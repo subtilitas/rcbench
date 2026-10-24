@@ -28,7 +28,7 @@ extern "C" {
  * authority.
  *
  * The ratio follows ArduPilot's IOMCU (I/O microcontroller): the IOmcu gives up
- * after 200 ms and the host escalates after 1 s, so the processor holding the
+ * after 200ms and the host escalates after 1s, so the processor holding the
  * outputs is the more suspicious of the two.
  */
 #define LINK_DEV_SILENCE_MS 200u

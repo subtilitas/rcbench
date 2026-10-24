@@ -13,7 +13,7 @@
 # it back, both through log_name.c.  log_take.c takes a run's number in its
 # folder, card_tree.h names the folders, card_tree.c makes them and checks a
 # log folder set on SETUP, and fault_log.c keeps the fault log under its
-# 1 MiB cap.
+# 1MiB cap.
 set(SRCS
     log_numbers.c
     log_csv.c

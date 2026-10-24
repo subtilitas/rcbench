@@ -22,7 +22,7 @@ Die Bilder dieses Abschnitts stammen aus dem Host-Renderer, der den Bildschirm m
 
 | Bereich | Zeigt |
 |---|---|
-| CH01 bis CH16 | eine Spur je Kanal: etwa 1,7 s Verlauf, 118 Werte, ein Balken für den aktuellen Wert und den Wert in us |
+| CH01 bis CH16 | eine Spur je Kanal: etwa 2,8s Verlauf bei 71 Frames je Sekunde, 200 Werte, ein Balken für den aktuellen Wert und den Wert in us |
 | Zustandsblock | KEIN SIGNAL, FRAME LOST, FAILSAFE oder LIVE, mit einer Zeile darunter |
 | BUS | `S.BUS` |
 | RATE | Frames pro Sekunde, in Hz |
@@ -44,7 +44,7 @@ Im FAILSAFE ist jede Spur rot gezeichnet. Der Empfänger sendet sechzehn formal 
 
 ## ROHDATEN
 
-ROHDATEN zeigt den letzten Frame als hexadezimale Bytes, 8 je Zeile. Kopf- und Abschlussbyte stehen in der Akzentfarbe. Darunter: die Bytezahl und die Pause, an der der Decoder Frames trennt, `25 Bytes; 2000 us Pause trennen die Frames`, dann die Zähler für Resync und Bad tail. KANÄLE und ROHDATEN wechseln die linke Ansicht.
+ROHDATEN zeigt den letzten Frame als hexadezimale Bytes, 8 je Zeile. Kopf- und Abschlussbyte stehen in der Akzentfarbe. Darunter: die Bytezahl und die Pause, an der der Decoder Frames trennt, `25 Bytes; 2000us Pause trennen die Frames`, dann die Zähler für Resync und Bad tail. KANÄLE und ROHDATEN wechseln die linke Ansicht.
 
 ## Verwandte Seiten
 

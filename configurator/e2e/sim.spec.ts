@@ -50,7 +50,7 @@ for (const lang of ['en', 'de'] as const) {
         await expectFigures(page, lang, DEFAULT_SIM);
         await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(`3 × ${ORDER[lang]} 470 Ω, 2 W`);
 
-        // Cells: 4S to 6S. 470 Ω, 2 W in delta: 1.35 W, the hint.
+        // Cells: 4S to 6S. 470Ω, 2W in delta: 1.35W, the hint.
         await page.locator('body').focus();
         await tabTo(page, 'sim-cells');
         await page.keyboard.press('ArrowDown');
@@ -61,7 +61,7 @@ for (const lang of ['en', 'de'] as const) {
         await expect(page.locator('#sim-hint')).toBeVisible();
         await expect(page.locator('#live')).toContainText(simText(lang, sim).hot);
 
-        // Rating: 2 W to 1 W: above the rating.
+        // Rating: 2W to 1W: above the rating.
         await tabTo(page, 'sim-watts');
         await page.keyboard.press('ArrowUp');
         sim = { ...sim, watts: 1 };
@@ -69,13 +69,13 @@ for (const lang of ['en', 'de'] as const) {
         await expect(page.locator('#sim-over')).toBeVisible();
         await expect(page.locator('#live')).toContainText(simText(lang, sim).level!.text);
 
-        // Resistance: 470 Ω to 560 Ω, back with Shift+Tab.
+        // Resistance: 470Ω to 560Ω, back with Shift+Tab.
         await tabTo(page, 'sim-ohms', true);
         await page.keyboard.press('ArrowDown');
         sim = { ...sim, ohms: 560 };
         await expectFigures(page, lang, sim);
 
-        // Wiring: delta to star: 0.284 W, no warning, no hint.
+        // Wiring: delta to star: 0.284W, no warning, no hint.
         await tabTo(page, 'sim-wiring');
         await page.keyboard.press('ArrowDown');
         sim = { ...sim, wiring: 'star' };
@@ -142,7 +142,7 @@ for (const lang of ['en', 'de'] as const) {
         await expect(page.locator('#have [data-h="sim"]')).toBeChecked();
         await expect(page.locator('#buy [data-h="sim"]')).toHaveCount(0);
         await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&h=sim');
-        // Wiring: the row stays "Resistor 470 Ω, 2 W", the tick stays.
+        // Wiring: the row stays "Resistor 470Ω, 2W", the tick stays.
         await tabTo(page, 'sim-wiring', true);
         await page.keyboard.press('ArrowDown');
         await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&h=sim&m=star');

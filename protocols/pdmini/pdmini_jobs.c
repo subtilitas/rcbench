@@ -259,7 +259,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * set point to write or an ON to make: at rest it is a reading like the
      * others, and a module slow to answer leaves the display its share.
      * Before the reads for an ON, not between them: a module answering
-     * 145 ms or more late takes longer than PDMINI_STATE_MS for them, and
+     * 145ms or more late takes longer than PDMINI_STATE_MS for them, and
      * the ON would never be written.  It counts as the reading that goes
      * ahead of a set point (polled_late), so a set point follows it.
      */
@@ -300,7 +300,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
     /*
      * A reading PDMINI_POLL_LATE_MS past its due goes before the set
      * points: a slider dragged with no confirm slide hands a new set point
-     * every 50 ms or so, its write and read-back take about as long, and
+     * every 50ms or so, its write and read-back take about as long, and
      * the readings would otherwise stand until the drag stops.  The display
      * -- long enough for the panel to take the readings as stopped and cut
      * the output -- and the state, which shows an output the module
@@ -318,8 +318,8 @@ static bool next_job(pdmini_t *d, uint32_t now)
     }
     /* The state is not held back by the one-at-a-time rule: an overdue
      * state read goes straight after another reading, so a tripped output,
-     * or one on while an OFF is asked, is seen within 2.1 s on a module
-     * answering up to 390 ms late -- the display waiting instead. */
+     * or one on while an OFF is asked, is seen within 2.1s on a module
+     * answering up to 390ms late -- the display waiting instead. */
     if (on_step == 0u && polled_late && !d->en_pending
         && (uint32_t)(now - d->last_state)
                >= PDMINI_STATE_MS + PDMINI_POLL_LATE_MS) {
@@ -366,7 +366,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
                         && set_ok && input_ok;
     if (on_due && d->input_known && pdmini_under_line(d)) {
         /* The input already under the line for the set point: read under
-         * PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV, 1500 mV, with no room for
+         * PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV, 1500mV, with no room for
          * the lowest set point.  An ON sag_check() would cut 2 readings on
          * is not written. */
         pdmini_sag_hold(d);

@@ -361,7 +361,7 @@ void servo_screen_released(uint16_t pause_seq)
 
 /*
  * The drawn output's slew at @p speed_pct, command units a millisecond, as
- * the far end's: SPEED_FULL_SPAN_S times the share, and at 100 % none --
+ * the far end's: SPEED_FULL_SPAN_S times the share, and at 100% none --
  * the command goes straight through (svs_slew_of()), which is negative here.
  */
 static float slew_per_ms(int speed_pct)
@@ -475,7 +475,7 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
  * The drawn output after @p ms more of the sweep @p w from @p phase_ms in,
  * starting at @p from: each step the curve's command, chased as tick()
  * chases it at @p speed_pct -- for a pause, the SPEED in force at the tap,
- * the far end's slew until the HOLD reached it.  Steps of 4 ms, under a
+ * the far end's slew until the HOLD reached it.  Steps of 4ms, under a
  * frame, so a turn of the curve is followed as the drawing follows it.
  */
 static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
@@ -504,7 +504,7 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
     s.toggle_live = false;      /* no undo across a notification */
     /*
      * The far end ran its curve on until the HOLD reached it, a queue and an
-     * exchange after the tap; at 5 Hz that is a visible share of a cycle.
+     * exchange after the tap; at 5Hz that is a visible share of a cycle.
      * The panel times the phase it kept from the acknowledgements, as it
      * times a start, so the two errors are the same and cancel.
      *
@@ -513,7 +513,7 @@ void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms)
      * tap's phase to the acknowledged one, slewed at SPEED as the drawing
      * slews.  Worked out here rather than by drawing the curve on until the
      * acknowledgement, which would need an end for a HOLD that is never
-     * acknowledged; without one, the tap's estimate stands.  At most 5 s is
+     * acknowledged; without one, the tap's estimate stands.  At most 5s is
      * worked through, 1250 steps.
      */
     if (pause_seq != s.pause_seq) {
@@ -648,6 +648,8 @@ void svs_tick_body(float dt_s)
         s.clock_ms += whole;
         s.clock_frac_ms -= (float)whole;
     }
+    /* The drag's filtered target, before the horn is moved towards it. */
+    svs_drag_tick(dt_s);
     if (s.sweeping) {
         /* A sweep whose curve a setting or the profile changed starts over,
          * as the IOmcu's does when it is written. */
@@ -659,7 +661,7 @@ void svs_tick_body(float dt_s)
         if (s.sweeping && !s.awaiting
             && sweep_step(&s.sw, s.clock_ms, &cmd)) {
             s.commanded_deg = clamp_travel(sweep_deg(cmd));
-            ++s.ctrl_rev;
+            ++s.dial_rev;
         }
     }
     if (s.dr.on) {
@@ -690,7 +692,7 @@ void svs_tick_body(float dt_s)
             }
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
-        ++s.ctrl_rev;
+        ++s.dial_rev;
     }
     if (s.arm_down && svs_arm_locked() && ui_hold_leave(&s.arm)) {
         /* The port was found held under a hold of ARM: no arm is sent. */
@@ -867,13 +869,13 @@ void svs_tick_body(float dt_s)
         s.shown_cmd = want;
         if (s.shown_deg != s.commanded_deg) {
             s.shown_deg = s.commanded_deg;
-            ++s.ctrl_rev;
+            ++s.dial_rev;
         }
         remember_shown();
         return;
     }
     s.shown_cmd = next;
     s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
-    ++s.ctrl_rev;
+    ++s.dial_rev;
     remember_shown();
 }

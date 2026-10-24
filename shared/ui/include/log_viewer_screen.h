@@ -23,7 +23,7 @@
  *
  * The import view shows the detected delimiter and decimal convention before
  * anything is plotted: a decimal-comma file read as decimal-point turns
- * 22,34 V into 2234 V.
+ * 22,34V into 2234V.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -48,10 +48,10 @@ extern "C" {
 #define LOG_VIEWER_NAME_MAX  64
 
 /*
- * The largest file OPEN reads: 2 GiB less 1 byte.  The panel reads a file
+ * The largest file OPEN reads: 2GiB less 1 byte.  The panel reads a file
  * through stdio, whose fseek() and ftell() take a long of 32 bits.  A
  * larger file, which an exFAT (extended File Allocation Table) card or a
- * FAT32 one up to 4 GiB less 1 byte holds, is listed with its size and
+ * FAT32 one up to 4GiB less 1 byte holds, is listed with its size and
  * refused at OPEN with TX_LOG_TOO_BIG.
  */
 #define LOG_VIEWER_OPEN_MAX 0x7FFFFFFFull
@@ -187,6 +187,35 @@ log_viewer_tab_t log_viewer_tab(void);
  */
 void log_viewer_set_tab(log_viewer_tab_t tab);
 
+/** @brief What log_viewer_show() found. */
+typedef enum {
+    LOG_SHOW_OPEN = 0,     /**< the list holds the file: it is open in
+                                IMPORT or TEXT, or the list shows it
+                                selected with the reason OPEN refused it
+                                (a file over LOG_VIEWER_OPEN_MAX, a report
+                                that does not read)                      */
+    LOG_SHOW_NOT_LISTED,   /**< a tab outside the three, or a name the list
+                                does not hold (a file other than a .csv or
+                                a report standing alone)                 */
+    LOG_SHOW_OTHER_CARD    /**< the list was read from another mount than
+                                @p mount: the card was swapped; nothing is
+                                opened                                   */
+} log_viewer_show_t;
+
+/**
+ * @brief Show @p tab with file @p name open, as a tap on the tab, a tap on
+ *        the file's row and OPEN do: FILES' OPEN on a file of one of the
+ *        three folders.  The page read is the one that starts at the name,
+ *        and it must come from the mount FILES listed the file from.
+ * @param tab    the folder's tab
+ * @param name   the file's name in that folder
+ * @param mount  the mount number (log_viewer_io_t mounts()) FILES read the
+ *               name from
+ * @return what was found
+ */
+log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
+                                  unsigned mount);
+
 /** The file currently open, or "" -- the overview header shows this. */
 const char *log_viewer_open_name(void);
 
@@ -229,9 +258,13 @@ gfx_color_t log_viewer_series_color(int k);
 int log_viewer_cursor(void);
 
 /**
- * A file's size as the list and the DELETE question write it into @p out
- * (@p n bytes): "300 B", "4 kB", "3.0 MB" from 1 MiB, "8.00 GB" from 1 GiB.
- * The units are binary: 1 kB is 1024 bytes, 1 GB 1024^3.
+ * @brief A file's size as the list and the DELETE question write it into @p
+ *        out (@p n bytes): "300B", "4kB", "3.0MB" from 1MiB, "8.00GB" from
+ *        1GiB. The units are binary: 1kB is 1024 bytes, 1GB 1024^3.
+ *
+ * @param out the text
+ * @param n its size, bytes
+ * @param bytes the file's size
  */
 void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
 
@@ -239,17 +272,16 @@ void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
 const char *log_viewer_message(void);
 
 /**
- * The range of a numeric column as the import view writes it into @p out
- * (@p n bytes): "lo..hi unit".  One decimal while both ends are below
- * 1000 in magnitude, none from 1000 on, so "2392..14639 rpm" fits the
- * 140 px box of the view.  A text over LOG_RANGE_CELLS glyphs (code points,
- * gfx_text_cells(), so "µs" is 2) drops the
- * decimal, then the space before the unit: "-999.9..-999.9 rpm" reads
- * "-1000..-1000 rpm".  A text still wider, such as two 7-digit negative
- * ends, is cut at the box's edge.  No space and no unit with an empty
- * @p unit.
+ * @brief The range of a numeric column as the import view writes it into @p
+ *        out (@p n bytes): "lo..hiunit".  One decimal while both ends are
+ *        below 1000 in magnitude, none from 1000 on, so "2392..14639rpm" fits
+ *        the 140px box of the view.  A text over LOG_RANGE_CELLS glyphs (code
+ *        points, gfx_text_cells(), so "µs" is 2) drops the decimal:
+ *        "-999.9..-999.9mOhm" reads "-1000..-1000mOhm".  A text still wider,
+ *        such as two 7-digit negative ends, is cut at the box's edge.  No unit
+ *        with an empty @p unit.
  */
-#define LOG_RANGE_CELLS 17u   /**< the 140 px range box in 8 px glyphs */
+#define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
 
 void log_viewer_range_text(char *out, size_t n, double lo, double hi,
                            const char *unit);

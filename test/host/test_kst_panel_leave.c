@@ -63,7 +63,7 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         g_rig.rail = true;
-        /* A 5.5 V source: 5.0 V out is 200 mV over its cap, 4.8 V. */
+        /* A 5.5V source: 5.0V out is 200mV over its cap, 4.8V. */
         g_rig.vin_mv = 4800u + PDMINI_CAP_MV;
         link_up();
         tap(val(PG_SERVO, 0, 0));
@@ -72,7 +72,7 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         CHECK_STR_EQ(said(), TR(KP_R_SUPPLY_RANGE));
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
         CHECK_EQ(g_rig.sup_sets, 0);
-        /* 4.8 V is what it can give. */
+        /* 4.8V is what it can give. */
         more_input(0);
         type_text("4.8");
         tap(val(PG_SERVO, 0, 0));
@@ -82,7 +82,7 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
     }
 }
 
-/* An output that is on under 4.8 V is not programmed at: CONNECT ends with
+/* An output that is on under 4.8V is not programmed at: CONNECT ends with
  * the line that says so, the port stays in PWM and the output as it is. */
 TEST_CASE(a_supply_that_is_on_under_4_8_v_is_refused_by_name)
 {
@@ -104,8 +104,8 @@ TEST_CASE(a_supply_that_is_on_under_4_8_v_is_refused_by_name)
         CHECK(g_rig.sup_on);
         CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MIN_MV - 100u);
 
-        /* At 4.8 V and 3 A the session runs at 4.8 V and the staged
-         * 1000 mA: the lower one of each. */
+        /* At 4.8V and 3A the session runs at 4.8V and the staged
+         * 1000mA: the lower one of each. */
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         g_rig.rail = true;
@@ -405,7 +405,7 @@ TEST_CASE(the_wait_before_pwm_is_a_row_with_limits_and_is_kept)
         CHECK_EQ(kst_prog_wait_ms(M), 10000u);
         CHECK_EQ(settings_get_int(SET_SERVO_PROG_WAIT), 10000);
         CHECK(settings_save_asked());
-        /* 1 ms above is refused: the value stays. */
+        /* 1ms above is refused: the value stays. */
         more_input(2);
         type_text("10001");
         CHECK_EQ(kst_panel_editor(), 1);

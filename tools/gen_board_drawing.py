@@ -209,7 +209,7 @@ def render(name: str, src: str, drawing: dict) -> str:
         f" * {drawing.get('name', name)}: the board drawing the IOmcu"
         " serves over",
         " * LINK_PAGE_ART_DATA, LINK_ART_DRAWING as link_pages.h lays it out.",
-        f" * Outline {w} x {h} (0.01 mm), {len(pads)} pads, {len(shapes)}"
+        f" * Outline {w} x {h} (0.01mm), {len(pads)} pads, {len(shapes)}"
         f" shapes, {n} bytes.",
         f" * Source: {src}",
         " *",
@@ -235,7 +235,7 @@ def render(name: str, src: str, drawing: dict) -> str:
         if p["kind"] == "gpio":
             what = f"GPIO {p['value']}"
         elif p["kind"] == "rail" and p["value"]:
-            what = f"rail {p['value'] / 10:.1f} V"
+            what = f"rail {p['value'] / 10:.1f}V"
         else:
             what = p["kind"]
         sq = ", square" if p.get("square") else ""

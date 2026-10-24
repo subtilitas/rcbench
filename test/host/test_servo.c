@@ -70,7 +70,8 @@ TEST_CASE(a_touch_on_the_dial_points_the_horn_there)
 }
 
 /* A drag keeps commanding, because the servo is meant to follow the finger
- * rather than jump when it lifts. */
+ * rather than jump when it lifts: the target follows the finger through
+ * the frames after a move. */
 TEST_CASE(a_drag_keeps_commanding)
 {
     fresh_armed();
@@ -81,10 +82,12 @@ TEST_CASE(a_drag_keeps_commanding)
 
     dial_at(60.0f, ARC_R - 30, &x, &y);
     ev(x, y, TOUCH_EVENT_MOVE, 1);
+    frames(0.3f);
     const uint16_t at_sixty = servo_screen_commanded();
     CHECK(at_sixty > at_zero);
 
     ev(x, y, TOUCH_EVENT_UP, 1);
+    frames(0.3f);
     /* And the release does not move it again. */
     CHECK_EQ(servo_screen_commanded(), at_sixty);
 }
@@ -107,7 +110,7 @@ TEST_CASE(the_case_is_not_the_dial)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
 }
 
-/* The dial takes a press out to 184 px from the shaft, ARC_R + 34: the
+/* The dial takes a press out to 184px from the shaft, ARC_R + 34: the
  * arc, its labels and a finger landing past them; nothing further out. */
 TEST_CASE(the_dial_reaches_184_px_from_the_shaft)
 {
@@ -274,6 +277,7 @@ TEST_CASE(a_press_that_disarmed_the_bench_does_not_then_arm_it)
     fresh();
     servo_screen_set_armed(true);
     arm_press();
+    CHECK_EQ(last_cmd().kind, SERVO_CMD_DISARM);   /* on the press */
     servo_screen_set_armed(false);
     hold_for(UI_HOLD_S + 0.5f);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_NONE);
@@ -334,7 +338,7 @@ TEST_CASE(the_arm_button_fades_across_the_hold_and_flashes_when_it_lands)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_ARM);
 
     /* Arriving flashes the whole button, its colour by the time the flash
-     * has run, 25 ms a phase, and it settles on the danger red.  The finger comes off first: a press lerps
+     * has run, 25ms a phase, and it settles on the danger red.  The finger comes off first: a press lerps
      * the fill towards white, and what is under test here is the flash. */
     servo_screen_set_armed(true);
     arm_release();
@@ -632,7 +636,7 @@ TEST_CASE(a_profile_changed_while_an_arm_is_pending_is_the_one_armed)
 /* ------------------------------------------------------- the servo's range */
 
 /*
- * The range travels with the pulse.  A narrow servo runs 660 to 860 us and
+ * The range travels with the pulse.  A narrow servo runs 660 to 860us and
  * its centre is below a standard servo's floor, so a command clamped against
  * the wrong pair sends the whole travel to one end.
  */

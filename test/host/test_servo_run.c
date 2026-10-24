@@ -129,8 +129,8 @@ TEST_CASE(arm_first_goes_once_the_bench_is_armed)
 }
 
 /* A run whose steps the caps do not reach is refused before any warning:
- * with VOLTAGE MAX 8.0 V and HV SERVO on, START TEST opens no HV warning
- * naming 8.0 V, and no run starts. */
+ * with VOLTAGE MAX 8.0V and HV SERVO on, START TEST opens no HV warning
+ * naming 8.0V, and no run starts. */
 TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
 {
     bench_fresh();
@@ -148,7 +148,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     hold_start(2.3f);
     CHECK(!servo_screen_testing());
 
-    /* The warning open at 21 V, and the cap brought under its top step
+    /* The warning open at 21V, and the cap brought under its top step
      * while it stands: the hold starts nothing. */
     bench_fresh();
     short_runs();
@@ -167,7 +167,7 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     scr->tick(0.02f);
     servo_invalidate();
     scr->render(&cv, 0);
-    /* Still the run's 8.40 V, not a value snapped under the cap. */
+    /* Still the run's 8.40V, not a value snapped under the cap. */
     for (int y = 60; y < 100; ++y) {
         CHECK_EQ(memcmp(&fb[(size_t)y * W], &named[(size_t)y * W],
                         490 * sizeof(gfx_color_t)), 0);
@@ -211,7 +211,7 @@ static bool overlay_same(const gfx_color_t *want)
 }
 
 /* A refusal goes with the change that answers it: NO STEP CHOSEN, then
- * STEP 4.8 V turned on; SUPPLY NOT ANSWERING, then the supply answering.
+ * STEP 4.8V turned on; SUPPLY NOT ANSWERING, then the supply answering.
  * The page is then the one drawn with nothing refused. */
 TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
 {

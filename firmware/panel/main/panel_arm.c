@@ -1,5 +1,6 @@
-/*
- * The bench's arm on the control task: the state the loop starts from, the
+/**
+ * @file
+ * @brief The bench's arm on the control task: the state the loop starts from, the
  * watch on an arm until the render side has seen it, the run's totals, the
  * latched stop and the act the arming policy asks for, the OUTPUTS screen's
  * binding onto the IOmcu's output pages, disarming wherever it was
@@ -54,7 +55,7 @@ static uint32_t    s_stops_served;
  * When the outstanding disarm started holding the safety line down, and how
  * long that may go on for.
  *
- * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
+ * Twice HEARTBEAT_MAX_GAP_MS (150ms), so a far end that never answers has
  * certainly failed safe by then and the line can go back up: a disarm nobody
  * can deliver must not hold it down for ever.
  */
@@ -116,11 +117,6 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 }
 
 /*
- * An arm was applied: number it, and watch it until the render side has
- * seen it.  The snapshot carries the number; the render side acknowledges it
- * at the end of a frame that began with the bench armed and found no loss.
- */
-/*
  * The run's charge and energy, counted here from what is shown -- the ESC's
  * readings over the link, the model's while it is down -- so one count runs
  * through the whole run whatever the source does; see bench_totals_t.
@@ -128,11 +124,24 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  */
 bench_totals_t s_totals;
 uint32_t       s_totals_ms;
+/*
+ * A SERVO run's voltage, current, power, charge and energy are the supply's:
+ * its reading at each sample, and the run's totals of it counted here over
+ * the same steps as s_totals.  Control task only.
+ */
+log_rail_t     s_rail;
+bench_totals_t s_rail_totals;
 
+/**
+ * @brief An arm was applied: number it, and watch it until the render side has
+ * seen it.  The snapshot carries the number; the render side acknowledges it
+ * at the end of a frame that began with the bench armed and found no loss.
+ */
 static void arm_applied(void)
 {
     /* A run starts with nothing counted. */
     bench_totals_reset(&s_totals);
+    bench_totals_reset(&s_rail_totals);
     s_totals_ms = now_ms();
     ++s_arm_gen;
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
@@ -228,6 +237,13 @@ static void service_disarm(bool link_up)
     }
 }
 
+/**
+ * @brief The latched stop and the act the arming policy asks for, once a
+ *        pass of the control task: the router's backstop STOP unless the
+ *        pump counted the same press, the let-go every stop owes, the
+ *        supply, then the arm or the disarm.
+ * @param link_up whether the link to the IOmcu answers
+ */
 void service_arming(bool link_up)
 {
     /*
@@ -239,7 +255,7 @@ void service_arming(bool link_up)
      * missed; a press it saw has already been applied there.
      */
     if (atomic_exchange(&s_stop_request, false)
-        && !atomic_exchange(&s_stop_counted, false)) {
+        && atomic_exchange(&s_stop_counted, 0u) == 0u) {
         arming_stop_pressed(&s_arm);        /* the band's STOP, pressed */
     }
 
@@ -248,7 +264,7 @@ void service_arming(bool link_up)
      * was armed and whichever thing raised it -- a press, the far end, touch
      * that stopped answering.  A bench that was not armed still had a servo
      * held, and nothing else would have released it: the position would go on
-     * being refreshed every 100 ms, over the top of an outputs binding made
+     * being refreshed every 100ms, over the top of an outputs binding made
      * later.
      */
     service_disarm(link_up);
@@ -415,7 +431,7 @@ void service_arming(bool link_up)
              * at, is asked again before each of the two writes: the
              * exchanges above and the CLEAR are answered in about a
              * millisecond and can be answered up to LINK_HOST_TIMEOUT_MS
-             * (1000 ms) late.  Past it the arm is given up and nothing
+             * (1000ms) late.  Past it the arm is given up and nothing
              * further is written (arming_handshake_open()): before CLEAR
              * as a refusal, after it as a stop, whose withheld heartbeat
              * sets the far end's latch again.  The frame that arms is the

@@ -39,7 +39,14 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
 # builds a panel that never addresses 0x14 and holds none of that code.
 option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
 
-# The DSI (Display Serial Interface) host's colour bars for 3 s at start-up,
+# The console's frame, stack and heap lines (main/panel_perf.h): the PSRAM
+# probe at start-up, and at most one line a frame, a rate line and a window
+# line every 300 frames.  Default ON.
+#   idf.py -D RCBENCH_PERF_LOG=OFF build
+# builds a panel that prints none of them and holds none of their code.
+option(RCBENCH_PERF_LOG "Log the frame times, stacks and heap on the console" ON)
+
+# The DSI (Display Serial Interface) host's colour bars for 3s at start-up,
 # for a first look at a board (components/display).
 #   idf.py -D RCBENCH_DISPLAY_BARS=ON build
 option(RCBENCH_DISPLAY_BARS "Show the DSI host's colour bars at start-up" OFF)
@@ -47,6 +54,10 @@ option(RCBENCH_DISPLAY_BARS "Show the DSI host's colour bars at start-up" OFF)
 # ESP-IDF's fatfs component with exFAT on, in place of its own; the reason
 # and the mechanism are in the file.
 include("${CMAKE_CURRENT_LIST_DIR}/fatfs_exfat.cmake")
+
+# ESP-IDF's esp_driver_ppa with the DIG-734 workaround always on, for Screen
+# rotation 180; the reason and the mechanism are in the file.
+include("${CMAKE_CURRENT_LIST_DIR}/ppa_dig734.cmake")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rcbench-panel)

@@ -4,14 +4,14 @@
 ; A DShot bit is eight cycles here, because the protocol's two high times are
 ; three eighths and six eighths of the bit and eight is the smallest count
 ; that makes both whole.  The state machine clock is therefore eight times the
-; bit rate: 4.8 MHz for DShot600.
+; bit rate: 4.8MHz for DShot600.
 ;
 ; Two transmit programs rather than one with a flag.  Plain DShot holds the
 ; line low between frames and never listens; the bidirectional one releases
 ; the line after every frame so the ESC (electronic speed controller) can
 ; answer on it, and raises a PIO (programmable input/output) interrupt so the
-; receiver starts at the right moment.  The turnaround is about 30 us after a
-; frame that is itself 27 us long, which is why it is here and not in a loop
+; receiver starts at the right moment.  The turnaround is about 30us after a
+; frame that is itself 27us long, which is why it is here and not in a loop
 ; on the processor.
 ;
 ; The inversion bidirectional DShot needs is a pad override on the GPIO

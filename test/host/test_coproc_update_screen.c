@@ -5,6 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -16,10 +17,8 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* Mirrored from coproc_update_screen.c: the buttons of the question. */
-#define CANCEL_X 264
-#define START_X  536
-#define BTN_Y    282
+/* The buttons of the question, in the body's coordinates. */
+#include "upd_spots.h"
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -71,9 +70,9 @@ TEST_CASE(older_compares_major_then_minor_then_patch)
 TEST_CASE(a_tap_on_start_starts_nothing)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(2);
-    ev(TOUCH_EVENT_UP, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(!coproc_update_screen_take_start());
     CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
@@ -82,9 +81,9 @@ TEST_CASE(a_tap_on_start_starts_nothing)
 TEST_CASE(half_the_hold_starts_nothing)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS / 2);
-    ev(TOUCH_EVENT_UP, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     CHECK(!coproc_update_screen_take_start());
     CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
 }
@@ -92,12 +91,12 @@ TEST_CASE(half_the_hold_starts_nothing)
 TEST_CASE(the_hold_starts_once_and_shows_the_progress)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK_EQ(coproc_update_screen_view(), CU_VIEW_PROGRESS);
     CHECK(coproc_update_screen_take_start());
     CHECK(!coproc_update_screen_take_start());
-    ev(TOUCH_EVENT_UP, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(!coproc_update_screen_take_start());
     CHECK(!coproc_update_screen_take_cancel());
@@ -106,7 +105,7 @@ TEST_CASE(the_hold_starts_once_and_shows_the_progress)
 TEST_CASE(an_older_image_takes_the_same_hold)
 {
     fresh(k_new, k_old);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(coproc_update_screen_take_start());
 }
@@ -114,7 +113,7 @@ TEST_CASE(an_older_image_takes_the_same_hold)
 TEST_CASE(one_late_frame_cannot_start)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     scr()->tick(5.0f);
     CHECK(!coproc_update_screen_take_start());
 }
@@ -122,10 +121,10 @@ TEST_CASE(one_late_frame_cannot_start)
 TEST_CASE(a_press_that_slides_off_start_abandons_the_hold)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS / 2);
-    ev(TOUCH_EVENT_MOVE, 1, START_X, BTN_Y - 100, 0);
-    ev(TOUCH_EVENT_MOVE, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_MOVE, 1, CU_Q_START_X, CU_Q_BTN_Y - 100, 0);
+    ev(TOUCH_EVENT_MOVE, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(!coproc_update_screen_take_start());
 }
@@ -133,13 +132,13 @@ TEST_CASE(a_press_that_slides_off_start_abandons_the_hold)
 TEST_CASE(a_cancelled_gesture_starts_nothing)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS / 2);
     scr()->cancel();
     ticks(HOLD_TICKS);
     CHECK(!coproc_update_screen_take_start());
     /* And a fresh press after it is taken. */
-    ev(TOUCH_EVENT_DOWN, 2, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 2, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(coproc_update_screen_take_start());
 }
@@ -147,8 +146,8 @@ TEST_CASE(a_cancelled_gesture_starts_nothing)
 TEST_CASE(cancel_is_a_tap_and_is_handed_over_once)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
     CHECK(coproc_update_screen_take_cancel());
     CHECK(!coproc_update_screen_take_cancel());
     CHECK(!coproc_update_screen_take_start());
@@ -157,21 +156,21 @@ TEST_CASE(cancel_is_a_tap_and_is_handed_over_once)
 TEST_CASE(a_release_off_cancel_or_flagged_is_no_cancel)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y - 120, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y - 120, 0);
     CHECK(!coproc_update_screen_take_cancel());
-    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y, TOUCH_FLAG_NO_TAP);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, TOUCH_FLAG_NO_TAP);
     CHECK(!coproc_update_screen_take_cancel());
 }
 
 TEST_CASE(a_second_finger_does_not_end_the_first_ones_hold)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS / 2);
-    ev(TOUCH_EVENT_DOWN, 2, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 2, CANCEL_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 2, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 2, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(!coproc_update_screen_take_cancel());
     CHECK(coproc_update_screen_take_start());
@@ -184,7 +183,7 @@ TEST_CASE(leaving_the_question_declines_and_leaving_the_progress_does_not)
     CHECK(coproc_update_screen_take_cancel());
 
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     scr()->leave();
     CHECK(!coproc_update_screen_take_cancel());
@@ -195,9 +194,9 @@ TEST_CASE(the_progress_view_takes_no_touch)
 {
     fresh(k_old, k_new);
     coproc_update_screen_progress(CU_STEP_SEND, 10u, 2994u);
-    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     CHECK(!coproc_update_screen_take_cancel());
     CHECK(!coproc_update_screen_take_start());
@@ -206,7 +205,7 @@ TEST_CASE(the_progress_view_takes_no_touch)
 TEST_CASE(a_new_offer_returns_to_the_question_with_clear_latches)
 {
     fresh(k_old, k_new);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
     coproc_update_screen_offer(k_old, k_new);
     CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
@@ -224,6 +223,41 @@ TEST_CASE(the_router_draws_the_band_over_the_question_only)
     CHECK(!ui_router_stop_live());
     ui_router_goto(SCREEN_OVERVIEW);
     CHECK(ui_router_stop_live());
+}
+
+/* The question after the progress, on the same screen: the band comes back
+ * in both buffers as a frame drawn whole draws it, though the router
+ * repaints a buffer's band only when it changed there. */
+TEST_CASE(the_band_comes_back_over_a_question_after_the_progress)
+{
+    const size_t n = (size_t)UI_PANEL_W * UI_PANEL_H;
+    gfx_color_t *px[3];
+    gfx_canvas_t cv[3];
+    for (int b = 0; b < 3; ++b) {
+        px[b] = calloc(n, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(px[b]);
+        gfx_canvas_init(&cv[b], px[b], UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    }
+    ui_router_init();
+    fresh(k_old, k_new);
+    ui_router_goto(SCREEN_COPROC_UPDATE);
+    ui_router_render(&cv[0], 0);
+    ui_router_render(&cv[1], 1);
+    coproc_update_screen_progress(CU_STEP_SEND, 0u, 2994u);
+    ui_router_render(&cv[0], 0);
+    ui_router_render(&cv[1], 1);
+    coproc_update_screen_offer(k_old, k_new);
+    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
+    ui_router_render(&cv[0], 0);
+    ui_router_render(&cv[1], 1);
+    ui_router_invalidate();
+    ui_router_render(&cv[2], 0);
+    const size_t band = (size_t)UI_PANEL_W * UI_BAND_H;
+    CHECK(memcmp(px[0], px[2], band * sizeof(gfx_color_t)) == 0);
+    CHECK(memcmp(px[1], px[2], band * sizeof(gfx_color_t)) == 0);
+    for (int b = 0; b < 3; ++b) {
+        free(px[b]);
+    }
 }
 
 /* ------------------------------------------------------------ the driver */
@@ -293,8 +327,8 @@ TEST_CASE(cancel_declines_once_and_the_question_stays_shut)
     drive_fresh();
     offer();
     CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
-    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
     cu_hand_t h = frame();
     CHECK(h.decline);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
@@ -364,9 +398,9 @@ TEST_CASE(start_runs_the_progress_and_the_end_returns_to_the_menu)
 {
     drive_fresh();
     offer();
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
-    ev(TOUCH_EVENT_UP, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     cu_hand_t h = frame();
     CHECK_EQ(h.starts, 1u);
     CHECK(!h.decline);
@@ -467,6 +501,7 @@ int main(void)
     RUN(the_progress_view_takes_no_touch);
     RUN(a_new_offer_returns_to_the_question_with_clear_latches);
     RUN(the_router_draws_the_band_over_the_question_only);
+    RUN(the_band_comes_back_over_a_question_after_the_progress);
     RUN(every_view_renders_inside_its_canvas);
     RUN(an_offer_opens_the_question_once_on_a_safe_menu);
     RUN(cancel_declines_once_and_the_question_stays_shut);

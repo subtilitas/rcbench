@@ -101,7 +101,7 @@ TEST_CASE(the_page_is_read_every_500_ms_and_the_clock_may_wrap)
     read_at(0xFFFFFF00u);
     CHECK(!prog_link_read_due(&g_p, 0xFFFFFF00u));
     CHECK(!prog_link_read_due(&g_p, 0xFFFFFF00u + PROG_LINK_POLL_MS - 1u));
-    /* 500 ms later the counter has wrapped. */
+    /* 500ms later the counter has wrapped. */
     CHECK(prog_link_read_due(&g_p, 0xFFFFFF00u + PROG_LINK_POLL_MS));
     CHECK_EQ((uint32_t)(0xFFFFFF00u + PROG_LINK_POLL_MS), 244u);
     read_at(244u);
@@ -807,7 +807,7 @@ TEST_CASE(a_target_change_returns_the_servo_rate_to_0_from_4_19)
  * An unanswered TARGET write may still have landed.  It leaves no TARGET
  * known, so the first read after it, once its UNKNOWN has been asked for,
  * finds nothing to compare against and says KEPT: the panel already
- * counts the rate as unknown, and a RESET there would count 50 Hz while
+ * counts the rate as unknown, and a RESET there would count 50Hz while
  * the new TARGET runs at the rate written since.
  */
 TEST_CASE(a_read_after_an_unanswered_target_write_compares_against_nothing)

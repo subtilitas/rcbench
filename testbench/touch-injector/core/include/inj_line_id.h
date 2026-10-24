@@ -1,13 +1,14 @@
-/*
- * Which of two wires carries SCL, read from I2C (Inter-Integrated Circuit)
- * traffic the injector only listens to.  Pure C: the RP2350 build feeds it
- * the edges core 1 recorded on GP4 and GP5, the host suite feeds it
- * synthetic ones.
+/**
+ * @file
+ * @brief Which of two wires carries SCL, read from I2C (Inter-Integrated
+ *        Circuit) traffic the injector only listens to.  Pure C: the RP2350
+ *        build feeds it the edges core 1 recorded on GP4 and GP5, the host
+ *        suite feeds it synthetic ones.
  *
  * Rules, per transaction (a stretch of activity between two idle spans):
  *
- *   - Idle is both lines high for at least 10 us.  A repeated START keeps
- *     both high for half a bit: 1.25 us at 400 kHz, 5 us at 100 kHz.
+ *   - Idle is both lines high for at least 10us.  A repeated START keeps
+ *     both high for half a bit: 1.25us at 400kHz, 5us at 100kHz.
  *   - START: out of idle, the line that falls first is SDA.
  *   - STOP: into idle, the line that rises last is SDA.
  *   - A transaction names a line when both rules name it.  A transaction
@@ -33,10 +34,10 @@
 extern "C" {
 #endif
 
-#define INJ_LINE_GLITCH         2u    /* samples                         */
-#define INJ_LINE_IDLE_NS        10000u /* both high this long is idle    */
-#define INJ_LINE_MIN_TX         20u
-#define INJ_LINE_MIN_AGREE_PCT  95u
+#define INJ_LINE_GLITCH         2u    /**< samples                       */
+#define INJ_LINE_IDLE_NS        10000u /**< both high this long is idle  */
+#define INJ_LINE_MIN_TX         20u   /**< transactions that name a line */
+#define INJ_LINE_MIN_AGREE_PCT  95u   /**< of them, those that agree     */
 
 /* Bit 0 of a state is GP4, bit 1 GP5; 1 is high. */
 #define INJ_LINE_GP4 0x1u

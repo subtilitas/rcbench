@@ -90,7 +90,7 @@ sense_value_t ina3221_current_ua(uint32_t shunt_uohm, int32_t code)
     } else if (code <= CODE13_MIN) {
         v.clip = SENSE_CLIP_LOW;
     } else {
-        /* 40 µV / R[µΩ] = 40 × 10^6 / R µA a step. */
+        /* 40µV / R[µΩ] = 40 × 10^6 / R µA a step. */
         v.value = (int32_t)((int64_t)code * 40000000 / (int64_t)shunt_uohm);
     }
     return v;

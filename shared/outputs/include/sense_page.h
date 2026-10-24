@@ -50,9 +50,9 @@ extern "C" {
 /**
  * @brief The set-up before anything is written: both parts off; GP16 and GP17,
  * I2C0's SDA and SCL, outside GP0 to GP7 where the guides put outputs;
- * 400 kHz; the MATEK I2C-INA-BM's INA228 at 0x45 on its 200 uOhm shunt,
- * ranged for 204.8 A; the DAOKAI INA3221 at 0x40 on its 0.1 Ohm shunts
- * (1.638 A full scale), reading CH1.
+ * 400kHz; the MATEK I2C-INA-BM's INA228 at 0x45 on its 200 uOhm shunt,
+ * ranged for 204.8A; the DAOKAI INA3221 at 0x40 on its 0.1Ohm shunts
+ * (1.638A full scale), reading CH1.
  */
 #define SENSE_DEFAULT_SDA        16u
 #define SENSE_DEFAULT_SCL        17u
@@ -65,8 +65,8 @@ extern "C" {
 #define SENSE_DEFAULT_I3221_CH   0x01u
 
 /**
- * @brief A capture armed before anything else is written: 100 mA of movement
- * and a 50 mA band, the servo test's SERVO_TEST_MOVE_A and SERVO_TEST_BAND_A.
+ * @brief A capture armed before anything else is written: 100mA of movement
+ * and a 50mA band, the servo test's SERVO_TEST_MOVE_A and SERVO_TEST_BAND_A.
  */
 #define SENSE_DEFAULT_MOVE_MA 100u
 #define SENSE_DEFAULT_BAND_MA  50u
@@ -120,7 +120,7 @@ void sense_page_defaults(uint16_t *cfg);
 
 /**
  * @brief The INA3221's full scale in mA for a shunt of @p shunt_dmohm tenths of
- *        a milliohm: 163.8 mV across it.  1638 at 0.1 Ohm.  0 for no shunt.
+ *        a milliohm: 163.8mV across it.  1638 at 0.1Ohm.  0 for no shunt.
  *
  * @param shunt_dmohm The shunt in tenths of a milliohm.
  * @return The full scale in mA; 0 for a shunt of 0.
@@ -137,7 +137,7 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
  * while a part is enabled a pin past the bank, reserved, bound to an output or
  * in @p taken, the two parts on one address while both are enabled, the INA3221
  * enabled with no channel, an INA228 shunt and maximum ina228_calibrate()
- * refuses (past 163.84 mV across the shunt, or a full scale past
+ * refuses (past 163.84mV across the shunt, or a full scale past
  * INA228_FS_MA_LIMIT at the range it chooses), and any change while @p o is
  * driving (BAD_VALUE).  A write of the set-up in force is taken armed or not.
  *
@@ -190,7 +190,7 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
  * does not have, an INA3221 channel that is not 1 (LINK_SS_CAP_CH) or not read,
  * an output channel that is not a surface on a PWM slot bound to silicon
  * (sense_page_bound()), with LINK_SS_ARM_PORT a programming port that renders
- * no pulse (sense_page_ports()), a movement or band of 0 or past 32767 mA
+ * no pulse (sense_page_ports()), a movement or band of 0 or past 32767mA
  * (BAD_VALUE); an arm while @p o is not armed for the surfaces (NOT_ARMED).
  * The holding level is signed mA and every value of it is taken, -32768 to
  * 32767.  An arm restarts the capture: CAP_STATE armed, the results 0.
@@ -333,9 +333,9 @@ void sense_page_esc(sense_page_t *p, bool v_ok, float volts, bool i_ok,
  * The INA228 is BENCH's source (LINK_BN_SENSED) while it is enabled and
  * online, and stays it to the end of a run it was online in: a part that
  * drops out while @p driving leaves voltage, current and power empty, not
- * the ESC's.  Voltage and current are the last 50 ms window's means, each
+ * the ESC's.  Voltage and current are the last 50ms window's means, each
  * valid with a sample in it; power is their product, valid with both.
- * The peaks are run @p run_gen's, from the 500 Hz samples, and until
+ * The peaks are run @p run_gen's, from the 500Hz samples, and until
  * core 1 has started that run, the live readings.  Charge and energy are
  * the part's ENERGY and CHARGE, with LINK_BN_TOTALS_OK, while they are the
  * run's totals; otherwise 0 and the bit clear.  Nothing changes while the
@@ -409,7 +409,7 @@ uint32_t sense_page_hz(const sense_page_t *p);
 uint64_t sense_page_pins(const sense_page_t *p);
 
 /** @brief Those and the pins core 1 has not let go of yet (sense_page_t.held):
- *        a bus moved or closed keeps its old pins for about 1 ms.
+ *        a bus moved or closed keeps its old pins for about 1ms.
  *
  * What no output
  *  may have.

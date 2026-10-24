@@ -66,9 +66,11 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
     fresh();
     /* hobbywing-flyfun-v5: twelve items. */
     open_profile("hobbywing-flyfun-v5");
-    for (int i = 0; i < 7; ++i) {
-        tap(STEP_UP_X, STEP_CY(i));
+    for (int i = 0; i < ST_PARM_ROWS; ++i) {
+        tap(STEP_UP_X, STEP_CY(i));          /* items 1 to 6 */
     }
+    tap(PAGE_DN_X, PAGE_CY);
+    tap(STEP_UP_X, STEP_CY(ST_PARM_ROWS - 1)); /* item 7 */
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
     CHECK_EQ(esc_stick_panel_runs(), 1u);
@@ -235,7 +237,7 @@ TEST_CASE(a_manual_step_shows_in_the_language_showing)
                  p->manual[1].action);
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(esc_stick_panel_step_text(&p->manual[1]),
-                 "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. "
+                 "Nach 2s oder der Tonfolge: JAZZ: Jumper abziehen. "
                  "MINIJAZZ: Taster dr\xC3\xBC" "cken.");
     /* No German in the step: the English. */
     esc_manual_t m = p->manual[0];
@@ -305,7 +307,7 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK(r.pct == ESC_STICK_PCT_MAX);
     CHECK(esc_stick_panel_hand_shown() == false);
     CHECK_STR_EQ(esc_stick_panel_left_text(),
-                 "Without DONE within %u s, the run ends and power switches "
+                 "Without DONE within %us, the run ends and power switches "
                  "off. The ESC may lock itself.");
     draws();                                 /* the prompt */
     for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
@@ -361,7 +363,7 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK_EQ(run->phase, ESC_STICK_HAND_END);
     CHECK(esc_stick_hand(run) != NULL && !esc_stick_hand(run)->locks);
     CHECK_STR_EQ(esc_stick_panel_left_text(),
-                 "Without DONE within %u s, the run ends and power switches "
+                 "Without DONE within %us, the run ends and power switches "
                  "off. The mode may not be saved.");
     draws();                                 /* the prompt */
     rig_run(&r, ESC_STICK_HAND_WAIT_MS + 1000u);

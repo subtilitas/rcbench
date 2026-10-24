@@ -31,6 +31,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "motor_spots.h"
+#include "supply_spots.h"
 
 #define W UI_PANEL_W
 #define H UI_PANEL_H
@@ -104,7 +105,7 @@ static void sv_fresh(void)
     sv_drain();
 }
 
-/* ARM held 2.3 s with no alert showing, and the bench's answer. */
+/* ARM held 2.3s with no alert showing, and the bench's answer. */
 static bool sv_armed(void)
 {
     sv_fresh();
@@ -132,7 +133,7 @@ TEST_CASE(disarm_ends_above_the_alert_band)
     CHECK(P(MO_ARM_T + MO_ARM_H - 1) < UI_ALERT_Y);
 }
 
-/* DISARM tapped 1.0 s after the hold, with an alert that arrived with the
+/* DISARM tapped 1.0s after the hold, with an alert that arrived with the
  * arm: the tap disarms, and the alert stays. */
 TEST_CASE(disarm_beside_the_alert_disarms_at_once)
 {
@@ -145,7 +146,7 @@ TEST_CASE(disarm_beside_the_alert_disarms_at_once)
     CHECK(alert_shows());
 }
 
-/* The same in the frame the alert arrives in, and 15 s into its 30 s. */
+/* The same in the frame the alert arrives in, and 15s into its 30s. */
 TEST_CASE(disarm_beside_the_alert_from_its_arrival_to_its_end)
 {
     const int at[] = { 0, 1, (int)(15.0f / FRAME_S),
@@ -260,33 +261,37 @@ TEST_CASE(a_tap_on_the_alert_only_closes_it)
 }
 
 /* A press on DISARM with an alert showing is DISARM's press like any
- * other: one that slides off and lifts away asks nothing, and one that
- * wanders over the button and lifts on it disarms. */
+ * other: it disarms at the press, and sliding off, or across the button,
+ * and lifting asks nothing more. */
 TEST_CASE(a_disarm_press_beside_the_alert_slides_as_without_one)
 {
     CHECK(sv_armed());
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
+    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     glide(FEED_LONE, SV_ARM_X, P(300), 8);
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 
+    CHECK(sv_armed());
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
+    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
     glide(FEED_LONE, SV_ARM_R - 4, SV_ARM_B, 8);
     lift(FEED_LONE);
-    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
+    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 }
 
-/* Touch lost while a press on DISARM is down: the press whose release went
- * missing is a DISARM all the same. */
+/* Touch lost while a press on DISARM is down: the press has disarmed, and
+ * neither the loss nor the lift asks anything more. */
 TEST_CASE(touch_lost_under_a_disarm_press_disarms)
 {
     CHECK(sv_armed());
     alert();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
-    ui_router_cancel_gestures();
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
+    ui_router_cancel_gestures();
+    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
     lift(FEED_LONE);
     CHECK_EQ(sv_took(), SERVO_CMD_NONE);
 }
@@ -307,7 +312,7 @@ static void open_bubble(bool armed)
 }
 
 /* With a help bubble open, DISARM disarms on the first tap and the bubble
- * closes; ARM held 3 s closes the bubble and starts no hold. */
+ * closes; ARM held 3s closes the bubble and starts no hold. */
 TEST_CASE(the_help_bubble_takes_no_disarm_and_starts_no_arm)
 {
     CHECK(sv_armed());
@@ -411,8 +416,9 @@ TEST_CASE(motor_arm_under_the_bubble_starts_no_hold)
 
 /* ----------------------------------------------------------------- SUPPLY */
 
-#define SU_OUT_X 676
-#define SU_OUT_Y P(318)
+/* SUPPLY's OUTPUT ON / OFF in panel coordinates (supply_spots.h). */
+#define SU_OUT_PX SU_OUT_X
+#define SU_OUT_PY P(SU_OUT_Y)
 
 static bool su_took(supply_cmd_t *c)
 {
@@ -421,7 +427,7 @@ static bool su_took(supply_cmd_t *c)
 }
 
 /* SUPPLY's OUTPUT OFF acts under the help bubble on the first tap; OUTPUT
- * ON held 3 s under it switches nothing on. */
+ * ON held 3s under it switches nothing on. */
 TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
 {
     supply_cmd_t c;
@@ -430,7 +436,7 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
     while (su_took(&c)) { }
     supply_screen_set_output(true);
     open_bubble(false);
-    feed_tap(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    feed_tap(FEED_LONE, SU_OUT_PX, SU_OUT_PY);
     CHECK(su_took(&c));
     CHECK(c.off);
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
@@ -438,7 +444,7 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
     supply_screen_set_output(false);
     while (su_took(&c)) { }
     open_bubble(false);
-    finger(FEED_LONE, SU_OUT_X, SU_OUT_Y);
+    finger(FEED_LONE, SU_OUT_PX, SU_OUT_PY);
     frames((int)(3.0f / FRAME_S));
     lift(FEED_LONE);
     CHECK(!su_took(&c));
@@ -448,7 +454,7 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
 /* ------------------------------------------------- under the alert band */
 
 /* The points of the body under the alert band that @p scr names as a stop,
- * every 2 px. */
+ * every 2px. */
 static int stops_under_the_band(const ui_screen_t *scr)
 {
     int n = 0;
@@ -462,7 +468,7 @@ static int stops_under_the_band(const ui_screen_t *scr)
 
 /* Every stop control ends above the alert band, so an alert covers none:
  * SERVO's DISARM and OUTPUT OFF, MOTOR & ESC's DISARM on LIVE's PLOT and
- * TABLE and on SETTINGS, SUPPLY's OUTPUT OFF.
+ * TABLE and on SETTINGS, SUPPLY's OUTPUT OFF on LIVE and on SETTINGS.
  * ESC STICK's ABORT is held in test_esc_stick_panel_touch. */
 TEST_CASE(no_stop_control_lies_under_the_alert_band)
 {
@@ -487,7 +493,12 @@ TEST_CASE(no_stop_control_lies_under_the_alert_band)
     up_on(SCREEN_SUPPLY);
     supply_screen_settings_loaded();
     supply_screen_set_output(true);
-    CHECK(supply_screen()->safe_at(SU_OUT_X, SU_OUT_Y - UI_BAND_H));
+    CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
+    CHECK_EQ(stops_under_the_band(supply_screen()), 0);
+    /* The same OUTPUT OFF on SETTINGS: the rail stays. */
+    feed_tap(FEED_LONE, SU_TAB_X(1), P(SU_TAB_Y));
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK(supply_screen()->safe_at(SU_OUT_PX, SU_OUT_PY - UI_BAND_H));
     CHECK_EQ(stops_under_the_band(supply_screen()), 0);
     supply_screen_set_output(false);
 }

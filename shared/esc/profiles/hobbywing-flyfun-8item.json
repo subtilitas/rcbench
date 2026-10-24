@@ -198,8 +198,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: two short beeps",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -294,16 +294,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (2.85 V/cell; Ni 0 %)"
+          "name": "low (2.85V/cell; Ni 0%)"
         },
         {
           "number": 2,
-          "name": "medium (3.15 V/cell; Ni 50 %)",
+          "name": "medium (3.15V/cell; Ni 50%)",
           "default": true
         },
         {
           "number": 3,
-          "name": "high (3.3 V/cell; Ni 65 %)"
+          "name": "high (3.3V/cell; Ni 65%)"
         }
       ],
       "applies_to": null,
@@ -316,16 +316,16 @@
       "values": [
         {
           "number": 1,
-          "name": "normal (300 ms)",
+          "name": "normal (300ms)",
           "default": true
         },
         {
           "number": 2,
-          "name": "soft (6 s)"
+          "name": "soft (6s)"
         },
         {
           "number": 3,
-          "name": "super soft (12 s)"
+          "name": "super soft (12s)"
         }
       ],
       "applies_to": null,
@@ -338,16 +338,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (3.75 deg)",
+          "name": "low (3.75deg)",
           "default": true
         },
         {
           "number": 2,
-          "name": "medium (15 deg)"
+          "name": "medium (15deg)"
         },
         {
           "number": 3,
-          "name": "high (26.25 deg)"
+          "name": "high (26.25deg)"
         }
       ],
       "applies_to": null,

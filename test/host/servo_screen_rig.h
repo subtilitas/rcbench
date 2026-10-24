@@ -17,6 +17,8 @@
  * - test_servo_target.c
  * - test_servo_rail.c
  * - test_servo_meter.c
+ * - test_servo_drag.c
+ * - test_servo_repaint.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,7 +54,7 @@
 #define SWEEP_X SV_SWEEP_X
 #define BTN_Y   SV_BTN_Y
 
-/** @brief Ticks the screen for @p secs seconds at the panel's 39 Hz frame rate. */
+/** @brief Ticks the screen for @p secs seconds at the panel's 39Hz frame rate. */
 static inline void frames(float secs)
 {
     for (int i = 0; i < (int)(secs * 39.0f + 0.5f); ++i) {
@@ -111,7 +113,7 @@ static inline int sweep_btn_pixels(gfx_color_t col)
  * The TARGET row of the output card, as the pixels of its box: the row at
  * y 308 to 356, between the SPEED slider, whose thumb and its shadow paint
  * down to y 303, and CENTRE (from y 366); the label at the output card's
- * column, SV_RC_X, and the value box 64 px further.
+ * column, SV_RC_X, and the value box 64px further.
  */
 #define TGT_X SV_RC_X
 #define TGT_W SV_RC_W
@@ -121,8 +123,8 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 
 /*
  * Mirrored from servo_screen_draw.c and servo_screen_int.h: the output
- * card's column, the line over the power plot with its 90 px name (PD
- * MINI) or 134 px name (INA 0x40 CH1), the line and plot together
+ * card's column, the line over the power plot with its 90px name (PD
+ * MINI) or 134px name (INA 0x40 CH1), the line and plot together
  * (power_rect()), and LIVE's CURRENT reading, the numerals of the third
  * column along the foot of the left card.
  */
@@ -165,10 +167,8 @@ static inline bool row_reads(const char *text, ui_color_id_t col)
                   ui_theme_color(UI_C_PANEL));
     char num[24];
     snprintf(num, sizeof(num), "%s", text);
-    char *sp = strchr(num, ' ');
-    if (sp != NULL) {
-        *sp = '\0';
-    }
+    num[strcspn(num, " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")]
+        = '\0';
     hero_want(num, ui_theme_color(col));
     return same_in(fb, want_fb, CUR_X, CUR_Y, CUR_W, CUR_H);
 }
@@ -187,7 +187,7 @@ static inline bool line_reads(const char *label, int lab_w, const char *v,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     const char *txt[3] = { v, a, w };
     const ui_color_id_t col[3] = { UI_C_VOLT, a_col, UI_C_POWER };
-    /* 88, 88 and 90 px beside PD MINI; 64, 84 and 74 px beside a channel. */
+    /* 88, 88 and 90px beside PD MINI; 64, 84 and 74px beside a channel. */
     static const int k_fw[2][3] = { { 88, 88, 90 }, { 64, 84, 74 } };
     const int *fw = k_fw[lab_w == LAB_INA ? 1 : 0];
     int x = RAIL_X + lab_w;
@@ -202,7 +202,7 @@ static inline bool line_reads(const char *label, int lab_w, const char *v,
                     GFX_ALIGN_RIGHT);
         x += fw[k];
     }
-    /* The name and the readings take the column's 356 px. */
+    /* The name and the readings take the column's 356px. */
     return fits && x == RAIL_X + RAIL_W
            && same_in(fb, want_fb, RAIL_X, LINE_Y, RAIL_W, LINE_H);
 }

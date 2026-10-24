@@ -440,15 +440,15 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
         st->next_us = time_us_32();
         /*
          * And the ask is owed again.  Extended telemetry is a runtime setting
-         * an ESC forgets when it restarts -- AM32 restarts after 0.5 s
+         * an ESC forgets when it restarts -- AM32 restarts after 0.5s
          * without a frame, and a disarmed bench sends none -- and an ESC can
          * be swapped on a bench between one run and the next.
          *
          * What is not forgotten is that it was asked.  An ESC that keeps
          * power keeps the setting across a short disarm: reading the next
          * run's first replies as periods would take an interleaved
-         * temperature or current frame for a speed, and a current of 120 A
-         * decodes as 8,900 rpm -- a number nobody questions, latched into the
+         * temperature or current frame for a speed, and a current of 120A
+         * decodes as 8,900rpm -- a number nobody questions, latched into the
          * run's peak.  dshot_edt_idle() keeps asked; only a slot that moves or
          * a restart clears it.
          */
@@ -465,10 +465,10 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      * The ask goes out in place of a stop frame and never in place of a
      * throttle.  A command is an ordinary frame and an ESC tells one from a
      * glitch by counting repeats, so one ask is DSHOT_CMD_REPEATS frames in a
-     * row, 10 ms at DSHOT_UPDATE_HZ, and it is repeated every
+     * row, 10ms at DSHOT_UPDATE_HZ, and it is repeated every
      * DSHOT_EDT_RETRY_MS while the throttle is zero until an extended frame
      * comes back: AM32 takes a command only once it has armed itself on a
-     * second of zero throttle, which a run's first 10 ms never are.
+     * second of zero throttle, which a run's first 10ms never are.
      * DSHOT_CMD_EDT_ENABLE is in the command range, so nothing turns while
      * it is being sent.
      *

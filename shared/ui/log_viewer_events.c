@@ -83,7 +83,7 @@ static bool tap_on(const touch_event_t *e, gfx_rect_t r)
            && gfx_rect_contains(r, e->point.x, e->point.y);
 }
 
-/* Row @p r of the rows showing in a list: under its 30 px heading. */
+/* Row @p r of the rows showing in a list: under its 30px heading. */
 static gfx_rect_t list_row_rect(gfx_rect_t list, int row_h, int r)
 {
     return gfx_rect_make(list.x, list.y + 30 + r * row_h, list.w, row_h);
@@ -227,9 +227,9 @@ static void browse_event(const touch_event_t *e)
     }
 
     /* PREV and NEXT are buttons only while they show. */
-    const gfx_rect_t btns[6] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
-                                 BR_PREV, BR_NEXT };
-    const int n_btns = lv_paged() ? 6 : 4;
+    const gfx_rect_t btns[7] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
+                                 BR_FILES, BR_PREV, BR_NEXT };
+    const int n_btns = lv_paged() ? 7 : 5;
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
@@ -307,11 +307,11 @@ static void browse_event(const touch_event_t *e)
         const bool on = btn >= 0 && tap_on(e, btns[btn]);
         if (on && btn == 0) {
             lv_rescan();
-        } else if (on && btn == 4) {
+        } else if (on && btn == 5) {
             if (lv_can_prev()) {
                 lv_read_page(LOG_PAGE_BEFORE, lv_page_edge(1));
             }
-        } else if (on && btn == 5) {
+        } else if (on && btn == 6) {
             if (lv_can_next()) {
                 lv_read_page(LOG_PAGE_AFTER, lv_page_edge(-1));
             }
@@ -319,6 +319,9 @@ static void browse_event(const touch_event_t *e)
             lv_open_selected();
         } else if (on && btn == 3) {
             ui_router_goto(SCREEN_WIFI);
+            return;
+        } else if (on && btn == 4) {
+            ui_router_goto(SCREEN_FILES);
             return;
         } else if (on) {
             ask_delete();
@@ -358,10 +361,7 @@ static void toggle_column(int i)
 static void import_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[4] = {
-        gfx_rect_make(16, IM_BTN_Y, 190, IM_BTN_H),
-        gfx_rect_make(214, IM_BTN_Y, 190, IM_BTN_H),
-        gfx_rect_make(412, IM_BTN_Y, 180, IM_BTN_H),
-        gfx_rect_make(600, IM_BTN_Y, 184, IM_BTN_H),
+        IM_BTN(0), IM_BTN(1), IM_BTN(2), IM_BTN(3),
     };
 
     switch (e->type) {
@@ -573,9 +573,7 @@ static void pan_apply(int x)
 static void plot_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[3] = {
-        gfx_rect_make(16, FOOT_Y, 170, FOOT_H),
-        gfx_rect_make(196, FOOT_Y, 80, FOOT_H),
-        gfx_rect_make(284, FOOT_Y, 80, FOOT_H),
+        PV_BACK, PV_PREV, PV_NEXT,
     };
 
     /* Two fingers on the plot own it until one lifts; a third is ignored. */

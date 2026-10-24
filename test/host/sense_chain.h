@@ -1,19 +1,19 @@
 /*
  * The servo rail's meter from the part to the panel, for a host suite: the
- * modelled INA3221 of fake_ina.h, read by the IOmcu's 1 ms schedule
+ * modelled INA3221 of fake_ina.h, read by the IOmcu's 1ms schedule
  * (sense_svc), published into its pages (sense_page) every millisecond, and
  * read by the panel's sense_link over a link this header models.
  *
  * One clock runs both ends.  The IOmcu steps once per millisecond.
  * The panel's tick is the same clock plus an offset, so a suite puts the
- * 2^32 ms wrap wherever it wants it.  An exchange takes ch.exch_ms, during
+ * 2^32ms wrap wherever it wants it.  An exchange takes ch.exch_ms, during
  * which the IOmcu runs on: a window closes between two exchanges of
  * one poll when the grid falls that way.
  *
- * CH1's current is a function of the window it is read in, 100 mA plus
- * 2 mA for each number modulo 500, so a window handed over under another
- * window's number shows in its mean (chain_mean_ma()).  2 mA is 5 steps of
- * the part's 40 uV across 0.1 Ohm: every mean is a whole number of mA.
+ * CH1's current is a function of the window it is read in, 100mA plus
+ * 2mA for each number modulo 500, so a window handed over under another
+ * window's number shows in its mean (chain_mean_ma()).  2mA is 5 steps of
+ * the part's 40 uV across 0.1Ohm: every mean is a whole number of mA.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -157,7 +157,7 @@ static inline void chain_far_boot(void)
 }
 
 /* The set-up SETUP names in every case here: the INA3221 at 0x40 on
- * GP16 and GP17 with 0.1 Ohm, channels @p channels. */
+ * GP16 and GP17 with 0.1Ohm, channels @p channels. */
 static inline sense_setup_t chain_setup(uint8_t channels)
 {
     const sense_setup_t w = {

@@ -270,13 +270,13 @@ static servo_str_t side_word(const servo_limrun_t *r, int g)
 }
 
 /**
- * @brief A share of travel, 0.1 us over 0.1 us, as three decimals; "-" for
+ * @brief A share of travel, 0.1us over 0.1us, as three decimals; "-" for
  *        none.
  *
  * @param buf  Out: the text.
  * @param n    Size of buf, bytes.
- * @param d    Travel, 0.1 us.
- * @param span Full span, 0.1 us; 0 or less gives "-".
+ * @param d    Travel, 0.1us.
+ * @param span Full span, 0.1us; 0 or less gives "-".
  */
 static void share_text(char *buf, size_t n, int32_t d, int32_t span)
 {
@@ -339,9 +339,9 @@ static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
 }
 
 /**
- * @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us, as microseconds.
+ * @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us, as microseconds.
  *
- * @param dus Pulse width, 0.1 us.
+ * @param dus Pulse width, 0.1us.
  * @return pulse width, us.
  */
 static double us_of(uint16_t dus)

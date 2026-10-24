@@ -23,6 +23,7 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "gfx_subpixel.h"
 
 /* Last: the layout macros of the headers it includes have short names
  * (W, H, PAD), which no header included after it may meet. */
@@ -30,12 +31,12 @@
 
 /**
  * @brief The widths of the three readings on the line over the plot, in px
- *        of 10 px cells.
+ *        of 10px cells.
  *
  * Beside PD MINI 88, 88 and 90, the rest of the column.  Beside an INA3221
  * channel's 12-cell name, "INA 0x41 CH2", 64, 84 and 74, which hold the
- * widest reading of the part's registers: a voltage of 6 cells, `9.99 V`
- * or `65.5 V`, `-32.77 A`, and a power of 7 cells, `-99.9 W` or `-2147 W`.
+ * widest reading of the part's registers: a voltage of 6 cells, `9.99V`
+ * or `65.5V`, `-32.77A`, and a power of 7 cells, `-99.9W` or `-2147W`.
  */
 static const uint8_t k_line_w[2][PS_COUNT] = {
     { 88, 88, 90 },
@@ -53,6 +54,30 @@ static gfx_rect_t sup_row_rect(void)
 
 /* ----------------------------------------------------------------- drawing */
 
+/**
+ * @brief The point @p r px from the shaft at @p deg, in fractions of a
+ *        pixel.
+ * @param deg the angle, degrees
+ * @param r the distance from the shaft, px
+ * @param x the column, px
+ * @param y the row, px
+ */
+static void at_f(float deg, float r, float *x, float *y)
+{
+    const float k = 3.14159265358979f / 180.0f;
+    const float phi = PHI(deg) * k;
+    *x = (float)SHAFT_X + r * cosf(phi);
+    *y = (float)SHAFT_Y - r * sinf(phi);
+}
+
+/**
+ * @brief The same on whole pixels: the dial's ticks and labels, which stand
+ *        still.
+ * @param deg the angle, degrees
+ * @param r the distance from the shaft, px
+ * @param x the column, px
+ * @param y the row, px
+ */
 static void at(float deg, int r, int *x, int *y)
 {
     const float k = 3.14159265358979f / 180.0f;
@@ -151,10 +176,20 @@ static float ring_gap_deg(float r, float half_w, float dark_px)
     return (asinf(sine) + dark_px / r) * k;
 }
 
+/**
+ * @brief The horn at @p deg in @p col: the arm, its holes, its rings and
+ *        the boss, placed in fractions of a pixel, so that a horn turning
+ *        by a tenth of a degree moves by a sixth of a pixel rather than
+ *        standing still and then jumping one.
+ * @param c the canvas
+ * @param deg the angle, degrees
+ * @param col the arm's colour
+ */
 static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
 {
-    int tx, ty;
-    at(deg, HORN_L, &tx, &ty);
+    float tx, ty;
+    at_f(deg, (float)HORN_L, &tx, &ty);
+    const float sx = (float)SHAFT_X, sy = (float)SHAFT_Y;
 
     /*
      * The unlit rings are drawn first and whole, so the arm is drawn over
@@ -162,26 +197,26 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
      */
     const gfx_color_t ghost =
         gfx_lerp(ui_theme_color(UI_C_PANEL), col, 46);
-    gfx_arc(c, tx, ty, 25, 3, 0.0f, 360.0f, ghost);
-    gfx_arc(c, tx, ty, 33, 2, 0.0f, 360.0f, ghost);
+    gfx_ring_aaf(c, tx, ty, 25.0f, 3.0f, 0.0f, 360.0f, ghost, ghost, 0.0f);
+    gfx_ring_aaf(c, tx, ty, 33.0f, 2.0f, 0.0f, 360.0f, ghost, ghost, 0.0f);
 
-    gfx_capsule_aa(c, SHAFT_X, SHAFT_Y, tx, ty, 26, col);
+    gfx_capsule_aaf(c, sx, sy, tx, ty, 26.0f, col);
     gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 25, col);
 
     /* Holes along the arm, spaced from the tip inwards so the outermost stays
      * on the arm whatever HORN_L is; a hole drawn past the tip reads as a
      * bite out of the card. */
     for (int i = 1; i <= 3; ++i) {
-        int hx, hy;
-        at(deg, HORN_L - 12 - (3 - i) * 14, &hx, &hy);
-        gfx_fill_circle_aa(c, hx, hy, 5, ui_theme_color(UI_C_PANEL));
+        float hx, hy;
+        at_f(deg, (float)(HORN_L - 12 - (3 - i) * 14), &hx, &hy);
+        gfx_fill_circle_aaf(c, hx, hy, 5.0f, ui_theme_color(UI_C_PANEL));
     }
     /* And the outermost one, which is the hole the ring is pointing at. */
-    gfx_fill_circle_aa(c, tx, ty, 5, ui_theme_color(UI_C_PANEL));
+    gfx_fill_circle_aaf(c, tx, ty, 5.0f, ui_theme_color(UI_C_PANEL));
 
     /*
      * The lit part of each ring, over the top.  It is split on the side the
-     * arm comes in from, with a constant 9 px band of card either side of
+     * arm comes in from, with a constant 9px band of card either side of
      * the metal (ring_gap_deg), and each end fades into the unlit ring
      * beneath.
      *
@@ -200,9 +235,9 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     const float dark   = 9.0f;    /* the band of card between ring and arm */
     const float g_in   = ring_gap_deg(25.0f, half_w, dark);
     const float g_out  = ring_gap_deg(33.0f, half_w, dark);
-    gfx_arc_fade(c, tx, ty, 25, 3, deg + 180.0f + g_in,
+    gfx_ring_aaf(c, tx, ty, 25.0f, 3.0f, deg + 180.0f + g_in,
                  deg + 540.0f - g_in, grip, ghost, 78.0f);
-    gfx_arc_fade(c, tx, ty, 33, 2, deg + 180.0f + g_out,
+    gfx_ring_aaf(c, tx, ty, 33.0f, 2.0f, deg + 180.0f + g_out,
                  deg + 540.0f - g_out, faint, ghost, 78.0f);
 
     /* The boss and its splines. */
@@ -299,6 +334,16 @@ int wrap_text(gfx_canvas_t *c, int x, int y, int pitch,
 static void draw_readings(gfx_canvas_t *c);
 
 /**
+ * @brief Whether the commanded horn is drawn behind the one shown: while
+ *        the two are more than a degree apart.
+ * @return true when it is
+ */
+static bool ghost_shown(void)
+{
+    return fabsf(s.shown_deg - s.commanded_deg) > 1.0f;
+}
+
+/**
  * @brief LIVE's card: the dial, the case, the horn, the horn's angle, why
  *        the dial takes no press, the three readings and a run's box.
  * @param c the canvas
@@ -316,7 +361,7 @@ static void draw_left(gfx_canvas_t *c)
 
     /* The commanded position behind the measured one, so a lag is visible as
      * two arms rather than as a number that disagrees with a picture. */
-    if (fabsf(s.shown_deg - s.commanded_deg) > 1.0f) {
+    if (ghost_shown()) {
         draw_horn(c, s.commanded_deg,
                   gfx_lerp(ui_theme_color(UI_C_PANEL),
                            ui_theme_color(UI_C_ACCENT), 70));
@@ -394,17 +439,16 @@ static gfx_rect_t power_rect(void)
  * @param n its size
  * @param q the count
  * @param places 1 or 2
- * @param unit the unit after a space, or ""
+ * @param unit the unit right after the number, or ""
  */
 static void fixed_text(char *out, size_t n, int32_t q, int places,
                        const char *unit)
 {
     const int32_t  scale = (places == 2) ? 100 : 10;
     const uint32_t mag   = (q < 0) ? (uint32_t)(-(int64_t)q) : (uint32_t)q;
-    snprintf(out, n, "%s%u.%0*u%s%s", (q < 0) ? "-" : "",
+    snprintf(out, n, "%s%u.%0*u%s", (q < 0) ? "-" : "",
              (unsigned)(mag / (uint32_t)scale), places,
-             (unsigned)(mag % (uint32_t)scale), (unit[0] != '\0') ? " " : "",
-             unit);
+             (unsigned)(mag % (uint32_t)scale), unit);
 }
 
 /* The servo rail's voltage, current and power, read and plotted, under the
@@ -427,9 +471,9 @@ static void draw_power(gfx_canvas_t *c)
     const uint8_t *fw = k_line_w[ina ? 1 : 0];
     /* Hundredths of a volt, and tenths where those do not fit. */
     if (m.v_ok) {
-        snprintf(v, sizeof(v), "%.2f V", (double)m.v);
+        snprintf(v, sizeof(v), "%.2fV", (double)m.v);
         if (gfx_text_width(SV_FONT_LABEL, v, 1) > fw[PS_V]) {
-            snprintf(v, sizeof(v), "%.1f V", (double)m.v);
+            snprintf(v, sizeof(v), "%.1fV", (double)m.v);
         }
     } else {
         snprintf(v, sizeof(v), "-- V");
@@ -441,7 +485,7 @@ static void draw_power(gfx_canvas_t *c)
         const float p = isfinite(m.p) ? m.p : 0.0f;
         fixed_text(w, sizeof(w), svs_fixed_of(p, 10.0f), 1, "W");
         if (gfx_text_width(SV_FONT_LABEL, w, 1) > fw[PS_W]) {
-            snprintf(w, sizeof(w), "%ld W", (long)svs_fixed_of(p, 1.0f));
+            snprintf(w, sizeof(w), "%ldW", (long)svs_fixed_of(p, 1.0f));
         }
     } else {
         snprintf(w, sizeof(w), "-- W");
@@ -465,7 +509,7 @@ static void draw_power(gfx_canvas_t *c)
     ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
     /*
      * The readings of the panel's model are no measurement: the overview's
-     * pill, 110 px or as wide as a longer word and 26 px high, on the
+     * pill, 110px or as wide as a longer word and 26px high, on the
      * plot's top-left corner under the name, as the line beside the name
      * is full.
      */
@@ -481,7 +525,7 @@ static void draw_power(gfx_canvas_t *c)
 /**
  * @brief A reading's numerals at (@p x, @p y), left aligned in @p w px:
  *        in SV_FONT_NUM, or where they are wider than that -- a reading
- *        held at +-1000000.00 A is 12 cells -- in SV_FONT_HEAD, or in
+ *        held at +-1000000.00A is 12 cells -- in SV_FONT_HEAD, or in
  *        SV_FONT_LABEL.
  * @param c the canvas
  * @param x the column's left edge, px
@@ -567,10 +611,7 @@ static void draw_readings(gfx_canvas_t *c)
     /* The pulse without its unit, which the label row carries. */
     char cmd[16];
     snprintf(cmd, sizeof(cmd), "%s", servo_screen_commanded_text());
-    char *sp = strchr(cmd, ' ');
-    if (sp != NULL) {
-        *sp = '\0';
-    }
+    cmd[strspn(cmd, "+-.0123456789")] = '\0';
     hero_text(c, READ_X(0), READ_NUM_Y, READ_W - 4, cmd,
               ui_theme_color(UI_C_TEXT));
     char mea[16];
@@ -611,8 +652,8 @@ static void draw_sup_row(gfx_canvas_t *c)
     gfx_text(c, RC_X, SUP_Y + 14, TR(SV_SET), SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     char v[12], a[12];
-    snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
-    snprintf(a, sizeof(a), "%.2f A", (double)supply_screen_set_i());
+    snprintf(v, sizeof(v), "%.2fV", (double)supply_screen_set_v());
+    snprintf(a, sizeof(a), "%.2fA", (double)supply_screen_set_i());
     /* Held by a programming port they take no press, and say so. */
     const bool held = supply_screen_port_held();
     const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
@@ -645,7 +686,7 @@ static gfx_rect_t tag_rect(void)
  *        microseconds, in the danger colour when it is one that can
  *        destroy a servo not made for it.
  *
- * The longest, a 13-character type, 560 Hz and two 4-digit ends, is 32
+ * The longest, a 13-character type, 560Hz and two 4-digit ends, is 32
  * of the pill's 35 cells.
  * @param c the canvas
  */
@@ -657,7 +698,7 @@ static void draw_tag(gfx_canvas_t *c)
                                     : ui_theme_color(UI_C_PANEL_SUNK);
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, fill);
     char line[40];
-    snprintf(line, sizeof(line), "%s  %u Hz  %u-%u", type()->name,
+    snprintf(line, sizeof(line), "%s  %uHz  %u-%u", type()->name,
              (unsigned)s.frame_hz, (unsigned)s.min_us, (unsigned)s.max_us);
     gfx_text_in(c, r, line, SV_FONT_LABEL,
                 danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
@@ -698,7 +739,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     /* SPEED's row says when SPEED, not CURVE, decides how a sweep moves:
      * the curves then look alike. */
     char buf[24];
-    snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
+    snprintf(buf, sizeof(buf), "%d%%", s.speed_pct);
     const bool limits = svs_speed_limits_sweep();
     gfx_text(c, RC_X, SPEED_Y, limits ? TR(SV_SPEED_LIMITS) : TR(SV_SPEED),
              SV_FONT_LABEL, limits ? ui_theme_color(UI_C_WARN)
@@ -756,6 +797,127 @@ static void clipped_session(gfx_canvas_t *c, gfx_rect_t box,
     c->clip = old_clip;
 }
 
+/* ---------------------------------------------------------- the dial's part */
+
+/** @brief How far a horn reaches from its tip, px: the outer ring's 33px
+ *         radius, its 1px half width, its blended edge and a pixel more. */
+#define HORN_TIP_REACH   36.0f
+/** @brief And from the shaft: the boss's 25px disc, its edge and a pixel. */
+#define HORN_SHAFT_REACH 27.0f
+
+/**
+ * @brief The smallest rectangle holding @p a and @p b, neither empty.
+ * @param a one rectangle
+ * @param b the other
+ * @return the rectangle holding both
+ */
+static gfx_rect_t rect_union(gfx_rect_t a, gfx_rect_t b)
+{
+    const int x0 = (a.x < b.x) ? a.x : b.x;
+    const int y0 = (a.y < b.y) ? a.y : b.y;
+    const int x1 = (a.x + a.w > b.x + b.w) ? a.x + a.w : b.x + b.w;
+    const int y1 = (a.y + a.h > b.y + b.h) ? a.y + a.h : b.y + b.h;
+    return (gfx_rect_t){ (int16_t)x0, (int16_t)y0, (int16_t)(x1 - x0),
+                         (int16_t)(y1 - y0) };
+}
+
+/**
+ * @brief Every pixel a horn at @p deg draws: the shaft's disc and the tip's
+ *        rings, which hold the arm between them.
+ * @param deg the horn's angle, degrees
+ * @return the box, whole pixels
+ */
+static gfx_rect_t horn_box(float deg)
+{
+    float tx, ty;
+    at_f(deg, (float)HORN_L, &tx, &ty);
+    const float sx = (float)SHAFT_X, sy = (float)SHAFT_Y;
+    const int x0 = (int)floorf(fminf(sx - HORN_SHAFT_REACH,
+                                     tx - HORN_TIP_REACH));
+    const int y0 = (int)floorf(fminf(sy - HORN_SHAFT_REACH,
+                                     ty - HORN_TIP_REACH));
+    const int x1 = (int)ceilf(fmaxf(sx + HORN_SHAFT_REACH,
+                                    tx + HORN_TIP_REACH));
+    const int y1 = (int)ceilf(fmaxf(sy + HORN_SHAFT_REACH,
+                                    ty + HORN_TIP_REACH));
+    return (gfx_rect_t){ (int16_t)x0, (int16_t)y0, (int16_t)(x1 - x0),
+                         (int16_t)(y1 - y0) };
+}
+
+/**
+ * @brief The horn's angle @p deg in the bench's numerals and DEG after
+ *        them, as draw_left() writes it, and never narrower than -888.8.
+ * @param deg the angle, degrees
+ * @return the box draw_left() draws them in
+ */
+static gfx_rect_t angle_box(float deg)
+{
+    const gfx_seg_style_t seg = ui_seg_hero();
+    char text[16];
+    snprintf(text, sizeof(text), "%+.1f", (double)deg);
+    const int nw = gfx_seg_width(text, &seg);
+    const int widest = gfx_seg_width("-888.8", &seg);
+    const int w = ((nw > widest) ? nw : widest) + 6
+                  + gfx_text_width(SV_FONT_LABEL, "DEG", 1);
+    return (gfx_rect_t){ (int16_t)(SEG_X - 2), (int16_t)(SEG_Y - 2),
+                         (int16_t)(w + 4), (int16_t)(seg.digit_h + 8) };
+}
+
+/**
+ * @brief Whether the dial's changes are repainted on their own: LIVE's
+ *        card shown with nothing over it.  A box of a run or a limit run
+ *        over the card, or any other page, repaints whole for them.
+ * @param cover a panel or a session is over the left column
+ * @return true when they are
+ */
+static bool dial_on_its_own(bool cover)
+{
+    return !cover && wb_task() == UI_WB_LIVE && rows_page() < 0
+           && !s.test_box && !s.lim_box;
+}
+
+/**
+ * @brief Note what buffer @p buf now shows of the dial.
+ * @param buf the buffer, 0 or 1
+ */
+static void dial_drawn(int buf)
+{
+    s.drawn_dial[buf]  = s.dial_rev;
+    s.drawn_deg[buf]   = s.shown_deg;
+    s.drawn_cmd[buf]   = s.commanded_deg;
+    s.drawn_ghost[buf] = ghost_shown();
+}
+
+/**
+ * @brief The dial's change repainted in buffer @p buf: LIVE's card, clipped
+ *        to the boxes of the horns as this buffer last drew them and as
+ *        they are now, to the angle's numerals and to COMMANDED and
+ *        MEASURED.  Each buffer keeps its own last angles, so both end up
+ *        with the horn where it is, whichever frames each was drawn in.
+ * @param c the canvas
+ * @param buf the buffer, 0 or 1
+ */
+static void draw_dial_part(gfx_canvas_t *c, int buf)
+{
+    gfx_rect_t box = rect_union(horn_box(s.drawn_deg[buf]),
+                                horn_box(s.shown_deg));
+    if (s.drawn_ghost[buf]) {
+        box = rect_union(box, horn_box(s.drawn_cmd[buf]));
+    }
+    if (ghost_shown()) {
+        box = rect_union(box, horn_box(s.commanded_deg));
+    }
+    clipped(c, box, draw_left);
+    clipped(c, rect_union(angle_box(s.drawn_deg[buf]),
+                          angle_box(s.shown_deg)), draw_left);
+    clipped(c, (gfx_rect_t){ (int16_t)READ_X(0), READ_NUM_Y,
+                             (int16_t)(2 * READ_W), READ_NUM_H },
+            draw_left);
+    dial_drawn(buf);
+    /* The grip is in the horn's box, at the breath it has now. */
+    s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
+}
+
 void svs_render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -787,9 +949,12 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
         clipped(c, strip_area(), draw_strip);
     }
 
-    /* The keypad and the keyboard keep their own counts of what changed. */
+    /* The keypad and the keyboard keep their own counts of what changed;
+     * the dial too, which repaints whole only where it is not on its own. */
     const uint32_t ov_rev = s.ctrl_rev + s.kp.revision + s.tk.revision;
-    if (s.drawn_ctrl[buf] != ov_rev) {
+    const bool dial_whole = !dial_on_its_own(cover)
+                            && s.drawn_dial[buf] != s.dial_rev;
+    if (s.drawn_ctrl[buf] != ov_rev || dial_whole) {
         /* The plot when it moved or this buffer has never had it. */
         const bool power = (s.drawn_power[buf] != s.power_rev);
         s.drawn_ctrl[buf]  = ov_rev;
@@ -804,6 +969,7 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         s.drawn_kst[buf]   = (ps != NULL) ? prog_ps_revision(ps) : 0u;
         s.drawn_kst_hold[buf] = (ps != NULL) ? prog_ps_hold_revision(ps) : 0u;
+        dial_drawn(buf);
         if (modal_open()) {
             draw_overlay(c);
         } else if (ps != NULL) {
@@ -892,8 +1058,18 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
     }
 
     /*
+     * The horn when it moved: boxes about 160px across, where the two
+     * cards are 620 and 380px wide.  A sweep or a drag moves it every
+     * frame, and the cards whole at that rate would cost most of the
+     * panel's bandwidth.
+     */
+    if (s.drawn_dial[buf] != s.dial_rev) {
+        draw_dial_part(c, buf);
+    }
+
+    /*
      * The grip, only while it breathes.  Clipped to the tip: repainting the
-     * 488x386 card at the frame rate to animate a ring of 36 px radius would
+     * 488x386 card at the frame rate to animate a ring of 36px radius would
      * cost most of the panel's bandwidth.
      */
     const int grip_r = 36;
@@ -902,9 +1078,11 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
         return;
     }
     s.drawn_pulse[buf] = step;
-    int tx, ty;
-    at(s.shown_deg, HORN_L, &tx, &ty);
-    const gfx_rect_t box = { (int16_t)(tx - grip_r), (int16_t)(ty - grip_r),
-                             (int16_t)(grip_r * 2), (int16_t)(grip_r * 2) };
+    float tx, ty;
+    at_f(s.shown_deg, (float)HORN_L, &tx, &ty);
+    const int gx = (int)floorf(tx) - grip_r, gy = (int)floorf(ty) - grip_r;
+    const gfx_rect_t box = { (int16_t)gx, (int16_t)gy,
+                             (int16_t)(grip_r * 2 + 1),
+                             (int16_t)(grip_r * 2 + 1) };
     clipped(c, box, draw_left);
 }

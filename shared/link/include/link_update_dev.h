@@ -7,7 +7,7 @@
  * are the caller's, handed in as callbacks, and both slots are read through
  * plain pointers, so the host suite runs every path against a slot in RAM.
  *
- * RAM: two 4 KiB sector buffers -- the slot's first sector, held until
+ * RAM: two 4KiB sector buffers -- the slot's first sector, held until
  * ACTIVATE writes it last, and the sector being filled.
  *
  * SPDX-License-Identifier: MIT
@@ -27,14 +27,14 @@ extern "C" {
 #endif
 
 /**
- * @brief Bytes a link_update_dev_poll() hashes, at most: 1 KiB, about 0.4 ms of
- * SHA-256 at 150 MHz (not measured).
+ * @brief Bytes a link_update_dev_poll() hashes, at most: 1KiB, about 0.4ms of
+ * SHA-256 at 150MHz (not measured).
  */
 #define LINK_UPD_HASH_STEP 1024u
 
 /**
  * @brief Time without a request to either update page that ends a session:
- * longer than the panel's own 1000 ms wait for an answer, so one lost frame
+ * longer than the panel's own 1000ms wait for an answer, so one lost frame
  * costs a retry and not the session, and longer than the panel's
  * LINK_UPH_LOST_MS, so the panel gives up first.
  *
@@ -45,7 +45,7 @@ extern "C" {
 
 /**
  * @brief Time between two tries of an owed erase of the other slot's first
- * sector: each one parks the loop for about 19 ms.
+ * sector: each one parks the loop for about 19ms.
  */
 #define LINK_UPD_SWEEP_MS 1000u
 
@@ -60,10 +60,10 @@ extern "C" {
  */
 typedef struct {
     /**
-     * @brief Erase the 4 KiB sector @p off bytes into the slot being written.
+     * @brief Erase the 4KiB sector @p off bytes into the slot being written.
      */
     bool (*erase)(void *ctx, uint32_t off);
-    /** @brief Program the 4 KiB sector at @p off from @p data. */
+    /** @brief Program the 4KiB sector at @p off from @p data. */
     bool (*program)(void *ctx, uint32_t off, const uint8_t *data);
     /**
      * @brief True while flash may be written: the bank not driving, the
@@ -130,7 +130,7 @@ typedef struct {
  * @param io The callbacks; kept, not copied.
  * @param running The running slot's bytes.
  * @param target The other slot's bytes.
- * @param slot_bytes Bytes in one slot, a multiple of the 4 KiB sector.
+ * @param slot_bytes Bytes in one slot, a multiple of the 4KiB sector.
  * @param slot LINK_UPD_SLOT as the boot ROM reports it.
  */
 void link_update_dev_init(link_update_dev_t *u, const link_update_io_t *io,

@@ -65,7 +65,7 @@ bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
 /**
  * @brief The chip a touch lands on.
  *
- * A chip is hit across the band's whole height and 3 px either side, half
+ * A chip is hit across the band's whole height and 3px either side, half
  * the gap to the next one; STOP and the home tag are not chips.
  * @param st The bench status the band shows.
  * @param x The touch's panel x.
@@ -90,6 +90,23 @@ bool ui_band_help_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
  */
 void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
                          ui_band_chip_t chip);
+
+/**
+ * @brief A number for what ui_band_render() draws from the same arguments:
+ *        the title, the home tag's and STOP's presses, the theme, and every
+ *        chip's place, label and colours.  Two calls that return the same
+ *        number draw the same band, so the router repaints a buffer's band
+ *        only when the number moves (ui_router_render()).
+ * @param title the current screen's title, or NULL
+ * @param show_home whether the title is the home tag
+ * @param st the bench's status, or NULL
+ * @param stop_pressed STOP is pressed
+ * @param home_pressed the home tag is pressed
+ * @return the number, a 32-bit FNV-1a hash
+ */
+uint32_t ui_band_key(const char *title, bool show_home,
+                     const ui_bench_status_t *st, bool stop_pressed,
+                     bool home_pressed);
 
 /**
  * Draw the band.  @p title is the current screen's title, or NULL on the

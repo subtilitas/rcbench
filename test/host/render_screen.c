@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 
 #include "card_tree.h"
 #include "log_name.h"
@@ -31,7 +32,9 @@
 #include "ui_textkey.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
+#include "wifi_spots.h"
 #include "coproc_update_screen.h"
+#include "render_files.h"
 #include "sense_link.h"
 #include "settings.h"
 #include "sense_limit_link.h"
@@ -42,10 +45,12 @@
 #include "balance_screen.h"
 #include "battery_screen.h"
 #include "analyser_screen.h"
+#include "instruments_spots.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "overview_screen.h"
+#include "log_writer.h"
 #include "telemetry_sim.h"
 #include "splash_screen.h"
 #include "outputs_screen.h"
@@ -58,7 +63,11 @@
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
+#include "outputs_spots.h"
 #include "servo_spots.h"
+#include "stick_spots.h"
+#include "supply_spots.h"
+#include "logview_spots.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -75,43 +84,33 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* The ESC STICK controls in body coordinates, as test/host/stick_rig.h and
- * esc_stick_panel_rig.h find them: the crumb row's ^ and v, TIMING and the
- * search field at the right edge, the foot row's RUN, the panels' HOLD TO
- * RUN and OK at their foot, and a parameter row's + stepper. */
-#define RS_SP_RIGHT    (UI_PANEL_W - UI_MARGIN - 12)
-#define RS_LIST_UP_X   (RS_SP_RIGHT - 76 + 17)
-#define RS_LIST_DN_X   (RS_SP_RIGHT - 38 + 17)
-#define RS_CRUMB_CY    45
-#define RS_TIMING_X    (RS_SP_RIGHT - 168 + 84)
-#define RS_FIND_X      (RS_SP_RIGHT - 182)
-#define RS_RUN_X       (RS_SP_RIGHT - 168 + 84)
-#define RS_RUN_CY      (UI_BODY_H - UI_ALERT_H - 4 - 36 + 17)
-#define RS_HOLD_X      (UI_MARGIN + 20 + 130)
-#define RS_OK_X        (UI_PANEL_W - UI_MARGIN - 20 - 90)
-#define RS_PBTN_CY     (UI_BODY_H - UI_ALERT_H - 4 - 36 - 4 - UI_BTN_H_TALL / 2)
-#define RS_STEP_UP_X   765
-#define RS_STEP_CY(i)  (142 + (i) * 30 + 10)
+/* The ESC STICK controls in body coordinates (stick_spots.h): the crumb
+ * row's ^ and v, TIMING and the search field at the right edge, the foot
+ * row's RUN, the panels' HOLD TO RUN and OK at their foot, and a parameter
+ * row's + stepper. */
+#define RS_LIST_UP_X   ST_LIST_UP_X
+#define RS_LIST_DN_X   ST_LIST_DN_X
+#define RS_CRUMB_CY    ST_CRUMB_CY
+#define RS_TIMING_X    ST_TIMING_X
+#define RS_FIND_X      ST_FIND_X
+#define RS_RUN_X       ST_WRITE_X
+#define RS_RUN_CY      ST_BTN_CY
+#define RS_HOLD_X      ST_HOLD_X
+#define RS_OK_X        ST_CANCEL_X
+#define RS_PBTN_CY     ST_PBTN_CY
+#define RS_STEP_UP_X   ST_STEP_UP_X
+#define RS_STEP_CY(i)  ST_STEP_CY(i)
 
-/* BALANCE's right card (test/host/test_balance.c): the rotor's EDF half and
- * the blade count's + stepper. */
-#define RS_BAL_CTRL_X  (UI_MARGIN + 450 + 8 + 14)
-#define RS_BAL_CTRL_W  (UI_PANEL_W - 2 * UI_MARGIN - 450 - 8 - 28)
-#define RS_BAL_EDF_X   (RS_BAL_CTRL_X + (RS_BAL_CTRL_W / 2 + 4) \
-                        + (RS_BAL_CTRL_W / 2 - 4) / 2)
-#define RS_BAL_EDF_Y   (44 + 34 + 15)
-#define RS_BAL_UP_X    (RS_BAL_CTRL_X + RS_BAL_CTRL_W - 34 + 17)
-#define RS_BAL_UP_Y    (44 + 96 + 14)
 
-/* MOTOR & ESC's PROGRAM tab, the second of the strip's (150 px a tab, 4 px
- * apart from x 9, 40 px high from y 8), and the STICK MENU row of its list,
+/* MOTOR & ESC's PROGRAM tab, the second of the strip's (150px a tab, 4px
+ * apart from x 9, 40px high from y 8), and the STICK MENU row of its list,
  * the first under its heading (prog_view.c). */
 #define MO_TAB_PROGRAM_X 234
 #define MO_TAB_Y         28
 #define MO_STICK_ROW_X   279
-/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS. */
-#define SU_TAB_SETTINGS_X 181
-#define SU_TAB_Y          18
+/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS
+ * (supply_spots.h, with SU_TAB_Y). */
+#define SU_TAB_SETTINGS_X SU_TAB_X(1)
 #define MO_STICK_ROW_Y   83
 
 static gfx_color_t fb[W * H];
@@ -180,6 +179,16 @@ static bool s_tap_on;
 static bool s_tone_fed;
 /* The output encoder enabled, its centre at count 3000. */
 static bool s_enc_on;
+/* Screen rotation stored at 180. */
+static bool s_rot_on;
+/* The time zone stored at LOS ANGELES, the longest option. */
+static bool s_tz_on;
+
+/* The settings model's ARMED source, as the panel's (panel_boot.c). */
+static bool router_armed(void)
+{
+    return ui_router_status()->armed;
+}
 
 static bool lang_load(float *values, int count)
 {
@@ -188,6 +197,12 @@ static bool lang_load(float *values, int count)
     }
     if (s_tap_on && (int)SET_TONE_EN < count) {
         values[SET_TONE_EN] = 1.0f;
+    }
+    if (s_rot_on && (int)SET_SCREEN_ROT < count) {
+        values[SET_SCREEN_ROT] = 1.0f;
+    }
+    if (s_tz_on && (int)SET_TIME_ZONE < count) {
+        values[SET_TIME_ZONE] = 7.0f;
     }
     if (s_enc_on && (int)SET_ENC_CENTRE < count) {
         values[SET_ENC_EN]     = 1.0f;
@@ -239,6 +254,61 @@ static void make_log_csv(void)
                               "%.2f;%.2f;%.2f;%.0f;%.0f\n",
                               (double)t, (double)b.voltage, (double)b.current,
                               (double)b.power, (double)b.rpm);
+    }
+}
+
+/* A SERVO run as the logger writes it (log_writer_servo_row()): a sweep
+ * from 1000 to 2000us and back every 8s on the PD mini at 6.00V, the
+ * encoder's angle a step behind the pulse, rows every 53ms. */
+static char g_servo_csv[65536];
+static size_t g_servo_len;
+
+static int servo_csv_write(void *ctx, const void *data, size_t len)
+{
+    (void)ctx;
+    if (g_servo_len + len >= sizeof(g_servo_csv)) {
+        return -1;
+    }
+    memcpy(g_servo_csv + g_servo_len, data, len);
+    g_servo_len += len;
+    g_servo_csv[g_servo_len] = '\0';
+    return (int)len;
+}
+
+static void make_servo_csv(void)
+{
+    g_servo_len = 0u;
+    g_servo_csv[0] = '\0';
+    const log_sink_t sink = { .write = servo_csv_write, .flush = NULL,
+                              .ctx = NULL };
+    log_writer_t w;
+    log_writer_init(&w, &sink);
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.valid = true;
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    float angle = 0.0f;
+    for (int i = 0; i < 300; ++i) {
+        const float ts = 0.036f + 0.053f * (float)i;
+        const float ph = fmodf(ts, 8.0f) / 8.0f;
+        const float tri = (ph < 0.5f) ? ph * 2.0f : (1.0f - ph) * 2.0f;
+        const float us = 1000.0f + 1000.0f * tri;
+        const float target = (us - 1500.0f) * 0.09f;
+        const float moving = fabsf(target - angle);
+        angle += (target - angle) * 0.6f;
+        /* Idle, the move, and the load that grows away from the centre. */
+        log_rail_t r;
+        memset(&r, 0, sizeof(r));
+        r.i  = 0.035f + 0.06f * moving + 0.004f * fabsf(angle);
+        r.v  = 6.0f - 0.05f * r.i;
+        r.p  = r.v * r.i;
+        r.ok = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+        log_rail_count(&t, &r, 0.053f, true);
+        log_servo_t sv;
+        log_servo_unpack(log_servo_pack(true, (uint16_t)lroundf(us), true,
+                                        angle), false, &sv);
+        (void)log_writer_servo_row(&w, ts, &b, &r, &sv);
     }
 }
 
@@ -401,6 +471,12 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
                           strlen(k_limit_report));
         return true;
     }
+    /* A SERVO run of BENCH/LOGS reads as one; every other file as the
+     * motor run. */
+    if (strncmp(name, "SERVO", 5) == 0 && g_servo_len > 0u) {
+        log_source_memory(src, &g_csv_ctx, g_servo_csv, g_servo_len);
+        return true;
+    }
     log_source_memory(src, &g_csv_ctx, g_csv, strlen(g_csv));
     return true;
 }
@@ -499,17 +575,6 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
     }
     fclose(f);
 }
-
-/* IM_BTN_Y from log_viewer_int.h, FOOT_Y: the footer's 42 px end 4 px
- * above the alert band.  If the layout moves, this moves with it;
- * render_ui --check reports the drift. */
-#define IM_BTN_Y_LOCAL (UI_BODY_H - UI_ALERT_H - 4 - 42)
-/* FOOT_Y and the DELETE button's x from the same file. */
-#define BR_FOOT_Y_LOCAL IM_BTN_Y_LOCAL
-#define BR_DELETE_CX    596
-/* NEXT in the header row, over OPEN. */
-#define BR_NEXT_CX      724
-#define BR_PG_CY_LOCAL  21
 
 /* The ask hook of the outputs-port2 view: taken, and never answered. */
 static bool render_port_ask(uint8_t seq, uint8_t port,
@@ -626,9 +691,9 @@ static void setup_value(setting_cat_t cat, setting_id_t id)
 }
 
 /**
- * @brief SETUP's open list dragged up by @p rows rows and the 8 px the
+ * @brief SETUP's open list dragged up by @p rows rows and the 8px the
  *        finger travels before the screen takes it for a scroll, from
- *        8 px above the pane's foot.
+ *        8px above the pane's foot.
  * @param rows The rows to scroll by, at most 5.
  */
 static void setup_scroll_rows(int rows)
@@ -1194,7 +1259,7 @@ static void servo_run_view(bool to_the_end, bool ina)
     servo_screen_clock(now);
     if (ina) {
         /* The INA3221 on in SETUP and the rail's meter: the run reads its
-         * windows, one every 50 ms. */
+         * windows, one every 50ms. */
         settings_set(SET_INA_FIT(0), 1.0f);
         servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     }
@@ -1210,7 +1275,7 @@ static void servo_run_view(bool to_the_end, bool ina)
         servo_screen_clock(now);
         if (ina && (now / 50u) != ((now - 20u) / 50u)) {
             /* The windows go on under the finger: a run that starts
-             * before the release ends after 200 ms without one. */
+             * before the release ends after 200ms without one. */
             const int ma = (int)(servo_sim_step(&sv, cmd, now) * 1000.0f);
             sense_link_win_t w;
             memset(&w, 0, sizeof(w));
@@ -1309,11 +1374,11 @@ static void servo_run_view(bool to_the_end, bool ina)
  * The limit run of LIMITS, on the bench of the host tests (test_kst_panel_limrun.c):
  * the simulated KST servo on programming port 1, GP13, behind the servo
  * model, the horn where its NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE
- * and RIGHT ANGLE put it at 4 us a count (kst_sim.h sim_horn_us()); its
- * stops at 1150 and 1880 us; the INA3221's CH1 windows from it every 50
+ * and RIGHT ANGLE put it at 4us a count (kst_sim.h sim_horn_us()); its
+ * stops at 1150 and 1880us; the INA3221's CH1 windows from it every 50
  * ms; a bench that goes SAFE and ARMED as the screen asks.  One frame of
- * the rig is 1 ms.  The bench's PULSE MIN and MAX are STANDARD PWM's, 1000
- * and 2000 us; the servo's PULSE LOWER and UPPER 900 and 2100 us, so every
+ * the rig is 1ms.  The bench's PULSE MIN and MAX are STANDARD PWM's, 1000
+ * and 2000us; the servo's PULSE LOWER and UPPER 900 and 2100us, so every
  * view but -range runs with SERVO PULSES at 1000-2000.
  *
  *   -ready    LIMITS with SEARCH+PROG and SERVO PULSES 1000-2000 chosen,
@@ -1507,7 +1572,7 @@ static void limrun_view(const char *view)
         return;
     }
     if (strcmp(v, "-stopped") == 0) {
-        /* STOP 3 s into the probe after the first write. */
+        /* STOP 3s into the probe after the first write. */
         unsigned sessions = 0u;
         bool held = false;
         for (int i = 0; i < 400000 && sessions < 2u; ++i) {
@@ -1567,11 +1632,11 @@ static void limrun_view(const char *view)
 }
 
 /*
- * The TEST page's sine, 0.5 Hz over 80 % of the travel, swept with SPEED at
- * the left end of its track, 12 %: the curve asks for 1257 units a second
+ * The TEST page's sine, 0.5Hz over 80% of the travel, swept with SPEED at
+ * the left end of its track, 12%: the curve asks for 1257 units a second
  * at the centre and SPEED allows 240, so SPEED's row says it limits the
  * sweep.  Geometry from servo_screen.c, offset by the band: the SPEED
- * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8 s in and
+ * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8s in and
  * the frames after it show the paused button.
  */
 static void servo_sweep_view(bool pause)
@@ -1584,7 +1649,7 @@ static void servo_sweep_view(bool pause)
     servo_screen_feedback(0u, 0.0f, false);
     uint32_t now = 100000u;
     servo_screen_clock(now);
-    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + SV_SPEED_Y);              /* SPEED 12 % */
+    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + SV_SPEED_Y);              /* SPEED 12% */
     tap(SV_SWEEP_X, UI_BAND_H + SV_BTN_Y);                      /* SWEEP */
     servo_cmd_t taken;
     uint16_t start_seq = 0u;
@@ -1617,7 +1682,7 @@ static void servo_sweep_view(bool pause)
 /*
  * A stick run on a modelled bench, as the panel drives one with no
  * IOmcu: the bench arms when asked, the supply switches when asked and
- * is read every 50 ms, and the simulated ESC draws the current.  One
+ * is read every 50ms, and the simulated ESC draws the current.  One
  * millisecond a step.
  */
 typedef struct {
@@ -1655,7 +1720,7 @@ static void stick_step(stick_rig_t *r)
     motor_screen_set_armed(r->armed);   /* the output strip's SAFE/ARMED */
     s_stick_armed = r->armed;
     if (s_tone_fed) {
-        /* The tap running on a phase that sounds 1523.4 Hz, and the last
+        /* The tap running on a phase that sounds 1523.4Hz, and the last
          * four beeps it reported. */
         tone_readout_t t;
         memset(&t, 0, sizeof(t));
@@ -1714,8 +1779,8 @@ static void stick_type(const char *text)
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
     ui_textkey_open_search(&k,
-                           (gfx_rect_t){ 352, 68, UI_PANEL_W - UI_MARGIN - 352,
-                                         UI_BODY_H - UI_MARGIN - 68 },
+                           (gfx_rect_t){ ST_DOCK_X, ST_DOCK_Y, ST_DOCK_W,
+                                         ST_DOCK_H },
                            "", "",
                            UI_TEXTKEY_MAX);
     for (const char *p = text; *p != '\0'; ++p) {
@@ -1727,7 +1792,7 @@ static void stick_type(const char *text)
     }
 }
 
-/* The supply reading off for 300 ms, as the warning needs before it asks
+/* The supply reading off for 300ms, as the warning needs before it asks
  * for a step at the ESC. */
 static void stick_supply_off(void)
 {
@@ -1748,8 +1813,8 @@ static void stick_supply_off(void)
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * esc_stick_panel.c (SP_ROW_Y0 68, 36 px apart, 9 to a page) and its ^ and
- * v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row, y 28 to 58. */
+ * esc_stick_panel.c (stick_spots.h: from y 84, 56px apart, 7 to a page)
+ * and its ^ and v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row. */
 static void stick_tap_row(int at)
 {
     int top = 0;
@@ -1758,11 +1823,11 @@ static void stick_tap_row(int at)
         tap(RS_LIST_UP_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    for (int g = 0; g < 64 && at >= top + 9; ++g) {
+    for (int g = 0; g < 64 && at >= top + ST_LIST_ROWS; ++g) {
         tap(RS_LIST_DN_X, UI_BAND_H + RS_CRUMB_CY);
         (void)esc_stick_panel_listed(&top);
     }
-    tap(400, UI_BAND_H + 70 + (at - top) * 36 + 16);
+    tap(400, UI_BAND_H + ST_ROW_CY(at - top));
 }
 
 /* On the makers, the one named @p name; on its models, the first of
@@ -1809,6 +1874,7 @@ static ui_screen_id_t id_of(const char *name)
         { "servo",      SCREEN_SERVO },
         { "analyser",   SCREEN_ANALYSER },
         { "logs",       SCREEN_LOGS },
+        { "files",      SCREEN_FILES },
         { "setup",      SCREEN_SETUP },
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
@@ -1983,7 +2049,7 @@ static void pose_wifi(const char *view)
     const bool keys = strncmp(view, "wifi-key", 8) == 0;
     if (strcmp(view, "wifi-scan") == 0 || strcmp(view, "wifi-scanning") == 0
         || keys) {
-        tap(16 + 180, UI_BAND_H + 16 + 2 * 68 + 28);       /* CHOOSE */
+        tap(WF_BTN_CX(2), UI_BAND_H + WF_BTN_CY(2));       /* CHOOSE */
         v.radio = WIFI_RADIO_SCANNING;
         wifi_screen_set(&v);
     }
@@ -2011,7 +2077,7 @@ static void pose_wifi(const char *view)
                           || strcmp(view, "wifi-key-shown") == 0
                           || strcmp(view, "wifi-key-short") == 0;
         if (pass) {
-            tap(16 + 100, UI_BAND_H + 16 + 20);             /* row 1 */
+            tap(WF_ROW_CX(0), UI_BAND_H + WF_ROW_CY(0));    /* row 1 */
             wifi_type("cedar");
             wifi_key(UI_TK_SHIFT);
             wifi_type("q");
@@ -2028,7 +2094,7 @@ static void pose_wifi(const char *view)
                 wifi_expect("cedarQ42x", false);
             }
         } else {
-            tap(272 + 128, UI_BAND_H + 376 + 24);          /* HIDDEN */
+            tap(WF_HIDDEN_CX, UI_BAND_H + WF_SCAN_CY);     /* HIDDEN */
             wifi_type("lab");
             if (strcmp(view, "wifi-key-upper") == 0) {
                 wifi_key(UI_TK_SHIFT);
@@ -2239,6 +2305,10 @@ static void band_view(const char *view, ui_bench_status_t *st)
 
 int main(int argc, char **argv)
 {
+    /* FILES INFO reads a stamp in the C library's zone (wall_local_s()):
+     * UTC for every shot, whatever the shell's zone. */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
         /* The table's IDs and their declared cells, for the fit check. */
         for (int i = 0; i < TX_COUNT; ++i) {
@@ -2264,10 +2334,13 @@ int main(int argc, char **argv)
                     || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
+    s_rot_on = strcmp(view, "setup-rotation") == 0;
+    s_tz_on = strcmp(view, "setup-time-zone") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     settings_set_store(&k_lang_store);
+    settings_set_armed(router_armed);
     settings_init();
     /* What settings_apply_ui() does for the language; the theme stays the
      * one the shot asks for. */
@@ -2288,7 +2361,7 @@ int main(int argc, char **argv)
     /*
      * A scripted run, so the bench screenshot shows the same moment every
      * time: spin up, hold, a burst, then settle.  One sample per plot column
-     * at the panel's poll rate, 20 Hz.
+     * at the panel's poll rate, 20Hz.
      */
     /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
      * output strip names it. */
@@ -2343,8 +2416,8 @@ int main(int argc, char **argv)
             if (strcmp(view, "motor-table") == 0
                 || strcmp(view, "motor-refused") == 0) {
                 /* An IOmcu reading an INA228: BENCH's numbers are the
-                 * INA228's, and the ESC's own telemetry reads 0.18 V and
-                 * 12 % of the current high beside them. */
+                 * INA228's, and the ESC's own telemetry reads 0.18V and
+                 * 12% of the current high beside them. */
                 bench.flags = (uint16_t)((bench.flags
                                           & (uint16_t)~LINK_BN_SIMULATED)
                                          | LINK_BN_SENSED);
@@ -2372,7 +2445,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_SUPPLY && strcmp(view, "supply-offline") == 0) {
+    if (id == SCREEN_SUPPLY && strncmp(view, "supply-offline", 14) == 0) {
         /*
          * The PD mini enabled on GP12 and GP13 and not answering, the
          * output never switched on: the header in the warning colour, the
@@ -2389,9 +2462,17 @@ int main(int argc, char **argv)
         st.set_i  = 2.0f;
         st.online = false;
         supply_screen_push(&st);
+        if (strcmp(view, "supply-offline-settings") == 0) {
+            /* The fit check's: SETTINGS with the PD mini, RESET PD MINI
+             * under the start values, and the longest save line, a change
+             * on SETUP nobody asked to keep. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+            settings_set(SET_SUPPLY_TRIP_MS, 300.0f);
+        }
     } else if (id == SCREEN_SUPPLY) {
         /* A run of the panel's model, as the panel drives it: the output on
-         * at 6 V and a 2 A limit, the load's bursts holding the limit, the
+         * at 6V and a 2A limit, the load's bursts holding the limit, the
          * extremes and totals counted from the switch-on. */
         supply_sim_t m;
         supply_sim_init(&m);
@@ -2399,7 +2480,7 @@ int main(int argc, char **argv)
         supply_state_t st;
         memset(&st, 0, sizeof(st));
         /* Limits an operator testing a standard servo would set: an HV
-         * servo's 8.4 V cap and a trip under the stall current. */
+         * servo's 8.4V cap and a trip under the stall current. */
         settings_set(SET_SUPPLY_V_MAX, 8.4f);
         settings_set(SET_SUPPLY_TRIP_I, 2.5f);
         settings_set(SET_SUPPLY_TRIP_MS, 200.0f);
@@ -2431,17 +2512,16 @@ int main(int argc, char **argv)
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
         } else if (strcmp(view, "supply-confirm") == 0) {
-            /* +0.1 V on a live output: the question, as the settings'
+            /* +0.1V on a live output: the question, as the settings'
              * default asks it. */
             ui_router_goto(SCREEN_SUPPLY);
-            tap(519, UI_BAND_H + 335);
+            tap(SU_UP_X, UI_BAND_H + SU_V_ROW_Y);
         } else if (strcmp(view, "supply-keypad") == 0) {
             ui_router_goto(SCREEN_SUPPLY);
-            tap(676, UI_BAND_H + 65);
+            tap(SU_CARD_X, UI_BAND_H + SU_CARD_Y(0));
             ui_keypad_t kp;
             memset(&kp, 0, sizeof(kp));
-            ui_keypad_open(&kp, (gfx_rect_t){ UI_MARGIN, 38, 546, UI_BODY_H - 46 }, "", "",
-                           0.0f, 0.0f, 1.0f, 2);
+            ui_keypad_open(&kp, SU_OV_AREA, "", "", 0.0f, 0.0f, 1.0f, 2);
             const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4 };
             for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
                 const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
@@ -2454,6 +2534,14 @@ int main(int argc, char **argv)
                                         : SUPPLY_TRIP_VOLTAGE;
             supply_screen_set_output(false);
             supply_screen_push(&st);
+        } else if (strcmp(view, "supply-table") == 0) {
+            /* The fit check's: LIVE's TABLE, every row with a reading. */
+            ui_router_goto(SCREEN_SUPPLY);
+            tap(SU_TABLE_TAB_X, UI_BAND_H + SU_PANE_Y);
+        } else if (strcmp(view, "supply-port") == 0) {
+            /* The fit check's: a servo programming port holds the
+             * supply, the set points faint and MODE's line saying why. */
+            supply_screen_set_port_held(true);
         }
     }
 
@@ -2787,7 +2875,7 @@ int main(int argc, char **argv)
      * the screen. */
     if (id == SCREEN_BATTERY && strcmp(view, "battery-none") != 0) {
         /*
-         * A 6S pack with one cell 40 mV down under load, the case the screen
+         * A 6S pack with one cell 40mV down under load, the case the screen
          * exists to show.  At rest the six voltages agree to two decimals.
          */
         battery_state_t b;
@@ -2800,8 +2888,8 @@ int main(int argc, char **argv)
             b.volts[i] = v[i];
             b.milliohms[i] = ir[i];
         }
-        /* The fit check's: the two other verdicts, the weak cell 15 mV
-         * and 75 mV under the next lowest. */
+        /* The fit check's: the two other verdicts, the weak cell 15mV
+         * and 75mV under the next lowest. */
         if (strcmp(view, "battery-healthy") == 0) {
             b.volts[2] = 3.795f;
         } else if (strcmp(view, "battery-replace") == 0) {
@@ -2915,9 +3003,9 @@ int main(int argc, char **argv)
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
         if (strcmp(view, "balance-rig") == 0) {
-            tap(200, UI_BAND_H + 22);
+            tap(IN_TAB_X(1), UI_BAND_H + IN_TAB_Y);
         } else if (strcmp(view, "balance-aircraft") == 0) {
-            tap(330, UI_BAND_H + 22);
+            tap(IN_TAB_X(2), UI_BAND_H + IN_TAB_Y);
         } else if (strcmp(view, "balance-keypad") == 0) {
             /* The blade count tapped, 5 typed. */
             const gfx_rect_t r = balance_screen_blades_rect();
@@ -2926,9 +3014,9 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "balance-edf") == 0) {
             /* A five-blade ducted fan: the duct, and a rotor whose blades
              * are not reachable. */
-            tap(RS_BAL_EDF_X, UI_BAND_H + RS_BAL_EDF_Y);
+            tap(BL_EDF_X, UI_BAND_H + BL_ROTOR_Y);
             for (int i = 0; i < 3; ++i) {
-                tap(RS_BAL_UP_X, UI_BAND_H + RS_BAL_UP_Y);
+                tap(BL_UP_X, UI_BAND_H + BL_BLADES_Y);
             }
         }
     }
@@ -2944,7 +3032,8 @@ int main(int argc, char **argv)
         sbus_decoder_reset(&dec);
         uint32_t us = 100000u;
 
-        for (unsigned t = 0; t < 132u; ++t) {
+        /* 212 frames: every lane's 200 samples filled. */
+        for (unsigned t = 0; t < 212u; ++t) {
             uint16_t ch[SBUS_CHANNELS];
             for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
                 ch[i] = 1024;                       /* neutral */
@@ -2953,11 +3042,11 @@ int main(int argc, char **argv)
             ch[1] = (uint16_t)(1024 + (int)(600.0f
                         * sinf((float)t * 0.06f)));
             /* A switch thrown a third of the way in. */
-            ch[4] = (t > 44u) ? 1811 : 172;
+            ch[4] = (t > 70u) ? 1811 : 172;
             /* A knob wound slowly. */
-            ch[7] = (uint16_t)(400 + t * 8u);
+            ch[7] = (uint16_t)(400 + t * 6u);
             /* One frame with a spike: the glitch a lane makes findable. */
-            if (t == 96u) {
+            if (t == 160u) {
                 ch[10] = 1811;
             }
 
@@ -3141,11 +3230,13 @@ int main(int argc, char **argv)
         }
         if (strcmp(view, "outputs-prog") == 0) {
             /* GP28 tapped: slice 6 is the port's, so the line under the
-             * protocol says why the cell is held.  Its cell is column 3,
-             * row 4 of the grid (288 + 3 * 125, 16 + 4 * 57). */
+             * protocol says why the cell is held.  Its cell from
+             * outputs_spots.h, by its catalogue entry. */
+            const int gp28 = (int)outbind_index_of(brd, 28u);
             touch_event_t d = { TOUCH_EVENT_DOWN,
-                                { 0, 288 + 3 * 125 + 60,
-                                  UI_BAND_H + 16 + 4 * 57 + 26, 40 }, 0u };
+                                { 0, (int16_t)(OU_CELL_X(gp28) + 60),
+                                  (int16_t)(UI_BAND_H + OU_CELL_Y(gp28)
+                                            + 26), 40 }, 0u };
             touch_event_t u = d;
             u.type = TOUCH_EVENT_UP;
             ui_router_event(&d);
@@ -3337,11 +3428,11 @@ int main(int argc, char **argv)
             servo_screen_supply(&sst);
         }
         /*
-         * The INA3221 as the servo rail's meter: 13 s of CH1's windows from
+         * The INA3221 as the servo rail's meter: 13s of CH1's windows from
          * a servo of the same model stepped between two positions every
-         * 2 s, the bus voltage 0.25 V lower for each amp.  In the clipped
+         * 2s, the bus voltage 0.25V lower for each amp.  In the clipped
          * view the last window holds samples at the top of the range of a
-         * 0.1 Ohm shunt, 1.638 A.  The channel is 0x41 CH2, watching
+         * 0.1Ohm shunt, 1.638A.  The channel is 0x41 CH2, watching
          * OUT 1, and names the plot.
          */
         if (strcmp(view, "servo-ina") == 0
@@ -3378,7 +3469,7 @@ int main(int argc, char **argv)
                 servo_screen_window(&w, SERVO_SOURCE_INA3221, 1u);
             }
         }
-        /* An IOmcu that took the screen's 50 Hz; one that refused it,
+        /* An IOmcu that took the screen's 50Hz; one that refused it,
          * and one with no SERVO page, for the OUTPUT page's note. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
         if (strcmp(view, "servo-rate-refused") == 0) {
@@ -3431,7 +3522,7 @@ int main(int argc, char **argv)
             }
         } else if (strcmp(view, "servo-hv") == 0
                    || strcmp(view, "servo-hv-live") == 0) {
-            /* The voltage on the SET line, typed past 6.0 V: the HV
+            /* The voltage on the SET line, typed past 6.0V: the HV
              * warning, and in servo-hv-live with the output on.  The
              * keypad's keys from a probe opened where the screen opens its
              * own, over the left card. */
@@ -3487,7 +3578,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo-encoder") == 0) {
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
-            /* TRIM's value, between its steps: the signed keypad, -25 us
+            /* TRIM's value, between its steps: the signed keypad, -25us
              * typed. */
             tap((526 + 570) / 2, UI_BAND_H + SV_ROW_Y(3));
             kp_type(servo_screen_keypad(), "-25");
@@ -3541,6 +3632,8 @@ int main(int argc, char **argv)
                        && strcmp(view, "servo-limrun-stopped") != 0
                        && strcmp(view, "servo-limrun-range") != 0)
                    || strcmp(view, "setup-leave-armed") == 0
+                   || render_files_armed(view)
+                   || strcmp(view, "setup-rotation") == 0
                    || (mo_prog && s_stick_armed);
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
@@ -3563,7 +3656,13 @@ int main(int argc, char **argv)
             coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
         }
     }
+    if (id == SCREEN_FILES) {
+        render_files_prepare(view);
+    }
     ui_router_goto(id);
+    if (id == SCREEN_FILES) {
+        render_files_pose(view);
+    }
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
     }
@@ -3598,8 +3697,14 @@ int main(int argc, char **argv)
         setup_tile(SET_CAT_IFACE);
     }
     /* SETUP's PANEL category: the language, the theme, the knob. */
-    if (strcmp(view, "setup-application") == 0) {
+    if (strcmp(view, "setup-application") == 0
+        || strcmp(view, "setup-rotation") == 0) {
         setup_tile(SET_CAT_APP);
+    }
+    /* PANEL scrolled to Time zone, stored at its longest option. */
+    if (strcmp(view, "setup-time-zone") == 0) {
+        setup_tile(SET_CAT_APP);
+        setup_scroll_rows(4);
     }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
@@ -3665,7 +3770,7 @@ int main(int argc, char **argv)
 
     /*
      * SETUP > SENSORS: 0x40 and 0x41 fitted, 0x41's CH2 watching PORT 1
-     * with a limit of 800 mA, and its CH3 off.  At the top, 0x40 online;
+     * with a limit of 800mA, and its CH3 off.  At the top, 0x40 online;
      * scrolled to 0x41's heading, an IOmcu older than 4.25 reading 0x40
      * alone; and scrolled to 0x41 CH2, both online on an IOmcu older than
      * 4.27, which judges no limit.
@@ -3698,13 +3803,13 @@ int main(int argc, char **argv)
                                                | (SENS_PART_SILENT << 4)));
         }
         /* 0x40 CH1's shunt, scrolled into view and its value tapped:
-         * 44.4 mOhm typed, the station's value. */
+         * 44.4mOhm typed, the station's value. */
         if (strcmp(view, "setup-sensors-keypad") == 0) {
             settings_set(SET_INA_FIT(0), 1.0f);
             setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
             kp_type(settings_screen_keypad(), "44.4");
         }
-        /* The same shunt, 3 mOhm typed and refused: the reason in place
+        /* The same shunt, 3mOhm typed and refused: the reason in place
          * of the range. */
         if (strcmp(view, "setup-sensors-why") == 0) {
             settings_set(SET_INA_FIT(0), 1.0f);
@@ -3740,6 +3845,7 @@ int main(int argc, char **argv)
          * in panel coordinates; the router removes the band before the
          * screen sees them. */
         make_log_csv();
+        make_servo_csv();
         /* logs-nocard: a lister that finds no volume; logs-nofat: and a
          * card in the slot that holds no FAT volume. */
         const bool nocard = strcmp(view, "logs-nocard") == 0;
@@ -3750,36 +3856,40 @@ int main(int argc, char **argv)
         g_pages_card = (strcmp(view, "logs-pages") == 0);
         log_viewer_refresh();
         /*
-         * BR_LIST starts at y = 44 in screen coordinates, its rows begin
-         * 30 px below that header, and a row is 44 px, so the first row's
-         * middle is 44 + 30 + 22.  The band offset is added because
-         * ui_router_event takes panel coordinates and strips it on the way
-         * in.
+         * LOGS' places from logview_spots.h, in the screen's coordinates.
+         * The band offset is added because ui_router_event takes panel
+         * coordinates and strips it on the way in.
          */
         if (nocard || nofat) {
             /* The browser as it opens: nothing to select. */
         } else if (strcmp(view, "logs-pages") == 0) {
             for (int p = 0; p < PAGES_NEXT; ++p) {
-                tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
+                tap(LV_NEXT_CX, UI_BAND_H + LV_HEAD_CY);   /* NEXT */
             }
         } else if (strcmp(view, "logs-delete") == 0) {
             /* The newest run is chosen as the list opens. */
-            tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
+            tap(LV_DELETE_CX, UI_BAND_H + LV_FOOT_CY);   /* DELETE */
         } else if (strcmp(view, "logs-root") == 0) {
             /* ROOT, the first tab at the header row's left. */
-            tap(19 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
+            tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);
         } else if (strcmp(view, "logs-report") == 0) {
             /* USER, the second tab: LIMIT006.TXT is the newest and chosen
              * as the list opens, so a tap on it opens it. */
-            tap(19 + 84 + 40, UI_BAND_H + BR_PG_CY_LOCAL);
-            tap(400, UI_BAND_H + 44 + 30 + 22);
+            tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
+        } else if (strcmp(view, "logs-servo-plot") == 0) {
+            /* SERVO013.CSV, the second row of BENCH: a tap chooses it, a
+             * second opens it. */
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
              * it. */
-            tap(400, UI_BAND_H + 44 + 30 + 22);   /* open */
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));   /* open */
         }
-        if (strcmp(view, "logs-plot") == 0) {
-            tap(690, UI_BAND_H + IM_BTN_Y_LOCAL + 23);   /* PLOT */
+        if (strcmp(view, "logs-plot") == 0
+            || strcmp(view, "logs-servo-plot") == 0) {
+            tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }
 
@@ -3805,7 +3915,7 @@ int main(int argc, char **argv)
 
     /*
      * Arming flashes the ARM button for UI_HOLD_FLASH_MS, which runs by
-     * time: ten frames of 50 ms end it.  Drawn after the frame above, which
+     * time: ten frames of 50ms end it.  Drawn after the frame above, which
      * has already painted everything else, so these repaint the button and
      * nothing more.
      */

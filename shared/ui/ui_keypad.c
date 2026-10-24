@@ -15,16 +15,16 @@
 #include "ui_widgets.h"
 
 /*
- * A title row, the entry, then four rows of keys, 8 px apart, ending at
- * UI_KEYS_FOOT at the latest.  Over SERVO's left column, 488 x 524 px, a
- * key is 112 x 88 px (16.8 x 13.2 mm at 0.150 mm a pixel); over SUPPLY's,
- * 546 x 494 px, 126 x 80 px.
+ * A title row, the entry, then four rows of keys, 8px apart, ending at
+ * UI_KEYS_FOOT at the latest.  Over SERVO's left column, 488 x 524px, a
+ * key is 112 x 88px (16.8 x 13.2mm at 0.150mm a pixel); over SUPPLY's,
+ * 620 x 476px, 145 x 76px.
  */
-/** @brief The room around the title, the entry and the keys: 8 px. */
+/** @brief The room around the title, the entry and the keys: 8px. */
 #define KP_PAD     8
-/** @brief The title row: the 10 x 20 face and 6 px above it. */
+/** @brief The title row: the 10 x 20 face and 6px above it. */
 #define KP_HDR     32
-/** @brief The entry: the 32 x 44 numerals and 8 px above and below. */
+/** @brief The entry: the 32 x 44 numerals and 8px above and below. */
 #define KP_ENTRY_H 60
 /** @brief The gap between the entry and the keys, and between keys. */
 #define KP_GAP     8
@@ -32,7 +32,7 @@
 #define KP_COLS    4
 /** @brief ... and 4 rows. */
 #define KP_ROWS    4
-/** @brief The room a key keeps left and right of its label: 6 px. */
+/** @brief The room a key keeps left and right of its label: 6px. */
 #define KP_KEY_PAD 6
 
 /* DEL, CLR and +/- are the keys' legends in every language (the faces
@@ -352,7 +352,7 @@ ui_keypad_result_t ui_keypad_event(ui_keypad_t *k, const touch_event_t *evt,
 
 /**
  * @brief The face the title and the range share: 10 x 20 when both fit the
- *        header side by side with 16 px between them, else 8 x 16.
+ *        header side by side with 16px between them, else 8 x 16.
  * @param hdr   The header row.
  * @param title The title.
  * @param range The range, or the caller's reason.
@@ -393,7 +393,7 @@ const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k)
 
 /**
  * @brief The entry: @p number in the numeral face and @p unit beside it,
- *        right-aligned 10 px inside @p box.  32 x 44 numerals with a
+ *        right-aligned 10px inside @p box.  32 x 44 numerals with a
  *        12 x 24 unit where they fit, else 24 x 30 with 10 x 20; what
  *        does not fit even then is cut at the box's right, the unit first.
  * @param c      Canvas.
@@ -417,7 +417,7 @@ static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
     const int uw = gfx_text_width(unf, unit, 1);
     const int nw = gfx_text_width(num, number, 1);
     const int nh = gfx_text_height(num, 1);
-    /* Right-aligned 10 px inside the box, and never left of its 10 px:
+    /* Right-aligned 10px inside the box, and never left of its 10px:
      * an entry wider than the box even at 24 x 30 is cut at the right. */
     const int left  = box.x + 10;
     const int right = box.x + box.w - 10;
@@ -430,13 +430,26 @@ static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
                 number, num, ink, 1, GFX_ALIGN_LEFT);
     if (uw > 0 && x + nw + gap + uw <= right) {
         /* The unit's baseline on the numerals': both faces end their
-         * digits and capitals 2 px above the cell's foot or less. */
+         * digits and capitals 2px above the cell's foot or less. */
         const int uh = gfx_text_height(unf, 1);
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + nw + gap),
                                      (int16_t)(y + nh - uh), (int16_t)uw,
                                      (int16_t)uh },
                     unit, unf, ink, 1, GFX_ALIGN_LEFT);
     }
+}
+
+const char *ui_keypad_range(const ui_keypad_t *k, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (k != NULL) {
+        snprintf(buf, n, TR(KEYPAD_RANGE), k->decimals, (double)k->min,
+                 k->decimals, (double)k->max, ui_unit_gap(k->unit), k->unit);
+    }
+    return buf;
 }
 
 void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
@@ -457,8 +470,7 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
     if (k->refused && k->reason[0] != '\0') {
         snprintf(range, sizeof(range), "%s", k->reason);   /* why, instead */
     } else {
-        snprintf(range, sizeof(range), TR(KEYPAD_RANGE), k->decimals,
-                 (double)k->min, k->decimals, (double)k->max, k->unit);
+        (void)ui_keypad_range(k, range, sizeof(range));
     }
     const gfx_font_t *hf = header_face(hdr, k->title, range);
     gfx_text_in(c, hdr, k->title, hf, ui_theme_color(UI_C_TEXT), 1,

@@ -5,7 +5,7 @@
  * whatever that flag says.
  *
  * An RP2350 image carries its metadata in a loop of picobin blocks, the
- * first inside its first 4 KiB.  The boot ROM uses the last IMAGE_DEF block
+ * first inside its first 4KiB.  The boot ROM uses the last IMAGE_DEF block
  * of the loop, and that block's IMAGE_TYPE item holds the TBYB flag in bit
  * 15 of its flags: byte 3 of the item, bit 7.  The build seals the image
  * with a SHA-256 hash in that last block, computed with the flag read as
@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-/** @brief The first block of the loop starts in the image's first 4 KiB. */
+/** @brief The first block of the loop starts in the image's first 4KiB. */
 #define LINK_IMAGE_SCAN_BYTES 4096u
 /** @brief Blocks followed before a loop that has not closed is given up on. */
 #define LINK_IMAGE_MAX_BLOCKS 8u
@@ -42,7 +42,7 @@ extern "C" {
 
 /**
  * @brief The byte offset of the TBYB flag in @p img: byte 3 of the IMAGE_TYPE
- * item of the last IMAGE_DEF block of the block loop.  -1 when the first 4 KiB
+ * item of the last IMAGE_DEF block of the block loop.  -1 when the first 4KiB
  * hold no block loop that closes inside @p len bytes, or no block of it is an
  * IMAGE_DEF.
  *

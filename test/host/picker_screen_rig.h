@@ -31,6 +31,9 @@
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H
+/** @brief The lowest row the screen draws or takes a press on: 4px above
+ *  the alert band, body y 492. */
+#define PK_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
 static int         s_applied __attribute__((unused));
 static outbind_t   s_last __attribute__((unused));
@@ -96,11 +99,10 @@ static inline bool pad_point_on(uint16_t board, uint8_t gpio, int *x, int *y)
     if (bd == NULL || bd->shape == NULL || i >= bd->count) { return false; }
     uint16_t xc, yc;
     if (!outbind_pad_xy(bd->shape, bd->pins[i].pad, &xc, &yc)) { return false; }
-    const int bw = 500;
-    const int bh = (int)(((uint32_t)bw * bd->shape->height_cmm)
-                         / bd->shape->width_cmm);
+    int bw = 0, bh = 0;
+    picker_board_fit(bd->shape->width_cmm, bd->shape->height_cmm, &bw, &bh);
     const int bx = (SCREEN_W - bw) / 2;
-    const int by = (SCREEN_H - bh) / 2;
+    const int by = (PK_FOOT - bh) / 2;
     /* Rounded to the nearest pixel, each from its own position. */
     *x = bx + (int)(((uint32_t)xc * (uint32_t)bw + bd->shape->width_cmm / 2u)
                     / bd->shape->width_cmm);

@@ -22,15 +22,15 @@
 
 /**
  * @brief The panel's width in pixels: the whole glass of the ESP32-P4 7B,
- *        about 153.6 mm across, 0.150 mm a pixel (assumed, not measured).
+ *        about 153.6mm across, 0.150mm a pixel (assumed, not measured).
  */
 #define UI_PANEL_W 1024
-/** @brief The panel's height in pixels, about 90.0 mm. */
+/** @brief The panel's height in pixels, about 90.0mm. */
 #define UI_PANEL_H 600
 
 /**
  * @brief The height of the band the router owns across the top, with STOP:
- *        60 px, 9.0 mm.
+ *        60px, 9.0mm.
  */
 #define UI_BAND_H 60
 
@@ -51,16 +51,16 @@
 
 /**
  * @brief Corner radii in pixels, one scale for cards, controls and chips:
- *        a card's 10 px.
+ *        a card's 10px.
  */
 #define UI_R_CARD 10
-/** @brief A control's corner radius: 8 px. */
+/** @brief A control's corner radius: 8px. */
 #define UI_R_CTL  8
-/** @brief A chip's corner radius: 5 px. */
+/** @brief A chip's corner radius: 5px. */
 #define UI_R_CHIP 5
 
 /**
- * @brief The smallest touch target for a control, in pixels: 48 px, 7.2 mm.
+ * @brief The smallest touch target for a control, in pixels: 48px, 7.2mm.
  *
  * UI_BTN_H is this height; the screens' other controls size to it in
  * their own layouts.
@@ -68,8 +68,8 @@
 #define UI_TAP_MIN 48
 
 /**
- * @brief The common button's height in pixels: UI_TAP_MIN, 48 px (7.2 mm).
+ * @brief The common button's height in pixels: UI_TAP_MIN, 48px (7.2mm).
  */
 #define UI_BTN_H      48
-/** @brief The taller button of the ESC panel: 56 px (8.4 mm). */
+/** @brief The taller button of the ESC panel: 56px (8.4mm). */
 #define UI_BTN_H_TALL 56

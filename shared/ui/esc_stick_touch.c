@@ -62,9 +62,8 @@ int sp_rows_shown(int total, int scroll)
 /* The search's keyboard, docked right of the narrowed rows. */
 static gfx_rect_t sp_dock(void)
 {
-    return (gfx_rect_t){ SP_DOCK_X, (int16_t)(SP_ROW_Y0 - 2),
-                         (int16_t)(W - PAD - SP_DOCK_X),
-                         (int16_t)(H - PAD - SP_ROW_Y0 + 2) };
+    return (gfx_rect_t){ SP_DOCK_X, SP_ROW_Y0, (int16_t)(W - PAD - SP_DOCK_X),
+                         (int16_t)(H - PAD - SP_ROW_Y0) };
 }
 
 /* A profile row, narrowed to the left of the keyboard while it is open. */
@@ -126,12 +125,12 @@ static void sp_find_event(const touch_event_t *evt)
  */
 static gfx_rect_t sp_value_rect(int i)
 {
-    return (gfx_rect_t){ CTRL_X, (int16_t)(ROW_Y0 + i * ROW_H - 4), CTRL_W,
-                         ROW_H - 2 };
+    return (gfx_rect_t){ CTRL_X, (int16_t)(ROW_Y0 + i * ROW_P), CTRL_W,
+                         ROW_H };
 }
 
-/** @brief TIMING's keypad: from under the output strip to 4 px above the
- *         alert band, 1008 x 466 px. */
+/** @brief TIMING's keypad: from under the output strip to 4px above the
+ *         alert band, 1008 x 464px. */
 #define SP_KP_H (H - UI_ALERT_H - 4 - SP_PANEL_Y)
 
 /**
@@ -475,7 +474,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
         return true;
     }
     if (t->shown) {
-        if (t->p->manual_count > 0u && hit(t->hand_btn, px, py)) {
+        if (t->p->manual_count > 0u && hit(t->hand_res, px, py)) {
             t->hand_open = true;            /* every step, after included */
             t->hand_p = t->p;
             t->hand_model = t->model;

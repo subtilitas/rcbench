@@ -47,14 +47,14 @@ TEST_CASE(the_model_holds_its_voltage_until_the_load_reaches_the_limit)
 
     supply_sim_set(&m, 6.0f, 2.0f);
     supply_sim_output(&m, true);
-    /* Inside the burst: 1 A of resistance and 1.4 A of burst is over the
-     * 2 A limit, so the current holds and the voltage falls. */
+    /* Inside the burst: 1A of resistance and 1.4A of burst is over the
+     * 2A limit, so the current holds and the voltage falls. */
     supply_sim_step(&m, 0.1f, &st);
     CHECK_EQ(st.mode, SUPPLY_MODE_CC);
     CHECK_NEAR(st.i, 2.0f, 1e-4f);
     CHECK(st.v < 6.0f && st.v > 2.0f);
 
-    /* Between bursts: the set voltage less the source drop, about 1 A. */
+    /* Between bursts: the set voltage less the source drop, about 1A. */
     supply_sim_step(&m, 1.0f, &st);
     CHECK_EQ(st.mode, SUPPLY_MODE_CV);
     CHECK_NEAR(st.v, 6.0f, 0.1f);
@@ -100,11 +100,11 @@ TEST_CASE(a_run_counts_only_while_the_output_is_on)
     for (int i = 0; i < 100; ++i) {
         supply_count_totals(&st, 1.0f);
     }
-    CHECK_NEAR(st.charge_mah, 50.0f, 0.1f);   /* 1.8 A for 100 s */
+    CHECK_NEAR(st.charge_mah, 50.0f, 0.1f);   /* 1.8A for 100s */
     CHECK_NEAR(st.energy_wh, 0.3f, 0.001f);
     CHECK_EQ(st.counted, BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
 
-    supply_count_totals(&st, 60.0f);           /* a stall counts 1 s */
+    supply_count_totals(&st, 60.0f);           /* a stall counts 1s */
     CHECK_NEAR(st.charge_mah, 50.5f, 0.1f);
 
     supply_reset_totals(&st);
@@ -121,7 +121,7 @@ TEST_CASE(the_extremes_take_only_what_arrived)
     supply_reset_peaks(&st);                   /* nothing arrived yet */
     CHECK(!st.sag_seeded);
 
-    /* An output switched off reads 0 V, which is no floor. */
+    /* An output switched off reads 0V, which is no floor. */
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     supply_reset_peaks(&st);
     CHECK(!st.sag_seeded);
@@ -147,7 +147,7 @@ TEST_CASE(the_extremes_take_only_what_arrived)
     CHECK_NEAR(st.v_min, 3.6f, 1e-4f);
     CHECK_NEAR(st.i_max, 2.0f, 1e-4f);
 
-    /* Nor does it seed a reset: a stale 9 A would hold the maximum above
+    /* Nor does it seed a reset: a stale 9A would hold the maximum above
      * every current the next run delivers. */
     st.i = 9.0f; st.p = 54.0f;
     st.ok = SUPPLY_OK_VOLTAGE;
@@ -202,8 +202,8 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     st.v = 6.0f;
     st.i = 2.6f;
-    /* 100 ms over 2.5 A, at 20 Hz: the first reading over starts the count
-     * and the one 100 ms after it fires, two intervals later. */
+    /* 100ms over 2.5A, at 20Hz: the first reading over starts the count
+     * and the one 100ms after it fires, two intervals later. */
     const supply_limits_t lim = { 21.0f, 5.0f, 2.5f, 0.0f, 0.1f };
     supply_trip_t t;
     supply_trip_reset(&t);
@@ -243,7 +243,7 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_CURRENT);
 
     /* A threshold changed while counting starts the count again: time over
-     * 2.5 A is not time over 2.55 A. */
+     * 2.5A is not time over 2.55A. */
     supply_trip_reset(&t);
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
@@ -257,7 +257,7 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     st.v = 6.6f;
     CHECK_EQ(supply_trip_step(&t, &vlim, &st, 0.05f), SUPPLY_TRIP_VOLTAGE);
 
-    /* Nothing counts while the output is off, and a long stall counts 1 s. */
+    /* Nothing counts while the output is off, and a long stall counts 1s. */
     st.output = false;
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 5.0f), SUPPLY_TRIP_NONE);
     CHECK_EQ(t.over_i_s, 0.0f);

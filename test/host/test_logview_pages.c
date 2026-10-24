@@ -292,7 +292,7 @@ TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
     memset(&q, 0, sizeof(q));
     q.dir = LOG_PAGE_FROM;
     CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
-    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999 % 7 == 5 */
+    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999% 7 == 5 */
     CHECK_STR_EQ(set[1].name, "SUPPL998.CSV");
     CHECK_STR_EQ(set[2].name, "MOTOR997.CSV");
     CHECK_STR_EQ(set[3].name, "SERVO996.CSV");
@@ -429,7 +429,7 @@ TEST_CASE(a_page_key_whose_file_has_gone_still_names_its_place)
 }
 
 /* The header row's PREV and NEXT, in screen coordinates. */
-#define PREV_X  596
+#define PREV_X  LV_PREV_CX
 
 static void prev_page(void)
 {
@@ -437,11 +437,11 @@ static void prev_page(void)
 }
 
 /* The bar: x of its middle, and the track's top and height. */
-#define BAR_X     755
+#define BAR_X     LV_BAR_CX
 
-#define BAR_TOP   (44 + 30)
+#define BAR_TOP   LV_BAR_TOP
 
-#define BAR_H     (6 * 44 - 4)
+#define BAR_H     LV_BAR_H
 
 /* The thumb on the drawn frame: the first accent row down the bar's middle,
  * and how many accent rows follow. */
@@ -642,7 +642,7 @@ TEST_CASE(deleting_the_last_pages_only_file_shows_the_page_before)
 TEST_CASE(after_delete_nothing_is_selected_and_the_scroll_stays)
 {
     /*
-     * Page 2 of 150 runs, scrolled to its bottom: rows 60 to 55 show.  The
+     * Page 2 of 150 runs, scrolled to its bottom: rows 61 to 55 show.  The
      * page's newest run, BENCH102, is off screen above them.  DELETE of
      * BENCH055 leaves nothing selected, so DELETE and OPEN act on nothing
      * and the next deletion needs a row chosen in sight.
@@ -659,9 +659,9 @@ TEST_CASE(after_delete_nothing_is_selected_and_the_scroll_stays)
     CHECK_EQ(g_remove_calls, 1);
     CHECK(!g_run_gone[102]);
     /* The page is read again from BENCH102: 102 to 56, then 54.  The
-     * scroll is the one before, 42, so the top row is the 43rd: 60. */
+     * scroll is the one before, 41, so the top row is the 42nd: 61. */
     check_tab(49, 96, 149);
-    CHECK_EQ(top_row_run(), 60);
+    CHECK_EQ(top_row_run(), 61);
 
     /* The first page: the same, the scroll at its top. */
     runs_card(60);
@@ -824,11 +824,12 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
 
 TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
 {
-    /* 48 runs: rows are runs 48 to 1 top down, and 42 is the last scroll. */
+    /* 48 runs: rows are runs 48 to 1 top down, and 41 is the last scroll. */
     runs_card(48);
-    /* The thumb is the rows shown against the page: 260 * 6 / 48 = 32 px,
-     * drawn 2 px in from each end, at the top of the track. */
-    const int th = BAR_H * 6 / 48;
+    /* The thumb is the rows shown against the page: 332 * 7 / 48 = 48px,
+     * drawn 2px in from each end, at the top of the track. */
+    const int th = BAR_H * BR_ROWS_SEEN / 48;
+    CHECK_EQ(th, 48);
     draw();
     CHECK_EQ(thumb_top(), BAR_TOP + 2);
     CHECK_EQ(thumb_len(), th - 4);
@@ -836,21 +837,21 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     tap(BAR_X, BAR_TOP + BAR_H - 2);
     draw();
     CHECK_EQ(thumb_top(), BAR_TOP + BAR_H - th + 2);
-    CHECK_EQ(top_row_run(), 6);
+    CHECK_EQ(top_row_run(), 7);
     /* And at the top, back. */
     tap(BAR_X, BAR_TOP + 1);
     CHECK_EQ(top_row_run(), 48);
 
-    /* A tap off the thumb brings the thumb's middle to the finger: 200 px
-     * down the track puts its top at 184 of 228 px of travel, scroll
-     * (184 * 42 + 114) / 228 = 34, and the top row is run 48 - 34. */
+    /* A tap off the thumb brings the thumb's middle to the finger: 200px
+     * down the track puts its top at 176 of 284px of travel, scroll
+     * (176 * 41 + 142) / 284 = 25, and the top row is run 48 - 25. */
     tap(BAR_X, BAR_TOP + 200);
     draw();
-    CHECK_EQ(top_row_run(), 14);
-    CHECK_EQ(thumb_top(), BAR_TOP + (BAR_H - th) * 34 / 42 + 2);
+    CHECK_EQ(top_row_run(), 23);
+    CHECK_EQ(thumb_top(), BAR_TOP + (BAR_H - th) * 25 / 41 + 2);
     tap(BAR_X, BAR_TOP + 1);
 
-    /* Dragging the thumb (32 px at the top) by half the travel scrolls half
+    /* Dragging the thumb (48px at the top) by half the travel scrolls half
      * the page; past the track's end it stops at the end, and on a 49th
      * row there is nothing to scroll to. */
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + th / 2);
@@ -861,7 +862,7 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H / 2);
     send(TOUCH_EVENT_MOVE, BAR_X, 2000);
     send(TOUCH_EVENT_UP, BAR_X, 2000);
-    CHECK_EQ(top_row_run(), 6);
+    CHECK_EQ(top_row_run(), 7);
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H - 1);
     send(TOUCH_EVENT_MOVE, BAR_X, -2000);
     send(TOUCH_EVENT_UP, BAR_X, -2000);
@@ -894,7 +895,7 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     tap(BAR_X, BAR_TOP + 1);
     CHECK_EQ(top_row_run(), 49);
     tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(top_row_run(), 7);
+    CHECK_EQ(top_row_run(), 8);
     check_tab(49, 96, 97);
 
     /* A touch loss ends a drag: the next move belongs to no press. */
@@ -909,7 +910,7 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
 TEST_CASE(re_reading_the_card_selects_the_newest_run)
 {
     fresh();
-    g_card_runs = 30;          /* more than six rows: the newest scrolls in */
+    g_card_runs = 30;          /* more than seven rows: the newest scrolls in */
     log_viewer_refresh();
     tap(OPEN_X, FOOT_CY);
     draw();

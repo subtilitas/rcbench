@@ -20,12 +20,12 @@
  * Displayed values are integers in the unit the field's kst_unit_t names.
  * No floating point is used.  Rounding, where a conversion rounds, is to the
  * nearest value with a tie going up, except Max. Duty, whose tie goes down
- * as the vendor tool's does (50 % is raw 127).
+ * as the vendor tool's does (50% is raw 127).
  *
  * The conversions are what the vendor tool displays and writes.  The effect
  * of a register on servo motion is not measured for any register.  The
  * scaling the vendor tool applies in Gyro Servo mode (register 0x1F bit 0:
- * half the microsecond values, 0.05 s time unit) is not applied here.
+ * half the microsecond values, 0.05s time unit) is not applied here.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -127,10 +127,10 @@ typedef enum {
 typedef enum {
     KST_UNIT_RAW = 0,        /**< the raw value, no unit known */
     KST_UNIT_BOOL,           /**< 0 or 1 */
-    KST_UNIT_TENTH_US,       /**< 0.1 us */
-    KST_UNIT_PERCENT,        /**< 1 % */
-    KST_UNIT_TENTH_PERCENT,  /**< 0.1 % */
-    KST_UNIT_TENTH_S,        /**< 0.1 s */
+    KST_UNIT_TENTH_US,       /**< 0.1us */
+    KST_UNIT_PERCENT,        /**< 1% */
+    KST_UNIT_TENTH_PERCENT,  /**< 0.1% */
+    KST_UNIT_TENTH_S,        /**< 0.1s */
     KST_UNIT_FACTOR,         /**< a multiplier: 1, 2, 4, 8, 16, 32 */
     KST_UNIT_COUNT_OF,       /**< a count: 0 to the field's width in bits */
 } kst_unit_t;
@@ -217,19 +217,19 @@ bool kst_field_edit(kst_image_t *img, kst_field_id_t id, uint16_t raw);
  * index 6 and 7.
  *
  *   Max. Duty      round(raw x 100 / 255) %
- *   Boost          50 us + 12.5 us x raw
+ *   Boost          50us + 12.5us x raw
  *   Stretch        1 << index
- *   Dead Band      0.2 us x (65 - raw)
- *   Pulse Lower, Pulse Upper, Uncontrolled Pos   0.8 us x raw
- *   Neutral        810 us + raw x 409 / 2048 us, to 0.1 us; the constants
- *                  are a fit through 3 values and uncertain by about 1 us
- *   Uncontrolled Time, prot1_time   0.1 s x raw; prot1_time shown capped
- *                  at 100.0 s
+ *   Dead Band      0.2us x (65 - raw)
+ *   Pulse Lower, Pulse Upper, Uncontrolled Pos   0.8us x raw
+ *   Neutral        810us + raw x 409 / 2048us, to 0.1us; the constants
+ *                  are a fit through 3 values and uncertain by about 1us
+ *   Uncontrolled Time, prot1_time   0.1s x raw; prot1_time shown capped
+ *                  at 100.0s
  *   prot1_pwm      round(raw x 97 / 255) %
  *   prot_pot_err, prot_pwm_err      count of 1 bits upward from bit 0.  The
  *                  vendor tool shows 0 for registers 17 = FF, 18 = FF; here
  *                  that image gives 12
- *   SPD            0.1 % x raw
+ *   SPD            0.1% x raw
  *   all others     raw
  *
  * @param id       Field.
@@ -261,7 +261,7 @@ bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
  *
  * A servo answers no model number.  The type is one bit: 20k_sel, register 04
  * bit 6.  The manufacturer states the factory default of that bit as set for
- * the V6.0 series (20 kHz drive) and clear for the V8.0 series (333 Hz drive).
+ * the V6.0 series (20kHz drive) and clear for the V8.0 series (333Hz drive).
  * The mapping rests on that statement.  It is read on 1 servo, whose bit is
  * set; no V8.0 servo is measured.  A servo whose 20k_sel was changed by another
  * tool reads as the other type.

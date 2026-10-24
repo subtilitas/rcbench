@@ -33,9 +33,9 @@
  * A format string's conversions are part of its contract: a translation
  * converts the same arguments in the same order (test_text checks).
  *
- * The text faces hold printable ASCII (0x20 to 0x7E) and the German
- * letters Ä Ö Ü ä ö ü ß; any other code point draws as '?'.  test_text
- * holds every string the panel draws to that set.  Text is UTF-8.
+ * The text faces hold printable ASCII (0x20 to 0x7E), the degree sign °
+ * and the German letters Ä Ö Ü ä ö ü ß; any other code point draws as
+ * '?'.  test_text holds every string the panel draws to that set.  Text is UTF-8.
  *
  * What stays English in every language is not in the table and is written
  * where it is drawn: ARM, DISARM, STOP, the screen titles, protocol and
@@ -127,8 +127,8 @@ UI_TEXT(PL_GRP_STICK, 40,
 /* The output strip over a full-width session, after `TARGET <target>`
  * (SV_TARGET): the supply as it reads now, then SAFE or ARMED. */
 UI_TEXT(PL_STRIP_SUP, 0,
-    "SUPPLY %u.%02u V  %u.%02u A",
-    "NETZTEIL %u.%02u V  %u.%02u A")
+    "SUPPLY %u.%02uV  %u.%02uA",
+    "NETZTEIL %u.%02uV  %u.%02uA")
 UI_TEXT(PL_STRIP_SUP_ON, 26,
     "SUPPLY ON",
     "NETZTEIL EIN")
@@ -158,8 +158,8 @@ UI_TEXT(LINK_REFUSED, 0,
  * width, so a view draws it and --fit measures it there; test_nav_bubble holds
  * the bubble above the alert strip in its tallest state. */
 UI_TEXT(BH_LINK_UP, 0,
-    "The IOmcu is responding on the CAN bus. The screens control its outputs and show its readings. The panel requests data every 50 ms. If the IOmcu stops responding while ARMED, the bench switches to SAFE.",
-    "Der IOmcu antwortet am CAN-Bus. Die Seiten steuern seine Ausgänge und zeigen seine Messwerte. Das Panel fragt alle 50 ms Daten ab. Antwortet der IOmcu bei ARMED nicht mehr, schaltet der Prüfstand auf SAFE.")
+    "The IOmcu is responding on the CAN bus. The screens control its outputs and show its readings. The panel requests data every 50ms. If the IOmcu stops responding while ARMED, the bench switches to SAFE.",
+    "Der IOmcu antwortet am CAN-Bus. Die Seiten steuern seine Ausgänge und zeigen seine Messwerte. Das Panel fragt alle 50ms Daten ab. Antwortet der IOmcu bei ARMED nicht mehr, schaltet der Prüfstand auf SAFE.")
 UI_TEXT(BH_NO_LINK, 0,
     "No IOmcu is responding. The panel tries once a second. The screens show simulated data, and the IOmcu outputs stay off. Check the IOmcu's power supply and CAN cable. A different major protocol version also causes NO LINK. Install firmware from the same release on both boards.",
     "Kein IOmcu antwortet. Das Panel versucht es einmal pro Sekunde. Die Seiten zeigen simulierte Daten. Die Ausgänge des IOmcu bleiben aus. Prüfe seine Versorgung und das CAN-Kabel. Eine andere Hauptversion des Protokolls führt ebenfalls zu KEINE VERBINDUNG. Installiere auf beiden Platinen Firmware aus demselben Release.")
@@ -179,12 +179,12 @@ UI_TEXT(BH_MODE_INJECT, 0,
     "Touch input also comes from the injector at I2C address 0x14. It is combined with input from the panel touchscreen, which still works. LINK shows whether an IOmcu responds. The older of the two sources determines the touch age. A contact on the touchscreen counts as detected touch. Without a controller at 0x5D, the status always shows INJECT. If the injector was absent at startup, a restart is needed.",
     "Touch-Eingaben kommen auch vom Injector an der I2C-Adresse 0x14. Sie werden mit den Eingaben des weiterhin nutzbaren Touchscreens zusammengeführt. LINK zeigt, ob ein IOmcu antwortet. Für das Touch-Alter zählt die ältere der beiden Quellen. Eine Berührung am Touchscreen zählt als erkannter Touch. Ohne Controller an 0x5D steht die Anzeige immer auf INJECT. Fehlte der Injector beim Start, ist ein Neustart nötig.")
 UI_TEXT(BH_MODE_INJECT_LOST, 0,
-    "With a controller at 0x5D, injector contacts are released after 3 failed reads in a row. If the touchscreen has no contact, touch is marked silent 200 ms after the injector's last reply. After another 500 ms, the bench switches to SAFE and blocks ARM. After 1000 ms of silence, the injector is detached. The touchscreen alone then sets the touch age, ARM is available again, and the status shows BENCH or SIM. The injector is checked every 1000 ms and reconnected when it replies.",
-    "Mit einem Controller an 0x5D werden Injector-Kontakte nach 3 fehlgeschlagenen Abfragen in Folge aufgehoben. Ohne Berührung am Touchscreen gilt Touch 200 ms nach der letzten Injector-Antwort als stumm. Weitere 500 ms später schaltet der Prüfstand auf SAFE und sperrt ARM. Nach 1000 ms Stille wird der Injector getrennt. Dann bestimmt allein der Touchscreen das Touch-Alter. ARM ist wieder möglich, und die Anzeige zeigt BENCH oder SIM. Der Injector wird alle 1000 ms abgefragt und bei einer Antwort wieder verbunden.")
+    "With a controller at 0x5D, injector contacts are released after 3 failed reads in a row. If the touchscreen has no contact, touch is marked silent 200ms after the injector's last reply. After another 500ms, the bench switches to SAFE and blocks ARM. After 1000ms of silence, the injector is detached. The touchscreen alone then sets the touch age, ARM is available again, and the status shows BENCH or SIM. The injector is checked every 1000ms and reconnected when it replies.",
+    "Mit einem Controller an 0x5D werden Injector-Kontakte nach 3 fehlgeschlagenen Abfragen in Folge aufgehoben. Ohne Berührung am Touchscreen gilt Touch 200ms nach der letzten Injector-Antwort als stumm. Weitere 500ms später schaltet der Prüfstand auf SAFE und sperrt ARM. Nach 1000ms Stille wird der Injector getrennt. Dann bestimmt allein der Touchscreen das Touch-Alter. ARM ist wieder möglich, und die Anzeige zeigt BENCH oder SIM. Der Injector wird alle 1000ms abgefragt und bei einer Antwort wieder verbunden.")
 #endif
 UI_TEXT(BH_SAFE, 0,
-    "Motor and servo outputs send no pulses. To activate them, hold ARM for 2 s on MOTOR & ESC or SERVO. The PD mini output on SUPPLY is switched separately. STOP turns it off too.",
-    "Motor- und Servoausgänge geben keine Pulse aus. Halte ARM auf MOTOR & ESC oder SERVO für 2 s, um sie zu aktivieren. Der PD-mini-Ausgang auf SUPPLY wird getrennt davon geschaltet. STOP schaltet auch ihn aus.")
+    "Motor and servo outputs send no pulses. To activate them, hold ARM for 2s on MOTOR & ESC or SERVO. The PD mini output on SUPPLY is switched separately. STOP turns it off too.",
+    "Motor- und Servoausgänge geben keine Pulse aus. Halte ARM auf MOTOR & ESC oder SERVO für 2s, um sie zu aktivieren. Der PD-mini-Ausgang auf SUPPLY wird getrennt davon geschaltet. STOP schaltet auch ihn aus.")
 UI_TEXT(BH_ARMED_MOTOR, 0,
     "Motor outputs send pulses. Servo outputs do not.",
     "Motorausgänge geben Pulse aus. Servoausgänge nicht.")
@@ -195,17 +195,17 @@ UI_TEXT(BH_ARMED_ALL, 0,
     "All assigned motor and servo outputs send pulses.",
     "Alle zugeordneten Motor- und Servoausgänge geben Pulse aus.")
 UI_TEXT(BH_ARMED_REST, 0,
-    "A channel with no command for 500 ms returns to rest: throttle at 0, servo at the centre of its travel. STOP, DISARM or leaving the screen switches the bench to SAFE.",
-    "Erhält ein Kanal 500 ms keinen Befehl, geht er in Ruhestellung: Gas auf 0, Servo in die Mitte seines Wegs. STOP, DISARM oder das Verlassen der Seite schaltet den Prüfstand auf SAFE.")
+    "A channel with no command for 500ms returns to rest: throttle at 0, servo at the centre of its travel. STOP, DISARM or leaving the screen switches the bench to SAFE.",
+    "Erhält ein Kanal 500ms keinen Befehl, geht er in Ruhestellung: Gas auf 0, Servo in die Mitte seines Wegs. STOP, DISARM oder das Verlassen der Seite schaltet den Prüfstand auf SAFE.")
 UI_TEXT(BH_ARMED_SIM, 0,
     "No IOmcu is responding. ARM runs the panel's simulation, not real outputs.",
     "Kein IOmcu antwortet. ARM startet nur die Simulation des Panels. Keine echten Ausgänge werden angesteuert.")
 UI_TEXT(BH_CLOCK, 0,
-    "Shows the run time since switching to ARMED. At SAFE, the clock stops and keeps the last run time until the next ARM. It shows minutes and seconds, adding hours from 60 min.",
-    "Zeigt die Laufzeit seit dem Wechsel zu ARMED. Bei SAFE stoppt die Uhr und zeigt die letzte Laufzeit bis zum nächsten ARM. Anzeige in Minuten und Sekunden, ab 60 min auch in Stunden.")
+    "Shows the run time since switching to ARMED. At SAFE, the clock stops and keeps the last run time until the next ARM. It shows minutes and seconds, adding hours from 60min.",
+    "Zeigt die Laufzeit seit dem Wechsel zu ARMED. Bei SAFE stoppt die Uhr und zeigt die letzte Laufzeit bis zum nächsten ARM. Anzeige in Minuten und Sekunden, ab 60min auch in Stunden.")
 UI_TEXT(BH_F_LINK_SILENT, 0,
-    "The IOmcu received no data for 200 ms and switched itself to SAFE. The PD mini output is off. A panel restart or loose CAN cable can cause this. The fault bit stays set until the next ARM. If it returns, check the CAN cable.",
-    "Der IOmcu hat 200 ms keine Daten empfangen und selbst auf SAFE geschaltet. Der PD-mini-Ausgang ist aus. Ursache kann ein Panel-Neustart oder ein lockeres CAN-Kabel sein. Das Fehlerbit bleibt bis zum nächsten ARM gesetzt. Tritt es erneut auf, prüfe das CAN-Kabel.")
+    "The IOmcu received no data for 200ms and switched itself to SAFE. The PD mini output is off. A panel restart or loose CAN cable can cause this. The fault bit stays set until the next ARM. If it returns, check the CAN cable.",
+    "Der IOmcu hat 200ms keine Daten empfangen und selbst auf SAFE geschaltet. Der PD-mini-Ausgang ist aus. Ursache kann ein Panel-Neustart oder ein lockeres CAN-Kabel sein. Das Fehlerbit bleibt bis zum nächsten ARM gesetzt. Tritt es erneut auf, prüfe das CAN-Kabel.")
 UI_TEXT(BH_F_OVERCURRENT, 0,
     "Stopped due to overcurrent.",
     "Wegen Überstrom gestoppt.")
@@ -236,18 +236,18 @@ UI_TEXT(BH_F_FLASH, 0,
 
 /* ------------------------------------------------------- keypads */
 UI_TEXT(KEYPAD_RANGE, 0,
-    "%.*f to %.*f %s",
-    "%.*f bis %.*f %s")
+    "%.*f to %.*f%s%s",
+    "%.*f bis %.*f%s%s")
 /* Why a setting's keypad refused a value inside its range, in place of the
  * range (ui_setting_keypad.c): a value between 0 and the row's off_below
  * (the row's off_below, maximum and unit, with its step's decimals: a
- * SENSORS shunt's "0 or 5.0 to 1000.0 mOhm", a SENSORS limit's "0 or 10
- * to 32767 mA"), a Sensor SDA pin the bus cannot have (the pins
+ * SENSORS shunt's "0 or 5.0 to 1000.0mΩ", a SENSORS limit's "0 or 10
+ * to 32767mA"), a Sensor SDA pin the bus cannot have (the pins
  * settings_sense_sda_valid() takes, listed where it is drawn), the other
  * PD mini pin's GPIO. */
 UI_TEXT(KEYPAD_WHY_OFF, 0,
-    "0 or %.*f to %.*f %s",
-    "0 oder %.*f bis %.*f %s")
+    "0 or %.*f to %.*f%s%s",
+    "0 oder %.*f bis %.*f%s%s")
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
@@ -286,6 +286,18 @@ UI_TEXT(TEXTKEY_DIR_RESERVED, 40,
 UI_TEXT(TEXTKEY_DIR_BENCH, 40,
     "Folder of the bench's own files",
     "Ordner der Prüfstand-Dateien")
+/* A file name the keyboard refused (fm_name_check()), right of its title
+ * on FILES' keyboard; an empty name is TEXTKEY_NEEDED and a device name
+ * TEXTKEY_DIR_RESERVED. */
+UI_TEXT(TEXTKEY_NAME_LONG, 40,
+    "59 bytes at most; ÄÖÜäöüß take 2",
+    "Höchstens 59 Bytes; ÄÖÜäöüß zählen 2")
+UI_TEXT(TEXTKEY_NAME_CHAR, 40,
+    "None of \" * / : < > ? \\ |",
+    "Keines von \" * / : < > ? \\ |")
+UI_TEXT(TEXTKEY_NAME_EDGE, 40,
+    "No space or full stop at an end",
+    "Kein Leerzeichen oder Punkt am Rand")
 UI_TEXT(TK_SHOW, 0,
     "SHOW",
     "ANZEIGEN")
@@ -383,8 +395,8 @@ UI_TEXT(BF_BUS_OFF_MEANS, 0,
     "Too many frames were not confirmed. The controller stopped sending.",
     "Zu viele Frames blieben unbestätigt. Der Controller sendet nicht mehr.")
 UI_TEXT(BF_BUS_REJOIN_MEANS, 0,
-    "The controller is waiting for the bus to be quiet before reconnecting. Wait 3 s.",
-    "Der Controller wartet vor dem Neuverbinden auf Busruhe. Warte 3 s.")
+    "The controller is waiting for the bus to be quiet before reconnecting. Wait 3s.",
+    "Der Controller wartet vor dem Neuverbinden auf Busruhe. Warte 3s.")
 UI_TEXT(BF_BUS_STOPPED_MEANS, 0,
     "The controller stopped and was not restarted. This is a fault in the panel.",
     "Der Controller wurde nach dem Stopp nicht neu gestartet. Das ist ein Fehler im Panel.")
@@ -443,29 +455,29 @@ UI_TEXT(BF_SILENT_3, 0,
     "Both boards must use firmware from the same release.",
     "Beide Platinen müssen Firmware aus demselben Release nutzen.")
 UI_TEXT(BF_SILENT_4, 0,
-    "With the bench off, measure about 60 ohms",
-    "Bei ausgeschaltetem Prüfstand etwa 60 Ohm")
+    "With the bench off, measure about 60Ω",
+    "Bei ausgeschaltetem Prüfstand etwa 60Ω")
 UI_TEXT(BF_SILENT_5, 0,
     "  between CANH and CANL for correct termination.",
     "  zwischen CANH und CANL messen: Busabschluss prüfen.")
 UI_TEXT(BF_CORRUPT_1, 0,
-    "With the bench off, expect about 60 ohms between CANH and CANL.",
-    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60 Ohm liegen.")
+    "With the bench off, expect about 60Ω between CANH and CANL.",
+    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60Ω liegen.")
 UI_TEXT(BF_CORRUPT_2, 0,
-    "  A reading of 120 ohms means one terminator is missing.",
-    "  Bei 120 Ohm fehlt einer der beiden Abschlusswiderstände.")
+    "  A reading of 120Ω means one terminator is missing.",
+    "  Bei 120Ω fehlt einer der beiden Abschlusswiderstände.")
 UI_TEXT(BF_CORRUPT_3, 0,
-    "Keep the branch to each board under 30 cm.",
-    "Stichleitung zu jeder Platine unter 30 cm halten.")
+    "Keep the branch to each board under 30cm.",
+    "Stichleitung zu jeder Platine unter 30cm halten.")
 UI_TEXT(BF_TWISTED, 0,
     "Twist CANH and CANL together. Keep them away from motor wires.",
     "CANH und CANL verdrillen. Abstand zu Motorleitungen halten.")
 UI_TEXT(BF_LOSSY_1, 0,
-    "With the bench off, check for about 60 ohms between CANH and CANL.",
-    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60 Ohm liegen.")
+    "With the bench off, check for about 60Ω between CANH and CANL.",
+    "Prüfstand ausschalten. Zwischen CANH und CANL sollten etwa 60Ω liegen.")
 UI_TEXT(BF_LOSSY_2, 0,
-    "Keep the total bus below 5 m and each branch below 30 cm.",
-    "Gesamten Bus unter 5 m und jede Stichleitung unter 30 cm halten.")
+    "Keep the total bus below 5m and each branch below 30cm.",
+    "Gesamten Bus unter 5m und jede Stichleitung unter 30cm halten.")
 UI_TEXT(BF_LOSSY_4, 0,
     "Check that every connector is fully seated.",
     "Prüfe, ob alle Stecker richtig sitzen.")
@@ -500,14 +512,14 @@ UI_TEXT(BF_ACKNOWLEDGED, 90,
     "ACKNOWLEDGED",
     "BESTÄTIGT")
 UI_TEXT(BF_HOLD, 0,
-    "HOLD 2 s TO ACKNOWLEDGE",
-    "2 s HALTEN ZUM BESTÄTIGEN")
+    "HOLD 2s TO ACKNOWLEDGE",
+    "2s HALTEN ZUM BESTÄTIGEN")
 UI_TEXT(BF_THIS_PANEL, 0,
     "THIS PANEL",
     "DIESES PANEL")
 UI_TEXT(BF_DOWN, 0,
-    "down      %lu s",
-    "getrennt      %lu s")
+    "down      %lus",
+    "getrennt      %lus")
 UI_TEXT(BF_REQUESTS, 0,
     "requests  %lu",
     "Anfragen      %lu")
@@ -558,36 +570,36 @@ UI_TEXT(CU_Q_VERSIONS, 0,
 UI_TEXT(CU_Q_OLDER, 0,
     "The firmware on this panel is older.",
     "Die Firmware auf diesem Panel ist älter.")
-UI_TEXT(CU_Q_SAME, 64,
+UI_TEXT(CU_Q_SAME, 67,
     "Same version number, but a different build.",
     "Gleiche Versionsnummer, aber ein anderer Build.")
 UI_TEXT(CU_Q_WHAT, 0,
     "Outputs stay off. ARMED is blocked until the update ends.",
     "Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.")
 UI_TEXT(CU_START, 0,
-    "HOLD 2 s TO START",
-    "2 s HALTEN ZUM STARTEN")
-UI_TEXT(CU_P_PREPARE, 47,
+    "HOLD 2s TO START",
+    "2s HALTEN ZUM STARTEN")
+UI_TEXT(CU_P_PREPARE, 48,
     "Preparing firmware.",
     "Firmware wird vorbereitet.")
 UI_TEXT(CU_P_SEND, 0,
     "Sending firmware.",
     "Firmware wird gesendet.")
-UI_TEXT(CU_P_VERIFY, 47,
+UI_TEXT(CU_P_VERIFY, 48,
     "IOmcu is checking the firmware.",
     "IOmcu prüft die Firmware.")
-UI_TEXT(CU_P_RESTART, 47,
+UI_TEXT(CU_P_RESTART, 48,
     "IOmcu is starting the new firmware.",
     "IOmcu startet die neue Firmware.")
-UI_TEXT(CU_P_BUY, 47,
+UI_TEXT(CU_P_BUY, 48,
     "Keeping the new firmware.",
     "Neue Firmware wird dauerhaft übernommen.")
 UI_TEXT(CU_P_FROM_TO, 0,
     "%s to %s",
     "%s auf %s")
 UI_TEXT(CU_P_BLOCKS, 0,
-    "Block %u of %u, %u %%",
-    "Block %u von %u, %u %%")
+    "Block %u of %u, %u%%",
+    "Block %u von %u, %u%%")
 UI_TEXT(CU_P_NOTE_OFF, 0,
     "Outputs are off. ARMED is blocked until the update ends.",
     "Ausgänge sind aus. ARMED ist bis zum Ende des Updates gesperrt.")
@@ -660,7 +672,7 @@ UI_TEXT(OUT_IFACE_TAP, 14,
 /* A PROG PORT entry of the list: its pin as a button that opens PICK A
  * PIN on the port, its FUNCTION segments, which INA3221 channel watches
  * it, and the SERVO TESTER and PORT PWM segments with why they are
- * locked: lines of the left column, 33 cells each, two where they need
+ * locked: lines of the left column, 30 cells each, two where they need
  * them.  A button holds 30 cells of the label face. */
 UI_TEXT(OUT_PROG_PORT_N, 14,
     "PROG PORT %u",
@@ -692,25 +704,25 @@ UI_TEXT(OUT_PORT_WATCHED, 33,
 UI_TEXT(OUT_PORT_WATCH_NONE, 0,
     "WATCHED BY NO CURRENT CHANNEL",
     "VON KEINEM STROMKANAL ÜBERWACHT")
-UI_TEXT(OUT_PORT_NOT_READ, 66,
+UI_TEXT(OUT_PORT_NOT_READ, 60,
     "PORTS NOT READ YET",
     "PORTS NOCH NICHT GELESEN")
-UI_TEXT(OUT_PORT_FN_OLD, 66,
+UI_TEXT(OUT_PORT_FN_OLD, 60,
     "IOMCU OLDER THAN 4.26: SERVO PWM ONLY",
     "IOMCU ÄLTER ALS 4.26: NUR SERVO PWM")
-UI_TEXT(OUT_PORT_ASK_WAIT, 66,
+UI_TEXT(OUT_PORT_ASK_WAIT, 60,
     "WAITS FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMER",
     "WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER")
-UI_TEXT(OUT_PORT_ASK_REFUSED, 66,
+UI_TEXT(OUT_PORT_ASK_REFUSED, 60,
     "THE IOMCU REFUSED IT",
     "DER IOMCU HAT ES ABGELEHNT")
-UI_TEXT(OUT_PORT_ASK_LOST, 66,
+UI_TEXT(OUT_PORT_ASK_LOST, 60,
     "LINK LOST BEFORE THE WRITE",
     "VERBINDUNG VOR DEM SCHREIBEN VERLOREN")
-UI_TEXT(OUT_PORT_TESTER_PWM, 66,
+UI_TEXT(OUT_PORT_TESTER_PWM, 60,
     "THE SERVO TESTER NEEDS FUNCTION SERVO PWM",
     "DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM")
-UI_TEXT(OUT_PORT_TESTER_ON, 66,
+UI_TEXT(OUT_PORT_TESTER_ON, 60,
     "SERVO TESTER DRIVES PROG PORT %u",
     "SERVO-TESTER STEUERT PROG-PORT %u")
 UI_TEXT(OUT_PORT_TESTER, 0,
@@ -725,13 +737,13 @@ UI_TEXT(OUT_TESTER_OUTPUTS, 0,
 UI_TEXT(OUT_PORT_PWM, 0,
     "PORT PWM",
     "PORT-PWM")
-UI_TEXT(OUT_PORT_HELD, 66,
+UI_TEXT(OUT_PORT_HELD, 60,
     "LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT",
     "GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT")
-UI_TEXT(OUT_PORT_LOCKED, 66,
+UI_TEXT(OUT_PORT_LOCKED, 60,
     "LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS",
     "GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT")
-UI_TEXT(OUT_PORT_PWM_NEEDS, 66,
+UI_TEXT(OUT_PORT_PWM_NEEDS, 60,
     "PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET",
     "PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS")
 UI_TEXT(OUT_SLICE_OF, 14,
@@ -740,10 +752,10 @@ UI_TEXT(OUT_SLICE_OF, 14,
 UI_TEXT(OUT_COMPARE_OF, 14,
     "PWM CH OF GP%u",
     "KANAL VON GP%u")
-UI_TEXT(OUT_SLICE_WHY, 66,
+UI_TEXT(OUT_SLICE_WHY, 60,
     "GP%u: SHARES PWM SLICE WITH PROG PORT GP%u",
     "GP%u: TEILT PWM-SLICE MIT PROG-PORT GP%u")
-UI_TEXT(OUT_COMPARE_WHY, 66,
+UI_TEXT(OUT_COMPARE_WHY, 60,
     "GP%u: SAME PWM CHANNEL AS GP%u",
     "GP%u: GLEICHER PWM-KANAL WIE GP%u")
 /* PICK A PIN with a PROG PORT picked: the count line names its function,
@@ -751,34 +763,34 @@ UI_TEXT(OUT_COMPARE_WHY, 66,
 UI_TEXT(PK_PORT_FN, 0,
     "FUNCTION: %s",
     "FUNKTION: %s")
-UI_TEXT(PK_PORT_SLICE_WHY, 66,
+UI_TEXT(PK_PORT_SLICE_WHY, 52,
     "GP%u: SHARES PWM SLICE WITH OUTPUT GP%u",
     "GP%u: TEILT PWM-SLICE MIT OUTPUT GP%u")
 UI_TEXT(OUT_LAST_WRITE, 0,
     "LAST WRITE",
     "LETZTER SCHREIBVORGANG")
-UI_TEXT(OUT_WRITTEN, 32,
+UI_TEXT(OUT_WRITTEN, 30,
     "WRITTEN",
     "GESCHRIEBEN")
-UI_TEXT(OUT_REFUSED, 32,
+UI_TEXT(OUT_REFUSED, 30,
     "REFUSED",
     "ABGELEHNT")
-UI_TEXT(OUT_NOT_WRITTEN, 32,
+UI_TEXT(OUT_NOT_WRITTEN, 30,
     "NOT WRITTEN",
     "NICHT GESCHRIEBEN")
-UI_TEXT(OUT_NO_LINK, 32,
+UI_TEXT(OUT_NO_LINK, 30,
     "NO LINK",
     "KEINE VERBINDUNG")
-UI_TEXT(OUT_OFF_VIEW, 66,
+UI_TEXT(OUT_OFF_VIEW, 60,
     "CHOOSE A PROTOCOL, THEN TAP PINS",
     "PROTOKOLL WÄHLEN, DANN PIN TIPPEN")
-UI_TEXT(OUT_NOT_READ, 66,
+UI_TEXT(OUT_NOT_READ, 60,
     "ASSIGNMENT NOT READ. EDITING LOCKED.",
     "ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.")
-UI_TEXT(OUT_NOT_MAPPED, 66,
+UI_TEXT(OUT_NOT_MAPPED, 60,
     "NO VALID ASSIGNMENT IN THE PAGES",
     "KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES")
-UI_TEXT(OUT_HOLD_UNBIND, 62,
+UI_TEXT(OUT_HOLD_UNBIND, 56,
     "HOLD: CLEAR ALL PIN ASSIGNMENTS",
     "HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN")
 
@@ -792,7 +804,7 @@ UI_TEXT(PK_PAD, 0,
 UI_TEXT(PK_SLOTS_OF, 0,
     "%u OF %u SLOTS IN USE",
     "%u VON %u PLÄTZEN BELEGT")
-UI_TEXT(PK_NONE_YET, 15,
+UI_TEXT(PK_NONE_YET, 18,
     "NONE YET",
     "NOCH KEINE")
 UI_TEXT(PK_IN_USE, 0,
@@ -801,22 +813,22 @@ UI_TEXT(PK_IN_USE, 0,
 UI_TEXT(PK_BY_OTHERS, 0,
     "BY OTHERS",
     "VON ANDEREN")
-UI_TEXT(PK_NONE, 16,
+UI_TEXT(PK_NONE, 17,
     "NONE",
     "KEINE")
 UI_TEXT(PK_NOT_READ, 35,
     "NOT READ",
     "NICHT AUSGELESEN")
-UI_TEXT(PK_NO_ART_1, 30,
+UI_TEXT(PK_NO_ART_1, 31,
     "NO BOARD IMAGE AVAILABLE",
     "KEIN PLATINENBILD VERFÜGBAR")
-UI_TEXT(PK_NO_ART_2, 60,
+UI_TEXT(PK_NO_ART_2, 52,
     "THE BOARD DOES NOT REPORT ITS PAD POSITIONS.",
     "DIE PLATINE MELDET KEINE PAD-POSITIONEN.")
-UI_TEXT(PK_NO_ART_3, 60,
+UI_TEXT(PK_NO_ART_3, 52,
     "AN ACCURATE DRAWING IS NOT POSSIBLE.",
     "EINE GENAUE ZEICHNUNG IST DAHER NICHT MÖGLICH.")
-UI_TEXT(PK_NO_ART_4, 60,
+UI_TEXT(PK_NO_ART_4, 52,
     "SEE ITS PINS ON THE OUTPUTS SCREEN.",
     "DIE PINS FINDEN SICH AUF DER SEITE OUTPUTS.")
 
@@ -834,8 +846,8 @@ UI_TEXT(AN_NOTHING_YET, 68,
     "No data decoded yet.",
     "Noch keine Daten dekodiert.")
 UI_TEXT(AN_BYTES, 68,
-    "%u bytes; a %u us gap separates frames",
-    "%u Bytes; %u us Pause trennen die Frames")
+    "%u bytes; a %uus gap separates frames",
+    "%u Bytes; %uus Pause trennen die Frames")
 UI_TEXT(AN_SILENT, 11,
     "NO SIGNAL",
     "KEIN SIGNAL")
@@ -902,8 +914,8 @@ UI_TEXT(BAT_USED, 0,
     "USED",
     "ENTNOMMEN")
 UI_TEXT(BAT_USED_OF, 0,
-    "%d of %d mAh",
-    "%d von %d mAh")
+    "%d of %dmAh",
+    "%d von %dmAh")
 UI_TEXT(BAT_NOTE_1, 0,
     "Cell readings are compared under load.",
     "Zellwerte werden unter Last verglichen.")
@@ -1069,7 +1081,7 @@ UI_TEXT(BAL_WHERE, 0,
     "WHERE",
     "WO")
 UI_TEXT(BAL_HUB, 0,
-    "hub, %d deg",
+    "hub, %ddeg",
     "Nabe, %d Grad")
 UI_TEXT(BAL_BETWEEN, 0,
     "between %d and %d",
@@ -1084,7 +1096,7 @@ UI_TEXT(BAL_NOTE_1, 0,
     "Four runs: one baseline, then a",
     "Vier Läufe: Referenz, dann eine")
 UI_TEXT(BAL_NOTE_2, 0,
-    "trial mass at 0, 120 and 240 deg.",
+    "trial mass at 0, 120 and 240deg.",
     "Testmasse bei 0, 120 und 240 Grad.")
 UI_TEXT(BAL_NOTE_3, 0,
     "An index pulse halves the runs.",
@@ -1106,8 +1118,11 @@ UI_TEXT(SET_HUB_WIFI, 0,
 UI_TEXT(SET_HUB_UPDATES, 0,
     "RELEASES ON GITHUB",
     "VERSIONEN AUF GITHUB")
+UI_TEXT(SET_HUB_FILES, 0,
+    "FOLDERS AND FILES",
+    "ORDNER UND DATEIEN")
 /* INTERFACES' section headings, in the order of its rows.  A heading is
- * drawn in a list row of 776 px, 16 px a character less the margins. */
+ * drawn in a list row of 776px, 16px a character less the margins. */
 UI_TEXT(SET_HD_I2C, 40,
     "I2C BUS",
     "I2C-BUS")
@@ -1163,8 +1178,8 @@ UI_TEXT(SENS_ST_NO_BUS, 56,
     "SENSOR SDA OR SCL UNSET",
     "SENSOR-SDA ODER -SCL NICHT FESTGELEGT")
 UI_TEXT(SET_SENS_OLD, 65,
-    "IOmcu older than 4.25: one INA3221, CH1 at 1 kHz.",
-    "IOmcu älter als 4.25: ein INA3221, CH1 mit 1 kHz.")
+    "IOmcu older than 4.25: one INA3221, CH1 at 1kHz.",
+    "IOmcu älter als 4.25: ein INA3221, CH1 mit 1kHz.")
 UI_TEXT(SET_SENS_LIM_OLD, 65,
     "IOmcu older than 4.27: no limit is judged.",
     "IOmcu älter als 4.27: keine Grenze wird geprüft.")
@@ -1284,8 +1299,8 @@ UI_TEXT(MO_TAB_TABLE, 0,
     "TABLE",
     "TABELLE")
 UI_TEXT(MO_RATE_ERR, 0,
-    "%d Hz   ERR %lu",
-    "%d Hz   FEHLER %lu")
+    "%dHz   ERR %lu",
+    "%dHz   FEHLER %lu")
 UI_TEXT(MO_TABLE_HEAD, 46,
     "CHANNEL        NOW            PEAK",
     "KANAL          JETZT          SPITZE")
@@ -1415,13 +1430,13 @@ UI_TEXT(SUP_LINE_TRIP_I, 0,
 UI_TEXT(SUP_LINE_TRIP_V, 0,
     "Overvoltage trip.",
     "Wegen Überspannung abgeschaltet.")
-UI_TEXT(SUP_LINE_CC, 22,
+UI_TEXT(SUP_LINE_CC, 36,
     "Current limit active.",
     "Strombegrenzung aktiv.")
 UI_TEXT(SUP_LINE_CV, 0,
     "At the set voltage.",
     "Sollspannung erreicht.")
-UI_TEXT(SUP_LINE_PORT, 22,
+UI_TEXT(SUP_LINE_PORT, 0,
     "Servo programmer.",
     "Servoprogrammierung.")
 UI_TEXT(SUP_MODEL, 0,
@@ -1445,13 +1460,13 @@ UI_TEXT(SUP_SETTINGS, 0,
 UI_TEXT(SUP_MODE, 0,
     "MODE",
     "MODUS")
-UI_TEXT(SUP_TABLE_HEAD, 46,
+UI_TEXT(SUP_TABLE_HEAD, 0,
     "CHANNEL        SET            NOW",
     "KANAL          SOLL           JETZT")
 UI_TEXT(SUP_CLOSE, 0,
     "CLOSE",
     "SCHLIESSEN")
-UI_TEXT(SUP_RESET_PDMINI, 24,
+UI_TEXT(SUP_RESET_PDMINI, 0,
     "RESET PD MINI",
     "PD MINI ZURÜCKSETZEN")
 UI_TEXT(SUP_CAPS, 0,
@@ -1475,16 +1490,16 @@ UI_TEXT(SUP_HELP_2, 0,
 UI_TEXT(SUP_HELP_3, 0,
     "the set trip time.",
     "über seiner Abschaltgrenze liegt.")
-UI_TEXT(SUP_SAVED, 64,
+UI_TEXT(SUP_SAVED, 60,
     "SAVED",
     "GESPEICHERT")
 UI_TEXT(SUP_SAVE_WAITING, 0,
     "SAVE PENDING",
     "SPEICHERN AUSSTEHEND")
-UI_TEXT(SUP_NOT_SAVED, 64,
+UI_TEXT(SUP_NOT_SAVED, 60,
     "NOT SAVED",
     "NICHT GESPEICHERT")
-UI_TEXT(SUP_SETUP_NOT_SAVED, 64,
+UI_TEXT(SUP_SETUP_NOT_SAVED, 0,
     "SETUP CHANGES NOT SAVED",
     "ÄNDERUNGEN IN SETUP NICHT GESPEICHERT")
 UI_TEXT(SUP_OUTPUT_IS_ON, 0,
@@ -1525,10 +1540,10 @@ UI_TEXT(LOG_CANNOT_OPEN, 28,
 UI_TEXT(LOG_IS_FOLDER, 26,
     "%s is a folder.",
     "%s ist ein Ordner.")
-/* OPEN on a file over LOG_VIEWER_OPEN_MAX, 2 GiB less 1 byte. */
+/* OPEN on a file over LOG_VIEWER_OPEN_MAX, 2GiB less 1 byte. */
 UI_TEXT(LOG_TOO_BIG, 44,
-    "%s is 2 GB or larger. Not opened.",
-    "%s ist 2 GB oder größer. Nicht geöffnet.")
+    "%s is 2GB or larger. Not opened.",
+    "%s ist 2GB oder größer. Nicht geöffnet.")
 UI_TEXT(LOG_CANNOT_DELETE, 28,
     "Cannot delete %s.",
     "%s lässt sich nicht löschen.")
@@ -1763,11 +1778,11 @@ UI_TEXT(LOG_PICK_FIRST, 64,
     "Choose a file first.",
     "Wähle zuerst eine Datei.")
 UI_TEXT(LOG_SUMMARY, 0,
-    "%s   %d ROWS   %.2f s   %.0f Hz",
-    "%s   %d ZEILEN   %.2f s   %.0f Hz")
+    "%s   %d ROWS   %.2fs   %.0fHz",
+    "%s   %d ZEILEN   %.2fs   %.0fHz")
 UI_TEXT(LOG_AT_TIME, 0,
-    "t = %.3f s   sample %d/%d",
-    "t = %.3f s   Messpunkt %d/%d")
+    "t = %.3fs   sample %d/%d",
+    "t = %.3fs   Messpunkt %d/%d")
 UI_TEXT(LOG_AT_ROW, 50,
     "row %d of %d   (no time column)",
     "Zeile %d von %d   (keine Zeitspalte)")
@@ -1775,14 +1790,289 @@ UI_TEXT(LOG_UNREADABLE_CELLS, 50,
     "%d CELLS UNREADABLE",
     "%d ZELLEN UNLESBAR")
 /* The TEXT view's last row, under a report longer than LOG_TEXT_MAX: its
- * size in kB.  A row of the view is 86 cells. */
-UI_TEXT(LOG_TEXT_CUT, 86,
-    "Only the first %u kB are shown.",
-    "Nur die ersten %u kB werden gezeigt.")
+ * size in kB.  A row of the view is 92 cells. */
+UI_TEXT(LOG_TEXT_CUT, 92,
+    "Only the first %ukB are shown.",
+    "Nur die ersten %ukB werden gezeigt.")
 /* The TEXT view's one row for a report of 0 bytes. */
-UI_TEXT(LOG_TEXT_EMPTY, 86,
+UI_TEXT(LOG_TEXT_EMPTY, 92,
     "The file is empty.",
     "Die Datei ist leer.")
+
+/* --------------------------------------------------------------- FILES */
+/* The footer's buttons, 118px of the 10 x 20 face: 11 cells at most.
+ * OPEN, DELETE and RESCAN are LOGS' (LOG_OPEN, LOG_DELETE, LOG_RESCAN). */
+UI_TEXT(FM_COPY, 0,
+    "COPY",
+    "KOPIEREN")
+UI_TEXT(FM_MOVE, 0,
+    "MOVE",
+    "VERSCHIEBEN")
+UI_TEXT(FM_RENAME, 0,
+    "RENAME",
+    "UMBENENNEN")
+UI_TEXT(FM_NEW, 0,
+    "NEW",
+    "NEU")
+UI_TEXT(FM_INFO, 0,
+    "INFO",
+    "INFO")
+UI_TEXT(FM_CLOSE, 0,
+    "CLOSE",
+    "SCHLIESSEN")
+/* NEW's choice; its folder is FM_KIND_FOLDER. */
+UI_TEXT(FM_NEW_FILE, 0,
+    "TEXT FILE",
+    "TEXTDATEI")
+/* A pane's heading: what the folder holds, and which part of it the page
+ * shows when it holds more than one page; the entries a walk left out
+ * after it. */
+UI_TEXT(FM_ENTRIES, 0,
+    "%d ENTRIES",
+    "%d EINTRÄGE")
+UI_TEXT(FM_ENTRY_ONE, 0,
+    "1 ENTRY",
+    "1 EINTRAG")
+UI_TEXT(FM_ENTRIES_OF, 0,
+    "ENTRIES %d TO %d OF %d",
+    "EINTRÄGE %d BIS %d VON %d")
+UI_TEXT(FM_UNLISTED, 0,
+    " + %u NOT LISTED",
+    " + %u NICHT GELISTET")
+/* A pane read for the first time and not answered yet. */
+UI_TEXT(FM_READING, 0,
+    "READING THE CARD",
+    "LESE DIE KARTE")
+/* A pane with no rows, in the pane's 420px: 35 cells of the 12 x 24
+ * face a line, two lines. */
+UI_TEXT(FM_EMPTY, 0,
+    "Empty folder.",
+    "Leerer Ordner.")
+UI_TEXT(FM_NO_FOLDER, 0,
+    "This folder is not on the card.",
+    "Dieser Ordner ist nicht auf der Karte.")
+UI_TEXT(FM_HIDDEN, 0,
+    "Only hidden entries or names over 63 bytes.",
+    "Nur versteckte Einträge oder Namen über 63 Bytes.")
+/* What an entry is, on its row's second line (8 x 16) and in INFO. */
+UI_TEXT(FM_KIND_FOLDER, 0,
+    "FOLDER",
+    "ORDNER")
+UI_TEXT(FM_KIND_RUN, 0,
+    "LOG",
+    "AUFZEICHNUNG")
+UI_TEXT(FM_KIND_REPORT, 0,
+    "REPORT",
+    "BERICHT")
+UI_TEXT(FM_KIND_KST, 0,
+    "SERVO FILE",
+    "SERVODATEI")
+UI_TEXT(FM_KIND_PROFILE, 0,
+    "ESC PROFILE",
+    "ESC-PROFIL")
+UI_TEXT(FM_KIND_FAULT, 0,
+    "FAULT LOG",
+    "FEHLERPROTOKOLL")
+UI_TEXT(FM_KIND_CSV, 0,
+    "CSV",
+    "CSV")
+UI_TEXT(FM_KIND_JSON, 0,
+    "JSON",
+    "JSON")
+UI_TEXT(FM_KIND_TEXT, 0,
+    "TEXT",
+    "TEXT")
+UI_TEXT(FM_KIND_OTHER, 0,
+    "FILE",
+    "DATEI")
+/* After the kind, in the warning colour: the logger writes the file, the
+ * servo programmer's record, a folder the bench keeps. */
+UI_TEXT(FM_WRITING, 0,
+    "WRITING",
+    "WIRD GESCHRIEBEN")
+UI_TEXT(FM_LOCKED, 0,
+    "LOCKED",
+    "GESPERRT")
+UI_TEXT(FM_FIXED, 0,
+    "FIXED",
+    "FEST")
+/* The message line while the write gate is shut (fm_gate()). */
+UI_TEXT(FM_GATE_ARMED, 0,
+    "Bench ARMED. The card is read-only.",
+    "Prüfstand ARMED. Die Karte ist nur lesbar.")
+UI_TEXT(FM_GATE_LOGGING, 0,
+    "A run is being logged. The card is read-only.",
+    "Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.")
+/* The message line after a job; two lines of 84 cells of the 12 x 24
+ * face.  A deletion is LOG_DELETED. */
+UI_TEXT(FM_COPIED, 84,
+    "%s copied.",
+    "%s kopiert.")
+UI_TEXT(FM_MOVED, 84,
+    "%s moved.",
+    "%s verschoben.")
+UI_TEXT(FM_RENAMED, 84,
+    "%s renamed to %s.",
+    "%s umbenannt in %s.")
+UI_TEXT(FM_MADE, 0,
+    "%s made.",
+    "%s angelegt.")
+/* Why a job was refused, failed or stopped (fm_err_t), on the message
+ * line. */
+UI_TEXT(FM_E_NO_CARD, 84,
+    "No card. Insert one and tap RESCAN.",
+    "Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.")
+UI_TEXT(FM_E_CARD_GONE, 84,
+    "The card was taken out or swapped. Tap RESCAN.",
+    "Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.")
+UI_TEXT(FM_E_NOT_FOUND, 84,
+    "%s is not on the card. Tap RESCAN.",
+    "%s ist nicht auf der Karte. Tippe auf AKTUALISIEREN.")
+UI_TEXT(FM_E_EXISTS, 0,
+    "%s exists there already.",
+    "%s gibt es dort schon.")
+UI_TEXT(FM_E_FULL, 84,
+    "The card or the folder is full.",
+    "Die Karte oder der Ordner ist voll.")
+UI_TEXT(FM_E_DENIED, 84,
+    "The card takes no writes: write-protected.",
+    "Die Karte nimmt nichts an: schreibgeschützt.")
+UI_TEXT(FM_E_BUSY, 0,
+    "%s is being written.",
+    "%s wird gerade geschrieben.")
+UI_TEXT(FM_E_FIXED, 0,
+    "%s is kept by the bench.",
+    "%s gehört dem Prüfstand.")
+UI_TEXT(FM_E_LOCKED, 0,
+    "%s is the servo programmer's record.",
+    "%s ist der Vermerk der Servoprogrammierung.")
+UI_TEXT(FM_E_NAME, 84,
+    "The name or the path does not fit the card.",
+    "Name oder Pfad passt nicht auf die Karte.")
+UI_TEXT(FM_E_ARG, 84,
+    "Not possible for %s.",
+    "Für %s nicht möglich.")
+UI_TEXT(FM_E_IO, 84,
+    "The card did not read or write.",
+    "Die Karte hat nicht gelesen oder geschrieben.")
+UI_TEXT(FM_E_NOT_EMPTY, 84,
+    "%s is not empty.",
+    "%s ist nicht leer.")
+UI_TEXT(FM_E_SAME, 84,
+    "Both panes show this folder, or the target is inside it.",
+    "Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.")
+UI_TEXT(FM_E_CANCELLED, 84,
+    "Stopped by CANCEL.",
+    "Mit ABBRECHEN gestoppt.")
+UI_TEXT(FM_E_STOP_ARMED, 84,
+    "Stopped: the bench switched to ARMED.",
+    "Gestoppt: Der Prüfstand ist ARMED.")
+UI_TEXT(FM_E_STOP_LOGGING, 84,
+    "Stopped: a run is being logged.",
+    "Gestoppt: Ein Lauf wird aufgezeichnet.")
+UI_TEXT(FM_SELECT_FIRST, 84,
+    "Select an entry first.",
+    "Wähle zuerst einen Eintrag.")
+/* OPEN on a file LOGS does not show. */
+UI_TEXT(FM_OPEN_WHERE, 84,
+    "LOGS opens .csv files and reports in ROOT, USER and BENCH.",
+    "LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.")
+/* The DELETE question of a folder, and of a run with its report.  The
+ * title and the file's sentence are LOGS' (LOG_DELETE_TITLE,
+ * LOG_DELETE_WHAT, LOG_DELETE_FINAL). */
+UI_TEXT(FM_DELETE_FOLDER, 0,
+    "This deletes the empty folder from the card.",
+    "Der leere Ordner wird von der Karte gelöscht.")
+UI_TEXT(FM_DELETE_REPORT, 52,
+    "Its report %s goes with it.",
+    "Sein Bericht %s wird mitgelöscht.")
+/* The progress box's title, the job's name after it. */
+UI_TEXT(FM_JOB_COPY, 0,
+    "COPYING",
+    "KOPIERE")
+UI_TEXT(FM_JOB_MOVE, 50,
+    "MOVING",
+    "VERSCHIEBE")
+UI_TEXT(FM_JOB_RENAME, 50,
+    "RENAMING",
+    "BENENNE UM")
+UI_TEXT(FM_JOB_DELETE, 50,
+    "DELETING",
+    "LÖSCHE")
+UI_TEXT(FM_JOB_MAKE, 50,
+    "MAKING",
+    "LEGE AN")
+/* Under the bar: the bytes done of the bytes to do, and the target. */
+UI_TEXT(FM_JOB_OF, 0,
+    "%s of %s",
+    "%s von %s")
+UI_TEXT(FM_JOB_TO, 0,
+    "To %s",
+    "Nach %s")
+/* INFO: the box's title for a file (a folder's is FM_KIND_FOLDER), the
+ * keys of its rows in 16 cells, and the values that are words. */
+UI_TEXT(FM_INFO_FILE, 0,
+    "FILE",
+    "DATEI")
+UI_TEXT(FM_INFO_NAME, 0,
+    "Name",
+    "Name")
+UI_TEXT(FM_INFO_FOLDER, 0,
+    "Folder",
+    "Ordner")
+UI_TEXT(FM_INFO_KIND, 0,
+    "Kind",
+    "Art")
+UI_TEXT(FM_INFO_SIZE, 0,
+    "Size",
+    "Größe")
+UI_TEXT(FM_INFO_TIME, 0,
+    "Modified",
+    "Geändert")
+UI_TEXT(FM_INFO_ENTRIES, 0,
+    "Entries",
+    "Einträge")
+UI_TEXT(FM_INFO_RULE, 0,
+    "Rule",
+    "Regel")
+UI_TEXT(FM_INFO_COUNT, 0,
+    "%u, their files %s",
+    "%u, ihre Dateien %s")
+UI_TEXT(FM_INFO_UNLISTED, 0,
+    "%u not listed",
+    "%u nicht gelistet")
+UI_TEXT(FM_INFO_NO_TIME, 62,
+    "not known",
+    "nicht bekannt")
+UI_TEXT(FM_INFO_READING, 62,
+    "reading the card",
+    "lese die Karte")
+/* INFO's Rule row: what the bench keeps an entry from. */
+UI_TEXT(FM_RULE_FREE, 0,
+    "none",
+    "keine")
+UI_TEXT(FM_RULE_FIXED, 0,
+    "A folder of the bench: no RENAME, MOVE or DELETE.",
+    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN, LÖSCHEN.")
+UI_TEXT(FM_RULE_LOCKED, 62,
+    "The servo programmer's record: INFO only.",
+    "Vermerk der Servoprogrammierung: nur INFO.")
+UI_TEXT(FM_RULE_FAULT, 62,
+    "COPY and DELETE while the IOmcu link is up.",
+    "KOPIEREN und LÖSCHEN bei Verbindung zur IOmcu.")
+UI_TEXT(FM_RULE_BUSY, 62,
+    "The logger writes it: INFO only.",
+    "Wird aufgezeichnet: nur INFO.")
+/* The keyboard's title for a name. */
+UI_TEXT(FM_TK_FOLDER, 0,
+    "NEW FOLDER",
+    "NEUER ORDNER")
+UI_TEXT(FM_TK_FILE, 0,
+    "NEW TEXT FILE",
+    "NEUE TEXTDATEI")
+UI_TEXT(FM_TK_RENAME, 0,
+    "NEW NAME",
+    "NEUER NAME")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport
@@ -1913,8 +2203,8 @@ UI_TEXT(PG_RANGE_OF, 0,
 
 /* ----------------------------------------------------------- ESC STICK */
 UI_TEXT(SP_NEEDS_V, 51,
-    "needs %u.%u V; limit %u.%u V",
-    "benötigt %u.%u V; Grenze %u.%u V")
+    "needs %u.%uV; limit %u.%uV",
+    "benötigt %u.%uV; Grenze %u.%uV")
 UI_TEXT(SP_AT_MOST, 146,
     "Up to %u changes per run.",
     "Höchstens %u Änderungen pro Lauf.")
@@ -1922,47 +2212,47 @@ UI_TEXT(SP_NO_CELLS, 146,
     "Profile has no cell count. Set VOLTAGE on the TIMING page.",
     "Keine Zellenzahl im Profil. SPANNUNG auf der Seite TIMING einstellen.")
 UI_TEXT(SP_ABOVE_CAP, 146,
-    "%u.%02u V exceeds the SUPPLY limit of %u.%02u V.",
-    "%u.%02u V liegt über der SUPPLY-Grenze von %u.%02u V.")
+    "%u.%02uV exceeds the SUPPLY limit of %u.%02uV.",
+    "%u.%02uV liegt über der SUPPLY-Grenze von %u.%02uV.")
 UI_TEXT(SP_BELOW_MIN, 146,
-    "VOLTAGE is below the supply minimum of %u.%02u V.",
-    "SPANNUNG liegt unter der Netzteil-Untergrenze von %u.%02u V.")
+    "VOLTAGE is below the supply minimum of %u.%02uV.",
+    "SPANNUNG liegt unter der Netzteil-Untergrenze von %u.%02uV.")
 UI_TEXT(SP_ITEM_NOT_HERE, 146,
     "%u %s is not available on this model.",
     "%u %s ist bei diesem Modell nicht verfügbar.")
 UI_TEXT(SP_V_OVER_ESC, 51,
-    "%u.%u V; ESC maximum %u.%u V",
-    "%u.%u V; ESC höchstens %u.%u V")
+    "%u.%uV; ESC maximum %u.%uV",
+    "%u.%uV; ESC höchstens %u.%uV")
 UI_TEXT(SP_V_OVER_ESC_NOTE, 146,
-    "VOLTAGE %u.%u V exceeds the ESC limit of %u.%u V.",
-    "SPANNUNG %u.%u V liegt über der ESC-Grenze von %u.%u V.")
+    "VOLTAGE %u.%uV exceeds the ESC limit of %u.%uV.",
+    "SPANNUNG %u.%uV liegt über der ESC-Grenze von %u.%uV.")
 UI_TEXT(SP_V_CELLS_OVER_ESC_NOTE, 146,
-    "The selected cell count gives %u.%u V, above the ESC limit of %u.%u V.",
-    "Die gewählte Zellenzahl ergibt %u.%u V, über der ESC-Grenze von %u.%u V.")
+    "The selected cell count gives %u.%uV, above the ESC limit of %u.%uV.",
+    "Die gewählte Zellenzahl ergibt %u.%uV, über der ESC-Grenze von %u.%uV.")
 UI_TEXT(SP_V_UNRATED, 51,
     "ESC voltage rating unknown.",
     "Zulässige ESC-Spannung unbekannt.")
 UI_TEXT(SP_V_UNRATED_CELLS_NOTE, 146,
-    "%u.%u V uses the family's lowest cell count. This ESC's rating is unknown.",
-    "%u.%u V aus der kleinsten Zellenzahl dieser Baureihe. Grenze dieses ESC unbekannt.")
+    "%u.%uV uses the family's lowest cell count. This ESC's rating is unknown.",
+    "%u.%uV aus der kleinsten Zellenzahl dieser Baureihe. Grenze dieses ESC unbekannt.")
 UI_TEXT(SP_V_UNRATED_NOTE, 146,
-    "VOLTAGE %u.%u V: check the ESC's voltage rating. It is unknown.",
-    "SPANNUNG %u.%u V: Zulässige ESC-Spannung unbekannt. Bitte prüfen.")
+    "VOLTAGE %u.%uV: check the ESC's voltage rating. It is unknown.",
+    "SPANNUNG %u.%uV: Zulässige ESC-Spannung unbekannt. Bitte prüfen.")
 UI_TEXT(SP_V_UNDER_ESC, 51,
-    "%u.%u V; ESC minimum %u.%u V",
-    "%u.%u V; ESC mindestens %u.%u V")
+    "%u.%uV; ESC minimum %u.%uV",
+    "%u.%uV; ESC mindestens %u.%uV")
 UI_TEXT(SP_V_UNDER_ESC_NOTE, 146,
-    "VOLTAGE %u.%u V is below the ESC minimum of %u.%u V.",
-    "SPANNUNG %u.%u V liegt unter der ESC-Untergrenze von %u.%u V.")
+    "VOLTAGE %u.%uV is below the ESC minimum of %u.%uV.",
+    "SPANNUNG %u.%uV liegt unter der ESC-Untergrenze von %u.%uV.")
 UI_TEXT(SP_I_OVER_ESC, 51,
-    "%u.%u A; ESC maximum %u A",
-    "%u.%u A; ESC höchstens %u A")
+    "%u.%uA; ESC maximum %uA",
+    "%u.%uA; ESC höchstens %uA")
 UI_TEXT(SP_I_OVER_ESC_NOTE, 146,
-    "CURRENT LIMIT %u.%u A exceeds the ESC rating of %u A.",
-    "STROMBEGRENZUNG %u.%u A liegt über der ESC-Grenze von %u A.")
+    "CURRENT LIMIT %u.%uA exceeds the ESC rating of %uA.",
+    "STROMBEGRENZUNG %u.%uA liegt über der ESC-Grenze von %uA.")
 UI_TEXT(SP_I_ABOVE_CAP, 146,
-    "CURRENT LIMIT exceeds the SUPPLY limit of %u.%02u A.",
-    "STROMBEGRENZUNG liegt über der SUPPLY-Grenze von %u.%02u A.")
+    "CURRENT LIMIT exceeds the SUPPLY limit of %u.%02uA.",
+    "STROMBEGRENZUNG liegt über der SUPPLY-Grenze von %u.%02uA.")
 UI_TEXT(SP_SUPPLY_NOT_OFF, 146,
     "No current reading confirms that the supply is off.",
     "Kein aktueller Messwert bestätigt, dass das Netzteil aus ist.")
@@ -2048,17 +2338,17 @@ UI_TEXT(SP_WHY_SUPPLY_LOST, 96,
     "The supply stopped responding.",
     "Das Netzteil antwortet nicht mehr.")
 UI_TEXT(SP_WHY_STALE, 96,
-    "No new supply reading for 1000 ms.",
-    "Seit 1000 ms kein neuer Messwert vom Netzteil.")
+    "No new supply reading for 1000ms.",
+    "Seit 1000ms kein neuer Messwert vom Netzteil.")
 UI_TEXT(SP_WHY_RATE, 96,
     "3 readings in a row arrived too late for BEEP MIN or GAP MIN.",
     "3 Messwerte in Folge kamen zu spät für PIEPTON MIN oder PAUSE MIN.")
 UI_TEXT(SP_WHY_NOT_ARMED, 96,
-    "The bench did not reach ARMED within 3000 ms.",
-    "Der Prüfstand hat ARMED nicht innerhalb von 3000 ms erreicht.")
+    "The bench did not reach ARMED within 3000ms.",
+    "Der Prüfstand hat ARMED nicht innerhalb von 3000ms erreicht.")
 UI_TEXT(SP_WHY_NO_POWER, 96,
-    "The supply did not confirm output ON within 3000 ms.",
-    "Das Netzteil hat den Ausgang nicht innerhalb von 3000 ms als EIN bestätigt.")
+    "The supply did not confirm output ON within 3000ms.",
+    "Das Netzteil hat den Ausgang nicht innerhalb von 3000ms als EIN bestätigt.")
 UI_TEXT(SP_WHY_NO_BEEPS, 96,
     "No beep during SILENCE. Check the load and THRESHOLD.",
     "Kein Piepton während STILLE. Last und SCHWELLE prüfen.")
@@ -2069,11 +2359,11 @@ UI_TEXT(SP_WHY_TIMEOUT, 96,
     "The expected beep sequence was not detected within TIMEOUT.",
     "Die erwartete Pieptonfolge wurde nicht innerhalb von ZEITLIMIT erkannt.")
 UI_TEXT(SP_WHY_HAND, 96,
-    "The manual step was not confirmed with DONE within %u s.",
-    "Der Handgriff wurde nicht innerhalb von %u s mit ERLEDIGT bestätigt.")
+    "The manual step was not confirmed with DONE within %us.",
+    "Der Handgriff wurde nicht innerhalb von %us mit ERLEDIGT bestätigt.")
 UI_TEXT(SP_WHY_SUPPLY_ON, 96,
-    "The supply did not confirm output OFF within 3000 ms.",
-    "Das Netzteil hat den Ausgang nicht innerhalb von 3000 ms als AUS bestätigt.")
+    "The supply did not confirm output OFF within 3000ms.",
+    "Das Netzteil hat den Ausgang nicht innerhalb von 3000ms als AUS bestätigt.")
 UI_TEXT(SP_WHY_TOUCH, 96,
     "Touch events were lost before the bench reached ARMED.",
     "Touch-Ereignisse gingen vor dem Wechsel zu ARMED verloren.")
@@ -2195,20 +2485,20 @@ UI_TEXT(SP_DO_ARMING, 96,
     "Switching to ARMED. Throttle at MIN, supply off.",
     "Wechsel zu ARMED. Gas auf MIN, Netzteil aus.")
 UI_TEXT(SP_DO_SIGNAL, 96,
-    "Throttle at %s for menu entry. Supply switches on in %u ms.",
-    "Gas auf %s zum Menüeinstieg. Netzteil schaltet in %u ms ein.")
+    "Throttle at %s for menu entry. Supply switches on in %ums.",
+    "Gas auf %s zum Menüeinstieg. Netzteil schaltet in %ums ein.")
 UI_TEXT(SP_DO_POWER, 96,
-    "Supply is switching on at %u.%02u V.",
-    "Netzteil schaltet mit %u.%02u V ein.")
+    "Supply is switching on at %u.%02uV.",
+    "Netzteil schaltet mit %u.%02uV ein.")
 UI_TEXT(SP_DO_ENTRY, 96,
-    "Powered on at %s. Menu expected in %u.%u s.",
-    "Mit %s eingeschaltet. Menü in %u.%u s erwartet.")
+    "Powered on at %s. Menu expected in %u.%us.",
+    "Mit %s eingeschaltet. Menü in %u.%us erwartet.")
 UI_TEXT(SP_DO_HOLD, 96,
-    "Keep holding for another %u.%u s.",
-    "Noch %u.%u s weiter halten.")
+    "Keep holding for another %u.%us.",
+    "Noch %u.%us weiter halten.")
 UI_TEXT(SP_DO_LET_GO, 96,
-    "Release now. Menu expected in %u.%u s.",
-    "Jetzt loslassen. Menü in %u.%u s erwartet.")
+    "Release now. Menu expected in %u.%us.",
+    "Jetzt loslassen. Menü in %u.%us erwartet.")
 UI_TEXT(SP_DO_ITEMS, 0,
     "Counting menu groups. Item %u is selected with the stick at %s.",
     "Menügruppen werden gezählt. Punkt %u wird mit Knüppelstellung %s gewählt.")
@@ -2216,14 +2506,14 @@ UI_TEXT(SP_DO_VALUES, 96,
     "Counting value groups. Value %u is saved with the stick at %s.",
     "Wertgruppen werden gezählt. Wert %u wird mit Knüppelstellung %s gespeichert.")
 UI_TEXT(SP_DO_STORE_MOVE, 96,
-    "Stick at %s to save the selection. Holding for %u ms.",
-    "Knüppel auf %s zum Speichern der Auswahl. Halten für %u ms.")
+    "Stick at %s to save the selection. Holding for %ums.",
+    "Knüppel auf %s zum Speichern der Auswahl. Halten für %ums.")
 UI_TEXT(SP_DO_STORE_HOLD, 96,
-    "Holding the selection for %u ms while the ESC responds.",
-    "Auswahl wird %u ms gehalten, während der ESC antwortet.")
+    "Holding the selection for %ums while the ESC responds.",
+    "Auswahl wird %ums gehalten, während der ESC antwortet.")
 UI_TEXT(SP_DO_CYCLE, 96,
-    "Supply off for %u ms before switching on again.",
-    "Netzteil bleibt vor dem nächsten Einschalten %u ms aus.")
+    "Supply off for %ums before switching on again.",
+    "Netzteil bleibt vor dem nächsten Einschalten %ums aus.")
 UI_TEXT(SP_DO_OFF, 96,
     "Supply is switching off. Stick stays at %s until it is off.",
     "Netzteil schaltet aus. Knüppel bleibt bis dahin auf %s.")
@@ -2249,8 +2539,8 @@ UI_TEXT(SP_STATS, 0,
     "GROUPS %u   POWER-UPS %u   THROTTLE %s   SUPPLY %s",
     "GRUPPEN %u   EINSCHALTUNGEN %u   GAS %s   NETZTEIL %s")
 UI_TEXT(SP_CURRENT, 0,
-    "CURRENT %d mA   BASELINE %d mA   READINGS EVERY %u ms",
-    "STROM %d mA   GRUNDSTROM %d mA   MESSWERTE ALLE %u ms")
+    "CURRENT %dmA   BASELINE %dmA   READINGS EVERY %ums",
+    "STROM %dmA   GRUNDSTROM %dmA   MESSWERTE ALLE %ums")
 UI_TEXT(SP_TONE_HEAD, 0,
     "TONE  %s   PITCH %s   LOST %s   MISSED %u",
     "ABGRIFF %s   TONHÖHE %s   VERLOREN %s   VERPASST %u")
@@ -2279,8 +2569,8 @@ UI_TEXT(SP_TONE_NONE, 30,
     "none yet",
     "noch keine")
 UI_TEXT(SP_TONE_BEEP, 0,
-    "#%u  %u.%u ms  %u.%u Hz",
-    "#%u  %u.%u ms  %u.%u Hz")
+    "#%u  %u.%ums  %u.%uHz",
+    "#%u  %u.%ums  %u.%uHz")
 UI_TEXT(SP_ENDS_RUN, 0,
     "STOP or ABORT ends the run: throttle MIN, supply off, bench SAFE.",
     "STOP oder ABBRECHEN beendet den Lauf: Gas auf MIN, Netzteil aus, Prüfstand auf SAFE.")
@@ -2384,8 +2674,8 @@ UI_TEXT(SP_MANY_CHANGES, 39,
     "MULTIPLE CHANGES PER POWER-UP",
     "MEHRERE ÄNDERUNGEN PRO EINSCHALTEN")
 UI_TEXT(SP_SUPPLY_ENTRY, 0,
-    "SUPPLY %u.%02u V  %u.%02u A   ENTRY %u.%u s%s",
-    "NETZTEIL %u.%02u V  %u.%02u A   EINSTIEG %u.%u s%s")
+    "SUPPLY %u.%02uV  %u.%02uA   ENTRY %u.%us%s",
+    "NETZTEIL %u.%02uV  %u.%02uA   EINSTIEG %u.%us%s")
 UI_TEXT(SP_FROM_PROFILE_MARK, 0,
     "(profile)",
     "(Profil)")
@@ -2411,11 +2701,11 @@ UI_TEXT(SP_WARN_5, 0,
     "Beeps are detected and counted from the current.",
     "Die Pieptöne werden anhand des Stroms erkannt und gezählt.")
 UI_TEXT(SP_WARN_SUPPLY, 96,
-    "SUPPLY %u.%02u V  %u.%02u A   %u CHANGE",
-    "NETZTEIL %u.%02u V  %u.%02u A   %u ÄNDERUNG")
+    "SUPPLY %u.%02uV  %u.%02uA   %u CHANGE",
+    "NETZTEIL %u.%02uV  %u.%02uA   %u ÄNDERUNG")
 UI_TEXT(SP_WARN_SUPPLY_N, 0,
-    "SUPPLY %u.%02u V  %u.%02u A   %u CHANGES",
-    "NETZTEIL %u.%02u V  %u.%02u A   %u ÄNDERUNGEN")
+    "SUPPLY %u.%02uV  %u.%02uA   %u CHANGES",
+    "NETZTEIL %u.%02uV  %u.%02uA   %u ÄNDERUNGEN")
 UI_TEXT(SP_WARN_UNVERIFIED, 0,
     "This profile is unverified. All beep times are defaults.",
     "Dieses Profil ist ungeprüft. Alle Pieptonzeiten sind Vorgaben.")
@@ -2450,8 +2740,8 @@ UI_TEXT(SP_HAND_WHEN_AT_POWER, 88,
     "WHILE THE SUPPLY SWITCHES ON",
     "WÄHREND DAS NETZTEIL EINSCHALTET")
 UI_TEXT(SP_HAND_WHEN_AT_POWER_MS, 88,
-    "WHILE THE SUPPLY SWITCHES ON, HOLD FOR %u.%u s",
-    "BEIM EINSCHALTEN DES NETZTEILS, %u.%u s HALTEN")
+    "WHILE THE SUPPLY SWITCHES ON, HOLD FOR %u.%us",
+    "BEIM EINSCHALTEN DES NETZTEILS, %u.%us HALTEN")
 UI_TEXT(SP_HAND_WHEN_BEFORE_MENU, 0,
     "AFTER ENTRY, BEFORE THE MENU",
     "NACH DEM EINSTIEG, VOR DEM MENÜ")
@@ -2498,8 +2788,8 @@ UI_TEXT(SP_PROMPT_AT_POWER, 90,
     "Begin now. Continue this step while tapping DONE to switch the supply on.",
     "Jetzt beginnen. Handgriff beim Tippen auf ERLEDIGT fortsetzen: Das Netzteil schaltet ein.")
 UI_TEXT(SP_PROMPT_HOLD, 90,
-    "Keep holding for %u.%u s after the supply switches on.",
-    "Halte nach dem Einschalten noch %u.%u s weiter.")
+    "Keep holding for %u.%us after the supply switches on.",
+    "Halte nach dem Einschalten noch %u.%us weiter.")
 UI_TEXT(SP_PROMPT_ON, 92,
     "ESC powered, throttle at %s. Complete this step, then tap DONE.",
     "ESC unter Spannung, Gas auf %s. Führe den Handgriff aus und tippe auf ERLEDIGT.")
@@ -2513,14 +2803,14 @@ UI_TEXT(SP_PROMPT_HEARD, 0,
     "The run continues when the correct menu sequence is detected. DONE continues immediately.",
     "Bei der richtigen Menüfolge geht es automatisch weiter. ERLEDIGT setzt den Lauf sofort fort.")
 UI_TEXT(SP_PROMPT_LEFT, 0,
-    "Without DONE within %u s, the run ends: throttle MIN, supply off, bench SAFE.",
-    "Ohne ERLEDIGT innerhalb von %u s endet der Lauf: Gas auf MIN, Netzteil aus, Prüfstand auf SAFE.")
+    "Without DONE within %us, the run ends: throttle MIN, supply off, bench SAFE.",
+    "Ohne ERLEDIGT innerhalb von %us endet der Lauf: Gas auf MIN, Netzteil aus, Prüfstand auf SAFE.")
 UI_TEXT(SP_PROMPT_LEFT_END, 0,
-    "Without DONE within %u s, the run ends and power switches off. The ESC may lock itself.",
-    "Ohne ERLEDIGT innerhalb von %u s endet der Lauf und das Netzteil schaltet aus. Der ESC kann sich sperren.")
+    "Without DONE within %us, the run ends and power switches off. The ESC may lock itself.",
+    "Ohne ERLEDIGT innerhalb von %us endet der Lauf und das Netzteil schaltet aus. Der ESC kann sich sperren.")
 UI_TEXT(SP_PROMPT_LEFT_CUT, 184,
-    "Without DONE within %u s, the run ends and power switches off. The mode may not be saved.",
-    "Ohne ERLEDIGT in %u s endet der Lauf und das Netzteil schaltet aus. Der Modus ist vielleicht nicht gespeichert.")
+    "Without DONE within %us, the run ends and power switches off. The mode may not be saved.",
+    "Ohne ERLEDIGT in %us endet der Lauf und das Netzteil schaltet aus. Der Modus ist vielleicht nicht gespeichert.")
 UI_TEXT(SP_HAND_DONE, 0,
     "DONE",
     "ERLEDIGT")
@@ -2632,8 +2922,8 @@ UI_TEXT(ESC_WHY_THRESHOLD, 146,
     "THRESHOLD must be above HYSTERESIS",
     "SCHWELLE muss über HYSTERESE liegen")
 UI_TEXT(ESC_WHY_ENTRY, 146,
-    "ENTRY must be above 500 ms",
-    "EINSTIEG muss über 500 ms liegen")
+    "ENTRY must be above 500ms",
+    "EINSTIEG muss über 500ms liegen")
 UI_TEXT(ESC_WHY_SELECT_WINDOW, 146,
     "GROUP GAP is outside the selection window",
     "GRUPPENPAUSE liegt außerhalb des Auswahlfensters")
@@ -2727,20 +3017,20 @@ UI_TEXT(SV_ROW_SETTLE, 0,
     "SETTLING TIME",
     "EINSCHWINGZEIT")
 UI_TEXT(SV_ROW_STEP_48, 0,
-    "STEP 4.8 V",
-    "STUFE 4.8 V")
+    "STEP 4.8V",
+    "STUFE 4.8V")
 UI_TEXT(SV_ROW_STEP_60, 0,
-    "STEP 6.0 V",
-    "STUFE 6.0 V")
+    "STEP 6.0V",
+    "STUFE 6.0V")
 UI_TEXT(SV_ROW_HV, 0,
     "HV SERVO",
     "HV-SERVO")
 UI_TEXT(SV_ROW_STEP_74, 0,
-    "STEP 7.4 V",
-    "STUFE 7.4 V")
+    "STEP 7.4V",
+    "STUFE 7.4V")
 UI_TEXT(SV_ROW_STEP_84, 0,
-    "STEP 8.4 V",
-    "STUFE 8.4 V")
+    "STEP 8.4V",
+    "STUFE 8.4V")
 UI_TEXT(SV_ROW_BROWNOUT, 0,
     "BROWN-OUT",
     "BROWN-OUT")
@@ -2788,8 +3078,8 @@ UI_TEXT(SV_AUTO_TEST, 0,
     "AUTOMATIC TEST",
     "AUTOMATISCHER TEST")
 UI_TEXT(SV_STEP_OF, 0,
-    "%s %u OF %u  %.2f V",
-    "%s %u VON %u  %.2f V")
+    "%s %u OF %u  %.2fV",
+    "%s %u VON %u  %.2fV")
 UI_TEXT(SV_PHASE_OF, 31,
     "%s %u OF %u",
     "%s %u VON %u")
@@ -2797,8 +3087,8 @@ UI_TEXT(SV_TEST_VERDICT, 0,
     "TEST %s",
     "TEST %s")
 UI_TEXT(SV_TRAVEL_HOLD, 0,
-    "TRAVEL %lu ms  HOLD %.2f A",
-    "STELLZEIT %lu ms  HALTESTROM %.2f A")
+    "TRAVEL %lums  HOLD %.2fA",
+    "STELLZEIT %lums  HALTESTROM %.2fA")
 UI_TEXT(SV_STOP_TEST, 15,
     "STOP TEST",
     "TEST BEENDEN")
@@ -2873,17 +3163,17 @@ UI_TEXT(SV_RELEASE, 0,
     "RELEASE",
     "FREIGEBEN")
 UI_TEXT(SV_IN_FORCE_OUT, 0,
-    "Active: OUTPUTS run at %u Hz.",
-    "Aktiv: AUSGÄNGE laufen mit %u Hz.")
+    "Active: OUTPUTS run at %uHz.",
+    "Aktiv: AUSGÄNGE laufen mit %uHz.")
 UI_TEXT(SV_IN_FORCE_PORT_PIN, 58,
-    "Active: PROG PORT GP%u runs at %u Hz.",
-    "Aktiv: PROG-PORT GP%u läuft mit %u Hz.")
+    "Active: PROG PORT GP%u runs at %uHz.",
+    "Aktiv: PROG-PORT GP%u läuft mit %uHz.")
 UI_TEXT(SV_IN_FORCE_PORT, 58,
-    "Active: %u Hz on PROG PORT. No pin is assigned to it.",
-    "Aktiv: %u Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.")
+    "Active: %uHz on PROG PORT. No pin is assigned to it.",
+    "Aktiv: %uHz am PROG-PORT. Ihm ist kein Pin zugeordnet.")
 UI_TEXT(SV_IN_FORCE_UNKNOWN, 58,
-    "Active rate: %u Hz. Target unknown.",
-    "Aktive Pulsrate: %u Hz. Ziel unbekannt.")
+    "Active rate: %uHz. Target unknown.",
+    "Aktive Pulsrate: %uHz. Ziel unbekannt.")
 UI_TEXT(SV_IN_FORCE_NO_LINK, 58,
     "No link. The active frame rate is unknown.",
     "Keine Verbindung. Die aktive Pulsrate ist unbekannt.")
@@ -2894,8 +3184,8 @@ UI_TEXT(SV_IN_FORCE_PWM_OFF, 58,
     "PORT PWM is OFF. The port sends no pulses.",
     "PORT-PWM ist AUS. Der Port gibt keine Pulse aus.")
 UI_TEXT(SV_IN_FORCE_SURFACES_1, 58,
-    "Active: all PWM control surfaces run at %u Hz.",
-    "Aktiv: Alle PWM-Ruder laufen mit %u Hz.")
+    "Active: all PWM control surfaces run at %uHz.",
+    "Aktiv: Alle PWM-Ruder laufen mit %uHz.")
 UI_TEXT(SV_IN_FORCE_2, 0,
     "PPM outputs keep their own frame rate.",
     "PPM-Ausgänge behalten ihre eigene Pulsrate.")
@@ -2909,8 +3199,8 @@ UI_TEXT(SV_UNSUPPORTED_1, 0,
     "This IOmcu cannot set the frame rate.",
     "Dieser IOmcu unterstützt keine einstellbare Pulsrate.")
 UI_TEXT(SV_UNSUPPORTED_2, 58,
-    "Each PWM output keeps its assigned rate of 50 Hz.",
-    "Jeder PWM-Ausgang behält seine zugeordnete Rate von 50 Hz.")
+    "Each PWM output keeps its assigned rate of 50Hz.",
+    "Jeder PWM-Ausgang behält seine zugeordnete Rate von 50Hz.")
 UI_TEXT(SV_UNSENT_1, 58,
     "The frame rate will be sent to the IOmcu",
     "Die Pulsrate wird mit der nächsten Position")
@@ -2927,11 +3217,11 @@ UI_TEXT(SV_HOLD_START, 29,
     "HOLD 2 S TO START",
     "2 S HALTEN ZUM STARTEN")
 UI_TEXT(SV_FASTEST, 0,
-    "Highest rate with these pulses: %u Hz (%s gap).",
-    "Höchste Rate mit diesen Pulsen: %u Hz (%s Pause).")
+    "Highest rate with these pulses: %uHz (%s gap).",
+    "Höchste Rate mit diesen Pulsen: %uHz (%s Pause).")
 UI_TEXT(SV_AT_START, 0,
-    "At startup, type and rate reset to STANDARD PWM 50 Hz.",
-    "Beim Start gelten wieder STANDARD PWM und 50 Hz.")
+    "At startup, type and rate reset to STANDARD PWM 50Hz.",
+    "Beim Start gelten wieder STANDARD PWM und 50Hz.")
 /* The limit run on its card on TEST and in its box on the left card: a
  * line of the page holds 58 cells, a line of the box 31, its button 15. */
 UI_TEXT(SV_ROW_LIM_MODE, 0,
@@ -2977,8 +3267,8 @@ UI_TEXT(SV_LIM_PWM_OFF, 58,
     "PORT PWM OFF. NO PULSES ON THIS PORT.",
     "PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.")
 UI_TEXT(SV_LIM_RAIL_LOW, 58,
-    "SERVO SUPPLY BELOW 3.0 V OR NOT READ",
-    "SERVOVERSORGUNG UNTER 3.0 V ODER NICHT AUSGELESEN")
+    "SERVO SUPPLY BELOW 3.0V OR NOT READ",
+    "SERVOVERSORGUNG UNTER 3.0V ODER NICHT AUSGELESEN")
 UI_TEXT(SV_LIM_REFUSED, 58,
     "CENTRE MUST BE BETWEEN PULSE MIN AND MAX",
     "MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN")
@@ -2998,14 +3288,14 @@ UI_TEXT(SV_LIM_PROG_BUSY, 58,
     "PROGRAMMING: PORT IS NOT IN PWM MODE",
     "PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS")
 UI_TEXT(SV_LIM_PROG_LOW, 58,
-    "PROGRAMMING: SUPPLY SET BELOW 4.8 V",
-    "PROGRAMMIEREN: VERSORGUNG AUF UNTER 4.8 V EINGESTELLT")
+    "PROGRAMMING: SUPPLY SET BELOW 4.8V",
+    "PROGRAMMIEREN: VERSORGUNG AUF UNTER 4.8V EINGESTELLT")
 UI_TEXT(SV_LIM_PROG_PD_OFF, 58,
     "PROGRAMMING: PD MINI OUTPUT OFF",
     "PROGRAMMIEREN: PD-MINI-AUSGANG AUS")
 UI_TEXT(SV_LIM_PROG_RAIL, 58,
-    "PROGRAMMING: SERVO RAIL BELOW 4.8 V",
-    "PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8 V")
+    "PROGRAMMING: SERVO RAIL BELOW 4.8V",
+    "PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V")
 UI_TEXT(SV_LIM_TITLE, 31,
     "LIMIT SEARCH",
     "ENDLAGENSUCHE")
@@ -3013,8 +3303,8 @@ UI_TEXT(SV_LIM_TITLE_PROG, 0,
     "LIMIT RUN, %u OF %u VALUES",
     "ENDLAGENLAUF, %u VON %u WERTEN")
 UI_TEXT(SV_LIM_AT, 0,
-    "%s %s END %u us",
-    "%s %s ENDE %u us")
+    "%s %s END %uus",
+    "%s %s ENDE %uus")
 UI_TEXT(SV_LIM_LOW, 0,
     "LOW",
     "UNTERES")
@@ -3037,8 +3327,8 @@ UI_TEXT(SV_LIM_RESTORE, 31,
     "RESTORE IN %s",
     "ZURÜCKSPIELEN IN %s")
 UI_TEXT(SV_LIM_RANGE, 31,
-    "%u-%u NOT IN %u-%u us",
-    "%u-%u NICHT IN %u-%u us")
+    "%u-%u NOT IN %u-%uus",
+    "%u-%u NICHT IN %u-%uus")
 UI_TEXT(SV_DUT_NOTE, 58,
     "This name appears at the top of every test report.",
     "Dieser Name steht oben auf jedem Testbericht.")
@@ -3051,8 +3341,8 @@ UI_TEXT(SV_ENC_NOTE_2, 58,
 /* TEST's run cards: a summary of the run's settings, the last result with
  * its file, and SUPPLY's caps, read-only, naming their home. */
 UI_TEXT(SV_SUM_TIME, 0,
-    "%s, %u s EACH",
-    "%s, JE %u s")
+    "%s, %us EACH",
+    "%s, JE %us")
 UI_TEXT(SV_SUM_MOVES, 0,
     "%s, %u MOVEMENTS EACH",
     "%s, JE %u BEWEGUNGEN")
@@ -3063,8 +3353,8 @@ UI_TEXT(SV_CARD_LAST, 0,
     "LAST: %s %s",
     "ZULETZT: %s %s")
 UI_TEXT(SV_CAPS, 0,
-    "Caps %.2f V %.2f A: SUPPLY > SETTINGS",
-    "Grenzen %.2f V %.2f A: SUPPLY > OPTIONEN")
+    "Caps %.2fV %.2fA: SUPPLY > SETTINGS",
+    "Grenzen %.2fV %.2fA: SUPPLY > OPTIONEN")
 UI_TEXT(SV_HOLD_TO_APPLY, 0,
     "HOLD TO APPLY",
     "HALTEN ZUM ÜBERNEHMEN")
@@ -3072,8 +3362,8 @@ UI_TEXT(SV_DESTROY, 0,
     "CAN DESTROY THE SERVO",
     "KANN DAS SERVO ZERSTÖREN")
 UI_TEXT(SV_DESTROY_WHAT, 0,
-    "%s at %u Hz, %u-%u us",
-    "%s bei %u Hz, %u-%u us")
+    "%s at %uHz, %u-%uus",
+    "%s bei %uHz, %u-%uus")
 UI_TEXT(SV_DESTROY_1, 0,
     "Use only with a servo rated for these settings. Check its datasheet.",
     "Nur mit einem für diese Werte geeigneten Servo nutzen. Datenblatt prüfen.")
@@ -3084,29 +3374,29 @@ UI_TEXT(SV_DESTROY_3, 0,
     "within seconds and be destroyed.",
     "innerhalb von Sekunden und wird zerstört.")
 UI_TEXT(SV_DESTROY_4, 0,
-    "Do not exceed 60 Hz with an analogue servo.",
-    "Bei einem analogen Servo höchstens 60 Hz verwenden.")
+    "Do not exceed 60Hz with an analogue servo.",
+    "Bei einem analogen Servo höchstens 60Hz verwenden.")
 UI_TEXT(SV_DESTROY_5, 0,
-    "Every restart returns to STANDARD PWM 50 Hz.",
-    "Nach jedem Neustart gilt wieder STANDARD PWM 50 Hz.")
+    "Every restart returns to STANDARD PWM 50Hz.",
+    "Nach jedem Neustart gilt wieder STANDARD PWM 50Hz.")
 UI_TEXT(SV_HV_ONLY, 0,
     "HV SERVOS ONLY",
     "NUR HV-SERVOS")
 UI_TEXT(SV_HV_ON_AT, 56,
-    "OUTPUT ON AT %.2f V",
-    "AUSGANG EIN BEI %.2f V")
+    "OUTPUT ON AT %.2fV",
+    "AUSGANG EIN BEI %.2fV")
 UI_TEXT(SV_HV_STEPS, 56,
-    "TEST STEPS UP TO %.2f V",
-    "TESTSTUFEN BIS %.2f V")
+    "TEST STEPS UP TO %.2fV",
+    "TESTSTUFEN BIS %.2fV")
 UI_TEXT(SV_HV_VOLTAGE, 56,
-    "VOLTAGE %.2f -> %.2f V",
-    "SPANNUNG %.2f -> %.2f V")
+    "VOLTAGE %.2f -> %.2fV",
+    "SPANNUNG %.2f -> %.2fV")
 UI_TEXT(SV_HV_1, 0,
-    "Standard servos are rated for 4.8 to 6.0 V.",
-    "Standardservos sind für 4.8 bis 6.0 V ausgelegt.")
+    "Standard servos are rated for 4.8 to 6.0V.",
+    "Standardservos sind für 4.8 bis 6.0V ausgelegt.")
 UI_TEXT(SV_HV_2, 0,
-    "Above 6.0 V, use only an HV (high-voltage) servo",
-    "Über 6.0 V nur ein HV-Servo (Hochvolt) verwenden,")
+    "Above 6.0V, use only an HV (high-voltage) servo",
+    "Über 6.0V nur ein HV-Servo (Hochvolt) verwenden,")
 UI_TEXT(SV_HV_3, 0,
     "rated for the selected voltage.",
     "das für die gewählte Spannung zugelassen ist.")
@@ -3127,6 +3417,11 @@ UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
 UI_TEXT(ALERT_TOUCH_LOST_ARMING, 94,
     "Touch signal lost while switching to ARMED. Stopped.",
     "Touch-Signal beim Wechsel zu ARMED verloren. Gestoppt.")
+/* Screen rotation 180° fell back: the copy into the frame buffer timed out
+ * or failed (gfx_turn.h).  Raised by the render loop. */
+UI_TEXT(ALERT_ROTATION_OFF, 94,
+    "Screen rotation 180° failed. NORMAL until restart.",
+    "Bilddrehung 180° fehlgeschlagen. NORMAL bis zum Neustart.")
 UI_TEXT(ALERT_NO_CARD_RUN, 94,
     "No card. This run is not being recorded.",
     "Keine Karte. Dieser Lauf wird nicht aufgezeichnet.")
@@ -3202,8 +3497,8 @@ UI_TEXT(ALERT_SUPPLY_NO_READING, 94,
     "No readings from the supply. Output off.",
     "Keine Messwerte vom Netzteil. Ausgang aus.")
 UI_TEXT(ALERT_SUPPLY_TRIP, 94,
-    "Supply exceeded %u.%02u %s. Output off.",
-    "Netzteil hat %u.%02u %s überschritten. Ausgang aus.")
+    "Supply exceeded %u.%02u%s. Output off.",
+    "Netzteil hat %u.%02u%s überschritten. Ausgang aus.")
 UI_TEXT(ALERT_TOUCH_ARM_AGAIN, 94,
     "Touch signal lost while switching to ARMED. Hold ARM again.",
     "Touch-Signal beim Wechsel zu ARMED verloren. ARM erneut halten.")
@@ -3274,8 +3569,8 @@ UI_TEXT(ALERT_PDMINI_SET, 94,
     "PD mini did not accept the set values.",
     "PD mini hat die Sollwerte nicht übernommen.")
 UI_TEXT(ALERT_PDMINI_SAG, 94,
-    "PD mini input %u.%02u V is below the required %u.%02u V + 0.5 V. Output off.",
-    "PD-mini-Eingang %u.%02u V liegt unter den nötigen %u.%02u V + 0.5 V. Ausgang aus.")
+    "PD mini input %u.%02uV is below the required %u.%02uV + 0.5V. Output off.",
+    "PD-mini-Eingang %u.%02uV liegt unter den nötigen %u.%02uV + 0.5V. Ausgang aus.")
 UI_TEXT(ALERT_PDMINI_WIRING_LIVE, 94,
     "PD mini wiring rejected. Its output may still be on.",
     "PD-mini-Anschlüsse abgelehnt. Sein Ausgang kann noch eingeschaltet sein.")
@@ -3328,11 +3623,11 @@ UI_TEXT(ALERT_SENSE_I228_CLIPPED, 94,
     "INA228 current at its range limit. Reading shows only the limit.",
     "INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.")
 UI_TEXT(ALERT_SENSE_I3221_CLIPPED, 94,
-    "INA3221 0x%02X CH%u clipped at %u.%02u A. Reading shows only the limit.",
-    "INA3221 0x%02X CH%u bei %u.%02u A übersteuert. Anzeige zeigt nur den Grenzwert.")
+    "INA3221 0x%02X CH%u clipped at %u.%02uA. Reading shows only the limit.",
+    "INA3221 0x%02X CH%u bei %u.%02uA übersteuert. Anzeige zeigt nur den Grenzwert.")
 UI_TEXT(ALERT_SENSE_OVER, 94,
-    "INA3221 0x%02X CH%u%s over its %u.%02u A limit.",
-    "INA3221 0x%02X CH%u%s über der Grenze von %u.%02u A.")
+    "INA3221 0x%02X CH%u%s over its %u.%02uA limit.",
+    "INA3221 0x%02X CH%u%s über der Grenze von %u.%02uA.")
 UI_TEXT(ALERT_SENSE_OVER_LOST, 94,
     "An INA3221 channel passed its limit; which one was lost on the link.",
     "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.")
@@ -3367,8 +3662,8 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu has no TONE page. Phase tap not read.",
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
-    "Phase tap on GP%u, %u to %u Hz rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff an GP%u, %u bis %u Hz abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phase tap on GP%u, %u to %uHz rejected. Check SETUP > INTERFACES.",
+    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
     "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.",
     "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
@@ -3413,34 +3708,34 @@ UI_TEXT(CU_WHY_NOT_STARTED, 36,
     "neue Firmware ist nicht gestartet")
 
 /* --------------------- the splash's details, from the panel's start-up */
-UI_TEXT(SPLASH_NO_PANEL, 55,
+UI_TEXT(SPLASH_NO_PANEL, 47,
     "no panel",
     "kein Panel")
-UI_TEXT(SPLASH_NO_ANSWER, 55,
+UI_TEXT(SPLASH_NO_ANSWER, 47,
     "no response",
     "keine Antwort")
 UI_TEXT(SPLASH_NO_CARD, 0,
     "no card",
     "keine Karte")
-UI_TEXT(SPLASH_CARD_NO_FAT, 55,
+UI_TEXT(SPLASH_CARD_NO_FAT, 47,
     "not FAT32/exFAT",
     "nicht FAT32/exFAT")
-UI_TEXT(SPLASH_CARD_UNREADABLE, 55,
+UI_TEXT(SPLASH_CARD_UNREADABLE, 47,
     "unreadable",
     "nicht lesbar")
-UI_TEXT(SPLASH_NVS_MISSING, 55,
+UI_TEXT(SPLASH_NVS_MISSING, 47,
     "NVS unavailable",
     "NVS nicht verfügbar")
-UI_TEXT(SPLASH_NOT_OPENED, 55,
+UI_TEXT(SPLASH_NOT_OPENED, 47,
     "not opened",
     "nicht geöffnet")
-UI_TEXT(SPLASH_REFUSED, 55,
+UI_TEXT(SPLASH_REFUSED, 47,
     "refused",
     "abgelehnt")
-UI_TEXT(SPLASH_WRONG_REPLY, 55,
+UI_TEXT(SPLASH_WRONG_REPLY, 47,
     "unexpected response",
     "unerwartete Antwort")
-UI_TEXT(SPLASH_NO_LINK, 55,
+UI_TEXT(SPLASH_NO_LINK, 47,
     "no link",
     "keine Verbindung")
 
@@ -3527,14 +3822,14 @@ UI_TEXT(KP_DISCARD, 58,
     "DISCARD EDITS: return to the servo's settings.",
     "ÄNDERUNGEN VERWERFEN: Zurück zu den Servowerten.")
 UI_TEXT(KP_SUPPLY_V, 58,
-    "PROGRAMMING VOLTAGE: %u.%u V",
-    "PROGRAMMIERSPANNUNG: %u.%u V")
+    "PROGRAMMING VOLTAGE: %u.%uV",
+    "PROGRAMMIERSPANNUNG: %u.%uV")
 UI_TEXT(KP_SUPPLY_A, 58,
-    "CURRENT LIMIT: %u mA",
-    "STROMBEGRENZUNG: %u mA")
+    "CURRENT LIMIT: %umA",
+    "STROMBEGRENZUNG: %umA")
 UI_TEXT(KP_PWM_WAIT, 58,
-    "WAIT BEFORE PWM: %u ms",
-    "WARTEZEIT VOR PWM: %u ms")
+    "WAIT BEFORE PWM: %ums",
+    "WARTEZEIT VOR PWM: %ums")
 UI_TEXT(KP_SOFT_TITLE, 27,
     "CHECK THIS CHANGE",
     "ÄNDERUNG PRÜFEN")
@@ -3638,8 +3933,8 @@ UI_TEXT(KP_WRITING, 116,
     "Writing. Do not disconnect.",
     "Schreibvorgang läuft. Nicht trennen.")
 UI_TEXT(KP_PORT_SUPPLY, 30,
-    "PORT  %u.%u V  %u mA",
-    "PORT  %u.%u V  %u mA")
+    "PORT  %u.%uV  %umA",
+    "PORT  %u.%uV  %umA")
 UI_TEXT(KP_ANGLE_NOTE, 116,
     "LEFT ANGLE, RIGHT ANGLE: raw servo values. The unit is unknown.",
     "LEFT ANGLE, RIGHT ANGLE: Werte aus dem Servo. Die Einheit ist unbekannt.")
@@ -3686,8 +3981,8 @@ UI_TEXT(KP_STATE_SYNC, 116,
     "Reading the port state from the IOmcu.",
     "Portzustand wird vom IOmcu ausgelesen.")
 UI_TEXT(KP_STATE_PWM, 116,
-    "Tester is using port %u. CONNECT sets %u.%u V and %u mA.",
-    "Tester nutzt Port %u. VERBINDEN stellt %u.%u V und %u mA ein.")
+    "Tester is using port %u. CONNECT sets %u.%uV and %umA.",
+    "Tester nutzt Port %u. VERBINDEN stellt %u.%uV und %umA ein.")
 UI_TEXT(KP_STATE_PWM_AS_IS, 116,
     "Tester is using port %u. No PD mini: supply stays unchanged.",
     "Tester nutzt Port %u. Kein PD mini: Versorgung bleibt unverändert.")
@@ -3698,8 +3993,8 @@ UI_TEXT(KP_STATE_PROGRAMMING, 116,
     "Port %u is in programming mode. PWM is off.",
     "Port %u ist im Programmiermodus. PWM ist aus.")
 UI_TEXT(KP_STATE_PROG_V, 116,
-    "Port %u in programming mode. PWM off. %u.%02u V, %u mA.",
-    "Port %u im Programmiermodus. PWM aus. %u.%02u V, %u mA.")
+    "Port %u in programming mode. PWM off. %u.%02uV, %umA.",
+    "Port %u im Programmiermodus. PWM aus. %u.%02uV, %umA.")
 UI_TEXT(KP_STATE_WORKING, 116,
     "Operation in progress: %u frames.",
     "Vorgang läuft: %u Frames.")
@@ -3854,11 +4149,11 @@ UI_TEXT(KP_SERVO_V, 15,
     "SERVO V%u",
     "SERVO V%u")
 UI_TEXT(KP_TYPE_V6, 116,
-    "Servo type V6: 20 kHz drive.",
-    "Servotyp V6: Ansteuerung mit 20 kHz.")
+    "Servo type V6: 20kHz drive.",
+    "Servotyp V6: Ansteuerung mit 20kHz.")
 UI_TEXT(KP_TYPE_V8, 116,
-    "Servo type V8: 333 Hz drive.",
-    "Servotyp V8: Ansteuerung mit 333 Hz.")
+    "Servo type V8: 333Hz drive.",
+    "Servotyp V8: Ansteuerung mit 333Hz.")
 UI_TEXT(KP_BACKUP_FILE, 116,
     "Backup file of this session: %s.",
     "Backup-Datei dieser Sitzung: %s.")
@@ -4142,11 +4437,11 @@ UI_TEXT(KP_R_SUPPLY_RANGE, 116,
     "The supply cannot provide this voltage or current limit.",
     "Das Netzteil unterstützt diese Spannung oder Strombegrenzung nicht.")
 UI_TEXT(KP_R_LEAVE_MS, 116,
-    "Wait before PWM is out of range. Allowed: 0 to 10000 ms.",
-    "Wartezeit vor PWM außerhalb des Bereichs. Erlaubt: 0 bis 10000 ms.")
+    "Wait before PWM is out of range. Allowed: 0 to 10000ms.",
+    "Wartezeit vor PWM außerhalb des Bereichs. Erlaubt: 0 bis 10000ms.")
 UI_TEXT(KP_R_SUPPLY_LOW, 116,
-    "Supply below 4.8 V. Programming requires at least 4.8 V.",
-    "Versorgung unter 4.8 V. Programmieren benötigt mindestens 4.8 V.")
+    "Supply below 4.8V. Programming requires at least 4.8V.",
+    "Versorgung unter 4.8V. Programmieren benötigt mindestens 4.8V.")
 UI_TEXT(KP_R_LOCKED, 116,
     "Servo state uncertain. The session stays open. Use RESTORE first.",
     "Servozustand unklar. Sitzung bleibt offen. Zuerst ZURÜCKSPIELEN.")
@@ -4238,8 +4533,8 @@ UI_TEXT(KP_S_ABORTED, 116,
     "Operation aborted. Tap READ ALL.",
     "Vorgang abgebrochen. ALLES AUSLESEN tippen.")
 UI_TEXT(KP_S_SUPPLY, 116,
-    "The supply did not switch within %u ms. Check the supply.",
-    "Versorgung hat nicht innerhalb von %u ms geschaltet. Versorgung prüfen.")
+    "The supply did not switch within %ums. Check the supply.",
+    "Versorgung hat nicht innerhalb von %ums geschaltet. Versorgung prüfen.")
 UI_TEXT(KP_S_TOO_COMPLEX, 116,
     "Too many changes to plan at once. Nothing written.",
     "Zu viele Änderungen für einen gemeinsamen Plan. Nichts geschrieben.")
@@ -4451,8 +4746,8 @@ UI_TEXT(WF_OFF_STOP, 88,
     "Wi-Fi switched off: STOP.",
     "WLAN ausgeschaltet: STOP.")
 UI_TEXT(WF_OFF_IDLE, 88,
-    "Wi-Fi switched off after 10 min without a request.",
-    "WLAN nach 10 min ohne Anfrage ausgeschaltet.")
+    "Wi-Fi switched off after 10min without a request.",
+    "WLAN nach 10min ohne Anfrage ausgeschaltet.")
 UI_TEXT(WF_OFF_GUESSES, 88,
     "Wi-Fi switched off after 16 wrong access codes.",
     "WLAN nach 16 falschen Zugangscodes ausgeschaltet.")
@@ -4466,8 +4761,8 @@ UI_TEXT(WF_JOIN_NOT_FOUND, 88,
     "Could not connect. Network not found.",
     "Verbindung fehlgeschlagen. Netzwerk nicht gefunden.")
 UI_TEXT(WF_JOIN_NO_ADDRESS, 88,
-    "Connection failed. No IP address within 15 s.",
-    "Keine Verbindung. Nach 15 s noch keine IP-Adresse.")
+    "Connection failed. No IP address within 15s.",
+    "Keine Verbindung. Nach 15s noch keine IP-Adresse.")
 UI_TEXT(WF_JOIN_LOST, 88,
     "Connection to the home network lost.",
     "Verbindung zum Heimnetz verloren.")
@@ -4480,7 +4775,7 @@ UI_TEXT(WF_STARTING, 48,
 UI_TEXT(WF_JOINING, 0,
     "Connecting to %s",
     "Verbindung mit %s wird aufgebaut")
-UI_TEXT(WF_WAIT_ADDRESS, 96,
+UI_TEXT(WF_WAIT_ADDRESS, 82,
     "Waiting for an IP address.",
     "Wartet auf eine IP-Adresse.")
 UI_TEXT(WF_NETWORK, 0,
@@ -4505,15 +4800,15 @@ UI_TEXT(WF_PLAIN, 0,
     "HTTP: access codes and files are sent without encryption.",
     "HTTP: Zugangscode und Dateien werden unverschlüsselt übertragen.")
 UI_TEXT(WF_CHANNEL, 0,
-    "2.4 GHz, channel %u",
-    "2.4 GHz, Kanal %u")
+    "2.4GHz, channel %u",
+    "2.4GHz, Kanal %u")
 UI_TEXT(WF_IDLE, 0,
-    "Off in %u min unless a request arrives.",
-    "Aus in %u min, wenn keine Anfrage kommt.")
+    "Off in %umin unless a request arrives.",
+    "Aus in %umin, wenn keine Anfrage kommt.")
 UI_TEXT(WF_RECEIVING, 0,
-    "Receiving %lu of %lu bytes (%u %%)",
-    "Empfang: %lu von %lu Bytes (%u %%)")
-UI_TEXT(WF_UP_REFUSED, 96,
+    "Receiving %lu of %lu bytes (%u%%)",
+    "Empfang: %lu von %lu Bytes (%u%%)")
+UI_TEXT(WF_UP_REFUSED, 82,
     "The last upload was rejected. The web page shows why.",
     "Der letzte Upload wurde abgelehnt. Der Grund steht auf der Webseite.")
 UI_TEXT(WF_OFF, 0,
@@ -4522,7 +4817,7 @@ UI_TEXT(WF_OFF, 0,
 UI_TEXT(WF_SCANNING, 0,
     "Searching for networks.",
     "Netzwerke werden gesucht.")
-UI_TEXT(WF_SCAN_NONE, 96,
+UI_TEXT(WF_SCAN_NONE, 82,
     "No WPA2 or WPA3 network found.",
     "Kein WPA2- oder WPA3-Netzwerk gefunden.")
 UI_TEXT(WF_RESCAN, 0,
@@ -4568,14 +4863,14 @@ UI_TEXT(WF_Q_COPROC, 0,
     "Installation is waiting for the IOmcu update to finish.",
     "Installation wartet auf das Ende des IOmcu-Updates.")
 UI_TEXT(WF_HOLD_INSTALL, 0,
-    "HOLD 2 s: INSTALL",
-    "2 s HALTEN: INSTALLIEREN")
+    "HOLD 2s: INSTALL",
+    "2s HALTEN: INSTALLIEREN")
 UI_TEXT(UP_TITLE, 0,
     "WRITING PANEL FIRMWARE %s",
     "PANEL-FIRMWARE %s WIRD GESCHRIEBEN")
 UI_TEXT(UP_BYTES, 0,
-    "%lu of %lu bytes (%u %%)",
-    "%lu von %lu Bytes (%u %%)")
+    "%lu of %lu bytes (%u%%)",
+    "%lu von %lu Bytes (%u%%)")
 UI_TEXT(UP_NOTE_1, 0,
     "Do not switch off the panel.",
     "Schalte das Panel nicht aus.")
@@ -4612,8 +4907,8 @@ UI_TEXT(UPD_CHAN_TESTING, 0,
     "RELEASES: TESTING",
     "RELEASES: TESTING")
 UI_TEXT(UPD_HOLD_DL, 0,
-    "HOLD 2 s: DOWNLOAD & INSTALL",
-    "2 s HALTEN: LADEN & INSTALLIEREN")
+    "HOLD 2s: DOWNLOAD & INSTALL",
+    "2s HALTEN: LADEN & INSTALLIEREN")
 UI_TEXT(UPD_KEEP_NET, 0,
     "Save a network under SETUP > WI-FI.",
     "Speichere ein Netzwerk unter SETUP > WI-FI.")
@@ -4631,8 +4926,8 @@ UI_TEXT(UPD_CU_NOT_KNOWN, 0,
     "not known",
     "unbekannt")
 UI_TEXT(UPD_CU_HOLD, 0,
-    "HOLD 2 s: UPDATE IOMCU",
-    "2 s HALTEN: IOMCU AKTUALISIEREN")
+    "HOLD 2s: UPDATE IOMCU",
+    "2s HALTEN: IOMCU AKTUALISIEREN")
 UI_TEXT(UPD_CU_NO_IMAGE, 0,
     "This panel carries no IOmcu firmware.",
     "Dieses Panel enthält keine IOmcu-Firmware.")
@@ -4667,8 +4962,8 @@ UI_TEXT(UPD_ABOUT_1, 0,
     "With reminders on, the panel checks GitHub at startup.",
     "Mit Erinnerung prüft das Panel beim Start auf GitHub.")
 UI_TEXT(UPD_ABOUT_2, 0,
-    "Wi-Fi stays on for no more than 30 s.",
-    "WLAN bleibt dabei höchstens 30 s eingeschaltet.")
+    "Wi-Fi stays on for no more than 30s.",
+    "WLAN bleibt dabei höchstens 30s eingeschaltet.")
 UI_TEXT(UPD_ABOUT_3, 0,
     "TESTING also offers testing releases: odd minor numbers.",
     "TESTING bietet auch Testing-Releases an: ungerade Minor-Nummern.")
@@ -4685,8 +4980,8 @@ UI_TEXT(UPD_ASKING, 0,
     "Checking GitHub.",
     "GitHub wird geprüft.")
 UI_TEXT(UPD_LEFT, 0,
-    "%u s left",
-    "noch %u s")
+    "%us left",
+    "noch %us")
 UI_TEXT(UPD_NEWER, 0,
     "Version %s is available.",
     "Version %s ist verfügbar.")
@@ -4699,55 +4994,55 @@ UI_TEXT(UPD_PAST_LINE, 0,
 UI_TEXT(UPD_LATEST, 0,
     "Latest release on GitHub: %s.",
     "Neuestes Release auf GitHub: %s.")
-UI_TEXT(UPD_STAGED, 88,
+UI_TEXT(UPD_STAGED, 81,
     "Download checked. Installing now.",
     "Download geprüft. Installation läuft.")
-UI_TEXT(UPD_WAIT_COPROC, 74,
+UI_TEXT(UPD_WAIT_COPROC, 67,
     "Waiting for the IOmcu update to finish.",
     "Wartet auf das Ende des IOmcu-Updates.")
-UI_TEXT(UPD_WAIT_DRAWING, 74,
+UI_TEXT(UPD_WAIT_DRAWING, 67,
     "Waiting: a board drawing is being downloaded or saved.",
     "Wartet: Eine Platinenzeichnung wird geladen oder gespeichert.")
-UI_TEXT(UPD_WAIT_BUSY, 74,
+UI_TEXT(UPD_WAIT_BUSY, 67,
     "Waiting: a check or installation is already running.",
     "Wartet: Eine Prüfung oder Installation läuft bereits.")
-UI_TEXT(UPD_STOP_FILES, 74,
+UI_TEXT(UPD_STOP_FILES, 67,
     "Stopped: the WI-FI screen is using Wi-Fi.",
     "Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.")
-UI_TEXT(UPD_STOP_CANCEL, 88,
+UI_TEXT(UPD_STOP_CANCEL, 81,
     "Cancelled.",
     "Abgebrochen.")
-UI_TEXT(UPD_STOP_COPROC, 88,
+UI_TEXT(UPD_STOP_COPROC, 81,
     "Stopped: the IOmcu update has started.",
     "Abgebrochen: IOmcu-Update gestartet.")
-UI_TEXT(UPD_STOP_INSTALL, 88,
+UI_TEXT(UPD_STOP_INSTALL, 81,
     "Stopped: panel firmware installation has started.",
     "Abgebrochen: Installation der Panel-Firmware gestartet.")
-UI_TEXT(UPD_STOP_DRAWING, 88,
+UI_TEXT(UPD_STOP_DRAWING, 81,
     "Stopped: a board drawing is being downloaded.",
     "Abgebrochen: Eine Platinenzeichnung wird geladen.")
 UI_TEXT(UPD_FAIL_TIMEOUT, 0,
-    "No response within %u s.",
-    "Keine Antwort innerhalb von %u s.")
-UI_TEXT(UPD_FAIL_CONNECT, 88,
+    "No response within %us.",
+    "Keine Antwort innerhalb von %us.")
+UI_TEXT(UPD_FAIL_CONNECT, 81,
     "No connection to GitHub.",
     "Keine Verbindung zu GitHub.")
-UI_TEXT(UPD_FAIL_REFUSED, 88,
+UI_TEXT(UPD_FAIL_REFUSED, 81,
     "GitHub rejected the request: HTTP %d.",
     "GitHub hat die Anfrage abgelehnt: HTTP %d.")
-UI_TEXT(UPD_FAIL_UNEXPECTED, 88,
+UI_TEXT(UPD_FAIL_UNEXPECTED, 81,
     "Unexpected answer from GitHub.",
     "Unerwartete Antwort von GitHub.")
-UI_TEXT(UPD_FAIL_SUMS, 88,
+UI_TEXT(UPD_FAIL_SUMS, 81,
     "Cannot use the SHA256SUMS file.",
     "SHA256SUMS-Datei nicht verwendbar.")
 UI_TEXT(UPD_FAIL_HASH, 0,
     "The SHA-256 checksum does not match SHA256SUMS.",
     "SHA-256-Prüfsumme stimmt nicht mit SHA256SUMS überein.")
-UI_TEXT(UPD_FAIL_IMAGE, 88,
+UI_TEXT(UPD_FAIL_IMAGE, 81,
     "The firmware did not pass the panel's checks.",
     "Die Firmware hat die Prüfungen des Panels nicht bestanden.")
-UI_TEXT(UPD_FAIL_MEMORY, 88,
+UI_TEXT(UPD_FAIL_MEMORY, 81,
     "Not enough memory for the firmware.",
     "Nicht genug Speicher für die Firmware.")
 UI_TEXT(UPD_FAIL_LIMIT, 0,
@@ -4759,67 +5054,67 @@ UI_TEXT(UPD_LIMIT_2, 0,
 UI_TEXT(UPD_UNVERSIONED, 0,
     "The panel's own version is not MAJOR.MINOR.PATCH: no update offered.",
     "Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.")
-UI_TEXT(UPD_REL_MISSING, 88,
+UI_TEXT(UPD_REL_MISSING, 81,
     "The response has no Location header.",
     "In der Antwort fehlt der Location-Header.")
-UI_TEXT(UPD_REL_LONG, 88,
+UI_TEXT(UPD_REL_LONG, 81,
     "The address is too long.",
     "Die Adresse ist zu lang.")
-UI_TEXT(UPD_REL_CHAR, 88,
+UI_TEXT(UPD_REL_CHAR, 81,
     "A byte is outside printable ASCII.",
     "Ein Byte liegt außerhalb von druckbarem ASCII.")
-UI_TEXT(UPD_REL_PLACE, 88,
+UI_TEXT(UPD_REL_PLACE, 81,
     "The address is in an unexpected location.",
     "Die Adresse steht an einer unerwarteten Stelle.")
-UI_TEXT(UPD_REL_VERSION, 88,
+UI_TEXT(UPD_REL_VERSION, 81,
     "The version text has an invalid format.",
     "Der Versionstext hat ein ungültiges Format.")
-UI_TEXT(UPD_REL_IMG_VERSION, 88,
+UI_TEXT(UPD_REL_IMG_VERSION, 81,
     "The firmware file specifies a different version.",
     "Die Firmware-Datei nennt eine andere Version.")
-UI_TEXT(UPD_REL_STATUS, 88,
+UI_TEXT(UPD_REL_STATUS, 81,
     "HTTP status %d.",
     "HTTP-Status %d.")
-UI_TEXT(UPD_REL_HOPS, 88,
+UI_TEXT(UPD_REL_HOPS, 81,
     "More than 3 redirects.",
     "Mehr als 3 Weiterleitungen.")
-UI_TEXT(UPD_REL_HOST, 88,
+UI_TEXT(UPD_REL_HOST, 81,
     "Redirect to a host that is not allowed.",
     "Weiterleitung zu einem nicht erlaubten Host.")
-UI_TEXT(UPD_REL_NO_LENGTH, 88,
+UI_TEXT(UPD_REL_NO_LENGTH, 81,
     "The response does not specify a size.",
     "Die Antwort enthält keine Größenangabe.")
-UI_TEXT(UPD_REL_EMPTY, 88,
+UI_TEXT(UPD_REL_EMPTY, 81,
     "The response is empty.",
     "Die Antwort ist leer.")
-UI_TEXT(UPD_REL_TOO_BIG, 88,
+UI_TEXT(UPD_REL_TOO_BIG, 81,
     "The download is too large for the panel.",
     "Der Download ist zu groß für das Panel.")
-UI_TEXT(UPD_REL_SHORT, 88,
+UI_TEXT(UPD_REL_SHORT, 81,
     "Received less data than expected.",
     "Weniger Daten als angekündigt empfangen.")
-UI_TEXT(UPD_REL_OVERRUN, 88,
+UI_TEXT(UPD_REL_OVERRUN, 81,
     "Received more data than expected.",
     "Mehr Daten als angekündigt empfangen.")
-UI_TEXT(UPD_REL_SUMS_BAD, 88,
+UI_TEXT(UPD_REL_SUMS_BAD, 81,
     "A checksum line has an invalid format.",
     "Eine Prüfsummenzeile hat ein ungültiges Format.")
-UI_TEXT(UPD_REL_SUMS_NONE, 88,
+UI_TEXT(UPD_REL_SUMS_NONE, 81,
     "No checksum entry for this firmware.",
     "Kein Prüfsummeneintrag für diese Firmware.")
-UI_TEXT(UPD_REL_SUMS_TWICE, 88,
+UI_TEXT(UPD_REL_SUMS_TWICE, 81,
     "Two checksum entries for this firmware.",
     "Zwei Prüfsummeneinträge für diese Firmware.")
-UI_TEXT(UPD_REL_TAG_NONE, 88,
+UI_TEXT(UPD_REL_TAG_NONE, 81,
     "The answer names no tag_name.",
     "Die Antwort nennt keinen tag_name.")
-UI_TEXT(UPD_REL_TAG_LONG, 88,
+UI_TEXT(UPD_REL_TAG_LONG, 81,
     "The tag_name is too long.",
     "Der tag_name ist zu lang.")
-UI_TEXT(UPD_REL_TAG_FORM, 88,
+UI_TEXT(UPD_REL_TAG_FORM, 81,
     "The answer is not in the expected JSON form.",
     "Die Antwort hat nicht die erwartete JSON-Form.")
-UI_TEXT(UPD_REL_SCAN_LONG, 88,
+UI_TEXT(UPD_REL_SCAN_LONG, 81,
     "The releases do not end within 262144 bytes.",
     "Die Releases enden nicht innerhalb von 262144 Bytes.")
 UI_TEXT(UPD_R_TITLE, 0,
@@ -4846,13 +5141,13 @@ UI_TEXT(UPD_NEVER, 0,
 UI_TEXT(UPD_DL_TITLE, 0,
     "DOWNLOADING PANEL FIRMWARE %s",
     "PANEL-FIRMWARE %s WIRD GELADEN")
-UI_TEXT(UPD_DL_SUMS, 47,
+UI_TEXT(UPD_DL_SUMS, 48,
     "Reading SHA256SUMS.",
     "SHA256SUMS wird gelesen.")
 UI_TEXT(UPD_DL_IMAGE, 0,
     "Downloading firmware.",
     "Firmware wird heruntergeladen.")
-UI_TEXT(UPD_DL_CHECKING, 47,
+UI_TEXT(UPD_DL_CHECKING, 48,
     "Checking the SHA-256 checksum and firmware.",
     "SHA-256-Prüfsumme und Firmware werden geprüft.")
 UI_TEXT(UPD_DL_NOTE_1, 0,
@@ -4905,14 +5200,14 @@ UI_SETTING_LABEL(SET_OUT_MIN_US,
     "Idle pulse",
     "Leerlaufpuls")
 UI_SETTING_HELP(SET_OUT_MIN_US,
-    "Width at 0 % throttle",
-    "Breite bei 0 % Gas")
+    "Width at 0% throttle",
+    "Breite bei 0% Gas")
 UI_SETTING_LABEL(SET_OUT_MAX_US,
     "Full pulse",
     "Vollpuls")
 UI_SETTING_HELP(SET_OUT_MAX_US,
-    "Width at 100 % throttle",
-    "Breite bei 100 % Gas")
+    "Width at 100% throttle",
+    "Breite bei 100% Gas")
 UI_SETTING_LABEL(SET_OUT_RAMP,
     "Ramp limit",
     "Rampengrenze")
@@ -4938,6 +5233,12 @@ UI_SETTING_LABEL(SET_CONTRAST,
 UI_SETTING_HELP(SET_CONTRAST,
     "Pushes colours away from mid grey",
     "Drückt Farben weg vom Mittelgrau")
+UI_SETTING_LABEL(SET_SCREEN_ROT,
+    "Screen rotation",
+    "Bilddrehung")
+UI_SETTING_HELP(SET_SCREEN_ROT,
+    "Turns picture and touch; locked while ARMED",
+    "Dreht Bild und Touch; gesperrt bei ARMED")
 UI_SETTING_LABEL(SET_LANGUAGE,
     "Language",
     "Sprache")
@@ -4950,6 +5251,12 @@ UI_SETTING_LABEL(SET_UNITS,
 UI_SETTING_HELP(SET_UNITS,
     "",
     "")
+UI_SETTING_LABEL(SET_TIME_ZONE,
+    "Time zone",
+    "Zeitzone")
+UI_SETTING_HELP(SET_TIME_ZONE,
+    "Local time for file dates; NTP on the home network sets it",
+    "Ortszeit für Dateidaten; NTP im Heimnetz stellt die Uhr")
 UI_SETTING_LABEL(SET_DIM_AFTER,
     "Dim after",
     "Dimmen nach")
@@ -5015,8 +5322,8 @@ UI_SETTING_LABEL(SET_INA3221_MOHM,
     "INA3221 shunt",
     "INA3221 Shunt")
 UI_SETTING_HELP(SET_INA3221_MOHM,
-    "Per channel; 100 reads to 1.64 A",
-    "Je Kanal; 100 misst bis 1.64 A")
+    "Per channel; 100 reads to 1.64A",
+    "Je Kanal; 100 misst bis 1.64A")
 UI_SETTING_LABEL(SET_INA3221_CH,
     "INA3221 channels",
     "INA3221 Kanäle")
@@ -5069,8 +5376,8 @@ UI_SETTING_LABEL(SET_TONE_F_MAX,
     "Tap highest tone",
     "Höchster Ton")
 UI_SETTING_HELP(SET_TONE_F_MAX,
-    "Above the lowest tone; to 6900 Hz",
-    "Über dem tiefsten Ton; bis 6900 Hz")
+    "Above the lowest tone; to 6900Hz",
+    "Über dem tiefsten Ton; bis 6900Hz")
 UI_SETTING_LABEL(SET_TONE_SPLIT,
     "Tap pitch split",
     "Tonsprung")
@@ -5136,8 +5443,8 @@ UI_SETTING_LABEL(SET_HITEC_RX,
     "Hitec D receive",
     "Hitec-D-Empfang")
 UI_SETTING_HELP(SET_HITEC_RX,
-    "PULL-UP needs 2.2 kOhm on the signal wire",
-    "PULL-UP braucht 2.2 kOhm an der Signalleitung")
+    "PULL-UP needs 2.2kΩ on the signal wire",
+    "PULL-UP braucht 2.2kΩ an der Signalleitung")
 /* --- the INA3221 parts, on SETUP > SENSORS (settings_sensors.h) ----- */
 UI_SETTING_LABEL(SET_INA_FIT_0,
     "0x40 fitted",
@@ -5484,26 +5791,26 @@ UI_SETTING_HELP(SET_SERVO_SETTLE_MS,
     "Waited after a supply step before measuring",
     "Wartezeit nach einer Netzteilstufe vor dem Messen")
 UI_SETTING_LABEL(SET_SERVO_STEP_48,
-    "Step 4.8 V",
-    "Stufe 4.8 V")
+    "Step 4.8V",
+    "Stufe 4.8V")
 UI_SETTING_HELP(SET_SERVO_STEP_48,
     "",
     "")
 UI_SETTING_LABEL(SET_SERVO_STEP_60,
-    "Step 6.0 V",
-    "Stufe 6.0 V")
+    "Step 6.0V",
+    "Stufe 6.0V")
 UI_SETTING_HELP(SET_SERVO_STEP_60,
     "",
     "")
 UI_SETTING_LABEL(SET_SERVO_STEP_74,
-    "Step 7.4 V",
-    "Stufe 7.4 V")
+    "Step 7.4V",
+    "Stufe 7.4V")
 UI_SETTING_HELP(SET_SERVO_STEP_74,
     "",
     "")
 UI_SETTING_LABEL(SET_SERVO_STEP_84,
-    "Step 8.4 V",
-    "Stufe 8.4 V")
+    "Step 8.4V",
+    "Stufe 8.4V")
 UI_SETTING_HELP(SET_SERVO_STEP_84,
     "",
     "")
@@ -5511,8 +5818,8 @@ UI_SETTING_LABEL(SET_SERVO_BROWNOUT,
     "Brown-out",
     "Brown-out")
 UI_SETTING_HELP(SET_SERVO_BROWNOUT,
-    "From 5.0 V down until the servo stops moving",
-    "Ab 5.0 V abwärts, bis das Servo stehen bleibt")
+    "From 5.0V down until the servo stops moving",
+    "Ab 5.0V abwärts, bis das Servo stehen bleibt")
 UI_SETTING_LABEL(SET_SERVO_IDLE_MAX,
     "Idle current max",
     "Ruhestrom max")
@@ -5724,6 +6031,11 @@ UI_OPTION("DARK", "DUNKEL")
 UI_OPTION("LIGHT", "HELL")
 UI_OPTIONS_END(theme)
 
+UI_OPTIONS(screen_rot)
+UI_OPTION("NORMAL", NULL)
+UI_OPTION("180°", NULL)
+UI_OPTIONS_END(screen_rot)
+
 UI_OPTIONS(language)
 UI_OPTION("ENGLISH", NULL)
 UI_OPTION("DEUTSCH", NULL)
@@ -5733,6 +6045,21 @@ UI_OPTIONS(units)
 UI_OPTION("METRIC", "METRISCH")
 UI_OPTION("IMPERIAL", "IMPERIAL")
 UI_OPTIONS_END(units)
+
+/* The time zones, in wall_clock.c's order of POSIX TZ strings
+ * (wall_zone_posix()); Berlin is the default. */
+UI_OPTIONS(time_zone)
+UI_OPTION("UTC", NULL)
+UI_OPTION("LONDON", NULL)
+UI_OPTION("BERLIN", NULL)
+UI_OPTION("HELSINKI", NULL)
+UI_OPTION("NEW YORK", NULL)
+UI_OPTION("CHICAGO", NULL)
+UI_OPTION("DENVER", NULL)
+UI_OPTION("LOS ANGELES", NULL)
+UI_OPTION("TOKYO", NULL)
+UI_OPTION("SYDNEY", NULL)
+UI_OPTIONS_END(time_zone)
 
 /* The INA228's address, 0x40 + the option: A0 and A1 each to GND, VS, SDA
  * or SCL give sixteen. */
@@ -5909,28 +6236,28 @@ UI_SERVO_TEXT(SERVO_STR_AB_SUPPLY_OFF,
     "supply output went off",
     "Netzteilausgang ging aus")
 UI_SERVO_TEXT(SERVO_STR_AB_STALE,
-    "no new supply reading for 1.5 s",
-    "seit 1.5 s kein Messwert")
+    "no new supply reading for 1.5s",
+    "seit 1.5s kein Messwert")
 UI_SERVO_TEXT(SERVO_STR_AB_NOT_ON,
     "supply output did not come on",
     "Netzteilausgang ging nicht an")
 UI_SERVO_TEXT(SERVO_STR_AB_SET_NOT_TAKEN,
-    "set point not read back in 3 s",
-    "Sollwert 3 s nicht bestätigt")
+    "set point not read back in 3s",
+    "Sollwert 3s nicht bestätigt")
 UI_SERVO_TEXT(SERVO_STR_AB_CAP,
     "step above the voltage cap",
     "Stufe über Spannungsobergrenze")
 UI_SERVO_TEXT(SERVO_STR_AB_STALL,
-    "above STALL AT for 1 s",
-    "1 s über BLOCKIERT AB")
+    "above STALL AT for 1s",
+    "1s über BLOCKIERT AB")
 /* The run's reasons are also a line of the SERVO screen's result box:
  * 31 characters at most. */
 UI_SERVO_TEXT(SERVO_STR_AB_CC,
-    "constant current for 1 s",
-    "1 s im Konstantstrom")
+    "constant current for 1s",
+    "1s im Konstantstrom")
 UI_SERVO_TEXT(SERVO_STR_AB_WIN_STALE,
-    "no INA3221 window for 0.2 s",
-    "0.2 s kein INA3221-Fenster")
+    "no INA3221 window for 0.2s",
+    "0.2s kein INA3221-Fenster")
 UI_SERVO_TEXT(SERVO_STR_AB_INA_RESET,
     "INA3221 reset itself",
     "INA3221 setzte sich zurück")
@@ -5985,10 +6312,10 @@ UI_SERVO_TEXT(SERVO_STR_R_RESULT_UNSEEN,
     "Strom erkannt")
 UI_SERVO_TEXT(SERVO_STR_R_RESULT_BO_UNSEEN,
     "Result:         %s - no movement seen "
-    "at %.2f V, the brown-out walk's first "
+    "at %.2fV, the brown-out walk's first "
     "voltage",
     "Ergebnis:        %s - keine Bewegung "
-    "erkannt bei %.2f V, der ersten "
+    "erkannt bei %.2fV, der ersten "
     "Spannung des Brown-out")
 UI_SERVO_TEXT(SERVO_STR_R_DEVICE,
     "Device:         %s",
@@ -6024,18 +6351,18 @@ UI_SERVO_TEXT(SERVO_STR_R_SKIPPED,
     "Übersprungen:    %lu Messwerte des "
     "Netzteils erreichten den Test nie")
 UI_SERVO_TEXT(SERVO_STR_R_RESOLUTION,
-    "Resolution:     one reading every %lu "
+    "Resolution:     one reading every %lu"
     "ms: a travel time is late by up to that",
-    "Auflösung:       ein Messwert alle %lu "
+    "Auflösung:       ein Messwert alle %lu"
     "ms: eine Stellzeit ist um bis zu so viel "
     "zu lang")
 UI_SERVO_TEXT(SERVO_STR_R_RESOLUTION_UNKNOWN,
     "Resolution:     not known",
     "Auflösung:       unbekannt")
 UI_SERVO_TEXT(SERVO_STR_R_LAG,
-    "Lag:            about %u ms from a change "
+    "Lag:            about %ums from a change "
     "of current to the reading that shows it",
-    "Verzögerung:     etwa %u ms von einer "
+    "Verzögerung:     etwa %ums von einer "
     "Stromänderung bis zum Messwert, der sie "
     "zeigt")
 UI_SERVO_TEXT(SERVO_STR_R_REPEATS,
@@ -6050,8 +6377,8 @@ UI_SERVO_TEXT(SERVO_STR_R_UPPER_BOUND,
     "Stellzeiten:     eine Obergrenze, nicht "
     "gegen die Grenze geprüft")
 UI_SERVO_TEXT(SERVO_STR_R_DURATION,
-    "Duration:       %lu.%01lu s",
-    "Dauer:           %lu.%01lu s")
+    "Duration:       %lu.%01lus",
+    "Dauer:           %lu.%01lus")
 UI_SERVO_TEXT(SERVO_STR_R_ROWS,
     "Log rows:       %lu written, %lu lost to "
     "a full queue",
@@ -6061,13 +6388,13 @@ UI_SERVO_TEXT(SERVO_STR_R_SETTINGS,
     "SETTINGS IN FORCE",
     "AKTIVE EINSTELLUNGEN")
 UI_SERVO_TEXT(SERVO_STR_R_TYPE,
-    "Type:           %s, centre %u us, %u-%u "
-    "us, trim %+d us, reverse %s",
-    "Typ:             %s, Mitte %u us, %u-%u "
-    "us, Trimmung %+d us, Umkehren %s")
+    "Type:           %s, centre %uus, %u-%u"
+    "us, trim %+dus, reverse %s",
+    "Typ:             %s, Mitte %uus, %u-%u"
+    "us, Trimmung %+dus, Umkehren %s")
 UI_SERVO_TEXT(SERVO_STR_R_RATE,
-    "Frame rate:     %u Hz",
-    "Pulsrate:        %u Hz")
+    "Frame rate:     %uHz",
+    "Pulsrate:        %uHz")
 UI_SERVO_TEXT(SERVO_STR_R_DANGER,
     "Can destroy:    %s",
     "Kann zerstören:  %s")
@@ -6078,19 +6405,19 @@ UI_SERVO_TEXT(SERVO_STR_R_HV,
     "HV servo:       %s",
     "HV Servo:        %s")
 UI_SERVO_TEXT(SERVO_STR_R_HV_OFF,
-    "OFF, no step above 6.0 V",
-    "AUS, keine Stufe über 6.0 V")
+    "OFF, no step above 6.0V",
+    "AUS, keine Stufe über 6.0V")
 UI_SERVO_TEXT(SERVO_STR_R_HV_ON_RUN,
-    "ON, steps above 6.0 V run",
-    "EIN, Stufen über 6.0 V laufen")
+    "ON, steps above 6.0V run",
+    "EIN, Stufen über 6.0V laufen")
 UI_SERVO_TEXT(SERVO_STR_R_HV_ON_NONE,
-    "ON, no step above 6.0 V chosen",
-    "EIN, keine Stufe über 6.0 V gewählt")
+    "ON, no step above 6.0V chosen",
+    "EIN, keine Stufe über 6.0V gewählt")
 UI_SERVO_TEXT(SERVO_STR_R_ENDS,
-    "Ends:           %u us and %u us (RANGE "
-    "%u %% of TRAVEL +/-%u deg)",
-    "Enden:           %u us und %u us "
-    "(BEREICH %u %% von WEG +/-%u deg)")
+    "Ends:           %uus and %uus (RANGE "
+    "%u%% of TRAVEL +/-%udeg)",
+    "Enden:           %uus und %uus "
+    "(BEREICH %u%% von WEG +/-%udeg)")
 UI_SERVO_TEXT(SERVO_STR_R_STEPS,
     "Steps:         ",
     "Stufen:         ")
@@ -6098,33 +6425,33 @@ UI_SERVO_TEXT(SERVO_STR_R_STEPS_NONE,
     " none",
     " keine")
 UI_SERVO_TEXT(SERVO_STR_R_BROWNOUT,
-    "Brown-out:      from %.2f V down in "
-    "%.2f V steps to %.2f V",
-    "Brown-out:       ab %.2f V abwärts in "
-    "Schritten von %.2f V bis %.2f V")
+    "Brown-out:      from %.2fV down in "
+    "%.2fV steps to %.2fV",
+    "Brown-out:       ab %.2fV abwärts in "
+    "Schritten von %.2fV bis %.2fV")
 UI_SERVO_TEXT(SERVO_STR_R_BROWNOUT_NOT_RUN,
     "Brown-out:      not run",
     "Brown-out:       nicht gelaufen")
 UI_SERVO_TEXT(SERVO_STR_R_I_LIMIT,
-    "Current limit:  %.2f A",
-    "Strombegrenzung: %.2f A")
+    "Current limit:  %.2fA",
+    "Strombegrenzung: %.2fA")
 UI_SERVO_TEXT(SERVO_STR_R_TIMING,
-    "Timing:         settle %u ms, idle %u "
-    "ms, dwell %u ms (hold measured %u ms)",
-    "Zeiten:          Einschwingen %u ms, "
-    "Ruhe %u ms, Verweilen %u ms (Halten "
-    "gemessen %u ms)")
+    "Timing:         settle %ums, idle %u"
+    "ms, dwell %ums (hold measured %ums)",
+    "Zeiten:          Einschwingen %ums, "
+    "Ruhe %ums, Verweilen %ums (Halten "
+    "gemessen %ums)")
 UI_SERVO_TEXT(SERVO_STR_R_LEN_MOVES,
     "Length:         %u movements a step",
     "Länge:           %u Bewegungen je Stufe")
 UI_SERVO_TEXT(SERVO_STR_R_LEN_TIME,
-    "Length:         %u s a step",
-    "Länge:           %u s je Stufe")
+    "Length:         %us a step",
+    "Länge:           %us je Stufe")
 UI_SERVO_TEXT(SERVO_STR_R_LIMITS,
     "Limits:         idle %s, holding %s, "
-    "travel %s, stall %.2f A",
+    "travel %s, stall %.2fA",
     "Grenzen:         Ruhe %s, Halten %s, "
-    "Stellzeit %s, Blockieren %.2f A")
+    "Stellzeit %s, Blockieren %.2fA")
 UI_SERVO_TEXT(SERVO_STR_R_ON,
     "ON",
     "EIN")
@@ -6155,9 +6482,9 @@ UI_SERVO_TEXT(SERVO_STR_R_NO_STEP,
     "Keine Stufe lief.")
 UI_SERVO_TEXT(SERVO_STR_R_LATE,
     "Late: moves seen moving that did not "
-    "arrive within %u ms.",
+    "arrive within %ums.",
     "Spät: erkannte Bewegungen, die nicht "
-    "binnen %u ms ankamen.")
+    "binnen %ums ankamen.")
 UI_SERVO_TEXT(SERVO_STR_R_UNSEEN,
     "Unseen: moves with no movement seen; not "
     "timed, not counted late.",
@@ -6165,19 +6492,19 @@ UI_SERVO_TEXT(SERVO_STR_R_UNSEEN,
     "Bewegung; nicht gemessen, nicht als spät "
     "gezählt.")
 UI_SERVO_TEXT(SERVO_STR_R_THRESHOLD,
-    "Thresh: movement is a reading max(%.3f A, "
+    "Thresh: movement is a reading max(%.3fA, "
     "%.0f x idle noise) from the level before "
     "the command.",
     "Schw.: Bewegung ist ein Messwert "
-    "max(%.3f A, %.0f x Ruherauschen) vom "
+    "max(%.3fA, %.0f x Ruherauschen) vom "
     "Niveau vor dem Befehl entfernt.")
 UI_SERVO_TEXT(SERVO_STR_R_ARRIVAL,
     "Arrival: after a reading Thresh above "
     "the end's holding level, the first back "
-    "within %.2f A of it.",
+    "within %.2fA of it.",
     "Ankunft: nach einem Messwert eine "
     "Schw. über dem Halteniveau der erste "
-    "wieder innerhalb %.2f A davon.")
+    "wieder innerhalb %.2fA davon.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_HEAD,
     "BROWN-OUT",
     "BROWN-OUT")
@@ -6188,56 +6515,56 @@ UI_SERVO_TEXT(SERVO_STR_R_BO_NOT_REACHED,
     "Not reached.",
     "Nicht erreicht.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_STOPPED,
-    "Moved at %.2f V; no movement seen at "
-    "%.2f V.",
-    "Bewegung bei %.2f V; keine Bewegung "
-    "erkannt bei %.2f V.")
+    "Moved at %.2fV; no movement seen at "
+    "%.2fV.",
+    "Bewegung bei %.2fV; keine Bewegung "
+    "erkannt bei %.2fV.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_ALL,
-    "Moved at every step down to %.2f V; "
+    "Moved at every step down to %.2fV; "
     "lower not tested.",
-    "Bewegung bei jeder Stufe bis %.2f V; "
+    "Bewegung bei jeder Stufe bis %.2fV; "
     "tiefer nicht getestet.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_NONE,
-    "No movement seen at %.2f V, the first "
+    "No movement seen at %.2fV, the first "
     "step: not measurable.",
-    "Keine Bewegung erkannt bei %.2f V, der "
+    "Keine Bewegung erkannt bei %.2fV, der "
     "ersten Stufe: nicht messbar.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_RULE,
     "No movement: no reading of a move more "
-    "than Thresh, %.3f A at %.2f V, from the "
+    "than Thresh, %.3fA at %.2fV, from the "
     "level before it.",
     "Keine Bewegung: kein Messwert einer "
-    "Bewegung mehr als Schw., %.3f A bei "
-    "%.2f V, vom Niveau davor entfernt.")
+    "Bewegung mehr als Schw., %.3fA bei "
+    "%.2fV, vom Niveau davor entfernt.")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_HEAD,
     "AGAINST THE PASS/FAIL LIMITS",
     "VERGLEICH MIT GRENZEN")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_IDLE,
-    "Idle current     highest %.3f A, limit "
+    "Idle current     highest %.3fA, limit "
     "%s: %s",
-    "Ruhestrom        Höchstwert %.3f A, "
+    "Ruhestrom        Höchstwert %.3fA, "
     "Grenze %s: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_HOLD,
-    "Holding current  highest %.3f A, limit "
+    "Holding current  highest %.3fA, limit "
     "%s: %s",
-    "Haltestrom       Höchstwert %.3f A, "
+    "Haltestrom       Höchstwert %.3fA, "
     "Grenze %s: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL,
-    "Travel time      longest %lu ms, limit "
-    "%u ms: %s",
-    "Stellzeit        längste %lu ms, Grenze "
-    "%u ms: %s")
+    "Travel time      longest %lums, limit "
+    "%ums: %s",
+    "Stellzeit        längste %lums, Grenze "
+    "%ums: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL_OFF,
-    "Travel time      longest %lu ms, limit "
+    "Travel time      longest %lums, limit "
     "OFF: %s",
-    "Stellzeit        längste %lu ms, Grenze "
+    "Stellzeit        längste %lums, Grenze "
     "AUS: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL_BOUND,
-    "Travel time      longest %lu ms, limit "
-    "%u ms: upper bound, not checked "
+    "Travel time      longest %lums, limit "
+    "%ums: upper bound, not checked "
     "against the limit",
-    "Stellzeit        längste %lu ms, "
-    "Grenze %u ms: Obergrenze, nicht gegen "
+    "Stellzeit        längste %lums, "
+    "Grenze %ums: Obergrenze, nicht gegen "
     "die Grenze geprüft")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL_NONE,
     "Travel time      longest --, limit %s: "
@@ -6245,10 +6572,10 @@ UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL_NONE,
     "Stellzeit        längste --, Grenze %s: "
     "nicht gemessen, keine Bewegung kam an")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL,
-    "Stall threshold  highest %.3f A, STALL "
-    "AT %.2f A: %s",
-    "Blockierschwelle Höchstwert %.3f A, "
-    "BLOCKIERT AB %.2f A: %s")
+    "Stall threshold  highest %.3fA, STALL "
+    "AT %.2fA: %s",
+    "Blockierschwelle Höchstwert %.3fA, "
+    "BLOCKIERT AB %.2fA: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_LATE,
     "Moves arrived    %u late: %s",
     "Verspätet        %u Bewegungen: %s")
@@ -6256,15 +6583,15 @@ UI_SERVO_TEXT(SERVO_STR_R_LIM_UNSEEN,
     "Moves seen       %u unseen: %s",
     "Unerkannt        %u Bewegungen: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_BO_SEEN,
-    "Brown-out start  movement seen at %.2f "
+    "Brown-out start  movement seen at %.2f"
     "V: %s",
     "Brown-out-Start  Bewegung erkannt bei "
-    "%.2f V: %s")
+    "%.2fV: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_BO_UNSEEN,
     "Brown-out start  no movement seen at "
-    "%.2f V: %s",
+    "%.2fV: %s",
     "Brown-out-Start  keine Bewegung erkannt "
-    "bei %.2f V: %s")
+    "bei %.2fV: %s")
 UI_SERVO_TEXT(SERVO_STR_R_NOT_CHECKED,
     "not checked",
     "nicht geprüft")
@@ -6308,22 +6635,22 @@ UI_SERVO_TEXT(SERVO_STR_R_ENC_COLUMNS,
     "Soll V  Ende u   Abw. u   Ende o   Abw. o   "
     "Stell. Längste Anz.  Unbew. Spät")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_CMD,
-    "Commanded: %+.1f deg at the low end, %+.1f "
+    "Commanded: %+.1fdeg at the low end, %+.1f"
     "deg at the high end.",
-    "Befohlen: %+.1f deg am unteren Ende, %+.1f "
+    "Befohlen: %+.1fdeg am unteren Ende, %+.1f"
     "deg am oberen.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_END,
-    "End: the settled angle, -180 to +180 deg "
+    "End: the settled angle, -180 to +180deg "
     "from the centre count. Err: End minus "
     "commanded, the shortest way round.",
-    "Ende: der beruhigte Winkel, -180 bis +180 "
+    "Ende: der beruhigte Winkel, -180 bis +180"
     "deg ab dem Mittenwert. Abw.: Ende minus "
     "befohlen, auf dem kürzeren Weg.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_SETTLED,
-    "Settled: the angle has stayed within %.2f "
-    "deg for %u ms.",
-    "Beruhigt: der Winkel blieb %.2f deg "
-    "innerhalb, %u ms lang.")
+    "Settled: the angle has stayed within %.2f"
+    "deg for %ums.",
+    "Beruhigt: der Winkel blieb %.2fdeg "
+    "innerhalb, %ums lang.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_TRAVEL,
     "Travel: the command to the start of that "
     "stillness, with the command's way from "
@@ -6332,15 +6659,15 @@ UI_SERVO_TEXT(SERVO_STR_R_ENC_TRAVEL,
     "Ruhe, mit dem Weg des Befehls vom Panel "
     "zum Pin.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_UNMOVED,
-    "Unmoved: the angle did not leave %.1f deg "
+    "Unmoved: the angle did not leave %.1fdeg "
     "of its start.",
-    "Unbew.: der Winkel verließ %.1f deg um "
+    "Unbew.: der Winkel verließ %.1fdeg um "
     "den Start nicht.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_LATE,
     "Late: the angle moved and was not still "
-    "for %u ms before the next command.",
+    "for %ums before the next command.",
     "Spät: der Winkel bewegte sich und war vor "
-    "dem nächsten Befehl keine %u ms ruhig.")
+    "dem nächsten Befehl keine %ums ruhig.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_DEADBAND,
     "Deadband: not measured; the moves go end "
     "to end.",
@@ -6385,10 +6712,10 @@ UI_SERVO_TEXT(SERVO_STR_R_CURRENT,
     "Current:        %s",
     "Strom:           %s")
 UI_SERVO_TEXT(SERVO_STR_R_CURRENT_INA,
-    "Current:        %s, shunt %.1f "
-    "mOhm, range %.3f A",
-    "Strom:           %s, Shunt %.1f "
-    "mOhm, Bereich %.3f A")
+    "Current:        %s, shunt %.1f"
+    "mΩ, range %.3fA",
+    "Strom:           %s, Shunt %.1f"
+    "mΩ, Bereich %.3fA")
 UI_SERVO_TEXT(SERVO_STR_R_VOLTAGE,
     "Voltage:        %s",
     "Spannung:        %s")
@@ -6398,10 +6725,10 @@ UI_SERVO_TEXT(SERVO_STR_R_VOLTAGE_INA,
     "Spannung:        %s, Lastseite "
     "des Shunts")
 UI_SERVO_TEXT(SERVO_STR_R_SHUNT,
-    "Shunt:          up to %.3f V lost across "
+    "Shunt:          up to %.3fV lost across "
     "it at the range; the set point is not "
     "raised for it",
-    "Shunt:           bis %.3f V fallen am "
+    "Shunt:           bis %.3fV fallen am "
     "Bereichsende an ihm ab; der Sollwert "
     "wird dafür nicht angehoben")
 UI_SERVO_TEXT(SERVO_STR_R_INA_UNUSED,
@@ -6420,16 +6747,16 @@ UI_SERVO_TEXT(SERVO_STR_R_INA_SILENT,
     "it does not answer",
     "er antwortet nicht")
 UI_SERVO_TEXT(SERVO_STR_R_INA_NO_WINDOW,
-    "no window with current in the last 200 "
+    "no window with current in the last 200"
     "ms",
     "kein Fenster mit Strom in den letzten "
-    "200 ms")
+    "200ms")
 UI_SERVO_TEXT(SERVO_STR_R_INA_RESET,
     "it reset itself",
     "er hat sich zurückgesetzt")
 UI_SERVO_TEXT(SERVO_STR_R_INA_SETTLING,
-    "it has worked for less than 1 s",
-    "er arbeitet seit weniger als 1 s")
+    "it has worked for less than 1s",
+    "er arbeitet seit weniger als 1s")
 UI_SERVO_TEXT(SERVO_STR_R_INA_MODEL,
     "the supply is the panel's model",
     "das Netzteil ist vom Panel simuliert")
@@ -6445,40 +6772,40 @@ UI_SERVO_TEXT(SERVO_STR_R_SKIPPED_WIN,
     "Übersprungen:    %lu Fenster des INA3221 "
     "erreichten den Test nie")
 UI_SERVO_TEXT(SERVO_STR_R_RESOLUTION_WIN,
-    "Resolution:     one window every %lu ms: "
+    "Resolution:     one window every %lums: "
     "a travel time is late by up to two "
     "windows and the poll that reads them",
-    "Auflösung:       ein Fenster alle %lu "
+    "Auflösung:       ein Fenster alle %lu"
     "ms: eine Stellzeit ist um bis zu zwei "
     "Fenster und den Poll, der sie liest, zu "
     "lang")
 UI_SERVO_TEXT(SERVO_STR_R_CLIPPED,
     "Clipped:        %lu windows hold a sample "
-    "at an end of the range, %.3f A: their "
+    "at an end of the range, %.3fA: their "
     "figures are a lower bound",
     "Übersteuert:     %lu Fenster enthalten "
-    "einen Messwert am Bereichsende, %.3f A: "
+    "einen Messwert am Bereichsende, %.3fA: "
     "ihre Werte sind eine Untergrenze")
 UI_SERVO_TEXT(SERVO_STR_R_CC,
     "Const. current: %lu supply readings, "
-    "longest stretch %lu ms",
+    "longest stretch %lums",
     "Konstantstrom:   %lu Messwerte des "
-    "Netzteils, längste Folge %lu ms")
+    "Netzteils, längste Folge %lums")
 UI_SERVO_TEXT(SERVO_STR_R_NEGATIVE,
     "Current reads negative at rest: shunt "
     "direction",
     "Strom in Ruhe negativ: Richtung des "
     "Shunts")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_LIMIT,
-    "STALL AT %.2f A cannot be reached: "
-    "current limit %.2f A",
-    "BLOCKIERT AB %.2f A unerreichbar: "
-    "Strombegrenzung %.2f A")
+    "STALL AT %.2fA cannot be reached: "
+    "current limit %.2fA",
+    "BLOCKIERT AB %.2fA unerreichbar: "
+    "Strombegrenzung %.2fA")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_RANGE,
-    "STALL AT %.2f A cannot be reached: "
-    "INA3221 range %.3f A",
-    "BLOCKIERT AB %.2f A unerreichbar: "
-    "INA3221-Bereich %.3f A")
+    "STALL AT %.2fA cannot be reached: "
+    "INA3221 range %.3fA",
+    "BLOCKIERT AB %.2fA unerreichbar: "
+    "INA3221-Bereich %.3fA")
 UI_SERVO_TEXT(SERVO_STR_R_UNM_POSITION_INA,
     "Position: nothing measures the horn; "
     "every result is the current of the "
@@ -6487,7 +6814,7 @@ UI_SERVO_TEXT(SERVO_STR_R_UNM_POSITION_INA,
     "jedes Ergebnis ist der Strom des oben "
     "genannten INA3221-Kanals.")
 UI_SERVO_TEXT(SERVO_STR_R_UNM_PEAKS_INA,
-    "Current between two 1 ms samples of that "
+    "Current between two 1ms samples of that "
     "channel: a window holds their mean, "
     "highest and lowest.",
     "Strom zwischen zwei 1-ms-Messwerten "
@@ -6529,23 +6856,23 @@ UI_SERVO_TEXT(SERVO_STR_L_PH_CHECK,
     "CHECK",
     "KONTROLLE")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_HARD,
-    "a sample at 3.0 A or more",
-    "ein Messwert ab 3.0 A")
+    "a sample at 3.0A or more",
+    "ein Messwert ab 3.0A")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_CLIPPED,
     "INA3221 at the end of its range",
     "INA3221 am Ende seines Bereichs")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_STALL,
-    "above 1.0 A for 400 ms",
-    "400 ms über 1.0 A")
+    "above 1.0A for 400ms",
+    "400ms über 1.0A")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_SEARCH_LONG,
-    "a search took longer than 40 s",
-    "eine Suche dauerte über 40 s")
+    "a search took longer than 40s",
+    "eine Suche dauerte über 40s")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_SUPPLY,
     "supply or rail voltage changed",
     "Netzteil oder Spannung geändert")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_BENCH,
-    "bench did not switch in 3 s",
-    "Prüfstand 3 s nicht geschaltet")
+    "bench did not switch in 3s",
+    "Prüfstand 3s nicht geschaltet")
 UI_SERVO_TEXT(SERVO_STR_L_WHY_NOT_KST,
     "no KST or Chaservo servo read",
     "kein KST- oder Chaservo-Servo")
@@ -6600,41 +6927,41 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM,
     "und RIGHT ANGLE programmiert")
 UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES,
     "Mode:           search only; PULSE LOWER "
-    "and PULSE UPPER set to 1000 and 2000 us "
+    "and PULSE UPPER set to 1000 and 2000us "
     "first",
     "Modus:           nur Suche; PULSE LOWER "
     "und PULSE UPPER zuerst auf 1000 und "
-    "2000 us gesetzt")
+    "2000us gesetzt")
 UI_SERVO_TEXT(SERVO_STR_L_R_SEARCH,
-    "Searched:       from %u us out to %u us "
-    "and %u us",
-    "Gesucht:         von %u us bis %u us und "
-    "%u us")
+    "Searched:       from %uus out to %uus "
+    "and %uus",
+    "Gesucht:         von %uus bis %uus und "
+    "%uus")
 UI_SERVO_TEXT(SERVO_STR_L_R_OUTPUT,
-    "Output:         %s, %u Hz",
-    "Ausgang:         %s, %u Hz")
+    "Output:         %s, %uHz",
+    "Ausgang:         %s, %uHz")
 UI_SERVO_TEXT(SERVO_STR_L_R_PULSE,
-    "Pulse range:    centre %u us, %u-%u us",
-    "Pulsbereich:     Mitte %u us, %u-%u us")
+    "Pulse range:    centre %uus, %u-%uus",
+    "Pulsbereich:     Mitte %uus, %u-%uus")
 UI_SERVO_TEXT(SERVO_STR_L_R_METER,
-    "Current:        %s, 50 ms "
-    "windows, shunt %.1f mOhm",
+    "Current:        %s, 50ms "
+    "windows, shunt %.1fmΩ",
     "Strom:           %s, Fenster "
-    "zu 50 ms, Shunt %.1f mOhm")
+    "zu 50ms, Shunt %.1fmΩ")
 UI_SERVO_TEXT(SERVO_STR_L_R_RULE,
-    "Search rule:    10 us steps, settle 120 "
-    "ms, mean of 80 ms; bound above %.1f x "
-    "free and +%.2f A",
-    "Suchregel:       Schritte zu 10 us, 120 "
-    "ms warten, Mittel über 80 ms; angelaufen "
-    "über %.1f x frei und +%.2f A")
+    "Search rule:    10us steps, settle 120"
+    "ms, mean of 80ms; bound above %.1f x "
+    "free and +%.2fA",
+    "Suchregel:       Schritte zu 10us, 120"
+    "ms warten, Mittel über 80ms; angelaufen "
+    "über %.1f x frei und +%.2fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_PROTECT,
-    "Protections:    a sample at %.1f A, above "
-    "%.1f A for %u ms, no window for %u ms, "
-    "%u s a search",
-    "Schutz:          ein Messwert ab %.1f A, "
-    "über %.1f A für %u ms, %u ms kein "
-    "Fenster, %u s je Suche")
+    "Protections:    a sample at %.1fA, above "
+    "%.1fA for %ums, no window for %ums, "
+    "%us a search",
+    "Schutz:          ein Messwert ab %.1fA, "
+    "über %.1fA für %ums, %ums kein "
+    "Fenster, %us je Suche")
 UI_SERVO_TEXT(SERVO_STR_L_R_ENDS_HEAD,
     "ENDS (the search before programming)",
     "ENDEN (die Suche vor dem Programmieren)")
@@ -6650,18 +6977,18 @@ UI_SERVO_TEXT(SERVO_STR_L_R_HIGH,
     "High end:       ",
     "Oberes Ende:     ")
 UI_SERVO_TEXT(SERVO_STR_L_R_END_BOUND,
-    "%sbound at %u us, endpoint %u us; free "
-    "%.3f A, bound %.3f A",
-    "%sangelaufen bei %u us, Endpunkt %u us; "
-    "frei %.3f A, angelaufen %.3f A")
+    "%sbound at %uus, endpoint %uus; free "
+    "%.3fA, bound %.3fA",
+    "%sangelaufen bei %uus, Endpunkt %uus; "
+    "frei %.3fA, angelaufen %.3fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_END_FREE,
-    "%sfree to %u us; free %.3f A",
-    "%sfrei bis %u us; frei %.3f A")
+    "%sfree to %uus; free %.3fA",
+    "%sfrei bis %uus; frei %.3fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_END_NOT_RUN,
     "%snot searched",
     "%snicht gesucht")
 UI_SERVO_TEXT(SERVO_STR_L_R_ANGLE,
-    "                AS5600 %+.1f deg at the "
+    "                AS5600 %+.1fdeg at the "
     "last free position",
     "                 AS5600 %+.1f Grad an der "
     "letzten freien Stellung")
@@ -6692,20 +7019,20 @@ UI_SERVO_TEXT(SERVO_STR_L_R_SERVO,
     "Servo:          type %u, REVERSION %s",
     "Servo:           Typ %u, REVERSION %s")
 UI_SERVO_TEXT(SERVO_STR_L_R_PULSES,
-    "Servo pulses:   NEUTRAL %.1f us, PULSE "
-    "LOWER %.1f us, PULSE UPPER %.1f us",
-    "Servopulse:      NEUTRAL %.1f us, PULSE "
-    "LOWER %.1f us, PULSE UPPER %.1f us")
+    "Servo pulses:   NEUTRAL %.1fus, PULSE "
+    "LOWER %.1fus, PULSE UPPER %.1fus",
+    "Servopulse:      NEUTRAL %.1fus, PULSE "
+    "LOWER %.1fus, PULSE UPPER %.1fus")
 UI_SERVO_TEXT(SERVO_STR_L_R_PULSE_SET,
-    "Pulse write:    PULSE LOWER %.1f -> %.1f "
-    "us, PULSE UPPER %.1f -> %.1f us",
-    "Pulse schreiben: PULSE LOWER %.1f -> %.1f "
-    "us, PULSE UPPER %.1f -> %.1f us")
+    "Pulse write:    PULSE LOWER %.1f -> %.1f"
+    "us, PULSE UPPER %.1f -> %.1fus",
+    "Pulse schreiben: PULSE LOWER %.1f -> %.1f"
+    "us, PULSE UPPER %.1f -> %.1fus")
 UI_SERVO_TEXT(SERVO_STR_L_R_RANGE,
-    "Range:          servo pulses %.1f-%.1f us "
-    "outside PULSE MIN/MAX %u-%u us",
-    "Bereich:         Servopulse %.1f-%.1f us "
-    "außerhalb PULS MIN/MAX %u-%u us")
+    "Range:          servo pulses %.1f-%.1fus "
+    "outside PULSE MIN/MAX %u-%uus",
+    "Bereich:         Servopulse %.1f-%.1fus "
+    "außerhalb PULS MIN/MAX %u-%uus")
 UI_SERVO_TEXT(SERVO_STR_L_R_LEFT,
     "LEFT ANGLE:     ",
     "LEFT ANGLE:      ")
@@ -6732,11 +7059,11 @@ UI_SERVO_TEXT(SERVO_STR_L_R_SIDE_UNKNOWN,
     "begrenztes Ende nicht gefunden")
 UI_SERVO_TEXT(SERVO_STR_L_R_METHOD,
     "Method:         linear in the pulse; "
-    "overset +%u %% on the share at the first "
+    "overset +%u%% on the share at the first "
     "bound pulse, then the share its search "
     "found free",
     "Verfahren:       linear im Puls; Vorhalt "
-    "+%u %% auf den Anteil am ersten "
+    "+%u%% auf den Anteil am ersten "
     "angelaufenen Puls, dann der Anteil, den "
     "seine Suche frei fand")
 UI_SERVO_TEXT(SERVO_STR_L_R_WRITES,
@@ -6792,11 +7119,11 @@ UI_WEB_TEXT(P_INSTALLED,
 UI_WEB_TEXT(P_FW_NOTE,
     "Upload a panel image, rcbench-panel-p4-vX.Y.Z.bin. The "
     "panel checks it and asks. It installs only after "
-    "INSTALL is held for 2 s on the panel.",
+    "INSTALL is held for 2s on the panel.",
     "Ein Panel-Image hochladen, "
     "rcbench-panel-p4-vX.Y.Z.bin. Das Panel prüft es und "
     "fragt. Es installiert erst, wenn INSTALL am Panel "
-    "2 s gehalten wird.")
+    "2s gehalten wird.")
 UI_WEB_TEXT(P_UPLOAD,
     "Upload",
     "Hochladen")
@@ -6862,8 +7189,8 @@ UI_WEB_TEXT(P_UP_OK_1,
     "Received and checked: panel firmware ",
     "Empfangen und geprüft: Panel-Firmware ")
 UI_WEB_TEXT(P_UP_OK_2,
-    ". To install, hold INSTALL on the panel for 2 s.",
-    ". Zum Installieren INSTALL am Panel 2 s halten.")
+    ". To install, hold INSTALL on the panel for 2s.",
+    ". Zum Installieren INSTALL am Panel 2s halten.")
 UI_WEB_TEXT(P_UP_SAME,
     ". This is the build the panel runs; the panel "
     "offers no install.",

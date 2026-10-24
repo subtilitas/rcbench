@@ -24,6 +24,7 @@
 #include "gfx.h"
 #include "prog_registry.h"
 #include "touch_types.h"
+#include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -32,49 +33,112 @@
 #define W UI_PANEL_W
 #define H UI_BODY_H
 
-/*
- * A full-width session (prog_registry.h): MOTOR & ESC draws the output
- * strip's line above PROG_FULL_Y, and the pages lay out under it.  From
- * the top: the crumb row (BACK, the trail, SEARCH or TIMING), the device
- * card, the parameter card with ROWS_MAX rows, the help lines, and the
- * foot row of buttons.  The foot is the body's: BTN_Y and HELP_Y are where
- * they are on the 1024 x 540 px body whatever the top holds, and the foot
- * row ends 4 px above the alert band (UI_ALERT_H), so an alert covers none
- * of its buttons: RUN, ABORT and OK are body y 456 to 489.
+/**
+ * @brief The faces: SP_FONT, the type scale's LABEL face (10 x 20, cells of
+ *        SP_CELL px), for every label, button, row, value and line;
+ *        SP_FONT_CRUMB, the BODY face (12 x 24), for the crumb's trail;
+ *        SP_FONT_HEAD (20 x 36) for a run's phase and a panel's title;
+ *        SP_FONT_NUM (32 x 44) for the beeps counted.  LINE_P is the pitch
+ *        of the lines a page wraps in SP_FONT.
  */
-#define PAD       UI_MARGIN
-#define CRUMB_Y   (PROG_FULL_Y + 2)
-#define DEV_Y     (CRUMB_Y + 34)
-#define DEV_H     40
-#define PARM_Y    (DEV_Y + DEV_H + 4)
-/** @brief The foot row's top: 4 px over the alert band, 36 px tall. */
-#define BTN_Y     (H - UI_ALERT_H - 4 - 36)
-#define HELP_Y    (BTN_Y - 32)
-#define PARM_H    (HELP_Y - 8 - PARM_Y)
+#define SP_FONT        (&gfx_font_10x20)     /**< labels, rows, lines */
+#define SP_CELL        10                    /**< its cell, px        */
+#define SP_FONT_CRUMB  (&gfx_font_12x24)     /**< the crumb's trail   */
+#define SP_CRUMB_CELL  12                    /**< its cell, px        */
+#define SP_FONT_HEAD   (&gfx_font_20x36)     /**< a phase, a title    */
+#define SP_FONT_NUM    (&gfx_font_num_32x44) /**< the beeps counted   */
+#define LINE_P         20                    /**< a wrapped line's pitch */
 
-#define ROW_Y0    (PARM_Y + 34)
-#define ROW_H     30
-#define ROWS_MAX  7
+/**
+ * @brief A full-width session's layout (prog_registry.h), in body pixels:
+ *        MOTOR & ESC draws the output strip's line above PROG_FULL_Y and
+ *        the pages lay out under it.
+ *
+ * From the top: the crumb row (BACK 120 x 48, the trail, SEARCH or
+ * TIMING) from CRUMB_Y, the cards from CARD_Y to CARD_B, and the foot row
+ * of buttons UI_BTN_H_TALL tall from BTN_Y, which ends SP_FOOT, 4px above
+ * the alert band (UI_ALERT_H): RUN, ABORT and OK are body y 436 to 491,
+ * and an alert covers none of them.
+ */
+#define PAD       UI_MARGIN                      /**< the outer margin     */
+#define SP_FOOT   (H - UI_ALERT_H - 4)           /**< 492: controls end    */
+#define CRUMB_Y   (PROG_FULL_Y + 2)              /**< the crumb row's top  */
+#define CRUMB_H   UI_TAP_MIN                     /**< its height, 48px     */
+#define BACK_W    120                            /**< BACK's width         */
+#define BTN_H     UI_BTN_H_TALL                  /**< the foot row, 56px   */
+/** @brief The foot row's top: 4px over the alert band, BTN_H tall. */
+#define BTN_Y     (SP_FOOT - BTN_H)
+#define FOOT_BTN_W 168                           /**< a foot button's width */
+#define CARD_Y    (CRUMB_Y + CRUMB_H + 6)        /**< 84: the cards' top    */
+#define CARD_B    (BTN_Y - 8)                    /**< 428: their foot       */
+
+/**
+ * @brief A profile's page and TIMING: the parameter card on the left,
+ *        PARM_W wide from CARD_Y to CARD_B, with ROWS_MAX rows of ROW_H
+ *        at a ROW_P pitch, so 8px lie between the keys of two rows; the
+ *        side column right of it (SIDE_X, SIDE_W) with the page keys' row
+ *        at PAGE_Y, MANUAL INTERVENTION REQUIRED at HAND_Y, and the device
+ *        lines and the help of the row picked under them.
+ *
+ * A row from the left: its number, the mark of a change, its name (the
+ * row's own tap, up to CTRL_X - 8), the value (CTRL_X, CTRL_W: 25 cells,
+ * TIMING's keypad), then "-" and "+" of UI_TAP_MIN, 8px apart.
+ */
+#define PARM_W    660                            /**< the parameter card   */
+#define ROW_Y0    (CARD_Y + 8)                   /**< the first row's top  */
+#define ROW_H     UI_TAP_MIN                     /**< a row, 48px          */
+#define ROW_P     56                             /**< its pitch            */
+#define ROWS_MAX  6                              /**< the rows a page holds */
+#define ROW_X     (PAD + 8)                      /**< a row's left         */
+#define ROW_TY    ((ROW_H - 20) / 2)             /**< its text, from its top */
+#define NAME_X    (PAD + 46)                     /**< a row's name         */
+#define STEP_W    UI_TAP_MIN                     /**< "-" and "+"          */
+#define STEP_UP_X (PAD + PARM_W - 8 - STEP_W)    /**< 612: "+"             */
+#define STEP_DN_X (STEP_UP_X - 8 - STEP_W)       /**< 556: "-"             */
+#define CTRL_W    250                            /**< the value, 25 cells  */
+#define CTRL_X    (STEP_DN_X - 8 - CTRL_W)       /**< 298                  */
+#define SIDE_X    (PAD + PARM_W + 8)             /**< 676: the side column */
+#define SIDE_W    (W - PAD - SIDE_X)             /**< 340px                */
+#define SIDE_IN   (SIDE_X + 12)                  /**< its text's left      */
+#define SIDE_CELLS ((SIDE_W - 24) / SP_CELL)     /**< 31 cells a line      */
+#define PAGE_Y    (CARD_Y + 8)                   /**< the page keys' row   */
+#define PAGE_KEY_W 48                            /**< "^" and "v"          */
+#define HAND_Y    (PAGE_Y + UI_TAP_MIN + 8)      /**< MANUAL INTERVENTION  */
+#define SIDE_B    (CARD_B - 6)                   /**< the side text's end  */
+
+/**
+ * @brief A run and its result: the device card across the body from
+ *        DEV_Y, DEV_H tall, the run's card under it to HELP_Y - 6, and two
+ *        help lines across the body from HELP_Y above the foot row.
+ */
+#define DEV_Y     CARD_Y                         /**< the device card      */
+#define DEV_H     48                             /**< its two lines        */
+#define RUN_Y     (DEV_Y + DEV_H + 4)            /**< 136: the run's card  */
+#define HELP_P    22                             /**< the help lines' pitch */
+#define HELP_Y    (BTN_Y - 4 - 20 - HELP_P)      /**< 390                  */
+#define RUN_H     (HELP_Y - 6 - RUN_Y)           /**< 248px                */
+#define RUN_L0    (RUN_Y + 84)                   /**< its first line       */
+#define RUN_LINES 8                              /**< the lines it holds   */
 
 /* The panels over the pages -- the RUN warning, the manual steps and a
  * run's prompt -- from PROG_FULL_Y to the body's margin, and the buttons at
- * their foot, which end 4 px above the foot row's place (body y 396 to
- * 451): a second tap on RUN's place lands on no button of the panel it
- * opened, and the alert band covers none of them. */
-#define SP_PANEL_Y  PROG_FULL_Y
-#define SP_PANEL_H  (H - PAD - SP_PANEL_Y)
-#define SP_PBTN_H   UI_BTN_H_TALL
-/** @brief A panel's buttons' top: they end 4 px over the foot row. */
+ * their foot, UI_TAP_MIN tall, which end 4px above the foot row's place
+ * (body y 384 to 431): a second tap on RUN's place lands on no button of
+ * the panel it opened, and the alert band covers none of them. */
+#define SP_PANEL_Y  PROG_FULL_Y                /**< a panel's top        */
+#define SP_PANEL_H  (H - PAD - SP_PANEL_Y)     /**< its height           */
+#define SP_PBTN_H   UI_TAP_MIN                 /**< its buttons, 48px    */
+/** @brief A panel's buttons' top: they end 4px over the foot row. */
 #define SP_PBTN_Y   (BTN_Y - 4 - SP_PBTN_H)
 
-_Static_assert(ROW_Y0 + (ROWS_MAX - 1) * ROW_H + 24 <= PARM_Y + PARM_H - 4,
+_Static_assert(ROW_Y0 + (ROWS_MAX - 1) * ROW_P + ROW_H <= CARD_B - 4,
                "ROWS_MAX rows fit the parameter card");
-
-/* The control column, sized to stop clear of the steppers: a value as long
- * as MEDIUM HIGH has to fit beside them, not under them. */
-#define CTRL_X    400
-#define CTRL_W    216
-#define STEP_W    34
+_Static_assert(RUN_L0 + (RUN_LINES - 1) * LINE_P + 20 <= RUN_Y + RUN_H - 2,
+               "a run's lines fit its card");
+_Static_assert(HELP_Y + HELP_P + 20 <= BTN_Y, "the help lines end above the "
+               "foot row");
+_Static_assert(BTN_Y + BTN_H + 4 == UI_ALERT_Y - UI_BAND_H,
+               "the foot row ends 4px above the alert band");
 
 /*
  * Each page's drawer is its own function, so the main task's stack holds
@@ -165,19 +229,31 @@ SP_SHARED bool hit(gfx_rect_t r, int px, int py)
     return false;
 }
 
+/**
+ * @brief The crumb row: BACK, and @p trail in SP_FONT_CRUMB beside it.
+ * @param c The canvas.
+ * @param trail The trail, cut to its room by the caller.
+ */
 SP_SHARED void draw_crumb(gfx_canvas_t *c, const char *trail)
 {
-    ui_button(c, pg.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI), false,
-              true);
-    gfx_text(c, pg.back.x + pg.back.w + 16, CRUMB_Y + 8, trail,
-             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    ui_button_font(c, pg.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI),
+                   false, true, SP_FONT);
+    gfx_text(c, pg.back.x + pg.back.w + 16, CRUMB_Y + (CRUMB_H - 24) / 2,
+             trail, SP_FONT_CRUMB, ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+/**
+ * @brief A row's value, right-aligned in the value column.
+ * @param c The canvas.
+ * @param y The row's top.
+ * @param text The value.
+ * @param ink Its colour.
+ */
 SP_SHARED void widget_enum(gfx_canvas_t *c, int y, const char *text,
                         gfx_color_t ink)
 {
-    gfx_text_in(c, (gfx_rect_t){ CTRL_X, (int16_t)y, CTRL_W, 16 },
-                text, UI_FONT_LABEL, ink, 1, GFX_ALIGN_RIGHT);
+    gfx_text_in(c, (gfx_rect_t){ CTRL_X, (int16_t)(y + ROW_TY), CTRL_W, 20 },
+                text, SP_FONT, ink, 1, GFX_ALIGN_RIGHT);
 }
 
 /* --- text in cells ------------------------------------------------------- */
@@ -275,7 +351,7 @@ SP_SHARED int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
                 ++at;
             }
         }
-        gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
+        gfx_text(c, x, y, buf, SP_FONT, ink, 1);
         y += pitch;
     }
     return lines;
@@ -299,18 +375,23 @@ static inline int sp_wrap_lines(const char *text, int cells, int max_lines)
     return lines;
 }
 
-/*
- * A line at the foot of a page, from @p x to @p right, left of the buttons
- * there: on one line level with their labels, or where it needs more, on
- * two from 2 px under their top, the second ending 2 px under their foot.
+/**
+ * @brief A note at the foot of a page, from @p x to @p right, left of the
+ *        buttons there: on one line level with their labels, or where it
+ *        needs more, on two at LINE_P from 6px under their top.
+ * @param c The canvas.
+ * @param x Its left.
+ * @param right Where it ends.
+ * @param text The note.
+ * @param ink Its colour.
  */
 SP_SHARED void sp_note(gfx_canvas_t *c, int x, int right, const char *text,
                     gfx_color_t ink)
 {
-    const int cells = (right - x) / 8;
-    const int y = (sp_wrap_lines(text, cells, 2) > 1) ? BTN_Y + 2
-                                                      : BTN_Y + 9;
-    (void)sp_wrap(c, x, y, 18, text, cells, 2, ink);
+    const int cells = (right - x) / SP_CELL;
+    const int y = (sp_wrap_lines(text, cells, 2) > 1) ? BTN_Y + 6
+                                                      : BTN_Y + (BTN_H - 20) / 2;
+    (void)sp_wrap(c, x, y, LINE_P, text, cells, 2, ink);
 }
 
 /* --- the panel's side, in esc_stick_panel.c ----------------------------- */

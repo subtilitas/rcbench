@@ -16,14 +16,13 @@
 
 /* ------------------------------------------------------ the PROG PORT entry */
 
-/* SERVO TESTER (y 262 to 298) and PORT PWM (y 326 to 362), two segments
- * of 128 px 4 px apart from x 19, under their labels
- * (outputs_port_entry.c). */
-#define SEG_X(i)      (19 + 64 + (i) * 132)
+/* SERVO TESTER and PORT PWM, two segments of 145px 4px apart from x 19,
+ * under their labels (outputs_spots.h). */
+#define SEG_X(i)      OU_SEG_X(i)
 
-#define SEG_TESTER_Y  (262 + 18)
+#define SEG_TESTER_Y  OU_TESTER_Y
 
-#define SEG_PWM_Y     (326 + 18)
+#define SEG_PWM_Y     OU_PWM_Y
 
 /* The ports as the screens see them: port 1 SERVO PWM on @p pin0, the
  * others NONE on GP26, none and GP27, from an IOmcu with FUNC. */
@@ -45,20 +44,11 @@ static void ports(uint8_t count, uint8_t pin0)
     port_view_set(&v);
 }
 
-/* The list's rows as the screen sizes them: 46 px, or less where the
- * protocols and the entries would pass the screen's 540 px. */
-static int row_h(void)
-{
-    const int fit = (SCREEN_H - DD_Y - 16)
-                    / ((int)OUTBIND_PROTOS + outputs_screen_port_entries());
-    return fit < 46 ? fit : 46;
-}
-
+/* The list opened and PROG PORT entry @p n picked in its second column. */
 static void choose_port(int n)
 {
     tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
-    const int i = (int)OUTBIND_PROTOS + n;
-    tap(DD_X + 40, DD_Y + 4 + i * row_h() + row_h() / 2);
+    tap(OU_POP_X(1), OU_POP_ROW_Y(n));
 }
 
 static void fresh_port(void)
@@ -106,8 +96,7 @@ TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
         fresh_port();
         ports(k[i].count, 13u);
         CHECK_EQ(outputs_screen_port_entries(), k[i].entries);
-        CHECK(DD_Y + 8 + row_h() * ((int)OUTBIND_PROTOS + k[i].entries)
-              <= SCREEN_H);
+        CHECK(DD_Y + 8 + OU_POP_ROW * (int)OUTBIND_PROTOS + 4 <= OU_FOOT);
         for (int n = 0; n < (int)k[i].entries; ++n) {
             choose_port(n);
             CHECK_EQ(outputs_screen_port_shown(), n);

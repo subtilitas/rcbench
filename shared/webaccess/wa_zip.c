@@ -14,6 +14,8 @@
 
 #include <string.h>
 
+#include "wall_clock.h"
+
 #define SIG_LOCAL    0x04034b50u
 #define SIG_DESC     0x08074b50u
 #define SIG_CENTRAL  0x02014b50u
@@ -121,7 +123,7 @@ uint32_t wa_zip_desc_bytes(uint64_t size)
 }
 
 /* Whether a central header carries its sizes in the ZIP64 field.  An
- * entry past 4 GiB carries them too, set to the mark in the header: Info-ZIP
+ * entry past 4GiB carries them too, set to the mark in the header: Info-ZIP
  * unzip 6.0 reads the field by the sizes of the entry before when it lists,
  * and an entry of exactly 0xFFFFFFFF bytes then shifts the next one's. */
 static bool central_sizes64(uint64_t size, uint64_t offset)
@@ -152,7 +154,8 @@ size_t wa_zip_local(uint8_t *out, const char *name, size_t name_len,
 {
     (void)dir;
     uint16_t t, d;
-    wa_dos_time(mtime, &t, &d);
+    /* DOS dates are local, as FatFs wrote the stamp (wall_clock.h). */
+    wa_dos_time(wall_local_s(mtime), &t, &d);
     const bool z64 = wa_zip_entry64(size);
     uint8_t *p = put32(out, SIG_LOCAL);
     p = put16(p, z64 ? VERSION_45 : VERSION_20);
@@ -196,7 +199,8 @@ size_t wa_zip_central(uint8_t *out, const char *name, size_t name_len,
                       int64_t mtime, bool dir)
 {
     uint16_t t, d;
-    wa_dos_time(mtime, &t, &d);
+    /* DOS dates are local, as FatFs wrote the stamp (wall_clock.h). */
+    wa_dos_time(wall_local_s(mtime), &t, &d);
     const unsigned k = central_fields(size, offset);
     const bool big = central_sizes64(size, offset);
     uint8_t *p = put32(out, SIG_CENTRAL);
@@ -420,7 +424,7 @@ static wa_zip_err_t plan_walk(wa_walk_t *w, const wa_fs_t *fs,
 
 wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out)
 {
-    static wa_walk_t w;   /* 1.6 kB: off the calling task's stack */
+    static wa_walk_t w;   /* 1.6kB: off the calling task's stack */
     return plan_walk(&w, fs, out, NULL, 0u);
 }
 

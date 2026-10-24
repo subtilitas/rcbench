@@ -41,7 +41,7 @@ typedef struct {
 } face_t;
 
 /* Cap top and baseline are the rows 'H' (text faces) and '0' (numerals)
- * occupy; the measured cap heights are 12, 15, 23 and 40 px; the 20x36 face is
+ * occupy; the measured cap heights are 12, 15, 23 and 40px; the 20x36 face is
  * generated at TrueType size 31 so that its descenders end inside the cell. */
 static const face_t k_faces[] = {
     { &gfx_font_10x20,     "10x20", 10, 20, false, 'H', 3, 15 },
@@ -101,7 +101,7 @@ TEST_CASE(new_faces_have_the_planned_cells)
         CHECK_EQ(ft->bytes_per_row, f->w);
         CHECK_EQ(ft->first, 0x20);
         CHECK_EQ(ft->last, f->numerals ? 0x3A : 0x7E);
-        CHECK_EQ(ft->extra_count, f->numerals ? 0 : 7);
+        CHECK_EQ(ft->extra_count, f->numerals ? 0 : 9);
         CHECK(f->numerals || ft->extra != NULL);
 
         CHECK_EQ(gfx_text_width(ft, "ABC", 1), 3 * f->w);
@@ -116,15 +116,17 @@ TEST_CASE(new_faces_have_the_planned_cells)
 
 TEST_CASE(new_text_faces_list_the_german_letters_in_order)
 {
+    /* The degree sign first, then the German letters, then the ohm sign
+     * (U+03A9, Greek capital omega): ascending. */
     static const uint16_t k_german[] = {
-        0xC4, 0xD6, 0xDC, 0xDF, 0xE4, 0xF6, 0xFC,
+        0xB0, 0xC4, 0xD6, 0xDC, 0xDF, 0xE4, 0xF6, 0xFC, 0x3A9,
     };
     for (size_t i = 0; i < N_FACES; ++i) {
         const gfx_font_t *ft = k_faces[i].font;
         if (k_faces[i].numerals) {
             continue;
         }
-        for (size_t k = 0; k < 7; ++k) {
+        for (size_t k = 0; k < 9; ++k) {
             CHECK_EQ(ft->extra[k], k_german[k]);
         }
     }

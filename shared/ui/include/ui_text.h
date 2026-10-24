@@ -132,6 +132,27 @@ const char *const *ui_servo_table(void);
 /** ON or OFF in the language showing. */
 const char *ui_on_off(int on);
 
+/* ---------------------------------------------------------------- units */
+
+/**
+ * @brief Whether @p unit is a unit symbol, written with no space after its
+ *        number: one of k_unit_symbols (ui_text.c), which holds the
+ *        symbols of tools/check_units.py, alone or followed by a "/" part
+ *        ("rpm/V", "%/s").
+ * @param unit  the unit, UTF-8 ("mΩ"); NULL or "" is none
+ * @return 1 for a symbol, 0 for a word ("GPIO", "S"), none or NULL
+ */
+int ui_unit_is_symbol(const char *unit);
+
+/**
+ * @brief What stands between a number and @p unit: "" before a symbol
+ *        ("6.00V", "1000.0mΩ", "40s") and before no unit, " " before a
+ *        word ("0 to 54 GPIO").
+ * @param unit  the unit, or NULL
+ * @return "" or " "
+ */
+const char *ui_unit_gap(const char *unit);
+
 #ifdef GFX_TEXT_TRACE
 /** Defined by the fit check's harness: @p id was looked up. */
 void ui_text_trace(ui_text_id_t id);

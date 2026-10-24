@@ -20,6 +20,7 @@ SPDX-License-Identifier: MIT
 
 SOURCES = [
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_damage.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_font8x16.c",
@@ -111,6 +112,19 @@ SOURCES = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    # FILES, and the file manager's core it starts its jobs and keeps its
+    # panes with (shared/files), the logger's open-file rule with it.
+    "shared/ui/files_screen.c",
+    "shared/ui/files_draw.c",
+    "shared/ui/files_events.c",
+    "shared/files/fm_name.c",
+    "shared/files/fm_select.c",
+    "shared/files/fm_rules.c",
+    "shared/files/fm_tree.c",
+    "shared/files/fm_ops.c",
+    "shared/files/fm_req.c",
+    "shared/clock/wall_clock.c",
+    "shared/logfile/log_take.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
     # ESC STICK session lists and runs.
     "shared/esc/esc_profiles_gen.c",
@@ -147,6 +161,8 @@ SOURCES = [
     "shared/bench/bench_state.c",
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
+    # LOGS' SERVO run, written by the logger itself.
+    "shared/bench/log_writer.c",
     "shared/servo/servo_sim.c",
     "shared/servo/servo_sweep.c",
     "shared/servo/servo_move.c",
@@ -178,6 +194,8 @@ INCLUDES = [
     "shared/link/include",
     "shared/can/include",
     "shared/logfile/include",
+    "shared/files/include",
+    "shared/clock/include",
     "shared/settings/include",
     "shared/servo/include",
     "shared/esc/include",

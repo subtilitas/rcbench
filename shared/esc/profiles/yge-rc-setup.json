@@ -471,39 +471,39 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz"
+          "name": "8kHz"
         },
         {
           "number": 2,
-          "name": "9 kHz"
+          "name": "9kHz"
         },
         {
           "number": 3,
-          "name": "10 kHz"
+          "name": "10kHz"
         },
         {
           "number": 4,
-          "name": "11 kHz"
+          "name": "11kHz"
         },
         {
           "number": 5,
-          "name": "12 kHz"
+          "name": "12kHz"
         },
         {
           "number": 6,
-          "name": "13 kHz"
+          "name": "13kHz"
         },
         {
           "number": 7,
-          "name": "14 kHz"
+          "name": "14kHz"
         },
         {
           "number": 8,
-          "name": "15 kHz"
+          "name": "15kHz"
         },
         {
           "number": 9,
-          "name": "16 kHz"
+          "name": "16kHz"
         }
       ],
       "applies_to": null,

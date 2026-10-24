@@ -238,7 +238,7 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
 
     /* Armed, and past the flash: holding DISARM must not fade. */
     motor_screen_set_armed(true);
-    for (int i = 0; i < 20; ++i) {           /* 150 ms in phase-sized steps */
+    for (int i = 0; i < 20; ++i) {           /* 150ms in phase-sized steps */
         scr->render(&cv, 0);
         scr->tick(0.02f);
     }
@@ -259,7 +259,7 @@ TEST_CASE(the_arm_button_fades_across_the_hold)
 }
 
 /*
- * Before a single poll has answered there is nothing to show, and 0.00 V is
+ * Before a single poll has answered there is nothing to show, and 0.00V is
  * a wrong reading; the heroes print a placeholder, so the screen differs
  * visibly from one holding real numbers.
  */
@@ -293,7 +293,7 @@ TEST_CASE(an_unanswered_bench_does_not_show_numbers)
  * The trace is the record of a run, so it advances only while the bench is
  * armed.  Arming clears it -- a run's trace is that run's -- and disarming
  * holds it, which is what stops a finished run scrolling off the left edge
- * 26.7 s later with no way to keep it.
+ * 26.7s later with no way to keep it.
  */
 TEST_CASE(the_plot_records_one_run)
 {

@@ -9,9 +9,10 @@ contrast ramp, so the font keeps its tuned weight and has a soft edge either
 side of it.
 
 A text face holds printable ASCII (0x20 to 0x7E) as one block and, after it,
-the extra code points listed in its row of FONTS: the German letters in the
-text faces.  gfx decodes UTF-8 and finds a code point in the block or in
-that list; anything else draws as '?'.
+the extra code points listed in its row of FONTS: the degree sign, the
+German letters and the ohm sign in the text faces.  gfx decodes UTF-8 and
+finds a code point in the block or in that list; anything else draws as
+'?'.
 
     python3 tools/gen_font.py              # regenerate all fonts
     python3 tools/gen_font.py --check      # fail if the checked-in files differ
@@ -47,25 +48,32 @@ FONT_CANDIDATES = [
 ]
 
 # The code points the text faces carry beyond printable ASCII, ascending:
-# the German letters.  A language that needs another letter adds it here and
-# regenerates; gfx looks a code point up in this list after the ASCII block.
+# the degree sign, the German letters and the ohm sign, U+03A9 (Greek
+# capital omega, which Unicode prefers to U+2126 OHM SIGN), written in
+# place of "Ohm" because this face's O reads close to a zero ("120Ohm" as
+# "1200hm").  A language that needs another
+# letter adds it here and regenerates; gfx looks a code point up in this
+# list after the ASCII block.
 GERMAN = [0xC4, 0xD6, 0xDC, 0xDF, 0xE4, 0xF6, 0xFC]   # Ä Ö Ü ß ä ö ü
+DEGREE = [0xB0]                                       # °
+OHM = [0x3A9]                                         # Ω
+TEXT_EXTRA = DEGREE + GERMAN + OHM
 
 # name, cell w, cell h, first, last, ttf size, dx, dy, threshold, output
 # file, extra code points
 FONTS = [
     ("gfx_font_8x16",      8, 16, 0x20, 0x7E, 13, -1, 0, 110,
-     "shared/gfx/gfx_font8x16.c", GERMAN),
+     "shared/gfx/gfx_font8x16.c", TEXT_EXTRA),
     ("gfx_font_16x28",    16, 28, 0x20, 0x7E, 26, -1, 0, 120,
-     "shared/gfx/gfx_font16x28.c", GERMAN),
+     "shared/gfx/gfx_font16x28.c", TEXT_EXTRA),
     ("gfx_font_num_24x30", 24, 30, 0x20, 0x3A, 39, -1, -8, 120,
      "shared/gfx/gfx_font_num24x30.c", []),
     ("gfx_font_10x20",    10, 20, 0x20, 0x7E, 16, 0, 0, 110,
-     "shared/gfx/gfx_font10x20.c", GERMAN),
+     "shared/gfx/gfx_font10x20.c", TEXT_EXTRA),
     ("gfx_font_12x24",    12, 24, 0x20, 0x7E, 20, 0, 0, 110,
-     "shared/gfx/gfx_font12x24.c", GERMAN),
+     "shared/gfx/gfx_font12x24.c", TEXT_EXTRA),
     ("gfx_font_20x36",    20, 36, 0x20, 0x7E, 31, 0, 0, 120,
-     "shared/gfx/gfx_font20x36.c", GERMAN),
+     "shared/gfx/gfx_font20x36.c", TEXT_EXTRA),
     ("gfx_font_num_32x44", 32, 44, 0x20, 0x3A, 52, -1, -9, 120,
      "shared/gfx/gfx_font_num32x44.c", []),
 ]
@@ -139,7 +147,7 @@ def render(spec) -> dict:
     glyphs = {}
     # How wide the ramp is either side of the threshold: narrow enough that a
     # stem stays a stem, wide enough that a diagonal is not a staircase, about
-    # 1 px of softness at these cell sizes.
+    # 1px of softness at these cell sizes.
     ramp = 62
     lo, hi = thr - ramp, thr + ramp
     for code in codes(spec):
@@ -162,7 +170,7 @@ def render(spec) -> dict:
 def clipped(spec) -> dict:
     """Count the solid pixels of each glyph that fall outside its cell.
 
-    The glyph is drawn on a canvas 24 px larger on every side, so ink beyond
+    The glyph is drawn on a canvas 24px larger on every side, so ink beyond
     the cell is seen instead of lost, and remapped through the same ramp as
     render().
 

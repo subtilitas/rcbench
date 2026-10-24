@@ -21,7 +21,7 @@
  *
  * Capture representation: edge timestamps, not fixed-rate samples.
  *   - A reply has at most 23 edges.  A capture is 200 bytes, against 2150
- *     bytes for the 8 ms window after a write sampled at 2 MHz.
+ *     bytes for the 8ms window after a write sampled at 2MHz.
  *   - The decoder does not depend on the driver's sampling rate.  A PIO
  *     (programmable input/output) program that counts cycles between edges
  *     and a DMA (direct memory access) sample buffer reduced to edges both
@@ -58,16 +58,16 @@ extern "C" {
 /* --- bit timing ----------------------------------------------------------- */
 
 /**
- * @brief Transmit half-cell, 25.40 us.
+ * @brief Transmit half-cell, 25.40us.
  *
- * The only rate the servo is proven to accept.  Required accuracy: 50 ns, edge
- * jitter below 100 ns.
+ * The only rate the servo is proven to accept.  Required accuracy: 50ns, edge
+ * jitter below 100ns.
  */
 #define KST_HALF_CELL_NS 25400u
-/** @brief The same half-cell in cycles of a 150 MHz system clock. */
+/** @brief The same half-cell in cycles of a 150MHz system clock. */
 #define KST_HALF_CELL_CYCLES_150MHZ 3810u
 /**
- * @brief The servo's own cell, 51.15 us (half-cell 25.575 us, 0.7 % slower than
+ * @brief The servo's own cell, 51.15us (half-cell 25.575us, 0.7% slower than
  *        the master).
  *
  * The decoder predicts each mid-cell edge with it.
@@ -91,52 +91,52 @@ extern "C" {
 /* --- line handling, for the driver ---------------------------------------- */
 
 /**
- * @brief After the last half-cell of a frame the driver drives low for 50 us,
+ * @brief After the last half-cell of a frame the driver drives low for 50us,
  *        then switches the pad to input.
  *
- * The earliest reply observed starts 437 us after the last edge.
+ * The earliest reply observed starts 437us after the last edge.
  */
 #define KST_RELEASE_NS 50000u
 
 /* --- reply windows, from the master's last edge to the first rising edge -- */
 
-/** @brief After a read frame and after a sync burst: measured 437 to 439 us. */
+/** @brief After a read frame and after a sync burst: measured 437 to 439us. */
 #define KST_READ_ACCEPT_MIN_NS 350000u
 #define KST_READ_ACCEPT_MAX_NS 600000u
-/** @brief Capture length after a read frame or a sync burst, 1.5 ms. */
+/** @brief Capture length after a read frame or a sync burst, 1.5ms. */
 #define KST_READ_WINDOW_NS     1500000u
-/** @brief After a write frame: measured 3687 to 3714 us. */
+/** @brief After a write frame: measured 3687 to 3714us. */
 #define KST_WRITE_ACCEPT_MIN_NS 3300000u
 #define KST_WRITE_ACCEPT_MAX_NS 4200000u
-/** @brief Capture length after a write frame, 8 ms. */
+/** @brief Capture length after a write frame, 8ms. */
 #define KST_WRITE_WINDOW_NS     8000000u
 
 /* --- decoder -------------------------------------------------------------- */
 
-/** @brief A level that lasts less than 1.5 us is not a level change. */
+/** @brief A level that lasts less than 1.5us is not a level change. */
 #define KST_GLITCH_NS 1500u
-/** @brief A mid-cell edge is searched within 8 us of its predicted time. */
+/** @brief A mid-cell edge is searched within 8us of its predicted time. */
 #define KST_RX_SEARCH_NS 8000u
 /**
- * @brief The two halves of a cell are compared 12.8 us before and after the
+ * @brief The two halves of a cell are compared 12.8us before and after the
  *        mid-cell edge.
  */
 #define KST_RX_CONFIRM_NS 12800u
 /**
- * @brief Mean half-cell of a reply: 25.6 us +/- 5 %.
+ * @brief Mean half-cell of a reply: 25.6us +/- 5%.
  *
  * The servo's clock tolerance over temperature and supply is not measured.
  */
 #define KST_RX_HALF_CELL_MIN_NS 24300u
 #define KST_RX_HALF_CELL_MAX_NS 26900u
 /**
- * @brief After a last bit 1 the line is low within 100 us of the nominal end.
+ * @brief After a last bit 1 the line is low within 100us of the nominal end.
  *
- * The servo releases the line there; the last high reads 32 us at a 1.4 V
- * threshold and 59 us at 0.1 V.
+ * The servo releases the line there; the last high reads 32us at a 1.4V
+ * threshold and 59us at 0.1V.
  */
 #define KST_RX_FINAL_EDGE_MAX_NS 100000u
-/** @brief The line stays low for 200 us after the reply. */
+/** @brief The line stays low for 200us after the reply. */
 #define KST_RX_QUIET_AFTER_NS 200000u
 
 /**
@@ -259,9 +259,9 @@ typedef enum {
     KST_RX_LATE,         /**< first edge after the accept window */
     KST_RX_CELL,         /**< a cell without opposite halves */
     KST_RX_LENGTH,       /**< fewer or more than 11 cells */
-    KST_RX_RATE,         /**< mean half-cell outside 24.3 to 26.9 us */
+    KST_RX_RATE,         /**< mean half-cell outside 24.3 to 26.9us */
     KST_RX_FLAGS,        /**< flag bits or sync value not as expected */
-    KST_RX_FINAL_EDGE,   /**< line still high 100 us after the nominal end */
+    KST_RX_FINAL_EDGE,   /**< line still high 100us after the nominal end */
     KST_RX_WINDOW,       /**< the capture ends before the quiet time does */
     KST_RX_OVERFLOW,     /**< the capture lost edges */
     KST_RX_CAPTURE,      /**< no capture, or edge times not ascending */

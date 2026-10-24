@@ -36,7 +36,7 @@ PROGRAM lists the ESC programmers. Its one row, `ESCs by throttle stick` in the 
 
 ESC STICK opens full width, over the left column and the right column. In place of the tabs the strip row shows the output strip, one line:
 
-`TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE`
+`TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE`
 
 - TARGET: the protocol and the pins the run drives, in the warning colour while no pin is bound or the binding is not read.
 - SUPPLY: the PD mini's output as it reads, `SUPPLY ON` without readings, `SUPPLY OFF`, or `SUPPLY --` while the supply does not answer.
@@ -79,9 +79,9 @@ ARM switches the whole bank of throttle outputs to ARMED, not only the pins name
 
 ![A run while ARMED, with no IOmcu: SIM and the SIMULATION watermark](view:motor)
 
-1. Hold ARM for 2 s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing.
+1. Hold ARM for 2s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing.
 2. Drag the throttle. It moves by how far the finger travels, not to where it lands. `-1` and `+1` step one percentage point.
-3. Tap DISARM, or press STOP, to end the run. Both stop the output at once, with no ramp, and return the throttle to 0 %.
+3. Tap DISARM, or press STOP, to end the run. Both stop the output at once, with no ramp, and return the throttle to 0%.
 
 While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads `NOW`. ARM is drawn disabled while the [servo programmer](servo-programmer.md) holds a port.
 
@@ -90,11 +90,11 @@ While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads
 | The track | refused; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | switches to ARMED after a 2 s hold | DISARM: switches to SAFE on a tap |
+| ARM | switches to ARMED after a 2s hold | DISARM: switches to SAFE on a tap |
 | RESET PEAKS | clears the peak markers | clears the peak markers |
 | PLOT, TABLE | switch the view of LIVE | switch the view of LIVE |
 
-Leaving the screen, TARGET, a lost link or a touch controller that stops answering also switches to SAFE and returns the throttle to 0 %.
+Leaving the screen, TARGET, a lost link or a touch controller that stops answering also switches to SAFE and returns the throttle to 0%.
 
 While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model.
 
@@ -102,7 +102,7 @@ While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the sc
 
 ![The plot holds the run after the switch to SAFE](view:motor-held)
 
-Switching to SAFE holds the plot as it stood: the tag reads `LAST TELEMETRY` and the right edge reads `END`. The next switch to ARMED clears it. The plot is 600 columns at 20 samples per second, 30.0 s. A longer run keeps its last 30.0 s on screen; the whole run is in its CSV (comma-separated values) file on the card.
+Switching to SAFE holds the plot as it stood: the tag reads `LAST TELEMETRY` and the right edge reads `END`. The next switch to ARMED clears it. The plot is 600 columns at 20 samples per second, 30.0s. A longer run keeps its last 30.0s on screen; the whole run is in its CSV (comma-separated values) file on the card.
 
 The readouts, the TABLE pane, the totals and the temperature strip stay live at all times, ARMED or not.
 
@@ -118,7 +118,7 @@ On LIVE the telemetry card carries PLOT and TABLE under its title, and beside th
 
 TABLE lists voltage, current, power and rpm, each with its peak. A channel nothing answered for reads `--`.
 
-- With the INA228 enabled on SETUP, INTERFACES and answering, voltage, current and power are the INA228's: the means of the IOmcu's last 50 ms window, read at 20 Hz. The heading names `INA228`.
+- With the INA228 enabled on SETUP, INTERFACES and answering, voltage, current and power are the INA228's: the means of the IOmcu's last 50ms window, read at 20Hz. The heading names `INA228`.
 - `CLIPPED` follows the heading while a current read the end of the part's range: current and power are then bounds, not values.
 - `ESC SAYS` lists the ESC's own telemetry voltage and current, and `diff` is the ESC's figure less the INA228's.
 - Without the INA228 the channels are the ESC's telemetry, and `ESC SAYS` is not shown.
@@ -126,7 +126,7 @@ TABLE lists voltage, current, power and rpm, each with its peak. A channel nothi
 
 ## kV, rpm/V and EFF
 
-The header of the plot shows the rated kV, the measured rpm per volt and EFF, the second divided by the first, capped at 199 %. The rated kV is the `Rated kV` setting on MOTOR & ESC, SETTINGS, 0 to 10000 rpm/V, default 0. At 0 the kV field is empty and no EFF is shown. EFF counts copper loss only and includes the ESC's losses, so it is an upper bound, not a shaft efficiency.
+The header of the plot shows the rated kV, the measured rpm per volt and EFF, the second divided by the first, capped at 199%. The rated kV is the `Rated kV` setting on MOTOR & ESC, SETTINGS, 0 to 10000rpm/V, default 0. At 0 the kV field is empty and no EFF is shown. EFF counts copper loss only and includes the ESC's losses, so it is an upper bound, not a shaft efficiency.
 
 ## The log of a run
 

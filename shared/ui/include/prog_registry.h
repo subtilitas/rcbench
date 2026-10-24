@@ -29,7 +29,7 @@
  *     the right (SERVO's sessions).  Full width, it takes the whole body
  *     under the strip row, and the host draws a one-line output strip in
  *     that row in place of the card: what the session drives, `TARGET
- *     DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE` (MOTOR & ESC's
+ *     DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE` (MOTOR & ESC's
  *     sessions, ESC STICK).  The owner grants each full-width page set;
  *     prog_reg_check() holds each device to the one layout its host draws.
  *
@@ -96,18 +96,21 @@ typedef enum {
 #define PROG_ONE_CALL __attribute__((noinline))
 #endif
 
-/*
- * A full-width session's layout, in the host's body coordinates (1024 x 540
- * px under the band): the output strip's line at the top, one line of the
- * 8 x 16 face from PROG_FULL_STRIP_Y, and the session's own area from
- * PROG_FULL_Y to the foot of the body.
+/**
+ * @brief A full-width session's layout, in the host's body coordinates
+ *        (1024 x 540px under the band): the output strip's line at the
+ *        top, one line of PROG_FULL_STRIP_FONT, the type scale's LABEL face
+ *        (10 x 20), from PROG_FULL_STRIP_Y, and the session's own area from
+ *        PROG_FULL_Y to the foot of the body.
  */
-#define PROG_FULL_STRIP_X 12
-#define PROG_FULL_STRIP_Y 6
-#define PROG_FULL_STRIP_H 16
-#define PROG_FULL_Y       26
-/** The cells the output strip's line holds: 776 px of 8 px cells. */
-#define PROG_FULL_STRIP_CELLS 97
+#define PROG_FULL_STRIP_X    12  /**< the strip's left, px            */
+#define PROG_FULL_STRIP_Y    4   /**< its top, px                     */
+#define PROG_FULL_STRIP_H    20  /**< its line's height, px           */
+#define PROG_FULL_Y          28  /**< the session's area's top, px    */
+#define PROG_FULL_STRIP_FONT (&gfx_font_10x20) /**< the strip's face  */
+/** @brief The cells the output strip's line holds: 1000px of 10px
+ *         cells. */
+#define PROG_FULL_STRIP_CELLS 100
 
 /** The list rules (see the top of this file). */
 #define PROG_LIST_SEARCH_OVER   9
@@ -322,9 +325,9 @@ void prog_list_build(prog_list_t *l, const prog_reg_row_t *rows, size_t n,
  * @brief A list drawn into a rectangle: a bar on top while the list offers
  *        SEARCH or does not fit (SEARCH, "^", "v"), then its entries.
  *
- * A row is 48 px (UI_TAP_MIN) with 8 px under it, a heading 28 px with
- * 4 px under it; the bar is 48 px, SEARCH 260 px wide and "^" and "v"
- * 56 px each.  The text is in PROG_VIEW_FONT, the type scale's LABEL face
+ * A row is 48px (UI_TAP_MIN) with 8px under it, a heading 28px with
+ * 4px under it; the bar is 48px, SEARCH 260px wide and "^" and "v"
+ * 56px each.  The text is in PROG_VIEW_FONT, the type scale's LABEL face
  * (10 x 20).  A row's press is taken on its DOWN and is a tap on its
  * release over the same row.
  */
@@ -381,7 +384,7 @@ gfx_rect_t prog_view_entry_rect(const prog_view_t *v, const prog_list_t *l,
  */
 gfx_rect_t prog_view_search_rect(const prog_view_t *v, const prog_list_t *l);
 /**
- * @brief "^" on the bar, PROG_VIEW_KEY_W wide, 8 px left of "v".
+ * @brief "^" on the bar, PROG_VIEW_KEY_W wide, 8px left of "v".
  * @param v the view
  * @param l the list it shows
  * @return its rectangle; empty when the list does not page

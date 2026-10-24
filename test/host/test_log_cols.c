@@ -16,7 +16,7 @@
 #include "log_fields.h"
 #include "log_writer.h"
 
-/* A map: parts @p parts, every shunt 100.0 mOhm, FAST none. */
+/* A map: parts @p parts, every shunt 100.0mOhm, FAST none. */
 static void map_of(uint16_t *m, uint16_t parts)
 {
     memset(m, 0, LINK_SM_KEPT * sizeof(uint16_t));

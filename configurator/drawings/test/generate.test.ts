@@ -267,7 +267,7 @@ test('the generator refuses a drawing whose part left the catalogue', () => {
 test('the generator refuses a label that leaves the drawing', () => {
   const c = clone();
   const pin = c.parts.find((p) => p.id === 'estop')!.pins.find((p) => p.id === 'NC1')!;
-  // The label ends at 332 px of 340 px. 0.62 em per character at 13 px: 41 characters fit, 42 do not.
+  // The label ends at 332px of 340px. 0.62 em per character at 13px: 41 characters fit, 42 do not.
   pin.label = { en: 'x'.repeat(41), de: 'x' };
   assert.doesNotThrow(() => generate(c));
   pin.label = { en: 'x', de: 'x'.repeat(42) };
@@ -312,7 +312,7 @@ test('a lead beside a pin, an eyelet without a lead and a second chain are loose
   d.pin('IN', 40, 60, 'W', 20, 40);
   d.pin('OUT', 260, 60, 'E', 280, 40, { a: 'end' });
   assert.deepEqual(d.loose(), []);
-  // 0.5 px beside the wire point of a pin is not at the pin.
+  // 0.5px beside the wire point of a pin is not at the pin.
   d.axial(40.5, 150, 200, 150);
   assert.deepEqual(d.loose(), ['40.5,150', '200,150']);
   d.eye(150, 20);
@@ -337,7 +337,7 @@ test('a lead end is compared with a pin at the 1 decimal the anchor is stored wi
   e.bare(80.16, 20, 120, 20.04);
   e.pin('B', 120.04, 20, 'E', 120, 40);
   assert.deepEqual(e.loose(), []);
-  // The next tenth is another place: 0.06 px off rounds to 10.1.
+  // The next tenth is another place: 0.06px off rounds to 10.1.
   const g = dwg();
   g.pin('A', 10, 20, 'W', 40, 40);
   g.bare(10.06, 20, 80, 20);

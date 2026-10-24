@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The touch injector at 0x14, read beside the glass (touch_inject.h).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -9,9 +12,10 @@
 #include "gt911.h"
 #include "touch_merge.h"
 
+/** @brief The log tag. */
 static const char *TAG = "touch_inject";
 
-/* The probe's own timeout, in ms: an address-only write. */
+/** @brief The probe's own timeout, in ms: an address-only write. */
 #define PROBE_TIMEOUT_MS 5
 
 /*
@@ -36,11 +40,11 @@ static const touch_map_t k_inject_map = {
     .rotation = TOUCH_ROTATION_0,
 };
 
-static gt911_handle_t    s_dev;
-static bool              s_is_glass;
-static touch_merge_t     s_merge;
-static volatile uint32_t s_ok_ms;
-static volatile bool     s_attached;
+static gt911_handle_t    s_dev;       /**< @brief the injector's handle   */
+static bool              s_is_glass;  /**< @brief it took the glass's place */
+static touch_merge_t     s_merge;     /**< @brief the two sources merged   */
+static volatile uint32_t s_ok_ms;     /**< @brief its last good read       */
+static volatile bool     s_attached;  /**< @brief attached, for the band   */
 
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
                          uint32_t now_ms)
@@ -102,8 +106,10 @@ bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh)
     return true;
 }
 
-/* A detached injector, asked once a second whether it answers as a GT911
- * again: the product ID read on the handle made at start. */
+/**
+ * @brief A detached injector, asked once a second whether it answers as a
+ *        GT911 again: the product ID read on the handle made at start.
+ */
 static void probe(uint32_t now_ms)
 {
     if (!touch_merge_probe_due(&s_merge, now_ms)) {
@@ -127,9 +133,9 @@ bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
     }
     bool changed = false;
     /*
-     * Silent for TOUCH_MERGE_DETACH_MS (1000 ms): its contacts go, and the
+     * Silent for TOUCH_MERGE_DETACH_MS (1000ms): its contacts go, and the
      * glass alone decides touch age, so the heartbeat comes back.  Touch
-     * read as dead 300 ms before this at the latest (200 ms to lose touch in
+     * read as dead 300ms before this at the latest (200ms to lose touch in
      * main.c, then ARMING_TOUCH_DEAD_MS), which counted a stop and disarmed
      * (shared/safety/arming.c:259-274).  The IOmcu latched its arm
      * when the heartbeat stopped (shared/safety/safety_gate.c:43-46), and
@@ -162,6 +168,13 @@ bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
         *count = touch_merge_frame(&s_merge, pts, TOUCH_MAX_POINTS);
     }
     return changed;
+}
+
+void touch_inject_mark(touch_event_t *evts, int n)
+{
+    if (s_dev != NULL) {
+        (void)touch_merge_mark_cut(&s_merge, evts, n);
+    }
 }
 
 uint32_t touch_inject_age_ms(uint32_t now_ms)

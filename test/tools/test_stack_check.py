@@ -362,7 +362,10 @@ def io_table_holds(table, header, struct, source, panel):
     assert called <= fields
     given = io_given(PANEL_MAIN / panel, struct)
     assert set(given) - {"ctx"} == fields
-    named = set().union(*(set(v) for v in table.values()))
+    qualified = set().union(*(set(v) for v in table.values()))
+    # A callback written `file:name` names the panel source it is in.
+    assert all(q.split(":")[0] == panel for q in qualified if ":" in q)
+    named = {q.split(":")[-1] for q in qualified}
     assert {given[f] for f in called} <= named
     for caller in table:
         assert re.search(r"\b" + caller + r"\(", src), caller
@@ -385,6 +388,17 @@ def test_kst_calls_name_every_card_function_of_the_servo_files():
     rest = io_table_holds(sc.KST_CALLS, "kst_store.h", "kst_store_io_t",
                           "kst_store.c", "kst_files.c")
     assert rest == set()
+
+
+def test_kst_calls_are_qualified_where_another_file_has_the_name():
+    """panel_files.c defines static io_mounted, io_walk and io_read of its
+    own; a bare name would be two functions in the ELF and fail the run."""
+    for caller, callbacks in sc.KST_CALLS.items():
+        for cb in callbacks:
+            assert cb.startswith("kst_files.c:"), (caller, cb)
+    other = (PANEL_MAIN / "panel_files.c").read_text(encoding="utf-8")
+    for name in ("io_mounted", "io_walk", "io_read"):
+        assert re.search(r"\bstatic\b[^;{]*\b" + name + r"\(", other), name
 
 
 def test_card_calls_name_every_folder_maker_handed_to_card_make_dirs():

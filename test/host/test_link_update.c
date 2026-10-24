@@ -35,7 +35,7 @@
 #define SECTOR        LINK_UPD_SECTOR_BYTES
 /* 16 sectors: big enough for every boundary, small enough to run fast. */
 #define SLOT_SMALL    (16u * SECTOR)
-/* The slot of firmware/iomcu/partitions.json: 2036 KiB. */
+/* The slot of firmware/iomcu/partitions.json: 2036KiB. */
 #define SLOT_FULL     (2036u * 1024u)
 /* The v0.18.0 IOmcu image, in bytes. */
 #define IMAGE_V018    184872u
@@ -119,13 +119,13 @@ static uint8_t g_flash[2][SLOT_FULL];
 
 /* -------------------------------------------------------- the IOmcu */
 
-/* RP2350 boot ROM: the TBYB watchdog, 16.7 s (datasheet 5.1.17). */
+/* RP2350 boot ROM: the TBYB watchdog, 16.7s (datasheet 5.1.17). */
 #define TBYB_MS       16700u
 /* From a restart to the first answer.  Not measured on the bench. */
 #define BOOT_MS       300u
-/* One erase and program of a 4 KiB sector, as measured: 19.2 ms. */
+/* One erase and program of a 4KiB sector, as measured: 19.2ms. */
 #define SECTOR_US     19180u
-/* One CAN frame at 1 Mbit/s, at most. */
+/* One CAN frame at 1Mbit/s, at most. */
 #define FRAME_US      160u
 
 typedef enum { BOOT_NORMAL, BOOT_FLASH_UPDATE } boot_kind_t;
@@ -707,7 +707,7 @@ TEST_CASE(the_flag_is_found_in_the_last_image_def_of_the_loop)
     /* A loop of one block: its own flag. */
     make_image(img, 40u, 7u, 1u, 2u, 3u);
     CHECK_EQ(link_update_tbyb_byte(img, 40u), 7);
-    /* The first block may sit anywhere in the first 4 KiB. */
+    /* The first block may sit anywhere in the first 4KiB. */
     memset(img, 0, sizeof(img));
     put_block(img, 4092u - BLOCK_BYTES, FLAGS_EXE, 0);
     CHECK_EQ(link_update_tbyb_byte(img, sizeof(img)),
@@ -717,7 +717,7 @@ TEST_CASE(the_flag_is_found_in_the_last_image_def_of_the_loop)
 TEST_CASE(no_flag_without_a_closed_loop_holding_an_image_def)
 {
     static uint8_t img[8192];
-    /* The first block past the first 4 KiB is not looked for. */
+    /* The first block past the first 4KiB is not looked for. */
     memset(img, 0, sizeof(img));
     put_block(img, 4096u, FLAGS_EXE, 0);
     CHECK_EQ(link_update_tbyb_byte(img, sizeof(img)), -1);
@@ -1284,7 +1284,7 @@ static void drop_link_at_block(const link_uph_t *u)
 
 TEST_CASE(a_link_drop_mid_transfer)
 {
-    /* Shorter than the IOmcu's 5 s: the session goes on. */
+    /* Shorter than the IOmcu's 5s: the session goes on. */
     bench(SLOT_SMALL, 30000u, 0u);
     const uint32_t len = 30000u;
     make_image(g_new, len, 2u, 19u, 0u, 0u);
@@ -1297,8 +1297,8 @@ TEST_CASE(a_link_drop_mid_transfer)
     CHECK_EQ(u.restarts, 0u);
     check_runs_new(len);
 
-    /* Longer than the panel's 4 s: the panel gives up, the IOmcu's
-     * session ends at 5 s, and the next update starts from block 0. */
+    /* Longer than the panel's 4s: the panel gives up, the IOmcu's
+     * session ends at 5s, and the next update starts from block 0. */
     bench(SLOT_SMALL, 30000u, 0u);
     make_image(g_new, len, 2u, 19u, 0u, 0u);
     g_resets_left = 1u;
@@ -1361,7 +1361,7 @@ TEST_CASE(a_shut_gate_is_waited_for_and_then_given_up_on)
     bench(SLOT_SMALL, 30000u, 0u);
     const uint32_t len = 9000u;
     make_image(g_new, len, 2u, 19u, 0u, 0u);
-    cp.gate_shut_until_us = g_us + 3000000u;   /* 3 s, a store saving */
+    cp.gate_shut_until_us = g_us + 3000000u;   /* 3s, a store saving */
     CHECK_EQ(update(len, NULL), LINK_UPH_UPDATED);
     check_runs_new(len);
 

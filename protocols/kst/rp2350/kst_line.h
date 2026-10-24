@@ -18,23 +18,23 @@
  *
  * Clock.  The counts are computed from clock_get_hz(clk_sys) at the open.
  * The open is refused when the half-cell that clock gives is more than
- * 0.2 % from 25.40 us.  At 150 MHz the half-cell is 3810 cycles and a
- * stamp resolves 26.7 ns.  The system clock must not change while the line
+ * 0.2% from 25.40us.  At 150MHz the half-cell is 3810 cycles and a
+ * stamp resolves 26.7ns.  The system clock must not change while the line
  * is open.
  *
  * Pad.  While the line is open and no transaction runs, the pad drives low.
- * In a transaction it is push-pull for the frame, driven low for 50 us
- * after the frame's last edge, then an input.  It drives low again 165 us
+ * In a transaction it is push-pull for the frame, driven low for 50us
+ * after the frame's last edge, then an input.  It drives low again 165us
  * after the last rising edge of a reply, or at the end of the window when
  * no edge came.  The pad's pull-down is on and its pull-up off from the
  * open on, and the close leaves the pad an input with the pull-down on.  A
- * pull-down on the board is expected: the internal one is 50 to 80 kOhm.
- * A level change before the reply starts the 165 us early, so the pad may
+ * pull-down on the board is expected: the internal one is 50 to 80kOhm.
+ * A level change before the reply starts the 165us early, so the pad may
  * drive low into a reply; the capture then holds the edges up to that point
  * and the decoder refuses it.
  *
  * Every function is called from one context.  kst_line_poll() ends a
- * transaction whose state machine still runs 1 ms after the window: the
+ * transaction whose state machine still runs 1ms after the window: the
  * state machine is restarted with the pad driven low and the capture is
  * marked as overflowed.
  *
@@ -65,7 +65,7 @@ extern "C" {
 typedef enum {
     KST_LINE_OK = 0,     /**< no error */
     KST_LINE_ERR_ARG,    /**< no line object, or a pin the chip does not have */
-    KST_LINE_ERR_CLOCK,  /**< the system clock gives no 25.40 us half-cell */
+    KST_LINE_ERR_CLOCK,  /**< the system clock gives no 25.40us half-cell */
     KST_LINE_ERR_PIO,    /**< no state machine or no program space */
     KST_LINE_ERR_DMA,    /**< fewer than 2 free DMA channels */
 } kst_line_err_t;

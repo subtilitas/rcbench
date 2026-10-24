@@ -191,7 +191,7 @@ TEST_CASE(a_stationary_channel_earns_no_slew_credit)
     fresh();
     CHECK(outputs_set_slew(&o, 0, 1u));   /* one unit a second */
     outputs_arm(&o, true, 1000u);
-    /* Commanded to where it already is, for 999 ms. */
+    /* Commanded to where it already is, for 999ms. */
     for (uint32_t t = 1001u; t <= 1999u; ++t) {
         outputs_set(&o, 0, OUT_SPAN / 2u, t);
         outputs_step(&o, t);
@@ -211,7 +211,7 @@ TEST_CASE(a_stationary_channel_earns_no_slew_credit)
  * Reducing throttle is the safe direction, so it is not ramped -- and the
  * step that rounds to zero must not delay it either.  At SPEED 1% the slew is
  * 20 units a second, which is a fiftieth of a unit in the millisecond a pass
- * takes, so a drop gated behind a non-zero step would wait up to 50 ms.
+ * takes, so a drop gated behind a non-zero step would wait up to 50ms.
  */
 TEST_CASE(a_throttle_coming_down_does_not_wait_for_a_slew_step)
 {
@@ -221,7 +221,7 @@ TEST_CASE(a_throttle_coming_down_does_not_wait_for_a_slew_step)
     outputs_arm(&o, true, 1000u);
     outputs_set(&o, 0, OUT_SPAN, 1000u);
     /* Inside the timeout, so the ramp runs rather than the channel resting:
-     * 400 ms at 20 units a second is 8 units up from a throttle's rest of 0. */
+     * 400ms at 20 units a second is 8 units up from a throttle's rest of 0. */
     outputs_step(&o, 1400u);
     CHECK_EQ(outputs_actual(&o, 0), 8u);
 
@@ -268,7 +268,7 @@ TEST_CASE(the_slew_rate_does_not_follow_the_step_cadence)
         outputs_set(&o, 0, 1000u, t);
         outputs_step(&o, t);
     }
-    /* 400 ms at 200 units a second is 80 units, up from the 500 rest. */
+    /* 400ms at 200 units a second is 80 units, up from the 500 rest. */
     CHECK_EQ(outputs_actual(&o, 0), 580u);
 }
 
@@ -370,7 +370,7 @@ TEST_CASE(the_table_says_what_a_driver_is_shaped_like)
     CHECK(out_driver(OUT_DRIVER_COUNT) == NULL);
 }
 
-/* A rate the driver cannot produce is refused: a servo asked for 2 kHz is a
+/* A rate the driver cannot produce is refused: a servo asked for 2kHz is a
  * configuration mistake, not a fast servo. */
 TEST_CASE(a_rate_outside_the_driver_is_refused)
 {
@@ -394,7 +394,7 @@ TEST_CASE(endpoints_are_refused_and_commands_are_clamped)
     /* Refused, so the defaults still stand. */
     CHECK_EQ(outputs_pulse_us(&o, 0), 1500u);
 
-    /* A 760 us tail servo's travel, 410 to 1110 us, is a range. */
+    /* A 760us tail servo's travel, 410 to 1110us, is a range. */
     CHECK(outputs_set_endpoints(&o, 0, 410u, 1110u));
     CHECK_EQ(outputs_pulse_us(&o, 0), 760u);
     CHECK(outputs_set_endpoints(&o, 0, 1000u, 2000u));
@@ -452,8 +452,8 @@ TEST_CASE(a_command_while_disarmed_is_remembered_and_not_emitted)
  * and it decides what a channel renders rather than whether it renders -- and
  * it cannot ask about the safety line, which the end holding the wire settles
  * before it arms.  A bank armed with every channel past the timeout still
- * drives, and what reaches the pin is the channel's rest: 1500 us for a
- * surface across the default 1000 to 2000 us endpoints.
+ * drives, and what reaches the pin is the channel's rest: 1500us for a
+ * surface across the default 1000 to 2000us endpoints.
  */
 TEST_CASE(driving_is_armed_and_asks_nothing_about_commands)
 {
@@ -497,7 +497,7 @@ TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
 {
     fresh();
     /* Channel 0 unslewed, channel 1 at 200 units a second: 100 units in the
-     * 500 ms timeout, against 400 units from rest to the command. */
+     * 500ms timeout, against 400 units from rest to the command. */
     CHECK(outputs_set_slew(&o, 1, 200u));
 
     outputs_arm(&o, true, 1000u);
@@ -523,7 +523,7 @@ TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
     CHECK_EQ(outputs_actual(&o, 0), 900u);   /* the whole distance at once */
     CHECK_EQ(outputs_actual(&o, 1), OUT_SPAN / 2u);
 
-    /* One millisecond before the timeout.  499 ms at 200 units a second is
+    /* One millisecond before the timeout.  499ms at 200 units a second is
      * 99 units and 800 thousandths, so the ramp stands at 599 of the 900
      * commanded -- inside the header's bound of slew_per_s * timeout_ms /
      * 1000, which is 100 units here. */
@@ -543,9 +543,9 @@ TEST_CASE(a_re_arm_ramps_from_rest_when_the_channel_is_slewed)
 }
 
 /*
- * Rest is the midpoint of the channel's own endpoints, not 1500 us.  The
- * default 1000 to 2000 us rests at 1500 us; the narrow servo the servo screen
- * offers, 660 to 860 us, rests at 760 us.
+ * Rest is the midpoint of the channel's own endpoints, not 1500us.  The
+ * default 1000 to 2000us rests at 1500us; the narrow servo the servo screen
+ * offers, 660 to 860us, rests at 760us.
  */
 TEST_CASE(a_surface_rests_at_the_midpoint_of_its_own_endpoints)
 {
@@ -968,7 +968,7 @@ TEST_CASE(a_channel_write_keeps_only_the_channels_it_named_alive)
 {
     /*
      * The timeout is per channel because the pages that write them are
-     * written independently.  A servo refreshed at 10 Hz to hold its
+     * written independently.  A servo refreshed at 10Hz to hold its
      * position must not stamp the clock of a surface nobody is driving, or
      * that surface never reaches its rest.
      */
@@ -981,7 +981,7 @@ TEST_CASE(a_channel_write_keeps_only_the_channels_it_named_alive)
     CHECK_EQ(outputs_channels_write(chans, 0, 2, two), 0);
     outputs_channels_apply_n(&b, chans, 0u, 2u, 0u);
 
-    /* 600 ms later only channel 0 is written again, one register. */
+    /* 600ms later only channel 0 is written again, one register. */
     const uint16_t one[1] = { LINK_CH_SPAN / 4u };
     CHECK_EQ(outputs_channels_write(chans, 0, 1, one), 0);
     outputs_channels_apply_n(&b, chans, 0u, 1u, 600u);
@@ -1057,8 +1057,8 @@ TEST_CASE(boot_arms_an_uncommanded_surface_at_its_centre)
 }
 
 /*
- * The same bench with a narrow servo: 660..860 us, where the low endpoint is
- * the servo's hard stop.  Centre is 760 us and that is where an uncommanded
+ * The same bench with a narrow servo: 660..860us, where the low endpoint is
+ * the servo's hard stop.  Centre is 760us and that is where an uncommanded
  * channel arms.
  */
 TEST_CASE(a_narrow_servo_arms_at_its_centre_not_its_stop)
@@ -1262,7 +1262,7 @@ TEST_CASE(the_servo_rate_reaches_pwm_surfaces_and_nothing_else)
     CHECK_EQ(rate[0], 50u);
 }
 
-/* A rate outside the PWM driver's 40 to 560 Hz is refused; 0 and the ends
+/* A rate outside the PWM driver's 40 to 560Hz is refused; 0 and the ends
  * are taken. */
 TEST_CASE(a_servo_rate_outside_the_pwm_range_is_refused)
 {
@@ -1369,7 +1369,7 @@ TEST_CASE(the_longest_pulse_is_one_count_under_the_period)
     for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         CHECK_EQ(out_pwm_pulse_max(k[i].hz), k[i].longest);
     }
-    /* The pages' ceiling fits every frame up to 400 Hz less one count, and
+    /* The pages' ceiling fits every frame up to 400Hz less one count, and
      * the PWM driver's whole range down to its floor. */
     CHECK(LINK_CC_CEILING_US <= out_pwm_pulse_max(333u));
     CHECK(LINK_CC_CEILING_US > out_pwm_pulse_max(400u));
@@ -1397,10 +1397,10 @@ static void range_of(uint16_t *cc, unsigned ch, uint16_t min_us,
 
 /*
  * A CHAN_CFG page is refused when it would leave an endpoint at or over
- * the period of the PWM output that renders it: at 560 Hz (period 1785 us)
- * 1784 us is taken and 1785 and 1786 us refused; at 500 Hz (2000 us) 1999
- * is taken and 2000 and 2001 refused; at 400 Hz (2500 us) 2499 is taken
- * and 2500 refused, 2501 being over the ceiling already.  At 333 and 50 Hz
+ * the period of the PWM output that renders it: at 560Hz (period 1785us)
+ * 1784us is taken and 1785 and 1786us refused; at 500Hz (2000us) 1999
+ * is taken and 2000 and 2001 refused; at 400Hz (2500us) 2499 is taken
+ * and 2500 refused, 2501 being over the ceiling already.  At 333 and 50Hz
  * the ceiling is the limit.  Either end counts, and the bank is not
  * touched by the judging.
  */
@@ -1463,14 +1463,14 @@ TEST_CASE(a_chan_cfg_endpoint_longer_than_its_frame_is_refused)
 
 /*
  * An OUTPUTS page is refused when it would run a PWM slot faster than its
- * channel's endpoints allow: 1000 to 2000 us is refused at 560 and 500 Hz
- * and taken at 499 and 400 Hz.  PPM and DShot slots are not judged.  The
+ * channel's endpoints allow: 1000 to 2000us is refused at 560 and 500Hz
+ * and taken at 499 and 400Hz.  PPM and DShot slots are not judged.  The
  * bank is not touched by the judging.
  */
 TEST_CASE(an_outputs_rate_too_fast_for_the_endpoints_is_refused)
 {
     fresh_pages();
-    outputs_chan_cfg_apply(&o, chan_cfg);   /* 1000 to 2000 us */
+    outputs_chan_cfg_apply(&o, chan_cfg);   /* 1000 to 2000us */
     uint16_t os[LINK_OS_COUNT];
     memcpy(os, slots, sizeof(os));
     slot_at(os, 0u, 0u, 0u, LINK_DRIVER_PWM, 560u);
@@ -1490,10 +1490,10 @@ TEST_CASE(an_outputs_rate_too_fast_for_the_endpoints_is_refused)
 
 /*
  * The SERVO page's rate is the one a surface runs at, so it is judged too:
- * a 50 Hz surface of 1000 to 2000 us refuses 560 Hz and takes 499 Hz; at
- * 1000 to 1784 us it takes 560 Hz.  A throttle keeps its own rate.  Going
- * back to 0 is judged as well: a 400 Hz surface that took 2500 us under a
- * 50 Hz SERVO rate refuses 0.  Ports named as channels are judged at the
+ * a 50Hz surface of 1000 to 2000us refuses 560Hz and takes 499Hz; at
+ * 1000 to 1784us it takes 560Hz.  A throttle keeps its own rate.  Going
+ * back to 0 is judged as well: a 400Hz surface that took 2500us under a
+ * 50Hz SERVO rate refuses 0.  Ports named as channels are judged at the
  * rate given.
  */
 TEST_CASE(the_rate_a_surface_runs_at_is_judged_against_its_endpoints)
@@ -1516,7 +1516,7 @@ TEST_CASE(the_rate_a_surface_runs_at_is_judged_against_its_endpoints)
              LINK_NACK_BAD_VALUE);
     range_of(chan_cfg, 0u, 1000u, 1784u);
     outputs_chan_cfg_apply(&o, chan_cfg);
-    CHECK_EQ(outputs_pulse_check(&o, 560u, 0u, 0u), 0u);   /* throttle: 50 Hz */
+    CHECK_EQ(outputs_pulse_check(&o, 560u, 0u, 0u), 0u);   /* throttle: 50Hz */
 
     /* A bank channel named as a port, at the rate given. */
     CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
@@ -1542,9 +1542,9 @@ TEST_CASE(the_rate_a_surface_runs_at_is_judged_against_its_endpoints)
 
 /*
  * A BIND commit puts a CHAN_CFG and an OUTPUTS page in force together, so
- * its CHAN_CFG page is judged with its own slots: 2000 us bound at 50 Hz
- * in place of a 560 Hz tail servo is taken, though the slot in force would
- * refuse it, and 2000 us with a 560 Hz slot is refused.
+ * its CHAN_CFG page is judged with its own slots: 2000us bound at 50Hz
+ * in place of a 560Hz tail servo is taken, though the slot in force would
+ * refuse it, and 2000us with a 560Hz slot is refused.
  */
 TEST_CASE(a_bind_commit_judges_its_pages_together)
 {
@@ -1574,7 +1574,7 @@ TEST_CASE(a_bind_commit_judges_its_pages_together)
 /*
  * A stored OUTPUTS page restored under stored endpoints: a PWM slot whose
  * channel's endpoint does not fit the frame of its own rate starts with
- * driver 0, and the others are kept -- a slot that fits, one at 50 Hz with
+ * driver 0, and the others are kept -- a slot that fits, one at 50Hz with
  * the ceiling, and a DShot slot, whose rate is a bit rate.
  */
 TEST_CASE(a_stored_slot_with_a_pulse_longer_than_its_frame_starts_unbound)
@@ -1710,7 +1710,7 @@ TEST_CASE(each_driver_number_on_the_wire_is_that_driver_in_the_bank)
 
 /*
  * A keepalive says a channel is still watched and leaves what it was asked:
- * it holds the silence timeout off for 500 ms from its own time, the
+ * it holds the silence timeout off for 500ms from its own time, the
  * command and the other channels are as they were, and a channel the bank
  * does not have is refused.
  */
@@ -1858,7 +1858,7 @@ TEST_CASE(a_role_switch_while_armed_rests_the_old_and_stamps_the_new)
         outputs_step(&o, t);
     }
     CHECK(outputs_actual(&o, 0) > 0u);
-    CHECK(outputs_overdue(&o, 1, 1600u));      /* the servo sat out 600 ms */
+    CHECK(outputs_overdue(&o, 1, 1600u));      /* the servo sat out 600ms */
 
     outputs_arm_roles(&o, S_BIT, 1600u);
     CHECK_EQ(outputs_actual(&o, 0), 0u);

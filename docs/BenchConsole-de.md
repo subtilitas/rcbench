@@ -18,7 +18,7 @@ ohne Heartbeat, eine Transaktion nach einem Stopp. Die Konsole hat keine
 Rechte, die das Panel nicht hat.
 
 Eine Anfrage der Konsole ist kein Link-Verkehr. Sie hält den Failsafe des
-stillen Links (200 ms) nicht auf, und sie ist kein Heartbeat. Jede Page, die
+stillen Links (200ms) nicht auf, und sie ist kein Heartbeat. Jede Page, die
 einen vertrauenswürdigen Heartbeat und einen nicht stillen Link braucht,
 braucht ein laufendes Panel neben der Konsole: das Einschalten von SUPPLY,
 eine KST-Session, jedes HITEC-Kommando außer ABORT und CLOSE und ein ARM.
@@ -29,7 +29,7 @@ Die Konsole kann schreiben, was das Panel schreiben kann, CONTROL
 eingeschlossen. Ein Schreiben von ARM aus der Konsole schaltet die Bank auf
 ARMED, wenn jede Regel des Safety Gate es zulässt ([Sicherheit](Safety-de.md)).
 Ein CLEAR aus der Konsole löst die Arm-Sperre und den Failsafe wie das des
-Panels; der Link wird 200 ms nach der letzten Anfrage des Panels wieder
+Panels; der Link wird 200ms nach der letzten Anfrage des Panels wieder
 still. Die Konsole nur auf einem Prüfstand ohne Propeller und mit
 gesicherten Ausgängen benutzen, wie bei jeder Arbeit am Prüfstand.
 
@@ -95,7 +95,7 @@ nack page=0x2A off=4: NOT_ARMED (5)
 
 Getippte Zeilen stehen hier nach `> `; die Konsole gibt keinen Prompt aus.
 Die erste Zeile liest die Protokollversion, 4.27. Die zweite ist das
-Einschalten von SUPPLY mit 5000 mV und 1000 mA, abgewiesen, weil kein Panel
+Einschalten von SUPPLY mit 5000mV und 1000mA, abgewiesen, weil kein Panel
 einen Heartbeat sendet. Mit laufendem Panel wird dieselbe Zeile angenommen:
 
 ```text
@@ -172,16 +172,16 @@ Leitung: der Vorlauf und jede gesendete Bitzeit. Der Vorlauf ist der
 verlangte oder länger: das PIO-Programm (Programmable Input/Output) sendet
 ganze Wörter von 16 Bitzeiten, und die Bitzeiten, die den Anfang des Stroms
 auf ein Wort auffüllen, zählen zum Vorlauf. Ein Lesen der D-Serie ergibt
-`lead_ns=559886`, bei einer Bitzeit von 8,68 us:
+`lead_ns=559886`, bei einer Bitzeit von 8,68us:
 
 | Teil | Bitzeiten | Zeit |
 | --- | ---: | ---: |
-| Vorlauf: 8 Takte und die 13 Bitzeiten Auffüllung (88 us verlangt) | 13,5 | 117,2 us |
-| 5 Bytes zu 10 Bit | 50 | 434,0 us |
-| 1 losgelassene Bitzeit, bevor der Empfänger startet | 1 | 8,7 us |
-| `lead_ns` | 64,5 | 559,9 us |
+| Vorlauf: 8 Takte und die 13 Bitzeiten Auffüllung (88us verlangt) | 13,5 | 117,2us |
+| 5 Bytes zu 10 Bit | 50 | 434,0us |
+| 1 losgelassene Bitzeit, bevor der Empfänger startet | 1 | 8,7us |
+| `lead_ns` | 64,5 | 559,9us |
 
-Ein Schreiben der D-Serie ergibt `lead_ns=705283`: 89,0 us Vorlauf, 70
+Ein Schreiben der D-Serie ergibt `lead_ns=705283`: 89,0us Vorlauf, 70
 Bitzeiten Bytes und 1 losgelassene Bitzeit.
 
 | Kommando | Tut |
@@ -194,10 +194,10 @@ Bitzeiten Bytes und 1 losgelassene Bitzeit.
 | `hitec send <port> [lead=<us>] [gap=<bits>] [window=<us>] [rx=<n>] [dec=<dec>] <byte>...` | SEND von 1 bis 8 Bytes |
 | `hitec listen <port> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | LISTEN |
 | `hitec level <port> 0\|1 <us>` | LEVEL |
-| `hitec power <port> mv=<mV> ma=<mA> off=<ms> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | POWER: die Versorgung aus, aus gehalten, an mit 4800 bis 6000 mV, und das LISTEN ab dem Einschalten |
-| `hitec c <port> <cmd> <p1> <p2>` | ein classic-Kommando mit seinem Summenbyte, 1 Ruhebit zwischen den Bytes, einem Fenster von 1500 us für 2 Bytes und dem classic-Dekoder, wenn das Modul das Kommando kennt |
-| `hitec d <port> read <id> <addr>` | ein Lesen der D-Serie: 88 us Vorlauf verlangt, 117,2 us low getrieben, 5 Bytes, ein Fenster von 25.000 us für 8 Bytes und der Dekoder der D-Serie |
-| `hitec d <port> write <id> <addr> <value>` | ein Schreiben der D-Serie: 88 us Vorlauf verlangt, 89,0 us low getrieben, 7 Bytes, nichts empfangen |
+| `hitec power <port> mv=<mV> ma=<mA> off=<ms> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | POWER: die Versorgung aus, aus gehalten, an mit 4800 bis 6000mV, und das LISTEN ab dem Einschalten |
+| `hitec c <port> <cmd> <p1> <p2>` | ein classic-Kommando mit seinem Summenbyte, 1 Ruhebit zwischen den Bytes, einem Fenster von 1500us für 2 Bytes und dem classic-Dekoder, wenn das Modul das Kommando kennt |
+| `hitec d <port> read <id> <addr>` | ein Lesen der D-Serie: 88us Vorlauf verlangt, 117,2us low getrieben, 5 Bytes, ein Fenster von 25.000us für 8 Bytes und der Dekoder der D-Serie |
+| `hitec d <port> write <id> <addr> <value>` | ein Schreiben der D-Serie: 88us Vorlauf verlangt, 89,0us low getrieben, 7 Bytes, nichts empfangen |
 
 `<dec>` ist `none`, `c:<cmd>`, `d:<addr>` oder `l:<byte>`.
 
@@ -205,7 +205,7 @@ Eine Option von `send`, `listen` oder `power`, die fehlt, ist 0: keine
 Lücke, kein Fenster, kein empfangenes Byte, kein Dekoder. `answer` ist die
 Ausnahme: fehlt es, wird nichts beantwortet; `answer=0` antwortet 0x00. Ein
 fehlendes `lead=` lässt die Auffüllung der PIO-Wörter vorn stehen: ein SEND
-der D-Serie mit 5 Bytes wird mit und ohne `lead=88` 117,2 us low getrieben.
+der D-Serie mit 5 Bytes wird mit und ohne `lead=88` 117,2us low getrieben.
 `send` fügt kein Summenbyte hinzu. Die rohe Form von
 `hitec d 0 read 0 0x32`:
 
@@ -218,7 +218,7 @@ Das letzte Byte ist das untere Byte der Summe aller Bytes nach dem Header
 das den Header mitzählt, bekam von einem D485HW keine Antwort.
 
 Eine Leitung der D-Serie braucht einen Pull-up auf der Platine. Getestet mit
-einem D485HW: 2,2 kOhm von der Signalleitung zur Servoversorgung, und jedes
+einem D485HW: 2,2kΩ von der Signalleitung zur Servoversorgung, und jedes
 Lesen wird beantwortet; mit dem Pull-up des Pads allein beantwortet der
 Servo keines (`rx=SILENT`).
 [Der Programmierport für Servos von Hitec](LinkHitec-de.md#hinein-und-hinaus)
@@ -273,7 +273,7 @@ Transaktion so.
   in Stücken über mehrere Durchläufe hinaus; ihr Rest zuerst. Jede Zeile bis
   zur längsten, 200 Byte mit ihrem LF, geht auch mit dem 64-Byte-Puffer des
   SDK hinaus.
-- Die eigenen Zeilen des IOmcu, `rcbench-iomcu: ...` alle 3 s und nach einem
+- Die eigenen Zeilen des IOmcu, `rcbench-iomcu: ...` alle 3s und nach einem
   Flash-Schreiben, laufen in diesem Build durch dieselbe Ausgabe: sie kommen
   nach der Zeile davor, nie mitten in ihr, und enden nur mit LF.
 - `shared/outputs/page_console.c` hält die Regeln, und

@@ -22,7 +22,7 @@ kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
 Current limitations:
 
 - An alert already on the band keeps the language it was raised in until
-  it is replaced, tapped away or cleared after 30 s (`UI_ALERT_SHOW_S`).
+  it is replaced, tapped away or cleared after 30s (`UI_ALERT_SHOW_S`).
   The alert held for a touch controller that did not answer at start is
   raised in the language kept in NVS and stays until restart; without touch
   the language cannot change meanwhile.
@@ -39,11 +39,11 @@ Current limitations:
 ## Numbers
 
 The screens, the TXT report and the CSV write the decimal point in every
-language: 7.4 V, 0.05 A. It is the separator of the transmitter, the ESC
+language: 7.4V, 0.05A. It is the separator of the transmitter, the ESC
 configurators and the supply's own display, and a CSV with a decimal comma
 would need a different field separator. The German pages of this
-documentation write the German decimal comma in their prose (7,4 V); a
-string quoted from the screen keeps its point (`seit 1.5 s kein Messwert`).
+documentation write the German decimal comma in their prose (7,4V); a
+string quoted from the screen keeps its point (`seit 1.5s kein Messwert`).
 
 ## Terms that stay English
 
@@ -182,14 +182,20 @@ source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
 - The five text faces hold printable ASCII (American Standard Code for
-  Information Interchange, 0x20 to 0x7E) and the seven German letters
-  Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6, U+00FC),
-  102 glyphs each. The two numeral faces hold digits and punctuation only.
-- The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23 px and
+  Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0), the
+  seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
+  U+00E4, U+00F6, U+00FC) and the ohm sign Ω (U+03A9), 104 glyphs each.
+  The two numeral faces hold digits and punctuation only.
+- A resistance is written with Ω, in the screens' texts, the settings'
+  units and the `.TXT` reports: `120Ω`, `2.2kΩ`, `100.0mΩ`, `uΩ` for the
+  INA228's shunt. The faces' O reads close to a zero, so `120Ohm` would
+  read as `1200hm`. `every_string_writes_the_ohm_as_its_sign` in
+  `test_text` fails on an `Ohm` or `ohm` in any of them.
+- The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23px and
   draw every glyph inside the cell; `gen_font.py --check` fails otherwise.
-  The 32x44 numeral face (cap height 40 px) cuts ink at the cell edge in six
-  characters: `#` 5 px, `$` 16 px, `(` 12 px, `)` 12 px, `,` 23 px and `/`
-  6 px (pixels of coverage 128 or more outside the cell). `gen_font.py
+  The 32x44 numeral face (cap height 40px) cuts ink at the cell edge in six
+  characters: `#` 5px, `$` 16px, `(` 12px, `)` 12px, `,` 23px and `/`
+  6px (pixels of coverage 128 or more outside the cell). `gen_font.py
   --check` prints these counts.
 - A code point a face does not hold draws as `?`. A byte that does not start
   a well-formed sequence, a sequence cut short and an overlong form are one
@@ -249,8 +255,8 @@ fails on any other entry under a condition.
 | `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
 | `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
 
-The five text faces hold printable ASCII (0x20 to 0x7E) and the 7 German
-letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`, and so does a
+The five text faces hold printable ASCII (0x20 to 0x7E), the degree sign °,
+the 7 German letters Ä Ö Ü ä ö ü ß and the ohm sign Ω. Any other code point draws as `?`, and so does a
 byte that starts no valid UTF-8 sequence.
 `every_drawn_string_has_its_glyphs` in `test_text` holds every string of
 the table the panel draws, in every language, to that set and to valid
@@ -267,8 +273,12 @@ UTF-8. The Wi-Fi page is drawn by the browser and is not held to it; a
    `UI_SETTING_LABEL` and a `UI_SETTING_HELP` entry for its `SET_` ID; an
    option list is a `UI_OPTIONS` block, bound to its setting by
    `ENUM_OPTS(name)` in `shared/settings/settings.c`.
-3. Run the host suite, `python3 tools/render_ui.py --fit`,
-   `python3 tools/check_formats.py` and `python3 tools/check_docs.py`.
+3. Write a number and its unit with no space, in both languages: `40s`,
+   `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. A word after a number keeps its
+   space: `3 servos`.
+4. Run the host suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
+   and `python3 tools/check_docs.py`.
    `test_text` fails on an entry without German, on a German format that
    converts other arguments than its English, on a string wider than its
    declared cells, on a letter the fonts lack, on a byte that is not valid
@@ -295,7 +305,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 290 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 320 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -340,8 +350,8 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 2,093 entries
-with an ID and 64 options, 10 of them with an empty English.
+A language is one more column in every entry of the table: 2,184 entries
+with an ID and 76 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
    the parameter to every macro that reads a column: 7 empty defaults at the

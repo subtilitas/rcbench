@@ -36,7 +36,7 @@
       "steps": [
         "Throttle signal at full power.",
         "Connect the drive battery (switch on where fitted).",
-        "Wait 5 s for the two low plus two high tones.",
+        "Wait 5s for the two low plus two high tones.",
         "Brake: move throttle to stop right after these tones.",
         "Other items: keep full throttle; move throttle to stop while the wanted pattern is sounding (each shown five times)."
       ]
@@ -92,19 +92,19 @@
         },
         {
           "number": 2,
-          "name": "2 LiPo cells, 5.8 V"
+          "name": "2 LiPo cells, 5.8V"
         },
         {
           "number": 3,
-          "name": "3 LiPo cells, 8.7 V; factory default on BEC versions"
+          "name": "3 LiPo cells, 8.7V; factory default on BEC versions"
         },
         {
           "number": 4,
-          "name": "4 LiPo cells, 11.6 V, Opto versions only"
+          "name": "4 LiPo cells, 11.6V, Opto versions only"
         },
         {
           "number": 5,
-          "name": "5 LiPo cells, 14.5 V, Opto versions only; factory default on Opto versions"
+          "name": "5 LiPo cells, 14.5V, Opto versions only; factory default on Opto versions"
         }
       ],
       "applies_to": null,
@@ -180,12 +180,12 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz (falling tone)",
+          "name": "8kHz (falling tone)",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz (rising tone)"
+          "name": "16kHz (rising tone)"
         }
       ],
       "applies_to": null,
@@ -216,15 +216,15 @@
         },
         {
           "number": 2,
-          "name": "up to 20 000 rpm, 2-pole equivalent ('_.._')"
+          "name": "up to 20000rpm, 2-pole equivalent ('_.._')"
         },
         {
           "number": 3,
-          "name": "up to 50 000 rpm ('_..._')"
+          "name": "up to 50000rpm ('_..._')"
         },
         {
           "number": 4,
-          "name": "above 50 000 rpm ('_...._')"
+          "name": "above 50000rpm ('_...._')"
         }
       ],
       "applies_to": null,

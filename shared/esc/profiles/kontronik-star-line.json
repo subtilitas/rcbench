@@ -85,8 +85,8 @@
     },
     {
       "when": "before_menu",
-      "action": "Pull the jumper off after 5 s or the tone sequence.",
-      "action_de": "Jumper nach 5 s oder der Tonfolge abziehen.",
+      "action": "Pull the jumper off after 5s or the tone sequence.",
+      "action_de": "Jumper nach 5s oder der Tonfolge abziehen.",
       "starts_menu": true,
       "source": "Kontronik_Star-Line.pdf p.5"
     },
@@ -108,7 +108,7 @@
         "Operator: fit the jumper. Connect the motor if tones are to be audible.",
         "Transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
         "Apply drive power.",
-        "Wait 5 s or until the ESC sounds its tone sequence.",
+        "Wait 5s or until the ESC sounds its tone sequence.",
         "Operator: pull the jumper off.",
         "Mode series sounds.",
         "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
@@ -153,11 +153,11 @@
         },
         {
           "number": 2,
-          "name": "Glider: brake about 0.3 s, cutoff 0.8 V per cell, optional separate motor-off position"
+          "name": "Glider: brake about 0.3s, cutoff 0.8V per cell, optional separate motor-off position"
         },
         {
           "number": 3,
-          "name": "Motor plane / boat: brake off, cutoff off, power reduced below 5.5 V"
+          "name": "Motor plane / boat: brake off, cutoff off, power reduced below 5.5V"
         },
         {
           "number": 4,

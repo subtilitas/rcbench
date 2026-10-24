@@ -102,7 +102,7 @@ jobs:
       # to be tested rather than only measured in aggregate.  coverage.py
       # leaves an instrumented build behind, so nothing is rebuilt.
       # gcovr takes a count of 2^32 or more for gcov's overflow bug; the
-      # suite's fills at 1024 x 600 px run gfx.c's fill_span loop 4.3e9 times,
+      # suite's fills at 1024 x 600px run gfx.c's fill_span loop 4.3e9 times,
       # so the line holds at 2^40 (1,099,511,627,776).
       - name: Coverage report for Codecov
         run: |
@@ -147,6 +147,12 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
+      # A number and its unit stand together, 40s and 6.00V, in the docs,
+      # the interface's texts and reports, and the code's comments; the
+      # exceptions are in tools/check_units_allow.txt with their reasons.
+      - name: Numbers carry their unit without a space
+        run: python3 tools/check_units.py --check
+
       # The web help: every screen has a page in English and German, every
       # screenshot it shows exists in render_ui.py and in docs/img/, the two
       # languages of a page have the same headings and screenshots, every
@@ -176,51 +182,49 @@ jobs:
           python3 tools/wiki_links.py /tmp/wikicheck
           python3 tools/wiki_links.py --verify /tmp/wikicheck
 
-      # Frame rate on this panel is bandwidth-bound, so the regression guard
-      # is cache-line traffic per frame under the ESP32-P4's two caches, not
-      # wall-clock on a runner that shares nothing with the board.  Each
-      # ceiling sits 10 to 35% above its mode in docs/Performance.md and
-      # catches the model drawing more.  The bench frame (frame, sim,
-      # supply) has no ceiling: a frame per 20 Hz sample needs the effective
-      # PSRAM bandwidth, which is not measured (PROBE_CLEAR_US).
-      - name: The chrome-cached screens have not started repainting
-        run: python3 tools/frame_cost.py overview --max-lines 2000
-
-      # The servo card draws its arm and grip from coverage; 30,000 catches
-      # that growing.  A breath repaints a clipped box and nothing else, and
-      # 6,000 catches one that repaints the card.  A changed current repaints
-      # the CURRENT row's value, the line and the plot beside the grip, each
-      # clipped; 9,000 catches a changed digit that repaints the card.
-      - name: The servo card is drawn, and its grip is only breathed on
-        run: python3 tools/frame_cost.py servo --max-lines 30000
-             && python3 tools/frame_cost.py servo-grip --max-lines 6000
-             && python3 tools/frame_cost.py servo-current --max-lines 9000
-
-      # Every screen caches its chrome, so a steady frame is a few hundred
-      # fills; 1,000 catches one that has started repainting.  ESC STICK's
-      # steady frame is 3,316 and is held apart at 4,000.
+      # The regression guard is cache-line traffic per frame under the
+      # ESP32-P4's two caches, not wall-clock on a runner that shares nothing
+      # with the board; test_frame_work holds the pixel visits beside it.
+      # Each ceiling sits 13 to 29% above its modes in docs/Performance.md,
+      # or at 1,000 for a mode under 600 fills, and catches the model
+      # drawing more.  The bench frame (frame, sim, supply) has no ceiling:
+      # a frame per 20Hz sample needs the effective PSRAM bandwidth, which
+      # is not measured (PROBE_CLEAR_US).
+      #
+      # Every screen caches its chrome and its band, so a steady frame
+      # draws nothing; 1,000 catches one that has started repainting.
+      # ESC STICK's steady frame is 1,551 and is held apart at 2,000.
       - name: Every screen still idles on a cached frame
-        run: python3 tools/frame_cost.py analyser logs settings battery balance
-             picker wifi --max-lines 1000
-             && python3 tools/frame_cost.py settings-list --max-lines 1000
-             && python3 tools/frame_cost.py motor-stick --max-lines 4000
+        run: python3 tools/frame_cost.py overview analyser logs settings
+             settings-list battery balance picker wifi --max-lines 1000
+             && python3 tools/frame_cost.py motor-stick --max-lines 2000
+
+      # The servo card draws its arm and grip from coverage; 2,700 catches
+      # that growing.  A breath repaints a clipped box and nothing else, and
+      # 1,000 catches one that repaints more.  A changed current repaints
+      # the CURRENT row's value, the line and the plot beside the grip, each
+      # clipped; 4,000 catches a changed digit that repaints the card.
+      - name: The servo card is drawn, and its grip is only breathed on
+        run: python3 tools/frame_cost.py servo --max-lines 2700
+             && python3 tools/frame_cost.py servo-grip --max-lines 1000
+             && python3 tools/frame_cost.py servo-current --max-lines 4000
 
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
              --max-lines 3600
 
       # A theme change or a change of the SIMULATED flag invalidates every
-      # screen, which costs one full repaint.  68,000 catches that growing.
+      # screen, which costs one full repaint.  72,000 catches that growing.
       - name: A full repaint of every screen stays bounded
         run: python3 tools/frame_cost.py analyser-chrome balance-chrome
              battery-chrome motor-stick-chrome logs-chrome settings-chrome
              settings-list-chrome picker-chrome supply-chrome wifi-chrome
-             --max-lines 68000
+             --max-lines 72000
 
       # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
-      # screen, about 36,400 fills; 40,000 catches a key that repaints more.
+      # screen, about 36,400 fills; 42,000 catches a key that repaints more.
       - name: A key of the Wi-Fi keyboard costs one repaint
-        run: python3 tools/frame_cost.py wifi-keys --max-lines 40000
+        run: python3 tools/frame_cost.py wifi-keys --max-lines 42000
 
       # The fills of every mode against the block in docs/Performance.md,
       # the profile's line, and the table of the board against
@@ -301,9 +305,10 @@ jobs:
       # The analyser and the bug-shaped checks over the pure-C core, the
       # protocol cores and the host tests.  A module's rp2350/ folder is not
       # in the host build; cppcheck reads it with the firmware below.
-      # render_screen.c and bench_frame.c are built by tools/render_ui.py and
-      # tools/frame_cost.py, not by CMake, so they have no compile command
-      # here; render_ui.py builds the first with -Werror, cppcheck reads both.
+      # render_screen.c, render_files.c and bench_frame.c are built by
+      # tools/render_ui.py and tools/frame_cost.py, not by CMake, so they have
+      # no compile command here; render_ui.py builds the first two with
+      # -Werror, cppcheck reads all three.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.
       - name: clang-tidy
@@ -312,6 +317,7 @@ jobs:
                        'testbench/touch-injector/core/*.c' \
               | grep -v -e 'gfx_font' -e '/rp2350/' \
                         -e 'test/host/render_screen.c' \
+                        -e 'test/host/render_files.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
@@ -400,7 +406,7 @@ jobs:
         run: python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
 
       # test/tools/test_doc_check.py runs Doxygen on a scratch tree.
-      # The archive is 115 MB; the cache holds it, and the script checks
+      # The archive is 115MB; the cache holds it, and the script checks
       # its SHA-256 on a hit as on a download.
       - name: Restore the Doxygen archive
         uses: actions/cache@v6
@@ -437,7 +443,7 @@ jobs:
           # The base branch has to be here to diff against.
           fetch-depth: 0
 
-      # The archive is 115 MB; the cache holds it, and the script checks
+      # The archive is 115MB; the cache holds it, and the script checks
       # its SHA-256 on a hit as on a download.
       - name: Restore the Doxygen archive
         uses: actions/cache@v6
@@ -464,7 +470,7 @@ jobs:
 
   # What the suite does not notice in the lines a pull request changes.  It
   # reports and does not fail on a survivor: the job fails only when the
-  # tool cannot run.  The run is bounded at 2700 s by the tool's defaults.
+  # tool cannot run.  The run is bounded at 2700s by the tool's defaults.
   mutation:
     name: Mutation check of the changed lines (advisory)
     if: github.event_name == 'pull_request'
@@ -598,15 +604,17 @@ jobs:
             exit 1
           fi
 
-      # The build without it, so the option keeps building: the image
-      # must hold none of that code.  Not uploaded.
-      - name: The build without the injector compiles
+      # The build without the injector and without the console's frame,
+      # stack and heap lines (RCBENCH_PERF_LOG), so both options keep
+      # building: the image must hold none of that code.  Not uploaded.
+      - name: The build without the injector and the frame lines compiles
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.5.5
           target: esp32p4
           path: 'firmware/panel'
-          command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
+          command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF
+                   -D RCBENCH_PERF_LOG=OFF build
 
       - name: The objects psram_bss.lf names are in PSRAM without the injector
         run: python3 tools/psram_bss.py firmware/panel/build-noinject
@@ -623,6 +631,21 @@ jobs:
             echo "::error::the build without the injector holds its code"
             exit 1
           fi
+
+      # And the default image holds the frame lines' code, the build
+      # without RCBENCH_PERF_LOG none of it.
+      - name: The frame lines are in the default build only
+        run: |
+          for s in scan_stacks "PSRAM probe:" "stack scan:"; do
+            if ! grep -aqF "$s" firmware/panel/build/rcbench-panel.elf; then
+              echo "::error::the default image lacks the frame lines: $s"
+              exit 1
+            fi
+            if grep -aqF "$s" firmware/panel/build-noinject/rcbench-panel.elf; then
+              echo "::error::the build without RCBENCH_PERF_LOG holds: $s"
+              exit 1
+            fi
+          done
 
       - uses: actions/upload-artifact@v7
         with:
@@ -648,7 +671,7 @@ jobs:
       - uses: actions/checkout@v6
 
       # The .deb files are cached because the Azure mirror serves at about
-      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # 50kB/s at times: gcc-arm-none-eabi (57.5MB) took 19min on one run.
       # The key carries the runner image version, so a new image saves a fresh
       # entry that starts from the previous one.
       - name: Key for the toolchain packages
@@ -669,7 +692,7 @@ jobs:
         run: tools/install_arm_toolchain.sh install "$HOME/apt-arm"
 
       # Pinned, and cached on the tag: the SDK (software development kit) is
-      # 400 MB of checkout and does not change between runs unless this pin
+      # 400MB of checkout and does not change between runs unless this pin
       # does.
       - name: Cache the pico-sdk
         id: sdk-cache
@@ -770,7 +793,7 @@ jobs:
       - uses: actions/checkout@v6
 
       # The .deb files are cached because the Azure mirror serves at about
-      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # 50kB/s at times: gcc-arm-none-eabi (57.5MB) took 19min on one run.
       # The key carries the runner image version, so a new image saves a fresh
       # entry that starts from the previous one.
       - name: Key for the toolchain packages

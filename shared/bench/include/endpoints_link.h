@@ -8,7 +8,7 @@
  * An edit of either setting, a link-up edge and the panel's start owe the
  * IOmcu the pair.  The debt is paid at a poll whose control write put
  * ARM = 0 at the IOmcu and was acknowledged, once ENDPOINTS_SETTLE_MS
- * (300 ms) have passed since the last edit: a key held on + or - steps the
+ * (300ms) have passed since the last edit: a key held on + or - steps the
  * value every few hundred milliseconds, and each write of CHAN_CFG is a
  * flash save at the IOmcu.  Paying it reads the page, puts the pair on the
  * throttle channels and writes the page when it differs.
@@ -78,7 +78,7 @@ typedef enum {
  * end and was acknowledged.  @p edit_ms: the time of the last edit.
  *
  * Due once now_ms - edit_ms, taken modulo 2^32, reaches
- * ENDPOINTS_SETTLE_MS: 299 ms after an edit waits, 300 ms pays.
+ * ENDPOINTS_SETTLE_MS: 299ms after an edit waits, 300ms pays.
  *
  * @param owed         true while a pair is owed.
  * @param far_disarmed true when the control write of this pass put ARM = 0 at

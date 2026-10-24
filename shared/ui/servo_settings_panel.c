@@ -339,7 +339,7 @@ static void edit_row(int i)
         for (int k = 0; k < type()->rate_count; ++k) {
             if (type()->rates[k] <= top) {
                 char lbl[16];
-                snprintf(lbl, sizeof(lbl), "%u Hz", (unsigned)type()->rates[k]);
+                snprintf(lbl, sizeof(lbl), "%uHz", (unsigned)type()->rates[k]);
                 choice_add(lbl, type()->rates[k]);
             }
         }
@@ -347,7 +347,7 @@ static void edit_row(int i)
         break;
     }
     /*
-     * Each end at least 50 us from the centre, and the range a command
+     * Each end at least 50us from the centre, and the range a command
      * carries -- centred on CENTRE, out to the further end; see cmd_range()
      * -- inside what the IOmcu takes and what the frame rate leaves
      * a pause after (max_pulse_for_rate(), never above the ceiling).  So an
@@ -385,7 +385,7 @@ static void edit_row(int i)
         open_keypad(KT_TRAVEL, TR(SV_ROW_TRAVEL), "deg", s.travel_deg, 10.0f,
                     90.0f, 0);
         break;
-    case R_TRIM:                        /* -200 to +200 us: the +/- key */
+    case R_TRIM:                        /* -200 to +200us: the +/- key */
         ui_keypad_open_signed(&s.kp, overlay_area(), TR(SV_ROW_TRIM), "us",
                               (float)s.trim_us, -200.0f, 200.0f, 0);
         s.kp_target = KT_TRIM;
@@ -507,7 +507,7 @@ static void keypad_done(ui_keypad_result_t r, float v)
         case KT_RATE:
             ask_profile(s.type, us);
             break;
-        case KT_TRIM:                   /* onto the 5 us steps of - and + */
+        case KT_TRIM:                   /* onto the 5us steps of - and + */
             s.trim_us = (int16_t)(5L * lroundf(v / 5.0f));
             reissue();
             break;

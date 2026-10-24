@@ -4,7 +4,7 @@
  * board's flash and boot ROM.
  *
  * The flash holds the partition table of partitions.json: slots A and B of
- * 2036 KiB each, and the store.  The image runs from one slot; the update
+ * 2036KiB each, and the store.  The image runs from one slot; the update
  * writes the other through the store's flash windows (out_store.h), restarts
  * into it as a flash update boot, and the boot ROM keeps it once the panel
  * writes BUY.  Without a partition table -- an image loaded before the table
@@ -75,7 +75,7 @@ uint8_t update_hw_data_write(void *ctx, uint8_t off, uint8_t n,
 /**
  * @brief Once per pass: a slice of a hash, the restart after ACTIVATE, an
  * owed erase of the other slot's first sector, the end of a session that has
- * had no update request for 5 s.
+ * had no update request for 5s.
  *
  * @param now_ms  The pass's clock in ms.
  */

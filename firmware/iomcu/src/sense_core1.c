@@ -40,7 +40,7 @@ static sense_svc_t  s_svc;
 static sense_cmd_t  s_cmd;
 static sense_snap_t s_snap;
 
-/* Core 1's stack, 4 kB: the default 2 kB was the sensor bus's, and the tone
+/* Core 1's stack, 4kB: the default 2kB was the sensor bus's, and the tone
  * service runs on it too. */
 static uint32_t s_stack[1024];
 
@@ -133,7 +133,7 @@ static void core1_main(void)
     uint64_t next = time_us_64();
     for (;;) {
         /* Paced on the timer, not on the work: a tick that ran long (a
-         * probe is 1.1 ms of bus, a scan 0.8 ms) is followed at once, and
+         * probe is 1.1ms of bus, a scan 0.8ms) is followed at once, and
          * one that ran past a whole tick starts the count again from now
          * rather than running the missed ones back to back. */
         while ((int64_t)(time_us_64() - next) < 0) {

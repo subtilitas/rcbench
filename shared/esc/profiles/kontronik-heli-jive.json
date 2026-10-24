@@ -43,8 +43,8 @@
     },
     {
       "when": "before_menu",
-      "action": "Pull the jumper off after 2 s or the tone sequence, within 10 s of power-up.",
-      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen, innerhalb 10 s nach dem Einschalten.",
+      "action": "Pull the jumper off after 2s or the tone sequence, within 10s of power-up.",
+      "action_de": "Jumper nach 2s oder der Tonfolge abziehen, innerhalb 10s nach dem Einschalten.",
       "starts_menu": true,
       "source": "Kontronik_Heli-Jive.pdf p.6, p.9 (DE), p.15 (EN)"
     },
@@ -66,8 +66,8 @@
         "Operator: fit the jumper on 2 of the 3 programming contacts. Connect the motor if tones are to be audible.",
         "Transmitter on, receiver on. Throttle stick or switch to the brake position.",
         "Apply drive power.",
-        "Wait 2 s or until the ESC sounds its tone sequence.",
-        "Operator: pull the jumper off within 10 s after power-up.",
+        "Wait 2s or until the ESC sounds its tone sequence.",
+        "Operator: pull the jumper off within 10s after power-up.",
         "The ESC sounds a second tone sequence, then the mode series, mode N as N tones.",
         "Move the throttle to full when the wanted mode sounds. The ESC confirms with 3 tones.",
         "To program autorotation, move the stick or switch to the AR position (modes 2 to 6). To leave it off, keep the throttle at full.",
@@ -115,7 +115,7 @@
         },
         {
           "number": 3,
-          "name": "Combi: ESC operation below a transition point (default 50 %), governor above it"
+          "name": "Combi: ESC operation below a transition point (default 50%), governor above it"
         },
         {
           "number": 4,
@@ -135,7 +135,7 @@
         },
         {
           "number": 8,
-          "name": "External governor (flybarless), stick range fixed at about 1 ms motor off and 2 ms full; needs software version 11 or higher"
+          "name": "External governor (flybarless), stick range fixed at about 1ms motor off and 2ms full; needs software version 11 or higher"
         },
         {
           "number": 9,

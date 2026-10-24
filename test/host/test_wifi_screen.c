@@ -3,7 +3,7 @@
  *
  * Under test: which control asks for what with and without a kept home
  * network, with the radio's gate shut, the home network picked from a scan
- * and typed on the Wi-Fi keyboard, and INSTALL as a 2 s hold that a release,
+ * and typed on the Wi-Fi keyboard, and INSTALL as a 2s hold that a release,
  * a vanished image or a closed install gate ends without asking.  The
  * screens command nothing themselves; every test reads wifi_screen_take().
  *
@@ -23,6 +23,7 @@
 #include "ui_widgets.h"
 #include "wa_session.h"
 #include "wifi_screen.h"
+#include "wifi_spots.h"
 
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_PANEL_H
@@ -31,20 +32,19 @@
 #define WF_KEY_AREA wifi_screen_key_area()
 
 /* Mirrored from wifi_screen.c. */
-#define BTN_CX(i)    (16 + 180)
-#define BTN_CY(i)    (16 + (i) * 68 + 28)
-#define OFF_CX       (16 + 120)
-#define OFF_CY       (360 + 28)
-#define Q_BY         (12 + 408 - 80)
-#define Q_CANCEL_CX  (32 + 120)
-#define INSTALL_CX   (408 + 180)
-#define Q_CY         (Q_BY + 32)
-#define ROW_CX(i)    (((i) < 8 ? 16 : 408) + 100)
-#define ROW_CY(i)    (16 + ((i) % 8) * 44 + 20)
-#define RESCAN_CX    (16 + 120)
-#define HIDDEN_CX    (272 + 128)
-#define SCAN_CANCEL_CX (544 + 120)
-#define SCAN_BY      (376 + 24)
+#define BTN_CX(i)    WF_BTN_CX(i)
+#define BTN_CY(i)    WF_BTN_CY(i)
+#define OFF_CX       WF_OFF_CX
+#define OFF_CY       WF_OFF_CY
+#define Q_CANCEL_CX  WF_Q_CANCEL_CX
+#define INSTALL_CX   WF_INSTALL_CX
+#define Q_CY         WF_Q_CY
+#define ROW_CX(i)    WF_ROW_CX(i)
+#define ROW_CY(i)    WF_ROW_CY(i)
+#define RESCAN_CX    WF_RESCAN_CX
+#define HIDDEN_CX    WF_HIDDEN_CX
+#define SCAN_CANCEL_CX WF_SCAN_CANCEL_CX
+#define SCAN_BY      WF_SCAN_CY
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -182,12 +182,12 @@ TEST_CASE(the_view_enums_mirror_the_session_and_the_installer)
 TEST_CASE(the_texts_name_the_session_limits)
 {
     CHECK_EQ(WA_IDLE_MS, 10u * 60u * 1000u);
-    CHECK(strstr(ui_tr(TX_WF_OFF_IDLE), "10 min") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_OFF_IDLE), "10min") != NULL);
     CHECK_EQ(WA_GUESS_MAX, 16u);
     CHECK(strstr(ui_tr(TX_WF_OFF_GUESSES), "16 ") != NULL);
     CHECK_EQ(WA_ADDRESS_MS, 15000u);
-    CHECK(strstr(ui_tr(TX_WF_JOIN_NO_ADDRESS), "15 s") != NULL);
-    CHECK(strstr(ui_tr(TX_WF_HOLD_INSTALL), "2 s") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_JOIN_NO_ADDRESS), "15s") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_HOLD_INSTALL), "2s") != NULL);
     CHECK(UI_HOLD_S == 2.0f);
 }
 
@@ -440,6 +440,68 @@ TEST_CASE(a_network_picked_from_the_scan_is_kept_with_its_password)
     CHECK_EQ(wifi_screen_take(), WIFI_REQ_JOIN);
 }
 
+/* SCAN AGAIN three times in a row: each asks for a scan, and each list
+ * shows. */
+TEST_CASE(scan_again_three_times_asks_three_scans_and_shows_each_list)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    for (int i = 0; i < 3; ++i) {
+        v.radio = WIFI_RADIO_SCANNING;
+        v.scanned = false;
+        v.scan_n = 0;
+        show();
+        const uint32_t searching = render_hash();
+        scan_result();
+        CHECK(render_hash() != searching);
+        tap(RESCAN_CX, SCAN_BY);
+        CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    }
+}
+
+/* A scan that failed, or that the radio refused, says so: neither the
+ * empty list's sentence nor the search's; SCAN AGAIN and HIDDEN NETWORK
+ * stay. */
+TEST_CASE(a_failed_scan_says_so_and_not_that_none_was_found)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    v.radio = WIFI_RADIO_OFF;
+    v.off = WIFI_WHY_NONE;
+    v.scanned = false;
+    show();
+    const uint32_t searching = render_hash();
+    v.scanned = true;                         /* done, nothing usable */
+    show();
+    const uint32_t none = render_hash();
+    CHECK(none != searching);
+    v.scanned = false;
+    v.off = WIFI_WHY_FAILED;
+    show();
+    const uint32_t failed = render_hash();
+    CHECK(failed != searching);
+    CHECK(failed != none);
+    tap(RESCAN_CX, SCAN_BY);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    tap(HIDDEN_CX, SCAN_BY);
+    CHECK(render_lit() > 2000);               /* the keyboard */
+    /* Each reason the radio went off draws in the list's place, the
+     * longest German one included. */
+    ui_text_set_language(UI_LANG_DE);
+    for (int why = WIFI_WHY_ARMED; why <= WIFI_WHY_JOIN; ++why) {
+        fresh();
+        ui_text_set_language(UI_LANG_DE);
+        tap(BTN_CX(2), BTN_CY(2));
+        (void)wifi_screen_take();
+        v.off = (wifi_why_t)why;
+        show();
+        CHECK(render_lit() > 1000);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* A hidden network: its name typed first, then its password; CANCEL goes
  * back to the list and keeps nothing. */
 TEST_CASE(a_hidden_network_is_typed_and_cancel_keeps_nothing)
@@ -496,7 +558,7 @@ TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
         CHECK(r.y + r.h <= UI_ALERT_Y - UI_BAND_H - 4);
         CHECK(r.x >= UI_MARGIN && r.x + r.w <= UI_PANEL_W - UI_MARGIN);
     }
-    /* A character key: 93 x 71 px on the 1024 x 600 panel. */
+    /* A character key: 93 x 71px on the 1024 x 600 panel. */
     const gfx_rect_t q = ui_textkey_key_rect(&k, 10);
     CHECK_EQ(q.w, 93);
     CHECK_EQ(q.h, 71);
@@ -843,7 +905,7 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
 }
 
 /* WF_JOBS_1 and WF_JOBS_2 are one sentence: wrapped as one, it takes the
- * card's 44 cells twice, with no line of one word between its parts. */
+ * card's 49 cells twice, with no line of one word between its parts. */
 TEST_CASE(the_first_sentence_is_wrapped_once_in_two_lines)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -867,6 +929,8 @@ int main(void)
     RUN(every_reason_and_join_failure_draws);
     RUN(the_running_views_draw_and_wifi_off_asks_off);
     RUN(a_network_picked_from_the_scan_is_kept_with_its_password);
+    RUN(scan_again_three_times_asks_three_scans_and_shows_each_list);
+    RUN(a_failed_scan_says_so_and_not_that_none_was_found);
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
     RUN(the_keyboard_keys_are_large_and_end_above_the_alert_band);
     RUN(a_tap_on_a_key_of_the_screens_area_types_that_key);

@@ -27,12 +27,12 @@ typedef enum {
 } limrun_stage_t;
 
 /**
- * @brief Distance from NEUTRAL to a side pulse limit, 0.1 us, from the
+ * @brief Distance from NEUTRAL to a side pulse limit, 0.1us, from the
  *        pulses given. servo_limrun_span() wraps this.
  *
- * @param sv   Servo pulses, 0.1 us.
+ * @param sv   Servo pulses, 0.1us.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
- * @return distance from NEUTRAL to the side pulse limit, 0.1 us.
+ * @return distance from NEUTRAL to the side pulse limit, 0.1us.
  */
 static inline int32_t limrun_span(const servo_limrun_servo_t *sv,
                                   uint8_t side)
@@ -63,7 +63,7 @@ static inline bool limrun_restore(const servo_limrun_t *r)
  *
  * @param r    Run state holding pulse_now.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
- * @return distance from NEUTRAL to the side pulse limit, 0.1 us.
+ * @return distance from NEUTRAL to the side pulse limit, 0.1us.
  */
 static inline int32_t span_now(const servo_limrun_t *r, uint8_t side)
 {

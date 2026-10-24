@@ -1,6 +1,6 @@
 /*
  * What the SERVO screen's SETTINGS overlay decides: the profiles
- * and the warning that applies a heli type or a rate above 60 Hz,
+ * and the warning that applies a heli type or a rate above 60Hz,
  * the note on the rate in force and the target, and the supply's
  * set points and output typed and switched from SERVO.
  *
@@ -61,7 +61,7 @@ TEST_CASE(a_heli_type_waits_for_the_warning_held_two_seconds)
 /*
  * Every profile's endpoints are a range the IOmcu takes: one it
  * refused would leave the panel driving a range the profile never named.
- * HELI TAIL 760's end of travel, 410 us, is the narrowest of them.
+ * HELI TAIL 760's end of travel, 410us, is the narrowest of them.
  */
 TEST_CASE(every_profile_is_a_range_the_coprocessor_takes)
 {
@@ -100,7 +100,7 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
     keys("2600");
     key(UI_KEY_CANCEL);
     /* A centre further from one end than the ceiling allows the other:
-     * 1800 us with MIN at 1000 would carry 1000..2600. */
+     * 1800us with MIN at 1000 would carry 1000..2600. */
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
     keys("1800");
     key(UI_KEY_CANCEL);
@@ -115,15 +115,15 @@ TEST_CASE(a_pulse_width_the_coprocessor_would_refuse_is_not_taken)
 /*
  * The range a command carries reaches past PULSE MAX when CENTRE is off the
  * middle, and the far end can render its top between two transactions: the
- * frame rate's pause is kept from that top.  At HELI TAIL 760's 560 Hz,
- * 1285 us is the longest pulse with 0.5 ms after it, so CENTRE may not move
- * the range past it; at 50 Hz a centre of 1700 us carries 1000..2400 us and
- * leaves 294 Hz as the fastest rate.
+ * frame rate's pause is kept from that top.  At HELI TAIL 760's 560Hz,
+ * 1285us is the longest pulse with 0.5ms after it, so CENTRE may not move
+ * the range past it; at 50Hz a centre of 1700us carries 1000..2400us and
+ * leaves 294Hz as the fastest rate.
  */
 TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
 {
     fresh_armed();
-    choose_type(4);                            /* HELI TAIL 760, 560 Hz */
+    choose_type(4);                            /* HELI TAIL 760, 560Hz */
     open_settings();
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
     keys("1060");                              /* would carry 410..1710 */
@@ -147,13 +147,13 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
     tap(ROW_R_X, ROW_Y(2));                    /* PULSE CENTRE */
     keys("1700");                              /* 1000..2400 */
     tap(ROW_L_X, ROW_Y(1));                    /* FRAME RATE */
-    tap(CH_X(6), CH_Y(6));                     /* CUSTOM, after 250 Hz */
-    keys("333");                               /* past 294 Hz: refused */
+    tap(CH_X(6), CH_Y(6));                     /* CUSTOM, after 250Hz */
+    keys("333");                               /* past 294Hz: refused */
     key(UI_KEY_CANCEL);
     CHECK_EQ(servo_screen_frame_hz(), 50);
     tap(ROW_L_X, ROW_Y(1));
     tap(CH_X(6), CH_Y(6));
-    keys("290");                               /* fits; past 60 Hz: warned */
+    keys("290");                               /* fits; past 60Hz: warned */
     hold_apply(2.3f);
     close_settings();
     CHECK_EQ(servo_screen_frame_hz(), 290);
@@ -165,7 +165,7 @@ TEST_CASE(the_pause_is_kept_from_the_top_of_the_range_a_command_carries)
 
 /*
  * MIN, CENTRE and MAX are set one by one, so each side of centre runs to
- * its own end: -90 deg is MIN and +90 deg is MAX.  The range a command
+ * its own end: -90deg is MIN and +90deg is MAX.  The range a command
  * carries is centred on CENTRE, because the far end rests a surface at its
  * midpoint -- on RELEASE and before an arm -- and that rest is the centre.
  */
@@ -243,10 +243,10 @@ TEST_CASE(a_rate_above_60_hz_needs_the_warning_and_60_does_not)
     fresh();
     open_settings();
     tap(ROW_L_X, ROW_Y(1));                    /* FRAME RATE */
-    tap(CH_X(1), CH_Y(1));                     /* 60 Hz */
+    tap(CH_X(1), CH_Y(1));                     /* 60Hz */
     CHECK_EQ(servo_screen_frame_hz(), 60);
     tap(ROW_L_X, ROW_Y(1));
-    tap(CH_X(2), CH_Y(2));                     /* 100 Hz: asked first */
+    tap(CH_X(2), CH_Y(2));                     /* 100Hz: asked first */
     CHECK_EQ(servo_screen_frame_hz(), 60);
     hold_apply(2.3f);
     CHECK_EQ(servo_screen_frame_hz(), 100);
@@ -254,12 +254,12 @@ TEST_CASE(a_rate_above_60_hz_needs_the_warning_and_60_does_not)
 
 TEST_CASE(standard_pwm_keeps_a_millisecond_between_pulses)
 {
-    /* 1 / (2000 us + 1 ms) is 333 Hz: the list stops there, a custom rate
-     * above it is refused, and at 333 Hz the longest pulse is 2003 us. */
+    /* 1 / (2000us + 1ms) is 333Hz: the list stops there, a custom rate
+     * above it is refused, and at 333Hz the longest pulse is 2003us. */
     fresh_armed();
     open_settings();
     tap(ROW_L_X, ROW_Y(1));
-    tap(CH_X(7), CH_Y(7));                     /* 333 Hz, the last */
+    tap(CH_X(7), CH_Y(7));                     /* 333Hz, the last */
     hold_apply(2.3f);
     CHECK_EQ(servo_screen_frame_hz(), 333);
     tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
@@ -273,18 +273,18 @@ TEST_CASE(standard_pwm_keeps_a_millisecond_between_pulses)
     tap(x, y);
     CHECK_EQ(last_cmd().max_us, 2003);
 
-    /* WIDE's 2200 us leaves 312 Hz: CUSTOM refuses 320, takes 300. */
+    /* WIDE's 2200us leaves 312Hz: CUSTOM refuses 320, takes 300. */
     fresh();
     choose_type(2);
     open_settings();
     tap(ROW_L_X, ROW_Y(1));
-    tap(CH_X(7), CH_Y(7));                     /* CUSTOM: 7 rates fit 312 Hz */
+    tap(CH_X(7), CH_Y(7));                     /* CUSTOM: 7 rates fit 312Hz */
     keys("320");
     key(UI_KEY_CANCEL);
     CHECK_EQ(servo_screen_frame_hz(), 50);
     tap(ROW_L_X, ROW_Y(1));
     tap(CH_X(7), CH_Y(7));                     /* CUSTOM */
-    keys("55");                                /* 60 Hz or under: no warning */
+    keys("55");                                /* 60Hz or under: no warning */
     CHECK_EQ(servo_screen_frame_hz(), 55);
 }
 
@@ -343,7 +343,7 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
 
     open_run_settings(0);                      /* AUTOMATIC TEST's */
     CHECK_EQ(servo_screen_run_settings(), 1);
-    tap(LROW_X(0), LROW_Y(0));                 /* STEP 4.8 V: a switch */
+    tap(LROW_X(0), LROW_Y(0));                 /* STEP 4.8V: a switch */
     CHECK(!settings_get_bool(SET_SERVO_STEP_48));
     tap(LROW_X(1), LROW_Y(1));                 /* IDLE CURRENT */
     keys("0.3");
@@ -398,11 +398,12 @@ TEST_CASE(the_tag_is_red_while_a_dangerous_profile_is_in_force)
 {
     fresh();
     scr->render(&cv, 0);
-    const gfx_color_t calm = fb[40 * W + 700];        /* the tag */
+    /* The tag, inside its pill and left of its text. */
+    const gfx_color_t calm = fb[40 * W + 660];
     CHECK(calm != ui_theme_color(UI_C_DANGER));
     choose_type(3);
     scr->render(&cv, 0);
-    CHECK_EQ(fb[40 * W + 700], ui_theme_color(UI_C_DANGER));
+    CHECK_EQ(fb[40 * W + 660], ui_theme_color(UI_C_DANGER));
 }
 
 TEST_CASE(drags_and_samples_leave_both_buffers_as_a_full_redraw_would)
@@ -612,8 +613,8 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
  * its first line.  Both are news, not a warning.
  */
 /* The rate note on the OUTPUT page, mirrored from servo_settings_draw.c:
- * its first line at OV_NOTE_Y + 2 * 21 (408), its second 21 px below,
- * each 20 px high, from 10 px into the page to 600 px further. */
+ * its first line at OV_NOTE_Y + 2 * 21 (408), its second 21px below,
+ * each 20px high, from 10px into the page to 600px further. */
 #define NOTE_X    (UI_MARGIN + 10)
 #define NOTE_L1_Y 408
 #define NOTE_L2_Y (NOTE_L1_Y + 21)
@@ -655,7 +656,7 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
     CHECK_EQ(servo_rate_in_force(18u), SERVO_RATE_IN_FORCE_SURFACES);
     CHECK_EQ(servo_rate_in_force(1u), SERVO_RATE_IN_FORCE_SURFACES);
     CHECK_STR_EQ(ui_tr(TX_SV_IN_FORCE_SURFACES_1),
-                 "Active: all PWM control surfaces run at %u Hz.");
+                 "Active: all PWM control surfaces run at %uHz.");
 
     fresh();
     two_buffers();
@@ -693,17 +694,17 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
     CHECK(last < NOTE_L1_Y + 20);
     CHECK(note_rows_equal(target, NOTE_L2_Y));
 
-    /* The rate is in the "every PWM surface" line: 50 Hz and 60 Hz read
+    /* The rate is in the "every PWM surface" line: 50Hz and 60Hz read
      * differently there, and the second line stays. */
     memcpy(target, fb, FB_BYTES);
     tap(ROW_L_X, ROW_Y(1));                    /* FRAME RATE */
-    tap(CH_X(1), CH_Y(1));                     /* 60 Hz */
+    tap(CH_X(1), CH_Y(1));                     /* 60Hz */
     CHECK_EQ(servo_screen_frame_hz(), 60);
     servo_screen_rate(servo_rate_in_force(18u), 60u);
     CHECK(both_whole());
     CHECK(!note_rows_equal(target, NOTE_L1_Y));
     CHECK(note_rows_equal(target, NOTE_L2_Y));
-    CHECK(note_matches("Active: all PWM control surfaces run at 60 Hz.",
+    CHECK(note_matches("Active: all PWM control surfaces run at 60Hz.",
                        ui_tr(TX_SV_IN_FORCE_2), false));
     free(target);
 }
@@ -723,27 +724,27 @@ typedef struct {
 #define PPM_LINE "PPM outputs keep their own frame rate."
 #define NOT_SET  "The TARGET chosen is not active."
 static const note_state_t k_note[] = {
-    { 0, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50 Hz.",
+    { 0, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50Hz.",
       PPM_LINE, false },
-    { 1, 1u, 13u, true, "Active: PROG PORT GP13 runs at 50 Hz.", PPM_LINE,
+    { 1, 1u, 13u, true, "Active: PROG PORT GP13 runs at 50Hz.", PPM_LINE,
       false },
     /* PROG PORT set and the port unbound: the outputs stay the target. */
-    { 1, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50 Hz.",
+    { 1, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50Hz.",
       NOT_SET, true },
     /* The port held while OUTPUTS is set: the change waits for rest. */
-    { 0, 1u, 13u, true, "Active: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+    { 0, 1u, 13u, true, "Active: PROG PORT GP13 runs at 50Hz.", NOT_SET,
       true },
     { 1, 1u, SERVO_SCREEN_NO_PIN, true,
-      "Active: 50 Hz on PROG PORT. No pin is assigned to it.", PPM_LINE, true },
-    { 1, 1u, 63u, false, "Active: PROG PORT GP63 runs at 50 Hz.",
+      "Active: 50Hz on PROG PORT. No pin is assigned to it.", PPM_LINE, true },
+    { 1, 1u, 63u, false, "Active: PROG PORT GP63 runs at 50Hz.",
       "PORT PWM is OFF. The port sends no pulses.", true },
     /* The port with no pin and its pulse off: the first line still says
      * there is no pin, the second that no pulse goes out. */
     { 1, 1u, SERVO_SCREEN_NO_PIN, false,
-      "Active: 50 Hz on PROG PORT. No pin is assigned to it.",
+      "Active: 50Hz on PROG PORT. No pin is assigned to it.",
       "PORT PWM is OFF. The port sends no pulses.", true },
     { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, true,
-      "Active rate: 50 Hz. Target unknown.", PPM_LINE, true },
+      "Active rate: 50Hz. Target unknown.", PPM_LINE, true },
     /* No link: the IOmcu may have restarted, so no rate is named. */
     { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, true,
       "No link. The active frame rate is unknown.", PPM_LINE, true },
@@ -780,34 +781,34 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
      * the port's pin, then the outputs once more. */
     servo_screen_set_drive(1u, 13u, true);
     CHECK(both_whole());
-    CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+    CHECK(note_matches("Active: PROG PORT GP13 runs at 50Hz.", NOT_SET,
                        true));
     servo_screen_set_drive(1u, 13u, false);
     CHECK(both_whole());
-    CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+    CHECK(note_matches("Active: PROG PORT GP13 runs at 50Hz.", NOT_SET,
                        true));
     servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
     CHECK(both_whole());
-    CHECK(note_matches("Active: OUTPUTS run at 50 Hz.", PPM_LINE, false));
+    CHECK(note_matches("Active: OUTPUTS run at 50Hz.", PPM_LINE, false));
 
     /* German, the same states: protocol and setting names as the UI writes
      * them. */
     static const char *const de[NOTE_N][2] = {
-        { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
+        { "Aktiv: AUSGÄNGE laufen mit 50Hz.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
-        { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
+        { "Aktiv: PROG-PORT GP13 läuft mit 50Hz.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
-        { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
+        { "Aktiv: AUSGÄNGE laufen mit 50Hz.",
           "Das gewählte ZIEL ist nicht aktiv." },
-        { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
+        { "Aktiv: PROG-PORT GP13 läuft mit 50Hz.",
           "Das gewählte ZIEL ist nicht aktiv." },
-        { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
+        { "Aktiv: 50Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
-        { "Aktiv: PROG-PORT GP63 läuft mit 50 Hz.",
+        { "Aktiv: PROG-PORT GP63 läuft mit 50Hz.",
           "PORT-PWM ist AUS. Der Port gibt keine Pulse aus." },
-        { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
+        { "Aktiv: 50Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
           "PORT-PWM ist AUS. Der Port gibt keine Pulse aus." },
-        { "Aktive Pulsrate: 50 Hz. Ziel unbekannt.",
+        { "Aktive Pulsrate: 50Hz. Ziel unbekannt.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Keine Verbindung. Die aktive Pulsrate ist unbekannt.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
@@ -827,9 +828,9 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
     /* The rate is the one passed; a NULL buffer or no room writes nothing. */
     char a[96], b[96];
     CHECK(!servo_in_force_note(a, b, sizeof(a), 560u, 1u, 13u, true, 1));
-    CHECK_STR_EQ(a, "Active: PROG PORT GP13 runs at 560 Hz.");
+    CHECK_STR_EQ(a, "Active: PROG PORT GP13 runs at 560Hz.");
     CHECK(!servo_in_force_note(a, b, sizeof(a), 560u, 0u, 13u, true, 0));
-    CHECK_STR_EQ(a, "Active: OUTPUTS run at 560 Hz.");
+    CHECK_STR_EQ(a, "Active: OUTPUTS run at 560Hz.");
     memset(a, 'x', sizeof(a));
     memset(b, 'x', sizeof(b));
     CHECK(!servo_in_force_note(NULL, b, sizeof(b), 50u, 0u, 0xFFu, false, 1));
@@ -842,31 +843,31 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
     CHECK_STR_EQ(b, NOT_SET);
 }
 
-/* The note carries the rate the screen runs, not 50 Hz: HELI TAIL 760's
- * 560 Hz on the port's pin as drawn, and in the lines for a target not
+/* The note carries the rate the screen runs, not 50Hz: HELI TAIL 760's
+ * 560Hz on the port's pin as drawn, and in the lines for a target not
  * known and for a port with no pin.  No link names no rate at all, also
  * for an IOmcu before 4.19 whose note says "every PWM surface". */
 TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
 {
     fresh();
     two_buffers();
-    choose_type(4);                            /* HELI TAIL 760, 560 Hz */
+    choose_type(4);                            /* HELI TAIL 760, 560Hz */
     CHECK_EQ(servo_screen_frame_hz(), 560);
     settings_set(SET_SERVO_TARGET, 1.0f);
     servo_screen_set_drive(1u, 13u, true);
     open_settings();
     servo_screen_rate(SERVO_RATE_IN_FORCE, 560u);
     CHECK(both_whole());
-    CHECK(note_matches("Active: PROG PORT GP13 runs at 560 Hz.", PPM_LINE,
+    CHECK(note_matches("Active: PROG PORT GP13 runs at 560Hz.", PPM_LINE,
                        false));
 
     char a[96], b[96];
     CHECK(servo_in_force_note(a, b, sizeof(a), 560u,
                               SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, 1));
-    CHECK_STR_EQ(a, "Active rate: 560 Hz. Target unknown.");
+    CHECK_STR_EQ(a, "Active rate: 560Hz. Target unknown.");
     CHECK(servo_in_force_note(a, b, sizeof(a), 560u, 1u, SERVO_SCREEN_NO_PIN,
                               true, 1));
-    CHECK_STR_EQ(a, "Active: 560 Hz on PROG PORT. No pin is assigned to it.");
+    CHECK_STR_EQ(a, "Active: 560Hz on PROG PORT. No pin is assigned to it.");
 
     /* The link goes: the drawn note names no rate, in the warning colour. */
     servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN,
@@ -883,7 +884,7 @@ TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
     servo_screen_set_drive(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN,
                            false);
     CHECK(both_whole());
-    CHECK(note_matches("Active: all PWM control surfaces run at 560 Hz.",
+    CHECK(note_matches("Active: all PWM control surfaces run at 560Hz.",
                        PPM_LINE, false));
 }
 
@@ -932,10 +933,10 @@ TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
         CHECK(both_whole());
         if (bound) {
-            CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.",
+            CHECK(note_matches("Active: PROG PORT GP13 runs at 50Hz.",
                                PPM_LINE, false));
         } else {
-            CHECK(note_matches("Active: 50 Hz on PROG PORT. No pin is "
+            CHECK(note_matches("Active: 50Hz on PROG PORT. No pin is "
                                "assigned to it.", PPM_LINE, true));
         }
     }
@@ -963,7 +964,7 @@ TEST_CASE(a_refused_save_repaints_only_the_save_line)
     int outside = 0, warn = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
-            /* The save line, 20 px tall, 4 px above the alert band. */
+            /* The save line, 20px tall, 4px above the alert band. */
             const int sy = UI_ALERT_Y - UI_BAND_H - 24;
             const bool in = x >= UI_MARGIN + 10 && x < UI_MARGIN + 254
                             && y >= sy && y < sy + 20;
@@ -990,12 +991,12 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
 {
     fresh_armed();
     two_buffers();
-    /* Past the arm's flash, 150 ms: 15 frames of 26 ms. */
+    /* Past the arm's flash, 150ms: 15 frames of 26ms. */
     for (int i = 0; i < UI_HOLD_FLASH_MS / 10; ++i) {
         scr->render((i % 2) ? &cv1 : &cv, i % 2);
         scr->tick(1.0f / 39.0f);
     }
-    tap(ARM_X + 1, SPEED_Y);                   /* the slowest sweep, 10 % */
+    tap(ARM_X + 1, SPEED_Y);                   /* the slowest sweep, 10% */
     int x, y;
     dial_at(60.0f, ARC_R - 20, &x, &y);
     tap(x, y);
@@ -1004,7 +1005,7 @@ TEST_CASE(the_horn_travels_and_breathes_as_a_full_redraw_would)
     gfx_color_t *early = malloc(FB_BYTES);
     REQUIRE_ALLOC(early);
     memcpy(early, fb, FB_BYTES);
-    for (int i = 0; i < 4 * 39; ++i) {         /* 60 deg at 36 deg/s, and on */
+    for (int i = 0; i < 4 * 39; ++i) {         /* 60deg at 36deg/s, and on */
         scr->tick(1.0f / 39.0f);
         scr->render((i % 2) ? &cv1 : &cv, i % 2);
     }
@@ -1177,7 +1178,7 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
     free(before);
 }
 
-/* A voltage raised past 6.0 V, a standard servo's rating, waits for the HV
+/* A voltage raised past 6.0V, a standard servo's rating, waits for the HV
  * warning's two-second hold: a tap does nothing, CANCEL drops it. */
 TEST_CASE(a_voltage_raised_past_6_v_takes_the_hv_hold)
 {
@@ -1223,7 +1224,7 @@ TEST_CASE(the_hv_hold_stands_for_the_live_question)
     CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
 }
 
-/* OUTPUT ON with a set point past 6.0 V already in force -- made on SUPPLY,
+/* OUTPUT ON with a set point past 6.0V already in force -- made on SUPPLY,
  * or before this screen was opened -- goes through the HV warning: the
  * switch's own hold switches nothing on, a tap on APPLY does nothing, STOP
  * ends the hold, and only the two-second hold on APPLY sends the ON. */
@@ -1273,7 +1274,7 @@ TEST_CASE(output_on_past_6_v_takes_the_hv_hold)
     }
     CHECK(!supply_cmd(NULL));
 
-    /* At 6.0 V it is the ordinary hold. */
+    /* At 6.0V it is the ordinary hold. */
     fresh();
     supply_screen_put(6.0f, 1.0f);
     scr->tick(0.025f);
@@ -1428,7 +1429,7 @@ TEST_CASE(settings_shuts_a_set_points_keypad_cleanly)
 TEST_CASE(a_cap_lowered_under_the_question_lowers_its_value)
 {
     fresh();
-    supply_screen_put(9.0f, 1.0f);              /* past 6 V already */
+    supply_screen_put(9.0f, 1.0f);              /* past 6V already */
     supply_screen_set_output(true);
     scr->tick(0.025f);
     tap(SUP_V_X, SUP_ROW_Y);

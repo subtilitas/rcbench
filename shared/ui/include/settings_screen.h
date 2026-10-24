@@ -66,7 +66,7 @@ const char *settings_screen_help(setting_id_t id);
 /**
  * @brief How far the open category's list is scrolled.
  * @param max Its scroll range into, when not NULL: 0 for a list that fits
- *            its 428 px.
+ *            its 428px.
  * @return The scroll, in px from the list's top: 0 to the range.
  */
 int settings_screen_scroll(int *max);

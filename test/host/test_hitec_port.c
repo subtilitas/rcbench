@@ -382,7 +382,7 @@ TEST_CASE(transactions_outside_the_line_are_refused)
     CHECK_EQ(cmd(LINK_HITEC_OP_SEND, CH, KEY), 0);
     CHECK_EQ(refusal(), LINK_HITEC_REF_RANGE);
     x.answer = 0u;
-    /* A lead and a window of 4 s are taken; one more us is not. */
+    /* A lead and a window of 4s are taken; one more us is not. */
     x.lead_us = HITEC_TIME_MAX_US + 1u;
     stage_send(&x, LINK_HITEC_DEC_NONE, 0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_SEND, CH, KEY), 0);
@@ -413,7 +413,7 @@ TEST_CASE(transactions_outside_the_line_are_refused)
     CHECK_EQ(cmd(LINK_HITEC_OP_SEND, CH, KEY), 0);
     CHECK_EQ(refusal(), LINK_HITEC_REF_RANGE);
     SST(LINK_HT_W_RX) = 2u;
-    /* A listen with no window; a level of 0 us; a level with a decoder. */
+    /* A listen with no window; a level of 0us; a level with a decoder. */
     stage_listen(0u, 0u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
     CHECK_EQ(refusal(), LINK_HITEC_REF_RANGE);
@@ -426,7 +426,7 @@ TEST_CASE(transactions_outside_the_line_are_refused)
     CHECK_EQ(refusal(), LINK_HITEC_REF_RANGE);
     SST(LINK_HT_W_DECODE) = 0u;
     CHECK_EQ(g_drv.starts, 0);
-    /* The limits themselves are taken: 8 bytes, a gap of 6, 4 s. */
+    /* The limits themselves are taken: 8 bytes, a gap of 6, 4s. */
     x.n_tx = 8u;
     x.gap_bits = HITEC_GAP_MAX;
     x.window_us = HITEC_TIME_MAX_US;
@@ -492,7 +492,7 @@ TEST_CASE(abort_cuts_the_transaction_and_keeps_the_port)
     g_drv.listen_n = 4u;
     stage_listen(4000000u, 8u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_LISTEN, CH, 0), 0);
-    /* The first two bytes have come at 1.0 and 1.5 ms. */
+    /* The first two bytes have come at 1.0 and 1.5ms. */
     run_ms(2u);
     CHECK_EQ(cmd(LINK_HITEC_OP_ABORT, CH, 0), 0);
     CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
@@ -642,8 +642,8 @@ TEST_CASE(a_send_says_while_its_lead_and_bytes_are_out)
     x.lead_us = 3000u;
     stage_send(&x, LINK_HITEC_DEC_NONE, 0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_SEND, CH, KEY), 0);
-    /* 3 ms of lead and 51 bit times of 8.68 us: 3.443 ms, counted as the
-     * whole 3 ms and 1 more. */
+    /* 3ms of lead and 51 bit times of 8.68us: 3.443ms, counted as the
+     * whole 3ms and 1 more. */
     for (unsigned i = 0; i <= 4u; ++i) {
         CHECK(hitec_port_frame_out(&g_port, g_ms + i));
     }

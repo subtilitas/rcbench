@@ -94,7 +94,7 @@ extern const uint8_t _binary_rcbench_iomcu_bin_end[];
 #endif
 
 /* Steps run back to back in one pass of the control task while an update
- * sends: a block is 9 exchanges, and the pass's own work and its 5 ms
+ * sends: a block is 9 exchanges, and the pass's own work and its 5ms
  * delay come between two slices. */
 #define CU_SLICE_MS 20u
 
@@ -156,7 +156,7 @@ static cu_version_t cu_carried(void)
 /*
  * The update's own wire: exchange() after the bus has been asked back.  An
  * IOmcu that restarts answers nothing for a few hundred milliseconds,
- * and a transmitter nobody acknowledges is off the bus in about 4 ms and
+ * and a transmitter nobody acknowledges is off the bus in about 4ms and
  * does not come back on its own (probe_identity()).  Asked only after an
  * exchange went unanswered, so a block costs no status read.
  */
@@ -422,6 +422,11 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         s_cu_starts_taken = atomic_load(&s_cu_starts);
         /* Busy first, then the install's flag: see s_fw_installing. */
         atomic_store(&s_cu_busy, true);
+        /* A radio held for the clock's NTP answer goes off now, so the
+         * offer made again below opens as soon as it is down. */
+        if (s_wifi_ok) {
+            wifi_access_end_linger();
+        }
         if (!cu_may_start()) {
             /* The panel's radio is up or an install of the panel has
              * begun: the START is spent and the offer made again, so the
@@ -508,7 +513,7 @@ static void update_frame(update_state_t st, const char *version,
     update_view_t v = { .state = st, .written = written, .total = total };
     snprintf(v.version, sizeof(v.version), "%s", version);
     update_screen_set(&v);
-    gfx_canvas_t *c = display_canvas();
+    gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
         ui_router_render(c, display_back_index());
         display_flip();
@@ -516,7 +521,7 @@ static void update_frame(update_state_t st, const char *version,
 }
 
 /*
- * INSTALL: the 2 s hold completed on the question.
+ * INSTALL: the 2s hold completed on the question.
  *
  * In order: the update screen, the radio off and waited for, the image
  * checked once more against the slot and the running build, the gate once
@@ -683,7 +688,7 @@ void wifi_service(bool armed, uint32_t stops_now)
     }
     /* What the screen shows: the session's and the receiver's enums map
      * one to one onto the screen's, which test_wifi_screen holds. */
-    /* 2 kB of copies, in PSRAM: internal RAM is what the radio is short of. */
+    /* 2kB of copies, in PSRAM: internal RAM is what the radio is short of. */
     static wifi_access_state_t *ap;
     static wifi_view_t         *vp;
     if (ap == NULL || vp == NULL) {
@@ -907,6 +912,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     /* What UPDATES and the download's screen show. */
     const bool busy = wa_fetch_busy(&f);
     v.block = (upd_why_t)upd_check_gate(armed);
+    v.radio_free = wifi_access_down();
     if (s_upd_dl || busy) {
         v.dl_block = UPD_WHY_BUSY;
     } else {

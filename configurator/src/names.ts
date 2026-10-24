@@ -30,7 +30,7 @@ export function powerGroups(setup: Setup): Array<{ feeds: PowerSource['feeds']; 
   return out;
 }
 
-/** Voltage and current of a power source as text: "1 to 20 V, 0.05 to 3 A. Vendor values, not measured." Empty without a number. */
+/** Voltage and current of a power source as text: "1 to 20V, 0.05 to 3A. Vendor values, not measured." Empty without a number. */
 export function powerNumbers(lang: Lang, source: PowerSource): string {
   const num = (v: number): string => (lang === 'de' ? String(v).replace('.', ',') : String(v));
   const span = (min: number, max: number): string => (min === max ? num(min) : t(lang, 'pwTo', { a: num(min), b: num(max) }));

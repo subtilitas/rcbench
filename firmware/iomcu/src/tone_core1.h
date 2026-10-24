@@ -69,8 +69,8 @@ void tone_core1_order(const tone_cmd_t *cmd, uint64_t t0_us);
 bool tone_core1_quiesce(void);
 
 /**
- * @brief The longest core 0 waits in tone_core1_quiesce(), 5 ms: core 1's
- * tick is 1 ms and the sensor pass before the tone pass takes up to 1.1 ms;
+ * @brief The longest core 0 waits in tone_core1_quiesce(), 5ms: core 1's
+ * tick is 1ms and the sensor pass before the tone pass takes up to 1.1ms;
  * the tone pass is not measured.
  */
 #define TONE_CORE1_WAIT_US 5000u

@@ -123,27 +123,19 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
     const float lo_f = (float)lo;
     const float hi_f = (float)hi;
     const bool has_unit = unit && unit[0];
-    /* One decimal below 1000, then the widths decide: a text wider than the
-     * box drops the decimal, and then the space before the unit. */
+    /* One decimal below 1000, then the width decides: a text wider than
+     * the box drops the decimal. */
     int decimals = (fabsf(lo_f) >= 999.95f || fabsf(hi_f) >= 999.95f) ? 0 : 1;
-    bool space = has_unit;
     for (;;) {
         char a[16];
         char b[16];
         ui_fmt(a, sizeof(a), lo_f, decimals);
         ui_fmt(b, sizeof(b), hi_f, decimals);
-        snprintf(out, n, "%s..%s%s%s", a, b, space ? " " : "",
-                 has_unit ? unit : "");
-        if (gfx_text_cells(out) <= (int)LOG_RANGE_CELLS) {
+        snprintf(out, n, "%s..%s%s", a, b, has_unit ? unit : "");
+        if (gfx_text_cells(out) <= (int)LOG_RANGE_CELLS || decimals == 0) {
             return;
         }
-        if (decimals > 0) {
-            decimals = 0;
-        } else if (space) {
-            space = false;
-        } else {
-            return;
-        }
+        decimals = 0;
     }
 }
 
@@ -573,6 +565,38 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     s.tabs.selected = tab_pos(tab);
     s.message[0] = '\0';
     lv_read_page(LOG_PAGE_FROM, "");
+}
+
+log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
+                                  unsigned mount)
+{
+    if ((unsigned)tab >= (unsigned)LOG_TAB_COUNT || name == NULL
+        || name[0] == '\0') {
+        return LOG_SHOW_NOT_LISTED;
+    }
+    s.tab = tab;
+    s.tabs.selected = tab_pos(tab);
+    s.message[0] = '\0';
+    /* The list, not a view left open before: an OPEN that refuses the
+     * file leaves the list with the reason, never another file's data. */
+    s.view = VIEW_BROWSE;
+    /* The page that starts at the name: the file is its first row when
+     * the list holds it. */
+    lv_read_page(LOG_PAGE_FROM, name);
+    if (s.mounts != mount) {
+        /* The same name on the card put in since FILES listed it is
+         * another file: it is not opened. */
+        return LOG_SHOW_OTHER_CARD;
+    }
+    for (int i = 0; i < s.n_files; ++i) {
+        if (strcmp(s.files[i].name, name) == 0) {
+            s.sel = i;
+            s.scroll = (i < BR_ROWS) ? 0 : i - BR_ROWS + 1;
+            lv_open_selected();
+            return LOG_SHOW_OPEN;
+        }
+    }
+    return LOG_SHOW_NOT_LISTED;
 }
 
 /**

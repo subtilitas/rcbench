@@ -1,4 +1,7 @@
-/*
+/**
+ * @file esc_stick_pages.c
+ * @brief ESC STICK as a page set (prog_registry.h): the session's frame.
+ *
  * ESC STICK as a page set (prog_registry.h): the session MOTOR & ESC opens
  * from the STICK MENU row of PROGRAM's list, full width.
  *
@@ -24,10 +27,6 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 
-/* The steppers, right of the control column. */
-#define STEP_DN_X 636
-#define STEP_UP_X 748
-
 /* The part esc_stick_panel.c reads and writes as well. */
 stick_shared_t pg;
 
@@ -35,29 +34,32 @@ int esc_stick_panel_stage(void) { return (int)pg.stage; }
 
 /* ------------------------------------------------------------ the layout */
 
-/* Start over: closed, nothing held, every control in its place.  The area
- * is the body under the output strip; the pages' layout is fixed to it
- * (esc_stick_int.h). */
+/**
+ * @brief Start over: closed, nothing held, every control in its place.
+ * @param area The body under the output strip; the pages' layout is fixed
+ *        to it (esc_stick_int.h).
+ */
 static void esc_stick_ps_init(gfx_rect_t area)
 {
     (void)area;
     memset(&pg, 0, sizeof(pg));
     pg.stage = STAGE_CLOSED;
-    pg.back      = (gfx_rect_t){ (int16_t)(PAD + 12), CRUMB_Y, 96, 30 };
-    pg.read_btn  = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 350),
-                                 (int16_t)BTN_Y, 168, 34 };
-    pg.write_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 168),
-                                 (int16_t)BTN_Y, 168, 34 };
-    pg.page_up   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 76),
-                                 (int16_t)(PARM_Y + 6), STEP_W, 24 };
-    pg.page_dn   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 38),
-                                 (int16_t)(PARM_Y + 6), STEP_W, 24 };
+    pg.back      = (gfx_rect_t){ (int16_t)(PAD + 12), CRUMB_Y, BACK_W,
+                                 CRUMB_H };
+    pg.read_btn  = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 2 * FOOT_BTN_W - 8),
+                                 (int16_t)BTN_Y, FOOT_BTN_W, BTN_H };
+    pg.write_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - FOOT_BTN_W),
+                                 (int16_t)BTN_Y, FOOT_BTN_W, BTN_H };
+    pg.page_dn   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - PAGE_KEY_W), PAGE_Y,
+                                 PAGE_KEY_W, UI_TAP_MIN };
+    pg.page_up   = (gfx_rect_t){ (int16_t)(pg.page_dn.x - 8 - PAGE_KEY_W),
+                                 PAGE_Y, PAGE_KEY_W, UI_TAP_MIN };
     for (int i = 0; i < ROWS_MAX; ++i) {
-        const int y = ROW_Y0 + i * ROW_H;
-        pg.row[i]  = (gfx_rect_t){ (int16_t)(PAD + 8), (int16_t)(y - 4),
-                                   (int16_t)(CTRL_X - PAD - 16), ROW_H - 2 };
-        pg.down[i] = (gfx_rect_t){ STEP_DN_X, (int16_t)(y - 2), STEP_W, 24 };
-        pg.up[i]   = (gfx_rect_t){ STEP_UP_X, (int16_t)(y - 2), STEP_W, 24 };
+        const int y = ROW_Y0 + i * ROW_P;
+        pg.row[i]  = (gfx_rect_t){ ROW_X, (int16_t)y,
+                                   (int16_t)(CTRL_X - 8 - ROW_X), ROW_H };
+        pg.down[i] = (gfx_rect_t){ STEP_DN_X, (int16_t)y, STEP_W, ROW_H };
+        pg.up[i]   = (gfx_rect_t){ STEP_UP_X, (int16_t)y, STEP_W, ROW_H };
     }
     esc_stick_panel_reset();
 }

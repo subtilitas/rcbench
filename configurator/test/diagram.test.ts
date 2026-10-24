@@ -448,7 +448,7 @@ test('the lines of a component follow the data file, and the strip beside the ed
   // Another component takes the signal name of its wire. A text without a comma is 1 line.
   assert.deepEqual(componentText({ route: { kind: 'S' }, signal: { en: 'fuse 2 A', de: 'Sicherung 2 A' } }, pad),
     { en: ['fuse 2 A,', 'band to GP22'], de: ['Sicherung 2 A,', 'Ring an GP22'] });
-  // The strip: 38 px to the axis of the body, 6 + 3 + 16 + 4 px to the lines, the longest line, 6 px, on the 8 px grid.
+  // The strip: 38px to the axis of the body, 6 + 3 + 16 + 4px to the lines, the longest line, 6px, on the 8px grid.
   assert.equal(bayOf(undefined), 80);
   assert.equal(bayOf({ en: ['x'], de: [] }), 80);
   assert.equal(bayOf({ en: ['x'.repeat(18)], de: ['x'.repeat(14)] }), Math.ceil((38 + 29 + 18 * TEXT_CHAR + 6) / 8) * 8);
@@ -472,7 +472,7 @@ test('a component between 2 parts has its body on the longest run, and one acros
   assert.deepEqual([w.body!.x, w.body!.y], [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]);
   assert.equal(w.body!.upright, p[0] === q[0]);
   assert.deepEqual(w.text, text);
-  // Across 2 pads of the north edge, 20 px apart: the body lies flat above the part, the band towards the first pad.
+  // Across 2 pads of the north edge, 20px apart: the body lies flat above the part, the band towards the first pad.
   for (const [xa, xb, band] of [[40, 60, -1], [60, 40, 1]] as const) {
     const above = diagramOf({
       parts: [part('copro', 'C')],
@@ -484,12 +484,12 @@ test('a component between 2 parts has its body on the longest run, and one acros
     assert.equal(c.body!.upright, false);
     assert.equal(c.body!.band, band);
     assert.ok(c.body!.y < box.iy && c.body!.y > 0);
-    // 20 px between the leads: the body is 20 - 2 * 3 = 14 px long.
+    // 20px between the leads: the body is 20 - 2 * 3 = 14px long.
     assert.equal(c.body!.len, 14);
     assert.equal(c.labels.length, 1);
     assert.ok(c.labels[0]!.y < c.body!.y && c.body!.text.y < c.labels[0]!.y && c.body!.text.y > 0);
   }
-  // 2 pads 8 px apart: the body keeps the least length, the band and 2 px on each side.
+  // 2 pads 8px apart: the body keeps the least length, the band and 2px on each side.
   const near = diagramOf({
     parts: [part('copro', 'C')],
     wires: [{ n: 3, kind: 'component' as const, colour: null, thick: false, a: [pin('copro', 'a', 110, 40, 'E')], b: [pin('copro', 'b', 110, 48, 'E')] }],
@@ -670,7 +670,7 @@ test('pads closer than their wires are wide: the leads bend at right angles and 
   const pin = (p: string, name: string, x: number, y: number, side: 'E' | 'W' | 'N' | 'S') => ({ part: p, pin: name, x, y, side });
   const wire = (n: number, thick: boolean, a: ReturnType<typeof pin>, b: ReturnType<typeof pin>) =>
     ({ n, kind: 'wire' as const, colour: 'blue', thick, a: [a], b: [b] });
-  // 4 pads 3 px apart on the east edge of `left`, 4 pads 3 px apart on the north edge of `right`.
+  // 4 pads 3px apart on the east edge of `left`, 4 pads 3px apart on the north edge of `right`.
   const scene = {
     parts: [part('left', 'L', 1), part('copro', 'C', 1), part('right', 'R', 1)],
     wires: [0, 1, 2, 3].map((i) => wire(i + 1, i % 2 === 0, pin('left', `p${i}`, 110, 40 + 3 * i, 'E'), pin('copro', `q${i}`, 10, 30 + 20 * i, 'W')))
@@ -688,7 +688,7 @@ test('pads closer than their wires are wide: the leads bend at right angles and 
     for (let j = i + 1; j < segs.length; j++) {
       const p = segs[i]!;
       const q = segs[j]!;
-      // 2 leads that start on pads 3 px apart run 3 px apart up to their bends: that part is the pads themselves.
+      // 2 leads that start on pads 3px apart run 3px apart up to their bends: that part is the pads themselves.
       if (p.n === q.n || (p.lead && q.lead)) continue;
       for (const k of [0, 1] as const) {
         const o = k === 0 ? 1 : 0;
@@ -714,7 +714,7 @@ test('2 wires that cross over in 1 channel at 1 height move the next column, and
   assert.deepEqual(d.clashes, []);
   const y = (id: string): number => d.parts.find((p) => p.id === id)!.y;
   assert.equal(y('copro') - y('left'), 8);
-  // Pads every 4 px on both edges, joined crosswise: every shift leaves a pair.
+  // Pads every 4px on both edges, joined crosswise: every shift leaves a pair.
   const dense = {
     parts: cross.parts,
     wires: Array.from({ length: 24 }, (_, i) => wire(i + 1, pin('left', `a${i}`, 10 + 4 * i, 'E'), pin('copro', `b${i}`, 10 + 4 * (23 - i), 'W'))),

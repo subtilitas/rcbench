@@ -4,7 +4,8 @@
  *        keypad's keys, -200 taken, -201 refused, -0 read as 0, the sign on
  *        an empty entry, and a value refused by the caller's own rule,
  *        with the caller's reason drawn in place of the range until the
- *        next key.
+ *        next key; and the range line, its unit joined to a symbol and
+ *        spaced from a word, in English and German.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,13 +16,14 @@
 #include "greatest.h"
 
 #include "ui_keypad.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 
 static const gfx_rect_t k_area = { 6, 24, 546, 402 };
 
 static ui_keypad_t kp;
 
-/** @brief SUPPLY's voltage keypad: 3.3 to 21.0 V, unsigned. */
+/** @brief SUPPLY's voltage keypad: 3.3 to 21.0V, unsigned. */
 static void open_v(void)
 {
     ui_keypad_open(&kp, k_area, "VOLTAGE", "V", 6.0f, 3.3f, 21.0f, 2);
@@ -128,10 +130,10 @@ TEST_CASE(a_callers_reason_takes_the_range_line_until_the_next_key)
     ui_keypad_refuse(&kp);                          /* no reason: the range */
     CHECK_STR_EQ(kp.reason, "");
     CHECK(draw_header(&kp, range) > 0);
-    ui_keypad_refuse_why(&kp, "0 or 5.0 to 1000.0 mOhm");
+    ui_keypad_refuse_why(&kp, "0 or 5.0 to 1000.0mΩ");
     CHECK(kp.open);
     CHECK(kp.refused);
-    CHECK_STR_EQ(kp.reason, "0 or 5.0 to 1000.0 mOhm");
+    CHECK_STR_EQ(kp.reason, "0 or 5.0 to 1000.0mΩ");
     CHECK_STR_EQ(kp.entry, "12.5");
     CHECK(draw_header(&kp, fb) > 0);                /* warning colour */
     CHECK(memcmp(fb + row0, range + row0, band * sizeof(gfx_color_t)) != 0);
@@ -199,7 +201,7 @@ TEST_CASE(a_long_reason_is_cut_at_a_character_start)
     CHECK_EQ(strlen(kp.reason), 63u);
 }
 
-/** @brief SERVO's TRIM: -200 to +200 us, whole microseconds, signed. */
+/** @brief SERVO's TRIM: -200 to +200us, whole microseconds, signed. */
 static void open_trim(void)
 {
     ui_keypad_open_signed(&kp, k_area, "TRIM", "us", 0.0f, -200.0f, 200.0f,
@@ -301,6 +303,40 @@ TEST_CASE(minus_zero_is_zero_and_a_lone_sign_is_nothing_typed)
     CHECK_STR_EQ(kp.entry, "5");
 }
 
+/* The range line joins a unit symbol to the maximum, the ohm's two bytes
+ * included, spaces a word from it, and ends at the number for no unit. */
+TEST_CASE(the_range_line_joins_a_symbol_and_spaces_a_word)
+{
+    static const struct {
+        const char *unit;
+        float lo, hi;
+        int dec;
+        const char *en, *de;
+    } k[] = {
+        { "V", 3.3f, 21.0f, 2, "3.30 to 21.00V", "3.30 bis 21.00V" },
+        { "m\xCE\xA9", 5.0f, 1000.0f, 1, "5.0 to 1000.0m\xCE\xA9",
+          "5.0 bis 1000.0m\xCE\xA9" },
+        { "rpm/V", 0.0f, 10000.0f, 0, "0 to 10000rpm/V", "0 bis 10000rpm/V" },
+        { "GPIO", -1.0f, 54.0f, 0, "-1 to 54 GPIO", "-1 bis 54 GPIO" },
+        { "S", 1.0f, 14.0f, 0, "1 to 14 S", "1 bis 14 S" },
+        { "", 2.0f, 8.0f, 0, "2 to 8", "2 bis 8" },
+    };
+    char line[64];
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        ui_keypad_open(&kp, k_area, "X", k[i].unit, k[i].lo, k[i].lo,
+                       k[i].hi, k[i].dec);
+        ui_text_set_language(UI_LANG_EN);
+        CHECK_STR_EQ(ui_keypad_range(&kp, line, sizeof(line)), k[i].en);
+        ui_text_set_language(UI_LANG_DE);
+        CHECK_STR_EQ(ui_keypad_range(&kp, line, sizeof(line)), k[i].de);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* A NULL keypad or no room: nothing. */
+    CHECK_STR_EQ(ui_keypad_range(NULL, line, sizeof(line)), "");
+    CHECK_STR_EQ(ui_keypad_range(&kp, NULL, 0u), "");
+    CHECK_STR_EQ(ui_keypad_range(&kp, line, 0u), "");
+}
+
 int main(void)
 {
     RUN(a_caller_refusal_reopens_the_keypad_marked);
@@ -309,5 +345,6 @@ int main(void)
     RUN(a_signed_keypad_has_its_sign_key_beside_the_point);
     RUN(the_sign_key_takes_the_range_down_to_its_minimum);
     RUN(minus_zero_is_zero_and_a_lone_sign_is_nothing_typed);
+    RUN(the_range_line_joins_a_symbol_and_spaces_a_word);
     return test_summary("keypad_sign");
 }

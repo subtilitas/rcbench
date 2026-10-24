@@ -60,7 +60,7 @@ static bool here(cursor_t *c)
 static void limit_a(const cursor_t *c, char *b, size_t n, float a)
 {
     if (a > 0.0f) {
-        snprintf(b, n, "%.2f A", (double)a);
+        snprintf(b, n, "%.2fA", (double)a);
     } else {
         snprintf(b, n, "%s", S(R_OFF));
     }
@@ -340,7 +340,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
     }
     if (here(c)) {
         /* What ran, not only the switch: HV SERVO on with both of its
-         * steps off runs nothing above 6.0 V. */
+         * steps off runs nothing above 6.0V. */
         bool above = false;
         for (unsigned s = 0; s < g->step_count; ++s) {
             above = above || g->steps_v[s] > SERVO_TEST_HV_ABOVE_V + 0.001f;
@@ -359,7 +359,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         int k = snprintf(b, n, "%s", S(R_STEPS));
         for (unsigned s = 0; s < g->step_count && k > 0 && (size_t)k < n; ++s) {
-            k += snprintf(b + k, n - (size_t)k, " %.2f V", (double)g->steps_v[s]);
+            k += snprintf(b + k, n - (size_t)k, " %.2fV", (double)g->steps_v[s]);
         }
         if (g->step_count == 0u && k > 0 && (size_t)k < n) {
             snprintf(b + k, n - (size_t)k, "%s", S(R_STEPS_NONE));
@@ -400,7 +400,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
         limit_a(c, hold, sizeof(hold), g->hold_max_a);
         char travel[24];
         if (g->travel_max_ms > 0u) {
-            snprintf(travel, sizeof(travel), "%u ms", (unsigned)g->travel_max_ms);
+            snprintf(travel, sizeof(travel), "%ums", (unsigned)g->travel_max_ms);
         } else {
             snprintf(travel, sizeof(travel), "%s", S(R_OFF));
         }
@@ -784,7 +784,7 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
              * an upper bound. */
             char lim[24];
             if (g->travel_max_ms > 0u) {
-                snprintf(lim, sizeof(lim), "%u ms", (unsigned)g->travel_max_ms);
+                snprintf(lim, sizeof(lim), "%ums", (unsigned)g->travel_max_ms);
             } else {
                 snprintf(lim, sizeof(lim), "%s", S(R_OFF));
             }

@@ -84,7 +84,7 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait 2000 ms: 4 groups of two fast beeps (within 4 s of power-up per the tone chart)",
+        "Wait 2000ms: 4 groups of two fast beeps (within 4s of power-up per the tone chart)",
         "Distinct tones then play in a loop"
       ]
     },
@@ -155,18 +155,18 @@
       "values": [
         {
           "number": 1,
-          "name": "low (2.8 V / 50 %)",
+          "name": "low (2.8V / 50%)",
           "tone": "*_ _* x4"
         },
         {
           "number": 2,
-          "name": "medium (3.0 V / 60 %)",
+          "name": "medium (3.0V / 60%)",
           "default": true,
           "tone": "*_ _ _* x4"
         },
         {
           "number": 3,
-          "name": "high (3.2 V / 65 %)",
+          "name": "high (3.2V / 65%)",
           "tone": "*_ _ _ _* x4"
         }
       ],
@@ -194,18 +194,18 @@
       "values": [
         {
           "number": 1,
-          "name": "automatic (7-30 deg)",
+          "name": "automatic (7-30deg)",
           "default": true,
           "tone": "- - - -"
         },
         {
           "number": 2,
-          "name": "low (7-22 deg)",
+          "name": "low (7-22deg)",
           "tone": "-- -- -- --"
         },
         {
           "number": 3,
-          "name": "high (22-30 deg)",
+          "name": "high (22-30deg)",
           "tone": "--- --- --- ---"
         }
       ],
@@ -250,12 +250,12 @@
         },
         {
           "number": 2,
-          "name": "heli mode 1 (5 s ramp)",
+          "name": "heli mode 1 (5s ramp)",
           "tone": "_**_ x4"
         },
         {
           "number": 3,
-          "name": "heli mode 2 (15 s ramp)",
+          "name": "heli mode 2 (15s ramp)",
           "tone": "_***_ x4"
         }
       ],
@@ -283,13 +283,13 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz",
+          "name": "8kHz",
           "default": true,
           "tone": "// // // //"
         },
         {
           "number": 2,
-          "name": "16 kHz",
+          "name": "16kHz",
           "tone": "\\\\ \\\\ \\\\ \\\\"
         }
       ],

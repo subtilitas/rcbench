@@ -1,14 +1,14 @@
 /*
  * The age of an ESC's last reading, as the IOmcu's output layer
  * (firmware/iomcu/src/outputs_hw.c) reports it, across the wrap of the
- * 32-bit millisecond clock at 2^32 ms (49.7 days).
+ * 32-bit millisecond clock at 2^32ms (49.7 days).
  *
  * outputs_hw_erpm() and outputs_hw_edt() give the age as now - stamp in
- * uint32_t.  The bench's stale rules (bench_state_from_telem(): 200 ms for
- * speed, 2,000 ms for the extended kinds) read that age, so an age that
- * jumps by 2^32 ms at the wrap would blank a live reading, and one that
+ * uint32_t.  The bench's stale rules (bench_state_from_telem(): 200ms for
+ * speed, 2,000ms for the extended kinds) read that age, so an age that
+ * jumps by 2^32ms at the wrap would blank a live reading, and one that
  * stays small would keep a dead one.  Each case runs at tick 0 and with the
- * reading taken 50 ms before the wrap (tick_wrap.h).
+ * reading taken 50ms before the wrap (tick_wrap.h).
  *
  * The pin drivers are fakes: a bind succeeds, a frame goes nowhere, and a
  * poll returns the one reply the case queued.  The clock is
@@ -129,7 +129,7 @@ static void at_ms(uint32_t ms)
     pico_stub_us = (uint64_t)ms * 1000u;
 }
 
-/* A bank with one bidirectional DShot slot on pin 2 at 600 kbit/s, bound by
+/* A bank with one bidirectional DShot slot on pin 2 at 600kbit/s, bound by
  * the output layer.  Disarmed: the layer still reads each reply. */
 static outputs_t g_bank;
 
@@ -157,8 +157,8 @@ static void hear(const dshot_telem_t *t)
     CHECK(!g_reply_queued);
 }
 
-/* A speed reading taken at t0 is 0 ms old at t0, 49 ms old 1 ms before the
- * next tick 0, 50 ms at it and 250 ms later on: the age grows by the time
+/* A speed reading taken at t0 is 0ms old at t0, 49ms old 1ms before the
+ * next tick 0, 50ms at it and 250ms later on: the age grows by the time
  * passed and by nothing else. */
 static void a_speed_reading_ages_by_the_time_passed(uint32_t t0)
 {
@@ -193,7 +193,7 @@ TEST_CASE(a_speed_readings_age_holds_across_the_millisecond_wrap)
 }
 
 /* The same for an extended kind, which keeps its own stamp: a temperature
- * heard at t0 is 2,000 ms old 2,000 ms later, the edge of its stale rule,
+ * heard at t0 is 2,000ms old 2,000ms later, the edge of its stale rule,
  * whether or not the clock wrapped in between. */
 static void a_temperature_reading_ages_by_the_time_passed(uint32_t t0)
 {
@@ -228,7 +228,7 @@ TEST_CASE(a_temperature_readings_age_holds_across_the_millisecond_wrap)
 }
 
 /* Two kinds heard on either side of the wrap keep their own ages: a speed
- * 10 ms before it and a voltage 10 ms after, asked 20 ms after that. */
+ * 10ms before it and a voltage 10ms after, asked 20ms after that. */
 TEST_CASE(readings_on_either_side_of_the_wrap_keep_their_own_ages)
 {
     const uint32_t t0 = tick_before_wrap(10u);

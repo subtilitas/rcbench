@@ -16,12 +16,12 @@ name: Configurator
 #   header rcbench_version.h, and the coverage figure in
 #   configurator/core/README.md.
 # - build: type check and unit tests of the page, the check of the part
-#   drawings against the data file, the Vite build, the size budget (250 kB
-#   initial, 1 MB total). The built page is an artifact of every run; a run
+#   drawings against the data file, the Vite build, the size budget (250kB
+#   initial, 1MB total). The built page is an artifact of every run; a run
 #   that is not a full one builds it without the checks.
-# - smoke: Playwright against the built page at 360 px and 1280 px width.
-# - matrix: Playwright against the built page in 8 cells (360 x 740 px and
-#   1280 x 800 px, English and German, light and dark, reduced motion) and
+# - smoke: Playwright against the built page at 360px and 1280px width.
+# - matrix: Playwright against the built page in 8 cells (360 x 740px and
+#   1280 x 800px, English and German, light and dark, reduced motion) and
 #   on every link of the hash corpus, in 4 shards. No test is retried. A
 #   failed test leaves its trace and screenshot as an artifact for 14 days.
 # - help: builds the web help with tools/help_site.py from help/content/
@@ -288,7 +288,7 @@ jobs:
           name: configurator-dist
           path: configurator/dist
 
-      # The install fetches system packages and takes up to 12.5 min on a
+      # The install fetches system packages and takes up to 12.5min on a
       # slow runner; it has its own limit, and the tests keep theirs.
       - name: Install Chromium
         timeout-minutes: 15
@@ -346,7 +346,7 @@ jobs:
           name: configurator-dist
           path: configurator/dist
 
-      # The install fetches system packages and takes up to 12.5 min on a
+      # The install fetches system packages and takes up to 12.5min on a
       # slow runner; it has its own limit, and the tests keep theirs.
       - name: Install Chromium
         timeout-minutes: 15
@@ -400,7 +400,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # The archive is 115 MB; the cache holds it, and the script checks
+      # The archive is 115MB; the cache holds it, and the script checks
       # its SHA-256 on a hit as on a download.
       - name: Restore the Doxygen archive
         uses: actions/cache@v6

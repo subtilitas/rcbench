@@ -320,24 +320,24 @@
       "values": [
         {
           "number": 1,
-          "name": "3.0 V per cell"
+          "name": "3.0V per cell"
         },
         {
           "number": 2,
-          "name": "3.1 V per cell"
+          "name": "3.1V per cell"
         },
         {
           "number": 3,
-          "name": "3.2 V per cell",
+          "name": "3.2V per cell",
           "default": true
         },
         {
           "number": 4,
-          "name": "3.3 V per cell"
+          "name": "3.3V per cell"
         },
         {
           "number": 5,
-          "name": "3.4 V per cell"
+          "name": "3.4V per cell"
         },
         {
           "number": 6,
@@ -410,16 +410,16 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz (outrunners)"
+          "name": "8kHz (outrunners)"
         },
         {
           "number": 2,
-          "name": "12 kHz",
+          "name": "12kHz",
           "default": true
         },
         {
           "number": 3,
-          "name": "16 kHz"
+          "name": "16kHz"
         }
       ],
       "applies_to": null,

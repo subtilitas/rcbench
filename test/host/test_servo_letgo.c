@@ -436,7 +436,7 @@ TEST_CASE(an_undone_pair_keeps_the_resume_waiting)
 /*
  * A resume acknowledged while feedback is valid uses its origin up: the
  * repeat of the acknowledgement after feedback has gone works on from the
- * reading, 1700 us, not from the 1600 saved at the tap.
+ * reading, 1700us, not from the 1600 saved at the tap.
  */
 TEST_CASE(a_resume_origin_is_used_once)
 {

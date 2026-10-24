@@ -3,6 +3,10 @@
  * @brief Writes a run as CSV (comma-separated values) in the format
  *        shared/logfile reads.
  *
+ * Three kinds of row: a bench run's (log_writer_row()), the same row with the
+ * supply's figures for a run ARMED from SERVO (log_writer_servo_row()), and a
+ * supply run's (log_writer_supply_row()).
+ *
  * The sink is injected: the host suite writes into memory and the panel
  * writes into a FILE.  Nothing here depends on the card, so the writer is
  * tested against the reader by writing a run and parsing it back.
@@ -17,6 +21,7 @@
 
 #include "bench_state.h"
 #include "log_cols.h"
+#include "sense_link.h"
 #include "supply.h"
 
 #ifdef __cplusplus
@@ -62,7 +67,7 @@ typedef struct {
     bool       by_map;
     log_cols_t cols;
     /**
-     * @brief A bench row as it is built: 23 cells, here rather than on the
+     * @brief A bench row as it is built: up to 25 cells, here rather than on the
      *        stack of the task that writes the card.
      */
     char       line[LOG_WRITER_LINE_MAX];
@@ -73,11 +78,11 @@ typedef struct {
  *
  * The writer commits every LOG_WRITER_FLUSH_ROWS rows, and again once
  * LOG_WRITER_FLUSH_S have passed on the run's own clock, whichever comes
- * first.  At the panel's 20 Hz sample rate the two are the same point: 20
- * rows is 1000 ms of run.
+ * first.  At the panel's 20Hz sample rate the two are the same point: 20
+ * rows is 1000ms of run.
  *
  * A run interrupted at any moment therefore loses at most 20 rows, spanning
- * less than 1.0 s of its own clock.  Twenty and not nineteen: the count
+ * less than 1.0s of its own clock.  Twenty and not nineteen: the count
  * reaches LOG_WRITER_FLUSH_ROWS before the commit is attempted and is
  * cleared only once the commit has succeeded, so those twenty rows are not
  * durable for as long as the sink takes.  The price is one commit per second per
@@ -167,6 +172,147 @@ bool log_writer_header(log_writer_t *w);
  *         log_writer_failed()).
  */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
+
+/**
+ * @brief The servo rail's supply on a SERVO run's row: the supply's last
+ *        reading and the run's totals of it, for log_writer_servo_row().
+ *
+ * Bit SUPPLY_OK_VOLTAGE of ok says v is a reading, SUPPLY_OK_CURRENT that i
+ * is one, and both that p is one; counted (BENCH_COUNTED_*) says which of
+ * charge_mah and energy_wh the run has counted.  All 0 is a row with no
+ * supply reading: its five cells are empty.  withheld marks a supply
+ * whose source is not the row's -- the supply's model on a measured row, a
+ * measured supply on a modelled row -- whose five cells are empty whatever
+ * the run has counted.
+ */
+typedef struct {
+    float   v;           /**< at the supply's output, V */
+    float   i;           /**< out of it, A */
+    float   p;           /**< v * i, W */
+    float   charge_mah;  /**< since the switch to ARMED, mAh */
+    float   energy_wh;   /**< since the switch to ARMED, Wh */
+    uint8_t ok;          /**< SUPPLY_OK_* of the readings taken */
+    uint8_t counted;     /**< BENCH_COUNTED_* of the totals */
+    bool    withheld;    /**< the supply's source is not the row's */
+} log_rail_t;
+
+/**
+ * @brief The supply's reading for a SERVO run's row, into @p out, with
+ *        nothing counted.
+ *
+ * The readings that arrived, by @p s's ok bits, when the supply's source
+ * is the row's: a supply that is the panel's model (supply_state_t.modelled)
+ * on a modelled row, a measured one on a measured row.  Otherwise none, and
+ * out->withheld says so: a row's source names all its figures.  @p s NULL
+ * takes none.
+ *
+ * @param out          Receives the reading.
+ * @param s            The supply's state, or NULL.
+ * @param row_modelled true when the row is the panel's model
+ *                     (bench_state_simulated()).
+ */
+void log_rail_take(log_rail_t *out, const supply_state_t *s,
+                   bool row_modelled);
+
+/**
+ * @brief Count @p r's readings into the run's totals @p t over @p dt_s, and
+ *        put the totals on @p r.
+ *
+ * Charge from a current reading, energy from a power reading, as
+ * bench_totals_count() counts them: a step over BENCH_TOTALS_MAX_STEP_S
+ * (1.0s) counts 1.0s, a step that is not positive counts nothing, and
+ * nothing is counted unless @p driving.  bench_totals_reset() starts a run.
+ * A withheld reading counts nothing and takes no totals: its row carries
+ * none, the model's totals of an earlier stretch included.  Either pointer
+ * NULL does nothing.
+ *
+ * @param t       The run's totals.
+ * @param r       The reading; its charge_mah, energy_wh and counted are set.
+ * @param dt_s    The time since the last count, in s.
+ * @param driving true while the bank is ARMED.
+ */
+void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
+                    bool driving);
+
+/**
+ * @brief The servo rail's INA3221 window for a SERVO run's row, into @p out,
+ *        with nothing counted: while an INA3221 channel is the rail's meter
+ *        (servo_source.h).
+ *
+ * The window's mean bus voltage, its mean current and their product, as
+ * SERVO's line shows them, each by the window's current and voltage flags.
+ * None on a modelled row, and out->withheld says so: the part reads through
+ * the IOmcu.  @p win NULL takes none.
+ *
+ * @param out          Receives the reading.
+ * @param win          The newest window of the rail's channel, or NULL.
+ * @param row_modelled true when the row is the panel's model.
+ */
+void log_rail_take_ina(log_rail_t *out, const sense_link_win_t *win,
+                       bool row_modelled);
+
+/**
+ * @brief A SERVO run's commanded pulse and measured angle on its row.
+ */
+typedef struct {
+    float    angle_deg;  /**< the horn's angle from the centre count, deg */
+    uint16_t pulse_us;   /**< the commanded pulse, us */
+    bool     pulse_ok;   /**< a pulse is commanded */
+    bool     angle_ok;   /**< an angle was measured */
+} log_servo_t;
+
+/**
+ * @brief The pulse and the angle in one 32-bit word, for the render side to
+ *        hand the control task in one atomic store.
+ *
+ * The pulse in bits 16 to 31, 0 for none; the angle in centidegrees, signed,
+ * in bits 0 to 15, 0x8000 for none.  An angle that is not finite or lies
+ * past +-327.67deg packs as none, and so does a pulse of 0.
+ *
+ * @param pulse_ok  true when a pulse is commanded.
+ * @param pulse_us  The commanded pulse, us.
+ * @param angle_ok  true when an angle was measured.
+ * @param angle_deg The angle, deg.
+ * @return The packed word.
+ */
+uint32_t log_servo_pack(bool pulse_ok, uint16_t pulse_us, bool angle_ok,
+                        float angle_deg);
+
+/**
+ * @brief log_servo_pack()'s word back into @p out, for a row: no angle on a
+ *        modelled row, whose figures the encoder did not produce.
+ *
+ * @param packed       The word.
+ * @param row_modelled true when the row is the panel's model.
+ * @param out          Receives the pulse and angle; NULL does nothing.
+ */
+void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out);
+
+/**
+ * @brief Append one sample of a run ARMED from SERVO: log_writer_row()'s row
+ *        with voltage, current, power, charge and energy from @p rail.
+ *
+ * The header is the motor run's with `pulse (us);angle (deg)` before
+ * `source`, so both files read by one rule.  The
+ * supply's cells are written as a supply file writes them: voltage and power
+ * to 0.01, current to 0.001, charge to 1mAh, energy to 0.01Wh; a cell rail
+ * has no reading or total of is empty, and so are all five with @p rail
+ * NULL.  rpm, the temperatures, the INA228's and the ESC's columns, the
+ * INA3221 window and source are @p b's, as log_writer_row() writes them.
+ * The pulse is written in whole us and the angle to 0.1deg, each empty when
+ * @p sv has none, and both with @p sv NULL.  Same returns, commits and latch
+ * as log_writer_row().
+ *
+ * @param w    The writer.
+ * @param t_s  The time of the row, in s.
+ * @param b    The bench sample.
+ * @param rail The supply's reading and totals, or NULL.
+ * @param sv   The pulse and angle, or NULL.
+ * @return true on success; false when refused or failed (see
+ *         log_writer_failed()).
+ */
+bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
+                          const log_rail_t *rail, const log_servo_t *sv);
 
 /**
  * @brief Append one supply sample, for a run that is the supply's output being

@@ -14,7 +14,7 @@
  * The INA3221's conversion timing, when a test gives the part a clock
  * (clock_us): the shunt and bus registers hold their values until the
  * cycle of the Configuration in force has passed (ina3221_cycle_us(): 280
- * µs for CH1 alone at 140 µs, 6.6 ms on the reset value 7127h), and a
+ * µs for CH1 alone at 140µs, 6.6ms on the reset value 7127h), and a
  * write of Configuration or a reset starts a cycle.  Without a clock every
  * read is a fresh conversion.
  *

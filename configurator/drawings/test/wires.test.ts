@@ -178,10 +178,10 @@ const record = (pins: Record<string, [number, number]>): DrawingRecord => ({
 });
 
 test('neighbours are mutual and end at 1.6 times the distance to the nearest pin', () => {
-  // A row with a pitch of 10 px and 1 pin 100 px away.
+  // A row with a pitch of 10px and 1 pin 100px away.
   const n = neighbours(record({ a: [0, 0], b: [10, 0], c: [20, 0], far: [120, 0] }));
   assert.deepEqual(n, { a: ['b'], b: ['a', 'c'], c: ['b'], far: [] });
-  // At exactly 1.6 times the pitch the pin is a neighbour, 0.1 px further it is not.
+  // At exactly 1.6 times the pitch the pin is a neighbour, 0.1px further it is not.
   assert.deepEqual(neighbours(record({ a: [0, 0], b: [10, 0], c: [26, 0] }))['b'], ['a', 'c']);
   assert.deepEqual(neighbours(record({ a: [0, 0], b: [10, 0], c: [26.1, 0] }))['b'], ['a']);
   assert.deepEqual(neighbours(record({ a: [0, 0] })), { a: [] });

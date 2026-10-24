@@ -19,17 +19,19 @@ rcbench/
     ui/                   theme · widgets · icons · router · screens
     settings/             typed schema and values
     logfile/              number and CSV parsing
+    files/                file manager and editor core: text buffer · highlighting · names and paths · card table · panes · rules · jobs
     link/                 page protocol · CAN framing · watchdogs · diagnosis
     artwork/              the panel's cache of board drawings
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
     outputs/              channels · driver table · the ARMED state, slew and staleness
-    safety/               heartbeat generator (panel) and monitor (IOmcu)
+    safety/               heartbeat generator (panel) and monitor (IOmcu) · IOmcu reset cause
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     esc/                  ESC programming profiles, their JSON reader and registry
     sense/                INA228 and INA3221 current monitor drivers
     fwupdate/             panel firmware image check · upload staging · installer
     webaccess/            Wi-Fi session · card listing and ZIP stream · the page · mDNS
+    clock/                wall clock rules: real date or not · file stamps · time zones · the NTP request
     text/                 the interface's words, every language in one table (header only)
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
@@ -78,9 +80,9 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
-| `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
+| `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ✔ | ✔ | ✔ |
 
@@ -93,8 +95,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | ARM GNU toolchain | 14.2 | any `arm-none-eabi` release targeting Cortex-M33 |
 
 `firmware/panel/sdkconfig.defaults` sets the ESP32-P4 at chip revision 3.1
-or later and 400 MHz, 32 MB of flash, the in-package PSRAM (pseudo-static
-random-access memory) at 200 MHz, code and constants in flash rather than
+or later and 400MHz, 32MB of flash, the in-package PSRAM (pseudo-static
+random-access memory) at 200MHz, code and constants in flash rather than
 PSRAM, the zero-initialised data that `main/psram_bss.lf` names in PSRAM
 ([Internal RAM](Performance.md#internal-ram)), the DSI (Display Serial
 Interface) host's interrupt running during a flash operation
@@ -118,10 +120,10 @@ controller, on two free header pins of the 7-inch ESP32-P4 display board:
 `BOARD_KNOB_PIN_SDA` and `BOARD_KNOB_PIN_SCL` in
 `firmware/panel/components/board/include/board_pins.h`: GPIO30 (SDA) and
 GPIO31 (SCL), the pins IO30 and IO31 of the 12-pin header P3 (3V3, GND, IO2
-to IO5, IO28 to IO31, IO34, IO36). The sensor takes 3.3 V and GND from the
+to IO5, IO28 to IO31, IO34, IO36). The sensor takes 3.3V and GND from the
 same header. The panel switches on the ESP32-P4's internal pull-ups; whether
-they alone hold 400 kHz on the knob's wires is not measured, so a sensor
-without pull-ups of its own gets 4.7 kOhm ones to 3.3 V, as the datasheet's
+they alone hold 400kHz on the knob's wires is not measured, so a sensor
+without pull-ups of its own gets 4.7kΩ ones to 3.3V, as the datasheet's
 I2C circuit has.
 
 The sensor has to be in its I2C/SSI (synchronous serial interface) mode,
@@ -133,19 +135,19 @@ memory) setting is needed. Pins of the SOP-8 MT6701CT, from the
 
 | MT6701 pin | Connect to |
 | --- | --- |
-| 1 VDD | 3.3 V from the header. The datasheet's supply is 3.3 to 5.0 V |
-| 2 MODE | VDD. An internal 200 kOhm pull-up holds an open pin high; figure 17 ties it to VDD. Never GND |
+| 1 VDD | 3.3V from the header. The datasheet's supply is 3.3 to 5.0V |
+| 2 MODE | VDD. An internal 200kΩ pull-up holds an open pin high; figure 17 ties it to VDD. Never GND |
 | 3 OUT | not connected; the panel reads the angle over I2C |
 | 4 GND | GND |
 | 5 PUSH | not connected |
-| 6 A/SDA | SDA |
-| 7 B/SCL | SCL |
+| 6A/SDA | SDA |
+| 7B/SCL | SCL |
 | 8 Z/CSN | VDD, as figure 17 |
 
 A breakout board brings out fewer pins. On one, check that MODE is at VDD
-(a pin, a jumper or a pull-up) and that its supply pin takes 3.3 V. The
-datasheet's I2C circuit has 4.7 kOhm pull-ups on SDA and SCL to VDD; a
-breakout's own pull-ups go to its VDD, here 3.3 V.
+(a pin, a jumper or a pull-up) and that its supply pin takes 3.3V. The
+datasheet's I2C circuit has 4.7kΩ pull-ups on SDA and SCL to VDD; a
+breakout's own pull-ups go to its VDD, here 3.3V.
 
 - Address: 0x06, the datasheet's default. The panel reads 0x06 only. EEPROM
   programming can move the address to 0x46 (version 1.9; version 0.1 of the
@@ -156,8 +158,8 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
   the ESP32-S3 panel's CH422G and GT911. 0x06 is outside it. It is one of
   the specification's Hs-mode (high-speed mode) master codes, 0x04 to 0x07,
   which no device on this bus uses.
-- Bus clock: 400 kHz. The datasheet allows an SCL (serial clock) period down
-  to 1 us and a rise and fall time of 150 ns at most. The rise time on the
+- Bus clock: 400kHz. The datasheet allows an SCL (serial clock) period down
+  to 1us and a rise and fall time of 150ns at most. The rise time on the
   terminal is not measured.
 - The magnet is a diametrically magnetised disc centred over the chip.
 - The I2C registers carry no field status: the magnet-too-weak and
@@ -165,7 +167,7 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
   still answers with an angle, and the panel takes it as a reading.
 - Each poll reads 0x03, 0x04 and 0x03 again and drops a poll whose two 0x03
   bytes differ. A high byte that changes and changes back between them is
-  accepted, so one step of up to 64 counts (0.52 % of the span at 270 deg)
+  accepted, so one step of up to 64 counts (0.52% of the span at 270deg)
   at a slider end stop remains possible; how often is not measured.
 - Direction: on the MT6701CT-STD with DIR (register 0x29 bit 1, in EEPROM)
   at its default 0, the angle rises counter-clockwise seen from the chip's
@@ -176,6 +178,53 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
 
 The knob is off until SETUP, PANEL, Rotary knob is switched on.
 [Screens](Screens.md#panel-the-rotary-knob) describes what it does.
+
+## The panel's clock
+
+The 7-inch ESP32-P4 display board (Waveshare ESP32-P4-WIFI6-Touch-LCD-7B,
+schematic of 2025-09-25) carries no RTC (real-time clock) chip. Its I2C bus
+(GPIO7, GPIO8) reaches the GT911 touch controller (0x5D), the ES8311 audio
+codec, the ES7210 audio ADC (analog-to-digital converter), the camera
+connector and the 4-pin I2C header; none of them keeps time. Waveshare's
+board support package 3.0.1 and its demo firmware (commit 9fcd49a8 of
+2026-08-21) have no RTC driver; the demo sets its clock by SNTP (Simple
+Network Time Protocol). The board has the ESP32-P4's own clock parts:
+
+| Part | What it is | Use in the panel |
+| --- | --- | --- |
+| Y3 | 32.768kHz crystal, 2.0 x 1.2mm, 22pF to GND on each side, 10MΩ across, on GPIO0 (XTAL_32K_N) and GPIO1 (XTAL_32K_P) | not used: the RTC timer runs from the internal RC oscillator (ESP-IDF's default, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| BAT1 | CR1220 coin-cell holder, "RTC BAT", on the ESP32-P4's VDD_BAT (pin 102); 3V3 charges it through D1 (B5819WS) with no series resistor; C41 1uF | not used. Waveshare: rechargeable 3 to 3.3V cells only. Whether a board ships with a cell is not known |
+
+The ESP32-P4 can keep its RTC timer running on VDD_BAT, but only from deep
+sleep: Espressif's battery backup guide for the ESP32-P4 (esp-iot-solution,
+"ESP32-P4 Battery Backup Solution") switches the low-power domain to VBAT
+in the sleep configuration, calls it a test scheme, and patches ESP-IDF to
+do it. The panel loses its power without warning, from the link cable or
+the switch, and never enters deep sleep. A cell in BAT1 therefore keeps no
+time for the panel.
+
+What the panel does instead
+([Screens](Screens.md#panel-time-zone-and-the-clock)):
+
+- A power-on starts the system time at 1970-01-01 00:00:00 UTC. A software
+  restart keeps it: ESP-IDF keeps the time in the RTC timer and two of its
+  store registers, which only a power-on resets
+  (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, the default).
+- Each join of the home network asks `pool.ntp.org` once
+  (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`).
+  lwIP's random start-up delay is off (`CONFIG_LWIP_SNTP_STARTUP_DELAY=n`),
+  so the request goes out at the join.
+- FatFs stamps files from `time()` through `localtime_r()`
+  (ESP-IDF `components/fatfs/diskio/diskio.c`, `get_fattime()`), so SETUP >
+  PANEL's Time zone applies to the stamps. A year before 1980 is stamped
+  as 1980. FAT keeps no zone: a stamp is the local time at the write, and
+  a later zone change does not move it.
+- A join that ends while the request asks holds the radio up for it,
+  30000ms from the request at most (`wall_ntp_holds()`, `wa_lingers()` in
+  `shared/webaccess/wa_session.c`).
+- The SNTP client runs in lwIP's task on core 0 and the request is moved on
+  by the Wi-Fi worker task. The control task on core 1, which owns STOP and
+  the heartbeat, reads no wall time and waits for none of it.
 
 ## Commands
 
@@ -191,7 +240,7 @@ idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
-# panel showing the DSI host's colour bars for 3 s at start-up, for a first
+# panel showing the DSI host's colour bars for 3s at start-up, for a first
 # look at a board
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
@@ -216,7 +265,7 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
-# IOmcu, debug build that prints INA3221 CH1's 1 ms samples
+# IOmcu, debug build that prints INA3221 CH1's 1ms samples
 cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
 cmake --build firmware/iomcu/build-trace
 
@@ -241,7 +290,7 @@ CAN ([Link](Link.md#firmware-update-over-the-link)). A panel built without
 the option offers no IOmcu update.
 
 `PICO_BOARD` defaults to `pimoroni_pico_plus2_rp2350`. The module used for
-bring-up is a Waveshare RP2350-CAN (RP2350A, 4 MB flash), which has no board
+bring-up is a Waveshare RP2350-CAN (RP2350A, 4MB flash), which has no board
 file in the SDK (software development kit); the default builds and runs on it.
 Override with `-DPICO_BOARD=`. The final board needs an RP2350B: the planned
 pin budget is 27 to 32 GPIO (general-purpose input/output).
@@ -251,22 +300,23 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | Tool | Purpose |
 | --- | --- |
 | `tools/coverage.py` | measures host-suite line coverage, enforces the floors (94% total, 85% per file) and writes the table in `STATUS.md` and the figure in `README.md` and `README-de.md`; `--check` fails on drift, and on a C file under `shared/` or a core file under `protocols/` that is not in the measurement or has no counters |
-| `tools/mutate.py` | changes one line of `shared/` or of a core under `protocols/` at a time in a copy of the tree (a comparison flipped, a bound plus or minus 1, a stored assignment dropped), builds and runs the host suite and reports the changes the suite passes with; by default the lines changed since `origin/main`, at most 60 mutants and 2700 s; CI runs it on pull requests and does not fail on a survivor |
+| `tools/mutate.py` | changes one line of `shared/` or of a core under `protocols/` at a time in a copy of the tree (a comparison flipped, a bound plus or minus 1, a stored assignment dropped), builds and runs the host suite and reports the changes the suite passes with; by default the lines changed since `origin/main`, at most 60 mutants and 2700s; CI runs it on pull requests and does not fail on a survivor |
 | `tools/check_sanitizers.py` | configures the sanitizer build and fails unless every compile command under `shared/`, `protocols/` and `test/host/` carries `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` and `-fno-omit-frame-pointer`, and no other flag of that family |
 | `tools/check_protocols.py` | holds every module under `protocols/` to the rule that lets it be built in another pico-sdk project: a core file includes C standard headers and the core's own headers only, a file under `rp2350/` also the module's driver headers, its generated `.pio.h` and pico-sdk headers, a driver's header includes no pico-sdk header, every public header carries `extern "C"` and compiles by itself as C11 and as C++17 with `-Wall -Wextra -Werror`, no include of a module names a path with `..` or an absolute path or a macro, or has a token after its operand, no `#include_next` names a header other than a C standard header or, in a C file under `rp2350/`, a pico-sdk header, the name `__has_include` stands outside a literal only as the operand of `#ifdef`, `#ifndef`, `#elifdef` or `#elifndef`, or of a `defined` term on an `#if` or `#elif` line that holds nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`, no line holds only `#`, read under the literal rules of ISO C, GNU C, C23 and C++ and, in a `.pio` file, in the C that pioasm writes into the generated header, no C file, header or C of a `.pio` file holds a trigraph (`??` followed by one of `= / ' ( ) ! < > -`), no file holds a NUL byte, the module has a `README.md` with an "Interface" heading, a heading with "Trademark" in it where it names a brand (matched anywhere in the file, in any case, also inside an identifier, file name, address or number, not next to a letter, so not in `KSTART` or `KstSession`), and the words "no pin driver" where it has no `rp2350/` folder, its CMake files name no other module, and every `_Static_assert` outside `protocols/` on a module's constants is listed by file and condition in the tool and still present (CMake include directories and link targets are not checked, and a `__has_include` pasted together with `##` passes, and `""R"(` and `''R"(` are read as C reads them, a literal and a raw string, so an include that such a sequence hides in C and that C++11 or later reads, with `R` as a literal suffix, is not found); `--check` prints the broken rules only |
 | `tools/security_parsers.py` | lists the modules under `shared/` and `protocols/` whose public headers declare a `parse`, `decode`, `unpack`, `_rx`, `_feed`, `_write`, `_read`, `_done` or `_utf8_next` function, plus the forced modules in the tool, which take outside input under other names, each with a reason (`shared/settings`, `shared/touch`); `--check` fails when the parser table in `SECURITY.md` and that list differ, or when a forced entry names a module that does not exist or that the name rule finds, a module being excused only by an entry with a reason in the tool |
 | `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every module under `shared/` and `protocols/`, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, [Performance](Performance.md) has no ceiling table while `ci.yml` has no `--max-lines` argument, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
 | `tools/wiki_links.py` | rewrites the links of a copy of `docs/` for the wiki, where pages are addressed by title: `Page.md` becomes `Page`, a target above `docs/` a repository URL (`blob`, `tree`, `raw` for an image); compares each page with its rewrite through markdown-it-py 3.0.0 and exits 1 on any other difference, with page and line; `--check` changes nothing; `--verify` fails on a converted page whose links a wiki cannot open |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
+| `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files other than the ESC profiles' panel texts and released CHANGELOG sections are not covered |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | move the interface's words from the per-file form (English in `ui_text.def` and the schema, German in `ui_text_de.c`) into the one table, `shared/text/include/ui_text.def`; `merge BASE THEIRS` carries the text changes of a branch still in the per-file form into the table during a merge ([Interface language](Language.md#adding-a-text)) |
 | `tools/gen_font.py` | regenerates the seven embedded fonts from DejaVu Sans Mono, the five text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
-| `tools/frame_cost.py` | measures L2 cache-line fills per frame under cachegrind with the ESP32-P4's L1 and L2 caches at 1024 x 600 px; `--max-lines N` fails when a mode exceeds N, as CI runs it per group of modes; `--check-doc` holds the block in [Performance](Performance.md) to the measurement, to a tolerance of 2%, and the table of the board's probe row to `PROBE_CLEAR_US`; `--update-doc` writes the block |
+| `tools/frame_cost.py` | measures L2 cache-line fills per frame under cachegrind with the ESP32-P4's L1 and L2 caches at 1024 x 600px; `--max-lines N` fails when a mode exceeds N, as CI runs it per group of modes; `--check-doc` holds the block in [Performance](Performance.md) to the measurement, to a tolerance of 2%, and the table of the board's probe row to `PROBE_CLEAR_US`; `--update-doc` writes the block |
 | `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; decodes the ESP32-P4's RISC-V code with `tools/stack_riscv.py` and stops on an ELF of another machine; CI runs it after both panel builds; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the IOmcu image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack; with `--check-doc` it holds core 0's row of the IOmcu table, the count of calls through a register reachable from `main` in both Performance pages and core 0's sentence in `STATUS.md`; the ELF reader and the call graph are in `tools/stack_elf.py`, the IOmcu's half in `tools/stack_iomcu.py` |
 | `tools/image_slot.py` | reads the partition table of a panel build and fails when the image is larger than the smaller of the two OTA (over-the-air) application slots, when the table has fewer than two such slots, or when they differ in size; prints the room left; takes the build directory, default `firmware/panel/build` |
 | `tools/psram_bss.py` | reads the linker map of a panel build and fails when a line in the entries of a mapping in `firmware/panel/main/psram_bss.lf` is not `<object> (rcbench_extram_bss)`, when an object that the fragment maps to PSRAM (pseudo-static random-access memory) holds no .bss in `.ext_ram.bss` or keeps any .bss in internal RAM; prints the bytes moved; `--list N` also lists every object with more than N bytes of .bss in internal RAM; takes the build directory, default `firmware/panel/build` |
 | `tools/check_sizes.py` | counts the code lines of every file git tracks (a code line is not blank and not comment-only: comments and Doxygen blocks in C, C++, headers, TypeScript and JavaScript, and `#` comments and docstrings in Python, are left out; other file kinds count their non-blank lines) and holds the files over 1,000 code lines to `tools/check_sizes.txt`, which gives each one's reason to stay whole and, for some, a code-line count with a tolerance; `--check` fails on a file over 1,000 code lines that the list does not name, a listed file at or under 1,000 code lines, a count outside its tolerance and an exclusion that covers nothing; a file whose head names the `tools/gen_*.py` that generates it, when CI runs that generator with `--check`, is not listed |
-| `tools/sense_trace.py` | reads a captured console of an IOmcu built with `-DSENSE_TRACE=ON`: reads each line against the line format and each trace of INA3221 CH1's 1 ms samples against its end line, writes one CSV (comma-separated values) file per trace, and replays every move through `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; `--servo-csv` adds the arrival less the AS5600's travel time, `--loaded-channel` names the output channels with a servo connected and leaves the commands of the others out ([First run](FirstRun.md#89-ch1s-1-ms-samples-on-the-console)) |
+| `tools/sense_trace.py` | reads a captured console of an IOmcu built with `-DSENSE_TRACE=ON`: reads each line against the line format and each trace of INA3221 CH1's 1ms samples against its end line, writes one CSV (comma-separated values) file per trace, and replays every move through `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10A; `--servo-csv` adds the arrival less the AS5600's travel time, `--loaded-channel` names the output channels with a servo connected and leaves the commands of the others out ([First run](FirstRun.md#89-ch1s-1ms-samples-on-the-console)) |
 | `tools/pinmap_check.py` | checks the IO board's draft pin map, `hardware/docs/ioboard-pinmap-draft.json`, against the pin functions in the pico-sdk's `io_bank0.h`; needs a pico-sdk checkout |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | generate the checked-in board drawings and ESC profile tables from their JSON sources (the board drawing from the configurator's `configurator/drawings/panel.json`); `--check` fails if the committed tables differ |
 | `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
@@ -305,7 +355,7 @@ P4; the C6 runs the radio.
 | D0 to D3 | GPIO14 to GPIO17 | IO20 to IO23 |
 | EN (chip enable), low resets | GPIO54 | EN |
 
-SDIO runs 4 bits wide at 40 MHz. `components/board/include/board_pins.h`
+SDIO runs 4 bits wide at 40MHz. `components/board/include/board_pins.h`
 names the pins (`BOARD_C6_*`), `firmware/panel/sdkconfig.defaults` hands
 them to esp_hosted, and `wifi_radio.c` fails the build when the two differ.
 
@@ -341,9 +391,9 @@ To move a version, change `idf_component.yml`, run
 The C6 runs Espressif's esp_hosted co-processor firmware. The version the
 board ships with is not published and not known here. At the first Wi-Fi
 start after power-up esp_hosted resets the C6: GPIO54 (EN) goes low for
-10 ms, then esp_hosted waits a fixed 1,500 ms
+10ms, then esp_hosted waits a fixed 1,500ms
 (`CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS`), starts the C6 as an SDIO card
-and polls for its start event every 200 ms. The panel then writes the C6's
+and polls for its start event every 200ms. The panel then writes the C6's
 version to the console:
 
 ```
@@ -351,7 +401,7 @@ wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
 ```
 
 A C6 firmware without the version request answers with
-`wifi: C6: firmware version not reported, host 2.13.0`, after up to 5 s.
+`wifi: C6: firmware version not reported, host 2.13.0`, after up to 5s.
 esp_hosted also logs `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`
 when the major or minor numbers differ. Espressif states that a host newer
 than its co-processor runs and may see request time-outs; the panel's
@@ -364,13 +414,13 @@ panel; later Wi-Fi starts find the link up and reset nothing.
 `esp_hosted_connect_to_slave()` returns `ESP_OK` whether or not the C6
 came up (`esp_hosted_api.c` 177-192). The panel takes esp_hosted's
 `ESP_HOSTED_EVENT_TRANSPORT_UP` event as the answer, and waits for it at
-most 1,000 ms after that call has returned (`wifi_radio.c`).
+most 1,000ms after that call has returned (`wifi_radio.c`).
 
 - A C6 that does not start as an SDIO card: esp_hosted gives up after the
-  card's start-up, at least 1,500 ms after the 1,520 ms reset; 1 reset.
+  card's start-up, at least 1,500ms after the 1,520ms reset; 1 reset.
 - A C6 that starts as a card and sends no start event: esp_hosted polls 100
-  times 200 ms apart and resets the C6 again after 50 and after 100 polls
-  (`transport_drv.c` 227-252); 3 resets, about 25 s.
+  times 200ms apart and resets the C6 again after 50 and after 100 polls
+  (`transport_drv.c` 227-252); 3 resets, about 25s.
 - Either way the start fails, WI-FI shows the failed start, and the panel
   holds the C6 in reset (GPIO54 low) until it restarts. Later starts fail
   at once, with no reset. The bench and the display run on meanwhile; the
@@ -380,18 +430,19 @@ most 1,000 ms after that call has returned (`wifi_radio.c`).
   `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
   restarts` once, holds the C6 in reset, and the session ends as a failed
   start. With the C6 in reset its SDIO lines are held high by their
-  51 kOhm pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
+  51kΩ pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
   instead of failing in a loop; this is not measured on a board. The panel
   does not restart for it
   (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): a restart would drop
   the link to the IOmcu and the heartbeat.
 - From the failure to Wi-Fi off: the event loop delivers the event (not
-  measured), the radio's task sees it within 100 ms, and takes the radio
+  measured), the radio's task sees it within 100ms, and takes the radio
   down without the two requests to the C6, `esp_wifi_stop()` and
-  `esp_wifi_deinit()`, which would each end at esp_hosted's 5 s response
-  time-out. Taking it down waits up to 1,500 ms for a GitHub fetch under way
-  and up to 20,000 ms for the fetch task to end. The time on a board is not
-  measured.
+  `esp_wifi_deinit()`, which would each end at esp_hosted's 5s response
+  time-out. Taking it down waits up to 1,500ms for a GitHub fetch under way.
+  A fetch task still in a name lookup after that is not waited for: it
+  ends when lwIP gives up on the lookup, and no fetch job starts before.
+  The time on a board is not measured.
 
 Current limitations, all inside esp_hosted. Each stops the panel with an
 abort, which restarts it:
@@ -477,7 +528,7 @@ Other allocations of esp_hosted are not counted here. The console line
 | --- | --- | --- |
 | `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.5.5 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu image and holds the touch injector's symbols and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` that fails when it holds an injector symbol; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
-| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000 s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums and creates a release, a pre-release for an odd minor number ([Releases](#releases)); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and browser tests of the configurator; the web help build of `tools/help_site.py`; the C API reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the web help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no browser test |
 
@@ -496,8 +547,8 @@ the tag (`tools/install_cppcheck.sh` checks its SHA-256 against the value in
 `ci.yml` and fails on a mismatch; the build is cached on version and hash). The
 distribution's cppcheck is older (2.13 on Ubuntu 24.04) and reports differently;
 install 2.17.1 locally with `tools/install_cppcheck.sh 2.17.1 <SHA-256 from
-ci.yml> ~/cppcheck-2.17.1` or from a distribution package of 2.17.1. Every job has a `timeout-minutes` limit: 100 min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400 s, 90 min), 10 to 60 min for the others. ctest stops a
-test after 120 s. With the environment variable `CI` set, a missing C++
+ci.yml> ~/cppcheck-2.17.1` or from a distribution package of 2.17.1. Every job has a `timeout-minutes` limit: 100min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400s, 90min), 10 to 60min for the others. ctest stops a
+test after 120s. With the environment variable `CI` set, a missing C++
 compiler fails the CMake configure step of the host suite, and a missing `git`, `cmake` or `cc`
 fails the end-to-end cases of `tools/mutate.py`. `tools/check_docs.py` holds
 the pico-sdk and ESP-IDF tags of this page to those in `ci.yml` and

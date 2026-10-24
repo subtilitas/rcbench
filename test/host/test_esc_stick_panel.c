@@ -406,7 +406,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
-/* The supply's own range, in place of the PPS default's 3.3 to 21 V. */
+/* The supply's own range, in place of the PPS default's 3.3 to 21V. */
 static void supply_gives(float v_min, float v_max)
 {
     supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
@@ -426,9 +426,9 @@ static bool run_starts(void)
 }
 
 /*
- * A voltage the supply can give is not refused: the profile's 7.6 V runs on
- * a supply whose highest voltage is 7.6 V and on one whose lowest is 7.6 V.
- * 0.01 V the other side of either is refused, with the reason on the page.
+ * A voltage the supply can give is not refused: the profile's 7.6V runs on
+ * a supply whose highest voltage is 7.6V and on one whose lowest is 7.6V.
+ * 0.01V the other side of either is refused, with the reason on the page.
  */
 TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
 {
@@ -445,7 +445,7 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     supply_gives(3.3f, 7.59f);
     CHECK(!run_starts());
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "7.60 V exceeds the SUPPLY limit of 7.59 V.");
+                 "7.60V exceeds the SUPPLY limit of 7.59V.");
 
     fresh();
     descend_to_hobbywing();
@@ -459,11 +459,11 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     supply_gives(7.61f, 21.0f);
     CHECK(!run_starts());
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "VOLTAGE is below the supply minimum of 7.61 V.");
+                 "VOLTAGE is below the supply minimum of 7.61V.");
 }
 
-/* The list the same: a profile that needs 7.6 V opens on a supply whose
- * highest voltage is 7.6 V, and 0.01 V under it the row is a refused one
+/* The list the same: a profile that needs 7.6V opens on a supply whose
+ * highest voltage is 7.6V, and 0.01V under it the row is a refused one
  * that says what it needs. */
 TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
 {
@@ -485,7 +485,7 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
             const char *why = esc_stick_panel_row_why(i);
             CHECK(why != NULL);
             if (why != NULL) {
-                CHECK_STR_EQ(why, "needs 7.6 V; limit 7.5 V");
+                CHECK_STR_EQ(why, "needs 7.6V; limit 7.5V");
             }
             break;
         }

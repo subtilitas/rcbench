@@ -131,7 +131,7 @@ static inline gfx_rect_t page_area(void)
  * card.
  */
 #define RUN_CARD_X  (PAD + 10)     /**< The run cards' left edge, px. */
-#define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600 px. */
+#define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600px. */
 #define RUN_CARD_H  200            /**< A run card's height, px. */
 #define RUN_CARD_GAP 4             /**< Above and between the cards, px. */
 /** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
@@ -194,11 +194,11 @@ static inline gfx_rect_t run_close_rect(void)
 #define RUN_PAGE_SAVE_DY 28
 
 /**
- * @brief The save line of a page of rows, 20 px tall.  On SETTINGS' pages
+ * @brief The save line of a page of rows, 20px tall.  On SETTINGS' pages
  *        along the bottom, under the notes; on a run's settings under the
  *        run's name, left of CLOSE, as the rows and the STALL AT note fill
  *        the page down to the alert band.  The German "not saved" line is
- *        37 cells, 370 px.
+ *        37 cells, 370px.
  * @return the line
  */
 static inline gfx_rect_t save_line_rect(void)

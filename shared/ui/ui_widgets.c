@@ -180,7 +180,7 @@ void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
     const int cy = r.y + r.h / 2;
-    /* A 4 px dot in a 6 px ring; 5 in 7 on a pill 40 px tall or more. */
+    /* A 4px dot in a 6px ring; 5 in 7 on a pill 40px tall or more. */
     const int rd = (r.h >= 40) ? 5 : 4;
     gfx_fill_circle(c, r.x + inset / 2, cy, rd, dot);
     gfx_draw_circle(c, r.x + inset / 2, cy, rd + 2, gfx_lerp(dot, fill, 130));
@@ -276,12 +276,12 @@ void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color
     }
 }
 
-/* The tag's text from its left edge: past the chevron, or 12 px in. */
-/** @brief A home tag's text from its left edge, past the chevron: 28 px. */
+/* The tag's text from its left edge: past the chevron, or 12px in. */
+/** @brief A home tag's text from its left edge, past the chevron: 28px. */
 #define TAG_TEXT_X_HOME 28
-/** @brief The wordmark's text from the tag's left edge: 12 px. */
+/** @brief The wordmark's text from the tag's left edge: 12px. */
 #define TAG_TEXT_X_MARK 12
-/** @brief The tag's text to its right edge: 12 px. */
+/** @brief The tag's text to its right edge: 12px. */
 #define TAG_TEXT_PAD_R  12
 
 static int tag_width(const char *title, bool chevron)
@@ -407,8 +407,8 @@ static void choice_face_ink(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                             gfx_color_t ink, gfx_color_t mark)
 {
     const bool tall = r.h >= UI_CHOICE_ROW_H;
-    /* A 7 px chevron 22 px from the right edge; 11 px and 28 px when tall.
-     * The text ends 4 px before the chevron's first column. */
+    /* A 7px chevron 22px from the right edge; 11px and 28px when tall.
+     * The text ends 4px before the chevron's first column. */
     const int span = tall ? 11 : 7;
     const int inset = tall ? 12 : 10;
     const int room = r.w - inset - (tall ? 28 : 22) - span - 4;

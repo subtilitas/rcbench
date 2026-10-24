@@ -85,33 +85,33 @@ jeder andere verweigert.
 ## Servo-PWM
 
 Hardware-PWM, kein PIO: das Bauteil hat 12 Slices und 24 Kanäle, und ein
-Servopuls ist genau das, was ein Slice erzeugt. Der Zähler läuft mit 1 MHz, ein
+Servopuls ist genau das, was ein Slice erzeugt. Der Zähler läuft mit 1MHz, ein
 Puls ist also eine Anzahl Mikrosekunden und die Frame-Dauer 1.000.000 geteilt
 durch die Rate.
 
 | | |
 | --- | --- |
-| Frame Rate | 40 bis 560 Hz |
-| Puls | 400 bis 2500 µs und höchstens die Periode minus 1 µs, außerhalb verweigert |
-| Auflösung | 1 µs |
+| Frame Rate | 40 bis 560Hz |
+| Puls | 400 bis 2500µs und höchstens die Periode minus 1µs, außerhalb verweigert |
+| Auflösung | 1µs |
 
 Ein Puls ist nie so lang wie sein Frame. Der längste, den ein Frame trägt, ist
-die Periode minus 1 µs, abgerundet: der letzte Zählerstand, der den Pin 1 µs
+die Periode minus 1µs, abgerundet: der letzte Zählerstand, der den Pin 1µs
 auf Low lässt.
 
 | Rate | Periode | Längster Puls |
 | ---: | ---: | ---: |
-| 560 Hz | 1785 µs | 1784 µs |
-| 500 Hz | 2000 µs | 1999 µs |
-| 400 Hz | 2500 µs | 2499 µs |
-| 399 Hz und darunter | 2506 µs und mehr | 2500 µs, die Obergrenze |
+| 560Hz | 1785µs | 1784µs |
+| 500Hz | 2000µs | 1999µs |
+| 400Hz | 2500µs | 2499µs |
+| 399Hz und darunter | 2506µs und mehr | 2500µs, die Obergrenze |
 
 Ein Schreiben auf CHAN_CFG, OUTPUTS, BIND, SERVO oder PROG, das einem
 PWM-Ausgang einen längeren Endpunkt hinterließe, wird mit BAD_VALUE
 verweigert, und nichts ändert sich. Beurteilt wird die Rate, mit der der
 Ausgang läuft: die von SERVO für eine Surface, solange sie nicht 0 ist, sonst
-die eigene des Slots. Ein Standardservo mit 1000 bis 2000 µs nimmt also
-499 Hz und wird bei 500 Hz und 560 Hz verweigert. Ein gespeicherter Slot,
+die eigene des Slots. Ein Standardservo mit 1000 bis 2000µs nimmt also
+499Hz und wird bei 500Hz und 560Hz verweigert. Ein gespeicherter Slot,
 dessen Endpunkt nicht zu seiner eigenen Rate passt, startet ungebunden. Die
 Regel ist `out_pwm_pulse_max()` und `outputs_pulse_check()`; [der
 Link](Link-de.md#ein-puls-nicht-länger-als-sein-frame) hat die Seite der Pages.
@@ -155,17 +155,17 @@ vom Beginn eines Marks bis zum Beginn des nächsten ist die Pulsweite eines
 Kanals. Nach dem letzten Kanal folgen ein abschließender Mark und die Sync-Lücke,
 und diese Lücke sagt einem Empfänger, wo der nächste Frame beginnt.
 
-Kanalzahl und Frame Rate sind nicht unabhängig. Acht Kanäle zu 2000 µs
-verbrauchen bereits 16 ms eines 22,5-ms-Frames. Der Prüfstand verweigert einen
-Frame, dessen Sync-Lücke unter 3000 µs fiele — die kürzeste Lücke, die kein
-Empfänger als Kanal lesen kann, denn die Kanalobergrenze liegt bei 2500 µs.
+Kanalzahl und Frame Rate sind nicht unabhängig. Acht Kanäle zu 2000µs
+verbrauchen bereits 16ms eines 22,5-ms-Frames. Der Prüfstand verweigert einen
+Frame, dessen Sync-Lücke unter 3000µs fiele — die kürzeste Lücke, die kein
+Empfänger als Kanal lesen kann, denn die Kanalobergrenze liegt bei 2500µs.
 
 Der kürzeste Frame, der n Kanäle bei jedem denkbaren Befehl trägt, ist
 
-    n × 2500 µs + 300 µs + 3000 µs
+    n × 2500µs + 300µs + 3000µs
 
-also 23,3 ms für acht Kanäle — acht Kanäle bei 50 Hz werden verweigert, acht bei
-40 Hz nicht. Die Verweigerung erfolgt beim Konfigurieren des Slots, nicht erst,
+also 23,3ms für acht Kanäle — acht Kanäle bei 50Hz werden verweigert, acht bei
+40Hz nicht. Die Verweigerung erfolgt beim Konfigurieren des Slots, nicht erst,
 wenn die Knüppel das Ende ihres Wegs erreichen.
 
 Die Polarität ist eine Pad-Invertierung, kein anderes Programm.
@@ -185,11 +185,11 @@ einigen sich also per Konfiguration auf die Rate.
 
 | Bit | High für |
 | --- | --- |
-| 0 | 37,5 % der Bitdauer |
-| 1 | 75 % |
+| 0 | 37,5% der Bitdauer |
+| 1 | 75% |
 
 Die State Machine läuft mit dem Achtfachen der Bitrate, weil acht die kleinste
-Zyklenzahl ist, die beide Anteile ganzzahlig macht. DShot600 sind damit 4,8 MHz.
+Zyklenzahl ist, die beide Anteile ganzzahlig macht. DShot600 sind damit 4,8MHz.
 
 Der Wert ist nicht über seinen ganzen Bereich ein Gasbefehl:
 
@@ -213,9 +213,9 @@ Stop, abgebildet, nicht auf volles Gas.
 gebunden ist, gibt false zurück und lässt den alten Output weiterlaufen. Ein
 Aufrufer gibt den Pin zuerst frei.
 
-Frames gehen mit 1 kHz hinaus. Diese Rate steht nicht auf der Leitung: das
+Frames gehen mit 1kHz hinaus. Diese Rate steht nicht auf der Leitung: das
 Ratenfeld der OUTPUTS-Page ist bei DShot eine Bitrate und keine Frame Rate, der
-Prüfstand wählt sie also. 1 kHz ist das Zwanzigfache der Poll-Rate des Panels
+Prüfstand wählt sie also. 1kHz ist das Zwanzigfache der Poll-Rate des Panels
 und liegt weit innerhalb des Signal-Timeouts jedes ESC.
 
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
@@ -232,9 +232,9 @@ reagieren. Es ist eine eigene Treibernummer auf der
 Leitungen, nicht eine Leitung mit einer Einstellung.
 
 Nach jedem Frame gibt der IOmcu die Leitung frei, und der ESC antwortet
-darauf, etwa 30 µs später, mit 21 Bit bei fünf Vierteln der DShot-Rate. Der
+darauf, etwa 30µs später, mit 21 Bit bei fünf Vierteln der DShot-Rate. Der
 Turnaround geschieht im PIO-Block — der Transmitter gibt den Pin frei und setzt
-ein Flag, der Receiver startet auf dieses Flag — denn 30 µs sind keine Frist,
+ein Flag, der Receiver startet auf dieses Flag — denn 30µs sind keine Frist,
 die eine Schleife einhalten kann.
 
 Die Antwort ist GCR-codiert (Group-Coded Recording). Jedes Nibble eines 16-Bit-
@@ -309,12 +309,12 @@ Drehzahl auf den Bildschirm bringen. Ein IOmcu mit einer veralteten Zahl
 meldet
 also die tatsächliche Drehzahl mal die Polzahl des Motors geteilt durch die
 gehaltene Zahl. Ein 12-poliger Motor an einem Prüfstand, der noch 14 hält,
-liest 14,3 % zu wenig; bleibt 12 stehen und der Motor hat 14 Pole, liest er
-16,7 % zu viel. Die Richtung folgt der Änderung, und die Enden des Bereichs
+liest 14,3% zu wenig; bleibt 12 stehen und der Motor hat 14 Pole, liest er
+16,7% zu viel. Die Richtung folgt der Änderung, und die Enden des Bereichs
 sind in beide Richtungen ein Faktor 21: ein 42-poliger Motor, der als 2
 umgerechnet wird, liest das Einundzwanzigfache seiner Drehzahl, ein 2-poliger
 als 42 ein Einundzwanzigstel. Zu beachten ist die gewöhnliche Änderung, denn
-einen Faktor 21 sieht man sofort und 14 % nicht.
+einen Faktor 21 sieht man sofort und 14% nicht.
 
 ### Extended Telemetry
 
@@ -323,14 +323,14 @@ Frames für Temperatur, Spannung, Strom, Stress und Status, markiert durch das
 oberste Nibble der Nutzdaten.
 
 Der Prüfstand fragt mit Command 13 und fragt erneut, bis der ESC antwortet.
-Eine Anfrage sind zehn Frames Command 13 hintereinander, 10 ms bei 1.000 Hz.
+Eine Anfrage sind zehn Frames Command 13 hintereinander, 10ms bei 1.000Hz.
 Eine Anfrage geht nur anstelle eines Frames mit Throttle null hinaus, sie
 verzögert also nie ein Throttle, und Command 13 liegt im Command-Bereich, es
 dreht sich also nichts, während sie hinausgeht:
 
 - die erste Anfrage beginnt mit dem ersten Frame mit Throttle null eines
   Laufs;
-- die nächste beginnt 500 ms nach der letzten Wiederholung der vorigen,
+- die nächste beginnt 500ms nach der letzten Wiederholung der vorigen,
   solange das Throttle auf null bleibt;
 - ein Throttle über null geht in seinem eigenen Frame hinaus, und eine
   Anfrage, die es unterbricht, beginnt wieder bei ihrer ersten Wiederholung;
@@ -342,15 +342,15 @@ dreht sich also nichts, während sie hinausgeht:
 
 Das Wiederholen ist für ESCs mit AM32-Firmware. Ein ESC mit AM32 2.21 nimmt
 ein Command nur an, solange er scharf ist und der Motor steht, und er schaltet
-sich nach 1 s Throttle null selbst scharf, gezählt ab dem ersten Frame, den er
+sich nach 1s Throttle null selbst scharf, gezählt ab dem ersten Frame, den er
 hört (`Src/dshot.c:157`,
 `Src/main.c:1353-1356`). Ein Prüfstand in SAFE sendet keine Frames, und
-die AM32-Firmware startet nach 0,5 s ohne Frame neu, wenn der ESC scharf ist,
-und nach 2 s, wenn nicht. Jeder Lauf beginnt also mit einem ESC, der nicht
-scharf ist. Eine Anfrage nur in den ersten 10 ms eines Laufs kommt an, bevor
+die AM32-Firmware startet nach 0,5s ohne Frame neu, wenn der ESC scharf ist,
+und nach 2s, wenn nicht. Jeder Lauf beginnt also mit einem ESC, der nicht
+scharf ist. Eine Anfrage nur in den ersten 10ms eines Laufs kommt an, bevor
 der ESC sie annehmen kann. `test_dshot_edt` prüft den Ablauf gegen ein Modell
 dieser Regeln: ein ESC mit AM32-Firmware, der aus der Stille bei Throttle null
-startet, nimmt die dritte Anfrage an, 1,02 s nach Beginn des Laufs. Die
+startet, nimmt die dritte Anfrage an, 1,02s nach Beginn des Laufs. Die
 Drehzahl hängt davon nicht ab: ein ESC mit AM32-Firmware beantwortet einen
 bidirektionalen Frame mit einer Periode, ob gefragt wurde oder nicht.
 
@@ -391,11 +391,11 @@ Eine Lesung steht nicht auf dieser Liste. Sie ist gegen einen ESC und ohne Messg
 - **Bidirektionales DShot600 gegen einen ESC** (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
   AM32-Konfigurator zeigt es gekürzt als `JUPITER_35A_F42`), an einem
   4S-Pack, gebunden auf GP0. Version 0.8.2 hat seine Drehzahl dekodiert
-  (2593 rpm). Version 0.9.1 hat mit der wiederholten Anfrage oben seine
-  Extended Telemetry eingeschaltet: bei 0 % Gas zeigte MOTOR & ESC 14,75 V,
-  72,0 A und eine ESC-Temperatur von 41 °C. Der Tester hat die Spannung als
+  (2593rpm). Version 0.9.1 hat mit der wiederholten Anfrage oben seine
+  Extended Telemetry eingeschaltet: bei 0% Gas zeigte MOTOR & ESC 14,75V,
+  72,0A und eine ESC-Temperatur von 41°C. Der Tester hat die Spannung als
   richtig gemeldet. Strom und Temperatur wurden dekodiert und gegen nichts
-  geprüft: 72,0 A im Stand, und 81,00 A, die DshotDisplay an einem anderen Tag
+  geprüft: 72,0A im Stand, und 81,00A, die DshotDisplay an einem anderen Tag
   vom selben ESC las, sehen nach einem Eingang ohne Stromsensor dahinter aus
   und nicht nach einer Messung.
 
@@ -404,15 +404,15 @@ ist über diesen einen ESC hinaus unbestätigt:
 
 - die Antwortrate von fünf Vierteln der DShot-Rate;
 - die Konvention für das führende Bit des Group Code;
-- die Turnaround-Verzögerung, und ob 30 µs das ist, was ein ESC tatsächlich
+- die Turnaround-Verzögerung, und ob 30µs das ist, was ein ESC tatsächlich
   wartet;
-- die Einheiten der Extended-Telemetry-Frames für Strom (1 A je Zählwert)
-  und Temperatur (1 °C je Zählwert) sowie die Stress-, Status- und
-  Debug-Frames; nur die Spannung (0,25 V je Zählwert) ist gegen einen Wert
+- die Einheiten der Extended-Telemetry-Frames für Strom (1A je Zählwert)
+  und Temperatur (1°C je Zählwert) sowie die Stress-, Status- und
+  Debug-Frames; nur die Spannung (0,25V je Zählwert) ist gegen einen Wert
   gelesen, den der Tester kannte;
 - ob ESCs mit anderer Firmware als AM32 Command 13 unter der wiederholten
   Anfrage annehmen: ESCs mit Bluejay- und BLHeli_32-Firmware sind ungetestet;
-- ob der Hinweis "mindestens 35 ms warten" in der Spezifikation zu Command 13
+- ob der Hinweis "mindestens 35ms warten" in der Spezifikation zu Command 13
   oder zu Command 12 (Save Settings) gehört. Die Tabelle lässt beide Lesarten
   zu, und der Prüfstand wartet in keinem Fall: auf die zehnte Wiederholung
   einer Anfrage folgt beim nächsten 1-ms-Takt das Throttle oder ein weiterer

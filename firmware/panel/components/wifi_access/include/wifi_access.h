@@ -1,7 +1,8 @@
-/*
- * The panel's Wi-Fi: the radio, the page's HTTP (hypertext transfer
- * protocol) server, the mDNS (multicast domain name system) name and the
- * NVS (non-volatile storage) entry of the home network.
+/**
+ * @file
+ * @brief The panel's Wi-Fi: the radio, the page's HTTP (hypertext transfer
+ *        protocol) server, the mDNS (multicast domain name system) name and
+ *        the NVS (non-volatile storage) entry of the home network.
  *
  * What the radio may do and when is shared/webaccess (wa_session.h), which
  * the host suite holds; this file carries it out.  The radio is off at every
@@ -40,7 +41,7 @@
 extern "C" {
 #endif
 
-/** The access point's channel, 2.4 GHz band. */
+/** @brief The access point's channel, 2.4GHz band. */
 #define WIFI_ACCESS_AP_CHANNEL 6u
 
 /** What the screen draws, as a copy. */
@@ -76,24 +77,45 @@ void wifi_access_set_german(bool de);
 /** Start in @p mode unless @p gate says why not; see wa_start(). */
 wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate);
 
-/** Radio off for @p why. */
+/**
+ * @brief Radio off for @p why; see wa_close().
+ * @param why The reason.
+ */
 void wifi_access_close(wa_off_t why);
 
 /**
- * Once a frame: the gate, STOP pressed since the last call, the time-outs;
- * and a change to what is kept written when @p may_write (flash may be
- * written now).  Returns whether this call switched the radio off.
+ * @brief Once a frame: the gate, STOP pressed since the last call, the
+ *        time-outs; and a change to what is kept written when @p may_write.
+ * @param gate      wa_gate()'s answer.
+ * @param stop      STOP pressed since the last call.
+ * @param may_write Flash may be written now.
+ * @return Whether this call switched the radio off or ended its linger
+ *         (wa_tick()).
  */
 bool wifi_access_tick(wa_off_t gate, bool stop, bool may_write);
 
 void wifi_access_get(wifi_access_state_t *out);
 
 /**
- * Whether the radio is wholly off and no start of it is asked for; from
- * any task, without the lock.  A start asked for counts as up from the
- * call on, a close until the radio is off.
+ * @brief Whether the radio is wholly off and no start of it is asked for;
+ *        from any task, without the lock.
+ *
+ * A start asked for counts as up from the call on, a close until the
+ * station or access point is stopped and its interface is gone.  A GitHub
+ * fetch task still in a name lookup then does not hold it up: it sends
+ * nothing while the radio stays off, and no fetch job starts before it
+ * ends.
+ *
+ * @return true when the radio is off and nothing asks for it
  */
 bool wifi_access_down(void);
+
+/**
+ * @brief The radio goes off without waiting for the clock's NTP answer:
+ *        a session that ended and lingers (wa_lingers()) stops lingering;
+ *        one that runs goes on.  From any task, without the lock.
+ */
+void wifi_access_end_linger(void);
 
 /** Keep a home network; false when wa_conf_set_net() refuses it. */
 bool wifi_access_save_net(const char *ssid, const char *pass);

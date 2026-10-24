@@ -49,7 +49,7 @@ static void type(const char *text)
 
 /**
  * @brief A drag up the list by about @p dy px, from the label column.
- * @param dy The drag, px; the first 8 px are the slop and scroll nothing.
+ * @param dy The drag, px; the first 8px are the slop and scroll nothing.
  */
 static void scroll_by(int dy)
 {
@@ -147,7 +147,7 @@ TEST_CASE(a_tap_on_a_value_opens_its_keypad)
     CHECK_NEAR(k->max, 300.0f, 1e-6f);
     CHECK_EQ(k->decimals, 1);
     CHECK_NEAR(k->value, settings_get(id), 1e-6f);
-    /* Over the list and the strip, its foot 4 px above the alert band. */
+    /* Over the list and the strip, its foot 4px above the alert band. */
     CHECK_EQ(k->area.x, 10);
     CHECK_EQ(k->area.y, 10);
     CHECK_EQ(k->area.w, UI_PANEL_W - 20);
@@ -227,7 +227,7 @@ TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
 TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
 {
     list_of(SET_CAT_IFACE);
-    const setting_id_t id = SET_INA228_MAX_A;     /* steps of 0.1 A */
+    const setting_id_t id = SET_INA228_MAX_A;     /* steps of 0.1A */
     open_on(id);
     type("12.345");
     CHECK_STR_EQ(settings_screen_keypad()->entry, "12.3");
@@ -294,8 +294,8 @@ TEST_CASE(nothing_under_the_keypad_presses)
 
 /* ------------------------------------------------- the same as a step */
 
-/* The station's walk on 0.22.0: 0x40 CH1's shunt from 100.0 to 44.4 mOhm
- * took 556 steps of 0.1 mOhm.  The keypad's 44.4 is the value those steps
+/* The station's walk on 0.22.0: 0x40 CH1's shunt from 100.0 to 44.4mOhm
+ * took 556 steps of 0.1mOhm.  The keypad's 44.4 is the value those steps
  * reach, set through the same call, and SAVE writes the same word. */
 TEST_CASE(a_typed_shunt_saves_what_556_steps_save)
 {
@@ -305,7 +305,7 @@ TEST_CASE(a_typed_shunt_saves_what_556_steps_save)
     ui_router_render(&s_c, 0);
     open_on(id);
     CHECK_STR_EQ(settings_screen_keypad()->title, "0x40 CH1 shunt");
-    CHECK_STR_EQ(settings_screen_keypad()->unit, "mOhm");
+    CHECK_STR_EQ(settings_screen_keypad()->unit, "mΩ");
     CHECK_NEAR(settings_screen_keypad()->min, 0.0f, 1e-6f);
     CHECK_NEAR(settings_screen_keypad()->max, 1000.0f, 1e-6f);
     type("44.4");
@@ -339,7 +339,7 @@ TEST_CASE(a_value_between_steps_takes_the_nearer_step)
 {
     list_of(SET_CAT_APP);
     settings_set(SET_BRIGHTNESS, 70.0f);
-    open_on(SET_BRIGHTNESS);                       /* steps of 5 % */
+    open_on(SET_BRIGHTNESS);                       /* steps of 5% */
     type("73");
     key(UI_KEY_OK);
     CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 75);
@@ -427,10 +427,10 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         ui_lang_t lang;
         const char *shunt, *limit, *sda, *pdmini;
     } k_why[] = {
-        { UI_LANG_EN, "0 or 5.0 to 1000.0 mOhm", "0 or 10 to 32767 mA",
+        { UI_LANG_EN, "0 or 5.0 to 1000.0mΩ", "0 or 10 to 32767mA",
           "Pins the bus takes: 0 4 6 14 16 18 20 26",
           "The other PD mini pin holds this GPIO" },
-        { UI_LANG_DE, "0 oder 5.0 bis 1000.0 mOhm", "0 oder 10 bis 32767 mA",
+        { UI_LANG_DE, "0 oder 5.0 bis 1000.0mΩ", "0 oder 10 bis 32767mA",
           "Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26",
           "Diesen GPIO hält der andere PD-mini-Pin" },
     };
@@ -444,7 +444,7 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         CHECK(!settings_screen_keypad()->refused);
         CHECK_STR_EQ(settings_screen_keypad()->reason, "");
         key(UI_KEY_CANCEL);
-        /* A limit of 5 mA: OFF is 0, the next step up 10 mA. */
+        /* A limit of 5mA: OFF is 0, the next step up 10mA. */
         CHECK_STR_EQ(refused_why(SET_INA_LIM(0), "5"), k_why[i].limit);
         key(UI_KEY_CANCEL);
         CHECK_EQ(settings_get_int(SET_INA_LIM(0)), 0);
@@ -544,8 +544,8 @@ TEST_CASE(a_short_sda_reason_keeps_whole_pins)
 }
 
 /* The off gap's reason is built from the row: every row with an off gap
- * is a shunt of 0 or 5.0 to 1000.0 mOhm in 0.1 steps or a limit of 0 or
- * 10 to 32767 mA in 10 mA steps, and its reason says so.  A NULL buffer
+ * is a shunt of 0 or 5.0 to 1000.0mOhm in 0.1 steps or a limit of 0 or
+ * 10 to 32767mA in 10mA steps, and its reason says so.  A NULL buffer
  * gives an empty text. */
 TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
 {
@@ -559,13 +559,13 @@ TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
             continue;
         }
         CHECK_NEAR(d->min, 0.0f, 1e-6f);
-        if (strcmp(d->unit, "mOhm") == 0) {
+        if (strcmp(d->unit, "mΩ") == 0) {
             ++shunts;
             CHECK_NEAR(d->off_below, 5.0f, 1e-6f);
             CHECK_NEAR(d->max, 1000.0f, 1e-6f);
             CHECK_EQ(settings_decimals(id), 1);
             CHECK_STR_EQ(ui_setting_keypad_why(id, 4.9f, why, sizeof(why)),
-                         "0 or 5.0 to 1000.0 mOhm");
+                         "0 or 5.0 to 1000.0mΩ");
         } else {
             ++limits;
             CHECK_STR_EQ(d->unit, "mA");
@@ -573,7 +573,7 @@ TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
             CHECK_NEAR(d->max, 32767.0f, 1e-6f);
             CHECK_EQ(settings_decimals(id), 0);
             CHECK_STR_EQ(ui_setting_keypad_why(id, 9.0f, why, sizeof(why)),
-                         "0 or 10 to 32767 mA");
+                         "0 or 10 to 32767mA");
         }
         CHECK_STR_EQ(ui_setting_keypad_why(id, 1.0f, NULL, 0u), "");
         CHECK(ui_setting_keypad_why(id, 0.0f, why, sizeof(why)) == NULL);

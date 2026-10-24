@@ -48,8 +48,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: two short beeps",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -144,16 +144,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (2.6 V/cell; Ni 0 %)"
+          "name": "low (2.6V/cell; Ni 0%)"
         },
         {
           "number": 2,
-          "name": "medium (2.85 V/cell; Ni 45 %)",
+          "name": "medium (2.85V/cell; Ni 45%)",
           "default": true
         },
         {
           "number": 3,
-          "name": "high (3.1 V/cell; Ni 60 %)"
+          "name": "high (3.1V/cell; Ni 60%)"
         }
       ],
       "applies_to": null,
@@ -171,11 +171,11 @@
         },
         {
           "number": 2,
-          "name": "soft (3 s)"
+          "name": "soft (3s)"
         },
         {
           "number": 3,
-          "name": "super soft (6 s)"
+          "name": "super soft (6s)"
         }
       ],
       "applies_to": null,

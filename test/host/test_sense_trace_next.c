@@ -1,5 +1,5 @@
 /*
- * The trace of CH1's 1 ms samples (sense_trace.h), a trace's end and the
+ * The trace of CH1's 1ms samples (sense_trace.h), a trace's end and the
  * next trace, over sense_trace_rig.h: the trigger queue full by 0 and 1;
  * the console's stop, which writes what came before it, and its other
  * characters; a changed set-up, a part going offline and a reset during a
@@ -100,7 +100,7 @@ TEST_CASE(a_changed_set_up_ends_a_trace)
     CHECK_EQ(seen.n_z, 1u);
     CHECK_EQ(seen.z_e, 's');
     CHECK_EQ(seen.z_s, seen.n_s);
-    /* The next trace carries the new one: 0.12 A is 150 steps of 0.8 mA. */
+    /* The next trace carries the new one: 0.12A is 150 steps of 0.8mA. */
     g_len = 0u;
     run(200u);
     sense_trace_key(&tr, 't', g_us);
@@ -192,7 +192,7 @@ TEST_CASE(a_stop_under_a_backlog_writes_what_came_before_it)
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     sense_trace_key(&tr, 't', g_us);
     run(100u);
-    /* 500 ms of samples wait in the ring when the stop comes. */
+    /* 500ms of samples wait in the ring when the stop comes. */
     stall(500u);
     sense_trace_key(&tr, 'x', g_us);
     CHECK(sense_trace_active(&tr));
@@ -210,7 +210,7 @@ TEST_CASE(a_stop_under_a_backlog_writes_what_came_before_it)
     CHECK_EQ(seen.z_e, 'k');
     CHECK_EQ(seen.z_l, 0u);
     CHECK_EQ(seen.z_s, seen.n_s);
-    /* Every sample up to the stop, 600 ms after the trigger, and none
+    /* Every sample up to the stop, 600ms after the trigger, and none
      * after it. */
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
     CHECK_EQ(seen.n_s, pre + 600u);
@@ -224,12 +224,12 @@ TEST_CASE(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next)
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
     run(3900u);
-    /* The console takes nothing from 100 ms before the end.  600 ms past
-     * the end a command comes: the 4 s trace is over, written or not. */
+    /* The console takes nothing from 100ms before the end.  600ms past
+     * the end a command comes: the 4s trace is over, written or not. */
     stall(700u);
     CHECK(sense_trace_active(&tr));
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 3u, 1900u);
-    /* And 1 ms before the end of that one, an edge: its own to extend. */
+    /* And 1ms before the end of that one, an edge: its own to extend. */
     stall(100u);
     run(1000u);
     const char *rest = first_trace_only();
@@ -263,7 +263,7 @@ TEST_CASE(a_start_after_a_stop_is_a_trace_of_its_own)
     stall(300u);
     sense_trace_key(&tr, 'x', g_us);
     stall(100u);
-    /* The stopped trace still has 300 ms to write when `t` comes. */
+    /* The stopped trace still has 300ms to write when `t` comes. */
     const uint32_t t1 = (uint32_t)(g_us / 100u);
     sense_trace_key(&tr, 't', g_us);
     /* More triggers than wait their turn: the ones with no place are
@@ -298,7 +298,7 @@ TEST_CASE(a_start_after_a_stop_is_a_trace_of_its_own)
     CHECK(!sense_trace_active(&tr));
 }
 
-/* A stopped trace with 300 ms still to write: a trigger now waits. */
+/* A stopped trace with 300ms still to write: a trigger now waits. */
 static void owe_a_stopped_trace(void)
 {
     rig();
@@ -366,7 +366,7 @@ TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
     const uint32_t t_cmd = now_t();
     CHECK(drive(1200u));
     CHECK_EQ(tr.out.wait_n, 1u);
-    /* 30 ms of slew: one entry behind the command, at the last change. */
+    /* 30ms of slew: one entry behind the command, at the last change. */
     uint32_t t_last = 0u;
     for (unsigned k = 1u; k <= 30u; ++k) {
         stall(1u);
@@ -376,7 +376,7 @@ TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
     }
     CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_STEP);
     CHECK_EQ(tr.out.wait[1].t, t_last);
-    /* Held still for 50 ms: the entry is the command's end. */
+    /* Held still for 50ms: the entry is the command's end. */
     for (unsigned k = 0u; k < 60u; ++k) {
         stall(1u);
         CHECK(!drive(1230u));
@@ -458,8 +458,8 @@ TEST_CASE(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open)
     stall(1u);
     const uint32_t t_cmd = now_t();
     CHECK(drive(1200u));
-    /* 4.5 s of slew with the console taking nothing, longer than the
-     * 4 s the command asks for. */
+    /* 4.5s of slew with the console taking nothing, longer than the
+     * 4s the command asks for. */
     uint32_t t_last = 0u;
     uint16_t us = 0u;
     unsigned k = 0u;
@@ -473,7 +473,7 @@ TEST_CASE(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open)
     CHECK_EQ(tr.out.wait[1].t, t_last);
     CHECK((int32_t)(t_last - (t_cmd + 40000u)) > 0);
     /* The console takes again; the slew goes on through the next
-     * trace's start and 20 ms past it. */
+     * trace's start and 20ms past it. */
     unsigned on = 0u;
     for (; k < 40000u && on < 20u; ++k) {
         run(1u);
@@ -664,7 +664,7 @@ TEST_CASE(a_waiting_slews_end_that_finds_no_place_is_counted)
 
 TEST_CASE(a_slews_end_waits_again_with_a_command_that_waits_again)
 {
-    /* An edge waits, and 5 s after it a slewed command: past the end of
+    /* An edge waits, and 5s after it a slewed command: past the end of
      * the trace the edge starts, so it waits again, its end behind it. */
     owe_a_stopped_trace();
     CHECK(!drive(1100u));
@@ -716,12 +716,12 @@ TEST_CASE(the_pulse_after_the_bank_let_go_is_a_command_however_soon)
     run(1u);
     CHECK(!drive(1610u));
     run(1u);
-    /* Let go 1 ms after a change: the slewed command ends where it was. */
+    /* Let go 1ms after a change: the slewed command ends where it was. */
     CHECK(!drive(0u));
     CHECK(!tr.out.watch[0].slewed && !tr.out.watch[0].changed);
     run(1u);
-    /* Driven again 1 ms later, at the pulse it had: a command, and what
-     * follows within 50 ms its slew. */
+    /* Driven again 1ms later, at the pulse it had: a command, and what
+     * follows within 50ms its slew. */
     CHECK(drive(1610u));
     run(1u);
     CHECK(!drive(1620u));

@@ -17,44 +17,103 @@
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
-/* The red bar across the top, and the verdict under it across the whole
- * width: 47 cells of the heading face. */
-#define BAR_H     56
-#define VERDICT_Y (BAR_H + 16)
+/*
+ * The faces of the type scale this screen draws in:
+ * BF_FONT_HEAD (20 x 36) for the bar's title and the verdict, BF_FONT_BODY
+ * (12 x 24) for the meaning, the checks and the notes, BF_FONT_LABEL
+ * (10 x 20) for the headings, the number column and the button.
+ */
+/** @brief The bar's title and the verdict: 20 x 36. */
+#define BF_FONT_HEAD  (&gfx_font_20x36)
+/** @brief The meaning, the checks and the notes: 12 x 24. */
+#define BF_FONT_BODY  UI_FONT_BODY
+/** @brief The headings, the number column and the button: 10 x 20. */
+#define BF_FONT_LABEL (&gfx_font_10x20)
+#define BODY_CELL     12              /**< BF_FONT_BODY's cell width, px */
 
-/* The two columns under the verdict: what it means and what to do on the
- * left, what was measured on the right.  The right column is 24 cells of
- * the label face, the left 67, and its text wraps. */
-#define COLS_Y    (VERDICT_Y + 38)
+/*
+ * The red bar across the top, and the verdict under it:
+ * The bar is 64px tall; the verdict runs across the whole width: 48 cells
+ * of BF_FONT_HEAD.
+ */
+/** @brief The red bar's height, px. */
+#define BAR_H     64
+/** @brief The verdict's top. */
+#define VERDICT_Y (BAR_H + 12)
+
+/*
+ * The two columns under the verdict:
+ * What it means and what to do on the left, 712px: 59 cells of
+ * BF_FONT_BODY, its text wrapped; what was measured on the right, 240px:
+ * 24 cells of BF_FONT_LABEL.
+ */
+/** @brief The two columns' top. */
+#define COLS_Y    (VERDICT_Y + 48)
 #define COL_X     24
-#define NUM_W     192
+/** @brief The number column's width, px: 24 cells of BF_FONT_LABEL. */
+#define NUM_W     240
 #define NUM_X     (W - 24 - NUM_W)
-#define COL_W     (NUM_X - 18 - COL_X)
-#define COL_CELLS (COL_W / 8)
+/** @brief The left column's width, px. */
+#define COL_W     (NUM_X - 24 - COL_X)
+/** @brief The left column's cells of BF_FONT_BODY. */
+#define COL_CELLS (COL_W / BODY_CELL)
 
-/* A wrapped line's pitch, and the right column's line, heading and
- * section steps. */
-#define WRAP_PITCH 18
-#define NUM_PITCH  18
-#define NUM_HEAD   20
-#define NUM_GAP    26
+/*
+ * Line pitches:
+ * A wrapped line's pitch in BF_FONT_BODY; the right column's line, heading
+ * and section steps in BF_FONT_LABEL.
+ */
+/** @brief A wrapped BF_FONT_BODY line's pitch, px. */
+#define WRAP_PITCH 28
+/** @brief The number column's line pitch, px. */
+#define NUM_PITCH  22
+/** @brief The step under a number column heading, px. */
+#define NUM_HEAD   24
+/** @brief The step between two number column sections, px. */
+#define NUM_GAP    28
 
-/* The meaning takes up to two lines from COLS_Y. */
+/*
+ * The meaning, the list and the notes:
+ * The meaning takes up to two lines from COLS_Y; the heading in
+ * BF_FONT_LABEL under it; up to LIST_MAX checks 32px apart, a check wider
+ * than the column wrapping under itself at WRAP_PITCH; the three notes from
+ * NOTE_Y, which the fullest list (five checks, two of them wrapped) ends
+ * above.
+ */
+/** @brief The lines the meaning takes at most. */
 #define MEANING_LINES 2
 #define HEAD_Y    (COLS_Y + MEANING_LINES * WRAP_PITCH + 8)
-#define LIST_Y    (HEAD_Y + 24)
-#define LIST_PITCH 27
+/** @brief The first check's top. */
+#define LIST_Y    (HEAD_Y + 28)
+/** @brief The step from one check to the next, px. */
+#define LIST_PITCH 32
 #define LIST_MAX  5
-#define LIST_CELLS (COL_CELLS - 2)
+/** @brief A check's text right of its bullet, px. */
+#define LIST_INDENT 16
+/** @brief A check's cells of BF_FONT_BODY. */
+#define LIST_CELLS ((COL_W - LIST_INDENT) / BODY_CELL)
+/** @brief The first note's top: under the fullest list. */
+#define NOTE_Y    (LIST_Y + LIST_MAX * LIST_PITCH + 2 * WRAP_PITCH)
 
-/* What acknowledging leaves behind, under the list. */
-#define NOTE_Y    322
-
-/* The acknowledgement, across the bottom. */
-#define ACK_H     52
-#define ACK_Y     (H - ACK_H - 18)
+/*
+ * The acknowledgement, across the bottom:
+ * 976 x 56px, 16px above the panel's edge; the rule 8px over it.
+ */
+/** @brief The acknowledgement's height, px. */
+#define ACK_H     56
+/** @brief The acknowledgement's top, 16px above the panel's edge. */
+#define ACK_Y     (H - ACK_H - 16)
 #define ACK_X     COL_X
 #define ACK_W     (W - 2 * COL_X)
+/** @brief The rule over the acknowledgement. */
+#define RULE_Y    (ACK_Y - 8)
+
+_Static_assert(ACK_H >= UI_TAP_MIN, "the acknowledgement is a finger tall");
+_Static_assert(NOTE_Y + 2 * WRAP_PITCH + 24 <= RULE_Y,
+               "the last note ends above the rule");
+_Static_assert(COLS_Y + 3 * NUM_HEAD + 10 * NUM_PITCH + 2 * NUM_GAP + 20
+                   <= RULE_Y,
+               "the fullest number column ends above the rule");
 
 static struct {
     busfault_report_t r;
@@ -64,12 +123,12 @@ static struct {
     bool     fired;       /**< the hold completed; do not repeat it       */
     int      flash_ms;    /**< ms of the flash still to run               */
     bool     ack;         /**< latched for the application                */
-    bool     pressed;
-    uint8_t  press_id;
-    bool     have_press;
+    bool     pressed;     /**< the contact is on the button            */
+    uint8_t  press_id;    /**< the contact that owns the press         */
+    bool     have_press;  /**< a contact owns the press                */
 
     unsigned drawn_mask;  /**< the static half, per framebuffer */
-} s;
+} s;  /**< the report and the hold */
 
 void busfault_screen_invalidate(void) { s.drawn_mask = 0; }
 
@@ -108,12 +167,12 @@ bool busfault_screen_take_ack(void)
 /* ------------------------------------------------------------ what to say */
 
 /*
- * One line of what the verdict means, in the operator's terms rather than
+ * One line of what the verdict means, in the operator's terms rather than:
  * the controller's.  can_selftest_text() says what the test saw; this says
  * what it is.
  */
 /*
- * The heading, which is the phrase an operator repeats when they ask somebody
+ * The heading, which is the phrase an operator repeats when they ask somebody:
  * about it.  For a link that dropped it is the controller's own state: the
  * wire carried frames a moment ago, so what happened since is this end's
  * business and not the bench's.
@@ -192,7 +251,7 @@ static const char *meaning_of(can_selftest_verdict_t v)
 }
 
 /*
- * What to check, cheapest first: a list that starts with the meter is a list
+ * What to check, cheapest first: a list that starts with the meter is a list:
  * nobody finishes.
  *
  * Terminators are last under SILENT and first under CORRUPT on purpose. A bus
@@ -330,9 +389,16 @@ static size_t line_len(const char *at, int cells)
     return (cut > 0u) ? cut : len;
 }
 
-/*
- * @p text in lines of at most @p cells of the label face, broken after a
- * space, from (x, y) down by WRAP_PITCH.  Returns the lines drawn.
+/**
+ * @brief @p text in lines of at most @p cells of BF_FONT_BODY, broken after
+ *        a space, from (x, y) down by WRAP_PITCH.
+ * @param c     Canvas, the whole panel.
+ * @param x     The lines' left edge.
+ * @param y     The first line's top.
+ * @param text  The text.
+ * @param cells The cells a line holds.
+ * @param ink   Its colour.
+ * @return The lines drawn.
  */
 static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
                      int cells, gfx_color_t ink)
@@ -345,7 +411,7 @@ static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
         const size_t n = (len < sizeof(buf)) ? len : sizeof(buf) - 1u;
         memcpy(buf, at, n);
         buf[n] = '\0';
-        gfx_text(c, x, y + lines * WRAP_PITCH, buf, UI_FONT_LABEL, ink, 1);
+        gfx_text(c, x, y + lines * WRAP_PITCH, buf, BF_FONT_BODY, ink, 1);
         ++lines;
         at += len;
         while (*at == ' ') {
@@ -359,7 +425,7 @@ static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
  * @brief The acknowledge button's fill.
  *
  * Danger red while it is waiting to be held, fading to the OK green it
- * settles on, and the same 150 ms flash ARM gives as the command goes.
+ * settles on, and the same 150ms flash ARM gives as the command goes.
  * The direction is the other way round from ARM because what it does is the
  * other way round: this one leaves a fault behind rather than entering one.
  * @return The fill for this frame.
@@ -373,99 +439,109 @@ static gfx_color_t ack_fill(void)
                         ui_theme_color(UI_C_OK), s.held_s);
 }
 
-/* The right-hand column for a link that dropped: this end's controller, and
- * how long it has been quiet.  Different numbers from the start-up test's --
- * there was no echo run, so there is nothing to count probes against. */
+/**
+ * @brief The right-hand column for a link that dropped: this end's
+ *        controller, and how long it has been quiet.
+ *
+ * Different numbers from the start-up test's -- there was no echo run, so
+ * there is nothing to count probes against.
+ * @param c Canvas, the whole panel.
+ */
 static void draw_link_numbers(gfx_canvas_t *c)
 {
     int y = COLS_Y;
     char line[48];
 
-    gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), BF_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += NUM_HEAD;
 
     snprintf(line, sizeof(line), TR(BF_DOWN), (unsigned long)s.r.down_s);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_REQUESTS), (unsigned long)s.r.polls);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_NO_ANSWER),
              (unsigned long)s.r.timeouts);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
              s.r.timeouts > 0 ? ui_theme_color(UI_C_WARN)
                               : ui_theme_color(UI_C_TEXT), 1);
     y += NUM_GAP;
 
-    gfx_text(c, NUM_X, y, "CONTROLLER", UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, "CONTROLLER", BF_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += NUM_HEAD;
-    gfx_text(c, NUM_X, y, bus_word(s.r.bus), UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, bus_word(s.r.bus), BF_FONT_LABEL,
              s.r.bus == BUSFAULT_BUS_RUNNING ? ui_theme_color(UI_C_OK)
                                              : ui_theme_color(UI_C_DANGER), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), "tx err %lu  rx err %lu",
              (unsigned long)s.r.tx_errors, (unsigned long)s.r.rx_errors);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
              s.r.tx_errors >= 128u ? ui_theme_color(UI_C_DANGER)
                                    : ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), "bus err %lu",
              (unsigned long)s.r.bus_errors);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_REJOINS),
              (unsigned long)s.r.recoveries);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
              s.r.recoveries > 0 ? ui_theme_color(UI_C_WARN)
                                 : ui_theme_color(UI_C_TEXT), 1);
 }
 
+/**
+ * @brief The right-hand column for the start-up test: the probes, this
+ *        panel's controller and the IOmcu's.
+ * @param c Canvas, the whole panel.
+ */
 static void draw_numbers(gfx_canvas_t *c)
 {
     int y = COLS_Y;
-    gfx_text(c, NUM_X, y, TR(BF_MEASURED), UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_MEASURED), BF_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += NUM_HEAD;
 
     char line[48];
     snprintf(line, sizeof(line), TR(BF_SENT), (unsigned long)s.r.sent);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_RETURNED), (unsigned long)s.r.echoed);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
              s.r.echoed > 0 ? ui_theme_color(UI_C_OK)
                             : ui_theme_color(UI_C_DANGER), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_ALTERED), (unsigned long)s.r.corrupt);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
              s.r.corrupt > 0 ? ui_theme_color(UI_C_DANGER)
                              : ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_LOST), (unsigned long)s.r.lost);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
              s.r.lost > 0 ? ui_theme_color(UI_C_WARN)
                           : ui_theme_color(UI_C_TEXT), 1);
     y += NUM_GAP;
 
-    gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), BF_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += NUM_HEAD;
     snprintf(line, sizeof(line), "tx err %lu  rx err %lu",
              (unsigned long)s.r.tx_errors, (unsigned long)s.r.rx_errors);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), "bus err %lu", (unsigned long)s.r.bus_errors);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     if (s.r.bus_off) {
-        gfx_text(c, NUM_X, y, "BUS OFF", UI_FONT_LABEL,
+        gfx_text(c, NUM_X, y, "BUS OFF", BF_FONT_LABEL,
                  ui_theme_color(UI_C_DANGER), 1);
     }
     y += NUM_GAP;
 
-    gfx_text(c, NUM_X, y, TR(BF_COPROCESSOR), UI_FONT_LABEL,
+    gfx_text(c, NUM_X, y, TR(BF_COPROCESSOR), BF_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     y += NUM_HEAD;
     if (!s.r.have_remote) {
@@ -474,29 +550,35 @@ static void draw_numbers(gfx_canvas_t *c)
          * already the whole of what SILENT says, and repeating it in red
          * would read as a second fault.
          */
-        gfx_text(c, NUM_X, y, TR(BF_NO_REPLY), UI_FONT_LABEL,
+        gfx_text(c, NUM_X, y, TR(BF_NO_REPLY), BF_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         return;
     }
     gfx_text(c, NUM_X, y, s.r.remote_up ? TR(BF_CAN_UP) : TR(BF_CAN_DOWN),
-             UI_FONT_LABEL,
+             BF_FONT_LABEL,
              s.r.remote_up ? ui_theme_color(UI_C_OK)
                            : ui_theme_color(UI_C_DANGER), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), "tx err %u  rx err %u",
              (unsigned)s.r.remote_tx_errors, (unsigned)s.r.remote_rx_errors);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     snprintf(line, sizeof(line), "flags 0x%02X", (unsigned)s.r.remote_flags);
-    gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, NUM_X, y, line, BF_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
     y += NUM_PITCH;
     if (s.r.remote_overflows > 0u) {
         snprintf(line, sizeof(line), TR(BF_DROPPED), s.r.remote_overflows);
-        gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
+        gfx_text(c, NUM_X, y, line, BF_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
     }
 }
 
+/**
+ * @brief The screen: the bar, the verdict, both columns and the notes once
+ *        per framebuffer, the acknowledgement every frame.
+ * @param c            Canvas, the whole panel.
+ * @param buffer_index The framebuffer drawn into.
+ */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -509,21 +591,23 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const bool lost = (s.r.kind == BUSFAULT_LINK_LOST);
 
         gfx_fill_rect(c, 0, 0, W, BAR_H, ui_theme_color(UI_C_DANGER));
-        gfx_text(c, COL_X, 14, lost ? "LINK LOST" : "CAN BUS FAULT",
-                 UI_FONT_HEAD, GFX_WHITE, 1);
+        const int hh = gfx_text_height(BF_FONT_HEAD, 1);
+        gfx_text(c, COL_X, (BAR_H - hh) / 2,
+                 lost ? "LINK LOST" : "CAN BUS FAULT", BF_FONT_HEAD,
+                 GFX_WHITE, 1);
 
         /* The verdict is the heading of the page, not a caption: it is what
          * the operator repeats when they ask somebody about it. */
         gfx_text(c, COL_X, VERDICT_Y,
                  lost ? bus_text(s.r.bus) : busfault_verdict_text(s.r.verdict),
-                 UI_FONT_HEAD, ui_theme_color(UI_C_TEXT), 1);
+                 BF_FONT_HEAD, ui_theme_color(UI_C_TEXT), 1);
         (void)wrap_text(c, COL_X, COLS_Y,
                         lost ? bus_meaning(s.r.bus) : meaning_of(s.r.verdict),
                         COL_CELLS, ui_theme_color(UI_C_TEXT_DIM));
 
         gfx_text(c, COL_X, HEAD_Y,
                  lost ? TR(BF_HEAD_MEANS) : TR(BF_HEAD_CHECK),
-                 UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
+                 BF_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
 
         const char *checks[LIST_MAX] = { 0 };
         const int n = lost ? bus_checks(s.r.bus, checks)
@@ -535,10 +619,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
              * the column wraps under itself at WRAP_PITCH. */
             const bool cont = (checks[i][0] == ' ');
             if (!cont) {
-                gfx_fill_rect(c, COL_X + 2, y + 6, 5, 5,
+                gfx_fill_rect(c, COL_X + 2, y + 9, 6, 6,
                               ui_theme_color(UI_C_ACCENT));
             }
-            const int lines = wrap_text(c, COL_X + 16, y, checks[i],
+            const int lines = wrap_text(c, COL_X + LIST_INDENT, y, checks[i],
                                         LIST_CELLS,
                                         cont ? ui_theme_color(UI_C_TEXT_DIM)
                                              : ui_theme_color(UI_C_TEXT));
@@ -549,17 +633,21 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * And what acknowledging costs, because the button is not a
          * dismissal: the bench is still on a bus that does not work.
          */
-        gfx_text(c, COL_X, NOTE_Y,
-                 TR(BF_NOTE_1),
-                 UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text(c, COL_X, NOTE_Y + 20,
-                 TR(BF_NOTE_2),
-                 UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text(c, COL_X, NOTE_Y + 44,
-                 lost ? TR(BF_NOTE_LOST) : TR(BF_NOTE_TEST),
-                 UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
+        const int lh = gfx_text_height(BF_FONT_BODY, 1);
+        gfx_text_in(c, gfx_rect_make(COL_X, NOTE_Y, ACK_W, lh), TR(BF_NOTE_1),
+                    BF_FONT_BODY, ui_theme_color(UI_C_TEXT_DIM), 1,
+                    GFX_ALIGN_LEFT);
+        gfx_text_in(c, gfx_rect_make(COL_X, NOTE_Y + WRAP_PITCH, ACK_W, lh),
+                    TR(BF_NOTE_2), BF_FONT_BODY,
+                    ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_LEFT);
+        /* The last note may run under the number column: the link's
+         * column ends higher, and the test's last note is shorter. */
+        gfx_text_in(c,
+                    gfx_rect_make(COL_X, NOTE_Y + 2 * WRAP_PITCH, ACK_W, lh),
+                    lost ? TR(BF_NOTE_LOST) : TR(BF_NOTE_TEST), BF_FONT_BODY,
+                    ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_LEFT);
 
-        ui_rule(c, COL_X, ACK_Y - 20, ACK_W, ui_theme_color(UI_C_EDGE));
+        ui_rule(c, COL_X, RULE_Y, ACK_W, ui_theme_color(UI_C_EDGE));
         if (lost) {
             draw_link_numbers(c);
         } else {
@@ -573,13 +661,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * frame: the hold fades across two seconds, so a frame that skipped it
      * would be a step in the fade.
      */
-    ui_button(c, gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H),
-              s.fired ? TR(BF_ACKNOWLEDGED) : TR(BF_HOLD),
-              ack_fill(), false, true);
+    ui_button_font(c, gfx_rect_make(ACK_X, ACK_Y, ACK_W, ACK_H),
+                   s.fired ? TR(BF_ACKNOWLEDGED) : TR(BF_HOLD), ack_fill(),
+                   false, true, BF_FONT_LABEL);
 }
 
 /*
- * Touch events were lost between two frames, so this screen's record of what
+ * Touch events were lost between two frames, so this screen's record of what:
  * is on the glass cannot be trusted.  Drop the gesture rather than let a
  * hold that completes on a timer finish on a contact that may have gone.
  * Nothing is commanded here: a gesture abandoned part way asks for nothing,

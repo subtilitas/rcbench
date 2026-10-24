@@ -8,7 +8,7 @@
  * Under test: a beep from words, with its start, length, pitch and carrier
  * in the page's units; the present limiting how far the detector is
  * advanced, so a beep ends only after its silence and no word is late; a
- * 144 kHz carrier reaching the detector as one pulse a burst; a lap of the
+ * 144kHz carrier reaching the detector as one pulse a burst; a lap of the
  * ring and a dropped word ending the beep under way and showing in the
  * status; the order: not running, a new set-up restarting the detector and
  * keeping the ring reader, a new capture restarting both, a set-up the
@@ -103,7 +103,7 @@ static void pass(uint64_t now)
     }
 }
 
-/* Passes every 1 ms from @p from to @p to, in ticks. */
+/* Passes every 1ms from @p from to @p to, in ticks. */
 static void run_passes(uint64_t from, uint64_t to)
 {
     for (uint64_t t = from; t <= to; t += TICK / 1000u) {
@@ -112,7 +112,7 @@ static void run_passes(uint64_t from, uint64_t to)
 }
 
 /* @p count bursts of a tone of @p hz, each high for @p on ticks, chopped by
- * a carrier of @p carrier_hz at 50 % (0: not chopped), from @p t0.  The
+ * a carrier of @p carrier_hz at 50% (0: not chopped), from @p t0.  The
  * tick after the last edge is returned. */
 static uint64_t beep(uint64_t t0, unsigned count, uint32_t hz, uint64_t on,
                      uint32_t carrier_hz)
@@ -140,13 +140,13 @@ static uint64_t beep(uint64_t t0, unsigned count, uint32_t hz, uint64_t on,
 TEST_CASE(a_beep_is_reported_in_the_pages_units)
 {
     fresh();
-    /* 40 bursts of 2 kHz, high for a fifth of the period, from 10 ms. */
+    /* 40 bursts of 2kHz, high for a fifth of the period, from 10ms. */
     const uint64_t t0 = TICK / 100u;
     const uint64_t end = beep(t0, 40u, 2000u, TICK / 2000u / 5u, 0u);
     run_passes(0, end + 10u * TICK / 1000u);
     CHECK_EQ(nrec, 1u);
     CHECK_EQ(recs[0].start_ms, 10u);
-    /* 39 periods of 0.5 ms and the last burst's 0.1 ms: 19.6 ms. */
+    /* 39 periods of 0.5ms and the last burst's 0.1ms: 19.6ms. */
     CHECK_EQ(recs[0].len_dms, 196u);
     CHECK_EQ(recs[0].freq_dhz, 20000u);
     CHECK_EQ(recs[0].bursts, 40u);
@@ -180,13 +180,13 @@ TEST_CASE(a_carrier_is_reported_in_100_hz_steps)
 {
     fresh();
     const uint64_t t0 = TICK / 100u;
-    /* 3 kHz bursts of 0.2 ms chopped at 24 kHz. */
+    /* 3kHz bursts of 0.2ms chopped at 24kHz. */
     const uint64_t end = beep(t0, 60u, 3000u, TICK / 5000u, 24000u);
     run_passes(0, end + 10u * TICK / 1000u);
     CHECK_EQ(nrec, 1u);
     CHECK_EQ(recs[0].freq_dhz, 30000u);
     CHECK_EQ(recs[0].bursts, 60u);
-    /* A tick is 26.7 ns; the carrier reads to a tenth of a percent. */
+    /* A tick is 26.7ns; the carrier reads to a tenth of a percent. */
     CHECK(recs[0].carrier_hhz >= 239u && recs[0].carrier_hhz <= 241u);
 }
 
@@ -366,7 +366,7 @@ TEST_CASE(a_new_set_up_restarts_the_detector_and_keeps_the_ring_reader)
     run_passes(t1 - TICK / 100u, end + 10u * TICK / 1000u);
     CHECK_EQ(nrec, 2u);
     CHECK_EQ(recs[1].freq_dhz, 25000u);
-    /* Out of the new range, 4 kHz, the same set-up hears nothing. */
+    /* Out of the new range, 4kHz, the same set-up hears nothing. */
     const uint64_t t2 = end + TICK / 50u;
     end = beep(t2, 20u, 4000u, TICK / 4000u / 5u, 0u);
     run_passes(t2 - TICK / 100u, end + 10u * TICK / 1000u);
@@ -396,7 +396,7 @@ TEST_CASE(a_new_capture_starts_the_ring_reader_again)
 TEST_CASE(a_set_up_the_detector_refuses_runs_nothing)
 {
     fresh();
-    cmd.gap_ms = 1u;                  /* shorter than 400 Hz's period */
+    cmd.gap_ms = 1u;                  /* shorter than 400Hz's period */
     pass(1000u);
     CHECK(!st.running);
     CHECK_EQ(st.gen, 1u);
@@ -409,7 +409,7 @@ TEST_CASE(a_set_up_the_detector_refuses_runs_nothing)
 TEST_CASE(a_silence_longer_than_the_counters_wrap_keeps_the_time)
 {
     fresh();
-    /* A beep 130 s after the start, with no edge before it. */
+    /* A beep 130s after the start, with no edge before it. */
     const uint64_t t0 = 130ull * TICK;
     pass(t0 - TICK / 1000u);
     CHECK(st.running);
@@ -433,7 +433,7 @@ TEST_CASE(a_beep_is_clipped_to_its_registers)
     tone_beep_t b;
     memset(&b, 0, sizeof(b));
     b.start = 5ull * 24 * 3600 * TICK;
-    b.end = b.start + 100ull * TICK;       /* 100 s, more than 6553.5 ms */
+    b.end = b.start + 100ull * TICK;       /* 100s, more than 6553.5ms */
     b.freq_hz = 7000.0f;                   /* 70000 dHz */
     b.carrier_hz = 8.0e6f;
     b.bursts = 100000u;

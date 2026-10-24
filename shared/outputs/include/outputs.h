@@ -22,7 +22,7 @@
  * finer than any of these protocols resolve.
  *
  * Refused and clamped are different answers.  An endpoint outside 400 to
- * 2500 us is refused: it is a configuration mistake, and accepting it leaves
+ * 2500us is refused: it is a configuration mistake, and accepting it leaves
  * the range looking set when it is not.  A command outside its span is
  * clamped: commands arrive many times a second from a host that may be
  * mid-drag, and an output that stops at its stop is what a stop is for.
@@ -52,8 +52,8 @@ extern "C" {
  * @brief What a pulse driver may render, in microseconds.
  *
  * Endpoints outside this are refused: no servo made takes them, so they are a
- * typo, not a range.  The floor is below a 760 us tail servo's end of travel,
- * 410 us.
+ * typo, not a range.  The floor is below a 760us tail servo's end of travel,
+ * 410us.
  */
 #define OUT_FLOOR_US       400u
 #define OUT_CEILING_US    2500u
@@ -168,7 +168,7 @@ uint16_t outputs_role_rest(out_role_t role);
 
 /**
  * @brief Set the bank to its start: every channel a surface at rest, the
- *        endpoints 1000 to 2000 us, and the timeout OUT_DEFAULT_TIMEOUT_MS.
+ *        endpoints 1000 to 2000us, and the timeout OUT_DEFAULT_TIMEOUT_MS.
  *
  * Nothing is done when @p o is NULL. The bank starts disarmed, with every role
  * in its arm set.
@@ -241,7 +241,7 @@ bool outputs_pin_available(const outputs_t *o, uint8_t pin);
  * @param min_us Pulse width in microseconds for command 0.
  * @param max_us Pulse width in microseconds for OUT_SPAN.
  * @return true when stored. false for NULL, a channel out of range, or an
- *         endpoint outside OUT_FLOOR_US to OUT_CEILING_US (400 to 2500 us).
+ *         endpoint outside OUT_FLOOR_US to OUT_CEILING_US (400 to 2500us).
  */
 bool outputs_set_endpoints(outputs_t *o, uint8_t ch, uint16_t min_us,
                            uint16_t max_us);
@@ -277,7 +277,7 @@ bool outputs_set_slew(outputs_t *o, uint8_t ch, uint16_t per_s);
  * carries, so only those are commanded: a channel outside the frame has not
  * been commanded by it, and stamping its clock would keep it alive on
  * somebody else's traffic.  That is the whole of the per-channel timeout --
- * a servo held at 10 Hz must not keep a surface nobody is driving from
+ * a servo held at 10Hz must not keep a surface nobody is driving from
  * reaching its rest.
  *
  * @param o The bank.
@@ -530,8 +530,8 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * for, whether or not anything is commanding it.  A channel that has had no command for timeout_ms is
  * rendered at its role's rest.  A surface's rest is OUT_SPAN/2, which
  * outputs_pulse_us() renders as the midpoint of that channel's own endpoints:
- * 1500 us across the default 1000 to 2000 us, and 760 us across the 660 to
- * 860 us of a narrow servo.  Endpoints are per channel and are written over
+ * 1500us across the default 1000 to 2000us, and 760us across the 660 to
+ * 860us of a narrow servo.  Endpoints are per channel and are written over
  * the CHAN_CFG page, so a channel carrying the wrong role presents the
  * midpoint of whatever range it was given, for as long as the bank is armed.
  *
@@ -554,7 +554,7 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  *
  *   slew_per_s 0   the first step is the whole distance, so the bank
  *                  carries the last command it was left with for the whole
- *                  timeout -- 500 ms at OUT_DEFAULT_TIMEOUT_MS
+ *                  timeout -- 500ms at OUT_DEFAULT_TIMEOUT_MS
  *   slew_per_s > 0 the disarm has already put actual at rest, so the bank
  *                  carries a ramp from rest towards that command.  It
  *                  arrives only if the distance is under
@@ -573,12 +573,12 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * sequence sends that first: firmware/iomcu/src/outputs_hw.c sends
  * DSHOT_CMD_EDT_ENABLE for DSHOT_CMD_REPEATS (10) frames on the edge into
  * driving for a bidirectional DShot slot, which at the IOmcu's
- * 1,000 Hz update rate is the first 10 ms of the arm.  The command reaches
+ * 1,000Hz update rate is the first 10ms of the arm.  The command reaches
  * that ESC after them.
  *
  * What an ESC (electronic speed controller) does with the surface rest is a
- * question about the ESC.  A receiver output of 1500 us is about half
- * throttle.  Whether one that has seen no pulses and is then handed 1500 us
+ * question about the ESC.  A receiver output of 1500us is about half
+ * throttle.  Whether one that has seen no pulses and is then handed 1500us
  * runs there or refuses to arm is not measured on this bench.
  *
  * @param o The bank.

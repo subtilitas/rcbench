@@ -35,8 +35,8 @@ extern "C" {
 
 /*
  * A file's size is 64-bit: an exFAT (extended File Allocation Table) volume
- * holds files of 4 GiB and more.  FAT12, FAT16 and FAT32 stop at
- * 4 GiB less 1 byte.
+ * holds files of 4GiB and more.  FAT12, FAT16 and FAT32 stop at
+ * 4GiB less 1 byte.
  */
 typedef struct {
     char name[STORAGE_NAME_MAX];
@@ -218,13 +218,35 @@ int storage_walk(const char *dir, const char *suffixes, storage_visit_fn visit,
                  void *ctx, storage_tick_fn tick);
 
 /**
- * The size, kind and time of one file or folder, by its full path under
+ * @brief storage_walk(), and the count of the entries its name filters
+ *        left out: names starting with "." and names of STORAGE_NAME_MAX
+ *        characters or more.  Entries the suffix filter leaves out are not
+ *        counted.
+ *
+ * The file manager's walk (fm_io.h) reads a folder with no suffix filter
+ * and needs every entry either visited or counted: a folder holding only
+ * .DS_Store is not empty, and is neither moved nor deleted as one.
+ *
+ * @param dir       as storage_walk()
+ * @param suffixes  as storage_walk()
+ * @param visit     as storage_walk()
+ * @param ctx       as storage_walk()
+ * @param tick      as storage_walk()
+ * @param left_out  takes the count; may be NULL.  0 when nothing is read.
+ * @return as storage_walk()
+ */
+int storage_walk_counted(const char *dir, const char *suffixes,
+                         storage_visit_fn visit, void *ctx,
+                         storage_tick_fn tick, unsigned *left_out);
+
+/**
+ * @brief The size, kind and time of one file or folder, by its full path under
  * STORAGE_MOUNT_POINT, e.g. "/sdcard/BENCH/RCBENCH.LOG".
  *
  * FatFs's own f_stat(), for its 64-bit size.  stat() through the VFS
  * (virtual file system) puts the size in st_size, an off_t of 32 bits on
- * the panel: a file of 4 GiB and more comes back as its size less a
- * multiple of 4 GiB, and one of 2 GiB and more as a negative number.
+ * the panel: a file of 4GiB and more comes back as its size less a
+ * multiple of 4GiB, and one of 2GiB and more as a negative number.
  *
  * A failure that says the card is gone lets the volume go as
  * storage_walk() does, without mounting again.

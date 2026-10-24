@@ -28,27 +28,85 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-#define W UI_PANEL_W
-#define H UI_BODY_H
+#define W UI_PANEL_W /**< The panel's width, px. */
+#define H UI_BODY_H  /**< The body's height under the band, px. */
 
-#define PAD     UI_MARGIN
-#define TAB_Y   8
-#define TAB_H   28
-#define BODY_Y  44
+#define PAD     UI_MARGIN /**< The screen's outer margin, px. */
 
-/* The MODELLED pill under the readings, above the rule at BODY_Y + 296. */
-#define MARK_DY 270
+/**
+ * @brief The pane tabs, BALANCE | TEST RIG | AIRCRAFT: three tabs of
+ *        150 x 48px, 4px apart, from x 11 and y 8, a finger tall.
+ */
+#define TAB_X   (PAD + 3)
+#define TAB_Y   8                       /**< The tabs' top, px. */
+#define TAB_H   UI_TAP_MIN              /**< A tab's height: 48px. */
+#define TAB_ROW_W (3 * 150 + 2 * 4)     /**< The row: 458px. */
+#define CARD_Y  64                      /**< Both cards' top, px. */
 
-#define LCARD_W 450
-#define RCARD_X (PAD + LCARD_W + 8)
-#define RCARD_W (W - RCARD_X - PAD)
+/**
+ * @brief The lowest row a control or a line of text may reach: 4px above
+ *        the alert band, body y 492.
+ */
+#define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
-/* The blade count's keypad: over both cards, from the cards' top to 4 px
- * above the alert band, 788 x 354 px with keys of 188 x 58 px. */
+/** @brief The rotor's card: 640px, the right card 360. */
+#define LCARD_W 640
+#define RCARD_X (PAD + LCARD_W + 8)            /**< x 656. */
+#define RCARD_W (W - RCARD_X - PAD)            /**< 360px. */
+#define CARD_H  (H - PAD - CARD_Y)             /**< 468px, to y 532. */
+#define RC_X    (RCARD_X + 14)                 /**< The right column: x 670. */
+#define RC_W    (RCARD_W - 28)                 /**< Its width: 332px. */
+
+/**
+ * @brief The faces of the 1024 x 600 type scale this screen draws in:
+ *        BL_FONT_LABEL (10 x 20) for labels, buttons, rows, callouts and
+ *        the rules' heads, BL_FONT_FINE (8 x 16) for the notes and the
+ *        rules' two lines, which the 33 cells of the 10 x 20 face in the
+ *        right column do not hold.
+ */
+#define BL_FONT_LABEL (&gfx_font_10x20)
+#define BL_FONT_FINE  UI_FONT_FINE       /**< 8 x 16. */
+
+/*
+ * The BALANCE pane's right column, top down: ROTOR and its two buttons,
+ * BLADES with its count and its "-" and "+" keys, the four readings in
+ * rows of 36px, the SIMULATED pill and the note.
+ */
+#define ROTOR_Y   (CARD_Y + 38)   /**< PROPELLER and EDF: y 102. */
+#define ROTOR_H   UI_TAP_MIN      /**< Their height: 48px. */
+#define BLADES_Y  (ROTOR_Y + ROTOR_H + 10)  /**< The BLADES row: y 160. */
+#define STEP_W    56              /**< The "-" and "+" keys' width, px. */
+#define STEP_H    UI_TAP_MIN      /**< Their height: 48px. */
+#define READ_Y    (BLADES_Y + STEP_H + 18)  /**< The first reading: y 226. */
+#define READ_H    36              /**< A reading's row, px. */
+/** @brief The SIMULATED pill under the readings, 20px high. */
+#define MARK_Y    (READ_Y + 4 * READ_H + 8)  /**< y 378. */
+#define NOTE_Y    (MARK_Y + 38)   /**< The note's first line: y 416. */
+_Static_assert(NOTE_Y + 42 + 16 <= TEXT_FLOOR,
+               "the note's last line ends above the alert band");
+_Static_assert(ROTOR_H >= UI_TAP_MIN && STEP_H >= UI_TAP_MIN
+               && STEP_W >= UI_TAP_MIN, "every key is a finger tall");
+
+/** @brief The rules' first row, TEST RIG and AIRCRAFT, px: y 104. */
+#define RULE_Y0   (CARD_Y + 40)
+#define RULE_PITCH 64             /**< A rule under the one before, px. */
+_Static_assert(RULE_Y0 + 5 * RULE_PITCH + 58 <= TEXT_FLOOR,
+               "the sixth rule ends above the alert band");
+
+/*
+ * The placement drawings of TEST RIG and AIRCRAFT keep their 450px card's
+ * coordinates and are drawn in a window centred in the 640px card, from
+ * the card's top.
+ */
+#define FIG_X     ((LCARD_W - 450) / 2)              /**< x 95. */
+#define FIG_Y     (CARD_Y - 40)                      /**< y 24. */
+
+/* The blade count's keypad: over both cards, from the cards' top to 4px
+ * above the alert band, 1008 x 428px. */
 /** @brief The keypad's top, px. */
-#define KP_Y    (BODY_Y - 4)
-/** @brief The keypad's height, px: 354. */
-#define KP_H    (H - UI_ALERT_H - 4 - KP_Y)
+#define KP_Y    CARD_Y
+/** @brief The keypad's height, px: 428. */
+#define KP_H    (TEXT_FLOOR - KP_Y)
 /** @brief The fewest blades the count takes. */
 #define BLADES_MIN 2
 /** @brief The most blades the count takes. */
@@ -76,27 +134,34 @@ static const ui_text_id_t k_tabs[] = { TX_BAL_TAB_BALANCE, TX_BAL_TAB_RIG,
  * two blades the correction falls between: an angle from the index mark is
  * actionable only relative to a blade.
  */
-#define DISC_CX  238
-#define DISC_CY  238
-#define DISC_R   132
-#define HUB_R    26
+#define DISC_CX  (PAD + LCARD_W / 2)            /**< x 328. */
+#define DISC_CY  ((CARD_Y + TEXT_FLOOR) / 2)     /**< y 278. */
+/** @brief The disc's radius, px: a ducted fan's numbers at DISC_R + 38
+ *         and 10px tall end inside the card and above the alert band. */
+#define DISC_R   160
+#define HUB_R    32                              /**< The hub's, px. */
+_Static_assert(DISC_CY + DISC_R + 38 + 10 <= TEXT_FLOOR,
+               "a blade number ends above the alert band");
+_Static_assert(DISC_CY - DISC_R - 38 - 10 >= CARD_Y + 6,
+               "a blade number begins inside the card");
 
 static struct {
-    ui_tabs_t tabs;
-    int   blades;                /* 2 to 6                        */
-    int   rotor;                 /* propeller or ducted fan       */
-    gfx_rect_t rotor_btn[ROTOR_COUNT];
-    gfx_rect_t blade_dn, blade_up;
+    ui_tabs_t tabs;              /**< BALANCE, TEST RIG, AIRCRAFT */
+    int   blades;                /**< 2 to 6                      */
+    int   rotor;                 /**< propeller or ducted fan     */
+    gfx_rect_t rotor_btn[ROTOR_COUNT]; /**< PROPELLER and EDF        */
+    gfx_rect_t blade_dn;         /**< the count's "-"             */
+    gfx_rect_t blade_up;         /**< the count's "+"             */
     ui_keypad_t kp;              /**< the blade count's keypad     */
     bool      value_down;        /**< a press on the count, opening
                                       on its release               */
     uint8_t   value_id;          /**< that press's touch id        */
     uint32_t  kp_rev;            /**< the keypad's revision last
                                       seen                         */
-    uint32_t  rev;
-    uint32_t  drawn[2];
-    unsigned  drawn_mask;
-} s;
+    uint32_t  rev;               /**< bumped on every change      */
+    uint32_t  drawn[2];          /**< each buffer's revision      */
+    unsigned  drawn_mask;        /**< the buffers cleared         */
+} s; /**< The screen's state. */
 
 void balance_invalidate(void)
 {
@@ -118,19 +183,17 @@ static void reset(void)
     s.rotor  = ROTOR_PROP;
     s.kp.pressed = -1;
     ui_tabs_init_text(&s.tabs, k_tabs, BALANCE_PANE_COUNT,
-                 (gfx_rect_t){ PAD + 3, TAB_Y, 390, TAB_H });
+                      (gfx_rect_t){ TAB_X, TAB_Y, TAB_ROW_W, TAB_H });
 
-    const int x = RCARD_X + 14;
-    const int w = RCARD_W - 28;
     for (int i = 0; i < ROTOR_COUNT; ++i) {
-        s.rotor_btn[i] = (gfx_rect_t){ (int16_t)(x + i * (w / 2 + 4)),
-                                       (int16_t)(BODY_Y + 34),
-                                       (int16_t)(w / 2 - 4), 30 };
+        s.rotor_btn[i] = (gfx_rect_t){ (int16_t)(RC_X + i * (RC_W / 2 + 4)),
+                                       (int16_t)ROTOR_Y,
+                                       (int16_t)(RC_W / 2 - 4), ROTOR_H };
     }
-    s.blade_dn = (gfx_rect_t){ (int16_t)(x + w - 78), (int16_t)(BODY_Y + 96),
-                               34, 28 };
-    s.blade_up = (gfx_rect_t){ (int16_t)(x + w - 34), (int16_t)(BODY_Y + 96),
-                               34, 28 };
+    s.blade_dn = (gfx_rect_t){ (int16_t)(RC_X + RC_W - 2 * STEP_W - 8),
+                               (int16_t)BLADES_Y, STEP_W, STEP_H };
+    s.blade_up = (gfx_rect_t){ (int16_t)(RC_X + RC_W - STEP_W),
+                               (int16_t)BLADES_Y, STEP_W, STEP_H };
 }
 
 int  balance_screen_blades(void) { return s.blades; }
@@ -140,9 +203,8 @@ const ui_keypad_t *balance_screen_keypad(void) { return &s.kp; }
 
 gfx_rect_t balance_screen_blades_rect(void)
 {
-    const int x = RCARD_X + 14;
-    return (gfx_rect_t){ (int16_t)(x + 60), (int16_t)(BODY_Y + 96),
-                         (int16_t)(s.blade_dn.x - 4 - (x + 60)), 28 };
+    return (gfx_rect_t){ (int16_t)(RC_X + 90), (int16_t)BLADES_Y,
+                         (int16_t)(s.blade_dn.x - 8 - (RC_X + 90)), STEP_H };
 }
 
 /**
@@ -297,12 +359,27 @@ static void event(const touch_event_t *evt)
 static void callout(gfx_canvas_t *c, int px, int py, int lx, int ly,
                     const char *text, gfx_color_t ink)
 {
-    const int w = gfx_text_width(UI_FONT_LABEL, text, 1);
+    const int w = gfx_text_width(BL_FONT_LABEL, text, 1);
     /* The leader meets the label at whichever end is nearer the part. */
     const int join_x = (px > lx + w) ? lx + w + 4 : lx - 4;
-    gfx_capsule_aa(c, px, py, join_x, ly + 8, 2, ink);
+    gfx_capsule_aa(c, px, py, join_x, ly + 10, 2, ink);
     gfx_fill_circle_aa(c, px, py, 4, ink);
-    gfx_text(c, lx, ly, text, UI_FONT_LABEL, ink, 1);
+    gfx_text(c, lx, ly, text, BL_FONT_LABEL, ink, 1);
+}
+
+/**
+ * @brief Where a callout's label starts so that it ends @p gap px left of
+ *        @p right, or at @p lx where it already does.
+ * @param lx    The label's start as drawn for a short word.
+ * @param right The column it must end left of.
+ * @param gap   The room left before @p right, px.
+ * @param text  The label.
+ * @return The label's start.
+ */
+static int left_of(int lx, int right, int gap, const char *text)
+{
+    const int end = right - gap - gfx_text_width(BL_FONT_LABEL, text, 1);
+    return (lx < end) ? lx : end;
 }
 
 static void draw_rig(gfx_canvas_t *c)
@@ -398,10 +475,12 @@ static void draw_rig(gfx_canvas_t *c)
     }
 
     callout(c, MOTOR_X - 25, ARM_Y - 12, 24, 62, TR(BAL_ACCELEROMETER), ink);
-    /* Both labels go left, under the arm, which is the one large piece of
-     * empty card that no leader has to cross anything to reach. */
-    callout(c, mark_x, SHAFT_Y + 36, 196, 282, TR(BAL_ONE_MARK), warn);
-    callout(c, mark_x, 308, 196, 332, TR(BAL_OPTICAL), warn);
+    /* The mark's label right of the sensor and under the disc, where the
+     * longest word has room; the sensor's label left, under the arm. */
+    callout(c, mark_x, SHAFT_Y + 36, SPIN_X - 18, 322, TR(BAL_ONE_MARK),
+            warn);
+    callout(c, mark_x, 308, left_of(196, mark_x - 17, 10, TR(BAL_OPTICAL)),
+            332, TR(BAL_OPTICAL), warn);
 }
 
 /*
@@ -515,9 +594,10 @@ static void draw_aircraft(gfx_canvas_t *c)
 
     callout(c, ax, axis - 34, 24, 62, TR(BAL_ACCELEROMETER), ink);
     callout(c, fw, axis + 18, 132, 288, TR(BAL_FIREWALL), ink);
-    /* Down and left: between the bell and the disc there is no gap for a
-     * leader to climb through. */
-    callout(c, mark_x, axis + 30, 236, 344, TR(BAL_ONE_MARK), warn);
+    /* Down and right, under the disc: between the bell and the disc there
+     * is no gap for a leader to climb through, and SECURED holds the room
+     * on the left. */
+    callout(c, mark_x, axis + 30, prop + 6, 344, TR(BAL_ONE_MARK), warn);
     callout(c, 52, ground - 12, 96, 344, TR(BAL_TIED_DOWN), warn);
 }
 
@@ -543,7 +623,7 @@ static void draw_measure(gfx_canvas_t *c)
      * you cannot reach a blade tip, so the correction goes on the hub. */
     /*
      * The rings are pairs of filled discs, not thin arcs.  An arc closed on
-     * itself lays some pixels twice and misses others, and at 1 or 2 px wide
+     * itself lays some pixels twice and misses others, and at 1 or 2px wide
      * that stipples.  They are safe to fill because they are drawn before
      * the blades.
      */
@@ -568,39 +648,39 @@ static void draw_measure(gfx_canvas_t *c)
         disc_at(a, HUB_R - 4, &rx, &ry);
         disc_at(a, (DISC_R + HUB_R) / 2, &mx2, &my2);
         disc_at(a, DISC_R - 6, &tx, &ty);
-        gfx_capsule_aa(c, rx, ry, mx2, my2, 20, skin);
-        gfx_capsule_aa(c, mx2, my2, tx, ty, 13, skin);
+        gfx_capsule_aa(c, rx, ry, mx2, my2, 24, skin);
+        gfx_capsule_aa(c, mx2, my2, tx, ty, 16, skin);
         /* Numbered from the index mark, which is what makes an angle into an
          * instruction rather than a reading. */
         char n[16];
         snprintf(n, sizeof(n), "%d", (i + 1) & 0xFF);
         int lx, ly;
         disc_at(a, DISC_R + (s.rotor == ROTOR_EDF ? 38 : 18), &lx, &ly);
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(lx - 12), (int16_t)(ly - 8),
-                                     24, 16 },
-                    n, UI_FONT_LABEL, faint, 1, GFX_ALIGN_CENTER);
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(lx - 12), (int16_t)(ly - 10),
+                                     24, 20 },
+                    n, BL_FONT_LABEL, faint, 1, GFX_ALIGN_CENTER);
     }
 
     gfx_fill_circle_aa(c, DISC_CX, DISC_CY, HUB_R, skin);
-    gfx_fill_circle_aa(c, DISC_CX, DISC_CY, 8, ui_theme_color(UI_C_PANEL));
+    gfx_fill_circle_aa(c, DISC_CX, DISC_CY, 10, ui_theme_color(UI_C_PANEL));
 
     /* The index mark, at zero, because every angle here is from it. */
     int mx, my;
-    disc_at(0.0f, HUB_R - 8, &mx, &my);
-    gfx_fill_round_rect(c, mx - 5, my - 4, 10, 8, 2, ui_theme_color(UI_C_BG));
-    gfx_draw_round_rect(c, mx - 5, my - 4, 10, 8, 2, warn);
+    disc_at(0.0f, HUB_R - 9, &mx, &my);
+    gfx_fill_round_rect(c, mx - 6, my - 5, 12, 10, 2, ui_theme_color(UI_C_BG));
+    gfx_draw_round_rect(c, mx - 6, my - 5, 12, 10, 2, warn);
 
     /* And where the mass goes. */
     const float ang = balance_screen_angle();
     int ax, ay, bx, by;
     disc_at(ang, HUB_R + 6, &ax, &ay);
-    disc_at(ang, DISC_R - 14, &bx, &by);
+    disc_at(ang, DISC_R - 16, &bx, &by);
     gfx_capsule_aa(c, ax, ay, bx, by, 3, ink);
     /* A band of arc at the answer, so the eye finds it before the numbers. */
-    gfx_arc(c, DISC_CX, DISC_CY, DISC_R - 14, 8, 90.0f - ang - 16.0f,
+    gfx_arc(c, DISC_CX, DISC_CY, DISC_R - 16, 10, 90.0f - ang - 16.0f,
             90.0f - ang + 16.0f, ink);
-    gfx_fill_circle_aa(c, bx, by, 9, ink);
-    gfx_fill_circle_aa(c, bx, by, 4, ui_theme_color(UI_C_PANEL));
+    gfx_fill_circle_aa(c, bx, by, 11, ink);
+    gfx_fill_circle_aa(c, bx, by, 5, ui_theme_color(UI_C_PANEL));
 }
 
 /* The placement rules, numbered. */
@@ -639,40 +719,47 @@ void balance_nearest_blades(float angle, int blades, int *lo, int *hi)
     *hi = ((before + 1) % blades) + 1;
 }
 
+/**
+ * @brief The BALANCE pane's right column: ROTOR, BLADES, the four
+ *        readings, the SIMULATED pill and the note.
+ * @param c The canvas.
+ */
 static void draw_readings(gfx_canvas_t *c)
 {
-    const int x = RCARD_X + 14;
-    const int w = RCARD_W - 28;
+    const int x = RC_X;
+    const int w = RC_W;
 
-    gfx_text(c, x, BODY_Y + 12, "ROTOR", UI_FONT_LABEL,
+    gfx_text(c, x, CARD_Y + 12, "ROTOR", BL_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
     for (int i = 0; i < ROTOR_COUNT; ++i) {
-        ui_button(c, s.rotor_btn[i], (i == ROTOR_PROP) ? "PROPELLER" : "EDF",
-                  (s.rotor == i) ? ui_theme_color(UI_C_ACCENT)
-                                 : ui_theme_color(UI_C_PANEL_HI),
-                  false, true);
+        ui_button_font(c, s.rotor_btn[i],
+                       (i == ROTOR_PROP) ? "PROPELLER" : "EDF",
+                       (s.rotor == i) ? ui_theme_color(UI_C_ACCENT)
+                                      : ui_theme_color(UI_C_PANEL_HI),
+                       false, true, BL_FONT_LABEL);
     }
 
     char buf[32];
-    gfx_text(c, x, BODY_Y + 102, TR(BAL_BLADES), UI_FONT_LABEL,
+    const int ty = BLADES_Y + (STEP_H - 20) / 2;
+    gfx_text(c, x, ty, TR(BAL_BLADES), BL_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     snprintf(buf, sizeof(buf), "%d", s.blades & 0xFF);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 60), (int16_t)(BODY_Y + 102),
-                                 60, 16 },
-                buf, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
+    const gfx_rect_t count = balance_screen_blades_rect();
+    gfx_text_in(c, (gfx_rect_t){ count.x, (int16_t)ty, 40, 20 },
+                buf, BL_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
-    ui_button(c, s.blade_dn, "-", ui_theme_color(UI_C_PANEL_HI),
-              false, s.blades > 2);
-    ui_button(c, s.blade_up, "+", ui_theme_color(UI_C_PANEL_HI),
-              false, s.blades < 6);
+    ui_button_font(c, s.blade_dn, "-", ui_theme_color(UI_C_PANEL_HI),
+                   false, s.blades > 2, BL_FONT_LABEL);
+    ui_button_font(c, s.blade_up, "+", ui_theme_color(UI_C_PANEL_HI),
+                   false, s.blades < 6, BL_FONT_LABEL);
 
-    gfx_hline(c, x, BODY_Y + 142, w, ui_theme_color(UI_C_EDGE));
+    gfx_hline(c, x, READ_Y - 8, w, ui_theme_color(UI_C_EDGE));
 
     const float ang = balance_screen_angle();
     char v_amp[32], v_ang[32], v_mass[32], v_where[32];
-    snprintf(v_amp,  sizeof(v_amp),  "0.42 g");
-    snprintf(v_ang,  sizeof(v_ang),  "%d deg", (int)ang);
-    snprintf(v_mass, sizeof(v_mass), "0.35 g");
+    snprintf(v_amp,  sizeof(v_amp),  "0.42g");
+    snprintf(v_ang,  sizeof(v_ang),  "%ddeg", (int)ang);
+    snprintf(v_mass, sizeof(v_mass), "0.35g");
     int lo, hi;
     balance_nearest_blades(ang, s.blades, &lo, &hi);
     if (s.rotor == ROTOR_EDF) {
@@ -694,12 +781,12 @@ static void draw_readings(gfx_canvas_t *c)
         { TR(BAL_WHERE),     v_where },
     };
     for (int i = 0; i < 4; ++i) {
-        const int y = BODY_Y + 158 + i * 30;
-        gfx_text(c, x, y, rows[i].k, UI_FONT_LABEL,
+        const int y = READ_Y + i * READ_H + (READ_H - 20) / 2;
+        gfx_text(c, x, y, rows[i].k, BL_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 74), (int16_t)y,
-                                     (int16_t)(w - 74), 16 },
-                    rows[i].v, UI_FONT_LABEL,
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 110), (int16_t)y,
+                                     (int16_t)(w - 110), 20 },
+                    rows[i].v, BL_FONT_LABEL,
                     (i >= 2) ? ui_theme_color(UI_C_ACCENT)
                              : ui_theme_color(UI_C_TEXT), 1,
                     GFX_ALIGN_RIGHT);
@@ -707,48 +794,55 @@ static void draw_readings(gfx_canvas_t *c)
 
     /*
      * The angle and both masses are fixed values, not a measurement: the
-     * overview's pill, 88 px or as wide as a longer word, 20 px high, and
+     * overview's pill, 88px or as wide as a longer word, 20px high, and
      * the words beside it.
      */
     int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(BAL_MODELLED), 1);
     mw = (mw < 88) ? 88 : mw;
-    ui_pill(c, (gfx_rect_t){ (int16_t)x, BODY_Y + MARK_DY, (int16_t)mw, 20 },
+    ui_pill(c, (gfx_rect_t){ (int16_t)x, MARK_Y, (int16_t)mw, 20 },
             TR(BAL_MODELLED), ui_theme_color(UI_C_WARN),
             ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_text(c, x + mw + 8, BODY_Y + MARK_DY + 2, TR(BAL_MODEL_NOTE),
-             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text(c, x + mw + 8, MARK_Y, TR(BAL_MODEL_NOTE),
+             BL_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
 
-    gfx_hline(c, x, BODY_Y + 296, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, BODY_Y + 308, TR(BAL_NOTE_1), UI_FONT_LABEL,
+    gfx_hline(c, x, NOTE_Y - 10, w, ui_theme_color(UI_C_EDGE));
+    gfx_text(c, x, NOTE_Y, TR(BAL_NOTE_1), BL_FONT_FINE,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BODY_Y + 326, TR(BAL_NOTE_2), UI_FONT_LABEL,
+    gfx_text(c, x, NOTE_Y + 18, TR(BAL_NOTE_2), BL_FONT_FINE,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BODY_Y + 350, TR(BAL_NOTE_3), UI_FONT_LABEL,
+    gfx_text(c, x, NOTE_Y + 42, TR(BAL_NOTE_3), BL_FONT_FINE,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
+/**
+ * @brief TEST RIG's or AIRCRAFT's right column: COMMON MISTAKES and the
+ *        numbered rules, each its head over its two lines.
+ * @param c     The canvas.
+ * @param rules The rules.
+ * @param count How many.
+ */
 static void draw_rules(gfx_canvas_t *c, const rule_t *rules, int count)
 {
-    const int x = RCARD_X + 14;
-    gfx_text(c, x, BODY_Y + 12, TR(BAL_WRONG), UI_FONT_LABEL,
+    const int x = RC_X;
+    gfx_text(c, x, CARD_Y + 12, TR(BAL_WRONG), BL_FONT_LABEL,
              ui_theme_color(UI_C_ACCENT), 1);
 
     for (int i = 0; i < count; ++i) {
-        const int y = BODY_Y + 32 + i * 58;
+        const int y = RULE_Y0 + i * RULE_PITCH;
         /* Bounded so the compiler can see it: count is small, but the
          * format is not told so. */
         char n[16];
         snprintf(n, sizeof(n), "%d", (i + 1) & 0xFF);
-        gfx_fill_round_rect(c, x, y - 2, 20, 20, 4,
+        gfx_fill_round_rect(c, x, y - 2, 24, 24, 4,
                             ui_theme_color(UI_C_PANEL_HI));
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)(y + 1), 20, 16 },
-                    n, UI_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1,
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)y, 24, 20 },
+                    n, BL_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1,
                     GFX_ALIGN_CENTER);
-        gfx_text(c, x + 28, y, ui_tr(rules[i].head), UI_FONT_LABEL,
+        gfx_text(c, x + 32, y, ui_tr(rules[i].head), BL_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, x + 28, y + 20, ui_tr(rules[i].line1), UI_FONT_LABEL,
+        gfx_text(c, x + 32, y + 24, ui_tr(rules[i].line1), BL_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text(c, x + 28, y + 36, ui_tr(rules[i].line2), UI_FONT_LABEL,
+        gfx_text(c, x + 32, y + 42, ui_tr(rules[i].line2), BL_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
 }
@@ -781,23 +875,32 @@ static void render(gfx_canvas_t *c, int buffer_index)
         ui_keypad_render(&s.kp, c);
         return;
     }
-    ui_card(c, (gfx_rect_t){ PAD, BODY_Y - 4, LCARD_W,
-                             (int16_t)(H - BODY_Y - 2) },
+    ui_card(c, (gfx_rect_t){ PAD, CARD_Y, LCARD_W, CARD_H },
             ui_theme_color(UI_C_PANEL));
-    ui_card(c, (gfx_rect_t){ RCARD_X, BODY_Y - 4, RCARD_W,
-                             (int16_t)(H - BODY_Y - 2) },
+    ui_card(c, (gfx_rect_t){ RCARD_X, CARD_Y, RCARD_W, CARD_H },
             ui_theme_color(UI_C_PANEL));
 
     if (s.tabs.selected == BALANCE_PANE_MEASURE) {
         draw_measure(c);
         draw_readings(c);
-    } else if (s.tabs.selected == BALANCE_PANE_RIG) {
-        draw_rig(c);
-        draw_rules(c, k_rig_rules, RIG_RULES);
-    } else {
-        draw_aircraft(c);
-        draw_rules(c, k_air_rules, AIR_RULES);
+        return;
     }
+    /* The drawing in its window, centred in the card. */
+    gfx_canvas_t fig;
+    if (gfx_canvas_sub(c, (gfx_rect_t){ FIG_X, FIG_Y,
+                                        (int16_t)(PAD + LCARD_W - 4 - FIG_X),
+                                        (int16_t)(TEXT_FLOOR - FIG_Y) },
+                       &fig)) {
+        if (s.tabs.selected == BALANCE_PANE_RIG) {
+            draw_rig(&fig);
+        } else {
+            draw_aircraft(&fig);
+        }
+    }
+    draw_rules(c, (s.tabs.selected == BALANCE_PANE_RIG) ? k_rig_rules
+                                                        : k_air_rules,
+               (s.tabs.selected == BALANCE_PANE_RIG) ? RIG_RULES
+                                                     : AIR_RULES);
 }
 
 /**

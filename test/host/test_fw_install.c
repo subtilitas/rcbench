@@ -83,7 +83,7 @@ static unsigned ops(void)
 static void fresh(void)
 {
     fw_fix_t f = fw_fix_default();
-    f.body = 200000u;                        /* 4 writes of 64 kB */
+    f.body = 200000u;                        /* 4 writes of 64kB */
     g_len = fw_fix_make(&f, g_img);
     memset(g_slot, 0xA5, SLOT);
     g_begins = g_writes = g_finishes = g_aborts = 0u;
@@ -119,7 +119,7 @@ TEST_CASE(a_checked_image_is_written_whole_and_starts_next)
         }
     } while (st == FW_INSTALL_RUNNING);
     CHECK_EQ(st, FW_INSTALL_DONE);
-    /* Open, one write a 64 kB block, the finish. */
+    /* Open, one write a 64kB block, the finish. */
     const unsigned blocks = (g_len + FW_WRITE_CHUNK - 1u) / FW_WRITE_CHUNK;
     CHECK_EQ(blocks, 4u);
     CHECK_EQ(steps, 1u + blocks + 1u);

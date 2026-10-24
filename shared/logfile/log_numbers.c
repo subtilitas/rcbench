@@ -37,7 +37,7 @@
  *   grouping-only  ' '  '\''  U+00A0  U+202F   -- never a decimal point
  *   whitespace     ASCII space and friends, plus U+00A0 and U+202F
  *
- * ASCII space is in both, so "1 234,56" is one number and "12 %" is a number
+ * ASCII space is in both, so "1 234,56" is one number and "12%" is a number
  * with a unit.  What separates them is that the numeric body must end on a
  * digit: the scanner remembers where the last digit was and hands everything
  * after it to the unit.

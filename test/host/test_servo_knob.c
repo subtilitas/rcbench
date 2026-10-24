@@ -251,7 +251,7 @@ TEST_CASE(a_completed_arm_is_not_overwritten_by_the_servo_knob)
  */
 #define P(y) ((y) + UI_BAND_H)
 
-/* Beside the dial, 190 px right of the shaft: the arc ends at 174 px. */
+/* Beside the dial, 190px right of the shaft: the arc ends at 174px. */
 #define BESIDE_X (SHAFT_X + 190)
 
 #define ONTO_X   (SHAFT_X + 150)
@@ -441,6 +441,7 @@ TEST_CASE(a_press_on_the_dial_ends_a_speed_drag_that_lost_its_release)
     finger(FEED_LONE, x, P(y));
     CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
     glide(FEED_LONE, x2, P(y2), 8);
+    frames(0.3f);           /* the drag's target follows the finger */
     CHECK_EQ(last_cmd().slew_per_s, set.slew_per_s);
     lift(FEED_LONE);
 

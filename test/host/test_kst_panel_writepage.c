@@ -69,7 +69,7 @@ TEST_CASE(the_write_page_lists_each_value_from_the_servos_to_the_new)
         CHECK_EQ(kst_panel_editor(), 3);
         /* The values first, in the order of the tabs: the servo's, the
          * new one, the unit once, a point in both languages. */
-        CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
+        CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97%");
         CHECK_EQ(kst_panel_warning_level(0), KST_PROG_WARN);
         CHECK_EQ(warn_at("SOFT START: "), 1);
         CHECK(strstr(kst_panel_warning_line(1), " -> ") != NULL);
@@ -153,14 +153,14 @@ TEST_CASE(a_value_further_out_than_the_confirmed_one_opens_the_page_again)
     connected();
     type_duty("97");
     CHECK_EQ(kst_panel_editor(), 3);
-    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97%");
     hold(2.1f);
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(kst_prog_changes(M), 1);
     kept = draft(KST_F_DUTY);
     type_duty("98");
     CHECK_EQ(kst_panel_editor(), 3);
-    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 98 %");
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 98%");
     CHECK(warns(TR(KP_W_DUTY_RAISED)));
     /* CANCEL keeps the value confirmed before. */
     tap(kst_panel_cancel_rect());

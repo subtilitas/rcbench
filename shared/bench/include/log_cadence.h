@@ -23,7 +23,7 @@
  * - A row's time is the wall time since the run's start, in seconds.  It
  *   advances on every pass, with or without a row, so a stretch without
  *   samples and a row the logger's queue refused both show as a step in the
- *   column.  The tick's wrap at 2^32 ms does not show in it.
+ *   column.  The tick's wrap at 2^32ms does not show in it.
  * - A row the queue refuses is counted as lost, a row it takes as sent.
  *   Every row log_cadence_row() grants is one or the other.
  * - No bench row while an automatic servo test runs

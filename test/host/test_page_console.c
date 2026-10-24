@@ -553,7 +553,7 @@ TEST_CASE(hitec_open_and_a_classic_command_report_the_reply)
     CHECK(has(o, "hitec done state=OPEN port=0"));
     CHECK(has(o, "op=OPEN"));
     CHECK(has(o, "hitec line pin=13"));
-    /* The servo's reply: 0x2E and `+`, at 51 us and 572 us. */
+    /* The servo's reply: 0x2E and `+`, at 51us and 572us. */
     g_drv.cap.n = 2u;
     g_drv.cap.full = 1u;
     g_drv.cap.byte[0].value = 0x2Eu;
@@ -798,7 +798,7 @@ TEST_CASE(the_raw_example_of_the_docs_runs)
               "0x1002 0x0000 0x002E 0x0000 0x2B2E"));
 }
 
-/* The console's requests are not the panel's: the link goes silent 200 ms
+/* The console's requests are not the panel's: the link goes silent 200ms
  * after the panel's last request whatever the console does. */
 TEST_CASE(the_console_does_not_hold_the_failsafe_off)
 {

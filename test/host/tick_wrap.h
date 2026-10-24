@@ -1,7 +1,7 @@
 /*
  * One case at two places on the millisecond clock, for a host suite: tick 0,
  * and a start a chosen number of ms before the 32-bit count wraps at
- * 2^32 ms (49.7 days).
+ * 2^32ms (49.7 days).
  *
  * A time comparison that is right only while the clock has not wrapped
  * comes in two forms, and a case has to see both fail:

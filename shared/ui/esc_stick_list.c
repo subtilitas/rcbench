@@ -41,7 +41,7 @@ void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
     char buf[192];
     sp_copy(buf, sizeof(buf), text);
     sp_cut(buf, sizeof(buf), max_chars);
-    gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
+    gfx_text(c, x, y, buf, SP_FONT, ink, 1);
 }
 
 int esc_stick_panel_wrap_lines(const char *text, int cells)

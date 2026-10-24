@@ -61,9 +61,9 @@ static void shape_of(const uint8_t *p, link_draw_shape_t *out)
  *
  * In 32 bits, so lo - r below zero is a negative number and not a wrap.
  *
- * @param lo Lower end of the interval, in 0.01 mm.
- * @param hi Upper end of the interval, in 0.01 mm.
- * @param limit The outline's width or height, in 0.01 mm.
+ * @param lo Lower end of the interval, in 0.01mm.
+ * @param hi Upper end of the interval, in 0.01mm.
+ * @param limit The outline's width or height, in 0.01mm.
  * @return true when 0 <= lo and hi <= limit.
  */
 static bool within(int32_t lo, int32_t hi, uint16_t limit)

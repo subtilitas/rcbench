@@ -59,6 +59,8 @@ TRACKED = [
     "shared/gfx/gfx.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
+    "shared/gfx/gfx_damage.c",
+    "shared/gfx/gfx_turn.c",
     "shared/touch/touch_map.c",
     "shared/touch/touch_merge.c",
     "shared/ui/ui_theme.c",
@@ -123,6 +125,9 @@ TRACKED = [
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_select.c",
     "shared/ui/log_text.c",
+    "shared/ui/files_screen.c",
+    "shared/ui/files_draw.c",
+    "shared/ui/files_events.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",
@@ -153,10 +158,19 @@ TRACKED = [
     "shared/logfile/log_take.c",
     "shared/logfile/card_tree.c",
     "shared/logfile/fault_log.c",
+    "shared/files/text_buf.c",
+    "shared/files/text_hl.c",
+    "shared/files/fm_name.c",
+    "shared/files/fm_select.c",
+    "shared/files/fm_rules.c",
+    "shared/files/fm_tree.c",
+    "shared/files/fm_ops.c",
+    "shared/files/fm_req.c",
     "shared/safety/heartbeat.c",
     "shared/safety/arming.c",
     "shared/safety/safety_gate.c",
     "shared/safety/flash_gate.c",
+    "shared/safety/reset_cause.c",
     "shared/safety/touch_loss.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
@@ -288,6 +302,7 @@ TRACKED = [
     "shared/webaccess/wa_zip.c",
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
+    "shared/clock/wall_clock.c",
 ]
 
 # Sources under shared/ that are tables and hold no function: gcc gives them
@@ -488,8 +503,8 @@ def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
     if lang == "de":
         text = ("Zeilenabdeckung von `shared/` und `protocols/` durch die "
                 "Host-Suite: "
-                "**%s %%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
-                "%d %% gesamt oder unter %d %% in einer Datei fehl. "
+                "**%s%%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
+                "%d%% gesamt oder unter %d%% in einer Datei fehl. "
                 "Die Tabelle je Datei steht in "
                 "[STATUS.md](STATUS.md#tests-and-ci)."
                 % (("%.1f" % pct).replace(".", ","),

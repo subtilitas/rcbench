@@ -30,7 +30,7 @@ extern "C" {
 /**
  * @brief The samples a series keeps: one per pixel column of a plot as
  *        wide as the panel, UI_PANEL_W, 1,024.  At 20 samples a second
- *        that is 51.2 s; a plot of the ring's 6 series takes 24,576 B for
+ *        that is 51.2s; a plot of the ring's 6 series takes 24,576B for
  *        it.
  */
 #define UI_PLOT_HISTORY    UI_PANEL_W
@@ -40,7 +40,7 @@ typedef struct {
     const char *unit;
     gfx_color_t color;
     int         decimals;
-    /** Lower bound of the autorange: a 0 to 0.4 A scale on an idle bench
+    /** @brief Lower bound of the autorange: a 0 to 0.4A scale on an idle bench
      *  draws noise at full height. */
     float       floor;
     /**
@@ -93,7 +93,7 @@ typedef struct {
      *        accepted push, a clear, or a change of running state.
      *
      * A screen keys the plot on this and the readouts on `pushes`.  The panel
-     * refreshes at 60 Hz and samples arrive at 20 Hz, so about two frames
+     * refreshes at 60Hz and samples arrive at 20Hz, so about two frames
      * in three would otherwise repaint an identical plot region into the
      * PSRAM (pseudo-static random-access memory) the LCD (liquid-crystal
      * display) scans out of -- and a stopped plot would repaint every one of
@@ -106,8 +106,8 @@ typedef struct {
  * @brief Round @p v up to 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8 or 10 times a
  *        power of ten.
  *
- * The finer steps keep a 6S pack (25.2 V) on a 0 to 30 V scale rather than
- * the 0 to 50 V a 1/2/5 ladder gives.
+ * The finer steps keep a 6S pack (25.2V) on a 0 to 30V scale rather than
+ * the 0 to 50V a 1/2/5 ladder gives.
  * @param v The value.
  * @return The step at or above it.
  */
@@ -166,7 +166,7 @@ float ui_plot_sample(const ui_plot_t *p, int series, int back);
  * @brief Recompute the scales.
  *
  * A scale grows immediately and shrinks only after 60 consecutive samples
- * (3 s at 20 Hz) below it, so a brief spike does not rescale the plot twice.
+ * (3s at 20Hz) below it, so a brief spike does not rescale the plot twice.
  * @param p               The plot.
  * @param visible_samples The newest samples the plot shows.
  */

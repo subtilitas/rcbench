@@ -69,8 +69,8 @@
       "confirm_signal": "Signal after jumper removal; 3-fold signal after about 5 s for the current limit; 6-fold signal about 30 s after reset beeps.",
       "steps": [
         "Stick-way teach-in: throttle at motor-off (stick back), jumper on, radio on; apply power, pull the jumper; a signal; move to full; a signal; for throttle compensation move to motor-off, otherwise wait; 2 beeps = without, 3 beeps = with; optional start button press; 2 or 3 beeps; disconnect power.",
-        "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5 s for the 3-fold signal; count the beeps (5 A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
-        "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power."
+        "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
+        "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power."
       ]
     },
     "announce": {
@@ -119,7 +119,7 @@
       "values": [
         {
           "number": 1,
-          "name": "each beep counted = 5 A; throttle leaves full at the wanted count"
+          "name": "each beep counted = 5A; throttle leaves full at the wanted count"
         }
       ],
       "applies_to": null,
@@ -132,7 +132,7 @@
       "values": [
         {
           "number": 1,
-          "name": "reset: about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously"
+          "name": "reset: about 30s after the last signal a 6-fold signal arrives; LED flashes continuously"
         }
       ],
       "applies_to": null,

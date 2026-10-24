@@ -9,12 +9,12 @@
  * set-up in the order that leaves the page a valid set-up; a refused frame
  * not written again until the set-up changes, a pin refused for a binding
  * offered again until it is free, BUSY and BAD_VALUE told apart from 4.17
- * and an older page's BAD_VALUE offered again at the 5 s pace unless the
- * tones fail on their face; the status read at 20 Hz; beeps taken by
+ * and an older page's BAD_VALUE offered again at the 5s pace unless the
+ * tones fail on their face; the status read at 20Hz; beeps taken by
  * number across the wrap from 65535 to 1, with replies lost, with the
  * panel more than the ring behind, and with the numbering restarted; the
  * FLAGS states the screen shows, and a running page whose WINDOW stands
- * shown stale after 1.5 s; and the events a read raises, each once.
+ * shown stale after 1.5s; and the events a read raises, each once.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -151,7 +151,7 @@ static void fake_read(uint8_t off, uint8_t n, uint16_t *regs)
     memset(all, 0, sizeof(all));
     memcpy(all, fk.cfg, sizeof(fk.cfg));
     all[LINK_TN_FLAGS]        = fk.flags;
-    /* A running detector closes a window every 8 ms, edges or none. */
+    /* A running detector closes a window every 8ms, edges or none. */
     if ((fk.flags & LINK_TN_RUNNING) != 0u && !fk.window_stands) {
         fk.window = (uint16_t)(now / 8u);
     }
@@ -281,7 +281,7 @@ static void fresh(uint16_t m)
     fresh_at(m, 10000u);
 }
 
-/* One poll of the control task: every exchange owed, then 50 ms on. */
+/* One poll of the control task: every exchange owed, then 50ms on. */
 static void poll_once(void)
 {
     for (int k = 0; k < 8; ++k) {
@@ -470,7 +470,7 @@ TEST_CASE(enabling_the_tap_writes_the_first_frame_and_polls_the_status)
     CHECK_EQ(fk.cfg[LINK_TN_PIN], LINK_TN_DEFAULT_PIN);
     CHECK(tone_link_settled(&tl));
 
-    /* Registers 8 to 23 once per 50 ms poll, which is 20 Hz. */
+    /* Registers 8 to 23 once per 50ms poll, which is 20Hz. */
     const unsigned before = reads;
     polls(20);
     CHECK_EQ(reads - before, 20u);
@@ -482,7 +482,7 @@ TEST_CASE(a_held_button_writes_the_set_up_once)
     tone_setup_t w = setup_default();
     w.enable = true;
     polls(2);
-    /* A value stepped every 33 ms for a second. */
+    /* A value stepped every 33ms for a second. */
     for (int i = 0; i < 30; ++i) {
         w.f_min_hz = (uint16_t)(400u + 10u * (unsigned)i);
         want(&w);
@@ -515,7 +515,7 @@ TEST_CASE(switching_the_tap_off_goes_through_whatever_range_is_asked)
 {
     fresh(8u);
     tap_on();
-    /* A range the page refuses for the gap: 50 Hz needs 20 ms. */
+    /* A range the page refuses for the gap: 50Hz needs 20ms. */
     tone_setup_t w = setup_default();
     w.enable = true;
     w.f_min_hz = 50u;
@@ -542,8 +542,8 @@ TEST_CASE(switching_the_tap_off_goes_through_whatever_range_is_asked)
 
 TEST_CASE(frames_go_in_the_order_that_leaves_a_valid_set_up)
 {
-    /* 400 Hz and 3 ms to 50 Hz and 20 ms: the range alone would leave 50 Hz
-     * with a 3 ms gap, which the page refuses; the gap goes first. */
+    /* 400Hz and 3ms to 50Hz and 20ms: the range alone would leave 50Hz
+     * with a 3ms gap, which the page refuses; the gap goes first. */
     fresh(8u);
     polls(2);
     tone_setup_t w = setup_default();
@@ -663,7 +663,7 @@ TEST_CASE(an_older_pages_bad_value_is_offered_again_at_the_retry_pace)
 
 /* A page older than 4.17 offers again only a BAD_VALUE: a first frame it
  * refuses with any other code (READ_ONLY 3, NOT_ARMED 5) is written once
- * and said once, and not again in 3 retry periods (15 s). */
+ * and said once, and not again in 3 retry periods (15s). */
 TEST_CASE(an_older_pages_other_refusal_is_not_offered_again)
 {
     static const int codes[] = { LINK_NACK_READ_ONLY, LINK_NACK_NOT_ARMED };
@@ -794,7 +794,7 @@ TEST_CASE(a_refused_second_frame_is_its_own_event)
 {
     fresh(8u);
     polls(2);
-    /* 1 ms is under the period of 400 Hz. */
+    /* 1ms is under the period of 400Hz. */
     tone_setup_t w = setup_default();
     w.gap_ms = 1u;
     want(&w);
@@ -807,10 +807,10 @@ TEST_CASE(a_refused_second_frame_is_its_own_event)
     CHECK(tone_link_settled(&tl));
 }
 
-/* The bench's walk: Tap gap stepped from 3 ms to 2 ms with the lowest tone
- * at 400 Hz, whose period is 2.5 ms, and back.  The page refuses 2 ms, as
- * it must; the refusal stands while 2 ms is asked and is over the moment
- * 3 ms is asked again, as the page still holds it.  One write, one NACK. */
+/* The bench's walk: Tap gap stepped from 3ms to 2ms with the lowest tone
+ * at 400Hz, whose period is 2.5ms, and back.  The page refuses 2ms, as
+ * it must; the refusal stands while 2ms is asked and is over the moment
+ * 3ms is asked again, as the page still holds it.  One write, one NACK. */
 TEST_CASE(a_gap_refused_and_stepped_back_is_over_at_once)
 {
     fresh(LINK_MINOR_TONE_BUSY);
@@ -827,7 +827,7 @@ TEST_CASE(a_gap_refused_and_stepped_back_is_over_at_once)
     CHECK_EQ(tone_link_unheld(&tl), TONE_LINK_ROWS_BEEP);
     polls(100);
     CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
-    /* 3 ms again: the page holds it, nothing is written. */
+    /* 3ms again: the page holds it, nothing is written. */
     w.gap_ms = 3u;
     want(&w);
     CHECK(!tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
@@ -859,7 +859,7 @@ TEST_CASE(a_refusal_stands_until_the_page_takes_the_frame)
     CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
     w.gap_ms = 4u;                          /* taken, after the rest */
     want(&w);
-    polls(9);                               /* 450 ms: still resting */
+    polls(9);                               /* 450ms: still resting */
     CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_SETUP_REFUSED));
     polls(2);
     CHECK_EQ(fk.cfg[LINK_TN_GAP_MS], 4u);
@@ -873,7 +873,7 @@ TEST_CASE(a_refusal_stands_until_the_page_takes_the_frame)
     CHECK(tone_link_event_stands(&tl, TONE_LINK_EV_NO_PAGE));
 }
 
-/* A pin something else holds: refused, offered again every 5 s, and over
+/* A pin something else holds: refused, offered again every 5s, and over
  * once the page takes it -- the pin freed, or another pin asked. */
 TEST_CASE(a_pin_refusal_is_over_once_a_pin_is_taken)
 {
@@ -959,7 +959,7 @@ TEST_CASE(a_refusal_put_back_and_over_is_not_handed_out)
 }
 
 /* A pin something else holds: BAD_VALUE from a 4.8 page, BUSY from a 4.17
- * one; either way offered again every 5 s until it is free. */
+ * one; either way offered again every 5s until it is free. */
 static void a_held_pin_goes_through_once_free(uint16_t m)
 {
     fresh(m);
@@ -975,7 +975,7 @@ static void a_held_pin_goes_through_once_free(uint16_t m)
     tone_link_readout(&tl, now, &r);
     CHECK_EQ(r.state, TONE_STATE_STOPPED);
 
-    /* Offered again every 5 s, quietly. */
+    /* Offered again every 5s, quietly. */
     polls(110);
     CHECK(writes >= 2u);
     CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
@@ -1008,7 +1008,7 @@ TEST_CASE(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free)
     CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_BUSY);
     CHECK_EQ(writes, 0u);
 
-    /* Every 5 s the first frame is offered again, and not said again. */
+    /* Every 5s the first frame is offered again, and not said again. */
     polls(120);
     CHECK_EQ(writes, 1u);
     polls(120);
@@ -1891,7 +1891,7 @@ TEST_CASE(null_arguments_are_taken)
 /* --------------------------------------------------- across the wrap */
 
 /* The set-up rests TONE_LINK_SETTLE_MS before it is written and the status
- * is read once a 50 ms poll, with the 2^32 ms wrap inside the rest. */
+ * is read once a 50ms poll, with the 2^32ms wrap inside the rest. */
 static void the_tap_is_written_and_read(uint32_t t0)
 {
     fresh_at(8u, t0);
@@ -1915,7 +1915,7 @@ TEST_CASE(the_set_up_rests_and_is_read_across_the_tick_wrap)
 }
 
 /* The status is asked for again TONE_LINK_READ_MS after it was last asked
- * for and not 1 ms sooner; tap_on() leaves the last one asked at t0 + 650. */
+ * for and not 1ms sooner; tap_on() leaves the last one asked at t0 + 650. */
 static void the_status_is_due_at_its_interval(uint32_t t0)
 {
     fresh_at(8u, t0);
@@ -1936,7 +1936,7 @@ TEST_CASE(the_status_is_due_at_its_interval_across_the_tick_wrap)
 }
 
 /* A status is the tap's state and its values for TONE_LINK_STALE_MS less
- * 1 ms and no longer; the last one came at t0 + 750. */
+ * 1ms and no longer; the last one came at t0 + 750. */
 static void a_status_goes_stale_at_its_time(uint32_t t0)
 {
     fresh_at(8u, t0);
@@ -1965,7 +1965,7 @@ TEST_CASE(a_status_goes_stale_at_its_time_across_the_tick_wrap)
 
 /* A page that still answers and says it runs, while its WINDOW stands:
  * running for TONE_LINK_WINDOW_STALE_MS from the read that showed it move
- * and not 1 ms longer, then the stale state; running again once it moves. */
+ * and not 1ms longer, then the stale state; running again once it moves. */
 static void a_window_that_stands_goes_stale(uint32_t t0)
 {
     fresh_at(8u, t0);
@@ -2048,7 +2048,7 @@ TEST_CASE(a_new_link_judges_the_window_afresh)
 }
 
 /* The second of two events waits TONE_LINK_EVENT_GAP_MS from the first and
- * not 1 ms less, wherever on the clock the first was handed out. */
+ * not 1ms less, wherever on the clock the first was handed out. */
 static void the_second_event_waits_the_gap(uint32_t t0)
 {
     fresh(8u);

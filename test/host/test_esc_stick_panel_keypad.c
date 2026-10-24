@@ -26,8 +26,8 @@
 #include "ui_keypad.h"
 
 /* The middle of a TIMING row's value, from esc_stick_int.h: the control
- * column at x 400, 216 px wide. */
-#define VALUE_X (400 + 216 / 2)
+ * column at x 400, 216px wide. */
+#define VALUE_X ST_VALUE_X
 
 /* The keypad's key @p key tapped, in the screen's coordinates. */
 static void key(ui_key_t key)
@@ -113,12 +113,12 @@ TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
 TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
 {
     at_timing_page();
-    tap(VALUE_X, STEP_CY(0));                /* VOLTAGE, steps of 0.1 V */
+    tap(VALUE_X, STEP_CY(0));                /* VOLTAGE, steps of 0.1V */
     type("12.34");
     CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "12.3");
     key(UI_KEY_OK);
     CHECK_NEAR(settings_get(SET_STICK_V), 12.3f, 1e-4f);
-    tap(VALUE_X, STEP_CY(1));                /* CURRENT, steps of 0.05 A */
+    tap(VALUE_X, STEP_CY(1));                /* CURRENT, steps of 0.05A */
     CHECK_EQ(esc_stick_panel_keypad()->decimals, 2);
     type("1.234");
     CHECK_STR_EQ(esc_stick_panel_keypad()->entry, "1.23");
@@ -141,7 +141,7 @@ TEST_CASE(a_typed_value_is_the_value_the_steps_reach)
 
     at_timing_page();
     for (int i = 0; i < 5; ++i) {
-        tap(STEP_UP_X, STEP_CY(1));          /* 1.00 A + 5 x 0.05 A */
+        tap(STEP_UP_X, STEP_CY(1));          /* 1.00A + 5 x 0.05A */
     }
     const float stepped = settings_get(SET_STICK_I);
     tap(WRITE_X, BTN_CY);
@@ -233,14 +233,14 @@ TEST_CASE(a_lost_press_keeps_what_was_typed)
 
 /* Paged down to the last rows, a value opens the keypad of the row drawn
  * there, not of the row at that place on the first page: Timeout, whose
- * 600000 ms is a six-digit entry. */
+ * 600000ms is a six-digit entry. */
 TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
 {
     at_timing_page();
     for (int i = 0; i < 10; ++i) {
-        tap(PAGE_DN_X, PAGE_CY);             /* to the last page: 7 rows */
+        tap(PAGE_DN_X, PAGE_CY);             /* to the last page: 8 on */
     }
-    tap(VALUE_X, STEP_CY(4));                /* 7 + 4: Timeout */
+    tap(VALUE_X, STEP_CY(3));                /* 8 + 3: Timeout */
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_TIMEOUT);
     type("600001");
     key(UI_KEY_OK);
@@ -253,7 +253,7 @@ TEST_CASE(a_scrolled_page_opens_the_row_shown_and_takes_six_digits)
     CHECK(!esc_stick_panel_keypad()->open);
     CHECK_EQ(settings_get_int(SET_STICK_TIMEOUT), 600000);
     /* The last row, Hysteresis, from the same page. */
-    tap(VALUE_X, STEP_CY(6));
+    tap(VALUE_X, STEP_CY(5));
     CHECK_EQ(esc_stick_panel_keypad_setting(), (int)SET_STICK_HYST);
     key(UI_KEY_CANCEL);
 }

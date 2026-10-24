@@ -99,10 +99,10 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 
 /*
  * The workbench, from servo_spots.h: the strip's tabs, SETTINGS' page tabs
- * and rows (left column at x 18, right at x 323, 56 px apart from y 112),
+ * and rows (left column at x 18, right at x 323, 56px apart from y 112),
  * TEST's run cards and a run's settings' rows (three columns, from y 116);
  * then the panels over the left column, mirrored from
- * servo_settings_panel.c: the list a row opens (two columns of five, 56 px
+ * servo_settings_panel.c: the list a row opens (two columns of five, 56px
  * apart from y 64) and the warning's HOLD TO APPLY and CANCEL.
  */
 #define TAB_X(i) SV_PAGE_X(i)

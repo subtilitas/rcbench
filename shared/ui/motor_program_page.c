@@ -1,4 +1,8 @@
-/*
+/**
+ * @file motor_program_page.c
+ * @brief MOTOR & ESC's PROGRAM: the registry's list and the output strip
+ *        over a full-width session.
+ *
  * MOTOR & ESC's PROGRAM: the list of the registry's MOTOR rows
  * (prog_registry.h) in the left column, and the session a row opens.
  *
@@ -8,7 +12,7 @@
  * column and the rail, one level down, and the strip row above it holds the
  * output strip in place of the tabs and the card:
  *
- *     TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE
+ *     TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE
  *
  * what the throttle drives, the supply's output as it reads, and the bench.
  * The home tag climbs the session one level at a time (its back()); from
@@ -301,10 +305,16 @@ uint32_t mpp_strip_signature(uint8_t proto, uint64_t pins, bool known,
     return h;
 }
 
-/*
- * The strip in its row, over the clear: TARGET dim, the target in the text
- * colour (the warning colour with no pin or the binding not read), the
- * supply dim, and the bench SAFE or, in the danger colour, ARMED.
+/**
+ * @brief The strip in its row, over the clear, in PROG_FULL_STRIP_FONT:
+ *        TARGET dim, the target in the text colour (the warning colour with
+ *        no pin or the binding not read), the supply dim, and the bench
+ *        SAFE or, in the danger colour, ARMED.
+ * @param c The canvas.
+ * @param proto The throttle's protocol.
+ * @param pins The pins bound as throttle, one bit each.
+ * @param known Whether the binding is read.
+ * @param armed Whether the bench is ARMED.
  */
 void mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins,
                       bool known, bool armed)
@@ -317,14 +327,14 @@ void mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins,
     supply_text(sup, sizeof(sup));
     const int y = PROG_FULL_STRIP_Y;
     int x = PROG_FULL_STRIP_X;
-    x += gfx_text(c, x, y, TR(SV_TARGET), &gfx_font_8x16,
+    x += gfx_text(c, x, y, TR(SV_TARGET), PROG_FULL_STRIP_FONT,
                   ui_theme_color(UI_C_TEXT_DIM), 1) + 8;
-    x += gfx_text(c, x, y, target, &gfx_font_8x16,
+    x += gfx_text(c, x, y, target, PROG_FULL_STRIP_FONT,
                   warn ? ui_theme_color(UI_C_WARN)
                        : ui_theme_color(UI_C_TEXT), 1) + 24;
-    x += gfx_text(c, x, y, sup, &gfx_font_8x16,
+    x += gfx_text(c, x, y, sup, PROG_FULL_STRIP_FONT,
                   ui_theme_color(UI_C_TEXT_DIM), 1) + 24;
-    (void)gfx_text(c, x, y, armed ? "ARMED" : TR(BAND_SAFE), &gfx_font_8x16,
+    (void)gfx_text(c, x, y, armed ? "ARMED" : TR(BAND_SAFE), PROG_FULL_STRIP_FONT,
                    armed ? ui_theme_color(UI_C_DANGER)
                          : ui_theme_color(UI_C_OK), 1);
 }

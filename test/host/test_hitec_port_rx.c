@@ -128,7 +128,7 @@ TEST_CASE(a_precharge_line_refuses_an_answer_and_a_window_past_30_ms)
     settle();
     CHECK_EQ(rx_code(), HITEC_RX_OK);
     CHECK_EQ(reg(LINK_HT_VALUE), 0x1232u);
-    /* The window at 30 ms and one past it. */
+    /* The window at 30ms and one past it. */
     x.window_us = HITEC_PRE_WINDOW_MAX_US;
     stage_send(&x, LINK_HITEC_DEC_D, 0x32u);
     CHECK_EQ(cmd(LINK_HITEC_OP_SEND, CH, KEY), 0);
@@ -182,8 +182,8 @@ TEST_CASE(a_pull_up_line_takes_what_a_precharge_line_refuses)
     CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
 }
 
-/* Start a 25 ms D read on a line of @p rx with the supply as it is, and
- * switch the supply off 2 ms in. */
+/* Start a 25ms D read on a line of @p rx with the supply as it is, and
+ * switch the supply off 2ms in. */
 static void read_then_supply_off(uint8_t rx)
 {
     hitec_xfer_t x;
@@ -282,8 +282,8 @@ TEST_CASE(the_supply_off_leaves_a_pull_up_receive_and_an_unpowered_start)
     CHECK_EQ(rx_code(), HITEC_RX_OK);
 }
 
-/* POWER on a PRECHARGE line: the supply off, 100 ms off, on at MV and MA,
- * and a 20 ms listen for one byte from the ON.  Returns in the pass after
+/* POWER on a PRECHARGE line: the supply off, 100ms off, on at MV and MA,
+ * and a 20ms listen for one byte from the ON.  Returns in the pass after
  * the ON with the listen running, the output still read off and the PD
  * mini's read the test's from here. */
 static void power_listen_precharge(uint32_t boot_ns)
@@ -390,7 +390,7 @@ TEST_CASE(a_power_listen_is_cut_when_the_output_is_asked_off)
 
 TEST_CASE(a_power_listen_whose_output_never_reads_on_runs_its_window)
 {
-    /* The output reads off for the whole 20 ms window: no cut, the
+    /* The output reads off for the whole 20ms window: no cut, the
      * capture as heard, DONE. */
     power_listen_precharge(30000000u);
     settle();
@@ -426,8 +426,8 @@ TEST_CASE(a_listen_on_an_output_read_off_is_cut_at_once)
 }
 
 /* The rig's window, as the driver's: waiting for a start bit only.  Three
- * bytes back to back from 1 ms: a 1,100 us window hears all three, the
- * last starting 1,174 us in; a 990 us window hears none. */
+ * bytes back to back from 1ms: a 1,100us window hears all three, the
+ * last starting 1,174us in; a 990us window hears none. */
 TEST_CASE(the_window_counts_the_waiting_only)
 {
     fresh();
@@ -443,7 +443,7 @@ TEST_CASE(the_window_counts_the_waiting_only)
     settle();
     CHECK_EQ(cap_n(), 0u);
     /* The answer to the first byte is not waiting either: the second byte
-     * starts one frame after the answer's end, 1,000 us of waiting in. */
+     * starts one frame after the answer's end, 1,000us of waiting in. */
     g_drv.listen_n = 2u;
     g_drv.listen_gap_ns = hitec_bits_ns(HITEC_D, 10u);
     stage_listen(1010u, 2u, true, 0x2Bu, LINK_HITEC_DEC_NONE, 0u);

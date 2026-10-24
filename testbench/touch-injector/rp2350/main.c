@@ -13,7 +13,7 @@
  * block is not attached: the injector acknowledges nothing until the host
  * has run `wiring` and sent `confirm scl=GP5` (injector.h).  Core 1 does the
  * listening for `wiring`; core 0 runs everything else.  The watchdog resets
- * the chip when the main loop stalls for 200 ms, and a reset is LISTEN.
+ * the chip when the main loop stalls for 200ms, and a reset is LISTEN.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,8 +51,8 @@ _Static_assert(sizeof(USBD_PRODUCT) <= USB_STR_MAX,
 
 #define WATCHDOG_MS 200u
 #define WIRING_US   500000u
-/* Level changes the listening window keeps: 128 KiB of RAM.  The panel's
- * polling at 400 kHz makes about 10 000 in 500 ms (not measured). */
+/* Level changes the listening window keeps: 128KiB of RAM.  The panel's
+ * polling at 400kHz makes about 10 000 in 500ms (not measured). */
 #define EDGE_MAX    16384u
 
 static injector_t s_inj;
@@ -154,7 +154,7 @@ static void __not_in_flash_func(i2c_event)(i2c_inst_t *i2c,
 
 static void attach_target(void)
 {
-    /* The block's set-up and hold times for 400 kHz, then target mode,
+    /* The block's set-up and hold times for 400kHz, then target mode,
      * then the pins: the lines reach the block only once it is a target. */
     (void)i2c_init(i2c0, 400000u);
     i2c_slave_init(i2c0, GT911_EMU_ADDR, i2c_event);

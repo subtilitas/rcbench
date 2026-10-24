@@ -273,8 +273,8 @@ TEST_CASE(a_value_reads_the_stick_position_it_is_set_from)
     }
 }
 
-/* A value's own entry time, as Kontronik SUN PLUS waits 5 s for modes 4
- * to 6 and 2 s for the rest; the generator holds it to the same range. */
+/* A value's own entry time, as Kontronik SUN PLUS waits 5s for modes 4
+ * to 6 and 2s for the rest; the generator holds it to the same range. */
 TEST_CASE(a_value_reads_its_own_entry_time)
 {
     static const char from[] = "{\"number\": 2, \"name\": \"on\"}";

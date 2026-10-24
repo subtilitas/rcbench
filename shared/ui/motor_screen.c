@@ -173,9 +173,9 @@ void mo_end_drag(void)
  *
  * Out of LIVE: the owners of the value end -- a drag, and the knob's
  * command -- and a throttle not yet collected is not sent.  The value shown
- * stays until the bench reports disarmed, which returns it to 0 %.
+ * stays until the bench reports disarmed, which returns it to 0%.
  *
- * Into LIVE: 0 %, for an arm the hold did not ask for, as for a stick run
+ * Into LIVE: 0%, for an arm the hold did not ask for, as for a stick run
  * on PROGRAM.  The hold returned the slider to zero when it asked, and only
  * the application's hook can have set it since.
  */
@@ -306,12 +306,12 @@ void motor_screen_cancel_arm(void)
 /*
  * An arm starts from nothing and a disarm ends at nothing: the slider, the
  * readout and the step buttons, which all read the slider's value, are at
- * 0 %.  A throttle waiting to be collected was set on the other side of the
+ * 0%.  A throttle waiting to be collected was set on the other side of the
  * edge and goes with it, and so does what the knob would put back.  A drag
  * under way is released, so a finger resting on the track commands nothing
  * until it presses again: ui_slider_set() re-anchors a drag on the new value
  * and keeps its origin, and the next move would add the whole travel since
- * the press to 0 %.
+ * the press to 0%.
  */
 void mo_throttle_from_zero(void)
 {
@@ -345,7 +345,7 @@ void motor_screen_set_armed(bool armed)
             ui_plot_clear(&s.plot);
             memset(s.pk_ok, 0, sizeof(s.pk_ok));
         } else {
-            /* The value shown on a disarmed bench is 0 %, and no control
+            /* The value shown on a disarmed bench is 0%, and no control
              * moves it from there (mo_value_live()).  A throttle not yet
              * collected is not sent to the disarmed bench. */
             mo_throttle_from_zero();
@@ -418,7 +418,7 @@ bool mo_bench_safe(void)
  * endpoint edit waits ENDPOINTS_SETTLE_MS on the panel before it goes to the
  * IOmcu, and the switch to ARMED sends no CHAN_CFG; an edit made under a
  * held ARM could be overtaken by the arm and run on the old range.  With ARM
- * down the keypad of an endpoint closes, and the 2 s hold leaves an edit
+ * down the keypad of an endpoint closes, and the 2s hold leaves an edit
  * made before it the time to go out. */
 bool mo_endpoints_free(void)
 {
@@ -484,7 +484,7 @@ void motor_screen_knob(float span_fraction)
         return;
     }
     /* A turn while the value is not live moves nothing and is not kept: the
-     * next turn after an arm starts from 0 %. */
+     * next turn after an arm starts from 0%. */
     if (!mo_value_live()) {
         return;
     }
@@ -579,12 +579,12 @@ static void cancel(void)
 {
     /*
      * Abandoning a gesture asks for nothing, and on an armed bench that is
-     * the wrong direction for one of them.  Disarming is a press: the
-     * release is the whole command, so a release that went missing is a
-     * DISARM the operator made and the bench never saw, and dropping it
-     * silently leaves the outputs driving until somebody notices.  Arming
-     * has already sent its command by the time the finger lifts, so an arm
-     * gesture cancelled part way asks for nothing, which is correct.
+     * the wrong direction for one of them.  DISARM acts on its press and
+     * takes no hold; a press of ARM still down on a bench that reads armed
+     * without its hold having fired is a finger on DISARM all the same, and
+     * switches to SAFE.  Arming has already sent its command by the time
+     * the finger lifts, so an arm gesture cancelled part way asks for
+     * nothing, which is correct.
      */
     if (s.gate.armed && s.pressed == 1 && !s.arm.fired) {
         mo_post(MOTOR_CMD_DISARM, 0.0f);

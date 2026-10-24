@@ -12,7 +12,7 @@
  * refuses to the panel it refuses here: a write of ARM while the arm latch
  * is set, a HITEC or KST transaction without the write key, a supply ON
  * without a heartbeat.  A request from here is not link traffic: it does
- * not hold the link's silence failsafe off (LINK_DEV_SILENCE_MS, 200 ms).
+ * not hold the link's silence failsafe off (LINK_DEV_SILENCE_MS, 200ms).
  * Every page that needs a trusted heartbeat and a link that is not silent
  * needs a running panel beside the console.
  *

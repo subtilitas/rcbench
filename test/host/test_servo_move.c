@@ -3,7 +3,7 @@
  *
  * Under test: the threshold from the idle noise; movement, arrival and
  * arrival at an end held harder than the servo moves, at the PD mini's 10
- * readings a second and at the IOmcu's 1 kHz, the latter against the
+ * readings a second and at the IOmcu's 1kHz, the latter against the
  * servo model; a reading before the command; the window with the meter's
  * lag, late and unseen; a clock before the command; the filter and its
  * delay; clipped samples, which decide only what their bound decides; a
@@ -20,7 +20,7 @@
 #include "servo_sim.h"
 
 /* A move at 10 readings a second, as the servo test runs it: time in ms,
- * from 0.10 A before the command to an end held at 0.10 A. */
+ * from 0.10A before the command to an end held at 0.10A. */
 static void pd_move(servo_move_t *m, float rise, float ref, float move_a)
 {
     const servo_move_cfg_t c = {
@@ -36,7 +36,7 @@ static void pd_move(servo_move_t *m, float rise, float ref, float move_a)
     servo_move_begin(m, &c);
 }
 
-/* Readings every 100 ms from @p t0, one per value, until the move is over;
+/* Readings every 100ms from @p t0, one per value, until the move is over;
  * the state after the last one fed. */
 static servo_move_state_t feed(servo_move_t *m, uint32_t t0, const float *a,
                                unsigned n)
@@ -53,10 +53,10 @@ static servo_move_state_t feed(servo_move_t *m, uint32_t t0, const float *a,
 TEST_CASE(the_threshold_is_three_noises_or_twenty_milliamps)
 {
     CHECK_EQ(servo_move_noise_a(0u, 0.0f, 0.0f), 0.0f);
-    /* Ten readings of 0.10 A: no noise, the smallest threshold. */
+    /* Ten readings of 0.10A: no noise, the smallest threshold. */
     CHECK_NEAR(servo_move_noise_a(10u, 1.0f, 0.1f), 0.0f, 1e-4f);
     CHECK_EQ(servo_move_threshold_a(0.0f), SERVO_MOVE_MIN_A);
-    /* 0.09 and 0.11 A in turn: 0.010 A, a threshold of 0.030 A. */
+    /* 0.09 and 0.11A in turn: 0.010A, a threshold of 0.030A. */
     const float n = servo_move_noise_a(2u, 0.20f, 0.09f * 0.09f + 0.11f * 0.11f);
     CHECK_NEAR(n, 0.010f, 1e-5f);
     CHECK_NEAR(servo_move_threshold_a(n), 0.030f, 1e-5f);
@@ -66,7 +66,7 @@ TEST_CASE(the_threshold_is_three_noises_or_twenty_milliamps)
     CHECK_EQ(servo_move_window_ms(300u), 3300u);
 }
 
-/* ------------------------------------------------------------ at 10 Hz */
+/* ------------------------------------------------------------ at 10Hz */
 
 /* Up past the destination's level, then back within the band: arrived at
  * that reading.  The mean and the peak are of the readings before it. */
@@ -97,7 +97,7 @@ TEST_CASE(a_reading_back_at_the_level_after_passing_it_is_the_arrival)
     CHECK_EQ(m.end_t, 1400u);
 }
 
-/* An end held at 0.50 A, harder than the servo moves at 0.30 A: never
+/* An end held at 0.50A, harder than the servo moves at 0.30A: never
  * passed, so two readings in a row within the band of it and of each
  * other are the arrival, at the first of them. */
 TEST_CASE(an_end_held_harder_is_reached_at_two_settled_readings)
@@ -133,7 +133,7 @@ TEST_CASE(an_acceleration_burst_hands_the_move_to_the_settled_rule)
 }
 
 /* The peak is the highest valued sample, from the first one on: a move
- * whose samples all lie below 0 A reports the highest of them, not 0. */
+ * whose samples all lie below 0A reports the highest of them, not 0. */
 TEST_CASE(the_peak_of_samples_below_zero_is_the_highest_of_them)
 {
     servo_move_t m;
@@ -155,7 +155,7 @@ TEST_CASE(leaving_an_end_pushed_on_is_movement_downwards)
     CHECK_EQ(feed(&m, 1000u, a, 2u), SERVO_MOVE_MOVING);
     CHECK_EQ(m.moved_t, 1100u);
     CHECK_EQ(feed(&m, 1200u, a + 2, 3u), SERVO_MOVE_ARRIVED);
-    CHECK_EQ(m.end_t, 1300u);    /* above the level at 0.30 A, back at 0.11 */
+    CHECK_EQ(m.end_t, 1300u);    /* above the level at 0.30A, back at 0.11 */
 }
 
 /* No movement in the window: unseen.  Movement and no arrival: late.  The
@@ -179,7 +179,7 @@ TEST_CASE(the_window_ends_a_move_late_or_unseen)
     CHECK(servo_move_moved(&m));
     CHECK(!servo_move_arrived(&m));
 
-    /* Back at 4100 ms, after 3000 ms but inside the 300 ms lag: timed. */
+    /* Back at 4100ms, after 3000ms but inside the 300ms lag: timed. */
     pd_move(&m, 0.10f, 0.10f, 0.020f);
     CHECK_EQ(feed(&m, 1100u, up, 1u), SERVO_MOVE_MOVING);
     CHECK_EQ(servo_move_tick(&m, 4100u), SERVO_MOVE_MOVING);
@@ -280,7 +280,7 @@ TEST_CASE(a_clipped_sample_decides_only_what_its_bound_decides)
 {
     servo_move_t m;
     pd_move(&m, 0.10f, 0.10f, 0.020f);
-    /* A bound of 0.11 A says nothing about movement. */
+    /* A bound of 0.11A says nothing about movement. */
     CHECK_EQ(servo_move_sample(&m, 1000u, 0.11f, SERVO_MOVE_CLIP_HIGH),
              SERVO_MOVE_WAITING);
     CHECK(m.clipped);
@@ -296,7 +296,7 @@ TEST_CASE(a_clipped_sample_decides_only_what_its_bound_decides)
     CHECK_EQ(m.n, 1u);
     CHECK_NEAR(m.peak, 0.40f, 1e-6f);
 
-    /* At the bottom of the range: movement down from 0.50 A, and back
+    /* At the bottom of the range: movement down from 0.50A, and back
      * below the level, which hands the move to the settled rule. */
     pd_move(&m, 0.50f, 0.10f, 0.020f);
     CHECK_EQ(servo_move_sample(&m, 1000u, 0.80f, SERVO_MOVE_CLIP_NONE),
@@ -329,7 +329,7 @@ TEST_CASE(the_filter_averages_four_samples)
         CHECK_EQ(servo_move_sample(&m, t, 0.10f, SERVO_MOVE_CLIP_NONE),
                  SERVO_MOVE_WAITING);
     }
-    /* A step to 0.90 A at the command: 0.30, 0.50, 0.70 ... */
+    /* A step to 0.90A at the command: 0.30, 0.50, 0.70 ... */
     CHECK_EQ(servo_move_sample(&m, 100u, 0.90f, SERVO_MOVE_CLIP_NONE),
              SERVO_MOVE_WAITING);
     CHECK_EQ(servo_move_sample(&m, 110u, 0.90f, SERVO_MOVE_CLIP_NONE),
@@ -355,8 +355,8 @@ TEST_CASE(the_filter_averages_four_samples)
 }
 
 /* Samples held from before the move began fill the filter as if fed then:
- * a step of 0.10 A at the command is a quarter of that against three
- * primed samples, under a 0.030 A threshold.  Unfiltered, or once over,
+ * a step of 0.10A at the command is a quarter of that against three
+ * primed samples, under a 0.030A threshold.  Unfiltered, or once over,
  * priming does nothing. */
 TEST_CASE(primed_samples_fill_the_filter)
 {
@@ -387,9 +387,9 @@ TEST_CASE(primed_samples_fill_the_filter)
 
 /* ------------------------------------------------- against the servo model */
 
-/* The modelled servo's move from 1100 to 1900 us takes 800 us at 1.2 us/ms:
- * 667 ms, drawing 0.95 A moving and 0.12 A holding, with 0.02 A of noise.
- * At 1 kHz, times in 0.1 ms, the four-sample filter and ten samples to
+/* The modelled servo's move from 1100 to 1900us takes 800us at 1.2us/ms:
+ * 667ms, drawing 0.95A moving and 0.12A holding, with 0.02A of noise.
+ * At 1kHz, times in 0.1ms, the four-sample filter and ten samples to
  * settle, the arrival comes within the filter's lag of the model's; at 10
  * readings a second, up to a reading later. */
 static uint32_t model_move(uint32_t every_ms, uint32_t t_per_ms,
@@ -459,7 +459,7 @@ TEST_CASE(a_modelled_stop_is_reached_settled_at_1_khz)
     servo_sim_init(&sim, &sc);
     sim.position_us = 1100.0f;
     (void)servo_sim_step(&sim, 1100u, 0u);
-    /* 1900 us is 20 us past the stop: half way to stall, 0.66 A. */
+    /* 1900us is 20us past the stop: half way to stall, 0.66A. */
     const float held = 0.12f + (1.20f - 0.12f) * 0.5f;
     servo_move_t m;
     const servo_move_cfg_t c = {
@@ -473,7 +473,7 @@ TEST_CASE(a_modelled_stop_is_reached_settled_at_1_khz)
         servo_move_sample(&m, ms * 10u, a, SERVO_MOVE_CLIP_NONE);
     }
     CHECK_EQ(m.state, SERVO_MOVE_SETTLED);
-    /* 780 us at 1.2 us/ms: 650 ms, and the filter's lag. */
+    /* 780us at 1.2us/ms: 650ms, and the filter's lag. */
     const uint32_t ms = (m.end_t - m.cfg.cmd_t) / 10u;
     CHECK(ms >= 650u);
     CHECK(ms <= 650u + 4u);

@@ -4,11 +4,11 @@
  * sense_chain.h on one clock.
  *
  * Under test: every window number handed over once and in order with polls
- * 20, 40, 47, 50, 53, 55, 100, 150, 199 and 200 ms apart, none lost; with
- * polls 201 and 250 ms apart the count of lost windows equal to the
+ * 20, 40, 47, 50, 53, 55, 100, 150, 199 and 200ms apart, none lost; with
+ * polls 201 and 250ms apart the count of lost windows equal to the
  * numbers missing; each
  * window under its own number; a reply lost on the link losing nothing; the
- * window number across 65535 to 0 and every timer across the 2^32 ms tick
+ * window number across 65535 to 0 and every timer across the 2^32ms tick
  * wrap; a ring that starts again -- a set-up written, an IOmcu
  * restart seen and one not seen -- handing over nothing twice and nothing
  * invented; numbers the IOmcu skipped neither handed over nor
@@ -108,7 +108,7 @@ static void running(unsigned period_ms, uint32_t tick0)
 
 /* ------------------------------------------------------ the poll period */
 
-/* Polls up to the ring's 200 ms apart: every number once, in order, each
+/* Polls up to the ring's 200ms apart: every number once, in order, each
  * with its own mean, and nothing counted lost. */
 TEST_CASE(no_window_is_lost_with_polls_up_to_200_ms_apart)
 {
@@ -174,7 +174,7 @@ TEST_CASE(a_poll_faster_than_the_windows_hands_each_over_once)
         CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
         const unsigned closed = (unsigned)((chain.us - began) / 50000u);
         CHECK(tl.n + 1u >= closed && tl.n <= closed + 1u);
-        /* The page is asked every 40 ms at most: every second 20 ms poll. */
+        /* The page is asked every 40ms at most: every second 20ms poll. */
         CHECK_EQ(chain.to_win - reads0, (p == 20u) ? 200u : 400u);
         CHECK_EQ(chain.win_all, 0u);
     }
@@ -190,7 +190,7 @@ TEST_CASE(windows_beyond_the_ring_are_counted_exactly)
     CHECK_EQ(tl.wrong, 0u);
     CHECK(sense_link_win_lost(&chain.sl) > 0u);
     CHECK_EQ(sense_link_win_lost(&chain.sl), tl.missing);
-    /* 1 ms a poll over the depth: one window in 50 polls. */
+    /* 1ms a poll over the depth: one window in 50 polls. */
     CHECK_EQ(tl.missing, 8u);
 
     running(250u, 1000u);
@@ -198,14 +198,14 @@ TEST_CASE(windows_beyond_the_ring_are_counted_exactly)
     cycles(100u, 250u);
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.wrong, 0u);
-    /* Five windows close in 250 ms and four are in the ring. */
+    /* Five windows close in 250ms and four are in the ring. */
     CHECK_EQ(tl.n, 400u);
     CHECK_EQ(sense_link_win_lost(&chain.sl) - lost0, 100u);
     CHECK_EQ(tl.missing, 99u);         /* between the 100 polls' windows */
     CHECK_EQ(sense_link_win_lost(NULL), 0u);
 }
 
-/* The log's own call at a 53 ms poll: a window number in every row it
+/* The log's own call at a 53ms poll: a window number in every row it
  * takes, none stepped over.  SERVO_SENSE alone shows the last window, and
  * loses one in 17 at this period. */
 TEST_CASE(every_window_reaches_the_log_at_a_53_ms_poll)
@@ -234,7 +234,7 @@ TEST_CASE(every_window_reaches_the_log_at_a_53_ms_poll)
         }
     }
     CHECK_EQ(stepped, 0u);
-    CHECK(rows >= 400u);               /* 53 ms polls, 50 ms windows */
+    CHECK(rows >= 400u);               /* 53ms polls, 50ms windows */
 }
 
 /* ---------------------------------------------------- a reply that is lost */
@@ -248,7 +248,7 @@ TEST_CASE(a_reply_lost_on_the_link_loses_no_window)
             chain.lose_win = 1u;          /* one reply                 */
         }
         if (i % 30u == 15u) {
-            chain.lose_win = 2u;          /* two polls in a row, 159 ms */
+            chain.lose_win = 2u;          /* two polls in a row, 159ms */
         }
         cycles(1u, 53u);
     }
@@ -260,7 +260,7 @@ TEST_CASE(a_reply_lost_on_the_link_loses_no_window)
     CHECK(chain.win_all > all0);
     CHECK(tl.most >= 3u);
 
-    /* Three in a row is 212 ms without a read: past the ring, and what is
+    /* Three in a row is 212ms without a read: past the ring, and what is
      * counted is what is missing. */
     running(53u, 1000u);
     for (unsigned i = 0u; i < 400u; ++i) {
@@ -342,13 +342,13 @@ TEST_CASE(the_window_number_runs_on_across_65535)
     }
 }
 
-/* The read timers and the whole-page timer across the 2^32 ms tick wrap,
+/* The read timers and the whole-page timer across the 2^32ms tick wrap,
  * with the wrap at every phase of a lost reply. */
 TEST_CASE(the_reads_run_on_across_the_tick_wrap)
 {
     for (uint32_t before = 20u; before <= 700u; before += 17u) {
         running(53u, (uint32_t)(0u - before - 824u));
-        /* running() took 824 ms: the wrap lies `before` ms ahead. */
+        /* running() took 824ms: the wrap lies `before` ms ahead. */
         CHECK(chain_now() > 0xFFFFF000u);
         const unsigned reads0 = chain.to_win;
         for (unsigned i = 0u; i < 30u; ++i) {
@@ -384,7 +384,7 @@ TEST_CASE(a_setup_written_starts_the_windows_at_number_0)
         cycles(1u, 53u);
         ++waited;
     }
-    CHECK(chain.writes > writes0);                    /* after the 500 ms rest */
+    CHECK(chain.writes > writes0);                    /* after the 500ms rest */
     const uint32_t lost0 = sense_link_win_lost(&chain.sl);
     tally_clear();
     cycles(60u, 53u);
@@ -551,7 +551,7 @@ TEST_CASE(windows_not_taken_wait_and_those_past_the_ring_are_counted)
 /* -------------------------------------------------------- the readings */
 
 /* A part that resets itself is found by the IOmcu, which counts it
- * in RESETS and sets the part up again 1000 ms later.  The windows of that
+ * in RESETS and sets the part up again 1000ms later.  The windows of that
  * time close without samples: each is handed over under its number, empty,
  * and the count shows in the meter's facts. */
 TEST_CASE(a_part_that_resets_itself_hands_over_empty_windows)
@@ -568,22 +568,22 @@ TEST_CASE(a_part_that_resets_itself_hands_over_empty_windows)
     sense_link_meter(&chain.sl, &m);
     CHECK_EQ(m.resets, 1u);
     CHECK((m.flags & LINK_SN_I3221_ONLINE) != 0u);     /* set up again */
-    CHECK(tl.empty >= 19u && tl.empty <= 21u);         /* 1000 ms      */
+    CHECK(tl.empty >= 19u && tl.empty <= 21u);         /* 1000ms       */
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.missing, 0u);
     CHECK_EQ(tl.wrong, 0u);
     CHECK_EQ(sense_link_win_lost(&chain.sl), 0u);
 }
 
-/* The windows of one read are stamped 50 ms apart: the newest with the
- * panel's tick at the read, each older one 50 ms before the one after it,
+/* The windows of one read are stamped 50ms apart: the newest with the
+ * panel's tick at the read, each older one 50ms before the one after it,
  * the latest it can have closed.  Across the tick wrap as well. */
 TEST_CASE(the_windows_of_one_read_are_stamped_50_ms_apart)
 {
     static const uint32_t k_tick0[] = { 1000u, 0xFFFFFF00u };
     for (size_t i = 0u; i < 2u; ++i) {
         running(50u, k_tick0[i]);
-        /* No poll for 170 ms: three windows close, and the next read
+        /* No poll for 170ms: three windows close, and the next read
          * brings them. */
         chain_far(170u);
         (void)chain_poll();
@@ -596,7 +596,7 @@ TEST_CASE(the_windows_of_one_read_are_stamped_50_ms_apart)
         CHECK(n >= 3u);
         for (unsigned k = 0u; k < n; ++k) {
             CHECK_EQ(w[k].number, (uint16_t)(w[0].number + k));
-            /* Within the poll's exchanges of the read, and 50 ms a
+            /* Within the poll's exchanges of the read, and 50ms a
              * window back from the newest. */
             CHECK_EQ(w[k].taken_ms,
                      w[n - 1u].taken_ms - (n - 1u - k) * SENSE_LINK_WINDOW_MS);
@@ -618,7 +618,7 @@ TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
     sense_link_win_t w;
     memset(&w, 0, sizeof(w));
 
-    chain.i3221->amps[0] = 2.0;                   /* past the 1.638 A range */
+    chain.i3221->amps[0] = 2.0;                   /* past the 1.638A range */
     chain_far(120u);
     cycles(2u, 50u);
     chain_cycle(50u);

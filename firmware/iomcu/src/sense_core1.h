@@ -1,11 +1,11 @@
 /**
  * @file
- * @brief Core 1: the sensor bus, read on a 1 ms tick, and the hand-over to
+ * @brief Core 1: the sensor bus, read on a 1ms tick, and the hand-over to
  * core 0.
  *
  * Core 0 runs the link, the outputs, the supply and the flash store, as
  * before; it never touches the I2C (Inter-Integrated Circuit) block.
- * Core 1 runs one loop and nothing else: each 1 ms it takes core 0's
+ * Core 1 runs one loop and nothing else: each 1ms it takes core 0's
  * latest order, runs one step of sense_svc (shared/sense/sense_svc.h) --
  * the schedule, the parts, the bus clear -- and hands back a snapshot.
  * It then runs one pass of the phase tap's tone service (tone_core1.h),

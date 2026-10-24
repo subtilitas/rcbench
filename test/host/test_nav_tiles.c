@@ -5,7 +5,7 @@
  * languages, and every screen's title.
  *
  * Cases:
- * - the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates
+ * - the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files
  * - the_band_titles_match_the_tiles
  * - wifi_returns_to_the_screen_that_opened_it
  * - wifi_keeps_its_opener_over_stop_link_loss_and_home
@@ -30,6 +30,9 @@
 
 #include "nav_rig.h"
 #include "motor_spots.h"
+#include "stick_spots.h"
+#include "supply_spots.h"
+#include "wifi_spots.h"
 
 static void tap_tile(int index)
 {
@@ -48,12 +51,12 @@ static void tap_home(void)
 /*
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
- * can reach.  The table's order, row by row: the two categories,
- * PANEL and INTERFACES, and OUTPUTS, then PICK A PIN, WI-FI and
- * UPDATES; the third row stays free.  ESC / BENCH is no tile: its rows are
- * MOTOR & ESC > SETTINGS'.
+ * can reach.  The table's order, row by row: PANEL, INTERFACES and SD
+ * CARD; SENSORS, OUTPUTS and PICK A PIN; WI-FI, UPDATES and FILES, which
+ * fill the grid.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
+ * SETTINGS'.
  */
-TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
+TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
 {
     static const struct {
         ui_screen_id_t id;
@@ -61,6 +64,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
     } k_tools[] = {
         { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_PICKER, "PICK A PIN" },
         { SCREEN_WIFI, "WI-FI" },      { SCREEN_UPDATES, "UPDATES" },
+        { SCREEN_FILES, "FILES" },
     };
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
@@ -136,9 +140,9 @@ TEST_CASE(the_band_titles_match_the_tiles)
     }
 }
 
-/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 144
- * to 263, 42 px tall, its foot 4 px above the alert band. */
-#define LOGS_WIFI_X 204
+/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 156
+ * to 255, 52px tall, its foot 4px above the alert band. */
+#define LOGS_WIFI_X 206
 
 #define LOGS_WIFI_Y (UI_BAND_H + UI_BODY_H - UI_ALERT_H - 4 - 21)
 
@@ -327,7 +331,7 @@ TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
 
 #define MO_PROG_ROW_PY   (UI_BAND_H + MO_PROG_ROW_Y)
 
-#define SP_ROW_Y(n)      (UI_BAND_H + 70 + (n) * 36 + 16)
+#define SP_ROW_Y(n)      (UI_BAND_H + ST_ROW_CY(n))
 
 /* The makers' row of @p name, or -1. */
 static int stick_maker_row(const char *name)
@@ -515,23 +519,32 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
  * What the four tool screens open over themselves, in panel coordinates
  * (supply_screen.c, wifi_screen.c, outputs_screen.c, picker_screen.c).
  */
-static void open_supply_settings(void) { tap(181, UI_BAND_H + 18); }
+static void open_supply_settings(void)
+{
+    tap(SU_TAB_X(1), UI_BAND_H + SU_TAB_Y);
+}
 
-static void open_supply_keypad(void)   { tap(676, UI_BAND_H + 65); }
+static void open_supply_keypad(void)
+{
+    tap(SU_CARD_X, UI_BAND_H + SU_CARD_Y(0));
+}
 
 /* SETTINGS, then VOLTAGE MAX's keypad over its page. */
 static void open_supply_settings_keypad(void)
 {
     open_supply_settings();
-    tap(144, UI_BAND_H + 94);
+    tap(SU_ROW_L_X, UI_BAND_H + SU_VMAX_Y);
 }
 
-static void open_wifi_list(void)       { tap(196, UI_BAND_H + 180); }
+static void open_wifi_list(void)
+{
+    tap(WF_BTN_CX(2), UI_BAND_H + WF_BTN_CY(2));   /* CHOOSE */
+}
 
 static void open_wifi_keyboard(void)
 {
     open_wifi_list();
-    tap(400, UI_BAND_H + 400);                   /* HIDDEN: the name */
+    tap(WF_HIDDEN_CX, UI_BAND_H + WF_SCAN_CY);   /* HIDDEN: the name */
 }
 
 static void open_outputs_list(void)    { tap(149, UI_BAND_H + 71); }
@@ -573,8 +586,9 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
         settings_set(SET_SUPPLY_CONFIRM_SLIDE, ask ? 1.0f : 0.0f);
         ui_router_goto(SCREEN_SUPPLY);
         supply_screen_set_output(live);
-        touch(82, UI_BAND_H + 335, TOUCH_EVENT_DOWN, 1);
-        touch(282, UI_BAND_H + 335, TOUCH_EVENT_MOVE, 1);
+        touch(SU_TRACK_X + 10, UI_BAND_H + SU_V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+        touch(SU_TRACK_X + 210, UI_BAND_H + SU_V_ROW_Y, TOUCH_EVENT_MOVE,
+              1);
         const gfx_rect_t home = ui_home_tag_rect("SUPPLY");
         touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_DOWN, 2);
         touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_UP, 2);
@@ -582,7 +596,7 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
             T_FAIL("ask %d live %d: the home tag led to %d", ask, live,
                    ui_router_current());
         }
-        touch(282, UI_BAND_H + 335, TOUCH_EVENT_UP, 1);
+        touch(SU_TRACK_X + 210, UI_BAND_H + SU_V_ROW_Y, TOUCH_EVENT_UP, 1);
         settings_cancel_save();
     }
 }
@@ -706,7 +720,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
  * The menu is 4 x 2, each tile in a fixed place by kind: the workbenches
  * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments RECEIVER, BATTERY
  * and BALANCE in row 2, LOGS over SETUP in the last column.  No tile is
- * PROGRAMMER.  Each tile is 243 x 255 px with 10 px margins, and a tap on
+ * PROGRAMMER.  Each tile is 243 x 255px with 10px margins, and a tap on
  * it opens its screen.
  */
 TEST_CASE(the_home_grid_is_four_by_two_by_kind)
@@ -744,7 +758,7 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
 }
 
 /*
- * Every tile's name and line fit its 243 px less UI_TILE_PAD on either
+ * Every tile's name and line fit its 243px less UI_TILE_PAD on either
  * side in both languages: the name on one row of the head face (20 x 36),
  * the line in the label face (10 x 20) on one row of 22 cells or, broken
  * at a space, on two (ui_tile()).
@@ -913,8 +927,8 @@ static int tile_ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, int *left,
 /*
  * ui_tile()'s line, in the menu's look: one wider than the 22 cells inside
  * the tile's padding breaks at its last space that fits onto a second row
- * 24 px lower (German SUPPLY, 27 cells); a line of 24 cells with spaces
- * breaks the same way and stays 8 px clear of the tile's sides; a line
+ * 24px lower (German SUPPLY, 27 cells); a line of 24 cells with spaces
+ * breaks the same way and stays 8px clear of the tile's sides; a line
  * with no space stays on one row, clipped; a look with no second row
  * (line_pitch 0, SETUP's) keeps a breakable line on one row.
  */
@@ -964,7 +978,7 @@ TEST_CASE(a_tile_line_breaks_at_a_space_inside_its_padding)
 }
 
 /*
- * The menu's lower row ends 10 px above the panel's foot, under the alert
+ * The menu's lower row ends 10px above the panel's foot, under the alert
  * band; its SIMULATED marks, names and lines end above the band, so an
  * alert hides none of them.  With no IOmcu RECEIVER, BATTERY and BALANCE
  * carry the mark (SETUP never does): ink between the line and the band,
@@ -984,7 +998,7 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
         if (tile_ink(r, UI_ALERT_Y, r.y + r.h - 2, bg, &l, &rr) != 0) {
             T_FAIL("tile %d inked under the alert band", i);
         }
-        /* The mark, in the 40 px above the band. */
+        /* The mark, in the 40px above the band. */
         if (i < 7) {
             CHECK(tile_ink(r, UI_ALERT_Y - 40, UI_ALERT_Y, bg, &l, &rr) > 0);
         }
@@ -993,7 +1007,7 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
 
 int main(void)
 {
-    RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates);
+    RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files);
     RUN(the_band_titles_match_the_tiles);
     RUN(wifi_returns_to_the_screen_that_opened_it);
     RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);

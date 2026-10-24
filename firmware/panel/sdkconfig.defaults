@@ -193,6 +193,11 @@ CONFIG_LWIP_TCP_SND_BUF_DEFAULT=11520
 # SO_LINGER, so a download that fails resets its connection
 # (wifi_sock.c, wifi_sock_drop()) and frees what it had queued at once.
 CONFIG_LWIP_SO_LINGER=y
+# The clock from the home network (components/wifi_access/wifi_ntp.c): the
+# first SNTP (Simple Network Time Protocol) request goes out at the join,
+# not after lwIP's random start-up delay of up to 5000ms, inside the boot
+# release check's join.  One request a join, one server.
+CONFIG_LWIP_SNTP_STARTUP_DELAY=n
 # A phone browser's request headers run past the default 512 bytes, and a
 # card path of WA_PATH_MAX (384) bytes is up to 1152 bytes percent-encoded.
 CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024

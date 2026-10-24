@@ -11,12 +11,12 @@
  *                generator, rendered while the bank is armed and the port's
  *                bit in LINK_PG_PWM is set.  The pulse is a channel of the
  *                bank (prog_port_channel()), so arming, clamping, slew, the
- *                500 ms command timeout and the endpoints are the bank's.
+ *                500ms command timeout and the endpoints are the bank's.
  *   NONE         no driver: the pin is held for the port, parked as an
  *                input with its pull-down, and renders nothing.  Any free
  *                header pin; no PWM-pin or slice rule.
  *   DSHOT150, DSHOT300, DSHOT600 (4.28)
- *                plain DShot at 150, 300 or 600 kbit/s from a PIO state
+ *                plain DShot at 150, 300 or 600kbit/s from a PIO state
  *                machine of its own, rendered from the port's channel as
  *                a motor slot is: the channel's role is THROTTLE, so ARM
  *                THROTTLE arms it and the CONTROL page's throttle commands
@@ -45,11 +45,11 @@
  * run at PROG_PORT_RATE_HZ.  A NONE or DShot port's pin is under none of
  * the PWM rules.
  *
- * Rates.  Every port runs at PROG_PORT_RATE_HZ, 50 Hz, except the TARGET
+ * Rates.  Every port runs at PROG_PORT_RATE_HZ, 50Hz, except the TARGET
  * port while the SERVO page names a rate: that port alone runs at it
  * (protocol 4.19).  A slice counts against one wrap register, so a port
  * whose pin shares its slice with another port's pin takes no rate but
- * 50 Hz (servo_page_write()), and no pin moves onto the slice of a TARGET
+ * 50Hz (servo_page_write()), and no pin moves onto the slice of a TARGET
  * port that runs at another rate.
  *
  * The model holds LINK_PG_PORTS_MAX ports; a build names how many it has.
@@ -203,8 +203,8 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept);
  *
  * No port whose PWM bit the write leaves set may have an endpoint longer
  * than its frame carries: MIN_US and MAX_US at most out_pwm_pulse_max() of
- * the rate the write leaves the port at (prog_port_port_hz()), 1784 us at
- * 560 Hz (BAD_VALUE, protocol 4.16).  This covers a range written to a
+ * the rate the write leaves the port at (prog_port_port_hz()), 1784us at
+ * 560Hz (BAD_VALUE, protocol 4.16).  This covers a range written to a
  * pulsing port and a pulse switched on under a range that does not fit.
  *
  * A TARGET change returns the SERVO rate to 0 (servo_page_target()), so

@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief The TI INA3221: three channels of 13-bit shunt and bus voltage, 0 to
- * 26 V, on I2C (Inter-Integrated Circuit).
+ * 26V, on I2C (Inter-Integrated Circuit).
  *
  * The register codec and a driver that talks to one part through sense_bus.h.
  *
@@ -9,11 +9,11 @@
  * 2026).  Tables and sections below are that document's.
  *
  * Readings.  Shunt and bus registers hold a sign and 12 data bits in bits
- * 15-3 (Table 8-2): shunt 40 µV a step, ±163.84 mV; bus 8 mV a step,
+ * 15-3 (Table 8-2): shunt 40µV a step, ±163.84mV; bus 8mV a step,
  * measured at IN-, the load side of the shunt (§7.3.1).  The DAOKAI
- * module's 0.1 Ω shunts give 400 µA a step and 1.638 A at the top code
+ * module's 0.1Ω shunts give 400µA a step and 1.638A at the top code
  * (7FF8h); a reading at either end of the code range is a clip, never a
- * value.  What the part reports past 163.84 mV is not stated; a reading
+ * value.  What the part reports past 163.84mV is not stated; a reading
  * there is taken to stay at the end code.
  *
  * Identity (§8.2.19, §8.2.20): manufacturer 5449h ("TI"), die 3220h.  A
@@ -64,8 +64,8 @@ enum {
 #define INA3221_CHANNELS       3u
 
 /**
- * @brief Below this the top code, 163.8 mV over the shunt, is more µA than an
- * int32 holds: 100 µΩ reads to 1638 A.
+ * @brief Below this the top code, 163.8mV over the shunt, is more µA than an
+ * int32 holds: 100 µΩ reads to 1638A.
  */
 #define INA3221_SHUNT_MIN_UOHM 100u
 
@@ -111,9 +111,9 @@ enum {
 
 /**
  * @brief The set-ups this bench runs (DESIGN §3.4): continuous shunt and bus,
- * 140 µs each (code 0), averaging 1.
+ * 140µs each (code 0), averaging 1.
  *
- * CH1 alone gives a fresh result every 280 µs; all three every 840 µs.
+ * CH1 alone gives a fresh result every 280µs; all three every 840µs.
  */
 #define INA3221_CONFIG_BENCH_CH1 0x4007u
 #define INA3221_CONFIG_BENCH_ALL 0x7007u
@@ -143,7 +143,7 @@ uint8_t ina3221_channels(uint16_t config);
 
 /**
  * @brief Conversion time of a VBUSCT or VSHCT code, µs, typical (Table 8-4; the
- * maxima in §6.5 run 10 % longer).
+ * maxima in §6.5 run 10% longer).
  *
  * @param code The conversion time code.
  * @return The typical conversion time, in µs.
@@ -182,7 +182,7 @@ bool ina3221_identity_ok(uint16_t maker, uint16_t die);
 int32_t ina3221_code13(uint16_t raw);
 
 /**
- * @brief A shunt code as current, µA: 40 µV a step over @p shunt_uohm.
+ * @brief A shunt code as current, µA: 40µV a step over @p shunt_uohm.
  *
  * A code at either end (4095, -4096) is a clip.
  *
@@ -194,7 +194,7 @@ sense_value_t ina3221_current_ua(uint32_t shunt_uohm, int32_t code);
 
 /**
  * @brief The current the end code of the range stands for, µA: code 4095 for
- * SENSE_CLIP_HIGH (1.638 A on 0.1 Ω), code -4096 for SENSE_CLIP_LOW (-1.6384
+ * SENSE_CLIP_HIGH (1.638A on 0.1Ω), code -4096 for SENSE_CLIP_LOW (-1.6384
  * A).
  *
  * 0 for SENSE_CLIP_NONE.
@@ -206,7 +206,7 @@ sense_value_t ina3221_current_ua(uint32_t shunt_uohm, int32_t code);
 int32_t ina3221_end_ua(uint32_t shunt_uohm, sense_clip_t end);
 
 /**
- * @brief A bus code in mV, 8 mV a step.
+ * @brief A bus code in mV, 8mV a step.
  *
  * @param code The bus code, from ina3221_code13().
  * @return The voltage in mV.
@@ -273,7 +273,7 @@ ina3221_setup_err_t ina3221_init_shunts(ina3221_t *d, sense_bus_t *bus,
  * @brief Every tick: probes the part when it is due -- at the first call, and
  * SENSE_RETRY_MS after it was found absent, wrong, refused or offline.
  *
- * A probe is 4 transactions, 455 µs of bus time at 400 kHz without the
+ * A probe is 4 transactions, 455µs of bus time at 400kHz without the
  * controller's own time between them.  Returns whether the part is online.
  *
  * @param d The driver.
@@ -327,14 +327,14 @@ sense_err_t ina3221_read_flags(ina3221_t *d, uint16_t *mask_enable);
  * @brief The Configuration register read back against the value written.
  *
  * A part that resets itself answers with INA3221_CONFIG_RESET: all three
- * channels, 1.1 ms conversions, a result every 6.6 ms.  Another value than the
+ * channels, 1.1ms conversions, a result every 6.6ms.  Another value than the
  * one written is read a second time at once, so one corrupted read is no reset;
  * when both differ the part is taken offline (sense_part_lost()), @p lost is
  * set and SENSE_OK returned.  A read of FFFFh, the bus that no part drives,
  * takes it offline on that read without a second.  @p lost is false otherwise.
  * The readings are not checked for all ones: a shunt or bus register FFFFh is
  * code -1 and taken.  One transaction, two on a first mismatch other than
- * FFFFh: 120 µs of bus time each at 400 kHz.
+ * FFFFh: 120µs of bus time each at 400kHz.
  *
  * @param d The driver.
  * @param lost Set true when the part was taken offline.

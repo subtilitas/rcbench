@@ -100,7 +100,7 @@ TEST_CASE(a_quintet_outside_the_table_is_refused)
 
 TEST_CASE(an_erpm_frame_decodes_to_the_period_it_carried)
 {
-    /* 500 us per electrical revolution: mantissa 500, exponent 0. */
+    /* 500us per electrical revolution: mantissa 500, exponent 0. */
     const uint16_t value = dshot_telem_value(DSHOT_TELEM_ERPM, 500u);
     dshot_telem_t t;
     CHECK(dshot_telem_from_value(value, false, &t));
@@ -113,7 +113,7 @@ TEST_CASE(an_erpm_frame_decodes_to_the_period_it_carried)
 
 TEST_CASE(the_exponent_shifts_the_mantissa)
 {
-    /* Mantissa 300, exponent 4: a period of 4800 us. */
+    /* Mantissa 300, exponent 4: a period of 4800us. */
     const uint16_t payload = (uint16_t)((4u << 9) | 300u);
     dshot_telem_t t;
     CHECK(dshot_telem_from_value(dshot_telem_value(DSHOT_TELEM_ERPM, payload),
@@ -142,8 +142,8 @@ TEST_CASE(extended_frames_are_read_only_when_extended_telemetry_is_on)
 
     /*
      * The same bits from an ESC that was never asked for extended telemetry
-     * are an eRPM frame -- mantissa 66, exponent 2, a period of 264 us --
-     * and reading them as a voltage puts 16.5 V on the screen for a motor
+     * are an eRPM frame -- mantissa 66, exponent 2, a period of 264us --
+     * and reading them as a voltage puts 16.5V on the screen for a motor
      * turning at 227272 electrical rpm.
      */
     CHECK(dshot_telem_from_value(value, false, &t));
@@ -248,7 +248,7 @@ TEST_CASE(null_and_nonsense_arguments_are_refused)
 
 TEST_CASE(a_burst_goes_from_the_wire_to_a_speed_in_one_call)
 {
-    /* Mantissa 500, exponent 1: a period of 1000 us. */
+    /* Mantissa 500, exponent 1: a period of 1000us. */
     const uint16_t value =
         dshot_telem_value(DSHOT_TELEM_ERPM, (uint16_t)((1u << 9) | 500u));
     capture_t cap;

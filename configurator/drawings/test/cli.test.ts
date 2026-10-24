@@ -28,7 +28,7 @@ test('the README of the page states the size of the drawing folder', () => {
   const svgs = Object.values(readSvgs(SVG_DIR));
   const bytes = svgs.reduce((n, s) => n + Buffer.byteLength(s), 0);
   const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
-  assert.ok(readme.includes(`Drawing folder: ${svgs.length} files, ${(bytes / 1000).toFixed(1)} kB.`), `${svgs.length} files, ${(bytes / 1000).toFixed(1)} kB`);
+  assert.ok(readme.includes(`Drawing folder: ${svgs.length} files, ${(bytes / 1000).toFixed(1)}kB.`), `${svgs.length} files, ${(bytes / 1000).toFixed(1)}kB`);
 });
 
 test('the README of the drawings carries the palette table and the counts of the generator', () => {

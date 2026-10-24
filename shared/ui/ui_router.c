@@ -8,6 +8,7 @@
 
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
+#include "files_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
@@ -39,9 +40,9 @@
 static struct {
     ui_screen_id_t    current;
     /* The screen that opened one with two openers, for its home tag;
-     * SCREEN_COUNT until one has.  One field for WI-FI and OUTPUTS: only
-     * the screen on top reads it, and entering either from an opener sets
-     * it. */
+     * SCREEN_COUNT until one has.  One field for WI-FI, FILES and OUTPUTS:
+     * only the screen on top reads it, and entering one from an opener
+     * sets it. */
     ui_screen_id_t    opener;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
@@ -85,6 +86,16 @@ static struct {
     gfx_rect_t     help_rect;
 
     /*
+     * What each framebuffer holds of the band: ui_band_key() of the band
+     * it last drew, valid where band_drawn has the buffer's bit.  The band
+     * is drawn whole in 102,288 pixel visits SAFE and 114,281 ARMED
+     * (test_frame_work) and changes once a second while the bench runs,
+     * so a frame repaints it only when it changed in that buffer.
+     */
+    uint32_t band_key[2];   /**< ui_band_key() of each buffer's band */
+    uint8_t  band_drawn;    /**< the buffers whose band_key holds, a bit each */
+
+    /*
      * The contacts the screen on top owns: each one whose DOWN it was
      * handed, with the last point it was handed, in panel coordinates.  A
      * screen is handed a MOVE or an UP only for a contact in this table, so
@@ -103,8 +114,9 @@ static bool has_band(ui_screen_id_t id);
 /*
  * The screens with more than one opener, each opener on a row of its own.
  * The home tag of such a screen returns to the one that opened it: WI-FI
- * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, OUTPUTS from
- * the TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
+ * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, FILES from
+ * LOGS' FILES button and from SETUP's FILES tile, OUTPUTS from the TARGET
+ * rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
  */
 static const struct {
     ui_screen_id_t screen;
@@ -112,6 +124,8 @@ static const struct {
 } k_openers[] = {
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_WIFI,    SCREEN_SETUP },
+    { SCREEN_FILES,   SCREEN_LOGS },
+    { SCREEN_FILES,   SCREEN_SETUP },
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
@@ -148,6 +162,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_COPROC_UPDATE: return coproc_update_screen();
     case SCREEN_UPDATES:  return upd_screen();
     case SCREEN_UPD_REMIND: return upd_remind_screen();
+    case SCREEN_FILES:    return files_screen();
     default:              return overview_screen();
     }
 }
@@ -221,6 +236,7 @@ uint32_t ui_router_dispatched(void) { return s.dispatched; }
 
 void ui_router_invalidate(void)
 {
+    s.band_drawn = 0u;
     splash_invalidate();
     overview_invalidate();
     motor_invalidate();
@@ -238,6 +254,7 @@ void ui_router_invalidate(void)
     wifi_screen_invalidate();
     update_screen_invalidate();
     upd_screen_invalidate();
+    files_screen_invalidate();
 }
 
 static void clear_alert(void)
@@ -475,7 +492,14 @@ static int owned_find(uint8_t id)
  * id the controller reuses, and takes a later contact's travel for its own.
  *
  * STOP and the home tag answer to a DOWN on them and to nothing else, so a
- * contact that slides onto STOP from the body presses nothing.
+ * contact that slides onto STOP from the body presses nothing.  STOP acts
+ * on that DOWN; the home tag on a tap.
+ *
+ * Every DOWN the screen is not handed -- on the band, on STOP, on a chip,
+ * on the alert band -- releases the contacts the screen owns as at the
+ * band's edge.  A screen ends a latched drag at any press it is handed, and
+ * the router does the same for the presses it keeps: a dial drag must not
+ * go on commanding while another finger presses STOP.
  *
  * A chip of the band opens its help bubble on a tap: a DOWN on it and a
  * release on the same chip.  While a bubble is open, a DOWN anywhere but on
@@ -540,6 +564,16 @@ void ui_router_event(const touch_event_t *evt)
             s.band_id    = evt->point.id;
             s.on_stop    = in_stop;
             s.on_chip    = (in_stop || in_home) ? UI_BAND_CHIP_NONE : chip;
+            /* A press the screen is not handed still ends what it holds:
+             * a drag left latched would go on commanding beside STOP. */
+            release_owned();
+            if (in_stop) {
+                /* On the press: a stop never waits for a lift that may not
+                 * come.  Latched rather than dispatched: the application
+                 * loop that drives the heartbeat drains it, so a stop also
+                 * stops the line. */
+                s.stop_latched = true;
+            }
             return;   /* consumed before the screen sees it */
         }
         if (safe && s.band_press && evt->point.id == s.band_id) {
@@ -551,21 +585,16 @@ void ui_router_event(const touch_event_t *evt)
         if (s.band_press && evt->point.id == s.band_id) {
             if (evt->type == TOUCH_EVENT_UP) {
                 s.band_press = false;
-                if (s.on_stop && in_stop) {
-                    /* Latched rather than dispatched: the application loop
-                     * that drives the heartbeat drains it, so a stop also
-                     * stops the line. */
-                    s.stop_latched = true;
+                if (s.on_stop) {
+                    /* STOP acted on the press; its release does nothing. */
                 } else if (s.on_chip != UI_BAND_CHIP_NONE) {
                     /* A chip answers a release the finger made on the
                      * chip it came down on. */
                     if (chip == s.on_chip && touch_event_is_tap_up(evt)) {
                         help_open(chip);
                     }
-                } else if (!s.on_stop && in_home
-                           && touch_event_is_tap_up(evt)) {
-                    /* STOP above takes any release over it; the home tag
-                     * takes one the finger made. */
+                } else if (in_home && touch_event_is_tap_up(evt)) {
+                    /* The home tag takes a release the finger made. */
                     router_back();
                 }
             }
@@ -617,6 +646,9 @@ void ui_router_event(const touch_event_t *evt)
          * negative y.  A contact the screen owns ends where the screen last
          * saw it, and is not handed back when it returns to the body. */
         if (slot < 0) {
+            if (evt->type == TOUCH_EVENT_DOWN) {
+                release_owned();   /* a press on the band, as above */
+            }
             return;
         }
         local.type    = TOUCH_EVENT_UP;
@@ -631,6 +663,9 @@ void ui_router_event(const touch_event_t *evt)
              * make a stop take two presses. */
             clear_alert();
         } else if (s.has_alert && band && in_alert(evt)) {
+            /* A press on the alert band ends what the screen holds, as a
+             * press anywhere on the screen does. */
+            release_owned();
             s.alert_ids[id >> 3] |= bit;
             if (!s.alert_press) {
                 s.alert_press     = true;
@@ -747,17 +782,17 @@ const char *ui_router_alert(void)
 }
 
 /* The alert's text, in UI_FONT_BAND (10 x 20): from x 12, the panel's width
- * less 12 px at the left and 36 px at the right, which clears the "x"
- * (976 px, 97 cells of 10 px, on the 1024 px panel).  Text wider than one
- * line breaks at a space onto a second, 20 px under the first: two rows
- * fill 40 of the band's 44 px, 2 px from its top. */
-/** @brief The alert text's left edge: 12 px. */
+ * less 12px at the left and 36px at the right, which clears the "x"
+ * (976px, 97 cells of 10px, on the 1024px panel).  Text wider than one
+ * line breaks at a space onto a second, 20px under the first: two rows
+ * fill 40 of the band's 44px, 2px from its top. */
+/** @brief The alert text's left edge: 12px. */
 #define ALERT_TEXT_X 12
-/** @brief The alert text's width: 976 px, 97 cells, clear of the "x". */
+/** @brief The alert text's width: 976px, 97 cells, clear of the "x". */
 #define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
-/** @brief An alert row to the next: 20 px. */
+/** @brief An alert row to the next: 20px. */
 #define ALERT_PITCH  20
-/** @brief The alert's face: 10 x 20 px. */
+/** @brief The alert's face: 10 x 20px. */
 #define ALERT_FONT   UI_FONT_BAND
 
 int ui_router_alert_rows(const char *text)
@@ -802,6 +837,10 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     }
 
     if (!has_band(s.current)) {
+        /* The screen draws where the band goes: this buffer has no band
+         * any more, for when the band comes back on the same screen (the
+         * IOmcu update's question after its progress). */
+        s.band_drawn &= (uint8_t)~(1u << ((unsigned)buffer_index & 1u));
         scr->render(c, buffer_index);
         if (s.status.simulated) {
             ui_watermark(c);
@@ -809,10 +848,27 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         return;
     }
 
-    ui_band_render(c, ui_router_title(s.current), has_home(s.current),
-                   &s.status, s.band_press && s.on_stop,
-                   s.band_press && !s.on_stop
-                   && s.on_chip == UI_BAND_CHIP_NONE);
+    /*
+     * The band when it changed in this buffer, or the buffer has not got
+     * it.  Over a simulated bench the watermark is laid over it every
+     * frame, so it is drawn every frame, as the screens under it are.
+     */
+    {
+        const char *title = ui_router_title(s.current);
+        const bool home = has_home(s.current);
+        const bool stop_down = s.band_press && s.on_stop;
+        const bool home_down = s.band_press && !s.on_stop
+                               && s.on_chip == UI_BAND_CHIP_NONE;
+        const unsigned buf = (unsigned)buffer_index & 1u;
+        const uint32_t key = ui_band_key(title, home, &s.status, stop_down,
+                                         home_down);
+        if (s.status.simulated || (s.band_drawn & (1u << buf)) == 0u
+            || s.band_key[buf] != key) {
+            ui_band_render(c, title, home, &s.status, stop_down, home_down);
+            s.band_key[buf] = key;
+            s.band_drawn |= (uint8_t)(1u << buf);
+        }
+    }
 
     /*
      * The bubble as this frame draws it.  One that closed, moved or changed

@@ -6,15 +6,28 @@ The rendering budget for anyone adding or changing a screen.
 
 ## The constraint
 
-The frame rate on this panel is limited by PSRAM (pseudo-static random-access
-memory) bandwidth, not by the CPU. The ESP32-P4 draws into one of two DPI
-(display pixel interface) frame buffers of 1,228,800 bytes in PSRAM while the
-DPI scans the other out: 1024 x 600 px of RGB565 at 60.38 Hz, 74 MB/s of
-reads. The CPU reaches the buffers through two write-back caches: the L1 data
-cache (64 KB, 2-way, 64-byte lines) and the L2 cache (128 KB, 8-way, 64-byte
-lines). Every line the L2 does not hold costs a 64-byte fill from PSRAM and,
-once written, a 64-byte write-back. The cost of a frame is therefore a count
-of L2 fills, which can be measured exactly on the host.
+The ESP32-P4 draws into one of two DPI (display pixel interface) frame
+buffers of 1,228,800 bytes in PSRAM (pseudo-static random-access memory)
+while the DPI scans the other out: 1024 x 600px of RGB565 at 60.38Hz,
+74MB/s of reads. The CPU reaches the buffers through two write-back caches:
+the L1 data cache (64KB, 2-way, 64-byte lines) and the L2 cache (128KB,
+8-way, 64-byte lines). Every line the L2 does not hold costs a 64-byte fill
+from PSRAM and, once written, a 64-byte write-back. The table below counts
+those fills, which can be measured exactly on the host.
+
+A frame's time is its PSRAM traffic and its instructions, and which of the
+two bounds a frame on this board is not measured. The one screen with
+figures from both sides points at the instructions: SERVO > LIVE during a
+sweep is 2,171 fills in the table, 271KiB of traffic, and the console read
+DRAW 13.8 to 16.5ms ([On the board](#on-the-board)); as traffic alone that
+is 16 to 20MB/s. The fills hold the traffic side; `test_frame_work` holds
+the instruction side in pixel visits ([Rules](#rules)).
+
+With Screen rotation 180°, a screen draws into a logical buffer of the same
+size in PSRAM, and the flip has the PPA (pixel-processing accelerator) copy
+the blocks the frame changed into the frame buffer, turned, before it
+presents it. The model counts the drawing, not the copy. The copy's time is
+the console's TURN; it is part of WAIT and adds to every frame that changes.
 
 `tools/frame_cost.py` builds the real screens for the host and runs them under
 cachegrind with the ESP32-P4's two caches: the L1 as cachegrind's first level,
@@ -28,7 +41,8 @@ What a fill costs in time is the effective bandwidth of the CPU's writes into
 PSRAM while the DPI reads. It is not measured, so the table gives fills and
 traffic and no time. The panel measures it at start-up ([On the
 board](#on-the-board)); `PROBE_CLEAR_US` in the tool takes that figure, and
-the table then gives an estimated time and frame rate for each mode.
+the table then gives an estimated time and frame rate for each mode, from
+the traffic only.
 
 <!-- framecost:start -->
 ```
@@ -37,41 +51,41 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                       11,501    1438 KiB
-frame-idle                     765      96 KiB
-held                         7,311     914 KiB
-sim                         12,950    1619 KiB
-throttle                    13,314    1664 KiB
-chrome                      51,504    6438 KiB
-overview                       878     110 KiB
-servo                       25,759    3220 KiB
-servo-grip                   4,750     594 KiB
-servo-current                7,866     983 KiB
-supply                      10,737    1342 KiB
-supply-chrome               45,636    5704 KiB
-analyser                       603      75 KiB
-logs                           476      60 KiB
-settings                       587      73 KiB
-settings-list                  586      73 KiB
-battery                        598      75 KiB
-balance                        624      78 KiB
-motor-stick                  3,316     414 KiB
-balance-sim                  3,085     386 KiB
-settings-sim                 3,072     384 KiB
-battery-sim                  3,064     383 KiB
-analyser-chrome             59,443    7430 KiB
-logs-chrome                 23,811    2976 KiB
-settings-chrome             35,827    4478 KiB
-settings-list-chrome        37,175    4647 KiB
-battery-chrome              58,264    7283 KiB
-balance-chrome              61,597    7700 KiB
-motor-stick-chrome          41,809    5226 KiB
-picker                         753      94 KiB
-picker-chrome               43,609    5451 KiB
-wifi                           515      64 KiB
-wifi-chrome                 20,894    2612 KiB
-wifi-keys                   36,372    4546 KiB
-clear                       19,207    2401 KiB
+frame                        9,335    1167 KiB
+frame-idle                       0       0 KiB
+held                         4,875     609 KiB
+sim                         13,003    1625 KiB
+throttle                    11,206    1401 KiB
+chrome                      51,580    6448 KiB
+overview                         0       0 KiB
+servo                        2,171     271 KiB
+servo-grip                     542      68 KiB
+servo-current                3,140     392 KiB
+supply                       9,546    1193 KiB
+supply-chrome               47,414    5927 KiB
+analyser                         0       0 KiB
+logs                             0       0 KiB
+settings                         0       0 KiB
+settings-list                    0       0 KiB
+battery                          0       0 KiB
+balance                          0       0 KiB
+motor-stick                  1,551     194 KiB
+balance-sim                  3,007     376 KiB
+settings-sim                 2,983     373 KiB
+battery-sim                  3,015     377 KiB
+analyser-chrome             60,990    7624 KiB
+logs-chrome                 26,180    3272 KiB
+settings-chrome             37,847    4731 KiB
+settings-list-chrome        36,875    4609 KiB
+battery-chrome              58,013    7252 KiB
+balance-chrome              63,347    7918 KiB
+motor-stick-chrome          41,827    5228 KiB
+picker                           0       0 KiB
+picker-chrome               40,147    5018 KiB
+wifi                             0       0 KiB
+wifi-chrome                 22,118    2765 KiB
+wifi-keys                   36,435    4554 KiB
+clear                       19,206    2401 KiB
 vlines                      10,202    1275 KiB
 hlines                         180      22 KiB
 
@@ -114,9 +128,9 @@ the same pixel count as horizontal lines costs 180, because each line is
 resident from the previous pixel. The shell is laid out in horizontal bands, and a
 vertical rule is a deliberate expense.
 
-**Cache the chrome.** Repainting everything costs 40 to 100 times a cached
-frame of the same screen: 59,443 fills for RECEIVER's full repaint against
-603 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
+**Cache the chrome.** Repainting everything costs 22,000 to 64,000 fills,
+the `-chrome` modes, and a cached steady frame of the same screen none:
+60,990 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
 painted; that is what the `buffer_index` argument of `render()` is for. The
 panel alternates between two buffers, so a screen that invalidates only the
 buffer being drawn leaves the other one a frame behind, which reads as flicker.
@@ -126,13 +140,13 @@ whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes an
 IOmcu answering with simulated numbers. Rotated text scans its rotated
 bounding box, which corner to corner is the whole canvas, and rotates and
 divides per pixel to write the pixels the mark covers: 3,439 on an
-800 x 480 px canvas, 0.9% of it, and 5,377 on 1024 x 600 px. `ui_watermark`
+800 x 480px canvas, 0.9% of it, and 5,377 on 1024 x 600px. `ui_watermark`
 records those points once, in a table of 6,144, and writes them thereafter:
-on 800 x 480 px, 144,721 instructions per frame in place of 8,412,078. The
-count on 1024 x 600 px is not measured.
+on 800 x 480px, 144,721 instructions per frame in place of 8,412,078. The
+count on 1024 x 600px is not measured.
 
 **A count of fills is not a count of cycles.** The table above measures
-cache-line fills, and the mark costs only 1,449 of them, `sim` against
+cache-line fills, and the mark costs only 3,668 of them, `sim` against
 `frame`: its time is arithmetic per pixel, not traffic, and the table cannot
 show it. Where a mode's measured frame time exceeds what its fills
 predict, count instructions before trusting the estimate.
@@ -141,49 +155,77 @@ predict, count instructions before trusting the estimate.
 touch per frame. A revision shared with the controls beside it would
 repaint them all on every touch. The motor screen's throttle carries its
 own, and repaints the readout's box and the slider's painted region: the `throttle` mode in the table above measures it against a sample
-frame. The flip quantises to whole panel frames: 60.4, 30.2 or 20.1 fps.
+frame. The flip quantises to whole panel frames: 60.4, 30.2 or 20.1fps.
 The drag's frame time on the board is not measured.
 
 Clear what a widget paints, not what it occupies. The slider's thumb and its
-shadow stand proud of the track by 5 px above and 7 px below, and the hero
-numerals are 32 px tall with 3 px of slant on a 30 px row, so a clear sized
+shadow stand proud of the track by 5px above and 7px below, and the hero
+numerals are 32px tall with 3px of slant on a 30px row, so a clear sized
 to the track or to the row leaves a thumb at every position the finger passed
 and the numerals' feet behind. `ui_slider_painted_rect()` reports the region
 rather than leaving a caller to derive it.
 
-**Paint only on frames that have something to paint.** Samples arrive at 20 Hz
-and the panel refreshes at 60.38 Hz, so two frames in three have nothing new.
+**Paint only on frames that have something to paint.** Samples arrive at 20Hz
+and the panel refreshes at 60.38Hz (measured, the console's VSYNC figure),
+so two frames in three have nothing new. The DPI clock is 48MHz, not the
+52MHz `board_pins.h` requests; at 48MHz its 1354 x 636 frame alone would
+give 55.74Hz. ESP-IDF keeps the requested line time by shortening the
+bridge's front porch to a 1250-clock line, so the frame takes as long as
+1354 x 636 clocks at 52MHz: 60.38Hz, the rate `tools/frame_cost.py`
+computes from `board_pins.h`. That this sets the rate is read from
+ESP-IDF's source, not from the registers.
 The bench screen keeps the plot's push count and a control revision, each per
 framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in
 `test_motor_draw` pins the per-buffer counters.
 
+**A clipped repaint walks only what lies in its clip.** A clip limits what a
+primitive writes, not what it computes. The SERVO card repaints its breathing
+grip through a box 73px square and a moving horn through boxes of about 170px
+square, each by drawing the whole card under the clip. So the rasteriser skips
+a glyph or a seven-segment digit whose cell lies outside the clip, walks an arc
+only in the directions in which the clip lies, walks the antialiased disc,
+capsule and ring over the pixels each row of them can cover, and works out a
+partial ring's angle per pixel only near its ends and its fade.
+`test_gfx_clip` holds each shortcut to the loop over the whole box, pixel for
+pixel.
+
+**The band is repainted when it changes.** Drawn whole, the band costs 102,288
+pixel visits SAFE and 114,281 ARMED, with its red chip and run clock. The
+router keeps `ui_band_key()` of the band each framebuffer last got and repaints
+it only when the key moves: the run clock once a second while the bench is
+ARMED, a chip, a press of STOP or the home tag. Over a simulated bench it is
+drawn every frame, under the watermark. `test_frame_work` counts the pixels the
+rasteriser visits per frame (`gfx_work()`, built into the host suite only) and
+holds ARMED at rest to SAFE at rest plus the band once a second, a held
+position to SAFE plus six layers of the grip's box, a swept or dragged horn to
+140,000 visits a frame and MOTOR & ESC LIVE ARMED at rest to 300,000.
+
 ## Ceilings
 
 CI (continuous integration) holds each mode below to a ceiling of fills per
-frame. A ceiling sits 10 to 35% above the mode's figure in the table above,
-so it catches a change that makes the model draw more, not a frame that
-misses the panel:
+frame. A ceiling sits 13 to 29% above the largest figure of its modes in the
+table above, and a mode under 600 fills is held at 1,000. A ceiling catches
+a change that makes the model draw more, not a frame that misses the panel:
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
-| `overview` | 2,000 | a screen with cached chrome that has started repainting |
-| `servo` | 30,000 | a growing arm and grip drawing |
-| `servo-grip` | 6,000 | a breath that repaints the whole card |
-| `servo-current` | 9,000 | a changed digit of the current that repaints the whole card |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `picker`, `wifi` | 1,000 | a screen that has started repainting |
-| `settings-list` | 1,000 | a SETUP list that has started repainting |
-| `motor-stick` | 4,000 | a growing steady frame of ESC STICK, 3,316 fills in the table above |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
+| `servo` | 2,700 | a growing arm and grip drawing |
+| `servo-grip` | 1,000 | a breath that repaints more than its box |
+| `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
+| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,551 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
-| the ten `-chrome` modes | 68,000 | a growing full repaint |
-| `wifi-keys` | 40,000 | a key of the Wi-Fi keyboard that repaints more than the screen |
+| the ten `-chrome` modes | 72,000 | a growing full repaint |
+| `wifi-keys` | 42,000 | a key of the Wi-Fi keyboard that repaints more than the screen |
 
 `tools/check_docs.py` holds this table to the `--max-lines` arguments in
 `.github/workflows/ci.yml`: a ceiling that differs, a mode CI holds that has
-no row here, and a row CI does not run each fail.
+no row here, and a row CI does not run each fail. `test_frame_work` holds
+budgets in pixel visits beside it ([Rules](#rules)).
 
 No ceiling holds the bench frame (`frame`, `sim`, `supply`) to one telemetry
-sample. A sample arrives every 50 ms, every third panel frame, and a frame
+sample. A sample arrives every 50ms, every third panel frame, and a frame
 keeps up with the samples while its traffic fits three panel frames at the
 effective bandwidth. That bandwidth is not measured, so the ceiling is not
 set.
@@ -194,24 +236,58 @@ region that was repainted.
 
 ## On the board
 
-The panel's console prints two lines every 300 frames, 5 s at 60.38 Hz:
+The console lines of this section come with the build option
+`RCBENCH_PERF_LOG`, ON by default (`firmware/panel/CMakeLists.txt`):
 
-```text
-I (…) rcbench: <n> fps  VSYNC <n> Hz  FLIP TIMEOUTS <n>  TOUCHLOST <panel>/<driver>
-I (…) rcbench: frames <n> on <title> (screen <id>): DRAW <min>/<mean>/<max> us  WAIT <min>/<mean>/<max> us (min/mean/max)
+```sh
+idf.py -D RCBENCH_PERF_LOG=OFF build
 ```
 
-VSYNC is the panel's refresh as the panel counts it. DRAW is the paint time
-of a frame, and WAIT is how long the flip blocked after it. The second line
-covers the frames drawn on the screen shown since the line before: fewer
-than 300 when the screen changed in between. A healthy frame is mostly WAIT;
-DRAW climbing until WAIT reaches zero is the frame budget being spent.
+builds a panel without the start-up probe, the lines and the code behind
+them: the render loop then reads no clock for DRAW and calls nothing for
+them. CI builds that, with the touch injector left out as well, as the
+extra panel build.
+
+The console is UART0 at 115,200 baud with no driver installed, beside the
+USB Serial/JTAG port. A line that does not fit the UART's 128-byte transmit
+FIFO (first in, first out) holds the render loop 87us for each byte past
+it, and 128 bytes drain in 11.1ms, inside a frame of 16.6ms at 60.4fps. The
+panel therefore prints at most one of these lines a frame:
+
+- every 300 frames, 5.0s at 60.4fps and 9.9s at 30.2fps, the rate line;
+- on the frame after it, the window line;
+- on the frames between, one line of the lows while one is due: the stack
+  scan's time, the internal heap, then one stack.
+
+```text
+I (…) rcbench: <f> fps  DRAW <n> us  WAIT <n> us  TURN <n> us  VSYNC <f> Hz  FLIP TIMEOUTS <n>  TOUCHLOST <panel>/<driver>
+I (…) rcbench: frames <n> on <title> #<id>: DRAW <min>/<mean>/<max> WAIT <min>/<mean>/<max> TURN <min>/<mean>/<max> us
+```
+
+The two lines are 110 to 135 bytes, by the counters' digits and the
+screen's title; a byte past 128 holds the loop 87us. The rate line's DRAW,
+WAIT and TURN are those of its frame; VSYNC is the panel's refresh as the
+panel counts it since the rate line before; FLIP TIMEOUTS counts the flips
+since start-up that waited 200ms for a frame-done event in vain. DRAW is the
+paint time of a frame, WAIT how long the flip blocked after it, and TURN
+the part of WAIT Screen rotation 180° spent copying the frame turned, 0 in
+NORMAL. The window line covers the frames drawn on the screen shown since
+the rate line before, fewer than 300 when the screen changed in between;
+its figures are minimum, mean and maximum in us. A healthy frame is mostly
+WAIT; DRAW climbing until WAIT reaches zero is the frame budget being spent.
+
+What the option costs each frame when ON: the frame added to the window,
+about ten comparisons and three 64-bit additions, and a test for a due line;
+every 300 frames one query of the internal heap; every 6th rate line one
+stack scan ([High-water marks on the board](#high-water-marks-on-the-board)).
+Their time on the board is not measured, except the stack scan's, which the
+panel logs.
 
 Once at start-up, before the splash's first frame, the panel times four
 clears of the back buffer, after one it does not time:
 
 ```text
-I (…) rcbench: PSRAM probe: 4 clears of 1228800 B in <n> us, <n> us each
+I (…) rcbench: PSRAM probe: 4 clears of 1228800B in <n> us, <n> us each
 ```
 
 A clear writes the buffer once: 2,457,600 bytes of traffic in the model, a
@@ -240,9 +316,27 @@ fill and a write-back for every line. The time of one clear, set as
 
 `frame_cost.py --check-doc` reads this table: a mode the tool does not draw
 fails, and the clear row's DRAW mean and `PROBE_CLEAR_US` are measured
-together or not at all and agree to 0.05 ms. The other figures are a record
+together or not at all and agree to 0.05ms. The other figures are a record
 of the board, held by no check; the mean and the extremes of a screen's
 frames are what the model's estimate for its mode is set against.
+
+No window line has been read on a board yet. The rate line of a station run
+on SERVO > LIVE, the bench ARMED, gave:
+
+| The arm | Screen rotation | fps | DRAW (ms) | TURN (ms) |
+| --- | --- | ---: | ---: | ---: |
+| at rest | NORMAL | 60.4 | not measured | 0 |
+| at rest | 180° | not measured | not measured | not measured |
+| sweeping | NORMAL | 39 to 45 | not measured | 0 |
+| sweeping | 180° | 30.2 | not measured | 3.8 to 4.8 |
+
+VSYNC read 60.38Hz. A second run, of an earlier build of the same frame
+path, read DRAW 13.8 to 16.5ms on the sweep in NORMAL, at 35 to 43fps. The
+flip quantises to whole panel frames, 60.4, 30.2 or 20.1fps, so a rate
+between two of them is a mix of frames that met one panel frame and frames
+that took two. With TURN in the flip, a sweep's DRAW and TURN together are
+17.6 to 21.3ms (derived from the two runs), over the 16.6ms of one panel
+frame, and every frame takes two.
 
 ## Stacks
 
@@ -262,13 +356,14 @@ its stack less 1024 bytes.
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,424 | 1,744 |
-| `control` | `control_task` | 6,144 | 4,688 | 432 |
-| `runlog` | `log_task` | 6,656 | 4,336 | 1,296 |
-| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,024 | 1,024 |
-| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,280 | 1,792 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 2,384 | 1,712 |
+| `control` | `control_task` | 6,144 | 4,720 | 400 |
+| `runlog` | `log_task` | 6,656 | 4,112 | 1,520 |
+| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,056 | 992 |
+| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,296 | 1,776 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,744 | 352 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,344 | 1,728 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 3,040 | 4,128 |
+| `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 3,504 | 2,128 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the TCP/IP (transmission control protocol, internet
@@ -280,14 +375,19 @@ security) handshake and every read under it: esp_http_client reaches its
 transport through a function pointer. Its stack is the page server's, which
 never runs beside it; the handshake's depth is not measured.
 
-`runlog`'s deepest chain mounts the SD card: a servo file listed in
-`BENCH/KST/CONF` (`kst_store_preset()`), the walk's `storage_walk()`, the
-mount again of a card found gone (`storage_read_end()`, `mount_locked()`)
-and the `snprintf()` under it. The tool follows every call the mount can
+`runlog`'s deepest chain mounts the SD card: the size of a servo file the
+card serves (`kst_card_run()`, `kst_store_load()`, `io_size()`,
+`storage_stat()`), the mount again of a card found gone
+(`storage_read_end()`, `mount_locked()`) and the `snprintf()` under it. The tool follows every call the mount can
 make, `f_mkfs()` among them, which a mount that never formats does not
 reach. A run's start mounts the card on this task as well
-(`storage_check()`). The chain needs 4,336 bytes; the stack of 6,656
-bytes leaves 1,296 above the 1,024-byte margin.
+(`storage_check()`). The chain needs 4,112 bytes; the stack of 6,656
+bytes leaves 1,520 above the 1,024-byte margin.
+
+`wifi_ctl`'s deepest chain is the radio's stop: `radio_down()`, the NTP
+(network time protocol) client's last poll (`wifi_ntp_poll()`) and the time
+line it logs (`wall_ntp_line()`, `wall_utc_text()`), whose `snprintf()`
+reaches newlib's float conversion. It leaves 352 bytes above the margin.
 
 Measured on the ESP32-P4 build with ESP-IDF v5.5.5 at -O2. Of the margin,
 560 bytes are spent outside the frames:
@@ -314,7 +414,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  214 such
+  225 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -332,14 +432,26 @@ count of calls through a pointer differs from the build.
 
 ### High-water marks on the board
 
-The console reports every task's stack as the panel runs. With each pair of
-frame lines, every task whose high-water mark fell since the last report
-gets a line; the first report, 5 s after start-up, lists every task,
-ESP-IDF's and esp_hosted's included:
+The first rate line and every 6th after it, 30s apart at 60.4fps, want a
+scan of every task's stack. The scan is FreeRTOS's `uxTaskGetSystemState()`.
+It holds the kernel lock, with the render core's interrupts masked, while it
+reads each task's unused stack byte by byte, so a kernel call on the other
+core, the control task's among them, waits for it. The scan therefore runs
+on a quiet frame only, by `flash_gate_open()`'s rule: the bench not ARMED
+and no arm waiting, the supply's output off and no ON queued. A scan wanted
+while the bench is ARMED runs on the first rate line after it is SAFE; the
+high-water mark keeps what the run used. The panel logs the scan's time at
+the first scan and at every scan that takes longer than all before it, and
+after each scan every task whose high-water mark fell, one line a frame:
 
 ```text
+I (…) rcbench: stack scan: <n> tasks in <n> us
 I (…) rcbench: stack <task>: <n> B never used
 ```
+
+The first scan lists every task, ESP-IDF's and esp_hosted's included, over
+the frames after it, one task a frame. The scan's time on the board is not
+measured.
 
 The figure is FreeRTOS's high-water mark: the bytes at the bottom of the
 stack that no frame has written since the task started, the coprocessor
@@ -357,6 +469,7 @@ not follow.
 | `wifi_ctl` | 5,120 | not measured |
 | `mdns` | 4,096 | not measured |
 | `wifi_get` | 8,192 | not measured |
+| `cardjob` | 6,656 | not measured |
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and
 figures come from the console of a sample, and none is recorded.
@@ -406,22 +519,22 @@ recurse. The planner's job, the plan and the staged image are held in the
 session's and the port's state, not on the stack.
 
 The port plans a write in slices. The write command checks the request and
-starts the planner's job, 64 us of planner work. Each pass of core 0's
+starts the planner's job, 64us of planner work. Each pass of core 0's
 main loop then runs 1 slice in `kst_session_step()`, 100 to 109 units of
-work: 892 us at most, 816 us the longest found. The planning ends after
+work: 892us at most, 816us the longest found. The planning ends after
 216,000 units, at most 2,161 passes, with a plan, with no plan, or with
 the result "too complex" when the units are spent first. The costliest
-request found takes 120,136 units, at most 1,202 passes and 397 to 647 ms
-of planner time. All times are for 150 MHz, computed in an emulator from
+request found takes 120,136 units, at most 1,202 passes and 397 to 647ms
+of planner time. All times are for 150MHz, computed in an emulator from
 the instructions executed with ARM GNU 14.2 at -O3, and not measured on
 hardware. The time of a pass with the link, the heartbeat and the outputs
 in it is not measured. The heartbeat gap that switches every output off is
-150 ms.
+150ms.
 
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 159 such calls
+  handler, which the tool reads out of the link's page table: 161 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   13.2.1; ARM GNU 14.2 gives 165);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
@@ -473,8 +586,8 @@ download):
 I (…) wifi: radio up, mode <n>; internal RAM <n> B free
 ```
 
-And with the frame lines, when the lowest free figure since start-up has
-fallen:
+And on a frame after a rate line, when the lowest free figure since
+start-up has fallen ([On the board](#on-the-board)):
 
 ```text
 I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest block <n> B
@@ -504,8 +617,21 @@ event handlers, the network interface, `esp_wifi_init`,
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
+FILES' card task `cardjob` takes 6,656 bytes of internal RAM for its stack
+and 16,384 bytes of DMA-capable internal RAM for its copy buffer. Both are
+taken at FILES' first request, not at start-up, and the panel logs the
+internal RAM free before and after:
+
+```text
+I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B after
+```
+
+Without the RAM the line is `W (…) rcbench: files: no internal RAM for
+cardjob` and FILES says `Not enough memory.` The figures on a panel
+are not measured.
+
 `firmware/panel/main/psram_bss.lf` places the zero-initialised data (.bss)
-of 29 objects in PSRAM (pseudo-static random-access memory): the screens'
+of 30 objects in PSRAM (pseudo-static random-access memory): the screens'
 state and the card, page, settings and output helpers. The fragment names
 each object and the rules it meets. `tools/psram_bss.py` reads the build's
 linker map and fails CI when a named object keeps .bss in internal RAM.
@@ -513,12 +639,13 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 30,000 | 201,144 |
-| .bss in PSRAM (`.ext_ram.bss`) | 171,144 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 127,474 | 298,618 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,286,272 | 2,286,272 |
+| .bss in internal RAM (DIRAM) | 30,720 | 243,080 |
+| .bss in PSRAM (`.ext_ram.bss`) | 212,360 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,384 | 340,744 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,409,376 | 2,409,376 |
 
-All figures are bytes. ESP-IDF's own PSRAM entries for lwIP (lightweight
+All figures are bytes. The column without the fragment adds the PSRAM .bss
+to the internal figures; it is not a build of its own. ESP-IDF's own PSRAM entries for lwIP (lightweight
 IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment
 defines, which the P4 build does not include; lwIP's 3,551 bytes of .bss
 stay in internal RAM.
@@ -528,39 +655,45 @@ stay in internal RAM.
 A card file or the ZIP file goes from the panel to the browser over one TCP
 (transmission control protocol) connection. The page's server answers one
 request at a time: a request that arrives during a download waits for its
-end. The rate of a download is not measured. What bounds it:
+end. On a home network a download of a 16MiB file ran at 688-757kB/s, the
+card read and the radio together, not separated, at a ping average of
+14.6ms, and an upload of a 2.56MB image to `/update` at 556-599kB/s. The
+panel logged no SDIO (Secure Digital input/output) error and drew 60fps
+during the downloads. What bounds the rate:
 
 | Link | Setting | Bound |
 | --- | --- | --- |
 | power save | none while joined to a home network (`esp_wifi_set_ps(WIFI_PS_NONE)`); an access point does not sleep | none |
-| send buffer | 11,520 bytes, 8 segments of 1,440 bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11,520 bytes per round trip: 1,152,000 B/s at a 10 ms round trip, 576,000 B/s at 20 ms |
-| card | SPI (serial peripheral interface) at 20 MHz, 2,500,000 B/s on the wire; each 4,096-byte piece read as 8 single 512-byte sectors | not measured |
-| processor | the server's task at priority 1 on core 0, beside the UI (user interface) loop at priority 1; the card's SPI transfers wait by polling | not measured |
+| send buffer | 11,520 bytes, 8 segments of 1,440 bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11,520 bytes per round trip: 1,152,000B/s at a 10ms round trip, 576,000B/s at 20ms |
+| card | SDMMC (the SD/MMC host), 4 data lines at 20MHz (`BOARD_SD_FREQ_KHZ`), 10,000,000B/s on the wire | not measured |
+| radio | the ESP32-C6 over SDIO, 4 data lines at 40MHz (`BOARD_C6_FREQ_KHZ`), 20,000,000B/s on the wire, on the SDMMC host the card uses | not measured |
+| processor | the server's task at priority 1 on core 0, beside the UI (user interface) loop at priority 1 | not measured |
 
 ESP-IDF's default power save, `WIFI_PS_MIN_MODEM`, wakes the radio for
 each DTIM (delivery traffic indication message) beacon only. The access
 point holds the frames for the panel until then, TCP's acknowledgements
-among them, so each send buffer waits up to one DTIM period: 102.4 ms at
-the common beacon interval and a DTIM period of 1, 307.2 ms at a DTIM
+among them, so each send buffer waits up to one DTIM period: 102.4ms at
+the common beacon interval and a DTIM period of 1, 307.2ms at a DTIM
 period of 3. With ESP-IDF's default send buffer of 5,760 bytes, that is
-18,750 to 56,250 B/s. Without power save the radio draws more current
+18,750 to 56,250B/s. Without power save the radio draws more current
 while it runs; how much more on the panel is not measured.
 
-The page's piece buffer is in PSRAM, which the SD (Secure Digital) card
-driver does not read into by DMA (direct memory access): ESP-IDF reads
-such a piece one sector at a time through a 512-byte buffer of its own.
-The expected rate, from the bounds above, is 300,000 to 1,000,000 B/s on a
-home network with a round trip under 20 ms. While a download runs, the
-server's task takes processor time from the UI loop; the frame rate
-during a download is not measured.
+The page's piece buffer, 4,096 bytes, is in PSRAM. ESP-IDF v5.5.5 reads a
+piece into it by DMA (direct memory access) when the buffer is aligned to a
+cache line, and through a buffer of its own otherwise; which of the two the
+page's buffer takes is not measured. At the measured 14.6ms round trip the
+send buffer bounds a download at 789kB/s (11,520 bytes a round trip,
+derived), above the measured 688-757kB/s. While a download runs, the
+server's task takes processor time from the UI loop; the panel drew 60fps
+during the measured downloads.
 
 A download ends early, and the connection is reset, when
 
-- the receiver closes the connection: seen within 250 ms
+- the receiver closes the connection: seen within 250ms
   (`WA_SEND_SLICE_MS`, `shared/webaccess/include/wa_send.h`);
 - the connection fails;
-- the receiver takes nothing for 30 s (`WA_SEND_QUIET_MS`);
-- the radio goes off: within 250 ms;
+- the receiver takes nothing for 30s (`WA_SEND_QUIET_MS`);
+- the radio goes off: within 250ms;
 - the card read fails, or the file is not the size the response announced.
 
 The browser then has fewer bytes than announced and reports the download
@@ -599,7 +732,7 @@ Linux, `iw`:
 6. A receiver that stops reading: a connection that asks for the file and
    then reads nothing,
    `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
-   then after 35 s
+   then after 35s
    `curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
    The console logs `file: nothing taken for 30 s`; the request
    answers `200`.
@@ -607,31 +740,29 @@ Linux, `iw`:
 ## The SD card's file system
 
 The panel reads FAT12, FAT16, FAT32 and exFAT (extended File Allocation
-Table) through FatFs, the file system library in ESP-IDF. ESP-IDF v5.4 and
-v5.5 build FatFs without exFAT, and no Kconfig option turns it on. The
-panel build takes a copy of ESP-IDF's `fatfs` component with
-`FF_FS_EXFAT` set to 1 (`firmware/panel/fatfs_exfat.cmake`). Long file
-names stay as `sdkconfig.defaults` sets them: on, 255 characters, the
-working buffer on the heap.
+Table) through FatFs, the file system library in ESP-IDF. ESP-IDF v5.5
+builds FatFs without exFAT, and no Kconfig option turns it on. The panel
+build takes a copy of ESP-IDF's `fatfs` component with `FF_FS_EXFAT` set to
+1 (`firmware/panel/fatfs_exfat.cmake`), and `storage_list.c` stops a build
+whose FatFs has no exFAT. Long file names stay as `sdkconfig.defaults` sets
+them: on, 255 characters, the working buffer on the heap.
 
-What exFAT costs, read from the ESP-IDF v5.4 build against the same tree
-without it:
+What exFAT costs, read from the P4 build at ESP-IDF v5.5.5 against the same
+tree built with the `fatfs_exfat.cmake` include and that stop taken out,
+both without `RCBENCH_IOMCU_BIN`:
 
 | Item | Without exFAT | With exFAT | Where |
 | --- | ---: | ---: | --- |
-| application image | 1,967,360 | 1,976,544 | flash, `ota_0` holds 4,063,232 |
-| internal RAM the image holds (`static` above) | 128,208 | 128,208 | internal |
+| application image | 2,425,520 | 2,434,880 | flash, `ota_0` holds 8,126,464 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, from `idf.py size` | 128,576 | 128,576 | internal |
 | the mount's context: `FATFS`, 4 open files (`FIL`) and ESP-IDF's VFS (virtual file system) state | 25,376 | 25,560 | heap, PSRAM first |
 | the long name working buffer, held for one FatFs call | 512 | 1,120 | heap, PSRAM first |
 | one directory walk's buffer (`storage_walk()`) | 328 | 368 | heap, internal |
 | `FILINFO`, one entry as FatFs reads it, in `storage_stat()`'s buffer beside the path, for one call | 280 | 288 | heap, internal |
-| `log_viewer_screen`'s .bss: 48 list rows with 64-bit sizes | 35,576 | 35,968 | PSRAM |
 
 All figures are bytes. The heap rows are `sizeof()` values read with GDB
-from the two builds; the heap at run time is not measured. The stack
-depths of the table under [Stacks](#stacks) are the same in both builds:
-FatFs puts its long name buffer on the heap, not on the calling task's
-stack.
+from the two builds; the heap at run time is not measured. FatFs puts its
+long name buffer on the heap, not on the calling task's stack.
 
 A file's size is 64-bit from FatFs to the screen. stat() through the VFS
 gives a size in `st_size`, an `off_t` of 32 bits on the panel, so every
@@ -639,6 +770,6 @@ size the panel uses comes from FatFs's `f_stat()` or `f_readdir()`
 instead.
 
 `FF_LBA64` (64-bit sector numbers) stays 0. It is needed for a card
-partitioned GPT (GUID Partition Table; GUID: globally unique identifier) and for a volume over 2 TiB. With
-it the image grows by a further 4,768 bytes, `FATFS` from 4,160 to 4,184
+partitioned GPT (GUID Partition Table; GUID: globally unique identifier) and for a volume over 2TiB. With
+it the P4 image grows by a further 5,056 bytes, `FATFS` from 4,160 to 4,184
 bytes and `FIL` from 4,176 to 4,192 bytes.

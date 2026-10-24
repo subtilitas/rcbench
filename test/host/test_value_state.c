@@ -84,7 +84,7 @@ static void frames(int n)
     }
 }
 
-/* Frames drawn into both buffers, 26 ms each, so a flash, 150 ms, is
+/* Frames drawn into both buffers, 26ms each, so a flash, 150ms, is
  * over. */
 static void settle(void)
 {
@@ -253,7 +253,7 @@ static bool m_arm(void)
 }
 
 /* MOTOR & ESC in state @p st.  Past OFF and ARMING the bench has been
- * driven to 24.2 %, 100 px of the track. */
+ * driven to 24.2%, 100px of the track. */
 static bool m_enter(int st)
 {
     router_up(SCREEN_MOTOR);
@@ -365,7 +365,7 @@ TEST_CASE(motor_an_input_is_taken_only_in_live)
                 CHECK(picture_unchanged());
                 CHECK(m_drawn_refused());
             }
-            /* The bench's answer to what was asked: LEAVING ends at 0 %. */
+            /* The bench's answer to what was asked: LEAVING ends at 0%. */
             if (is_leaving(st)) {
                 motor_screen_set_armed(false);
                 CHECK_EQ(motor_screen_throttle(), 0.0f);
@@ -392,7 +392,7 @@ static void m_activate(int control)
 
 /* The edge out of LIVE while the control is active: its command is not
  * sent, the finger's further travel moves nothing, and the value stays
- * until the bench reports disarmed, which returns it to 0 %. */
+ * until the bench reports disarmed, which returns it to 0%. */
 TEST_CASE(motor_the_edge_out_of_live_ends_an_active_control)
 {
     for (int edge = 0; edge < EDGE_COUNT; ++edge) {
@@ -444,7 +444,7 @@ TEST_CASE(motor_the_edge_out_of_live_ends_an_active_control)
 
 /* The edge into LIVE, and the edge from LEAVING to OFF, under a finger
  * that pressed the control while it was refused: the press is no drag and
- * no step afterwards, and the value is 0 %. */
+ * no step afterwards, and the value is 0%. */
 TEST_CASE(motor_an_edge_under_a_refused_press_starts_nothing)
 {
     for (int st = 0; st < ST_COUNT; ++st) {
@@ -467,7 +467,7 @@ TEST_CASE(motor_an_edge_under_a_refused_press_starts_nothing)
             CHECK_EQ(m_kinds(NULL), 0u);
             CHECK_EQ(motor_screen_throttle(), 0.0f);
             if (!is_leaving(st)) {
-                /* Live: the next press is taken, from 0 %. */
+                /* Live: the next press is taken, from 0%. */
                 CHECK(m_drawn_live());
                 feed_tap(FEED_LONE, M_UP_X, M_TRACK_Y);
                 CHECK_NEAR(m_took().value, 1.0f, 0.001f);

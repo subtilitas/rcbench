@@ -36,8 +36,8 @@
 #define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* From motor_spots.h: the strip's tabs, 150 px a tab 4 px apart from x 9,
- * 40 px high from y 8; the CONTROL card's ARM; PROGRAM's first row, in the
+/* From motor_spots.h: the strip's tabs, 150px a tab 4px apart from x 9,
+ * 40px high from y 8; the CONTROL card's ARM; PROGRAM's first row, in the
  * page from y 56. */
 #define TAB_Y       P(MO_TAB_Y)
 #define TAB_X(i)    MO_TAB_X(i)
@@ -272,7 +272,8 @@ TEST_CASE(a_full_width_session_shows_the_strip_not_the_card)
     /* The strip: TARGET dim from x 12 in the strip row, the bench's SAFE in
      * the OK colour after it. */
     int dim = 0, ok = 0;
-    for (int y = P(PROG_FULL_STRIP_Y); y < P(PROG_FULL_STRIP_Y + 16); ++y) {
+    for (int y = P(PROG_FULL_STRIP_Y);
+         y < P(PROG_FULL_STRIP_Y + PROG_FULL_STRIP_H); ++y) {
         for (int x = 0; x < W; ++x) {
             if (px(x, y) == ui_theme_color(UI_C_TEXT_DIM)) {
                 ++dim;
@@ -325,7 +326,7 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, 1.0f);
     strip(line, sizeof(line), true, NULL);
     CHECK_STR_EQ(line,
-                 "TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   ARMED");
+                 "TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   ARMED");
 
     /* A reading below zero is no reading. */
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, -0.1f);
@@ -344,7 +345,7 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, 1.0f);
     strip(line, sizeof(line), false, NULL);
     CHECK_STR_EQ(line,
-                 "ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE");
+                 "ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60V  1.00A   SAFE");
     supply(true, false, 0u, 0.0f, 0.0f);
     strip(line, sizeof(line), true, NULL);
     CHECK_STR_EQ(line, "ZIEL DSHOT300 GP0 GP1   NETZTEIL AUS   ARMED");
@@ -367,8 +368,8 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
 /*
  * The widest strip fits the row in every language: every pin bound (the
  * target cut to its 26 cells, "+N" at the end), the widest supply reading
- * (99.99 V and 99.99 A, beyond the 21 V and 5 A a PPS source gives) and
- * ARMED.  The drawn strip puts 8 + 24 + 24 px between its four parts, the
+ * (99.99V and 99.99A, beyond the 21V and 5A a PPS source gives) and
+ * ARMED.  The drawn strip puts 8 + 24 + 24px between its four parts, the
  * text 1 + 3 + 3 spaces: the same width.
  */
 TEST_CASE(the_widest_strip_fits_the_row_in_both_languages)
@@ -407,13 +408,18 @@ TEST_CASE(the_widest_strip_fits_the_row_in_both_languages)
             }
         }
     }
-    CHECK(PROG_FULL_STRIP_X + PROG_FULL_STRIP_CELLS * 8 <= W - 12);
+    /* The strip's line in PROG_FULL_STRIP_FONT, 10px cells, ends 12px
+     * inside the body's right edge, and above the session's area. */
+    CHECK(PROG_FULL_STRIP_X + PROG_FULL_STRIP_CELLS * 10 <= W - 12);
+    CHECK_EQ(PROG_FULL_STRIP_FONT->width, 10);
+    CHECK_EQ(PROG_FULL_STRIP_FONT->height, PROG_FULL_STRIP_H);
+    CHECK(PROG_FULL_STRIP_Y + PROG_FULL_STRIP_H <= PROG_FULL_Y);
     CHECK(widest > 40);
     ui_text_set_language(UI_LANG_EN);
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 99.994f,
            99.994f);
     (void)motor_output_strip(line, sizeof(line), 4u, 3u, true, false, NULL);
-    CHECK(strstr(line, "99.99 V  99.99 A") != NULL);
+    CHECK(strstr(line, "99.99V  99.99A") != NULL);
 }
 
 /* The strip repaints when what it says changes: the supply's reading and
@@ -506,10 +512,11 @@ TEST_CASE(leaving_with_a_session_open_disarms_and_closes_it)
 }
 
 /*
- * PROGRAM's list on an armed bench, the throttle at 40 %: a second finger
- * opens ESC STICK while the first holds DISARM.  The session covers DISARM
- * and takes the first finger's release, so the opening itself switches the
- * bench to SAFE; so does an opening with no finger on DISARM.
+ * PROGRAM's list on an armed bench, the throttle at 40%: a second finger
+ * opens ESC STICK while the first holds DISARM.  The press on DISARM has
+ * asked for SAFE, and the opening asks again while the bench has not
+ * answered; the session takes the first finger's release.  An opening with
+ * no finger on DISARM switches the bench to SAFE itself.
  */
 TEST_CASE(opening_a_session_on_an_armed_bench_disarms_it)
 {
@@ -522,7 +529,7 @@ TEST_CASE(opening_a_session_on_an_armed_bench_disarms_it)
         if (held) {
             finger(1, ARM_X, ARM_Y);        /* DISARM, pressed */
             frames(1);
-            CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+            CHECK_EQ(took().kind, MOTOR_CMD_DISARM);   /* on the press */
         }
         feed_tap(2, ROW_X, ROW_Y);
         frames(1);

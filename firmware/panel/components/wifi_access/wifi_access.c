@@ -49,11 +49,14 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_dns.h"
+#include "wifi_ntp.h"
 #include "wifi_radio.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
 #include "wa_zip.h"
+#include "wall_clock.h"
 
 static const char *TAG = "wifi";
 
@@ -76,12 +79,18 @@ static const char *TAG = "wifi";
 /* A read waits this long at a time, so a job ended from outside stops its
  * task within about this much once the data flows. */
 #define FETCH_SLICE_MS 1000u
-/* The radio goes off after this much, task ended or not: a connection or a
- * name lookup that waits on the network ends when the radio does. */
+/** @brief The radio goes off after this much, task ended or not, ms.  A
+ *         connection ends with the radio; a name lookup only when lwIP
+ *         gives up on it, up to about 7s a DNS server, and the radio does
+ *         not wait for that (wa_fetch_start_gate()). */
 #define FETCH_GRACE_MS 1500u
-/* And the task's end is waited for this long at most after it. */
-#define FETCH_EXIT_MS  20000u
 #define FETCH_AGENT    "rcbench-panel"
+/** @brief How long the worker waits for the event loop to pass the radio's
+ *         last events at its stop (drain()), ms. */
+#define DRAIN_MS       2000u
+
+/** @brief The worker's marker in the default event loop (drain()). */
+ESP_EVENT_DEFINE_BASE(WA_DRAIN_EVENT);
 
 static struct {
     SemaphoreHandle_t lock;
@@ -115,6 +124,7 @@ static struct {
     /* The worker's. */
     bool            net_ready;
     bool            radio_up;
+    bool            held;         /**< up past its session for the clock */
     uint32_t        up_gen;
     wa_mode_t       up_mode;
     esp_netif_t    *netif;
@@ -130,10 +140,15 @@ static struct {
      * by the worker as it reads the session, so wifi_access_down() never
      * sees a start that has not reached the radio as a radio off. */
     atomic_bool     asked;
+    atomic_bool     unlinger;     /**< wifi_access_end_linger() asked: the
+                                       worker ends the session's linger */
     atomic_bool     de;
+    SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
     /* The fetch task's.  fetch_alive from its creation to its last touch
-     * of anything shared; fetch_stop asks it to end. */
+     * of anything shared, which can be past the radio's end; fetch_stop
+     * asks it to end, and only a new job, never started while it lives,
+     * clears it. */
     atomic_bool     fetch_alive;
     atomic_bool     fetch_stop;
     fw_upload_t     fup;          /* its image, until staged            */
@@ -307,7 +322,7 @@ static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
         memcpy(d->path + d->len + 1u, e->d_name, nl);
         d->path[d->len + 1u + nl] = '\0';
         /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads
-         * an exFAT file of 4 GiB and more as a small one. */
+         * an exFAT file of 4GiB and more as a small one. */
         storage_stat_t st;
         const esp_err_t r = storage_stat(d->path, &st);
         d->path[d->len] = '\0';
@@ -599,7 +614,7 @@ static esp_err_t h_update(httpd_req_t *r)
         const int got = httpd_req_recv(r, (char *)b->io,
                                        (left < IO_CHUNK) ? left : IO_CHUNK);
         if (got == HTTPD_SOCK_ERR_TIMEOUT && ++waits < 6u) {
-            continue;       /* 6 waits of the server's 5 s: 30 s quiet */
+            continue;       /* 6 waits of the server's 5s: 30s quiet */
         }
         if (got <= 0) {
             whole = false;
@@ -1208,31 +1223,115 @@ static bool auth_refused(uint8_t reason)
     }
 }
 
-static void on_scan_done(void)
+/**
+ * @brief Start the scan of @p tok, all channels, the driver's default
+ *        times, while it is still the scan under way; a refusal ends the
+ *        session WA_OFF_FAILED only while it still is.
+ *
+ * Called with the lock not held, from the event loop: the request goes to
+ * the C6 and waits for its answer, and a session can end and another start
+ * meanwhile (wa_scan_begin()).
+ *
+ * @param tok The scan's token.
+ * @param run The scan's number in the session, from 1.
+ */
+static void scan_start(uint32_t tok, unsigned run)
 {
+    lock();
+    const bool mine = wa_scan_is(&s.w, tok);
+    unlock();
+    if (!mine) {
+        ESP_LOGI(TAG, "scan %u: the session ended, not started",
+                 (unsigned)tok);
+        return;
+    }
+    wifi_scan_config_t sc = { 0 };
+    ESP_LOGI(TAG, "scan %u: start, try %u of %u", (unsigned)tok, run,
+             WA_SCAN_TRIES);
+    const esp_err_t e = esp_wifi_scan_start(&sc, false);
+    if (e != ESP_OK) {
+        lock();
+        const bool ended = wa_scan_refused(&s.w, tok);
+        unlock();
+        ESP_LOGW(TAG, "scan %u: refused: %s%s", (unsigned)tok,
+                 esp_err_to_name(e), ended ? "" : "; the session had ended");
+    }
+}
+
+/**
+ * @brief WIFI_EVENT_SCAN_DONE in a scan session: read the list of the scan
+ *        under way, or start it again, or end the session.
+ *
+ * A done report with no scan of this session under way reads nothing: its
+ * list, if any, goes with the driver at the radio's stop.  A failed scan, a
+ * list that cannot be read and a read that does not hold what the report
+ * counts each count as a failure (wa_scan_read_ok()), never as an empty
+ * list.  The scan's token carries the report through the read, which runs
+ * without the lock.
+ *
+ * @param d The event's data; NULL reads as a success that counts nothing.
+ */
+static void on_scan_done(const wifi_event_sta_scan_done_t *d)
+{
+    const uint32_t status = (d != NULL) ? d->status : 0u;
+    const unsigned reported = (d != NULL) ? d->number : 0u;
+    lock();
+    const uint32_t tok = wa_scan_pending(&s.w);
+    unlock();
+    if (tok == 0u) {
+        ESP_LOGW(TAG, "scan: done report with no scan under way, "
+                 "status %u, %u counted: ignored", (unsigned)status,
+                 reported);
+        return;
+    }
     uint16_t n = SCAN_READ;
-    wifi_ap_record_t *rec = heap_caps_malloc(n * sizeof(*rec),
-                                             MALLOC_CAP_SPIRAM);
-    if (rec == NULL || esp_wifi_scan_get_ap_records(&n, rec) != ESP_OK) {
+    bool read_ok = false;
+    wifi_ap_record_t *rec = NULL;
+    if (status == 0u) {
+        rec = heap_caps_malloc(n * sizeof(*rec), MALLOC_CAP_SPIRAM);
+        read_ok = (rec != NULL
+                   && esp_wifi_scan_get_ap_records(&n, rec) == ESP_OK);
+    }
+    if (!read_ok) {
         n = 0u;
         (void)esp_wifi_clear_ap_list();
     }
+    const bool ok = wa_scan_read_ok(status, reported, read_ok, n, SCAN_READ);
+    uint32_t next = 0u;
     lock();
-    wa_scan_clear(&s.scan);
-    for (uint16_t i = 0; i < n; ++i) {
-        const wifi_auth_mode_t m = rec[i].authmode;
-        const bool usable = (m == WIFI_AUTH_WPA2_PSK
-                             || m == WIFI_AUTH_WPA_WPA2_PSK
-                             || m == WIFI_AUTH_WPA3_PSK
-                             || m == WIFI_AUTH_WPA2_WPA3_PSK);
-        wa_scan_add(&s.scan, rec[i].ssid,
-                    strnlen((const char *)rec[i].ssid, sizeof(rec[i].ssid)),
-                    rec[i].rssi, usable);
+    const unsigned run = s.w.scan_runs;
+    const wa_scan_step_t step = wa_on_scan_end(&s.w, tok, ok, &next);
+    unsigned listed = 0u;
+    unsigned dropped = 0u;
+    if (step == WA_SCAN_TAKE) {
+        wa_scan_clear(&s.scan);
+        for (uint16_t i = 0; i < n; ++i) {
+            const wifi_auth_mode_t m = rec[i].authmode;
+            const bool usable = (m == WIFI_AUTH_WPA2_PSK
+                                 || m == WIFI_AUTH_WPA_WPA2_PSK
+                                 || m == WIFI_AUTH_WPA3_PSK
+                                 || m == WIFI_AUTH_WPA2_WPA3_PSK);
+            wa_scan_add(&s.scan, rec[i].ssid,
+                        strnlen((const char *)rec[i].ssid,
+                                sizeof(rec[i].ssid)),
+                        rec[i].rssi, usable);
+        }
+        s.scanned = true;
+        listed = s.scan.n;
+        dropped = s.scan.dropped;
     }
-    s.scanned = true;
-    wa_on_scan_done(&s.w);
     unlock();
     heap_caps_free(rec);
+    ESP_LOGI(TAG, "scan %u: done, try %u, status %u, %u counted, %u read%s; "
+             "%u listed, %u left off%s", (unsigned)tok, run,
+             (unsigned)status, reported, (unsigned)n,
+             read_ok ? "" : " (list not read)", listed, dropped,
+             (step == WA_SCAN_IGNORE) ? "; the session had ended" : "");
+    if (step == WA_SCAN_AGAIN) {
+        scan_start(next, run + 1u);
+    } else if (step == WA_SCAN_FAILED) {
+        ESP_LOGW(TAG, "scan %u: failed after %u tries", (unsigned)tok, run);
+    }
 }
 
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
@@ -1248,11 +1347,17 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_STA_START:
             if (s.up_mode == WA_MODE_SCAN) {
-                wifi_scan_config_t sc = { 0 };
-                if (esp_wifi_scan_start(&sc, false) != ESP_OK) {
-                    lock();
-                    wa_on_failed(&s.w);
-                    unlock();
+                /* One scan at a time: esp_hosted can report one start
+                 * twice, and a second esp_wifi_scan_start() replaces the
+                 * first, which then reports done with nothing found. */
+                lock();
+                const uint32_t tok = wa_scan_begin(&s.w);
+                const unsigned run = s.w.scan_runs;
+                unlock();
+                if (tok != 0u) {
+                    scan_start(tok, run);
+                } else {
+                    ESP_LOGI(TAG, "scan: station start again, no new scan");
                 }
             } else {
                 retry = true;
@@ -1260,7 +1365,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_SCAN_DONE:
             if (s.up_mode == WA_MODE_SCAN) {
-                on_scan_done();
+                on_scan_done(data);
             }
             break;
         case WIFI_EVENT_STA_CONNECTED:
@@ -1313,12 +1418,56 @@ static void start_failed(const char *step, esp_err_t e)
              (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
 }
 
+/**
+ * @brief The marker drain() posts: every event posted before it is handled.
+ * @param arg  Unused.
+ * @param base WA_DRAIN_EVENT.
+ * @param id   Unused.
+ * @param data Unused.
+ */
+static void on_drain(void *arg, esp_event_base_t base, int32_t id,
+                     void *data)
+{
+    (void)arg;
+    (void)base;
+    (void)id;
+    (void)data;
+    (void)xSemaphoreGive(s.drained);
+}
+
+/**
+ * @brief Wait, DRAIN_MS at most, until the event loop has handled every
+ *        event the radio posted before its stop.
+ *
+ * Binds each scan's done report to its radio: the next radio's station
+ * start, which starts its scan (wa_scan_begin()), comes after the marker,
+ * so a done report of the radio taken down is never read as the next
+ * one's.
+ */
+static void drain(void)
+{
+    (void)xSemaphoreTake(s.drained, 0);
+    if (esp_event_post(WA_DRAIN_EVENT, 0, NULL, 0, pdMS_TO_TICKS(DRAIN_MS))
+            != ESP_OK
+        || xSemaphoreTake(s.drained, pdMS_TO_TICKS(DRAIN_MS)) != pdTRUE) {
+        ESP_LOGW(TAG, "radio off: events not drained within %ums",
+                 (unsigned)DRAIN_MS);
+    }
+}
+
 /* The network interface layer, the default event loop and the handlers,
  * once.  A step that fails is tried again at the next start. */
 static bool net_once(void)
 {
     if (s.net_ready) {
         return true;
+    }
+    if (s.drained == NULL) {
+        s.drained = xSemaphoreCreateBinary();
+        if (s.drained == NULL) {
+            start_failed("drain semaphore", ESP_ERR_NO_MEM);
+            return false;
+        }
     }
     esp_err_t e = esp_netif_init();
     if (e != ESP_OK) {
@@ -1344,6 +1493,16 @@ static bool net_once(void)
         start_failed("esp_event_handler_register IP_EVENT", e);
         return false;
     }
+    e = esp_event_handler_register(WA_DRAIN_EVENT, ESP_EVENT_ANY_ID,
+                                   on_drain, NULL);
+    if (e != ESP_OK) {
+        (void)esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                                           on_event);
+        (void)esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                           on_event);
+        start_failed("esp_event_handler_register WA_DRAIN_EVENT", e);
+        return false;
+    }
     s.net_ready = true;
     return true;
 }
@@ -1363,9 +1522,17 @@ static bool fetch_wait(uint32_t wait_ms)
  * @brief Take the radio down: mDNS, the fetch, the page's server, the
  *        driver and the interface.
  *
+ * The fetch task gets FETCH_GRACE_MS.  One still in a name lookup after it
+ * is not waited for: the radio counts as down once the interface is gone,
+ * and the task ends when lwIP gives up on the lookup.  It reads no state
+ * the radio's end frees, its report is dropped by the job's generation,
+ * and no job starts while it lives (wa_fetch_start_gate()).  A lookup that
+ * a next session's station answers leads to one connection over it, whose
+ * result is dropped; f_stopped() ends the job before any further request.
+ *
  * After a failed C6 link, esp_wifi_stop() and esp_wifi_deinit() are not
  * called: each is a request to the C6, which is held in reset then, and
- * would end only at esp_hosted's response time-out, 5 s each.
+ * would end only at esp_hosted's response time-out, 5s each.
  */
 static void radio_down(void)
 {
@@ -1383,10 +1550,13 @@ static void radio_down(void)
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
+    /* Before the interface goes: SNTP sends through it. */
+    wifi_ntp_stop();
     if (s.radio_up) {
         if (!wifi_radio_failed()) {
             (void)esp_wifi_stop();
             (void)esp_wifi_deinit();
+            drain();
         }
         if (s.netif != NULL) {
             esp_netif_destroy_default_wifi(s.netif);
@@ -1394,10 +1564,12 @@ static void radio_down(void)
         }
     }
     s.radio_up = false;
+    s.held = false;
     memset(s.ip, 0, sizeof(s.ip));
-    if (!fetch_wait(FETCH_EXIT_MS)) {
-        /* No new job starts while it lives (wifi_access_fetch_start()). */
-        ESP_LOGW(TAG, "GitHub: the fetch task has not ended");
+    if (atomic_load(&s.fetch_alive)) {
+        /* In a name lookup: it ends on its own, and no job starts before. */
+        ESP_LOGW(TAG, "GitHub: the fetch task has not ended; radio off "
+                 "without it");
     }
     atomic_store(&s.abort, false);
     atomic_store(&s.down, true);
@@ -1501,9 +1673,27 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
 }
 
 /**
+ * @brief Keep the radio up past its session's end for the clock's NTP
+ *        answer (wifi_ntp.h): the page's requests under way and the mDNS
+ *        name end now, the station and the interface stay until
+ *        radio_down().  Logged once a radio.
+ */
+static void radio_hold(void)
+{
+    if (!s.held) {
+        s.held = true;
+        atomic_store(&s.abort, true);
+        atomic_store(&s.mdns_run, false);
+        ESP_LOGI(TAG, "radio held for the NTP answer, %ums at most from "
+                 "the request", (unsigned)WALL_NTP_TIMEOUT_MS);
+    }
+}
+
+/**
  * @brief The task that owns the radio: compares what the session wants
  *        with what runs, and brings the radio up or down; a failed C6 link
- *        takes it down.
+ *        takes it down.  A session that ended and lingers (wa_lingers())
+ *        keeps the radio while the clock's NTP request asks.
  *
  * @param arg Unused.
  */
@@ -1513,14 +1703,26 @@ static void worker(void *arg)
     for (;;) {
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
         lock();
+        if (atomic_exchange(&s.unlinger, false)) {
+            wa_unlinger(&s.w);
+        }
         const bool want = wa_radio(&s.w);
         atomic_store(&s.asked, want);
         const uint32_t gen = s.gen;
         const wa_t w = s.w;
         const wa_conf_t c = s.conf;
         unlock();
+        /* The clock from the home network, once a join; this radio's
+         * session only, and never past a failed C6 link. */
+        const bool same = s.radio_up && gen == s.up_gen
+                          && !wifi_radio_failed();
+        const bool held = wifi_ntp_poll(same && w.state == WA_ST_JOINED,
+                                        same && wa_lingers(&w));
+        wifi_dns_poll(s.netif, same && w.state == WA_ST_JOINED);
         if (s.radio_up || !atomic_load(&s.down)) {
-            if (!want || gen != s.up_gen || wifi_radio_failed()) {
+            if (held) {
+                radio_hold();
+            } else if (!want || gen != s.up_gen || wifi_radio_failed()) {
                 radio_down();
                 ESP_LOGI(TAG, "radio off");
             }
@@ -1692,6 +1894,12 @@ bool wifi_access_down(void)
     return atomic_load(&s.down) && !atomic_load(&s.asked);
 }
 
+void wifi_access_end_linger(void)
+{
+    atomic_store(&s.unlinger, true);
+    poke();
+}
+
 bool wifi_access_save_net(const char *ssid, const char *pass)
 {
     lock();
@@ -1771,12 +1979,9 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
         no_worker = true;
     }
     lock();
-    wa_why_t g = gate;
-    if (g == WA_WHY_NONE
-        && (s.taken || atomic_load(&s.fetch_alive)
-            || (wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH))) {
-        g = WA_WHY_BUSY;
-    }
+    const wa_why_t g = wa_fetch_start_gate(
+        gate, s.taken, atomic_load(&s.fetch_alive),
+        wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH);
     const wa_got_t r = wa_fetch_start(&s.f, job, want, ch, s.conf.have_net,
                                       g, ms());
     if (r == WA_GOT_NONE) {
@@ -1810,6 +2015,10 @@ void wifi_access_fetch_tick(wa_why_t abort)
         atomic_store(&s.fetch_stop, true);
         if (s.w.mode == WA_MODE_FETCH) {
             wa_close(&s.w, WA_OFF_ASKED);   /* not WI-FI's session */
+            /* Only the job's own end leaves the radio for the clock. */
+            if (abort != WA_WHY_NONE) {
+                wa_unlinger(&s.w);
+            }
         }
     }
     if (run) {

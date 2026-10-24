@@ -267,12 +267,18 @@ FAULT_CALLS = {
     "fault_level": ("panel_card_make_dir",),
 }
 
-# kst_store_io_t (kst_store.c), the servo files of kst_files.c.
+# kst_store_io_t (kst_store.c), the servo files of kst_files.c.  A callback
+# written `file:name` is the static function of that name in that source
+# file: panel_files.c has an io_mounted, an io_walk and an io_read of its
+# own.
 KST_CALLS = {
-    "kst_store_preset": ("io_mounted", "io_walk"),
-    "kst_store_save": ("io_mounted", "io_walk", "io_create"),
-    "kst_store_list_after": ("io_mounted", "io_walk"),
-    "kst_store_load": ("io_mounted", "io_size", "io_read"),
+    "kst_store_preset": ("kst_files.c:io_mounted", "kst_files.c:io_walk"),
+    "kst_store_save": ("kst_files.c:io_mounted", "kst_files.c:io_walk",
+                       "kst_files.c:io_create"),
+    "kst_store_list_after": ("kst_files.c:io_mounted",
+                             "kst_files.c:io_walk"),
+    "kst_store_load": ("kst_files.c:io_mounted", "kst_files.c:io_size",
+                       "kst_files.c:io_read"),
 }
 
 # The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
@@ -637,14 +643,16 @@ def main() -> int:
     outside = OUTSIDE_FRAMES + tls_bytes(elf)
 
     # Where several names share an address, the alphabetically first.
-    sizes, names, rom = {}, {}, {}
-    for addr, kind, size, name, _, absolute in sorted(elf.symbols,
-                                                      key=lambda s: s[3]):
+    sizes, names, rom, by_file = {}, {}, {}, {}
+    for addr, kind, size, name, src, absolute in sorted(elf.symbols,
+                                                        key=lambda s: s[3]):
         if absolute:
             rom.setdefault(addr, name)
         elif kind == STT_FUNC:
             names.setdefault(addr, name)
             sizes[addr] = max(sizes.get(addr, 0), size)
+            if src is not None:
+                by_file.setdefault(f"{src}:{name}", set()).add(addr)
     names.update(rom)
     funcs = {a: analyse_riscv(elf, a, n, names[a]) for a, n in sizes.items()
              if n > 0}
@@ -697,7 +705,8 @@ def main() -> int:
                              f"the table no longer matches {home}")
                 continue
             for cb in callbacks:
-                targets = by_name.get(cb, [])
+                targets = (sorted(by_file.get(cb, ())) if ":" in cb
+                           else by_name.get(cb, []))
                 if len(targets) != 1:
                     fails.append(f"{table}: callback {cb} is "
                                  f"{len(targets)} functions in the ELF, "

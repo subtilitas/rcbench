@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The TI INA228: 85 V, 20-bit current, voltage, power, energy and charge
+ * @brief The TI INA228: 85V, 20-bit current, voltage, power, energy and charge
  * monitor on I2C (Inter-Integrated Circuit).
  *
  * The register codec and a driver that talks to one part through sense_bus.h.
@@ -9,9 +9,9 @@
  * Tables and sections below are that document's.
  *
  * Calibration (§8.1.2).  The maximum current chooses the shunt range:
- * ADCRANGE 1 (±40.96 mV, 78.125 nV a step) when the maximum across the
- * shunt fits it, else ADCRANGE 0 (±163.84 mV, 312.5 nV a step); a maximum
- * past 163.84 mV is refused (Table 8-1).
+ * ADCRANGE 1 (±40.96mV, 78.125 nV a step) when the maximum across the
+ * shunt fits it, else ADCRANGE 0 (±163.84mV, 312.5 nV a step); a maximum
+ * past 163.84mV is refused (Table 8-1).
  *
  * CURRENT_LSB is the ADC (analog-to-digital converter) step over the
  * shunt, not Equation 3 taken at the maximum (maximum / 2^19).  Equation 2,
@@ -33,8 +33,8 @@
  * it.  A shunt whose full scale at the chosen range passes
  * INA228_FS_MA_LIMIT is refused.
  *
- * The MATEK I2C-INA-BM (200 µΩ, address 0x45) at its 204.8 A: ADCRANGE 1,
- * SHUNT_CAL 4096, CURRENT_LSB 390.625 µA, power 1.25 mW, energy 20 mJ and
+ * The MATEK I2C-INA-BM (200 µΩ, address 0x45) at its 204.8A: ADCRANGE 1,
+ * SHUNT_CAL 4096, CURRENT_LSB 390.625µA, power 1.25mW, energy 20 mJ and
  * charge 390.625 µC a step.
  *
  * Identity (Tables 7-23, 7-24): MANUFACTURER_ID 5449h ("TI") and DEVICE_ID
@@ -94,7 +94,7 @@ enum {
  * @brief The largest full scale taken, mA: every reading then fits an int32 of
  * µA.
  *
- * 2000 A is 81.92 µΩ at ADCRANGE 0 and 20.48 µΩ at ADCRANGE 1.
+ * 2000A is 81.92 µΩ at ADCRANGE 0 and 20.48 µΩ at ADCRANGE 1.
  */
 #define INA228_FS_MA_LIMIT 2000000u
 /**
@@ -146,11 +146,11 @@ enum {
 
 /**
  * @brief The set-up this bench runs (DESIGN §3.4): continuous, bus and shunt
- * 540 µs (code 4), temperature 50 µs (code 0), averaging 1: a fresh result
- * every 1130 µs.
+ * 540µs (code 4), temperature 50µs (code 0), averaging 1: a fresh result
+ * every 1130µs.
  *
- * 540 µs integrates over 4 to 26 periods of an ESC's (electronic speed
- * controller's) 8 to 48 kHz switching.
+ * 540µs integrates over 4 to 26 periods of an ESC's (electronic speed
+ * controller's) 8 to 48kHz switching.
  */
 #define INA228_ADC_BENCH 0xF900u
 
@@ -204,8 +204,8 @@ typedef enum {
     INA228_SETUP_OK = 0,
     INA228_SETUP_BAD_ADDR,     /**< outside 0x40 to 0x4F                  */
     INA228_SETUP_NO_SHUNT,     /**< a shunt of 0 µΩ                       */
-    INA228_SETUP_NO_MAX,       /**< a maximum current of 0 mA             */
-    INA228_SETUP_OVER_RANGE,   /**< the maximum drops more than 163.84 mV
+    INA228_SETUP_NO_MAX,       /**< a maximum current of 0mA              */
+    INA228_SETUP_OVER_RANGE,   /**< the maximum drops more than 163.84mV
                                     across the shunt, or the range's full
                                     scale passes INA228_FS_MA_LIMIT        */
 } ina228_setup_err_t;
@@ -263,7 +263,7 @@ sense_value_t ina228_current_ua(const ina228_cal_t *cal, int32_t code);
 sense_value_t ina228_vshunt_nv(const ina228_cal_t *cal, int32_t code);
 
 /**
- * @brief VBUS in µV, 195.3125 µV a step (Table 7-10).
+ * @brief VBUS in µV, 195.3125µV a step (Table 7-10).
  *
  * @param code The VBUS code.
  * @return The bus voltage in µV.
@@ -271,7 +271,7 @@ sense_value_t ina228_vshunt_nv(const ina228_cal_t *cal, int32_t code);
 int32_t ina228_vbus_uv(int32_t code);
 
 /**
- * @brief DIETEMP in m°C, 7.8125 m°C a step (Table 7-11).
+ * @brief DIETEMP in m°C, 7.8125m°C a step (Table 7-11).
  *
  * @param raw The DIETEMP register value.
  * @return The die temperature in m°C.
@@ -343,7 +343,7 @@ ina228_setup_err_t ina228_init(ina228_t *d, sense_bus_t *bus, uint8_t addr,
  * @brief Every tick: probes the part when it is due -- at the first call, and
  * SENSE_RETRY_MS after it was found absent, wrong, refused or offline.
  *
- * A probe is 10 transactions, 1075 µs of bus time at 400 kHz without the
+ * A probe is 10 transactions, 1075µs of bus time at 400kHz without the
  * controller's own time between them.  Returns whether the part is online.
  *
  * @param d The driver.
@@ -450,8 +450,8 @@ sense_err_t ina228_clear_totals(ina228_t *d);
  * SENSE_OK returned.  A read of FFFFh, the bus that no part drives, takes it
  * offline on that read without a second.  @p lost is false otherwise.  The
  * readings are not checked for all ones: CURRENT FFFFFFh is code -1 and taken.
- * One transaction, two on a first mismatch other than FFFFh: 120 µs of bus time
- * each at 400 kHz.
+ * One transaction, two on a first mismatch other than FFFFh: 120µs of bus time
+ * each at 400kHz.
  *
  * @param d The driver.
  * @param lost Set true when the part was taken offline.

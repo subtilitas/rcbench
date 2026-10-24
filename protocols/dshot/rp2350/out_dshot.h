@@ -9,8 +9,8 @@
  * Plain DShot is one state machine holding the line low between frames.
  * Bidirectional DShot is two: a transmitter that releases the line when the
  * frame ends and raises a flag, and a receiver that starts on that flag and
- * samples the reply.  The turnaround is about 30 us after a frame that is
- * itself 27 us long, so it happens in the PIO (programmable input/output)
+ * samples the reply.  The turnaround is about 30us after a frame that is
+ * itself 27us long, so it happens in the PIO (programmable input/output)
  * block and not in a loop on the processor.
  *
  * A frame is sent when the caller asks.  Nothing here has a rate of its own:

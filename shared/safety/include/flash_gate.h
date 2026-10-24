@@ -7,8 +7,8 @@
  * of its main flash disables the cache and stalls both cores for its length:
  * code that is not in IRAM (instruction RAM) runs nowhere.  The control task
  * is not in IRAM.  It beats the safety line, whose ceiling is
- * HEARTBEAT_MAX_GAP_MS (150 ms), and it carries STOP, OUTPUT OFF and the
- * supply's trips.  One 4 kB sector erase is tens of milliseconds; a bench
+ * HEARTBEAT_MAX_GAP_MS (150ms), and it carries STOP, OUTPUT OFF and the
+ * supply's trips.  One 4kB sector erase is tens of milliseconds; a bench
  * that is armed, or whose supply is live, must not wait for one.
  *
  * So a flash write starts only on a bench that is disarmed with the supply
@@ -66,7 +66,7 @@ bool flash_gate_open(bool armed, bool supply);
  *
  * The bank driving: a window stops this core and steps no output.  The supply
  * asked on or perhaps on: its UART replies would overrun the 8-byte FIFO in a
- * 19 ms window, and an OFF asked over the link would wait for it.  A KST
+ * 19ms window, and an OFF asked over the link would wait for it.  A KST
  * session: a flash write stalls the pass that steps it.
  *
  * @p driving      the bank is driving (outputs_driving()).

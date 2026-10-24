@@ -29,6 +29,16 @@ static const char *const k_ch123 =
     "ch3 current (A);ch3 max (A);ch3 voltage (V);";
 static const char *const k_tail = "source\n";
 
+/** @brief The supply figures of a SERVO run's row, by column (log_rail_t). */
+enum {
+    RAIL_NONE = 0,  /**< a column the bench sample fills */
+    RAIL_V,         /**< voltage */
+    RAIL_I,         /**< current */
+    RAIL_P,         /**< power */
+    RAIL_Q,         /**< charge */
+    RAIL_E,         /**< energy */
+};
+
 /**
  * @brief The last column of both files: what produced the row's values.
  *
@@ -147,7 +157,19 @@ void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols)
     }
 }
 
-bool log_writer_header(log_writer_t *w)
+/** @brief A SERVO run's file: the commanded pulse and the measured angle,
+ *         before source. */
+static const char *const k_servo_cols = "pulse (us);angle (deg);";
+
+/**
+ * @brief The header of a bench file: a motor run's, or with @p servo a
+ *        SERVO run's, which adds k_servo_cols before source.
+ *
+ * @param w     The writer.
+ * @param servo true for a SERVO run's file.
+ * @return true on success; false when a write failed.
+ */
+static bool header(log_writer_t *w, bool servo)
 {
     if (w == NULL || w->header_done) {
         return w != NULL && !w->failed;
@@ -156,8 +178,10 @@ bool log_writer_header(log_writer_t *w)
     if (!put(w, k_head, strlen(k_head))) {
         return false;
     }
+    const char *const tail_servo = servo ? k_servo_cols : "";
     if (!w->by_map) {
         return put(w, k_ch123, strlen(k_ch123))
+               && put(w, tail_servo, strlen(tail_servo))
                && put(w, k_tail, strlen(k_tail));
     }
     static const char *const k_what[3] = { "current (A)", "max (A)",
@@ -173,7 +197,13 @@ bool log_writer_header(log_writer_t *w)
             }
         }
     }
-    return put(w, k_tail, strlen(k_tail));
+    return put(w, tail_servo, strlen(tail_servo))
+           && put(w, k_tail, strlen(k_tail));
+}
+
+bool log_writer_header(log_writer_t *w)
+{
+    return header(w, false);
 }
 
 /**
@@ -202,7 +232,7 @@ static int fmt(char *out, size_t cap, float v, int decimals)
  *        move, and the commit comes on rows or on the run's own clock,
  *        whichever is first.
  *
- * The clock bound is what holds when rows arrive slower than 20 Hz -- the far
+ * The clock bound is what holds when rows arrive slower than 20Hz -- the far
  * end answering every other poll, say -- where waiting for
  * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
  *
@@ -331,12 +361,61 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
     return finish_row(w, t_s, line, n);
 }
 
-bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
+/**
+ * @brief The cell of a supply figure on a SERVO run's row (RAIL_*), from
+ *        @p r: false when @p r has no reading or total of it.
+ *
+ * @param r     The supply's reading and totals, or NULL.
+ * @param which RAIL_V to RAIL_E.
+ * @param v     Receives the figure when true.
+ * @return true when the figure is a reading or a counted total.
+ */
+static bool rail_figure(const log_rail_t *r, unsigned which, float *v)
+{
+    if (r == NULL) {
+        return false;
+    }
+    const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    switch (which) {
+    case RAIL_V:
+        *v = r->v;
+        return (r->ok & SUPPLY_OK_VOLTAGE) != 0u;
+    case RAIL_I:
+        *v = r->i;
+        return (r->ok & SUPPLY_OK_CURRENT) != 0u;
+    case RAIL_P:
+        *v = r->p;
+        return (r->ok & both) == both;
+    case RAIL_Q:
+        *v = r->charge_mah;
+        return (r->counted & BENCH_COUNTED_CHARGE) != 0u;
+    case RAIL_E:
+    default:
+        *v = r->energy_wh;
+        return (r->counted & BENCH_COUNTED_ENERGY) != 0u;
+    }
+}
+
+/**
+ * @brief One bench row, a motor run's with @p servo false and a SERVO run's
+ *        with it true: then the five columns k_cols marks are @p rail's.
+ *
+ * @param w     The writer.
+ * @param t_s   The time of the row, in s.
+ * @param b     The bench sample.
+ * @param servo true for a SERVO run's row.
+ * @param rail  The supply's figures on a SERVO run's row, or NULL.
+ * @param sv    The pulse and angle on a SERVO run's row, or NULL.
+ * @return true when the row is written.
+ */
+static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
+                      bool servo, const log_rail_t *rail,
+                      const log_servo_t *sv)
 {
     if (w == NULL || b == NULL) {
         return false;
     }
-    if (!w->header_done && !log_writer_header(w)) {
+    if (!w->header_done && !header(w, servo)) {
         return false;
     }
 
@@ -352,23 +431,37 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
      * Power carries both halves because it is their product.  Charge and
      * energy carry what the panel counted (bench_state_t.counted): a run
      * with no current to count has no consumption to record, and its record
-     * must not show 0 mAh that nothing counted.
+     * must not show 0mAh that nothing counted.
+     */
+    /*
+     * On a SERVO run's row voltage, current, power, charge and energy are the
+     * supply's (rail, RAIL_*), at the decimals of a supply file: a servo's
+     * idle current is tens of mA and its power under a watt.
      */
     static const struct {
         int decimals; size_t offset; uint16_t flag; uint8_t counted;
+        uint8_t rail; int rail_decimals;
     } k_cols[] = {
-        { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK, 0u },
-        { 2, offsetof(bench_state_t, current),    LINK_BN_CURRENT_OK, 0u },
+        { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK, 0u,
+             RAIL_V, 2 },
+        { 2, offsetof(bench_state_t, current),    LINK_BN_CURRENT_OK, 0u,
+             RAIL_I, 3 },
         { 0, offsetof(bench_state_t, power),
-             (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK), 0u },
-        { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK, 0u },
-        { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK, 0u },
-        { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK, 0u },
-        { 0, offsetof(bench_state_t, charge_mah), 0u, BENCH_COUNTED_CHARGE },
-        { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY },
+             (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK), 0u,
+             RAIL_P, 2 },
+        { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK, 0u,
+             RAIL_NONE, 0 },
+        { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK, 0u,
+             RAIL_NONE, 0 },
+        { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK, 0u,
+             RAIL_NONE, 0 },
+        { 0, offsetof(bench_state_t, charge_mah), 0u, BENCH_COUNTED_CHARGE,
+             RAIL_Q, 0 },
+        { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY,
+             RAIL_E, 2 },
     };
 
-    /* In the writer, not on the stack: 23 cells, every one checked
+    /* In the writer, not on the stack: up to 25 cells, every one checked
      * against the end. */
     char *line = w->line;
     const size_t cap = sizeof(w->line);
@@ -382,6 +475,14 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
             return false;
         }
         line[n++] = LOG_WRITER_SEP;
+        float v;
+        if (servo && k_cols[i].rail != RAIL_NONE) {
+            if (rail_figure(rail, k_cols[i].rail, &v)) {
+                n += fmt(line + n, cap - (size_t)n, v,
+                         k_cols[i].rail_decimals);
+            }
+            continue;               /* no supply figure: an empty cell */
+        }
         const uint16_t need = k_cols[i].flag;
         if (need != 0u && (b->flags & need) != need) {
             continue;               /* nothing measured it: an empty cell */
@@ -390,7 +491,6 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
             && (b->counted & k_cols[i].counted) == 0u) {
             continue;               /* nothing counted it: an empty cell */
         }
-        float v;
         memcpy(&v, (const char *)b + k_cols[i].offset, sizeof(v));
         n += fmt(line + n, cap - (size_t)n, v, k_cols[i].decimals);
     }
@@ -450,6 +550,14 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
                && cell(line, cap, &n, i, max / 1000.0f, 3)
                && cell(line, cap, &n, v, min / 1000.0f, 3);
     }
+    /* A SERVO run's pulse and angle, empty where there is none. */
+    if (servo) {
+        fits = fits
+               && cell(line, cap, &n, sv != NULL && sv->pulse_ok,
+                       (sv != NULL) ? (float)sv->pulse_us : 0.0f, 0)
+               && cell(line, cap, &n, sv != NULL && sv->angle_ok,
+                       (sv != NULL) ? sv->angle_deg : 0.0f, 1);
+    }
     fits = fits && text_cell(line, cap, &n,
                              source_word(bench_state_simulated(b)));
     if (!fits || (size_t)n + 2u >= cap) {
@@ -457,4 +565,124 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         return false;
     }
     return finish_row(w, t_s, line, n);
+}
+
+bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
+{
+    return bench_row(w, t_s, b, false, NULL, NULL);
+}
+
+bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
+                          const log_rail_t *rail, const log_servo_t *sv)
+{
+    return bench_row(w, t_s, b, true, rail, sv);
+}
+
+void log_rail_take_ina(log_rail_t *out, const sense_link_win_t *win,
+                       bool row_modelled)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (win == NULL) {
+        return;
+    }
+    if (row_modelled) {
+        out->withheld = true;   /* the part reads through the IOmcu */
+        return;
+    }
+    out->v = (float)win->mean_mv / 1000.0f;
+    out->i = (float)win->mean_ma / 1000.0f;
+    out->p = out->v * out->i;
+    out->ok = (uint8_t)((win->voltage ? SUPPLY_OK_VOLTAGE : 0u)
+                        | (win->current ? SUPPLY_OK_CURRENT : 0u));
+}
+
+/** @brief The packed angle that is no angle (log_servo_pack()). */
+#define LOG_SERVO_NO_ANGLE 0x8000u
+
+uint32_t log_servo_pack(bool pulse_ok, uint16_t pulse_us, bool angle_ok,
+                        float angle_deg)
+{
+    const uint32_t us = pulse_ok ? (uint32_t)pulse_us : 0u;
+    uint32_t angle = LOG_SERVO_NO_ANGLE;
+    if (angle_ok && isfinite(angle_deg)) {
+        const long cdeg = lroundf(angle_deg * 100.0f);
+        if (cdeg >= -32767L && cdeg <= 32767L) {
+            angle = (uint32_t)(uint16_t)(int16_t)cdeg;
+        }
+    }
+    return (us << 16) | angle;
+}
+
+void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    out->pulse_us = (uint16_t)(packed >> 16);
+    out->pulse_ok = out->pulse_us != 0u;
+    const uint16_t angle = (uint16_t)(packed & 0xFFFFu);
+    /* The encoder reads through the IOmcu: a modelled row has no angle. */
+    if (angle != LOG_SERVO_NO_ANGLE && !row_modelled) {
+        out->angle_deg = (float)(int16_t)angle / 100.0f;
+        out->angle_ok  = true;
+    }
+}
+
+void log_rail_take(log_rail_t *out, const supply_state_t *s,
+                   bool row_modelled)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (s == NULL) {
+        return;
+    }
+    if (s->modelled != row_modelled) {
+        out->withheld = true;
+        return;
+    }
+    out->v  = s->v;
+    out->i  = s->i;
+    out->p  = s->p;
+    out->ok = (uint8_t)(s->ok & (SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT));
+}
+
+void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
+                    bool driving)
+{
+    if (t == NULL || r == NULL) {
+        return;
+    }
+    if (r->withheld) {
+        r->charge_mah = 0.0f;
+        r->energy_wh  = 0.0f;
+        r->counted    = 0u;
+        return;
+    }
+    float dt = dt_s;
+    if (!(dt > 0.0f) || !driving) {
+        dt = 0.0f;              /* negative, zero or NaN counts nothing */
+    } else if (dt > BENCH_TOTALS_MAX_STEP_S) {
+        dt = BENCH_TOTALS_MAX_STEP_S;
+    }
+    if (driving) {
+        const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+        t->run_s += dt;
+        if ((r->ok & SUPPLY_OK_CURRENT) != 0u) {
+            t->mah += r->i * dt * (1000.0f / 3600.0f);
+            t->counted |= BENCH_COUNTED_CHARGE;
+        }
+        if ((r->ok & both) == both) {
+            t->wh += r->p * dt * (1.0f / 3600.0f);
+            t->counted |= BENCH_COUNTED_ENERGY;
+        }
+    }
+    r->charge_mah = t->mah;
+    r->energy_wh  = t->wh;
+    r->counted    = t->counted;
 }

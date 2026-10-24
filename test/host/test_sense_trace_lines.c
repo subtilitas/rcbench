@@ -1,5 +1,5 @@
 /*
- * The trace of CH1's 1 ms samples (sense_trace.h), its lines and its
+ * The trace of CH1's 1ms samples (sense_trace.h), its lines and its
  * counts, over sense_trace_rig.h: the pulse held to the frame; every line
  * at its longest inside SENSE_TRACE_LINE_MAX; a clipped sample; trigger
  * lines in the order of their times; a record that comes late, a core 1
@@ -14,13 +14,13 @@
 
 TEST_CASE(a_pulse_is_the_one_the_frame_can_carry)
 {
-    /* 560 Hz: a frame of 1785 counts, the counter wrapping at 1784. */
+    /* 560Hz: a frame of 1785 counts, the counter wrapping at 1784. */
     CHECK_EQ(sense_trace_rendered(2000u, 1784u), 1784u);
     CHECK_EQ(sense_trace_rendered(1785u, 1784u), 1784u);
     CHECK_EQ(sense_trace_rendered(1784u, 1784u), 1784u);
     CHECK_EQ(sense_trace_rendered(1783u, 1784u), 1783u);
     CHECK_EQ(sense_trace_rendered(0u, 1784u), 0u);
-    /* 50 Hz, and a counter's top above 16 bits. */
+    /* 50Hz, and a counter's top above 16 bits. */
     CHECK_EQ(sense_trace_rendered(2000u, 19999u), 2000u);
     CHECK_EQ(sense_trace_rendered(65535u, 70000u), 65535u);
     /* Two endpoints past the frame render the same pulse: no command. */
@@ -38,7 +38,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     rig();
     /* A clipped sample at the bottom of the range, and the longest
      * numbers a header, a trigger and an end line carry: the millisecond
-     * tick and the 0.1 ms count both at 10 digits. */
+     * tick and the 0.1ms count both at 10 digits. */
     i3221->amps[0] = -5.0;
     g_us = (uint64_t)4294964295u * 1000u;
     run(100u);
@@ -103,7 +103,7 @@ TEST_CASE(a_clipped_sample_reads_the_end_of_the_range)
     CHECK_EQ(seen.code[0], 4095);
     CHECK_EQ(seen.code[seen.n_s - 1u], -4096);
     CHECK_EQ(seen.z_s, seen.n_s);
-    /* The last values before the ends are values: 4094 steps of 0.4 mA,
+    /* The last values before the ends are values: 4094 steps of 0.4mA,
      * and 4095 the other way. */
     g_len = 0u;
     i3221->amps[0] = 1.6376;
@@ -200,7 +200,7 @@ TEST_CASE(trigger_lines_are_written_in_the_order_of_their_times)
     CHECK_EQ(seen.mark_t[3], t0 + 1000u + 180u);
     CHECK_EQ(seen.mark_ch, 1u);
     CHECK_EQ(seen.z_m, 4u);
-    /* Each behind the samples of before its time: 2 ms, 9 ms and 18 ms
+    /* Each behind the samples of before its time: 2ms, 9ms and 18ms
      * of them. */
     const char *c2 = strstr(g_log, " ch=2 us=1900\r\n");
     const char *e = strstr(g_log, "$E t=");
@@ -229,9 +229,9 @@ TEST_CASE(a_record_that_comes_late_is_still_its_traces)
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
     run(3999u);
-    /* The trace's last tick: core 1 reads its sample 1 ms before the end
+    /* The trace's last tick: core 1 reads its sample 1ms before the end
      * and is parked before it feeds the trace.  Core 0 finds the ring
-     * empty for 30 ms past the end. */
+     * empty for 30ms past the end. */
     const uint64_t tick_us = g_us;
     sense_svc_step(&svc, &cmd, &snap);
     parked(31u);
@@ -260,7 +260,7 @@ TEST_CASE(a_core_that_stays_away_ends_the_trace_and_the_end_line_says_so)
     run(200u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
     run(3990u);
-    /* 10 ms before the end core 1 stops for good.  The end line waits
+    /* 10ms before the end core 1 stops for good.  The end line waits
      * SENSE_TRACE_STALL_MS past the end, to the pass. */
     parked(10u + SENSE_TRACE_STALL_MS - 1u);
     CHECK(sense_trace_active(&tr));
@@ -299,7 +299,7 @@ TEST_CASE(a_trigger_line_waits_for_core_1_and_says_when_it_did_not_come)
     run(200u);
     sense_trace_key(&tr, 't', g_us);
     run(100u);
-    /* A command whose frame starts 5 ms on; core 1 is parked 1 ms before
+    /* A command whose frame starts 5ms on; core 1 is parked 1ms before
      * that, its sample of then read and not yet fed. */
     const uint32_t mark_t = (uint32_t)((g_us + 5000u) / 100u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 5000u, 3u, 1700u);
@@ -561,7 +561,7 @@ TEST_CASE(records_dropped_before_a_second_trigger_are_said_once_in_the_longer_tr
     CHECK(sense_trace_active(&tr));
     CHECK(strstr(g_log, "$L n=") != NULL);
     CHECK_EQ(tr.out.ahead, lost);
-    /* A second trigger 1 ms before the end moves the end; the next
+    /* A second trigger 1ms before the end moves the end; the next
      * record kept carries the count that is said already. */
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us - 1000u, 0u, 0u);
     run(50u);
@@ -684,7 +684,7 @@ TEST_CASE(a_set_up_record_that_found_no_room_before_the_end_is_counted_there)
 
 TEST_CASE(records_dropped_in_a_trace_that_is_dropped_are_said_where_they_are_missing)
 {
-    /* No console, and a console that took nothing for 29.8 h. */
+    /* No console, and a console that took nothing for 29.8h. */
     for (unsigned how = 0u; how < 2u; ++how) {
         rig_size(8u);
         run(20u);
@@ -785,7 +785,7 @@ TEST_CASE(a_count_said_in_a_trace_that_is_dropped_is_said_again_in_the_next)
 
 TEST_CASE(a_stop_drops_the_trigger_lines_past_it)
 {
-    /* With the console keeping up, and with 100 ms of samples waiting. */
+    /* With the console keeping up, and with 100ms of samples waiting. */
     for (unsigned backlog = 0u; backlog < 2u; ++backlog) {
         rig();
         run(200u);
@@ -794,7 +794,7 @@ TEST_CASE(a_stop_drops_the_trigger_lines_past_it)
         if (backlog != 0u) {
             stall(100u);
         }
-        /* A command whose frame starts 18 ms on, and the stop before
+        /* A command whose frame starts 18ms on, and the stop before
          * it. */
         sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 18000u, 1u,
                             1100u);
@@ -819,7 +819,7 @@ TEST_CASE(a_stop_before_a_traces_own_trigger_keeps_its_line)
 {
     rig();
     run(200u);
-    /* A command starts the trace; its frame starts 15 ms on.  The stop
+    /* A command starts the trace; its frame starts 15ms on.  The stop
      * comes at once: the end is just past the frame's start. */
     const uint32_t t0 = (uint32_t)((g_us + 15000u) / 100u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 15000u, 2u, 1900u);

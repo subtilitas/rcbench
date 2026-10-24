@@ -19,13 +19,13 @@ extern "C" {
 
 /**
  * @brief The capture's step: FAST's sample of this tick, or NULL with none, at
- * @p at_t (0.1 ms).
+ * @p at_t (0.1ms).
  *
  * Then the sample into the history.
  *
  * @param s The schedule whose capture and history are updated.
  * @param v FAST's sample of this tick, or NULL when there is none.
- * @param at_t Time of the step, in 0.1 ms.
+ * @param at_t Time of the step, in 0.1ms.
  */
 void sense_cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t);
 

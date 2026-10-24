@@ -3,8 +3,8 @@
  *
  * Under test: the 13-bit registers and the datasheet's own example; the
  * Configuration fields, with CH1 in bit 14; the time a set-up takes; the
- * DAOKAI module's 0.1 Ω shunts at 400 µA a step, and a reading at the top
- * of their 1.64 A reported as a clip, never a value; a part that answers
+ * DAOKAI module's 0.1Ω shunts at 400µA a step, and a reading at the top
+ * of their 1.64A reported as a clip, never a value; a part that answers
  * 1408h refused before anything is written to it; the configuration read
  * back; a channel the set-up does not convert never read; three failures
  * in a row taking the part offline, a probe a second later bringing it
@@ -24,7 +24,7 @@
 #include "ina3221.h"
 #include "sense_bus.h"
 
-#define DAOKAI_UOHM 100000u     /* R100: 0.1 Ω */
+#define DAOKAI_UOHM 100000u     /* R100: 0.1Ω */
 #define DAOKAI_ADDR 0x40u
 
 static fake_bus_t   fb;
@@ -58,7 +58,7 @@ TEST_CASE(registers_hold_thirteen_bits_in_15_to_3)
     CHECK_EQ(ina3221_code13(0x0008u), 1);
     CHECK_EQ(ina3221_code13(0x0007u), 0);       /* bits 2-0 reserved */
     CHECK_EQ(ina3221_code13(0xFFF8u), -1);
-    /* The datasheet's example: -80 mV is C180h (§8.2.2). */
+    /* The datasheet's example: -80mV is C180h (§8.2.2). */
     CHECK_EQ(ina3221_code13(0xC180u), -2000);
     CHECK_EQ(ina3221_bus_mv(ina3221_code13(0x7FF8u)), 32760);  /* §8.2.3 */
     CHECK_EQ(ina3221_bus_mv(625), 5000);
@@ -79,7 +79,7 @@ TEST_CASE(the_daokai_shunt_reads_400_microamps_a_step_to_1638_milliamps)
     CHECK_EQ(v.clip, SENSE_CLIP_LOW);
     CHECK_EQ(v.value, 0);
 
-    /* 0.05 Ω: 800 µA a step; 100 µΩ, the smallest taken: 400 mA. */
+    /* 0.05Ω: 800µA a step; 100 µΩ, the smallest taken: 400mA. */
     CHECK_EQ(ina3221_current_ua(50000u, 1).value, 800);
     CHECK_EQ(ina3221_current_ua(INA3221_SHUNT_MIN_UOHM, 4094).value, 1637600000);
 }
@@ -92,7 +92,7 @@ TEST_CASE(channel_one_is_bit_14_and_the_fields_pack)
     CHECK_EQ(ina3221_config(7u, 0, 0, 0, INA3221_MODE_CONT), INA3221_CONFIG_BENCH_ALL);
     CHECK_EQ(ina3221_config(2u, 0, 0, 0, 0), INA3221_CONFIG_CH2EN);
     CHECK_EQ(ina3221_config(4u, 0, 0, 0, 0), INA3221_CONFIG_CH3EN);
-    /* The power-on value: all channels, averaging 1, 1.1 ms, continuous. */
+    /* The power-on value: all channels, averaging 1, 1.1ms, continuous. */
     CHECK_EQ(ina3221_config(7u, 0, 4, 4, 7), INA3221_CONFIG_RESET);
     CHECK_EQ(ina3221_config(0u, 0xF, 0xF, 0xF, 0xF), 0x0FFF);
     CHECK_EQ(ina3221_channels(INA3221_CONFIG_RESET), 7);
@@ -102,8 +102,8 @@ TEST_CASE(channel_one_is_bit_14_and_the_fields_pack)
 
 TEST_CASE(a_cycle_is_each_channels_shunt_and_bus_in_turn)
 {
-    CHECK_EQ(ina3221_cycle_us(INA3221_CONFIG_BENCH_CH1), 280);   /* 3.57 kHz */
-    CHECK_EQ(ina3221_cycle_us(INA3221_CONFIG_BENCH_ALL), 840);   /* 1.19 kHz */
+    CHECK_EQ(ina3221_cycle_us(INA3221_CONFIG_BENCH_CH1), 280);   /* 3.57kHz */
+    CHECK_EQ(ina3221_cycle_us(INA3221_CONFIG_BENCH_ALL), 840);   /* 1.19kHz */
     CHECK_EQ(ina3221_cycle_us(INA3221_CONFIG_RESET), 6600);
     CHECK_EQ(ina3221_cycle_us(ina3221_config(7u, 0, 0, 0, INA3221_MODE_SHUNT_CONT)),
              420);
@@ -319,13 +319,13 @@ TEST_CASE(three_failed_reads_in_a_row_take_the_part_offline)
 
 /* ---------------------------------------------------------- one bus */
 
-/* The ends of the range as currents: codes 4095 and -4096 of 40 µV. */
+/* The ends of the range as currents: codes 4095 and -4096 of 40µV. */
 TEST_CASE(an_end_code_is_1638_milliamps_on_the_daokai_shunt)
 {
     CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_HIGH), 1638000);
     CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_LOW), -1638400);
     CHECK_EQ(ina3221_end_ua(DAOKAI_UOHM, SENSE_CLIP_NONE), 0);
-    CHECK_EQ(ina3221_end_ua(5000u, SENSE_CLIP_HIGH), 32760000);  /* 5 mΩ */
+    CHECK_EQ(ina3221_end_ua(5000u, SENSE_CLIP_HIGH), 32760000);  /* 5mΩ */
     CHECK_EQ(ina3221_end_ua(INA3221_SHUNT_MIN_UOHM, SENSE_CLIP_LOW),
              -1638400000);
     CHECK_EQ(ina3221_end_ua(0u, SENSE_CLIP_HIGH), 0);

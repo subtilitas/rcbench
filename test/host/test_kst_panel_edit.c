@@ -88,7 +88,7 @@ TEST_CASE(the_keypads_range_is_the_cores_and_a_value_inside_it_is_an_edit)
     CHECK_NEAR(kst_panel_keypad()->max, (float)(dlo < dhi ? dhi : dlo) / 10.0f,
                0.01f);
     CHECK_NEAR(kst_panel_keypad()->value, 300.0f, 0.01f);
-    /* 250.0 us is below what the servo holds: taken without a page. */
+    /* 250.0us is below what the servo holds: taken without a page. */
     key(UI_KEY_2);
     key(UI_KEY_5);
     key(UI_KEY_0);
@@ -113,7 +113,7 @@ TEST_CASE(a_value_beyond_a_hard_limit_cannot_be_entered)
     tap(kst_panel_tab_rect(PG_TUNE));
     tap(val(PG_TUNE, 1, 0));
     CHECK_NEAR(kst_panel_keypad()->max, (float)top, 0.01f);
-    /* 100 % and 0 % are past the duty limits: the keypad keeps them. */
+    /* 100% and 0% are past the duty limits: the keypad keeps them. */
     key(UI_KEY_1);
     key(UI_KEY_0);
     key(UI_KEY_0);
@@ -141,10 +141,10 @@ TEST_CASE(a_value_past_a_soft_limit_waits_for_a_2_s_hold)
     key(UI_KEY_OK);
     /* The page names the change and the reason; nothing is taken yet. */
     CHECK_EQ(kst_panel_editor(), 3);
-    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97%");
     CHECK(warns(TR(KP_W_DUTY_RAISED)));
     CHECK_EQ(kst_prog_changes(M), 0);
-    /* 1.9 s is not a hold. */
+    /* 1.9s is not a hold. */
     hold(1.9f);
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK_EQ(kst_prog_changes(M), 0);
@@ -295,10 +295,10 @@ TEST_CASE(a_step_key_acts_on_the_press_and_repeats_while_held)
     steps = abs((int)draft(KST_F_DEAD_BAND) - (int)was);
     CHECK_EQ(steps, 1);
     CHECK_EQ(kst_panel_editor(), 0);
-    /* Nothing more before 0.45 s. */
+    /* Nothing more before 0.45s. */
     ticks(0.40f);
     CHECK_EQ(abs((int)draft(KST_F_DEAD_BAND) - (int)was), 1);
-    /* Then 8 a second: 1 s after the press, 1 + 1 + 4. */
+    /* Then 8 a second: 1s after the press, 1 + 1 + 4. */
     ticks(0.60f);
     steps = abs((int)draft(KST_F_DEAD_BAND) - (int)was);
     CHECK(steps >= 5 && steps <= 7);
@@ -332,7 +332,7 @@ TEST_CASE(the_repeat_speeds_up_after_1_8_s_more)
     ticks(1.0f);
     at_3s = draft(KST_F_DEAD_BAND);
     ev(cx(plus), cy(plus), TOUCH_EVENT_UP, 1);
-    /* 8 Hz for 1.8 s is 15 steps and the press; then 30 a second. */
+    /* 8Hz for 1.8s is 15 steps and the press; then 30 a second. */
     CHECK(abs((int)at_2s - (int)servo(KST_F_DEAD_BAND)) >= 15);
     CHECK(abs((int)at_2s - (int)servo(KST_F_DEAD_BAND)) <= 17);
     CHECK(abs((int)at_3s - (int)at_2s) >= 28);

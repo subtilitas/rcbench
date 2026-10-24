@@ -27,6 +27,8 @@
 #include "ui_theme.h"
 #include "touch_feed.h"
 
+#include "stick_spots.h"
+
 #define W UI_PANEL_W
 #define H UI_PANEL_H
 
@@ -34,24 +36,21 @@ static gfx_color_t *fb;
 static gfx_canvas_t cv;
 static const ui_screen_t *scr;
 
-/* Mirrored from esc_stick_int.h and esc_stick_pages.c; if the layout moves
- * these move with it.  The session lays out from PROG_FULL_Y (26) down:
- * the crumb row at 30, the device card at 64, the parameter card at 108,
- * its rows from 142.  The page keys, READ and WRITE end SP_RIGHT, 12 px
- * inside the right margin; the foot row is 36 px over the bottom margin. */
-#define SP_RIGHT   (UI_PANEL_W - UI_MARGIN - 12)
-#define BACK_X     66
-#define BACK_Y     45
-#define ROW_CX     400
-#define STEP_DN_X  653
-#define STEP_UP_X  765
-#define STEP_CY(i) (142 + (i) * 30 + 10)
-#define READ_X     (SP_RIGHT - 350 + 84)
-#define WRITE_X    (SP_RIGHT - 168 + 84)
-#define BTN_CY     (UI_BODY_H - UI_ALERT_H - 4 - 36 + 17)
-#define PAGE_UP_X  (SP_RIGHT - 76 + 17)
-#define PAGE_DN_X  (SP_RIGHT - 38 + 17)
-#define PAGE_CY    126
+/* The layout's spots (stick_spots.h) under the names the rig's tests
+ * use. */
+#define SP_RIGHT   ST_RIGHT
+#define BACK_X     ST_BACK_X
+#define BACK_Y     ST_CRUMB_CY
+#define ROW_CX     ST_PROW_X
+#define STEP_DN_X  ST_STEP_DN_X
+#define STEP_UP_X  ST_STEP_UP_X
+#define STEP_CY(i) ST_STEP_CY(i)
+#define READ_X     ST_READ_X
+#define WRITE_X    ST_WRITE_X
+#define BTN_CY     ST_BTN_CY
+#define PAGE_UP_X  ST_PAGE_UP_X
+#define PAGE_DN_X  ST_PAGE_DN_X
+#define PAGE_CY    ST_PAGE_CY
 
 /* The page set behind the hooks the rig's tests call: a screen whose reset
  * starts the session over, whose leave and enter are the host's, whose

@@ -46,8 +46,8 @@ uint32_t dshot_edt_millivolts(uint16_t count);   /* also _amps, _celsius */
 ```
 
 `dshot_edt_*()` schedules the command that asks for extended telemetry:
-an ask is 10 repeats and the next starts 500 ms after the last repeat (509
-ms between starts at 1 kHz), at zero throttle, at most 10 asks per run.
+an ask is 10 repeats and the next starts 500ms after the last repeat (509
+ms between starts at 1kHz), at zero throttle, at most 10 asks per run.
 
 `dshot_throttle(command, span)` maps a command from 0 to `span` onto 0
 (stop) or a throttle value from 48 to 2047: 0 gives 0, 1 gives 48 for a

@@ -7,17 +7,17 @@
  * If the layout moves these move with it.  Taken by motor_rig.h, the
  * screen's suites and render_screen.c.
  *
- *   - the strip: LIVE, PROGRAM, SETTINGS from x 9, 150 px each, 4 px
+ *   - the strip: LIVE, PROGRAM, SETTINGS from x 9, 150px each, 4px
  *     apart, y 8 to 48;
- *   - LIVE's telemetry card from y 56: PLOT | TABLE from x 18, 200 px for
+ *   - LIVE's telemetry card from y 56: PLOT | TABLE from x 18, 200px for
  *     the two, y 82 to 122;
- *   - the THROTTLE card from y 352: the step keys 72 x 56 px at x 18 and
+ *   - the THROTTLE card from y 352: the step keys 72 x 56px at x 18 and
  *     528, y 406 to 462, the track x 98 to 520, y 410 to 458, the hint's
  *     line y 470 to 490;
  *   - the rail's CONTROL card from y 280: the TARGET row x 648 to 1004,
  *     y 308 to 356; RESET PEAKS y 366 to 414; ARM y 424 to 484, both as
  *     wide as the TARGET row;
- *   - PROGRAM's list in the page area from y 56, its first row 48 px tall
+ *   - PROGRAM's list in the page area from y 56, its first row 48px tall
  *     from y 66.
  *
  * SPDX-License-Identifier: MIT
@@ -58,5 +58,5 @@
 #define MO_PROG_ROW_X     279           /**< PROGRAM's rows. */
 #define MO_PROG_ROW_Y     90            /**< Its first row. */
 
-/** @brief SETTINGS' save line, 4 px above the alert band. */
+/** @brief SETTINGS' save line, 4px above the alert band. */
 #define MO_SAVE_LINE_Y    (UI_ALERT_Y - UI_BAND_H - 4 - 20)

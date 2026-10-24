@@ -38,7 +38,7 @@ typedef struct {
     int      task_core;             /**< -1 for no affinity                   */
 } touch_config_t;
 
-/** @brief Polled every 10 ms, mirrored as board_pins.h says, 32 events. */
+/** @brief Polled every 10ms, mirrored as board_pins.h says, 32 events. */
 #define TOUCH_CONFIG_DEFAULT()              \
     (touch_config_t) {                      \
         .rotation = TOUCH_ROTATION_0,       \
@@ -114,11 +114,13 @@ uint32_t touch_age_ms(void);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
 /**
- * Whether a touch injector (testbench/touch-injector) is attached: it
- * answered at start-up and has not been silent for 1000 ms since, or a
+ * @brief Whether a touch injector (testbench/touch-injector) is attached: it
+ * answered at start-up and has not been silent for 1000ms since, or a
  * probe has re-attached it.  Always true when the injector is the only touch
  * device (no GT911 at 0x5D).  Declared in a build with RCBENCH_TOUCH_INJECTOR
  * (the default) only; touch_inject.h has the rest.
+ *
+ * @return true while an injector is attached
  */
 bool touch_injector_attached(void);
 #endif

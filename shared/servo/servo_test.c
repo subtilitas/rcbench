@@ -132,7 +132,7 @@ void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm)
     m->upper_bound = true;
     m->shunt_dmohm = shunt_dmohm;
     if (shunt_dmohm > 0u) {
-        /* uV over 0.1 mOhm is 10 mA. */
+        /* uV over 0.1mOhm is 10mA. */
         const uint32_t ma = SERVO_TEST_INA3221_END_UV * 10u / shunt_dmohm;
         m->range_ma = (ma > 0xFFFFu) ? (uint16_t)0xFFFFu : (uint16_t)ma;
     }
@@ -142,8 +142,8 @@ void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm)
  * @brief A current in whole mA, held to a range every reading lies in.
  *
  * @param a Current, A.
- * @return the current in whole mA; a value beyond +-1000000 A is clamped to
- *        +-1000000000 mA, and NaN gives 0.
+ * @return the current in whole mA; a value beyond +-1000000A is clamped to
+ *        +-1000000000mA, and NaN gives 0.
  */
 static long whole_ma(float a)
 {
@@ -609,7 +609,7 @@ static void end_move(servo_test_t *t, bool arrived, uint32_t at_ms)
             t->travel_now_ms = (ms > 0u) ? ms : 1u;
             s->move.sum += t->move.sum;
             s->move.n   += t->move.n;
-            /* On the INA3221 the peak is a window's 1 ms sample, not the
+            /* On the INA3221 the peak is a window's 1ms sample, not the
              * highest window mean. */
             const float peak = on_windows(t) ? t->move_peak_now
                                              : t->move.peak;
@@ -682,7 +682,7 @@ static void end_step(servo_test_t *t, uint32_t now_ms)
     }
     /* Down a step while it still moves; done at the first that shows no
      * movement, or at the floor.  A floor off the step's grid -- a supply
-     * whose lowest set point is 3.3 V -- is the last step itself. */
+     * whose lowest set point is 3.3V -- is the last step itself. */
     float next = s->set_v - SERVO_TEST_BROWNOUT_STEP_V;
     if (next < t->floor_v - 0.001f && s->set_v > t->floor_v + 0.001f) {
         next = t->floor_v;
@@ -905,7 +905,7 @@ static void measure(servo_test_t *t, const sample_t *m)
     }
     /* STALL AT, wherever the run is: counted on a characterisation step,
      * and ending the run once it lasts.  The time counts from the start of
-     * the first reading above it, so a window counts its 50 ms. */
+     * the first reading above it, so a window counts its 50ms. */
     if (servo_test_over_a(i, t->cfg.stall_a)) {
         if (!s->brownout && t->phase != SERVO_TEST_PH_SET
             && t->phase != SERVO_TEST_PH_SETTLE) {
@@ -1227,7 +1227,7 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
             if (in_phase >= SERVO_TEST_IDLE_MS) {
                 if (cur(t)->idle.n == 0u) {
                     /* No reading in all of IDLE.  On the INA3221 the run
-                     * has ended before this, 200 ms after its last
+                     * has ended before this, 200ms after its last
                      * window. */
                     finish(t, SERVO_TEST_AB_STALE, now_ms);
                     break;

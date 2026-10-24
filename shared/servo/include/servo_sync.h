@@ -88,7 +88,7 @@ typedef struct {
      *
      * Two parts, because the moves differ in size.  Stepping to the next scan
      * point is a few microseconds of pulse width; changing stage swings a
-     * servo across its whole deflection, over 1 s on a slow servo.  One fixed
+     * servo across its whole deflection, over 1s on a slow servo.  One fixed
      * wait is either sized for the large move and wastes two thirds of the
      * search, or sized for the small move and reads two servos still
      * travelling at the start of every stage.

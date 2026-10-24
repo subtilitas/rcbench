@@ -1,7 +1,8 @@
-/*
- * The board's drawing: fetched from the IOmcu a slice of a poll at a
- * time on the control task, kept in flash a sector a pass on a safe bench,
- * and published for the picker on the UI task.
+/**
+ * @file
+ * @brief The board's drawing: fetched from the IOmcu a slice of a poll at a
+ *        time on the control task, kept in flash a sector a pass on a safe
+ *        bench, and published for the picker on the UI task.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -344,7 +345,7 @@ static void art_finish(void)
  * One bounded slice of the fetch.
  *
  * A block at a time until the slice is spent: this task also beats the
- * safety line, and its ceiling is 150 ms.  The sequence does exactly the
+ * safety line, and its ceiling is 150ms.  The sequence does exactly the
  * blocks it is given, so how much of a poll goes to a drawing is decided
  * here and nowhere else.
  */

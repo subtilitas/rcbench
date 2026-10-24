@@ -23,7 +23,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5]
     runs-on: ubuntu-latest
-    # budget 18000 s + 5 timeouts of 600 s = 21000 s, plus checkout.
+    # budget 18000s + 5 timeouts of 600s = 21000s, plus checkout.
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v6

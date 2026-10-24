@@ -7,6 +7,13 @@
  * panel (frame buffers allocated and black, video not started), the
  * panel's reset, the initialisation commands, then the video stream.
  *
+ * Screen rotation 180° turns the picture in the flush (gfx_turn.h): the UI
+ * draws into a logical buffer, and display_flip() copies what it drew into
+ * the frame buffer, turned, through the PPA (pixel-processing accelerator)
+ * before it presents that buffer.  The EK79007's scan direction (0x36)
+ * cannot do it on this board: its PINCTL strap holds the scan direction
+ * and the register is ignored, at start-up as while the video runs.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -19,7 +26,9 @@
 #include "board.h"
 #include "board_pins.h"
 #include "driver/gpio.h"
+#include "driver/ppa.h"
 #include "esp_check.h"
+#include "esp_heap_caps.h"
 #include "esp_lcd_mipi_dsi.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
@@ -29,6 +38,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "gfx_turn.h"
 
 static const char *TAG = "display";
 
@@ -41,16 +51,23 @@ static const char *TAG = "display";
 /** @brief The longest display_flip() waits for a frame-done event. */
 #define FLIP_WAIT_MS 200
 
+/** @brief One frame buffer's bytes: 1024 x 600 x 2, 1,228,800. */
+#define FB_BYTES ((size_t)BOARD_LCD_H_RES * BOARD_LCD_V_RES * sizeof(gfx_color_t))
+
+/** @brief The logical buffers' alignment: the PSRAM's L2 cache line, 128
+ *         bytes. */
+#define LFB_ALIGN 128
+
 /**
- * @brief The panel's reset: low for 10 ms (the EK79007 needs 1 ms), then 20 ms
+ * @brief The panel's reset: low for 10ms (the EK79007 needs 1ms), then 20ms
  * before the first command (the datasheet states no minimum).
  */
 #define RESET_LOW_MS   10
 #define RESET_WAIT_MS  20
 
 /**
- * @brief After sleep out (0x11): the EK79007 takes the next command after 5 ms
- * and shows a picture about 7 frames later.  120 ms covers both.
+ * @brief After sleep out (0x11): the EK79007 takes the next command after 5ms
+ * and shows a picture about 7 frames later.  120ms covers both.
  */
 #define SLEEP_OUT_MS   120
 
@@ -100,7 +117,12 @@ typedef struct {
     gfx_color_t *fb[2];                 /**< the frame buffers             */
     uint8_t back;                       /**< index the CPU draws into      */
 
-    gfx_canvas_t canvas;                /**< points into fb[back]          */
+    gfx_canvas_t canvas;                /**< fb[back], or lfb[back] turned */
+
+    gfx_color_t *lfb[2];                /**< the logical buffers, turned   */
+    ppa_client_handle_t ppa;            /**< the PPA's rotate client       */
+    SemaphoreHandle_t ppa_sem;          /**< a PPA copy finished           */
+    gfx_turn_t turn;                    /**< Screen rotation's state       */
 
     uint32_t frames;                    /**< flips since init              */
     uint32_t fps_frames;                /**< flips in the current window   */
@@ -111,6 +133,13 @@ typedef struct {
 
 /** @brief The one display. */
 static display_state_t s_disp;
+
+/**
+ * @brief What Screen rotation asks for (display_set_turned()).  Outside
+ *        s_disp: it is set before display_init() and from any task; the
+ *        flip reads it.
+ */
+static atomic_bool s_want;
 
 /**
  * @brief Frame-done callback: a frame buffer's scan ended.  ISR (interrupt
@@ -153,11 +182,211 @@ static IRAM_ATTR bool on_vsync(esp_lcd_panel_handle_t panel,
     return woken == pdTRUE;
 }
 
-/** @brief Point the canvas at the UI's area of the back buffer. */
+/**
+ * @brief Point the canvas at the UI's area of the back buffer, or of its
+ *        logical buffer while turned, and start the frame's damage record.
+ */
 static void rebind_canvas(void)
 {
-    gfx_canvas_init(&s_disp.canvas, s_disp.fb[s_disp.back],
+    const bool turned = gfx_turn_drawing(&s_disp.turn);
+    gfx_canvas_init(&s_disp.canvas,
+                    turned ? s_disp.lfb[s_disp.back] : s_disp.fb[s_disp.back],
                     BOARD_UI_H_RES, BOARD_UI_V_RES, BOARD_LCD_H_RES);
+    gfx_turn_begin(&s_disp.turn, &s_disp.canvas);
+}
+
+/**
+ * @brief PPA transaction done: wake ppa_wait().  ISR (interrupt service
+ *        routine) context, from the 2D-DMA's interrupt, which is not
+ *        IRAM-safe in this build (CONFIG_DMA2D_ISR_IRAM_SAFE off) and so
+ *        never runs while the flash cache is off.  It touches the
+ *        semaphore alone.
+ *
+ * The driver passes each transaction's user_data, which ppa_submit()
+ * sets from the job (gfx_turn_engine_copy() fills it with &s_disp).  A
+ * NULL context, or a semaphore already deleted, is counted
+ * (gfx_turn_stray_dones()) or skipped; the wait then times out and the
+ * flush falls back to NORMAL.
+ *
+ * @param client Unused.
+ * @param edata Unused.
+ * @param user_ctx The display_state_t.
+ * @return true when a task woke and a context switch is due.
+ */
+static IRAM_ATTR bool on_ppa_done(ppa_client_handle_t client,
+                                  ppa_event_data_t *edata, void *user_ctx)
+{
+    (void)client;
+    (void)edata;
+    display_state_t *st = (display_state_t *)gfx_turn_done_ctx(user_ctx);
+    if (st == NULL || st->ppa_sem == NULL) {
+        return false;
+    }
+    BaseType_t woken = pdFALSE;
+    xSemaphoreGiveFromISR(st->ppa_sem, &woken);
+    return woken == pdTRUE;
+}
+
+/**
+ * @brief Start one job on the PPA: SRM (scale, rotate, mirror) at 180°,
+ *        RGB565, non-blocking, its user_data the job's.
+ * @param engine The display_state_t.
+ * @param job The block (gfx_turn_engine_copy()).
+ * @return false when the driver refuses it.
+ */
+static bool ppa_submit(void *engine, const gfx_turn_job_t *job)
+{
+    display_state_t *st = (display_state_t *)engine;
+    const ppa_srm_oper_config_t op = {
+        .in = {
+            .buffer = job->in,
+            .pic_w = (uint32_t)job->width,
+            .pic_h = (uint32_t)job->height,
+            .block_w = (uint32_t)job->src.w,
+            .block_h = (uint32_t)job->src.h,
+            .block_offset_x = (uint32_t)job->src.x,
+            .block_offset_y = (uint32_t)job->src.y,
+            .srm_cm = PPA_SRM_COLOR_MODE_RGB565,
+        },
+        .out = {
+            .buffer = job->out,
+            .buffer_size = FB_BYTES,
+            .pic_w = (uint32_t)job->width,
+            .pic_h = (uint32_t)job->height,
+            .block_offset_x = (uint32_t)job->dst_x,
+            .block_offset_y = (uint32_t)job->dst_y,
+            .srm_cm = PPA_SRM_COLOR_MODE_RGB565,
+        },
+        .rotation_angle = PPA_SRM_ROTATION_ANGLE_180,
+        .scale_x = 1.0f,
+        .scale_y = 1.0f,
+        .mode = PPA_TRANS_MODE_NON_BLOCKING,
+        /* on_ppa_done()'s context: the driver passes each transaction's
+         * user_data, not the client's. */
+        .user_data = job->user_data,
+    };
+    /* A token left from an earlier copy is not this one's end. */
+    (void)xSemaphoreTake(st->ppa_sem, 0);
+    return ppa_do_scale_rotate_mirror(st->ppa, &op) == ESP_OK;
+}
+
+/**
+ * @brief Wait for on_ppa_done(), at most @p budget_us, in whole
+ *        milliseconds up and at least one tick (CONFIG_FREERTOS_HZ 1000).
+ * @param engine The display_state_t.
+ * @param budget_us The longest wait, us.
+ * @return true when the transaction ended in time.
+ */
+static bool ppa_wait(void *engine, uint32_t budget_us)
+{
+    display_state_t *st = (display_state_t *)engine;
+    TickType_t ticks = pdMS_TO_TICKS((budget_us + 999u) / 1000u);
+    if (ticks == 0) {
+        ticks = 1;
+    }
+    return xSemaphoreTake(st->ppa_sem, ticks) == pdTRUE;
+}
+
+/** @brief The PPA as a gfx_turn engine; its done callback gets s_disp. */
+static const gfx_turn_engine_t k_ppa_engine = {
+    .submit = ppa_submit,
+    .wait = ppa_wait,
+    .engine = &s_disp,
+    .done_ctx = &s_disp,
+};
+
+/**
+ * @brief One block of the logical buffer into the frame buffer, turned by
+ *        180°, through the PPA (gfx_turn_engine_copy()).
+ * @param ctx Unused: k_ppa_engine holds the state.
+ * @param src The logical buffer.
+ * @param dst The frame buffer of the same index.
+ * @param r The block, in logical coordinates.
+ * @param budget_us The longest wait, us.
+ * @return How the copy ended.
+ */
+static gfx_turn_copy_t ppa_copy(void *ctx, const gfx_color_t *src,
+                                gfx_color_t *dst, gfx_rect_t r,
+                                uint32_t budget_us)
+{
+    (void)ctx;
+    return gfx_turn_engine_copy(&k_ppa_engine, src, dst, r, BOARD_LCD_H_RES,
+                                BOARD_LCD_V_RES, budget_us);
+}
+
+/**
+ * @brief The time for gfx_turn_flush(), us.
+ * @param ctx Unused.
+ * @return esp_timer's time, wrapping at 2^32.
+ */
+static uint32_t turn_now_us(void *ctx)
+{
+    (void)ctx;
+    return (uint32_t)esp_timer_get_time();
+}
+
+/** @brief The PPA as gfx_turn_flush()'s copy engine. */
+static const gfx_turn_ops_t k_turn_ops = {
+    .copy = ppa_copy,
+    .now_us = turn_now_us,
+    .ctx = NULL,
+};
+
+/**
+ * @brief Screen rotation's buffers and engine: two logical buffers in
+ *        PSRAM and a PPA client for 180° copies.  A failure leaves the
+ *        panel NORMAL (gfx_turn_fail()) and the display working.
+ */
+static void turn_up(void)
+{
+    gfx_turn_init(&s_disp.turn, BOARD_LCD_H_RES, BOARD_LCD_V_RES);
+    const char *missing = NULL;
+    for (int b = 0; b < DISPLAY_NUM_FBS && missing == NULL; ++b) {
+        s_disp.lfb[b] = heap_caps_aligned_calloc(LFB_ALIGN, 1, FB_BYTES,
+                                                 MALLOC_CAP_SPIRAM);
+        missing = (s_disp.lfb[b] == NULL) ? "logical buffers" : NULL;
+    }
+    s_disp.ppa_sem = (missing == NULL) ? xSemaphoreCreateBinary() : NULL;
+    if (missing == NULL && s_disp.ppa_sem == NULL) {
+        missing = "semaphore";
+    }
+    if (missing == NULL) {
+        const ppa_client_config_t cfg = {
+            .oper_type = PPA_OPERATION_SRM,
+            .max_pending_trans_num = 1,
+        };
+        const ppa_event_callbacks_t cbs = { .on_trans_done = on_ppa_done };
+        if (ppa_register_client(&cfg, &s_disp.ppa) != ESP_OK
+            || ppa_client_register_event_callbacks(s_disp.ppa, &cbs)
+                   != ESP_OK) {
+            missing = "PPA client";
+        }
+    }
+    if (missing != NULL) {
+        gfx_turn_fail(&s_disp.turn, GFX_TURN_FAIL_ENGINE);
+        ESP_LOGW(TAG, "rotation 180 off: no %s", missing);
+    }
+}
+
+/**
+ * @brief Free what turn_up() got.  A client the driver will not let go,
+ *        because a transaction is still pending, keeps its semaphore, so
+ *        a late on_ppa_done() never gives a deleted one.
+ */
+static void turn_down(void)
+{
+    bool pending = false;
+    if (s_disp.ppa != NULL) {
+        pending = ppa_unregister_client(s_disp.ppa) != ESP_OK;
+    }
+    if (s_disp.ppa_sem != NULL && !pending) {
+        vSemaphoreDelete(s_disp.ppa_sem);
+    }
+    for (int b = 0; b < DISPLAY_NUM_FBS; ++b) {
+        heap_caps_free(s_disp.lfb[b]);
+    }
+    gfx_damage_attach(NULL);
+    (void)gfx_turn_presented(&s_disp.turn, GFX_TURN_SHOW_NORMAL);
 }
 
 /**
@@ -266,6 +495,7 @@ static esp_err_t bus_up(void)
  *         failure or at deinit, and zero the state. */
 static void bus_down(void)
 {
+    turn_down();
     if (s_disp.panel != NULL) {
         (void)esp_lcd_panel_del(s_disp.panel);
     }
@@ -302,6 +532,7 @@ static esp_err_t start(const display_config_t *c)
                         TAG, "semaphores");
 
     ESP_RETURN_ON_ERROR(bus_up(), TAG, "bus");
+    turn_up();
 
     const esp_lcd_dpi_panel_event_callbacks_t cbs = {
         .on_frame_buf_complete = on_frame_done,
@@ -323,7 +554,7 @@ static esp_err_t start(const display_config_t *c)
     ESP_RETURN_ON_ERROR(esp_lcd_panel_init(s_disp.panel), TAG, "video");
 
 #ifdef RCBENCH_DISPLAY_BARS
-    /* The DSI host's own colour bars for 3 s: a picture that needs no
+    /* The DSI host's own colour bars for 3s: a picture that needs no
      * frame buffer, for a first look at a new board. */
     ESP_RETURN_ON_ERROR(
         esp_lcd_dpi_panel_set_pattern(s_disp.panel,
@@ -337,8 +568,10 @@ static esp_err_t start(const display_config_t *c)
 #endif
 
     /* fb[0] scans first, so the CPU (central processing unit) starts on
-     * fb[1]. */
+     * fb[1]; turned, on lfb[1]. */
     s_disp.back = 1;
+    gfx_turn_request(&s_disp.turn, atomic_load(&s_want));
+    gfx_turn_next(&s_disp.turn);
     rebind_canvas();
     return ESP_OK;
 }
@@ -367,14 +600,15 @@ esp_err_t display_init(const display_config_t *cfg)
     ESP_RETURN_ON_ERROR(board_backlight(c.backlight_on), TAG, "backlight");
 
     ESP_LOGI(TAG, "%dx%d RGB565, %d lanes at %d Mbit/s, %.1f MHz pixel clock "
-                  "requested, %d frame buffers in PSRAM (%u KiB each), "
-                  "UI %dx%d",
+                  "requested, %d frame buffers and %d logical buffers in "
+                  "PSRAM (%u KiB each), UI %dx%d, PSRAM free %u KiB",
              BOARD_LCD_H_RES, BOARD_LCD_V_RES, BOARD_DSI_LANES,
              BOARD_DSI_LANE_MBPS, (double)BOARD_LCD_DPI_CLOCK_MHZ,
              DISPLAY_NUM_FBS,
-             (unsigned)((size_t)BOARD_LCD_H_RES * BOARD_LCD_V_RES
-                        * sizeof(gfx_color_t) / 1024u),
-             BOARD_UI_H_RES, BOARD_UI_V_RES);
+             (s_disp.lfb[1] != NULL) ? DISPLAY_NUM_FBS : 0,
+             (unsigned)(FB_BYTES / 1024u),
+             BOARD_UI_H_RES, BOARD_UI_V_RES,
+             (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024u));
     return ESP_OK;
 }
 
@@ -404,7 +638,7 @@ esp_err_t display_wait_vsync(uint32_t timeout_ms)
                ? ESP_OK : ESP_ERR_TIMEOUT;
 }
 
-/** @brief Count a flip and update the rolling rate every 500 ms. */
+/** @brief Count a flip and update the rolling rate every 500ms. */
 static void account_frame(void)
 {
     s_disp.frames++;
@@ -436,6 +670,22 @@ esp_err_t display_flip(void)
     const int64_t wait_start = esp_timer_get_time();
 
     /*
+     * Turned, what the frame drew goes into its frame buffer first, turned
+     * by the PPA, on this task: the control task, which owns STOP, never
+     * waits on it.  A copy that fails or runs out of its 50ms sends this
+     * frame out unturned, and the shown flag below follows.
+     */
+    const gfx_turn_show_t show =
+        gfx_turn_flush(&s_disp.turn, s_disp.lfb[s_disp.back],
+                       s_disp.fb[s_disp.back], &k_turn_ops);
+    if (show == GFX_TURN_SHOW_FALLBACK) {
+        ESP_LOGW(TAG, "rotation 180 off: PPA %s after %u us",
+                 (s_disp.turn.why == GFX_TURN_FAIL_TIMEOUT) ? "timeout"
+                                                            : "error",
+                 (unsigned)s_disp.turn.copy_us);
+    }
+
+    /*
      * A pointer inside a frame buffer is taken as it is: the driver writes
      * the cache back and scans that buffer from the next frame on.
      */
@@ -456,8 +706,19 @@ esp_err_t display_flip(void)
     (void)xSemaphoreTake(s_disp.done_sem, 0);
     const esp_err_t err = wait_frame_done();
 
+    /* The frame is on the glass: touch turns with it, from here on. */
+    if (gfx_turn_presented(&s_disp.turn, show)
+        && show == GFX_TURN_SHOW_TURNED) {
+        ESP_LOGI(TAG, "rotation 180 applied in flush: %u blocks, %u px, "
+                      "%u us",
+                 (unsigned)s_disp.turn.rects, (unsigned)s_disp.turn.pixels,
+                 (unsigned)s_disp.turn.copy_us);
+    }
+
     s_disp.last_wait_us = (uint32_t)(esp_timer_get_time() - wait_start);
     s_disp.back ^= 1u;
+    gfx_turn_request(&s_disp.turn, atomic_load(&s_want));
+    gfx_turn_next(&s_disp.turn);
     rebind_canvas();
     account_frame();
     return err;
@@ -496,6 +757,31 @@ float display_fps(void)
 uint32_t display_vsync_count(void)
 {
     return atomic_load(&s_disp.vsyncs);
+}
+
+void display_set_turned(bool turned)
+{
+    atomic_store(&s_want, turned);
+}
+
+bool display_turned(void)
+{
+    return gfx_turn_shown();
+}
+
+bool display_take_repaint(void)
+{
+    return gfx_turn_take_repaint(&s_disp.turn);
+}
+
+bool display_take_turn_alert(void)
+{
+    return gfx_turn_take_alert(&s_disp.turn);
+}
+
+uint32_t display_last_turn_us(void)
+{
+    return s_disp.turn.copy_us;
 }
 
 esp_err_t display_backlight(bool on)

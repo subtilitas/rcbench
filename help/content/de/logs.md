@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und die allein stehenden Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und zeigt einen Bericht als Text. Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md). Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht und vom Text eines Berichts zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und die allein stehenden Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und zeigt einen Bericht als Text. Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht und vom Text eines Berichts zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
@@ -24,7 +24,7 @@ Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Jede Zeile ist eine Datei mit ihrer Größe.
+Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Die Liste zeigt 7 Zeilen auf einmal, jede 48px (etwa 7,2mm) des Glases zum Tippen; jede Zeile ist eine Datei mit ihrer Größe.
 
 | Tab | Ordner | Enthält |
 |---|---|---|
@@ -39,6 +39,7 @@ LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und n
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | WLAN | öffnet [WLAN](wifi.md) |
+| DATEIEN | öffnet [Files](files.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht als Text; grau, solange nichts gewählt ist |
 
@@ -47,14 +48,14 @@ LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und n
 - Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, ein allein stehender Bericht nach seiner eigenen Nummer, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
 - Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
 - Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, stehen auf Seite 1. VORIGE überspringt dann auf dem Rückweg ab Seite 3 so viele Einträge, wie aufgezeichnet wurden; NÄCHSTE von Seite 1 zeigt sie, und die Zahlen im Reiter zeigen die Verschiebung.
-- Der Rollbalken am rechten Rand, 42 px (etwa 6,3 mm) breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
+- Der Rollbalken am rechten Rand, 56px (etwa 8,4mm) breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
 - Das Öffnen von LOGS liest die Karte: die erste Seite, ihr neuester Lauf gewählt. Ein Lauf, der aufgezeichnet wurde, während LOGS geschlossen war, steht ohne AKTUALISIEREN in der Liste.
 - Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
 - Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
 - Eine Karte, die eingesteckt, entnommen oder getauscht wird, während das Panel läuft, findet das nächste AKTUALISIEREN, das nächste Öffnen von LOGS, die nächste Seite oder ÖFFNEN und der Start des nächsten Laufs, ohne Neustart. Eine neue Karte öffnet auf ihrer ersten Seite; ein leerer Steckplatz sagt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
-- Neueste heißt die höchste Nummer im Namen. Das Panel hat keine Uhr, die das Abschalten übersteht; jede Datei trägt das Datum 1980-01-01.
+- Neueste heißt die höchste Nummer im Namen. Das Datum einer Datei ist nur so gut wie die Uhr des Panels: Sie startet bei jedem Einschalten ungestellt, und bis NTP sie im Heimnetz stellt, datiert das Panel Dateien auf 1980 ([Setup](setup.md#panel)).
 - Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste. Seine Nummer in einem anderen Ordner schon.
-- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px auf den Zeilen scrollt die Liste und wählt nichts.
+- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8px auf den Zeilen scrollt die Liste und wählt nichts.
 
 ## Was ein Lauf schreibt
 
@@ -82,7 +83,7 @@ Jeder Ordner hat seine eigene Reihe: ein neuer Lauf nimmt eins über der höchst
 
 Firmware 0.21.0 und älter schreibt ins Stammverzeichnis und liest `BENCH/LOGS` und `USER/LOGS` nicht.
 
-Ein Lauf wird alle 20 Zeilen oder alle 1000 ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0 s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20 s bei 20 Hz, wenn sie stockt.
+Ein Lauf wird alle 20 Zeilen oder alle 1000ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20s bei 20Hz, wenn sie stockt.
 
 Das Band meldet, was die Karte mit einem Lauf gemacht hat:
 
@@ -104,13 +105,13 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ![Der Bericht eines ENDLAGENLAUFS als Text](view:logs-report)
 
-ÖFFNEN auf einem allein stehenden Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 14 Zeilen zu bis zu 86 Zeichen stehen auf einmal darin.
+ÖFFNEN auf einem allein stehenden Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 15 Zeilen zu bis zu 92 Zeichen stehen auf einmal darin.
 
 - Eine Zeile, die länger ist als eine Bildschirmzeile, bricht am letzten Leerzeichen um; ein längeres Wort wird am Zeilenende abgeschnitten.
 - Ziehen auf den Zeilen oder am Rollbalken rollt sie. ZURÜCK führt zur Liste und gibt den Text frei; das Verlassen von LOGS gibt ihn auch frei.
 - Eine Zeile endet an einem Zeilenvorschub, an einem Wagenrücklauf und an einem Paar aus beiden.
 - Eine Datei von 0 Bytes zeigt `Die Datei ist leer.`
-- Die Ansicht fasst die ersten 32 KiB einer Datei. Eine längere endet mit `Nur die ersten 32 kB werden gezeigt.`
+- Die Ansicht fasst die ersten 32KiB einer Datei. Eine längere endet mit `Nur die ersten 32kB werden gezeigt.`
 - Ein Bericht, der sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum, zum Beispiel `LIMIT044.TXT lässt sich nicht öffnen.`
 
 [WLAN](wifi.md) lädt jeden Bericht herunter, auch die neben einer CSV-Datei.
@@ -130,7 +131,7 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 | UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 
-Die rechte Liste nennt jede Spalte mit ihrem ersten Wert und ihrem Bereich, vom kleinsten zum größten. Ein Tipp auf eine Zahlenspalte nimmt sie in die Grafik auf oder heraus; der Titel zählt sie, `GRAFIK  4/4`. TRENNZEICHEN und ZAHLENFORMAT schalten durch die Möglichkeiten, AUTO zuerst, wenn Werte oder Spalten falsch aussehen. ZURÜCK führt zur Liste; GRAFIK zeichnet die gewählten Spalten.
+Die rechte Liste nennt jede Spalte mit ihrem ersten Wert und ihrem Bereich, vom kleinsten zum größten. Eine Datei öffnet mit bis zu 4 gewählten Spalten: in einer SERVO-Datei `pulse`, `angle`, `current` und `voltage`, jede, wo sie Zahlen hält, dann die nächsten Zahlenspalten; in jeder anderen Datei ihre ersten 4 Zahlenspalten. Ein Tipp auf eine Zahlenspalte nimmt sie in die Grafik auf oder heraus; der Titel zählt sie, `GRAFIK  4/4`. TRENNZEICHEN und ZAHLENFORMAT schalten durch die Möglichkeiten, AUTO zuerst, wenn Werte oder Spalten falsch aussehen. ZURÜCK führt zur Liste; GRAFIK zeichnet die gewählten Spalten.
 
 Eine letzte Zeile ohne Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat. Sie wird weggelassen, ZEILEN steht in der Warnfarbe, und die Ansicht zeigt `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`.
 
@@ -142,7 +143,7 @@ Der Kopf nennt die Datei, ihre Zeilen, ihre Dauer und ihre Abtastrate. Jede Spal
 
 - Ein Finger, `<` und `>` bewegen den Cursor. Die Zeile unten rechts zeigt seine Zeit und seinen Messpunkt.
 - Zwei Finger zoomen: spreizen zum Vergrößern, zusammenziehen zum Verkleinern, beide bewegen zum Verschieben. Die engste Ansicht sind 8 Messpunkte, die weiteste der ganze Lauf.
-- Mit SETUP, PANEL, Ein Finger schiebt eingeschaltet verschiebt ein Finger, der sich mehr als 10 px bewegt, eine vergrößerte Ansicht seitwärts.
+- Mit SETUP, PANEL, Ein Finger schiebt eingeschaltet verschiebt ein Finger, der sich mehr als 10px bewegt, eine vergrößerte Ansicht seitwärts.
 - ZURÜCK führt zur Importansicht.
 
 Die Zeilen stehen gleichmäßig nach Zeilennummer. Die Beschriftungen unter der Grafik sind die Zeitspalte der Datei; eine Lücke in den Zeilen ist ein Sprung in den Beschriftungen.
@@ -155,11 +156,11 @@ LÖSCHEN öffnet eine Rückfrage, die die Datei und ihre Größe nennt. Nur ihr 
 
 ## Kartenformate
 
-Das Panel liest Karten mit FAT12, FAT16, FAT32 oder exFAT (extended File Allocation Table): die ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record), die eines davon trägt. SDHC-Karten (4 GB bis 32 GB) kommen mit FAT32, SDXC-Karten (64 GB bis 2 TB) mit exFAT; beide mounten so, wie sie kommen.
+Das Panel liest Karten mit FAT12, FAT16, FAT32 oder exFAT (extended File Allocation Table): die ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record), die eines davon trägt. SDHC-Karten (4GB bis 32GB) kommen mit FAT32, SDXC-Karten (64GB bis 2 TB) mit exFAT; beide mounten so, wie sie kommen.
 
 - Nicht unterstützt: GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2 TiB, NTFS, ext4, HFS+ und APFS. Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
 - Zum Formatieren dient der SD Memory Card Formatter der SD Association, oder am Rechner FAT32 oder exFAT auf einem MBR (unter macOS: Schema `Master Boot Record`).
-- Eine Datei ab 4 GiB auf einer exFAT-Karte steht mit ihrer Größe in der Liste, zum Beispiel `8.00 GB`. OPEN liest Dateien bis 2 GiB weniger 1 Byte; eine größere bleibt in der Liste, und OPEN meldet `BENCH001.CSV ist 2 GB oder größer. Nicht geöffnet.` [WLAN](wifi.md) lädt sie herunter.
+- Eine Datei ab 4GiB auf einer exFAT-Karte steht mit ihrer Größe in der Liste, zum Beispiel `8.00GB`. OPEN liest Dateien bis 2GiB weniger 1 Byte; eine größere bleibt in der Liste, und OPEN meldet `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.` [WLAN](wifi.md) lädt sie herunter.
 
 ## Verwandte Seiten
 

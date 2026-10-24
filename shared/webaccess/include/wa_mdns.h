@@ -1,12 +1,13 @@
-/*
- * The panel's name on the home network: an mDNS (multicast Domain Name
- * System, RFC 6762) answer for "rcbench-1A2B.local".
+/**
+ * @file
+ * @brief The panel's name on the home network: an mDNS (multicast Domain Name
+ *        System, RFC 6762) answer for "rcbench-1A2B.local".
  *
  * Only the one name and only its address (type A): a query for it, of type
  * A or ANY, is answered; everything else is not.  A query from port 5353 is
  * answered to the group with ID 0 and no question; one from any other port
  * is a one-shot resolver's and gets its ID and its question back, with a
- * TTL (time to live) of 10 s as section 6.7 asks.  Names compare without
+ * TTL (time to live) of 10s as section 6.7 asks.  Names compare without
  * regard to the case of ASCII letters.
  *
  * Pure C, no sockets: the platform receives on 224.0.0.251 port 5353 and

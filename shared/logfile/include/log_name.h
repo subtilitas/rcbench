@@ -35,12 +35,13 @@
  * would rank last in a full list.  A folder holding a number 999 under any
  * prefix takes no further run.
  *
- * Nothing else about an entry's age is readable on this bench.  The board
- * carries no clock that survives a power cycle, so every file the panel
- * writes is dated 1980-01-01 in the FAT directory -- the epoch the filesystem
- * clamps an unset clock to -- and directory order is creation order only
- * until a file is deleted and its slot filled again.  The number in the name
- * is the only age there is.
+ * Nothing else about an entry's age is reliable on this bench.  The board
+ * carries no clock that survives a power cycle: until NTP sets it on the
+ * home network (wall_clock.h), a file the panel writes is dated 1980 in the
+ * FAT directory -- the year the filesystem clamps an unset clock to -- and
+ * directory order is creation order only until a file is deleted and its
+ * slot filled again.  The number in the name is the only age every file
+ * has.
  *
  * Both ends of that rule are here: the logger builds a name with
  * log_name_build(), the viewer reads the number back with log_run_number(),

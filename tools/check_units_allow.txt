@@ -1,0 +1,41 @@
+# The deliberate exceptions of tools/check_units.py: a reason in comment
+# lines, then one `path: text` line per exception, where text is a part of
+# the line, or `path: re:pattern`.  A blank line ends a reason.
+#
+# SPDX-License-Identifier: MIT
+
+# The stick engine's reason key: esc_stick_rules.c returns it and this
+# table matches it with strcmp(); the screen shows TX_ESC_WHY_ENTRY.
+shared/ui/esc_stick_list.c: { "ENTRY above 500 ms", TX_ESC_WHY_ENTRY },
+
+# The IOmcu's console lines, quoted as it prints them.  The console format
+# is read by tools/sense_trace.py and the bench scripts and stays as it is.
+docs/Bringup.md: rcbench-iomcu: CAN up, 1000000 bit/s
+docs/Bringup-de.md: rcbench-iomcu: CAN up, 1000000 bit/s
+docs/FirstRun.md: rcbench-iomcu: sense flags
+docs/FirstRun.md: rcbench-iomcu: sense window
+docs/FirstRun-de.md: rcbench-iomcu: sense flags
+docs/FirstRun-de.md: rcbench-iomcu: sense window
+
+# The panel's ESP-IDF log lines, quoted as the console prints them.  Log
+# formats stay as they are.
+docs/Bringup.md: I (…) can: 1000000 bit/s: brp
+docs/Bringup.md: re:round trip min \d+ (avg \d+ )?max \d+ us
+docs/Bringup-de.md: I (…) can: 1000000 bit/s: brp
+docs/Bringup-de.md: re:round trip min \d+ (avg \d+ )?max \d+ us
+docs/Performance.md: B read in <n> ms
+docs/Performance.md: nothing taken for 30 s
+docs/Performance-de.md: B read in <n> ms
+docs/Performance-de.md: nothing taken for 30 s
+docs/Screens.md: I storage: SK64G mounted, exFAT, 61002 MB
+docs/Screens-de.md: I storage: SK64G mounted, exFAT, 61002 MB
+test/host/test_storage.c: "SK64G mounted, 61002 MB"
+
+# What curl prints for the rate test, by its -w format: `%{size_download} B`.
+docs/Performance.md: `200 16777216 B`
+docs/Performance-de.md: `200 16777216 B`
+
+# The KST servo configuration file, a text format kst_file.c writes and
+# parses and a person edits; its value lines carry the unit after a space.
+protocols/kst/README.md: re:^[A-Za-z0-9_. ]+ = [\d.]+ (us|s|%)( \[not loaded\])?$
+protocols/kst/README.md: `Max. Duty = 10 %`

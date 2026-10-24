@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Core 1's side of the trace of the FAST channel's 1 ms samples: each
+ * @brief Core 1's side of the trace of the FAST channel's 1ms samples: each
  * tick's records into the ring, and the count of those it dropped.
  *
  * See sense_trace.h.
@@ -34,7 +34,7 @@ static void drop(sense_trace_t *tr)
  *
  * @param tr The trace.
  * @param kind The record kind.
- * @param t Time of the record, in 0.1 ms.
+ * @param t Time of the record, in 0.1ms.
  * @param v The record value.
  * @return true when the record was put in the ring.
  */
@@ -76,7 +76,7 @@ static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
  * @param tr The trace.
  * @param cfg The Configuration value of FAST's part.
  * @param shunt FAST's shunt, in µΩ.
- * @param tick_t Start of the tick, in 0.1 ms.
+ * @param tick_t Start of the tick, in 0.1ms.
  */
 static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
                     uint32_t tick_t)
@@ -128,7 +128,7 @@ static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
  *
  * @param tr The trace.
  * @param s The schedule that has ticked; NULL when there is no bus.
- * @param tick_t Start of the tick, in 0.1 ms.
+ * @param tick_t Start of the tick, in 0.1ms.
  */
 static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
 {

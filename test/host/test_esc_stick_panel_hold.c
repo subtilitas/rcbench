@@ -16,8 +16,8 @@
 
 #include "esc_stick_panel_rig.h"
 
-/* SUN PLUS mode 4 waits 5 s from power-on, the profile's entry 2 s: the
- * page shows 5 s when mode 4 is picked, through the run, and on the result
+/* SUN PLUS mode 4 waits 5s from power-on, the profile's entry 2s: the
+ * page shows 5s when mode 4 is picked, through the run, and on the result
  * after the change is made. */
 TEST_CASE(the_page_shows_the_entry_the_run_waits)
 {
@@ -55,7 +55,7 @@ TEST_CASE(the_page_shows_the_entry_the_run_waits)
 }
 
 /* ALL STEPS, between HOLD TO RUN and CANCEL on the warning. */
-#define STEPS_X 437
+#define STEPS_X ST_STEPS_X
 
 /* Four long steps before the power-up do not fit the warning: it shows
  * none cut, HOLD TO RUN does not count until ALL STEPS has been opened and
@@ -139,8 +139,8 @@ TEST_CASE(the_hold_needs_every_pre_power_step_read)
 }
 
 /* A family whose models need different voltages, with the SUPPLY cap
- * between them: 3SL's 6-cell models (7.2 V) run, its 14-cell ones
- * (16.8 V) do not.  The row, the pop-up, the page and RUN agree for the
+ * between them: 3SL's 6-cell models (7.2V) run, its 14-cell ones
+ * (16.8V) do not.  The row, the pop-up, the page and RUN agree for the
  * model tapped, not for the family's lowest. */
 TEST_CASE(the_model_tapped_is_the_one_judged)
 {
@@ -159,7 +159,7 @@ TEST_CASE(the_model_tapped_is_the_one_judged)
     draws();
     tap(CANCEL_X, HOLD_Y);
     /* A 6-cell model: opens, its steps say the run asks for them, and RUN
-     * runs it at its own 7.2 V. */
+     * runs it at its own 7.2V. */
     open_model("kontronik-3sl", "3SL 25-6-18");
     const esc_profile_t *p = esc_stick_panel_page();
     CHECK(p != NULL && strcmp(p->id, "kontronik-3sl") == 0);
@@ -237,7 +237,7 @@ TEST_CASE(every_step_after_programming_is_shown)
     tap(CANCEL_X, HOLD_Y);                   /* OK: the result */
     CHECK(!esc_stick_panel_hand_shown());
     draws();                                 /* the count, and the button */
-    tap(HAND_X, HAND_Y);
+    tap(HAND_RES_X, HAND_RES_Y);         /* on the result: the foot row */
     CHECK(esc_stick_panel_hand_shown());
     tap(CANCEL_X, HOLD_Y);
     tap(WRITE_X, BTN_CY);                    /* OK on the result */
@@ -300,7 +300,7 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     static const struct { bool output; supply_mode_t mode; float i; } k[] = {
         { true,  SUPPLY_MODE_CV,  0.0f },    /* on, as asked          */
         { false, SUPPLY_MODE_CV,  0.0f },    /* off asked, module on  */
-        { false, SUPPLY_MODE_OFF, 0.05f },   /* 50 mA through it      */
+        { false, SUPPLY_MODE_OFF, 0.05f },   /* 50mA through it       */
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         fresh();
@@ -630,7 +630,7 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
     none.read = true;
     (void)tone_drawn(&r, &none, buf++ & 1);
     CHECK(tone_rows_hash() != waiting);
-    /* A read pitch of 0 is "--", one of 0.1 Hz is "0.1 Hz". */
+    /* A read pitch of 0 is "--", one of 0.1Hz is "0.1Hz". */
     tone_readout_t p;
     memset(&p, 0, sizeof(p));
     p.state = TONE_STATE_RUNNING;

@@ -280,8 +280,8 @@ TEST_CASE(the_order_that_keeps_every_image_valid_is_taken)
     kst_image_t target;
     kst_plan_t plan;
 
-    /* Lower 0x2FF to 0x300.  07 first passes 0x200, 409.6 us, below the
-     * 500 us limit; 09 first passes 0x3FF. */
+    /* Lower 0x2FF to 0x300.  07 first passes 0x200, 409.6us, below the
+     * 500us limit; 09 first passes 0x3FF. */
     CHECK(kst_field_edit(&start, KST_F_PULSE_LOWER, 0x2FF));
     target = edited(&start, KST_F_PULSE_LOWER, 0x300);
     CHECK_EQ(kst_plan_edit(&start, &target, 0, &plan, NULL), KST_PLAN_OK);
@@ -325,8 +325,8 @@ TEST_CASE(where_no_order_is_valid_an_extra_write_goes_first)
     kst_image_t mid;
 
     /* Upper 0xBFF to 0xC00 with Uncontrolled Pos at 0xB20.  08 first passes
-     * 0xB00, below Uncontrolled Pos; 09 first passes 0xCFF, above 2500 us.
-     * With 08 at 0x35 first: 0xB35, then 0xC35 (2500.0 us), then 0xC00. */
+     * 0xB00, below Uncontrolled Pos; 09 first passes 0xCFF, above 2500us.
+     * With 08 at 0x35 first: 0xB35, then 0xC35 (2500.0us), then 0xC00. */
     CHECK(kst_field_edit(&start, KST_F_PULSE_UPPER, 0xBFF));
     CHECK(kst_field_edit(&start, KST_F_UNCONT_POS, 0xB20));
     CHECK(kst_limits_image(&start) == 0u);

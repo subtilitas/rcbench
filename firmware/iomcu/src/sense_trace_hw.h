@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The SENSE_TRACE build: CH1's 1 ms samples on the USB console.
+ * @brief The SENSE_TRACE build: CH1's 1ms samples on the USB console.
  *
  * Compiled only with -DSENSE_TRACE=ON; no released image holds it.  The
  * rules -- what triggers a trace, what a line is, what happens when the
@@ -29,7 +29,7 @@
 #include "sense_svc.h"
 
 /**
- * @brief Records the ring holds: 49,152 bytes, 3.9 s of CH1 at 1000 samples
+ * @brief Records the ring holds: 49,152 bytes, 3.9s of CH1 at 1000 samples
  * and 50 voltages a second.
  */
 #define SENSE_TRACE_HW_RING 4096u
@@ -54,8 +54,8 @@ void sense_trace_hw_feed(const sense_svc_t *svc, uint64_t tick_us);
  *
  * A changed one is a command (sense_trace_pulse()), timed at the start of the
  * frame that first carries it: now plus what the slice's counter has left of
- * its frame, 1 µs a count.  The counter is read after the level was written, so
- * a wrap between the two -- some tens of µs in a frame of 2,500 to 25,000 µs --
+ * its frame, 1µs a count.  The counter is read after the level was written, so
+ * a wrap between the two -- some tens of µs in a frame of 2,500 to 25,000µs --
  * puts the time one frame late.
  *
  * @param o  The output bank.

@@ -94,9 +94,9 @@
       "steps": [
         "Receiver battery connected on ESC types without BEC. Transmitter on.",
         "Stick-way teach-in: throttle to brake or motor-off (stick back), operator fits the jumper and turns on the radio; apply drive power and pull the jumper; one signal; move to full; one signal; for EMK brake move to motor-off (may equal brake); for a start button fit the jumper again; two signals; disconnect power.",
-        "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5 s for the 4-fold signal; count the beeps (10 % each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
-        "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5 s for the 3-fold signal; count the beeps (5 A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
-        "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power."
+        "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5s for the 4-fold signal; count the beeps (10% each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
+        "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
+        "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power."
       ]
     },
     "announce": {
@@ -145,7 +145,7 @@
       "values": [
         {
           "number": 1,
-          "name": "each beep counted = 5 A; throttle leaves full at the wanted count"
+          "name": "each beep counted = 5A; throttle leaves full at the wanted count"
         }
       ],
       "applies_to": null,
@@ -158,7 +158,7 @@
       "values": [
         {
           "number": 1,
-          "name": "each beep counted = 10 % brake strength; throttle leaves brake at the wanted count"
+          "name": "each beep counted = 10% brake strength; throttle leaves brake at the wanted count"
         }
       ],
       "applies_to": null,
@@ -171,7 +171,7 @@
       "values": [
         {
           "number": 1,
-          "name": "reset: about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously"
+          "name": "reset: about 30s after the last signal a 6-fold signal arrives; the LED flashes continuously"
         },
         {
           "number": 2,

@@ -55,8 +55,8 @@
   "manual": [
     {
       "when": "before_menu",
-      "action": "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.",
-      "action_de": "Taster nach der Tonfolge drücken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6.",
+      "action": "Press the button after the tone sequence: 2s for modes 1 to 3, 5s for modes 4 to 6.",
+      "action_de": "Taster nach der Tonfolge drücken: 2s bei Modi 1 bis 3, 5s bei Modi 4 bis 6.",
       "starts_menu": true,
       "source": "Kontronik_Sun_Plus.pdf p.3-6 (DE), p.11-13 (EN)"
     },
@@ -77,7 +77,7 @@
       "steps": [
         "Connect the motor if tones are to be audible. Transmitter on. Throttle to brake for mode 1; to neutral for modes 2 to 6.",
         "Apply drive power. The ESC sounds 3 tones for NiCd/NiMH or 6 tones for LiPo detection.",
-        "Wait 2 s (modes 1, 2, 3) or 5 s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
+        "Wait 2s (modes 1, 2, 3) or 5s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
         "Operator: press the ESC button ('Taster').",
         "The ESC sounds a descending tone sequence, then the mode series.",
         "Move the throttle to full (stick forward) when the wanted mode sounds.",
@@ -150,7 +150,7 @@
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)"
+          "name": "LiPo undervoltage detection (2.7 to 3V per cell instead of 0.7 to 0.8V)"
         }
       ],
       "applies_to": null,

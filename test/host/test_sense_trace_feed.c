@@ -1,5 +1,5 @@
 /*
- * The trace of CH1's 1 ms samples (sense_trace.h), core 1's side, over
+ * The trace of CH1's 1ms samples (sense_trace.h), core 1's side, over
  * sense_trace_rig.h: a ring that is a power of two; every CH1 sample and
  * every CH1 bus voltage taken once, with its time and value, across a
  * window's close, an emptied window, a set-up and a closed bus; no bus
@@ -49,11 +49,11 @@ TEST_CASE(every_ch1_sample_and_voltage_is_taken_once)
         tick();
     }
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
-    /* A voltage every 24 ms: 41 or 42 in the second, each traced. */
+    /* A voltage every 24ms: 41 or 42 in the second, each traced. */
     CHECK(i3221->reads[INA3221_BUS1] >= 41u && i3221->reads[INA3221_BUS1] <= 42u);
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), 1000u);
     CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
-    /* Each sample 1 ms after the one before, at the value read. */
+    /* Each sample 1ms after the one before, at the value read. */
     unsigned n = 0u;
     for (unsigned k = 0u; k < held_data(); ++k) {
         const sense_trace_rec_t *r = rec(k);
@@ -137,7 +137,7 @@ TEST_CASE(a_set_up_and_a_closed_bus_lose_and_repeat_nothing)
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
     CHECK_EQ(held_of(SENSE_TRACE_BUS), i3221->reads[INA3221_BUS1]);
     CHECK_EQ(tr.src.shunt, I3221_UOHM);
-    /* The shunt went from none to 0.1 Ω, to none with the bus closed and
+    /* The shunt went from none to 0.1Ω, to none with the bus closed and
      * back: a record each time, and one of the Configuration with it. */
     CHECK_EQ(held_of(SENSE_TRACE_SHUNT), 3u);
     CHECK(held_of(SENSE_TRACE_CFG) >= 3u);
@@ -149,7 +149,7 @@ TEST_CASE(a_voltage_is_taken_from_a_window_a_reset_emptied)
     for (unsigned k = 0; k < 300u; ++k) {
         tick();
     }
-    /* The part resets itself; the read-back finds it within 40 ms and
+    /* The part resets itself; the read-back finds it within 40ms and
      * empties CH1's window. */
     fake_reset3221(i3221);
     for (unsigned k = 0; k < 2000u; ++k) {
@@ -182,7 +182,7 @@ TEST_CASE(a_set_up_that_leaves_the_history_at_the_same_place)
     CHECK_EQ(held_of(SENSE_TRACE_CURRENT), i3221->reads[INA3221_SHUNT1]);
 }
 
-/* A tick by hand: a new CH1 sample 1 ms on, and the window being filled
+/* A tick by hand: a new CH1 sample 1ms on, and the window being filled
  * holding @p n_v voltages that sum to @p v_sum. */
 static void poke(uint16_t n_v, int64_t v_sum)
 {
@@ -200,7 +200,7 @@ static void poke(uint16_t n_v, int64_t v_sum)
 TEST_CASE(a_voltage_is_told_from_the_one_before_by_window_and_count)
 {
     rig();
-    /* Two set-ups inside the first 50 ms: each schedule's first window
+    /* Two set-ups inside the first 50ms: each schedule's first window
      * is number 0 and holds one voltage after 10 ticks. */
     for (unsigned k = 0; k < 10u; ++k) {
         tick();
@@ -408,7 +408,7 @@ TEST_CASE(each_gap_in_a_trace_has_its_line)
     run(20u);
     sense_trace_key(&tr, 't', g_us);
     run(20u);
-    /* Two stalls of 20 ms on a ring of 8, a second apart. */
+    /* Two stalls of 20ms on a ring of 8, a second apart. */
     for (unsigned gap = 0u; gap < 2u; ++gap) {
         for (unsigned k = 0; k < 20u; ++k) {
             tick();

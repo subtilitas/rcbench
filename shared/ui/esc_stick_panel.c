@@ -78,32 +78,32 @@ void esc_stick_panel_reset(void)
 {
     memset(&s, 0, sizeof(s));
     for (int i = 0; i < SP_ROWS; ++i) {
-        s.st.rows[i] = (gfx_rect_t){ (int16_t)(PAD + 12),
-                                     (int16_t)(SP_ROW_Y0 + i * SP_ROW_H),
-                                     (int16_t)(W - 2 * PAD - 24),
-                                     SP_ROW_H - 4 };
+        s.st.rows[i] = (gfx_rect_t){ SP_ROW_X,
+                                     (int16_t)(SP_ROW_Y0 + i * SP_ROW_P),
+                                     (int16_t)(W - 2 * SP_ROW_X), SP_ROW_H };
     }
-    s.st.find_box = (gfx_rect_t){ SP_FIND_X, CRUMB_Y, SP_FIND_W, 30 };
-    s.st.find_clr = (gfx_rect_t){ (int16_t)(SP_FIND_X + SP_FIND_W - 30),
-                                  (int16_t)(CRUMB_Y + 2), 28, 26 };
-    s.st.list_up = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 76), CRUMB_Y,
-                                 STEP_W, 30 };
-    s.st.list_dn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 38), CRUMB_Y,
-                                 STEP_W, 30 };
+    s.st.find_box = (gfx_rect_t){ SP_FIND_X, CRUMB_Y, SP_FIND_W, CRUMB_H };
+    s.st.find_clr = (gfx_rect_t){ (int16_t)(SP_FIND_X + SP_FIND_W - SP_CLR_W),
+                                  CRUMB_Y, SP_CLR_W, CRUMB_H };
+    s.st.list_up = (gfx_rect_t){ SP_LIST_UP_X, CRUMB_Y, SP_KEY_W, CRUMB_H };
+    s.st.list_dn = (gfx_rect_t){ SP_LIST_DN_X, CRUMB_Y, SP_KEY_W, CRUMB_H };
     s.st.hold_btn   = (gfx_rect_t){ PAD + 20, SP_PBTN_Y, 260, SP_PBTN_H };
     s.st.cancel_btn = (gfx_rect_t){ (int16_t)(W - PAD - 20 - 180), SP_PBTN_Y,
                                     180, SP_PBTN_H };
     /* Between HOLD TO RUN and CANCEL, on the warning. */
     s.st.steps_btn  = (gfx_rect_t){ PAD + 20 + 260 + 24, SP_PBTN_Y, 266,
                                     SP_PBTN_H };
-    /* In the item list's header, between CHANGE and the count. */
-    s.st.hand_btn   = (gfx_rect_t){ PAD + 108, (int16_t)(PARM_Y + 4), 300,
-                                    24 };
-    /* In the profile page's crumb row, at its right, so the card's line
-     * of how the menu works has the card's width: CONNECT's size, level
-     * with BACK's middle. */
-    s.st.timing_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 168),
-                                    (int16_t)(CRUMB_Y - 3), 168, 36 };
+    /* In the side column, under the page keys. */
+    s.st.hand_btn   = (gfx_rect_t){ SIDE_IN, HAND_Y,
+                                    (int16_t)(SIDE_CELLS * SP_CELL),
+                                    UI_TAP_MIN };
+    /* On a result, in the foot row left of OK. */
+    s.st.hand_res   = (gfx_rect_t){ (int16_t)(W - PAD - 12 - FOOT_BTN_W - 8
+                                              - 330),
+                                    BTN_Y, 330, BTN_H };
+    /* In the profile page's crumb row, at its right, as tall as BACK. */
+    s.st.timing_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - FOOT_BTN_W),
+                                    CRUMB_Y, FOOT_BTN_W, CRUMB_H };
     s.st.kp.pressed = -1;
 }
 
@@ -336,7 +336,7 @@ bool sp_warn_gated(void)
 /*
  * Whether the warning shows every before-power step whole: under its
  * lines (sp_draw_warning(): five, the profile, the supply and the
- * unverified line from the panel's top + 68 at 22 px, then the steps'
+ * unverified line from the panel's top + 68 at 22px, then the steps'
  * label), each
  * step wrapped to two lines, and room kept for the line about later steps,
  * above HOLD TO RUN.

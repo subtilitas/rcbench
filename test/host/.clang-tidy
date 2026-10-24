@@ -6,7 +6,7 @@
 #
 #   bugprone-implicit-widening-of-multiplication-result
 #                                    index and offset arithmetic on fixtures
-#                                    smaller than 64 KiB; no product nears
+#                                    smaller than 64KiB; no product nears
 #                                    2^31
 #   bugprone-suspicious-memory-comparison
 #                                    memcmp over canvas buffers and over

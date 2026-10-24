@@ -1,5 +1,6 @@
-/*
- * The logger: the runlog task, which makes every card call of a run, a
+/**
+ * @file
+ * @brief The logger: the runlog task, which makes every card call of a run, a
  * servo test and the fault log.  A run is written to AUTO LOG FOLDER, a
  * test to USER LOG FOLDER (SETUP > SD CARD; CARD_AUTO_LOGS and
  * CARD_USER_LOGS by default, card_tree.h), each under its folder's next
@@ -39,9 +40,9 @@ static const char *TAG = "rcbench";
  * viewer reads, and a host test writes a run and parses it back.
  *
  * The control task touches no file.  It beats the safety line, its ceiling is
- * HEARTBEAT_MAX_GAP_MS (150 ms) and the IOmcu calls the link silent
- * after 200 ms, while the SD (Secure Digital) specification allows a card
- * 250 ms to finish a single-block write before a host may give it up.  How
+ * HEARTBEAT_MAX_GAP_MS (150ms) and the IOmcu calls the link silent
+ * after 200ms, while the SD (Secure Digital) specification allows a card
+ * 250ms to finish a single-block write before a host may give it up.  How
  * long this board's card takes is not measured.  A card write on that task is
  * therefore a dropped heartbeat and an IOmcu that fails safe, not a late
  * row -- so rows cross to a task of its own and every fopen, fwrite, fsync
@@ -357,7 +358,7 @@ static int file_write(void *ctx, const void *data, size_t len)
  * lost.  fsync() is the call that reaches f_sync.
  *
  * log_writer_row() calls this every LOG_WRITER_FLUSH_ROWS (20) rows or
- * LOG_WRITER_FLUSH_S (1.0 s) of run, whichever comes first, which at
+ * LOG_WRITER_FLUSH_S (1.0s) of run, whichever comes first, which at
  * PANEL_SAMPLE_HZ is the same instant.
  */
 static bool file_flush(void *ctx)
@@ -385,7 +386,7 @@ static log_prefix_t run_prefix(log_run_kind_t kind)
  * Every probe is a card transaction and the loop can make hundreds of them,
  * which is why the scan is here and not on the task that beats the safety
  * line.  It runs when the run's first row arrives, one sample interval
- * (50 ms) after the arm or the supply's switch-on.
+ * (50ms) after the arm or the supply's switch-on.
  */
 static void log_open(uint32_t run, log_run_kind_t kind)
 {
@@ -395,11 +396,12 @@ static void log_open(uint32_t run, log_run_kind_t kind)
 
     /*
      * Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would carry the FAT (File Allocation Table)
-     * epoch, 1980-01-01.  The number is the only order the card carries,
-     * and the viewer reads it back with log_run_number() to decide which
-     * runs it can still show once a folder holds more of them than the
-     * screen does; log_name_build() is the one place the name is built.
+     * cycle, so a file written before an NTP answer carries a FAT (File
+     * Allocation Table) date in 1980.  The number is the only order the
+     * card carries, and the viewer reads it back with log_run_number() to
+     * decide which runs it can still show once a folder holds more of
+     * them than the screen does; log_name_build() is the one place the
+     * name is built.
      *
      * Every way to no file is said, and said on the panel rather than to
      * a console: the panel's console is not reachable on every bench, and
@@ -531,15 +533,36 @@ static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /* a write or the close of the report failed */
 static char     s_test_dir[CARD_DIR_MAX];   /* the folder of the run's files */
+/** @brief The open test file's path, for the console lines. */
+static char     s_test_path[64];
+/** @brief The lines written to the open test file. */
+static unsigned s_test_count;
+/** @brief A write to the open test file failed. */
+static bool     s_test_file_bad;
 
-/* ATESTnnn.CSV, or with @p txt ATESTnnn.TXT, as a path on the card. */
-static void test_path(int number, bool txt, char *path, size_t n)
+/**
+ * @brief Run @p number's file in the test folder as a path on the card:
+ *        ATESTnnn.CSV, ATESTnnn.TXT or LIMITnnn.TXT.
+ *
+ * @param prefix  LOG_PREFIX_ATEST or LOG_PREFIX_LIMIT.
+ * @param number  The run's number.
+ * @param txt     true for the .TXT report, false for the CSV.
+ * @param path    Receives the path.
+ * @param n       Size of @p path, bytes.
+ */
+static void test_path(log_prefix_t prefix, int number, bool txt, char *path,
+                      size_t n)
 {
     char name[LOG_RUN_NAME_MAX];
-    log_name_build(name, sizeof(name), LOG_PREFIX_ATEST, number, txt);
+    log_name_build(name, sizeof(name), prefix, number, txt);
     storage_path(s_test_dir, name, path, n);
 }
 
+/**
+ * @brief Close the open test file, if any, and say so on the console with
+ *        the lines it holds: "closed" when every write and the close went
+ *        through, "closed short" otherwise.
+ */
 static void test_close(void)
 {
     if (s_test_fp == NULL) {
@@ -553,6 +576,12 @@ static void test_close(void)
         s_test_failed  = true;
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
     }
+    if (bad || s_test_file_bad) {
+        ESP_LOGW(TAG, "%s closed short: a write or the close failed, "
+                      "%u lines sent", s_test_path, s_test_count);
+    } else {
+        ESP_LOGI(TAG, "%s closed, %u lines", s_test_path, s_test_count);
+    }
     s_test_fp = NULL;
     if (s_test_txt) {
         atomic_store(&s_test_open_txt, 0u);
@@ -561,9 +590,16 @@ static void test_close(void)
     }
 }
 
-/* A run's OPEN: the folder's next number, as log_open() takes one.  With
- * @p txt the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
- * run): its LIMITnnn.TXT is opened under the number, and no CSV. */
+/**
+ * @brief A run's OPEN: the folder's next number, as log_open() takes one.
+ *
+ * The file's path goes to the console as take_create() opens it,
+ * "logging to ..."; a take that opens no file logs why.
+ *
+ * @param txt  true for a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
+ *             run): its LIMITnnn.TXT is opened under the number, and no
+ *             CSV.  false for the AUTOMATIC TEST's ATESTnnn.CSV.
+ */
 static void test_open(bool txt)
 {
     test_close();
@@ -582,8 +618,14 @@ static void test_open(bool txt)
                               LOG_TAB_USER, &number);
     if (r == LOG_TAKE_OK) {
         s_test_num = number;
+        test_path(txt ? LOG_PREFIX_LIMIT : LOG_PREFIX_ATEST, number, txt,
+                  s_test_path, sizeof(s_test_path));
+        s_test_count = 0u;
+        s_test_file_bad = false;
     } else {
         s_test_fp = NULL;
+        ESP_LOGW(TAG, "no test file in %s (take %d); this test is not "
+                      "recorded", s_test_dir, (int)r);
         /* "Card missing or full" for every other way to no file. */
         take_alert(r, s_test_dir,
                    (r == LOG_TAKE_NO_CARD)
@@ -594,6 +636,15 @@ static void test_open(bool txt)
     atomic_fetch_add(&s_test_opens_done, 1u);
 }
 
+/**
+ * @brief One line from the render loop: an OPEN, an END, or a line of the
+ *        open run's CSV or report.
+ *
+ * The report's ATESTnnn.TXT opens at its first line, after the CSV
+ * closes, and its path goes to the console as it opens.
+ *
+ * @param l  The line.
+ */
 static void test_write(const test_line_t *l)
 {
     if (l->kind == SERVO_TEST_OUT_OPEN
@@ -622,14 +673,20 @@ static void test_write(const test_line_t *l)
          * is set before the CSV's goes, so the run stays open between. */
         atomic_store(&s_test_open_txt, (unsigned)s_test_num);
         test_close();
-        char path[64];
-        test_path(s_test_num, true, path, sizeof(path));
+        test_path(LOG_PREFIX_ATEST, s_test_num, true, s_test_path,
+                  sizeof(s_test_path));
         s_test_txt = true;
-        s_test_fp = storage_fopen(path, "w");
+        s_test_count = 0u;
+        s_test_file_bad = false;
+        s_test_fp = storage_fopen(s_test_path, "w");
         if (s_test_fp == NULL) {
             s_test_failed  = true;
             s_test_txt_bad = true;
             atomic_store(&s_test_open_txt, 0u);
+            ESP_LOGW(TAG, "cannot open %s: errno %d; the report is not "
+                          "recorded", s_test_path, errno);
+        } else {
+            ESP_LOGI(TAG, "logging to %s", s_test_path);
         }
     }
     if (s_test_fp == NULL) {
@@ -637,6 +694,7 @@ static void test_write(const test_line_t *l)
     }
     bool bad = fputs(l->text, s_test_fp) < 0
                || fputc('\n', s_test_fp) == EOF;
+    ++s_test_count;
     /* Committed as the run log is, every LOG_WRITER_FLUSH_ROWS lines. */
     if (++s_test_lines >= LOG_WRITER_FLUSH_ROWS) {
         s_test_lines = 0u;
@@ -649,6 +707,7 @@ static void test_write(const test_line_t *l)
          * incomplete. */
         const bool first = !s_test_failed;
         s_test_failed  = true;
+        s_test_file_bad = true;
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
         if (first && storage_check() != CARD_STATE_MOUNTED) {
             test_close();
@@ -676,7 +735,7 @@ static int32_t note_size(void *ctx, const char *path)
     char full[NOTE_PATH_MAX];
     take_path(path, NULL, full, sizeof(full));
     /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a
-     * file of 4 GiB and more as a small one, which the cap would let grow. */
+     * file of 4GiB and more as a small one, which the cap would let grow. */
     storage_stat_t st;
     const esp_err_t err = storage_stat(full, &st);
     if (err != ESP_OK) {
@@ -753,13 +812,15 @@ static void log_note(const char *line)
     }
 }
 
-/*
- * Everything that touches the card.
+/**
+ * @brief Everything that touches the card.
  *
  * On the control task's core and below it in priority: the control task
- * blocks for CONTROL_PERIOD_MS (5 ms) every pass and inside every receive
+ * blocks for CONTROL_PERIOD_MS (5ms) every pass and inside every receive
  * window of a link exchange, and this runs in those gaps.  It touches no
  * PSRAM, so it does not share bandwidth with the display's scan-out.
+ *
+ * @param arg Unused.
  */
 void log_task(void *arg)
 {
@@ -803,6 +864,9 @@ void log_task(void *arg)
         if (got && s_log_file != NULL) {
             if (row.kind == LOG_RUN_SUPPLY) {
                 (void)log_writer_supply_row(&s_log, row.t_s, &row.u.supply);
+            } else if (row.kind == LOG_RUN_SERVO) {
+                (void)log_writer_servo_row(&s_log, row.t_s, &row.u.bench,
+                                           &row.rail, &row.servo);
             } else {
                 (void)log_writer_row(&s_log, row.t_s, &row.u.bench);
             }

@@ -5,7 +5,7 @@
  * started.
  *
  * Stepwise.  Each link_uph_step() does one thing -- one block of 64 bytes
- * (8 data frames and a COMMIT), one read, one command, or 8 KiB of a hash --
+ * (8 data frames and a COMMIT), one read, one command, or 8KiB of a hash --
  * and returns, so the caller runs its own loop between steps.  The wire is
  * a link_port_t, so the host suite runs every step against a simulated
  * IOmcu over the real link layer.
@@ -38,7 +38,7 @@ extern "C" {
  * @brief How long exchanges may go unanswered in a row before the link counts
  * as gone: an IOmcu that restarts answers again well inside it.
  *
- * An unanswered exchange takes LINK_HOST_TIMEOUT_MS (1000 ms) at the panel.
+ * An unanswered exchange takes LINK_HOST_TIMEOUT_MS (1000ms) at the panel.
  */
 #define LINK_UPH_LOST_MS     4000u
 /**
@@ -52,7 +52,7 @@ extern "C" {
  * @brief How long the store's gate may stay shut while a command waits for it.
  */
 #define LINK_UPH_BUSY_MS     10000u
-/** @brief How long a hash at the IOmcu may take: 2036 KiB at 1 KiB a pass. */
+/** @brief How long a hash at the IOmcu may take: 2036KiB at 1KiB a pass. */
 #define LINK_UPH_HASH_MS     10000u
 /**
  * @brief After ACTIVATE: nothing asked for this long, so the old image has
@@ -61,7 +61,7 @@ extern "C" {
 #define LINK_UPH_SETTLE_MS   500u
 /**
  * @brief After ACTIVATE: the new image has to answer and be bought inside this,
- * well inside the boot ROM's 16.7 s TBYB (try before you buy) watchdog.
+ * well inside the boot ROM's 16.7s TBYB (try before you buy) watchdog.
  */
 #define LINK_UPH_CONFIRM_MS  12000u
 
@@ -205,7 +205,7 @@ uint16_t link_uph_permille(const link_uph_t *u);
  * stays down.
  *
  * Its alert and its build check are owed once per mismatch, not at every probe
- * of the 1 s the link-down probe repeats at; an update that ended owes the
+ * of the 1s the link-down probe repeats at; an update that ended owes the
  * check again, since an IOmcu that kept its old image gives no link-up edge to
  * start one.
  */

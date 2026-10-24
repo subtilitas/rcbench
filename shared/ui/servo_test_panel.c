@@ -69,7 +69,7 @@ void test_meter_follow(servo_source_id_t id, uint32_t changes)
 
 /* --------------------------------------------------------- the automatic test */
 
-/* The steps the run's settings name: 7.4 and 8.4 V only while HV SERVO is
+/* The steps the run's settings name: 7.4 and 8.4V only while HV SERVO is
  * on. */
 static uint8_t test_steps(float *v)
 {
@@ -165,7 +165,7 @@ static void test_cfg(servo_test_cfg_t *c)
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     if (in_force_dangerous()) {
-        snprintf(c->danger, sizeof(c->danger), "%s %u Hz", type()->name,
+        snprintf(c->danger, sizeof(c->danger), "%s %uHz", type()->name,
                  (unsigned)s.frame_hz);
     }
     c->hv         = s.test_hv;
@@ -604,7 +604,7 @@ void draw_test_start(gfx_canvas_t *c)
                    running || test_blocked() == 0, SV_FONT_LABEL);
 }
 
-/* The steps a run would take, as the card says them: "4.8 6.0 V
+/* The steps a run would take, as the card says them: "4.8 6.0V
  * BROWN-OUT", or NO STEP CHOSEN. */
 static void test_plan(char *plan, size_t size)
 {

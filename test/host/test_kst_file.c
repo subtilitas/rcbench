@@ -1243,11 +1243,11 @@ TEST_CASE(a_changed_line_wins_over_the_register_block)
     kst_file_load_t r;
     size_t n;
 
-    /* 244 and 245 both show as 96 %.  The line unchanged: the block's 244. */
+    /* 244 and 245 both show as 96%.  The line unchanged: the block's 244. */
     n = written(&img) - 18u;
     CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
     CHECK_EQ(f.value[KST_F_DUTY], 244);
-    /* The line changed to 95 %: its number, converted as a typed one. */
+    /* The line changed to 95%: its number, converted as a typed one. */
     at = strstr(g_text, "Max. Duty = 96 %");
     CHECK(at != NULL);
     at[13] = '5';
@@ -1271,7 +1271,7 @@ TEST_CASE(a_changed_line_wins_over_the_register_block)
     CHECK((f.named & BIT(KST_F_DUTY)) == 0u);
     CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == 0u);
-    /* Without the block the line converts: 96 % is raw 245. */
+    /* Without the block the line converts: 96% is raw 245. */
     CHECK_EQ(edited("Type: V6\nMax. Duty = 96 %\n", &f, NULL), KST_FILE_OK);
     CHECK_EQ(f.value[KST_F_DUTY], 245);
     CHECK((f.as_raw & BIT(KST_F_DUTY)) == 0u);
@@ -1582,10 +1582,10 @@ TEST_CASE(a_number_the_servo_already_shows_changes_nothing)
     const kst_image_t servo = sim_bench_image();
     kst_file_load_t r;
 
-    /* Raw 245 shows as 96 %, and 96 % converts to raw 245. */
+    /* Raw 245 shows as 96%, and 96% converts to raw 245. */
     CHECK_EQ(load("Max. Duty = 96 %\n", &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == 0u);
-    /* Raw 244 shows as 96 % too: typed as a number it is no change, as a
+    /* Raw 244 shows as 96% too: typed as a number it is no change, as a
      * raw value it is one. */
     {
         const kst_image_t at_244 = bench_with(KST_F_DUTY, 244);
@@ -1760,7 +1760,7 @@ static bool taken(const char *body)
 
 TEST_CASE(the_hard_limits_between_fields_hold_for_values_in_their_unit)
 {
-    /* 500 us and 2500 us for the end points, with Uncontrolled Pos and
+    /* 500us and 2500us for the end points, with Uncontrolled Pos and
      * Neutral where the other rules leave them. */
     CHECK(taken("Pulse Lower = 500 us\n"));
     CHECK(refused_for("Pulse Lower = 499.2 us\n", KST_H_LOWER_LOW,
@@ -1768,22 +1768,22 @@ TEST_CASE(the_hard_limits_between_fields_hold_for_values_in_their_unit)
     CHECK(taken("Pulse Upper = 2500 us\n"));
     CHECK(refused_for("Pulse Upper = 2500.8 us\n", KST_H_UPPER_HIGH,
                       KST_F_PULSE_UPPER, 2));
-    /* Uncontrolled Pos follows the end points to 500 and 2500 us. */
+    /* Uncontrolled Pos follows the end points to 500 and 2500us. */
     CHECK(taken("Pulse Lower = 500 us\nUncontrolled Pos = 500 us\n"));
     CHECK(refused_for("Pulse Lower = 500 us\nUncontrolled Pos = 499.2 us\n",
                       KST_H_UNCONT_POS_LOW, KST_F_UNCONT_POS, 3));
     CHECK(taken("Pulse Upper = 2500 us\nUncontrolled Pos = 2500 us\n"));
     CHECK(refused_for("Pulse Upper = 2500 us\nUncontrolled Pos = 2500.8 us\n",
                       KST_H_UNCONT_POS_HIGH, KST_F_UNCONT_POS, 3));
-    /* 400 us between the end points; the margins to Neutral break first
+    /* 400us between the end points; the margins to Neutral break first
      * unless Neutral sits in the middle. */
     CHECK(taken("Pulse Lower = 1300 us\nPulse Upper = 1700 us\n"));
     CHECK(refused_for("Pulse Lower = 1300.8 us\nPulse Upper = 1700 us\n"
                       "Uncontrolled Pos = 1500 us\n",
                       KST_H_SPAN, KST_F_PULSE_LOWER, 2));
-    /* spd_sel on needs SPD at 5 % or more. */
+    /* spd_sel on needs SPD at 5% or more. */
     CHECK(taken("spd_sel = 1\nSPD = 5.0 %\n"));
-    /* The servo's SPD is 1.0 %: taking the SPD line back leaves the rule
+    /* The servo's SPD is 1.0%: taking the SPD line back leaves the rule
      * broken, taking the spd_sel line back clears it. */
     CHECK(refused_for("SPD = 4.9 %\nspd_sel = 1\n", KST_H_SPD_SEL_LOW_SPD,
                       KST_F_SPD_SEL, 3));
@@ -1793,7 +1793,7 @@ TEST_CASE(the_hard_limits_between_fields_hold_for_values_in_their_unit)
     CHECK(taken("Max. Duty = 98 %\n"));
     CHECK(refused_for("# 1\n# 2\nMax. Duty = 99 %\n", KST_H_DUTY_HIGH,
                       KST_F_DUTY, 4));
-    /* 10 % converts to raw 25, one below the limit of 26. */
+    /* 10% converts to raw 25, one below the limit of 26. */
     CHECK(taken("Max. Duty = 11 %\n"));
     CHECK(refused_for("Max. Duty = 10 %\n", KST_H_DUTY_LOW, KST_F_DUTY, 2));
 }
@@ -1863,7 +1863,7 @@ TEST_CASE(the_limits_compare_with_the_backup_the_caller_passes)
     kst_file_t f;
     kst_file_load_t r;
 
-    /* 500 us is above the servo's 300 us and at the backup's 550 us less
+    /* 500us is above the servo's 300us and at the backup's 550us less
      * one step: raised against the servo, not against the backup. */
     CHECK_EQ(edited("Boost = 537.5 us\n", &f, NULL), KST_FILE_OK);
     CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);

@@ -143,7 +143,7 @@ static int32_t fast_ua(const sense_sched_t *s, const sense_value_t *v)
  *
  * @param s The schedule.
  * @param v The FAST sample.
- * @param at_t Time of the sample, in 0.1 ms.
+ * @param at_t Time of the sample, in 0.1ms.
  */
 static void fast_keep(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
 {
@@ -192,7 +192,7 @@ static bool take_rise(sense_sched_t *s)
  *
  * @param s The schedule.
  * @param v FAST's sample, or NULL when there is none.
- * @param at_t Time of the step, in 0.1 ms.
+ * @param at_t Time of the step, in 0.1ms.
  */
 static void cap_step(sense_sched_t *s, const sense_value_t *v, uint32_t at_t)
 {

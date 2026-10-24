@@ -19,7 +19,7 @@
  * servo_screen_core_int.h between them.
  *
  * A type or a frame rate that can destroy a servo not made for it -- a
- * heli profile, anything above 60 Hz -- is applied only after a warning
+ * heli profile, anything above 60Hz -- is applied only after a warning
  * held for two seconds, and is never kept past a restart.
  *
  * START TEST, on TEST's AUTOMATIC TEST card, runs the automatic test
@@ -61,8 +61,8 @@
 /*
  * The profiles the bench drives.  STANDARD PWM is the safe one and the one
  * every restart starts at.  The heli profiles are Rotorflight's for digital
- * cyclic and narrow-band tail servos: 1520 us centre, +/-700 us, up to
- * 333 Hz; and 760 us centre, +/-350 us, up to 560 Hz.
+ * cyclic and narrow-band tail servos: 1520us centre, +/-700us, up to
+ * 333Hz; and 760us centre, +/-350us, up to 560Hz.
  */
 static const uint16_t k_std_rates[]  = { 50, 60, 100, 150, 200, 250, 300, 333 };
 static const uint16_t k_cyc_rates[]  = { 50, 120, 200, 333 };
@@ -98,7 +98,7 @@ servo_screen_state_t s;
 
 /*
  * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
- * by one, so -90 deg is MIN and +90 deg is MAX however far each lies from
+ * by one, so -90deg is MIN and +90deg is MAX however far each lies from
  * the centre.
  */
 static float half_travel_us(bool below)
@@ -189,8 +189,8 @@ float svs_cmd_to_us(float cmd)
 /*
  * The angle the pin drives on an armed bench while nothing commands it: the
  * outputs layer's rest for a surface, in the range a command carries.  The
- * midpoint of that range, so PULSE CENTRE without the trim: 1500 us for
- * STANDARD PWM, 760 us for NARROW 760.
+ * midpoint of that range, so PULSE CENTRE without the trim: 1500us for
+ * STANDARD PWM, 760us for NARROW 760.
  */
 float svs_rest_deg(void)
 {
@@ -250,6 +250,8 @@ void post(servo_cmd_kind_t kind, uint16_t us)
         && kind != SERVO_CMD_ARM) {
         return;
     }
+    /* Any other command takes the horn from the drag's filter. */
+    svs_drag_on_post(kind, us);
     /* A resume not yet taken stays one when the sweep is said again. */
     const bool resume = kind == SERVO_CMD_SWEEP
                         && s.pending.kind == SERVO_CMD_SWEEP
@@ -288,7 +290,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
         ui_value_drop_arm(&s.gate);
     }
     /* The range travels with the pulse: the panel configures the channel
-     * from it, and a narrow servo's 760 us centre is below a standard
+     * from it, and a narrow servo's 760us centre is below a standard
      * servo's floor.  The frame rate goes with it. */
     cmd_range(&s.pending.min_us, &s.pending.max_us);
     s.pending.frame_hz = s.frame_hz;
@@ -323,7 +325,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
  * The pulse a command carries is the angle put through the profile, the
  * trim, the reverse and the travel; change any of them while an output is
  * held and the pulse on the pin belongs to the old one.  Switching a held
- * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500 us on a
+ * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500us on a
  * servo whose maximum is 860 while the screen shows the new range.
  */
 
@@ -381,7 +383,11 @@ void reissue(void)
             s.dr.on = false;
             s.commanded_deg = clamp_travel(s.shown_deg);
         }
+        /* The held position said again under the new rate or range: the
+         * drag's filter, settling, goes on (svs_drag_on_post()). */
+        s.df.restating = true;
         post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
+        s.df.restating = false;
     } else if (s.gate.armed || s.gate.arm_asked) {
         /*
          * Resting on an armed bench: the rest restated under the profile now
@@ -410,7 +416,7 @@ bool svs_command(float deg)
     }
     s.commanded_deg = clamp_travel(deg);
     post(SERVO_CMD_POSITION, svs_deg_to_us(s.commanded_deg));
-    ++s.ctrl_rev;
+    ++s.dial_rev;
     return true;
 }
 
@@ -424,6 +430,7 @@ bool svs_command(float deg)
 void svs_drop_motion(void)
 {
     svs_knob_withdraw();
+    svs_drag_filter_end();      /* and the drag's filter commands no more */
     const servo_cmd_kind_t k = s.pending.kind;
     if (k == SERVO_CMD_POSITION || k == SERVO_CMD_CENTRE
         || k == SERVO_CMD_SWEEP || k == SERVO_CMD_HOLD) {
@@ -501,7 +508,7 @@ void servo_invalidate(void)
 }
 
 /**
- * @brief The screen at its start: the state cleared, STANDARD PWM at 50 Hz,
+ * @brief The screen at its start: the state cleared, STANDARD PWM at 50Hz,
  *        and the output card's controls, the strip, the sessions, the plot
  *        and SETTINGS' tabs laid out.
  */
@@ -524,7 +531,7 @@ static void reset(void)
     s.source        = SERVO_SOURCE_MODEL;   /* likewise */
     s.cur_key       = CUR_KEY_NONE;
     s.shown_cmd     = (float)OUT_SPAN / 2.0f;
-    /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
+    /* STANDARD PWM at 50Hz: what every restart starts at, whatever the
      * session before it used. */
     s.type      = 0;
     s.min_us    = k_types[0].min_us;
@@ -634,7 +641,7 @@ static void leave(void)
     /* No release arrives for a finger on the speed slider or on the dial as
      * the screen changes, and a latched drag outlives the gesture. */
     ui_slider_release(&s.speed);
-    s.dragging = false;
+    svs_drag_end();
     /* Disarm rather than release: navigating away from an armed bench must
      * not leave it armed behind a screen that is not visible, and the
      * disarm lets go of the output on its way. */
@@ -700,10 +707,11 @@ static void enter(void)
  */
 static void cancel(void)
 {
-    /* Disarming is a press, so its release is the whole command: one that
-     * went missing is a DISARM the operator made and the bench never saw.
-     * Arming has already sent its command by the time the finger lifts, so
-     * cancelling one part way asks for nothing, which is correct. */
+    /* DISARM acts on its press and takes no hold.  A press of ARM still
+     * down on a bench that reads armed without its hold having fired is a
+     * finger on DISARM all the same, and switches to SAFE.  Arming has
+     * already sent its command by the time the finger lifts, so cancelling
+     * one part way asks for nothing, which is correct. */
     if (s.gate.armed && s.arm_down && !s.arm.fired) {
         svs_ask_disarm();
     }
@@ -743,9 +751,10 @@ static void cancel(void)
      * And the dial.  A drag left latched owns its track id, and the GT911
      * reuses ids: a later contact that began somewhere else would satisfy
      * the drag path and command a position with no press on the dial, which
-     * on an armed bench moves the servo.
+     * on an armed bench moves the servo.  Its filter stops where it has
+     * got to: the target it was settling on is the abandoned gesture's.
      */
-    s.dragging = false;
+    svs_drag_end();
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
     prog_cancel();

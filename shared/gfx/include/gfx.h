@@ -1,5 +1,7 @@
-/*
- * gfx: an RGB565 (16-bit red, green, blue) rasteriser with no dependencies.
+/**
+ * @file
+ * @brief gfx: an RGB565 (16-bit red, green, blue) rasteriser with no
+ *        dependencies.
  *
  * Nothing in this header touches ESP-IDF, FreeRTOS or any hardware.  It draws
  * into a plain block of 16-bit pixels described by a gfx_canvas_t, so the
@@ -268,15 +270,15 @@ extern const gfx_font_t gfx_font_16x28;
 /** 24x30 digits and punctuation, 0x20..0x3A.  Hero numerals. */
 extern const gfx_font_t gfx_font_num_24x30;
 /** @brief 10x20 monospaced, ASCII 0x20..0x7E and the German letters.  Cap height
- *  12 px.  Labels, tabs, buttons and row values on the 1024 x 600 panel. */
+ *  12px.  Labels, tabs, buttons and row values on the 1024 x 600 panel. */
 extern const gfx_font_t gfx_font_10x20;
 /** @brief 12x24 monospaced, ASCII 0x20..0x7E and the German letters.  Cap height
- *  15 px.  Prose: help text, warnings, questions, run results. */
+ *  15px.  Prose: help text, warnings, questions, run results. */
 extern const gfx_font_t gfx_font_12x24;
 /** @brief 20x36 monospaced, ASCII 0x20..0x7E and the German letters.  Cap height
- *  23 px.  Headings, tile names and choice faces on the 1024 x 600 panel. */
+ *  23px.  Headings, tile names and choice faces on the 1024 x 600 panel. */
 extern const gfx_font_t gfx_font_20x36;
-/** @brief 32x44 digits and punctuation, 0x20..0x3A.  Cap height 40 px.  Hero
+/** @brief 32x44 digits and punctuation, 0x20..0x3A.  Cap height 40px.  Hero
  *  numerals on the 1024 x 600 panel. */
 extern const gfx_font_t gfx_font_num_32x44;
 

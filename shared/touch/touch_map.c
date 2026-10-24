@@ -1,5 +1,7 @@
-/*
- * Turning frames of touch points into down/up events.
+/**
+ * @file
+ * @brief Turning frames of touch points into down/up events, and the
+ *        coordinate maps before them.
  *
  * The controller reports which contacts are present each frame; a screen wants
  * to know when one arrived and when one left.  This diffs consecutive frames
@@ -16,6 +18,13 @@
 
 #include <string.h>
 
+/**
+ * @brief @p v clamped into lo..hi.
+ * @param v The value.
+ * @param lo The lowest.
+ * @param hi The highest.
+ * @return The clamped value.
+ */
 static int16_t clamp16(int v, int lo, int hi)
 {
     if (v < lo) { return (int16_t)lo; }
@@ -81,6 +90,22 @@ void touch_map_point(const touch_map_t *m, touch_point_t *p)
     touch_map_apply(m, p->x, p->y, &p->x, &p->y);
 }
 
+/** @brief The map with a 180 degree turn on top (touch_map.h). */
+touch_map_t touch_map_turned(const touch_map_t *m, bool turned)
+{
+    touch_map_t out = { 0 };
+    if (m == NULL) {
+        return out;
+    }
+    out = *m;
+    if (turned) {
+        /* A turn by r then by 180 in the mapped area is a turn by r + 180
+         * after the same mirrors: both axes of the mapped area reverse. */
+        out.rotation = (touch_rotation_t)(((int)m->rotation + 2) % 4);
+    }
+    return out;
+}
+
 /** @brief Map n points in place (touch_map.h). */
 void touch_map_points(const touch_map_t *m, touch_point_t *pts, int n)
 {
@@ -110,6 +135,7 @@ int touch_map_crop(touch_point_t *pts, int count, int16_t w, int16_t h)
 
 /* ----------------------------------------------------------------- tracker */
 
+/** @brief Forget every contact (touch_map.h). */
 void touch_tracker_reset(touch_tracker_t *t)
 {
     if (t) {
@@ -117,6 +143,13 @@ void touch_tracker_reset(touch_tracker_t *t)
     }
 }
 
+/**
+ * @brief The first of @p count points with track id @p id.
+ * @param pts The points.
+ * @param count How many.
+ * @param id The track id.
+ * @return The point, or NULL for none.
+ */
 static const touch_point_t *find_by_id(const touch_point_t *pts, int count, uint8_t id)
 {
     for (int i = 0; i < count; ++i) {
@@ -127,6 +160,7 @@ static const touch_point_t *find_by_id(const touch_point_t *pts, int count, uint
     return NULL;
 }
 
+/** @brief Diff a frame against the last one (touch_map.h). */
 int touch_tracker_update(touch_tracker_t *t,
                          const touch_point_t *cur, int cur_count,
                          touch_event_t *out, int max_out)

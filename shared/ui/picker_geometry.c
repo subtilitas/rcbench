@@ -52,9 +52,10 @@ void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h)
 
 /*
  * The box the board occupies, from the drawing's outline or else the
- * shape's, centred on the screen.  The drawing is drawn to scale into it;
- * its outline is the shape's whenever the board has one
- * (board_drawing_agrees()).
+ * shape's, centred across the screen and between the body's top and
+ * FOOT, so the tiers above and below it end inside both.  The drawing is
+ * drawn to scale into it; its outline is the shape's whenever the board
+ * has one (board_drawing_agrees()).
  */
 void pk_board_box(int *x, int *y, int *w, int *h)
 {
@@ -70,7 +71,7 @@ void pk_board_box(int *x, int *y, int *w, int *h)
     }
     picker_board_fit(ow, oh, w, h);
     *x = (SCREEN_W - *w) / 2;
-    *y = (SCREEN_H - *h) / 2;
+    *y = (FOOT - *h) / 2;
 }
 
 /* ------------------------------------------------------------- geometry */
@@ -170,15 +171,12 @@ bool pk_button_at(int i, gfx_rect_t *out, int *tier_out)
     int bx, by, bw, bh;
     pk_board_box(&bx, &by, &bw, &bh);
     /*
-     * The room above the board is `by` and no less: the router hands a screen
-     * its own body, so the band is already out of these coordinates and
-     * taking it off again would shrink every top button by the height of a
-     * band it is not sharing the screen with.
+     * KEY_H tall, GAP from the board's edge and TGAP between the tiers:
+     * the board's box leaves the room for both tiers above it and below
+     * it, ending at FOOT, above the alert band.
      */
-    const int th = (((top ? by : (SCREEN_H - (by + bh)))
-                     - GAP) - (TIERS - 1) * TGAP) / TIERS;
-    const int ty = top ? (by - GAP - (tier + 1) * th - tier * TGAP)
-                       : (by + bh + GAP + tier * (th + TGAP));
+    const int ty = top ? (by - GAP - (tier + 1) * KEY_H - tier * TGAP)
+                       : (by + bh + GAP + tier * (KEY_H + TGAP));
     int x = px - BTNW / 2;
     if (x < 2) { x = 2; }
     if (x + BTNW > SCREEN_W - 2) { x = SCREEN_W - 2 - BTNW; }
@@ -186,9 +184,9 @@ bool pk_button_at(int i, gfx_rect_t *out, int *tier_out)
     out->x = (int16_t)x;
     out->y = (int16_t)ty;
     out->w = (int16_t)BTNW;
-    out->h = (int16_t)((th > 0) ? th : 0);
+    out->h = (int16_t)KEY_H;
     if (tier_out != NULL) { *tier_out = tier; }
-    return out->h > 0;
+    return true;
 }
 
 bool picker_screen_button_rect(uint8_t index, gfx_rect_t *out)
@@ -262,9 +260,9 @@ gfx_rect_t picker_screen_area(picker_area_t area)
 {
     switch (area) {
     case PICKER_AREA_PINS:
-        return gfx_rect_make(PINS_X, PINS_Y, PINS_W, SCREEN_H - PINS_Y - 4);
+        return gfx_rect_make(PINS_X, PINS_Y, PINS_W, FOOT - PINS_Y);
     case PICKER_AREA_IN_USE:
-        return gfx_rect_make(USE_X, USE_Y, USE_W, SCREEN_H - USE_Y - 4);
+        return gfx_rect_make(USE_X, USE_Y, USE_W, FOOT - USE_Y);
     case PICKER_AREA_HEAD:
     default:
         return gfx_rect_make(HEAD_X, HEAD_Y, HEAD_W, HEAD_H);
@@ -277,28 +275,29 @@ gfx_rect_t picker_screen_list_face(void)
 }
 
 /* The list's rows: the protocols, then one PROG PORT entry a port, as on
- * OUTPUTS, each POP_ROW tall or less where they would run past the
- * screen. */
+ * OUTPUTS. */
 int pk_pop_rows(void)
 {
     return (int)OUTBIND_PROTOS + (int)outputs_screen_port_entries();
 }
 
-static int pop_row_h(void)
-{
-    const int fit = (SCREEN_H - HEAD_Y - 16) / pk_pop_rows();
-    return (fit < POP_ROW) ? fit : POP_ROW;
-}
-
+/* The list: one column of POP_W, two with PROG PORT entries. */
 gfx_rect_t pk_pop_rect(void)
 {
-    return gfx_rect_make(HEAD_X, HEAD_Y, POP_W, pk_pop_rows() * pop_row_h() + 8);
+    const int cols = (outputs_screen_port_entries() > 0u) ? 2 : 1;
+    return gfx_rect_make(HEAD_X, HEAD_Y, cols * POP_W,
+                         (int)OUTBIND_PROTOS * POP_ROW + 8);
 }
 
+/* Row @p proto: a protocol in the first column, PROG PORT entry
+ * proto - OUTBIND_PROTOS in the second, from the same top. */
 gfx_rect_t picker_screen_list_row(uint8_t proto)
 {
-    return gfx_rect_make(HEAD_X + 4, HEAD_Y + 4 + (int)proto * pop_row_h(),
-                         POP_W - 8, pop_row_h());
+    const int col = (proto < OUTBIND_PROTOS) ? 0 : 1;
+    const int row = (col == 0) ? (int)proto
+                               : (int)proto - (int)OUTBIND_PROTOS;
+    return gfx_rect_make(HEAD_X + col * POP_W + 4,
+                         HEAD_Y + 4 + row * POP_ROW, POP_W - 8, POP_ROW);
 }
 
 bool picker_screen_list_open(void) { return s.open; }

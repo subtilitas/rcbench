@@ -30,95 +30,199 @@
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
-#define W UI_PANEL_W
-#define H UI_BODY_H   /* the router owns the band */
-
-#define PAD       UI_MARGIN
-#define INNER     6
-#define COL_GAP   6
-#define LEFT_X    PAD
-#define LEFT_W    546
-#define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
-#define RIGHT_W   (W - PAD - RIGHT_X)
+#define W UI_PANEL_W /**< The panel's width, px: the screen's own. */
+#define H UI_BODY_H   /**< The body's height under the band, px. */
 
 /*
- * The task strip at the top (ui_workbench.h), LIVE | SETTINGS, as on MOTOR
- * & ESC and SERVO.  To its right on the same row the line that says where
- * the numbers come from, and the range the set points may take: in sight
- * on both tasks and under the keypad and the question.
+ * MOTOR & ESC's frame at the 1024 x 600 sizes: the page in a 620px left
+ * column, the readings and the CONTROL card on a 380px rail on the right,
+ * the same on both tasks.
  */
+#define PAD       UI_MARGIN               /**< The outer margin, px. */
+#define INNER     10                      /**< A card's own padding, px. */
+#define LEFT_W    620                     /**< The left column, px. */
+#define LEFT_X    PAD                     /**< Its left edge, px. */
+#define RIGHT_X   (LEFT_X + LEFT_W + 8)   /**< The rail: x 636. */
+#define RIGHT_W   (W - PAD - RIGHT_X)     /**< Its width: 380px. */
+#define RC_X      (RIGHT_X + 12)          /**< The rail's column: x 648. */
+#define RC_W      (RIGHT_W - 24)          /**< Its width: 356px. */
+
+/**
+ * @brief The task strip, LIVE | SETTINGS, at SERVO's and MOTOR & ESC's
+ *        sizes: tabs of 150 x 40px, 4px apart, from (9, 8); the page
+ *        from y 56.  The shared UI_WB_ figures plus the difference.
+ */
+#define SU_STRIP_X UI_WB_STRIP_X
+#define SU_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8px. */
+#define SU_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40px. */
+#define SU_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150px. */
+#define SU_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4px. */
+#define SU_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
+
+/**
+ * @brief The lowest row a control that stops what the bench drives, or a
+ *        line of text, may reach: 4px above the alert band.
+ */
+#define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+
+/**
+ * @brief The faces of the 1024 x 600 type scale this screen draws in.
+ *
+ * SU_FONT_LABEL (10 x 20) for every label, button, row and value;
+ * SU_FONT_FINE (8 x 16) for SETTINGS' help lines; SU_FONT_BODY (12 x 24)
+ * for the question's sentences; SU_FONT_HEAD (20 x 36) for MODE's letters,
+ * the question's title and its change; SU_FONT_NUM (32 x 44, digits,
+ * sign, point and space only) for the readings.
+ */
+#define SU_FONT_LABEL (&gfx_font_10x20)
+#define SU_FONT_FINE  UI_FONT_FINE           /**< 8 x 16: help lines. */
+#define SU_FONT_BODY  UI_FONT_BODY           /**< 12 x 24: sentences. */
+#define SU_FONT_HEAD  (&gfx_font_20x36)      /**< 20 x 36: MODE, titles. */
+#define SU_FONT_NUM   (&gfx_font_num_32x44)  /**< 32 x 44: the readings. */
+/** @brief A line of SU_FONT_LABEL, px. */
+#define LINE_H    20
+
+/*
+ * The header right of the strip, on the strip's middle row: where the
+ * numbers come from, and the range the set points may take.  In sight on
+ * both tasks and under the keypad and the question.
+ */
+/** @brief The strip's tasks: LIVE and SETTINGS. */
 #define TASKS     (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_SETTINGS))
-#define INFO_X    (UI_WB_STRIP_X + 2 * UI_WB_TAB_W + UI_WB_TAB_GAP + 3 + 12)
-#define INFO_Y    (UI_WB_STRIP_Y + 4)
+/** @brief The header's left edge: 12px right of the strip's trough. */
+#define INFO_X    (SU_STRIP_X + 2 * SU_TAB_W + SU_TAB_GAP + 3 + 12)
+/** @brief Its top: centred on the strip's 40px. */
+#define INFO_Y    (SU_STRIP_Y + (SU_STRIP_H - LINE_H) / 2)
 
-/* Under the strip, on LIVE: PLOT | TABLE, over the plot. */
-#define HDR_Y     UI_WB_PAGE_Y
-#define HDR_H     18
-
-#define UP_Y      (HDR_Y + HDR_H + 4)
-#define UP_H      (LO_Y - 6 - UP_Y)
-/* The rail's four cards, from the page's top down to the plot's foot. */
-#define RAIL_Y    UI_WB_PAGE_Y
-#define CARD_GAP  4
-#define CARD_H    ((UP_Y + UP_H - RAIL_Y - 3 * CARD_GAP) / 4)
-
-/* The lower row: the set points on the left, the CONTROL card on the right,
- * at the height MOTOR & ESC puts its throttle and CONTROL card. */
-#define LO_Y      272
-#define LO_H      (H - LO_Y - PAD)
-
+/** @brief A panel's title strip, the accent tag on its top edge, px. */
 #define TITLE_H   20
-#define LEG_Y     (UP_Y + TITLE_H + 4)
-#define LEG_H     30
-#define PLOT_X    (LEFT_X + INNER)
-#define PLOT_W    (LEFT_W - 2 * INNER)
-#define PLOT_Y    (LEG_Y + LEG_H + 4)
-#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y)
 
 /*
- * The set points: two rows in the lower left, each a label and its value
- * over a track with a fine step at each end.  The step buttons move by a
- * tenth of a volt or of an amp, which the slider is too coarse to place;
- * the slider covers the range, and both snap to what the supply takes.  The
- * value itself opens the keypad.
+ * The rail, top down: four reading cards from the page's top, then the
+ * CONTROL card with the totals on its title line, RESET PEAKS, and OUTPUT
+ * ON / OFF at the foot, where SERVO and MOTOR & ESC have ARM and DISARM.
  */
-#define SET_ROW_H   62
-#define SET_Y0      (LO_Y + TITLE_H + 4)
-#define SET_TEXT_H  20
-#define SET_CTRL_DY 24
-#define SET_CTRL_H  30
-#define NUDGE_W     54
-#define SET_TRACK_X (LEFT_X + INNER + NUDGE_W + 6)
-#define SET_TRACK_W (LEFT_W - 2 * INNER - 2 * (NUDGE_W + 6))
-#define NUDGE_V     0.1f
-#define NUDGE_I     0.1f
-
-#define BTN_H     UI_BTN_H
-#define OUT_Y     (LO_Y + TITLE_H + 8)
-#define TOTALS_Y  (OUT_Y + BTN_H + 10)
-#define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
-
-#define TAB_Y     HDR_Y
-#define TAB_H     HDR_H
-#define TAB_W     124
+#define RAIL_Y    SU_PAGE_Y               /**< The first card, px. */
+#define CARD_H    64                      /**< A reading card's height. */
+#define CARD_GAP  4                       /**< Between two of them, px. */
+/** @brief The CONTROL card's top: 8px under the fourth reading card. */
+#define CTL_Y     (RAIL_Y + 4 * CARD_H + 3 * CARD_GAP + 8)
+#define CTL_H     (H - PAD - CTL_Y)       /**< To the body's margin. */
+#define BTN_H     UI_TAP_MIN              /**< RESET PEAKS' height, px. */
+#define RESET_Y   (CTL_Y + TITLE_H + 14)  /**< RESET PEAKS: y 366. */
+#define OUT_Y     (RESET_Y + BTN_H + 10)  /**< OUTPUT ON / OFF: y 424. */
+#define OUT_H     60                      /**< Its height: 9.0mm. */
+_Static_assert(OUT_Y + OUT_H <= STOP_FLOOR,
+               "OUTPUT OFF ends above the alert band");
+_Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
 
 /*
- * The keypad, the question and SETTINGS' page all take the left column under
- * the strip, plot and set points, and leave the right column -- the readings
- * and OUTPUT OFF -- where it is and working.
+ * The left column on LIVE: the output card, with PLOT | TABLE under its
+ * title, the legend and the plot or the table; under it the SET POINTS
+ * card.
  */
-#define OV_X      LEFT_X
-#define OV_Y      UI_WB_PAGE_Y
-#define OV_W      LEFT_W
-#define OV_H      (H - OV_Y - PAD)
-#define OV_ROW_H  36
-#define OV_VAL_W  100
-/* The caps and start values on the left, 210 px; the trips, their help and
- * the confirmations on the right, 300 px, the 37 cells the help's lines
- * take. */
-#define OV_COL_W  210
-#define OV_COL1_X (OV_X + 10 + OV_COL_W + 16)
-#define OV_COL1_W (OV_X + OV_W - 10 - OV_COL1_X)
+#define UP_Y      SU_PAGE_Y               /**< The output card, px. */
+#define UP_H      240                     /**< Its height, px. */
+#define LO_Y      (UP_Y + UP_H + 8)       /**< SET POINTS: y 304. */
+#define LO_H      (H - PAD - LO_Y)        /**< To the body's margin. */
+
+#define TAB_X     (LEFT_X + INNER)        /**< PLOT | TABLE, px. */
+#define TAB_Y     (UP_Y + TITLE_H + 6)    /**< Their top: y 82. */
+#define TAB_H     40                      /**< Their height, px. */
+#define TAB_W     200                     /**< The row: two of 100px. */
+#define LEG_Y     (TAB_Y + TAB_H + 4)     /**< The legend, px. */
+#define LEG_H     20                      /**< Its height, px. */
+#define PLOT_X    (LEFT_X + INNER)        /**< The plot's left edge, px. */
+#define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600px. */
+#define PLOT_Y    (LEG_Y + LEG_H + 4)     /**< Its top, px. */
+#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 136px. */
+/** @brief TABLE's SET column, from PLOT_X: SUP_TABLE_HEAD's cell 15. */
+#define TBL_SET_DX  150
+#define TBL_NOW_DX  300                   /**< NOW: its cell 30, px. */
+#define TBL_UNIT_DX 400                   /**< The unit, px. */
+#define TBL_PITCH   30                    /**< From row to row, px. */
+
+/*
+ * The set points: two rows in SET POINTS, each its label over a row of
+ * controls: the fine step down, the track, the fine step up, and the value,
+ * which opens the keypad.  The step buttons move by a tenth of a volt or
+ * of an amp, which the slider is too coarse to place; the slider covers
+ * the range, and both snap to what the supply takes.
+ *
+ * The thumb stands UI_SLIDER_OVERHANG (5px) proud of the track and its
+ * shadow 2px more under it, so the controls start 6px under the label
+ * and a row's painted foot ends over the next row's label.
+ */
+#define SET_ROW_H   82                    /**< From row to row, px. */
+#define SET_Y0      (LO_Y + TITLE_H + 4)  /**< The first label: y 328. */
+#define SET_TEXT_H  LINE_H                /**< A label's line, px. */
+#define SET_CTRL_DY 26                    /**< From label to controls. */
+#define SET_CTRL_H  UI_TAP_MIN            /**< Keys, track, value, px. */
+#define NUDGE_W     72                    /**< A step key's width, px. */
+#define SET_VAL_W   120                   /**< The value's box, px. */
+/** @brief The value's box: at the card's padding on the right. */
+#define SET_VAL_X   (LEFT_X + LEFT_W - INNER - SET_VAL_W)
+/** @brief The fine step up: 8px left of the value. */
+#define SET_UP_X    (SET_VAL_X - 8 - NUDGE_W)
+#define SET_TRACK_X (LEFT_X + INNER + NUDGE_W + 8) /**< The track: x 98. */
+#define SET_TRACK_W (SET_UP_X - 8 - SET_TRACK_X)   /**< Its length: 312. */
+#define NUDGE_V     0.1f                  /**< The voltage's step, V. */
+#define NUDGE_I     0.1f                  /**< The current's step, A. */
+_Static_assert(SET_Y0 + SET_ROW_H + SET_CTRL_DY + SET_CTRL_H
+                   + UI_SLIDER_OVERHANG + 2 <= STOP_FLOOR,
+               "the current limit's row ends above the alert band");
+_Static_assert(SET_CTRL_DY + SET_CTRL_H + UI_SLIDER_OVERHANG + 2
+                   <= SET_ROW_H,
+               "a row's thumb ends over the next row's label");
+_Static_assert(SET_CTRL_DY >= SET_TEXT_H + UI_SLIDER_OVERHANG + 1,
+               "the thumb ends under its label");
+
+/*
+ * The keypad, the question and SETTINGS' page all take the left column
+ * under the strip, plot and set points, and leave the strip and the rail
+ * -- the readings and OUTPUT OFF -- where they are and working.
+ */
+#define OV_X      LEFT_X                  /**< The left column, px. */
+#define OV_Y      SU_PAGE_Y               /**< Under the strip: y 56. */
+#define OV_W      LEFT_W                  /**< 620px. */
+#define OV_H      (H - OV_Y - PAD)        /**< To the body's margin. */
+/*
+ * SETTINGS' page: two columns of 48px rows at a 56px pitch, each a label
+ * left of its 120px value.  The caps and start values on the left, 260
+ * px, for labels of up to 13 cells; the trips, their help in the 8 x 16
+ * face and the confirmations on the right, 324px, for labels of up to 19
+ * cells and help lines of up to 36.  The save line at the page's foot
+ * ends 4px above the alert band.
+ */
+#define OV_ROW_H  UI_TAP_MIN              /**< A row's height, px. */
+#define OV_PITCH  56                      /**< From row to row, px. */
+#define OV_HEAD_H 28                      /**< A heading's line, px. */
+#define OV_VAL_W  120                     /**< A row's value, px. */
+#define OV_COL_W  260                     /**< The left column, px. */
+#define OV_COL0_X (OV_X + INNER)          /**< Its left edge: x 18. */
+#define OV_COL1_X (OV_COL0_X + OV_COL_W + 16)      /**< The right: 294. */
+#define OV_COL1_W (OV_X + OV_W - INNER - OV_COL1_X) /**< Its width: 324. */
+#define OV_SAVE_Y (STOP_FLOOR - LINE_H)   /**< The save line, px. */
+#define OV_HELP_PITCH 18                  /**< The help's lines, px. */
+/* From the page's top: the headings, the trips' help, RESET PD MINI. */
+#define OV_CAPS_DY     8                  /**< LIMITS and TRIPS, px. */
+#define OV_RESTART_DY  152                /**< AFTER RESTART, px. */
+#define OV_HELP_DY     204                /**< The trips' help, px. */
+#define OV_CONFIRM_DY  268                /**< CONFIRM WHILE ON, px. */
+#define OV_MODRESET_DY 300                /**< RESET PD MINI, px. */
+_Static_assert(OV_Y + 352 + OV_ROW_H <= OV_SAVE_Y,
+               "KEYPAD's row ends over the save line");
+_Static_assert(OV_HELP_DY + 3 * OV_HELP_PITCH <= OV_CONFIRM_DY,
+               "the trips' help ends over CONFIRM WHILE ON");
+
+/*
+ * The question: its title, why it asks, the change, APPLY and CANCEL, and
+ * at its foot where to turn it off, ending 4px above the alert band.
+ */
+#define ASK_BTN_W 240                     /**< APPLY and CANCEL, px. */
+#define ASK_BTN_H 60                      /**< Their height, px. */
+#define ASK_BTN_Y (OV_Y + 240)            /**< Their top: y 296. */
+#define ASK_PITCH 26                      /**< Its sentences' lines, px. */
 
 /* The sample rate of the panel's loop, which is the plot's time base. */
 #define SAMPLE_HZ 20.0f
@@ -133,8 +237,8 @@ enum { S_VOLT = 0, S_CURR, S_POWER, S_READINGS, S_VSET = S_READINGS, S_ISET,
 
 /* What a press is on.  One contact holds the screen at a time. */
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
-       P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_TEXT_V,
-       P_TEXT_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET };
+       P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_VALUE_V,
+       P_VALUE_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET };
 
 /* Where a set point change came from, for the question it may need. */
 enum { FROM_SLIDER = 0, FROM_KEYPAD };
@@ -155,15 +259,15 @@ typedef struct {
 } limit_row_t;
 
 static const limit_row_t k_rows[] = {
-    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 38,  2 },
-    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 80,  2 },
-    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 156, 2 },
-    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 198, 2 },
-    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 38,  2 },
-    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 80,  2 },
-    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 122, 0 },
-    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 260, 0 },
-    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 304, 0 },
+    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 36,  2 },
+    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 92,  2 },
+    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 180, 2 },
+    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 236, 2 },
+    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 36,  2 },
+    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 92,  2 },
+    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 148, 0 },
+    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 296, 0 },
+    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 352, 0 },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
@@ -257,7 +361,7 @@ extern sup_state_t sup_s;
 extern const ui_plot_series_t sup_series[S_COUNT];
 
 void sup_bind_colours(void);
-gfx_rect_t sup_set_text_rect(int row);
+gfx_rect_t sup_set_value_rect(int row);
 gfx_rect_t sup_card_rect(int i);
 gfx_rect_t sup_strip_area(void);
 bool sup_on_live(void);

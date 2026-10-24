@@ -58,21 +58,21 @@ extern "C" {
 #endif
 
 /**
- * @brief The PD mini's own range, as the screen's caps: 1 to 20 V and 0.05 to
- *        3 A from the vendor's page, in 10 mV and 10 mA steps.
+ * @brief The PD mini's own range, as the screen's caps: 1 to 20V and 0.05 to
+ *        3A from the vendor's page, in 10mV and 10mA steps.
  */
 #define SUPPLY_CAPS_PDMINI { 1.0f, 20.0f, 0.01f, 0.05f, 3.0f, 0.01f }
 
 /**
  * @brief A reading older than this is not the supply answering: longer than one
- *        exchange's 1000 ms timeout, so one lost frame is not a supply gone,
+ *        exchange's 1000ms timeout, so one lost frame is not a supply gone,
  *        and  about the 3 failed transactions the IOmcu's driver takes.
  */
 #define SUPPLY_LINK_STALE_MS 1500u
 /**
  * @brief A reading count that has stood this long is a supply no trip can
  *        watch: 2 x SUPPLY_LINK_STALE_MS, so the readings have been marked not
- *        valid (ok 0) for a further 1500 ms (supply_link_blind()).
+ *        valid (ok 0) for a further 1500ms (supply_link_blind()).
  */
 #define SUPPLY_LINK_BLIND_MS (2u * SUPPLY_LINK_STALE_MS)
 /** @brief How often the page is read while the supply is in use. */
@@ -193,7 +193,7 @@ void supply_link_wire(supply_link_t *s, const supply_wiring_t *w);
 
 /**
  * @brief What the output is to be; set points clamped to the page's 1000 to
- *        20000 mV and 50 to 3000 mA.
+ *        20000mV and 50 to 3000mA.
  *
  * @param s  The link state.
  * @param on true to switch the output on.

@@ -21,7 +21,7 @@ void servo_sim_defaults(servo_sim_cfg_t *cfg)
     cfg->stall_a        = 2.4f;
     cfg->bind_us        = 45;
     cfg->travel_a       = 0.95f;  /* about 40% of stall, while moving */
-    cfg->slew_us_per_ms = 1.2f;   /* 0.17 s for 60 degrees */
+    cfg->slew_us_per_ms = 1.2f;   /* 0.17s for 60 degrees */
     cfg->noise_a        = 0.02f;
 }
 

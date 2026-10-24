@@ -17,7 +17,7 @@
  *   - A stop during that wait wins.  The arm is abandoned, not queued.
  *   - With a far end to ask, the wait ends when the far end reports the
  *     line trusted and not when a fixed time is up: the monitor needs five
- *     edges, the fifth is 100 to 125 ms after the latch clears at a 5 ms
+ *     edges, the fifth is 100 to 125ms after the latch clears at a 5ms
  *     pass, and later on a slower one.  The wait is bounded; an arm the far
  *     end never trusts is given up before CLEAR is written.
  *   - A link that goes quiet while the bench is armed, or while an arm is
@@ -52,12 +52,12 @@ extern "C" {
 
 /**
  * @brief How long past the settle the panel waits for the far end to report the
- *        line trusted before it gives the arm up: 200 ms, 300 ms from the hold
- *        with the 100 ms settle.
+ *        line trusted before it gives the arm up: 200ms, 300ms from the hold
+ *        with the 100ms settle.
  *
  * The monitor needs five edges.  An edge is emitted on the first pass at or
- * after HEARTBEAT_PERIOD_MS (20 ms) from the last, so five take 100 ms at a
- * 5 ms pass, 135 ms at 9 ms and 300 ms at a pass of 30 ms, six times the
+ * after HEARTBEAT_PERIOD_MS (20ms) from the last, so five take 100ms at a
+ * 5ms pass, 135ms at 9ms and 300ms at a pass of 30ms, six times the
  * control task's period.
  */
 #define ARMING_LINE_WAIT_MS 200u
@@ -382,7 +382,7 @@ void arming_refused(arming_t *a);
  *   - after CLEAR, as a stop from the far end.  The CLEAR released the far
  *     end's latch and no frame can set it again, so the stop withholds the
  *     heartbeat, and the far end sets its latch when it stops trusting the
- *     line, within HEARTBEAT_MAX_GAP_MS (150 ms).
+ *     line, within HEARTBEAT_MAX_GAP_MS (150ms).
  *
  * Also false, with nothing changed, when no arm is in hand.  Always true
  * for an arm that asked no far end.  What it cannot bound is the frame that

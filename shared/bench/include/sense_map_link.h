@@ -253,7 +253,7 @@ void sense_map_link_done(sense_map_link_t *s, int result,
 bool sense_map_link_page(const sense_map_link_t *s);
 
 /**
- * @brief The shunt in 0.1 mOhm of CH @p ch (1 to 3) of the part SENSE mirrors,
+ * @brief The shunt in 0.1mOhm of CH @p ch (1 to 3) of the part SENSE mirrors,
  *        as the page holds the map: the part SENSE's CLIPPED flag and
  *        SERVO_SENSE are about.
  *
@@ -261,7 +261,7 @@ bool sense_map_link_page(const sense_map_link_t *s);
  *
  * @param s  The link state.
  * @param ch The channel, 1 to 3.
- * @return The shunt in 0.1 mOhm, or 0 without a map read or for no such part.
+ * @return The shunt in 0.1mOhm, or 0 without a map read or for no such part.
  */
 uint16_t sense_map_link_mirror_dmohm(const sense_map_link_t *s, unsigned ch);
 

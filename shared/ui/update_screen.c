@@ -27,7 +27,37 @@ static struct {
     unsigned      drawn_mask;
 } u;
 
+/*
+ * PANEL UPDATE on the whole panel:
+ * A 64px title bar; the bytes in U_FONT_HEAD (20 x 36) over a bar 36px
+ * tall, 976px wide; from U_LINES_Y the step or the verdict in U_FONT_HEAD
+ * and the lines under it in U_FONT_BODY (12 x 24), 28px apart; the one
+ * button 240 x 56px at the bottom left, 18px above the panel's edge.
+ */
+/** @brief The title, the bytes and the step: 20 x 36. */
+#define U_FONT_HEAD  (&gfx_font_20x36)
+/** @brief The lines under them: 12 x 24. */
+#define U_FONT_BODY  UI_FONT_BODY
+/** @brief The button: 10 x 20. */
+#define U_FONT_LABEL (&gfx_font_10x20)
+/** @brief The title bar's height, px. */
+#define U_BAR_H      64
+/** @brief The column's left edge. */
+#define U_X          24
+#define U_W          (UI_PANEL_W - 2 * U_X)  /**< 976px: 48 cells of
+                                                  U_FONT_HEAD, 81 of BODY */
+/** @brief The bytes' top. */
+#define U_BYTES_Y    88
+/** @brief The bar, 36px tall. */
+#define U_PBAR       gfx_rect_make(U_X, 140, U_W, 36)
+/** @brief The step's or the verdict's top. */
+#define U_LINES_Y    208
+/** @brief A U_FONT_BODY line's pitch, px. */
+#define U_PITCH      28
+/** @brief CLOSE or CANCEL, at the bottom left. */
 #define U_CLOSE gfx_rect_make(24, UI_PANEL_H - 18 - 56, 240, 56)
+
+_Static_assert(56 >= UI_TAP_MIN, "CLOSE and CANCEL are a finger tall");
 
 static void u_reset(void)
 {
@@ -105,6 +135,27 @@ static void u_cancel(void)
     u.drawn_mask = 0u;
 }
 
+/**
+ * @brief One line of @p t in @p f from (U_X, @p y), as wide as the column.
+ * @param c   Canvas, the whole panel.
+ * @param y   The line's top.
+ * @param t   The text.
+ * @param f   Its face.
+ * @param col Its colour.
+ */
+static void u_line(gfx_canvas_t *c, int y, const char *t, const gfx_font_t *f,
+                   gfx_color_t col)
+{
+    gfx_text_in(c, gfx_rect_make(U_X, y, U_W, gfx_text_height(f, 1)), t, f,
+                col, 1, GFX_ALIGN_LEFT);
+}
+
+/**
+ * @brief PANEL UPDATE, drawn whole once per framebuffer and again after
+ *        every change.
+ * @param c            Canvas, the whole panel.
+ * @param buffer_index The framebuffer drawn into.
+ */
 static void u_render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -121,71 +172,63 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
     const bool failed = (u.v.state == UPDATE_FAILED
                          || u.v.state == UPDATE_FETCH_FAILED);
     const gfx_color_t head = failed ? UI_DANGER : UI_ACCENT;
-    gfx_fill_rect(c, 0, 0, UI_PANEL_W, 56, head);
+    gfx_fill_rect(c, 0, 0, UI_PANEL_W, U_BAR_H, head);
     char line[96];
     snprintf(line, sizeof(line), fetch ? TR(UPD_DL_TITLE) : TR(UP_TITLE),
              u.v.version);
-    gfx_text_in(c, gfx_rect_make(24, 13, 752, 30), line, UI_FONT_HEAD,
-                ui_is_light(head) ? UI_TEXT_ON_LIGHT : GFX_WHITE, 1,
-                GFX_ALIGN_LEFT);
+    u_line(c, (U_BAR_H - gfx_text_height(U_FONT_HEAD, 1)) / 2, line,
+           U_FONT_HEAD, ui_is_light(head) ? UI_TEXT_ON_LIGHT : GFX_WHITE);
     const unsigned pct = (u.v.total > 0u)
         ? (unsigned)((uint64_t)u.v.written * 100u / u.v.total) : 0u;
     if (!fetch || u.v.total > 0u) {
         /* A download names its bytes once the image's size is known. */
         snprintf(line, sizeof(line), TR(UP_BYTES),
                  (unsigned long)u.v.written, (unsigned long)u.v.total, pct);
-        gfx_text_in(c, gfx_rect_make(24, 96, 752, 30), line, UI_FONT_HEAD,
-                    UI_TEXT, 1, GFX_ALIGN_LEFT);
+        u_line(c, U_BYTES_Y, line, U_FONT_HEAD, UI_TEXT);
     }
-    ui_bar(c, gfx_rect_make(24, 140, 752, 24),
+    ui_bar(c, U_PBAR,
            (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total : 0.0f,
            -1.0f, failed ? UI_DANGER : UI_ACCENT);
-    int y = 200;
+    /* The step or the verdict in the heading face, the lines under it
+     * 48px lower and U_PITCH apart. */
+    const int y = U_LINES_Y, y2 = U_LINES_Y + 48;
     if (u.v.state == UPDATE_FETCHING) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), u.v.what, UI_FONT_HEAD,
-                    UI_TEXT, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 40, 752, 18), u.v.why,
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 80, 752, 18), TR(UPD_DL_NOTE_1),
-                    UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 104, 752, 18),
-                    TR(UPD_DL_NOTE_2), UI_FONT_LABEL, UI_TEXT_DIM, 1,
-                    GFX_ALIGN_LEFT);
-        ui_button(c, U_CLOSE, TR(CANCEL), UI_PANEL_HI, u.pressed, true);
+        u_line(c, y, u.v.what, U_FONT_HEAD, UI_TEXT);
+        u_line(c, y2, u.v.why, U_FONT_BODY, UI_TEXT_DIM);
+        u_line(c, y2 + 2 * U_PITCH, TR(UPD_DL_NOTE_1), U_FONT_BODY,
+               UI_TEXT);
+        u_line(c, y2 + 3 * U_PITCH, TR(UPD_DL_NOTE_2), U_FONT_BODY,
+               UI_TEXT_DIM);
+        ui_button_font(c, U_CLOSE, TR(CANCEL), UI_PANEL_HI, u.pressed, true,
+                       U_FONT_LABEL);
     } else if (u.v.state == UPDATE_FETCH_FAILED) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), TR(UPD_DL_FAILED),
-                    UI_FONT_HEAD, UI_DANGER, 1, GFX_ALIGN_LEFT);
-        y += 44;
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), u.v.what,
-                    UI_FONT_LABEL, UI_WARN, 1, GFX_ALIGN_LEFT);
+        u_line(c, y, TR(UPD_DL_FAILED), U_FONT_HEAD, UI_DANGER);
+        int ly = y2;
+        u_line(c, ly, u.v.what, U_FONT_BODY, UI_WARN);
         if (u.v.why[0] != '\0') {
-            y += 24;
-            gfx_text_in(c, gfx_rect_make(24, y, 752, 18), u.v.why,
-                        UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
+            ly += U_PITCH;
+            u_line(c, ly, u.v.why, U_FONT_BODY, UI_TEXT_DIM);
         }
-        y += 32;
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), TR(UP_FAILED_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        ui_button(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed, true);
+        u_line(c, ly + U_PITCH + 12, TR(UP_FAILED_2), U_FONT_BODY,
+               UI_TEXT_DIM);
+        ui_button_font(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed,
+                       true, U_FONT_LABEL);
     } else if (u.v.state == UPDATE_RESTARTING) {
-        /* Nothing under it: a line longer than the 47 cells breaks onto
-         * the next, 40 px lower. */
-        (void)ui_text_wrap(c, gfx_rect_make(24, y, 752, 30), 40,
-                           TR(UP_RESTART), UI_FONT_HEAD, UI_OK);
+        /* Nothing under it: a line longer than the 48 cells breaks onto
+         * the next, 48px lower. */
+        (void)ui_text_wrap(c, gfx_rect_make(U_X, y, U_W,
+                                            gfx_text_height(U_FONT_HEAD, 1)),
+                           48, TR(UP_RESTART), U_FONT_HEAD, UI_OK);
     } else if (failed) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), TR(UP_FAILED),
-                    UI_FONT_HEAD, UI_DANGER, 1, GFX_ALIGN_LEFT);
-        y += 44;
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), TR(UP_FAILED_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        ui_button(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed, true);
+        u_line(c, y, TR(UP_FAILED), U_FONT_HEAD, UI_DANGER);
+        u_line(c, y2, TR(UP_FAILED_2), U_FONT_BODY, UI_TEXT_DIM);
+        ui_button_font(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed,
+                       true, U_FONT_LABEL);
     } else {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), TR(UP_NOTE_1),
-                    UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 24, 752, 18), TR(UP_NOTE_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 48, 752, 18), TR(WF_Q_NOTE_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
+        u_line(c, y, TR(UP_NOTE_1), U_FONT_BODY, UI_TEXT);
+        u_line(c, y + U_PITCH, TR(UP_NOTE_2), U_FONT_BODY, UI_TEXT_DIM);
+        u_line(c, y + 2 * U_PITCH, TR(WF_Q_NOTE_2), U_FONT_BODY,
+               UI_TEXT_DIM);
     }
     u.drawn_mask |= bit;
 }

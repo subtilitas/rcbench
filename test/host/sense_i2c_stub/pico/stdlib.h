@@ -4,7 +4,7 @@
  * nothing.  Each pin is low while a part holds it, high on an external
  * pull-up, and high on its own pad pull-up once that has been on for the
  * pin's rise time; low otherwise, as a pin nothing is wired to reads.  The
- * clock moves 1 us at every tight_loop_contents() and busy wait.  Nothing
+ * clock moves 1us at every tight_loop_contents() and busy wait.  Nothing
  * else of the SDK (software development kit) is stood in for here.
  *
  * SPDX-License-Identifier: MIT

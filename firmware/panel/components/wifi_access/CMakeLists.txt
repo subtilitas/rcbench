@@ -10,9 +10,9 @@
 # input/output), reached through the managed components esp_wifi_remote
 # and esp_hosted (idf_component.yml, wifi_radio.c).
 idf_component_register(
-    SRCS "wifi_access.c" "wifi_radio.c" "wifi_sock.c"
+    SRCS "wifi_access.c" "wifi_radio.c" "wifi_sock.c" "wifi_ntp.c" "wifi_dns.c"
     INCLUDE_DIRS include
-    REQUIRES board webaccess fwupdate storage esp_wifi esp_netif esp_event
+    REQUIRES board webaccess fwupdate storage clock esp_wifi esp_netif esp_event
              esp_http_server esp_http_client esp-tls mbedtls esp_timer
              nvs_flash lwip freertos esp_hw_support heap esp_driver_gpio
 )

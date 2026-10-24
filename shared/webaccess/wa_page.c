@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "wa_zip.h"
+#include "wall_clock.h"
 
 /** @brief The page's texts, P_<ID> for each UI_WEB_TEXT() of ui_text.def. */
 typedef enum {
@@ -178,7 +179,7 @@ static void files(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs)
         wa_out_str(o, "</p>");
     }
 
-    static wa_walk_t w;   /* 1.6 kB: off the calling task's stack */
+    static wa_walk_t w;   /* 1.6kB: off the calling task's stack */
     wa_walk_begin(&w, fs);
     bool open = false;
     for (;;) {
@@ -197,7 +198,11 @@ static void files(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs)
             wa_out_str(o, "</a></td><td class=\"n\">");
             wa_out_u64(o, w.ent.size);
             wa_out_str(o, "</td><td>");
-            wa_out_time(o, w.ent.mtime);
+            /* A 1980 stamp is an unset clock's (wall_clock.h): an empty
+             * cell rather than a date nobody wrote the file on. */
+            if (wall_stamp_known(w.ent.mtime)) {
+                wa_out_time(o, wall_local_s(w.ent.mtime));
+            }
             wa_out_str(o, "</td></tr>");
         } else {
             if (open) {

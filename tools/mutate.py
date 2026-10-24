@@ -39,9 +39,9 @@ builds there, and removes the directory on every way out: the end of the
 run, an error, Ctrl-C and SIGTERM.
 
 Run time is bounded.  The unmutated configure, build and suite run first,
-at most --timeout (300 s) each.  No mutant starts after --budget (1200 s)
+at most --timeout (300s) each.  No mutant starts after --budget (1200s)
 of mutants, and one mutant's build and suite run are stopped after
---timeout each, so a run ends within the budget plus five timeouts: 2700 s
+--timeout each, so a run ends within the budget plus five timeouts: 2700s
 with the defaults.  A mutant whose suite run is stopped counts as killed:
 it hangs.  The mutants left when the budget ends are reported as not run.
 

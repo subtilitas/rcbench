@@ -156,11 +156,14 @@ static const log_viewer_io_t k_fc_io = {
 /* The tabs' middles, in the header row (BR_TABS in the screen).  The row
  * runs ROOT, USER, BENCH: the position of a tab id is one more than the id,
  * modulo 3 (USER 0, BENCH 1, ROOT 2). */
-#define TAB_Y       21
+#define TAB_Y       LV_HEAD_CY
 
 #define TAB_POS(t)  (((t) + 1) % 3)
 
-#define TAB_X(t)    (19 + TAB_POS(t) * 84 + 40)
+#define TAB_X(t)    LV_TAB_CX(TAB_POS(t))
+
+/* A pixel 6px inside the left edge of the tab at position @p i. */
+#define TAB_EDGE(i) (LV_TAB_X0 + (i) * LV_TAB_PITCH + 6)
 
 /* A card in the target layout, behind the folder I/O, LOGS just opened. */
 static void folder_card(void)
@@ -276,17 +279,17 @@ TEST_CASE(the_tabs_stand_root_user_bench_from_the_left)
     CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
     /* The selected tab is the right-most one, BENCH, at a start. */
     draw();
-    const gfx_color_t on = gfx_pixel_get(&s_c, 19 + 2 * 84 + 6, TAB_Y);
-    CHECK(gfx_pixel_get(&s_c, 19 + 0 * 84 + 6, TAB_Y) != on);
-    CHECK(gfx_pixel_get(&s_c, 19 + 1 * 84 + 6, TAB_Y) != on);
+    const gfx_color_t on = gfx_pixel_get(&s_c, TAB_EDGE(2), TAB_Y);
+    CHECK(gfx_pixel_get(&s_c, TAB_EDGE(0), TAB_Y) != on);
+    CHECK(gfx_pixel_get(&s_c, TAB_EDGE(1), TAB_Y) != on);
 
-    tap(19 + 0 * 84 + 40, TAB_Y);
+    tap(LV_TAB_CX(0), TAB_Y);
     CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
     CHECK_STR_EQ(g_fc.dir, CARD_ROOT);
-    tap(19 + 1 * 84 + 40, TAB_Y);
+    tap(LV_TAB_CX(1), TAB_Y);
     CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
     CHECK_STR_EQ(g_fc.dir, CARD_USER_LOGS);
-    tap(19 + 2 * 84 + 40, TAB_Y);
+    tap(LV_TAB_CX(2), TAB_Y);
     CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
     CHECK_STR_EQ(g_fc.dir, CARD_AUTO_LOGS);
 
@@ -296,9 +299,9 @@ TEST_CASE(the_tabs_stand_root_user_bench_from_the_left)
     CHECK_EQ((int)LOG_TAB_ROOT, 2);
     log_viewer_set_tab(LOG_TAB_ROOT);
     draw();
-    const gfx_color_t on_root = gfx_pixel_get(&s_c, 19 + 6, TAB_Y);
-    CHECK(gfx_pixel_get(&s_c, 19 + 84 + 6, TAB_Y) != on_root);
-    CHECK(gfx_pixel_get(&s_c, 19 + 2 * 84 + 6, TAB_Y) != on_root);
+    const gfx_color_t on_root = gfx_pixel_get(&s_c, TAB_EDGE(0), TAB_Y);
+    CHECK(gfx_pixel_get(&s_c, TAB_EDGE(1), TAB_Y) != on_root);
+    CHECK(gfx_pixel_get(&s_c, TAB_EDGE(2), TAB_Y) != on_root);
 }
 
 /* The right-most column of the header row (y 2 to 40, right of the tabs)
@@ -320,8 +323,8 @@ static int name_edge(const char *a, const char *b, int runs)
     log_viewer_refresh();
     draw();
     int edge = -1;
-    for (int y = 2; y < 40; ++y) {
-        for (int x = 270; x < W; ++x) {
+    for (int y = LV_HEAD_TOP; y < LV_HEAD_BOT; ++y) {
+        for (int x = LV_HEAD_TEXT_X - 10; x < W; ++x) {
             if (first[y * W + x] != s_fb[y * W + x]) {
                 edge = (x > edge) ? x : edge;
             }
@@ -332,21 +335,22 @@ static int name_edge(const char *a, const char *b, int runs)
 
 TEST_CASE(the_card_name_ends_the_header_row_and_stops_short_of_prev)
 {
-    /* The last letter differs: the difference is the name's right end.
-     * Without PREV and NEXT it ends at the list's right edge, 784 px. */
+    /* The last letter differs: the difference is the name's right end,
+     * within one 10px cell.  Without PREV and NEXT it ends at the list's
+     * right edge, LV_HEAD_FAR. */
     int edge = name_edge("UNITEST", "UNITESX", 3);
-    CHECK(edge >= 784 - 8 && edge < 784);
+    CHECK(edge >= LV_HEAD_FAR - 10 && edge < LV_HEAD_FAR);
     /* Exactly one page: still no PREV and NEXT. */
     edge = name_edge("UNITEST", "UNITESX", LOG_VIEWER_MAX_FILES);
-    CHECK(edge >= 784 - 8 && edge < 784);
-    /* With PREV and NEXT showing (more than 48 runs) it ends 8 px short
-     * of PREV, which starts at 536 px. */
+    CHECK(edge >= LV_HEAD_FAR - 10 && edge < LV_HEAD_FAR);
+    /* With PREV and NEXT showing (more than 48 runs) it ends 8px short
+     * of PREV, at LV_HEAD_END. */
     edge = name_edge("UNITEST", "UNITESX", 150);
-    CHECK(edge >= 528 - 8 && edge < 528);
+    CHECK(edge >= LV_HEAD_END - 10 && edge < LV_HEAD_END);
     /* The longest label, 11 characters, and the longest folder share the
-     * 248 px to PREV: the name's left end stays right of the folder's. */
+     * 352px to PREV: the name's left end stays right of the folder's. */
     edge = name_edge("ABCDEFGHIJK", "ABCDEFGHIJX", 150);
-    CHECK(edge >= 528 - 8 && edge < 528);
+    CHECK(edge >= LV_HEAD_END - 10 && edge < LV_HEAD_END);
 }
 
 /*
@@ -368,13 +372,13 @@ TEST_CASE(the_tabs_switch_with_no_card)
             CHECK_EQ(g_list_calls, calls + 1);
             CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
             draw();
-            /* The selected tab's fill against the other two's, 6 px in
+            /* The selected tab's fill against the other two's, 6px in
              * from each tab's left edge. */
-            const gfx_color_t on = gfx_pixel_get(&s_c, 19 + TAB_POS(t) * 84 + 6,
+            const gfx_color_t on = gfx_pixel_get(&s_c, TAB_EDGE(TAB_POS(t)),
                                                  TAB_Y);
             for (int o = 0; o < (int)LOG_TAB_COUNT; ++o) {
                 if (o != t) {
-                    CHECK(gfx_pixel_get(&s_c, 19 + TAB_POS(o) * 84 + 6,
+                    CHECK(gfx_pixel_get(&s_c, TAB_EDGE(TAB_POS(o)),
                                         TAB_Y) != on);
                 }
             }
@@ -487,19 +491,20 @@ TEST_CASE(an_open_test_in_user_does_not_hide_the_same_number_in_bench)
 }
 
 /* The empty list's two lines, as drawn: the reason at box.y + 52 and what
- * the folder holds at box.y + 76. */
+ * the folder holds at box.y + 92. */
 static void empty_lines_drawn(gfx_color_t *out)
 {
     draw();
     int k = 0;
-    for (int y = 205; y < 250; ++y) {
-        for (int x = 140; x < 660; ++x) {
+    for (int y = LV_EMPTY_WHY_Y; y < LV_EMPTY_HINT_Y + 24; ++y) {
+        for (int x = LV_EMPTY_X0; x < LV_EMPTY_X1; ++x) {
             out[k++] = s_fb[y * W + x];
         }
     }
 }
 
-#define EMPTY_PX (45 * 520)
+#define EMPTY_PX ((LV_EMPTY_HINT_Y + 24 - LV_EMPTY_WHY_Y) \
+                  * (LV_EMPTY_X1 - LV_EMPTY_X0))
 
 TEST_CASE(each_empty_folder_says_what_it_holds_and_what_is_off)
 {

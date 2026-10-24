@@ -8,11 +8,11 @@ run and to stop unless it passed.
 
     tools/ci_gate.py --repo OWNER/REPO --sha COMMIT
 
-It asks GitHub for the runs of the CI workflow on COMMIT, every 30 s:
+It asks GitHub for the runs of the CI workflow on COMMIT, every 30s:
 
 - one of them passed: exit 0;
-- one is queued or running: wait, at most 5400 s from the start;
-- there is none, or every one ended and none passed: wait 600 s for a run
+- one is queued or running: wait, at most 5400s from the start;
+- there is none, or every one ended and none passed: wait 600s for a run
   to appear, then exit 1.  The workflow and the CI run of the same push
   start together, so an older failed run on the commit can be listed before
   the run this push started is.

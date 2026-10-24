@@ -25,7 +25,7 @@ def test_the_l2_follows_what_sdkconfig_defaults_sets():
 def test_the_panel_rate_is_the_boards_dpi_timing():
     """The panel rate is the boards dpi timing."""
     text = fc.BOARD_PINS_H.read_text(encoding="utf-8")
-    # 52 MHz over (1024 + 10 + 160 + 160) x (600 + 1 + 23 + 12).
+    # 52MHz over (1024 + 10 + 160 + 160) x (600 + 1 + 23 + 12).
     assert fc.panel_hz(text, fc.CANVAS) == pytest.approx(
         52e6 / (1354 * 636), rel=1e-9)
     assert 60.3 < fc.panel_hz(text, fc.CANVAS) < 60.5
@@ -45,7 +45,7 @@ def test_the_profile_is_the_canvas_the_renderer_draws():
 def test_the_bandwidth_is_not_measured_until_the_probe_is():
     """The bandwidth is not measured until the probe is."""
     assert fc.effective_bw(None, fc.CANVAS) is None
-    # One clear of 1,228,800 B in 24.576 ms: 2 x 1,228,800 B of traffic.
+    # One clear of 1,228,800B in 24.576ms: 2 x 1,228,800B of traffic.
     assert fc.effective_bw(24576.0, fc.CANVAS) == pytest.approx(100e6)
 
 
@@ -64,7 +64,7 @@ def test_the_table_with_a_bandwidth_estimates_each_mode():
     lines = fc.table([("clear", 19200)], 64, 60.0, 100e6)
     assert "~100 MB/s effective" in lines[0]
     row = lines[-1].split()
-    # 19,200 x 128 B = 2,457,600 B at 100 MB/s: 24.6 ms, two panel frames.
+    # 19,200 x 128B = 2,457,600B at 100MB/s: 24.6ms, two panel frames.
     assert row[0] == "clear"
     assert float(row[-2]) == pytest.approx(24.6)
     assert float(row[-1]) == pytest.approx(30.0)

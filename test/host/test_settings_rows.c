@@ -19,16 +19,16 @@
 #define F_VALUE (&gfx_font_12x24)
 #define F_LABEL (&gfx_font_10x20)
 
-/** @brief A row's name and help line: from 16 px into the row to 10 px
+/** @brief A row's name and help line: from 16px into the row to 10px
  *         short of the "-" key, where the screen clips them. */
 #define TEXT_W (MINUS_X - 10 - (LIST_X + 16))
-/** @brief A value and its unit: from 8 px right of the "-" key to 8 px
+/** @brief A value and its unit: from 8px right of the "-" key to 8px
  *         short of the "+" key. */
 #define VALUE_SPAN (PLUS_X - 8 - (MINUS_X + BTN_W + 8))
 
 /*
  * The rig mirrors the screen's geometry; the screen's own functions say
- * where it is.  Row 0 of the open list at its top, the next 70 px under
+ * where it is.  Row 0 of the open list at its top, the next 70px under
  * it, the keys in their columns over the row's height, the value between
  * them.
  */
@@ -56,18 +56,18 @@ TEST_CASE(the_rig_matches_the_screens_rows)
     CHECK_EQ(va.x + va.w, PLUS_X);
     CHECK_EQ(mi.y, r1.y);
     CHECK_EQ(pl.h, ROW_H);
-    /* The "+" key 12 px inside the row's right edge, the row 8 px left of
-     * the 12 px scroll bar, which ends at the third strip column's edge. */
+    /* The "+" key 12px inside the row's right edge, the row 8px left of
+     * the 12px scroll bar, which ends at the third strip column's edge. */
     CHECK_EQ(PLUS_X + BTN_W, r0.x + r0.w - 12);
     CHECK_EQ(r0.x + r0.w + 8 + 12, SAVE_X + HUB_COL_W);
     CHECK_EQ(va.w, 166);
 }
 
 /*
- * Nothing on SETUP that takes a tap is under UI_TAP_MIN (48 px, 7.2 mm):
- * a key is 56 x 48 drawn and takes its column over the row's 64 px; the
- * strip's three columns are 48 px tall; a hub tile 328 x 130; a menu tile
- * 243 x 255.  Two keys of one row are the value's 166 px apart.
+ * Nothing on SETUP that takes a tap is under UI_TAP_MIN (48px, 7.2mm):
+ * a key is 56 x 48 drawn and takes its column over the row's 64px; the
+ * strip's three columns are 48px tall; a hub tile 328 x 130; a menu tile
+ * 243 x 255.  Two keys of one row are the value's 166px apart.
  */
 TEST_CASE(every_target_of_setup_and_the_menu_is_a_full_tap)
 {
@@ -92,9 +92,9 @@ TEST_CASE(every_target_of_setup_and_the_menu_is_a_full_tap)
 }
 
 /*
- * The pane holds six rows whole and not seven: 6 x 70 px less the last
- * gap is 414 of its 428 px.  The strip under it starts 8 px lower and
- * ends 4 px above the alert band.
+ * The pane holds six rows whole and not seven: 6 x 70px less the last
+ * gap is 414 of its 428px.  The strip under it starts 8px lower and
+ * ends 4px above the alert band.
  */
 TEST_CASE(six_rows_show_whole_in_the_pane)
 {
@@ -172,7 +172,7 @@ TEST_CASE(every_row_fits_between_its_edge_and_its_keys_in_both_languages)
     CHECK_EQ(label, 0);
 }
 
-/* Whether any pixel of the scroll bar's column, 1002 to 1013 px, over the
+/* Whether any pixel of the scroll bar's column, 1002 to 1013px, over the
  * pane, is the accent: the bar's knob. */
 static bool bar_drawn(void)
 {
@@ -250,7 +250,7 @@ TEST_CASE(the_longest_list_scrolls_to_its_last_row)
  * The warning that holds the way out keeps its answers above the alert
  * band too: with a value unsaved and the warning open, a tap on every 4th
  * px of the band's rectangle answers nothing, and STAY, DISCARD and SAVE
- * end 4 px above it.
+ * end 4px above it.
  */
 TEST_CASE(nothing_of_the_warning_is_under_the_alert_band)
 {

@@ -27,7 +27,7 @@
  * One lens or the base of the stack light: a cylinder seen from the side.
  * Lit, the colour runs to a near-white band down the middle; unlit, the
  * same colour greyed and dark.  Both darken toward the edges, and a darker
- * line every 6 px is a rib of the lens.  Drawn row by row in runs of one
+ * line every 6px is a rib of the lens.  Drawn row by row in runs of one
  * colour, since the panel's frame buffer is cached by rows.
  */
 static void sp_cylinder(gfx_canvas_t *c, int x, int y, int w, int h,
@@ -304,7 +304,7 @@ static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
     if (!r->read || r->win_freq_dhz == 0u) {
         snprintf(pitch_txt, sizeof(pitch_txt), "--");
     } else {
-        snprintf(pitch_txt, sizeof(pitch_txt), "%u.%u Hz",
+        snprintf(pitch_txt, sizeof(pitch_txt), "%u.%uHz",
                  (unsigned)(r->win_freq_dhz / 10u),
                  (unsigned)(r->win_freq_dhz % 10u));
     }
@@ -316,19 +316,20 @@ static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
     char line[128];
     snprintf(line, sizeof(line), TR(SP_TONE_HEAD), sp_tone_state(r),
              pitch_txt, lost_txt, (unsigned)r->missed);
-    gfx_text(c, PAD + 12, y, line, UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, y, line, SP_FONT,
              fault ? ui_theme_color(UI_C_WARN) : dim, 1);
-    const int x0 = PAD + 12 + (gfx_text_cells(TR(SP_TONE_BEEPS)) + 2) * 8;
-    gfx_text(c, PAD + 12, y + pitch, TR(SP_TONE_BEEPS), UI_FONT_LABEL, dim,
+    const int x0 = PAD + 12
+                   + (gfx_text_cells(TR(SP_TONE_BEEPS)) + 2) * SP_CELL;
+    gfx_text(c, PAD + 12, y + pitch, TR(SP_TONE_BEEPS), SP_FONT, dim,
              1);
     if (r->n == 0u) {
-        gfx_text(c, x0, y + pitch, TR(SP_TONE_NONE), UI_FONT_LABEL, dim, 1);
+        gfx_text(c, x0, y + pitch, TR(SP_TONE_NONE), SP_FONT, dim, 1);
         return;
     }
     for (unsigned i = 0u; i < r->n && i < TONE_LINK_SHOWN; ++i) {
         sp_tone_beep(&r->beeps[i], line, sizeof(line));
-        gfx_text(c, x0 + (int)(i % 2u) * SP_TONE_COL_CELLS * 8,
-                 y + pitch + (int)(i / 2u) * pitch, line, UI_FONT_LABEL,
+        gfx_text(c, x0 + (int)(i % 2u) * SP_TONE_COL_CELLS * SP_CELL,
+                 y + pitch + (int)(i / 2u) * pitch, line, SP_FONT,
                  ui_theme_color(UI_C_TEXT), 1);
     }
 }
@@ -341,30 +342,30 @@ DRAWER void sp_draw_progress(gfx_canvas_t *c)
     const gfx_color_t txt = ui_theme_color(UI_C_TEXT);
     char line[128];
 
-    gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_RUN), UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, RUN_Y + 12, TR(SP_RUN), SP_FONT,
              ui_theme_color(UI_C_ACCENT), 1);
     if (e->entry != ESC_THR_MIN) {
         snprintf(line, sizeof(line), TR(SP_POWER_UP_AT),
                  sp_pos(esc_stick_pct(e->entry)));
-        gfx_text(c, PAD + 12 + gfx_text_cells(TR(SP_RUN)) * 8 + 24,
-                 PARM_Y + 12, line, UI_FONT_LABEL,
+        gfx_text(c, PAD + 12 + gfx_text_cells(TR(SP_RUN)) * SP_CELL + 24,
+                 RUN_Y + 12, line, SP_FONT,
                  ui_theme_color(UI_C_WARN), 1);
     }
-    gfx_text(c, PAD + 12, PARM_Y + 34, sp_phase_text(e->phase),
-             UI_FONT_HEAD, txt, 1);
+    gfx_text(c, PAD + 12, RUN_Y + 38, sp_phase_text(e->phase),
+             SP_FONT_HEAD, txt, 1);
     /* The count beside the stack light. */
     snprintf(line, sizeof(line), "%u", esc_stick_beeps(e));
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_TOWER_X - 24 - 210),
-                                 (int16_t)(PARM_Y + 14), 210, 34 },
-                line, UI_FONT_NUM, ui_theme_color(UI_C_CURR), 1,
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_TOWER_X - 24 - 250),
+                                 (int16_t)(RUN_Y + 10), 250, 44 },
+                line, SP_FONT_NUM, ui_theme_color(UI_C_CURR), 1,
                 GFX_ALIGN_RIGHT);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_TOWER_X - 24 - 210),
-                                 (int16_t)(PARM_Y + 50), 210, 16 },
-                TR(SP_BEEPS_GROUP), UI_FONT_LABEL,
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(SP_TOWER_X - 24 - 250),
+                                 (int16_t)(RUN_Y + 58), 250, 20 },
+                TR(SP_BEEPS_GROUP), SP_FONT,
                 ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
 
-    const int y0 = PARM_Y + 80;
-    const int pitch = 22;
+    const int y0 = RUN_L0;
+    const int pitch = LINE_P;
     /* The change being made; while items are counted, the first one still
      * to make, since the menu decides which comes up first. */
     uint8_t shown = e->active;
@@ -477,24 +478,24 @@ DRAWER void sp_draw_progress(gfx_canvas_t *c)
                  : e->last_trusted ? TR(SP_TWO_IN_ROW)
                  : e->last_in_order ? TR(SP_IN_ORDER) : TR(SP_NOT_IN_ORDER));
     }
-    gfx_text(c, PAD + 12, y0 + 2 * pitch, line, UI_FONT_LABEL, txt, 1);
+    gfx_text(c, PAD + 12, y0 + 2 * pitch, line, SP_FONT, txt, 1);
     snprintf(line, sizeof(line), TR(SP_STATS), (unsigned)e->groups,
              (unsigned)e->entries, sp_pos(e->out.throttle_pct),
              ui_on_off(e->out.supply_on));
-    gfx_text(c, PAD + 12, y0 + 3 * pitch, line, UI_FONT_LABEL, dim, 1);
+    gfx_text(c, PAD + 12, y0 + 3 * pitch, line, SP_FONT, dim, 1);
     snprintf(line, sizeof(line), TR(SP_CURRENT), (int)e->ma,
              (int)esc_det_floor_ma(&e->det), (unsigned)e->iv_ms);
-    gfx_text(c, PAD + 12, y0 + 4 * pitch, line, UI_FONT_LABEL, dim, 1);
+    gfx_text(c, PAD + 12, y0 + 4 * pitch, line, SP_FONT, dim, 1);
     sp_draw_tone(c, y0 + 5 * pitch, pitch);
     /* After the lines, so a line that reached under it would show as
      * painted over in the fit check. */
     sp_draw_tower(c, false, t->green);
 
-    gfx_text(c, PAD + 12, HELP_Y + 9,
-             TR(SP_ENDS_RUN), UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT),
-             1);
-    ui_button(c, pg.write_btn, TR(SP_ABORT), ui_theme_color(UI_C_DANGER),
-              false, true);
+    (void)sp_wrap(c, PAD + 12, HELP_Y, HELP_P, TR(SP_ENDS_RUN),
+                  (W - 2 * PAD - 24) / SP_CELL, 2,
+                  ui_theme_color(UI_C_TEXT_FAINT));
+    ui_button_font(c, pg.write_btn, TR(SP_ABORT),
+                   ui_theme_color(UI_C_DANGER), false, true, SP_FONT);
 }
 
 /* The red light: a result on screen, until OK, of a run that ended on
@@ -538,20 +539,20 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
     const bool done = e->phase == ESC_STICK_DONE;
     const gfx_color_t dim = ui_theme_color(UI_C_TEXT_DIM);
     char line[128];
-    gfx_text(c, PAD + 12, PARM_Y + 12, TR(SP_RESULT), UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, RUN_Y + 12, TR(SP_RESULT), SP_FONT,
              ui_theme_color(UI_C_ACCENT), 1);
     snprintf(line, sizeof(line), "%s", TR(SP_PH_DONE));
     if (!done) {
         snprintf(line, sizeof(line), TR(SP_ABORTED_WHY),
                  sp_reason_text(e->reason));
     }
-    gfx_text(c, PAD + 12, PARM_Y + 34, line, UI_FONT_HEAD,
+    gfx_text(c, PAD + 12, RUN_Y + 38, line, SP_FONT_HEAD,
              done ? ui_theme_color(UI_C_OK) : ui_theme_color(UI_C_DANGER),
              1);
-    const int y0 = PARM_Y + 80;
-    const int pitch = 22;
+    const int y0 = RUN_L0;
+    const int pitch = LINE_P;
     sp_result_head(e, line, sizeof(line));
-    gfx_text(c, PAD + 12, y0, line, UI_FONT_LABEL,
+    gfx_text(c, PAD + 12, y0, line, SP_FONT,
              ui_theme_color(UI_C_TEXT), 1);
     /* Five lines fit; past five, the fifth says how many more. */
     const unsigned shown = (e->n > 5u) ? 4u : e->n;
@@ -567,7 +568,7 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
     }
     if (shown < e->n) {
         sp_result_more(e, shown, line, sizeof(line));
-        gfx_text(c, PAD + 12, y0 + 5 * pitch, line, UI_FONT_LABEL, dim, 1);
+        gfx_text(c, PAD + 12, y0 + 5 * pitch, line, SP_FONT, dim, 1);
     }
     /* Below the changes, two lines: what the profile has a person do once
      * the run is over, and after an abort that what was fitted before
@@ -576,8 +577,8 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
      * above -- open by itself when the run ended -- lists every one. */
     const esc_profile_t *p = e->p;
     if (p->manual_count > 0u) {
-        ui_button(c, s.st.hand_btn, TR(SP_HAND_BTN),
-                  ui_theme_color(UI_C_DANGER), false, true);
+        ui_button_font(c, s.st.hand_res, TR(SP_HAND_BTN),
+                       ui_theme_color(UI_C_DANGER), false, true, SP_FONT);
     }
     int y = y0 + 6 * pitch;
     int room = 2;
@@ -585,7 +586,7 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
     if (p->manual_count > 0u && !sp_supply_reads_off()) {
         /* An abort asks the supply off; until it reads off, no hand at the
          * ESC for anything that follows. */
-        sp_text(c, PAD + 12, y, TR(SP_HAND_OVER_LIVE), 93,
+        sp_text(c, PAD + 12, y, TR(SP_HAND_OVER_LIVE), SP_WIDE_CELLS,
                 ui_theme_color(UI_C_DANGER));
         y += pitch;
         room--;
@@ -599,13 +600,14 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
         if (m->when == ESC_MANUAL_AFTER_PROGRAMMING && after < ESC_MANUAL_MAX) {
             snprintf(what, sizeof(what), "%s: %s", sp_when_text(m),
                      sp_action(m));
-            need += sp_wrap_lines(what, 93, 2);
+            need += sp_wrap_lines(what, SP_WIDE_CELLS, 2);
             ++after;
         }
     }
     if (need > room && room > 0) {
         snprintf(line, sizeof(line), TR(SP_HAND_AFTER_N), after);
-        sp_text(c, PAD + 12, y, line, 93, ui_theme_color(UI_C_WARN));
+        sp_text(c, PAD + 12, y, line, SP_WIDE_CELLS,
+                ui_theme_color(UI_C_WARN));
         y += pitch;
         room--;
     } else {
@@ -618,7 +620,8 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
             }
             snprintf(what, sizeof(what), "%s: %s", sp_when_text(m),
                      sp_action(m));
-            const int n = sp_wrap(c, PAD + 12, y, pitch, what, 93, 2,
+            const int n = sp_wrap(c, PAD + 12, y, pitch, what,
+                                  SP_WIDE_CELLS, 2,
                                   ui_theme_color(UI_C_WARN));
             y += n * pitch;
             room -= n;
@@ -628,34 +631,34 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
     if (!done && room > 0
         && (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u
             || esc_profile_manual_count(p, ESC_MANUAL_AT_POWER_UP) > 0u)) {
-        sp_text(c, PAD + 12, y, TR(SP_HAND_UNDO), 93,
+        sp_text(c, PAD + 12, y, TR(SP_HAND_UNDO), SP_WIDE_CELLS,
                 ui_theme_color(UI_C_WARN));
     }
     sp_draw_tower(c, sp_red(), false);
     if (done) {
         gfx_text(c, PAD + 12, HELP_Y,
                  TR(SP_TONES_1),
-                 UI_FONT_LABEL, dim, 1);
-        gfx_text(c, PAD + 12, HELP_Y + 18,
-                 TR(SP_TONES_2), UI_FONT_LABEL, dim, 1);
+                 SP_FONT, dim, 1);
+        gfx_text(c, PAD + 12, HELP_Y + HELP_P,
+                 TR(SP_TONES_2), SP_FONT, dim, 1);
     } else {
         gfx_text(c, PAD + 12, HELP_Y, sp_reason_help(e->reason),
-                 UI_FONT_LABEL, dim, 1);
+                 SP_FONT, dim, 1);
         /* The supply went off while the ESC was to confirm: the value may
          * not be stored, and a Kontronik ESC whose step marks it takes
          * that for programming broken off and locks itself. */
         if (esc_stick_cut_short(e)) {
-            gfx_text(c, PAD + 12, HELP_Y + 18,
+            gfx_text(c, PAD + 12, HELP_Y + HELP_P,
                      esc_stick_lock_risk(e) ? TR(SP_HAND_LOCK)
                                             : TR(SP_HAND_CUT),
-                     UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+                     SP_FONT, ui_theme_color(UI_C_WARN), 1);
         } else {
-            gfx_text(c, PAD + 12, HELP_Y + 18, TR(SP_SAFE_NOW),
-                     UI_FONT_LABEL, dim, 1);
+            gfx_text(c, PAD + 12, HELP_Y + HELP_P, TR(SP_SAFE_NOW),
+                     SP_FONT, dim, 1);
         }
     }
-    ui_button(c, pg.write_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
-              true);
+    ui_button_font(c, pg.write_btn, "OK", ui_theme_color(UI_C_PANEL_HI),
+                   false, true, SP_FONT);
 }
 
 /*
@@ -676,8 +679,8 @@ static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
     gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
-    gfx_text_in(c, (gfx_rect_t){ a.x, (int16_t)(a.y + 12), a.w, 28 },
-                title, UI_FONT_HEAD,
+    gfx_text_in(c, (gfx_rect_t){ a.x, (int16_t)(a.y + 8), a.w, 36 },
+                title, SP_FONT_HEAD,
                 ui_is_light(red) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
                                  : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
@@ -703,7 +706,7 @@ static DRAWER void sp_draw_warning_hand(gfx_canvas_t *c,
         return;
     }
     if (esc_profile_manual_count(p, ESC_MANUAL_BEFORE_POWER) > 0u) {
-        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND), UI_FONT_LABEL,
+        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND), SP_FONT,
                  ui_theme_color(UI_C_WARN), 1);
         y += 22;
         if (!sp_warn_steps_fit(p)) {
@@ -725,7 +728,7 @@ static DRAWER void sp_draw_warning_hand(gfx_canvas_t *c,
         }
     }
     if (later > 0u && y <= last) {
-        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND_LATER), UI_FONT_LABEL,
+        gfx_text(c, a.x + 20, y, TR(SP_WARN_HAND_LATER), SP_FONT,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
 }
@@ -742,7 +745,7 @@ DRAWER void sp_draw_warning(gfx_canvas_t *c)
     const int n = (int)(sizeof(k_lines) / sizeof(k_lines[0]));
     for (int i = 0; i < n; ++i) {
         gfx_text(c, a.x + 20, a.y + 68 + i * 22, ui_tr(k_lines[i]),
-                 UI_FONT_LABEL,
+                 SP_FONT,
                  ui_theme_color(UI_C_TEXT), 1);
     }
     char line[128];
@@ -761,7 +764,7 @@ DRAWER void sp_draw_warning(gfx_canvas_t *c)
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 10u),
              (unsigned)(ma / 1000u), (unsigned)(ma % 1000u / 10u),
              (unsigned)picked);
-    gfx_text(c, a.x + 20, top + 22, line, UI_FONT_LABEL,
+    gfx_text(c, a.x + 20, top + 22, line, SP_FONT,
              ui_theme_color(UI_C_VOLT), 1);
     /* Where the stick is when the supply comes on, beside the supply,
      * when it is not MIN: every position the run's power-ups take. */
@@ -769,23 +772,24 @@ DRAWER void sp_draw_warning(gfx_canvas_t *c)
     if (sp_power_up_text(t->p, ch, picked < ESC_STICK_MAX_CHANGES
                                        ? picked : ESC_STICK_MAX_CHANGES,
                          at, sizeof(at))) {
-        gfx_text(c, a.x + 20 + gfx_text_cells(line) * 8 + 24, top + 22, at,
-                 UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
+        gfx_text(c, a.x + 20 + gfx_text_cells(line) * SP_CELL + 24, top + 22,
+                 at,
+                 SP_FONT, ui_theme_color(UI_C_WARN), 1);
     }
     gfx_text(c, a.x + 20, top + 44, TR(SP_WARN_UNVERIFIED),
-             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+             SP_FONT, ui_theme_color(UI_C_TEXT_DIM), 1);
     sp_draw_warning_hand(c, t->p, a, top + 66);
-    ui_button(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
-              ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
-                           t->hold.held_s),
-              t->warn_down, !sp_hold_blocked());
+    ui_button_font(c, t->hold_btn, TR(SP_HOLD_TO_RUN),
+                   ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK), red,
+                                t->hold.held_s),
+                   t->warn_down, !sp_hold_blocked(), SP_FONT);
     if (!sp_warn_steps_fit(t->p)) {
-        ui_button(c, t->steps_btn, TR(SP_STEPS_BTN),
-                  t->warn_read ? ui_theme_color(UI_C_PANEL_HI) : red, false,
-                  true);
+        ui_button_font(c, t->steps_btn, TR(SP_STEPS_BTN),
+                       t->warn_read ? ui_theme_color(UI_C_PANEL_HI) : red,
+                       false, true, SP_FONT);
     }
-    ui_button(c, t->cancel_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
-              false, true);
+    ui_button_font(c, t->cancel_btn, TR(CANCEL),
+                   ui_theme_color(UI_C_PANEL_SUNK), false, true, SP_FONT);
 }
 
 /*
@@ -803,16 +807,16 @@ DRAWER void sp_draw_hand(gfx_canvas_t *c)
     snprintf(line, sizeof(line), "%s %s", p->brand, p->family);
     sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
     /* ESC_MANUAL_MAX steps of a label and two lines each fit above the
-     * buttons at a pitch of 19. */
+     * buttons at a pitch of LINE_P. */
     int y = a.y + 90;
     for (unsigned i = 0; i < p->manual_count; ++i) {
         const esc_manual_t *m = &p->manual[i];
         snprintf(line, sizeof(line), "%u  %s", i + 1u, sp_when_text(m));
-        gfx_text(c, a.x + 20, y, line, UI_FONT_LABEL,
+        gfx_text(c, a.x + 20, y, line, SP_FONT,
                  ui_theme_color(UI_C_WARN), 1);
-        y += 19;
-        y += 19 * sp_wrap(c, a.x + 44, y, 19, sp_action(m), 90, 2,
-                          ui_theme_color(UI_C_TEXT));
+        y += LINE_P;
+        y += LINE_P * sp_wrap(c, a.x + 44, y, LINE_P, sp_action(m), 90, 2,
+                              ui_theme_color(UI_C_TEXT));
         y += 4;
     }
     char why[64];
@@ -826,13 +830,13 @@ DRAWER void sp_draw_hand(gfx_canvas_t *c)
     } else {
         snprintf(line, sizeof(line), TR(SP_HAND_NOT_RUN), no);
     }
-    sp_wrap(c, a.x + 20, t->cancel_btn.y + 8, 20, line,
-            (t->cancel_btn.x - a.x - 36) / 8, 2,
+    sp_wrap(c, a.x + 20, t->cancel_btn.y + 4, LINE_P, line,
+            (t->cancel_btn.x - a.x - 36) / SP_CELL, 2,
             (t->shown && t->p == p && !sp_supply_reads_off())
                 ? ui_theme_color(UI_C_DANGER)
                 : ui_theme_color(UI_C_TEXT_DIM));
-    ui_button(c, t->cancel_btn, "OK", ui_theme_color(UI_C_PANEL_HI), false,
-              true);
+    ui_button_font(c, t->cancel_btn, "OK", ui_theme_color(UI_C_PANEL_HI),
+                   false, true, SP_FONT);
 }
 
 /*
@@ -863,7 +867,7 @@ DRAWER void sp_draw_prompt(gfx_canvas_t *c)
     char line[256];
     snprintf(line, sizeof(line), "%s %s", e->p->brand, e->p->family);
     sp_text(c, a.x + 20, a.y + 64, line, 92, ui_theme_color(UI_C_ACCENT));
-    gfx_text(c, a.x + 20, a.y + 92, sp_when_text(m), UI_FONT_LABEL,
+    gfx_text(c, a.x + 20, a.y + 92, sp_when_text(m), SP_FONT,
              ui_theme_color(UI_C_WARN), 1);
     int y = a.y + 118;
     y += 22 * sp_wrap(c, a.x + 20, y, 22, sp_action(m), 92, 3,
@@ -905,9 +909,10 @@ DRAWER void sp_draw_prompt(gfx_canvas_t *c)
     (void)sp_wrap(c, a.x + 20, y, 22, line, 92, 2,
                   ui_theme_color(UI_C_TEXT_FAINT));
     const bool ready = esc_stick_hand_ready(e);
-    ui_button(c, t->hold_btn, TR(SP_HAND_DONE),
-              ready ? ui_theme_color(UI_C_OK)
-                    : ui_theme_color(UI_C_PANEL_SUNK), false, ready);
-    ui_button(c, t->cancel_btn, TR(SP_ABORT), ui_theme_color(UI_C_DANGER),
-              false, true);
+    ui_button_font(c, t->hold_btn, TR(SP_HAND_DONE),
+                   ready ? ui_theme_color(UI_C_OK)
+                         : ui_theme_color(UI_C_PANEL_SUNK), false, ready,
+                   SP_FONT);
+    ui_button_font(c, t->cancel_btn, TR(SP_ABORT),
+                   ui_theme_color(UI_C_DANGER), false, true, SP_FONT);
 }

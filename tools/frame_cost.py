@@ -3,13 +3,15 @@
 
 The panel draws into one of two 1,228,800-byte DPI (display pixel
 interface) frame buffers in PSRAM (pseudo-static random-access memory) while
-the DPI scans the other out at 74 MB/s.  The CPU (central processing unit)
-reaches PSRAM through a 64 KiB L1 data cache (2-way, 64-byte lines) and the
-L2 cache (128 KiB, 8-way, 64-byte lines as sdkconfig.defaults leaves them).
+the DPI scans the other out at 74MB/s.  The CPU (central processing unit)
+reaches PSRAM through a 64KiB L1 data cache (2-way, 64-byte lines) and the
+L2 cache (128KiB, 8-way, 64-byte lines as sdkconfig.defaults leaves them).
 A line that misses the L2 is a line fetched from PSRAM, and a dirty line it
 evicts is a line written back, so a frame's traffic is about
 ``2 x line x L2 misses``.  cachegrind models that pair of caches on the
 host, and ``test/host/bench_frame.c`` renders the real screens through it.
+The model counts traffic only: neither the instructions a frame executes
+nor the PPA's copy of a frame turned by Screen rotation 180° is in it.
 
     python3 tools/frame_cost.py             # measure every mode
     python3 tools/frame_cost.py frame       # just the steady-state frame
@@ -25,7 +27,7 @@ console line ``PSRAM probe: ... <n> us each`` gives the time of one clear of
 the back buffer, which writes the whole buffer once.  PROBE_CLEAR_US holds
 that figure; while it is None the bandwidth is not measured, the table has
 no time columns, and the table of the board in docs/Performance.md says so
-in its ``clear`` row.
+in its ``clear`` row.  A time the table gives is the traffic's alone.
 
 SPDX-License-Identifier: MIT
 """
@@ -52,7 +54,7 @@ BOARD_PINS_H = (REPO / "firmware" / "panel" / "components" / "board"
                 / "include" / "board_pins.h")
 SDKCONFIG_DEFAULTS = REPO / "firmware" / "panel" / "sdkconfig.defaults"
 
-# The canvas the profile models: the 7-inch ESP32-P4 board's 1024 x 600 px.
+# The canvas the profile models: the 7-inch ESP32-P4 board's 1024 x 600px.
 # The renderer draws the size in ui_layout.h; --check-doc and --update-doc
 # fail while the two differ.
 CANVAS = (1024, 600)
@@ -100,7 +102,7 @@ def l2_cache(text: str) -> tuple[int, int]:
     Returns:
         (bytes, line bytes): CONFIG_CACHE_L2_CACHE_<n>KB and
         CONFIG_CACHE_L2_CACHE_LINE_<n>B set to y, or ESP-IDF's defaults,
-        128 KiB and 64 bytes, for the one the file does not set.
+        128KiB and 64 bytes, for the one the file does not set.
     """
     size, line = L2_DEFAULT
     m = re.search(r"^CONFIG_CACHE_L2_CACHE_(\d+)KB=y", text, re.M)
@@ -114,6 +116,12 @@ def l2_cache(text: str) -> tuple[int, int]:
 
 def panel_hz(text: str, canvas: tuple[int, int]) -> float:
     """Compute the panel's refresh from the DPI timing in board_pins.h.
+
+    The requested pixel clock over the frame's total clocks: 52MHz over
+    1354 x 636 gives 60.38Hz, the console's VSYNC figure on the board.  The
+    DPI runs at 48MHz, and ESP-IDF keeps the requested line time by
+    shortening the front porch, so the requested clock gives the rate
+    (docs/Performance.md, Rules).
 
     Args:
         text: board_pins.h.
@@ -212,7 +220,7 @@ def misses(exe: pathlib.Path, frames: int, mode: str, ll: str) -> int:
 ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
 # Absolute fills depend on the machine (argv, environment and stack layout
 # land in the same cache), so the doc table is checked to a tolerance rather
-# than byte for byte: 2 % of a mode, and never less than 100 fills.
+# than byte for byte: 2% of a mode, and never less than 100 fills.
 DOC_TOLERANCE = 0.02
 DOC_FLOOR = 100
 
@@ -404,7 +412,7 @@ def bench_problems(page: str, rows: dict | None,
 
     Only a measured cell is held.  The clear row's DRAW mean is the start-up
     probe's time of one clear, the figure PROBE_CLEAR_US holds: the two are
-    measured together or not at all, and agree to 0.05 ms.
+    measured together or not at all, and agree to 0.05ms.
 
     Args:
         page: The page's name, for the messages.

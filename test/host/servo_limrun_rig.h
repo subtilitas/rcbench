@@ -6,7 +6,7 @@
  * horn where kst_sim.h's sim_horn_us() puts it for the pulse -- linear, or
  * square-law, from NEUTRAL to PULSE LOWER and PULSE UPPER, LEFT ANGLE and
  * RIGHT ANGLE the full travel, REVERSION choosing which register limits
- * which pulse side; the INA3221 as 50 ms windows of the servo's 1 ms
+ * which pulse side; the INA3221 as 50ms windows of the servo's 1ms
  * current; a bench that switches to SAFE and ARMED when asked; and a
  * programmer that answers CONNECT with the registers, stores a write of
  * the angles or of the pulses and reads it back, and gives the port back.
@@ -30,9 +30,9 @@
 #define MIN_US  800u
 #define MAX_US  2200u
 #define HI_RAW  255u
-/* The bench image: NEUTRAL 1500.2 us, PULSE LOWER 900.0 us, PULSE UPPER
- * 2100.0 us, LEFT ANGLE and RIGHT ANGLE 150; at 4 us a count the full
- * travel lies 600 us from NEUTRAL, a linear servo's horn where its pulse
+/* The bench image: NEUTRAL 1500.2us, PULSE LOWER 900.0us, PULSE UPPER
+ * 2100.0us, LEFT ANGLE and RIGHT ANGLE 150; at 4us a count the full
+ * travel lies 600us from NEUTRAL, a linear servo's horn where its pulse
  * is. */
 #define NEUTRAL_DUS 15002
 #define LOWER_DUS   9000
@@ -117,7 +117,7 @@ static rig_t g;
 static inline uint16_t reg_get(kst_field_id_t id);
 static inline void reg_set(kst_field_id_t id, uint16_t v);
 
-/* PULSE LOWER and PULSE UPPER set to @p lo and @p hi, 0.1 us. */
+/* PULSE LOWER and PULSE UPPER set to @p lo and @p hi, 0.1us. */
 static inline void rig_pulses(int32_t lo, int32_t hi)
 {
     uint16_t raw = 0u;
@@ -143,7 +143,7 @@ static inline void rig_init(uint32_t t0, bool reversion)
 {
     memset(&g, 0, sizeof(g));
     servo_sim_cfg_t sc;
-    servo_sim_defaults(&sc);           /* stops at 1150 and 1880 us */
+    servo_sim_defaults(&sc);           /* stops at 1150 and 1880us */
     sc.limit_lo_us = 0u;               /* the horn model is the travel */
     sc.limit_hi_us = 0u;
     servo_sim_init(&g.servo, &sc);
@@ -155,7 +155,7 @@ static inline void rig_init(uint32_t t0, bool reversion)
         (void)kst_field_set(&m, KST_F_REVERSION, reversion ? 1u : 0u);
         memcpy(g.reg, m.r, sizeof(g.reg));
     }
-    g.upc     = 4.0f;                  /* 150 counts: 600 us of travel */
+    g.upc     = 4.0f;                  /* 150 counts: 600us of travel */
     g.lo_raw  = 1u;
     g.now = g.t0 = t0;
     g.live = true;
@@ -464,7 +464,7 @@ static inline void take(const servo_limrun_do_t *d)
     }
 }
 
-/* One millisecond of the rig; the run is stepped every 10 ms, as a panel
+/* One millisecond of the rig; the run is stepped every 10ms, as a panel
  * frame would. */
 static inline void tick(void)
 {

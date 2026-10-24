@@ -577,9 +577,9 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK(can_selftest_hint((can_selftest_verdict_t)99)[0] == '\0');
 }
 
-/* A probe is waited for until its timeout and not 1 ms less, wherever the
- * clock is: nothing times out at 1 ms or at 49 ms of 50, the probe is given
- * up at 50 ms, and the next one goes out then. */
+/* A probe is waited for until its timeout and not 1ms less, wherever the
+ * clock is: nothing times out at 1ms or at 49ms of 50, the probe is given
+ * up at 50ms, and the next one goes out then. */
 static void a_probe_is_given_up_at_its_timeout(uint32_t t0)
 {
     can_selftest_t st;

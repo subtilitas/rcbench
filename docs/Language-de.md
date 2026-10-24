@@ -23,7 +23,7 @@ SPEICHERN sie übernimmt.
 Aktuelle Einschränkungen:
 
 - Ein Alarm, der schon im Band steht, bleibt in der Sprache, in der er
-  entstand, bis er ersetzt, weggetippt oder nach 30 s (`UI_ALERT_SHOW_S`)
+  entstand, bis er ersetzt, weggetippt oder nach 30s (`UI_ALERT_SHOW_S`)
   gelöscht wird. Der gehaltene Alarm für einen Touch-Controller, der beim
   Start nicht antwortete, entsteht in der Sprache aus dem NVS und bleibt bis
   zum Neustart; ohne Touch lässt sich die Sprache bis dahin nicht ändern.
@@ -40,12 +40,12 @@ Aktuelle Einschränkungen:
 ## Zahlen
 
 Die Seiten, der TXT-Bericht und die CSV schreiben in jeder Sprache den
-Dezimalpunkt: 7.4 V, 0.05 A. Es ist das Trennzeichen des Senders, der
+Dezimalpunkt: 7.4V, 0.05A. Es ist das Trennzeichen des Senders, der
 ESC-Konfiguratoren und der eigenen Anzeige des Netzteils, und eine CSV mit
 Dezimalkomma bräuchte ein anderes Feldtrennzeichen. Die deutschen Seiten
 dieser Dokumentation schreiben im Fließtext das deutsche Dezimalkomma
-(7,4 V); ein Text, der vom Bildschirm zitiert wird, behält seinen Punkt
-(`seit 1.5 s kein Messwert`).
+(7,4V); ein Text, der vom Bildschirm zitiert wird, behält seinen Punkt
+(`seit 1.5s kein Messwert`).
 
 ## Begriffe, die Englisch bleiben
 
@@ -187,15 +187,22 @@ bis zum TXT-Bericht auf der Karte. `gfx` dekodiert ihn, und ein Codepoint ist
 eine Zelle:
 
 - Die fünf Text-Fonts enthalten druckbares ASCII (American Standard Code
-  for Information Interchange, 0x20 bis 0x7E) und die sieben deutschen
-  Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6,
-  U+00FC), je 102 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
+  for Information Interchange, 0x20 bis 0x7E), das Gradzeichen ° (U+00B0),
+  die sieben deutschen Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC,
+  U+00DF, U+00E4, U+00F6, U+00FC) und das Ohmzeichen Ω (U+03A9), je 104
+  Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
-- Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23 px und
+- Ein Widerstand wird mit Ω geschrieben, in den Texten der Bildschirme, den
+  Einheiten der Einstellungen und den `.TXT`-Berichten: `120Ω`, `2.2kΩ`,
+  `100.0mΩ`, `uΩ` für den Shunt des INA228. Das O der Fonts sieht einer
+  Null ähnlich, `120Ohm` läse sich als `1200hm`.
+  `every_string_writes_the_ohm_as_its_sign` in `test_text` schlägt bei einem
+  `Ohm` oder `ohm` in einem davon fehl.
+- Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23px und
   zeichnen jedes Glyph innerhalb der Zelle; sonst schlägt
-  `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40 px)
-  schneidet am Zellenrand Tinte in sechs Zeichen ab: `#` 5 px, `$` 16 px,
-  `(` 12 px, `)` 12 px, `,` 23 px und `/` 6 px (Pixel mit Deckung ab 128
+  `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40px)
+  schneidet am Zellenrand Tinte in sechs Zeichen ab: `#` 5px, `$` 16px,
+  `(` 12px, `)` 12px, `,` 23px und `/` 6px (Pixel mit Deckung ab 128
   außerhalb der Zelle). `gen_font.py --check` gibt diese Zahlen aus.
 - Ein Codepoint, den ein Font nicht enthält, erscheint als `?`. Ein Byte,
   das keine gültige Folge beginnt, eine abgeschnittene Folge und eine
@@ -258,8 +265,8 @@ unter einer Bedingung fehl.
 | `shared/servo/servo_str.c` | das Englisch des Servotests, das auch die CSV nutzt |
 | `shared/webaccess/wa_page.c` | Englisch und Deutsch der WLAN-Seite |
 
-Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E) und die 7
-deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
+Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E), das
+Gradzeichen °, die 7 deutschen Buchstaben Ä Ö Ü ä ö ü ß und das Ohmzeichen Ω. Jeder andere Codepoint erscheint als
 `?`, ebenso ein Byte, das keine gültige UTF-8-Folge beginnt.
 `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
 Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge und an
@@ -278,9 +285,12 @@ nicht. Ein deutscher Eintrag `NULL` zeigt auch dort sein Englisch
    ID `SET_`; eine Optionsliste ist ein Block `UI_OPTIONS`, den
    `ENUM_OPTS(name)` in `shared/settings/settings.c` an seine Einstellung
    bindet.
-3. Die Host-Suite, `python3 tools/render_ui.py --fit`,
-   `python3 tools/check_formats.py` und `python3 tools/check_docs.py`
-   ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
+3. Zahl und Einheit ohne Leerzeichen schreiben, in beiden Sprachen: `40s`,
+   `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. Ein Wort nach einer Zahl behält
+   sein Leerzeichen: `3 Servos`.
+4. Die Host-Suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
+   und `python3 tools/check_docs.py` ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
    einem deutschen Format, das andere Argumente wandelt als sein Englisch,
    bei einem Text, der breiter ist als seine angegebenen Zellen, bei einem
    Buchstaben, den die Fonts nicht enthalten, bei einem Byte, das kein
@@ -309,7 +319,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 290 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 320 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -360,8 +370,8 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.093
-Einträge mit ID und 64 Optionen, 10 davon mit leerem Englisch.
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.184
+Einträge mit ID und 76 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
    ergänzen und den Parameter in jedem Makro, das eine Spalte liest: 7

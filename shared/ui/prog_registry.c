@@ -31,7 +31,7 @@
  *     programming port.  It needs no capability to open: its profiles read
  *     without the IOmcu, and its RUN says itself what the bench lacks
  *     (no throttle pin, the binding not read, the supply the panel's
- *     model).  Full width: the stick panel is laid out for 776 px.
+ *     model).  Full width: the stick panel is laid out for 776px.
  *
  * The modelled ESC and servo protocols of prog_models.h have no transport
  * on the IOmcu and get no row.  The next maker is one more row here and
@@ -476,8 +476,8 @@ static int entry_h(const prog_list_t *l, int k)
 
 /**
  * @brief The pitches the entries may add up to under the bar, if any: to
- *        PROG_VIEW_PAD above the area's foot or 4 px above the alert band,
- *        whichever is higher, and a heading's 4 px gap, the smaller one, so
+ *        PROG_VIEW_PAD above the area's foot or 4px above the alert band,
+ *        whichever is higher, and a heading's 4px gap, the smaller one, so
  *        the last entry shown ends above that line.
  * @param v the view
  * @param bar with the bar

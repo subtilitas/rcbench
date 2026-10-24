@@ -28,9 +28,9 @@
 
 #include "supply_screen_rig.h"
 
-#define VSTART_Y  212
+#define VSTART_Y  SU_VSTART_Y
 
-#define CONF_KP_Y 360
+#define CONF_KP_Y SU_CONF_KP_Y
 
 /* ------------------------------------------------------- the task strip */
 
@@ -272,7 +272,7 @@ TEST_CASE(a_lowered_cap_brings_the_set_point_and_the_start_down)
     CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 8.0f, 1e-4f);
     /* And the keypad for a start value offers only what the cap allows:
-     * 12 V is refused, and the start stays where it was. */
+     * 12V is refused, and the start stays where it was. */
     tap(ROW_L_X, VSTART_Y);
     keys("7");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 7.0f, 1e-4f);
@@ -328,11 +328,11 @@ TEST_CASE(the_page_tells_an_unsaved_setup_change_from_a_waiting_save)
     settings_request_save();
     supply_invalidate();
     scr->render(&cv2, 0);
-    /* The bottom line, 26 px over the overlay's foot: x 16..300. */
+    /* The bottom line, 4px over the alert band: x 18..300. */
     int differ = 0;
-    const int y0 = UI_BODY_H - UI_MARGIN - 26;
+    const int y0 = SU_SAVE_LINE_Y;
     for (int y = y0; y < y0 + 20; ++y) {
-        for (int x = 16; x < 300; ++x) {
+        for (int x = 18; x < 300; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }

@@ -21,8 +21,8 @@
 
 /*
  * The tallest IN USE table a binding gives: OFF selected, so every bound pin
- * is another protocol's; the programming port listed, in 28 px pin rows,
- * and then 4 of them on distinct pins, in 20 px pin rows; and the 8 slots
+ * is another protocol's; the programming port listed, in 28px pin rows,
+ * and then 4 of them on distinct pins, in 20px pin rows; and the 8 slots
  * spread over the 6 protocols that take one channel a pin.  Every pin is listed
  * once under its own protocol, and every line is inside the table and the
  * canvas, clear of every other line, key, marker and text area, and drawn
@@ -166,7 +166,7 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
     }
     ui_text_set_language(UI_LANG_EN);
 
-    /* A table that fits in 28 px pin rows keeps them, with the GPIO in the
+    /* A table that fits in 28px pin rows keeps them, with the GPIO in the
      * head face. */
     fresh();
     static const uint8_t servo[2] = { 0, 1 };
@@ -345,8 +345,8 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
 
 /*
  * The fullest table: 4 ports, 8 slots over 6 protocols and every
- * interface on lists 27 lines, which the 468 px under the heading hold at
- * 16 px.  Every line is listed, inside the table and clear of the others,
+ * interface on lists 27 lines, which the 468px under the heading hold at
+ * 16px.  Every line is listed, inside the table and clear of the others,
  * and none is left out; the ports and the interfaces come first.
  */
 TEST_CASE(the_fullest_in_use_table_lists_every_line)
@@ -495,13 +495,18 @@ TEST_CASE(every_state_renders_inside_its_canvas)
 TEST_CASE(a_tall_board_is_drawn_to_scale_and_not_stretched)
 {
     int w = 0, h = 0;
-    /* The Pico outline: 51.00 x 21.00 mm fits at full width. */
+    /* A 3:1 outline fits at full width. */
+    picker_board_fit(6000u, 2000u, &w, &h);
+    CHECK_EQ(w, 600);
+    CHECK_EQ(h, 200);
+    /* Exactly at the cap: 600 x 240. */
+    picker_board_fit(5000u, 2000u, &w, &h);
+    CHECK_EQ(w, 600);
+    CHECK_EQ(h, 240);
+    /* The Pico outline, 51.00 x 21.00mm: 247px tall at full width, so
+     * 240 high and 582 wide. */
     picker_board_fit(5100u, 2100u, &w, &h);
-    CHECK_EQ(w, 500);
-    CHECK_EQ(h, 205);
-    /* Exactly at the cap: 500 x 240. */
-    picker_board_fit(5000u, 2400u, &w, &h);
-    CHECK_EQ(w, 500);
+    CHECK_EQ(w, 582);
     CHECK_EQ(h, 240);
     /* Taller than the cap: the width shrinks with the height. */
     picker_board_fit(5000u, 5000u, &w, &h);
@@ -519,7 +524,7 @@ TEST_CASE(a_tall_board_is_drawn_to_scale_and_not_stretched)
     CHECK_EQ(w, 1);
     /* No outline: the full box. */
     picker_board_fit(0u, 0u, &w, &h);
-    CHECK_EQ(w, 500);
+    CHECK_EQ(w, 600);
     CHECK_EQ(h, 240);
 }
 
@@ -571,10 +576,11 @@ TEST_CASE(the_home_tag_closes_the_pickers_list_first)
 }
 
 /*
- * The reason under the protocol list: 35 cells under the count, and what
- * does not fit there on a second line of at most 17 cells, which ends left
- * of the widest board (150 px).  Every reason the picker shows, in every
- * language, the longest protocol name and two-digit numbers in it.
+ * The reason under the protocol list: 35 cells of 10 x 20 under the
+ * count, and what does not fit there on a second line of at most 17
+ * cells, which ends at x 178, left of the widest board (x 212).  Every
+ * reason the picker shows, in every language, the longest protocol name
+ * and two-digit numbers in it.
  */
 TEST_CASE(every_reason_ends_left_of_the_board)
 {

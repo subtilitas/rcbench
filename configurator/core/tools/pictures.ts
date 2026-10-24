@@ -1,7 +1,7 @@
 // Checks the pictures of the parts against the files of the picture folder.
 //
 // A photo is two WebP files: `<file>.webp` and `<file>-thumb.webp`, the thumb
-// 480 px wide. A drawing is one SVG file: `<file>.svg`. The folder holds no
+// 480px wide. A drawing is one SVG file: `<file>.svg`. The folder holds no
 // file that no part names.
 
 import { readFileSync, readdirSync } from 'node:fs';

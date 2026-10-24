@@ -205,7 +205,7 @@ TEST_CASE(motor_and_head_rpm_come_out_of_the_gear_train)
     CHECK(openyge_motor_rpm(&p, 100000, &motor));
     CHECK_NEAR(motor, 20000.0f, 0.5f);          /* 10 poles -> 5 pole pairs */
     CHECK(openyge_head_rpm(&p, 100000, &head));
-    CHECK_NEAR(head, 20000.0f * 13.0f / 110.0f, 0.5f);   /* ~2364 rpm */
+    CHECK_NEAR(head, 20000.0f * 13.0f / 110.0f, 0.5f);   /* ~2364rpm */
 }
 
 TEST_CASE(rpm_is_refused_when_the_table_cannot_support_it)

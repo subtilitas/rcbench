@@ -12,7 +12,7 @@ PICK A PIN shows the IOmcu board as it lies on the bench and binds a pin by a ke
 
 ![The picker with three pins bound as SERVO PWM](view:picker)
 
-A pad is under 40 px across, smaller than a fingertip. So each pin has a key, 43 px wide, on a straight trace to its pad: two staggered rows above the board and two below.
+A pad is under 40px across, smaller than a fingertip. So each pin has a key, 50 x 56px, on a straight trace to its pad: two staggered rows above the board and two below.
 
 | Key | Pin | A tap |
 |---|---|---|
@@ -22,6 +22,8 @@ A pad is under 40 px across, smaller than a fingertip. So each pin has a key, 43
 | no key, red cross on the pad | reserved: GP3 heartbeat, GP8 to GP12 CAN (Controller Area Network) | none |
 
 A tap on a key writes the binding at once, with the same results as a tick on Outputs.
+
+Current limitation: on a board with a pin in the top-left corner of its outline, the keys of the upper rows lie under the protocol list, the count and the reason. A press on the part of such a key over the protocol list opens the list instead of taking the pin. The RP2350-CAN has no pin there.
 
 The board also marks the other wires of a servo lead:
 
@@ -74,7 +76,7 @@ A pin [SETUP > INTERFACES](setup-interfaces.md) holds is grey the same way, and 
 
 ## The board drawing
 
-The IOmcu carries a drawing of itself: outline, parts and every pad, to scale in 0.01 mm. The panel fetches it over the link, keeps it in flash and shows it only when it matches the board's shape and pin catalogue.
+The IOmcu carries a drawing of itself: outline, parts and every pad, to scale in 0.01mm. The panel fetches it over the link, keeps it in flash and shows it only when it matches the board's shape and pin catalogue.
 
 ![The picker drawn from the shape alone](view:picker-drawn)
 

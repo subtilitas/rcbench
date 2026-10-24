@@ -23,7 +23,7 @@
  * @brief One microsecond per count (OUT_PWM_TICK_HZ).
  *
  * The frame period then fits
- * the sixteen-bit counter down to 16 Hz, past the 40 Hz floor the driver
+ * the sixteen-bit counter down to 16Hz, past the 40Hz floor the driver
  * table sets, and a microsecond is the resolution every pulse in this
  * firmware is expressed in.
  */
@@ -212,8 +212,8 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us)
         return;
     }
     /*
-     * A pulse cannot be longer than the frame that carries it.  400 Hz is a
-     * 2500 us period and 2500 us is a legal endpoint, and a level above the
+     * A pulse cannot be longer than the frame that carries it.  400Hz is a
+     * 2500us period and 2500us is a legal endpoint, and a level above the
      * wrap makes the counter never reach it: the pin sits high for ever,
      * which is not a long pulse but no pulse at all.  Clamped to the wrap,
      * so there is always a tick of low and the output stays a pulse train.
@@ -223,7 +223,7 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us)
      * that would leave an endpoint longer than the wrap of the frame that
      * renders it, and a stored slot that would starts unbound.  No page
      * write reaches this clamp; it stays for a caller outside them.  At
-     * 560 Hz the wrap is 1784 us.
+     * 560Hz the wrap is 1784us.
      */
     pwm_set_gpio_level(pin, (pulse_us > b->wrap) ? b->wrap : pulse_us);
 }

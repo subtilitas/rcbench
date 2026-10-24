@@ -3,7 +3,7 @@
  * follows the ARM the engine asks for, a supply that switches when asked
  * and is read at a chosen rate, and the simulated ESC (electronic speed
  * controller) drawing the current.  rig_hand() gives a profile manual
- * steps of the case's own.  One tick is 1 ms.
+ * steps of the case's own.  One tick is 1ms.
  *
  * For test_esc_stick.c, test_esc_stick_rules.c, test_esc_stick_hand.c and
  * test_esc_stick_entry.c.

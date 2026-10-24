@@ -76,7 +76,7 @@ TEST_CASE(the_padding_boundaries)
 }
 
 /* Every split of a 200-byte message gives the one-call digest: the update
- * hashes 1 KiB on one pass and 8 KiB on another. */
+ * hashes 1KiB on one pass and 8KiB on another. */
 TEST_CASE(any_split_gives_the_same_digest)
 {
     uint8_t msg[200];

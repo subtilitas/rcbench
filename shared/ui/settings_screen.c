@@ -277,9 +277,8 @@ static void change_line(int k, char *line, size_t n)
         char was[32], now[32];
         (void)ui_setting_value_of(id, settings_stored(id), was, sizeof(was));
         (void)ui_setting_value(id, now, sizeof(now));
-        snprintf(line, n, "%s: %s%s%s -> %s%s%s", ui_setting_label(id), was,
-                 (u_was[0] != '\0') ? " " : "", u_was, now,
-                 (u_now[0] != '\0') ? " " : "", u_now);
+        snprintf(line, n, "%s: %s%s -> %s%s", ui_setting_label(id), was,
+                 u_was, now, u_now);
         return;
     }
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
@@ -340,7 +339,7 @@ int stg_row_count(void)
 void stg_clamp_scroll(void)
 {
     /* n rows are n*ROW_H plus the n-1 gaps between them.  A trailing gap
-     * would give a 7-row category a 4 px scroll range, and a scroll indicator
+     * would give a 7-row category a 4px scroll range, and a scroll indicator
      * beside a list that fits. */
     int n = stg_row_count();
     int content = (n > 0) ? (n * ROW_H + (n - 1) * ROW_GAP) : 0;
@@ -617,7 +616,7 @@ static void tick(float dt_s)
     if (s.drawn_dirty != settings_dirty()
         || s.drawn_asked != settings_save_asked()
         || s.drawn_failed != settings_save_failed()
-        || (s.warn && s.drawn_armed != stg_bench_armed())) {
+        || ((s.warn || s.list) && s.drawn_armed != stg_bench_armed())) {
         settings_screen_invalidate();
     }
     /* A row held or derived since its keypad opened takes no value: the
@@ -632,8 +631,8 @@ static void tick(float dt_s)
         return;
     }
     float before = s.held_for;
-    /* A stalled frame is worth UI_HOLD_MAX_CREDIT_S (0.25 s) and no more,
-     * so a 1 s stall steps at most 3 times at 8 Hz and 8 times at 30 Hz. */
+    /* A stalled frame is worth UI_HOLD_MAX_CREDIT_S (0.25s) and no more,
+     * so a 1s stall steps at most 3 times at 8Hz and 8 times at 30Hz. */
     s.held_for += ui_hold_credit(dt_s);
     if (s.held_for < REPEAT_DELAY_S) {
         return;

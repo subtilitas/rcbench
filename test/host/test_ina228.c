@@ -77,10 +77,10 @@ TEST_CASE(registers_decode_most_significant_byte_first_with_their_signs)
     CHECK_EQ(sense_sext32(0x80000000u, 32u), -2147483647 - 1);
     CHECK_EQ(sense_sext32(0x1FFFu, 13u), -1);
 
-    /* DIETEMP: 7.8125 m°C a step, two's complement (Table 7-11). */
+    /* DIETEMP: 7.8125m°C a step, two's complement (Table 7-11). */
     CHECK_EQ(ina228_dietemp_mdegc(0x0C80u), 25000);     /* 3200 steps */
     CHECK_EQ(ina228_dietemp_mdegc(0xFB00u), -10000);    /* -1280 steps */
-    /* VBUS: 195.3125 µV a step (Table 7-10); 85 V is 435200 steps. */
+    /* VBUS: 195.3125µV a step (Table 7-10); 85V is 435200 steps. */
     CHECK_EQ(ina228_vbus_uv(435200), 85000000);
     CHECK_EQ(ina228_vbus_uv(16), 3125);
 }
@@ -101,11 +101,11 @@ TEST_CASE(the_matek_module_calibrates_as_the_datasheet_equations_say)
 {
     ina228_cal_t cal;
     CHECK_EQ(ina228_calibrate(MATEK_UOHM, MATEK_MAX_MA, &cal), INA228_SETUP_OK);
-    /* 204.8 A × 200 µΩ = 40.96 mV: the narrow range, SHUNT_CAL 1024 × 4. */
+    /* 204.8A × 200 µΩ = 40.96mV: the narrow range, SHUNT_CAL 1024 × 4. */
     CHECK_EQ(cal.adcrange, 1);
     CHECK_EQ(cal.shunt_cal, 4096);
 
-    /* CURRENT_LSB 390.625 µA: 256000 steps are 100 A. */
+    /* CURRENT_LSB 390.625µA: 256000 steps are 100A. */
     sense_value_t v = ina228_current_ua(&cal, 256000);
     CHECK_EQ(v.clip, SENSE_CLIP_NONE);
     CHECK_EQ(v.value, 100000000);
@@ -113,7 +113,7 @@ TEST_CASE(the_matek_module_calibrates_as_the_datasheet_equations_say)
     CHECK_EQ(ina228_current_ua(&cal, 1).value, 390);     /* truncated */
     CHECK_EQ(ina228_current_ua(&cal, 8).value, 3125);
 
-    /* Power 1.25 mW, energy 20 mJ, charge 390.625 µC a step (Eq. 5-7). */
+    /* Power 1.25mW, energy 20 mJ, charge 390.625 µC a step (Eq. 5-7). */
     CHECK(ina228_power_uw(&cal, 1u) == 1250u);
     CHECK(ina228_power_uw(&cal, 0xFFFFFFu) == 20971518750ull);
     CHECK(ina228_energy_mj(&cal, 1u) == 20u);
@@ -129,13 +129,13 @@ TEST_CASE(the_matek_module_calibrates_as_the_datasheet_equations_say)
 TEST_CASE(adcrange_follows_the_maximum_across_the_shunt)
 {
     ina228_cal_t cal;
-    /* One mA past 40.96 mV over 200 µΩ: the wide range, 1.5625 mA a step. */
+    /* One mA past 40.96mV over 200 µΩ: the wide range, 1.5625mA a step. */
     CHECK_EQ(ina228_calibrate(200u, 204801u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 0);
     CHECK_EQ(cal.shunt_cal, 4096);
     CHECK_EQ(ina228_vshunt_nv(&cal, 2).value, 625);    /* 312.5 nV */
     CHECK_EQ(ina228_current_ua(&cal, 2).value, 3125);
-    /* 819.2 A over 200 µΩ is 163.84 mV, the top of the wide range. */
+    /* 819.2A over 200 µΩ is 163.84mV, the top of the wide range. */
     CHECK_EQ(ina228_calibrate(200u, 819200u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 0);
     CHECK_EQ(ina228_calibrate(200u, 819201u, &cal), INA228_SETUP_OVER_RANGE);
@@ -151,12 +151,12 @@ TEST_CASE(adcrange_follows_the_maximum_across_the_shunt)
 TEST_CASE(a_full_scale_past_2000_amps_is_refused)
 {
     ina228_cal_t cal;
-    /* Narrow range: 40.96 mV over 20 µΩ is 2048 A; over 21 µΩ 1950.5 A. */
+    /* Narrow range: 40.96mV over 20 µΩ is 2048A; over 21 µΩ 1950.5A. */
     CHECK_EQ(ina228_calibrate(20u, 1000000u, &cal), INA228_SETUP_OVER_RANGE);
     CHECK_EQ(ina228_calibrate(21u, 1000000u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 1);
     CHECK_EQ(ina228_current_ua(&cal, 524286).value, 1950468750);
-    /* Wide range: 163.84 mV over 81 µΩ is 2022.7 A; over 82 µΩ 1998.0 A. */
+    /* Wide range: 163.84mV over 81 µΩ is 2022.7A; over 82 µΩ 1998.0A. */
     CHECK_EQ(ina228_calibrate(81u, 600000u, &cal), INA228_SETUP_OVER_RANGE);
     CHECK_EQ(ina228_calibrate(82u, 600000u, &cal), INA228_SETUP_OK);
     CHECK_EQ(cal.adcrange, 0);
@@ -198,9 +198,9 @@ TEST_CASE(shunt_cal_is_4096_at_either_range_for_every_shunt)
 
 TEST_CASE(below_the_ranges_top_current_clips_only_at_the_adc_end)
 {
-    /* The MATEK asked for 150 A: the narrow range, whose ADC reads to
-     * 204.8 A.  Equation 3 at 150 A would end the CURRENT register at
-     * 150 A; here CURRENT follows VSHUNT to the ADC's end. */
+    /* The MATEK asked for 150A: the narrow range, whose ADC reads to
+     * 204.8A.  Equation 3 at 150A would end the CURRENT register at
+     * 150A; here CURRENT follows VSHUNT to the ADC's end. */
     fake_bus_init(&fb, &bus);
     part = fake_add(&fb, FAKE_INA228, MATEK_ADDR, 200e-6);
     CHECK_EQ(ina228_init(&d, &bus, MATEK_ADDR, MATEK_UOHM, 150000u,
@@ -235,12 +235,12 @@ TEST_CASE(below_the_ranges_top_current_clips_only_at_the_adc_end)
 
 TEST_CASE(adc_config_packs_its_fields_and_times_a_cycle)
 {
-    /* The reset value FB68h is continuous, 1052 µs each, averaging 1. */
+    /* The reset value FB68h is continuous, 1052µs each, averaging 1. */
     CHECK_EQ(ina228_adc_config(0xF, 5, 5, 5, 0), INA228_ADC_RESET);
     CHECK_EQ(ina228_adc_config(INA228_MODE_CONT_ALL, 4, 4, 0, 0), INA228_ADC_BENCH);
     CHECK_EQ(ina228_cycle_us(INA228_ADC_RESET), 3156);
-    CHECK_EQ(ina228_cycle_us(INA228_ADC_BENCH), 1130);   /* 885 Hz */
-    /* Averaging repeats the whole sequence: 4 × 610 µs. */
+    CHECK_EQ(ina228_cycle_us(INA228_ADC_BENCH), 1130);   /* 885Hz */
+    /* Averaging repeats the whole sequence: 4 × 610µs. */
     CHECK_EQ(ina228_cycle_us(ina228_adc_config(INA228_MODE_CONT_VI, 3, 3, 0, 1)),
              2240);
     CHECK_EQ(ina228_cycle_us(ina228_adc_config(INA228_MODE_CONT_SHUNT, 7, 0, 7, 0)),
@@ -377,11 +377,11 @@ TEST_CASE(readings_decode_as_the_part_reports_them)
 
     sense_value_t nv = { 0, SENSE_CLIP_NONE };
     CHECK_EQ(ina228_read_vshunt(&d, &nv), SENSE_OK);
-    CHECK_EQ(nv.value, 20000000);               /* 20 mV over 200 µΩ */
+    CHECK_EQ(nv.value, 20000000);               /* 20mV over 200 µΩ */
 
     int32_t uv = 0;
     CHECK_EQ(ina228_read_vbus(&d, &uv), SENSE_OK);
-    CHECK_NEAR(uv, 16800000, 98);               /* half a 195.3 µV step */
+    CHECK_NEAR(uv, 16800000, 98);               /* half a 195.3µV step */
 
     int32_t mdegc = 0;
     CHECK_EQ(ina228_read_dietemp(&d, &mdegc), SENSE_OK);
@@ -389,7 +389,7 @@ TEST_CASE(readings_decode_as_the_part_reports_them)
 
     uint64_t uw = 0;
     CHECK_EQ(ina228_read_power(&d, &uw), SENSE_OK);
-    CHECK_NEAR((double)uw, 1680e6, 625);        /* 1680 W, half a step */
+    CHECK_NEAR((double)uw, 1680e6, 625);        /* 1680W, half a step */
 
     part->amps[0] = -12.5;                      /* regenerating */
     CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
@@ -403,7 +403,7 @@ TEST_CASE(a_current_at_the_top_of_the_range_is_a_clip_never_a_value)
     CHECK(ina228_step(&d, 0));
     sense_value_t ua = { 0, SENSE_CLIP_NONE };
 
-    part->amps[0] = 300.0;                      /* past 204.8 A */
+    part->amps[0] = 300.0;                      /* past 204.8A */
     CHECK_EQ(ina228_read_current(&d, &ua), SENSE_OK);
     CHECK_EQ(ua.clip, SENSE_CLIP_HIGH);
     CHECK_EQ(ua.value, 0);
@@ -561,7 +561,7 @@ TEST_CASE(a_line_held_low_sticks_the_bus_until_a_recovery_frees_it)
     CHECK_EQ(ina228_read_current(&d, &ua), SENSE_STUCK);
     CHECK_EQ(fb.transactions, t);
 
-    /* A recovery is due at once, then every 100 ms while the line stays
+    /* A recovery is due at once, then every 100ms while the line stays
      * low. */
     CHECK(sense_bus_recovery_due(&bus, 10));
     sense_bus_recovered(&bus, 10);
@@ -725,7 +725,7 @@ TEST_CASE(failed_transactions_are_counted_modulo_65536)
 }
 
 /* A recovery that freed the bus is over with the first transaction that
- * goes through: a line that sticks again 1 ms later is recovered at once,
+ * goes through: a line that sticks again 1ms later is recovered at once,
  * not SENSE_RECOVER_MS after the recovery before. */
 TEST_CASE(a_bus_that_sticks_again_after_a_good_transaction_is_recovered_at_once)
 {

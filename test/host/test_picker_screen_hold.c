@@ -247,11 +247,12 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
 
 /*
  * Every button against everything else on the screen, with the
- * IOmcu's drawing and with the board drawn from its shape (both 205 px
- * tall): inside the
- * screen, centred on its own pad unless the screen edge stops it, clear of
- * every other button, of every marker inside the board and of the text
- * areas, and a tap on its centre binds its own pin and no other.
+ * IOmcu's drawing and with the board drawn from its shape (both 240px
+ * tall): at least UI_TAP_MIN wide and tall, inside the screen and above
+ * the alert band, centred on its own pad unless the screen edge stops it,
+ * 8px or more clear of every other button beside it, clear of every
+ * marker inside the board and of the text areas, and a tap on its centre
+ * binds its own pin and no other.
  */
 TEST_CASE(every_button_is_clear_of_everything_else)
 {
@@ -294,7 +295,8 @@ TEST_CASE(every_button_is_clear_of_everything_else)
             const gfx_rect_t r = btn[i];
             const unsigned gp = bd->pins[i].gpio;
             if (r.x < 0 || r.y < 0 || r.x + r.w > SCREEN_W
-                || r.y + r.h > SCREEN_H || r.w < 43 || r.h < 40) {
+                || r.y + r.h > PK_FOOT || r.w < UI_TAP_MIN
+                || r.h < UI_TAP_MIN) {
                 T_FAIL("pass %d: GP%u's button %d,%d %dx%d", pass, gp, r.x,
                        r.y, r.w, r.h);
             }
@@ -309,6 +311,16 @@ TEST_CASE(every_button_is_clear_of_everything_else)
                 if (has[o] && overlap(r, btn[o])) {
                     T_FAIL("pass %d: GP%u and GP%u overlap", pass, gp,
                            bd->pins[o].gpio);
+                }
+                /* Beside each other in a tier: 8px apart or more. */
+                const gfx_rect_t q = btn[o];
+                if (has[o] && r.y < q.y + q.h && q.y < r.y + r.h) {
+                    const int apart = (q.x >= r.x) ? q.x - (r.x + r.w)
+                                                   : r.x - (q.x + q.w);
+                    if (apart < 8) {
+                        T_FAIL("pass %d: GP%u and GP%u are %d px apart",
+                               pass, gp, bd->pins[o].gpio, apart);
+                    }
                 }
             }
             for (uint8_t m = 0; m < pads; ++m) {

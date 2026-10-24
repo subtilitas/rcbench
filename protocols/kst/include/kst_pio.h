@@ -28,9 +28,9 @@
  * The levels are the frame's half-cells followed by one low half-cell,
  * whose start is the frame's last edge.  Low half-cells in front fill the
  * first word, so the levels end on a word boundary: the frame starts up to
- * 31 half-cells (787 us) after the stream is handed over.
+ * 31 half-cells (787us) after the stream is handed over.
  *
- * A tick is KST_PIO_TICK_CYCLES system clock cycles, 26.7 ns at 150 MHz.
+ * A tick is KST_PIO_TICK_CYCLES system clock cycles, 26.7ns at 150MHz.
  * The program stamps the tick counter at every level change and reloads it
  * with `quiet` at every rising edge:
  *
@@ -40,9 +40,9 @@
  *
  * When the counter runs out the pad drives low: at the end of the window
  * without a reply, and KST_PIO_QUIET_NS after the last rising edge of one.
- * Two rising edges of a reply are at most 2 cells (102.3 us) apart, and a
- * last high ends within 59 us of its rise, so the pad drives low 60 us to
- * 165 us after the reply's last level change.
+ * Two rising edges of a reply are at most 2 cells (102.3us) apart, and a
+ * last high ends within 59us of its rise, so the pad drives low 60us to
+ * 165us after the reply's last level change.
  *
  * The module includes nothing outside the C standard headers and holds no
  * global state.
@@ -114,9 +114,9 @@ typedef struct {
  * @brief The counts for a system clock of @p sys_hz.
  *
  * False when a tick is longer than KST_PIO_MAX_TICK_NS, which it is below 8
- * MHz, and when the half-cell the clock gives is more than 0.2 % from
- * KST_HALF_CELL_NS.  Every clock from 9.9 MHz up gives one within 0.2 %, and a
- * multiple of 5 MHz gives it exactly.
+ * MHz, and when the half-cell the clock gives is more than 0.2% from
+ * KST_HALF_CELL_NS.  Every clock from 9.9MHz up gives one within 0.2%, and a
+ * multiple of 5MHz gives it exactly.
  *
  * @param sys_hz  System clock, in Hz.
  * @param out     Receives the counts; left unchanged when false is returned.

@@ -18,13 +18,13 @@
 #define PANEL_W UI_PANEL_W
 
 /*
- * STOP is 168 x 48 px (25.2 x 7.2 mm) at the right edge of the band, from
+ * STOP is 168 x 48px (25.2 x 7.2mm) at the right edge of the band, from
  * x 850, sized for a thumb rather than for its label.  It is the only
  * control in the band, so no other control can be hit on the way to it.
  */
-/** @brief STOP's width: 168 px. */
+/** @brief STOP's width: 168px. */
 #define STOP_W 168
-/** @brief STOP's margin to the band's top, bottom and right edges: 6 px. */
+/** @brief STOP's margin to the band's top, bottom and right edges: 6px. */
 #define STOP_M 6
 
 gfx_rect_t ui_band_stop_rect(void)
@@ -110,30 +110,30 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 }
 
 /*
- * Chips are laid out right to left from 8 px left of STOP, each placed at
+ * Chips are laid out right to left from 8px left of STOP, each placed at
  * the right edge the previous one leaves, so no chip needs another's width
  * in advance and a long mode string cannot push the clock under the ARMED
  * badge.  One layout for drawing and for hit-testing, so a tap finds the
- * chip that is drawn.  A chip is 44 px tall, 8 px from the band's top, its
+ * chip that is drawn.  A chip is 44px tall, 8px from the band's top, its
  * label in UI_FONT_BAND.  Chips stand CHIP_GAP (6) px apart and each takes
- * the 3 px beside it for a tap, so the strips meet without overlapping.  A
+ * the 3px beside it for a tap, so the strips meet without overlapping.  A
  * label starts CHIP_INSET (28) px into its chip and ends CHIP_PAD_R (4) px
- * short of its right edge, LINK's 16 px.  The widest row, a clock of 10
+ * short of its right edge, LINK's 16px.  The widest row, a clock of 10
  * hours or more, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German, is
- * 566 px and starts at x 276, right of MOTOR & ESC's home tag, the widest
+ * 566px and starts at x 276, right of MOTOR & ESC's home tag, the widest
  * (test_nav_bubble measures every screen's), which ends at x 268.
  */
-/** @brief A chip's top, from the band's: 8 px. */
+/** @brief A chip's top, from the band's: 8px. */
 #define CHIP_Y     8
-/** @brief A chip's height: 44 px. */
+/** @brief A chip's height: 44px. */
 #define CHIP_H     44
-/** @brief The gap between two chips: 6 px. */
+/** @brief The gap between two chips: 6px. */
 #define CHIP_GAP   6
-/** @brief A label's start from its chip's left edge: 28 px. */
+/** @brief A label's start from its chip's left edge: 28px. */
 #define CHIP_INSET 28
-/** @brief A label's end from its chip's right edge: 4 px. */
+/** @brief A label's end from its chip's right edge: 4px. */
 #define CHIP_PAD_R 4
-/** @brief LINK's dot: 12 px more right of its label. */
+/** @brief LINK's dot: 12px more right of its label. */
 #define CHIP_DOT_W 12      /* more right of LINK's label */
 /** @brief The chips from STOP leftwards. */
 static const ui_band_chip_t k_order[] = {
@@ -208,25 +208,25 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
 
 /*
  * The bubble is the DELETE question's box of LOGS: a panel with its border
- * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4 px under
- * the band, 8 px in from the panel's edges at most.  A bubble is 640 px
- * wide, 60 cells of text; FAULT's spans the panel less 8 px each side and
- * the text's 16 px padding: 976 px, 97 cells on the 1024 px panel, so the
+ * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4px under
+ * the band, 8px in from the panel's edges at most.  A bubble is 640px
+ * wide, 60 cells of text; FAULT's spans the panel less 8px each side and
+ * the text's 16px padding: 976px, 97 cells on the 1024px panel, so the
  * seven bits and their advice fit above the alert band in either language.
  */
-/** @brief A help bubble's width: 640 px, 60 cells of text. */
+/** @brief A help bubble's width: 640px, 60 cells of text. */
 #define HELP_W       640
-/** @brief A bubble's least distance to the panel's edges: 8 px. */
+/** @brief A bubble's least distance to the panel's edges: 8px. */
 #define HELP_M       8
-/** @brief A bubble's top under the band: 4 px. */
+/** @brief A bubble's top under the band: 4px. */
 #define HELP_GAP     4
 #define HELP_PAD     16     /**< text from the bubble's sides            */
 #define HELP_TOP     30     /**< the first line from the top: tab and 10 */
-/** @brief The last line to the bubble's bottom edge: 10 px. */
+/** @brief The last line to the bubble's bottom edge: 10px. */
 #define HELP_BOTTOM  10
-/** @brief A bubble line to the next: 21 px. */
+/** @brief A bubble line to the next: 21px. */
 #define HELP_PITCH   21
-/** @brief More between two paragraphs: 4 px. */
+/** @brief More between two paragraphs: 4px. */
 #define HELP_PARA    4      /* more between two paragraphs             */
 
 /* One paragraph, and one line of it.  Static: the bubble is drawn by the
@@ -475,6 +475,89 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
 
 /* ----------------------------------------------------------- the band */
 
+/**
+ * @brief How @p chip is drawn for @p st: its dot, 0 for none, and its fill.
+ * @param st the bench's status
+ * @param chip the chip
+ * @param dot its dot's colour, 0 for none
+ * @param fill its fill
+ */
+static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
+                      gfx_color_t *dot, gfx_color_t *fill)
+{
+    *dot  = 0;
+    *fill = ui_theme_color(UI_C_PANEL_SUNK);
+    switch (chip) {
+    case UI_BAND_CHIP_ARMED:
+        /* ARMED is a filled badge rather than a coloured dot, so the
+         * armed state is readable by shape at arm's length, not by
+         * colour alone.  It names the role an arm covers when it
+         * covers one: an arm on MOTOR leaves the servos without a
+         * pulse, and one on SERVO the motor. */
+        if (st->armed) {
+            *fill = ui_theme_color(UI_C_DANGER);
+        }
+        break;
+    case UI_BAND_CHIP_FAULT:
+        *fill = ui_theme_color(UI_C_WARN);
+        break;
+    case UI_BAND_CHIP_LINK:
+        *dot = st->link_up ? ui_theme_color(UI_C_OK)
+                           : ui_theme_color(UI_C_DANGER);
+        break;
+    default:
+        break;
+    }
+}
+
+/** @brief One step of the 32-bit FNV-1a hash over @p n bytes at @p p. */
+static uint32_t fnv(uint32_t h, const void *p, size_t n)
+{
+    const uint8_t *b = (const uint8_t *)p;
+    for (size_t i = 0; i < n; ++i) {
+        h = (h ^ b[i]) * 16777619u;
+    }
+    return h;
+}
+
+uint32_t ui_band_key(const char *title, bool show_home,
+                     const ui_bench_status_t *st, bool stop_pressed,
+                     bool home_pressed)
+{
+    uint32_t h = 2166136261u;
+    const uint8_t flags[4] = {
+        (uint8_t)(title != NULL), (uint8_t)show_home, (uint8_t)stop_pressed,
+        (uint8_t)home_pressed,
+    };
+    h = fnv(h, flags, sizeof(flags));
+    const int theme = (int)ui_theme_get();
+    h = fnv(h, &theme, sizeof(theme));
+    if (title != NULL) {
+        h = fnv(h, title, strlen(title) + 1u);
+    }
+    if (st == NULL) {
+        return h;
+    }
+    chips_t l;
+    chips_layout(st, &l);
+    for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
+        const ui_band_chip_t chip = k_order[i];
+        if (!l.on[chip]) {
+            continue;
+        }
+        char buf[24];
+        const char *label = chip_label(st, chip, buf, sizeof(buf));
+        gfx_color_t look[2];
+        chip_look(st, chip, &look[0], &look[1]);
+        const int16_t box[5] = { (int16_t)chip, l.r[chip].x, l.r[chip].y,
+                                 l.r[chip].w, l.r[chip].h };
+        h = fnv(h, box, sizeof(box));
+        h = fnv(h, look, sizeof(look));
+        h = fnv(h, label, strlen(label) + 1u);
+    }
+    return h;
+}
+
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
                     const ui_bench_status_t *st, bool stop_pressed,
                     bool home_pressed)
@@ -507,29 +590,8 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         }
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
-        gfx_color_t dot  = 0;
-        gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
-        switch (chip) {
-        case UI_BAND_CHIP_ARMED:
-            /* ARMED is a filled badge rather than a coloured dot, so the
-             * armed state is readable by shape at arm's length, not by
-             * colour alone.  It names the role an arm covers when it
-             * covers one: an arm on MOTOR leaves the servos without a
-             * pulse, and one on SERVO the motor. */
-            if (st->armed) {
-                fill = ui_theme_color(UI_C_DANGER);
-            }
-            break;
-        case UI_BAND_CHIP_FAULT:
-            fill = ui_theme_color(UI_C_WARN);
-            break;
-        case UI_BAND_CHIP_LINK:
-            dot = st->link_up ? ui_theme_color(UI_C_OK)
-                              : ui_theme_color(UI_C_DANGER);
-            break;
-        default:
-            break;
-        }
+        gfx_color_t dot, fill;
+        chip_look(st, chip, &dot, &fill);
         ui_pill_font(c, l.r[chip], label, dot, fill, CHIP_INSET, UI_FONT_BAND);
     }
 }

@@ -6,13 +6,13 @@ order: 52
 
 # Panel update
 
-PANEL UPDATE writes a new panel firmware image into the panel's flash. It opens after the 2 s hold on INSTALL on [Wi-Fi](wifi.md), or when a download from [Updates](updates.md) has passed its checks, and it takes the whole screen: no band and no STOP. Nothing can be switched to ARMED behind it.
+PANEL UPDATE writes a new panel firmware image into the panel's flash. It opens after the 2s hold on INSTALL on [Wi-Fi](wifi.md), or when a download from [Updates](updates.md) has passed its checks, and it takes the whole screen: no band and no STOP. Nothing can be switched to ARMED behind it.
 
 ## Writing
 
 ![Writing the image](view:panel-update)
 
-The hold switches the radio off first. The panel then stops its polls and withholds the heartbeat, so the IOmcu holds its outputs in failsafe, as at any restart of the panel. The screen writes the slot that is not running, in pieces of 64 KiB, and shows the bytes written and the percentage. The display goes fully dark at each flash erase, about every 0.5 s (reported on 0.20.0; 0.21.x not measured), and comes back after it. Do not switch off the panel.
+The hold switches the radio off first. The panel then stops its polls and withholds the heartbeat, so the IOmcu holds its outputs in failsafe, as at any restart of the panel. The screen writes the slot that is not running, in pieces of 64KiB, and shows the bytes written and the percentage. What the display shows during each flash erase is not measured. Do not switch off the panel.
 
 How long the erase and the write take is not measured.
 

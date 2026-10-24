@@ -41,8 +41,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: long tone",
-        "Wait about 5000 ms more: melody 5-6-5, programming mode entered"
+        "Wait about 2000ms: long tone",
+        "Wait about 5000ms more: melody 5-6-5, programming mode entered"
       ]
     },
     "announce": {
@@ -134,15 +134,15 @@
       "values": [
         {
           "number": 1,
-          "name": "low (2.5 V/cell)"
+          "name": "low (2.5V/cell)"
         },
         {
           "number": 2,
-          "name": "medium (2.75 V/cell)"
+          "name": "medium (2.75V/cell)"
         },
         {
           "number": 3,
-          "name": "high (3.0 V/cell)"
+          "name": "high (3.0V/cell)"
         }
       ],
       "applies_to": null,
@@ -160,11 +160,11 @@
         },
         {
           "number": 2,
-          "name": "soft (about 1 s)"
+          "name": "soft (about 1s)"
         },
         {
           "number": 3,
-          "name": "super soft (about 2 s)"
+          "name": "super soft (about 2s)"
         }
       ],
       "applies_to": null,

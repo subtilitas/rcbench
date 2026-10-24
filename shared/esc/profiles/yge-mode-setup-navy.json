@@ -42,7 +42,7 @@
       "confirm_signal": "20 repeated interval tones, then 2 tones; the 2 tones say the mode menu is entered",
       "steps": [
         "Remove rotor blades or propeller; the motor must stay connected because it makes the tones",
-        "Throttle signal at maximum (100 %) before power is applied",
+        "Throttle signal at maximum (100%) before power is applied",
         "Apply supply power; wait for 20 interval tones, then 2 confirmation tones",
         "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn"
       ]

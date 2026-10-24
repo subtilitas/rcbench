@@ -38,9 +38,9 @@ hardware: no frame of this code has been sent to a servo.
   `KST_PLAN_BUSY` after `budget` to `budget + 9` units of work; a unit is a
   fixed piece of the search, the same on every target. The session takes
   `KST_PLAN_SLICE_UNITS` (100) per `kst_session_step()` call. On a
-  Cortex-M33 at 150 MHz the costliest slice found over the 71 costliest
-  requests found is 816 us, and a begin call 64 us. The costliest single
-  unit found is 1,228 cycles, which puts a slice of 109 units at 892 us or
+  Cortex-M33 at 150MHz the costliest slice found over the 71 costliest
+  requests found is 816us, and a begin call 64us. The costliest single
+  unit found is 1,228 cycles, which puts a slice of 109 units at 892us or
   less. The figures are computed in an emulator from the instructions
   executed, as 1 cycle per instruction, 1 more per load and per store and
   2 per basic block, with ARM GNU 14.2 at -O3. Not measured on hardware.
@@ -49,7 +49,7 @@ hardware: no frame of this code has been sent to a servo.
   found takes 120,136 units, so the cap is 1.8 times that. A request above
   120,136 units is not ruled out. `kst_plan_edit()`, `kst_plan_restore()`
   and `kst_session_write()` run the planner to its end without a cap:
-  397 to 647 ms for the costliest request found, by the same estimate.
+  397 to 647ms for the costliest request found, by the same estimate.
 - `kst_session_write()` checks a plan against the planner's, which it
   builds into the session's own copy of the running plan. A plan handed to
   it must not be that copy or overlap it (`KST_SES_ERR_ARG`).
@@ -71,33 +71,33 @@ hardware: no frame of this code has been sent to a servo.
 ## Wire
 
 Half duplex on the signal wire, idle low, Manchester coded, most significant
-bit first. The master sends 27 bits at 25.40 us per half-cell. The servo
-answers with 11 bits at 25.575 us per half-cell. A frame has no parity and
+bit first. The master sends 27 bits at 25.40us per half-cell. The servo
+answers with 11 bits at 25.575us per half-cell. A frame has no parity and
 no checksum.
 
 | Quantity | Value |
 | --- | --- |
-| Reply to a read: accepted first edge | 350 us to 600 us after the frame's last edge |
-| Reply to a write: accepted first edge | 3.3 ms to 4.2 ms |
-| Capture window | 1.5 ms after a read, 8 ms after a write |
-| Accepted mean half-cell of a reply | 24.3 us to 26.9 us |
-| Level shorter than 1.5 us | removed as a glitch and counted |
-| Line high later than 100 us after the nominal end of a reply | reply refused |
-| Gap from the end of a window to the next frame | 3 ms; 20 ms after a window without a valid reply; 3 ms inside the entry sequence |
-| Entry | line low 100 ms, read 0x01, sync burst of 64 pulses, read 0x01 |
+| Reply to a read: accepted first edge | 350us to 600us after the frame's last edge |
+| Reply to a write: accepted first edge | 3.3ms to 4.2ms |
+| Capture window | 1.5ms after a read, 8ms after a write |
+| Accepted mean half-cell of a reply | 24.3us to 26.9us |
+| Level shorter than 1.5us | removed as a glitch and counted |
+| Line high later than 100us after the nominal end of a reply | reply refused |
+| Gap from the end of a window to the next frame | 3ms; 20ms after a window without a valid reply; 3ms inside the entry sequence |
+| Entry | line low 100ms, read 0x01, sync burst of 64 pulses, read 0x01 |
 
 Every failed check of the decoder has its own result code (`kst_rx_t`), so a
 log tells a silent servo from a late reply, a wrong bit rate, a broken cell
 and a lost edge.
 
 The servo's signal pin is a microcontroller GPIO (general-purpose
-input/output). The high level of its reply is at most 5 V and typically
-3.3 V. The level is not measured.
+input/output). The high level of its reply is at most 5V and typically
+3.3V. The level is not measured.
 
 | Master | Rating of its pin | On the wire |
 | --- | --- | --- |
-| RP2350 GPIO0 to 39, IOVDD (input/output supply) at 3.3 V | 5.5 V | no level shifter, no clamp |
-| The same pin, IOVDD at 0 V | 3.63 V | a servo that drives the wire at 5 V exceeds the rating |
+| RP2350 GPIO0 to 39, IOVDD (input/output supply) at 3.3V | 5.5V | no level shifter, no clamp |
+| The same pin, IOVDD at 0V | 3.63V | a servo that drives the wire at 5V exceeds the rating |
 
 What the servo's pin does at idle while the master is unpowered is not
 measured. Power the master before the servo's supply, or do not feed the
@@ -115,12 +115,12 @@ typedef struct {
 ```
 
 - Outside a transaction the driver holds the line low.
-- `start()` clocks out `frame->n_half` half-cells of 25.40 us, each level
-  from `kst_frame_level()`, drives low for 50 us, switches the pin to input
+- `start()` clocks out `frame->n_half` half-cells of 25.40us, each level
+  from `kst_frame_level()`, drives low for 50us, switches the pin to input
   and records every level change until `window_ns` after the frame's last
   edge. It returns at once, `false` when it cannot start.
 - `poll()` returns `false` while the transaction runs. After the window it
-  fills the capture and returns `true` once. The session waits 5 ms past
+  fills the capture and returns `true` once. The session waits 5ms past
   the end of the window and then ends the operation with
   `KST_SES_ERR_DRIVER`.
 - `now_us()` is a free-running microsecond clock. It may wrap.
@@ -136,7 +136,7 @@ kst_session_t s;
 kst_session_init(&s, &driver);
 
 kst_session_enter(&s);                 /* the caller has stopped PWM */
-while (kst_session_step(&s) == KST_SES_BUSY) { /* call every 1 ms */ }
+while (kst_session_step(&s) == KST_SES_BUSY) { /* call every 1ms */ }
 
 kst_session_read_all(&s);              /* the first image is the backup */
 while (kst_session_step(&s) == KST_SES_BUSY) { }
@@ -202,28 +202,28 @@ includes no pico-sdk header and has `extern "C"` guards.
 
 `kst_line_open()` claims the resources and `kst_line_close()` gives all of
 them back. An open fails with its own code for a pin the chip does not
-have, a system clock that gives no 25.40 us half-cell within 0.2 %, no free
+have, a system clock that gives no 25.40us half-cell within 0.2%, no free
 state machine or program space, and fewer than 2 free DMA channels; a
 failed open claims nothing and leaves the pin as it was.
 
-| Quantity | Value at a 150 MHz system clock |
+| Quantity | Value at a 150MHz system clock |
 | --- | --- |
-| Transmit half-cell | 3810 cycles, 25.40 us |
-| Resolution of an edge stamp | 4 cycles, 26.7 ns |
-| Frame start after `start()` | up to 31 half-cells, 787 us: low half-cells fill the first word |
-| Pad after the frame's last edge | driven low for 50 us, then an input |
-| Pad after a reply | driven low 165 us after the reply's last rising edge, which is 60 us to 165 us after its last level change |
+| Transmit half-cell | 3810 cycles, 25.40us |
+| Resolution of an edge stamp | 4 cycles, 26.7ns |
+| Frame start after `start()` | up to 31 half-cells, 787us: low half-cells fill the first word |
+| Pad after the frame's last edge | driven low for 50us, then an input |
+| Pad after a reply | driven low 165us after the reply's last rising edge, which is 60us to 165us after its last level change |
 | Pad after a window without an edge | driven low at the end of the window |
-| A state machine still running 1 ms after the window | restarted with the pad driven low; the capture is marked as overflowed |
+| A state machine still running 1ms after the window | restarted with the pad driven low; the capture is marked as overflowed |
 
 While a line is open and no transaction runs, the pad drives low. The pad's
 pull-down is on from the open on, and the close leaves the pad an input
-with the pull-down on. The internal pull-down is 50 to 80 kOhm; a pull-down
+with the pull-down on. The internal pull-down is 50 to 80kΩ; a pull-down
 on the board is expected.
 
 Limits:
 
-- A level change in the window before the reply starts the 165 us early.
+- A level change in the window before the reply starts the 165us early.
   The pad then drives low into the reply, the capture holds the edges up to
   that point and the decoder refuses it.
 - The system clock must not change while a line is open.
@@ -239,7 +239,7 @@ if (kst_line_open(&line, 14) == KST_LINE_OK) {   /* the pad drives low */
 
     kst_session_init(&s, &driver);
     kst_session_enter(&s);
-    while (kst_session_step(&s) == KST_SES_BUSY) { /* call every 1 ms */ }
+    while (kst_session_step(&s) == KST_SES_BUSY) { /* call every 1ms */ }
 }
 kst_line_close(&line);                           /* an input, pulled down */
 ```
@@ -333,8 +333,8 @@ before the checksum line, with each line end counted as one LF.
 
 `kst_type()` gives the type of an image: V6 with `20k_sel` (register 0x04
 bit 6) set, V8 with it clear. No other register enters. The mapping rests
-on the factory defaults the manufacturer states, 20 kHz drive for V6.0 and
-333 Hz drive for V8.0. It is read on 1 servo, whose bit is set; no V8.0
+on the factory defaults the manufacturer states, 20kHz drive for V6.0 and
+333Hz drive for V8.0. It is read on 1 servo, whose bit is set; no V8.0
 servo has been read. `20k_sel` is a locked field: no file and no edit
 changes it.
 
@@ -387,7 +387,7 @@ Reversion = 1
   file.
 - Where the block shows as the line of an editable field reads, the block
   gives the field's raw value. Several raw values of Max. Duty show as one
-  percentage: raw 244 and raw 245 both show 96 %, and 96 % converts to raw
+  percentage: raw 244 and raw 245 both show 96%, and 96% converts to raw
   245. A file whose line is unchanged loads the raw value it was written
   from. A line that reads otherwise wins over the block. The block gives
   no value for a field without a line.
@@ -427,7 +427,7 @@ connected servo and gives the image to write.
 
 `Max. Duty` is displayed in whole per cent and held in 255 raw steps, so
 `Max. Duty = 10 %` converts to raw 25, 1 below hard limit 26, and is
-refused; 11 % to 98 % load.
+refused; 11% to 98% load.
 
 The target goes to `kst_session_edit()` or `kst_plan_edit()` like an edit
 made by hand.
@@ -495,7 +495,7 @@ Not measured:
 - Gyro Servo mode (register 0x1F bit 0). An image in that mode breaks hard
   rule 21 and no plan toward it is built.
 - The Neutral conversion beyond 3 values: its constants are a fit and
-  uncertain by about 1 us.
+  uncertain by about 1us.
 - The encoding of `prot1_time` and `prot1_pwm` on write: there is no
   conversion from a displayed value for them.
 - Supply voltage limits during programming.

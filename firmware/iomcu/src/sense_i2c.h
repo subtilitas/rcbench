@@ -8,21 +8,21 @@
  * which interrupts core 1 to park it in RAM) lands between transactions
  * and never stops one half way with SCL held low.  The longest such
  * stretch is one transaction's timeout, SENSE_I2C_TIMEOUT_US, plus the
- * block's re-initialisation; a bus clear is about 0.12 ms.
+ * block's re-initialisation; a bus clear is about 0.12ms.
  *
- * The block runs at 400 kHz, fast mode, on the SDA and SCL the SENSE page
+ * The block runs at 400kHz, fast mode, on the SDA and SCL the SENSE page
  * names (GPIO number mod 4 0 or 2 for SDA, SCL the next one; I2C0 or I2C1
  * from (SDA / 2) mod 2, pico-sdk io_bank0.h).
  *
  * Pull-ups.  The pads' own pull-ups and pull-downs are switched off on
- * both pins.  The bus needs pull-ups strong enough for 400 kHz -- 300 ns
- * of rise, 3.54 kOhm at most on 100 pF (UM10204) -- and the pad's pull-up
+ * both pins.  The bus needs pull-ups strong enough for 400kHz -- 300ns
+ * of rise, 3.54kOhm at most on 100pF (UM10204) -- and the pad's pull-up
  * is tens of kOhm (not measured here), a rise of microseconds: it cannot
  * carry the bus, and a bus missing its external pull-ups would run slow
  * and marginal on it rather than fail at its first transaction.  The
  * pad's pull-down, on at reset, would only fight the external pull-ups.
- * The modules carry pull-ups (the DAOKAI INA3221 10 kOhm to VS) and the
- * build guide adds 2.2 kOhm to 3V3 at the IOmcu.
+ * The modules carry pull-ups (the DAOKAI INA3221 10kOhm to VS) and the
+ * build guide adds 2.2kOhm to 3V3 at the IOmcu.
  *
  * One use of the pad's pull-up stays: telling a line held low from one
  * nothing holds.  Pins with nothing wired to them -- no part, no pull-up
@@ -66,7 +66,7 @@
  * @brief One transaction's limit.
  *
  * The longest, a 5-byte read with its pointer
- *  write, is 75 bit times, 188 us at 400 kHz.
+ *  write, is 75 bit times, 188us at 400kHz.
  */
 #define SENSE_I2C_TIMEOUT_US    1000u
 /**
@@ -75,15 +75,15 @@
 #define SENSE_I2C_IDLE_US         10u
 /**
  * @brief How long a line low at idle has to rise on the pad's own pull-up,
- * 32 to 86 kOhm by the RP2350 datasheet's pad table: 50 us is 13 time
- * constants at 86 kOhm on 45 pF of pin, lead and probe, and a line a part
+ * 32 to 86kOhm by the RP2350 datasheet's pad table: 50us is 13 time
+ * constants at 86kOhm on 45pF of pin, lead and probe, and a line a part
  * holds low never rises.
  *
  * The pin capacitance of a bench lead is not measured.
  */
 #define SENSE_I2C_PROBE_US        50u
 /**
- * @brief Half a clock of the bus clear: 100 kHz.
+ * @brief Half a clock of the bus clear: 100kHz.
  */
 #define SENSE_I2C_CLEAR_HALF_US    5u
 /**

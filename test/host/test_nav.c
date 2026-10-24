@@ -181,9 +181,9 @@ TEST_CASE(stop_works_from_every_screen_that_has_a_band)
     }
 }
 
-/* A press that begins on STOP and slides off is not a stop, and neither is it
- * a tap on whatever it slid onto. */
-TEST_CASE(a_press_that_slides_off_stop_does_nothing)
+/* A press on STOP stops at the press.  Sliding off and lifting elsewhere
+ * takes nothing back and taps nothing it slid onto. */
+TEST_CASE(a_press_on_stop_stops_wherever_it_lifts)
 {
     fresh();
     to_overview();
@@ -191,6 +191,7 @@ TEST_CASE(a_press_that_slides_off_stop_does_nothing)
     const gfx_rect_t r = ui_band_stop_rect();
 
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_take_stop());
     touch(20, 300, TOUCH_EVENT_MOVE, 1);
     touch(20, 300, TOUCH_EVENT_UP, 1);
     CHECK(!ui_router_take_stop());
@@ -217,19 +218,20 @@ TEST_CASE(the_overview_has_no_home_tag)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
-/* A second finger, or a palm, must not steal the release the first is waiting
- * for; otherwise the throttle drag latches to whatever moves next. */
-TEST_CASE(a_second_contact_cannot_steal_the_release)
+/* A STOP press stops once, at its press.  Neither a second contact's
+ * release nor its own stops the bench again. */
+TEST_CASE(a_stop_press_stops_once)
 {
     fresh();
     to_overview();
     const gfx_rect_t r = ui_band_stop_rect();
 
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_take_stop());
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 2);   /* not ours */
     CHECK(!ui_router_take_stop());
     touch(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1);
-    CHECK(ui_router_take_stop());
+    CHECK(!ui_router_take_stop());
 }
 
 /* The splash holds until every step has answered, then hands over.  A tap
@@ -327,10 +329,10 @@ int main(void)
     RUN(no_screen_can_draw_over_the_band);
     RUN(stop_latches_and_clears_when_read);
     RUN(stop_works_from_every_screen_that_has_a_band);
-    RUN(a_press_that_slides_off_stop_does_nothing);
+    RUN(a_press_on_stop_stops_wherever_it_lifts);
     RUN(the_home_tag_returns_to_the_overview);
     RUN(the_overview_has_no_home_tag);
-    RUN(a_second_contact_cannot_steal_the_release);
+    RUN(a_stop_press_stops_once);
     RUN(an_unknown_screen_id_falls_back_to_the_overview);
     RUN(the_splash_holds_then_hands_over);
     RUN(a_tap_skips_the_splash_hold);

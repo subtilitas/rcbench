@@ -12,7 +12,7 @@
  * it has to hold; check_wa_zip.py then opens each with Python's zipfile
  * (testzip()) and with `unzip -t`, and holds names, sizes, CRCs and times
  * to the manifest.  The ZIP64 limits are written as sparse files, the data
- * a hole, and read by their directories only: 4 GiB of data is not read.
+ * a hole, and read by their directories only: 4GiB of data is not read.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -29,7 +30,7 @@
 #include "wa_fakefs.h"
 #include "wa_zip.h"
 
-/* The sparse archives seek past 4 GiB. */
+/* The sparse archives seek past 4GiB. */
 _Static_assert(sizeof(off_t) >= 8, "off_t must hold an offset past 4 GiB");
 
 #ifndef ZIP_OUT_DIR
@@ -353,8 +354,8 @@ static void write_sparse(const char *name, const uint64_t *sizes, int n)
 TEST_CASE(sizes_at_the_32_bit_limit_switch_to_zip64)
 {
     CHECK(!wa_zip_entry64(0xFFFFFFFEu));
-    CHECK(wa_zip_entry64(0xFFFFFFFFu));          /* 4 GiB - 1 B: the mark */
-    CHECK(wa_zip_entry64(0x100000000u));         /* 4 GiB */
+    CHECK(wa_zip_entry64(0xFFFFFFFFu));          /* 4GiB - 1B: the mark */
+    CHECK(wa_zip_entry64(0x100000000u));         /* 4GiB */
     CHECK_EQ(wa_zip_local_bytes(5u, 0xFFFFFFFEu), 35u);
     CHECK_EQ(wa_zip_local_bytes(5u, 0xFFFFFFFFu), 55u);
     CHECK_EQ(wa_zip_desc_bytes(0xFFFFFFFEu), 16u);
@@ -366,8 +367,8 @@ TEST_CASE(sizes_at_the_32_bit_limit_switch_to_zip64)
     CHECK(wa_zip_end64(1u, 0xFFFFFFFFu, 0u));
     CHECK(wa_zip_end64(1u, 0u, 0xFFFFFFFFu));
 
-    /* A file of 4 GiB - 2 B, of 4 GiB - 1 B and of 4 GiB, each followed
-     * by one of 5 bytes whose header then sits past 4 GiB. */
+    /* A file of 4GiB - 2B, of 4GiB - 1B and of 4GiB, each followed
+     * by one of 5 bytes whose header then sits past 4GiB. */
     const uint64_t below[] = { 0xFFFFFFFEu, 5u };
     const uint64_t at[]    = { 0xFFFFFFFFu, 5u };
     const uint64_t over[]  = { 0x100000000u, 5u };
@@ -707,7 +708,7 @@ static int      g_grow_when;
 static bool     g_grown;
 
 /**
- * @brief Grow g_grow by 37 bytes and move its time on by 1 h, as a log
+ * @brief Grow g_grow by 37 bytes and move its time on by 1h, as a log
  *        written to: once on the first piece, before the second walk comes
  *        to it (when 0); once when the second walk has taken it, so the
  *        third walk finds it larger and newer (when 1); after every piece
@@ -892,6 +893,10 @@ TEST_CASE(an_added_entry_whose_path_hash_collides_is_left_out)
 
 int main(void)
 {
+    /* Dates as UTC whatever the shell's zone: the page and the ZIP read
+     * stamps in the C library's zone (wall_local_s()). */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     setup_dir();
     RUN(crc32_and_dos_times_are_as_zip_takes_them);
     RUN(an_empty_card_is_an_empty_archive);

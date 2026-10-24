@@ -32,6 +32,7 @@
 #include "storage.h"
 #include "touch.h"
 #include "ui_card_text.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 #include "wifi_access.h"
 
@@ -59,11 +60,21 @@ char               s_boot_alert[ALERT_MAX];
 
 /* ------------------------------------------------------------------- boot */
 
+/**
+ * @brief Whether the bench is ARMED, as the router's status says; the
+ *        settings model's ARMED source (settings_set_armed()).
+ * @return True while ARMED.
+ */
+static bool bench_armed(void)
+{
+    return ui_router_status()->armed;
+}
+
 static void pump(void)
 {
     /* Draw between init steps so the splash fills in as it happens, rather
      * than appearing complete at the end. */
-    gfx_canvas_t *c = display_canvas();
+    gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
         ui_router_render(c, display_back_index());
         display_flip();
@@ -71,8 +82,8 @@ static void pump(void)
 }
 
 /*
- * How long to keep asking who is there: 3000 ms is about three attempts,
- * because a poll with no answer costs the 1000 ms host timeout.
+ * How long to keep asking who is there: 3000ms is about three attempts,
+ * because a poll with no answer costs the 1000ms host timeout.
  */
 #define IDENTITY_WAIT_MS 3000u
 
@@ -125,6 +136,9 @@ bool bring_up(void)
      * the IOmcu the same way an edit made later is. */
     settings_set_observer(settings_changed);
     settings_set_text_observer(publish_log_folder);
+    /* Screen rotation is held while ARMED, as the router's status says:
+     * the status DISCARD on SETUP waits on. */
+    settings_set_armed(bench_armed);
     settings_init();
     /* And once unconditionally, whatever settings_init() told the observer:
      * a bench left at the defaults still has to tell the far end what it
@@ -141,6 +155,10 @@ bool bring_up(void)
     publish_log_auto();
     publish_tone();
     publish_hitec_rx();
+    /* The zone before the card mounts, so the first file stamped is
+     * stamped in it; and what the clock holds, on the console. */
+    publish_time_zone();
+    log_clock_at_start();
     settings_apply_ui();
     /*
      * The panel's Wi-Fi reads its kept home network now, before the panel
@@ -220,6 +238,9 @@ bool bring_up(void)
     /* And the viewer is told how to reach it.  Without this it has no way to
      * list anything and reports no card whatever is mounted. */
     log_viewer_set_io(&k_card_io);
+    /* FILES reaches the card through its own task, started at its first
+     * request. */
+    files_screen_set_io(&k_files_io);
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();
@@ -243,7 +264,7 @@ bool bring_up(void)
     const bool link_open = (can_twai_start(PANEL_CAN_BITRATE) == ESP_OK);
     splash_screen_set(SPLASH_STEP_LINK,
                       link_open ? SPLASH_OK : SPLASH_WARN,
-                      link_open ? "CAN 1 Mbit/s" : TR(SPLASH_NOT_OPENED));
+                      link_open ? "CAN 1Mbit/s" : TR(SPLASH_NOT_OPENED));
     /*
      * After the bus is up, so the echo test measures the bus rather than
      * reporting "nothing came back" regardless of the hardware, and before
@@ -259,7 +280,7 @@ bool bring_up(void)
         s_bus_ok = can_selftest_run(CAN_SELFTEST_MS, &s_busfault);
         splash_screen_set(SPLASH_STEP_LINK,
                           s_bus_ok ? SPLASH_OK : SPLASH_FAIL,
-                          s_bus_ok ? "CAN 1 Mbit/s"
+                          s_bus_ok ? "CAN 1Mbit/s"
                                    : busfault_verdict_text(
                                          s_busfault.verdict));
         if (!s_bus_ok) {

@@ -33,19 +33,19 @@
  *   whose two 0x03 bytes differ moves nothing and keeps the reference.  A
  *   high byte that changes and changes back between the two 0x03 reads is
  *   accepted, so a still knob whose noise sits on a 64-count boundary can
- *   still give one step of up to 64 counts at a slider end stop (0.52 % of
- *   the span at 270 deg): the check narrows that case, it does not remove
+ *   still give one step of up to 64 counts at a slider end stop (0.52% of
+ *   the span at 270deg): the check narrows that case, it does not remove
  *   it.  How often it happens is not measured.
  * - The I2C registers carry no field-strength or status bit.  The
  *   magnet-too-strong, too-weak, push and loss-of-track bits Mg[3:0] are in
  *   the SSI (synchronous serial interface) frame only (section 7.8).  An
  *   answer is therefore taken as a reading; a sensor with no magnet over it
  *   gives an angle all the same.
- * - SCL (serial clock) period at least 1 us, so 1 MHz at most; the panel's
- *   bus runs at 400 kHz.  SDA and SCL rise and fall in 150 ns at most.
+ * - SCL (serial clock) period at least 1us, so 1MHz at most; the panel's
+ *   bus runs at 400kHz.  SDA and SCL rise and fall in 150ns at most.
  * - The I2C interface needs the MODE pin high, which selects I2C/SSI over
  *   ABZ (figure 17 ties MODE and Z/CSN to VDD; figure 6, ABZ, ties MODE to
- *   GND).  MODE has an internal 200 kOhm pull-up.  No EEPROM setting is
+ *   GND).  MODE has an internal 200kOhm pull-up.  No EEPROM setting is
  *   needed for I2C.
  *
  * Direction: the angle rises counter-clockwise seen from the chip's top

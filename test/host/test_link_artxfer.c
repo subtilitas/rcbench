@@ -186,7 +186,7 @@ TEST_CASE(a_length_from_a_header_to_the_largest_drawing_is_taken)
     CHECK(!meta_for(LINK_DRAW_MAX_BYTES + 1u, &meta));
     CHECK(!meta_for(0xFFFFFFFFu, &meta));
 
-    /* A length past 64 kB arrives in both halves, and is refused whole
+    /* A length past 64kB arrives in both halves, and is refused whole
      * rather than read as its low half. */
     uint16_t m[LINK_AW_COUNT];
     link_artserve_meta(m, (uint16_t)LINK_ART_DRAWING, (uint16_t)W,

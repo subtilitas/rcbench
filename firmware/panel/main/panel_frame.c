@@ -4,18 +4,17 @@
  *
  * What the control task published goes into the screens; touch, into the
  * router; the screens' commands, back to the control task; then one frame
- * is drawn and flipped.  Every 300 frames two console lines give the frame
- * rate, the panel's own refresh and the touch losses, then the draw and
- * wait times on the screen shown, and every stack and the internal heap
- * whose lowest figure fell (panel_perf.c).  panel_frame_loop() does not
- * return.
+ * is drawn and flipped, and panel_perf.c accounts it for the console: every
+ * 300 frames the frame rate, the panel's own refresh and the touch losses,
+ * then the draw, wait and turn times on the screen shown, and every stack
+ * and the internal heap whose lowest figure fell.  panel_frame_loop() does
+ * not return.
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
 #include <string.h>
 
-#include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -34,7 +33,6 @@
 #include "panel_main.h"
 #include "panel_perf.h"
 #include "pdmini.h"
-#include "perf_watch.h"
 #include "picker_screen.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
@@ -46,8 +44,7 @@
 #include "touch.h"
 #include "ui_band.h"
 #include "ui_screen.h"
-
-static const char *TAG = "rcbench";
+#include "ui_text.h"
 
 /*
  * A link that was up and stopped, said on the panel rather than on a console.
@@ -62,18 +59,23 @@ static const char *TAG = "rcbench";
  */
 #define LINK_LOST_SCREEN_MS 4000u
 
+gfx_canvas_t *panel_canvas(void)
+{
+    if (display_take_repaint()) {
+        ui_router_invalidate();
+    }
+    if (display_take_turn_alert()) {
+        ui_router_set_alert(TR(ALERT_ROTATION_OFF));
+    }
+    return display_canvas();
+}
+
 /** @brief The render loop (panel_main.h).  Does not return. */
 void panel_frame_loop(void)
 {
-    uint32_t frames  = 0;
-    uint32_t flip_timeouts = 0;   /* since start-up */
     uint32_t last_us = (uint32_t)esp_timer_get_time();
-    uint32_t last_vs = display_vsync_count();
-    uint32_t last_vs_us = last_us;
     bool     was_armed = false;
     uint32_t last_stops = 0;
-    perf_window_t window;           /* DRAW and WAIT since the last line */
-    perf_window_start(&window, (int)ui_router_current());
 
     for (;;) {
         const uint32_t us = (uint32_t)esp_timer_get_time();
@@ -187,14 +189,14 @@ void panel_frame_loop(void)
          *
          * What this does not cover: a run that both arms and disarms between
          * two frames is never seen armed here, so it leaves no trace at all.
-         * That is a run shorter than one frame, about 17 ms at 60 Hz.
+         * That is a run shorter than one frame, about 17ms at 60Hz.
          */
         if (motor_armed_now && !motor_armed) {
             /*
              * A run starts at the arm, so what the queue is holding from
              * before it is not part of it.  Dropped rather than pushed: the
-             * queue can hold SAMPLE_Q_LEN samples, 400 ms at
-             * PANEL_SAMPLE_HZ, and without this the first 400 ms of a run's
+             * queue can hold SAMPLE_Q_LEN samples, 400ms at
+             * PANEL_SAMPLE_HZ, and without this the first 400ms of a run's
              * trace would be readings taken while the bench was not driving.
              */
             bench_state_t stale;
@@ -307,7 +309,7 @@ void panel_frame_loop(void)
         const bool supply_real = atomic_load(&s_supply_real);
         /* The PD mini is given no more than its input less PDMINI_CAP_MV:
          * the screen's voltage cap follows the input as the page reads it,
-         * moved only on a change of 100 mV or more. */
+         * moved only on a change of 100mV or more. */
         unsigned vcap = 0u;
         if (supply_real) {
             const unsigned vin = atomic_load(&s_supply_vin_mv);
@@ -353,6 +355,17 @@ void panel_frame_loop(void)
         while (xQueueReceive(s_win_q, &win, 0) == pdTRUE) {
             servo_screen_source_dropped(win.dropped, win.dropped_at);
             servo_screen_window(&win.win, win.source, win.changes);
+        }
+        /* The pulse COMMANDED shows and the angle MEASURED shows, for a
+         * SERVO run's rows: one word, so the control task reads the two as
+         * one. */
+        {
+            uint16_t us  = 0u;
+            float    deg = 0.0f;
+            const bool have_us  = servo_screen_log_pulse(&us);
+            const bool have_deg = servo_screen_log_angle(&deg);
+            atomic_store(&s_servo_log,
+                         log_servo_pack(have_us, us, have_deg, deg));
         }
         supply_item_t sup_item;
         while (xQueueReceive(s_supply_q, &sup_item, 0) == pdTRUE) {
@@ -583,7 +596,7 @@ void panel_frame_loop(void)
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a
          * second read that caught the zero would test now_ms() - 0, the
-         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
+         * uptime, against LINK_LOST_SCREEN_MS: past 4000ms of uptime that
          * passes, and the screen takes over on a link that is up.
          */
         const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
@@ -656,7 +669,7 @@ void panel_frame_loop(void)
          * happen is flash_gate_open()'s rule, the one the drawing's keep
          * asks too: not while the bench is armed or an arm waits -- the
          * control task beats the safety line and its ceiling is
-         * HEARTBEAT_MAX_GAP_MS (150 ms) -- and not while the supply's output
+         * HEARTBEAT_MAX_GAP_MS (150ms) -- and not while the supply's output
          * is on or an ON is queued: OUTPUT OFF, STOP and the trips are the
          * control task's, and a flash write would stall them for its length.
          * Nor while the board's drawing is being fetched or kept: one flash
@@ -666,67 +679,32 @@ void panel_frame_loop(void)
          * comes, and disarmed -- which is where the settings screen is used
          * -- the next frame is one.
          */
-        (void)settings_save_tick(flash_gate_open(arm_wanted_now,
-                                                 supply_live_or_coming())
-                                 && !s_artbusy && !atomic_load(&s_keeping));
+        const bool quiet =
+            flash_gate_open(arm_wanted_now, supply_live_or_coming());
+        (void)settings_save_tick(quiet && !s_artbusy
+                                 && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control
          * task to read on its next pump. */
         publish_throttle_ramp();
 
-        gfx_canvas_t *c = display_canvas();
+        gfx_canvas_t *c = panel_canvas();
         const ui_screen_id_t shown = ui_router_current();
-        const int64_t draw_start = esp_timer_get_time();
+        const uint32_t draw_start = perf_now_us();
         ui_router_render(c, display_back_index());
-        const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
+        const uint32_t draw_us = perf_now_us() - draw_start;
         /* Blocks until the swap has taken effect.  A flip that saw no
-         * frame-done event in 200 ms is counted for the console line. */
-        if (display_flip() == ESP_ERR_TIMEOUT) {
-            ++flip_timeouts;
-        }
-        perf_window_add(&window, (int)shown, draw_us, display_last_wait_us());
+         * frame-done event in 200ms is counted for the console. */
+        const bool timed_out = (display_flip() == ESP_ERR_TIMEOUT);
 
         /*
-         * Every PERF_WINDOW_FRAMES frames, 5 s.  The first line: the frame
-         * rate, VSYNC, the panel's refresh as measured here, FLIP TIMEOUTS,
-         * the flips since start-up that waited 200 ms for a frame-done
-         * event in vain, and TOUCHLOST.  The second: DRAW, the paint time
-         * of a frame, and WAIT, how long the flip blocked afterwards, as
-         * minimum, mean and maximum over the frames on the screen shown
-         * since the last line, fewer than 300 when the screen changed.  A
+         * The console's frame, stack and heap lines (panel_perf.h), at
+         * most one a frame: DRAW, the paint time of a frame; WAIT, how
+         * long the flip blocked afterwards; TURN, the part of WAIT Screen
+         * rotation 180° spent copying the frame turned (0 in NORMAL).  A
          * healthy frame is mostly WAIT, the loop paced by the panel.  DRAW
-         * climbing until WAIT reaches zero is the frame budget being spent.
+         * climbing until WAIT reaches zero is the frame budget being
+         * spent.  Built without RCBENCH_PERF_LOG, nothing.
          */
-        if (++frames % PERF_WINDOW_FRAMES == 0u) {
-            /* And the panel's own refresh, from its VSYNC (vertical sync)
-             * events over the same frames. */
-            const uint32_t vs = display_vsync_count();
-            const uint32_t vs_us = (uint32_t)esp_timer_get_time();
-            const float vsync_hz =
-                (vs_us != last_vs_us)
-                    ? (float)(vs - last_vs) * 1e6f / (float)(vs_us - last_vs_us)
-                    : 0.0f;
-            last_vs = vs;
-            last_vs_us = vs_us;
-            ESP_LOGI(TAG,
-                     "%.1f fps  VSYNC %.2f Hz  FLIP TIMEOUTS %u  "
-                     "TOUCHLOST %u/%u",
-                     (double)display_fps(), (double)vsync_hz,
-                     (unsigned)flip_timeouts, s_tq_lost,
-                     atomic_load(&s_drv_gaps));
-            const char *title = ui_router_title((ui_screen_id_t)window.screen);
-            ESP_LOGI(TAG,
-                     "frames %u on %s (screen %d): DRAW %u/%u/%u us  "
-                     "WAIT %u/%u/%u us (min/mean/max)",
-                     (unsigned)window.frames,
-                     (title != NULL) ? title : "-", window.screen,
-                     (unsigned)window.draw_min_us,
-                     (unsigned)perf_window_draw_mean_us(&window),
-                     (unsigned)window.draw_max_us,
-                     (unsigned)window.wait_min_us,
-                     (unsigned)perf_window_wait_mean_us(&window),
-                     (unsigned)window.wait_max_us);
-            perf_window_start(&window, window.screen);
-            perf_report_lows();
-        }
+        perf_frame((int)shown, draw_us, timed_out, quiet);
     }
 }

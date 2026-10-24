@@ -405,7 +405,7 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
         const uint32_t bound = a->settle_until_ms + a->line_wait_ms;
         /*
          * The far end's yes counts up to the bound and not after it.  The
-         * question is an exchange that can take 1000 ms to come back, and
+         * question is an exchange that can take 1000ms to come back, and
          * the bound is on when the bench may start driving: a yes that
          * returns past it arms nothing.
          */

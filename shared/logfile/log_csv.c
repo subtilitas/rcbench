@@ -164,7 +164,7 @@ typedef struct {
 
 /*
  * Scratch, file-static rather than on the stack: a row buffer and a unit
- * tally per column come to about 3 kB, which is too much for a UI task's
+ * tally per column come to about 3kB, which is too much for a UI task's
  * stack on this chip.  Analysis and build are called from one task, one file
  * at a time; they are not reentrant, and neither is the screen that drives
  * them.
@@ -458,8 +458,8 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
         /* Past the cap the reader goes on to the first row with content,
          * which makes the file truncated.  The cut row is then taken from
          * the file's last bytes (tail_cut), and the rows after that first
-         * one are not read: a 360 MB file reads no more of its rows than a
-         * 360 kB one.  A source without that answer is read on to its end:
+         * one are not read: a 360MB file reads no more of its rows than a
+         * 360kB one.  A source without that answer is read on to its end:
          * the rows past the cap are parsed into the static row buffer and
          * dropped, no statistics, no allocation, one sequential read of the
          * rest of the file. */

@@ -38,9 +38,9 @@
 /**
  * @brief How often the panel asks for an edge.
  *
- * The panel toggles from its control task, which runs every 5 ms, so an edge
- * asked for at 20 ms is delivered within one of those passes and the line
- * edges every 20 ms. The generator does not have to know the caller's rate:
+ * The panel toggles from its control task, which runs every 5ms, so an edge
+ * asked for at 20ms is delivered within one of those passes and the line
+ * edges every 20ms. The generator does not have to know the caller's rate:
  * it is asked on every pass and answers when the period is up.
  */
 #define HEARTBEAT_PERIOD_MS   20u
@@ -49,10 +49,10 @@
  * @brief The interval the monitor will accept between two edges.
  *
  * The floor rejects noise: a line that is ringing, shorted to a clock, or
- * driven by something other than the panel edges far faster than a 20 ms
+ * driven by something other than the panel edges far faster than a 20ms
  * period can, and the monostable alone would happily be retriggered by it.
  * The ceiling leaves room above that period for a panel whose control task is
- * held up -- a panel that has not edged for 150 ms has stopped running.
+ * held up -- a panel that has not edged for 150ms has stopped running.
  */
 #define HEARTBEAT_MIN_GAP_MS  4u
 #define HEARTBEAT_MAX_GAP_MS  150u
@@ -62,18 +62,18 @@
  *
  * Four, which is two full toggles: enough that a glitch pair cannot do it,
  * few enough that arming does not wait a perceptible time. Four intervals at
- * HEARTBEAT_PERIOD_MS is 80 ms.
+ * HEARTBEAT_PERIOD_MS is 80ms.
  */
 #define HEARTBEAT_GOOD_RUN    4u
 
 /**
  * @brief The least time the panel gives a line that was already running before
- *        it writes an arm: HEARTBEAT_GOOD_RUN intervals, plus one, 100 ms.
+ *        it writes an arm: HEARTBEAT_GOOD_RUN intervals, plus one, 100ms.
  *
  * It is not enough for a line that was withheld.  The generator's first
  * edge is one period after it resumes and the monitor rejects the interval
  * that edge closes, so the fifth edge is what makes the line trusted:
- * 100 to 125 ms after the resume at a 5 ms pass, later on a slower one.
+ * 100 to 125ms after the resume at a 5ms pass, later on a slower one.
  * arming_set_line_wait() covers the rest by asking the far end.
  */
 #define HEARTBEAT_SETTLE_MS \

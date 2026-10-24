@@ -1,18 +1,18 @@
 /*
  * The sensor bus's sampling schedule (sense_sched.h), against the modelled
- * INA228 and INA3221 of fake_ina.h and a clock the suite moves 1 ms a
+ * INA228 and INA3221 of fake_ina.h and a clock the suite moves 1ms a
  * tick.
  *
- * Under test: the read rates, counted at the parts -- CH1 1000 Hz, the
- * INA228's current and voltage 500 Hz each, the rest 50 Hz or 25 Hz, CH2
- * and CH3 at 1000 Hz while the pair runs, and every tick of the rotation
- * inside 1 ms of bus time; CH1's ring of four windows after 1, 4, 5 and 6
+ * Under test: the read rates, counted at the parts -- CH1 1000Hz, the
+ * INA228's current and voltage 500Hz each, the rest 50Hz or 25Hz, CH2
+ * and CH3 at 1000Hz while the pair runs, and every tick of the rotation
+ * inside 1ms of bus time; CH1's ring of four windows after 1, 4, 5 and 6
  * of them, across window 65535, with the numbers a late tick skips, and
  * its clipped samples counted at the end of the range; a part that reset
  * itself found by the read-back of its set-up within one rotation,
  * emptied, counted once, set up again after SENSE_RETRY_MS and across the
  * millisecond count's wrap, and one corrupted read-back no reset; the
- * 50 ms windows, their numbers and
+ * 50ms windows, their numbers and
  * their figures, a clipped sample kept out of them, across the 32-bit
  * millisecond wrap, and a sample read after a probe that crosses a window
  * boundary kept in the window after it; the run's peaks, power
@@ -20,8 +20,8 @@
  * the arm, ended by one failed read; a part missing, lost and back; a
  * stuck bus recovered; the move capture on CH1 against the servo model,
  * arrived, settled, late, unseen, clipped and lost, its filter seeded with
- * the samples taken while armed, and across the 0.1 ms
- * count's wrap; the level before the command taken from CH1's 50 ms
+ * the samples taken while armed, and across the 0.1ms
+ * count's wrap; the level before the command taken from CH1's 50ms
  * before the edge, and a capture with none lost; its states the link's.
  *
  * SPDX-License-Identifier: MIT
@@ -94,7 +94,7 @@ static sense_err_t timed_write(void *ctx, uint8_t addr, uint8_t reg,
 }
 
 /* Both parts on the bus, as @p channels says for the INA3221; the clock
- * at 10 s. */
+ * at 10s. */
 static void rig(uint8_t channels, bool with_recover)
 {
     sense_bus_t scratch;
@@ -120,7 +120,7 @@ static void rig(uint8_t channels, bool with_recover)
     sense_sched_init(&s, &io, &cfg);
 }
 
-/* One tick, and the next 1 ms after this one began, however long its
+/* One tick, and the next 1ms after this one began, however long its
  * transactions took. */
 static void tick(void)
 {
@@ -154,11 +154,11 @@ TEST_CASE(each_register_is_read_at_its_rate)
     ticks(1000u);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], 1000u);
     /* The voltages: one channel an even tick in turn over all 12, so a
-     * channel every 24 ms, 41 or 42 in a second. */
+     * channel every 24ms, 41 or 42 in a second. */
     CHECK(i3221->reads[INA3221_BUS1] == 41u || i3221->reads[INA3221_BUS1] == 42u);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1 + 2], 0u);   /* CH2: not enabled */
     CHECK_EQ(i3221->reads[INA3221_BUS1 + 4], 0u);     /* CH3 */
-    /* Mask/Enable and Configuration in a slot each: 25 Hz each. */
+    /* Mask/Enable and Configuration in a slot each: 25Hz each. */
     CHECK_EQ(i3221->reads[INA3221_MASK_ENABLE], 25u);
     CHECK_EQ(i3221->reads[INA3221_CONFIG], 25u);
     CHECK_EQ(i228->reads[INA228_CURRENT], 500u);
@@ -174,7 +174,7 @@ TEST_CASE(each_register_is_read_at_its_rate)
     CHECK_EQ(s.diag, 0x0001u);           /* MEMSTAT: the trim checksum good */
 
     /* All three channels: CH1 every tick, CH2 and CH3 in turn beside it,
-     * 500 Hz each; the INA228 as before. */
+     * 500Hz each; the INA228 as before. */
     rig(7u, true);
     tick();
     zero_counts();
@@ -190,7 +190,7 @@ TEST_CASE(each_register_is_read_at_its_rate)
 
 /* -------------------------------------------------------------- windows */
 
-/* 50 ms windows numbered from the first tick: CH1's 50 samples, the
+/* 50ms windows numbered from the first tick: CH1's 50 samples, the
  * INA228's 25 currents and 25 voltages, 2 or 3 bus voltages a channel. */
 TEST_CASE(a_window_holds_fifty_milliseconds)
 {
@@ -218,9 +218,9 @@ TEST_CASE(a_window_holds_fifty_milliseconds)
     CHECK_EQ(w.v_min_uv, 6000000);
     CHECK(!w.clip_hi && !w.clip_lo);
     CHECK(sense_sched_window(&s, SENSE_CH(0, 2), &w));
-    CHECK_EQ(w.n_i, 25u);                /* CH2 and CH3 in turn: 500 Hz */
+    CHECK_EQ(w.n_i, 25u);                /* CH2 and CH3 in turn: 500Hz */
     CHECK_EQ(w.i_mean_ua, 200000);
-    CHECK_EQ(w.v_min_uv, 5904000);       /* 5.9 V in 8 mV steps */
+    CHECK_EQ(w.v_min_uv, 5904000);       /* 5.9V in 8mV steps */
     CHECK(sense_sched_window(&s, SENSE_SRC_INA228, &w));
     CHECK_EQ(w.n_i, 25u);
     CHECK_EQ(w.n_v, 25u);
@@ -238,7 +238,7 @@ TEST_CASE(a_window_holds_fifty_milliseconds)
     CHECK_EQ(w.i_mean_ua, 345000);
     CHECK_EQ(w.n_v, 2u);
 
-    /* A tick 120 ms late, at 221 ms: window 2 closes, window 3 is
+    /* A tick 120ms late, at 221ms: window 2 closes, window 3 is
      * missed, and the next to close is window 4. */
     g_us += 120000u;
     tick();
@@ -254,9 +254,9 @@ TEST_CASE(a_window_holds_fifty_milliseconds)
 TEST_CASE(a_clipped_reading_is_kept_out_of_the_window)
 {
     rig(7u, true);
-    i3221->amps[0] = 2.0;       /* past the R100's 1.638 A */
+    i3221->amps[0] = 2.0;       /* past the R100's 1.638A */
     i3221->amps[1] = -2.0;
-    i228->amps[0]  = 300.0;     /* past the MATEK's 204.8 A */
+    i228->amps[0]  = 300.0;     /* past the MATEK's 204.8A */
     ticks(50u);
     /* The next window half clipped; its first tick closes window 0. */
     for (unsigned k = 0; k < 50u; ++k) {
@@ -299,9 +299,9 @@ TEST_CASE(the_run_keeps_its_peaks_from_the_arm)
     i228->amps[0] = 10.0;
     i228->volts[0] = 16.0;
     ticks(10u);
-    /* A peak: the pack sags to 15 V, then 30 A for 4 ms, 450 W.  A
-     * current is multiplied by the voltage read 1 ms before it, so a step
-     * in both at once would pair 30 A with 16 V. */
+    /* A peak: the pack sags to 15V, then 30A for 4ms, 450W.  A
+     * current is multiplied by the voltage read 1ms before it, so a step
+     * in both at once would pair 30A with 16V. */
     i228->volts[0] = 15.0;
     ticks(2u);
     i228->amps[0] = 30.0;
@@ -420,7 +420,7 @@ TEST_CASE(a_missing_part_is_not_read_and_a_lost_one_comes_back)
 }
 
 /* SDA held low: nothing more is sent, a recovery runs at once and every
- * 100 ms, and the first transaction after one that goes through frees
+ * 100ms, and the first transaction after one that goes through frees
  * the bus.  The parts' failed reads take them offline meanwhile, so that
  * transaction is the next probe, up to a second on; it brings them back.
  * Without a recover callback the recovery is still counted. */
@@ -434,7 +434,7 @@ TEST_CASE(a_stuck_bus_is_recovered)
     const unsigned sent = fb.transactions;
     ticks(250u);
     CHECK(fb.transactions - sent <= 3u);         /* one test a recovery */
-    CHECK_EQ(g_recoveries, 3u);                  /* at 0, 100 and 200 ms */
+    CHECK_EQ(g_recoveries, 3u);                  /* at 0, 100 and 200ms */
     CHECK_EQ(ina3221_state(&s.i3221[0]), SENSE_PART_OFFLINE);
     fb.low = false;
     ticks(100u);
@@ -482,7 +482,7 @@ TEST_CASE(a_part_not_enabled_is_never_addressed)
 static servo_sim_t g_servo;
 static uint16_t    g_cmd;
 
-/* The modelled servo on CH1: 0.12 A holding, 0.95 A moving, 1.2 us/ms. */
+/* The modelled servo on CH1: 0.12A holding, 0.95A moving, 1.2us/ms. */
 static void servo_rig(float travel_a)
 {
     rig(1u, true);
@@ -512,9 +512,9 @@ static void servo_ticks(unsigned n)
 
 static const sense_cap_arm_t k_levels = { 120000, 120000, 30000, 50000 };
 
-/* Armed, then the edge stamped 0.5 ms ahead, then the command reaches the
+/* Armed, then the edge stamped 0.5ms ahead, then the command reaches the
  * servo at that edge: the move is timed from the edge to within the
- * filter's lag of the model's 667 ms. */
+ * filter's lag of the model's 667ms. */
 TEST_CASE(a_capture_times_a_move_from_the_edge)
 {
     servo_rig(0.95f);
@@ -539,7 +539,7 @@ TEST_CASE(a_capture_times_a_move_from_the_edge)
     }
     CHECK_EQ(s.cap.state, SENSE_CAP_ARRIVED);
     CHECK_EQ(s.cap.seq, 1u);
-    /* Movement within the filter of the edge; arrival 667 ms and the
+    /* Movement within the filter of the edge; arrival 667ms and the
      * filter's lag after it. */
     CHECK(s.cap.move_t <= 30u);
     CHECK(s.cap.arrive_t >= 6670u);
@@ -558,7 +558,7 @@ TEST_CASE(a_capture_times_a_move_from_the_edge)
     CHECK_EQ(s.cap.seq, 1u);
 }
 
-/* A servo moving at 2 A: past the R100's 1.638 A, every moving sample is
+/* A servo moving at 2A: past the R100's 1.638A, every moving sample is
  * clipped.  The clip is movement and is not yet there; the arrival is
  * timed, and peak and mean say they lack the clipped samples. */
 TEST_CASE(a_capture_through_clipped_samples_is_timed)
@@ -577,7 +577,7 @@ TEST_CASE(a_capture_through_clipped_samples_is_timed)
     CHECK(s.cap.arrive_t <= 6670u + 40u);
     CHECK(s.cap.samples < 10u);
 
-    /* At the bottom of the range: movement down from 0.50 A. */
+    /* At the bottom of the range: movement down from 0.50A. */
     rig(1u, true);
     tick();
     const sense_cap_arm_t down = { 500000, 100000, 30000, 50000 };
@@ -608,7 +608,7 @@ TEST_CASE(a_capture_at_a_stop_settles)
     CHECK(s.cap.arrive_t <= 6500u + 40u);
 }
 
-/* No arrival in 3005 ms, 3000 ms and the 5 ms lag: late with movement,
+/* No arrival in 3005ms, 3000ms and the 5ms lag: late with movement,
  * unseen without. */
 TEST_CASE(a_capture_ends_late_or_unseen)
 {
@@ -720,11 +720,11 @@ TEST_CASE(a_failed_voltage_read_leaves_the_next_current_without_power)
 
 /* The 32-bit millisecond count wraps after 49.7 days: the windows run on,
  * numbered one after another, and the parts stay online.  A capture across
- * the 0.1 ms count's wrap, after 4.97 days, is timed as any other. */
+ * the 0.1ms count's wrap, after 4.97 days, is timed as any other. */
 TEST_CASE(windows_and_captures_run_on_across_the_wraps)
 {
     rig(1u, true);
-    g_us = ((uint64_t)1u << 32) * 1000u - 120000u;   /* 120 ms before */
+    g_us = ((uint64_t)1u << 32) * 1000u - 120000u;   /* 120ms before */
     i3221->amps[0] = 0.5;
     ticks(51u);
     sense_window_t w;
@@ -740,7 +740,7 @@ TEST_CASE(windows_and_captures_run_on_across_the_wraps)
     CHECK_EQ(ina228_state(&s.i228), SENSE_PART_ONLINE);
 
     rig(1u, true);
-    g_us = ((uint64_t)1u << 32) * 100u - 200000u;    /* 200 ms before */
+    g_us = ((uint64_t)1u << 32) * 100u - 200000u;    /* 200ms before */
     i3221->amps[0] = 0.12;
     ticks(10u);
     const sense_cap_arm_t lv = { 120000, 120000, 30000, 50000 };
@@ -756,18 +756,18 @@ TEST_CASE(windows_and_captures_run_on_across_the_wraps)
     CHECK(s.cap.arrive_t <= 5040u);
 }
 
-/* The windows are numbered from the schedule's start in 64 bits: 2^32 ms
- * and 250 ms after it the open window is number (2^32 + 250) / 50, not 5,
+/* The windows are numbered from the schedule's start in 64 bits: 2^32ms
+ * and 250ms after it the open window is number (2^32 + 250) / 50, not 5,
  * and the page's 16 bits carry that number's low half. */
 TEST_CASE(the_window_number_counts_on_2_32_ms_after_the_start)
 {
     rig(1u, true);
     i3221->amps[0] = 0.5;
     ticks(100u);
-    CHECK(s.win == 1u);                 /* the tick at 99 ms */
+    CHECK(s.win == 1u);                 /* the tick at 99ms */
     g_us += (((uint64_t)1u << 32) + 150u) * 1000u;
     const uint64_t want = (((uint64_t)1u << 32) + 250u) / SENSE_WINDOW_MS;
-    tick();                             /* at 2^32 + 250 ms */
+    tick();                             /* at 2^32 + 250ms */
     CHECK(s.win == want);
     ticks(50u);
     CHECK(s.win == want + 1u);
@@ -778,7 +778,7 @@ TEST_CASE(the_window_number_counts_on_2_32_ms_after_the_start)
 }
 
 /* A probe of a part back from offline can cross a window boundary: the
- * INA228's 10 transactions take about 1.1 ms.  The window is rolled again
+ * INA228's 10 transactions take about 1.1ms.  The window is rolled again
  * after it, so the CH1 sample read past the boundary is the next
  * window's. */
 TEST_CASE(a_sample_after_a_probe_across_a_boundary_is_the_next_windows)
@@ -790,14 +790,14 @@ TEST_CASE(a_sample_after_a_probe_across_a_boundary_is_the_next_windows)
     ticks(5u);
     CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
     i228->present = true;
-    /* The next boundary, and the probe due 1 ms before it. */
+    /* The next boundary, and the probe due 1ms before it. */
     const uint64_t b_ms = s.t0_ms + SENSE_WINDOW_MS * (s.win + 1u);
     s.i228.part.probe_at = (uint32_t)(b_ms - 1u);
     while (g_us / 1000u < b_ms - 1u) {
         tick();
     }
     const uint16_t n = (uint16_t)s.win;
-    g_xfer_us   = 110u;                 /* a 16-bit read at 400 kHz */
+    g_xfer_us   = 110u;                 /* a 16-bit read at 400kHz */
     g_switch_us = b_ms * 1000u;
     g_switch_a  = 1.0;
     tick();
@@ -813,7 +813,7 @@ TEST_CASE(a_sample_after_a_probe_across_a_boundary_is_the_next_windows)
     CHECK_EQ(w.i_max_ua, 1000000);
 }
 
-/* A tick's reads take up to 690 µs and can straddle a window's end: CH1,
+/* A tick's reads take up to 690µs and can straddle a window's end: CH1,
  * read before it, counts in the window that ends; the INA228, read after
  * it, in the next. */
 TEST_CASE(a_read_batch_across_a_boundary_splits_between_the_windows)
@@ -830,8 +830,8 @@ TEST_CASE(a_read_batch_across_a_boundary_splits_between_the_windows)
         tick();                         /* to a tick that reads CURRENT */
     }
     const uint16_t n = (uint16_t)s.win;
-    g_us = b_ms * 1000u - 500u;         /* CH1 done at -200 µs, the INA228
-                                           at +100 µs */
+    g_us = b_ms * 1000u - 500u;         /* CH1 done at -200µs, the INA228
+                                           at +100µs */
     g_xfer_us = 300u;
     i3221->amps[0] = 0.7;
     i228->amps[0]  = 20.0;
@@ -853,9 +853,9 @@ TEST_CASE(a_read_batch_across_a_boundary_splits_between_the_windows)
     CHECK_EQ(w.i_max_ua, 500000);
 }
 
-/* A move from 0.12 A at 0.9 A that drops back @p drop_ms after the edge:
+/* A move from 0.12A at 0.9A that drops back @p drop_ms after the edge:
  * the filter shows the drop whole 3 samples later.  The capture's state,
- * and its arrival in 0.1 ms. */
+ * and its arrival in 0.1ms. */
 static sense_cap_state_t arrival_after(unsigned drop_ms, uint32_t *arrive_t)
 {
     rig(1u, true);
@@ -872,8 +872,8 @@ static sense_cap_state_t arrival_after(unsigned drop_ms, uint32_t *arrive_t)
     return s.cap.state;
 }
 
-/* The window is 3005 ms: an arrival 1 ms before it is timed, one exactly
- * at it or 1 ms past it is late -- the deadline is checked before the
+/* The window is 3005ms: an arrival 1ms before it is timed, one exactly
+ * at it or 1ms past it is late -- the deadline is checked before the
  * sample is judged. */
 TEST_CASE(an_arrival_at_the_deadline_is_late)
 {
@@ -905,7 +905,7 @@ static void timed_move(uint64_t xfer_us, uint32_t *move_t, uint32_t *arrive_t)
 }
 
 /* CH1 is stamped when its own read is done: INA228 reads after it that
- * take 400 µs each move no capture time. */
+ * take 400µs each move no capture time. */
 TEST_CASE(slow_reads_after_ch1_do_not_move_the_capture)
 {
     uint32_t m0 = 0u;
@@ -922,9 +922,9 @@ TEST_CASE(slow_reads_after_ch1_do_not_move_the_capture)
 /* ---------------------------------------------------- the seeded filter */
 
 /* The CH1 samples taken while armed fill the filter at the edge: a single
- * sample 0.10 A above the level is a quarter of that, under the 0.030 A
+ * sample 0.10A above the level is a quarter of that, under the 0.030A
  * threshold, and starts no move.  Without them it would be the whole
- * 0.10 A. */
+ * 0.10A. */
 TEST_CASE(a_one_sample_transient_at_the_edge_starts_no_move)
 {
     rig(1u, true);
@@ -956,7 +956,7 @@ TEST_CASE(a_one_sample_transient_at_the_edge_starts_no_move)
 static const sense_cap_arm_t k_auto = { SENSE_CAP_RISE_AUTO, 120000, 30000,
                                         50000 };
 
-/* Armed with the level left to CH1: it is the 0.12 A the servo held
+/* Armed with the level left to CH1: it is the 0.12A the servo held
  * before the edge, and the move is timed as with the level given. */
 TEST_CASE(a_capture_takes_the_level_before_the_command_from_ch1)
 {
@@ -972,7 +972,7 @@ TEST_CASE(a_capture_takes_the_level_before_the_command_from_ch1)
     g_cmd = 1900u;
     servo_tick();                            /* the first past it */
     CHECK(!s.cap.rise_owed);
-    /* The model holds at about 0.12 A; the INA3221 reads it in 0.4 mA
+    /* The model holds at about 0.12A; the INA3221 reads it in 0.4mA
      * steps. */
     CHECK_NEAR((double)s.cap.arm.rise_ua, 120000.0, 1200.0);
     CHECK_NEAR((double)s.cap.mv.cfg.rise_a, s.cap.arm.rise_ua * 1e-6, 1e-6);
@@ -985,7 +985,7 @@ TEST_CASE(a_capture_takes_the_level_before_the_command_from_ch1)
     CHECK(s.cap.arrive_t <= 6670u + 40u);
 }
 
-/* The level is the 50 ms before the edge: older samples are not in it,
+/* The level is the 50ms before the edge: older samples are not in it,
  * samples taken between the call and an edge that lies ahead are, and a
  * clipped sample counts at the end of the range. */
 TEST_CASE(the_level_before_the_command_is_the_50_ms_before_the_edge)
@@ -996,18 +996,18 @@ TEST_CASE(the_level_before_the_command_is_the_50_ms_before_the_edge)
     i3221->amps[0] = 0.2;
     ticks(40u);
     CHECK(sense_sched_cap_arm(&s, &k_auto));
-    const uint64_t edge = g_us + 10000u;     /* 10 ms ahead */
+    const uint64_t edge = g_us + 10000u;     /* 10ms ahead */
     sense_sched_cap_edge(&s, edge);
     i3221->amps[0] = 0.3;
     ticks(10u);                              /* up to the edge */
     CHECK(s.cap.rise_owed);
     tick();                                  /* at the edge */
     CHECK(!s.cap.rise_owed);
-    /* 40 samples at 0.2 A and 10 at 0.3 A. */
+    /* 40 samples at 0.2A and 10 at 0.3A. */
     CHECK_EQ(s.cap.arm.rise_ua, 220000);
 
     rig(1u, true);
-    i3221->amps[0] = 2.0;                    /* past 1.638 A: clipped */
+    i3221->amps[0] = 2.0;                    /* past 1.638A: clipped */
     ticks(60u);
     CHECK(sense_sched_cap_arm(&s, &k_auto));
     sense_sched_cap_edge(&s, g_us);
@@ -1016,7 +1016,7 @@ TEST_CASE(the_level_before_the_command_is_the_50_ms_before_the_edge)
     CHECK_EQ(s.cap.state, SENSE_CAP_WAITING);
 }
 
-/* No CH1 sample in the 50 ms before the edge: the capture ends lost, at
+/* No CH1 sample in the 50ms before the edge: the capture ends lost, at
  * the first sample past it.  A level given at the arm needs none. */
 TEST_CASE(a_capture_with_no_ch1_level_before_the_edge_is_lost)
 {
@@ -1046,8 +1046,8 @@ TEST_CASE(a_capture_with_no_edge_ends_lost)
     rig(1u, true);
     i3221->amps[0] = 0.12;
     tick();
-    /* Armed at the next tick's time: that tick is 0 ms after the arm, so
-     * the last one still armed is 2999 ms after it. */
+    /* Armed at the next tick's time: that tick is 0ms after the arm, so
+     * the last one still armed is 2999ms after it. */
     CHECK(sense_sched_cap_arm(&s, &k_levels));
     ticks(SENSE_CAP_EDGE_WAIT_MS);
     CHECK_EQ(s.cap.state, SENSE_CAP_ARMED);
@@ -1078,7 +1078,7 @@ TEST_CASE(the_capture_states_are_the_links)
 
 /* ---------------------------------------------------------- the ring */
 
-/* Window @p n of a run: CH1 draws 0.1 A times n + 1 through its 50 ticks. */
+/* Window @p n of a run: CH1 draws 0.1A times n + 1 through its 50 ticks. */
 static void fill_window(unsigned n)
 {
     i3221->amps[0] = 0.1 * (double)(n + 1u);
@@ -1194,8 +1194,8 @@ TEST_CASE(the_ring_runs_on_across_window_65535)
     }
 }
 
-/* Ticks at 0 to 99 ms, then the tick due at 100 ms comes @p late_ms late
- * and the ticks after it 1 ms apart, up to the tick at @p until_ms. */
+/* Ticks at 0 to 99ms, then the tick due at 100ms comes @p late_ms late
+ * and the ticks after it 1ms apart, up to the tick at @p until_ms. */
 static void late_tick(unsigned late_ms, unsigned until_ms)
 {
     rig(1u, true);
@@ -1212,7 +1212,7 @@ TEST_CASE(a_late_tick_skips_numbers_and_the_ring_says_which)
 {
     sense_window_t w;
     sense_ring_win_t r;
-    /* 49 ms: the tick lands at 149 ms, in window 2.  Windows 0, 1 and 2
+    /* 49ms: the tick lands at 149ms, in window 2.  Windows 0, 1 and 2
      * all close; window 2 holds the one late sample. */
     late_tick(49u, 150u);
     CHECK(sense_sched_window(&s, SENSE_CH(0, 1), &w));
@@ -1225,7 +1225,7 @@ TEST_CASE(a_late_tick_skips_numbers_and_the_ring_says_which)
     CHECK_EQ(r.n_i, 50u);
     CHECK(!sense_sched_ring(&s, 3u, &r));
 
-    /* 50 ms: the tick lands at 150 ms, in window 3.  No tick fell in
+    /* 50ms: the tick lands at 150ms, in window 3.  No tick fell in
      * window 2: its number is skipped. */
     late_tick(50u, 200u);
     CHECK(sense_sched_window(&s, SENSE_CH(0, 1), &w));
@@ -1240,7 +1240,7 @@ TEST_CASE(a_late_tick_skips_numbers_and_the_ring_says_which)
     CHECK_EQ(r.n_i, 50u);
     CHECK(sense_sched_ring(&s, 3u, &r));         /* window 0 */
 
-    /* 51 ms: the same, window 3 one sample short. */
+    /* 51ms: the same, window 3 one sample short. */
     late_tick(51u, 200u);
     CHECK(sense_sched_window(&s, SENSE_CH(0, 1), &w));
     CHECK_EQ(w.number, 3u);
@@ -1250,7 +1250,7 @@ TEST_CASE(a_late_tick_skips_numbers_and_the_ring_says_which)
     CHECK(sense_sched_ring(&s, 2u, &r));
     CHECK(sense_sched_ring(&s, 3u, &r));
 
-    /* 5 windows: the tick lands at 350 ms, in window 7.  Window 1 closes
+    /* 5 windows: the tick lands at 350ms, in window 7.  Window 1 closes
      * then, with windows 2 to 6 skipped: at first the ring is windows 1
      * and 0, and once window 7 closes it alone. */
     late_tick(250u, 350u);
@@ -1271,7 +1271,7 @@ TEST_CASE(a_late_tick_skips_numbers_and_the_ring_says_which)
 }
 
 /* A clipped sample is the reading it is: in a ring entry it counts at the
- * end of the range, 1.638 A on the 0.1 Ω shunt, and the entry says how
+ * end of the range, 1.638A on the 0.1Ω shunt, and the entry says how
  * many of its samples did.  sense_sched_window() keeps them out. */
 TEST_CASE(a_ring_entry_counts_its_clipped_samples)
 {
@@ -1342,7 +1342,7 @@ TEST_CASE(a_ring_entry_counts_its_clipped_samples)
 
 /* ------------------------------------------------- a part that reset */
 
-/* One rotation: a slot every second tick, 40 ms. */
+/* One rotation: a slot every second tick, 40ms. */
 #define ROTATION_TICKS (SENSE_ROTATION * 2u)
 
 /* Ticks until the INA3221 leaves online, @p limit at most; how many. */
@@ -1367,7 +1367,7 @@ static unsigned ticks_to_228_offline(unsigned limit)
 }
 
 /* An INA3221 that resets itself answers every read, on its power-on
- * Configuration.  The read-back finds it within one rotation, 40 ms,
+ * Configuration.  The read-back finds it within one rotation, 40ms,
  * wherever in the rotation the reset falls, and counts it once. */
 TEST_CASE(an_ina3221_reset_is_found_within_one_rotation)
 {
@@ -1423,7 +1423,7 @@ static void reset_then_back(uint64_t start_us)
     CHECK(sense_sched_ring(&s, (unsigned)(s.ring_at - found_in), &r));
     CHECK_EQ(r.n_i, 0u);
     CHECK_EQ(r.n_v, 0u);
-    /* 999 ms after the tick that found it: still offline, nothing sent
+    /* 999ms after the tick that found it: still offline, nothing sent
      * to it, and its Configuration still the reset value. */
     ticks(949u);
     CHECK_EQ(ina3221_state(&s.i3221[0]), SENSE_PART_OFFLINE);
@@ -1435,12 +1435,12 @@ static void reset_then_back(uint64_t start_us)
         CHECK_EQ(r.n_i, 0u);
         CHECK_EQ(r.n_v, 0u);
     }
-    /* 1000 ms: probed, set up again and read in that tick. */
+    /* 1000ms: probed, set up again and read in that tick. */
     tick();
     CHECK_EQ(ina3221_state(&s.i3221[0]), SENSE_PART_ONLINE);
     CHECK_EQ(i3221->reg[INA3221_CONFIG], INA3221_CONFIG_BENCH_CH1);
     CHECK_EQ(i3221->reads[INA3221_SHUNT1], ch1_reads + 1u);
-    /* 1001 ms, and on: online, the reset counted once, windows whole. */
+    /* 1001ms, and on: online, the reset counted once, windows whole. */
     tick();
     CHECK_EQ(ina3221_state(&s.i3221[0]), SENSE_PART_ONLINE);
     ticks(150u);
@@ -1456,7 +1456,7 @@ TEST_CASE(a_reset_ina3221_is_emptied_counted_and_set_up_again)
 {
     reset_then_back(10000000u);
     /* The retry across the 32-bit millisecond count's wrap: the reset
-     * found about 500 ms before it. */
+     * found about 500ms before it. */
     reset_then_back(((uint64_t)1u << 32) * 1000u - 750000u);
     /* And the reset itself across it. */
     reset_then_back(((uint64_t)1u << 32) * 1000u - 210000u);
@@ -1464,7 +1464,7 @@ TEST_CASE(a_reset_ina3221_is_emptied_counted_and_set_up_again)
 
 /* Ticks to the one that reads rotation slot @p slot, then the clock moved
  * so that tick's fourth transaction -- the second read of a set-up
- * register that differs -- ends 50 µs past the next window's end, at 100 µs
+ * register that differs -- ends 50µs past the next window's end, at 100µs
  * a transaction.  The number of the window that ends. */
 static uint16_t to_slot_across_a_boundary(unsigned slot)
 {
@@ -1747,7 +1747,7 @@ static void i228_reset_then_back(uint64_t start_us)
     unsigned whole = 0u;
     uint16_t last = w.number;
     for (unsigned k = 1u; k <= 1300u; ++k) {     /* ms since it was found */
-        if (k == 1000u) {                        /* 999 ms have passed */
+        if (k == 1000u) {                        /* 999ms have passed */
             CHECK_EQ(ina228_state(&s.i228), SENSE_PART_OFFLINE);
             CHECK_EQ(i228->reg[INA228_ADC_CONFIG], INA228_ADC_RESET);
         }
@@ -1791,7 +1791,7 @@ TEST_CASE(a_reset_ina228_is_found_and_set_up_again)
         CHECK_EQ(s.bus.errors, 0u);
     }
 
-    /* A set-up at ADCRANGE 0, 300 A on 200 µΩ: CONFIG reads back as
+    /* A set-up at ADCRANGE 0, 300A on 200 µΩ: CONFIG reads back as
      * written after a reset, and ADC_CONFIG tells. */
     sense_bus_t scratch;
     fake_bus_init(&fb, &scratch);
@@ -1814,14 +1814,14 @@ TEST_CASE(a_reset_ina228_is_found_and_set_up_again)
 }
 
 /* Between the reset and the read-back that finds it the INA3221 converts
- * on its power-on set-up: one CH1 result every 6.6 ms, read up to seven
- * times over.  The values are right; the 1 ms samples repeat. */
+ * on its power-on set-up: one CH1 result every 6.6ms, read up to seven
+ * times over.  The values are right; the 1ms samples repeat. */
 TEST_CASE(a_reset_ina3221_repeats_its_samples_until_it_is_found)
 {
     rig(1u, true);
     i3221->clock_us = &g_us;
     g_xfer_us = 120u;                            /* a transaction's time */
-    /* A ramp of 0.4 mA, one step of the shunt register, a tick. */
+    /* A ramp of 0.4mA, one step of the shunt register, a tick. */
     unsigned distinct = 0u;
     int32_t last = -1;
     for (unsigned k = 0; k < 100u; ++k) {
@@ -1832,7 +1832,7 @@ TEST_CASE(a_reset_ina3221_repeats_its_samples_until_it_is_found)
         distinct += (ua != last);
         last = ua;
     }
-    CHECK_EQ(distinct, 100u);                    /* 280 µs a result */
+    CHECK_EQ(distinct, 100u);                    /* 280µs a result */
 
     while (s.rot % SENSE_ROTATION != 0u) {
         tick();                                  /* the read-back is done */
@@ -1850,7 +1850,7 @@ TEST_CASE(a_reset_ina3221_repeats_its_samples_until_it_is_found)
         ++n;
     }
     CHECK(n >= 38u && n <= ROTATION_TICKS);
-    CHECK(distinct >= 5u && distinct <= 7u);     /* 40 ms / 6.6 ms */
+    CHECK(distinct >= 5u && distinct <= 7u);     /* 40ms / 6.6ms */
 }
 
 /* -------------------------------------------------------- bus time */
@@ -1874,9 +1874,9 @@ static unsigned worst_tick_clocks(fake_part_t *enc, unsigned n, bool even_only)
     return worst;
 }
 
-/* Every tick of the 20-slot rotation fits the 1 ms tick at 400 kHz, 2.5 µs
+/* Every tick of the 20-slot rotation fits the 1ms tick at 400kHz, 2.5µs
  * a clock: with all three channels and the encoder.  An even tick stays
- * at 690 µs, and the one that reads a set-up register twice is 742.5 µs. */
+ * at 690µs, and the one that reads a set-up register twice is 742.5µs. */
 TEST_CASE(every_tick_of_the_rotation_fits_a_millisecond)
 {
     sense_bus_t scratch;
@@ -1904,11 +1904,11 @@ TEST_CASE(every_tick_of_the_rotation_fits_a_millisecond)
 
     /* Even: CH1 (48 clocks), CH2 or CH3 (48), the INA228's slot (57), a
      * voltage (48) and the longest item, ENERGY or CHARGE (75): 276
-     * clocks, 690 µs.  Odd, with the encoder's field slot:
-     * 48 + 48 + 57 + 135 = 288, 720 µs. */
+     * clocks, 690µs.  Odd, with the encoder's field slot:
+     * 48 + 48 + 57 + 135 = 288, 720µs. */
     CHECK_EQ(worst_tick_clocks(enc, 1000u, true), 276u);
     CHECK_EQ(worst_tick_clocks(enc, 1000u, false), 288u);
-    CHECK(288u * 25u < 10000u);                  /* 2.5 µs a clock: 1 ms */
+    CHECK(288u * 25u < 10000u);                  /* 2.5µs a clock: 1ms */
 
     /* Both read-backs read twice in every rotation.  With one part the
      * read-backs' slots meet no voltage of a channel that is read (the

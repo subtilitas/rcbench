@@ -237,11 +237,11 @@ void kpn_fmt_value(kst_field_id_t id, uint16_t raw, char *out, size_t n,
     case KST_UNIT_TENTH_US:
     case KST_UNIT_TENTH_PERCENT:
     case KST_UNIT_TENTH_S:
-        snprintf(out, n, "%d.%d%s%s", (int)(v / 10), (int)(v % 10),
-                 unit ? " " : "", unit ? kpn_unit_of(id) : "");
+        snprintf(out, n, "%d.%d%s", (int)(v / 10), (int)(v % 10),
+                 unit ? kpn_unit_of(id) : "");
         break;
     case KST_UNIT_PERCENT:
-        snprintf(out, n, "%d%s", (int)v, unit ? " %" : "");
+        snprintf(out, n, "%d%s", (int)v, unit ? "%" : "");
         break;
     default:
         snprintf(out, n, "%d", (int)v);
@@ -263,8 +263,8 @@ bool kpn_changed(kst_field_id_t id)
 
 /* --------------------------------------------------------------- wrapping */
 
-/** @brief The cells of KP_FONT a line of text has: the area less 10 px on
- *         each side, 60 on SERVO's left card of 620 px. */
+/** @brief The cells of KP_FONT a line of text has: the area less 10px on
+ *         each side, 60 on SERVO's left card of 620px. */
 static int text_cells(void)
 {
     return (k.area.w - 20) / KP_CELL;
@@ -331,7 +331,7 @@ int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
 
 gfx_rect_t kpn_tabs_rect(void)
 {
-    /* The row less 8 px each side, CLOSE and 8 px before it. */
+    /* The row less 8px each side, CLOSE and 8px before it. */
     return (gfx_rect_t){ (int16_t)(k.area.x + 8), (int16_t)(k.area.y + TAB_Y),
                          (int16_t)(k.area.w - 16 - CLOSE_W - 8), TAB_H };
 }
@@ -429,8 +429,8 @@ gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 
 gfx_rect_t kst_panel_choice_rect(int i)
 {
-    /* Under the title, 48 px tall at a 56 px pitch: the 7 entries of the
-     * fullest list, FILES, end 8 px above CANCEL. */
+    /* Under the title, 48px tall at a 56px pitch: the 7 entries of the
+     * fullest list, FILES, end 8px above CANCEL. */
     return (gfx_rect_t){ (int16_t)(k.area.x + 10),
                          (int16_t)(k.area.y + 44 + i * PITCH),
                          (int16_t)(k.area.w - 20), ROW_H };

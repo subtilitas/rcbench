@@ -7,7 +7,7 @@
  * The processor is not in the timing path at all.  One DMA channel plays the
  * frame into the state machine and chains to a second, whose only transfer
  * writes the buffer address back into the first and retriggers it, so the
- * frame repeats forever whatever the loop is doing.  A frame is 22.5 ms and
+ * frame repeats forever whatever the loop is doing.  A frame is 22.5ms and
  * the state machine's queue is eight words deep; anything that fed it from
  * the loop would produce a stretched frame every time the loop was busy, and
  * a stretched frame is a servo that twitches.
@@ -55,7 +55,7 @@ extern "C" {
  * @param pin       GPIO number.
  * @param channels  Number of channels.
  * @param rate_hz   Frames per second; refused when rate_hz is 0 or the frame
- *                  period is below 2 us or above 65535 us.
+ *                  period is below 2us or above 65535us.
  * @return true when the pin is bound with these parameters, false otherwise.
  */
 bool out_ppm_bind(uint8_t pin, uint8_t channels, uint16_t rate_hz);

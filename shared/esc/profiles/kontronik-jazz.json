@@ -91,8 +91,8 @@
     },
     {
       "when": "before_menu",
-      "action": "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.",
-      "action_de": "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster drücken.",
+      "action": "After 2s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.",
+      "action_de": "Nach 2s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster drücken.",
       "starts_menu": true,
       "source": "Kontronik_Jazz.pdf p.6; Kontronik_MiniJazz.pdf p.6 (DE), p.15 (EN)"
     },
@@ -114,7 +114,7 @@
         "Operator: fit the jumper on any 2 of the 3 programming contacts. Connect the motor to the ESC if the tones are to be audible.",
         "Switch the transmitter on. Throttle to the brake position (stick back). For modes 6 and 8 use the motor-off position instead.",
         "Apply drive power.",
-        "Wait 2 s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
+        "Wait 2s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
         "Operator: pull the jumper off.",
         "The ESC sounds a second three-tone sequence, then the mode series 1, 2, 3 ... 9 with a pause between series.",
         "Move the throttle to full (stick forward) while the wanted mode series sounds.",
@@ -196,7 +196,7 @@
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage cutoff, 2.7 to 3 V per cell, added on top of another mode"
+          "name": "LiPo undervoltage cutoff, 2.7 to 3V per cell, added on top of another mode"
         }
       ],
       "applies_to": null,

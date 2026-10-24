@@ -37,26 +37,28 @@ TEST_CASE(cancelling_gestures_lets_go_of_the_band)
     const gfx_rect_t stop = ui_band_stop_rect();
     const int sx = stop.x + stop.w / 2, sy = stop.y + stop.h / 2;
 
-    /* A press on STOP, and then the events stop arriving. */
+    /* A press on STOP, which stops at the press, and then the events stop
+     * arriving. */
     touch(sx, sy, TOUCH_EVENT_DOWN, 7);
+    CHECK(ui_router_take_stop());
     ui_router_cancel_gestures();
 
     /* The release the router never saw arrives on a reused id, over a tile.
      * With the band press cleared it is not the band's, so it neither stops
-     * the bench nor navigates from a press nobody made. */
+     * the bench again nor navigates from a press nobody made. */
     const ui_screen_id_t before = ui_router_current();
     touch(sx, sy, TOUCH_EVENT_UP, 7);
     CHECK_EQ(ui_router_current(), before);
     CHECK(!ui_router_take_stop());
 }
 
-/* On the band, 3 px under STOP (y 6..41) and 4 px above the body. */
+/* On the band, 3px under STOP (y 6..41) and 4px above the body. */
 #define UNDER_STOP_X 720
 
 /*
- * Armed.  A finger drags the throttle track 60 px, slides up the glass at
- * 8 px per report and leaves it on the band.  The next lone finger aims at
- * STOP, lands in the 6 px of band under the button and rolls 5 px down into
+ * Armed.  A finger drags the throttle track 60px, slides up the glass at
+ * 8px per report and leaves it on the band.  The next lone finger aims at
+ * STOP, lands in the 6px of band under the button and rolls 5px down into
  * the body.  The first drag ended at the edge of the band, so the second
  * contact has nothing to continue, and it came down on the band, so the
  * screen sees none of it.
@@ -110,7 +112,7 @@ TEST_CASE(the_release_at_the_edge_adds_no_travel_made_on_the_band)
     glide(FEED_LONE, 360, UI_BAND_H + 4, 8);
     const uint32_t d0 = ui_router_dispatched();
 
-    /* One step short of the band: still the screen's, and the 4 px to the
+    /* One step short of the band: still the screen's, and the 4px to the
      * right count. */
     glide(FEED_LONE, 364, UI_BAND_H, 4);
     CHECK_EQ(ui_router_dispatched(), d0 + 1u);
@@ -118,8 +120,8 @@ TEST_CASE(the_release_at_the_edge_adds_no_travel_made_on_the_band)
     CHECK_NEAR(at_edge, 64.0f * M_PX_PCT, 0.01f);
     drain_motor();
 
-    /* The first row of the band, 2 px further right: one event to the
-     * screen, the release, and the 2 px do not count. */
+    /* The first row of the band, 2px further right: one event to the
+     * screen, the release, and the 2px do not count. */
     glide(FEED_LONE, 366, UI_BAND_H - 1, 2);
     CHECK_EQ(ui_router_dispatched(), d0 + 2u);
     CHECK_NEAR(motor_screen_throttle(), at_edge, 0.001f);
@@ -175,7 +177,7 @@ TEST_CASE(a_contact_that_came_down_on_the_band_reaches_no_screen)
     CHECK_EQ(ui_router_dispatched(), d0 + 4u);
 }
 
-/* The splash carries no band, so its top 48 px are the screen's. */
+/* The splash carries no band, so its top 48px are the screen's. */
 TEST_CASE(a_screen_without_a_band_owns_its_top_rows)
 {
     fresh();
@@ -212,9 +214,9 @@ static float after_a_drag_then(uint8_t id2, int x0, int y0, int x1, int y1,
 
 /*
  * Every way the second contact can arrive, and the first drag at three
- * speeds.  At 130 px per report the tracker splits each step into an UP and
+ * speeds.  At 130px per report the tracker splits each step into an UP and
  * a DOWN (TOUCH_JUMP_PX is 120), so the screen has its release from the
- * tracker; at 100 px per report it has it from the router.
+ * tracker; at 100px per report it has it from the router.
  */
 TEST_CASE(no_later_contact_continues_a_drag_that_left_by_the_band)
 {
@@ -238,9 +240,9 @@ TEST_CASE(no_later_contact_continues_a_drag_that_left_by_the_band)
 }
 
 /*
- * STOP answers a second finger while the first drags, and the drag goes on:
- * the stop is the application's to act on, and the bench's disarm is what
- * ends the run.
+ * STOP answers a second finger while the first drags, at the press, and
+ * the press ends the drag: the first finger's travel after it moves
+ * nothing.
  */
 TEST_CASE(stop_answers_a_second_finger_during_a_drag)
 {
@@ -253,15 +255,14 @@ TEST_CASE(stop_answers_a_second_finger_during_a_drag)
     finger(0, 300, M_TRACK_Y);
     glide(0, 340, M_TRACK_Y, 8);
     finger(1, sx, sy);
-    CHECK(!ui_router_take_stop());      /* on the release, not the press */
+    CHECK(ui_router_take_stop());       /* on the press */
     lift(1);
-    CHECK(ui_router_take_stop());
     CHECK(!ui_router_take_stop());
 
     glide(0, 380, M_TRACK_Y, 8);
-    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * M_PX_PCT, 0.01f);
     lift(0);
-    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * M_PX_PCT, 0.01f);
 }
 
 /*
@@ -303,7 +304,7 @@ TEST_CASE(sliding_onto_stop_or_home_presses_neither)
     glide(FEED_LONE, 400, M_TRACK_Y, 8);
     lift(FEED_LONE);
     CHECK_EQ(ui_router_dispatched(), d0);
-    CHECK(!ui_router_take_stop());      /* it lifted off the button */
+    CHECK(ui_router_take_stop());       /* the press on STOP stopped */
     CHECK_NEAR(motor_screen_throttle(), before, 0.001f);
     CHECK(!motor_posted(NULL));
     CHECK(before > dragged - 30.0f);    /* and the first drag ended sanely */
@@ -376,9 +377,11 @@ TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
 }
 
-/* The alert strip answers a second finger during a drag, and the drag goes
- * on.  A press on the strip that wanders to the band and lifts there clears
- * nothing and leaves the strip answering the next tap. */
+/* The alert strip answers a second finger during a drag, and its press
+ * ends the drag as a press anywhere does: the screen is handed the drag's
+ * release and nothing of the strip's press.  A press on the strip that
+ * wanders to the band and lifts there clears nothing and leaves the strip
+ * answering the next tap. */
 TEST_CASE(the_alert_strip_answers_a_second_finger_during_a_drag)
 {
     on_screen(SCREEN_MOTOR);
@@ -391,10 +394,11 @@ TEST_CASE(the_alert_strip_answers_a_second_finger_during_a_drag)
     const uint32_t d0 = ui_router_dispatched();
     feed_tap(1, 600, H - 10);
     CHECK(ui_router_alert() == NULL);
-    CHECK_EQ(ui_router_dispatched(), d0);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);   /* the drag's release */
     glide(0, 380, M_TRACK_Y, 8);
     lift(0);
-    CHECK_NEAR(motor_screen_throttle(), 80.0f * M_PX_PCT, 0.01f);
+    CHECK_EQ(ui_router_dispatched(), d0 + 1u);
+    CHECK_NEAR(motor_screen_throttle(), 40.0f * M_PX_PCT, 0.01f);
 
     ui_router_set_alert("again");
     const uint32_t d1 = ui_router_dispatched();

@@ -17,23 +17,23 @@ The module has two parts.
 
 ## Constraints
 
-- The capture is built for a 150 MHz system clock and is refused at any
+- The capture is built for a 150MHz system clock and is refused at any
   other (`TONE_SVC_SYS_HZ`).
-- One tick is 4 system clocks, 26.7 ns. A word carries 31 bits of the tick
-  count, which wraps every 57.3 s. The caller's estimate of the present
-  tick has to be within 28.6 s of the truth.
-- The capture hold-off is 8000 ns (`TONE_SVC_HOLD_NS`). A rise starts a
+- One tick is 4 system clocks, 26.7ns. A word carries 31 bits of the tick
+  count, which wraps every 57.3s. The caller's estimate of the present
+  tick has to be within 28.6s of the truth.
+- The capture hold-off is 8000ns (`TONE_SVC_HOLD_NS`). A rise starts a
   burst only after a low of at least twice the hold-off.
 - The ring is 4096 words (`TONE_RING_WORDS`). A reader the DMA (direct
   memory access) channel has lapped discards the ring and reports an
   overrun.
-- A pass is made every 1 ms and takes at most 16 finished beeps
+- A pass is made every 1ms and takes at most 16 finished beeps
   (`TONE_SVC_BEEPS`).
-- The detector's limits: a window of 1 ms to 100 ms, a silence of at most
-  1 s to end a beep, a lowest tone of at least 50 Hz.
+- The detector's limits: a window of 1ms to 100ms, a silence of at most
+  1s to end a beep, a lowest tone of at least 50Hz.
 - The driver takes 1 PIO (programmable input/output) state machine and 1 DMA
   channel, and serves 1 pin. The pin is an input with its pull-down on.
-- The input sees the phase through a series resistor of 4.7 kOhm and a
+- The input sees the phase through a series resistor of 4.7kΩ and a
   clamp. The module does not drive the pin.
 - `tone_cap_start()` and `tone_cap_stop()` are called from one core, the
   ring reader from the other. A capture is paused and the reader's
@@ -68,7 +68,7 @@ uint32_t        tone_cap_wr(void);
 bool            tone_cap_stalled(void);
 ```
 
-One pass, every 1 ms on the reading core:
+One pass, every 1ms on the reading core:
 
 ```c
 bool   stalled = tone_cap_stalled();          /* before the position */

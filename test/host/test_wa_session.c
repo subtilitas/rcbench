@@ -6,7 +6,7 @@
  * it; a password or access code that can be guessed from the last one, or
  * that still opens the page after the screen was closed and opened again;
  * a home network kept that the radio would refuse; and a join that fails
- * without saying why.
+ * without saying why.  The scan: test_wa_scan.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -452,58 +452,6 @@ TEST_CASE(retry_times_hold_across_the_millisecond_wrap)
     CHECK(!p.failed);
 }
 
-/* ------------------------------------------------------- the scan list */
-
-static void add(wa_scan_t *s, const char *name, int rssi, bool usable)
-{
-    wa_scan_add(s, (const uint8_t *)name, strlen(name), (int8_t)rssi, usable);
-}
-
-TEST_CASE(the_scan_list_holds_each_usable_network_once_strongest_first)
-{
-    wa_scan_t s;
-    wa_scan_clear(&s);
-    add(&s, "weak", -80, true);
-    add(&s, "strong", -40, true);
-    add(&s, "open cafe", -30, false);        /* no WPA2/WPA3 personal */
-    add(&s, "", -35, true);                  /* hidden */
-    add(&s, "weak", -60, true);              /* a second access point */
-    add(&s, "mid", -60, true);
-    CHECK_EQ(s.n, 3u);
-    CHECK_EQ(s.dropped, 2u);
-    CHECK_STR_EQ(wa_scan_pick(&s, 0u), "strong");
-    /* Equal signals keep the order they came in. */
-    CHECK_STR_EQ(wa_scan_pick(&s, 1u), "weak");
-    CHECK_EQ(s.net[1].rssi, -60);
-    CHECK_STR_EQ(wa_scan_pick(&s, 2u), "mid");
-    CHECK(wa_scan_pick(&s, 3u) == NULL);
-    CHECK(wa_scan_pick(NULL, 0u) == NULL);
-}
-
-TEST_CASE(a_full_scan_list_keeps_the_strongest)
-{
-    wa_scan_t s;
-    wa_scan_clear(&s);
-    char name[8];
-    for (int i = 0; i < 20; ++i) {
-        snprintf(name, sizeof(name), "n%02d", i);
-        add(&s, name, -90 + i, true);        /* each stronger than the last */
-    }
-    CHECK_EQ(s.n, WA_SCAN_MAX);
-    CHECK_EQ(s.dropped, 4u);
-    CHECK_STR_EQ(wa_scan_pick(&s, 0u), "n19");
-    CHECK_STR_EQ(wa_scan_pick(&s, WA_SCAN_MAX - 1u), "n04");
-    add(&s, "weakest", -95, true);
-    CHECK_EQ(s.dropped, 5u);
-    CHECK_STR_EQ(wa_scan_pick(&s, WA_SCAN_MAX - 1u), "n04");
-    /* A 32-byte name is listed whole, a 33-byte one is not a name. */
-    memset(g_long, 'z', 33u);
-    wa_scan_add(&s, (const uint8_t *)g_long, 32u, -10, true);
-    CHECK_EQ(strlen(wa_scan_pick(&s, 0u)), 32u);
-    wa_scan_add(&s, (const uint8_t *)g_long, 33u, -10, true);
-    CHECK_EQ(s.dropped, 7u);
-}
-
 /* ------------------------------------------------------- the session */
 
 static wa_t g_w;
@@ -674,7 +622,7 @@ TEST_CASE(each_way_a_join_fails_is_named)
     CHECK(!wa_radio(&g_w));
 }
 
-/* A join in @p mode, started at 0 ms. */
+/* A join in @p mode, started at 0ms. */
 static void joining(wa_mode_t mode)
 {
     wa_init(&g_w);
@@ -769,7 +717,7 @@ TEST_CASE(a_join_time_out_after_an_auth_drop_refuses_the_password)
         CHECK(!wa_on_drop(&g_w, false));
         CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
     }
-    /* The 3rd at WA_JOIN_MS - 1 ms ends the join itself. */
+    /* The 3rd at WA_JOIN_MS - 1ms ends the join itself. */
     joining(WA_MODE_FETCH);
     CHECK(wa_on_drop(&g_w, true));
     CHECK(wa_on_drop(&g_w, true));
@@ -861,24 +809,6 @@ TEST_CASE(a_drop_on_the_network_is_lost_and_off_it_asks_nothing)
     CHECK_EQ(g_w.state, WA_ST_SCANNING);
 }
 
-TEST_CASE(a_scan_runs_the_radio_and_ends_off)
-{
-    wa_init(&g_w);
-    CHECK_EQ(wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand,
-                      NULL),
-             WA_OFF_NONE);
-    CHECK_EQ(g_w.state, WA_ST_SCANNING);
-    CHECK(wa_radio(&g_w));
-    CHECK(!wa_serving(&g_w));
-    wa_on_scan_done(&g_w);
-    CHECK(!wa_radio(&g_w));
-    CHECK_EQ(g_w.off, WA_OFF_NONE);
-    /* One that never ends is ended. */
-    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
-    CHECK(wa_tick(&g_w, WA_START_MS, WA_OFF_NONE, false));
-    CHECK_EQ(g_w.off, WA_OFF_FAILED);
-}
-
 TEST_CASE(a_fetch_joins_and_serves_no_page)
 {
     wa_init(&g_w);
@@ -907,6 +837,151 @@ TEST_CASE(a_fetch_joins_and_serves_no_page)
                       NULL),
              WA_OFF_SUPPLY);
     CHECK(!wa_radio(&g_w));
+}
+
+/* ------------------------------------------------------- the linger */
+
+/* A session joined on the home network in @p mode at 2000ms. */
+static void joined(wa_mode_t mode)
+{
+    joining(mode);
+    wa_on_associated(&g_w, 1000u);
+    wa_on_address(&g_w, 0x1701A8C0u, 2000u);
+    CHECK_EQ(g_w.state, WA_ST_JOINED);
+    CHECK(!wa_lingers(&g_w));
+}
+
+TEST_CASE(only_the_operators_off_and_the_idle_time_out_linger_a_join)
+{
+    const wa_mode_t modes[] = { WA_MODE_JOIN, WA_MODE_FETCH };
+    const wa_off_t urgent[] = { WA_OFF_NONE, WA_OFF_ARMED, WA_OFF_SUPPLY,
+                                WA_OFF_RUN, WA_OFF_STOP, WA_OFF_GUESSES,
+                                WA_OFF_INSTALL, WA_OFF_FAILED, WA_OFF_JOIN };
+    for (size_t m = 0; m < 2u; ++m) {
+        joined(modes[m]);
+        wa_close(&g_w, WA_OFF_ASKED);
+        CHECK(!wa_radio(&g_w));
+        CHECK(wa_lingers(&g_w));
+        CHECK(!wa_serving(&g_w));
+        joined(modes[m]);
+        wa_close(&g_w, WA_OFF_IDLE);
+        CHECK(wa_lingers(&g_w));
+        for (size_t u = 0; u < sizeof(urgent) / sizeof(urgent[0]); ++u) {
+            joined(modes[m]);
+            wa_close(&g_w, urgent[u]);
+            CHECK(!wa_radio(&g_w));
+            CHECK(!wa_lingers(&g_w));
+        }
+    }
+    /* The idle time-out of wa_tick() lingers as wa_close() does. */
+    joined(WA_MODE_JOIN);
+    CHECK(wa_tick(&g_w, 2000u + WA_IDLE_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.off, WA_OFF_IDLE);
+    CHECK(wa_lingers(&g_w));
+}
+
+TEST_CASE(a_session_off_the_network_never_lingers)
+{
+    /* Not joined yet: nothing of the platform's runs on the network. */
+    joining(WA_MODE_FETCH);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK(!wa_lingers(&g_w));
+    joining(WA_MODE_JOIN);
+    wa_on_associated(&g_w, 1000u);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK(!wa_lingers(&g_w));
+    up_ap(0u);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK(!wa_lingers(&g_w));
+    wa_init(&g_w);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand,
+                      NULL),
+             WA_OFF_NONE);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK(!wa_lingers(&g_w));
+    wa_init(&g_w);
+    CHECK(!wa_lingers(&g_w));
+}
+
+TEST_CASE(a_radio_off_request_during_the_linger_ends_it_at_once)
+{
+    /* STOP and each gate: wa_tick() reports the end, so the platform acts
+     * on it in the same frame. */
+    const wa_off_t gates[] = { WA_OFF_ARMED, WA_OFF_SUPPLY, WA_OFF_RUN };
+    joined(WA_MODE_FETCH);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK(!wa_tick(&g_w, 3000u, WA_OFF_NONE, false));
+    CHECK(wa_lingers(&g_w));
+    CHECK(wa_tick(&g_w, 3010u, WA_OFF_NONE, true));
+    CHECK(!wa_lingers(&g_w));
+    CHECK(!wa_tick(&g_w, 3020u, WA_OFF_NONE, true));
+    for (size_t i = 0; i < 3u; ++i) {
+        joined(WA_MODE_JOIN);
+        wa_close(&g_w, WA_OFF_ASKED);
+        CHECK(wa_tick(&g_w, 3000u, gates[i], false));
+        CHECK(!wa_lingers(&g_w));
+        /* The off reason stays the session's own. */
+        CHECK_EQ(g_w.off, WA_OFF_ASKED);
+    }
+    /* An install, a failed radio and STOP closed on the session that is
+     * off already. */
+    const wa_off_t closes[] = { WA_OFF_INSTALL, WA_OFF_FAILED, WA_OFF_STOP };
+    for (size_t i = 0; i < 3u; ++i) {
+        joined(WA_MODE_FETCH);
+        wa_close(&g_w, WA_OFF_ASKED);
+        wa_close(&g_w, closes[i]);
+        CHECK(!wa_lingers(&g_w));
+        CHECK_EQ(g_w.off, WA_OFF_ASKED);
+    }
+    joined(WA_MODE_FETCH);
+    wa_close(&g_w, WA_OFF_ASKED);
+    wa_on_failed(&g_w);
+    CHECK(!wa_lingers(&g_w));
+    /* A second OFF or the idle time-out leave it as it is. */
+    joined(WA_MODE_JOIN);
+    wa_close(&g_w, WA_OFF_ASKED);
+    wa_close(&g_w, WA_OFF_ASKED);
+    wa_close(&g_w, WA_OFF_IDLE);
+    CHECK(wa_lingers(&g_w));
+    /* The platform's own need, and the station dropped. */
+    wa_unlinger(&g_w);
+    CHECK(!wa_lingers(&g_w));
+    joined(WA_MODE_JOIN);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK(!wa_on_drop(&g_w, false));
+    CHECK(!wa_lingers(&g_w));
+}
+
+TEST_CASE(a_start_ends_the_linger_of_the_last_session)
+{
+    /* Another mode, the same mode again, and a start the gate refuses. */
+    joined(WA_MODE_FETCH);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_AP, WA_OFF_NONE, 5000u, counter_rand,
+                      NULL),
+             WA_OFF_NONE);
+    CHECK(wa_radio(&g_w));
+    CHECK(!wa_lingers(&g_w));
+    joined(WA_MODE_JOIN);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_JOIN, WA_OFF_NONE, 5000u, counter_rand,
+                      NULL),
+             WA_OFF_NONE);
+    CHECK(!wa_lingers(&g_w));
+    joined(WA_MODE_JOIN);
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_JOIN, WA_OFF_ARMED, 5000u, counter_rand,
+                      NULL),
+             WA_OFF_ARMED);
+    CHECK(!wa_lingers(&g_w));
+    /* A start while joined closes the running session first: that close
+     * lingers, and the start ends it. */
+    joined(WA_MODE_JOIN);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_JOIN, WA_OFF_SUPPLY, 5000u, counter_rand,
+                      NULL),
+             WA_OFF_SUPPLY);
+    CHECK(!wa_radio(&g_w));
+    CHECK(!wa_lingers(&g_w));
 }
 
 /* ------------------------------------------------------- the code */
@@ -1003,8 +1078,6 @@ int main(void)
     RUN(an_erase_that_worked_is_not_repeated_for_a_save_that_failed);
     RUN(a_change_during_a_write_is_not_lost);
     RUN(retry_times_hold_across_the_millisecond_wrap);
-    RUN(the_scan_list_holds_each_usable_network_once_strongest_first);
-    RUN(a_full_scan_list_keeps_the_strongest);
     RUN(the_radio_does_not_start_armed_with_the_supply_on_or_a_run_open);
     RUN(arm_stop_the_supply_and_a_run_each_switch_it_off);
     RUN(ten_minutes_without_a_request_switch_it_off);
@@ -1018,8 +1091,11 @@ int main(void)
     RUN(a_join_time_out_after_another_drop_or_none_is_not_found);
     RUN(the_auth_count_starts_again_with_each_join);
     RUN(a_drop_on_the_network_is_lost_and_off_it_asks_nothing);
-    RUN(a_scan_runs_the_radio_and_ends_off);
     RUN(a_fetch_joins_and_serves_no_page);
+    RUN(only_the_operators_off_and_the_idle_time_out_linger_a_join);
+    RUN(a_session_off_the_network_never_lingers);
+    RUN(a_radio_off_request_during_the_linger_ends_it_at_once);
+    RUN(a_start_ends_the_linger_of_the_last_session);
     RUN(with_the_code_on_the_page_answers_only_the_right_code);
     RUN(with_the_code_off_every_request_passes);
     RUN(a_code_from_before_the_screen_was_reopened_opens_nothing);

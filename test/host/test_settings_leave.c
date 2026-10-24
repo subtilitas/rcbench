@@ -6,6 +6,7 @@
 #include "settings_rig.h"
 
 #include "outputs_screen.h"
+#include "outputs_spots.h"
 
 /* -------------------------------------------- the stored copy and leaving */
 
@@ -325,7 +326,7 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
     CHECK_EQ(warn_lines(), 1);
-    CHECK_STR_EQ(warn_line(0), "Capacity: 5000 mAh -> 5200 mAh");
+    CHECK_STR_EQ(warn_line(0), "Capacity: 5000mAh -> 5200mAh");
     CHECK_STR_EQ(warn_line(1), "");
 
     /* An enum and a switch by their words, translated. */
@@ -435,7 +436,7 @@ TEST_CASE(a_save_asked_holds_nothing_and_a_failed_one_warns)
     warn_up();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
-    CHECK_STR_EQ(warn_line(0), "Cells: 6 S -> 4 S");
+    CHECK_STR_EQ(warn_line(0), "Cells: 6S -> 4S");
     ui_router_render(&s_c, 0);
     settings_set_store(NULL);
 }
@@ -690,7 +691,8 @@ TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
     CHECK(!settings_dirty());
     /* GP4, column 0 row 4 of the grid: no protocol, no write.  The same
      * tap with SERVO PWM picked ticks it, so the tap is on the pin. */
-    const int gp4_x = 288 + 60, gp4_y = UI_BAND_H + 16 + 4 * 57 + 26;
+    const int gp4_x = OU_CELL_X(4) + 60;
+    const int gp4_y = UI_BAND_H + OU_CELL_Y(4) + 26;
     tap(gp4_x, gp4_y);
     CHECK_EQ(s_out_applied, 0);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);

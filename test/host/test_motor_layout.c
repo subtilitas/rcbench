@@ -18,7 +18,7 @@
 
 #include "link_pages.h"
 
-/** @brief The body row 4 px over the alert band: no text reaches it. */
+/** @brief The body row 4px over the alert band: no text reaches it. */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
 /** @brief The rectangle of the body that safe_at() names as a stop,
@@ -66,7 +66,7 @@ static void row_extent(int y, int xa, int xb, gfx_color_t col, int *lo,
 /*
  * Armed, DISARM is the one stop of the screen: UI_TAP_MIN or taller, where
  * its danger-red fill is drawn, at the CONTROL card's foot, and its bottom
- * row 4 px or more above the alert band.  Disarmed, ARM is no stop.
+ * row 4px or more above the alert band.  Disarmed, ARM is no stop.
  */
 TEST_CASE(disarm_acts_where_it_is_drawn_and_is_a_finger_tall)
 {
@@ -114,7 +114,7 @@ TEST_CASE(the_controls_stand_apart_and_above_the_alert_band)
     CHECK(!scr->safe_at(MO_RESET_X, MO_RESET_Y + UI_TAP_MIN / 2 - 1));
     CHECK(!scr->safe_at(MO_TARGET_X, MO_TARGET_B));
     CHECK(!scr->safe_at(MO_UP_X, MO_TRACK_Y));
-    /* RESET PEAKS stops 10 px over DISARM, and takes its press. */
+    /* RESET PEAKS stops 10px over DISARM, and takes its press. */
     CHECK(MO_RESET_Y + UI_TAP_MIN / 2 + 10 <= MO_ARM_T);
     tap(MO_RESET_X, MO_RESET_Y + UI_TAP_MIN / 2 - 1);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_RESET_PEAKS);

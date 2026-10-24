@@ -30,8 +30,8 @@
 TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
 {
     /* Many small moves, as a finger makes them: the set point follows the
-     * finger and does not run ahead of it.  17.7 V over 413 px is about
-     * 43 mV a pixel. */
+     * finger and does not run ahead of it.  17.7V over 413px is about
+     * 43mV a pixel. */
     fresh();
     const float per_px = (21.0f - 3.3f) / (float)(TRACK_W - 1);
     ev(TRACK_X + 100, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
@@ -68,7 +68,7 @@ TEST_CASE(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip)
     tap(ROW_L_X, VMAX_Y);
     keys("12.01");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
-    tap(ROW_L_X, VMAX_Y + 42);           /* CURRENT MAX */
+    tap(ROW_L_X, VMAX_Y + SU_ROW_PITCH); /* CURRENT MAX */
     keys("1.03");
     CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 1.0f, 1e-4f);
     tap(ROW_R_X, TRIPI_Y);
@@ -365,10 +365,10 @@ TEST_CASE(a_trip_shows_on_the_mode_card)
     supply_screen_push(&st);
     supply_invalidate();
     scr->render(&cv2, 0);
-    /* The MODE card, the rail's fourth: x 558..794, y 212..266. */
+    /* The MODE card, the rail's fourth. */
     int differ = 0;
-    for (int y = 212; y < 266; ++y) {
-        for (int x = 558; x < 794; ++x) {
+    for (int y = SU_CARD_T(3); y < SU_CARD_T(3) + 64; ++y) {
+        for (int x = SU_CARD_L; x < SU_CARD_R; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }
@@ -380,8 +380,8 @@ TEST_CASE(a_trip_shows_on_the_mode_card)
     supply_invalidate();
     scr->render(&cv2, 0);
     differ = 0;
-    for (int y = 212; y < 266; ++y) {
-        for (int x = 558; x < 794; ++x) {
+    for (int y = SU_CARD_T(3); y < SU_CARD_T(3) + 64; ++y) {
+        for (int x = SU_CARD_L; x < SU_CARD_R; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }
@@ -577,7 +577,8 @@ TEST_CASE(a_held_supply_is_drawn_dimmed_and_says_who_holds_it)
         supply_screen_set_port_held(true);
         scr->render(&cv2, 0);
         /* The MODE card, the steps and the tracks. */
-        CHECK(differ_in(558, 207, 794, 264) > 0);
+        CHECK(differ_in(SU_CARD_L, SU_CARD_T(3), SU_CARD_R,
+                        SU_CARD_T(3) + 63) > 0);
         CHECK(differ_in(V_DOWN_X - 10, V_ROW_Y - 10, V_DOWN_X + 10,
                         V_ROW_Y + 10) > 0);
         CHECK(differ_in(V_UP_X - 10, I_ROW_Y - 10, V_UP_X + 10,

@@ -221,7 +221,7 @@ TEST_CASE(nothing_under_the_keyboard_presses)
     CHECK(!settings_get_bool(SET_LOG_AUTO));
     CHECK(kb()->open);
     const gfx_rect_t ok = ui_textkey_key_rect(kb(), UI_TK_OK);
-    /* 60 px inside SAVE's right end. */
+    /* 60px inside SAVE's right end. */
     const int on_save = SAVE_X + HUB_COL_W - 60;
     CHECK(gfx_rect_contains(ok, on_save, SAVE_Y + SAVE_H / 2 - UI_BAND_H));
     tap(on_save, SAVE_Y + SAVE_H / 2);

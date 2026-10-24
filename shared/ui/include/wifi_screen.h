@@ -12,7 +12,7 @@
  * radio went off when it did.
  *
  * An uploaded image waits on the panel as a question naming both versions.
- * The browser cannot start the write: INSTALL is a 2 s hold here (UI_HOLD_S),
+ * The browser cannot start the write: INSTALL is a 2s hold here (UI_HOLD_S),
  * and the hold ends unfired when the image goes away under it -- a STOP, an
  * ARM, CANCEL -- or the install gate closes.
  *
@@ -160,7 +160,7 @@ typedef struct {
 #define WIFI_REQ_CODE_ON   0x040u   /**< the page asks for the access code */
 #define WIFI_REQ_CODE_OFF  0x080u   /**< the page asks for no access code  */
 #define WIFI_REQ_DISCARD   0x100u   /**< drop the staged image           */
-#define WIFI_REQ_INSTALL   0x200u   /**< the 2 s hold completed          */
+#define WIFI_REQ_INSTALL   0x200u   /**< the 2s hold completed           */
 
 /** Hand the screen what to show. */
 void wifi_screen_set(const wifi_view_t *v);
@@ -186,7 +186,7 @@ void wifi_screen_invalidate(void);
 
 /**
  * @brief Where the keyboard opens: the body less UI_MARGIN at its sides and
- *        top, ending 4 px above the alert band, 1008 x 484 px.
+ *        top, ending 4px above the alert band, 1008 x 484px.
  * @return The area, in the screen's coordinates.
  */
 gfx_rect_t wifi_screen_key_area(void);

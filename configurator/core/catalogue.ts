@@ -581,7 +581,7 @@ const parts: Part[] = [
     release: 'released',
     slot: { column: 'R', order: 12 },
     // Pin names are those of the MATEK board. The header of the module with
-    // XT90 plugs prints L A V G 5: L is SCL, A is SDA, V is the 3.3 V supply
+    // XT90 plugs prints L A V G 5: L is SCL, A is SDA, V is the 3.3V supply
     // of the chip, G is GND. Hole 5 has no pin. The supply pin differs by
     // board; the check entry `ina228-xt90-pads` states the print.
     pins: [
@@ -913,7 +913,7 @@ const SERVO_OUTPUTS: Cond = { all: [{ has: 'servo' }, { opt: 'servoPort', is: 'o
 /** The servo signal on the programming port: the function that programs a servo. */
 const SERVO_PROG: Cond = { all: [{ has: 'servo' }, { opt: 'servoPort', is: 'prog' }] };
 const SERVO_EXTERNAL: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'external' }] };
-/** The bench itself feeds the servo: the 5 V pin, or the V pin of a strip of the Osoyoo breakout board. */
+/** The bench itself feeds the servo: the 5V pin, or the V pin of a strip of the Osoyoo breakout board. */
 const SERVO_BENCH: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'bench' }] };
 const SERVO_5V_PIN: Cond = { all: [SERVO_BENCH, { opt: 'connection', is: 'pads' }] };
 const SERVO_STRIP: Cond = { all: [SERVO_BENCH, { opt: 'connection', is: 'osoyoo' }] };
@@ -1405,7 +1405,7 @@ const wires: Wire[] = [
     when: { all: [{ has: 'esc' }, XT90_SHUNT] },
     stage: 5, route: { kind: 'X', left: 18, right: 22, channel: 6 }, src: OWNER,
   },
-  // The servo fed by the bench itself. Wires 59 and 60: the 5 V pin of the
+  // The servo fed by the bench itself. Wires 59 and 60: the 5V pin of the
   // IOmcu board. Wires 61 and 62: the V pin of the strip at the servo
   // pin of the Osoyoo breakout board; the strip is no pad of the IOmcu,
   // so the wire ends in the drawing as a stub with its target in words.
@@ -2204,7 +2204,7 @@ const pinDefaults: PinDefault[] = [
 // own. Every other line is one sentence.
 //
 // The numbers of the PD mini are vendor values. No source states a current
-// for the 5 V pin or for the V pins of the Osoyoo breakout board.
+// for the 5V pin or for the V pins of the Osoyoo breakout board.
 // ---------------------------------------------------------------------------
 
 const VENDOR = t('Vendor values, not measured.', 'Herstellerangaben, nicht gemessen.');

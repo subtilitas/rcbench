@@ -5,7 +5,7 @@
  * The bank is armed while four things hold: the ARM register is set, the
  * heartbeat is trusted, the link is out of failsafe and the arm latch is
  * clear.  The latch is what keeps a cause that took the outputs down from
- * being undone by the ARM the panel goes on writing every 50 ms:
+ * being undone by the ARM the panel goes on writing every 50ms:
  *
  *     set      at start-up (link_dev_init()), on the edge into link silence,
  *              on the edge where the heartbeat stops being trusted, and by

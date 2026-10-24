@@ -24,9 +24,9 @@ static const char *TAG = "knob";
  * @brief The longest one transaction waits, in milliseconds.
  *
  * The bus is the knob's alone, so a transaction waits for nothing else.
- * The three transactions of one poll take about 0.3 ms at 400 kHz.  A
+ * The three transactions of one poll take about 0.3ms at 400kHz.  A
  * failed one costs more: the driver resets the controller and clears the
- * bus, which waits up to 50 ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held
+ * bus, which waits up to 50ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held
  * low.
  */
 #define KNOB_I2C_TIMEOUT_MS 5
@@ -50,17 +50,29 @@ static bool knob_read(uint8_t reg, uint8_t *byte)
                                        KNOB_I2C_TIMEOUT_MS) == ESP_OK;
 }
 
+/**
+ * @brief The polling task: one poll every KNOB_POLL_MS while the sensor
+ *        answers, every KNOB_POLL_IDLE_MS while it does not or the setting
+ *        is off.
+ *
+ * Logs one line when the sensor first answers and one when it stops
+ * answering after that: a change, not a poll.
+ *
+ * @param arg Unused.
+ */
 static void knob_task(void *arg)
 {
     (void)arg;
     knob_reset(&s_knob);
     uint32_t period_ms = KNOB_POLL_IDLE_MS;
+    bool found = false;     /* the last poll's answer, for the log lines */
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(period_ms));
         if (!atomic_load(&s_on)) {
             knob_reset(&s_knob);
             period_ms = KNOB_POLL_IDLE_MS;
+            found = false;
             continue;
         }
         uint8_t bytes[KNOB_POLL_READS] = { 0 };
@@ -78,6 +90,18 @@ static void knob_task(void *arg)
         const int d = knob_poll_done(&s_knob, answered, bytes);
         if (d != 0) {
             atomic_fetch_add(&s_steps, d);
+        }
+        if (answered != found) {
+            found = answered;
+            if (found) {
+                ESP_LOGI(TAG, "found at 0x%02x on I2C%d (GPIO%d/%d)",
+                         (unsigned)addr, (int)BOARD_KNOB_I2C_PORT,
+                         (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+            } else {
+                ESP_LOGI(TAG, "lost at 0x%02x on I2C%d (GPIO%d/%d)",
+                         (unsigned)addr, (int)BOARD_KNOB_I2C_PORT,
+                         (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+            }
         }
         /* A sensor that does not answer backs off to the idle period. */
         period_ms = answered ? KNOB_POLL_MS : KNOB_POLL_IDLE_MS;
@@ -128,8 +152,8 @@ void knob_task_start(void)
         return;     /* nothing to poll; the knob stays inert */
     }
     /*
-     * Core 0 beside the renderer, below it in nothing it needs: 10 ms polls
-     * of about 0.2 ms each.  Priority 2, under the card task's 3, and not on
+     * Core 0 beside the renderer, below it in nothing it needs: 10ms polls
+     * of about 0.2ms each.  Priority 2, under the card task's 3, and not on
      * core 1 where the control task owns the deadlines.  Stack 3072 bytes:
      * the task's deepest chain is the I2C driver's transaction.
      */

@@ -23,7 +23,7 @@
  * @brief The program renders a run of N microseconds as a one-cycle `out` and
  *        N-1 cycles of loop, so the count in the FIFO (first in first out) is
  *        two less than the duration.  ppm_frame() refuses a run shorter than
- *        the mark, and the mark is 300 us, so this cannot go negative.
+ *        the mark, and the mark is 300us, so this cannot go negative.
  */
 #define RUN_TO_COUNT(us)  ((uint32_t)(us) - 2u)
 
