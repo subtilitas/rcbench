@@ -43,8 +43,8 @@
     },
     {
       "when": "before_menu",
-      "action": "Pull the jumper off after 2 s or the tone sequence.",
-      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
+      "action": "Pull the jumper off after 2s or the tone sequence.",
+      "action_de": "Jumper nach 2s oder der Tonfolge abziehen.",
       "starts_menu": true,
       "source": "Kontronik_Beat.pdf p.15 (DE), p.37 (EN)"
     },
@@ -63,7 +63,7 @@
       "hold_ms": 2000,
       "confirm_signal": "As BEAT.",
       "steps": [
-        "As the BEAT procedure (jumper on, power on, wait 2 s, pull the jumper), programmed like mode 6 of the BEAT: signal count equals the mode number.",
+        "As the BEAT procedure (jumper on, power on, wait 2s, pull the jumper), programmed like mode 6 of the BEAT: signal count equals the mode number.",
         "Wait for the series of the wanted mode and move the throttle to full.",
         "Mode 8 is programmed like mode 7 with 8 signals and can be combined with modes 2 to 6."
       ]

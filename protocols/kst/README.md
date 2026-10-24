@@ -218,7 +218,7 @@ failed open claims nothing and leaves the pin as it was.
 
 While a line is open and no transaction runs, the pad drives low. The pad's
 pull-down is on from the open on, and the close leaves the pad an input
-with the pull-down on. The internal pull-down is 50 to 80kOhm; a pull-down
+with the pull-down on. The internal pull-down is 50 to 80kΩ; a pull-down
 on the board is expected.
 
 Limits:

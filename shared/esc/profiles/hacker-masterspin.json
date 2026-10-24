@@ -276,8 +276,8 @@
       "steps": [
         "Throttle signal at full power (transmitter on).",
         "Connect the drive battery; switch the BEC on where fitted (MasterSpin 11 has no switch).",
-        "Wait about 5 s for the four-tone melody.",
-        "Wait about 5 s more; the groups start."
+        "Wait about 5s for the four-tone melody.",
+        "Wait about 5s more; the groups start."
       ]
     },
     "announce": {
@@ -313,20 +313,20 @@
       "values": [
         {
           "number": 1,
-          "name": "Acro inrunner: no brake, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell",
+          "name": "Acro inrunner: no brake, timing 0 degrees, LiPo autodetect, slow down at 3.0V per cell",
           "default": true
         },
         {
           "number": 2,
-          "name": "Acro outrunner: no brake, timing 24 degrees, LiPo autodetect, slow down at 3.0 V per cell"
+          "name": "Acro outrunner: no brake, timing 24 degrees, LiPo autodetect, slow down at 3.0V per cell"
         },
         {
           "number": 3,
-          "name": "Glider inrunner: brake on, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell"
+          "name": "Glider inrunner: brake on, timing 0 degrees, LiPo autodetect, slow down at 3.0V per cell"
         },
         {
           "number": 4,
-          "name": "Glider outrunner: brake on, timing 24 degrees, LiPo autodetect, slow down at 3.0 V per cell"
+          "name": "Glider outrunner: brake on, timing 24 degrees, LiPo autodetect, slow down at 3.0V per cell"
         },
         {
           "number": 5,

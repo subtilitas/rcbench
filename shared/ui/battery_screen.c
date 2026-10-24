@@ -466,7 +466,7 @@ static void draw_right(gfx_canvas_t *c)
         (spread >= SPREAD_BAD_MV)   ? ui_theme_color(UI_C_DANGER)
       : (spread >= SPREAD_WATCH_MV) ? ui_theme_color(UI_C_WARN)
                                     : ui_theme_color(UI_C_OK));
-    snprintf(buf, sizeof(buf), "%.1fmOhm", (double)ir);
+    snprintf(buf, sizeof(buf), "%.1fmΩ", (double)ir);
     row(c, 4, TR(BAT_PACK_IR), buf, ink);
     snprintf(buf, sizeof(buf), TR(BAT_USED_OF),
              (int)s.b.drawn_mah, (int)s.b.capacity_mah);

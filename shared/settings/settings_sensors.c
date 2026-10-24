@@ -41,7 +41,7 @@
         SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, (watch_def), WATCH_OPTS,  \
         0.0f },                                                            \
     [AT(SET_INA_SH(3 * (a) + (ch) - 1))] = {                               \
-        "ina_sh_" #a #ch, "mOhm",                                          \
+        "ina_sh_" #a #ch, "mΩ",                                            \
         SET_CAT_SENSORS, SET_TYPE_FLOAT, 0.0f, 1000.0f, 0.1f, 100.0f,      \
         NULL, 0, 5.0f },                                                   \
     [AT(SET_INA_LIM(3 * (a) + (ch) - 1))] = {                              \
@@ -72,7 +72,7 @@ static const setting_def_t k_kept[4] = {
         "ina3221_adr", "",
         SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, settings_opts_old_addr, 4, 0.0f },
     {                                   /* SET_INA3221_MOHM */
-        "ina3221_mohm", "mOhm",
+        "ina3221_mohm", "mΩ",
         SET_CAT_COUNT, SET_TYPE_FLOAT, 5.0f, 1000.0f, 0.1f, 100.0f, NULL, 0, 0.0f },
     {                                   /* SET_INA3221_CH */
         "ina3221_ch", "",

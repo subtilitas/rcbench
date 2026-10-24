@@ -9,9 +9,10 @@ contrast ramp, so the font keeps its tuned weight and has a soft edge either
 side of it.
 
 A text face holds printable ASCII (0x20 to 0x7E) as one block and, after it,
-the extra code points listed in its row of FONTS: the degree sign and the
-German letters in the text faces.  gfx decodes UTF-8 and finds a code point in the block or in
-that list; anything else draws as '?'.
+the extra code points listed in its row of FONTS: the degree sign, the
+German letters and the ohm sign in the text faces.  gfx decodes UTF-8 and
+finds a code point in the block or in that list; anything else draws as
+'?'.
 
     python3 tools/gen_font.py              # regenerate all fonts
     python3 tools/gen_font.py --check      # fail if the checked-in files differ
@@ -47,12 +48,16 @@ FONT_CANDIDATES = [
 ]
 
 # The code points the text faces carry beyond printable ASCII, ascending:
-# the degree sign and the German letters.  A language that needs another
+# the degree sign, the German letters and the ohm sign, U+03A9 (Greek
+# capital omega, which Unicode prefers to U+2126 OHM SIGN), written in
+# place of "Ohm" because this face's O reads close to a zero ("120Ohm" as
+# "1200hm").  A language that needs another
 # letter adds it here and regenerates; gfx looks a code point up in this
 # list after the ASCII block.
 GERMAN = [0xC4, 0xD6, 0xDC, 0xDF, 0xE4, 0xF6, 0xFC]   # Ä Ö Ü ß ä ö ü
 DEGREE = [0xB0]                                       # °
-TEXT_EXTRA = DEGREE + GERMAN
+OHM = [0x3A9]                                         # Ω
+TEXT_EXTRA = DEGREE + GERMAN + OHM
 
 # name, cell w, cell h, first, last, ttf size, dx, dy, threshold, output
 # file, extra code points

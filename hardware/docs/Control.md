@@ -182,7 +182,7 @@ not requalified. The owner accepted each as open (owner, 2026-09-29).
 
 - R1: Microcontroller (RP2354B not requalified by FU-A4). The held fixed input; not verified for R1 in FU-A4.
 - R1: USB protection. No part; not verified.
-- R2: Link terminator (the 120Ohm at the IO board's end: fitted, switchable or external). A round-2 passive; not verified.
+- R2: Link terminator (the 120Ω at the IO board's end: fitted, switchable or external). A round-2 passive; not verified.
 - R2: CAN controller clock (the crystal, resonator or oscillator each controller takes). A round-2 part; not verified.
 - R3: onboard pack switch MOSFETs. No part; not verified.
 - R3: external pack switch module. No part; not verified.

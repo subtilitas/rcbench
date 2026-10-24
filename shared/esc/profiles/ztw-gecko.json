@@ -108,7 +108,7 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps, programming mode entered"
+        "Wait about 2000ms: two short beeps, programming mode entered"
       ]
     },
     "announce": {
@@ -154,15 +154,15 @@
         },
         {
           "number": 2,
-          "name": "soft brake (30 %)"
+          "name": "soft brake (30%)"
         },
         {
           "number": 3,
-          "name": "mid brake (60 %)"
+          "name": "mid brake (60%)"
         },
         {
           "number": 4,
-          "name": "hard brake (100 %)"
+          "name": "hard brake (100%)"
         }
       ],
       "applies_to": null,
@@ -197,16 +197,16 @@
       "values": [
         {
           "number": 1,
-          "name": "2.8 V / 50 %"
+          "name": "2.8V / 50%"
         },
         {
           "number": 2,
-          "name": "3.0 V / 60 %",
+          "name": "3.0V / 60%",
           "default": true
         },
         {
           "number": 3,
-          "name": "3.2 V / 60 % (table) or 65 % (text)"
+          "name": "3.2V / 60% (table) or 65% (text)"
         },
         {
           "number": 4,
@@ -241,23 +241,23 @@
         },
         {
           "number": 2,
-          "name": "2 deg"
+          "name": "2deg"
         },
         {
           "number": 3,
-          "name": "8 deg"
+          "name": "8deg"
         },
         {
           "number": 4,
-          "name": "15 deg"
+          "name": "15deg"
         },
         {
           "number": 5,
-          "name": "22 deg"
+          "name": "22deg"
         },
         {
           "number": 6,
-          "name": "30 deg"
+          "name": "30deg"
         }
       ],
       "applies_to": null,
@@ -270,20 +270,20 @@
       "values": [
         {
           "number": 1,
-          "name": "5.0 V",
+          "name": "5.0V",
           "default": true
         },
         {
           "number": 2,
-          "name": "6.0 V"
+          "name": "6.0V"
         },
         {
           "number": 3,
-          "name": "7.4 V (not on Gecko 45A)"
+          "name": "7.4V (not on Gecko 45A)"
         },
         {
           "number": 4,
-          "name": "8.4 V (not on Gecko 45A)"
+          "name": "8.4V (not on Gecko 45A)"
         }
       ],
       "applies_to": [
@@ -306,11 +306,11 @@
         },
         {
           "number": 2,
-          "name": "1st soft start (8 s)"
+          "name": "1st soft start (8s)"
         },
         {
           "number": 3,
-          "name": "2nd soft start (15 s)"
+          "name": "2nd soft start (15s)"
         },
         {
           "number": 4,
@@ -349,40 +349,40 @@
       "values": [
         {
           "number": 1,
-          "name": "10 %"
+          "name": "10%"
         },
         {
           "number": 2,
-          "name": "15 %"
+          "name": "15%"
         },
         {
           "number": 3,
-          "name": "20 %"
+          "name": "20%"
         },
         {
           "number": 4,
-          "name": "25 %"
+          "name": "25%"
         },
         {
           "number": 5,
-          "name": "30 %",
+          "name": "30%",
           "default": true
         },
         {
           "number": 6,
-          "name": "35 %"
+          "name": "35%"
         },
         {
           "number": 7,
-          "name": "40 %"
+          "name": "40%"
         },
         {
           "number": 8,
-          "name": "45 %"
+          "name": "45%"
         },
         {
           "number": 9,
-          "name": "50 %"
+          "name": "50%"
         }
       ],
       "applies_to": null,

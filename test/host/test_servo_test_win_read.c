@@ -79,7 +79,7 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
     CHECK(strstr(r, "Log:            the .CSV with this file's number, one "
                     "row per INA3221 window\n") != NULL);
     CHECK(strstr(r, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(r, "Current:        INA3221, shunt 100.0mOhm, range "
+    CHECK(strstr(r, "Current:        INA3221, shunt 100.0mΩ, range "
                     "1.638A\n") != NULL);
     CHECK(strstr(r, "Voltage:        INA3221, load side of the shunt\n")
           != NULL);

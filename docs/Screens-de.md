@@ -2165,8 +2165,8 @@ Netzteil wird in seinem eigenen 50-ms-Takt geführt und geloggt, auch während
 die Steuer-Task auf den Link wartet; ein IOmcu, der nicht antwortet,
 dünnt weder den Plot noch das Log des Netzteils aus.
 
-Das Modell ist eine Last von 6Ohm mit einem Stoß von 1,4A für 0,6s alle
-3s, hinter einem Quellwiderstand von 0,05Ohm. Bei den Startwerten, 6,00V
+Das Modell ist eine Last von 6Ω mit einem Stoß von 1,4A für 0,6s alle
+3s, hinter einem Quellwiderstand von 0,05Ω. Bei den Startwerten, 6,00V
 und 2,00A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
@@ -3355,7 +3355,7 @@ Auswahl springt vom letzten Wert auf den ersten.
   des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
   Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
   ebenfalls offen und nennt statt des Bereichs den Grund in der Warnfarbe:
-  `0 oder 5.0 bis 1000.0mOhm` für einen Shunt zwischen 0 und 5,0mΩ,
+  `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ,
   `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA,
   `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für
   Sensor-SDA, den der Bus nicht haben kann, und `Diesen GPIO hält der andere
@@ -3766,13 +3766,13 @@ Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
 ([Tasten und Liste](#tasten-und-liste)). 44,4mΩ vom Standardwert 100,0
 sind fünf Tasten, `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht.
 0 ist AUS; 0,1 bis 4,9 wird abgelehnt, und das Tastenfeld zeigt bis zur
-nächsten Taste `0 oder 5.0 bis 1000.0mOhm` statt des Bereichs.
+nächsten Taste `0 oder 5.0 bis 1000.0mΩ` statt des Bereichs.
 Eine Zeile LIMIT nimmt 0 (AUS) oder 10 bis 32767mA; 1 bis 9 wird mit
 `0 oder 10 bis 32767mA` abgelehnt.
 
 ![Das Tastenfeld von 0x40 CH1 Shunt](img/de/setup-sensors-keypad.png)
 
-![3mOhm abgelehnt, der Grund statt des Bereichs](img/de/setup-sensors-why.png)
+![3mΩ abgelehnt, der Grund statt des Bereichs](img/de/setup-sensors-why.png)
 
 Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 
@@ -3999,7 +3999,7 @@ GP13 als Voreinstellung ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)):
 
 | Einstellung | Werte | Voreinstellung | |
 | --- | --- | --- | --- |
-| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: ein Widerstand von 2,2kOhm von der Signalleitung zur Servoversorgung hebt die Leitung, und der IOmcu liest sie losgelassen. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1086,7ns für 100,0ns auf High und tastet es 113,3ns nach dem Loslassen ab |
+| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: ein Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung hebt die Leitung, und der IOmcu liest sie losgelassen. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1086,7ns für 100,0ns auf High und tastet es 113,3ns nach dem Loslassen ab |
 
 Sie wird wie die übrigen Zeilen im NVS gehalten; ein fehlender oder
 unlesbarer gespeicherter Wert ist PULL-UP. Das Panel schreibt sie bei jedem
@@ -4010,7 +4010,7 @@ Das Panel sendet selbst keine Hitec-Transaktion: die Einstellung erreicht
 die Leitungen, die die Prüfstandskonsole öffnet
 ([Die Prüfstandskonsole](BenchConsole-de.md)).
 
-Unmarkiert folgt die Hilfezeile dem Wert: `PULL-UP braucht 2.2kOhm an der
+Unmarkiert folgt die Hilfezeile dem Wert: `PULL-UP braucht 2.2kΩ an der
 Signalleitung` bei PULL-UP, `PRECHARGE: kein Pull-up an der Signalleitung`
 bei PRECHARGE.
 

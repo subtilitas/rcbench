@@ -238,6 +238,7 @@ TEST_CASE(every_drawn_string_has_its_glyphs)
             drawn("label", i, l, ui_setting_label((setting_id_t)i));
             drawn("help", i, l, ui_setting_help((setting_id_t)i));
             const setting_def_t *d = settings_def((setting_id_t)i);
+            drawn("unit", i, l, (d->unit != NULL) ? d->unit : "");
             for (int k = 0; k < d->option_count; ++k) {
                 drawn("option", i * 100 + k, l,
                       ui_setting_option((setting_id_t)i, k));
@@ -259,8 +260,45 @@ TEST_CASE(every_drawn_string_has_its_glyphs)
     CHECK(!in_face(&gfx_font_8x16, "GR\xc3" "E"));
     CHECK(in_face(&gfx_font_8x16, "OK?"));
     CHECK(in_face(&gfx_font_8x16, "GR\xc3\x96\xc3\x9f" "E"));
+    CHECK(in_text_faces("120\xce\xa9, 100.0m\xce\xa9, 2.2k\xce\xa9"));
     CHECK(in_face(&gfx_font_16x28, ""));
     CHECK(!in_text_faces("\xc3\xa9"));
+}
+
+/** @brief Fails the case when @p s spells the ohm in letters ("Ohm",
+ *  "ohm"), naming it by @p what, @p i and language @p l: the panel font's
+ *  O reads close to a zero, so "120Ohm" reads as "1200hm". */
+static void no_ohm_letters(const char *what, int i, int l, const char *s)
+{
+    if (strstr(s, "Ohm") != NULL || strstr(s, "ohm") != NULL) {
+        T_FAIL("%s %d in language %d spells the ohm in letters: \"%s\"",
+               what, i, l, s);
+    }
+}
+
+/** @brief Every string the panel draws or writes to a report writes the
+ *  ohm as the sign U+03A9 (120Ω, 100.0mΩ, 2.2kΩ): the
+ *  screens' strings, the settings' words and units and the servo test's
+ *  report lines, in every language. */
+TEST_CASE(every_string_writes_the_ohm_as_its_sign)
+{
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        for (int i = 0; i < TX_COUNT; ++i) {
+            no_ohm_letters("text", i, l, ui_tr_in((ui_lang_t)l,
+                                                 (ui_text_id_t)i));
+        }
+        ui_text_set_language((ui_lang_t)l);
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            const setting_def_t *d = settings_def((setting_id_t)i);
+            no_ohm_letters("label", i, l, ui_setting_label((setting_id_t)i));
+            no_ohm_letters("help", i, l, ui_setting_help((setting_id_t)i));
+            no_ohm_letters("unit", i, l, (d->unit != NULL) ? d->unit : "");
+        }
+        for (int i = 0; i < SERVO_STR_COUNT; ++i) {
+            no_ohm_letters("servo", i, l, ui_servo_str((servo_str_t)i));
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /** @brief Every SERVO_STR_ ID has English: an ID without its
@@ -846,6 +884,7 @@ int main(void)
     RUN(every_translation_converts_what_the_english_does);
     RUN(every_string_fits_its_declared_field);
     RUN(every_drawn_string_has_its_glyphs);
+    RUN(every_string_writes_the_ohm_as_its_sign);
     RUN(every_servo_word_has_its_english);
     RUN(the_servo_device_line_names_a_series_and_no_model);
     RUN(alerts_and_details_fit_their_buffers);

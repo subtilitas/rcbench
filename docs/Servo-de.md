@@ -385,7 +385,7 @@ Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT 1 GP13, 50Hz
 Pulsbereich:     Mitte 1500us, 1000-2000us
 Gesucht:         von 1500us bis 1000us und 2000us
-Strom:           INA3221 0x40 CH1, Fenster zu 50ms, Shunt 100.0mOhm
+Strom:           INA3221 0x40 CH1, Fenster zu 50ms, Shunt 100.0mΩ
 Suchregel:       Schritte zu 10us, 120ms warten, Mittel über 80ms; angelaufen über 1.8 x frei und +0.15A
 Schutz:          ein Messwert ab 3.0A, über 1.0A für 400ms, 200ms kein Fenster, 40s je Suche
 Dauer:           85.6s
@@ -1065,7 +1065,7 @@ modellierten Prüfstand der Host-Suite:
 ```
 Log:             die .CSV mit der Nummer dieser Datei, eine Zeile je Fenster des INA3221
 Netzteil:        PD mini
-Strom:           INA3221 0x40 CH1, Shunt 100.0mOhm, Bereich 1.638A
+Strom:           INA3221 0x40 CH1, Shunt 100.0mΩ, Bereich 1.638A
 Spannung:        INA3221 0x40 CH1, Lastseite des Shunts
 Shunt:           bis 0.164V fallen am Bereichsende an ihm ab; der Sollwert wird dafür nicht angehoben
 Messwerte:       20.0 /s Fenster vom INA3221 geschlossen, 20.0 /s erreichten den Test

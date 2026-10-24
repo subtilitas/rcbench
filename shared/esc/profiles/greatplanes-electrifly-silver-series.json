@@ -125,7 +125,7 @@
       "confirm_signal": "Two beeps 5 s after power-up at full throttle.",
       "steps": [
         "Throttle full, transmitter on, connect battery.",
-        "After 5 s: two beeps.",
+        "After 5s: two beeps.",
         "Throttle to off (towards you): two beeps.",
         "Throttle to full: two beeps (brake now on).",
         "Throttle to off: four beeps (armed)."

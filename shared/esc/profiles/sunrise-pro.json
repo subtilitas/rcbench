@@ -240,7 +240,7 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 5000 ms: 4 beeps, programming mode entered"
+        "Wait about 5000ms: 4 beeps, programming mode entered"
       ]
     },
     "announce": {

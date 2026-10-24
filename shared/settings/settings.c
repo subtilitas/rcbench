@@ -52,7 +52,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "pack_mah", "mAh",
         SET_CAT_ESC, SET_TYPE_INT, 0, 30000, 100, 5000, NULL, 0 },
     [SET_PACK_MOHM] = {
-        "pack_mohm", "mOhm",
+        "pack_mohm", "mΩ",
         SET_CAT_ESC, SET_TYPE_FLOAT, 0, 200, 1, 18, NULL, 0 },
     [SET_MOTOR_POLES] = {
         "motor_poles", "",
@@ -128,7 +128,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "ina228_adr", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(ina228_addr) },
     [SET_INA228_UOHM] = {
-        "ina228_uohm", "uOhm",
+        "ina228_uohm", "uΩ",
         SET_CAT_IFACE, SET_TYPE_INT, 50, 20000, 1, 200, NULL, 0 },
     [SET_INA228_MAX_A] = {
         "ina228_max_a", "A",

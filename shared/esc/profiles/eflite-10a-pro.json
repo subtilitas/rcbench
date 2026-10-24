@@ -1,7 +1,7 @@
 {
   "id": "eflite-10a-pro",
   "brand": "E-flite",
-  "family": "10 A Pro Brushless ESC (EFLA1010)",
+  "family": "10A Pro Brushless ESC (EFLA1010)",
   "models": [
     {
       "name": "10-Amp Pro Brushless ESC (EFLA1010)",
@@ -34,9 +34,9 @@
       "hold_ms": 5000,
       "confirm_signal": "Two sets of fast ringing tones after 5 s at full throttle.",
       "steps": [
-        "Battery disconnected, transmitter on, throttle full (above 1.7 ms).",
-        "Connect battery and hold full throttle for 5 s: two sets of fast tones.",
-        "Throttle to centre (1.4-1.6 ms): 1 beep = menu 1."
+        "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
+        "Connect battery and hold full throttle for 5s: two sets of fast tones.",
+        "Throttle to centre (1.4-1.6ms): 1 beep = menu 1."
       ]
     },
     "announce": {
@@ -72,16 +72,16 @@
       "values": [
         {
           "number": 1,
-          "name": "3S Li-Po cutoff (9 V), stick full throttle",
+          "name": "3S Li-Po cutoff (9V), stick full throttle",
           "default": true
         },
         {
           "number": 2,
-          "name": "2S Li-Po or Ni-Cd/Ni-MH cutoff (6 V), stick idle"
+          "name": "2S Li-Po or Ni-Cd/Ni-MH cutoff (6V), stick idle"
         },
         {
           "number": 3,
-          "name": "70% Smart Cut soft cutoff, hold full throttle 7 s until 7 beeps"
+          "name": "70% Smart Cut soft cutoff, hold full throttle 7s until 7 beeps"
         }
       ],
       "applies_to": null,
@@ -131,7 +131,7 @@
       "values": [
         {
           "number": 1,
-          "name": "1.1-1.9 ms, stick full throttle"
+          "name": "1.1-1.9ms, stick full throttle"
         },
         {
           "number": 2,

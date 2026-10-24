@@ -152,7 +152,7 @@ power, in the order a run meets it. Absent or null: none.
 "manual": [
   {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
    "source": "Kontronik_Beat.pdf p.5"},
-  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+  {"when": "before_menu", "action": "Pull the jumper off after 2s or the tone sequence."}
 ]
 ```
 
@@ -194,7 +194,17 @@ regenerate the C file and check it:
 ```sh
 python3 tools/gen_esc_profiles.py
 python3 tools/gen_esc_profiles.py --check
+python3 tools/check_units.py --check
 ```
+
+The texts the panel carries write a number and its unit together: `2s`,
+`1.2-1.8ms`, `3.0V per cell`, `8kHz`. A word after a number keeps its space
+(`3 beeps`). These are `brand`, `family`, `automatable_note`, the entry's
+`steps`, a model's `name`, an item's `name` and `applies_when`, a value's
+`name` and a manual step's `action` and `action_de`, the strings
+`gen_esc_profiles.py` compiles into the C. `check_units.py` holds them; the
+research fields (`sources`, `notes`, `unknowns`, the descriptions, a model's
+`spec_source` and `firmware_note`) are not held.
 
 CI (continuous integration) runs `--check`. The host suite parses every file
 with the panel's reader and compares the result with the generated table,

@@ -10,8 +10,8 @@
  * MOTOR & ESC and SUPPLY keypads set it.  A value the - and + keys never
  * reach is refused: the keypad stays open and shows, in the warning
  * colour and in place of the range, why (ui_setting_keypad_why()).  That
- * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9mOhm:
- * "0 or 5.0 to 1000.0mOhm"; a SENSORS limit of 1 to 9mA: "0 or 10 to
+ * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9mΩ:
+ * "0 or 5.0 to 1000.0mΩ"; a SENSORS limit of 1 to 9mA: "0 or 10 to
  * 32767mA"), a Sensor SDA pin settings_sense_sda_valid()
  * refuses (the pins it takes, listed), and the GPIO the other PD mini pin
  * holds.  The next key brings the range back.
