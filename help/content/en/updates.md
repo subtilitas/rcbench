@@ -60,7 +60,7 @@ On both settings a release is offered only when it is of the panel's release lin
 | `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` | the running build's version does not parse; nothing is offered |
 | `Unexpected answer from GitHub.` | the `Location`, or with TESTING the answer, is missing or out of form; a second line says which |
 | `Wi-Fi switched off: bench ARMED.` and the like | ARMED, the supply output, a log run or STOP ended the check |
-| `Stopped: ...` | WI-FI, the IOmcu's update or CANCEL ended the check |
+| `Stopped: ...` | WI-FI, the IOmcu's update or CANCEL ended the check; `Stopped: the WI-FI screen is using Wi-Fi.` clears once WI-FI's session has ended and the radio is off |
 
 ![A check that found no answer](view:updates-failed)
 
@@ -91,7 +91,7 @@ With TESTING, when the highest of the 10 newest releases is past the line, the h
 
 ## The download
 
-The 2s hold is the one confirmation: no question follows. The panel joins the home network within 30s and fetches `SHA256SUMS` and `rcbench-panel-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
+The 2s hold is the one confirmation: no question follows. The panel joins the home network within 30s and fetches `SHA256SUMS` and `rcbench-panel-p4-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
 
 1. `SHA256SUMS` is 4096 bytes at most and holds exactly one line for the image.
 2. The image announces its size first; an image without a size, of 0 bytes or over 8,126,464 bytes is refused. It is kept in PSRAM (pseudo-static random-access memory).
@@ -133,8 +133,9 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 ## Current limitations
 
 - How long the check and the download take on a real network is not measured.
+- A first DNS (Domain Name System) server of the home network that does not answer delays each name lookup by about 7s after a join, out of the check's 30s: lwIP asks that server 4 times, up to 7s, before the next.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
 - The release list holds the 10 newest releases by date (`per_page=10`). A 0.22.x patch release with 10 or more releases published after it is not found, on either setting.
 - No certificate's dates are checked: mbedTLS is built without its expiry check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
-- A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.
+- A release whose assets are not named `rcbench-panel-p4-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

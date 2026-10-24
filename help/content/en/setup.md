@@ -113,7 +113,7 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Time zone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN | the zone file dates are written and shown in, daylight saving included |
 | Dim after | 0 to 60min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
-| Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
+| Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on a bus of its own, IO30 and IO31 of header P3 (I2C: Inter-Integrated Circuit), turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob scale | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 
 The backlight is on while the panel runs. No setting switches it.
@@ -122,7 +122,7 @@ Screen rotation turns the picture as each frame goes out, through the ESP32-P4's
 
 ![Screen rotation at 180° while ARMED](view:setup-rotation)
 
-The panel has no RTC (real-time clock) chip. Its clock starts unset at each power-on and is set by NTP (Network Time Protocol): each join of the home network asks `pool.ntp.org` once, for at most 30000ms. A join that ends before the answer keeps the radio up for it, 30000ms at most; ARM, STOP, the supply, a log run and an install take the radio down at once. A software restart keeps the clock. FAT stores a file's time as local time at the moment of writing: a later change of Time zone does not move the times of files already on the card. Until an answer, files the panel writes are dated 1980; FILES INFO reads such a date as `not known`. The access point asks no time server.
+The panel has no RTC (real-time clock) chip. Its clock starts unset at each power-on and is set by NTP (Network Time Protocol): each join of the home network asks `pool.ntp.org` once, for at most 30000ms. A join that ends before the answer keeps the radio up for it, 30000ms at most; ARM, STOP, the supply, a log run and an install take the radio down at once. Current limitation: a first DNS (Domain Name System) server of the home network that does not answer delays the request by about 7s after each join. A software restart keeps the clock. FAT stores a file's time as local time at the moment of writing: a later change of Time zone does not move the times of files already on the card. Until an answer, files the panel writes are dated 1980; FILES INFO reads such a date as `not known`. The access point asks no time server.
 
 ![Time zone set to LOS ANGELES](view:setup-time-zone)
 
@@ -136,7 +136,7 @@ The panel has no RTC (real-time clock) chip. Its clock starts unset at each powe
 - A finger on the throttle track or the SERVO dial owns the value while it is down.
 - The sensor is read every 10ms. A step over 90deg between two readings is dropped.
 
-The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it, where the board's CH422G I/O expander and GT911 touch controller answer, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
+The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of the board is on its bus. The panel never addresses 0x14 or 0x5D for it, where the GT911 touch controller answers on the touch bus, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
 
 ## SD CARD
 

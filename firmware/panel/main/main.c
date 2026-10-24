@@ -451,6 +451,13 @@ uint32_t           s_lost_notice_seq;
 atomic_uint s_loss_gen;
 atomic_uint s_arm_ack;
 
+/**
+ * @brief The render loop's progress: moved once a pass of panel_frame_loop()
+ *        and once per card read the loop makes on LOGS (panel_card.c), read
+ *        by the control task's watchdog (frame_watch.h, control_pump()).
+ */
+atomic_uint s_render_progress;
+
 /*
  * The arm in flight, control task only.  An arm's two stamps are kept from
  * the moment it is taken, because the exchanges that apply it can take two

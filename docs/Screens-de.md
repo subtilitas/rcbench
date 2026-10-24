@@ -3110,7 +3110,7 @@ der Sprache des Panels. Sie hat zwei Teile.
 
 **Panel-Firmware.** Die installierte Version, eine Dateiauswahl, Hochladen
 mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die Datei
-ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei, die größer
+ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei, die größer
 als der Slot des Panels ist, 8 126 464 Bytes, wird abgewiesen, bevor ein
 Byte gesendet ist. Das Panel prüft das ganze Image, bevor es etwas fragt:
 den ESP-Image-Header für den ESP32-P4 (Chip-ID 0x0012), den Projektnamen `rcbench-panel`
@@ -3512,6 +3512,18 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   Verbindung, wie sie war. Wie lange eine Antwort in einem echten Netz
   braucht, ist nicht gemessen; im Heimnetz des Prüfstands kam eine 7,2s
   nach der Adresse.
+- Eine GitHub-Anfrage, die noch auf ihre Namensauflösung wartet, hält das
+  Funkteil nicht an: Das Funkteil wartet höchstens 1,5s auf die Anfrage,
+  geht dann aus, und die Auflösung endet, wenn lwIP sie aufgibt. Bis dahin
+  startet keine neue Suche und kein Download.
+- Nach jeder Verbindung nennt die Konsole die DNS-Server (Domain Name
+  System), die das Heimnetz vergeben hat, in der Reihenfolge, in der lwIP
+  sie fragt, zum Beispiel `wifi: dns 192.0.2.53, 192.0.2.1`.
+- Aktuelle Einschränkung: Ein erster DNS-Server, der nicht antwortet,
+  verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, die der
+  NTP-Anfrage wie die der Release-Prüfung. lwIP fragt einen Server bei 0s,
+  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v5.5.5 bietet keinen der
+  beiden Werte in seiner Konfiguration an.
 - Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
   die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -3531,8 +3543,8 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
 
 ### PANEL: der Drehknopf
 
-Ein magnetischer Winkelsensor MT6701 unter 0x06 am I2C-Anschluss des Panels
-(I2C: Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
+Ein magnetischer Winkelsensor MT6701 unter 0x06 an einem eigenen Bus, IO30 (SDA) und
+IO31 (SCL) des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Regler des obersten Prüfstandsbildschirms:
 das Gas auf MOTOR & ESC, das Horn auf SERVO. Verdrahtung:
 [Bauen](Building-de.md#verdrahtung-des-drehknopfs). Andere Bildschirme
 ignorieren ihn.
@@ -3589,11 +3601,11 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   in SAFE nichts und wird nicht aufgehoben; das Schalten auf SAFE setzt den
   Schieberegler auf 0%, und die nächste Drehung nach einem ARM zählt von
   dort.
-- Das Panel legt weder den Knopf noch ein anderes selbst angeschlossenes
-  Gerät auf eine Adresse, auf der die Platine an diesem Bus antwortet, 0x14,
-  0x20 bis 0x27, 0x30 bis 0x3F und 0x5D, oder auf eine, die die
-  I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F. Bei 0x20 bis
-  0x27 und 0x30 bis 0x3F erreicht ein Zugriff den Expander CH422G als Befehl.
+- Der Bus des Knopfs ist der zweite I2C-Controller des ESP32-P4, und nichts
+  sonst von der Platine liegt an ihm. Das Panel legt weder den Knopf noch ein
+  anderes selbst angeschlossenes Gerät auf 0x14 oder 0x5D, die beiden
+  Adressen des Touch-Controllers GT911 am Touch-Bus, oder auf eine, die die
+  I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F.
   Ohne Sensor sendet `Drehknopf` EIN alle 100ms eine unbestätigte
   Adressprobe an 0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
   nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
@@ -4310,15 +4322,14 @@ sich nicht lesen lässt, schreibt `?` in seine Spalten statt einer anders
 geformten Zeile: die Ablesung, die einen Zeitstempel am nötigsten hat, ist
 genau die, bei der der Controller nicht geantwortet hat.
 
-Die Karte ist dafür da, weil die Konsole des Panels nicht auf jeder Platine
-erreichbar ist. Die native USB-Buchse führt GPIO19 und GPIO20, die der
-Multiplexer etwa eine Sekunde nach dem Start an CAN übergibt — sie ist also
-weg, bevor ein Fehler am Prüfstand passiert. Die gebrückte Buchse liegt an
-UART0 und trägt die Konsole normalerweise durchgehend; womit sie verbunden
-ist, ist aber umschaltbar: ein Schiebeschalter neben den Tastern BOOT und
-RESET ist mit UART1 und UART2 beschriftet. In einer Stellung meldet sich der
-Bridge-Chip an und lässt in keine Richtung etwas durch, und dann hat das Panel
-gar keine Konsole.
+Die Karte ist dafür da, weil ein Fehler am Prüfstand auftreten kann, ohne dass
+eine Konsole angeschlossen ist. Die Konsole ist UART0 (Universal Asynchronous
+Receiver-Transmitter 0) mit USB-Serial-JTAG (die eingebaute USB-Serial- und
+Debug-Bridge des ESP32-P4) als zweiter Konsole, und welche der beiden
+USB-C-Buchsen der Platine welche erreicht, ist nicht verfolgt. Das CAN des
+Links ist das TWAI (Two-Wire Automotive Interface) des ESP32-P4 an GPIO21
+(Empfang) und GPIO22 (Senden), zu einem Transceiver TJA1051T/3; keiner der
+beiden Pins führt etwas anderes.
 
 [Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
 bedeutet.
@@ -4465,6 +4476,11 @@ es zur Release-Linie des Panels gehört und neuer als der laufende Build ist.
 Die Linie des ESP32-P4-Panels enthält jedes Release
 ([Die Release-Linie](#die-release-linie)).
 
+Aktuelle Einschränkung beider Einstellungen: Ein erster DNS-Server (Domain
+Name System) des Heimnetzes, der nicht antwortet, verzögert jede
+Namensauflösung um etwa 7s, von den 30s der Suche
+([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)).
+
 Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
 API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
 die Geräte hinter einer Adresse teilen sie sich. Jede Suche ist eine
@@ -4476,7 +4492,8 @@ ist.
 
 Die Karte zeigt den Schritt (`Verbindung mit Workshop 2.4 wird aufgebaut`, `GitHub wird geprüft.`)
 und die verbleibenden Sekunden (`noch 26s`). Das Ergebnis bleibt auf der
-Karte bis zur nächsten Suche:
+Karte bis zur nächsten Suche; eine für WI-FI abgebrochene Suche verschwindet,
+sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist:
 
 ![Ein neueres Release](img/de/updates-newer.png)
 ![Aktuell](img/de/updates-current.png)
@@ -4495,7 +4512,7 @@ Karte bis zur nächsten Suche:
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.22.1.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`STABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
-| `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
+| `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. Die Zeile verschwindet, sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist. |
 | `Abgebrochen: IOmcu-Update gestartet.` | Das Update des IOmcu begann. |
 | `Abgebrochen.` | ABBRECHEN. |
 | `WLAN konnte nicht starten.` | Der Funk kam nicht hoch. |
@@ -4673,7 +4690,7 @@ sie nichts. Ihr Ergebnis steht auf UPDATES.
 Das Halten über 2s ist die einzige Bestätigung: Nach dem Download folgt
 keine Frage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz
 und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
-`rcbench-panel-v0.20.0.bin`. GitHub beantwortet beide mit einem Redirect zu
+`rcbench-panel-p4-v0.23.0.bin`. GitHub beantwortet beide mit einem Redirect zu
 seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 `github.com`, `release-assets.githubusercontent.com` und
 `objects.githubusercontent.com`. Dann:
@@ -4727,7 +4744,7 @@ Aktuelle Einschränkungen:
 - Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine
   Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von
   ESP-IDF).
-- Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und
+- Ein Release, dessen Dateien nicht `rcbench-panel-p4-vX.Y.Z.bin` und
   `SHA256SUMS` heißen, lässt sich nicht laden.
 
 ## Outputs

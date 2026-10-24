@@ -85,7 +85,12 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
 | Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang nach `BENCH/LOGS` aufgezeichnet, Tests nach `USER/LOGS` (die vorgegebenen Ordner), beides abschaltbar und einstellbar unter SETUP > SD-KARTE | gebaut |
+| Files | die SD-Karte (Secure Digital) in zwei Panes: Dateien kopieren, verschieben, umbenennen und löschen, Ordner und leere Textdateien anlegen, Dateiinformation; schreibt nur, solange der Prüfstand auf SAFE steht und keine Logdatei offen ist, und verweigert die eigenen Ordner des Prüfstands und die Dateien, die der Logger schreibt | Bildschirm gebaut und auf dem Host getestet; öffnet aus Logs und aus Setup |
+| WLAN | das Funkmodul des Panels, nur an, solange der Bildschirm offen ist und für Update-Prüfungen: ein eigener Access Point (WPA2 (Wi-Fi Protected Access 2), 2,4GHz Kanal 6, 1 Client) oder ein gemerktes Heimnetz (WPA2 oder WPA3 personal); eine Browser-Seite lädt jede Datei der Karte oder die ganze Karte als eine ZIP-Datei herunter und lädt ein Panel-Firmware-Image hoch, das ein 2s-Hold am Panel installiert | gebaut und auf dem Host getestet; ein Download von 16MiB lief in einem Heimnetz mit 688-757kB/s; Reichweite nicht gemessen |
+| Updates | fragt GitHub nach dem neuesten Panel-Release (STABLE oder TESTING), erinnert einmal je Start, lädt es über HTTPS herunter und installiert es auf einen 2s-Hold; installiert das IOmcu-Image, das das Panel trägt, auf einen 2s-Hold auf dem IOmcu | gebaut und auf dem Host getestet; die Dauer einer Prüfung und eines Downloads in einem echten Netz ist nicht gemessen |
+| Outputs | die an Pins des IOmcu gebundenen Protokolle und die Pins, die jedes treibt, hinter der Kachel OUTPUTS; PICK A PIN zeichnet die IOmcu-Platine maßstäblich und zeigt, wohin die Leitung eines Pins gehört | gebaut und auf dem Host getestet |
 | Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut |
+| Setup > Panel | `Zeitzone` (10 Zonen, standardmäßig BERLIN) bestimmt die Zone, in der Dateidaten geschrieben und gezeigt werden. Die Uhr startet bei jedem Einschalten ungestellt und wird bei jedem Beitritt zum Heimnetz einmal binnen 30000ms per SNTP (Simple Network Time Protocol) von `pool.ntp.org` gestellt. `Bilddrehung` dreht Bild und Touch um 180° | gebaut und auf dem Host getestet; die Platine hat keinen RTC-Chip (Real-Time Clock); die Zeit eines gedrehten Flips auf der Platine ist nicht gemessen |
 
 ## Bauen
 
@@ -98,7 +103,7 @@ ctest --test-dir test/host/build --output-on-failure
 ```
 
 Die Panel-Firmware braucht ESP-IDF (Espressif Internet-of-Things Development
-Framework) v5.4 oder neuer, die IOmcu-Firmware pico-sdk 2.0 oder neuer
+Framework) v5.5.5 oder neuer auf der Linie v5.5, die IOmcu-Firmware pico-sdk 2.0 oder neuer
 (SDK, Software Development Kit).
 [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) beschreibt
 Toolchains, Befehle und die CI-Gates (Continuous Integration).
@@ -132,7 +137,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9%**, 55 617 von 56 824 Zeilen in 246 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9%**, 55 645 von 56 852 Zeilen in 247 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

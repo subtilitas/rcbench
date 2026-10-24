@@ -2817,7 +2817,7 @@ panel's language. It has two parts.
 
 **Panel firmware.** The version installed, a file picker, Upload with a
 progress bar, and the panel's answer as a line of text. The file is the
-release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than the panel's
+release asset `rcbench-panel-p4-vX.Y.Z.bin`. A file larger than the panel's
 slot, 8,126,464 bytes, is refused before a byte is sent. The panel checks
 the whole image before it asks anything: the ESP image header for the
 ESP32-P4 (chip ID 0x0012), the application's project name `rcbench-panel`, a version of the
@@ -3177,6 +3177,17 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   stays as it was until the next join. How long an answer takes on a real
   network is not measured; on the bench's home network one came 7.2s after
   the address.
+- A GitHub request still waiting on its name lookup does not hold the
+  radio: the radio waits 1.5s at most for the request, then goes off, and
+  the lookup ends when lwIP gives up on it. No new check or download
+  starts before that.
+- After each join the console names the DNS (Domain Name System) servers
+  the home network gave, in the order lwIP asks them, for example
+  `wifi: dns 192.0.2.53, 192.0.2.1`.
+- Current limitation: a first DNS server that does not answer delays every
+  name lookup after a join by about 7s, the NTP request's and the release
+  check's alike. lwIP tries a server at 0s, 1s, 2s and 4s and asks the
+  next at 7s; ESP-IDF v5.5.5 offers neither figure in its configuration.
 - An answer sets the clock and writes one console line: the server, the
   time set in UTC and how far it moved the clock, for example
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -3195,8 +3206,8 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
 
 ### PANEL: the rotary knob
 
-An MT6701 magnetic angle sensor at 0x06 on the panel's I2C terminal (I2C:
-Inter-Integrated Circuit) turns the slider of the bench screen on top: the
+An MT6701 magnetic angle sensor at 0x06 on a bus of its own, IO30 (SDA) and
+IO31 (SCL) of header P3 (I2C: Inter-Integrated Circuit), turns the slider of the bench screen on top: the
 throttle on MOTOR & ESC, the horn on SERVO. Wiring:
 [Building](Building.md#rotary-knob-wiring). Other screens ignore it.
 
@@ -3247,14 +3258,14 @@ across a third of its travel from -travel to +travel.
   MOTOR & ESC a turn while the bench is SAFE moves nothing and is not
   kept either; the switch to SAFE returns the slider to 0%, and the next turn after
   a switch to ARMED counts from there.
-- The panel never puts the knob, or another device of the builder's, at an
-  address the board answers at on that bus, 0x14, 0x20 to 0x27, 0x30 to 0x3F
-  and 0x5D, or at one the I2C specification reserves, 0x00 to 0x03 and 0x78
-  to 0x7F. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
-  CH422G expander as a command. With no sensor fitted, Rotary knob ON sends
-  one unacknowledged probe to 0x06 every 100ms. In the host tests' model of
-  the bus that changes nothing else. On the panel it is not measured: 0x00
-  to 0x07 have not been scanned on this board.
+- The knob's bus is the ESP32-P4's second I2C controller, and nothing else
+  of the board is on it. The panel never puts the knob, or another device of
+  the builder's, at 0x14 or 0x5D, the GT911 touch controller's two addresses
+  on the touch bus, or at one the I2C specification reserves, 0x00 to 0x03
+  and 0x78 to 0x7F. With no sensor fitted, Rotary knob ON sends one
+  unacknowledged probe to 0x06 every 100ms. In the host tests' model of the
+  bus that changes nothing else. On the panel it is not measured: 0x00 to
+  0x07 have not been scanned on this board.
 - The knob is not measured on hardware: its direction, its noise and its
   behaviour with no magnet over it.
 
@@ -3910,14 +3921,13 @@ over the total since boot, and an unreadable controller writes `?` in its
 columns rather than a differently shaped line: the reading that most needs a
 timestamp is the one where the controller would not answer.
 
-The card is there because the panel's console is not reachable on every board.
-The native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
-CAN about a second into boot, so it is gone before a bench fault happens. The
-bridged socket is on UART0 and normally carries the console right through, but
-what it is connected to is switchable: a slide switch beside the BOOT and
-RESET buttons is marked UART1 and UART2. In one position the bridge chip
-enumerates and passes nothing in either direction, and the panel then has no
-console at all.
+The card is there because a bench fault can happen with no console attached.
+The console is UART0 (universal asynchronous receiver-transmitter 0) with
+USB-Serial-JTAG (the ESP32-P4's built-in USB serial and debug bridge) as
+secondary, and which of the board's two USB-C sockets reaches which is not
+traced. The link's CAN is the ESP32-P4's TWAI (Two-Wire Automotive Interface)
+on GPIO21 (receive) and GPIO22 (transmit), to a TJA1051T/3 transceiver; neither
+pin carries anything else.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
@@ -4053,6 +4063,11 @@ request ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). On e
 the panel's release line and newer than the running build. The ESP32-P4
 panel's line holds every release ([The release line](#the-release-line)).
 
+Current limitation of both settings: a first DNS (Domain Name System)
+server of the home network that does not answer delays each name lookup by
+about 7s, out of the check's 30s
+([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)).
+
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
 devices behind one address share them. Each check is one request, and the
@@ -4063,7 +4078,8 @@ seen, however high its version.
 
 The card shows the step (`Connecting to Workshop 2.4`, `Checking GitHub.`) and the
 seconds left (`26s left`). The result stays on the card until the next
-check:
+check; a check stopped for WI-FI clears once WI-FI's session has ended and
+the radio is off:
 
 ![A newer release](img/updates-newer.png)
 ![Up to date](img/updates-current.png)
@@ -4082,7 +4098,7 @@ check:
 | `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.22.1.` | The running build's version does not parse. No release is offered. |
 | `Unexpected answer from GitHub.` | The `Location` (`STABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
-| `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
+| `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. The line clears once WI-FI's session has ended and the radio is off. |
 | `Stopped: the IOmcu update has started.` | The IOmcu's update began. |
 | `Cancelled.` | CANCEL. |
 | `Wi-Fi could not start.` | The radio did not come up. |
@@ -4253,7 +4269,7 @@ Its result is on UPDATES.
 
 The 2s hold is the one confirmation: no question follows the download. The
 panel joins the home network within 30s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-v0.20.0.bin`.
+release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.23.0.bin`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
@@ -4304,7 +4320,7 @@ Current limitations:
   measured.
 - No certificate's dates are checked: mbedTLS is built without its expiry
   check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
-- A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and
+- A release whose assets are not named `rcbench-panel-p4-vX.Y.Z.bin` and
   `SHA256SUMS` cannot be downloaded.
 
 ## Outputs

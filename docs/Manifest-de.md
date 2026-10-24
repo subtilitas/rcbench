@@ -25,11 +25,11 @@ Die ursprüngliche Anforderungsliste:
 
 | Anforderung | Umsetzung |
 | --- | --- |
-| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-IOmcu, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. |
+| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-IOmcu, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der Touch-Bus des Panels (GPIO7, GPIO8) trägt den Touch-Controller, und der Drehknopf hat einen eigenen I²C-Bus. |
 | ESC-Programmierer (ESCs mit AM32- und BLHeli_S-Firmware gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) |
 | Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am IOmcu, auf einer gemeinsamen Zeitbasis abgetastet |
 | Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll |
-| Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden |
+| Servoprogrammierung | Servos von KST und Chaservo: ein Programmierer auf dem SERVO-Bildschirm mit Backup, Limitprüfung und Schreibschalter, über den Programmierport des IOmcu ([Servo-Programmierer](ServoProgrammer-de.md)). Servos von Hitec: das Drahtprotokoll und der Programmierport sind gebaut, eine Sitzung am Panel nicht ([Der Programmierport für Servos von Hitec](LinkHitec-de.md)) |
 | Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert |
 
 Der Stand jeder Anforderung steht in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

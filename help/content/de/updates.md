@@ -60,7 +60,7 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` | die Version des laufenden Builds ist nicht lesbar; nichts wird angeboten |
 | `Unerwartete Antwort von GitHub.` | der `Location`-Header, oder mit TESTING die Antwort, fehlt oder ist ungültig; eine zweite Zeile sagt, was |
 | `WLAN ausgeschaltet: Prüfstand ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
-| `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche |
+| `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche; `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` verschwindet, sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist |
 
 ![Eine Suche ohne Antwort](view:updates-failed)
 
@@ -91,7 +91,7 @@ Liegt mit TESTING das höchste der 10 neuesten Releases hinter der Linie, wird a
 
 ## Der Download
 
-Das Halten über 2s ist die einzige Bestätigung: Es folgt keine Frage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz und lädt `SHA256SUMS` und `rcbench-panel-vX.Y.Z.bin` des Release über HTTPS. Es folgt höchstens 3 Redirects, nur zu `github.com`, `release-assets.githubusercontent.com` und `objects.githubusercontent.com`.
+Das Halten über 2s ist die einzige Bestätigung: Es folgt keine Frage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz und lädt `SHA256SUMS` und `rcbench-panel-p4-vX.Y.Z.bin` des Release über HTTPS. Es folgt höchstens 3 Redirects, nur zu `github.com`, `release-assets.githubusercontent.com` und `objects.githubusercontent.com`.
 
 1. `SHA256SUMS` hat höchstens 4096 Bytes und genau eine Zeile für das Image.
 2. Das Image kündigt zuerst seine Größe an; ein Image ohne Größe, mit 0 Bytes oder über 8.126.464 Bytes wird abgelehnt. Es liegt im PSRAM (Pseudo-Static Random-Access Memory).
@@ -133,8 +133,9 @@ Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum
 ## Aktuelle Einschränkungen
 
 - Wie lange Suche und Download in einem echten Netz dauern, ist nicht gemessen.
+- Ein erster DNS-Server (Domain Name System) des Heimnetzes, der nicht antwortet, verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, von den 30s der Suche: lwIP fragt diesen Server 4-mal, bis zu 7s lang, vor dem nächsten.
 - TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
 - Die Release-Liste enthält die 10 nach Datum neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 - Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von ESP-IDF).
-- Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.
+- Ein Release, dessen Dateien nicht `rcbench-panel-p4-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.
