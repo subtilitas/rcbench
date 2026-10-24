@@ -23,6 +23,12 @@ history is in git.
   1980 stamp, an unset clock's, reads `not known` on FILES INFO and leaves
   the Wi-Fi page's time cell empty
   ([Building](docs/Building.md#the-panels-clock)).
+- The panel's RTC timer, which keeps the clock across a software restart,
+  counts the board's 32.768kHz crystal Y3 instead of the internal RC
+  oscillator, which was 4.357s off after about 2h. A crystal that does not
+  start leaves the panel on the RC. Each start logs the slow clock, e.g.
+  `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`
+  ([Building](docs/Building.md#the-rtc-slow-clock)).
 - A SERVO run's log, `SERVOnnn.CSV`, has `pulse (us)` and `angle (deg)`
   before `source`: the pulse COMMANDED shows and the AS5600 angle MEASURED
   shows, empty without one. While an INA3221 channel is the servo rail's
