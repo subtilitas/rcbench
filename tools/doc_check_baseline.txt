@@ -351,7 +351,6 @@ firmware/panel/components/wifi_access/include/wifi_access.h: warning: Member up_
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: Member w (variable) of struct wifi_access_state_t is not documented.
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: Member wifi_access_get(wifi_access_state_t *out) (function) of file wifi_access.h is not documented.
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: Member wifi_access_set_code(bool on) (function) of file wifi_access.h is not documented.
-firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_close are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_fetch_get are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_fetch_start are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_fetch_tick are not documented
@@ -361,7 +360,6 @@ firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_set_german are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_start are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_take are not documented
-firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_tick are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_down is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_fetch_start is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_home is not documented
@@ -369,7 +367,6 @@ firmware/panel/components/wifi_access/include/wifi_access.h: warning: return typ
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_save_net is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_start is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_take is not documented
-firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_tick is not documented
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound bufs_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound card_dir_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound http_ctx_t is not documented.

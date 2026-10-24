@@ -161,3 +161,16 @@ wall_ntp_do_t wall_ntp_step(wall_ntp_t *n, bool joined, bool answered,
         return WALL_NTP_NONE;
     }
 }
+
+bool wall_ntp_holds(const wall_ntp_t *n, bool lingers, uint32_t now_ms)
+{
+    return n != NULL && lingers && n->state == WALL_NTP_ASKING
+           && (uint32_t)(now_ms - n->start_ms) < WALL_NTP_TIMEOUT_MS;
+}
+
+wall_ntp_do_t wall_ntp_hold_step(wall_ntp_t *n, bool joined, bool lingers,
+                                 bool answered, uint32_t now_ms)
+{
+    const bool asking = n != NULL && n->state == WALL_NTP_ASKING;
+    return wall_ntp_step(n, joined || (lingers && asking), answered, now_ms);
+}

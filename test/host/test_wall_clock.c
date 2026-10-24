@@ -2,7 +2,8 @@
  * The panel's wall clock (shared/clock): whether the clock holds a real
  * date, whether a file's FAT stamp says anything, the time zones SETUP
  * offers and their row in the settings model, the console line of an NTP
- * answer, and the one request a join makes.
+ * answer, the one request a join makes, and the radio that request holds
+ * up past a session that lingers (wa_session.h, wa_lingers()).
  *
  * The panel's end -- esp_netif_sntp, setenv("TZ") and the Wi-Fi worker
  * (firmware/panel/components/wifi_access/wifi_ntp.c, main/panel_settings.c)
@@ -16,6 +17,7 @@
 #include <time.h>
 
 #include "settings_rig.h"
+#include "wa_session.h"
 #include "wall_clock.h"
 
 /* ------------------------------------------------------------ helpers */
@@ -415,6 +417,149 @@ TEST_CASE(a_join_that_ends_first_stops_the_request)
     CHECK_EQ(wall_ntp_step(&n, true, false, 9400u), WALL_NTP_START);
 }
 
+/* ------------------------------------------------- the radio's hold */
+
+/* The secrets' source of the sessions below: any word does. */
+static uint32_t any_rand(void *ctx)
+{
+    (void)ctx;
+    return 0x03020100u;
+}
+
+/*
+ * A release check joined at @p t0 and its request started there, as the
+ * Wi-Fi worker starts it; then the check's own end at @p end_ms, which
+ * switches the session off and lets it linger.
+ */
+static void check_ends_asking(wa_t *w, wall_ntp_t *n, uint32_t t0,
+                              uint32_t end_ms)
+{
+    wa_init(w);
+    memset(n, 0, sizeof(*n));
+    CHECK_EQ(wa_start(w, WA_MODE_FETCH, WA_OFF_NONE, t0, any_rand, NULL),
+             WA_OFF_NONE);
+    wa_on_address(w, 1u, t0);
+    CHECK_EQ(wall_ntp_hold_step(n, w->state == WA_ST_JOINED, wa_lingers(w),
+                                false, t0),
+             WALL_NTP_START);
+    CHECK(!wall_ntp_holds(n, wa_lingers(w), t0));
+    wa_close(w, WA_OFF_ASKED);
+    CHECK(!wa_radio(w));
+    CHECK(wa_lingers(w));
+    CHECK_EQ(wall_ntp_hold_step(n, false, wa_lingers(w), false, end_ms),
+             WALL_NTP_NONE);
+    CHECK(wall_ntp_holds(n, wa_lingers(w), end_ms));
+}
+
+TEST_CASE(an_answer_at_29900ms_ends_the_hold_with_the_clock_set)
+{
+    wa_t w;
+    wall_ntp_t n;
+    /* The station log of #577: the answer 7200ms after the address, the
+     * check's end 380ms later. */
+    check_ends_asking(&w, &n, 12181u, 19000u);
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, false, 12181u + 29900u),
+             WALL_NTP_NONE);
+    CHECK(wall_ntp_holds(&n, true, 12181u + 29900u));
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, true, 12181u + 29900u),
+             WALL_NTP_SET);
+    CHECK(!wall_ntp_holds(&n, true, 12181u + 29900u));
+    /* The linger left over holds nothing more, and starts nothing. */
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, false, 12181u + 29950u),
+             WALL_NTP_NONE);
+    CHECK_EQ(n.state, WALL_NTP_IDLE);
+    CHECK(!wall_ntp_holds(&n, true, 12181u + 29950u));
+}
+
+TEST_CASE(the_hold_ends_at_30000ms_unanswered_across_the_wrap)
+{
+    wa_t w;
+    wall_ntp_t n;
+    const uint32_t t0 = 0xFFFFF000u;   /* 4096ms before the wrap */
+    check_ends_asking(&w, &n, t0, t0 + 8000u);
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, false,
+                                t0 + WALL_NTP_TIMEOUT_MS - 1u),
+             WALL_NTP_NONE);
+    CHECK(wall_ntp_holds(&n, true, t0 + WALL_NTP_TIMEOUT_MS - 1u));
+    /* At 30000ms the hold is over before the step gives up. */
+    CHECK(!wall_ntp_holds(&n, true, t0 + WALL_NTP_TIMEOUT_MS));
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, false,
+                                t0 + WALL_NTP_TIMEOUT_MS),
+             WALL_NTP_GAVE_UP);
+    CHECK(!wall_ntp_holds(&n, true, t0 + WALL_NTP_TIMEOUT_MS));
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, true, t0 + 40000u),
+             WALL_NTP_NONE);
+    CHECK(!wall_ntp_holds(NULL, true, t0));
+    CHECK_EQ(wall_ntp_hold_step(NULL, true, true, true, t0), WALL_NTP_NONE);
+}
+
+TEST_CASE(a_radio_off_request_during_the_hold_stops_the_request_at_once)
+{
+    wa_t w;
+    wall_ntp_t n;
+    /* STOP: the frame's wa_tick() ends the linger; the worker's next step
+     * stops the request unanswered and lets the radio go. */
+    check_ends_asking(&w, &n, 1000u, 9000u);
+    CHECK(wa_tick(&w, 9100u, WA_OFF_NONE, true));
+    CHECK(!wa_lingers(&w));
+    CHECK(!wall_ntp_holds(&n, wa_lingers(&w), 9100u));
+    CHECK_EQ(wall_ntp_hold_step(&n, false, wa_lingers(&w), false, 9100u),
+             WALL_NTP_STOP);
+    CHECK_EQ(n.state, WALL_NTP_IDLE);
+    /* ARM, an install and the platform's own need do the same. */
+    check_ends_asking(&w, &n, 1000u, 9000u);
+    CHECK(wa_tick(&w, 9100u, WA_OFF_ARMED, false));
+    CHECK(!wall_ntp_holds(&n, wa_lingers(&w), 9100u));
+    check_ends_asking(&w, &n, 1000u, 9000u);
+    wa_close(&w, WA_OFF_INSTALL);
+    CHECK(!wall_ntp_holds(&n, wa_lingers(&w), 9100u));
+    check_ends_asking(&w, &n, 1000u, 9000u);
+    wa_unlinger(&w);
+    CHECK(!wall_ntp_holds(&n, wa_lingers(&w), 9100u));
+    /* A new session's start: the radio goes down for it. */
+    check_ends_asking(&w, &n, 1000u, 9000u);
+    CHECK_EQ(wa_start(&w, WA_MODE_AP, WA_OFF_NONE, 9100u, any_rand, NULL),
+             WA_OFF_NONE);
+    CHECK(!wall_ntp_holds(&n, wa_lingers(&w), 9100u));
+}
+
+TEST_CASE(a_second_join_after_a_give_up_asks_and_holds_again)
+{
+    wa_t w;
+    wall_ntp_t n;
+    /* The first join gives up while joined, then ends: nothing holds. */
+    wa_init(&w);
+    memset(&n, 0, sizeof(n));
+    CHECK_EQ(wa_start(&w, WA_MODE_JOIN, WA_OFF_NONE, 0u, any_rand, NULL),
+             WA_OFF_NONE);
+    wa_on_address(&w, 1u, 100u);
+    CHECK_EQ(wall_ntp_hold_step(&n, true, false, false, 100u),
+             WALL_NTP_START);
+    CHECK_EQ(wall_ntp_hold_step(&n, true, false, false,
+                                100u + WALL_NTP_TIMEOUT_MS),
+             WALL_NTP_GAVE_UP);
+    wa_close(&w, WA_OFF_ASKED);
+    CHECK(wa_lingers(&w));
+    CHECK(!wall_ntp_holds(&n, true, 100u + WALL_NTP_TIMEOUT_MS + 10u));
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, false,
+                                100u + WALL_NTP_TIMEOUT_MS + 10u),
+             WALL_NTP_NONE);
+    CHECK_EQ(n.state, WALL_NTP_IDLE);
+    /* The next join asks again, and its end holds the radio again. */
+    CHECK_EQ(wa_start(&w, WA_MODE_FETCH, WA_OFF_NONE, 60000u, any_rand,
+                      NULL),
+             WA_OFF_NONE);
+    CHECK(!wa_lingers(&w));
+    wa_on_address(&w, 1u, 61000u);
+    CHECK_EQ(wall_ntp_hold_step(&n, true, false, false, 61000u),
+             WALL_NTP_START);
+    wa_close(&w, WA_OFF_ASKED);
+    CHECK(wall_ntp_holds(&n, wa_lingers(&w), 62000u));
+    CHECK_EQ(wall_ntp_hold_step(&n, false, true, true, 62500u),
+             WALL_NTP_SET);
+    CHECK(!wall_ntp_holds(&n, true, 62500u));
+}
+
 int main(void)
 {
     RUN(a_clock_from_2026_on_holds_a_real_date);
@@ -428,5 +573,9 @@ int main(void)
     RUN(a_join_asks_once_and_logs_the_answer);
     RUN(an_unanswered_request_gives_up_at_30000ms_across_the_wrap);
     RUN(a_join_that_ends_first_stops_the_request);
+    RUN(an_answer_at_29900ms_ends_the_hold_with_the_clock_set);
+    RUN(the_hold_ends_at_30000ms_unanswered_across_the_wrap);
+    RUN(a_radio_off_request_during_the_hold_stops_the_request_at_once);
+    RUN(a_second_join_after_a_give_up_asks_and_holds_again);
     return test_summary("wall_clock");
 }

@@ -325,6 +325,7 @@ wa_off_t wa_start(wa_t *w, wa_mode_t mode, wa_off_t gate, uint32_t now_ms,
     }
     if (gate != WA_OFF_NONE) {
         w->off = gate;
+        w->linger = false;
         return gate;
     }
     /* Everything of the last session goes: a code shown then opens
@@ -347,11 +348,26 @@ wa_off_t wa_start(wa_t *w, wa_mode_t mode, wa_off_t gate, uint32_t now_ms,
     return WA_OFF_NONE;
 }
 
+/**
+ * @brief Whether a session switched off for @p why may leave the radio up
+ *        for the platform's last request.
+ * @param why The reason.
+ * @return true for WA_OFF_ASKED and WA_OFF_IDLE.
+ */
+static bool off_lingers(wa_off_t why)
+{
+    return why == WA_OFF_ASKED || why == WA_OFF_IDLE;
+}
+
 void wa_close(wa_t *w, wa_off_t why)
 {
     if (w->state == WA_ST_OFF) {
+        if (!off_lingers(why)) {
+            w->linger = false;
+        }
         return;
     }
+    w->linger = (w->state == WA_ST_JOINED) && off_lingers(why);
     w->state = WA_ST_OFF;
     w->off   = why;
     w->busy  = 0u;
@@ -364,6 +380,16 @@ void wa_close(wa_t *w, wa_off_t why)
 bool wa_radio(const wa_t *w)
 {
     return w->state != WA_ST_OFF;
+}
+
+bool wa_lingers(const wa_t *w)
+{
+    return w->state == WA_ST_OFF && w->linger;
+}
+
+void wa_unlinger(wa_t *w)
+{
+    w->linger = false;
 }
 
 bool wa_serving(const wa_t *w)
@@ -481,6 +507,8 @@ bool wa_on_drop(wa_t *w, bool auth)
         return false;
     }
     if (w->state != WA_ST_JOINING) {
+        /* No join under way: a station that lingered is gone. */
+        w->linger = false;
         return false;
     }
     if (!auth) {
@@ -502,6 +530,10 @@ void wa_on_failed(wa_t *w)
 bool wa_tick(wa_t *w, uint32_t now_ms, wa_off_t gate, bool stop)
 {
     if (w->state == WA_ST_OFF) {
+        if (w->linger && (stop || gate != WA_OFF_NONE)) {
+            w->linger = false;
+            return true;
+        }
         return false;
     }
     if (stop) {
