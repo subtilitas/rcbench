@@ -4761,6 +4761,10 @@ clear of the outermost key a 600px board can have, a pad on its very edge
 included. The protocol list opens as on Outputs: the protocols in a column
 of 48px rows, the PROG PORT entries in a second column beside it.
 
+Each visit draws one of 8 cat drawings, picked at random, bottom left or
+bottom right where no row, key or list comes within 4px of it; it takes no
+taps.
+
 Current limitation: the head stays where it is whatever the board. On a
 board whose shape page puts a pin in the top-left corner of its outline,
 the keys of the upper rows reach as far left as x 187, under the protocol
