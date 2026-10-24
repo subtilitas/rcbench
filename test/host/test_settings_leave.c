@@ -385,6 +385,15 @@ TEST_CASE(the_warning_names_a_pin_open_and_spaces_gpio)
     snprintf(want, sizeof(want), "%s: %.1fm\xCE\xA9 -> OFF",
              ui_setting_label(sh), (double)was);
     CHECK_STR_EQ(warn_line(0), want);
+    settings_set(sh, was);
+
+    /* The INA228's shunt, in uΩ, joins its number as well. */
+    const float uohm = settings_get(SET_INA228_UOHM);
+    settings_set(SET_INA228_UOHM, uohm + 50.0f);
+    snprintf(want, sizeof(want), "%s: %.0fu\xCE\xA9 -> %.0fu\xCE\xA9",
+             ui_setting_label(SET_INA228_UOHM), (double)uohm,
+             (double)(uohm + 50.0f));
+    CHECK_STR_EQ(warn_line(0), want);
     ui_router_render(&s_c, 0);
     settings_set_store(NULL);
 }

@@ -353,20 +353,20 @@ static const char k_limit_report[] =
     "Device:         KST X20-830\n"
     "Firmware:       rcbench 0.22.0\n"
     "Mode:           search only, nothing written to the servo\n"
-    "Output:         S1, 333 Hz\n"
-    "Pulse range:    centre 1500 us, 900-2100 us\n"
-    "Searched:       from 1500 us out to 900 us and 2100 us\n"
-    "Current:        INA3221, 50 ms windows, shunt 100.0 mOhm\n"
-    "Search rule:    10 us steps, settle 120 ms, mean of 80 ms; bound above "
-    "2.0 x free and +0.15 A\n"
-    "Protections:    a sample at 4.0 A, above 2.5 A for 300 ms, no window "
-    "for 500 ms, 60 s a search\n"
-    "Duration:       38.4 s\n"
+    "Output:         S1, 333Hz\n"
+    "Pulse range:    centre 1500us, 900-2100us\n"
+    "Searched:       from 1500us out to 900us and 2100us\n"
+    "Current:        INA3221, 50ms windows, shunt 100.0m\xCE\xA9\n"
+    "Search rule:    10us steps, settle 120ms, mean of 80ms; bound above "
+    "2.0 x free and +0.15A\n"
+    "Protections:    a sample at 4.0A, above 2.5A for 300ms, no window "
+    "for 500ms, 60s a search\n"
+    "Duration:       38.4s\n"
     "\n"
     "ENDS (the search before programming)\n"
-    "Low end:        bound at 960 us, endpoint 970 us; free 0.112 A, bound "
-    "0.391 A\n"
-    "High end:       free to 2100 us; free 0.108 A\n"
+    "Low end:        bound at 960us, endpoint 970us; free 0.112A, bound "
+    "0.391A\n"
+    "High end:       free to 2100us; free 0.108A\n"
     "AS5600:         not fitted, no angles\n"
     "\n"
     "PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)\n"
@@ -1921,7 +1921,7 @@ static void pose_splash(void)
     splash_screen_set(SPLASH_STEP_TOUCH,    SPLASH_OK,   "GT911 5pt");
     splash_screen_set(SPLASH_STEP_STORAGE,  SPLASH_WARN, TR(SPLASH_NO_CARD));
     splash_screen_set(SPLASH_STEP_SETTINGS, SPLASH_OK,   "NVS");
-    splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "CAN 1 Mbit/s");
+    splash_screen_set(SPLASH_STEP_LINK,     SPLASH_OK,   "CAN 1Mbit/s");
     /* Built from the constants rather than typed: the IOmcu line went
      * from 1.0 to 3.0 and gained a firmware field with this string untouched,
      * so the screenshot on the wiki showed a protocol two majors old. */

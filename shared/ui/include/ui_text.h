@@ -140,7 +140,8 @@ const char *ui_on_off(int on);
  *        symbols of tools/check_units.py, alone or followed by a "/" part
  *        ("rpm/V", "%/s").
  * @param unit  the unit, UTF-8 ("mΩ"); NULL or "" is none
- * @return 1 for a symbol, 0 for a word ("GPIO", "S"), none or NULL
+ * @return 1 for a symbol ("V", "S", a battery's cell count), 0 for a word
+ *         ("GPIO", "cells"), none or NULL
  */
 int ui_unit_is_symbol(const char *unit);
 

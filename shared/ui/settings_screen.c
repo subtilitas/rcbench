@@ -276,7 +276,7 @@ static void leave_value(setting_id_t id, float value, char *out, size_t n)
     }
     const bool off = d != NULL && d->off_below > 0.0f && value == 0.0f;
     /* GPIO, the schema's one word unit, keeps its space; every other unit
-     * of the schema is a symbol and joins its number. */
+     * of the schema joins its number (6S, 6.00V, 250uΩ). */
     const char *gap = (strcmp(unit, "GPIO") == 0) ? " " : "";
     char v[32];
     (void)ui_setting_value_of(id, value, v, sizeof(v));

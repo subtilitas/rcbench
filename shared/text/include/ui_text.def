@@ -3267,8 +3267,8 @@ UI_TEXT(SV_TAP_HV, 29,
     "TAP: HV WARNING",
     "TIPPEN: HV-WARNUNG")
 UI_TEXT(SV_HOLD_START, 29,
-    "HOLD 2 S TO START",
-    "2 S HALTEN ZUM STARTEN")
+    "HOLD 2s TO START",
+    "2s HALTEN ZUM STARTEN")
 UI_TEXT(SV_FASTEST, 0,
     "Highest rate with these pulses: %uHz (%s gap).",
     "Höchste Rate mit diesen Pulsen: %uHz (%s Pause).")

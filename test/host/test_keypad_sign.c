@@ -318,7 +318,8 @@ TEST_CASE(the_range_line_joins_a_symbol_and_spaces_a_word)
           "5.0 bis 1000.0m\xCE\xA9" },
         { "rpm/V", 0.0f, 10000.0f, 0, "0 to 10000rpm/V", "0 bis 10000rpm/V" },
         { "GPIO", -1.0f, 54.0f, 0, "-1 to 54 GPIO", "-1 bis 54 GPIO" },
-        { "S", 1.0f, 14.0f, 0, "1 to 14 S", "1 bis 14 S" },
+        { "S", 1.0f, 14.0f, 0, "1 to 14S", "1 bis 14S" },
+        { "cells", 1.0f, 14.0f, 0, "1 to 14 cells", "1 bis 14 cells" },
         { "", 2.0f, 8.0f, 0, "2 to 8", "2 bis 8" },
     };
     char line[64];
