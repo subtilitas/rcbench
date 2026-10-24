@@ -190,6 +190,66 @@ TEST_CASE(a_counted_walk_counts_the_names_it_leaves_out)
     CHECK_EQ(left, 0u);
 }
 
+TEST_CASE(a_folder_read_an_entry_at_a_time_has_each_size_and_time)
+{
+    card_in(FS_EXFAT, 64ull * 1000u * 1000u * 1000u);
+    storage_dir_t *d = storage_dir_open(STORAGE_MOUNT_POINT "/BIG");
+    CHECK(d != NULL);
+    char name[STORAGE_NAME_MAX];
+    storage_stat_t st;
+    for (size_t i = 0u; i < VOL_N; ++i) {
+        memset(&st, 0xA5, sizeof(st));
+        CHECK_EQ(storage_dir_read(d, name, sizeof(name), &st), 1);
+        CHECK_STR_EQ(name, k_vol[i].name);
+        CHECK(st.size == (k_vol[i].dir ? 0u : k_vol[i].size));
+        CHECK_EQ(st.is_dir, k_vol[i].dir);
+        CHECK(st.mtime == vol_mtime());
+    }
+    CHECK_EQ(storage_dir_read(d, name, sizeof(name), &st), 0);
+    CHECK_EQ(storage_dir_read(d, name, sizeof(name), &st), 0);
+    storage_dir_close(d);
+    CHECK(storage_mounted());
+    /* A name that does not fit: -1, not a cut name. */
+    d = storage_dir_open(STORAGE_MOUNT_POINT "/BIG");
+    CHECK(d != NULL);
+    char small[9];                       /* "EDGE1.CSV" is 9 bytes */
+    CHECK_EQ(storage_dir_read(d, small, sizeof(small), &st), -1);
+    char fits[10];
+    CHECK_EQ(storage_dir_read(d, fits, sizeof(fits), &st), 1);
+    CHECK_STR_EQ(fits, "EDGE2.CSV");
+    storage_dir_close(d);
+    storage_dir_close(NULL);
+    CHECK(storage_mounted());
+    /* Not under the mount point, not there, nothing mounted: no folder,
+     * and a folder not there is no failed read. */
+    CHECK(storage_dir_open("/other/BIG") == NULL);
+    CHECK(storage_dir_open(STORAGE_MOUNT_POINT "x/BIG") == NULL);
+    CHECK(storage_dir_open(NULL) == NULL);
+    CHECK(storage_dir_open(STORAGE_MOUNT_POINT "/NONE") == NULL);
+    CHECK(storage_mounted());
+    slot_empty();
+    CHECK(storage_dir_open(STORAGE_MOUNT_POINT "/BIG") == NULL);
+}
+
+TEST_CASE(a_card_pulled_under_a_folder_read_is_let_go_at_the_close)
+{
+    card_in(FS_EXFAT, 64ull * 1000u * 1000u * 1000u);
+    g_pull_after = 2;
+    g_card = false;
+    storage_dir_t *d = storage_dir_open(STORAGE_MOUNT_POINT "/BIG");
+    CHECK(d != NULL);
+    char name[STORAGE_NAME_MAX];
+    storage_stat_t st;
+    CHECK_EQ(storage_dir_read(d, name, sizeof(name), &st), 1);
+    CHECK_EQ(storage_dir_read(d, name, sizeof(name), &st), 1);
+    CHECK_EQ(storage_dir_read(d, name, sizeof(name), &st), -1);
+    /* Held until the close; then the card is found gone and let go. */
+    storage_dir_close(d);
+    CHECK(!storage_mounted());
+    CHECK_EQ(storage_card_state(), CARD_STATE_NONE);
+    CHECK(!g_lock_taken);
+}
+
 TEST_CASE(a_stat_reads_sizes_past_4_gib_whole)
 {
     card_in(FS_EXFAT, 64ull * 1000u * 1000u * 1000u);
@@ -533,6 +593,8 @@ int main(void)
     RUN(a_walk_hands_on_sizes_past_4_gib_whole);
     RUN(a_counted_walk_counts_the_names_it_leaves_out);
     RUN(a_stat_reads_sizes_past_4_gib_whole);
+    RUN(a_folder_read_an_entry_at_a_time_has_each_size_and_time);
+    RUN(a_card_pulled_under_a_folder_read_is_let_go_at_the_close);
     RUN(a_stat_of_what_it_cannot_reach_says_which);
     return test_summary("storage");
 }

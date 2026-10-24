@@ -10,6 +10,7 @@
 
 #include <string.h>
 
+#include "wa_guard.h"
 #include "wa_zip.h"
 #include "wall_clock.h"
 
@@ -122,6 +123,7 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
     wa_out_js(o, pt(pi->de, P_TOO_BIG));
     wa_out_str(o, "';return;}"
                   "var x=new XMLHttpRequest();x.open('POST','" WA_URL_UPDATE
+                  "');x.setRequestHeader('" WA_UPLOAD_HDR "','" WA_UPLOAD_VAL
                   "');p.hidden=false;p.value=0;r.textContent='';"
                   "x.upload.onprogress=function(v){if(v.lengthComputable)"
                   "p.value=Math.floor(v.loaded*100/v.total);};"

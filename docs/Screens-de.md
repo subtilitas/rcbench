@@ -3107,6 +3107,25 @@ ohne Code an, und der Bildschirm sagt
 `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload
 installiert trotzdem erst nach 2s Halten am Panel.
 
+Jede Anfrage wird vor dem Zugangscode geprüft, mit Code ein und aus
+(`shared/webaccess/wa_guard.h`):
+
+| Prüfung | Abgelehnt mit |
+| --- | --- |
+| Der `Host`-Header nennt das Panel: `rcbench-3F7A.local`, `rcbench-3F7A` oder die Adresse, mit der sich der Browser verbunden hat (`192.168.4.1` als Access Point), in beliebiger Groß- und Kleinschreibung, ohne Port oder mit Port 80. Eine IPv6-Adresse wird abgelehnt. | 421 Misdirected Request |
+| Eine Anfrage nach der Seite, einer Datei oder dem ZIP hat keinen Body. | 400 Bad Request |
+| Eine Code-Eingabe hat höchstens 95 Bytes Body. | 413 Content Too Large |
+| Code-Eingabe und Upload tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
+| Ein Upload trägt den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
+
+Eine andere Webseite im selben Browser erreicht die Karte damit nicht
+unter einem eigenen DNS-Namen (Domain Name System), sendet keine Codes, die
+zu den 16 zählen, und sendet kein Image. Ein Browser sendet einen eigenen
+Header an eine andere Seite erst, nachdem er diese Seite gefragt hat, und
+das Panel beantwortet keine solche Frage mit Ja. Eine abgelehnte Anfrage
+wird beantwortet, bevor ihr Body gelesen ist, und die Verbindung schließt
+mit der Antwort.
+
 ### Die Seite
 
 Eine HTML-Seite (Hypertext Markup Language) ohne Skript oder Stil von

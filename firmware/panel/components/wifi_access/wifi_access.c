@@ -20,8 +20,6 @@
 
 #include "wifi_access.h"
 
-#include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -52,6 +50,7 @@
 #include "wifi_dns.h"
 #include "wifi_ntp.h"
 #include "wifi_radio.h"
+#include "wifi_req.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
@@ -67,6 +66,12 @@ static const char *TAG = "wifi";
 #define WORKER_STACK  6912u
 #define MDNS_STACK    4096u
 #define HTTPD_STACK   8192u
+/** @brief A receive or a send of the page's server waits this long at a
+ *         time, s: esp_http_server's own default (HTTPD_DEFAULT_CONFIG()),
+ *         written out.  A request whose client goes quiet for it ends. */
+#define HTTPD_WAIT_S  5u
+/** @brief Waits of HTTPD_WAIT_S an upload rides out: 30s quiet. */
+#define UPLOAD_WAITS  6u
 /* Below the UI loop's priority would starve the page; above it a ZIP
  * download would starve the frame.  Equal shares the core by time slice. */
 #define NET_PRIORITY  1u
@@ -169,6 +174,9 @@ typedef struct {
     char            disp[WA_NAME_BYTES * 3u + 64u];
     char            head[WA_NAME_BYTES * 3u + 64u + 192u];
     char            path[WA_PATH_MAX + 1u];
+    wifi_req_bufs_t req;          /**< a request's headers for the guard */
+    /** @brief The Cookie header, whole up to the server's header limit. */
+    char            cookie[CONFIG_HTTPD_MAX_REQ_HDR_LEN + 1];
     wa_send_t       snd;
     uint8_t         mdns_q[WA_MDNS_MAX];
     uint8_t         mdns_out[WA_MDNS_MAX];
@@ -264,12 +272,6 @@ static const wa_store_t k_store = {
 
 /* ------------------------------------------------------------- the card */
 
-typedef struct {
-    DIR   *d;
-    size_t len;                 /* bytes of the folder's own path */
-    char   path[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + WA_NAME_BYTES + 2u];
-} card_dir_t;
-
 static size_t card_path(char *out, size_t cap, const char *rel)
 {
     const int n = snprintf(out, cap, "%s%s%s", STORAGE_MOUNT_POINT,
@@ -277,77 +279,52 @@ static size_t card_path(char *out, size_t cap, const char *rel)
     return (n < 0 || (size_t)n >= cap) ? 0u : (size_t)n;
 }
 
+/**
+ * @brief wa_fs_t.stopped(): a request under way ends now (s.abort).
+ * @param ctx  unused
+ * @return true once the radio is going down or held
+ */
+static bool card_stopped(void *ctx)
+{
+    (void)ctx;
+    return atomic_load(&s.abort);
+}
+
 /*
  * Every folder and file open here holds the volume (storage_hold()) until
  * its close, so a card swapped while a download runs is let go after the
- * download's last close and never under a read.
+ * download's last close and never under a read.  A folder is read with
+ * FatFs's own reads (storage_dir_open()): each entry with its size and
+ * time, no f_stat() per entry.
  */
 static void *card_opendir(void *ctx, const char *path)
 {
-    (void)ctx;
-    if (!storage_hold()) {
+    if (card_stopped(ctx)) {
         return NULL;
     }
-    card_dir_t *d = heap_caps_malloc(sizeof(*d), MALLOC_CAP_SPIRAM);
-    if (d == NULL) {
-        storage_release();
-        return NULL;
-    }
-    d->len = card_path(d->path, sizeof(d->path), path);
-    d->d = (d->len > 0u) ? opendir(d->path) : NULL;
-    if (d->d == NULL) {
-        heap_caps_free(d);
-        storage_release();
-        return NULL;
-    }
-    return d;
+    char full[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + 2u];
+    return (card_path(full, sizeof(full), path) > 0u)
+           ? storage_dir_open(full) : NULL;
 }
 
 static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
 {
     (void)ctx;
-    card_dir_t *d = dir;
-    for (;;) {
-        errno = 0;
-        const struct dirent *e = readdir(d->d);
-        if (e == NULL) {
-            return (errno != 0) ? -1 : 0;
-        }
-        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
-            continue;
-        }
-        const size_t nl = strnlen(e->d_name, sizeof(e->d_name));
-        if (d->len + 1u + nl + 1u > sizeof(d->path)
-            || nl + 1u > sizeof(out->name)) {
-            return -1;
-        }
-        d->path[d->len] = '/';
-        memcpy(d->path + d->len + 1u, e->d_name, nl);
-        d->path[d->len + 1u + nl] = '\0';
-        /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads
-         * an exFAT file of 4GiB and more as a small one. */
-        storage_stat_t st;
-        const esp_err_t r = storage_stat(d->path, &st);
-        d->path[d->len] = '\0';
-        if (r != ESP_OK) {
-            return -1;
-        }
-        memset(out, 0, sizeof(*out));
-        memcpy(out->name, e->d_name, nl);
+    storage_stat_t st;
+    memset(out, 0, sizeof(*out));
+    const int r = storage_dir_read(dir, out->name, sizeof(out->name), &st);
+    if (r == 1) {
         out->dir = st.is_dir;
         out->size = st.size;
         out->mtime = st.mtime;
-        return 1;
     }
+    return r;
 }
 
 static void card_closedir(void *ctx, void *dir)
 {
     (void)ctx;
-    card_dir_t *d = dir;
-    (void)closedir(d->d);
-    heap_caps_free(d);
-    storage_release();
+    storage_dir_close(dir);
 }
 
 static void *card_open(void *ctx, const char *path)
@@ -381,7 +358,7 @@ static void card_close(void *ctx, void *file)
 
 static const wa_fs_t k_card = {
     card_opendir, card_readdir, card_closedir,
-    card_open, card_read, card_close, NULL,
+    card_open, card_read, card_close, NULL, card_stopped,
 };
 
 /* ------------------------------------------------------------- the page */
@@ -405,13 +382,30 @@ static void req_end(void)
     unlock();
 }
 
-/* The access code check, the cookie's.  Counted like a typed one. */
+/**
+ * @brief wifi_req_guard() before anything else of a handler's.
+ * @param r     the request
+ * @param kind  what it is
+ * @param e     takes the handler's return on a refusal
+ * @return true when the request may be answered
+ */
+static bool req_guard(httpd_req_t *r, wa_req_kind_t kind, esp_err_t *e)
+{
+    return wifi_req_guard(r, kind, s.name, &b->req, e);
+}
+
+/*
+ * The access code check, the cookie's.  Counted like a typed one.  The
+ * Cookie header is read whole, up to the server's header limit
+ * (CONFIG_HTTPD_MAX_REQ_HDR_LEN): at 192.168.4.1 it carries the cookies of
+ * every gadget at that address, the panel's among them.
+ */
 static wa_code_t req_code(httpd_req_t *r)
 {
-    char hdr[160], given[WA_SECRET_LEN + 2u];
+    char given[WA_SECRET_LEN + 2u];
     given[0] = '\0';
-    if (httpd_req_get_hdr_value_str(r, "Cookie", hdr, sizeof(hdr)) == ESP_OK
-        && !wa_cookie_get(hdr, WA_COOKIE, given, sizeof(given))) {
+    const char *hdr = wifi_req_hdr(r, "Cookie", b->cookie, sizeof(b->cookie));
+    if (hdr != NULL && !wa_cookie_get(hdr, WA_COOKIE, given, sizeof(given))) {
         given[0] = '\0';
     }
     lock();
@@ -462,6 +456,10 @@ static esp_err_t closed(httpd_req_t *r)
 
 static esp_err_t h_root(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_READ, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -478,10 +476,14 @@ static esp_err_t h_root(httpd_req_t *r)
 
 static esp_err_t h_code(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_CODE, &g)) {
+        return g;          /* no guess counted, no body read */
+    }
     if (!req_begin()) {
         return closed(r);
     }
-    char body[96];
+    char body[WA_CODE_BODY_MAX + 1u];
     size_t n = 0u;
     esp_err_t e = ESP_OK;
     while (n < (size_t)r->content_len && n < sizeof(body) - 1u) {
@@ -565,6 +567,10 @@ static esp_err_t answer_upload(httpd_req_t *r, fw_err_t e,
  */
 static esp_err_t h_update(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_UPLOAD, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -582,7 +588,7 @@ static esp_err_t h_update(httpd_req_t *r)
     fw_err_t e = FW_OK;
     if (s.taken) {
         e = FW_ERR_BUSY;
-    } else if (s.up.state != FW_UP_RECEIVING && s.up.state != FW_UP_STAGED) {
+    } else if (!fw_upload_busy(&s.up) && s.up.state != FW_UP_STAGED) {
         heap_caps_free(s.up.buf);
         s.up.buf = NULL;
         s.up.cap = 0u;
@@ -616,8 +622,8 @@ static esp_err_t h_update(httpd_req_t *r)
         }
         const int got = httpd_req_recv(r, (char *)b->io,
                                        (left < IO_CHUNK) ? left : IO_CHUNK);
-        if (got == HTTPD_SOCK_ERR_TIMEOUT && ++waits < 6u) {
-            continue;       /* 6 waits of the server's 5s: 30s quiet */
+        if (got == HTTPD_SOCK_ERR_TIMEOUT && ++waits < UPLOAD_WAITS) {
+            continue;
         }
         if (got <= 0) {
             whole = false;
@@ -636,15 +642,30 @@ static esp_err_t h_update(httpd_req_t *r)
         left -= (uint32_t)got;
     }
 
+    /* The check, a SHA-256 over up to the whole slot, runs without the
+     * lock: the seal keeps the buffer the check's (fw_upload_busy()), and
+     * every path that frees it asks first. */
+    lock();
+    e = fw_upload_seal(&s.up, whole);
+    const uint8_t *img = s.up.buf;
+    const uint32_t img_n = s.up.bytes;
+    const uint32_t img_slot = s.up.slot;
+    unlock();
+    fw_image_info_t got;
+    memset(&got, 0, sizeof(got));
+    const fw_err_t ce = (e == FW_OK)
+                        ? fw_image_check(img, img_n, img_slot, &got) : e;
     fw_image_info_t info;
     bool same = false;
     lock();
-    e = fw_upload_end(&s.up, whole);
+    if (e == FW_OK) {
+        e = fw_upload_checked(&s.up, ce, &got);
+    }
     info = s.up.info;
     if (e == FW_OK) {
         s.offer = fw_offer(&s.running, &info);
         same = (s.offer == FW_OFFER_INSTALLED);
-    } else if (s.up.state != FW_UP_RECEIVING && s.up.state != FW_UP_STAGED) {
+    } else if (!fw_upload_busy(&s.up) && s.up.state != FW_UP_STAGED) {
         heap_caps_free(s.up.buf);    /* refused: nothing to keep */
         s.up.buf = NULL;
         s.up.cap = 0u;
@@ -685,6 +706,10 @@ static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
 
 static esp_err_t h_file(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_READ, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -753,6 +778,10 @@ static esp_err_t h_file(httpd_req_t *r)
  */
 static esp_err_t h_zip(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_READ, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -827,6 +856,8 @@ static esp_err_t httpd_up(void)
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
     cfg.max_uri_handlers = 6;
+    cfg.recv_wait_timeout = HTTPD_WAIT_S;
+    cfg.send_wait_timeout = HTTPD_WAIT_S;
     esp_err_t e = httpd_start(&s.httpd, &cfg);
     if (e != ESP_OK) {
         s.httpd = NULL;
@@ -1934,13 +1965,15 @@ void wifi_access_set_code(bool on)
 void wifi_access_discard(void)
 {
     lock();
-    if (!s.taken && s.up.state != FW_UP_RECEIVING) {
+    if (!s.taken && !fw_upload_busy(&s.up)) {
         fw_upload_discard(&s.up);
         heap_caps_free(s.up.buf);
         s.up.buf = NULL;
         s.up.cap = 0u;
     } else if (!s.taken) {
-        /* Under way: refused now, and the sender's next piece finds it so. */
+        /* Under way or in its check: refused now, and the sender's next
+         * piece or the check's answer finds it so; the buffer is freed by
+         * h_update(). */
         fw_upload_discard(&s.up);
     }
     unlock();
@@ -1988,7 +2021,7 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
     const wa_got_t r = wa_fetch_start(&s.f, job, want, ch, s.conf.have_net,
                                       g, ms());
     if (r == WA_GOT_NONE) {
-        if (job == WA_JOB_DOWNLOAD && s.up.state != FW_UP_RECEIVING) {
+        if (job == WA_JOB_DOWNLOAD && !fw_upload_busy(&s.up)) {
             /* What the page left: the download takes its place. */
             fw_upload_discard(&s.up);
             heap_caps_free(s.up.buf);

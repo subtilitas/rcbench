@@ -174,6 +174,82 @@ TEST_CASE(an_image_filling_the_p4_slot_is_staged_and_one_block_more_refused)
     CHECK_EQ(g_up.state, FW_UP_IDLE);
 }
 
+TEST_CASE(a_sealed_upload_keeps_its_buffer_until_the_check_answers)
+{
+    /* The check runs without the caller's lock (fw_upload_seal()): every
+     * path that frees the buffer asks fw_upload_busy() first. */
+    fresh();
+    CHECK(!fw_upload_busy(&g_up));
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK(fw_upload_busy(&g_up));
+    CHECK_EQ(send(g_len, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_OK);
+    CHECK(g_up.checking);
+    CHECK(fw_upload_busy(&g_up));
+    CHECK_EQ(g_up.state, FW_UP_RECEIVING);
+    /* Nothing more goes in, nothing new starts, a second seal is refused. */
+    CHECK_EQ(fw_upload_add(&g_up, g_img, 1u), FW_ERR_BUSY);
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_ERR_BUSY);
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_ERR_BUSY);
+    fw_image_info_t info;
+    const fw_err_t e = fw_image_check(g_buf, g_len, SLOT, &info);
+    CHECK_EQ(e, FW_OK);
+    CHECK_EQ(fw_upload_checked(&g_up, e, &info), FW_OK);
+    CHECK(!g_up.checking);
+    CHECK(!fw_upload_busy(&g_up));
+    CHECK_EQ(g_up.state, FW_UP_STAGED);
+    CHECK_STR_EQ(g_up.info.version_text, "0.19.0");
+    /* A second answer finds nothing sealed. */
+    CHECK_EQ(fw_upload_checked(&g_up, FW_OK, &info), FW_ERR_BUSY);
+    CHECK_EQ(g_up.state, FW_UP_STAGED);
+}
+
+TEST_CASE(a_discard_during_the_check_drops_the_answer_not_the_buffer)
+{
+    fresh();
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(send(g_len, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_OK);
+    /* CANCEL on the panel, twice: the buffer stays the check's. */
+    fw_upload_discard(&g_up);
+    CHECK_EQ(g_up.state, FW_UP_IDLE);
+    CHECK(fw_upload_busy(&g_up));
+    fw_upload_discard(&g_up);
+    CHECK(fw_upload_busy(&g_up));
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_ERR_BUSY);
+    fw_image_info_t info;
+    const fw_err_t e = fw_image_check(g_buf, g_len, SLOT, &info);
+    CHECK_EQ(fw_upload_checked(&g_up, e, &info), FW_ERR_BUSY);
+    CHECK_EQ(g_up.state, FW_UP_IDLE);
+    CHECK(!fw_upload_busy(&g_up));
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+}
+
+TEST_CASE(a_seal_refuses_what_the_end_refuses)
+{
+    fresh();
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_ERR_BUSY);      /* no begin */
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(send(g_len - 1u, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_ERR_READ);      /* short */
+    CHECK_EQ(g_up.state, FW_UP_FAILED);
+    CHECK(!g_up.checking);
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_ERR_READ);      /* stays */
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(send(g_len, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_seal(&g_up, false), FW_ERR_READ);     /* broke off */
+    /* A check that refuses: FAILED with its reason. */
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(send(g_len, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_seal(&g_up, true), FW_OK);
+    fw_image_info_t info;
+    memset(&info, 0, sizeof(info));
+    CHECK_EQ(fw_upload_checked(&g_up, FW_ERR_HASH, &info), FW_ERR_HASH);
+    CHECK_EQ(g_up.state, FW_UP_FAILED);
+    CHECK_EQ(g_up.err, FW_ERR_HASH);
+    CHECK(!fw_upload_busy(&g_up));
+}
+
 int main(void)
 {
     g_img = malloc(SLOT_P4 + 64u);
@@ -188,6 +264,9 @@ int main(void)
     RUN(a_damaged_image_arrives_refused_with_its_reason);
     RUN(an_end_without_a_begin_changes_nothing);
     RUN(an_image_filling_the_p4_slot_is_staged_and_one_block_more_refused);
+    RUN(a_sealed_upload_keeps_its_buffer_until_the_check_answers);
+    RUN(a_discard_during_the_check_drops_the_answer_not_the_buffer);
+    RUN(a_seal_refuses_what_the_end_refuses);
     free(g_img);
     free(g_buf);
     return test_summary("fw_upload");

@@ -165,7 +165,7 @@ static uint64_t write_zip_with(fake_fs_t *fs, const char *name,
     CHECK_EQ(total, plan.bytes);
     CHECK_EQ(fs->files_open, 0);
     CHECK_EQ(fs->dirs_open, 0);
-    CHECK_EQ(fs->dirs_open_max, 1);
+    CHECK(fs->dirs_open_max <= (int)WA_WALK_DEPTH + 1);
     free(z);
     free(slot);
     return total;
