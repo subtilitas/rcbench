@@ -73,9 +73,6 @@ void lv_quiet(void)
 
 const char *lv_message(char *buf, size_t n)
 {
-    if (buf == NULL || n == 0u) {
-        return "";
-    }
     buf[0] = '\0';
     if (s.msg_kind == LV_MSG_ERR) {
         snprintf(buf, n, "%s", err_text(s.msg_err));

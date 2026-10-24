@@ -19,6 +19,7 @@
  * - a_rescan_or_leaving_the_screen_closes_the_question
  * - the_question_leaves_no_stale_pixels
  * - the_footer_message_follows_the_language
+ * - a_plot_that_cannot_load_says_why_in_the_language_showing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -336,6 +337,48 @@ TEST_CASE(the_footer_message_follows_the_language)
     draw();
     ui_text_set_language(UI_LANG_EN);
     g_long[0] = '\0';
+
+    /* A folder refused at OPEN, said in English, read in German. */
+    fresh();
+    g_dir_index = 2;
+    log_viewer_refresh();
+    open_file(2);
+    CHECK_STR_EQ(log_viewer_message(),
+                 line_in(UI_LANG_EN, TX_LOG_IS_FOLDER, k_card[2].name));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(log_viewer_message(),
+                 line_in(UI_LANG_DE, TX_LOG_IS_FOLDER, k_card[2].name));
+    draw();
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/** @brief An allocator that refuses every block. */
+static void *refuse_all(size_t n)
+{
+    (void)n;
+    return NULL;
+}
+
+/*
+ * PLOT on a file whose columns cannot be read into memory: the import
+ * stays with the reader's verdict, worded in the language showing.
+ */
+TEST_CASE(a_plot_that_cannot_load_says_why_in_the_language_showing)
+{
+    fresh();
+    open_file(0);
+    CHECK(log_viewer_analysis() != NULL);
+    log_set_allocator(refuse_all, NULL);
+    tap(PLOT_X, IM_BTN_CY);
+    log_set_allocator(NULL, NULL);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_EN, TX_LOG_ERR_MEMORY));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_DE, TX_LOG_ERR_MEMORY));
+    draw();
+    ui_text_set_language(UI_LANG_EN);
 }
 
 int main(void)
@@ -353,5 +396,6 @@ int main(void)
     RUN(a_rescan_or_leaving_the_screen_closes_the_question);
     RUN(the_question_leaves_no_stale_pixels);
     RUN(the_footer_message_follows_the_language);
+    RUN(a_plot_that_cannot_load_says_why_in_the_language_showing);
     return test_summary("logview_delete");
 }

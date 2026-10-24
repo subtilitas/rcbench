@@ -531,9 +531,9 @@ void lv_quiet(void);
 
 /**
  * @brief The footer message in the language showing.
- * @param buf  takes the message
- * @param n    bytes at @p buf, LV_MSG_MAX for the longest
- * @return @p buf, "" for no message; "" also for a NULL @p buf or a zero @p n
+ * @param buf  takes the message; never NULL
+ * @param n    bytes at @p buf, 1 or more, LV_MSG_MAX for the longest
+ * @return @p buf, "" for no message
  */
 const char *lv_message(char *buf, size_t n);
 const char *lv_delim_text(char delimiter);
