@@ -144,9 +144,14 @@ and the numerals' feet behind. `ui_slider_painted_rect()` reports the region
 rather than leaving a caller to derive it.
 
 **Paint only on frames that have something to paint.** Samples arrive at 20 Hz
-and the panel refreshes faster, 39Hz on the ESP32-S3 and 55.74Hz on the
-ESP32-P4 (derived from `board_pins.h`, not measured), so most frames have
-nothing new.
+and the panel refreshes faster, 39Hz on the ESP32-S3 and 60.38Hz on the
+ESP32-P4 (measured, the console's VSYNC figure), so most frames have nothing
+new. The P4's DPI (Display Pixel Interface) clock is 48MHz, not the 52MHz
+`board_pins.h` requests; at 48MHz its 1354 x 636 frame alone would give
+55.74Hz. ESP-IDF keeps the requested line time by shortening the bridge's
+front porch to a 1250-clock line, so the frame takes as long as 1354 x 636
+clocks at 52MHz: 60.38Hz. That this sets the rate is read from ESP-IDF's
+source, not from the registers.
 The bench screen keeps the plot's push count and a control revision, each per
 framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in

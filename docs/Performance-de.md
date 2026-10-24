@@ -153,9 +153,15 @@ Ziffern stehen. `ui_slider_painted_rect()` liefert die Region, statt sie den
 Aufrufer herleiten zu lassen.
 
 **Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
-20 Hz, das Panel zeichnet schneller, mit 39Hz auf dem ESP32-S3 und 55,74Hz
-auf dem ESP32-P4 (aus `board_pins.h` hergeleitet, nicht gemessen), also hat
-der größte Teil der Frames nichts Neues. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
+20 Hz, das Panel zeichnet schneller, mit 39Hz auf dem ESP32-S3 und 60,38Hz
+auf dem ESP32-P4 (gemessen, der VSYNC-Wert der Konsole), also hat der größte
+Teil der Frames nichts Neues. Der DPI-Takt (Display Pixel Interface) des P4
+ist 48MHz, nicht die 52MHz, die `board_pins.h` anfordert; bei 48MHz ergäbe
+sein Frame von 1354 x 636 Takten allein 55,74Hz. ESP-IDF hält die
+angeforderte Zeilendauer, indem es die Front Porch der Bridge auf eine Zeile
+von 1250 Takten kürzt, also dauert ein Frame so lange wie 1354 x 636 Takte
+bei 52MHz: 60,38Hz. Dass dies die Rate bestimmt, ist aus dem Quelltext von
+ESP-IDF gelesen, nicht aus den Registern. Der Prüfstandsbildschirm führt den Push-Zähler des Plots und eine
 Revisionsnummer der Bedienelemente, jeweils je Framebuffer, und zeichnet Plot,
 Anzeigen und Bedienelemente nur neu, wenn der zugehörige Zähler sich bewegt
 hat. `each_framebuffer_is_updated_independently` in `test_motor_draw` hält die

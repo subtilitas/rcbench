@@ -140,8 +140,8 @@ history is in git.
   builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
   32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
   on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
-  600 RGB565 at 55.74Hz (derived, not measured), two frame buffers in
-  PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
+  600 RGB565 at 60.38Hz (measured on the console's VSYNC figure), two
+  frame buffers in PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
   black. Touch is polled (the GT911's INT line does not reach the chip),
   mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
   mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
