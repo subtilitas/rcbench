@@ -760,6 +760,16 @@ Home-Tag schließen es, und der Wert bleibt unverändert.
 
 ![Das Tastenfeld über OPTIONEN](img/de/motor-settings-keypad.png)
 
+Das Tastenfeld des Leerlaufpulses lehnt einen Wert ab, der nicht mindestens
+100us unter dem Vollpuls liegt (`LINK_CC_THROTTLE_GAP_US`), das des Vollpulses
+einen, der nicht mindestens 100us über dem Leerlaufpuls liegt. Die Bereiche
+überlappen sich, 800 bis 1600us und 1400 bis 2400us. Das Tastenfeld bleibt
+offen, zeigt `Leerlaufpuls höchstens 1900us (100us unter Vollpuls)` oder
+`Vollpuls mindestens 1100us (100us über Leerlaufpuls)` in der Warnfarbe statt
+des Bereichs, und die Zeile behält ihren Wert. Die Zahlung des Paars an den
+IOmcu hält dieselbe Lücke; die eigene Schreibprüfung des IOmcu hält jeden
+Puls auf 400 bis 2500us und liest sie nicht.
+
 Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert
 an: Der IOmcu übernimmt die Endpunkte, solange er entschärft ist, 300ms
 nach der letzten Änderung, und das Schalten auf ARMED sendet keine. Solange
@@ -4805,8 +4815,8 @@ ist; eine Änderung in ARMED wartet auf das Schalten auf SAFE.
 Ein IOmcu, der sich verbindet, bekommt die beiden Einstellungen, bevor
 der Prüfstand ihn treibt: bei einem Prüfstand in ARMED bleibt er
 SAFE, bis er sie hat. Ein
-Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das
-Band zeigt `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
+Leerlaufpuls, der nicht mindestens 100us unter dem Vollpuls liegt, wird nicht gesendet, und das
+Band zeigt `Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.`.
 
 Ein ESC, dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten
 Puls dieses Senders als null. Einen Leerlaufpuls darüber liest der ESC als Gas,

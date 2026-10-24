@@ -503,6 +503,10 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
+    # one, refused with its reason.
+    "motor-settings-gap-idle": (None, "motor", "dark"),
+    "motor-settings-gap-full": (None, "motor", "dark"),
     # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
     "setup-tap-why": (None, "setup", "dark"),
     # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and

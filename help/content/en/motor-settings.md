@@ -27,6 +27,8 @@ A row shows the setting and its value with its unit, 48px tall, and a help line 
 | THROTTLE OUTPUT | Full pulse | 1400 to 2400us, steps of 10 | 2000 | the PWM width at 100% throttle |
 | THROTTLE OUTPUT | Ramp limit | 5 to 300%/s, steps of 5 | 55 | the throttle slew of the panel's model, used while no IOmcu answers |
 
+The keypad of Idle pulse refuses a value that is not 100us or more below Full pulse, and the keypad of Full pulse one that is not 100us or more above Idle pulse. The keypad stays open, shows `Idle pulse at most 1900us (100us below Full pulse)` or `Full pulse at least 1100us (100us above Idle pulse)` in the warning colour, and the row keeps its value. The ranges overlap, 800 to 1600us and 1400 to 2400us, so the pair needs this check.
+
 Idle pulse and Full pulse go to the IOmcu at link-up and on every change. The IOmcu ramps no throttle: a bound pin steps to the command.
 
 Idle pulse and Full pulse take a value on a SAFE bench only. While the bench is ARMED, ARM is held, or an ARM or a DISARM waits for its answer, their help line reads `Set on a SAFE bench only` in the warning colour and the value takes no tap. A keypad open for one of them closes when ARM is pressed or the bench leaves SAFE. The other 6 rows take a value at any time.
@@ -38,7 +40,7 @@ When the IOmcu does not take the pair, ARM stays refused until the pair is in fo
 | Band | What to do |
 |---|---|
 | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` | update the IOmcu: the panel offers the image it carries when the IOmcu connects |
-| `Idle pulse is not below Full pulse. Change one, then hold ARM again.` | lower Idle pulse or raise Full pulse |
+| `Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.` | lower Idle pulse or raise Full pulse |
 | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` | shorten the pulse, or bind the motor pin at a slower rate on OUTPUTS: a pulse longer than its PWM frame is refused |
 | `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` | change either value; the panel sends the pair again |
 

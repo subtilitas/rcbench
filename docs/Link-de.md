@@ -1054,7 +1054,7 @@ einem Poll, dessen Schreiben von ARM = 0 quittiert wurde: es liest die Page,
 schreibt sie nur, wenn die Gaskanäle abweichen, und prüft die gespeicherten
 Register, die die Quittung trägt. Ein Lesen oder Schreiben, das niemand
 beantwortet, bleibt offen. Ein abgelehntes Lesen, ein abgelehntes Schreiben,
-ein Leerlaufpuls nicht unter dem Vollpuls oder eine Quittung, deren
+ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollpuls liegt, oder eine Quittung, deren
 Gaskanäle ein anderes Paar halten, beendet die Schuld mit einem Hinweis und
 sperrt das Schalten auf ARMED, bis eine Änderung, eine Zuordnung oder ein
 Link-up das Paar in Kraft bringt. Solange sie bei bestehendem Link offen oder

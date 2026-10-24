@@ -42,7 +42,7 @@ Picking a protocol writes nothing. It chooses which pins show as ticked and whic
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
+A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not 100us or more below Full pulse is not sent, and the band says `Idle pulse must be 100us or more below Full pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012us, 980us and 2020us.
 

@@ -259,7 +259,7 @@ it, and the acknowledgement carries what it stored.
 | the write is acknowledged and every throttle channel stored the pair | paid | goes on |
 | the read or the write is not answered | owed, sent again at the next poll | `Pulse range not yet sent to the IOmcu. Hold ARM again.` |
 | the read is refused | ended, `The IOmcu did not report its pulse range.` | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` |
-| Idle pulse is not below Full pulse | ended, nothing sent, `Idle pulse must be shorter than full-throttle pulse. Not sent.` | `Idle pulse is not below Full pulse. Change one, then hold ARM again.` |
+| Idle pulse is less than 100us below Full pulse | ended, nothing sent, `Idle pulse must be 100us or more below Full pulse. Not sent.` | `Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.` |
 | the write is refused | ended, `The IOmcu rejected the pulse range.` | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` |
 | the write is acknowledged and a throttle channel stored another pair | ended | `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` |
 

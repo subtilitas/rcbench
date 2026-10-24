@@ -695,6 +695,16 @@ unchanged.
 
 ![The keypad over SETTINGS](img/motor-settings-keypad.png)
 
+The keypad of Idle pulse refuses a value that is not 100us or more below
+Full pulse (`LINK_CC_THROTTLE_GAP_US`), and the keypad of Full pulse one that
+is not 100us or more above Idle pulse. The ranges overlap, 800 to 1600us and
+1400 to 2400us. The keypad stays open, shows `Idle pulse at most 1900us
+(100us below Full pulse)` or `Full pulse at least 1100us (100us above Idle
+pulse)` in the warning colour in place of the range, and the row keeps its
+value. The panel's payment of the pair to the IOmcu holds the same gap; the
+IOmcu's own write check holds each pulse to 400 to 2500us and does not read
+it.
+
 Idle pulse and Full pulse take a value on a SAFE bench only: the IOmcu takes
 the endpoints while it is disarmed, 300ms after the last edit, and the
 switch to ARMED sends none. While the bench is ARMED, ARM is held, or an ARM
@@ -4376,8 +4386,8 @@ servo chosen there. An edit reaches the IOmcu 300ms after the last
 change while the bench is SAFE; one made while it is ARMED waits for the
 switch to SAFE. An IOmcu that links up is brought to the two settings before
 the bench drives it: with the bench already ARMED, the IOmcu is held
-SAFE until it has them. An Idle pulse that is not below the Full pulse is not sent, and the
-band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
+SAFE until it has them. An Idle pulse that is not 100us or more below the Full pulse is not sent, and the
+band says `Idle pulse must be 100us or more below Full pulse. Not sent.`.
 
 An ESC whose throttle range was calibrated on a transmitter takes that
 transmitter's shortest pulse as zero. An Idle pulse above it reads to the ESC

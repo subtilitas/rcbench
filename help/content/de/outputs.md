@@ -42,7 +42,7 @@ Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Pins abgehakt 
 
 ## Leerlaufpuls und Vollpuls
 
-Ein MOTOR-PWM-Kanal sendet 0% Throttle als Leerlaufpuls und 100% als Vollpuls, ab Werk 1000us und 2000us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10us: Leerlaufpuls 800 bis 1600us, Vollpuls 1400 bis 2400us. Ein SERVO-PWM-Kanal behält 1000 bis 2000us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
+Ein MOTOR-PWM-Kanal sendet 0% Throttle als Leerlaufpuls und 100% als Vollpuls, ab Werk 1000us und 2000us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10us: Leerlaufpuls 800 bis 1600us, Vollpuls 1400 bis 2400us. Ein SERVO-PWM-Kanal behält 1000 bis 2000us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.`.
 
 Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012us sendet, 980us und 2020us.
 

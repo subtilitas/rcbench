@@ -251,6 +251,14 @@ UI_TEXT(KEYPAD_WHY_OFF, 0,
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
+/* The first number is the largest Idle pulse (the smallest Full pulse) the
+ * pair takes, the second the gap, LINK_CC_THROTTLE_GAP_US. */
+UI_TEXT(KEYPAD_WHY_IDLE_GAP, 58,
+    "Idle pulse at most %uus (%uus below Full pulse)",
+    "Leerlaufpuls höchstens %uus (%uus unter Vollpuls)")
+UI_TEXT(KEYPAD_WHY_FULL_GAP, 58,
+    "Full pulse at least %uus (%uus above Idle pulse)",
+    "Vollpuls mindestens %uus (%uus über Leerlaufpuls)")
 UI_TEXT(KEYPAD_WHY_TAP, 0,
     "Pins the tap takes: %s",
     "Pins, die der Abgriff nimmt: %s")
@@ -3480,8 +3488,8 @@ UI_TEXT(ALERT_PULSE_RANGE_UNKNOWN, 94,
     "The IOmcu did not report its pulse range.",
     "Der IOmcu hat seinen Pulsbereich nicht gemeldet.")
 UI_TEXT(ALERT_PULSE_ORDER, 94,
-    "Idle pulse must be shorter than full-throttle pulse. Not sent.",
-    "Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.")
+    "Idle pulse must be 100us or more below Full pulse. Not sent.",
+    "Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.")
 UI_TEXT(ALERT_PULSE_REFUSED, 94,
     "The IOmcu rejected the pulse range.",
     "Der IOmcu hat den Pulsbereich abgelehnt.")
@@ -3527,8 +3535,8 @@ UI_TEXT(ALERT_ARM_RANGE_UNKNOWN, 94,
     "No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.",
     "Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_ORDER, 94,
-    "Idle pulse is not below Full pulse. Change one, then hold ARM again.",
-    "Leerlaufpuls liegt nicht unter Vollpuls. Einen ändern, dann ARM erneut halten.")
+    "Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.",
+    "Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_REFUSED, 94,
     "The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.",
     "Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.")

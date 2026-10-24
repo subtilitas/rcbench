@@ -5008,7 +5008,6 @@ shared/ui/motor_live_int.h: warning: Member knob_finger (variable) of struct mo_
 shared/ui/motor_live_int.h: warning: Member knob_had_cmd (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member knob_pending (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member knob_prev (variable) of struct mo_state_t is not documented.
-shared/ui/motor_live_int.h: warning: Member mo_arm_locked(void) (function) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member mo_bench_safe(void) (function) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member mo_bind_colours(void) (function) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member mo_end_drag(void) (function) of file motor_live_int.h is not documented.
@@ -5070,7 +5069,6 @@ shared/ui/motor_screen.c: warning: Member enter(void) (function) of file motor_s
 shared/ui/motor_screen.c: warning: Member k_screen (variable) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member k_tab_labels[] (variable) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member leave(void) (function) of file motor_screen.c is not documented.
-shared/ui/motor_screen.c: warning: Member mo_arm_locked(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member mo_bench_safe(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member mo_bind_colours(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member mo_end_drag(void) (function) of file motor_screen.c is not documented.

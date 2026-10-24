@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "link_pages.h"
 #include "outputs.h"
 #include "ui_text.h"
 
@@ -55,6 +56,8 @@ typedef enum {
     WHY_OFF_GAP,    /**< between 0 and off_below */
     WHY_SDA,        /**< a Sensor SDA pin the bus cannot have */
     WHY_TAP,        /**< a Tap pin the module does not bring out */
+    WHY_IDLE_GAP,   /**< an Idle pulse too near Full pulse */
+    WHY_FULL_GAP,   /**< a Full pulse too near Idle pulse */
     WHY_PDMINI,     /**< the other PD mini pin's GPIO */
     WHY_NO_ROW,     /**< no such setting */
 } why_t;
@@ -82,6 +85,17 @@ static why_t why_refused(setting_id_t id, float v)
     }
     if (id == SET_TONE_PIN) {
         return settings_tap_pin_valid(pin) ? WHY_NONE : WHY_TAP;
+    }
+    /* The throttle's pair keeps LINK_CC_THROTTLE_GAP_US between its ends:
+     * the same gap the payment to the IOmcu holds it to. */
+    if (id == SET_OUT_MIN_US) {
+        return (pin + (int)LINK_CC_THROTTLE_GAP_US
+                <= settings_get_int(SET_OUT_MAX_US)) ? WHY_NONE : WHY_IDLE_GAP;
+    }
+    if (id == SET_OUT_MAX_US) {
+        return (pin >= settings_get_int(SET_OUT_MIN_US)
+                           + (int)LINK_CC_THROTTLE_GAP_US)
+                   ? WHY_NONE : WHY_FULL_GAP;
     }
     if (id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
         const setting_id_t other =
@@ -187,6 +201,22 @@ const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
         }
         snprintf(buf, n, TR(KEYPAD_WHY_TAP),
                  ui_setting_keypad_tap_pins(pins, room));
+        return buf;
+    }
+    case WHY_IDLE_GAP:
+    case WHY_FULL_GAP: {
+        if (buf == NULL || n == 0u) {
+            return "";
+        }
+        /* The bound the other end sets, in the row's own unit. */
+        const bool idle = why_refused(id, v) == WHY_IDLE_GAP;
+        const int bound = idle ? settings_get_int(SET_OUT_MAX_US)
+                                     - (int)LINK_CC_THROTTLE_GAP_US
+                               : settings_get_int(SET_OUT_MIN_US)
+                                     + (int)LINK_CC_THROTTLE_GAP_US;
+        snprintf(buf, n, ui_tr(idle ? TX_KEYPAD_WHY_IDLE_GAP
+                                    : TX_KEYPAD_WHY_FULL_GAP),
+                 (unsigned)bound, (unsigned)LINK_CC_THROTTLE_GAP_US);
         return buf;
     }
     case WHY_PDMINI:

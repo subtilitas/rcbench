@@ -3683,6 +3683,24 @@ int main(int argc, char **argv)
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
         }
+        if (strncmp(view, "motor-settings-gap-", 19) == 0) {
+            /* A pulse less than 100us from the other one, typed and
+             * refused with its reason in place of the range: Idle 1599us
+             * against Full 1650us, Full 1450us against Idle 1400us. */
+            const bool idle = strcmp(view, "motor-settings-gap-idle") == 0;
+            settings_set(SET_OUT_MIN_US, idle ? 1000.0f : 1400.0f);
+            settings_set(SET_OUT_MAX_US, idle ? 1650.0f : 2000.0f);
+            setting_id_t ids[16];
+            const int rows = motor_settings_rows(ids, 16);
+            for (int r = 0; r < rows; ++r) {
+                if (ids[r] == (idle ? SET_OUT_MIN_US : SET_OUT_MAX_US)) {
+                    const gfx_rect_t box = motor_settings_box(r);
+                    tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);
+                }
+            }
+            kp_type(motor_screen_keypad(), idle ? "1599" : "1450");
+            ktap(ui_keypad_key_rect(motor_screen_keypad(), UI_KEY_OK));
+        }
         if (strcmp(view, "motor-settings-armed") == 0) {
             settings_set(SET_PACK_MAH, 2200.0f);
             settings_request_save();
