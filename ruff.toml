@@ -33,7 +33,7 @@ convention = "google"
 # gen_font.py carries the glyph tables it emits as long literal strings
 # (E501).
 #
-# The D codes below are the docstring baseline: 1225 findings in 51 files.
+# The D codes below are the docstring baseline: 1210 findings in 50 files.
 # A file not listed passes every D rule.  Each listed file is excused the
 # codes on its line; delete a code when its file is fixed, and the line
 # when no code is left.
@@ -72,7 +72,6 @@ convention = "google"
 "tools/check_sizes.py" = ["D103", "D205", "D209"]
 "tools/ci_gate.py" = ["D103", "D205", "D209"]
 "tools/coverage.py" = ["D103", "D205", "D209"]
-"tools/frame_cost.py" = ["D103"]
 "tools/gen_board_drawing.py" = ["D103", "D402"]
 "tools/gen_esc_profiles.py" = ["D101", "D103", "D205", "D209"]
 "tools/gen_font.py" = ["D103", "E501"]
@@ -84,7 +83,7 @@ convention = "google"
 "tools/render_ui.py" = ["D101", "D102", "D103", "D107", "D205", "D209"]
 "tools/security_parsers.py" = ["D103"]
 "tools/sense_trace.py" = ["D102", "D103", "D107", "D205", "D209"]
-"tools/stack_check.py" = ["D101", "D103", "D107", "D205", "D209"]
+"tools/stack_check.py" = ["D103", "D205", "D209"]
 "tools/stack_elf.py" = ["D102", "D103", "D107", "D205", "D209", "D403"]
 "tools/stack_iomcu.py" = ["D101", "D103", "D107", "D205", "D209"]
 "tools/wiki_links.py" = ["D103", "D107", "D205", "D209", "D301"]

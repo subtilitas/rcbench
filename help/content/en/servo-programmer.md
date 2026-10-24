@@ -26,7 +26,7 @@ The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo
 
 ![The programmer with the tester holding the port](view:servo-kst)
 
-- An IOmcu of protocol 4.13 or later; LEAVE needs 4.15.
+- An IOmcu of 0.17.0 or later (protocol 4.15, LEAVE included).
 - The servo on one of the IOmcu's programming ports, PROG PORT 1 to 4, with FUNCTION SERVO PWM and a pin: port 1 is GP13, pad 17, unless another pin is stored for it; ports 2 to 4 have the pin set on their PROG PORT entry of Outputs.
 - SERVO TESTER on that entry set to that port, PORT 1, PORT 2, PORT 3 or PORT 4; a tap on the TARGET row opens it ([the TARGET row](servo-settings.md#the-target-row)).
 - The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
@@ -104,7 +104,7 @@ A tap that would break a hard limit changes nothing and names the limit.
 
 ![CHECK THIS CHANGE](view:servo-kst-soft)
 
-A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD TO APPLY takes it after 2s; CANCEL leaves the draft as it was. A [limit run](servo.md#the-limit-run) asks nothing here: its 2s start hold is the consent to a LEFT ANGLE or RIGHT ANGLE below 50.
+A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD 2s TO APPLY takes it after 2s; CANCEL leaves the draft as it was. A [limit run](servo.md#the-limit-run) asks nothing here: its 2s start hold is the consent to a LEFT ANGLE or RIGHT ANGLE below 50.
 
 ![The LOCKED tab](view:servo-kst-locked)
 
@@ -112,12 +112,12 @@ A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE,
 
 ![Enabling the write](view:servo-kst-enable)
 
-ENABLE WRITE TO SERVO is off by default. A tap on OFF opens a page that names the risks; HOLD TO ENABLE switches it on after 2s. It goes off at every entry of SERVO, at every STOP, CONNECT and LEAVE, on a lost link, and when a servo is in doubt.
+ENABLE WRITE TO SERVO is off by default. A tap on OFF opens a page that names the risks; HOLD 2s TO ENABLE switches it on after 2s. It goes off at every entry of SERVO, at every STOP, CONNECT and LEAVE, on a lost link, and when a servo is in doubt.
 
 ![Three changed values, the switch on](view:servo-kst-changes)
 ![The write page](view:servo-kst-write)
 
-WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6us`. HOLD TO WRITE starts the write after 2s.
+WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6us`. HOLD 2s TO WRITE starts the write after 2s.
 
 1. The first write of a session saves the servo's values to a new file on the SD (Secure Digital) card.
 2. The panel records the write in `BENCH/KST/CONF/KST.TXT`, or in memory without a card.
@@ -165,7 +165,7 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 
 ![LEAVE PROGRAMMING](view:servo-kst-leave)
 
-LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
+LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD 2s TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
 
 ## Related pages
 

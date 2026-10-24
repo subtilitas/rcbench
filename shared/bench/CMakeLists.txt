@@ -13,6 +13,7 @@ set(SRCS
     log_writer.c
     log_cols.c
     log_cadence.c
+    perf_watch.c
     supply.c
     supply_link.c
     sense_link.c

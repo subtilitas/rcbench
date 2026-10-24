@@ -60,7 +60,10 @@
 static const char *TAG = "wifi";
 
 #define NVS_NS        "wifi"
-#define WORKER_STACK  5120u
+/** @brief Stack of the wifi_ctl task, in bytes, from internal RAM. The
+ *  deepest call chain, the radio stop down to snprintf(), is 3744 bytes;
+ *  6912 leaves 2144 above tools/stack_check.py's 1024-byte margin. */
+#define WORKER_STACK  6912u
 #define MDNS_STACK    4096u
 #define HTTPD_STACK   8192u
 /** @brief A receive or a send of the page's server waits this long at a

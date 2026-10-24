@@ -251,12 +251,23 @@ const char *ui_textkey_label(int key);
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
 /**
+ * @brief The face of the character keys: the largest of 20 x 36, 16 x 28,
+ *        12 x 24 and 10 x 20 whose cell fits a character key with 4px on
+ *        each side, else 8 x 16.  Over the WI-FI screen's 1008 x 484px a
+ *        key is 93 x 71px and takes 20 x 36.
+ * @param k The keyboard, opened.
+ * @return The face; 8 x 16 for NULL.
+ */
+const gfx_font_t *ui_textkey_char_font(const ui_textkey_t *k);
+
+/**
  * @brief The face of the word keys (the bottom row, DEL, and the Wi-Fi
- *        layer keys) in the language shown: the largest of 12 x 24,
- *        10 x 20 and 8 x 16 in which every one of them fits its key with
- *        4px each side, in every state it can show (SHOW and HIDE, ABC,
- *        abc and #+=), so the words of one keyboard share one face and a
- *        press does not change it.  The character keys are always 12 x 24.
+ *        layer keys) in the language shown: the largest of 20 x 36,
+ *        16 x 28, 12 x 24 and 10 x 20, never larger than
+ *        ui_textkey_char_font(), in which every one of them fits its key
+ *        with 4px each side, in every state it can show (SHOW and HIDE,
+ *        ABC, abc and #+=), so the words of one keyboard share one face
+ *        and a press does not change it; else 8 x 16.
  * @param k The keyboard, opened.
  * @return The face; 8 x 16 for NULL.
  */
@@ -266,8 +277,9 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k);
  * @brief The whole keyboard over its area: the title and the count in
  *        10 x 20 (8 x 16 where they do not fit side by side), the text in
  *        20 x 36 (16 x 28 in a field narrower than UI_TEXTKEY_MAX
- *        characters and the caret), the character keys in 12 x 24 and the
- *        word keys in ui_textkey_word_font().  Nothing while it is closed.
+ *        characters and the caret), the character keys in
+ *        ui_textkey_char_font() and the word keys in
+ *        ui_textkey_word_font().  Nothing while it is closed.
  * @param k The keyboard.
  * @param c Canvas.
  */

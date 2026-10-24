@@ -42,7 +42,7 @@ Picking a protocol writes nothing. It chooses which pins show as ticked and whic
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
+A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not 100us or more below Full pulse is not sent, and the band says `Idle pulse must be 100us or more below Full pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012us, 980us and 2020us.
 
@@ -99,7 +99,7 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
 | `SERVO TESTER DRIVES PROG PORT 3` | the tester drives another port |
 | `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot |
-| `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
+| `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
 Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The tester's two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`.
@@ -131,7 +131,7 @@ The screen edits a binding only after reading it. While a page did not read, the
 
 ![Pages no binding describes](view:outputs-odd)
 
-When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD: CLEAR ALL PIN ASSIGNMENTS`. Held for 2s, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
+When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`. Held, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
 
 ## The IOmcu keeps the binding
 

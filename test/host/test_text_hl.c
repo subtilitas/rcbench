@@ -69,7 +69,7 @@ static const char *const k_not_units[] = {
     "free", "frei", "time", "after", "angle", "bound", "counted", "reading",
     "readings", "supply", "unseen", "values", "windows", "written",
     "movements", "Bewegungen", "Fenster", "Messwert", "Messwerte", "Werte",
-    "Winkelmesswerte", "angelaufen", "geschrieben", "nachher",
+    "Winkelmesswerte", "blockiert", "geschrieben", "nachher",
     "gez\xC3\xA4hlten", "before", "vorher",
 };
 

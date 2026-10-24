@@ -201,8 +201,11 @@ static void render_browse(gfx_canvas_t *c)
         ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 6,
                        lv_can_next(), LV_FONT_LABEL);
     }
+    /* 6px each side of the label: a longer one takes the 8 x 16 face. */
     ui_button_font(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI,
-                   s.press_btn == 0, true, LV_FONT_LABEL);
+                   s.press_btn == 0, true,
+                   ui_button_face(TR(LOG_RESCAN), BR_PG_W, FOOT_H, 6,
+                                  LV_FONT_LABEL, &gfx_font_8x16));
     /* WI-FI: the card's files to a browser, over the panel's
      * Wi-Fi.  The screen there says when Wi-Fi may not start. */
     ui_button_font(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3,
@@ -220,7 +223,9 @@ static void render_browse(gfx_canvas_t *c)
             msg_end = BR_DELETE.x;
         }
     }
-    if (s.message[0] != '\0') {
+    char msg[LV_MSG_MAX];
+    const char *message = lv_message(msg, sizeof(msg));
+    if (message[0] != '\0') {
         /* In the gap between the buttons, on two BR_MSG_LH px lines of the
          * 52px footer when one is too short.  A message longer than two
          * lines is one line clipped there: a long name runs out of room
@@ -228,15 +233,15 @@ static void render_browse(gfx_canvas_t *c)
         const gfx_color_t col = s.message_ok ? UI_TEXT_DIM : UI_DANGER;
         const gfx_rect_t two = gfx_rect_make(BR_MSG_X, FOOT_Y + 2,
                                              msg_end - 8 - BR_MSG_X, BR_MSG_LH);
-        const int n = ui_text_wrap(NULL, two, BR_MSG_LH, s.message,
+        const int n = ui_text_wrap(NULL, two, BR_MSG_LH, message,
                                    LV_FONT_BODY, col);
         if (n == 2) {
-            (void)ui_text_wrap(c, two, BR_MSG_LH, s.message, LV_FONT_BODY,
+            (void)ui_text_wrap(c, two, BR_MSG_LH, message, LV_FONT_BODY,
                                col);
         } else {
             gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y,
                                          msg_end - 8 - BR_MSG_X, FOOT_H),
-                        s.message, LV_FONT_BODY, col, 1, GFX_ALIGN_LEFT);
+                        message, LV_FONT_BODY, col, 1, GFX_ALIGN_LEFT);
         }
     }
 }
@@ -259,9 +264,11 @@ static void render_import(gfx_canvas_t *c)
 
     if (!s.have_analysis) {
         const gfx_rect_t box = IM_FAIL;
+        char msg[LV_MSG_MAX];
+        const char *why = lv_message(msg, sizeof(msg));
         ui_panel(c, box, TR(LOG_CANNOT_READ), UI_DANGER);
         gfx_text(c, box.x + 24, box.y + 52,
-                 s.message[0] ? s.message : TR(LOG_UNREADABLE), LV_FONT_BODY,
+                 why[0] ? why : TR(LOG_UNREADABLE), LV_FONT_BODY,
                  UI_TEXT, 1);
         gfx_text(c, box.x + 24, box.y + 92,
                  TR(LOG_TRY_ANOTHER),
@@ -524,9 +531,11 @@ static void render_plot(gfx_canvas_t *c)
 
     if (!s.have_data) {
         const gfx_rect_t box = PV_NONE;
+        char msg[LV_MSG_MAX];
+        const char *why = lv_message(msg, sizeof(msg));
         ui_panel(c, box, TR(LOG_NOTHING_LOADED), UI_WARN);
         gfx_text(c, box.x + 24, box.y + 52,
-                 s.message[0] ? s.message : TR(LOG_PICK_FIRST),
+                 why[0] ? why : TR(LOG_PICK_FIRST),
                  LV_FONT_BODY, UI_TEXT, 1);
         return;
     }

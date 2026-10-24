@@ -225,8 +225,8 @@ ebenso. Die Pieptöne werden aus dem Strom gezählt. Darunter stehen das
 Profil, die Sollwerte des Netzteils mit der Zahl der Änderungen und die
 Zeile, dass das Profil ungeprüft und jede Pieptonzeit ein Vorgabewert ist.
 
-HALTEN ZUM STARTEN startet den
-Lauf nach 2s Halten, wie ARM. Ein Finger, der den Knopf verlässt, ein
+2s HALTEN ZUM STARTEN startet den
+Lauf, wie ARM. Ein Finger, der den Knopf verlässt, ein
 verlorenes Touch-Ereignis oder ein STOP während des Haltens bricht es ab;
 ABBRECHEN schließt die Warnung. Das ARM, das das Halten anfordert, verlässt den
 Bildschirm mit den Befehlen des nächsten Frames; ein STOP oder ein
@@ -246,11 +246,11 @@ beschrieben.
 
 ![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/motor-stick-run.png)
 
-Ist der Phasenabgriff unter SETUP bei ANSCHLÜSSE eingeschaltet, ergänzt die
+Ist der Phasenabgriff unter SETUP bei INTERFACES eingeschaltet, ergänzt die
 Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
 die Tonhöhe seines letzten 8-ms-Fensters, die Zähler der verlorenen
 Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz
-([die Zeilen und Zustände des Abgriffs](Screens-de.md#anschlüsse-der-phasenabgriff)).
+([die Zeilen und Zustände des Abgriffs](Screens-de.md#interfaces-der-phasenabgriff)).
 Der Lauf zählt seine Pieptöne wie bisher aus dem Netzteilstrom; die Pieptöne
 des Abgriffs benutzt er nicht.
 
@@ -283,7 +283,7 @@ mit dem Zeitpunkt, an dem er fällig ist:
 
 | Fällig | Der Lauf |
 | --- | --- |
-| `before_power` | nennt ihn auf der Warnung: HALTEN ZUM STARTEN sagt, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
+| `before_power` | nennt ihn auf der Warnung: 2s HALTEN ZUM STARTEN sagt, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
 | `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
 | `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
@@ -301,7 +301,7 @@ sie.
 ![Seine Handgriffe](img/de/motor-stick-hand-info.png)
 
 Die Warnung vor einem Lauf nennt die Schritte vor dem Einschalten und sagt,
-wann der Lauf für weitere anhält. Sie nennt sie, und HALTEN ZUM STARTEN
+wann der Lauf für weitere anhält. Sie nennt sie, und 2s HALTEN ZUM STARTEN
 zählt, nur solange das Netzteil aus meldet: ein Messwert, nicht älter als
 1000ms (`ESC_STICK_STALE_MS`), in dem das Netzteil selbst seinen Ausgang
 aus meldet, mit dem Strom 200ms lang bei höchstens 20mA. Bis dahin sagt
@@ -315,9 +315,9 @@ das Netzteil nicht aus meldet.
 ![Die Warnung mit einem Schritt vor dem Einschalten](img/de/motor-stick-hand-warning.png)
 
 Schritte, die nicht alle ganz auf die Warnung passen -- jeder auf zwei
-Zeilen umbrochen, über HALTEN ZUM STARTEN --, erscheinen nicht
+Zeilen umbrochen, über 2s HALTEN ZUM STARTEN --, erscheinen nicht
 abgeschnitten: die Warnung zählt sie und bietet ALLE HANDGRIFFE neben
-HALTEN ZUM STARTEN an. HALTEN ZUM STARTEN zählt erst, wenn ALLE HANDGRIFFE
+2s HALTEN ZUM STARTEN an. 2s HALTEN ZUM STARTEN zählt erst, wenn ALLE HANDGRIFFE
 über dieser Warnung geöffnet und mit OK geschlossen wurde; das Halten
 bestätigt so jeden Schritt, und eine neue Warnung fragt wieder danach.
 
@@ -775,7 +775,7 @@ Pieptöne, die nicht gemessen ist. Es wird nicht gemacht.
 
 ## Simulation
 
-Ist das PD mini in SETUP ANSCHLÜSSE aus, betreibt der Bildschirm SUPPLY das
+Ist das PD mini in SETUP INTERFACES aus, betreibt der Bildschirm SUPPLY das
 Modell eines Netzteils im Panel. Während eines Stick-Laufs ist der Strom
 dieses Modells ein simulierter ESC (`shared/esc/esc_sim.c`), der dem Profil
 folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem

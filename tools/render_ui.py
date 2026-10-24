@@ -44,7 +44,7 @@ STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
 
 # The screens (ui_sources.py), the renderer, and what only its views
 # drive: the KST programmer's link module, the IOmcu's port and the wire
-# under it, and the card's choice of log files.
+# under it.
 SOURCES = [
     "test/host/render_screen.c",
     *ui_sources.SOURCES,
@@ -53,7 +53,6 @@ SOURCES = [
     "shared/link/link_dev.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
-    "shared/ui/log_select.c",
     # FILES' views run its requests on a card in memory, behind the host
     # card task.
     "test/host/render_files.c",
@@ -503,6 +502,12 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
+    # one, refused with its reason.
+    "motor-settings-gap-idle": (None, "motor", "dark"),
+    "motor-settings-gap-full": (None, "motor", "dark"),
+    # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
+    "setup-tap-why": (None, "setup", "dark"),
     # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and
     # PRECHARGE held, with its own help line.
     "setup-prog-noline": (None, "setup", "dark"),

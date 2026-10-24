@@ -337,8 +337,13 @@ static void draw_footer(gfx_canvas_t *c)
         const gfx_color_t fill = (b == FS_OPEN)     ? UI_ACCENT
                                  : (b == FS_DELETE) ? UI_DANGER
                                                     : UI_PANEL_HI;
-        ui_button_font(c, FS_FOOT(b), ui_tr(labels[b]), fill, s.press == b,
-                       fs_foot_live((fs_foot_t)b, NULL), FS_FONT_LABEL);
+        const gfx_rect_t r = FS_FOOT(b);
+        const char *text = ui_tr(labels[b]);
+        /* 6px each side of a label: a longer one takes the 8 x 16 face. */
+        ui_button_font(c, r, text, fill, s.press == b,
+                       fs_foot_live((fs_foot_t)b, NULL),
+                       ui_button_face(text, r.w, r.h, FOOT_PAD,
+                                      FS_FONT_LABEL, FS_FONT_FINE));
     }
 }
 

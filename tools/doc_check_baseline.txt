@@ -376,7 +376,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member NVS_NS (mac
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member SCAN_READ (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member TAG (variable) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member WORKER_PRIO (macro definition) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member WORKER_STACK (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member abort (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member answer_upload(httpd_req_t *r, fw_err_t e, const fw_image_info_t *info, bool same, bool cut) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member asked (variable) of struct [struct].s is not documented.
@@ -973,7 +972,6 @@ firmware/panel/main/panel_boot.c: warning: Member TAG (variable) of file panel_b
 firmware/panel/main/panel_boot.c: warning: Member poll_identity(link_host_t *host, link_msg_t *reply) (function) of file panel_boot.c is not documented.
 firmware/panel/main/panel_boot.c: warning: Member pump(void) (function) of file panel_boot.c is not documented.
 firmware/panel/main/panel_boot.c: warning: Member s_busfault (variable) of file panel_boot.c is not documented.
-firmware/panel/main/panel_card.c: warning: Compound card_pick_t is not documented.
 firmware/panel/main/panel_card.c: warning: Compound esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member CARD_PATH_MAX (macro definition) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member ESC_CARD_DIR (macro definition) of file panel_card.c is not documented.
@@ -993,7 +991,6 @@ firmware/panel/main/panel_card.c: warning: Member card_written(log_viewer_tab_t 
 firmware/panel/main/panel_card.c: warning: Member esc_card_take(const storage_entry_t *entry, void *ctx) (function) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member esc_profiles_load(void) (function) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member esc_profiles_read(void) (function) of file panel_card.c is not documented.
-firmware/panel/main/panel_card.c: warning: Member files (variable) of struct card_pick_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member files (variable) of struct esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member held (variable) of struct esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member k_card_io (variable) of file panel_card.c is not documented.
@@ -1023,7 +1020,6 @@ firmware/panel/main/panel_card.c: warning: Member s_kst_path_new[64] (variable) 
 firmware/panel/main/panel_card.c: warning: Member s_log_open_run (variable) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member s_test_open_run (variable) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member s_test_open_txt (variable) of file panel_card.c is not documented.
-firmware/panel/main/panel_card.c: warning: Member sel (variable) of struct card_pick_t is not documented.
 firmware/panel/main/panel_control.c: warning: Member TAG (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member beat(bool alive) (function) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member control_pump(void) (function) of file panel_control.c is not documented.
@@ -1036,7 +1032,6 @@ firmware/panel/main/panel_control.c: warning: Member s_tsens (variable) of file 
 firmware/panel/main/panel_control.c: warning: Member touch_q_put(const touch_event_t *evt, bool lost) (function) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member tsens_read(void) (function) of file panel_control.c is not documented.
 firmware/panel/main/panel_frame.c: warning: Member LINK_LOST_SCREEN_MS (macro definition) of file panel_frame.c is not documented.
-firmware/panel/main/panel_frame.c: warning: Member TAG (variable) of file panel_frame.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member TAG (variable) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member arm_value_wanted(void) (function) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member arm_write_failed(uint32_t quiet_before, const char *alert) (function) of file panel_link.c is not documented.
@@ -3899,7 +3894,6 @@ shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_analysis is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_cursor is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_data is not documented
-shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_message is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_open_name is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_series_color is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_tab is not documented
@@ -4427,7 +4421,6 @@ shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_MAX_CREDIT_S (macro defi
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_bar are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_button are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_card are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_chevron_left are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_choice_face_locked are not documented
@@ -4862,11 +4855,9 @@ shared/ui/log_viewer_int.h: warning: Member lv_rescan(void) (function) of file l
 shared/ui/log_viewer_int.h: warning: Member lv_run_analysis(void) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_s (variable) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_series_color[LOG_MAX_SERIES] (variable) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member lv_set_message(const char *fmt,...) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_span[LOG_MAX_SERIES][PV_W][2] (variable) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_tab_at[LOG_TAB_COUNT] (variable) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_volume_now(void) (function) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member message[80] (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member message_ok (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member mounts (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member n_card (variable) of struct lv_state_t is not documented.
@@ -4911,13 +4902,11 @@ shared/ui/log_viewer_int.h: warning: Member volume[LOG_VIEWER_NAME_MAX] (variabl
 shared/ui/log_viewer_int.h: warning: Member win0 (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member win_n (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member written_seen (variable) of struct lv_state_t is not documented.
-shared/ui/log_viewer_load.c: warning: Member err_text(log_err_t err) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_compute_spans(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_delim_text(char delimiter) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_load_data(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_open_selected(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_run_analysis(void) (function) of file log_viewer_load.c is not documented.
-shared/ui/log_viewer_load.c: warning: Member lv_set_message(const char *fmt,...) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member open_name(log_source_t *src) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member cancel(void) (function) of file log_viewer_screen.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member enter(void) (function) of file log_viewer_screen.c is not documented.
@@ -4960,7 +4949,6 @@ shared/ui/motor_draw.c: warning: Member render_body(gfx_canvas_t *c, unsigned bi
 shared/ui/motor_draw.c: warning: Member render_session(gfx_canvas_t *c, unsigned bit, int buf, const prog_page_set_t *ps) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member tag_text(uint8_t tag, char *buf, size_t n) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member telemetry_tag(void) (function) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member temp_text(char *out, size_t n, const char *label, float v, bool ok) (function) of file motor_draw.c is not documented.
 shared/ui/motor_events.c: warning: Member mo_event(const touch_event_t *evt) (function) of file motor_events.c is not documented.
 shared/ui/motor_events.c: warning: Member mo_safe_at(int x, int y) (function) of file motor_events.c is not documented.
 shared/ui/motor_events.c: warning: Member mo_tick(float dt_s) (function) of file motor_events.c is not documented.
@@ -4992,7 +4980,6 @@ shared/ui/motor_live_int.h: warning: Member knob_finger (variable) of struct mo_
 shared/ui/motor_live_int.h: warning: Member knob_had_cmd (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member knob_pending (variable) of struct mo_state_t is not documented.
 shared/ui/motor_live_int.h: warning: Member knob_prev (variable) of struct mo_state_t is not documented.
-shared/ui/motor_live_int.h: warning: Member mo_arm_locked(void) (function) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member mo_bench_safe(void) (function) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member mo_bind_colours(void) (function) of file motor_live_int.h is not documented.
 shared/ui/motor_live_int.h: warning: Member mo_end_drag(void) (function) of file motor_live_int.h is not documented.
@@ -5054,7 +5041,6 @@ shared/ui/motor_screen.c: warning: Member enter(void) (function) of file motor_s
 shared/ui/motor_screen.c: warning: Member k_screen (variable) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member k_tab_labels[] (variable) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member leave(void) (function) of file motor_screen.c is not documented.
-shared/ui/motor_screen.c: warning: Member mo_arm_locked(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member mo_bench_safe(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member mo_bind_colours(void) (function) of file motor_screen.c is not documented.
 shared/ui/motor_screen.c: warning: Member mo_end_drag(void) (function) of file motor_screen.c is not documented.
@@ -5298,7 +5284,30 @@ shared/ui/picker_geometry.c: warning: Member pk_pop_rect(void) (function) of fil
 shared/ui/picker_geometry.c: warning: Member pk_pop_rows(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_port.c: file has no @file block
 shared/ui/picker_port.h: file has no @file block
-shared/ui/picker_screen.c: file has no @file block
+shared/ui/picker_screen.c: warning: Member back(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member button_under(int x, int y) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member cancel(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member enter(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member event(const touch_event_t *evt) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member g_open_port (variable) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member g_prog_pins[LINK_PG_PORTS_MAX] (variable) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member leave(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pick(uint8_t proto) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pick_port(uint8_t port) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen_set_apply(picker_apply_fn fn) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen_set_drawing_source(picker_drawing_fn fn) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen_set_select(picker_select_fn fn) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_channel_of(uint8_t index) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_drawing(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_iface_taken(uint8_t index) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_prog_taken(uint8_t index) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_proto_shown(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_s (variable) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_shape(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_touched(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member reset(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member s_screen (variable) of file picker_screen.c is not documented.
 shared/ui/picker_screen_int.h: warning: Compound pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member EBONY (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member GND_DROP (macro definition) of file picker_screen_int.h is not documented.
@@ -5820,7 +5829,6 @@ shared/ui/servo_test_panel.c: warning: Member test_file_name(char *b, size_t n) 
 shared/ui/servo_test_panel.c: warning: Member test_ina_why(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_meter_follow(servo_source_id_t id, uint32_t changes) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_on_ina_now(void) (function) of file servo_test_panel.c is not documented.
-shared/ui/servo_test_panel.c: warning: Member test_plan(char *plan, size_t size) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_restore_service(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_signature(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_steps(float *v) (function) of file servo_test_panel.c is not documented.

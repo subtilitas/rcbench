@@ -41,7 +41,7 @@ Das Tastenfeld der TRIMMUNG hat zwischen dem Punkt und OK eine Taste `+/-`: Sie 
 
 ![KANN DAS SERVO ZERSTÖREN](view:servo-warning)
 
-Ein Heli-Typ oder jede Frame Rate über 60Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem HALTEN ZUM ÜBERNEHMEN 2s gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
+Ein Heli-Typ oder jede Frame Rate über 60Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
 
 Die Seite AUSGANG sagt, was aus der Rate wurde:
 
@@ -110,7 +110,7 @@ Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Lau
 | Option | Was sie tut |
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
-| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD-KARTE EIN ist |
+| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD CARD EIN ist |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
 
 AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-interfaces.md) geschaltet. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.

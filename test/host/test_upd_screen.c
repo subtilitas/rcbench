@@ -202,6 +202,38 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
 
 /* -------------------------------------------------------------- UPDATES */
 
+/* A check that ended for want of a home network says what the status lines
+ * say: the result card leaves its lines out while those show, and only
+ * then.  Every other ending, a run under way, a network kept or Wi-Fi not
+ * set up draws the result. */
+TEST_CASE(the_no_network_result_is_not_said_twice)
+{
+    CHECK(!upd_result_said_above(NULL));
+    upd_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.phase = UPD_PH_ENDED;
+    v.got = UPD_GOT_NO_NET;
+    CHECK(upd_result_said_above(&v));
+    char line[96], second[96];
+    upd_result_text(&v, line, sizeof(line), second, sizeof(second));
+    CHECK_STR_EQ(line, TR(WF_HOME_NONE));      /* the card's own words */
+    CHECK_STR_EQ(second, TR(UPD_KEEP_NET));
+
+    v.have_net = true;                          /* the card names a network */
+    CHECK(!upd_result_said_above(&v));
+    v.have_net = false;
+    v.unavailable = true;                       /* the card says unavailable */
+    CHECK(!upd_result_said_above(&v));
+    v.unavailable = false;
+    v.phase = UPD_PH_JOINING;                   /* a run under way */
+    CHECK(!upd_result_said_above(&v));
+    v.phase = UPD_PH_ENDED;
+    for (int g = 0; g <= (int)UPD_GOT_PAST_LINE; ++g) {
+        v.got = (upd_got_t)g;
+        CHECK_EQ(upd_result_said_above(&v), g == (int)UPD_GOT_NO_NET);
+    }
+}
+
 TEST_CASE(check_asks_once_with_a_home_network_and_the_gate_open)
 {
     fresh();
@@ -1063,6 +1095,7 @@ TEST_CASE(every_card_text_takes_two_lines_at_most)
 int main(void)
 {
     RUN(the_enums_mirror_the_fetch_and_the_release_parser);
+    RUN(the_no_network_result_is_not_said_twice);
     RUN(check_asks_once_with_a_home_network_and_the_gate_open);
     RUN(check_is_grey_without_a_network_wifi_or_the_gate);
     RUN(a_running_check_turns_the_button_into_cancel);

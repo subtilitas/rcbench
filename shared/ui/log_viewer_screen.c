@@ -25,7 +25,7 @@
  * header row: ROOT, USER and BENCH, in that order (log_viewer_tab_t holds
  * the ids; the tabs' order on screen is lv_tab_at).
  *
- * A report standing alone, LIMITnnn.TXT, opens in a fourth view as text:
+ * A report, ATESTnnn.TXT or LIMITnnn.TXT, opens in a fourth view as text:
  * the browse list's panel, scroll bar and BACK, with the file's rows in
  * place of the files (log_text.h).
  *
@@ -146,7 +146,8 @@ int log_viewer_cursor(void)
 
 const char *log_viewer_message(void)
 {
-    return s.message;
+    static char line[LV_MSG_MAX];
+    return lv_message(line, sizeof(line));
 }
 
 void log_viewer_invalidate(void)
@@ -287,7 +288,7 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
  * read, after a DELETE or behind the screen's back.  The last page is read
  * instead, as the pages from the first one cut it: what is left of the
  * count after whole pages.  The newest is the highest number on the page,
- * a report standing alone included.
+ * a report included.
  *
  * @param dir  Which side of @p key the page is on.
  * @param key  The name at the page's edge; "" or NULL for the top.
@@ -563,7 +564,7 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     }
     s.tab = tab;
     s.tabs.selected = tab_pos(tab);
-    s.message[0] = '\0';
+    lv_quiet();
     lv_read_page(LOG_PAGE_FROM, "");
 }
 
@@ -576,7 +577,7 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
     }
     s.tab = tab;
     s.tabs.selected = tab_pos(tab);
-    s.message[0] = '\0';
+    lv_quiet();
     /* The list, not a view left open before: an OPEN that refuses the
      * file leaves the list with the reason, never another file's data. */
     s.view = VIEW_BROWSE;

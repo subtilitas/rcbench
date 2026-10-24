@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kategorien: PANEL, ANSCHLÜSSE, SD-KARTE und SENSOREN. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kategorien: PANEL, INTERFACES, SD CARD und SENSORS. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
 
 ## Die Kacheln
 
@@ -15,9 +15,9 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
 | PANEL | `11 EINSTELLUNGEN` | die Liste von PANEL |
-| ANSCHLÜSSE | `23 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
-| SD-KARTE | `4 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt, und wohin |
-| SENSOREN | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
+| INTERFACES | `23 EINSTELLUNGEN` | die Liste von INTERFACES |
+| SD CARD | `4 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin |
+| SENSORS | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
@@ -38,7 +38,7 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 
 ## Einen Wert ändern
 
-![ANSCHLÜSSE, alles gespeichert](view:setup-interfaces)
+![INTERFACES, alles gespeichert](view:setup-interfaces)
 
 Die Liste ist 984px breit und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
@@ -138,9 +138,9 @@ Das Panel hat keinen RTC-Chip (Real-Time Clock). Seine Uhr startet bei jedem Ein
 
 Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Nichts sonst von der Platine liegt an seinem Bus. Das Panel spricht für ihn nie 0x14 oder 0x5D an, wo der Touch-Controller GT911 am Touch-Bus antwortet, und auch nicht 0x00 bis 0x03 oder 0x78 bis 0x7F, die die I2C-Spezifikation reserviert. Ohne Sensor prüft `Drehknopf` EIN alle 100ms mit einer Adressprobe, ob 0x06 antwortet. Die Host-Tests zeigen, dass das sonst nichts ändert; am Panel ist es nicht gemessen. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
 
-## SD-KARTE
+## SD CARD
 
-![SD-KARTE](view:setup-card)
+![SD CARD](view:setup-card)
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -171,13 +171,13 @@ Für einen Ordner, den die Karte nicht nehmen kann, lässt OK die Tastatur offen
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
 | `BENCH/ESC`, `BENCH/KST` oder `BENCH/HITEC`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Ordner der Prüfstand-Dateien` |
 
-## ANSCHLÜSSE
+## INTERFACES
 
-ANSCHLÜSSE hält den Strommonitor INA228, die Pins des Sensorbusses, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho, den PD mini und den Hitec-Empfang. Die Liste hat fünf Überschriften: I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN, NETZTEIL und PROG-PORT. [Anschlüsse](setup-interfaces.md) beschreibt sie.
+INTERFACES hält den Strommonitor INA228, die Pins des Sensorbusses, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho, den PD mini und den Hitec-Empfang. Die Liste hat fünf Überschriften: I2C-BUS, PHASENABGRIFF, BALANCE SENSORS, SUPPLY und PROG-PORT. [Anschlüsse](setup-interfaces.md) beschreibt sie.
 
-## SENSOREN
+## SENSORS
 
-SENSOREN hält bis zu vier Strommonitore INA3221: welche bestückt sind, den Shunt jedes Kanals und was jeder Kanal misst. [Sensoren](setup-sensors.md) beschreibt sie.
+SENSORS hält bis zu vier Strommonitore INA3221: welche bestückt sind, den Shunt jedes Kanals und was jeder Kanal misst. [Sensoren](setup-sensors.md) beschreibt sie.
 
 ## Verwandte Seiten
 

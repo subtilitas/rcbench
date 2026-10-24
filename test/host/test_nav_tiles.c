@@ -219,6 +219,46 @@ TEST_CASE(wifi_returns_to_the_screen_that_opened_it)
     CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
 }
 
+/*
+ * WI-FI opened from SETUP's tile returns to SETUP after any history of the
+ * screens that share the opener field: FILES and OUTPUTS entered from
+ * either of their openers in between, and WI-FI visited from LOGS first.
+ */
+TEST_CASE(wifi_from_the_setup_tile_returns_to_setup_after_any_history)
+{
+    for (int h = 0; h < 4; ++h) {
+        fresh();
+        to_overview();
+        switch (h) {
+        case 0:
+            wifi_from_logs();
+            tap_home();
+            break;
+        case 1:
+            ui_router_goto(SCREEN_LOGS);
+            ui_router_goto(SCREEN_FILES);
+            tap_home();
+            break;
+        case 2:
+            ui_router_goto(SCREEN_SETUP);
+            ui_router_goto(SCREEN_OUTPUTS);
+            tap_home();
+            break;
+        default:
+            ui_router_goto(SCREEN_MOTOR);
+            ui_router_goto(SCREEN_OUTPUTS);
+            ui_router_goto(SCREEN_OVERVIEW);
+            break;
+        }
+        ui_router_goto(SCREEN_OVERVIEW);
+        wifi_from_setup();
+        CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
+        tap_home();
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), -1);
+    }
+}
+
 /* The status band's STOP, mirrored from ui_band.c. */
 static void tap_stop(void)
 {
@@ -847,8 +887,7 @@ TEST_CASE(the_setup_hub_names_its_first_category_panel_in_both_languages)
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         CHECK_STR_EQ(ui_setting_category(SET_CAT_APP), "PANEL");
-        CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE),
-                     lang == UI_LANG_DE ? "ANSCHLÜSSE" : "INTERFACES");
+        CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -1010,6 +1049,7 @@ int main(void)
     RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files);
     RUN(the_band_titles_match_the_tiles);
     RUN(wifi_returns_to_the_screen_that_opened_it);
+    RUN(wifi_from_the_setup_tile_returns_to_setup_after_any_history);
     RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);
     RUN(the_home_tag_climbs_one_level_from_every_screen);
     RUN(the_home_tag_climbs_the_stick_session_one_level_at_a_time);

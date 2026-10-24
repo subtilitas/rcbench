@@ -20,7 +20,9 @@
 
 #include "gfx.h"
 #include "keypad_rows_rig.h"
+#include "link_pages.h"
 #include "motor_screen.h"
+#include "outputs_pages.h"
 #include "settings.h"
 #include "splash_screen.h"
 #include "ui_band.h"
@@ -151,9 +153,106 @@ TEST_CASE(the_pulse_rows_open_no_keypad_while_armed)
     CHECK_EQ(pulses, 2);
 }
 
+/** @brief The row of setting @p id on SETTINGS, or -1. */
+static int row_of(setting_id_t id)
+{
+    const int rows = motor_settings_rows(s_ids, 16);
+    for (int r = 0; r < rows; ++r) {
+        if (s_ids[r] == id) {
+            return r;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief @p text typed on the pulse row @p id and OK tapped.
+ * @param id   SET_OUT_MIN_US or SET_OUT_MAX_US.
+ * @param text The digits.
+ */
+static void type_ok(setting_id_t id, const char *text)
+{
+    open_row(row_of(id));
+    CHECK(kp()->open);
+    kpr_type(&k_settings, text);
+    kkey(UI_KEY_OK);
+}
+
+/*
+ * Idle pulse and Full pulse keep LINK_CC_THROTTLE_GAP_US (100us) between
+ * them: a value at the gap is taken, one under it by 1us is refused with
+ * its reason in the warning colour, the keypad stays open, and the row
+ * keeps its value; CANCEL then keeps it too.  The ranges overlap (800 to
+ * 1600 and 1400 to 2400us), so both ends are held.
+ */
+TEST_CASE(the_pulse_rows_keep_the_gap_between_idle_and_full)
+{
+    CHECK_EQ(LINK_CC_THROTTLE_GAP_US, 100u);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        /* Idle against Full at 1650us. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        settings_set(SET_OUT_MAX_US, 1650.0f);
+        type_ok(SET_OUT_MIN_US, "1551");              /* Full - 99 */
+        CHECK(kp()->open);
+        CHECK(kp()->refused);
+        char want[80];
+        snprintf(want, sizeof(want), ui_tr(TX_KEYPAD_WHY_IDLE_GAP), 1550u,
+                 (unsigned)LINK_CC_THROTTLE_GAP_US);
+        CHECK_STR_EQ(kp()->reason, want);
+        CHECK_NEAR(settings_get(SET_OUT_MIN_US), 1000.0f, 1e-4f);
+        kkey(UI_KEY_CANCEL);
+        CHECK(!kp()->open);
+        CHECK_NEAR(settings_get(SET_OUT_MIN_US), 1000.0f, 1e-4f);
+        type_ok(SET_OUT_MIN_US, "1550");              /* Full - 100 */
+        CHECK(!kp()->open);
+        CHECK_NEAR(settings_get(SET_OUT_MIN_US), 1550.0f, 1e-4f);
+
+        /* Full against Idle at 1350us. */
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        settings_set(SET_OUT_MIN_US, 1350.0f);
+        type_ok(SET_OUT_MAX_US, "1449");              /* Idle + 99 */
+        CHECK(kp()->open);
+        CHECK(kp()->refused);
+        snprintf(want, sizeof(want), ui_tr(TX_KEYPAD_WHY_FULL_GAP), 1450u,
+                 (unsigned)LINK_CC_THROTTLE_GAP_US);
+        CHECK_STR_EQ(kp()->reason, want);
+        CHECK_NEAR(settings_get(SET_OUT_MAX_US), 2000.0f, 1e-4f);
+        kkey(UI_KEY_CANCEL);
+        CHECK_NEAR(settings_get(SET_OUT_MAX_US), 2000.0f, 1e-4f);
+        type_ok(SET_OUT_MAX_US, "1450");              /* Idle + 100 */
+        CHECK(!kp()->open);
+        CHECK_NEAR(settings_get(SET_OUT_MAX_US), 1450.0f, 1e-4f);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The gap is the one the panel's payment to the IOmcu holds a pair to, and
+ * the texts that name it carry it. */
+TEST_CASE(the_payment_and_the_texts_use_the_same_gap)
+{
+    uint16_t regs[LINK_OUT_CHANNELS * LINK_CC_STRIDE];
+    memset(regs, 0, sizeof(regs));
+    outputs_chan_cfg_defaults(regs);
+    CHECK(outputs_chan_cfg_set_throttle_range(regs, 1000u, 1100u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(regs, 1000u, 1099u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(regs, 1000u, 1000u));
+    CHECK(!outputs_chan_cfg_set_throttle_range(regs, 1100u, 1000u));
+    CHECK(outputs_chan_cfg_set_throttle_range(regs, 400u, 2500u));
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK(strstr(TR(ALERT_PULSE_ORDER), "100us") != NULL);
+        CHECK(strstr(TR(ALERT_ARM_RANGE_ORDER), "100us") != NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(every_settings_row_takes_ok_and_refuses_and_cancels);
     RUN(the_pulse_rows_open_no_keypad_while_armed);
+    RUN(the_pulse_rows_keep_the_gap_between_idle_and_full);
+    RUN(the_payment_and_the_texts_use_the_same_gap);
     return test_summary("keypad_rows_motor");
 }

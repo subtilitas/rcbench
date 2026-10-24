@@ -5,6 +5,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -2182,6 +2184,21 @@ TEST_CASE(a_restore_and_a_release_are_taken_as_the_planner_built_them)
                0u, 90u, 324u, 47573u, 8u, 9u);
 }
 
+/**
+ * @brief A plan pointer @p off bytes from @p p: the address of a plan that
+ *        lies across the session's own copy, which the session must refuse
+ *        before it reads it.  The base goes through a volatile, so an -O3
+ *        build does not take the copy's bounds for the plan's.
+ * @param p   the session's copy
+ * @param off the offset, bytes
+ * @return the pointer
+ */
+static const kst_plan_t *at_offset(const kst_plan_t *p, ptrdiff_t off)
+{
+    const uint8_t *volatile base = (const uint8_t *)p;
+    return (const kst_plan_t *)(const void *)(base + off);
+}
+
 /* The session checks a plan against the planner's, built into its own
  * copy: a plan that is that copy, or lies across it, cannot be checked. */
 TEST_CASE(the_sessions_own_copy_is_not_a_plan_to_run)
@@ -2199,13 +2216,11 @@ TEST_CASE(the_sessions_own_copy_is_not_a_plan_to_run)
     /* a plan whose last byte is the copy's first, and the other way round */
     CHECK_EQ(kst_session_write(
                  &g_ses,
-                 (const kst_plan_t *)(const void *)((const uint8_t *)&g_ses.plan
-                                                    - sizeof(plan) + 1u),
+                 at_offset(&g_ses.plan, -(ptrdiff_t)sizeof(plan) + 1),
                  false), KST_SES_ERR_ARG);
     CHECK_EQ(kst_session_write(
                  &g_ses,
-                 (const kst_plan_t *)(const void *)((const uint8_t *)&g_ses.plan
-                                                    + sizeof(plan) - 1u),
+                 at_offset(&g_ses.plan, (ptrdiff_t)sizeof(plan) - 1),
                  false), KST_SES_ERR_ARG);
     CHECK_EQ(g_sim.n_frames, frames);
     CHECK_EQ(g_ses.locked, 0);

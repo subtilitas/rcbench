@@ -8,6 +8,7 @@
 
 #include <string.h>
 
+#include "gt911_emu.h"
 #include "touch_map.h"
 #include "touch_merge.h"
 
@@ -232,17 +233,31 @@ TEST_CASE(a_turn_reverses_both_axes_of_the_mapped_area_for_every_map)
     }
 }
 
+/**
+ * @brief Whether two maps are the same, field by field: a struct copy need
+ *        not copy the padding a memcmp() would read.
+ * @param a one map
+ * @param b the other
+ * @return true when every field matches
+ */
+static bool same_map(const touch_map_t *a, const touch_map_t *b)
+{
+    return a->src_w == b->src_w && a->src_h == b->src_h
+           && a->mirror_x == b->mirror_x && a->mirror_y == b->mirror_y
+           && a->rotation == b->rotation;
+}
+
 TEST_CASE(no_turn_keeps_the_map_and_two_turns_are_none)
 {
     const touch_map_t same = touch_map_turned(&k_board_glass, false);
-    CHECK(memcmp(&same, &k_board_glass, sizeof(same)) == 0);
+    CHECK(same_map(&same, &k_board_glass));
     const touch_map_t once = touch_map_turned(&k_board_glass, true);
     CHECK_EQ(once.rotation, TOUCH_ROTATION_180);
     CHECK_EQ(once.src_w, 1024);
     CHECK_EQ(once.src_h, 600);
     CHECK(once.mirror_x && once.mirror_y);
     const touch_map_t twice = touch_map_turned(&once, true);
-    CHECK(memcmp(&twice, &k_board_glass, sizeof(twice)) == 0);
+    CHECK(same_map(&twice, &k_board_glass));
     const touch_map_t none = touch_map_turned(NULL, true);
     CHECK_EQ(none.src_w, 0);
     CHECK_EQ(none.src_h, 0);
@@ -307,6 +322,179 @@ TEST_CASE(injected_contacts_keep_their_logical_pixels_in_both_orientations)
             CHECK(seen_inj && seen_glass);
         }
     }
+}
+
+/* ------------------------------------- Which controller is the injector */
+
+/* A GT911's product ID, the 4 bytes at 0x8140: "911" and a NUL. */
+static const char k_glass_id[4] = { '9', '1', '1', 0 };
+
+/* What the touch injector's register file serves at 0x8140..0x8143. */
+static void emu_product_id(char out[4])
+{
+    gt911_emu_t e;
+    gt911_emu_init(&e, 1024, 600);
+    for (unsigned i = 0; i < 4u; ++i) {
+        out[i] = (char)gt911_emu_peek(&e, (uint16_t)(GT911_EMU_REG_PRODUCT + i));
+    }
+}
+
+/* The map the touch task reads one report of the first controller with
+ * (touch.c): its role from its address and product ID, then the map for
+ * the turn as the flip reports it. */
+static touch_map_t first_map(uint16_t addr, const char *id, bool turned)
+{
+    return touch_merge_role_map(touch_merge_role(addr, false, id),
+                                &k_board_glass, &k_board_inject, turned);
+}
+
+/* STOP's middle, logical x 850-1018, y 6-54 (ui_band.c), and the raw glass
+ * point a finger there reports: both axes mirrored. */
+#define STOP_X   934
+#define STOP_Y   30
+#define STOP_RAW_X (1023 - STOP_X)
+#define STOP_RAW_Y (599 - STOP_Y)
+
+TEST_CASE(the_injector_is_known_by_its_product_id_and_glass_never_matches)
+{
+    char emu[4];
+    emu_product_id(emu);
+    CHECK(memcmp(emu, TOUCH_MERGE_INJECT_PRODUCT, 4) == 0);
+    CHECK(memcmp(GT911_EMU_PRODUCT_ID, TOUCH_MERGE_INJECT_PRODUCT, 4) == 0);
+    CHECK(touch_merge_is_injector(emu));
+
+    /* Real parts' IDs, the old injector's "911", one byte off, and none. */
+    static const char *const k_not[] = {
+        "911", "9110", "9271", "917S", "928", "1151", "9INK", "8INJ",
+        "9IN", "9iNJ", "",
+    };
+    for (size_t i = 0; i < sizeof(k_not) / sizeof(k_not[0]); ++i) {
+        char id[4] = { 0 };
+        memcpy(id, k_not[i], strlen(k_not[i]));
+        if (touch_merge_is_injector(id)) {
+            T_FAIL("\"%s\" taken for the injector", k_not[i]);
+        }
+    }
+    CHECK(!touch_merge_is_injector(k_glass_id));
+    CHECK(!touch_merge_is_injector(NULL));
+}
+
+TEST_CASE(the_role_follows_the_product_id_and_0x5d_wins)
+{
+    char inj[4];
+    emu_product_id(inj);
+    /* addr, glass found before it, product ID, role */
+    static const struct {
+        uint16_t addr;
+        bool glass_found;
+        int id;     /* 0 glass, 1 injector, 2 NULL (the read failed) */
+        touch_role_t want;
+    } k[] = {
+        { 0x5D, false, 0, TOUCH_ROLE_GLASS },
+        { 0x5D, false, 1, TOUCH_ROLE_GLASS },     /* 0x5D is the glass   */
+        { 0x5D, false, 2, TOUCH_ROLE_GLASS },
+        { 0x14, false, 1, TOUCH_ROLE_INJECTOR },  /* the injector alone  */
+        { 0x14, true,  1, TOUCH_ROLE_INJECTOR },  /* beside the glass    */
+        { 0x14, false, 0, TOUCH_ROLE_GLASS },     /* glass latched 0x14  */
+        { 0x14, false, 2, TOUCH_ROLE_GLASS },     /* unread: the glass   */
+        { 0x14, true,  0, TOUCH_ROLE_NONE },      /* second GT911: unread */
+        { 0x14, true,  2, TOUCH_ROLE_NONE },
+        { 0x15, false, 1, TOUCH_ROLE_NONE },
+        { 0x13, true,  1, TOUCH_ROLE_NONE },
+        { 0x5C, false, 0, TOUCH_ROLE_NONE },
+        { 0x5E, false, 0, TOUCH_ROLE_NONE },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const char *id = k[i].id == 0 ? k_glass_id
+                       : k[i].id == 1 ? inj : NULL;
+        const touch_role_t got = touch_merge_role(k[i].addr, k[i].glass_found,
+                                                  id);
+        if (got != k[i].want) {
+            T_FAIL("row %zu: 0x%02x found %d id %d gave role %d, want %d",
+                   i, k[i].addr, (int)k[i].glass_found, k[i].id, (int)got,
+                   (int)k[i].want);
+        }
+    }
+}
+
+TEST_CASE(a_glass_at_0x14_maps_as_at_0x5d_mirrored_and_turned)
+{
+    for (int turned = 0; turned < 2; ++turned) {
+        const touch_map_t at14 = first_map(0x14, k_glass_id, turned != 0);
+        const touch_map_t at5d = first_map(0x5D, k_glass_id, turned != 0);
+        const touch_map_t want = touch_map_turned(&k_board_glass, turned != 0);
+        CHECK(memcmp(&at14, &want, sizeof(want)) == 0);
+        CHECK(memcmp(&at5d, &want, sizeof(want)) == 0);
+        CHECK(at14.mirror_x && at14.mirror_y);
+        CHECK_EQ(at14.rotation, turned ? TOUCH_ROTATION_180 : TOUCH_ROTATION_0);
+    }
+    /* A finger on STOP, NORMAL: the mirrored raw point lands on STOP, not
+     * at the bottom left where the injector's map put it. */
+    const touch_map_t normal = first_map(0x14, k_glass_id, false);
+    expect(&normal, STOP_RAW_X, STOP_RAW_Y, STOP_X, STOP_Y);
+    /* TURNED: the picture's STOP is under the raw point it shows at. */
+    const touch_map_t turned = first_map(0x14, k_glass_id, true);
+    expect(&turned, STOP_X, STOP_Y, STOP_X, STOP_Y);
+    /* A failed product ID read is the glass too. */
+    const touch_map_t unread = first_map(0x14, NULL, false);
+    expect(&unread, STOP_RAW_X, STOP_RAW_Y, STOP_X, STOP_Y);
+}
+
+TEST_CASE(the_injector_at_0x14_keeps_logical_pixels_and_never_turns)
+{
+    char inj[4];
+    emu_product_id(inj);
+    for (int turned = 0; turned < 2; ++turned) {
+        const touch_map_t m = first_map(0x14, inj, turned != 0);
+        CHECK(memcmp(&m, &k_board_inject, sizeof(m)) == 0);
+        expect(&m, STOP_X, STOP_Y, STOP_X, STOP_Y);
+        expect(&m, 0, 0, 0, 0);
+        expect(&m, 1023, 599, 1023, 599);
+    }
+}
+
+TEST_CASE(a_turn_that_falls_back_takes_the_glass_at_0x14_back_to_normal)
+{
+    /* gfx_turn_shown() reads true while turned frames reach the glass and
+     * false again from the first frame the flip sends unturned. */
+    char inj[4];
+    emu_product_id(inj);
+    static const bool k_shown[] = { false, true, true, false, false };
+    for (size_t f = 0; f < sizeof(k_shown) / sizeof(k_shown[0]); ++f) {
+        const bool shown = k_shown[f];
+        const touch_map_t glass = first_map(0x14, k_glass_id, shown);
+        const touch_map_t inject = first_map(0x14, inj, shown);
+        /* A finger on the picture's STOP is at raw (STOP) when turned and
+         * at raw (mirrored STOP) when normal; it lands on STOP each time. */
+        if (shown) {
+            expect(&glass, STOP_X, STOP_Y, STOP_X, STOP_Y);
+            expect(&glass, STOP_RAW_X, STOP_RAW_Y, STOP_RAW_X, STOP_RAW_Y);
+        } else {
+            expect(&glass, STOP_RAW_X, STOP_RAW_Y, STOP_X, STOP_Y);
+            expect(&glass, STOP_X, STOP_Y, STOP_RAW_X, STOP_RAW_Y);
+        }
+        expect(&inject, STOP_X, STOP_Y, STOP_X, STOP_Y);
+    }
+}
+
+TEST_CASE(no_role_or_no_map_gives_an_empty_map)
+{
+    const touch_map_t none = touch_merge_role_map(TOUCH_ROLE_NONE,
+                                                  &k_board_glass,
+                                                  &k_board_inject, false);
+    CHECK_EQ(none.src_w, 0);
+    CHECK_EQ(none.src_h, 0);
+    const touch_map_t no_glass = touch_merge_role_map(TOUCH_ROLE_GLASS, NULL,
+                                                      &k_board_inject, true);
+    CHECK_EQ(no_glass.src_w, 0);
+    const touch_map_t no_inject = touch_merge_role_map(TOUCH_ROLE_INJECTOR,
+                                                       &k_board_glass, NULL,
+                                                       false);
+    CHECK_EQ(no_inject.src_w, 0);
+    const touch_map_t bad = touch_merge_role_map((touch_role_t)7,
+                                                 &k_board_glass,
+                                                 &k_board_inject, false);
+    CHECK_EQ(bad.src_w, 0);
 }
 
 TEST_CASE(a_crop_keeps_the_points_inside_and_their_order)
@@ -590,6 +778,12 @@ int main(void)
     RUN(a_turn_reverses_both_axes_of_the_mapped_area_for_every_map);
     RUN(no_turn_keeps_the_map_and_two_turns_are_none);
     RUN(injected_contacts_keep_their_logical_pixels_in_both_orientations);
+    RUN(the_injector_is_known_by_its_product_id_and_glass_never_matches);
+    RUN(the_role_follows_the_product_id_and_0x5d_wins);
+    RUN(a_glass_at_0x14_maps_as_at_0x5d_mirrored_and_turned);
+    RUN(the_injector_at_0x14_keeps_logical_pixels_and_never_turns);
+    RUN(a_turn_that_falls_back_takes_the_glass_at_0x14_back_to_normal);
+    RUN(no_role_or_no_map_gives_an_empty_map);
     RUN(a_crop_keeps_the_points_inside_and_their_order);
     RUN(a_crop_of_nothing_or_into_nothing_keeps_nothing);
     RUN(a_drag_out_of_the_crop_is_a_release_and_back_in_a_press);

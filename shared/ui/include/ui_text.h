@@ -140,7 +140,8 @@ const char *ui_on_off(int on);
  *        symbols of tools/check_units.py, alone or followed by a "/" part
  *        ("rpm/V", "%/s").
  * @param unit  the unit, UTF-8 ("mΩ"); NULL or "" is none
- * @return 1 for a symbol, 0 for a word ("GPIO", "S"), none or NULL
+ * @return 1 for a symbol ("V", "S", a battery's cell count), 0 for a word
+ *         ("GPIO", "cells"), none or NULL
  */
 int ui_unit_is_symbol(const char *unit);
 
@@ -152,6 +153,16 @@ int ui_unit_is_symbol(const char *unit);
  * @return "" or " "
  */
 const char *ui_unit_gap(const char *unit);
+
+/**
+ * @brief What holds a reserved pin, in the language showing: the words
+ *        out_bind.c gives a catalogue's LINK_PIN_* values ("heartbeat",
+ *        "flash", "debug", "sensor", "in use") from the text table, and any
+ *        other name ("CAN INT", "CAN") as it is.
+ * @param held_by  an outbind_pin_t's held_by, or NULL
+ * @return the text to show; "" for NULL
+ */
+const char *ui_pin_holder(const char *held_by);
 
 #ifdef GFX_TEXT_TRACE
 /** Defined by the fit check's harness: @p id was looked up. */

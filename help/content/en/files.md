@@ -36,7 +36,7 @@ A button that would be refused is dimmed. A tap on it says why on the line over 
 
 | Button | What it does |
 |---|---|
-| OPEN | enters a folder. A CSV file or a report in ROOT, USER or BENCH opens on [LOGS](logs.md) |
+| OPEN | enters a folder. A CSV file or a report in ROOT, USER or BENCH opens on [LOGS](logs.md), a report as text. A file the bench is still writing stays here, `ATEST012.TXT is being written.`, and any other file reads `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |

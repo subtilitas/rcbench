@@ -1,5 +1,6 @@
-"""stack_check.py: the panel's decoder, the task table in the docs, and
-the build trees it does not read.
+"""stack_check.py: the task table in the docs, the call graph, the
+tables of callbacks followed by name, the build trees it does not read and
+the machine it reads.  The decoder's tests are in test_stack_riscv.py.
 
 SPDX-License-Identifier: MIT
 """
@@ -9,11 +10,7 @@ import re
 import pytest
 
 import stack_check as sc
-
-
-def test_the_panel_decoder_reads_an_entry():
-    # entry a1, 48
-    assert sc.decode(0x42000000, 0x006136, 3) == ("entry", 48)
+import stack_riscv as sr
 
 
 EN = sc.PERFORMANCE[0][1]
@@ -70,6 +67,7 @@ def test_both_pages_carry_the_task_table_and_the_count():
     ("main/main.c", False),
     ("components/gt911/touch_inject.c", False),
     ("components/builder/x.c", False),
+    ("managed_components/espressif__esp_hosted/host/x.c", True),
 ])
 def test_build_trees_are_not_read_as_source(rel, inside):
     assert sc.in_build_dir(sc.Path(rel)) is inside
@@ -135,7 +133,7 @@ def graph(frames: dict, calls: dict) -> sc.Graph:
     """A call graph of {address: frame} and {address: [callee]}."""
     funcs = {}
     for addr, frame in frames.items():
-        f = sc.Func(addr, f"f{addr}")
+        f = sr.RvFunc(addr, f"f{addr}")
         f.frame = frame
         f.calls = set(calls.get(addr, ()))
         funcs[addr] = f
@@ -364,7 +362,10 @@ def io_table_holds(table, header, struct, source, panel):
     assert called <= fields
     given = io_given(PANEL_MAIN / panel, struct)
     assert set(given) - {"ctx"} == fields
-    named = set().union(*(set(v) for v in table.values()))
+    qualified = set().union(*(set(v) for v in table.values()))
+    # A callback written `file:name` names the panel source it is in.
+    assert all(q.split(":")[0] == panel for q in qualified if ":" in q)
+    named = {q.split(":")[-1] for q in qualified}
     assert {given[f] for f in called} <= named
     for caller in table:
         assert re.search(r"\b" + caller + r"\(", src), caller
@@ -387,6 +388,17 @@ def test_kst_calls_name_every_card_function_of_the_servo_files():
     rest = io_table_holds(sc.KST_CALLS, "kst_store.h", "kst_store_io_t",
                           "kst_store.c", "kst_files.c")
     assert rest == set()
+
+
+def test_kst_calls_are_qualified_where_another_file_has_the_name():
+    """panel_files.c defines static io_mounted, io_walk and io_read of its
+    own; a bare name would be two functions in the ELF and fail the run."""
+    for caller, callbacks in sc.KST_CALLS.items():
+        for cb in callbacks:
+            assert cb.startswith("kst_files.c:"), (caller, cb)
+    other = (PANEL_MAIN / "panel_files.c").read_text(encoding="utf-8")
+    for name in ("io_mounted", "io_walk", "io_read"):
+        assert re.search(r"\bstatic\b[^;{]*\b" + name + r"\(", other), name
 
 
 def test_card_calls_name_every_folder_maker_handed_to_card_make_dirs():
@@ -415,18 +427,18 @@ def elf_of_machine(path, machine):
     path.write_bytes(bytes(head))
 
 
-def test_a_risc_v_panel_build_is_refused(tmp_path, monkeypatch):
-    elf_of_machine(tmp_path / sc.ELF_NAME, 243)          # EM_RISCV
+def test_an_xtensa_panel_build_is_refused(tmp_path, monkeypatch):
+    elf_of_machine(tmp_path / sc.ELF_NAME, 94)           # EM_XTENSA
     monkeypatch.setattr("sys.argv", ["stack_check.py", str(tmp_path)])
     with pytest.raises(SystemExit) as stop:
         sc.main()
-    assert "machine 243, not Xtensa (94)" in str(stop.value)
-    assert "builds RISC-V" in str(stop.value)
+    assert "machine 94, not RISC-V (243)" in str(stop.value)
 
 
-def test_an_xtensa_header_passes_the_machine_check(tmp_path, monkeypatch):
-    elf_of_machine(tmp_path / sc.ELF_NAME, 94)
+def test_a_risc_v_header_passes_the_machine_check(tmp_path, monkeypatch):
+    elf_of_machine(tmp_path / sc.ELF_NAME, 243)
     monkeypatch.setattr("sys.argv", ["stack_check.py", str(tmp_path)])
     with pytest.raises(SystemExit) as stop:
-        sc.main()                    # on to the tables, which this ELF lacks
-    assert "not Xtensa" not in str(stop.value)
+        sc.main()                    # on to the symbols, which this ELF lacks
+    assert "not RISC-V" not in str(stop.value)
+    assert "_thread_local_data_start" in str(stop.value)

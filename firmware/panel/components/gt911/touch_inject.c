@@ -41,32 +41,54 @@ static const touch_map_t k_inject_map = {
 };
 
 static gt911_handle_t    s_dev;       /**< @brief the injector's handle   */
-static bool              s_is_glass;  /**< @brief it took the glass's place */
+static bool              s_is_glass;  /**< @brief alone, in the glass's place */
 static touch_merge_t     s_merge;     /**< @brief the two sources merged   */
 static volatile uint32_t s_ok_ms;     /**< @brief its last good read       */
 static volatile bool     s_attached;  /**< @brief attached, for the band   */
 
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
-                         uint32_t now_ms)
+                         touch_role_t glass_role, uint32_t now_ms)
 {
     /* Absent until the probe below says otherwise, and absent for good
      * when it does: nothing after start-up looks for the injector. */
     touch_merge_start(&s_merge, false, now_ms);
     s_ok_ms = now_ms;
-    if (glass_addr == TOUCH_INJECT_ADDR) {
-        /* No controller at 0x5D, and the injector took the glass's place;
+    if (glass_role == TOUCH_ROLE_INJECTOR) {
+        /* No controller at 0x5D, and the injector's product ID at 0x14;
          * touch_init() says so on the console. */
         s_is_glass = true;
+        return;
+    }
+    if (glass_role != TOUCH_ROLE_GLASS) {
+        return;
+    }
+    if (glass_addr == TOUCH_INJECT_ADDR) {
+        /* The glass latched 0x14: no injector can answer there beside it. */
+        ESP_LOGW(TAG, "the glass answers at 0x%02x: no injector looked for",
+                 TOUCH_INJECT_ADDR);
         return;
     }
     if (i2c_master_probe(bus, TOUCH_INJECT_ADDR, PROBE_TIMEOUT_MS) != ESP_OK) {
         ESP_LOGI(TAG, "no injector at 0x%02x", TOUCH_INJECT_ADDR);
         return;
     }
+    /* Beside the glass at 0x5D, a GT911 at 0x14 is the injector only with
+     * the injector's product ID. */
     const gt911_config_t cfg = { .i2c_addr = TOUCH_INJECT_ADDR };
     if (gt911_new(bus, &cfg, &s_dev) != ESP_OK) {
         s_dev = NULL;
         ESP_LOGW(TAG, "0x%02x answers, but not as a GT911", TOUCH_INJECT_ADDR);
+        return;
+    }
+    char id[5] = { 0 };
+    if (gt911_info(s_dev, id, NULL) != ESP_OK
+        || touch_merge_role(TOUCH_INJECT_ADDR, true, id)
+               != TOUCH_ROLE_INJECTOR) {
+        ESP_LOGW(TAG, "0x%02x answers as a GT911 with product ID \"%s\", "
+                      "not the touch injector's %s: not read",
+                 TOUCH_INJECT_ADDR, id, TOUCH_MERGE_INJECT_PRODUCT);
+        (void)gt911_del(s_dev);
+        s_dev = NULL;
         return;
     }
     touch_merge_start(&s_merge, true, now_ms);
@@ -107,8 +129,10 @@ bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh)
 }
 
 /**
- * @brief A detached injector, asked once a second whether it answers as a
- *        GT911 again: the product ID read on the handle made at start.
+ * @brief A detached injector, asked once a second whether it answers as
+ *        the injector again: its product ID, TOUCH_MERGE_INJECT_PRODUCT,
+ *        read on the handle made at start.
+ * @param now_ms The clock.
  */
 static void probe(uint32_t now_ms)
 {
@@ -117,7 +141,7 @@ static void probe(uint32_t now_ms)
     }
     char id[5] = { 0 };
     const bool answered = gt911_info(s_dev, id, NULL) == ESP_OK
-                          && id[0] == '9';
+                          && touch_merge_is_injector(id);
     if (touch_merge_probe(&s_merge, answered, now_ms)) {
         s_ok_ms = now_ms;
         s_attached = true;

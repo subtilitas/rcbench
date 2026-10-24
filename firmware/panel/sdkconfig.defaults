@@ -87,9 +87,8 @@ CONFIG_FREERTOS_USE_TRACE_FACILITY=y
 # Main task stack ----------------------------------------------------------
 # app_main runs the UI: every screen's enter, tick, event and render is
 # called on the main task.  ESP-IDF's default stack, 3584 bytes, is below
-# the UI's deepest call chain, 3856 bytes in the ESP32-S3's Xtensa code,
-# through the log viewer's render and snprintf().  8192 bytes hold that with room.  The
-# chain on the ESP32-P4's RISC-V code is not measured.
+# the UI's deepest call chain, the main task's row in the task table of
+# docs/Performance.md, which tools/stack_check.py holds to this build.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 # Console ------------------------------------------------------------------
@@ -235,8 +234,9 @@ CONFIG_HTTPD_MAX_URI_LEN=1280
 # certificate authorities, not the full one: github.com chains to USERTrust
 # ECC, its release files' host to ISRG Root X1, and both are in it.  A
 # bundle of those two alone would be smaller and would stop working the day
-# GitHub changes its authority.  No clock is set, so no certificate's dates
-# are checked.
+# GitHub changes its authority.  The clock is set by NTP (Network Time
+# Protocol), but no certificate's dates are checked:
+# CONFIG_MBEDTLS_HAVE_TIME_DATE is off, which is ESP-IDF's default.
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
 # mbedTLS's memory, the 16 KB record buffer for what arrives among it, in
