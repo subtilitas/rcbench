@@ -545,22 +545,19 @@ reads the state and shows the alert, is not in the coverage figure.
   with a 5ms bus timeout on each transaction of a poll: a probe while it
   has no reference, then three reads. A failed transaction also costs the
   driver's recovery, a controller reset and a bus clear that waits up to
-  50ms more while SDA is held low. A sensor that holds SDA low therefore
-  delays the touch read by about 55ms per transaction. That is under the
-  touch read's own 100ms bus timeout (`GT911_I2C_TIMEOUT_MS`), and a touch
-  controller silent for 500ms switches the bench to SAFE
+  50ms more while SDA is held low. The knob sits on an I2C controller of its
+  own (I2C_NUM_1, IO30 and IO31 of header P3) and nothing else is on that
+  bus, so a sensor that holds SDA low delays the knob task only. The touch
+  controller is on the other controller (I2C_NUM_0, GPIO7 and GPIO8), and
+  a touch controller silent for 500ms switches the bench to SAFE
   (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the heartbeat's path: the control task
-  generates the heartbeat and does not use the I2C bus. The board answers at
-  0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on that bus, and the CH422G I/O
-  expander takes a transaction at its addresses as a command: at 0x30 to 0x3F
-  the written byte becomes its output byte, which holds the backlight, the
-  touch reset and the USB/CAN (Universal Serial Bus / Controller Area
-  Network) select. The panel refuses to put the knob, or any other device of
-  the builder's, at those addresses or at the ones the I2C specification
+  generates the heartbeat and does not use either I2C bus. The touch bus
+  holds the GT911 at 0x5D, and the touch injector of a build with it at
+  0x14. The panel refuses to put the knob, or any other device of the
+  builder's, at those two addresses or at the ones the I2C specification
   reserves, 0x00 to 0x03 and 0x78 to 0x7F (`shared/bench/include/panel_i2c.h`).
-  That nothing on the board answers at the knob's 0x06 rests on the CH422G's
-  and the GT911's documented addressing: the board's one bus scan covered
-  0x08 to 0x77.
+  That nothing answers at the knob's 0x06 on the knob's bus rests on the
+  bus being the knob's alone; what answers on the board is not measured.
 - If the touch controller stops answering for 500ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the IOmcu does not switch back to ARMED when traffic returns.

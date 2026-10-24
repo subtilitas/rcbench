@@ -21,6 +21,7 @@ Network) at 1Mbit/s.
 | Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, list to buy with maker pages and web search links, wiring drawing and pin-to-pin table for the selected setup) |
 | Build and flash both boards | [Building](Building.md) |
 | Wire the two boards and verify the bus | [Bringing up the link](Bringup.md) |
+| Flash both boards and run the bench for the first time | [First run on hardware](FirstRun.md) |
 | Operate the screens | [Screens](Screens.md) |
 | Balance a propeller or a ducted fan | [Balancing](Balance.md) |
 | Measure a servo's installed limit, or synchronise two servos | [Servo procedures](Servo.md) |
@@ -35,8 +36,15 @@ Network) at 1Mbit/s.
 | Page | Content |
 | --- | --- |
 | [The link](Link.md) | CAN wiring, failure behaviour, the page protocol |
+| [The programming port for KST and Chaservo servos](LinkKST.md) | The wire protocol of the programming port for KST and Chaservo servos |
+| [The programming port for Hitec servos](LinkHitec.md) | The wire protocol of the programming port for Hitec servos |
+| [The INA3221 map and windows](LinkSensors.md) | The INA3221 current monitors' map and sample windows |
+| [The bench console](BenchConsole.md) | The IOmcu's command console on its USB serial port, a bench tool |
+| [DShot and the output drivers](DShot.md) | DShot frames, telemetry and the output drivers |
 | [The OpenYGE protocol](OpenYGE.md) | ESC telemetry and parameter protocol specification |
+| [ESC programming profiles](EscProfiles.md) | The profiles for ESC programming |
 | [Performance](Performance.md) | Rendering budget in cache-line fills |
+| [Interface language](Language.md) | The interface language and its texts |
 
 The state of the project, the open items and the settled decisions are recorded
 in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).
