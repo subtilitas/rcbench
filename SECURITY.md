@@ -58,13 +58,16 @@ Current limitations: the page is plain HTTP, so on a home network the code
 and the files cross the network unencrypted; the home network's password is
 kept unencrypted in NVS (non-volatile storage); an image uploaded over the
 page is checked against its own SHA-256, not against a signature, so any
-image built as `rcbench-panel` for the ESP32-S3 installs, and on a home
+image built as `rcbench-panel` for the ESP32-P4 installs, and on a home
 network a device between the browser and the panel can replace the image on
 its way; a downloaded image is bound to the release by the certificate
 chain and `SHA256SUMS`, not by a signature, so whoever can publish a release
 on the repository, or a certificate authority in the bundle that issues a
 false certificate, can deliver an image that installs; no certificate's
-validity dates are checked, as the panel has no clock; esp_http_client keeps
+validity dates are checked, also after the panel's clock is set from NTP
+(network time protocol), because mbedTLS is built without its expiry check
+(`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default), so a certificate
+past its validity is accepted when its chain checks; esp_http_client keeps
 every response header value in memory without a bound of its own, which only
 a server whose certificate chain checks reaches; the IOmcu image a
 panel image carries comes with it and is offered to the IOmcu, after

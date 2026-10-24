@@ -3194,8 +3194,8 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
 
 ### PANEL: the rotary knob
 
-An MT6701 magnetic angle sensor at 0x06 on the panel's I2C terminal (I2C:
-Inter-Integrated Circuit) turns the slider of the bench screen on top: the
+An MT6701 magnetic angle sensor at 0x06 on a bus of its own, IO30 (SDA) and
+IO31 (SCL) of header P3 (I2C: Inter-Integrated Circuit), turns the slider of the bench screen on top: the
 throttle on MOTOR & ESC, the horn on SERVO. Wiring:
 [Building](Building.md#rotary-knob-wiring). Other screens ignore it.
 
@@ -3246,14 +3246,14 @@ across a third of its travel from -travel to +travel.
   MOTOR & ESC a turn while the bench is SAFE moves nothing and is not
   kept either; the switch to SAFE returns the slider to 0%, and the next turn after
   a switch to ARMED counts from there.
-- The panel never puts the knob, or another device of the builder's, at an
-  address the board answers at on that bus, 0x14, 0x20 to 0x27, 0x30 to 0x3F
-  and 0x5D, or at one the I2C specification reserves, 0x00 to 0x03 and 0x78
-  to 0x7F. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
-  CH422G expander as a command. With no sensor fitted, Rotary knob ON sends
-  one unacknowledged probe to 0x06 every 100ms. In the host tests' model of
-  the bus that changes nothing else. On the panel it is not measured: 0x00
-  to 0x07 have not been scanned on this board.
+- The knob's bus is the ESP32-P4's second I2C controller, and nothing else
+  of the board is on it. The panel never puts the knob, or another device of
+  the builder's, at 0x14 or 0x5D, the GT911 touch controller's two addresses
+  on the touch bus, or at one the I2C specification reserves, 0x00 to 0x03
+  and 0x78 to 0x7F. With no sensor fitted, Rotary knob ON sends one
+  unacknowledged probe to 0x06 every 100ms. In the host tests' model of the
+  bus that changes nothing else. On the panel it is not measured: 0x00 to
+  0x07 have not been scanned on this board.
 - The knob is not measured on hardware: its direction, its noise and its
   behaviour with no magnet over it.
 
@@ -3909,14 +3909,13 @@ over the total since boot, and an unreadable controller writes `?` in its
 columns rather than a differently shaped line: the reading that most needs a
 timestamp is the one where the controller would not answer.
 
-The card is there because the panel's console is not reachable on every board.
-The native USB socket carries GPIO19 and GPIO20, which the multiplexer hands to
-CAN about a second into boot, so it is gone before a bench fault happens. The
-bridged socket is on UART0 and normally carries the console right through, but
-what it is connected to is switchable: a slide switch beside the BOOT and
-RESET buttons is marked UART1 and UART2. In one position the bridge chip
-enumerates and passes nothing in either direction, and the panel then has no
-console at all.
+The card is there because a bench fault can happen with no console attached.
+The console is UART0 (universal asynchronous receiver-transmitter 0) with
+USB-Serial-JTAG (the ESP32-P4's built-in USB serial and debug bridge) as
+secondary, and which of the board's two USB-C sockets reaches which is not
+traced. The link's CAN is the ESP32-P4's TWAI (Two-Wire Automotive Interface)
+on GPIO21 (receive) and GPIO22 (transmit), to a TJA1051T/3 transceiver; neither
+pin carries anything else.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
@@ -4258,7 +4257,7 @@ Its result is on UPDATES.
 
 The 2s hold is the one confirmation: no question follows the download. The
 panel joins the home network within 30s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.20.0.bin`.
+release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.23.0.bin`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
