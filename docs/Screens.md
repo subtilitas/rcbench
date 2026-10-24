@@ -214,26 +214,38 @@ the faces and the spacing inside are theirs.
 
 - **Keypad.** A title row of 32px, the entry of 60px, then 4 x 4 keys
   8px apart, 8px from the area's edge, the keys ending 4px above the
-  alert band at the latest (below). Over SERVO's left column, 488 x 524px,
-  a key is 112 x 88px (16.8 x 13.2mm); over SUPPLY's, 546 x 494px,
-  126 x 80px. The title and the range are in the
+  alert band at the latest (below). On SERVO a key is 145 x 88px
+  (21.8 x 13.2mm); on SUPPLY 145 x 76px. The title and the range are in the
   10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
   entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
   does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
-  digits and the point are in 12 x 24. DEL, CLR, CANCEL, OK and `+/-` share
-  one face: the largest of 12 x 24, 10 x 20 and 8 x 16 in which all of them
-  fit their keys with 6px each side. German `ABBRECHEN` needs a key of
-  120px for 12 x 24 and 102px for 10 x 20.
+  digits and the point are in the largest of 20 x 36, 16 x 28, 12 x 24
+  and 10 x 20 whose cell fits a digit key with 6px each side, else in
+  8 x 16; 20 x 36 needs a key of 32 x 48px and is the face of every
+  keypad the panel opens. DEL, CLR, CANCEL, OK and `+/-` share one face:
+  the largest of the same faces, never larger than the digits', in which
+  all of them fit their keys with 6px each side. `CANCEL` needs a key of
+  132px for 20 x 36. German `ABBRECHEN` needs 192px for 20 x 36, 156px
+  for 16 x 28, 120px for 12 x 24 and 102px for 10 x 20, so the German
+  keypads of SERVO, SUPPLY and MOTOR & ESC's SETTINGS draw their words in
+  12 x 24.
 - **Keyboard.** A title row of 32px, the text field of 52px, then 5 rows
   of keys 6px apart. The title and the count are in 10 x 20, or in 8 x 16
   where the two do not fit side by side. The text is in the 20 x 36 face
   when 23 characters and the caret fit the field, else in 16 x 28. The
-  letters, digits and marks are in 12 x 24. The word keys (the bottom row,
-  DEL, `ABC`, `abc`, `#+=`) share one face: the largest of 12 x 24, 10 x 20
-  and 8 x 16 in which all of them fit their keys with 4px each side, HIDE
-  measured in place of SHOW too, so a press does not change it. On WI-FI the
-  keyboard takes the body above the alert band, 1008 x 484px, with keys of
-  93 x 71px (14.0 x 10.7mm) and every word in 12 x 24.
+  letters, digits and marks are in the largest of 20 x 36, 16 x 28,
+  12 x 24 and 10 x 20 whose cell fits a character key with 4px each side,
+  else in 8 x 16; 20 x 36 needs a key of 28 x 44px and is the face of
+  every keyboard the panel opens. The word keys (the bottom row, DEL,
+  `ABC`, `abc`, `#+=`) share one face: the largest of the same faces,
+  never larger than the characters', in which all of them fit their keys
+  with 4px each side, HIDE measured in place of SHOW too, so a press does
+  not change it. On WI-FI the keyboard takes the body above the alert
+  band, 1008 x 484px, with keys of 93 x 71px (14.0 x 10.7mm) and every
+  word in 20 x 36; the German password's in 16 x 28, as `LEERZEICHEN`
+  has two keys of 192px. SERVO's name keyboards, keys of 55 x 72px, draw
+  their words in 12 x 24; the ESC STICK search keyboard, keys of
+  59 x 57px, in 16 x 28.
 - **Choice list.** A face or a row 56px tall or taller draws its text in
   the 20 x 36 face, 12px in, with an 11px chevron 28px from the face's
   right edge. A shorter one draws in 16 x 28, 10px in, with a 7px chevron
@@ -258,8 +270,8 @@ the faces and the spacing inside are theirs.
 Key grids end 4px above the alert band, at body y 492, on every screen.
 A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
-keys are then 112 x 88px and the keyboards' 41 x 72px; on SUPPLY the
-keypad's are 126 x 80px; on the ESC STICK search keyboard 59 x 57px; on
+keys are then 145 x 88px and the keyboards' 55 x 72px; on SUPPLY the
+keypad's are 145 x 76px; on the ESC STICK search keyboard 59 x 57px; on
 MOTOR & ESC's SETTINGS the keypad's are 145 x 89px; on BALANCE the blade
 count's keypad's are 242 x 72px.
 
