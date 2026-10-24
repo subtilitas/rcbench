@@ -8,6 +8,7 @@
 
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
+#include "files_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
@@ -39,9 +40,9 @@
 static struct {
     ui_screen_id_t    current;
     /* The screen that opened one with two openers, for its home tag;
-     * SCREEN_COUNT until one has.  One field for WI-FI and OUTPUTS: only
-     * the screen on top reads it, and entering either from an opener sets
-     * it. */
+     * SCREEN_COUNT until one has.  One field for WI-FI, FILES and OUTPUTS:
+     * only the screen on top reads it, and entering one from an opener
+     * sets it. */
     ui_screen_id_t    opener;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
@@ -113,8 +114,9 @@ static bool has_band(ui_screen_id_t id);
 /*
  * The screens with more than one opener, each opener on a row of its own.
  * The home tag of such a screen returns to the one that opened it: WI-FI
- * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, OUTPUTS from
- * the TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
+ * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, FILES from
+ * LOGS' FILES button and from SETUP's FILES tile, OUTPUTS from the TARGET
+ * rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
  */
 static const struct {
     ui_screen_id_t screen;
@@ -122,6 +124,8 @@ static const struct {
 } k_openers[] = {
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_WIFI,    SCREEN_SETUP },
+    { SCREEN_FILES,   SCREEN_LOGS },
+    { SCREEN_FILES,   SCREEN_SETUP },
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
@@ -158,6 +162,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_COPROC_UPDATE: return coproc_update_screen();
     case SCREEN_UPDATES:  return upd_screen();
     case SCREEN_UPD_REMIND: return upd_remind_screen();
+    case SCREEN_FILES:    return files_screen();
     default:              return overview_screen();
     }
 }
@@ -249,6 +254,7 @@ void ui_router_invalidate(void)
     wifi_screen_invalidate();
     update_screen_invalidate();
     upd_screen_invalidate();
+    files_screen_invalidate();
 }
 
 static void clear_alert(void)

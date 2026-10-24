@@ -85,6 +85,9 @@ set(SRCS
     update_screen.c
     coproc_update_screen.c
     upd_screen.c
+    files_screen.c
+    files_draw.c
+    files_events.c
 )
 
 if(ESP_PLATFORM)

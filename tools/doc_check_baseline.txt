@@ -4104,7 +4104,6 @@ shared/ui/include/ui_hero.h: warning: Member color (variable) of struct ui_hero_
 shared/ui/include/ui_hero.h: warning: Member decimals (variable) of struct ui_hero_def_t is not documented.
 shared/ui/include/ui_hero.h: warning: Member label (variable) of struct ui_hero_def_t is not documented.
 shared/ui/include/ui_hero.h: warning: Member unit (variable) of struct ui_hero_def_t is not documented.
-shared/ui/include/ui_icons.h: file has no @file block
 shared/ui/include/ui_keypad.h: warning: Member ui_keypad_close(ui_keypad_t *k) (function) of file ui_keypad.h is not documented.
 shared/ui/include/ui_keypad.h: warning: parameters of member ui_keypad_cancel_press are not documented
 shared/ui/include/ui_keypad.h: warning: parameters of member ui_keypad_event are not documented
@@ -4145,7 +4144,6 @@ shared/ui/include/ui_screen.h: warning: parameters of member ui_router_event are
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_goto are not documented
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_help_rect are not documented
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_hold_alert are not documented
-shared/ui/include/ui_screen.h: warning: parameters of member ui_router_parent are not documented
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_set_alert are not documented
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_withdraw_alert are not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_alert is not documented
@@ -4154,7 +4152,6 @@ shared/ui/include/ui_screen.h: warning: return type of member ui_router_dispatch
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_help is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_help_rect is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_navigations is not documented
-shared/ui/include/ui_screen.h: warning: return type of member ui_router_parent is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_stop_live is not documented
 shared/ui/include/ui_screen.h: warning: return type of member ui_router_withdraw_alert is not documented
 shared/ui/include/ui_slider.h: file has no @file block
@@ -5953,7 +5950,6 @@ shared/ui/ui_band.c: warning: Member never (variable) of struct [struct].k_bits 
 shared/ui/ui_band.c: warning: Member s_line[400] (variable) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member s_para[640] (variable) of file ui_band.c is not documented.
 shared/ui/ui_band.c: warning: Member text (variable) of struct [struct].k_bits is not documented.
-shared/ui/ui_icons.c: file has no @file block
 shared/ui/ui_keypad.c: warning: Member digits_after_point(const ui_keypad_t *k) (function) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member k_labels[UI_KEY_COUNT] (variable) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member ui_keypad_close(ui_keypad_t *k) (function) of file ui_keypad.c is not documented.

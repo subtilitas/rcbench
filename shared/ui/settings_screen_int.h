@@ -196,6 +196,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
     HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
+    HUB_SCREEN(SCREEN_FILES,   TX_SET_HUB_FILES,   ui_icon_folder),
 };
 
 #define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))

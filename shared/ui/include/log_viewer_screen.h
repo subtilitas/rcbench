@@ -187,6 +187,35 @@ log_viewer_tab_t log_viewer_tab(void);
  */
 void log_viewer_set_tab(log_viewer_tab_t tab);
 
+/** @brief What log_viewer_show() found. */
+typedef enum {
+    LOG_SHOW_OPEN = 0,     /**< the list holds the file: it is open in
+                                IMPORT or TEXT, or the list shows it
+                                selected with the reason OPEN refused it
+                                (a file over LOG_VIEWER_OPEN_MAX, a report
+                                that does not read)                      */
+    LOG_SHOW_NOT_LISTED,   /**< a tab outside the three, or a name the list
+                                does not hold (a file other than a .csv or
+                                a report standing alone)                 */
+    LOG_SHOW_OTHER_CARD    /**< the list was read from another mount than
+                                @p mount: the card was swapped; nothing is
+                                opened                                   */
+} log_viewer_show_t;
+
+/**
+ * @brief Show @p tab with file @p name open, as a tap on the tab, a tap on
+ *        the file's row and OPEN do: FILES' OPEN on a file of one of the
+ *        three folders.  The page read is the one that starts at the name,
+ *        and it must come from the mount FILES listed the file from.
+ * @param tab    the folder's tab
+ * @param name   the file's name in that folder
+ * @param mount  the mount number (log_viewer_io_t mounts()) FILES read the
+ *               name from
+ * @return what was found
+ */
+log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
+                                  unsigned mount);
+
 /** The file currently open, or "" -- the overview header shows this. */
 const char *log_viewer_open_name(void);
 

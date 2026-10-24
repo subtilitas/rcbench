@@ -313,7 +313,7 @@ TEST_CASE(every_warning_and_file_message_takes_two_lines_at_most)
         TX_LOG_DELETED, TX_LOG_TOO_BIG,
     };
     const gfx_rect_t warn = gfx_rect_make(24, 0, LV_WARN_W, LV_WARN_LH);
-    const gfx_rect_t foot = gfx_rect_make(312, 0, LV_MSG_W, LV_MSG_LH);
+    const gfx_rect_t foot = gfx_rect_make(LV_MSG_X, 0, LV_MSG_W, LV_MSG_LH);
     char line[96];
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);

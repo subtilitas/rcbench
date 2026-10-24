@@ -575,6 +575,38 @@ void log_viewer_set_tab(log_viewer_tab_t tab)
     lv_read_page(LOG_PAGE_FROM, "");
 }
 
+log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
+                                  unsigned mount)
+{
+    if ((unsigned)tab >= (unsigned)LOG_TAB_COUNT || name == NULL
+        || name[0] == '\0') {
+        return LOG_SHOW_NOT_LISTED;
+    }
+    s.tab = tab;
+    s.tabs.selected = tab_pos(tab);
+    s.message[0] = '\0';
+    /* The list, not a view left open before: an OPEN that refuses the
+     * file leaves the list with the reason, never another file's data. */
+    s.view = VIEW_BROWSE;
+    /* The page that starts at the name: the file is its first row when
+     * the list holds it. */
+    lv_read_page(LOG_PAGE_FROM, name);
+    if (s.mounts != mount) {
+        /* The same name on the card put in since FILES listed it is
+         * another file: it is not opened. */
+        return LOG_SHOW_OTHER_CARD;
+    }
+    for (int i = 0; i < s.n_files; ++i) {
+        if (strcmp(s.files[i].name, name) == 0) {
+            s.sel = i;
+            s.scroll = (i < BR_ROWS) ? 0 : i - BR_ROWS + 1;
+            lv_open_selected();
+            return LOG_SHOW_OPEN;
+        }
+    }
+    return LOG_SHOW_NOT_LISTED;
+}
+
 /**
  * @brief The screen as a start leaves it: the BENCH tab, nothing open,
  *        nothing selected.

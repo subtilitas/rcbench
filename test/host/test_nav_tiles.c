@@ -5,7 +5,7 @@
  * languages, and every screen's title.
  *
  * Cases:
- * - the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates
+ * - the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files
  * - the_band_titles_match_the_tiles
  * - wifi_returns_to_the_screen_that_opened_it
  * - wifi_keeps_its_opener_over_stop_link_loss_and_home
@@ -51,12 +51,12 @@ static void tap_home(void)
 /*
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
- * can reach.  The table's order, row by row: the two categories,
- * PANEL and INTERFACES, and OUTPUTS, then PICK A PIN, WI-FI and
- * UPDATES; the third row stays free.  ESC / BENCH is no tile: its rows are
- * MOTOR & ESC > SETTINGS'.
+ * can reach.  The table's order, row by row: PANEL, INTERFACES and SD
+ * CARD; SENSORS, OUTPUTS and PICK A PIN; WI-FI, UPDATES and FILES, which
+ * fill the grid.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
+ * SETTINGS'.
  */
-TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
+TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
 {
     static const struct {
         ui_screen_id_t id;
@@ -64,6 +64,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
     } k_tools[] = {
         { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_PICKER, "PICK A PIN" },
         { SCREEN_WIFI, "WI-FI" },      { SCREEN_UPDATES, "UPDATES" },
+        { SCREEN_FILES, "FILES" },
     };
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
@@ -139,9 +140,9 @@ TEST_CASE(the_band_titles_match_the_tiles)
     }
 }
 
-/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 144
- * to 263, 42 px tall, its foot 4 px above the alert band. */
-#define LOGS_WIFI_X 204
+/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 156
+ * to 255, 52 px tall, its foot 4 px above the alert band. */
+#define LOGS_WIFI_X 206
 
 #define LOGS_WIFI_Y (UI_BAND_H + UI_BODY_H - UI_ALERT_H - 4 - 21)
 
@@ -1006,7 +1007,7 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
 
 int main(void)
 {
-    RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates);
+    RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files);
     RUN(the_band_titles_match_the_tiles);
     RUN(wifi_returns_to_the_screen_that_opened_it);
     RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);

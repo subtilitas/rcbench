@@ -107,6 +107,7 @@ is taken in a gap ahead of the save that needs it.
 | Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`. The home tag that leaves SETUP with values unsaved opens a warning listing each change against the stored copy, with SAVE, DISCARD (refused while ARMED) and STAY; no route the panel takes by itself is held (`test_settings`). A tap on a number's value opens the keypad, on SETUP's lists, ESC STICK's TIMING, BALANCE's blade count and SERVO's TRIM (signed, with a `+/-` key) as on SUPPLY, SERVO, MOTOR & ESC and the servo programmer; its OK sets the value through `settings_set()`, the call the `-` and `+` keys end in, and refuses a value outside the range, naming the range, or one the keys never reach, naming the reason in place of the range until the next key (`shared/ui/ui_setting_keypad.c`, `test_settings_keypad`, `test_esc_stick_panel_keypad`, `test_servo_trim_keypad`, `test_keypad_sign`, `test_balance`; `test_setting_keypad_eq` types every one of the 149,555 values `-` and `+` reach and finds each stored bit for bit as stepped) |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus; a report standing alone, `LIMITnnn.TXT` or the `SERVOnnn.TXT` alone of 0.21.0 and older, is listed by its number and opens as text (`shared/ui/log_select.c`, `shared/ui/log_text.c`, `test_logview_report`, `test_log_text`); the panel's two walks of a folder for it (`panel_card.c`) are not host-tested |
 | Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a run armed from SERVO takes `voltage`, `current`, `power`, `charge` and `energy` from the supply's last reading and the panel's count of it since the arm, a supply whose source is not the row's giving empty cells (`log_writer_servo_row()`, `log_rail_take()`, `log_rail_count()` in `shared/bench/log_writer.c`, host-tested in `test_servo_runlog`; the panel's call in `panel_poll.c` is not host-tested); a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the IOmcu's pages. A file goes to one of two folders and is named by what started it: `BENCH/LOGS` holds `SERVOnnn` for an arm from SERVO, `MOTORnnn` for an arm from MOTOR & ESC or ESC STICK and `SUPPLnnn` for a supply run; `USER/LOGS` holds `ATESTnnn` for the automatic test and `LIMITnnn` for the limit run; the `BENCHnnn`, `ESCnnn` and `SERVOnnn` runs of firmware 0.21.0 and older stay in the root and stay readable. Each folder is made one level at a time on its first write, and its numbers are one series across every name in it, read by one walk and probed name by name before each take (`shared/logfile/log_name.c`, `shared/logfile/log_take.c`, host-tested in `test_log_name` and `test_log_take`). SETUP > SD CARD switches each folder's writing off (Auto logs, User logs; `test_log_cadence`, `test_servo_test_panel`, `test_servo_limit_panel`) and sets each folder (Auto log folder, User log folder: 1 or 2 folders of up to 8 characters, `card_folder_check()` in `shared/logfile/card_tree.c`; `test_card_tree`, `test_keypad`, `test_settings_folders`); a changed folder takes the next file and numbers from what it holds (`log_series_follow()`, `test_log_take`), and LOGS lists the folders set (`test_logview_tabs`). The logger's copy of the folders and the open markers' folders, under a spinlock in `panel_log.c`, are not host-tested. The bench's own files are under `BENCH` too: the fault log `BENCH/RCBENCH.LOG`, written whatever SETUP > SD CARD says and held to 1 MiB with the full file kept as `BENCH/RCBENCH.OLD` (`shared/logfile/fault_log.c`, `test_fault_log`), the ESC profiles read from `BENCH/ESC/CONF` and the servo files and the write record in `BENCH/KST/CONF`; each folder is made one level at a time (`shared/logfile/card_tree.c`, `test_card_tree`). The folders `ESC` and `KST` and the root's `RCBENCH.LOG` of 0.21.0 and older are not read. An automatic servo test's CSV and report take the next number of `USER/LOGS`, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
+| File manager: FILES | built and tested on the host (`shared/ui/files_screen.c`, `files_draw.c`, `files_events.c`, `shared/files/fm_req.c`; `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_layout`): two panes over the SD card, COPY, MOVE, RENAME, DELETE (a run's CSV with its report), NEW folder and empty text file, INFO, paging of 48 entries, entries not listed counted; writes only while SAFE with no log file open (`fm_gate()`), the bench's folders, the servo programmer's record and the files the logger writes refused by `fm_rules.c`; a copy stops before its next 16KiB chunk on CANCEL, ARMED or a run that starts logging. Opens from LOGS and from SETUP; OPEN hands a CSV file or a report in LOGS' three folders to LOGS. The requests run on the panel's task `cardjob` (`firmware/panel/main/panel_files.c`), not host-tested; after each job the logger forgets its folders' numbering (`log_series_forget_all()` in `shared/logfile/log_take.c`, `test_log_take`), so its next take walks the folder; not run on a panel: the copy rate (logged on the console after each copy), the stack left on `cardjob` and the times of files the panel writes are not measured. The text viewer and editor of the file manager are not built. [Files](docs/Screens.md#files) |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash. SETUP > PANEL's Screen rotation 180° turns the picture in the flush: the screens draw into one of two logical buffers (2 x 1,228,800 bytes of PSRAM), and each flip copies what the frame drew, at most 8 rectangles of 16-row bands, into the frame buffer turned, through the ESP32-P4's PPA (pixel-processing accelerator), with the DIG-734 workaround on for every copy (`firmware/panel/ppa_dig734.cmake`). The glass's touch map turns by the flag the flip sets once the turned frame is on the glass, x' = 1023 - x, y' = 599 - y; the touch injector's contacts keep logical pixels. A flip whose copies take longer than 50ms or fail sends its frame unturned, and picture and touch stay NORMAL until the next start, with an alert on the band. The row is held while ARMED. The EK79007's scan direction (DCS command 0x36) is held by its PINCTL strap on this board and turns nothing (`test_gfx_damage`, `test_gfx_turn`, `test_touch_map`, `test_settings`, `test_settings_screen`) |
 | Panel firmware update and card files over Wi-Fi | built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_screen`, `test_wifi_layout`); the panel side is `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the IOmcu's update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the install waits while the IOmcu's update or BUY runs, and the IOmcu's question opens and its START is taken only with the radio wholly off and no install under way. On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and `esp_hosted` (`wifi_radio.c`, [Wi-Fi through the ESP32-C6](docs/Building.md#wi-fi-through-the-esp32-c6)). Measured on a home network on 2026-10-23, panel build 408c43bd: a download of a 16MiB file at 688-757kB/s, the card read and the radio together, not separated; an upload of a 2.56MB image to `/update` at 556-599kB/s; a ping average of 14.6ms; no SDIO error and 60fps during the downloads. The page, 18.9kB with its card listing, took 4.54s to arrive, about 4.2kB/s: a current limitation whose cause is not measured. Not measured: the range, the time of an erase and a write, what the glass shows during an erase, the free internal heap with the radio and the display up, a scan and the C6's firmware version. [Wi-Fi](docs/Screens.md#wi-fi), [migration](docs/FirstRun.md#1-flash-both-boards) |
 | Release check, reminder and download from GitHub | built and host-tested: the strict reading of the release tag, the redirects and `SHA256SUMS` (`shared/fwupdate/fw_release.c`, `test_fw_release`), the scan of GitHub's API answer for the highest of its 10 newest releases and the rule that offers only a newer release (`test_fw_release_scan`), the check and the download with their budgets, aborts and a scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), RELEASES' two channels and GitHub's request limit (`test_wa_fetch_channel`), and UPDATES, the reminder and the download's screen (`shared/ui/upd_screen.c`, `test_upd_screen`). The panel side is `wifi_access_fetch_*()` over esp_http_client in `firmware/panel/components/wifi_access/`. Not run on a panel or against GitHub: the API request of RELEASES on TESTING, the TLS (transport layer security) handshakes, the durations of the check and the download, and the free internal heap while a TLS connection runs are not measured. [Updates](docs/Screens.md#updates) |
@@ -219,7 +220,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 283 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 287 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_pdmini`,
@@ -234,7 +235,7 @@ The host suite is 283 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`, `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_outputs_screen_draw`, `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_layout`, `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`, `test_picker_layout`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_logview_report`, `test_log_text`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_recheck`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_rx`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_mdns`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun` and `test_fm_name`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_logview_report`, `test_log_text`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_rx`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_mdns`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun` and `test_fm_name`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -251,13 +252,21 @@ SD card mount, `firmware/panel/components/storage/`, over the ESP-IDF calls
 in `test/host/storage_stub/`; `test_storage_swap` holds a card taken out,
 swapped or put in while the panel runs over the same slot. `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun` and `test_fm_name` hold the core of
-the file manager and text editor, `shared/files/`, which the firmware
-does not link: the text buffer at 1 MiB and 65,536 line ends and one byte
+the file manager and text editor, `shared/files/`: the text buffer at 1 MiB and 65,536 line ends and one byte
 or line past them, every kind of line end, the BOM (byte order mark), tabs
 and UTF-8 units against `gfx_utf8_next()`; the highlighter on the servo
 test's and the limit run's reports in English and German, line by line,
 and on the KST files; the name rules and the path limits against the
-storage component's walk. `test/host/guard_canvas.h`
+storage component's walk. `test_fm_req` runs the card task's
+requests (`shared/files/fm_req.c`) over a card in memory: a page, INFO of
+a file and of a folder, a job to its end, CANCEL and ARMED between two
+chunks of a copy. `test_files_screen`, `test_files_ops` and
+`test_files_layout` drive FILES through taps over that card behind a card
+task on the test's thread (`test/host/files_host_io.c`): the panes, the
+paging, a card swapped, each operation and each refusal, the write gate,
+the name keyboard and the layout. The panel's card task and its table
+over the storage component, `firmware/panel/main/panel_files.c`, are not
+host-tested. `test/host/guard_canvas.h`
 puts 8 guard pixels above, below and beside a canvas, so a pixel written
 off the canvas fails the plain build and not only the sanitizer one.
 `test_fuzz_engines` runs 600 random servo tests and 2400 random stick
@@ -342,8 +351,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 468 committed screenshots to the current
-render, 234 in English and the same 234 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 492 committed screenshots to the current
+render, 246 in English and the same 246 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed). `image_slot.py`
 holds the panel image to the smaller of its two update slots.
@@ -372,7 +381,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_merge.c` | 146 | 146 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 343 | 336 | 98.0% |
-| `shared/ui/ui_icons.c` | 162 | 162 | 100.0% |
+| `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 270 | 257 | 95.2% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
@@ -382,7 +391,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 417 | 414 | 99.3% |
 | `shared/ui/ui_text.c` | 106 | 105 | 99.1% |
-| `shared/ui/ui_router.c` | 378 | 371 | 98.2% |
+| `shared/ui/ui_router.c` | 380 | 373 | 98.2% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
@@ -397,7 +406,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_draw.c` | 392 | 383 | 97.7% |
 | `shared/ui/ui_keypad.c` | 266 | 264 | 99.2% |
 | `shared/ui/ui_setting_keypad.c` | 84 | 84 | 100.0% |
-| `shared/ui/ui_textkey.c` | 304 | 293 | 96.4% |
+| `shared/ui/ui_textkey.c` | 346 | 335 | 96.8% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
 | `shared/ui/servo_screen_sweep.c` | 471 | 468 | 99.4% |
@@ -426,12 +435,15 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
 | `shared/ui/esc_stick_draw.c` | 466 | 450 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 308 | 299 | 97.1% |
+| `shared/ui/log_viewer_screen.c` | 326 | 317 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 212 | 185 | 87.3% |
-| `shared/ui/log_viewer_draw.c` | 416 | 404 | 97.1% |
-| `shared/ui/log_viewer_events.c` | 489 | 475 | 97.1% |
+| `shared/ui/log_viewer_draw.c` | 417 | 405 | 97.1% |
+| `shared/ui/log_viewer_events.c` | 492 | 478 | 97.2% |
 | `shared/ui/log_select.c` | 93 | 93 | 100.0% |
 | `shared/ui/log_text.c` | 138 | 136 | 98.5% |
+| `shared/ui/files_screen.c` | 592 | 566 | 95.6% |
+| `shared/ui/files_draw.c` | 332 | 321 | 96.7% |
+| `shared/ui/files_events.c` | 208 | 207 | 99.5% |
 | `shared/ui/settings_screen.c` | 494 | 488 | 98.8% |
 | `shared/ui/settings_draw.c` | 220 | 215 | 97.7% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
@@ -459,7 +471,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 120 | 120 | 100.0% |
-| `shared/logfile/log_take.c` | 89 | 88 | 98.9% |
+| `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
 | `shared/logfile/card_tree.c` | 76 | 76 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
 | `shared/files/text_buf.c` | 444 | 443 | 99.8% |
@@ -469,6 +481,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/files/fm_rules.c` | 173 | 172 | 99.4% |
 | `shared/files/fm_tree.c` | 165 | 164 | 99.4% |
 | `shared/files/fm_ops.c` | 401 | 395 | 98.5% |
+| `shared/files/fm_req.c` | 89 | 88 | 98.9% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 220 | 214 | 97.3% |
 | `shared/safety/safety_gate.c` | 55 | 55 | 100.0% |
@@ -604,7 +617,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 386 | 375 | 97.2% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **55247** | **54081** | **97.9%** |
+| **total** | **56568** | **55363** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -639,7 +652,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Screen rotation 180° on the board | the PPA copy of a turned frame is tested on the host with a fake engine (`test_gfx_turn`); its time on the board, the frame rate at 180° and the fallback after a PPA timeout are not measured. The host copies 77,093 px a frame on average on SERVO LIVE sweeping and 192,911 px on MOTOR & ESC LIVE ARMED | a station check: 180° on SETUP > PANEL turns the picture on the next frame; touch lands under the finger at the 4 corners and on STOP; STOP and DISARM work turned; the console's fps and `TURN` on SERVO LIVE at rest and sweeping, NORMAL against 180°; 180° kept over a restart |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The scan-out reads PSRAM by DMA (direct memory access) with no bounce buffer, and the DSI host's interrupt runs during the write (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay; not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's lines beside it |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 234 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 246 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 | Comment gaps of the existing tree | the comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in `ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`; Doxygen reports nothing inside such a file, so its other gaps are not listed until the block is added | documentation of the listed files |
 
 ## Constraints
