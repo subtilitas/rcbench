@@ -1222,15 +1222,15 @@ TEST_CASE(a_disabled_button_is_dimmer_than_an_enabled_one_in_both_themes)
         CHECK(body_off != UI_PANEL_SUNK);
         CHECK(body_off != UI_EDGE_HI);
         CHECK_EQ(fb[(on.y + 8) * W + on.x + 12], UI_PANEL_HI);
-        /* The labels: the full ink on, the faint text colour off. */
-        const gfx_color_t ink = ui_is_light(UI_PANEL_HI) ? UI_TEXT_ON_LIGHT
+        /* The labels: the full label_ink on, the faint text colour off. */
+        const gfx_color_t label_ink = ui_is_light(UI_PANEL_HI) ? UI_TEXT_ON_LIGHT
                                                          : UI_TEXT;
         unsigned text_on = 0, faint_off = 0, text_off = 0;
         for (int y = 0; y < 56; ++y) {
             for (int x = 0; x < 160; ++x) {
-                text_on   += fb[(on.y + y) * W + on.x + x] == ink;
+                text_on   += fb[(on.y + y) * W + on.x + x] == label_ink;
                 faint_off += fb[(off.y + y) * W + off.x + x] == UI_TEXT_FAINT;
-                text_off  += fb[(off.y + y) * W + off.x + x] == ink;
+                text_off  += fb[(off.y + y) * W + off.x + x] == label_ink;
             }
         }
         CHECK(text_on > 0u);
@@ -1250,16 +1250,16 @@ TEST_CASE(the_wordmark_text_reads_on_its_fill_in_both_themes)
         ui_theme_set(k_themes[t]);
         const gfx_color_t fill = UI_TEXT;
         ui_wordmark(&cv, "rcbench", fill);
-        const gfx_color_t ink = ui_is_light(fill) ? UI_TEXT_ON_LIGHT
+        const gfx_color_t label_ink = ui_is_light(fill) ? UI_TEXT_ON_LIGHT
                                                   : UI_PANEL;
         unsigned inked = 0;
         for (int y = UI_TAG_Y; y < UI_TAG_Y + UI_TAG_H; ++y) {
             for (int x = UI_TAG_X; x < UI_TAG_X + 200; ++x) {
-                inked += fb[y * W + x] == ink;
+                inked += fb[y * W + x] == label_ink;
             }
         }
         CHECK(inked > 100u);
-        CHECK(ink != fill);
+        CHECK(label_ink != fill);
     }
     ui_theme_set(UI_THEME_DARK);
 }
