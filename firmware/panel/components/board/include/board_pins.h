@@ -43,10 +43,21 @@ extern "C" {
 #define BOARD_UI_V_RES              600
 
 /**
- * @brief DPI (Display Pixel Interface) timing, in pixels and lines.  52 MHz is
- * requested; the 240 MHz DPI clock divided by 5 delivers 48 MHz, which
- * gives 60.38 Hz over 1250 x 636 (derived, not measured).  The EK79007
- * accepts 44.9 to 70.3 MHz at 60 Hz.
+ * @brief DPI (Display Pixel Interface) timing, in pixels and lines.
+ *
+ * The panel refreshes at 60.38Hz, measured: the VSYNC figure of the
+ * console's 300-frame line on the station, 2026-10-23.  52MHz is
+ * requested; ESP-IDF v5.5.5 rounds 240MHz / 52MHz to a divider of 5,
+ * which delivers 48MHz.  The defines make a frame 1354 x 636 clocks
+ * (1024 + 10 + 160 + 160 by 600 + 1 + 23 + 12); at 48MHz that alone
+ * would give 55.74Hz.  mipi_dsi_hal_host_dpi_set_horizontal_timing()
+ * (components/hal/mipi_dsi_hal.c) keeps the requested rate instead: it
+ * times the DSI host's line from 1354 clocks at 52MHz and shortens the
+ * bridge's front porch by 104 clocks, so the line is 1250 clocks at
+ * 48MHz, 26.04us either way.  52MHz over 1354 x 636 is 60.38Hz, the
+ * measured figure.  That this compensation is what sets the rate is read
+ * from the source, not from the registers.  The EK79007 accepts 44.9 to
+ * 70.3MHz at 60Hz.
  */
 #define BOARD_LCD_DPI_CLOCK_MHZ     52.0f
 #define BOARD_LCD_HSYNC_PULSE_WIDTH 10
