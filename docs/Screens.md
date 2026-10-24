@@ -2176,20 +2176,21 @@ or `Cannot read the card. Servo test not recorded.` for a test. A folder that ca
 made, because a file holds its name or the card is write-protected or full,
 reads `Cannot make folder BENCH/LOGS. Run not recorded.` A failed run makes
 the panel walk the folder again next time, so a file deleted in between
-frees its number. The list shows the CSV files and the reports standing
-alone, and DELETE on a run removes the report with the same name and number
-too. A report stands alone when no CSV of its name and number is in the
-folder: `LIMITnnn.TXT` always, and in the root `SERVOnnn.TXT` alone, the
-limit run of firmware 0.21.0 and older. `ATESTnnn.TXT` beside
-`ATESTnnn.CSV` is not listed: OPEN on the run reads the CSV. Other `.TXT`
-files are not listed. Runs are listed newest first by number, across all
-names in the folder, a report standing alone by its own number:
-`LIMIT044.TXT`, then `MOTOR043.CSV`, then `SERVO042.CSV`, then
-`SUPPL041.CSV`.
+frees its number. The list shows the CSV files and the reports, and DELETE
+on a run removes the report with the same name and number too. A report is
+a `.TXT` file named like a run (`log_report_number()`), the rule FILES
+labels a report by: `ATESTnnn.TXT` beside `ATESTnnn.CSV` or without it,
+`LIMITnnn.TXT`, which a LIMIT RUN writes with no CSV, and in the root
+`SERVOnnn.TXT`, of firmware 0.21.0 and older. A run and its report are two
+rows, the CSV first: OPEN on the CSV reads it into the import, OPEN on the
+report shows its text. Other `.TXT` files are not listed. Runs are listed
+newest first by number, across all names in the folder, a report by its own
+number: `LIMIT044.TXT`, then `MOTOR043.CSV`, then `SERVO042.CSV`, then
+`SERVO042.TXT`, then `SUPPL041.CSV`.
 
 ![A LIMIT RUN's report opened as text](img/logs-report.png)
 
-OPEN on a report standing alone shows it as text in place of the import
+OPEN on a report shows it as text in place of the import
 view: the file's name heads the panel, and its lines follow, 15 rows of up
 to 92 characters in the 10 x 20 face on screen, 22px apart. BACK is
 140 x 52px at the footer's left. A line longer than a row breaks at its last
@@ -2226,7 +2227,7 @@ hidden. A file opened from one tab stays that tab's file: its import view
 and plot read it from that folder whichever tab is chosen since.
 
 The list shows the folder a page of 48 entries at a time, and a folder holds
-up to 999 runs. Pages run newest run first: runs and reports standing alone by
+up to 999 runs. Pages run newest run first: runs and reports by
 number, highest first, then the files the bench did not write, by name. The rows of a page run the same
 way, the newest run at the top. The number in the name is what newest means:
 a file's date is only as good as the panel's clock, which starts at each
@@ -2251,16 +2252,10 @@ holds. The read runs on the task that draws the screen and handles touch. For
 measured); on the panel it is estimated at 20 to 40ms, and the directory read
 at 63 sectors of 512 bytes, about 25ms at the card's 20MHz SPI (Serial
 Peripheral Interface) clock, or 125 sectors, about 50ms, with a report beside
-every run. Neither is measured on the panel. Each entry's size comes with the
-directory read, so a page costs one walk and the selection. A folder with a
-report other than `LIMITnnn.TXT` and no CSV of its name and number beside it,
-the root of a card of firmware 0.21.0 with a limit run on it, is read twice
-per page: the first walk finds which reports stand alone, the second offers
-them. The walks keep their notes in 1,750 bytes of PSRAM (pseudo-static
-RAM), taken at the first listing after a start. Without them the list
-holds the CSV files and the `LIMITnnn.TXT` reports, a `SERVOnnn.TXT`
-standing alone is not listed, and the console says
-`no PSRAM for the list's notes`.
+every run. Neither is measured on the panel. A folder with a report beside
+every run lists up to 1,998 entries; the selection's time for those is not
+measured. Each entry's size comes with the directory read, so a page costs
+one walk and the selection.
 
 The scroll bar along the list's right edge is 56px wide, 8.4mm at the 0.150
 mm a pixel assumed for the panel (not measured). Its thumb is the rows on
@@ -2512,7 +2507,7 @@ footer.
 
 | Button | What it does |
 |---|---|
-| OPEN | enters a folder; a CSV file or a report standing alone in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs); a file LOGS does not open, one over 2GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| OPEN | enters a folder; a CSV file or a report in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs) on that folder's tab, a report as text: the names LOGS lists (`log_select_lists()`), every file the list labels REPORT among them; a file LOGS does not open, one over 2GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` A file the logger still writes is not opened, OPEN is grey and says `ATEST012.TXT is being written.`; a file gone from the card since FILES listed it says `LIMIT013.TXT is not on the card. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |

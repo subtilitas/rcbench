@@ -13,12 +13,12 @@
  *           folder, left to right: ROOT (the card's root, where firmware
  *           0.21.0 and older wrote every run), USER (USER/LOGS, the tests
  *           a user starts) and BENCH (BENCH/LOGS, the automatic logs).  The
- *           list holds the CSV files and the reports standing alone
- *           (log_select.h)
+ *           list holds the CSV files and the reports
+ *           (log_select_lists())
  *   IMPORT  what the CSV (comma-separated values) reader detected, and the
  *           controls to override it
  *   PLOT    the traces, on one time base with a scale each
- *   TEXT    a report standing alone, LIMITnnn.TXT, as text (log_text.h):
+ *   TEXT    a report, ATESTnnn.TXT or LIMITnnn.TXT, as text (log_text.h):
  *           OPEN on a report shows it in place of IMPORT
  *
  * The import view shows the detected delimiter and decimal convention before
@@ -196,7 +196,8 @@ typedef enum {
                                 that does not read)                      */
     LOG_SHOW_NOT_LISTED,   /**< a tab outside the three, or a name the list
                                 does not hold (a file other than a .csv or
-                                a report standing alone)                 */
+                                a report, one the logger has open, one
+                                gone from the card)                      */
     LOG_SHOW_OTHER_CARD    /**< the list was read from another mount than
                                 @p mount: the card was swapped; nothing is
                                 opened                                   */
