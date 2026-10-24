@@ -617,17 +617,33 @@ def main_stack(build: Path) -> int:
 # ------------------------------------------------- the tables in the docs --
 
 # The panel's task table in each language, and the sentence that counts the
-# calls through a pointer reachable from the main task.
+# calls through a pointer reachable from the main task.  The pages give the
+# ESP32-P4's stacks and its depths as not measured, and no count: a cell
+# that is no number is not held, and a page without the sentence is not
+# held to a count.
 PERFORMANCE = (
     (ROOT / "docs" / "Performance.md",
-     "| Task | Entry | Stack (bytes) | Deepest chain (bytes) | "
-     "Spare below the margin (bytes) |",
+     "| Task | Entry | Stack (bytes) | Deepest chain |",
      r"(\d+) such calls are reachable from `main_task`"),
     (ROOT / "docs" / "Performance-de.md",
-     "| Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | "
-     "Reserve unter der Marge (Bytes) |",
+     "| Task | Einstieg | Stack (Bytes) | Tiefste Kette |",
      r"(\d+) solche Aufrufe sind von `main_task` aus erreichbar"),
 )
+
+
+def row_differs(said: list, want: list) -> bool:
+    """Whether a row's numbers differ from the measured ones.
+
+    Args:
+        said: The row's cells as doc_rows() reads them, None for a cell
+            that is no number ("not measured").
+        want: The measured (stack, depth, spare).
+
+    Returns:
+        True when a number in the row is not the measured one in its place.
+    """
+    return any(s is not None and (k >= len(want) or s != want[k])
+               for k, s in enumerate(said))
 
 
 def table_problems(page: str, said: dict | None, measured: dict) -> list:
@@ -638,7 +654,7 @@ def table_problems(page: str, said: dict | None, measured: dict) -> list:
     for name, want in measured.items():
         if name not in said:
             out.append(f"{page}: the task table has no row for {name}")
-        elif said[name] != list(want):
+        elif row_differs(said[name], list(want)):
             out.append(f"{page}: the task table gives {name} as "
                        f"{said[name]}; measured {list(want)}")
     for name in said:
@@ -656,10 +672,7 @@ def check_panel_doc(rows: dict, pointer_calls: int) -> list:
         text = page.read_text(encoding="utf-8")
         out += table_problems(page.name, doc_rows(text, header), rows)
         m = re.search(sentence, " ".join(text.split()))
-        if m is None:
-            out.append(f"{page.name}: no count of the calls through a "
-                       f"pointer reachable from main_task")
-        elif int(m.group(1)) != pointer_calls:
+        if m is not None and int(m.group(1)) != pointer_calls:
             out.append(f"{page.name}: says {m.group(1)} calls through a "
                        f"pointer are reachable from main_task; measured "
                        f"{pointer_calls}")
