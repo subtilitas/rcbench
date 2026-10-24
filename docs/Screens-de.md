@@ -232,28 +232,41 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 
 - **Tastenfeld.** Eine Titelzeile von 32px, die Eingabe von 60px, dann
   4 x 4 Tasten mit 8px Abstand, 8px vom Rand der Fläche; die Tasten enden
-  spätestens 4px über dem Alarmband (unten). Über der linken Spalte von
-  SERVO, 488 x 524px, ist eine Taste 112 x 88px groß (16,8 x 13,2mm);
-  über der von SUPPLY, 546 x 494px, 126 x 80px.
+  spätestens 4px über dem Alarmband (unten). Auf SERVO ist eine Taste
+  145 x 88px groß (21,8 x 13,2mm), auf SUPPLY 145 x 76px.
   Titel und Bereich stehen im Font 10 x 20, oder in 8 x 16, wo beide nicht
   nebeneinander passen. Die Eingabe steht in den Ziffern 32 x 44 mit der
   Einheit in 12 x 24; eine Eingabe, die nicht passt, nimmt die Ziffern
-  24 x 30 mit der Einheit in 10 x 20. Ziffern und Punkt stehen in 12 x 24.
-  DEL, CLR, ABBRECHEN, OK und `+/-` teilen einen Font: den größten von
-  12 x 24, 10 x 20 und 8 x 16, in dem alle mit 6px Rand je Seite auf ihre
-  Taste passen. `ABBRECHEN` braucht für 12 x 24 eine Taste von 120px, für
-  10 x 20 eine von 102px.
+  24 x 30 mit der Einheit in 10 x 20. Ziffern und Punkt stehen im größten
+  von 20 x 36, 16 x 28, 12 x 24 und 10 x 20, dessen Zelle mit 6px Rand je
+  Seite auf eine Zifferntaste passt, sonst in 8 x 16; 20 x 36 braucht
+  eine Taste von 32 x 48px und ist der Font jedes Tastenfelds, das das
+  Panel öffnet. DEL, CLR, ABBRECHEN, OK und `+/-` teilen einen Font: den
+  größten derselben Fonts, nie größer als der der Ziffern, in dem alle
+  mit 6px Rand je Seite auf ihre Taste passen. Das englische Wort für
+  ABBRECHEN braucht für 20 x 36 eine Taste von 132px. `ABBRECHEN` braucht für 20 x 36 192px,
+  für 16 x 28 156px, für 12 x 24 120px und für 10 x 20 102px; die
+  deutschen Tastenfelder von SERVO, SUPPLY und den SETTINGS von
+  MOTOR & ESC zeigen ihre Wörter darum in 12 x 24.
 - **Tastatur.** Eine Titelzeile von 32px, das Textfeld von 52px, dann 5
   Tastenreihen mit 6px Abstand. Titel und Zähler stehen in 10 x 20, oder
   in 8 x 16, wo beide nicht nebeneinander passen. Der Text steht im Font
   20 x 36, wenn 23 Zeichen und die Schreibmarke ins Feld passen, sonst in
-  16 x 28. Buchstaben, Ziffern und Zeichen stehen in 12 x 24. Die
-  Worttasten (die untere Reihe, DEL, `ABC`, `abc`, `#+=`) teilen einen
-  Font: den größten von 12 x 24, 10 x 20 und 8 x 16, in dem alle mit 4px
-  Rand je Seite auf ihre Taste passen; VERBERGEN zählt dabei wie ANZEIGEN,
-  so ändert ein Tippen den Font nicht. Auf WI-FI nimmt die Tastatur den
-  Körper über dem Alarmband, 1008 x 484px, mit Tasten von 93 x 71px
-  (14,0 x 10,7mm) und jedem Wort in 12 x 24.
+  16 x 28. Buchstaben, Ziffern und Zeichen stehen im größten von 20 x 36,
+  16 x 28, 12 x 24 und 10 x 20, dessen Zelle mit 4px Rand je Seite auf
+  eine Zeichentaste passt, sonst in 8 x 16; 20 x 36 braucht eine Taste
+  von 28 x 44px und ist der Font jeder Tastatur, die das Panel öffnet.
+  Die Worttasten (die untere Reihe, DEL, `ABC`, `abc`, `#+=`) teilen
+  einen Font: den größten derselben Fonts, nie größer als der der
+  Zeichen, in dem alle mit 4px Rand je Seite auf ihre Taste passen;
+  VERBERGEN zählt dabei wie ANZEIGEN, so ändert ein Tippen den Font
+  nicht. Auf WI-FI nimmt die Tastatur den Körper über dem Alarmband,
+  1008 x 484px, mit Tasten von 93 x 71px (14,0 x 10,7mm) und jedem Wort
+  in 20 x 36; die Wörter der Passworttastatur stehen auf Deutsch in
+  16 x 28, da `LEERZEICHEN` zwei Tasten von 192px hat. Die
+  Namenstastaturen von SERVO, Tasten von 55 x 72px, zeigen ihre Wörter
+  in 12 x 24, die Suchtastatur von ESC STICK, Tasten von 59 x 57px, in
+  16 x 28.
 - **Auswahlliste.** Ein Feld oder eine Zeile ab 56px Höhe zeigt den Text
   im Font 20 x 36, 12px eingerückt, mit einem 11px breiten Winkel 28px
   vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10px
@@ -281,8 +294,8 @@ Tastenraster enden auf jedem Bildschirm 4px über dem Alarmband, bei
 Körper-y 492. Ein Tastenfeld oder eine Tastatur, deren Fläche weiter reicht,
 malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
-112 x 88px groß und die der Tastaturen 41 x 72px; auf SUPPLY die des
-Tastenfelds 126 x 80px; auf der Suchtastatur von ESC STICK 59 x 57px; auf
+145 x 88px groß und die der Tastaturen 55 x 72px; auf SUPPLY die des
+Tastenfelds 145 x 76px; auf der Suchtastatur von ESC STICK 59 x 57px; auf
 SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89px; auf BALANCE die
 des Tastenfelds der Blattzahl 242 x 72px.
 
