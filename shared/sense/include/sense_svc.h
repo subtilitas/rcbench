@@ -124,11 +124,12 @@ typedef struct {
     sense_run_t run;
     sense_cap_state_t cap_state;
     uint16_t cap_seq;            /**< captures ended, modulo 65536          */
-    uint32_t cap_move_t;         /**< 0.1ms                                */
-    uint32_t cap_arrive_t;       /**< 0.1ms                                */
-    int32_t  cap_peak_ua, cap_mean_ua;
-    uint32_t cap_samples;
-    bool     cap_clipped;
+    uint32_t cap_move_t;         /**< 0.1ms                                 */
+    uint32_t cap_arrive_t;       /**< 0.1ms                                 */
+    int32_t  cap_peak_ua;        /**< the capture's peak current, µA        */
+    int32_t  cap_mean_ua;        /**< the capture's mean current, µA        */
+    uint32_t cap_samples;        /**< the capture's samples                 */
+    bool     cap_clipped;        /**< a sample of it read an end of the range */
     /* The output encoder (AS5600). */
     sense_state_t enc;
     bool     enc_have_angle;     /**< enc_raw is a reading of this set-up  */

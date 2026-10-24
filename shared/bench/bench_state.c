@@ -15,10 +15,10 @@
 
 /* The scales of the BENCH page registers, matching link_pages.h.  A scale
  * that disagrees with the wire produces a wrong reading, not a crash. */
-#define CV_PER_V   100.0f   /* 10mV steps  */
-#define CA_PER_A   100.0f   /* 10mA steps  */
-#define DC_PER_C    10.0f   /* 0.1C steps  */
-#define DWH_PER_WH  10.0f   /* 0.1Wh steps */
+#define CV_PER_V   100.0f   /**< 10mV steps */
+#define CA_PER_A   100.0f   /**< 10mA steps */
+#define DC_PER_C    10.0f   /**< 0.1C steps */
+#define DWH_PER_WH  10.0f   /**< 0.1Wh steps */
 
 /**
  * @brief Decodes an unsigned register value into units.

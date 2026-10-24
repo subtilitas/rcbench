@@ -135,16 +135,16 @@ extern "C" {
  *
  * At these, every setting is under 2^32 ticks at any 32-bit tick_hz.
  */
-#define TONE_WINDOW_US_MAX 100000u   /**< 100ms                          */
-#define TONE_GAP_US_MAX    1000000u  /**< 1s                             */
-#define TONE_GLITCH_NS_MAX 10000u    /**< 10us                           */
-#define TONE_HOLD_NS_MAX   100000u   /**< 100us                          */
+#define TONE_WINDOW_US_MAX 100000u   /**< 100ms                           */
+#define TONE_GAP_US_MAX    1000000u  /**< 1s                              */
+#define TONE_GLITCH_NS_MAX 10000u    /**< 10us                            */
+#define TONE_HOLD_NS_MAX   100000u   /**< 100us                           */
 
 /** @brief Detector settings, as given to tone_init(). */
 typedef struct {
     uint32_t tick_hz;        /**< the edge stamps' clock                  */
-    uint32_t window_us;      /**< a window's length, 1000 to 100000us    */
-    uint32_t f_min_hz;       /**< lowest tone, at least 50Hz             */
+    uint32_t window_us;      /**< a window's length, 1000 to 100000us     */
+    uint32_t f_min_hz;       /**< lowest tone, at least 50Hz              */
     uint32_t f_max_hz;       /**< highest tone                            */
     /**
      * @brief Rise intervals up to this carrier's period are chopping inside a

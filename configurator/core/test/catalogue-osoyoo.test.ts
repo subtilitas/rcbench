@@ -40,9 +40,9 @@ test('coverage: the figure names each measured file and fails without its record
     { file: 'catalogue.ts', found: 9, hit: 9 },
   ]);
   assert.ok(block.startsWith(BEGIN) && block.endsWith(END));
-  assert.match(block, /\| `resolve\.ts` \| 183 \| 184 \| 99\.4 % \|/);
-  assert.match(block, /\| `cond\.ts` \| 51 \| 51 \| 100\.0 % \|/);
-  assert.match(block, /\| `groups\.ts` \| 199 \| 200 \| 99\.5 % \|/);
+  assert.match(block, /\| `resolve\.ts` \| 183 \| 184 \| 99\.4% \|/);
+  assert.match(block, /\| `cond\.ts` \| 51 \| 51 \| 100\.0% \|/);
+  assert.match(block, /\| `groups\.ts` \| 199 \| 200 \| 99\.5% \|/);
   assert.doesNotMatch(block, /catalogue/);
   assert.throws(() => figure([{ file: 'cond.ts', found: 51, hit: 51 }]), /no record for resolve\.ts/);
   assert.deepEqual(MEASURED, ['resolve.ts', 'cond.ts', 'groups.ts', 'sim.ts']);

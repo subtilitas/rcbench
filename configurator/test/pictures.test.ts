@@ -148,6 +148,6 @@ test('README.md states the file count and the size of the picture folder', () =>
   const names = readdirSync(DIR);
   const bytes = names.reduce((sum, name) => sum + statSync(`${DIR}${name}`).size, 0);
   const readme = readFileSync(fileURLToPath(new URL('../README.md', import.meta.url)), 'utf8');
-  const line = `Picture folder: ${names.length} files, ${(bytes / 1000).toFixed(1)} kB.`;
+  const line = `Picture folder: ${names.length} files, ${(bytes / 1000).toFixed(1)}kB.`;
   assert.ok(readme.includes(line), `README.md does not hold the line "${line}"`);
 });

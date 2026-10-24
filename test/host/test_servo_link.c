@@ -912,7 +912,7 @@ TEST_CASE(a_pulse_is_clamped_to_the_range_it_names)
         { 1000u, 2000u, 1250u, 250u, 1000u, 2000u },
         {  660u,  860u,  760u, 500u,  660u,  860u },   /* narrow servo  */
         {    0u,    0u, 1750u, 750u, 1000u, 2000u },   /* none named    */
-        {  300u, 2000u, 1500u, 500u, 1000u, 2000u },   /* below 400us  */
+        {  300u, 2000u, 1500u, 500u, 1000u, 2000u },   /* below 400us   */
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         up(1u, 0x01u);

@@ -180,7 +180,7 @@ TEST_CASE(every_file_is_listed_with_a_link_back_to_it)
     /* The upload is offered, with the slot as the size limit. */
     CHECK(strstr(g_p.buf, "f.size>4063232") != NULL);
     CHECK(strstr(g_p.buf, "Installed: 0.19.0") != NULL);
-    CHECK(strstr(g_p.buf, "INSTALL is held for 2 s on the panel") != NULL);
+    CHECK(strstr(g_p.buf, "INSTALL is held for 2s on the panel") != NULL);
     CHECK_EQ(fs.dirs_open, 0);
     fake_free(&fs);
 }
@@ -405,7 +405,7 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     wa_page_upload_result(&g_o, false, FW_OK, &info, false);
     CHECK(wa_out_flush(&g_o));
     CHECK_STR_EQ(g_p.buf, "Received and checked: panel firmware 0.20.1. To "
-                          "install, hold INSTALL on the panel for 2 s.");
+                          "install, hold INSTALL on the panel for 2s.");
     begin(-1);
     wa_page_upload_result(&g_o, true, FW_OK, &info, true);
     CHECK(wa_out_flush(&g_o));

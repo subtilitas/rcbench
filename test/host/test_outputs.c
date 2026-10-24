@@ -1057,7 +1057,7 @@ TEST_CASE(boot_arms_an_uncommanded_surface_at_its_centre)
 }
 
 /*
- * The same bench with a narrow servo: 660..860 us, where the low endpoint is
+ * The same bench with a narrow servo: 660..860us, where the low endpoint is
  * the servo's hard stop.  Centre is 760us and that is where an uncommanded
  * channel arms.
  */

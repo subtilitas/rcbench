@@ -134,6 +134,15 @@ history is in git.
 
 ### Changed
 
+- A number and its unit stand together, with no space: `40s`, `6.00V`,
+  `20ms`, `100%`, `180°`, `100.0mOhm`, in English and German. This holds
+  for every screen text, the servo test's and the limit run's `.TXT`
+  reports, the Wi-Fi page, the web help, the docs and the code's comments.
+  A word after a number keeps its space (`3 servos`), and so do the log
+  and console lines, the CSV headers and the KST servo configuration file.
+  `tools/check_units.py --check` holds the rule in CI; its exceptions are
+  in `tools/check_units_allow.txt`, each with its reason.
+
 - `tools/check_sizes.py` counts code lines: a line that is not blank and
   not comment-only. Block and `//` comments, Doxygen blocks included, and in
   Python `#` comments and docstrings do not count; a line with code and a

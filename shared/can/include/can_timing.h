@@ -1,6 +1,7 @@
-/*
- * CAN (Controller Area Network) bit timing: a wanted bit rate turned into
- * segment counts.
+/**
+ * @file
+ * @brief CAN (Controller Area Network) bit timing: a wanted bit rate turned
+ *        into segment counts.
  *
  * A CAN controller divides its source clock into time quanta and splits each
  * bit into one sync quantum plus two programmable segments.  A bit rate that
@@ -64,14 +65,14 @@ typedef struct {
 } can_timing_t;
 
 /**
- * The sample point CiA (CAN in Automation) recommends for rates above
+ * @brief The sample point CiA (CAN in Automation) recommends for rates above
  * 800kbit/s, in permille.  Later is better for propagation delay and worse
  * for oscillator tolerance; 87.5% is the usual compromise.
  */
 #define CAN_SAMPLE_POINT_DEFAULT 875
 
 /**
- * The sample point this link uses, at both ends.
+ * @brief The sample point this link uses, at both ends.
  *
  * The IOmcu's XL2515 has one way to make 1Mbit/s from a 16MHz
  * crystal: the smallest divisor and 8 quanta per bit, the fewest a bit may

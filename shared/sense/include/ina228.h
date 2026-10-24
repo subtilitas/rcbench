@@ -204,7 +204,7 @@ typedef enum {
     INA228_SETUP_OK = 0,
     INA228_SETUP_BAD_ADDR,     /**< outside 0x40 to 0x4F                  */
     INA228_SETUP_NO_SHUNT,     /**< a shunt of 0 µΩ                       */
-    INA228_SETUP_NO_MAX,       /**< a maximum current of 0mA             */
+    INA228_SETUP_NO_MAX,       /**< a maximum current of 0mA              */
     INA228_SETUP_OVER_RANGE,   /**< the maximum drops more than 163.84mV
                                     across the shunt, or the range's full
                                     scale passes INA228_FS_MA_LIMIT        */

@@ -317,8 +317,8 @@ typedef struct {
     bool     orphan;      /**< the command's trigger found a queue full:
                                its end is not said                         */
     uint16_t pulse;
-    uint32_t changed_t;   /**< its last change, 0.1ms                     */
-    uint32_t cmd_t;       /**< its last command's trigger time, 0.1ms     */
+    uint32_t changed_t;   /**< its last change, 0.1ms                      */
+    uint32_t cmd_t;       /**< its last command's trigger time, 0.1ms      */
 } sense_trace_watch_t;
 
 /** @brief Where the header stands. */
@@ -379,8 +379,8 @@ typedef struct {
     atomic_uint_fast32_t fed;     /**< the start, 0.1ms, of the last tick
                                        whose records are in; core 1 moves
                                        it, after the tick's drops          */
-    sense_trace_src_t src;
-    sense_trace_out_t out;
+    sense_trace_src_t src;        /**< core 1's own                      */
+    sense_trace_out_t out;        /**< core 0's own                      */
 } sense_trace_t;
 
 /**

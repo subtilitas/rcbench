@@ -1,7 +1,9 @@
-/*
- * The programmable supply, on the control task: the PD (USB Power
- * Delivery) mini over the IOmcu's SUPPLY page, or the panel's model,
- * its steps at the sample cadence, its run's rows for the log, and its page.
+/**
+ * @file
+ * @brief The programmable supply, on the control task: the PD (USB Power
+ *        Delivery) mini over the IOmcu's SUPPLY page, or the panel's model,
+ *        its steps at the sample cadence, its run's rows for the log, and its
+ *        page.
  *
  * SPDX-License-Identifier: MIT
  */

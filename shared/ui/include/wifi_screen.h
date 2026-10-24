@@ -160,7 +160,7 @@ typedef struct {
 #define WIFI_REQ_CODE_ON   0x040u   /**< the page asks for the access code */
 #define WIFI_REQ_CODE_OFF  0x080u   /**< the page asks for no access code  */
 #define WIFI_REQ_DISCARD   0x100u   /**< drop the staged image           */
-#define WIFI_REQ_INSTALL   0x200u   /**< the 2s hold completed          */
+#define WIFI_REQ_INSTALL   0x200u   /**< the 2s hold completed           */
 
 /** Hand the screen what to show. */
 void wifi_screen_set(const wifi_view_t *v);

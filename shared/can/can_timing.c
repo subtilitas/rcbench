@@ -1,4 +1,9 @@
-/*
+/**
+ * @file
+ * @brief CAN (Controller Area Network) bit timing: the segment counts
+ *        for a bit rate, and the limits of each controller.  See
+ *        can_timing.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

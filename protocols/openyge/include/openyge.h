@@ -162,8 +162,8 @@ bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
 /* ------------------------------------------------------------ telemetry */
 
 typedef struct {
-    float    volts;          /**< battery volts, from 10mV counts          */
-    float    amps;           /**< battery amps, from 10mA counts           */
+    float    volts;          /**< battery volts, from 10mV counts           */
+    float    amps;           /**< battery amps, from 10mA counts            */
     uint16_t consumption_mah; /**< consumed charge, mAh                    */
     uint32_t erpm;           /**< electrical rpm, the wire value times 10   */
     int8_t   pwm_pct;        /**< output duty */

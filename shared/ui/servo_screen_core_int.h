@@ -138,8 +138,11 @@ float svs_cmd_to_us(float cmd);
 /** @brief The angle the pin drives on an armed bench while nothing
  *         commands it: the outputs layer's rest for a surface. */
 float svs_rest_deg(void);
-/** @brief SPEED @p pct as the bench's slew, channel-span units a second;
- *         0 at 100%, which is no slew. */
+/**
+ * @brief SPEED as the bench's slew.
+ * @param pct SPEED, %
+ * @return channel-span units a second; 0 at 100%, which is no slew
+ */
 uint16_t svs_slew_of(int pct);
 
 /* servo_screen_sweep.c */

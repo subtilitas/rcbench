@@ -173,10 +173,10 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     }
     CHECK(six >= 0);
     CHECK_STR_EQ(esc_stick_panel_row_why(six),
-                 "20.0 V; ESC maximum 8.4 V");
+                 "20.0V; ESC maximum 8.4V");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(esc_stick_panel_row_why(six),
-                 "20.0 V; ESC höchstens 8.4 V");
+                 "20.0V; ESC höchstens 8.4V");
     ui_text_set_language(UI_LANG_EN);
     open_model("hobbywing-flyfun-8item", "FlyFun-6A");
     CHECK(esc_stick_panel_page() == NULL);   /* refused */
@@ -194,7 +194,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     hold_for(2.25f);
     CHECK_EQ(esc_stick_panel_runs(), 0u);
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "VOLTAGE 20.0 V exceeds the ESC limit of 8.4 V.");
+                 "VOLTAGE 20.0V exceeds the ESC limit of 8.4V.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -247,7 +247,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
         row = (q != NULL && strcmp(q->id, "card-one-amp") == 0) ? i : row;
     }
     const char *why = esc_stick_panel_row_why(row);
-    CHECK(why != NULL && strcmp(why, "2.0 A; ESC maximum 1 A") == 0);
+    CHECK(why != NULL && strcmp(why, "2.0A; ESC maximum 1A") == 0);
     settings_set(SET_STICK_I, 1.0f);
     scr->tick(0.02f);
     CHECK(esc_stick_panel_row_why(row) == NULL);
@@ -259,7 +259,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     hold_for(2.25f);
     CHECK_EQ(esc_stick_panel_runs(), 0u);
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "CURRENT LIMIT 2.0 A exceeds the ESC rating of 1 A.");
+                 "CURRENT LIMIT 2.0A exceeds the ESC rating of 1A.");
     settings_set(SET_STICK_I, 1.0f);
     scr->leave();
     esc_profiles_clear_overrides();
@@ -295,7 +295,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     const uint32_t mv = esc_stick_model_mv(esc_profiles_find(
                                                "kontronik-kontrol-x"), -1);
     snprintf(want, sizeof(want),
-             "%u.%u V uses the family's lowest cell count. This ESC's "
+             "%u.%uV uses the family's lowest cell count. This ESC's "
              "rating is unknown.",
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
     CHECK_STR_EQ(esc_stick_panel_note(), want);

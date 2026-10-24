@@ -1,5 +1,6 @@
-/*
- * SHA-256 (Secure Hash Algorithm, 256 bit), FIPS 180-4, in portable C.
+/**
+ * @file
+ * @brief SHA-256 (Secure Hash Algorithm, 256 bit), FIPS 180-4, in portable C.
  *
  * The panel's application image carries the SHA-256 of everything before it
  * in its last 32 bytes; the update checks it before the first erase.  Written
@@ -28,7 +29,7 @@ extern "C" {
 typedef struct {
     uint32_t h[8];
     uint64_t bits;        /**< message length so far */
-    uint8_t  block[64];
+    uint8_t  block[64];   /**< the block being filled */
     uint32_t fill;        /**< bytes in @c block */
 } fw_sha256_t;
 

@@ -2308,9 +2308,9 @@ Eine Datei öffnet mit bis zu 4 gewählten Spalten: in einer SERVO-Datei
 die nächsten Zahlenspalten; in jeder anderen Datei ihre ersten 4
 Zahlenspalten. Jede numerische Spalte zeigt ihren Bereich vom kleinsten zum größten Wert:
 mit einer Nachkommastelle, solange beide Enden unter 1000 liegen, ab 1000
-ohne (`11.9..12.6 V`, `2392..14639 rpm`). Ein Bereich breiter als die 17
-Zeichen seines Felds verliert die Nachkommastelle, dann das Leerzeichen vor
-der Einheit (`-1000..-1000rpm`, `-14639..-14639rpm`); ein noch breiterer
+ohne (`11.9..12.6V`, `2392..14639rpm`). Ein Bereich breiter als die 17
+Zeichen seines Felds verliert die Nachkommastelle (`-999.9..-999.9mOhm`
+wird `-1000..-1000mOhm`); ein noch breiterer
 wird am Rand des Felds abgeschnitten. Eine Zeile endet an ihrem
 Zeilenvorschub (LF, 0x0A). Text nach dem letzten Zeilenvorschub ist eine
 Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat: Sie

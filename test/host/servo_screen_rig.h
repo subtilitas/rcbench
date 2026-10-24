@@ -167,10 +167,8 @@ static inline bool row_reads(const char *text, ui_color_id_t col)
                   ui_theme_color(UI_C_PANEL));
     char num[24];
     snprintf(num, sizeof(num), "%s", text);
-    char *sp = strchr(num, ' ');
-    if (sp != NULL) {
-        *sp = '\0';
-    }
+    num[strcspn(num, " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")]
+        = '\0';
     hero_want(num, ui_theme_color(col));
     return same_in(fb, want_fb, CUR_X, CUR_Y, CUR_W, CUR_H);
 }

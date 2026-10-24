@@ -1,5 +1,6 @@
-/*
- * Writing a new panel application into the slot that is not running.
+/**
+ * @file
+ * @brief Writing a new panel application into the slot that is not running.
  *
  * Takes an image already in memory, a pointer and a length, and knows
  * nothing about where it came from (fw_upload.h brings it there).  The whole
@@ -37,7 +38,7 @@
 extern "C" {
 #endif
 
-/** Bytes per write step: one 64kB block, erased as the write reaches it. */
+/** @brief Bytes per write step: one 64kB block, erased as the write reaches it. */
 #define FW_WRITE_CHUNK (64u * 1024u)
 
 /* ---------------------------------------------------------------- the gate */

@@ -326,7 +326,7 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, 1.0f);
     strip(line, sizeof(line), true, NULL);
     CHECK_STR_EQ(line,
-                 "TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   ARMED");
+                 "TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   ARMED");
 
     /* A reading below zero is no reading. */
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, -0.1f);
@@ -345,7 +345,7 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, 1.0f);
     strip(line, sizeof(line), false, NULL);
     CHECK_STR_EQ(line,
-                 "ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE");
+                 "ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60V  1.00A   SAFE");
     supply(true, false, 0u, 0.0f, 0.0f);
     strip(line, sizeof(line), true, NULL);
     CHECK_STR_EQ(line, "ZIEL DSHOT300 GP0 GP1   NETZTEIL AUS   ARMED");
@@ -419,7 +419,7 @@ TEST_CASE(the_widest_strip_fits_the_row_in_both_languages)
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 99.994f,
            99.994f);
     (void)motor_output_strip(line, sizeof(line), 4u, 3u, true, false, NULL);
-    CHECK(strstr(line, "99.99 V  99.99 A") != NULL);
+    CHECK(strstr(line, "99.99V  99.99A") != NULL);
 }
 
 /* The strip repaints when what it says changes: the supply's reading and

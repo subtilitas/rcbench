@@ -397,9 +397,9 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
         CHECK_NEAR(mod_s, 20.0f, 0.1f);
         CHECK_EQ(every, 50u);
         CHECK(strstr(bench.out.report, "Current:        INA3221 0x41 CH2, shunt "
-                                   "100.0 mOhm, range 1.638 A\n") != NULL);
+                                   "100.0mOhm, range 1.638A\n") != NULL);
         CHECK(strstr(bench.out.report, "Result:         PASS\n") != NULL);
-        CHECK(strstr(bench.out.report, "STALL AT 1.50 A cannot be reached")
+        CHECK(strstr(bench.out.report, "STALL AT 1.50A cannot be reached")
               == NULL);
     }
 }
@@ -517,7 +517,7 @@ TEST_CASE(a_full_run_on_the_pd_mini_beside_a_working_ina3221)
     }
     CHECK(strstr(bench.out.report, "Current:        PD mini\n") != NULL);
     CHECK(strstr(bench.out.report, "INA3221:        not used: it has worked "
-                               "for less than 1 s\n") != NULL);
+                               "for less than 1s\n") != NULL);
 }
 
 /* The part stops answering in the middle of a run on it: the run ends
@@ -606,8 +606,8 @@ TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
     CHECK(bench.t.clipped >= 19u);
     CHECK(bench.t.stalled);
     b_check_ended(SERVO_TEST_AB_STALL);
-    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638 A, STALL AT "
-                               "1.50 A: FAIL\n") != NULL);
+    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638A, STALL AT "
+                               "1.50A: FAIL\n") != NULL);
     CHECK(strstr(bench.out.report, "Clipped:        ") != NULL);
     CHECK(rows_with(bench.out.csv, COL_CLIPPED, "50") >= 15u);
     CHECK(rows_with(bench.out.csv, COL_CURRENT, "1.638") >= 15u);
@@ -624,13 +624,13 @@ TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
     CHECK(bench.t.clipped > 40u);
     CHECK_EQ(bench.t.cc_readings, 0u);
     CHECK_NEAR(bench.t.stall_peak_a, 1.638f, 0.001f);
-    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638 A, STALL AT "
-                               "2.00 A: PASS\n") != NULL);
-    CHECK(strstr(bench.out.report, "STALL AT 2.00 A cannot be reached: INA3221 "
-                               "range 1.638 A\n") != NULL);
+    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638A, STALL AT "
+                               "2.00A: PASS\n") != NULL);
+    CHECK(strstr(bench.out.report, "STALL AT 2.00A cannot be reached: INA3221 "
+                               "range 1.638A\n") != NULL);
     char want[96];
     snprintf(want, sizeof(want), "Clipped:        %lu windows hold a sample "
-             "at an end of the range, 1.638 A", (unsigned long)bench.t.clipped);
+             "at an end of the range, 1.638A", (unsigned long)bench.t.clipped);
     CHECK(strstr(bench.out.report, want) != NULL);
 }
 
@@ -654,10 +654,10 @@ TEST_CASE(a_servo_on_a_stop_against_the_limit_ends_on_constant_current)
     CHECK(bench.t.cc_longest_ms >= 1000u && bench.t.cc_longest_ms < 1000u + PD_MS);
     CHECK_NEAR(bench.t.stall_peak_a, 1.0f, 0.002f);
     b_check_ended(SERVO_TEST_AB_CC);
-    CHECK(strstr(bench.out.report, "STALL AT 2.00 A cannot be reached: current "
-                               "limit 1.00 A\n") != NULL);
-    CHECK(strstr(bench.out.report, "STALL AT 2.00 A cannot be reached: INA3221 "
-                               "range 1.638 A\n") != NULL);
+    CHECK(strstr(bench.out.report, "STALL AT 2.00A cannot be reached: current "
+                               "limit 1.00A\n") != NULL);
+    CHECK(strstr(bench.out.report, "STALL AT 2.00A cannot be reached: INA3221 "
+                               "range 1.638A\n") != NULL);
 }
 
 /* A shunt wired the other way round, through the chain: the part's signed

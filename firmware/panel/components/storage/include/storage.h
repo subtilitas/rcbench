@@ -240,7 +240,7 @@ int storage_walk_counted(const char *dir, const char *suffixes,
                          storage_tick_fn tick, unsigned *left_out);
 
 /**
- * The size, kind and time of one file or folder, by its full path under
+ * @brief The size, kind and time of one file or folder, by its full path under
  * STORAGE_MOUNT_POINT, e.g. "/sdcard/BENCH/RCBENCH.LOG".
  *
  * FatFs's own f_stat(), for its 64-bit size.  stat() through the VFS

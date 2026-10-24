@@ -1071,7 +1071,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     CHECK_EQ(r.with_sample, 380u);              /* each sample once   */
     CHECK_EQ(r.bare, r.rows - 380u);
     CHECK_EQ(r.same_time, r.bare);
-    CHECK(r.bare >= 20u);                       /* 3ms a poll in 50  */
+    CHECK(r.bare >= 20u);                       /* 3ms a poll in 50   */
     CHECK_EQ(r.stepped, 0u);
     CHECK_EQ(r.wrong, 0u);
     CHECK_EQ(r.back, 0u);

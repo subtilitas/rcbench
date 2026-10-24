@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-/** The highest supply voltage a standard servo is rated for, mV: a
+/** @brief The highest supply voltage a standard servo is rated for, mV: a
  *  programming voltage above it needs HV SERVO and a 2s hold. */
 #define KST_PANEL_STD_MV 6000u
 /** Characters of a file name typed on the keyboard at most.  A file with a
@@ -180,8 +180,13 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
 /** Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.
  *  The run's first write holds the servo as read (kst_prog_run_hold()). */
 kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right);
-/** Write PULSE LOWER and PULSE UPPER, 0.1us, and nothing else; as
- *  kst_panel_run_write() otherwise. */
+/**
+ * @brief Write PULSE LOWER and PULSE UPPER and nothing else; as
+ *        kst_panel_run_write() otherwise.
+ * @param lower_dus PULSE LOWER, 0.1us
+ * @param upper_dus PULSE UPPER, 0.1us
+ * @return as kst_panel_run_write()
+ */
 kst_prog_msg_id_t kst_panel_run_pulses(uint16_t lower_dus, uint16_t upper_dus);
 /** LEAVE. */
 kst_prog_msg_id_t kst_panel_run_leave(void);
@@ -197,11 +202,19 @@ kst_panel_run_t kst_panel_run_poll(void);
  *         powered; false otherwise.
  */
 bool kst_panel_run_no_servo(void);
-/** The servo as read: its two angles, the values both take by the hard
- *  rules, REVERSION, its type number, and NEUTRAL, PULSE LOWER and PULSE
- *  UPPER in 0.1us (0 for one not shown).  False with none read, or one
- *  that is not editable (no KST or Chaservo servo, in doubt); the angles
- *  are filled then where a servo was read. */
+/**
+ * @brief The servo as read.
+ * @param angle out: its two angles; filled also when false is returned,
+ *        where a servo was read
+ * @param lo out: the value both angles take by the hard rules, at least
+ * @param hi out: and at most
+ * @param reversion out: REVERSION
+ * @param type out: its type number
+ * @param pulse_dus out: NEUTRAL, PULSE LOWER and PULSE UPPER in 0.1us, 0
+ *        for one not shown
+ * @return false with none read, or one that is not editable (no KST or
+ *         Chaservo servo, in doubt)
+ */
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
                          bool *reversion, unsigned *type,
                          uint16_t pulse_dus[3]);

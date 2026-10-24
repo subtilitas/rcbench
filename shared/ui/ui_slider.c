@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The draggable value with presets.  See ui_slider.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

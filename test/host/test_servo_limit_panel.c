@@ -392,7 +392,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     CHECK(strstr(bench.report, "RCBENCH SERVO LIMIT REPORT\n") == bench.report);
     CHECK(strstr(bench.report, "FOUND") != NULL);
     CHECK(strstr(bench.report, "search only, nothing written") != NULL);
-    CHECK(strstr(bench.report, "INA3221 0x40 CH1, 50 ms windows") != NULL);
+    CHECK(strstr(bench.report, "INA3221 0x40 CH1, 50ms windows") != NULL);
     CHECK(strstr(bench.report, "Not run: search only.") != NULL);
     CHECK(strstr(bench.report, "RESTORE") == NULL);
     unsigned lo = 0u, hi = 0u;
@@ -411,8 +411,8 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     snprintf(want, sizeof(want), TR(SV_LIM_VERDICT),
              ui_servo_str(SERVO_STR_L_FOUND));
     CHECK(lim_box_reads(0, want, UI_C_ACCENT));
-    snprintf(a, sizeof(a), "%u us", lo);
-    snprintf(z, sizeof(z), "%u us", hi);
+    snprintf(a, sizeof(a), "%uus", lo);
+    snprintf(z, sizeof(z), "%uus", hi);
     snprintf(want, sizeof(want), TR(SV_LIM_ENDS), a, z);
     CHECK(lim_box_reads(1, want, UI_C_TEXT));
     /* Under them the output they were found on, SERVO PWM GP2.  It stays
@@ -572,7 +572,7 @@ TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
             CHECK(strstr(bench.report, "ABORTED") != NULL);
         }
         if (how == 5) {
-            CHECK(strstr(bench.report, "no INA3221 window for 0.2 s")
+            CHECK(strstr(bench.report, "no INA3221 window for 0.2s")
                   != NULL);
             /* The box says it too, under ABORTED. */
             char want[64];

@@ -517,7 +517,7 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(!sensors_rows_unheld(SET_INA_FIT(1)));
     CHECK(!sensors_rows_unheld(SET_HITEC_RX));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(3)),
-                 "IOmcu older than 4.25: one INA3221, CH1 at 1 kHz.");
+                 "IOmcu older than 4.25: one INA3221, CH1 at 1kHz.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(6)),
                  "Every channel off. The IOmcu takes no such part.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(9)),
@@ -649,13 +649,13 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
         unsigned ch; uint16_t ma; int watch; const char *en;
     } k[] = {
         { 0u, 10u, SENS_W_NONE,
-          "INA3221 0x40 CH1 over its 0.01 A limit." },
+          "INA3221 0x40 CH1 over its 0.01A limit." },
         { 4u, 990u, SENS_W_SUPPLY,
-          "INA3221 0x41 CH2 (SUPPLY) over its 0.99 A limit." },
+          "INA3221 0x41 CH2 (SUPPLY) over its 0.99A limit." },
         { 8u, 32760u, SENS_W_PORT_1,
-          "INA3221 0x42 CH3 (PORT 1) over its 32.76 A limit." },
+          "INA3221 0x42 CH3 (PORT 1) over its 32.76A limit." },
         { 11u, 32767u, SENS_W_OUT_1 + 7,
-          "INA3221 0x43 CH3 (OUT 8) over its 32.77 A limit." },
+          "INA3221 0x43 CH3 (OUT 8) over its 32.77A limit." },
     };
     char buf[UI_ALERT_MAX];
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -684,22 +684,22 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
                                     SENSE_LIMIT_LINK_EV_OVER, 0u, 10u,
                                     SENS_W_NONE),
                  "INA3221 0x40 CH1 \xc3\xbc"
-                 "ber der Grenze von 0.01 A.");
+                 "ber der Grenze von 0.01A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_OVER, 4u, 990u,
                                     SENS_W_SUPPLY),
                  "INA3221 0x41 CH2 (NETZTEIL) \xc3\xbc"
-                 "ber der Grenze von 0.99 A.");
+                 "ber der Grenze von 0.99A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_OVER, 8u, 32760u,
                                     SENS_W_PORT_1),
                  "INA3221 0x42 CH3 (PORT 1) \xc3\xbc"
-                 "ber der Grenze von 32.76 A.");
+                 "ber der Grenze von 32.76A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_OVER, 11u, 32767u,
                                     SENS_W_SUPPLY),
                  "INA3221 0x43 CH3 (NETZTEIL) \xc3\xbc"
-                 "ber der Grenze von 32.77 A.");
+                 "ber der Grenze von 32.77A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
                  "INA3221-Grenzen abgelehnt. SETUP > SENSOREN pr"

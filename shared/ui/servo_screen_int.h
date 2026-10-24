@@ -667,7 +667,7 @@ typedef struct {
      * every restart, as a profile that can destroy a servo is.
      */
     servo_test_t test;
-    bool      test_hv;       /**< HV SERVO: 7.4 and 8.4V run          */
+    bool      test_hv;       /**< HV SERVO: 7.4 and 8.4V run           */
     ui_hold_t test_hold;
     bool      test_down;
     uint32_t  test_rev;

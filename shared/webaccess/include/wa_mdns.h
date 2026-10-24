@@ -1,6 +1,7 @@
-/*
- * The panel's name on the home network: an mDNS (multicast Domain Name
- * System, RFC 6762) answer for "rcbench-1A2B.local".
+/**
+ * @file
+ * @brief The panel's name on the home network: an mDNS (multicast Domain Name
+ *        System, RFC 6762) answer for "rcbench-1A2B.local".
  *
  * Only the one name and only its address (type A): a query for it, of type
  * A or ANY, is answered; everything else is not.  A query from port 5353 is

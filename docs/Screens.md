@@ -2096,9 +2096,9 @@ SERVO file `pulse`, `angle`, `current` and `voltage`, each where it holds
 numbers, then the next numeric columns; in any other file its first 4
 numeric columns. Each numeric column shows its range, lowest to
 highest: one decimal while both ends are below 1000, none from 1000 on
-(`11.9..12.6 V`, `2392..14639 rpm`). A range wider than the 17 glyphs of
-its box drops the decimal, then the space before the unit
-(`-1000..-1000rpm`, `-14639..-14639rpm`); a wider one is cut at the box's
+(`11.9..12.6V`, `2392..14639rpm`). A range wider than the 17 glyphs of
+its box drops the decimal (`-999.9..-999.9mOhm` reads
+`-1000..-1000mOhm`); a wider one is cut at the box's
 edge. A row ends at its line feed (LF, 0x0A).
 Text after the last line feed is a row cut off by a power loss or a full
 card: it can hold every field and a number cut short, `95` of `9554`, so it

@@ -70,9 +70,15 @@ static inline gfx_color_t ui_theme_color(ui_color_id_t id)
 
 /** Recompute the palette.  Call ui_router_invalidate() after. */
 void ui_theme_set(ui_theme_id_t theme);
-/** 20..100 %.  Scales the whole palette. */
+/**
+ * @brief Scales the whole palette.
+ * @param percent the brightness, 20..100%
+ */
 void ui_theme_set_brightness(int percent);
-/** 60..140 %.  Pushes colours away from mid-grey, or pulls them toward it. */
+/**
+ * @brief Pushes colours away from mid-grey, or pulls them toward it.
+ * @param percent the contrast, 60..140%
+ */
 void ui_theme_set_contrast(int percent);
 
 ui_theme_id_t ui_theme_get(void);

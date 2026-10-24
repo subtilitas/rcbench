@@ -46,14 +46,14 @@ typedef struct {
     uint32_t long_ms;     /**< a long beep, and the stored tone          */
     uint32_t pause_ms;    /**< silence between two groups                */
     uint32_t entry_ms;    /**< power on to the first group; 0: the
-                               profile's hold, or 3000ms without one    */
+                               profile's hold, or 3000ms without one     */
     uint32_t window_ms;   /**< how long after a group a move selects it;
                                0: the profile's window, or until the
                                next group begins                         */
-    uint32_t idle_ma;
+    uint32_t idle_ma;     /**< the current the ESC draws idle            */
     uint32_t beep_ma;     /**< on top of idle_ma while a beep sounds     */
     uint32_t noise_ma;    /**< uniform, either way                       */
-    uint32_t seed;
+    uint32_t seed;        /**< the noise generator's seed                */
     uint8_t  extra;       /**< groups the menu sounds past the profile's
                                highest number                            */
     int32_t  drop_group;  /**< this menu group, from 0 since power-on,

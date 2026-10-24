@@ -258,9 +258,13 @@ gfx_color_t log_viewer_series_color(int k);
 int log_viewer_cursor(void);
 
 /**
- * A file's size as the list and the DELETE question write it into @p out
- * (@p n bytes): "300B", "4kB", "3.0MB" from 1MiB, "8.00GB" from 1GiB.
- * The units are binary: 1kB is 1024 bytes, 1GB 1024^3.
+ * @brief A file's size as the list and the DELETE question write it into @p
+ *        out (@p n bytes): "300B", "4kB", "3.0MB" from 1MiB, "8.00GB" from
+ *        1GiB. The units are binary: 1kB is 1024 bytes, 1GB 1024^3.
+ *
+ * @param out the text
+ * @param n its size, bytes
+ * @param bytes the file's size
  */
 void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
 
@@ -268,15 +272,14 @@ void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
 const char *log_viewer_message(void);
 
 /**
- * The range of a numeric column as the import view writes it into @p out
- * (@p n bytes): "lo..hi unit".  One decimal while both ends are below
- * 1000 in magnitude, none from 1000 on, so "2392..14639 rpm" fits the
- * 140px box of the view.  A text over LOG_RANGE_CELLS glyphs (code points,
- * gfx_text_cells(), so "µs" is 2) drops the
- * decimal, then the space before the unit: "-999.9..-999.9rpm" reads
- * "-1000..-1000rpm".  A text still wider, such as two 7-digit negative
- * ends, is cut at the box's edge.  No space and no unit with an empty
- * @p unit.
+ * @brief The range of a numeric column as the import view writes it into @p
+ *        out (@p n bytes): "lo..hiunit".  One decimal while both ends are
+ *        below 1000 in magnitude, none from 1000 on, so "2392..14639rpm" fits
+ *        the 140px box of the view.  A text over LOG_RANGE_CELLS glyphs (code
+ *        points, gfx_text_cells(), so "µs" is 2) drops the decimal:
+ *        "-999.9..-999.9mOhm" reads "-1000..-1000mOhm".  A text still wider,
+ *        such as two 7-digit negative ends, is cut at the box's edge.  No unit
+ *        with an empty @p unit.
  */
 #define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
 

@@ -1,7 +1,8 @@
-/*
- * The Wi-Fi page: one HTML (hypertext markup language) page with no
- * scripts or styles from elsewhere, so it works on a phone with no other
- * connection.
+/**
+ * @file
+ * @brief The Wi-Fi page: one HTML (hypertext markup language) page with no
+ *        scripts or styles from elsewhere, so it works on a phone with no
+ *        other connection.
  *
  * Two parts.  Panel firmware: a file picker and an upload with progress,
  * then the panel's answer as text; the page never starts the write, the

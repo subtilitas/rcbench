@@ -487,18 +487,18 @@ TEST_CASE(a_size_is_written_in_its_unit_up_to_an_sdxc_card)
         uint64_t bytes;
         const char *text;
     } k[] = {
-        { 0u,                    "0 B" },
-        { 1023u,                 "1023 B" },
-        { 1024u,                 "1 kB" },
-        { 1024u * 1024u - 1u,    "1023 kB" },
-        { 1024u * 1024u,         "1.0 MB" },
-        { 0x3FFFFFFFull,         "1024.0 MB" },
-        { 0x40000000ull,         "1.00 GB" },
-        { 0x7FFFFFFFull,         "2.00 GB" },
-        { 0xFFFFFFFFull,         "4.00 GB" },
-        { 0x100000000ull,        "4.00 GB" },
-        { 0x200000000ull,        "8.00 GB" },
-        { 0x20000000000ull,      "2048.00 GB" },  /* 2 TiB, SDXC's top */
+        { 0u,                    "0B" },
+        { 1023u,                 "1023B" },
+        { 1024u,                 "1kB" },
+        { 1024u * 1024u - 1u,    "1023kB" },
+        { 1024u * 1024u,         "1.0MB" },
+        { 0x3FFFFFFFull,         "1024.0MB" },
+        { 0x40000000ull,         "1.00GB" },
+        { 0x7FFFFFFFull,         "2.00GB" },
+        { 0xFFFFFFFFull,         "4.00GB" },
+        { 0x100000000ull,        "4.00GB" },
+        { 0x200000000ull,        "8.00GB" },
+        { 0x20000000000ull,      "2048.00GB" },  /* 2 TiB, SDXC's top */
     };
     char out[16];
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {

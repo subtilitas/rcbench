@@ -223,9 +223,9 @@ static void front_run(const drive_t *d, const front_t *f, edges_t *out)
     }
 }
 
-#define TAU_22K  (22e3 * 50e-12)    /* 1.1us  */
+#define TAU_22K  (22e3 * 50e-12)    /* 1.1us   */
 #define TAU_TYP  (33e3 * 50e-12)    /* 1.65us */
-#define TAU_SLOW (33e3 * 300e-12)   /* 9.9us  */
+#define TAU_SLOW (33e3 * 300e-12)   /* 9.9us   */
 /* The fitted front end: 4.7kOhm into a UDZV3.0B, about 65pF at 0V. */
 #define TAU_4K7  (4.7e3 * 65e-12)   /* 0.31us */
 /* The same resistor into a BZX84-class zener of about 450pF. */

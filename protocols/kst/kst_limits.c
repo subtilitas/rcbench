@@ -9,27 +9,27 @@
 
 /** @brief The fields one image check reads. */
 typedef struct {
-    int32_t duty;
-    int32_t boost;
-    int32_t stretch;
-    int32_t soft_start;
-    int32_t spd_sel;
-    int32_t spd;
-    int32_t dead_band;
-    int32_t allow_uncont;
-    int32_t lower;        /* 0.1us */
-    int32_t upper;        /* 0.1us */
-    int32_t neutral;      /* 0.1us */
-    int32_t neutral_raw;
-    int32_t lower_raw;
-    int32_t upper_raw;
-    int32_t uncont_raw;
-    int32_t uncont;       /* 0.1us */
-    int32_t uncont_time;
-    int32_t reversion;
-    int32_t left;
-    int32_t right;
-    int32_t gyro;
+    int32_t duty;         /**< MAX. DUTY, as the register holds it        */
+    int32_t boost;        /**< BOOST                                      */
+    int32_t stretch;      /**< STRETCH                                    */
+    int32_t soft_start;   /**< SOFT START                                 */
+    int32_t spd_sel;      /**< SPD SEL                                    */
+    int32_t spd;          /**< SPD                                        */
+    int32_t dead_band;    /**< DEAD BAND                                  */
+    int32_t allow_uncont; /**< ALLOW UNCONT                               */
+    int32_t lower;        /**< PULSE LOWER, 0.1us                         */
+    int32_t upper;        /**< PULSE UPPER, 0.1us                         */
+    int32_t neutral;      /**< NEUTRAL, 0.1us                             */
+    int32_t neutral_raw;  /**< NEUTRAL as the register holds it           */
+    int32_t lower_raw;    /**< PULSE LOWER as the register holds it       */
+    int32_t upper_raw;    /**< PULSE UPPER as the register holds it       */
+    int32_t uncont_raw;   /**< UNCONTROLLED POS as the register holds it  */
+    int32_t uncont;       /**< UNCONTROLLED POS, 0.1us                    */
+    int32_t uncont_time;  /**< UNCONTROLLED TIME as the register holds it */
+    int32_t reversion;    /**< REVERSION                                  */
+    int32_t left;         /**< LEFT ANGLE                                 */
+    int32_t right;        /**< RIGHT ANGLE                                */
+    int32_t gyro;         /**< GYRO                                       */
 } values_t;
 
 /**

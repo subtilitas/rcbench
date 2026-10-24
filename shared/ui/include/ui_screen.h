@@ -324,8 +324,8 @@ bool ui_router_take_stop(void);
 #define UI_ALERT_SHOW_S 30.0f
 
 /**
- * Show @p text in a 34px band across the bottom of every screen, or NULL to
- * clear it.
+ * @brief Show @p text in a 34px band across the bottom of every screen, or
+ *        NULL to clear it.
  *
  * For faults the screen itself does not show, such as a touch controller that
  * has stopped answering.  At the bottom, it covers controls rather than
@@ -333,7 +333,10 @@ bool ui_router_take_stop(void);
  * when a tap lands on it and lifts there; a tap on the band reaches no
  * screen.  A press on a control under it that stops what the bench drives
  * -- DISARM, ABORT, STOP TEST -- reaches the screen as if the band were not
- * there, and clears the band (ui_screen_t's safe_at).  Setting an alert again, even the same text, restarts its time.
+ * there, and clears the band (ui_screen_t's safe_at).  Setting an alert
+ * again, even the same text, restarts its time.
+ *
+ * @param text the alert, or NULL to clear it
  */
 void ui_router_set_alert(const char *text);
 

@@ -79,27 +79,27 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
     CHECK(strstr(r, "Log:            the .CSV with this file's number, one "
                     "row per INA3221 window\n") != NULL);
     CHECK(strstr(r, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(r, "Current:        INA3221, shunt 100.0 mOhm, range "
-                    "1.638 A\n") != NULL);
+    CHECK(strstr(r, "Current:        INA3221, shunt 100.0mOhm, range "
+                    "1.638A\n") != NULL);
     CHECK(strstr(r, "Voltage:        INA3221, load side of the shunt\n")
           != NULL);
-    CHECK(strstr(r, "Shunt:          up to 0.164 V lost across it at the "
+    CHECK(strstr(r, "Shunt:          up to 0.164V lost across it at the "
                     "range") != NULL);
     CHECK(strstr(r, "Readings:       20.0 /s windows closed by the INA3221, "
                     "20.0 /s reached the test\n") != NULL);
     CHECK(strstr(r, "Skipped:        0 windows the INA3221 closed never "
                     "reached the test\n") != NULL);
-    CHECK(strstr(r, "Resolution:     one window every 50 ms: a travel "
+    CHECK(strstr(r, "Resolution:     one window every 50ms: a travel "
                     "time is late by up to two windows and the poll that "
                     "reads them\n") != NULL);
-    CHECK(strstr(r, "Lag:            about 50 ms") != NULL);
+    CHECK(strstr(r, "Lag:            about 50ms") != NULL);
     CHECK(strstr(r, "Repeats:") == NULL);
     CHECK(strstr(r, "Travel times:   an upper bound, not checked against "
                     "the limit\n") != NULL);
-    CHECK(strstr(r, "limit 100 ms: upper bound, not checked against the "
+    CHECK(strstr(r, "limit 100ms: upper bound, not checked against the "
                     "limit\n") != NULL);
     CHECK(strstr(r, "Clipped:") == NULL);
-    CHECK(strstr(r, "Const. current: 0 supply readings, longest stretch 0 "
+    CHECK(strstr(r, "Const. current: 0 supply readings, longest stretch 0"
                     "ms\n") != NULL);
     CHECK(strstr(r, " 4.80    4.79  4.59   0.020  0.020  0.400  0.450  ")
           != NULL);
@@ -125,9 +125,9 @@ TEST_CASE(a_run_on_the_pd_mini_reads_no_window)
                                    "set-up" },
         { SERVO_TEST_INA_SILENT, "it does not answer" },
         { SERVO_TEST_INA_NO_WINDOW, "no window with current in the last "
-                                    "200 ms" },
+                                    "200ms" },
         { SERVO_TEST_INA_RESET, "it reset itself" },
-        { SERVO_TEST_INA_SETTLING, "it has worked for less than 1 s" },
+        { SERVO_TEST_INA_SETTLING, "it has worked for less than 1s" },
         { SERVO_TEST_INA_MODEL, "the supply is the panel's model" },
     };
     for (size_t k = 0u; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {
@@ -297,11 +297,11 @@ TEST_CASE(a_current_negative_at_rest_is_reported_and_judged_by_magnitude)
     const char *r = h.out.report;
     CHECK(strstr(r, "Current reads negative at rest: shunt direction\n")
           != NULL);
-    CHECK(strstr(r, "Idle current     highest -0.120 A, limit 0.10 A: "
+    CHECK(strstr(r, "Idle current     highest -0.120A, limit 0.10A: "
                     "FAIL\n") != NULL);
-    CHECK(strstr(r, "Holding current  highest -0.120 A, limit 0.20 A: "
+    CHECK(strstr(r, "Holding current  highest -0.120A, limit 0.20A: "
                     "PASS\n") != NULL);
-    CHECK(strstr(r, "Stall threshold  highest -0.600 A, STALL AT 1.00 A: "
+    CHECK(strstr(r, "Stall threshold  highest -0.600A, STALL AT 1.00A: "
                     "PASS\n") != NULL);
 
     /* -0.020A at rest is not said, -0.021A is; and a stall the other
@@ -365,10 +365,10 @@ TEST_CASE(a_clipped_window_is_the_value_it_is_and_is_counted)
             CHECK_EQ(rows_with(h.out.csv, COL_I_MAX, "1.638"), clipped);
             CHECK_EQ(rows_with(h.out.csv, COL_CURRENT, "1.588"), clipped);
             snprintf(want, sizeof(want), "Clipped:        %lu windows hold "
-                     "a sample at an end of the range, 1.638 A",
+                     "a sample at an end of the range, 1.638A",
                      (unsigned long)clipped);
             CHECK(strstr(h.out.report, want) != NULL);
-            CHECK(strstr(h.out.report, "Stall threshold  highest 1.588 A")
+            CHECK(strstr(h.out.report, "Stall threshold  highest 1.588A")
                   != NULL);
         }
     }

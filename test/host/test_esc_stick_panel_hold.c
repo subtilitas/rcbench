@@ -300,7 +300,7 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     static const struct { bool output; supply_mode_t mode; float i; } k[] = {
         { true,  SUPPLY_MODE_CV,  0.0f },    /* on, as asked          */
         { false, SUPPLY_MODE_CV,  0.0f },    /* off asked, module on  */
-        { false, SUPPLY_MODE_OFF, 0.05f },   /* 50mA through it      */
+        { false, SUPPLY_MODE_OFF, 0.05f },   /* 50mA through it       */
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         fresh();

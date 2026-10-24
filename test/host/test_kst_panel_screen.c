@@ -44,7 +44,7 @@ TEST_CASE(the_port_row_names_the_programming_voltage_and_current)
         f.rd.flags |= LINK_KS_F_RAIL;
         kst_panel_feed(&f);
         show();
-        snprintf(want, sizeof(want), "PORT  %u.%u V  %u mA",
+        snprintf(want, sizeof(want), "PORT  %u.%uV  %umA",
                  kst_prog_supply_mv(M) / 1000u,
                  kst_prog_supply_mv(M) % 1000u / 100u,
                  (unsigned)kst_prog_supply_ma(M));
@@ -68,7 +68,7 @@ TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
 {
     fresh_screen();
     link_up();
-    CHECK(strstr(servo_screen_commanded_text(), " us") != NULL);
+    CHECK(strstr(servo_screen_commanded_text(), "us") != NULL);
     program_open();
     CHECK(kst_panel_is_open());
     tap(val(PG_SERVO, 0, 0));
@@ -84,7 +84,7 @@ TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK(!kst_panel_holds_port());
-    CHECK(strstr(servo_screen_commanded_text(), " us") != NULL);
+    CHECK(strstr(servo_screen_commanded_text(), "us") != NULL);
 }
 
 TEST_CASE(program_lists_the_programmer_and_its_row_opens_it_a_level_down)

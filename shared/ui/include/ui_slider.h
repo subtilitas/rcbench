@@ -1,6 +1,7 @@
-/*
- * A draggable value with presets: the throttle, and any other control that
- * needs coarse reach and fine adjustment in one place.
+/**
+ * @file
+ * @brief A draggable value with presets: the throttle, and any other control
+ *        that needs coarse reach and fine adjustment in one place.
  *
  * Two contracts about presses that do not end where they began, because
  * those are the presses that command a motor by accident:
@@ -75,7 +76,14 @@ void ui_slider_init(ui_slider_t *s, gfx_rect_t track, float min, float max,
 /** Draw @p n scale divisions across the track.  0 turns them off. */
 void ui_slider_set_ticks(ui_slider_t *s, int n);
 
-/** Presets are laid out in a row inside @p row, with 4px gaps. */
+/**
+ * @brief Sets the presets, laid out in a row inside @p row with 4px gaps.
+ * @param s the slider
+ * @param values the presets' values
+ * @param labels their labels
+ * @param count how many
+ * @param row the row they take
+ */
 void ui_slider_set_presets(ui_slider_t *s, const float *values,
                            const char *const *labels, int count,
                            gfx_rect_t row);

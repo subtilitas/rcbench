@@ -64,7 +64,8 @@
 #define SV_RUN_CARD_Y(k)   (60 + 204 * (k))
 /** @brief The lines under a run card's START, from its top. */
 #define SV_RUN_LINE_DY     120
-/** @brief The run's box on LIVE's card, left under ARM FIRST: 346px wide, its lines
+/** @brief The run's box on LIVE's card, left under ARM FIRST: 346px wide, its
+ *        lines
  *         24px apart from 10px in, its button 150 x 48px 112px down. */
 #define SV_BOX_X           18
 #define SV_BOX_Y           142                /**< The box's top. */

@@ -981,7 +981,7 @@ UART holds -- is refused with BAD_VALUE, the slots in force stay, and nothing
 is saved. [DShot and the output drivers](DShot.md) has the rest.
 
 CHAN_CFG and OUTPUTS entries are written whole, four registers at a time. A
-channel's pulse range defaults to 1000..2000 µs; endpoints outside 400..2500 µs
+channel's pulse range defaults to 1000..2000µs; endpoints outside 400..2500µs
 are refused with BAD_VALUE, and so is an endpoint longer than the frame of the
 PWM output that renders it
 ([A pulse no longer than its frame](#a-pulse-no-longer-than-its-frame)). A

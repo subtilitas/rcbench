@@ -298,7 +298,7 @@ TEST_CASE(a_pass_writes_one_row_for_each_window_and_one_without)
 
 /* ---------------------------------------------- the control loop's grid */
 
-#define PASS_MS        5u      /* the loop's delay, on a 1ms tick          */
+#define PASS_MS        5u      /* the loop's delay, on a 1ms tick           */
 #define POLL_MS        50u     /* the poll gate with the link up            */
 #define EXCH_MIN_US    1000u   /* one exchange with the IOmcu         */
 #define EXCH_MAX_US    3000u
@@ -318,7 +318,7 @@ typedef struct {
     uint32_t run_ms;
     uint32_t cmd_every_ms;   /* 0: none                                     */
     uint32_t cmd_first_ms;   /* the first command, after the run's start    */
-    bool     cmd_random;     /* commands 200 to 3000ms apart instead       */
+    bool     cmd_random;     /* commands 200 to 3000ms apart instead        */
     uint32_t seed;
     uint32_t stall_at_ms;    /* the loop held for stall_ms from here; 0: no */
     uint32_t stall_ms;

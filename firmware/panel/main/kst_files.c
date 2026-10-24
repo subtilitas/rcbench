@@ -1,5 +1,6 @@
-/*
- * The card as the servo programmer's files see it.  See kst_files.h.
+/**
+ * @file
+ * @brief The card as the servo programmer's files see it.  See kst_files.h.
  *
  * SPDX-License-Identifier: MIT
  */

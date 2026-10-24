@@ -167,15 +167,15 @@ typedef struct {
     bool     take_set, take_on;
     bool     cc;            /* it reports constant current               */
     uint16_t pd_samples;
-    bool     pd_on;         /* readings arrive, every 104ms             */
+    bool     pd_on;         /* readings arrive, every 104ms              */
     uint32_t pd_next;
     float    pd_a;          /* the current it reads                      */
     /* The windows. */
-    bool     win_on;        /* they arrive, every 50ms                  */
+    bool     win_on;        /* they arrive, every 50ms                   */
     uint32_t win_next;
     uint16_t win_number;
     int      rest_ma;       /* at rest and holding                       */
-    int      move_ma;       /* for 200ms from a command to an end       */
+    int      move_ma;       /* for 200ms from a command to an end        */
     int      force_ma;      /* every window, when not INT16_MIN          */
     unsigned clipped;       /* samples at an end in every window         */
     uint16_t cmd;

@@ -76,7 +76,7 @@ void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
      * method depends on meeting the knee rather than arriving past it.
      */
     cfg->step_us       = positive ? 10 : -10;
-    cfg->max_travel_us = 600;    /* 900..2100 us from a 1500us centre */
+    cfg->max_travel_us = 600;    /* 900..2100us from a 1500us centre */
     cfg->settle_ms     = 120;    /* a slow digital servo arrives within this */
     cfg->measure_ms    = 80;
     cfg->knee_ratio    = 1.8f;

@@ -77,10 +77,10 @@ typedef struct {
 /** @brief A finished beep, in the TONE page's units. */
 typedef struct {
     uint32_t start_ms;       /**< first rise, ms since the capture started  */
-    uint16_t len_dms;        /**< first rise to last edge, 0.1ms, clipped  */
-    uint16_t freq_dhz;       /**< 0.1Hz, clipped                           */
+    uint16_t len_dms;        /**< first rise to last edge, 0.1ms, clipped   */
+    uint16_t freq_dhz;       /**< 0.1Hz, clipped                            */
     uint16_t bursts;         /**< clipped                                   */
-    uint16_t carrier_hhz;    /**< 100Hz steps, clipped; 0 unchopped        */
+    uint16_t carrier_hhz;    /**< 100Hz steps, clipped; 0 unchopped         */
     uint8_t  flags;          /**< tone_beep_flag_t                          */
 } tone_rec_t;
 

@@ -78,7 +78,7 @@ TEST_CASE(a_reversed_profile_reads_the_encoder_in_the_commanded_direction)
     float deg = 0.0f;
     CHECK(servo_test_enc_at(&g.t, g.now, &deg));
     CHECK(fabsf(deg) <= 36.5f);
-    CHECK(strstr(g.report, "Commanded: +36.0 deg at the low end, -36.0 deg at the high end.") != NULL);
+    CHECK(strstr(g.report, "Commanded: +36.0deg at the low end, -36.0deg at the high end.") != NULL);
 }
 
 TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
@@ -117,8 +117,8 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
     CHECK(strstr(g.report, "Encoder:        AS5600 on the horn shaft, centre count 3000,") != NULL);
     CHECK(strstr(g.report, "ENCODER (angles in degrees from the centre count, times in ms)") != NULL);
     CHECK(strstr(g.report, "Set V  End lo   Err lo   End hi   Err hi   Travel Longest Moves Unmoved Late") != NULL);
-    CHECK(strstr(g.report, "Commanded: -36.0 deg at the low end, +36.0 deg at the high end.") != NULL);
-    CHECK(strstr(g.report, "Settled: the angle has stayed within 1.05 deg for 100 ms.") != NULL);
+    CHECK(strstr(g.report, "Commanded: -36.0deg at the low end, +36.0deg at the high end.") != NULL);
+    CHECK(strstr(g.report, "Settled: the angle has stayed within 1.05deg for 100ms.") != NULL);
     CHECK(strstr(g.report, "Deadband: not measured; the moves go end to end.") != NULL);
     CHECK(strstr(g.report, "Position: the AS5600 measures the horn;") != NULL);
     CHECK(strstr(g.report, "Position: nothing measures the horn") == NULL);
@@ -230,7 +230,7 @@ TEST_CASE(a_servo_that_does_not_move_is_counted_unmoved_by_the_angle)
     CHECK_EQ(s->enc_unmoved, 3u);
     CHECK_EQ(s->enc_travels, 0u);
     CHECK_EQ(s->enc_late, 0u);
-    CHECK(strstr(g.report, "Unmoved: the angle did not leave 2.0 deg of its start.") != NULL);
+    CHECK(strstr(g.report, "Unmoved: the angle did not leave 2.0deg of its start.") != NULL);
 }
 
 TEST_CASE(an_encoder_that_gives_nothing_is_said_so)
@@ -646,7 +646,7 @@ TEST_CASE(ends_more_than_180_degrees_apart_are_reported_within_one_turn)
     CHECK_NEAR(lo, 0.0f, 0.5f);
     CHECK_NEAR(hi, -160.0f, 0.5f);
     CHECK(fabsf(elo) < 0.5f && fabsf(ehi) < 0.5f);
-    CHECK(strstr(g.report, "End: the settled angle, -180 to +180 deg from the "
+    CHECK(strstr(g.report, "End: the settled angle, -180 to +180deg from the "
                            "centre count. Err: End minus commanded, the "
                            "shortest way round.") != NULL);
 }

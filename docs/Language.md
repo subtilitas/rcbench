@@ -267,8 +267,12 @@ UTF-8. The Wi-Fi page is drawn by the browser and is not held to it; a
    `UI_SETTING_LABEL` and a `UI_SETTING_HELP` entry for its `SET_` ID; an
    option list is a `UI_OPTIONS` block, bound to its setting by
    `ENUM_OPTS(name)` in `shared/settings/settings.c`.
-3. Run the host suite, `python3 tools/render_ui.py --fit`,
-   `python3 tools/check_formats.py` and `python3 tools/check_docs.py`.
+3. Write a number and its unit with no space, in both languages: `40s`,
+   `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. A word after a number keeps its
+   space: `3 servos`.
+4. Run the host suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
+   and `python3 tools/check_docs.py`.
    `test_text` fails on an entry without German, on a German format that
    converts other arguments than its English, on a string wider than its
    declared cells, on a letter the fonts lack, on a byte that is not valid

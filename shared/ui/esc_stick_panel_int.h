@@ -39,7 +39,7 @@
 #define SP_MAX     (128)
 #define SP_ROWS    7                          /**< rows to a page      */
 #define SP_ROW_Y0  CARD_Y                     /**< the first row's top */
-#define SP_ROW_H   UI_TAP_MIN                 /**< a row, 48px        */
+#define SP_ROW_H   UI_TAP_MIN                 /**< a row, 48px         */
 #define SP_ROW_P   56                         /**< its pitch           */
 #define SP_ROW_X   (PAD + 12)                 /**< a row's left        */
 #define SP_ROW_TY  ((SP_ROW_H - 20) / 2)      /**< its text, from its top */

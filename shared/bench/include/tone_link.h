@@ -192,10 +192,10 @@ typedef struct {
 typedef struct {
     uint16_t seq;             /**< its number, 1 to 65535               */
     uint32_t start_ms;        /**< first rise, ms since ENABLE          */
-    uint16_t len_dms;         /**< first rise to last edge, 0.1ms      */
-    uint16_t freq_dhz;        /**< mean pitch, 0.1Hz                   */
-    uint16_t bursts;
-    uint16_t carrier_hhz;     /**< 100Hz steps; 0 unchopped            */
+    uint16_t len_dms;         /**< first rise to last edge, 0.1ms       */
+    uint16_t freq_dhz;        /**< mean pitch, 0.1Hz                    */
+    uint16_t bursts;          /**< its bursts, to 65535                 */
+    uint16_t carrier_hhz;     /**< 100Hz steps; 0 unchopped             */
     uint8_t  flags;           /**< LINK_TN_EVT_*                        */
 } tone_beep_t;
 
@@ -230,7 +230,7 @@ typedef struct {
     bool     tone;            /**< the last window held a tone          */
     bool     beep;            /**< a beep is under way                  */
     uint16_t win_freq_dhz;    /**< the last window's pitch, 0.1Hz; 0 none */
-    uint16_t win_periods;
+    uint16_t win_periods;     /**< the tone periods in the last window  */
     uint16_t lost;            /**< beeps the IOmcu dropped        */
     uint16_t glitches;        /**< lows it ignored as too short         */
     uint32_t missed;          /**< beeps the panel did not read         */

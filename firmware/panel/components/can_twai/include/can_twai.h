@@ -49,7 +49,8 @@ typedef enum {
 } can_twai_health_t;
 
 /**
- * Look at the controller and put it back on the bus if it has fallen off.
+ * @brief Look at the controller and put it back on the bus if it has fallen
+ *        off.
  *
  * A transmitter nobody answers reaches the bus-off threshold in about four
  * milliseconds at 1Mbit/s, and this peripheral does not recover on its own:

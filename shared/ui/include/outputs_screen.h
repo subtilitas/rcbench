@@ -81,9 +81,10 @@ bind_read_t outputs_screen_read_state(void);
 bool outputs_screen_editable(void);
 
 /**
- * Called with the binding to write after a pin is ticked or unticked, and
- * with a binding that holds no pin when UNBIND ALL PINS is held for
- * UI_HOLD_S (2s) in the BIND_READ_ODD state.  Never for a protocol pick.
+ * @brief Called with the binding to write after a pin is ticked or unticked,
+ *        and with a binding that holds no pin when UNBIND ALL PINS is held for
+ *        UI_HOLD_S (2s) in the BIND_READ_ODD state.  Never for a protocol
+ *        pick.
  *
  * The screen does not know whether a link exists or whether the far end took
  * the pages; outputs_screen_set_result() is how it is told, so the operator

@@ -59,17 +59,19 @@ typedef struct {
     servo_cmd_kind_t kind;     /**< what the command asks */
     uint16_t         value_us; /**< pulse width in microseconds, for a position */
     /**
-     * The range the channel is configured with, carried with the command:
-     * centred on the servo's PULSE CENTRE and reaching the further of its
-     * PULSE MIN and MAX, so its midpoint -- where the far end rests a
-     * surface -- is the centre.  value_us stays within MIN..MAX.
+     * @brief The range the channel is configured with, carried with the
+     *        command: centred on the servo's PULSE CENTRE and reaching the
+     *        further of its PULSE MIN and MAX, so its midpoint -- where the
+     *        far end rests a surface -- is the centre.  value_us stays within
+     *        MIN..MAX.
      *
      * The pulse means nothing without them: 760us is the centre of a narrow
      * servo and below the bottom of a standard one, so a command clamped
      * against the wrong pair is a servo that does not move, or one driven
      * past its stops. Zero on either says the sender named no range.
      */
-    uint16_t         min_us, max_us;
+    uint16_t         min_us;
+    uint16_t         max_us;   /**< the range's upper end; see min_us   */
     /**
      * How fast the bench may move the output, in channel-span units a
      * second; zero is at once.

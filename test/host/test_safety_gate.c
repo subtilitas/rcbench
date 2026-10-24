@@ -423,7 +423,7 @@ TEST_CASE(the_pass_arms_only_on_the_gate_with_no_port_out_and_no_update)
 #define D_CH_THROTTLE LINK_OUT_CHANNELS   /* the IOmcu's own throttle */
 #define P_CH_THROTTLE 0u
 
-static uint32_t T;                /* the clock, 1ms                       */
+static uint32_t T;                /* the clock, 1ms                        */
 static uint32_t T0;               /* where a scenario starts it            */
 static bool     w_line;           /* the level of the panel's safety line  */
 static uint32_t w_glitch_at;      /* 0: none.  The line reads inverted for

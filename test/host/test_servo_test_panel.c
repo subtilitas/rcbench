@@ -194,7 +194,7 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
     }
     CHECK(bench.set_v_max > 8.3f);
     CHECK(strstr(bench.report, "HV servo:       ON") != NULL);
-    CHECK(strstr(bench.report, " 8.40 V") != NULL);
+    CHECK(strstr(bench.report, " 8.40V") != NULL);
 }
 
 /* Every way out of a run ends it: the output asked off, the servo let go,
@@ -697,8 +697,8 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     CHECK_EQ(bench.ends, 1u);
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(bench.report, "Current:        INA3221 0x40 CH1, shunt 50.0 mOhm, "
-                           "range 3.276 A\n") != NULL);
+    CHECK(strstr(bench.report, "Current:        INA3221 0x40 CH1, shunt 50.0mOhm, "
+                           "range 3.276A\n") != NULL);
     CHECK(strstr(bench.report, "Voltage:        INA3221 0x40 CH1, load side of the "
                            "shunt\n") != NULL);
     CHECK(strstr(bench.report, "INA3221:        not used") == NULL);
@@ -711,8 +711,8 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     CHECK(bench.csv - 1u + 40u >= bench.wins - wins0);
     /* The default STALL AT, 2.00A, is at the supply's 2.00A limit and
      * under this shunt's range. */
-    CHECK(strstr(bench.report, "STALL AT 2.00 A cannot be reached: current "
-                           "limit 2.00 A\n") != NULL);
+    CHECK(strstr(bench.report, "STALL AT 2.00A cannot be reached: current "
+                           "limit 2.00A\n") != NULL);
     CHECK(strstr(bench.report, "INA3221 range") == NULL);
 }
 
@@ -865,7 +865,7 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
     CHECK(strstr(bench.report, "Result:         PASS") != NULL);
     CHECK(strstr(bench.report, "Current:        PD mini\n") != NULL);
     CHECK(strstr(bench.report, "INA3221:        not used: it has worked for "
-                           "less than 1 s\n") != NULL);
+                           "less than 1s\n") != NULL);
     CHECK(strstr(bench.csv_last, ";PDMINI;;;;;") != NULL);
     /* About ten rows a second for the run, not the windows' twenty. */
     CHECK(bench.csv < bench.samples);
@@ -891,7 +891,7 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
                                      "set-up" },
         { SERVO_SOURCE_WHY_SILENT, "it does not answer" },
         { SERVO_SOURCE_WHY_NO_WINDOW, "no window with current in the last "
-                                      "200 ms" },
+                                      "200ms" },
         { SERVO_SOURCE_WHY_RESET, "it reset itself" },
         { SERVO_SOURCE_WHY_OFF, NULL },
         { SERVO_SOURCE_WHY_NO_LINK, NULL },
@@ -957,7 +957,7 @@ TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
     CHECK(!bench.out);
     CHECK(bench.released);
     CHECK(strstr(bench.report, "Result:         ABORTED - no INA3221 window "
-                           "for 0.2 s\n") != NULL);
+                           "for 0.2s\n") != NULL);
 }
 
 /* A servo on a stop against a supply at its limit, through the screen
@@ -989,9 +989,9 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
         CHECK(!bench.out);
         CHECK(bench.released);
         CHECK(strstr(bench.report, "Result:         ABORTED - constant current "
-                               "for 1 s\n") != NULL);
-        CHECK(strstr(bench.report, "STALL AT 2.00 A cannot be reached: current "
-                               "limit 2.00 A\n") != NULL);
+                               "for 1s\n") != NULL);
+        CHECK(strstr(bench.report, "STALL AT 2.00A cannot be reached: current "
+                               "limit 2.00A\n") != NULL);
     }
 }
 

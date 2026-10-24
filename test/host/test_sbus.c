@@ -341,7 +341,7 @@ TEST_CASE(the_microsecond_mapping_hits_its_two_fixed_points)
 
     /*
      * The clamp is unreachable from the decoder (eleven bits map to
-     * 895..2144 us, inside it), so it only guards a caller passing a value
+     * 895..2144us, inside it), so it only guards a caller passing a value
      * the decoder never produces.  Tested directly.
      */
     CHECK_EQ(sbus_to_us(60000u), 2200);

@@ -1,5 +1,6 @@
-/*
- * The board-drawing partition, as an art_flash_t. See art_flash_esp.h.
+/**
+ * @file
+ * @brief The board-drawing partition, as an art_flash_t. See art_flash_esp.h.
  *
  * Nothing here decides anything: art_store owns the format and the order of
  * a write, and this is the three operations it needs on real flash.

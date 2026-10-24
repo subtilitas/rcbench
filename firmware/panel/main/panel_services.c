@@ -1,8 +1,10 @@
-/*
- * The link modules' services, one page of the IOmcu each: the current
- * monitors (SENSE and SERVO_SENSE), the phase tap (TONE), the programmer for
- * KST and Chaservo servos (KST) and the programming ports (PROG).  Each runs
- * from the poll (panel_poll.c), on the control task.
+/**
+ * @file
+ * @brief The link modules' services, one page of the IOmcu each: the current
+ *        monitors (SENSE and SERVO_SENSE), the phase tap (TONE), the
+ *        programmer for KST and Chaservo servos (KST) and the programming
+ *        ports (PROG).  Each runs from the poll (panel_poll.c), on the control
+ *        task.
  *
  * SPDX-License-Identifier: MIT
  */

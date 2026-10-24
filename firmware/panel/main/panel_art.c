@@ -1,7 +1,8 @@
-/*
- * The board's drawing: fetched from the IOmcu a slice of a poll at a
- * time on the control task, kept in flash a sector a pass on a safe bench,
- * and published for the picker on the UI task.
+/**
+ * @file
+ * @brief The board's drawing: fetched from the IOmcu a slice of a poll at a
+ *        time on the control task, kept in flash a sector a pass on a safe
+ *        bench, and published for the picker on the UI task.
  *
  * SPDX-License-Identifier: MIT
  */

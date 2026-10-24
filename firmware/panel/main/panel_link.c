@@ -1,8 +1,9 @@
-/*
- * The link to the IOmcu: exchange(), through which every request to
- * the far end goes, and the control page, which carries ARM, THROTTLE, the
- * pole count, CLEAR and the throttle's endpoints.  The link report is here
- * too.  Control task only, and app_main before that task exists.
+/**
+ * @file
+ * @brief The link to the IOmcu: exchange(), through which every request to the
+ *        far end goes, and the control page, which carries ARM, THROTTLE, the
+ *        pole count, CLEAR and the throttle's endpoints.  The link report is
+ *        here too.  Control task only, and app_main before that task exists.
  *
  * SPDX-License-Identifier: MIT
  */

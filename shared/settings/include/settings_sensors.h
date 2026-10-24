@@ -133,10 +133,11 @@ typedef struct {
      *  lowest fitted part; 0xFF while none is fitted.  On an IOmcu older
      *  than 4.25 it is the one part read. */
     uint8_t  mirror;
-    /** SENSE registers 8 to 10 for an IOmcu older than 4.25: the mirror
-     *  part, its CH1 shunt or its first one not 0, and its channels on
-     *  that shunt -- the frame has one shunt for every channel it reads,
-     *  so a channel on another shunt is not read.  one_on false: no part to read; the frame then holds 0x40,
+    /** @brief SENSE registers 8 to 10 for an IOmcu older than 4.25: the mirror
+     *        part, its CH1 shunt or its first one not 0, and its channels on
+     *        that shunt -- the frame has one shunt for every channel it reads,
+     *        so a channel on another shunt is not read.  one_on false: no part
+     *        to read; the frame then holds 0x40,
      *  100.0mOhm and CH1, values the page takes. */
     bool     one_on;
     uint8_t  one_addr;
@@ -159,12 +160,18 @@ uint8_t settings_sensors_fast(void);
 /** The fitted parts: bit a for 0x40 + a. */
 uint8_t settings_sensors_fitted(void);
 
-/** The shunt of the channel the servo rail's meter reads, in 0.1mOhm:
- *  FAST's, else the one-part frame's (settings_sensors_map_t); 0 for no
- *  part fitted. */
+/**
+ * @brief The shunt of the channel the servo rail's meter reads.
+ * @return FAST's shunt, else the one-part frame's
+ *         (settings_sensors_map_t), in 0.1mOhm; 0 for no part fitted
+ */
 uint16_t settings_sensors_meter_dmohm(void);
 
-/** Channel @p c's shunt as the map carries it, in 0.1mOhm; 0 off. */
+/**
+ * @brief A channel's shunt as the map carries it.
+ * @param c the channel
+ * @return the shunt in 0.1mOhm; 0 off
+ */
 uint16_t settings_sensors_dmohm(int c);
 
 #ifdef __cplusplus

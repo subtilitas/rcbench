@@ -580,7 +580,7 @@ TEST_CASE(a_servo_held_at_the_current_limit_ends_the_run)
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_ABORTED);
     CHECK_EQ(g.t.why, SERVO_TEST_AB_CC);
     CHECK(strstr(g.report, "Result:         ABORTED - constant current for "
-                           "1 s") != NULL);
+                           "1s") != NULL);
     CHECK(strstr(g.report, "Result:         PASS") == NULL);
     CHECK(g.off_asked);
     CHECK(g.released);

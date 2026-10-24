@@ -1,7 +1,7 @@
 /**
  * @file test_nav_alert.c
- * @brief The shell's alerts: the band's two rows, the 30s clear, slots taken back or
- * replaced, the tap that clears one, and what the band shows.
+ * @brief The shell's alerts: the band's two rows, the 30s clear, slots taken
+ *        back or replaced, the tap that clears one, and what the band shows.
  *
  * Cases:
  * - an_alert_survives_navigation

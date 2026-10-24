@@ -107,9 +107,9 @@ typedef struct {
     uint8_t pad;        /**< the number printed on the board                */
     uint8_t kind;       /**< a link_pad_kind_t                              */
     /**
-     * Tenths of a volt. Zero on a rail means it is not a fixed voltage --
-     * an input follows whatever feeds it -- and is not the same as 0V,
-     * which is what a ground is.
+     * @brief Tenths of a volt. Zero on a rail means it is not a fixed voltage
+     *        -- an input follows whatever feeds it -- and is not the same as
+     *        0V, which is what a ground is.
      */
     uint8_t decivolts;
 } outbind_pad_t;
@@ -393,7 +393,7 @@ typedef struct {
     uint8_t      max_pins;  /**< PPM is one pin by definition               */
     uint8_t      channels;  /**< channels one pin of it renders             */
     /**
-     * What the channels this entry renders are for.
+     * @brief What the channels this entry renders are for.
      *
      * Carried by the entry rather than derived from the driver: a pulse at
      * 50Hz is a servo on one pin and an ESC (electronic speed controller)

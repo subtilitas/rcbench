@@ -175,7 +175,7 @@ TEST_CASE(the_overset_is_left_out_near_the_pulse_limit)
         uint16_t overset, v2;
     } k[] = {
         { 915u, 920u, 5802, 5902, 150u, 145u }, /* v1 not below v0     */
-        { 940u, 940u, 5602, 5702, 147u, 140u }, /* the move 11.4us    */
+        { 940u, 940u, 5602, 5702, 147u, 140u }, /* the move 11.4us     */
     };
     for (size_t i = 0; i < 2u; ++i) {
         rig_init(0u, false);
@@ -224,7 +224,7 @@ TEST_CASE(every_stop_position_passes)
             run_for(RUN_MS);
             ++runs;
             if (g.run.verdict != SERVO_LIMRUN_PASS) {
-                T_FAIL("stop %u us, SET %d: verdict %d why %d", stop, set,
+                T_FAIL("stop %uus, SET %d: verdict %d why %d", stop, set,
                        (int)g.run.verdict, (int)g.run.why);
                 continue;
             }
@@ -311,7 +311,7 @@ TEST_CASE(one_side_bound_leaves_the_other_register_as_it_was)
         CHECK_EQ(g.run.first[SERVO_LIMRUN_HI].limit_us, 2100u);
         CHECK(!g.run.after[SERVO_LIMRUN_HI].bound);
         CHECK_EQ(g.cmd_hi, 2100u);
-        CHECK(strstr(g.report, "free to 2100 us") != NULL);
+        CHECK(strstr(g.report, "free to 2100us") != NULL);
     }
 }
 
@@ -441,8 +441,8 @@ TEST_CASE(search_only_reports_the_endpoints)
     CHECK(g.run.first[0].limit_us > 1150u && g.run.first[0].limit_us < 1200u);
     CHECK(g.run.first[1].limit_us < 1880u && g.run.first[1].limit_us > 1830u);
     CHECK(strstr(g.report, "search only") != NULL);
-    CHECK(strstr(g.report, "Searched:       from 1500 us out to 900 us and "
-                           "2100 us") != NULL);
+    CHECK(strstr(g.report, "Searched:       from 1500us out to 900us and "
+                           "2100us") != NULL);
     /* Nothing sent, so no backup: the line is left out. */
     CHECK(strstr(g.report, "Writes:         values written 0, writes "
                            "sent 0") != NULL);
@@ -465,8 +465,8 @@ TEST_CASE(the_pwm_pin_searches_out_to_min_and_max)
     CHECK_EQ(g.disarms, 0u);
     CHECK_EQ(g.cmd_lo, MIN_US);
     CHECK_EQ(g.cmd_hi, MAX_US);
-    CHECK(strstr(g.report, "Searched:       from 1500 us out to 800 us and "
-                           "2200 us") != NULL);
+    CHECK(strstr(g.report, "Searched:       from 1500us out to 800us and "
+                           "2200us") != NULL);
     CHECK(strstr(g.report, "Servo pulses") == NULL);
 
     /* Bound ends: FOUND, the bench never switched. */
@@ -518,8 +518,8 @@ TEST_CASE(a_bench_range_narrower_than_the_servos_is_refused)
         CHECK(!servo_limrun_restore(&g.run));
         char want[96];
         snprintf(want, sizeof(want),
-                 "servo pulses 900.0-2100.0 us outside PULSE MIN/MAX "
-                 "%u-%u us", g.cfg.min_us, g.cfg.max_us);
+                 "servo pulses 900.0-2100.0us outside PULSE MIN/MAX "
+                 "%u-%uus", g.cfg.min_us, g.cfg.max_us);
         CHECK(strstr(g.report, want) != NULL);
         CHECK(strstr(g.report, "servo pulses outside MIN/MAX") != NULL);
         /* Nothing searched: no line says where. */
@@ -593,8 +593,8 @@ TEST_CASE(set_1000_2000_writes_the_pulses_before_the_search)
         CHECK(full_us(SERVO_LIMRUN_LO, reg_get(rev ? KST_F_RIGHT_ANGLE
                                                    : KST_F_LEFT_ANGLE))
               > 1150.0f);
-        CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0 "
-                               "us, PULSE UPPER 2100.0 -> 2000.0 us") != NULL);
+        CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0"
+                               "us, PULSE UPPER 2100.0 -> 2000.0us") != NULL);
         /* The values before the run, for RESTORE. */
         CHECK_EQ(g.run.servo.pulse_dus[SERVO_LIMRUN_P_LOWER], LOWER_DUS);
         CHECK_EQ(g.run.servo.pulse_dus[SERVO_LIMRUN_P_UPPER], UPPER_DUS);
@@ -614,7 +614,7 @@ TEST_CASE(set_1000_2000_on_a_servo_there_already_writes_nothing)
     CHECK_EQ(g.pulse_ops, 0u);
     CHECK_EQ(g.write_ops, 0u);
     CHECK_EQ(g.run.writes, 0u);
-    CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 1000.0 -> 1000.0 us")
+    CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 1000.0 -> 1000.0us")
           != NULL);
 }
 

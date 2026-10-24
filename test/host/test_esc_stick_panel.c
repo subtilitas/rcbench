@@ -445,7 +445,7 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     supply_gives(3.3f, 7.59f);
     CHECK(!run_starts());
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "7.60 V exceeds the SUPPLY limit of 7.59 V.");
+                 "7.60V exceeds the SUPPLY limit of 7.59V.");
 
     fresh();
     descend_to_hobbywing();
@@ -459,7 +459,7 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     supply_gives(7.61f, 21.0f);
     CHECK(!run_starts());
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "VOLTAGE is below the supply minimum of 7.61 V.");
+                 "VOLTAGE is below the supply minimum of 7.61V.");
 }
 
 /* The list the same: a profile that needs 7.6V opens on a supply whose
@@ -485,7 +485,7 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
             const char *why = esc_stick_panel_row_why(i);
             CHECK(why != NULL);
             if (why != NULL) {
-                CHECK_STR_EQ(why, "needs 7.6 V; limit 7.5 V");
+                CHECK_STR_EQ(why, "needs 7.6V; limit 7.5V");
             }
             break;
         }

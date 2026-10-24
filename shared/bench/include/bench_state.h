@@ -29,8 +29,8 @@ extern "C" {
 
 /**
  * @brief One 50ms window of every INA3221 channel, from SENSE_WIN_A and
- *        SENSE_WIN_B (protocol 4.25), for the log's columns per watched target:
- *        channel c = 3 a + CHn - 1 of the part at 0x40 + a.
+ *        SENSE_WIN_B (protocol 4.25), for the log's columns per watched
+ *        target: channel c = 3 a + CHn - 1 of the part at 0x40 + a.
  *
  * Bit c of ok says channel c's window holds readings and was read under the
  * window number window; of no_current that it holds no current sample, of

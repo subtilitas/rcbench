@@ -34,12 +34,12 @@ extern "C" {
 /** @brief What the IOmcu says its drawing is, off the ARTWORK page. */
 typedef struct {
     uint16_t blocks;
-    uint16_t width;    /**< outline, 0.01mm                               */
-    uint16_t height;   /**< outline, 0.01mm                               */
+    uint16_t width;    /**< outline, 0.01mm                                */
+    uint16_t height;   /**< outline, 0.01mm                                */
     uint16_t format;   /**< a link_art_format_t                            */
     uint16_t crc;      /**< link_crc() over the payload, seeded zero        */
     uint32_t hash;     /**< link_fnv1a32() over the payload                */
-    uint32_t bytes;
+    uint32_t bytes;    /**< the payload's size                             */
 } link_art_meta_t;
 
 /**

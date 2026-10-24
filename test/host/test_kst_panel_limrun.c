@@ -240,8 +240,8 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         CHECK(strstr(lr.report, "Writes:") != NULL);
         CHECK_EQ(lr.opens_txt, 1u);
         CHECK_EQ(lr.ends, 1u);
-        CHECK(strstr(lr.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0 "
-                                "us, PULSE UPPER 2100.0 -> 2000.0 us") != NULL);
+        CHECK(strstr(lr.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0"
+                                "us, PULSE UPPER 2100.0 -> 2000.0us") != NULL);
         CHECK(servo(KST_F_LEFT_ANGLE) < 150u);
         CHECK(servo(KST_F_RIGHT_ANGLE) < 150u);
         CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER),
@@ -329,8 +329,8 @@ TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
      * card, the programmer does not open over it. */
     CHECK(!kst_panel_holds_port());
     CHECK(!kst_panel_is_open());
-    CHECK(strstr(lr.report, "Range:          servo pulses 900.0-2100.0 us "
-                            "outside PULSE MIN/MAX 1000-2000 us") != NULL);
+    CHECK(strstr(lr.report, "Range:          servo pulses 900.0-2100.0us "
+                            "outside PULSE MIN/MAX 1000-2000us") != NULL);
     CHECK_EQ(lr.disarms, 1u);
     CHECK_EQ(lr.arms, 0u);
     CHECK(!lr.armed);
@@ -634,8 +634,8 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     lr_run_out();
     CHECK(strstr(lr.report, "search only, nothing") != NULL);
     CHECK(strstr(lr.report, "Pulse write") == NULL);
-    CHECK(strstr(lr.report, "Searched:       from 1500 us out to 1000 us "
-                            "and 2000 us") != NULL);
+    CHECK(strstr(lr.report, "Searched:       from 1500us out to 1000us "
+                            "and 2000us") != NULL);
     CHECK_EQ(lr.disarms, 0u);
     {
         kst_image_t was = sim_bench_image(), now = rig_servo();

@@ -229,7 +229,7 @@ typedef struct {
                               PICKER_USE_IFACE()                          */
     uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
     int8_t     channel;  /**< PICKER_USE_PIN: its channel, -1 for the port  */
-    bool       compact;  /**< drawn in the 20 or 16px pin rows             */
+    bool       compact;  /**< drawn in the 20 or 16px pin rows              */
     gfx_rect_t rect;     /**< the line's box, inside PICKER_AREA_IN_USE     */
 } picker_use_t;
 

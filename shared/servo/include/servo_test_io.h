@@ -45,8 +45,12 @@ typedef struct {
     bool     current;       /**< it holds current samples               */
     bool     voltage;       /**< it holds bus voltage samples           */
     uint8_t  clipped;       /**< samples at an end of the range         */
-    int16_t  mean_ma, max_ma, min_ma;   /**< mA, signed                 */
-    uint16_t mean_mv, min_mv;           /**< at the load side of the shunt */
+    int16_t  mean_ma;       /**< the mean current, mA, signed           */
+    int16_t  max_ma;        /**< the highest current, mA, signed        */
+    int16_t  min_ma;        /**< the lowest current, mA, signed         */
+    uint16_t mean_mv;       /**< the mean bus voltage at the load side
+                                 of the shunt, mV                       */
+    uint16_t min_mv;        /**< the lowest of it, mV                   */
     /** @brief The latest it can have closed, on the run's clock
      *         (sense_link_win_t.taken_ms): windows that arrive together carry
      *         times 50ms apart.

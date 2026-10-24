@@ -16,8 +16,8 @@
 #define CODE20_MIN (-524288)
 
 /** @brief Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1). */
-#define FS_NARROW_NV  40960000u    /* ±40.96mV, ADCRANGE 1  */
-#define FS_WIDE_NV   163840000u    /* ±163.84mV, ADCRANGE 0 */
+#define FS_NARROW_NV  40960000u    /**< ±40.96mV, ADCRANGE 1  */
+#define FS_WIDE_NV   163840000u    /**< ±163.84mV, ADCRANGE 0 */
 
 _Static_assert(INA228_SHUNT_CAL_ADC <= 0x7FFFu,
                "SHUNT_CAL is a 15-bit field (Table 7-7)");

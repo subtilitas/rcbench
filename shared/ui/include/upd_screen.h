@@ -167,7 +167,7 @@ typedef struct {
 /** What the screens ask for: bits of upd_screen_take(). */
 #define UPD_REQ_CHECK     0x01u   /**< CHECK FOR UPDATES                  */
 #define UPD_REQ_CANCEL    0x02u   /**< CANCEL a check                     */
-#define UPD_REQ_DOWNLOAD  0x04u   /**< the 2s hold completed             */
+#define UPD_REQ_DOWNLOAD  0x04u   /**< the 2s hold completed              */
 
 /** Hand the screens what to show. */
 void upd_screen_set(const upd_view_t *v);
@@ -188,7 +188,10 @@ void upd_screen_set_coproc(const upd_cu_view_t *v);
 /** What the section shows, for the driver and the tests. */
 const upd_cu_view_t *upd_screen_coproc(void);
 
-/** True once after HOLD 2s: UPDATE IOMCU completed. */
+/**
+ * @brief Whether HOLD 2s: UPDATE IOMCU completed, once.
+ * @return true once after the hold completed; false until the next one
+ */
 bool upd_screen_take_coproc(void);
 
 /** The section's state line for @p v, and its colour. */

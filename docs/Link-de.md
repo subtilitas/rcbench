@@ -1076,8 +1076,8 @@ die geltenden Slots bleiben, und nichts wird gespeichert. [DShot und die
 Output-Treiber](DShot-de.md) hat den Rest.
 
 Einträge in CHAN_CFG und OUTPUTS werden ganz geschrieben, vier Register auf
-einmal. Der Pulsbereich eines Kanals ist standardmäßig 1000..2000 µs;
-Endpunkte außerhalb von 400..2500 µs werden mit BAD_VALUE abgewiesen, ebenso
+einmal. Der Pulsbereich eines Kanals ist standardmäßig 1000..2000µs;
+Endpunkte außerhalb von 400..2500µs werden mit BAD_VALUE abgewiesen, ebenso
 ein Endpunkt, der länger ist als der Frame des PWM-Ausgangs, der ihn ausgibt
 ([Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Ein
 Kommando außerhalb seines Bereichs wird begrenzt. Zwei Slots auf einem Pin

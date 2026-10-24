@@ -1,6 +1,7 @@
-/*
- * GT911 capacitive touch controller driver over I2C (Inter-Integrated
- * Circuit).
+/**
+ * @file
+ * @brief GT911 capacitive touch controller driver over I2C (Inter-Integrated
+ *        Circuit).
  *
  * The GT911 uses 16-bit big-endian register addresses.  Coordinates live in a
  * buffer whose ready flag the host clears after each read; while the flag is
@@ -38,7 +39,7 @@ typedef struct gt911_dev_t *gt911_handle_t;
 
 typedef struct {
     uint16_t i2c_addr;      /**< 0 -> probe 0x5D then 0x14      */
-    uint32_t scl_speed_hz;  /**< 0 -> 400kHz                   */
+    uint32_t scl_speed_hz;  /**< 0 -> 400kHz                    */
 } gt911_config_t;
 
 /** Attach to a controller already out of reset. */

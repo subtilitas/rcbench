@@ -63,7 +63,7 @@
 #define IOMCU_CAN_PIN_MISO   12
 #define IOMCU_CAN_PIN_CS     9
 #define IOMCU_CAN_PIN_INT    8   /**< active low, wants a pull-up */
-#define IOMCU_CAN_CRYSTAL_HZ 16000000u
+#define IOMCU_CAN_CRYSTAL_HZ 16000000u /**< the XL2515's crystal, Hz */
 /**
  * @brief The vendor's driver clocks SPI (Serial Peripheral Interface) at 10
  * MHz; the part is rated to 10MHz.

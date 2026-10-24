@@ -24,7 +24,9 @@ Not covered: the released sections of CHANGELOG.md, which are history;
 CHANGELOG-0.9.md; the research records under hardware/research/; string
 literals outside the files above (log lines, console and wire formats,
 CSV headers, test fixtures of external formats); data files (JSON, CSV,
-SVG).
+SVG), the ESC profiles' texts among them; a Markdown heading's section
+number; and the frame cost table tools/frame_cost.py writes into
+docs/Performance.md.
 
 A deliberate exception is an entry in tools/check_units_allow.txt: a
 comment line with the reason, then `path: text`, where text is a part of
@@ -77,12 +79,15 @@ CONVERSION = (r"%[-+ #0']*(?:\d+|\*)?(?:\.(?:\d+|\*))?"
               r"(?:hh|h|ll|l|z|j|t|L)?[diouxXfFeEgGs]")
 NUMBER = (r"(?:\d+(?:[.,]\d+)*(?:x\d+(?:[.,]\d+)*)?"
           r"|" + CONVERSION + r"(?:[.,]" + CONVERSION + r")*)")
-# A unit ends where no letter, digit, % or = follows (ms=110 is a key), and
-# a lone % is not the start of the next conversion, as in "%6s %-6s".
-UNIT = "|".join(re.escape(u) if u != "%" else r"%(?![-+#'*\d\w]|\.\d)"
-                for u in UNITS)
-PATTERN = re.compile(r"(?<![\w.])(" + NUMBER + r")([ \u00a0\u202f]+)("
-                     + UNIT + r")(?![\w%=])")
+# A number starts after no letter, digit or point, or after the ".." of a
+# range such as 2392..14639rpm.  A unit ends where no letter, digit, % or =
+# follows (ms=110 is a key), and a lone % is not the start of the next
+# conversion, as in "%6s %-6s" or "%d %.*f"; a "**" after it closes
+# Markdown bold.
+PERCENT = r"%(?![-+#'\d\w]|\.[\d*]|\*[\w.])"
+UNIT = "|".join(re.escape(u) if u != "%" else PERCENT for u in UNITS)
+PATTERN = re.compile(r"(?:(?<![\w.])|(?<=\.\.))(" + NUMBER
+                     + r")([ \u00a0\u202f]+)(" + UNIT + r")(?![\w%=])")
 
 # The C files outside ui_text.def whose string literals are text a screen
 # shows or a report on the card holds.
@@ -161,7 +166,8 @@ def c_parts(text: str, strings: bool, pio: bool = False,
             j = i + 1
             run = j
             parts = []
-            while j < n and text[j] != ch and not (ch != "`" and text[j] == "\n"):
+            while j < n and text[j] != ch and (ch == "`"
+                                               or text[j] != "\n"):
                 if text[j] == "\\":
                     parts.append((run, j))
                     j += 2
@@ -310,6 +316,7 @@ def covered(path: str, text: str, groups: list | None = None) -> str | None:
 
 
 def tracked() -> list:
+    """Returns the paths git tracks, relative to the tree's root."""
     out = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, check=True,
                          capture_output=True).stdout.decode()
     return [p for p in out.split("\0") if p]
@@ -388,6 +395,14 @@ def find(path: str, text: str) -> list:
 
 
 def main(argv: list) -> int:
+    """Lists, checks or fixes every number-space-unit of the tree.
+
+    Args:
+        argv: The arguments: --check, --fix, or none.
+
+    Returns:
+        1 for --check with a hit or a stale entry, else 0.
+    """
     check = "--check" in argv
     fix = "--fix" in argv
     allow = parse_allow(ALLOW.read_text(encoding="utf-8")) \

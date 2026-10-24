@@ -78,7 +78,7 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
             h_check_ended(SERVO_TEST_AB_WIN_STALE);
             CHECK(strstr(h.out.report,
                          "Result:         ABORTED - no INA3221 window for "
-                         "0.2 s\n") != NULL);
+                         "0.2s\n") != NULL);
         }
     }
     /* A run that never has a window ends 200ms after its start, here
@@ -271,8 +271,8 @@ TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_windows)
             }
             CHECK_EQ(h.t.end_ms, at);
             h_check_ended(SERVO_TEST_AB_STALL);
-            CHECK(strstr(h.out.report, "Stall threshold  highest 1.001 A, "
-                                       "STALL AT 1.00 A: FAIL\n") != NULL);
+            CHECK(strstr(h.out.report, "Stall threshold  highest 1.001A, "
+                                       "STALL AT 1.00A: FAIL\n") != NULL);
         }
     }
 }
@@ -378,9 +378,9 @@ TEST_CASE(constant_current_for_a_second_ends_the_run)
                 h_check_ended(SERVO_TEST_AB_CC);
                 CHECK(strstr(h.out.report,
                              "Result:         ABORTED - constant current "
-                             "for 1 s\n") != NULL);
+                             "for 1s\n") != NULL);
                 CHECK(strstr(h.out.report, "Const. current: 11 supply "
-                                           "readings, longest stretch 1000 "
+                                           "readings, longest stretch 1000"
                                            "ms\n") != NULL);
             }
         }
@@ -414,7 +414,7 @@ TEST_CASE(a_spell_of_constant_current_is_counted_and_fails_nothing)
         CHECK(h.t.cc_longest_ms >= 312u && h.t.cc_longest_ms <= 416u);
         char want[96];
         snprintf(want, sizeof(want), "Const. current: %lu supply readings, "
-                 "longest stretch %lu ms\n", (unsigned long)h.t.cc_readings,
+                 "longest stretch %lums\n", (unsigned long)h.t.cc_readings,
                  (unsigned long)h.t.cc_longest_ms);
         CHECK(strstr(h.out.report, want) != NULL);
         if (ina != 0u) {
@@ -462,12 +462,12 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
         h_out();
         CHECK_EQ(h.t.why, SERVO_TEST_AB_NONE);
         char want[96];
-        snprintf(want, sizeof(want), "STALL AT %.2f A cannot be reached: "
-                 "current limit %.2f A\n", (double)k_case[k].stall,
+        snprintf(want, sizeof(want), "STALL AT %.2fA cannot be reached: "
+                 "current limit %.2fA\n", (double)k_case[k].stall,
                  (double)k_case[k].limit);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_limit);
-        snprintf(want, sizeof(want), "STALL AT %.2f A cannot be reached: "
-                 "INA3221 range 1.638 A\n", (double)k_case[k].stall);
+        snprintf(want, sizeof(want), "STALL AT %.2fA cannot be reached: "
+                 "INA3221 range 1.638A\n", (double)k_case[k].stall);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_range);
         CHECK_EQ(strstr(h.out.report, "cannot be reached") != NULL,
                  k_case[k].by_limit || k_case[k].by_range);
@@ -484,12 +484,12 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
     CHECK_STR_EQ(note, "");
     c.stall_a = 1.65f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 1.65 A cannot be reached: INA3221 range "
-                       "1.638 A");
+    CHECK_STR_EQ(note, "STALL AT 1.65A cannot be reached: INA3221 range "
+                       "1.638A");
     c.stall_a = 2.0f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 2.00 A cannot be reached: current limit "
-                       "2.00 A");
+    CHECK_STR_EQ(note, "STALL AT 2.00A cannot be reached: current limit "
+                       "2.00A");
     CHECK(!servo_test_stall_note(&c, NULL, 0u));
     CHECK(!servo_test_stall_note(&c, note, 0u));
 }

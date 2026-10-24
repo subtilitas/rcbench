@@ -1,5 +1,6 @@
-/*
- * The IOmcu's firmware update, as the panel offers and shows it.
+/**
+ * @file
+ * @brief The IOmcu's firmware update, as the panel offers and shows it.
  *
  * Two views.  The question: which version the IOmcu runs, which one
  * this panel carries, whether that one is older, CANCEL and START.  START

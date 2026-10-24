@@ -278,9 +278,12 @@ nicht. Ein deutscher Eintrag `NULL` zeigt auch dort sein Englisch
    ID `SET_`; eine Optionsliste ist ein Block `UI_OPTIONS`, den
    `ENUM_OPTS(name)` in `shared/settings/settings.c` an seine Einstellung
    bindet.
-3. Die Host-Suite, `python3 tools/render_ui.py --fit`,
-   `python3 tools/check_formats.py` und `python3 tools/check_docs.py`
-   ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
+3. Zahl und Einheit ohne Leerzeichen schreiben, in beiden Sprachen: `40s`,
+   `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. Ein Wort nach einer Zahl behält
+   sein Leerzeichen: `3 Servos`.
+4. Die Host-Suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
+   und `python3 tools/check_docs.py` ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
    einem deutschen Format, das andere Argumente wandelt als sein Englisch,
    bei einem Text, der breiter ist als seine angegebenen Zellen, bei einem
    Buchstaben, den die Fonts nicht enthalten, bei einem Byte, das kein

@@ -386,7 +386,7 @@ typedef struct {
 
 /** @brief A FAST sample kept for the level before a command. */
 typedef struct {
-    uint32_t t;           /**< when it was read, 0.1ms                   */
+    uint32_t t;           /**< when it was read, 0.1ms                    */
     int32_t  ua;          /**< its value; a clip at the end of the range  */
 } sense_fast_t;
 
@@ -397,8 +397,8 @@ typedef struct {
     sense_cap_state_t state;
     uint16_t seq;         /**< captures ended, modulo 65536               */
     sense_cap_arm_t arm;
-    uint32_t edge_t;      /**< the edge, 0.1ms                           */
-    uint32_t arm_t;       /**< the arm, 0.1ms                            */
+    uint32_t edge_t;      /**< the edge, 0.1ms                            */
+    uint32_t arm_t;       /**< the arm, 0.1ms                             */
     bool     rise_owed;   /**< the level before the command is FAST's,
                                taken at the first sample past the edge    */
     /* The last SENSE_CAP_FILTER_N FAST samples while armed. */

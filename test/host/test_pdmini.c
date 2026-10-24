@@ -41,7 +41,7 @@ typedef struct {
     uint16_t mv[5], ma[5];
     uint16_t v_mv, i_ma;
     bool     input_ok;        /* PD negotiated: the output can switch on */
-    uint16_t input_mv;        /* what READ_INPUT_STATE reports, 0: 24V  */
+    uint16_t input_mv;        /* what READ_INPUT_STATE reports, 0: 24V   */
     bool     bad_crc;         /* answer every read with a broken CRC     */
     bool     whoami_crc;      /* end WHO_AM_I with a CRC, not 0x0A       */
     uint8_t  junk;            /* a byte the handover leaves, 0 for none  */

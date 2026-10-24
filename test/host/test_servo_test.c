@@ -60,7 +60,7 @@ TEST_CASE(a_run_measures_each_step_and_passes)
     CHECK(strstr(g.report, "Result:         PASS") != NULL);
     CHECK(strstr(g.report, "Device:         DS3218") != NULL);
     CHECK(strstr(g.report, "STANDARD PWM") != NULL);
-    CHECK(strstr(g.report, " 4.80 V 6.00 V") != NULL);
+    CHECK(strstr(g.report, " 4.80V 6.00V") != NULL);
     CHECK(strstr(g.report, "NOT MEASURED") != NULL);
     float per_s = 0.0f, mod_s = 0.0f;
     uint32_t every = 0u;
@@ -192,7 +192,7 @@ TEST_CASE(the_report_says_whether_a_step_above_6_v_ran)
     c.hv = true;
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
-    CHECK(strstr(g.report, "HV servo:       ON, no step above 6.0 V chosen")
+    CHECK(strstr(g.report, "HV servo:       ON, no step above 6.0V chosen")
           != NULL);
 
     rig_fresh();
@@ -202,7 +202,7 @@ TEST_CASE(the_report_says_whether_a_step_above_6_v_ran)
     c.hv = true;
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
-    CHECK(strstr(g.report, "HV servo:       ON, steps above 6.0 V run")
+    CHECK(strstr(g.report, "HV servo:       ON, steps above 6.0V run")
           != NULL);
 }
 
@@ -223,7 +223,7 @@ TEST_CASE(the_brownout_walk_stops_where_the_servo_stops)
     CHECK(servo_test_brownout(&g.t, &moved, &stopped));
     CHECK_NEAR(moved, 4.2f, 0.001f);
     CHECK(stopped);
-    CHECK(strstr(g.report, "Moved at 4.20 V; no movement seen at 4.00 V.")
+    CHECK(strstr(g.report, "Moved at 4.20V; no movement seen at 4.00V.")
           != NULL);
     /* 5.0 down to 4.0 in 0.2V steps. */
     CHECK_EQ(g.t.step_count, 6u);
@@ -251,11 +251,11 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
      * model's lowest set point, as the report says. */
     CHECK_NEAR(moved, 3.3f, 0.001f);
     CHECK_NEAR(g.t.steps[g.t.step_count - 1u].set_v, 3.3f, 0.001f);
-    CHECK(strstr(g.report, "in 0.20 V steps to 3.30 V") != NULL);
-    CHECK(strstr(g.report, "down to 3.30 V") != NULL);
+    CHECK(strstr(g.report, "in 0.20V steps to 3.30V") != NULL);
+    CHECK(strstr(g.report, "down to 3.30V") != NULL);
     CHECK(strstr(g.report, "lower not tested") != NULL);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
-    CHECK(strstr(g.report, "Brown-out start  movement seen at 5.00 V: PASS\n")
+    CHECK(strstr(g.report, "Brown-out start  movement seen at 5.00V: PASS\n")
           != NULL);
 
     /* Not moving at the first: said so. */
@@ -268,16 +268,16 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     run_out(60000u);
     CHECK(!servo_test_brownout(&g.t, &moved, &stopped));
     CHECK(stopped);
-    CHECK(strstr(g.report, "No movement seen at 5.00 V, the first step: "
+    CHECK(strstr(g.report, "No movement seen at 5.00V, the first step: "
                            "not measurable.") != NULL);
     /* The walk is the whole run, and it measured nothing: the result and
      * the limits say where, not "0 of 0 moves". */
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
     CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
-                           "seen at 5.00 V, the brown-out walk's first "
+                           "seen at 5.00V, the brown-out walk's first "
                            "voltage\n") != NULL);
     CHECK(strstr(g.report, "0 of 0") == NULL);
-    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00 V: "
+    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00V: "
                            "NOT MEASURABLE\n") != NULL);
 
     /* A step that moves and passes, and a walk that sees nothing at its
@@ -295,10 +295,10 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK(!g.t.steps[1].moved);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
     CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
-                           "seen at 5.00 V, the brown-out walk's first "
+                           "seen at 5.00V, the brown-out walk's first "
                            "voltage\n") != NULL);
     CHECK(strstr(g.report, "Moves seen       0 unseen: PASS\n") != NULL);
-    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00 V: "
+    CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00V: "
                            "NOT MEASURABLE\n") != NULL);
 }
 
@@ -341,7 +341,7 @@ TEST_CASE(each_limit_fails_the_run)
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_FAIL);
-    CHECK(strstr(g.report, "Travel time      longest 700 ms, limit 500 ms: "
+    CHECK(strstr(g.report, "Travel time      longest 700ms, limit 500ms: "
                            "FAIL") != NULL);
 
     /* The same servo read by the PD mini: its readings lag and repeat, so
@@ -355,12 +355,12 @@ TEST_CASE(each_limit_fails_the_run)
     run_out(60000u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
     CHECK(strstr(g.report, "Supply:         PD mini\n") != NULL);
-    CHECK(strstr(g.report, "Lag:            about 300 ms from a change of "
+    CHECK(strstr(g.report, "Lag:            about 300ms from a change of "
                            "current to the reading that shows it\n") != NULL);
     CHECK(strstr(g.report, "Repeats:        a reading can repeat") != NULL);
     CHECK(strstr(g.report, "Travel times:   an upper bound, not checked "
                            "against the limit\n") != NULL);
-    CHECK(strstr(g.report, "Travel time      longest 700 ms, limit 500 ms: "
+    CHECK(strstr(g.report, "Travel time      longest 700ms, limit 500ms: "
                            "upper bound, not checked against the limit\n")
           != NULL);
     servo_test_meter_pdmini(NULL);          /* nothing to fill: no harm */
@@ -445,7 +445,7 @@ TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
     /* No move arrived: there is no longest travel time to state. */
     CHECK(strstr(g.report, "Travel time      longest --, limit OFF: not "
                            "measured, no move arrived\n") != NULL);
-    CHECK(strstr(g.report, "longest 0 ms") == NULL);
+    CHECK(strstr(g.report, "longest 0ms") == NULL);
 
     /* Nor on the PD mini with a limit set: not an upper bound of 0ms. */
     rig_fresh();
@@ -458,11 +458,11 @@ TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
-    CHECK(strstr(g.report, "Travel time      longest --, limit 500 ms: not "
+    CHECK(strstr(g.report, "Travel time      longest --, limit 500ms: not "
                            "measured, no move arrived\n") != NULL);
     CHECK(strstr(g.report, "upper bound, not checked against the limit\n")
           != NULL);                         /* the header line, not this */
-    CHECK(strstr(g.report, "longest 0 ms") == NULL);
+    CHECK(strstr(g.report, "longest 0ms") == NULL);
 
     /* A limit exceeded still fails it. */
     rig_fresh();

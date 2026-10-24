@@ -223,7 +223,14 @@ void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill);
 /** Left-pointing solid triangle, apex at (x, cy). */
 void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color);
 
-/** A 1px horizontal rule. */
+/**
+ * @brief A 1px horizontal rule.
+ * @param c the canvas
+ * @param x its left end, px
+ * @param y its row, px
+ * @param w its length, px
+ * @param color its colour
+ */
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
 
 /* ----------------------------------------------------------- choice list */
@@ -273,7 +280,12 @@ void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
  *  draws a segment row: sunk, its text and chevron dim, no accent. */
 void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text);
 
-/** The open list's ground: a shadow 4px down and right, then the panel. */
+/**
+ * @brief The open list's ground: a shadow 4px down and right, then the
+ *        panel.
+ * @param c the canvas
+ * @param r the list's box
+ */
 void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r);
 
 /** One row of the open list: @p chosen is the choice in force, accented. */

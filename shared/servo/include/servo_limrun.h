@@ -233,7 +233,7 @@ typedef struct {
     char     type[20];
     uint16_t frame_hz;
     char     output[28];  /**< what it drives: "PROG PORT GP13", "GP2"  */
-    uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1mOhm           */
+    uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1mOhm            */
     char     meter[20];   /**< its channel: "INA3221 0x41 CH2"; "" names
                                it "INA3221"                             */
     bool     enc_on;      /**< an AS5600 reads the horn shaft           */
@@ -278,8 +278,8 @@ typedef struct {
     bool     write;       /**< the programmer: these two values           */
     uint16_t angle[2];
     bool     pulses;      /**< the programmer: PULSE LOWER and PULSE UPPER,
-                               0.1us                                     */
-    uint16_t pulse_dus[2];
+                               0.1us                                      */
+    uint16_t pulse_dus[2]; /**< PULSE LOWER and PULSE UPPER, 0.1us       */
     bool     leave;       /**< the programmer: LEAVE                      */
 } servo_limrun_do_t;
 

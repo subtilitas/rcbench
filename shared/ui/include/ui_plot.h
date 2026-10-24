@@ -40,7 +40,7 @@ typedef struct {
     const char *unit;
     gfx_color_t color;
     int         decimals;
-    /** Lower bound of the autorange: a 0 to 0.4A scale on an idle bench
+    /** @brief Lower bound of the autorange: a 0 to 0.4A scale on an idle bench
      *  draws noise at full height. */
     float       floor;
     /**

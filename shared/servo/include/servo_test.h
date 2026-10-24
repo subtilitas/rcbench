@@ -276,7 +276,7 @@ extern "C" {
 /** @brief Which meter a run reads. */
 typedef enum {
     SERVO_TEST_METER_PDMINI = 0,    /**< the supply's own readings      */
-    SERVO_TEST_METER_INA3221,       /**< CH1's 50ms windows            */
+    SERVO_TEST_METER_INA3221,       /**< CH1's 50ms windows             */
     SERVO_TEST_METER_MODEL,         /**< the panel's model of the supply */
 } servo_test_meter_kind_t;
 
@@ -289,7 +289,7 @@ typedef enum {
     SERVO_TEST_INA_SILENT,      /**< the part does not answer            */
     SERVO_TEST_INA_NO_WINDOW,   /**< no fresh window with current        */
     SERVO_TEST_INA_RESET,       /**< it reset itself                     */
-    SERVO_TEST_INA_SETTLING,    /**< working for less than 1s           */
+    SERVO_TEST_INA_SETTLING,    /**< working for less than 1s            */
     SERVO_TEST_INA_MODEL,       /**< the supply is the panel's model     */
     SERVO_TEST_INA_COUNT
 } servo_test_ina_t;
@@ -511,8 +511,8 @@ typedef struct {
                                  while travelling; on the INA3221 the 1ms
                                  sample                                 */
     float    peak_a;        /**< likewise, of every reading after SETTLE */
-    uint32_t travel_max_ms;
-    uint32_t travel_sum_ms;
+    uint32_t travel_max_ms; /**< the longest travel of a move that arrived */
+    uint32_t travel_sum_ms; /**< and the sum of their travels          */
     uint16_t travels;       /**< moves that arrived                     */
     uint16_t moves;         /**< moves counted                          */
     uint16_t no_rise;       /**< counted moves with no movement seen:

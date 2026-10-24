@@ -1,5 +1,7 @@
-/*
- * gfx: an RGB565 (16-bit red, green, blue) rasteriser with no dependencies.
+/**
+ * @file
+ * @brief gfx: an RGB565 (16-bit red, green, blue) rasteriser with no
+ *        dependencies.
  *
  * Nothing in this header touches ESP-IDF, FreeRTOS or any hardware.  It draws
  * into a plain block of 16-bit pixels described by a gfx_canvas_t, so the

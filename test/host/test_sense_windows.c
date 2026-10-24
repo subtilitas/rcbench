@@ -568,7 +568,7 @@ TEST_CASE(a_part_that_resets_itself_hands_over_empty_windows)
     sense_link_meter(&chain.sl, &m);
     CHECK_EQ(m.resets, 1u);
     CHECK((m.flags & LINK_SN_I3221_ONLINE) != 0u);     /* set up again */
-    CHECK(tl.empty >= 19u && tl.empty <= 21u);         /* 1000ms      */
+    CHECK(tl.empty >= 19u && tl.empty <= 21u);         /* 1000ms       */
     CHECK_EQ(tl.back, 0u);
     CHECK_EQ(tl.missing, 0u);
     CHECK_EQ(tl.wrong, 0u);

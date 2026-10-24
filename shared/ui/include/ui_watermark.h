@@ -1,5 +1,7 @@
-/*
- * The SIMULATION watermark: the mark that the numbers behind it are modelled.
+/**
+ * @file
+ * @brief The SIMULATION watermark: the mark that the numbers behind it are
+ *        modelled.
  *
  * It is written across the whole screen, corner to corner, at 15% opacity:
  * readable through, and not croppable out of a photograph.  A caption in a

@@ -141,7 +141,7 @@ TEST_CASE(a_value_past_a_soft_limit_waits_for_a_2_s_hold)
     key(UI_KEY_OK);
     /* The page names the change and the reason; nothing is taken yet. */
     CHECK_EQ(kst_panel_editor(), 3);
-    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97 %");
+    CHECK_STR_EQ(kst_panel_warning_line(0), "MAX. DUTY: 96 -> 97%");
     CHECK(warns(TR(KP_W_DUTY_RAISED)));
     CHECK_EQ(kst_prog_changes(M), 0);
     /* 1.9s is not a hold. */

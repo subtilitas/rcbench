@@ -100,7 +100,7 @@ TEST_CASE(the_format_check_sees_what_is_read)
     char a[32];
     conversions("%d of %d", a, sizeof(a));
     CHECK_STR_EQ(a, "d,d,");
-    conversions("100 %% at %-6s %5.2f %lu %+d %.*f %02X", a, sizeof(a));
+    conversions("100%% at %-6s %5.2f %lu %+d %.*f %02X", a, sizeof(a));
     CHECK_STR_EQ(a, "s,f,lu,d,*f,X,");
     conversions("none", a, sizeof(a));
     CHECK_STR_EQ(a, "");
@@ -543,7 +543,7 @@ TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
         }
     }
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_CC),
-                 "constant current for 1 s");
+                 "constant current for 1s");
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_INA_METER),
                  "INA3221 no longer the meter");
 }

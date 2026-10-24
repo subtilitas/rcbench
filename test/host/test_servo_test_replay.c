@@ -457,13 +457,13 @@ TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
     CHECK(!g_rp.stalled);
     char want[96];
     snprintf(want, sizeof(want), "Const. current: %lu supply readings, "
-             "longest stretch 425 ms\n", (unsigned long)g_rp.cc_readings);
+             "longest stretch 425ms\n", (unsigned long)g_rp.cc_readings);
     CHECK(strstr(g_rp_report, want) != NULL);
     CHECK(strstr(g_rp_report, "Result:         PASS\n") != NULL);
-    CHECK(strstr(g_rp_report, "Stall threshold  highest 0.390 A, STALL AT "
-                              "3.00 A: PASS\n") != NULL);
-    CHECK(strstr(g_rp_report, "STALL AT 3.00 A cannot be reached: current "
-                              "limit 2.00 A\n") != NULL);
+    CHECK(strstr(g_rp_report, "Stall threshold  highest 0.390A, STALL AT "
+                              "3.00A: PASS\n") != NULL);
+    CHECK(strstr(g_rp_report, "STALL AT 3.00A cannot be reached: current "
+                              "limit 2.00A\n") != NULL);
 }
 
 /* The MG90S's recording with every current three times as large, as an
@@ -486,7 +486,7 @@ TEST_CASE(a_standard_servo_on_the_pd_mini_passes)
     for (unsigned k = 0; k < 2u; ++k) {
         rp_check_step(&g_rp.steps[k], g_rp.steps[k].moves);
     }
-    CHECK(strstr(g_rp_report, "limit 500 ms: upper bound, not checked "
+    CHECK(strstr(g_rp_report, "limit 500ms: upper bound, not checked "
                               "against the limit") != NULL);
 
     c.meter.upper_bound = false;

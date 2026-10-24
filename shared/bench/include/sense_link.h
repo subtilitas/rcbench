@@ -201,7 +201,7 @@ typedef struct {
     uint16_t i228_uohm;       /**< shunt, uOhm                          */
     uint16_t i228_max_da;     /**< the current its range is set for, 0.1A */
     uint8_t  i3221_addr;      /**< 0x40 to 0x43                         */
-    uint16_t i3221_dmohm;     /**< shunt, 0.1mOhm                      */
+    uint16_t i3221_dmohm;     /**< shunt, 0.1mOhm                       */
     uint8_t  i3221_ch;        /**< bits 0..2 for CH1 to CH3             */
     /**
      * @brief Bit a: the INA3221 at 0x40 + a is fitted (SETUP > SENSORS); the
@@ -331,10 +331,10 @@ typedef struct {
     bool     clip_lo;     /**< a sample read the bottom                   */
     uint8_t  clipped;     /**< samples at an end, held at 255             */
     int16_t  mean_ma;     /**< mA, signed                                 */
-    int16_t  max_ma;
-    int16_t  min_ma;
+    int16_t  max_ma;      /**< the highest sample, mA, signed             */
+    int16_t  min_ma;      /**< the lowest sample, mA, signed              */
     uint16_t mean_mv;     /**< bus voltage at the load side of the shunt  */
-    uint16_t min_mv;
+    uint16_t min_mv;      /**< the lowest bus voltage sample, mV          */
     /**
      * @brief The latest the window can have closed, on the panel's tick: when
      *        the panel had the read that brought it, less SENSE_LINK_WINDOW_MS

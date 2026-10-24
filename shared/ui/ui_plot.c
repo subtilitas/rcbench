@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The multi-series plot on one time base.  See ui_plot.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

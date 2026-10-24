@@ -611,10 +611,7 @@ static void draw_readings(gfx_canvas_t *c)
     /* The pulse without its unit, which the label row carries. */
     char cmd[16];
     snprintf(cmd, sizeof(cmd), "%s", servo_screen_commanded_text());
-    char *sp = strchr(cmd, ' ');
-    if (sp != NULL) {
-        *sp = '\0';
-    }
+    cmd[strspn(cmd, "+-.0123456789")] = '\0';
     hero_text(c, READ_X(0), READ_NUM_Y, READ_W - 4, cmd,
               ui_theme_color(UI_C_TEXT));
     char mea[16];

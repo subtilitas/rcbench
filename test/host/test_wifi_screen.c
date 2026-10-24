@@ -182,12 +182,12 @@ TEST_CASE(the_view_enums_mirror_the_session_and_the_installer)
 TEST_CASE(the_texts_name_the_session_limits)
 {
     CHECK_EQ(WA_IDLE_MS, 10u * 60u * 1000u);
-    CHECK(strstr(ui_tr(TX_WF_OFF_IDLE), "10 min") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_OFF_IDLE), "10min") != NULL);
     CHECK_EQ(WA_GUESS_MAX, 16u);
     CHECK(strstr(ui_tr(TX_WF_OFF_GUESSES), "16 ") != NULL);
     CHECK_EQ(WA_ADDRESS_MS, 15000u);
-    CHECK(strstr(ui_tr(TX_WF_JOIN_NO_ADDRESS), "15 s") != NULL);
-    CHECK(strstr(ui_tr(TX_WF_HOLD_INSTALL), "2 s") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_JOIN_NO_ADDRESS), "15s") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_HOLD_INSTALL), "2s") != NULL);
     CHECK(UI_HOLD_S == 2.0f);
 }
 

@@ -198,7 +198,7 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_REPLY_MS    400u    /**< the window for a reply             */
 #define PDMINI_BYTE_MS      60u    /**< and longer by this on every byte   */
 #define PDMINI_TXN_MS      600u    /**< but never past this from the request;
-                                        a 37-byte reply is 20ms at 19200  */
+                                        a 37-byte reply is 20ms at 19200   */
 #define PDMINI_CONFIRM_MS  250u    /**< OUTPUT_EN to the read that confirms */
 #define PDMINI_WATCH_MS   1000u    /**< an ON cancelled before its argument
                                         is known, watched this long         */

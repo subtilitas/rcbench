@@ -640,14 +640,14 @@ enum {
     LINK_SN_I228_ID         = 14,
     LINK_SN_I3221_ID        = 15,
     LINK_SN_ERRORS          = 16,
-    LINK_SN_I228_TEMP_DC    = 17,  /**< 0.1C, signed -- read as int16_t    */
+    LINK_SN_I228_TEMP_DC    = 17,  /**< 0.1C, signed -- read as int16_t     */
     LINK_SN_I228_DIAG       = 18,
-    LINK_SN_I228_CHARGE_LO  = 19,  /**< 0.01mAh, int32_t, low half first   */
+    LINK_SN_I228_CHARGE_LO  = 19,  /**< 0.01mAh, int32_t, low half first    */
     LINK_SN_I228_CHARGE_HI  = 20,
-    LINK_SN_I228_ENERGY_LO  = 21,  /**< 0.01Wh, uint32_t, low half first   */
+    LINK_SN_I228_ENERGY_LO  = 21,  /**< 0.01Wh, uint32_t, low half first    */
     LINK_SN_I228_ENERGY_HI  = 22,
-    LINK_SN_ESC_VOLTAGE_CV  = 23,  /**< 10mV steps                         */
-    LINK_SN_ESC_CURRENT_CA  = 24,  /**< 10mA steps                         */
+    LINK_SN_ESC_VOLTAGE_CV  = 23,  /**< 10mV steps                          */
+    LINK_SN_ESC_CURRENT_CA  = 24,  /**< 10mA steps                          */
     LINK_SN_ESC_FLAGS       = 25,
     LINK_SN_AS5600_FLAGS    = 26,  /**< protocol 4.9, from here             */
     LINK_SN_AS5600_ANGLE    = 27,  /**< RAW ANGLE, 0 to 4095                */
@@ -824,8 +824,8 @@ enum {
     LINK_SS_CAP_BAND_MA  = 17,
     LINK_SS_CAP_STATE    = 18,  /**< read only from here */
     LINK_SS_CAP_SEQ      = 19,
-    LINK_SS_CAP_MOVE_T   = 20,  /**< 0.1ms              */
-    LINK_SS_CAP_ARRIVE_T = 21,  /**< 0.1ms              */
+    LINK_SS_CAP_MOVE_T   = 20,  /**< 0.1ms               */
+    LINK_SS_CAP_ARRIVE_T = 21,  /**< 0.1ms               */
     LINK_SS_CAP_PEAK_MA  = 22,
     LINK_SS_CAP_MEAN_MA  = 23,
     LINK_SS_CAP_SAMPLES  = 24,
@@ -877,7 +877,7 @@ typedef enum {
     LINK_CAP_UNSEEN    = 7, /**< no movement within 3000ms plus the
                                  meter's lag: neither timed nor late       */
     LINK_CAP_LOST      = 8, /**< the INA3221 stopped answering, or no PWM
-                                 edge came within 3000ms of the arm       */
+                                 edge came within 3000ms of the arm        */
 } link_cap_state_t;
 
 /* --- the SERVO_WIN page (protocol 4.11): the INA3221's CH1, the servo
@@ -1199,10 +1199,10 @@ enum {
     LINK_TN_EVT_SEQ      = 14,
     LINK_TN_EVT_START_LO = 15,  /**< ms since ENABLE, uint32_t, low first*/
     LINK_TN_EVT_START_HI = 16,
-    LINK_TN_EVT_LEN_DMS  = 17,  /**< 0.1ms                              */
-    LINK_TN_EVT_FREQ_DHZ = 18,  /**< 0.1Hz                              */
+    LINK_TN_EVT_LEN_DMS  = 17,  /**< 0.1ms                               */
+    LINK_TN_EVT_FREQ_DHZ = 18,  /**< 0.1Hz                               */
     LINK_TN_EVT_BURSTS   = 19,
-    LINK_TN_EVT_CARRIER_HHZ = 20, /**< 100Hz steps; 0 unchopped         */
+    LINK_TN_EVT_CARRIER_HHZ = 20, /**< 100Hz steps; 0 unchopped          */
     LINK_TN_EVT_FLAGS    = 21,
     LINK_TN_LOST         = 22,
     LINK_TN_GLITCHES     = 23,
@@ -1430,14 +1430,14 @@ typedef enum {
  * the fast samples and the panel sees one poll in fifty of them.
  */
 enum {
-    LINK_BN_VOLTAGE_CV   = 0,  /**< 10mV steps, 0..655.35 V              */
-    LINK_BN_CURRENT_CA   = 1,  /**< 10mA steps, 0..655.35 A              */
+    LINK_BN_VOLTAGE_CV   = 0,  /**< 10mV steps, 0..655.35V                */
+    LINK_BN_CURRENT_CA   = 1,  /**< 10mA steps, 0..655.35A                */
     LINK_BN_POWER_W      = 2,  /**< watts                                  */
     LINK_BN_RPM          = 3,
-    LINK_BN_TEMP_ESC_DC  = 4,  /**< 0.1C, signed -- read as int16_t       */
-    LINK_BN_TEMP_MOT_DC  = 5,  /**< 0.1C, signed                          */
+    LINK_BN_TEMP_ESC_DC  = 4,  /**< 0.1C, signed -- read as int16_t        */
+    LINK_BN_TEMP_MOT_DC  = 5,  /**< 0.1C, signed                           */
     LINK_BN_CHARGE_MAH   = 6,  /**< accumulated by the current monitor     */
-    LINK_BN_ENERGY_DWH   = 7,  /**< 0.1Wh                                 */
+    LINK_BN_ENERGY_DWH   = 7,  /**< 0.1Wh                                  */
     LINK_BN_VOLT_MIN_CV  = 8,  /**< sag: the lowest the bus went           */
     LINK_BN_CURR_MAX_CA  = 9,
     LINK_BN_POWER_MAX_W  = 10,
@@ -1624,8 +1624,8 @@ typedef enum {
  */
 enum {
     LINK_AW_BLOCKS   = 0, /**< blocks of payload; 0 when there is none    */
-    LINK_AW_WIDTH    = 1, /**< the outline along the pad rows, 0.01mm    */
-    LINK_AW_HEIGHT   = 2, /**< the outline across them, 0.01mm           */
+    LINK_AW_WIDTH    = 1, /**< the outline along the pad rows, 0.01mm     */
+    LINK_AW_HEIGHT   = 2, /**< the outline across them, 0.01mm            */
     LINK_AW_FORMAT   = 3, /**< a link_art_format_t                        */
     LINK_AW_BYTES_LO = 4, /**< payload length, low half                   */
     LINK_AW_BYTES_HI = 5,
@@ -1790,7 +1790,7 @@ enum {
  */
 typedef enum {
     LINK_PAD_NONE   = 0, /**< no pad in this slot; the list ends here      */
-    LINK_PAD_GROUND = 1, /**< 0V, and what a servo lead returns through   */
+    LINK_PAD_GROUND = 1, /**< 0V, and what a servo lead returns through    */
     LINK_PAD_POWER  = 2, /**< a rail, at LINK_PAD_DV tenths of a volt      */
     LINK_PAD_OTHER  = 3, /**< neither: a RUN or an enable                  */
 } link_pad_kind_t;
@@ -2568,7 +2568,7 @@ enum {
     LINK_UPD_STATE       = 1,  /**< a link_upd_state_t                       */
     LINK_UPD_ERROR       = 2,  /**< a link_upd_err_t: why the last refusal   */
     LINK_UPD_SLOT        = 3,  /**< LINK_UPD_SLOT_* bits                     */
-    LINK_UPD_SLOT_SECTORS = 4, /**< 4KiB sectors in one slot; 0 when none   */
+    LINK_UPD_SLOT_SECTORS = 4, /**< 4KiB sectors in one slot; 0 when none    */
     LINK_UPD_NEXT_BLOCK  = 5,  /**< the block COMMIT takes next              */
     LINK_UPD_SIZE_LO     = 6,  /**< bytes of the session's image, or of the  */
     LINK_UPD_SIZE_HI     = 7,  /**<   running slot hashed by HASH_RUNNING     */

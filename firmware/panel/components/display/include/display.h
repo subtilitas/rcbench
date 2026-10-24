@@ -59,7 +59,7 @@ extern "C" {
 
 /** @brief How display_init() sets the display up. */
 typedef struct {
-    bool backlight_on;    /**< backlight to 100% after the first frame  */
+    bool backlight_on;    /**< backlight to 100% after the first frame   */
 } display_config_t;
 
 /** @brief Backlight on after the first frame. */
