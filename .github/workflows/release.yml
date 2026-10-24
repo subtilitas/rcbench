@@ -181,6 +181,15 @@ jobs:
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
+      # The trial start's rollback test build aborts every trial start;
+      # it is never a release.
+      - name: The image is no trial crash test build
+        run: |
+          if grep -q '^RCBENCH_TRIAL_CRASH:BOOL=ON' firmware/panel/build/CMakeCache.txt; then
+            echo "RCBENCH_TRIAL_CRASH is ON" >&2
+            exit 1
+          fi
+
       # A build that rewrites the lock file resolved a version the commit
       # does not pin.
       - name: The build leaves the lock file as committed

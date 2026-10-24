@@ -104,8 +104,10 @@ CONFIG_FATFS_USE_LABEL=y
 #
 # Two application slots and otadata (partitions.csv).  An update writes the
 # slot that is not running; the bootloader starts a new build once as a
-# trial, and a start that does not reach fw_ota_boot_check() with the
-# display and touch up goes back to the build before it.  No anti-rollback,
+# trial, and a start that resets before the panel keeps it goes back to the
+# build before it.  The panel keeps it once every task runs and a frame is
+# on the display, 30s after the start at the latest with the screen loop
+# running (shared/fwupdate/fw_trial.h).  No anti-rollback,
 # no secure boot, no flash encryption, no signing: an image is checked by
 # its header, its project name and its appended SHA-256 (secure hash
 # algorithm, 256 bits), which say what it is and that it arrived whole, and
