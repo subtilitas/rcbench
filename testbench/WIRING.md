@@ -308,31 +308,32 @@ injector's three wires to the same bus. The injector is a Waveshare
 RP2350-Zero of its own (`touch-injector/README.md`), not the bench RP2350.
 It answers at 0x14; the real controller stays at 0x5D.
 
-**Which two lines on the panel.** `BOARD_I2C_PIN_SDA` is GPIO8 and
-`BOARD_I2C_PIN_SCL` is GPIO9, on `I2C_NUM_0` at `BOARD_I2C_FREQ_HZ`
+**Which two lines on the panel.** `BOARD_I2C_PIN_SDA` is GPIO7 and
+`BOARD_I2C_PIN_SCL` is GPIO8, on `I2C_NUM_0` at `BOARD_I2C_FREQ_HZ`
 (400,000Hz) -- `firmware/panel/components/board/include/board_pins.h`. The
-bus is brought out on the panel's 4-pin PH2.0 I²C connector:
-1 I2C_VCC, 2 GND, 3 SDA, 4 SCL, as `docs/Building.md` gives it. Check the
-order with a meter against the board in hand before the first lead goes on.
+bus is brought out on the board's 4-pin I²C header
+(`docs/Building.md`, "The touch bus header"). The order of its pins is not
+known: find SDA and SCL with a meter against the board in hand before the
+first lead goes on.
 
 | RP2350-Zero | Goes to | Notes |
 |---|---|---|
-| GP4 | connector pin 3, SDA | an input until confirmed, then I²C0 SDA, open drain |
-| GP5 | connector pin 4, SCL | an input until confirmed, then I²C0 SCL, open drain |
+| GP4 | the header's SDA pin | an input until confirmed, then I²C0 SDA, open drain |
+| GP5 | the header's SCL pin | an input until confirmed, then I²C0 SCL, open drain |
 | GND | the star point | short wire; see below |
 | GP6 | not connected | reserved for the GT911 INT line |
 | GP7 | not connected | reserved for a panel reset sense |
 | 3V3 | not connected | the Zero runs from its own USB port |
 
-No pull-up is added on the Zero: the panel's bus has its own, and a second
-set changes the rise time on a bus this bench measures. The injector enables
-none.
+No pull-up is added on the Zero: a second set changes the rise time on a bus
+this bench measures, and the injector enables none. Whether the board's bus
+has pull-ups of its own is not measured.
 
 **The injector's ground is the one exception to section 1.** The Zero is
 powered and driven over USB from the Pi, so its ground reaches the star a
 second time through the Pi. No isolator sits in that lead, and the second
 ground path is accepted for this lead alone. Keep its GND wire short and run
-it to the star point, not to the panel's connector pin 2.
+it to the star point, not to the header's ground pin.
 
 400kHz is also what sets the capture rate below: 4MHz is ten samples a bit.
 
@@ -424,11 +425,10 @@ Measured across CANH and CANL with everything unpowered, two 120Ω
 terminators in parallel read about 60Ω. One terminator, or none, reads 120Ω
 or open, and that is the commonest way this is built wrong.
 
-**And the panel has to be in CAN mode to be on that bus at all.** GPIO19 and
-GPIO20 carry both USB and CAN, and the FSUSB42UMX multiplexer chooses -- CH422G
-EXIO5, 0 for USB and 1 for CAN. Selecting CAN takes the panel's native USB
-away, which is worth knowing before it is the port a flash was going to use.
-`docs/Link.md` has the detail.
+**The panel's CAN has no mode to select.** It is the ESP32-P4's TWAI
+(Two-Wire Automotive Interface) controller on GPIO21 (RX) and GPIO22 (TX) to
+a TJA1051T/3 transceiver on header H11, and neither pin carries anything else
+(`board_pins.h`). `docs/Link.md` has the detail.
 
 Then four leads on the IOmcu's SPI to the XL2515 -- SCK on GP10 pad 14, MOSI
 on GP11 pad 15, MISO on GP12 pad 16, CS on GP9 pad 12 -- and one on RXCAN
@@ -465,15 +465,13 @@ measures the same 60Ω, the panel keeps polling its controller over SPI, and
 the IOmcu's RXCAN sits recessive until the transmitter gives up and goes
 bus-off. In order of what costs least to check:
 
-1. **The multiplexer.** The panel is only on the bus with CH422G EXIO5 set to
-   CAN. In USB mode it is not transmitting at all.
-2. **Polarity.** CANH to CANH and CANL to CANL. Crossed reads 60Ω and works
+1. **Polarity.** CANH to CANH and CANL to CANL. Crossed reads 60Ω and works
    for nobody.
-3. **What the ends say.** The panel's start-up self-test gives a verdict, and
+2. **What the ends say.** The panel's start-up self-test gives a verdict, and
    the IOmcu's error counters say whether it has been transmitting into
    silence. A transmitter that has gone bus-off is a bus fault, not a probe
    fault.
-4. **Then the probe**, which wants the logic-level pin between the controller
+3. **Then the probe**, which wants the logic-level pin between the controller
    and the transceiver rather than the differential pair.
 
 ---

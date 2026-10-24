@@ -42,16 +42,18 @@ image.
 
 | RP2350-Zero | Connects to | Notes |
 | --- | --- | --- |
-| GP4 | panel I2C SDA (connector pin 3) | I2C0 SDA once confirmed; an input before |
-| GP5 | panel I2C SCL (connector pin 4) | I2C0 SCL once confirmed; an input before |
+| GP4 | panel I2C SDA (the header's SDA pin) | I2C0 SDA once confirmed; an input before |
+| GP5 | panel I2C SCL (the header's SCL pin) | I2C0 SCL once confirmed; an input before |
 | GND | the bench's star point | short wire; the one second ground path the bench accepts (`testbench/WIRING.md`, section 5) |
 | GP6 | not connected | reserved for the GT911 INT line; an input, never driven |
 | GP7 | not connected | reserved for a panel reset sense; an input |
 | GP16 | on-board WS2812 LED, bytes in RGB order | status, see below |
-| 3V3 | not connected | the Zero runs from its own USB port; the bus has its pull-ups on the panel |
+| 3V3 | not connected | the Zero runs from its own USB port |
 
-The connector is the panel's 4-pin PH2.0 I2C connector, pinned out in
-`docs/Building.md`: 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. The injector has no pull-ups and enables none.
+The connector is the board's 4-pin I2C header ("The touch bus header" in
+`docs/Building.md`); the order of its pins is not known, so SDA and SCL are
+found with a meter before a lead goes on. The injector has no pull-ups and
+enables none. Whether the board's bus has pull-ups of its own is not measured.
 
 ## Build
 
