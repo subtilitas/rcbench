@@ -142,6 +142,9 @@ typedef struct {
     bool        have_net;
     char        net[WIFI_SSID_MAX + 1];
     upd_why_t   block;         /**< why a check may not start now          */
+    bool        radio_free;    /**< the radio is off and no session asks
+                                    for it (wifi_access_down()): a job
+                                    stopped for WI-FI shows no result     */
     upd_why_t   dl_block;      /**< why a download may not start now       */
     char        running[WIFI_VER_MAX + 1];
     bool        line_capped;   /**< the release line ends at 0.22
@@ -212,7 +215,10 @@ bool upd_busy(const upd_view_t *v);
  *        and the line under it.
  *
  * Both screens and the download's progress draw these.  Nothing is
- * written when @p out or @p second is NULL or has no room.
+ * written when @p out or @p second is NULL or has no room.  A job stopped
+ * for WI-FI (UPD_WHY_FILES) gives two empty lines once the view's
+ * radio_free is set: its line says WI-FI is using Wi-Fi, which then no
+ * longer holds.
  *
  * @param v      the view; NULL gives two empty lines
  * @param out    the first line, empty for none
