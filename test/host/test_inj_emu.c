@@ -17,9 +17,9 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
     uint8_t id[6] = { 0 };
     m_read(GT911_EMU_REG_PRODUCT, id, 6);
     CHECK_EQ(id[0], '9');
-    CHECK_EQ(id[1], '1');
-    CHECK_EQ(id[2], '1');
-    CHECK_EQ(id[3], 0);
+    CHECK_EQ(id[1], 'I');
+    CHECK_EQ(id[2], 'N');
+    CHECK_EQ(id[3], 'J');
     CHECK_EQ(id[4], 0x01);
     CHECK_EQ(id[5], 0xE0);
     CHECK_EQ(inj.emu.product_reads, 1);
@@ -34,6 +34,10 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x804C), 5);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8157), 0);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0xFFFF), 0);
+    /* The product ID's edges: the byte before it and the one after. */
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT - 1u), 0);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT + 3u), 'J');
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT + 4u), 0x01);
 
     /* The command registers keep what was written; others ignore it. */
     const uint8_t cmd[2] = { 0xAA, 0x55 };
@@ -48,7 +52,7 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
     m_read(0x8140, id, 2);
     id[0] = gt911_emu_tx(&inj.emu);
     gt911_emu_finish(&inj.emu);
-    CHECK_EQ(id[0], '1');
+    CHECK_EQ(id[0], 'N');
 }
 
 TEST_CASE(a_frame_waits_for_its_acknowledge)
@@ -95,7 +99,7 @@ TEST_CASE(a_reset_listens_and_refuses_gestures)
 {
     fresh(0);
     send("ping");
-    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen");
+    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen id=9INJ");
     send("tap 10 10");
     CHECK_STR_EQ(last(), "err unconfirmed");
     send("hold 10 10 500");
@@ -148,7 +152,7 @@ TEST_CASE(confirm_needs_an_ok_verdict)
     }
     confirm_ok();
     send("ping");
-    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=active");
+    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=active id=9INJ");
     send("confirm scl=GP5");
     CHECK_STR_EQ(last(), "err state");
     send("wiring");

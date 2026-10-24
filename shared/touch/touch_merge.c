@@ -265,3 +265,39 @@ int touch_merge_mark_cut(const touch_merge_t *m, touch_event_t *evts, int n)
     }
     return marked;
 }
+
+bool touch_merge_is_injector(const char *product_id)
+{
+    return product_id != NULL
+           && memcmp(product_id, TOUCH_MERGE_INJECT_PRODUCT, 4) == 0;
+}
+
+touch_role_t touch_merge_role(uint16_t addr, bool glass_found,
+                              const char *product_id)
+{
+    if (addr == TOUCH_MERGE_GLASS_ADDR) {
+        return TOUCH_ROLE_GLASS;
+    }
+    if (addr != TOUCH_MERGE_INJECT_ADDR) {
+        return TOUCH_ROLE_NONE;
+    }
+    if (touch_merge_is_injector(product_id)) {
+        return TOUCH_ROLE_INJECTOR;
+    }
+    return glass_found ? TOUCH_ROLE_NONE : TOUCH_ROLE_GLASS;
+}
+
+touch_map_t touch_merge_role_map(touch_role_t role, const touch_map_t *glass,
+                                 const touch_map_t *inject, bool turned)
+{
+    const touch_map_t none = { 0 };
+    switch (role) {
+    case TOUCH_ROLE_GLASS:
+        return glass != NULL ? touch_map_turned(glass, turned) : none;
+    case TOUCH_ROLE_INJECTOR:
+        return inject != NULL ? *inject : none;
+    case TOUCH_ROLE_NONE:
+    default:
+        return none;
+    }
+}
