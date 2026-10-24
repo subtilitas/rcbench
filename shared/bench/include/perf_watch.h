@@ -115,11 +115,23 @@ typedef struct {
 void perf_lows_init(perf_lows_t *t);
 
 /**
+ * @brief Copy a task's name into a row-sized buffer.
+ *
+ * Reads at most PERF_LOWS_NAME - 1 bytes of @p name and none past its
+ * terminator, so a name without one is cut, not run past.
+ *
+ * @param dst  The buffer, PERF_LOWS_NAME bytes; always terminated.
+ * @param name The name; NULL is copied as "".
+ */
+void perf_name_copy(char dst[PERF_LOWS_NAME], const char *name);
+
+/**
  * @brief Note @p least free bytes for @p name.
  *
  * @param t     The table.
  * @param name  The task's name, or another the caller chooses; cut to
- *              PERF_LOWS_NAME - 1 bytes.  NULL is noted as "".
+ *              PERF_LOWS_NAME - 1 bytes, of which no more are read
+ *              (perf_name_copy()).  NULL is noted as "".
  * @param least The least free bytes now.
  * @return true when the name is new or @p least is below its last figure,
  *         which it then becomes, and the row is due for a line; false when

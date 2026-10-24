@@ -59,16 +59,23 @@ void perf_lows_init(perf_lows_t *t)
     memset(t, 0, sizeof(*t));
 }
 
+void perf_name_copy(char dst[PERF_LOWS_NAME], const char *name)
+{
+    size_t n = 0u;
+    if (name != NULL) {
+        while (n < PERF_LOWS_NAME - 1u && name[n] != '\0') {
+            dst[n] = name[n];
+            ++n;
+        }
+    }
+    dst[n] = '\0';
+}
+
 bool perf_lows_note(perf_lows_t *t, const char *name, uint32_t least)
 {
     char key[PERF_LOWS_NAME];
-    const char *src = (name != NULL) ? name : "";
-    size_t n = strlen(src);
-    if (n > PERF_LOWS_NAME - 1u) {
-        n = PERF_LOWS_NAME - 1u;
-    }
-    memcpy(key, src, n);
-    key[n] = '\0';
+    perf_name_copy(key, name);
+    const size_t n = strlen(key);
     for (uint32_t i = 0; i < t->count; ++i) {
         perf_low_t *r = &t->rows[i];
         if (strcmp(r->name, key) == 0) {

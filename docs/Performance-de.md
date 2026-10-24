@@ -476,7 +476,11 @@ Regel von `flash_gate_open()`: der Prüfstand nicht ARMED und kein ARM
 wartend, der Ausgang des Netzteils aus und kein EIN eingereiht. Ein Scan,
 der fällig wird, während der Prüfstand ARMED ist, läuft bei der ersten
 Ratenzeile, nachdem er SAFE ist; die High-Water-Mark behält, was der Lauf
-gebraucht hat. Das Panel gibt die Zeit des Scans beim ersten Scan aus und bei
+gebraucht hat. Der Scan meldet den Namen jeder Task als Zeiger in den
+Kontrollblock der Task, den eine endende Task freigibt: das Panel kopiert die
+Namen sofort, höchstens 15 Bytes, und behält den Scan nur, wenn die Zahl der
+Tasks nach dem Kopieren die ist, die der Scan gelesen hat; sonst scannt die
+nächste Ratenzeile erneut. Das Panel gibt die Zeit des Scans beim ersten Scan aus und bei
 jedem Scan, der länger dauert als alle davor, und nach jedem Scan jede Task,
 deren High-Water-Mark gefallen ist, eine Zeile je Frame:
 

@@ -54,7 +54,9 @@ static bool          s_scan_wanted = true;
 static uint32_t      s_since_scan;
 /** @brief The task list uxTaskGetSystemState() fills, in PSRAM. */
 static TaskStatus_t *s_tasks;
-/** @brief Room in s_tasks, in tasks. */
+/** @brief Each task's name, copied out of s_tasks right after the scan. */
+static char        (*s_names)[PERF_LOWS_NAME];
+/** @brief Room in s_tasks and s_names, in tasks. */
 static UBaseType_t   s_task_room;
 
 /** @brief Whether perf_frame() has seen its first frame. */
@@ -98,19 +100,30 @@ void perf_probe_psram(void)
 }
 
 /**
- * @brief Room in s_tasks for every task now and 8 more, from PSRAM.
+ * @brief Room in s_tasks and s_names for every task now and 8 more, from
+ *        PSRAM.
  *
  * @return The room, in tasks; 0 when the heap has none.
  */
 static UBaseType_t task_room(void)
 {
     const UBaseType_t want = uxTaskGetNumberOfTasks() + 8u;
-    if (s_tasks != NULL && s_task_room >= want) {
+    if (s_tasks != NULL && s_names != NULL && s_task_room >= want) {
         return s_task_room;
     }
     heap_caps_free(s_tasks);
+    heap_caps_free(s_names);
     s_tasks = heap_caps_malloc(want * sizeof(*s_tasks), MALLOC_CAP_SPIRAM);
-    s_task_room = (s_tasks != NULL) ? want : 0u;
+    s_names = heap_caps_malloc(want * sizeof(*s_names), MALLOC_CAP_SPIRAM);
+    if (s_tasks == NULL || s_names == NULL) {
+        heap_caps_free(s_tasks);
+        heap_caps_free(s_names);
+        s_tasks = NULL;
+        s_names = NULL;
+        s_task_room = 0u;
+        return 0u;
+    }
+    s_task_room = want;
     return s_task_room;
 }
 
@@ -121,27 +134,48 @@ static UBaseType_t task_room(void)
  * core's interrupts are masked and the kernel lock is held while it scans
  * each task's unused stack, so a kernel call on the other core waits for
  * it.  The time is logged; the scan runs on a quiet frame only.
+ *
+ * The status it fills points at each task's name in the task's control
+ * block, which a task that ends after the lock is released frees.  The
+ * names are copied at once, at most PERF_LOWS_NAME - 1 bytes each, a task
+ * waiting for its clean-up is skipped, and the scan counts only if the
+ * number of tasks after the copy is the number the scan read: FreeRTOS
+ * lowers the count under the kernel lock before it frees a control block,
+ * so a block freed before or during the copy shows as a lower count.
+ *
+ * @return true when the scan counted; false when there was no room or a
+ *         task ended during it, and the next rate line tries again.
  */
-static void scan_stacks(void)
+static bool scan_stacks(void)
 {
     if (s_stacks.count == 0u) {
         perf_lows_init(&s_stacks);
     }
     const UBaseType_t room = task_room();
     if (room == 0u) {
-        return;
+        return false;
     }
     const int64_t t0 = esp_timer_get_time();
     const UBaseType_t got = uxTaskGetSystemState(s_tasks, room, NULL);
     const uint32_t us = (uint32_t)(esp_timer_get_time() - t0);
+    for (UBaseType_t i = 0; i < got; ++i) {
+        perf_name_copy(s_names[i], s_tasks[i].pcTaskName);
+    }
+    if (got == 0u || uxTaskGetNumberOfTasks() != got) {
+        return false;
+    }
     if (us > s_scan_us_max) {
         s_scan_us_max = us;
-        s_scan_due_tasks = (got != 0u) ? got : 1u;
+        s_scan_due_tasks = got;
     }
     for (UBaseType_t i = 0; i < got; ++i) {
-        (void)perf_lows_note(&s_stacks, s_tasks[i].pcTaskName,
+        if (s_tasks[i].eCurrentState == eDeleted) {
+            continue;
+        }
+        (void)perf_lows_note(&s_stacks, s_names[i],
                              (uint32_t)s_tasks[i].usStackHighWaterMark);
     }
+    return true;
 }
 
 /** @brief Note the internal heap's lowest free figure; its line is due when
@@ -267,8 +301,7 @@ void perf_frame(int screen, uint32_t draw_us, bool flip_timed_out,
         if (++s_since_scan >= PERF_SCAN_WINDOWS) {
             s_scan_wanted = true;
         }
-        if (s_scan_wanted && quiet) {
-            scan_stacks();
+        if (s_scan_wanted && quiet && scan_stacks()) {
             s_scan_wanted = false;
             s_since_scan = 0u;
         }

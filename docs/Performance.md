@@ -440,7 +440,11 @@ core, the control task's among them, waits for it. The scan therefore runs
 on a quiet frame only, by `flash_gate_open()`'s rule: the bench not ARMED
 and no arm waiting, the supply's output off and no ON queued. A scan wanted
 while the bench is ARMED runs on the first rate line after it is SAFE; the
-high-water mark keeps what the run used. The panel logs the scan's time at
+high-water mark keeps what the run used. The scan reports each task's name
+as a pointer into the task's control block, which a task that ends frees:
+the panel copies the names at once, 15 bytes at most, and keeps the scan
+only if the number of tasks after the copy is the number the scan read;
+otherwise the next rate line scans again. The panel logs the scan's time at
 the first scan and at every scan that takes longer than all before it, and
 after each scan every task whose high-water mark fell, one line a frame:
 

@@ -277,6 +277,22 @@ TEST_CASE(the_window_across_the_wrap_is_196_frames)
     CHECK_EQ(perf_line_due(UINT32_MAX), PERF_LINE_LOW);
 }
 
+TEST_CASE(a_name_copy_reads_no_byte_past_fifteen_or_the_terminator)
+{
+    char dst[PERF_LOWS_NAME];
+    /* 16 bytes and no terminator: the 16th is never read. */
+    const char raw[16] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+                          'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'};
+    perf_name_copy(dst, raw);
+    CHECK_STR_EQ(dst, "abcdefghijklmno");
+    perf_name_copy(dst, "ipc0");
+    CHECK_STR_EQ(dst, "ipc0");
+    perf_name_copy(dst, "");
+    CHECK_STR_EQ(dst, "");
+    perf_name_copy(dst, NULL);
+    CHECK_STR_EQ(dst, "");
+}
+
 int main(void)
 {
     RUN(the_window_is_300_frames_and_a_task_name_is_16_bytes);
@@ -299,5 +315,6 @@ int main(void)
     RUN(the_last_row_of_a_full_table_is_due);
     RUN(the_rate_line_closes_each_window_and_the_window_line_follows);
     RUN(the_window_across_the_wrap_is_196_frames);
+    RUN(a_name_copy_reads_no_byte_past_fifteen_or_the_terminator);
     return test_summary("perf_watch");
 }
