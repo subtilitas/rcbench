@@ -3122,7 +3122,10 @@ mounted upside down.
   runs.
 - The copy runs on the render loop, inside the flip. The control task,
   which owns STOP, never waits on it. Its time per flip is the console's
-  `TURN` figure; on the board it is not measured. On the host, SERVO LIVE
+  `TURN` figure. On SERVO LIVE sweeping, ARMED, a station run read TURN
+  3.8 to 4.8ms and 30.2fps, against 39 to 45fps in NORMAL: with the copy,
+  every frame takes two panel frames ([Performance](Performance.md#on-the-board)).
+  On the host, SERVO LIVE
   sweeping copies 77,093px a frame on average, MOTOR & ESC LIVE ARMED
   192,911px, a screen at rest 0px (`test_gfx_turn`).
 - The glass's contacts turn with the picture. A contact the glass reports

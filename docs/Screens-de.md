@@ -3445,7 +3445,10 @@ eingebaut ist.
   bei laufendem Video.
 - Die Kopie läuft in der Render-Schleife, im Flip. Der Steuer-Task, dem
   STOP gehört, wartet nie auf sie. Ihre Zeit je Flip ist der Wert `TURN`
-  der Konsole; auf dem Board ist sie nicht gemessen. Auf dem Host kopiert
+  der Konsole. Auf SERVO LIVE beim Schwenken, ARMED, las ein Lauf am
+  Prüfplatz TURN 3,8 bis 4,8ms und 30,2fps, gegen 39 bis 45fps bei NORMAL:
+  mit der Kopie braucht jeder Frame zwei Panel-Frames
+  ([Performance](Performance-de.md#auf-dem-board)). Auf dem Host kopiert
   SERVO LIVE beim Schwenken im Mittel 77.093px je Frame, MOTOR & ESC LIVE
   bei ARMED 192.911px, ein ruhender Bildschirm 0px (`test_gfx_turn`).
 - Die Kontakte des Glases drehen sich mit dem Bild. Ein Kontakt, den das

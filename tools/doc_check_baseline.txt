@@ -1037,7 +1037,6 @@ firmware/panel/main/panel_control.c: warning: Member s_tsens (variable) of file 
 firmware/panel/main/panel_control.c: warning: Member touch_q_put(const touch_event_t *evt, bool lost) (function) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member tsens_read(void) (function) of file panel_control.c is not documented.
 firmware/panel/main/panel_frame.c: warning: Member LINK_LOST_SCREEN_MS (macro definition) of file panel_frame.c is not documented.
-firmware/panel/main/panel_frame.c: warning: Member TAG (variable) of file panel_frame.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member TAG (variable) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member arm_value_wanted(void) (function) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member arm_write_failed(uint32_t quiet_before, const char *alert) (function) of file panel_link.c is not documented.
