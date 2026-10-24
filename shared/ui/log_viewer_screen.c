@@ -584,6 +584,9 @@ bool log_viewer_show(log_viewer_tab_t tab, const char *name)
     s.tab = tab;
     s.tabs.selected = tab_pos(tab);
     s.message[0] = '\0';
+    /* The list, not a view left open before: an OPEN that refuses the
+     * file leaves the list with the reason, never another file's data. */
+    s.view = VIEW_BROWSE;
     /* The page that starts at the name: the file is its first row when
      * the list holds it. */
     lv_read_page(LOG_PAGE_FROM, name);
@@ -592,7 +595,7 @@ bool log_viewer_show(log_viewer_tab_t tab, const char *name)
             s.sel = i;
             s.scroll = (i < BR_ROWS) ? 0 : i - BR_ROWS + 1;
             lv_open_selected();
-            return s.view != VIEW_BROWSE;
+            return true;
         }
     }
     return false;

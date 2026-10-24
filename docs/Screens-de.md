@@ -2719,7 +2719,7 @@ der Meldungszeile, zwei Zeilen in der Schrift 12 x 24 über der Fußzeile.
 
 | Taste | Was sie tut |
 |---|---|
-| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein allein stehender Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs). Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein allein stehender Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs); eine Datei, die LOGS nicht öffnet, eine über 2 GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund. Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |

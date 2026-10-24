@@ -193,9 +193,11 @@ void log_viewer_set_tab(log_viewer_tab_t tab);
  *        three folders.  The page read is the one that starts at the name.
  * @param tab   the folder's tab
  * @param name  the file's name in that folder
- * @return true when the file is open in IMPORT or TEXT; false for a tab
- *         outside the three, a name the list does not hold (a file other
- *         than a .csv or a report standing alone), or a file OPEN refuses
+ * @return true when the list holds the file: it is open in IMPORT or
+ *         TEXT, or the list shows it selected with the reason OPEN refused
+ *         it (a file over LOG_VIEWER_OPEN_MAX, a report that does not
+ *         read); false for a tab outside the three or a name the list does
+ *         not hold (a file other than a .csv or a report standing alone)
  */
 bool log_viewer_show(log_viewer_tab_t tab, const char *name);
 

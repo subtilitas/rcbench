@@ -466,22 +466,25 @@ TEST_CASE(the_fault_log_copies_only_while_the_link_is_up)
 static log_mem_ctx_t s_lv_ctx;
 static const char k_csv[] = "time,voltage\n0.0,22.3\n0.1,22.2\n0.2,22.1\n";
 
-/** @brief LOGS' list(): ATEST005.CSV alone. */
+/** @brief LOGS' list(): ATEST005.CSV, and ATEST006.CSV 1 byte over what
+ *         OPEN reads. */
 static int lv_list(log_viewer_file_t *out, int max_entries,
                    log_viewer_page_t *page, void *ctx)
 {
     (void)ctx;
-    if (max_entries < 1) {
+    if (max_entries < 2) {
         return 0;
     }
-    memset(&out[0], 0, sizeof(out[0]));
+    memset(out, 0, 2u * sizeof(out[0]));
     snprintf(out[0].name, sizeof(out[0].name), "%s", "ATEST005.CSV");
     out[0].size = sizeof(k_csv) - 1u;
+    snprintf(out[1].name, sizeof(out[1].name), "%s", "ATEST006.CSV");
+    out[1].size = LOG_VIEWER_OPEN_MAX + 1u;
     if (page != NULL) {
         page->ahead = 0;
-        page->held = 1;
+        page->held = 2;
     }
-    return 1;
+    return 2;
 }
 
 /** @brief LOGS' open(): the CSV from memory. */
@@ -498,6 +501,7 @@ static bool lv_open(const char *name, log_source_t *src, void *ctx)
 TEST_CASE(open_hands_a_log_folders_csv_to_logs)
 {
     fresh();
+    fk_file(&g_h.card, "USER/LOGS/ATEST006.CSV", NULL, 64u);
     const log_viewer_io_t lv = { .list = lv_list, .open = lv_open };
     log_viewer_set_io(&lv);
     ui_router_goto(SCREEN_SETUP);
@@ -509,6 +513,15 @@ TEST_CASE(open_hands_a_log_folders_csv_to_logs)
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST005.CSV");
     CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+    /* A file OPEN refuses, with the import of ATEST005.CSV left open in
+     * LOGS: the list with the reason, not the other run's data. */
+    ui_router_goto(SCREEN_FILES);
+    settle();
+    CHECK(pick(1, "ATEST006.CSV"));
+    tap_foot(FS_SPOT_OPEN);
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(strstr(log_viewer_message(), "ATEST006.CSV") != NULL);
     /* A name LOGS does not list stays in FILES and says where files
      * open. */
     ui_router_goto(SCREEN_FILES);
