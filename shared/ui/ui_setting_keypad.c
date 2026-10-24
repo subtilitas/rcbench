@@ -128,8 +128,9 @@ const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
         /* The row's own figures: a shunt's 0.1mOhm, a limit's 1mA. */
         const setting_def_t *d = settings_def(id);
         const int dec = ui_setting_keypad_decimals(id);
+        const char *unit = (d->unit != NULL) ? d->unit : "";
         snprintf(buf, n, TR(KEYPAD_WHY_OFF), dec, (double)d->off_below, dec,
-                 (double)d->max, (d->unit != NULL) ? d->unit : "");
+                 (double)d->max, ui_unit_gap(unit), unit);
         return buf;
     }
     case WHY_SDA: {

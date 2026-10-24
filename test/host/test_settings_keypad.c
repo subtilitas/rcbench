@@ -427,10 +427,10 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         ui_lang_t lang;
         const char *shunt, *limit, *sda, *pdmini;
     } k_why[] = {
-        { UI_LANG_EN, "0 or 5.0 to 1000.0 mΩ", "0 or 10 to 32767 mA",
+        { UI_LANG_EN, "0 or 5.0 to 1000.0mΩ", "0 or 10 to 32767mA",
           "Pins the bus takes: 0 4 6 14 16 18 20 26",
           "The other PD mini pin holds this GPIO" },
-        { UI_LANG_DE, "0 oder 5.0 bis 1000.0 mΩ", "0 oder 10 bis 32767 mA",
+        { UI_LANG_DE, "0 oder 5.0 bis 1000.0mΩ", "0 oder 10 bis 32767mA",
           "Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26",
           "Diesen GPIO hält der andere PD-mini-Pin" },
     };
@@ -565,7 +565,7 @@ TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
             CHECK_NEAR(d->max, 1000.0f, 1e-6f);
             CHECK_EQ(settings_decimals(id), 1);
             CHECK_STR_EQ(ui_setting_keypad_why(id, 4.9f, why, sizeof(why)),
-                         "0 or 5.0 to 1000.0 mΩ");
+                         "0 or 5.0 to 1000.0mΩ");
         } else {
             ++limits;
             CHECK_STR_EQ(d->unit, "mA");
@@ -573,7 +573,7 @@ TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
             CHECK_NEAR(d->max, 32767.0f, 1e-6f);
             CHECK_EQ(settings_decimals(id), 0);
             CHECK_STR_EQ(ui_setting_keypad_why(id, 9.0f, why, sizeof(why)),
-                         "0 or 10 to 32767 mA");
+                         "0 or 10 to 32767mA");
         }
         CHECK_STR_EQ(ui_setting_keypad_why(id, 1.0f, NULL, 0u), "");
         CHECK(ui_setting_keypad_why(id, 0.0f, why, sizeof(why)) == NULL);

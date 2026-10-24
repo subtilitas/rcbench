@@ -26,6 +26,7 @@
 #include "gfx.h"
 #include "touch_types.h"
 #include "ui_layout.h"
+#include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
 
@@ -248,6 +249,16 @@ _Static_assert(FS_INFO_Y + FS_INFO_H <= SCREEN_H - UI_ALERT_H - 4,
 _Static_assert(FS_BOX_Y + FS_BOX_H <= SCREEN_H - UI_ALERT_H - 4,
                "the question ends 4px above the alert band");
 
+/** @brief The message line's longest text, bytes with its NUL. */
+#define FS_MSG_MAX 192
+
+/** @brief What the message line holds. */
+typedef enum {
+    FS_MSG_NONE = 0,      /**< nothing: the gate's sentence, if any    */
+    FS_MSG_TEXT,          /**< a text of the table: msg_id             */
+    FS_MSG_ERR            /**< a refusal or a failure: msg_err         */
+} fs_msg_kind_t;
+
 /** @brief The screen's state. */
 typedef struct {
     files_io_t io;            /**< the card's task                       */
@@ -301,7 +312,13 @@ typedef struct {
     char auto_dir[CARD_DIR_MAX]; /**< AUTO LOG FOLDER in force           */
     bool drawn_gate;          /**< the gate as last drawn: shut          */
 
-    char message[192];        /**< the message line, "" for none         */
+    /* The message line, kept as its text's ID and names, not as words,
+     * so it is worded in the language showing when it is drawn. */
+    fs_msg_kind_t msg_kind;   /**< what the message line holds           */
+    ui_text_id_t msg_id;      /**< FS_MSG_TEXT: the text                 */
+    fm_err_t msg_err;         /**< FS_MSG_ERR: the answer                */
+    char msg_a[FM_NAME_BUF];  /**< the first name it formats, or ""      */
+    char msg_b[FM_NAME_BUF];  /**< the second, RENAME's new name, or ""  */
     bool message_ok;          /**< a result, not a refusal               */
 
     /* The contact that holds a press, where it came down, and what on. */
@@ -388,11 +405,36 @@ void fs_name_typed(const char *name);
 void fs_job_cancel(void);
 
 /**
- * @brief The message line, a format of the table's.
- * @param ok   a result, not a refusal
- * @param fmt  the format
+ * @brief The message line says @p id, with up to two names.
+ *
+ * The line keeps the ID and the names, and fs_message() words it in the
+ * language showing, so a change of SET_LANGUAGE rewords it.
+ *
+ * @param ok  a result, not a refusal
+ * @param id  the text: FM_COPIED, FM_MOVED, LOG_DELETED and FM_MADE format
+ *            @p a, FM_RENAMED @p a and @p b; any other is shown as it is
+ * @param a   the first name, or NULL
+ * @param b   the second name, or NULL
  */
-void fs_say(bool ok, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void fs_say(bool ok, ui_text_id_t id, const char *a, const char *b);
+
+/**
+ * @brief The message line says why @p err, for @p name (fs_err_text()).
+ * @param err   the answer
+ * @param name  the entry's name, or NULL
+ */
+void fs_say_err(fm_err_t err, const char *name);
+
+/** @brief The message line says nothing. */
+void fs_quiet(void);
+
+/**
+ * @brief The message line in the language showing.
+ * @param buf  takes the line
+ * @param n    bytes at @p buf, FS_MSG_MAX for the longest
+ * @return @p buf, "" for no message; "" also for a NULL @p buf or a zero @p n
+ */
+const char *fs_message(char *buf, size_t n);
 
 /**
  * @brief The words of a refusal or a failure, for @p name.

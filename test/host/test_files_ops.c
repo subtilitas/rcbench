@@ -217,6 +217,12 @@ TEST_CASE(rename_takes_the_name_typed)
     snprintf(want, sizeof(want), TR(FM_RENAMED), "NOTES.TXT",
              "Bench notes.txt");
     CHECK_STR_EQ(files_screen_message(), want);
+    /* In German, both names in the German sentence. */
+    ui_text_set_language(UI_LANG_DE);
+    snprintf(want, sizeof(want), ui_tr_in(UI_LANG_DE, TX_FM_RENAMED),
+             "NOTES.TXT", "Bench notes.txt");
+    CHECK_STR_EQ(files_screen_message(), want);
+    ui_text_set_language(UI_LANG_EN);
     CHECK_EQ(files_screen_pane(0)->selected, row_of(0, "Bench notes.txt"));
     /* CANCEL leaves the name as it was. */
     tap_foot(FS_SPOT_RENAME);

@@ -556,31 +556,31 @@ Linux, `iw`:
 ## Das Dateisystem der SD-Karte
 
 Das Panel liest FAT12, FAT16, FAT32 und exFAT (extended File Allocation
-Table) über FatFs, die Dateisystem-Bibliothek in ESP-IDF. ESP-IDF v5.4 und
-v5.5 bauen FatFs ohne exFAT, und keine Kconfig-Option schaltet es ein. Der
-Panel-Build nimmt eine Kopie der Komponente `fatfs` von ESP-IDF mit
-`FF_FS_EXFAT` auf 1 (`firmware/panel/fatfs_exfat.cmake`). Lange Dateinamen
-bleiben, wie `sdkconfig.defaults` sie setzt: an, 255 Zeichen, der
-Arbeitspuffer auf dem Heap.
+Table) über FatFs, die Dateisystem-Bibliothek in ESP-IDF. ESP-IDF v5.5 baut
+FatFs ohne exFAT, und keine Kconfig-Option schaltet es ein. Der Panel-Build
+nimmt eine Kopie der Komponente `fatfs` von ESP-IDF mit `FF_FS_EXFAT` auf 1
+(`firmware/panel/fatfs_exfat.cmake`), und `storage_list.c` hält einen Build
+an, dessen FatFs kein exFAT hat. Lange Dateinamen bleiben, wie
+`sdkconfig.defaults` sie setzt: an, 255 Zeichen, der Arbeitspuffer auf dem
+Heap.
 
-Was exFAT kostet, gelesen aus dem Build mit ESP-IDF v5.4 gegen denselben
-Stand ohne:
+Was exFAT kostet, gelesen aus dem P4-Build mit ESP-IDF v5.5.5 gegen
+denselben Stand, gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne
+diesen Halt, beide ohne `RCBENCH_IOMCU_BIN`:
 
 | Posten | Ohne exFAT | Mit exFAT | Wo |
 | --- | ---: | ---: | --- |
-| Anwendungs-Image | 1 967 360 | 1 976 544 | Flash, `ota_0` fasst 4 063 232 |
-| interner RAM, den das Image belegt (`static` oben) | 128 208 | 128 208 | intern |
+| Anwendungs-Image | 2 425 520 | 2 434 880 | Flash, `ota_0` fasst 8 126 464 |
+| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, aus `idf.py size` | 128 576 | 128 576 | intern |
 | der Kontext des Mounts: `FATFS`, 4 offene Dateien (`FIL`) und der Zustand des VFS (Virtual File System) von ESP-IDF | 25 376 | 25 560 | Heap, zuerst PSRAM |
 | der Arbeitspuffer für lange Namen, für einen FatFs-Aufruf belegt | 512 | 1 120 | Heap, zuerst PSRAM |
 | der Puffer eines Verzeichnisdurchlaufs (`storage_walk()`) | 328 | 368 | Heap, intern |
 | `FILINFO`, ein Eintrag, wie FatFs ihn liest, im Puffer von `storage_stat()` neben dem Pfad, für einen Aufruf | 280 | 288 | Heap, intern |
-| .bss von `log_viewer_screen`: 48 Listenzeilen mit 64-Bit-Größen | 35 576 | 35 968 | PSRAM |
 
 Alle Werte sind Bytes. Die Heap-Zeilen sind `sizeof()`-Werte, mit GDB aus
-den beiden Builds gelesen; der Heap zur Laufzeit ist nicht gemessen. Die
-Stack-Tiefen der Tabelle unter [Stacks](#stacks) sind in beiden Builds
-gleich: FatFs legt seinen Puffer für lange Namen auf den Heap, nicht auf
-den Stack des aufrufenden Tasks.
+den beiden Builds gelesen; der Heap zur Laufzeit ist nicht gemessen. FatFs
+legt seinen Puffer für lange Namen auf den Heap, nicht auf den Stack des
+aufrufenden Tasks.
 
 Die Größe einer Datei ist von FatFs bis zum Bildschirm 64 Bit breit. stat()
 über das VFS liefert die Größe in `st_size`, einem `off_t` von 32 Bit auf
@@ -588,6 +588,6 @@ dem Panel; jede Größe, die das Panel verwendet, kommt deshalb aus
 `f_stat()` oder `f_readdir()` von FatFs.
 
 `FF_LBA64` (64-Bit-Sektornummern) bleibt 0. Es ist nötig für eine Karte mit
-GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier) und für ein Volume über 2 TiB.
-Damit wächst das Image um weitere 4 768 Bytes, `FATFS` von 4 160 auf 4 184
-Bytes und `FIL` von 4 176 auf 4 192 Bytes.
+GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier) und für ein Volume über 2TiB.
+Damit wächst das P4-Image um weitere 5 056 Bytes, `FATFS` von 4 160 auf
+4 184 Bytes und `FIL` von 4 176 auf 4 192 Bytes.
