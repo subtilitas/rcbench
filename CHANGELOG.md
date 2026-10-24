@@ -113,6 +113,20 @@ history is in git.
 
 ### Fixed
 
+- In the light theme a button that takes no press drew as a dark slab,
+  darker than the enabled buttons beside it. A disabled button now takes
+  the theme's ground colour with a dim edge and a faint label in both
+  themes. The overview's `rcbench` mark was near-black on a near-black
+  box in the light theme; its text now takes the panel colour on a dark
+  fill.
+- UPDATES without a home network said `No home network saved.` and the
+  line under it twice, once in the status lines and once as the check's
+  result. The result is left out while the status lines say it.
+- RECEIVER drew CH17 and CH18 as buttons that took no tap. They are lamps
+  now: a pill whose dot lights while the channel is set.
+- A host Release build (`-DCMAKE_BUILD_TYPE=Release`) stopped on -Werror
+  warnings that the Debug build does not raise: a buffer of 8 bytes for
+  `+%u` on MOTOR & ESC's TARGET, and four host tests. It builds and passes.
 - LOGS words its footer message when it draws it, so a change of
   SET_LANGUAGE rewords a message already standing: a refused open or
   delete, a deleted file's name and the reader's verdict on a file.
@@ -190,6 +204,28 @@ history is in git.
   stay as they are.
 
 ### Changed
+
+- An IOmcu too old for a page is named by the first release whose IOmcu
+  speaks it, the number UPDATES shows, not by the link protocol: `IOMCU
+  OLDER THAN 0.22.0: SERVO PWM ONLY` instead of `4.26`, `Update the IOmcu
+  to version 0.17.0 or later.` instead of `4.13`. Protocol 4.6 is 0.13.0,
+  4.9 0.15.0, 4.11 0.16.0, 4.13 and 4.15 0.17.0, 4.23 0.21.1, 4.24 to 4.27
+  0.22.0; 13 texts in English and German.
+- Every hold names its time in one pattern: `HOLD 2s TO ...`, in German
+  `2s HALTEN ZUM ...`. The KST programmer's holds, HOLD 2s TO APPLY, ESC
+  STICK's HOLD 2s TO RUN, UPDATES' `HOLD 2s TO DOWNLOAD & INSTALL` and
+  `HOLD 2s TO UPDATE THE IOMCU`, WI-FI's `HOLD 2s TO INSTALL` and OUTPUTS'
+  `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` follow the BUSFAULT and SERVO
+  holds.
+- German texts that were English outside the text table: the pin holders
+  on OUTPUTS and PICK A PIN (`HEARTBEAT`, `BELEGT` for in use), RECEIVER's
+  `ENDBYTE FALSCH` for BAD TAIL, and the splash's `Panel-Firmware` and
+  `Protokoll 4.28, Firmware 0.22.1` lines. The plot legends VOLT, CURR,
+  PWR, RPM, VSET and ISET stay English, as the channel names.
+- Units: MOTOR & ESC's temperatures read `ESC 33°C`; SERVO's dial says
+  `deg` after its angle, as the readout under it; the SETUP leave question
+  names a pin's -1 as the row's help does and spaces the word unit GPIO:
+  `PD mini TX: open -> 4 GPIO`.
 
 - A battery's cell count joins its number as a unit symbol: the pack's
   Cells keypad gives its range as `1 to 14S` (`1 bis 14S`). A unit keeps

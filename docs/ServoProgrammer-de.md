@@ -34,7 +34,7 @@ bevor man sich auf ein Schreiben verlässt.
 
 - Der IOmcu spricht Protokoll 4.13 oder neuer. Mit einem älteren sagt
   das Overlay `Nicht verfügbar: Der IOmcu hat keinen Programmierport.` und
-  `IOmcu auf Version 4.13 oder neuer aktualisieren.`, und jedes
+  `IOmcu auf Version 0.17.0 oder neuer aktualisieren.`, und jedes
   Bedienelement außer **SCHLIESSEN** ist aus.
 - **VERLASSEN** mit seinem Warten braucht Protokoll 4.15 auf dem
   IOmcu. Ein älterer wird
@@ -280,7 +280,7 @@ Abfallen braucht, ist nicht gemessen.
 Eine Spannung über 6,0V braucht **HV-SERVO** in den Optionen der Karte
 AUTOMATISCHER TEST auf TEST; ohne es endet die Tastatur bei 6,0V. Mit ihm öffnet ein Wert
 über 6,0V die Warnseite der Hochspannungs-Einstellung des
-SERVO-Bildschirms, und **HALTEN ZUM ÜBERNEHMEN** übernimmt ihn nach 2s.
+SERVO-Bildschirms, und **2s HALTEN ZUM ÜBERNEHMEN** übernimmt ihn.
 Das Ausschalten von **HV-SERVO** setzt eine Programmierspannung über 6,0V
 auf 5,0V zurück.
 
@@ -424,7 +424,7 @@ Ein Wert innerhalb der harten Limits, der ein weiches Limit verletzt, öffnet
 ÄNDERUNG PRÜFEN mit der Zeile des Felds und einer Zeile je Limit. Die Zeile
 des Felds zählt vom Wert des Servos, nicht von einer Änderung davor: `MAX.
 DUTY: 96 -> 97%` ist der Wert, den das Servo hält, der neue Wert und die
-Einheit. **HALTEN ZUM ÜBERNEHMEN** übernimmt ihn nach 2s Halten;
+Einheit. **2s HALTEN ZUM ÜBERNEHMEN** übernimmt ihn;
 **ABBRECHEN** oder ein Finger, der von der Taste rutscht, lässt den
 Entwurf, wie er war.
 
@@ -488,7 +488,7 @@ nicht geschrieben: die Limits dieses Modus sind nicht bekannt.
 ## Der Schreibschalter
 
 **SCHREIBEN INS SERVO FREIGEBEN** ist in der Vorgabe aus. Ein Tipp auf
-**AUS** öffnet eine Seite, die die Risiken nennt; **HALTEN ZUM FREIGEBEN**
+**AUS** öffnet eine Seite, die die Risiken nennt; **2s HALTEN ZUM FREIGEBEN**
 schaltet ihn nach 2s ein. Ein Tipp auf **EIN** schaltet ihn sofort aus.
 
 ![Das Schreiben freigeben](img/de/servo-kst-enable.png)
@@ -536,8 +536,8 @@ Tipp [die Seite des Schalters](#der-schreibschalter).
 
 ![Drei geänderte Werte, der Schalter ein](img/de/servo-kst-changes.png)
 
-Ein Tipp öffnet die Schreibseite. **HALTEN ZUM SCHREIBEN** startet das
-Schreiben nach 2s. Die Seite hat 12 Zeilen.
+Ein Tipp öffnet die Schreibseite. **2s HALTEN ZUM SCHREIBEN** startet das
+Schreiben. Die Seite hat 12 Zeilen.
 
 Zuerst stehen die geänderten Werte in der Reihenfolge der Reiter, je eine
 Zeile: `DEAD BAND: 2.0 -> 1.6us` ist der Wert des Servos, der neue Wert
@@ -822,7 +822,7 @@ Die Seite hat 12 Zeilen: die Zeile der Datei, die Zeile einer bearbeiteten
 Datei, die abweichenden Werte, wie [die Schreibseite](#schreiben) sie
 listet, 4 oder 3 und `und 2 weitere`, und dieselben Warnzeilen wie eine
 Änderung über diese Limits hinaus; bei mehr Warnungen als Zeilen zählt die
-letzte Zeile den Rest. **HALTEN ZUM
+letzte Zeile den Rest. **2s HALTEN ZUM
 LADEN** für 2s übernimmt die Werte in den Entwurf. **ABBRECHEN** lässt den
 Entwurf, wie er war.
 
@@ -879,7 +879,7 @@ Ein Backup, dessen Werte ein weiches Limit überschreiten, das die Werte des
 Servos einhalten, öffnet zuerst BACKUP PRÜFEN. Die Seite listet die
 Warnungen dieser Limits, dieselben Zeilen wie bei einer Änderung über sie
 hinaus, höchstens 5; bei mehr als 5 zählt die fünfte Zeile den Rest.
-**HALTEN ZUM FORTFAHREN** für 2s öffnet die Seite des Zurückspielens, die
+**2s HALTEN ZUM FORTFAHREN** öffnet die Seite des Zurückspielens, die
 ein eigenes Drücken und 2s Halten braucht. Das Zurückspielen des Backups
 der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
 
@@ -1086,7 +1086,7 @@ PROGRAMMIERMODUS VERLASSEN öffnet mit
 `Der Port wechselt zurück zu Servo-PWM. Die Versorgung bleibt unverändert.` und
 `Das Servo erhält wieder das Testsignal und kann sich bewegen.` Die Seite
 warnt, bevor geänderte Werte verloren gehen und bevor eine Sitzung endet,
-die ein unklares Servo noch zurückspielen könnte. **HALTEN ZUM VERLASSEN**
+die ein unklares Servo noch zurückspielen könnte. **2s HALTEN ZUM VERLASSEN**
 für 2s sendet den Vorgang LEAVE des Ports aus der Link-Version 4.15. Kein
 Frame geht an das Servo und kein Versorgungsbefehl an den PD mini. Der Port
 hält seine Leitung für [**WARTEZEIT VOR PWM**](#die-versorgung) auf Low und
@@ -1146,8 +1146,8 @@ keines.
 
 | Ein PD mini antwortet | Das Panel | Zeilen |
 | --- | --- | --- |
-| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Port ist wieder im Testermodus.` und `IOmcu-Firmware älter als 4.15. PWM startet ohne Wartezeit.` |
-| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini erfordert IOmcu-Firmware ab 4.15.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
+| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Port ist wieder im Testermodus.` und `IOmcu-Firmware älter als 0.17.0. PWM startet ohne Wartezeit.` |
+| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini erfordert IOmcu-Firmware ab 0.17.0.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
 
 Mit einem PD mini an einem solchen IOmcu beendet **STOP** oder der
 ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt

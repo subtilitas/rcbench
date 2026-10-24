@@ -115,13 +115,6 @@ bool bring_up(void)
 {
     bool ok = true;
 
-    /* The panel's own build, on the first line it draws.  It is the host, so
-     * it publishes no identity page; without this the only version anywhere
-     * on the bench would be the IOmcu's.  "panel fw": the board's name
-     * beside it is the board, not a build. */
-    splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK,
-                      BOARD_NAME_TEXT ", panel fw " RCBENCH_VERSION_STRING);
-
     /*
      * Schema defaults, then the values the NVS (non-volatile storage) store
      * holds on top of them.  A store that cannot be opened leaves the
@@ -161,6 +154,17 @@ bool bring_up(void)
     publish_time_zone();
     log_clock_at_start();
     settings_apply_ui();
+    /* The panel's own build, on the first line it draws, in the language
+     * the settings just put in force.  It is the host, so it publishes no
+     * identity page; without this the only version anywhere on the bench
+     * would be the IOmcu's.  "panel firmware": the board's name beside it
+     * is the board, not a build. */
+    {
+        char board[SPLASH_DETAIL_MAX];
+        snprintf(board, sizeof(board), TR(SPLASH_PANEL_FW), BOARD_NAME_TEXT,
+                 RCBENCH_VERSION_STRING);
+        splash_screen_set(SPLASH_STEP_BOARD, SPLASH_OK, board);
+    }
     /*
      * The panel's Wi-Fi reads its kept home network now, before the panel
      * scans, as the settings are read here.  The radio stays off.
@@ -285,17 +289,17 @@ bool bring_up(void)
         link_msg_t reply;
         if (poll_identity(&s_host, &reply)) {
             /*
-             * 48 bytes holds five 16-bit registers plus the words.  The
-             * splash truncates its detail field anyway, but a truncating
-             * snprintf is a compiler warning, and warnings are errors.
+             * SPLASH_DETAIL_MAX (64) bytes hold five 16-bit registers plus
+             * the words, the splash's own field.  A truncating snprintf is a
+             * compiler warning, and warnings are errors.
              *
              * The far end's firmware version is printed as well as the
              * protocol it speaks.  Two boards can speak the same protocol
              * and be different builds, and "which one is on the bench" is
              * the question a bring-up line exists to answer.
              */
-            char detail[48];
-            snprintf(detail, sizeof(detail), "proto %u.%u fw %u.%u.%u",
+            char detail[SPLASH_DETAIL_MAX];
+            snprintf(detail, sizeof(detail), TR(SPLASH_IOMCU_FW),
                      (unsigned)reply.regs[LINK_ID_PROTOCOL_MAJOR],
                      (unsigned)reply.regs[LINK_ID_PROTOCOL_MINOR],
                      (unsigned)reply.regs[LINK_ID_FIRMWARE_MAJOR],

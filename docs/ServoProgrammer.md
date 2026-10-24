@@ -32,7 +32,7 @@ before a write is relied on.
 
 - The IOmcu runs protocol 4.13 or later. With an older one the overlay
   says `Unavailable: the IOmcu has no programming port.` and
-  `Update the IOmcu to version 4.13 or later.`, and every control but
+  `Update the IOmcu to version 0.17.0 or later.`, and every control but
   **CLOSE** is off.
 - **LEAVE** with its wait needs protocol 4.15 on the IOmcu. An older
   one is [named and handled without it](#an-iomcu-older-than-link-version-415).
@@ -251,7 +251,7 @@ after its off command is not measured.
 
 A voltage above 6.0V needs **HV SERVO** in the AUTOMATIC TEST card's settings on TEST;
 without it the keypad ends at 6.0V. With it, a value above 6.0V opens the
-warning page of the SERVO screen's high-voltage setting, and **HOLD TO
+warning page of the SERVO screen's high-voltage setting, and **HOLD 2s TO
 APPLY** takes it after 2s. Switching **HV SERVO** off sets a programming
 voltage above 6.0V back to 5.0V.
 
@@ -385,7 +385,7 @@ A value inside the hard limits that breaks a soft limit opens CHECK THIS
 CHANGE with the field's line and one line per limit. The field's line
 counts from the servo's value, not from an edit before this one: `MAX.
 DUTY: 96 -> 97%` is the value the servo holds, the new value and the unit.
-**HOLD TO APPLY** takes it after 2s of holding; **CANCEL**, or a finger
+**HOLD 2s TO APPLY** takes it after 2s of holding; **CANCEL**, or a finger
 that slides off, leaves the draft as it was.
 
 A limit confirmed for a value is confirmed for that value. A later edit of
@@ -446,7 +446,7 @@ known.
 ## The write switch
 
 **ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
-that names the risks; **HOLD TO ENABLE** switches it on after 2s. A tap on
+that names the risks; **HOLD 2s TO ENABLE** switches it on after 2s. A tap on
 **ON** switches it off at once. A tap on **WRITE n VALUES** with the switch
 off opens the same page: its hold switches the switch on and writes
 nothing, and the next tap on **WRITE n VALUES** opens the write page.
@@ -491,7 +491,7 @@ change. With the switch off its tap opens
 
 ![Three changed values, the switch on](img/servo-kst-changes.png)
 
-A tap opens the write page. **HOLD TO WRITE** starts the write after 2s.
+A tap opens the write page. **HOLD 2s TO WRITE** starts the write after 2s.
 The page has 12 lines.
 
 The changed values come first, in the order of the tabs, one line each:
@@ -756,7 +756,7 @@ opens CHECK THIS FILE before anything becomes the draft. The page has 12
 lines: the file's line, the line of an edited file, the values that differ
 as [the write page](#writing) lists them, 4 or 3 and `and 2 more`, and the
 same warning lines an edit past those limits shows; with more warnings than
-lines the last line counts the rest. **HOLD TO LOAD** for 2s takes the
+lines the last line counts the rest. **HOLD 2s TO LOAD** takes the
 values into the draft. **CANCEL** leaves the draft as it was.
 
 ![The warnings of a file](img/servo-kst-file-soft.png)
@@ -806,7 +806,7 @@ write sends it.
 A backup whose values pass a soft limit that the servo's own values keep
 opens CHECK THIS BACKUP first. The page lists the warnings of those limits,
 the same lines an edit past them shows, at most 5; with more than 5 the
-fifth line counts the rest. **HOLD TO CONTINUE** for 2s opens the restore
+fifth line counts the rest. **HOLD 2s TO CONTINUE** opens the restore
 page, which needs a press and a 2s hold of its own. The restore of the
 session's backup is checked the same way while the servo's values are known.
 
@@ -986,7 +986,7 @@ switches the supply off -- unless SERVO is shown again first. After
 
 LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.` The
 page warns before changed values are lost and before a session ends that
-could still restore a servo in doubt. **HOLD TO LEAVE** for 2s sends the
+could still restore a servo in doubt. **HOLD 2s TO LEAVE** sends the
 port's LEAVE operation of link version 4.15. No frame goes to the servo and
 no supply command to the PD mini. The port holds its line low for
 [**WAIT BEFORE PWM**](#the-supply) and then gives the pin to the PWM
@@ -1043,8 +1043,8 @@ Link versions 4.13 and 4.14 have no LEAVE. The panel sends none to them.
 
 | A PD mini answers | The panel | Lines |
 | --- | --- | --- |
-| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The port is back in tester mode.` and `IOmcu firmware older than 4.15. PWM starts without a delay.` |
-| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires IOmcu firmware 4.15 or later.` and `STOP ends the session and switches the supply off.` |
+| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The port is back in tester mode.` and `IOmcu firmware older than 0.17.0. PWM starts without a delay.` |
+| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires IOmcu firmware 0.17.0 or later.` and `STOP ends the session and switches the supply off.` |
 
 With a PD mini on such an IOmcu, **STOP** or the supply's output
 switched off ends the session: the supply stays off for 2000ms and the

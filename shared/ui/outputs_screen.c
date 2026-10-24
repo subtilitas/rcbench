@@ -789,7 +789,7 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
      * one named in the list. */
     if (pin->reserved) {
         if (label != NULL) {
-            snprintf(label, cap, "%s", pin->held_by);
+            snprintf(label, cap, "%s", ui_pin_holder(pin->held_by));
         }
         return OUTPUTS_CELL_RESERVED;
     }

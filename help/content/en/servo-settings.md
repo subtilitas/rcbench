@@ -41,7 +41,7 @@ TRIM's keypad has a `+/-` key between the point and OK: it puts a minus sign in 
 
 ![CAN DESTROY THE SERVO](view:servo-warning)
 
-A heli type, or any frame rate above 60Hz, can destroy a servo not made for it. Choosing one opens a warning in the danger colour that names the choice. It is applied after HOLD TO APPLY is held for 2s. CANCEL, a finger that slides off and leaving the screen apply nothing. The type and rate in force stay red on the right card.
+A heli type, or any frame rate above 60Hz, can destroy a servo not made for it. Choosing one opens a warning in the danger colour that names the choice. It is applied after HOLD 2s TO APPLY is held. CANCEL, a finger that slides off and leaving the screen apply nothing. The type and rate in force stay red on the right card.
 
 The OUTPUT page says what became of the rate:
 

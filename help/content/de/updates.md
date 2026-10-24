@@ -15,8 +15,8 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 | NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
 | ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
 | RELEASES: STABLE / TESTING | legt fest, welche Releases eine Suche liest, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk STABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
-| 2s HALTEN: LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
-| 2s HALTEN: IOMCU AKTUALISIEREN | startet das [IOmcu-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
+| 2s HALTEN ZUM LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
+| 2s HALTEN ZUM IOMCU-UPDATE | startet das [IOmcu-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
 
 ## Was die Suche braucht
 
@@ -110,7 +110,7 @@ ABBRECHEN beendet den Download. STOP, ARMED, der Netzteilausgang, ein Log-Lauf, 
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-Unter den Tasten nennt UPDATES die Version, die der IOmcu laufen hat (`Läuft: 0.21.2`), und die Version des Images, das dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`). 2s HALTEN: IOMCU AKTUALISIEREN startet das Update, das die Frage beim Link-up startet, mit demselben Fortschritt. Endet das Update, oder verfiel der START, kehrt der Bildschirm zu UPDATES zurück.
+Unter den Tasten nennt UPDATES die Version, die der IOmcu laufen hat (`Läuft: 0.21.2`), und die Version des Images, das dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE startet das Update, das die Frage beim Link-up startet, mit demselben Fortschritt. Endet das Update, oder verfiel der START, kehrt der Bildschirm zu UPDATES zurück.
 
 Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, den Prüfstand SAFE, den Netzteilausgang aus, den WLAN-Funk ganz aus und keine Panel-Installation im Gang. Sonst ist es grau, und die Zeile darüber sagt, warum, das Erste davon, das gilt:
 

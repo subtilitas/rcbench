@@ -145,7 +145,8 @@ const outbind_board_t *outbind_board(uint16_t id)
 }
 
 /**
- * @brief The panel's words for what the wire can only number.
+ * @brief The panel's words for what the wire can only number.  The panel
+ *        shows them through ui_pin_holder(), in the language showing.
  *
  * @param hold  A LINK_PIN_* value from the catalogue page.
  * @return      The word for @p hold, or "in use" for any other value.
