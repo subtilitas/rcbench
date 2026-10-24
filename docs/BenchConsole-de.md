@@ -164,7 +164,7 @@ OPEN nahm: der der offenen Leitung, solange eine offen ist, und nach CLOSE
 behalten. Sie weichen ab, wenn Register 23 geschrieben wird,
 während eine Leitung offen ist: die offene Leitung behält ihren Modus bis
 CLOSE. Das Panel schreibt Register 23 bei jedem Link-Aufbau und bei jeder
-Änderung von SETUP > ANSCHLÜSSE > Hitec-D-Empfang, gespeichert oder nicht:
+Änderung von SETUP > INTERFACES > Hitec-D-Empfang, gespeichert oder nicht:
 jeder auf SETUP gesetzte Wert gilt sofort.
 
 `lead_ns` reicht von der ersten Flanke des Vorlaufs bis zum Loslassen der
@@ -255,7 +255,7 @@ hitec line pin=13 line=0x11 rx=pre ...
 ```
 
 `pre` und `pu` schreiben dasselbe Register, das das Panel aus SETUP >
-ANSCHLÜSSE > Hitec-D-Empfang schreibt. Das Panel schreibt es wieder bei
+INTERFACES > Hitec-D-Empfang schreibt. Das Panel schreibt es wieder bei
 seiner nächsten Änderung dieser Zeile und bei jedem Link-Aufbau.
 
 Ein rohes `w` der HITEC-Page bekommt keinen Bericht und keinen Schlüssel;

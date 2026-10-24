@@ -281,7 +281,7 @@ bevor er es quittiert, und die Quittung trägt, was er gespeichert hat.
 | das Schreiben wird quittiert, und jeder Gaskanal hat das Paar gespeichert | beglichen | geht weiter |
 | das Lesen oder das Schreiben bleibt unbeantwortet | offen, beim nächsten Poll erneut gesendet | `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` |
 | das Lesen wird abgelehnt | beendet, `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` | `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.` |
-| der Leerlaufpuls liegt nicht unter dem Vollpuls | beendet, nichts gesendet, `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.` | `Leerlaufpuls liegt nicht unter Vollpuls. Einen ändern, dann ARM erneut halten.` |
+| der Leerlaufpuls liegt weniger als 100us unter dem Vollpuls | beendet, nichts gesendet, `Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.` | `Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.` |
 | das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` | `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.` |
 | das Schreiben wird quittiert, und ein Gaskanal hat ein anderes Paar gespeichert | beendet | `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` |
 
@@ -351,7 +351,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gilt nur unter dem Zählerstand, mit dem sie gestellt wurde. Ein ÜBERNEHMEN
   im selben Frame wie STOP ändert also keinen Sollwert, auch wenn das
   Netzteil den Ausgang erst eine Messung später als aus meldet.
-- Die Verdrahtung des PD mini (SETUP ANSCHLÜSSE) ändert sich, sobald das
+- Die Verdrahtung des PD mini (SETUP INTERFACES) ändert sich, sobald das
   Modul einmal geantwortet hat, nur auf eine nach der Änderung gesendete
   Zustandslesung, die den Ausgang aus zeigt. Ein Modul, das sich in den
   500ms zwischen zwei Lesungen selbst eingeschaltet hat, behält seine Pins

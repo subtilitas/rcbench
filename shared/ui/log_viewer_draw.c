@@ -201,8 +201,11 @@ static void render_browse(gfx_canvas_t *c)
         ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 6,
                        lv_can_next(), LV_FONT_LABEL);
     }
+    /* 6px each side of the label: a longer one takes the 8 x 16 face. */
     ui_button_font(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI,
-                   s.press_btn == 0, true, LV_FONT_LABEL);
+                   s.press_btn == 0, true,
+                   ui_button_face(TR(LOG_RESCAN), BR_PG_W, FOOT_H, 6,
+                                  LV_FONT_LABEL, &gfx_font_8x16));
     /* WI-FI: the card's files to a browser, over the panel's
      * Wi-Fi.  The screen there says when Wi-Fi may not start. */
     ui_button_font(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3,

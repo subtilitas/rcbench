@@ -86,7 +86,10 @@ const char *lim_blocked(void)
     if (!value_live()) {
         return ui_servo_str(SERVO_STR_START_NOT_ARMED);
     }
-    if (servo_test_running(&s.test) || !servo_test_drained(&s.test)
+    if (servo_test_running(&s.test)) {
+        return ui_servo_str(SERVO_STR_START_TEST_RUNS);
+    }
+    if (!servo_test_drained(&s.test)
         || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return ui_servo_str(SERVO_STR_START_BUSY);
     }

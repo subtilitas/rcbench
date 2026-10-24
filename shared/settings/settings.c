@@ -609,6 +609,18 @@ bool settings_sense_sda_valid(int gpio)
            && (outbind_reserved_mask(OUTBIND_BOARD_PICO_HEADER) & pair) == 0u;
 }
 
+bool settings_tap_pin_valid(int gpio)
+{
+    if (gpio < 0 || gpio >= (int)OUT_MAX_PIN) {
+        return false;
+    }
+    if ((gpio >= 26 && gpio <= 29) || gpio >= 40) {
+        return false;                   /* the TONE page refuses ADC pins */
+    }
+    return (outbind_reserved_mask(OUTBIND_BOARD_PICO_HEADER)
+            & ((uint64_t)1u << (unsigned)gpio)) == 0u;
+}
+
 bool settings_pdmini_same_pin(void)
 {
     const int tx = (int)lrintf(s.values[SET_PDMINI_TX]);
@@ -624,6 +636,9 @@ static bool pin_takes(setting_id_t id, int pin)
             (id == SET_PDMINI_TX) ? SET_PDMINI_RX : SET_PDMINI_TX;
         return pin < 0 || pin != (int)lrintf(s.values[other]);
     }
+    if (id == SET_TONE_PIN) {
+        return settings_tap_pin_valid(pin);
+    }
     return settings_sense_sda_valid(pin);
 }
 
@@ -635,6 +650,13 @@ static float coerce(const setting_def_t *d, float v)
         const long pin = lrintf(v);
         return (pin >= (long)d->min && pin <= (long)d->max
                 && settings_sense_sda_valid((int)pin))
+                   ? (float)pin : d->def;
+    }
+    if (d == &k_defs[SET_TONE_PIN]) {
+        /* A stored pin the module does not bring out is a stale word. */
+        const long pin = lrintf(v);
+        return (pin >= (long)d->min && pin <= (long)d->max
+                && settings_tap_pin_valid((int)pin))
                    ? (float)pin : d->def;
     }
     switch (d->type) {
@@ -897,7 +919,8 @@ void settings_adjust(setting_id_t id, int steps)
         settings_set(id, (float)next);
         return;
     }
-    if (id == SET_SENSE_SDA || id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
+    if (id == SET_SENSE_SDA || id == SET_PDMINI_TX || id == SET_PDMINI_RX
+        || id == SET_TONE_PIN) {
         /* From one pin the row takes to the next, and no further than the
          * first and the last. */
         int pin = (int)lrintf(s.values[id]);

@@ -6,7 +6,7 @@ order: 62
 
 # Sensoren
 
-SENSOREN, die vierte Kategorie auf [SETUP](setup.md), stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am Sensorbus auf 0x40 bis 0x43, und sagt für jeden Kanal, was er misst. Der INA228 und die Pins des Busses bleiben unter [Anschlüsse](setup-interfaces.md). Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert.
+SENSORS, die vierte Kategorie auf [SETUP](setup.md), stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am Sensorbus auf 0x40 bis 0x43, und sagt für jeden Kanal, was er misst. Der INA228 und die Pins des Busses bleiben unter [Anschlüsse](setup-interfaces.md). Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert.
 
 ## Die Bausteine
 
@@ -39,7 +39,7 @@ Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kana
 |---|---|
 | `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80A.` | ein Fenster hat die Grenze des Kanals überschritten; in Klammern, was der Kanal misst; die Grenze, an der das Fenster geprüft wurde |
 | `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | die Antwort, die den Kanal nannte, ging verloren; gesagt nach dem nächsten Link-Aufbau, nicht nach einem Neustart des IOmcu |
-| `INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
+| `INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
 
 Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ihr Schreiben wartet, nach einer Ablehnung und bei einem IOmcu älter als 0.22.0 (Protokoll 4.27), der keine Grenze prüft (`IOmcu älter als 0.22.0: keine Grenze wird geprüft.`).
 
@@ -63,7 +63,7 @@ Rechts in der Überschrift eines Bausteins steht, was er tut:
 | `ALLE KANÄLE AUS` | alle drei Shunts stehen auf AUS; nichts wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf dieser Adresse eingeschaltet; keiner wird gelesen |
 | `IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN` | ein älterer IOmcu liest nur einen Baustein |
-| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | ANSCHLÜSSE legt keinen Sensorbus fest; nichts wird gelesen |
+| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | INTERFACES legt keinen Sensorbus fest; nichts wird gelesen |
 
 ![Ein IOmcu älter als 0.22.0](view:setup-sensors-old)
 

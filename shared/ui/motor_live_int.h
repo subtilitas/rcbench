@@ -175,6 +175,7 @@ typedef struct {
     bool          pk_ok[S_COUNT];
     ui_hold_t     arm;           /**< the ARM gesture: ui_widgets owns it  */
     bool          kst_held;      /**< the servo programmer holds a port    */
+    bool          no_pin;        /**< the binding is read, with no motor pin */
     gfx_rect_t    arm_rect;
     gfx_rect_t    reset_rect;
     gfx_rect_t    down_rect;    /**< one percentage point down */
@@ -199,6 +200,7 @@ bool mo_value_live(void);
 void mo_end_drag(void);
 void mo_post(motor_cmd_kind_t kind, float value);
 bool mo_arm_locked(void);
+bool mo_no_motor_pin(void);
 void mo_throttle_from_zero(void);
 bool mo_bench_safe(void);
 bool mo_endpoints_free(void);

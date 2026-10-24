@@ -221,7 +221,12 @@ void mo_event(const touch_event_t *evt)
                 return;   /* the hold belongs to the contact that began it */
             }
             if (mo_arm_locked()) {
-                return;   /* programming and an armed bench are exclusive */
+                /* Programming and an armed bench are exclusive; an arm
+                 * with no motor pin drives nothing, and says so. */
+                if (mo_no_motor_pin()) {
+                    ui_router_set_alert(TR(ALERT_ARM_NO_PIN));
+                }
+                return;
             }
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
             ui_hold_begin(&s.arm);
@@ -284,8 +289,10 @@ void mo_event(const touch_event_t *evt)
  */
 void mo_tick(float dt_s)
 {
-    if (kst_panel_holds_port() != s.kst_held) {
+    if (kst_panel_holds_port() != s.kst_held
+        || mo_no_motor_pin() != s.no_pin) {
         s.kst_held = kst_panel_holds_port();
+        s.no_pin   = mo_no_motor_pin();
         ++s.arm_rev;
         ++s.ctrl_rev;
     }
