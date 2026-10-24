@@ -154,8 +154,8 @@ breakout's own pull-ups go to its VDD, here 3.3V.
   datasheet gives 0x26); a sensor moved there is not read.
 - Nothing of the board is on this bus. The panel refuses an address in the
   table of `shared/bench/include/panel_i2c.h`, which holds 0x00 to 0x03 and
-  0x78 to 0x7F, which the I2C specification reserves, and the addresses of
-  the ESP32-S3 panel's CH422G and GT911. 0x06 is outside it. It is one of
+  0x78 to 0x7F, which the I2C specification reserves, and 0x14 and
+  0x5D, the GT911 touch controller's two addresses on the touch bus. 0x06 is outside it. It is one of
   the specification's Hs-mode (high-speed mode) master codes, 0x04 to 0x07,
   which no device on this bus uses.
 - Bus clock: 400kHz. The datasheet allows an SCL (serial clock) period down
@@ -178,6 +178,22 @@ breakout's own pull-ups go to its VDD, here 3.3V.
 
 The knob is off until SETUP, PANEL, Rotary knob is switched on.
 [Screens](Screens.md#panel-the-rotary-knob) describes what it does.
+
+## The touch bus header
+
+The touch bus is `I2C_NUM_0` with `BOARD_I2C_PIN_SDA` GPIO7 and
+`BOARD_I2C_PIN_SCL` GPIO8 at `BOARD_I2C_FREQ_HZ` 400,000Hz
+(`firmware/panel/components/board/include/board_pins.h`). On the 7-inch
+ESP32-P4 display board (schematic of 2025-09-25) it reaches the GT911 touch
+controller (0x5D), the ES8311 audio codec, the ES7210 audio ADC, the camera
+connector and a 4-pin I2C header. The header carries this bus's SDA (GPIO7)
+and SCL (GPIO8). The order of its four pins, and what its other two pins
+carry, are not known from the schematic in this repository and not measured:
+find SDA and SCL with a meter against the board in hand before a lead goes on.
+Whether the bus has pull-ups on the board is not measured. The touch
+injector (`testbench/touch-injector/README.md`)
+and the analyser leads of `testbench/WIRING.md` connect here. The knob is not on this header: it has its own bus
+([Rotary knob wiring](#rotary-knob-wiring)).
 
 ## The panel's clock
 
@@ -591,11 +607,12 @@ stable release. 0.22 is the last release line for the ESP32-S3 panel, and
 later releases are for the 7-inch ESP32-P4 display board from Waveshare.
 The panel's check reads GitHub's latest release with RELEASES set to
 STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
-TESTING; STABLE reads those 10 as well when the latest release is past the
-line and newer than the running build. On both settings it offers only a 0.22.x patch release newer than
-the version it runs ([Screens: The release line](Screens.md#the-release-line)).
+TESTING; The ESP32-P4 panel's line is uncapped: on both settings
+it offers any release newer than the version it runs. The 0.22.x cap, with
+the second read STABLE makes for it, belongs to the ESP32-S3 panel's
+line only ([Screens: The release line](Screens.md#the-release-line)).
 A release also loads by hand: its
-`rcbench-panel-vX.Y.Z.bin` through the panel's browser page, or its
+`rcbench-panel-p4-vX.Y.Z.bin` through the panel's browser page, or its
 archives over USB (Universal Serial Bus), as in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's
 `rcbench-iomcu-vX.Y.Z.zip` and the image the panel carries are of the same

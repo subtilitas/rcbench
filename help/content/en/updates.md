@@ -91,7 +91,7 @@ With TESTING, when the highest of the 10 newest releases is past the line, the h
 
 ## The download
 
-The 2s hold is the one confirmation: no question follows. The panel joins the home network within 30s and fetches `SHA256SUMS` and `rcbench-panel-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
+The 2s hold is the one confirmation: no question follows. The panel joins the home network within 30s and fetches `SHA256SUMS` and `rcbench-panel-p4-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
 
 1. `SHA256SUMS` is 4096 bytes at most and holds exactly one line for the image.
 2. The image announces its size first; an image without a size, of 0 bytes or over 8,126,464 bytes is refused. It is kept in PSRAM (pseudo-static random-access memory).
@@ -138,4 +138,4 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
 - The release list holds the 10 newest releases by date (`per_page=10`). A 0.22.x patch release with 10 or more releases published after it is not found, on either setting.
 - No certificate's dates are checked: mbedTLS is built without its expiry check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
-- A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.
+- A release whose assets are not named `rcbench-panel-p4-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

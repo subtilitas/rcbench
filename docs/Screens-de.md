@@ -3116,7 +3116,7 @@ der Sprache des Panels. Sie hat zwei Teile.
 
 **Panel-Firmware.** Die installierte Version, eine Dateiauswahl, Hochladen
 mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die Datei
-ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei, die größer
+ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei, die größer
 als der Slot des Panels ist, 8 126 464 Bytes, wird abgewiesen, bevor ein
 Byte gesendet ist. Das Panel prüft das ganze Image, bevor es etwas fragt:
 den ESP-Image-Header für den ESP32-P4 (Chip-ID 0x0012), den Projektnamen `rcbench-panel`
@@ -3549,8 +3549,8 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
 
 ### PANEL: der Drehknopf
 
-Ein magnetischer Winkelsensor MT6701 unter 0x06 am I2C-Anschluss des Panels
-(I2C: Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
+Ein magnetischer Winkelsensor MT6701 unter 0x06 an einem eigenen Bus, IO30 (SDA) und
+IO31 (SCL) des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Regler des obersten Prüfstandsbildschirms:
 das Gas auf MOTOR & ESC, das Horn auf SERVO. Verdrahtung:
 [Bauen](Building-de.md#verdrahtung-des-drehknopfs). Andere Bildschirme
 ignorieren ihn.
@@ -3607,11 +3607,11 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   in SAFE nichts und wird nicht aufgehoben; das Schalten auf SAFE setzt den
   Schieberegler auf 0%, und die nächste Drehung nach einem ARM zählt von
   dort.
-- Das Panel legt weder den Knopf noch ein anderes selbst angeschlossenes
-  Gerät auf eine Adresse, auf der die Platine an diesem Bus antwortet, 0x14,
-  0x20 bis 0x27, 0x30 bis 0x3F und 0x5D, oder auf eine, die die
-  I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F. Bei 0x20 bis
-  0x27 und 0x30 bis 0x3F erreicht ein Zugriff den Expander CH422G als Befehl.
+- Der Bus des Knopfs ist der zweite I2C-Controller des ESP32-P4, und nichts
+  sonst von der Platine liegt an ihm. Das Panel legt weder den Knopf noch ein
+  anderes selbst angeschlossenes Gerät auf 0x14 oder 0x5D, die beiden
+  Adressen des Touch-Controllers GT911 am Touch-Bus, oder auf eine, die die
+  I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F.
   Ohne Sensor sendet `Drehknopf` EIN alle 100ms eine unbestätigte
   Adressprobe an 0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
   nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
@@ -4328,15 +4328,14 @@ sich nicht lesen lässt, schreibt `?` in seine Spalten statt einer anders
 geformten Zeile: die Ablesung, die einen Zeitstempel am nötigsten hat, ist
 genau die, bei der der Controller nicht geantwortet hat.
 
-Die Karte ist dafür da, weil die Konsole des Panels nicht auf jeder Platine
-erreichbar ist. Die native USB-Buchse führt GPIO19 und GPIO20, die der
-Multiplexer etwa eine Sekunde nach dem Start an CAN übergibt — sie ist also
-weg, bevor ein Fehler am Prüfstand passiert. Die gebrückte Buchse liegt an
-UART0 und trägt die Konsole normalerweise durchgehend; womit sie verbunden
-ist, ist aber umschaltbar: ein Schiebeschalter neben den Tastern BOOT und
-RESET ist mit UART1 und UART2 beschriftet. In einer Stellung meldet sich der
-Bridge-Chip an und lässt in keine Richtung etwas durch, und dann hat das Panel
-gar keine Konsole.
+Die Karte ist dafür da, weil ein Fehler am Prüfstand auftreten kann, ohne dass
+eine Konsole angeschlossen ist. Die Konsole ist UART0 (Universal Asynchronous
+Receiver-Transmitter 0) mit USB-Serial-JTAG (die eingebaute USB-Serial- und
+Debug-Bridge des ESP32-P4) als zweiter Konsole, und welche der beiden
+USB-C-Buchsen der Platine welche erreicht, ist nicht verfolgt. Das CAN des
+Links ist das TWAI (Two-Wire Automotive Interface) des ESP32-P4 an GPIO21
+(Empfang) und GPIO22 (Senden), zu einem Transceiver TJA1051T/3; keiner der
+beiden Pins führt etwas anderes.
 
 [Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
 bedeutet.
@@ -4697,7 +4696,7 @@ sie nichts. Ihr Ergebnis steht auf UPDATES.
 Das Halten über 2s ist die einzige Bestätigung: Nach dem Download folgt
 keine Frage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz
 und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
-`rcbench-panel-v0.20.0.bin`. GitHub beantwortet beide mit einem Redirect zu
+`rcbench-panel-p4-v0.23.0.bin`. GitHub beantwortet beide mit einem Redirect zu
 seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 `github.com`, `release-assets.githubusercontent.com` und
 `objects.githubusercontent.com`. Dann:
@@ -4751,7 +4750,7 @@ Aktuelle Einschränkungen:
 - Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine
   Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von
   ESP-IDF).
-- Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und
+- Ein Release, dessen Dateien nicht `rcbench-panel-p4-vX.Y.Z.bin` und
   `SHA256SUMS` heißen, lässt sich nicht laden.
 
 ## Outputs
