@@ -7,7 +7,7 @@
  * timestamps with the delays, the bit rate and the stretched last high that
  * the wire readings show.  A fault script bends single transactions.  The
  * wire side is a kst_driver_t on a clock the test advances, and it counts
- * what a master must never do: a frame sooner than 3 ms after the last
+ * what a master must never do: a frame sooner than 3ms after the last
  * window, a write to register 0x00, an address above 0x1F.
  *
  * SPDX-License-Identifier: MIT
@@ -24,8 +24,8 @@
 
 /* --- reply shapes ----------------------------------------------------------- */
 
-/* As measured: first edge 438 us after a read, 3700 us after a write; servo
- * half-cell 25.575 us; last high 32 us at a 1.4 V threshold. */
+/* As measured: first edge 438us after a read, 3700us after a write; servo
+ * half-cell 25.575us; last high 32us at a 1.4V threshold. */
 #define SIM_READ_DELAY_NS  438000u
 #define SIM_WRITE_DELAY_NS 3700000u
 #define SIM_HALF_NS        25575u
@@ -198,7 +198,7 @@ typedef enum {
     SIM_F_WRITE_VALUE,   /* a write stores arg */
     SIM_F_SHAPE_DELAY,   /* the reply starts arg ns after the frame */
     SIM_F_SHAPE_HALF,    /* the reply runs at a half-cell of arg ns */
-    SIM_F_SHAPE_GLITCH,  /* a 1 us pulse arg ns after the reply's first edge */
+    SIM_F_SHAPE_GLITCH,  /* a 1us pulse arg ns after the reply's first edge */
     SIM_F_STALL,         /* the driver never finishes */
     SIM_F_POLL_LATE,     /* the driver finishes arg us late */
     SIM_F_START_FAIL,    /* the driver refuses the frame */
@@ -494,8 +494,8 @@ static inline kst_driver_t sim_driver(sim_t *sim)
     return d;
 }
 
-/* Step the session until the operation ends; the clock moves 100 us per
- * step.  10 s of simulated time is the bound. */
+/* Step the session until the operation ends; the clock moves 100us per
+ * step.  10s of simulated time is the bound. */
 static inline kst_ses_t sim_run(sim_t *sim, kst_session_t *s)
 {
     for (unsigned i = 0; i < 100000u; ++i) {

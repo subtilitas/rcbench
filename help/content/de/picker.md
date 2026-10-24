@@ -12,7 +12,7 @@ PICK A PIN zeigt die Platine des IOmcu, wie sie auf dem Prüfstand liegt, und bi
 
 ![Die Pin-Auswahl mit drei als SERVO PWM gebundenen Pins](view:picker)
 
-Ein Pad misst unter 40 px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 50 x 56 px, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
+Ein Pad misst unter 40px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 50 x 56px, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
 
 | Taste | Pin | Ein Tipp |
 |---|---|---|
@@ -76,7 +76,7 @@ Ein Pin, den [SETUP > ANSCHLÜSSE](setup-interfaces.md) hält, ist ebenso grau, 
 
 ## Die Platinenzeichnung
 
-Der IOmcu trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01 mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
+Der IOmcu trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
 
 ![Die Pin-Auswahl, allein aus der Form gezeichnet](view:picker-drawn)
 

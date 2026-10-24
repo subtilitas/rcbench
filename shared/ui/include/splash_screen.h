@@ -40,7 +40,7 @@ typedef enum {
  * @brief Bytes a step's detail keeps, terminator included.
  *
  * The detail is drawn
- * from x 432 to 24 px short of the panel's edge, 47 cells of 12 x 24; a
+ * from x 432 to 24px short of the panel's edge, 47 cells of 12 x 24; a
  * German letter takes two bytes, so the CAN self-test's longest verdict
  * (48 bytes, 46 cells) fits whole.
  */

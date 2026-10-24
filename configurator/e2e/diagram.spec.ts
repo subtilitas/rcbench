@@ -116,7 +116,7 @@ for (const size of SIZES) {
           }
           await expect(page.locator('#dia-hint')).toContainText(STRINGS.diaUndrawn[col].replace('{n}', '31'));
 
-          // Load wires are 7 px wide, the others 3 px. A USB-C cable is a sheath of 7 px around a core of 3 px.
+          // Load wires are 7px wide, the others 3px. A USB-C cable is a sheath of 7px around a core of 3px.
           // The legend names both widths, the cable and both supply colours.
           const widths = await page.locator('svg.picture g.dw').evaluateAll((els) => els.map((el) => ({
             thick: el.classList.contains('thick'),

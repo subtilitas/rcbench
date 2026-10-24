@@ -46,7 +46,7 @@ typedef struct {
     uint32_t long_ms;     /**< a long beep, and the stored tone          */
     uint32_t pause_ms;    /**< silence between two groups                */
     uint32_t entry_ms;    /**< power on to the first group; 0: the
-                               profile's hold, or 3000 ms without one    */
+                               profile's hold, or 3000ms without one    */
     uint32_t window_ms;   /**< how long after a group a move selects it;
                                0: the profile's window, or until the
                                next group begins                         */
@@ -151,7 +151,7 @@ void esc_sim_init(esc_sim_t *s, const esc_profile_t *p,
  * Advance to @p now_ms with the supply @p powered and the signal at
  * @p throttle_pct, negative for no signal.  Returns the current it draws,
  * mA.  Call it often enough for its pulses: in the host suite every few
- * milliseconds, on the panel at the supply's 50 ms.
+ * milliseconds, on the panel at the supply's 50ms.
  *
  * @param s            The simulator.
  * @param now_ms       Time of this step, ms.

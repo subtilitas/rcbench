@@ -10,7 +10,7 @@
 ; The clock is one cycle per microsecond, so a duration is a count of cycles.
 ; A run of N microseconds is a one-cycle `out` plus N-1 cycles of loop, so the
 ; count written into the FIFO (first in first out) is N-2 and the shortest run
-; this can produce is 2 us.
+; this can produce is 2us.
 ;
 ; SPDX-License-Identifier: MIT
 ;

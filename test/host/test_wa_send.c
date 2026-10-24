@@ -327,7 +327,7 @@ TEST_CASE(a_receiver_that_takes_nothing_for_30_s_ends_the_send)
     fake_fs_t fs;
     fake_init(&fs);
     const int f = fake_add(&fs, "f", false, 20000u, 0);
-    /* 5000 bytes, then nothing ever again: the send ends 30 s after the
+    /* 5000 bytes, then nothing ever again: the send ends 30s after the
      * last byte, at the first look at or past it. */
     conn_t c;
     conn_init(&c, 5000u, f);
@@ -346,7 +346,7 @@ TEST_CASE(a_receiver_that_takes_nothing_for_30_s_ends_the_send)
     CHECK_EQ(run_file(&fs, f, &c), WA_SEND_DONE);
     CHECK_EQ((long)c.taken, 20000L);
     CHECK(c.bytes_ok);
-    /* The clock wraps at 2^32 during the wait: still 30 s, not at once and
+    /* The clock wraps at 2^32 during the wait: still 30s, not at once and
      * not never. */
     conn_init(&c, 5000u, f);
     c.refill = 0u;

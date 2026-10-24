@@ -29,10 +29,10 @@
 
 /*
  * A channel's rows: WATCHES, SHUNT and LIMIT.  The shunt's range is the
- * page's, 5.0 to 1000.0 mOhm, and 0 switches the channel off; 100.0 mOhm
- * is the DAOKAI module's 0.1 Ohm, which reads to 1.638 A.  0x40 CH1
+ * page's, 5.0 to 1000.0mOhm, and 0 switches the channel off; 100.0mOhm
+ * is the DAOKAI module's 0.1Ohm, which reads to 1.638A.  0x40 CH1
  * watches OUT 1 by default (owner decision 1, 2026-10-20).  The limit's
- * range is SENSE_LIMIT's, 10 to 32767 mA, in 10 mA steps on the arrows,
+ * range is SENSE_LIMIT's, 10 to 32767mA, in 10mA steps on the arrows,
  * 0 (OFF) for none.
  */
 #define CH_ROWS(a, ch, watch_def)                                          \
@@ -190,7 +190,7 @@ uint16_t settings_sensors_limit_ma(int c)
     if (c < 0 || c >= SET_INA_CHANNELS) {
         return 0u;
     }
-    /* The row's range is the page's, 0 to 32767 mA (LINK_SL_MA_MAX). */
+    /* The row's range is the page's, 0 to 32767mA (LINK_SL_MA_MAX). */
     const long ma = lrintf(settings_get(SET_INA_LIM(c)));
     return (ma <= 0) ? 0u : (uint16_t)ma;
 }

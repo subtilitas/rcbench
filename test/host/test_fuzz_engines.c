@@ -14,9 +14,9 @@
  * out, trips, reports another set point or goes off; windows that repeat,
  * skip and come without samples; the meter changing under a run; encoder
  * readings; a cap that moves, disarms and aborts; the clock started
- * anywhere in 2^32 ms.  Checked: the step that sees the run over hands off
+ * anywhere in 2^32ms.  Checked: the step that sees the run over hands off
  * and release together; nothing is asked on, set or commanded after it; a
- * set point is at most the cap and at least 3.0 V; a command is the centre
+ * set point is at most the cap and at least 3.0V; a command is the centre
  * or an end; step and step_count stay inside the slots; every CSV row has
  * the header's number of fields and neither nan nor inf; no line fills its
  * buffer or holds a newline; the outbox drains.
@@ -25,11 +25,11 @@
  * random changes and timings, a bench that arms late, a supply that follows
  * late, stops, disarms, link loss, supply loss, late, skipped and
  * current-less readings, noise in five shapes and a person tapping DONE at
- * random.  Checked: the throttle is 0, 50 or 100 %; the stick leaves 0 %
+ * random.  Checked: the throttle is 0, 50 or 100%; the stick leaves 0%
  * only on an armed bench; a stick move with the supply asked off happens
  * only once the supply read off; the supply is asked on only on entering
  * POWER; a run that is over has the arm off, the supply off and the
- * throttle at 0 %; every run ends within 1200 s.
+ * throttle at 0%; every run ends within 1200s.
  *
  * Not checked: whether a run stores the value asked.  The simulated menu
  * here loses readings on purpose, and what the engine does then is the
@@ -230,7 +230,7 @@ static void one_servo_run(uint32_t seed, unsigned id)
             r.taken_ms = now - upto(3u) * 10u + upto(2u) * 15u; /* either side */
             servo_test_reading(&st, &r, (uint16_t)(upto(2u) ? 0u : rnd()));
         }
-        /* A window every 50 ms, each number once; now and then one twice,
+        /* A window every 50ms, each number once; now and then one twice,
          * a number left out, one without samples, or none for a while. */
         while (on_windows && (int32_t)(now - win_next) >= 0) {
             win_next += 50u;
@@ -464,8 +464,8 @@ static bool one_stick_run(uint32_t seed, unsigned id)
             s.current_ok = upto(400u) != 0u;
             int32_t ma = supply ? 60 : (int32_t)upto(15u);
             if (supply) {
-                /* A menu: groups of 1 to 5 beeps, 250 ms on, 250 ms off,
-                 * 1.5 s between groups; noise by mode. */
+                /* A menu: groups of 1 to 5 beeps, 250ms on, 250ms off,
+                 * 1.5s between groups; noise by mode. */
                 tone_t += 100u;
                 const uint32_t group_ms = tone_n * 500u + 1500u;
                 if (tone_t >= group_ms) {

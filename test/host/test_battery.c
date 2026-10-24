@@ -113,8 +113,8 @@ TEST_CASE(no_pack_is_not_a_flat_pack)
 }
 
 /*
- * The scale follows the pack.  A fixed scale draws a 10 mV spread and a
- * 20 mV spread as the same picture, so the two renders differ.
+ * The scale follows the pack.  A fixed scale draws a 10mV spread and a
+ * 20mV spread as the same picture, so the two renders differ.
  */
 TEST_CASE(the_scale_follows_the_pack)
 {

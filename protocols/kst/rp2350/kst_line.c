@@ -232,7 +232,7 @@ bool kst_line_poll(void *ctx, kst_capture_t *out)
     if (l == NULL || out == NULL || l->open == 0u || l->busy == 0u) {
         return false;
     }
-    /* The window by the clock, with 2 us for the hand-over and the
+    /* The window by the clock, with 2us for the hand-over and the
      * rounding. */
     const uint32_t total_us = (l->run.lead_ns + 999u) / 1000u
                               + (l->run.window_ns + 999u) / 1000u + 2u;

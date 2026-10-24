@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief The panel's half of SENSE_WIN_A and SENSE_WIN_B (0x37, 0x38, protocol
- *        4.25): every INA3221 channel's last complete 50 ms window, for the
+ *        4.25): every INA3221 channel's last complete 50ms window, for the
  *        log's columns per watched target.
  *
  * SENSE_WIN_A carries channels 0 to 5 (the parts at 0x40 and 0x41),
@@ -37,7 +37,7 @@ extern "C" {
 
 /**
  * @brief A page is read this often while a part it carries is enabled: the
- *        IOmcu closes a window every 50 ms, and a gate under the poll's 50 ms
+ *        IOmcu closes a window every 50ms, and a gate under the poll's 50ms
  *        lets every poll read, whatever its offset in the pass.
  */
 #define SENSE_WIN_LINK_READ_MS 40u

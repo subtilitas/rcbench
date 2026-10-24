@@ -29,10 +29,10 @@ static struct {
 
 /*
  * PANEL UPDATE on the whole panel:
- * A 64 px title bar; the bytes in U_FONT_HEAD (20 x 36) over a bar 36 px
- * tall, 976 px wide; from U_LINES_Y the step or the verdict in U_FONT_HEAD
- * and the lines under it in U_FONT_BODY (12 x 24), 28 px apart; the one
- * button 240 x 56 px at the bottom left, 18 px above the panel's edge.
+ * A 64px title bar; the bytes in U_FONT_HEAD (20 x 36) over a bar 36px
+ * tall, 976px wide; from U_LINES_Y the step or the verdict in U_FONT_HEAD
+ * and the lines under it in U_FONT_BODY (12 x 24), 28px apart; the one
+ * button 240 x 56px at the bottom left, 18px above the panel's edge.
  */
 /** @brief The title, the bytes and the step: 20 x 36. */
 #define U_FONT_HEAD  (&gfx_font_20x36)
@@ -44,11 +44,11 @@ static struct {
 #define U_BAR_H      64
 /** @brief The column's left edge. */
 #define U_X          24
-#define U_W          (UI_PANEL_W - 2 * U_X)  /**< 976 px: 48 cells of
+#define U_W          (UI_PANEL_W - 2 * U_X)  /**< 976px: 48 cells of
                                                   U_FONT_HEAD, 81 of BODY */
 /** @brief The bytes' top. */
 #define U_BYTES_Y    88
-/** @brief The bar, 36 px tall. */
+/** @brief The bar, 36px tall. */
 #define U_PBAR       gfx_rect_make(U_X, 140, U_W, 36)
 /** @brief The step's or the verdict's top. */
 #define U_LINES_Y    208
@@ -190,7 +190,7 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
            (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total : 0.0f,
            -1.0f, failed ? UI_DANGER : UI_ACCENT);
     /* The step or the verdict in the heading face, the lines under it
-     * 48 px lower and U_PITCH apart. */
+     * 48px lower and U_PITCH apart. */
     const int y = U_LINES_Y, y2 = U_LINES_Y + 48;
     if (u.v.state == UPDATE_FETCHING) {
         u_line(c, y, u.v.what, U_FONT_HEAD, UI_TEXT);
@@ -215,7 +215,7 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
                        true, U_FONT_LABEL);
     } else if (u.v.state == UPDATE_RESTARTING) {
         /* Nothing under it: a line longer than the 48 cells breaks onto
-         * the next, 48 px lower. */
+         * the next, 48px lower. */
         (void)ui_text_wrap(c, gfx_rect_make(U_X, y, U_W,
                                             gfx_text_height(U_FONT_HEAD, 1)),
                            48, TR(UP_RESTART), U_FONT_HEAD, UI_OK);

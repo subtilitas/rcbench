@@ -30,7 +30,7 @@ TEST_CASE(the_list_follows_voltage_and_the_cap)
     settings_set(SET_SUPPLY_V_MAX, 7.0f);
     supply_screen_limits_changed();
     scr->tick(0.02f);
-    /* Every hobbywing-flyfun-8item model needs 7.6 V or more now: its row
+    /* Every hobbywing-flyfun-8item model needs 7.6V or more now: its row
      * is a refused one and opens nothing. */
     open_model("hobbywing-flyfun-8item", NULL);
     CHECK(esc_stick_panel_page() == NULL);
@@ -93,7 +93,7 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
-    /* Every model with a cell count needs 7.6 V or more: none opens. */
+    /* Every model with a cell count needs 7.6V or more: none opens. */
     open_model("hobbywing-flyfun-8item", NULL);
     tap(STEP_UP_X, STEP_CY(2));
     tap(WRITE_X, BTN_CY);
@@ -113,7 +113,7 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
 }
 
 /* The page offers only the items on the model opened: FLYFUN V5's BEC
- * voltage is on its 60, 80 and 120 A models.  With no model, only the
+ * voltage is on its 60, 80 and 120A models.  With no model, only the
  * items every model has. */
 TEST_CASE(the_page_offers_only_the_models_items)
 {
@@ -153,7 +153,7 @@ TEST_CASE(the_page_offers_only_the_models_items)
 }
 
 /* The model's own rating, not only the SUPPLY cap: FlyFun-6A is rated
- * 8.4 V and 6 A.  VOLTAGE 20 V is refused on its row and on RUN, 7.6 V
+ * 8.4V and 6A.  VOLTAGE 20V is refused on its row and on RUN, 7.6V
  * runs; the automatic voltage stays under the rating. */
 TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
 {
@@ -205,7 +205,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     CHECK_EQ(esc_stick_panel_runs(), 1u);
     scr->leave();
 
-    /* The automatic voltage: the model's 2 cells, 7.6 V, under 8.4 V. */
+    /* The automatic voltage: the model's 2 cells, 7.6V, under 8.4V. */
     fresh();
     settings_set(SET_STICK_V, 0.0f);
     esc_stick_panel_bench(0u, false, 0u, 0u, false);
@@ -221,7 +221,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     scr->leave();
 
     /* CURRENT LIMIT over a rating a card profile states: a FlyFun-6A
-     * card rated 1 A refuses 2 A, on its row and on RUN. */
+     * card rated 1A refuses 2A, on its row and on RUN. */
     fresh();
     esc_profiles_clear_overrides();
     static esc_model_t k_one;
@@ -462,7 +462,7 @@ TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
 
 /* The footer's count, mirrored from esc_stick_panel.c: SP_COUNT_W, 360
  * px, and beside the docked keyboard from PAD + 12 to SP_DOCK_X - 8, 326
- * px, of 8 px cells. */
+ * px, of 8px cells. */
 #define COUNT_CELLS      45
 
 #define COUNT_DOCK_CELLS 40

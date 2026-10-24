@@ -13,13 +13,13 @@
  *
  * Pull-down.  The pin's pull-down is on while the tap is disabled, so a
  * tap wire connected to nothing reads low, and stays on while the tap
- * runs: against the series resistor of 4.7 kOhm on the phase it divides a
- * floating 3.7 V phase to 3.2 V or more, over the input's 2.0 V threshold.
+ * runs: against the series resistor of 4.7kOhm on the phase it divides a
+ * floating 3.7V phase to 3.2V or more, over the input's 2.0V threshold.
  *
  * Time.  The counter starts at 0 when the state machine is enabled.
  * tone_cap_start_us() is the microsecond timer at that instant, to about
- * 1 us: the present tick is the timer less this, 37.5 ticks a microsecond
- * (tone_svc_ticks()).  The image is built for the 150 MHz system clock; the
+ * 1us: the present tick is the timer less this, 37.5 ticks a microsecond
+ * (tone_svc_ticks()).  The image is built for the 150MHz system clock; the
  * capture is refused at any other.
  *
  * SPDX-License-Identifier: MIT
@@ -40,7 +40,7 @@ extern "C" {
  *
  * False, with nothing claimed, when no PIO block that reaches the pin has room
  * for the program and a state machine, no DMA channel is free, or the system
- * clock is not 150 MHz.
+ * clock is not 150MHz.
  *
  * @param pin  GPIO number of the phase input.
  * @return     true when the capture runs.

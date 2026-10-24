@@ -12,7 +12,7 @@
  * and detaches it after; pdmini_io_t's callbacks are the three below.
  *
  * Received bytes wait in the receive machine's FIFO, 8 deep, until the main
- * loop takes them: 4.2 ms of reply at 19200 baud, 0.17 ms at 460800.  A
+ * loop takes them: 4.2ms of reply at 19200 baud, 0.17ms at 460800.  A
  * pass longer than that loses bytes, and the transaction fails and is
  * tried again.  The pass time is not measured.
  *

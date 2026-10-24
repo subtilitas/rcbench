@@ -10,9 +10,9 @@
  * MOTOR & ESC and SUPPLY keypads set it.  A value the - and + keys never
  * reach is refused: the keypad stays open and shows, in the warning
  * colour and in place of the range, why (ui_setting_keypad_why()).  That
- * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9 mOhm:
- * "0 or 5.0 to 1000.0 mOhm"; a SENSORS limit of 1 to 9 mA: "0 or 10 to
- * 32767 mA"), a Sensor SDA pin settings_sense_sda_valid()
+ * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9mOhm:
+ * "0 or 5.0 to 1000.0mOhm"; a SENSORS limit of 1 to 9mA: "0 or 10 to
+ * 32767mA"), a Sensor SDA pin settings_sense_sda_valid()
  * refuses (the pins it takes, listed), and the GPIO the other PD mini pin
  * holds.  The next key brings the range back.
  *
@@ -55,7 +55,7 @@ bool ui_setting_keypad_offered(setting_id_t id);
  * @return True for a number whose range reaches below 0, except a pin
  *         (unit "GPIO"), whose one value below 0 is -1, not set, which "-"
  *         reaches.  No setting of today's schema is signed; SERVO's TRIM,
- *         -200 to +200 us, is a signed row of its own screen.
+ *         -200 to +200us, is a signed row of its own screen.
  */
 bool ui_setting_keypad_signed(setting_id_t id);
 

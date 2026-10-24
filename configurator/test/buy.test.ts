@@ -178,7 +178,7 @@ test('a "have it" tick moves its row from the rows to buy to the rows the visito
   assert.ok(tokens(list.buy).includes('wire.pair') && tokens(list.buy).includes('wire.jumper'));
 });
 
-/** Checks that the ticks of an older link for the 7-inch board and the 3 A charger do not carry over. */
+/** Checks that the ticks of an older link for the 7-inch board and the 3A charger do not carry over. */
 test('a link with the ticks `panel` and `usb.charger` of an older version leaves both new rows under the rows to buy', () => {
   const hash = '#v=1&h=panel,usb.charger';
   const parsed = parseHash(hash, DEFAULT_OPTIONS);

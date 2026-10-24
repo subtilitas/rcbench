@@ -16,8 +16,8 @@
  * a decoder that trusts it locks onto the middle of a frame and reports
  * sixteen plausible channels that are all wrong.
  *
- * The frame boundary is the gap.  Frames arrive every 7 ms or 14 ms and take
- * 3 ms to send, so there are at least 4 ms of silence between them, against
+ * The frame boundary is the gap.  Frames arrive every 7ms or 14ms and take
+ * 3ms to send, so there are at least 4ms of silence between them, against
  * 120 microseconds between bytes within one.  The decoder is fed a timestamp
  * per byte and frames on that gap; the header and footer confirm.
  *
@@ -55,14 +55,14 @@ extern "C" {
  * Not the raw limits: 172 and 1811 are what the protocol settled on, and a
  * receiver can send outside them.
  */
-#define SBUS_RAW_1000US 172u  /**< raw value of a 1000 us pulse */
-#define SBUS_RAW_2000US 1811u /**< raw value of a 2000 us pulse */
+#define SBUS_RAW_1000US 172u  /**< raw value of a 1000us pulse */
+#define SBUS_RAW_2000US 1811u /**< raw value of a 2000us pulse */
 
 /**
  * @brief Silence that means a frame boundary.
  *
  * Bytes within a frame are 120 microseconds apart at 100 kbaud 8E2; frames are
- * at least 4 ms apart. Two milliseconds sits clear of both, so it cannot split
+ * at least 4ms apart. Two milliseconds sits clear of both, so it cannot split
  * a frame and cannot join two.
  */
 #define SBUS_GAP_US 2000u

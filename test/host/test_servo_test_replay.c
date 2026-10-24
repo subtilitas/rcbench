@@ -20,13 +20,13 @@
 /*
  * Two runs on the bench on 0.13.0 with the PD mini, from a tester: an
  * MG90S micro servo (fixtures/servo-mg90s.csv) and a 1102HB digital
- * (fixtures/servo-1102hb.csv).  Each ran 4.80 and 6.00 V for 60 s and the
- * brown-out walk: LENGTH BY TIME, SETTLE 500 ms, DWELL 200 ms, the ends
- * 1100 and 1900 us, current limit 2.00 A.  0.13.0 took movement to be a
- * reading 0.10 A from the level before the command and saw none: every
- * move ran out at 3000 ms, late, and both runs read FAIL.  The files are
+ * (fixtures/servo-1102hb.csv).  Each ran 4.80 and 6.00V for 60s and the
+ * brown-out walk: LENGTH BY TIME, SETTLE 500ms, DWELL 200ms, the ends
+ * 1100 and 1900us, current limit 2.00A.  0.13.0 took movement to be a
+ * reading 0.10A from the level before the command and saw none: every
+ * move ran out at 3000ms, late, and both runs read FAIL.  The files are
  * the runs' CSVs, trimmed: every SET, SETTLE and IDLE row, and of each
- * command's MOVE and HOLD rows those within 2.0 s of its first and its
+ * command's MOVE and HOLD rows those within 2.0s of its first and its
  * last, the reading just before the next command.
  *
  * A replay plays a recording back against the commands the run gives
@@ -35,21 +35,21 @@
  * move to the same end.  Rows arrive at their recorded time after the
  * recorded command, which fell between two readings and is taken at their
  * middle.  Past the end of a response its last reading repeats every
- * 105 ms, and so does it across a gap the trim left.  Moves end at their
- * arrival where 0.13.0 waited 3000 ms, so a step makes more of them than
+ * 105ms, and so does it across a gap the trim left.  Moves end at their
+ * arrival where 0.13.0 waited 3000ms, so a step makes more of them than
  * were recorded: they start over from the first move end to end.
- * Brown-out voltages under the recorded 5.00 V replay its response, so a
- * replay says nothing about a servo below 5.00 V.
+ * Brown-out voltages under the recorded 5.00V replay its response, so a
+ * replay says nothing about a servo below 5.00V.
  *
  * A third recording is a whole file, untrimmed: an MS24 digital servo on
- * 0.14.0 (fixtures/servo-ms24-pdmini.csv), 4.80 and 6.00 V for 60 s and the
- * brown-out walk down to 3.00 V, eleven voltages, each replayed as it was
+ * 0.14.0 (fixtures/servo-ms24-pdmini.csv), 4.80 and 6.00V for 60s and the
+ * brown-out walk down to 3.00V, eleven voltages, each replayed as it was
  * recorded.  The PD mini reported constant current in two spells of five
- * readings, 0.43 s each, at 0.004 to 0.342 A: the mode column is replayed
+ * readings, 0.43s each, at 0.004 to 0.342A: the mode column is replayed
  * with the readings.
  *
  * With RP_PRINT set in the environment each replay prints its report: the
- * sample in docs/Servo.md is the MG90S's, with TRAVEL TIME at 800 ms.
+ * sample in docs/Servo.md is the MG90S's, with TRAVEL TIME at 800ms.
  */
 #define RP_ROWS     2048u
 #define RP_SEGS     48u
@@ -349,9 +349,9 @@ static void rp_check_step(const servo_test_step_t *s, unsigned seen_min)
     CHECK(s->travels >= seen_min);
 }
 
-/* The MG90S draws 0.001 A holding and 0.04 to 0.077 A moving: every move
- * is seen at the 0.020 A threshold, timed, none late, and the run passes.
- * The brown-out walk sees it move at 5.00 V. */
+/* The MG90S draws 0.001A holding and 0.04 to 0.077A moving: every move
+ * is seen at the 0.020A threshold, timed, none late, and the run passes.
+ * The brown-out walk sees it move at 5.00V. */
 TEST_CASE(a_micro_servo_on_the_pd_mini_is_seen_moving)
 {
     CHECK(rp_load(&g_rec, "servo-mg90s.csv"));
@@ -372,9 +372,9 @@ TEST_CASE(a_micro_servo_on_the_pd_mini_is_seen_moving)
     CHECK(strstr(g_rp_report, "Result:         PASS\n") != NULL);
 }
 
-/* The 1102HB holds 0.015 to 0.029 A and peaks 0.039 to 0.044 A moving:
- * moves to the high end, from the low end's 0.028 A, never pass the level
- * before them by the 0.020 A threshold.  Those are unseen, neither timed
+/* The 1102HB holds 0.015 to 0.029A and peaks 0.039 to 0.044A moving:
+ * moves to the high end, from the low end's 0.028A, never pass the level
+ * before them by the 0.020A threshold.  Those are unseen, neither timed
  * nor late; the moves seen all arrive, and the run reads NOT MEASURABLE,
  * not FAIL. */
 TEST_CASE(a_servo_moving_under_the_threshold_is_not_failed)
@@ -403,10 +403,10 @@ TEST_CASE(a_servo_moving_under_the_threshold_is_not_failed)
           != NULL);
 }
 
-/* The MS24's whole recording.  Its two spells of constant current, 0.43 s
+/* The MS24's whole recording.  Its two spells of constant current, 0.43s
  * each during a move, end nothing and fail nothing: the run passes as it
  * did on the bench, and the report counts them.  The recorded LIMITS page
- * had STALL AT at 3.00 A over a current limit of 2.00 A, which the report
+ * had STALL AT at 3.00A over a current limit of 2.00A, which the report
  * says cannot be reached. */
 TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
 {
@@ -431,8 +431,8 @@ TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
         rp_check_step(&g_rp.steps[k], 20u);
         CHECK_EQ(g_rp.steps[k].no_rise, 0u);
     }
-    /* The recorded report's figures: idle 0.004 and 0.023 A, the highest
-     * reading 0.353 and 0.390 A.  The 6.00 V step's current is still
+    /* The recorded report's figures: idle 0.004 and 0.023A, the highest
+     * reading 0.353 and 0.390A.  The 6.00V step's current is still
      * falling through IDLE, so its mean depends on where IDLE begins
      * between two readings. */
     CHECK_NEAR(g_rp.steps[0].idle.sum / (float)g_rp.steps[0].idle.n, 0.004f,
@@ -442,14 +442,14 @@ TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
     CHECK_NEAR(g_rp.steps[0].peak_a, 0.353f, 0.0005f);
     CHECK_NEAR(g_rp.steps[1].peak_a, 0.390f, 0.0005f);
     CHECK_NEAR(g_rp.stall_peak_a, 0.390f, 0.0005f);
-    /* The walk ran every voltage down to 3.00 V. */
+    /* The walk ran every voltage down to 3.00V. */
     float moved = 0.0f;
     bool stopped = true;
     CHECK(servo_test_brownout(&g_rp, &moved, &stopped));
     CHECK_NEAR(moved, 3.0f, 0.001f);
     CHECK(!stopped);
     /* Each spell is five readings from its first to its last, 425 and
-     * 405 ms; the second step replays its moves until its 60 s are over,
+     * 405ms; the second step replays its moves until its 60s are over,
      * so the spell in it can come more than once. */
     CHECK(g_rp.cc_readings >= 10u);
     CHECK_EQ(g_rp.cc_readings % 5u, 0u);
@@ -467,8 +467,8 @@ TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
 }
 
 /* The MG90S's recording with every current three times as large, as an
- * MS24 draws: 0.003 A holding, 0.11 to 0.23 A moving.  Every move seen,
- * none late, PASS; TRAVEL TIME at 500 ms is reported against the PD mini's
+ * MS24 draws: 0.003A holding, 0.11 to 0.23A moving.  Every move seen,
+ * none late, PASS; TRAVEL TIME at 500ms is reported against the PD mini's
  * travel times and not checked.  The same readings from a meter whose
  * travel times hold do fail it. */
 TEST_CASE(a_standard_servo_on_the_pd_mini_passes)

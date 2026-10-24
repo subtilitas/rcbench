@@ -26,13 +26,13 @@
 void log_viewer_size_text(char *out, size_t n, uint64_t bytes)
 {
     if (bytes >= 1024ull * 1024u * 1024u) {
-        snprintf(out, n, "%.2f GB", (double)bytes / (1024.0 * 1024.0 * 1024.0));
+        snprintf(out, n, "%.2fGB", (double)bytes / (1024.0 * 1024.0 * 1024.0));
     } else if (bytes >= 1024ull * 1024u) {
-        snprintf(out, n, "%.1f MB", (double)bytes / (1024.0 * 1024.0));
+        snprintf(out, n, "%.1fMB", (double)bytes / (1024.0 * 1024.0));
     } else if (bytes >= 1024u) {
-        snprintf(out, n, "%u kB", (unsigned)(bytes / 1024u));
+        snprintf(out, n, "%ukB", (unsigned)(bytes / 1024u));
     } else {
-        snprintf(out, n, "%u B", (unsigned)bytes);
+        snprintf(out, n, "%uB", (unsigned)bytes);
     }
 }
 
@@ -46,7 +46,7 @@ static void render_question(gfx_canvas_t *c)
     log_viewer_size_text(size, sizeof(size), s.doomed_size);
     snprintf(line, sizeof(line), "%s   %s", s.doomed, size);
     /* The file in the label face, the two sentences under it in the body
-     * face, 32 px apart. */
+     * face, 32px apart. */
     gfx_text_in(c, gfx_rect_make(box.x + 24, box.y + 44, box.w - 48, 20), line,
                 LV_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
     gfx_text(c, box.x + 24, box.y + 88, TR(LOG_DELETE_WHAT),
@@ -222,7 +222,7 @@ static void render_browse(gfx_canvas_t *c)
     }
     if (s.message[0] != '\0') {
         /* In the gap between the buttons, on two BR_MSG_LH px lines of the
-         * 52 px footer when one is too short.  A message longer than two
+         * 52px footer when one is too short.  A message longer than two
          * lines is one line clipped there: a long name runs out of room
          * rather than over DELETE. */
         const gfx_color_t col = s.message_ok ? UI_TEXT_DIM : UI_DANGER;
@@ -424,9 +424,9 @@ static void render_import(gfx_canvas_t *c)
                                               : UI_PANEL;
             gfx_fill_rect(c, row.x, row.y, 5, row.h, mark);
 
-            /* The name in 20 cells from 16 px in, the first value in 12
-             * cells to x 344, and 12 px short of the row's end the range, a
-             * data figure, in the 140 px box of LOG_RANGE_CELLS glyphs of
+            /* The name in 20 cells from 16px in, the first value in 12
+             * cells to x 344, and 12px short of the row's end the range, a
+             * data figure, in the 140px box of LOG_RANGE_CELLS glyphs of
              * 8 x 16, or TIME or TEXT in 22 cells of 10 x 20. */
             gfx_color_t text = col->numeric ? UI_TEXT : UI_TEXT_FAINT;
             gfx_text_in(c, gfx_rect_make(row.x + 16, row.y, 200, row.h),
@@ -546,7 +546,7 @@ static void render_plot(gfx_canvas_t *c)
                               UI_PANEL);
         gfx_fill_rect(c, chip.x, chip.y, 5, chip.h, col);
         /* The name over the range at the left, the value at the cursor
-         * right-aligned on the lower line: two lines of 20 px. */
+         * right-aligned on the lower line: two lines of 20px. */
         gfx_text_in(c, gfx_rect_make(chip.x + 12, chip.y + 2, chip.w - 20, 20),
                     s.data.field[k].name, LV_FONT_LABEL, UI_TEXT, 1,
                     GFX_ALIGN_LEFT);
@@ -646,7 +646,7 @@ static void render_plot(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(LOG_AT_ROW), ci + 1,
                  s.data.count);
     }
-    /* One line in the footer's middle, or two of 24 px with the cells
+    /* One line in the footer's middle, or two of 24px with the cells
      * that did not read under it. */
     const bool two = s.data.unparsed_cells > 0;
     gfx_text(c, PV_LINE_X, FOOT_Y + (two ? 4 : (FOOT_H - 20) / 2), line,

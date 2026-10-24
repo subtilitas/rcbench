@@ -72,10 +72,11 @@ UNITS = sorted("""
 
 # A number: digits with decimal or group separators, a size such as
 # 1024x600 (whose last part is the number before the unit), or a printf
-# conversion in a format string.
+# conversion in a format string, also in two as in "%u.%02u".
+CONVERSION = (r"%[-+ #0']*(?:\d+|\*)?(?:\.(?:\d+|\*))?"
+              r"(?:hh|h|ll|l|z|j|t|L)?[diouxXfFeEgGs]")
 NUMBER = (r"(?:\d+(?:[.,]\d+)*(?:x\d+(?:[.,]\d+)*)?"
-          r"|%[-+ #0']*(?:\d+|\*)?(?:\.(?:\d+|\*))?"
-          r"(?:hh|h|ll|l|z|j|t|L)?[diouxXfFeEgGs])")
+          r"|" + CONVERSION + r"(?:[.,]" + CONVERSION + r")*)")
 # A unit ends where no letter, digit, % or = follows (ms=110 is a key), and
 # a lone % is not the start of the next conversion, as in "%6s %-6s".
 UNIT = "|".join(re.escape(u) if u != "%" else r"%(?![-+#'*\d\w]|\.\d)"
@@ -264,8 +265,8 @@ TOOL_BLOCKS = re.compile(r"<!-- (framecost):start -->.*?<!-- \1:end -->",
 def markdown_view(text: str) -> str:
     """Masks what a page holds that is not its own prose.
 
-    A heading's section number, so "### 8.4 A run" is no 8.4 A, and the
-    blocks of TOOL_BLOCKS.
+    A heading's section number, so the "8.4" of a heading "8.4" + "A run"
+    reads as no current, and the blocks of TOOL_BLOCKS.
     """
     text = SECTION.sub(lambda m: m.group(1) + MASK * len(m.group(2)), text)
     return TOOL_BLOCKS.sub(lambda m: "".join(c if c == "\n" else MASK

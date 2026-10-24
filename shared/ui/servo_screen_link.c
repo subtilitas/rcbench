@@ -614,7 +614,7 @@ const char *servo_screen_commanded_text(void)
         /* A session holds the port: no pulse is on it. */
         return "---";
     }
-    snprintf(text, sizeof(text), "%u us",
+    snprintf(text, sizeof(text), "%uus",
              (unsigned)svs_deg_to_us(s.commanded_deg));
     return text;
 }
@@ -665,7 +665,7 @@ void servo_screen_set_link(bool up)
         cur_follow();
         /*
          * A sweep or a pause: the far end stops a sweep and lets a hold go
-         * 500 ms after the last write it heard, and the surfaces rest.  The
+         * 500ms after the last write it heard, and the surfaces rest.  The
          * screen ends them as well and draws the output at rest, so nothing
          * stays PAUSED over an output that has gone, and the next tap starts
          * a sweep rather than resuming one.

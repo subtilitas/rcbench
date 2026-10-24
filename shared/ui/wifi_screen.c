@@ -16,7 +16,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* The area below the band: 1024 x 540 px. */
+/* The area below the band: 1024 x 540px. */
 #define W UI_PANEL_W
 #define H UI_BODY_H
 
@@ -33,16 +33,16 @@
 #define WF_FONT_HEAD  (&gfx_font_20x36)       /**< 20 x 36: values. */
 
 /**
- * @brief The lowest body row anything is drawn on, plus one: 4 px above
+ * @brief The lowest body row anything is drawn on, plus one: 4px above
  *        the alert band, body y 492.
  */
 #define FOOT    (UI_ALERT_Y - UI_BAND_H - 4)
 
 /*
- * With the radio off: five buttons of 460 x 60 px (69.0 x 9.0 mm)
- * 8 px apart on the left, from body y 16; the card on the right,
- * 16 px beside them, to 8 px from the right edge and down to FOOT.
- * The card's lines are 49 cells of WF_FONT_LABEL, 24 px apart.
+ * With the radio off: five buttons of 460 x 60px (69.0 x 9.0mm)
+ * 8px apart on the left, from body y 16; the card on the right,
+ * 16px beside them, to 8px from the right edge and down to FOOT.
+ * The card's lines are 49 cells of WF_FONT_LABEL, 24px apart.
  */
 #define BX       16          /**< The buttons' left edge. */
 #define BY       16          /**< The first button's top. */
@@ -51,15 +51,15 @@
 #define BPITCH   68          /**< The buttons' pitch, px. */
 #define RX       (BX + BW + 16) /**< The card's left edge. */
 #define RY       16          /**< Its top. */
-#define RW       (W - UI_MARGIN - RX) /**< Its width: 524 px. */
-#define RH       (FOOT - RY) /**< Its height: 476 px. */
+#define RW       (W - UI_MARGIN - RX) /**< Its width: 524px. */
+#define RH       (FOOT - RY) /**< Its height: 476px. */
 #define CARD_P   24          /**< The card's line pitch, px. */
 
 /*
- * With the radio on: rows of 56 px from body y 16, a label column
- * of 240 px and a value column of 740 px, an SSID of 32 characters
- * 640 px of it in WF_FONT_HEAD; the lines under the rows in
- * WF_FONT_BODY 28 px apart; WI-FI OFF 460 x 60 px, 8 px above FOOT.
+ * With the radio on: rows of 56px from body y 16, a label column
+ * of 240px and a value column of 740px, an SSID of 32 characters
+ * 640px of it in WF_FONT_HEAD; the lines under the rows in
+ * WF_FONT_BODY 28px apart; WI-FI OFF 460 x 60px, 8px above FOOT.
  */
 #define LBL_X    16          /**< The label column's left edge. */
 #define LBL_W    240         /**< Its width, px. */
@@ -71,12 +71,12 @@
 #define OFF_Y    (FOOT - 8 - BH) /**< WI-FI OFF's top: body y 424. */
 
 /*
- * The scan list: two columns of eight rows of 48 px, 52 px apart,
- * each row 492 px wide on a ground 4 px larger every side, the two
- * grounds 8 px apart across the body; an SSID of 32 characters is
- * 384 px of the row in WF_FONT_BODY beside the signal's 80 px.
- * Under it SCAN AGAIN, HIDDEN NETWORK and CANCEL, 328 x 56 px each,
- * 12 px apart, ending at FOOT.
+ * The scan list: two columns of eight rows of 48px, 52px apart,
+ * each row 492px wide on a ground 4px larger every side, the two
+ * grounds 8px apart across the body; an SSID of 32 characters is
+ * 384px of the row in WF_FONT_BODY beside the signal's 80px.
+ * Under it SCAN AGAIN, HIDDEN NETWORK and CANCEL, 328 x 56px each,
+ * 12px apart, ending at FOOT.
  */
 #define SC_X0    (UI_MARGIN + 4) /**< The left column's rows' left edge. */
 #define SC_X1    (W / 2 + 8) /**< The right column's. */
@@ -92,10 +92,10 @@
 #define SC_BX(i) (UI_MARGIN + (i) * (SC_BW + 12))
 
 /*
- * The question: a card of 1008 x 484 px over the body from
- * UI_MARGIN down to FOOT; CANCEL and HOLD 2 s: INSTALL 460 x 72 px
- * at its foot, 16 px in; its sentences in WF_FONT_BODY, 80 cells a
- * line, 28 px apart.
+ * The question: a card of 1008 x 484px over the body from
+ * UI_MARGIN down to FOOT; CANCEL and HOLD 2s: INSTALL 460 x 72px
+ * at its foot, 16px in; its sentences in WF_FONT_BODY, 80 cells a
+ * line, 28px apart.
  */
 #define Q_X      UI_MARGIN   /**< The question's left edge. */
 #define Q_Y      UI_MARGIN   /**< Its top. */
@@ -119,8 +119,8 @@ _Static_assert(SC_X1 + SC_W + 4 <= W - UI_MARGIN
 
 /**
  * @brief The keyboard, over the whole body, UI_MARGIN in from its sides and
- *        top, and ending 4 px above the alert band: 1008 x 484 px, keys of
- *        93 x 71 px.
+ *        top, and ending 4px above the alert band: 1008 x 484px, keys of
+ *        93 x 71px.
  */
 #define KEY_AREA gfx_rect_make(UI_MARGIN, UI_MARGIN, W - 2 * UI_MARGIN, \
                                FOOT - UI_MARGIN)
@@ -275,7 +275,7 @@ static gfx_rect_t q_cancel_rect(void)
     return gfx_rect_make(Q_X + 16, Q_BY, Q_BW, Q_BH);
 }
 
-/** @brief HOLD 2 s: INSTALL.  @return Its rectangle. */
+/** @brief HOLD 2s: INSTALL.  @return Its rectangle. */
 static gfx_rect_t install_rect(void)
 {
     return gfx_rect_make(Q_X + Q_W - 16 - Q_BW, Q_BY, Q_BW, Q_BH);
@@ -901,13 +901,13 @@ static void draw_scan(gfx_canvas_t *c)
             const gfx_rect_t r = row_rect(i);
             const bool pressed = s.have_press && s.hit == HIT_ROW + i;
             ui_choice_row(c, r, "", false, pressed);
-            /* A name of 32 bytes takes 384 px in the body face, 12 px in;
-             * the signal 8 cells of the label face, 12 px from the right. */
+            /* A name of 32 bytes takes 384px in the body face, 12px in;
+             * the signal 8 cells of the label face, 12px from the right. */
             gfx_text_in(c, gfx_rect_make(r.x + 12, r.y, r.w - 108, r.h),
                         s.v.scan[i], WF_FONT_BODY, UI_TEXT, 1,
                         GFX_ALIGN_LEFT);
             char dbm[16];
-            snprintf(dbm, sizeof(dbm), "%d dBm", (int)s.v.rssi[i]);
+            snprintf(dbm, sizeof(dbm), "%ddBm", (int)s.v.rssi[i]);
             gfx_text_in(c, gfx_rect_make(r.x + r.w - 92, r.y, 80, r.h), dbm,
                         WF_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
         }

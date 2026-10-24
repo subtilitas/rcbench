@@ -17,8 +17,8 @@
  * The rule this module enforces: the bit rate comes out exact.  CAN has no
  * framing to resynchronise against beyond its own bit stuffing, and two nodes
  * that disagree by 1% agree on short frames and fail on long ones.  A rate
- * that cannot be hit exactly is reported as impossible; an 8 MHz crystal
- * cannot make 1 Mbit/s.
+ * that cannot be hit exactly is reported as impossible; an 8MHz crystal
+ * cannot make 1Mbit/s.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -65,7 +65,7 @@ typedef struct {
 
 /**
  * The sample point CiA (CAN in Automation) recommends for rates above
- * 800 kbit/s, in permille.  Later is better for propagation delay and worse
+ * 800kbit/s, in permille.  Later is better for propagation delay and worse
  * for oscillator tolerance; 87.5% is the usual compromise.
  */
 #define CAN_SAMPLE_POINT_DEFAULT 875
@@ -73,7 +73,7 @@ typedef struct {
 /**
  * The sample point this link uses, at both ends.
  *
- * The IOmcu's XL2515 has one way to make 1 Mbit/s from a 16 MHz
+ * The IOmcu's XL2515 has one way to make 1Mbit/s from a 16MHz
  * crystal: the smallest divisor and 8 quanta per bit, the fewest a bit may
  * have, which puts the sample point at 75%.  The panel has slack and matches
  * the IOmcu, so both ends sample the bit in the same place.
@@ -99,7 +99,7 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
 /**
- * @brief The panel's TWAI on the ESP32-P4, off the 40 MHz crystal: even
+ * @brief The panel's TWAI on the ESP32-P4, off the 40MHz crystal: even
  *        prescalers from 2 to 32768.
  * @param out Filled with the limits; NULL is ignored.
  */

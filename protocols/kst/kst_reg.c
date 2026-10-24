@@ -13,12 +13,12 @@
 enum {
     CONV_RAW = 0,     /* displayed as stored */
     CONV_DUTY,        /* round(raw x 100 / 255) % */
-    CONV_BOOST,       /* 50 us + 12.5 us x raw */
+    CONV_BOOST,       /* 50us + 12.5us x raw */
     CONV_STRETCH,     /* 1 << index */
-    CONV_DEAD_BAND,   /* 0.2 us x (65 - raw) */
-    CONV_PULSE,       /* 0.8 us x raw */
-    CONV_NEUTRAL,     /* 810 us + raw x 409 / 2048 us */
-    CONV_PROT1_TIME,  /* 0.1 s x raw, capped at 100.0 s; decode only */
+    CONV_DEAD_BAND,   /* 0.2us x (65 - raw) */
+    CONV_PULSE,       /* 0.8us x raw */
+    CONV_NEUTRAL,     /* 810us + raw x 409 / 2048us */
+    CONV_PROT1_TIME,  /* 0.1s x raw, capped at 100.0s; decode only */
     CONV_PROT1_PWM,   /* round(raw x 97 / 255) %; decode only */
     CONV_THERMO,      /* count of 1 bits upward from bit 0 */
 };
@@ -259,7 +259,7 @@ bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
     }
     switch (f->conv) {
     case CONV_DUTY:
-        /* The vendor tool's rule: 50 % is 127, so the tie goes down. */
+        /* The vendor tool's rule: 50% is 127, so the tie goes down. */
         r = display > 100 ? -1 : (display * 255 + 49) / 100;
         break;
     case CONV_BOOST:

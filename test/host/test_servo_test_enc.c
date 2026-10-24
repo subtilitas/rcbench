@@ -268,7 +268,7 @@ TEST_CASE(an_invalid_reading_ends_the_angle_until_the_next)
 }
 
 /* Runs until a counted move has begun with a start angle and has not moved
- * yet; false when none does within 60 s. */
+ * yet; false when none does within 60s. */
 static bool run_to_counted_move_start(void)
 {
     for (uint32_t k = 0; k < 60000u; k += FRAME_MS) {
@@ -430,7 +430,7 @@ TEST_CASE(a_row_takes_the_newest_angle_not_later_than_itself)
     servo_test_init(&t);
     const servo_test_enc_t w = { true, 700u, 0u, 0xFFFFFFF0u, false, false, false, false };
     servo_test_encoder(&t, &w);
-    CHECK(servo_test_enc_at(&t, 20u, &deg));               /* 36 ms later */
+    CHECK(servo_test_enc_at(&t, 20u, &deg));               /* 36ms later */
     CHECK_NEAR(deg, servo_test_enc_deg(700u, 0u), 0.0001f);
     CHECK(!servo_test_enc_at(&t, 0xFFFFFFE0u, &deg));      /* before it */
 }
@@ -489,13 +489,13 @@ TEST_CASE(a_stillness_from_before_the_command_is_not_the_end_of_the_move)
     t.enc_end = 1u;
     t.enc_cmd_ms = 10000u;
     t.enc_start_raw = 0u;
-    /* Moved 5 degrees, still for 200 ms, the stillness older than the
+    /* Moved 5 degrees, still for 200ms, the stillness older than the
      * command: not settled. */
     servo_test_enc_t e = { true, (uint16_t)(5.0f * 4096.0f / 360.0f), 200u, 10100u, false, false, false, false };
     servo_test_encoder(&t, &e);
     CHECK(t.enc_moved);
     CHECK(!t.enc_settled);
-    /* Still for 100 ms from 10050: after the command, settled at 50 ms. */
+    /* Still for 100ms from 10050: after the command, settled at 50ms. */
     e.taken_ms = 10150u;
     e.still_ms = 100u;
     servo_test_encoder(&t, &e);
@@ -528,7 +528,7 @@ TEST_CASE(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged)
 {
     servo_test_cfg_t c;
     enc_rig(ENC_DEG_PER_US, &c);
-    g.enc_every = 2000u;            /* a reading every 2 s: too old to start from */
+    g.enc_every = 2000u;            /* a reading every 2s: too old to start from */
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(120000u);
     const servo_test_step_t *s = &g.t.steps[0];
@@ -582,7 +582,7 @@ TEST_CASE(end_angles_either_side_of_the_half_turn_average_on_the_circle)
     servo_test_cfg_t c;
     enc_rig(ENC_DEG_PER_US, &c);
     c.moves = 4u;
-    const uint16_t hi_count = (uint16_t)(ENC_CENTRE_COUNT + 410u);  /* +36 deg */
+    const uint16_t hi_count = (uint16_t)(ENC_CENTRE_COUNT + 410u);  /* +36deg */
     c.enc_centre = (uint16_t)(hi_count - 2048u);
     c.enc_cmd_deg[0] = 108.0f;
     c.enc_cmd_deg[1] = 180.0f;

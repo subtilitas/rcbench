@@ -4,7 +4,7 @@
  *        centre.
  *
  * The curve runs where the pins are, on the IOmcu, so its timing does
- * not depend on the link: a 5 Hz sine over a CAN round trip of tens of
+ * not depend on the link: a 5Hz sine over a CAN round trip of tens of
  * milliseconds would be a staircase.  The panel computes the same curve with
  * the same code to draw the horn.
  *

@@ -406,7 +406,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
-/* The supply's own range, in place of the PPS default's 3.3 to 21 V. */
+/* The supply's own range, in place of the PPS default's 3.3 to 21V. */
 static void supply_gives(float v_min, float v_max)
 {
     supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
@@ -426,9 +426,9 @@ static bool run_starts(void)
 }
 
 /*
- * A voltage the supply can give is not refused: the profile's 7.6 V runs on
- * a supply whose highest voltage is 7.6 V and on one whose lowest is 7.6 V.
- * 0.01 V the other side of either is refused, with the reason on the page.
+ * A voltage the supply can give is not refused: the profile's 7.6V runs on
+ * a supply whose highest voltage is 7.6V and on one whose lowest is 7.6V.
+ * 0.01V the other side of either is refused, with the reason on the page.
  */
 TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
 {
@@ -462,8 +462,8 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
                  "VOLTAGE is below the supply minimum of 7.61 V.");
 }
 
-/* The list the same: a profile that needs 7.6 V opens on a supply whose
- * highest voltage is 7.6 V, and 0.01 V under it the row is a refused one
+/* The list the same: a profile that needs 7.6V opens on a supply whose
+ * highest voltage is 7.6V, and 0.01V under it the row is a refused one
  * that says what it needs. */
 TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
 {

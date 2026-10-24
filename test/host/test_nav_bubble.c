@@ -533,8 +533,8 @@ TEST_CASE(the_link_bubble_follows_the_link)
  * INJECT, the mode a build with RCBENCH_TOUCH_INJECTOR names while a touch
  * injector is attached, has both its paragraphs under its title in both
  * languages; a mode string the band has no text for is its title alone.
- * The floor is each paragraph's cells over a line's 60, at 21 px a line
- * and 4 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
+ * The floor is each paragraph's cells over a line's 60, at 21px a line
+ * and 4px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
  * bubble that drops either paragraph is shorter.
  */
 TEST_CASE(the_inject_bubble_explains_the_injector)

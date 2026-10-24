@@ -121,9 +121,9 @@ endforeach()
 # and the real device against each other over a bus this suite controls.
 set(FAKES "")
 
-# Every test is stopped after 120 s unless it sets its own TIMEOUT.  CTest
+# Every test is stopped after 120s unless it sets its own TIMEOUT.  CTest
 # reads the default from DartConfiguration.tcl, which include(CTest) writes
-# from DART_TESTING_TIMEOUT; the ctest default without it is 1500 s.
+# from DART_TESTING_TIMEOUT; the ctest default without it is 1500s.
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
@@ -345,8 +345,8 @@ set_tests_properties(wa_page_script PROPERTIES
 # The profile generator against the card reader: fuzz_parity.py changes the
 # profiles of record, reads each result with tools/gen_esc_profiles.py and,
 # through esc_parse_dump, with esc_profile_parse(), and fails on a file the
-# two read differently.  2 fixed seeds of 1500 cases each: 6.2 s measured on
-# one x86-64 host, 8.1 s in the sanitizer build, stopped after 120 s.
+# two read differently.  2 fixed seeds of 1500 cases each: 6.2s measured on
+# one x86-64 host, 8.1s in the sanitizer build, stopped after 120s.
 # Not in the coverage build: the cases follow Python's random module, and
 # the figure in STATUS.md is what the C suites reach on any Python.
 if(NOT ENABLE_COVERAGE)

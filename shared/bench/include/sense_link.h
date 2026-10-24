@@ -113,8 +113,8 @@ extern "C" {
 
 /**
  * @brief SENSE's read-only registers are due this long after the last read,
- *        while a part is enabled: under the 50 ms poll, so every BENCH poll
- *        reads  them -- 20 Hz -- however its exchanges move it, and a bench
+ *        while a part is enabled: under the 50ms poll, so every BENCH poll
+ *        reads  them -- 20Hz -- however its exchanges move it, and a bench
  *        sample has  the ESC's figures and the INA228's totals of the same
  *        poll.
  */
@@ -123,21 +123,21 @@ extern "C" {
 /**
  * @brief The INA228's totals from a SENSE read younger than this are used over
  *        BENCH's: two polls, so one read that went unanswered does not drop the
- *        count back to BENCH's 1 mAh and 0.1 Wh rounding for a sample.
+ *        count back to BENCH's 1mAh and 0.1Wh rounding for a sample.
  */
 #define SENSE_LINK_TOTALS_MS 100u
 
 /**
  * @brief SERVO_SENSE's windows and channel flags are due this long after the
- *        last read while the INA3221 is enabled: under the 50 ms poll, so every
- *        poll reads them and every 50 ms window is seen -- its mean the filter,
+ *        last read while the INA3221 is enabled: under the 50ms poll, so every
+ *        poll reads them and every 50ms window is seen -- its mean the filter,
  *        its highest current and lowest voltage the spikes.
  */
 #define SENSE_LINK_SERVO_MS 40u
 
 /**
  * @brief SERVO_WIN's header and two newest windows are due this long after the
- *        last read while the INA3221 is enabled with CH1: under the 50 ms poll,
+ *        last read while the INA3221 is enabled with CH1: under the 50ms poll,
  *        so every poll reads them.
  */
 #define SENSE_LINK_WIN_MS 40u
@@ -156,7 +156,7 @@ extern "C" {
 /**
  * @brief A part enabled and not online this long after its set-up was taken, or
  *        first read, is said not to answer: the IOmcu scans the bus again
- *        every 1000 ms while a part is missing.
+ *        every 1000ms while a part is missing.
  */
 #define SENSE_LINK_GRACE_MS 2500u
 
@@ -199,9 +199,9 @@ typedef struct {
     int8_t   sda, scl;        /**< IOmcu GPIO; -1 not set         */
     uint8_t  i228_addr;       /**< 0x40 to 0x4F                         */
     uint16_t i228_uohm;       /**< shunt, uOhm                          */
-    uint16_t i228_max_da;     /**< the current its range is set for, 0.1 A */
+    uint16_t i228_max_da;     /**< the current its range is set for, 0.1A */
     uint8_t  i3221_addr;      /**< 0x40 to 0x43                         */
-    uint16_t i3221_dmohm;     /**< shunt, 0.1 mOhm                      */
+    uint16_t i3221_dmohm;     /**< shunt, 0.1mOhm                      */
     uint8_t  i3221_ch;        /**< bits 0..2 for CH1 to CH3             */
     /**
      * @brief Bit a: the INA3221 at 0x40 + a is fitted (SETUP > SENSORS); the
@@ -218,7 +218,7 @@ typedef struct {
     /**
      * @brief FAST is CH2 or CH3 of its part: without the map the INA3221 is
      *        not the servo rail's meter then, as an IOmcu older than 4.25 reads
-     *        CH1 at 1 kHz whatever watches.
+     *        CH1 at 1kHz whatever watches.
      */
     bool     i3221_fast_off_ch1;
 } sense_setup_t;
@@ -250,7 +250,7 @@ enum {
     /** @brief The INA228's current read at the end of its range. */
     SENSE_LINK_EV_I228_CLIPPED  = 0x0800,
     /**
-     * @brief An INA3221 channel read 163.8 mV across its shunt; see
+     * @brief An INA3221 channel read 163.8mV across its shunt; see
      *        sense_link_clipped_channel().
      */
     SENSE_LINK_EV_I3221_CLIPPED = 0x1000,
@@ -318,7 +318,7 @@ typedef struct {
 #define SENSE_LINK_WINDOW_MS 50u
 
 /**
- * @brief One 50 ms window of INA3221 CH1, as SERVO_WIN carries it.
+ * @brief One 50ms window of INA3221 CH1, as SERVO_WIN carries it.
  *
  * A clipped
  *  sample counts in the three currents at the end of the range it read.
@@ -340,7 +340,7 @@ typedef struct {
      *        the panel had the read that brought it, less SENSE_LINK_WINDOW_MS
      *        for each window that closed after it and came in the same read.
      *
-     * The windows of one read are 50 ms apart, oldest first.
+     * The windows of one read are 50ms apart, oldest first.
      */
     uint32_t taken_ms;
     bool     stamped;     /**< taken_ms is set; 0 is a tick like any other */
@@ -812,7 +812,7 @@ bool sense_link_esc(const sense_link_t *s, uint32_t now_ms, bool *v_ok,
                     float *volts, bool *i_ok, float *amps);
 
 /**
- * @brief The INA228's charge in 0.01 mAh and energy in 0.01 Wh as last read,  0
+ * @brief The INA228's charge in 0.01mAh and energy in 0.01Wh as last read,  0
  *        while they are not the run's totals.
  *
  * False before any read and for a
@@ -820,8 +820,8 @@ bool sense_link_esc(const sense_link_t *s, uint32_t now_ms, bool *v_ok,
  *
  * @param s           The link state.
  * @param now_ms      The time, in ms.
- * @param charge_cmah Receives the charge, in 0.01 mAh.
- * @param energy_cwh  Receives the energy, in 0.01 Wh.
+ * @param charge_cmah Receives the charge, in 0.01mAh.
+ * @param energy_cwh  Receives the energy, in 0.01Wh.
  * @return true when the totals are valid.
  */
 bool sense_link_totals(const sense_link_t *s, uint32_t now_ms,
@@ -949,10 +949,10 @@ uint16_t sense_link_event_id(const sense_link_t *s, sense_link_part_t part);
 uint8_t  sense_link_event_found(const sense_link_t *s, sense_link_part_t part);
 
 /**
- * @brief The INA3221's shunt on the page, 0.1 mOhm.
+ * @brief The INA3221's shunt on the page, 0.1mOhm.
  *
  * @param s The link state.
- * @return The INA3221's shunt on the page, in 0.1 mOhm.
+ * @return The INA3221's shunt on the page, in 0.1mOhm.
  */
 uint16_t sense_link_i3221_dmohm(const sense_link_t *s);
 

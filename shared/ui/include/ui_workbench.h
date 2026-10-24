@@ -47,8 +47,8 @@ typedef enum {
 
 /*
  * Geometry in the screen's own coordinates (the body under the band).  A
- * tab is 112 px: PROGRAMMIEREN, the longest label, is 13 cells of 8 px.
- * Four tabs take 460 px, which the 488 px page area of a workbench holds.
+ * tab is 112px: PROGRAMMIEREN, the longest label, is 13 cells of 8px.
+ * Four tabs take 460px, which the 488px page area of a workbench holds.
  * The page area and the output card start at UI_WB_PAGE_Y.
  */
 #define UI_WB_STRIP_X 9
@@ -99,7 +99,7 @@ bool ui_wb_strip_pressed(const ui_wb_strip_t *w);
 /** Drop a press under way (ui_tabs_cancel()). */
 void ui_wb_strip_cancel(ui_wb_strip_t *w);
 
-/** The strip's row: the tabs, without the trough's 3 px around them. */
+/** The strip's row: the tabs, without the trough's 3px around them. */
 gfx_rect_t ui_wb_strip_rect(const ui_wb_strip_t *w);
 
 /** The tab of @p task, or an empty rectangle when the strip lacks it. */

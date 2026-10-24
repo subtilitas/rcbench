@@ -34,8 +34,8 @@ extern "C" {
 /** @brief What the IOmcu says its drawing is, off the ARTWORK page. */
 typedef struct {
     uint16_t blocks;
-    uint16_t width;    /**< outline, 0.01 mm                               */
-    uint16_t height;   /**< outline, 0.01 mm                               */
+    uint16_t width;    /**< outline, 0.01mm                               */
+    uint16_t height;   /**< outline, 0.01mm                               */
     uint16_t format;   /**< a link_art_format_t                            */
     uint16_t crc;      /**< link_crc() over the payload, seeded zero        */
     uint32_t hash;     /**< link_fnv1a32() over the payload                */
@@ -143,8 +143,8 @@ bool link_artxfer_verify(const link_artxfer_t *x);
  *
  * @param regs Receives the LINK_AW_COUNT registers; NULL is ignored.
  * @param format The format, a link_art_format_t.
- * @param width Outline width, in 0.01 mm.
- * @param height Outline height, in 0.01 mm.
+ * @param width Outline width, in 0.01mm.
+ * @param height Outline height, in 0.01mm.
  * @param bytes Payload length in bytes.
  * @param crc CRC of the payload.
  * @param hash FNV-1a hash of the payload.

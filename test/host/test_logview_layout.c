@@ -1,7 +1,7 @@
 /**
  * @file test_logview_layout.c
  * @brief LOGS at the 1024 x 600 sizes: the file list shows seven rows on a
- *        48 px pitch, each row a finger tall from its top pixel to its
+ *        48px pitch, each row a finger tall from its top pixel to its
  *        bottom one; the scroll bar reaches the last row of a card of 20
  *        runs; a report's TEXT view shows 15 rows and a BACK a finger
  *        tall; no text or control of any view reaches the alert band, in
@@ -19,7 +19,7 @@
 
 #include "logview_rig.h"
 
-/** @brief The body row 4 px over the alert band: nothing reaches it. */
+/** @brief The body row 4px over the alert band: nothing reaches it. */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
 /** @brief The top pixel row of the list's row @p r, its pitch's first. */
@@ -28,7 +28,7 @@
 /*
  * 20 runs, the newest at the top: row r is run 20 - r.  A press on the
  * first pixel row of a row's pitch selects it and one on the pitch's last
- * row, 47 px lower, opens it: the hit area is the whole 48 px.
+ * row, 47px lower, opens it: the hit area is the whole 48px.
  */
 TEST_CASE(a_card_of_20_runs_shows_seven_rows_a_finger_tall)
 {
@@ -51,8 +51,8 @@ TEST_CASE(a_card_of_20_runs_shows_seven_rows_a_finger_tall)
 }
 
 /*
- * Each of the seven rows is drawn 44 px tall in the sunk fill, the
- * selected one raised, with 4 px of the list's own fill under it.
+ * Each of the seven rows is drawn 44px tall in the sunk fill, the
+ * selected one raised, with 4px of the list's own fill under it.
  */
 TEST_CASE(the_list_draws_seven_rows_and_the_gaps_between_them)
 {
@@ -153,9 +153,9 @@ static void at_text(void)
 }
 
 /*
- * The report's rows: 15 at a pitch of 22 px in the list's panel, the 15th
+ * The report's rows: 15 at a pitch of 22px in the list's panel, the 15th
  * drawn and nothing under it.  BACK takes a tap on its top and on its
- * bottom pixel row, 52 px apart, and on neither does the text scroll.
+ * bottom pixel row, 52px apart, and on neither does the text scroll.
  */
 TEST_CASE(a_report_shows_fifteen_rows_and_back_is_a_finger_tall)
 {
@@ -241,7 +241,7 @@ static void at_plot(void)
 
 /*
  * The router's alert band covers body y 496 to 539 while an alert shows.
- * Nothing of LOGS reaches 4 px over it: every pixel from body y 492 down
+ * Nothing of LOGS reaches 4px over it: every pixel from body y 492 down
  * is the background, on every view, in English and in German.
  */
 TEST_CASE(nothing_is_drawn_under_the_alert_band)

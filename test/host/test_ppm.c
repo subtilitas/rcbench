@@ -69,7 +69,7 @@ TEST_CASE(a_frame_whose_sync_gap_would_be_too_short_is_refused)
     uint16_t runs[PPM_MAX_RUNS];
     ppm_cfg_t cfg = PPM_CFG_DEFAULT();
 
-    /* 16000 us of channels, 300 of mark: 22500 leaves 6200 and 19000 leaves
+    /* 16000us of channels, 300 of mark: 22500 leaves 6200 and 19000 leaves
      * 2700, which is inside the range a channel can occupy. */
     CHECK(ppm_frame(ch, 8u, &cfg, runs, PPM_MAX_RUNS) != 0u);
     cfg.frame_us = 19000u;
@@ -89,7 +89,7 @@ TEST_CASE(a_frame_whose_sync_gap_would_be_too_short_is_refused)
 TEST_CASE(the_shortest_usable_frame_is_reported_before_it_is_needed)
 {
     const ppm_cfg_t cfg = PPM_CFG_DEFAULT();
-    /* Eight channels at the 2500 us ceiling, the terminating mark and the
+    /* Eight channels at the 2500us ceiling, the terminating mark and the
      * smallest gap that is still a gap. */
     CHECK_EQ(ppm_min_frame_us(8u, &cfg), 8u * 2500u + 300u + 3000u);
     CHECK_EQ(ppm_min_frame_us(1u, &cfg), 2500u + 300u + 3000u);
@@ -158,7 +158,7 @@ TEST_CASE(the_modules_channel_range_is_the_banks_and_both_ends_are_carried)
 
 TEST_CASE(a_mark_that_would_not_fit_inside_its_channel_is_refused)
 {
-    /* A 600 us mark and a 500 us channel is a mark that runs into the next
+    /* A 600us mark and a 500us channel is a mark that runs into the next
      * one: the space would have to be negative. */
     const uint16_t ch[1] = { 500u };
     uint16_t runs[PPM_MAX_RUNS];

@@ -277,7 +277,7 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
      * would pass with one message for both, which is the defect.
      *
      * The panel is drawn at (104,150) 816x160 and the reason sits at
-     * box.y + 52, 24 px tall, so the band below covers that line and
+     * box.y + 52, 24px tall, so the band below covers that line and
      * nothing else.
      */
     int differing = 0;
@@ -438,7 +438,7 @@ TEST_CASE(a_directory_row_cannot_be_opened_as_a_log)
 
 /*
  * OPEN reads through stdio, whose seek takes a 32-bit long on the panel: a
- * file of 2 GiB and more is listed with its size and refused at OPEN with
+ * file of 2GiB and more is listed with its size and refused at OPEN with
  * a message, never opened, so no part of it passes for the whole run.
  */
 TEST_CASE(a_file_of_2_gib_or_more_is_listed_and_refused_at_open)

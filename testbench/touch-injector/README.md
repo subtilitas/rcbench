@@ -95,16 +95,16 @@ their pulls off, the I2C block is not attached, and nothing on the bus is
 acknowledged. It leaves LISTEN only on `confirm scl=GP5` after a `wiring`
 check that read `ok`. ACTIVE answers at 0x14 until the next reset.
 
-A panel that found the injector at start-up detaches it after 1000 ms
+A panel that found the injector at start-up detaches it after 1000ms
 without an answer from 0x14. Its injected
 contacts are released, `INJECT` leaves the mode chip, and the glass alone
 decides whether touch is alive. The panel then reads the product ID at 0x14
-once every 1000 ms; the first answer re-attaches the injector with no
+once every 1000ms; the first answer re-attaches the injector with no
 contacts down. An injector reset therefore needs no panel restart, provided the panel found
 the injector at start-up: after
-`wiring` and `confirm` the panel re-attaches it within about 1 s.
+`wiring` and `confirm` the panel re-attaches it within about 1s.
 
-The watchdog resets the chip when the main loop stalls for 200 ms. A reset
+The watchdog resets the chip when the main loop stalls for 200ms. A reset
 is LISTEN again.
 
 ## Protocol
@@ -274,18 +274,18 @@ fails the check. `release` lifts every contact at once.
 
 ## Wiring check
 
-`wiring` samples GP4 and GP5 for 500 ms and applies two rules to every
+`wiring` samples GP4 and GP5 for 500ms and applies two rules to every
 transaction: out of idle the line that falls first is SDA (START), into idle
 the line that rises last is SDA (STOP). Idle is both lines high for at least
-10 µs. A transaction names a line when both rules name the same one.
+10µs. A transaction names a line when both rules name the same one.
 
 A verdict needs at least 20 whole transactions that name a line, and at
 least half of all whole transactions. `agree=` is the share of the named
-ones that name the majority line, and a verdict needs 95 %. A transaction
+ones that name the majority line, and a verdict needs 95%. A transaction
 that names no line is counted in `tx=` and left out of `agree=`. The panel's
 poll of 0x14 while the injector listens is one: the address goes
 unacknowledged, both lines go high after the ninth clock, and a bare STOP
-follows more than 10 µs later. SDA and SCL shorted together name no line at
+follows more than 10µs later. SDA and SCL shorted together name no line at
 all and give `noise`.
 
 | Verdict | Meaning | Next step |
@@ -298,14 +298,14 @@ all and give `noise`.
 
 A level shorter than 2 samples is dropped as a glitch before the rules run.
 The host suite checks the rules at 10 Msps (mega-samples per second) with
-400 kHz traffic and at 4 Msps with 100 kHz traffic. The rate the RP2350
+400kHz traffic and at 4 Msps with 100kHz traffic. The rate the RP2350
 reaches is not measured; the verdict line reports it as `rate=`.
 
 ## Bring-up on the bench
 
 1. Wire GP4, GP5 and GND as in the pin table. Leave 3V3, GP6 and GP7 open.
 2. Power the panel and let it run. Plug the Zero into the Pi.
-3. `ping` returns `state=listen`. The LED blinks white at 1 Hz.
+3. `ping` returns `state=listen`. The LED blinks white at 1Hz.
 4. `wiring` returns `wiring ok scl=GP5 sda=GP4 ...`. Any other verdict: fix
    the wiring first; the LED is yellow for `swapped`, `low` and `noise`.
 5. `confirm scl=GP5`. The LED goes dim green once the panel reads 0x14.
@@ -313,7 +313,7 @@ reaches is not measured; the verdict line reports it as `rate=`.
    finds 0x14 at start and shows `INJECT` in the status band's mode chip.
    After an injector reset, repeat steps 3 to 5 only: the panel (which found
    the injector at start-up) detached the
-   silent injector after 1000 ms and re-attaches it within about 1 s of
+   silent injector after 1000ms and re-attaches it within about 1s of
    `confirm`, and `INJECT` shows again.
 7. `tap 890 462` presses the SETUP tile. The reply is
    `done tap frames=2 ms=<100 to 110>`.
@@ -321,15 +321,15 @@ reaches is not measured; the verdict line reports it as `rate=`.
 The IOmcu's update question, which opens on the menu when the IOmcu runs
 another build, has CANCEL at panel (305, 376) and START at (719, 376).
 `tap 305 376` declines it; `hold 719 376 2500` starts the update after the
-2 s hold.
+2s hold.
 
 ## LED
 
 | Colour | State |
 | --- | --- |
-| white, blinking 1 Hz | LISTEN |
+| white, blinking 1Hz | LISTEN |
 | yellow | LISTEN, last verdict `swapped`, `low` or `noise` |
-| off | ACTIVE, no read for 100 ms |
+| off | ACTIVE, no read for 100ms |
 | dim green | ACTIVE, the panel reads 0x14 |
 | blue | a contact is down |
 | red | the last gesture failed |

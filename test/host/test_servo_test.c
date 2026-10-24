@@ -66,13 +66,13 @@ TEST_CASE(a_run_measures_each_step_and_passes)
     uint32_t every = 0u;
     CHECK(servo_test_rates(&g.t, &per_s, &mod_s, &every));
     CHECK_NEAR(per_s, 10.0f, 0.2f);
-    CHECK_EQ(every, 100u);       /* 99.8 ms, rounded */
+    CHECK_EQ(every, 100u);       /* 99.8ms, rounded */
     CHECK(servo_test_drained(&g.t));
     CHECK(g.set_v_max <= 6.0f + 0.001f);
 }
 
 /* At 20 readings a second the travel time comes nearer: late by up to one
- * reading's 50 ms and a frame. */
+ * reading's 50ms and a frame. */
 TEST_CASE(the_travel_time_is_late_by_at_most_a_reading)
 {
     rig_fresh();
@@ -100,19 +100,19 @@ TEST_CASE(length_by_time_moves_for_the_test_time)
     c.time_s = 6u;
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(60000u);
-    /* A move and its hold take about 0.77 + 0.6 s. */
+    /* A move and its hold take about 0.77 + 0.6s. */
     CHECK(g.t.steps[0].moves >= 4u);
     CHECK(g.t.steps[0].moves <= 6u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_PASS);
 }
 
 /*
- * A servo whose ends hold at different currents -- 0.40 A at the low end,
- * which is loaded, 0.05 A at the high end and the centre -- and whose
- * current ramps up from where it was at 0.95 A a second while it moves,
- * for 1200 ms end to end.  Neither the first reading of a move, still at
+ * A servo whose ends hold at different currents -- 0.40A at the low end,
+ * which is loaded, 0.05A at the high end and the centre -- and whose
+ * current ramps up from where it was at 0.95A a second while it moves,
+ * for 1200ms end to end.  Neither the first reading of a move, still at
  * the start end's level, nor the ramp passing the destination's level on
- * its way up is the arrival: every travel time is the 1200 ms the servo
+ * its way up is the arrival: every travel time is the 1200ms the servo
  * takes, late by no more than a reading.
  */
 static float ramp_level(uint16_t us) { return (us < 1300u) ? 0.40f : 0.05f; }
@@ -182,7 +182,7 @@ TEST_CASE(unequal_end_levels_do_not_arrive_early)
 }
 
 /* HV SERVO in the report says what ran: on with neither of its steps
- * chosen runs nothing above 6.0 V. */
+ * chosen runs nothing above 6.0V. */
 TEST_CASE(the_report_says_whether_a_step_above_6_v_ran)
 {
     servo_test_cfg_t c;
@@ -225,14 +225,14 @@ TEST_CASE(the_brownout_walk_stops_where_the_servo_stops)
     CHECK(stopped);
     CHECK(strstr(g.report, "Moved at 4.20 V; no movement seen at 4.00 V.")
           != NULL);
-    /* 5.0 down to 4.0 in 0.2 V steps. */
+    /* 5.0 down to 4.0 in 0.2V steps. */
     CHECK_EQ(g.t.step_count, 6u);
     CHECK(g.set_v_max <= 5.0f + 0.001f);
     CHECK(g.off_asked);
 }
 
 /* A servo that moves at every voltage: the walk ends at the floor, the
- * supply's lowest set point where that is above 3.0 V. */
+ * supply's lowest set point where that is above 3.0V. */
 TEST_CASE(the_brownout_walk_ends_at_the_floor)
 {
     rig_fresh();
@@ -247,7 +247,7 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     bool stopped = true;
     CHECK(servo_test_brownout(&g.t, &moved, &stopped));
     CHECK(!stopped);
-    /* 5.0 down in 0.2 V steps to 3.4, then the floor itself: 3.3 V, the
+    /* 5.0 down in 0.2V steps to 3.4, then the floor itself: 3.3V, the
      * model's lowest set point, as the report says. */
     CHECK_NEAR(moved, 3.3f, 0.001f);
     CHECK_NEAR(g.t.steps[g.t.step_count - 1u].set_v, 3.3f, 0.001f);
@@ -302,7 +302,7 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
                            "NOT MEASURABLE\n") != NULL);
 }
 
-/* A cap under 5.0 V starts the walk at the cap. */
+/* A cap under 5.0V starts the walk at the cap. */
 TEST_CASE(the_brownout_walk_starts_under_the_cap)
 {
     rig_fresh();
@@ -390,7 +390,7 @@ TEST_CASE(each_limit_fails_the_run)
 TEST_CASE(a_servo_pushing_on_a_stop_ends_the_run)
 {
     rig_fresh();
-    g.servo.cfg.stop_hi_us = 1880u;      /* 20 us short of the high end */
+    g.servo.cfg.stop_hi_us = 1880u;      /* 20us short of the high end */
     servo_test_cfg_t c;
     cfg_defaults(&c);
     c.step_count = 1u;
@@ -447,7 +447,7 @@ TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
                            "measured, no move arrived\n") != NULL);
     CHECK(strstr(g.report, "longest 0 ms") == NULL);
 
-    /* Nor on the PD mini with a limit set: not an upper bound of 0 ms. */
+    /* Nor on the PD mini with a limit set: not an upper bound of 0ms. */
     rig_fresh();
     g.brownout_v = 99.0f;
     cfg_defaults(&c);
@@ -567,7 +567,7 @@ TEST_CASE(every_abort_switches_off_lets_go_and_reports)
     g.v_max = 5.5f;
     check_aborted(SERVO_TEST_AB_CAP);
     CHECK(g.set_v_max <= 4.8f + 0.001f);
-    CHECK(strstr(g.report, "(cut short)") == NULL);   /* 4.8 V ran out */
+    CHECK(strstr(g.report, "(cut short)") == NULL);   /* 4.8V ran out */
     CHECK(strstr(g.report, " 6.00  not run") != NULL);
 }
 

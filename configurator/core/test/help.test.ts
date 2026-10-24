@@ -46,7 +46,7 @@ function define(source: string, name: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-/** Millivolts as the text writes them: "0.5 V" in English, "0,5 V" in German. */
+/** Millivolts as the text writes them: "0.5V" in English, "0,5V" in German. */
 const volts = (mv: number, lang: 'en' | 'de'): string => {
   const v = String(mv / 1000);
   return `${lang === 'de' ? v.replace('.', ',') : v} V`;

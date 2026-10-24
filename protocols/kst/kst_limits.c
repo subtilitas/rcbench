@@ -17,14 +17,14 @@ typedef struct {
     int32_t spd;
     int32_t dead_band;
     int32_t allow_uncont;
-    int32_t lower;        /* 0.1 us */
-    int32_t upper;        /* 0.1 us */
-    int32_t neutral;      /* 0.1 us */
+    int32_t lower;        /* 0.1us */
+    int32_t upper;        /* 0.1us */
+    int32_t neutral;      /* 0.1us */
     int32_t neutral_raw;
     int32_t lower_raw;
     int32_t upper_raw;
     int32_t uncont_raw;
-    int32_t uncont;       /* 0.1 us */
+    int32_t uncont;       /* 0.1us */
     int32_t uncont_time;
     int32_t reversion;
     int32_t left;

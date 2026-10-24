@@ -142,7 +142,7 @@ def render(spec) -> dict:
     glyphs = {}
     # How wide the ramp is either side of the threshold: narrow enough that a
     # stem stays a stem, wide enough that a diagonal is not a staircase, about
-    # 1 px of softness at these cell sizes.
+    # 1px of softness at these cell sizes.
     ramp = 62
     lo, hi = thr - ramp, thr + ramp
     for code in codes(spec):
@@ -165,7 +165,7 @@ def render(spec) -> dict:
 def clipped(spec) -> dict:
     """Count the solid pixels of each glyph that fall outside its cell.
 
-    The glyph is drawn on a canvas 24 px larger on every side, so ink beyond
+    The glyph is drawn on a canvas 24px larger on every side, so ink beyond
     the cell is seen instead of lost, and remapped through the same ramp as
     render().
 

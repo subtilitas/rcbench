@@ -183,8 +183,8 @@ void sense_link_alerts(void)
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_STORE_OFF));
     }
     if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
-        /* The full scale in hundredths of an ampere, rounded: 1638 mA on
-         * the DAOKAI's 0.1 Ohm reads 1.64 A.  With a map the clipped
+        /* The full scale in hundredths of an ampere, rounded: 1638mA on
+         * the DAOKAI's 0.1Ohm reads 1.64A.  With a map the clipped
          * channel's own shunt. */
         const unsigned ch = sense_link_clipped_channel(&s_sense_link);
         uint16_t dmohm = sense_map_link_mirror_dmohm(&s_sense_map, ch);
@@ -294,7 +294,7 @@ static void enc_queue(void)
     servo_test_enc_t q;
     memset(&q, 0, sizeof(q));
     if (sense_link_enc(&s_sense_link, now_ms(), &e)) {
-        /* The same read is not sent twice: the page is read every 40 ms
+        /* The same read is not sent twice: the page is read every 40ms
          * and the count moves 20 times in that. */
         if (given && was_valid && e.taken_ms == last_taken
             && e.samples == last_samples) {
@@ -320,7 +320,7 @@ static void enc_queue(void)
         was_no_magnet = q.no_magnet;
     }
     if (xQueueSend(s_enc_q, &q, 0) != pdTRUE) {
-        /* The screen has not drained 8 readings (320 ms): what is queued
+        /* The screen has not drained 8 readings (320ms): what is queued
          * may hold the only "none" marker, and dropping one entry would
          * keep the readings after it.  All of it goes, and the reading
          * that follows says readings were lost. */
@@ -557,7 +557,7 @@ void tone_link_alerts(void)
 
 /*
  * The phase tap's page: the set-up SETUP names written when it differs
- * from what TONE holds, registers 8 to 23 read at 20 Hz and the beeps
+ * from what TONE holds, registers 8 to 23 read at 20Hz and the beeps
  * taken by number (tone_link.h).  From poll_bench(); an IOmcu older
  * than 4.8 is sent nothing.  A tap change is taken armed or not, so no
  * idle gate.
@@ -636,8 +636,8 @@ __attribute__((noinline)) void kst_commands(void)
 }
 
 /*
- * The programmer's page: status read every KST_LINK_POLL_MS (50 ms) while
- * an operation runs and every KST_LINK_IDLE_MS (500 ms) otherwise, a
+ * The programmer's page: status read every KST_LINK_POLL_MS (50ms) while
+ * an operation runs and every KST_LINK_IDLE_MS (500ms) otherwise, a
  * request's staged registers and command written, the results and the
  * images read (kst_link.h).  From poll_bench(), at most 4 exchanges a pass;
  * an IOmcu older than 4.12 is sent nothing.
@@ -686,7 +686,7 @@ static __attribute__((noinline)) void prog_page_read(void)
 }
 
 /*
- * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
+ * The programming ports' page: read every PROG_LINK_POLL_MS (500ms), and
  * at once after a written ask, and at most 1 write a pass towards what the
  * SERVO screen wants and the operator asked of a port's PIN or FUNC
  * (prog_link.h).

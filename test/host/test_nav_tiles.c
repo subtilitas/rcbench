@@ -141,7 +141,7 @@ TEST_CASE(the_band_titles_match_the_tiles)
 }
 
 /* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 156
- * to 255, 52 px tall, its foot 4 px above the alert band. */
+ * to 255, 52px tall, its foot 4px above the alert band. */
 #define LOGS_WIFI_X 206
 
 #define LOGS_WIFI_Y (UI_BAND_H + UI_BODY_H - UI_ALERT_H - 4 - 21)
@@ -720,7 +720,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
  * The menu is 4 x 2, each tile in a fixed place by kind: the workbenches
  * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments RECEIVER, BATTERY
  * and BALANCE in row 2, LOGS over SETUP in the last column.  No tile is
- * PROGRAMMER.  Each tile is 243 x 255 px with 10 px margins, and a tap on
+ * PROGRAMMER.  Each tile is 243 x 255px with 10px margins, and a tap on
  * it opens its screen.
  */
 TEST_CASE(the_home_grid_is_four_by_two_by_kind)
@@ -758,7 +758,7 @@ TEST_CASE(the_home_grid_is_four_by_two_by_kind)
 }
 
 /*
- * Every tile's name and line fit its 243 px less UI_TILE_PAD on either
+ * Every tile's name and line fit its 243px less UI_TILE_PAD on either
  * side in both languages: the name on one row of the head face (20 x 36),
  * the line in the label face (10 x 20) on one row of 22 cells or, broken
  * at a space, on two (ui_tile()).
@@ -927,8 +927,8 @@ static int tile_ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, int *left,
 /*
  * ui_tile()'s line, in the menu's look: one wider than the 22 cells inside
  * the tile's padding breaks at its last space that fits onto a second row
- * 24 px lower (German SUPPLY, 27 cells); a line of 24 cells with spaces
- * breaks the same way and stays 8 px clear of the tile's sides; a line
+ * 24px lower (German SUPPLY, 27 cells); a line of 24 cells with spaces
+ * breaks the same way and stays 8px clear of the tile's sides; a line
  * with no space stays on one row, clipped; a look with no second row
  * (line_pitch 0, SETUP's) keeps a breakable line on one row.
  */
@@ -978,7 +978,7 @@ TEST_CASE(a_tile_line_breaks_at_a_space_inside_its_padding)
 }
 
 /*
- * The menu's lower row ends 10 px above the panel's foot, under the alert
+ * The menu's lower row ends 10px above the panel's foot, under the alert
  * band; its SIMULATED marks, names and lines end above the band, so an
  * alert hides none of them.  With no IOmcu RECEIVER, BATTERY and BALANCE
  * carry the mark (SETUP never does): ink between the line and the band,
@@ -998,7 +998,7 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
         if (tile_ink(r, UI_ALERT_Y, r.y + r.h - 2, bg, &l, &rr) != 0) {
             T_FAIL("tile %d inked under the alert band", i);
         }
-        /* The mark, in the 40 px above the band. */
+        /* The mark, in the 40px above the band. */
         if (i < 7) {
             CHECK(tile_ink(r, UI_ALERT_Y - 40, UI_ALERT_Y, bg, &l, &rr) > 0);
         }

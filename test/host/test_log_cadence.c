@@ -4,10 +4,10 @@
  *
  * Two kinds of test.  The rules one call at a time, at each limit and one
  * step either side.  And a model of the panel's control loop -- passes on a
- * 5 ms tick grid, a 50 ms poll gate looked at once per pass, exchanges of
- * 1 to 3 ms, a command written ahead of the poll -- that drives
+ * 5ms tick grid, a 50ms poll gate looked at once per pass, exchanges of
+ * 1 to 3ms, a command written ahead of the poll -- that drives
  * log_cadence_row() for 10 minutes of simulated time and counts samples
- * against rows.  The model also runs a rule of two independent 50 ms gates,
+ * against rows.  The model also runs a rule of two independent 50ms gates,
  * one on the poll and one on the row, to hold what that rule loses.
  *
  * SPDX-License-Identifier: MIT
@@ -40,7 +40,7 @@ TEST_CASE(the_bench_log_writes_no_row_while_a_servo_test_runs)
     CHECK(!log_cadence_bench_run(false, false));
     CHECK(!log_cadence_bench_run(false, true));
 
-    /* An armed bench sampled every 50 ms, a test from 1000 to 3000 ms. */
+    /* An armed bench sampled every 50ms, a test from 1000 to 3000ms. */
     log_cadence_t c;
     log_cadence_init(&c, 0xFFFFFC00u);
     log_cadence_run_start(&c, 0xFFFFFC00u);
@@ -119,12 +119,12 @@ TEST_CASE(the_models_clock_moves_with_the_link_up_and_takes_no_step)
     log_cadence_t c;
     log_cadence_init(&c, 100u);
     float step = -1.0f;
-    /* Up: the gate opens at 50 ms, no step. */
+    /* Up: the gate opens at 50ms, no step. */
     CHECK(!log_cadence_model_due(&c, 149u, true, &step));
     CHECK(!log_cadence_model_due(&c, 150u, true, &step));
     CHECK_NEAR(step, 0.0, 1e-9);
-    /* Down 49 ms after that opening: not due; at 50 ms a step of 50 ms,
-     * not of the 100 ms since the start. */
+    /* Down 49ms after that opening: not due; at 50ms a step of 50ms,
+     * not of the 100ms since the start. */
     CHECK(!log_cadence_model_due(&c, 199u, false, &step));
     CHECK(log_cadence_model_due(&c, 200u, false, &step));
     CHECK_NEAR(step, 0.050, 1e-6);
@@ -209,7 +209,7 @@ TEST_CASE(passes_without_a_row_advance_the_time)
     log_cadence_init(&c, 0xFFFFFF00u);
     float t = 0.0f;
     uint32_t now = 0xFFFFFF00u;
-    for (int k = 0; k < 500; ++k) {            /* 2.5 s with no sample */
+    for (int k = 0; k < 500; ++k) {            /* 2.5s with no sample */
         now += 5u;
         CHECK(!log_cadence_row(&c, now, false, true, &t));
     }
@@ -223,7 +223,7 @@ TEST_CASE(a_run_longer_than_the_ticks_range_keeps_counting)
     log_cadence_init(&c, 0u);
     float t = 0.0f, last = -1.0f;
     uint32_t now = 0u;
-    for (int k = 0; k < 8; ++k) {              /* 8 x 2^30 ms = 2^33 ms */
+    for (int k = 0; k < 8; ++k) {              /* 8 x 2^30ms = 2^33ms */
         now += 0x40000000u;
         CHECK(log_cadence_row(&c, now, true, true, &t));
         CHECK(t > last);
@@ -298,7 +298,7 @@ TEST_CASE(a_pass_writes_one_row_for_each_window_and_one_without)
 
 /* ---------------------------------------------- the control loop's grid */
 
-#define PASS_MS        5u      /* the loop's delay, on a 1 ms tick          */
+#define PASS_MS        5u      /* the loop's delay, on a 1ms tick          */
 #define POLL_MS        50u     /* the poll gate with the link up            */
 #define EXCH_MIN_US    1000u   /* one exchange with the IOmcu         */
 #define EXCH_MAX_US    3000u
@@ -307,7 +307,7 @@ TEST_CASE(a_pass_writes_one_row_for_each_window_and_one_without)
 
 typedef enum {
     RULE_SHARED,     /* log_cadence_row() */
-    RULE_TWO_GATES,  /* a row when the poll's gate and a second 50 ms gate
+    RULE_TWO_GATES,  /* a row when the poll's gate and a second 50ms gate
                       * are open in the same pass; the time grows by the
                       * second gate's last interval per row */
 } rule_t;
@@ -318,7 +318,7 @@ typedef struct {
     uint32_t run_ms;
     uint32_t cmd_every_ms;   /* 0: none                                     */
     uint32_t cmd_first_ms;   /* the first command, after the run's start    */
-    bool     cmd_random;     /* commands 200 to 3000 ms apart instead       */
+    bool     cmd_random;     /* commands 200 to 3000ms apart instead       */
     uint32_t seed;
     uint32_t stall_at_ms;    /* the loop held for stall_ms from here; 0: no */
     uint32_t stall_ms;
@@ -493,7 +493,7 @@ static model_cfg_t ten_minutes(rule_t rule)
 
 /*
  * Every phase of the command against the poll: the poll's period on this
- * grid is 50 to 70 ms, so first commands 0 to 69 ms after the start, 1 ms
+ * grid is 50 to 70ms, so first commands 0 to 69ms after the start, 1ms
  * apart, put the command in every pass of a poll period.
  */
 #define PHASES 70u
@@ -546,7 +546,7 @@ TEST_CASE(every_sample_is_a_row_with_no_command)
 }
 
 /*
- * What a second, independent 50 ms gate on the row costs on the same grid.
+ * What a second, independent 50ms gate on the row costs on the same grid.
  * Not a rule of the firmware: it is here to hold the reason the log has no
  * gate of its own.
  */
@@ -583,7 +583,7 @@ TEST_CASE(a_second_50_ms_gate_loses_rows_and_compresses_the_time)
 
 TEST_CASE(the_time_is_the_wall_clock_across_the_tick_wrap)
 {
-    /* The wrap 0, 1, 5 and 300 s into the run, and not at all. */
+    /* The wrap 0, 1, 5 and 300s into the run, and not at all. */
     static const uint32_t tick0[] = {
         0u, 0xFFFFFFFFu, 0xFFFFFC18u, 0xFFFFEC78u, 0xFFFB6C20u,
     };
@@ -611,7 +611,7 @@ TEST_CASE(a_stall_shows_as_a_step_of_its_length)
             model_cfg_t cfg = ten_minutes(RULE_SHARED);
             cfg.tick0        = tick0[j];
             cfg.cmd_every_ms = 1750u;
-            cfg.stall_at_ms  = 99990u;       /* 10 ms ahead of the wrap */
+            cfg.stall_at_ms  = 99990u;       /* 10ms ahead of the wrap */
             cfg.stall_ms     = stalls[k];
             model_out_t o;
             model_run(&cfg, &o);
@@ -631,7 +631,7 @@ TEST_CASE(a_stall_shows_as_a_step_of_its_length)
 
 TEST_CASE(a_full_queue_is_counted_and_the_time_goes_on)
 {
-    /* The card takes nothing for 10 s: the queue holds 64 rows of it. */
+    /* The card takes nothing for 10s: the queue holds 64 rows of it. */
     static const uint32_t tick0[] = { 0u, 0xFFFE7960u };
     for (size_t j = 0; j < sizeof(tick0) / sizeof(tick0[0]); ++j) {
         model_cfg_t cfg = ten_minutes(RULE_SHARED);
@@ -644,7 +644,7 @@ TEST_CASE(a_full_queue_is_counted_and_the_time_goes_on)
         CHECK_EQ(o.rows, o.samples);
         CHECK_EQ(o.sent + o.lost, o.rows);
         CHECK(o.lost > 0u);
-        /* 10 s at one sample every 50 to 70 ms, less the 64 queued. */
+        /* 10s at one sample every 50 to 70ms, less the 64 queued. */
         CHECK(o.lost >= 10000u / 70u - QUEUE_ROWS - 2u);
         CHECK(o.lost <= 10000u / 50u - QUEUE_ROWS + 2u);
         CHECK(o.monotonic);
@@ -725,7 +725,7 @@ TEST_CASE(the_run_is_named_by_the_screen_and_none_runs_with_auto_logs_off)
 
 /*
  * main.c's log_follow_runs() and the poll's row, over a bench armed for
- * @p passes passes of 50 ms whose logger queue takes nothing: how many
+ * @p passes passes of 50ms whose logger queue takes nothing: how many
  * runs start, and the alert their ends give -- ALERT_CARD_SLOW for a run
  * none of whose rows got through, ALERT_CARD_GAPS for one that lost some.
  */

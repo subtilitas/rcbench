@@ -64,7 +64,7 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
 };
 
 /**
- * @brief The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty
+ * @brief The Pico form factor: 51.00 x 21.00mm, forty pads on 2.54mm, twenty
  *        a side, pad 1 at the bottom left with the numbers running away from
  *        it.
  *
@@ -572,15 +572,15 @@ uint64_t outbind_reserved_mask(uint16_t board)
 /* ------------------------------------------------------------- protocols */
 
 /**
- * @brief PWM runs at 50 Hz, which every analogue and digital servo takes.
+ * @brief PWM runs at 50Hz, which every analogue and digital servo takes.
  *
- * PPM runs at 40 Hz because eight channels do not fit in a 50 Hz frame.  A
- * channel is at most OUT_CEILING_US (2500 us), and the frame also carries
+ * PPM runs at 40Hz because eight channels do not fit in a 50Hz frame.  A
+ * channel is at most OUT_CEILING_US (2500us), and the frame also carries
  * the mark and a sync gap of at least PPM_SYNC_MIN_US, so eight of them need
- * 8 x 2500 + 300 + 3000 = 23,300 us and 50 Hz gives 20,000.  The IOmcu
+ * 8 x 2500 + 300 + 3000 = 23,300us and 50Hz gives 20,000.  The IOmcu
  * refuses the bind and leaves the slot unbound, having acknowledged the page
  * that asked for it, so the screen shows a binding the bench does not have.
- * 40 Hz gives 25,000 us and binds.
+ * 40Hz gives 25,000us and binds.
  *
  * The DShot rates are bit rates and the two bidirectional entries are the
  * same wire asking for telemetry back.

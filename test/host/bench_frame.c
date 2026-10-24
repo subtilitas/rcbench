@@ -1,6 +1,6 @@
 /*
  * Renders real frames on the host so cachegrind can model the ESP32-S3's data
- * cache (64 KiB, 8-way, 64-byte lines).
+ * cache (64KiB, 8-way, 64-byte lines).
  *
  * On the board the framebuffer lives in PSRAM (pseudo-static random-access
  * memory) behind that cache, so every D1 (level-1 data cache) miss is a
@@ -21,8 +21,8 @@
  *   supply-chrome  the same, repainted in full every frame
  *   sim       the same steady state with the SIMULATION watermark over it,
  *             the only mode that blends rather than writes
- *   frame-idle the bench between samples: the panel refreshes at 39 Hz and
- *             samples arrive at 20 Hz, so about half of all frames have
+ *   frame-idle the bench between samples: the panel refreshes at 39Hz and
+ *             samples arrive at 20Hz, so about half of all frames have
  *             nothing new to plot.  `frame` pushes one sample per frame and
  *             is the worst case, which is what the ceiling guards.
  *   clear     a full-screen clear, for reference

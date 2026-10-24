@@ -184,7 +184,7 @@ float esc_stick_pct(esc_throttle_t pos);
 
 /**
  * @brief The supply voltage a profile asks for, mV: the lowest stated cell
- *        count among its models at 3800 mV a LiPo cell or 1200 mV a NiMH cell,
+ *        count among its models at 3800mV a LiPo cell or 1200mV a NiMH cell,
  *        which is above that model's cut-off and under every model's maximum.
  *        0
  *        when no model states a cell count.
@@ -781,7 +781,7 @@ const esc_manual_t *esc_stick_hand(const esc_stick_t *e);
 /**
  * @brief Power-on to the menu for change @p c, ms, as the run waits it: its
  *        value's entry_hold_ms where the manual gives one (Kontronik SUN PLUS
- *        modes 4 to 6, 5 s), else @p t's entry, and no less than the longest
+ *        modes 4 to 6, 5s), else @p t's entry, and no less than the longest
  *        hold of the profile's at_power_up steps.  @p c NULL: the entry's.
  *
  * @param p  The profile.

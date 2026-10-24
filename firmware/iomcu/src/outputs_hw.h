@@ -85,7 +85,7 @@ void outputs_hw_service(const outputs_t *o);
  * @p parked (bit n, FUNC NONE) holds its pin as an input with its pull-down and
  * renders nothing.  A port in @p dshot (bit n, FUNC DSHOT150 to DSHOT600) is
  * bound to a DShot state machine at @p rate_hz[n] kbit/s and rendered as a
- * plain DShot slot is: a frame every 1 ms while the bank is armed for its
+ * plain DShot slot is: a frame every 1ms while the bank is armed for its
  * channel's role, the throttle, and none while it is not. Any other port's pin
  * is bound to the PWM generator at @p rate_hz[n] frames a second (SERVO PWM).
  * A port whose pin, rate or function moved is released and held again; one that

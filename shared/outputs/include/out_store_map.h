@@ -13,8 +13,8 @@
  * sector is one command to the die, and the die cannot be read while it runs;
  * the IOmcu executes from that die, so an erase per save is an erase
  * window per save with the core answering nothing.  On the bring-up module a
- * save that erased and programmed inside one window measured 19,178 us,
- * against a CAN (Controller Area Network) frame time of about 130 us and two
+ * save that erased and programmed inside one window measured 19,178us,
+ * against a CAN (Controller Area Network) frame time of about 130us and two
  * receive buffers in the controller.  Neither half of that window was timed
  * on its own: a page program is one page rather than one sector, and
  * out_store_last_program_us() and out_store_last_erase_us() are what will

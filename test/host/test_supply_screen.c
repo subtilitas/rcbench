@@ -670,13 +670,13 @@ TEST_CASE(a_tap_on_a_track_sets_a_value_the_supply_takes)
 {
     fresh();
     tap(TRACK_X + TRACK_W / 2, V_ROW_Y);
-    /* About the middle of 3.3 to 21 V, on a 20 mV step above 3.3 V. */
+    /* About the middle of 3.3 to 21V, on a 20mV step above 3.3V. */
     const float v = supply_screen_set_v();
     CHECK(v > 11.5f && v < 12.7f);
     const float steps = (v - 3.3f) / 0.02f;
     CHECK_NEAR(steps, roundf(steps), 1e-2f);
 
-    /* The current track the same, on its 50 mA step. */
+    /* The current track the same, on its 50mA step. */
     tap(TRACK_X + TRACK_W - 1, I_ROW_Y);
     CHECK_NEAR(supply_screen_set_i(), 5.0f, 1e-4f);
 }

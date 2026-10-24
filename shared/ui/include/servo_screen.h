@@ -101,7 +101,7 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  *
  * The commanded value follows the bench.  At every arm it becomes the rest
  * the pins drive -- outputs_role_rest() across the range a command carries,
- * 1500 us for STANDARD PWM and 760 us for NARROW 760 -- and without
+ * 1500us for STANDARD PWM and 760us for NARROW 760 -- and without
  * feedback the horn is drawn there at once.  While the bench is disarmed no
  * input changes it: the dial, the knob, CENTRE, SWEEP and
  * servo_screen_set_commanded() post nothing and move nothing, and the value
@@ -217,7 +217,7 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
  * model's; with the model (supply_screen_model()) the MODELLED pill sits on
  * the plot's top-left corner.  SERVO_SOURCE_MODEL until the first call.  The
  * name takes its cells from the readings beside it: beside INA3221 CH1 they
- * are 60, 64 and 56 px wide, and a power wider than that is drawn in whole
+ * are 60, 64 and 56px wide, and a power wider than that is drawn in whole
  * watts.
  *
  * The row is `---` and a reading on the line `--` while the meter has no
@@ -272,7 +272,7 @@ void servo_screen_source_why(servo_source_why_t why);
 void servo_screen_source_dropped(servo_source_why_t why, uint32_t at);
 
 /**
- * One 50 ms window of INA3221 CH1 (sense_link_take_win()), each one once, in
+ * One 50ms window of INA3221 CH1 (sense_link_take_win()), each one once, in
  * the order they arrive, with the meter @p id and its change count
  * @p changes as decided in the poll that took the window.
  *
@@ -304,8 +304,8 @@ float servo_screen_power_sample(int series, int back);
  * @p target / @p gpio / @p pwm (as servo_screen_set_drive()) and the PWM
  * TARGET setting @p setting (SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT, the
  * target the panel asks for).  The first line names the target the
- * IOmcu holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
- * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
+ * IOmcu holds, not the setting: "In force: OUTPUTS run at 50Hz.",
+ * "In force: PROG PORT GP13 runs at 560Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
  * says "The TARGET chosen is not active." while the setting and the
@@ -478,7 +478,7 @@ void servo_screen_set_commanded(float deg);
 /*
  * START TEST on TEST's AUTOMATIC TEST card runs servo_test.h's automatic
  * test from this screen: a two-second hold, or HV SERVOS ONLY held for two
- * seconds when a step is above 6.0 V.  It needs an armed bench and a supply that answers,
+ * seconds when a step is above 6.0V.  It needs an armed bench and a supply that answers,
  * and it commands the servo and SUPPLY's set points and output itself.
  * Progress and the result are shown on its card and in LIVE's box.
  */

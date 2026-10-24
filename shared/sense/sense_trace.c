@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief CH1's 1 ms samples as text lines: core 0's side.
+ * @brief CH1's 1ms samples as text lines: core 0's side.
  *
  * Core 1's feed is sense_trace_feed.c.  See sense_trace.h.
  *
@@ -88,7 +88,7 @@ int32_t sense_trace_code(int32_t ua, uint32_t shunt_uohm)
         return 0;
     }
     /* ina3221_current_ua() cuts code * 40e6 / R towards 0; rounding the
-     * product back gives the code for every shunt up to 20 Ω. */
+     * product back gives the code for every shunt up to 20Ω. */
     const int64_t num = (int64_t)ua * (int64_t)shunt_uohm;
     const int64_t half = (num >= 0) ? 20000000 : -20000000;
     return (int32_t)((num + half) / 40000000);
@@ -185,7 +185,7 @@ static bool changes_setup(const sense_trace_out_t *o,
  * The console may owe lines of a trace long over.
  *
  * @param o The output state.
- * @param t The time, in 0.1 ms.
+ * @param t The time, in 0.1ms.
  * @return true when a trace is under way, not stopped, and t lies before its
  *       end.
  */
@@ -199,7 +199,7 @@ static bool open_at(const sense_trace_out_t *o, uint32_t t)
  * @brief Move the trace's end time forward, never back.
  *
  * @param o The output state.
- * @param end_t Candidate end time, in 0.1 ms.
+ * @param end_t Candidate end time, in 0.1ms.
  */
 static void extend(sense_trace_out_t *o, uint32_t end_t)
 {
@@ -215,8 +215,8 @@ static void extend(sense_trace_out_t *o, uint32_t end_t)
  * @param n The count to add to.
  * @param span The first and last times of the dropped triggers.
  * @param add Number of triggers dropped.
- * @param first Time of the first one, in 0.1 ms.
- * @param last Time of the last one, in 0.1 ms.
+ * @param first Time of the first one, in 0.1ms.
+ * @param last Time of the last one, in 0.1ms.
  */
 static void lost_add(uint32_t *n, uint32_t span[2], uint32_t add,
                      uint32_t first, uint32_t last)
@@ -240,11 +240,11 @@ static void lost_add(uint32_t *n, uint32_t span[2], uint32_t add,
  *
  * @param o The output state.
  * @param kind The trigger kind.
- * @param t Time of the mark, in 0.1 ms.
+ * @param t Time of the mark, in 0.1ms.
  * @param at_us Time of the trigger, in µs.
  * @param ch The channel.
  * @param us The pulse, in µs.
- * @param cmd_t Time of the command, in 0.1 ms.
+ * @param cmd_t Time of the command, in 0.1ms.
  * @return true when the mark was queued; false when the queue is full.
  */
 static bool mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
@@ -374,9 +374,9 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
  * @param o The output state.
  * @param kind The mark kind.
  * @param ch The channel.
- * @param t Time of the mark, in 0.1 ms.
+ * @param t Time of the mark, in 0.1ms.
  * @param us The pulse, in µs.
- * @param cmd_t Time of the command, in 0.1 ms.
+ * @param cmd_t Time of the command, in 0.1ms.
  */
 static void wait_slew(sense_trace_out_t *o, sense_trace_trig_t kind,
                       uint16_t ch, uint32_t t, uint16_t us, uint32_t cmd_t)
@@ -783,7 +783,7 @@ static bool next_starts(const sense_trace_out_t *o)
  * count stays here.
  *
  * @param o The output state.
- * @param cut The cut time, in 0.1 ms.
+ * @param cut The cut time, in 0.1ms.
  * @return true when the dropped marks lie past the cut and the next trace
  *       starts.
  */
@@ -797,7 +797,7 @@ static bool lost_past(const sense_trace_out_t *o, uint32_t cut)
  * @brief Test whether all the dropped mark records lie before a cut time.
  *
  * @param o The output state.
- * @param cut The cut time, in 0.1 ms.
+ * @param cut The cut time, in 0.1ms.
  * @return true when lost_past() holds and the first dropped mark lies past the
  *       cut.
  */
@@ -816,9 +816,9 @@ typedef enum { NOT_YET = 0, PASSED, STALLED } past_t;
 /**
  * @brief Classify a record time against what has been fed and the clock.
  *
- * @param fed_t The time core 1 has fed, in 0.1 ms.
- * @param now_t The current time, in 0.1 ms.
- * @param t The record time, in 0.1 ms.
+ * @param fed_t The time core 1 has fed, in 0.1ms.
+ * @param now_t The current time, in 0.1ms.
+ * @param t The record time, in 0.1ms.
  * @return PASSED once fed_t has reached t, STALLED once now_t is
  *       SENSE_TRACE_STALL_MS past t, else NOT_YET.
  */
@@ -850,7 +850,7 @@ static void line_lost(uint32_t n, line_t *l)
  * Changes nothing else.
  *
  * @param tr The trace.
- * @param now_t The current time, in 0.1 ms.
+ * @param now_t The current time, in 0.1ms.
  * @param l Receives the line.
  * @param ahead Receives the count of dropped records that no record carries
  *       yet.
@@ -993,7 +993,7 @@ static void to_idle(sense_trace_t *tr)
  * on its time.
  *
  * @param tr The trace.
- * @param cut The time the trace ended, in 0.1 ms.
+ * @param cut The time the trace ended, in 0.1ms.
  */
 static void ended(sense_trace_t *tr, const uint32_t *cut)
 {

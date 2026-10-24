@@ -10,7 +10,7 @@
  *
  *   LISTEN  after every reset.  GP4 and GP5 are inputs and nothing answers
  *           on the bus.  `wiring` asks the glue to listen to the bus for
- *           500 ms and report which line carries SCL; `confirm scl=GP5`
+ *           500ms and report which line carries SCL; `confirm scl=GP5`
  *           after an `ok` verdict asks it to attach the I2C target.
  *   ACTIVE  the target answers at 0x14 and gestures run.
  *
@@ -105,7 +105,7 @@ typedef enum {
 
 /** @brief What the status LED shows. */
 typedef enum {
-    INJ_LED_LISTEN = 0,  /**< white, blinking 1 Hz                       */
+    INJ_LED_LISTEN = 0,  /**< white, blinking 1Hz                       */
     INJ_LED_WIRING_BAD,  /**< yellow: swapped, low or noise              */
     INJ_LED_OFF,         /**< active, no read for INJ_LIVE_MS            */
     INJ_LED_POLLED,      /**< dim green: the panel reads 0x14            */
@@ -130,7 +130,7 @@ typedef struct {
     uint32_t frames;         /**< frames read that changed it            */
     uint16_t px;             /**< the last point published: column       */
     uint16_t py;             /**< the last point published: row          */
-    bool     slowed;         /**< swipe: the 100 px step stretched it    */
+    bool     slowed;         /**< swipe: the 100px step stretched it    */
     bool     end_published;  /**< swipe: the frame at (x1, y1)           */
     bool     end_acked;      /**< swipe: that frame was read             */
 } inj_contact_t;
@@ -198,7 +198,7 @@ void injector_poll(injector_t *in, uint32_t now_ms);
 bool injector_take_wiring(injector_t *in);
 
 /**
- * @brief The glue's 500 ms of listening, classified.
+ * @brief The glue's 500ms of listening, classified.
  * @param in The injector.
  * @param r The verdict.
  */

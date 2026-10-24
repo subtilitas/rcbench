@@ -6,19 +6,19 @@
  * If the layout moves these move with it.  Taken by files_rig.h, the
  * screen's suites and render_screen.c.
  *
- *   - two panes 500 px wide at x 8 and x 516;
- *   - a pane's header row y 4 to 52: UP 312 px from the pane's left, PREV
- *     and NEXT 88 x 48 px at its right end;
- *   - a pane's list from y 60: 6 rows under a 30 px heading at a pitch of
- *     48 px, 420 px wide from 8 px in; the scroll bar 56 px wide, 8 px
- *     in from the pane's right, from y 90, 284 px tall;
+ *   - two panes 500px wide at x 8 and x 516;
+ *   - a pane's header row y 4 to 52: UP 312px from the pane's left, PREV
+ *     and NEXT 88 x 48px at its right end;
+ *   - a pane's list from y 60: 6 rows under a 30px heading at a pitch of
+ *     48px, 420px wide from 8px in; the scroll bar 56px wide, 8px
+ *     in from the pane's right, from y 90, 284px tall;
  *   - the message line y 388 to 436;
  *   - the footer y 440 to 492: OPEN, COPY, MOVE, RENAME, DELETE, NEW, INFO
- *     118 px wide from x 8 at a pitch of 124 px, RESCAN 140 px at x 876;
+ *     118px wide from x 8 at a pitch of 124px, RESCAN 140px at x 876;
  *   - the DELETE question's CANCEL x 186 and DELETE x 538, the progress
- *     box's CANCEL x 362, 300 x 56 px from y 304; INFO's CLOSE x 362,
- *     300 x 56 px from y 364;
- *   - NEW's choice from x 446, y 312: FOLDER and TEXT FILE, 56 px rows.
+ *     box's CANCEL x 362, 300 x 56px from y 304; INFO's CLOSE x 362,
+ *     300 x 56px from y 364;
+ *   - NEW's choice from x 446, y 312: FOLDER and TEXT FILE, 56px rows.
  *
  * SPDX-License-Identifier: MIT
  */

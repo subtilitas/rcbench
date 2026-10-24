@@ -18,17 +18,17 @@
  * copy of the program, so a block of 32 words holds 1 line and the RP2350's
  * 3 blocks hold up to 3.  No interrupt and no PIO interrupt flag is used.
  * PRECHARGE claims 1 more state machine with the sampler's program, 7
- * words at 150 MHz (hitec_pre_program()), in a block with room for it, and
+ * words at 150MHz (hitec_pre_program()), in a block with room for it, and
  * 1 more DMA channel, at the open; the close gives them back.
  *
  * Clock.  The divider is computed from clock_get_hz(clk_sys) at the open,
  * 16 state machine cycles a bit.  The open is refused when the divider would
- * be below 4 or the bit time more than 0.05 % off.  The system clock must
+ * be below 4 or the bit time more than 0.05% off.  The system clock must
  * not change while the line is open.
  *
  * Pad.  Open and outside a transaction the pad is an input: classic with
  * its pull-down on, the D series with its pull-up on and the input
- * inverted.  The internal pulls are 50 to 80 kOhm; the D series needs a
+ * inverted.  The internal pulls are 50 to 80kOhm; the D series needs a
  * pull-up on the board.  In a transaction the pad drives as the stream
  * says and is released at the end of the transmit, at the end of the
  * answer, at the end of the window, at an abort and at a restart.  The
@@ -39,7 +39,7 @@
  * (hitec_pre_tx_xfer()).  The first poll() that finds the request ended
  * hands the pad to the sampler: the pin's control and pad registers are
  * kept, the pin goes to the sampler's PIO block with no input override,
- * 2 mA drive and slow slew, and a DMA channel writes the samples to the
+ * 2mA drive and slow slew, and a DMA channel writes the samples to the
  * line object.  Each poll() decodes the words written since the last one
  * (hitec_pre_step()).  At the decoder's end, at the last word, at an abort
  * and at the close the sampler stops with the pad released, and the
@@ -47,7 +47,7 @@
  * from its start; one that answers is refused, and so is a window above
  * HITEC_PRE_WINDOW_MAX_US.  A transaction with no window and a LEVEL run as
  * in PULL-UP.  The bytes' times carry the sampler's start, read off the
- * microsecond timer: within 1 us.
+ * microsecond timer: within 1us.
  *
  * Every function is called from one context.  hitec_line_poll() ends a
  * transaction whose state machine still runs HITEC_LINE_GRACE_US after the

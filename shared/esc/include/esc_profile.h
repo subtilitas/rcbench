@@ -46,7 +46,7 @@ extern "C" {
 /**
  * @brief The largest file the parser takes, in bytes.
  *
- * The largest profile of record is about 21 KiB.
+ * The largest profile of record is about 21KiB.
  */
 #define ESC_PROFILE_MAX_BYTES 65536u
 

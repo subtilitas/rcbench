@@ -31,7 +31,7 @@
  * only, so the file is opened where the suite runs. */
 #define HOST_FILE "test_storage_swap.tmp"
 
-/* The SK64G of the station: exFAT, 61002 MB, its own label. */
+/* The SK64G of the station: exFAT, 61002MB, its own label. */
 static void sk64g_in(void)
 {
     card_in(FS_EXFAT, 61002ull * 1024u * 1024u);

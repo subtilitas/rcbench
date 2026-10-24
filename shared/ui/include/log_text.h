@@ -35,7 +35,7 @@
 extern "C" {
 #endif
 
-/** @brief The most of a file the view holds: 32 KiB. */
+/** @brief The most of a file the view holds: 32KiB. */
 #define LOG_TEXT_MAX ((size_t)32u * 1024u)
 
 /**

@@ -19,7 +19,7 @@
 #include "link_msg.h"
 #include "link_pages.h"
 
-/* The INA3221's shunt full scale, 163.8 mV, in uV: 4095 steps of 40 uV. */
+/* The INA3221's shunt full scale, 163.8mV, in uV: 4095 steps of 40 uV. */
 #define I3221_FULL_SCALE_UV 163800uL
 
 /* The largest current a register of signed mA carries. */
@@ -62,7 +62,7 @@ void sense_page_init(sense_page_t *p)
  * one rule, the driver's, so the page takes no set-up the part refuses.
  *
  * @param shunt_uohm The shunt in micro-ohms.
- * @param max_da     The maximum current in units of 10 mA.
+ * @param max_da     The maximum current in units of 10mA.
  * @return true when ina228_calibrate() accepts the set-up.
  */
 static bool i228_calibrates(uint16_t shunt_uohm, uint16_t max_da)
@@ -77,7 +77,7 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm)
     if (shunt_dmohm == 0u) {
         return 0u;
     }
-    /* uV / (0.1 mOhm) = 10 mA a step, so uV * 10 / dmOhm is mA. */
+    /* uV / (0.1mOhm) = 10mA a step, so uV * 10 / dmOhm is mA. */
     return (I3221_FULL_SCALE_UV * 10u) / shunt_dmohm;
 }
 
@@ -419,7 +419,7 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
         || f[3] == 0u || f[3] > MA_MAX) {
         return LINK_NACK_BAD_VALUE;
     }
-    /* CH1 only: the schedule samples CH1, its FAST channel, every 1 ms,
+    /* CH1 only: the schedule samples CH1, its FAST channel, every 1ms,
      * fast enough to time a move, and the others in turn. */
     if (ch != LINK_SS_CAP_CH) {
         return LINK_NACK_BAD_VALUE;
@@ -727,7 +727,7 @@ static void publish_sense(uint16_t *r, const sense_snap_t *s,
     uint32_t charge = 0u;
     uint32_t energy = 0u;
     if (totals_ok(s, run_gen)) {
-        /* 0.01 mAh is 36 mC, and 0.01 Wh is 36 J. */
+        /* 0.01mAh is 36 mC, and 0.01Wh is 36 J. */
         int64_t c = div_round(s->run.charge_uc, 36000);
         if (c > INT32_MAX) {
             c = INT32_MAX;
@@ -970,7 +970,7 @@ void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
             b->power = b->voltage * b->current;
         }
     }
-    /* The peaks of the run in force, from the 500 Hz samples, kept when
+    /* The peaks of the run in force, from the 500Hz samples, kept when
      * the part drops out within it. */
     const sense_run_t *r = &s->run;
     const bool run = fresh && s->run_gen == run_gen;
@@ -983,7 +983,7 @@ void sense_page_bench(sense_page_t *p, const sense_snap_t *s,
     b->charge_mah = 0.0f;
     b->energy_wh  = 0.0f;
     if (fresh && totals_ok(s, run_gen)) {
-        /* 1 mAh is 3.6 C; 1 Wh is 3600 J. */
+        /* 1mAh is 3.6C; 1Wh is 3600 J. */
         b->charge_mah = (float)r->charge_uc / 3.6e6f;
         b->energy_wh  = (float)r->energy_mj / 3.6e6f;
         b->flags     |= (uint16_t)LINK_BN_TOTALS_OK;

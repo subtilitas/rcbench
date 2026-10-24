@@ -2,7 +2,7 @@
  * @file
  * @brief The panel's half of the SERVO screen on the link: a command onto the
  *        IOmcu's CHAN_CFG, CHANNELS, SERVO and PROG pages, the position said
- *        again every SERVO_HOLD_MS (100 ms), the release owed while a surface
+ *        again every SERVO_HOLD_MS (100ms), the release owed while a surface
  *        holds a position, the frame rate and the sweep.
  *
  * Every exchange runs over a link_port_t, so the sequences the panel sends
@@ -158,7 +158,7 @@ void servo_link_let_go(void);
 /**
  * @brief Every pass: settle a rate not known while a release is owed or the
  *        bank is armed, pay an owed release, and say a held position again once
- *        SERVO_HOLD_MS (100 ms) has passed.
+ *        SERVO_HOLD_MS (100ms) has passed.
  *
  * Nothing while @p link_up is false.
  *

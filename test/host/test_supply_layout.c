@@ -19,7 +19,7 @@
 #include "supply_screen_rig.h"
 #include "ui_slider.h"
 
-/** @brief The body row 4 px over the alert band: no text reaches it. */
+/** @brief The body row 4px over the alert band: no text reaches it. */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
 /** @brief The rectangle of the body that safe_at() names as a stop,
@@ -52,7 +52,7 @@ static gfx_rect_t stop_bounds(void)
 /*
  * On, OUTPUT OFF is the one stop of the screen: UI_TAP_MIN or taller,
  * where its danger-red fill is drawn, at the CONTROL card's foot, and its
- * bottom row 4 px or more above the alert band.  Off, OUTPUT ON is no stop.
+ * bottom row 4px or more above the alert band.  Off, OUTPUT ON is no stop.
  */
 TEST_CASE(output_off_acts_where_it_is_drawn_and_is_a_finger_tall)
 {
@@ -226,7 +226,7 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         CHECK_EQ(ink_under_the_alert_band(), 0);
         tap(SU_PLOT_TAB_X, SU_PANE_Y);
 
-        /* +0.1 V on the live output: the question. */
+        /* +0.1V on the live output: the question. */
         tap(SU_UP_X, SU_V_ROW_Y);
         CHECK_EQ(ink_under_the_alert_band(), 0);
         tap(DISCARD_X, ASK_Y);

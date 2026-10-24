@@ -1,6 +1,6 @@
 /**
  * @file test_nav_alert.c
- * @brief The shell's alerts: the band's two rows, the 30 s clear, slots taken back or
+ * @brief The shell's alerts: the band's two rows, the 30s clear, slots taken back or
  * replaced, the tap that clears one, and what the band shows.
  *
  * Cases:
@@ -81,13 +81,13 @@ TEST_CASE(a_two_row_alert_fits_two_rows_of_the_band)
     CHECK(seen > 0);
 }
 
-/** @brief The alert band's taps: 4 px under its top edge, over the menu's
- *         lower tiles, which end 10 px above the panel's foot. */
+/** @brief The alert band's taps: 4px under its top edge, over the menu's
+ *         lower tiles, which end 10px above the panel's foot. */
 #define ALERT_TAP_Y (UI_ALERT_Y + 4)
 
-/* A point on the alert band, 4 px under its top edge, that, with no alert
+/* A point on the alert band, 4px under its top edge, that, with no alert
  * there, opens a screen from the overview: the tap the band must keep from
- * the screen beneath.  The menu's tiles end 10 px above the panel's foot.
+ * the screen beneath.  The menu's tiles end 10px above the panel's foot.
  * -1 when the overview has nothing there. */
 static int alert_band_x_over_a_tile(void)
 {
@@ -101,7 +101,7 @@ static int alert_band_x_over_a_tile(void)
     return -1;
 }
 
-/* The frame the alert arrives in, then 30 s. */
+/* The frame the alert arrives in, then 30s. */
 static void expire_alert(void)
 {
     ui_router_tick(0.0f);
@@ -460,7 +460,7 @@ static int alert_ink(int y0, int y1)
     return ink;
 }
 
-/* An alert longer than a row's 97 cells takes two rows of 20 px from 2 px
+/* An alert longer than a row's 97 cells takes two rows of 20px from 2px
  * under the band's top edge; one that fits a row is centred in the band. */
 TEST_CASE(a_long_alert_draws_on_two_rows)
 {

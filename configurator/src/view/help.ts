@@ -34,7 +34,7 @@ function shortName(view: View, id: PartId): string {
   return part ? tx(view.lang, part.short) : id;
 }
 
-/** A part a rule alone adds, with the parts that make it unneeded: "2 × 2.2 kΩ (only without INA3221)". */
+/** A part a rule alone adds, with the parts that make it unneeded: "2 × 2.2kΩ (only without INA3221)". */
 function neededName(view: View, r: ResolvedPart): string {
   const name = shortName(view, r.part.id);
   if (r.addedBy.some((reason) => reason.kind !== 'rule')) return name;
@@ -95,11 +95,11 @@ function needsLines(view: View, setup: Setup, self: PartId | null, forces: Recor
   return lines;
 }
 
-/** The first letter in upper case: "supply, 3.3 V" gives "Supply, 3.3 V". */
+/** The first letter in upper case: "supply, 3.3V" gives "Supply, 3.3V". */
 const upper = (lang: Lang, s: string): string => s.charAt(0).toLocaleUpperCase(lang) + s.slice(1);
 
 /**
- * The supply wires of a part in the setup with it, each with its note: the logic supply ("Supply, 3.3 V:
+ * The supply wires of a part in the setup with it, each with its note: the logic supply ("Supply, 3.3V:
  * IOmcu 3V3 (pad 36).") and the power input ("PD in: T-plug OUT, USB-C socket."), the wires of class logic and power that
  * end on the part.
  */

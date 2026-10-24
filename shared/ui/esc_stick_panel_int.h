@@ -32,14 +32,14 @@
 
 /**
  * @brief The profile list: SP_ROWS rows to a page, UI_TAP_MIN tall at an
- *        SP_ROW_P pitch from SP_ROW_Y0, as wide as the body less 20 px a
- *        side; the footer's line under them ends 4 px above the alert
+ *        SP_ROW_P pitch from SP_ROW_Y0, as wide as the body less 20px a
+ *        side; the footer's line under them ends 4px above the alert
  *        band.
  */
 #define SP_MAX     (128)
 #define SP_ROWS    7                          /**< rows to a page      */
 #define SP_ROW_Y0  CARD_Y                     /**< the first row's top */
-#define SP_ROW_H   UI_TAP_MIN                 /**< a row, 48 px        */
+#define SP_ROW_H   UI_TAP_MIN                 /**< a row, 48px        */
 #define SP_ROW_P   56                         /**< its pitch           */
 #define SP_ROW_X   (PAD + 12)                 /**< a row's left        */
 #define SP_ROW_TY  ((SP_ROW_H - 20) / 2)      /**< its text, from its top */
@@ -48,9 +48,9 @@
 
 /**
  * @brief A model's row, from its left edge: the name in SP_NAME_CELLS
- *        cells from 12 px, the current and the voltage right-aligned in
- *        56 and 64 px, and the family.  Right of the family, what the
- *        profile is or why it does not run: 260 px, or up to SP_WHY_CELLS
+ *        cells from 12px, the current and the voltage right-aligned in
+ *        56 and 64px, and the family.  Right of the family, what the
+ *        profile is or why it does not run: 260px, or up to SP_WHY_CELLS
  *        where a reason needs them, the family giving way.
  */
 #define SP_NAME_CELLS 30    /**< a model's name, cells          */

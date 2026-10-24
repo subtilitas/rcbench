@@ -14,7 +14,7 @@
 
 /**
  * @brief The longest window, lead and level fit their fields at the fastest bit
- *        rate, with the divider 0.05 % short.
+ *        rate, with the divider 0.05% short.
  */
 _Static_assert((uint64_t)HITEC_TIME_MAX_US * HITEC_D_BIT_RATE
                    * HITEC_PIO_CYCLES_PER_BIT / HITEC_PIO_TICK_CYCLES
@@ -270,7 +270,7 @@ unsigned hitec_pio_tx(const hitec_pio_clock_t *clock, uint8_t drive,
                    + (uint64_t)bits * HITEC_PIO_CYCLES_PER_BIT);
     /* The hand-over and the pulls, the lead and the bits, the waiting with
      * a transition per byte, the bytes, the answer, the drain, one bit of
-     * slack.  In us straight from the cycles: a lead and a window of 4 s
+     * slack.  In us straight from the cycles: a lead and a window of 4s
      * each are more ns than a uint32_t holds. */
     span = 4u + 2u * lead_count + HITEC_PIO_LEAD_CYCLES
            + (uint64_t)bits * HITEC_PIO_CYCLES_PER_BIT

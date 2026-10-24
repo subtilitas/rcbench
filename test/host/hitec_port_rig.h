@@ -6,7 +6,7 @@
  *
  * For test_hitec_port.c and test_hitec_port_stop.c.
  *
- * The clock: a pass is 1 ms on the port's clock and 1000 us on the
+ * The clock: a pass is 1ms on the port's clock and 1000us on the
  * driver's.
  *
  * SPDX-License-Identifier: MIT
@@ -143,7 +143,7 @@ static inline void servo_answers(const hitec_xfer_t *x)
         } else {
             return;
         }
-        /* 520 us from the start of the master's last byte. */
+        /* 520us from the start of the master's last byte. */
         reply_bytes(r, 2u, 520000u - hitec_bits_ns(HITEC_CLASSIC, 9u));
     } else if (x->family == HITEC_D && x->n_tx == HITEC_D_READ_LEN
                && x->tx[0] == HITEC_D_HEADER_REQUEST) {

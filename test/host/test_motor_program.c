@@ -36,8 +36,8 @@
 #define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* From motor_spots.h: the strip's tabs, 150 px a tab 4 px apart from x 9,
- * 40 px high from y 8; the CONTROL card's ARM; PROGRAM's first row, in the
+/* From motor_spots.h: the strip's tabs, 150px a tab 4px apart from x 9,
+ * 40px high from y 8; the CONTROL card's ARM; PROGRAM's first row, in the
  * page from y 56. */
 #define TAB_Y       P(MO_TAB_Y)
 #define TAB_X(i)    MO_TAB_X(i)
@@ -368,8 +368,8 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
 /*
  * The widest strip fits the row in every language: every pin bound (the
  * target cut to its 26 cells, "+N" at the end), the widest supply reading
- * (99.99 V and 99.99 A, beyond the 21 V and 5 A a PPS source gives) and
- * ARMED.  The drawn strip puts 8 + 24 + 24 px between its four parts, the
+ * (99.99V and 99.99A, beyond the 21V and 5A a PPS source gives) and
+ * ARMED.  The drawn strip puts 8 + 24 + 24px between its four parts, the
  * text 1 + 3 + 3 spaces: the same width.
  */
 TEST_CASE(the_widest_strip_fits_the_row_in_both_languages)
@@ -408,7 +408,7 @@ TEST_CASE(the_widest_strip_fits_the_row_in_both_languages)
             }
         }
     }
-    /* The strip's line in PROG_FULL_STRIP_FONT, 10 px cells, ends 12 px
+    /* The strip's line in PROG_FULL_STRIP_FONT, 10px cells, ends 12px
      * inside the body's right edge, and above the session's area. */
     CHECK(PROG_FULL_STRIP_X + PROG_FULL_STRIP_CELLS * 10 <= W - 12);
     CHECK_EQ(PROG_FULL_STRIP_FONT->width, 10);
@@ -512,7 +512,7 @@ TEST_CASE(leaving_with_a_session_open_disarms_and_closes_it)
 }
 
 /*
- * PROGRAM's list on an armed bench, the throttle at 40 %: a second finger
+ * PROGRAM's list on an armed bench, the throttle at 40%: a second finger
  * opens ESC STICK while the first holds DISARM.  The press on DISARM has
  * asked for SAFE, and the opening asks again while the bench has not
  * answered; the session takes the first finger's release.  An opening with

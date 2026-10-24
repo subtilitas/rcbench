@@ -43,7 +43,7 @@ TEST_CASE(a_two_stage_short_long_menu_stores_what_was_asked)
     ended_safe();
 }
 
-/* Readings at the PD mini's 100 ms with jitter up to the 200 ms the default
+/* Readings at the PD mini's 100ms with jitter up to the 200ms the default
  * timing allows. */
 TEST_CASE(a_slow_jittery_supply_still_counts_right)
 {
@@ -649,9 +649,9 @@ TEST_CASE(the_green_light_shows_every_pulse_for_its_minimum)
 /* ------------------------------------------- limits to the reading */
 
 /*
- * The supply is off at a current of ESC_STICK_OFF_MA and not 1 mA above
- * it: a module that reads 20 mA while off is taken as off and the run
- * stores its value; one that reads 21 mA never is, and the run ends with
+ * The supply is off at a current of ESC_STICK_OFF_MA and not 1mA above
+ * it: a module that reads 20mA while off is taken as off and the run
+ * stores its value; one that reads 21mA never is, and the run ends with
  * SUPPLY STAYS ON before anything is powered.
  */
 TEST_CASE(the_supply_is_off_at_20_ma_and_not_at_21)
@@ -756,7 +756,7 @@ static uint32_t ms_to_the_menu(void)
 
 /*
  * Readings that stop in a powered phase end the run ESC_STICK_STALE_MS
- * after the last one: still running at 1000 ms, ended at 1001 ms, and
+ * after the last one: still running at 1000ms, ended at 1001ms, and
  * ended safe.
  */
 static void readings_stop_in_the_menu(uint32_t t0)
@@ -781,7 +781,7 @@ static void readings_stop_in_the_menu(uint32_t t0)
 
 TEST_CASE(readings_that_stop_end_the_run_at_1001_ms_across_the_tick_wrap)
 {
-    /* The last reading 500 ms before the wrap. */
+    /* The last reading 500ms before the wrap. */
     at_tick_0_and_before_the_wrap(readings_stop_in_the_menu,
                                   ms_to_the_menu() + 500u);
 }
@@ -789,7 +789,7 @@ TEST_CASE(readings_that_stop_end_the_run_at_1001_ms_across_the_tick_wrap)
 /*
  * The same with the supply off and a person asked to act at the ESC: no
  * reading for ESC_STICK_STALE_MS says the supply is still off, and the run
- * ends 1001 ms after the last one with nothing powered.
+ * ends 1001ms after the last one with nothing powered.
  */
 static void readings_stop_while_a_step_is_asked(uint32_t t0)
 {
@@ -824,7 +824,7 @@ static void readings_stop_while_a_step_is_asked(uint32_t t0)
 TEST_CASE(readings_that_stop_before_the_power_end_the_run_at_1001_ms)
 {
     /* How long the run takes to ask for the step, for a last reading
-     * 500 ms before the wrap. */
+     * 500ms before the wrap. */
     static const esc_manual_t k[] = {
         { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
     };

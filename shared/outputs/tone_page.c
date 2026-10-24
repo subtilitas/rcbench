@@ -63,7 +63,7 @@ uint64_t tone_page_pins(const tone_page_t *p)
  * @brief The pins that are ADC inputs on either part the image may run on:
  *        GP26 to GP29 of the RP2350A, GP40 to GP47 of the RP2354B.
  *
- * Rated IOVDD + 0.5 V, not fault tolerant.
+ * Rated IOVDD + 0.5V, not fault tolerant.
  *
  * @param pin GPIO number.
  * @return true for an ADC pin, false otherwise.

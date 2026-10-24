@@ -39,7 +39,7 @@
  * it reads off (HITEC_PORT_SUPPLY_MS at most, else
  * LINK_HITEC_RESULT_SUPPLY), keeps it off for the staged off time, asks it
  * on at the staged LINK_HITEC_SUPPLY_MIN_MV to LINK_HITEC_SUPPLY_MAX_MV
- * (4800 to 6000 mV), and starts the staged listen in the same pass.  A
+ * (4800 to 6000mV), and starts the staged listen in the same pass.  A
  * supply that refuses the ON gives LINK_HITEC_RESULT_SUPPLY; a listen the
  * driver refuses gives LINK_HITEC_RESULT_START with the supply on.  From
  * the OFF to the end of the listen the SUPPLY page is held
@@ -112,10 +112,10 @@ extern "C" {
 #endif
 
 /** @brief The port renders no pulse this long before the generator gives up the
- *  pin: 2 frames at 40 Hz, the lowest PWM rate. */
+ *  pin: 2 frames at 40Hz, the lowest PWM rate. */
 #define HITEC_PORT_STOP_MS 50u
 /** @brief A transaction still running this long is aborted: longer than the
- *        longest one the driver takes, a 4 s lead and a 4 s window with 16
+ *        longest one the driver takes, a 4s lead and a 4s window with 16
  *  bytes. */
 #define HITEC_PORT_BUSY_MS 10000u
 /** @brief The PD mini has this long to read off after a POWER asked it off. */

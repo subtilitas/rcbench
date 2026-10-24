@@ -491,7 +491,7 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* How many cells @p s takes, as the 8 px face draws it. */
+/* How many cells @p s takes, as the 8px face draws it. */
 static int cells_of(const char *s)
 {
     int n = 0;
@@ -501,9 +501,9 @@ static int cells_of(const char *s)
     return n;
 }
 
-/* A run's reason is a line of the SERVO screen's result box, 250 px for
+/* A run's reason is a line of the SERVO screen's result box, 250px for
  * 31 cells, and the two lines that say STALL AT cannot be reached go
- * across the settings card under START TEST, 468 px for 58 cells with
+ * across the settings card under START TEST, 468px for 58 cells with
  * their numbers in: in every language. */
 TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
 {

@@ -7,17 +7,17 @@
  * If the layout moves these move with it.  Taken by servo_rig.h and
  * render_screen.c.
  *
- *   - the strip: LIVE, TEST, PROGRAM, SETTINGS from x 9, 150 px each, 4 px
+ *   - the strip: LIVE, TEST, PROGRAM, SETTINGS from x 9, 150px each, 4px
  *     apart, y 8 to 48 (SV_STRIP_*);
  *   - PROGRAM's list (prog_registry.h) in the page area from y 56: rows 34
- *     px each and 40 px apart; the first row is the KST and Chaservo
+ *     px each and 40px apart; the first row is the KST and Chaservo
  *     programmer;
- *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 18, 197 px each,
- *     y 64 to 104, and their rows from y 108, 48 px tall and 52 px apart,
+ *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 18, 197px each,
+ *     y 64 to 104, and their rows from y 108, 48px tall and 52px apart,
  *     the left column from x 18, the right from x 323;
  *   - TEST's two run cards from y 60 and 264, each with START and SETTINGS
- *     60 px down; a run's settings' rows in three columns of 193 px from x
- *     18, 203 px apart, each its label over its 48 px value, 71 px apart
+ *     60px down; a run's settings' rows in three columns of 193px from x
+ *     18, 203px apart, each its label over its 48px value, 71px apart
  *     from y 112; its CLOSE x 478 to 618, y 60 to 108;
  *   - the output card from SV_RCARD_X, its inner column SV_RC_X and
  *     SV_RC_W; CENTRE, SWEEP and RELEASE a third of it each, y 366 to 414;
@@ -42,8 +42,8 @@
 #define SV_TAB_PROGRAM_X   392                /**< PROGRAM's tab. */
 #define SV_TAB_SETTINGS_X  546                /**< SETTINGS' tab. */
 #define SV_PROG_ROW_X      250                /**< PROGRAM's rows. */
-/** @brief PROGRAM's row @p r: 48 px tall at a 56 px pitch from the page
- *         area's top, 56, and 10 px. */
+/** @brief PROGRAM's row @p r: 48px tall at a 56px pitch from the page
+ *         area's top, 56, and 10px. */
 #define SV_PROG_ROW_Y(r)   (90 + 56 * (r))
 
 /** @brief SETTINGS' page tab @p i: OUTPUT, SWEEP, DUT. */
@@ -64,8 +64,8 @@
 #define SV_RUN_CARD_Y(k)   (60 + 204 * (k))
 /** @brief The lines under a run card's START, from its top. */
 #define SV_RUN_LINE_DY     120
-/** @brief The run's box on LIVE's card, left under ARM FIRST: 346 px wide, its lines
- *         24 px apart from 10 px in, its button 150 x 48 px 112 px down. */
+/** @brief The run's box on LIVE's card, left under ARM FIRST: 346px wide, its lines
+ *         24px apart from 10px in, its button 150 x 48px 112px down. */
 #define SV_BOX_X           18
 #define SV_BOX_Y           142                /**< The box's top. */
 #define SV_BOX_W           346                /**< Its width. */
@@ -97,7 +97,7 @@
 #define SV_RCARD_W         (UI_PANEL_W - SV_RCARD_X - UI_MARGIN) /**< 380. */
 #define SV_RC_X            (SV_RCARD_X + 12)  /**< The inner column. */
 #define SV_RC_W            (SV_RCARD_W - 24)  /**< Its width: 356. */
-/** @brief CENTRE, SWEEP and RELEASE (servo_screen.c), 113 px each, 8 px
+/** @brief CENTRE, SWEEP and RELEASE (servo_screen.c), 113px each, 8px
  *         apart: their row and the middle of each. */
 #define SV_BTN_Y           (366 + 24)
 #define SV_CENTRE_X        (SV_RC_X + 56)            /**< CENTRE. */
@@ -110,7 +110,7 @@
 #define SV_ARM_Y           424
 #define SV_ARM_H           60                 /**< Its height. */
 /** @brief The SET row: the voltage's and the current limit's value boxes,
- *         84 px each from SV_RC_X + 48, 8 px apart, and OUTPUT ON to the
+ *         84px each from SV_RC_X + 48, 8px apart, and OUTPUT ON to the
  *         column's end. */
 #define SV_SUP_Y           198
 #define SV_SUP_V_X         (SV_RC_X + 48 + 42)        /**< The voltage. */

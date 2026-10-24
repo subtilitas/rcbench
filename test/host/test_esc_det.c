@@ -30,7 +30,7 @@ static void det_fresh(uint8_t les)
     esc_stick_timing_t t;
     esc_stick_timing_defaults(&t);
     esc_det_init(&det, &t, les);
-    /* The floor at 150 mA, then counting, after the quiet that has to come
+    /* The floor at 150mA, then counting, after the quiet that has to come
      * first. */
     (void)esc_det_reading(&det, 0u, 150, false);
     esc_det_count(&det);
@@ -60,9 +60,9 @@ TEST_CASE(beeps_make_a_group_that_silence_ends)
     det_fresh(0u);
     uint32_t at = g_at;
     for (int b = 0; b < 3; ++b) {
-        (void)feed(&at, 50u, 5, 750);      /* 250 ms beep */
+        (void)feed(&at, 50u, 5, 750);      /* 250ms beep */
         CHECK_EQ(feed(&at, 50u, 1, 150), ESC_DET_PULSE);
-        (void)feed(&at, 50u, 4, 150);      /* the rest of a 250 ms gap */
+        (void)feed(&at, 50u, 4, 150);      /* the rest of a 250ms gap */
     }
     CHECK_EQ(feed(&at, 50u, 20, 150), ESC_DET_GROUP);
     CHECK_EQ(det.count, 3);
@@ -73,7 +73,7 @@ TEST_CASE(long_beeps_count_by_the_profiles_measure)
 {
     det_fresh(5u);
     uint32_t at = g_at;
-    (void)feed(&at, 50u, 16, 750);         /* 800 ms: long */
+    (void)feed(&at, 50u, 16, 750);         /* 800ms: long */
     (void)feed(&at, 50u, 5, 150);
     (void)feed(&at, 50u, 5, 750);          /* short */
     (void)feed(&at, 50u, 5, 150);
@@ -161,7 +161,7 @@ TEST_CASE(a_current_that_stays_high_is_reported_once)
 
 /* A pulse that ends on tick 0 has ended.  Counting restarted while the line
  * has been quiet since that fall takes the gap already heard as quiet: the
- * wait for a quiet gap (700 ms) ends 700 ms after the fall, not after the
+ * wait for a quiet gap (700ms) ends 700ms after the fall, not after the
  * reading that follows it.  The readings before the fall are before the
  * 32-bit wrap. */
 TEST_CASE(a_pulse_ending_on_tick_zero_starts_the_quiet_at_the_fall)
@@ -192,10 +192,10 @@ TEST_CASE(a_pulse_ending_on_tick_zero_starts_the_quiet_at_the_fall)
         at += 50u;
         (void)esc_det_reading(&det, at, 150, false);
     }
-    CHECK(det.wait_quiet);                  /* 650 ms after the fall */
+    CHECK(det.wait_quiet);                  /* 650ms after the fall */
     at += 50u;
     (void)esc_det_reading(&det, at, 150, false);
-    CHECK(!det.wait_quiet);                 /* 700 ms after it */
+    CHECK(!det.wait_quiet);                 /* 700ms after it */
 }
 
 /* The floor while the ESC starts is the lowest current seen, so a tone in

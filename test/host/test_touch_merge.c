@@ -5,7 +5,7 @@
  *
  * The panel's path is the same as here: the merged frame goes through the
  * tracker, and the tracker's events to ui_router_event().  Touch health is
- * firmware/panel/main/main.c's rule: touch_age_ms() under 200 ms counts as
+ * firmware/panel/main/main.c's rule: touch_age_ms() under 200ms counts as
  * touch seen, and arming.h takes it from there.
  *
  * SPDX-License-Identifier: MIT
@@ -137,7 +137,7 @@ TEST_CASE(three_failed_reads_drop_the_injected_contacts)
     CHECK_EQ(m.inject_n, 0);
     CHECK(!touch_merge_inject_failed(&m, 30));   /* nothing left to drop */
 
-    /* Asked again only every 100 ms from the last try. */
+    /* Asked again only every 100ms from the last try. */
     CHECK(!touch_merge_inject_due(&m, 31));
     CHECK(!touch_merge_inject_due(&m, 129));
     CHECK(touch_merge_inject_due(&m, 130));
@@ -345,10 +345,10 @@ TEST_CASE(an_injected_stop_stops)
 #define SETTLE_MS (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
 
 /*
- * The glass answers every 10 ms throughout; the injector stops at 1000 ms.
- * Touch reads as seen until its age reaches 200 ms, and ARMING_TOUCH_DEAD_MS
- * (500 ms) after the last time it was seen the bench disarms: at most
- * 700 ms after the injector's last answer, the bound the glass has.
+ * The glass answers every 10ms throughout; the injector stops at 1000ms.
+ * Touch reads as seen until its age reaches 200ms, and ARMING_TOUCH_DEAD_MS
+ * (500ms) after the last time it was seen the bench disarms: at most
+ * 700ms after the injector's last answer, the bound the glass has.
  */
 TEST_CASE(a_silent_injector_takes_the_bench_to_safe)
 {
@@ -420,8 +420,8 @@ static uint32_t panel_age(const touch_merge_t *m, uint32_t glass_age,
                                                   m->ok_ms, t));
 }
 
-/* Silent since its last good read at 0: attached and counting at 999 ms,
- * detached at 1000 ms and after. */
+/* Silent since its last good read at 0: attached and counting at 999ms,
+ * detached at 1000ms and after. */
 TEST_CASE(an_injector_silent_for_1000_ms_detaches)
 {
     touch_merge_t m;
@@ -442,7 +442,7 @@ TEST_CASE(an_injector_silent_for_1000_ms_detaches)
     CHECK(touch_merge_expire(&late, 1001));
     CHECK(!touch_merge_attached(&late));
 
-    /* The age stops counting at 1000 ms even before the touch task has
+    /* The age stops counting at 1000ms even before the touch task has
      * detached it: touch_age_ms() runs in another task. */
     CHECK_EQ(touch_merge_inject_age(true, 0, 999), 999);
     CHECK_EQ(touch_merge_inject_age(true, 0, 1000), 0);
@@ -502,7 +502,7 @@ TEST_CASE(a_detached_injector_leaves_the_glass_age)
     CHECK(!touch_merge_attached(&m));
 }
 
-/* Detached at 1000 ms: probed at 2000 ms, again at 3000 ms, and the first
+/* Detached at 1000ms: probed at 2000ms, again at 3000ms, and the first
  * answer re-attaches it with a fresh age. */
 TEST_CASE(the_first_good_probe_reattaches)
 {
@@ -530,7 +530,7 @@ TEST_CASE(the_first_good_probe_reattaches)
 }
 
 /* Reads that fail just after a re-attach do not detach it at once: the
- * 1000 ms run from the re-attach, and the next probe 1000 ms after that. */
+ * 1000ms run from the re-attach, and the next probe 1000ms after that. */
 TEST_CASE(a_read_failing_just_after_reattach)
 {
     touch_merge_t m;
@@ -566,7 +566,7 @@ TEST_CASE(no_probe_more_often_than_once_a_second)
             (void)touch_merge_probe(&m, false, t);
         }
     }
-    /* Detached at 1000 ms, probed at 2000, 3000, ... 20000 ms. */
+    /* Detached at 1000ms, probed at 2000, 3000, ... 20000ms. */
     CHECK_EQ(probes, 19);
 }
 
@@ -615,8 +615,8 @@ TEST_CASE(no_injected_press_survives_a_detach_and_reattach)
     CHECK_EQ(trk.prev_count, 1);
 }
 
-/* The glass answers every 10 ms; the injector stops at 1000 ms and never
- * comes back.  The bench disarms within 700 ms of its last answer, the
+/* The glass answers every 10ms; the injector stops at 1000ms and never
+ * comes back.  The bench disarms within 700ms of its last answer, the
  * heartbeat comes back at the detach, and nothing arms again. */
 TEST_CASE(a_detached_injector_gives_the_heartbeat_back)
 {
@@ -662,9 +662,9 @@ TEST_CASE(a_detached_injector_gives_the_heartbeat_back)
 
 /*
  * An injector that answers every probe and fails every read: attached for
- * 1000 ms, detached for 1000 ms, and again.  Its age never reaches
+ * 1000ms, detached for 1000ms, and again.  Its age never reaches
  * TOUCH_MERGE_DETACH_MS, so each loss of the heartbeat lasts at most from
- * 700 ms (200 ms to lose touch, then ARMING_TOUCH_DEAD_MS) to the detach,
+ * 700ms (200ms to lose touch, then ARMING_TOUCH_DEAD_MS) to the detach,
  * plus one poll.  Nothing arms in between.
  */
 TEST_CASE(a_flapping_injector_holds_the_heartbeat_no_longer)
@@ -693,7 +693,7 @@ TEST_CASE(a_flapping_injector_holds_the_heartbeat_no_longer)
         }
         arming_touch_poll(&a, t);
         (void)arming_step(&a, t);
-        /* Last good read at 490 ms: lost from 700 ms, dead from 1200 ms. */
+        /* Last good read at 490ms: lost from 700ms, dead from 1200ms. */
         if (t >= 490u + PANEL_TOUCH_FRESH_MS + ARMING_TOUCH_DEAD_MS + 10u) {
             CHECK(!a.armed);
         }
@@ -754,7 +754,7 @@ TEST_CASE(nothing_at_start_means_no_probe_ever_later)
     CHECK_EQ(out[0].id, 2);
 }
 
-/* Not found at start, found 10 s later: ignored until a restart, which
+/* Not found at start, found 10s later: ignored until a restart, which
  * starts the merge again. */
 TEST_CASE(an_injector_appearing_after_start_is_ignored_until_restart)
 {
@@ -776,7 +776,7 @@ TEST_CASE(an_injector_appearing_after_start_is_ignored_until_restart)
 }
 
 /* An injector that answered at start-up keeps today's behaviour: detached
- * after 1000 ms silent, probed once a second, back on the first answer. */
+ * after 1000ms silent, probed once a second, back on the first answer. */
 TEST_CASE(present_at_start_detaches_and_reattaches_as_before)
 {
     touch_merge_t m;
@@ -794,7 +794,7 @@ TEST_CASE(present_at_start_detaches_and_reattaches_as_before)
     CHECK(touch_merge_probe_due(&m, 3000u));
     CHECK(touch_merge_probe(&m, true, 3000u));
     CHECK(touch_merge_attached(&m));
-    /* Silent once more: detached 1000 ms after the re-attach. */
+    /* Silent once more: detached 1000ms after the re-attach. */
     CHECK(!touch_merge_expire(&m, 3999u));
     CHECK(touch_merge_expire(&m, 4000u));
 }

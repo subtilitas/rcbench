@@ -64,7 +64,7 @@ typedef struct {
      * PULSE MIN and MAX, so its midpoint -- where the far end rests a
      * surface -- is the centre.  value_us stays within MIN..MAX.
      *
-     * The pulse means nothing without them: 760 us is the centre of a narrow
+     * The pulse means nothing without them: 760us is the centre of a narrow
      * servo and below the bottom of a standard one, so a command clamped
      * against the wrong pair is a servo that does not move, or one driven
      * past its stops. Zero on either says the sender named no range.

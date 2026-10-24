@@ -948,7 +948,7 @@ TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
 
 /*
  * The card of UPDATES and of FILES & UPDATE breaks a text into lines of
- * its 352 px, 44 cells.  A text no view draws declares 88 cells in
+ * its 352px, 44 cells.  A text no view draws declares 88 cells in
  * ui_text.def, two of those lines, or fewer where another screen draws it
  * on one line; here each is held to the two lines as the card breaks it.
  */

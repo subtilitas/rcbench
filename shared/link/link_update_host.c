@@ -746,7 +746,7 @@ static void step_activate(link_uph_t *u, link_host_t *h,
         return;
     }
     /* Taken, or unanswered: an ACTIVATE that went in restarts the
-     * IOmcu 20 ms after it, and its acknowledgement may be what was
+     * IOmcu 20ms after it, and its acknowledgement may be what was
      * lost.  The restart says which. */
     heard(u);
     u->busy = false;

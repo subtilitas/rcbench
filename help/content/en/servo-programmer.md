@@ -46,9 +46,9 @@ MORE, while the tester has the port, sets what CONNECT applies:
 
 | Entry | Range | Default |
 |---|---|---|
-| PROGRAMMING VOLTAGE | 4.8 to 6.0 V in 0.1 V steps; up to 8.4 V with HV SERVO on | 5.0 V |
-| CURRENT LIMIT | 50 to 3000 mA | 1000 mA |
-| WAIT BEFORE PWM | 0 to 10000 ms | 100 ms |
+| PROGRAMMING VOLTAGE | 4.8 to 6.0V in 0.1V steps; up to 8.4V with HV SERVO on | 5.0V |
+| CURRENT LIMIT | 50 to 3000mA | 1000mA |
+| WAIT BEFORE PWM | 0 to 10000ms | 100ms |
 
 ![A PD mini answers](view:servo-kst-supply)
 ![The supply in programming mode](view:servo-kst-supplied)
@@ -71,7 +71,7 @@ While the port is out of PWM, the supply's set points belong to the port: the SE
 | ENABLE WRITE TO SERVO | OFF, ON | the write switch |
 | CHANGES | WRITE n VALUES | writes the changed values |
 
-V6 is a 20 kHz drive, V8 a 333 Hz drive. The type is never edited and never written.
+V6 is a 20kHz drive, V8 a 333Hz drive. The type is never edited and never written.
 
 ![A servo of unknown layout: read only](view:servo-kst-readonly)
 
@@ -88,9 +88,9 @@ A value is edited in a draft on the panel. Nothing reaches the servo before WRIT
 
 | Tab | Rows |
 |---|---|
-| TUNE | DEAD BAND, MAX. DUTY (10 to 98 %), BOOST (up to 3000 us), STRETCH (x1 to x32), SOFT START, SPEED LIMIT, SPEED |
-| PULSE | NEUTRAL (1360 to 1640 us), PULSE LOWER (from 500 us), PULSE UPPER (up to 2500 us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
-| FAILSAFE | MOVE ON SIGNAL LOSS, POSITION (500 to 2500 us), AFTER (0.4 to 13.0 s) |
+| TUNE | DEAD BAND, MAX. DUTY (10 to 98%), BOOST (up to 3000us), STRETCH (x1 to x32), SOFT START, SPEED LIMIT, SPEED |
+| PULSE | NEUTRAL (1360 to 1640us), PULSE LOWER (from 500us), PULSE UPPER (up to 2500us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
+| FAILSAFE | MOVE ON SIGNAL LOSS, POSITION (500 to 2500us), AFTER (0.4 to 13.0s) |
 | LOCKED | the servo type, LOCK, MODE and the protection block; shown, never edited |
 
 ![The PULSE tab](view:servo-kst-pulse)
@@ -104,7 +104,7 @@ A tap that would break a hard limit changes nothing and names the limit.
 
 ![CHECK THIS CHANGE](view:servo-kst-soft)
 
-A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD TO APPLY takes it after 2 s; CANCEL leaves the draft as it was. A [limit run](servo.md#the-limit-run) asks nothing here: its 2 s start hold is the consent to a LEFT ANGLE or RIGHT ANGLE below 50.
+A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD TO APPLY takes it after 2s; CANCEL leaves the draft as it was. A [limit run](servo.md#the-limit-run) asks nothing here: its 2s start hold is the consent to a LEFT ANGLE or RIGHT ANGLE below 50.
 
 ![The LOCKED tab](view:servo-kst-locked)
 
@@ -112,12 +112,12 @@ A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE,
 
 ![Enabling the write](view:servo-kst-enable)
 
-ENABLE WRITE TO SERVO is off by default. A tap on OFF opens a page that names the risks; HOLD TO ENABLE switches it on after 2 s. It goes off at every entry of SERVO, at every STOP, CONNECT and LEAVE, on a lost link, and when a servo is in doubt.
+ENABLE WRITE TO SERVO is off by default. A tap on OFF opens a page that names the risks; HOLD TO ENABLE switches it on after 2s. It goes off at every entry of SERVO, at every STOP, CONNECT and LEAVE, on a lost link, and when a servo is in doubt.
 
 ![Three changed values, the switch on](view:servo-kst-changes)
 ![The write page](view:servo-kst-write)
 
-WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6 us`. HOLD TO WRITE starts the write after 2 s.
+WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6us`. HOLD TO WRITE starts the write after 2s.
 
 1. The first write of a session saves the servo's values to a new file on the SD (Secure Digital) card.
 2. The panel records the write in `BENCH/KST/CONF/KST.TXT`, or in memory without a card.
@@ -145,13 +145,13 @@ A tap on a file loads it into the draft. Nothing reaches the servo before the wr
 ![The restore list](view:servo-kst-restore-list)
 ![A restore of the session's backup](view:servo-kst-restore)
 
-RESTORE writes back the session's backup, the servo as first read after CONNECT, the values before an interrupted write, or `Settings before the limit run.`. Every restore needs the write switch and a 2 s hold.
+RESTORE writes back the session's backup, the servo as first read after CONNECT, the values before an interrupted write, or `Settings before the limit run.`. Every restore needs the write switch and a 2s hold.
 
 ![MORE in programming mode](view:servo-kst-more)
 
 - VERIFY reads all registers and compares them with the image held.
 - DISCARD EDITS sets the draft back to the servo's values.
-- RELEASE PAIRING sets register 1D to 00 after a 2 s hold. What the servo does with the value is not known.
+- RELEASE PAIRING sets register 1D to 00 after a 2s hold. What the servo does with the value is not known.
 
 ## An interrupted write
 
@@ -165,7 +165,7 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 
 ![LEAVE PROGRAMMING](view:servo-kst-leave)
 
-LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD TO LEAVE takes it after 2 s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
+LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
 
 ## Related pages
 

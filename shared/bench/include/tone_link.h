@@ -84,7 +84,7 @@ extern "C" {
 
 /**
  * @brief Registers 8 to 23 are due this long after the last read while the tap
- *        is enabled: under the 50 ms poll, so every BENCH poll reads them.
+ *        is enabled: under the 50ms poll, so every BENCH poll reads them.
  */
 #define TONE_LINK_READ_MS 40u
 
@@ -99,12 +99,12 @@ extern "C" {
 
 /**
  * @brief A WINDOW that has not moved for this long, while FLAGS says the tap
- *        runs, no longer says it runs: the detector closes a window every 8 ms,
+ *        runs, no longer says it runs: the detector closes a window every 8ms,
  *        edges or none, so a count that stands is a capture that stopped while
  *        the page still answers.
  *
  * SUPPLY's and SENSE's counts are judged the
- *  same way, at 1500 ms for SUPPLY.
+ *  same way, at 1500ms for SUPPLY.
  */
 #define TONE_LINK_WINDOW_STALE_MS 1500u
 
@@ -192,10 +192,10 @@ typedef struct {
 typedef struct {
     uint16_t seq;             /**< its number, 1 to 65535               */
     uint32_t start_ms;        /**< first rise, ms since ENABLE          */
-    uint16_t len_dms;         /**< first rise to last edge, 0.1 ms      */
-    uint16_t freq_dhz;        /**< mean pitch, 0.1 Hz                   */
+    uint16_t len_dms;         /**< first rise to last edge, 0.1ms      */
+    uint16_t freq_dhz;        /**< mean pitch, 0.1Hz                   */
     uint16_t bursts;
-    uint16_t carrier_hhz;     /**< 100 Hz steps; 0 unchopped            */
+    uint16_t carrier_hhz;     /**< 100Hz steps; 0 unchopped            */
     uint8_t  flags;           /**< LINK_TN_EVT_*                        */
 } tone_beep_t;
 
@@ -229,7 +229,7 @@ typedef struct {
     bool     overrun;         /**< the capture overran since ENABLE     */
     bool     tone;            /**< the last window held a tone          */
     bool     beep;            /**< a beep is under way                  */
-    uint16_t win_freq_dhz;    /**< the last window's pitch, 0.1 Hz; 0 none */
+    uint16_t win_freq_dhz;    /**< the last window's pitch, 0.1Hz; 0 none */
     uint16_t win_periods;
     uint16_t lost;            /**< beeps the IOmcu dropped        */
     uint16_t glitches;        /**< lows it ignored as too short         */

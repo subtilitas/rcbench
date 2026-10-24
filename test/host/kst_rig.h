@@ -5,7 +5,7 @@
  * control task and its card.
  *
  * The overlay is driven as the firmware drives it: a feed every frame, the
- * commands taken, the file written.  One frame is 1 ms.
+ * commands taken, the file written.  One frame is 1ms.
  *
  * For the host tests and the screenshot renderer.
  *
@@ -241,7 +241,7 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->set_mv = f->supply_read ? g_rig.sup_mv : 0u;
 }
 
-/* 1 ms: the IOmcu, one exchange, the control task and the card. */
+/* 1ms: the IOmcu, one exchange, the control task and the card. */
 static inline void rig_frame(void)
 {
     kst_prog_cmd_t cmd;
@@ -316,7 +316,7 @@ static inline bool rig_at_rest(void)
         || st == KST_PROG_DOWN || st == KST_PROG_NO_PAGE;
 }
 
-/* Until nothing runs; 60 s is the bound.  False when something still does. */
+/* Until nothing runs; 60s is the bound.  False when something still does. */
 static inline bool rig_settle(void)
 {
     rig_frame();

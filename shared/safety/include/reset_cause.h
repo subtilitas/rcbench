@@ -142,7 +142,7 @@ typedef enum {
  *    flags and p1 = the activity LED pin (0xFFFFFFFF for none); the reboot
  *    out of BOOTSEL overwrites both.  The firmware zeroes both registers
  *    after it reads them.  Else FORCE: SW_RESET (the SDK's
- *    watchdog_reboot() with no delay).  Else WATCHDOG: the boot ROM's 16.7 s
+ *    watchdog_reboot() with no delay).  Else WATCHDOG: the boot ROM's 16.7s
  *    TBYB (try before you buy) timer after an update that was not bought, a
  *    reboot() with type NORMAL and other parameters, or the SDK's
  *    watchdog_reboot() with a delay.
@@ -180,7 +180,7 @@ const char *reset_cause_word(reset_cause_t c);
 int reset_cause_boot_type(const reset_regs_t *r);
 
 /**
- * @brief The text of the start-up line and the 3 s line, every raw value in
+ * @brief The text of the start-up line and the 3s line, every raw value in
  *        hex:
  *        `POR (chip_reset 0x00010000 reason 0x0 boot 0x00000000
  *        params 0x00000000 0x00000000 scratch 0x00000000 0x00000000)`,

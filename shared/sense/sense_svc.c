@@ -86,7 +86,7 @@ bool sense_window_over(const sense_window_t *w, int32_t clip_ua,
     }
     const int64_t lim_ua = (int64_t)limit_ma * 1000;
     /* Rounded to mA, halves away from zero: above the limit from
-     * limit + 0.5 mA on. */
+     * limit + 0.5mA on. */
     const bool max_over = w->n_i > 0u
                           && (int64_t)w->i_max_ua >= lim_ua + 500;
     const bool clip_over = w->clip_hi && (int64_t)clip_ua > lim_ua;

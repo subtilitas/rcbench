@@ -251,7 +251,7 @@ TEST_CASE(a_completed_arm_is_not_overwritten_by_the_servo_knob)
  */
 #define P(y) ((y) + UI_BAND_H)
 
-/* Beside the dial, 190 px right of the shaft: the arc ends at 174 px. */
+/* Beside the dial, 190px right of the shaft: the arc ends at 174px. */
 #define BESIDE_X (SHAFT_X + 190)
 
 #define ONTO_X   (SHAFT_X + 150)

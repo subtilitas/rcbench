@@ -102,7 +102,7 @@ jobs:
       # to be tested rather than only measured in aggregate.  coverage.py
       # leaves an instrumented build behind, so nothing is rebuilt.
       # gcovr takes a count of 2^32 or more for gcov's overflow bug; the
-      # suite's fills at 1024 x 600 px run gfx.c's fill_span loop 4.3e9 times,
+      # suite's fills at 1024 x 600px run gfx.c's fill_span loop 4.3e9 times,
       # so the line holds at 2^40 (1,099,511,627,776).
       - name: Coverage report for Codecov
         run: |
@@ -350,7 +350,7 @@ jobs:
         run: python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
 
       # test/tools/test_doc_check.py runs Doxygen on a scratch tree.
-      # The archive is 115 MB; the cache holds it, and the script checks
+      # The archive is 115MB; the cache holds it, and the script checks
       # its SHA-256 on a hit as on a download.
       - name: Restore the Doxygen archive
         uses: actions/cache@v6
@@ -387,7 +387,7 @@ jobs:
           # The base branch has to be here to diff against.
           fetch-depth: 0
 
-      # The archive is 115 MB; the cache holds it, and the script checks
+      # The archive is 115MB; the cache holds it, and the script checks
       # its SHA-256 on a hit as on a download.
       - name: Restore the Doxygen archive
         uses: actions/cache@v6
@@ -414,7 +414,7 @@ jobs:
 
   # What the suite does not notice in the lines a pull request changes.  It
   # reports and does not fail on a survivor: the job fails only when the
-  # tool cannot run.  The run is bounded at 2700 s by the tool's defaults.
+  # tool cannot run.  The run is bounded at 2700s by the tool's defaults.
   mutation:
     name: Mutation check of the changed lines (advisory)
     if: github.event_name == 'pull_request'
@@ -588,7 +588,7 @@ jobs:
       - uses: actions/checkout@v6
 
       # The .deb files are cached because the Azure mirror serves at about
-      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # 50kB/s at times: gcc-arm-none-eabi (57.5MB) took 19min on one run.
       # The key carries the runner image version, so a new image saves a fresh
       # entry that starts from the previous one.
       - name: Key for the toolchain packages
@@ -609,7 +609,7 @@ jobs:
         run: tools/install_arm_toolchain.sh install "$HOME/apt-arm"
 
       # Pinned, and cached on the tag: the SDK (software development kit) is
-      # 400 MB of checkout and does not change between runs unless this pin
+      # 400MB of checkout and does not change between runs unless this pin
       # does.
       - name: Cache the pico-sdk
         id: sdk-cache
@@ -710,7 +710,7 @@ jobs:
       - uses: actions/checkout@v6
 
       # The .deb files are cached because the Azure mirror serves at about
-      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # 50kB/s at times: gcc-arm-none-eabi (57.5MB) took 19min on one run.
       # The key carries the runner image version, so a new image saves a fresh
       # entry that starts from the previous one.
       - name: Key for the toolchain packages

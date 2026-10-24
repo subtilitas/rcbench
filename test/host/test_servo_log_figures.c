@@ -40,7 +40,7 @@ TEST_CASE(the_log_takes_the_encoders_angle_only_while_measured_shows_it)
     CHECK(!servo_screen_log_angle(&deg));
 
     /* On, with a reading: the angle from the centre count, 100 counts of
-     * 360/4096 deg. */
+     * 360/4096deg. */
     settings_set(SET_ENC_EN, 1.0f);
     settings_set(SET_ENC_CENTRE, 3000.0f);
     servo_screen_encoder(&e);

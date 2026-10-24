@@ -22,7 +22,7 @@ The pictures in this section come from the host renderer, which feeds the screen
 
 | Area | Shows |
 |---|---|
-| CH01 to CH16 | one lane per channel: about 2.8 s of history at 71 frames a second, 200 samples, a bar for the current value and the value in us |
+| CH01 to CH16 | one lane per channel: about 2.8s of history at 71 frames a second, 200 samples, a bar for the current value and the value in us |
 | State block | NO SIGNAL, FRAME LOST, FAILSAFE or LIVE, with one line under it |
 | BUS | `S.BUS` |
 | RATE | frames a second, in Hz |
@@ -44,7 +44,7 @@ In FAILSAFE every trace is drawn red. The receiver sends sixteen well-formed val
 
 ## RAW DATA
 
-RAW DATA shows the last frame as hexadecimal bytes, 8 to a row. The header and footer bytes are drawn in the accent colour. Under them: the byte count and the gap the decoder frames on, `25 bytes; a 2000 us gap separates frames`, then the resync and bad-tail counts. CHANNELS and RAW DATA switch the left pane.
+RAW DATA shows the last frame as hexadecimal bytes, 8 to a row. The header and footer bytes are drawn in the accent colour. Under them: the byte count and the gap the decoder frames on, `25 bytes; a 2000us gap separates frames`, then the resync and bad-tail counts. CHANNELS and RAW DATA switch the left pane.
 
 ## Related pages
 

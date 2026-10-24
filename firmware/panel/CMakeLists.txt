@@ -39,7 +39,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
 # builds a panel that never addresses 0x14 and holds none of that code.
 option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
 
-# The DSI (Display Serial Interface) host's colour bars for 3 s at start-up,
+# The DSI (Display Serial Interface) host's colour bars for 3s at start-up,
 # for a first look at a board (components/display).
 #   idf.py -D RCBENCH_DISPLAY_BARS=ON build
 option(RCBENCH_DISPLAY_BARS "Show the DSI host's colour bars at start-up" OFF)

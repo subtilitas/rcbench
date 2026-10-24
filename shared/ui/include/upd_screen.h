@@ -8,11 +8,11 @@
  * check on and off (SET_UPD_REMIND).  RELEASES switches between STABLE and
  * TESTING (SET_UPD_CHANNEL): which releases a check looks at; the
  * application drops a result found on the other channel from the view.
- * When a newer release was found, HOLD 2 s: DOWNLOAD & INSTALL fetches and
+ * When a newer release was found, HOLD 2s: DOWNLOAD & INSTALL fetches and
  * installs it.
  *
  * Its IOmcu section, under the buttons: the version the IOmcu
- * runs, the version of the image this panel carries, and HOLD 2 s: UPDATE
+ * runs, the version of the image this panel carries, and HOLD 2s: UPDATE
  * IOMCU, which starts the update the link-up's question starts, also
  * after that question was declined.  The hold is live only while
  * coproc_update_section() reads CU_SEC_READY; any other state greys it and
@@ -24,7 +24,7 @@
  * release.  It opens on OVERVIEW only, with the bench SAFE and the supply
  * off, and never over the IOmcu's update question or its progress,
  * which come first.  IGNORE NOW closes it until the next start; NEVER
- * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2 s:
+ * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2s:
  * DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
  * confirmation: no question follows the download.  Leaving it by the HOME
  * tag is IGNORE NOW.
@@ -167,7 +167,7 @@ typedef struct {
 /** What the screens ask for: bits of upd_screen_take(). */
 #define UPD_REQ_CHECK     0x01u   /**< CHECK FOR UPDATES                  */
 #define UPD_REQ_CANCEL    0x02u   /**< CANCEL a check                     */
-#define UPD_REQ_DOWNLOAD  0x04u   /**< the 2 s hold completed             */
+#define UPD_REQ_DOWNLOAD  0x04u   /**< the 2s hold completed             */
 
 /** Hand the screens what to show. */
 void upd_screen_set(const upd_view_t *v);
@@ -188,7 +188,7 @@ void upd_screen_set_coproc(const upd_cu_view_t *v);
 /** What the section shows, for the driver and the tests. */
 const upd_cu_view_t *upd_screen_coproc(void);
 
-/** True once after HOLD 2 s: UPDATE IOMCU completed. */
+/** True once after HOLD 2s: UPDATE IOMCU completed. */
 bool upd_screen_take_coproc(void);
 
 /** The section's state line for @p v, and its colour. */

@@ -3,7 +3,7 @@
 ; state machine on one input pin, no pin driven.
 ;
 ; X is a free-running tick counter, one decrement every 4 clock cycles
-; (26.7 ns at 150 MHz).  On each edge of the pin the machine pushes a word,
+; (26.7ns at 150MHz).  On each edge of the pin the machine pushes a word,
 ; bits 31..1 the low 31 bits of X and bit 0 the level after the edge, with
 ; the capture's hold-off applied: a fall is pushed only once the line has
 ; stayed low for the hold-off, and a low that ends sooner is never pushed,

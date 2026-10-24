@@ -56,17 +56,17 @@
  *
  * From the top: the crumb row (BACK 120 x 48, the trail, SEARCH or
  * TIMING) from CRUMB_Y, the cards from CARD_Y to CARD_B, and the foot row
- * of buttons UI_BTN_H_TALL tall from BTN_Y, which ends SP_FOOT, 4 px above
+ * of buttons UI_BTN_H_TALL tall from BTN_Y, which ends SP_FOOT, 4px above
  * the alert band (UI_ALERT_H): RUN, ABORT and OK are body y 436 to 491,
  * and an alert covers none of them.
  */
 #define PAD       UI_MARGIN                      /**< the outer margin     */
 #define SP_FOOT   (H - UI_ALERT_H - 4)           /**< 492: controls end    */
 #define CRUMB_Y   (PROG_FULL_Y + 2)              /**< the crumb row's top  */
-#define CRUMB_H   UI_TAP_MIN                     /**< its height, 48 px    */
+#define CRUMB_H   UI_TAP_MIN                     /**< its height, 48px    */
 #define BACK_W    120                            /**< BACK's width         */
-#define BTN_H     UI_BTN_H_TALL                  /**< the foot row, 56 px  */
-/** @brief The foot row's top: 4 px over the alert band, BTN_H tall. */
+#define BTN_H     UI_BTN_H_TALL                  /**< the foot row, 56px  */
+/** @brief The foot row's top: 4px over the alert band, BTN_H tall. */
 #define BTN_Y     (SP_FOOT - BTN_H)
 #define FOOT_BTN_W 168                           /**< a foot button's width */
 #define CARD_Y    (CRUMB_Y + CRUMB_H + 6)        /**< 84: the cards' top    */
@@ -75,18 +75,18 @@
 /**
  * @brief A profile's page and TIMING: the parameter card on the left,
  *        PARM_W wide from CARD_Y to CARD_B, with ROWS_MAX rows of ROW_H
- *        at a ROW_P pitch, so 8 px lie between the keys of two rows; the
+ *        at a ROW_P pitch, so 8px lie between the keys of two rows; the
  *        side column right of it (SIDE_X, SIDE_W) with the page keys' row
  *        at PAGE_Y, MANUAL INTERVENTION REQUIRED at HAND_Y, and the device
  *        lines and the help of the row picked under them.
  *
  * A row from the left: its number, the mark of a change, its name (the
  * row's own tap, up to CTRL_X - 8), the value (CTRL_X, CTRL_W: 25 cells,
- * TIMING's keypad), then "-" and "+" of UI_TAP_MIN, 8 px apart.
+ * TIMING's keypad), then "-" and "+" of UI_TAP_MIN, 8px apart.
  */
 #define PARM_W    660                            /**< the parameter card   */
 #define ROW_Y0    (CARD_Y + 8)                   /**< the first row's top  */
-#define ROW_H     UI_TAP_MIN                     /**< a row, 48 px         */
+#define ROW_H     UI_TAP_MIN                     /**< a row, 48px         */
 #define ROW_P     56                             /**< its pitch            */
 #define ROWS_MAX  6                              /**< the rows a page holds */
 #define ROW_X     (PAD + 8)                      /**< a row's left         */
@@ -98,7 +98,7 @@
 #define CTRL_W    250                            /**< the value, 25 cells  */
 #define CTRL_X    (STEP_DN_X - 8 - CTRL_W)       /**< 298                  */
 #define SIDE_X    (PAD + PARM_W + 8)             /**< 676: the side column */
-#define SIDE_W    (W - PAD - SIDE_X)             /**< 340 px               */
+#define SIDE_W    (W - PAD - SIDE_X)             /**< 340px               */
 #define SIDE_IN   (SIDE_X + 12)                  /**< its text's left      */
 #define SIDE_CELLS ((SIDE_W - 24) / SP_CELL)     /**< 31 cells a line      */
 #define PAGE_Y    (CARD_Y + 8)                   /**< the page keys' row   */
@@ -116,19 +116,19 @@
 #define RUN_Y     (DEV_Y + DEV_H + 4)            /**< 136: the run's card  */
 #define HELP_P    22                             /**< the help lines' pitch */
 #define HELP_Y    (BTN_Y - 4 - 20 - HELP_P)      /**< 390                  */
-#define RUN_H     (HELP_Y - 6 - RUN_Y)           /**< 248 px               */
+#define RUN_H     (HELP_Y - 6 - RUN_Y)           /**< 248px               */
 #define RUN_L0    (RUN_Y + 84)                   /**< its first line       */
 #define RUN_LINES 8                              /**< the lines it holds   */
 
 /* The panels over the pages -- the RUN warning, the manual steps and a
  * run's prompt -- from PROG_FULL_Y to the body's margin, and the buttons at
- * their foot, UI_TAP_MIN tall, which end 4 px above the foot row's place
+ * their foot, UI_TAP_MIN tall, which end 4px above the foot row's place
  * (body y 384 to 431): a second tap on RUN's place lands on no button of
  * the panel it opened, and the alert band covers none of them. */
 #define SP_PANEL_Y  PROG_FULL_Y                /**< a panel's top        */
 #define SP_PANEL_H  (H - PAD - SP_PANEL_Y)     /**< its height           */
-#define SP_PBTN_H   UI_TAP_MIN                 /**< its buttons, 48 px   */
-/** @brief A panel's buttons' top: they end 4 px over the foot row. */
+#define SP_PBTN_H   UI_TAP_MIN                 /**< its buttons, 48px   */
+/** @brief A panel's buttons' top: they end 4px over the foot row. */
 #define SP_PBTN_Y   (BTN_Y - 4 - SP_PBTN_H)
 
 _Static_assert(ROW_Y0 + (ROWS_MAX - 1) * ROW_P + ROW_H <= CARD_B - 4,
@@ -138,7 +138,7 @@ _Static_assert(RUN_L0 + (RUN_LINES - 1) * LINE_P + 20 <= RUN_Y + RUN_H - 2,
 _Static_assert(HELP_Y + HELP_P + 20 <= BTN_Y, "the help lines end above the "
                "foot row");
 _Static_assert(BTN_Y + BTN_H + 4 == UI_ALERT_Y - UI_BAND_H,
-               "the foot row ends 4 px above the alert band");
+               "the foot row ends 4px above the alert band");
 
 /*
  * Each page's drawer is its own function, so the main task's stack holds
@@ -378,7 +378,7 @@ static inline int sp_wrap_lines(const char *text, int cells, int max_lines)
 /**
  * @brief A note at the foot of a page, from @p x to @p right, left of the
  *        buttons there: on one line level with their labels, or where it
- *        needs more, on two at LINE_P from 6 px under their top.
+ *        needs more, on two at LINE_P from 6px under their top.
  * @param c The canvas.
  * @param x Its left.
  * @param right Where it ends.

@@ -34,8 +34,8 @@
 #define H UI_BODY_H   /**< The body's height under the band, px. */
 
 /*
- * MOTOR & ESC's frame at the 1024 x 600 sizes: the page in a 620 px left
- * column, the readings and the CONTROL card on a 380 px rail on the right,
+ * MOTOR & ESC's frame at the 1024 x 600 sizes: the page in a 620px left
+ * column, the readings and the CONTROL card on a 380px rail on the right,
  * the same on both tasks.
  */
 #define PAD       UI_MARGIN               /**< The outer margin, px. */
@@ -43,25 +43,25 @@
 #define LEFT_W    620                     /**< The left column, px. */
 #define LEFT_X    PAD                     /**< Its left edge, px. */
 #define RIGHT_X   (LEFT_X + LEFT_W + 8)   /**< The rail: x 636. */
-#define RIGHT_W   (W - PAD - RIGHT_X)     /**< Its width: 380 px. */
+#define RIGHT_W   (W - PAD - RIGHT_X)     /**< Its width: 380px. */
 #define RC_X      (RIGHT_X + 12)          /**< The rail's column: x 648. */
-#define RC_W      (RIGHT_W - 24)          /**< Its width: 356 px. */
+#define RC_W      (RIGHT_W - 24)          /**< Its width: 356px. */
 
 /**
  * @brief The task strip, LIVE | SETTINGS, at SERVO's and MOTOR & ESC's
- *        sizes: tabs of 150 x 40 px, 4 px apart, from (9, 8); the page
+ *        sizes: tabs of 150 x 40px, 4px apart, from (9, 8); the page
  *        from y 56.  The shared UI_WB_ figures plus the difference.
  */
 #define SU_STRIP_X UI_WB_STRIP_X
-#define SU_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8 px. */
-#define SU_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40 px. */
-#define SU_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150 px. */
-#define SU_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4 px. */
-#define SU_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56 px. */
+#define SU_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8px. */
+#define SU_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40px. */
+#define SU_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150px. */
+#define SU_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4px. */
+#define SU_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
 
 /**
  * @brief The lowest row a control that stops what the bench drives, or a
- *        line of text, may reach: 4 px above the alert band.
+ *        line of text, may reach: 4px above the alert band.
  */
 #define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
@@ -89,9 +89,9 @@
  */
 /** @brief The strip's tasks: LIVE and SETTINGS. */
 #define TASKS     (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_SETTINGS))
-/** @brief The header's left edge: 12 px right of the strip's trough. */
+/** @brief The header's left edge: 12px right of the strip's trough. */
 #define INFO_X    (SU_STRIP_X + 2 * SU_TAB_W + SU_TAB_GAP + 3 + 12)
-/** @brief Its top: centred on the strip's 40 px. */
+/** @brief Its top: centred on the strip's 40px. */
 #define INFO_Y    (SU_STRIP_Y + (SU_STRIP_H - LINE_H) / 2)
 
 /** @brief A panel's title strip, the accent tag on its top edge, px. */
@@ -105,13 +105,13 @@
 #define RAIL_Y    SU_PAGE_Y               /**< The first card, px. */
 #define CARD_H    64                      /**< A reading card's height. */
 #define CARD_GAP  4                       /**< Between two of them, px. */
-/** @brief The CONTROL card's top: 8 px under the fourth reading card. */
+/** @brief The CONTROL card's top: 8px under the fourth reading card. */
 #define CTL_Y     (RAIL_Y + 4 * CARD_H + 3 * CARD_GAP + 8)
 #define CTL_H     (H - PAD - CTL_Y)       /**< To the body's margin. */
 #define BTN_H     UI_TAP_MIN              /**< RESET PEAKS' height, px. */
 #define RESET_Y   (CTL_Y + TITLE_H + 14)  /**< RESET PEAKS: y 366. */
 #define OUT_Y     (RESET_Y + BTN_H + 10)  /**< OUTPUT ON / OFF: y 424. */
-#define OUT_H     60                      /**< Its height: 9.0 mm. */
+#define OUT_H     60                      /**< Its height: 9.0mm. */
 _Static_assert(OUT_Y + OUT_H <= STOP_FLOOR,
                "OUTPUT OFF ends above the alert band");
 _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
@@ -129,13 +129,13 @@ _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
 #define TAB_X     (LEFT_X + INNER)        /**< PLOT | TABLE, px. */
 #define TAB_Y     (UP_Y + TITLE_H + 6)    /**< Their top: y 82. */
 #define TAB_H     40                      /**< Their height, px. */
-#define TAB_W     200                     /**< The row: two of 100 px. */
+#define TAB_W     200                     /**< The row: two of 100px. */
 #define LEG_Y     (TAB_Y + TAB_H + 4)     /**< The legend, px. */
 #define LEG_H     20                      /**< Its height, px. */
 #define PLOT_X    (LEFT_X + INNER)        /**< The plot's left edge, px. */
-#define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600 px. */
+#define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600px. */
 #define PLOT_Y    (LEG_Y + LEG_H + 4)     /**< Its top, px. */
-#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 136 px. */
+#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 136px. */
 /** @brief TABLE's SET column, from PLOT_X: SUP_TABLE_HEAD's cell 15. */
 #define TBL_SET_DX  150
 #define TBL_NOW_DX  300                   /**< NOW: its cell 30, px. */
@@ -149,8 +149,8 @@ _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
  * of an amp, which the slider is too coarse to place; the slider covers
  * the range, and both snap to what the supply takes.
  *
- * The thumb stands UI_SLIDER_OVERHANG (5 px) proud of the track and its
- * shadow 2 px more under it, so the controls start 6 px under the label
+ * The thumb stands UI_SLIDER_OVERHANG (5px) proud of the track and its
+ * shadow 2px more under it, so the controls start 6px under the label
  * and a row's painted foot ends over the next row's label.
  */
 #define SET_ROW_H   82                    /**< From row to row, px. */
@@ -162,7 +162,7 @@ _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
 #define SET_VAL_W   120                   /**< The value's box, px. */
 /** @brief The value's box: at the card's padding on the right. */
 #define SET_VAL_X   (LEFT_X + LEFT_W - INNER - SET_VAL_W)
-/** @brief The fine step up: 8 px left of the value. */
+/** @brief The fine step up: 8px left of the value. */
 #define SET_UP_X    (SET_VAL_X - 8 - NUDGE_W)
 #define SET_TRACK_X (LEFT_X + INNER + NUDGE_W + 8) /**< The track: x 98. */
 #define SET_TRACK_W (SET_UP_X - 8 - SET_TRACK_X)   /**< Its length: 312. */
@@ -184,15 +184,15 @@ _Static_assert(SET_CTRL_DY >= SET_TEXT_H + UI_SLIDER_OVERHANG + 1,
  */
 #define OV_X      LEFT_X                  /**< The left column, px. */
 #define OV_Y      SU_PAGE_Y               /**< Under the strip: y 56. */
-#define OV_W      LEFT_W                  /**< 620 px. */
+#define OV_W      LEFT_W                  /**< 620px. */
 #define OV_H      (H - OV_Y - PAD)        /**< To the body's margin. */
 /*
- * SETTINGS' page: two columns of 48 px rows at a 56 px pitch, each a label
- * left of its 120 px value.  The caps and start values on the left, 260
+ * SETTINGS' page: two columns of 48px rows at a 56px pitch, each a label
+ * left of its 120px value.  The caps and start values on the left, 260
  * px, for labels of up to 13 cells; the trips, their help in the 8 x 16
- * face and the confirmations on the right, 324 px, for labels of up to 19
+ * face and the confirmations on the right, 324px, for labels of up to 19
  * cells and help lines of up to 36.  The save line at the page's foot
- * ends 4 px above the alert band.
+ * ends 4px above the alert band.
  */
 #define OV_ROW_H  UI_TAP_MIN              /**< A row's height, px. */
 #define OV_PITCH  56                      /**< From row to row, px. */
@@ -217,7 +217,7 @@ _Static_assert(OV_HELP_DY + 3 * OV_HELP_PITCH <= OV_CONFIRM_DY,
 
 /*
  * The question: its title, why it asks, the change, APPLY and CANCEL, and
- * at its foot where to turn it off, ending 4 px above the alert band.
+ * at its foot where to turn it off, ending 4px above the alert band.
  */
 #define ASK_BTN_W 240                     /**< APPLY and CANCEL, px. */
 #define ASK_BTN_H 60                      /**< Their height, px. */

@@ -65,7 +65,7 @@ bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
 /**
  * @brief The chip a touch lands on.
  *
- * A chip is hit across the band's whole height and 3 px either side, half
+ * A chip is hit across the band's whole height and 3px either side, half
  * the gap to the next one; STOP and the home tag are not chips.
  * @param st The bench status the band shows.
  * @param x The touch's panel x.

@@ -108,7 +108,7 @@
 #include "outputs_pages.h"
 
 /*
- * The ramp comes from the `Ramp limit` setting, 5 to 300 %/s.  It governs
+ * The ramp comes from the `Ramp limit` setting, 5 to 300%/s.  It governs
  * this bank, which is the modelled bench: the value it slews to is read by
  * telemetry_sim_step() and by nothing else, and only while the link is down.
  *
@@ -203,8 +203,8 @@ uint32_t s_recoveries_total;  /* since boot                       */
  * The bench and the screen run on separate cores.
  *
  * Touch, the outputs, the link and the heartbeat live in the control task at
- * a fixed 5 ms; drawing lives in app_main at whatever rate the panel manages.
- * A frame that costs 50 ms then delays what is shown and not what the bench
+ * a fixed 5ms; drawing lives in app_main at whatever rate the panel manages.
+ * A frame that costs 50ms then delays what is shown and not what the bench
  * does, and STOP does not wait for a repaint.
  *
  * The heartbeat follows the control task because the control task owns STOP,
@@ -272,7 +272,7 @@ QueueHandle_t     s_kst_q;     /**< app_main -> control task */
  * would compress by exactly the frames it missed, which is the frame-rate
  * coupling this task exists to remove.  Full means the renderer is more than
  * SAMPLE_Q_LEN samples behind; the oldest is dropped, because a plot that is
- * 400 ms out of date is worth less than one that is current.
+ * 400ms out of date is worth less than one that is current.
  */
 QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 /* The supply's samples, one entry each, for the same reason; each with the
@@ -474,7 +474,7 @@ arm_watch_t        s_arm_watch;
  * and inside 2 to 42, so it passes the far end's range check, sets
  * LINK_BN_RPM_OK, and reaches the plot and the CSV as a valid reading.  The
  * speed reported is the actual speed times the motor's poles over the count
- * held: 14.3 % low for a 12-pole motor converted as 14, and a factor of 21
+ * held: 14.3% low for a 12-pole motor converted as 14, and a factor of 21
  * at the ends of the range.
  *
  * The value travels beside the flag rather than being read from the settings

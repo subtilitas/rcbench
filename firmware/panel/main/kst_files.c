@@ -104,7 +104,7 @@ static bool io_walk(void *ctx, kst_store_visit_fn visit, void *visit_ctx)
 }
 
 /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a file
- * of 4 GiB and more as a small one. */
+ * of 4GiB and more as a small one. */
 static int32_t io_size(void *ctx, const char *name)
 {
     char path[PATH_MAX_LEN];

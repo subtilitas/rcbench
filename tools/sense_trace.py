@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Read the console log of an IOmcu built with SENSE_TRACE.
 
-The SENSE_TRACE build prints INA3221 CH1's 1 ms samples on the USB console
+The SENSE_TRACE build prints INA3221 CH1's 1ms samples on the USB console
 (shared/sense/sense_trace.h has the line format).  This tool takes a
 terminal capture of that console and, for each trace in it:
 
@@ -18,19 +18,19 @@ terminal capture of that console and, for each trace in it:
   3. prints the noise of the samples before the first command, as they
      are and through a moving mean of 4 and of 8 samples;
   4. replays every move through shared/servo/servo_move.c with the filter
-     at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A, and
+     at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10A, and
      prints for each setting whether the move is seen and when it arrives.
 
 A move is a command line, at the time of its edge line when the trace has
-one within 30 ms of it; an edge line with no command line that near is a
+one within 30ms of it; an edge line with no command line that near is a
 move too.  An edge line is one command's and a command line one edge's:
 as many of them are paired as can be, and of the ways to pair that many
 the one with the least distance in sum.  A slewed command's destination is
 its $D line's pulse.  A version 3 $D line is the end of the command whose
 $C time its `cmd=` gives; a version 2 $D line, which has no `cmd=`, is
-taken as the end of the latest command of its channel no more than 30 ms
+taken as the end of the latest command of its channel no more than 30ms
 after its time.
-Commands within 30 ms of each other change the current together: none of
+Commands within 30ms of each other change the current together: none of
 them is replayed.  A move that follows another output's move before that
 one arrived carries its current too; the tool does not tell these apart,
 and the earlier move reads `cut`.
@@ -40,12 +40,12 @@ chance.  The trace holds one current, CH1's, for every output.  With
 --loaded-channel N, once for each channel whose output has a load in
 CH1's supply, the trace is read as of those outputs alone: the $C and $D
 lines of every other channel are no moves, and no commands for the rule
-of the 30 ms.  An edge line pairs with a command line of a loaded channel
-first; one left over with a command line of another channel within 30 ms
+of the 30ms.  An edge line pairs with a command line of a loaded channel
+first; one left over with a command line of another channel within 30ms
 is that output's and no move.  The report says in its second line which
 channels are loaded, how many lines of which other channels are left out,
 and which loaded channel has no command line in the log.  Two loaded
-channels commanded within 30 ms of each other are still not replayed.
+channels commanded within 30ms of each other are still not replayed.
 Without the option every channel is loaded.  The tool cannot check the
 statement: an output named as not loaded that draws current puts it into
 the moves of the others.
@@ -77,14 +77,14 @@ fewer traces.
 A move's levels are taken from the trace as the servo test takes them from
 its meter:
 
-  level before   the mean of the 50 ms before the command
-  holding level  the mean of the 200 ms before the command that last left
+  level before   the mean of the 50ms before the command
+  holding level  the mean of the 200ms before the command that last left
                  the destination's pulse width; the idle level, the mean
                  of the samples before the trace's first command, while
                  that end has not been held
-  threshold      the largest of --floor (0.020 A), the largest distance of
+  threshold      the largest of --floor (0.020A), the largest distance of
                  a sample from the mean before the first command, and the
-                 same over the 200 ms before this command
+                 same over the 200ms before this command
 
 Each level is taken from the samples of one window, and each sample as
 the replay takes it: a clipped one as the last value before that end of
@@ -95,21 +95,21 @@ move that needs the level is replayed; the report names the window:
 
   before the first command   every move's threshold, and the holding level
                              of a move to a pulse width no move left
-  the 50 ms before a move    its level before
-  the 200 ms before a move   its threshold, and the holding level of each
+  the 50ms before a move    its level before
+  the 200ms before a move   its threshold, and the holding level of each
                              later move back to the pulse width it left
-  a move's samples           from 50 ms before it to the next move or the
+  a move's samples           from 50ms before it to the next move or the
                              trace's end: what the replay is fed
 
 The rules count samples, and the capture ends lost when the part goes
-offline.  The window is 3005 ms and the settle count 10 samples, as the
+offline.  The window is 3005ms and the settle count 10 samples, as the
 capture's.
 A move whose samples end before the rules end it -- the next command, or
 the trace's end -- reads `cut`.
 
 From the traces alone the tool prints which settings see and time every
 move, each setting's median arrival and its distance from the capture's
-setting (filter 4, band 0.05 A), and how far apart the settings put one
+setting (filter 4, band 0.05A), and how far apart the settings put one
 move's arrival.  Without --servo-csv no arrival is compared with the
 horn, and the report says so.
 
@@ -128,7 +128,7 @@ each boot's moves are paired on their own, and the rows of a later boot
 lie after those of an earlier one.  Where they do not, no row is paired
 and the tool says so.  A restart is a $T line whose millisecond tick
 lies before the last one's, or whose trace number is not past the last
-one's; both count modulo their range, 2^32 ms and 65536, and the later
+one's; both count modulo their range, 2^32ms and 65536, and the later
 of two is the one less than half the range on: 24.8 days, 32768 traces.
 Numbers that are missing are no restart: a trace with no console has a
 number and no line.  A restart after which neither goes back is not told.
@@ -143,7 +143,7 @@ Usage:
     python3 tools/sense_trace.py console.log --out traces --floor 0.004
     python3 tools/sense_trace.py console.log --loaded-channel 2
 
---floor is 0.000001 A to 1000 A, --pair-ms above 0 ms to 60000 ms,
+--floor is 0.000001A to 1000A, --pair-ms above 0ms to 60000ms,
 --csv-offset within 1e9 s of 0, --loaded-channel a channel as a $C line
 writes it: 0 to 65535, no sign, no leading zero.
 
@@ -183,7 +183,7 @@ SETTLE_N = 10
 CLIP_HI = 4095
 CLIP_LO = -4096
 CLIP_AS = 4094
-T_PER_MS = 10               # the trace counts 0.1 ms
+T_PER_MS = 10               # the trace counts 0.1ms
 RISE_MS = 50                # the level before a command
 HOLD_MS = 200               # a holding level
 EDGE_PAIR_MS = 30           # an edge line's command line lies this close
@@ -198,7 +198,7 @@ REF_FILTER = 4              # the capture's: SENSE_CAP_FILTER_N,
 REF_BAND_A = 0.05           # SERVO_MOVE_BAND_A
 SETTLE_HOLD_MS = 100        # the encoder finds a settle this long after it
 # A move's time in the replay, which counts in 32 bits from 0; its samples
-# are timed from it, and those of the 50 ms before it stay above 0.
+# are timed from it, and those of the 50ms before it stay above 0.
 REPLAY_BASE = 1000000
 # The ranges of the numbers on the command line.  The replay takes a
 # current as whole uA.
@@ -290,7 +290,7 @@ class Trace:
         self.number = number
         self.trig = trig
         self.t0 = t0                # as printed, modulo 2^32
-        self.t0_abs = t0_abs        # 0.1 ms, unwrapped across the log
+        self.t0_abs = t0_abs        # 0.1ms, unwrapped across the log
         self.boot = 0               # restarts of the IOmcu before it
         self.ms = ms
         self.length = length
@@ -301,13 +301,13 @@ class Trace:
         self.online = 0
         self.resets = 0
         self.have_setup = False
-        # Per sample: time in 0.1 ms from the trigger, and the shunt code.
+        # Per sample: time in 0.1ms from the trigger, and the shunt code.
         self.t: list[int] = []
         self.code: list[int] = []
         self.mv: dict[int, int] = {}        # sample index -> bus mV
         self.n_volts = 0
         # (kind, time, channel, pulse, the command a $D line names): the
-        # times in 0.1 ms from the trigger; None where a line has none.
+        # times in 0.1ms from the trigger; None where a line has none.
         self.marks: list[tuple[str, int, int | None, int | None,
                                int | None]] = []
         self.lost = 0
@@ -393,7 +393,7 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             if last_t0 is None:
                 t0_abs = t0
             else:
-                # Later traces lie later.  The 0.1 ms count wraps every
+                # Later traces lie later.  The 0.1ms count wraps every
                 # 4.97 days; the millisecond tick says how often it did
                 # between the two.
                 on = (t0 - last_t0[0]) & 0xFFFFFFFF
@@ -603,7 +603,7 @@ class Move:
     def __init__(self, tr: Trace, t: int, ch: int | None,
                  us: int | None) -> None:
         self.tr = tr
-        self.t = t                  # 0.1 ms from the trace's trigger
+        self.t = t                  # 0.1ms from the trace's trigger
         self.ch = ch
         self.us = us
         self.rise_a: float | None = None
@@ -722,7 +722,7 @@ def find_moves(tr: Trace, floor_a: float,
     # A slewed command's line carries its first pulse; its $D line the one
     # it ended at, which is the end the servo is then held at.  The $D
     # line's time is the last pulse change, which can lie before the frame
-    # time its $C line carries.  The $D line is written 50 ms after that
+    # time its $C line carries.  The $D line is written 50ms after that
     # time, past the samples up to there, so its place among the lines
     # says nothing.  Version 3's $D line names its command: the $C line of
     # its channel at its cmd= time.  One whose command line is not in the
@@ -796,11 +796,11 @@ def find_moves(tr: Trace, floor_a: float,
     #   idle       the samples before the first move: every move's
     #              threshold, and the holding level of a move to a pulse
     #              width no move left before
-    #   rise k     the 50 ms before move k: its level before
-    #   hold k     the 200 ms before move k: its threshold, and the
+    #   rise k     the 50ms before move k: its level before
+    #   hold k     the 200ms before move k: its threshold, and the
     #              holding level of each later move back to the pulse
     #              width move k left
-    #   samples k  from 50 ms before move k to the next move, or the
+    #   samples k  from 50ms before move k to the next move, or the
     #              trace's end: what the replay is fed
     idle = Level(tr, None, moves[0].t)
     hold: list[Level] = []
@@ -980,7 +980,7 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
               pair_s: float, offset: float | None) -> tuple[int, bool]:
     """Give each move the travel time of the row that belongs to it.
 
-    A row's command lies its travel time and the encoder's 100 ms hold
+    A row's command lies its travel time and the encoder's 100ms hold
     before the row.  Returns the rows paired and whether another offset
     pairs as many rows and not the same rows with the same moves.
     """

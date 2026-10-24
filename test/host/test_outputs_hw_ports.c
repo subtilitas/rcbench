@@ -11,7 +11,7 @@
  * not have is not held; a port without a pin let go; a session taking a
  * parked pin and the pin parked again when it comes back; a DShot port
  * bound at its kbit/s rate and moved by a rate or function change, framed
- * every 1 ms only while the bank is armed for the throttle, its frame the
+ * every 1ms only while the bank is armed for the throttle, its frame the
  * throttle, 0 at the rest, and no frame on SAFE, on ARM SURFACE or on
  * STOP; a DShot port no state machine is left for not held.
  *
@@ -302,7 +302,7 @@ TEST_CASE(a_dshot_port_is_bound_at_its_bit_rate_and_moved_by_it)
     counts_zero();
     dshot_port(14u, 150u);
     CHECK_EQ(g_dshot_kbit, 150u);
-    /* To SERVO PWM at 50 Hz: the DShot way let go, the generator taken. */
+    /* To SERVO PWM at 50Hz: the DShot way let go, the generator taken. */
     counts_zero();
     ports(13u, 14u, 0u);
     CHECK_EQ(g_dshot_releases, 1);
@@ -382,7 +382,7 @@ TEST_CASE(a_dshot_port_frames_every_ms_only_while_armed_for_the_throttle)
     CHECK_EQ(g_dshot_sends, 1);
     CHECK_EQ(g_dshot_value, 0u);
     CHECK_EQ(g_last_pin, 14u);
-    /* No second frame inside the 1 ms period; the next at 1 ms. */
+    /* No second frame inside the 1ms period; the next at 1ms. */
     pico_stub_us += 999u;
     outputs_hw_service(&o);
     CHECK_EQ(g_dshot_sends, 1);
@@ -456,7 +456,7 @@ TEST_CASE(a_dshot_port_rearmed_sends_the_arming_frames_throttle_first)
     outputs_hw_service(&o);
     CHECK_EQ(g_dshot_sends, 1);
     CHECK_EQ(g_dshot_value, (uint16_t)DSHOT_CMD_MOTOR_STOP);
-    /* The page's THROTTLE is what a re-arm runs at: 50.00 % is the frame
+    /* The page's THROTTLE is what a re-arm runs at: 50.00% is the frame
      * dshot_throttle() makes of half the span. */
     control_frame(&o, 0u, 0u, ++now);
     outputs_step(&o, now);
@@ -496,13 +496,13 @@ TEST_CASE(a_dshot_port_ignores_the_tester_drive_bit)
     CHECK_EQ(g_dshot_sends, 0);
 }
 
-/* The 1 ms period across the microsecond clock's wrap at 2^32 us. */
+/* The 1ms period across the microsecond clock's wrap at 2^32us. */
 TEST_CASE(a_dshot_port_period_survives_the_clock_wrap)
 {
     outputs_t o;
     throttle_bank(&o);
     outputs_hw_init();
-    pico_stub_us = 0xFFFFFC00u;      /* 1,024 us before the wrap */
+    pico_stub_us = 0xFFFFFC00u;      /* 1,024us before the wrap */
     dshot_port(14u, 300u);
     outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), 0u);
     counts_zero();
@@ -511,7 +511,7 @@ TEST_CASE(a_dshot_port_period_survives_the_clock_wrap)
     pico_stub_us += 999u;            /* not due, still before the wrap */
     outputs_hw_service(&o);
     CHECK_EQ(g_dshot_sends, 1);
-    pico_stub_us += 1u;              /* due, 24 us before the wrap */
+    pico_stub_us += 1u;              /* due, 24us before the wrap */
     outputs_hw_service(&o);
     CHECK_EQ(g_dshot_sends, 2);
     pico_stub_us += 1000u;           /* due, past the wrap */

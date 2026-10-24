@@ -21,14 +21,14 @@ measured angle into a blade reference ("between blades two and three") in
 addition to the angle.
 
 The count's `-` and `+` step it on the press. A tap on the count opens the
-keypad over both cards, 1008 x 428 px with keys of 242 x 72 px, its foot
-4 px above the alert band. OK takes 2 to 6; any other count keeps the
+keypad over both cards, 1008 x 428px with keys of 242 x 72px, its foot
+4px above the alert band. OK takes 2 to 6; any other count keeps the
 keypad open and names the range in the warning colour. CANCEL, OK with
 nothing typed, the home tag and a tab close it and change nothing.
 
 ![The blade count's keypad](img/balance-keypad.png)
 
-The readings (vibration 0.42 g, angle 265°, mass to add 0.35 g) are fixed
+The readings (vibration 0.42g, angle 265°, mass to add 0.35g) are fixed
 values and not a measurement. A SIMULATED mark and the words "Not measured."
 stand under them, in the same pill the menu uses. Only the BALANCE pane carries
 the mark.
@@ -70,16 +70,16 @@ blade tip inside a duct is not accessible:
 Without an index pulse there is no phase reference and balancing uses the
 four-run method: a baseline run, then a trial mass at 0°, 120° and 240°. The
 method does not measure phase, so a constant sensor delay does not affect it.
-It needs bandwidth: at 10,000 rpm (revolutions per minute) the fundamental is
-167 Hz, which an IMU (inertial measurement unit) streaming fused orientation at
-100 Hz cannot resolve. Use an analogue sensor (piezo or analogue accelerometer)
+It needs bandwidth: at 10,000rpm (revolutions per minute) the fundamental is
+167Hz, which an IMU (inertial measurement unit) streaming fused orientation at
+100Hz cannot resolve. Use an analogue sensor (piezo or analogue accelerometer)
 into the IOmcu's ADC (analogue-to-digital converter).
 
 With an index pulse the number of runs halves, and only the variation of the
 sensor delay matters; a constant delay cancels because the trial run measures
-the whole chain. An analogue sensor has a delay of about 15 µs, under 1° at
-10,000 rpm. A fused IMU has about 5 ms of delay, neither constant nor
-specified, which is 300° at 10,000 rpm.
+the whole chain. An analogue sensor has a delay of about 15µs, under 1° at
+10,000rpm. A fused IMU has about 5ms of delay, neither constant nor
+specified, which is 300° at 10,000rpm.
 
 ## What the measurement needs
 

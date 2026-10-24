@@ -6,7 +6,7 @@
  * The panel offers a browser page for two jobs: a panel firmware upload and
  * the card's files for download.  It reaches the browser one of two ways:
  *
- *   ACCESS POINT  its own network, 2.4 GHz, WPA2 (Wi-Fi Protected Access 2),
+ *   ACCESS POINT  its own network, 2.4GHz, WPA2 (Wi-Fi Protected Access 2),
  *                 named "rcbench-" and 4 hex digits of the MAC (media access
  *                 control) address, with a password of WA_SECRET_LEN
  *                 characters made fresh at every start; one client at a time

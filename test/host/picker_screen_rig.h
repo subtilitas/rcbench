@@ -31,7 +31,7 @@
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H
-/** @brief The lowest row the screen draws or takes a press on: 4 px above
+/** @brief The lowest row the screen draws or takes a press on: 4px above
  *  the alert band, body y 492. */
 #define PK_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 

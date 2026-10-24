@@ -31,7 +31,7 @@
  *        bits at five samples each is 106, which is four words.
  *
  * A poll that took less than this would take a reply that has not finished
- * arriving.  The loop turns over thousands of times in the 70 us a capture
+ * arriving.  The loop turns over thousands of times in the 70us a capture
  * takes, so the first poll after a frame always finds the queue short --
  * draining it there would throw away every reply this bench will ever get.
  */
@@ -267,7 +267,7 @@ void out_dshot_stop(uint8_t pin)
     /*
      * The frame in flight is cut rather than allowed to finish.  A truncated
      * frame fails the ESC's checksum and is discarded, so nothing acts on
-     * it; waiting for one to finish would put a busy-wait of up to 107 us at
+     * it; waiting for one to finish would put a busy-wait of up to 107us at
      * DShot150 into the failsafe path, which is the one path that must not
      * wait for anything.
      *

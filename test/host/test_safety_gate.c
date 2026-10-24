@@ -4,18 +4,18 @@
  *
  * The second half is a model of both main loops around the real shared
  * code -- link_dev.c, link_control.c, safety_gate.c, heartbeat.c, arming.c
- * and outputs.c -- on a 1 ms clock:
+ * and outputs.c -- on a 1ms clock:
  *
  *   IOmcu  one pass per millisecond: a frame served, then
  *                safety_gate_step(), then outputs_arm() with its answer.  A
  *                restart is link_dev_init() and heartbeat_mon_init() again,
  *                with a throttle channel bound as the flash would restore
  *                it and no command.
- *   panel        a pass, then a wait of 5 ms plus the pass's own work.  A
+ *   panel        a pass, then a wait of 5ms plus the pass's own work.  A
  *                pass pumps the heartbeat, serves the arming policy, drains
- *                the operator's commands and polls the far end every 50 ms
- *                while the link is up and every 1000 ms while it is down.
- *   the wire     an exchange costs 1 ms.  A request sent while the
+ *                the operator's commands and polls the far end every 50ms
+ *                while the link is up and every 1000ms while it is down.
+ *   the wire     an exchange costs 1ms.  A request sent while the
  *                IOmcu is down is lost after LINK_HOST_TIMEOUT_MS
  *                (the controller chip acknowledged it), fails at once (the
  *                panel's controller is bus-off), or is retransmitted until
@@ -55,7 +55,7 @@ static void gate_init(uint32_t now)
     heartbeat_mon_init(&g_beat);
 }
 
-/* Passes of 1 ms from @p from to @p to, an edge every 20 ms, a request
+/* Passes of 1ms from @p from to @p to, an edge every 20ms, a request
  * every pass so the link stays out of silence. */
 static safety_gate_t gate_run(uint32_t from, uint32_t to)
 {
@@ -134,7 +134,7 @@ TEST_CASE(a_distrusted_heartbeat_latches_until_clear)
     g_control[LINK_CT_THROTTLE] = 7000u;
     CHECK(gate_run(200, 301).arm);
 
-    /* One edge 2 ms after a real one: under HEARTBEAT_MIN_GAP_MS. */
+    /* One edge 2ms after a real one: under HEARTBEAT_MIN_GAP_MS. */
     g_dev.last_request_ms = 302u;
     safety_gate_t g = safety_gate_step(&g_beat, true, &g_dev, g_control, 302u);
     CHECK(g.off);
@@ -165,8 +165,8 @@ TEST_CASE(a_distrusted_heartbeat_latches_until_clear)
 
 TEST_CASE(a_silent_line_latches_at_the_ceiling_and_not_before)
 {
-    /* The last edge at 300 ms: trusted for 149 ms of silence, and not at
-     * HEARTBEAT_MAX_GAP_MS (150 ms). */
+    /* The last edge at 300ms: trusted for 149ms of silence, and not at
+     * HEARTBEAT_MAX_GAP_MS (150ms). */
     for (uint32_t base = 0u; base < 2u; ++base) {
         const uint32_t t0 = base == 0u ? 0u : 0xFFFFFF00u;   /* and the wrap */
         gate_init(t0);
@@ -183,13 +183,13 @@ TEST_CASE(a_silent_line_latches_at_the_ceiling_and_not_before)
             g_dev.last_request_ms = t0 + i;
             g = safety_gate_step(&g_beat, false, &g_dev, g_control, t0 + i);
         }
-        CHECK(g.arm);                        /* 149 ms: still inside */
+        CHECK(g.arm);                        /* 149ms: still inside */
         CHECK(!g.off);
         CHECK(!link_dev_arm_latched(&g_dev));
         g_dev.last_request_ms = t0 + 300u + HEARTBEAT_MAX_GAP_MS;
         g = safety_gate_step(&g_beat, false, &g_dev, g_control,
                              t0 + 300u + HEARTBEAT_MAX_GAP_MS);
-        CHECK(g.off);                        /* 150 ms */
+        CHECK(g.off);                        /* 150ms */
         CHECK(!g.arm);
         CHECK(link_dev_arm_latched(&g_dev));
         g_dev.last_request_ms = t0 + 301u + HEARTBEAT_MAX_GAP_MS;
@@ -304,7 +304,7 @@ TEST_CASE(a_role_arm_is_passed_on_and_every_stop_takes_it_whole)
     CHECK(outputs_role_armed(&bank, OUT_ROLE_THROTTLE));
     CHECK(!outputs_role_armed(&bank, OUT_ROLE_SURFACE));
 
-    /* The heartbeat: one edge 2 ms after a real one. */
+    /* The heartbeat: one edge 2ms after a real one. */
     g_dev.last_request_ms = 262u;
     (void)safety_gate_step(&g_beat, true, &g_dev, g_control, 261u);
     g = safety_gate_step(&g_beat, true, &g_dev, g_control, 262u);
@@ -423,7 +423,7 @@ TEST_CASE(the_pass_arms_only_on_the_gate_with_no_port_out_and_no_update)
 #define D_CH_THROTTLE LINK_OUT_CHANNELS   /* the IOmcu's own throttle */
 #define P_CH_THROTTLE 0u
 
-static uint32_t T;                /* the clock, 1 ms                       */
+static uint32_t T;                /* the clock, 1ms                       */
 static uint32_t T0;               /* where a scenario starts it            */
 static bool     w_line;           /* the level of the panel's safety line  */
 static uint32_t w_glitch_at;      /* 0: none.  The line reads inverted for
@@ -582,7 +582,7 @@ static unsigned        p_quiet_release, p_quiet_clear, p_quiet_frame;
  * panel first finished a far-end stop. */
 static uint32_t        p_write_quiet_at, p_stop_at, p_any_quiet_at;
 static bool            p_write_quiet, p_stop_seen, p_any_quiet;
-static uint32_t        p_servo_next;     /* the 100 ms servo refresh */
+static uint32_t        p_servo_next;     /* the 100ms servo refresh */
 /* How late each exchange of the arm's handshake is answered, once: 1 the
  * servo release, 2 CLEAR, 3 the frame that arms.  The request reaches the
  * IOmcu on time; its answer is what takes long. */
@@ -647,7 +647,7 @@ static void events(void)
     }
 }
 
-/* What every pass and every 5 ms of an exchange's wait does. */
+/* What every pass and every 5ms of an exchange's wait does. */
 static void p_pump(void)
 {
     const bool touch_out = p_touch_out_ms != 0u
@@ -1043,7 +1043,7 @@ static void run_until(uint32_t end)
         }
         if (w_services && p_link_up && (int32_t)(T - p_servo_next) >= 0) {
             /* servo_link_service(): a held position, written again every
-             * 100 ms, ahead of the poll. */
+             * 100ms, ahead of the poll. */
             link_msg_t sv;
             p_servo_next = T + 100u;
             p_poll_stage = 5;
@@ -1055,7 +1055,7 @@ static void run_until(uint32_t end)
     }
 }
 
-/* Armed at 1 s, 70 % at 1.5 s: the run every scenario below starts from. */
+/* Armed at 1s, 70% at 1.5s: the run every scenario below starts from. */
 static void armed_at_70(uint32_t t0, wire_t wire)
 {
     world_init(t0);
@@ -1079,7 +1079,7 @@ static bool restart_rearms(uint32_t t0, uint32_t reset_at, uint32_t down_ms,
     e_reset_at = t0 + reset_at;
     e_boot_at  = t0 + reset_at + down_ms;
     e_reset_on = e_boot_on = true;
-    /* Looked at 100 ms ahead: a pass can run a few milliseconds past the
+    /* Looked at 100ms ahead: a pass can run a few milliseconds past the
      * time it is asked to stop at. */
     run_until(reset_at - 100u);
     const bool ran = d_drives_70() && d_arm_edges == 1u;
@@ -1138,8 +1138,8 @@ TEST_CASE(a_restarted_coprocessor_is_not_armed_again)
 
 TEST_CASE(a_restart_across_the_tick_wrap_is_not_armed_again)
 {
-    /* The reset at 3000 ms after a start 2800 ms before the wrap: the
-     * outage, the panel's 1000 ms timeout and its 1 Hz probe all span it. */
+    /* The reset at 3000ms after a start 2800ms before the wrap: the
+     * outage, the panel's 1000ms timeout and its 1Hz probe all span it. */
     for (unsigned i = 0; i < N_DOWNS; ++i) {
         unsigned rearmed = 0;
         for (uint32_t ph = 0; ph < 55u; ph += 6u) {
@@ -1168,7 +1168,7 @@ TEST_CASE(either_end_alone_holds_a_restart_it_can_see)
     w_panel_ignores_link_edges = false;
 
     /* An IOmcu that starts unlatched: the panel's stop on the
-     * link-down edge holds every outage the panel notices -- 60 ms and
+     * link-down edge holds every outage the panel notices -- 60ms and
      * longer with a lost or failed request. */
     w_dev_starts_unlatched = true;
     rearmed = 0;
@@ -1182,8 +1182,8 @@ TEST_CASE(either_end_alone_holds_a_restart_it_can_see)
     w_dev_starts_unlatched = false;
 }
 
-/* Armed with no link at 1 s and at 70 % from 1.5 s; an IOmcu is
- * powered at 4 s. */
+/* Armed with no link at 1s and at 70% from 1.5s; an IOmcu is
+ * powered at 4s. */
 static void sim_then_power(void)
 {
     world_init(0);
@@ -1240,7 +1240,7 @@ TEST_CASE(a_bank_armed_with_no_link_arms_no_far_end_that_appears)
 
 TEST_CASE(a_pulled_cable_stops_the_panel_and_arms_nothing_on_return)
 {
-    /* The IOmcu keeps running; the panel's sends fail for 300 ms. */
+    /* The IOmcu keeps running; the panel's sends fail for 300ms. */
     armed_at_70(0, WIRE_BUS_OFF);
     run_until(3000);
     CHECK(d_drives_70());
@@ -1272,8 +1272,8 @@ TEST_CASE(a_pulled_cable_stops_the_panel_and_arms_nothing_on_return)
 
 TEST_CASE(a_heartbeat_glitch_stays_disarmed_until_clear)
 {
-    /* One panel pass at 3000 ms made longer, which stretches the interval
-     * between two writes of ARM = 1 to 52, 98 and 123 ms. */
+    /* One panel pass at 3000ms made longer, which stretches the interval
+     * between two writes of ARM = 1 to 52, 98 and 123ms. */
     static const uint32_t extra[]    = { 0, 76, 101 };
     static const uint32_t interval[] = { 52, 98, 123 };
     for (unsigned i = 0; i < 3u; ++i) {
@@ -1326,7 +1326,7 @@ TEST_CASE(a_heartbeat_glitch_stays_disarmed_until_clear)
 
 TEST_CASE(the_first_arm_after_a_stop_is_taken)
 {
-    /* A pass of 5 to 9 ms, the hold completing at each of 110 phases. */
+    /* A pass of 5 to 9ms, the hold completing at each of 110 phases. */
     for (p_pass_work_ms = 0; p_pass_work_ms <= 4u; ++p_pass_work_ms) {
         unsigned refused = 0, not_armed = 0;
         uint32_t slowest = 0;
@@ -1354,7 +1354,7 @@ TEST_CASE(the_first_arm_after_a_stop_is_taken)
             T_FAIL("pass %u ms: refused %u, not armed %u of 110",
                    (unsigned)(5u + p_pass_work_ms), refused, not_armed);
         }
-        /* Inside the bound, with room: settle plus wait is 300 ms. */
+        /* Inside the bound, with room: settle plus wait is 300ms. */
         CHECK(slowest <= 200u);
     }
     p_pass_work_ms = 0;
@@ -1362,11 +1362,11 @@ TEST_CASE(the_first_arm_after_a_stop_is_taken)
 
 TEST_CASE(a_link_that_goes_while_an_arm_waits_is_a_stop)
 {
-    /* STOP at 3 s, the hold completes at 6 s, and the IOmcu goes down
-     * for 3 s somewhere between 100 ms before the hold and the end of the
-     * wait: every 5 ms, and every millisecond from 6090 to 6150 ms, where
+    /* STOP at 3s, the hold completes at 6s, and the IOmcu goes down
+     * for 3s somewhere between 100ms before the hold and the end of the
+     * wait: every 5ms, and every millisecond from 6090 to 6150ms, where
      * the question about the line, the CLEAR and the frame that arms are
-     * on the wire.  An exchange nobody answers has waited 1000 ms, past
+     * on the wire.  An exchange nobody answers has waited 1000ms, past
      * the bound: that is a link lost, not an arm given up or refused. */
     static const wire_t wires[] = { WIRE_LOST, WIRE_BUS_OFF, WIRE_RETX };
     for (unsigned w = 0; w < 3u; ++w) {
@@ -1458,7 +1458,7 @@ TEST_CASE(a_touch_outage_disarms_and_the_next_arm_is_taken)
         op_at(2, 6000, OP_ARM, 0);
         run_until(5900);
         /* ARMING_TOUCH_DEAD_MS is counted from the last answer, which is
-         * the pump before the outage: up to 5 ms earlier. */
+         * the pump before the outage: up to 5ms earlier. */
         const bool disarmed = !outputs_driving(&d_bank);
         if (outs[i] >= 501u) {
             CHECK(disarmed);
@@ -1484,7 +1484,7 @@ TEST_CASE(a_touch_outage_disarms_and_the_next_arm_is_taken)
 
 TEST_CASE(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll)
 {
-    /* Armed at 70 %.  The poll's read is answered and the IOmcu goes
+    /* Armed at 70%.  The poll's read is answered and the IOmcu goes
      * down under the write of ARM and THROTTLE that follows it.  That poll
      * has failed: the stop is latched in it, not at the next poll's
      * timeout a second later. */
@@ -1517,7 +1517,7 @@ TEST_CASE(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll)
 
 TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
 {
-    /* Armed at 70 %; the IOmcu goes down at each millisecond of two
+    /* Armed at 70%; the IOmcu goes down at each millisecond of two
      * poll periods.  Whichever exchange is the first to end unanswered --
      * the poll's read, its write, a page service after the write, the
      * status read after the poll, the servo refresh ahead of the next --
@@ -1557,7 +1557,7 @@ TEST_CASE(any_exchange_nobody_answers_stops_an_armed_panel_at_once)
     w_services = false;
 }
 
-/* STOP at 3 s, the hold completes at 6 s, and the answers to the servo
+/* STOP at 3s, the hold completes at 6s, and the answers to the servo
  * release, the CLEAR and the frame that arms come that many ms late. */
 static void slow_handshake(uint32_t release_ms, uint32_t clear_ms,
                            uint32_t frame_ms)
@@ -1573,7 +1573,7 @@ static void slow_handshake(uint32_t release_ms, uint32_t clear_ms,
 
 TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
 {
-    /* Answered 20 ms late: inside the deadline, and the arm is taken. */
+    /* Answered 20ms late: inside the deadline, and the arm is taken. */
     for (int st = 1; st <= 3; ++st) {
         slow_handshake(st == 1 ? 20u : 0u, st == 2 ? 20u : 0u,
                        st == 3 ? 20u : 0u);
@@ -1583,7 +1583,7 @@ TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
         CHECK(outputs_driving(&d_bank));
     }
 
-    /* The servo release answered 250 ms late: past the deadline before
+    /* The servo release answered 250ms late: past the deadline before
      * CLEAR.  No CLEAR, no frame; the IOmcu's latch was never
      * released; the panel is disarmed with no stop, and the next hold
      * arms. */
@@ -1602,9 +1602,9 @@ TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
     CHECK_EQ(d_arm_edges, 2);
     CHECK(outputs_driving(&d_bank));
 
-    /* The release answered 100 ms late and the CLEAR 150 ms: past the
+    /* The release answered 100ms late and the CLEAR 150ms: past the
      * deadline before the frame, with the IOmcu's link watchdog not
-     * yet at its 200 ms.  No frame is written.  The CLEAR released the IOmcu's latch; the
+     * yet at its 200ms.  No frame is written.  The CLEAR released the IOmcu's latch; the
      * panel's stop withholds the heartbeat and the IOmcu sets it
      * again within HEARTBEAT_MAX_GAP_MS of the last edge. */
     slow_handshake(100u, 150u, 0u);
@@ -1633,7 +1633,7 @@ TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
     CHECK_EQ(d_arm_edges, 2);                    /* the next hold */
     CHECK(outputs_driving(&d_bank));
 
-    /* The release answered 100 ms late and the frame that arms 150 ms:
+    /* The release answered 100ms late and the frame that arms 150ms:
      * written inside the deadline, acknowledged past it.  The bound does
      * not reach that: the IOmcu has taken the frame and the bench is
      * armed, at rest. */

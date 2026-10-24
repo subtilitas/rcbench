@@ -16,7 +16,7 @@ check, a SUPPLY ON without a heartbeat, a transaction after a stop. The
 console has no rights the panel does not have.
 
 A request from the console is not link traffic. It does not hold the link's
-silence failsafe off (200 ms), and it is not a heartbeat. Every page that
+silence failsafe off (200ms), and it is not a heartbeat. Every page that
 needs a trusted heartbeat and a link that is not silent needs a running
 panel beside the console: SUPPLY's ON, a KST session, every HITEC command
 but ABORT and CLOSE, and an ARM. Without a panel those are refused or
@@ -26,7 +26,7 @@ The console can write what the panel can write, CONTROL included. A write
 of ARM from the console arms the bank when every rule of the safety gate
 lets it ([Safety](Safety.md)). A CLEAR written from the console releases
 the arm latch and the failsafe as the panel's does; the link goes silent
-again 200 ms after the panel's last request. Use the console on a bench
+again 200ms after the panel's last request. Use the console on a bench
 with no propeller and the outputs secured, as for any bench work.
 
 ## Building it
@@ -89,7 +89,7 @@ nack page=0x2A off=4: NOT_ARMED (5)
 
 Lines typed are shown here after `> `; the console prints no prompt. The
 first line reads the protocol version, 4.27. The second is SUPPLY's ON at
-5000 mV and 1000 mA, refused because no panel sends a heartbeat. With a
+5000mV and 1000mA, refused because no panel sends a heartbeat. With a
 panel running, the same line is taken:
 
 ```text
@@ -161,16 +161,16 @@ every value set on SETUP is in force at once.
 lead and every bit time sent. The lead is the one asked, or longer: the PIO
 (programmable input/output) program sends whole words of 16 bit times, and
 the bit times that pad the front of the stream to a word count as lead. A D
-series read gives `lead_ns=559886`, at a bit time of 8.68 us:
+series read gives `lead_ns=559886`, at a bit time of 8.68us:
 
 | Part | Bit times | Time |
 | --- | ---: | ---: |
-| Lead: 8 cycles and the 13 bit times of padding (88 us asked) | 13.5 | 117.2 us |
-| 5 bytes of 10 bits | 50 | 434.0 us |
-| 1 released bit time before the receiver starts | 1 | 8.7 us |
-| `lead_ns` | 64.5 | 559.9 us |
+| Lead: 8 cycles and the 13 bit times of padding (88us asked) | 13.5 | 117.2us |
+| 5 bytes of 10 bits | 50 | 434.0us |
+| 1 released bit time before the receiver starts | 1 | 8.7us |
+| `lead_ns` | 64.5 | 559.9us |
 
-A D series write gives `lead_ns=705283`: 89.0 us of lead, 70 bit times of
+A D series write gives `lead_ns=705283`: 89.0us of lead, 70 bit times of
 bytes and 1 released bit time.
 
 | Command | Does |
@@ -183,10 +183,10 @@ bytes and 1 released bit time.
 | `hitec send <port> [lead=<us>] [gap=<bits>] [window=<us>] [rx=<n>] [dec=<dec>] <byte>...` | SEND of 1 to 8 bytes |
 | `hitec listen <port> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | LISTEN |
 | `hitec level <port> 0\|1 <us>` | LEVEL |
-| `hitec power <port> mv=<mV> ma=<mA> off=<ms> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | POWER: the supply off, held off, on at 4800 to 6000 mV, and the LISTEN from the ON |
-| `hitec c <port> <cmd> <p1> <p2>` | a classic command with its sum byte, 1 idle bit between bytes, a window of 1500 us for 2 bytes, and the classic decoder when the command is one the module knows |
-| `hitec d <port> read <id> <addr>` | a D series read: 88 us of lead asked, driven low for 117.2 us, 5 bytes, a window of 25,000 us for 8 bytes, and the D series decoder |
-| `hitec d <port> write <id> <addr> <value>` | a D series write: 88 us of lead asked, driven low for 89.0 us, 7 bytes, nothing received |
+| `hitec power <port> mv=<mV> ma=<mA> off=<ms> window=<us> rx=<n> [answer=<byte>] [dec=<dec>]` | POWER: the supply off, held off, on at 4800 to 6000mV, and the LISTEN from the ON |
+| `hitec c <port> <cmd> <p1> <p2>` | a classic command with its sum byte, 1 idle bit between bytes, a window of 1500us for 2 bytes, and the classic decoder when the command is one the module knows |
+| `hitec d <port> read <id> <addr>` | a D series read: 88us of lead asked, driven low for 117.2us, 5 bytes, a window of 25,000us for 8 bytes, and the D series decoder |
+| `hitec d <port> write <id> <addr> <value>` | a D series write: 88us of lead asked, driven low for 89.0us, 7 bytes, nothing received |
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
 
@@ -194,7 +194,7 @@ An option of `send`, `listen` or `power` left out is 0: no gap, no
 window, no byte received, no decoder. `answer` is the exception: left out,
 nothing is answered; `answer=0` answers 0x00. A `lead=` left out still
 leaves the front padding of the PIO words: a 5-byte D series SEND is
-driven low for 117.2 us with or without `lead=88`. `send` adds no sum
+driven low for 117.2us with or without `lead=88`. `send` adds no sum
 byte. The raw form of `hitec d 0 read 0 0x32`:
 
 ```text
@@ -206,7 +206,7 @@ The last byte is the low byte of the sum of every byte after the header
 which counts the header, got no answer from a D485HW.
 
 A D series line needs a pull-up on the board. Tested with a D485HW:
-2.2 kOhm from the signal wire to the servo supply, and every read is
+2.2kOhm from the signal wire to the servo supply, and every read is
 answered; with the pad's pull-up alone the servo answers none
 (`rx=SILENT`). [The programming port for Hitec servos](LinkHitec.md#the-way-in-and-out)
 has the unknowns.
@@ -259,7 +259,7 @@ that way.
   in pieces over several passes; its rest goes first. Any line up to the
   longest, 200 bytes with its LF, leaves with the SDK's 64-byte buffer as
   well.
-- The IOmcu's own lines, `rcbench-iomcu: ...` every 3 s and after a flash
+- The IOmcu's own lines, `rcbench-iomcu: ...` every 3s and after a flash
   write, go through the same output in this build: they come after the
   line before them, never inside it, and end with LF alone.
 - `shared/outputs/page_console.c` holds the rules and

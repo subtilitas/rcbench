@@ -148,8 +148,8 @@ bool dshot_gcr_decode(uint32_t line, uint16_t *out)
 static void erpm_from_payload(uint16_t payload, dshot_telem_t *out)
 {
     out->kind = DSHOT_TELEM_ERPM;
-    /* Nine bits of mantissa shifted by three bits of exponent: 1 us to
-     * 65408 us, which is 917 rpm to 60 million at one pole pair. */
+    /* Nine bits of mantissa shifted by three bits of exponent: 1us to
+     * 65408us, which is 917rpm to 60 million at one pole pair. */
     out->period_us = (uint32_t)(payload & 0x01FFu) << (payload >> 9);
     out->erpm = (payload == ERPM_STOPPED || out->period_us == 0u)
                     ? 0u

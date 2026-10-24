@@ -128,7 +128,7 @@ static log_viewer_page_t g_last_page __attribute__((unused));
 static int g_dir_index __attribute__((unused)) = -1;
 static log_mem_ctx_t g_ctx __attribute__((unused));
 /* A size the fixture card lists for one entry in place of its own, and the
- * entry, or -1 for none: an exFAT card holds files of 4 GiB and more. */
+ * entry, or -1 for none: an exFAT card holds files of 4GiB and more. */
 static int g_big_index __attribute__((unused)) = -1;
 static uint64_t g_big_size __attribute__((unused));
 static int g_open_calls __attribute__((unused));        /* how often open() was asked */
@@ -469,7 +469,7 @@ static inline int first_diff(const gfx_color_t *a, const gfx_color_t *b, int *co
 
 /*
  * The accent tab on the browse panel's top edge is the title's width plus
- * 26 px, and its top row is the one row the chamfer does not cut, so the run
+ * 26px, and its top row is the one row the chamfer does not cut, so the run
  * of accent pixels along it measures the title.  Cheaper than reading pixels
  * back as letters, and it fails when the title stops saying what it should.
  */

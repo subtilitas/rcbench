@@ -6,17 +6,17 @@
  *
  * If the layout moves these move with it.  Taken by the screens' suites.
  *
- *   - UPDATES, in the body under the band: the buttons 460 x 56 px from
- *     x 16 at a 64 px pitch from y 16 (CHECK, the reminder, RELEASES, the
- *     download's hold); the IOmcu's hold 460 x 56 px at y 428; the card
+ *   - UPDATES, in the body under the band: the buttons 460 x 56px from
+ *     x 16 at a 64px pitch from y 16 (CHECK, the reminder, RELEASES, the
+ *     download's hold); the IOmcu's hold 460 x 56px at y 428; the card
  *     x 484 to 1016, y 16 to 488;
- *   - the reminder, in the body: NOT NOW and NEVER REMIND ME 398 x 56 px
- *     at y 328 from x 106 and 520, the hold 812 x 64 px at y 400 from
+ *   - the reminder, in the body: NOT NOW and NEVER REMIND ME 398 x 56px
+ *     at y 328 from x 106 and 520, the hold 812 x 64px at y 400 from
  *     x 106;
- *   - the IOmcu's question, in the body: CANCEL and START 398 x 56 px at
+ *   - the IOmcu's question, in the body: CANCEL and START 398 x 56px at
  *     y 288 from x 106 and 520;
- *   - PANEL UPDATE, on the whole panel: its one button 240 x 56 px from
- *     x 24, 18 px above the panel's foot.
+ *   - PANEL UPDATE, on the whole panel: its one button 240 x 56px from
+ *     x 24, 18px above the panel's foot.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,8 +33,8 @@
 #define UP_CHECK_Y     UP_ROW_Y(0)   /**< CHECK FOR UPDATES. */
 #define UP_REMIND_Y    UP_ROW_Y(1)   /**< REMINDER AT START. */
 #define UP_CHAN_Y      UP_ROW_Y(2)   /**< RELEASES. */
-#define UP_DL_Y        UP_ROW_Y(3)   /**< HOLD 2 s: DOWNLOAD & INSTALL. */
-#define UP_CU_T        428      /**< HOLD 2 s: UPDATE IOMCU's top. */
+#define UP_DL_Y        UP_ROW_Y(3)   /**< HOLD 2s: DOWNLOAD & INSTALL. */
+#define UP_CU_T        428      /**< HOLD 2s: UPDATE IOMCU's top. */
 #define UP_CU_Y        (UP_CU_T + 28)  /**< Its middle row. */
 #define UP_CARD_X      484      /**< The card's left edge. */
 #define UP_CARD_B      488      /**< The row under the card's foot. */
@@ -58,5 +58,5 @@
 #define UP_U_BTN_X     144      /**< PANEL UPDATE's CLOSE or CANCEL. */
 #define UP_U_BTN_Y     (UI_PANEL_H - 18 - 28)  /**< Its middle row. */
 
-/** @brief The body row 4 px over the alert band: nothing reaches it. */
+/** @brief The body row 4px over the alert band: nothing reaches it. */
 #define UP_FLOOR       (UI_ALERT_Y - UI_BAND_H - 4)

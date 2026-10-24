@@ -109,7 +109,7 @@ typedef struct {
  * @param cfg       Configuration to fill. Does nothing when NULL.
  * @param centre_us Centre pulse width, us.
  * @param positive  true to step toward longer pulse widths, false toward
- *        shorter ones; the step is 10 us either way.
+ *        shorter ones; the step is 10us either way.
  */
 void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
                           bool positive);

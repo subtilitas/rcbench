@@ -14,7 +14,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 
 # Seconds one case may run under the no_hang fixture.  The slowest case of
-# test_check_protocols.py runs 2.3 s on Linux x86-64.
+# test_check_protocols.py runs 2.3s on Linux x86-64.
 CASE_LIMIT_S = 30
 
 # A copy of the terminal's stderr, taken before the cases run: pytest

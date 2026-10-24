@@ -206,7 +206,7 @@ TEST_CASE(entry_holds_the_line_low_100_ms_then_reads_and_syncs)
     CHECK_EQ(g_ses.last_reply.result, KST_RX_OK);
     CHECK_EQ(g_ses.last_reply.flags, 2);
     CHECK_EQ(g_ses.last_reply.value, 0);
-    /* 3 ms after the read that nothing answered, not 20 ms. */
+    /* 3ms after the read that nothing answered, not 20ms. */
     CHECK(g_sim.min_gap_after_silence_us >= KST_GAP_US);
     CHECK(g_sim.min_gap_after_silence_us < KST_GAP_US + 200u);
     CHECK_EQ(g_ses.stats.replies, 1);
@@ -283,7 +283,7 @@ TEST_CASE(no_servo_ends_the_entry_after_read_sync_read)
 
 TEST_CASE(an_acknowledge_at_another_bit_rate_is_no_entry)
 {
-    /* Half-cell 51.15 us: half the bit rate.  No other rate is tried. */
+    /* Half-cell 51.15us: half the bit rate.  No other rate is tried. */
     fresh(&g_sim, &g_ses);
     sim_add_fault(&g_sim, SIM_SYNC, -1, 0, 1, SIM_F_SHAPE_HALF, 51150);
     sim_add_fault(&g_sim, SIM_READ, -1, 0, 2, SIM_F_NO_REPLY, 0);
@@ -323,7 +323,7 @@ TEST_CASE(read_all_is_3_passes_over_32_registers)
     CHECK(g_ses.stats.half_min_ns >= 25500u);
     CHECK(g_ses.stats.half_max_ns <= 25650u);
     CHECK(g_ses.stats.half_min_ns <= g_ses.stats.half_max_ns);
-    /* 3 ms between a reply window and the next frame, and no more than a
+    /* 3ms between a reply window and the next frame, and no more than a
      * step of the caller on top. */
     conduct(&g_sim);
     CHECK(g_sim.min_gap_us < KST_GAP_US + 200u);
@@ -411,7 +411,7 @@ TEST_CASE(a_pass_without_a_single_reply_is_no_servo)
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_NO_SERVO);
     CHECK_EQ(g_sim.n_frames, 2 + 96 + 32);
     CHECK(g_ses.bad_regs == 0xFFFFFFFFu);
-    /* 20 ms after every window that held nothing. */
+    /* 20ms after every window that held nothing. */
     conduct(&g_sim);
     CHECK(g_sim.min_gap_after_silence_us < KST_GAP_AFTER_FAULT_US + 200u);
     /* The image read before is kept. */
@@ -476,7 +476,7 @@ TEST_CASE(a_reply_outside_its_time_or_rate_is_not_taken)
 {
     kst_rx_t rx = KST_RX_OK;
 
-    /* The accept window of a read reply is 350 us to 600 us. */
+    /* The accept window of a read reply is 350us to 600us. */
     CHECK_EQ(reads_with(SIM_F_SHAPE_DELAY, 350000, &rx), 96);
     CHECK_EQ(rx, KST_RX_OK);
     CHECK_EQ(g_ses.stats.delay_min_ns, 350000);
@@ -488,7 +488,7 @@ TEST_CASE(a_reply_outside_its_time_or_rate_is_not_taken)
     CHECK_EQ(reads_with(SIM_F_SHAPE_DELAY, 601000, &rx), 160);
     CHECK_EQ(rx, KST_RX_LATE);
 
-    /* Half-cell 25.575 us +/- 5 %. */
+    /* Half-cell 25.575us +/- 5%. */
     CHECK_EQ(reads_with(SIM_F_SHAPE_HALF, KST_RX_HALF_CELL_MIN_NS, &rx), 96);
     CHECK_EQ(rx, KST_RX_OK);
     CHECK_EQ(g_ses.stats.half_min_ns, KST_RX_HALF_CELL_MIN_NS);
@@ -502,7 +502,7 @@ TEST_CASE(a_reply_outside_its_time_or_rate_is_not_taken)
              160);
     CHECK(rx != KST_RX_OK);
 
-    /* A 1 us pulse inside a cell is dropped and counted. */
+    /* A 1us pulse inside a cell is dropped and counted. */
     CHECK_EQ(reads_with(SIM_F_SHAPE_GLITCH, 30000, &rx), 96);
     CHECK_EQ(rx, KST_RX_OK);
 }
@@ -583,7 +583,7 @@ TEST_CASE(the_reply_to_a_write_is_not_what_the_write_is_judged_by)
     conduct(&g_sim);
     CHECK(g_sim.min_gap_after_silence_us < KST_GAP_AFTER_FAULT_US + 200u);
 
-    /* A reply before 3.3 ms and one after 4.2 ms. */
+    /* A reply before 3.3ms and one after 4.2ms. */
     up(&g_sim, &g_ses);
     plan = edit_plan(&g_ses, KST_F_BOOST, 19);
     sim_add_fault(&g_sim, SIM_WRITE, -1, 0, 1, SIM_F_SHAPE_DELAY, 3299000);
@@ -1558,7 +1558,7 @@ TEST_CASE(a_driver_that_never_finishes_ends_the_operation)
     }
     t0 = g_sim.now_us;
     CHECK_EQ(sim_run(&g_sim, &g_ses), KST_SES_ERR_DRIVER);
-    /* Frame 1.3 ms, window 1.5 ms, slack 5 ms. */
+    /* Frame 1.3ms, window 1.5ms, slack 5ms. */
     CHECK(g_sim.now_us - t0 > 7700u);
     CHECK(g_sim.now_us - t0 < 8200u);
     CHECK_EQ(g_ses.locked, 0);
@@ -1573,7 +1573,7 @@ TEST_CASE(a_driver_that_never_finishes_ends_the_operation)
 }
 
 /* The entry with its first capture handed over @p late_us after the window;
- * the clock moves 1 us per step. */
+ * the clock moves 1us per step. */
 static kst_ses_t enter_with_late_poll(uint32_t late_us)
 {
     fresh(&g_sim, &g_ses);
@@ -1592,7 +1592,7 @@ static kst_ses_t enter_with_late_poll(uint32_t late_us)
 
 TEST_CASE(the_driver_has_5_ms_after_the_window)
 {
-    /* A read of 0x01 is 52 half-cells, 1320.8 us; the window 1500 us. */
+    /* A read of 0x01 is 52 half-cells, 1320.8us; the window 1500us. */
     CHECK_EQ(enter_with_late_poll(KST_DRIVER_SLACK_US), KST_SES_OK);
     CHECK_EQ(g_sim.n_frames, 2);
     CHECK_EQ(enter_with_late_poll(KST_DRIVER_SLACK_US + 1u),
@@ -1607,7 +1607,7 @@ TEST_CASE(the_clock_may_wrap_in_any_wait)
 {
     kst_plan_t plan;
 
-    /* The wrap falls into the 100 ms of the entry. */
+    /* The wrap falls into the 100ms of the entry. */
     fresh(&g_sim, &g_ses);
     g_sim.now_us = 0xFFFFFFFFu - 50000u;
     {
@@ -1648,7 +1648,7 @@ TEST_CASE(a_slow_caller_makes_the_gaps_longer_and_nothing_else)
     up(&g_sim, &g_ses);
     plan = edit_plan(&g_ses, KST_F_DUTY, 200);
     CHECK_EQ(kst_session_write(&g_ses, &plan, false), KST_SES_BUSY);
-    /* One call every 4.7 ms. */
+    /* One call every 4.7ms. */
     for (unsigned i = 0; i < 20000u && r == KST_SES_BUSY; ++i) {
         r = kst_session_step(&g_ses);
         g_sim.now_us += 4700u;

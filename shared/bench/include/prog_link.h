@@ -340,8 +340,8 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w);
  *        that switches none on.
  *
  * An IOmcu from protocol 4.16 refuses that write
- * while the port's range is longer than the frame it runs at (1784 us at
- * 560 Hz), so the panel states the range the screen names to the port
+ * while the port's range is longer than the frame it runs at (1784us at
+ * 560Hz), so the panel states the range the screen names to the port
  * first: a range kept from an earlier profile would keep it refused.
  *
  * @param p The link state.

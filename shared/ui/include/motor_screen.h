@@ -61,7 +61,7 @@ void motor_screen_push(const bench_state_t *b);
  * buttons and motor_screen_knob() post nothing and move nothing, from the
  * first frame to the bench's answer to an ARM, and from a MOTOR_CMD_DISARM
  * being posted or motor_screen_cancel_arm() on an armed bench until this
- * is called with false.  The change to disarmed returns the slider to 0 %, drops a
+ * is called with false.  The change to disarmed returns the slider to 0%, drops a
  * throttle command waiting to be polled and ends a drag under way.
  *
  * The hold that posts MOTOR_CMD_ARM does the same.  The change to armed
@@ -85,7 +85,7 @@ int motor_screen_plot_samples(void);
 
 /**
  * Whether channel @p channel's peak is drawn as a value -- 0 voltage, 1
- * current, 2 power, 3 rpm: a valid reading of it has arrived since the run
+ * current, 2 power, 3rpm: a valid reading of it has arrived since the run
  * started or the peaks were reset.  It stays drawn when the live reading
  * goes empty, as when a source stops answering mid-run and the run's peaks
  * it measured stand.

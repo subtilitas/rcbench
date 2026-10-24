@@ -167,15 +167,15 @@ typedef struct {
     bool     take_set, take_on;
     bool     cc;            /* it reports constant current               */
     uint16_t pd_samples;
-    bool     pd_on;         /* readings arrive, every 104 ms             */
+    bool     pd_on;         /* readings arrive, every 104ms             */
     uint32_t pd_next;
     float    pd_a;          /* the current it reads                      */
     /* The windows. */
-    bool     win_on;        /* they arrive, every 50 ms                  */
+    bool     win_on;        /* they arrive, every 50ms                  */
     uint32_t win_next;
     uint16_t win_number;
     int      rest_ma;       /* at rest and holding                       */
-    int      move_ma;       /* for 200 ms from a command to an end       */
+    int      move_ma;       /* for 200ms from a command to an end       */
     int      force_ma;      /* every window, when not INT16_MIN          */
     unsigned clipped;       /* samples at an end in every window         */
     uint16_t cmd;
@@ -212,8 +212,8 @@ static inline void h_fresh(uint32_t tick0)
     h.set_i    = 2.0f;
 }
 
-/* One step at 4.80 V, two counted moves, STALL AT 1.00 A under a limit of
- * 2.00 A, read by @p ina the INA3221 on 0.1 Ohm or the PD mini. */
+/* One step at 4.80V, two counted moves, STALL AT 1.00A under a limit of
+ * 2.00A, read by @p ina the INA3221 on 0.1Ohm or the PD mini. */
 static inline void h_cfg(servo_test_cfg_t *c, bool ina)
 {
     memset(c, 0, sizeof(*c));
@@ -269,8 +269,8 @@ static inline void h_pd_at(uint32_t at)
     servo_test_reading(&h.t, &r, 0u);
 }
 
-/* A window of @p ma mean taken at @p at: its highest sample 50 mA above
- * the mean, its lowest 5 mA under. */
+/* A window of @p ma mean taken at @p at: its highest sample 50mA above
+ * the mean, its lowest 5mA under. */
 static inline void h_win_at(uint32_t at, int ma)
 {
     servo_test_win_t w;
@@ -357,7 +357,7 @@ static inline void h_run_ms(uint32_t ms)
     }
 }
 
-/* Until the run is in @p phase, at most 20 s. */
+/* Until the run is in @p phase, at most 20s. */
 static inline bool h_until(servo_test_phase_t phase)
 {
     for (uint32_t k = 0u; k < 20000u && servo_test_running(&h.t); ++k) {
@@ -369,7 +369,7 @@ static inline bool h_until(servo_test_phase_t phase)
     return servo_test_running(&h.t) && h.t.phase == phase;
 }
 
-/* Until the run is over and handed over, at most 60 s. */
+/* Until the run is over and handed over, at most 60s. */
 static inline void h_out(void)
 {
     for (uint32_t k = 0u; k < 60000u && !servo_test_drained(&h.t); ++k) {
@@ -389,7 +389,7 @@ static inline void h_idle_by_hand(uint32_t tick0, const servo_test_cfg_t *c)
     h.pd_on  = false;
 }
 
-/* The start tick that puts a run's time @p rel ms after its start 500 ms
+/* The start tick that puts a run's time @p rel ms after its start 500ms
  * before the tick wraps. */
 static inline uint32_t wrap_at(uint32_t rel)
 {
@@ -400,7 +400,7 @@ static inline uint32_t wrap_at(uint32_t rel)
  * The run ended as @p why: the output asked off once and the servo let go
  * once, the verdict ABORTED, the report's first line after the title
  * naming the reason.  Then two seconds of everything a bench can still
- * hand it -- windows of 1.5 A, supply readings in constant current and
+ * hand it -- windows of 1.5A, supply readings in constant current and
  * then not answering, a meter that changed, passes with the bench
  * disarmed -- change neither the reason, the report, the file nor what was
  * asked.

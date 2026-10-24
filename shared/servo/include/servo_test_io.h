@@ -35,7 +35,7 @@ typedef struct {
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
 } servo_test_reading_t;
 
-/** @brief One 50 ms window of INA3221 CH1, as the window ring carries it
+/** @brief One 50ms window of INA3221 CH1, as the window ring carries it
  *         (sense_link_win_t).
  *
  * A clipped sample counts in the three currents at the end of the range it
@@ -49,7 +49,7 @@ typedef struct {
     uint16_t mean_mv, min_mv;           /**< at the load side of the shunt */
     /** @brief The latest it can have closed, on the run's clock
      *         (sense_link_win_t.taken_ms): windows that arrive together carry
-     *         times 50 ms apart.
+     *         times 50ms apart.
      *
      * The window began SERVO_TEST_WIN_MS before. */
     uint32_t taken_ms;
@@ -57,7 +57,7 @@ typedef struct {
 
 /** @brief Readings of the encoder kept for matching with the supply's rows.
  *
- * The panel has one about every 40 ms, so 16 span 640 ms: more than
+ * The panel has one about every 40ms, so 16 span 640ms: more than
  * SERVO_TEST_ENC_STALE_MS. */
 #define SERVO_TEST_ENC_HIST          16u
 

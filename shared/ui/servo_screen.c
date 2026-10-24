@@ -19,7 +19,7 @@
  * servo_screen_core_int.h between them.
  *
  * A type or a frame rate that can destroy a servo not made for it -- a
- * heli profile, anything above 60 Hz -- is applied only after a warning
+ * heli profile, anything above 60Hz -- is applied only after a warning
  * held for two seconds, and is never kept past a restart.
  *
  * START TEST, on TEST's AUTOMATIC TEST card, runs the automatic test
@@ -61,8 +61,8 @@
 /*
  * The profiles the bench drives.  STANDARD PWM is the safe one and the one
  * every restart starts at.  The heli profiles are Rotorflight's for digital
- * cyclic and narrow-band tail servos: 1520 us centre, +/-700 us, up to
- * 333 Hz; and 760 us centre, +/-350 us, up to 560 Hz.
+ * cyclic and narrow-band tail servos: 1520us centre, +/-700us, up to
+ * 333Hz; and 760us centre, +/-350us, up to 560Hz.
  */
 static const uint16_t k_std_rates[]  = { 50, 60, 100, 150, 200, 250, 300, 333 };
 static const uint16_t k_cyc_rates[]  = { 50, 120, 200, 333 };
@@ -98,7 +98,7 @@ servo_screen_state_t s;
 
 /*
  * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
- * by one, so -90 deg is MIN and +90 deg is MAX however far each lies from
+ * by one, so -90deg is MIN and +90deg is MAX however far each lies from
  * the centre.
  */
 static float half_travel_us(bool below)
@@ -189,8 +189,8 @@ float svs_cmd_to_us(float cmd)
 /*
  * The angle the pin drives on an armed bench while nothing commands it: the
  * outputs layer's rest for a surface, in the range a command carries.  The
- * midpoint of that range, so PULSE CENTRE without the trim: 1500 us for
- * STANDARD PWM, 760 us for NARROW 760.
+ * midpoint of that range, so PULSE CENTRE without the trim: 1500us for
+ * STANDARD PWM, 760us for NARROW 760.
  */
 float svs_rest_deg(void)
 {
@@ -290,7 +290,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
         ui_value_drop_arm(&s.gate);
     }
     /* The range travels with the pulse: the panel configures the channel
-     * from it, and a narrow servo's 760 us centre is below a standard
+     * from it, and a narrow servo's 760us centre is below a standard
      * servo's floor.  The frame rate goes with it. */
     cmd_range(&s.pending.min_us, &s.pending.max_us);
     s.pending.frame_hz = s.frame_hz;
@@ -325,7 +325,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
  * The pulse a command carries is the angle put through the profile, the
  * trim, the reverse and the travel; change any of them while an output is
  * held and the pulse on the pin belongs to the old one.  Switching a held
- * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500 us on a
+ * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500us on a
  * servo whose maximum is 860 while the screen shows the new range.
  */
 
@@ -508,7 +508,7 @@ void servo_invalidate(void)
 }
 
 /**
- * @brief The screen at its start: the state cleared, STANDARD PWM at 50 Hz,
+ * @brief The screen at its start: the state cleared, STANDARD PWM at 50Hz,
  *        and the output card's controls, the strip, the sessions, the plot
  *        and SETTINGS' tabs laid out.
  */
@@ -531,7 +531,7 @@ static void reset(void)
     s.source        = SERVO_SOURCE_MODEL;   /* likewise */
     s.cur_key       = CUR_KEY_NONE;
     s.shown_cmd     = (float)OUT_SPAN / 2.0f;
-    /* STANDARD PWM at 50 Hz: what every restart starts at, whatever the
+    /* STANDARD PWM at 50Hz: what every restart starts at, whatever the
      * session before it used. */
     s.type      = 0;
     s.min_us    = k_types[0].min_us;

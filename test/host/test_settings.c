@@ -334,8 +334,8 @@ TEST_CASE(value_text_renders_every_type)
     settings_set(SET_PACK_CELLS, 6);
     CHECK_STR_EQ(settings_value_text(SET_PACK_CELLS, buf, sizeof(buf)), "6");
 
-    /* A float with the digits of its step: 1 mOhm, 0.1 A, 0.05 A, 0.001 A;
-     * a STICK current limit of 1.25 A reads 1.25, as its keypad takes it. */
+    /* A float with the digits of its step: 1mOhm, 0.1A, 0.05A, 0.001A;
+     * a STICK current limit of 1.25A reads 1.25, as its keypad takes it. */
     settings_set(SET_PACK_MOHM, 18.0f);
     CHECK_STR_EQ(settings_value_text(SET_PACK_MOHM, buf, sizeof(buf)), "18");
     settings_set(SET_INA228_MAX_A, 204.8f);

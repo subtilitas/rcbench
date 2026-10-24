@@ -376,7 +376,7 @@ test.describe('pictures', () => {
   const ALL = FULL;
 
   // The browser fetches a lazy image some distance before it scrolls into view.
-  // Chromium uses 1250 px on a fast connection and 2500 px on a slow one.
+  // Chromium uses 1250px on a fast connection and 2500px on a slow one.
   const LAZY_REACH = 3000;
 
   test('at 360 px no picture is in the first screen and none far below it loads before a scroll', async ({ page }) => {
@@ -395,7 +395,7 @@ test.describe('pictures', () => {
     expect(images).toHaveLength(11);
     for (const image of images) {
       expect(image.lazy, image.path).toBe(true);
-      // Above the fold: the first screen of 360 x 800 px holds no picture.
+      // Above the fold: the first screen of 360 x 800px holds no picture.
       expect(image.top, image.path).toBeGreaterThan(SIZES[0].height);
     }
     const far = images.filter((image) => image.top > SIZES[0].height + LAZY_REACH).map((image) => image.path);
@@ -461,7 +461,7 @@ test.describe('pictures', () => {
       await expect(page.locator('.parts img[src*="current-sensor"]')).toHaveCount(0);
       await expect(page.locator('.parts img[src*="breakout"]')).toHaveCount(0);
 
-      // Print: a thumb is at most 40 mm wide, 151.2 px at 96 px per inch.
+      // Print: a thumb is at most 40mm wide, 151.2px at 96px per inch.
       await open(page, ALL);
       await page.emulateMedia({ media: 'print' });
       const widest = await page.evaluate(() => Math.max(...[...document.querySelectorAll('.parts img')].map((img) => img.getBoundingClientRect().width)));

@@ -84,7 +84,7 @@ TEST_CASE(a_one_shot_query_gets_its_id_and_question_back)
     CHECK_EQ(memcmp(g_out + 12, g_out + 36, 20u), 0);   /* the same name */
     CHECK_EQ(g_out[58], 0x00u);           /* class IN, no flush */
     CHECK_EQ(g_out[59], 0x01u);
-    CHECK_EQ(g_out[63], 10u);             /* TTL 10 s */
+    CHECK_EQ(g_out[63], 10u);             /* TTL 10s */
 }
 
 TEST_CASE(other_names_types_and_responses_are_not_answered)
@@ -174,7 +174,7 @@ TEST_CASE(malformed_queries_are_dropped_without_reading_past_them)
     CHECK_EQ(wa_mdns_announce("", k_ip, g_out, sizeof(g_out)), 0u);
 }
 
-/* The responder's starts: a failed start is tried again three times, 5 s
+/* The responder's starts: a failed start is tried again three times, 5s
  * apart, and a new join starts the count again. */
 TEST_CASE(a_failed_start_is_tried_three_more_times_then_waits_for_a_join)
 {

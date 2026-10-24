@@ -31,10 +31,10 @@ stays on the part.
   "Trademark notice", in German "Markenhinweis". Besides the links of the
   parts list it is the 1 link of the page to another origin. The page loads
   nothing from it. The Tab key reaches it as the last control of the result.
-- Below 1024 px width a bar is fixed to the bottom of the viewport. Its
-  height is 57 px with labels of 1 line; the labels wrap at a large text
+- Below 1024px width a bar is fixed to the bottom of the viewport. Its
+  height is 57px with labels of 1 line; the labels wrap at a large text
   size and the bar grows. The page keeps the rendered height of the bar plus
-  16 px free at its lower edge (`padding-bottom`, `scroll-padding-bottom`): a
+  16px free at its lower edge (`padding-bottom`, `scroll-padding-bottom`): a
   control that takes the focus scrolls to above the bar.
 - The page is served under the base path `/rcbench/`.
 
@@ -70,10 +70,10 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
-| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, one bubble at a time after a click on a mark and between the focus of a tick and the pointer on another mark, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
+| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360px, German text, one bubble at a time after a click on a mark and between the focus of a tick and the pointer on another mark, every bubble whole inside the chooser at 1280 × 800px, the top of every bubble and its end after a scroll at 1100 × 450px and 1024 × 500px, every bubble above the bar at 360px. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/buy.spec.ts` | Playwright test of the parts list: rows, owned parts, variants, copy buttons, links and no request to Google before a click. |
-| `e2e/sim.spec.ts` | Playwright test of the motor simulator by keyboard alone, in English and German at 360 px and 1280 px: the 4 inputs, the figures, the warning and the hint, the link, the part name, the row to buy, both copies, a link with a value the page does not offer, "Start over". |
+| `e2e/sim.spec.ts` | Playwright test of the motor simulator by keyboard alone, in English and German at 360px and 1280px: the 4 inputs, the figures, the warning and the hint, the link, the part name, the row to buy, both copies, a link with a value the page does not offer, "Start over". |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
 | `tools/size.ts` | Size check of the build. |
@@ -130,9 +130,9 @@ npm test            # unit tests
 npm run drawings    # writes public/drawings/, drawings/anchors.json and drawings/panel.json
 npm run drawings:check   # fails on a finding or on drift, writes nothing
 npm run build       # runs the drawings check, then writes dist/
-npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB
+npm run size        # initial load at most 250kB, dist/ without pictures at most 1MB
 npx playwright install chromium
-npm run e2e         # smoke, chooser and export tests at 360 px and 1280 px width
+npm run e2e         # smoke, chooser and export tests at 360px and 1280px width
 npm run e2e:matrix  # matrix and corpus tests
 npm run dev         # http://localhost:5173/rcbench/
 node tools/shots.ts shots   # 24 PNG files: 2 widths, 2 themes, 2 languages, 3 selections
@@ -257,11 +257,11 @@ A part carries one reason line. A part that a rule adds along with a bench part 
 
 4 variants follow the setup: connection to the IOmcu, INA228 board, ESC
 power and servo power. Servo power is A, the visitor's own supply (default),
-or B, from the bench for a small servo: the 5 V pin of the IOmcu (pad
+or B, from the bench for a small servo: the 5V pin of the IOmcu (pad
 40), or the V pin of the strip of the Osoyoo breakout board. With B the result
 and the PDF carry a note: the servo draws from the supply of the logic, which
 is prone to problems. On the V pin of the strip the jumper V Selector sits on
-5V, and the setup adds the DC supply of the board, 7 to 12 V DC, with its 2
+5V, and the setup adds the DC supply of the board, 7 to 12V DC, with its 2
 leads, wires 65 and 66. It is a modelled part: the page and the PDF tag it
 "Modelled part: no product chosen", and its text gives the range and "not
 stated" for the current. "Small" carries no number: no source states a current
@@ -272,8 +272,8 @@ IOmcu alone. Its tick moves the servo signal from wire 7 (pad 4, GP2,
 a slot of SETUP → OUTPUTS) to wire 64 (pad 17, GP13), the programming port
 of an IOmcu that has stored no other pin for it. The result carries 3
 notes and 1 unknown: SERVO TESTER on the PROG PORT entry of SETUP → OUTPUTS
-is PROG PORT; with the PD mini, CONNECT sets the servo supply, 4.8 to 6.0 V or up to 8.4 V with HV
-SERVO on, and 50 to 3000 mA; without the PD mini the servo takes the supply
+is PROG PORT; with the PD mini, CONNECT sets the servo supply, 4.8 to 6.0V or up to 8.4V with HV
+SERVO on, and 50 to 3000mA; without the PD mini the servo takes the supply
 of the servo power variant, and the programming voltage and current limit
 are stored and not applied; the level of the servo's reply on GP13 is not
 measured. The pin is no visible variant and the hash holds no token for it:
@@ -287,11 +287,11 @@ the resolver in the variants of the page:
 
 - "Needs: ..." lists the bench parts the setup with the item alone holds
   beyond the base setup. A part that only a rule adds carries the parts whose
-  absence the rule asks for: "2 × 2.2 kΩ (only without INA3221)".
+  absence the rule asks for: "2 × 2.2kΩ (only without INA3221)".
 - "Connects: ..." names the test object the item connects.
 - "Variant: ..." names the variant the function sets.
 - A part names its supply wires, the wires of class logic and power that
-  end on it, with the note of the wire: "Supply, 3.3 V: IOmcu 3V3
+  end on it, with the note of the wire: "Supply, 3.3V: IOmcu 3V3
   (pad 36).", and for the PD mini its power input, "PD in: T-plug OUT, USB-C
   socket." and the note of the USB-C cable.
 - Without a further part the line reads "Needs no further part of the
@@ -300,7 +300,7 @@ the resolver in the variants of the page:
 The functions of the base setup, the test objects and the parts that are not
 selectable have no bubble. The bubble opens when its tick has the keyboard
 focus and when the pointer rests on the round "i" mark at the right end of
-the row, 44 px wide. The pointer can move from the mark into the bubble. A
+the row, 44px wide. The pointer can move from the mark into the bubble. A
 click or tap on the mark opens or closes the bubble and never changes the
 tick; a tap on the label still toggles it. A press anywhere else
 (`pointerdown`), Escape and the loss of the focus close it. One bubble shows
@@ -315,15 +315,15 @@ without a handler of its own to no click listener of the document. The mark
 and the bubble take no focus, so the Tab order is that of the ticks. Each
 tick names its bubble in `aria-describedby`; the bubble has the role
 `tooltip`. The bubble spans the width of the row, so it stays inside a
-viewport of 360 px. It opens under the row, and over it when the room under
+viewport of 360px. It opens under the row, and over it when the room under
 the row is less than the height of the bubble and the room over it holds the
 whole bubble. The room is the viewport above the bar of the narrow layout,
-cut by the box of the chooser, which scrolls on its own at 1024 px and wider.
+cut by the box of the chooser, which scrolls on its own at 1024px and wider.
 The page places a shown bubble again when the page or the chooser scrolls or
 the window changes size. A bubble taller than both rooms opens under the
 row: its top shows, and the chooser or the page scrolls down to its end. At
-1280 × 800 px every bubble shows whole, in English and German; at
-1100 × 450 px and 1024 × 500 px the top of every bubble shows.
+1280 × 800px every bubble shows whole, in English and German; at
+1100 × 450px and 1024 × 500px the top of every bubble shows.
 
 Removing the tick of a function removes it from the selection. A note under
 the row states whether the function stays active, which of its parts stay
@@ -363,19 +363,19 @@ The motor simulator is 3 resistors on the 3 phase wires of the ESC. Its card
 under "Parts" holds 4 inputs and the current and the power per resistor. The
 values name the part and its row to buy on the page, in the PDF and in both
 copies of the parts list: "Motor simulator, self-built: 3 resistors in delta,
-470 Ω, 2 W" and "3 × Resistor 470 Ω, 2 W". They change no wire and no
+470Ω, 2W" and "3 × Resistor 470Ω, 2W". They change no wire and no
 function.
 
 | Input | Values | Default | Tokens in `m` |
 |---|---|---|---|
-| LiPo pack | 1S to 6S at 4.2 V per cell: 4.2 V to 25.2 V | 4S, 16.8 V | `1s` to `6s` |
-| Resistance | The 21 E12 values from 100 Ω to 4.7 kΩ | 470 Ω | RKM code: `100r` to `820r`, `1k`, `1k2` to `4k7` |
-| Rating | 0.25 W, 0.5 W, 1 W, 2 W, 3 W, 5 W | 2 W | `0w25`, `0w5`, `1w`, `2w`, `3w`, `5w` |
+| LiPo pack | 1S to 6S at 4.2V per cell: 4.2V to 25.2V | 4S, 16.8V | `1s` to `6s` |
+| Resistance | The 21 E12 values from 100Ω to 4.7kΩ | 470Ω | RKM code: `100r` to `820r`, `1k`, `1k2` to `4k7` |
+| Rating | 0.25W, 0.5W, 1W, 2W, 3W, 5W | 2W | `0w25`, `0w5`, `1w`, `2w`, `3w`, `5w` |
 | Wiring | Delta, star | Delta | `delta`, `star` |
 
 The default pack is 4S: the 1 ESC reading of `docs/DShot.md` ran on a 4S
-pack, and ESC power B, the PD mini, gives at most 20 V, which 4S (16.8 V)
-stays under and 5S (21.0 V) exceeds.
+pack, and ESC power B, the PD mini, gives at most 20V, which 4S (16.8V)
+stays under and 5S (21.0V) exceeds.
 
 Load case: one commutation step held at the full pack voltage V. A sensorless
 ESC cannot commutate on resistors, so it can hold a step. R is the resistance
@@ -386,8 +386,8 @@ of 1 resistor.
 | Delta | 1 resistor across the driven pair: V/R and V²/R | 2 in series across V: V/(2R) and V²/(4R) each |
 | Star | 2 in series across V: V/(2R) and V²/(4R) each | 1: no current |
 
-Check figures: 470 Ω at 6S (25.2 V) in delta give 53.6 mA and 1.35 W.
-450 Ω at 16.8 V in star give 18.7 mA and 0.157 W; 450 Ω is no E12 value and
+Check figures: 470Ω at 6S (25.2V) in delta give 53.6mA and 1.35W.
+450Ω at 16.8V in star give 18.7mA and 0.157W; 450Ω is no E12 value and
 the page does not offer it.
 
 The card shows:
@@ -395,12 +395,12 @@ The card shows:
 - the hottest resistor: current in mA, power in W and the share of the rating
   in whole percent, rounded down, and rounded up above the rating;
 - the other resistors;
-- above the rating, a warning (`#sim-over`): "Above the rating of 2 W. Choose
+- above the rating, a warning (`#sim-over`): "Above the rating of 2W. Choose
   a higher rating or a higher resistance.";
-- from 50 % of the rating up to the rating, a hint (`#sim-hint`). It states
+- from 50% of the rating up to the rating, a hint (`#sim-hint`). It states
   its basis: the rating holds only up to the ambient temperature that the
   datasheet of the resistor states, and a resistor near its rating runs hot.
-  It names no derating figure. The 50 % threshold is a choice of the page,
+  It names no derating figure. The 50% threshold is a choice of the page,
   not a figure of a maker;
 - the load case, and 1 sentence: the ESC also limits the current, and that
   is not modelled;
@@ -447,7 +447,7 @@ row of that variant: the Osoyoo breakout board adds a row, the XT90 module
 replaces the Matek board.
 
 Each row to buy has a tick "Have it": an `<input type="checkbox">` inside a
-`<label>`, 22 × 22 px, in the tab order after the links of its row. Its
+`<label>`, 22 × 22px, in the tab order after the links of its row. Its
 accessible name is "Have it: <maker and ordering name>". A tick moves the row
 under "You have" and writes its row token under `h` in the hash; the focus
 moves with the checkbox. The live region says "Moved to "You have"." or
@@ -477,7 +477,7 @@ repository README; `core/test/buy.test.ts` fails when one is missing.
 
 ## Drawing
 
-The drawing is 970 px wide. Its height follows the modules of the setup.
+The drawing is 970px wide. Its height follows the modules of the setup.
 Modules stand in a left and a right column, the IOmcu in the middle.
 Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
@@ -487,7 +487,7 @@ subset of the 12 functions with a tick and every subset of the 8 selectable part
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,
-- two wires of different nets share a line or run closer than 5 px,
+- two wires of different nets share a line or run closer than 5px,
 - a pill covers a wire of another pin or another pill,
 - a module text is wider than its module,
 - a wire number names different ends in two selections.
@@ -506,18 +506,18 @@ wire point of `drawings/anchors.json`.
 
 | Rule | Value |
 |---|---|
-| Wire shape | Horizontal and vertical segments only. Corner radius 2 px. |
+| Wire shape | Horizontal and vertical segments only. Corner radius 2px. |
 | Leaving a pin | Perpendicular to the edge of the part the pin sits on. |
-| Parallel wires | Side by side in lanes, 5 px clear between the edges of 2 wires. |
+| Parallel wires | Side by side in lanes, 5px clear between the edges of 2 wires. |
 | Crossing | At a right angle. 2 wires of different numbers share no segment. |
-| Width | 7 px for a wire that carries load current, 3 px for every other wire, 2 px for a lead of a component. |
-| Load current | A wire of class `power` in the data file: 25 of 66 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
+| Width | 7px for a wire that carries load current, 3px for every other wire, 2px for a lead of a component. |
+| Load current | A wire of class `power` in the data file: 25 of 66 wires. The phase wires 48 to 51 and wire 52 are 3px: the data file states no current for them. |
 | Colour | Supply plus red, supply minus black with a light casing, signals in the other colours of `drawings/wires.ts`. No signal is red or black. |
 | Wire number | In a chip at both ends of the wire. |
-| Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |
-| Cable | A wire on the net `pd_in` is a USB-C cable between 2 sockets: a grey sheath of 7 px around a red core of 3 px. The nets are the table `CABLE_NETS` in `drawings/wires.ts`. |
+| Wires on 1 pin | Side by side along the edge of the part, up to 12px from the wire point. |
+| Cable | A wire on the net `pd_in` is a USB-C cable between 2 sockets: a grey sheath of 7px around a red core of 3px. The nets are the table `CABLE_NETS` in `drawings/wires.ts`. |
 | Between | A part with `between` in the data file, with both named parts on its side of the IOmcu, makes that side 3 columns wide: the first named part alone in the outermost column, the part in the middle column, the second named part in the inner column. The T-plug stands between the PD charger and the PD mini. |
-| Component | A wire of kind `component` in the data file is drawn as the component: a body of 12 px by 20 px on 2 leads with right-angle bends, 1 wire number, and a text of up to 2 lines. Between 2 pins of 1 part the body stands beside that part and the picture is 192 px wider for a text of 18 characters. The band is at end `a` of the wire. |
+| Component | A wire of kind `component` in the data file is drawn as the component: a body of 12px by 20px on 2 leads with right-angle bends, 1 wire number, and a text of up to 2 lines. Between 2 pins of 1 part the body stands beside that part and the picture is 192px wider for a text of 18 characters. The band is at end `a` of the wire. |
 | Not drawn | A wire with 1 end (`b: null`), such as the address bridge 31 on the INA3221 board. Its table row carries the note. |
 
 The legend below the picture names both widths ("power line", "signal") and
@@ -530,11 +530,11 @@ picture. A drag with the mouse or 1 finger moves the zoomed picture; at fit,
 the wheel zoom. Tab from the box reaches the wires; the arrow keys, Home and
 End walk them; Enter or Space marks a wire and its table row. The wire button
 of a table row marks the wire in the picture. The page does not scroll
-sideways at 360 px width: the picture moves inside its box.
+sideways at 360px width: the picture moves inside its box.
 
 `test/diagram.test.ts` routes every distinct setup of the resolver sweep and
 fails when a segment is not horizontal or vertical, 2 wires share a segment
-or run closer than their lane gap, a load wire is not 7 px or a signal wire
+or run closer than their lane gap, a load wire is not 7px or a signal wire
 is.
 
 `src/diagram/export.ts` gives the picture inside the element subset of the
@@ -542,9 +542,9 @@ PDF painter: parts as outlines with their wire points and pin names, wires in
 the widths and colours of the page. `test/diagram-export.test.ts` paints it
 for every 97th setup of the export test sample and its 2 ends, in both
 languages. The PDF export shows the schematic, not
-the picture: scaled to the 510 pt text width of an A4 page, the 12 px text of
+the picture: scaled to the 510 pt text width of an A4 page, the 12px text of
 the picture measures 6.1 pt for the setup with the fewest wires and 2.0 pt
-for the setup with the most (picture 880 px to 3104 px wide). A landscape
+for the setup with the most (picture 880px to 3104px wide). A landscape
 page gives at most 2.9 pt for the widest picture. The swap is 1 line in
 `src/export/diagram.ts`.
 
@@ -572,10 +572,10 @@ holds each record to the files of `public/pictures/`.
 
 | Kind | Files | A part card shows |
 |---|---|---|
-| `photo` | `<file>.webp` and `<file>-thumb.webp`, 480 px wide | the thumb, as a link to `<file>.webp` |
+| `photo` | `<file>.webp` and `<file>-thumb.webp`, 480px wide | the thumb, as a link to `<file>.webp` |
 | `drawing` | `<file>.svg` | the drawing, as a link to the same file |
 
-- A card shows at most 2 pictures, at most 320 px wide on screen and 40 mm wide in print.
+- A card shows at most 2 pictures, at most 320px wide on screen and 40mm wide in print.
 - A part without a picture shows no image and no frame.
 - A picture with `only` shows for the named option value: the Osoyoo breakout
   board, the INA228 module with XT90 plugs.
@@ -586,12 +586,12 @@ holds each record to the files of `public/pictures/`.
 - The pictures are not part of the size budget. The initial load holds no
   picture: `npm run size` fails when `index.html` references one. Each image
   is `loading="lazy"`; the browser fetches it when its card comes near the
-  viewport (Chromium: 1250 px, 2500 px on a slow connection). The smoke test
-  fails at 360 px width when a picture lies in the first screen, when a
-  picture more than 3000 px below it loads before a scroll, or when a full
+  viewport (Chromium: 1250px, 2500px on a slow connection). The smoke test
+  fails at 360px width when a picture lies in the first screen, when a
+  picture more than 3000px below it loads before a scroll, or when a full
   file loads without a tap.
 
-Picture folder: 22 files, 1694.5 kB.
+Picture folder: 22 files, 1694.5kB.
 
 `test/pictures.test.ts` fails when this line differs from the folder.
 
@@ -602,9 +602,9 @@ drawings of boards outside it (INA219, ADXL345). `drawings/anchors.json` gives
 the wire point of every pin in px of the drawing. The files are committed.
 `npm run drawings:check` fails when they differ from the output of the
 generator or from the data file. The wiring picture shows them. They
-count against the 1 MB of the size budget.
+count against the 1MB of the size budget.
 
-Drawing folder: 48 files, 458.9 kB.
+Drawing folder: 48 files, 458.9kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 
@@ -617,7 +617,7 @@ export chunk on the first use.
 | Property | Value |
 |---|---|
 | File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection and the "have it" ticks as the URL hash writes them, without the language. |
-| Page | A4, 15 mm margins. Footer on every page: the sentence on product and company names of the page footer, without the link to `NOTICE`, and "Page x of y". |
+| Page | A4, 15mm margins. Footer on every page: the sentence on product and company names of the page footer, without the link to `NOTICE`, and "Page x of y". |
 | Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Parts to buy, with the disclaimer, what you have and what you bring. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
@@ -625,7 +625,7 @@ export chunk on the first use.
 | Metadata | Title, document language, creator. |
 | Links | The share link, written without the ids of the functions every setup runs and with a test object as the tick of its function. In the parts list, each maker page and each web search, as a link annotation over its line. |
 | Output | The same bytes for the same setup, language, share link and date. |
-| Size | 49 kB for the smallest setup (5 pages), 83 kB for the largest (12 pages). |
+| Size | 49kB for the smallest setup (5 pages), 83kB for the largest (12 pages). |
 
 Parts of `src/export/`:
 
@@ -640,8 +640,8 @@ Parts of `src/export/`:
 | `font.ts`, `pdf.ts` | TrueType reader and PDF writer. |
 | `font/` | `Inter-Regular-subset.ttf` (22488 bytes), `Inter-Bold-subset.ttf` (22620 bytes), `OFL.txt`. |
 
-The export chunk is 113.98 kB (52.34 kB gzip). The first load carries the button,
-its strings and the chunk loader: 3.2 kB (1.1 kB gzip).
+The export chunk is 113.98kB (52.34kB gzip). The first load carries the button,
+its strings and the chunk loader: 3.2kB (1.1kB gzip).
 
 The font is Inter 4.001 by The Inter Project Authors under the SIL Open Font
 License 1.1, text in `src/export/font/OFL.txt`. `tools/font-subset.py` writes
@@ -664,22 +664,22 @@ file names no stage, so the checks follow the stages as one list.
 - Motor simulator: the current limit of the ESC, the tolerance of the resistance and the temperature of a
   resistor are not modelled.
 - Servo power from the bench: the current limit of pad 40 is not stated. The output currents of the
-  Osoyoo breakout board are vendor values (2 A at 5 V, 500 mA at 3.3 V), not measured.
+  Osoyoo breakout board are vendor values (2A at 5V, 500mA at 3.3V), not measured.
   The V pins of all 40 strips follow the jumper V Selector; with USB alone and the jumper on 3V3 the schematic and
   the product page disagree.
-- DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1 mm, centre positive) has no reverse-polarity
+- DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1mm, centre positive) has no reverse-polarity
   protection. A centre-negative plug reverses the input of the XL1509 converter. The SI2302 protects the VIN terminal
   and H4 only.
-- DC jack of the Osoyoo breakout board: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that
-  name. The 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor.
-- Osoyoo breakout board above 12 V at any input: the gate of the SI2302 (Q3) sits at PWRIN through R7, and its
-  gate-source voltage exceeds the ±12 V rating of its datasheet. The print of 16 V and the vendor limit of 18 V are
+- DC jack of the Osoyoo breakout board: the product page names the socket DC005-2.1. The 2.1mm pin follows from that
+  name. The 5.5mm outer diameter is the usual size of that socket family and is not stated by the vendor.
+- Osoyoo breakout board above 12V at any input: the gate of the SI2302 (Q3) sits at PWRIN through R7, and its
+  gate-source voltage exceeds the ±12V rating of its datasheet. The print of 16V and the vendor limit of 18V are
   above that.
 - What powers an ESC during programming other than ESC STICK is not stated.
 - 8 of 20 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap,
   DC supply of the Osoyoo breakout board and cables: no picture.
 - Photo `02-pd-mini`: the left third is out of focus.
-- The schematic has no zoom control. Below 1024 px width it scrolls sideways in its box.
+- The schematic has no zoom control. Below 1024px width it scrolls sideways in its box.
 - Wiring picture: wire 31 ends on no wire point and is not drawn; the table lists it.
 - Wiring picture: a wire number can lie over the bent lead of a component.
 - Wiring picture: the pinch gesture is tested through synthetic touch events only, not on a phone.
@@ -694,7 +694,7 @@ file names no stage, so the checks follow the stages as one list.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Print output: not checked on paper.
-- PDF export: the first use needs the network for the export chunk of 113.98 kB. Later uses work offline
+- PDF export: the first use needs the network for the export chunk of 113.98kB. Later uses work offline
   until the page reloads.
 - PDF export: the file has no structure tags (not PDF/UA). A screen reader reads the text in page order
   and does not announce headings or table cells.

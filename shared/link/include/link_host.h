@@ -25,7 +25,7 @@ extern "C" {
 
 /**
  * @brief How long the panel tolerates silence before it escalates: five times
- * the IOmcu's 200 ms, so the end holding the outputs gives up first.
+ * the IOmcu's 200ms, so the end holding the outputs gives up first.
  */
 #define LINK_HOST_TIMEOUT_MS 1000u
 

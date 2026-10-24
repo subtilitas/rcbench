@@ -59,7 +59,7 @@ extern "C" {
 
 /** @brief How display_init() sets the display up. */
 typedef struct {
-    bool backlight_on;    /**< backlight to 100 % after the first frame  */
+    bool backlight_on;    /**< backlight to 100% after the first frame  */
 } display_config_t;
 
 /** @brief Backlight on after the first frame. */
@@ -95,9 +95,9 @@ gfx_canvas_t *display_canvas(void);
 
 /**
  * @brief Present the back buffer and block until the buffer it replaces is no
- * longer scanned out, at most 200 ms.
+ * longer scanned out, at most 200ms.
  *
- * @return ESP_OK; ESP_ERR_TIMEOUT when no frame-done event came in 200 ms;
+ * @return ESP_OK; ESP_ERR_TIMEOUT when no frame-done event came in 200ms;
  *         ESP_ERR_INVALID_STATE before display_init(); or the DPI panel's
  *         error for the hand-over.
  */
@@ -147,8 +147,8 @@ uint32_t display_last_wait_us(void);
  */
 uint32_t display_frame_count(void);
 /**
- * @brief Rolling frames per second, measured over the last 500 ms.
- * @return Frames per second; 0 before the first 500 ms.
+ * @brief Rolling frames per second, measured over the last 500ms.
+ * @return Frames per second; 0 before the first 500ms.
  */
 float display_fps(void);
 
@@ -195,8 +195,8 @@ bool display_take_turn_alert(void);
 uint32_t display_last_turn_us(void);
 
 /**
- * @brief Backlight at 100 % or 0 %.
- * @param on true for 100 %, false for 0 % (dark).
+ * @brief Backlight at 100% or 0%.
+ * @param on true for 100%, false for 0% (dark).
  * @return As board_backlight().
  */
 esp_err_t display_backlight(bool on);

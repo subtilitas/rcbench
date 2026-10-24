@@ -45,7 +45,7 @@
 #define PV_TOP_Y    LV_PV_TOP
 
 /* PV_Y + PV_H - 1 of log_viewer_int.h: the panel from y 80 down to the
- * time labels over the footer, less its 16 px. */
+ * time labels over the footer, less its 16px. */
 #define PV_BOTTOM_Y LV_PV_BOTTOM
 
 static int column_row(const log_analysis_t *a, const char *name)
@@ -404,7 +404,7 @@ TEST_CASE(a_range_of_1000_or_more_drops_the_decimal)
     CHECK_STR_EQ(out, "-14639..-14639rpm");
     CHECK(gfx_text_cells(out) == (int)LOG_RANGE_CELLS);
     /* Glyphs are counted, not bytes: "µs" is 2 cells in 3 bytes, and the
-     * 17 cells of "-999.9..-999.9 µs" fit with the decimal. */
+     * 17 cells of "-999.9..-999.9µs" fit with the decimal. */
     log_viewer_range_text(out, sizeof(out), -999.9, -999.9, "\xC2\xB5s");
     CHECK_STR_EQ(out, "-999.9..-999.9 \xC2\xB5s");
     log_viewer_range_text(out, sizeof(out), -999.9, -999.9, "\xC2\xB5sx");
@@ -477,7 +477,7 @@ TEST_CASE(two_fingers_spread_zoom_in_and_the_view_stays)
     CHECK_EQ(first, 0);
     CHECK_EQ(count, LONG_ROWS);
 
-    /* Spread from 100 px apart to 400 px apart around x = 400: a quarter
+    /* Spread from 100px apart to 400px apart around x = 400: a quarter
      * of the samples, centred where the fingers were. */
     two_down(350, 450);
     two_move(200, 600);
@@ -504,7 +504,7 @@ TEST_CASE(two_fingers_moved_together_pan_and_pinching_zooms_out)
     log_viewer_window(&first, &count);
     const int zoomed_first = first;
 
-    /* Both fingers 200 px to the right, same distance: the trace follows
+    /* Both fingers 200px to the right, same distance: the trace follows
      * them, so earlier samples come into view. */
     two_down(300, 500);
     two_move(500, 700);
@@ -580,7 +580,7 @@ static int zoom_in_with_cursor(void)
     return log_viewer_cursor();
 }
 
-/* One finger from x0 to x1 in steps of 25 px, then up. */
+/* One finger from x0 to x1 in steps of 25px, then up. */
 /* The plot's width in pixels, PV_W in log_viewer_int.h. */
 #define PV_W_TEST LV_PV_COLS
 
@@ -618,8 +618,8 @@ TEST_CASE(one_finger_drag_pans_a_zoomed_view_when_the_setting_is_on)
     log_viewer_window(&first, &count);
     settings_set(SET_PLOT_PAN, 1.0f);
 
-    /* A drag of 100 px left, less the 10 px threshold, moves the view
-     * right by 90 px worth of samples; the cursor stays. */
+    /* A drag of 100px left, less the 10px threshold, moves the view
+     * right by 90px worth of samples; the cursor stays. */
     drag(600, 500);
     int f2 = -1, n2 = -1;
     log_viewer_window(&f2, &n2);
@@ -657,7 +657,7 @@ TEST_CASE(one_move_past_the_threshold_pans_by_what_lies_past_it)
     int first = -1, count = -1;
     log_viewer_window(&first, &count);
     settings_set(SET_PLOT_PAN, 1.0f);
-    /* Down, one move of 60 px, up: 50 px of pan. */
+    /* Down, one move of 60px, up: 50px of pan. */
     send(TOUCH_EVENT_DOWN, 600, 200);
     send(TOUCH_EVENT_MOVE, 540, 200);
     send(TOUCH_EVENT_UP, 540, 200);
@@ -679,7 +679,7 @@ TEST_CASE(a_tap_still_selects_and_a_short_slide_does_not_pan_with_the_setting_on
     const int c1 = log_viewer_cursor();
     CHECK(c1 >= first && c1 < first + count);
 
-    /* 8 px of travel stays under the threshold: the cursor follows, the
+    /* 8px of travel stays under the threshold: the cursor follows, the
      * view stays. */
     send(TOUCH_EVENT_DOWN, 500, 200);
     send(TOUCH_EVENT_MOVE, 504, 200);
@@ -700,8 +700,8 @@ static int cursor_under(int x)
     return log_viewer_cursor();
 }
 
-/* A slide of exactly the 10 px threshold is still a tap that moved: the
- * cursor follows the finger and the view stays.  1 px more is a pan: the
+/* A slide of exactly the 10px threshold is still a tap that moved: the
+ * cursor follows the finger and the view stays.  1px more is a pan: the
  * cursor is back where it was before the press. */
 TEST_CASE(a_slide_of_10_px_moves_the_cursor_and_11_px_pans)
 {
@@ -734,7 +734,7 @@ TEST_CASE(a_slide_of_10_px_moves_the_cursor_and_11_px_pans)
 }
 
 /* A pan that ends a fraction of a sample past the end of the file leaves
- * the view on the last samples: 1 to 9 px past the threshold, at 7.52 px a
+ * the view on the last samples: 1 to 9px past the threshold, at 7.52px a
  * sample, from a view that already ends on the last one. */
 TEST_CASE(a_pan_a_fraction_of_a_sample_past_the_end_stops_at_the_end)
 {

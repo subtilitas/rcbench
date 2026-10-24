@@ -29,7 +29,7 @@ Ein Motor-, ESC- (Electronic Speed Controller, Motorregler) und Servoprüfstand
 auf zwei Prozessoren: ein ESP32-P4-Touchpanel, das Waveshare ESP32-P4 7B
 (Bedienoberfläche auf einem 1024x600-Display an MIPI DSI, Einstellungen, SD-Karte,
 Wi-Fi über seinen ESP32-C6), und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
-Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
+Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1Mbit/s.
 
 Release 0.22.1 läuft auf dem ESP32-S3-Panel. Was seine Update-Suche
 anbietet, steht in
@@ -132,7 +132,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 55 439 von 56 644 Zeilen in 245 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 55 439 von 56 644 Zeilen in 245 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

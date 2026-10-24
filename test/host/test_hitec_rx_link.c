@@ -76,7 +76,7 @@ TEST_CASE(an_unanswered_write_goes_again_after_500_ms)
     CHECK(hitec_rx_link_next(&L, 0xFFFFFF00u, &v));
     hitec_rx_link_done(&L, HITEC_RX_LINK_NO_ANSWER, 0xFFFFFF00u);
     CHECK_EQ(hitec_rx_link_mark(&L), HITEC_RX_LINK_PENDING);
-    /* Across the wrap of the clock: 499 ms waits, 500 ms writes. */
+    /* Across the wrap of the clock: 499ms waits, 500ms writes. */
     CHECK(!hitec_rx_link_next(&L, 0xFFFFFF00u + 499u, &v));
     CHECK(hitec_rx_link_next(&L, 0xFFFFFF00u + 500u, &v));
     CHECK_EQ(v, LINK_HITEC_RX_PRECHARGE);

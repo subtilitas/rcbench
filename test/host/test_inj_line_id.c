@@ -121,7 +121,7 @@ static void transaction(bool swap, uint32_t gap_samples)
     wait(gap_samples);
 }
 
-/* @p count polls at @p ksps and @p bus_hz, 50 us apart, after 20 us idle. */
+/* @p count polls at @p ksps and @p bus_hz, 50us apart, after 20us idle. */
 static void traffic(uint32_t ksps, uint32_t bus_hz, int count, bool swap)
 {
     gen_reset(ksps, bus_hz);
@@ -169,7 +169,7 @@ TEST_CASE(polls_at_100khz_and_4_msps)
 }
 
 /* The slowest rate at which every level lasts the 2 samples the filter
- * keeps: half a bit of 2 samples at 400 kHz is 1.6 Msample/s. */
+ * keeps: half a bit of 2 samples at 400kHz is 1.6 Msample/s. */
 TEST_CASE(a_two_sample_level_is_kept)
 {
     traffic(1600, 400000, 25, false);
@@ -239,7 +239,7 @@ TEST_CASE(nineteen_transactions_give_no_verdict_and_twenty_do)
 }
 
 /* Transactions with the lines the other way round stand for a bus whose
- * rules disagree: 19 of 20 is 95 % and passes, 47 of 50 is 94 % and does
+ * rules disagree: 19 of 20 is 95% and passes, 47 of 50 is 94% and does
  * not. */
 TEST_CASE(ninety_five_percent_agreement_is_the_floor)
 {
@@ -325,10 +325,10 @@ TEST_CASE(an_idle_span_at_the_window_end_closes_the_last_poll)
     traffic(10000, 400000, 20, false);
     const uint32_t end = g.t;
     inj_line_result_t r;
-    /* Window ends 9.9 us into the idle: not idle yet, so 19 count. */
+    /* Window ends 9.9us into the idle: not idle yet, so 19 count. */
     inj_line_classify(g.first, g.e, g.n, end - 500u + 99u, 10000, &r);
     CHECK_EQ(r.tx, 19);
-    /* 10 us in: it counts. */
+    /* 10us in: it counts. */
     inj_line_classify(g.first, g.e, g.n, end - 500u + 100u, 10000, &r);
     CHECK_EQ(r.tx, 20);
 }
@@ -357,7 +357,7 @@ TEST_CASE(simultaneous_edges_name_no_line)
 /*
  * The panel polling 0x14 with nothing there, as seen on the bench: the
  * address byte goes unacknowledged, both lines are high after the ninth
- * clock, and 15 us later the master sends a bare STOP, SDA down and up with
+ * clock, and 15us later the master sends a bare STOP, SDA down and up with
  * SCL high.  The address part names no line (START on SDA, SCL rises
  * last); the bare STOP names SDA.
  */
@@ -373,7 +373,7 @@ static void absent_poll(uint32_t gap_samples)
     lvl(1, 0);
     wait(g.h / 2u);
     lvl(1, 1);
-    wait(150);   /* 15 us at 10 Msps */
+    wait(150);   /* 15us at 10 Msps */
     /* The bare STOP. */
     lvl(0, 1);
     wait(g.h);
@@ -468,13 +468,13 @@ TEST_CASE(nineteen_named_give_no_verdict)
     CHECK_EQ(r.verdict, INJ_WIRING_NOISE);
 }
 
-/* A gap under 10 us between two polls is not idle: the two are one. */
+/* A gap under 10us between two polls is not idle: the two are one. */
 TEST_CASE(a_short_gap_joins_two_polls)
 {
     gen_reset(10000, 400000);
     wait(200);
     for (int i = 0; i < 20; ++i) {
-        transaction(false, 20);    /* 2 us */
+        transaction(false, 20);    /* 2us */
         transaction(false, 500);
     }
     const inj_line_result_t r = classify(10000);

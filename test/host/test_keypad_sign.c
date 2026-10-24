@@ -21,7 +21,7 @@ static const gfx_rect_t k_area = { 6, 24, 546, 402 };
 
 static ui_keypad_t kp;
 
-/** @brief SUPPLY's voltage keypad: 3.3 to 21.0 V, unsigned. */
+/** @brief SUPPLY's voltage keypad: 3.3 to 21.0V, unsigned. */
 static void open_v(void)
 {
     ui_keypad_open(&kp, k_area, "VOLTAGE", "V", 6.0f, 3.3f, 21.0f, 2);
@@ -199,7 +199,7 @@ TEST_CASE(a_long_reason_is_cut_at_a_character_start)
     CHECK_EQ(strlen(kp.reason), 63u);
 }
 
-/** @brief SERVO's TRIM: -200 to +200 us, whole microseconds, signed. */
+/** @brief SERVO's TRIM: -200 to +200us, whole microseconds, signed. */
 static void open_trim(void)
 {
     ui_keypad_open_signed(&kp, k_area, "TRIM", "us", 0.0f, -200.0f, 200.0f,

@@ -70,13 +70,13 @@ void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
     memset(cfg, 0, sizeof(*cfg));
     cfg->centre_us     = centre_us;
     /*
-     * 10 us is about 1 degree on a standard servo (1000 us of pulse width
+     * 10us is about 1 degree on a standard servo (1000us of pulse width
      * over about 90 degrees of travel).  The step has to be small enough that
      * one step cannot carry the horn from free to hard against the stop; the
      * method depends on meeting the knee rather than arriving past it.
      */
     cfg->step_us       = positive ? 10 : -10;
-    cfg->max_travel_us = 600;    /* 900..2100 us from a 1500 us centre */
+    cfg->max_travel_us = 600;    /* 900..2100 us from a 1500us centre */
     cfg->settle_ms     = 120;    /* a slow digital servo arrives within this */
     cfg->measure_ms    = 80;
     cfg->knee_ratio    = 1.8f;
@@ -197,7 +197,7 @@ static void judge(servo_limit_t *lf, float avg_a)
     if (bound) {
         /*
          * The first rise ends the search.  Confirming it by pushing further
-         * would cost another settle-and-measure cycle (200 ms at the
+         * would cost another settle-and-measure cycle (200ms at the
          * defaults) of a servo pushing against a stop already found.
          *
          * The endpoint is the last free position, backed off by backoff_us.

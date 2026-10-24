@@ -18,7 +18,7 @@
 #include "esc_stick_rig.h"
 
 /* Kontronik JAZZ: the jumper is on before the warning is held, the run
- * powers up and waits the 2 s entry, then asks for the pull and listens
+ * powers up and waits the 2s entry, then asks for the pull and listens
  * from that moment, powered and at MIN.  The ESC is silent until the pull;
  * SILENCE does not end the run meanwhile.  No DONE: the menu heard in
  * order takes the step as done, and the mode is stored. */
@@ -64,7 +64,7 @@ TEST_CASE(a_jumper_pulled_after_the_entry_is_waited_for)
 }
 
 /* The pull starts the series at once, and DONE comes when the operator is
- * back at the screen, here 4 s later.  Counting from the pull, mode 3 is
+ * back at the screen, here 4s later.  Counting from the pull, mode 3 is
  * acted on in the first loop -- groups 1, 2, 3 in order -- not a whole
  * loop later, as it would be counting from DONE.  A partial first group is
  * never acted on: the quiet-first and order rules hold from the prompt. */
@@ -81,8 +81,8 @@ TEST_CASE(a_pull_starts_the_menu_and_no_group_is_lost)
     (void)esc_stick_confirm(&r.e);            /* back at the screen */
     run_until_phase(ESC_STICK_STORE, 60000u);
     CHECK_EQ(r.e.phase, ESC_STICK_STORE);
-    /* The answer (1.25 s), the pause, then 1, 2 and 3 at about 1.75 s
-     * each: under 9 s.  One loop of nine modes more is over 15 s. */
+    /* The answer (1.25s), the pause, then 1, 2 and 3 at about 1.75s
+     * each: under 9s.  One loop of nine modes more is over 15s. */
     if (r.now - pulled > 9000u) {
         T_FAIL("mode 3 acted on %u ms after the pull",
                (unsigned)(r.now - pulled));
@@ -602,7 +602,7 @@ TEST_CASE(a_step_at_power_up_is_asked_with_the_supply_off)
     ended_safe();
 }
 
-/* A button held 3 s while the supply comes on, and an entry of 2 s: the
+/* A button held 3s while the supply comes on, and an entry of 2s: the
  * pull asked after the entry waits for the hold to end, not the entry. */
 TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
 {
@@ -625,7 +625,7 @@ TEST_CASE(the_entry_lasts_at_least_the_hold_at_power_up)
     CHECK(r.e.hand_menu);
     CHECK(r.e.hand_ms - on >= 3000u);
     CHECK(r.e.hand_ms - on < 3010u);
-    /* Without the hold, the entry's own 2 s. */
+    /* Without the hold, the entry's own 2s. */
     static const esc_manual_t pull[] = {
         { ESC_MANUAL_BEFORE_MENU, "Pull the jumper.", 0u, NULL, true, false },
     };
@@ -698,7 +698,7 @@ TEST_CASE(a_run_started_with_the_output_on_asks_nothing)
     CHECK(esc_stick_reason_is_fault(r.e.reason));
     ended_safe();
 
-    /* The same module going off 600 ms into the run: the step is asked
+    /* The same module going off 600ms into the run: the step is asked
      * only once it has read off for ESC_STICK_OFF_SETTLE_MS. */
     rig_hand("kontronik-jazz", k_hold_button, 1);
     r.supply_on = true;

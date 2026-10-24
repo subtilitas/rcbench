@@ -937,7 +937,7 @@ TEST_CASE(a_read_is_due_at_its_interval_across_the_tick_wrap)
                                   SUPPLY_LINK_READ_MS / 2u);
 }
 
-/* The supply answers for SUPPLY_LINK_STALE_MS less 1 ms after a read and
+/* The supply answers for SUPPLY_LINK_STALE_MS less 1ms after a read and
  * is not answering at SUPPLY_LINK_STALE_MS, wherever the clock is. */
 static void a_read_is_fresh_until_the_stale_time(uint32_t t0)
 {
@@ -971,7 +971,7 @@ TEST_CASE(a_read_goes_stale_at_its_time_across_the_tick_wrap)
 }
 
 /* The page answers and the module reads ONLINE, but its reading count
- * stands: not stopped 1 ms before SUPPLY_LINK_BLIND_MS, stopped at it and
+ * stands: not stopped 1ms before SUPPLY_LINK_BLIND_MS, stopped at it and
  * after it, wherever the clock is; a count that moves again starts the
  * time over. */
 static void readings_stop_at_the_blind_time(uint32_t t0)
@@ -989,9 +989,9 @@ static void readings_stop_at_the_blind_time(uint32_t t0)
     far_step_and_read(true);
     CHECK(!supply_link_blind(&sl, t0));
     CHECK(!supply_link_blind(&sl, t0 + 1u));
-    /* The page read every 100 ms, the count standing.  The last reading
-     * is a reading 1 ms before SUPPLY_LINK_STALE_MS and none at it, with
-     * the page read 100 ms before both. */
+    /* The page read every 100ms, the count standing.  The last reading
+     * is a reading 1ms before SUPPLY_LINK_STALE_MS and none at it, with
+     * the page read 100ms before both. */
     supply_state_t st;
     memset(&st, 0, sizeof(st));
     while ((uint32_t)(now - t0) < SUPPLY_LINK_BLIND_MS - 100u) {

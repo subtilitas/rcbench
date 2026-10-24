@@ -115,7 +115,7 @@ TEST_CASE(a_slow_pair_is_measured_after_it_arrives_not_while_it_travels)
 {
     servo_pair_cfg_t pc;
     servo_pair_defaults(&pc, 1500);
-    pc.slew_us_per_ms = 0.16f;   /* a 13 us scan step takes most of a window */
+    pc.slew_us_per_ms = 0.16f;   /* a 13us scan step takes most of a window */
     servo_pair_t pair;
     servo_pair_init(&pair, &pc);
 
@@ -210,7 +210,7 @@ TEST_CASE(a_pure_travel_error_leaves_the_centre_alone)
     CHECK(sy.trim_us > -3 && sy.trim_us < 3);
 
     /* And the travel error, which centre could not see, is corrected: a
-     * throw 8% long must be commanded 300 / 1.08 = 278 us. */
+     * throw 8% long must be commanded 300 / 1.08 = 278us. */
     CHECK(sy.travel_hi_us > 268 && sy.travel_hi_us < 288);
     CHECK(sy.travel_lo_us > 268 && sy.travel_lo_us < 288);
 }
@@ -249,7 +249,7 @@ TEST_CASE(a_sensor_that_cannot_see_the_fight_says_so)
 {
     servo_pair_cfg_t pc;
     servo_pair_defaults(&pc, 1500);
-    pc.fight_a_per_us = 0.0004f;    /* 40 us of fight is 16 mA */
+    pc.fight_a_per_us = 0.0004f;    /* 40us of fight is 16mA */
     servo_pair_t pair;
     servo_pair_init(&pair, &pc);
 
@@ -273,7 +273,7 @@ TEST_CASE(the_two_ends_get_their_own_corrections)
     run(&sy, &pair, 300000);
     CHECK_EQ(sy.state, SERVO_SYNC_DONE);
 
-    /* B's throw is 6% long, so it must be commanded about 6% less: 300 us
+    /* B's throw is 6% long, so it must be commanded about 6% less: 300us
      * becomes roughly 283. Both ends, because both were measured. */
     CHECK(sy.travel_hi_us < 295 && sy.travel_hi_us > 270);
     CHECK(sy.travel_lo_us < 295 && sy.travel_lo_us > 270);
@@ -308,7 +308,7 @@ TEST_CASE(the_search_takes_a_workable_amount_of_time)
     setup(&sy, &pair);
     const uint32_t took = run(&sy, &pair, 300000);
     CHECK_EQ(sy.state, SERVO_SYNC_DONE);
-    /* Three stages of three rounds of seven points at 250 ms is about 16 s.
+    /* Three stages of three rounds of seven points at 250ms is about 16s.
      * The bound holds the procedure to that. */
     CHECK(took < 20000);
 }
@@ -324,7 +324,7 @@ TEST_CASE(progress_runs_from_nothing_to_all_of_it)
 }
 
 /*
- * A correction beyond the first window's reach (40 + 13 + 4 = 57 us with the
+ * A correction beyond the first window's reach (40 + 13 + 4 = 57us with the
  * defaults) puts the lowest point of the first scan at the window's end.
  * That point is the reach of the window, not the answer: a fault, not DONE
  * with a trim of 57.
@@ -333,7 +333,7 @@ TEST_CASE(a_minimum_at_the_edge_of_the_window_is_no_answer)
 {
     servo_pair_cfg_t pc;
     servo_pair_defaults(&pc, 1500);
-    pc.offset_us = -100;       /* the trim wanted is +100 us: out of reach */
+    pc.offset_us = -100;       /* the trim wanted is +100us: out of reach */
     pc.travel    = 1.0f;
     servo_pair_t pair;
     servo_pair_init(&pair, &pc);
@@ -355,7 +355,7 @@ TEST_CASE(a_minimum_at_the_edge_of_the_window_is_no_answer)
     CHECK_EQ(sy.fault, SERVO_SYNC_FAULT_NO_MINIMUM);
 }
 
-/* No command leaves 500 to 2500 us. */
+/* No command leaves 500 to 2500us. */
 TEST_CASE(no_command_leaves_the_pulse_range)
 {
     servo_pair_cfg_t pc;
@@ -431,7 +431,7 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 }
 
 /* The search's settle and measure times are differences of two times: a
- * search with the 2^32 ms wrap inside it gives the corrections a search at
+ * search with the 2^32ms wrap inside it gives the corrections a search at
  * tick 0 gives, after the same time. */
 static servo_sync_t g_at_0;
 static uint32_t     g_at_0_ms;
@@ -458,7 +458,7 @@ static void a_search_gives_its_corrections(uint32_t t0)
 TEST_CASE(a_search_takes_the_same_time_across_the_tick_wrap)
 {
     /* Each start puts the wrap in another settle or measure of the search:
-     * 1 ms, 130 ms and 2501 ms after the start. */
+     * 1ms, 130ms and 2501ms after the start. */
     static const uint32_t k_before[] = { 1u, 130u, 2501u };
     for (unsigned i = 0; i < sizeof(k_before) / sizeof(k_before[0]); ++i) {
         at_tick_0_and_before_the_wrap(a_search_gives_its_corrections,

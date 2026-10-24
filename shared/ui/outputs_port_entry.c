@@ -48,9 +48,9 @@
  *        PIN button, each segment row under its label, the WATCHED BY
  *        line, and up to three lines of reason.
  *
- * The PIN button and the segment rows are 48 px (UI_TAP_MIN) tall; a
- * label is 10 x 20 with its segment row 22 px under its top.  The
- * FUNCTION list opens under its face: 5 rows of 48 px with its 4 px
+ * The PIN button and the segment rows are 48px (UI_TAP_MIN) tall; a
+ * label is 10 x 20 with its segment row 22px under its top.  The
+ * FUNCTION list opens under its face: 5 rows of 48px with its 4px
  * margins end at body y 488, its shadow at OU_FOOT.
  */
 #define PIN_Y        (DD_Y + DD_H + 4) /**< The PIN button's top. */

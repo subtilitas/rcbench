@@ -23,7 +23,7 @@
  *
  * The import view shows the detected delimiter and decimal convention before
  * anything is plotted: a decimal-comma file read as decimal-point turns
- * 22,34 V into 2234 V.
+ * 22,34V into 2234V.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -48,10 +48,10 @@ extern "C" {
 #define LOG_VIEWER_NAME_MAX  64
 
 /*
- * The largest file OPEN reads: 2 GiB less 1 byte.  The panel reads a file
+ * The largest file OPEN reads: 2GiB less 1 byte.  The panel reads a file
  * through stdio, whose fseek() and ftell() take a long of 32 bits.  A
  * larger file, which an exFAT (extended File Allocation Table) card or a
- * FAT32 one up to 4 GiB less 1 byte holds, is listed with its size and
+ * FAT32 one up to 4GiB less 1 byte holds, is listed with its size and
  * refused at OPEN with TX_LOG_TOO_BIG.
  */
 #define LOG_VIEWER_OPEN_MAX 0x7FFFFFFFull
@@ -259,8 +259,8 @@ int log_viewer_cursor(void);
 
 /**
  * A file's size as the list and the DELETE question write it into @p out
- * (@p n bytes): "300 B", "4 kB", "3.0 MB" from 1 MiB, "8.00 GB" from 1 GiB.
- * The units are binary: 1 kB is 1024 bytes, 1 GB 1024^3.
+ * (@p n bytes): "300B", "4kB", "3.0MB" from 1MiB, "8.00GB" from 1GiB.
+ * The units are binary: 1kB is 1024 bytes, 1GB 1024^3.
  */
 void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
 
@@ -271,14 +271,14 @@ const char *log_viewer_message(void);
  * The range of a numeric column as the import view writes it into @p out
  * (@p n bytes): "lo..hi unit".  One decimal while both ends are below
  * 1000 in magnitude, none from 1000 on, so "2392..14639 rpm" fits the
- * 140 px box of the view.  A text over LOG_RANGE_CELLS glyphs (code points,
+ * 140px box of the view.  A text over LOG_RANGE_CELLS glyphs (code points,
  * gfx_text_cells(), so "µs" is 2) drops the
- * decimal, then the space before the unit: "-999.9..-999.9 rpm" reads
- * "-1000..-1000 rpm".  A text still wider, such as two 7-digit negative
+ * decimal, then the space before the unit: "-999.9..-999.9rpm" reads
+ * "-1000..-1000rpm".  A text still wider, such as two 7-digit negative
  * ends, is cut at the box's edge.  No space and no unit with an empty
  * @p unit.
  */
-#define LOG_RANGE_CELLS 17u   /**< the 140 px range box in 8 px glyphs */
+#define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
 
 void log_viewer_range_text(char *out, size_t n, double lo, double hi,
                            const char *unit);

@@ -27,12 +27,12 @@
 #define UPD_FONT_BODY  UI_FONT_BODY
 
 /*
- * UPDATES, in the body below the band: 1024 x 540 px:
- * The buttons on the left, 460 x 56 px at a 64 px pitch from y 16: CHECK,
+ * UPDATES, in the body below the band: 1024 x 540px:
+ * The buttons on the left, 460 x 56px at a 64px pitch from y 16: CHECK,
  * the reminder, RELEASES, and the download's hold.  The card on the right,
  * x 484 to 1016, y 16 to 488: what is kept and what last happened, each
- * text broken into lines of its 500 px column (41 cells of UPD_FONT_BODY),
- * 28 px apart.
+ * text broken into lines of its 500px column (41 cells of UPD_FONT_BODY),
+ * 28px apart.
  */
 /** @brief The buttons' left edge. */
 #define BX      16
@@ -60,8 +60,8 @@
 /*
  * The IOmcu section, in the left column under the fourth row:
  * Its heading, the two versions and up to two lines of state in
- * UPD_FONT_LABEL 24 px apart, and the hold, 460 x 56 px, whose foot is
- * body y 484, 12 px above the alert band.
+ * UPD_FONT_LABEL 24px apart, and the hold, 460 x 56px, whose foot is
+ * body y 484, 12px above the alert band.
  */
 /** @brief The IOmcu section's heading. */
 #define CU_HEAD_Y  280
@@ -73,13 +73,13 @@
 #define CU_LINE_Y  356
 /** @brief The state's line pitch, px. */
 #define CU_PITCH   24
-/** @brief HOLD 2 s: UPDATE IOMCU. */
+/** @brief HOLD 2s: UPDATE IOMCU. */
 #define CU_BTN     gfx_rect_make(BX, 428, BW, BH)
 
 /*
  * The reminder:
- * A box 860 x 480 px from body y 8, its lines in UPD_FONT_BODY; NOT NOW and
- * NEVER REMIND ME side by side, 398 x 56 px, the hold 812 x 64 px under
+ * A box 860 x 480px from body y 8, its lines in UPD_FONT_BODY; NOT NOW and
+ * NEVER REMIND ME side by side, 398 x 56px, the hold 812 x 64px under
  * them; the box's foot is body y 488.
  */
 /** @brief The reminder's box, in the body. */
@@ -91,7 +91,7 @@
 /** @brief The reminder's hold. */
 #define R_HOLD    gfx_rect_make(106, 400, 812, 64)
 
-/** @brief The body row 4 px above the alert band: every control ends over
+/** @brief The body row 4px above the alert band: every control ends over
  *         it. */
 #define UPD_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 _Static_assert(BH >= UI_TAP_MIN, "UPDATES' buttons are a finger tall");
@@ -113,7 +113,7 @@ enum {
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
-    HIT_COPROC,         /* HOLD 2 s: UPDATE IOMCU */
+    HIT_COPROC,         /* HOLD 2s: UPDATE IOMCU */
 };
 
 /* What both screens show, and what they ask for. */
@@ -847,7 +847,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 
     /* The release line's end when it is capped, the reminder and RELEASES,
-     * at the card's foot: its last line ends 12 px above the card's bottom
+     * at the card's foot: its last line ends 12px above the card's bottom
      * edge.  The line's end is drawn in UI_TEXT, the rest dim. */
     static const ui_text_id_t k_capped[] = { TX_UPD_LAST_LINE, TX_UPD_ABOUT_1,
                                              TX_UPD_ABOUT_2,
@@ -1032,8 +1032,8 @@ static void r_render(gfx_canvas_t *c, int buffer_index)
     char line[112];
     snprintf(line, sizeof(line), TR(UPD_R_VERSIONS), s_v.found, s_v.running);
     /* The versions, what the hold does, how to turn the reminder back on,
-     * and why the hold is grey: the lines of a group 28 px apart, the
-     * groups 36 to 48 px. */
+     * and why the hold is grey: the lines of a group 28px apart, the
+     * groups 36 to 48px. */
     text_in(c, x, box.y + 44, w, line, UPD_FONT_BODY, UI_TEXT);
     text_in(c, x, box.y + 84, w, TR(UPD_R_WHAT_1), UPD_FONT_BODY,
             UI_TEXT_DIM);

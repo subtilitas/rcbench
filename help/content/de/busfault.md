@@ -6,13 +6,13 @@ order: 110
 
 # Busfehler
 
-Der Busfehler-Bildschirm sagt, warum Panel und IOmcu nicht über den CAN-Bus (Controller Area Network) miteinander reden. Er öffnet von selbst, in zwei Fällen: Der CAN-Selbsttest beim Start schlägt fehl, oder ein Link, der stand, ist seit 4 s weg. Er belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+Der Busfehler-Bildschirm sagt, warum Panel und IOmcu nicht über den CAN-Bus (Controller Area Network) miteinander reden. Er öffnet von selbst, in zwei Fällen: Der CAN-Selbsttest beim Start schlägt fehl, oder ein Link, der stand, ist seit 4s weg. Er belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 
 ## Der Selbsttest beim Start
 
 ![Testframes kommen verändert zurück](view:busfault)
 
-Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200 ms lang innerhalb des Splash. Jedes Urteil außer dem, dass alle Testframes unversehrt zurückkamen, öffnet diesen Bildschirm statt des Menüs.
+Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200ms lang innerhalb des Splash. Jedes Urteil außer dem, dass alle Testframes unversehrt zurückkamen, öffnet diesen Bildschirm statt des Menüs.
 
 - Die Überschrift ist das Urteil.
 - WAS DAS BEDEUTET sagt es in einer Zeile.
@@ -28,29 +28,29 @@ Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200 ms lang inn
 | `Einige Testframes gingen verloren.` | `Einige Frames gehen verloren. Der Bus meldet Fehler.` | die Abschlüsse, die Buslänge, verdrillte CANH und CANL, einen Stecker |
 | `Testframes gingen ohne Busfehler verloren.` | `Frames kamen korrekt an, wurden aber ungelesen verworfen. Kein Verkabelungsfehler.` | nicht die Leitung; mit den Zahlen rechts melden |
 
-Die Abschlüsse messen bei ausgeschaltetem Prüfstand etwa 60 Ohm zwischen CANH und CANL. 120 Ohm heißt, einer der beiden fehlt. Der ganze Bus bleibt unter 5 m, jede Stichleitung unter 30 cm.
+Die Abschlüsse messen bei ausgeschaltetem Prüfstand etwa 60Ohm zwischen CANH und CANL. 120Ohm heißt, einer der beiden fehlt. Der ganze Bus bleibt unter 5m, jede Stichleitung unter 30cm.
 
 ## Ein Link, der abbricht
 
 ![Panel vom Bus getrennt.](view:busfault-lost)
 
-Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4 s weg ist. Die Überschrift sagt dann, was der eigene CAN-Controller des Panels tut:
+Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4s weg ist. Die Überschrift sagt dann, was der eigene CAN-Controller des Panels tut:
 
 | Überschrift | Bedeutung |
 |---|---|
 | `Panel vom Bus getrennt.` | zu viele Frames blieben unbestätigt; der Controller sendet nicht mehr |
-| `Panel verbindet sich neu.` | er zählt die Ruhezeit, die ein Neuverbinden braucht; 3 s warten |
+| `Panel verbindet sich neu.` | er zählt die Ruhezeit, die ein Neuverbinden braucht; 3s warten |
 | `CAN-Controller des Panels ist gestoppt.` | er steht und wurde nicht neu gestartet: ein Fehler in der Firmware des Panels |
 | `Verbindung antwortet nicht mehr.` | der Controller ist am Bus, und nichts antwortet |
 | `Controller-Zustand nicht auslesbar.` | der Treiber läuft nicht; nichts kann gesendet werden |
 
 Bei ARMED öffnet der Bildschirm nie: Er hat kein STOP. Bei ARMED meldet das Alert-Band, dass der Link weg ist, und der Bildschirm wartet auf das Schalten auf SAFE.
 
-Dieselben Zahlen gehen nach `BENCH/RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist. Die Datei hält höchstens 1 MiB (1.048.576 Bytes): Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um, ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Zeilen werden unabhängig von Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE geschrieben.
+Dieselben Zahlen gehen nach `BENCH/RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist. Die Datei hält höchstens 1MiB (1.048.576 Bytes): Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um, ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Zeilen werden unabhängig von Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE geschrieben.
 
 ## Den Bildschirm verlassen
 
-2 s HALTEN ZUM BESTÄTIGEN schließt den Bildschirm, mit der Geste und dem Übergang von ARM. Das Quittieren repariert nichts. Der Prüfstand läuft danach in der Simulation, nichts steuert einen Ausgang an, und der Test läuft beim nächsten Start erneut.
+2s HALTEN ZUM BESTÄTIGEN schließt den Bildschirm, mit der Geste und dem Übergang von ARM. Das Quittieren repariert nichts. Der Prüfstand läuft danach in der Simulation, nichts steuert einen Ausgang an, und der Test läuft beim nächsten Start erneut.
 
 ## Verwandte Seiten
 

@@ -30,7 +30,7 @@ typedef enum {
 
 /**
  * @brief The INA228's eight slots where they always were; each INA3221's
- * Mask/Enable and Configuration 20 ms apart, part 0's in the slots one part had
+ * Mask/Enable and Configuration 20ms apart, part 0's in the slots one part had
  * before; four slots empty.
  */
 static const uint8_t k_rotation[SENSE_ROTATION] = {
@@ -627,7 +627,7 @@ static void enc_anchor(sense_enc_t *e, uint16_t raw, uint64_t at_ms)
  * SENSE_ENC_MAG_EVERY-th time the field's AGC and MAGNITUDE as well, in place
  * of STATUS.
  *
- * The angle is read in every slot, 500 Hz.  Each register is a transaction of
+ * The angle is read in every slot, 500Hz.  Each register is a transaction of
  * its own (as5600.h).
  *
  * @param s The schedule.
@@ -770,7 +770,7 @@ void sense_sched_tick(sense_sched_t *s)
         }
         sense_bus_recovered(&s->bus, now_ms32);
     }
-    /* One INA3221 probe a tick at most: 455 µs of bus each. */
+    /* One INA3221 probe a tick at most: 455µs of bus each. */
     bool probed = false;
     for (unsigned a = 0; a < SENSE_I3221_PARTS; ++a) {
         ina3221_t *d = &s->i3221[a];

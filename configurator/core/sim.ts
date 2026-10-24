@@ -16,7 +16,7 @@ import type { Catalogue, Lang, Part, SimSettings, Text } from '../contract.ts';
 export const CELL_VOLTS = 4.2;
 /** The LiPo cell counts the visitor chooses from. */
 export const SIM_CELLS: readonly number[] = Object.freeze([1, 2, 3, 4, 5, 6]);
-/** The resistances in Ω: the E12 values from 100 Ω to 4.7 kΩ. */
+/** The resistances in Ω: the E12 values from 100Ω to 4.7kΩ. */
 export const SIM_OHMS: readonly number[] = Object.freeze([
   100, 120, 150, 180, 220, 270, 330, 390, 470, 560, 680, 820,
   1000, 1200, 1500, 1800, 2200, 2700, 3300, 3900, 4700,
@@ -26,9 +26,9 @@ export const SIM_WATTS: readonly number[] = Object.freeze([0.25, 0.5, 1, 2, 3, 5
 export const SIM_WIRINGS: ReadonlyArray<SimSettings['wiring']> = Object.freeze(['delta', 'star'] as const);
 
 /**
- * 470 Ω, 2 W and delta, as the catalogue builds the part. 4 cells: the 1 ESC
+ * 470Ω, 2W and delta, as the catalogue builds the part. 4 cells: the 1 ESC
  * reading of the docs ran on a 4S pack, and ESC power B, the PD mini, gives
- * at most 20 V, which 4S (16.8 V) stays under and 5S (21.0 V) exceeds.
+ * at most 20V, which 4S (16.8V) stays under and 5S (21.0V) exceeds.
  */
 export const DEFAULT_SIM: Readonly<SimSettings> = Object.freeze({ cells: 4, ohms: 470, watts: 2, wiring: 'delta' });
 
@@ -76,12 +76,12 @@ export function sig(lang: Lang, value: number): string {
   return comma(lang, value === 0 ? '0' : value.toPrecision(3));
 }
 
-/** "16.8 V", "21.0 V". */
+/** "16.8V", "21.0V". */
 export const voltsText = (lang: Lang, volts: number): string => `${comma(lang, volts.toFixed(1))} V`;
-/** "470 Ω", "1.2 kΩ". */
+/** "470Ω", "1.2kΩ". */
 export const ohmsText = (lang: Lang, ohms: number): string =>
   (ohms < 1000 ? `${ohms} Ω` : `${comma(lang, String(ohms / 1000))} kΩ`);
-/** "0.25 W", "2 W". */
+/** "0.25W", "2W". */
 export const wattsText = (lang: Lang, watts: number): string => `${comma(lang, String(watts))} W`;
 
 const both = (f: (lang: Lang) => string): Text => ({ en: f('en'), de: f('de') });

@@ -310,7 +310,7 @@ TEST_CASE(noise_before_a_frame_does_not_eat_it)
 
 /*
  * A byte gap must not be mistaken for a frame gap.  At 100 kbaud 8E2 the bytes
- * of one frame are 120 microseconds apart and frames are at least 4 ms apart,
+ * of one frame are 120 microseconds apart and frames are at least 4ms apart,
  * so the threshold has to sit between; a threshold below the byte spacing
  * restarts the frame on every byte, which is no framing at all.
  */
@@ -386,7 +386,7 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 
 TEST_CASE(the_microsecond_mapping_rounds_the_same_way_on_both_sides)
 {
-    /* 1000 us per 1639 counts: 0.6101 us per count, rounded to nearest. */
+    /* 1000us per 1639 counts: 0.6101us per count, rounded to nearest. */
     CHECK_EQ(sbus_to_us(0u), 895);       /* -104.94 -> -105 */
     CHECK_EQ(sbus_to_us(171u), 999);     /* -0.61   -> -1   */
     CHECK_EQ(sbus_to_us(172u), 1000);

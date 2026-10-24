@@ -5,7 +5,7 @@
  * in its last 32 bytes; the update checks it before the first erase.  Written
  * here rather than taken from mbedTLS so the check is the same code on the
  * host and on the panel, and the host suite can feed it the cases a card
- * produces.  Speed is not the point: a 1.2 MB image is hashed once per
+ * produces.  Speed is not the point: a 1.2MB image is hashed once per
  * update.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).

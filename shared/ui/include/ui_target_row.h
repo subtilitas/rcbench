@@ -34,13 +34,13 @@ extern "C" {
 
 /**
  * @brief The row height from which the row draws its label and its value
- *        in the 10 x 20 face, 40 px (6.0 mm); a shorter row draws them in
+ *        in the 10 x 20 face, 40px (6.0mm); a shorter row draws them in
  *        UI_FONT_LABEL (8 x 16).  A screen takes the larger face with the
  *        row height its own layout gives.
  */
 #define UI_TARGET_TALL_H 40
 /** @brief The label's share of a row UI_TARGET_TALL_H tall or taller:
- *         88 px, "TARGET" in 10 x 20 and 28 px clear. */
+ *         88px, "TARGET" in 10 x 20 and 28px clear. */
 #define UI_TARGET_LABEL_W_TALL 88
 
 /** @brief A TARGET row: where it is and the press it holds. */
@@ -84,7 +84,7 @@ const gfx_font_t *ui_target_row_font(const ui_target_row_t *t);
 /**
  * @brief How many cells of text the value box holds, in the row's face.
  * @param t The row.
- * @return The box's width less 8 px each side over the face's cell width;
+ * @return The box's width less 8px each side over the face's cell width;
  *         0 for NULL or a box narrower than the padding.
  */
 unsigned ui_target_row_cells(const ui_target_row_t *t);

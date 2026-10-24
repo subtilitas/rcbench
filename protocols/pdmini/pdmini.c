@@ -270,7 +270,7 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  * the one that means on, and relied on -- for a blind OFF, and without
  * trying the other -- only once two ONs with it have both taken: the
  * module's own button or its AUTO OUT setting can switch the output on in
- * the same 250 ms as one guess.
+ * the same 250ms as one guess.
  */
 /*
  * The voltage set point the module is given: the one asked, but no more
@@ -287,7 +287,7 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  */
 uint16_t pdmini_cap_mv(uint32_t vin_mv)
 {
-    /* On the 10 mV grid the screen offers, rounded down; an input with no
+    /* On the 10mV grid the screen offers, rounded down; an input with no
      * room for the lowest set point gets the lowest, and an ON is then not
      * written (pdmini_sag_hold()). */
     uint32_t cap = PDMINI_V_MIN_MV;

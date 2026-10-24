@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The IOmcu's sensor service: what core 1 does each 1 ms tick with the
+ * @brief The IOmcu's sensor service: what core 1 does each 1ms tick with the
  * orders core 0 gives it, and the snapshot of what it read that core 0
  * publishes on the link.
  *
@@ -38,7 +38,7 @@
  *            address that gave no answer keeps its last one.
  *            An online part's address counts as answering without being
  *            asked: a read at it would clear the flags its last register
- *            pointer holds.  16 addresses at 400 kHz are about 0.8 ms of
+ *            pointer holds.  16 addresses at 400kHz are about 0.8ms of
  *            bus time, in the tick they run in.
  *   Encoder  with the AS5600 enabled, the bus is opened and the schedule
  *            reads the part at 0x36 on the ticks that read no rotation item
@@ -124,8 +124,8 @@ typedef struct {
     sense_run_t run;
     sense_cap_state_t cap_state;
     uint16_t cap_seq;            /**< captures ended, modulo 65536          */
-    uint32_t cap_move_t;         /**< 0.1 ms                                */
-    uint32_t cap_arrive_t;       /**< 0.1 ms                                */
+    uint32_t cap_move_t;         /**< 0.1ms                                */
+    uint32_t cap_arrive_t;       /**< 0.1ms                                */
     int32_t  cap_peak_ua, cap_mean_ua;
     uint32_t cap_samples;
     bool     cap_clipped;
@@ -149,7 +149,7 @@ typedef struct {
 typedef struct {
     sense_sched_io_t sched;      /**< its ctx is passed to the three below */
     /**
-     * @brief The I2C block on @p sda and @p scl at 400 kHz; false when those
+     * @brief The I2C block on @p sda and @p scl at 400kHz; false when those
      * pins cannot carry it, and nothing is changed.
      */
     bool        (*open)(void *ctx, uint8_t sda, uint8_t scl);
@@ -195,7 +195,7 @@ typedef struct {
 void sense_svc_init(sense_svc_t *v, const sense_svc_io_t *io);
 
 /**
- * @brief One tick, every 1 ms: @p cmd acted on, the schedule ticked while the
+ * @brief One tick, every 1ms: @p cmd acted on, the schedule ticked while the
  * bus is open, and @p out filled.
  *
  * @param v The service.
@@ -208,7 +208,7 @@ void sense_svc_step(sense_svc_t *v, const sense_cmd_t *cmd, sense_snap_t *out);
  * @brief Whether window @p w of a channel passed @p limit_ma: its highest
  * current rounded to mA (as SENSE_WIN shows it) above the limit, or a sample
  * clipped at the top of the range when that top, @p clip_ua (the top code's
- * current, 163.8 mV across the shunt), is above the limit.
+ * current, 163.8mV across the shunt), is above the limit.
  *
  * Never with a limit of 0, and never for a negative current.  The service
  * judges each channel's window once, as it closes, on core 1, so no window is

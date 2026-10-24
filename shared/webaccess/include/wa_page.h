@@ -5,7 +5,7 @@
  *
  * Two parts.  Panel firmware: a file picker and an upload with progress,
  * then the panel's answer as text; the page never starts the write, the
- * operator does on the panel with a 2 s hold.  Card files: every file on the
+ * operator does on the panel with a 2s hold.  Card files: every file on the
  * card, folder by folder, each a download, and one link for the whole card
  * as a ZIP file with its size given before the click.
  *

@@ -153,7 +153,7 @@ TEST_CASE(one_byte_and_no_final_line_end)
     CHECK_EQ(text_buf_line_of(&g_tb, 99u), 2u);
 }
 
-/* Exactly 1 MiB is taken, 1 MiB and a byte are refused before a byte is
+/* Exactly 1MiB is taken, 1MiB and a byte are refused before a byte is
  * copied, and a refused load leaves an empty text. */
 TEST_CASE(a_file_of_the_cap_loads_and_one_byte_more_does_not)
 {
@@ -195,13 +195,13 @@ TEST_CASE(a_file_of_the_cap_loads_and_one_byte_more_does_not)
     CHECK_EQ(text_buf_load(&g_tb, big, 17u), TEXT_BUF_TOO_LARGE);
     CHECK_EQ(text_buf_load(&g_tb, big, 16u), TEXT_BUF_OK);
     CHECK_EQ(text_buf_insert(&g_tb, 'x'), TEXT_BUF_FULL);
-    /* A buffer larger than the cap still takes 1 MiB at most. */
+    /* A buffer larger than the cap still takes 1MiB at most. */
     fresh(CAP + 64u, 4u);
     CHECK_EQ(text_buf_room(&g_tb), CAP);
     free(big);
 }
 
-/* A BOM counts in the file's 1 MiB: with one, the text holds 3 bytes
+/* A BOM counts in the file's 1MiB: with one, the text holds 3 bytes
  * fewer, so what a save writes always opens again. */
 TEST_CASE(the_bom_counts_in_the_cap)
 {
@@ -299,7 +299,7 @@ TEST_CASE(sixty_five_thousand_lines_are_the_most)
     free(t);
 }
 
-/* A line of 100 kB: one line, wrapped at 98 cells into 1,021 rows. */
+/* A line of 100kB: one line, wrapped at 98 cells into 1,021 rows. */
 TEST_CASE(a_long_line_wraps)
 {
     const size_t n = 100000u;
@@ -489,7 +489,7 @@ TEST_CASE(the_bom_is_kept_and_takes_no_cell)
     CHECK(!text_buf_bom(&g_tb));
 }
 
-/* A NUL in the first 4 KiB is no text; one after it stays. */
+/* A NUL in the first 4KiB is no text; one after it stays. */
 TEST_CASE(a_nul_in_the_first_4_kib_is_no_text)
 {
     char t[TEXT_BUF_PROBE + 8u];

@@ -111,7 +111,7 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b);
  *        frame's last count, one less than its period.
  *
  * 0 for a rate of 0 and for a period the sixteen-bit counter cannot hold
- * (below 16 Hz).
+ * (below 16Hz).
  *
  * A pin is high while the counter is below the compare value, so a pulse of
  * this length leaves one count of low at the end of each frame.  One count
@@ -119,8 +119,8 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b);
  * is the rule the output pages refuse an endpoint by, and the wrap
  * firmware/iomcu/src/out_pwm.c programs, so the two cannot disagree.
  *
- * 1784 us at 560 Hz, 1999 us at 500 Hz, 2499 us at 400 Hz and 19999 us at
- * 50 Hz.
+ * 1784us at 560Hz, 1999us at 500Hz, 2499us at 400Hz and 19999us at
+ * 50Hz.
  *
  * @param rate_hz Frame rate in Hz. The counter tick is OUT_PWM_TICK_HZ.
  * @return Longest pulse in microseconds. 0 for a rate of 0 and for a period

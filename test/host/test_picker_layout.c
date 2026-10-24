@@ -1,6 +1,6 @@
 /**
  * @file test_picker_layout.c
- * @brief PICK A PIN at the 1024 x 600 sizes: the keys are 50 x 56 px and the
+ * @brief PICK A PIN at the 1024 x 600 sizes: the keys are 50 x 56px and the
  *        board with both tiers of them ends above the alert band; the PINS
  *        table holds a protocol's 8 pins there; nothing is drawn under the
  *        alert band in English or German, with no pin bound, at the
@@ -27,7 +27,7 @@
 
 #include "outputs_screen.h"
 
-/** @brief The eighth row of the PINS table: from body y 448, 36 px. */
+/** @brief The eighth row of the PINS table: from body y 448, 36px. */
 #define PINS_ROW8_Y 448
 
 /* The pixels from PK_FOOT down that are not the ground: what an alert
@@ -62,7 +62,7 @@ static void servo_on(unsigned n)
 
 /*
  * Every key, with the board from its shape and from the IOmcu's drawing:
- * 50 x 56 px, 56 px being UI_BTN_H_TALL; the ones of a tier on one row;
+ * 50 x 56px, 56px being UI_BTN_H_TALL; the ones of a tier on one row;
  * the lowest ending at body y 490, above PK_FOOT.
  */
 TEST_CASE(every_key_is_the_same_finger_sized_key)
@@ -190,9 +190,9 @@ TEST_CASE(nothing_is_drawn_under_the_alert_band)
 
 /*
  * A board that reports its own shape with no margin past its end pads:
- * 20 pads a row at 2.54 mm, an outline of 48.26 x 19.00 mm, so it draws
- * 600 px wide from x 212 and pad 1 sits on its left edge.  Pins on the
- * four corner pads.  Every key stays 8 px clear of the PINS and IN USE
+ * 20 pads a row at 2.54mm, an outline of 48.26 x 19.00mm, so it draws
+ * 600px wide from x 212 and pad 1 sits on its left edge.  Pins on the
+ * four corner pads.  Every key stays 8px clear of the PINS and IN USE
  * tables and above the alert band, as on the boards this build knows.
  */
 TEST_CASE(keys_clear_the_tables_on_a_board_with_no_end_margin)

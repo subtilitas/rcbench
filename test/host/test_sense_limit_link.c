@@ -6,7 +6,7 @@
  * Read whole at link-up, the limits written after their settle in any
  * bank state and only where they differ, OVER read while a limit is held
  * and once before new limits, each bit told once with the limit it was
- * judged by, at most one alert every 5 s and a channel once every 30 s,
+ * judged by, at most one alert every 5s and a channel once every 30s,
  * channels in turn, a lost reply's bits said as lost at the next link-up
  * and an IOmcu restart not, a refusal and BAD_PAGE said once, and nothing
  * sent to an IOmcu older than 4.27.
@@ -53,7 +53,7 @@ static int far_exchange(const sense_limit_link_op_t *op, uint16_t *regs)
     return SENSE_LIMIT_LINK_ACK;
 }
 
-/* One poll: every exchange owed, then 50 ms on. */
+/* One poll: every exchange owed, then 50ms on. */
 static void poll_once(void)
 {
     for (int k = 0; k < 4; ++k) {
@@ -155,7 +155,7 @@ TEST_CASE(the_page_is_read_then_the_limits_written_after_their_settle)
     want_one(4, 2000u);
     CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_PENDING);
     CHECK_EQ(sense_limit_link_unheld(&ll), 0x0010u);
-    polls(9);                           /* 450 ms */
+    polls(9);                           /* 450ms */
     CHECK_EQ(writes, 0u);
     polls(2);
     CHECK_EQ(writes, 1u);
@@ -166,10 +166,10 @@ TEST_CASE(the_page_is_read_then_the_limits_written_after_their_settle)
     CHECK_EQ(sense_limit_link_status(&ll), SENSE_LIMIT_ST_HELD);
     CHECK_EQ(sense_limit_link_unheld(&ll), 0u);
     CHECK_EQ(sense_limit_link_unheld(NULL), 0u);
-    /* The same again is no write; OVER is read every 200 ms now. */
+    /* The same again is no write; OVER is read every 200ms now. */
     const unsigned r0 = reads;
     want_one(4, 2000u);
-    polls(40);                          /* 2 s */
+    polls(40);                          /* 2s */
     CHECK_EQ(writes, 1u);
     CHECK(reads - r0 >= 9u && reads - r0 <= 11u);
     /* A limit above the page's top goes out as the top. */
@@ -255,7 +255,7 @@ TEST_CASE(each_channel_over_is_told_at_its_pace)
              SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 7u);
     /* Channel 1 passing on: not told again within REPEAT_MS. */
-    for (int i = 0; i < 100; ++i) {               /* 5 s */
+    for (int i = 0; i < 100; ++i) {               /* 5s */
         over(1);
         polls(1);
     }
@@ -312,7 +312,7 @@ TEST_CASE(the_clocks_hold_across_the_wrap)
              SENSE_LIMIT_LINK_EV_OVER);
     CHECK_EQ(ch, 0u);
     const unsigned r0 = reads;
-    polls(20);                                    /* 1 s, over the wrap */
+    polls(20);                                    /* 1s, over the wrap */
     CHECK(reads - r0 >= 4u && reads - r0 <= 6u);
     over(0);
     polls(5);
@@ -391,7 +391,7 @@ TEST_CASE(a_bit_is_told_with_the_limit_it_passed)
     fresh(27u, 1000u);
     want_one(2, 500u);
     polls(20);
-    over(2);                            /* judged under 500 mA */
+    over(2);                            /* judged under 500mA */
     want_one(2, 0u);                    /* OFF before the next read */
     const unsigned r0 = reads;
     const unsigned w0 = writes;

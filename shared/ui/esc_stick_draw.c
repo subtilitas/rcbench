@@ -98,7 +98,7 @@ static void sp_volts(char *out, size_t n, const esc_model_t *m)
     } else if (m->v_max_mv % 1000u == 0u) {
         snprintf(out, n, "%uV", (unsigned)(m->v_max_mv / 1000u));
     } else {
-        snprintf(out, n, "%u.%u V", (unsigned)(m->v_max_mv / 1000u),
+        snprintf(out, n, "%u.%uV", (unsigned)(m->v_max_mv / 1000u),
                  (unsigned)(m->v_max_mv % 1000u / 100u));
     }
 }

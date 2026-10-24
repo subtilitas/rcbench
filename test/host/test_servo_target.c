@@ -124,7 +124,7 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
 /*
  * SETUP > OUTPUTS' PROG PORT entry, which the TARGET row opens: its SERVO
  * TESTER segment (OUTPUTS | PROG PORT) and its PORT PWM segment (ON |
- * OFF), two tabs of 145 px 4 px apart from x 19 (outputs_spots.h).
+ * OFF), two tabs of 145px 4px apart from x 19 (outputs_spots.h).
  */
 #define OSEG_X(i)      OU_SEG_X(i)
 
@@ -228,7 +228,7 @@ TEST_CASE(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest)
 #define TGT_H 48
 
 /* The target line's box at the foot of the left card before the TARGET
- * row: left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26 px. */
+ * row: left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26px. */
 #define OLD_TGT_X 206
 
 #define OLD_TGT_Y ((H - UI_BAND_H) - 6 - 36)
@@ -314,7 +314,7 @@ static const char *const k_tgt_txt[2][TGT_N] = {
 
 /* The row a label and a value give, drawn over the screen's by the row
  * widget (ui_target_row.h, whose own pixels test_widgets holds) at the
- * row's place: the label at SV_RC_X, the value in the box 64 px further, in
+ * row's place: the label at SV_RC_X, the value in the box 64px further, in
  * the warning colour for @p warn, the box drawn locked for @p locked. */
 static void target_reference_as(gfx_color_t *out, const char *label,
                                 const char *text, bool warn, bool locked)

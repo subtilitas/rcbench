@@ -38,7 +38,7 @@ static const char *const k_dir[]    = { "NORMAL", "REVERSED", "BIDIRECTIONAL" };
  */
 static const char *const k_timing[] = { "LOW", "MEDIUM LOW", "MEDIUM",
                                         "MEDIUM HIGH", "HIGH" };
-static const char *const k_pwm[]    = { "24 kHz", "48 kHz", "96 kHz" };
+static const char *const k_pwm[]    = { "24kHz", "48kHz", "96kHz" };
 static const char *const k_demag[]  = { "OFF", "LOW", "HIGH" };
 static const char *const k_mtype[]  = { "BLDC", "FOC" };
 static const char *const k_res[]    = { "STANDARD", "HIGH" };

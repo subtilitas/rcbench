@@ -3,7 +3,7 @@
  *
  * Two views.  The question: which version the IOmcu runs, which one
  * this panel carries, whether that one is older, CANCEL and START.  START
- * takes the 2 s hold (UI_HOLD_S), the ARM gesture.  The progress: a full
+ * takes the 2s hold (UI_HOLD_S), the ARM gesture.  The progress: a full
  * screen without the band, like the bus-fault screen, with the step under
  * way and the blocks sent.  The bench cannot be armed while it shows: the
  * IOmcu refuses ARM for the whole update session.

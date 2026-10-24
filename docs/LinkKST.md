@@ -25,11 +25,11 @@ register 0 clear, whatever mode the servo is in, and the supply is asked
 off.
 
 The session plans a WRITE and a RESTORE itself (since 4.14). The command's
-frame checks the request and prepares the planner's job, 64 us of planner
+frame checks the request and prepares the planner's job, 64us of planner
 work. A target the planner refuses without a search is refused there
 (PLAN_RULES, PLAN_R00, PLAN_PAIRING) and no operation starts. Every other
 request starts the operation, and each pass of core 0's main loop then does
-one slice of the planner: 100 to 109 units of work, 892 us at most. While
+one slice of the planner: 100 to 109 units of work, 892us at most. While
 the port plans, bit 3 of register 0 is set, the low byte of `RESULT` reads
 35, the frame count reads 0 and no frame goes to the servo. The planning
 ends after 216,000 units at most, 2,161 passes:
@@ -44,9 +44,9 @@ ends after 216,000 units at most, 2,161 passes:
 
 Nothing is sent to the servo for results 33, 34 and 11, the session is not
 locked, and the next WRITE is taken without a READ_ALL. The costliest
-request found takes 120,136 units, 1,202 passes at most and 397 to 647 ms
+request found takes 120,136 units, 1,202 passes at most and 397 to 647ms
 of planner time. The times are computed in an emulator from the
-instructions executed at 150 MHz
+instructions executed at 150MHz
 ([Performance](Performance.md#the-iomcu)) and not measured on
 hardware. The time of a pass with the rest of the main loop in it is not
 measured, so the planning time on a bench is not known. A 4.13 IOmcu
@@ -59,14 +59,14 @@ servo, line and supply model.
 | State | Value | The port's pin | The supply | Ends |
 | --- | ---: | --- | --- | --- |
 | PWM | 0 | the PWM generator | the panel's, on SUPPLY | when ENTER or REBOOT is taken |
-| STOPPING | 1 | the PWM generator, rendering no pulse: a pulse in progress completes | unchanged | after 50 ms |
-| LOW | 2 | the wire driver, driven low | set for programming, see below | after 100 ms and when the supply reads as asked |
+| STOPPING | 1 | the PWM generator, rendering no pulse: a pulse in progress completes | unchanged | after 50ms |
+| LOW | 2 | the wire driver, driven low | set for programming, see below | after 100ms and when the supply reads as asked |
 | PROGRAMMING | 3 | the wire driver: low, a frame, or an input for a reply window | on, held by the port | on POWER_CYCLED, REBOOT or LEAVE, and when the supply goes off; before the first frame also on ABORT, a stop or a failed entry |
-| RAIL_OFF | 4 | the wire driver, or the PWM generator rendering no pulse after a REBOOT in PWM | off | 2000 ms after the supply reads off |
-| RAIL_WAIT | 5 | as RAIL_OFF | on, at the set points it had | 1000 ms after the supply reads on, to PWM |
+| RAIL_OFF | 4 | the wire driver, or the PWM generator rendering no pulse after a REBOOT in PWM | off | 2000ms after the supply reads off |
+| RAIL_WAIT | 5 | as RAIL_OFF | on, at the set points it had | 1000ms after the supply reads on, to PWM |
 | LEAVING | 6 | the wire driver, driven low | as it is: not switched, no set point written | after the wait of write register 28, to PWM (since 4.15) |
 
-The entry sequence of the session holds the line low for another 100 ms
+The entry sequence of the session holds the line low for another 100ms
 after LOW. From LOW on the generator does not have the pin. Every source of
 a PWM command (the panel, the sweep, the automatic test) ends at the port's
 bank channel, so none reaches the pin; PROG and SERVO still take such a
@@ -81,19 +81,19 @@ register 0 reads 1 while a PD mini answers; the port then switches it.
 
 ENTER takes the programming voltage and current limit from write registers
 26 and 27. With a PD mini answering, ENTER is refused with SUPPLY_RANGE
-unless the voltage is at most 8400 mV, the current 50 to 3000 mA and the
-session's voltage at least 700 mV under the input voltage of the PD mini. 8400 mV is the highest
+unless the voltage is at most 8400mV, the current 50 to 3000mA and the
+session's voltage at least 700mV under the input voltage of the PD mini. 8400mV is the highest
 servo rail of the IO board. The session's voltage is the staged one, or
-the lower of it and the voltage of an output that is on; under 4800 mV
+the lower of it and the voltage of an output that is on; under 4800mV
 ENTER is refused with SUPPLY_LOW (since 4.15) and the supply is not
 touched. The panel holds the same floor on its side: it sends no ENTER
-while it reads a PD mini output that is on and set under 4800 mV, whatever
-the IOmcu does with that ENTER. 4800 mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
+while it reads a PD mini output that is on and set under 4800mV, whatever
+the IOmcu does with that ENTER. 4800mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
 voltage a servo needs to store a register is not measured. In LOW the port
 then does one of two things:
 
 - the output is asked off: the set points are written and the output is
-  switched on. The session starts 1000 ms after the PD mini reads on;
+  switched on. The session starts 1000ms after the PD mini reads on;
 - the output is on: the voltage is set to the lower of the two voltages and
   the current limit to the lower of the two limits (the limit since 4.15).
   Nothing is written where both are the output's already.
@@ -101,15 +101,15 @@ then does one of two things:
 No step of the port raises the voltage or the current limit of an output
 that is on, and leaving programming does not restore a higher value that
 ENTER lowered. A PD mini
-that does not read as asked within 3000 ms ends ENTER with result 32: the
+that does not read as asked within 3000ms ends ENTER with result 32: the
 port is in PWM, and an output switched on by this ENTER is off again.
 
 POWER_CYCLED and REBOOT in PROGRAMMING, with the PD mini asked on, cycle
-the supply: off, RAIL_OFF for 2000 ms from the read that shows it off, on at
-the set points it had, RAIL_WAIT for 1000 ms from the read that shows it on,
+the supply: off, RAIL_OFF for 2000ms from the read that shows it off, on at
+the set points it had, RAIL_WAIT for 1000ms from the read that shows it on,
 then PWM with bit 4 clear. REBOOT is also taken in PWM, for a servo that is
-to restart: the same cycle, with no pulse on the port during it. 2000 ms and
-1000 ms are the owner's values. The time a KST servo needs without power to
+to restart: the same cycle, with no pulse on the port during it. 2000ms and
+1000ms are the owner's values. The time a KST servo needs without power to
 leave programming mode, the time it needs to start, and the supply voltage
 it accepts in programming mode are not measured. Neither is the time the PD
 mini takes to switch.
@@ -131,7 +131,7 @@ supply wiring just written is not yet in flash.
 
 An OFF written to SUPPLY, or the heartbeat lost, while an operation of the
 port runs reads 0 in OUTPUT at once and reaches the PD mini when the port
-has cut its frame and no operation runs, 12 ms after it at the latest
+has cut its frame and no operation runs, 12ms after it at the latest
 (`SUPPLY_PAGE_OFF_WAIT_MS`, since 4.15). The port sees OUTPUT 0 in its next
 pass and ends the operation. An output the PD mini switches off by itself
 is not delayed. The time the PD mini's output takes to fall after the
@@ -147,13 +147,13 @@ Where the supply ends when something fails:
 | Event | The supply | The port |
 | --- | --- | --- |
 | The PD mini does not answer at ENTER | untouched | the session runs as on a bench without one |
-| The PD mini stops answering or does not read as asked within 3000 ms in LOW | asked off if this ENTER switched it on, else left on, at the lower voltage if this ENTER lowered it | PWM, result 32 |
+| The PD mini stops answering or does not read as asked within 3000ms in LOW | asked off if this ENTER switched it on, else left on, at the lower voltage if this ENTER lowered it | PWM, result 32 |
 | The staged voltage is out of range | untouched | ENTER refused with SUPPLY_RANGE |
-| The session's voltage is under 4800 mV | untouched | ENTER refused with SUPPLY_LOW |
-| The supply reads off or is asked off in PROGRAMMING (the panel, a lost heartbeat, the PD mini's own protection) | kept off for 2000 ms, not switched on again | the operation ends, a frame on the wire is finished; PWM with bit 4 clear, result 19 |
-| The supply does not read off within 3000 ms of a cycle's start | asked off | from PROGRAMMING: PROGRAMMING again with bits 4 and 5 kept, result 32. From PWM: PWM, result 32 |
+| The session's voltage is under 4800mV | untouched | ENTER refused with SUPPLY_LOW |
+| The supply reads off or is asked off in PROGRAMMING (the panel, a lost heartbeat, the PD mini's own protection) | kept off for 2000ms, not switched on again | the operation ends, a frame on the wire is finished; PWM with bit 4 clear, result 19 |
+| The supply does not read off within 3000ms of a cycle's start | asked off | from PROGRAMMING: PROGRAMMING again with bits 4 and 5 kept, result 32. From PWM: PWM, result 32 |
 | The heartbeat is lost or the link is silent in RAIL_OFF | stays off | PWM with bit 4 clear, result 19 |
-| The supply does not read on within 3000 ms in RAIL_WAIT | asked off | PWM, result 32 |
+| The supply does not read on within 3000ms in RAIL_WAIT | asked off | PWM, result 32 |
 | The supply is asked off in RAIL_WAIT (the panel, a lost heartbeat) | off | PWM, result 19 |
 
 The supply ends off whenever no panel is there to switch it off: SUPPLY
@@ -170,15 +170,15 @@ also one that ENTER switched on or lowered. With no PD mini answering the
 port does the same. POWER_CYCLED and REBOOT stay as they are.
 
 A LEAVE that is taken puts the port in LEAVING. The wire driver holds the
-pin low for the wait in write register 28 (`LEAVE_MS`), 0 to 10,000 ms,
-counted from the command. The wait is 100 ms until a panel writes the
+pin low for the wait in write register 28 (`LEAVE_MS`), 0 to 10,000ms,
+counted from the command. The wait is 100ms until a panel writes the
 register, and the register keeps what was written until the IOmcu
 restarts. The register takes every value: a LEAVE that finds more than 10,000 in it is refused with LEAVE_MS,
 the port stays in PROGRAMMING, and the value is not clamped. A write to the
 register while the port waits is for the next LEAVE. After the wait the
 generator has the pin, the port is in PWM with bits 4 and 5 clear and result
 0, and the port's pulse is back as its `PWM` bit and `TARGET` say. A wait of
-0 ms ends at the next pass of the main loop. The time left is not on the
+0ms ends at the next pass of the main loop. The time left is not on the
 page: all 32 read registers are in use. A panel counts it from its own
 clock.
 
@@ -209,7 +209,7 @@ the state as they were.
 | ABORT | as it is | PROGRAMMING with result 19, the session as LEAVE found it, bit 5 not set |
 | A switch to SAFE | as it is | PROGRAMMING with result 19 and bit 5 set |
 | The heartbeat lost or the link silent, no PD mini answering | untouched | PROGRAMMING with result 19 and bit 5 set |
-| The supply reads off or is asked off (the panel's STOP, a lost heartbeat, the PD mini's own protection) | kept off for 2000 ms, not switched on again | RAIL_OFF, then PWM with bits 4 and 5 clear and result 19 |
+| The supply reads off or is asked off (the panel's STOP, a lost heartbeat, the PD mini's own protection) | kept off for 2000ms, not switched on again | RAIL_OFF, then PWM with bits 4 and 5 clear and result 19 |
 | The PD mini stops answering | untouched | the wait goes on |
 | Any other command | as it is | refused with BUSY |
 
@@ -249,7 +249,7 @@ A write sees other registers:
 | 25 | `VIEW` | 0: the read's registers 16 to 31 show the image last read. 1: the backup. In force when written |
 | 26 | `SUPPLY_MV` | the supply voltage of an ENTER, mV (since 4.13). The panel's default is 5000 |
 | 27 | `SUPPLY_MA` | the current limit of an ENTER that switches the supply on, mA (since 4.13) |
-| 28 | `LEAVE_MS` | the wait of a LEAVE with the line low, 0 to 10,000 ms (since 4.15). 100 until it is written |
+| 28 | `LEAVE_MS` | the wait of a LEAVE with the line low, 0 to 10,000ms (since 4.15). 100 until it is written |
 
 The check is the link's CRC-16 (cyclic redundancy check), seeded 0xFFFF,
 over each register's low byte and then its high byte (`link_kst_crc()`).
@@ -327,9 +327,9 @@ ended.
 | NO_PIN | 16 | the port holds no pin, or its FUNC is DShot (since 4.28), for an ENTER and for a REBOOT in PWM (since 4.13) |
 | SUPPLY_RANGE | 17 | the staged supply voltage or current is outside what ENTER takes (since 4.13) |
 | NO_SUPPLY | 18 | a REBOOT with no PD mini answering or the PD mini asked off (since 4.13) |
-| LEAVE_MS | 19 | a LEAVE with more than 10,000 ms in register 28 (since 4.15) |
+| LEAVE_MS | 19 | a LEAVE with more than 10,000ms in register 28 (since 4.15) |
 | LOCKED | 20 | a LEAVE while only RESTORE is accepted (since 4.15) |
-| SUPPLY_LOW | 21 | an ENTER whose supply voltage, the staged one or the lower one of an output that is on, is under 4800 mV (since 4.15) |
+| SUPPLY_LOW | 21 | an ENTER whose supply voltage, the staged one or the lower one of an output that is on, is under 4800mV (since 4.15) |
 
 Values 3 and 4 are not given. A result the session knows without a plan
 (5, 7, 8, 9, and 10 for a RESTORE whose staged image is not the backup) is
@@ -360,10 +360,10 @@ a bank in ARMED, SUPPLY's output written 0, and the command ABORT from
 | --- | --- | --- | --- |
 | PWM | the pulse stops, as on every output. The supply stays as it is | the pulse stops and the supply is off | the pulse stops. SUPPLY switches the PD mini off |
 | STOPPING, LOW | the port returns to PWM with result 19. A supply this ENTER switched on is switched off; one found on stays on | the same, and the supply is off | the same, and SUPPLY switches the PD mini off |
-| PROGRAMMING | the running operation ends with result 19: a frame on the wire is finished, which takes at most 12 ms, and no other starts. The pin is driven low or an input afterwards. After a first frame bit 5 is set and the port stays PROGRAMMING; before it the port returns to PWM. The supply stays on | the operation ends the same way. The supply is off: the port keeps it off for 2000 ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING with bit 5 set | as the panel's STOP |
-| RAIL_OFF | nothing: the cycle goes on | the supply stays off; after the 2000 ms the port is in PWM with result 19 | as the panel's STOP |
+| PROGRAMMING | the running operation ends with result 19: a frame on the wire is finished, which takes at most 12ms, and no other starts. The pin is driven low or an input afterwards. After a first frame bit 5 is set and the port stays PROGRAMMING; before it the port returns to PWM. The supply stays on | the operation ends the same way. The supply is off: the port keeps it off for 2000ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING with bit 5 set | as the panel's STOP |
+| RAIL_OFF | nothing: the cycle goes on | the supply stays off; after the 2000ms the port is in PWM with result 19 | as the panel's STOP |
 | RAIL_WAIT | nothing: the cycle goes on | the supply is switched off; the port is in PWM with result 19 | as the panel's STOP |
-| LEAVING | the wait ends with result 19 and the port is in PROGRAMMING with bit 5 set. The supply stays on | the wait ends the same way. The supply is off: the port keeps it off for 2000 ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING | as the panel's STOP |
+| LEAVING | the wait ends with result 19 and the port is in PROGRAMMING with bit 5 set. The supply stays on | the wait ends the same way. The supply is off: the port keeps it off for 2000ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING | as the panel's STOP |
 
 While bit 5 is set the port takes ENTER, READ_ALL, ABORT, POWER_CYCLED and
 REBOOT only, until a READ_ALL has succeeded. ABORT alone has the effect of
@@ -377,7 +377,7 @@ result 19. No frame was sent and no register written, and the session is
 not locked. Bit 5 is set as after a cut frame, because the session sent
 frames before it planned. The supply stays on after a switch to SAFE or an ABORT
 alone. After the panel's STOP, a lost heartbeat or a silent link it is off,
-and with a PD mini answering the port keeps it off for 2000 ms and returns
+and with a PD mini answering the port keeps it off for 2000ms and returns
 to PWM with bits 4 and 5 clear. POWER_CYCLED and REBOOT end the planning
 and then run. Every other command is refused with BUSY and the planning
 goes on. A PD mini that stops answering does not end it. A switch to SAFE is seen as an edge: the port stops once and takes commands
@@ -388,7 +388,7 @@ UNSAFE.
 
 A link lost during RAIL_OFF leaves the supply off and the port in PWM: with
 no panel on the link nobody could switch the supply off again, and a servo
-that had no power for 2000 ms has left programming mode if 2000 ms is
+that had no power for 2000ms has left programming mode if 2000ms is
 enough, which is not measured. The panel switches the supply on again on
 SUPPLY.
 
@@ -406,10 +406,10 @@ SUPPLY.
 
 `shared/bench/kst_link.c` is the panel's half. A request names the port,
 for ENTER the supply voltage and current, and for LEAVE the wait, which the
-module refuses above 10,000 ms before anything is sent. It stages the registers,
-sends the command with the next `SEQ`, reads registers 0 to 3 every 50 ms
-while an operation runs or the port is out of PWM and every 500 ms otherwise
-(one request and one data frame, 0.31 ms of bus time), and after an
+module refuses above 10,000ms before anything is sent. It stages the registers,
+sends the command with the next `SEQ`, reads registers 0 to 3 every 50ms
+while an operation runs or the port is out of PWM and every 500ms otherwise
+(one request and one data frame, 0.31ms of bus time), and after an
 operation reads registers 4 to 15, the backup and the image. Its phase is
 PLANNING while the page last read has bit 3 set and result 35, and RUNNING
 before the first read and from the plan on. It sends a
@@ -438,10 +438,10 @@ no order of writes, one above the work cap, a write without the key, a PD
 mini absent, slow, silent
 and refusing, an ABORT in RAIL_OFF and in RAIL_WAIT, the supply found on above, at and under the programming
 voltage, a link lost in RAIL_OFF and in RAIL_WAIT, the counters at their
-ends and every timer across the 2^32 ms wrap. For LEAVE they run the
+ends and every timer across the 2^32ms wrap. For LEAVE they run the
 command in every state, with a PD mini on, switched on by the entry, silent
 and absent, during a frame and while the port plans, with bit 5 and with bit
-9 set, waits of 0, 1, 100 and 10,000 ms, the refusal at 10,001 ms, and an
+9 set, waits of 0, 1, 100 and 10,000ms, the refusal at 10,001ms, and an
 ABORT, a switch to SAFE, a lost heartbeat and a supply switched off in the wait.
 `test_kst_link` runs the panel's module through the dispatcher
 against the port: whole sessions, a write from PLANNING to its end, results

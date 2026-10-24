@@ -20,10 +20,10 @@
 
 /*
  * The TAG row carries the pulse range after the type and the frame rate:
- * "STANDARD PWM  50 Hz  1000-2000", two spaces between the three parts, the
+ * "STANDARD PWM  50Hz  1000-2000", two spaces between the three parts, the
  * range in microseconds without its unit.  The longest a profile and its
  * keypads allow, a 13-character type, a 3-digit rate and two 4-digit ends,
- * is 32 of the 35 cells the 356 px pill holds.  A typed end reaches the row
+ * is 32 of the 35 cells the 356px pill holds.  A typed end reaches the row
  * at once.
  */
 #define TAG_BOX_Y 20
@@ -82,7 +82,7 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
 /*
  * The supply the rail's line names is the PD mini, or the panel's model of
  * it: then the SIMULATED (SIMULIERT) pill sits on the plot's top-left corner,
- * under the name, 110 px or as wide as a longer word and 26 px high.  A change of the model reaches it without a tap; with
+ * under the name, 110px or as wide as a longer word and 26px high.  A change of the model reaches it without a tap; with
  * INA3221 CH1 as the meter it is not shown.
  */
 #define PILL_X (RAIL_X + 2)
@@ -262,7 +262,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
 
     rail_window(412, 5980u);
     CHECK(row_reads("0.41 A", UI_C_TEXT));
-    CHECK(line_ina("5.98 V", "0.41 A", "2.5 W"));        /* 2.46 W */
+    CHECK(line_ina("5.98 V", "0.41 A", "2.5 W"));        /* 2.46W */
     CHECK_EQ(servo_screen_power_points(), 1);
     CHECK_NEAR(servo_screen_power_sample(0, 0), 5.98f, 1e-5f);
     CHECK_NEAR(servo_screen_power_sample(1, 0), 0.412f, 1e-6f);
@@ -289,7 +289,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     rail_window(32767, 65535u);
     CHECK(line_ina("65.5 V", "32.77 A", "2147 W"));
     /* Where the tenths stop fitting: 7 cells. */
-    /* Hundredths of a volt to 9.99 V. */
+    /* Hundredths of a volt to 9.99V. */
     rail_window(1000, 9994u);
     CHECK(line_ina("9.99 V", "1.00 A", "10.0 W"));
     rail_window(-9990, 10000u);
@@ -300,7 +300,7 @@ TEST_CASE(the_current_row_shows_ch1s_window_while_the_ina3221_is_the_meter)
     CHECK(line_ina("10.0 V", "10.00 A", "100.0 W"));
     rail_window(10000, 10005u);
     CHECK(line_ina("10.0 V", "10.00 A", "100.1 W"));
-    rail_window(-10005, 10000u);                  /* -100.05 W */
+    rail_window(-10005, 10000u);                  /* -100.05W */
     CHECK(line_ina("10.0 V", "-10.01 A", "-100 W"));
     rail_window(1637, 5000u);
     CHECK(row_reads("1.64 A", UI_C_TEXT));
@@ -352,7 +352,7 @@ TEST_CASE(a_negative_current_is_shown_signed)
     rail_window(-1640, 5000u);
     CHECK(line_ina("5.00 V", "-1.64 A", "-8.2 W"));
     rail_window(-4, 5000u);
-    CHECK(line_ina("5.00 V", "0.00 A", "0.0 W"));       /* -0.02 W */
+    CHECK(line_ina("5.00 V", "0.00 A", "0.0 W"));       /* -0.02W */
 
     /* The supply's reading keeps its sign as well. */
     meter(SERVO_SOURCE_PDMINI);

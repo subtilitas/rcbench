@@ -6,12 +6,12 @@
  * A frame is a run of marks.  The time from the start of one mark to the
  * start of the next is one channel's pulse width, so a channel is carried by
  * where its mark falls rather than by how long it is, and the mark itself is
- * a fixed 300 us that belongs to no channel.  After the last channel comes a
+ * a fixed 300us that belongs to no channel.  After the last channel comes a
  * terminating mark and then a gap long enough that a receiver cannot mistake
  * it for a channel; that gap is what locates the start of the next frame.
  *
  * The consequence is that channels and frame rate are not independent.  Eight
- * channels at 2000 us each already spend 16 ms of a 22.5 ms frame, and the
+ * channels at 2000us each already spend 16ms of a 22.5ms frame, and the
  * sync gap is whatever is left.  Asking for more channels, longer travel or a
  * faster frame eats the gap, and a frame whose gap has shrunk into the range
  * a receiver reads as a channel does not fail visibly: it decodes as a
@@ -37,7 +37,7 @@ extern "C" {
 #endif
 
 /**
- * @brief Eight in a 22.5 ms frame is the convention; more fits only by
+ * @brief Eight in a 22.5ms frame is the convention; more fits only by
  *        shortening the frame, which is what ppm_cfg_t.frame_us is for.
  */
 #define PPM_MAX_CHANNELS   8u
@@ -64,8 +64,8 @@ extern "C" {
  * @brief The shortest gap that is unambiguously a gap.
  *
  * A receiver frames on the first interval longer than any channel can be.
- * The ceiling on a channel is PPM_CHANNEL_MAX_US (2500 us), so a gap under about
- * 3 ms is one that some receiver will read as a very long channel.
+ * The ceiling on a channel is PPM_CHANNEL_MAX_US (2500us), so a gap under about
+ * 3ms is one that some receiver will read as a very long channel.
  */
 #define PPM_SYNC_MIN_US         3000u
 

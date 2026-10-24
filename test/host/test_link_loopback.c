@@ -301,7 +301,7 @@ static bool exchange_answering_every_frame(const link_msg_t *req,
  * in, each naming its own four registers. A host that waited for one
  * acknowledgement of the whole window matched none of them, counted all
  * eight as mismatches and waited out LINK_HOST_TIMEOUT_MS -- during which it
- * transmitted nothing, so the far end's own 200 ms silence watchdog latched.
+ * transmitted nothing, so the far end's own 200ms silence watchdog latched.
  * Applying an output binding did that every time.
  */
 TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
@@ -350,7 +350,7 @@ TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
  * which is what an IOmcu whose page is 16 registers wide does to a
  * panel that thinks it is 32.  Matching a refusal only against the
  * transaction's own offset drops it, and the transaction then runs to
- * LINK_HOST_TIMEOUT_MS (1000 ms) with the reason lost:
+ * LINK_HOST_TIMEOUT_MS (1000ms) with the reason lost:
  * write_output_binding() in firmware/panel/main/panel_arm.c maps a refusal to
  * OUTPUTS_REFUSED and a timeout to OUTPUTS_NO_LINK, so the reason decides
  * whether the operator is sent to the pins chosen or to the cable.
@@ -378,9 +378,9 @@ TEST_CASE(a_refusal_of_a_later_fragment_answers_the_write)
     CHECK(!host.pending);
 
     /* The refusal is the answer, so no clock is still running against this
-     * transaction: at 1099 ms the host has neither abandoned a request nor
+     * transaction: at 1099ms the host has neither abandoned a request nor
      * reported the link down.  A transaction left unanswered reaches
-     * LINK_HOST_TIMEOUT_MS from the request at 0 ms and fires both. */
+     * LINK_HOST_TIMEOUT_MS from the request at 0ms and fires both. */
     CHECK(!link_host_tick(&host, 100 + LINK_HOST_TIMEOUT_MS - 1u));
     CHECK_EQ(host.timeouts, 0u);
 

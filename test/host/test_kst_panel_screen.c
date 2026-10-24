@@ -674,7 +674,7 @@ TEST_CASE(connect_is_refused_over_the_supplys_limits)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         for (int which = 0; which < 2; ++which) {
-            /* 4.9 V or 0.8 A allowed; the programmer asks 5.0 V 1.0 A. */
+            /* 4.9V or 0.8A allowed; the programmer asks 5.0V 1.0A. */
             fresh_screen();
             ui_text_set_language((ui_lang_t)lang);
             settings_set(SET_SUPPLY_V_MAX, which == 0 ? 4.9f : 21.0f);

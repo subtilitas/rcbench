@@ -23,10 +23,8 @@ docs/Bringup.md: I (…) can: 1000000 bit/s: brp
 docs/Bringup.md: re:round trip min \d+ (avg \d+ )?max \d+ us
 docs/Bringup-de.md: I (…) can: 1000000 bit/s: brp
 docs/Bringup-de.md: re:round trip min \d+ (avg \d+ )?max \d+ us
-docs/Performance.md: re:B free|largest block <n> B
 docs/Performance.md: B read in <n> ms
 docs/Performance.md: nothing taken for 30 s
-docs/Performance-de.md: re:B free|largest block <n> B
 docs/Performance-de.md: B read in <n> ms
 docs/Performance-de.md: nothing taken for 30 s
 docs/Screens.md: I storage: SK64G mounted, exFAT, 61002 MB

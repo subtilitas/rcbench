@@ -6,16 +6,16 @@
  * Word format.  Bits 31 to 1 are the low 31 bits of the state machine's
  * down counter X when the edge was seen; bit 0 is the level after the edge,
  * 1 for a rise.  X starts at 0 when the capture starts and counts down once
- * per tick (4 system clocks, 26.7 ns at 150 MHz), so the ticks elapsed
+ * per tick (4 system clocks, 26.7ns at 150MHz), so the ticks elapsed
  * since the start are (0 - count) mod 2^31.  The counter wraps every
- * 2^31 ticks, 57.3 s.
+ * 2^31 ticks, 57.3s.
  *
  * Extension.  A word carries 31 bits of a 64-bit tick count.  The rest
  * comes from an estimate of the present tick the caller has from another
  * clock: the word's tick is the one congruent to its count modulo 2^31
- * nearest the estimate.  The estimate has to be within 2^30 ticks (28.6 s)
+ * nearest the estimate.  The estimate has to be within 2^30 ticks (28.6s)
  * of the truth; microseconds are what it is held to.  Chaining the
- * differences between words instead would lose a multiple of 57.3 s across
+ * differences between words instead would lose a multiple of 57.3s across
  * any silence longer than that.
  *
  * The ring.  The DMA channel writes the words into a ring of a power of two
@@ -23,7 +23,7 @@
  * word index.  The capture clears the ring before it starts.
  * edge_ring_take() takes the words written since the last call.  An
  * overrun, the DMA having lapped the reader, shows as the slot of the last
- * word taken holding another word: counts do not repeat within 57.3 s, so
+ * word taken holding another word: counts do not repeat within 57.3s, so
  * a lap always shows.  Before the first word is taken that slot is the
  * ring's last one and the word expected is 0, the cleared state; a real
  * word of 0, a fall at tick 0, cannot occur.  The reader then discards

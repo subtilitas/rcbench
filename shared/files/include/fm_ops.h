@@ -77,7 +77,7 @@
 extern "C" {
 #endif
 
-/** @brief The chunk the panel copies, saves and loads in: 16 KiB. */
+/** @brief The chunk the panel copies, saves and loads in: 16KiB. */
 #define FM_CHUNK 16384u
 
 /**

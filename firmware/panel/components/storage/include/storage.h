@@ -35,8 +35,8 @@ extern "C" {
 
 /*
  * A file's size is 64-bit: an exFAT (extended File Allocation Table) volume
- * holds files of 4 GiB and more.  FAT12, FAT16 and FAT32 stop at
- * 4 GiB less 1 byte.
+ * holds files of 4GiB and more.  FAT12, FAT16 and FAT32 stop at
+ * 4GiB less 1 byte.
  */
 typedef struct {
     char name[STORAGE_NAME_MAX];
@@ -245,8 +245,8 @@ int storage_walk_counted(const char *dir, const char *suffixes,
  *
  * FatFs's own f_stat(), for its 64-bit size.  stat() through the VFS
  * (virtual file system) puts the size in st_size, an off_t of 32 bits on
- * the panel: a file of 4 GiB and more comes back as its size less a
- * multiple of 4 GiB, and one of 2 GiB and more as a negative number.
+ * the panel: a file of 4GiB and more comes back as its size less a
+ * multiple of 4GiB, and one of 2GiB and more as a negative number.
  *
  * A failure that says the card is gone lets the volume go as
  * storage_walk() does, without mounting again.

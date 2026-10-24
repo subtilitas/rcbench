@@ -1,8 +1,8 @@
 /**
  * @file test_servo_trim_keypad.c
  * @brief SERVO > SETTINGS > OUTPUT > TRIM's keypad: a tap on TRIM's value
- *        opens a signed keypad of -200 to +200 us; OK puts the value on the
- *        5 us steps of "-" and "+" and sends the pulse at once, as a step
+ *        opens a signed keypad of -200 to +200us; OK puts the value on the
+ *        5us steps of "-" and "+" and sends the pulse at once, as a step
  *        does, with the dial untouched; a value past
  *        the range is refused; CANCEL, the home tag and a STOP change
  *        nothing.
@@ -137,7 +137,7 @@ TEST_CASE(ok_on_trim_sends_the_pulse_at_once)
     CHECK_EQ((int)last_cmd().value_us, zero + 60);
 }
 
-/* A typed trim lands on the 5 us steps, the nearer one; -0 is 0. */
+/* A typed trim lands on the 5us steps, the nearer one; -0 is 0. */
 TEST_CASE(a_typed_trim_lands_on_the_steps)
 {
     fresh_armed();

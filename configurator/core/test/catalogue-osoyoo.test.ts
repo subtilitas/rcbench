@@ -108,7 +108,7 @@ test('the Osoyoo strip: one DC input, no unresolved 3V3 claim, the plug claim ex
     assert.match(m, /0 V/);
     assert.match(m, lang === 'en' ? /3\.3 V/ : /3,3 V/);
   }
-  // The 3.3 V limit of the Pico pin, the factory position and the shared supply without USB are stated.
+  // The 3.3V limit of the Pico pin, the factory position and the shared supply without USB are stated.
   assert.match(check('strip-level').text.en, /3\.3 V I\/O only/);
   assert.match(check('strip-level').text.de, /nur 3,3-V-Ein- und Ausgänge/);
   assert.match(check('strip-regulator').text.en, /as delivered/);
@@ -280,7 +280,7 @@ test('the Osoyoo strip: whole clauses of the readings, switch states, values and
     assert.match(get('en'), en, `strip-v ${field} en`);
     assert.match(get('de'), de, `strip-v ${field} de`);
   }
-  // Wire notes 61 and 62 name the vendor wording in both languages (pinned elsewhere); the strip-v pros keep the shared 2 A.
+  // Wire notes 61 and 62 name the vendor wording in both languages (pinned elsewhere); the strip-v pros keep the shared 2A.
   assert.match(strip.pros[2]!.en, /share the 2 A\.$/);
   assert.match(strip.pros[2]!.de, /teilen sich die 2 A\.$/);
 });
@@ -421,7 +421,7 @@ test('the DC supply of the Osoyoo breakout board: a modelled part with its range
   });
   // No source states the input current, so the part names none.
   assert.doesNotMatch(dc.role!.en, /\d+(\.\d+)? ?m?A\b/);
-  // The range is the one the strip states: the same 7 to 12 V and the same bounds.
+  // The range is the one the strip states: the same 7 to 12V and the same bounds.
   const strip = CATALOGUE.powerSources.find((x) => x.id === 'strip-v')!;
   assert.match(strip.cons[1]!.en, /7 to 12 V .*print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V/);
   // Sources: the product page for the part, the schematic for its pins and leads.
@@ -497,8 +497,8 @@ test('the DC jack of the Osoyoo breakout board: centre positive, minus on GND, t
 });
 
 test('the DC jack of the Osoyoo breakout board: the plug size names its basis, the SI2302 gate limits the input to 12 V', () => {
-  // The product page names the socket DC005-2.1 only. The 2.1 mm pin follows
-  // from that name; the 5.5 mm outer diameter is the usual size of the socket
+  // The product page names the socket DC005-2.1 only. The 2.1mm pin follows
+  // from that name; the 5.5mm outer diameter is the usual size of the socket
   // family. Every text that gives the plug size says so.
   const dc = CATALOGUE.parts.find((p) => p.id === 'dcsup')!;
   const w66 = CATALOGUE.wires.find((w) => w.n === 66)!;
@@ -511,10 +511,10 @@ test('the DC jack of the Osoyoo breakout board: the plug size names its basis, t
   assert.match(dc.role!.en, /The product page names the socket DC005-2\.1: the 2\.1 mm pin follows from that name/);
   assert.match(dc.role!.de, /Die Produktseite nennt die Buchse DC005-2\.1: Der Stift von 2,1 mm folgt aus diesem Namen/);
   // Schematic REV 1.0: the gate of Q3 sits at PWRIN through R7 with no clamp,
-  // its source at GND; the HXY datasheet rates the gate-source voltage at ±12 V.
+  // its source at GND; the HXY datasheet rates the gate-source voltage at ±12V.
   assert.match(dc.role!.en, /Above 12 V the gate-source voltage of the SI2302 \(Q3\) exceeds its rating of ±12 V \(datasheet linked on the product page\) at every input: the gate sits at PWRIN through R7, with no clamp\. The print of 16 V and the vendor limit of 18 V are above that\./);
   assert.match(dc.role!.de, /Über 12 V überschreitet die Gate-Source-Spannung des SI2302 \(Q3\) an jedem Eingang ihren Grenzwert von ±12 V \(Datenblatt, verlinkt auf der Produktseite\): Das Gate liegt über R7 ohne Begrenzung an PWRIN\. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber\./);
-  // The range stays 7 to 12 V.
+  // The range stays 7 to 12V.
   assert.deepEqual(dc.slot!.sub, { en: '7 to 12 V DC', de: '7 bis 12 V DC' });
 });
 

@@ -247,10 +247,10 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
 
 /*
  * Every button against everything else on the screen, with the
- * IOmcu's drawing and with the board drawn from its shape (both 240 px
+ * IOmcu's drawing and with the board drawn from its shape (both 240px
  * tall): at least UI_TAP_MIN wide and tall, inside the screen and above
  * the alert band, centred on its own pad unless the screen edge stops it,
- * 8 px or more clear of every other button beside it, clear of every
+ * 8px or more clear of every other button beside it, clear of every
  * marker inside the board and of the text areas, and a tap on its centre
  * binds its own pin and no other.
  */
@@ -312,7 +312,7 @@ TEST_CASE(every_button_is_clear_of_everything_else)
                     T_FAIL("pass %d: GP%u and GP%u overlap", pass, gp,
                            bd->pins[o].gpio);
                 }
-                /* Beside each other in a tier: 8 px apart or more. */
+                /* Beside each other in a tier: 8px apart or more. */
                 const gfx_rect_t q = btn[o];
                 if (has[o] && r.y < q.y + q.h && q.y < r.y + r.h) {
                     const int apart = (q.x >= r.x) ? q.x - (r.x + r.w)

@@ -635,7 +635,7 @@ static void check_at(double got_ns, double want_ns)
 
 /* The D485HW's answer as the bench shows it: the line high until the servo
  * pulls it low, the answer, a byte 0x00 back to back, the line low for
- * 150 us, then released. */
+ * 150us, then released. */
 static void d_answer(double first_ns, const uint8_t *a, unsigned n)
 {
     const double bit = bit_ns(HITEC_D);

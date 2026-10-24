@@ -703,7 +703,7 @@ test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the P
   assert.deepEqual(pd.checks.filter((c) => c.id.startsWith('prog-')).map((c) => c.id), ['prog-target', 'prog-supply-pd', 'prog-level']);
   assert.deepEqual(pd.power.filter((p) => p.used).map((p) => p.source.id), ['usb', 'pd-servo']);
 
-  // The bench feeds the servo under the other variant: the 5 V pin, or the
+  // The bench feeds the servo under the other variant: the 5V pin, or the
   // V pin of a strip of the Osoyoo breakout board, whose plug is at GP2 and so
   // not the plug of a servo on GP13.
   assert.deepEqual(wireNumbers(resolve(CATALOGUE, select(['servoprog'], [], { servoPower: 'bench' }))), [1, 2, 3, 4, 8, 59, 64]);

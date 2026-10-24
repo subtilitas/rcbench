@@ -4,7 +4,7 @@
 #
 #   tools/install_doxygen.sh VERSION SHA256 PREFIX [ARCHIVE_DIR]
 #
-# Takes doxygen-VERSION.linux.bin.tar.gz (115 MB for 1.18.0) from
+# Takes doxygen-VERSION.linux.bin.tar.gz (115MB for 1.18.0) from
 # ARCHIVE_DIR when it is there, and otherwise downloads it from the release
 # Release_<VERSION with _ for .> on github.com/doxygen/doxygen, into
 # ARCHIVE_DIR when one is given.  Stops when the archive's SHA-256 (Secure

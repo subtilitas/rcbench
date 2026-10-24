@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The console report every 3 s: the flash store, the running slot
+ * @brief The console report every 3s: the flash store, the running slot
  * and why this start happened, the CAN bus and the current monitors as the
  * pages show them.
  *
@@ -111,19 +111,19 @@ void reset_start(void)
     char text[RESET_CAUSE_FULL_MAX];
     (void)reset_cause_full(&s_reset, text, sizeof(text));
     /* Before the console exists, like can_start()'s line; can_report()
-     * repeats it every 3 s. */
+     * repeats it every 3s. */
     printf("rcbench-iomcu: reset %s\n", text);
 }
 
 /**
  * @brief The current monitors as the pages show them, with can_report()
- * every 3 s, while either part is enabled: what a bench session reads before
+ * every 3s, while either part is enabled: what a bench session reads before
  * the panel has a screen for them.
  *
  * The registers as published, in their own
  * units: FLAGS, PRESENT and the IDs in hex, the reset counts of the INA228
- * and the INA3221, BENCH's 10 mV and 10 mA, CH1's
- * mA and mV, times in 0.1 ms; and the INA3221 map with each channel's mA.
+ * and the INA3221, BENCH's 10mV and 10mA, CH1's
+ * mA and mV, times in 0.1ms; and the INA3221 map with each channel's mA.
  */
 static void sense_report(void)
 {
@@ -171,7 +171,7 @@ static void sense_report(void)
 }
 
 /*
- * Repeated every 3 s rather than printed at boot alone.  USB (Universal
+ * Repeated every 3s rather than printed at boot alone.  USB (Universal
  * Serial Bus) CDC (communications device class) does not exist until a host
  * enumerates it, so anything printed before the terminal opens is lost.
  */

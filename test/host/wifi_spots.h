@@ -6,14 +6,14 @@
  * If the layout moves these move with it.  Taken by the screen's suites
  * and render_screen.c.
  *
- *   - the buttons with the radio off: 460 x 60 px at x 16, from y 16,
- *     68 px apart; the card from x 492 to 1016, y 16 to 492;
- *   - WI-FI OFF with the radio on: 460 x 60 px at x 16, y 424 to 484;
- *   - the scan list: rows of 492 x 48 px at x 12 and 520, from y 12,
- *     52 px apart, eight a column; SCAN AGAIN, HIDDEN NETWORK and CANCEL
- *     328 x 56 px at x 8, 348 and 688, y 436 to 492;
+ *   - the buttons with the radio off: 460 x 60px at x 16, from y 16,
+ *     68px apart; the card from x 492 to 1016, y 16 to 492;
+ *   - WI-FI OFF with the radio on: 460 x 60px at x 16, y 424 to 484;
+ *   - the scan list: rows of 492 x 48px at x 12 and 520, from y 12,
+ *     52px apart, eight a column; SCAN AGAIN, HIDDEN NETWORK and CANCEL
+ *     328 x 56px at x 8, 348 and 688, y 436 to 492;
  *   - the question: a card from (8, 8) to (1016, 492); CANCEL and
- *     HOLD 2 s: INSTALL 460 x 72 px at x 24 and 540, y 404 to 476.
+ *     HOLD 2s: INSTALL 460 x 72px at x 24 and 540, y 404 to 476.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,7 +21,7 @@
 
 #include "ui_layout.h"
 
-/** @brief The lowest body row anything is drawn on, plus one: 4 px above
+/** @brief The lowest body row anything is drawn on, plus one: 4px above
  *         the alert band. */
 #define WF_FOOT        (UI_ALERT_Y - UI_BAND_H - 4)
 
@@ -54,7 +54,7 @@
 #define WF_ROW_X(i)    (((i) < 8) ? WF_ROW_X0 : WF_ROW_X1)
 /** @brief Row @p i's top. */
 #define WF_ROW_T(i)    (WF_ROW_Y + ((i) % 8) * WF_ROW_P)
-/** @brief A point in row @p i, 100 px in, at its middle row. */
+/** @brief A point in row @p i, 100px in, at its middle row. */
 #define WF_ROW_CX(i)   (WF_ROW_X(i) + 100)
 /** @brief Row @p i's middle row. */
 #define WF_ROW_CY(i)   (WF_ROW_T(i) + WF_ROW_H / 2)
@@ -77,7 +77,7 @@
 #define WF_Q_BW        460           /**< Their width, px. */
 #define WF_Q_BH        72            /**< Their height, px. */
 #define WF_Q_CANCEL_X  24            /**< CANCEL's left edge. */
-#define WF_INSTALL_X   540           /**< HOLD 2 s: INSTALL's left edge. */
+#define WF_INSTALL_X   540           /**< HOLD 2s: INSTALL's left edge. */
 #define WF_Q_CANCEL_CX (WF_Q_CANCEL_X + WF_Q_BW / 2) /**< CANCEL. */
 #define WF_INSTALL_CX  (WF_INSTALL_X + WF_Q_BW / 2)  /**< INSTALL. */
 #define WF_Q_CY        (WF_Q_BY + WF_Q_BH / 2)       /**< Their middle row. */

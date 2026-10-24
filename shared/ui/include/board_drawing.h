@@ -9,7 +9,7 @@
  * whole: a screen that draws one board and binds another sends a lead to
  * the wrong pad.
  *
- * Every position is scaled from its own value in 0.01 mm, never from a
+ * Every position is scaled from its own value in 0.01mm, never from a
  * neighbour's screen position, so rounding does not add up along a row of
  * forty pads.
  *
@@ -43,7 +43,7 @@ bool board_drawing_agrees(const link_drawing_t *d,
                           const outbind_board_t *board, const char **why);
 
 /**
- * @p v of @p full (0.01 mm) as pixels of @p px, rounded to the nearest.
+ * @p v of @p full (0.01mm) as pixels of @p px, rounded to the nearest.
  * 0 for a @p full of 0.
  */
 int board_drawing_scale(uint32_t v, int px, uint16_t full);

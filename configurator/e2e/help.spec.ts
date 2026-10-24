@@ -56,7 +56,7 @@ async function onScreen(page: Page, bubble: Locator): Promise<void> {
 
 /**
  * How far the box of `bubble` reaches over the top and under the bottom of the part of the viewport that shows
- * it: the viewport, cut by the client box of #choose where #choose scrolls (1024 px and wider).
+ * it: the viewport, cut by the client box of #choose where #choose scrolls (1024px and wider).
  */
 const cut = (bubble: Locator): Promise<{ top: number; bottom: number }> => bubble.evaluate((box) => {
   const choose = document.getElementById('choose')!;
@@ -383,7 +383,7 @@ for (const viewport of [{ width: 1100, height: 450 }, { width: 1024, height: 500
             const room = Math.min(c.bottom, window.innerHeight) - Math.max(c.top, 0);
             return 2 * (box as HTMLElement).offsetHeight > room;
           })) tall++;
-          // Scrolled into view, the whole bubble shows, to the rounding of the scroll position (under 1 px). The
+          // Scrolled into view, the whole bubble shows, to the rounding of the scroll position (under 1px). The
           // scroll repeats on each poll: a smooth scroll that the focus started can still run and move the row.
           await expect.poll(async () => {
             await bubble.evaluate((box) => box.scrollIntoView({ block: 'nearest', behavior: 'instant' }));

@@ -167,7 +167,7 @@ TEST_CASE(a_run_through_the_screen_ends_and_restores_the_set_points)
     CHECK(both_whole());
 }
 
-/* HV SERVO adds 7.4 and 8.4 V, and a run that has them starts only through
+/* HV SERVO adds 7.4 and 8.4V, and a run that has them starts only through
  * HV SERVOS ONLY held for two seconds: START TEST is then a tap that opens
  * it, and a tap on APPLY does nothing. */
 TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
@@ -459,8 +459,8 @@ TEST_CASE(a_run_ended_by_a_disarm_leaves_no_position_to_send)
 
 /*
  * A run that ends on an armed bench releases the servo, and the value shown
- * is the rest the pins go to: 1500 us for STANDARD PWM whatever the trim,
- * 760 us for NARROW 760.  Ended by its last step, or by STOP TEST on the
+ * is the rest the pins go to: 1500us for STANDARD PWM whatever the trim,
+ * 760us for NARROW 760.  Ended by its last step, or by STOP TEST on the
  * left card while it is driven off the centre.
  */
 static void a_run_ends_armed(int profile, bool by_operator)
@@ -478,7 +478,7 @@ static void a_run_ends_armed(int profile, bool by_operator)
     } else if (profile == 2) {
         open_settings();
         for (int i = 0; i < 4; ++i) {
-            tap(TRIM_UP_X, ROW_Y(3));   /* +20 us */
+            tap(TRIM_UP_X, ROW_Y(3));   /* +20us */
         }
         close_settings();
     }
@@ -509,7 +509,7 @@ static void a_run_ends_armed(int profile, bool by_operator)
     bench_frames(200u);
     CHECK_EQ(servo_screen_commanded(), rest);
     CHECK_EQ(servo_screen_drawn(), rest);
-    /* The first 1 % of the knob goes on from the rest, on LIVE: a run
+    /* The first 1% of the knob goes on from the rest, on LIVE: a run
      * that ends by itself leaves the workbench on TEST, where the knob
      * does not move the servo. */
     close_settings();
@@ -649,7 +649,7 @@ static unsigned ink_in_row(int y0, ui_color_id_t col)
 }
 
 /* The meter beside the box's button on LIVE: @p text flush right at the
- * box's right edge less 10 px, on the box's fill. */
+ * box's right edge less 10px, on the box's fill. */
 static bool box_meter_reads(const char *text)
 {
     close_settings();
@@ -709,7 +709,7 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
      * reading is: 20 rows a second, not 10 or 30. */
     CHECK(bench.csv - 1u <= bench.wins - wins0);
     CHECK(bench.csv - 1u + 40u >= bench.wins - wins0);
-    /* The default STALL AT, 2.00 A, is at the supply's 2.00 A limit and
+    /* The default STALL AT, 2.00A, is at the supply's 2.00A limit and
      * under this shunt's range. */
     CHECK(strstr(bench.report, "STALL AT 2.00 A cannot be reached: current "
                            "limit 2.00 A\n") != NULL);
@@ -718,7 +718,7 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
 
 /* A window stamped on tick 0 is stamped: its row sits where tick 0 is on the
  * run's clock, not where the window arrived.  Before the run began the row
- * is at 0.000 s; after a wrap it is the stretch from the run's start. */
+ * is at 0.000s; after a wrap it is the stretch from the run's start. */
 TEST_CASE(an_ina3221_window_stamped_on_tick_zero_keeps_its_stamp)
 {
     static const uint32_t k_base[] = { 5000u, 0xFFFFFFFFu - 2500u };
@@ -753,7 +753,7 @@ TEST_CASE(an_ina3221_window_stamped_on_tick_zero_keeps_its_stamp)
         if (k == 0u) {
             CHECK(strncmp(bench.csv_last, "0.000;", 6) == 0);
         } else {
-            /* Tick 0 is under 0.5 s after the run began and over 1 s
+            /* Tick 0 is under 0.5s after the run began and over 1s
              * before the clock reads what it does now. */
             CHECK(strncmp(bench.csv_last, "0.", 2) == 0);
         }
@@ -939,15 +939,15 @@ TEST_CASE(a_run_on_the_modelled_supply_reads_the_model)
 }
 
 /* The windows stopping while the meter is still named the INA3221: the
- * run ends 500 ms after the last one. */
+ * run ends 500ms after the last one. */
 TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
 {
     bench_on_ina();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     bench_frames(3000u);
-    /* The last window at most 40 ms back: 160 ms more is under 200 ms
-     * without one, 60 ms after that is past it. */
+    /* The last window at most 40ms back: 160ms more is under 200ms
+     * without one, 60ms after that is past it. */
     bench.ina = false;
     bench_frames(160u);
     CHECK(servo_screen_testing());
@@ -961,8 +961,8 @@ TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
 }
 
 /* A servo on a stop against a supply at its limit, through the screen
- * with the shipped LIMITS page: STALL AT 2.00 A at a current limit of
- * 2.00 A.  The supply reads constant current and the run ends on that, on
+ * with the shipped LIMITS page: STALL AT 2.00A at a current limit of
+ * 2.00A.  The supply reads constant current and the run ends on that, on
  * either meter. */
 TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
 {
@@ -1004,16 +1004,16 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     open_test();
     /* The AUTOMATIC TEST card's lines, mirrored from servo_test_panel.c:
      * the card's state line SV_RUN_LINE_DY down and the note two lines of
-     * 22 px under that. */
+     * 22px under that. */
     const int y = SV_RUN_CARD_Y(0) + SV_RUN_LINE_DY + 44;
-    /* As shipped: 2.00 A at a limit of 2.00 A. */
+    /* As shipped: 2.00A at a limit of 2.00A. */
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);
-    /* One step of STALL AT's 0.05 A under the limit. */
+    /* One step of STALL AT's 0.05A under the limit. */
     settings_set(SET_SERVO_STALL_A, 1.95f);
     servo_invalidate();
     CHECK_EQ(ink_in_row(y, UI_C_WARN), 0u);
-    /* The INA3221 on 0.1 Ohm reads to 1.638 A: 1.95 A is out of its
-     * reach, 1.60 A is in it and 1.65 A is not.  Its shunt is 0x40 CH1's,
+    /* The INA3221 on 0.1Ohm reads to 1.638A: 1.95A is out of its
+     * reach, 1.60A is in it and 1.65A is not.  Its shunt is 0x40 CH1's,
      * the channel watching the outputs. */
     settings_set(SET_INA_FIT(0), 1.0f);
     meter(SERVO_SOURCE_PDMINI);
@@ -1100,7 +1100,7 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
             st.online = false;
             servo_screen_supply(&st);
             break;
-        case 3:                         /* no window for 500 ms: a tick */
+        case 3:                         /* no window for 500ms: a tick */
             bench.now += 600u;
             servo_screen_clock(bench.now);
             st.taken_ms = bench.now;

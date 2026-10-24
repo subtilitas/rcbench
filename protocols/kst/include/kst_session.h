@@ -17,7 +17,7 @@
  * or kst_session_write().  The caller then calls kst_session_step() until
  * it returns something other than KST_SES_BUSY.  kst_session_step() never
  * waits: it reads the clock, polls the driver and returns.  A call every
- * 1 ms or faster keeps the pacing near its minimum; a slower caller makes
+ * 1ms or faster keeps the pacing near its minimum; a slower caller makes
  * the gaps longer and nothing else.  One operation runs at a time.
  *
  * kst_session_edit() and kst_session_restore() plan their writes inside the
@@ -56,12 +56,12 @@
 extern "C" {
 #endif
 
-/** @brief Line low before the first frame of the entry sequence, 100 ms. */
+/** @brief Line low before the first frame of the entry sequence, 100ms. */
 #define KST_ENTRY_LOW_US 100000u
-/** @brief End of a reply window to the next frame, 3 ms. */
+/** @brief End of a reply window to the next frame, 3ms. */
 #define KST_GAP_US 3000u
 /**
- * @brief The same after a window without a valid reply, 20 ms.
+ * @brief The same after a window without a valid reply, 20ms.
  *
  * Inside the entry sequence the gap is KST_GAP_US: an unanswered read and an
  * unanswered sync are its normal course.
@@ -69,7 +69,7 @@ extern "C" {
 #define KST_GAP_AFTER_FAULT_US 20000u
 /**
  * @brief The driver has this long after the end of the reply window to hand
- *        over the capture, 5 ms.
+ *        over the capture, 5ms.
  */
 #define KST_DRIVER_SLACK_US 5000u
 

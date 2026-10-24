@@ -66,16 +66,16 @@ export const SPEC_GEO: Geometry = {
  * The geometry the page draws. It differs from SPEC_GEO in 6 places, each of
  * which removes a collision that test/layout.test.ts finds in SPEC_GEO:
  *
- * - Module tops sit on a 20 px grid that starts at y = 34. Every module pin row
- *   then lies 10 px from the nearest pad row, and the two rows of the panel's
+ * - Module tops sit on a 20px grid that starts at y = 34. Every module pin row
+ *   then lies 10px from the nearest pad row, and the two rows of the panel's
  *   CAN terminals meet the IOmcu's CAN rows in a straight line. Without
  *   the grid a pin row can share its y with a pad row, and two wires of
  *   different nets then run on one line.
- * - Channels under the IOmcu: y = 549 + 10 k. They lie 5 px from the
+ * - Channels under the IOmcu: y = 549 + 10 k. They lie 5px from the
  *   nearest pin row.
  * - Outer lanes: wires 10 and 21 use lane 2, wires 14 and 22 use lane 1. The
  *   second pill on OUT + of the PD mini then covers lanes of its own pin only.
- *   The second pill of an outer edge sits 21 px from the first.
+ *   The second pill of an outer edge sits 21px from the first.
  * - Right lanes of the 5 wires that cross under the IOmcu from the left
  *   modules: 13, 14, 16, 17, 18 in place of 16 to 20. The cross mark of a stub
  *   on a right module is at x = 750 and lanes 19 and 20 pass through it. The 3
@@ -85,8 +85,8 @@ export const SPEC_GEO: Geometry = {
  *   wire 60 right lane 13. Wire 59 runs the height of the IOmcu; lane 5
  *   holds wire 24 of the INA3221 board only, and wire 59 is absent with that
  *   board. Wire 60 is absent with wires 28 and 29, which use lane 13.
- * - The pill of a component between 2 pads sits 8 px from its line. It then
- *   ends 3 px before right lane 0, which wire 58 uses.
+ * - The pill of a component between 2 pads sits 8px from its line. It then
+ *   ends 3px before right lane 0, which wire 58 uses.
  */
 export const GEO: Geometry = {
   ...SPEC_GEO,
@@ -166,7 +166,7 @@ export type Layout = {
 type Anchor = { y: number; inner: number; outer: number; side: 'L' | 'R'; isPad: boolean };
 type End = { n: number; ref: EndRef; x0: number; y: number; laneX: number; isPad: boolean };
 
-/** Estimated width of 11 px text in px per character. */
+/** Estimated width of 11px text in px per character. */
 export const SUB_CHAR = 5.6;
 const SUB_LINE = 13;
 

@@ -17,15 +17,15 @@
 #include "ui_widgets.h"
 
 /*
- * A title row, the text, then five rows of keys, 6 px apart.  Over the
- * 1008 x 484 px the WI-FI screen gives it, a key is 93 x 71 px
- * (14.0 x 10.7 mm at 0.150 mm a pixel).
+ * A title row, the text, then five rows of keys, 6px apart.  Over the
+ * 1008 x 484px the WI-FI screen gives it, a key is 93 x 71px
+ * (14.0 x 10.7mm at 0.150mm a pixel).
  */
-/** @brief The room around the title, the text and the keys: 8 px. */
+/** @brief The room around the title, the text and the keys: 8px. */
 #define TK_PAD     8
-/** @brief The title row: the 10 x 20 face and 6 px above it. */
+/** @brief The title row: the 10 x 20 face and 6px above it. */
 #define TK_HDR     32
-/** @brief The text: the 20 x 36 face and 8 px above and below. */
+/** @brief The text: the 20 x 36 face and 8px above and below. */
 #define TK_ENTRY_H 52
 /** @brief The gap between the text and the keys, and between keys. */
 #define TK_GAP     6
@@ -33,7 +33,7 @@
 #define TK_COLS    10
 /** @brief ... and 5 rows, the last the bottom row of words. */
 #define TK_ROWS    5
-/** @brief The room a key keeps left and right of its label: 4 px. */
+/** @brief The room a key keeps left and right of its label: 4px. */
 #define TK_KEY_PAD 4
 
 /** @brief The character rows, in reading order; the last is DEL. */
@@ -482,7 +482,7 @@ static const char *file_why(uint8_t why)
 
 /**
  * @brief The face of the text field: 20 x 36 when UI_TEXTKEY_MAX
- *        characters and the caret fit @p box with 10 px each side and the
+ *        characters and the caret fit @p box with 10px each side and the
  *        face's height fits it, else 16 x 28.  A Wi-Fi text longer than the
  *        field shows its end in either.
  * @param box The field.
@@ -572,7 +572,7 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     } else {
         snprintf(room, sizeof(room), TR(TEXTKEY_COUNT), k->len, k->max_len);
     }
-    /* 10 x 20 when the title and its line fit side by side, 16 px apart. */
+    /* 10 x 20 when the title and its line fit side by side, 16px apart. */
     const gfx_font_t *hf =
         (gfx_text_width(&gfx_font_10x20, k->title, 1) + 16
              + gfx_text_width(&gfx_font_10x20, room, 1) <= hdr.w)

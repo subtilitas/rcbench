@@ -19,7 +19,7 @@
  * changes on its way up from idle.
  *
  * Bidirectional DShot inverts the line and the checksum.  The ESC answers
- * about 30 us after the frame with 21 bits at 5/4 of the DShot rate, GCR
+ * about 30us after the frame with 21 bits at 5/4 of the DShot rate, GCR
  * coded, carrying an electrical period rather than a speed.  Nothing about
  * that burst is timed here: this file turns a captured sample stream into
  * bits, bits into a value, and a value into rpm (revolutions per minute).
@@ -147,7 +147,7 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
  * @brief Units of the extended telemetry payload, per count of its eight bits
  *        (0 to 255).
  *
- * Voltage is 0.25 V per count, current 1 A per count, temperature 1 degree
+ * Voltage is 0.25V per count, current 1A per count, temperature 1 degree
  * Celsius per count.
  */
 #define DSHOT_EDT_MV_PER_COUNT      250u
@@ -308,7 +308,7 @@ uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs);
  * acts on a command while its motor is stopped, and AM32 only once it has
  * armed itself on about a second of zero throttle.  Every run on this bench
  * starts from silence -- a disarmed bench sends nothing, and AM32 restarts
- * after 0.5 s without a signal -- so an ask made only in a run's first 10 ms
+ * after 0.5s without a signal -- so an ask made only in a run's first 10ms
  * lands before AM32 can take it and extended telemetry never comes on.
  *
  * So the ask is repeated, every DSHOT_EDT_RETRY_MS while the throttle is at

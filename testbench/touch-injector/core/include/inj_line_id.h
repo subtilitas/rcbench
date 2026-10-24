@@ -6,8 +6,8 @@
  *
  * Rules, per transaction (a stretch of activity between two idle spans):
  *
- *   - Idle is both lines high for at least 10 us.  A repeated START keeps
- *     both high for half a bit: 1.25 us at 400 kHz, 5 us at 100 kHz.
+ *   - Idle is both lines high for at least 10us.  A repeated START keeps
+ *     both high for half a bit: 1.25us at 400kHz, 5us at 100kHz.
  *   - START: out of idle, the line that falls first is SDA.
  *   - STOP: into idle, the line that rises last is SDA.
  *   - A transaction names a line when both rules name it.  A transaction

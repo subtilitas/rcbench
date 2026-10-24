@@ -63,7 +63,7 @@ static int ink_outside(gfx_rect_t r)
 /**
  * @brief The width of a keypad whose keys are @p kw px wide.
  * @param kw A key's width.
- * @return The area's width: 8 px each side and 8 px between 4 keys.
+ * @return The area's width: 8px each side and 8px between 4 keys.
  */
 static int16_t keypad_w(int kw)
 {
@@ -94,7 +94,7 @@ TEST_CASE(a_keypad_over_a_workbench_card_has_large_keys_in_12x24)
 }
 
 /* ABBRECHEN, the longest word on a keypad, sets the face of all of them:
- * 12 x 24 needs a 120 px key, 10 x 20 a 102 px one, 8 x 16 an 84 px one. */
+ * 12 x 24 needs a 120px key, 10 x 20 a 102px one, 8 x 16 an 84px one. */
 TEST_CASE(the_longest_german_word_sets_the_keypads_word_face)
 {
     static const struct {
@@ -114,13 +114,13 @@ TEST_CASE(the_longest_german_word_sets_the_keypads_word_face)
         ui_text_set_language(UI_LANG_DE);
         CHECK(ui_keypad_word_font(&k) == k_at[i].de);
         ui_text_set_language(UI_LANG_EN);
-        /* CANCEL is 6 cells: 12 x 24 down to an 84 px key. */
+        /* CANCEL is 6 cells: 12 x 24 down to an 84px key. */
         CHECK(ui_keypad_word_font(&k) == &gfx_font_12x24);
     }
 }
 
 /* The entry, the faint value and the refusal draw inside the area at both
- * numeral faces: "-199.5 us" takes 32 x 44 down to a box of 264 px (an
+ * numeral faces: "-199.5us" takes 32 x 44 down to a box of 264px (an
  * area of 280); at 260 it takes 24 x 30, and at 120 even that is cut at
  * the box's right, the unit first. */
 TEST_CASE(the_keypad_draws_inside_its_area_at_either_numeral_face)
@@ -159,8 +159,8 @@ TEST_CASE(the_wifi_keyboard_draws_every_word_in_12x24)
     CHECK(ui_textkey_word_font(NULL) == &gfx_font_8x16);
 }
 
-/* Over a 488 px area a character key is 41 px: DEL needs 10 x 20, and the
- * German CANCEL, ABBRECHEN in two keys of 88 px, needs 8 x 16. */
+/* Over a 488px area a character key is 41px: DEL needs 10 x 20, and the
+ * German CANCEL, ABBRECHEN in two keys of 88px, needs 8 x 16. */
 TEST_CASE(a_narrow_keyboard_takes_the_face_its_longest_word_fits)
 {
     ui_textkey_t k;
@@ -217,11 +217,11 @@ TEST_CASE(tabs_take_10x20_when_tall_and_every_label_fits)
     static const char *const k_four[] = { "LIVE", "TEST", "PROGRAMMIEREN",
                                           "SETTINGS" };
     ui_tabs_t t;
-    /* 150 x 40: PROGRAMMIEREN is 130 px and 6 px clear each side. */
+    /* 150 x 40: PROGRAMMIEREN is 130px and 6px clear each side. */
     ui_tabs_init(&t, k_four, 4, gfx_rect_make(11, 8, 4 * 150 + 3 * 4, 40));
     CHECK_EQ(t.rect[2].w, 150);
     CHECK(ui_tabs_font(&t) == &gfx_font_10x20);
-    /* 141 px: one label 1 px short of its room, so the row keeps 8 x 16. */
+    /* 141px: one label 1px short of its room, so the row keeps 8 x 16. */
     ui_tabs_init(&t, k_four, 4, gfx_rect_make(11, 8, 4 * 141 + 3 * 4, 40));
     CHECK_EQ(t.rect[2].w, 141);
     CHECK(ui_tabs_font(&t) == UI_FONT_LABEL);
@@ -266,8 +266,8 @@ TEST_CASE(a_choice_takes_20x36_from_56_px)
 }
 
 /* DSHOT600 BIDIR, the longest protocol name in either language, 14 cells:
- * in 20 x 36 it needs 280 px before the chevron, so a 292 px face (238 px
- * of text room) draws it in 16 x 28, and a row takes 20 x 36 from 304 px. */
+ * in 20 x 36 it needs 280px before the chevron, so a 292px face (238px
+ * of text room) draws it in 16 x 28, and a row takes 20 x 36 from 304px. */
 TEST_CASE(a_choice_text_that_does_not_fit_20x36_takes_16x28)
 {
     static const char k_long[] = "DSHOT600 BIDIR";
@@ -306,7 +306,7 @@ TEST_CASE(a_face_taller_than_its_box_does_not_fit)
     CHECK(ui_text_fits(&gfx_font_12x24, "A", 200, 24, 0));
     CHECK(!ui_text_fits(NULL, "A", 200, 200, 0));
     CHECK(ui_text_fits(&gfx_font_10x20, NULL, 0, 20, 0));
-    /* The padding counts on both sides: 3 cells of 10 px and 6 px each. */
+    /* The padding counts on both sides: 3 cells of 10px and 6px each. */
     CHECK(ui_text_fits(&gfx_font_10x20, "DEL", 42, 20, 6));
     CHECK(!ui_text_fits(&gfx_font_10x20, "DEL", 41, 20, 6));
 }
@@ -328,7 +328,7 @@ static const struct {
     { { 8, 8, 1008, 484 },    true,  93, 71 },   /* WI-FI               */
 };
 
-/* Every key of every host ends UI_KEYS_FOOT at the latest, 4 px above the
+/* Every key of every host ends UI_KEYS_FOOT at the latest, 4px above the
  * alert band, and is UI_TAP_MIN or more tall and wide; the key sizes are
  * the ones Screens.md names. */
 TEST_CASE(every_hosts_keys_end_above_the_alert_band)
@@ -368,7 +368,7 @@ TEST_CASE(every_hosts_keys_end_above_the_alert_band)
     }
 }
 
-/* An area that ends above UI_KEYS_FOOT keeps its own foot, 8 px in; one
+/* An area that ends above UI_KEYS_FOOT keeps its own foot, 8px in; one
  * that reaches past it stops its keys there and still paints all of it. */
 TEST_CASE(a_short_area_keeps_its_foot_and_a_long_one_paints_whole)
 {
@@ -394,7 +394,7 @@ TEST_CASE(a_short_area_keeps_its_foot_and_a_long_one_paints_whole)
 TEST_CASE(a_tall_target_row_counts_its_cells_in_10x20)
 {
     ui_target_row_t t;
-    /* The plan's SERVO card: 356 px inner, 44 px tall. */
+    /* The plan's SERVO card: 356px inner, 44px tall. */
     ui_target_row_init(&t, gfx_rect_make(648, 400, 356, 44));
     CHECK(ui_target_row_font(&t) == &gfx_font_10x20);
     const gfx_rect_t v = ui_target_row_value_rect(&t);

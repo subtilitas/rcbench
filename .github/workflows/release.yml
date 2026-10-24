@@ -54,7 +54,7 @@ jobs:
   version:
     name: The tag matches the images
     runs-on: ubuntu-latest
-    # ci_gate.py waits up to 5400 s (90 min) for CI; 100 min leaves 10 min
+    # ci_gate.py waits up to 5400s (90min) for CI; 100min leaves 10min
     # for the checkouts and the version check.
     timeout-minutes: 100
     # Resolved once, here, and every job below builds this SHA rather than
@@ -128,7 +128,7 @@ jobs:
           set -o pipefail
           python3 gate/tools/release_kind.py "$TAG" | tee -a "$GITHUB_OUTPUT"
 
-      # ci_gate.py waits up to 5400 s for the CI run on the pinned commit
+      # ci_gate.py waits up to 5400s for the CI run on the pinned commit
       # and fails unless one passed.  The image jobs and the publish job
       # need this job, so a failure here builds and publishes nothing.
       - name: CI passed on this commit
@@ -219,7 +219,7 @@ jobs:
           ref: ${{ needs.version.outputs.sha }}
 
       # The .deb files are cached because the Azure mirror serves at about
-      # 50 kB/s at times: gcc-arm-none-eabi (57.5 MB) took 19 min on one run.
+      # 50kB/s at times: gcc-arm-none-eabi (57.5MB) took 19min on one run.
       # The key carries the runner image version, so a new image saves a fresh
       # entry that starts from the previous one.
       - name: Key for the toolchain packages

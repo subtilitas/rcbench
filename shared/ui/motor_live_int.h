@@ -38,13 +38,13 @@
  */
 #define SUB_Y     (UP_Y + TITLE_H + 6)    /**< PLOT | TABLE, px. */
 #define SUB_H     40                      /**< Their height, px. */
-#define SUB_W     200                     /**< Their row: two of 98 px. */
+#define SUB_W     200                     /**< Their row: two of 98px. */
 #define LEG_Y     (SUB_Y + SUB_H + 4)     /**< The legend, px. */
 #define LEG_H     20                      /**< Its height, px. */
 #define PLOT_X    (LEFT_X + INNER)        /**< The plot's left edge, px. */
-#define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600 px. */
+#define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600px. */
 #define PLOT_Y    (LEG_Y + LEG_H + 4)     /**< Its top, px. */
-#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 184 px. */
+#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 184px. */
 /** @brief The poll rate and the link's errors, right of PLOT | TABLE. */
 #define RATE_X    (PLOT_X + SUB_W + 14)
 
@@ -69,11 +69,11 @@
  *        throttle control.  +1 is x 528 to 599, DISARM from x 648.
  */
 #define THR_R     (RC_X - UI_TAP_MIN)
-/** @brief The track's length: 422 px, between the two step keys. */
+/** @brief The track's length: 422px, between the two step keys. */
 #define TRACK_W   (THR_R - NUDGE_W - 8 - TRACK_X)
 #define HINT_Y    (CTRL_Y + NUDGE_H + 8)  /**< The hint's line, px. */
 /** @brief The hint's left edge, at the card's padding.  The hint draws in
- *         MO_FONT_FINE: the German one is 61 cells, 488 px. */
+ *         MO_FONT_FINE: the German one is 61 cells, 488px. */
 #define HINT_X    (LEFT_X + INNER)
 _Static_assert(TRACK_X + TRACK_W + 8 + NUDGE_W + UI_TAP_MIN <= RC_X,
                "+1 ends a finger's width left of DISARM");
@@ -99,8 +99,8 @@ _Static_assert(ROW_Y + READOUT_H <= CTRL_Y,
 enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
 
 /*
- * The panel polls at 20 Hz, one sample per plot column, so the time base is
- * the plot width in samples: PLOT_W / 20 s.
+ * The panel polls at 20Hz, one sample per plot column, so the time base is
+ * the plot width in samples: PLOT_W / 20s.
  */
 #define SAMPLE_HZ 20.0f
 typedef struct {
@@ -139,7 +139,7 @@ typedef struct {
     /* Bumped by anything that changes a button's or the tab row's
      * appearance.  The throttle carries its own, because a drag moves it on
      * every frame and repainting the buttons with it costs the row's full
-     * 800 x 90 px rather than the readout's 396 x 30. */
+     * 800 x 90px rather than the readout's 396 x 30. */
     uint32_t      ctrl_rev;
     uint32_t      drawn_ctrl[2];
     uint32_t      thr_rev;

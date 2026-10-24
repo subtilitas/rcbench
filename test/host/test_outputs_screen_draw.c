@@ -416,10 +416,10 @@ TEST_CASE(a_protocol_named_from_outside_lands_over_the_one_on_screen)
 
 /*
  * The longest protocol names inside what they are drawn in: the closed list
- * in the 16 x 28 face between its 12 px inset and the chevron's 11 px
- * column 28 px from its right edge, 4 px clear of it; every shorter name
+ * in the 16 x 28 face between its 12px inset and the chevron's 11px
+ * column 28px from its right edge, 4px clear of it; every shorter name
  * in 20 x 36 there; and the line under a pin in 8 x 16 inside the cell,
- * left of its 8 px chamfer.  One cell more than the longest name does not
+ * left of its 8px chamfer.  One cell more than the longest name does not
  * fit the face.
  */
 TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
@@ -441,7 +441,7 @@ TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
     const int fine = gfx_text_width(&gfx_font_8x16, "DSHOT600 BIDIR", 1);
     CHECK_EQ(head, 224);
     CHECK_EQ(fine, 112);
-    /* The face: text from x + 12, 4 px clear of the chevron's column. */
+    /* The face: text from x + 12, 4px clear of the chevron's column. */
     const int room = DD_W - 12 - 28 - 11 - 4;
     CHECK(head <= room);
     /* "MOTOR PWM" and "PROG PORT 4" in the 20 x 36 face. */
@@ -451,7 +451,7 @@ TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
      * x + w - 8. */
     CHECK(OU_CELL_PAD + 18 * 8 <= CELL_W - 8);
     CHECK(OU_CELL_PAD + fine <= CELL_W - 8);
-    /* And the grid ends inside the screen with its 8 px margin, 8 px right
+    /* And the grid ends inside the screen with its 8px margin, 8px right
      * of the column, and above the alert band. */
     CHECK_EQ(GRID_X + 4 * CELL_W + 3 * CELL_GAP, SCREEN_W - 8);
     CHECK_EQ(DD_X + DD_W + 8, GRID_X);
@@ -499,10 +499,10 @@ TEST_CASE(a_selection_from_the_picker_is_a_pick)
 
 /*
  * The column's lines that break onto a second line where they need it: the
- * reason under the protocol (300 px, 30 cells of 10 x 20), the label of
- * the button that unbinds every pin (280 px inside it) and the last write
- * in 20 x 36 (300 px, 15 cells) into two; the PROG PORT entry's reason
- * (300 px) into three.  Each has to break into its lines in every
+ * reason under the protocol (300px, 30 cells of 10 x 20), the label of
+ * the button that unbinds every pin (280px inside it) and the last write
+ * in 20 x 36 (300px, 15 cells) into two; the PROG PORT entry's reason
+ * (300px) into three.  Each has to break into its lines in every
  * language, a pin number at its widest, its last line inside the width
  * as well.
  */

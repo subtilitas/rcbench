@@ -61,7 +61,7 @@ export const RP_PARTS: ReadonlyArray<RpPart> = [
   { kind: 'chip', x: C, y: 386, w: 34, h: 34, o: { n: 5, sides: 4, leg: 3, text: ['XL2515'], tsz: 6.5 } },
   { kind: 'smd', x: C - 24, y: 422, type: 'c', rot: 0, k: 0.8 }, { kind: 'smd', x: C + 24, y: 422, type: 'r', rot: 0, k: 0.8 },
   { kind: 'chip', x: C, y: 452, w: 30, h: 24, o: { n: 4, text: ['SIT65', 'HVD230'], tsz: 5.5 } },
-  // slide switch of the 120 ohm termination
+  // slide switch of the 120ohm termination
   { kind: 'switch', x: C - 17, y: 497, w: 34, h: 18 },
   { kind: 'tin', x: C - 14, y: 540, w: 9, h: 12 }, { kind: 'tin', x: C, y: 540, w: 9, h: 12 }, { kind: 'tin', x: C + 14, y: 540, w: 9, h: 12 },
   { kind: 'text', x: C, y: 584, s: 'RP2350-CAN', o: { sz: 11, a: 'middle', ls: '.3' } },
@@ -160,7 +160,7 @@ function coproOsoyoo(d: Dwg): void {
   const { pitch, y0 } = STRIP;
   d.add(`<g filter="${d.u('s3')}"><rect x="20" y="${y0 - pitch / 2 - 2}" width="38" height="${20 * pitch + 4}" rx="2" fill="#1f7a41"/><rect x="422" y="${y0 - pitch / 2 - 2}" width="38" height="${20 * pitch + 4}" rx="2" fill="#1f7a41"/></g>`);
   // Servo strips: 1 plug point with the pins S, V and G beside every screw terminal.
-  // V is 1 net; the jumper V Selector feeds it from the 5 V converter or the 3.3 V regulator.
+  // V is 1 net; the jumper V Selector feeds it from the 5V converter or the 3.3V regulator.
   for (const xs of [STRIP.left, STRIP.right]) {
     xs.forEach((x, i) => {
       d.add(`<rect x="${x - 4}" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="${STRIP.colours[i]}"/>`);
@@ -512,7 +512,7 @@ function ina228Xt90(d: Dwg): void {
   d.add(d.chip(134, 218, 24, 22, { n: 5, leg: 3 }), d.smd(110, 206, 'r', 90, 0.7), d.smd(110, 228, 'c', 90, 0.7), d.smd(158, 206, 'r', 90, 0.7), d.smd(158, 228, 'c', 90, 0.7));
   const xs = [184, 214, 244, 274, 304];
   const print = ['L', 'A', 'V', 'G', '5'];
-  // L = SCL, A = SDA, V = supply of the chip, G = ground. Hole 5 is the 5 V output of the
+  // L = SCL, A = SDA, V = supply of the chip, G = ground. Hole 5 is the 5V output of the
   // regulator that is not fitted: no pin, no wire.
   const ids = ['SCL', 'SDA', 'V3', 'G', null];
   d.add(`<rect x="170" y="213" width="148" height="22" rx="1" fill="none" stroke="${SILK}" stroke-width="1.2"/>`);

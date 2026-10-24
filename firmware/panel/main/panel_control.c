@@ -119,8 +119,8 @@ static uint32_t    s_tq_seq;
  * and nothing that talks to the link.
  *
  * Called from the top of the control task and again from inside the wait in
- * exchange(), because that wait runs for up to LINK_HOST_TIMEOUT_MS (1000 ms)
- * and the heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150 ms).  Without this
+ * exchange(), because that wait runs for up to LINK_HOST_TIMEOUT_MS (1000ms)
+ * and the heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150ms).  Without this
  * a single unanswered CAN reply drops the IOmcu's outputs and latches
  * its failsafe.  The loop that owns STOP really is still running during that
  * wait; this is what makes the line say so.
@@ -247,7 +247,7 @@ void control_pump(void)
          *
          * A still finger emits nothing, so filling 32 slots takes either
          * coordinate wobble on the held contact or a second one; a palm
-         * resting on the glass reaches it in about 90 ms of undrained
+         * resting on the glass reaches it in about 90ms of undrained
          * frame.  What happens when it does fill is touch_q_put()'s.
          *
          * The router will latch this same press and the backstop would
@@ -286,7 +286,7 @@ void control_pump(void)
      * the pass ended.  Undone the way a STOP is undone from here, because a
      * disarm writes the far end and this runs inside an exchange:
      * arming_stop() drops the heartbeat now, the IOmcu fails safe
-     * within HEARTBEAT_MAX_GAP_MS (150 ms) whatever this task is waiting
+     * within HEARTBEAT_MAX_GAP_MS (150ms) whatever this task is waiting
      * for, and service_arming() lets go of the rest when the loop is free.
      * A queued drive command carries the old stop count and is dropped.
      */
@@ -326,12 +326,12 @@ void control_pump(void)
      * It is gated on a disarm nobody has served yet.  A write that has been
      * transmitted cannot be recalled: the far end applies it and then
      * acknowledges, and if that acknowledgement is lost this task waits
-     * LINK_HOST_TIMEOUT_MS (1000 ms) with the request unserved and the
+     * LINK_HOST_TIMEOUT_MS (1000ms) with the request unserved and the
      * output driving.  The line is the one channel that does not need the
      * link, so it carries the disarm instead.
      *
      * On a healthy link this costs nothing -- the request is served on the
-     * next pass, well inside HEARTBEAT_MAX_GAP_MS (150 ms).  On a link that
+     * next pass, well inside HEARTBEAT_MAX_GAP_MS (150ms).  On a link that
      * has stopped answering it fails the far end safe, and a bench whose
      * panel is asking it to disarm and cannot be heard is one that should
      * fail safe.
@@ -344,12 +344,12 @@ void control_pump(void)
 }
 
 /*
- * Everything the bench does, at a fixed 5 ms on the core the renderer does
+ * Everything the bench does, at a fixed 5ms on the core the renderer does
  * not use: touch, STOP, arming, the outputs, the link and the heartbeat.
  *
  * STOP is hit-tested here against the band's own rectangle rather than waiting
  * for the router to report a press, because the router only sees events when
- * a frame is drawn and a frame can cost 50 ms.  app_main forwards the
+ * a frame is drawn and a frame can cost 50ms.  app_main forwards the
  * router's own STOP as well, so a press this test misses still latches.
  */
 void control_task(void *arg)
@@ -391,7 +391,7 @@ void control_task(void *arg)
          *
          * A stop must not wait behind a command that talks to the link: an
          * unanswered exchange holds this loop for LINK_HOST_TIMEOUT_MS
-         * (1000 ms), and a queue with several such commands in it multiplies
+         * (1000ms), and a queue with several such commands in it multiplies
          * that, with the far end armed the whole time.  control_pump() keeps
          * the heartbeat going during the wait but only records further stop
          * requests; acting on them is here.
@@ -430,7 +430,7 @@ void control_task(void *arg)
          */
         (void)link_host_tick(&s_host, now_ms());
 
-        /* --- the far end, at 1 Hz until it answers ----------------------- */
+        /* --- the far end, at 1Hz until it answers ----------------------- */
         bool new_sample = false;
         if (!cu_service(&link_up, &bench, &last_poll, &last_status)) {
             new_sample = poll_far_end(&link_up, &bench, &last_poll,
@@ -444,7 +444,7 @@ void control_task(void *arg)
             tsens_read();
         }
 
-        /* Every 5 s while the link is down, every 60 s while it is up. */
+        /* Every 5s while the link is down, every 60s while it is up. */
         if ((uint32_t)(now_ms() - last_report)
             >= (link_up ? 60000u : 5000u)) {
             last_report = now_ms();

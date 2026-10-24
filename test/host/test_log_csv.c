@@ -269,7 +269,7 @@ TEST_CASE(without_a_time_column_the_x_axis_is_the_row_index)
 
 TEST_CASE(an_unreadable_cell_holds_the_trace_instead_of_breaking_it)
 {
-    /* One bad cell in five keeps the column above the 80 % threshold that
+    /* One bad cell in five keeps the column above the 80% threshold that
      * decides whether it is numeric.  Below that threshold the column is
      * reported as non-numeric rather than the cell as bad. */
     static const char text[] = "t,v\n0,1.5\n1,n/a\n2,3.5\n3,4.0\n4,4.5\n";

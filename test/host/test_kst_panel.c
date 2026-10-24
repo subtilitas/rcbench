@@ -184,7 +184,7 @@ TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
         ui_text_set_language((ui_lang_t)lang);
         g_rig.rail = true;
         link_up();
-        /* 5.0 V and 1000 mA until they are set. */
+        /* 5.0V and 1000mA until they are set. */
         snprintf(want, sizeof(want), TR(KP_STATE_PWM), RIG_PORT + 1u, 5u, 0u,
                  1000u);
         CHECK_STR_EQ(status(0), want);
@@ -202,7 +202,7 @@ TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
                    (float)KST_PORT_SUPPLY_MIN_MV / 1000.0f, 0.001f);
         CHECK_NEAR(kst_panel_keypad()->max,
                    (float)KST_PANEL_STD_MV / 1000.0f, 0.001f);
-        /* 6.1 V and 4.7 V cannot be entered. */
+        /* 6.1V and 4.7V cannot be entered. */
         type_text("6.1");
         CHECK_EQ(kst_panel_editor(), 1);
         CHECK(kst_panel_keypad()->refused);
@@ -265,7 +265,7 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     type_text("8.5");
     CHECK_EQ(kst_panel_editor(), 1);
     CHECK(kst_panel_keypad()->refused);
-    /* 6.1 V is the first that asks. */
+    /* 6.1V is the first that asks. */
     type_text("6.1");
     CHECK_EQ(kst_panel_editor(), 3);
     snprintf(want, sizeof(want), TR(KP_SUPPLY_V), 6u, 1u);
@@ -273,7 +273,7 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     CHECK(warns(TR(SV_HV_1)));
     CHECK(warns(TR(SV_HV_4)));
     CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
-    /* 1.9 s is not a hold; CANCEL sets nothing. */
+    /* 1.9s is not a hold; CANCEL sets nothing. */
     hold(1.9f);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
     if (kst_panel_editor() == 3) {
@@ -293,7 +293,7 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MAX_MV);
     /* HV SERVO off while the port is held changes nothing on the servo;
-     * the next CONNECT asks for 5.0 V again. */
+     * the next CONNECT asks for 5.0V again. */
     kst_panel_set_hv(false);
     CHECK_EQ(kst_prog_supply_mv(M), KST_PROG_SUPPLY_MV);
     CHECK_EQ(g_rig.sup_mv, KST_PORT_SUPPLY_MAX_MV);
@@ -328,7 +328,7 @@ TEST_CASE(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold)
     CHECK_EQ(kst_prog_supply_mv(M), 5500u);
 }
 
-/* No stored voltage above 6.0 V reaches the programmer, with HV SERVO off
+/* No stored voltage above 6.0V reaches the programmer, with HV SERVO off
  * or on, at an opening, a screen entry or a start under a held port. */
 TEST_CASE(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v)
 {
@@ -371,8 +371,8 @@ TEST_CASE(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v)
     }
 }
 
-/* A voltage above 6.0 V is the hold's and the session's: the settings do
- * not keep it, and the next opening, entry or start has 6.0 V. */
+/* A voltage above 6.0V is the hold's and the session's: the settings do
+ * not keep it, and the next opening, entry or start has 6.0V. */
 TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
 {
     fresh();
@@ -390,7 +390,7 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
     type_text("800");
     CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
     CHECK_NEAR(settings_get(SET_SERVO_PROG_V), 6.0f, 0.001f);
-    /* An opening with no port held reads the settings: 6.0 V. */
+    /* An opening with no port held reads the settings: 6.0V. */
     kst_panel_close();
     CHECK_EQ(kst_prog_supply_mv(M), KST_PORT_SUPPLY_MAX_MV);
     kst_panel_open();
@@ -403,7 +403,7 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
     CHECK_EQ(kst_prog_supply_mv(M), KST_PANEL_STD_MV);
 
     /* A held port keeps the session's voltage over an opening; a panel
-     * that starts under it has none above 6.0 V. */
+     * that starts under it has none above 6.0V. */
     more_input(0);
     type_text("7.4");
     hold(2.1f);

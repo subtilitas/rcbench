@@ -49,7 +49,7 @@
 #define PLUS_X   926
 #define MINUS_X  704
 #define BTN_W    56
-/* The strip under the list and the tiles, 4 px above the alert band:
+/* The strip under the list and the tiles, 4px above the alert band:
  * RESET CATEGORY under the second column of the hub's three, SAVE under
  * the third. */
 #define STRIP_H  48
@@ -303,7 +303,7 @@ static inline unsigned save_face(void)
 #define XM       (MINUS_X + BTN_W / 2)
 #define XP       (PLUS_X + BTN_W / 2)
 /* The key the gesture tests press: INA228 max current, a number of
- * 0.1 A steps on row 3 of INTERFACES, in view with the list at its
+ * 0.1A steps on row 3 of INTERFACES, in view with the list at its
  * top. */
 #define KEY_ID   SET_INA228_MAX_A
 

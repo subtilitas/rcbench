@@ -33,7 +33,7 @@ static card_dir_t fault_level(void *ctx, const char *dir)
  *
  * With an OLD beside it the TMP is the older of the two and goes; without one
  * it is the OLD and takes the name. Until it is gone no line is written, so the
- * card holds at most the OLD and the TMP, 2 MiB.
+ * card holds at most the OLD and the TMP, 2MiB.
  *
  * @param io  The card functions.
  * @return FAULT_LOG_OK when no TMP stands, else the reason it could not go.

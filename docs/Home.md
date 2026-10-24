@@ -11,7 +11,7 @@ built from two processors: an ESP32-P4 touch panel, the Waveshare ESP32-P4 7B
 Display Serial Interface) display, settings, SD card, Wi-Fi through its
 ESP32-C6), and an RP2350 IOmcu (IO microcontroller: measurement, outputs,
 and every protocol with timing requirements). The two are connected over CAN (Controller Area
-Network) at 1 Mbit/s.
+Network) at 1Mbit/s.
 
 ## Using the bench
 

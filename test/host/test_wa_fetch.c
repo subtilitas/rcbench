@@ -328,7 +328,7 @@ TEST_CASE(no_connection_is_connect_or_the_budget)
 
 static void check_waits_within_the_budget(uint32_t t0)
 {
-    /* The join took 25 s: the request waits 5 s at most. */
+    /* The join took 25s: the request waits 5s at most. */
     fresh(t0 + 25000u);
     answer(latest(TAG "v0.22.1"));
     wa_run_t r = run_for(t0, WA_FETCH_CHECK_MS);
@@ -736,7 +736,7 @@ TEST_CASE(a_download_stopped_at_each_phase_stages_nothing)
 
 static void download_times_out_across_the_wrap(uint32_t t0)
 {
-    /* Each read takes 1.5 s; the budget runs out inside the image of 3
+    /* Each read takes 1.5s; the budget runs out inside the image of 3
      * pieces, after the second. */
     fresh(t0);
     make_release("0.20.0", true);

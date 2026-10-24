@@ -135,8 +135,8 @@ void ui_keypad_refuse(ui_keypad_t *k);
 void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason);
 
 /**
- * @brief Where a key is drawn and hit: the grid ends 8 px inside the
- *        area, or at UI_KEYS_FOOT (4 px above the alert band, body
+ * @brief Where a key is drawn and hit: the grid ends 8px inside the
+ *        area, or at UI_KEYS_FOOT (4px above the alert band, body
  *        coordinates) where the area reaches further.
  * @param k The keypad.
  * @param key The key.
@@ -148,7 +148,7 @@ gfx_rect_t ui_keypad_key_rect(const ui_keypad_t *k, ui_key_t key);
 /**
  * @brief The face of the word keys (DEL, CLR, CANCEL, OK, +/-) in the
  *        language shown: the largest of 12 x 24, 10 x 20 and 8 x 16 in
- *        which every one of them fits its key with 6 px each side, so the
+ *        which every one of them fits its key with 6px each side, so the
  *        words of one keypad share one face.  Digits and the point are
  *        always 12 x 24.
  * @param k The keypad, opened.

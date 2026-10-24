@@ -40,9 +40,9 @@ static const char *TAG = "rcbench";
  * viewer reads, and a host test writes a run and parses it back.
  *
  * The control task touches no file.  It beats the safety line, its ceiling is
- * HEARTBEAT_MAX_GAP_MS (150 ms) and the IOmcu calls the link silent
- * after 200 ms, while the SD (Secure Digital) specification allows a card
- * 250 ms to finish a single-block write before a host may give it up.  How
+ * HEARTBEAT_MAX_GAP_MS (150ms) and the IOmcu calls the link silent
+ * after 200ms, while the SD (Secure Digital) specification allows a card
+ * 250ms to finish a single-block write before a host may give it up.  How
  * long this board's card takes is not measured.  A card write on that task is
  * therefore a dropped heartbeat and an IOmcu that fails safe, not a late
  * row -- so rows cross to a task of its own and every fopen, fwrite, fsync
@@ -358,7 +358,7 @@ static int file_write(void *ctx, const void *data, size_t len)
  * lost.  fsync() is the call that reaches f_sync.
  *
  * log_writer_row() calls this every LOG_WRITER_FLUSH_ROWS (20) rows or
- * LOG_WRITER_FLUSH_S (1.0 s) of run, whichever comes first, which at
+ * LOG_WRITER_FLUSH_S (1.0s) of run, whichever comes first, which at
  * PANEL_SAMPLE_HZ is the same instant.
  */
 static bool file_flush(void *ctx)
@@ -386,7 +386,7 @@ static log_prefix_t run_prefix(log_run_kind_t kind)
  * Every probe is a card transaction and the loop can make hundreds of them,
  * which is why the scan is here and not on the task that beats the safety
  * line.  It runs when the run's first row arrives, one sample interval
- * (50 ms) after the arm or the supply's switch-on.
+ * (50ms) after the arm or the supply's switch-on.
  */
 static void log_open(uint32_t run, log_run_kind_t kind)
 {
@@ -734,7 +734,7 @@ static int32_t note_size(void *ctx, const char *path)
     char full[NOTE_PATH_MAX];
     take_path(path, NULL, full, sizeof(full));
     /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads a
-     * file of 4 GiB and more as a small one, which the cap would let grow. */
+     * file of 4GiB and more as a small one, which the cap would let grow. */
     storage_stat_t st;
     const esp_err_t err = storage_stat(full, &st);
     if (err != ESP_OK) {
@@ -815,7 +815,7 @@ static void log_note(const char *line)
  * @brief Everything that touches the card.
  *
  * On the control task's core and below it in priority: the control task
- * blocks for CONTROL_PERIOD_MS (5 ms) every pass and inside every receive
+ * blocks for CONTROL_PERIOD_MS (5ms) every pass and inside every receive
  * window of a link exchange, and this runs in those gaps.  It touches no
  * PSRAM, so it does not share bandwidth with the display's scan-out.
  *

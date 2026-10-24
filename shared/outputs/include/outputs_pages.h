@@ -149,8 +149,8 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
  *        carries it: 0, or LINK_NACK_BAD_VALUE (protocol 4.16).
  *
  * A pulse fits when it is no longer than out_pwm_pulse_max() of its frame
- * rate: one microsecond less than the period, 1784 us at 560 Hz and 2499 us
- * at 400 Hz.  A longer one leaves the pin high for the whole frame.  What
+ * rate: one microsecond less than the period, 1784us at 560Hz and 2499us
+ * at 400Hz.  A longer one leaves the pin high for the whole frame.  What
  * is judged is a channel's longer endpoint, the pulse at full travel.
  *
  * Each PWM slot is judged at the rate it runs at (outputs_slot_rates() with
@@ -354,7 +354,7 @@ void    outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved);
  * pulse as zero.  A surface keeps its own range -- the schema's default, or
  * the one the SERVO screen named for the servo on it -- because a surface
  * that took an ESC's range would rest at that range's midpoint, off centre
- * whenever the range is not symmetric about 1500 us.
+ * whenever the range is not symmetric about 1500us.
  *
  * Returns false and changes nothing for endpoints the page would refuse:
  * below LINK_CC_FLOOR_US, above LINK_CC_CEILING_US, or not @p min_us below

@@ -133,9 +133,9 @@ bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
     }
     bool changed = false;
     /*
-     * Silent for TOUCH_MERGE_DETACH_MS (1000 ms): its contacts go, and the
+     * Silent for TOUCH_MERGE_DETACH_MS (1000ms): its contacts go, and the
      * glass alone decides touch age, so the heartbeat comes back.  Touch
-     * read as dead 300 ms before this at the latest (200 ms to lose touch in
+     * read as dead 300ms before this at the latest (200ms to lose touch in
      * main.c, then ARMING_TOUCH_DEAD_MS), which counted a stop and disarmed
      * (shared/safety/arming.c:259-274).  The IOmcu latched its arm
      * when the heartbeat stopped (shared/safety/safety_gate.c:43-46), and

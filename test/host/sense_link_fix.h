@@ -91,7 +91,7 @@ static inline int far_exchange(const sense_link_op_t *op, uint16_t *regs)
     return SENSE_LINK_ACK;
 }
 
-/* One poll of the control task: every exchange owed, then 50 ms on. */
+/* One poll of the control task: every exchange owed, then 50ms on. */
 static inline void poll_once(void)
 {
     for (int k = 0; k < 8; ++k) {

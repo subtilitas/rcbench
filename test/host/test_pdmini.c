@@ -41,7 +41,7 @@ typedef struct {
     uint16_t mv[5], ma[5];
     uint16_t v_mv, i_ma;
     bool     input_ok;        /* PD negotiated: the output can switch on */
-    uint16_t input_mv;        /* what READ_INPUT_STATE reports, 0: 24 V  */
+    uint16_t input_mv;        /* what READ_INPUT_STATE reports, 0: 24V  */
     bool     bad_crc;         /* answer every read with a broken CRC     */
     bool     whoami_crc;      /* end WHO_AM_I with a CRC, not 0x0A       */
     uint8_t  junk;            /* a byte the handover leaves, 0 for none  */
@@ -213,7 +213,7 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         const uint8_t r[6] = { PDMINI_READ_INPUT, m.input_ok ? 5u : 1u,
                                (uint8_t)((m.input_mv ? m.input_mv : 24000u) & 0xFFu),
                                (uint8_t)((m.input_mv ? m.input_mv : 24000u) >> 8),
-                               200u, 0u };   /* 24000 mV unless set, 20.0 V */
+                               200u, 0u };   /* 24000mV unless set, 20.0V */
         reply(r, 6u, true);
         break;
     }
@@ -469,7 +469,7 @@ TEST_CASE(an_off_never_switches_an_output_on)
 }
 
 /* The confirming read waits until the output has settled; a write that takes
- * 200 ms to show is confirmed with one write, not taken for a failure. */
+ * 200ms to show is confirmed with one write, not taken for a failure. */
 TEST_CASE(the_confirming_read_waits_for_the_output_to_settle)
 {
     fresh();
@@ -609,7 +609,7 @@ TEST_CASE(stuck_clears_when_the_output_is_seen_as_asked)
 }
 
 /* An OFF asked for while an ON waits to be confirmed does not wait out the
- * 250 ms: the state is read at once, and the output switched off the
+ * 250ms: the state is read at once, and the output switched off the
  * moment it reads on. */
 TEST_CASE(an_off_does_not_wait_behind_an_on_being_confirmed)
 {
@@ -626,8 +626,8 @@ TEST_CASE(an_off_does_not_wait_behind_an_on_being_confirmed)
     m.on_ms = 0u;
     run(600u, false);
     CHECK(!m.output);
-    /* On for its 60 ms to come on, a read or two, and its 60 ms to go off:
-     * waiting out the confirmation would be 250 ms and the same again. */
+    /* On for its 60ms to come on, a read or two, and its 60ms to go off:
+     * waiting out the confirmation would be 250ms and the same again. */
     CHECK(m.on_ms < 150u);
     CHECK_EQ(m.en_writes, 2u);
 
@@ -675,7 +675,7 @@ TEST_CASE(an_off_reaches_a_module_that_stopped_answering)
     CHECK_EQ(m.en_writes, 1u);                 /* the one before it went quiet */
 }
 
-/* Run until the driver has written OUTPUT_EN @p n times, at most 3 s. */
+/* Run until the driver has written OUTPUT_EN @p n times, at most 3s. */
 static void run_to_en_write(unsigned n)
 {
     for (unsigned k = 0u; m.en_writes < n && k < 3000u; ++k) {
@@ -685,7 +685,7 @@ static void run_to_en_write(unsigned n)
 
 /* With the argument for off known, an OFF asked for while an ON waits to be
  * confirmed is written at once, and an ON slower than the confirmation never
- * shows; with it not yet known, the ON is watched past its 250 ms. */
+ * shows; with it not yet known, the ON is watched past its 250ms. */
 TEST_CASE(an_off_cancels_a_slow_on)
 {
     fresh();
@@ -717,7 +717,7 @@ TEST_CASE(an_off_cancels_a_slow_on)
     pdmini_want(&d, false, 5000u, 1000u);
     run(1500u, false);
     CHECK(!m.output);
-    /* Seen on as it came on, at 300 ms, and its 300 ms to go off. */
+    /* Seen on as it came on, at 300ms, and its 300ms to go off. */
     CHECK(m.on_ms < 400u);
     CHECK(d.on_seen);
     CHECK_EQ(d.on_value, 1u);
@@ -970,7 +970,7 @@ TEST_CASE(no_blind_off_goes_to_another_device_that_answers)
 TEST_CASE(a_slow_reply_holds_neither_the_pins_nor_an_off)
 {
     fresh();
-    m.byte_gap = 59u;                          /* a 36-byte WHO_AM_I: 2.1 s */
+    m.byte_gap = 59u;                          /* a 36-byte WHO_AM_I: 2.1s */
     run(3000u, false);
     CHECK(!pdmini_status(&d)->online);
     CHECK(m.attach_max <= PDMINI_ATTACH_MS + PDMINI_TXN_MS + 2u);
@@ -1129,7 +1129,7 @@ TEST_CASE(stale_set_points_are_not_sent)
 }
 
 /* Firmware that does not answer READ_INPUT_STATE is asked three times and
- * then only every 5 s, so its 400 ms windows do not hold up the rest; a
+ * then only every 5s, so its 400ms windows do not hold up the rest; a
  * module that only lost those three answers is capped once it answers. */
 TEST_CASE(an_unanswered_input_read_is_given_up)
 {
@@ -1144,7 +1144,7 @@ TEST_CASE(an_unanswered_input_read_is_given_up)
     CHECK(m.reads[PDMINI_READ_INPUT] <= asked + 1u);
 
     m.no_input = false;                       /* it answers after all */
-    m.input_mv = 4885u;                       /* off the 10 mV grid */
+    m.input_mv = 4885u;                       /* off the 10mV grid */
     for (int k = 0; k < 700; ++k) {           /* set points all the while */
         pdmini_want(&d, false, (uint16_t)(6000u + 10u * (unsigned)(k % 50)),
                     1000u);
@@ -1348,7 +1348,7 @@ TEST_CASE(an_output_not_read_may_be_on)
 }
 
 /* Wiring restored after a restart: the module may be on until read off,
- * and a module that answers nothing for 10 s is taken not to be there. */
+ * and a module that answers nothing for 10s is taken not to be there. */
 TEST_CASE(a_restored_module_may_be_on_until_read)
 {
     fresh();
@@ -1405,7 +1405,7 @@ TEST_CASE(an_output_the_module_switched_off_stays_off)
     CHECK(m.output);
 }
 
-/* Fed 4.88 V and asked for 5.88 V: the module is given no more than its
+/* Fed 4.88V and asked for 5.88V: the module is given no more than its
  * input less PDMINI_CAP_MV, and comes on at that. */
 TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
 {
@@ -1465,7 +1465,7 @@ TEST_CASE(nothing_is_switched_on_before_the_input_is_read)
     CHECK(!m.output);
 }
 
-/* Set points changed every 50 ms, faster than a write goes round: the input
+/* Set points changed every 50ms, faster than a write goes round: the input
  * is still read every half second, and a drop in it caps the next write. */
 TEST_CASE(a_dragged_slider_does_not_starve_the_input)
 {
@@ -1489,11 +1489,11 @@ TEST_CASE(a_dragged_slider_does_not_starve_the_input)
 }
 
 /*
- * A live output, its set point changed every 50 ms for 5 s with the confirm
- * slide off: the write and its read-back take longer than 50 ms, and a new
+ * A live output, its set point changed every 50ms for 5s with the confirm
+ * slide off: the write and its read-back take longer than 50ms, and a new
  * set point is waiting after each.  The display is still read at least every
  * PDMINI_DISPLAY_MS + PDMINI_POLL_LATE_MS and two transactions, so the
- * panel, reading the count of readings off the page every 50 ms, never sees
+ * panel, reading the count of readings off the page every 50ms, never sees
  * it stand for SUPPLY_LINK_STALE_MS and never cuts the output for readings
  * stopped.
  */
@@ -1537,11 +1537,11 @@ TEST_CASE(a_dragged_live_set_point_does_not_starve_the_display)
 }
 
 /*
- * OFF asked, the voltage dragged every 50 ms for 5 s -- live with the output
+ * OFF asked, the voltage dragged every 50ms for 5s -- live with the output
  * off, whatever the confirm slide says -- and the module switches its output
- * on by itself (its button or AUTO OUT) 500 ms into the drag.  The state
+ * on by itself (its button or AUTO OUT) 500ms into the drag.  The state
  * read, overdue, goes before the next set point, and the OFF follows it
- * within 1.5 s.  The set points still go out during the drag.
+ * within 1.5s.  The set points still go out during the drag.
  */
 TEST_CASE(a_drag_does_not_hold_back_the_off_for_an_output_switched_on)
 {
@@ -1584,10 +1584,10 @@ TEST_CASE(a_drag_does_not_hold_back_the_off_for_an_output_switched_on)
 }
 
 /*
- * A live output, its set point dragged every 50 ms for 5 s, and the
- * module's protection switches the output off 500 ms into the drag: the
+ * A live output, its set point dragged every 50ms for 5s, and the
+ * module's protection switches the output off 500ms into the drag: the
  * overdue state read goes before the next set point and shows it tripped
- * within 1.5 s.  The set points still go out until then.
+ * within 1.5s.  The set points still go out until then.
  */
 TEST_CASE(a_drag_does_not_hide_a_tripped_output)
 {
@@ -1625,8 +1625,8 @@ TEST_CASE(a_drag_does_not_hide_a_tripped_output)
 }
 
 /*
- * A module that answers every read 180 ms late, a live output dragged every
- * 50 ms for 10 s: the overdue readings go ahead one at a time, so the set
+ * A module that answers every read 180ms late, a live output dragged every
+ * 50ms for 10s: the overdue readings go ahead one at a time, so the set
  * points still go out, and the display still comes round before the panel
  * cuts the output for readings stopped.
  */
@@ -1662,8 +1662,8 @@ TEST_CASE(a_drag_on_a_slow_module_still_writes_set_points)
     CHECK(gap_most < SUPPLY_LINK_BLIND_MS);
 }
 
-/* The driver settled with the output @p on at 5000 mV and the module
- * answering every read @p late ms late for 3 s. */
+/* The driver settled with the output @p on at 5000mV and the module
+ * answering every read @p late ms late for 3s. */
 static void settle_late(bool on, uint32_t late)
 {
     fresh();
@@ -1676,9 +1676,9 @@ static void settle_late(bool on, uint32_t late)
 }
 
 /*
- * One set point changed, nothing else asked, the module answering 250 ms
- * and 390 ms late -- close to the 400 ms reply window -- with the output off
- * and live: the set point reaches the module within 5 s.
+ * One set point changed, nothing else asked, the module answering 250ms
+ * and 390ms late -- close to the 400ms reply window -- with the output off
+ * and live: the set point reaches the module within 5s.
  */
 TEST_CASE(one_set_point_reaches_a_module_answering_late)
 {
@@ -1698,9 +1698,9 @@ TEST_CASE(one_set_point_reaches_a_module_answering_late)
 }
 
 /*
- * An ON asked of a module answering 120 ms and 180 ms late: the input read
+ * An ON asked of a module answering 120ms and 180ms late: the input read
  * goes before the reads for the ON, not between them, and the ON is
- * written within 3 s -- at the cap of an input read just before, which has
+ * written within 3s -- at the cap of an input read just before, which has
  * sagged since the last reading.
  */
 TEST_CASE(an_on_reaches_a_module_answering_late)
@@ -1721,9 +1721,9 @@ TEST_CASE(an_on_reaches_a_module_answering_late)
 }
 
 /*
- * A live output dragged every 50 ms for 10 s, the module answering 300 ms
+ * A live output dragged every 50ms for 10s, the module answering 300ms
  * late: set points still go out during the drag, and the last one asked
- * reaches the module within 5 s of the drag's end.
+ * reaches the module within 5s of the drag's end.
  */
 TEST_CASE(a_drag_on_a_module_answering_300_ms_late_still_writes)
 {
@@ -1744,11 +1744,11 @@ TEST_CASE(a_drag_on_a_module_answering_300_ms_late_still_writes)
 }
 
 /*
- * A live output dragged every 50 ms, the module answering 250 ms and
- * 350 ms late and its protection switching the output off 500 ms into the
+ * A live output dragged every 50ms, the module answering 250ms and
+ * 350ms late and its protection switching the output off 500ms into the
  * drag: an overdue state read goes before the set points and the next
- * display read alike, and shows the output tripped within 2 s -- over 40
- * start phases 13 ms apart.
+ * display read alike, and shows the output tripped within 2s -- over 40
+ * start phases 13ms apart.
  */
 TEST_CASE(a_drag_on_a_slow_module_shows_a_trip_first)
 {
@@ -1783,7 +1783,7 @@ TEST_CASE(a_drag_on_a_slow_module_shows_a_trip_first)
 }
 
 /*
- * A live output at rest, the module answering 390 ms late: the input read
+ * A live output at rest, the module answering 390ms late: the input read
  * that goes before a set point or an ON waits while there is none to
  * write, and the display still comes round inside SUPPLY_LINK_BLIND_MS --
  * the panel does not cut an output at rest.
@@ -1852,8 +1852,8 @@ static uint8_t job_with_readings_aged_after(uint32_t display_ms,
 }
 
 /* A reading goes before a waiting set point from PDMINI_POLL_LATE_MS past
- * its due, not 1 ms sooner: the display 500 ms after the last display read,
- * the state 900 ms after the last state read. */
+ * its due, not 1ms sooner: the display 500ms after the last display read,
+ * the state 900ms after the last state read. */
 TEST_CASE(a_reading_goes_before_a_set_point_from_400_ms_past_its_due)
 {
     const uint32_t disp = PDMINI_DISPLAY_MS + PDMINI_POLL_LATE_MS;
@@ -1870,8 +1870,8 @@ TEST_CASE(a_reading_goes_before_a_set_point_from_400_ms_past_its_due)
 }
 
 /* Straight after a reading that went ahead of a set point, the state still
- * goes first from PDMINI_STATE_MS + PDMINI_POLL_LATE_MS, 900 ms, since its
- * last read, not 1 ms sooner; the display waits its turn. */
+ * goes first from PDMINI_STATE_MS + PDMINI_POLL_LATE_MS, 900ms, since its
+ * last read, not 1ms sooner; the display waits its turn. */
 TEST_CASE(a_state_read_follows_another_reading_from_900_ms)
 {
     const uint32_t state = PDMINI_STATE_MS + PDMINI_POLL_LATE_MS;
@@ -1937,7 +1937,7 @@ static uint8_t job_at_rest(uint32_t disp, uint32_t state, uint32_t input,
     return job_aged(disp, state, input, slot);
 }
 
-/* At rest, each reading starts at the millisecond it is due, not 1 ms
+/* At rest, each reading starts at the millisecond it is due, not 1ms
  * before or after. */
 TEST_CASE(a_reading_at_rest_starts_when_it_is_due)
 {
@@ -1957,7 +1957,7 @@ TEST_CASE(a_reading_at_rest_starts_when_it_is_due)
 /*
  * At rest the input is a reading like the others: with nothing to write --
  * the output off or on as asked, or an ON already written and waiting for
- * its confirming read -- a display read 300 ms past its due goes before an
+ * its confirming read -- a display read 300ms past its due goes before an
  * input read just due.  A set point to write, the current alone too, reads
  * the input first; the slot, a read-back under way or no read-back yet go
  * before that input read.
@@ -2004,7 +2004,7 @@ TEST_CASE(the_input_goes_first_only_with_something_to_write)
 /*
  * Firmware without READ_INPUT_STATE: once the read has gone unanswered
  * PDMINI_INPUT_MISSES times, a set point waits for it only every
- * PDMINI_INPUT_RETRY_MS, 5000 ms, not 1 ms sooner.
+ * PDMINI_INPUT_RETRY_MS, 5000ms, not 1ms sooner.
  */
 TEST_CASE(an_input_never_answered_goes_before_a_set_point_every_5_s)
 {
@@ -2031,7 +2031,7 @@ TEST_CASE(an_input_never_answered_goes_before_a_set_point_every_5_s)
 
 /*
  * An ON being confirmed is read only by its confirming read: straight after
- * a reading that went ahead, a state read 900 ms old waits for
+ * a reading that went ahead, a state read 900ms old waits for
  * PDMINI_CONFIRM_MS.  Job by job, and on a module answering late with the
  * ON asked at the end of a drag: no state read reaches the module less
  * than PDMINI_CONFIRM_MS after an OUTPUT_EN.
@@ -2052,7 +2052,7 @@ TEST_CASE(an_on_being_confirmed_gets_no_early_state_read)
         for (unsigned ph = 0u; ph < 40u; ++ph) {
             settle_late(false, lates[i]);
             run(ph * 13u, false);
-            for (unsigned k = 0u; k < 40u; ++k) {   /* a drag, 2 s */
+            for (unsigned k = 0u; k < 40u; ++k) {   /* a drag, 2s */
                 pdmini_want(&d, false,
                             (uint16_t)(6000u + 10u * (k % 20u)), 1000u);
                 run(50u, false);
@@ -2115,7 +2115,7 @@ TEST_CASE(an_on_waits_for_the_input_when_it_is_unknown)
 }
 
 /* Firmware that never answers the input read gets its ON: the unknown
- * input and a reading of 0 mV do not hold it as a sagging source. */
+ * input and a reading of 0mV do not hold it as a sagging source. */
 TEST_CASE(an_on_goes_ahead_when_the_firmware_has_no_input_read)
 {
     rest_with_output(false);
@@ -2129,7 +2129,7 @@ TEST_CASE(an_on_goes_ahead_when_the_firmware_has_no_input_read)
 }
 
 /* An unidentified module is asked WHO_AM_I when PDMINI_IDENTIFY_MS have
- * passed since the last ask, not 1 ms before. */
+ * passed since the last ask, not 1ms before. */
 TEST_CASE(who_am_i_is_asked_when_the_identify_interval_is_up)
 {
     rest_with_output(false);
@@ -2156,8 +2156,8 @@ static uint8_t next_command(void)
 
 /*
  * The reads before an ON -- the set points, then the slot -- and the ON go
- * one straight after the other: a display and a state read 600 ms and
- * 1000 ms past their due wait until the ON is written.
+ * one straight after the other: a display and a state read 600ms and
+ * 1000ms past their due wait until the ON is written.
  */
 TEST_CASE(no_overdue_reading_splits_the_reads_before_an_on)
 {
@@ -2431,7 +2431,7 @@ static void input_reads(unsigned k)
     run(20u, false);
 }
 
-/* On at 6.00 V from a 12 V input, then the input as given. */
+/* On at 6.00V from a 12V input, then the input as given. */
 static void on_at_6v(void)
 {
     fresh();
@@ -2447,11 +2447,11 @@ static void on_at_6v(void)
 TEST_CASE(one_sagging_input_reading_leaves_the_output_on)
 {
     on_at_6v();
-    m.input_mv = 6200u;                        /* under 6.00 + 0.50 V */
+    m.input_mv = 6200u;                        /* under 6.00 + 0.50V */
     input_reads(1u);
     run(200u, false);
     CHECK(m.output);
-    CHECK_EQ(m.mv[0], 6000u);                  /* not lowered to 5.70 V */
+    CHECK_EQ(m.mv[0], 6000u);                  /* not lowered to 5.70V */
     m.input_mv = 12000u;
     input_reads(1u);
     run(1000u, false);
@@ -2520,8 +2520,8 @@ TEST_CASE(an_unknown_input_switches_nothing_off)
     CHECK(!pdmini_status(&d)->sagged);
 }
 
-/* On at the cap: 20000 mV asked from a 19990 mV input gives 19290 mV,
- * PDMINI_CAP_MV under it on the 10 mV grid.  The cut line is 19790 mV. */
+/* On at the cap: 20000mV asked from a 19990mV input gives 19290mV,
+ * PDMINI_CAP_MV under it on the 10mV grid.  The cut line is 19790mV. */
 static void on_at_cap(void)
 {
     fresh();
@@ -2532,7 +2532,7 @@ static void on_at_cap(void)
     CHECK_EQ(m.mv[0], 19290u);
 }
 
-/* A 10 mV dip on the input readings at the cap is not a sag: the output
+/* A 10mV dip on the input readings at the cap is not a sag: the output
  * stays on. */
 TEST_CASE(a_10_mv_dip_at_the_cap_leaves_the_output_on)
 {
@@ -2545,7 +2545,7 @@ TEST_CASE(a_10_mv_dip_at_the_cap_leaves_the_output_on)
     CHECK_EQ(m.mv[0], 19290u);                 /* not lowered either */
 }
 
-/* The cut line at the cap, exactly and 1 mV over: on; 1 mV under, on
+/* The cut line at the cap, exactly and 1mV over: on; 1mV under, on
  * PDMINI_SAG_READS readings, off within PDMINI_SAG_READS input periods and
  * one transaction of the input falling. */
 TEST_CASE(a_sag_at_the_cap_cuts_only_under_the_line)
@@ -2584,7 +2584,7 @@ static uint16_t set_from(uint16_t vin, uint16_t want)
     return m.mv[0];
 }
 
-/* The cap: PDMINI_CAP_MV under the input, rounded down to 10 mV, and no
+/* The cap: PDMINI_CAP_MV under the input, rounded down to 10mV, and no
  * lower than PDMINI_V_MIN_MV, however low the input reads. */
 TEST_CASE(the_cap_holds_at_its_line_and_its_floor)
 {
@@ -2618,9 +2618,9 @@ TEST_CASE(the_shown_cap_is_the_one_written)
     }
 }
 
-/* An input under 1500 mV leaves no room for the lowest set point: an ON is
+/* An input under 1500mV leaves no room for the lowest set point: an ON is
  * not written, and the output is held off as for a sag until an OFF is
- * asked.  At 1500 mV and 1 mV over, the ON is written and stays. */
+ * asked.  At 1500mV and 1mV over, the ON is written and stays. */
 TEST_CASE(an_on_under_the_line_is_not_written)
 {
     fresh();
@@ -2727,7 +2727,7 @@ TEST_CASE(a_sag_under_an_output_not_live_is_not_counted)
 
 /*
  * A write of the output is read back PDMINI_CONFIRM_MS after it went out
- * and not 1 ms later: the state read that confirms it is on the wire
+ * and not 1ms later: the state read that confirms it is on the wire
  * PDMINI_CONFIRM_MS and the PDMINI_ATTACH_MS of its own hand-over after the
  * write, with nothing else on the line at that time.
  */
@@ -2772,7 +2772,7 @@ static void srun(uint32_t ms)
     }
 }
 
-/* srun() until the driver has written OUTPUT_EN once more, at most 3 s. */
+/* srun() until the driver has written OUTPUT_EN once more, at most 3s. */
 static void srun_to_en_write(void)
 {
     const unsigned n = m.en_writes + 1u;
@@ -2783,9 +2783,9 @@ static void srun_to_en_write(void)
 
 /*
  * A session with every timer of the driver in it:
- *   a WHO_AM_I that drips at 40 ms a byte and is given up at PDMINI_TXN_MS;
- *   one at 12 ms a byte, which outlasts PDMINI_REPLY_MS and is waited for a
- *   byte at a time; an ON confirmed after the module's 200 ms; display,
+ *   a WHO_AM_I that drips at 40ms a byte and is given up at PDMINI_TXN_MS;
+ *   one at 12ms a byte, which outlasts PDMINI_REPLY_MS and is waited for a
+ *   byte at a time; an ON confirmed after the module's 200ms; display,
  *   state, input and slot reads at their intervals; an OFF; an ON the
  *   module loses, cancelled before its argument is known and watched for
  *   PDMINI_WATCH_MS; the argument learnt a second time; an ON the module
@@ -2895,7 +2895,7 @@ static void a_session_counts_the_same(uint32_t t0)
     CHECK_EQ(now - t0, g_session_ms);
 }
 
-/* The 2^32 ms wrap at every 11 ms of the session: no timer of the driver
+/* The 2^32ms wrap at every 11ms of the session: no timer of the driver
  * fires earlier or later for it. */
 TEST_CASE(a_session_is_the_same_wherever_the_tick_wraps_in_it)
 {

@@ -10,10 +10,10 @@
  *   - the crumb row y 30 to 78: BACK x 20 to 140; on the list the search
  *     field x 616 to 876 with X x 828 to 876, "^" x 884 to 940 and "v"
  *     x 948 to 1004; on a profile's page TIMING x 836 to 1004;
- *   - the list's rows x 20 to 1004, 48 px tall at a 56 px pitch from y 84,
+ *   - the list's rows x 20 to 1004, 48px tall at a 56px pitch from y 84,
  *     7 to a page;
- *   - a profile's page and TIMING: the parameter rows 48 px tall at a
- *     56 px pitch from y 92, 6 to a page, the name x 16 to 290, the value
+ *   - a profile's page and TIMING: the parameter rows 48px tall at a
+ *     56px pitch from y 92, 6 to a page, the name x 16 to 290, the value
  *     x 298 to 548, "-" x 556 to 604 and "+" x 612 to 660; the side
  *     column's "^" x 900 to 948 and "v" x 956 to 1004 at y 92 to 140, and
  *     MANUAL INTERVENTION REQUIRED x 688 to 998 at y 148 to 196;

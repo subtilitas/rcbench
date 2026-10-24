@@ -57,7 +57,7 @@ link_can_prio_t link_can_priority(uint8_t page, uint8_t op)
         || page == LINK_PAGE_LIMITS || page == LINK_PAGE_SUPPLY) {
         return LINK_CAN_PRIO_CONTROL;
     }
-    /* A firmware update is 26,001 exchanges, 6.8 to 8.3 s of frames for a
+    /* A firmware update is 26,001 exchanges, 6.8 to 8.3s of frames for a
      * 184,872-byte image; any poll and any stop wins arbitration over it. */
     if (page == LINK_PAGE_UPDATE_CTL || page == LINK_PAGE_UPDATE_DATA) {
         return LINK_CAN_PRIO_BULK;

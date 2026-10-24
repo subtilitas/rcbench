@@ -104,7 +104,7 @@ void ui_slider_release(ui_slider_t *s)
  * press that lands where the finger happens to touch would command whatever
  * is under it.  Touching the right-hand end of the track would ask for full
  * travel, and a throttle bound on the IOmcu carries no slew, so the
- * next 1 ms pass renders it.  A press moves nothing; only a drag does, and
+ * next 1ms pass renders it.  A press moves nothing; only a drag does, and
  * it moves by the distance dragged.
  */
 static bool by_delta(ui_slider_t *s, int x)
@@ -204,7 +204,7 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
     return false;
 }
 
-/* The shadow sits 2 px below the thumb, so the bottom reaches further than
+/* The shadow sits 2px below the thumb, so the bottom reaches further than
  * the top.  Kept beside the drawing it describes. */
 #define SLIDER_SHADOW_DROP 2
 
@@ -272,7 +272,7 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
                   gfx_lerp(fillc, GFX_WHITE, 70));
     }
 
-    /* Scale divisions, cut 5 px into both edges rather than ruled across the
+    /* Scale divisions, cut 5px into both edges rather than ruled across the
      * track, so they stay readable while the fill moves. */
     for (int t = 1; s->ticks > 0 && t < s->ticks; ++t) {
         const int tx = s->track.x + (int)((float)s->track.w
@@ -307,7 +307,7 @@ void ui_slider_render(const ui_slider_t *s, gfx_canvas_t *c)
     const int ty = s->track.y - UI_SLIDER_OVERHANG;
 
     /*
-     * One shape offset 2 px below the thumb, drawn first, as its shadow.
+     * One shape offset 2px below the thumb, drawn first, as its shadow.
      * Darkened from the trough rather than from the screen's background: the
      * shadow falls on the track, and a caller may have cleared the region to
      * a panel colour rather than to the background.

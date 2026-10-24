@@ -421,7 +421,7 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
     rail_window(412, 5980u);
     scr->render(&cv, 0);
 
-    /* 0.412 A to 0.414 A: the plot takes its point, the row is left. */
+    /* 0.412A to 0.414A: the plot takes its point, the row is left. */
     mark_all();
     rail_window(414, 5980u);
     scr->render(&cv, 0);
@@ -430,7 +430,7 @@ TEST_CASE(the_current_row_repaints_on_a_changed_digit_and_alone)
     CHECK(!mk(MK_PLOT));
     CHECK(card_kept());
 
-    /* 0.414 A to 0.415 A is 0.41 to 0.42: the row, and nothing around it
+    /* 0.414A to 0.415A is 0.41 to 0.42: the row, and nothing around it
      * but the line and the plot the window also feeds. */
     mark_all();
     rail_window(415, 5980u);
@@ -561,7 +561,7 @@ TEST_CASE(the_plot_keeps_one_point_for_each_window)
 }
 
 /* One run of the automatic test with @p changing: the meter changed every
- * 300 ms and two windows handed over every 100 ms while it runs.  With
+ * 300ms and two windows handed over every 100ms while it runs.  With
  * @p behind every supply sample of the run was taken under a meter
  * replaced since. */
 static void a_short_run(bool changing, bool behind)

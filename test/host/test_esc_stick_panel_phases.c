@@ -400,7 +400,7 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
 }
 
 /* The reviewers' proof through the screen: the SUPPLY flag goes off with
- * the request, the module 300 ms later.  The run waits for the module. */
+ * the request, the module 300ms later.  The run waits for the module. */
 TEST_CASE(the_screen_passes_the_supplys_own_state)
 {
     fresh();

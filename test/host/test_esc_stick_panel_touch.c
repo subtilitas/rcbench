@@ -26,7 +26,7 @@
  * The cases below put finger frames through the tracker (touch_feed.h) and
  * hand its events to the screen, or to the router where the band matters.
  * A control is a tap: pressed and released in place it acts, and a finger
- * that crosses it, leaves it or travels past 8 px does nothing.
+ * that crosses it, leaves it or travels past 8px does nothing.
  */
 #define TAP_ID 3
 
@@ -102,7 +102,7 @@ TEST_CASE(a_control_acts_on_a_tap_and_on_nothing_less)
             scr->tick(0.010f);
         }
         moved += (look() != was) ? 2 : 0;
-        /* Carried 60 px away, down the glass and across it, and lifted. */
+        /* Carried 60px away, down the glass and across it, and lifted. */
         f_to(c->x, c->y + 60, 9);
         f_lift();
         moved += (look() != was) ? 4 : 0;
@@ -110,18 +110,18 @@ TEST_CASE(a_control_acts_on_a_tap_and_on_nothing_less)
         f_to(c->x - 60, c->y, 9);
         f_lift();
         moved += (look() != was) ? 8 : 0;
-        /* A swipe that starts 60 px above it and crosses it. */
+        /* A swipe that starts 60px above it and crosses it. */
         f_at(c->x, c->y - 60);
         f_to(c->x, c->y + 60, 9);
         f_lift();
         moved += (look() != was) ? 16 : 0;
-        /* Pressed, carried 60 px away and back onto it. */
+        /* Pressed, carried 60px away and back onto it. */
         f_at(c->x, c->y);
         f_to(c->x + 60, c->y, 9);
         f_to(c->x, c->y, 9);
         f_lift();
         moved += (look() != was) ? 32 : 0;
-        /* 9 px from the press, in one report and px by px. */
+        /* 9px from the press, in one report and px by px. */
         f_at(c->x, c->y);
         f_to(c->x + 9, c->y, 9);
         f_lift();
@@ -133,7 +133,7 @@ TEST_CASE(a_control_acts_on_a_tap_and_on_nothing_less)
             T_FAIL("%s acted without a tap (%d)", c->name, moved);
         }
 
-        /* A tap acts; so does one that moves 8 px, or wobbles. */
+        /* A tap acts; so does one that moves 8px, or wobbles. */
         for (int k = 0; k < 3; ++k) {
             c->page();
             on_screen();
@@ -311,7 +311,7 @@ TEST_CASE(abort_acts_on_the_press)
 }
 
 /* The points of the body under the alert band the session names as a
- * stop, every 2 px. */
+ * stop, every 2px. */
 static int stops_under_the_band(const prog_page_set_t *ps)
 {
     int n = 0;
@@ -325,7 +325,7 @@ static int stops_under_the_band(const prog_page_set_t *ps)
 
 /*
  * The session names ABORT to its host while a run is under way, so the
- * router hands a press on it through its help bubble.  ABORT ends 4 px
+ * router hands a press on it through its help bubble.  ABORT ends 4px
  * above the alert band (panel y 496 to 551), and nothing under the band is
  * a stop.  Nothing before the run: the warning's
  * HOLD TO RUN and CANCEL are no stop.  On a manual step it is the prompt's
@@ -427,11 +427,11 @@ TEST_CASE(a_manual_step_takes_done_as_a_tap_and_abort_on_the_press)
     }
 }
 
-/* HOLD TO RUN keeps its 2 s, fed as a finger: short of it nothing starts,
+/* HOLD TO RUN keeps its 2s, fed as a finger: short of it nothing starts,
  * and a release the tracker makes for a jump is a release. */
 TEST_CASE(hold_to_run_keeps_its_two_seconds)
 {
-    /* In frames of 250 ms, which add up exactly. */
+    /* In frames of 250ms, which add up exactly. */
     static const struct { int frames; unsigned runs; } k[] = {
         { 7, 0u }, { 8, 1u }, { 9, 1u },
     };
@@ -483,11 +483,11 @@ TEST_CASE(a_stick_control_released_for_the_finger_is_not_pressed)
     feed_tap(TAP_ID, MO_ROW_X, MO_ROW_Y + UI_BAND_H);
     CHECK(motor_screen_session_shown());
     CHECK_EQ(esc_stick_panel_stage(), 1);            /* the makers */
-    /* BACK, 45 px under the band's edge, and up into the band. */
+    /* BACK, 45px under the band's edge, and up into the band. */
     finger(TAP_ID, BACK_X, BACK_Y + UI_BAND_H);
     finger(TAP_ID, BACK_X, UI_BAND_H - 8);
     lift(TAP_ID);
-    /* BACK, then the contact reported 300 px away. */
+    /* BACK, then the contact reported 300px away. */
     finger(TAP_ID, BACK_X, BACK_Y + UI_BAND_H);
     finger(TAP_ID, BACK_X + 300, BACK_Y + UI_BAND_H + 360);
     lift(TAP_ID);

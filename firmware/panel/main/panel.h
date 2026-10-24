@@ -419,13 +419,13 @@ typedef struct {
 } log_row_t;
 
 /*
- * Sixty-four rows is 3.2 s of run at PANEL_SAMPLE_HZ, against the 250 ms an
+ * Sixty-four rows is 3.2s of run at PANEL_SAMPLE_HZ, against the 250ms an
  * SD card may take over one write: a card that pauses costs no rows.
  */
 #define LOG_Q_LEN      64
 
 /* The report link_report() writes to the card, and how many may be in
- * flight.  The report is made every 5 s at its fastest. */
+ * flight.  The report is made every 5s at its fastest. */
 #define LOG_NOTE_MAX   208
 #define LOG_NOTE_Q_LEN 4
 
@@ -518,7 +518,7 @@ static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
 extern uint16_t s_arm_value;
 
 /*
- * ARM and THROTTLE, the write every 50 ms poll and every disarm makes.
+ * ARM and THROTTLE, the write every 50ms poll and every disarm makes.
  *
  * Two registers rather than the three the frame that arms carries.  This
  * write keeps a running bench running and stops a stopping one, and the
@@ -549,12 +549,12 @@ void endpoints_service(bool far_disarmed);
  *
  * An arm waits for this before CLEAR is written.  The heartbeat is withheld
  * while a stop is latched, and after it resumes the far end's monitor needs
- * five edges, 100 to 125 ms at a 5 ms pass and longer on a slower one: a
+ * five edges, 100 to 125ms at a 5ms pass and longer on a slower one: a
  * fixed wait is right for one pass period and refused at the next.  One
  * register, one frame each way.
  *
  * @p answered is false when nobody answered.  That exchange has then waited
- * LINK_HOST_TIMEOUT_MS (1000 ms), past the arm's whole bound, and it is the
+ * LINK_HOST_TIMEOUT_MS (1000ms), past the arm's whole bound, and it is the
  * link that is gone and not the line that is distrusted.
  */
 static inline bool far_line_trusted(bool *answered)
@@ -577,7 +577,7 @@ static inline bool control_clear_failsafe(link_msg_t *reply)
 }
 
 /* What the panel knows about a link that stopped; the link report, every
- * 5 s while the link is down and every 60 s while it is up. */
+ * 5s while the link is down and every 60s while it is up. */
 void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
@@ -745,7 +745,7 @@ static inline uint16_t panel_throttle_ramp(void)
 }
 
 /*
- * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
+ * The bench page is polled every 50ms, so a sample is 1/20s of plot.  The
  * motor screen scales its time axis by the same number; the two have to
  * agree or the axis lies about how long ago something happened.
  */

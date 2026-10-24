@@ -40,14 +40,14 @@ The home tag at the top left climbs one level at a time:
 
 ![INTERFACES, everything saved](view:setup-interfaces)
 
-The list is 984 px wide and shows 6 rows of 64 px. Under it a strip, 48 px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4 px above the band an alert shows across the bottom, so an alert covers no key, row or button.
+The list is 984px wide and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
 A row shows the setting, a help line and its value with its unit. A number has `-` and `+` keys; a switch or a choice has `<` and `>`.
 
-- **Tap**: a key steps once when the finger lifts within 8 px of the press, inside the key.
-- **Hold**: a held key steps first after 0.45 s, then 8 times a second, and 30 times a second from 2.25 s.
-- **Scroll**: a vertical drag of more than 8 px anywhere on the list scrolls it and changes no value.
-- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73 % brightness is 75 %. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt between 0 and 5.0 mOhm, `0 or 10 to 32767 mA` for a current limit between 0 and 10 mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
+- **Tap**: a key steps once when the finger lifts within 8px of the press, inside the key.
+- **Hold**: a held key steps first after 0.45s, then 8 times a second, and 30 times a second from 2.25s.
+- **Scroll**: a vertical drag of more than 8px anywhere on the list scrolls it and changes no value.
+- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73% brightness is 75%. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0mOhm` for a shunt between 0 and 5.0mOhm, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
 - One finger at a time: a second finger does nothing while one presses or scrolls.
 
 A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default.
@@ -105,15 +105,15 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Theme | DARK, LIGHT | DARK | the colour theme, from the next frame |
-| Brightness | 20 to 100 %, steps of 5 | 100 | scales the palette |
-| Contrast | 60 to 140 %, steps of 5 | 100 | pushes colours away from mid grey |
+| Brightness | 20 to 100%, steps of 5 | 100 | scales the palette |
+| Contrast | 60 to 140%, steps of 5 | 100 | pushes colours away from mid grey |
 | Screen rotation | NORMAL, 180° | NORMAL | turns picture and touch by 180°, from the next frame; locked while ARMED |
 | Language | ENGLISH, DEUTSCH | ENGLISH | the interface language, from the next frame, without a restart |
 | Units | METRIC, IMPERIAL | METRIC | stored; no screen uses it in this release |
-| Dim after | 0 to 60 min, steps of 5 | 0 | stored; no screen uses it in this release |
+| Dim after | 0 to 60min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
-| Knob scale | 90 to 720 deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
+| Knob scale | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 
 The backlight is on while the panel runs. No setting switches it.
 
@@ -125,13 +125,13 @@ Screen rotation turns the picture as each frame goes out, through the ESP32-P4's
 
 ### The rotary knob
 
-- The knob moves a value by how far it turns, never to where it points. At 270 deg a quarter turn moves the throttle 33.3 points.
+- The knob moves a value by how far it turns, never to where it points. At 270deg a quarter turn moves the throttle 33.3 points.
 - It never switches to ARMED. While the bench is SAFE a turn moves nothing and is not kept.
 - The first reading after power-up, or after the sensor stopped answering, sets a reference and moves nothing.
 - A finger on the throttle track or the SERVO dial owns the value while it is down.
-- The sensor is read every 10 ms. A step over 90 deg between two readings is dropped.
+- The sensor is read every 10ms. A step over 90deg between two readings is dropped.
 
-The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it, where the board's CH422G I/O expander and GT911 touch controller answer, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100 ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
+The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it, where the board's CH422G I/O expander and GT911 touch controller answer, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
 
 ## SD CARD
 

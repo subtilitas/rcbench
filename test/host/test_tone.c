@@ -4,36 +4,36 @@
  * A phase is modelled as the intervals it is driven, at the supply voltage
  * or, floating against a resistor star, at half of it.  The front end is
  * modelled as it is wired: a series resistor into the pin's capacitance
- * and a zener's, a 3.0 V clamp, and a Schmitt input that goes high at
- * 2.0 V and low at 0.8 V, the datasheet's VIH minimum and VIL maximum.
- * Edges come out at the 26.7 ns tick of a PIO (programmable input/output)
- * counter at 150 MHz, 4 cycles a count.
+ * and a zener's, a 3.0V clamp, and a Schmitt input that goes high at
+ * 2.0V and low at 0.8V, the datasheet's VIH minimum and VIL maximum.
+ * Edges come out at the 26.7ns tick of a PIO (programmable input/output)
+ * counter at 150MHz, 4 cycles a count.
  *
- * Under test: tones from 500 Hz to 6 kHz, as a square or chopped by a
- * carrier of 8 to 48 kHz at 10 to 90 % duty, the carrier locked to the
- * tone or running free; edge jitter; a phase from 1 V to 25.2 V, driven or
+ * Under test: tones from 500Hz to 6kHz, as a square or chopped by a
+ * carrier of 8 to 48kHz at 10 to 90% duty, the carrier locked to the
+ * tone or running free; edge jitter; a phase from 1V to 25.2V, driven or
  * floating; a clamp slow enough to swallow the carrier; beep trains;
  * two pitches alternating with and without a silence between; silence, a
  * line stuck high or low, a continuous carrier, a single click, a glitch;
  * every bound at its exact value and one tick past it; the capture's
- * hold-off, an eGaN ESC's 144 kHz carrier with it and without it, and the
- * 8 to 48 kHz carriers through it; the fitted front end, 4.7 kOhm into a
- * zener of about 65 pF (0.31 us), at 8.4 V and 20 V, every carrier at 10,
- * 50 and 90 % duty, with the hold-off and without it, driven and floating
- * at half the supply, and at clamps of 2.6 V and 3.4 V; a floating 2S
- * phase of 3.0 V, whose shortest 144 kHz pulses come and go, pinned as a
- * limit; and the same resistor into a 450 pF zener (2.1 us).
+ * hold-off, an eGaN ESC's 144kHz carrier with it and without it, and the
+ * 8 to 48kHz carriers through it; the fitted front end, 4.7kOhm into a
+ * zener of about 65pF (0.31us), at 8.4V and 20V, every carrier at 10,
+ * 50 and 90% duty, with the hold-off and without it, driven and floating
+ * at half the supply, and at clamps of 2.6V and 3.4V; a floating 2S
+ * phase of 3.0V, whose shortest 144kHz pulses come and go, pinned as a
+ * limit; and the same resistor into a 450pF zener (2.1us).
  *
- * Accuracy held here, with up to 1 us of jitter on every edge:
- *   carrier locked to the tone, or none, or 144 kHz through the 8 us
- *     hold-off (locked or free), or 144 kHz without it at 10 and 50 %
- *     duty through the 0.31 us node (locked or free): a beep's frequency
- *     within 0.01 %, a window's within 0.1 %;
- *   carrier of 8 to 48 kHz running free, at least 4 times the tone: a
- *     beep's within 0.1 %, a window's within 2 %, with or without the
+ * Accuracy held here, with up to 1us of jitter on every edge:
+ *   carrier locked to the tone, or none, or 144kHz through the 8us
+ *     hold-off (locked or free), or 144kHz without it at 10 and 50%
+ *     duty through the 0.31us node (locked or free): a beep's frequency
+ *     within 0.01%, a window's within 0.1%;
+ *   carrier of 8 to 48kHz running free, at least 4 times the tone: a
+ *     beep's within 0.1%, a window's within 2%, with or without the
  *     hold-off.  A burst gated from a free carrier starts up to one
- *     carrier period late, so an 8 ms window is known to a carrier period
- *     in 8 ms.
+ *     carrier period late, so an 8ms window is known to a carrier period
+ *     in 8ms.
  * A beep's start is its first rise and its end its last edge, exactly; its
  * burst count is exact.
  *
@@ -48,7 +48,7 @@
 
 #include "tone.h"
 
-#define TICK_HZ 37500000u               /* 150 MHz / 4 */
+#define TICK_HZ 37500000u               /* 150MHz / 4 */
 
 /* The bounds held, as fractions of the tone frequency. */
 #define LOCKED_BEEP 0.0001
@@ -209,7 +209,7 @@ static void front_run(const drive_t *d, const front_t *f, edges_t *out)
         if (v > vz_clamp) {
             v = vz_clamp;
         }
-        /* Discharging towards 0 V through the resistor. */
+        /* Discharging towards 0V through the resistor. */
         if (high) {
             const double tc = b + f->tau_s * log(v / VT_L);
             if (tc < next) {
@@ -223,13 +223,13 @@ static void front_run(const drive_t *d, const front_t *f, edges_t *out)
     }
 }
 
-#define TAU_22K  (22e3 * 50e-12)    /* 1.1 us  */
-#define TAU_TYP  (33e3 * 50e-12)    /* 1.65 us */
-#define TAU_SLOW (33e3 * 300e-12)   /* 9.9 us  */
-/* The fitted front end: 4.7 kOhm into a UDZV3.0B, about 65 pF at 0 V. */
-#define TAU_4K7  (4.7e3 * 65e-12)   /* 0.31 us */
-/* The same resistor into a BZX84-class zener of about 450 pF. */
-#define TAU_4K7_SLOW (4.7e3 * 450e-12) /* 2.1 us */
+#define TAU_22K  (22e3 * 50e-12)    /* 1.1us  */
+#define TAU_TYP  (33e3 * 50e-12)    /* 1.65us */
+#define TAU_SLOW (33e3 * 300e-12)   /* 9.9us  */
+/* The fitted front end: 4.7kOhm into a UDZV3.0B, about 65pF at 0V. */
+#define TAU_4K7  (4.7e3 * 65e-12)   /* 0.31us */
+/* The same resistor into a BZX84-class zener of about 450pF. */
+#define TAU_4K7_SLOW (4.7e3 * 450e-12) /* 2.1us */
 
 /* ------------------------------------------------------------ the detector */
 
@@ -267,7 +267,7 @@ static void start(const tone_cfg_t *c)
     n_beeps = 0;
 }
 
-/* Every edge, then 1 ms steps to @p t_end seconds, taking results as a
+/* Every edge, then 1ms steps to @p t_end seconds, taking results as a
  * caller polling the detector would. */
 static void play(const edges_t *e, double t_end)
 {
@@ -352,7 +352,7 @@ static unsigned windows_present(void)
     return n;
 }
 
-/* One beep of @p sp from 10 ms for @p dur through @p f, checked: one beep,
+/* One beep of @p sp from 10ms for @p dur through @p f, checked: one beep,
  * its edges, its bursts, its frequency within @p beep_tol and the windows
  * inside it within @p win_tol.  Returns the beep's error. */
 /* The capture's hold-off one_beep() applies, ns; 0 none. */
@@ -492,9 +492,9 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     CHECK(tone_init(&det, &c));
     CHECK_EQ(det.per_min, 2);
     CHECK_EQ(det.car_max, 1);
-    /* 100 kHz, 10 to 60 kHz tones, carrier from 70 kHz: 1 tick against
-     * 2, ranges that meet although the Hz do not.  40 kHz: 2 against 2,
-     * refused.  30 kHz: 3 against 2, taken. */
+    /* 100kHz, 10 to 60kHz tones, carrier from 70kHz: 1 tick against
+     * 2, ranges that meet although the Hz do not.  40kHz: 2 against 2,
+     * refused.  30kHz: 3 against 2, taken. */
     tone_cfg_defaults(&c, 100000u);
     c.glitch_ns = 10000u;
     c.hold_ns = 0u;
@@ -517,7 +517,7 @@ TEST_CASE(a_configuration_that_contradicts_itself_is_refused)
     CHECK(tone_init(&det, &c));
 }
 
-/* A 1 MHz clock, tones 10 to 20 kHz, carrier from 30 kHz: the period of
+/* A 1MHz clock, tones 10 to 20kHz, carrier from 30kHz: the period of
  * f_min_hz is 100 ticks. */
 static void cfg_1mhz(tone_cfg_t *c)
 {
@@ -550,8 +550,8 @@ TEST_CASE(every_time_setting_is_taken_at_its_bound_and_refused_past_it)
     AT_BOUND(glitch_ns, TONE_GLITCH_NS_MAX);
     AT_BOUND(hold_ns, TONE_HOLD_NS_MAX);
 #undef AT_BOUND
-    /* A 1 GHz clock and a gap of 2^32 - 1 us, 71.6 min: refused, where
-     * the product of the two in 64 bits wrapped to 15.3 s.  1 s: taken,
+    /* A 1GHz clock and a gap of 2^32 - 1us, 71.6min: refused, where
+     * the product of the two in 64 bits wrapped to 15.3s.  1s: taken,
      * 10^9 ticks. */
     tone_cfg_defaults(&c, 1000000000u);
     c.gap_us = UINT32_MAX;
@@ -568,7 +568,7 @@ TEST_CASE(the_tick_conversion_is_exact_without_overflow)
     CHECK_EQ(tone_ns_ticks(TICK_HZ, 3000000u), 112500);
     CHECK_EQ(tone_ns_ticks(TICK_HZ, 400u), 15);
     CHECK_EQ(tone_ns_ticks(TICK_HZ, 401u), 16);
-    /* 2^32 - 1 us at 1 GHz: 71.6 min, 4294967295000 ticks, where
+    /* 2^32 - 1us at 1GHz: 71.6min, 4294967295000 ticks, where
      * 1e9 * 4294967295000 overflows 64 bits. */
     CHECK(tone_ns_ticks(1000000000u, 4294967295000ull) == 4294967295000ull);
     /* (2^32 - 1)^2 * 1000 / 1e9, rounded up. */
@@ -582,7 +582,7 @@ TEST_CASE(the_tick_conversion_is_exact_without_overflow)
 TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
 {
     tone_cfg_t c;
-    /* Twice a 100 us hold-off is 200 ticks, past the 100-tick gap and
+    /* Twice a 100us hold-off is 200 ticks, past the 100-tick gap and
      * the 100-tick longest period: no low could start a burst and stay
      * inside the run. */
     cfg_1mhz(&c);
@@ -595,7 +595,7 @@ TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
     c.gap_us = 200u;
     CHECK(!tone_init(&det, &c));
     /* Twice the hold-off exactly the longest period: refused, also from
-     * 49.001 us, which rounds up to 50 ticks.  49 us, 98 ticks: taken. */
+     * 49.001us, which rounds up to 50 ticks.  49us, 98 ticks: taken. */
     cfg_1mhz(&c);
     c.hold_ns = 50000u;
     CHECK(!tone_init(&det, &c));
@@ -606,7 +606,7 @@ TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
     CHECK_EQ(det.start_low, 98);
     CHECK_EQ(det.per_max, 100);
     /* A glitch as long as the longest period: every low between two
-     * bursts is a glitch.  10 us is 10 ticks; a 100 kHz f_min_hz is a
+     * bursts is a glitch.  10us is 10 ticks; a 100kHz f_min_hz is a
      * 10-tick period. */
     cfg_1mhz(&c);
     c.f_min_hz = 100000u;
@@ -621,7 +621,7 @@ TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
     c.glitch_ns = 9000u;
     c.gap_us = 20u;
     CHECK(tone_init(&det, &c));
-    /* A window of 1000 us at 37.5 MHz is 37500 ticks; the shortest
+    /* A window of 1000us at 37.5MHz is 37500 ticks; the shortest
      * period that counts is 2884.  14 periods need 13 of them inside a
      * window: 37492, taken.  15 need 14: 40376, refused. */
     tone_cfg_defaults(&c, TICK_HZ);
@@ -631,7 +631,7 @@ TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
     c.window_min_periods = 15u;
     CHECK(!tone_init(&det, &c));
     /* The spacing is the most of half the shortest period, the glitch and
-     * twice the hold-off.  1 MHz, a 1 ms window, 10 to 20 kHz, a 49 us
+     * twice the hold-off.  1MHz, a 1ms window, 10 to 20kHz, a 49us
      * hold-off: burst starts at least 98 ticks apart, so 11 fit in 1000
      * ticks.  20 refused; 11 taken, 12 refused. */
     cfg_1mhz(&c);
@@ -644,7 +644,7 @@ TEST_CASE(settings_under_which_no_signal_makes_a_tone_are_refused)
     c.window_min_periods = 11u;
     CHECK(tone_init(&det, &c));
     CHECK_EQ(det.spacing, 98);
-    /* The glitch as the spacing: 10 to 200 kHz, a 10 us glitch, 10 ticks;
+    /* The glitch as the spacing: 10 to 200kHz, a 10us glitch, 10 ticks;
      * 100 periods fit 1000 ticks, 101 do not. */
     cfg_1mhz(&c);
     c.window_us = 1000u;
@@ -699,7 +699,7 @@ TEST_CASE(a_chopped_tone_reads_the_tone_and_the_carrier)
                 const tone_spec_t sp = { hz[i], 0.5, fc[j], duty[k], false,
                                          0.0 };
                 one_beep(&sp, &f, 0.200, LOCKED_BEEP, LOCKED_WIN);
-                /* At 90 % the 2 us lows at 48 kHz are shorter than the
+                /* At 90% the 2us lows at 48kHz are shorter than the
                  * input takes to fall, and the burst is one pulse. */
                 if (n_beeps == 1u && beeps[0].carrier_hz > 0.0f) {
                     CHECK(rel_err(beeps[0].carrier_hz, fc[j]) < 0.01);
@@ -773,8 +773,8 @@ TEST_CASE(a_phase_under_the_input_threshold_reads_nothing)
 
 TEST_CASE(a_clamp_slow_enough_to_swallow_the_carrier_still_reads_the_tone)
 {
-    /* 9.9 us: the input takes 14 us to fall from the clamp, longer than a
-     * 48 kHz carrier's low, so each burst reaches the pin as one pulse. */
+    /* 9.9us: the input takes 14us to fall from the clamp, longer than a
+     * 48kHz carrier's low, so each burst reaches the pin as one pulse. */
     static const double hz[] = { 500, 2000, 4000 };
     const front_t f = { 25.2, TAU_SLOW };
     for (size_t i = 0; i < sizeof hz / sizeof hz[0]; ++i) {
@@ -832,7 +832,7 @@ TEST_CASE(a_beep_train_counts_and_places_every_beep)
 {
     const front_t f = { 12.0, TAU_TYP };
     const tone_spec_t sq = { 0, 0.5, 0.0, 0.0, false, 1e-6 };
-    /* Five 100 ms beeps 150 ms apart at 2 kHz. */
+    /* Five 100ms beeps 150ms apart at 2kHz. */
     note_t five[5];
     for (size_t i = 0; i < 5u; ++i) {
         five[i] = (note_t){ 0.010 + 0.250 * (double)i, 0.100, 2000.0 };
@@ -845,14 +845,14 @@ TEST_CASE(a_beep_train_counts_and_places_every_beep)
         { 1.800, 0.080, 1000.0 },
     };
     train(ls, sizeof ls / sizeof ls[0], &sq, &f, 0.001, 0u);
-    /* Eight short beeps at 4 kHz, chopped at 24 kHz, 30 ms apart. */
+    /* Eight short beeps at 4kHz, chopped at 24kHz, 30ms apart. */
     const tone_spec_t ch = { 0, 0.5, 24000.0, 0.5, false, 1e-6 };
     note_t eight[8];
     for (size_t i = 0; i < 8u; ++i) {
         eight[i] = (note_t){ 0.010 + 0.080 * (double)i, 0.050, 4000.0 };
     }
     train(eight, 8u, &ch, &f, 0.001, 0u);
-    /* A silence of 3.5 ms, just over the gap, still parts two beeps. */
+    /* A silence of 3.5ms, just over the gap, still parts two beeps. */
     const note_t close[] = { { 0.010, 0.050, 3000.0 },
                              { 0.0635, 0.050, 3000.0 } };
     train(close, 2u, &sq, &f, 0.001, 0u);
@@ -886,7 +886,7 @@ TEST_CASE(two_pitches_alternating_with_no_silence_split_at_the_change)
           (uint8_t)(TONE_BEEP_AFTER_CHANGE | TONE_BEEP_BEFORE_CHANGE));
     CHECK_EQ(beeps[0].flags, TONE_BEEP_BEFORE_CHANGE);
     CHECK_EQ(beeps[5].flags, TONE_BEEP_AFTER_CHANGE);
-    /* A step of 10 %: found only once all four periods of a block are
+    /* A step of 10%: found only once all four periods of a block are
      * the new pitch, so the split falls on the block's first. */
     const note_t step[] = { { 0.010, 0.080, 1000.0 },
                             { 0.090, 0.080, 1100.0 } };
@@ -951,7 +951,7 @@ TEST_CASE(a_line_stuck_high_or_low_reports_no_tone)
     CHECK_EQ(tone_stats(&det)->rejected, 1);
     CHECK(!tone_busy(&det));
     /* Stuck high at the end of a beep: the rise is the beep's last burst,
-     * 1.7 ms after the one before, and too far from 0.5 ms to join the
+     * 1.7ms after the one before, and too far from 0.5ms to join the
      * mean. */
     drive_t d = { 0 };
     edges_t e = { 0 };
@@ -962,7 +962,7 @@ TEST_CASE(a_line_stuck_high_or_low_reports_no_tone)
     front_run(&d, &f, &e);
     start(NULL);
     play(&e, 0.400);
-    /* The fall 440 ms later comes after a silence: not the beep's. */
+    /* The fall 440ms later comes after a silence: not the beep's. */
     CHECK_EQ(n_beeps, 1);
     CHECK_EQ(beeps[0].end, e.e[e.n - 2u].t);
     CHECK(e.e[e.n - 2u].level);
@@ -975,7 +975,7 @@ TEST_CASE(a_line_stuck_high_or_low_reports_no_tone)
 TEST_CASE(a_continuous_carrier_is_no_tone)
 {
     /* A drive chopped without a break, as a motor held at one step: one
-     * burst for 200 ms. */
+     * burst for 200ms. */
     static const double fc[] = { 8000, 16000, 48000 };
     for (size_t j = 0; j < sizeof fc / sizeof fc[0]; ++j) {
         drive_t d = { 0 };
@@ -992,7 +992,7 @@ TEST_CASE(a_continuous_carrier_is_no_tone)
         drive_free(&d);
         edges_free(&e);
     }
-    /* Unchopped pulses above the highest tone: 6.8 kHz. */
+    /* Unchopped pulses above the highest tone: 6.8kHz. */
     drive_t d = { 0 };
     edges_t e = { 0 };
     const tone_spec_t sp = { 6800.0, 0.3, 0.0, 0.0, false, 0.0 };
@@ -1054,7 +1054,7 @@ TEST_CASE(a_glitch_on_an_edge_is_one_rise)
 
 TEST_CASE(a_beep_whose_first_periods_are_wrong_keeps_its_start)
 {
-    /* Four pulses 200 us apart, then 1 kHz without a break: the first
+    /* Four pulses 200us apart, then 1kHz without a break: the first
      * periods, as dips in a burst seen before its carrier, set a mean
      * every later period would miss.  The beep starts its mean again and
      * keeps its first rise. */
@@ -1080,8 +1080,8 @@ TEST_CASE(a_beep_whose_first_periods_are_wrong_keeps_its_start)
 TEST_CASE(an_edge_to_the_level_the_line_holds_changes_nothing)
 {
     /* A fall lost between two rises, a rise lost between two falls.  With
-     * no fall after 15 ms, the rises at 15.25 and 16 ms are the line
-     * staying high: the burst at 16 ms is missed, and the 2 ms period it
+     * no fall after 15ms, the rises at 15.25 and 16ms are the line
+     * staying high: the burst at 16ms is missed, and the 2ms period it
      * leaves is no part of the mean. */
     start(NULL);
     const uint64_t ms = TICK_HZ / 1000u;
@@ -1145,7 +1145,7 @@ static void play_ticks(const edges_t *e, uint64_t end)
 
 TEST_CASE(a_silence_of_exactly_the_gap_ends_a_beep)
 {
-    /* Two 1 kHz trains, the second rising 3000 us after the first's last
+    /* Two 1kHz trains, the second rising 3000us after the first's last
      * fall: two beeps.  One tick sooner: one. */
     const uint64_t gap = 3u * MS;
     for (unsigned sooner = 0; sooner < 2u; ++sooner) {
@@ -1180,14 +1180,14 @@ TEST_CASE(a_silence_of_exactly_the_gap_ends_a_beep)
 
 TEST_CASE(a_carrier_at_exactly_the_lowest_carrier_rate_is_chopping)
 {
-    /* 7 kHz, carrier_min_hz itself, around a 1 kHz tone: a chopped
-     * 1 kHz, not a 7 kHz tone. */
+    /* 7kHz, carrier_min_hz itself, around a 1kHz tone: a chopped
+     * 1kHz, not a 7kHz tone. */
     const tone_spec_t sp = { 1000.0, 0.5, 7000.0, 0.5, false, 0.0 };
     const front_t f = { 12.0, 0.0 };
     one_beep(&sp, &f, 0.100, LOCKED_BEEP, LOCKED_WIN);
     CHECK(n_beeps == 1u && rel_err(beeps[0].carrier_hz, 7000.0) < 0.001);
     /* In ticks: rises exactly car_max apart inside each burst, the bursts
-     * 1 ms apart. */
+     * 1ms apart. */
     edges_t e = { 0 };
     start(NULL);
     const uint64_t cm = det.car_max;
@@ -1208,7 +1208,7 @@ TEST_CASE(a_low_of_exactly_one_and_a_quarter_carrier_periods_starts_a_burst)
 {
     /* Bursts of 3 pulses 4000 ticks apart, 2000 high; between bursts a
      * low of 5000 ticks, 1.25 carrier periods: bursts of their own at
-     * 15000 ticks, 2500 Hz.  One tick shorter: one long burst, no tone. */
+     * 15000 ticks, 2500Hz.  One tick shorter: one long burst, no tone. */
     for (unsigned shorter = 0; shorter < 2u; ++shorter) {
         edges_t e = { 0 };
         uint64_t t = 10u * MS;
@@ -1232,7 +1232,7 @@ TEST_CASE(a_low_of_exactly_one_and_a_quarter_carrier_periods_starts_a_burst)
 
 TEST_CASE(a_low_of_exactly_the_glitch_time_is_a_low)
 {
-    /* 400 ns is 15 ticks.  A dip of 15 ticks in each pulse is a low; one
+    /* 400ns is 15 ticks.  A dip of 15 ticks in each pulse is a low; one
      * of 14 is a glitch, and the pulse goes on.  No hold-off, so a low
      * that short could start a burst. */
     tone_cfg_t c;
@@ -1256,7 +1256,7 @@ TEST_CASE(a_low_of_exactly_the_glitch_time_is_a_low)
             CHECK_EQ(n_beeps, 1);
             CHECK_EQ(beeps[0].bursts, 20);
         } else {
-            /* A burst at every dip as well: no 1 kHz beep of 20. */
+            /* A burst at every dip as well: no 1kHz beep of 20. */
             CHECK(n_beeps == 0u || beeps[0].bursts != 20u);
         }
         edges_free(&e);
@@ -1265,7 +1265,7 @@ TEST_CASE(a_low_of_exactly_the_glitch_time_is_a_low)
 
 TEST_CASE(a_low_of_exactly_twice_the_hold_off_can_start_a_burst)
 {
-    /* 8000 ns of hold-off is 300 ticks.  Pulses 1 ms apart, each with a
+    /* 8000ns of hold-off is 300 ticks.  Pulses 1ms apart, each with a
      * low of 600 ticks in its middle: the rise after it starts a burst.
      * 599: one burst a millisecond. */
     for (unsigned low = 599u; low <= 600u; ++low) {
@@ -1294,9 +1294,9 @@ TEST_CASE(a_low_of_exactly_twice_the_hold_off_can_start_a_burst)
 
 TEST_CASE(a_burst_needs_twice_the_hold_off_the_capture_applies)
 {
-    /* 1 MHz and a 1.5 us hold-off: the capture rounds it up to 2 ticks,
-     * and a burst needs a low of twice that, 4 ticks, not 1.5 us doubled
-     * and rounded once, 3.  The same at 49.5 us: 50 ticks, so 100. */
+    /* 1MHz and a 1.5us hold-off: the capture rounds it up to 2 ticks,
+     * and a burst needs a low of twice that, 4 ticks, not 1.5us doubled
+     * and rounded once, 3.  The same at 49.5us: 50 ticks, so 100. */
     tone_cfg_t c;
     cfg_1mhz(&c);
     c.hold_ns = 1500u;
@@ -1367,7 +1367,7 @@ TEST_CASE(tones_at_exactly_the_lowest_and_highest_frequency_are_in_range)
 
 TEST_CASE(a_pitch_exactly_split_pct_away_does_not_split)
 {
-    /* 20 periods of 37500 ticks, then 20 of 40500: 8 % exactly, one
+    /* 20 periods of 37500 ticks, then 20 of 40500: 8% exactly, one
      * beep.  40501: two. */
     for (unsigned more = 0; more < 2u; ++more) {
         edges_t e = { 0 };
@@ -1383,7 +1383,7 @@ TEST_CASE(a_pitch_exactly_split_pct_away_does_not_split)
 
 TEST_CASE(a_window_holds_exactly_as_many_periods_as_the_spacing_allows)
 {
-    /* The set-up taken at the boundary above: 1 MHz, a 1000-tick window,
+    /* The set-up taken at the boundary above: 1MHz, a 1000-tick window,
      * starts at least 98 ticks apart, 11 periods a window.  Burst starts
      * exactly 98 ticks apart, each a rise and a fall on one tick: 11
      * periods end in window 1, which holds the tone. */
@@ -1414,10 +1414,10 @@ TEST_CASE(a_window_holds_exactly_as_many_periods_as_the_spacing_allows)
 
 TEST_CASE(a_steady_tone_of_a_few_ticks_a_period_stays_one_beep)
 {
-    /* A 100 kHz clock and a 34.48 kHz tone: periods of 2.9 ticks, edges on
+    /* A 100kHz clock and a 34.48kHz tone: periods of 2.9 ticks, edges on
      * whole ticks, so 3, 3, 3, 2, 3 ...  A mean cut to whole ticks reads
-     * 2, and every block of 3s looks 50 % off it: about ten beeps.  Kept
-     * as a fraction, one beep at 34.48 kHz. */
+     * 2, and every block of 3s looks 50% off it: about ten beeps.  Kept
+     * as a fraction, one beep at 34.48kHz. */
     tone_cfg_t c;
     tone_cfg_defaults(&c, 100000u);
     c.glitch_ns = 10000u;
@@ -1445,9 +1445,9 @@ TEST_CASE(a_steady_tone_of_a_few_ticks_a_period_stays_one_beep)
 
 TEST_CASE(an_odd_split_pct_halves_exactly)
 {
-    /* split_pct 1 on a 1 MHz clock, a beep's mean 1000 ticks, then a
-     * block of 1001, 1002, 1021, 1021: its pitch is 1.1 % off, but only
-     * two periods lie more than 0.5 % off, not the three a split needs.
+    /* split_pct 1 on a 1MHz clock, a beep's mean 1000 ticks, then a
+     * block of 1001, 1002, 1021, 1021: its pitch is 1.1% off, but only
+     * two periods lie more than 0.5% off, not the three a split needs.
      * Truncating 1 / 2 to 0 counted all four. */
     tone_cfg_t c;
     tone_cfg_defaults(&c, 1000000u);
@@ -1593,15 +1593,15 @@ TEST_CASE(the_hold_off_reports_a_fall_at_the_time_the_line_fell)
     CHECK_EQ(tone_holdoff_horizon(NULL, 7u), 7);
 }
 
-/* The tones the 144 kHz cases run, Hz. */
+/* The tones the 144kHz cases run, Hz. */
 static const double grid_hz[] = { 500, 1000, 2000, 3000, 4000, 5000, 6000,
                                   6500 };
 #define GRID_N (sizeof grid_hz / sizeof grid_hz[0])
 
 TEST_CASE(a_144_khz_carrier_through_the_hold_off_is_one_pulse_a_burst)
 {
-    /* An eGaN ESC's 144 kHz: every low is at most 6.9 us, under the
-     * 8 us hold-off, so each burst reaches the detector as one pulse,
+    /* An eGaN ESC's 144kHz: every low is at most 6.9us, under the
+     * 8us hold-off, so each burst reaches the detector as one pulse,
      * read as accurately as an unchopped tone. */
     static const double duty[] = { 0.1, 0.5, 0.9 };
     const front_t f = { 12.0, TAU_22K };
@@ -1610,7 +1610,7 @@ TEST_CASE(a_144_khz_carrier_through_the_hold_off_is_one_pulse_a_burst)
     for (size_t i = 0; i < GRID_N; ++i) {
         for (size_t k = 0; k < 3u; ++k) {
             for (int fr = 0; fr < 2; ++fr) {
-                /* At 6500 Hz exactly, a free carrier's burst starts move
+                /* At 6500Hz exactly, a free carrier's burst starts move
                  * the mean past the top of the range. */
                 if (fr != 0 && grid_hz[i] > 6000.0) {
                     continue;
@@ -1632,8 +1632,8 @@ TEST_CASE(the_hold_off_streams_without_an_edge_out_of_order)
 {
     /* Edges through the hold-off as they come, the detector advanced
      * each millisecond to the hold-off's horizon.  With no node delay the
-     * 2 kHz bursts rise on whole milliseconds, so a rise falls inside the
-     * last hold-off of a pass, at the pass's own time; with 1.1 us of
+     * 2kHz bursts rise on whole milliseconds, so a rise falls inside the
+     * last hold-off of a pass, at the pass's own time; with 1.1us of
      * delay, just after it. */
     static const double tau[] = { TAU_22K, 0.0 };
     for (size_t n = 0; n < 2u; ++n) {
@@ -1677,17 +1677,17 @@ TEST_CASE(the_hold_off_streams_without_an_edge_out_of_order)
 
 TEST_CASE(a_144_khz_carrier_without_the_hold_off_is_read_at_every_edge)
 {
-    /* No hold-off.  A node of 1.1 us passes every carrier pulse: the
+    /* No hold-off.  A node of 1.1us passes every carrier pulse: the
      * detector reads the carrier and the tone, at 288,000 edges a second
      * inside a burst.  The carrier is the shortest rise interval, so
-     * 0.2 us of jitter on each edge reads it up to 0.4 us short: 6 % high.
-     * At 30 % duty a node of 3.7 us takes 4.89 us to fall from the 3.0 V
-     * clamp to 0.8 V, against a 4.86 us low, and under 0.2 us of jitter
+     * 0.2us of jitter on each edge reads it up to 0.4us short: 6% high.
+     * At 30% duty a node of 3.7us takes 4.89us to fall from the 3.0V
+     * clamp to 0.8V, against a 4.86us low, and under 0.2us of jitter
      * loses some lows and not others; the bursts still group.  The node
      * is chosen for that: its fall must sit at the low's length, and
-     * 3.3 us, which fell in 4.7 us from a 3.3 V clamp, falls in 4.36 us
-     * from 3.0 V and passes every low.  At 50 % duty one of 6.6 us at
-     * 25.2 V loses every low: one pulse a burst.  The tone is read as
+     * 3.3us, which fell in 4.7us from a 3.3V clamp, falls in 4.36us
+     * from 3.0V and passes every low.  At 50% duty one of 6.6us at
+     * 25.2V loses every low: one pulse a burst.  The tone is read as
      * accurately as an unchopped one in all three. */
     static const double tau[] = { TAU_22K, 3.7e-6, 6.6e-6 };
     static const double volts[] = { 12.0, 12.0, 25.2 };
@@ -1722,8 +1722,8 @@ TEST_CASE(a_144_khz_carrier_without_the_hold_off_is_read_at_every_edge)
 
 TEST_CASE(a_short_carrier_pulse_the_node_cannot_raise_is_no_tone)
 {
-    /* 10 % of 144 kHz is a 0.69 us pulse.  At 5 V through 1.65 us the
-     * node never reaches the input's 2.0 V: no edge, no tone, with or
+    /* 10% of 144kHz is a 0.69us pulse.  At 5V through 1.65us the
+     * node never reaches the input's 2.0V: no edge, no tone, with or
      * without the hold-off. */
     drive_t d = { 0 };
     edges_t e = { 0 };
@@ -1738,9 +1738,9 @@ TEST_CASE(a_short_carrier_pulse_the_node_cannot_raise_is_no_tone)
 
 TEST_CASE(carriers_of_8_to_48_khz_read_the_same_through_the_hold_off)
 {
-    /* With an 8 us hold-off, a carrier's lows of 2.1 to 112 us are
-     * swallowed or reported; at 12 kHz and 90 % duty they are 8.3 us,
-     * at the hold-off, and with 1 us of jitter some are and some are
+    /* With an 8us hold-off, a carrier's lows of 2.1 to 112us are
+     * swallowed or reported; at 12kHz and 90% duty they are 8.3us,
+     * at the hold-off, and with 1us of jitter some are and some are
      * not.  The bounds held are those without the hold-off. */
     static const double hz[] = { 500, 1000, 2000, 4000, 6000 };
     static const double fc[] = { 8000, 12000, 16000, 24000, 32000, 48000 };
@@ -1779,14 +1779,14 @@ typedef bool (*node_skip_t)(double fc, double duty, double v);
 
 /* Every tone of grid_hz on every carrier of node_fc at every duty, locked
  * and free, through @p f and the hold-off in hold_ns, each held to the
- * bounds of its class: a carrier of 8 to 48 kHz running free to
+ * bounds of its class: a carrier of 8 to 48kHz running free to
  * FREE_BEEP and FREE_WIN, every other to LOCKED_BEEP and LOCKED_WIN.
  *
- * A carrier of 8 to 48 kHz runs only at 4 times the tone or more, and only
- * a locked carrier at exactly 6500 Hz: a free one moves the mean past the
- * top of the range, as in the 144 kHz case above.  Jitter is
- * 1 us under 24 kHz and unchopped, 0.2 us above, and none at exactly
- * 6500 Hz, where it moves a window's mean past the top of the range
+ * A carrier of 8 to 48kHz runs only at 4 times the tone or more, and only
+ * a locked carrier at exactly 6500Hz: a free one moves the mean past the
+ * top of the range, as in the 144kHz case above.  Jitter is
+ * 1us under 24kHz and unchopped, 0.2us above, and none at exactly
+ * 6500Hz, where it moves a window's mean past the top of the range
  * whatever the node.  Returns the runs made. */
 static unsigned node_sweep(const front_t *f, node_skip_t skip)
 {
@@ -1831,7 +1831,7 @@ static unsigned node_sweep(const front_t *f, node_skip_t skip)
                                  2u * beeps[0].bursts);
                     } else if (fr == 0) {
                         /* The carrier, from the shortest rise interval:
-                         * up to 7 % high under 0.2 us of jitter. */
+                         * up to 7% high under 0.2us of jitter. */
                         CHECK(beeps[0].carrier_hz >= 144000.0f
                               && beeps[0].carrier_hz < 144000.0f * 1.07f);
                     }
@@ -1847,10 +1847,10 @@ static const double node_volts[] = { 8.4, 20.0 };
 
 TEST_CASE(a_4k7_node_reads_every_carrier_through_the_hold_off)
 {
-    /* 4.7 kOhm into about 65 pF: the node rises to 2.0 V in 0.08 us at
-     * 8.4 V and falls from the clamp to 0.8 V in 0.40 us, so it passes
-     * every pulse and every low of 8 to 144 kHz at 10 to 90 % duty, the
-     * 0.69 us of 144 kHz included.  Through the hold-off, as the capture
+    /* 4.7kOhm into about 65pF: the node rises to 2.0V in 0.08us at
+     * 8.4V and falls from the clamp to 0.8V in 0.40us, so it passes
+     * every pulse and every low of 8 to 144kHz at 10 to 90% duty, the
+     * 0.69us of 144kHz included.  Through the hold-off, as the capture
      * runs by default, every case holds the bounds of its class. */
     hold_ns = 8000u;
     rng_seed(13u);
@@ -1861,12 +1861,12 @@ TEST_CASE(a_4k7_node_reads_every_carrier_through_the_hold_off)
     hold_ns = 0u;
 }
 
-/* 144 kHz at 90 % without the hold-off: its 0.69 us lows reach the pin
- * as about 0.3 us, up to 0.7 us under 0.2 us of jitter on each edge, so
+/* 144kHz at 90% without the hold-off: its 0.69us lows reach the pin
+ * as about 0.3us, up to 0.7us under 0.2us of jitter on each edge, so
  * most are glitches and a few are not.  A burst whose one counted low
  * comes late reads, before its third rise, as a carrier of the shortest
- * low plus the longest high: about 77 us, against the 83 us low of a
- * 6 kHz tone, and the next burst start is missed.  A current limitation
+ * low plus the longest high: about 77us, against the 83us low of a
+ * 6kHz tone, and the next burst start is missed.  A current limitation
  * of the detector, met only without the hold-off. */
 static bool skip_144k_90(double fc, double duty, double v)
 {
@@ -1876,7 +1876,7 @@ static bool skip_144k_90(double fc, double duty, double v)
 
 TEST_CASE(a_4k7_node_reads_every_carrier_without_the_hold_off)
 {
-    /* Without the hold-off the detector reads 144 kHz itself, at every
+    /* Without the hold-off the detector reads 144kHz itself, at every
      * edge, and the tone as accurately as an unchopped one. */
     rng_seed(17u);
     for (size_t n = 0; n < 2u; ++n) {
@@ -1892,9 +1892,9 @@ static const double float_volts[] = { 3.7, 4.2, 10.0 };
 TEST_CASE(a_floating_phase_at_2s_and_20_v_reads_every_carrier)
 {
     /* The tapped phase floating against the resistor star carries the
-     * bursts at half the supply.  At 3.7 V a 144 kHz pulse at 10 %,
-     * 0.29 us at its shortest under 0.2 us of jitter on each edge, still
-     * lifts the node to 2.0 V.  The model leaves out the zener's knee,
+     * bursts at half the supply.  At 3.7V a 144kHz pulse at 10%,
+     * 0.29us at its shortest under 0.2us of jitter on each edge, still
+     * lifts the node to 2.0V.  The model leaves out the zener's knee,
      * which lowers a floating node on the bench. */
     rng_seed(23u);
     for (size_t n = 0; n < sizeof float_volts / sizeof float_volts[0];
@@ -1909,11 +1909,11 @@ TEST_CASE(a_floating_phase_at_2s_and_20_v_reads_every_carrier)
 
 TEST_CASE(the_4k7_node_reads_every_carrier_over_the_clamp_s_spread)
 {
-    /* The UDZV3.0B clamps at about 2.5 V at 1 mA (graph) and at 3.01 to
-     * 3.22 V at 5 mA; a cheap 3.0 V part anywhere from about 2.6 to
-     * 3.4 V.  A lower clamp falls to 0.8 V sooner, a higher one later:
-     * 1.18 tau from 2.6 V, 1.45 tau from 3.4 V.  Through the hold-off,
-     * driven at 8.4 V and 20 V, every case holds the bounds of its
+    /* The UDZV3.0B clamps at about 2.5V at 1mA (graph) and at 3.01 to
+     * 3.22V at 5mA; a cheap 3.0V part anywhere from about 2.6 to
+     * 3.4V.  A lower clamp falls to 0.8V sooner, a higher one later:
+     * 1.18 tau from 2.6V, 1.45 tau from 3.4V.  Through the hold-off,
+     * driven at 8.4V and 20V, every case holds the bounds of its
      * class at both ends. */
     static const double clamp[] = { 2.6, 3.4 };
     hold_ns = 8000u;
@@ -1929,7 +1929,7 @@ TEST_CASE(the_4k7_node_reads_every_carrier_over_the_clamp_s_spread)
     hold_ns = 0u;
 }
 
-/* One 100 ms beep of @p hz, 144 kHz at 10 %, locked, through @p f and the
+/* One 100ms beep of @p hz, 144kHz at 10%, locked, through @p f and the
  * hold-off in hold_ns, played from seed @p seed. */
 static void float_beep(double hz, const front_t *f, double jit,
                        uint32_t seed)
@@ -1971,14 +1971,14 @@ static void window_span(double hz, double *lo, double *hi)
 
 TEST_CASE(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent)
 {
-    /* A current limitation, pinned.  A floating phase of 3.0 V (2S at
-     * 6.0 V) charges the 0.31 us node to 2.0 V in 0.34 us, so a 0.69 us
-     * pulse of 144 kHz at 10 %, shortened to as little as 0.29 us by
-     * 0.2 us of jitter on each edge, is seen at some periods and not at
-     * others.  That holds below about 3.2 V, 2.0 V / (1 - exp(-0.29 us /
-     * 0.31 us)).  The front end then drops pulses inside a burst. */
+    /* A current limitation, pinned.  A floating phase of 3.0V (2S at
+     * 6.0V) charges the 0.31us node to 2.0V in 0.34us, so a 0.69us
+     * pulse of 144kHz at 10%, shortened to as little as 0.29us by
+     * 0.2us of jitter on each edge, is seen at some periods and not at
+     * others.  That holds below about 3.2V, 2.0V / (1 - exp(-0.29us /
+     * 0.31us)).  The front end then drops pulses inside a burst. */
     const front_t f = { 3.0, TAU_4K7 };
-    /* Without the hold-off a 500 Hz beep splits into several and its
+    /* Without the hold-off a 500Hz beep splits into several and its
      * windows read up to about 3 times the tone. */
     hold_ns = 0u;
     for (uint32_t s = 1u; s <= 10u; ++s) {
@@ -1989,8 +1989,8 @@ TEST_CASE(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent)
         CHECK(n_beeps >= 2u);
         CHECK(hi > 1.5);
     }
-    /* With the hold-off a 5 kHz beep stays one beep, its frequency within
-     * the bound, but loses bursts, and windows read up to about 28 %
+    /* With the hold-off a 5kHz beep stays one beep, its frequency within
+     * the bound, but loses bursts, and windows read up to about 28%
      * low. */
     hold_ns = 8000u;
     unsigned bursts = 0;
@@ -2008,7 +2008,7 @@ TEST_CASE(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent)
     }
     CHECK(bursts < 10u * 500u);
     CHECK(lo < 0.9);
-    /* Without jitter every pulse is 0.69 us and is seen: the same drive
+    /* Without jitter every pulse is 0.69us and is seen: the same drive
      * reads as the bounds require, with the hold-off and without it. */
     static const double hz[] = { 500.0, 5000.0 };
     for (size_t i = 0; i < 2u; ++i) {
@@ -2020,17 +2020,17 @@ TEST_CASE(a_floating_2s_phase_under_3_3_v_misreads_144_khz_at_10_percent)
     }
 }
 
-/* Where the 2.1 us node fails, left out of the sanity case below:
- *   at 8.4 V, 144 kHz at 10 %: a 0.69 us pulse lifts the node to 2.3 V,
- *     and one shortened by jitter stays under 2.0 V, so pulses come and
+/* Where the 2.1us node fails, left out of the sanity case below:
+ *   at 8.4V, 144kHz at 10%: a 0.69us pulse lifts the node to 2.3V,
+ *     and one shortened by jitter stays under 2.0V, so pulses come and
  *     go inside a burst;
- *   48 kHz at 50 %: the node falls from the clamp in 3.0 us and rises to
- *     2.0 V in 0.2 us at 20 V, 0.6 us at 8.4 V, so the phase's 10.4 us
- *     carrier lows reach the pin as 7.6 to 8.0 us, at the 8 us hold-off,
+ *   48kHz at 50%: the node falls from the clamp in 3.0us and rises to
+ *     2.0V in 0.2us at 20V, 0.6us at 8.4V, so the phase's 10.4us
+ *     carrier lows reach the pin as 7.6 to 8.0us, at the 8us hold-off,
  *     swallowed or reported from one period to the next.  A burst whose
  *     lows are mostly swallowed reads, before its third rise, as a long
- *     carrier, and the next burst start is missed, as for 144 kHz at
- *     90 % through the 0.31 us node without the hold-off. */
+ *     carrier, and the next burst start is missed, as for 144kHz at
+ *     90% through the 0.31us node without the hold-off. */
 static bool skip_slow_zener(double fc, double duty, double v)
 {
     return (v < 10.0 && fc > 100000.0 && duty < 0.2)
@@ -2039,7 +2039,7 @@ static bool skip_slow_zener(double fc, double duty, double v)
 
 TEST_CASE(a_slow_450_pf_zener_still_reads_the_tone_through_the_hold_off)
 {
-    /* 4.7 kOhm into a BZX84-class zener of about 450 pF: 2.1 us.  Through
+    /* 4.7kOhm into a BZX84-class zener of about 450pF: 2.1us.  Through
      * the hold-off, every case its pulses and lows clear holds the bounds
      * of its class. */
     hold_ns = 8000u;

@@ -591,7 +591,7 @@ TEST_CASE(a_full_list_keeps_the_newest_runs_of_every_writer)
         memset(&f, 0, sizeof(f));
         log_name_build(f.name, sizeof(f.name),
                        (log_prefix_t)(i % (int)LOG_PREFIX_COUNT), i, false);
-        /* Over 4 GiB, as an exFAT card holds: the size travels whole. */
+        /* Over 4GiB, as an exFAT card holds: the size travels whole. */
         f.size = ((uint64_t)i << 32) | (uint64_t)i;
         held = log_select_keep(set, held, LOG_VIEWER_MAX_FILES, &f);
     }

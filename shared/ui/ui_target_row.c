@@ -53,7 +53,7 @@ unsigned ui_target_row_cells(const ui_target_row_t *t)
 {
     const gfx_rect_t v = ui_target_row_value_rect(t);
     const int cw = ui_target_row_font(t)->width;
-    /* 8 px of padding each side, as a value box's text has. */
+    /* 8px of padding each side, as a value box's text has. */
     return (v.w > 16) ? (unsigned)((v.w - 16) / cw) : 0u;
 }
 

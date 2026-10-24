@@ -13,7 +13,7 @@
  * its data and a CRC8.  WHO_AM_I's reply ends in 0x0A by the sheet, and the
  * driver takes either that or a CRC.  A write is answered with nothing at
  * all, so the driver confirms each one with the matching read: the output
- * with READ_OUTPUT_STATE 250 ms later -- and reads no state in between, so
+ * with READ_OUTPUT_STATE 250ms later -- and reads no state in between, so
  * an early read of a module still settling is not taken for the answer --
  * a set point with READ_OUTPUT_DATA.
  *
@@ -23,41 +23,41 @@
  * take is written again without pause.  An OFF asked for while an ON is
  * being confirmed is written at once when a read-back has shown which
  * argument means off; before that, the state is read back to back for
- * 1000 ms from the ON and the output switched off the moment it reads on.
+ * 1000ms from the ON and the output switched off the moment it reads on.
  * An ON that comes later than that is an output on while OFF is asked,
- * switched off at the next state read: about 500 ms on with a module
- * answering at once, up to 1.8 s with one answering up to 390 ms late, and
- * up to 2.1 s while set points change faster than they are written, see
+ * switched off at the next state read: about 500ms on with a module
+ * answering at once, up to 1.8s with one answering up to 390ms late, and
+ * up to 2.1s while set points change faster than they are written, see
  * below.
  *
- * The readings come round on their periods: the display every 100 ms, the
- * state and the input every 500 ms, the slot every 1000 ms, with a module
- * answering within 12 ms.  A module answering later stretches them, each
- * transaction taking its reply time: at rest the input is read 850 ms
- * apart at 100 ms late, 1.3 s at 200 ms and 2.5 s at 390 ms, the state up
- * to 1.5 s apart (host model).  A reading PDMINI_POLL_LATE_MS past its due
+ * The readings come round on their periods: the display every 100ms, the
+ * state and the input every 500ms, the slot every 1000ms, with a module
+ * answering within 12ms.  A module answering later stretches them, each
+ * transaction taking its reply time: at rest the input is read 850ms
+ * apart at 100ms late, 1.3s at 200ms and 2.5s at 390ms, the state up
+ * to 1.5s apart (host model).  A reading PDMINI_POLL_LATE_MS past its due
  * goes before the next set point, one at a time with a set-point job or a
  * read for an ON between two, so set points changed faster than a write
  * and its read-back take -- a slider dragged -- hold no reading back for
  * long.  The state read, and the input read before a write, may follow
  * another reading straight away.  The input is read before a set point
  * write or an ON once it is PDMINI_STATE_MS old, and not between the reads
- * for an ON.  Set points and an ON reach a module answering up to 390 ms
- * late (host model, 40 start phases): one set point within 2.5 s; an ON
- * within 3.6 s at set points already written, up to 7.5 s right after a
- * set point change.  With replies 279 ms or more late and a set point
- * changed every 50 ms, the display read stands 3.7 s to 5.0 s, past the
- * 3 s the panel allows (see the README); from 263 ms it stands over 2.9 s,
- * which the panel's page read every 100 ms can take past 3 s.  At rest it
- * stands up to 2.5 s at 390 ms.  The real module's reply time is not
+ * for an ON.  Set points and an ON reach a module answering up to 390ms
+ * late (host model, 40 start phases): one set point within 2.5s; an ON
+ * within 3.6s at set points already written, up to 7.5s right after a
+ * set point change.  With replies 279ms or more late and a set point
+ * changed every 50ms, the display read stands 3.7s to 5.0s, past the
+ * 3s the panel allows (see the README); from 263ms it stands over 2.9s,
+ * which the panel's page read every 100ms can take past 3s.  At rest it
+ * stands up to 2.5s at 390ms.  The real module's reply time is not
  * measured.
  *
  * An ON waits for the set points: it is written only once the active slot
  * reads back what is asked, read again straight before the ON together
  * with which slot is active, so the output never comes on at the voltage
  * it held before.  A slot chosen or a set point turned on the module's own
- * buttons in the 15 ms between those reads and the ON is seen by the next
- * slot read, at most 1000 ms on, and put back.
+ * buttons in the 15ms between those reads and the ON is seen by the next
+ * slot read, at most 1000ms on, and put back.
  *
  * Three state reads in a row that fail take the module for gone, however
  * the other readings are answered: its output state is what matters.
@@ -66,17 +66,17 @@
  * A live output whose input reads under its set point and
  * PDMINI_HEADROOM_MV on PDMINI_SAG_READS input reads in a row is switched
  * off and held off (st.sagged) until an OFF is asked: a buck fed less than
- * it is set to put out may show ERR and need a power cycle.  The 200 mV
+ * it is set to put out may show ERR and need a power cycle.  The 200mV
  * between the two lets the input drop under load without a cut.  An ON
- * asked while the input reads under 1500 mV, with no room for the lowest
+ * asked while the input reads under 1500mV, with no room for the lowest
  * set point, is not written and is held off the same way.  A rule chosen
  * without a bench measurement -- whether a live module goes to ERR on a
  * sagging input is not measured -- so it may cut a run that would have
  * survived.  An input read that fails neither counts nor clears the run of
  * low readings.  While the output is on, the set point is not lowered to
  * follow a falling input; the rule switches it off instead.  From a sag to
- * the cut takes about 1.0 s with a module answering at once, 1.7 s at
- * 100 ms late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms, the input
+ * the cut takes about 1.0s with a module answering at once, 1.7s at
+ * 100ms late, 1.9s at 200ms and up to 4.7s up to 390ms, the input
  * reads stretching as above (host model).
  *
  * A state read can be asked for (pdmini_check_off()): one sent after the
@@ -91,7 +91,7 @@
  * mean on, so the blind OFF cannot switch on an output that was off.  A
  * module that answers WHO_AM_I is read, never written blind, as it may be
  * another one.  Not closed: a module put in place of the quiet one while a
- * WHO_AM_I is on its way, up to 410 ms before the blind OFF, is sent that
+ * WHO_AM_I is on its way, up to 410ms before the blind OFF, is sent that
  * OFF, and one that reads OUTPUT_EN the other way round comes on until it
  * has answered, been read and been switched off.
  *
@@ -140,22 +140,22 @@ extern "C" {
  * @brief The margin between the input the module reports and a live output's
  *        set point that the buck is taken to need: a buck cannot put out more
  *        than it is fed, and a module asked to shows ERR and needs a power
- *        cycle (seen on the bench, 2026-10-06, 5.88 V asked from a 4.88 V
+ *        cycle (seen on the bench, 2026-10-06, 5.88V asked from a 4.88V
  *        input).
  *
  * A live output whose input reads under its set point and this is switched off
- * (PDMINI_SAG_READS).  The margin the module needs is not measured; 4.00 V
- * from 4.85 V worked.
+ * (PDMINI_SAG_READS).  The margin the module needs is not measured; 4.00V
+ * from 4.85V worked.
  */
 #define PDMINI_HEADROOM_MV  500u
 /**
  * @brief A voltage set point is kept this far under the input the module
- *        reports, rounded down to 10 mV, and no lower than PDMINI_V_MIN_MV.
- *        200 mV above  PDMINI_HEADROOM_MV, so a set point at the cap is not on
+ *        reports, rounded down to 10mV, and no lower than PDMINI_V_MIN_MV.
+ *        200mV above  PDMINI_HEADROOM_MV, so a set point at the cap is not on
  *        the line its output is cut at: the input is read with the output off,
  *        and under load it drops by the current through the source and the
- *        cable.  200 mV is  3000 mA, PDMINI_I_MAX_MA, through 1 m of 20 AWG
- *        copper out and back,  2 x 33 mOhm.
+ *        cable.  200mV is  3000mA, PDMINI_I_MAX_MA, through 1m of 20 AWG
+ *        copper out and back,  2 x 33mOhm.
  *
  * The drop on a real source and cable is not measured.
  */
@@ -198,7 +198,7 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_REPLY_MS    400u    /**< the window for a reply             */
 #define PDMINI_BYTE_MS      60u    /**< and longer by this on every byte   */
 #define PDMINI_TXN_MS      600u    /**< but never past this from the request;
-                                        a 37-byte reply is 20 ms at 19200  */
+                                        a 37-byte reply is 20ms at 19200  */
 #define PDMINI_CONFIRM_MS  250u    /**< OUTPUT_EN to the read that confirms */
 #define PDMINI_WATCH_MS   1000u    /**< an ON cancelled before its argument
                                         is known, watched this long         */
@@ -216,7 +216,7 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
 #define PDMINI_RETRY_MS    2000u   /**< a write that did not take, again    */
 #define PDMINI_FAILS          3u   /**< failed transactions in a row: gone */
 #define PDMINI_ABSENT_TRIES  10u   /**< WHO_AM_I unanswered by a byte this
-                                        many times, about 10 s: a restored
+                                        many times, about 10s: a restored
                                         module is taken not to be there   */
 #define PDMINI_INPUT_MISSES   3u   /**< READ_INPUT_STATE unanswered this many
                                         times is not asked again until the
@@ -377,7 +377,7 @@ typedef enum {
  *        answer is in pdmini_checked().
  *
  * It waits for the transaction under way and for an OFF owed, so at most about
- * two transactions, 1210 ms.
+ * two transactions, 1210ms.
  *
  * @param d  Driver state.
  */
@@ -477,9 +477,9 @@ bool pdmini_may_be_on(const pdmini_t *d);
 /**
  * @brief The highest voltage set point written for an input of vin_mv, as read.
  *
- * vin_mv - PDMINI_CAP_MV rounded down to 10 mV, at least PDMINI_V_MIN_MV
- * (an input under PDMINI_V_MIN_MV + PDMINI_CAP_MV, 1700 mV, gets the
- * 1000 mV floor, and one under 1500 mV is held off), at most
+ * vin_mv - PDMINI_CAP_MV rounded down to 10mV, at least PDMINI_V_MIN_MV
+ * (an input under PDMINI_V_MIN_MV + PDMINI_CAP_MV, 1700mV, gets the
+ * 1000mV floor, and one under 1500mV is held off), at most
  * PDMINI_V_MAX_MV.  The caller treats an input not known as PDMINI_V_MAX_MV.
  *
  * @param vin_mv Input voltage as read, in mV.

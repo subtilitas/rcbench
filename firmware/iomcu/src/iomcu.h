@@ -7,7 +7,7 @@
  *
  * main.c         boot, the main loop and the page table; defines most of
  *                the state declared below
- * iomcu_report.c the console report every 3 s, and why this start
+ * iomcu_report.c the console report every 3s, and why this start
  * iomcu_pages.c  IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
  *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
  * iomcu_kst.c    the KST page and the port's hardware
@@ -123,7 +123,7 @@ extern tone_page_t   s_tone;
  *
  * The pins it said it still holds are the page's
  * (sense_page_held()): a bus moved or closed keeps its old pins from the
- * outputs until core 1 has let them go, about 1 ms.
+ * outputs until core 1 has let them go, about 1ms.
  */
 extern sense_snap_t  s_sense_snap;
 extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
@@ -232,7 +232,7 @@ extern uint32_t s_refused;
  * Every timeout in this application is a wrap-safe unsigned subtraction of
  * two timestamps.  A second reading of the clock inside a pass can be a
  * millisecond ahead of the pass's own, and a stamp ahead of the `now` it is
- * later compared against subtracts to 4,294,967,295 ms -- past every timeout
+ * later compared against subtracts to 4,294,967,295ms -- past every timeout
  * there is.  A CHANNELS write stamped that way reads as stale in the same
  * pass and is put back to rest; a save stamped that way skips the settle and
  * the quiet-bus wait and takes its flash window inside the request burst it
@@ -909,9 +909,9 @@ void can_start(void);
  */
 void can_service(uint32_t now);
 
-/* iomcu_report.c: every 3 s at most, from the main loop */
+/* iomcu_report.c: every 3s at most, from the main loop */
 /**
- * @brief Prints the console report when 3 s have passed.
+ * @brief Prints the console report when 3s have passed.
  *
  * @param now  The pass's clock in ms.
  */
@@ -923,7 +923,7 @@ void can_report(uint32_t now);
  * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH2 and SCRATCH3 and the
  * boot ROM's boot info, then zeroes SCRATCH2 and SCRATCH3 (reset_cause.h).
  * The SDK's start-up code writes none of them.  can_report() repeats the
- * line every 3 s.
+ * line every 3s.
  */
 void reset_start(void);
 
@@ -1075,7 +1075,7 @@ static inline void sense_build(sense_cmd_t *cmd)
  *
  * A copy under a lock, about a microsecond.  The order, 136 bytes with the
  * 12 channels' shunts and limits, is built in s_sense_cmd rather than on
- * core 0's 4 kB stack: core 0 alone builds it, from its main loop.
+ * core 0's 4kB stack: core 0 alone builds it, from its main loop.
  */
 static inline void sense_order(void)
 {
@@ -1086,7 +1086,7 @@ static inline void sense_order(void)
 /**
  * @brief Core 1's newest snapshot into the pages, when there is one.
  *
- * Called where its contents are needed -- a read of either page, the 50 Hz
+ * Called where its contents are needed -- a read of either page, the 50Hz
  * sample, a capture ending -- rather than every pass, so a pass with nothing
  * to publish costs one load.
  */

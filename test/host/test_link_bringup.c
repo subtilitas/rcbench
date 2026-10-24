@@ -222,7 +222,7 @@ TEST_CASE(the_mean_survives_a_session_longer_than_a_sum_would)
         link_bringup_add_rtt(&b, 4000);
     }
     CHECK_EQ(b.rt_samples, 200000);
-    /* 200,000 x 4000 us is 8e8 us, which a 32-bit sum would have wrapped. */
+    /* 200,000 x 4000us is 8e8 us, which a 32-bit sum would have wrapped. */
     CHECK(b.rt_mean_us >= 3990 && b.rt_mean_us <= 4000);
     CHECK_EQ(b.rt_max_us, 4000);
 }

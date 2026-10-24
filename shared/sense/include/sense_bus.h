@@ -24,13 +24,13 @@
  *   and reports it with sense_bus_recovered().  The next transaction then
  *   goes out as the test: one that ends with OK or a NACK clears the stuck
  *   flag.  The INA3221 also frees the bus by itself after SCL is held low
- *   for 28 ms to 35 ms (SBOS576C §6.5, SMBus timeout); the INA228's
+ *   for 28ms to 35ms (SBOS576C §6.5, SMBus timeout); the INA228's
  *   datasheet states no such timeout.
  *
  * - A part online or offline.  A part is probed (identity read, set-up
  *   written and read back) before anything else is said to it.
  *   SENSE_FAILS failed transactions in a row take an online part offline:
- *   6 ms of readings at 500 Hz.  So does a set-up register that reads back
+ *   6ms of readings at 500Hz.  So does a set-up register that reads back
  *   another value than the one written, twice in a row: the part reset
  *   itself and runs on its power-on set-up (sense_part_lost()).  A part
  *   that is not online is probed again every SENSE_RETRY_MS.  Nothing is

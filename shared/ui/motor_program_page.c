@@ -12,7 +12,7 @@
  * column and the rail, one level down, and the strip row above it holds the
  * output strip in place of the tabs and the card:
  *
- *     TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE
+ *     TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE
  *
  * what the throttle drives, the supply's output as it reads, and the bench.
  * The home tag climbs the session one level at a time (its back()); from

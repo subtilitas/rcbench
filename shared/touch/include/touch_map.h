@@ -118,7 +118,7 @@ void touch_tracker_reset(touch_tracker_t *t);
  * lands between the lift and the next press, or a failed I²C (Inter-Integrated
  * Circuit) read), the reused id looks like the same finger moving across the
  * panel, and the consumer gets a MOVE where it waits for an UP, which leaves
- * a drag latched.  A finger cannot cross 120 px in one 10 ms poll; a reused
+ * a drag latched.  A finger cannot cross 120px in one 10ms poll; a reused
  * id can.
  */
 #define TOUCH_JUMP_PX 120

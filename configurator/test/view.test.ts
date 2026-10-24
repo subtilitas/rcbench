@@ -149,7 +149,7 @@ test('a group names a part that is one of several boards and the parts the rules
   assert.ok(escpow.includes(`Also needs: ${short('pull', 'en')}.`), escpow);
   const pd = ['pdmini', 'charger', 'usbtap'].map((id) => short(id, 'en')).join(' + ');
   assert.ok(escpow.includes(`Also needs, by variant: ${short('batt', 'en')}, or ${pd}.`), escpow);
-  // A servo takes its power from the servo supply or from a pin of the bench: the 5 V pin adds no part,
+  // A servo takes its power from the servo supply or from a pin of the bench: the 5V pin adds no part,
   // the V pin of the Osoyoo breakout board adds its DC supply.
   const servocur = text(fieldset(en, 'g-ina3221'));
   assert.ok(servocur.startsWith(`Needs: ${short('ina3221', 'en')}`), servocur);
@@ -555,7 +555,7 @@ test('every setup that wires the plus of the servo to a pin of the bench carries
   let other = 0;
   for (const { selection } of sweep({ CATALOGUE, resolve, DEFAULT_OPTIONS })) {
     const v = view(selection);
-    // The plus of the servo on a pin of the bench: a wire or a stub from the 5 V pad or a V pin of the strip.
+    // The plus of the servo on a pin of the bench: a wire or a stub from the 5V pad or a V pin of the strip.
     const bench = v.setup.wires.filter((w) => w.cls === 'power' && w.a === 'servo.POS' && (w.b === null || w.b.startsWith('pad.')));
     const numbered = v.setup.wires.some((w) => [59, 60, 61, 62].includes(w.n));
     assert.equal(bench.length > 0 || numbered, numbered, describe(selection));

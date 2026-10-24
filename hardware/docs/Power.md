@@ -18,23 +18,23 @@ to R8.
 
 | Need | Round 1 result |
 | --- | --- |
-| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0 V in, 8.4 V and 4.0 A out and 50 °C ambient its estimated junction temperature spans 89 to 179 °C against the 125 °C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it and uses three, one for each servo rail (2026-09-30): 4 to 6.35 A is a short peak for one servo; a small aluminum heatsink on a 6-layer board cools each; an MCP9808T-E/MS beside each switches its rail off above a threshold, which bounds a sustained current from several servos. A follow-up of R6 finds the continuous current one converter holds at 6.0 V in and 50 °C |
+| Servo supply | TPS55285VALR, the held fixed input, is refuted on its ambient range. At 6.0V in, 8.4V and 4.0A out and 50°C ambient its estimated junction temperature spans 89 to 179°C against the 125°C recommended maximum, because its datasheet gives no loss figure for the IC (integrated circuit) at that point. The owner keeps it and uses three, one for each servo rail (2026-09-30): 4 to 6.35A is a short peak for one servo; a small aluminum heatsink on a 6-layer board cools each; an MCP9808T-E/MS beside each switches its rail off above a threshold, which bounds a sustained current from several servos. A follow-up of R6 finds the continuous current one converter holds at 6.0V in and 50°C |
 | 2S (two cells in series) charger with balancing | BQ25713RSNR, with MAX17320G22+ for balancing and pack protection and FUSB303BTMX for the USB-C (Universal Serial Bus Type-C) input limit. The BQ25887 is not selected |
-| Output port monitors | INA3221AIRGVR, 7 parts, with ERJ-6CWDR010V, a 10 mΩ shunt, on each of the 20 ports |
+| Output port monitors | INA3221AIRGVR, 7 parts, with ERJ-6CWDR010V, a 10mΩ shunt, on each of the 20 ports |
 | Motor monitor | INA238AIDGSR fails the stock gate at both vendors: JLCPCB 0 with a presale count of −99, Digi-Key 0 (2026-09-29T17:18:33Z). The owner fixes the INA228AIDGSR in its place (2026-09-30): it returns to stock soon, as the owner states; its stock is not read |
-| Motor shunts | BVR-Z-R0002-1.0 on the board for 150 A, and WSBE8518L1000JKA2 off the board, bought at Digi-Key, with no second source |
+| Motor shunts | BVR-Z-R0002-1.0 on the board for 150A, and WSBE8518L1000JKA2 off the board, bought at Digi-Key, with no second source |
 
 ## Summary
 
 | Need | Part | Package | Reason |
 | --- | --- | --- | --- |
-| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25), 4 a board: 3 servo rails and the adjustable supply (owner, 2026-09-30); its limit stops at 6.35 A, so each rail runs to 6.35 A. The TPS55288, whose limit scales past 6.35 A, is the alternative below |
-| 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die from a maker question S1 allows that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3 A from USB-C at 5 V ([Research](Research.md#research-categories)) |
-| Output port monitors, ≤15 V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26 V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); INA3221AIRGVR is a fixed input the owner keeps whatever a research run returns (owner, 2026-10-03) |
-| Motor monitor, 67.2 V (16 cells), 300 A | INA228AIDGSR | VSSOP-10 | 85 V and 20 bits, fixed by the owner (2026-09-30); the INA238, 16 bits on the same footprint, is the alternative below |
+| Buck-boost, I²C (Inter-Integrated Circuit) voltage and current | TPS55285 | VQFN (very thin quad flat no-lead) | the owner holds 12 (2026-09-25), 4 a board: 3 servo rails and the adjustable supply (owner, 2026-09-30); its limit stops at 6.35A, so each rail runs to 6.35A. The TPS55288, whose limit scales past 6.35A, is the alternative below |
+| 2S charger with balancing | BQ25887RGER, a candidate | QFN-24-EP 4×4 | the only single die from a maker question S1 allows that charges 2S and balances it. A seed of research category R7, not a choice: the charge input is up to 3A from USB-C at 5V ([Research](Research.md#research-categories)) |
+| Output port monitors, ≤15V | INA3221, 7 parts for 20 ports | VQFN-16 4×4 | 3 channels a part, 26V bus, 13-bit shunt reading. One channel per port (owner, 2026-09-25); INA3221AIRGVR is a fixed input the owner keeps whatever a research run returns (owner, 2026-10-03) |
+| Motor monitor, 67.2V (16 cells), 300A | INA228AIDGSR | VSSOP-10 | 85V and 20 bits, fixed by the owner (2026-09-30); the INA238, 16 bits on the same footprint, is the alternative below |
 
-The INA3221 reads ±163.84 mV across its shunt in 40 µV steps. With a 10 mΩ
-shunt per port that is 4 mA a step and 16.4 A full scale, finer than the 0.08 A
+The INA3221 reads ±163.84mV across its shunt in 40µV steps. With a 10mΩ
+shunt per port that is 4mA a step and 16.4A full scale, finer than the 0.08A
 the servo synchroniser resolves. Seven parts give 21 channels for the 20 ports.
 It has no energy or charge accumulator; the motor keeps its INA228.
 
@@ -42,30 +42,30 @@ It has no energy or charge accumulator; the motor keeps its INA228.
 
 The servo supply is the TPS55285 (owner, 2026-09-25): 12 are held in the
 personal library. Four sit on each board (owner, 2026-09-30): a fourth is a
-simple adjustable supply, 0.8 to 15 V and 0.5 to 6.35 A, out on an XT60
+simple adjustable supply, 0.8 to 15V and 0.5 to 6.35A, out on an XT60
 socket. Three feed three servo rails: 8 PWM ports,
 the other 8 PWM ports, and the 4 multiprotocol ports (owner, 2026-09-30).
-At 4 a board the 12 held cover 3 boards. Each rail runs to 6.35 A, and the
-DC (direct current) input is 12 to 20 V to stay inside the 22 V input rating
+At 4 a board the 12 held cover 3 boards. Each rail runs to 6.35A, and the
+DC (direct current) input is 12 to 20V to stay inside the 22V input rating
 ([where things stand](../STATUS.md#decided)).
 The TPS55288, the TPS55289 and the MP4246 below are the alternatives, not
 used.
 
-Each servo rail has two output settings: up to 5.5 V for LV (low-voltage)
-servos and up to 8.4 V for HV (high-voltage) servos, at 4 to 6.35 A. Each
-runs down to the TPS55285's 0.8 V to test a servo's brownout behavior (owner,
+Each servo rail has two output settings: up to 5.5V for LV (low-voltage)
+servos and up to 8.4V for HV (high-voltage) servos, at 4 to 6.35A. Each
+runs down to the TPS55285's 0.8V to test a servo's brownout behavior (owner,
 2026-09-30). Both are set from software for each rail on its own, and the current limit follows
 the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
-Each rail's limit goes to 6.35 A from the DC input and from the pack alike:
-the SLS XTRON pack's 90 A carries all four converters (owner, 2026-09-30).
-At the 6.0 V pack floor the four at 6.35 A draw about 47.3 A at an assumed
-90 %, nominal. The limit's tolerance is stated only at the 1, 3 and 5 A
-settings (4.7 to 5.3 A at 5 A).
-For one servo 4 to 6.35 A is a short peak: a servo that draws it without
+Each rail's limit goes to 6.35A from the DC input and from the pack alike:
+the SLS XTRON pack's 90A carries all four converters (owner, 2026-09-30).
+At the 6.0V pack floor the four at 6.35A draw about 47.3A at an assumed
+90%, nominal. The limit's tolerance is stated only at the 1, 3 and 5A
+settings (4.7 to 5.3A at 5A).
+For one servo 4 to 6.35A is a short peak: a servo that draws it without
 pause burns out. Several servos on one rail can draw it without a time
 limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
-runs hot (owner, 2026-09-30). The continuous current at 6.0 V in and 50 °C
+runs hot (owner, 2026-09-30). The continuous current at 6.0V in and 50°C
 is not known; a follow-up of R6 finds it.
 
 Three parts of the same TI (Texas Instruments) family, and the MP4246 of
@@ -74,28 +74,28 @@ stock was read on 2026-10-08, the others on 2026-09-01:
 
 | | TPS55288 | TPS55289 | TPS55285 | MP4246 |
 | --- | --- | --- | --- | --- |
-| V_in | 2.7–36 V | 3.0–30 V | 2.4–22 V | 4–22 V, 36 V transient, 40 V absolute maximum |
-| V_out over I²C | 0.8–22 V, 20 mV step | 0.8–22 V, 10 mV step | 0.8–15 V, 10 mV step | 1–21.47 V, 10 mV step |
-| Current limit | external shunt, 0–63.5 mV in 0.5 mV steps | external shunt, same | internal sense, fixed 6.35 A | external shunt of 5 or 10 mΩ, 0.5–6.35 A in 50 mA steps at 5 mΩ |
-| Rating | 16 A inductor limit, 100 W from 12 V | 8 A | 8 A, four 15 mΩ FETs (field-effect transistors) | 6 A "at certain input supply ranges", four FETs of 6 to 14 mΩ |
+| V_in | 2.7–36V | 3.0–30V | 2.4–22V | 4–22V, 36V transient, 40V absolute maximum |
+| V_out over I²C | 0.8–22V, 20mV step | 0.8–22V, 10mV step | 0.8–15V, 10mV step | 1–21.47V, 10mV step |
+| Current limit | external shunt, 0–63.5mV in 0.5mV steps | external shunt, same | internal sense, fixed 6.35A | external shunt of 5 or 10mΩ, 0.5–6.35A in 50mA steps at 5mΩ |
+| Rating | 16A inductor limit, 100W from 12V | 8A | 8A, four 15mΩ FETs (field-effect transistors) | 6A "at certain input supply ranges", four FETs of 6 to 14mΩ |
 | JLCPCB | C2864583 · 5854 · $1.79 | C5942077 · 2218 · $5.20 | C52160906 · 2984 · $2.11 | C46881996 · 5 · $3.63 |
 | Digi-Key | 5808 · $4.28 | 0, 3000 due 2026-11-02 | 2349 · $2.76 | 244 · $3.58 (cut tape), lead time 40 weeks |
 
-All three datasheets state "programmable output current limit up to 6.35 A". On
-the '288 and the '289 the register sets a sense voltage, 0 to 63.5 mV in 0.5 mV
-steps, across a shunt between ISP and ISN; 6.35 A is the value with the
-datasheet's 10 mΩ example. The ceiling moves with the resistor:
+All three datasheets state "programmable output current limit up to 6.35A". On
+the '288 and the '289 the register sets a sense voltage, 0 to 63.5mV in 0.5mV
+steps, across a shunt between ISP and ISN; 6.35A is the value with the
+datasheet's 10mΩ example. The ceiling moves with the resistor:
 
-| R_sense | Full-scale limit | Step | Dissipation at 8 A |
+| R_sense | Full-scale limit | Step | Dissipation at 8A |
 | --- | --- | --- | --- |
-| 8 mΩ | 7.94 A | 62.5 mA | 0.51 W |
-| 6.3 mΩ | 10.1 A | 79 mA | 0.40 W |
+| 8mΩ | 7.94A | 62.5mA | 0.51W |
+| 6.3mΩ | 10.1A | 79mA | 0.40W |
 
-For the TPS55288, 6.3 mΩ in a 1 W part gives headroom over 8 A. The average inductor current limit is a separate mechanism set by a
-resistor at the ILIM pin and goes to 16 A.
+For the TPS55288, 6.3mΩ in a 1W part gives headroom over 8A. The average inductor current limit is a separate mechanism set by a
+resistor at the ILIM pin and goes to 16A.
 
-On the '285 the sense is internal, so 6.35 A is a hard ceiling. It delivers 8 A
-but cannot be set to allow 8 A; the rail's 6.35 A follows from it.
+On the '285 the sense is internal, so 6.35A is a hard ceiling. It delivers 8A
+but cannot be set to allow 8A; the rail's 6.35A follows from it.
 
 ### MP4246
 
@@ -103,60 +103,60 @@ Figures from the MP4246 datasheet, Rev. 1.0 of 2024-07-16, read from the
 copy LCSC hosts; the MPS site was not reachable, so a later revision is
 not ruled out. Against the servo rails and the adjustable supply:
 
-- **Output floor.** V_out starts at 1 V, above the 0.8 V the brownout test
-  needs. The datasheet gives the ceiling as 22 V on its cover and as
-  21.47 V at the VOUT_COMMAND register; either covers the adjustable
-  supply's 15 V.
-- **Current limit.** A constant-current limit across an external 5 mΩ or
-  10 mΩ shunt, 0.5 to 6.35 A in 50 mA steps at 5 mΩ, default 5.4 A. The
-  threshold is ±5 % at the 3.6 A setting and ±15 % at the 1 A setting.
-  After a blank time of 320 µs to 80 ms the limit holds the output current;
-  with the output 40 % low and under 2.97 V it enters hiccup, 570 ms off.
-  Separate cycle-by-cycle switch limits run from 9 to 22.4 A peak.
-- **Rating.** "Up to 6 A of output current at certain input supply ranges";
+- **Output floor.** V_out starts at 1V, above the 0.8V the brownout test
+  needs. The datasheet gives the ceiling as 22V on its cover and as
+  21.47V at the VOUT_COMMAND register; either covers the adjustable
+  supply's 15V.
+- **Current limit.** A constant-current limit across an external 5mΩ or
+  10mΩ shunt, 0.5 to 6.35A in 50mA steps at 5mΩ, default 5.4A. The
+  threshold is ±5% at the 3.6A setting and ±15% at the 1A setting.
+  After a blank time of 320µs to 80ms the limit holds the output current;
+  with the output 40% low and under 2.97V it enters hiccup, 570ms off.
+  Separate cycle-by-cycle switch limits run from 9 to 22.4A peak.
+- **Rating.** "Up to 6A of output current at certain input supply ranges";
   the datasheet does not name the ranges and gives no derating curve. Its
-  efficiency curves stop at 5 A and have no 8.4 V output: about 97 % at
-  12 V in, 9 V out and 5 A (graph).
+  efficiency curves stop at 5A and have no 8.4V output: about 97% at
+  12V in, 9V out and 5A (graph).
 - **Read-back.** None over I²C: no output voltage or current register and
   no ADC (analogue-to-digital converter). An IMON pin gives an analogue
-  248 mV/A at 5 mΩ, ±5 % at 3 A. STATUS_WORD flags output overvoltage,
+  248mV/A at 5mΩ, ±5% at 3A. STATUS_WORD flags output overvoltage,
   overcurrent, input overvoltage, temperature and power good.
-- **Input.** Input overvoltage trips at 24 V (23 to 25 V), above the 20 V
-  DC input; a 2S pack at 6.0 to 8.4 V is inside 4 to 22 V.
+- **Input.** Input overvoltage trips at 24V (23 to 25V), above the 20V
+  DC input; a 2S pack at 6.0 to 8.4V is inside 4 to 22V.
 - **I²C.** Four addresses, 07h, 27h, 47h and 67h, set by a divider on ADDR,
   which also sets whether the output starts on.
-- **Package.** QFN-19, 4 × 5 mm; junction −40 to 125 °C; thermal shutdown
-  at 165 °C.
+- **Package.** QFN-19, 4 × 5mm; junction −40 to 125°C; thermal shutdown
+  at 165°C.
 
 Digi-Key lists the MP4246 as Active (2026-10-08). The stock row above is
 under the 4 a board, 12 for 3 boards, that the TPS55285 covers.
 
-Rejected: MP4245 (36 V, 6 A peak, I²C) is marked Not For New Designs at
-Digi-Key; the MP4246 above is its sibling with a 22 V input and no ADC. MP8859 stops at 3 A.
+Rejected: MP4245 (36V, 6A peak, I²C) is marked Not For New Designs at
+Digi-Key; the MP4246 above is its sibling with a 22V input and no ADC. MP8859 stops at 3A.
 
 ### Input rail
 
-8.4 V at 6.35 A is 53.3 W out a rail. At 90 % efficiency that is 59.3 W in:
-4.9 A from a 12 V input and 3.0 A from 20 V. The 3 rails at full load draw
-177.8 W: 14.8 A from 12 V and 8.9 A from 20 V, before the other loads. The
-adjustable supply at 15 V and 6.35 A delivers 95.3 W more; the four draw
-283.6 W: 23.6 A from 12 V and 14.2 A from 20 V. These are nominal at the
-assumed 90 %; the datasheet guarantees no efficiency. The DC input is 12 to 20 V (owner, 2026-09-25).
+8.4V at 6.35A is 53.3W out a rail. At 90% efficiency that is 59.3W in:
+4.9A from a 12V input and 3.0A from 20V. The 3 rails at full load draw
+177.8W: 14.8A from 12V and 8.9A from 20V, before the other loads. The
+adjustable supply at 15V and 6.35A delivers 95.3W more; the four draw
+283.6W: 23.6A from 12V and 14.2A from 20V. These are nominal at the
+assumed 90%; the datasheet guarantees no efficiency. The DC input is 12 to 20V (owner, 2026-09-25).
 
 ## Pack charger: BQ25887 (candidate)
 
 The BQ25887 is a seed of research category R7, not a choice. The pack charges
-from USB-C only, drawing up to 3 A at 5 V (question F8 in
+from USB-C only, drawing up to 3A at 5V (question F8 in
 [Research](Research.md#blocking-answered-before-the-research-tasks)). The
 analysis below records the alternatives.
 
-No single die charges a 2S pack above 2 A and balances it.
+No single die charges a 2S pack above 2A and balances it.
 
 | | BQ25887 | MP2672A |
 | --- | --- | --- |
-| Charge current | 2 A | 2 A |
-| Input | 3.9–6.2 V, 20 V abs max | 4–5.75 V |
-| Balancing | 400 mA integrated FETs, automatic, within one charge cycle | integrated, on a mismatch threshold |
+| Charge current | 2A | 2A |
+| Input | 3.9–6.2V, 20V abs max | 4–5.75V |
+| Balancing | 400mA integrated FETs, automatic, within one charge cycle | integrated, on a mismatch threshold |
 | Power path | none | NVDC (narrow voltage direct current) |
 | ADC (analogue-to-digital converter) | 16 bit: bus V and I, each cell, charge current, NTC (negative temperature coefficient thermistor), die | present, unspecified |
 | JLCPCB | C2761614 · 874 · $3.16 | C6674645 · 549 · $1.78 |
@@ -168,20 +168,20 @@ MP2672A is from Monolithic Power Systems, which question S1 in
 [Research](Research.md#sourcing) does not allow; it stays here as a comparison,
 not a candidate.
 Both are boost chargers off a USB (Universal Serial Bus) input; neither takes
-12 V.
+12V.
 
-The charge input is 3 A at 5 V, 15 W (F8). At an assumed 90 % efficiency, 13.5
-W reaches the pack: 1.6 A at 8.4 V and 2.25 A at 6.0 V. A 2 A charger uses the
-whole budget above 6.75 V and is limited to 2 A below it. A charge current above
-2 A splits the function:
+The charge input is 3A at 5V, 15W (F8). At an assumed 90% efficiency, 13.5
+W reaches the pack: 1.6A at 8.4V and 2.25A at 6.0V. A 2A charger uses the
+whole budget above 6.75V and is limited to 2A below it. A charge current above
+2A splits the function:
 
 | Part | Role | Balance current | JLCPCB | Digi-Key |
 | --- | --- | --- | --- | --- |
-| BQ25798RQMR | 1–4S buck-boost charger, 5 A, 3.6–24 V in, I²C | none | 366 · $1.81 | 10,954 · $3.51 |
-| + BQ76907RGRR | 2–7S AFE (analogue front end), I²C, 16-bit ADC, full protection | 0–50 mA per cell, host-driven | 2646 · $1.15 | none |
-| + BQ29209DRBR | autonomous 2S balancer, no host | up to 15 mA, resistor-set | 707 · $0.58 | none |
+| BQ25798RQMR | 1–4S buck-boost charger, 5A, 3.6–24V in, I²C | none | 366 · $1.81 | 10,954 · $3.51 |
+| + BQ76907RGRR | 2–7S AFE (analogue front end), I²C, 16-bit ADC, full protection | 0–50mA per cell, host-driven | 2646 · $1.15 | none |
+| + BQ29209DRBR | autonomous 2S balancer, no host | up to 15mA, resistor-set | 707 · $0.58 | none |
 
-400 mA against 50 mA is balancing within a charge against balancing overnight.
+400mA against 50mA is balancing within a charge against balancing overnight.
 BQ25798 has a wide input, which BQ25887 does not.
 
 ## Port monitor alternative: INA745A
@@ -189,13 +189,13 @@ BQ25798 has a wide input, which BQ25887 does not.
 The owner's choice is one INA3221 channel on each of the 20 output ports; INA3221AIRGVR is a fixed input the owner keeps whatever a research run returns (owner, 2026-10-03). The
 analysis below compares the alternatives for one position.
 
-40 V, ±35 A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
-A: 6.4 mV drop, 51 mW, LSB (least significant bit) about 1.2 mA. No shunt to
+40V, ±35A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
+A: 6.4mV drop, 51mW, LSB (least significant bit) about 1.2mA. No shunt to
 lay out, no Kelvin connection, no four-terminal footprint.
 
 | | INA745A/B | INA238 | INA239 | INA226 |
 | --- | --- | --- | --- | --- |
-| Bus | 40 V | 85 V | 85 V | 36 V |
+| Bus | 40V | 85V | 85V | 36V |
 | ADC | 16 bit | 16 bit | 16 bit | 16 bit |
 | Shunt | integrated 800 µΩ | external | external | external |
 | Interface | I²C | I²C | SPI (Serial Peripheral Interface) | I²C |
@@ -203,12 +203,12 @@ lay out, no Kelvin connection, no four-terminal footprint.
 | JLCPCB | B: 13,351 · $1.05; A: 50 | 2246 · $4.35 | 108 · $2.86 | 74,914 · $0.52 |
 | Digi-Key | A: 6611 · $1.67; B: 9330 · $1.27 | 0, 2500 due 2026-10-27 | 255 · $2.34 | 95,920 · $1.72 |
 
-Take the A grade: offset ±6.25 mA against the B grade's ±62.5 mA, which on a 0
-to 8 A rail is 0.08% against 0.8% of full scale. Digi-Key stocks A; JLCPCB
+Take the A grade: offset ±6.25mA against the B grade's ±62.5mA, which on a 0
+to 8A rail is 0.08% against 0.8% of full scale. Digi-Key stocks A; JLCPCB
 stocks B.
 
-Alternatives: INA238 with a 5 mΩ shunt gives 40 mV at 8 A, a 0.25 mA LSB and
-0.32 W. INA239 is the SPI variant; stock is thin at both vendors. INA226 is a
+Alternatives: INA238 with a 5mΩ shunt gives 40mV at 8A, a 0.25mA LSB and
+0.32W. INA239 is the SPI variant; stock is thin at both vendors. INA226 is a
 fifth of the price and in large stock, but has no energy or charge accumulator,
 so consumption would have to be integrated in firmware.
 
@@ -216,11 +216,11 @@ so consumption would have to be integrated in firmware.
 
 | | INA238 | INA228 | INA229 |
 | --- | --- | --- | --- |
-| Bus | 85 V | 85 V | 85 V |
+| Bus | 85V | 85V | 85V |
 | ADC | 16 bit | 20 bit | 20 bit |
 | Interface | I²C | I²C | SPI |
-| Shunt full scale | ±163.84 mV / ±40.96 mV | same | same |
-| LSB | 5 µV / 1.25 µV | 312.5 nV / 78.125 nV | as INA228 |
+| Shunt full scale | ±163.84mV / ±40.96mV | same | same |
+| LSB | 5µV / 1.25µV | 312.5 nV / 78.125 nV | as INA228 |
 | JLCPCB | 2246 · $4.35 | 29, pre-sale −477 | 0 to 3 |
 | Digi-Key | 0, 2500 due 2026-10-27 | 0, 666 due 2026-11-03 | 0, 2500 due 2026-12-23 |
 
@@ -233,21 +233,21 @@ instead of 20. It has no energy or charge register (SLYS025B Table 6-3); the
 INA228 has both (V161 in [Research](Research.md#raised-by-p1)). Round 1 read it at JLCPCB 0
 with a presale count of −99 and Digi-Key 0 on 2026-09-29.
 
-| R_shunt | Drop at 300 A | Of ±40.96 mV full scale | INA228 LSB | INA238 LSB | Dissipation at 300 A |
+| R_shunt | Drop at 300A | Of ±40.96mV full scale | INA228 LSB | INA238 LSB | Dissipation at 300A |
 | --- | --- | --- | --- | --- | --- |
-| 100 µΩ | 30 mV | 73% | 0.78 mA | 12.5 mA | 9 W |
-| 50 µΩ | 15 mV | 37% | 1.56 mA | 25 mA | 4.5 W |
+| 100 µΩ | 30mV | 73% | 0.78mA | 12.5mA | 9W |
+| 50 µΩ | 15mV | 37% | 1.56mA | 25mA | 4.5W |
 
 The noise a running ESC (electronic speed controller) puts on the wire is not
-measured. The shunt is the constraint: 300 A needs a
+measured. The shunt is the constraint: 300A needs a
 busbar-type resistor (Isabellenhütte BV series, Vishay WSBS8518); the largest
-four-terminal SMD (surface-mount device) parts (Bourns CSS2H-2512, 15 W) stop
-at 0.2 mΩ and would dissipate 18 W. Kelvin-sense it, with an RC
+four-terminal SMD (surface-mount device) parts (Bourns CSS2H-2512, 15W) stop
+at 0.2mΩ and would dissipate 18W. Kelvin-sense it, with an RC
 (resistor-capacitor) filter on IN+ and IN− against switching edges.
 
 ## Not answered here
 
 - The converters' input connector, their shutdown threshold and the size of
   their heatsinks.
-- The shunt part numbers are on [Supply](Supply.md); their mounting and the 300 A path's busbar are round 3.
-- Layout, isolation, and how a 300 A path and a 3.3 V I²C bus share a board.
+- The shunt part numbers are on [Supply](Supply.md); their mounting and the 300A path's busbar are round 3.
+- Layout, isolation, and how a 300A path and a 3.3V I²C bus share a board.

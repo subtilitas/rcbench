@@ -192,11 +192,11 @@ TEST_CASE(every_value_is_held_to_its_range_at_both_ends)
 TEST_CASE(a_gap_shorter_than_the_lowest_tones_period_is_refused)
 {
     fresh();
-    /* 50 Hz is 20 ms a period: the gap is at least that. */
+    /* 50Hz is 20ms a period: the gap is at least that. */
     CHECK_EQ(setup(0u, 22u, 50u, 6500u, 8u, 19u, 3u, 0u),
              LINK_NACK_BAD_VALUE);
     CHECK_EQ(setup(0u, 22u, 50u, 6500u, 8u, 20u, 3u, 0u), 0u);
-    /* 400 Hz is 2.5 ms: 2 ms is short, 3 ms is not. */
+    /* 400Hz is 2.5ms: 2ms is short, 3ms is not. */
     CHECK_EQ(setup(0u, 22u, 400u, 6500u, 8u, 2u, 3u, 0u),
              LINK_NACK_BAD_VALUE);
     CHECK_EQ(setup(0u, 22u, 400u, 6500u, 8u, 3u, 3u, 0u), 0u);
@@ -275,7 +275,7 @@ TEST_CASE(a_busy_pin_is_taken_once_freed_and_bad_values_stay_bad_value)
 
 /* Core 1 did not start: nothing runs a capture before a restart, so an
  * enabled set-up is refused with BAD_VALUE, which the panel does not offer
- * again every 5 s, and never with BUSY, which it does -- on a free pin and
+ * again every 5s, and never with BUSY, which it does -- on a free pin and
  * on a busy one alike.  The tap may still be switched off. */
 TEST_CASE(a_page_without_a_capture_refuses_the_tap_with_bad_value)
 {

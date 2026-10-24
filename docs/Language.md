@@ -22,7 +22,7 @@ kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
 Current limitations:
 
 - An alert already on the band keeps the language it was raised in until
-  it is replaced, tapped away or cleared after 30 s (`UI_ALERT_SHOW_S`).
+  it is replaced, tapped away or cleared after 30s (`UI_ALERT_SHOW_S`).
   The alert held for a touch controller that did not answer at start is
   raised in the language kept in NVS and stays until restart; without touch
   the language cannot change meanwhile.
@@ -39,11 +39,11 @@ Current limitations:
 ## Numbers
 
 The screens, the TXT report and the CSV write the decimal point in every
-language: 7.4 V, 0.05 A. It is the separator of the transmitter, the ESC
+language: 7.4V, 0.05A. It is the separator of the transmitter, the ESC
 configurators and the supply's own display, and a CSV with a decimal comma
 would need a different field separator. The German pages of this
-documentation write the German decimal comma in their prose (7,4 V); a
-string quoted from the screen keeps its point (`seit 1.5 s kein Messwert`).
+documentation write the German decimal comma in their prose (7,4V); a
+string quoted from the screen keeps its point (`seit 1.5s kein Messwert`).
 
 ## Terms that stay English
 
@@ -185,11 +185,11 @@ is one cell:
   Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0) and
   the seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
   U+00E4, U+00F6, U+00FC), 103 glyphs each. The two numeral faces hold digits and punctuation only.
-- The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23 px and
+- The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23px and
   draw every glyph inside the cell; `gen_font.py --check` fails otherwise.
-  The 32x44 numeral face (cap height 40 px) cuts ink at the cell edge in six
-  characters: `#` 5 px, `$` 16 px, `(` 12 px, `)` 12 px, `,` 23 px and `/`
-  6 px (pixels of coverage 128 or more outside the cell). `gen_font.py
+  The 32x44 numeral face (cap height 40px) cuts ink at the cell edge in six
+  characters: `#` 5px, `$` 16px, `(` 12px, `)` 12px, `,` 23px and `/`
+  6px (pixels of coverage 128 or more outside the cell). `gen_font.py
   --check` prints these counts.
 - A code point a face does not hold draws as `?`. A byte that does not start
   a well-formed sequence, a sequence cut short and an overlong form are one

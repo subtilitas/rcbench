@@ -623,7 +623,7 @@ TEST_CASE(a_quick_single_call_shows_no_box)
     tk_type("n2");
     tk_key(UI_TK_OK);
     CHECK_EQ(files_screen_view(), FILES_VIEW_JOB);
-    /* 0.19 s under way: the panes; then the box. */
+    /* 0.19s under way: the panes; then the box. */
     files_screen_invalidate();
     draw();
     screen()->tick(0.2f);

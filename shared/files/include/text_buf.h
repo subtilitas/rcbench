@@ -12,7 +12,7 @@
  * unchanged buffer gives the loaded file byte for byte.
  *
  * Limits:
- *   - a file of at most TEXT_BUF_FILE_MAX bytes (1 MiB), the BOM included;
+ *   - a file of at most TEXT_BUF_FILE_MAX bytes (1MiB), the BOM included;
  *     the editor stops a text from growing past what the viewer opens, so a
  *     saved file always opens again;
  *   - at most the caller's index entries, and TEXT_BUF_ENDS_MAX (65,536),
@@ -54,9 +54,9 @@
 extern "C" {
 #endif
 
-/** @brief Bytes of a file the buffer takes, its BOM included: 1 MiB. */
+/** @brief Bytes of a file the buffer takes, its BOM included: 1MiB. */
 #define TEXT_BUF_FILE_MAX 1048576u
-/** @brief Line ends a text holds at most: 65,536 index entries of 4 B. */
+/** @brief Line ends a text holds at most: 65,536 index entries of 4B. */
 #define TEXT_BUF_ENDS_MAX 65536u
 /** @brief Bytes from the start of the file a NUL makes it no text. */
 #define TEXT_BUF_PROBE 4096u

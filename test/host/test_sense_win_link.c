@@ -286,9 +286,9 @@ TEST_CASE(fast_comes_from_the_ring)
 /*
  * The control task's poll, every @p period_ms: SERVO_WIN's windows taken,
  * a row each, then the pages read, as the panel orders them, at an offset
- * in the pass of 0 to 6 ms that shrinks from poll to poll; each row's
+ * in the pass of 0 to 6ms that shrinks from poll to poll; each row's
  * groups attached as the panel does.  The IOmcu closes window n at 50 n
- * ms.  Counts the rows in 20 s and those without FAST's channel 0 and
+ * ms.  Counts the rows in 20s and those without FAST's channel 0 and
  * without page A's channel 3.
  */
 static void poll_rows(uint32_t period_ms, unsigned *rows, unsigned *no_fast,
@@ -329,7 +329,7 @@ static void poll_rows(uint32_t period_ms, unsigned *rows, unsigned *no_fast,
 }
 
 /* FAST is on every row.  The other channels miss only the windows no read
- * saw: at a 53 ms poll about 1 in 17, at a 50 ms poll none, the offset in
+ * saw: at a 53ms poll about 1 in 17, at a 50ms poll none, the offset in
  * the pass shrinking or not. */
 TEST_CASE(every_poll_reads_the_pages_after_the_ring)
 {
@@ -338,7 +338,7 @@ TEST_CASE(every_poll_reads_the_pages_after_the_ring)
     CHECK(rows >= 398u);
     CHECK_EQ(no_fast, 0u);
     CHECK(no_other <= rows / 17u + 1u);
-    /* A gate of 50 ms would skip every read whose offset shrank: half the
+    /* A gate of 50ms would skip every read whose offset shrank: half the
      * rows. */
     poll_rows(50u, &rows, &no_fast, &no_other);
     CHECK(rows >= 398u);

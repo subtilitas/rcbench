@@ -52,13 +52,13 @@ TEST_CASE(cancelling_gestures_lets_go_of_the_band)
     CHECK(!ui_router_take_stop());
 }
 
-/* On the band, 3 px under STOP (y 6..41) and 4 px above the body. */
+/* On the band, 3px under STOP (y 6..41) and 4px above the body. */
 #define UNDER_STOP_X 720
 
 /*
- * Armed.  A finger drags the throttle track 60 px, slides up the glass at
- * 8 px per report and leaves it on the band.  The next lone finger aims at
- * STOP, lands in the 6 px of band under the button and rolls 5 px down into
+ * Armed.  A finger drags the throttle track 60px, slides up the glass at
+ * 8px per report and leaves it on the band.  The next lone finger aims at
+ * STOP, lands in the 6px of band under the button and rolls 5px down into
  * the body.  The first drag ended at the edge of the band, so the second
  * contact has nothing to continue, and it came down on the band, so the
  * screen sees none of it.
@@ -112,7 +112,7 @@ TEST_CASE(the_release_at_the_edge_adds_no_travel_made_on_the_band)
     glide(FEED_LONE, 360, UI_BAND_H + 4, 8);
     const uint32_t d0 = ui_router_dispatched();
 
-    /* One step short of the band: still the screen's, and the 4 px to the
+    /* One step short of the band: still the screen's, and the 4px to the
      * right count. */
     glide(FEED_LONE, 364, UI_BAND_H, 4);
     CHECK_EQ(ui_router_dispatched(), d0 + 1u);
@@ -120,8 +120,8 @@ TEST_CASE(the_release_at_the_edge_adds_no_travel_made_on_the_band)
     CHECK_NEAR(at_edge, 64.0f * M_PX_PCT, 0.01f);
     drain_motor();
 
-    /* The first row of the band, 2 px further right: one event to the
-     * screen, the release, and the 2 px do not count. */
+    /* The first row of the band, 2px further right: one event to the
+     * screen, the release, and the 2px do not count. */
     glide(FEED_LONE, 366, UI_BAND_H - 1, 2);
     CHECK_EQ(ui_router_dispatched(), d0 + 2u);
     CHECK_NEAR(motor_screen_throttle(), at_edge, 0.001f);
@@ -177,7 +177,7 @@ TEST_CASE(a_contact_that_came_down_on_the_band_reaches_no_screen)
     CHECK_EQ(ui_router_dispatched(), d0 + 4u);
 }
 
-/* The splash carries no band, so its top 48 px are the screen's. */
+/* The splash carries no band, so its top 48px are the screen's. */
 TEST_CASE(a_screen_without_a_band_owns_its_top_rows)
 {
     fresh();
@@ -214,9 +214,9 @@ static float after_a_drag_then(uint8_t id2, int x0, int y0, int x1, int y1,
 
 /*
  * Every way the second contact can arrive, and the first drag at three
- * speeds.  At 130 px per report the tracker splits each step into an UP and
+ * speeds.  At 130px per report the tracker splits each step into an UP and
  * a DOWN (TOUCH_JUMP_PX is 120), so the screen has its release from the
- * tracker; at 100 px per report it has it from the router.
+ * tracker; at 100px per report it has it from the router.
  */
 TEST_CASE(no_later_contact_continues_a_drag_that_left_by_the_band)
 {

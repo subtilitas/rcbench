@@ -91,7 +91,7 @@ void link_bringup_add_rtt(link_bringup_t *b, uint32_t us)
     }
     /*
      * A running mean rather than a sum: a microsecond sum overflows 32 bits
-     * after about 1 hour of polling.  Integer, biased low by at most 1 us per
+     * after about 1 hour of polling.  Integer, biased low by at most 1us per
      * sample.
      */
     ++b->rt_samples;

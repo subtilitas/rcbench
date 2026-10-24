@@ -904,7 +904,7 @@ TEST_CASE(out_of_range_geometry_saturates_instead_of_wrapping)
     gfx_fill_rect(&s_c, 0, 0, 65540, 2, GFX_RED);
     CHECK_EQ(count_of(GFX_RED), W * 2);
 
-    /* A blit whose origin is out of range must draw nothing, not read 128 KiB
+    /* A blit whose origin is out of range must draw nothing, not read 128KiB
      * before its source. */
     static gfx_color_t src[4] = { GFX_BLUE, GFX_BLUE, GFX_BLUE, GFX_BLUE };
     fresh();

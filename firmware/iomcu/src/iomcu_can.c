@@ -26,12 +26,12 @@
  * enable in hardware (docs/Safety.md), so this monitor is the whole check.
  * A ringing line, a short to a clock or a floating input next to a switching
  * supply look like edges.  heartbeat_mon_t knows the expected period and
- * rejects what cannot be the panel's control task edging every 20 ms.
+ * rejects what cannot be the panel's control task edging every 20ms.
  *
  * The pin is sampled in the main loop rather than by an interrupt.  A pass
- * that turns over faster than HEARTBEAT_MIN_GAP_MS (4 ms) cannot miss an
+ * that turns over faster than HEARTBEAT_MIN_GAP_MS (4ms) cannot miss an
  * edge the monitor would accept.  The pass time is not measured: a printf
- * every 3 s goes to USB (Universal Serial Bus) stdio, and the supply's
+ * every 3s goes to USB (Universal Serial Bus) stdio, and the supply's
  * UART send blocks while its PIO FIFO is full.  An ISR (interrupt service
  * routine) would notice edges faster than the floor, which the monitor
  * rejects anyway.
@@ -74,7 +74,7 @@ uint32_t s_can_overflows;
  * can_service() empties both receive buffers every pass, so where this is
  * read it is the age of the last frame on the bus rather than of the last one
  * collected.  The flash windows are opened against it: this core answers
- * nothing while it writes, and the two buffers hold 260 us of frames.  Zero
+ * nothing while it writes, and the two buffers hold 260us of frames.  Zero
  * until the first frame, so a board that has heard nothing since boot reads
  * as a quiet bus, which is what it has.
  */
@@ -90,8 +90,8 @@ void can_start(void)
 
 /*
  * One clock for the whole pass, handed in.  Every timeout is a wrap-safe
- * unsigned subtraction, so a last_request_ms stamped 1 ms later than the
- * `now` that link_dev_tick() receives reads as 4,294,967,295 ms of silence,
+ * unsigned subtraction, so a last_request_ms stamped 1ms later than the
+ * `now` that link_dev_tick() receives reads as 4,294,967,295ms of silence,
  * past every timeout there is.
  */
 void can_service(uint32_t now)

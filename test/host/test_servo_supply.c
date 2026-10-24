@@ -66,10 +66,10 @@ static void bench_frames_on(uint32_t ms, bool accept_on, float *on_v_max)
 }
 
 /*
- * 8.4 V set on SUPPLY with the output off; a run without HV steps starts
- * and asks 4.8 V and its ON, which does not land.  OUTPUT ON held on SERVO
- * at 4.8 V while the run ends (no ON in 3 s): the set points do not go back
- * under the hold, and no ON is ever asked above 6.0 V.
+ * 8.4V set on SUPPLY with the output off; a run without HV steps starts
+ * and asks 4.8V and its ON, which does not land.  OUTPUT ON held on SERVO
+ * at 4.8V while the run ends (no ON in 3s): the set points do not go back
+ * under the hold, and no ON is ever asked above 6.0V.
  */
 TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
 {
@@ -90,7 +90,7 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     CHECK(!(bench.out && supply_screen_set_v() > 6.0f + 1e-4f));
     bench_frames_on(2000u, true, &on_v);
     CHECK(on_v <= 6.0f + 1e-4f);
-    /* The output came on at 4.8 V under the hold: the set points stay as
+    /* The output came on at 4.8V under the hold: the set points stay as
      * they are while it is on. */
     CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
 }
@@ -133,7 +133,7 @@ TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
     CHECK(c.off && !c.on);
 }
 
-/* A set point raised past 6.0 V during OUTPUT ON's ordinary hold -- on
+/* A set point raised past 6.0V during OUTPUT ON's ordinary hold -- on
  * SUPPLY, or a run's end putting it back -- switches nothing on when the
  * hold completes: HV SERVOS ONLY opens instead. */
 TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)

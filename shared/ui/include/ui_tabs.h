@@ -36,7 +36,7 @@ typedef struct {
 
 /**
  * @brief Tabs whose labels are drawn as given, in every language: @p row
- *        split into @p count tabs 4 px apart, the first selected.
+ *        split into @p count tabs 4px apart, the first selected.
  * @param t      The tabs; NULL does nothing.
  * @param labels The labels; NULL does nothing.
  * @param count  The tabs, at most UI_TABS_MAX.
@@ -74,21 +74,21 @@ bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt);
 void ui_tabs_cancel(ui_tabs_t *t);
 /**
  * @brief The tabs' labels in the face of ui_tabs_font(), centred in each
- *        tab; the selected tab raised in a sunk trough 3 px around the row.
+ *        tab; the selected tab raised in a sunk trough 3px around the row.
  * @param t The tabs.
  * @param c Canvas.
  */
 void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c);
 
 /**
- * @brief A row UI_TABS_LABEL_H (32 px) tall or taller whose every label
+ * @brief A row UI_TABS_LABEL_H (32px) tall or taller whose every label
  *        fits its tab in the 10 x 20 face, UI_TABS_PAD px clear each side,
  *        draws its labels in that face; another row in UI_FONT_LABEL
  *        (8 x 16).  The test runs in the language shown, so one row draws
  *        in one face.
  */
 #define UI_TABS_LABEL_H 32
-/** @brief The room a tab keeps left and right of a 10 x 20 label: 6 px. */
+/** @brief The room a tab keeps left and right of a 10 x 20 label: 6px. */
 #define UI_TABS_PAD     6
 
 /**

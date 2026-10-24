@@ -11,16 +11,16 @@
  * them: shifting left, 32 to a word.
  *
  * Under test:
- *  - the counts at 150 MHz and at every clock the arithmetic takes, and
+ *  - the counts at 150MHz and at every clock the arithmetic takes, and
  *    the clocks it refuses;
  *  - the program, stepped instruction by instruction: the precharge, the
  *    release, the sample and the period;
  *  - a 7-byte answer and its trailing byte at 7.99 samples a bit, the
- *    servo's bit time 4 % short and long, and the answer's times;
+ *    servo's bit time 4% short and long, and the answer's times;
  *  - a start bit on the first sample and on the window's last, a byte
  *    across the window's end, a framing error, no answer, a line stuck
  *    high from the start and after a byte, a glitch;
- *  - the 30 ms window and the one above it, a sampler that stops short,
+ *  - the 30ms window and the one above it, a sampler that stops short,
  *    words fed one at a time against all at once;
  *  - the run's plans, and an abort in every phase.
  *
@@ -162,7 +162,7 @@ TEST_CASE(the_counts_at_150_mhz_are_the_bench_period_and_the_middle_of_the_windo
     CHECK_EQ(T.mid[0], 3u);
     CHECK_EQ(T.mid[1], 11u);
     CHECK_EQ(T.mid[9], 75u);
-    /* 25 ms, the read's window: 23 006 samples. */
+    /* 25ms, the read's window: 23 006 samples. */
     CHECK_EQ(hitec_pre_window_samples(&T, 25000u), 23006u);
     CHECK_EQ(hitec_pre_window_samples(&T, 0u), 0u);
 }
@@ -276,7 +276,7 @@ TEST_CASE(a_seven_byte_answer_decodes_at_7_99_samples_a_bit)
     hitec_reply_t r;
 
     CHECK(hitec_pre_timing(150000000u, &T));
-    /* The answer of register 0x32 5.9 ms into the window, its trailing
+    /* The answer of register 0x32 5.9ms into the window, its trailing
      * 0x00 behind it, as the D485HW sends them. */
     wire_clear();
     wire_bytes(5.9e6, D_BIT_NS, k_answer, 8u);
@@ -368,8 +368,8 @@ TEST_CASE(a_start_bit_on_the_last_sample_of_the_window_is_taken_whole)
 TEST_CASE(a_byte_across_the_window_end_and_the_bytes_behind_it)
 {
     CHECK(hitec_pre_timing(150000000u, &T));
-    /* 8 bytes from 0.5 ms into a 0.6 ms window, 0.69 ms long: the bytes
-     * do not count against the window, so the waiting has 0.1 ms left
+    /* 8 bytes from 0.5ms into a 0.6ms window, 0.69ms long: the bytes
+     * do not count against the window, so the waiting has 0.1ms left
      * when the last byte ends, past the window's end in time. */
     wire_clear();
     wire_bytes(0.5e6, D_BIT_NS, k_answer, 8u);
@@ -472,7 +472,7 @@ TEST_CASE(the_30_ms_window_fits_and_the_next_microsecond_does_not)
           <= HITEC_PRE_WORDS);
     CHECK_EQ(hitec_pre_words(&T, HITEC_PRE_WINDOW_MAX_US + 1u, 1u), 0u);
     CHECK_EQ(hitec_pre_words(NULL, 1000u, 1u), 0u);
-    /* An answer at 29.9 ms of a 30 ms window, 16 bytes. */
+    /* An answer at 29.9ms of a 30ms window, 16 bytes. */
     wire_clear();
     {
         uint8_t v[16];

@@ -29,7 +29,7 @@ function parts(): Parts | null {
   return { box, svg, size, rect, scale };
 }
 
-/** Largest scale: 1 px of the picture on 2 CSS px. */
+/** Largest scale: 1px of the picture on 2 CSS px. */
 const maxOf = (p: Parts): number => Math.max(2, 2 / p.scale);
 
 /** A point of the window in px of the picture box. */

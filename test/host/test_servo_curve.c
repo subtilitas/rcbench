@@ -47,7 +47,7 @@ TEST_CASE(a_refused_sweep_leaves_nothing_driven)
 /*
  * With feedback, a HOLD acknowledged after an early PAUSED keeps the
  * reading for the resume: feedback gone before the resume's
- * acknowledgement, the resume goes on from 1700 us, not the tap's 1600.
+ * acknowledgement, the resume goes on from 1700us, not the tap's 1600.
  */
 TEST_CASE(an_early_resume_keeps_the_reading_at_the_hold)
 {
@@ -136,8 +136,8 @@ TEST_CASE(leaving_forgets_the_sweep_model)
  * While a start waits for its acknowledgement, a SPEED change and a curve
  * change replace what the screen would draw, not what was sent.  A SPEED
  * change is a repeat of the same curve: the start's own acknowledgement,
- * 307 ms late, is worked through at the start's SPEED, 12 %, not the new
- * 100 %.  A curve change is a new start: the first start's acknowledgement
+ * 307ms late, is worked through at the start's SPEED, 12%, not the new
+ * 100%.  A curve change is a new start: the first start's acknowledgement
  * does not end the wait, the new one's does, with its own curve.
  */
 TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
@@ -149,7 +149,7 @@ TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
     tap(SWEEP_X, BTN_Y);
     const servo_cmd_t start = last_cmd();
     CHECK_EQ(start.kind, SERVO_CMD_SWEEP);
-    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100 % */
+    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100% */
     const servo_cmd_t repeat = last_cmd();
     CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
     CHECK(repeat.start_seq != start.start_seq);
@@ -158,7 +158,7 @@ TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
     servo_screen_sweep_started(start.start_seq, 307u, SERVO_SWEEP_FROM_REST,
                                0u);
     const uint16_t at = servo_screen_drawn();
-    CHECK(at > 1500u && at <= 1575u);          /* 307 ms at 240 a second */
+    CHECK(at > 1500u && at <= 1575u);          /* 307ms at 240 a second */
 
     fresh();
     servo_screen_set_armed(true);
@@ -175,15 +175,15 @@ TEST_CASE(a_start_acknowledgement_applies_to_its_own_command)
     CHECK_EQ(servo_screen_commanded(), 1500u); /* still waiting */
     servo_screen_sweep_started(second.start_seq, 0u, SERVO_SWEEP_FROM_REST,
                                0u);
-    frames(0.125f);                            /* 1 Hz, 128 ms in */
+    frames(0.125f);                            /* 1Hz, 128ms in */
     CHECK(servo_screen_commanded() > 1760u);
 }
 
 /*
  * The start's write failed and a repeat -- SPEED moved -- started the sweep
  * at the far end instead: only the repeat is acknowledged.  The wait ends
- * with it, at the repeat's SPEED, 100 %: 307 ms into the 0.5 Hz sine,
- * near 1829 us.  The same for a resume whose RESUME failed: the repeat
+ * with it, at the repeat's SPEED, 100%: 307ms into the 0.5Hz sine,
+ * near 1829us.  The same for a resume whose RESUME failed: the repeat
  * that followed it started the curve from rest.  An acknowledgement of a
  * command older than the start, or newer than any posted, is not taken.
  */
@@ -195,7 +195,7 @@ TEST_CASE(a_later_repeat_acknowledged_ends_the_wait)
     tap(ARM_X + 1, SPEED_Y);                   /* SPEED's slowest */
     tap(SWEEP_X, BTN_Y);
     const servo_cmd_t start = last_cmd();
-    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100 % */
+    tap(ARM_X + ARM_W - 1, SPEED_Y);           /* SPEED 100% */
     const servo_cmd_t repeat = last_cmd();
     CHECK_EQ(repeat.kind, SERVO_CMD_SWEEP);
     frames(0.3f);
@@ -234,10 +234,10 @@ TEST_CASE(a_later_repeat_acknowledged_ends_the_wait)
 }
 
 /*
- * TRAVEL 90 to 45 deg while a sweep runs: the far end runs the old curve
+ * TRAVEL 90 to 45deg while a sweep runs: the far end runs the old curve
  * under the old mapping until the restart is acknowledged, so the drawing
- * goes on to the old curve's peak, 1900 us, not clamped at 45 deg (1750 us).
- * After the acknowledgement the new curve keeps within 45 deg.
+ * goes on to the old curve's peak, 1900us, not clamped at 45deg (1750us).
+ * After the acknowledgement the new curve keeps within 45deg.
  */
 TEST_CASE(a_restart_drains_the_old_curve_in_its_old_mapping)
 {
@@ -303,10 +303,10 @@ TEST_CASE(two_sweep_taps_in_one_pass_send_nothing)
 }
 
 /*
- * At SPEED 100 % the far end takes a command at once, and so does the
+ * At SPEED 100% the far end takes a command at once, and so does the
  * drawing: a square's edge inside the HOLD's acknowledgement interval puts
- * the paused output at the far end, 1100 us, not part way down a ramp, and
- * a trim changed while paused says that.  A drag at 100 % is drawn at the
+ * the paused output at the far end, 1100us, not part way down a ramp, and
+ * a trim changed while paused says that.  A drag at 100% is drawn at the
  * command on the next frame.
  */
 TEST_CASE(speed_100_is_immediate_in_the_drawing_and_the_replay)
@@ -316,7 +316,7 @@ TEST_CASE(speed_100_is_immediate_in_the_drawing_and_the_replay)
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
     sweep_go();
-    frames(1.1f);                              /* +A until 1200 ms */
+    frames(1.1f);                              /* +A until 1200ms */
     CHECK_EQ(servo_screen_drawn(), 1900u);
     const servo_cmd_t hold = pause_go();
     frames(0.2f);                              /* the edge passes */
@@ -340,8 +340,8 @@ TEST_CASE(speed_100_is_immediate_in_the_drawing_and_the_replay)
 
 /*
  * PAUSED does not move the horn: the far end stays held until the RESUME
- * reaches it.  Acknowledged 300 ms after it did, the drawn output is worked
- * on from the held point for those 300 ms at SPEED, as the far end's
+ * reaches it.  Acknowledged 300ms after it did, the drawn output is worked
+ * on from the held point for those 300ms at SPEED, as the far end's
  * output slews -- the bank the IOmcu runs, fed the same curve.
  */
 TEST_CASE(a_resume_is_drawn_from_its_acknowledgement)
@@ -461,7 +461,7 @@ TEST_CASE(a_pause_ends_where_a_hold_ended)
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 
     paused_sweep();
-    servo_screen_released(g_hold_seq);                   /* unrepeated for 500 ms */
+    servo_screen_released(g_hold_seq);                   /* unrepeated for 500ms */
     CHECK(!servo_screen_paused());
 
     paused_sweep();
@@ -492,7 +492,7 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
     tap(ROW_L_X, ROW_Y(2));                    /* PULSE MIN */
     keys("900");
     close_settings();
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 10 % */
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 10% */
     (void)last_cmd();
     tap(SWEEP_X, BTN_Y);
     servo_cmd_t c = last_cmd();
@@ -528,8 +528,8 @@ TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
  * Without feedback the horn follows only what the far end is known to do.
  * A sweep asked for is not drawn until its start is acknowledged; then the
  * output is worked on from where it was drawn when the far end began, at
- * SPEED: acknowledged 300 ms after it began, it is where one acknowledged
- * at once is 300 ms in.  A sweep that froze unrepeated starts from where it
+ * SPEED: acknowledged 300ms after it began, it is where one acknowledged
+ * at once is 300ms in.  A sweep that froze unrepeated starts from where it
  * froze.
  */
 TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
@@ -537,7 +537,7 @@ TEST_CASE(the_drawn_output_starts_where_the_far_ends_output_starts)
     fresh();
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
-    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 12 % */
+    tap(ARM_X + 1, SPEED_Y);                   /* SPEED 12% */
     tap(SWEEP_X, BTN_Y);
     CHECK_EQ(last_cmd().kind, SERVO_CMD_SWEEP);
     frames(0.3f);                              /* not acknowledged */

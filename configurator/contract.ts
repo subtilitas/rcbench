@@ -44,7 +44,7 @@ export type Pin = {
 /**
  * A picture of a part in the picture folder of the page.
  *
- * - photo: `<file>.webp` and `<file>-thumb.webp`, the thumb 480 px wide.
+ * - photo: `<file>.webp` and `<file>-thumb.webp`, the thumb 480px wide.
  * - drawing: `<file>.svg`.
  *
  * `width` and `height` are the pixel size of the file a part card shows: the
@@ -261,7 +261,7 @@ export type Selection = {
 
 /**
  * The values the visitor chooses on the motor simulator: the LiPo cell count
- * of the ESC pack (4.2 V per cell), the resistance in Ω and the power rating
+ * of the ESC pack (4.2V per cell), the resistance in Ω and the power rating
  * in W of each of the 3 resistors, and how they are joined. They name the
  * part and its row of the parts list and give the heat per resistor. They
  * change no wire and no function.

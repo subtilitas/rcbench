@@ -78,11 +78,11 @@ typedef struct {
  *
  * The writer commits every LOG_WRITER_FLUSH_ROWS rows, and again once
  * LOG_WRITER_FLUSH_S have passed on the run's own clock, whichever comes
- * first.  At the panel's 20 Hz sample rate the two are the same point: 20
- * rows is 1000 ms of run.
+ * first.  At the panel's 20Hz sample rate the two are the same point: 20
+ * rows is 1000ms of run.
  *
  * A run interrupted at any moment therefore loses at most 20 rows, spanning
- * less than 1.0 s of its own clock.  Twenty and not nineteen: the count
+ * less than 1.0s of its own clock.  Twenty and not nineteen: the count
  * reaches LOG_WRITER_FLUSH_ROWS before the commit is attempted and is
  * cleared only once the commit has succeeded, so those twenty rows are not
  * durable for as long as the sink takes.  The price is one commit per second per

@@ -40,9 +40,9 @@ void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 void status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
-    /* As of the last pass rather than the last 50 Hz sample: the panel
+    /* As of the last pass rather than the last 50Hz sample: the panel
      * writes an arm once the heartbeat bit reads clear, and a bit up to
-     * 20 ms old would hold that arm back a poll. */
+     * 20ms old would hold that arm back a poll. */
     status_gate(s);
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = s->status[off + i];
@@ -545,7 +545,7 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     /*
      * No ARM while the IOmcu's own firmware is being written or waits
-     * for its BUY: the flash windows of the update stop this core for 19 ms
+     * for its BUY: the flash windows of the update stop this core for 19ms
      * at a time.  Refused before the page's rules run, so nothing of the
      * frame is stored; a disarm is always taken.
      */

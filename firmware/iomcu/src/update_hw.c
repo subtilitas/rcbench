@@ -44,7 +44,7 @@ static uint32_t          s_running_off;
 static int               s_slot = -1;
 
 /**
- * @brief The boot ROM's BUY needs 4 KiB to rewrite the sector holding the flag.
+ * @brief The boot ROM's BUY needs 4KiB to rewrite the sector holding the flag.
  */
 static uint32_t s_buy_work[FLASH_SECTOR_SIZE / sizeof(uint32_t)];
 static int      s_buy_rc;

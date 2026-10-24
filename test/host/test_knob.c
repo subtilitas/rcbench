@@ -278,7 +278,7 @@ TEST_CASE(a_nack_or_a_timeout_leaves_the_knob_idle)
     bytes_of(990, b);
     CHECK_EQ(knob_poll_done(&k, true, b), 10);
 
-    /* The bus driver's NACK and its 5 ms timeout both end as "not
+    /* The bus driver's NACK and its 5ms timeout both end as "not
      * answered": whatever the bytes hold, nothing moves. */
     bytes_of(0, b);
     for (int i = 0; i < 50; ++i) {
@@ -497,7 +497,7 @@ TEST_CASE(enabling_the_knob_with_no_sensor_changes_nothing_else)
     }
     CHECK_EQ(bus.xfers, 0);
 
-    /* On, through the key as the SETUP row sets it, for 10 s of idle
+    /* On, through the key as the SETUP row sets it, for 10s of idle
      * polls with no sensor there. */
     settings_adjust(SET_KNOB_EN, 1);
     CHECK(settings_get_bool(SET_KNOB_EN));
@@ -602,7 +602,7 @@ TEST_CASE(a_knob_command_withdrawn_after_a_stop_leaves_nothing_held)
     servo_screen_set_armed(true);
     while (servo_took().kind != SERVO_CMD_NONE) { }
 
-    /* The dial at 40 deg, 110 px from the shaft (servo_spots.h). */
+    /* The dial at 40deg, 110px from the shaft (servo_spots.h). */
     const float k = 3.14159265358979f / 180.0f;
     const int x = SV_SHAFT_X + (int)(110.0f * cosf(40.0f * k) + 0.5f);
     const int y = UI_BAND_H + SV_SHAFT_Y - (int)(110.0f * sinf(40.0f * k) + 0.5f);

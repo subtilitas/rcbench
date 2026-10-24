@@ -160,8 +160,8 @@ static void upd_pose(upd_got_t got, bool capped, upd_why_t block)
 /* ------------------------------------------------------------- UPDATES */
 
 /*
- * The buttons are 460 x 56 px at a 64 px pitch: a press on the edge rows
- * and columns of REMINDER AT START and RELEASES acts; the 8 px between
+ * The buttons are 460 x 56px at a 64px pitch: a press on the edge rows
+ * and columns of REMINDER AT START and RELEASES acts; the 8px between
  * two rows and the column beside them do not.
  */
 TEST_CASE(updates_buttons_act_where_they_are_drawn)
@@ -197,9 +197,9 @@ TEST_CASE(updates_buttons_act_where_they_are_drawn)
 }
 
 /*
- * HOLD 2 s: UPDATE IOMCU is 460 x 56 px with its foot at body y 484: a
+ * HOLD 2s: UPDATE IOMCU is 460 x 56px with its foot at body y 484: a
  * hold on its bottom row completes, a hold one row under it starts
- * nothing, and the row lies 8 px over the floor above the alert band.
+ * nothing, and the row lies 8px over the floor above the alert band.
  */
 TEST_CASE(the_iomcu_hold_acts_at_its_foot_above_the_alert_band)
 {
@@ -216,8 +216,8 @@ TEST_CASE(the_iomcu_hold_acts_at_its_foot_above_the_alert_band)
 }
 
 /*
- * The reminder's NOT NOW and NEVER REMIND ME are 398 x 56 px side by side,
- * 16 px apart: NEVER at its left and bottom edge turns the reminder off;
+ * The reminder's NOT NOW and NEVER REMIND ME are 398 x 56px side by side,
+ * 16px apart: NEVER at its left and bottom edge turns the reminder off;
  * the gap between them and the row under them do nothing.
  */
 TEST_CASE(the_reminder_buttons_act_at_their_edges)
@@ -242,7 +242,7 @@ TEST_CASE(the_reminder_buttons_act_at_their_edges)
 /* ------------------------------------------------------- the question */
 
 /*
- * CANCEL and START are 398 x 56 px at body y 288: CANCEL acts at its
+ * CANCEL and START are 398 x 56px at body y 288: CANCEL acts at its
  * corners, START's hold completes on its bottom-right pixel.  A tap where
  * they were at 800 x 480 (body 264, 282 and 536, 282) lands on nothing.
  */
@@ -273,7 +273,7 @@ TEST_CASE(the_question_buttons_act_at_their_edges_and_old_taps_miss)
 
 /*
  * In English and German nothing of UPDATES, the reminder or the question
- * is drawn on the rows from 4 px over the alert band to the body's foot:
+ * is drawn on the rows from 4px over the alert band to the body's foot:
  * UPDATES at its fullest (the release line capped, the hold of the IOmcu)
  * and shut by the gate, the reminder with the hold shut, the question for
  * an older image.
@@ -319,7 +319,7 @@ static void bf_pose(can_selftest_verdict_t v)
 }
 
 /*
- * The acknowledgement runs 976 x 56 px across the foot, 16 px above the
+ * The acknowledgement runs 976 x 56px across the foot, 16px above the
  * panel's edge: a hold on its top-left and its bottom-right pixel
  * acknowledges; a hold on the row over it does not.
  */
@@ -374,7 +374,7 @@ TEST_CASE(the_fullest_bus_fault_lists_end_above_the_notes_and_the_rule)
 /* ----------------------------------------- the progress and the splash */
 
 /*
- * The progress bar is 36 px tall from y 180 across the panel less 24 px
+ * The progress bar is 36px tall from y 180 across the panel less 24px
  * each side; the German note on the kept version wraps to a second line,
  * which ends above y 400.
  */
@@ -410,8 +410,8 @@ TEST_CASE(the_progress_bar_is_36_px_and_the_notes_wrap_in_german)
 }
 
 /*
- * The steps are 40 px rows from y 200, the last ending above the credit;
- * a detail of SPLASH_DETAIL_MAX - 1 characters is cut 24 px short of the
+ * The steps are 40px rows from y 200, the last ending above the credit;
+ * a detail of SPLASH_DETAIL_MAX - 1 characters is cut 24px short of the
  * panel's right edge.
  */
 TEST_CASE(the_splash_rows_are_40_px_and_a_long_detail_stays_on_the_panel)

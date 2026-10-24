@@ -32,14 +32,14 @@ static const esp_partition_t *s_part;
  * that beats the safety line and polls the bench.
  *
  * A quarter-megabyte erase in one call therefore stops the heartbeat for as
- * long as it takes, the IOmcu's 200 ms silence timer trips, the
- * panel's own 1 s host timeout trips, and the screen says NO LINK while the
+ * long as it takes, the IOmcu's 200ms silence timer trips, the
+ * panel's own 1s host timeout trips, and the screen says NO LINK while the
  * cable is fine. Putting the work on another task does not help: the stall
  * is the cache, not the scheduler.
  *
  * So every operation is broken into one sector, and the task doing it gives
- * the scheduler a tick in between. One 4 kB sector erase is tens of
- * milliseconds, which fits inside the heartbeat's 150 ms ceiling with room;
+ * the scheduler a tick in between. One 4kB sector erase is tens of
+ * milliseconds, which fits inside the heartbeat's 150ms ceiling with room;
  * a whole slot does not.
  */
 /* One erase granule. Written in terms of the platform's own constant so the

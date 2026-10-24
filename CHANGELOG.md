@@ -17,7 +17,7 @@ history is in git.
   file with `pulse`, `angle`, `current` and `voltage` chosen.
 
 - The IOmcu says why it last started. A console line at start-up and every
-  3 s names the cause and carries every raw value it was read from:
+  3s names the cause and carries every raw value it was read from:
   `reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot ... params ...
   scratch ...)`, from POWMAN CHIP_RESET, WATCHDOG REASON, the boot ROM's
   boot word and reboot parameters, and WATCHDOG SCRATCH2 and SCRATCH3. The
@@ -32,24 +32,24 @@ history is in git.
   in, onto the nearer step, and SAVE keeps it as it keeps a step. A value
   outside the range keeps the keypad open and names the range in the
   warning colour. One the keys never reach keeps it open with the reason
-  in place of the range until the next key: `0 or 5.0 to 1000.0 mOhm` for
-  a SENSORS shunt between 0 and 5.0 mOhm, `0 or 10 to 32767 mA` for a
-  LIMIT row between 0 and 10 mA, `Pins the bus takes: 0 4 6 14
+  in place of the range until the next key: `0 or 5.0 to 1000.0mOhm` for
+  a SENSORS shunt between 0 and 5.0mOhm, `0 or 10 to 32767mA` for a
+  LIMIT row between 0 and 10mA, `Pins the bus takes: 0 4 6 14
   16 18 20 26` for a Sensor SDA pin the bus cannot have, listed from the
   check the row's keys use, and `The other PD mini pin holds this GPIO`.
-  A shunt of 44.4 mOhm from the 100.0 default is five keys, where `-`
+  A shunt of 44.4mOhm from the 100.0 default is five keys, where `-`
   takes 556 steps.
 - SERVO > SETTINGS > OUTPUT > TRIM opens a signed keypad: a `+/-` key
-  between the point and OK, -200 to +200 us, onto the 5 us steps of `-` and
+  between the point and OK, -200 to +200us, onto the 5us steps of `-` and
   `+`. Keypads of unsigned rows keep their keys where they were; a pin's
   -1, not set, is still set with `-`.
 - A settings value with a step finer than 0.1 shows the step's digits after
   the point, and one with a step of 1 none: ESC STICK's Current limit reads
-  1.25 A where it read 1.2 A, MOTOR & ESC's Internal R 18 mOhm where it
+  1.25A where it read 1.2A, MOTOR & ESC's Internal R 18mOhm where it
   read 18.0.
 - ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
   Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
-  GPIO17, the C6's enable on GPIO54, 4 bits at 40 MHz. The `esp_wifi` calls
+  GPIO17, the C6's enable on GPIO54, 4 bits at 40MHz. The `esp_wifi` calls
   of the WI-FI session, the release check and the download reach the C6
   through the managed components `esp_wifi_remote` 1.6.5 and `esp_hosted`
   2.13.0 (Apache-2.0; esp_hosted carries the protobuf-c runtime,
@@ -67,9 +67,9 @@ history is in git.
 - Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
   faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
   of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
-  (12x24). Cap heights are 12, 15, 23 and 40 px. The 32x44 numeral face
-  cuts `#` (5 px), `$` (16 px), `(` (12 px), `)` (12 px), `,` (23 px) and
-  `/` (6 px) at the cell edge; the three text faces cut nothing, which
+  (12x24). Cap heights are 12, 15, 23 and 40px. The 32x44 numeral face
+  cuts `#` (5px), `$` (16px), `(` (12px), `)` (12px), `,` (23px) and
+  `/` (6px) at the cell edge; the three text faces cut nothing, which
   `gen_font.py --check` verifies. No screen draws with the faces yet.
 - The console names each SERVO test file as it opens and closes:
   `logging to .../ATEST004.TXT` when the report opens after the CSV,
@@ -152,14 +152,14 @@ history is in git.
 - The panel firmware targets the 7-inch ESP32-P4 display board from
   Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
   builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
-  32 MB flash with two application slots of 7936 kB. The EK79007 panel runs
-  on 2 MIPI DSI (Display Serial Interface) lanes at 1000 Mbit/s each, 1024 x
+  32MB flash with two application slots of 7936kB. The EK79007 panel runs
+  on 2 MIPI DSI (Display Serial Interface) lanes at 1000Mbit/s each, 1024 x
   600 RGB565 at 60.38Hz (measured on the console's VSYNC figure), two
   frame buffers in PSRAM; the UI draws 800 x 480 in the top-left corner and the rest stays
   black. Touch is polled (the GT911's INT line does not reach the chip),
   mirrored in x and y, and a touch outside 800 x 480 is dropped. The card
   mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
-  (RX) from the 40 MHz crystal; the rotary knob has an I2C controller of its
+  (RX) from the 40MHz crystal; the rotary knob has an I2C controller of its
   own. The heartbeat pin is IO28 and the knob pins are IO30 (SDA) and
   IO31 (SCL), all on the 12-pin header P3. Its Wi-Fi radio is the
   board's ESP32-C6 on SDIO, listed under Added.

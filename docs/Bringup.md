@@ -20,7 +20,7 @@ controller answered, and echoes probes permanently. The echo costs one register
 read per loop and answers only frames addressed to a page the map does not use.
 
 Boot output on the IOmcu's USB (Universal Serial Bus) console, repeated
-every 3 s:
+every 3s:
 
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
 
@@ -40,7 +40,7 @@ GP12), not on the CAN bus.
 
 ### Panel
 
-The test runs at every start-up. It takes 1200 ms, inside the splash and
+The test runs at every start-up. It takes 1200ms, inside the splash and
 before the identity poll: a broken bus is then diagnosed as a broken bus
 rather than as an identity that never answered.
 
@@ -125,8 +125,8 @@ bits and long runs of one level are what a marginal bus fails on.
 ## Link report
 
 After bring-up the panel polls the IOmcu's identity page every second
-until it answers, then polls the bench page at 20 Hz and the status page every
-500 ms. Every 5 s while the link is down, and once a minute while it is up, the
+until it answers, then polls the bench page at 20Hz and the status page every
+500ms. Every 5s while the link is down, and once a minute while it is up, the
 panel prints a diagnosis:
 
     I (…) rcbench: LINK works, and not every time
@@ -149,10 +149,10 @@ panel prints a diagnosis:
 kept what it held ([Frames](Link.md#frames)). A set-up from SETUP
 INTERFACES that a page refuses is one each: one write per refused value,
 not written again until the value changes, so stepping through rows on SETUP
-counts one NACK for each value the IOmcu refuses -- Tap gap 2 ms with Tap
-lowest tone at 400 Hz, or PD mini RX on the sensor bus's SCL -- and none for
+counts one NACK for each value the IOmcu refuses -- Tap gap 2ms with Tap
+lowest tone at 400Hz, or PD mini RX on the sensor bus's SCL -- and none for
 the values it takes. A pin refused because something else holds it is
-offered again every 5 s and counts one each time. `timeouts`, `stale` and
+offered again every 5s and counts one each time. `timeouts`, `stale` and
 `crc` are the columns that count a link fault.
 
 The `crc` and `resync` columns of the IOmcu line carry the XL2515's
@@ -164,13 +164,13 @@ received and refused to decode since its power-up (`LINK_ST_REFUSED_LO` and
 
 ## Why the IOmcu last started
 
-At start-up and every 3 s after it, the IOmcu's console names why the IOmcu
+At start-up and every 3s after it, the IOmcu's console names why the IOmcu
 last started, with every raw value:
 
     rcbench-iomcu: reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot 0x010104FF params 0x101FD000 0x00000000 scratch 0x101FD000 0x00000000)
 
 The start-up line leaves before a host has the USB port open in most
-cases; the 3 s line repeats it. `chip_reset` is POWMAN CHIP_RESET, `reason`
+cases; the 3s line repeats it. `chip_reset` is POWMAN CHIP_RESET, `reason`
 WATCHDOG REASON, `boot` the boot ROM's boot word (0xttppbbdd: TBYB flags,
 partition, boot type, diagnostic partition; `boot none` when the boot ROM
 gave none), `params` its reboot parameters, `scratch` WATCHDOG SCRATCH2 and
@@ -192,7 +192,7 @@ wins:
 | `RAM_IMAGE` | boot type 3 | an image loaded into SRAM |
 | `BOOTSEL_REBOOT` | boot type 2; or reason non-zero, boot type 0, scratch 0xFFFFFFFF 0x00000000 | back from BOOTSEL through `picotool reboot`, which picotool also sends after every command run with `-f`. The way into BOOTSEL is the 1200 baud request or picotool's reset request over USB |
 | `SW_RESET` | reason 0x2 | the watchdog triggered at once by software |
-| `WATCHDOG` | reason 0x1 | the watchdog counted down: the boot ROM's 16.7 s TBYB (try before you buy) timer after an update the panel did not buy, or a reboot with other parameters |
+| `WATCHDOG` | reason 0x1 | the watchdog counted down: the boot ROM's 16.7s TBYB (try before you buy) timer after an update the panel did not buy, or a reboot with other parameters |
 | `POR` | reason 0, HAD_POR (bit 16) | power applied |
 | `BOR` | reason 0, HAD_BOR (bit 17) | brown-out detector |
 | `RUN_PIN` | reason 0, HAD_RUN_LOW (bit 18) | RUN pin held low: the reset button, or a host pulling RUN |

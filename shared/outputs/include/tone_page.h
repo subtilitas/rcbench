@@ -80,7 +80,7 @@ void tone_page_init(tone_page_t *p);
 
 /**
  * @brief The set-up as a page starts, into @p cfg (LINK_TN_CONFIG_COUNT
- *        registers): the tap off, GP22, 400 to 6500 Hz, 8 %, 3 ms, 3 periods.
+ *        registers): the tap off, GP22, 400 to 6500Hz, 8%, 3ms, 3 periods.
  *
  * @param cfg Receives LINK_TN_CONFIG_COUNT registers. Nothing is done when
  *        NULL.

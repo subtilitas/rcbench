@@ -3,7 +3,7 @@
  *
  * Under test: which control asks for what with and without a kept home
  * network, with the radio's gate shut, the home network picked from a scan
- * and typed on the Wi-Fi keyboard, and INSTALL as a 2 s hold that a release,
+ * and typed on the Wi-Fi keyboard, and INSTALL as a 2s hold that a release,
  * a vanished image or a closed install gate ends without asking.  The
  * screens command nothing themselves; every test reads wifi_screen_take().
  *
@@ -558,7 +558,7 @@ TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
         CHECK(r.y + r.h <= UI_ALERT_Y - UI_BAND_H - 4);
         CHECK(r.x >= UI_MARGIN && r.x + r.w <= UI_PANEL_W - UI_MARGIN);
     }
-    /* A character key: 93 x 71 px on the 1024 x 600 panel. */
+    /* A character key: 93 x 71px on the 1024 x 600 panel. */
     const gfx_rect_t q = ui_textkey_key_rect(&k, 10);
     CHECK_EQ(q.w, 93);
     CHECK_EQ(q.h, 71);

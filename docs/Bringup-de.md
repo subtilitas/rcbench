@@ -22,7 +22,7 @@ kostet einen Registerzugriff je Schleifendurchlauf und beantwortet nur Frames
 an eine Page, die die Page Map nicht benutzt.
 
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
-alle 3 s wiederholt:
+alle 3s wiederholt:
 
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
 
@@ -44,7 +44,7 @@ nicht am CAN-Bus.
 
 ### Panel
 
-Der Test läuft bei jedem Start. Er dauert 1200 ms, innerhalb des Splash und
+Der Test läuft bei jedem Start. Er dauert 1200ms, innerhalb des Splash und
 vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
 und nicht als eine Identity, die nie geantwortet hat.
 
@@ -133,8 +133,8 @@ Bus scheitert.
 ## Link-Bericht
 
 Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
-IOmcu, bis er antwortet, dann die Bench-Page mit 20 Hz und die
-Status-Page alle 500 ms. Alle 5 s, solange der Link ausgefallen ist, und einmal
+IOmcu, bis er antwortet, dann die Bench-Page mit 20Hz und die
+Status-Page alle 500ms. Alle 5s, solange der Link ausgefallen ist, und einmal
 pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
     I (…) rcbench: LINK works, and not every time
@@ -158,10 +158,10 @@ arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
 Eine Einstellung aus SETUP ANSCHLÜSSE, die eine Page ablehnt, zählt je
 einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
 wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
-ein NACK für jeden Wert, den der IOmcu ablehnt -- Abgriff-Pause 2 ms mit
-Tiefster Ton 400 Hz, oder PD mini RX auf dem SCL des Sensorbusses --, und
+ein NACK für jeden Wert, den der IOmcu ablehnt -- Abgriff-Pause 2ms mit
+Tiefster Ton 400Hz, oder PD mini RX auf dem SCL des Sensorbusses --, und
 keines für die Werte, die er übernimmt. Ein Pin, der abgelehnt wurde, weil
-etwas anderes ihn hält, wird alle 5 s erneut angeboten und zählt jedes Mal
+etwas anderes ihn hält, wird alle 5s erneut angeboten und zählt jedes Mal
 einmal. `timeouts`, `stale` und `crc` sind die Spalten, die einen Linkfehler
 zählen.
 
@@ -174,13 +174,13 @@ IOmcu seit dem Einschalten empfangen und nicht dekodiert hat
 
 ## Warum der IOmcu zuletzt gestartet ist
 
-Beim Start und danach alle 3 s nennt die Konsole des IOmcu, warum der IOmcu
+Beim Start und danach alle 3s nennt die Konsole des IOmcu, warum der IOmcu
 zuletzt gestartet ist, mit jedem Rohwert:
 
     rcbench-iomcu: reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot 0x010104FF params 0x101FD000 0x00000000 scratch 0x101FD000 0x00000000)
 
 Die Zeile beim Start geht meist hinaus, bevor ein Host den USB-Port
-geöffnet hat; die Zeile alle 3 s wiederholt sie. `chip_reset` ist POWMAN
+geöffnet hat; die Zeile alle 3s wiederholt sie. `chip_reset` ist POWMAN
 CHIP_RESET, `reason` WATCHDOG REASON, `boot` das Boot-Wort des Boot-ROM
 (0xttppbbdd: TBYB-Flags, Partition, Boot-Typ, Diagnose-Partition; `boot
 none`, wenn das Boot-ROM keines lieferte), `params` seine Reboot-Parameter,

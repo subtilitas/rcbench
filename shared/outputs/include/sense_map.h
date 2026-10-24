@@ -3,7 +3,7 @@
  * @brief The SENSE_MAP, SENSE_WIN_A and SENSE_WIN_B link pages at the IOmcu
  *        (protocol 4.25): up to four INA3221 at 0x40 to 0x43, a shunt and a
  *        watch target for each of their 12 channels, the FAST channel, and
- *        every channel's last 50 ms window.
+ *        every channel's last 50ms window.
  *
  * The registers are in link_pages.h (LINK_SM_*, LINK_SX_*); the state is the
  * SENSE page's (sense_page_t), so one set-up generation covers both.

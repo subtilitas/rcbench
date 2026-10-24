@@ -16,15 +16,15 @@
  * What a write costs.  The flash cannot be read while it is written and this
  * core executes from it, so a write runs with interrupts off and this end
  * answers nothing for its length.  On the bring-up module an erase and
- * program together measured 19,178 us: a CAN (Controller Area Network) frame
- * at 1 Mbit/s is about 130 us and the XL2515 holds two of them, so a request
+ * program together measured 19,178us: a CAN (Controller Area Network) frame
+ * at 1Mbit/s is about 130us and the XL2515 holds two of them, so a request
  * arriving in that window is lost with nothing wrong on the wire.  That
  * measurement is the two operations inside one window; neither half of it was
  * timed on its own.  It is 1 sample on the bring-up module, with the flash
  * part not yet identified; the window is to be argued again against the
  * part's datasheet maximum once the part is known.  A lost request costs
- * the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's
- * LINK_DEV_SILENCE_MS (200 ms) failsafe.  One lost frame is enough for that,
+ * the panel LINK_HOST_TIMEOUT_MS (1000ms) of waiting, and 1000ms of silence latches this end's
+ * LINK_DEV_SILENCE_MS (200ms) failsafe.  One lost frame is enough for that,
  * which is what makes the length of these windows a safety number rather than
  * a performance one.
  *
@@ -50,7 +50,7 @@
  * the erase covers 4,096 bytes and the program 512, and on serial NOR
  * (not-or) flash a page program takes one to two orders of magnitude less
  * than an erase, which puts the two pages somewhere between 400 and
- * 4,000 us against the 260 us of frames the controller holds.  out_store_last_program_us() is what will settle it.
+ * 4,000us against the 260us of frames the controller holds.  out_store_last_program_us() is what will settle it.
  * Removing the loss rather than shrinking it needs the receive buffers
  * emptied during the window, which means reading the controller over SPI
  * (Serial Peripheral Interface) from a routine held in RAM while the flash is
@@ -113,15 +113,15 @@ void out_store_save(const out_store_t *cfg, uint32_t now_ms);
 /**
  * @brief How long the bus is quiet before a window is opened in it.
  *
- * The panel polls every 50 ms and each poll is a run of back-to-back
+ * The panel polls every 50ms and each poll is a run of back-to-back
  * transactions, so silence longer than any gap inside a run means the run is
  * over.  Five milliseconds is that.
  *
- * It is a minimum and nothing more.  The test says the last frame was 5 ms
+ * It is a minimum and nothing more.  The test says the last frame was 5ms
  * ago; it does not say how much of the gap is left, so a window can open in
  * front of the next run as well as behind the last one.  A run that has just
- * ended leaves up to 45 ms before the next, which is more than the 19,178 us
- * an erase and a program together measured; a 5 ms lull inside a run leaves
+ * ended leaves up to 45ms before the next, which is more than the 19,178us
+ * an erase and a program together measured; a 5ms lull inside a run leaves
  * whatever the run has left.  Nothing enforces the pattern either -- a write
  * from a screen arrives when a finger moves.  This narrows the odds rather
  * than removing them.
@@ -184,8 +184,8 @@ bool out_store_is_off(void);
  * off on this core, and core 1 -- the sensor bus -- parked in RAM by the
  * multicore lock-out, because a core executing from flash while it is
  * written faults.  Core 1 answers the lock-out between two I2C
- * transactions, each held to 1 ms (sense_i2c.h), so it stops within about
- * 1.2 ms; 10 ms is that with room.  The wait for it is spent before the
+ * transactions, each held to 1ms (sense_i2c.h), so it stops within about
+ * 1.2ms; 10ms is that with room.  The wait for it is spent before the
  * window opens and is not counted in it.
  */
 #define OUT_STORE_LOCKOUT_MS  10u
@@ -257,7 +257,7 @@ bool out_store_pending(void);
  * @brief How long the last sector erase held interrupts off, in microseconds.
  *
  * Zero until one has run.  The erase on its own is not measured: what the
- * bring-up module printed was 19,174 to 19,186 us over eight saves, and each
+ * bring-up module printed was 19,174 to 19,186us over eight saves, and each
  * of those windows held an erase and a page program together.  This is what
  * separates the two.
  *
@@ -306,7 +306,7 @@ uint8_t out_store_last_record(void);
 bool out_store_window_open(void);
 
 /**
- * @brief Erase the 4 KiB sector at flash offset @p off, below the store.
+ * @brief Erase the 4KiB sector at flash offset @p off, below the store.
  *
  * True when the erase ran.
  *

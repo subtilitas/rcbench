@@ -20,10 +20,10 @@
 #include "servo_test_rig.h"
 
 /*
- * A servo with its own current profile: after 40 ms of latency it moves for
- * 1200 ms at @p mv amperes, the first 100 ms of the motion at @p spike when
+ * A servo with its own current profile: after 40ms of latency it moves for
+ * 1200ms at @p mv amperes, the first 100ms of the motion at @p spike when
  * that is above zero, and settles at the end's holding level -- @p lo at the
- * low end, 0.05 A at the centre and the high end.  Readings every 100 ms,
+ * low end, 0.05A at the centre and the high end.  Readings every 100ms,
  * @p off ms after the run starts.  Six counted moves.
  */
 typedef struct {
@@ -98,7 +98,7 @@ static void run_profile(servo_test_t *t, float lo, float mv, float spike,
     }
 }
 
-/* Every move timed at the servo's 1240 ms, late by no more than a reading:
+/* Every move timed at the servo's 1240ms, late by no more than a reading:
  * none early. */
 static void check_on_time(const servo_test_t *t)
 {
@@ -112,7 +112,7 @@ static void check_on_time(const servo_test_t *t)
     CHECK_NEAR(s->hold[1].sum / (float)s->hold[1].n, 0.05f, 0.001f);
 }
 
-/* An end held at 0.40 A, harder than the 0.25 A the servo moves at: never
+/* An end held at 0.40A, harder than the 0.25A the servo moves at: never
  * passed on the way, so the settled readings there are the arrival. */
 TEST_CASE(an_end_held_harder_than_the_servo_moves_is_reached_settled)
 {
@@ -121,7 +121,7 @@ TEST_CASE(an_end_held_harder_than_the_servo_moves_is_reached_settled)
     check_on_time(&t);
 }
 
-/* The same end, with the first 100 ms of every move at 0.9 A: that reading
+/* The same end, with the first 100ms of every move at 0.9A: that reading
  * lies above the end's level, and the moving current after it below. A
  * reading below the level is not the arrival, whatever the phase of the
  * readings against the motion. */
@@ -150,11 +150,11 @@ TEST_CASE(a_moving_current_equal_to_the_holding_current_is_the_limit)
 }
 
 /*
- * A slow servo read through a lagging meter: it holds 0.05 A, moves at
- * 0.30 A for @p travel_ms after 40 ms of latency, and the meter shows each
- * current @p lag_ms late, read every 100 ms.  Four counted moves.  A
+ * A slow servo read through a lagging meter: it holds 0.05A, moves at
+ * 0.30A for @p travel_ms after 40ms of latency, and the meter shows each
+ * current @p lag_ms late, read every 100ms.  Four counted moves.  A
  * @p travel_ms of 0 is a servo that moves normally to place both ends, then
- * sticks at 0.30 A from its first counted move on, the third.
+ * sticks at 0.30A from its first counted move on, the third.
  */
 static void run_lagged(servo_test_t *t, uint32_t travel_ms, uint32_t lag_ms,
                        const servo_test_meter_t *meter)
@@ -217,9 +217,9 @@ static void run_lagged(servo_test_t *t, uint32_t travel_ms, uint32_t lag_ms,
     }
 }
 
-/* A servo that arrives at 2840 ms shows it on a meter 300 ms behind at
- * about 3140 ms, after the 3000 ms window: the meter's lag widens the
- * window to 3300 ms, so the move is timed and not late.  Without the lag
+/* A servo that arrives at 2840ms shows it on a meter 300ms behind at
+ * about 3140ms, after the 3000ms window: the meter's lag widens the
+ * window to 3300ms, so the move is timed and not late.  Without the lag
  * stated the same readings are late.  A servo that never arrives is late
  * on the lagging meter too, and fails the run. */
 TEST_CASE(a_meters_lag_widens_the_window_and_a_stuck_move_is_late)
@@ -246,9 +246,9 @@ TEST_CASE(a_meters_lag_widens_the_window_and_a_stuck_move_is_late)
     CHECK(t.steps[0].timeouts > 0u);
     CHECK_EQ(servo_test_verdict(&t), SERVO_TEST_FAIL);
 
-    /* Stuck at 0.30 A from its first counted move on: that move rises and
-     * never comes back, late at 3300 ms, and fails the run.  The end it
-     * then holds measures 0.30 A, so moves after it show no change. */
+    /* Stuck at 0.30A from its first counted move on: that move rises and
+     * never comes back, late at 3300ms, and fails the run.  The end it
+     * then holds measures 0.30A, so moves after it show no change. */
     run_lagged(&t, 0u, 300u, &pd);
     CHECK_EQ(t.why, SERVO_TEST_AB_NONE);
     CHECK(t.steps[0].timeouts > 0u);
@@ -259,7 +259,7 @@ TEST_CASE(a_meters_lag_widens_the_window_and_a_stuck_move_is_late)
 /* A supply whose reading count stops while its page goes on answering --
  * display reads on the IOmcu that are slow or fail -- shows the same
  * current over and over.  None of it is a new reading: no row is logged,
- * nothing is measured, and 1.5 s on the run ends as STALE. */
+ * nothing is measured, and 1.5s on the run ends as STALE. */
 TEST_CASE(a_frozen_current_is_no_reading)
 {
     rig_fresh();
@@ -476,7 +476,7 @@ TEST_CASE(the_csv_reads_back_in_the_viewer)
 static servo_test_t g_dl;
 static uint16_t     g_dl_samples;
 
-/* A reading of @p i amps at @p t, at a 5.00 V set point, then a pass. */
+/* A reading of @p i amps at @p t, at a 5.00V set point, then a pass. */
 static void dl_feed(uint32_t t, float i)
 {
     servo_test_reading_t r;
@@ -498,8 +498,8 @@ static void dl_feed(uint32_t t, float i)
 }
 
 /* The brown-out's first move, centre to the high end, on the PD mini's
- * meter: 0.12 A at rest, 0.9 A moving every 100 ms, and the reading back
- * at 0.12 A @p back_ms after the command. */
+ * meter: 0.12A at rest, 0.9A moving every 100ms, and the reading back
+ * at 0.12A @p back_ms after the command. */
 static void dl_run(uint32_t back_ms)
 {
     servo_test_cfg_t c;
@@ -529,8 +529,8 @@ static void dl_run(uint32_t back_ms)
     dl_feed(cmd + back_ms, 0.12f);
 }
 
-/* The window is 3000 ms and the PD mini's 300 ms lag: a reading back at
- * the level 1 ms before 3300 ms is the arrival, one at 3300 ms is not --
+/* The window is 3000ms and the PD mini's 300ms lag: a reading back at
+ * the level 1ms before 3300ms is the arrival, one at 3300ms is not --
  * the move is late. */
 TEST_CASE(a_reading_at_the_deadline_is_late)
 {
@@ -551,21 +551,21 @@ TEST_CASE(a_reading_at_the_deadline_is_late)
 
 /* ------------------------------------------------- stall and the limits */
 
-/* A LIMITS value as settings.c holds it: snapped to its 0.01 A step in
- * float, which for 0.05 A is 0.049999997. */
+/* A LIMITS value as settings.c holds it: snapped to its 0.01A step in
+ * float, which for 0.05A is 0.049999997. */
 static float limit_held(unsigned ma)
 {
     return 0.0f + roundf(((float)ma / 1000.0f - 0.0f) / 0.01f) * 0.01f;
 }
 
 /* A servo binding at its high end against a supply whose current limit is
- * STALL AT, both 2.00 A as shipped: no reading is above STALL AT, the
+ * STALL AT, both 2.00A as shipped: no reading is above STALL AT, the
  * supply reads constant current, and the run ends on that. */
 TEST_CASE(a_servo_held_at_the_current_limit_ends_the_run)
 {
     rig_fresh();
     g.cc_limits = true;
-    g.servo.cfg.stop_hi_us = 1850u;     /* 50 us short of the high end */
+    g.servo.cfg.stop_hi_us = 1850u;     /* 50us short of the high end */
     servo_test_cfg_t c;
     cfg_defaults(&c);
     c.step_count = 1u;
@@ -586,13 +586,13 @@ TEST_CASE(a_servo_held_at_the_current_limit_ends_the_run)
     CHECK(g.released);
     CHECK(!g.sup.output);
     /* On for the set point, SETTLE, IDLE, the two moves to the stop and the
-     * second of constant current, not for the step's 60 s. */
+     * second of constant current, not for the step's 60s. */
     CHECK(g.on_ms < 8000u);
 }
 
 /* A reading of the same number of mA as a LIMITS value is not above it:
- * idle and holding currents of 0.050 A against limits of 0.05 A pass, and
- * 0.051 A fails. */
+ * idle and holding currents of 0.050A against limits of 0.05A pass, and
+ * 0.051A fails. */
 TEST_CASE(a_reading_equal_to_a_limit_passes_it)
 {
     for (unsigned ma = 50u; ma <= 51u; ++ma) {
@@ -626,7 +626,7 @@ TEST_CASE(a_reading_equal_to_a_limit_passes_it)
                 next += 100u;
                 r.samples = ++samples;
                 r.taken_ms = now;
-                /* 0.3 A for 300 ms from 40 ms after a command, the level
+                /* 0.3A for 300ms from 40ms after a command, the level
                  * under test otherwise. */
                 const uint32_t dt = now - cmd_at;
                 r.i = (moved && dt >= 40u && dt < 340u)
@@ -666,8 +666,8 @@ TEST_CASE(a_reading_equal_to_a_limit_passes_it)
 }
 
 /* One reading of the same number of mA as STALL AT is not a stall, for
- * each of the 99 values STALL AT takes, 0.10 to 5.00 A in steps of 0.05 A,
- * as settings.c holds them; 1 mA more is. */
+ * each of the 99 values STALL AT takes, 0.10 to 5.00A in steps of 0.05A,
+ * as settings.c holds them; 1mA more is. */
 TEST_CASE(a_reading_equal_to_stall_at_is_not_a_stall)
 {
     unsigned at_equal = 0u, above = 0u;
@@ -694,7 +694,7 @@ TEST_CASE(a_reading_equal_to_stall_at_is_not_a_stall)
             (void)servo_test_start(&t, &c, 1000u, &r, 1.0f, 20.0f);
             const servo_test_in_t in = { true, 20.0f };
             servo_test_do_t d;
-            /* SET takes the first reading; SETTLE of 0 ms ends at the next
+            /* SET takes the first reading; SETTLE of 0ms ends at the next
              * pass; the reading after is IDLE's. */
             r.samples = 1u;
             r.taken_ms = 1010u;

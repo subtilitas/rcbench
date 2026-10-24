@@ -29,7 +29,7 @@ recovering does not clear a stop.
 ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
 A touch belongs to what it came down on until it lifts. The band is the top
-60 px of the panel.
+60px of the panel.
 
 - A touch that comes down on the band stays the band's. Sliding it down into
   the screen moves nothing there, and lifting it there presses nothing.
@@ -42,9 +42,9 @@ A touch belongs to what it came down on until it lifts. The band is the top
   take it, because they stop something: DISARM, OUTPUT OFF and START TEST
   while a servo test runs. The touch is not picked up again when the finger
   comes back down onto the screen; lift and press again.
-- A contact that is more than 120 px (the x and the y distance added) from
+- A contact that is more than 120px (the x and the y distance added) from
   where the previous report had it is taken as a lift there and a new press
-  here. The touch controller is read every 10 ms; its report interval on the
+  here. The touch controller is read every 10ms; its report interval on the
   panel is not measured. That lift presses nothing either, with the same
   three exceptions and STOP. The new press is a press like any other, except
   on a key of the SETUP list, where it scrolls and steps nothing.
@@ -54,13 +54,13 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the screen the tag leads to.
 
-STOP is 168 x 48 px at the right end of the band, from x 850. The chips
-stand from STOP to the left, 8 px from it and 6 px apart. Each chip is 44 px
-tall, with its label in the 10 x 20 px face, 28 px in from the chip's left
+STOP is 168 x 48px at the right end of the band, from x 850. The chips
+stand from STOP to the left, 8px from it and 6px apart. Each chip is 44px
+tall, with its label in the 10 x 20px face, 28px in from the chip's left
 edge. The widest row, a run clock of 10 hours, ARMED MOTOR, a FAULT code,
 BENCH and LINK in German, starts at x 276.
 
-The home tag is 44 px tall at x 8, y 8, its name in the 20 x 36 px face. The
+The home tag is 44px tall at x 8, y 8, its name in the 20 x 36px face. The
 home tags end at x 268 (MOTOR & ESC) and at x 248 or less on the other
 screens, so no chip row reaches under a home tag.
 
@@ -68,10 +68,10 @@ screens, so no chip row reaches under a home tag.
 
 A tap on a chip of the band opens a box under the band that says what the
 chip's state means for the bench and what to do: LINK or NO LINK, the mode,
-FAULT, the arm chip and the run clock. The box opens 4 px under the band at
-the tapped chip's left edge, moved left as far as it needs to stay 8 px
-inside the panel. It is 640 px wide, 60 characters of the 10 x 20 px face
-on 21 px lines; FAULT's box spans the panel (1008 px, 97 characters), with
+FAULT, the arm chip and the run clock. The box opens 4px under the band at
+the tapped chip's left edge, moved left as far as it needs to stay 8px
+inside the panel. It is 640px wide, 60 characters of the 10 x 20px face
+on 21px lines; FAULT's box spans the panel (1008px, 97 characters), with
 one paragraph per set bit. No box reaches into the band, so none covers
 STOP, and none reaches the alert band.
 
@@ -108,7 +108,7 @@ The FAULT box names each bit, its code and what it means:
 
 | Code | Bit | Set by this release |
 | --- | --- | --- |
-| 01 | LINK_SILENT | the IOmcu heard no request for 200 ms; stays until the next arm |
+| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm |
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
@@ -131,14 +131,14 @@ says to flash both boards from one release.
 
 ## The alert band
 
-A fault the screen itself does not show appears in a red band, 44 px high,
+A fault the screen itself does not show appears in a red band, 44px high,
 across the bottom of every screen that has the status band. Its text is in the
-10 x 20 px face, at most 97 characters a line on up to 2 lines. It covers the
-bottom 44 px of the screen while it shows; ARM and every control that stops
+10 x 20px face, at most 97 characters a line on up to 2 lines. It covers the
+bottom 44px of the screen while it shows; ARM and every control that stops
 the bench end above it.
 
-- It clears 30 s after the frame it arrived in. A new alert, even with the
-  same text, starts the 30 s again.
+- It clears 30s after the frame it arrived in. A new alert, even with the
+  same text, starts the 30s again.
 - A tap on the band clears it earlier: press and lift on the band, marked
   with an `x` at its right end. The screen beneath receives neither that tap
   nor a second finger's on the band; only the first finger's lift clears.
@@ -161,16 +161,16 @@ the bench end above it.
 
 ![The feature menu](img/overview.png)
 
-The menu is a grid of 4 columns by 2 rows, each tile 243 x 255 px with
-10 px margins. A tile carries a 40 px icon, its name in the 20 x 36 px face
-and a line in the 10 x 20 px face. The first row holds the workbenches, MOTOR & ESC, SERVO and
+The menu is a grid of 4 columns by 2 rows, each tile 243 x 255px with
+10px margins. A tile carries a 40px icon, its name in the 20 x 36px face
+and a line in the 10 x 20px face. The first row holds the workbenches, MOTOR & ESC, SERVO and
 SUPPLY; the second the instruments, RECEIVER, BATTERY and BALANCE; the last
 column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
 build at 4 columns (`shared/ui/overview_screen.c`). Programming has no tile:
 it is the PROGRAM task of MOTOR & ESC and of SERVO.
 
 Each tile carries a line under its name, 2 rows of at most 22 characters,
-8 px clear of the tile's sides:
+8px clear of the tile's sides:
 
 | Tile | Line |
 | --- | --- |
@@ -212,67 +212,67 @@ The keypad, the keyboard, the choice lists, the tabs and the TARGET row look
 the same on every screen. Each screen gives them their area or their row;
 the faces and the spacing inside are theirs.
 
-- **Keypad.** A title row of 32 px, the entry of 60 px, then 4 x 4 keys
-  8 px apart, 8 px from the area's edge, the keys ending 4 px above the
-  alert band at the latest (below). Over SERVO's left column, 488 x 524 px,
-  a key is 112 x 88 px (16.8 x 13.2 mm); over SUPPLY's, 546 x 494 px,
-  126 x 80 px. The title and the range are in the
+- **Keypad.** A title row of 32px, the entry of 60px, then 4 x 4 keys
+  8px apart, 8px from the area's edge, the keys ending 4px above the
+  alert band at the latest (below). Over SERVO's left column, 488 x 524px,
+  a key is 112 x 88px (16.8 x 13.2mm); over SUPPLY's, 546 x 494px,
+  126 x 80px. The title and the range are in the
   10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
   entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
   does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
   digits and the point are in 12 x 24. DEL, CLR, CANCEL, OK and `+/-` share
   one face: the largest of 12 x 24, 10 x 20 and 8 x 16 in which all of them
-  fit their keys with 6 px each side. German `ABBRECHEN` needs a key of
-  120 px for 12 x 24 and 102 px for 10 x 20.
-- **Keyboard.** A title row of 32 px, the text field of 52 px, then 5 rows
-  of keys 6 px apart. The title and the count are in 10 x 20, or in 8 x 16
+  fit their keys with 6px each side. German `ABBRECHEN` needs a key of
+  120px for 12 x 24 and 102px for 10 x 20.
+- **Keyboard.** A title row of 32px, the text field of 52px, then 5 rows
+  of keys 6px apart. The title and the count are in 10 x 20, or in 8 x 16
   where the two do not fit side by side. The text is in the 20 x 36 face
   when 23 characters and the caret fit the field, else in 16 x 28. The
   letters, digits and marks are in 12 x 24. The word keys (the bottom row,
   DEL, `ABC`, `abc`, `#+=`) share one face: the largest of 12 x 24, 10 x 20
-  and 8 x 16 in which all of them fit their keys with 4 px each side, HIDE
+  and 8 x 16 in which all of them fit their keys with 4px each side, HIDE
   measured in place of SHOW too, so a press does not change it. On WI-FI the
-  keyboard takes the body above the alert band, 1008 x 484 px, with keys of
-  93 x 71 px (14.0 x 10.7 mm) and every word in 12 x 24.
-- **Choice list.** A face or a row 56 px tall or taller draws its text in
-  the 20 x 36 face, 12 px in, with an 11 px chevron 28 px from the face's
-  right edge. A shorter one draws in 16 x 28, 10 px in, with a 7 px chevron
-  22 px from the edge. A text that does not fit before the chevron in
-  20 x 36 draws in 16 x 28: `DSHOT600 BIDIR` on a face of 292 px. Each face
+  keyboard takes the body above the alert band, 1008 x 484px, with keys of
+  93 x 71px (14.0 x 10.7mm) and every word in 12 x 24.
+- **Choice list.** A face or a row 56px tall or taller draws its text in
+  the 20 x 36 face, 12px in, with an 11px chevron 28px from the face's
+  right edge. A shorter one draws in 16 x 28, 10px in, with a 7px chevron
+  22px from the edge. A text that does not fit before the chevron in
+  20 x 36 draws in 16 x 28: `DSHOT600 BIDIR` on a face of 292px. Each face
   and row picks its own, so the rows of one list can differ. OUTPUTS and
-  PICK A PIN draw theirs under 56 px.
-- **Tabs.** A row of tabs 32 px tall or taller draws its labels in the
-  10 x 20 face when every label fits its tab with 6 px each side in the
+  PICK A PIN draw theirs under 56px.
+- **Tabs.** A row of tabs 32px tall or taller draws its labels in the
+  10 x 20 face when every label fits its tab with 6px each side in the
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
   BENCH and the PROG PORT entry's segments on OUTPUTS are in 10 x 20. The
-  strips of SERVO and MOTOR & ESC are 40 px tall and draw in 10 x 20;
-  SUPPLY's is 24 px tall and keeps 8 x 16. RECEIVER's and BALANCE's tabs
-  are 150 x 48 px and draw in 10 x 20.
-- **TARGET row.** A row 40 px tall or taller draws its label and its value
-  in 10 x 20, with 88 px for the label, and counts the pins it names in
-  10 px cells. A shorter row draws in 8 x 16 with 64 px for the label and
-  counts in 8 px cells. SERVO and MOTOR & ESC draw theirs 48 px tall.
+  strips of SERVO and MOTOR & ESC are 40px tall and draw in 10 x 20;
+  SUPPLY's is 24px tall and keeps 8 x 16. RECEIVER's and BALANCE's tabs
+  are 150 x 48px and draw in 10 x 20.
+- **TARGET row.** A row 40px tall or taller draws its label and its value
+  in 10 x 20, with 88px for the label, and counts the pins it names in
+  10px cells. A shorter row draws in 8 x 16 with 64px for the label and
+  counts in 8px cells. SERVO and MOTOR & ESC draw theirs 48px tall.
 - **Plot.** A plot keeps 1,024 samples a series, one for each pixel column
-  of a plot as wide as the panel: 51.2 s at 20 samples a second.
+  of a plot as wide as the panel: 51.2s at 20 samples a second.
 
-Key grids end 4 px above the alert band, at body y 492, on every screen.
+Key grids end 4px above the alert band, at body y 492, on every screen.
 A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
-keys are then 112 x 88 px and the keyboards' 41 x 72 px; on SUPPLY the
-keypad's are 126 x 80 px; on the ESC STICK search keyboard 59 x 57 px; on
-MOTOR & ESC's SETTINGS the keypad's are 145 x 89 px; on BALANCE the blade
-count's keypad's are 242 x 72 px.
+keys are then 112 x 88px and the keyboards' 41 x 72px; on SUPPLY the
+keypad's are 126 x 80px; on the ESC STICK search keyboard 59 x 57px; on
+MOTOR & ESC's SETTINGS the keypad's are 145 x 89px; on BALANCE the blade
+count's keypad's are 242 x 72px.
 
 ## Splash
 
 ![The splash](img/splash.png)
 
 The splash fills the panel, without the band. The mark `rcbench` is the
-20 x 36 px face at twice its size on an accent tag 88 px tall, centred at
-the top. The tagline sits under it in the 12 x 24 px face. Each step has a
-row of 40 px from y 200: its name, its mark (`OK`, `--`, `!!`, `..` while
-it runs) and its detail, all in the 12 x 24 px face. A detail starts at
-x 432 and is cut 24 px short of the right edge, after 47 characters.
+20 x 36px face at twice its size on an accent tag 88px tall, centred at
+the top. The tagline sits under it in the 12 x 24px face. Each step has a
+row of 40px from y 200: its name, its mark (`OK`, `--`, `!!`, `..` while
+it runs) and its detail, all in the 12 x 24px face. A detail starts at
+x 432 and is cut 24px short of the right edge, after 47 characters.
 
 Each subsystem reports its result as it comes up: board, display, touch, SD
 card, settings, link, IOmcu. The board line carries the panel's own
@@ -288,32 +288,32 @@ touch controller that does not answer, or an IOmcu with a different
 protocol major version, is a failure and the bench does not switch to ARMED.
 
 When every step has answered, the splash hands over to the menu after a hold
-of 1.6 s; a tap skips the hold.
+of 1.6s; a tap skips the hold.
 
 ## Motor & ESC
 
 ![Motor and ESC](img/motor.png)
 
 MOTOR & ESC is a workbench: a strip of tasks at the top, LIVE, PROGRAM and
-SETTINGS (German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`), each 150 x 40 px from
+SETTINGS (German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`), each 150 x 40px from
 y 8 of the body, and a page under it from y 56. The menu's tile always opens LIVE. A tap on a tab switches
 the task; a switch is no navigation level and leaves LIVE's view, PLOT or
 TABLE, as it was.
 
-| Task | The left column, 620 px |
+| Task | The left column, 620px |
 | --- | --- |
 | LIVE | the plot or the table over the throttle |
 | PROGRAM | the list of ESC programmers; a row opens its session over the whole body ([PROGRAM](#program)) |
 | SETTINGS | the 8 ESC settings under PACK, MOTOR and THROTTLE OUTPUT ([Settings](#motor--esc-settings)) |
 
-Two columns, as on SERVO. The page takes the left 620 px, the rail the right
-380 px, so reading the numbers and working the throttle do not compete for
+Two columns, as on SERVO. The page takes the left 620px, the rail the right
+380px, so reading the numbers and working the throttle do not compete for
 the same part of the screen. The rail holds, top down, the three
-temperatures, the four readouts, 56 px each in 32 x 44 numerals, and the
+temperatures, the four readouts, 56px each in 32 x 44 numerals, and the
 CONTROL card: its title line with the run's mAh and Wh, the TARGET row
-(48 px), RESET PEAKS (48 px) and ARM (60 px). The TARGET row and ARM sit
+(48px), RESET PEAKS (48px) and ARM (60px). The TARGET row and ARM sit
 where SERVO's output card has its TARGET row and ARM: ARM from body y 424 to
-484, 8 px above the alert band. The rail is the same
+484, 8px above the alert band. The rail is the same
 on LIVE, PROGRAM's list and SETTINGS, and ARM works on all three; a session
 opened from PROGRAM covers it. With the rotary knob on, turning it moves the
 throttle on LIVE ([the knob](#panel-the-rotary-knob)); on PROGRAM and
@@ -329,7 +329,7 @@ The home tag climbs one level at a time:
 
 ### TARGET names the protocol and the pins
 
-The CONTROL card opens with the TARGET row: the label, 88 px, and a value box
+The CONTROL card opens with the TARGET row: the label, 88px, and a value box
 of 25 characters that names what the throttle drives, the protocol and then
 the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a
 DShot protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
@@ -388,8 +388,8 @@ The right-hand axis label reads `NOW` while it advances and `END` where a held
 one stopped. The readouts, the TABLE pane, the totals and the temperature
 strip are live at all times, ARMED or not.
 
-The plot is 600 x 184 px. The window is 600 columns at 20 samples per second,
-30.0 s. A longer run holds its last 30.0 s; what came before is in the CSV
+The plot is 600 x 184px. The window is 600 columns at 20 samples per second,
+30.0s. A longer run holds its last 30.0s; what came before is in the CSV
 file and not on the screen.
 
 The trace ends at the switch to SAFE, not when the motor stops. Switching to SAFE commands
@@ -402,7 +402,7 @@ of a run a STOP ended does not survive making the bench usable again. One
 switching to ARMED writes one CSV file, and LOGS plots it.
 
 On LIVE the telemetry card carries PLOT and TABLE under its title, two tabs
-in 200 x 40 px, and beside them the poll rate and the link's error count
+in 200 x 40px, and beside them the poll rate and the link's error count
 (cyclic redundancy check failures and resyncs added together). While the
 link is up and the IOmcu has refused link frames since its power-up, the
 line under them shows how many, in 8 x 16: `Rejected link frames: 37`. An
@@ -426,7 +426,7 @@ The throttle changes only while the bench is ARMED. What each control does:
 | The track | refused: no command, the slider and the readout stay; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | switches the throttle outputs to ARMED after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | switches to SAFE on a tap |
+| ARM | switches the throttle outputs to ARMED after its 2s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | switches to SAFE on a tap |
 | RESET PEAKS | resets the peaks | resets the peaks |
 | PLOT, TABLE | switch LIVE's view | switch LIVE's view |
 
@@ -436,12 +436,12 @@ the ARM hold completes and before that report is refused too. From a DISARM the
 screen asks for, by the tap or by leaving, or a STOP while the bench is ARMED,
 until the bench reports SAFE, the controls are refused too.
 
-A switch to SAFE returns the throttle to 0 %, however it happens: the DISARM tap,
+A switch to SAFE returns the throttle to 0%, however it happens: the DISARM tap,
 STOP, a lost link, a touch controller that stops answering, or leaving the
 screen. The slider, the readout and the `-1` and `+1` steps then stay at
-0.0 % until the next switch to ARMED, so the first `+1` after a switch to ARMED asks for 1.0 % and
-the first 1 % turn of the knob asks for 1.0 %. A bench switched to ARMED without the ARM
-hold, by a stick run on PROGRAM, starts from 0 % as well. A throttle the
+0.0% until the next switch to ARMED, so the first `+1` after a switch to ARMED asks for 1.0% and
+the first 1% turn of the knob asks for 1.0%. A bench switched to ARMED without the ARM
+hold, by a stick run on PROGRAM, starts from 0% as well. A throttle the
 screen has posted and the panel has not sent when the bench switches to SAFE is not
 sent. A finger on the track when the bench switches to ARMED or to SAFE moves nothing
 until it lifts and presses again.
@@ -484,8 +484,8 @@ EFF rather than efficiency because of them:
   drivetrain, and comparing it against a motor datasheet compares two
   different things.
 - It is only as good as the rated kV. An error there maps straight into the
-  percentage, and a figure above 100 % means the rated value is wrong; the
-  screen shows that rather than hiding it, capped at 199 %.
+  percentage, and a figure above 100% means the rated value is wrong; the
+  screen shows that rather than hiding it, capped at 199%.
 
 The rated kV comes from the connected ESC when it reports one. No ESC reports
 it yet, so in practice it is the `Rated kV` setting, which defaults to zero: a
@@ -509,8 +509,8 @@ answered for reads `--`.
 
 With the INA228 enabled on SETUP under INTERFACES and answering (BENCH flag
 bit 5), voltage, current and power are the INA228's: the means of the
-IOmcu's last 50 ms window, read at 20 Hz, with the run's peaks from its
-500 Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
+IOmcu's last 50ms window, read at 20Hz, with the run's peaks from its
+500Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
 while a current read the end of the part's range in the last window or since
 the switch to ARMED: current and power, or their peaks, are then bounds and not values.
 Under the channels, `ESC SAYS` lists the ESC's own telemetry voltage and
@@ -524,9 +524,9 @@ ESC's telemetry and `ESC SAYS` is not shown.
 
 The mAh and Wh on the CONTROL card's title line are the INA228's own while BENCH flag bit 6 is
 set: its charge and energy since the switch to ARMED, accumulated in the part at every
-conversion and read in 0.01 mAh and 0.01 Wh steps. The IOmcu takes
+conversion and read in 0.01mAh and 0.01Wh steps. The IOmcu takes
 the last run's totals and bit 6 off the bench page on the switch to ARMED, and the panel
-counts the first 100 ms of a run itself as well, so a page built before the
+counts the first 100ms of a run itself as well, so a page built before the
 switch cannot carry the last run's totals into this one. Without bit 6 the panel counts both from the current
 and power shown. When the INA228 stops
 answering mid-run, the count carries on from its last total and does not go
@@ -536,28 +536,28 @@ A run's CSV file has one row for every sample the panel takes, and no row
 without one:
 
 - With the link up a sample is one answered read of the BENCH page. The
-  panel polls every 50 ms plus the 5 ms pass of its control task that looks
-  at the gate and the pass's own exchanges: 52.9 ms on average on one bench,
+  panel polls every 50ms plus the 5ms pass of its control task that looks
+  at the gate and the pass's own exchanges: 52.9ms on average on one bench,
   about 19 rows per second. Other benches are not measured.
-- With the link down a sample is one step of the model, every 50 ms.
+- With the link down a sample is one step of the model, every 50ms.
 - A sample is one row. With the INA3221 read through the window ring
   (IOmcu protocol 4.11, CH1 enabled) a poll that brings more than one
-  50 ms window writes one row for each: the rows of one poll carry the same
+  50ms window writes one row for each: the rows of one poll carry the same
   `time`, the sample is in the last of them with the newest window, and the
   rows before it hold `window` and the channel columns and are empty
-  otherwise. At a 53 ms poll one poll in 17 writes two rows.
+  otherwise. At a 53ms poll one poll in 17 writes two rows.
 - Nothing else gates a row. A row the card's queue cannot take is dropped
   and counted, and the band says so at the run's end (see [Logs](#logs)).
 
-`time` is the wall time since the switch to ARMED in seconds, written to 1 ms, and is
+`time` is the wall time since the switch to ARMED in seconds, written to 1ms, and is
 not a row count: the first row is not at 0, and a stretch without samples or
-with dropped rows is a step in `time` of that length. The value keeps 1 ms
-of resolution for the first 4.5 h of a run and 2 ms up to 9.1 h.
+with dropped rows is a step in `time` of that length. The value keeps 1ms
+of resolution for the first 4.5h of a run and 2ms up to 9.1h.
 
 A file written by firmware 0.15.0 or older differs in two ways. Rows are
-missing in stretches of up to 30 s after a servo command, and
+missing in stretches of up to 30s after a servo command, and
 `time` advances only with a written row, so it ends short of the run's
-length and shows no gap. In such a file the `window` numbers, 50 ms apart,
+length and shows no gap. In such a file the `window` numbers, 50ms apart,
 give the spacing of the rows while the INA3221 is enabled.
 
 
@@ -611,21 +611,21 @@ text column and is never plotted. `ina voltage` and
 the INA228 is the source and from the BENCH page otherwise, and empty when
 the ESC reports none or the panel models the bench. A quantity nothing
 measured is an empty cell. `window` and the nine channel columns are the
-INA3221's 50 ms window -- per channel the mean and highest current and the
+INA3221's 50ms window -- per channel the mean and highest current and the
 lowest bus voltage -- on the first row after the panel read it and on no
 other, so each window is in the file once, under its number; a channel the
 window has no readings of is empty, and so are CH1's current cells or its
 voltage cell for a window that holds no sample of that quantity. With an
 IOmcu of protocol 4.11 and
 CH1 enabled every CH1 window is in the file while two reads lie at most
-200 ms apart, and a step in `window` of more than 1 is a window that was
+200ms apart, and a step in `window` of more than 1 is a window that was
 lost or a number the IOmcu skipped. A window taken while the bench
 was SAFE is in no file. CH1's figures count a clipped sample at the end
-of the range, 1.638 A on the 0.1 Ω shunt, and keep the sign of a negative
+of the range, 1.638A on the 0.1Ω shunt, and keep the sign of a negative
 current. CH2 and CH3 are on the row of their window when the panel read
 both pages within that window, and empty on a row the poll caught up. With
 an older IOmcu, or with CH1 off, the columns hold the last window of
-each read: a poll longer than 50 ms skips windows, 1 in 17 at 53 ms, and a
+each read: a poll longer than 50ms skips windows, 1 in 17 at 53ms, and a
 clipped sample is left out of the figures. LOGS groups `ina voltage`,
 `ina current` and `esc current` under INA228 and ESC, and the window's
 columns under INA3221.
@@ -657,11 +657,11 @@ the window ring, SERVO_WIN, and is on every row that has a `window`. The
 other groups come from SENSE_WIN_A and SENSE_WIN_B
 ([Link](LinkSensors.md#sense_win_a-and-sense_win_b)), which hold each
 channel's last window only. The panel reads them on every poll, after
-SERVO_WIN, with a gate of 40 ms, while a part on the page is fitted. Such a
+SERVO_WIN, with a gate of 40ms, while a part on the page is fitted. Such a
 group is on the row of its window when the last read of its page, or the
 read before it, holds that window number, and empty otherwise. A window
 that closed and was followed by the next one between two reads is in no
-row: at a 53 ms poll about 1 row in 17 (`test_sense_win_link`). The map
+row: at a 53ms poll about 1 row in 17 (`test_sense_win_link`). The map
 counts once the IOmcu holds it in force; with the map derived from SENSE
 the file keeps `ch1` to `ch3`. The map takes no write while the bank
 drives, so the columns hold the whole run. LOGS groups `out`, `port` and `supply`
@@ -680,25 +680,25 @@ output (`SET_CAT_ESC` in the settings schema) in schema order, under three headi
 | MOTOR | Motor poles, Rated kV |
 | THROTTLE OUTPUT | Idle pulse, Full pulse, Ramp limit |
 
-The rows stand in two columns of 295 px: PACK and MOTOR on the left,
-THROTTLE OUTPUT on the right. A row is 68 px: the label and, right of it,
-the value with its unit in a box of 120 x 48 px, and under them the help
+The rows stand in two columns of 295px: PACK and MOTOR on the left,
+THROTTLE OUTPUT on the right. A row is 68px: the label and, right of it,
+the value with its unit in a box of 120 x 48px, and under them the help
 line in 8 x 16. A tap on the box opens the keypad over the left column and
-the strip, 620 x 529 px, so no tab switches the task under it; the rail
+the strip, 620 x 529px, so no tab switches the task under it; the rail
 stays in reach. The keypad names the setting, its range and its unit. OK
-takes a value inside the range and lands it on the setting's step, 4321 mAh
-as 4300 mAh; outside the range it keeps the keypad open and names the range
+takes a value inside the range and lands it on the setting's step, 4321mAh
+as 4300mAh; outside the range it keeps the keypad open and names the range
 in the warning colour. CANCEL and the home tag close it with the value
 unchanged.
 
 ![The keypad over SETTINGS](img/motor-settings-keypad.png)
 
 Idle pulse and Full pulse take a value on a SAFE bench only: the IOmcu takes
-the endpoints while it is disarmed, 300 ms after the last edit, and the
+the endpoints while it is disarmed, 300ms after the last edit, and the
 switch to ARMED sends none. While the bench is ARMED, ARM is held, or an ARM
 or a DISARM waits for its answer, their help line reads `Set on a SAFE bench
 only` in the warning colour and the box takes no tap; a keypad open for one
-closes when ARM is pressed or the bench leaves SAFE. The 2 s hold of ARM
+closes when ARM is pressed or the bench leaves SAFE. The 2s hold of ARM
 leaves an edit made before the press the time to reach the IOmcu. While an
 edit is still owed to the IOmcu with the link up, the switch to ARMED is
 refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and
@@ -714,7 +714,7 @@ kept, the same write SETUP's SAVE asks for ([Keeping the
 values](#keeping-the-values)). A value left unsaved on SETUP is written with
 it, so SETUP has nothing left to warn about. A refused write leaves every
 value unsaved, and SETUP's warning on leaving lists the ESC rows with its
-own. The line at the page's foot, ending 4 px above the alert band, names
+own. The line at the page's foot, ending 4px above the alert band, names
 the store's state:
 
 | Line | State |
@@ -747,16 +747,16 @@ strip in their place, one line in the 10 x 20 face from x 12, y 4:
 ![ESC STICK under the output strip](img/motor-stick.png)
 
 ```
-TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE
+TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE
 ```
 
 | Part | Shows |
 | --- | --- |
 | `TARGET` (German `ZIEL`) | the protocol and the pins bound as throttle, as the CONTROL card's TARGET row names them, in at most 26 characters; in the warning colour while no pin is bound or the binding is not read |
-| `SUPPLY` (German `NETZTEIL`) | the PD mini's output as it reads: `SUPPLY 7.60 V  1.00 A`; `SUPPLY ON` while it is on without a voltage and a current reading; `SUPPLY OFF`; `SUPPLY --` while the supply does not answer |
+| `SUPPLY` (German `NETZTEIL`) | the PD mini's output as it reads: `SUPPLY 7.60V  1.00A`; `SUPPLY ON` while it is on without a voltage and a current reading; `SUPPLY OFF`; `SUPPLY --` while the supply does not answer |
 | `SAFE` or `ARMED` | the bench; ARMED in the danger colour |
 
-The strip is at most 100 characters, 1000 px, in English and in German. It
+The strip is at most 100 characters, 1000px, in English and in German. It
 is repainted when its text changes.
 
 From ESC STICK's makers the home tag closes the session to PROGRAM's list;
@@ -778,12 +778,12 @@ ESC STICK programs an ESC through its throttle-stick menu, from an ESC
 profile; [Stick programming](StickProgramming.md) describes the runs.
 
 Every control on ESC STICK takes a tap. It acts when the finger lifts
-inside the control it pressed, no more than 8 px from the press in x and in
+inside the control it pressed, no more than 8px from the press in x and in
 y. A finger that comes down on a control and travels on presses nothing, and
 neither does one that crosses a control. One finger at a time presses a
 control. Three controls act on the press:
 
-- HOLD TO RUN: its 2 s hold starts at the press.
+- HOLD TO RUN: its 2s hold starts at the press.
 - ABORT of a stick run, on the run's page and on a manual step's prompt. It
   stops a motor, so it does not wait for the lift, and it answers a second
   finger.
@@ -794,13 +794,13 @@ with its labels, rows and buttons in the 10 x 20 face:
 
 | Part | Place and size |
 | --- | --- |
-| crumb row | y 30 to 78: BACK 120 x 48 px, the trail in the 12 x 24 face, and at the right the search field (260 px, its X 48 px), `^` and `v` (56 px each) on the list or TIMING (168 px) on a profile's page |
-| list | 7 rows a page, 48 px tall at a 56 px pitch from y 84, 984 px wide; a model's name in 30 characters; the footer line ends 4 px above the alert band |
-| profile's page and TIMING | the parameter card on the left, 660 px: 6 rows a page, 48 px tall at a 56 px pitch, each with its number, its name (up to 23 characters), its value in a 250 px column and `-` and `+` of 48 x 48 px, 8 px between any two |
-| side column | 340 px right of the parameter card: CHANGE (TIMING's title on TIMING), the rows shown and `^` and `v` of 48 x 48 px; MANUAL INTERVENTION REQUIRED, 310 x 48 px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
-| foot row | y 436 to 492, 4 px above the alert band: the note at the left on up to 2 lines, DEFAULTS and RUN, ABORT, OK or CLOSE, 168 x 56 px each |
-| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 with the stack light at its right, two help lines from y 390, and the foot row; a result's MANUAL INTERVENTION REQUIRED, 330 x 56 px, left of OK |
-| warning, manual steps, prompt | a panel over the pages from y 28, its title in the 20 x 36 face, its lines at a 22 px pitch, its buttons 48 px tall ending 4 px above the foot row, so a second tap on RUN's place lands on none of them |
+| crumb row | y 30 to 78: BACK 120 x 48px, the trail in the 12 x 24 face, and at the right the search field (260px, its X 48px), `^` and `v` (56px each) on the list or TIMING (168px) on a profile's page |
+| list | 7 rows a page, 48px tall at a 56px pitch from y 84, 984px wide; a model's name in 30 characters; the footer line ends 4px above the alert band |
+| profile's page and TIMING | the parameter card on the left, 660px: 6 rows a page, 48px tall at a 56px pitch, each with its number, its name (up to 23 characters), its value in a 250px column and `-` and `+` of 48 x 48px, 8px between any two |
+| side column | 340px right of the parameter card: CHANGE (TIMING's title on TIMING), the rows shown and `^` and `v` of 48 x 48px; MANUAL INTERVENTION REQUIRED, 310 x 48px; then how the profile's menu works, the supply and the entry time, and the picked row's help, wrapped to 31 characters a line |
+| foot row | y 436 to 492, 4px above the alert band: the note at the left on up to 2 lines, DEFAULTS and RUN, ABORT, OK or CLOSE, 168 x 56px each |
+| run and result | the device card across the body from y 84 with its two lines, the run's card under it from y 136 with the stack light at its right, two help lines from y 390, and the foot row; a result's MANUAL INTERVENTION REQUIRED, 330 x 56px, left of OK |
+| warning, manual steps, prompt | a panel over the pages from y 28, its title in the 20 x 36 face, its lines at a 22px pitch, its buttons 48px tall ending 4px above the foot row, so a second tap on RUN's place lands on none of them |
 
 BACK and the band's home tag climb one level at a time: a stick profile's
 page to the list, a maker's models to the makers, the makers to PROGRAM's
@@ -839,7 +839,7 @@ values picked:
 RUN opens a warning over the whole screen, PROPELLER REMOVED? MOTOR SECURED?: a
 motor on the ESC must be mounted solid and carry no propeller, or a
 resistor load takes its place. The run starts after HOLD TO RUN is held
-for 2 s:
+for 2s:
 
 ![The warning](img/motor-stick-warning.png)
 
@@ -853,7 +853,7 @@ button pressed -- carries a red MANUAL tag in the list and MANUAL
 INTERVENTION REQUIRED in red on its page. The button shows the steps and
 when each is due; so does the first opening of the profile. The warning
 lists the steps due before the power-up, and the run stops for each later
-step with DONE and ABORT, waiting at most 60 s
+step with DONE and ABORT, waiting at most 60s
 ([Manual steps](StickProgramming.md#manual-steps)):
 
 ![A profile with manual steps](img/motor-stick-hand.png)
@@ -869,12 +869,12 @@ where it stored, until DONE:
 While it runs, the page shows the phase, the beeps of the group under way
 and the last group. ABORT, the home tag, STOP and leaving the screen end it
 with the throttle at MIN, the supply off and the bench SAFE. The stack light's
-green is on while a beep is detected, for at least 150 ms:
+green is on while a beep is detected, for at least 150ms:
 
 ![A run](img/motor-stick-run.png)
 
 While the phase tap is enabled on SETUP the run's page adds a read-only
-readout under the current line: the tap's state, the pitch of its last 8 ms
+readout under the current line: the tap's state, the pitch of its last 8ms
 window, the counts of beeps the IOmcu lost and beeps the panel did not
 read, and the last four
 beeps with their number, length in ms and mean pitch in Hz. The run still
@@ -886,13 +886,13 @@ counts its beeps from the supply current.
 | --- | --- |
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
-| `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or its flags say the tap runs and its window number has not moved for 1.5 s, or the tap was switched off and the page still holds it on |
+| `WAITING` | no link, or the TONE page has not answered in the last 500ms, or its flags say the tap runs and its window number has not moved for 1.5s, or the tap was switched off and the page still holds it on |
 | `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
 | `PIN NOT FREE` | the IOmcu holds the tap off: its pin is bound elsewhere, or the IOmcu runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the IOmcu |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
 
 PITCH and LOST are the page's values from the last status read. They read
-`--`, and OVERRUN is not shown, while no read younger than 500 ms gives the
+`--`, and OVERRUN is not shown, while no read younger than 500ms gives the
 state: in `WAITING`, in `NO TONE PAGE`, and in `NOT RUNNING` while the
 set-up the page holds has the tap off. MISSED and the beeps are the panel's
 own count and record and stay.
@@ -912,13 +912,13 @@ measured:
 
 ![Timing](img/motor-stick-timing.png)
 
-A row's `-` and `+` step its value. A tap on the value, the 250 px column
+A row's `-` and `+` step its value. A tap on the value, the 250px column
 between the name and the keys, opens the keypad over the page, from under
-the output strip to 4 px above the alert band: 1008 x 464 px, keys of
-242 x 81 px. It names the setting, its range and its unit and takes the
-step's digits after the point: one for Voltage's 0.1 V, two for Current
-limit's 0.05 A. OK sets the value as a step does, onto the nearer step (1.23 A is
-1.25 A); CLOSE asks for the save, as after a step. A value outside the
+the output strip to 4px above the alert band: 1008 x 464px, keys of
+242 x 81px. It names the setting, its range and its unit and takes the
+step's digits after the point: one for Voltage's 0.1V, two for Current
+limit's 0.05A. OK sets the value as a step does, onto the nearer step (1.23A is
+1.25A); CLOSE asks for the save, as after a step. A value outside the
 range keeps the keypad open and names the range in the warning colour.
 CANCEL, OK with nothing typed and the home tag close it and change nothing;
 TIMING stays. Nothing under it takes a press. A profile's items are lists
@@ -932,7 +932,7 @@ of the ESC's own values and open no keypad.
 
 SERVO is a workbench. The strip under the band holds its tasks, **LIVE**,
 **TEST**, **PROGRAM** and **SETTINGS** (German `LIVE`, `TEST`,
-`PROGRAMMIEREN`, `OPTIONEN`), 150 x 40 px a tab, 4 px apart, from y 8
+`PROGRAMMIEREN`, `OPTIONEN`), 150 x 40px a tab, 4px apart, from y 8
 under the band. The tile opens LIVE. A tab
 switch is no navigation level: the home tag goes home from every task, and
 climbs one level only from a run's settings back to TEST and from a
@@ -947,22 +947,22 @@ SAFE, from any task.
 | PROGRAM | the list of programmers, one row each; a row opens its programmer over the left column |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT |
 
-The left card is 620 px wide and starts under the strip, at y 56. The
-right card is the output card, 380 px wide, from the top margin to the
+The left card is 620px wide and starts under the strip, at y 56. The
+right card is the output card, 380px wide, from the top margin to the
 bottom one beside the strip, the same on every task: the type in force,
 the servo rail's line and plot, the SET line, SPEED, the TARGET row,
-CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48 px tall or
-taller; ARM is 60 px and ends 4 px above the alert band, as OUTPUT OFF
+CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48px tall or
+taller; ARM is 60px and ends 4px above the alert band, as OUTPUT OFF
 does. A panel -- a keypad, the keyboard, a list, a warning, the question
 or a programmer -- covers the whole left column, the strip's tabs with it,
 and is answered or closed before the task changes.
 
 LIVE's card holds the horn's angle in the bench's numerals top left, with
-`ARM FIRST` under it while the bench is SAFE, the dial (radius 150 px)
+`ARM FIRST` under it while the bench is SAFE, the dial (radius 150px)
 with the servo, and along its foot the three readings, a third of the card
 each: COMMANDED in microseconds, MEASURED in degrees and CURRENT in amps,
-the label and unit over numerals 44 px tall. Numerals wider than their
-198 px column -- a current held at `-1000000.00` -- are drawn in a
+the label and unit over numerals 44px tall. Numerals wider than their
+198px column -- a current held at `-1000000.00` -- are drawn in a
 smaller face, so they stay inside it. The readings are on LIVE only; on
 the other tasks the line over the plot carries the current.
 
@@ -1055,11 +1055,11 @@ well, and a sweep, a pause, a held position and a run of the automatic test
 end where it is asked.
 
 When the bench switches to ARMED, the commanded value becomes the rest the pins drive:
-the midpoint of the channel's endpoints, 1500 us for STANDARD PWM and 760 us
+the midpoint of the channel's endpoints, 1500us for STANDARD PWM and 760us
 for NARROW 760, without TRIM. Without feedback the horn is drawn there at
 once. The first drag or knob turn after a switch to ARMED starts from that value,
-whatever the screen showed before; a 1 % turn of the knob on STANDARD PWM
-asks for 1510 us. A type or pulse width changed while the bench is ARMED before the
+whatever the screen showed before; a 1% turn of the knob on STANDARD PWM
+asks for 1510us. A type or pulse width changed while the bench is ARMED before the
 first position moves the rest, and the value with it.
 
 A finger on the dial when the bench switches to ARMED, switches to SAFE or stops moves nothing
@@ -1069,11 +1069,11 @@ sent, and a knob turn in that state is withdrawn: the value returns to the
 one before the turn.
 
 RELEASE while the bench is ARMED follows the rule of the switch to ARMED again. The pins go to the rest,
-and the commanded value becomes that rest: 1500 us for STANDARD PWM, 760 us
+and the commanded value becomes that rest: 1500us for STANDARD PWM, 760us
 for NARROW 760, without TRIM. The horn is drawn moving there at SPEED. A
 drag under way ends. A press on the dial drives the servo again, and the
-first knob turn counts from the rest: a 1 % turn on STANDARD PWM asks for
-1510 us. The same holds for the release a run of the automatic test ends
+first knob turn counts from the rest: a 1% turn on STANDARD PWM asks for
+1510us. The same holds for the release a run of the automatic test ends
 with, and for the one a changed type or pulse width sends on a resting
 bench. One command waits for each frame: of a position and a RELEASE made in
 the same frame the later is sent, and the value shown is that one's. A knob
@@ -1082,17 +1082,17 @@ turn in a frame in which RELEASE waits is dropped.
 The output card shows the type, frame rate and pulse range in force -- in
 the danger colour while they are ones that can destroy a servo not made for
 them -- and the servo rail as its meter reads it: voltage, current and power
-on the line over the plot, plotted over the last 17.8 s (356 px at 20
+on the line over the plot, plotted over the last 17.8s (356px at 20
 points a second). LIVE's CURRENT reading shows the current again. The type
-row, 44 px tall, reads `STANDARD PWM  50 Hz  1000-2000`: the type, the
+row, 44px tall, reads `STANDARD PWM  50Hz  1000-2000`: the type, the
 frame rate and PULSE MIN to PULSE MAX in microseconds, two spaces apart.
-The longest, a 13-character type at 560 Hz with two 4-digit ends, takes 32
+The longest, a 13-character type at 560Hz with two 4-digit ends, takes 32
 of the row's 35 characters, so the range carries no unit. A pulse width
 typed in the settings reaches the row at once.
 
 | The servo rail's meter | Name on the line | LIVE's CURRENT, the line and the plot show |
 | --- | --- | --- |
-| an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
+| an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
 | the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
 
@@ -1100,8 +1100,8 @@ typed in the settings reaches the row at once.
 
 The name stays `PD MINI` in both languages. While the PD mini is disabled on
 SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
-then a SIMULATED pill (SIMULIERT in German), 26 px high and 30 px plus the word
-wide but at least 110 px (120 px for SIMULATED and SIMULIERT), sits
+then a SIMULATED pill (SIMULIERT in German), 26px high and 30px plus the word
+wide but at least 110px (120px for SIMULATED and SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
 name holds the three readings. The pill comes and goes with the model,
 without a tap. With an INA3221 channel as the meter the line names the
@@ -1114,23 +1114,23 @@ channel is CH1 of the one part SENSE reads.
 
 Which meter it is is decided once per poll
 ([the current monitors](#interfaces-the-current-monitors)): the INA3221
-1000 ms after its conditions hold, the PD mini from the first poll in which
+1000ms after its conditions hold, the PD mini from the first poll in which
 one fails.
 
-- A current is signed and shown in hundredths of an amp: `0.41 A`,
-  `-0.02 A`, `-1.64 A`. A reading that rounds to zero is `0.00 A`. The
+- A current is signed and shown in hundredths of an amp: `0.41A`,
+  `-0.02A`, `-1.64A`. A reading that rounds to zero is `0.00A`. The
   power on the line is signed in tenths of a watt. Beside a channel's name the
-  three readings have 64, 84 and 74 px, 6, 8 and 7 characters of 10 px,
-  after the name's 134 px; beside PD MINI 88, 88 and 90 px after its 90 px:
-  a voltage of 10 V or more is shown in tenths, `26.0 V`, and
-  a power of more than 7 characters in tenths, `-100.0 W` and beyond or
-  `1000.0 W` and beyond, in whole watts.
+  three readings have 64, 84 and 74px, 6, 8 and 7 characters of 10px,
+  after the name's 134px; beside PD MINI 88, 88 and 90px after its 90px:
+  a voltage of 10V or more is shown in tenths, `26.0V`, and
+  a power of more than 7 characters in tenths, `-100.0W` and beyond or
+  `1000.0W` and beyond, in whole watts.
 - A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the
   line and a gap in the plot: no sample yet, a supply that does not answer,
   no window since the link came up, a window without samples of that
   quantity.
-- A window in which a sample read an end of the INA3221's range, 1.638 A or
-  -1.638 A on a 0.1 Ω shunt, shows its mean as it is, in the warning colour
+- A window in which a sample read an end of the INA3221's range, 1.638A or
+  -1.638A on a 0.1Ω shunt, shows its mean as it is, in the warning colour
   in LIVE's CURRENT and on the line. The clipped samples count in that mean
   at the end of the range.
 
@@ -1153,7 +1153,7 @@ supply is the PD mini, the PD mini's readings otherwise, and the model's
 with the supply modelled ([The meter](Servo.md#the-meter)).
 
 MEASURED is the horn's angle from the centre count while AS5600 is on in
-SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0 deg`,
+SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0deg`,
 tenths of a degree, -180.0 to +179.9, read 20 times a second. It is `---`
 while the sensor does not answer and while it reports no magnet (STATUS MD
 clear): its count is no angle then. A magnet reported too weak or too strong
@@ -1173,23 +1173,23 @@ the change on both.
   WHILE ON, KEYPAD is off. The question goes, unanswered, when the output
   goes off or on STOP. An APPLY tapped in the same frame as STOP applies
   nothing, though the supply reports the output off a sample later.
-- A voltage raised from 6.0 V or below to above it opens the warning HV
-  SERVOS ONLY: standard servos are rated for 4.8 to 6.0 V, and above that
+- A voltage raised from 6.0V or below to above it opens the warning HV
+  SERVOS ONLY: standard servos are rated for 4.8 to 6.0V, and above that
   only a servo specified as HV (high voltage) is within its rating; a
   standard servo above it can be destroyed immediately. The
-  voltage is applied after HOLD TO APPLY is held for 2 s, the gesture of the
+  voltage is applied after HOLD TO APPLY is held for 2s, the gesture of the
   profile warning; CANCEL drops it. STOP ends the hold. With the output on it replaces SUPPLY's
   question, and it stays if the output goes off. A voltage already above
-  6.0 V changes without it. A voltage set on SUPPLY does not open it.
+  6.0V changes without it. A voltage set on SUPPLY does not open it.
 
   ![The HV warning](img/servo-hv.png)
 
 - OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
-  a hold under way. With a voltage set point above 6.0 V, wherever it was
+  a hold under way. With a voltage set point above 6.0V, wherever it was
   set, OUTPUT ON opens HV SERVOS ONLY instead, naming the voltage, and the
-  output comes on only after HOLD TO APPLY is held for 2 s; the switch's own
+  output comes on only after HOLD TO APPLY is held for 2s; the switch's own
   hold and a tap on APPLY switch nothing on. A set point that rises above
-  6.0 V during the ordinary hold -- on SUPPLY, or put back after a run --
+  6.0V during the ordinary hold -- on SUPPLY, or put back after a run --
   is seen as the hold completes: HV SERVOS ONLY opens and nothing comes on.
   Leaving SERVO switches off an output SERVO switched on: by OUTPUT ON,
   by a test, or by the servo programmer's CONNECT. While the servo
@@ -1223,14 +1223,14 @@ leave behind the curve -- and holds it there; the button then reads PAUSED,
 filled in the warning colour. The IOmcu does the holding (the link's
 HOLD, SWEEP register 4), because only it knows exactly where that is;
 without feedback the horn drawn on the panel is an estimate of it. The panel
-repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
-IOmcu's 500 ms rule. A pause does not wait behind sweep writes already
+repeats the hold every 100ms (`SERVO_HOLD_MS`), so a pause outlasts the
+IOmcu's 500ms rule. A pause does not wait behind sweep writes already
 on the wire. A tap on PAUSED carries the sweep on from the point of the
 curve it was paused at: its place in a dwell and the ends it has reached go
 on from there too, and the horn is drawn on from that phase. The phase is
 the curve's when the IOmcu acknowledged the HOLD, not at the tap: the
 curve runs on there for the exchange in between, and so the drawing runs
-on too, at the SPEED in force at the tap, for at most 500 ms -- the longest
+on too, at the SPEED in force at the tap, for at most 500ms -- the longest
 the IOmcu runs a sweep it has not heard. Without feedback the drawn
 horn is then put where the output had got at the acknowledgement: the curve
 to that phase, slewed as the drawing slews. A SPEED changed in between reaches the
@@ -1242,7 +1242,7 @@ arriving after the tap, still moves the horn to where the IOmcu held
 the output, and the resume goes on from there. The IOmcu
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
 protocol 4.6); the output slews from where it was held to the curve at
-SPEED's rate, at once at 100 %, and is normally already there. A curve
+SPEED's rate, at once at 100%, and is normally already there. A curve
 changed on SETTINGS > SWEEP while paused starts as a new sweep instead. An
 IOmcu older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
@@ -1255,14 +1255,14 @@ nothing: the pause ends with that HOLD.
 
 ![A paused sweep](img/servo-paused.png)
 
-A hold the link left unrepeated for 500 ms has been let go at the far end,
+A hold the link left unrepeated for 500ms has been let go at the far end,
 so the panel releases the surfaces to their centre and the horn goes there.
-So does a HOLD answered only at a retry, or after longer than 500 ms: the
+So does a HOLD answered only at a retry, or after longer than 500ms: the
 IOmcu may have let it go and held again elsewhere, so where it holds
 is not known on the panel, and the pause ends rather than keep an angle a
 later change of profile would send to the servo. The link going ends a
 sweep or a pause too, and the horn is drawn at rest, as the IOmcu
-rests the surfaces 500 ms after the last write it heard; no sweep or hold
+rests the surfaces 500ms after the last write it heard; no sweep or hold
 asked for before is sent when the link comes back, and the next tap starts
 a sweep.
 A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the screen
@@ -1283,7 +1283,7 @@ profile or frame rate goes with it at once. SWEEP is offered while the
 bench is ARMED, with a surface bound and the link up, and an IOmcu speaking
 protocol 4.2;
 greyed otherwise; the IOmcu stops a sweep the panel has not
-repeated for 500 ms and leaves each surface where its output has got to.
+repeated for 500ms and leaves each surface where its output has got to.
 
 **SPEED LIMITS THE SWEEP** replaces SPEED's label on the right card, in the
 warning colour, while SPEED is slower than the fastest change the curve asks
@@ -1292,9 +1292,9 @@ triangle all move as ramps at SPEED's rate and look alike, and the output
 can turn back before it reaches an end. The line follows the settings, so it
 shows before SWEEP is pressed as well as while a sweep runs. Raise SPEED, or
 lower SETTINGS > SWEEP's SPEED (the rate in Hz) or RANGE, to clear it. A square
-jumps between its ends, so it shows at every SPEED below 100 %. With the
-SWEEP page's defaults (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it
-clears at SPEED 63 %, and for a triangle at 40 %.
+jumps between its ends, so it shows at every SPEED below 100%. With the
+SWEEP page's defaults (sine, 0.5Hz, RANGE 80%) and TRAVEL +/-90deg it
+clears at SPEED 63%, and for a triangle at 40%.
 [Servo procedures](Servo.md#sweep-and-speed) gives the rule.
 
 ![SPEED limiting a sweep](img/servo-sweep.png)
@@ -1303,31 +1303,31 @@ clears at SPEED 63 %, and for a triangle at 40 %.
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. The card, 600 x 200 px, holds the run's name, a summary line
-(`4.8 6.0 V BROWN-OUT, 60 s EACH`, or `..., 20 MOVEMENTS EACH`), START
-TEST (300 x 56 px) with the card's SETTINGS (160 x 48 px) beside it, the
+files. The card, 600 x 200px, holds the run's name, a summary line
+(`4.8 6.0V BROWN-OUT, 60s EACH`, or `..., 20 MOVEMENTS EACH`), START
+TEST (300 x 56px) with the card's SETTINGS (160 x 48px) beside it, the
 state line, the last result with its files
 (`LAST: PASS ATEST004.CSV + .TXT`) and the STALL AT note. START TEST needs
 the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
 before any warning opens) or LAST REPORT STILL WRITING, and follows the
-bench and the settings as they change. The note under the last result says when no reading can pass STALL AT: `STALL AT 2.00 A
-cannot be reached: current limit 2.00 A` while STALL AT is at or above the
-SET line's current limit, else `STALL AT 2.00 A cannot be reached: INA3221
-range 1.638 A` while the INA3221 is the rail's meter and STALL AT is at or
+bench and the settings as they change. The note under the last result says when no reading can pass STALL AT: `STALL AT 2.00A
+cannot be reached: current limit 2.00A` while STALL AT is at or above the
+SET line's current limit, else `STALL AT 2.00A cannot be reached: INA3221
+range 1.638A` while the INA3221 is the rail's meter and STALL AT is at or
 above its range. START TEST stays open: see
 [Stall and constant current](Servo.md#stall-and-constant-current).
 It is a two-second hold,
 the gesture OUTPUT ON uses, because a run switches the supply on and moves
-the servo. With HV SERVO on and a step above 6.0 V chosen, a tap opens HV
+the servo. With HV SERVO on and a step above 6.0V chosen, a tap opens HV
 SERVOS ONLY instead, naming the highest step, and the run starts only after
-its HOLD TO APPLY is held for 2 s. HV SERVO is for the session: every restart
+its HOLD TO APPLY is held for 2s. HV SERVO is for the session: every restart
 turns it off.
 
 TEST stays shown as the run starts, and the card's state line reads the
 step. LIVE shows the run's box on the left of its card, under `ARM FIRST`,
-346 px wide and clear of the horn at every angle: its step and
+346px wide and clear of the horn at every angle: its step and
 phase, with the meter the run reads beside STOP TEST: `PD mini`,
 the INA3221 channel, `INA 0x41 CH2`, or `SIMULATION`. It is the servo rail's meter at START TEST, and
 the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
@@ -1361,13 +1361,13 @@ plot does:
 ![A result on the INA3221](img/servo-result-ina.png)
 
 **START LIMIT RUN runs the limit search** from TEST's LIMIT RUN card: the servo
-stepped outward in 10 us steps until its current shows the linkage bound,
+stepped outward in 10us steps until its current shows the linkage bound,
 and, with LIMIT RUN on SEARCH + PROGRAM, a KST or Chaservo servo's LEFT ANGLE
 and RIGHT ANGLE lowered until neither end binds. On a SERVO PWM pin the
 search runs from PULSE CENTRE to PULSE MIN and PULSE MAX; on PROG PORT a
 read session comes first, and the search runs from the servo's NEUTRAL to
 its own PULSE LOWER and PULSE UPPER. [Servo procedures](Servo.md#installed-mechanical-limit)
-gives the method, the protections and the report. It is a 2 s hold while
+gives the method, the protections and the report. It is a 2s hold while
 the bench is ARMED and the INA3221 is the servo rail's meter. Over it the
 card's summary names the mode, `SEARCH ONLY` or `SEARCH + PROGRAM`, and
 SERVO PULSES while the run reads the port. Under it a line names the
@@ -1375,8 +1375,8 @@ output it drives and the meter, `OUTPUT PROG PORT 1 GP13, CURRENT
 INA3221 0x41 CH2` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1`
 (`CURRENT INA3221` while no channel watches the target), the next line says why
 it cannot start or what it does now, then the last result and its report.
-These four lines are in the 10 x 20 face, 20 px apart, the first 2 px under
-START LIMIT RUN, so the fourth ends 2 px inside the 200 px card.
+These four lines are in the 10 x 20 face, 20px apart, the first 2px under
+START LIMIT RUN, so the fourth ends 2px inside the 200px card.
 TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the
@@ -1402,7 +1402,7 @@ port SERVO TESTER names, PORT 1, PORT 2, PORT 3 or PORT 4, and reads `PROG
 PORT` with its pin while SERVO TESTER is OUTPUTS. A row is dimmed with
 `PORT IN USE` while another session holds its port: another row's, or a
 HITEC session the bench console opened, which the panel reads from the
-HITEC page's STATE every 500 ms. The list has one row, `KST and
+HITEC page's STATE every 500ms. The list has one row, `KST and
 Chaservo servos` (German `KST- und Chaservo-Servos`). A tap on a live row
 opens its programmer over the left column, the strip's tabs with it, one
 level down, and ends a running automatic test. CLOSE in the programmer, or
@@ -1427,10 +1427,10 @@ list holds 48 rows at most. With one row none of these is drawn. Modelled
 protocols without a transport on the IOmcu, the Hitec D-series servos among
 them, have no row ([PROGRAM](#program) on MOTOR & ESC).
 
-A row is 48 px tall with 8 px under it, a heading 28 px with 4 px under
-it, both in the 10 x 20 face. The bar over a paged list is 48 px tall:
-SEARCH 260 px wide on the left, `^` and `v` 56 px each on the right.
-Every entry ends 4 px above the alert band: on SERVO's left card 7 rows
+A row is 48px tall with 8px under it, a heading 28px with 4px under
+it, both in the 10 x 20 face. The bar over a paged list is 48px tall:
+SEARCH 260px wide on the left, `^` and `v` 56px each on the right.
+Every entry ends 4px above the alert band: on SERVO's left card 7 rows
 fit without the bar, 6 under it. MOTOR & ESC's list is the same list.
 
 The KST and Chaservo programmer takes the programming port the tester
@@ -1446,25 +1446,25 @@ on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled and
 takes no press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
 tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
-`PORT  5.0 V  1000 mA`. The set points and OUTPUT ON of
+`PORT  5.0V  1000mA`. The set points and OUTPUT ON of
 the SET row and of the SUPPLY screen are dimmed and take no press for as
 long; OUTPUT OFF works.
 It leaves programming without a cycle of the servo's supply. Whether a KST
 servo follows PWM while in programming mode is not measured.
 
-The programmer's layout on the 620 px left card, every control 48 px tall
-or more and ending 4 px above the alert band:
+The programmer's layout on the 620px left card, every control 48px tall
+or more and ending 4px above the alert band:
 
 | Part | Size |
 | --- | --- |
-| tabs and CLOSE | one row at the top, 48 px tall: five tabs of 95 px, CLOSE 120 px |
-| rows | 48 px tall at a 56 px pitch, up to 5 a tab, in two columns of 295 px; a wide row spans both |
-| values | 150 px (15 cells of the 10 x 20 face); a wide row's 260 px, with its `-` and `+` keys of 56 px inside it |
-| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20 px a row, to 4 px above the alert band: 7 rows under the SERVO tab |
-| lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48 px tall at a 56 px pitch, CANCEL 150 x 48 px at the foot |
-| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8 px above the buttons), the hold button 300 x 56 px and CANCEL 180 x 56 px at the foot |
+| tabs and CLOSE | one row at the top, 48px tall: five tabs of 95px, CLOSE 120px |
+| rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
+| values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
+| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 4px above the alert band: 7 rows under the SERVO tab |
+| lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48px tall at a 56px pitch, CANCEL 150 x 48px at the foot |
+| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8px above the buttons), the hold button 300 x 56px and CANCEL 180 x 56px at the foot |
 
-The tabs' labels are in the 10 x 20 face when every label fits its 95 px
+The tabs' labels are in the 10 x 20 face when every label fits its 95px
 tab, as in English, and in the 8 x 16 face when one does not, as German
 `ABSTIMMEN` does. No note, message or control lies under the alert band.
 Every line of a message is drawn: the longest takes 5 of the 7 rows under
@@ -1488,21 +1488,21 @@ back to the cards. Another task hides the list, and TEST shows it again. The out
 value opens the keypad, a list opens a list, a switch flips on the tap, and
 the name opens a keyboard.
 
-SETTINGS' page tabs are 197 x 40 px across the card. Its rows are two
-columns of 295 px, each row 48 px tall and 52 px from the next, the label
-left and the value right, 140 px wide (TYPE, FRAME RATE and NAME take both
-columns). The notes under OUTPUT's rows are lines of 60 characters, 21 px
-apart. A run's settings are three columns of 193 px, each row its label
-over its 48 px value, 71 px from the next: the automatic test's 15 rows
+SETTINGS' page tabs are 197 x 40px across the card. Its rows are two
+columns of 295px, each row 48px tall and 52px from the next, the label
+left and the value right, 140px wide (TYPE, FRAME RATE and NAME take both
+columns). The notes under OUTPUT's rows are lines of 60 characters, 21px
+apart. A run's settings are three columns of 193px, each row its label
+over its 48px value, 71px from the next: the automatic test's 15 rows
 are five to a column, the steps with HV SERVO, the pass and fail limits
 with BROWN-OUT, and the length and timing. TEST LENGTH BY tops the right
 column, under the card's SETTINGS: a second tap on SETTINGS opens its list
 and changes no setting. The notes, the save line, the STALL AT note and
-the caps line under TEST's cards end 4 px or more above the alert band. A
+the caps line under TEST's cards end 4px or more above the alert band. A
 list's choices are
-two columns of five, 48 px tall and 56 px apart; the warnings read in
-12 x 24 px letters, 49 characters a line, with HOLD TO APPLY and CANCEL
-56 px tall ending 4 px above the alert band.
+two columns of five, 48px tall and 56px apart; the warnings read in
+12 x 24px letters, 49 characters a line, with HOLD TO APPLY and CANCEL
+56px tall ending 4px above the alert band.
 
 ![The servo's settings](img/servo-settings.png)
 ![The SWEEP page](img/servo-sweep-page.png)
@@ -1511,32 +1511,32 @@ two columns of five, 48 px tall and 56 px apart; the warnings read in
 | --- | --- | --- |
 | SETTINGS > OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
 | SETTINGS > OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
-| SETTINGS > OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400 us or 2500 us |
-| SETTINGS > OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
+| SETTINGS > OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500us: -90deg is MIN, 0 is CENTRE, +90deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400us or 2500us |
+| SETTINGS > OUTPUT | TRIM | added to the centre, 5us a step, up to 200us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
 | SETTINGS > OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | SETTINGS > OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
-| SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
+| SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5Hz, 10 to 100% of the travel. The automatic test moves in steps between the ends RANGE gives |
 | AUTOMATIC TEST > SETTINGS | TEST LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
 | AUTOMATIC TEST > SETTINGS | DWELL TIME, SETTLING TIME | held at each end, by the test and by SWEEP; waited after a supply step before measuring |
-| AUTOMATIC TEST > SETTINGS | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down; 7.4 and 8.4 V run only with HV SERVO on |
-| AUTOMATIC TEST > SETTINGS | HV SERVO | adds the 7.4 and 8.4 V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
+| AUTOMATIC TEST > SETTINGS | STEP 4.8 / 6.0 / 7.4 / 8.4V, BROWN-OUT | the supply steps, and the brown-out run from 5.0V down; 7.4 and 8.4V run only with HV SERVO on |
+| AUTOMATIC TEST > SETTINGS | HV SERVO | adds the 7.4 and 8.4V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
 | AUTOMATIC TEST > SETTINGS | STALL AT | above this current the servo counts as stalled |
 | AUTOMATIC TEST > SETTINGS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
 | LIMIT RUN > SETTINGS | LIMIT RUN | SEARCH ONLY or SEARCH + PROGRAM, a tap switches; SEARCH + PROGRAM is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under it otherwise. For the session |
-| LIMIT RUN > SETTINGS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us in the run's read session, before the search. KEEP by default; for the session |
+| LIMIT RUN > SETTINGS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
 | SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
 
 TRIM's keypad is the one signed keypad: its `+/-` key, between the point
 and OK, puts a minus sign in front of the entry or takes it away, before or
-after the digits. OK takes -200 to +200 us and puts the value on the 5 us
+after the digits. OK takes -200 to +200us and puts the value on the 5us
 steps of `-` and `+`, the nearer one: 13 is 15, -12 is -10, -0 is 0. -201
 keeps the keypad open and names the range in the warning colour; the sign
 alone is nothing typed. The other keypads have no `+/-` key and their keys
 stay where they are.
 
-![TRIM's keypad, -25 us typed](img/servo-trim-keypad.png)
+![TRIM's keypad, -25us typed](img/servo-trim-keypad.png)
 
 AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
 alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
@@ -1545,8 +1545,8 @@ and report ([Servo](Servo.md#the-output-encoder)).
 
 SUPPLY's caps, the voltage and current the set points and a run's steps stay
 inside, show read-only under TEST's cards and on DUT, with their home and
-the caps in force: `Caps 21.00 V 5.00 A: SUPPLY > SETTINGS` (German
-`Grenzen 21.00 V 5.00 A: SUPPLY > OPTIONEN`). They are set on SUPPLY >
+the caps in force: `Caps 21.00V 5.00A: SUPPLY > SETTINGS` (German
+`Grenzen 21.00V 5.00A: SUPPLY > OPTIONEN`). They are set on SUPPLY >
 SETTINGS.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
@@ -1596,29 +1596,29 @@ up, a write to it was not acknowledged, or a read of it went unanswered.
 While the servo programmer holds the port, the row does not change: it keeps
 naming the target the IOmcu holds, a port or the outputs; the
 programmer drives the port and the tester sends nothing. The page is read
-every 500 ms. An IOmcu without that page (protocol older than 4.13) has
+every 500ms. An IOmcu without that page (protocol older than 4.13) has
 the standard outputs as target. The row follows the target the IOmcu
 holds, not the setting: a SERVO TESTER change waits for a quiet bench and
 reaches the row once the IOmcu has taken it. The IOmcu starts with the
 outputs as target, and moves the target to the outputs while a
 programming session leaves its port without a pin. In SAFE the panel
-writes the set port back within one read of the page, 500 ms, without
+writes the set port back within one read of the page, 500ms, without
 waiting for the next ARM.
 
 ![The TARGET row with PROG PORT](img/servo-target.png)
 
 | Type | Centre | Travel | Frame rates |
 | --- | --- | --- | --- |
-| STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |
-| NARROW 760 | 760 us | 660-860 us | as STANDARD PWM |
-| WIDE | 1500 us | 800-2200 us | as STANDARD PWM, up to 312 Hz |
-| HELI CYCLIC | 1520 us | 820-2220 us | 50, 120, 200, 333 Hz |
-| HELI TAIL 760 | 760 us | 410-1110 us | 200, 333, 560 Hz |
+| STANDARD PWM | 1500us | 1000-2000us | 50, 60, 100, 150, 200, 250, 300, 333Hz |
+| NARROW 760 | 760us | 660-860us | as STANDARD PWM |
+| WIDE | 1500us | 800-2200us | as STANDARD PWM, up to 312Hz |
+| HELI CYCLIC | 1520us | 820-2220us | 50, 120, 200, 333Hz |
+| HELI TAIL 760 | 760us | 410-1110us | 200, 333, 560Hz |
 
 A pulse needs a pause before the next frame. STANDARD PWM, NARROW 760 and WIDE
-keep at least 1 ms between pulses, so their fastest rate is 1 / (longest
-pulse + 1 ms): 333 Hz for 2000 us. The heli profiles run at Rotorflight's
-rates for digital cyclic and narrow-band tail servos, with at least 0.5 ms
+keep at least 1ms between pulses, so their fastest rate is 1 / (longest
+pulse + 1ms): 333Hz for 2000us. The heli profiles run at Rotorflight's
+rates for digital cyclic and narrow-band tail servos, with at least 0.5ms
 between pulses. A frame rate the pulses leave no pause for is refused, and a
 longer PULSE MAX is refused at a rate it does not fit. The pause is kept after
 the longest pulse the IOmcu can render, the top of the range a command
@@ -1626,13 +1626,13 @@ carries: PULSE MAX, or past it when CENTRE is off the middle, by as much as
 CENTRE lies nearer MAX than MIN. So a CENTRE that would push that top past
 the rate's pause is refused too.
 
-**A heli type, or any frame rate above 60 Hz, can destroy a servo that is not
+**A heli type, or any frame rate above 60Hz, can destroy a servo that is not
 made for it.** Choosing one opens a warning in the danger colour that names
 what is chosen and what it does to a servo not made for it; it is applied only
-after HOLD TO APPLY has been held for 2 s. CANCEL, a finger that slides off,
+after HOLD TO APPLY has been held for 2s. CANCEL, a finger that slides off,
 a touch loss and leaving the screen apply nothing. The type and frame rate in
 force stay red on the right card, and every restart goes back to STANDARD PWM
-at 50 Hz: a servo plugged in after a restart never meets a rate meant for
+at 50Hz: a servo plugged in after a restart never meets a rate meant for
 another one.
 
 ![The warning](img/servo-warning.png)
@@ -1642,8 +1642,8 @@ another one.
 servo ports, as target that is every PWM output whose first channel is a surface; a
 PPM output keeps its own frame. With PROG PORT as target it is the
 programming port's pin, and every slot keeps its own rate (protocol 4.19).
-Every other programming port runs at 50 Hz. A port whose pin shares its PWM
-slice with another programming port's pin runs at 50 Hz only: the RP2350
+Every other programming port runs at 50Hz. A port whose pin shares its PWM
+slice with another programming port's pin runs at 50Hz only: the RP2350
 gives both pins of a slice one divider and one wrap, so a faster rate there
 is refused. A change of TARGET puts the rate back to 0, each output at
 its own rate, and the screen sends its rate again with the next position. It goes with every held position,
@@ -1656,13 +1656,13 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330 Hz.` or `Active: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT GP13 runs at 330Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
-| This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
+| This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50Hz |
 
 An IOmcu restart, and every binding written on OUTPUTS, put each slot
-back at its own rate, 50 Hz for a servo; the screen sends its rate again with
+back at its own rate, 50Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
@@ -1687,7 +1687,7 @@ a run's settings.
 Current limitations:
 
 - Until the screen sends a position, the pins run at the rate the SERVO page
-  holds, which after a restart or a new binding is 50 Hz.
+  holds, which after a restart or a new binding is 50Hz.
 - On the panel's supply model the automatic test's currents are the model's load, not the servo's: a run there
   measures the model. [What is not measured](Servo.md#what-is-not-measured).
 - The supply on the right card is SUPPLY's: the PD mini when SETUP enables
@@ -1702,7 +1702,7 @@ Sets, switches and records a programmable supply: the PD mini, a USB-PD (USB
 Power Delivery) trigger controlled over a UART (universal asynchronous
 receiver-transmitter). The IOmcu drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
-(protocol 4.3). The panel writes the page and reads it every 100 ms. With
+(protocol 4.3). The panel writes the page and reads it every 100ms. With
 the PD mini enabled on SETUP under INTERFACES, the header names the module
 and the IOmcu's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
 from the PD mini TX and PD mini RX settings. With either pin not set, or
@@ -1710,29 +1710,29 @@ both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, 
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
 
 SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
-(German `LIVE`, `OPTIONEN`), each 150 x 40 px, and a page under it. The
+(German `LIVE`, `OPTIONEN`), each 150 x 40px, and a page under it. The
 menu's tile always opens LIVE. A tap on a tab switches the task; a switch
 is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 
-| Task | The left column, 620 px |
+| Task | The left column, 620px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
 | SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
 
 The header is the row right of the strip: the module and its pins, ONLINE
 or NOT ANSWERING, and at the right end the range the set points may take,
-for example `3.3-8.4 V  0.50-5.00 A`. It stays in sight on both tasks and
-under the keypad and the question. The rail on the right, 380 px, is the
-same on both tasks: four reading cards of 64 px, VOLT, CURR, PWR and MODE,
+for example `3.3-8.4V  0.50-5.00A`. It stays in sight on both tasks and
+under the keypad and the question. The rail on the right, 380px, is the
+same on both tasks: four reading cards of 64px, VOLT, CURR, PWR and MODE,
 and the CONTROL card with the run's mAh and Wh on its title line, RESET
-PEAKS (48 px) and OUTPUT ON / OFF (60 px) at its foot, where SERVO and
+PEAKS (48px) and OUTPUT ON / OFF (60px) at its foot, where SERVO and
 MOTOR & ESC have ARM and DISARM.
 
 The layout is the one MOTOR & ESC uses. On LIVE the left column holds the
 output card, PLOT | TABLE under its title, and SET POINTS under it. Each
-set point is a row: its label, then the `-0.1` key (72 x 48 px), the track
-(312 x 48 px), the `+0.1` key and the value in a 120 x 48 px box. The plot
-shows voltage, current and power over the last 30 s. The rail shows the readings, the run's lowest
+set point is a row: its label, then the `-0.1` key (72 x 48px), the track
+(312 x 48px), the `+0.1` key and the value in a 120 x 48px box. The plot
+shows voltage, current and power over the last 30s. The rail shows the readings, the run's lowest
 voltage and its highest current and power. MODE says which set point the
 supply holds: CV (constant voltage) at the set voltage, or CC (constant
 current) at the current limit. CC is drawn in the warning colour: a supply in
@@ -1746,26 +1746,26 @@ screen holds.
 
 | Set point | Model | PD mini | Buttons |
 | --- | --- | --- | --- |
-| VOLTAGE | 3.3 to 21 V, 20 mV steps | 1 to 20 V, 10 mV steps | 0.1 V |
-| CURRENT LIMIT | 0.5 to 5 A, 50 mA steps | 0.05 to 3 A, 10 mA steps | 0.1 A |
+| VOLTAGE | 3.3 to 21V, 20mV steps | 1 to 20V, 10mV steps | 0.1V |
+| CURRENT LIMIT | 0.5 to 5A, 50mA steps | 0.05 to 3A, 10mA steps | 0.1A |
 
 The model's ranges are a USB-PD PPS (Programmable Power Supply) source's
-widest profile, 3.3 to 21 V at up to 5 A. The PD mini's are from the
+widest profile, 3.3 to 21V at up to 5A. The PD mini's are from the
 vendor's page, not measured. The PD mini is a buck converter and gives no
-more than it is fed: its voltage is also capped 0.7 V under the input voltage
-it reports, so a 5 V input voltage allows at most 4.3 V. An input voltage
-under 1.7 V leaves the 1 V minimum, which the screen shows as the cap, and
-one under 1.5 V holds the output off; until the input voltage is read the
-cap is 20 V. A set point over the input voltage
+more than it is fed: its voltage is also capped 0.7V under the input voltage
+it reports, so a 5V input voltage allows at most 4.3V. An input voltage
+under 1.7V leaves the 1V minimum, which the screen shows as the cap, and
+one under 1.5V holds the output off; until the input voltage is read the
+cap is 20V. A set point over the input voltage
 puts the module into ERR until it is power cycled; the margin it needs is
-not measured. The cap lies 0.2 V above the line the output is cut at (see
-below), so the input voltage can drop 0.2 V under load before a set point at the
+not measured. The cap lies 0.2V above the line the output is cut at (see
+below), so the input voltage can drop 0.2V under load before a set point at the
 cap is cut. Both are narrowed by the caps in SETTINGS, and
 the sliders follow the supply in use. A tap on a track sets the value under
 the finger.
 
 **A tap on the VOLT or CURR card, or on a set point's value box, opens a
-keypad** over the left column, under the strip, with keys of 145 x 76 px. It shows the range in the title row and the current
+keypad** over the left column, under the strip, with keys of 145 x 76px. It shows the range in the title row and the current
 value faint until a digit is typed. OK takes a value inside the range,
 rounded to the supply's step; a value outside it is refused and the range
 turns to the warning colour. OK with nothing typed, and CANCEL, leave the set
@@ -1782,7 +1782,7 @@ lifting -- the home tag tapped with a second finger, or a contact the touch
 controller loses -- asks nothing, and the slider goes back. With the output
 off nothing is asked.
 STOP closes the question unanswered: an APPLY tapped in the same frame
-(about 50 ms) as STOP applies nothing. SETTINGS switches the question off for the slider and for the keypad
+(about 50ms) as STOP applies nothing. SETTINGS switches the question off for the slider and for the keypad
 separately.
 
 ![The question](img/supply-confirm.png)
@@ -1820,47 +1820,47 @@ tag never climbs from SETTINGS to LIVE.
 the panel owes it, and the IOmcu switches the output off itself when
 the panel's heartbeat stops. An enabled PD mini reads NOT ANSWERING while no
 IOmcu that speaks protocol 4.3 answers, or while the page's readings
-are older than 1500 ms; an output that is on is switched off then. A page
+are older than 1500ms; an output that is on is switched off then. A page
 that answers while the module's reading count (SAMPLES) stands -- a display
 read that fails while the other reads answer -- keeps ONLINE: after
-1500 ms without a new reading the voltage, current and power cards show
-dashes and no trip, peak or total takes a reading, and after 3000 ms (`SUPPLY_LINK_BLIND_MS`) an
+1500ms without a new reading the voltage, current and power cards show
+dashes and no trip, peak or total takes a reading, and after 3000ms (`SUPPLY_LINK_BLIND_MS`) an
 output that is on is switched off and the band says
 `No readings from the supply. Output off.`. A set point changed faster than
 the module takes it -- the slider dragged with SLIDER AND STEPS off, about
-one new set point every 50 ms -- does not hold the readings back: a reading
-400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
+one new set point every 50ms -- does not hold the readings back: a reading
+400ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
 write, one at a time with another transaction between two; the state read,
 and the input voltage read before a write, may also follow another reading straight
 away. With a module that answers at once, the display is then read about
-500 ms after the last display read and the output state about 900 ms after
+500ms after the last display read and the output state about 900ms after
 the last state read, each with up to two transactions more. An output the
 module switches on while it is off on the panel, or switches off itself, is
 seen during the drag. The input voltage is read before a set-point write or an ON
 only when one is waiting, and not between the reads for an ON. Set points
-and an ON reach a module that answers up to 390 ms late (the driver waits
-400 ms; host model, 40 start phases): one set point within 2.5 s; an ON
-within 3.6 s when the set points are already written, up to 7.5 s when it
+and an ON reach a module that answers up to 390ms late (the driver waits
+400ms; host model, 40 start phases): one set point within 2.5s; an ON
+within 3.6s when the set points are already written, up to 7.5s when it
 is asked right after a set point change or a drag; a module switching its
-output itself seen within 2.1 s during a drag. An output the module
-switches on while OFF is asked is switched off about 500 ms later with a
-module that answers at once, up to 1.8 s later at rest and up to 2.1 s
-during a drag with one that answers up to 390 ms late. The real module's
+output itself seen within 2.1s during a drag. An output the module
+switches on while OFF is asked is switched off about 500ms later with a
+module that answers at once, up to 1.8s later at rest and up to 2.1s
+during a drag with one that answers up to 390ms late. The real module's
 reply time is not measured.
-Current limitation: a module that answers late stretches the 500 ms of the
+Current limitation: a module that answers late stretches the 500ms of the
 state and input voltage reads, as each transaction takes its reply time. At rest
-the input voltage is read 850 ms apart at 100 ms late, 1.3 s apart at 200 ms and
-2.5 s apart at 390 ms; the state up to 1.5 s apart.
-Current limitation: with a module answering 279 ms or more late and the
-slider dragged, the display is read only 3.7 s to 5.0 s after the last
-display read (5.0 s at 390 ms), past `SUPPLY_LINK_BLIND_MS`; an output that
+the input voltage is read 850ms apart at 100ms late, 1.3s apart at 200ms and
+2.5s apart at 390ms; the state up to 1.5s apart.
+Current limitation: with a module answering 279ms or more late and the
+slider dragged, the display is read only 3.7s to 5.0s after the last
+display read (5.0s at 390ms), past `SUPPLY_LINK_BLIND_MS`; an output that
 is on is switched off and the band says
 `No readings from the supply. Output off.`. The panel reads the page every
-100 ms, which adds up to 100 ms to the gap it sees: from 263 ms late the
-driver's gap is over 2.9 s, so the cut is possible from 263 ms. At rest the
-display read stands up to 2.5 s at 390 ms. It stands over 1.4 s from
-259 ms late and 1.5 s from 279 ms, so the cards can show dashes from about
-260 ms. The
+100ms, which adds up to 100ms to the gap it sees: from 263ms late the
+driver's gap is over 2.9s, so the cut is possible from 263ms. At rest the
+display read stands up to 2.5s at 390ms. It stands over 1.4s from
+259ms late and 1.5s from 279ms, so the cards can show dashes from about
+260ms. The
 output is also switched off, with a line in the band, when the IOmcu
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on
@@ -1871,17 +1871,17 @@ take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
 
 **A sagging input voltage switches the PD mini off.** While the output is on, the
-IOmcu reads the input voltage of the module every 500 ms with a module that
+IOmcu reads the input voltage of the module every 500ms with a module that
 answers at once, and further apart with one that answers late (see above).
-When the input voltage reads under the set point plus 0.5 V on 2 reads in a
+When the input voltage reads under the set point plus 0.5V on 2 reads in a
 row, it switches the output off at once, and the band names the input voltage
 and the set point, for example
-`PD mini input 6.18 V is below the required 6.00 V + 0.5 V. Output off.`. From the
-sag to the cut takes about 1.0 s with a module that answers at once.
-Current limitation: with one that answers late it takes 1.7 s at 100 ms
-late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms (host model). The
-output stays off until a new hold. An input voltage reading under 1.5 V leaves no
-room for the lowest set point, 1.0 V: the ON is not written, and the band
+`PD mini input 6.18V is below the required 6.00V + 0.5V. Output off.`. From the
+sag to the cut takes about 1.0s with a module that answers at once.
+Current limitation: with one that answers late it takes 1.7s at 100ms
+late, 1.9s at 200ms and up to 4.7s up to 390ms (host model). The
+output stays off until a new hold. An input voltage reading under 1.5V leaves no
+room for the lowest set point, 1.0V: the ON is not written, and the band
 shows the same message. One low reading switches nothing, and a
 read that fails neither counts nor clears. While the output is on, its set
 point is not lowered to follow a falling input voltage. The rule is chosen without
@@ -1896,8 +1896,8 @@ second finger does nothing anywhere on the screen.
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left
 column: the caps and the start values on the left, the trips and the
-confirmations on the right, each a 48 px row with its value in a 120 x
-48 px box, and the save line at the foot. Each is kept in the panel's NVS (non-volatile storage) and survives
+confirmations on the right, each a 48px row with its value in a 120 x
+48px box, and the save line at the foot. Each is kept in the panel's NVS (non-volatile storage) and survives
 a restart. A value opens the keypad over the page; a switch flips on the
 tap. A tap on LIVE while the keypad is open closes it, and the setting keeps
 its value, as CANCEL leaves it. The same holds for a set point's keypad and
@@ -1913,19 +1913,19 @@ there or a change here asks for it.
 
 | Setting | Range | Default | What it does |
 | --- | --- | --- | --- |
-| VOLTAGE MAX | 3.3 to 21 V | 21.00 V | the highest voltage a set point takes |
-| CURRENT MAX | 0.5 to 5 A | 5.00 A | the highest current limit a set point takes |
-| START VOLTAGE | up to VOLTAGE MAX | 6.00 V | the voltage set point after a restart |
-| START CURRENT | up to CURRENT MAX | 2.00 A | the current limit after a restart |
-| CURRENT TRIP | 0 to 5 A | OFF | output off once the current has been over it for TRIP TIME |
-| VOLTAGE TRIP | 0 to 21 V | OFF | output off once the voltage has been over it for TRIP TIME |
-| TRIP TIME | 0 to 5000 ms | 100 ms | how long a reading is over a trip before it fires |
+| VOLTAGE MAX | 3.3 to 21V | 21.00V | the highest voltage a set point takes |
+| CURRENT MAX | 0.5 to 5A | 5.00A | the highest current limit a set point takes |
+| START VOLTAGE | up to VOLTAGE MAX | 6.00V | the voltage set point after a restart |
+| START CURRENT | up to CURRENT MAX | 2.00A | the current limit after a restart |
+| CURRENT TRIP | 0 to 5A | OFF | output off once the current has been over it for TRIP TIME |
+| VOLTAGE TRIP | 0 to 21V | OFF | output off once the voltage has been over it for TRIP TIME |
+| TRIP TIME | 0 to 5000ms | 100ms | how long a reading is over a trip before it fires |
 | SLIDER AND STEPS | ON, OFF | ON | ask before the slider changes a live output |
 | KEYPAD | ON, OFF | ON | ask before the keypad changes a live output |
 
 A cap lowered under a set point brings the set point down to it at once, and a
 start value with it. A typed value goes onto the setting's step the safe way: a
-cap rounds down, so 12.01 V allows 12.00 V, and a trip typed above 0 is at
+cap rounds down, so 12.01V allows 12.00V, and a trip typed above 0 is at
 least one step, never OFF. A trip of 0 is off. The time over a trip counts from
 the first reading over it. A reading under its trip starts the
 count again; a reading that did not arrive leaves it where it was. A trip
@@ -1939,7 +1939,7 @@ The output stays off at a restart, whatever the start values.
 With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It
 switches the output off and restarts the module (its SYSTEM_RESET command),
 for a module that shows ERR -- a set point over its input voltage puts it there --
-without unplugging it. The module is asked who it is again about 1 s later.
+without unplugging it. The module is asked who it is again about 1s later.
 Whether a restart clears every ERR is not measured. An IOmcu older than
 protocol 4.4 has no reset: the output goes off and the band says so.
 
@@ -1947,11 +1947,11 @@ protocol 4.4 has no reset: the output goes off and the band says so.
 
 A run is one switch-on of the output. The plot clears when the output comes on
 and holds the run after it goes off. The mAh and Wh on the CONTROL card's
-title line count the run from the readings shown, each step capped at 1 s. RESET PEAKS starts the
+title line count the run from the readings shown, each step capped at 1s. RESET PEAKS starts the
 lowest and highest values again from the current reading.
 
 A run is recorded to a `SUPPLnnn.CSV` of its own in `BENCH/LOGS`, one row
-every 50 ms, while Auto logs on [Setup](#setup) > SD CARD is ON:
+every 50ms, while Auto logs on [Setup](#setup) > SD CARD is ON:
 
 ```
 time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
@@ -1962,12 +1962,12 @@ empty while the supply does not answer. `source` is `measured` for the PD mini's
 readings and `model` for the panel's model. The bench takes the log: switching to ARMED during
 a supply run ends that run's file, and an output still on at the switch to SAFE starts
 a new file. That file's charge and energy go on from the totals counted since
-the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50 ms cadence while
+the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50ms cadence while
 the control task waits on the link, so an unanswered IOmcu does not thin
 out the supply's plot or its log.
 
-The model is a 6 ohm load with a 1.4 A burst for 0.6 s every 3 s, behind a
-0.05 ohm source resistance. At the starting set points, 6.00 V and 2.00 A, the
+The model is a 6ohm load with a 1.4A burst for 0.6s every 3s, behind a
+0.05ohm source resistance. At the starting set points, 6.00V and 2.00A, the
 burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
@@ -1987,7 +1987,7 @@ is then GP17. The alert leaves the band once a read shows the page holding
 the wiring asked: at once when the pin is stepped back to the one the page
 still holds. Once the module has
 answered, a change waits for a state read of the module sent after it, at
-most about 1.2 s, and is taken only if that read shows the output off: the
+most about 1.2s, and is taken only if that read shows the output off: the
 module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
@@ -2006,17 +2006,17 @@ AUTO and with a fixed rate alike.
 
 ![Receiver](img/analyser.png)
 
-Sixteen channels in two columns of eight lanes, 52 px each. A lane holds the
-channel's name in 10 x 20, its history, a bar 56 px wide for its current value
+Sixteen channels in two columns of eight lanes, 52px each. A lane holds the
+channel's name in 10 x 20, its history, a bar 56px wide for its current value
 and the value in us in 8 x 16. The history is 200 samples, one pixel each:
-about 2.8 s at 71 frames a second (one S.BUS frame every 14 ms). CH17 and
+about 2.8s at 71 frames a second (one S.BUS frame every 14ms). CH17 and
 CH18 are the two digital channels. A glitch is a spike in one lane; a dropout
 is a notch across all sixteen at the same instant.
 
-The state card on the right is 260 px wide: the state word in 20 x 36, its
+The state card on the right is 260px wide: the state word in 20 x 36, its
 line in up to three lines of 12 x 24, BUS, RATE, FRAMES, RESYNC and BAD TAIL in
-rows of 32 px, and CH17 and CH18, 44 px tall, lit while set. CHANNELS and RAW
-DATA are tabs of 150 x 48 px. RAW DATA shows the last frame's bytes, eight to
+rows of 32px, and CH17 and CH18, 44px tall, lit while set. CHANNELS and RAW
+DATA are tabs of 150 x 48px. RAW DATA shows the last frame's bytes, eight to
 a row, and the decoder's counts in 8 x 16.
 
 No firmware feeds this screen yet (see [Receiver buses](Receivers.md)); it
@@ -2036,15 +2036,15 @@ channels. [Receiver buses](Receivers.md) describes the states.
 ![Cell divergence](img/battery.png)
 
 Cells are drawn as their departure from the pack's mean. The verdict follows
-the spread, the widest gap between any two cells: HEALTHY below 30 mV, WATCH
-from 30 mV, REPLACE from 60 mV. The scale follows the pack down to a floor of
-12 mV and is printed beside the plot.
+the spread, the widest gap between any two cells: HEALTHY below 30mV, WATCH
+from 30mV, REPLACE from 60mV. The scale follows the pack down to a floor of
+12mV and is printed beside the plot.
 
-The plot card is 640 px wide, the right card 360 px. A bar is at most 48 px
-wide and reaches 164 px either side of the mean. Under each bar the cell's
+The plot card is 640px wide, the right card 360px. A bar is at most 48px
+wide and reaches 164px either side of the mean. Under each bar the cell's
 number and its voltage are in 12 x 24 up to 11 cells and in 10 x 20 from 12 to
 14. The verdict is in 20 x 36, its line in up to two lines of 12 x 24, the six
-rows 36 px each, the note in 10 x 20.
+rows 36px each, the note in 10 x 20.
 
 Measure under load. At rest a weak cell reads like the others.
 
@@ -2068,23 +2068,23 @@ menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
 RESCAN, opens [Wi-Fi](#wi-fi), and FILES beside it opens [Files](#files).
 
 The file list takes the body in three parts. The header row, body y 4 to
-52, holds ROOT, USER and BENCH (110 x 40 px each), the folder and the
-card's name, and PREV and NEXT (140 x 48 px) while the folder holds more
-than one page. The list under it is 1008 px wide and shows 7 rows of 44 px
-at a pitch of 48 px: each row takes a tap anywhere in its 48 px. A row
+52, holds ROOT, USER and BENCH (110 x 40px each), the folder and the
+card's name, and PREV and NEXT (140 x 48px) while the folder holds more
+than one page. The list under it is 1008px wide and shows 7 rows of 44px
+at a pitch of 48px: each row takes a tap anywhere in its 48px. A row
 shows the file's name and, right-aligned, its size; the file's date, kind
 and length are not shown. The footer, body y 440 to 492, holds RESCAN
-(140 x 52 px), WI-FI and FILES (100 x 52 px) at the left and DELETE and
-OPEN (140 x 52 px) at the right, and ends 4 px above the alert band. A
+(140 x 52px), WI-FI and FILES (100 x 52px) at the left and DELETE and
+OPEN (140 x 52px) at the right, and ends 4px above the alert band. A
 message about a file stands between FILES and DELETE on up to two lines of
 28 characters.
 
-The import view shows DETECTED (400 px wide) beside the column list (600 px,
-7 rows at a pitch of 48 px), with four buttons of 246 x 52 px under them.
-The plot is 992 x 316 px under four series chips of 240 x 44 px; under it
-run the time labels, then BACK (140 x 52 px), `<` and `>` (96 x 52 px) and
-the cursor's line. The DELETE question is a box of 700 x 280 px with CANCEL
-and DELETE of 300 x 56 px. Labels, rows, buttons and the import's warnings
+The import view shows DETECTED (400px wide) beside the column list (600px,
+7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
+The plot is 992 x 316px under four series chips of 240 x 44px; under it
+run the time labels, then BACK (140 x 52px), `<` and `>` (96 x 52px) and
+the cursor's line. The DELETE question is a box of 700 x 280px with CANCEL
+and DELETE of 300 x 56px. Labels, rows, buttons and the import's warnings
 draw in the 10 x 20 face; the sentences of the empty list, the question,
 the boxes that say why nothing shows and the file messages in 12 x 24; the
 plot's time labels and the ranges of the columns and the chips in 8 x 16.
@@ -2098,7 +2098,7 @@ numeric columns. Each numeric column shows its range, lowest to
 highest: one decimal while both ends are below 1000, none from 1000 on
 (`11.9..12.6 V`, `2392..14639 rpm`). A range wider than the 17 glyphs of
 its box drops the decimal, then the space before the unit
-(`-1000..-1000 rpm`, `-14639..-14639rpm`); a wider one is cut at the box's
+(`-1000..-1000rpm`, `-14639..-14639rpm`); a wider one is cut at the box's
 edge. A row ends at its line feed (LF, 0x0A).
 Text after the last line feed is a row cut off by a power loss or a full
 card: it can hold every field and a number cut short, `95` of `9554`, so it
@@ -2179,16 +2179,16 @@ names in the folder, a report standing alone by its own number:
 
 OPEN on a report standing alone shows it as text in place of the import
 view: the file's name heads the panel, and its lines follow, 15 rows of up
-to 92 characters in the 10 x 20 face on screen, 22 px apart. BACK is
-140 x 52 px at the footer's left. A line longer than a row breaks at its last
+to 92 characters in the 10 x 20 face on screen, 22px apart. BACK is
+140 x 52px at the footer's left. A line longer than a row breaks at its last
 space inside the row, and a word longer than a row is cut at the row's end.
 A line ends at a line feed (LF), at a carriage return (CR) and at a CR LF
 pair, which is one end; a tab reads as a space. A drag on the rows or on the
 scroll bar scrolls them. A frame reads the 15 rows it draws and at most 15
 rows before them, wherever the text is scrolled to. BACK and the home tag
 return to the list and free the text; leaving LOGS frees it too, and LOGS
-opens on the list again. The view holds the first 32 KiB of a file; a longer
-file shows those and a last row `Only the first 32 kB are shown.` A file of
+opens on the list again. The view holds the first 32KiB of a file; a longer
+file shows those and a last row `Only the first 32kB are shown.` A file of
 0 bytes shows one row, `The file is empty.` A report that cannot be opened
 stays on the list, and the footer says why: `Cannot open LIMIT044.TXT.` or
 `Not enough memory.`
@@ -2233,10 +2233,10 @@ NEXT from page 1 shows them, and the tab numbers show the shift. Each page is on
 read of the tab's folder: the walk keeps the 48 entries of that page
 and counts the rest, so the panel holds one page in memory whatever the card
 holds. The read runs on the task that draws the screen and handles touch. For
-999 runs the selection takes about 2 ms on a desktop computer (x86-64,
-measured); on the panel it is estimated at 20 to 40 ms, and the directory read
-at 63 sectors of 512 bytes, about 25 ms at the card's 20 MHz SPI (Serial
-Peripheral Interface) clock, or 125 sectors, about 50 ms, with a report beside
+999 runs the selection takes about 2ms on a desktop computer (x86-64,
+measured); on the panel it is estimated at 20 to 40ms, and the directory read
+at 63 sectors of 512 bytes, about 25ms at the card's 20MHz SPI (Serial
+Peripheral Interface) clock, or 125 sectors, about 50ms, with a report beside
 every run. Neither is measured on the panel. Each entry's size comes with the
 directory read, so a page costs one walk and the selection. A folder with a
 report other than `LIMITnnn.TXT` and no CSV of its name and number beside it,
@@ -2248,7 +2248,7 @@ holds the CSV files and the `LIMITnnn.TXT` reports, a `SERVOnnn.TXT`
 standing alone is not listed, and the console says
 `no PSRAM for the list's notes`.
 
-The scroll bar along the list's right edge is 56 px wide, 8.4 mm at the 0.150
+The scroll bar along the list's right edge is 56px wide, 8.4mm at the 0.150
 mm a pixel assumed for the panel (not measured). Its thumb is the rows on
 screen against the rows on the page, and it scrolls within the page. A tap on
 the track brings the thumb's middle to the finger; a finger on the thumb drags
@@ -2305,15 +2305,15 @@ for a file written by firmware 0.15.0 or older it is shorter than the run
 
 SETUP → PANEL → One finger pans, off by default, lets a single finger
 pan a zoomed view. While it is on and the view is zoomed in, a finger that
-moves more than 10 px from where it touched down drags the view sideways, and
-the sample under the finger stays under it. A touch that stays within 10 px
+moves more than 10px from where it touched down drags the view sideways, and
+the sample under the finger stays under it. A touch that stays within 10px
 selects a value as with the setting off, and a pan leaves the cursor where it
 was. A view that shows the whole run is not panned: one finger moves the
 cursor. A second finger on the plot starts a zoom, as before.
 
 A button or a row on LOGS takes a tap. It acts when the finger that pressed
-it lifts inside it, having been no more than 8 px from the press in x and in
-y. A vertical drag of more than 8 px on the file list or on the column list
+it lifts inside it, having been no more than 8px from the press in x and in
+y. A vertical drag of more than 8px on the file list or on the column list
 scrolls it and selects nothing. On those two views one finger at a time
 presses; a second finger does nothing.
 
@@ -2329,15 +2329,15 @@ again only if it was above every run left on the card at that read.
 
 ![The DELETE question](img/logs-delete.png)
 
-A run is committed to the card every 20 rows or 1000 ms of run, whichever
+A run is committed to the card every 20 rows or 1000ms of run, whichever
 comes first. Power lost mid-run costs the rows the commit has not finished
 with and the rows still in the queue between the control task and the card's
-own task: under 1.0 s of run while the card keeps up, and 84 rows, 4.20 s at
-the panel's 20 Hz sample rate, if the card has stalled and the queue is full.
+own task: under 1.0s of run while the card keeps up, and 84 rows, 4.20s at
+the panel's 20Hz sample rate, if the card has stalled and the queue is full.
 The rest of the file is readable either way; a row the cut stopped part way
 through has no line feed and is left out on reading (see [Logs](#logs)). The card is written by a task of its own: an SD (Secure
-Digital) card is allowed 250 ms to finish a write, and the task that beats the
-safety line has a ceiling of 150 ms.
+Digital) card is allowed 250ms to finish a write, and the task that beats the
+safety line has a ceiling of 150ms.
 
 Nine messages say what a card did to a run. Each appears on the band:
 
@@ -2370,9 +2370,9 @@ written.
 
 | Card | Size | Format out of the box | On the panel |
 | --- | --- | --- | --- |
-| SDSC (SD Standard Capacity) | up to 2 GB | FAT12 or FAT16 | mounts |
-| SDHC (SD High Capacity) | 4 GB to 32 GB | FAT32 | mounts |
-| SDXC (SD eXtended Capacity) | 64 GB to 2 TB | exFAT | mounts |
+| SDSC (SD Standard Capacity) | up to 2GB | FAT12 or FAT16 | mounts |
+| SDHC (SD High Capacity) | 4GB to 32GB | FAT32 | mounts |
+| SDXC (SD eXtended Capacity) | 64GB to 2 TB | exFAT | mounts |
 | SDUC (SD Ultra Capacity) | over 2 TB | exFAT | does not mount |
 
 Not supported:
@@ -2385,7 +2385,7 @@ Not supported:
 A card in one of these does not mount. The panel never formats a card.
 
 To format a card for the bench, use the SD Association's SD Memory Card
-Formatter: it writes FAT32 up to 32 GB and exFAT from 64 GB, on an MBR. On
+Formatter: it writes FAT32 up to 32GB and exFAT from 64GB, on an MBR. On
 Windows, the format dialog's FAT32 or exFAT does the same. On macOS, Disk
 Utility's Erase with Scheme `Master Boot Record` and Format `MS-DOS (FAT)`
 or `ExFAT`. On Linux, for the card's first partition at `/dev/sdX1` on a
@@ -2424,12 +2424,12 @@ ESP-IDF logs that write's E lines (`sdmmc_cmd`, `diskio_sdmmc`) before the
 second time to ask FatFs why. That look adds one card start-up to each
 failed try, its time not measured, and nothing to a card that mounts.
 
-A file's size is read 64-bit, so a file of 4 GiB and more on an exFAT card
-lists with its size, `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte:
-a larger one, also a FAT32 file of 2 GiB to 4 GiB less 1 byte, stays on the
-list and OPEN says `BENCH001.CSV is 2 GB or larger. Not opened.` The sizes
-on the list are binary: 1 kB is 1,024 bytes, 1 MB 1,024 kB and 1 GB
-1,024 MB. [WI-FI](#wi-fi) lists and downloads a file of any size the card
+A file's size is read 64-bit, so a file of 4GiB and more on an exFAT card
+lists with its size, `8.00GB`. OPEN reads files up to 2GiB less 1 byte:
+a larger one, also a FAT32 file of 2GiB to 4GiB less 1 byte, stays on the
+list and OPEN says `BENCH001.CSV is 2GB or larger. Not opened.` The sizes
+on the list are binary: 1kB is 1,024 bytes, 1MB 1,024kB and 1GB
+1,024MB. [WI-FI](#wi-fi) lists and downloads a file of any size the card
 holds.
 
 ## Files
@@ -2443,7 +2443,7 @@ output.
 
 ![FILES](img/files.png)
 
-Each pane is one folder of the card, 500 px wide, at x 8 and x 516. The
+Each pane is one folder of the card, 500px wide, at x 8 and x 516. The
 left pane opens on the card's root, the right one on the User log folder
 (`USER/LOGS` by default). The pane with the accent heading is the active
 one: OPEN, RENAME, DELETE, NEW and INFO act in it, and COPY and MOVE take
@@ -2452,8 +2452,8 @@ and makes its pane the active one; a second tap on the selected row is
 OPEN.
 
 A pane's header row, body y 4 to 52, holds the folder's path on a button
-312 px wide that goes up one folder; the root shows the card's volume
-label, or `SD CARD`, and goes nowhere. PREV and NEXT, 88 x 48 px, stand at
+312px wide that goes up one folder; the root shows the card's volume
+label, or `SD CARD`, and goes nowhere. PREV and NEXT, 88 x 48px, stand at
 the pane's right end while the folder holds more than 48 entries:
 
 ![The second page of a folder of 120 entries](img/files-paged.png)
@@ -2464,8 +2464,8 @@ panel does not list are counted after it, `+ 1 NOT LISTED`: names that start
 with a full stop (`.DS_Store`, `._RCBENCH.LOG`) and names over 63 bytes. A
 folder that holds only such entries is not empty, and DELETE refuses it.
 
-The list shows 6 rows at a pitch of 48 px, drawn 44 px tall; a drag on the
-list or on the 56 px scroll bar moves it. Folders come first, then files,
+The list shows 6 rows at a pitch of 48px, drawn 44px tall; a drag on the
+list or on the 56px scroll bar moves it. Folders come first, then files,
 each group in name order. A row shows an icon, the name, the size
 right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 1,024 bytes) and, under the name, the kind and a state word:
@@ -2491,14 +2491,14 @@ The fault log takes COPY and DELETE only while the IOmcu link is up: with
 the link down the panel writes to it every 5s.
 
 The footer, body y 440 to 492, holds OPEN, COPY, MOVE, RENAME, DELETE, NEW
-and INFO, 118 x 52 px, and RESCAN, 140 x 52 px, 6 px apart; it ends 4 px
+and INFO, 118 x 52px, and RESCAN, 140 x 52px, 6px apart; it ends 4px
 above the alert band. A button that would be refused is drawn dimmed; a tap
 on it says why in the message line, two lines of the 12 x 24 face over the
 footer.
 
 | Button | What it does |
 |---|---|
-| OPEN | enters a folder; a CSV file or a report standing alone in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs); a file LOGS does not open, one over 2 GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| OPEN | enters a folder; a CSV file or a report standing alone in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs); a file LOGS does not open, one over 2GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
@@ -2537,8 +2537,8 @@ stops before its next chunk of 16KiB and says
 
 ![The DELETE question](img/files-delete.png)
 
-The DELETE question is a box of 700 x 280 px with CANCEL and DELETE of
-300 x 56 px. It names the entry and its size; for a run's CSV with a report
+The DELETE question is a box of 700 x 280px with CANCEL and DELETE of
+300 x 56px. It names the entry and its size; for a run's CSV with a report
 of the same number it names the report that goes with it.
 
 ![A copy under way](img/files-copy.png)
@@ -2551,7 +2551,7 @@ done of the bytes to copy, and CANCEL stops it before its next chunk:
 ![INFO on a file](img/files-info.png)
 ![INFO on a folder](img/files-info-folder.png)
 
-INFO is a box of 800 x 420 px with CLOSE of 300 x 56 px. A file shows its
+INFO is a box of 800 x 420px with CLOSE of 300 x 56px. A file shows its
 name, folder, kind, size, time and rule; a folder shows its entries, the
 bytes of the files directly in it, the entries not listed, its time and its
 rule. The time is the modification time the card holds, read as UTC
@@ -2560,7 +2560,7 @@ zone. The times of files the panel writes are not checked on a panel.
 
 ![NEW's choice](img/files-new.png)
 
-NEW opens a list of two rows of 56 px above NEW: FOLDER and TEXT FILE. A
+NEW opens a list of two rows of 56px above NEW: FOLDER and TEXT FILE. A
 press beside the list closes it.
 
 ### The name keyboard
@@ -2613,18 +2613,18 @@ radio runs only while
 this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off
 when the screen is left, before an install writes the flash, and after
-10 min without a request.
+10min without a request.
 
-Every view of WI-FI ends 4 px above the alert band, at body y 492, so an
-alert covers no control. Rows, buttons and keys are 48 px or taller.
+Every view of WI-FI ends 4px above the alert band, at body y 492, so an
+alert covers no control. Rows, buttons and keys are 48px or taller.
 
 | View | Layout |
 | --- | --- |
-| Radio off | five buttons of 460 x 60 px (69.0 x 9.0 mm), 8 px apart, on the left; on the right a card of 524 px with lines of 49 characters in 10 x 20, 24 px apart |
-| Radio on | rows of 56 px: the label in 10 x 20 in 240 px, the value in 20 x 36 in 740 px, where a network name of 32 characters takes 640 px; the lines under the rows in 12 x 24, 28 px apart; WI-FI OFF 460 x 60 px from body y 424 |
-| Network list | two columns of eight rows of 492 x 48 px, 52 px apart: the name in 12 x 24 (32 characters are 384 px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56 px each |
-| Question about an image | a card of 1008 x 484 px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2 s: INSTALL 460 x 72 px |
-| Keyboard | 1008 x 484 px, keys of 93 x 71 px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
+| Radio off | five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
+| Radio on | rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424 |
+| Network list | two columns of eight rows of 492 x 48px, 52px apart: the name in 12 x 24 (32 characters are 384px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56px each |
+| Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s: INSTALL 460 x 72px |
+| Keyboard | 1008 x 484px, keys of 93 x 71px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
 
 The radio starts only with the bench SAFE, the supply output off and no log
 run open. Otherwise the buttons that start it are grey and the card says what
@@ -2633,11 +2633,11 @@ is missing:
 ![The radio may not start](img/wifi-blocked.png)
 
 It goes off by itself on a switch to ARMED, on STOP, on the supply output
-coming on, on a log run opening, after 10 min without a request and after 16
+coming on, on a log run opening, after 10min without a request and after 16
 wrong access codes. The card then says which, in one line:
 `Wi-Fi switched off: bench ARMED.`, `Wi-Fi switched off: STOP.`,
 `Wi-Fi switched off: supply output on.`, `Wi-Fi switched off: a recording session started.`,
-`Wi-Fi switched off after 10 min without a request.`,
+`Wi-Fi switched off after 10min without a request.`,
 `Wi-Fi switched off after 16 wrong access codes.`, or `Wi-Fi could not start.` A STOP
 or a switch to ARMED also drops an uploaded image that waits on the panel.
 While the radio is up, the link to the IOmcu and the heartbeat run as
@@ -2656,7 +2656,7 @@ or a computer needs:
 
 | | |
 | --- | --- |
-| Band and channel | 2.4 GHz, channel 6 (`WIFI_ACCESS_AP_CHANNEL`) |
+| Band and channel | 2.4GHz, channel 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Security | WPA2 (Wi-Fi Protected Access 2) personal |
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-3F7A` |
 | Password | 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o) |
@@ -2675,7 +2675,7 @@ The panel can join a network that is already there instead: WPA2 or WPA3
 (Wi-Fi Protected Access 3) personal. Enterprise networks and open networks
 are not offered.
 
-CHOOSE HOME NETWORK scans for 10 s at most, then lists up to 16 networks,
+CHOOSE HOME NETWORK scans for 10s at most, then lists up to 16 networks,
 strongest first, with their signal in dBm. A network without a name, an open
 one and an enterprise one are left off the list.
 
@@ -2704,7 +2704,7 @@ The keyboard has three layers of the same grid: lower case, `ABC` for upper
 case, `#+=` for the 32 printable marks of ASCII (American Standard Code for
 Information Interchange). Each of the 95 printable ASCII characters is on
 one layer once; SPACE is the wide key. The keyboard covers the body above
-the alert band, 1008 x 484 px, with keys of 93 x 71 px
+the alert band, 1008 x 484px, with keys of 93 x 71px
 ([Keypad, keyboard and the shared controls](#keypad-keyboard-and-the-shared-controls)).
 A name takes 1 to 32 bytes; OK on an empty name keeps the keyboard open
 and says `Enter a network name.` A
@@ -2729,7 +2729,7 @@ Joined, the screen shows the network, the panel's address and its name,
 point's name. The name answers through mDNS (multicast domain name system)
 on computers that resolve `.local` names; which phones do is not measured.
 The address works on every one. A name responder that fails to start (no
-task, no socket, no multicast group) is tried again 3 times, 5 s apart
+task, no socket, no multicast group) is tried again 3 times, 5s apart
 (`WA_MDNS_RETRIES`, `WA_MDNS_RETRY_MS`); after that the name stays silent
 until the next join, and the address still works.
 
@@ -2738,9 +2738,9 @@ the home network:
 
 | Line on the card | Condition |
 | --- | --- |
-| `Could not connect. Password rejected.` | 3 auth-class drops in a row within 20 s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time; or no association within 20 s (`WA_JOIN_MS`) with an auth-class drop as the last drop |
-| `Could not connect. Network not found.` | no association within 20 s (`WA_JOIN_MS`), and the last drop of another kind, or none |
-| `Connection failed. No IP address within 15 s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15 s (`WA_ADDRESS_MS`) |
+| `Could not connect. Password rejected.` | 3 auth-class drops in a row within 20s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time; or no association within 20s (`WA_JOIN_MS`) with an auth-class drop as the last drop |
+| `Could not connect. Network not found.` | no association within 20s (`WA_JOIN_MS`), and the last drop of another kind, or none |
+| `Connection failed. No IP address within 15s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15s (`WA_ADDRESS_MS`) |
 | `Connection to the home network lost.` | joined, then the network dropped the panel |
 
 A drop while joining connects again. One auth-class drop does not end the
@@ -2755,7 +2755,7 @@ access code back to on.
 
 A change of what is kept (a network, FORGET, the access code switch) takes
 effect at once and reaches NVS on the next frame that may write flash. A
-write that fails is tried again 3 times, 10 s apart (`WA_PENDING_RETRIES`,
+write that fails is tried again 3 times, 10s apart (`WA_PENDING_RETRIES`,
 `WA_PENDING_RETRY_MS`), and the card says `Not saved. Writing to flash failed. Saving will be tried again with the next change.` until one succeeds. The change holds
 until the panel restarts either way; only a write that succeeded outlasts
 the restart.
@@ -2770,7 +2770,7 @@ Current limitations:
   says so while joined.
 - An uploaded image is checked against its own SHA-256, not against a
   signature. Any image built as `rcbench-panel` for the ESP32-P4 installs
-  after the 2 s hold, and on a home network a device between the browser
+  after the 2s hold, and on a home network a device between the browser
   and the panel can replace the image on its way. The IOmcu image a
   panel image carries comes with it and is offered to the IOmcu at the
   next link-up.
@@ -2790,7 +2790,7 @@ session. 16 wrong codes switch the radio off.
 ACCESS CODE switches it, for both ways in. It is on by default, after
 FORGET HOME NETWORK and on a panel with nothing kept. The switch is kept in
 NVS. Off, the page lists, sends files and takes an upload without a code,
-and the screen says `Access code off. Any device on the network can open the page.` An upload still installs only after the 2 s hold on the
+and the screen says `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the
 panel.
 
 ### The page
@@ -2829,7 +2829,7 @@ card that cannot be read, the page says so and the upload still works.
 page gives the number of files, their bytes and the ZIP file's bytes before
 the click. The files are stored as they are, not compressed, with their
 folder paths from the card's root, names in UTF-8 and the card's times. A
-file over 4 GiB − 1 B, an archive over 4 GiB − 1 B and more than 65,535
+file over 4GiB − 1B, an archive over 4GiB − 1B and more than 65,535
 entries use ZIP64. Nothing is written to the card to make it. The panel
 keeps 24 bytes per entry in PSRAM, not the archive: it is sent as it is
 read. The number of entries has no limit of its own; a card whose entries
@@ -2848,7 +2848,7 @@ end for the ZIP file's directory.
 - A file made shorter before the download reads it, and a file or folder
   removed or renamed before the download's last pass over it, end the
   download short; the browser reports it as failed. The rotation of
-  `BENCH/RCBENCH.LOG` at 1 MiB is a rename.
+  `BENCH/RCBENCH.LOG` at 1MiB is a rename.
 
 On a home network a download of a 16MiB file ran at 688-757kB/s, the card
 read and the radio together, not separated, and an upload of a 2.56MB image
@@ -2859,7 +2859,7 @@ downloads. The range is not measured.
 the steps to measure it. A download of S bytes at a rate of R bytes per
 second takes S / R seconds: at 700kB/s, a 50MB card takes about 71s. The page answers one request at a time, so a request made
 during a download waits for its end. A card pulled during a download ends
-the download short, and so does a browser that takes nothing for 30 s; the
+the download short, and so does a browser that takes nothing for 30s; the
 browser reports it as failed, and the panel runs on.
 
 ### Installing: PANEL UPDATE
@@ -2880,7 +2880,7 @@ that runs already is not offered:
 ![The same version, another build](img/wifi-rebuild.png)
 ![The build that runs](img/wifi-installed.png)
 
-INSTALL is a 2 s hold (`HOLD 2 s: INSTALL`). The browser cannot start it.
+INSTALL is a 2s hold (`HOLD 2s: INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
 drawing being fetched or kept and no update of the IOmcu running
 (`Installation is waiting for the IOmcu update to finish.`). CANCEL drops the image.
@@ -2891,9 +2891,9 @@ The hold switches the radio off first. Then the control task stops its polls
 and withholds the heartbeat on purpose, so the IOmcu holds its outputs
 in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
 whole screen, with no band and no STOP: nothing can be switched to ARMED
-behind it. A 64 px bar holds the title; the bytes stand in the 20 x 36 px
-face over a bar 36 px tall and 976 px wide, and the lines under it are in
-the 12 x 24 px face. It writes the slot that is not running in pieces of 64 KiB and
+behind it. A 64px bar holds the title; the bytes stand in the 20 x 36px
+face over a bar 36px tall and 976px wide, and the lines under it are in
+the 12 x 24px face. It writes the slot that is not running in pieces of 64KiB and
 shows the bytes and the percentage. The display's scan-out goes on during
 each flash erase; what the display shows then is not measured.
 Then the slot is read back and checked, it becomes the one that starts, and
@@ -2932,8 +2932,8 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 ## Setup
 
 The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
-style. Each tile is 328 x 130 px with 10 px margins: a 36 px icon centred
-over its name in the 12 x 24 px face, and a line in the 10 x 20 px face.
+style. Each tile is 328 x 130px with 10px margins: a 36px icon centred
+over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 ![Setup](img/setup.png)
 
@@ -2959,13 +2959,13 @@ The same page in the light theme:
 
 ![Setup in the light theme](img/setup-light.png)
 
-A category's list is 984 px wide from the panel's left margin and shows
-428 px of it, 6 rows whole, over a strip of three columns, 48 px tall: the
-category's name, RESET CATEGORY and SAVE. A row is 64 px tall at a 70 px
-pitch: the setting's name in the 20 x 36 px face, its help line under it in
-the 10 x 20 px face, its value in the 12 x 24 px face. A value wider than
-the gap between the keys would take the 10 x 20 px face; no value of a
-SETUP setting needs it, in English or in German. The strip ends at panel y 552, 4 px above the alert band
+A category's list is 984px wide from the panel's left margin and shows
+428px of it, 6 rows whole, over a strip of three columns, 48px tall: the
+category's name, RESET CATEGORY and SAVE. A row is 64px tall at a 70px
+pitch: the setting's name in the 20 x 36px face, its help line under it in
+the 10 x 20px face, its value in the 12 x 24px face. A value wider than
+the gap between the keys would take the 10 x 20px face; no value of a
+SETUP setting needs it, in English or in German. The strip ends at panel y 552, 4px above the alert band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 
@@ -3000,44 +3000,44 @@ value by one step. A changed value is in force at once; SAVE decides whether
 it survives a restart ([Keeping the values](#keeping-the-values)). A number
 stops at the ends of its range, and so does INA228 address, which has `-`
 and `+` keys: 0x40 to 0x4F. A shunt on SENSORS takes 0 (OFF) or 5.0 to
-1000.0 mΩ: `+` from OFF gives 5.0 and `-` from 5.0 gives OFF. A switch or a
+1000.0mΩ: `+` from OFF gives 5.0 and `-` from 5.0 gives OFF. A switch or a
 choice wraps round from its last value to its first.
 
 - **Tap.** A key steps once when the finger lifts. The lift counts when the
   finger is the one that pressed the key, is inside the key, and is no more
-  than 8 px from the press in x and in y. The key is drawn pressed from the
+  than 8px from the press in x and in y. The key is drawn pressed from the
   press on.
-- **Hold.** A key held steps for the first time 0.45 s after the press, then
-  8 times a second, and 30 times a second from 2.25 s after the press. Held
-  for 1.00 s it has stepped 5 times, for 3.00 s 38 times. The lift after a
-  hold adds no step. The hold ends when the finger is more than 8 px from the
+- **Hold.** A key held steps for the first time 0.45s after the press, then
+  8 times a second, and 30 times a second from 2.25s after the press. Held
+  for 1.00s it has stepped 5 times, for 3.00s 38 times. The lift after a
+  hold adds no step. The hold ends when the finger is more than 8px from the
   press or outside the key.
-- **Scroll.** A vertical drag of more than 8 px that starts anywhere on the
+- **Scroll.** A vertical drag of more than 8px that starts anywhere on the
   list scrolls it, the key columns included. A scroll changes no value. The
-  bar right of the list, 12 px wide, shows the position and takes no touch.
-  A list that fits its 428 px has no bar.
-- A key is drawn 56 x 48 px and takes its column, 56 px wide, over the
-  64 px of its row. The 6 px between two rows belong to no key.
-- **Keypad.** A tap on a number's value, the 166 px between its `-` and `+`
-  keys, opens the keypad over the list and the strip: 1004 x 482 px, keys of
-  241 x 85 px, its foot 4 px above the alert band. It names the setting, its
+  bar right of the list, 12px wide, shows the position and takes no touch.
+  A list that fits its 428px has no bar.
+- A key is drawn 56 x 48px and takes its column, 56px wide, over the
+  64px of its row. The 6px between two rows belong to no key.
+- **Keypad.** A tap on a number's value, the 166px between its `-` and `+`
+  keys, opens the keypad over the list and the strip: 1004 x 482px, keys of
+  241 x 85px, its foot 4px above the alert band. It names the setting, its
   range and its unit, shows the value faint until a digit is typed, and
   takes as many digits after the point as the step has: one for a shunt's
-  0.1 mΩ, none for a pin. OK sets the value as a step sets it: in force at
+  0.1mΩ, none for a pin. OK sets the value as a step sets it: in force at
   once, kept by SAVE. A value between two steps is set to the nearer step:
-  73 % brightness is 75 %. A value outside the range keeps the keypad open
+  73% brightness is 75%. A value outside the range keeps the keypad open
   and names the range in the warning colour. A value inside the range that
   the keys never reach keeps it open too and names the reason in place of
-  the range, in the warning colour: `0 or 5.0 to 1000.0 mOhm` for a shunt
-  between 0 and 5.0 mΩ, `0 or 10 to 32767 mA` for a current limit
-  between 0 and 10 mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
+  the range, in the warning colour: `0 or 5.0 to 1000.0mOhm` for a shunt
+  between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit
+  between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
   Sensor SDA pin the bus cannot have, and `The other PD mini pin holds this
   GPIO` for the GPIO the other PD mini pin holds. The pin list is built from
   `settings_sense_sda_valid()`, the check the row's keys step by. The next
   key brings the range back. A pin's keypad has no `+/-`
   key: -1, a pin not set, is set with `-`. A number shows as many digits
   after the point as its step has, so the row reads what the keypad takes:
-  1.25 A, not 1.2 A. CANCEL, OK with nothing typed and the
+  1.25A, not 1.2A. CANCEL, OK with nothing typed and the
   home tag close it and change nothing; leaving SETUP closes it too. Nothing
   under it takes a press. A switch, a choice, INA228 address and Sensor SCL
   open no keypad, and a drag that starts on a value scrolls and opens
@@ -3049,7 +3049,7 @@ choice wraps round from its last value to its first.
 
 Two limits:
 
-- A finger that rests on a key for 0.45 s or longer and then scrolls has
+- A finger that rests on a key for 0.45s or longer and then scrolls has
   stepped the key: that is a hold.
 - A contact the touch controller leaves out of one report arrives as a lift
   and a new press. If the new press is on a key and lifts there without
@@ -3081,8 +3081,8 @@ mounted upside down.
 - The copy runs on the render loop, inside the flip. The control task,
   which owns STOP, never waits on it. Its time per flip is the console's
   `TURN` figure; on the board it is not measured. On the host, SERVO LIVE
-  sweeping copies 77,093 px a frame on average, MOTOR & ESC LIVE ARMED
-  192,911 px, a screen at rest 0 px (`test_gfx_turn`).
+  sweeping copies 77,093px a frame on average, MOTOR & ESC LIVE ARMED
+  192,911px, a screen at rest 0px (`test_gfx_turn`).
 - The glass's contacts turn with the picture. A contact the glass reports
   at logical pixel (x, y) in NORMAL reports at (1023 - x, 599 - y) in 180°.
   Both read one flag: the one the flip sets once the turned frame is on the
@@ -3119,31 +3119,31 @@ throttle on MOTOR & ESC, the horn on SERVO. Wiring:
 | Setting | Range | Default |
 | --- | --- | --- |
 | Rotary knob | OFF, ON | OFF |
-| Knob scale | 90 to 720 deg in steps of 10 | 270 deg |
+| Knob scale | 90 to 720deg in steps of 10 | 270deg |
 
 Knob scale is the knob angle that moves the slider across its whole span.
-At 270 deg a quarter turn moves the throttle 33.3 points, and the horn
+At 270deg a quarter turn moves the throttle 33.3 points, and the horn
 across a third of its travel from -travel to +travel.
 
 - The knob moves a value by how far it turns, never to where it points. A
-  turn adds to the throttle or the horn's angle and stops at 0 and 100 % or
+  turn adds to the throttle or the horn's angle and stops at 0 and 100% or
   at the travel limit. Turning past an end and back moves the value from the
   end.
 - It never switches to ARMED. ARM is the same hold on the same button.
 - The first reading after power-up and the first one after the sensor stopped
   answering set a reference and move nothing, so a knob that comes back
   turned does not jump the slider.
-- The sensor is read every 10 ms, and every 100 ms while it does not answer.
-  A poll is three reads, 0x03, 0x04 and 0x03 again, each with a 5 ms bus
+- The sensor is read every 10ms, and every 100ms while it does not answer.
+  A poll is three reads, 0x03, 0x04 and 0x03 again, each with a 5ms bus
   timeout; a NACK or a timeout on any counts as no answer. While the knob
   has no reference, a probe of 0x06 (the address byte alone) comes first,
   and the reads follow only when it is acknowledged. A poll whose two 0x03
   bytes differ moves nothing and keeps the reference. A high byte that
   changes and changes back between the two 0x03 reads is accepted, so one
-  step of up to 64 counts (0.52 % of the span at 270 deg) at a slider end
+  step of up to 64 counts (0.52% of the span at 270deg) at a slider end
   stop remains possible; how often is not measured. The sensor reports no
   magnet status over I2C, so an answer is a reading. A step of more than
-  90 deg between two readings counts as a glitch and is dropped.
+  90deg between two readings counts as a glitch and is dropped.
 - A finger on the throttle track or on the SERVO dial owns the value while it
   is down, and for the whole frame in which it touched the control, also when
   it lifts in that frame. On SERVO the knob does not take the horn from a running or paused
@@ -3161,14 +3161,14 @@ across a third of its travel from -travel to +travel.
   sets the horn to the rest, and the next turn counts from there. A turn
   posted and not yet sent when the bench switches to SAFE or stops is withdrawn. On
   MOTOR & ESC a turn while the bench is SAFE moves nothing and is not
-  kept either; the switch to SAFE returns the slider to 0 %, and the next turn after
+  kept either; the switch to SAFE returns the slider to 0%, and the next turn after
   a switch to ARMED counts from there.
 - The panel never puts the knob, or another device of the builder's, at an
   address the board answers at on that bus, 0x14, 0x20 to 0x27, 0x30 to 0x3F
   and 0x5D, or at one the I2C specification reserves, 0x00 to 0x03 and 0x78
   to 0x7F. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
   CH422G expander as a command. With no sensor fitted, Rotary knob ON sends
-  one unacknowledged probe to 0x06 every 100 ms. In the host tests' model of
+  one unacknowledged probe to 0x06 every 100ms. In the host tests' model of
   the bus that changes nothing else. On the panel it is not measured: 0x00
   to 0x07 have not been scanned on this board.
 - The knob is not measured on hardware: its direction, its noise and its
@@ -3180,7 +3180,7 @@ INTERFACES lists its 23 settings in five sections. A heading above the first
 row of each names it: I2C BUS (the INA228, Sensor SDA and SCL, and the
 AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
 (the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its
-own, 64 px high at the list's 70 px pitch, in the accent colour over a rule,
+own, 64px high at the list's 70px pitch, in the accent colour over a rule,
 with no keys and no value: a tap or a drag on it changes nothing, and a drag
 scrolls the list. The list is 28 rows long.
 
@@ -3197,7 +3197,7 @@ are at the top of INTERFACES:
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300 A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000 A full scale stays, and 300 A on the smallest shunt, 50 µΩ, does not reach it |
+| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
 | Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
 
@@ -3223,12 +3223,12 @@ the stored Sensor SDA, and the key is saved with the derived value. A stored
 Sensor SDA outside the values above loads as 16, with no alert and without
 marking the settings as changed.
 
-The bus runs at 400 kHz, which is not a setting:
+The bus runs at 400kHz, which is not a setting:
 the IOmcu takes no other clock. A reading at the top of the INA3221's
-range, 163.8 mV across the shunt, is shown as clipped and never as a value.
+range, 163.8mV across the shunt, is shown as clipped and never as a value.
 
 The panel writes the set-up to the IOmcu's SENSE page (protocol 4.7)
-500 ms after the last edit, only while the bench is SAFE, and only what
+500ms after the last edit, only while the bench is SAFE, and only what
 differs from what the page holds: the IOmcu refuses a change while it
 drives, and keeps each change in flash. It reads the page at every link-up
 first, so a set-up the IOmcu already keeps is not written again. When
@@ -3241,12 +3241,12 @@ set-up, and with the INA228 enabled the MOTOR & ESC tile loses its SIMULATED
 mark.
 
 While a monitor is enabled, the panel reads SENSE's 14 read-only registers
-every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
-50 ms, each 50 ms window once. With an IOmcu of protocol 4.11 and CH1
-among the INA3221's channels it also reads SERVO_WIN every 50 ms, which
+every 50ms; while the INA3221 is, SERVO_SENSE's channel windows every
+50ms, each 50ms window once. With an IOmcu of protocol 4.11 and CH1
+among the INA3221's channels it also reads SERVO_WIN every 50ms, which
 holds the meter channel's last four windows, and SENSE to register 31
 ([Link](Link.md#the-window-ring)). With an IOmcu of protocol 4.25 it reads
-SENSE_WIN_A and SENSE_WIN_B on every poll, after SERVO_WIN and at most every 40 ms, while a part on the page is fitted,
+SENSE_WIN_A and SENSE_WIN_B on every poll, after SERVO_WIN and at most every 40ms, while a part on the page is fitted,
 for the run log's columns ([TABLE](#table-and-what-the-esc-says)).
 
 The servo rail has one meter at a time: the INA3221 channel that watches
@@ -3254,13 +3254,13 @@ the servo tester's target ([SENSORS](#sensors-the-ina3221-parts)) -- on an
 IOmcu older than 4.25 CH1 of the one part SENSE reads -- while a fitted
 part has that channel, the IOmcu speaks protocol 4.11, the IOmcu holds the
 set-up, the part answers as an INA3221 on a bus that is not stuck, a window
-with current samples closed in the last 200 ms, its reset count stands, and
-all of that has held for 1000 ms; the PD mini otherwise. The SERVO screen's
+with current samples closed in the last 200ms, its reset count stands, and
+all of that has held for 1000ms; the PD mini otherwise. The SERVO screen's
 CURRENT row, line and plot show the meter's reading ([Servo](#servo)); the
 servo test reads the PD mini whichever it is.
 
 The band says what they show, each once and one at a time: the most
-pressing first, and the next no sooner than 5 s later, so two at once are
+pressing first, and the next no sooner than 5s later, so two at once are
 both said. In order:
 
 | Message | When |
@@ -3268,36 +3268,36 @@ both said. In order:
 | `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
 | `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
 | `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | the INA228 on the address of a fitted INA3221; neither is read |
-| `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
-| `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
+| `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
+| `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
 | `INA3221 settings rejected. Check SETUP > SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
 | `INA3221 0x41 has every channel off. Check SETUP > SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
-| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it -- pins with no part and no pull-up wired to them -- is not this: it rises within 50 µs on the IOmcu's own pad pull-up (32 to 86 kΩ), and the monitors read as not answering |
-| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
+| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it -- pins with no part and no pull-up wired to them -- is not this: it rises within 50µs on the IOmcu's own pad pull-up (32 to 86kΩ), and the monitors read as not answering |
+| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
-| `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
-| `INA3221 0x40 CH1 clipped at 1.64 A. Reading shows only the limit.` | a channel of the part SERVO_SENSE reads hit the top of its range; the current is its full scale |
+| `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50ms window or since the switch to ARMED |
+| `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.` | a channel of the part SERVO_SENSE reads hit the top of its range; the current is its full scale |
 | `IOmcu storage unavailable. Settings will be lost at restart.` | STATUS fault bit 6: the IOmcu saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
 | `IOmcu firmware older than 4.11. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the IOmcu speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
-| `INA3221 has reset. Check its power supply.` | the IOmcu found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
+| `INA3221 has reset. Check its power supply.` | the IOmcu found the INA3221 on its power-on set-up and set it up again 1000ms later; said once per reset. The windows of those 1000ms hold no samples |
 
 A refused set-up is not written again until it changes on SETUP. Pins that
 are one I2C block's pair, refused because an output, the PD mini or the
-board holds one, are offered again every 5 s without another alert, so
+board holds one, are offered again every 5s without another alert, so
 freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not switch the bench to SAFE: nothing trips on the
 monitors' readings.
 
 An alert about the set-up leaves the band as soon as its cause is over,
-before its 30 s are up: `Sensor SDA or SCL not set.` and `INA228 and
+before its 30s are up: `Sensor SDA or SCL not set.` and `INA228 and
 INA3221 both use 0x40.` with the edit that puts the setting right, and a
 refusal once the IOmcu holds the frame as asked -- at once when the value
 is stepped back to the one the page still holds, otherwise when the write
-of the new value is taken, 500 ms after the last edit and with the bench
+of the new value is taken, 500ms after the last edit and with the bench
 SAFE (`sense_link_event_stands()`). An alert that was replaced before a
 frame showed it, and whose cause is over by its next turn, is not shown.
 What a read said -- not responding, another identity, a limit, a blocked
-bus -- stays for its 30 s or until tapped.
+bus -- stays for its 30s or until tapped.
 
 #### A row the IOmcu does not hold
 
@@ -3315,8 +3315,8 @@ pitch split, Tap gap and Tap min periods. SENSORS marks its rows by part
 
 | The mark shows | Until |
 | --- | --- |
-| from an edit | the write is acknowledged: 500 ms after the last edit, and for the current monitors only once the bench is SAFE |
-| on a value the IOmcu refused | the value is changed to one it takes; for pins held elsewhere, until the 5 s retry is taken |
+| from an edit | the write is acknowledged: 500ms after the last edit, and for the current monitors only once the bench is SAFE |
+| on a value the IOmcu refused | the value is changed to one it takes; for pins held elsewhere, until the 5s retry is taken |
 | on INA228 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, the INA228 on a fitted INA3221's address, an IOmcu older than the part |
 | after an IOmcu restart or a link-up, on what its page reads differently | the panel has written it |
 
@@ -3346,29 +3346,29 @@ has no heading and no rows.
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
-| 0x40 CH1 shunt | OFF, 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64 A |
-| 0x40 CH1 limit | OFF, 10 to 32767 mA, 10 mA steps on the arrows | OFF | a 50 ms window whose highest current passes it is said on the band. An alert only: nothing stops, switches to SAFE or drives anything. OFF: no limit |
+| 0x40 CH1 shunt | OFF, 5.0 to 1000.0mΩ, 0.1mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64A |
+| 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | a 50ms window whose highest current passes it is said on the band. An alert only: nothing stops, switches to SAFE or drives anything. OFF: no limit |
 
 A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
-44.4 mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
+44.4mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
 where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused, and the keypad
-shows `0 or 5.0 to 1000.0 mOhm` in place of the range until the next key.
-A LIMIT row takes 0 (OFF) or 10 to 32767 mA; 1 to 9 is refused with
-`0 or 10 to 32767 mA`.
+shows `0 or 5.0 to 1000.0mOhm` in place of the range until the next key.
+A LIMIT row takes 0 (OFF) or 10 to 32767mA; 1 to 9 is refused with
+`0 or 10 to 32767mA`.
 
 ![The keypad of 0x40 CH1 shunt](img/setup-sensors-keypad.png)
 
-![3 mOhm refused, the reason in place of the range](img/setup-sensors-why.png)
+![3mOhm refused, the reason in place of the range](img/setup-sensors-why.png)
 
 The heading of a part shows on its right what the part is doing:
 
 | State | When |
 | --- | --- |
 | `ONLINE` | the IOmcu reads the part, which answers as an INA3221 |
-| `LOOKING FOR THE PART` | the set-up is taken, and the IOmcu has not found the part yet: the first 2.5 s |
-| `NOT ANSWERING` | nothing answers at the part's address 2.5 s after the set-up was taken, or the part stopped answering |
+| `LOOKING FOR THE PART` | the set-up is taken, and the IOmcu has not found the part yet: the first 2.5s |
+| `NOT ANSWERING` | nothing answers at the part's address 2.5s after the set-up was taken, or the part stopped answering |
 | `ANOTHER ID ANSWERS` | something answers at the address with another identity |
-| `NOT WRITTEN YET` | an edit waits: 500 ms after the last edit, and only while the bench is SAFE |
+| `NOT WRITTEN YET` | an edit waits: 500ms after the last edit, and only while the bench is SAFE |
 | `NOT READ YET` | no IOmcu answers, or its page has not been read since the link came up |
 | `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the map; it keeps the one it held |
 | `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
@@ -3380,7 +3380,7 @@ The rows of a part refused, with every channel off, on the INA228's
 address, without a sensor bus or not read by an older IOmcu are marked as a row the IOmcu does
 not hold: edge and value in the warning colour, and a line in place of the
 help. On an IOmcu older than 4.25 that line reads `IOmcu older than 4.25:
-one INA3221, CH1 at 1 kHz.`:
+one INA3221, CH1 at 1kHz.`:
 
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
@@ -3392,23 +3392,23 @@ limit that is not OFF, with `IOmcu older than 4.27: no limit is judged.`:
 ![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
 
 The panel writes the limits to the IOmcu's SENSE_LIMIT page (protocol
-4.27) in one write of 12 registers, LIMIT_MA in mA, 500 ms after the last
+4.27) in one write of 12 registers, LIMIT_MA in mA, 500ms after the last
 edit, in any bank state, and only where the page holds something else. It
 reads the page whole at every link-up. While the page holds a limit that
-is not OFF, it reads OVER and OVER_COUNT every 200 ms, armed or not; that
-read clears OVER on the IOmcu. The IOmcu judges each channel's 50 ms
+is not OFF, it reads OVER and OVER_COUNT every 200ms, armed or not; that
+read clears OVER on the IOmcu. The IOmcu judges each channel's 50ms
 window once as it closes: over when the window's highest current is above
 the limit, or when a sample read the top of the range and that top is
 above it ([Link](LinkSensors.md#sense_limit)). Before it writes new
 limits over held ones, the panel reads OVER once, so a window judged under
 the old limit is said with the old limit. The band says, at most once
-every 5 s and for one channel at most once every 30 s while it keeps
+every 5s and for one channel at most once every 30s while it keeps
 passing. Channels over at the same time take turns, starting after the
-channel said last: with all 12 over, each is said within 12 alerts, 60 s.
+channel said last: with all 12 over, each is said within 12 alerts, 60s.
 
 | Band | When |
 | --- | --- |
-| `INA3221 0x41 CH2 (PORT 1) over its 0.80 A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
+| `INA3221 0x41 CH2 (PORT 1) over its 0.80A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
 | `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved with no OVER bit: the reply that carried the bits did not arrive. A reply that does not arrive takes the link down, so this is said after the read at the next link-up. A count of 0 there is an IOmcu that started again and is not said |
 | `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
 
@@ -3416,29 +3416,29 @@ OVER bits the IOmcu holds from before the link came up, also those of an
 IOmcu that started again, are said by channel at the first read.
 
 The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
-one write of 26 registers: the parts fitted, the channel read at 1 kHz,
+one write of 26 registers: the parts fitted, the channel read at 1kHz,
 the twelve shunts and what each channel watches. As for SENSE it reads the
-page first at every link-up, writes 500 ms after the last edit and only
+page first at every link-up, writes 500ms after the last edit and only
 while the bench is SAFE, and writes nothing the page holds. A refused map is
 not written again until it changes. While a part is fitted the panel reads
-the parts' IDs and states every 500 ms. A part that stops answering, or
+the parts' IDs and states every 500ms. A part that stops answering, or
 that answers as something else, is said on the band once, as on INTERFACES;
 the part SENSE reports on (below) is said by SENSE's own reads.
 
-The channel read at 1 kHz, whose windows the servo test and the SERVO
+The channel read at 1kHz, whose windows the servo test and the SERVO
 screen use, is the lowest channel with a shunt on a fitted part that
 watches the servo tester's target: an output, OUT 1 to OUT 8, while the
 target is OUTPUTS, and PORT n while it is programming port n. Every other
-channel with a shunt is read in turn, one a millisecond: 90.9 Hz each with
+channel with a shunt is read in turn, one a millisecond: 90.9Hz each with
 eleven ([Link](Link.md)).
 
 On an IOmcu older than 4.25 the servo test and the SERVO screen take the
 INA3221 as the servo rail's meter only while that channel is CH1 of its
-part: that IOmcu reads CH1 at 1 kHz. With it on CH2 or CH3 the rail's meter
+part: that IOmcu reads CH1 at 1kHz. With it on CH2 or CH3 the rail's meter
 is the PD mini there.
 
 An IOmcu older than 4.25 has no SENSE_MAP and reads one INA3221 from
-SENSE: the part of the channel read at 1 kHz, else the lowest fitted part,
+SENSE: the part of the channel read at 1kHz, else the lowest fitted part,
 with its CH1 shunt (or its first one that is not OFF) and the channels on
 that shunt. SENSE carries one shunt for every channel it reads, so a channel
 on another shunt is not read.
@@ -3451,7 +3451,7 @@ it lacks is taken at start-up from the four INA3221 settings 0.21 kept:
 the part at the old address fitted when the INA3221 was ON, its CH1 on the
 old shunt, CH2 and CH3 on it with CH1+2+3 and OFF with CH1, and its CH1
 watching PORT 1 when the servo tester's target was the programming port,
-OUT 1 otherwise; every other channel 100.0 mΩ and NONE; every limit OFF.
+OUT 1 otherwise; every other channel 100.0mΩ and NONE; every limit OFF.
 The old settings
 stay stored, unchanged, so a panel taken back to 0.21 finds its set-up. The
 next SAVE writes every SENSORS key.
@@ -3466,16 +3466,16 @@ sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
 | AS5600 | ON, OFF | OFF | the output encoder; it takes the sensor bus's SDA and SCL above, and needs both pins set |
 | AS5600 centre | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTRE sets it from the live reading |
 
-The panel writes the enable bit with the rest of the bus frame, 500 ms after
+The panel writes the enable bit with the rest of the bus frame, 500ms after
 the last edit and only while the bench is SAFE, to an IOmcu that
 names protocol 4.9; an older one is sent nothing. While the encoder is
-enabled it reads SENSE's registers 12 to 31 every 40 ms. The band says, each
+enabled it reads SENSE's registers 12 to 31 every 40ms. The band says, each
 once and one at a time like the monitors':
 
 | Message | When |
 | --- | --- |
 | `IOmcu firmware older than 4.9. AS5600 not read.` | the encoder is enabled and the IOmcu speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
-| `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
+| `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
 | `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
 | `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
 | `AS5600: magnetic field too strong. Move the magnet farther away.` | STATUS MD and MH are set. The angle is used, as with ML |
@@ -3506,14 +3506,14 @@ the bus's pins:
 | --- | --- | --- | --- |
 | Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
 | Tap pin | 0 to 47 | 22 | IOmcu GPIO; GP22 is pad 29. Refused: an ADC (analog-to-digital converter) pin, GP26 to GP29 on the RP2350A and GP40 to GP47 on the RP2354B; a pin bound to an output; a pin the SENSE or SUPPLY page holds |
-| Tap lowest tone | 50 to 2000 Hz, 10 Hz steps | 400 | a tone below it is not a beep |
-| Tap highest tone | 100 to 6900 Hz, 50 Hz steps | 6500 | above the lowest tone |
-| Tap pitch split | 0 to 50 %, 1 % steps | 8 | a pitch change this large starts a new beep with no silence between; 0 splits on silence only |
-| Tap gap | 1 to 100 ms | 3 | the silence that ends a beep; at least one period of the lowest tone, so 20 ms at 50 Hz |
+| Tap lowest tone | 50 to 2000Hz, 10Hz steps | 400 | a tone below it is not a beep |
+| Tap highest tone | 100 to 6900Hz, 50Hz steps | 6500 | above the lowest tone |
+| Tap pitch split | 0 to 50%, 1% steps | 8 | a pitch change this large starts a new beep with no silence between; 0 splits on silence only |
+| Tap gap | 1 to 100ms | 3 | the silence that ends a beep; at least one period of the lowest tone, so 20ms at 50Hz |
 | Tap min periods | 1 to 64 | 3 | the tone periods that make a beep |
 
 The panel writes the set-up to the IOmcu's TONE page (protocol 4.8)
-500 ms after the last edit, and only what differs from what the page holds:
+500ms after the last edit, and only what differs from what the page holds:
 the IOmcu keeps each change in flash. It reads the page at every
 link-up first. The set-up goes in two frames, the pin and the tone range,
 then the split, the gap and the periods. When both change, the one that
@@ -3524,7 +3524,7 @@ the values the page holds and the tap disabled, whatever range is asked, so
 a range the page would refuse cannot keep the tap running; the range
 follows in a frame of its own. Until the page holds the tap off the screen
 shows `WAITING`, not off. A set-up kept in flash that met a busy pin at the
-IOmcu's boot is written again every 5 s, without another message,
+IOmcu's boot is written again every 5s, without another message,
 while the page reports the pin refused. A change of ENABLE or of the pin
 empties the IOmcu's ring and the panel takes its place at the newest
 beep number, so none is read twice and none counted as missed; a change
@@ -3532,13 +3532,13 @@ of the range or of the other values leaves the ring and the numbering
 alone. An IOmcu older than 4.8 is sent nothing.
 
 While the page holds the tap on, the panel reads its 16 read-only registers
-every 50 ms: the flags, the last 8 ms window's pitch, the number of the
+every 50ms: the flags, the last 8ms window's pitch, the number of the
 newest beep and the counts of beeps lost and lows ignored. A read whose
 flags say the tap runs speaks for it while its window number moves: the
-IOmcu closes a window every 8 ms, so a number that has stood for
-1.5 s (`TONE_LINK_WINDOW_STALE_MS`) is a capture that stopped while the
+IOmcu closes a window every 8ms, so a number that has stood for
+1.5s (`TONE_LINK_WINDOW_STALE_MS`) is a capture that stopped while the
 page still answers, and the screen shows `WAITING` as for a read older
-than 500 ms. It takes the
+than 500ms. It takes the
 beeps one by one by number. The IOmcu keeps the last 64 beeps,
 numbered 1 to 65535 and then 1 again, and a read does not remove one, so a
 reply lost on the link loses no beep. A beep that left the ring before it
@@ -3552,20 +3552,20 @@ current monitors:
 | Message | When |
 | --- | --- |
 | `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap on GP22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
 | `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
-| `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 The three alerts about the set-up -- the first frame rejected, the second
 frame rejected, the pin in use -- leave the band as soon as the cause is
-over, before their 30 s are up (`tone_link_event_stands()`): a refused frame
+over, before their 30s are up (`tone_link_event_stands()`): a refused frame
 once the IOmcu holds it as asked, at once when the value is stepped back to
 the one the page still holds, otherwise when the write of the new value is
-taken 500 ms after the last edit; a pin in use once a status read shows the
+taken 500ms after the last edit; a pin in use once a status read shows the
 pin taken, or once the tap is switched off and the page holds it off. Tap gap
-2 ms with Tap lowest tone at 400 Hz is refused by design: the gap has to be
-at least one period of the lowest tone, 2.5 ms at 400 Hz
+2ms with Tap lowest tone at 400Hz is refused by design: the gap has to be
+at least one period of the lowest tone, 2.5ms at 400Hz
 (`tone_init()`, `protocols/phase_tap/tone.c`).
 
 ### INTERFACES: the programming port
@@ -3576,7 +3576,7 @@ default ([Receive mode](LinkHitec.md#receive-mode)):
 
 | Setting | Values | Default | |
 | --- | --- | --- | --- |
-| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2 kOhm resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0 ns every 1086.7 ns and samples it 113.3 ns after it lets go |
+| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2kOhm resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0ns every 1086.7ns and samples it 113.3ns after it lets go |
 
 It is kept in NVS like the other rows; a missing or unreadable stored value
 is PULL-UP. The panel writes it to the HITEC page at every link-up and
@@ -3585,7 +3585,7 @@ D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
 it. The panel sends no Hitec transaction itself: the setting reaches the
 lines the bench console opens ([The bench console](BenchConsole.md)).
 
-Unmarked, the help line follows the value: `PULL-UP needs 2.2 kOhm on the
+Unmarked, the help line follows the value: `PULL-UP needs 2.2kOhm on the
 signal wire` at PULL-UP, `PRECHARGE: no pull-up on the signal wire` at
 PRECHARGE.
 
@@ -3701,14 +3701,14 @@ until a save succeeds, even with every value stepped back.
 
 The home tag on the tiles, the only way from SETUP to the menu, is held while
 the label reads `SAVE` or `NOT SAVED`. A warning covers the body instead: a
-card of 1004 x 424 px with a 3 px edge in the warning colour, over the strip.
-Its title is in the 20 x 36 px face, the two lines on what unsaved means and
-the notes in the 12 x 24 px face.
+card of 1004 x 424px with a 3px edge in the warning colour, over the strip.
+Its title is in the 20 x 36px face, the two lines on what unsaved means and
+the notes in the 12 x 24px face.
 
 ![One value unsaved, at the home tag](img/setup-leave.png)
 
 It lists each value and string that differs from the stored copy, one line
-of 24 px each in the 10 x 20 px face, as `name: stored -> now`. A value is written as the list
+of 24px each in the 10 x 20px face, as `name: stored -> now`. A value is written as the list
 writes it, with its unit; a string, the DUT (device under test) name, as it
 is. Values set on other screens, such as SERVO's settings, ESC STICK's or
 MOTOR & ESC's, are listed too: they are in the same set and the same save
@@ -3756,7 +3756,7 @@ The warning holds only the home tag:
 ## The bus-fault screen
 
 The panel runs the CAN (Controller Area Network) echo self-test at every
-start-up, for 1200 ms inside the splash. A verdict other than every probe
+start-up, for 1200ms inside the splash. A verdict other than every probe
 coming back intact puts this on the panel instead of the menu.
 
 ![Frames cross and arrive changed](img/busfault.png)
@@ -3767,13 +3767,13 @@ both look like a bench that shows no numbers. The verdict is the heading, the
 list is what to check in the order that costs least to check, and the right
 column is what both ends counted.
 
-The screen fills the panel. A red bar of 64 px holds the title, and the
-verdict stands under it, both in the 20 x 36 px face. The left column,
-712 px, holds the meaning in at most two lines and the list of checks in
-the 12 x 24 px face: a row of 32 px per check, and 28 px more for each line
+The screen fills the panel. A red bar of 64px holds the title, and the
+verdict stands under it, both in the 20 x 36px face. The left column,
+712px, holds the meaning in at most two lines and the list of checks in
+the 12 x 24px face: a row of 32px per check, and 28px more for each line
 a check wraps onto. The three notes follow from y 432. The right column,
-240 px from x 760, holds the counts in the 10 x 20 px face.
-`HOLD 2 s TO ACKNOWLEDGE` runs 976 x 56 px across the foot, 16 px above the
+240px from x 760, holds the counts in the 10 x 20px face.
+`HOLD 2s TO ACKNOWLEDGE` runs 976 x 56px across the foot, 16px above the
 panel's edge.
 
 ![Nothing came back](img/busfault-silent.png)
@@ -3786,7 +3786,7 @@ STOP, because the bench cannot switch to ARMED behind it.
 ### A link that stops
 
 The same screen carries the other half: a link that was up and has been gone
-for 4 s. The heading is what this panel's own CAN controller is doing, because
+for 4s. The heading is what this panel's own CAN controller is doing, because
 the wire carried frames a moment ago.
 
 ![The panel is off the bus](img/busfault-lost.png)
@@ -3794,7 +3794,7 @@ the wire carried frames a moment ago.
 | Heading | Meaning |
 | --- | --- |
 | `Panel disconnected from the bus.` | too many frames went unacknowledged; it stopped transmitting |
-| `Panel is reconnecting.` | it is counting the quiet time a rejoin needs, about 3 s |
+| `Panel is reconnecting.` | it is counting the quiet time a rejoin needs, about 3s |
 | `The panel's CAN controller has stopped.` | idle and not restarted — a fault in the firmware |
 | `The link stopped responding.` | the controller is on the bus and nothing answers |
 | `Cannot read the controller's state.` | the driver is not running; nothing can be sent |
@@ -3808,10 +3808,10 @@ alert band says the link is gone and the screen waits for the switch to SAFE.
 
 The same numbers go to `BENCH/RCBENCH.LOG` on the SD card, one line per report
 while the link is down, whatever Auto logs on [Setup](#setup) > SD CARD says.
-The file holds at most 1 MiB (1,048,576 bytes): a line that would take it past
+The file holds at most 1MiB (1,048,576 bytes): a line that would take it past
 that renames it to `BENCH/RCBENCH.OLD`, replacing the one there, and starts a
-new `BENCH/RCBENCH.LOG`. The card holds at most 2 MiB of fault log; at 208
-bytes a line every 5 s, one file is about 7 hours of link loss. During the
+new `BENCH/RCBENCH.LOG`. The card holds at most 2MiB of fault log; at 208
+bytes a line every 5s, one file is about 7 hours of link loss. During the
 rename the old `RCBENCH.OLD` is named `BENCH/RCBENCH.TMP`, and a rename that
 fails gives it its name back. A `RCBENCH.TMP` still on the card at a line, left
 by a power cut or a removal the card refused, is removed first, or named
@@ -3849,8 +3849,8 @@ and the question opens again once both have ended.
 
 ![The IOmcu update question](img/coproc-update.png)
 
-The question is a box of 860 x 248 px in the body, its lines in the
-12 x 24 px face. CANCEL and START are 398 x 56 px each, side by side,
+The question is a box of 860 x 248px in the body, its lines in the
+12 x 24px face. CANCEL and START are 398 x 56px each, side by side,
 START on the right; their middles are at panel x 305 and 719, y 376.
 
 The question names the version the IOmcu runs and the version this
@@ -3858,7 +3858,7 @@ panel carries. CANCEL is a tap: the question closes, and the panel does not
 ask again for that IOmcu version until it restarts. Leaving the
 question another way declines the same way. SETUP > UPDATES still starts
 the update after a decline ([The IOmcu](#the-iomcu)). START
-takes the 2 s hold, the ARM gesture and the same fade.
+takes the 2s hold, the ARM gesture and the same fade.
 
 An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
 
@@ -3872,14 +3872,14 @@ behind it.
 
 ![The progress](img/coproc-update-progress.png)
 
-The progress has a 64 px title bar, the step in the 20 x 36 px face, the
-versions under it, a bar 36 px tall and 976 px wide from y 180, the block
-count, and three notes in the 12 x 24 px face, 28 px apart.
+The progress has a 64px title bar, the step in the 20 x 36px face, the
+versions under it, a bar 36px tall and 976px wide from y 180, the block
+count, and three notes in the 12 x 24px face, 28px apart.
 
 | Step | Shown while |
 | --- | --- |
-| `Preparing firmware.` | the panel hashes the image, 8 KiB a step |
-| `Sending firmware.` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50 %` count them |
+| `Preparing firmware.` | the panel hashes the image, 8KiB a step |
+| `Sending firmware.` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50%` count them |
 | `IOmcu is checking the firmware.` | the IOmcu hashes the slot it wrote |
 | `IOmcu is starting the new firmware.` | it restarts into the new slot, on trial |
 | `Keeping the new firmware.` | the panel reads the new image's identity and writes BUY |
@@ -3890,12 +3890,12 @@ UPDATES' hold started it. The alert band then says how it ended:
 | Alert | Meaning |
 | --- | --- |
 | `IOmcu updated to 0.22.0.` | the new image runs and is kept |
-| `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
+| `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4s |
 | `IOmcu update stopped: refused, error 6. Previous firmware is running.` | the IOmcu refused a step; the error numbers are in [Link](Link.md#the-pages) |
 | `IOmcu update stopped: firmware check failed. Previous firmware is running.` | the SHA-256 of the slot is not the image's |
-| `IOmcu update stopped: flash memory stayed busy. Previous firmware is running.` | the store's gate stayed shut for 10 s |
+| `IOmcu update stopped: flash memory stayed busy. Previous firmware is running.` | the store's gate stayed shut for 10s |
 | `IOmcu update stopped: IOmcu restarted 3 times. Previous firmware is running.` | three starts from block 0 |
-| `IOmcu update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
+| `IOmcu update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12s; the boot ROM goes back to the old one |
 | `IOmcu cannot update over CAN. Install firmware once via USB.` | an IOmcu without the update pages or without the partition table ([First run](FirstRun.md#the-iomcus-partition-table)) |
 | `New IOmcu firmware kept.` | an image found on trial at link-up was bought |
 
@@ -3919,10 +3919,10 @@ release ([The release line](#the-release-line)).
 
 ![UPDATES](img/updates.png)
 
-The buttons are 460 x 56 px, 64 px apart, on the left. The card on the
-right is 532 px wide and ends 8 px above the alert band; its text runs in
-lines of 41 characters of the 12 x 24 px face, 28 px apart. Under the
-buttons the IOmcu section's lines are in the 10 x 20 px face, and its
+The buttons are 460 x 56px, 64px apart, on the left. The card on the
+right is 532px wide and ends 8px above the alert band; its text runs in
+lines of 41 characters of the 12 x 24px face, 28px apart. Under the
+buttons the IOmcu section's lines are in the 10 x 20px face, and its
 hold is a fifth button of the same size, from body y 428.
 
 | Control | Action |
@@ -3930,8 +3930,8 @@ hold is a fifth button of the same size, from body y 428.
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
 | `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
-| `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
-| `HOLD 2 s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
+| `HOLD 2s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
+| `HOLD 2s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -3962,7 +3962,7 @@ RELEASES sets the request:
 | `STABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. When that release is past the release line and newer than the running build, the `TESTING` request follows once ([The release line](#the-release-line)). |
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
-Then the radio goes off. The join, the address and the request take 30 s at
+Then the radio goes off. The join, the address and the request take 30s at
 most, together. On either setting a release is offered only when it is of
 the panel's release line and newer than the running build. The ESP32-P4
 panel's line holds every release ([The release line](#the-release-line)).
@@ -3976,7 +3976,7 @@ seen, however high its version.
 ![A check under way](img/updates-checking.png)
 
 The card shows the step (`Connecting to Workshop 2.4`, `Checking GitHub.`) and the
-seconds left (`26 s left`). The result stays on the card until the next
+seconds left (`26s left`). The result stays on the card until the next
 check:
 
 ![A newer release](img/updates-newer.png)
@@ -3988,8 +3988,8 @@ check:
 | `Version 0.22.1 is available.` | The newest release is newer than the running build. The hold appears. |
 | `Up to date. Panel version: 0.22.0.` and `Latest release on GitHub: 0.22.0.` | The newest release is the running version or older. |
 | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | A panel held to the 0.22 line only: the newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
-| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
-| `No response within 30 s.` | The 30 s ran out. |
+| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
+| `No response within 30s.` | The 30s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
 | `GitHub rejected the request: HTTP 404.` | An answer other than a redirect (`STABLE`) or other than 200 (`TESTING`). |
 | `GitHub's request limit is reached: HTTP 403.` and `GitHub allows 60 API requests an hour per address.` | `TESTING`: GitHub answered 403 or 429, its limit for requests without an account. |
@@ -4100,7 +4100,7 @@ published after it is not found, on either setting.
 Under the buttons, UPDATES shows the IOmcu's update: the version the
 IOmcu runs (`Running: 0.21.2`), the version of the image this panel
 carries (`Carried: 0.22.0`), one line of state, and
-`HOLD 2 s: UPDATE IOMCU`. The hold starts the update that the
+`HOLD 2s: UPDATE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
 ([IOmcu update](#iomcu-update)). It also starts it after that
 question was declined. When the update ends, or the START was spent
@@ -4137,15 +4137,15 @@ IOmcu too.
 
 ![The reminder](img/upd-remind.png)
 
-The reminder is a box of 860 x 480 px with its lines in the 12 x 24 px
-face. NOT NOW and NEVER REMIND ME are 398 x 56 px side by side; the hold is
-812 x 64 px under them.
+The reminder is a box of 860 x 480px with its lines in the 12 x 24px
+face. NOT NOW and NEVER REMIND ME are 398 x 56px side by side; the hold is
+812 x 64px under them.
 
 With REMINDER AT START on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash
 gone, the bench SAFE, the supply output off, no log run open, WI-FI closed
 and no IOmcu update offered or running. A start-up check
-that has found no such moment 10 min after the start does not run at that
+that has found no such moment 10min after the start does not run at that
 start.
 
 When the check finds a newer release, the reminder opens on the menu
@@ -4158,15 +4158,15 @@ gone and the menu shows.
 | --- | --- |
 | `NOT NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
 | `NEVER REMIND ME` | Switches REMINDER AT START off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). SETUP > UPDATES switches it on again. |
-| `HOLD 2 s: DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
+| `HOLD 2s: DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
 
 The start-up check shows nothing when it finds no newer release or fails.
 Its result is on UPDATES.
 
 ### The download
 
-The 2 s hold is the one confirmation: no question follows the download. The
-panel joins the home network within 30 s, then fetches two files of the
+The 2s hold is the one confirmation: no question follows the download. The
+panel joins the home network within 30s, then fetches two files of the
 release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-v0.20.0.bin`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
@@ -4192,12 +4192,12 @@ nothing touches the flash.
 | --- | --- |
 | `Connecting to Workshop 2.4` | the join and the address |
 | `Reading SHA256SUMS.` | the first file |
-| `Downloading firmware.` | the image; the bar and `720896 of 1843200 bytes (39 %)` count it |
+| `Downloading firmware.` | the image; the bar and `720896 of 1843200 bytes (39%)` count it |
 | `Checking the SHA-256 checksum and firmware.` | the checks |
 
 CANCEL ends the download. The download also ends on STOP, on ARMED, on the
 supply output coming on, on a log run opening, on a board drawing being
-fetched, and after 180 s from the hold. The running build stays, and CLOSE
+fetched, and after 180s from the hold. The running build stays, and CLOSE
 goes back to UPDATES, or to the menu when the hold was the reminder's.
 
 ![A download that stopped](img/panel-download-failed.png)
@@ -4210,7 +4210,7 @@ goes back to UPDATES, or to the menu when the hold was the reminder's.
 | `GitHub rejected the request: HTTP 404.` | An answer to the image other than the file or a redirect. |
 | `Unexpected answer from GitHub.` | `More than 3 redirects.`, `Redirect to a host that is not allowed.`, `The address is too long.` (a `Location` over 2048 bytes), `The response does not specify a size.`, `The response is empty.`, `The download is too large for the panel.`, `Received less data than expected.`, `The firmware file specifies a different version.` |
 | `Not enough memory for the firmware.` | PSRAM had no room for the announced size. |
-| `No response within 30 s.`, `No response within 180 s.` | The join's 30 s or the download's 180 s ran out. |
+| `No response within 30s.`, `No response within 180s.` | The join's 30s or the download's 180s ran out. |
 
 Current limitations:
 
@@ -4239,17 +4239,17 @@ it opens on what that workbench drives:
 
 ![Outputs](img/outputs.png)
 
-The left column is 300 px wide: the PROTOCOL label, the protocol list's
-face (300 x 64 px), the count and the reason under it in 10 x 20, and
+The left column is 300px wide: the PROTOCOL label, the protocol list's
+face (300 x 64px), the count and the reason under it in 10 x 20, and
 LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
-grid of 4 columns of 7 cells, 167 x 64 px each (25.1 x 9.6 mm), 8 px apart
-across and 6 px apart down, from x 324. A cell holds a 24 px tick box, the
+grid of 4 columns of 7 cells, 167 x 64px each (25.1 x 9.6mm), 8px apart
+across and 6px apart down, from x 324. A cell holds a 24px tick box, the
 GP name in 20 x 36 and, under them, what holds the pin or its pad in
 8 x 16, 18 characters at most. The grid's last row ends at body y 492,
-4 px above the alert band. The open protocol list holds the 8 protocols in
-a column of 48 px rows (7.2 mm) from the face's top and the PROG PORT
+4px above the alert band. The open protocol list holds the 8 protocols in
+a column of 48px rows (7.2mm) from the face's top and the PROG PORT
 entries in a second column of the same rows beside it; with 4 entries the
-list is 600 x 392 px and ends at body y 436.
+list is 600 x 392px and ends at body y 436.
 
 A set of pins per protocol, not eight independent slots: a bench is wired a
 protocol at a time — four servo leads, then one ESC (electronic speed
@@ -4262,22 +4262,22 @@ pin order across every protocol, taking channels from zero upward — so the
 lowest ticked pin is channel 0 whatever order the screen was touched in and
 whichever protocol holds it. Eight slots and eight channels are the budget,
 shared. PPM renders eight channels on its one pin, so a bench with PPM on it
-has room for nothing else. It runs at 40 Hz, not the 50 Hz the pulse drivers
-use: eight channels need 23,300 us of frame and 50 Hz gives 20,000.
+has room for nothing else. It runs at 40Hz, not the 50Hz the pulse drivers
+use: eight channels need 23,300us of frame and 50Hz gives 20,000.
 
-SERVO PWM and MOTOR PWM are the same pulse at the same 50 Hz and differ in
+SERVO PWM and MOTOR PWM are the same pulse at the same 50Hz and differ in
 what the channel is for. A servo channel centres when nothing commands it; a
 motor channel stops. Nothing in the pulse says which is on the pin, so the
 entry says it: bind an ESC as MOTOR PWM and a control surface as SERVO PWM.
 The MOTOR & ESC throttle drives every channel bound as a motor — MOTOR PWM
 and the DShot entries — and leaves the servo channels alone.
 
-A MOTOR PWM channel sends 0 % throttle as the Idle pulse and 100 % as the
-Full pulse: 1000 us and 2000 us by default, set under MOTOR & ESC, SETTINGS, in
-steps of 10 us (Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us). The
+A MOTOR PWM channel sends 0% throttle as the Idle pulse and 100% as the
+Full pulse: 1000us and 2000us by default, set under MOTOR & ESC, SETTINGS, in
+steps of 10us (Idle pulse 800 to 1600us, Full pulse 1400 to 2400us). The
 two settings reach the channels bound as a motor and no others: a SERVO PWM
-channel keeps 1000 to 2000 us, or the range the SERVO screen sends for the
-servo chosen there. An edit reaches the IOmcu 300 ms after the last
+channel keeps 1000 to 2000us, or the range the SERVO screen sends for the
+servo chosen there. An edit reaches the IOmcu 300ms after the last
 change while the bench is SAFE; one made while it is ARMED waits for the
 switch to SAFE. An IOmcu that links up is brought to the two settings before
 the bench drives it: with the bench already ARMED, the IOmcu is held
@@ -4289,7 +4289,7 @@ transmitter's shortest pulse as zero. An Idle pulse above it reads to the ESC
 as throttle not at the bottom, and the ESC does not arm; many ESCs beep
 rapidly in that state. Set the Idle pulse at or below the transmitter's
 shortest pulse and the Full pulse at or above its longest: for a transmitter
-that sends 985 to 2012 us, 980 us and 2020 us.
+that sends 985 to 2012us, 980us and 2020us.
 
 When the protocol can take no more pins, the reason is under it in amber:
 `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
@@ -4372,7 +4372,7 @@ own pin lit; no pin takes a tick there.
 | --- | --- | --- |
 | SERVO PWM | the servo pulse from the PWM generator, while the bank is ARMED for the servos and PORT PWM is ON on the tester's port; low otherwise | a PWM pin, on no slice of a PWM output and on no compare register of another SERVO PWM port |
 | NONE | an input with its pull-down; no pulse | any free header pin |
-| DSHOT150, DSHOT300, DSHOT600 | plain DShot at 150, 300 or 600 kbit/s, a frame every 1 ms while the bank is ARMED for the throttle; no frame otherwise. MOTOR & ESC drives it ([TARGET](#target-names-the-protocol-and-the-pins)) | any free header pin a PIO block reaches; no slice rule |
+| DSHOT150, DSHOT300, DSHOT600 | plain DShot at 150, 300 or 600kbit/s, a frame every 1ms while the bank is ARMED for the throttle; no frame otherwise. MOTOR & ESC drives it ([TARGET](#target-names-the-protocol-and-the-pins)) | any free header pin a PIO block reaches; no slice rule |
 
 Port 1 starts as SERVO PWM on GP13, ports 2 to 4 as NONE with no pin. The
 IOmcu keeps each port's pin and function in its flash with the outputs'
@@ -4426,7 +4426,7 @@ first. DShot and PPM run on PIO (programmable I/O), not on a slice, and are
 offered both pins.
 
 Limitation: the slice rule needs the programming port's pin, which the panel
-reads from the IOmcu. Until that reading arrives, up to 500 ms after
+reads from the IOmcu. Until that reading arrives, up to 500ms after
 the link comes up or the port's pin changes, GP28 is offered, and a tap on
 it ends in `LAST WRITE: REFUSED`. Other IOmcu checks, such as the
 SERVO page's frame rate on a pin shared with MOTOR PWM, also refuse with no
@@ -4446,7 +4446,7 @@ of the write is under the protocol, as LAST WRITE:
 | --- | --- |
 | `NOT WRITTEN` | nothing has been written since the panel started, or a write was not sent because the binding on the screen was not one a read confirmed |
 | `WRITTEN` | the IOmcu acknowledged every exchange of the write |
-| `NO LINK` | an exchange of the write got no answer within 1000 ms, or the link was down |
+| `NO LINK` | an exchange of the write got no answer within 1000ms, or the link was down |
 | `REFUSED` | the IOmcu answered and refused: a pin it cannot bind, a change while the bench is ARMED, or a frame rate it could not put back |
 
 To an IOmcu speaking protocol 4.10 the binding is written whole: the
@@ -4509,7 +4509,7 @@ PICK A PIN opens with OFF selected too.
 
 One write is reachable with OFF selected. With pages that describe no
 binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
-`HOLD: CLEAR ALL PIN ASSIGNMENTS` for 2 s writes a binding with no pin. That
+`HOLD: CLEAR ALL PIN ASSIGNMENTS` for 2s writes a binding with no pin. That
 hold is the way out of those pages
 ([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
 
@@ -4531,7 +4531,7 @@ results:
 | Read | The screen |
 | --- | --- |
 | both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
-| a page did not read: no answer within 1000 ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
+| a page did not read: no answer within 1000ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
 | both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD: CLEAR ALL PIN ASSIGNMENTS` |
 | the IOmcu is a board this build has no pin map for | shows no pins |
 
@@ -4539,17 +4539,17 @@ In the second and third state a tap on a pin does nothing here and on PICK
 A PIN, and no write is sent. A tick made just before the read failed is
 taken back: the pins shown are the ones last read, not the ones last
 tapped. The list still opens, and a pick still changes which protocol's pins
-show their pad. The panel reads again at every link-up and every 500 ms while
+show their pad. The panel reads again at every link-up and every 500ms while
 the link is up and the binding is not confirmed; the first read that gives a
 binding ends the state.
 
 ![The last binding read, after a read that failed](img/outputs-unread.png)
 
 Pages no binding describes do not become readable by reading them again.
-`HOLD: CLEAR ALL PIN ASSIGNMENTS`, held for 2 s, writes a binding with no pin; the
+`HOLD: CLEAR ALL PIN ASSIGNMENTS`, held for 2s, writes a binding with no pin; the
 read-back then shows nothing bound and edits are taken again. It is the one
 write the screen sends in this state. A finger that leaves the key, a lift
-before 2 s, and leaving the screen abandon the hold.
+before 2s, and leaving the screen abandon the hold.
 
 ![Pages no binding describes](img/outputs-odd.png)
 
@@ -4572,17 +4572,17 @@ Outputs screen holds. The list answers "which GPIO is bound"; this answers
 The keys are not the pads. At any size that fits a 1024 x 600 panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
 drawn where they are and the touching happens on two staggered rows of keys
-above the board and two below, 50 x 56 px (7.5 x 8.4 mm), each on a
-straight trace to its own pad. The board is drawn 600 px wide and at most
-240 px tall, to scale: the RP2350-CAN's 51 x 21 mm outline draws at
-582 x 240 px. Two keys in one row stand two pads apart, 8 px clear of each
+above the board and two below, 50 x 56px (7.5 x 8.4mm), each on a
+straight trace to its own pad. The board is drawn 600px wide and at most
+240px tall, to scale: the RP2350-CAN's 51 x 21mm outline draws at
+582 x 240px. Two keys in one row stand two pads apart, 8px clear of each
 other, and the lower row ends at body y 490, above the alert band. The
-protocol list's face (280 x 56 px), the count and the reason are top left;
-the PINS table is under them, 171 px wide, rows of 36 px with the GP name
-in 20 x 36; IN USE is on the right, 168 px wide. Both tables stand 8 px
-clear of the outermost key a 600 px board can have, a pad on its very edge
+protocol list's face (280 x 56px), the count and the reason are top left;
+the PINS table is under them, 171px wide, rows of 36px with the GP name
+in 20 x 36; IN USE is on the right, 168px wide. Both tables stand 8px
+clear of the outermost key a 600px board can have, a pad on its very edge
 included. The protocol list opens as on Outputs: the protocols in a column
-of 48 px rows, the PROG PORT entries in a second column beside it.
+of 48px rows, the PROG PORT entries in a second column beside it.
 
 Current limitation: the head stays where it is whatever the board. On a
 board whose shape page puts a pin in the top-left corner of its outline,
@@ -4686,12 +4686,12 @@ refusing a part, redraws the keys and the table on the next frame.
 
 ![The interfaces' pins held and named under IN USE](img/picker-iface.png)
 
-IN USE lists every pin it holds. A protocol's name takes a 20 px line and a
-pin a 28 px line. When those run past the foot of the table, every pin line
-is 20 px with the GPIO in the smaller face, then 16 px, then the names 16 px
+IN USE lists every pin it holds. A protocol's name takes a 20px line and a
+pin a 28px line. When those run past the foot of the table, every pin line
+is 20px with the GPIO in the smaller face, then 16px, then the names 16px
 too. The tallest table of protocols is OFF selected, the programming port
 listed and the 8 slots over the 6 protocols that take one channel a pin: 16
-lines, 392 px of the 432 px under the heading. With 4 programming ports and
+lines, 392px of the 432px under the heading. With 4 programming ports and
 every interface on beside that binding, the table lists 27 lines, the ports
 and the interfaces first, in the smaller lines. A table that still runs past
 the foot holds the lines that fit and ends in `+N`, N the lines left out.
@@ -4713,7 +4713,7 @@ pins are still on the Outputs screen.
 
 The board's drawing comes from the board as well. The IOmcu carries a
 drawing of itself, the one the configurator draws: the outline, the parts as
-flat shapes and every pad, to scale in 0.01 mm ([The board
+flat shapes and every pad, to scale in 0.01mm ([The board
 drawing](Link.md#the-board-drawing)). The panel draws it on the shape's pad
 grid, so the board on screen is laid out like the board in your hands.
 Without a drawing, the outline and every pad are drawn from the shape and
@@ -4727,12 +4727,12 @@ the catalogue's GPIO, and every other pad the catalogue's ground or rail. A
 drawing that disagrees is not shown, and the shape is drawn instead.
 
 The drawing of the RP2350-CAN is 1,560 bytes, fetched over the link in 26
-blocks of 62 bytes in a 15 ms slice of each 50 ms poll. The time this takes
+blocks of 62 bytes in a 15ms slice of each 50ms poll. The time this takes
 on a bench is not measured. The panel keeps it in its flash with the
 drawing's length, CRC (cyclic redundancy check) and hash, and shows the kept
 copy only while the IOmcu still reports the same three; an IOmcu
 flashed with another drawing is fetched again. Writing it to flash waits for
-a bench that is SAFE with the supply off and pauses between two 4 kB sectors
+a bench that is SAFE with the supply off and pauses between two 4kB sectors
 when the bench is ARMED or the supply comes on
 ([Safety](Safety.md#deliberate-behaviours)).
 A board with no drawing, or one whose transfer has not finished, is drawn
@@ -4743,15 +4743,15 @@ marked on the board itself, on a short trace in from the pad:
 
 | Mark | Pad |
 | --- | --- |
-| white round marker, 36 px, with a large **G**, 40 px in from the pad | ground |
-| amber round marker, 32 px, with the voltage: **5V0**, **3V3** | a rail at a fixed voltage |
+| white round marker, 36px, with a large **G**, 40px in from the pad | ground |
+| amber round marker, 32px, with the voltage: **5V0**, **3V3** | a rail at a fixed voltage |
 | amber round marker with **PWR** | a rail that is an input, VSYS: a number that is only sometimes true is worse here than none |
 | dim cross on the pad | neither, like RUN and 3V3_EN |
 
 The marks go inside the outline because that is the only room left: the
 space beside the board belongs to the keys, and a mark on the pad itself
-would be as small as the pad. Rails sit on neighbouring pads, 29 px apart,
-so a rail's marker is 30 px or 78 px in from its pad, alternating along the
+would be as small as the pad. Rails sit on neighbouring pads, 29px apart,
+so a rail's marker is 30px or 78px in from its pad, alternating along the
 row; the deeper one clears the marker of a ground on the pad beside it.
 
 These come from the [pads page](Link.md#page-map), which is separate from the
@@ -4779,21 +4779,21 @@ a throttle position does not.
 The save waits for the bench to stop driving, and then for a gap in the
 traffic. Writing flash stops the IOmcu with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
-erased and programmed inside one window measured 19,178 us, against a CAN
-frame of about 130 us and two frames of buffer in the controller. The figure is one
+erased and programmed inside one window measured 19,178us, against a CAN
+frame of about 130us and two frames of buffer in the controller. The figure is one
 measurement: 1 sample, taken on the bring-up module, with the flash part not
 yet identified. The erase and the page program have not been timed apart from
 each other. The window is to be argued again against the flash part's
 datasheet maximum once the part is known. A request lost
-in that window costs the panel 1000 ms of waiting, which is past the
-IOmcu's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
+in that window costs the panel 1000ms of waiting, which is past the
+IOmcu's 200ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
 
 So the sector is not erased per save. Two sectors hold sixteen records each; a
 save writes the next record, and a sector is erased only once every record in
 it has been superseded. That erase is taken before the save that needs it: at
 boot before the IOmcu starts answering, or on a pass after the save that
-first writes into the other sector, once the bus has been quiet for 5 ms. It
+first writes into the other sector, once the bus has been quiet for 5ms. It
 is the sector left behind that is erased, not the one just filled, so the
 erase and the save that needs it are separated by the fifteen saves in
 between. Fifteen saves in
@@ -4818,15 +4818,15 @@ confirmed](#a-binding-that-is-not-confirmed).
 
 Described on its own page: [Balancing](Balance.md).
 
-The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
-vibration, 0.35 g mass to add) until a sensor is fitted. The SIMULATED pill and
-the words "Not measured." stand under the readings, 20 px high and 88 px wide.
+The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42g
+vibration, 0.35g mass to add) until a sensor is fitted. The SIMULATED pill and
+the words "Not measured." stand under the readings, 20px high and 88px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 
-BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48 px. The rotor's card is
-640 px wide, its disc 160 px in radius; the right card is 360 px wide.
-PROPELLER and EDF are 162 x 48 px, the blade count's `-` and `+` 56 x 48 px,
-the count's tap area 114 x 48 px, the four readings rows of 36 px. The notes
+BALANCE, TEST RIG and AIRCRAFT are tabs of 150 x 48px. The rotor's card is
+640px wide, its disc 160px in radius; the right card is 360px wide.
+PROPELLER and EDF are 162 x 48px, the blade count's `-` and `+` 56 x 48px,
+the count's tap area 114 x 48px, the four readings rows of 36px. The notes
 and the rules' two lines are in 8 x 16; the rules' heads, the labels and the
 drawings' callouts in 10 x 20.
 

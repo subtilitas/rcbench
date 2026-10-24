@@ -7,7 +7,7 @@
  * servo ports as target it is every PWM slot whose first channel is a
  * surface (outputs_servo_rate_check()); with a programming port it is that
  * port's pin alone, and the slots run at their own rates.  The other
- * programming ports run at PROG_PORT_RATE_HZ, 50 Hz.  A change of target
+ * programming ports run at PROG_PORT_RATE_HZ, 50Hz.  A change of target
  * returns the register to 0.  Registers 1 to
  * 4 are a sweep -- curve, speed, amplitude, dwell -- and fit one CAN frame,
  * so a start is whole.  Register 5 is how many ends a sweep started after it
@@ -87,7 +87,7 @@ void servo_page_init(servo_page_t *p);
  * (BAD_VALUE): for the standard servo ports one outputs_servo_rate_check()
  * refuses or one under which a bound PWM output would carry a pulse longer than
  * its frame (outputs_pulse_check(), protocol 4.16); for a programming port one
- * outside the PWM driver's 40 to 560 Hz, one other than PROG_PORT_RATE_HZ for a
+ * outside the PWM driver's 40 to 560Hz, one other than PROG_PORT_RATE_HZ for a
  * port servo_page_ports() names as sharing its slice, or one whose frame is
  * shorter than the endpoint of a port it names as pulsing (protocol 4.19).
  * Refused too: a sweep sweep_cfg_valid() refuses, or a sweep started or changed

@@ -4,7 +4,7 @@
  *        phase.
  *
  * An ESC beeps by driving the motor windings at the tone frequency, often
- * chopped by its PWM (pulse-width modulation) carrier at 8 to 48 kHz.  One
+ * chopped by its PWM (pulse-width modulation) carrier at 8 to 48kHz.  One
  * phase reaches an IOmcu input through a series resistor and a zener
  * clamp, so the input is a logic level: high while the phase is driven
  * high, or floats above the input threshold, and low otherwise.  A PIO
@@ -135,16 +135,16 @@ extern "C" {
  *
  * At these, every setting is under 2^32 ticks at any 32-bit tick_hz.
  */
-#define TONE_WINDOW_US_MAX 100000u   /**< 100 ms                          */
-#define TONE_GAP_US_MAX    1000000u  /**< 1 s                             */
-#define TONE_GLITCH_NS_MAX 10000u    /**< 10 us                           */
-#define TONE_HOLD_NS_MAX   100000u   /**< 100 us                          */
+#define TONE_WINDOW_US_MAX 100000u   /**< 100ms                          */
+#define TONE_GAP_US_MAX    1000000u  /**< 1s                             */
+#define TONE_GLITCH_NS_MAX 10000u    /**< 10us                           */
+#define TONE_HOLD_NS_MAX   100000u   /**< 100us                          */
 
 /** @brief Detector settings, as given to tone_init(). */
 typedef struct {
     uint32_t tick_hz;        /**< the edge stamps' clock                  */
-    uint32_t window_us;      /**< a window's length, 1000 to 100000 us    */
-    uint32_t f_min_hz;       /**< lowest tone, at least 50 Hz             */
+    uint32_t window_us;      /**< a window's length, 1000 to 100000us    */
+    uint32_t f_min_hz;       /**< lowest tone, at least 50Hz             */
     uint32_t f_max_hz;       /**< highest tone                            */
     /**
      * @brief Rise intervals up to this carrier's period are chopping inside a
@@ -284,8 +284,8 @@ typedef struct {
 } tone_t;
 
 /**
- * @brief Defaults for a clock of @p tick_hz: 8000 us windows, 400 to 6500 Hz,
- *        carrier from 7 kHz, 500 ns glitch, 8000 ns hold-off, 3000 us gap, 8 %
+ * @brief Defaults for a clock of @p tick_hz: 8000us windows, 400 to 6500Hz,
+ *        carrier from 7kHz, 500ns glitch, 8000ns hold-off, 3000us gap, 8%
  *        split, 3 periods a beep, 2 a window.
  *
  * @param c        Settings to fill.
@@ -301,8 +301,8 @@ void tone_cfg_defaults(tone_cfg_t *c, uint32_t tick_hz);
  * f_max_hz, f_max_hz or carrier_min_hz above tick_hz (a period under one
  * tick), hold_ns above TONE_HOLD_NS_MAX, glitch_ns outside 1 to
  * TONE_GLITCH_NS_MAX or under one tick, gap_us under the period of f_min_hz or
- * above TONE_GAP_US_MAX, a window outside 1000 us to TONE_WINDOW_US_MAX,
- * f_min_hz under 50 Hz, a minimum of 0, split_pct above 100.  Also refused, as
+ * above TONE_GAP_US_MAX, a window outside 1000us to TONE_WINDOW_US_MAX,
+ * f_min_hz under 50Hz, a minimum of 0, split_pct above 100.  Also refused, as
  * settings under which no signal makes a tone, in whole ticks: the period of
  * f_min_hz, or the gap, at most the glitch or at most twice the hold-off (no
  * low could part two bursts without being a glitch, being too short to start
@@ -420,10 +420,10 @@ uint64_t tone_ticks_us(const tone_t *d, uint64_t ticks);
  * the time the low qualified.  A rise is reported at once.
  *
  * Why: a carrier's lows inside a burst are (1 - duty) / carrier long.  At
- * the default 8 us, every low of a carrier above 125 kHz, and every low
- * at 50 % duty above 62.5 kHz, is shorter, so such a burst reaches the
+ * the default 8us, every low of a carrier above 125kHz, and every low
+ * at 50% duty above 62.5kHz, is shorter, so such a burst reaches the
  * detector as one pulse: two edges per burst instead of two per carrier
- * period, 288,000 edges/s at 144 kHz.  Lows between bursts, at least a
+ * period, 288,000 edges/s at 144kHz.  Lows between bursts, at least a
  * quarter of the longest tone period in range, are far longer.
  *
  * A fall is reported up to the hold-off late, so the detector is advanced

@@ -8,7 +8,7 @@
  * one larger than the slot touches no flash.
  *
  * Then, a step at a time so the caller can draw between two: open the slot,
- * write it in pieces of FW_WRITE_CHUNK, each erasing the 64 kB it lands in
+ * write it in pieces of FW_WRITE_CHUNK, each erasing the 64kB it lands in
  * first, and finish -- the platform's own check of what is in flash and the
  * switch of the boot slot.  The running slot is never written, so a power
  * cut or a failed step at any point leaves the panel starting as before.
@@ -37,7 +37,7 @@
 extern "C" {
 #endif
 
-/** Bytes per write step: one 64 kB block, erased as the write reaches it. */
+/** Bytes per write step: one 64kB block, erased as the write reaches it. */
 #define FW_WRITE_CHUNK (64u * 1024u)
 
 /* ---------------------------------------------------------------- the gate */

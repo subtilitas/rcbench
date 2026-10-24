@@ -403,8 +403,8 @@ static gfx_color_t ack_face(void)
 }
 
 /*
- * The hold that acknowledges ends in the 150 ms flash ARM gives, by time:
- * white, black and the OK green for 25 ms each, twice, then the OK green.
+ * The hold that acknowledges ends in the 150ms flash ARM gives, by time:
+ * white, black and the OK green for 25ms each, twice, then the OK green.
  */
 TEST_CASE(the_acknowledgement_flashes_for_150_ms)
 {

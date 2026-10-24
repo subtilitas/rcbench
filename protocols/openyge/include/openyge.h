@@ -162,8 +162,8 @@ bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
 /* ------------------------------------------------------------ telemetry */
 
 typedef struct {
-    float    volts;          /**< battery volts, from 10 mV counts          */
-    float    amps;           /**< battery amps, from 10 mA counts           */
+    float    volts;          /**< battery volts, from 10mV counts          */
+    float    amps;           /**< battery amps, from 10mA counts           */
     uint16_t consumption_mah; /**< consumed charge, mAh                    */
     uint32_t erpm;           /**< electrical rpm, the wire value times 10   */
     int8_t   pwm_pct;        /**< output duty */
@@ -428,7 +428,7 @@ bool openyge_params_get(const openyge_params_t *p, uint16_t index,
 /**
  * @brief 0..1, for a progress bar.
  *
- * The table fills in about 1.6 s at 20 Hz and  32 parameters.
+ * The table fills in about 1.6s at 20Hz and  32 parameters.
  *
  * @param p  Cache to read.
  * @return   0..1; 0 while writes are pending, or while the count is 0 or

@@ -19,8 +19,8 @@
  *                   the zero position, the maximum angle and the filters
  *   0x0E ANGLE      the same 12 bits after them; equal to RAW ANGLE while
  *                   ZPOS and MPOS are not burned
- *   0x1A AGC        automatic gain control, 0 to 255 at 5 V and 0 to 128 at
- *                   3.3 V; a magnet at the right distance reads near the
+ *   0x1A AGC        automatic gain control, 0 to 255 at 5V and 0 to 128 at
+ *                   3.3V; a magnet at the right distance reads near the
  *                   middle of the range
  *   0x1B MAGNITUDE  bits 11-0 in 0x1B bits 3-0 and 0x1C: the CORDIC
  *                   magnitude, a measure of the field
@@ -48,12 +48,12 @@
  *   AGC        0x1A  1 byte
  *   MAGNITUDE  0x1B  2 bytes, high byte first
  *
- * Bus time at 400 kHz, 9 clocks a byte, the address byte written, the
+ * Bus time at 400kHz, 9 clocks a byte, the address byte written, the
  * register byte and the address byte read, and 3 clocks for START,
- * repeated START and STOP: 39 clocks (97.5 us) for a 1-byte read, 48 clocks
- * (120 us) for a 2-byte read, without the controller's own time between
- * transactions, which is not measured.  as5600_read_angle() is 217.5 us,
- * as5600_read_magnitude() 217.5 us.
+ * repeated START and STOP: 39 clocks (97.5us) for a 1-byte read, 48 clocks
+ * (120us) for a 2-byte read, without the controller's own time between
+ * transactions, which is not measured.  as5600_read_angle() is 217.5us,
+ * as5600_read_magnitude() 217.5us.
  *
  * The magnet bits.  The datasheet's STATUS table (Figure 23) gives the
  * state when each bit is high: MD (0x0B bit 5) "Magnet was detected", ML

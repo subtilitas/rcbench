@@ -112,7 +112,7 @@ SCREENS = {
     # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
     # TEST card's settings and the LIMIT RUN card's, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
-    # TRIM's keypad, signed: the +/- key, -25 us typed.
+    # TRIM's keypad, signed: the +/- key, -25us typed.
     "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
@@ -135,8 +135,8 @@ SCREENS = {
     # a run partway, run
     # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
     # with RESTORE named, RESTORE's list in the programmer after a STOP in a
-    # session, and SERVO PULSES at KEEP refused: the servo's 900-2100 us
-    # outside the bench's 1000-2000 us.
+    # session, and SERVO PULSES at KEEP refused: the servo's 900-2100us
+    # outside the bench's 1000-2000us.
     "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
     "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
     "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
@@ -157,7 +157,7 @@ SCREENS = {
     # The tester drives the standard outputs: PROGRAM is locked.
     "servo-kst-target": ("servo-kst-target.png", "servo", "dark"),
     # A PD mini answers: the voltage and limit CONNECT sets, the list
-    # that holds them, their keypads and the hold above 6.0 V.
+    # that holds them, their keypads and the hold above 6.0V.
     "servo-kst-supply": ("servo-kst-supply.png", "servo", "dark"),
     "servo-kst-options": ("servo-kst-options.png", "servo", "dark"),
     "servo-kst-voltage": ("servo-kst-voltage.png", "servo", "dark"),
@@ -308,10 +308,10 @@ SCREENS = {
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
-    # The keypad of 0x40 CH1's shunt, 44.4 mOhm typed.
+    # The keypad of 0x40 CH1's shunt, 44.4mOhm typed.
     "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
     # Values inside the range the steps never reach, refused with the
-    # reason in place of the range: a 3 mOhm shunt, GPIO 5 for Sensor SDA,
+    # reason in place of the range: a 3mOhm shunt, GPIO 5 for Sensor SDA,
     # and PD mini RX's GPIO 9 for PD mini TX.
     "setup-sensors-why": ("setup-sensors-why.png", "setup", "dark"),
     "setup-sda-why": ("setup-sda-why.png", "setup", "dark"),
@@ -368,7 +368,7 @@ SCREENS = {
     # The protocol list open over the board.
     "picker-protocol": ("picker-protocol.png", "picker", "dark"),
     # OFF picked, GP13 the programming port's, 8 pins over 6 protocols:
-    # the tallest IN USE table, in its 20 px rows.
+    # the tallest IN USE table, in its 20px rows.
     "picker-off": ("picker-off.png", "picker", "dark"),
     # The same interfaces on PICK A PIN: held, and named under IN USE after
     # the programming port.

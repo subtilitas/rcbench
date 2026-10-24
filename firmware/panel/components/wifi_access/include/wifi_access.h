@@ -40,7 +40,7 @@
 extern "C" {
 #endif
 
-/** The access point's channel, 2.4 GHz band. */
+/** The access point's channel, 2.4GHz band. */
 #define WIFI_ACCESS_AP_CHANNEL 6u
 
 /** What the screen draws, as a copy. */

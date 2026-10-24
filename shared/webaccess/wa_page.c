@@ -178,7 +178,7 @@ static void files(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs)
         wa_out_str(o, "</p>");
     }
 
-    static wa_walk_t w;   /* 1.6 kB: off the calling task's stack */
+    static wa_walk_t w;   /* 1.6kB: off the calling task's stack */
     wa_walk_begin(&w, fs);
     bool open = false;
     for (;;) {

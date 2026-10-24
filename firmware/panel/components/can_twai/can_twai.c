@@ -69,7 +69,7 @@ esp_err_t can_twai_start(uint32_t bitrate)
         .clkout_divider = 0,
         .intr_flags = ESP_INTR_FLAG_LEVEL1,
     };
-    /* The 40 MHz crystal, the clock can_timing_limits_twai() solves for. */
+    /* The 40MHz crystal, the clock can_timing_limits_twai() solves for. */
     const twai_timing_config_t timing = {
         .clk_src = TWAI_CLK_SRC_XTAL,
         .brp = t.div,
@@ -161,7 +161,7 @@ bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
  * Bus-off is permanent until somebody asks for the bus back.
  *
  * A CAN transmitter that gets no acknowledgement retransmits on its own and
- * adds 8 to its error counter each time; at 1 Mbit/s a frame nobody answers
+ * adds 8 to its error counter each time; at 1Mbit/s a frame nobody answers
  * reaches the bus-off threshold of 256 in about four milliseconds.  So an
  * IOmcu that is not on the bus yet, has reset, or has stopped
  * answering for a moment leaves the panel's controller in TWAI_STATE_BUS_OFF

@@ -30,8 +30,8 @@
 TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
 {
     /* Many small moves, as a finger makes them: the set point follows the
-     * finger and does not run ahead of it.  17.7 V over 413 px is about
-     * 43 mV a pixel. */
+     * finger and does not run ahead of it.  17.7V over 413px is about
+     * 43mV a pixel. */
     fresh();
     const float per_px = (21.0f - 3.3f) / (float)(TRACK_W - 1);
     ev(TRACK_X + 100, V_ROW_Y, TOUCH_EVENT_DOWN, 1);

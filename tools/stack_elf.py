@@ -144,7 +144,7 @@ class Graph:
     limit to 20000, and the deepest panel chain is 31 functions."""
 
     # The visits to functions of one group a search from one entry into it
-    # makes before it fails: about 1 s.  The panel's largest group, 10
+    # makes before it fails: about 1s.  The panel's largest group, 10
     # functions in a ring, takes 80.
     VISIT_CAP = 1_000_000
 

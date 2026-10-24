@@ -41,8 +41,8 @@
 #define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* From motor_spots.h: the strip's tabs, 150 px a tab 4 px apart from x 9,
- * 40 px high from y 8; the CONTROL card's TARGET row and ARM; the keypad's
+/* From motor_spots.h: the strip's tabs, 150px a tab 4px apart from x 9,
+ * 40px high from y 8; the CONTROL card's TARGET row and ARM; the keypad's
  * area over the page and the strip. */
 #define TAB_Y       P(MO_TAB_Y)
 #define TAB_X(i)    MO_TAB_X(i)
@@ -53,7 +53,7 @@
 #define TRACK_X     MO_TRACK_X
 #define TRACK_Y     P(MO_TRACK_Y)
 #define KP_AREA     ((gfx_rect_t){ UI_MARGIN, 3, 620, UI_BODY_H - 3 - UI_MARGIN })
-/* SETTINGS' save line, 4 px above the alert band (motor_settings_page.c). */
+/* SETTINGS' save line, 4px above the alert band (motor_settings_page.c). */
 #define SAVE_LINE_Y MO_SAVE_LINE_Y
 /* LIVE's views, PLOT and TABLE, in the telemetry card. */
 #define TABLE_X     MO_TABLE_TAB_X
@@ -395,8 +395,8 @@ TEST_CASE(the_settings_rows_are_esc_bench_under_three_headings)
 }
 
 /*
- * Every row fits its column in both languages: the label 16 cells of 10 px
- * left of the 120 px box, the help (or the lock's reason) 36 cells of 8 px
+ * Every row fits its column in both languages: the label 16 cells of 10px
+ * left of the 120px box, the help (or the lock's reason) 36 cells of 8px
  * under them, the value with its unit the box's 11 at the setting's minimum
  * and maximum.  The boxes are a finger tall, stand apart, inside the page,
  * above the save line, which ends above the alert band.
@@ -613,7 +613,7 @@ TEST_CASE(the_pulse_rows_change_on_a_safe_bench_only)
 }
 
 /*
- * ARM held locks the pulse rows too.  An endpoint edit waits 300 ms before
+ * ARM held locks the pulse rows too.  An endpoint edit waits 300ms before
  * it goes to the IOmcu and the switch to ARMED sends no CHAN_CFG, so an OK
  * under a held ARM could be overtaken by the arm.  OK on an open keypad
  * while ARM is down changes nothing, the next frame closes the keypad, and

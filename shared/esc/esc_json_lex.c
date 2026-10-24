@@ -34,7 +34,7 @@
  * @brief No profile object has more than 14 members.
  *
  * The duplicate check compares each key with those before it, so this bounds it
- * at 64 x 63 / 2 comparisons an object rather than letting a 64 KiB file of
+ * at 64 x 63 / 2 comparisons an object rather than letting a 64KiB file of
  * short keys ask for tens of millions.
  */
 #define MAX_MEMBERS 64u
