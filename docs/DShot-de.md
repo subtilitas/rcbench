@@ -380,6 +380,13 @@ deshalb als Argument entgegen, statt ihn zu erschließen. Ein ESC, der Command
 Drehzahl-Frames als Temperatur oder Spannung gelesen -- ungemessen, und der
 Grund, die ersten Anzeigen an einem neuen ESC zu prüfen.
 
+Temperatur, Spannung und Strom erreichen die Zahlen des Prüfstands von hier
+und von nirgends sonst: Der IOmcu hat kein Messfrontend. Jede hat ihr eigenes
+Staleness-Fenster von 2000ms, gegen 200ms für die Drehzahl, weil die
+Extended-Frames nur wenige je Sekunde zwischen die anderen gestreut werden,
+während eine Periode mit jedem Frame zurückkommt. Die Leistung ist das Produkt
+aus Spannung und Strom und bleibt leer, wenn nicht beide eingetroffen sind.
+
 ## Was auf der Leitung nicht bestätigt ist
 
 Die Implementierung ist aus der veröffentlichten Beschreibung des Protokolls

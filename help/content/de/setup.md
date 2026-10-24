@@ -113,7 +113,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Zeitzone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN | die Zone, in der Dateidaten geschrieben und gezeigt werden, Sommerzeit eingeschlossen |
 | Dimmen nach | 0 bis 60min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
-| Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
+| Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 an einem eigenen Bus, IO30 und IO31 des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
@@ -136,7 +136,7 @@ Das Panel hat keinen RTC-Chip (Real-Time Clock). Seine Uhr startet bei jedem Ein
 - Ein Finger auf dem Throttle-Balken oder dem SERVO-Zifferblatt hat den Wert, solange er aufliegt.
 - Der Sensor wird alle 10ms gelesen. Ein Sprung über 90deg zwischen zwei Messwerten wird verworfen.
 
-Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Panel spricht für ihn nie 0x14, 0x20 bis 0x27, 0x30 bis 0x3F oder 0x5D an, wo der I/O-Expander CH422G und der Touch-Controller GT911 der Platine antworten, und auch nicht 0x00 bis 0x03 oder 0x78 bis 0x7F, die die I2C-Spezifikation reserviert. Ohne Sensor prüft `Drehknopf` EIN alle 100ms mit einer Adressprobe, ob 0x06 antwortet. Die Host-Tests zeigen, dass das sonst nichts ändert; am Panel ist es nicht gemessen. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
+Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Nichts sonst von der Platine liegt an seinem Bus. Das Panel spricht für ihn nie 0x14 oder 0x5D an, wo der Touch-Controller GT911 am Touch-Bus antwortet, und auch nicht 0x00 bis 0x03 oder 0x78 bis 0x7F, die die I2C-Spezifikation reserviert. Ohne Sensor prüft `Drehknopf` EIN alle 100ms mit einer Adressprobe, ob 0x06 antwortet. Die Host-Tests zeigen, dass das sonst nichts ändert; am Panel ist es nicht gemessen. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
 
 ## SD-KARTE
 
