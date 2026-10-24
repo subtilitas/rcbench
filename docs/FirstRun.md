@@ -137,7 +137,7 @@ is 4.28, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
 2. The question opens on the menu while the bench is SAFE, the supply's
    output is off and the panel's Wi-Fi radio is off. It names the version
    on the IOmcu and the version in the panel. Hold START for 2s, or after
-   CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP > UPDATES. The progress fills
+   CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP > UPDATES. The progress fills
    the screen ([Screens: IOmcu update](Screens.md#iomcu-update)), and back
    on the menu the band says `IOmcu updated to X.Y.Z.`.
 

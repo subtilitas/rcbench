@@ -229,6 +229,16 @@ bool upd_busy(const upd_view_t *v);
 void upd_result_text(const upd_view_t *v, char *out, size_t n,
                      char *second, size_t n2);
 
+/**
+ * @brief Whether the result card leaves out upd_result_text()'s lines
+ *        because the status lines above already say them: a check that
+ *        ended for want of a home network while the card shows "No home
+ *        network saved." (Wi-Fi set up, no network kept).
+ * @param v the view; NULL is false
+ * @return true when the result is not drawn
+ */
+bool upd_result_said_above(const upd_view_t *v);
+
 /** Repaint on the next frame. */
 void upd_screen_invalidate(void);
 

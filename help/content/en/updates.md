@@ -15,8 +15,8 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
 | REMINDER AT START: ON / OFF | switches the check at start and its reminder; kept with SAVE on [Setup](setup.md#keeping-the-values); on by default |
 | RELEASES: STABLE / TESTING | sets which releases a check reads, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); STABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
-| HOLD 2s: DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
-| HOLD 2s: UPDATE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
+| HOLD 2s TO DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
+| HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 
 ## What the check needs
 
@@ -110,7 +110,7 @@ CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board dra
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Carried: 0.22.0`). HOLD 2s: UPDATE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
+Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Carried: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
 
 The hold takes what the question takes: an IOmcu that runs another build, the bench SAFE, the supply output off, the Wi-Fi radio wholly off and no panel install under way. Otherwise it is grey and the line above it says why, the first of these that holds:
 

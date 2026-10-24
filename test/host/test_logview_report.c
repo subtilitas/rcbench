@@ -532,12 +532,14 @@ TEST_CASE(pages_of_a_full_folder_hold_every_listed_name_once_in_order)
                 return;
             }
             CHECK(last[0] == '\0' || log_name_rank(last, page[i].name) < 0);
-            snprintf(last, sizeof(last), "%s", page[i].name);
+            snprintf(last, sizeof(last), "%.*s", (int)sizeof(last) - 1,
+                     page[i].name);
             --expect;
         }
         seen += q.held;
         q.dir = LOG_PAGE_AFTER;
-        snprintf(q.key, sizeof(q.key), "%s", page[q.held - 1].name);
+        snprintf(q.key, sizeof(q.key), "%.*s", (int)sizeof(q.key) - 1,
+                 page[q.held - 1].name);
     }
     CHECK_EQ(seen, listed);
     CHECK_EQ(expect, 0);

@@ -125,7 +125,7 @@ Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines
 
 ![Ein neueres Image wartet](view:wifi-question)
 
-Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit beiden Versionen. INSTALL ist ein Halten von 2s, `2s HALTEN: INSTALLIEREN`; der Browser kann es nicht starten. ABBRECHEN verwirft das Image. Die Installation braucht den Prüfstand SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf, keine Platinenzeichnung, die geladen oder gespeichert wird, und kein laufendes IOmcu-Update.
+Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit beiden Versionen. INSTALL ist ein Halten von 2s, `2s HALTEN ZUM INSTALLIEREN`; der Browser kann es nicht starten. ABBRECHEN verwirft das Image. Die Installation braucht den Prüfstand SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf, keine Platinenzeichnung, die geladen oder gespeichert wird, und kein laufendes IOmcu-Update.
 
 ![Ein älteres Image, und eine Zeichnung wird gespeichert](view:wifi-older)
 

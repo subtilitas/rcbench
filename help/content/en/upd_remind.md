@@ -14,7 +14,7 @@ The reminder says that a newer panel firmware release is on GitHub. It opens on 
 |---|---|
 | NOT NOW | closes the reminder until the next start of the panel; leaving by the HOME tag does the same |
 | NEVER REMIND ME | switches REMINDER AT START off and asks for the save; SETUP > UPDATES switches it on again |
-| HOLD 2s: DOWNLOAD & INSTALL | the same hold as on [Updates](updates.md#the-download) |
+| HOLD 2s TO DOWNLOAD & INSTALL | the same hold as on [Updates](updates.md#the-download) |
 
 ## When the check runs
 

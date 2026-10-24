@@ -795,7 +795,7 @@ y. A finger that comes down on a control and travels on presses nothing, and
 neither does one that crosses a control. One finger at a time presses a
 control. Three controls act on the press:
 
-- HOLD TO RUN: its 2s hold starts at the press.
+- HOLD 2s TO RUN: its 2s hold starts at the press.
 - ABORT of a stick run, on the run's page and on a manual step's prompt. It
   stops a motor, so it does not wait for the lift, and it answers a second
   finger.
@@ -850,7 +850,7 @@ values picked:
 
 RUN opens a warning over the whole screen, PROPELLER REMOVED? MOTOR SECURED?: a
 motor on the ESC must be mounted solid and carry no propeller, or a
-resistor load takes its place. The run starts after HOLD TO RUN is held
+resistor load takes its place. The run starts after HOLD 2s TO RUN is held
 for 2s:
 
 ![The warning](img/motor-stick-warning.png)
@@ -1189,7 +1189,7 @@ the change on both.
   SERVOS ONLY: standard servos are rated for 4.8 to 6.0V, and above that
   only a servo specified as HV (high voltage) is within its rating; a
   standard servo above it can be destroyed immediately. The
-  voltage is applied after HOLD TO APPLY is held for 2s, the gesture of the
+  voltage is applied after HOLD 2s TO APPLY is held, the gesture of the
   profile warning; CANCEL drops it. STOP ends the hold. With the output on it replaces SUPPLY's
   question, and it stays if the output goes off. A voltage already above
   6.0V changes without it. A voltage set on SUPPLY does not open it.
@@ -1199,7 +1199,7 @@ the change on both.
 - OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
   a hold under way. With a voltage set point above 6.0V, wherever it was
   set, OUTPUT ON opens HV SERVOS ONLY instead, naming the voltage, and the
-  output comes on only after HOLD TO APPLY is held for 2s; the switch's own
+  output comes on only after HOLD 2s TO APPLY is held; the switch's own
   hold and a tap on APPLY switch nothing on. A set point that rises above
   6.0V during the ordinary hold -- on SUPPLY, or put back after a run --
   is seen as the hold completes: HV SERVOS ONLY opens and nothing comes on.
@@ -1259,7 +1259,7 @@ changed on SETTINGS > SWEEP while paused starts as a new sweep instead. An
 IOmcu older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
 sine or a triangle, the first end for a square -- and the alert band says
-so: `IOmcu firmware older than 4.6. Sweep starts again.` or `IOmcu could not resume. Sweep starts again.`. So does PAUSED tapped while
+so: `IOmcu firmware older than 0.13.0. Sweep starts again.` or `IOmcu could not resume. Sweep starts again.`. So does PAUSED tapped while
 the HOLD has gone unanswered, since the IOmcu may then be holding or
 still running: `Pause was not confirmed. Sweep starts again.`. A
 PAUSED tapped before a HOLD that the panel then lets go of (below) starts
@@ -1334,7 +1334,7 @@ It is a two-second hold,
 the gesture OUTPUT ON uses, because a run switches the supply on and moves
 the servo. With HV SERVO on and a step above 6.0V chosen, a tap opens HV
 SERVOS ONLY instead, naming the highest step, and the run starts only after
-its HOLD TO APPLY is held for 2s. HV SERVO is for the session: every restart
+its HOLD 2s TO APPLY is held. HV SERVO is for the session: every restart
 turns it off.
 
 TEST stays shown as the run starts, and the card's state line reads the
@@ -1513,7 +1513,7 @@ and changes no setting. The notes, the save line, the STALL AT note and
 the caps line under TEST's cards end 4px or more above the alert band. A
 list's choices are
 two columns of five, 48px tall and 56px apart; the warnings read in
-12 x 24px letters, 49 characters a line, with HOLD TO APPLY and CANCEL
+12 x 24px letters, 49 characters a line, with HOLD 2s TO APPLY and CANCEL
 56px tall ending 4px above the alert band.
 
 ![The servo's settings](img/servo-settings.png)
@@ -1641,7 +1641,7 @@ the rate's pause is refused too.
 **A heli type, or any frame rate above 60Hz, can destroy a servo that is not
 made for it.** Choosing one opens a warning in the danger colour that names
 what is chosen and what it does to a servo not made for it; it is applied only
-after HOLD TO APPLY has been held for 2s. CANCEL, a finger that slides off,
+after HOLD 2s TO APPLY has been held. CANCEL, a finger that slides off,
 a touch loss and leaving the screen apply nothing. The type and frame rate in
 force stay red on the right card, and every restart goes back to STANDARD PWM
 at 50Hz: a servo plugged in after a restart never meets a rate meant for
@@ -2027,7 +2027,7 @@ is a notch across all sixteen at the same instant.
 
 The state card on the right is 260px wide: the state word in 20 x 36, its
 line in up to three lines of 12 x 24, BUS, RATE, FRAMES, RESYNC and BAD TAIL in
-rows of 32px, and CH17 and CH18, 44px tall, lit while set. CHANNELS and RAW
+rows of 32px, and CH17 and CH18 as lamps 44px tall, whose dot lights while the channel is set; they take no tap. CHANNELS and RAW
 DATA are tabs of 150 x 48px. RAW DATA shows the last frame's bytes, eight to
 a row, and the decoder's counts in 8 x 16.
 
@@ -2639,7 +2639,7 @@ alert covers no control. Rows, buttons and keys are 48px or taller.
 | Radio off | five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
 | Radio on | rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424 |
 | Network list | two columns of eight rows of 492 x 48px, 52px apart: the name in 12 x 24 (32 characters are 384px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56px each |
-| Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s: INSTALL 460 x 72px |
+| Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s TO INSTALL 460 x 72px |
 | Keyboard | 1008 x 484px, keys of 93 x 71px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
 
 The radio starts only with the bench SAFE, the supply output off and no log
@@ -2899,7 +2899,7 @@ that runs already is not offered:
 ![The same version, another build](img/wifi-rebuild.png)
 ![The build that runs](img/wifi-installed.png)
 
-INSTALL is a 2s hold (`HOLD 2s: INSTALL`). The browser cannot start it.
+INSTALL is a 2s hold (`HOLD 2s TO INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
 drawing being fetched or kept and no update of the IOmcu running
 (`Installation is waiting for the IOmcu update to finish.`). CANCEL drops the image.
@@ -3410,7 +3410,7 @@ both said. In order:
 | `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50ms window or since the switch to ARMED |
 | `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.` | a channel of the part SERVO_SENSE reads hit the top of its range; the current is its full scale |
 | `IOmcu storage unavailable. Settings will be lost at restart.` | STATUS fault bit 6: the IOmcu saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
-| `IOmcu firmware older than 4.11. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the IOmcu speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
+| `IOmcu firmware older than 0.16.0. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the IOmcu speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
 | `INA3221 has reset. Check its power supply.` | the IOmcu found the INA3221 on its power-on set-up and set it up again 1000ms later; said once per reset. The windows of those 1000ms hold no samples |
 
 A refused set-up is not written again until it changes on SETUP. Pins that
@@ -3505,21 +3505,20 @@ The heading of a part shows on its right what the part is doing:
 | `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the map; it keeps the one it held |
 | `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at the part's address: the part is left out of the map and the INA228 off |
-| `IOMCU OLDER THAN 4.25: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
+| `IOMCU OLDER THAN 0.22.0: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
 | `SENSOR SDA OR SCL UNSET` | INTERFACES has no pin for the sensor bus's SDA or SCL: no part is enabled |
 
 The rows of a part refused, with every channel off, on the INA228's
 address, without a sensor bus or not read by an older IOmcu are marked as a row the IOmcu does
 not hold: edge and value in the warning colour, and a line in place of the
-help. On an IOmcu older than 4.25 that line reads `IOmcu older than 4.25:
-one INA3221, CH1 at 1kHz.`:
+help. On an IOmcu older than 4.25 that line reads `IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.`:
 
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
 A LIMIT row is marked the same way while the IOmcu does not hold its
 limit: from the edit to the write taken, after a refused write or a
 refused page with `Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
-limit that is not OFF, with `IOmcu older than 4.27: no limit is judged.`:
+limit that is not OFF, with `IOmcu older than 0.22.0: no limit is judged.`:
 
 ![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
 
@@ -3606,7 +3605,7 @@ once and one at a time like the monitors':
 
 | Message | When |
 | --- | --- |
-| `IOmcu firmware older than 4.9. AS5600 not read.` | the encoder is enabled and the IOmcu speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
+| `IOmcu firmware older than 0.15.0. AS5600 not read.` | the encoder is enabled and the IOmcu speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
 | `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
 | `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
 | `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
@@ -3728,8 +3727,8 @@ own help line:
 | The help line reads | While |
 | --- | --- |
 | `Not accepted by the IOmcu.` | the value is not acknowledged yet, or the IOmcu refused it |
-| `IOmcu older than 4.24: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
-| `IOmcu older than 4.23: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
+| `IOmcu older than 0.22.0: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
+| `IOmcu older than 0.21.1: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
 
 No mark shows while no IOmcu answers, and none for PULL-UP on an older
 IOmcu.
@@ -4061,8 +4060,8 @@ hold is a fifth button of the same size, from body y 428.
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
 | `RELEASES: STABLE` / `TESTING` | Sets which releases a check reads ([The check](#the-check)). Kept with SAVE on SETUP. `STABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
-| `HOLD 2s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
-| `HOLD 2s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
+| `HOLD 2s TO DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
+| `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -4239,7 +4238,7 @@ published after it is not found, on either setting.
 Under the buttons, UPDATES shows the IOmcu's update: the version the
 IOmcu runs (`Running: 0.21.2`), the version of the image this panel
 carries (`Carried: 0.22.0`), one line of state, and
-`HOLD 2s: UPDATE IOMCU`. The hold starts the update that the
+`HOLD 2s TO UPDATE THE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
 ([IOmcu update](#iomcu-update)). It also starts it after that
 question was declined. When the update ends, or the START was spent
@@ -4297,7 +4296,7 @@ gone and the menu shows.
 | --- | --- |
 | `NOT NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
 | `NEVER REMIND ME` | Switches REMINDER AT START off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). SETUP > UPDATES switches it on again. |
-| `HOLD 2s: DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
+| `HOLD 2s TO DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
 
 The start-up check shows nothing when it finds no newer release or fails.
 Its result is on UPDATES.
@@ -4538,7 +4537,7 @@ The amber line under the rows names the first reason that holds:
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | ARMED, or a test or a sweep runs |
 | `SERVO TESTER DRIVES PROG PORT n` | the tester drives another port, port n |
 | `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot: the tester takes it as no target |
-| `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION: every port is SERVO PWM and the row takes no tap |
+| `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION: every port is SERVO PWM and the row takes no tap |
 | `SERVO TESTER DRIVES PROG PORT n` | the tester drives this port, port n: FUNCTION takes no tap |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
@@ -4649,7 +4648,7 @@ PICK A PIN opens with OFF selected too.
 
 One write is reachable with OFF selected. With pages that describe no
 binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
-`HOLD: CLEAR ALL PIN ASSIGNMENTS` for 2s writes a binding with no pin. That
+`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` writes a binding with no pin. That
 hold is the way out of those pages
 ([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
 
@@ -4672,7 +4671,7 @@ results:
 | --- | --- |
 | both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
 | a page did not read: no answer within 1000ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
-| both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD: CLEAR ALL PIN ASSIGNMENTS` |
+| both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` |
 | the IOmcu is a board this build has no pin map for | shows no pins |
 
 In the second and third state a tap on a pin does nothing here and on PICK
@@ -4686,7 +4685,7 @@ binding ends the state.
 ![The last binding read, after a read that failed](img/outputs-unread.png)
 
 Pages no binding describes do not become readable by reading them again.
-`HOLD: CLEAR ALL PIN ASSIGNMENTS`, held for 2s, writes a binding with no pin; the
+`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`, held, writes a binding with no pin; the
 read-back then shows nothing bound and edits are taken again. It is the one
 write the screen sends in this state. A finger that leaves the key, a lift
 before 2s, and leaving the screen abandon the hold.

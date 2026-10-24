@@ -354,6 +354,12 @@ static const char *phase_text(upd_phase_t ph)
     }
 }
 
+bool upd_result_said_above(const upd_view_t *v)
+{
+    return v != NULL && v->phase == UPD_PH_ENDED
+           && v->got == UPD_GOT_NO_NET && !v->unavailable && !v->have_net;
+}
+
 void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
                      size_t n2)
 {
@@ -829,9 +835,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, TR(UPD_KEEP_NET), UI_TEXT_DIM) + 12;
     }
 
-    /* The job under way, or how the last one ended. */
+    /* The job under way, or how the last one ended.  A check that ended
+     * for want of a home network says what the lines above already say,
+     * and is not said twice. */
     upd_result_text(&s_v, line, sizeof(line), second, sizeof(second));
-    if (line[0] != '\0') {
+    if (line[0] != '\0' && !upd_result_said_above(&s_v)) {
         const gfx_color_t col = upd_busy(&s_v) ? UI_TEXT : result_colour();
         y = para(c, x, y, w, line, col);
         y = para(c, x, y, w, second, UI_TEXT_DIM) + 12;
