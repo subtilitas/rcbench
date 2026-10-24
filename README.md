@@ -32,7 +32,7 @@ interface on a 1024x600 MIPI DSI display, settings, SD card, Wi-Fi through its
 ESP32-C6), and an RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
 protocol with timing requirements), connected over CAN (Controller Area Network) at 1Mbit/s.
 
-Release 0.22.1 runs on the ESP32-S3 panel. What its update check offers
+Release 0.23.0 runs on the ESP32-P4 panel. What its update check offers
 is in [Screens: The release line](docs/Screens.md#the-release-line).
 
 **Status: under construction.** The project is under development and its
