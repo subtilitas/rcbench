@@ -360,7 +360,6 @@ firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_set_german are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_start are not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: parameters of member wifi_access_take are not documented
-firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_down is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_fetch_start is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_home is not documented
 firmware/panel/components/wifi_access/include/wifi_access.h: warning: return type of member wifi_access_init is not documented
@@ -371,8 +370,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Compound bufs_t is
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound card_dir_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Compound http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_AGENT (macro definition) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_EXIT_MS (macro definition) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_GRACE_MS (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_SLICE_MS (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member FETCH_STACK (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member HTTPD_STACK (macro definition) of file wifi_access.c is not documented.

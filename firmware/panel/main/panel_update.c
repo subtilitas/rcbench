@@ -912,6 +912,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     /* What UPDATES and the download's screen show. */
     const bool busy = wa_fetch_busy(&f);
     v.block = (upd_why_t)upd_check_gate(armed);
+    v.radio_free = wifi_access_down();
     if (s_upd_dl || busy) {
         v.dl_block = UPD_WHY_BUSY;
     } else {

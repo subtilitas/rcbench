@@ -439,9 +439,10 @@ most 1,000ms after that call has returned (`wifi_radio.c`).
   measured), the radio's task sees it within 100ms, and takes the radio
   down without the two requests to the C6, `esp_wifi_stop()` and
   `esp_wifi_deinit()`, which would each end at esp_hosted's 5s response
-  time-out. Taking it down waits up to 1,500ms for a GitHub fetch under way
-  and up to 20,000ms for the fetch task to end. The time on a board is not
-  measured.
+  time-out. Taking it down waits up to 1,500ms for a GitHub fetch under way.
+  A fetch task still in a name lookup after that is not waited for: it
+  ends when lwIP gives up on the lookup, and no fetch job starts before.
+  The time on a board is not measured.
 
 Current limitations, all inside esp_hosted. Each stops the panel with an
 abort, which restarts it:

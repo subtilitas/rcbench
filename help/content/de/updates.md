@@ -60,7 +60,7 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` | die Version des laufenden Builds ist nicht lesbar; nichts wird angeboten |
 | `Unerwartete Antwort von GitHub.` | der `Location`-Header, oder mit TESTING die Antwort, fehlt oder ist ungültig; eine zweite Zeile sagt, was |
 | `WLAN ausgeschaltet: Prüfstand ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
-| `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche |
+| `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche; `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` verschwindet, sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist |
 
 ![Eine Suche ohne Antwort](view:updates-failed)
 
@@ -133,6 +133,7 @@ Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum
 ## Aktuelle Einschränkungen
 
 - Wie lange Suche und Download in einem echten Netz dauern, ist nicht gemessen.
+- Ein erster DNS-Server (Domain Name System) des Heimnetzes, der nicht antwortet, verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, von den 30s der Suche: lwIP fragt diesen Server 4-mal, bis zu 7s lang, vor dem nächsten.
 - TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
 - Die Release-Liste enthält die 10 nach Datum neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
