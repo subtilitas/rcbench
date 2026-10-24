@@ -5,17 +5,23 @@ A file is checked again unless a pass is on record for the same key.  The
 key is a SHA-256 over:
 
 - the clang-tidy version text and the clang-tidy binary;
-- the compiler's version text (it lists the dependencies);
+- the version text and the binary of the clang driver beside clang-tidy;
 - every .clang-tidy file in the tree, and this script;
 - the file's compile command, with the tree's path replaced by a token;
-- the path and the content of every file the compiler reads for the
-  translation unit (`cc -M`): the source, each project header and each
-  system header.
+- the path and the content of every file that clang driver reads for the
+  translation unit (`clang -M` with the compile command's arguments): the
+  source, each project header and each system header.
+
+The inputs are listed by the clang of the same LLVM install as clang-tidy,
+not by the compiler of the compile command, so a header included only
+under __clang__ is listed too.  clang-tidy's real path names that install;
+when no `clang` lies beside it there, or its version differs from
+clang-tidy's, no file gets a key and every file runs.
 
 Raw content is hashed, not preprocessed text, so a changed comment such as
 a NOLINT in a header counts as a change too.  A header change reaches every
 file that includes it.  Only a pass is recorded: a failing file runs again
-on every call.  A file the compiler cannot list the dependencies of always
+on every call.  A file clang cannot list the dependencies of always
 runs, and so does a file one of whose inputs cannot be read or whose
 compile command names a response file (@FILE) or a specs file, which the
 compiler reads without listing them.  clang-tidy
@@ -57,6 +63,8 @@ TIMES = "times.json"
 # A key record's suffix.
 PASS = ".pass"
 # The line clang prints after a file with filtered-out warnings.
+# The version number in an LLVM tool's --version text.
+VERSION = re.compile(r"version (\d+\.\d+\.\d+)")
 COUNT_LINE = re.compile(r"^\d+ warnings? (and \d+ errors? )?generated\.\s*$")
 
 
@@ -115,12 +123,49 @@ def config_files(root: Path) -> list[Path]:
     return sorted(found)
 
 
-def static_key(clang_tidy: str, compiler: str, root: Path) -> str:
+def llvm_version(text: str) -> str | None:
+    """Reads the version number out of an LLVM tool's --version text.
+
+    Args:
+        text: What the tool prints.
+
+    Returns:
+        The first "version X.Y.Z" number, or None.
+    """
+    found = VERSION.search(text)
+    return found.group(1) if found else None
+
+
+def find_clang(clang_tidy: str) -> tuple[str | None, str]:
+    """Finds the clang driver of the LLVM install clang-tidy belongs to.
+
+    Args:
+        clang_tidy: The clang-tidy command.
+
+    Returns:
+        The clang path, or None with the reason when there is none or its
+        version differs from clang-tidy's.
+    """
+    binary = shutil.which(clang_tidy)
+    if binary is None:
+        return None, f"{clang_tidy} not found"
+    clang = Path(os.path.realpath(binary)).parent / "clang"
+    if not os.access(clang, os.X_OK):
+        return None, f"no clang beside {os.path.realpath(binary)}"
+    want = llvm_version(tool_text([clang_tidy, "--version"]))
+    have = llvm_version(tool_text([str(clang), "--version"]))
+    if want is None or want != have:
+        return None, (f"{clang} is version {have}, clang-tidy is "
+                      f"version {want}")
+    return str(clang), ""
+
+
+def static_key(clang_tidy: str, clang: str, root: Path) -> str:
     """Hashes the inputs every file shares.
 
     Args:
         clang_tidy: The clang-tidy command.
-        compiler: The compiler of the compile commands.
+        clang: The clang driver that lists the inputs.
         root: The top of the tree.
 
     Returns:
@@ -131,7 +176,8 @@ def static_key(clang_tidy: str, compiler: str, root: Path) -> str:
     binary = shutil.which(clang_tidy)
     if binary:
         h.update(sha_file(Path(os.path.realpath(binary)), {}).encode())
-    h.update(tool_text([compiler, "--version"]).encode())
+    h.update(tool_text([clang, "--version"]).encode())
+    h.update(sha_file(Path(clang), {}).encode())
     for cfg in config_files(root):
         h.update(str(cfg.relative_to(root)).encode() + b"\0")
         h.update(cfg.read_bytes())
@@ -153,11 +199,13 @@ def command_args(entry: dict) -> list[str]:
     return shlex.split(entry["command"])
 
 
-def deps_args(args: list[str]) -> list[str]:
+def deps_args(args: list[str], clang: str | None = None) -> list[str]:
     """Turns a compile command into one that lists its inputs.
 
     Args:
         args: The compile command.
+        clang: The driver to run in place of the command's compiler; the
+            command's own when None.
 
     Returns:
         The command with -o and -c removed and -M added, writing the list
@@ -175,6 +223,8 @@ def deps_args(args: list[str]) -> list[str]:
         if arg == "-c" or arg.startswith("-o"):
             continue
         out.append(arg)
+    if clang is not None and out:
+        out[0] = clang
     return out + ["-M", "-MF", "/dev/stdout"]
 
 
@@ -234,11 +284,13 @@ def unlisted_input(arg: str) -> bool:
     return arg.startswith("@") or arg.startswith(("-specs", "--specs"))
 
 
-def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
-    """Hashes one compile command and the files it reads.
+def entry_hash(entry: dict, clang: str, root: Path,
+               memo: dict[str, str]) -> str | None:
+    """Hashes one compile command and the files clang reads for it.
 
     Args:
         entry: The compile command.
+        clang: The clang driver beside clang-tidy.
         root: The top of the tree.
         memo: Content hashes already taken.
 
@@ -250,8 +302,8 @@ def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
         return None
     cwd = entry["directory"]
     try:
-        done = subprocess.run(deps_args(args), cwd=cwd, capture_output=True,
-                              text=True, check=False)
+        done = subprocess.run(deps_args(args, clang), cwd=cwd,
+                              capture_output=True, text=True, check=False)
     except OSError:
         return None
     if done.returncode != 0:
@@ -274,13 +326,14 @@ def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
     return h.hexdigest()
 
 
-def file_key(entries: list[dict], base: str, root: Path,
+def file_key(entries: list[dict], base: str, clang: str, root: Path,
              memo: dict[str, str]) -> str | None:
     """Hashes one file's inputs over every distinct compile command.
 
     Args:
         entries: Its distinct compile commands.
         base: The shared key.
+        clang: The clang driver beside clang-tidy.
         root: The top of the tree.
         memo: Content hashes already taken.
 
@@ -288,7 +341,8 @@ def file_key(entries: list[dict], base: str, root: Path,
         The hex SHA-256, or None when an input list cannot be taken.
     """
     h = hashlib.sha256(base.encode())
-    for part in sorted(entry_hash(e, root, memo) or "" for e in entries):
+    for part in sorted(entry_hash(e, clang, root, memo) or ""
+                       for e in entries):
         if not part:
             return None
         h.update(part.encode())
@@ -436,15 +490,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"tidy_cache: {name}: no compile command", file=sys.stderr)
         return 2
     jobs = max(1, args.jobs)
-    compiler = command_args(commands[rels[0]][0])[0]
-    base = static_key(args.clang_tidy, compiler, root)
     args.cache.mkdir(parents=True, exist_ok=True)
-
-    memo: dict[str, str] = {}
-    with ThreadPoolExecutor(jobs) as pool:
-        keys = dict(zip(rels, pool.map(
-            lambda n: file_key(commands[n], base, root, memo), rels),
-            strict=True))
+    clang, why = find_clang(args.clang_tidy)
+    keys: dict[str, str | None] = dict.fromkeys(rels)
+    if clang is None:
+        print(f"tidy_cache: {why}; no file is recorded, every file runs",
+              flush=True)
+    else:
+        base = static_key(args.clang_tidy, clang, root)
+        memo: dict[str, str] = {}
+        with ThreadPoolExecutor(jobs) as pool:
+            keys = dict(zip(rels, pool.map(
+                lambda n: file_key(commands[n], base, clang, root, memo),
+                rels), strict=True))
 
     times = read_times(args.cache)
     todo = [n for n in rels

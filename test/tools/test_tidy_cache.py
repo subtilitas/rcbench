@@ -27,7 +27,7 @@ FAKE = r'''#!/usr/bin/env python3
 import json, os, re, sys
 args = sys.argv[1:]
 if args == ["--version"]:
-    print(os.environ.get("FAKE_TIDY_VERSION", "fake clang-tidy 1"))
+    print(os.environ.get("FAKE_TIDY_VERSION", "LLVM version 18.1.8"))
     sys.exit(0)
 db = args[args.index("-p") + 1]
 name = args[-1]
@@ -43,6 +43,19 @@ if "BAD" in text:
     print(f"{name}:1:1: error: BAD [fake-check]")
     sys.exit(1)
 print("3 warnings generated.", file=sys.stderr)
+'''
+
+# The clang driver beside the stand-in clang-tidy: it reports a version and
+# lists inputs as cc does, with __clang__ defined as clang defines it.
+FAKE_CLANG = r'''#!/usr/bin/env python3
+import os, sys
+if sys.argv[1:] == ["--version"]:
+    print(os.environ.get("FAKE_CLANG_VERSION", "clang version 18.1.8"))
+    sys.exit(0)
+if os.environ.get("FAKE_CLANG_RULE"):
+    print(os.environ["FAKE_CLANG_RULE"])
+    sys.exit(0)
+os.execvp("cc", ["cc", "-D__clang__=1", *sys.argv[1:]])
 '''
 
 
@@ -70,9 +83,14 @@ def make_tree(base, monkeypatch):
     (root / "src" / "a.c").write_text('#include "common.h"\nint a;\n')
     (root / "src" / "b.c").write_text('#include "common.h"\nint b;\n')
     (root / "src" / "c.c").write_text("int c;\n")
-    fake = base / "fake-tidy"
+    llvm = base / "llvm" / "bin"
+    llvm.mkdir(parents=True)
+    fake = llvm / "clang-tidy"
     fake.write_text(FAKE)
     fake.chmod(0o755)
+    clang = llvm / "clang"
+    clang.write_text(FAKE_CLANG)
+    clang.chmod(0o755)
     log = base / "calls.log"
     monkeypatch.setenv("FAKE_TIDY_LOG", str(log))
     write_db(root, ["a.c", "b.c", "c.c"])
@@ -231,7 +249,8 @@ def test_a_config_change_reruns_everything(tree):
 def test_a_new_clang_tidy_reruns_everything(tree, monkeypatch):
     """A different clang-tidy version runs every file."""
     run(tree)
-    monkeypatch.setenv("FAKE_TIDY_VERSION", "fake clang-tidy 2")
+    monkeypatch.setenv("FAKE_TIDY_VERSION", "LLVM version 18.1.9")
+    monkeypatch.setenv("FAKE_CLANG_VERSION", "clang version 18.1.9")
     _, _, calls = run(tree)
     assert len(calls) == 3
 
@@ -364,20 +383,13 @@ def test_a_tree_path_with_a_space_keeps_its_inputs(tmp_path, monkeypatch):
     assert sorted(calls) == ["src/a.c", "src/b.c", "src/c.c"]
 
 
-def test_an_unreadable_input_is_never_recorded(tree, tmp_path):
+def test_an_unreadable_input_is_never_recorded(tree, monkeypatch):
     """A listed input that cannot be read leaves the file unrecorded."""
-    root = tree[0]
-    lister = tmp_path / "lister-cc"
-    lister.write_text("#!/bin/sh\necho 'c.o: /nonexistent/gone.h'\n")
-    lister.chmod(0o755)
-    entries = json.loads((root / "build" / "compile_commands.json")
-                         .read_text())
-    entries[2]["arguments"][0] = str(lister)
-    (root / "build" / "compile_commands.json").write_text(
-        json.dumps(entries))
+    monkeypatch.setenv("FAKE_CLANG_RULE", "c.o: /nonexistent/gone.h")
     run(tree)
     _, _, calls = run(tree)
-    assert calls == ["src/c.c"]
+    assert len(calls) == 3
+    assert list(tree[3].glob("*.pass")) == []
 
 
 def test_extra_clang_tidy_arguments_are_refused(tree):
@@ -423,3 +435,79 @@ def test_unlisted_input_names_only_those_arguments():
     assert tc.unlisted_input("-specs=a")
     assert not tc.unlisted_input("-I/x")
     assert not tc.unlisted_input("-DA=@")
+
+
+def test_a_header_only_clang_reads_is_in_the_key(tree):
+    """A header included under __clang__ is listed by clang, not by cc.
+
+    Its change runs the file again.
+    """
+    root = tree[0]
+    (root / "src" / "only_clang.h").write_text("#define ONLY 1\n")
+    (root / "src" / "c.c").write_text(
+        '#ifdef __clang__\n#include "only_clang.h"\n#endif\nint c;\n')
+    assert run(tree)[0] == 0
+    assert run(tree)[2] == []
+    (root / "src" / "only_clang.h").write_text("#define ONLY BAD\n")
+    status, _, calls = run(tree)
+    assert status == 1
+    assert calls == ["src/c.c"]
+
+
+def test_no_clang_beside_clang_tidy_records_nothing(tree):
+    """Without a clang in clang-tidy's directory every file runs."""
+    fake = tree[1]
+    (fake.parent / "clang").unlink()
+    status, out, calls = run(tree)
+    assert status == 0
+    assert "no clang beside" in out
+    assert len(calls) == 3
+    assert run(tree)[2] != []
+    assert list(tree[3].glob("*.pass")) == []
+
+
+def test_a_clang_of_another_version_records_nothing(tree, monkeypatch):
+    """A clang whose version differs from clang-tidy's lists nothing."""
+    monkeypatch.setenv("FAKE_CLANG_VERSION", "clang version 17.0.6")
+    _, out, calls = run(tree)
+    assert "is version 17.0.6, clang-tidy is version 18.1.8" in out
+    assert len(calls) == 3
+    assert len(run(tree)[2]) == 3
+
+
+def test_clang_is_found_beside_the_real_clang_tidy(tree, tmp_path):
+    """A clang-tidy reached through a symbolic link names its own install."""
+    root, fake, log, cache = tree
+    link_dir = tmp_path / "usr-bin"
+    link_dir.mkdir()
+    link = link_dir / "clang-tidy"
+    link.symlink_to(fake)
+    clang, why = tc.find_clang(str(link))
+    assert clang == str(fake.parent / "clang")
+    assert why == ""
+    assert run((root, link, log, cache))[0] == 0
+    assert run((root, link, log, cache))[2] == []
+
+
+def test_a_missing_clang_tidy_has_no_clang():
+    """A clang-tidy that is not on the path has no install to name."""
+    clang, why = tc.find_clang("no-such-clang-tidy-0")
+    assert clang is None
+    assert "not found" in why
+
+
+@pytest.mark.parametrize("text, version", [
+    ("LLVM (http://llvm.org/):\n  LLVM version 18.1.3\n", "18.1.3"),
+    ("Ubuntu clang version 18.1.3 (1ubuntu1)\n", "18.1.3"),
+    ("clang version 22.1.8\n", "22.1.8"),
+    ("no number here\n", None),
+])
+def test_llvm_version_reads_the_number(text, version):
+    """The version number is read from either tool's --version text."""
+    assert tc.llvm_version(text) == version
+
+
+def test_deps_args_puts_clang_first():
+    """The listing runs the given clang in place of the compiler."""
+    assert tc.deps_args(["cc", "-DX", "-c", "a.c"], "/l/bin/clang") == [
+        "/l/bin/clang", "-DX", "a.c", "-M", "-MF", "/dev/stdout"]

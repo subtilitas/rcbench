@@ -216,7 +216,7 @@ jobs:
                       /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build clang-tidy
+            cmake ninja-build clang-tidy clang
           python3 -m pip install --quiet ruff==0.16.5
 
       # clang-tidy needs to know how each file is compiled, and CMake can say.
@@ -226,8 +226,10 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       # A recorded pass per file, keyed by the content of every file the
-      # compiler reads for it, the compile command, every .clang-tidy and
-      # the clang-tidy binary; tools/tidy_cache.py lists the key.  A run
+      # clang beside clang-tidy (same LLVM install and version) reads for
+      # it, the compile command, every .clang-tidy and both binaries;
+      # tools/tidy_cache.py lists the key.  Without that clang every file
+      # runs and nothing is recorded.  A run
       # restores the newest record its branch can see (its own, its base's,
       # main's) and saves its own, also when a file fails.
       - name: Restore the clang-tidy results
