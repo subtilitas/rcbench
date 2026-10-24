@@ -275,6 +275,9 @@ SCREENS = {
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # PANEL: the language, the theme and the knob.
     "setup-application": ("setup-application.png", "setup", "dark"),
+    # PANEL with Screen rotation stored at 180 and the bench ARMED: the
+    # row without keys.
+    "setup-rotation": ("setup-rotation.png", "setup", "dark"),
     # SD CARD: AUTO LOGS and USER LOGS, AUTO LOG FOLDER and USER LOG
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),

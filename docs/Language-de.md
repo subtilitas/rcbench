@@ -187,9 +187,9 @@ bis zum TXT-Bericht auf der Karte. `gfx` dekodiert ihn, und ein Codepoint ist
 eine Zelle:
 
 - Die fünf Text-Fonts enthalten druckbares ASCII (American Standard Code
-  for Information Interchange, 0x20 bis 0x7E) und die sieben deutschen
-  Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6,
-  U+00FC), je 102 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
+  for Information Interchange, 0x20 bis 0x7E), das Gradzeichen ° (U+00B0)
+  und die sieben deutschen Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC,
+  U+00DF, U+00E4, U+00F6, U+00FC), je 103 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
 - Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23 px und
   zeichnen jedes Glyph innerhalb der Zelle; sonst schlägt
@@ -258,8 +258,8 @@ unter einer Bedingung fehl.
 | `shared/servo/servo_str.c` | das Englisch des Servotests, das auch die CSV nutzt |
 | `shared/webaccess/wa_page.c` | Englisch und Deutsch der WLAN-Seite |
 
-Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E) und die 7
-deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
+Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E), das
+Gradzeichen ° und die 7 deutschen Buchstaben Ä Ö Ü ä ö ü ß. Jeder andere Codepoint erscheint als
 `?`, ebenso ein Byte, das keine gültige UTF-8-Folge beginnt.
 `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
 Tabelle, den das Panel zeichnet, in jeder Sprache an diese Menge und an
@@ -309,7 +309,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 294 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 295 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -360,8 +360,8 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.093
-Einträge mit ID und 64 Optionen, 10 davon mit leerem Englisch.
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.096
+Einträge mit ID und 66 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
    ergänzen und den Parameter in jedem Makro, das eine Spalte liest: 7

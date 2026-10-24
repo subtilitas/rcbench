@@ -6,7 +6,10 @@
 
 #include "greatest.h"
 
+#include <string.h>
+
 #include "touch_map.h"
+#include "touch_merge.h"
 
 static touch_map_t map_for(touch_rotation_t rot, bool mx, bool my)
 {
@@ -154,6 +157,156 @@ TEST_CASE(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners)
     touch_map_size(&m, &w, &h);
     CHECK_EQ(w, 1024);
     CHECK_EQ(h, 600);
+}
+
+/* ------------------------------------------------- Screen rotation 180 */
+
+/* The 7-inch board's glass map (touch.c, board_pins.h): 1024 x 600,
+ * mirrored in x and y. */
+static const touch_map_t k_board_glass = {
+    .src_w = 1024, .src_h = 600, .mirror_x = true, .mirror_y = true,
+    .rotation = TOUCH_ROTATION_0,
+};
+
+/* The touch injector's map (touch_inject.c): logical pixels of the UI's
+ * 1024 x 600, unmirrored. */
+static const touch_map_t k_board_inject = {
+    .src_w = 1024, .src_h = 600, .mirror_x = false, .mirror_y = false,
+    .rotation = TOUCH_ROTATION_0,
+};
+
+TEST_CASE(the_turned_glass_lands_on_the_mirrored_corner_centre_and_band)
+{
+    /* Raw glass -> logical pixel, normal and turned: the turn is
+     * x' = 1023 - x, y' = 599 - y of the normal pixel. */
+    static const int k[][6] = {
+        /* raw x, raw y, normal x, normal y, turned x, turned y */
+        { 1023, 599,    0,   0, 1023, 599 },   /* top-left corner      */
+        {    0, 599, 1023,   0,    0, 599 },   /* top-right            */
+        { 1023,   0,    0, 599, 1023,   0 },   /* bottom-left          */
+        {    0,   0, 1023, 599,    0,   0 },   /* bottom-right         */
+        {  511, 299,  512, 300,  511, 299 },   /* centre               */
+        {  123, 569,  900,  30,  123, 569 },   /* in the 60px band     */
+        {  900,  30,  123, 569,  900,  30 },   /* turned into the band */
+        { 1023, 540,    0,  59, 1023, 540 },   /* the band's last row  */
+    };
+    const touch_map_t turned = touch_map_turned(&k_board_glass, true);
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        expect(&k_board_glass, k[i][0], k[i][1], k[i][2], k[i][3]);
+        expect(&turned, k[i][0], k[i][1], k[i][4], k[i][5]);
+    }
+    /* The band, the top 60px, is the bottom 60px of the glass turned. */
+    int16_t x = 0, y = 0;
+    touch_map_apply(&turned, 500, 0, &x, &y);
+    CHECK(y < 60);
+    touch_map_apply(&turned, 500, 599, &x, &y);
+    CHECK(y >= 540);
+    int16_t w = 0, h = 0;
+    touch_map_size(&turned, &w, &h);
+    CHECK_EQ(w, 1024);
+    CHECK_EQ(h, 600);
+}
+
+TEST_CASE(a_turn_reverses_both_axes_of_the_mapped_area_for_every_map)
+{
+    for (int r = 0; r < 4; ++r) {
+        for (int mir = 0; mir < 4; ++mir) {
+            const touch_map_t m = map_for((touch_rotation_t)r, (mir & 1) != 0,
+                                          (mir & 2) != 0);
+            const touch_map_t t = touch_map_turned(&m, true);
+            int16_t w = 0, h = 0;
+            touch_map_size(&m, &w, &h);
+            for (int x = 0; x < 800; x += 37) {
+                for (int y = 0; y < 480; y += 29) {
+                    int16_t nx = 0, ny = 0, tx = 0, ty = 0;
+                    touch_map_apply(&m, (int16_t)x, (int16_t)y, &nx, &ny);
+                    touch_map_apply(&t, (int16_t)x, (int16_t)y, &tx, &ty);
+                    if (tx != w - 1 - nx || ty != h - 1 - ny) {
+                        T_FAIL("rotation %d mirrors %d: (%d,%d) turned to "
+                               "(%d,%d), want (%d,%d)", r * 90, mir, x, y,
+                               tx, ty, w - 1 - nx, h - 1 - ny);
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE(no_turn_keeps_the_map_and_two_turns_are_none)
+{
+    const touch_map_t same = touch_map_turned(&k_board_glass, false);
+    CHECK(memcmp(&same, &k_board_glass, sizeof(same)) == 0);
+    const touch_map_t once = touch_map_turned(&k_board_glass, true);
+    CHECK_EQ(once.rotation, TOUCH_ROTATION_180);
+    CHECK_EQ(once.src_w, 1024);
+    CHECK_EQ(once.src_h, 600);
+    CHECK(once.mirror_x && once.mirror_y);
+    const touch_map_t twice = touch_map_turned(&once, true);
+    CHECK(memcmp(&twice, &k_board_glass, sizeof(twice)) == 0);
+    const touch_map_t none = touch_map_turned(NULL, true);
+    CHECK_EQ(none.src_w, 0);
+    CHECK_EQ(none.src_h, 0);
+}
+
+/* The touch task's order (touch.c): the glass mapped with its map, turned
+ * or not, the injector with its own, merged, cropped to 1024 x 600. */
+static int board_frame(bool turned, const touch_point_t *glass, int ng,
+                       const touch_point_t *inj, int ni, touch_point_t *out)
+{
+    touch_point_t g[TOUCH_MAX_POINTS];
+    touch_point_t i[TOUCH_MAX_POINTS];
+    if (ng > 0) {
+        memcpy(g, glass, sizeof(g[0]) * (size_t)ng);
+    }
+    if (ni > 0) {
+        memcpy(i, inj, sizeof(i[0]) * (size_t)ni);
+    }
+    const touch_map_t gm = touch_map_turned(&k_board_glass, turned);
+    touch_map_points(&gm, g, ng);
+    touch_map_points(&k_board_inject, i, ni);
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    touch_merge_glass(&m, g, ng);
+    (void)touch_merge_inject(&m, i, ni, true, 0);
+    const int n = touch_merge_frame(&m, out, TOUCH_MAX_POINTS);
+    return touch_map_crop(out, n, 1024, 600);
+}
+
+TEST_CASE(injected_contacts_keep_their_logical_pixels_in_both_orientations)
+{
+    /* The four corners, the centre, STOP's corner of the band and a point
+     * in the band's middle: what station scripts and the injector's README
+     * name. */
+    static const int k[][2] = {
+        { 0, 0 }, { 1023, 0 }, { 0, 599 }, { 1023, 599 }, { 512, 300 },
+        { 980, 30 }, { 512, 59 },
+    };
+    for (int turned = 0; turned < 2; ++turned) {
+        for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
+            const touch_point_t inj = { .id = 2, .x = (int16_t)k[c][0],
+                                        .y = (int16_t)k[c][1] };
+            /* A finger on the glass at the same raw spot beside it. */
+            const touch_point_t glass = { .id = 4, .x = (int16_t)k[c][0],
+                                          .y = (int16_t)k[c][1] };
+            touch_point_t out[TOUCH_MAX_POINTS];
+            const int n = board_frame(turned != 0, &glass, 1, &inj, 1, out);
+            CHECK_EQ(n, 2);
+            bool seen_inj = false, seen_glass = false;
+            for (int p = 0; p < n; ++p) {
+                if (out[p].id == 4) {
+                    /* The glass: mirrored, and turned back when turned. */
+                    seen_glass = true;
+                    CHECK_EQ(out[p].x, turned ? k[c][0] : 1023 - k[c][0]);
+                    CHECK_EQ(out[p].y, turned ? k[c][1] : 599 - k[c][1]);
+                } else {
+                    seen_inj = true;
+                    CHECK_EQ(out[p].x, k[c][0]);
+                    CHECK_EQ(out[p].y, k[c][1]);
+                }
+            }
+            CHECK(seen_inj && seen_glass);
+        }
+    }
 }
 
 TEST_CASE(a_crop_keeps_the_points_inside_and_their_order)
@@ -433,6 +586,10 @@ int main(void)
     RUN(out_of_range_input_is_clamped);
     RUN(map_point_updates_in_place);
     RUN(a_1024_by_600_glass_mirrored_lands_on_the_panels_corners);
+    RUN(the_turned_glass_lands_on_the_mirrored_corner_centre_and_band);
+    RUN(a_turn_reverses_both_axes_of_the_mapped_area_for_every_map);
+    RUN(no_turn_keeps_the_map_and_two_turns_are_none);
+    RUN(injected_contacts_keep_their_logical_pixels_in_both_orientations);
     RUN(a_crop_keeps_the_points_inside_and_their_order);
     RUN(a_crop_of_nothing_or_into_nothing_keeps_nothing);
     RUN(a_drag_out_of_the_crop_is_a_release_and_back_in_a_press);

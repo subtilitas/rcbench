@@ -79,6 +79,11 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_CONTRAST] = {
         "contrast", "%",
         SET_CAT_APP, SET_TYPE_INT, 60, 140, 5, 100, NULL, 0 },
+    /* The panel's scan and the glass's map turned by 180 degrees: 0
+     * NORMAL, 1 turned (display.h, touch.h). */
+    [SET_SCREEN_ROT] = {
+        "screen_rot", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(screen_rot) },
     [SET_LANGUAGE] = {
         "language", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(language) },
@@ -459,6 +464,7 @@ static struct {
     settings_observer_fn observer;
     settings_text_observer_fn text_observer;
     settings_hold_fn hold;
+    settings_armed_fn armed;   /**< says whether the bench is ARMED */
 } s;
 
 /*
@@ -544,9 +550,27 @@ void settings_set_hold(settings_hold_fn fn)
     s.hold = fn;
 }
 
+/** @brief Install the ARMED source (settings.h). */
+void settings_set_armed(settings_armed_fn fn)
+{
+    s.armed = fn;
+}
+
+/** @brief Whether @p id changes on a SAFE bench only (settings.h). */
+bool settings_safe_only(setting_id_t id)
+{
+    return id == SET_SCREEN_ROT;
+}
+
 bool settings_held(setting_id_t id)
 {
-    return id >= 0 && id < SETTING_COUNT && s.hold != NULL && s.hold(id);
+    if (id < 0 || id >= SETTING_COUNT) {
+        return false;
+    }
+    if (settings_safe_only(id) && s.armed != NULL && s.armed()) {
+        return true;
+    }
+    return s.hold != NULL && s.hold(id);
 }
 
 const char *settings_category_name(setting_cat_t cat)
