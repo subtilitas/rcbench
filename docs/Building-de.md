@@ -159,8 +159,8 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
   wird nicht gelesen.
 - Nichts von der Platine liegt an diesem Bus. Das Panel lehnt eine Adresse
   aus der Tabelle in `shared/bench/include/panel_i2c.h` ab: 0x00 bis 0x03
-  und 0x78 bis 0x7F, die die I2C-Spezifikation reserviert, und die Adressen
-  von CH422G und GT911 des ESP32-S3-Panels. 0x06 liegt außerhalb. Es ist
+  und 0x78 bis 0x7F, die die I2C-Spezifikation reserviert, sowie 0x14 und
+  0x5D, die beiden Adressen des Touch-Controllers GT911 am Touch-Bus. 0x06 liegt außerhalb. Es ist
   einer der Hs-Mode-Mastercodes (Hs: High-Speed) der Spezifikation, 0x04
   bis 0x07, die kein Gerät an diesem Bus benutzt.
 - Bustakt: 400kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
@@ -185,6 +185,23 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 
 Der Knopf ist aus, bis SETUP, PANEL, `Drehknopf` eingeschaltet wird.
 [Bildschirme](Screens-de.md#panel-der-drehknopf) beschreibt, was er tut.
+
+## Der Header des Touch-Busses
+
+Der Touch-Bus ist `I2C_NUM_0` mit `BOARD_I2C_PIN_SDA` GPIO7 und
+`BOARD_I2C_PIN_SCL` GPIO8 bei `BOARD_I2C_FREQ_HZ` 400.000Hz
+(`firmware/panel/components/board/include/board_pins.h`). Auf dem
+7-Zoll-Display-Board mit ESP32-P4 (Schaltplan vom 2025-09-25) erreicht er den
+Touch-Controller GT911 (0x5D), den Audio-Codec ES8311, den Audio-ADC ES7210,
+den Kameraanschluss und einen 4-poligen I2C-Header. Der Header führt SDA
+(GPIO7) und SCL (GPIO8) dieses Busses. Die Reihenfolge seiner vier Pins und
+was seine anderen beiden Pins führen, ist aus dem Schaltplan in diesem
+Repository nicht bekannt und nicht gemessen: SDA und SCL vor dem ersten
+Anschluss mit einem Multimeter an der vorliegenden Platine finden. Ob der Bus
+auf der Platine Pull-ups hat, ist nicht gemessen. Der Touch-Injector
+(`testbench/touch-injector/README.md`) und die Analyser-Leitungen aus
+`testbench/WIRING.md` schließen hier an. Der Knopf liegt nicht an diesem Header: Er hat einen eigenen Bus
+([Verdrahtung des Drehknopfs](#verdrahtung-des-drehknopfs)).
 
 ## Die Uhr des Panels
 
@@ -623,12 +640,13 @@ Stable-Release. 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel,
 und spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von
 Waveshare. Die Suche des Panels liest mit RELEASES auf STABLE unter SETUP >
 UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 10
-neuesten Releases; STABLE liest diese 10 auch, wenn das Latest-Release
-hinter der Linie liegt und neuer als der laufende Build ist. In beiden Stellungen bietet es nur ein Patch-Release
-0.22.x an, das neuer ist als die Version, die es hat
+neuesten Releases; Die Linie des ESP32-P4-Panels ist ohne Obergrenze: In beiden Stellungen
+bietet es jedes Release an, das neuer ist als die Version, die es hat. Die
+Grenze 0.22.x mit dem zweiten Lesen, das STABLE dafür macht, gehört nur zur
+Linie des ESP32-S3-Panels
 ([Bildschirme: Die Release-Linie](Screens-de.md#die-release-linie)). Ein
 Release lässt sich auch von Hand laden: seine
-`rcbench-panel-vX.Y.Z.bin` über die Browser-Seite des Panels, oder seine
+`rcbench-panel-p4-vX.Y.Z.bin` über die Browser-Seite des Panels, oder seine
 Archive über USB (Universal Serial Bus), wie in
 [Erster Lauf, §1](FirstRun-de.md#1-beide-platinen-flashen). Das
 `rcbench-iomcu-vX.Y.Z.zip` des Releases und das Image, das das Panel
