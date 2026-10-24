@@ -5,17 +5,35 @@ It emulates a GT911 touch controller at I2C (Inter-Integrated Circuit)
 address 0x14 and presses where a USB (Universal Serial Bus) serial command
 tells it to. A panel image polls 0x14
 beside the glass's controller and merges both when 0x14 answers at
-start-up; `RCBENCH_TOUCH_INJECTOR` defaults to ON, and a panel built with
+start-up with the injector's product ID; `RCBENCH_TOUCH_INJECTOR` defaults to ON, and a panel built with
 `-D RCBENCH_TOUCH_INJECTOR=OFF` never reads 0x14 as an injector. A panel
 that finds nothing at 0x14 at start-up does not look again until its next
 start.
 
+The panel tells the injector from the glass by its product ID, not by its
+address. The injector reports `9INJ` at registers 0x8140 to 0x8143
+(`GT911_EMU_PRODUCT_ID`). A Goodix controller reports its part number
+there, digits with at most one trailing letter: `911` and a NUL on the
+GT911 this board's glass carries, `9271`, `917S`. `9INJ` has letters from
+its second byte on, so no glass reports it.
+
 The glass's GT911 takes 0x5D or 0x14 at the end of its reset, from the
 level on its INT line; on the 7-inch ESP32-P4 board no GPIO drives that
 line, and which address it takes is not measured. A panel built with the
-injector accepts the glass at 0x5D only: a controller that answers only at
-0x14 is taken as the injector, and the console says
-`0x14 refused as the glass`.
+injector reads what it finds as follows (`touch_merge_role()`):
+
+| 0x5D | 0x14 | Touch is | Console |
+| --- | --- | --- | --- |
+| glass | `9INJ` | the glass and the injector, merged; `INJECT` on the band | `touch injector attached at 0x14` |
+| glass | another GT911 | the glass alone; 0x14 is not read | `0x14 answers as a GT911 with product ID "...", not the touch injector's 9INJ: not read` |
+| glass | nothing | the glass alone | `no injector at 0x14` |
+| nothing | `9INJ` | the injector alone, unmirrored and never turned; `INJECT` on the band | `0x14 reports product ID 9INJ: touch is the touch injector alone, unmirrored and never turned` |
+| nothing | another GT911 | the glass at 0x14, with its mirrors, rotation and the 180° turn; no injector | `0x14 reports product ID "911", not the touch injector's 9INJ: read as the glass` |
+
+When both answer, 0x5D is the glass, whatever it reports. An injector
+image without `9INJ`, one whose `ping` reply has no `id=`, reports `911`:
+beside the glass it is not read, and alone it is read as the glass,
+mirrored in both axes. Flash the current image.
 
 It is a test-bench tool. No release carries its UF2 (USB Flashing Format)
 image.
@@ -99,7 +117,7 @@ A panel that found the injector at start-up detaches it after 1000ms
 without an answer from 0x14. Its injected
 contacts are released, `INJECT` leaves the mode chip, and the glass alone
 decides whether touch is alive. The panel then reads the product ID at 0x14
-once every 1000ms; the first answer re-attaches the injector with no
+once every 1000ms; the first `9INJ` re-attaches the injector with no
 contacts down. An injector reset therefore needs no panel restart, provided the panel found
 the injector at start-up: after
 `wiring` and `confirm` the panel re-attaches it within about 1s.
@@ -114,7 +132,7 @@ one reply line; a gesture gets a second when it ends.
 
 | Command | Reply |
 | --- | --- |
-| `ping` | `pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen` (or `active`) |
+| `ping` | `pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen id=9INJ` (or `active`); `id=` is the product ID the panel identifies the injector by, and an image that predates it sends no `id=` |
 | `wiring` | `ok wiring`, then the verdict about 500ms later |
 | `confirm scl=GP5` | `ok confirm`; the target answers from then on |
 | `status` | `status <state> reads= acks= last_read_ms= down= x= y=`; state, down, x and y are contact 0's |
