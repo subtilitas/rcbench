@@ -51,11 +51,14 @@ def test_a_format_string_of_the_interface_is_held_and_a_log_line_is_not():
     src = ('snprintf(b, n, "%u ms", t);\n'
            'snprintf(b, n, "%u.%02u V", a, b);\n'
            'snprintf(b, n, "%d %%", p);\n'
-           'snprintf(b, n, "%6s %-6s %+d %.*f", a, b, c, d, e);\n')
+           'snprintf(b, n, "%6s %-6s %+d %.*f", a, b, c, d, e);\n'
+           'snprintf(b, n, "ENTRY %u.%u s%s", a, b, m);\n'
+           'snprintf(b, n, "%u s%d", a, b);\n')
     assert gaps("shared/ui/x.c", src) == [
         'snprintf(b, n, "%u|ms", t);',
         'snprintf(b, n, "%u.%02u|V", a, b);',
         'snprintf(b, n, "%d|%%", p);',
+        'snprintf(b, n, "ENTRY %u.%u|s%s", a, b, m);',
     ]
     assert gaps("firmware/panel/main/x.c", src) == []
 
@@ -108,3 +111,57 @@ def test_an_allowlist_entry_needs_a_reason():
                               "the console prints it"]
     assert cu.allows(entries[0][1], "took 5 ms")
     assert not cu.allows(entries[0][1], "took 5ms")
+
+
+PROFILE = "shared/esc/profiles/x.json"
+
+
+def test_an_esc_profiles_texts_the_panel_carries_are_held():
+    """The value names, the entry steps and the manual steps are held."""
+    text = ('{\n  "family": "Avian 160 A",\n'
+            '  "scheme": {"entry": {"steps": ["Wait 2 s"],\n'
+            '    "description": "beeps after 5 s"}},\n'
+            '  "items": [{"name": "Cutoff", "note": "3.0 V a cell",\n'
+            '    "values": [{"name": "1.2-1.8 ms", "number": 1}]}],\n'
+            '  "manual": [{"action": "after 2 s", "action_de": "Nach 2 s",\n'
+            '    "source": "p.5 at 2 s"}],\n'
+            '  "unknowns": ["the 7 s hold"]\n}\n')
+    assert [line.strip() for line in gaps(PROFILE, text)] == [
+        '"family": "Avian 160|A",',
+        '"scheme": {"entry": {"steps": ["Wait 2|s"],',
+        '"values": [{"name": "1.2-1.8|ms", "number": 1}]}],',
+        '"manual": [{"action": "after 2|s", "action_de": "Nach 2 s",',
+        '"manual": [{"action": "after 2 s", "action_de": "Nach 2|s",',
+    ]
+
+
+def test_a_key_a_word_and_a_json_file_elsewhere_are_not_held():
+    """A key is no text, a word is no unit, other JSON is data."""
+    text = '{"5 ms": {"name": "x"}, "items": [{"name": "3 beeps"}]}\n'
+    assert gaps(PROFILE, text) == []
+    assert gaps("configurator/x.json", '{"family": "2 s"}\n') == []
+
+
+def test_a_broken_profile_still_holds_what_it_reads():
+    """An unclosed string ends at the line's end; an escape is left out."""
+    assert gaps(PROFILE, '{"family": "2 s\n') == ['{"family": "2|s']
+    assert gaps(PROFILE, '{"family": "a\\"2 s"}\n') == [
+        '{"family": "a\\"2|s"}']
+
+
+def test_every_text_the_generator_compiles_is_held():
+    """The strings gen_esc_profiles.py puts into the C are the ones held."""
+    import gen_esc_profiles as gen
+
+    for path in sorted(gen.SRC.glob("*.json")):
+        text = path.read_text(encoding="utf-8")
+        held = {text[a:b] for where, a, b in cu.json_strings(text)
+                if where in cu.PROFILE_TEXTS}
+        p = gen.check(path)
+        compiled = [p["brand"], p["family"], p["note"], *p["steps"],
+                    *(m["name"] for m in p["models"]),
+                    *(m[k] for m in p["manual"] for k in ("action", "de")),
+                    *(it[k] for it in p["items"] for k in ("name", "when")),
+                    *(v["name"] for it in p["items"] for v in it["values"])]
+        for s in compiled:
+            assert s == "" or s in held, (path.name, s)

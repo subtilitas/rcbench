@@ -71,12 +71,12 @@
         "Plug the receiver lead into the motor channel. Transmitter on. Throttle and trim to brake if the short-circuit brake is wanted, else to motor-off.",
         "Power the receiver (opto types need a receiver battery).",
         "Operator: fit the short-circuit bridge on the two gold contacts (between the black and blue battery cables). A pushbutton held down while powering works in place of the bridge.",
-        "Apply drive power. After about 5 s the ESC signals that it has detected the brake / motor-off position.",
-        "Move the throttle to full and keep it there until the ESC signals the full position, about 5 s after the last signal.",
+        "Apply drive power. After about 5s the ESC signals that it has detected the brake / motor-off position.",
+        "Move the throttle to full and keep it there until the ESC signals the full position, about 5s after the last signal.",
         "Brake wanted: move the throttle to motor-off. Brake not wanted: leave it at full.",
         "After about 5 more s a double signal confirms storing.",
-        "Start button function (optional): press the start button again within about 5 s; another double signal confirms.",
-        "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1 s shows readiness once the throttle is at motor-off or brake."
+        "Start button function (optional): press the start button again within about 5s; another double signal confirms.",
+        "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1s shows readiness once the throttle is at motor-off or brake."
       ]
     },
     "announce": {

@@ -57,12 +57,12 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "The button on the ESC must be pressed after the 2 s wait. The bench has no actuator for it.",
+  "automatable_note": "The button on the ESC must be pressed after the 2s wait. The bench has no actuator for it.",
   "manual": [
     {
       "when": "before_menu",
-      "action": "Press the button marked Taster on the label after 2 s or the tone sequence.",
-      "action_de": "Taster mit der Aufschrift Taster nach 2 s oder der Tonfolge drücken.",
+      "action": "Press the button marked Taster on the label after 2s or the tone sequence.",
+      "action_de": "Taster mit der Aufschrift Taster nach 2s oder der Tonfolge drücken.",
       "starts_menu": true,
       "source": "Kontronik_Pix1000_3000.pdf p.4 (DE), p.10 (EN); Kontronik_Pix4000.pdf p.4"
     },
@@ -83,7 +83,7 @@
       "steps": [
         "Connect the motor if tones are to be audible. Transmitter on, throttle to the brake position (stick back).",
         "Apply drive power.",
-        "Wait 2 s or until the ESC sounds an ascending tone sequence.",
+        "Wait 2s or until the ESC sounds an ascending tone sequence.",
         "Operator: press and release the button marked 'Taster' on the ESC label.",
         "The ESC sounds a descending tone sequence, then the mode series with pauses between series (mode 7 after 7 tones, mode 9 after 9 tones).",
         "Move the throttle to full (stick forward) when the wanted mode sounds. The ESC confirms with a descending tone sequence.",
@@ -144,7 +144,7 @@
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage detection: switches between 0.7 to 0.8 V per NiCd/NiMH cell and 2.7 to 3 V per LiPo cell"
+          "name": "LiPo undervoltage detection: switches between 0.7 to 0.8V per NiCd/NiMH cell and 2.7 to 3V per LiPo cell"
         }
       ],
       "applies_to": null,

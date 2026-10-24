@@ -122,12 +122,12 @@
       "values": [
         {
           "number": 1,
-          "name": "LiPo with automatic cutoff (stick full throttle), default; motor off at 3.0 V per cell",
+          "name": "LiPo with automatic cutoff (stick full throttle), default; motor off at 3.0V per cell",
           "default": true
         },
         {
           "number": 2,
-          "name": "NiXX (stick motor OFF); motor off at 6.0 V"
+          "name": "NiXX (stick motor OFF); motor off at 6.0V"
         }
       ],
       "applies_to": null,
@@ -249,11 +249,11 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz (stick full throttle)"
+          "name": "8kHz (stick full throttle)"
         },
         {
           "number": 2,
-          "name": "16 kHz (stick motor OFF), default",
+          "name": "16kHz (stick motor OFF), default",
           "default": true
         }
       ],

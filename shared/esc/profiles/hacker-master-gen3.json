@@ -373,7 +373,7 @@
     }
   ],
   "automatable": "full",
-  "automatable_note": "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0 V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
+  "automatable_note": "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
   "scheme": {
     "type": "melody_groups",
     "entry": {
@@ -383,9 +383,9 @@
       "confirm_signal": "Four-tone melody about 5 s after power-up. The motor does not start although the throttle is at full.",
       "steps": [
         "Throttle signal at full power, then connect the drive battery (switch the BEC on where fitted).",
-        "Wait about 5 s for the four-tone melody (programming mode entered).",
+        "Wait about 5s for the four-tone melody (programming mode entered).",
         "Mode toggle (item 1): move throttle to stop immediately after the melody.",
-        "Timing (item 2): keep full throttle, wait about 5 s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
+        "Timing (item 2): keep full throttle, wait about 5s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
         "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the wanted pattern."
       ]
     },
@@ -467,16 +467,16 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz (long tones)",
+          "name": "8kHz (long tones)",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz (alternating long and short)"
+          "name": "16kHz (alternating long and short)"
         },
         {
           "number": 3,
-          "name": "32 kHz (short tones)"
+          "name": "32kHz (short tones)"
         }
       ],
       "applies_to": [
@@ -504,15 +504,15 @@
       "values": [
         {
           "number": 1,
-          "name": "NiCd/NiMH: 33 % of pack voltage at connection, minimum 4 V (long tones)"
+          "name": "NiCd/NiMH: 33% of pack voltage at connection, minimum 4V (long tones)"
         },
         {
           "number": 2,
-          "name": "about 6.0 V, 2 LiPo cells (alternating long and short)"
+          "name": "about 6.0V, 2 LiPo cells (alternating long and short)"
         },
         {
           "number": 3,
-          "name": "about 9.0 V, 3 LiPo cells (short tones)"
+          "name": "about 9.0V, 3 LiPo cells (short tones)"
         }
       ],
       "applies_to": [
@@ -570,15 +570,15 @@
       "values": [
         {
           "number": 1,
-          "name": "about 20 A"
+          "name": "about 20A"
         },
         {
           "number": 2,
-          "name": "about 40 A"
+          "name": "about 40A"
         },
         {
           "number": 3,
-          "name": "about 60 A"
+          "name": "about 60A"
         },
         {
           "number": 4,

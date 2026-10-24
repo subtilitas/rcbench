@@ -125,7 +125,7 @@ GPIO31 (SCL), die Pins IO30 und IO31 des 12-poligen Headers P3 (3V3, GND, IO2
 bis IO5, IO28 bis IO31, IO34, IO36). Der Sensor nimmt 3,3V und GND vom
 selben Header. Das Panel schaltet die internen Pull-ups des ESP32-P4 ein; ob
 sie allein 400kHz auf den Leitungen des Knopfs halten, ist nicht gemessen,
-ein Sensor ohne eigene Pull-ups bekommt daher welche von 4,7kOhm nach 3,3V,
+ein Sensor ohne eigene Pull-ups bekommt daher welche von 4,7kΩ nach 3,3V,
 wie die I2C-Schaltung des Datenblatts.
 
 Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
@@ -139,7 +139,7 @@ SOP-8-Gehäuse, aus dem
 | MT6701-Pin | Anschluss an |
 | --- | --- |
 | 1 VDD | 3,3V vom Header. Die Versorgung des Datenblatts ist 3,3 bis 5,0V |
-| 2 MODE | VDD. Ein interner Pull-up von 200kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
+| 2 MODE | VDD. Ein interner Pull-up von 200kΩ hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
 | 3 OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
 | 4 GND | GND |
 | 5 PUSH | nicht angeschlossen |
@@ -149,7 +149,7 @@ SOP-8-Gehäuse, aus dem
 
 Ein Breakout führt weniger Pins heraus. Dort prüfen, dass MODE an VDD liegt
 (ein Pin, eine Brücke oder ein Pull-up) und dass sein Versorgungspin 3,3V
-nimmt. Die I2C-Schaltung des Datenblatts hat Pull-ups von 4,7kOhm an SDA und
+nimmt. Die I2C-Schaltung des Datenblatts hat Pull-ups von 4,7kΩ an SDA und
 SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 3,3V.
 
@@ -201,7 +201,7 @@ selbst:
 
 | Teil | Was es ist | Nutzung im Panel |
 | --- | --- | --- |
-| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MOhm parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | nicht genutzt: Der RTC-Timer läuft vom internen RC-Oszillator (Vorgabe von ESP-IDF, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | nicht genutzt: Der RTC-Timer läuft vom internen RC-Oszillator (Vorgabe von ESP-IDF, `CONFIG_RTC_CLK_SRC_INT_RC`) |
 | BAT1 | Knopfzellenhalter CR1220, "RTC BAT", an VDD_BAT des ESP32-P4 (Pin 102); 3V3 lädt ihn über D1 (B5819WS) ohne Vorwiderstand; C41 1uF | nicht genutzt. Waveshare: nur wiederaufladbare Zellen mit 3 bis 3.3V. Ob eine Platine mit Zelle kommt, ist nicht bekannt |
 
 Der ESP32-P4 kann seinen RTC-Timer an VDD_BAT weiterlaufen lassen, aber nur
@@ -320,7 +320,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, [Performance](Performance-de.md) hat keine Tabelle der Obergrenzen, solange `ci.yml` kein `--max-lines`-Argument hat, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt die Links einer Kopie von `docs/` für das Wiki um, das Seiten über ihren Titel adressiert: `Page.md` wird zu `Page`, ein Ziel oberhalb von `docs/` zu einer Repository-URL (`blob`, `tree`, `raw` für ein Bild); vergleicht jede Seite über markdown-it-py 3.0.0 mit ihrer Umschreibung und endet bei jeder anderen Abweichung mit 1, mit Seite und Zeile; `--check` ändert nichts; `--verify` schlägt bei einer umgeschriebenen Seite fehl, deren Links ein Wiki nicht öffnen kann |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
-| `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
+| `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien außer den Panel-Texten der ESC-Profile und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | bringen die Wörter der Oberfläche aus der Form in mehreren Dateien (Englisch in `ui_text.def` und im Schema, Deutsch in `ui_text_de.c`) in die eine Tabelle, `shared/text/include/ui_text.def`; `merge BASE THEIRS` übernimmt beim Merge die Textänderungen eines Branches, der noch die alte Form hat, in die Tabelle ([Sprache der Oberfläche](Language-de.md#einen-text-hinzufügen)) |
 | `tools/gen_font.py` | erzeugt die sieben eingebetteten Fonts aus DejaVu Sans Mono neu, die fünf Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
@@ -448,7 +448,7 @@ wartet darauf höchstens 1 000ms, nachdem dieser Aufruf zurückgekehrt ist
   `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. Das Panel schreibt einmal
   `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
   restarts`, hält den C6 im Reset, und die Sitzung endet als gescheiterter
-  Start. Mit dem C6 im Reset halten die 51-kOhm-Pull-ups seine SDIO-Leitungen
+  Start. Mit dem C6 im Reset halten die 51-kΩ-Pull-ups seine SDIO-Leitungen
   auf High, sodass der Lese-Task von esp_hosted, Priorität 23 auf Kern 0,
   wartet, statt in einer Schleife zu scheitern; auf einem Board ist das
   nicht gemessen. Das Panel startet dafür nicht neu

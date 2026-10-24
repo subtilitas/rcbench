@@ -43,11 +43,11 @@ OPEN takes the port:
 1. STOPPING, 50ms: the port renders no pulse, so a pulse that runs ends.
 2. The PWM generator gives up the pin. The wire driver opens the line on it
    as a released input: classic with the pad's pull-down, the D series with
-   its pull-up and the input inverted. The internal pulls are 50 to 80kOhm;
+   its pull-up and the input inverted. The internal pulls are 50 to 80kΩ;
    the D series receives with a pull-up on the board, or by PRECHARGE
    ([Receive mode](#receive-mode)). Tested with a D485HW: with the pad's
    pull-up alone the line stays below 1.4V and the servo answers no read;
-   with 2.2kOhm from the signal wire to the servo supply it answers every
+   with 2.2kΩ from the signal wire to the servo supply it answers every
    read. The line voltages, and whether the servo's high level stays within
    the pin's rating, are not measured
    ([Electrical](../protocols/hitec/README.md#electrical)).
@@ -73,14 +73,14 @@ Write register 23 (`RX_MODE`) says how a D series line receives the
 servo's answer, from the next OPEN on. The OPEN takes the value the
 register holds when the OPEN is written; a change while a line is open
 waits for the next OPEN. An OPEN of a classic line ignores the register:
-a classic servo drives its high level itself, through about 1kOhm, and
+a classic servo drives its high level itself, through about 1kΩ, and
 answers with neither a pull-up nor a precharge on an open-drain port
 (measured on an HS-7955TG, an HS-5955TG and an HS-5645MG at a 5.0V
 supply; the line voltages are not measured).
 
 | Value | Name | How the answer is received |
 | ---: | --- | --- |
-| 0 | `PULL-UP` | the line released; a 2.2kOhm pull-up from the signal wire to the servo supply lifts it. The default, and the value after an IOmcu restart |
+| 0 | `PULL-UP` | the line released; a 2.2kΩ pull-up from the signal wire to the servo supply lifts it. The default, and the value after an IOmcu restart |
 | 1 | `PRECHARGE` | no pull-up. Every 1086.7ns the IOmcu drives the pad high for 100.0ns, releases it, and samples it 113.3ns after the release |
 
 On a PRECHARGE line:

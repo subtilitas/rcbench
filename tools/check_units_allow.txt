@@ -39,8 +39,3 @@ docs/Performance-de.md: `200 16777216 B`
 # parses and a person edits; its value lines carry the unit after a space.
 protocols/kst/README.md: re:^[A-Za-z0-9_. ]+ = [\d.]+ (us|s|%)( \[not loaded\])?$
 protocols/kst/README.md: `Max. Duty = 10 %`
-
-# An ESC profile's JSON, quoted from shared/esc/profiles/; the profiles'
-# texts are data and not part of this rule.
-docs/EscProfiles.md: Pull the jumper off after 2 s or the tone sequence.
-docs/EscProfiles-de.md: Pull the jumper off after 2 s or the tone sequence.

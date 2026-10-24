@@ -108,7 +108,7 @@
       "steps": [
         "Transmitter on, throttle stick to full throttle.",
         "Connect the battery.",
-        "After about 2 s: four groups of two fast beeps. Programming mode is active."
+        "After about 2s: four groups of two fast beeps. Programming mode is active."
       ]
     },
     "announce": {
@@ -192,16 +192,16 @@
       "values": [
         {
           "number": 1,
-          "name": "2.8 V per cell (NiXX 50%)"
+          "name": "2.8V per cell (NiXX 50%)"
         },
         {
           "number": 2,
-          "name": "3.0 V per cell (NiXX 60%)",
+          "name": "3.0V per cell (NiXX 60%)",
           "default": true
         },
         {
           "number": 3,
-          "name": "3.2 V per cell (NiXX 65%)"
+          "name": "3.2V per cell (NiXX 65%)"
         },
         {
           "number": 4,
@@ -266,20 +266,20 @@
       "values": [
         {
           "number": 1,
-          "name": "5.0 V",
+          "name": "5.0V",
           "default": true
         },
         {
           "number": 2,
-          "name": "6.0 V"
+          "name": "6.0V"
         },
         {
           "number": 3,
-          "name": "7.4 V (5 V on PROcontrol 45)"
+          "name": "7.4V (5V on PROcontrol 45)"
         },
         {
           "number": 4,
-          "name": "8.4 V (5 V on PROcontrol 45)"
+          "name": "8.4V (5V on PROcontrol 45)"
         }
       ],
       "applies_to": null,
@@ -298,11 +298,11 @@
         },
         {
           "number": 2,
-          "name": "soft start 1 (8 s delay)"
+          "name": "soft start 1 (8s delay)"
         },
         {
           "number": 3,
-          "name": "soft start 2 (15 s delay)"
+          "name": "soft start 2 (15s delay)"
         },
         {
           "number": 4,

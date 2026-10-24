@@ -182,9 +182,15 @@ source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
 - The five text faces hold printable ASCII (American Standard Code for
-  Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0) and
-  the seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
-  U+00E4, U+00F6, U+00FC), 103 glyphs each. The two numeral faces hold digits and punctuation only.
+  Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0), the
+  seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
+  U+00E4, U+00F6, U+00FC) and the ohm sign Ω (U+03A9), 104 glyphs each.
+  The two numeral faces hold digits and punctuation only.
+- A resistance is written with Ω, in the screens' texts, the settings'
+  units and the `.TXT` reports: `120Ω`, `2.2kΩ`, `100.0mΩ`, `uΩ` for the
+  INA228's shunt. The faces' O reads close to a zero, so `120Ohm` would
+  read as `1200hm`. `every_string_writes_the_ohm_as_its_sign` in
+  `test_text` fails on an `Ohm` or `ohm` in any of them.
 - The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23px and
   draw every glyph inside the cell; `gen_font.py --check` fails otherwise.
   The 32x44 numeral face (cap height 40px) cuts ink at the cell edge in six
@@ -249,8 +255,8 @@ fails on any other entry under a condition.
 | `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
 | `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
 
-The five text faces hold printable ASCII (0x20 to 0x7E), the degree sign °
-and the 7 German letters Ä Ö Ü ä ö ü ß. Any other code point draws as `?`, and so does a
+The five text faces hold printable ASCII (0x20 to 0x7E), the degree sign °,
+the 7 German letters Ä Ö Ü ä ö ü ß and the ohm sign Ω. Any other code point draws as `?`, and so does a
 byte that starts no valid UTF-8 sequence.
 `every_drawn_string_has_its_glyphs` in `test_text` holds every string of
 the table the panel draws, in every language, to that set and to valid

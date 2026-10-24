@@ -21,11 +21,11 @@ Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x4
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, sonst KEINE | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
-| 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0mOhm, Schritte von 0,1mOhm | 100,0 | AUS: der Kanal wird nicht gelesen; 100mOhm misst bis 1,64A |
+| 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0mΩ, Schritte von 0,1mΩ | 100,0 | AUS: der Kanal wird nicht gelesen; 100mΩ misst bis 1,64A |
 | 0x40 CH1 Grenze | AUS, 10 bis 32767mA, Schritte von 10mA mit den Pfeilen | AUS | das Band sagt, wenn der höchste Strom eines 50-ms-Fensters sie überschreitet; nur eine Meldung, nichts stoppt |
 
-- `+` auf einem Shunt bei AUS gibt 5,0mOhm, `-` bei 5,0mOhm gibt AUS.
-- Ein Tippen auf den Wert eines Shunts öffnet das Tastenfeld: 44,4mOhm vom Standardwert 100,0 sind `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht. 0 ist AUS; 0,1 bis 4,9 wird abgelehnt: Das Tastenfeld bleibt offen und zeigt bis zur nächsten Taste `0 oder 5.0 bis 1000.0mOhm` statt des Bereichs.
+- `+` auf einem Shunt bei AUS gibt 5,0mΩ, `-` bei 5,0mΩ gibt AUS.
+- Ein Tippen auf den Wert eines Shunts öffnet das Tastenfeld: 44,4mΩ vom Standardwert 100,0 sind `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht. 0 ist AUS; 0,1 bis 4,9 wird abgelehnt: Das Tastenfeld bleibt offen und zeigt bis zur nächsten Taste `0 oder 5.0 bis 1000.0mΩ` statt des Bereichs.
 - Der Kanal, der jede Millisekunde gelesen wird und dessen Strom der Bildschirm [SERVO](servo.md#das-messgerät-der-servoschiene) und der Servotest nutzen, ist der niedrigste Kanal mit Shunt an einem bestückten Baustein, der das Ziel des Servotesters misst: einen Ausgang, solange das Ziel OUTPUTS ist, PORT n, solange es Programmierport n ist.
 - Das Panel schreibt die Einstellung 500ms nach der letzten Änderung, nur bei einem Prüfstand in SAFE. Die Grenzen gehen 500ms nach ihrer letzten Änderung in jedem Zustand an einen IOmcu mit Protokoll 4.27 oder neuer.
 
@@ -45,7 +45,7 @@ Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ih
 
 ![Das Tastenfeld von 0x40 CH1 Shunt, 44,4 getippt](view:setup-sensors-keypad)
 
-![3mOhm abgelehnt, der Grund statt des Bereichs](view:setup-sensors-why)
+![3mΩ abgelehnt, der Grund statt des Bereichs](view:setup-sensors-why)
 
 ## Was ein Baustein tut
 

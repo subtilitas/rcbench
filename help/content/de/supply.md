@@ -23,7 +23,7 @@ Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte und die Karte 
 
 ![SUPPLY mit abgeschaltetem PD mini: SIMULIERTES NETZTEIL](view:supply)
 
-Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ohm mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ohm. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
+Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ω mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ω. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
 
 ## Der PD mini
 

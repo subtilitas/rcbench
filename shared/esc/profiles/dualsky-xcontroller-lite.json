@@ -167,16 +167,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (3.0 V/cell; Ni 0 %)"
+          "name": "low (3.0V/cell; Ni 0%)"
         },
         {
           "number": 2,
-          "name": "medium (3.2 V/cell; Ni 50 %)",
+          "name": "medium (3.2V/cell; Ni 50%)",
           "default": true
         },
         {
           "number": 3,
-          "name": "high (3.4 V/cell; Ni 60 %)"
+          "name": "high (3.4V/cell; Ni 60%)"
         }
       ],
       "applies_to": null,
@@ -198,7 +198,7 @@
         },
         {
           "number": 3,
-          "name": "super soft (about 6 s)"
+          "name": "super soft (about 6s)"
         }
       ],
       "applies_to": null,

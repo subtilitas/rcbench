@@ -43,7 +43,7 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "The ESC runs only with its motor and the motor identification chip connected. Parameters are set with the JetiBox, not by stick. Stick teaching covers the throttle range only. Modes 1 to 3 also need a second PWM channel from a switch; the supply range of the ESC starts at 18 V.",
+  "automatable_note": "The ESC runs only with its motor and the motor identification chip connected. Parameters are set with the JetiBox, not by stick. Stick teaching covers the throttle range only. Modes 1 to 3 also need a second PWM channel from a switch; the supply range of the ESC starts at 18V.",
   "scheme": {
     "type": "stick_position",
     "entry": {

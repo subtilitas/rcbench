@@ -47,6 +47,9 @@ TEST_CASE(the_unit_table_classes_each_unit)
     CHECK_EQ(text_hl_unit_class("rpm", 3u), TEXT_HL_RATE);
     CHECK_EQ(text_hl_unit_class("Hz", 2u), TEXT_HL_RATE);
     CHECK_EQ(text_hl_unit_class("%", 1u), TEXT_HL_UNIT);
+    CHECK_EQ(text_hl_unit_class("m\xCE\xA9", 3u), TEXT_HL_UNIT);
+    CHECK_EQ(text_hl_unit_class("\xCE\xA9", 2u), TEXT_HL_UNIT);
+    CHECK_EQ(text_hl_unit_class("m\xCE", 2u), TEXT_HL_TEXT);
     CHECK_EQ(text_hl_unit_class("v", 1u), TEXT_HL_TEXT);
     CHECK_EQ(text_hl_unit_class("Vx", 1u), TEXT_HL_VOLT);
     CHECK_EQ(text_hl_unit_class("Vx", 2u), TEXT_HL_TEXT);
@@ -322,6 +325,9 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
         {"x -31.5 Grad", 2u, 10u, TEXT_HL_UNIT},
         {"+/-90 deg", 2u, 7u, TEXT_HL_UNIT},
         {"x 100.0 mOhm", 2u, 10u, TEXT_HL_UNIT},
+        /* The ohm sign is two bytes of UTF-8: 0xCE 0xA9. */
+        {"x 100.0 m\xCE\xA9,", 2u, 9u, TEXT_HL_UNIT},
+        {"x 120 \xCE\xA9", 2u, 6u, TEXT_HL_UNIT},
         {"x 300 B", 2u, 5u, TEXT_HL_UNIT},
         {"(4 kB)", 1u, 4u, TEXT_HL_UNIT},
         {"x 3.0 MB", 2u, 6u, TEXT_HL_UNIT},
@@ -337,7 +343,7 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
     static const char *const k_text[] = {
         "x 1.8 x free", "AS5600 x", "GP13 A", "rcbench 0.0.0 V", "x 20k_sel",
         "x 5V", "x 3 Ab", "x 4.80  V", "x 1.5.", "x 800-2200", "x 3. A",
-        "Stretch = x1", "x 1500 usx", "x 5 v",
+        "Stretch = x1", "x 1500 usx", "x 5 v", "x 5 \xCE\xA9x", "x 5 m\xCE",
     };
     for (size_t i = 0u; i < sizeof(k_text) / sizeof(k_text[0]); ++i) {
         const size_t n = hl_line(k_text[i], 3u, TEXT_HL_KIND_TEXT);

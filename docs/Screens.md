@@ -1966,8 +1966,8 @@ the output came on, as the screen's do, so its first row does not start at 0. Th
 the control task waits on the link, so an unanswered IOmcu does not thin
 out the supply's plot or its log.
 
-The model is a 6ohm load with a 1.4A burst for 0.6s every 3s, behind a
-0.05ohm source resistance. At the starting set points, 6.00V and 2.00A, the
+The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a
+0.05Ω source resistance. At the starting set points, 6.00V and 2.00A, the
 burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
@@ -3035,7 +3035,7 @@ choice wraps round from its last value to its first.
   73% brightness is 75%. A value outside the range keeps the keypad open
   and names the range in the warning colour. A value inside the range that
   the keys never reach keeps it open too and names the reason in place of
-  the range, in the warning colour: `0 or 5.0 to 1000.0mOhm` for a shunt
+  the range, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt
   between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit
   between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
   Sensor SDA pin the bus cannot have, and `The other PD mini pin holds this
@@ -3424,13 +3424,13 @@ has no heading and no rows.
 A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
 44.4mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
 where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused, and the keypad
-shows `0 or 5.0 to 1000.0mOhm` in place of the range until the next key.
+shows `0 or 5.0 to 1000.0mΩ` in place of the range until the next key.
 A LIMIT row takes 0 (OFF) or 10 to 32767mA; 1 to 9 is refused with
 `0 or 10 to 32767mA`.
 
 ![The keypad of 0x40 CH1 shunt](img/setup-sensors-keypad.png)
 
-![3mOhm refused, the reason in place of the range](img/setup-sensors-why.png)
+![3mΩ refused, the reason in place of the range](img/setup-sensors-why.png)
 
 The heading of a part shows on its right what the part is doing:
 
@@ -3648,7 +3648,7 @@ default ([Receive mode](LinkHitec.md#receive-mode)):
 
 | Setting | Values | Default | |
 | --- | --- | --- | --- |
-| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2kOhm resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0ns every 1086.7ns and samples it 113.3ns after it lets go |
+| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2kΩ resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0ns every 1086.7ns and samples it 113.3ns after it lets go |
 
 It is kept in NVS like the other rows; a missing or unreadable stored value
 is PULL-UP. The panel writes it to the HITEC page at every link-up and
@@ -3657,7 +3657,7 @@ D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
 it. The panel sends no Hitec transaction itself: the setting reaches the
 lines the bench console opens ([The bench console](BenchConsole.md)).
 
-Unmarked, the help line follows the value: `PULL-UP needs 2.2kOhm on the
+Unmarked, the help line follows the value: `PULL-UP needs 2.2kΩ on the
 signal wire` at PULL-UP, `PRECHARGE: no pull-up on the signal wire` at
 PRECHARGE.
 

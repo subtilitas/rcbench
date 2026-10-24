@@ -44,7 +44,7 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
 | Bit rate | 19 200bit/s, 52.08us a bit | 115 200bit/s, 8.68us a bit |
 | Format | 8N1, least significant bit first | 8N1, least significant bit first |
 | Polarity | normal: the line idles high, a start bit is low | inverted: inside a frame the line rests low, a start bit is high |
-| High level | made by the servo; with no servo the line is low | made by a pull-up; the servo has a 3kOhm pull-down (reported with another programmer, not measured here) |
+| High level | made by the servo; with no servo the line is low | made by a pull-up; the servo has a 3kΩ pull-down (reported with another programmer, not measured here) |
 | Master frame | 4 bytes `cmd p1 p2 sum`; the 4 bytes sum to 0 modulo 256 | write 7 bytes `96 ID addr 02 lo hi sum`, read 5 bytes `96 ID addr 00 sum`; `sum` is the low byte of the sum of every byte after the header |
 | Reply | 2 bytes: value and `+`, `+ +`, or position high and low | 7 bytes `69 ID addr 02 lo hi sum`; a write is not answered |
 | Reply start | 508 to 517us after the start of the master's last byte after reads, up to 614us after writes and after the first read of a session: inside the master's stop bit | 5.9 to 6.5ms after the end of the request (HFP-30); 5.93 to 6.52ms over 153 reads by PRECHARGE (D485HW, 2026-10-20) |
@@ -276,7 +276,7 @@ answers, a window above 30,000us and a classic transaction are refused.
 Classic servos need neither a pull-up nor a precharge: an HS-7955TG, an
 HS-5955TG and an HS-5645MG enter serial mode and answer every read on an
 open-drain port with neither, at a 5.0V supply. The servo drives the high
-level itself, through about 1kOhm, and its answer starts inside the
+level itself, through about 1kΩ, and its answer starts inside the
 master's stop bit. The line voltages are not measured. The pin driver
 refuses PRECHARGE for classic.
 
@@ -371,9 +371,9 @@ measured.
 | PRECHARGE receive | | driven high 100.0ns of every 1086.7ns at 2mA, slow slew, else released |
 | After close | an input, pull-down on, no override | an input, pull-up on, no override |
 
-The internal pulls are 50 to 80kOhm. The D series needs a pull-up on the
+The internal pulls are 50 to 80kΩ. The D series needs a pull-up on the
 board. Tested with a D485HW: with the pad's pull-up alone the line stays
-below the 1.4V threshold and the servo answers no read; with 2.2kOhm
+below the 1.4V threshold and the servo answers no read; with 2.2kΩ
 from the signal wire to the servo supply it answers every read. The line
 voltages are not measured. The HFP-30 holds the line low after a write until its next request
 and releases it after a read; this driver releases it after every
@@ -435,19 +435,19 @@ the 1.4V crossing is known.
 
 - Classic: whether the internal pull-down holds the line low with no servo
   is not measured.
-- D series: a pull-up of R to 3.3V against the servo's 3kOhm pull-down
-  gives 3.3V x 3 / (3 + R) at the line. With the 3.3kOhm of Hitec's
+- D series: a pull-up of R to 3.3V against the servo's 3kΩ pull-down
+  gives 3.3V x 3 / (3 + R) at the line. With the 3.3kΩ of Hitec's
   reference circuit that is 1.57V, below the 2.0V an RP2350 input needs
-  for a high at IOVDD 3.3V. 1.95kOhm or less gives 2.0V; whether the
+  for a high at IOVDD 3.3V. 1.95kΩ or less gives 2.0V; whether the
   servo still pulls such a line low is not known. The pull-up for a 3.3V
   pin is not established.
-- D series, tested with a D485HW: 2.2kOhm from the signal wire to the
+- D series, tested with a D485HW: 2.2kΩ from the signal wire to the
   servo supply, and every read is answered. The line voltages are not
-  measured. Against the 3kOhm pull-down reported for the servo the
+  measured. Against the 3kΩ pull-down reported for the servo the
   divider puts 58% of the servo supply on the line (computed): whether
   that stays within the pin's rating in the table above, also with the
   IOmcu unpowered, is not known. Push-pull drives the high level of a sent bit to
-  3.3V, 1.1mA into 3kOhm; the servo's high bits still come from the
+  3.3V, 1.1mA into 3kΩ; the servo's high bits still come from the
   pull-up.
 - Which side drives each level of a D series answer is not measured.
 

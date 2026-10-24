@@ -34,7 +34,7 @@ static const esc_value_t p_align_rce_bl15x_v4[] = {
     { "standard (low stick) in the author's example", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_align_rce_bl15x_v5[] = {
-    { "6 V (high stick) in the author's example", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6V (high stick) in the author's example", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_align_rce_bl15x_items[] = {
     { "Brake", "brake", 1u, 1u, p_align_rce_bl15x_v0,
@@ -82,11 +82,11 @@ static const esc_model_t p_castle_phoenix_edge_models[] = {
     { "Phoenix Edge Lite HV 160", 3u, 12u, false, 50400u, 160u, 0u },
 };
 static const esc_value_t p_castle_phoenix_edge_v0[] = {
-    { "3.0 V per cell", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.1 V per cell", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V per cell", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.3 V per cell", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.4 V per cell", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V per cell", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.1V per cell", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V per cell", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.3V per cell", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.4V per cell", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "disabled", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_castle_phoenix_edge_v1[] = {
@@ -103,9 +103,9 @@ static const esc_value_t p_castle_phoenix_edge_v2[] = {
     { "pulsing RPM", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_castle_phoenix_edge_v3[] = {
-    { "8 kHz (outrunners)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 kHz", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz (outrunners)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12kHz", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_castle_phoenix_edge_items[] = {
     { "Low-voltage cutoff, cell voltage", "cutoff_voltage", 1u, 6u, p_castle_phoenix_edge_v0,
@@ -122,8 +122,8 @@ static const esc_item_t p_castle_phoenix_edge_items[] = {
 static const char *const p_dualsky_xcontroller_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: long tone",
-    "Wait about 5000 ms more: melody 5-6-5, programming mode entered",
+    "Wait about 2000ms: long tone",
+    "Wait about 5000ms more: melody 5-6-5, programming mode entered",
 };
 static const esc_model_t p_dualsky_xcontroller_models[] = {
     { "XController (model not named in the programming sheet)", 0u, 0u, false, 0u, 0u, 0u },
@@ -141,14 +141,14 @@ static const esc_value_t p_dualsky_xcontroller_v2[] = {
     { "shut down", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_dualsky_xcontroller_v3[] = {
-    { "low (2.5 V/cell)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (2.75 V/cell)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.0 V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (2.5V/cell)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (2.75V/cell)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.0V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_dualsky_xcontroller_v4[] = {
     { "normal", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft (about 1 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "super soft (about 2 s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (about 1s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "super soft (about 2s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_dualsky_xcontroller_v5[] = {
     { "low (0)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -205,14 +205,14 @@ static const esc_value_t p_dualsky_xcontroller_lite_v2[] = {
     { "switch off", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_dualsky_xcontroller_lite_v3[] = {
-    { "low (3.0 V/cell; Ni 0 %)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (3.2 V/cell; Ni 50 %)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.4 V/cell; Ni 60 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (3.0V/cell; Ni 0%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.2V/cell; Ni 50%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.4V/cell; Ni 60%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_dualsky_xcontroller_lite_v4[] = {
     { "normal", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "soft", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "super soft (about 6 s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "super soft (about 6s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_dualsky_xcontroller_lite_v5[] = {
     { "low", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -246,17 +246,17 @@ static const esc_item_t p_dualsky_xcontroller_lite_items[] = {
 
 /* eflite-10a-pro */
 static const char *const p_eflite_10a_pro_steps[] = {
-    "Battery disconnected, transmitter on, throttle full (above 1.7 ms).",
-    "Connect battery and hold full throttle for 5 s: two sets of fast tones.",
-    "Throttle to centre (1.4-1.6 ms): 1 beep = menu 1.",
+    "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
+    "Connect battery and hold full throttle for 5s: two sets of fast tones.",
+    "Throttle to centre (1.4-1.6ms): 1 beep = menu 1.",
 };
 static const esc_model_t p_eflite_10a_pro_models[] = {
     { "10-Amp Pro Brushless ESC (EFLA1010)", 2u, 3u, false, 12600u, 10u, 0u },
 };
 static const esc_value_t p_eflite_10a_pro_v0[] = {
-    { "3S Li-Po cutoff (9 V), stick full throttle", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2S Li-Po or Ni-Cd/Ni-MH cutoff (6 V), stick idle", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "70% Smart Cut soft cutoff, hold full throttle 7 s until 7 beeps", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3S Li-Po cutoff (9V), stick full throttle", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2S Li-Po or Ni-Cd/Ni-MH cutoff (6V), stick idle", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "70% Smart Cut soft cutoff, hold full throttle 7s until 7 beeps", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_10a_pro_v1[] = {
     { "brake off, stick full throttle", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -267,7 +267,7 @@ static const esc_value_t p_eflite_10a_pro_v2[] = {
     { "2-pole motors, stick idle", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_10a_pro_v3[] = {
-    { "1.1-1.9 ms, stick full throttle", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.1-1.9ms, stick full throttle", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "auto select, stick idle", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_eflite_10a_pro_items[] = {
@@ -283,9 +283,9 @@ static const esc_item_t p_eflite_10a_pro_items[] = {
 
 /* eflite-pro-sbec-7menu */
 static const char *const p_eflite_pro_sbec_7menu_steps[] = {
-    "Battery disconnected, transmitter on, throttle full (above 1.7 ms).",
-    "Connect battery, hold full throttle 5 s: two sets of fast ringing tones.",
-    "Throttle to centre for 5 s: 1 beep = menu 1.",
+    "Battery disconnected, transmitter on, throttle full (above 1.7ms).",
+    "Connect battery, hold full throttle 5s: two sets of fast ringing tones.",
+    "Throttle to centre for 5s: 1 beep = menu 1.",
 };
 static const esc_model_t p_eflite_pro_sbec_7menu_models[] = {
     { "30-Amp Pro Switch-Mode BEC ESC", 3u, 4u, false, 16800u, 30u, 0u },
@@ -296,9 +296,9 @@ static const esc_model_t p_eflite_pro_sbec_7menu_models[] = {
 static const esc_value_t p_eflite_pro_sbec_7menu_v0[] = {
     { "3-cell cutoff (3 beeps)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "4-cell cutoff (4 beeps)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5-cell cutoff (5 beeps), 40 A V1 only", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6-cell cutoff (6 beeps), 40 A V1 only", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft cutoff at a share of start voltage (7 beeps): 70% on 40 A Pro, 74% or 9.2 V whichever is higher on 30 A Pro and 40 A Lite Pro V2", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5-cell cutoff (5 beeps), 40A V1 only", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6-cell cutoff (6 beeps), 40A V1 only", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft cutoff at a share of start voltage (7 beeps): 70% on 40A Pro, 74% or 9.2V whichever is higher on 30A Pro and 40A Lite Pro V2", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_pro_sbec_7menu_v1[] = {
     { "brake off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -314,21 +314,21 @@ static const esc_value_t p_eflite_pro_sbec_7menu_v2[] = {
     { "25 degrees", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_pro_sbec_7menu_v3[] = {
-    { "1.2-1.8 ms", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "1.1-1.9 ms", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.2-1.8ms", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.1-1.9ms", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_pro_sbec_7menu_v4[] = {
-    { "0.25 s", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "1 s", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "0.25s", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1s", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_pro_sbec_7menu_v5[] = {
-    { "8 kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "32 kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "32kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_eflite_pro_sbec_7menu_v6[] = {
     { "normal (airplane)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "helicopter (5 s soft start after a stop of more than 5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "helicopter (5s soft start after a stop of more than 5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_eflite_pro_sbec_7menu_items[] = {
     { "Voltage cutoff", "cutoff_voltage", 1u, 5u, p_eflite_pro_sbec_7menu_v0,
@@ -349,8 +349,8 @@ static const esc_item_t p_eflite_pro_sbec_7menu_items[] = {
 
 /* graupner-brushless-control-t */
 static const char *const p_graupner_brushless_control_t_steps[] = {
-    "Calibrate the stick range as described (full throttle, melody at about 10 s, motor off within 4 s, melody) up to step 4 or 5.",
-    "Move the stick to full throttle again and hold it for at least 6 s.",
+    "Calibrate the stick range as described (full throttle, melody at about 10s, motor off within 4s, melody) up to step 4 or 5.",
+    "Move the stick to full throttle again and hold it for at least 6s.",
     "Five beeps: programming mode.",
 };
 static const esc_model_t p_graupner_brushless_control_t_models[] = {
@@ -439,7 +439,7 @@ static const esc_item_t p_graupner_brushless_control_t_items[] = {
 static const char *const p_greatplanes_electrifly_c_series_steps[] = {
     "Transmitter on, stick at brake position (towards you).",
     "Press the ESC on/off button: 3 beeps (brake setup state).",
-    "Move stick to full power: 5 beeps; wait 5 s: 7 beeps.",
+    "Move stick to full power: 5 beeps; wait 5s: 7 beeps.",
     "Move stick to the brake position while the wanted count sounds.",
 };
 static const esc_model_t p_greatplanes_electrifly_c_series_models[] = {
@@ -458,8 +458,8 @@ static const esc_value_t p_greatplanes_electrifly_c_series_v1[] = {
     { "4-cell Li-Po (blue LED blinks 4)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_greatplanes_electrifly_c_series_manual[] = {
-    { ESC_MANUAL_AT_POWER_UP, "Press the ESC's on/off button: once for brake setup; held 4-5 s, until the red LED goes out, for battery setup.", 0u, "Ein/Aus-Taster des ESC: einmal f\303\274r Bremse; 4-5 s halten, bis die rote LED ausgeht, f\303\274r Akkutyp.", false, false },
-    { ESC_MANUAL_DURING_MENU, "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3 s to store.", 0u, "Akkutyp: Taster dr\303\274cken zum Weiterschalten, an der blauen LED ablesen; 2-3 s halten zum Speichern.", false, false },
+    { ESC_MANUAL_AT_POWER_UP, "Press the ESC's on/off button: once for brake setup; held 4-5s, until the red LED goes out, for battery setup.", 0u, "Ein/Aus-Taster des ESC: einmal f\303\274r Bremse; 4-5s halten, bis die rote LED ausgeht, f\303\274r Akkutyp.", false, false },
+    { ESC_MANUAL_DURING_MENU, "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3s to store.", 0u, "Akkutyp: Taster dr\303\274cken zum Weiterschalten, an der blauen LED ablesen; 2-3s halten zum Speichern.", false, false },
 };
 static const esc_item_t p_greatplanes_electrifly_c_series_items[] = {
     { "Brake", "brake", 1u, 2u, p_greatplanes_electrifly_c_series_v0,
@@ -471,7 +471,7 @@ static const esc_item_t p_greatplanes_electrifly_c_series_items[] = {
 /* greatplanes-electrifly-silver-series */
 static const char *const p_greatplanes_electrifly_silver_series_steps[] = {
     "Throttle full, transmitter on, connect battery.",
-    "After 5 s: two beeps.",
+    "After 5s: two beeps.",
     "Throttle to off (towards you): two beeps.",
     "Throttle to full: two beeps (brake now on).",
     "Throttle to off: four beeps (armed).",
@@ -499,8 +499,8 @@ static const esc_item_t p_greatplanes_electrifly_silver_series_items[] = {
 static const char *const p_hacker_master_basic_steps[] = {
     "Throttle signal at full power (transmitter on).",
     "Connect the drive battery; switch the BEC on where fitted.",
-    "Wait about 5 s for the four-tone melody.",
-    "Wait about 5 s more; the groups start.",
+    "Wait about 5s for the four-tone melody.",
+    "Wait about 5s more; the groups start.",
 };
 static const esc_model_t p_hacker_master_basic_models[] = {
     { "Master Basic 44", 2u, 6u, false, 26000u, 44u, 6000u },
@@ -510,10 +510,10 @@ static const esc_model_t p_hacker_master_basic_models[] = {
 };
 static const esc_value_t p_hacker_master_basic_v0[] = {
     { "brake on/off toggle (factory state: brake off)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "battery NiCd/NiMH, cutoff 0.7 V per cell, slow down", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "battery Li-Ion/LiPo, cutoff 3.2 V per cell, slow down", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "battery LiFe, cutoff 2.5 V per cell, slow down", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "operating mode switch from normal (plane) to heli mode: acceleration 10 s instead of 1 s, brake disabled", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "battery NiCd/NiMH, cutoff 0.7V per cell, slow down", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "battery Li-Ion/LiPo, cutoff 3.2V per cell, slow down", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "battery LiFe, cutoff 2.5V per cell, slow down", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "operating mode switch from normal (plane) to heli mode: acceleration 10s instead of 1s, brake disabled", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_hacker_master_basic_items[] = {
     { "Mode", "mode", 1u, 5u, p_hacker_master_basic_v0,
@@ -523,9 +523,9 @@ static const esc_item_t p_hacker_master_basic_items[] = {
 /* hacker-master-gen3 */
 static const char *const p_hacker_master_gen3_steps[] = {
     "Throttle signal at full power, then connect the drive battery (switch the BEC on where fitted).",
-    "Wait about 5 s for the four-tone melody (programming mode entered).",
+    "Wait about 5s for the four-tone melody (programming mode entered).",
     "Mode toggle (item 1): move throttle to stop immediately after the melody.",
-    "Timing (item 2): keep full throttle, wait about 5 s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
+    "Timing (item 2): keep full throttle, wait about 5s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
     "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the wanted pattern.",
 };
 static const esc_model_t p_hacker_master_gen3_models[] = {
@@ -571,9 +571,9 @@ static const esc_value_t p_hacker_master_gen3_v1[] = {
     { "stage 4, 30 degrees", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_master_gen3_v2[] = {
-    { "8 kHz (long tones)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz (alternating long and short)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "32 kHz (short tones)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz (long tones)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz (alternating long and short)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "32kHz (short tones)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_hacker_master_gen3_a2[] = {
     "Master 40-SB-Flight",
@@ -591,9 +591,9 @@ static const char *const p_hacker_master_gen3_a2[] = {
     "Master 77-O-Heli",
 };
 static const esc_value_t p_hacker_master_gen3_v3[] = {
-    { "NiCd/NiMH: 33 % of pack voltage at connection, minimum 4 V (long tones)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "about 6.0 V, 2 LiPo cells (alternating long and short)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "about 9.0 V, 3 LiPo cells (short tones)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "NiCd/NiMH: 33% of pack voltage at connection, minimum 4V (long tones)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "about 6.0V, 2 LiPo cells (alternating long and short)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "about 9.0V, 3 LiPo cells (short tones)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_hacker_master_gen3_a3[] = {
     "Master 4-B-Flight",
@@ -631,9 +631,9 @@ static const char *const p_hacker_master_gen3_a4[] = {
     "Master 77-O-Heli",
 };
 static const esc_value_t p_hacker_master_gen3_v5[] = {
-    { "about 20 A", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "about 40 A", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "about 60 A", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "about 20A", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "about 40A", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "about 60A", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "no limit", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_hacker_master_gen3_a5[] = {
@@ -693,8 +693,8 @@ static const esc_item_t p_hacker_master_senstrol_items[] = {
 static const char *const p_hacker_masterspin_steps[] = {
     "Throttle signal at full power (transmitter on).",
     "Connect the drive battery; switch the BEC on where fitted (MasterSpin 11 has no switch).",
-    "Wait about 5 s for the four-tone melody.",
-    "Wait about 5 s more; the groups start.",
+    "Wait about 5s for the four-tone melody.",
+    "Wait about 5s more; the groups start.",
 };
 static const esc_model_t p_hacker_masterspin_models[] = {
     { "MasterSpin 11", 2u, 4u, false, 17000u, 11u, 5000u },
@@ -719,10 +719,10 @@ static const esc_model_t p_hacker_masterspin_models[] = {
     { "MasterSpin 99 Navy", 4u, 10u, false, 42000u, 90u, 12000u },
 };
 static const esc_value_t p_hacker_masterspin_v0[] = {
-    { "Acro inrunner: no brake, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Acro outrunner: no brake, timing 24 degrees, LiPo autodetect, slow down at 3.0 V per cell", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider inrunner: brake on, timing 0 degrees, LiPo autodetect, slow down at 3.0 V per cell", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider outrunner: brake on, timing 24 degrees, LiPo autodetect, slow down at 3.0 V per cell", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Acro inrunner: no brake, timing 0 degrees, LiPo autodetect, slow down at 3.0V per cell", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Acro outrunner: no brake, timing 24 degrees, LiPo autodetect, slow down at 3.0V per cell", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider inrunner: brake on, timing 0 degrees, LiPo autodetect, slow down at 3.0V per cell", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider outrunner: brake on, timing 24 degrees, LiPo autodetect, slow down at 3.0V per cell", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Heli constant rpm, normal speed correction (no fast speed changes), timing 0 degrees", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Heli constant rpm 3D, fast speed correction, timing 0 degrees", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
@@ -735,7 +735,7 @@ static const esc_item_t p_hacker_masterspin_items[] = {
 static const char *const p_hacker_x_pro_steps[] = {
     "Throttle signal at full power.",
     "Connect the drive battery (switch on where fitted); Opto versions need an external supply for the receiver connected first.",
-    "Wait 5 s for the two low plus two high tones.",
+    "Wait 5s for the two low plus two high tones.",
     "Brake: move throttle to stop right after these tones.",
     "Other items: keep full throttle until the wanted pattern sounds; move throttle to stop while its five repetitions are playing.",
 };
@@ -760,15 +760,15 @@ static const esc_value_t p_hacker_x_pro_v0[] = {
 };
 static const esc_value_t p_hacker_x_pro_v1[] = {
     { "NiCd", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2 LiPo cells, 5.8 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3 LiPo cells, 8.7 V (2007, 2008) or 8.3 V (2016)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "4 LiPo cells, 11.6 V or 11.3 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 LiPo cells, 14.5 V or 14.2 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6 LiPo cells, 17.4 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7 LiPo cells, 20.3 V, Opto only", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8 LiPo cells, 23.2 V, Opto only", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "9 LiPo cells, 26.1 V, Opto only", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 LiPo cells, 29.0 V, Opto only", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2 LiPo cells, 5.8V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3 LiPo cells, 8.7V (2007, 2008) or 8.3V (2016)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "4 LiPo cells, 11.6V or 11.3V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5 LiPo cells, 14.5V or 14.2V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6 LiPo cells, 17.4V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7 LiPo cells, 20.3V, Opto only", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8 LiPo cells, 23.2V, Opto only", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "9 LiPo cells, 26.1V, Opto only", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10 LiPo cells, 29.0V, Opto only", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_v2[] = {
     { "reduce power ('-_')", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -785,8 +785,8 @@ static const esc_value_t p_hacker_x_pro_v4[] = {
     { "hard, 22 to 30 degrees, multipole motors", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_v5[] = {
-    { "8 kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_v6[] = {
     { "reverse motor rotation ('W' melody)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -820,7 +820,7 @@ static const esc_item_t p_hacker_x_pro_items[] = {
 static const char *const p_hacker_x_pro_2006_steps[] = {
     "Throttle signal at full power.",
     "Connect the drive battery (switch on where fitted).",
-    "Wait 5 s for the two low plus two high tones.",
+    "Wait 5s for the two low plus two high tones.",
     "Brake: move throttle to stop right after these tones.",
     "Other items: keep full throttle; move throttle to stop while the wanted pattern is sounding (each shown five times).",
 };
@@ -832,10 +832,10 @@ static const esc_value_t p_hacker_x_pro_2006_v0[] = {
 };
 static const esc_value_t p_hacker_x_pro_2006_v1[] = {
     { "NiCd (five groups of one beep)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2 LiPo cells, 5.8 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3 LiPo cells, 8.7 V; factory default on BEC versions", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "4 LiPo cells, 11.6 V, Opto versions only", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 LiPo cells, 14.5 V, Opto versions only; factory default on Opto versions", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2 LiPo cells, 5.8V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3 LiPo cells, 8.7V; factory default on BEC versions", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "4 LiPo cells, 11.6V, Opto versions only", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5 LiPo cells, 14.5V, Opto versions only; factory default on Opto versions", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_2006_v2[] = {
     { "reduce power ('-_')", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -852,17 +852,17 @@ static const esc_value_t p_hacker_x_pro_2006_v4[] = {
     { "hard, 22 to 30 degrees, multipole motors (three high tones)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_2006_v5[] = {
-    { "8 kHz (falling tone)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz (rising tone)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz (falling tone)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz (rising tone)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_2006_v6[] = {
     { "reverse motor rotation ('W' melody)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_pro_2006_v7[] = {
     { "off ('_._')", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "up to 20 000 rpm, 2-pole equivalent ('_.._')", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "up to 50 000 rpm ('_..._')", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "above 50 000 rpm ('_...._')", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "up to 20000rpm, 2-pole equivalent ('_.._')", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "up to 50000rpm ('_..._')", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "above 50000rpm ('_...._')", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_hacker_x_pro_2006_items[] = {
     { "Brake", "brake", 1u, 1u, p_hacker_x_pro_2006_v0,
@@ -887,8 +887,8 @@ static const esc_item_t p_hacker_x_pro_2006_items[] = {
 static const char *const p_hacker_x_series_steps[] = {
     "Throttle signal at full power.",
     "Connect the drive battery (switch on where fitted).",
-    "Wait 5 s for the two low plus two high tones.",
-    "Brake: move throttle to stop right after these tones (2010 edition) or within 5 s of them (2004 edition).",
+    "Wait 5s for the two low plus two high tones.",
+    "Brake: move throttle to stop right after these tones (2010 edition) or within 5s of them (2004 edition).",
     "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the wanted pattern is sounding.",
 };
 static const esc_model_t p_hacker_x_series_models[] = {
@@ -905,10 +905,10 @@ static const esc_value_t p_hacker_x_series_v0[] = {
 };
 static const esc_value_t p_hacker_x_series_v1[] = {
     { "NiCd (five groups of one beep)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2 LiPo cells, 5.8 V (two beeps per group)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3 LiPo cells (three beeps per group); 7.8 V in the 2004 edition, 8.3 V in the 2010 edition", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "4 LiPo cells, 11.3 V (four beeps per group), Opto only, 2010 edition", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 LiPo cells, 14.2 V (five beeps per group), Opto only, 2010 edition", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2 LiPo cells, 5.8V (two beeps per group)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3 LiPo cells (three beeps per group); 7.8V in the 2004 edition, 8.3V in the 2010 edition", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "4 LiPo cells, 11.3V (four beeps per group), Opto only, 2010 edition", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5 LiPo cells, 14.2V (five beeps per group), Opto only, 2010 edition", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_series_v2[] = {
     { "reduce power (high then low tone, '-_')", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -924,8 +924,8 @@ static const esc_value_t p_hacker_x_series_v4[] = {
     { "hard, 22 to 30 degrees, multipole motors (three high tones)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_series_v5[] = {
-    { "8 kHz (falling tone)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz (rising tone)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz (falling tone)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz (rising tone)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hacker_x_series_v6[] = {
     { "reverse motor rotation ('W' melody)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -951,7 +951,7 @@ static const esc_item_t p_hacker_x_series_items[] = {
 static const char *const p_hitec_energy_sport_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait 2000 ms: 4 groups of two fast beeps (within 4 s of power-up per the tone chart)",
+    "Wait 2000ms: 4 groups of two fast beeps (within 4s of power-up per the tone chart)",
     "Distinct tones then play in a loop",
 };
 static const esc_model_t p_hitec_energy_sport_models[] = {
@@ -969,17 +969,17 @@ static const esc_value_t p_hitec_energy_sport_v1[] = {
     { "LiPo (default, auto cell count)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v2[] = {
-    { "low (2.8 V / 50 %)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (3.0 V / 60 %)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.2 V / 65 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (2.8V / 50%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.0V / 60%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.2V / 65%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v3[] = {
     { "restore", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v4[] = {
-    { "automatic (7-30 deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "low (7-22 deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (22-30 deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "automatic (7-30deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (7-22deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (22-30deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v5[] = {
     { "soft", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -988,15 +988,15 @@ static const esc_value_t p_hitec_energy_sport_v5[] = {
 };
 static const esc_value_t p_hitec_energy_sport_v6[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "heli mode 1 (5 s ramp)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "heli mode 2 (15 s ramp)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "heli mode 1 (5s ramp)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "heli mode 2 (15s ramp)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v7[] = {
     { "reverse (selected from the default off)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v8[] = {
-    { "8 kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hitec_energy_sport_v9[] = {
     { "reduce power", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1029,8 +1029,8 @@ static const esc_item_t p_hitec_energy_sport_items[] = {
 static const char *const p_hobbywing_flyfun_8item_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_flyfun_8item_models[] = {
     { "FlyFun-6A", 2u, 2u, false, 8400u, 6u, 0u },
@@ -1061,19 +1061,19 @@ static const esc_value_t p_hobbywing_flyfun_8item_v2[] = {
     { "hard cutoff", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_8item_v3[] = {
-    { "low (2.85 V/cell; Ni 0 %)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (3.15 V/cell; Ni 50 %)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.3 V/cell; Ni 65 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (2.85V/cell; Ni 0%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.15V/cell; Ni 50%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.3V/cell; Ni 65%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_8item_v4[] = {
-    { "normal (300 ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft (6 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "super soft (12 s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (300ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (6s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "super soft (12s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_8item_v5[] = {
-    { "low (3.75 deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (15 deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (26.25 deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (3.75deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (15deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (26.25deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_8item_v6[] = {
     { "restore defaults", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1104,8 +1104,8 @@ static const esc_item_t p_hobbywing_flyfun_8item_items[] = {
 static const char *const p_hobbywing_flyfun_hv_9item_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_flyfun_hv_9item_models[] = {
     { "FLYFUN-80-HV", 5u, 10u, false, 42000u, 80u, 0u },
@@ -1124,14 +1124,14 @@ static const esc_value_t p_hobbywing_flyfun_hv_9item_v2[] = {
     { "hard cutoff", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_hv_9item_v3[] = {
-    { "low (2.6 V/cell; Ni 0 %)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (2.85 V/cell; Ni 45 %)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.1 V/cell; Ni 60 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (2.6V/cell; Ni 0%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (2.85V/cell; Ni 45%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.1V/cell; Ni 60%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_hv_9item_v4[] = {
     { "normal", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft (3 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "super soft (6 s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (3s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "super soft (6s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_hv_9item_v5[] = {
     { "low", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1172,8 +1172,8 @@ static const esc_item_t p_hobbywing_flyfun_hv_9item_items[] = {
 static const char *const p_hobbywing_flyfun_v5_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_flyfun_v5_models[] = {
     { "FLYFUN 60A V5", 3u, 6u, false, 25200u, 60u, 0u },
@@ -1214,17 +1214,17 @@ static const esc_value_t p_hobbywing_flyfun_v5_v3[] = {
 };
 static const esc_value_t p_hobbywing_flyfun_v5_v4[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2.8 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.4 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.6 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.8 V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.8V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.4V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.6V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.8V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_v5_v5[] = {
-    { "5.2 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_hobbywing_flyfun_v5_a5[] = {
     "FLYFUN 60A V5",
@@ -1237,14 +1237,14 @@ static const esc_value_t p_hobbywing_flyfun_v5_v6[] = {
     { "very soft", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_v5_v7[] = {
-    { "0 deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8 deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "20 deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "25 deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "0deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "20deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "25deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_flyfun_v5_v8[] = {
     { "CW", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1291,8 +1291,8 @@ static const esc_item_t p_hobbywing_flyfun_v5_items[] = {
 static const char *const p_hobbywing_platinum_v3_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_platinum_v3_models[] = {
     { "Platinum-100A-V3", 2u, 6u, false, 25200u, 100u, 5200u },
@@ -1314,10 +1314,10 @@ static const esc_value_t p_hobbywing_platinum_v3_v2[] = {
 };
 static const esc_value_t p_hobbywing_platinum_v3_v3[] = {
     { "off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "low (2.85 V/cell; NiMH 50 %)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "middle (3.15 V/cell; NiMH 62.5 %)", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.30 V/cell; NiMH 75 %)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "customized 2.8-25.2 V, 0.1 V steps (PC or LCD program box only)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (2.85V/cell; NiMH 50%)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "middle (3.15V/cell; NiMH 62.5%)", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.30V/cell; NiMH 75%)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "customized 2.8-25.2V, 0.1V steps (PC or LCD program box only)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_platinum_v3_v4[] = {
     { "airplane fixed wing", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1327,35 +1327,35 @@ static const esc_value_t p_hobbywing_platinum_v3_v4[] = {
 };
 static const esc_value_t p_hobbywing_platinum_v3_v5[] = {
     { "off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 s", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 s", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 s", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 s", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "90 s", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5s", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10s", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15s", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30s", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "90s", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_platinum_v3_v6[] = {
-    { "0 deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "4 deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8 deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "18 deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "22 deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "26 deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 deg", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "customized 0-30 deg, 1 deg steps (PC or LCD program box only)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "0deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "4deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "18deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "22deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "26deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30deg", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "customized 0-30deg, 1deg steps (PC or LCD program box only)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_platinum_v3_v7[] = {
-    { "8 kHz", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "24 kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "32 kHz", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "24kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "32kHz", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_platinum_v3_v8[] = {
-    { "5.2 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_platinum_v3_v9[] = {
     { "auto", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1403,8 +1403,8 @@ static const esc_item_t p_hobbywing_platinum_v3_items[] = {
 static const char *const p_hobbywing_seaking_boat_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery (ESC switch on where fitted)",
-    "Wait about 2000 ms: Beep-Beep",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: Beep-Beep",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_seaking_boat_models[] = {
     { "SEAKING-25A (V1)", 2u, 3u, false, 12600u, 25u, 0u },
@@ -1436,20 +1436,20 @@ static const esc_value_t p_hobbywing_seaking_boat_v1[] = {
 };
 static const esc_value_t p_hobbywing_seaking_boat_v2[] = {
     { "no protection", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2.8 V/cell", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V/cell", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V/cell", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.4 V/cell", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.8V/cell", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V/cell", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V/cell", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.4V/cell", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_seaking_boat_v3[] = {
-    { "0 deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.75 deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.5 deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "11.25 deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "18.75 deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "22.5 deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "26.25 deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "0deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.75deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.5deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "11.25deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "18.75deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "22.5deg", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "26.25deg", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_hobbywing_seaking_boat_items[] = {
     { "Running mode", "mode", 1u, 2u, p_hobbywing_seaking_boat_v0,
@@ -1466,8 +1466,8 @@ static const esc_item_t p_hobbywing_seaking_boat_items[] = {
 static const char *const p_hobbywing_skywalker_120a_v2_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_skywalker_120a_v2_models[] = {
     { "Skywalker 120A V2", 3u, 8u, false, 33600u, 120u, 0u },
@@ -1479,9 +1479,9 @@ static const esc_value_t p_hobbywing_skywalker_120a_v2_v0[] = {
     { "linear reverse", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v1[] = {
-    { "low (60 %)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (90 %)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (100 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (60%)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (90%)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (100%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v2[] = {
     { "soft", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1498,19 +1498,19 @@ static const esc_value_t p_hobbywing_skywalker_120a_v2_v3[] = {
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v4[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "low (about 2.8 V/cell)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (about 3.0 V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (about 3.4 V/cell)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (about 2.8V/cell)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (about 3.0V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (about 3.4V/cell)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v5[] = {
-    { "normal (about 200 ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft (about 500 ms)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "very soft (about 800 ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (about 200ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (about 500ms)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very soft (about 800ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v6[] = {
-    { "low (5 deg)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (15 deg)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (25 deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (5deg)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (15deg)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (25deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v7[] = {
     { "on", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1518,15 +1518,15 @@ static const esc_value_t p_hobbywing_skywalker_120a_v2_v7[] = {
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v8[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 min", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 min", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 min", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5min", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10min", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15min", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v9[] = {
-    { "5 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_120a_v2_v10[] = {
     { "restore defaults", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1565,8 +1565,8 @@ static const esc_item_t p_hobbywing_skywalker_120a_v2_items[] = {
 static const char *const p_hobbywing_skywalker_v2_hv_opto_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_skywalker_v2_hv_opto_models[] = {
     { "Skywalker 130A HV OPTO V2", 6u, 14u, false, 58800u, 130u, 0u },
@@ -1579,9 +1579,9 @@ static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v0[] = {
     { "linear reverse", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v1[] = {
-    { "low (60 %)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (90 %)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (100 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (60%)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (90%)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (100%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v2[] = {
     { "soft", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1597,21 +1597,21 @@ static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v3[] = {
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v4[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "low (about 2.8 V/cell)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (about 3.0 V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (about 3.4 V/cell)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (about 2.8V/cell)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (about 3.0V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (about 3.4V/cell)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v5[] = {
-    { "normal (about 400 ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft (about 900 ms)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "very soft (about 1500 ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (about 400ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (about 900ms)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very soft (about 1500ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v6[] = {
-    { "5 deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 deg", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "20 deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "25 deg", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5deg", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "20deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "25deg", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v7[] = {
     { "on", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1619,9 +1619,9 @@ static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v7[] = {
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v8[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 min", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 min", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 min", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5min", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10min", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15min", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_hv_opto_v9[] = {
     { "restore defaults", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1658,8 +1658,8 @@ static const esc_item_t p_hobbywing_skywalker_v2_hv_opto_items[] = {
 static const char *const p_hobbywing_skywalker_v2_mini_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps",
-    "Wait about 5000 ms more: special tone, programming mode entered",
+    "Wait about 2000ms: two short beeps",
+    "Wait about 5000ms more: special tone, programming mode entered",
 };
 static const esc_model_t p_hobbywing_skywalker_v2_mini_models[] = {
     { "Skywalker 15A V2", 2u, 3u, false, 12600u, 15u, 0u },
@@ -1681,9 +1681,9 @@ static const esc_value_t p_hobbywing_skywalker_v2_mini_v0[] = {
     { "linear reverse", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v1[] = {
-    { "low (60 %)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (90 %)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (100 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (60%)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (90%)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (100%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v2[] = {
     { "soft", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1698,19 +1698,19 @@ static const esc_value_t p_hobbywing_skywalker_v2_mini_v3[] = {
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v4[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "low (about 2.8 V/cell)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (about 3.0 V/cell)", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (about 3.4 V/cell)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (about 2.8V/cell)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (about 3.0V/cell)", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (about 3.4V/cell)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v5[] = {
-    { "normal (about 200 ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft (about 500 ms)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "very soft (about 800 ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (about 200ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft (about 500ms)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very soft (about 800ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v6[] = {
-    { "low (5 deg)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (15 deg)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (25 deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (5deg)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (15deg)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (25deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v7[] = {
     { "on", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1718,9 +1718,9 @@ static const esc_value_t p_hobbywing_skywalker_v2_mini_v7[] = {
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v8[] = {
     { "off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 min", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 min", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 min", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5min", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10min", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15min", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_hobbywing_skywalker_v2_mini_v9[] = {
     { "restore defaults", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1757,9 +1757,9 @@ static const esc_item_t p_hobbywing_skywalker_v2_mini_items[] = {
 static const char *const p_jeti_spin_3p_steps[] = {
     "Transmitter on, stick to full throttle.",
     "Connect the main pack, switch on the receiver switch if one is fitted.",
-    "Wait 5 s: four beeps (. . - .).",
+    "Wait 5s: four beeps (. . - .).",
     "Stick to 'close' (motor off) within the window: sets the brake option and gives 1 or 2 beeps.",
-    "Or wait a further 5 s for the timing sequence.",
+    "Or wait a further 5s for the timing sequence.",
 };
 static const esc_model_t p_jeti_spin_3p_models[] = {
     { "Master 40-3P", 6u, 12u, true, 18000u, 40u, 0u },
@@ -1807,14 +1807,14 @@ static const esc_value_t p_jeti_spin_3p_v1[] = {
     { "mode 4: 30 degrees", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_jeti_spin_3p_v2[] = {
-    { "8 kHz (long tone x5)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz (tone plus beep x5)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "32 kHz (two beeps x5)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz (long tone x5)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz (tone plus beep x5)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "32kHz (two beeps x5)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_jeti_spin_3p_v3[] = {
-    { "minimum 4 V, NiCd/NiMH (long tone x5)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "constant 5.3 V, 2 Li cells (tone plus beep x5)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "constant 7.95 V, 3 Li cells (two beeps x5)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "minimum 4V, NiCd/NiMH (long tone x5)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "constant 5.3V, 2 Li cells (tone plus beep x5)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "constant 7.95V, 3 Li cells (two beeps x5)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_jeti_spin_3p_a3[] = {
     "Master 04-3P",
@@ -1861,7 +1861,7 @@ static const char *const p_kontronik_3p_steps[] = {
     "Disconnect power, pull the jumper, reconnect power.",
     "Phase 2 (optional): throttle at max speed position, apply power; flash, then three flashes. Move to brake position for counter-clockwise or keep max for clockwise; three or four flashes confirm.",
     "Cutoff: jumper still plugged at the final flash = cutoff on; pulled = cutoff off.",
-    "Arming switch (optional): pull the jumper and plug it again within about 5 s after phase 2; two flashes confirm.",
+    "Arming switch (optional): pull the jumper and plug it again within about 5s after phase 2; two flashes confirm.",
 };
 static const esc_model_t p_kontronik_3p_models[] = {
     { "3P-B 30-6-12", 6u, 12u, true, 18000u, 30u, 0u },
@@ -1869,9 +1869,9 @@ static const esc_model_t p_kontronik_3p_models[] = {
     { "3P-O 35-14-32", 14u, 32u, true, 48000u, 35u, 0u },
 };
 static const esc_value_t p_kontronik_3p_v0[] = {
-    { "brake speed position at max speed: about 0.1 s to 100 % brake", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "brake speed position at middle: about 0.5 s", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "brake speed position at brake (off): minimum brake speed, about 2 s (English) or 3 s (German)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "brake speed position at max speed: about 0.1s to 100% brake", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "brake speed position at middle: about 0.5s", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "brake speed position at brake (off): minimum brake speed, about 2s (English) or 3s (German)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "proportional brake: brake-speed position equals brake (off) position with enough distance to motor-off", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_3p_v1[] = {
@@ -1883,7 +1883,7 @@ static const esc_value_t p_kontronik_3p_v2[] = {
     { "off: jumper removed", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_3p_v3[] = {
-    { "enabled by pulling and re-plugging the jumper within about 5 s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "enabled by pulling and re-plugging the jumper within about 5s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_3p_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold pins; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken.", false, false },
@@ -1905,7 +1905,7 @@ static const char *const p_kontronik_3sl_steps[] = {
     "Operator: fit the jumper on the programming contacts. Connect the motor if tones are to be audible.",
     "Transmitter and receiver on. Throttle to brake (stick back); mode 3 and 6: motor-off position.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its tone sequence.",
+    "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off.",
     "Mode series sounds; mode 7 is reached at the 7-fold signal.",
     "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake.",
@@ -1920,7 +1920,7 @@ static const esc_model_t p_kontronik_3sl_models[] = {
 };
 static const esc_value_t p_kontronik_3sl_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider: brake about 0.5 s, cutoff 0.8 V per cell, RPM limit 50,000 at 4 poles, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider: brake about 0.5s, cutoff 0.8V per cell, RPM limit 50,000 at 4 poles, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane / boat: brake off, cutoff off", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter: speed governor", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Competition F5B / F5B 10 cells / F5D", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1929,7 +1929,7 @@ static const esc_value_t p_kontronik_3sl_v0[] = {
 };
 static const esc_manual_t p_kontronik_3sl_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the three-tone sequence.", 0u, "Jumper nach 2 s oder dem Dreiklang abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the three-tone sequence.", 0u, "Jumper nach 2s oder dem Dreiklang abziehen.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_3sl_items[] = {
@@ -1942,7 +1942,7 @@ static const char *const p_kontronik_beat_steps[] = {
     "Operator: fit the jumper on any 2 of the 3 programming contacts. Connect the motor if tones are to be audible.",
     "Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for modes 6 and 8.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its tone sequence.",
+    "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off.",
     "The ESC sounds the mode series. Mode 7 is reached by waiting for the 7-fold signal.",
     "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 8: then stick to full reverse (back).",
@@ -1961,7 +1961,7 @@ static const esc_model_t p_kontronik_beat_models[] = {
 };
 static const esc_value_t p_kontronik_beat_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider: brake about 0.5 s, cutoff 0.8 V per cell, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider: brake about 0.5s, cutoff 0.8V per cell, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane / boat: brake off, cutoff off", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter: true speed governor", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Competition F5B / F5B 10 cells / F5D: maximum brake, cutoff off", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -1971,7 +1971,7 @@ static const esc_value_t p_kontronik_beat_v0[] = {
 };
 static const esc_manual_t p_kontronik_beat_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_beat_items[] = {
@@ -1981,7 +1981,7 @@ static const esc_item_t p_kontronik_beat_items[] = {
 
 /* kontronik-beat-car */
 static const char *const p_kontronik_beat_car_steps[] = {
-    "As the BEAT procedure (jumper on, power on, wait 2 s, pull the jumper), programmed like mode 6 of the BEAT: signal count equals the mode number.",
+    "As the BEAT procedure (jumper on, power on, wait 2s, pull the jumper), programmed like mode 6 of the BEAT: signal count equals the mode number.",
     "Wait for the series of the wanted mode and move the throttle to full.",
     "Mode 8 is programmed like mode 7 with 8 signals and can be combined with modes 2 to 6.",
 };
@@ -2000,7 +2000,7 @@ static const esc_value_t p_kontronik_beat_car_v0[] = {
 };
 static const esc_manual_t p_kontronik_beat_car_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_beat_car_items[] = {
@@ -2010,7 +2010,7 @@ static const esc_item_t p_kontronik_beat_car_items[] = {
 
 /* kontronik-beat-fai */
 static const char *const p_kontronik_beat_fai_steps[] = {
-    "As the BEAT procedure (jumper on, power on, wait 2 s, pull the jumper), programmed like mode 5 of the BEAT: signal count equals the mode number.",
+    "As the BEAT procedure (jumper on, power on, wait 2s, pull the jumper), programmed like mode 5 of the BEAT: signal count equals the mode number.",
     "Wait for the series of the wanted mode and move the throttle (motor switch) to full.",
 };
 static const esc_model_t p_kontronik_beat_fai_models[] = {
@@ -2029,7 +2029,7 @@ static const esc_value_t p_kontronik_beat_fai_v0[] = {
 };
 static const esc_manual_t p_kontronik_beat_fai_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_beat_fai_items[] = {
@@ -2041,9 +2041,9 @@ static const esc_item_t p_kontronik_beat_fai_items[] = {
 static const char *const p_kontronik_cyber_line_steps[] = {
     "Receiver battery connected on ESC types without BEC. Transmitter on.",
     "Stick-way teach-in: throttle to brake or motor-off (stick back), operator fits the jumper and turns on the radio; apply drive power and pull the jumper; one signal; move to full; one signal; for EMK brake move to motor-off (may equal brake); for a start button fit the jumper again; two signals; disconnect power.",
-    "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5 s for the 4-fold signal; count the beeps (10 % each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
-    "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5 s for the 3-fold signal; count the beeps (5 A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
-    "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power.",
+    "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5s for the 4-fold signal; count the beeps (10% each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
+    "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
+    "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power.",
 };
 static const esc_model_t p_kontronik_cyber_line_models[] = {
     { "CYBEC 40-6-12", 6u, 12u, true, 16000u, 40u, 5600u },
@@ -2055,13 +2055,13 @@ static const esc_value_t p_kontronik_cyber_line_v0[] = {
     { "taught by the sequence; EMK brake on if the throttle goes to motor-off after the full signal", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_cyber_line_v1[] = {
-    { "each beep counted = 5 A; throttle leaves full at the wanted count", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "each beep counted = 5A; throttle leaves full at the wanted count", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_cyber_line_v2[] = {
-    { "each beep counted = 10 % brake strength; throttle leaves brake at the wanted count", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "each beep counted = 10% brake strength; throttle leaves brake at the wanted count", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_cyber_line_v3[] = {
-    { "reset: about 30 s after the last signal a 6-fold signal arrives; the LED flashes continuously", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "reset: about 30s after the last signal a 6-fold signal arrives; the LED flashes continuously", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "undervoltage cutoff off: pull the jumper during the reset sequence", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_cyber_line_manual[] = {
@@ -2085,8 +2085,8 @@ static const char *const p_kontronik_heli_jive_steps[] = {
     "Operator: fit the jumper on 2 of the 3 programming contacts. Connect the motor if tones are to be audible.",
     "Transmitter on, receiver on. Throttle stick or switch to the brake position.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its tone sequence.",
-    "Operator: pull the jumper off within 10 s after power-up.",
+    "Wait 2s or until the ESC sounds its tone sequence.",
+    "Operator: pull the jumper off within 10s after power-up.",
     "The ESC sounds a second tone sequence, then the mode series, mode N as N tones.",
     "Move the throttle to full when the wanted mode sounds. The ESC confirms with 3 tones.",
     "To program autorotation, move the stick or switch to the AR position (modes 2 to 6). To leave it off, keep the throttle at full.",
@@ -2098,12 +2098,12 @@ static const esc_model_t p_kontronik_heli_jive_models[] = {
 static const esc_value_t p_kontronik_heli_jive_v0[] = {
     { "APM: reset only", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor / ESC operation over the whole throttle range (throttle curve in the transmitter)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Combi: ESC operation below a transition point (default 50 %), governor above it", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Combi: ESC operation below a transition point (default 50%), governor above it", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter governor: parameters relearned at every power-up", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter fixed governor: parameters learned once after programming", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Continuous governor over the whole throttle range", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Reverse motor rotation (needs a mode other than 1 programmed first)", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "External governor (flybarless), stick range fixed at about 1 ms motor off and 2 ms full; needs software version 11 or higher", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "External governor (flybarless), stick range fixed at about 1ms motor off and 2ms full; needs software version 11 or higher", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "KSA special application mode; cleared when another mode is programmed", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "LRPM low-RPM mode for high-KV motors (Spanish manual only)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
@@ -2113,7 +2113,7 @@ static const esc_value_t p_kontronik_heli_jive_v1[] = {
 };
 static const esc_manual_t p_kontronik_heli_jive_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).", 0u, "Jumper auf 2 der 3 Programmierkontakte stecken (deutsches Handbuch: die 2 markierten).", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence, within 10 s of power-up.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen, innerhalb 10 s nach dem Einschalten.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence, within 10s of power-up.", 0u, "Jumper nach 2s oder der Tonfolge abziehen, innerhalb 10s nach dem Einschalten.", true, false },
     { ESC_MANUAL_AFTER_PROGRAMMING, "The jumper may be fitted again; it can stay on the ESC in use.", 0u, "Jumper darf wieder gesteckt werden und im Betrieb am ESC bleiben.", false, false },
 };
 static const esc_item_t p_kontronik_heli_jive_items[] = {
@@ -2126,8 +2126,8 @@ static const esc_item_t p_kontronik_heli_jive_items[] = {
 /* kontronik-heli-line */
 static const char *const p_kontronik_heli_line_steps[] = {
     "Stick-way teach-in: throttle at motor-off (stick back), jumper on, radio on; apply power, pull the jumper; a signal; move to full; a signal; for throttle compensation move to motor-off, otherwise wait; 2 beeps = without, 3 beeps = with; optional start button press; 2 or 3 beeps; disconnect power.",
-    "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5 s for the 3-fold signal; count the beeps (5 A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
-    "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power.",
+    "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
+    "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power.",
 };
 static const esc_model_t p_kontronik_heli_line_models[] = {
     { "HELBEC 40-6-10", 6u, 10u, true, 14000u, 40u, 5600u },
@@ -2137,10 +2137,10 @@ static const esc_value_t p_kontronik_heli_line_v0[] = {
     { "taught by the sequence; throttle compensation on: throttle to motor-off after the full signal, confirmed by 3 beeps; off: wait, confirmed by 2 beeps", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_heli_line_v1[] = {
-    { "each beep counted = 5 A; throttle leaves full at the wanted count", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "each beep counted = 5A; throttle leaves full at the wanted count", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_heli_line_v2[] = {
-    { "reset: about 30 s after the last signal a 6-fold signal arrives; LED flashes continuously", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "reset: about 30s after the last signal a 6-fold signal arrives; LED flashes continuously", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_heli_line_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken.", false, false },
@@ -2161,7 +2161,7 @@ static const char *const p_kontronik_jazz_steps[] = {
     "Operator: fit the jumper on any 2 of the 3 programming contacts. Connect the motor to the ESC if the tones are to be audible.",
     "Switch the transmitter on. Throttle to the brake position (stick back). For modes 6 and 8 use the motor-off position instead.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
+    "Wait 2s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
     "Operator: pull the jumper off.",
     "The ESC sounds a second three-tone sequence, then the mode series 1, 2, 3 ... 9 with a pause between series.",
     "Move the throttle to full (stick forward) while the wanted mode series sounds.",
@@ -2184,11 +2184,11 @@ static const esc_value_t p_kontronik_jazz_v0[] = {
     { "Car, one direction, proportional brake", 6u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
     { "Reverse motor rotation (needs a mode other than 1 programmed first)", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Car, forward and reverse", 8u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
-    { "LiPo undervoltage cutoff, 2.7 to 3 V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo undervoltage cutoff, 2.7 to 3V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jazz_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.", 0u, "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "After 2 s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.", 0u, "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster dr\303\274cken.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "After 2s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.", 0u, "Nach 2s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster dr\303\274cken.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_jazz_items[] = {
@@ -2201,11 +2201,11 @@ static const char *const p_kontronik_jive_steps[] = {
     "Operator: fit the jumper on the 2 marked programming contacts. Connect the motor if tones are to be audible.",
     "Transmitter on. Throttle to the brake position (modes 6 and 8: motor-off position).",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its three-tone sequence.",
+    "Wait 2s or until the ESC sounds its three-tone sequence.",
     "Operator: pull the jumper off.",
     "The ESC sounds a second three-tone sequence, then the mode series 1 to 11.",
     "Move the throttle to full while the wanted series sounds.",
-    "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10 % per tone); move the throttle to motor-off at the wanted count.",
+    "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10% per tone); move the throttle to motor-off at the wanted count.",
     "The ESC repeats the stored mode. Disconnect drive power.",
 };
 static const esc_model_t p_kontronik_jive_models[] = {
@@ -2224,16 +2224,16 @@ static const esc_value_t p_kontronik_jive_v0[] = {
     { "Car, one direction, proportional brake (series stops at tone 6; start with throttle at motor-off)", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Reverse motor rotation (needs a mode other than 1 programmed first)", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane with adjustable F3A brake (start with throttle at motor-off)", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "LiPo undervoltage cutoff, 2.7 to 3 V per cell", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo undervoltage cutoff, 2.7 to 3V per cell", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "KSA special application mode (for example turbines); cleared when another mode is programmed", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter 2: fixed-speed governor", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_jive_v1[] = {
-    { "each tone adds 10 % brake strength; the count at which the throttle returns to motor-off is stored", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "each tone adds 10% brake strength; the count at which the throttle returns to motor-off is stored", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jive_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).", 0u, "Jumper auf die 2 markierten Programmierkontakte stecken (englisches Handbuch: 2 beliebige der 3).", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2 s or the tone sequence.", 0u, "Jumper nach 2 s oder der Tonfolge abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
 };
 static const esc_item_t p_kontronik_jive_items[] = {
     { "Mode", "mode", 1u, 11u, p_kontronik_jive_v0,
@@ -2244,14 +2244,14 @@ static const esc_item_t p_kontronik_jive_items[] = {
 
 /* kontronik-jive-pro */
 static const char *const p_kontronik_jive_pro_steps[] = {
-    "Transmitter on, throttle at motor-off (0 %). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+    "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
     "Operator: plug in the jumper cable.",
     "Connect the motor. Apply drive power.",
     "The ESC sounds an ascending three-tone sequence and single tones for the detected cell count (long tone = 4 cells, short tone = 1 cell). The LED flashes.",
     "Operator: pull the jumper cable. The ESC sounds a descending three-tone sequence.",
     "The ESC sounds mode series 1, 2, 3 ... one tone more per series; the LED flashes the same count.",
-    "Move the throttle to full (100 %) after the wanted tone count.",
-    "The ESC confirms with an ascending three-tone sequence and the mode as tones. Mode 2: a further stick position can then be set. Mode 6: move the stick to reverse (0 %) after the full-throttle confirmation.",
+    "Move the throttle to full (100%) after the wanted tone count.",
+    "The ESC confirms with an ascending three-tone sequence and the mode as tones. Mode 2: a further stick position can then be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
     "Wait for the confirmation before disconnecting power; otherwise the ESC treats programming as incomplete and locks (9 LED flashes).",
 };
 static const esc_model_t p_kontronik_jive_pro_models[] = {
@@ -2260,33 +2260,33 @@ static const esc_model_t p_kontronik_jive_pro_models[] = {
 };
 static const esc_value_t p_kontronik_jive_pro_v0[] = {
     { "APM: reset, clears all settings", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider, ESC operation with EMK brake (default strength 92 %), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider, ESC operation with EMK brake (default strength 92%), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane, ESC operation, no brake", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Helicopter governor with autorotation (AR on at 25 % throttle)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Helicopter governor with autorotation (AR on at 25% throttle)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Forward / reverse, motor-off at stick centre", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "BEC voltage setting, 5 to 8 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "BEC voltage setting, 5 to 8V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_jive_pro_v1[] = {
-    { "5.0 V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.2 V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.6 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.8 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.2 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.4 V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.6 V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.8 V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.0 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.2 V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.6 V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.8 V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.0V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.6V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.8V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.2V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.4V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.6V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.8V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.0V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.2V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.6V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.8V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jive_pro_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Plug the jumper cable onto the ESC.", 0u, "Jumperkabel auf den ESC stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.", 0u, "Jumperkabel nach den Zellent\303\266nen abziehen, innerhalb 10 s nach dem Einschalten.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10s of power-up.", 0u, "Jumperkabel nach den Zellent\303\266nen abziehen, innerhalb 10s nach dem Einschalten.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
 };
 static const esc_item_t p_kontronik_jive_pro_items[] = {
@@ -2300,7 +2300,7 @@ static const esc_item_t p_kontronik_jive_pro_items[] = {
 static const char *const p_kontronik_koby_steps[] = {
     "Connect the motor if tones are to be audible. Transmitter on, throttle to the brake position.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its tone sequence.",
+    "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: press the button under the shrink tubing on the ESC.",
     "The ESC sounds a tone sequence, then the mode series, with a pause between series.",
     "Move the throttle to full when the wanted mode sounds. Mode 10 is reached after the 10th tone.",
@@ -2317,29 +2317,29 @@ static const esc_value_t p_kontronik_koby_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Glider, ESC operation; cutoff on, brake on, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane / boat; cutoff by reducing power, brake off", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Helicopter governor; soft start 12 s default", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "BEC voltage setting, 5 to 8 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Helicopter governor; soft start 12s default", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "BEC voltage setting, 5 to 8V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_koby_v1[] = {
-    { "5.0 V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.2 V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.6 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.8 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.2 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.4 V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.6 V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.8 V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.0 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.2 V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.6 V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.8 V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.0V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.6V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.8V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.2V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.4V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.6V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.8V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.0V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.2V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.6V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.8V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_koby_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge dr\303\274cken.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
 };
 static const esc_item_t p_kontronik_koby_items[] = {
@@ -2351,14 +2351,14 @@ static const esc_item_t p_kontronik_koby_items[] = {
 
 /* kontronik-kolibri */
 static const char *const p_kontronik_kolibri_steps[] = {
-    "Transmitter on, throttle at motor-off (0 %). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+    "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
     "Connect the motor. Apply drive power.",
     "The ESC sounds an ascending three-tone sequence and single tones for the detected LiPo cell count (long tone = 4 cells, short tone = 1 cell).",
     "Operator: press the button marked on the ESC.",
     "The ESC sounds a descending three-tone sequence, then the mode series 1, 2, 3 ... one tone more per series.",
-    "Move the throttle to full (100 %) after the wanted tone count.",
-    "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0 %) after the full-throttle confirmation.",
-    "Wait for the confirmation (up to about 2 s for mode 4) before disconnecting power; otherwise the ESC locks (9 LED flashes).",
+    "Move the throttle to full (100%) after the wanted tone count.",
+    "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
+    "Wait for the confirmation (up to about 2s for mode 4) before disconnecting power; otherwise the ESC locks (9 LED flashes).",
 };
 static const esc_model_t p_kontronik_kolibri_models[] = {
     { "KOLIBRI 60 LV-I", 2u, 6u, false, 25000u, 60u, 0u },
@@ -2369,14 +2369,14 @@ static const esc_model_t p_kontronik_kolibri_models[] = {
 };
 static const esc_value_t p_kontronik_kolibri_v0[] = {
     { "APM: reset, clears all settings", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider, ESC operation, EMK brake (default 92 %), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider, ESC operation, EMK brake (default 92%), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane, ESC operation, no brake", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Helicopter governor with autorotation (AR at 25 % throttle)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Helicopter governor with autorotation (AR at 25% throttle)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Forward / reverse, motor-off at stick centre", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Telemetry protocol, port 1 (front port)", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Telemetry protocol, port 2 (side port); only KOLIBRI 140 LV-I and 140 HV-I", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "BEC voltage setting, 5 to 9 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "BEC voltage setting, 5 to 9V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_kolibri_v1[] = {
     { "KONTRONIK", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2389,27 +2389,27 @@ static const esc_value_t p_kontronik_kolibri_v1[] = {
     { "FrSky", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_kolibri_v2[] = {
-    { "5.0 V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.2 V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.6 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.8 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.2 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.4 V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.6 V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.8 V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.0 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.2 V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.6 V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.8 V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.2 V", 16u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V", 17u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.6 V", 18u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.8 V", 19u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "9.0 V", 20u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.0V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.6V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.8V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.2V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.4V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.6V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.8V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.0V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.2V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.6V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.8V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.2V", 16u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V", 17u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.6V", 18u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.8V", 19u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "9.0V", 20u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kolibri_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster am ESC nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).", true, false },
@@ -2428,7 +2428,7 @@ static const esc_item_t p_kontronik_kolibri_items[] = {
 static const char *const p_kontronik_kontrol_x_steps[] = {
     "Connect the motor if tones are to be audible. Transmitter on. Throttle to motor-off.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its tone sequence.",
+    "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: press the ESC button (push button under the heat shrink).",
     "The ESC sounds a tone sequence, then the mode series, mode 1 as one tone, mode 2 as two tones, with a pause between series.",
     "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 3: then move the throttle to full reverse (stick back).",
@@ -2446,7 +2446,7 @@ static const esc_value_t p_kontronik_kontrol_x_v0[] = {
     { "Reverse motor rotation", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kontrol_x_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2 s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2 s oder der Tonfolge dr\303\274cken.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge dr\303\274cken.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
 };
 static const esc_item_t p_kontronik_kontrol_x_items[] = {
@@ -2456,14 +2456,14 @@ static const esc_item_t p_kontronik_kontrol_x_items[] = {
 
 /* kontronik-kosmik */
 static const char *const p_kontronik_kosmik_steps[] = {
-    "Transmitter on, throttle at motor-off (0 %). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+    "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
     "Connect the motor. Apply drive power.",
     "The ESC sounds an ascending three-tone sequence and single tones for the detected LiPo cell count (long tone = 4 cells, short tone = 1 cell).",
     "Operator: press the button marked PRESS on the ESC (on shrink-tube versions on the back near the sensor slot).",
     "The ESC sounds a descending three-tone sequence, then the mode series 1, 2, 3 ... one tone more per series.",
-    "Move the throttle to full (100 %) after the wanted tone count.",
-    "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0 %) after the full-throttle confirmation.",
-    "Wait for the confirmation (up to about 2 s for mode 4) before disconnecting power; otherwise the ESC locks (10 red LED flashes).",
+    "Move the throttle to full (100%) after the wanted tone count.",
+    "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
+    "Wait for the confirmation (up to about 2s for mode 4) before disconnecting power; otherwise the ESC locks (10 red LED flashes).",
 };
 static const esc_model_t p_kontronik_kosmik_models[] = {
     { "KOSMIK 160 HV", 5u, 14u, false, 59000u, 160u, 0u },
@@ -2481,14 +2481,14 @@ static const esc_model_t p_kontronik_kosmik_models[] = {
 };
 static const esc_value_t p_kontronik_kosmik_v0[] = {
     { "APM: reset, unlocks the delivery state", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider, ESC operation, EMK brake (default 92 %), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider, ESC operation, EMK brake (default 92%), optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Motor plane, ESC operation, no brake", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Helicopter governor with autorotation (AR at 25 % throttle); soft start 12 s default, 8 to 60 s with a programming unit", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Helicopter governor with autorotation (AR at 25% throttle); soft start 12s default, 8 to 60s with a programming unit", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Forward / reverse, no RPM control", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Telemetry protocol, port 1 (BEC side); only on HV-I variants", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Telemetry protocol, port 2 (LED side); only on HV-I variants", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "BEC voltage setting, 5 to 8 V (HV-I+ up to 12.2 V)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "BEC voltage setting, 5 to 8V (HV-I+ up to 12.2V)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_kosmik_v1[] = {
     { "KONTRONIK", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2500,22 +2500,22 @@ static const esc_value_t p_kontronik_kosmik_v1[] = {
     { "PowerBox CORE", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_kosmik_v2[] = {
-    { "5.0 V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.2 V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.6 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5.8 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.2 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.4 V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.6 V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.8 V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.0 V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.2 V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.6 V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.8 V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.0 V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.0V (no tone)", 0u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.6V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.8V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.2V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.4V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.6V", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.8V", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.0V", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.2V", 11u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 12u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.6V", 13u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.8V", 14u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kosmik_manual[] = {
     { ESC_MANUAL_BEFORE_MENU, "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster mit der Aufschrift PRESS nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).", true, false },
@@ -2547,7 +2547,7 @@ static const esc_value_t p_kontronik_mini20_v0[] = {
     { "neutral and brake position equal: motor-off equals brake", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_kontronik_mini20_v1[] = {
-    { "on (0.8 V per cell): jumper still fitted", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "on (0.8V per cell): jumper still fitted", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "off: jumper removed", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_mini20_manual[] = {
@@ -2566,12 +2566,12 @@ static const char *const p_kontronik_opto_bec_steps[] = {
     "Plug the receiver lead into the motor channel. Transmitter on. Throttle and trim to brake if the short-circuit brake is wanted, else to motor-off.",
     "Power the receiver (opto types need a receiver battery).",
     "Operator: fit the short-circuit bridge on the two gold contacts (between the black and blue battery cables). A pushbutton held down while powering works in place of the bridge.",
-    "Apply drive power. After about 5 s the ESC signals that it has detected the brake / motor-off position.",
-    "Move the throttle to full and keep it there until the ESC signals the full position, about 5 s after the last signal.",
+    "Apply drive power. After about 5s the ESC signals that it has detected the brake / motor-off position.",
+    "Move the throttle to full and keep it there until the ESC signals the full position, about 5s after the last signal.",
     "Brake wanted: move the throttle to motor-off. Brake not wanted: leave it at full.",
     "After about 5 more s a double signal confirms storing.",
-    "Start button function (optional): press the start button again within about 5 s; another double signal confirms.",
-    "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1 s shows readiness once the throttle is at motor-off or brake.",
+    "Start button function (optional): press the start button again within about 5s; another double signal confirms.",
+    "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1s shows readiness once the throttle is at motor-off or brake.",
 };
 static const esc_model_t p_kontronik_opto_bec_models[] = {
     { "OPTO", 0u, 0u, false, 0u, 0u, 0u },
@@ -2604,12 +2604,12 @@ static const esc_item_t p_kontronik_opto_bec_items[] = {
 static const char *const p_kontronik_optomax_steps[] = {
     "Receiver lead in the motor channel. Transmitter on, receiver battery connected. Throttle and trim to brake if a brake is wanted, else motor-off.",
     "Operator: fit the short-circuit bridge on the two gold contacts.",
-    "Apply drive power. After about 5 s a signal confirms the brake / motor-off position.",
-    "Move the throttle to full and hold it until the signal, about 5 s after the last one.",
+    "Apply drive power. After about 5s a signal confirms the brake / motor-off position.",
+    "Move the throttle to full and hold it until the signal, about 5s after the last one.",
     "No brake: leave the throttle at full. Brake: move the throttle to motor-off.",
-    "After about 5 s a signal confirms the brake activation.",
+    "After about 5s a signal confirms the brake activation.",
     "Hard brake: move the throttle to full again. Soft brake: keep the throttle where it is.",
-    "After about 5 s a double signal stores all settings. Undervoltage cutoff stays on if the bridge is still fitted at this moment; remove it before the double signal to switch the cutoff off.",
+    "After about 5s a double signal stores all settings. Undervoltage cutoff stays on if the bridge is still fitted at this moment; remove it before the double signal to switch the cutoff off.",
     "Disconnect drive power and remove the bridge.",
 };
 static const esc_model_t p_kontronik_optomax_models[] = {
@@ -2645,7 +2645,7 @@ static const esc_item_t p_kontronik_optomax_items[] = {
 static const char *const p_kontronik_pix_steps[] = {
     "Connect the motor if tones are to be audible. Transmitter on, throttle to the brake position (stick back).",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds an ascending tone sequence.",
+    "Wait 2s or until the ESC sounds an ascending tone sequence.",
     "Operator: press and release the button marked 'Taster' on the ESC label.",
     "The ESC sounds a descending tone sequence, then the mode series with pauses between series (mode 7 after 7 tones, mode 9 after 9 tones).",
     "Move the throttle to full (stick forward) when the wanted mode sounds. The ESC confirms with a descending tone sequence.",
@@ -2662,10 +2662,10 @@ static const esc_value_t p_kontronik_pix_v0[] = {
     { "Glider: EMK brake and undervoltage cutoff on, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 1u, { ESC_THR_MIN } },
     { "Motor plane / boat: brake off, undervoltage reduction instead of cutoff", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "LiPo undervoltage detection: switches between 0.7 to 0.8 V per NiCd/NiMH cell and 2.7 to 3 V per LiPo cell", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo undervoltage detection: switches between 0.7 to 0.8V per NiCd/NiMH cell and 2.7 to 3V per LiPo cell", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_pix_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button marked Taster on the label after 2 s or the tone sequence.", 0u, "Taster mit der Aufschrift Taster nach 2 s oder der Tonfolge dr\303\274cken.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button marked Taster on the label after 2s or the tone sequence.", 0u, "Taster mit der Aufschrift Taster nach 2s oder der Tonfolge dr\303\274cken.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_pix_items[] = {
@@ -2677,7 +2677,7 @@ static const esc_item_t p_kontronik_pix_items[] = {
 static const char *const p_kontronik_smile_steps[] = {
     "Connect the motor. Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
     "Apply drive power.",
-    "Wait 2 s or until the ESC sounds its tone sequence.",
+    "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: press and release the button on the ESC ('Taster').",
     "Wait for the mode series; modes 7 and 9 are reached by waiting for the 7-fold or 9-fold signal.",
     "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then move the stick to brake (back).",
@@ -2696,10 +2696,10 @@ static const esc_value_t p_kontronik_smile_v0[] = {
     { "Competition: maximum brake response, undervoltage and overtemperature cutoff off, current limit off", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Car: proportional brake", 6u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "LiPo undervoltage cutoff, 3 V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo undervoltage cutoff, 3V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_smile_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press and release the button after 2 s or the tone sequence.", 0u, "Taster nach 2 s oder der Tonfolge dr\303\274cken und loslassen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press and release the button after 2s or the tone sequence.", 0u, "Taster nach 2s oder der Tonfolge dr\303\274cken und loslassen.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_smile_items[] = {
@@ -2712,7 +2712,7 @@ static const char *const p_kontronik_star_line_steps[] = {
     "Operator: fit the jumper. Connect the motor if tones are to be audible.",
     "Transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
     "Apply drive power.",
-    "Wait 5 s or until the ESC sounds its tone sequence.",
+    "Wait 5s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off.",
     "Mode series sounds.",
     "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
@@ -2727,15 +2727,15 @@ static const esc_model_t p_kontronik_star_line_models[] = {
 };
 static const esc_value_t p_kontronik_star_line_v0[] = {
     { "APM: reset, stick range learned at every power-up", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Glider: brake about 0.3 s, cutoff 0.8 V per cell, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "Motor plane / boat: brake off, cutoff off, power reduced below 5.5 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Glider: brake about 0.3s, cutoff 0.8V per cell, optional separate motor-off position", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "Motor plane / boat: brake off, cutoff off, power reduced below 5.5V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Helicopter: throttle compensation for falling battery voltage, linear curve, optional start button", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Competition F5B / F5B 10 cells / F5D", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "Car: proportional brake", 6u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_star_line_manual[] = {
     { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 5 s or the tone sequence.", 0u, "Jumper nach 5 s oder der Tonfolge abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 5s or the tone sequence.", 0u, "Jumper nach 5s oder der Tonfolge abziehen.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_star_line_items[] = {
@@ -2747,7 +2747,7 @@ static const esc_item_t p_kontronik_star_line_items[] = {
 static const char *const p_kontronik_sun_plus_steps[] = {
     "Connect the motor if tones are to be audible. Transmitter on. Throttle to brake for mode 1; to neutral for modes 2 to 6.",
     "Apply drive power. The ESC sounds 3 tones for NiCd/NiMH or 6 tones for LiPo detection.",
-    "Wait 2 s (modes 1, 2, 3) or 5 s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
+    "Wait 2s (modes 1, 2, 3) or 5s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
     "Operator: press the ESC button ('Taster').",
     "The ESC sounds a descending tone sequence, then the mode series.",
     "Move the throttle to full (stick forward) when the wanted mode sounds.",
@@ -2766,10 +2766,10 @@ static const esc_value_t p_kontronik_sun_plus_v0[] = {
     { "Helicopter: throttle compensation for falling battery voltage, linear throttle curve", 4u, false, ESC_THR_NONE, 5000u, 0u, { 0 } },
     { "Competition: maximum brake response, undervoltage and overtemperature cutoff off", 5u, false, ESC_THR_NONE, 5000u, 0u, { 0 } },
     { "Car: proportional brake, undervoltage cutoff off", 6u, false, ESC_THR_MID, 5000u, 1u, { ESC_THR_MIN } },
-    { "LiPo undervoltage detection (2.7 to 3 V per cell instead of 0.7 to 0.8 V)", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo undervoltage detection (2.7 to 3V per cell instead of 0.7 to 0.8V)", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_sun_plus_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2 s for modes 1 to 3, 5 s for modes 4 to 6.", 0u, "Taster nach der Tonfolge dr\303\274cken: 2 s bei Modi 1 bis 3, 5 s bei Modi 4 bis 6.", true, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2s for modes 1 to 3, 5s for modes 4 to 6.", 0u, "Taster nach der Tonfolge dr\303\274cken: 2s bei Modi 1 bis 3, 5s bei Modi 4 bis 6.", true, false },
     { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
 };
 static const esc_item_t p_kontronik_sun_plus_items[] = {
@@ -2781,7 +2781,7 @@ static const esc_item_t p_kontronik_sun_plus_items[] = {
 static const char *const p_multiplex_roxxy_bl_725_4d_steps[] = {
     "Battery disconnected, transmitter on, throttle stick at maximum.",
     "Connect a charged flight battery: three-way tone sequence.",
-    "After about 3 s a longer fourth sound.",
+    "After about 3s a longer fourth sound.",
     "Stick to minimum: ascending tone sequence, throttle calibrated, controller ready in standard mode.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_725_4d_models[] = {
@@ -2805,8 +2805,8 @@ static const esc_item_t p_multiplex_roxxy_bl_725_4d_items[] = {
 static const char *const p_multiplex_roxxy_bl_900_steps[] = {
     "Receiver connected, transmitter on, throttle stick forward.",
     "Connect battery power: short tone sequence.",
-    "After about 10 s: double tone sequence.",
-    "After about 3 s more: triple tone sequence.",
+    "After about 10s: double tone sequence.",
+    "After about 3s more: triple tone sequence.",
     "Programming mode: parameter 1 shown as one beep and one LED flash, repeating.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_900_models[] = {
@@ -2820,32 +2820,32 @@ static const esc_model_t p_multiplex_roxxy_bl_900_models[] = {
     { "Roxxy BL 9100-6", 2u, 6u, false, 25200u, 100u, 0u },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v0[] = {
-    { "LiPo (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "NiCd/NiMH (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "NiCd/NiMH (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v1[] = {
-    { "normal (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "reverse (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "reverse (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v2[] = {
-    { "off (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "on (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "off (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "on (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v3[] = {
-    { "off (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "on (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "off (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "on (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v4[] = {
-    { "off (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "on (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "off (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "on (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v5[] = {
-    { "AIR (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "HELI (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "AIR (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "HELI (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_900_v6[] = {
-    { "BOAT (LED on, beep every 2 s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "CAR (LED blinks, beep every 0.5 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "BOAT (LED on, beep every 2s)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "CAR (LED blinks, beep every 0.5s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_multiplex_roxxy_bl_900_items[] = {
     { "Battery type", "battery_type", 1u, 2u, p_multiplex_roxxy_bl_900_v0,
@@ -2879,8 +2879,8 @@ static const esc_model_t p_multiplex_roxxy_bl_control_s_bec_models[] = {
     { "ROXXY BL-Control 755 S-BEC", 2u, 6u, false, 25200u, 55u, 0u },
 };
 static const esc_value_t p_multiplex_roxxy_bl_control_s_bec_v0[] = {
-    { "LiPo with automatic cutoff (stick full throttle), default; motor off at 3.0 V per cell", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "NiXX (stick motor OFF); motor off at 6.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "LiPo with automatic cutoff (stick full throttle), default; motor off at 3.0V per cell", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "NiXX (stick motor OFF); motor off at 6.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_control_s_bec_v1[] = {
     { "brake on (stick full throttle), default", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2907,8 +2907,8 @@ static const esc_value_t p_multiplex_roxxy_bl_control_s_bec_v6[] = {
     { "soft timing 7 degrees, inrunners (stick motor OFF)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_control_s_bec_v7[] = {
-    { "8 kHz (stick full throttle)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz (stick motor OFF), default", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz (stick full throttle)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz (stick motor OFF), default", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_bl_control_s_bec_v8[] = {
     { "helicopter, governor mode (stick full throttle); brake forced off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -2939,7 +2939,7 @@ static const esc_item_t p_multiplex_roxxy_bl_control_s_bec_items[] = {
 static const char *const p_multiplex_roxxy_procontrol_steps[] = {
     "Transmitter on, throttle stick to full throttle.",
     "Connect the battery.",
-    "After about 2 s: four groups of two fast beeps. Programming mode is active.",
+    "After about 2s: four groups of two fast beeps. Programming mode is active.",
 };
 static const esc_model_t p_multiplex_roxxy_procontrol_models[] = {
     { "ROXXY PROcontrol 45 (1-02103)", 2u, 6u, false, 25200u, 45u, 0u },
@@ -2962,9 +2962,9 @@ static const esc_value_t p_multiplex_roxxy_procontrol_v1[] = {
     { "LiFe", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_procontrol_v2[] = {
-    { "2.8 V per cell (NiXX 50%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V per cell (NiXX 60%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V per cell (NiXX 65%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.8V per cell (NiXX 50%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V per cell (NiXX 60%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V per cell (NiXX 65%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "undervoltage protection off", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_procontrol_v3[] = {
@@ -2979,15 +2979,15 @@ static const esc_value_t p_multiplex_roxxy_procontrol_v4[] = {
     { "30 degrees", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_procontrol_v5[] = {
-    { "5.0 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V (5 V on PROcontrol 45)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V (5 V on PROcontrol 45)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.0V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V (5V on PROcontrol 45)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V (5V on PROcontrol 45)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_multiplex_roxxy_procontrol_v6[] = {
     { "speed control off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft start 1 (8 s delay)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft start 2 (15 s delay)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft start 1 (8s delay)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft start 2 (15s delay)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "governor mode 1 (low kV)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "governor mode 2 (high kV)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
@@ -3038,8 +3038,8 @@ static const char *const p_mystery_ztw_melody_menu_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
     "Wait for two short beeps: programming mode entered",
-    "If the throttle goes to min within 5 s, the throttle calibration is changed (avoid this)",
-    "Keep the throttle at max beyond 5 s: the ESC starts the tone sequence",
+    "If the throttle goes to min within 5s, the throttle calibration is changed (avoid this)",
+    "Keep the throttle at max beyond 5s: the ESC starts the tone sequence",
 };
 static const esc_model_t p_mystery_ztw_melody_menu_models[] = {
     { "MY8A", 2u, 4u, false, 16800u, 8u, 0u },
@@ -3068,34 +3068,34 @@ static const esc_value_t p_mystery_ztw_melody_menu_v1[] = {
     { "LiPo (default, auto cell count)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v2[] = {
-    { "low (2.8 V / 50 %)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (3.0 V; 60 % or 65 %)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.2 V / 65 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (2.8V / 50%)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.0V; 60% or 65%)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.2V / 65%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v3[] = {
     { "restore", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v4[] = {
-    { "automatic (7-30 deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "low (7-22 deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (22-30 deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "automatic (7-30deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (7-22deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (22-30deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v5[] = {
-    { "very soft (1.5 s ramp)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft acceleration (1 s ramp)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very soft (1.5s ramp)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft acceleration (1s ramp)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "start acceleration (quick)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v6[] = {
     { "rpm off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "heli first range (5 s delay)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "heli second range (15 s delay)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "heli first range (5s delay)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "heli second range (15s delay)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v7[] = {
     { "positive / reverse tone (state set by selection not stated)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v8[] = {
-    { "8 kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_mystery_ztw_melody_menu_v9[] = {
     { "reduce power", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3127,8 +3127,8 @@ static const esc_item_t p_mystery_ztw_melody_menu_items[] = {
 /* robbe-roxxy-bl-smart-control */
 static const char *const p_robbe_roxxy_bl_smart_control_steps[] = {
     "Receiver connected, transmitter on, throttle forward (full).",
-    "Connect power: after about 4 s a long beep.",
-    "After 4 s more: melody 5-6-5.",
+    "Connect power: after about 4s a long beep.",
+    "After 4s more: melody 5-6-5.",
     "Parameters then sound in a loop.",
 };
 static const esc_model_t p_robbe_roxxy_bl_smart_control_models[] = {
@@ -3192,7 +3192,7 @@ static const esc_item_t p_robbe_roxxy_bl_smart_control_items[] = {
 static const char *const p_spektrum_avian_130_pro_steps[] = {
     "Transmitter on with throttle at full.",
     "Connect the battery: three ascending tones, then two short tones (full throttle accepted).",
-    "Keep full throttle for more than 5 s (do not lower the stick): the ESC plays another tone series and enters programming.",
+    "Keep full throttle for more than 5s (do not lower the stick): the ESC plays another tone series and enters programming.",
     "Two short tones, then the tones of parameter 1.",
 };
 static const esc_model_t p_spektrum_avian_130_pro_models[] = {
@@ -3232,18 +3232,18 @@ static const esc_value_t p_spektrum_avian_130_pro_v4[] = {
 };
 static const esc_value_t p_spektrum_avian_130_pro_v5[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.4 V", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.6 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.8 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.4V", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.6V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.8V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_130_pro_v6[] = {
-    { "6.0 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "9.0 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "9.0V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_130_pro_v7[] = {
     { "normal", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3269,14 +3269,14 @@ static const esc_value_t p_spektrum_avian_130_pro_v11[] = {
     { "3", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_130_pro_v12[] = {
-    { "0 s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "45 s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "90 s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "0s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "45s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "90s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_130_pro_v13[] = {
-    { "1.0 s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "1.5 s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2.0 s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.0s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.5s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.0s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_130_pro_v14[] = {
     { "CH5", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3322,8 +3322,8 @@ static const esc_item_t p_spektrum_avian_130_pro_items[] = {
 static const char *const p_spektrum_avian_hv_steps[] = {
     "Transmitter on, throttle full.",
     "Connect battery: three ascending tones.",
-    "After 5 s: two short tones (maximum throttle accepted).",
-    "Leave the stick at full for more than 5 s: tones signal programming mode.",
+    "After 5s: two short tones (maximum throttle accepted).",
+    "Leave the stick at full for more than 5s: tones signal programming mode.",
 };
 static const esc_model_t p_spektrum_avian_hv_models[] = {
     { "Avian 160A HV (SPMXAE1160HV)", 6u, 14u, false, 58800u, 160u, 0u },
@@ -3364,16 +3364,16 @@ static const esc_value_t p_spektrum_avian_hv_v4[] = {
 };
 static const esc_value_t p_spektrum_avian_hv_v5[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.4 V", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.6 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.8 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.4V", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.6V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.8V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_hv_v6[] = {
-    { "6.0 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_hv_v7[] = {
     { "normal", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3399,14 +3399,14 @@ static const esc_value_t p_spektrum_avian_hv_v11[] = {
     { "level 3", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_hv_v12[] = {
-    { "0 s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "45 s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "90 s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "0s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "45s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "90s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_hv_v13[] = {
-    { "1.0 s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "1.5 s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2.0 s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.0s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1.5s", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.0s", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_hv_v14[] = {
     { "CH5", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3452,7 +3452,7 @@ static const esc_item_t p_spektrum_avian_hv_items[] = {
 static const char *const p_spektrum_avian_smart_steps[] = {
     "Transmitter on with throttle at full.",
     "Connect the battery: three ascending tones, then two short tones (full throttle accepted).",
-    "Keep full throttle for more than 5 s (do not lower the stick): the ESC plays another tone series and enters programming.",
+    "Keep full throttle for more than 5s (do not lower the stick): the ESC plays another tone series and enters programming.",
     "Two short tones, then the tones of parameter 1.",
 };
 static const esc_model_t p_spektrum_avian_smart_models[] = {
@@ -3495,22 +3495,22 @@ static const esc_value_t p_spektrum_avian_smart_v4[] = {
 };
 static const esc_value_t p_spektrum_avian_smart_v5[] = {
     { "disabled", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2.8 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.4 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.6 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.8 V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.8V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V", 3u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.4V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.6V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.8V", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_spektrum_avian_smart_v6[] = {
-    { "5.2 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.2V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_spektrum_avian_smart_a6[] = {
     "Avian 15A (SPMXAE1015)",
 };
 static const esc_value_t p_spektrum_avian_smart_v7[] = {
-    { "6 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.2 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.2V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_spektrum_avian_smart_a7[] = {
     "Avian 30A (SPMXAE1030)",
@@ -3518,9 +3518,9 @@ static const char *const p_spektrum_avian_smart_a7[] = {
     "Avian 60A (SPMXAE1060)",
 };
 static const esc_value_t p_spektrum_avian_smart_v8[] = {
-    { "6 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_spektrum_avian_smart_a8[] = {
     "Avian 80A (SPMXAE1080)",
@@ -3586,7 +3586,7 @@ static const esc_item_t p_spektrum_avian_smart_items[] = {
 static const char *const p_sunrise_pro_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 5000 ms: 4 beeps, programming mode entered",
+    "Wait about 5000ms: 4 beeps, programming mode entered",
 };
 static const esc_model_t p_sunrise_pro_models[] = {
     { "Sunrise PRO 10A LBEC", 2u, 3u, false, 12600u, 10u, 0u },
@@ -3628,8 +3628,8 @@ static const esc_item_t p_sunrise_pro_items[] = {
 static const char *const p_surpass_kxss_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: 2 beeps",
-    "Wait about 5000 ms more: rising tone, programming mode entered",
+    "Wait about 2000ms: 2 beeps",
+    "Wait about 5000ms more: rising tone, programming mode entered",
 };
 static const esc_model_t p_surpass_kxss_models[] = {
     { "KXSS2401", 2u, 4u, false, 16800u, 10u, 0u },
@@ -3648,17 +3648,17 @@ static const esc_value_t p_surpass_kxss_v2[] = {
     { "cut-off", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_surpass_kxss_v3[] = {
-    { "low (3.0 V/cell)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "medium (3.15 V/cell)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (3.3 V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (3.0V/cell)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "medium (3.15V/cell)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (3.3V/cell)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_surpass_kxss_v4[] = {
-    { "normal (300 ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (300ms)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "soft", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "super soft", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_surpass_kxss_v5[] = {
-    { "low (3.75 deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (3.75deg)", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "medium", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "high", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
@@ -3701,24 +3701,24 @@ static const esc_model_t p_turnigy_aquastar_models[] = {
 };
 static const esc_value_t p_turnigy_aquastar_v0[] = {
     { "Auto LiPo cell detect", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12.0 V (4S)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15.0 V (5S)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "18.0 V (6S)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "21.0 V (7S)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "24.0 V (8S)", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "27.0 V (9S)", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30.0 V (10S)", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "33.0 V (11S)", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "36.0 V (12S)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12.0V (4S)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15.0V (5S)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "18.0V (6S)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "21.0V (7S)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "24.0V (8S)", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "27.0V (9S)", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30.0V (10S)", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "33.0V (11S)", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "36.0V (12S)", 10u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_aquastar_v1[] = {
     { "brake disabled", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft brake (50 %)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft brake (50%)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_aquastar_v2[] = {
-    { "low (0-15 deg)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "middle (5-20 deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "high (15-30 deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "low (0-15deg)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "middle (5-20deg)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "high (15-30deg)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "auto", 4u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_aquastar_v3[] = {
@@ -3731,9 +3731,9 @@ static const esc_value_t p_turnigy_aquastar_v4[] = {
     { "fast start", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_aquastar_v5[] = {
-    { "8 kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_aquastar_v6[] = {
     { "exit programming and go", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3775,16 +3775,16 @@ static const esc_value_t p_turnigy_trackstar_60a_v2_v0[] = {
     { "forward / brake / reverse", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v1[] = {
-    { "25 %", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "50 %", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "75 %", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "100 %", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "25%", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "50%", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "75%", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "100%", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v2[] = {
-    { "25 %", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "50 %", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "75 %", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "100 %", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "25%", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "50%", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "75%", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "100%", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v3[] = {
     { "high", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3795,25 +3795,25 @@ static const esc_value_t p_turnigy_trackstar_60a_v2_v3[] = {
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v4[] = {
     { "disable", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 %", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "20 %", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 %", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "40 %", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10%", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "20%", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30%", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "40%", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v5[] = {
-    { "large (0.1500 ms)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "normal (0.1000 ms)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "small (0.0750 ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "very small (0.0500 ms)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "smallest (0.0250 ms)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "large (0.1500ms)", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "normal (0.1000ms)", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "small (0.0750ms)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "very small (0.0500ms)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "smallest (0.0250ms)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v6[] = {
     { "none", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "auto LiPo", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "5 V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6 V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "9 V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5V", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6V", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "9V", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12V", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_turnigy_trackstar_60a_v2_v7[] = {
     { "lowest", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -3962,7 +3962,7 @@ static const esc_item_t p_yge_hvt_navy_items[] = {
 /* yge-mode-setup-5 */
 static const char *const p_yge_mode_setup_5_steps[] = {
     "Remove rotor blades or propeller; the motor must stay connected because it makes the tones",
-    "Throttle signal at maximum (100 %) before power is applied",
+    "Throttle signal at maximum (100%) before power is applied",
     "Apply supply power; wait for 20 interval tones, then 2 confirmation tones",
     "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn",
 };
@@ -3990,7 +3990,7 @@ static const esc_item_t p_yge_mode_setup_5_items[] = {
 /* yge-mode-setup-6 */
 static const char *const p_yge_mode_setup_6_steps[] = {
     "Remove rotor blades or propeller; the motor must stay connected because it makes the tones",
-    "Throttle signal at maximum (100 %) before power is applied",
+    "Throttle signal at maximum (100%) before power is applied",
     "Apply supply power; wait for 20 interval tones, then 2 confirmation tones",
     "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn",
 };
@@ -4019,7 +4019,7 @@ static const esc_item_t p_yge_mode_setup_6_items[] = {
 /* yge-mode-setup-navy */
 static const char *const p_yge_mode_setup_navy_steps[] = {
     "Remove rotor blades or propeller; the motor must stay connected because it makes the tones",
-    "Throttle signal at maximum (100 %) before power is applied",
+    "Throttle signal at maximum (100%) before power is applied",
     "Apply supply power; wait for 20 interval tones, then 2 confirmation tones",
     "Throttle to minimum; the ESC sounds mode 1, mode 2, ... in turn",
 };
@@ -4087,15 +4087,15 @@ static const esc_value_t p_yge_rc_setup_v2[] = {
     { "automatic", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_yge_rc_setup_v3[] = {
-    { "8 kHz", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "9 kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "10 kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "11 kHz", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "12 kHz", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "13 kHz", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "14 kHz", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 kHz", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "16 kHz", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8kHz", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "9kHz", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10kHz", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "11kHz", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "12kHz", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "13kHz", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "14kHz", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15kHz", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "16kHz", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_yge_rc_setup_v4[] = {
     { "off", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4159,7 +4159,7 @@ static const esc_item_t p_yge_saphir_items[] = {
 static const char *const p_ztw_gecko_steps[] = {
     "Transmitter on, throttle at max",
     "Connect battery",
-    "Wait about 2000 ms: two short beeps, programming mode entered",
+    "Wait about 2000ms: two short beeps, programming mode entered",
 };
 static const esc_model_t p_ztw_gecko_models[] = {
     { "Gecko 45A SBEC 5A", 2u, 6u, false, 25200u, 45u, 0u },
@@ -4172,9 +4172,9 @@ static const esc_model_t p_ztw_gecko_models[] = {
 };
 static const esc_value_t p_ztw_gecko_v0[] = {
     { "brake off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "soft brake (30 %)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "mid brake (60 %)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "hard brake (100 %)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "soft brake (30%)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "mid brake (60%)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "hard brake (100%)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_ztw_gecko_v1[] = {
     { "NiCd / NiMH", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4182,9 +4182,9 @@ static const esc_value_t p_ztw_gecko_v1[] = {
     { "LiFe", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_ztw_gecko_v2[] = {
-    { "2.8 V / 50 %", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.0 V / 60 %", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "3.2 V / 60 % (table) or 65 % (text)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2.8V / 50%", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.0V / 60%", 2u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "3.2V / 60% (table) or 65% (text)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "no protection", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_ztw_gecko_v3[] = {
@@ -4192,17 +4192,17 @@ static const esc_value_t p_ztw_gecko_v3[] = {
 };
 static const esc_value_t p_ztw_gecko_v4[] = {
     { "auto", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2 deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8 deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "22 deg", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "22deg", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_ztw_gecko_v5[] = {
-    { "5.0 V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "6.0 V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "7.4 V (not on Gecko 45A)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8.4 V (not on Gecko 45A)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "5.0V", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "6.0V", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "7.4V (not on Gecko 45A)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8.4V (not on Gecko 45A)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const char *const p_ztw_gecko_a5[] = {
     "Gecko 65A SBEC 8A",
@@ -4212,8 +4212,8 @@ static const char *const p_ztw_gecko_a5[] = {
 };
 static const esc_value_t p_ztw_gecko_v6[] = {
     { "RPM off", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "1st soft start (8 s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2nd soft start (15 s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "1st soft start (8s)", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2nd soft start (15s)", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "governor mode 1 (low KV)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
     { "governor mode 2 (high KV)", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
@@ -4222,15 +4222,15 @@ static const esc_value_t p_ztw_gecko_v7[] = {
     { "reverse", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_ztw_gecko_v8[] = {
-    { "10 %", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 %", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "20 %", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "25 %", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 %", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "35 %", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "40 %", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "45 %", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "50 %", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "10%", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15%", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "20%", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "25%", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30%", 5u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "35%", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "40%", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "45%", 8u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "50%", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_value_t p_ztw_gecko_v9[] = {
     { "reduce power", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
@@ -4261,9 +4261,9 @@ static const esc_item_t p_ztw_gecko_items[] = {
 
 /* ztw-spider-v2 */
 static const char *const p_ztw_spider_v2_steps[] = {
-    "Radio on, throttle at 100 %",
+    "Radio on, throttle at 100%",
     "Connect battery",
-    "Wait: two beeps = programming mode (Chinese page: wait 3 s first; its example waits for four 'beep-beep' groups)",
+    "Wait: two beeps = programming mode (Chinese page: wait 3s first; its example waits for four 'beep-beep' groups)",
 };
 static const esc_model_t p_ztw_spider_v2_models[] = {
     { "Spider 20A OPTO", 2u, 6u, false, 25200u, 20u, 0u },
@@ -4279,11 +4279,11 @@ static const esc_value_t p_ztw_spider_v2_v0[] = {
 };
 static const esc_value_t p_ztw_spider_v2_v1[] = {
     { "auto", 1u, true, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "2 deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "8 deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "15 deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "22 deg", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
-    { "30 deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "2deg", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "8deg", 3u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "15deg", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "22deg", 5u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
+    { "30deg", 6u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_item_t p_ztw_spider_v2_items[] = {
     { "Mode", "mode", 1u, 2u, p_ztw_spider_v2_v0,
@@ -4330,7 +4330,7 @@ const esc_profile_t esc_profiles_builtin[] = {
       3u, p_dualsky_xcontroller_lite_steps, 4u, p_dualsky_xcontroller_lite_models, 8u, p_dualsky_xcontroller_lite_items,
       0u, NULL },
     { "eflite-10a-pro", "E-flite",
-      "10 A Pro Brushless ESC (EFLA1010)",
+      "10A Pro Brushless ESC (EFLA1010)",
       ESC_SCHEME_STICK_POSITION, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM, ESC_AUTO_FULL,
       "",
       ESC_THR_MAX, false, 5000u,
@@ -4359,7 +4359,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "greatplanes-electrifly-c-series", "Great Planes",
       "C-25, C-35, C-55 brushed ESC",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_VALUE, ESC_AUTO_ASSISTED,
-      "Brake and battery setup start with a press of the ESC on/off button (battery setup: hold 4-5 s, red LED out). The button is not a throttle or power action.",
+      "Brake and battery setup start with a press of the ESC on/off button (battery setup: hold 4-5s, red LED out). The button is not a throttle or power action.",
       ESC_THR_MIN, true, 0u,
       ESC_THR_MIN, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
@@ -4386,7 +4386,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "hacker-master-gen3", "Hacker",
       "Master (third generation: Flight, F5, Acro, Heli, Navy, Car; OPTO, BEC, S-BEC)",
       ESC_SCHEME_MELODY_GROUPS, ESC_ENC_COUNT, ESC_ANNOUNCE_VALUE, ESC_AUTO_FULL,
-      "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0 V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
+      "Only throttle signal and supply are needed. Car types use a centre-neutral throttle and the current-limit item starts from the max-brake end, so the bench must output those throttle positions. Navy types need a full-then-centre teach once. OPTO types are specified with a separate 4.5-6.0V receiver supply for programming through the programming box; whether stick programming needs it is not stated.",
       ESC_THR_MAX, false, 5000u,
       ESC_THR_MIN, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, 5, true, false,
@@ -4395,7 +4395,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "hacker-master-senstrol", "Hacker",
       "Master Senstrol 120/180 Opto (sine commutation)",
       ESC_SCHEME_STICK_POSITION, ESC_ENC_COUNT, ESC_ANNOUNCE_VALUE, ESC_AUTO_ASSISTED,
-      "The ESC runs only with its motor and the motor identification chip connected. Parameters are set with the JetiBox, not by stick. Stick teaching covers the throttle range only. Modes 1 to 3 also need a second PWM channel from a switch; the supply range of the ESC starts at 18 V.",
+      "The ESC runs only with its motor and the motor identification chip connected. Parameters are set with the JetiBox, not by stick. Stick teaching covers the throttle range only. Modes 1 to 3 also need a second PWM channel from a switch; the supply range of the ESC starts at 18V.",
       ESC_THR_MAX, false, 0u,
       ESC_THR_MIN, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
@@ -4494,7 +4494,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "hobbywing-skywalker-120a-v2", "Hobbywing",
       "Skywalker 120A V2, 12-item menu",
       ESC_SCHEME_SHORT_LONG, ESC_ENC_SHORT_LONG, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_FULL,
-      "Model has a BEC (5/6/7.4/8.4 V adjustable).",
+      "Model has a BEC (5/6/7.4/8.4V adjustable).",
       ESC_THR_MAX, false, 7000u,
       ESC_THR_MIN, 3000u, ESC_THR_MAX, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       5u, 0u, 0u, 0u, -1, false, false,
@@ -4629,7 +4629,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "kontronik-koby", "Kontronik",
       "KOBY",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_ASSISTED,
-      "The ESC's own button must be pressed once after the 2 s entry wait. The bench has no actuator for it.",
+      "The ESC's own button must be pressed once after the 2s entry wait. The bench has no actuator for it.",
       ESC_THR_MIN, false, 2000u,
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
@@ -4647,7 +4647,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "kontronik-kontrol-x", "Kontronik",
       "KONTROL-X / KOLIBRI-X",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM, ESC_AUTO_ASSISTED,
-      "These ESCs are not throttle-only: the programming steps include pressing the ESC's own button after the 2 s wait. The bench has no actuator for it.",
+      "These ESCs are not throttle-only: the programming steps include pressing the ESC's own button after the 2s wait. The bench has no actuator for it.",
       ESC_THR_MIN, false, 2000u,
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
@@ -4692,7 +4692,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "kontronik-pix", "Kontronik",
       "PIX",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM, ESC_AUTO_ASSISTED,
-      "The button on the ESC must be pressed after the 2 s wait. The bench has no actuator for it.",
+      "The button on the ESC must be pressed after the 2s wait. The bench has no actuator for it.",
       ESC_THR_MIN, false, 2000u,
       ESC_THR_MAX, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, true, false,
@@ -4789,16 +4789,16 @@ const esc_profile_t esc_profiles_builtin[] = {
       4u, p_spektrum_avian_130_pro_steps, 1u, p_spektrum_avian_130_pro_models, 15u, p_spektrum_avian_130_pro_items,
       0u, NULL },
     { "spektrum-avian-hv", "Spektrum",
-      "Avian 160 A / 200 A HV Smart ESC",
+      "Avian 160A / 200A HV Smart ESC",
       ESC_SCHEME_SHORT_LONG, ESC_ENC_SHORT_LONG, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_NONE,
-      "This manual gives the tone codes and options but no stick procedure for selecting a parameter or option; it describes the programming box and SmartLink only. The calibration tip says more than 5 s at full throttle enters programming mode.",
+      "This manual gives the tone codes and options but no stick procedure for selecting a parameter or option; it describes the programming box and SmartLink only. The calibration tip says more than 5s at full throttle enters programming mode.",
       ESC_THR_MAX, false, 5000u,
       ESC_THR_NONE, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       5u, 0u, 0u, 0u, -1, false, false,
       4u, p_spektrum_avian_hv_steps, 2u, p_spektrum_avian_hv_models, 15u, p_spektrum_avian_hv_items,
       0u, NULL },
     { "spektrum-avian-smart", "Spektrum",
-      "Avian Smart ESC 15-100 A",
+      "Avian Smart ESC 15-100A",
       ESC_SCHEME_SHORT_LONG, ESC_ENC_SHORT_LONG, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_FULL,
       "",
       ESC_THR_MAX, false, 0u,
@@ -4827,7 +4827,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "turnigy-aquastar", "HobbyKing/Turnigy",
       "Aquastar boat ESC, throttle count menu",
       ESC_SCHEME_COUNT, ESC_ENC_COUNT, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_ASSISTED,
-      "The manual has the user switch the ESC on after the throttle is at max and the transmitter is on, and the HV 240A needs a separate 5-6 V receiver supply. The bench could replace the ESC switch with supply output, but the manual does not say so.",
+      "The manual has the user switch the ESC on after the throttle is at max and the transmitter is on, and the HV 240A needs a separate 5-6V receiver supply. The bench could replace the ESC switch with supply output, but the manual does not say so.",
       ESC_THR_MAX, false, 0u,
       ESC_THR_MIN, 0u, ESC_THR_MAX, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, -1, false, false,

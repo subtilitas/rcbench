@@ -123,7 +123,7 @@ GPIO31 (SCL), the pins IO30 and IO31 of the 12-pin header P3 (3V3, GND, IO2
 to IO5, IO28 to IO31, IO34, IO36). The sensor takes 3.3V and GND from the
 same header. The panel switches on the ESP32-P4's internal pull-ups; whether
 they alone hold 400kHz on the knob's wires is not measured, so a sensor
-without pull-ups of its own gets 4.7kOhm ones to 3.3V, as the datasheet's
+without pull-ups of its own gets 4.7kΩ ones to 3.3V, as the datasheet's
 I2C circuit has.
 
 The sensor has to be in its I2C/SSI (synchronous serial interface) mode,
@@ -136,7 +136,7 @@ memory) setting is needed. Pins of the SOP-8 MT6701CT, from the
 | MT6701 pin | Connect to |
 | --- | --- |
 | 1 VDD | 3.3V from the header. The datasheet's supply is 3.3 to 5.0V |
-| 2 MODE | VDD. An internal 200kOhm pull-up holds an open pin high; figure 17 ties it to VDD. Never GND |
+| 2 MODE | VDD. An internal 200kΩ pull-up holds an open pin high; figure 17 ties it to VDD. Never GND |
 | 3 OUT | not connected; the panel reads the angle over I2C |
 | 4 GND | GND |
 | 5 PUSH | not connected |
@@ -146,7 +146,7 @@ memory) setting is needed. Pins of the SOP-8 MT6701CT, from the
 
 A breakout board brings out fewer pins. On one, check that MODE is at VDD
 (a pin, a jumper or a pull-up) and that its supply pin takes 3.3V. The
-datasheet's I2C circuit has 4.7kOhm pull-ups on SDA and SCL to VDD; a
+datasheet's I2C circuit has 4.7kΩ pull-ups on SDA and SCL to VDD; a
 breakout's own pull-ups go to its VDD, here 3.3V.
 
 - Address: 0x06, the datasheet's default. The panel reads 0x06 only. EEPROM
@@ -192,7 +192,7 @@ Network Time Protocol). The board has the ESP32-P4's own clock parts:
 
 | Part | What it is | Use in the panel |
 | --- | --- | --- |
-| Y3 | 32.768kHz crystal, 2.0 x 1.2mm, 22pF to GND on each side, 10MOhm across, on GPIO0 (XTAL_32K_N) and GPIO1 (XTAL_32K_P) | not used: the RTC timer runs from the internal RC oscillator (ESP-IDF's default, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| Y3 | 32.768kHz crystal, 2.0 x 1.2mm, 22pF to GND on each side, 10MΩ across, on GPIO0 (XTAL_32K_N) and GPIO1 (XTAL_32K_P) | not used: the RTC timer runs from the internal RC oscillator (ESP-IDF's default, `CONFIG_RTC_CLK_SRC_INT_RC`) |
 | BAT1 | CR1220 coin-cell holder, "RTC BAT", on the ESP32-P4's VDD_BAT (pin 102); 3V3 charges it through D1 (B5819WS) with no series resistor; C41 1uF | not used. Waveshare: rechargeable 3 to 3.3V cells only. Whether a board ships with a cell is not known |
 
 The ESP32-P4 can keep its RTC timer running on VDD_BAT, but only from deep
@@ -307,7 +307,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every module under `shared/` and `protocols/`, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, [Performance](Performance.md) has no ceiling table while `ci.yml` has no `--max-lines` argument, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
 | `tools/wiki_links.py` | rewrites the links of a copy of `docs/` for the wiki, where pages are addressed by title: `Page.md` becomes `Page`, a target above `docs/` a repository URL (`blob`, `tree`, `raw` for an image); compares each page with its rewrite through markdown-it-py 3.0.0 and exits 1 on any other difference, with page and line; `--check` changes nothing; `--verify` fails on a converted page whose links a wiki cannot open |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
-| `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files and released CHANGELOG sections are not covered |
+| `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files other than the ESC profiles' panel texts and released CHANGELOG sections are not covered |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | move the interface's words from the per-file form (English in `ui_text.def` and the schema, German in `ui_text_de.c`) into the one table, `shared/text/include/ui_text.def`; `merge BASE THEIRS` carries the text changes of a branch still in the per-file form into the table during a merge ([Interface language](Language.md#adding-a-text)) |
 | `tools/gen_font.py` | regenerates the seven embedded fonts from DejaVu Sans Mono, the five text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
@@ -430,7 +430,7 @@ most 1,000ms after that call has returned (`wifi_radio.c`).
   `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
   restarts` once, holds the C6 in reset, and the session ends as a failed
   start. With the C6 in reset its SDIO lines are held high by their
-  51kOhm pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
+  51kΩ pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
   instead of failing in a loop; this is not measured on a board. The panel
   does not restart for it
   (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): a restart would drop

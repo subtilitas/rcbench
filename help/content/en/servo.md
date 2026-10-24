@@ -80,7 +80,7 @@ The line over the plot names the meter of the servo rail:
 ![The INA3221 as the rail's meter](view:servo-ina)
 ![A clipped window, in the warning colour](view:servo-clipped)
 
-The INA3221 becomes the meter 1000ms after its conditions hold: a channel of a fitted part watches the tester's target in SETUP > SENSORS (on an IOmcu older than 4.25, CH1 of its part), the IOmcu speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638A on a 0.1ohm shunt, shows in the warning colour: its mean is then a bound.
+The INA3221 becomes the meter 1000ms after its conditions hold: a channel of a fitted part watches the tester's target in SETUP > SENSORS (on an IOmcu older than 4.25, CH1 of its part), the IOmcu speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638A on a 0.1Ω shunt, shows in the warning colour: its mean is then a bound.
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 

@@ -352,7 +352,7 @@ Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GP13, 50Hz
 Pulse range:    centre 1500us, 1000-2000us
 Searched:       from 1500us out to 1000us and 2000us
-Current:        INA3221 0x40 CH1, 50ms windows, shunt 100.0mOhm
+Current:        INA3221 0x40 CH1, 50ms windows, shunt 100.0mΩ
 Search rule:    10us steps, settle 120ms, mean of 80ms; bound above 1.8 x free and +0.15A
 Protections:    a sample at 3.0A, above 1.0A for 400ms, no window for 200ms, 40s a search
 Duration:       85.6s
@@ -1053,7 +1053,7 @@ the host suite's modelled bench:
 ```
 Log:            the .CSV with this file's number, one row per INA3221 window
 Supply:         PD mini
-Current:        INA3221 0x40 CH1, shunt 100.0mOhm, range 1.638A
+Current:        INA3221 0x40 CH1, shunt 100.0mΩ, range 1.638A
 Voltage:        INA3221 0x40 CH1, load side of the shunt
 Shunt:          up to 0.164V lost across it at the range; the set point is not raised for it
 Readings:       20.0 /s windows closed by the INA3221, 20.0 /s reached the test

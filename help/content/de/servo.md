@@ -80,7 +80,7 @@ Die Zeile über der Grafik nennt das Messgerät der Servoschiene:
 ![Der INA3221 als Messgerät der Schiene](view:servo-ina)
 ![Ein übersteuertes Fenster, in der Warnfarbe](view:servo-clipped)
 
-Der INA3221 wird 1000ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät: Ein Kanal eines bestückten Bausteins überwacht in SETUP > SENSOREN das Ziel des Testers (an einem IOmcu älter als 4.25 CH1 seines Bausteins), der IOmcu spricht Protokoll 4.11, und Fenster mit Strommesswerten kommen an. Ein Fenster, in dem ein Messwert das Ende des Bereichs erreicht hat, 1,638A an einem Shunt von 0,1Ohm, steht in der Warnfarbe: Sein Mittelwert ist dann eine Grenze.
+Der INA3221 wird 1000ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät: Ein Kanal eines bestückten Bausteins überwacht in SETUP > SENSOREN das Ziel des Testers (an einem IOmcu älter als 4.25 CH1 seines Bausteins), der IOmcu spricht Protokoll 4.11, und Fenster mit Strommesswerten kommen an. Ein Fenster, in dem ein Messwert das Ende des Bereichs erreicht hat, 1,638A an einem Shunt von 0,1Ω, steht in der Warnfarbe: Sein Mittelwert ist dann eine Grenze.
 
 ![Das Netzteilmodell des Panels als Messgerät, mit der Marke SIMULIERT](view:servo-model)
 

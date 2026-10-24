@@ -155,7 +155,7 @@ Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
 "manual": [
   {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
    "source": "Kontronik_Beat.pdf p.5"},
-  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+  {"when": "before_menu", "action": "Pull the jumper off after 2s or the tone sequence."}
 ]
 ```
 
@@ -200,7 +200,18 @@ dann die C-Datei neu erzeugen und prüfen:
 ```sh
 python3 tools/gen_esc_profiles.py
 python3 tools/gen_esc_profiles.py --check
+python3 tools/check_units.py --check
 ```
+
+Die Texte, die das Panel mitführt, schreiben Zahl und Einheit zusammen:
+`2s`, `1.2-1.8ms`, `3.0V per cell`, `8kHz`. Ein Wort nach einer Zahl behält
+sein Leerzeichen (`3 beeps`). Das sind `brand`, `family`,
+`automatable_note`, die `steps` des Einstiegs, der `name` eines Modells, der
+`name` und `applies_when` eines Menüpunkts, der `name` eines Werts und
+`action` und `action_de` eines Handgriffs: die Strings, die
+`gen_esc_profiles.py` in die C-Datei übernimmt. `check_units.py` hält sie;
+die Recherchefelder (`sources`, `notes`, `unknowns`, die Beschreibungen,
+`spec_source` und `firmware_note` eines Modells) nicht.
 
 CI (Continuous Integration) führt `--check` aus. Die Host-Suite liest jede
 Datei mit dem Leser des Panels und vergleicht das Ergebnis Feld für Feld mit

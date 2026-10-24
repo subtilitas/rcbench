@@ -58,12 +58,12 @@
       "steps": [
         "Receiver lead in the motor channel. Transmitter on, receiver battery connected. Throttle and trim to brake if a brake is wanted, else motor-off.",
         "Operator: fit the short-circuit bridge on the two gold contacts.",
-        "Apply drive power. After about 5 s a signal confirms the brake / motor-off position.",
-        "Move the throttle to full and hold it until the signal, about 5 s after the last one.",
+        "Apply drive power. After about 5s a signal confirms the brake / motor-off position.",
+        "Move the throttle to full and hold it until the signal, about 5s after the last one.",
         "No brake: leave the throttle at full. Brake: move the throttle to motor-off.",
-        "After about 5 s a signal confirms the brake activation.",
+        "After about 5s a signal confirms the brake activation.",
         "Hard brake: move the throttle to full again. Soft brake: keep the throttle where it is.",
-        "After about 5 s a double signal stores all settings. Undervoltage cutoff stays on if the bridge is still fitted at this moment; remove it before the double signal to switch the cutoff off.",
+        "After about 5s a double signal stores all settings. Undervoltage cutoff stays on if the bridge is still fitted at this moment; remove it before the double signal to switch the cutoff off.",
         "Disconnect drive power and remove the bridge."
       ]
     },

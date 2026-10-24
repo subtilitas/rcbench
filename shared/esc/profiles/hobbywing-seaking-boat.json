@@ -198,8 +198,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery (ESC switch on where fitted)",
-        "Wait about 2000 ms: Beep-Beep",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: Beep-Beep",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -295,20 +295,20 @@
         },
         {
           "number": 2,
-          "name": "2.8 V/cell"
+          "name": "2.8V/cell"
         },
         {
           "number": 3,
-          "name": "3.0 V/cell"
+          "name": "3.0V/cell"
         },
         {
           "number": 4,
-          "name": "3.2 V/cell",
+          "name": "3.2V/cell",
           "default": true
         },
         {
           "number": 5,
-          "name": "3.4 V/cell"
+          "name": "3.4V/cell"
         }
       ],
       "applies_to": null,
@@ -321,36 +321,36 @@
       "values": [
         {
           "number": 1,
-          "name": "0 deg"
+          "name": "0deg"
         },
         {
           "number": 2,
-          "name": "3.75 deg"
+          "name": "3.75deg"
         },
         {
           "number": 3,
-          "name": "7.5 deg"
+          "name": "7.5deg"
         },
         {
           "number": 4,
-          "name": "11.25 deg"
+          "name": "11.25deg"
         },
         {
           "number": 5,
-          "name": "15 deg",
+          "name": "15deg",
           "default": true
         },
         {
           "number": 6,
-          "name": "18.75 deg"
+          "name": "18.75deg"
         },
         {
           "number": 7,
-          "name": "22.5 deg"
+          "name": "22.5deg"
         },
         {
           "number": 8,
-          "name": "26.25 deg"
+          "name": "26.25deg"
         }
       ],
       "applies_to": null,

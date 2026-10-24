@@ -250,8 +250,8 @@
       "hold_ms": 6000,
       "confirm_signal": "Five beeps after the stick returns to full throttle and is held at least 6 s.",
       "steps": [
-        "Calibrate the stick range as described (full throttle, melody at about 10 s, motor off within 4 s, melody) up to step 4 or 5.",
-        "Move the stick to full throttle again and hold it for at least 6 s.",
+        "Calibrate the stick range as described (full throttle, melody at about 10s, motor off within 4s, melody) up to step 4 or 5.",
+        "Move the stick to full throttle again and hold it for at least 6s.",
         "Five beeps: programming mode."
       ]
     },

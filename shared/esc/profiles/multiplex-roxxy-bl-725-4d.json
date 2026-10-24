@@ -36,7 +36,7 @@
       "steps": [
         "Battery disconnected, transmitter on, throttle stick at maximum.",
         "Connect a charged flight battery: three-way tone sequence.",
-        "After about 3 s a longer fourth sound.",
+        "After about 3s a longer fourth sound.",
         "Stick to minimum: ascending tone sequence, throttle calibrated, controller ready in standard mode."
       ]
     },

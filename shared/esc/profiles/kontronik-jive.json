@@ -85,8 +85,8 @@
     },
     {
       "when": "before_menu",
-      "action": "Pull the jumper off after 2 s or the tone sequence.",
-      "action_de": "Jumper nach 2 s oder der Tonfolge abziehen.",
+      "action": "Pull the jumper off after 2s or the tone sequence.",
+      "action_de": "Jumper nach 2s oder der Tonfolge abziehen.",
       "starts_menu": true,
       "source": "Kontronik_Jive.pdf p.6 (DE), p.18 (EN)"
     }
@@ -102,11 +102,11 @@
         "Operator: fit the jumper on the 2 marked programming contacts. Connect the motor if tones are to be audible.",
         "Transmitter on. Throttle to the brake position (modes 6 and 8: motor-off position).",
         "Apply drive power.",
-        "Wait 2 s or until the ESC sounds its three-tone sequence.",
+        "Wait 2s or until the ESC sounds its three-tone sequence.",
         "Operator: pull the jumper off.",
         "The ESC sounds a second three-tone sequence, then the mode series 1 to 11.",
         "Move the throttle to full while the wanted series sounds.",
-        "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10 % per tone); move the throttle to motor-off at the wanted count.",
+        "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10% per tone); move the throttle to motor-off at the wanted count.",
         "The ESC repeats the stored mode. Disconnect drive power."
       ]
     },
@@ -175,7 +175,7 @@
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage cutoff, 2.7 to 3 V per cell"
+          "name": "LiPo undervoltage cutoff, 2.7 to 3V per cell"
         },
         {
           "number": 10,
@@ -196,7 +196,7 @@
       "values": [
         {
           "number": 1,
-          "name": "each tone adds 10 % brake strength; the count at which the throttle returns to motor-off is stored"
+          "name": "each tone adds 10% brake strength; the count at which the throttle returns to motor-off is stored"
         }
       ],
       "applies_to": null,

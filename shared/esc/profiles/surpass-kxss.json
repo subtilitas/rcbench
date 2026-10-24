@@ -48,8 +48,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: 2 beeps",
-        "Wait about 5000 ms more: rising tone, programming mode entered"
+        "Wait about 2000ms: 2 beeps",
+        "Wait about 5000ms more: rising tone, programming mode entered"
       ]
     },
     "announce": {
@@ -144,16 +144,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (3.0 V/cell)"
+          "name": "low (3.0V/cell)"
         },
         {
           "number": 2,
-          "name": "medium (3.15 V/cell)",
+          "name": "medium (3.15V/cell)",
           "default": true
         },
         {
           "number": 3,
-          "name": "high (3.3 V/cell)"
+          "name": "high (3.3V/cell)"
         }
       ],
       "applies_to": null,
@@ -166,7 +166,7 @@
       "values": [
         {
           "number": 1,
-          "name": "normal (300 ms)",
+          "name": "normal (300ms)",
           "default": true
         },
         {
@@ -188,7 +188,7 @@
       "values": [
         {
           "number": 1,
-          "name": "low (3.75 deg)",
+          "name": "low (3.75deg)",
           "default": true
         },
         {

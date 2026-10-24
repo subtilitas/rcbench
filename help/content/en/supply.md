@@ -23,7 +23,7 @@ The right column is the same on both tasks: the readings, and the CONTROL card w
 
 ![SUPPLY with the PD mini disabled: SIMULATED SUPPLY](view:supply)
 
-With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supply. The header reads `SIMULATED SUPPLY` and the menu tile is marked SIMULATED. The model is a 6ohm load with a 1.4A burst for 0.6s every 3s, behind a 0.05ohm source resistance. Its readings are not measured, and nothing on the bench is powered.
+With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supply. The header reads `SIMULATED SUPPLY` and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
 
 ## The PD mini
 
