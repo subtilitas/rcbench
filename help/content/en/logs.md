@@ -53,7 +53,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
 - A card put in, taken out or swapped while the panel runs is found by the next RESCAN, the next opening of LOGS, the next page or OPEN, and the next run's start, with no restart. A new card opens on its first page; an empty slot says `No card. Insert one and tap RESCAN.`.
-- Newest means the highest number in the name. The panel has no clock that survives a power cycle, so every file is dated 1980-01-01.
+- Newest means the highest number in the name. A file's date is only as good as the panel's clock: it starts unset at each power-on, and until NTP sets it on the home network the panel dates files 1980 ([Setup](setup.md#panel)).
 - A run being written is not listed. Its number in another folder is.
 - A row takes a tap. A drag of more than 8px on the rows scrolls the list and selects nothing.
 

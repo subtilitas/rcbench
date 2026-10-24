@@ -67,7 +67,7 @@ FILES schreibt nur, solange der Prüfstand SAFE ist und kein Lauf aufgezeichnet 
 ![INFO zu einer Datei](view:files-info)
 ![INFO zu einem Ordner](view:files-info-folder)
 
-Eine Aufgabe, die länger als 0.25s dauert, zeigt ihren Fortschritt in einer Box; ABBRECHEN hält eine Kopie vor ihren nächsten 16KiB an. INFO zeigt die Zeit, die die Karte führt, gelesen als UTC (Coordinated Universal Time).
+Eine Aufgabe, die länger als 0.25s dauert, zeigt ihren Fortschritt in einer Box; ABBRECHEN hält eine Kopie vor ihren nächsten 16KiB an. INFO zeigt die Zeit, die die Karte führt, in der Zone von SETUP > PANEL, Zeitzone. Ein Datum in 1980 liest sich `nicht bekannt`: Die Uhr war nicht gestellt, als die Datei geschrieben wurde ([Setup](setup.md#panel)).
 
 ## Keine Karte
 

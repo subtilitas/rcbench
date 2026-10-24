@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -892,6 +893,10 @@ TEST_CASE(an_added_entry_whose_path_hash_collides_is_left_out)
 
 int main(void)
 {
+    /* Dates as UTC whatever the shell's zone: the page and the ZIP read
+     * stamps in the C library's zone (wall_local_s()). */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     setup_dir();
     RUN(crc32_and_dos_times_are_as_zip_takes_them);
     RUN(an_empty_card_is_an_empty_archive);

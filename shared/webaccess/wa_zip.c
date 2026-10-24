@@ -14,6 +14,8 @@
 
 #include <string.h>
 
+#include "wall_clock.h"
+
 #define SIG_LOCAL    0x04034b50u
 #define SIG_DESC     0x08074b50u
 #define SIG_CENTRAL  0x02014b50u
@@ -152,7 +154,8 @@ size_t wa_zip_local(uint8_t *out, const char *name, size_t name_len,
 {
     (void)dir;
     uint16_t t, d;
-    wa_dos_time(mtime, &t, &d);
+    /* DOS dates are local, as FatFs wrote the stamp (wall_clock.h). */
+    wa_dos_time(wall_local_s(mtime), &t, &d);
     const bool z64 = wa_zip_entry64(size);
     uint8_t *p = put32(out, SIG_LOCAL);
     p = put16(p, z64 ? VERSION_45 : VERSION_20);
@@ -196,7 +199,8 @@ size_t wa_zip_central(uint8_t *out, const char *name, size_t name_len,
                       int64_t mtime, bool dir)
 {
     uint16_t t, d;
-    wa_dos_time(mtime, &t, &d);
+    /* DOS dates are local, as FatFs wrote the stamp (wall_clock.h). */
+    wa_dos_time(wall_local_s(mtime), &t, &d);
     const unsigned k = central_fields(size, offset);
     const bool big = central_sizes64(size, offset);
     uint8_t *p = put32(out, SIG_CENTRAL);

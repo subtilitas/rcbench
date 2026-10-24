@@ -154,6 +154,10 @@ bool bring_up(void)
     publish_log_auto();
     publish_tone();
     publish_hitec_rx();
+    /* The zone before the card mounts, so the first file stamped is
+     * stamped in it; and what the clock holds, on the console. */
+    publish_time_zone();
+    log_clock_at_start();
     settings_apply_ui();
     /*
      * The panel's Wi-Fi reads its kept home network now, before the panel

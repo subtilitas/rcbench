@@ -14,7 +14,7 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| PANEL | `10 SETTINGS` | the list of PANEL |
+| PANEL | `11 SETTINGS` | the list of PANEL |
 | INTERFACES | `23 SETTINGS` | the list of INTERFACES |
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
 | SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
@@ -110,6 +110,7 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Screen rotation | NORMAL, 180° | NORMAL | turns picture and touch by 180°, from the next frame; locked while ARMED |
 | Language | ENGLISH, DEUTSCH | ENGLISH | the interface language, from the next frame, without a restart |
 | Units | METRIC, IMPERIAL | METRIC | stored; no screen uses it in this release |
+| Time zone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN | the zone file dates are written and shown in, daylight saving included |
 | Dim after | 0 to 60min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
@@ -120,6 +121,10 @@ The backlight is on while the panel runs. No setting switches it.
 Screen rotation turns the picture as each frame goes out, through the ESP32-P4's PPA (pixel-processing accelerator), and turns touch with it, so every control stays under the finger. A contact at (x, y) in NORMAL is at (1023 - x, 599 - y) in 180°. Touch injector contacts do not turn. The row has no keys while the bench is ARMED. When a frame's copy takes longer than 50ms, picture and touch go back to NORMAL together and the band says so; the setting stays 180°, and the next start turns again.
 
 ![Screen rotation at 180° while ARMED](view:setup-rotation)
+
+The panel has no RTC (real-time clock) chip. Its clock starts unset at each power-on and is set by NTP (Network Time Protocol): each join of the home network asks `pool.ntp.org` once, for at most 30000ms, and never keeps the radio on longer than the join. A software restart keeps the clock. Until an answer, files the panel writes are dated 1980; FILES INFO reads such a date as `not known`. The access point asks no time server.
+
+![Time zone set to LOS ANGELES](view:setup-time-zone)
 
 ![SETUP in the light theme](view:setup-light)
 

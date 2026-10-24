@@ -2446,8 +2446,10 @@ bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe un
 die allein stehenden Berichte nach Nummer, die höchste zuerst, dann die
 Dateien, die der Prüfstand nicht geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
 Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im
-Namen: die Panel-Platine hat keine Uhr, die einen Stromausfall übersteht,
-deshalb trägt jede Datei auf der Karte das Datum 1980-01-01.
+Namen: Das Datum einer Datei ist nur so gut wie die Uhr des Panels, die bei
+jedem Einschalten ungestellt startet und im Heimnetz über NTP (Network Time
+Protocol) gestellt wird ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)).
+Eine Datei, die vorher geschrieben wurde, trägt das Datum 1980.
 
 ![Eine volle Karte mit 999 Läufen und einer anderen Datei auf ihrer vierten Seite](img/de/logs-pages.png)
 
@@ -2827,9 +2829,11 @@ INFO ist eine Box von 800 x 420px mit SCHLIESSEN von 300 x 56px. Eine
 Datei zeigt Name, Ordner, Art, Größe, Zeit und Regel; ein Ordner zeigt
 seine Einträge, die Bytes der Dateien direkt in ihm, die nicht gelisteten
 Einträge, seine Zeit und seine Regel. Die Zeit ist die Änderungszeit, die
-die Karte führt, gelesen als UTC (Coordinated Universal Time),
-`2024-05-17 12:34`; das Panel kennt keine Zeitzone. Die Zeiten der Dateien,
-die das Panel schreibt, sind auf einem Panel nicht geprüft.
+die Karte führt, in der Zone von SETUP > PANEL, `Zeitzone`,
+`2024-05-17 12:34`. Ein Zeitstempel in 1980 liest sich `nicht bekannt`: FAT
+(File Allocation Table) schreibt 1980 für eine Uhr, die nicht gestellt war,
+und das Panel nennt kein Datum, das es nicht hat
+([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)).
 
 ![Die Auswahl von NEU](img/de/files-new.png)
 
@@ -3112,8 +3116,9 @@ läuft während jedes Flash-Löschens (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 zeigt, ist nicht gemessen.
 
 **Dateien auf der Karte.** Jede Datei, Ordner für Ordner, mit Namen, Größe
-in Bytes und Änderungszeit, wie die Karte sie hat. Jeder Name lädt seine
-Datei herunter. Die Seite liest die Karte nur: Nichts darauf wird gelöscht,
+in Bytes und Änderungszeit, wie die Karte sie hat, in der Zone von SETUP >
+PANEL, `Zeitzone`. Ein Zeitstempel in 1980, der einer ungestellten Uhr, lässt
+die Zeitzelle leer. Jeder Name lädt seine Datei herunter. Die Seite liest die Karte nur: Nichts darauf wird gelöscht,
 umbenannt oder geschrieben. Ein Name über 255 Zeichen, ein Pfad über
 384 Bytes und ein Ordner tiefer als 16 fehlen, und die Seite sagt, wie
 viele. Ohne Karte oder mit einer Karte, die nicht lesbar ist, sagt die Seite
@@ -3123,7 +3128,8 @@ es, und der Upload geht trotzdem.
 ZIP-Datei. Die Seite nennt vor dem Klick die Zahl der Dateien, ihre Bytes
 und die Bytes der ZIP-Datei. Die Dateien liegen darin, wie sie sind, nicht
 komprimiert, mit ihren Ordnerpfaden ab der Wurzel der Karte, Namen in UTF-8
-und den Zeiten der Karte. Eine Datei über 4GiB − 1B, ein Archiv über
+und den Zeiten der Karte in der Zone von SETUP > PANEL, `Zeitzone`, wie ZIP
+Ortszeiten nimmt. Eine Datei über 4GiB − 1B, ein Archiv über
 4GiB − 1B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür auf
 die Karte geschrieben. Das Panel hält 24 Bytes je Eintrag im PSRAM, nicht
 das Archiv: Es wird gesendet, wie es gelesen wird. Die Zahl der Einträge hat
@@ -3438,6 +3444,62 @@ eingebaut ist.
   bewegt jedes Bedienelement unter dem Finger weg, STOP eingeschlossen. Die
   Regel ist die von Leerlaufpuls und Vollpuls auf MOTOR & ESC,
   EINSTELLUNGEN: ein Wert nur für einen Prüfstand in SAFE.
+
+### PANEL: Zeitzone und Uhr
+
+Die Panel-Platine trägt keinen RTC-Chip (Real-Time Clock). Ihre Uhr ist die
+Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
+
+| Einstellung | Werte | Vorgabe |
+| --- | --- | --- |
+| `Zeitzone` | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN |
+
+![PANEL bis zur Zeitzone gescrollt, auf LOS ANGELES](img/de/setup-time-zone.png)
+
+- `Zeitzone` legt die Zone fest, in der Dateidaten geschrieben und gezeigt
+  werden: die FAT-Zeitstempel auf der Karte, FILES INFO, die Dateiliste der
+  Wi-Fi-Seite und die ZIP-Datei. Ein Schritt gilt ab dem nächsten
+  Zeitstempel und dem nächsten Frame, ohne Neustart. SPEICHERN behält ihn;
+  der nächste Start setzt ihn, bevor die Karte eingebunden wird. Die
+  Sommerzeit folgt der Regel jeder Zone: Berlin hat MEZ (UTC+1) und MESZ
+  (UTC+2) vom letzten Sonntag im März 01:00 UTC bis zum letzten Sonntag im
+  Oktober 01:00 UTC. Die Regeln sind POSIX-TZ-Zeichenketten in
+  `shared/clock/wall_clock.c`.
+- Die Zeile ist bei ARMED nicht gesperrt: Sie bewegt kein Bedienelement.
+- Bei jedem Einschalten startet die Uhr ungestellt, bei 1970-01-01 00:00:00
+  UTC. Eine Datei, die dann geschrieben wird, trägt 1980-01-01 plus die Zeit
+  seit dem Einschalten, `1980-01-02 06:54` einen Tag und 6h 54min danach:
+  FAT kennt kein früheres Datum. FILES INFO liest einen solchen Zeitstempel
+  als `nicht bekannt`, und die Dateiliste der Wi-Fi-Seite lässt seine Zeit
+  leer.
+- Ein Software-Neustart behält die Uhr: ein Firmware-Update, ein Neustart
+  nach einem Fehler. ESP-IDF hält die Systemzeit im RTC-Timer des ESP32-P4,
+  den nur das Einschalten zurücksetzt. Auf der Platine nicht gemessen.
+- Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal über SNTP
+  (Simple Network Time Protocol): die Release-Prüfung beim Start, NACH
+  UPDATES SUCHEN und der Download unter [Updates](#updates) und das
+  Heimnetz von WI-FI ([WLAN](#wlan)). Die Anfrage geht hinaus, sobald das
+  Panel seine Adresse hat. Sie endet mit der Antwort, nach 30000ms ohne
+  Antwort oder mit dem Ende der Verbindung, was zuerst kommt. Sie hält das
+  Funkteil nie an: Endet die Release-Prüfung zuerst, bleibt die Uhr bis zur
+  nächsten Verbindung, wie sie war. Wie lange eine Antwort in einem echten
+  Netz braucht, ist nicht gemessen.
+- Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
+  die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel
+  `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
+  Keine Antwort: `ntp: no answer from pool.ntp.org in 30000ms; clock unchanged`.
+  Eine Verbindung, die zuerst endet: `ntp: join ended before an answer from pool.ntp.org; clock unchanged`.
+- Bei jedem Start sagt die Konsole, was die Uhr hält: `clock: not set
+  (...s since 1970); file dates read 1980 until an NTP answer` nach dem
+  Einschalten, oder die über einen Neustart behaltene Zeit in UTC und in der
+  Zone.
+- Der Access Point (WI-FI ohne Heimnetz) hat keinen Weg nach draußen und
+  fragt keinen Zeitserver. Ein Panel, das nur den Access Point nutzt, behält
+  Daten in 1980.
+- Die Uhr im Band (`04:17`) ist die Zeit des Laufs seit ARM, nicht die
+  Uhrzeit. Lauf-Logs zählen ihre Zeitspalte ab dem Start des Laufs, und die
+  Berichte (ATESTnnn.TXT, LIMITnnn.TXT) tragen kein Datum: Der Zeitstempel
+  der Datei ist ihr Datum.
 
 ### PANEL: der Drehknopf
 
@@ -4368,7 +4430,8 @@ der Antwort. RELEASES legt die Anfrage fest:
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` mit `Accept: application/vnd.github+json` und `X-GitHub-Api-Version: 2022-11-28` | `tag_name` und `draft` jedes der 10 nach Datum neuesten Releases in der JSON-Antwort (JavaScript Object Notation), Testing oder Stable. Die höchste Version unter denen, die kein Entwurf sind, ist das neueste Release, gleich in welcher Reihenfolge; das höchste Release der Release-Linie unter ihnen wird daneben gehalten. Die Antwort wird in Stücken von 4096 Bytes bis zum Ende des 10. Release gelesen und nicht gespeichert. |
 
 Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen
-höchstens 30s. In beiden Einstellungen wird ein Release nur angeboten, wenn
+höchstens 30s. Die Verbindung fragt auch einen NTP-Server nach der Zeit,
+innerhalb derselben Verbindung ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)). In beiden Einstellungen wird ein Release nur angeboten, wenn
 es zur Release-Linie des Panels gehört und neuer als der laufende Build ist.
 Die Linie des ESP32-P4-Panels enthält jedes Release
 ([Die Release-Linie](#die-release-linie)).
@@ -4632,7 +4695,9 @@ Aktuelle Einschränkungen:
 
 - Wie lange Suche und Download in einem echten Netz dauern, ist nicht
   gemessen.
-- Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
+- Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine
+  Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von
+  ESP-IDF).
 - Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und
   `SHA256SUMS` heißen, lässt sich nicht laden.
 

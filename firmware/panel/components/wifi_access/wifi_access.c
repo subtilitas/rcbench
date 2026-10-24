@@ -49,6 +49,7 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_ntp.h"
 #include "wifi_radio.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
@@ -1534,6 +1535,8 @@ static void radio_down(void)
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
+    /* Before the interface goes: SNTP sends through it. */
+    wifi_ntp_stop();
     if (s.radio_up) {
         if (!wifi_radio_failed()) {
             (void)esp_wifi_stop();
@@ -1693,6 +1696,8 @@ static void worker(void *arg)
                                           MALLOC_CAP_INTERNAL));
             }
         }
+        /* The clock from the home network, once a join (wifi_ntp.h). */
+        wifi_ntp_poll(s.radio_up && w.state == WA_ST_JOINED);
         if (s.radio_up && w.state == WA_ST_JOINED
             && !atomic_load(&s.mdns_alive) && !atomic_load(&s.mdns_run)
             && s.up_mode == WA_MODE_JOIN

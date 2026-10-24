@@ -53,7 +53,7 @@ LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und n
 - Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
 - Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
 - Eine Karte, die eingesteckt, entnommen oder getauscht wird, während das Panel läuft, findet das nächste AKTUALISIEREN, das nächste Öffnen von LOGS, die nächste Seite oder ÖFFNEN und der Start des nächsten Laufs, ohne Neustart. Eine neue Karte öffnet auf ihrer ersten Seite; ein leerer Steckplatz sagt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
-- Neueste heißt die höchste Nummer im Namen. Das Panel hat keine Uhr, die das Abschalten übersteht; jede Datei trägt das Datum 1980-01-01.
+- Neueste heißt die höchste Nummer im Namen. Das Datum einer Datei ist nur so gut wie die Uhr des Panels: Sie startet bei jedem Einschalten ungestellt, und bis NTP sie im Heimnetz stellt, datiert das Panel Dateien auf 1980 ([Setup](setup.md#panel)).
 - Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste. Seine Nummer in einem anderen Ordner schon.
 - Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8px auf den Zeilen scrollt die Liste und wählt nichts.
 

@@ -61,6 +61,17 @@ void publish_pdmini(void);
 void publish_tone(void);
 void publish_log_auto(void);
 void publish_hitec_rx(void);
+/**
+ * @brief The time zone setting to the C library: setenv("TZ") and
+ *        tzset(), so FatFs's file stamps and localtime() read it from the
+ *        next call.  At the start-up before the card mounts.
+ */
+void publish_time_zone(void);
+/**
+ * @brief One console line at the start-up on the clock: the time kept
+ *        across a software restart, or "not set" after a power-on.
+ */
+void log_clock_at_start(void);
 
 /** @brief AUTO LOGS, for the control task's log_follow_runs()
  *         (main.c). */

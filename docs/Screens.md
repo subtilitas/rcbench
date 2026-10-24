@@ -2217,8 +2217,10 @@ The list shows the folder a page of 48 entries at a time, and a folder holds
 up to 999 runs. Pages run newest run first: runs and reports standing alone by
 number, highest first, then the files the bench did not write, by name. The rows of a page run the same
 way, the newest run at the top. The number in the name is what newest means:
-the panel has no clock that survives a power cycle, so every file on the card
-is dated 1980-01-01.
+a file's date is only as good as the panel's clock, which starts at each
+power-on unset and is set by NTP (Network Time Protocol) on the home
+network ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)).
+A file written before that is dated 1980.
 
 ![A full card of 999 runs and one other file on its fourth page](img/logs-pages.png)
 
@@ -2554,9 +2556,11 @@ done of the bytes to copy, and CANCEL stops it before its next chunk:
 INFO is a box of 800 x 420px with CLOSE of 300 x 56px. A file shows its
 name, folder, kind, size, time and rule; a folder shows its entries, the
 bytes of the files directly in it, the entries not listed, its time and its
-rule. The time is the modification time the card holds, read as UTC
-(Coordinated Universal Time), `2024-05-17 12:34`; the panel keeps no time
-zone. The times of files the panel writes are not checked on a panel.
+rule. The time is the modification time the card holds, in the zone of
+SETUP > PANEL's Time zone, `2024-05-17 12:34`. A stamp in 1980 reads
+`not known`: FAT (File Allocation Table) writes 1980 for a clock that was
+not set, and the panel names no date it does not have
+([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)).
 
 ![NEW's choice](img/files-new.png)
 
@@ -2819,7 +2823,9 @@ each flash erase (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 erases is not measured.
 
 **Files on the card.** Every file, folder by folder, with its name, its size
-in bytes and its modification time as the card has it. Each name downloads
+in bytes and its modification time as the card has it, in the zone of
+SETUP > PANEL's Time zone. A stamp in 1980, an unset clock's, leaves the
+time cell empty. Each name downloads
 that file. The page reads the card only: nothing on it is deleted, renamed or
 written. A name over 255 characters, a path over 384 bytes and a folder
 deeper than 16 are left out, and the page says how many. With no card, or a
@@ -2828,7 +2834,8 @@ card that cannot be read, the page says so and the upload still works.
 **Download all as one ZIP file** sends the whole card as one ZIP file. The
 page gives the number of files, their bytes and the ZIP file's bytes before
 the click. The files are stored as they are, not compressed, with their
-folder paths from the card's root, names in UTF-8 and the card's times. A
+folder paths from the card's root, names in UTF-8 and the card's times in
+the zone of SETUP > PANEL's Time zone, as ZIP takes local times. A
 file over 4GiB − 1B, an archive over 4GiB − 1B and more than 65,535
 entries use ZIP64. Nothing is written to the card to make it. The panel
 keeps 24 bytes per entry in PSRAM, not the archive: it is sent as it is
@@ -3108,6 +3115,58 @@ mounted upside down.
   leave it. A turn moves every control away from the finger, STOP
   included. The rule is the one Idle pulse and Full pulse on MOTOR & ESC,
   SETTINGS follow: a value for a SAFE bench only.
+
+### PANEL: Time zone and the clock
+
+The panel board carries no RTC (real-time clock) chip. Its clock is the
+ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
+
+| Setting | Values | Default |
+| --- | --- | --- |
+| Time zone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN |
+
+![PANEL scrolled to Time zone, set to LOS ANGELES](img/setup-time-zone.png)
+
+- Time zone sets the zone file dates are written and shown in: FAT stamps
+  on the card, FILES INFO, the Wi-Fi page's file list and the ZIP file. A
+  step applies to the next stamp and the next frame, without a restart.
+  SAVE keeps it; the next start sets it before the card mounts.
+  Daylight saving follows each zone's rule: Berlin has CET (UTC+1) and CEST
+  (UTC+2) from the last Sunday of March 01:00 UTC to the last Sunday of
+  October 01:00 UTC. The rules are POSIX TZ strings in
+  `shared/clock/wall_clock.c`.
+- The row is not locked while ARMED: it moves no control.
+- At each power-on the clock starts unset, at 1970-01-01 00:00:00 UTC. A
+  file written then is stamped 1980-01-01 plus the time since the
+  power-on, `1980-01-02 06:54` a day and 6h 54min after it: FAT has no
+  earlier date. FILES INFO reads such a stamp as `not known`, and the
+  Wi-Fi page's file list leaves its time empty.
+- A software restart keeps the clock: a firmware update, a restart after
+  a fault. ESP-IDF keeps the system time in the ESP32-P4's RTC timer,
+  which only a power-on resets. Not measured on the board.
+- Each join of the home network asks `pool.ntp.org` once by SNTP (Simple
+  Network Time Protocol): the release check at start, CHECK FOR UPDATES
+  and the download on [Updates](#updates), and WI-FI's home network
+  ([Wi-Fi](#wi-fi)). The request goes out when the panel has its address.
+  It ends with the answer, after 30000ms without one, or when the join
+  ends, whichever comes first. It never keeps the radio on: when the
+  release check ends first, the clock stays as it was until the next join.
+  How long an answer takes on a real network is not measured.
+- An answer sets the clock and writes one console line: the server, the
+  time set in UTC and how far it moved the clock, for example
+  `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
+  No answer: `ntp: no answer from pool.ntp.org in 30000ms; clock unchanged`.
+  A join that ends first: `ntp: join ended before an answer from pool.ntp.org; clock unchanged`.
+- At each start the console says what the clock holds: `clock: not set
+  (...s since 1970); file dates read 1980 until an NTP answer` after a
+  power-on, or the time kept across a restart in UTC and in the zone.
+- The access point (WI-FI without a home network) has no route out and
+  asks no time server. A panel that only ever runs the access point keeps
+  1980 dates.
+- The band's clock (`04:17`) is the run's time since ARM, not the time of
+  day. Run logs count their time column from the run's start, and the
+  reports (ATESTnnn.TXT, LIMITnnn.TXT) carry no date: the file's stamp is
+  their date.
 
 ### PANEL: the rotary knob
 
@@ -3963,7 +4022,8 @@ RELEASES sets the request:
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30s at
-most, together. On either setting a release is offered only when it is of
+most, together. The join also asks an NTP server for the time, inside the
+same join ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). On either setting a release is offered only when it is of
 the panel's release line and newer than the running build. The ESP32-P4
 panel's line holds every release ([The release line](#the-release-line)).
 
@@ -4216,7 +4276,8 @@ Current limitations:
 
 - The check's and the download's durations on a real network are not
   measured.
-- No certificate's dates are checked: the panel has no clock.
+- No certificate's dates are checked: mbedTLS is built without its expiry
+  check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
 - A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and
   `SHA256SUMS` cannot be downloaded.
 

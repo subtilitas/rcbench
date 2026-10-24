@@ -27,7 +27,7 @@ extern "C" {
 
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
-                              units, plot                              */
+                              units, time zone, plot                   */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
     SET_CAT_SENSORS,     /**< the INA3221 parts: fitted, shunts, what
@@ -81,6 +81,7 @@ typedef enum {
     SET_SCREEN_ROT,
     SET_LANGUAGE,
     SET_UNITS,
+    SET_TIME_ZONE,
     SET_DIM_AFTER,
     SET_PLOT_PAN,
     SET_KNOB_EN,

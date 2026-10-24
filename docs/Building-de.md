@@ -31,6 +31,7 @@ rcbench/
     sense/                Treiber für die Strommonitore INA228 und INA3221
     fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer
     webaccess/            WLAN-Sitzung · Kartenliste und ZIP-Strom · die Seite · mDNS
+    clock/                Regeln der Uhr: echtes Datum oder nicht · Zeitstempel · Zeitzonen · die NTP-Anfrage
     text/                 die Wörter der Oberfläche, alle Sprachen in einer Tabelle (nur Header)
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
@@ -184,6 +185,53 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 
 Der Knopf ist aus, bis SETUP, PANEL, `Drehknopf` eingeschaltet wird.
 [Bildschirme](Screens-de.md#panel-der-drehknopf) beschreibt, was er tut.
+
+## Die Uhr des Panels
+
+Die 7-Zoll-Anzeigeplatine mit ESP32-P4 (Waveshare
+ESP32-P4-WIFI6-Touch-LCD-7B, Schaltplan vom 2025-09-25) trägt keinen
+RTC-Chip (Real-Time Clock). Ihr I2C-Bus (GPIO7, GPIO8) erreicht den
+Touch-Controller GT911 (0x5D), den Audio-Codec ES8311, den Audio-ADC ES7210
+(Analog-Digital-Wandler), den Kameraanschluss und den 4-poligen I2C-Stecker;
+keiner davon hält eine Zeit. Waveshares Board
+Support Package 3.0.1 und seine Demo-Firmware (Commit 9fcd49a8 vom
+2026-08-21) haben keinen RTC-Treiber; die Demo stellt ihre Uhr über SNTP
+(Simple Network Time Protocol). Die Platine hat die Uhrteile des ESP32-P4
+selbst:
+
+| Teil | Was es ist | Nutzung im Panel |
+| --- | --- | --- |
+| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MOhm parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | nicht genutzt: Der RTC-Timer läuft vom internen RC-Oszillator (Vorgabe von ESP-IDF, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| BAT1 | Knopfzellenhalter CR1220, "RTC BAT", an VDD_BAT des ESP32-P4 (Pin 102); 3V3 lädt ihn über D1 (B5819WS) ohne Vorwiderstand; C41 1uF | nicht genutzt. Waveshare: nur wiederaufladbare Zellen mit 3 bis 3.3V. Ob eine Platine mit Zelle kommt, ist nicht bekannt |
+
+Der ESP32-P4 kann seinen RTC-Timer an VDD_BAT weiterlaufen lassen, aber nur
+aus dem Deep Sleep: Espressifs Anleitung zur Batteriepufferung des ESP32-P4
+(esp-iot-solution, "ESP32-P4 Battery Backup Solution") schaltet die
+Low-Power-Domäne in der Schlafkonfiguration auf VBAT, nennt das ein
+Testschema und ändert dafür ESP-IDF. Das Panel verliert seinen Strom ohne
+Vorwarnung, über das Link-Kabel oder den Schalter, und geht nie in den Deep
+Sleep. Eine Zelle in BAT1 hält deshalb für das Panel keine Zeit.
+
+Was das Panel stattdessen tut
+([Bildschirme](Screens-de.md#panel-zeitzone-und-uhr)):
+
+- Ein Einschalten startet die Systemzeit bei 1970-01-01 00:00:00 UTC. Ein
+  Software-Neustart behält sie: ESP-IDF hält die Zeit im RTC-Timer und in
+  zwei seiner Speicherregister, die nur ein Einschalten zurücksetzt
+  (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, die Vorgabe).
+- Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal
+  (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`). Die
+  zufällige Startverzögerung von lwIP ist aus
+  (`CONFIG_LWIP_SNTP_STARTUP_DELAY=n`), also geht die Anfrage mit der
+  Verbindung hinaus.
+- FatFs stempelt Dateien aus `time()` über `localtime_r()` (ESP-IDF
+  `components/fatfs/diskio/diskio.c`, `get_fattime()`), also gilt SETUP >
+  PANEL, `Zeitzone` für die Zeitstempel. Ein Jahr vor 1980 wird als 1980
+  gestempelt.
+- Der SNTP-Client läuft in der lwIP-Task auf Kern 0, und die Anfrage
+  bewegt die Wi-Fi-Worker-Task weiter. Die Steuer-Task auf Kern 1, die STOP
+  und den Heartbeat besitzt, liest keine Uhrzeit und wartet auf nichts
+  davon.
 
 ## Befehle
 

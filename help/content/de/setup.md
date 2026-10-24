@@ -14,7 +14,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `10 EINSTELLUNGEN` | die Liste von PANEL |
+| PANEL | `11 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `23 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | SD-KARTE | `4 EINSTELLUNGEN` | die Liste von SD-KARTE: welche Logs das Panel schreibt, und wohin |
 | SENSOREN | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
@@ -110,6 +110,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Bilddrehung | NORMAL, 180° | NORMAL | dreht Bild und Touch um 180°, ab dem nächsten Frame; gesperrt bei ARMED |
 | Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
 | Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
+| Zeitzone | UTC, LONDON, BERLIN, HELSINKI, NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO, SYDNEY | BERLIN | die Zone, in der Dateidaten geschrieben und gezeigt werden, Sommerzeit eingeschlossen |
 | Dimmen nach | 0 bis 60min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
@@ -120,6 +121,10 @@ Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung s
 Bilddrehung dreht das Bild, während jeder Frame hinausgeht, über die PPA (Pixel-Processing Accelerator) des ESP32-P4, und den Touch mit ihm, so dass jedes Bedienelement unter dem Finger bleibt. Ein Kontakt bei (x, y) unter NORMAL liegt unter 180° bei (1023 - x, 599 - y). Kontakte des Touch-Injectors drehen sich nicht. Solange der Prüfstand ARMED ist, hat die Zeile keine Tasten. Braucht die Kopie eines Frames länger als 50ms, gehen Bild und Touch gemeinsam auf NORMAL zurück, und das Band sagt es; die Einstellung bleibt 180°, und der nächste Start dreht wieder.
 
 ![Bilddrehung auf 180° bei ARMED](view:setup-rotation)
+
+Das Panel hat keinen RTC-Chip (Real-Time Clock). Seine Uhr startet bei jedem Einschalten ungestellt und wird über NTP (Network Time Protocol) gestellt: Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal, höchstens 30000ms lang, und hält das Funkteil nie länger an als die Verbindung. Ein Software-Neustart behält die Uhr. Bis zu einer Antwort tragen Dateien, die das Panel schreibt, das Datum 1980; FILES INFO liest ein solches Datum als `nicht bekannt`. Der Access Point fragt keinen Zeitserver.
+
+![Zeitzone auf LOS ANGELES](view:setup-time-zone)
 
 ![SETUP im hellen Design](view:setup-light)
 
