@@ -23,6 +23,7 @@
  * - every_way_in_reads_both_panes_again_and_looks_at_the_slot
  * - the_files_the_logger_writes_are_marked
  * - the_user_log_folder_in_force_is_the_right_panes_start
+ * - the_message_line_follows_the_language
  *
  * SPDX-License-Identifier: MIT
  */
@@ -420,6 +421,52 @@ TEST_CASE(the_user_log_folder_in_force_is_the_right_panes_start)
     settings_set_text(SET_TEXT_LOG_USER_DIR, CARD_USER_LOGS);
 }
 
+/**
+ * @brief The message line in @p lang for @p id with @p name.
+ * @param lang  the language
+ * @param id    the text, a format of one name
+ * @param name  the name
+ * @return the line, in a buffer the next call overwrites
+ */
+static const char *line_in(ui_lang_t lang, ui_text_id_t id, const char *name)
+{
+    static char out[192];
+    snprintf(out, sizeof(out), ui_tr_in(lang, id), name);
+    return out;
+}
+
+TEST_CASE(the_message_line_follows_the_language)
+{
+    fresh();
+    /* A refusal with no name: COPY with nothing selected. */
+    tap_foot(FS_SPOT_COPY);
+    const char *en = ui_tr_in(UI_LANG_EN, TX_FM_SELECT_FIRST);
+    const char *de = ui_tr_in(UI_LANG_DE, TX_FM_SELECT_FIRST);
+    CHECK(strcmp(en, de) != 0);
+    CHECK_STR_EQ(files_screen_message(), en);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(files_screen_message(), de);
+    draw();
+    /* A result that names its file, said in German, then read in English. */
+    CHECK(pick(0, "NOTES.TXT"));
+    tap_foot(FS_SPOT_COPY);
+    CHECK_STR_EQ(files_screen_message(),
+                 line_in(UI_LANG_DE, TX_FM_COPIED, "NOTES.TXT"));
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(files_screen_message(),
+                 line_in(UI_LANG_EN, TX_FM_COPIED, "NOTES.TXT"));
+    /* A refusal that names its file: the copy is there now. */
+    CHECK(pick(0, "NOTES.TXT"));
+    tap_foot(FS_SPOT_COPY);
+    CHECK_STR_EQ(files_screen_message(),
+                 line_in(UI_LANG_EN, TX_FM_E_EXISTS, "NOTES.TXT"));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(files_screen_message(),
+                 line_in(UI_LANG_DE, TX_FM_E_EXISTS, "NOTES.TXT"));
+    draw();
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_panes_start_in_the_root_and_user_log_folder);
@@ -439,6 +486,7 @@ int main(void)
     RUN(every_way_in_reads_both_panes_again_and_looks_at_the_slot);
     RUN(the_files_the_logger_writes_are_marked);
     RUN(the_user_log_folder_in_force_is_the_right_panes_start);
+    RUN(the_message_line_follows_the_language);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_screen");
