@@ -174,6 +174,41 @@ static void esc_profiles_read(void)
  * One at a time: the viewer opens a log, reads it and closes it before it
  * opens another. */
 static FILE *s_card_file;
+/** @brief The read of the source card_open() set up, which card_read()
+ *         wraps. */
+static size_t (*s_card_read)(void *ctx, char *buf, size_t max);
+
+/**
+ * @brief One read of the open log for the viewer, counted as the render
+ *        task's progress (render_progress()).
+ *
+ * The viewer reads a log whole inside one pass of the render loop, up to
+ * LOG_DEFAULT_MAX_ROWS (60,000) rows in two passes over the file, and that
+ * pass can last longer than the watchdog's FRAME_WATCH_MS (1000ms): a live
+ * supply output held by a programming port stays on while LOGS is open.
+ * Counted per read, the watchdog sees one read's length at a time, which a
+ * card that stops answering still exceeds.
+ *
+ * @param ctx The FILE * of the open log.
+ * @param buf Where the bytes go.
+ * @param max Room in @p buf, bytes.
+ * @return The bytes read; 0 at the end or on a failure.
+ */
+static size_t card_read(void *ctx, char *buf, size_t max)
+{
+    render_progress();
+    return s_card_read(ctx, buf, max);
+}
+
+/**
+ * @brief The walks' tick (storage_walk()): one directory entry read on the
+ *        render task, counted as its progress, for the reason card_read()
+ *        gives.
+ */
+static void card_tick(void)
+{
+    render_progress();
+}
 
 /*
  * The run the logger has open, as a run number, or 0 for none.
@@ -403,9 +438,8 @@ static int card_list(log_viewer_file_t *out, int max_entries,
     }
     card_pick_t pick;
     /*
-     * No tick: this runs on the task that renders, which has no safety line
-     * to hold and nothing to pump.  One walk per page, PREV and NEXT
-     * included: the page is held and the rest of the card is counted, so a
+     * The tick counts the render task's progress for its watchdog
+     * (card_tick()).  One walk per page, PREV and NEXT included: the page is held and the rest of the card is counted, so a
      * page of a full card costs what the first page of it does.  A walk
      * that found the card gone and mounted the one in the slot is walked
      * once more, from nothing: what it handed over was the old card's.
@@ -422,14 +456,14 @@ static int card_list(log_viewer_file_t *out, int max_entries,
          * walk of the old card, and walked again. */
         s_card_mount = storage_mount_count();
         total = storage_walk(s_card_dir, CARD_SUFFIXES, card_take, &pick,
-                             NULL);
+                             card_tick);
         /* The reports standing alone, when the first walk found one other
          * than a LIMIT report: a second walk of the folder, on the same
          * mount, the reports alone (log_select.h). */
         if (total >= 0 && log_lone_again(s_card_lone)) {
             pick.again = true;
             const int more = storage_walk(s_card_dir, CARD_REPORTS,
-                                          card_take, &pick, NULL);
+                                          card_take, &pick, card_tick);
             if (more < 0) {
                 total = more;
             }
@@ -504,6 +538,8 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
         return false;
     }
     log_source_stdio(src, s_card_file);
+    s_card_read = src->read;
+    src->read = card_read;
     return true;
 }
 
