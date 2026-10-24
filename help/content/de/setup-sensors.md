@@ -31,7 +31,7 @@ Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x4
 
 ## Grenzen
 
-![Eine Grenze bei einem IOmcu älter als 4.27](view:setup-sensors-limit)
+![Eine Grenze bei einem IOmcu älter als 0.22.0](view:setup-sensors-limit)
 
 Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kanals, und das Panel liest alle 200ms, welche Kanäle sie überschritten haben. Das Band sagt, höchstens einmal alle 5s und einmal alle 30s für einen Kanal, der sie weiter überschreitet. Kanäle, die gleichzeitig darüber liegen, kommen reihum dran: sind alle 12 darüber, wird jeder innerhalb von 60s gesagt.
 
@@ -41,7 +41,7 @@ Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kana
 | `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | die Antwort, die den Kanal nannte, ging verloren; gesagt nach dem nächsten Link-Aufbau, nicht nach einem Neustart des IOmcu |
 | `INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
 
-Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ihr Schreiben wartet, nach einer Ablehnung und bei einem IOmcu älter als 4.27, der keine Grenze prüft (`IOmcu älter als 4.27: keine Grenze wird geprüft.`).
+Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ihr Schreiben wartet, nach einer Ablehnung und bei einem IOmcu älter als 0.22.0 (Protokoll 4.27), der keine Grenze prüft (`IOmcu älter als 0.22.0: keine Grenze wird geprüft.`).
 
 ![Das Tastenfeld von 0x40 CH1 Shunt, 44,4 getippt](view:setup-sensors-keypad)
 
@@ -62,12 +62,12 @@ Rechts in der Überschrift eines Bausteins steht, was er tut:
 | `VOM IOMCU NICHT ÜBERNOMMEN` | der IOmcu hat die Einstellung abgelehnt |
 | `ALLE KANÄLE AUS` | alle drei Shunts stehen auf AUS; nichts wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf dieser Adresse eingeschaltet; keiner wird gelesen |
-| `IOMCU ÄLTER ALS 4.25: NICHT GELESEN` | ein älterer IOmcu liest nur einen Baustein |
+| `IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN` | ein älterer IOmcu liest nur einen Baustein |
 | `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | INTERFACES legt keinen Sensorbus fest; nichts wird gelesen |
 
-![Ein IOmcu älter als 4.25](view:setup-sensors-old)
+![Ein IOmcu älter als 0.22.0](view:setup-sensors-old)
 
-Die Zeilen eines Bausteins, den der IOmcu nicht liest, stehen in der Warnfarbe, mit dem Grund statt der Hilfezeile. Ein IOmcu älter als 4.25 liest einen INA3221: den Baustein des Kanals, der das Ziel des Servotesters misst, sonst den niedrigsten bestückten.
+Die Zeilen eines Bausteins, den der IOmcu nicht liest, stehen in der Warnfarbe, mit dem Grund statt der Hilfezeile. Ein IOmcu älter als 0.22.0 (Protokoll 4.25) liest einen INA3221: den Baustein des Kanals, der das Ziel des Servotesters misst, sonst den niedrigsten bestückten.
 
 Ein Panel, das von 0.21 aktualisiert wurde, nimmt seine erste Einstellung von dem einen INA3221, den es hatte: der Baustein an der alten Adresse bestückt, sein CH1 auf dem alten Shunt und misst AUSGANG 1, oder PORT 1, wenn das Ziel des Servotesters der Programmierport war; jede Grenze AUS. Das nächste SPEICHERN behält sie.
 

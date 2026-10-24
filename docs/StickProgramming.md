@@ -197,7 +197,7 @@ as well. The beeps are counted from the current. Below that stand the
 profile, the supply's set points with the number of changes, and the line
 that the profile is unverified and every beep time a default.
 
-HOLD TO RUN starts the run after 2s of holding, as ARM does. A finger that
+HOLD 2s TO RUN starts the run after 2s of holding, as ARM does. A finger that
 leaves the button, a lost touch event or a STOP during the hold abandons
 it; CANCEL closes the warning. The ARM the hold asks for leaves the screen
 with the next frame's commands; a STOP or a lost touch event before then
@@ -249,7 +249,7 @@ each with the moment it is due:
 
 | Due | The run |
 | --- | --- |
-| `before_power` | lists it on the warning: HOLD TO RUN is the word that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
+| `before_power` | lists it on the warning: HOLD 2s TO RUN is the word that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
 | `at_power_up` | stops before each power-up with the supply off and asks; DONE switches the supply on, and the run counts down the hold the profile gives |
 | `before_menu` | asks once the entry has had its time, with the ESC powered and the stick at the power-up position. A step marked `starts_menu` is the action that starts the menu, and the run counts the beeps from the moment it asks (see below); every other one waits for DONE |
 | `during_menu` | cannot know the moment: the profile does not run, `manual step` |
@@ -267,7 +267,7 @@ them.
 ![Its manual steps](img/motor-stick-hand-info.png)
 
 The warning before a run lists the steps due before the power-up, and says
-when the run will stop for more. It lists them, and HOLD TO RUN counts, only
+when the run will stop for more. It lists them, and HOLD 2s TO RUN counts, only
 while the supply reads off: a reading no older than 1000ms
 (`ESC_STICK_STALE_MS`) in which the supply itself reports its output off
 with the current at or under 20mA for 200ms. Until then it says to switch
@@ -280,8 +280,8 @@ does not read off.
 ![The warning with a step before power-up](img/motor-stick-hand-warning.png)
 
 Steps that do not all fit the warning whole -- each wrapped to two lines,
-above HOLD TO RUN -- are not shown cut: the warning counts them and offers
-ALL STEPS beside HOLD TO RUN. HOLD TO RUN counts only once ALL STEPS has
+above HOLD 2s TO RUN -- are not shown cut: the warning counts them and offers
+ALL STEPS beside HOLD 2s TO RUN. HOLD 2s TO RUN counts only once ALL STEPS has
 been opened over this warning and closed with OK, so the hold attests to
 every step; a new warning asks for them again.
 

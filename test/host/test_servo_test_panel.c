@@ -885,8 +885,8 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
         servo_source_why_t why;
         const char        *text;
     } k_why[] = {
-        { SERVO_SOURCE_WHY_OLD, "the IOmcu is older than link "
-                                "protocol 4.11" },
+        { SERVO_SOURCE_WHY_OLD, "the IOmcu is older than firmware "
+                                "0.16.0" },
         { SERVO_SOURCE_WHY_NOT_HELD, "the IOmcu does not hold its "
                                      "set-up" },
         { SERVO_SOURCE_WHY_SILENT, "it does not answer" },

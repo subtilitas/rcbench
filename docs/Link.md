@@ -210,7 +210,7 @@ reserved.
 | Panel | IOmcu | The encoder (SENSE bit 2, registers 26 to 31) |
 | --- | --- | --- |
 | 4.9 | 4.9 | served |
-| 4.9 | 4.8 or 4.7 | the panel does not write ENABLE bit 2 and reads SENSE's registers 12 to 25 only; with the encoder enabled on SETUP it says `IOmcu firmware older than 4.9. AS5600 not read.`, at link-up and when the encoder is enabled while the IOmcu answers. A 4.8 IOmcu's page has 26 registers and refuses a read past them |
+| 4.9 | 4.8 or 4.7 | the panel does not write ENABLE bit 2 and reads SENSE's registers 12 to 25 only; with the encoder enabled on SETUP it says `IOmcu firmware older than 0.15.0. AS5600 not read.`, at link-up and when the encoder is enabled while the IOmcu answers. A 4.8 IOmcu's page has 26 registers and refuses a read past them |
 | 4.9 | 4.6 or older | nothing is sent to SENSE; the same alert |
 | 4.8 or 4.7 | 4.9 | the panel never writes bit 2 and never reads registers 26 to 31. An encoder kept in the IOmcu's flash from a 4.9 panel stays enabled and is read; its two pins stay held from the outputs |
 
@@ -510,7 +510,7 @@ read a second time is 742.5µs.
 | Panel | IOmcu | SERVO_WIN (0x31), `RESETS` and `CAP_HOLD_MA` |
 | --- | --- | --- |
 | 4.11 | 4.11 | served. While SENSE enables the INA3221 with CH1, this build's panel reads SERVO_WIN every poll and SENSE's registers 12 to 31, `RESETS` among them. It arms no capture |
-| 4.11 | 4.10 or older | the IOmcu answers a request to 0x31 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 11. It takes the INA3221's windows from SERVO_SENSE, the last one per read, reads the PD mini as the servo rail's meter and says once `IOmcu firmware older than 4.11. Servo current is read from the PD mini.`. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
+| 4.11 | 4.10 or older | the IOmcu answers a request to 0x31 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 11. It takes the INA3221's windows from SERVO_SENSE, the last one per read, reads the PD mini as the servo rail's meter and says once `IOmcu firmware older than 0.16.0. Servo current is read from the PD mini.`. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
 | 4.10 or older | 4.11 | the panel never reads 0x31 and reads register 31 as a reserved register it ignores. A holding level it writes, 0 to 32767mA, means the same. A part found reset reads offline for 1000ms and then online again |
 
 **The panel's reads.** `shared/bench/sense_link.c` takes each CH1 window
@@ -762,7 +762,7 @@ the screen wants is written back after the page is read again.
 | 4.13 | 4.13 | served |
 | 4.13 | 4.12 or older | the IOmcu answers a request to 0x33 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 13 |
 | 4.12 or older | 4.13 | the panel never reads or writes 0x33: no port renders a pulse, and port 0 holds GP13 |
-| 4.26 | 4.13 to 4.25 | the panel reads 24 registers and takes every port as SERVO PWM; it asks no `FUNC` and says `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` |
+| 4.26 | 4.13 to 4.25 | the panel reads 24 registers and takes every port as SERVO PWM; it asks no `FUNC` and says `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` |
 | 4.13 to 4.25 | 4.26 | the panel reads 24 registers and never writes `FUNC`; a port it sets as the target must be SERVO PWM, or the IOmcu refuses the `TARGET` |
 | 4.28 | 4.26 or 4.27 | the panel offers SERVO PWM and NONE only and asks no DShot `FUNC` |
 | 4.26 or 4.27 | 4.28 | the panel shows a DShot port as NONE and never sets it as the target; MOTOR & ESC's throttle reaches it all the same |

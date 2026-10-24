@@ -99,7 +99,7 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
 | `SERVO TESTER DRIVES PROG PORT 3` | the tester drives another port |
 | `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot |
-| `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
+| `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
 Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The tester's two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`.
@@ -131,7 +131,7 @@ The screen edits a binding only after reading it. While a page did not read, the
 
 ![Pages no binding describes](view:outputs-odd)
 
-When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD: CLEAR ALL PIN ASSIGNMENTS`. Held for 2s, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
+When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`. Held, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
 
 ## The IOmcu keeps the binding
 

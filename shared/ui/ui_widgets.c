@@ -90,9 +90,10 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                     gfx_color_t fill, bool pressed, bool enabled,
                     const gfx_font_t *f)
 {
-    gfx_color_t body = enabled ? fill : GFX_RGB(38, 46, 58);
-    /* The label colour follows the luma of the fill: near-black on an
-     * accent-coloured button, light on a panel-coloured one. */
+    /* The label colour of an enabled button follows the luma of the fill:
+     * near-black on an accent-coloured button, light on a panel-coloured
+     * one.  A button that takes no press is ui_button_off_fill(). */
+    gfx_color_t body = enabled ? fill : ui_button_off_fill();
     gfx_color_t text = enabled ? (ui_is_light(body) ? UI_TEXT_ON_LIGHT
                                                     : UI_TEXT)
                                : UI_TEXT_FAINT;
@@ -108,11 +109,17 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
         gfx_hline(c, r.x + UI_R_CTL, r.y + 1, r.w - 2 * UI_R_CTL,
                   gfx_lerp(body, GFX_WHITE, 38));
     } else {
-        gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, UI_EDGE);
+        gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL,
+                            gfx_lerp(body, UI_EDGE, 160));
     }
     if (label) {
         gfx_text_in(c, r, label, f, text, 1, GFX_ALIGN_CENTER);
     }
+}
+
+gfx_color_t ui_button_off_fill(void)
+{
+    return UI_BG;
 }
 
 /*
@@ -390,7 +397,8 @@ void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill)
                              UI_CHAMFER, 0, UI_CHAMFER, fill);
     gfx_text(c, UI_TAG_X + TAG_TEXT_X_MARK,
              UI_TAG_Y + (UI_TAG_H - gfx_text_height(UI_FONT_TAG, 1)) / 2,
-             text ? text : "", UI_FONT_TAG, UI_TEXT_ON_LIGHT, 1);
+             text ? text : "", UI_FONT_TAG,
+             ui_is_light(fill) ? UI_TEXT_ON_LIGHT : UI_PANEL, 1);
 }
 
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)

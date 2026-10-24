@@ -29,10 +29,28 @@ void ui_panel(gfx_canvas_t *c, gfx_rect_t r, const char *title,
 void ui_panel_header(gfx_canvas_t *c, gfx_rect_t r, const char *title,
                      gfx_color_t accent);
 
-/** Filled rounded button.  @p pressed lightens the fill; @p enabled false
- *  dims it. */
+/**
+ * @brief Filled rounded button, its label in UI_FONT_LABEL.
+ * @param c       Canvas.
+ * @param r       The button.
+ * @param label   Its label, centred, or NULL for none.
+ * @param fill    Its colour while enabled.
+ * @param pressed Lightens the fill.
+ * @param enabled False draws it in ui_button_off_fill() with a dim edge and
+ *                a faint label.
+ */
 void ui_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                gfx_color_t fill, bool pressed, bool enabled);
+
+/**
+ * @brief The fill of a button that takes no press: the theme's ground
+ *        (UI_BG), so with its faint label it reads dimmer than an enabled
+ *        button in the dark theme and in the light one, and differs from
+ *        every fill an enabled button takes (UI_PANEL, UI_PANEL_HI,
+ *        UI_PANEL_SUNK, UI_EDGE_HI, an accent).
+ * @return the colour
+ */
+gfx_color_t ui_button_off_fill(void);
 
 /**
  * @brief ui_button() with its label in face @p f.
@@ -246,7 +264,8 @@ void ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed);
  * @brief The home tag's shape without the chevron: an identity mark, not a
  *        control.
  * @param c    The canvas, the panel's.
- * @param text The mark's text, in UI_FONT_TAG.
+ * @param text The mark's text, in UI_FONT_TAG: near-black on a light
+ *             @p fill, the theme's panel colour on a dark one.
  * @param fill The mark's fill.
  */
 void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill);

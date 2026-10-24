@@ -228,7 +228,7 @@ bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
 | Panel | IOmcu | Der Encoder (SENSE Bit 2, Register 26 bis 31) |
 | --- | --- | --- |
 | 4.9 | 4.9 | bedient |
-| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der IOmcu antwortet. Die Page eines 4.8-IOmcu hat 26 Register und weist ein Lesen darüber hinaus ab |
+| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der IOmcu antwortet. Die Page eines 4.8-IOmcu hat 26 Register und weist ein Lesen darüber hinaus ab |
 | 4.9 | 4.6 oder älter | an SENSE wird nichts gesendet; dieselbe Meldung |
 | 4.8 oder 4.7 | 4.9 | das Panel schreibt Bit 2 nie und liest die Register 26 bis 31 nie. Ein Encoder, den ein 4.9-Panel im Flash des IOmcu hinterlassen hat, bleibt freigegeben und wird gelesen; seine zwei Pins bleiben den Ausgängen entzogen |
 
@@ -556,7 +556,7 @@ Konfigurationsregister ein zweites Mal gelesen wird, hat 742,5µs.
 | Panel | IOmcu | SERVO_WIN (0x31), `RESETS` und `CAP_HOLD_MA` |
 | --- | --- | --- |
 | 4.11 | 4.11 | bedient. Solange SENSE den INA3221 mit CH1 freigibt, liest das Panel dieses Builds SERVO_WIN bei jedem Poll und von SENSE die Register 12 bis 31, darunter `RESETS`. Es schaltet keine Messung scharf |
-| 4.11 | 4.10 oder älter | der IOmcu beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
+| 4.11 | 4.10 oder älter | der IOmcu beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `IOmcu-Firmware älter als 0.16.0. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
 | 4.10 oder älter | 4.11 | das Panel liest 0x31 nie und liest Register 31 als reserviertes Register, das es übergeht. Ein Haltestrom, den es schreibt, 0 bis 32767mA, bedeutet dasselbe. Ein zurückgesetzt gefundenes Bauteil liest 1000ms lang offline und dann wieder online |
 
 **Die Lesezugriffe des Panels.** `shared/bench/sense_link.c` nimmt jede
@@ -839,7 +839,7 @@ die Page erneut gelesen ist.
 | 4.13 | 4.13 | bedient |
 | 4.13 | 4.12 oder älter | der IOmcu beantwortet eine Anfrage an 0x33 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 13 nichts dorthin |
 | 4.12 oder älter | 4.13 | das Panel liest und schreibt 0x33 nie: kein Port gibt einen Puls aus, und Port 0 hält GP13 |
-| 4.26 | 4.13 bis 4.25 | das Panel liest 24 Register und nimmt jeden Port als SERVO PWM; es erbittet keine `FUNC` und sagt `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` |
+| 4.26 | 4.13 bis 4.25 | das Panel liest 24 Register und nimmt jeden Port als SERVO PWM; es erbittet keine `FUNC` und sagt `IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM` |
 | 4.13 bis 4.25 | 4.26 | das Panel liest 24 Register und schreibt `FUNC` nie; ein Port, den es als Ziel setzt, muss SERVO PWM sein, sonst weist der IOmcu das `TARGET` ab |
 | 4.28 | 4.26 oder 4.27 | das Panel bietet nur SERVO PWM und NONE an und erbittet keine DShot-`FUNC` |
 | 4.26 oder 4.27 | 4.28 | das Panel zeigt einen DShot-Port als NONE und setzt ihn nie als Ziel; das Gas von MOTOR & ESC erreicht ihn trotzdem |

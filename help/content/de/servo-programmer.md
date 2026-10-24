@@ -26,7 +26,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 
 ![Der Programmierer, während der Tester den Port hält](view:servo-kst)
 
-- Einen IOmcu mit Protokoll 4.13 oder neuer; VERLASSEN braucht 4.15.
+- Einen IOmcu mit 0.17.0 oder neuer (Protokoll 4.15, VERLASSEN eingeschlossen).
 - Das Servo an einem Programmierport des IOmcu, PROG-PORT 1 bis 4, mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist; die Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT von Ausgänge gesetzt ist.
 - SERVO-TESTER auf diesem Eintrag auf diesen Port, PORT 1, PORT 2, PORT 3 oder PORT 4; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
 - Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
@@ -104,7 +104,7 @@ Ein Tipp, der eine harte Grenze verletzen würde, ändert nichts und nennt die G
 
 ![ÄNDERUNG PRÜFEN](view:servo-kst-soft)
 
-Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2s; ABBRECHEN lässt den Entwurf, wie er war. Ein [Endlagenlauf](servo.md#der-endlagenlauf) fragt hier nicht: Sein Halten von 2s beim Start ist die Zustimmung zu einem LEFT ANGLE oder RIGHT ANGLE unter 50.
+Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. 2s HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2s; ABBRECHEN lässt den Entwurf, wie er war. Ein [Endlagenlauf](servo.md#der-endlagenlauf) fragt hier nicht: Sein Halten von 2s beim Start ist die Zustimmung zu einem LEFT ANGLE oder RIGHT ANGLE unter 50.
 
 ![Der Reiter GESPERRT](view:servo-kst-locked)
 
@@ -112,12 +112,12 @@ Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet 
 
 ![Das Schreiben freigeben](view:servo-kst-enable)
 
-SCHREIBEN INS SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Seite, die die Risiken nennt; HALTEN ZUM FREIGEBEN schaltet es nach 2s ein. Es geht aus bei jedem Aufruf von SERVO, bei jedem STOP, VERBINDEN und VERLASSEN, bei verlorenem Link und wenn ein Servo unklar ist.
+SCHREIBEN INS SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Seite, die die Risiken nennt; 2s HALTEN ZUM FREIGEBEN schaltet es nach 2s ein. Es geht aus bei jedem Aufruf von SERVO, bei jedem STOP, VERBINDEN und VERLASSEN, bei verlorenem Link und wenn ein Servo unklar ist.
 
 ![Drei geänderte Werte, der Schalter an](view:servo-kst-changes)
 ![Die Seite zum Schreiben](view:servo-kst-write)
 
-n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAND: 2.0 -> 1.6us`. HALTEN ZUM SCHREIBEN startet das Schreiben nach 2s.
+n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAND: 2.0 -> 1.6us`. 2s HALTEN ZUM SCHREIBEN startet das Schreiben nach 2s.
 
 1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in eine neue Datei auf der SD-Karte (Secure Digital).
 2. Das Panel vermerkt das Schreiben in `BENCH/KST/CONF/KST.TXT`, oder ohne Karte im Speicher.
@@ -165,7 +165,7 @@ Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu st
 
 ![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
 
-VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
+VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. 2s HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
 
 ## Verwandte Seiten
 

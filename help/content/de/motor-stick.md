@@ -65,7 +65,7 @@ Keine der Zeiten ist gemessen. SCHLIESSEN fordert das Speichern an; das Speicher
 
 ![PROPELLER AB? MOTOR GESICHERT?](view:motor-stick-warning)
 
-START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN oder das Home-Tag schließt die Warnung.
+START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. 2s HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN oder das Home-Tag schließt die Warnung.
 
 ![Ein Lauf zählt Punktgruppen](view:motor-stick-run)
 
@@ -107,7 +107,7 @@ Manche ESCs gehen erst in ihren Programmiermodus, wenn eine Person einen Jumper 
 ![Die Warnung mit einem Handgriff vor dem Einschalten](view:motor-stick-hand-warning)
 ![Vier Handgriffe vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen](view:motor-stick-hand-steps)
 
-Die Warnung listet die Handgriffe, die vor dem Einschalten fällig sind. Passen nicht alle, öffnet ALLE HANDGRIFFE sie, und HALTEN ZUM STARTEN zählt erst, nachdem ALLE HANDGRIFFE geöffnet und mit OK geschlossen wurde.
+Die Warnung listet die Handgriffe, die vor dem Einschalten fällig sind. Passen nicht alle, öffnet ALLE HANDGRIFFE sie, und 2s HALTEN ZUM STARTEN zählt erst, nachdem ALLE HANDGRIFFE geöffnet und mit OK geschlossen wurde.
 
 ![Der Lauf wartet auf den Jumper](view:motor-stick-hand-prompt)
 

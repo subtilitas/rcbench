@@ -99,7 +99,7 @@ Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung de
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
 | `SERVO-TESTER STEUERT PROG-PORT 3` | der Tester steuert einen anderen Port |
 | `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot |
-| `IOMCU ÄLTER ALS 4.26: NUR SERVO PWM` | der IOmcu hat keine FUNKTION |
+| `IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM` | der IOmcu hat keine FUNKTION |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
 
 Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen des Testers hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`.
@@ -131,7 +131,7 @@ Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange ei
 
 ![Seiten, die keine Bindung beschreiben](view:outputs-odd)
 
-Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` an. 2s gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2s oder das Verlassen des Bildschirms bricht das Halten ab.
+Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` an. Gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2s oder das Verlassen des Bildschirms bricht das Halten ab.
 
 ## Der IOmcu behält die Bindung
 

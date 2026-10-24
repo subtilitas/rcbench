@@ -924,6 +924,32 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
     CHECK_STR_EQ(ui_unit_gap(NULL), "");
 }
 
+/* A reserved pin's holder: the catalogue's words from the table, upper
+ * case, in German where German differs; any other name as it is; NULL as
+ * the empty text. */
+TEST_CASE(a_pin_holder_is_named_in_the_language_showing)
+{
+    static const struct { const char *in, *en, *de; } k[] = {
+        { "heartbeat", "HEARTBEAT", "HEARTBEAT" },
+        { "flash",     "FLASH",     "FLASH" },
+        { "debug",     "DEBUG",     "DEBUG" },
+        { "sensor",    "SENSOR",    "SENSOR" },
+        { "in use",    "IN USE",    "BELEGT" },
+        { "CAN INT",   "CAN INT",   "CAN INT" },
+        { "CAN",       "CAN",       "CAN" },
+        { "Heartbeat", "Heartbeat", "Heartbeat" },  /* no case folding */
+        { "",          "",          "" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        ui_text_set_language(UI_LANG_EN);
+        CHECK_STR_EQ(ui_pin_holder(k[i].in), k[i].en);
+        ui_text_set_language(UI_LANG_DE);
+        CHECK_STR_EQ(ui_pin_holder(k[i].in), k[i].de);
+    }
+    CHECK_STR_EQ(ui_pin_holder(NULL), "");
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
@@ -949,5 +975,6 @@ int main(void)
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     RUN(the_card_slot_has_three_words_at_every_place);
     RUN(a_number_joins_a_unit_symbol_and_spaces_a_word);
+    RUN(a_pin_holder_is_named_in_the_language_showing);
     return test_summary("text");
 }

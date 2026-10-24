@@ -41,7 +41,7 @@ Das Tastenfeld der TRIMMUNG hat zwischen dem Punkt und OK eine Taste `+/-`: Sie 
 
 ![KANN DAS SERVO ZERSTÖREN](view:servo-warning)
 
-Ein Heli-Typ oder jede Frame Rate über 60Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem HALTEN ZUM ÜBERNEHMEN 2s gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
+Ein Heli-Typ oder jede Frame Rate über 60Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
 
 Die Seite AUSGANG sagt, was aus der Rate wurde:
 

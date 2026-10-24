@@ -716,7 +716,7 @@ PWM-Frame misst, verwendet der Lauf nicht.
   mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
 - **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem ein INA3221
   unter SETUP > SENSORS bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
-  `der IOmcu ist älter als Link-Protokoll 4.11`, `der IOmcu hält
+  `der IOmcu ist älter als Firmware 0.16.0`, `der IOmcu hält
   seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
   den letzten 200ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
   als 1s` oder `das Netzteil ist vom Panel simuliert`.

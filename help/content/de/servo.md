@@ -98,7 +98,7 @@ Die Zeile SOLL trägt die beiden Sollwerte der Seite SUPPLY und ihren Ausgangssc
 
 ![NUR HV-SERVOS](view:servo-hv)
 
-Standardservos sind für 4,8 bis 6,0V ausgelegt. Eine Spannung, die von 6,0V oder darunter auf über 6,0V steigt, öffnet NUR HV-SERVOS. Die Spannung gilt, nachdem HALTEN ZUM ÜBERNEHMEN 2s gehalten wurde; ABBRECHEN verwirft sie. AUSGANG EIN mit einem Sollwert über 6,0V öffnet dieselbe Warnung.
+Standardservos sind für 4,8 bis 6,0V ausgelegt. Eine Spannung, die von 6,0V oder darunter auf über 6,0V steigt, öffnet NUR HV-SERVOS. Die Spannung gilt, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde; ABBRECHEN verwirft sie. AUSGANG EIN mit einem Sollwert über 6,0V öffnet dieselbe Warnung.
 
 ## SWEEP und PAUSE
 
