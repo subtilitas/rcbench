@@ -82,6 +82,10 @@ void panel_frame_loop(void)
     uint32_t last_stops = 0;
 
     for (;;) {
+        /* A pass, for the control task's watchdog: a counter that stands
+         * still for FRAME_WATCH_MS on an ARMED bench or under a live supply
+         * output is a stop (frame_watch.h). */
+        render_progress();
         const uint32_t us = (uint32_t)esp_timer_get_time();
         const float dt_s = (float)(us - last_us) / 1e6f;
         last_us = us;
