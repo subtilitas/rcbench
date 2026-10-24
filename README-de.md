@@ -31,7 +31,7 @@ auf zwei Prozessoren: ein ESP32-P4-Touchpanel, das Waveshare ESP32-P4 7B
 Wi-Fi über seinen ESP32-C6), und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1Mbit/s.
 
-Release 0.22.1 läuft auf dem ESP32-S3-Panel. Was seine Update-Suche
+Release 0.23.0 läuft auf dem ESP32-P4-Panel. Was seine Update-Suche
 anbietet, steht in
 [Bildschirme: Die Release-Linie](docs/Screens-de.md#die-release-linie).
 

@@ -1086,10 +1086,10 @@ test('tree: stale pin defaults are reported', () => {
 });
 
 test('tree: a newer release tag is a warning, not an error', () => {
-  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.23.0' };
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.24.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.23.0` },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.24.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
   // The release pull request before its tag: the newest tag is older than the data.
@@ -1189,8 +1189,8 @@ test('counts: a missing safety note, stage or pad is reported', () => {
   reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
 
   const release = copy();
-  release.release = '0.23.0';
-  reports(checkCounts(release), 'release', /0\.23\.0/);
+  release.release = '0.24.0';
+  reports(checkCounts(release), 'release', /0\.24\.0/);
   release.release = 'next';
   reports(checkCounts(release), 'release', /version number/);
 
