@@ -372,7 +372,7 @@ static const char *const k_unit_symbols[] = {
     "px", "dBm", "dB", "rpm", "RPM", "eRPM", "fps", "ppm", "sps",
     "mm", "cm", "µm", "nm", "m", "kg", "g", "Ncm", "Nm", "N",
     "µF", "μF", "uF", "nF", "pF", "mF", "F", "µH", "uH", "mH", "nH", "H", "K",
-    "C",
+    "C", "S",
 };
 
 /**

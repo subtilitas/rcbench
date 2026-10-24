@@ -177,3 +177,50 @@ def test_the_panels_unit_symbols_are_the_checkers():
     panel = re.findall(r'"([^"]*)"', body)
     assert len(panel) == len(set(panel))
     assert set(panel) == {"%" if u == "%%" else u for u in cu.UNITS}
+
+
+def test_a_cell_count_joins_its_number_and_a_name_keeps_its_s():
+    """A cell count after a space is a hit; 6S and ROXXY's S-BEC are not."""
+    assert gaps("docs/A.md", "a 6 S pack\n") == ["a 6|S pack"]
+    assert gaps("docs/A.md", "a 6S pack, 2-6S, 1 to 14S\n") == []
+    assert gaps("docs/A.md", "ROXXY BL-Control 725 S-BEC\n") == []
+
+
+def caps(path, text):
+    """The lines find_caps() reports.
+
+    Args:
+        path: The file's path in the tree.
+        text: Its text.
+
+    Returns:
+        Each hit's line.
+    """
+    return [line for _, line in cu.find_caps(path, text)]
+
+
+@pytest.mark.parametrize("label", [
+    "HOLD 500 MS", "50HZ", "2 KHZ", "20 MA", "6.0 MV", "100 US",
+    "%u MS", "1000 MAH",
+])
+def test_a_unit_in_capitals_in_a_panel_text_is_found(label):
+    """An upper-case unit after a number in a panel text is one hit."""
+    src = f'snprintf(b, n, "{label} LEFT");\n'
+    assert len(caps("shared/ui/x.c", src)) == 1
+
+
+@pytest.mark.parametrize("label", [
+    "HOLD 2s TO START", "6S", "12.6V", "40A", "1200RPM", "100MΩ", "5G",
+    "2 MINUTES", "3 MSG",
+])
+def test_a_cell_count_a_capital_unit_or_a_word_is_no_capitals_hit(label):
+    """6S, V, A, RPM and MΩ are units in capitals; a word is no unit."""
+    src = f'snprintf(b, n, "{label}");\n'
+    assert caps("shared/ui/x.c", src) == []
+
+
+def test_capitals_are_held_in_panel_texts_only():
+    """A comment, a document and a log line keep a bit's name: bit 3 MH."""
+    assert caps("shared/ui/x.c", "/* bit 3 MH */\n") == []
+    assert caps("docs/A.md", "bit 3 MH, 2 PPM\n") == []
+    assert caps("firmware/iomcu/x.c", 'printf("500 MS");\n') == []

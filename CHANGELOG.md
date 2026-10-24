@@ -101,6 +101,10 @@ history is in git.
 
 ### Fixed
 
+- LOGS words its footer message when it draws it, so a change of
+  SET_LANGUAGE rewords a message already standing: a refused open or
+  delete, a deleted file's name and the reader's verdict on a file.
+
 - A new panel build's first start is kept once the panel works as a whole:
   the card tried, the settings loaded, the control and logger tasks one
   pass each, a whole frame on the display and a screen loop tick after it,
@@ -164,6 +168,13 @@ history is in git.
 
 ### Changed
 
+- A battery's cell count joins its number as a unit symbol: the pack's
+  Cells keypad gives its range as `1 to 14S` (`1 bis 14S`). A unit keeps
+  its own case in a label of capitals: SERVO's run cards say `HOLD 2s TO
+  START` (`2s HALTEN ZUM STARTEN`), and the automatic test's steps read
+  `4.8 6.0V BROWN-OUT`. `tools/check_units.py --check` fails on a cell count
+  after a space and on a unit in capitals after a number in the texts the
+  panel shows (`500MS`, `50 HZ`).
 - The ESC profiles' texts the panel shows write a number and its unit
   together, as the rest of the interface does: `1.2-1.8ms`, `Nach 2s`,
   `8kHz`, 683 numbers in 624 texts of 67 of the 72 profiles. These are the
