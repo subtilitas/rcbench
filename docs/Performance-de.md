@@ -412,8 +412,22 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
+Die Kartenaufgabe `cardjob` von FILES belegt 6.656 Bytes internen RAM für
+ihren Stack und 16.384 Bytes DMA-fähigen internen RAM für ihren
+Kopierpuffer. Beides wird bei der ersten Anfrage von FILES belegt, nicht
+beim Start, und das Panel schreibt den freien internen RAM davor und
+danach:
+
+```text
+I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B after
+```
+
+Ohne den RAM lautet die Zeile `W (…) rcbench: files: no internal RAM for
+cardjob`, und FILES meldet `Nicht genug Speicher.` Die
+Zahlen auf einem Panel sind nicht gemessen.
+
 `firmware/panel/main/psram_bss.lf` legt die nullinitialisierten Daten (.bss)
-von 29 Objekten in den PSRAM (Pseudo-Static Random-Access Memory): den
+von 30 Objekten in den PSRAM (Pseudo-Static Random-Access Memory): den
 Zustand der Bildschirme und der Helfer für Karte, Seite, Einstellungen und
 Ausgänge. Das Fragment nennt jedes Objekt und die Regeln, die es erfüllt.
 `tools/psram_bss.py` liest die Linker-Map des Builds und lässt CI
@@ -422,12 +436,13 @@ Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
 
 | Posten | Mit dem Fragment | Ohne es |
 | --- | ---: | ---: |
-| .bss im internen RAM (DIRAM) | 30 000 | 201 144 |
-| .bss im PSRAM (`.ext_ram.bss`) | 171 144 | 0 |
-| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 127 474 | 298 618 |
-| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 286 272 | 2 286 272 |
+| .bss im internen RAM (DIRAM) | 30 632 | 242 992 |
+| .bss im PSRAM (`.ext_ram.bss`) | 212 360 | 0 |
+| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 128 296 | 340 656 |
+| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 408 432 | 2 408 432 |
 
-Alle Zahlen sind Bytes. Die PSRAM-Einträge von ESP-IDF für lwIP
+Alle Zahlen sind Bytes. Die Spalte ohne Fragment zählt das .bss im PSRAM
+zu den internen Zahlen; sie ist kein eigener Build. Die PSRAM-Einträge von ESP-IDF für lwIP
 (Lightweight IP Stack) und wpa_supplicant nutzen ein Schema, das nur das
 Fragment von `esp_wifi` definiert, und der P4-Build bindet es nicht ein;
 die 3 551 Bytes .bss von lwIP bleiben im internen RAM.

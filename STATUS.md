@@ -213,7 +213,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 282 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 286 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_pdmini`,
@@ -344,8 +344,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 468 committed screenshots to the current
-render, 234 in English and the same 234 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 492 committed screenshots to the current
+render, 246 in English and the same 246 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed). `image_slot.py`
 holds the panel image to the smaller of its two update slots.
@@ -374,7 +374,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_merge.c` | 146 | 146 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 343 | 336 | 98.0% |
-| `shared/ui/ui_icons.c` | 162 | 162 | 100.0% |
+| `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 270 | 257 | 95.2% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
@@ -384,7 +384,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 417 | 414 | 99.3% |
 | `shared/ui/ui_text.c` | 106 | 105 | 99.1% |
-| `shared/ui/ui_router.c` | 378 | 371 | 98.2% |
+| `shared/ui/ui_router.c` | 380 | 373 | 98.2% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
@@ -399,7 +399,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_draw.c` | 392 | 383 | 97.7% |
 | `shared/ui/ui_keypad.c` | 266 | 264 | 99.2% |
 | `shared/ui/ui_setting_keypad.c` | 84 | 84 | 100.0% |
-| `shared/ui/ui_textkey.c` | 304 | 293 | 96.4% |
+| `shared/ui/ui_textkey.c` | 346 | 335 | 96.8% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
 | `shared/ui/servo_screen_sweep.c` | 471 | 468 | 99.4% |
@@ -428,12 +428,15 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
 | `shared/ui/esc_stick_draw.c` | 466 | 450 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 308 | 299 | 97.1% |
+| `shared/ui/log_viewer_screen.c` | 323 | 314 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 212 | 185 | 87.3% |
-| `shared/ui/log_viewer_draw.c` | 416 | 404 | 97.1% |
-| `shared/ui/log_viewer_events.c` | 489 | 475 | 97.1% |
+| `shared/ui/log_viewer_draw.c` | 417 | 405 | 97.1% |
+| `shared/ui/log_viewer_events.c` | 492 | 478 | 97.2% |
 | `shared/ui/log_select.c` | 93 | 93 | 100.0% |
 | `shared/ui/log_text.c` | 138 | 136 | 98.5% |
+| `shared/ui/files_screen.c` | 586 | 559 | 95.4% |
+| `shared/ui/files_draw.c` | 332 | 321 | 96.7% |
+| `shared/ui/files_events.c` | 208 | 207 | 99.5% |
 | `shared/ui/settings_screen.c` | 494 | 488 | 98.8% |
 | `shared/ui/settings_draw.c` | 220 | 215 | 97.7% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
@@ -471,6 +474,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/files/fm_rules.c` | 173 | 172 | 99.4% |
 | `shared/files/fm_tree.c` | 165 | 164 | 99.4% |
 | `shared/files/fm_ops.c` | 401 | 395 | 98.5% |
+| `shared/files/fm_req.c` | 89 | 88 | 98.9% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 220 | 214 | 97.3% |
 | `shared/safety/safety_gate.c` | 55 | 55 | 100.0% |
@@ -606,7 +610,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 386 | 375 | 97.2% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **55168** | **54003** | **97.9%** |
+| **total** | **56473** | **55268** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -642,7 +646,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Screen rotation 180° on the board | the PPA copy of a turned frame is tested on the host with a fake engine (`test_gfx_turn`); its time on the board, the frame rate at 180° and the fallback after a PPA timeout are not measured. The host copies 77,093 px a frame on average on SERVO LIVE sweeping and 192,911 px on MOTOR & ESC LIVE ARMED | a station check: 180° on SETUP > PANEL turns the picture on the next frame; touch lands under the finger at the 4 corners and on STOP; STOP and DISARM work turned; the console's fps and `TURN` on SERVO LIVE at rest and sweeping, NORMAL against 180°; 180° kept over a restart |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The scan-out reads PSRAM by DMA (direct memory access) with no bounce buffer, and the DSI host's interrupt runs during the write (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay; not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's lines beside it |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 234 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 246 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 | Comment gaps of the existing tree | the comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in `ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`; Doxygen reports nothing inside such a file, so its other gaps are not listed until the block is added | documentation of the listed files |
 
 ## Constraints

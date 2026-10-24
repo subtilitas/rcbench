@@ -383,8 +383,21 @@ event handlers, the network interface, `esp_wifi_init`,
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
+FILES' card task `cardjob` takes 6,656 bytes of internal RAM for its stack
+and 16,384 bytes of DMA-capable internal RAM for its copy buffer. Both are
+taken at FILES' first request, not at start-up, and the panel logs the
+internal RAM free before and after:
+
+```text
+I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B after
+```
+
+Without the RAM the line is `W (…) rcbench: files: no internal RAM for
+cardjob` and FILES says `Not enough memory.` The figures on a panel
+are not measured.
+
 `firmware/panel/main/psram_bss.lf` places the zero-initialised data (.bss)
-of 29 objects in PSRAM (pseudo-static random-access memory): the screens'
+of 30 objects in PSRAM (pseudo-static random-access memory): the screens'
 state and the card, page, settings and output helpers. The fragment names
 each object and the rules it meets. `tools/psram_bss.py` reads the build's
 linker map and fails CI when a named object keeps .bss in internal RAM.
@@ -392,12 +405,13 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 30,000 | 201,144 |
-| .bss in PSRAM (`.ext_ram.bss`) | 171,144 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 127,474 | 298,618 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,286,272 | 2,286,272 |
+| .bss in internal RAM (DIRAM) | 30,632 | 242,992 |
+| .bss in PSRAM (`.ext_ram.bss`) | 212,360 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,296 | 340,656 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,408,432 | 2,408,432 |
 
-All figures are bytes. ESP-IDF's own PSRAM entries for lwIP (lightweight
+All figures are bytes. The column without the fragment adds the PSRAM .bss
+to the internal figures; it is not a build of its own. ESP-IDF's own PSRAM entries for lwIP (lightweight
 IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment
 defines, which the P4 build does not include; lwIP's 3,551 bytes of .bss
 stay in internal RAM.

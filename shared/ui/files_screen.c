@@ -617,7 +617,7 @@ void fs_foot(fs_foot_t b)
     if (e == NULL && b != FS_NEW) {
         return;                    /* fs_foot_live() asked for one */
     }
-    fm_tree_t *here = &s.pane[s.active];
+    const fm_tree_t *here = &s.pane[s.active];
     const fm_tree_t *there = &s.pane[1 - s.active];
     switch (b) {
     case FS_OPEN:
@@ -740,7 +740,7 @@ void fs_name_typed(const char *name)
     if (s.busy) {
         return;
     }
-    fm_tree_t *here = &s.pane[s.active];
+    const fm_tree_t *here = &s.pane[s.active];
     memset(&s.req, 0, sizeof(s.req));
     fm_err_t err;
     switch (s.name_for) {

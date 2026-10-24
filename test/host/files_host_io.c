@@ -34,6 +34,7 @@ static void fh_bench(fm_bench_t *out, void *ctx)
  * @param ctx  the task
  * @return the flag
  */
+// cppcheck-suppress constParameterCallback
 static bool fh_cancelled(void *ctx)
 {
     return ((const fh_t *)ctx)->cancel;
@@ -110,6 +111,7 @@ static bool fh_submit(fm_req_t *req, void *ctx)
  * @param ctx  the task
  * @return true with nothing held
  */
+// cppcheck-suppress constParameterCallback
 static bool fh_idle(void *ctx)
 {
     return ((const fh_t *)ctx)->held == NULL;
@@ -121,6 +123,7 @@ static bool fh_idle(void *ctx)
  * @param total  takes the bytes to do
  * @param ctx    the task
  */
+// cppcheck-suppress constParameterCallback
 static void fh_progress(uint64_t *done, uint64_t *total, void *ctx)
 {
     const fh_t *h = (const fh_t *)ctx;
@@ -159,6 +162,7 @@ static void fh_screen_bench(fm_bench_t *out, void *ctx)
  * @param ctx  the task
  * @return the name
  */
+// cppcheck-suppress constParameterCallback
 static const char *fh_volume(void *ctx)
 {
     const fh_t *h = (const fh_t *)ctx;
@@ -170,6 +174,7 @@ static const char *fh_volume(void *ctx)
  * @param ctx  the task
  * @return the slot's state
  */
+// cppcheck-suppress constParameterCallback
 static card_state_t fh_card(void *ctx)
 {
     return ((const fh_t *)ctx)->state;
