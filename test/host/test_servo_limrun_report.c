@@ -190,6 +190,34 @@ TEST_CASE(a_first_connect_no_servo_answers_ends_as_not_kst)
     CHECK(strstr(g.report, "programming port session failed") == NULL);
 }
 
+/* A run that ended before its first search says what was asked and that no
+ * search ran, in each mode; a run that searched keeps the plain mode line.
+ * The German words are held by test_text.c. */
+TEST_CASE(the_mode_line_of_a_run_that_never_searched_says_so)
+{
+    for (int mode = 0; mode < 3; ++mode) {
+        rig_init(0u, false);
+        g.cfg.program = mode == 1;
+        g.cfg.set_pulses = mode == 2;
+        g.fail_at = 1u;
+        g.fail_no_servo = true;
+        CHECK(start());
+        run_for(RUN_MS);
+        CHECK(!g.run.searched);
+        CHECK(strstr(g.report, "(no search ran)") != NULL);
+        CHECK(strstr(g.report, "Searched:") == NULL);
+        if (mode == 0) {
+            CHECK(strstr(g.report, "search only (no search ran), nothing "
+                                   "written to the servo") != NULL);
+        }
+    }
+    rig_init(0u, false);
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(g.run.searched);
+    CHECK(strstr(g.report, "(no search ran)") == NULL);
+}
+
 /* Any other end of the first CONNECT is the session's failure. */
 TEST_CASE(a_first_connect_that_fails_otherwise_ends_as_a_session_failure)
 {
@@ -240,6 +268,7 @@ int main(void)
     RUN(every_reason_and_phase_has_its_words);
     RUN(the_share_the_overset_and_the_final_value);
     RUN(a_first_connect_no_servo_answers_ends_as_not_kst);
+    RUN(the_mode_line_of_a_run_that_never_searched_says_so);
     RUN(a_first_connect_that_fails_otherwise_ends_as_a_session_failure);
     RUN(a_later_connect_that_fails_ends_as_a_session_failure);
     RUN(no_servo_answering_outside_a_connect_ends_nothing);

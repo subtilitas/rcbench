@@ -127,7 +127,7 @@ Bit 7 von `STATE` liest das Register; Register 25 von `VIEW` 2, Bit 8, sagt,
 dass die offene Leitung per PRECHARGE empfängt. Ein IOmcu mit 4.23 weist
 ein Schreiben, das Register 23 erreicht, mit READ_ONLY ab und empfängt mit
 dem Pull-up; das Panel markiert dann die Einstellung unter SETUP
-([ANSCHLÜSSE: der Programmierport](Screens-de.md#anschlüsse-der-programmierport)).
+([INTERFACES: der Programmierport](Screens-de.md#interfaces-der-programmierport)).
 Was gemessen ist und was nicht:
 [`protocols/hitec`](../protocols/hitec/README.md#receive-by-precharge-and-sample).
 

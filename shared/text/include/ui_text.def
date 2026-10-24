@@ -251,6 +251,9 @@ UI_TEXT(KEYPAD_WHY_OFF, 0,
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
+UI_TEXT(KEYPAD_WHY_TAP, 0,
+    "Pins the tap takes: %s",
+    "Pins, die der Abgriff nimmt: %s")
 UI_TEXT(KEYPAD_WHY_PDMINI, 0,
     "The other PD mini pin holds this GPIO",
     "Diesen GPIO hält der andere PD-mini-Pin")
@@ -1131,10 +1134,10 @@ UI_TEXT(SET_HD_TAP, 40,
     "PHASENABGRIFF")
 UI_TEXT(SET_HD_BALANCE, 40,
     "BALANCE SENSORS",
-    "BALANCE-SENSOREN")
+    "BALANCE SENSORS")
 UI_TEXT(SET_HD_SUPPLY, 40,
     "SUPPLY",
-    "NETZTEIL")
+    "SUPPLY")
 UI_TEXT(SET_HD_PROG, 40,
     "PROG PORT",
     "PROG-PORT")
@@ -1191,7 +1194,7 @@ UI_TEXT(SET_SENS_SAME_ADDR, 65,
     "Der INA228 nutzt diese Adresse. Keiner wird gelesen.")
 UI_TEXT(SET_SENS_NO_BUS, 65,
     "Sensor SDA or SCL unset. Set both on INTERFACES.",
-    "SDA oder SCL der Sensoren fehlt. Beide auf ANSCHLÜSSE festlegen.")
+    "SDA oder SCL der Sensoren fehlt. Beide auf INTERFACES festlegen.")
 UI_TEXT(SET_RESET, 0,
     "RESET CATEGORY",
     "KATEGORIE ZURÜCKSETZEN")
@@ -1591,7 +1594,7 @@ UI_TEXT(LOG_DELETE, 0,
     "LÖSCHEN")
 UI_TEXT(LOG_SD_CARD, 60,
     "SD CARD",
-    "SD-KARTE")
+    "SD CARD")
 UI_TEXT(LOG_NO_LOGS, 64,
     "NO RECORDINGS",
     "KEINE AUFZEICHNUNGEN")
@@ -1627,10 +1630,10 @@ UI_TEXT(LOG_ROOT_HERE, 64,
     "Läufe von Firmware 0.21.0 und älter.")
 UI_TEXT(LOG_AUTO_OFF, 64,
     "AUTO LOGS OFF in SETUP > SD CARD.",
-    "AUTO-LOGS AUS unter SETUP > SD-KARTE.")
+    "AUTO-LOGS AUS unter SETUP > SD CARD.")
 UI_TEXT(LOG_USER_OFF, 64,
     "USER LOGS OFF in SETUP > SD CARD.",
-    "USER-LOGS AUS unter SETUP > SD-KARTE.")
+    "USER-LOGS AUS unter SETUP > SD CARD.")
 /* The folder tabs: the card's folder names, the same in every language
  * but the root's. */
 UI_TEXT(LOG_TAB_USER, 0,
@@ -2054,7 +2057,7 @@ UI_TEXT(FM_RULE_FREE, 0,
     "keine")
 UI_TEXT(FM_RULE_FIXED, 0,
     "A folder of the bench: no RENAME, MOVE or DELETE.",
-    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN.")
+    "Prüfstand-Ordner: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")
@@ -3335,7 +3338,7 @@ UI_TEXT(SV_DUT_NOTE, 58,
     "Dieser Name steht oben auf jedem Testbericht.")
 UI_TEXT(SV_ENC_NOTE_1, 58,
     "AS5600 on or off: SETUP > INTERFACES.",
-    "AS5600 ein oder aus: SETUP > ANSCHLÜSSE.")
+    "AS5600 ein oder aus: SETUP > INTERFACES.")
 UI_TEXT(SV_ENC_NOTE_2, 58,
     "Centre the servo, then tap ENC CENTRE.",
     "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
@@ -3565,7 +3568,7 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_ON, 94,
     "Netzteil ließ sich nicht einschalten. Ausgang aus.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
     "PD mini pins rejected. Check SETUP > INTERFACES.",
-    "PD-mini-Pins abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
     "PD-mini-Ausgang ließ sich nicht schalten.")
@@ -3595,22 +3598,22 @@ UI_TEXT(ALERT_NO_SENSE_PAGE, 94,
     "IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.")
 UI_TEXT(ALERT_SENSE_PINS_UNSET, 94,
     "Sensor SDA or SCL not set. Check SETUP > INTERFACES.",
-    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.")
+    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_SAME_ADDR, 94,
     "INA228 and INA3221 both use 0x%02X. Check SETUP > INTERFACES.",
-    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > ANSCHLÜSSE prüfen.")
+    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_PINS, 94,
     "Sensor pins GP%d/GP%d rejected. Check SETUP > INTERFACES.",
-    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
     "INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.",
-    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I3221_SETUP, 94,
     "INA3221 settings rejected. Check SETUP > SENSORS.",
-    "INA3221-Einstellungen abgelehnt. SETUP > SENSOREN prüfen.")
+    "INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_DARK, 94,
     "INA3221 0x%02X has every channel off. Check SETUP > SENSORS.",
-    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSOREN prüfen.")
+    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_SILENT, 94,
     "%s is not responding at 0x%02X.",
     "%s antwortet nicht unter 0x%02X.")
@@ -3637,7 +3640,7 @@ UI_TEXT(ALERT_SENSE_OVER_LOST, 94,
     "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.")
 UI_TEXT(ALERT_SENSE_LIMITS, 94,
     "INA3221 limits rejected. Check SETUP > SENSORS.",
-    "INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.")
+    "INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_ENC_OLD, 94,
     "IOmcu firmware older than 4.9. AS5600 not read.",
     "IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.")
@@ -3667,10 +3670,10 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
     "Phase tap on GP%u, %u to %uHz rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
     "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_BUSY, 94,
     "Phase tap pin GP%u is in use. Capture not running.",
     "Pin GP%u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")
@@ -6002,22 +6005,22 @@ UI_SETTING_CATEGORY(SET_CAT_APP,
     "PANEL")
 UI_SETTING_CATEGORY(SET_CAT_IFACE,
     "INTERFACES",
-    "ANSCHLÜSSE")
+    "INTERFACES")
 UI_SETTING_CATEGORY(SET_CAT_CARD,
     "SD CARD",
-    "SD-KARTE")
+    "SD CARD")
 UI_SETTING_CATEGORY(SET_CAT_SENSORS,
     "SENSORS",
-    "SENSOREN")
+    "SENSORS")
 UI_SETTING_CATEGORY(SET_CAT_ESC,
     "ESC / BENCH",
-    "ESC / PRÜFSTAND")
+    "ESC / BENCH")
 UI_SETTING_CATEGORY(SET_CAT_SUPPLY,
     "SUPPLY",
-    "NETZTEIL")
+    "SUPPLY")
 UI_SETTING_CATEGORY(SET_CAT_SERVO,
     "SERVO TEST",
-    "SERVOTEST")
+    "SERVO TEST")
 UI_SETTING_CATEGORY(SET_CAT_STICK,
     "ESC STICK",
     "ESC STICK")
@@ -6942,6 +6945,26 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES,
     "Modus:           nur Suche; PULSE LOWER "
     "und PULSE UPPER zuerst auf 1000 und "
     "2000us gesetzt")
+/* The same modes for a run that ended before its first search. */
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_SEARCH_NONE,
+    "Mode:           search only (no search "
+    "ran), nothing written to the servo",
+    "Modus:           nur Suche (keine Suche "
+    "gelaufen), nichts ins Servo geschrieben")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE,
+    "Mode:           search, then LEFT ANGLE "
+    "and RIGHT ANGLE to be programmed (no "
+    "search ran)",
+    "Modus:           Suche, dann LEFT ANGLE "
+    "und RIGHT ANGLE zu programmieren (keine "
+    "Suche gelaufen)")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_NONE,
+    "Mode:           search only; PULSE LOWER "
+    "and PULSE UPPER to be set to 1000 and "
+    "2000us first (no search ran)",
+    "Modus:           nur Suche; PULSE LOWER "
+    "und PULSE UPPER zuerst auf 1000 und "
+    "2000us zu setzen (keine Suche gelaufen)")
 UI_SERVO_TEXT(SERVO_STR_L_R_SEARCH,
     "Searched:       from %uus out to %uus "
     "and %uus",

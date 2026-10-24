@@ -376,7 +376,7 @@ Was eine Einrichtung von 0.21.1 auf 0.22.1 vorfindet:
 
 | Auf 0.21.1 | Auf 0.22.1 |
 | --- | --- |
-| PD mini TX und PD mini RX auf einem GPIO gespeichert | lädt wie gespeichert; der PD mini bleibt aus, der Kopf von SUPPLY meldet `PD MINI OHNE PINS` und beide Zeilen auf SETUP > ANSCHLÜSSE melden `TX und RX auf einem Pin. Der PD mini bleibt aus.`; eine Zeile auf einen anderen GPIO stellen und SPEICHERN |
+| PD mini TX und PD mini RX auf einem GPIO gespeichert | lädt wie gespeichert; der PD mini bleibt aus, der Kopf von SUPPLY meldet `PD MINI OHNE PINS` und beide Zeilen auf SETUP > INTERFACES melden `TX und RX auf einem Pin. Der PD mini bleibt aus.`; eine Zeile auf einen anderen GPIO stellen und SPEICHERN |
 | Beleuchtung auf SETUP > PANEL | keine Zeile; die Hintergrundbeleuchtung ist an, solange das Panel läuft; der gespeicherte Schlüssel `backlight` bleibt im Einstellungsspeicher und wird nicht gelesen |
 | Sensor SDA und SCL ohne Verdrahtung: `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | die Monitore gelten als nicht antwortend; die Prüfung läuft auf dem IOmcu und kommt mit Schritt 3 |
 | INA228-Adresse und INA3221-Adresse springen an ihren Enden um | bleiben bei 0x40 und 0x4F (INA228), 0x40 und 0x43 (INA3221) stehen |
@@ -423,7 +423,7 @@ Was eine Einrichtung von 0.21.2 auf 0.22.1 vorfindet:
 
 | Auf 0.21.2 | Auf 0.22.1 |
 | --- | --- |
-| Die INA3221-Zeilen auf SETUP > ANSCHLÜSSE: INA3221, Adresse, Shunt, Kanäle | SETUP > SENSOREN, beim ersten Start aus den gespeicherten Zeilen belegt: der Baustein an der gespeicherten Adresse bestückt, wenn der INA3221 EIN war, sein CH1 auf dem gespeicherten Shunt, CH2 und CH3 darauf mit CH1+2+3 und AUS mit CH1, CH1 überwacht PORT 1, wenn das Ziel des Servotesters der Programmierport war, sonst OUT 1 ([Bildschirme: SENSOREN](Screens-de.md#sensoren-die-ina3221-bausteine)); die gespeicherten Schlüssel bleiben unverändert für ein Panel, das zurück auf 0.21 geht |
+| Die INA3221-Zeilen auf SETUP > INTERFACES: INA3221, Adresse, Shunt, Kanäle | SETUP > SENSORS, beim ersten Start aus den gespeicherten Zeilen belegt: der Baustein an der gespeicherten Adresse bestückt, wenn der INA3221 EIN war, sein CH1 auf dem gespeicherten Shunt, CH2 und CH3 darauf mit CH1+2+3 und AUS mit CH1, CH1 überwacht PORT 1, wenn das Ziel des Servotesters der Programmierport war, sonst OUT 1 ([Bildschirme: SENSORS](Screens-de.md#sensors-die-ina3221-bausteine)); die gespeicherten Schlüssel bleiben unverändert für ein Panel, das zurück auf 0.21 geht |
 | Ein Programmierport, PROG PORT | PROG PORT 1, PROG PORT 2, PROG PORT 3 und PROG PORT 4 auf SETUP > OUTPUTS; ein ZIEL des Servotesters PROG PORT liest sich als PORT 1; die Ports 2 bis 4 starten mit FUNKTION NONE ohne Pin |
 | Die INA3221-Spalten des Lauf-Logs `ch1` bis `ch3` | eine Gruppe aus Strom, Maximum und Spannung je überwachendem Kanal, nach seinem Ziel benannt (`port 1 current (A)`), höchstens 3 Gruppen |
 | Die Tabs von LOGS in der Reihenfolge USER, BENCH, STAMM | STAMM, USER, BENCH; der gemerkte Tab und die Ordner bleiben |
@@ -836,8 +836,8 @@ Widerstände 2,2kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
-**Am Panel einrichten.** SETUP → ANSCHLÜSSE: `INA228` auf ON; SETUP →
-SENSOREN: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
+**Am Panel einrichten.** SETUP → INTERFACES: `INA228` auf ON; SETUP →
+SENSORS: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
 der Vorgabe zu den Modulen oben: INA228 auf 0x45 mit 200 µΩ, der INA3221 auf
 0x40 mit 0,1Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GP16 und SCL an
 GP17. Ohne Panel gibt die Build-Option `IOMCU_SENSE_BRINGUP=ON` beide
@@ -1122,7 +1122,7 @@ wird nachgespielt. Eine Taste wird beim Drücken gesendet, ohne Enter.
 2. `firmware/iomcu/build-trace/rcbench-iomcu.uf2` flashen: BOOTSEL halten,
    das Modul an den PC stecken, die Datei auf sein Laufwerk kopieren.
 3. Den Port in PuTTY mit Mitschnitt öffnen. Innerhalb von 3s kommt eine
-   Zeile, die mit `rcbench-iomcu:` beginnt. Am Panel SETUP → SENSOREN:
+   Zeile, die mit `rcbench-iomcu:` beginnt. Am Panel SETUP → SENSORS:
    `0x40 bestückt` auf ON.
 4. Rauschen ohne Servo: kein Servo angeschlossen, der Ausgang des Netzteils
    an bei 6,00V, `t` drücken. 10s später druckt die Konsole eine Zeile,
@@ -1264,7 +1264,7 @@ des Arms ist, beantwortet er nicht.
 **Teil B: mit dem AS5600.** Dieselben Bewegungen mit dem Encoder auf der
 Welle.
 
-1. SETUP → ANSCHLÜSSE: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
+1. SETUP → INTERFACES: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
    PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, SENSOR-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.

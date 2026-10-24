@@ -503,6 +503,8 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
+    "setup-tap-why": (None, "setup", "dark"),
     # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and
     # PRECHARGE held, with its own help line.
     "setup-prog-noline": (None, "setup", "dark"),

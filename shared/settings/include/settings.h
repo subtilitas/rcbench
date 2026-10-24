@@ -377,6 +377,19 @@ bool settings_cycles(setting_id_t id);
 bool settings_sense_sda_valid(int gpio);
 
 /**
+ * Whether Tap pin takes @p gpio: an IOmcu GPIO the RP2350-CAN brings out
+ * and does not reserve, outbind_reserved_mask(), that is no ADC pin -- the
+ * TONE page refuses GP26 to GP29 of the RP2350A and GP40 to GP47 of the
+ * RP2354B.  That leaves 0, 1, 2, 4, 5, 6, 7 and 13 to 22.  A pin an output,
+ * the supply or the sensor bus holds is not known here; the page refuses it
+ * and SETUP marks the row.
+ *
+ * @param gpio An IOmcu GPIO number.
+ * @return true when Tap pin takes it.
+ */
+bool settings_tap_pin_valid(int gpio);
+
+/**
  * Whether PD mini TX and PD mini RX hold one GPIO, 0 or above.  The steps
  * never set that; a stored set-up can hold it.  The panel writes such a
  * wiring to the SUPPLY page disabled (supply_link.c), so the PD mini

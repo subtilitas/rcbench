@@ -140,7 +140,7 @@ und empfängt mit dem Pull-up. Das Panel sendet keine Hitec-Transaktion
 richtet SENSE_MAP (0x35) bis zu 4 INA3221 mit einem Shunt und einem
 Beobachtungsziel je Kanal ein, und SENSE_WIN_A und SENSE_WIN_B (0x37, 0x38)
 tragen das letzte Fenster jedes Kanals; ein älterer IOmcu weist die drei mit
-BAD_PAGE ab. Das Panel dieses Builds schreibt SENSE_MAP aus SETUP > SENSOREN
+BAD_PAGE ab. Das Panel dieses Builds schreibt SENSE_MAP aus SETUP > SENSORS
 und liest keine der beiden Fenster-Pages ([Die INA3221-Map und ihre Fenster](LinkSensors-de.md)).
 Ab 4.26 hat PROG 28 Register: die Register 24 bis 27 sind die FUNC jedes
 Ports, und der Build hat 4 Ports; das Panel liest 24 Register eines
@@ -180,7 +180,7 @@ Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der
 Pegel vor dem Befehl der Mittelwert von CH1 über die 50ms vor der Flanke;
 eine Messung, die scharfgeschaltet wird, während der INA3221 CH1 nicht
 liest, endet sofort als verloren und zählt in CAP_SEQ. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
-bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
+bis 11 von SENSE, schreibt die Einstellung aus SETUP INTERFACES Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
 SERVO_SENSE schreibt es keine Messung. SERVO_WIN (0x31) liest es an einem
@@ -191,7 +191,7 @@ auch immer ENABLE hält; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17 abgelehnt. SETUP > INTERFACES prüfen.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und wie bisher angenommen. Eine
 Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird
@@ -321,7 +321,7 @@ Das Panel (`shared/bench/tone_link.c`) meldet einen abgewiesenen ersten
 Frame einmal im Band. Einen mit BUSY abgewiesenen Frame bietet es alle 5s
 erneut an (`TONE_LINK_RETRY_MS`), je ein Write, und einen mit BAD_VALUE
 abgewiesenen schreibt es erst wieder, wenn sich die Konfiguration unter
-SETUP ANSCHLÜSSE ändert oder der Link wieder hochkommt.
+SETUP INTERFACES ändert oder der Link wieder hochkommt.
 
 | Panel | IOmcu | Ein abgewiesener erster Frame |
 | --- | --- | --- |
@@ -610,7 +610,7 @@ solange alles Folgende gilt:
 
 | # | Bedingung |
 | ---: | --- |
-| 1 | SETUP SENSOREN hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; dieser Kanal ist CH1 des Bausteins |
+| 1 | SETUP SENSORS hat einen bestückten Baustein mit einem Kanal, der das Ziel des Servotesters misst; dieser Kanal ist CH1 des Bausteins |
 | 2 | die Protokoll-Minor des IOmcu ist 11 oder mehr |
 | 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen; mit SENSE_MAP sind sein Enable-Bit des INA3221 und die Register 8 bis 11 die der Zuordnung, und die Register 0 bis 25 von SENSE_MAP sind die verlangte Zuordnung: seit dem Link-Aufbau gelesen, nicht abgelehnt, kein Schreiben offen |
 | 4 | das letzte Lesen von SENSE ist jünger als 200ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
@@ -948,7 +948,7 @@ Failsafe ist eine solche Nebenwirkung.
 
 Ein NACK ist eine Antwort, kein Linkfehler. Das Panel zählt sie in seinem
 Link-Bericht (`nack`, [Inbetriebnahme](Bringup-de.md#link-bericht)): eine
-Einstellung aus SETUP ANSCHLÜSSE, die eine Page ablehnt, ist ein NACK je
+Einstellung aus SETUP INTERFACES, die eine Page ablehnt, ist ein NACK je
 abgelehntem Wert, einmal geschrieben, bis sich der Wert ändert, und ein Pin,
 den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 

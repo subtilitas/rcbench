@@ -192,9 +192,17 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
         snprintf(c->buf, c->n, LS(R_FIRMWARE), g->firmware);
         return true;
     }
-    if (text_line(c, g->program      ? SERVO_STR_L_R_MODE_PROGRAM
-                     : g->set_pulses ? SERVO_STR_L_R_MODE_PULSES
-                                     : SERVO_STR_L_R_MODE_SEARCH)) {
+    /* The mode asked for, said as asked while no search ran: a run that
+     * ended before its first search did not search, program or set. */
+    const bool ran = r->searched;
+    const servo_str_t mode =
+        g->program      ? (ran ? SERVO_STR_L_R_MODE_PROGRAM
+                               : SERVO_STR_L_R_MODE_PROGRAM_NONE)
+        : g->set_pulses ? (ran ? SERVO_STR_L_R_MODE_PULSES
+                               : SERVO_STR_L_R_MODE_PULSES_NONE)
+                        : (ran ? SERVO_STR_L_R_MODE_SEARCH
+                               : SERVO_STR_L_R_MODE_SEARCH_NONE);
+    if (text_line(c, mode)) {
         return true;
     }
     if (here(c)) {

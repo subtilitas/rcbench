@@ -2332,7 +2332,8 @@ int main(int argc, char **argv)
     s_monitors_on = strcmp(view, "setup-interfaces") == 0
                     || strncmp(view, "setup-sensors", 13) == 0
                     || strcmp(view, "setup-unheld") == 0;
-    s_tap_on = strcmp(view, "setup-tap") == 0;
+    s_tap_on = strcmp(view, "setup-tap") == 0
+               || strcmp(view, "setup-tap-why") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;
@@ -3737,6 +3738,7 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-interfaces") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0
+        || strcmp(view, "setup-tap-why") == 0
         || strcmp(view, "setup-prog") == 0
         || strcmp(view, "setup-prog-noline") == 0
         || strcmp(view, "setup-prog-pre") == 0) {
@@ -3752,6 +3754,12 @@ int main(int argc, char **argv)
              * list is high leaves the screen. */
             setup_scroll_rows(4);
             setup_scroll_rows(5);
+        } else if (strcmp(view, "setup-tap-why") == 0) {
+            /* GP23, a pin the module does not bring out, typed for Tap
+             * pin: refused with the pins the row takes. */
+            setup_value(SET_CAT_IFACE, SET_TONE_PIN);
+            kp_type(settings_screen_keypad(), "23");
+            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
         } else if (strncmp(view, "setup-prog", 10) == 0) {
             /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
              * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or

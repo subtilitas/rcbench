@@ -147,7 +147,7 @@ static const char *const *const k_options[SETTING_COUNT] = {
 
 static const char *const k_category[SET_CAT_COUNT] = {
     [SET_CAT_APP]             = "PANEL",
-    [SET_CAT_SENSORS]         = "SENSOREN",
+    [SET_CAT_SENSORS]         = "SENSORS",
 };
 
 static const char *const k_servo[SERVO_STR_COUNT] = {
@@ -302,7 +302,7 @@ def test_the_settings_words_leave_the_schema_for_the_table():
     assert ('UI_SETTING_LABEL(SET_INA_FIT_1,\n    "0x41 fitted",\n'
             '    "0x41 bestückt")' in table)
     assert ('UI_SETTING_CATEGORY(SET_CAT_SENSORS,\n    "SENSORS",\n'
-            '    "SENSOREN")' in table)
+            '    "SENSORS")' in table)
     assert 'UI_OPTIONS(theme)\nUI_OPTION("DARK", "DUNKEL")' in table
     assert ('/* What a part watches. */\nUI_OPTIONS(watch)\n'
             'UI_OPTION("NONE", "KEINE")' in table)

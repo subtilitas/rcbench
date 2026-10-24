@@ -246,11 +246,11 @@ beschrieben.
 
 ![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/motor-stick-run.png)
 
-Ist der Phasenabgriff unter SETUP bei ANSCHLÜSSE eingeschaltet, ergänzt die
+Ist der Phasenabgriff unter SETUP bei INTERFACES eingeschaltet, ergänzt die
 Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
 die Tonhöhe seines letzten 8-ms-Fensters, die Zähler der verlorenen
 Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz
-([die Zeilen und Zustände des Abgriffs](Screens-de.md#anschlüsse-der-phasenabgriff)).
+([die Zeilen und Zustände des Abgriffs](Screens-de.md#interfaces-der-phasenabgriff)).
 Der Lauf zählt seine Pieptöne wie bisher aus dem Netzteilstrom; die Pieptöne
 des Abgriffs benutzt er nicht.
 
@@ -775,7 +775,7 @@ Pieptöne, die nicht gemessen ist. Es wird nicht gemacht.
 
 ## Simulation
 
-Ist das PD mini in SETUP ANSCHLÜSSE aus, betreibt der Bildschirm SUPPLY das
+Ist das PD mini in SETUP INTERFACES aus, betreibt der Bildschirm SUPPLY das
 Modell eines Netzteils im Panel. Während eines Stick-Laufs ist der Strom
 dieses Modells ein simulierter ESC (`shared/esc/esc_sim.c`), der dem Profil
 folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem

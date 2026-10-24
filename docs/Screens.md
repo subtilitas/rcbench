@@ -11,7 +11,9 @@ The top band is shared by every screen. From the right: STOP, the run clock
 (while ARMED or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
 panel drives the IOmcu's outputs, and SIM while no IOmcu answers
-and the panel runs on its own models.
+and the panel runs on its own models. INJECT replaces BENCH and SIM while a
+touch injector answers at I2C (Inter-Integrated Circuit) address 0x14; the
+panel looks for one once, at start-up.
 
 The arm chip names what the switch to ARMED drives:
 
@@ -3038,9 +3040,11 @@ choice wraps round from its last value to its first.
   the range, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt
   between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit
   between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a
-  Sensor SDA pin the bus cannot have, and `The other PD mini pin holds this
-  GPIO` for the GPIO the other PD mini pin holds. The pin list is built from
-  `settings_sense_sda_valid()`, the check the row's keys step by. The next
+  Sensor SDA pin the bus cannot have, `Pins the tap takes: 0 1 2 4 5 6 7 13
+  14 15 16 17 18 19 20 21 22` for a Tap pin the module does not bring out,
+  and `The other PD mini pin holds this GPIO` for the GPIO the other PD mini
+  pin holds. The pin lists are built from `settings_sense_sda_valid()` and
+  `settings_tap_pin_valid()`, the checks the rows' keys step by. The next
   key brings the range back. A pin's keypad has no `+/-`
   key: -1, a pin not set, is set with `-`. A number shows as many digits
   after the point as its step has, so the row reads what the keypad takes:
@@ -3588,7 +3592,7 @@ the bus's pins:
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
-| Tap pin | 0 to 47 | 22 | IOmcu GPIO; GP22 is pad 29. Refused: an ADC (analog-to-digital converter) pin, GP26 to GP29 on the RP2350A and GP40 to GP47 on the RP2354B; a pin bound to an output; a pin the SENSE or SUPPLY page holds |
+| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | IOmcu GPIO; GP22 is pad 29. The keypad and the keys offer the pins the RP2350-CAN brings out and does not reserve, less the ADC (analog-to-digital converter) pins GP26 to GP29: GP3 is the heartbeat, GP8 to GP12 are the CAN controller's, and the module does not bring out GP23 to GP25 and GP29. Refused by the IOmcu: a pin bound to an output; a pin the SENSE or SUPPLY page holds |
 | Tap lowest tone | 50 to 2000Hz, 10Hz steps | 400 | a tone below it is not a beep |
 | Tap highest tone | 100 to 6900Hz, 50Hz steps | 6500 | above the lowest tone |
 | Tap pitch split | 0 to 50%, 1% steps | 8 | a pitch change this large starts a new beep with no silence between; 0 splits on silence only |

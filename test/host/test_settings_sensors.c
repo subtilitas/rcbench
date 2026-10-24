@@ -702,7 +702,7 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
                  "ber der Grenze von 32.77A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
-                 "INA3221-Grenzen abgelehnt. SETUP > SENSOREN pr"
+                 "INA3221-Grenzen abgelehnt. SETUP > SENSORS pr"
                  "\xc3\xbc" "fen.");
     ui_text_set_language(UI_LANG_EN);
 }

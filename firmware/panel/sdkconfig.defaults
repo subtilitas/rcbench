@@ -210,8 +210,9 @@ CONFIG_HTTPD_MAX_URI_LEN=1280
 # certificate authorities, not the full one: github.com chains to USERTrust
 # ECC, its release files' host to ISRG Root X1, and both are in it.  A
 # bundle of those two alone would be smaller and would stop working the day
-# GitHub changes its authority.  No clock is set, so no certificate's dates
-# are checked.
+# GitHub changes its authority.  The clock is set by NTP (Network Time
+# Protocol), but no certificate's dates are checked:
+# CONFIG_MBEDTLS_HAVE_TIME_DATE is off, which is ESP-IDF's default.
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
 # mbedTLS's memory, the 16 KB record buffer for what arrives among it, in

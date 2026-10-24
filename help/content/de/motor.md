@@ -118,7 +118,7 @@ Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und dan
 
 TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze. Ein Kanal, für den nichts geantwortet hat, zeigt `--`.
 
-- Ist der INA228 unter SETUP, ANSCHLÜSSE eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
+- Ist der INA228 unter SETUP, INTERFACES eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
 - `ÜBERSTEUERT` folgt der Überschrift, solange ein Strom das Ende des Messbereichs erreicht hat: Strom und Leistung sind dann Grenzen, keine Werte.
 - `ESC MELDET` listet Spannung und Strom aus der eigenen Telemetrie des ESC, und `Abw.` ist der Wert des ESC minus dem des INA228.
 - Ohne INA228 sind die Kanäle die Telemetrie des ESC, und `ESC MELDET` fehlt.
@@ -130,7 +130,7 @@ Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und E
 
 ## Das Log eines Laufs
 
-Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
+Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels, solange Auto-Logs unter [SETUP](setup.md#sd-card) > SD CARD EIN ist. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
 
 ## Verwandte Seiten
 

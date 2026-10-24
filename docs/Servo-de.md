@@ -66,7 +66,7 @@ kürzeres Halten startet nichts.
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
 Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
-und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSOREN das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
+und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
 geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
 Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
 Ausgangskarte bleibt ebenfalls sichtbar.
@@ -81,7 +81,7 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSOREN das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
+| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000ms gehalten, oder kein Fenster mit Strom in den letzten 200ms |
 | `SERVOVERSORGUNG UNTER 3.0V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
@@ -365,8 +365,8 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
 daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
 unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit User-Logs AUS unter
-SETUP > SD-KARTE wird kein Bericht geschrieben
-([Setup](Screens-de.md#sd-karte-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder das
+SETUP > SD CARD wird kein Bericht geschrieben
+([Setup](Screens-de.md#sd-card-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
 läuft durch den Lauf weiter, wie seine Summen. Vom Start des Laufs, bis die
 Karte den Bericht geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
@@ -482,7 +482,7 @@ ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
 (Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
 (siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
-Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
+Power Mini V1), wenn SETUP INTERFACES ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den
@@ -715,7 +715,7 @@ PWM-Frame misst, verwendet der Lauf nicht.
   0,390A und der höchste 1-ms-Messwert des INA3221 1,637A. Ein Lauf am PD
   mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
 - **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem ein INA3221
-  unter SETUP > SENSOREN bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
+  unter SETUP > SENSORS bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
   `der IOmcu ist älter als Link-Protokoll 4.11`, `der IOmcu hält
   seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
   den letzten 200ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
@@ -783,7 +783,7 @@ bis 0,342A.
 ### Der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
-SETUP, ANSCHLÜSSE unter AS5600 eingestellt (Standard AUS) und vom IOmcu
+SETUP, INTERFACES unter AS5600 eingestellt (Standard AUS) und vom IOmcu
 gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
@@ -985,7 +985,7 @@ eigene Task der SD-Karte schreibt seine Dateien dorthin: `ATESTnnn.CSV`, eine
 Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
 PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 `LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
-([Logs](Screens-de.md#logs)). Mit User-Logs AUS unter SETUP > SD-KARTE,
+([Logs](Screens-de.md#logs)). Mit User-Logs AUS unter SETUP > SD CARD,
 gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
 nennt `USER-LOGS AUS`. Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
@@ -1194,7 +1194,7 @@ erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
 Die Strommessung an der Servoschiene. Die Endlagensuche liest den
 INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet in SETUP
-ANSCHLÜSSE und bestückt in SETUP > SENSOREN, und sonst nichts. Der
+INTERFACES und bestückt in SETUP > SENSORS, und sonst nichts. Der
 Abgleich braucht einen Sensor über das Paar der Ausgänge, der nicht bestückt
 ist. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
 Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE

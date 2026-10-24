@@ -279,7 +279,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gilt nur unter dem Zählerstand, mit dem sie gestellt wurde. Ein ÜBERNEHMEN
   im selben Frame wie STOP ändert also keinen Sollwert, auch wenn das
   Netzteil den Ausgang erst eine Messung später als aus meldet.
-- Die Verdrahtung des PD mini (SETUP ANSCHLÜSSE) ändert sich, sobald das
+- Die Verdrahtung des PD mini (SETUP INTERFACES) ändert sich, sobald das
   Modul einmal geantwortet hat, nur auf eine nach der Änderung gesendete
   Zustandslesung, die den Ausgang aus zeigt. Ein Modul, das sich in den
   500ms zwischen zwei Lesungen selbst eingeschaltet hat, behält seine Pins
