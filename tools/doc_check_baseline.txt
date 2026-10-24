@@ -206,9 +206,6 @@ firmware/panel/components/can_twai/include/can_twai.h: warning: return type of m
 firmware/panel/components/display/display.c: warning: Member EK_CMD_ADDRESS_MODE (macro definition) of file display.c is not documented.
 firmware/panel/components/display/display.c: warning: Member RESET_WAIT_MS (macro definition) of file display.c is not documented.
 firmware/panel/components/display/display.c: warning: Member TAG (variable) of file display.c is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: file has no @file block
-firmware/panel/components/fw_ota/fw_ota.c: warning: Compound ota_ctx_t is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Compound restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member check (variable) of struct restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member h (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member magic (variable) of struct restart_note_t is not documented.
@@ -216,7 +213,6 @@ firmware/panel/components/fw_ota/fw_ota.c: warning: Member next (variable) of st
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member open (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member part (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member version[FW_TEXT_MAX] (variable) of struct restart_note_t is not documented.
-firmware/panel/components/fw_ota/include/fw_ota.h: file has no @file block
 firmware/panel/components/gt911/gt911.c: file has no @file block
 firmware/panel/components/gt911/gt911.c: warning: Compound gt911_dev_t is not documented.
 firmware/panel/components/gt911/gt911.c: warning: Member addr (variable) of struct gt911_dev_t is not documented.
