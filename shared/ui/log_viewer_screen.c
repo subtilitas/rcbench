@@ -25,7 +25,7 @@
  * header row: ROOT, USER and BENCH, in that order (log_viewer_tab_t holds
  * the ids; the tabs' order on screen is lv_tab_at).
  *
- * A report standing alone, LIMITnnn.TXT, opens in a fourth view as text:
+ * A report, ATESTnnn.TXT or LIMITnnn.TXT, opens in a fourth view as text:
  * the browse list's panel, scroll bar and BACK, with the file's rows in
  * place of the files (log_text.h).
  *
@@ -288,7 +288,7 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
  * read, after a DELETE or behind the screen's back.  The last page is read
  * instead, as the pages from the first one cut it: what is left of the
  * count after whole pages.  The newest is the highest number on the page,
- * a report standing alone included.
+ * a report included.
  *
  * @param dir  Which side of @p key the page is on.
  * @param key  The name at the page's edge; "" or NULL for the top.

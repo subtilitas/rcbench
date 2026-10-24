@@ -333,8 +333,7 @@ static const log_fake_t k_user[] = {
     { "ATEST004.TXT", 2187 },
 };
 /* The root of a card of firmware 0.21.0: a servo test's SERVO042.CSV with
- * its report, which the list leaves out, and a limit run's SERVO043.TXT
- * alone, which it lists. */
+ * its report and a limit run's SERVO043.TXT alone, each a row of the list. */
 static const log_fake_t k_card[] = {
     { "SERVO043.TXT", 1702 },
     { "SERVO042.CSV", 16310 },
@@ -376,34 +375,23 @@ static const char k_limit_report[] =
 static log_mem_ctx_t g_report_ctx;
 
 /*
- * Offer a folder's names to the page as the panel's lister does: through
- * the notes of log_select.h, the CSV files and the LIMIT reports at once
- * and the reports standing alone in a second pass when there are any.
+ * Offer a folder's names to the page as the panel's lister does: the names
+ * log_select_lists() takes, in one walk.
  */
 static int offer_folder(log_select_page_t *sel, const log_fake_t *set,
                         size_t count)
 {
-    static log_lone_t lone;
-    log_lone_begin(&lone);
     log_viewer_file_t f;
     memset(&f, 0, sizeof(f));
     int n = 0;
-    for (int pass = 0; pass < 2; ++pass) {
-        if (pass == 1 && !log_lone_again(&lone)) {
-            break;
+    for (size_t i = 0; i < count; ++i) {
+        if (!log_select_lists(set[i].name)) {
+            continue;
         }
-        for (size_t i = 0; i < count; ++i) {
-            const bool listed = (pass == 0)
-                                    ? log_lone_first(&lone, set[i].name)
-                                    : log_lone_second(&lone, set[i].name);
-            if (!listed) {
-                continue;
-            }
-            snprintf(f.name, sizeof(f.name), "%s", set[i].name);
-            f.size = set[i].size;
-            log_select_page_offer(sel, &f);
-            ++n;
-        }
+        snprintf(f.name, sizeof(f.name), "%s", set[i].name);
+        f.size = set[i].size;
+        log_select_page_offer(sel, &f);
+        ++n;
     }
     return n;
 }

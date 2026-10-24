@@ -3,8 +3,8 @@
  * @brief The log viewer's loading: a file the browse view opens is analysed
  *        (its delimiter, decimal convention and time column, see
  *        shared/logfile), its chosen columns are read, and lv_compute_spans()
- *        turns them into the plot's scaled traces; a report standing alone
- *        is read whole into the TEXT view.  log_viewer_screen.c holds
+ *        turns them into the plot's scaled traces; a report is read whole
+ *        into the TEXT view.  log_viewer_screen.c holds
  *        the state, the card's listing and paging and the screen's interface
  *        (log_viewer_screen.h); log_viewer_int.h is what the screen's four
  *        files share.
@@ -410,7 +410,7 @@ static void open_text(void)
 
 /*
  * OPEN on the selected row: a CSV file to the import view, a report
- * standing alone to the TEXT view (open_text()).  A folder and a file over
+ * (log_report_number()) to the TEXT view (open_text()).  A folder and a file over
  * LOG_VIEWER_OPEN_MAX are not opened; the footer says why.  What the
  * import, the plot and the text held was another file's and is dropped.
  */
@@ -435,8 +435,8 @@ void lv_open_selected(void)
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.open_mounts = s.mounts;
-    /* A report the list holds stands alone (log_select.h): its text, and
-     * no import.  What the import and the plot held was another file's. */
+    /* A report, its run's CSV beside it or not (log_select.h): its text,
+     * and no import.  What the import and the plot held was another file's. */
     if (log_report_number(s.name) >= 0) {
         s.have_analysis = false;
         lv_drop_data();

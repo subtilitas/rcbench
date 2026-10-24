@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und die allein stehenden Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und zeigt einen Bericht als Text. Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht und vom Text eines Berichts zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und seine Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und zeigt einen Bericht als Text. Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht und vom Text eines Berichts zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
@@ -45,7 +45,7 @@ LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und n
 
 ![Die vierte Seite einer vollen Karte](view:logs-pages)
 
-- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, ein allein stehender Bericht nach seiner eigenen Nummer, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
+- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, ein Bericht nach seiner eigenen Nummer und nach der CSV-Datei seines Laufs, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
 - Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
 - Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, stehen auf Seite 1. VORIGE überspringt dann auf dem Rückweg ab Seite 3 so viele Einträge, wie aufgezeichnet wurden; NÄCHSTE von Seite 1 zeigt sie, und die Zahlen im Reiter zeigen die Verschiebung.
 - Der Rollbalken am rechten Rand, 56px (etwa 8,4mm) breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
@@ -79,7 +79,7 @@ Ordner Auto-Logs und Ordner User-Logs unter [SETUP > SD-KARTE](setup.md#sd-karte
 
 Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
 
-Jeder Ordner hat seine eigene Reihe: ein neuer Lauf nimmt eins über der höchsten Nummer in seinem Ordner, gleich unter welchem Namen, die Namen von Firmware 0.21.0 eingeschlossen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Ein Ordner mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Die Liste zeigt einen allein stehenden Bericht, `LIMITnnn.TXT` oder im Stammverzeichnis `SERVOnnn.TXT` ohne `SERVOnnn.CSV` daneben. Ein Bericht neben der CSV-Datei seines Laufs, `ATESTnnn.TXT`, steht nicht in der Liste, und LÖSCHEN auf dem Lauf entfernt ihn mit. Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
+Jeder Ordner hat seine eigene Reihe: ein neuer Lauf nimmt eins über der höchsten Nummer in seinem Ordner, gleich unter welchem Namen, die Namen von Firmware 0.21.0 eingeschlossen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Ein Ordner mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Die Liste zeigt jeden Bericht, eine `.TXT`-Datei mit dem Namen eines Laufs: `ATESTnnn.TXT` neben seiner `ATESTnnn.CSV` oder ohne sie, `LIMITnnn.TXT` und im Stammverzeichnis `SERVOnnn.TXT` von Firmware 0.21.0 und älter. Ein Lauf und sein Bericht sind zwei Zeilen, die CSV-Datei zuerst. LÖSCHEN auf dem Lauf entfernt seinen Bericht mit. Jede andere `.TXT`-Datei steht nicht in der Liste; DATEIEN zeigt sie. Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
 
 Firmware 0.21.0 und älter schreibt ins Stammverzeichnis und liest `BENCH/LOGS` und `USER/LOGS` nicht.
 
@@ -105,7 +105,7 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ![Der Bericht eines ENDLAGENLAUFS als Text](view:logs-report)
 
-ÖFFNEN auf einem allein stehenden Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 15 Zeilen zu bis zu 92 Zeichen stehen auf einmal darin.
+ÖFFNEN auf einem Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 15 Zeilen zu bis zu 92 Zeichen stehen auf einmal darin.
 
 - Eine Zeile, die länger ist als eine Bildschirmzeile, bricht am letzten Leerzeichen um; ein längeres Wort wird am Zeilenende abgeschnitten.
 - Ziehen auf den Zeilen oder am Rollbalken rollt sie. ZURÜCK führt zur Liste und gibt den Text frei; das Verlassen von LOGS gibt ihn auch frei.
@@ -114,7 +114,7 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 - Die Ansicht fasst die ersten 32KiB einer Datei. Eine längere endet mit `Nur die ersten 32kB werden gezeigt.`
 - Ein Bericht, der sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum, zum Beispiel `LIMIT044.TXT lässt sich nicht öffnen.`
 
-[WLAN](wifi.md) lädt jeden Bericht herunter, auch die neben einer CSV-Datei.
+[WLAN](wifi.md) lädt jeden Bericht ebenfalls herunter.
 
 ## Die Importansicht
 
