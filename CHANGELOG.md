@@ -168,6 +168,13 @@ history is in git.
 
 ### Changed
 
+- CI keeps the clang-tidy and cppcheck results between runs: clang-tidy
+  skips a file whose inputs match a recorded pass (`tools/tidy_cache.py`),
+  and cppcheck keeps its build directory. cppcheck runs in a job of its
+  own, `cppcheck`, beside `Lint and static analysis`.
+  `test/host/render_screen.c` poses the views of each screen group in a
+  function of its own; cppcheck's exhaustive check of the file takes 144s
+  instead of 673s on one core of an AMD EPYC 7402P.
 - A battery's cell count joins its number as a unit symbol: the pack's
   Cells keypad gives its range as `1 to 14S` (`1 bis 14S`). A unit keeps
   its own case in a label of capitals: SERVO's run cards say `HOLD 2s TO
