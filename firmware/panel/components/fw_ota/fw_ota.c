@@ -1,5 +1,6 @@
-/*
- * The application slots over esp_ota_ops.
+/**
+ * @file fw_ota.c
+ * @brief The application slots over esp_ota_ops.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,6 +17,7 @@
 #include "esp_partition.h"
 #include "esp_system.h"
 
+/** @brief The console tag. */
 static const char *TAG = "fw_ota";
 
 uint32_t fw_ota_slot_bytes(void)
@@ -37,6 +39,7 @@ bool fw_ota_running(fw_image_info_t *out)
 
 /* ------------------------------------------------------------- the writer */
 
+/** @brief One write into the slot that is not running. */
 typedef struct {
     const esp_partition_t *part;
     esp_ota_handle_t       h;
@@ -44,8 +47,15 @@ typedef struct {
     uint32_t               next;    /* esp_ota_write() appends: the offset */
 } ota_ctx_t;
 
+/** @brief The write under way; one at a time. */
 static ota_ctx_t s_ctx;
 
+/**
+ * @brief Open the slot that is not running for @p bytes.
+ * @param ctx   The ota_ctx_t.
+ * @param bytes The image's size.
+ * @return False when the slot is missing, too small or will not open.
+ */
 static bool ota_begin(void *ctx, uint32_t bytes)
 {
     ota_ctx_t *c = ctx;
@@ -66,6 +76,14 @@ static bool ota_begin(void *ctx, uint32_t bytes)
     return true;
 }
 
+/**
+ * @brief Write the next piece, at the offset the last one ended.
+ * @param ctx The ota_ctx_t.
+ * @param off The piece's offset in the image.
+ * @param src The bytes.
+ * @param len Bytes at @p src.
+ * @return False when the write is not open, out of order or fails.
+ */
 static bool ota_write(void *ctx, uint32_t off, const uint8_t *src,
                       uint32_t len)
 {
@@ -83,6 +101,11 @@ static bool ota_write(void *ctx, uint32_t off, const uint8_t *src,
     return true;
 }
 
+/**
+ * @brief Check the written slot and name it in otadata.
+ * @param ctx The ota_ctx_t.
+ * @return False when the check or the otadata write fails.
+ */
 static bool ota_finish(void *ctx)
 {
     ota_ctx_t *c = ctx;
@@ -103,6 +126,10 @@ static bool ota_finish(void *ctx)
     return true;
 }
 
+/**
+ * @brief Drop a write under way.
+ * @param ctx The ota_ctx_t.
+ */
 static void ota_abort(void *ctx)
 {
     ota_ctx_t *c = ctx;
@@ -112,6 +139,7 @@ static void ota_abort(void *ctx)
     }
 }
 
+/** @brief The writer fw_install_begin() drives. */
 static const fw_flash_t k_flash = {
     ota_begin, ota_write, ota_finish, ota_abort, &s_ctx,
 };
@@ -120,17 +148,24 @@ const fw_flash_t *fw_ota_flash(void) { return &k_flash; }
 
 /* ------------------------------------------------------- the first start */
 
-#define NOTE_MAGIC 0x52435550u   /* "RCUP" */
+/** @brief A note that holds a version: "RCUP". */
+#define NOTE_MAGIC 0x52435550u
 
+/** @brief The note fw_ota_note_restart() leaves for the next start. */
 typedef struct {
     uint32_t magic;
     char     version[FW_TEXT_MAX];
     uint32_t check;
 } restart_note_t;
 
-/* Kept across esp_restart() and a panic; a power cut clears it. */
+/** @brief Kept across esp_restart() and a panic; a power cut clears it. */
 static RTC_NOINIT_ATTR restart_note_t s_note;
 
+/**
+ * @brief FNV-1a (Fowler-Noll-Vo) over the note's version text.
+ * @param n The note.
+ * @return The hash.
+ */
 static uint32_t note_check(const restart_note_t *n)
 {
     uint32_t h = 2166136261u;
@@ -149,6 +184,11 @@ void fw_ota_note_restart(const char *version)
     s_note.magic = NOTE_MAGIC;
 }
 
+/**
+ * @brief Whether the running build is pending verify.
+ * @param ctx Unused.
+ * @return True on a trial start.
+ */
 static bool boot_pending(void *ctx)
 {
     (void)ctx;
@@ -158,6 +198,10 @@ static bool boot_pending(void *ctx)
            && st == ESP_OTA_IMG_PENDING_VERIFY;
 }
 
+/**
+ * @brief Mark the running build invalid and restart into the one before.
+ * @param ctx Unused.
+ */
 static void boot_mark_invalid(void *ctx)
 {
     (void)ctx;
@@ -168,6 +212,11 @@ static void boot_mark_invalid(void *ctx)
              esp_err_to_name(e));
 }
 
+/**
+ * @brief Keep the running build: otadata says valid.
+ * @param ctx Unused.
+ * @return False when otadata could not be written.
+ */
 static bool boot_mark_valid(void *ctx)
 {
     (void)ctx;
@@ -180,18 +229,33 @@ static bool boot_mark_valid(void *ctx)
     return true;
 }
 
+/**
+ * @brief Restart.
+ * @param ctx Unused.
+ */
 static void boot_restart(void *ctx)
 {
     (void)ctx;
     esp_restart();
 }
 
+/**
+ * @brief Whether a slot is marked invalid by a start that went back.
+ * @param ctx Unused.
+ * @return True when one is.
+ */
 static bool boot_last_invalid(void *ctx)
 {
     (void)ctx;
     return esp_ota_get_last_invalid_partition() != NULL;
 }
 
+bool fw_ota_trial_pending(void)
+{
+    return boot_pending(NULL);
+}
+
+/** @brief The calls fw_boot_decide() makes. */
 static const fw_boot_ops_t k_boot = {
     boot_pending, boot_mark_invalid, boot_mark_valid, boot_restart,
     boot_last_invalid, NULL,

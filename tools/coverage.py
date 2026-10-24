@@ -294,6 +294,7 @@ TRACKED = [
     "shared/fwupdate/fw_release.c",
     "shared/fwupdate/fw_install.c",
     "shared/fwupdate/fw_boot.c",
+    "shared/fwupdate/fw_trial.c",
     "shared/webaccess/wa_session.c",
     "shared/webaccess/wa_fetch.c",
     "shared/webaccess/wa_text.c",
