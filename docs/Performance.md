@@ -417,10 +417,10 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 30,648 | 243,008 |
+| .bss in internal RAM (DIRAM) | 30,720 | 243,080 |
 | .bss in PSRAM (`.ext_ram.bss`) | 212,360 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,312 | 340,672 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,408,624 | 2,408,624 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,384 | 340,744 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,409,376 | 2,409,376 |
 
 All figures are bytes. The column without the fragment adds the PSRAM .bss
 to the internal figures; it is not a build of its own. ESP-IDF's own PSRAM entries for lwIP (lightweight
