@@ -69,6 +69,7 @@
 #include "supply_spots.h"
 #include "logview_spots.h"
 #include "ui_band.h"
+#include "ui_cats.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -2333,6 +2334,11 @@ int main(int argc, char **argv)
                     || strncmp(view, "setup-sensors", 13) == 0
                     || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
+    /* A screen with a free spot draws the first cat pose where it fits,
+     * so every shot is repeatable; picker-cat-N draws pose N on PICK A
+     * PIN. */
+    ui_cats_force(strncmp(view, "picker-cat-", 11) == 0
+                      ? (int)strtol(view + 11, NULL, 10) : 0);
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;

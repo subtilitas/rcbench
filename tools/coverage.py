@@ -59,6 +59,7 @@ TRACKED = [
     "shared/gfx/gfx.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
+    "shared/gfx/gfx_sprite.c",
     "shared/gfx/gfx_damage.c",
     "shared/gfx/gfx_turn.c",
     "shared/touch/touch_map.c",
@@ -140,6 +141,8 @@ TRACKED = [
     "shared/ui/picker_screen.c",
     "shared/ui/picker_geometry.c",
     "shared/ui/picker_draw.c",
+    "shared/ui/picker_cat.c",
+    "shared/ui/ui_cats.c",
     "shared/ui/picker_port.c",
     "shared/ui/board_drawing.c",
     "shared/ui/busfault_screen.c",
@@ -320,6 +323,8 @@ DATA_ONLY = {
     "shared/gfx/gfx_font12x24.c",
     "shared/gfx/gfx_font20x36.c",
     "shared/gfx/gfx_font_num32x44.c",
+    # The cats' drawings written by tools/gen_cats.py.
+    "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
 }

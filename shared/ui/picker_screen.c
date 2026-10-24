@@ -1,6 +1,7 @@
-/*
- * The board, with a button on every pin an output may have.
- * See picker_screen.h.
+/**
+ * @file picker_screen.c
+ * @brief PICK A PIN's state, touch handling and interface: the board, with
+ *        a button on every pin an output may have.  See picker_screen.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,22 +21,24 @@
 
 #include "picker_screen_int.h"
 
-/* The screen's state; picker_screen_int.h names it s. */
+/** @brief The screen's state; picker_screen_int.h names it s. */
 pk_state_t pk_s;
 
-/* The port the next entry opens on, -1 for OFF: picker_screen_open_on_port(),
- * once. */
+/** @brief The port the next entry opens on, -1 for OFF:
+ *         picker_screen_open_on_port(), once. */
 static int g_open_port = -1;
 
-/* The GPIOs the IOmcu's programming ports are bound to, PICKER_NO_PIN
- * for none.  Kept out of `s` so a reset of the screen does not forget
- * them. */
+/** @brief The GPIOs the IOmcu's programming ports are bound to,
+ *         PICKER_NO_PIN for none.  Kept out of `s` so a reset of the
+ *         screen does not forget them. */
 static uint8_t g_prog_pins[LINK_PG_PORTS_MAX] = {
     PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN
 };
 _Static_assert(LINK_PG_PORTS_MAX == 4u, "g_prog_pins' initialiser");
 
-/*
+/**
+ * @brief Count a change: every framebuffer's picture is stale.
+ *
  * A change invalidates every framebuffer, and a render validates the one it
  * drew.  Not a counter compared against the last frame drawn: with two
  * buffers alternating, a counter that is satisfied by the first of them
@@ -106,10 +109,22 @@ void picker_screen_follow(uint8_t proto, bool editable)
 
 bool picker_screen_editable(void) { return !s.unread; }
 
+/**
+ * @brief Name the function a tick or untick applies the binding through.
+ * @param fn the function, or NULL for none
+ */
 void picker_screen_set_apply(picker_apply_fn fn) { s.apply = fn; }
 
+/**
+ * @brief Name the function a pick in the list tells the Outputs screen by.
+ * @param fn the function, or NULL for none
+ */
 void picker_screen_set_select(picker_select_fn fn) { s.select = fn; }
 
+/**
+ * @brief Name the function that asks for the drawing of a board.
+ * @param fn the function, or NULL for none
+ */
 void picker_screen_set_drawing_source(picker_drawing_fn fn) { s.source = fn; }
 
 bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
@@ -151,13 +166,20 @@ void picker_screen_set_prog_pin(uint8_t gpio)
     picker_screen_set_prog_ports(1u, &gpio);
 }
 
+/**
+ * @brief The shape page of the board the binding names.
+ * @return the shape, or NULL for a board without one
+ */
 const outbind_shape_t *pk_shape(void)
 {
     const outbind_board_t *bd = outbind_board(s.bind.board);
     return (bd != NULL) ? bd->shape : NULL;
 }
 
-/* The drawing, while it is the one for the board the binding names. */
+/**
+ * @brief The drawing, while it is the one for the board the binding names.
+ * @return the drawing, or NULL
+ */
 const link_drawing_t *pk_drawing(void)
 {
     return (s.has_drawing && s.drawing_board == s.bind.board) ? &s.drawing
@@ -172,6 +194,10 @@ bool picker_screen_can_draw(void)
            && outbind_pin_count(s.bind.board) > 0u;
 }
 
+/**
+ * @brief The protocol shown: the binding's, OFF for one out of range.
+ * @return its index in the catalogue
+ */
 uint8_t pk_proto_shown(void)
 {
     return (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
@@ -179,9 +205,14 @@ uint8_t pk_proto_shown(void)
 
 /* ---------------------------------------------------------------- state */
 
-/* Whether the programming port has pin @p index: it is the port's and no
- * protocol holds it.  A pin a stored slot holds is that slot's -- the
- * IOmcu gives the port no pin then -- and can be unticked. */
+/**
+ * @brief Whether the programming port has pin @p index: it is the port's
+ *        and no protocol holds it.  A pin a stored slot holds is that
+ *        slot's -- the IOmcu gives the port no pin then -- and can be
+ *        unticked.
+ * @param index the pin's index in the board's catalogue
+ * @return true when the port has it
+ */
 bool pk_prog_taken(uint8_t index)
 {
     if (index >= outbind_pin_count(s.bind.board)
@@ -198,9 +229,13 @@ bool pk_prog_taken(uint8_t index)
     return false;
 }
 
-/* What SETUP > INTERFACES holds pin @p index for, or OUTPUTS_IFACE_NONE:
- * no protocol and no port holds it, and the IOmcu does not reserve it.  A
- * pin a protocol holds is that protocol's, as against a port. */
+/**
+ * @brief What SETUP > INTERFACES holds pin @p index for: no protocol and no
+ *        port holds it, and the IOmcu does not reserve it.  A pin a
+ *        protocol holds is that protocol's, as against a port.
+ * @param index the pin's index in the board's catalogue
+ * @return the interface, or OUTPUTS_IFACE_NONE
+ */
 outputs_iface_t pk_iface_taken(uint8_t index)
 {
     if (index >= outbind_pin_count(s.bind.board)
@@ -291,9 +326,14 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
                                            : PICKER_PIN_REFUSED;
 }
 
-/* The channel the OUTPUTS page gives catalogue entry @p index, or -1.
- * Channels are allocated in pin order across every protocol, so a group's
- * first pin is not its channel 0 unless it also holds the lowest pin. */
+/**
+ * @brief The channel the OUTPUTS page gives catalogue entry @p index.
+ *        Channels are allocated in pin order across every protocol, so a
+ *        group's first pin is not its channel 0 unless it also holds the
+ *        lowest pin.
+ * @param index the pin's index in the board's catalogue
+ * @return the channel, or -1
+ */
 int8_t pk_channel_of(uint8_t index)
 {
     uint16_t regs[LINK_OS_COUNT];
@@ -373,6 +413,12 @@ bool picker_screen_reason(char *buf, size_t cap)
 
 /* ----------------------------------------------------------------- input */
 
+/**
+ * @brief The key under a point.
+ * @param x the point's column, screen coordinates
+ * @param y its row
+ * @return the key's pin index, or -1 for none
+ */
 static int button_under(int x, int y)
 {
     const uint8_t n = outbind_pin_count(s.bind.board);
@@ -385,9 +431,13 @@ static int button_under(int x, int y)
     return -1;
 }
 
-/* A pick says which set is shown and which group the next tap joins.  It
- * changes no page, so nothing is written; the outputs screen is told, so
- * the two screens show one selection. */
+/**
+ * @brief Pick a protocol.  A pick says which set is shown and which group
+ *        the next tap joins.  It changes no page, so nothing is written;
+ *        the outputs screen is told, so the two screens show one
+ *        selection.
+ * @param proto the protocol's index in the catalogue
+ */
 static void pick(uint8_t proto)
 {
     outbind_set_proto(&s.bind, proto);
@@ -398,8 +448,11 @@ static void pick(uint8_t proto)
     }
 }
 
-/* A port picked: its pin is the one a tap sets.  The outputs screen
- * shows the same entry. */
+/**
+ * @brief Pick a port: its pin is the one a tap sets.  The outputs screen
+ *        shows the same entry.
+ * @param port the port, from 0
+ */
 static void pick_port(uint8_t port)
 {
     if (port >= outputs_screen_port_entries()) {
@@ -415,6 +468,10 @@ void picker_screen_open_on_port(uint8_t port) { g_open_port = (int)port; }
 
 int picker_screen_port_shown(void) { return s.port; }
 
+/**
+ * @brief A touch event: the list, the face or a key.
+ * @param evt the event, or NULL
+ */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -523,6 +580,7 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/** @brief Forget everything: no binding, no list, no cat. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -530,10 +588,13 @@ static void reset(void)
     s.hit = -1;
     s.refused = -1;
     s.port = -1;
+    pk_cat_reset();
     pk_touched();
 }
 
-/*
+/**
+ * @brief A visit begins.
+ *
  * Every visit opens on the overview, as the Outputs screen's does: OFF
  * selected here for the first frame, and on the Outputs screen through the
  * select hook, which this screen follows every frame.  Without the hook the
@@ -561,9 +622,12 @@ static void enter(void)
     if (s.source != NULL) {
         s.source(s.bind.board);
     }
+    /* A cat, picked on this visit's first frame. */
+    pk_cat_enter();
     pk_touched();
 }
 
+/** @brief The screen is left: no press, the list closed. */
 static void leave(void)
 {
     s.hit_kind = HIT_NONE;
@@ -571,8 +635,11 @@ static void leave(void)
     s.open = false;
 }
 
-/* The home tag closes an open protocol list without choosing; with none
- * open it leaves the screen. */
+/**
+ * @brief The home tag closes an open protocol list without choosing; with
+ *        none open it leaves the screen.
+ * @return true when it closed the list
+ */
 static bool back(void)
 {
     if (!s.open) {
@@ -583,7 +650,9 @@ static bool back(void)
     return true;
 }
 
-/*
+/**
+ * @brief Forget the press under way.
+ *
  * Touch events were lost between two frames, so the button recorded under
  * the finger may not be under one any more.  A release toggles the pin when
  * it lands on the button the press began on, and a stale record turns the
@@ -598,6 +667,7 @@ static void cancel(void)
     }
 }
 
+/** @brief The screen's hooks for the router. */
 static const ui_screen_t s_screen = {
     .title  = "PICK A PIN",
     .reset  = reset,
@@ -610,4 +680,8 @@ static const ui_screen_t s_screen = {
     .back   = back,
 };
 
+/**
+ * @brief The pin picker.
+ * @return its hooks
+ */
 const ui_screen_t *picker_screen(void) { return &s_screen; }

@@ -23,6 +23,7 @@
 #include "out_bind.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
+#include "ui_cats.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_widgets.h"
@@ -194,6 +195,13 @@ _Static_assert(USE_TOP + ((int)PICKER_USE_MAX - 1) * USE_PIN_H_D
                    <= USE_FOOT,
                "the IN USE table holds its fullest list");
 
+/**
+ * @brief The panel PICK A PIN shows when it cannot draw the board: 640 x
+ *        180px, centred over the body above FOOT.
+ */
+#define NOART_W 640
+#define NOART_H 180   /**< Its height, px. */
+
 #define IVORY GFX_RGB(236, 235, 228)
 #define EBONY GFX_RGB(22, 23, 28)
 #define INK   GFX_RGB(10, 10, 14)
@@ -227,6 +235,12 @@ typedef struct {
     int      port;
     uint32_t view_rev;
     bool     chrome_valid[MAX_FBS];
+    /* The cat (picker_cat.c): picked on the first frame of a visit from
+     * the roll entering took, and drawn while its box stays clear. */
+    bool          cat_pending; /**< the pick is still to make           */
+    uint32_t      cat_roll;    /**< the roll entering took               */
+    ui_cat_pick_t cat;         /**< the pose and spot picked             */
+    gfx_rect_t    cat_drawn;  /**< the box drawn last, empty for none */
 } pk_state_t;
 
 /* Defined in picker_screen.c. */
@@ -256,3 +270,16 @@ gfx_rect_t pk_pop_rect(void);
 /* --- picker_draw.c ------------------------------------------------------ */
 
 void pk_render(gfx_canvas_t *c, int buffer_index);
+
+/* --- picker_cat.c ------------------------------------------------------- */
+
+/** @brief A visit begins: roll for the cat, picked on its first frame. */
+void pk_cat_enter(void);
+/** @brief Forget the cat: none until the next visit. */
+void pk_cat_reset(void);
+/**
+ * @brief Pick the cat on a visit's first frame and draw it while its box
+ *        is clear; called last in a frame that draws the static parts.
+ * @param c the screen's canvas
+ */
+void pk_cat_render(gfx_canvas_t *c);
