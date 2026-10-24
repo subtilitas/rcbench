@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "log_fields.h"
 #include "log_name.h"
 #include "log_viewer_screen.h"
 #include "settings.h"
@@ -150,15 +151,12 @@ void lv_run_analysis(void)
     }
 
     /* Nothing survived (a different file, or a re-read that renamed every
-     * column): fall back to the first numeric columns that are not the time
-     * axis. */
+     * column): fall back to the file's first picks, a SERVO run's pulse,
+     * angle, current and voltage, else its first numeric columns that are
+     * not the time axis (log_fields_picks()). */
     if (s.n_picked == 0) {
         s.col_scroll = 0;
-        for (int c = 0; c < s.an.n_columns && s.n_picked < LOG_MAX_SERIES; ++c) {
-            if (c != s.an.time_index && s.an.columns[c].numeric) {
-                s.picked[s.n_picked++] = c;
-            }
-        }
+        s.n_picked = log_fields_picks(&s.an, s.picked, LOG_MAX_SERIES);
     }
 }
 

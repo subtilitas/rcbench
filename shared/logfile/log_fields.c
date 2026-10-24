@@ -81,6 +81,8 @@ static const rule_t k_rules[] = {
     { M_PREFIX, "out ",           "INA3221", "" },
     { M_PREFIX, "port ",          "INA3221", "" },
     { M_PREFIX, "supply ",        "INA3221", "" },
+    /* A SERVO run's commanded pulse and measured angle. */
+    { M_ANY_OF, "pulse|angle",    "Servo", ""      },
 };
 
 /**
@@ -163,4 +165,66 @@ log_field_meta_t log_field_meta(const char *name)
         }
     }
     return other;
+}
+
+/**
+ * @brief The index of the numeric column named @p name, not the time axis.
+ *
+ * @param an   The file's analysis.
+ * @param name The column name.
+ * @return The column's index, or -1.
+ */
+static int numeric_column(const log_analysis_t *an, const char *name)
+{
+    for (int c = 0; c < an->n_columns; ++c) {
+        if (c != an->time_index && an->columns[c].numeric
+            && strcmp(an->columns[c].name, name) == 0) {
+            return c;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Whether @p c is among the first @p n of @p picks.
+ *
+ * @param picks The columns picked.
+ * @param n     How many.
+ * @param c     The column.
+ * @return true when c is picked.
+ */
+static bool picked(const int *picks, int n, int c)
+{
+    for (int k = 0; k < n; ++k) {
+        if (picks[k] == c) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int log_fields_picks(const log_analysis_t *an, int *out, int max)
+{
+    if (an == NULL || out == NULL) {
+        return 0;
+    }
+    int n = 0;
+    if (numeric_column(an, "pulse") >= 0) {
+        static const char *const k_servo[] = { "pulse", "angle", "current",
+                                               "voltage" };
+        for (size_t i = 0; i < sizeof(k_servo) / sizeof(k_servo[0]) && n < max;
+             ++i) {
+            const int c = numeric_column(an, k_servo[i]);
+            if (c >= 0) {
+                out[n++] = c;
+            }
+        }
+    }
+    for (int c = 0; c < an->n_columns && n < max; ++c) {
+        if (c != an->time_index && an->columns[c].numeric
+            && !picked(out, n, c)) {
+            out[n++] = c;
+        }
+    }
+    return n;
 }

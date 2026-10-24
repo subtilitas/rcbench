@@ -13,7 +13,9 @@
 
 #include "greatest.h"
 
+#include "log_cols.h"
 #include "log_csv.h"
+#include "log_fields.h"
 #include "log_writer.h"
 
 /* ------------------------------------------------------------- the sink */
@@ -110,13 +112,13 @@ TEST_CASE(a_servo_row_with_a_supply_reading_carries_its_figures)
     t.wh = 0.0082f;
     t.counted = (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
     log_rail_count(&t, &r, 0.0f, true);
-    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r));
+    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r, NULL));
 
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
     /* time; voltage; current; power; rpm; esc; motor; charge; energy; ina
      * voltage; ina current; esc current; window; ch1 to ch3; source. */
-    CHECK_STR_EQ(got, "1.000;6.00;0.035;0.21;;;;1;0.01;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;6.00;0.035;0.21;;;;1;0.01;;;;;;;;;;;;;;;;measured");
 }
 
 TEST_CASE(a_servo_row_without_a_supply_reading_has_empty_supply_cells)
@@ -127,7 +129,7 @@ TEST_CASE(a_servo_row_without_a_supply_reading_has_empty_supply_cells)
     s.online = false;
     s.ok = 0u;
     const bench_state_t b = bench_empty();
-    static const char k_empty[] = "1.000;;;;;;;;;;;;;;;;;;;;;;measured";
+    static const char k_empty[] = "1.000;;;;;;;;;;;;;;;;;;;;;;;;measured";
 
     log_writer_t w = writer();
     log_rail_t r;
@@ -136,7 +138,7 @@ TEST_CASE(a_servo_row_without_a_supply_reading_has_empty_supply_cells)
     bench_totals_reset(&t);
     log_rail_count(&t, &r, 0.05f, true);
     CHECK_EQ(t.counted, 0u);
-    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r));
+    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
     CHECK_STR_EQ(got, k_empty);
@@ -144,12 +146,12 @@ TEST_CASE(a_servo_row_without_a_supply_reading_has_empty_supply_cells)
     log_writer_t w2 = writer();
     log_rail_t none;
     memset(&none, 0, sizeof(none));
-    CHECK(log_writer_servo_row(&w2, 1.0f, &b, &none));
+    CHECK(log_writer_servo_row(&w2, 1.0f, &b, &none, NULL));
     line_of(1u, got, sizeof(got));
     CHECK_STR_EQ(got, k_empty);
 
     log_writer_t w3 = writer();
-    CHECK(log_writer_servo_row(&w3, 1.0f, &b, NULL));
+    CHECK(log_writer_servo_row(&w3, 1.0f, &b, NULL, NULL));
     line_of(1u, got, sizeof(got));
     CHECK_STR_EQ(got, k_empty);
 }
@@ -168,10 +170,10 @@ TEST_CASE(a_supply_reading_with_one_half_writes_only_that_half)
     bench_totals_reset(&t);
     log_rail_count(&t, &r, 1.0f, true);
     CHECK_EQ(t.counted, (uint8_t)BENCH_COUNTED_CHARGE);
-    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r));
+    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "1.000;;0.035;;;;;0;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "1.000;;0.035;;;;;0;;;;;;;;;;;;;;;;;measured");
 }
 
 TEST_CASE(the_supply_model_stays_out_of_a_measured_row)
@@ -191,10 +193,10 @@ TEST_CASE(the_supply_model_stays_out_of_a_measured_row)
     bench_state_t b = bench_empty();
     b.flags = (uint16_t)LINK_BN_SIMULATED;
     log_writer_t w = writer();
-    CHECK(log_writer_servo_row(&w, 2.0f, &b, &r));
+    CHECK(log_writer_servo_row(&w, 2.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "2.000;6.00;0.035;0.21;;;;;;;;;;;;;;;;;;;model");
+    CHECK_STR_EQ(got, "2.000;6.00;0.035;0.21;;;;;;;;;;;;;;;;;;;;;model");
 
     /* A PD mini reading still fresh when the link drops: the bench row is
      * the model's, and the measured supply is withheld from it. */
@@ -236,10 +238,10 @@ TEST_CASE(a_measured_row_after_a_modelled_stretch_takes_no_model_totals)
     CHECK_NEAR(t.mah, mah, 1e-6f);
     const bench_state_t b = bench_empty();
     log_writer_t w = writer();
-    CHECK(log_writer_servo_row(&w, 3.0f, &b, &r));
+    CHECK(log_writer_servo_row(&w, 3.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
-    CHECK_STR_EQ(got, "3.000;;;;;;;;;;;;;;;;;;;;;;measured");
+    CHECK_STR_EQ(got, "3.000;;;;;;;;;;;;;;;;;;;;;;;;measured");
 
     log_rail_take(&r, &s, true);
     log_rail_count(&t, &r, 0.0f, true);
@@ -267,12 +269,12 @@ TEST_CASE(a_servo_row_keeps_the_bench_columns)
     log_rail_t r;
     log_rail_take(&r, &s, false);
     log_writer_t w = writer();
-    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r));
+    CHECK(log_writer_servo_row(&w, 1.0f, &b, &r, NULL));
     char got[LOG_WRITER_LINE_MAX];
     line_of(1u, got, sizeof(got));
     CHECK_STR_EQ(got,
                  "1.000;6.00;0.035;0.21;1200;31.5;;;;5.95;0.04;0.30;;;;;;;;;;;"
-                 "measured");
+                 ";;measured");
 }
 
 /* ------------------------------------------------------- the run totals */
@@ -342,23 +344,37 @@ TEST_CASE(a_motor_row_is_unchanged)
     CHECK_STR_EQ(got, "1.000;;10.00;;;;;5;;;;10.00;;;;;;;;;;;measured");
 }
 
-TEST_CASE(a_servo_file_has_the_motor_files_columns)
+TEST_CASE(a_servo_file_has_the_motor_files_columns_and_two_more)
 {
-    /* One header for both: LOGS, the card reader and the tools read a
-     * SERVO file with the rules they read a MOTOR file with. */
-    const bench_state_t b = bench_empty();
-    log_writer_t w = writer();
-    CHECK(log_writer_row(&w, 1.0f, &b));
-    char motor[LOG_WRITER_LINE_MAX];
-    line_of(0u, motor, sizeof(motor));
-    const supply_state_t s = pd_mini();
-    log_rail_t r;
-    log_rail_take(&r, &s, false);
-    log_writer_t w2 = writer();
-    CHECK(log_writer_servo_row(&w2, 1.0f, &b, &r));
-    char servo[LOG_WRITER_LINE_MAX];
-    line_of(0u, servo, sizeof(servo));
-    CHECK_STR_EQ(servo, motor);
+    /* The motor file's header, with the pulse and the angle before
+     * `source`: LOGS, the card reader and the tools read both by one rule.
+     * With CH1 to CH3, and with a sensor map's groups. */
+    for (int by_map = 0; by_map < 2; ++by_map) {
+        log_cols_t cols;
+        memset(&cols, 0, sizeof(cols));
+        cols.n = 2u;
+        cols.ch[0] = 0u;
+        cols.ch[1] = 4u;
+        snprintf(cols.name[0], sizeof(cols.name[0]), "port 1");
+        snprintf(cols.name[1], sizeof(cols.name[1]), "supply");
+        const bench_state_t b = bench_empty();
+        log_writer_t w = writer();
+        log_writer_set_cols(&w, by_map ? &cols : NULL);
+        CHECK(log_writer_row(&w, 1.0f, &b));
+        char motor[512];
+        line_of(0u, motor, sizeof(motor));
+        log_writer_t w2 = writer();
+        log_writer_set_cols(&w2, by_map ? &cols : NULL);
+        CHECK(log_writer_servo_row(&w2, 1.0f, &b, NULL, NULL));
+        char servo[512];
+        line_of(0u, servo, sizeof(servo));
+        char want[512];
+        const size_t keep = strlen(motor) - strlen("source");
+        snprintf(want, sizeof(want), "%.*spulse (us);angle (deg);source",
+                 (int)keep, motor);
+        CHECK_STR_EQ(servo, want);
+        CHECK(strncmp(motor + keep, "source", 6) == 0);
+    }
 }
 
 TEST_CASE(a_servo_run_reads_back_with_its_supply_columns)
@@ -376,7 +392,8 @@ TEST_CASE(a_servo_run_reads_back_with_its_supply_columns)
         log_rail_t r;
         log_rail_take(&r, &s, false);
         log_rail_count(&t, &r, 0.053f, true);
-        CHECK(log_writer_servo_row(&w, 0.036f + 0.053f * (float)k, &b, &r));
+        CHECK(log_writer_servo_row(&w, 0.036f + 0.053f * (float)k, &b, &r,
+                                     NULL));
     }
     log_source_t src;
     log_mem_ctx_t ctx;
@@ -386,7 +403,7 @@ TEST_CASE(a_servo_run_reads_back_with_its_supply_columns)
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
     CHECK_EQ(a.ragged_rows, 0);
-    CHECK_EQ(a.n_columns, 23);
+    CHECK_EQ(a.n_columns, 25);
     CHECK_EQ(a.time_index, 0);
     for (int c = 1; c <= 3; ++c) {
         CHECK(a.columns[c].numeric);
@@ -405,7 +422,7 @@ int main(void)
     RUN(a_servo_row_keeps_the_bench_columns);
     RUN(the_supply_totals_count_from_the_arm_while_driving);
     RUN(a_motor_row_is_unchanged);
-    RUN(a_servo_file_has_the_motor_files_columns);
+    RUN(a_servo_file_has_the_motor_files_columns_and_two_more);
     RUN(a_servo_run_reads_back_with_its_supply_columns);
     return test_summary("servo_runlog");
 }

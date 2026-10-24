@@ -414,6 +414,8 @@ typedef struct {
     /** @brief The supply's reading and the run's totals of it, on a SERVO
      *         run's row that carries the sample; all 0 on any other row. */
     log_rail_t     rail;
+    /** @brief The pulse and angle, on the same rows as rail. */
+    log_servo_t    servo;
 } log_row_t;
 
 /*
@@ -927,6 +929,10 @@ extern uint32_t       s_totals_ms;
 extern log_rail_t     s_rail;
 /** @brief The run's totals of s_rail since the arm.  Control task only. */
 extern bench_totals_t s_rail_totals;
+/** @brief The SERVO screen's pulse and angle for a SERVO run's rows,
+ *         packed (log_servo_pack()): stored by the render side each frame,
+ *         read by the control task. */
+extern atomic_uint    s_servo_log;
 void arm_watch_service(bool link_up);
 /* The latched stop, and the act the arming policy asks for. */
 void service_arming(bool link_up);

@@ -49,6 +49,7 @@
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "overview_screen.h"
+#include "log_writer.h"
 #include "telemetry_sim.h"
 #include "splash_screen.h"
 #include "outputs_screen.h"
@@ -250,6 +251,61 @@ static void make_log_csv(void)
     }
 }
 
+/* A SERVO run as the logger writes it (log_writer_servo_row()): a sweep
+ * from 1000 to 2000us and back every 8s on the PD mini at 6.00V, the
+ * encoder's angle a step behind the pulse, rows every 53ms. */
+static char g_servo_csv[65536];
+static size_t g_servo_len;
+
+static int servo_csv_write(void *ctx, const void *data, size_t len)
+{
+    (void)ctx;
+    if (g_servo_len + len >= sizeof(g_servo_csv)) {
+        return -1;
+    }
+    memcpy(g_servo_csv + g_servo_len, data, len);
+    g_servo_len += len;
+    g_servo_csv[g_servo_len] = '\0';
+    return (int)len;
+}
+
+static void make_servo_csv(void)
+{
+    g_servo_len = 0u;
+    g_servo_csv[0] = '\0';
+    const log_sink_t sink = { .write = servo_csv_write, .flush = NULL,
+                              .ctx = NULL };
+    log_writer_t w;
+    log_writer_init(&w, &sink);
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.valid = true;
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    float angle = 0.0f;
+    for (int i = 0; i < 300; ++i) {
+        const float ts = 0.036f + 0.053f * (float)i;
+        const float ph = fmodf(ts, 8.0f) / 8.0f;
+        const float tri = (ph < 0.5f) ? ph * 2.0f : (1.0f - ph) * 2.0f;
+        const float us = 1000.0f + 1000.0f * tri;
+        const float target = (us - 1500.0f) * 0.09f;
+        const float moving = fabsf(target - angle);
+        angle += (target - angle) * 0.6f;
+        /* Idle, the move, and the load that grows away from the centre. */
+        log_rail_t r;
+        memset(&r, 0, sizeof(r));
+        r.i  = 0.035f + 0.06f * moving + 0.004f * fabsf(angle);
+        r.v  = 6.0f - 0.05f * r.i;
+        r.p  = r.v * r.i;
+        r.ok = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+        log_rail_count(&t, &r, 0.053f, true);
+        log_servo_t sv;
+        log_servo_unpack(log_servo_pack(true, (uint16_t)lroundf(us), true,
+                                        angle), false, &sv);
+        (void)log_writer_servo_row(&w, ts, &b, &r, &sv);
+    }
+}
+
 typedef struct {
     const char *name;
     uint32_t size;
@@ -407,6 +463,12 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
     if (log_report_number(name) >= 0) {
         log_source_memory(src, &g_report_ctx, k_limit_report,
                           strlen(k_limit_report));
+        return true;
+    }
+    /* A SERVO run of BENCH/LOGS reads as one; every other file as the
+     * motor run. */
+    if (strncmp(name, "SERVO", 5) == 0 && g_servo_len > 0u) {
+        log_source_memory(src, &g_csv_ctx, g_servo_csv, g_servo_len);
         return true;
     }
     log_source_memory(src, &g_csv_ctx, g_csv, strlen(g_csv));
@@ -3767,6 +3829,7 @@ int main(int argc, char **argv)
          * in panel coordinates; the router removes the band before the
          * screen sees them. */
         make_log_csv();
+        make_servo_csv();
         /* logs-nocard: a lister that finds no volume; logs-nofat: and a
          * card in the slot that holds no FAT volume. */
         const bool nocard = strcmp(view, "logs-nocard") == 0;
@@ -3798,12 +3861,18 @@ int main(int argc, char **argv)
              * as the list opens, so a tap on it opens it. */
             tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
+        } else if (strcmp(view, "logs-servo-plot") == 0) {
+            /* SERVO013.CSV, the second row of BENCH: a tap chooses it, a
+             * second opens it. */
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
+            tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(1));
         } else if (strcmp(view, "logs") != 0) {
             /* The newest run is chosen as the list opens: one tap opens
              * it. */
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));   /* open */
         }
-        if (strcmp(view, "logs-plot") == 0) {
+        if (strcmp(view, "logs-plot") == 0
+            || strcmp(view, "logs-servo-plot") == 0) {
             tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }

@@ -583,6 +583,24 @@ uint16_t servo_screen_commanded(void)
     return svs_deg_to_us(s.commanded_deg);
 }
 
+bool servo_screen_log_pulse(uint16_t *us)
+{
+    if (us == NULL || prog_holds()) {
+        return false;   /* a session holds the port: no pulse is on it */
+    }
+    *us = svs_deg_to_us(s.commanded_deg);
+    return true;
+}
+
+bool servo_screen_log_angle(float *deg)
+{
+    if (deg == NULL || !enc_shown()) {
+        return false;
+    }
+    *deg = enc_deg_now();
+    return true;
+}
+
 const ui_keypad_t *servo_screen_keypad(void)
 {
     return &s.kp;
