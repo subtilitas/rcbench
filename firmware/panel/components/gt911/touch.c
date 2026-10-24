@@ -40,9 +40,13 @@ typedef struct {
     gt911_handle_t gt911;
     touch_config_t cfg;
     touch_map_t map;
-    /** @brief The glass's map is the touch injector's (0x14 took the
-     *  glass's place): its contacts are logical pixels and never turn. */
-    bool map_is_injector;
+#ifdef RCBENCH_TOUCH_INJECTOR
+    /** @brief What the controller gt911_new() found is: the glass, or the
+     *  touch injector alone at 0x14 (touch_merge_role()). */
+    touch_role_t role;
+    /** @brief The injector's map, for TOUCH_ROLE_INJECTOR. */
+    touch_map_t inject_map;
+#endif
 
     TaskHandle_t task;
     QueueHandle_t events;
@@ -169,8 +173,14 @@ static void touch_task(void *arg)
         if (fresh) {
             /* The picture's turn, read once per report, so one report is
              * mapped whole one way.  The injector's map never turns. */
-            const touch_map_t glass = touch_map_turned(
-                &s_touch.map, gfx_turn_shown() && !s_touch.map_is_injector);
+#ifdef RCBENCH_TOUCH_INJECTOR
+            const touch_map_t glass = touch_merge_role_map(
+                s_touch.role, &s_touch.map, &s_touch.inject_map,
+                gfx_turn_shown());
+#else
+            const touch_map_t glass = touch_map_turned(&s_touch.map,
+                                                       gfx_turn_shown());
+#endif
             touch_map_points(&glass, raw, count);
         }
 #ifdef RCBENCH_TOUCH_INJECTOR
@@ -221,10 +231,20 @@ esp_err_t touch_init(const touch_config_t *cfg)
                   "first, then 0x14)", glass_addr);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
+    /*
+     * The product ID tells the injector from the glass, not the address:
+     * a glass that latched 0x14 reports "911" and is read as the glass,
+     * with its mirrors and the turn.  A failed read counts as the glass.
+     */
+    char product_id[5] = { 0 };
+    if (gt911_info(s_touch.gt911, product_id, NULL) != ESP_OK) {
+        memset(product_id, 0, sizeof(product_id));
+    }
+    s_touch.role = touch_merge_role(glass_addr, false, product_id);
+    s_touch.inject_map = touch_inject_map();
     /* Before the task exists: adding a device to the bus is not safe
      * against a transaction on it. */
-    touch_inject_attach(board_i2c_bus(), gt911_address(s_touch.gt911),
-                        now_ms());
+    touch_inject_attach(board_i2c_bus(), glass_addr, s_touch.role, now_ms());
 #endif
 
     uint16_t x_max = 0, y_max = 0;
@@ -242,15 +262,16 @@ esp_err_t touch_init(const touch_config_t *cfg)
         .rotation = s_touch.cfg.rotation,
     };
 #ifdef RCBENCH_TOUCH_INJECTOR
-    if (glass_addr == TOUCH_INJECT_ADDR) {
-        /* 0x14 is the injector's address in this build, so what answers
-         * there is taken as the injector and not as the glass: panel
-         * pixels of the UI's area, unmirrored. */
-        s_touch.map = touch_inject_map();
-        s_touch.map_is_injector = true;
-        ESP_LOGW(TAG, "0x14 refused as the glass: it is the touch "
-                      "injector's address in this build; touch is the "
-                      "injector alone");
+    if (s_touch.role == TOUCH_ROLE_INJECTOR) {
+        /* Its contacts are logical pixels of the UI's area, unmirrored,
+         * and never turn. */
+        ESP_LOGW(TAG, "0x%02x reports product ID %s: touch is the touch "
+                      "injector alone, unmirrored and never turned",
+                 glass_addr, TOUCH_MERGE_INJECT_PRODUCT);
+    } else if (glass_addr == TOUCH_INJECT_ADDR) {
+        ESP_LOGW(TAG, "0x%02x reports product ID \"%s\", not the touch "
+                      "injector's %s: read as the glass",
+                 glass_addr, product_id, TOUCH_MERGE_INJECT_PRODUCT);
     }
 #endif
     touch_tracker_reset(&s_touch.tracker);
@@ -281,11 +302,18 @@ esp_err_t touch_init(const touch_config_t *cfg)
      * momentarily reported as stale before its first poll. */
     s_touch.last_ok_ms = now_ms();
     s_touch.initialised = true;
-    ESP_LOGI(TAG, "GT911 ready at 0x%02x, %ux%u, mirror x %d y %d, "
+    /* The map one report of it is read through, unturned. */
+#ifdef RCBENCH_TOUCH_INJECTOR
+    const touch_map_t used = touch_merge_role_map(
+        s_touch.role, &s_touch.map, &s_touch.inject_map, false);
+#else
+    const touch_map_t used = s_touch.map;
+#endif
+    ESP_LOGI(TAG, "GT911 ready at 0x%02x, %dx%d, mirror x %d y %d, "
                   "rotation %d, polled every %u ms",
-             gt911_address(s_touch.gt911), x_max, y_max,
-             (int)s_touch.cfg.mirror_x, (int)s_touch.cfg.mirror_y,
-             (int)s_touch.cfg.rotation * 90,
+             gt911_address(s_touch.gt911), (int)used.src_w,
+             (int)used.src_h, (int)used.mirror_x, (int)used.mirror_y,
+             (int)used.rotation * 90,
              (unsigned)s_touch.cfg.poll_interval_ms);
     return ESP_OK;
 }

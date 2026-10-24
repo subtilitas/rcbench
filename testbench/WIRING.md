@@ -377,7 +377,7 @@ still listening, nothing answers at 0x14.
 listens: GP4 and GP5 are inputs and it acknowledges nothing. With the panel
 running, open its port on the Pi and ask:
 
-    ping      ->  pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen
+    ping      ->  pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen id=9INJ
     wiring    ->  ok wiring
               ->  wiring ok scl=GP5 sda=GP4 tx=<n> named=<n> agree=<pct> rate=<Msps>
 
@@ -388,7 +388,10 @@ names a line held low, and `noise` means no verdict. Only after `ok`:
 
     confirm scl=GP5  ->  ok confirm
 
-The injector then answers at 0x14. A panel image
+The injector then answers at 0x14. The reply ends with `id=9INJ`, the
+product ID the panel tells the injector from the glass by; an image whose
+reply has no `id=` reports `911`, is not read beside the glass, and needs
+flashing again (`touch-injector/README.md`). A panel image
 finds it at its next start (a panel looks at start-up only): pulse its
 RESET, and the status band's MODE chip reads `INJECT`. After an injector
 reset the panel needs no RESET if it found the injector at start-up: it
