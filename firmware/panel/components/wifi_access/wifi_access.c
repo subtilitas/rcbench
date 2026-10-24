@@ -49,6 +49,7 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_dns.h"
 #include "wifi_ntp.h"
 #include "wifi_radio.h"
 #include "wifi_sock.h"
@@ -78,11 +79,11 @@ static const char *TAG = "wifi";
 /* A read waits this long at a time, so a job ended from outside stops its
  * task within about this much once the data flows. */
 #define FETCH_SLICE_MS 1000u
-/* The radio goes off after this much, task ended or not: a connection or a
- * name lookup that waits on the network ends when the radio does. */
+/** @brief The radio goes off after this much, task ended or not, ms.  A
+ *         connection ends with the radio; a name lookup only when lwIP
+ *         gives up on it, up to about 7s a DNS server, and the radio does
+ *         not wait for that (wa_fetch_start_gate()). */
 #define FETCH_GRACE_MS 1500u
-/* And the task's end is waited for this long at most after it. */
-#define FETCH_EXIT_MS  20000u
 #define FETCH_AGENT    "rcbench-panel"
 /** @brief How long the worker waits for the event loop to pass the radio's
  *         last events at its stop (drain()), ms. */
@@ -145,7 +146,9 @@ static struct {
     SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
     /* The fetch task's.  fetch_alive from its creation to its last touch
-     * of anything shared; fetch_stop asks it to end. */
+     * of anything shared, which can be past the radio's end; fetch_stop
+     * asks it to end, and only a new job, never started while it lives,
+     * clears it. */
     atomic_bool     fetch_alive;
     atomic_bool     fetch_stop;
     fw_upload_t     fup;          /* its image, until staged            */
@@ -1519,6 +1522,14 @@ static bool fetch_wait(uint32_t wait_ms)
  * @brief Take the radio down: mDNS, the fetch, the page's server, the
  *        driver and the interface.
  *
+ * The fetch task gets FETCH_GRACE_MS.  One still in a name lookup after it
+ * is not waited for: the radio counts as down once the interface is gone,
+ * and the task ends when lwIP gives up on the lookup.  It reads no state
+ * the radio's end frees, its report is dropped by the job's generation,
+ * and no job starts while it lives (wa_fetch_start_gate()).  A lookup that
+ * a next session's station answers leads to one connection over it, whose
+ * result is dropped; f_stopped() ends the job before any further request.
+ *
  * After a failed C6 link, esp_wifi_stop() and esp_wifi_deinit() are not
  * called: each is a request to the C6, which is held in reset then, and
  * would end only at esp_hosted's response time-out, 5s each.
@@ -1555,9 +1566,10 @@ static void radio_down(void)
     s.radio_up = false;
     s.held = false;
     memset(s.ip, 0, sizeof(s.ip));
-    if (!fetch_wait(FETCH_EXIT_MS)) {
-        /* No new job starts while it lives (wifi_access_fetch_start()). */
-        ESP_LOGW(TAG, "GitHub: the fetch task has not ended");
+    if (atomic_load(&s.fetch_alive)) {
+        /* In a name lookup: it ends on its own, and no job starts before. */
+        ESP_LOGW(TAG, "GitHub: the fetch task has not ended; radio off "
+                 "without it");
     }
     atomic_store(&s.abort, false);
     atomic_store(&s.down, true);
@@ -1706,6 +1718,7 @@ static void worker(void *arg)
                           && !wifi_radio_failed();
         const bool held = wifi_ntp_poll(same && w.state == WA_ST_JOINED,
                                         same && wa_lingers(&w));
+        wifi_dns_poll(s.netif, same && w.state == WA_ST_JOINED);
         if (s.radio_up || !atomic_load(&s.down)) {
             if (held) {
                 radio_hold();
@@ -1966,12 +1979,9 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
         no_worker = true;
     }
     lock();
-    wa_why_t g = gate;
-    if (g == WA_WHY_NONE
-        && (s.taken || atomic_load(&s.fetch_alive)
-            || (wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH))) {
-        g = WA_WHY_BUSY;
-    }
+    const wa_why_t g = wa_fetch_start_gate(
+        gate, s.taken, atomic_load(&s.fetch_alive),
+        wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH);
     const wa_got_t r = wa_fetch_start(&s.f, job, want, ch, s.conf.have_net,
                                       g, ms());
     if (r == WA_GOT_NONE) {

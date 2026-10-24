@@ -377,6 +377,11 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
     if (v->phase != UPD_PH_ENDED) {
         return;
     }
+    /* "is using Wi-Fi" holds only while WI-FI's session has the radio. */
+    if ((v->got == UPD_GOT_ABORTED || v->got == UPD_GOT_BLOCKED)
+        && v->why == UPD_WHY_FILES && v->radio_free) {
+        return;
+    }
     switch (v->got) {
     case UPD_GOT_NEWER:
         snprintf(out, n, TR(UPD_NEWER), v->found);

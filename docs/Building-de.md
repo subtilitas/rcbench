@@ -459,8 +459,10 @@ wartet darauf höchstens 1 000ms, nachdem dieser Aufruf zurückgekehrt ist
   Funkteil ohne die zwei Anfragen an den C6 herunter, `esp_wifi_stop()` und
   `esp_wifi_deinit()`, die jeweils erst mit der Antwort-Zeitüberschreitung
   von esp_hosted nach 5s enden würden. Das Herunterfahren wartet bis zu
-  1 500ms auf eine laufende GitHub-Abfrage und bis zu 20 000ms auf das
-  Ende ihres Tasks. Die Zeit auf einem Board ist nicht gemessen.
+  1 500ms auf eine laufende GitHub-Abfrage. Auf einen Task, der danach
+  noch in einer Namensauflösung steht, wartet es nicht: Er endet, wenn lwIP
+  die Auflösung aufgibt, und bis dahin startet kein Abruf.
+  Die Zeit auf einem Board ist nicht gemessen.
 
 Bekannte Einschränkungen, alle in esp_hosted. Jede hält das Panel mit einem
 Abbruch an, der es neu startet:

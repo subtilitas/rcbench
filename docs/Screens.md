@@ -3165,6 +3165,17 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   stays as it was until the next join. How long an answer takes on a real
   network is not measured; on the bench's home network one came 7.2s after
   the address.
+- A GitHub request still waiting on its name lookup does not hold the
+  radio: the radio waits 1.5s at most for the request, then goes off, and
+  the lookup ends when lwIP gives up on it. No new check or download
+  starts before that.
+- After each join the console names the DNS (Domain Name System) servers
+  the home network gave, in the order lwIP asks them, for example
+  `wifi: dns 192.0.2.53, 192.0.2.1`.
+- Current limitation: a first DNS server that does not answer delays every
+  name lookup after a join by about 7s, the NTP request's and the release
+  check's alike. lwIP tries a server at 0s, 1s, 2s and 4s and asks the
+  next at 7s; ESP-IDF v5.5.5 offers neither figure in its configuration.
 - An answer sets the clock and writes one console line: the server, the
   time set in UTC and how far it moved the clock, for example
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -4041,6 +4052,11 @@ request ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). On e
 the panel's release line and newer than the running build. The ESP32-P4
 panel's line holds every release ([The release line](#the-release-line)).
 
+Current limitation of both settings: a first DNS (Domain Name System)
+server of the home network that does not answer delays each name lookup by
+about 7s, out of the check's 30s
+([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)).
+
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
 devices behind one address share them. Each check is one request, and the
@@ -4051,7 +4067,8 @@ seen, however high its version.
 
 The card shows the step (`Connecting to Workshop 2.4`, `Checking GitHub.`) and the
 seconds left (`26s left`). The result stays on the card until the next
-check:
+check; a check stopped for WI-FI clears once WI-FI's session has ended and
+the radio is off:
 
 ![A newer release](img/updates-newer.png)
 ![Up to date](img/updates-current.png)
@@ -4070,7 +4087,7 @@ check:
 | `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.22.1.` | The running build's version does not parse. No release is offered. |
 | `Unexpected answer from GitHub.` | The `Location` (`STABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
-| `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
+| `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. The line clears once WI-FI's session has ended and the radio is off. |
 | `Stopped: the IOmcu update has started.` | The IOmcu's update began. |
 | `Cancelled.` | CANCEL. |
 | `Wi-Fi could not start.` | The radio did not come up. |
