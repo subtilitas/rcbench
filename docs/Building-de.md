@@ -647,6 +647,19 @@ Host-Tests werden mit den Flags der Bibliotheken gebaut: `-Wall -Wextra
 -Werror -Wshadow -Wconversion -Wno-sign-conversion`; `test/host/.clang-tidy`
 listet die für sie abgeschalteten Checks, jeweils mit Grund.
 
+cppcheck läuft im Job `cppcheck`, neben `Lint and static analysis`, der
+clang-tidy bei jedem Lauf über jede Datei laufen lässt. cppcheck behält
+sein Build-Verzeichnis (`--cppcheck-build-dir`) zwischen CI-Läufen: es
+liest eine Datei neu, wenn sie oder eine eingebundene Datei von ihrem
+Eintrag abweicht, und gibt die Befunde der übersprungenen Dateien erneut
+aus. Der Cache des Build-Verzeichnisses hat als Schlüssel die
+cppcheck-Version, seine Optionen, die Include-Pfade und
+`.cppcheck-suppress`. Ein Lauf stellt den neuesten Cache her, den sein
+Branch lesen kann: den eigenen, den des Basis-Branches seines Pull
+Requests, dann den von `main`; ein Branch bekommt einen Cache nur aus einem
+CI-Lauf auf ihm, und `ci.yml` läuft bei einem Push nur für `main` und
+Tags.
+
 CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5 und pytest 9.1.1 in
 genau diesen Versionen, Doxygen 1.18.0 aus dem offiziellen Linux-Release-Archiv
 (`tools/install_doxygen.sh` prüft dessen SHA-256 gegen den Wert in `ci.yml`)

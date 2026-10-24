@@ -193,6 +193,13 @@ history is in git.
 
 ### Changed
 
+- CI keeps cppcheck's build directory between runs, so cppcheck re-reads
+  only the files whose content or included files changed. cppcheck runs in
+  a job of its own, `cppcheck`, beside `Lint and static analysis`, which
+  runs clang-tidy over every file on every run.
+  `test/host/render_screen.c` poses the views of each screen group in a
+  function of its own; cppcheck's exhaustive check of the file takes 144s
+  instead of 673s on one core of an AMD EPYC 7402P.
 - An IOmcu too old for a page is named by the first release whose IOmcu
   speaks it, the number UPDATES shows, not by the link protocol: `IOMCU
   OLDER THAN 0.22.0: SERVO PWM ONLY` instead of `4.26`, `Update the IOmcu

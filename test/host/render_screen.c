@@ -2316,72 +2316,21 @@ static void band_view(const char *view, ui_bench_status_t *st)
     }
 }
 
-int main(int argc, char **argv)
+/**
+ * @brief MOTOR's run and SUPPLY's offline views: the samples, the bindings and
+ *        the PD mini.
+ * @param id      The screen of the shot.
+ * @param view    The golden's name.
+ * @param mo_prog The view is one of MOTOR's PROGRAM or ESC STICK views.
+ */
+static void pose_motor_supply(ui_screen_id_t id, const char *view,
+                              bool mo_prog)
 {
-    /* FILES INFO reads a stamp in the C library's zone (wall_local_s()):
-     * UTC for every shot, whatever the shell's zone. */
-    (void)setenv("TZ", "UTC0", 1);
-    tzset();
-    if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
-        /* The table's IDs and their declared cells, for the fit check. */
-        for (int i = 0; i < TX_COUNT; ++i) {
-            printf("I %s %d\n", ui_text_name((ui_text_id_t)i),
-                   ui_text_cells((ui_text_id_t)i));
-        }
-        return 0;
-    }
-    if (argc < 3) {
-        fprintf(stderr, "usage: render_screen OUT.ppm SCREEN [theme] [view] "
-                        "[en|de] [TRACE]\n");
-        return 2;
-    }
-    const ui_screen_id_t id = id_of(argv[2]);
-    const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
-    /* argv[4] is the golden's name; several share one screen. */
-    const char *view = (argc > 4) ? argv[4] : argv[2];
-    const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
-    s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
-                                                       : UI_LANG_EN;
-    s_monitors_on = strcmp(view, "setup-interfaces") == 0
-                    || strncmp(view, "setup-sensors", 13) == 0
-                    || strcmp(view, "setup-unheld") == 0;
-    s_tap_on = strcmp(view, "setup-tap") == 0
-               || strcmp(view, "setup-tap-why") == 0;
-    s_enc_on = strcmp(view, "servo-encoder") == 0;
-    s_rot_on = strcmp(view, "setup-rotation") == 0;
-    s_tz_on = strcmp(view, "setup-time-zone") == 0;
-    s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
-
-    ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
-    settings_set_store(&k_lang_store);
-    settings_set_armed(router_armed);
-    settings_init();
-    /* What settings_apply_ui() does for the language; the theme stays the
-     * one the shot asks for. */
-    ui_text_set_language((ui_lang_t)settings_get_int(SET_LANGUAGE));
-#ifdef GFX_TEXT_TRACE
-    /* From the start: a screen looks its words up when it is set up as
-     * well as when it draws. */
-    if (argc > 6) {
-        s_trace = fopen(argv[6], "w");
-        if (s_trace == NULL) {
-            perror(argv[6]);
-            return 1;
-        }
-    }
-#endif
-    ui_router_init();
-    pose_splash();
     /*
      * A scripted run, so the bench screenshot shows the same moment every
      * time: spin up, hold, a burst, then settle.  One sample per plot column
      * at the panel's poll rate, 20Hz.
      */
-    /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
-     * output strip names it. */
-    const bool mo_prog = id == SCREEN_MOTOR
-                         && (strncmp(view, "motor-program", 13) == 0
-                             || strncmp(view, "motor-stick", 11) == 0);
     if (id == SCREEN_MOTOR && (strcmp(view, "motor-idle") == 0
                                || strcmp(view, "motor-port") == 0)) {
         /* A linked bench before its first run: no sample, never armed, and
@@ -2558,7 +2507,15 @@ int main(int argc, char **argv)
             supply_screen_set_port_held(true);
         }
     }
+}
 
+/**
+ * @brief MOTOR & ESC > PROGRAM and the ESC STICK views.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_motor_tools(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_MOTOR && strncmp(view, "motor-program", 13) == 0) {
         /* MOTOR & ESC > PROGRAM: the strip's second tab, the registry's
          * list with its STICK MENU row. */
@@ -2884,7 +2841,15 @@ int main(int argc, char **argv)
             }
         }
     }
+}
 
+/**
+ * @brief BATTERY, SETUP's leave and dirty views and BUSFAULT.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_bench_views(ui_screen_id_t id, const char *view)
+{
     /* battery-none: no cell monitor, as on a bench, where no firmware feeds
      * the screen. */
     if (id == SCREEN_BATTERY && strcmp(view, "battery-none") != 0) {
@@ -3013,7 +2978,15 @@ int main(int argc, char **argv)
         }
         busfault_screen_set(&r);
     }
+}
 
+/**
+ * @brief BALANCE and the ANALYSER: the cells and the received frames.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_analyser_views(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
         if (strcmp(view, "balance-rig") == 0) {
@@ -3105,7 +3078,15 @@ int main(int argc, char **argv)
             }
         }
     }
+}
 
+/**
+ * @brief OUTPUTS and the INTERFACES views.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_outputs_views(ui_screen_id_t id, const char *view)
+{
     if ((id == SCREEN_OUTPUTS && strcmp(view, "outputs-iface") == 0)
         || (id == SCREEN_PICKER && strcmp(view, "picker-iface") == 0)) {
         /* SETUP > INTERFACES as the bench is wired: the INA228 and the
@@ -3280,7 +3261,15 @@ int main(int argc, char **argv)
             outputs_screen_set_result(OUTPUTS_NO_LINK);
         }
     }
+}
 
+/**
+ * @brief The PICKER's views: the list, the port and the tap on a pin.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_picker_views(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_PICKER) {
         /*
          * The same bench the outputs screen is posed with: four servo leads
@@ -3395,7 +3384,16 @@ int main(int argc, char **argv)
             ui_router_event(&u);
         }
     }
+}
 
+/**
+ * @brief SERVO's views: the capabilities, the programmer, the runs and the
+ *        limit search.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_servo_views(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_SERVO) {
         /* What the IOmcu reports (its output drivers'), so PROGRAM's KST row
          * is live; none with no IOmcu answering. */
@@ -3610,85 +3608,15 @@ int main(int argc, char **argv)
             tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y); /* TEST: the cards */
         }
     }
+}
 
-    ui_bench_status_t st = k_status;
-    if (id == SCREEN_OVERVIEW && !sim) {
-        /* A linked IOmcu reports its output drivers (IOMCU_CAPABILITIES)
-         * and, with the INA228 enabled on SETUP, the pack's volts and amps:
-         * MOTOR & ESC and SERVO without the mark, the rest with it. */
-        s_caps = (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
-                            | LINK_CAP_ESC_TELEM | LINK_CAP_PACK_SENSE);
-    }
-    st.capabilities = s_caps;
-    st.simulated = sim || (id == SCREEN_MOTOR
-                           && strcmp(view, "motor-table") != 0
-                           && strcmp(view, "motor-refused") != 0
-                           && strcmp(view, "motor-idle") != 0
-                           && strcmp(view, "motor-port") != 0
-                           && strncmp(view, "motor-settings", 14) != 0
-                           && !mo_prog);
-    /* An IOmcu that has refused 37 frames: the count in the header
-     * strip after the error count. */
-    if (strcmp(view, "motor-refused") == 0) {
-        st.link_refused = 37u;
-    }
-    /* Modelled numbers are the panel's own, which it runs only while no
-     * IOmcu answers: the band says NO LINK and SIM, as on the bench. */
-    st.link_up   = !st.simulated;
-    st.mode      = ui_band_mode(st.link_up);
-    st.armed     = (id == SCREEN_MOTOR
-                    && strcmp(view, "motor-held") != 0
-                    && strcmp(view, "motor-idle") != 0
-                    && strcmp(view, "motor-port") != 0
-                    && !mo_prog
-                    && (strncmp(view, "motor-settings", 14) != 0
-                        || strcmp(view, "motor-settings-armed") == 0))
-                   || strcmp(view, "servo-armed") == 0
-                   || strcmp(view, "servo-run") == 0
-                   || strcmp(view, "servo-result") == 0
-                   || strcmp(view, "servo-result-ina") == 0
-                   || strcmp(view, "servo-test-done") == 0
-                   || strcmp(view, "servo-sweep") == 0
-                   || strcmp(view, "servo-paused") == 0
-                   || (strncmp(view, "servo-limrun", 12) == 0
-                       && strcmp(view, "servo-limrun-restore") != 0
-                       && strcmp(view, "servo-limrun-stopped") != 0
-                       && strcmp(view, "servo-limrun-range") != 0)
-                   || strcmp(view, "setup-leave-armed") == 0
-                   || render_files_armed(view)
-                   || strcmp(view, "setup-rotation") == 0
-                   || (mo_prog && s_stick_armed);
-    /* An arm covers the role of the screen that asked for it. */
-    st.armed_roles = !st.armed ? 0u
-                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
-    ui_router_set_status(&st);
-    if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
-         * a panel carrying 0.22.0, the version of the alert `IOmcu
-         * updated to 0.22.0` in Screens.md; the older one with the two
-         * swapped.  Fixed, as the examples above are.  The progress half
-         * way through the blocks of a 191,592-byte image. */
-        const cu_version_t old_v = { 0, 21, 2 };
-        const cu_version_t new_v = { 0, 22, 0 };
-        if (strcmp(view, "coproc-update-older") == 0) {
-            coproc_update_screen_offer(new_v, old_v);
-        } else {
-            coproc_update_screen_offer(old_v, new_v);
-        }
-        if (strcmp(view, "coproc-update-progress") == 0) {
-            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
-        }
-    }
-    if (id == SCREEN_FILES) {
-        render_files_prepare(view);
-    }
-    ui_router_goto(id);
-    if (id == SCREEN_FILES) {
-        render_files_pose(view);
-    }
-    if (strncmp(view, "band-", 5) == 0) {
-        band_view(view, &st);
-    }
+/**
+ * @brief The views posed on the screen once it shows: the alert and MOTOR's
+ *        table and settings.
+ * @param view The golden's name.
+ */
+static void pose_shown_views(const char *view)
+{
     /* An alert on the menu: the band across the bottom, with its x. */
     if (strcmp(view, "overview-alert") == 0) {
         ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
@@ -3728,6 +3656,16 @@ int main(int argc, char **argv)
             settings_request_save();
         }
     }
+}
+
+/**
+ * @brief SETUP's views posed once it shows: leave, dirty, the rows, the card,
+ *        the folder and the sensors.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_shown_setup(ui_screen_id_t id, const char *view)
+{
     /* The home tag on SETUP's tiles, held by the warning. */
     if (strncmp(view, "setup-leave", 11) == 0) {
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(id));
@@ -3877,7 +3815,15 @@ int main(int argc, char **argv)
         kp_type(settings_screen_keypad(), sda ? "5" : "9");
         ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
     }
+}
 
+/**
+ * @brief Wi-Fi, the update screens and LOGS once they show.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ */
+static void pose_shown_tools(ui_screen_id_t id, const char *view)
+{
     if (id == SCREEN_WIFI) {
         pose_wifi(view);
     }
@@ -3940,8 +3886,159 @@ int main(int argc, char **argv)
             tap(LV_IM_BTN_CX(3), UI_BAND_H + LV_FOOT_CY);   /* PLOT */
         }
     }
+}
 
+int main(int argc, char **argv)
+{
+    /* FILES INFO reads a stamp in the C library's zone (wall_local_s()):
+     * UTC for every shot, whatever the shell's zone. */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
+    if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
+        /* The table's IDs and their declared cells, for the fit check. */
+        for (int i = 0; i < TX_COUNT; ++i) {
+            printf("I %s %d\n", ui_text_name((ui_text_id_t)i),
+                   ui_text_cells((ui_text_id_t)i));
+        }
+        return 0;
+    }
+    if (argc < 3) {
+        fprintf(stderr, "usage: render_screen OUT.ppm SCREEN [theme] [view] "
+                        "[en|de] [TRACE]\n");
+        return 2;
+    }
+    const ui_screen_id_t id = id_of(argv[2]);
+    const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
+    /* argv[4] is the golden's name; several share one screen. */
+    const char *view = (argc > 4) ? argv[4] : argv[2];
+    const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
+    s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
+                                                       : UI_LANG_EN;
+    s_monitors_on = strcmp(view, "setup-interfaces") == 0
+                    || strncmp(view, "setup-sensors", 13) == 0
+                    || strcmp(view, "setup-unheld") == 0;
+    s_tap_on = strcmp(view, "setup-tap") == 0
+               || strcmp(view, "setup-tap-why") == 0;
+    s_enc_on = strcmp(view, "servo-encoder") == 0;
+    s_rot_on = strcmp(view, "setup-rotation") == 0;
+    s_tz_on = strcmp(view, "setup-time-zone") == 0;
+    s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
+    ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
+    settings_set_store(&k_lang_store);
+    settings_set_armed(router_armed);
+    settings_init();
+    /* What settings_apply_ui() does for the language; the theme stays the
+     * one the shot asks for. */
+    ui_text_set_language((ui_lang_t)settings_get_int(SET_LANGUAGE));
+#ifdef GFX_TEXT_TRACE
+    /* From the start: a screen looks its words up when it is set up as
+     * well as when it draws. */
+    if (argc > 6) {
+        s_trace = fopen(argv[6], "w");
+        if (s_trace == NULL) {
+            perror(argv[6]);
+            return 1;
+        }
+    }
+#endif
+    ui_router_init();
+    pose_splash();
+    /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
+     * output strip names it. */
+    const bool mo_prog = id == SCREEN_MOTOR
+                         && (strncmp(view, "motor-program", 13) == 0
+                             || strncmp(view, "motor-stick", 11) == 0);
+    pose_motor_supply(id, view, mo_prog);
+    pose_motor_tools(id, view);
+    pose_bench_views(id, view);
+    pose_analyser_views(id, view);
+    pose_outputs_views(id, view);
+    pose_picker_views(id, view);
+    pose_servo_views(id, view);
+
+    ui_bench_status_t st = k_status;
+    if (id == SCREEN_OVERVIEW && !sim) {
+        /* A linked IOmcu reports its output drivers (IOMCU_CAPABILITIES)
+         * and, with the INA228 enabled on SETUP, the pack's volts and amps:
+         * MOTOR & ESC and SERVO without the mark, the rest with it. */
+        s_caps = (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
+                            | LINK_CAP_ESC_TELEM | LINK_CAP_PACK_SENSE);
+    }
+    st.capabilities = s_caps;
+    st.simulated = sim || (id == SCREEN_MOTOR
+                           && strcmp(view, "motor-table") != 0
+                           && strcmp(view, "motor-refused") != 0
+                           && strcmp(view, "motor-idle") != 0
+                           && strcmp(view, "motor-port") != 0
+                           && strncmp(view, "motor-settings", 14) != 0
+                           && !mo_prog);
+    /* An IOmcu that has refused 37 frames: the count in the header
+     * strip after the error count. */
+    if (strcmp(view, "motor-refused") == 0) {
+        st.link_refused = 37u;
+    }
+    /* Modelled numbers are the panel's own, which it runs only while no
+     * IOmcu answers: the band says NO LINK and SIM, as on the bench. */
+    st.link_up   = !st.simulated;
+    st.mode      = ui_band_mode(st.link_up);
+    st.armed     = (id == SCREEN_MOTOR
+                    && strcmp(view, "motor-held") != 0
+                    && strcmp(view, "motor-idle") != 0
+                    && strcmp(view, "motor-port") != 0
+                    && !mo_prog
+                    && (strncmp(view, "motor-settings", 14) != 0
+                        || strcmp(view, "motor-settings-armed") == 0))
+                   || strcmp(view, "servo-armed") == 0
+                   || strcmp(view, "servo-run") == 0
+                   || strcmp(view, "servo-result") == 0
+                   || strcmp(view, "servo-result-ina") == 0
+                   || strcmp(view, "servo-test-done") == 0
+                   || strcmp(view, "servo-sweep") == 0
+                   || strcmp(view, "servo-paused") == 0
+                   || (strncmp(view, "servo-limrun", 12) == 0
+                       && strcmp(view, "servo-limrun-restore") != 0
+                       && strcmp(view, "servo-limrun-stopped") != 0
+                       && strcmp(view, "servo-limrun-range") != 0)
+                   || strcmp(view, "setup-leave-armed") == 0
+                   || render_files_armed(view)
+                   || strcmp(view, "setup-rotation") == 0
+                   || (mo_prog && s_stick_armed);
+    /* An arm covers the role of the screen that asked for it. */
+    st.armed_roles = !st.armed ? 0u
+                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
+    ui_router_set_status(&st);
+    if (id == SCREEN_COPROC_UPDATE) {
+        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
+         * a panel carrying 0.22.0, the version of the alert `IOmcu
+         * updated to 0.22.0` in Screens.md; the older one with the two
+         * swapped.  Fixed, as the examples above are.  The progress half
+         * way through the blocks of a 191,592-byte image. */
+        const cu_version_t old_v = { 0, 21, 2 };
+        const cu_version_t new_v = { 0, 22, 0 };
+        if (strcmp(view, "coproc-update-older") == 0) {
+            coproc_update_screen_offer(new_v, old_v);
+        } else {
+            coproc_update_screen_offer(old_v, new_v);
+        }
+        if (strcmp(view, "coproc-update-progress") == 0) {
+            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
+        }
+    }
+    if (id == SCREEN_FILES) {
+        render_files_prepare(view);
+    }
+    ui_router_goto(id);
+    if (id == SCREEN_FILES) {
+        render_files_pose(view);
+    }
+    if (strncmp(view, "band-", 5) == 0) {
+        band_view(view, &st);
+    }
+    pose_shown_views(view);
+
+    pose_shown_setup(id, view);
+    pose_shown_tools(id, view);
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
 
