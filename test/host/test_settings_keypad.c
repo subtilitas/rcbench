@@ -736,6 +736,32 @@ TEST_CASE(the_helper_takes_its_decimals_from_the_step)
     CHECK_EQ(ui_setting_keypad_ok(&k, SET_LANGUAGE, 1.0f), UI_SETKEY_LOCKED);
 }
 
+/* A pin setting's keypad names its range and its entry with GPIO first, and
+ * no pin setting has the "0 or ..." gap, whose text puts the unit last. */
+TEST_CASE(a_pin_setting_shows_gpio_before_its_number)
+{
+    int pins = 0;
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const setting_def_t *d = settings_def((setting_id_t)i);
+        if (d == NULL || !ui_unit_is_prefix(d->unit)) {
+            continue;
+        }
+        ++pins;
+        CHECK(d->off_below <= 0.0f);
+    }
+    CHECK(pins >= 6);
+    ui_keypad_t k;
+    char line[64];
+    fresh_hub();
+    ui_setting_keypad_open(&k, (gfx_rect_t){ 0, 0, 480, 400 }, SET_PDMINI_TX);
+    CHECK_STR_EQ(k.unit, "GPIO");
+    CHECK_STR_EQ(ui_keypad_range(&k, line, sizeof(line)), "GPIO -1 to 47");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_keypad_range(&k, line, sizeof(line)),
+                 "GPIO -1 bis 47");
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(a_tap_on_a_value_opens_its_keypad);
@@ -758,5 +784,6 @@ int main(void)
     RUN(a_pin_from_minus_1_takes_0_on_an_unsigned_keypad);
     RUN(stop_over_the_keypad_stops_and_sets_nothing);
     RUN(the_helper_takes_its_decimals_from_the_step);
+    RUN(a_pin_setting_shows_gpio_before_its_number);
     return test_summary("settings_keypad");
 }

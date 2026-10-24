@@ -350,30 +350,30 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     ui_router_render(&s_c, 0);
 }
 
-/* A pin's -1 is named as the row's help says it, "open"; a pin number takes
- * a space before GPIO, a word unit; GP0 is a pin, not open; and a value
+/* A pin's -1 is named as the row's help says it, "open"; a pin number follows
+ * GPIO, a word unit, so that it does not read as a count; GP0 is a pin, not open; and a value
  * whose 0 is OFF carries no unit there.  In German too. */
-TEST_CASE(the_warning_names_a_pin_open_and_spaces_gpio)
+TEST_CASE(the_warning_names_a_pin_open_and_leads_with_gpio)
 {
     fresh_hub();
     settings_set(SET_PDMINI_TX, 4.0f);
     warn_up();
     CHECK(settings_screen_warning());
-    CHECK_STR_EQ(warn_line(0), "PD mini TX: open -> 4 GPIO");
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: open -> GPIO 4");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(warn_line(0), "PD mini TX: offen -> 4 GPIO");
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: offen -> GPIO 4");
     ui_text_set_language(UI_LANG_EN);
 
     /* GP0, the lowest pin, is a number like any other. */
     settings_set(SET_PDMINI_TX, 0.0f);
-    CHECK_STR_EQ(warn_line(0), "PD mini TX: open -> 0 GPIO");
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: open -> GPIO 0");
 
     /* Back to -1 from a stored pin: the saved side shows the number. */
     settings_set(SET_PDMINI_TX, 4.0f);
     settings_set_store(&s_mem_store);
     CHECK(settings_save());
     settings_set(SET_PDMINI_TX, -1.0f);
-    CHECK_STR_EQ(warn_line(0), "PD mini TX: 4 GPIO -> open");
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: GPIO 4 -> open");
     settings_set(SET_PDMINI_TX, 4.0f);
     CHECK_STR_EQ(warn_line(0), "");
 
@@ -789,7 +789,7 @@ int main(void)
     RUN(leaving_setup_with_nothing_changed_warns_nothing);
     RUN(leaving_with_one_change_warns_and_names_it);
     RUN(a_changed_string_is_named_in_the_warning);
-    RUN(the_warning_names_a_pin_open_and_spaces_gpio);
+    RUN(the_warning_names_a_pin_open_and_leads_with_gpio);
     RUN(more_changes_than_fit_end_on_their_count);
     RUN(a_value_edited_back_holds_nothing);
     RUN(a_save_asked_holds_nothing_and_a_failed_one_warns);

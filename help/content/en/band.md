@@ -30,7 +30,7 @@ The home tag goes to the [menu](overview.md).
 | SAFE | none |
 | ARMED MOTOR | the throttle outputs, from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | ARMED SERVO | the servo outputs and a pulsing PROG PORT, from SERVO |
-| ARMED | every bound output, on an IOmcu older than protocol 4.18 |
+| ARMED | every bound output, on an IOmcu older than 0.18.0 |
 
 A channel with no command for 500ms sits at rest while ARMED: a throttle at 0%, a servo at the middle of its travel.
 

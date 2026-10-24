@@ -25,6 +25,7 @@
  * - leaving_the_screen_closes_the_bubble
  * - opening_a_bubble_releases_the_screens_contacts
  * - a_screen_without_a_band_opens_no_bubble
+ * - every_chip_reads_at_4_5_to_1_in_both_themes
  *
  * SPDX-License-Identifier: MIT
  */
@@ -799,6 +800,76 @@ TEST_CASE(a_screen_without_a_band_opens_no_bubble)
     CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
 }
 
+/* The WCAG 2.x relative luminance of an RGB565 colour as the panel shows it. */
+static double rel_lum(gfx_color_t c)
+{
+    uint8_t v[3];
+    gfx_unpack(c, &v[0], &v[1], &v[2]);
+    double lin[3];
+    for (int i = 0; i < 3; ++i) {
+        const double s = v[i] / 255.0;
+        lin[i] = (s <= 0.04045) ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4);
+    }
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+/* The WCAG contrast ratio of two colours, 1 to 21. */
+static double contrast(gfx_color_t a, gfx_color_t b)
+{
+    const double la = rel_lum(a);
+    const double lb = rel_lum(b);
+    const double hi = (la > lb) ? la : lb;
+    const double lo = (la > lb) ? lb : la;
+    return (hi + 0.05) / (lo + 0.05);
+}
+
+/* Every state of every chip the band draws, text on fill: the clock, SAFE,
+ * ARMED with each role, FAULT, BENCH and the link up and down.  WCAG AA asks
+ * 4.5:1 for text of this size. */
+TEST_CASE(every_chip_reads_at_4_5_to_1_in_both_themes)
+{
+    static const ui_bench_status_t k_states[] = {
+        { .link_up = true,  .run_seconds = 5, .mode = "BENCH" },
+        { .link_up = false, .run_seconds = 5, .mode = "SIM" },
+        { .link_up = true,  .armed = true, .run_seconds = 5,
+          .armed_roles = UI_ARMED_MOTOR | UI_ARMED_SERVO, .mode = "BENCH" },
+        { .link_up = true,  .armed = true, .run_seconds = 5,
+          .armed_roles = UI_ARMED_MOTOR, .mode = "BENCH" },
+        { .link_up = true,  .armed = true, .run_seconds = 5,
+          .armed_roles = UI_ARMED_SERVO, .mode = "BENCH" },
+        { .link_up = true,  .faults = 0x10, .run_seconds = 5,
+          .mode = "BENCH" },
+    };
+    const ui_theme_id_t was = ui_theme_get();
+    int seen = 0;
+    for (int t = 0; t < UI_THEME_COUNT; ++t) {
+        ui_theme_set((ui_theme_id_t)t);
+        for (size_t i = 0; i < sizeof(k_states) / sizeof(k_states[0]); ++i) {
+            for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT;
+                 ++chip) {
+                gfx_color_t fill, ink;
+                if (!ui_band_chip_rect(&k_states[i], (ui_band_chip_t)chip,
+                                      NULL)) {
+                    continue;
+                }
+                REQUIRE(ui_band_chip_colors(&k_states[i],
+                                            (ui_band_chip_t)chip, &fill,
+                                            &ink));
+                const double r = contrast(ink, fill);
+                if (r < 4.5) {
+                    ui_theme_set(was);
+                    T_FAIL("theme %d state %zu chip %d: %.2f:1", t, i, chip,
+                           r);
+                    return;
+                }
+                ++seen;
+            }
+        }
+    }
+    ui_theme_set(was);
+    CHECK(seen >= 2 * 6 * 4);
+}
+
 int main(void)
 {
     RUN(the_armed_chip_names_the_role);
@@ -822,5 +893,6 @@ int main(void)
     RUN(leaving_the_screen_closes_the_bubble);
     RUN(opening_a_bubble_releases_the_screens_contacts);
     RUN(a_screen_without_a_band_opens_no_bubble);
+    RUN(every_chip_reads_at_4_5_to_1_in_both_themes);
     return test_summary("nav_bubble");
 }

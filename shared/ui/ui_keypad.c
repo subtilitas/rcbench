@@ -425,6 +425,8 @@ const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k)
  *        right-aligned 10px inside @p box.  32 x 44 numerals with a
  *        12 x 24 unit where they fit, else 24 x 30 with 10 x 20; what
  *        does not fit even then is cut at the box's right, the unit first.
+ *        A pin word (ui_unit_is_prefix()) stands before the number
+ *        ("GPIO 4"); every other unit after it.
  * @param c      Canvas.
  * @param box    The entry's box.
  * @param number The number: digits, a minus sign and a point.
@@ -443,6 +445,7 @@ static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
         num = &gfx_font_num_24x30;
         unf = &gfx_font_10x20;
     }
+    const bool before = ui_unit_is_prefix(unit) != 0;
     const int uw = gfx_text_width(unf, unit, 1);
     const int nw = gfx_text_width(num, number, 1);
     const int nh = gfx_text_height(num, 1);
@@ -453,17 +456,20 @@ static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
     int x = right - uw - gap - nw;
     x = (x < left) ? left : x;
     const int y  = box.y + (box.h - nh) / 2;
-    const int shown = (x + nw <= right) ? nw : right - x;
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)y, (int16_t)shown,
-                                 (int16_t)nh },
-                number, num, ink, 1, GFX_ALIGN_LEFT);
-    if (uw > 0 && x + nw + gap + uw <= right) {
+    const int nx = before ? x + uw + gap : x;       /* the number's left */
+    const int ux = before ? x : x + nw + gap;       /* the unit's left */
+    const int shown = (nx + nw <= right) ? nw : right - nx;
+    if (shown > 0) {
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)nx, (int16_t)y,
+                                     (int16_t)shown, (int16_t)nh },
+                    number, num, ink, 1, GFX_ALIGN_LEFT);
+    }
+    if (uw > 0 && ux + uw <= right) {
         /* The unit's baseline on the numerals': both faces end their
          * digits and capitals 2px above the cell's foot or less. */
         const int uh = gfx_text_height(unf, 1);
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + nw + gap),
-                                     (int16_t)(y + nh - uh), (int16_t)uw,
-                                     (int16_t)uh },
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)ux, (int16_t)(y + nh - uh),
+                                     (int16_t)uw, (int16_t)uh },
                     unit, unf, ink, 1, GFX_ALIGN_LEFT);
     }
 }
@@ -475,8 +481,14 @@ const char *ui_keypad_range(const ui_keypad_t *k, char *buf, size_t n)
     }
     buf[0] = '\0';
     if (k != NULL) {
-        snprintf(buf, n, TR(KEYPAD_RANGE), k->decimals, (double)k->min,
-                 k->decimals, (double)k->max, ui_unit_gap(k->unit), k->unit);
+        if (ui_unit_is_prefix(k->unit)) {
+            snprintf(buf, n, TR(KEYPAD_RANGE_PRE), k->unit, k->decimals,
+                     (double)k->min, k->decimals, (double)k->max);
+        } else {
+            snprintf(buf, n, TR(KEYPAD_RANGE), k->decimals, (double)k->min,
+                     k->decimals, (double)k->max, ui_unit_gap(k->unit),
+                     k->unit);
+        }
     }
     return buf;
 }

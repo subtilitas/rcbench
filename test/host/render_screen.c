@@ -3769,6 +3769,11 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
     }
     /* INTERFACES: GPIO 5 typed for Sensor SDA, and PD mini RX's GPIO 9 for
      * PD mini TX, each refused with its reason in place of the range. */
+    if (strcmp(view, "setup-sda-keypad") == 0) {
+        setup_tile(SET_CAT_IFACE);
+        setup_value(SET_CAT_IFACE, SET_SENSE_SDA);
+        kp_type(settings_screen_keypad(), "1");
+    }
     if (strcmp(view, "setup-sda-why") == 0
         || strcmp(view, "setup-pdmini-why") == 0) {
         const bool sda = strcmp(view, "setup-sda-why") == 0;

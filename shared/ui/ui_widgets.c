@@ -181,9 +181,9 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
     return n;
 }
 
-void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                  gfx_color_t dot, gfx_color_t fill, int inset,
-                  const gfx_font_t *f)
+void ui_pill_ink(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                 gfx_color_t dot, gfx_color_t fill, gfx_color_t ink,
+                 int inset, const gfx_font_t *f)
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
     const int cy = r.y + r.h / 2;
@@ -193,8 +193,15 @@ void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
     gfx_draw_circle(c, r.x + inset / 2, cy, rd + 2, gfx_lerp(dot, fill, 130));
     if (label) {
         gfx_text(c, r.x + inset, cy - gfx_text_height(f, 1) / 2, label, f,
-                 UI_TEXT, 1);
+                 ink, 1);
     }
+}
+
+void ui_pill_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                  gfx_color_t dot, gfx_color_t fill, int inset,
+                  const gfx_font_t *f)
+{
+    ui_pill_ink(c, r, label, dot, fill, UI_TEXT, inset, f);
 }
 
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
