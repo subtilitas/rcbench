@@ -3551,10 +3551,13 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   nach einem Fehler. ESP-IDF hält die Systemzeit im RTC-Timer des ESP32-P4,
   den nur das Einschalten zurücksetzt. Der Timer zählt den Quarz Y3 der
   Platine mit 32.768kHz, oder den internen RC-Oszillator, wenn der Quarz
-  nicht anschwingt ([Aufbau](Building-de.md#der-langsame-rtc-takt)). Auf
-  dem RC lag die Uhr an der Station nach etwa 2h über einen Neustart um
-  4.357s daneben, etwa 600ppm (gemessen). Auf dem Quarz ist die
-  Abweichung über einen Neustart nicht gemessen.
+  nicht anschwingt ([Aufbau](Building-de.md#der-langsame-rtc-takt)). Mit
+  dem Quarz beträgt die Abweichung höchstens etwa 30ppm, gemessen über
+  65min. Auf dem RC ist sie kein fester Wert: 584ppm über 2h04min in einem
+  Lauf, unter 15ppm über 1h51min in einem anderen. Die Abweichung summiert
+  sich nur über einen Hardware-Reset; ein Software-Neustart
+  (`esp_restart`) setzt die Uhr bei der nächsten Verbindung wieder auf die
+  NTP-Zeit.
 - Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal über SNTP
   (Simple Network Time Protocol): die Release-Prüfung beim Start, NACH
   UPDATES SUCHEN und der Download unter [Updates](#updates) und das

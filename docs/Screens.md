@@ -3219,10 +3219,12 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   a fault. ESP-IDF keeps the system time in the ESP32-P4's RTC timer,
   which only a power-on resets. The timer counts the board's 32.768kHz
   crystal Y3, or the internal RC oscillator when the crystal does not
-  start ([Building](Building.md#the-rtc-slow-clock)). On the RC the clock
-  was 4.357s off after about 2h across a restart at the station, about
-  600ppm (measured). On the crystal the drift across a restart is not
-  measured.
+  start ([Building](Building.md#the-rtc-slow-clock)). With the crystal
+  the drift is at most about 30ppm, measured over 65min. On the RC it is not
+  a fixed figure: 584ppm over 2h04min in one run, under 15ppm over
+  1h51min in another. Drift accumulates only across a hardware reset; a
+  software restart (`esp_restart`) re-anchors the clock to NTP time on the
+  next join.
 - Each join of the home network asks `pool.ntp.org` once by SNTP (Simple
   Network Time Protocol): the release check at start, CHECK FOR UPDATES
   and the download on [Updates](#updates), and WI-FI's home network

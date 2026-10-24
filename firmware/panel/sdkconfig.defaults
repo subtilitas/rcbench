@@ -12,9 +12,9 @@ CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_400=y
 # The RTC (real-time clock) timer, which keeps the system time across a
 # software restart, counts the 32.768kHz crystal Y3 on GPIO0 (XTAL_32K_N)
 # and GPIO1 (XTAL_32K_P), not the internal RC oscillator, ESP-IDF's
-# default.  At the station the RC carried the clock 4.357s off across a
-# restart after about 2h, about 600ppm.  The drift on the crystal is not
-# measured.
+# default.  The crystal's drift is at most about 30ppm, measured over
+# 65min.  The RC's is not a fixed figure: 584ppm over 2h04min in one run,
+# under 15ppm over 1h51min in another.
 #
 # The bootloader starts the crystal (bootloader_clock_init.c); the start-up
 # code waits for it by calibrating 3000 of its cycles against the 40MHz

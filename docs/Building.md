@@ -227,10 +227,12 @@ What the panel does instead
   restart keeps it: ESP-IDF keeps the time in the RTC timer and two of its
   store registers, which only a power-on resets
   (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, the default).
-- Across a restart the clock is as good as the RTC timer's slow clock. On
-  the internal RC oscillator it was 4.357s off after about 2h at the
-  station, about 600ppm (measured). On the crystal Y3 the drift across a
-  restart is not measured.
+- The clock is as good as the RTC timer's slow clock. With the 32.768kHz
+  crystal Y3 the drift is at most about 30ppm, measured over 65min. On the
+  internal RC oscillator, the fallback, it is not a fixed figure: 584ppm
+  over 2h04min in one run, under 15ppm over 1h51min in another. Drift
+  accumulates only across a hardware reset; a software restart
+  (`esp_restart`) re-anchors the clock to NTP time on the next join.
 - Each join of the home network asks `pool.ntp.org` once
   (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`).
   lwIP's random start-up delay is off (`CONFIG_LWIP_SNTP_STARTUP_DELAY=n`),

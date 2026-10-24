@@ -237,10 +237,13 @@ Was das Panel stattdessen tut
   Software-Neustart behält sie: ESP-IDF hält die Zeit im RTC-Timer und in
   zwei seiner Speicherregister, die nur ein Einschalten zurücksetzt
   (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, die Vorgabe).
-- Über einen Neustart ist die Uhr so gut wie der langsame Takt des
-  RTC-Timers. Auf dem internen RC-Oszillator lag sie an der Station nach
-  etwa 2h um 4.357s daneben, etwa 600ppm (gemessen). Auf dem Quarz Y3 ist
-  die Abweichung über einen Neustart nicht gemessen.
+- Die Uhr ist so gut wie der langsame Takt des RTC-Timers. Mit dem Quarz Y3
+  (32.768kHz) beträgt die Abweichung höchstens etwa 30ppm, gemessen über
+  65min. Auf dem internen RC-Oszillator, der Rückfallebene, ist sie kein
+  fester Wert: 584ppm über 2h04min in einem Lauf, unter 15ppm über 1h51min
+  in einem anderen. Die Abweichung summiert sich nur über einen
+  Hardware-Reset; ein Software-Neustart (`esp_restart`) setzt die Uhr bei
+  der nächsten Verbindung wieder auf die NTP-Zeit.
 - Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal
   (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`). Die
   zufällige Startverzögerung von lwIP ist aus
