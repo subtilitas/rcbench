@@ -42,3 +42,9 @@ docs/Performance-de.md: `200 16777216 B`
 # parses and a person edits; its value lines carry the unit after a space.
 protocols/kst/README.md: re:^[A-Za-z0-9_. ]+ = [\d.]+ (us|s|%)( \[not loaded\])?$
 protocols/kst/README.md: `Max. Duty = 10 %`
+
+# YGE's model names, as the profile's models and applies_to lists name
+# them: the 7 and the 8 and 12 are the current in A, not a cell count.
+shared/esc/profiles/yge-rc-setup.json: "name": "YGE 7 S"
+shared/esc/profiles/yge-rc-setup.json: "name": "YGE 8 S"
+shared/esc/profiles/yge-rc-setup.json: "name": "YGE 12 S"

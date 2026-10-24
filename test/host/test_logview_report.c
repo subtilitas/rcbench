@@ -972,6 +972,41 @@ TEST_CASE(a_load_that_fails_holds_nothing)
     CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_LOG_ERR_MEMORY));
 }
 
+/*
+ * An I/O without open: OPEN on a report or a CSV file stays on the list
+ * and says there is no source, in the language showing.
+ */
+TEST_CASE(an_io_without_open_says_so_in_the_language_showing)
+{
+    static log_viewer_io_t no_open;
+    fresh();
+    no_open = k_io;
+    no_open.open = NULL;
+    log_viewer_set_io(&no_open);
+    add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
+    show(LOG_TAB_USER);
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_EN, TX_LOG_NO_SOURCE));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_DE, TX_LOG_NO_SOURCE));
+    draw();
+    ui_text_set_language(UI_LANG_EN);
+    /* A CSV file: the import opens on the reason. */
+    fresh();
+    log_viewer_set_io(&no_open);
+    add(CARD_USER_LOGS, "ATEST001.CSV", "t,v\n0,1\n1,2\n");
+    show(LOG_TAB_USER);
+    tap(OPEN_X, FOOT_CY);
+    CHECK(log_viewer_analysis() == NULL);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_EN, TX_LOG_NO_SOURCE));
+    draw();
+    log_viewer_set_io(&k_io);
+}
+
 int main(void)
 {
     RUN(the_notes_list_csv_files_and_reports_standing_alone);
@@ -990,6 +1025,7 @@ int main(void)
     RUN(a_report_over_the_cap_is_cut_and_the_view_says_so);
     RUN(a_frame_reads_its_rows_and_not_the_text_above_them);
     RUN(a_load_that_fails_holds_nothing);
+    RUN(an_io_without_open_says_so_in_the_language_showing);
     free(s_fb);
     return test_summary("logview_report");
 }

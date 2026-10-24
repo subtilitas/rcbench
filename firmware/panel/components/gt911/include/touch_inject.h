@@ -5,7 +5,9 @@
  * build leaves it out).
  *
  * The injector (testbench/touch-injector) answers as a GT911 at 0x14 on the
- * touch bus.  touch_init() asks for it once, before the touch task starts.
+ * touch bus and reports the product ID TOUCH_MERGE_INJECT_PRODUCT ("9INJ"),
+ * which no Goodix controller reports.  touch_init() asks for it once,
+ * before the touch task starts.
  * One that does not answer then is off until the next start: 0x14 is not
  * read or probed again, and touch is the glass alone, as in a build without
  * the injector.  One that first answers later is not seen until the next
@@ -15,12 +17,22 @@
  * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000ms) is
  * detached: its age no longer counts, and the touch task reads its product
  * ID once every TOUCH_MERGE_PROBE_MS (1000ms) until it answers, which
- * re-attaches it.  In a build with the injector, a controller that answers
- * only at 0x14 is taken as the injector and refused as the glass.  The
- * injector's contacts are panel pixels of the UI's area, mapped unmirrored
- * (touch_inject_map()) before they are merged with the glass's.  A build
- * with RCBENCH_TOUCH_INJECTOR=OFF compiles none of this; it addresses 0x14
- * only as the glass's alternate address, when nothing answers at 0x5D.
+ * re-attaches it.  The product ID decides, not the address
+ * (touch_merge_role()):
+ *
+ *   - glass at 0x5D, "9INJ" at 0x14: the glass and the injector, merged;
+ *   - glass at 0x5D, another GT911 at 0x14: the glass alone, 0x14 not read;
+ *   - nothing at 0x5D, "9INJ" at 0x14: the injector alone, touch_init()
+ *     maps it with the injector's map and never turns it;
+ *   - nothing at 0x5D, another GT911 at 0x14: the glass, which latched
+ *     0x14 at its reset, with the glass's mirrors, rotation and turn; no
+ *     injector is looked for.
+ *
+ * The injector's contacts are panel pixels of the UI's area, mapped
+ * unmirrored (touch_inject_map()) before they are merged with the glass's.
+ * A build with RCBENCH_TOUCH_INJECTOR=OFF compiles none of this; it
+ * addresses 0x14 only as the glass's alternate address, when nothing
+ * answers at 0x5D, and reads whatever answers there as the glass.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,6 +46,7 @@
 #include "esp_err.h"
 
 #include "touch.h"
+#include "touch_merge.h"
 #include "touch_types.h"
 
 #ifdef __cplusplus
@@ -41,27 +54,31 @@ extern "C" {
 #endif
 
 /** @brief The injector's I2C address: the GT911's second strap address. */
-#define TOUCH_INJECT_ADDR 0x14
+#define TOUCH_INJECT_ADDR TOUCH_MERGE_INJECT_ADDR
 
 /**
- * @brief Look for the injector on @p bus.
+ * @brief Look for the injector on @p bus beside the controller touch_init()
+ *        found.
  *
- * When the glass's controller answered on TOUCH_INJECT_ADDR, the glass's
- * controller is absent and the injector answered in its place, so no second
- * handle is made.  Never fails touch: an absent injector is the normal case.
+ * TOUCH_ROLE_INJECTOR: that controller is the injector, alone, and no
+ * second handle is made.  The glass at TOUCH_INJECT_ADDR: nothing is looked
+ * for.  The glass at 0x5D: 0x14 is probed, and attached only when it
+ * reports TOUCH_MERGE_INJECT_PRODUCT.  Never fails touch: an absent
+ * injector is the normal case.
  *
  * @param bus The touch bus.
- * @param glass_addr The address the glass's controller answered on.
+ * @param glass_addr The address that controller answered on.
+ * @param glass_role Its role (touch_merge_role()).
  * @param now_ms The clock.
  */
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
-                         uint32_t now_ms);
+                         touch_role_t glass_role, uint32_t now_ms);
 
 /**
  * @brief The map for the injector's contacts: panel pixels of the UI's
  *        BOARD_UI_H_RES x BOARD_UI_V_RES area, unmirrored.
- * @return The map; touch_init() also takes it for a controller that
- *         answers only at TOUCH_INJECT_ADDR.
+ * @return The map; touch_init() also takes it for the injector alone
+ *         (TOUCH_ROLE_INJECTOR).
  */
 touch_map_t touch_inject_map(void);
 

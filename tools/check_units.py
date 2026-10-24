@@ -5,7 +5,11 @@ The rule: a number and its unit symbol stand together, as in 40s, 6.00V,
 20ms, 1.6MB/s, 180°, 100mΩ and 4.8 to 6.0V.  A space lets a line wrap
 between the number and its unit.  A word after a number is not a unit and
 keeps its space (3 servos, 8 values, 115200 baud, 20 AWG), and so does an
-x between two numbers of a size (1024x600 has none to begin with).
+x between two numbers of a size (1024x600 has none to begin with).  A
+battery's cell count is a symbol too: 6S, so a capital S after a number is
+a cell count, never seconds.  A unit keeps its own case after a number in a
+label of capitals, as in HOLD 2s TO START; the texts the panel shows are
+held to that as well (find_caps()).
 
 Covered, each as the text a reader sees:
 
@@ -65,7 +69,7 @@ ALLOW = ROOT / "tools" / "check_units_allow.txt"
 # The unit symbols, re-derived from the tree.  Longest first, so that kHz is
 # tried before Hz and °C before °.  The panel's ui_unit_gap() decides by the
 # same list, k_unit_symbols in shared/ui/ui_text.c; test_check_units.py
-# holds the two to each other.
+# holds the two to each other.  S is a battery's cell count, as in 6S.
 UNITS = sorted("""
     kbit/s Mbit/s bit/s kB/s MB/s KB/s B/s KiB/s MiB/s °/s deg/s
     mAh mWh kWh Wh Ah
@@ -77,7 +81,7 @@ UNITS = sorted("""
     KiB MiB GiB kB KB MB GB B kbps Mbps bps
     px dBm dB rpm RPM eRPM fps ppm sps
     mm cm µm nm m kg g Ncm Nm N
-    µF μF uF nF pF mF F µH uH mH nH H K C
+    µF μF uF nF pF mF F µH uH mH nH H K C S
 """.split(), key=len, reverse=True)
 
 # A number: digits with decimal or group separators, a size such as
@@ -95,10 +99,26 @@ NUMBER = (r"(?:\d+(?:[.,]\d+)*(?:x\d+(?:[.,]\d+)*)?"
 # conversion, as in "%6s %-6s" or "%d %.*f"; a "**" after it closes
 # Markdown bold.
 PERCENT = r"%(?![-+#'\d\w]|\.[\d*]|\*[\w.])"
-UNIT = "|".join(re.escape(u) if u != "%" else PERCENT for u in UNITS)
+# An S before a hyphen is part of a name, as in ROXXY's 725 S-BEC.
+CELLS = r"S(?!-)"
+UNIT = "|".join(PERCENT if u == "%" else CELLS if u == "S"
+                else re.escape(u) for u in UNITS)
 PATTERN = re.compile(r"(?:(?<![\w.])|(?<=\.\.))(" + NUMBER
                      + r")([ \u00a0\u202f]+)(" + UNIT
                      + r")(?![\w=]|%(?!s\b))")
+
+# A unit keeps its own case after a number, in a label of capitals too:
+# HOLD 2s TO START, 500ms, 50Hz.  An upper-case form of a unit symbol of two
+# or more characters that is no unit symbol itself (MS, HZ, KHZ, MA, MV) is
+# a hit, with or without a space before it.  A single letter is left out:
+# S is the cell count, and G or M after a number is a name (5G) as often
+# as a unit.  So is a form that is a unit of its own, such as MΩ or RPM.
+UPPER = sorted({u.upper() for u in UNITS
+                if len(u) > 1 and u.upper() != u
+                and u.upper() not in UNITS}, key=len, reverse=True)
+CAPS = re.compile(r"(?:(?<![\w.])|(?<=\.\.))(" + NUMBER
+                  + r")[ \u00a0\u202f]?("
+                  + "|".join(re.escape(u) for u in UPPER) + r")(?![\w=])")
 
 # The C files outside ui_text.def whose string literals are text a screen
 # shows or a report on the card holds.
@@ -490,6 +510,40 @@ def find(path: str, text: str) -> list:
     return hits
 
 
+def find_caps(path: str, text: str) -> list:
+    """Finds a unit written in capitals after a number (CAPS).
+
+    Held are the texts the panel shows, where the labels of capitals are:
+    the string literals of ui_text.def and of STRING_FILES, and the ESC
+    profiles' texts.  Comments and documents are not, where MH and PPM
+    after a number are a bit's name and a protocol.
+
+    Args:
+        path: The file's path in the tree.
+        text: Its text.
+
+    Returns:
+        (line number, line) per hit.
+    """
+    if path.startswith(NOT_COVERED):
+        return []
+    if path.startswith(STRING_FILES) and path.endswith(C_SUFFIXES):
+        groups: list = []
+        c_parts(text, True, groups=groups)
+        view = mask(text, [part for group in groups for lit in group
+                           for part in lit])
+    elif path.startswith(PROFILE_DIR) and path.endswith(".json"):
+        view = mask(text, json_parts(text))
+    else:
+        return []
+    lines = text.split("\n")
+    hits = []
+    for m in CAPS.finditer(view):
+        row = text.count("\n", 0, m.start())
+        hits.append((row + 1, lines[row]))
+    return hits
+
+
 def main(argv: list) -> int:
     """Lists, checks or fixes every number-space-unit of the tree.
 
@@ -505,6 +559,7 @@ def main(argv: list) -> int:
         if ALLOW.exists() else []
     used = set()
     found = 0
+    capped = 0
     for path in tracked():
         full = ROOT / path
         if not full.is_file():
@@ -522,6 +577,13 @@ def main(argv: list) -> int:
             found += 1
             cuts.extend(gap)
             print(f"{path}:{row}: {line.strip()}")
+        for row, line in find_caps(path, text):
+            hit = [e for e in allow if e[0] == path and allows(e[1], line)]
+            if hit:
+                used.update(e[3] for e in hit)
+                continue
+            capped += 1
+            print(f"{path}:{row}: unit in capitals: {line.strip()}")
         if fix and cuts:
             drop = set(cuts)
             full.write_text("".join(ch for k, ch in enumerate(text)
@@ -529,10 +591,11 @@ def main(argv: list) -> int:
     stale = [e for e in allow if e[3] not in used]
     for path, part, _, num in stale:
         print(f"{ALLOW.name}:{num}: matches nothing: {path}: {part}")
-    if found or stale:
+    if found or capped or stale:
         print(f"{found} number(s) with a space before the unit, "
+              f"{capped} unit(s) in capitals, "
               f"{len(stale)} stale allowlist entr(y/ies)", file=sys.stderr)
-    return 1 if check and (found or stale) else 0
+    return 1 if check and (found or capped or stale) else 0
 
 
 if __name__ == "__main__":
