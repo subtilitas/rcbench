@@ -2805,7 +2805,7 @@ panel's language. It has two parts.
 
 **Panel firmware.** The version installed, a file picker, Upload with a
 progress bar, and the panel's answer as a line of text. The file is the
-release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than the panel's
+release asset `rcbench-panel-p4-vX.Y.Z.bin`. A file larger than the panel's
 slot, 8,126,464 bytes, is refused before a byte is sent. The panel checks
 the whole image before it asks anything: the ESP image header for the
 ESP32-P4 (chip ID 0x0012), the application's project name `rcbench-panel`, a version of the
@@ -4258,7 +4258,7 @@ Its result is on UPDATES.
 
 The 2s hold is the one confirmation: no question follows the download. The
 panel joins the home network within 30s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-v0.20.0.bin`.
+release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-p4-v0.20.0.bin`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
@@ -4309,7 +4309,7 @@ Current limitations:
   measured.
 - No certificate's dates are checked: mbedTLS is built without its expiry
   check (`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default).
-- A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and
+- A release whose assets are not named `rcbench-panel-p4-vX.Y.Z.bin` and
   `SHA256SUMS` cannot be downloaded.
 
 ## Outputs

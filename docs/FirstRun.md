@@ -11,7 +11,7 @@ Work down the list. Each step assumes the one above it passed.
 
 ## 0. Before power
 
-> ### Set the panel's UART switch to `UART1` before anything else
+> ### ESP32-S3 panel (0.22.x and older): set the UART switch to `UART1` before anything else
 >
 > A slide switch beside the **BOOT** and **RESET** buttons is marked
 > **`UART1`** and **`UART2`**. It selects what the bridged USB-C socket's
@@ -43,7 +43,12 @@ than burning a track.
 
 ## 1. Flash both boards
 
-What a bench loads, and how, for 0.22.1 depends on the release it runs:
+0.23.0 is the first release for the ESP32-P4 panel and a testing release
+([Building: Releases](Building.md#releases)). A bench with the ESP32-P4
+panel loads it as [From the release assets](#from-the-release-assets)
+describes. The ESP32-S3 panel does not take it: 0.22.1 is its last release.
+What a bench with the ESP32-S3 panel loads, and how, for 0.22.1 depends on
+the release it runs:
 
 | Bench runs | IOmcu | Panel |
 | --- | --- | --- |
@@ -94,8 +99,8 @@ format](Screens.md#the-sd-cards-format)).
 | Asset | Holds | For |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | the IOmcu's USB load: `rcbench-iomcu-install.uf2` |
-| `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | the panel's USB flash |
-| `rcbench-panel-vX.Y.Z.bin` | the panel's application alone, with the IOmcu image it offers over CAN | an update over Wi-Fi of a panel that runs 0.20.0 or later; not for USB |
+| `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | the panel's USB flash |
+| `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the IOmcu image it offers over CAN | an update over Wi-Fi of an ESP32-P4 panel; not for USB |
 | `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the three files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
@@ -114,19 +119,24 @@ Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
 
    The module restarts into slot A. Its console prints `rcbench-iomcu:
    running from slot A` every 3s ([below](#the-iomcus-partition-table)).
-3. **Panel.** Unpack `rcbench-panel-vX.Y.Z.zip` and connect the panel's
-   USB-C socket (bridged socket: switch on `UART1`, [§0](#0-before-power)).
-   In the unpacked folder, on a bench whose settings stay:
+3. **Panel.** Unpack `rcbench-panel-p4-vX.Y.Z.zip` and connect the
+   ESP32-P4 panel's USB-C socket. Which of the board's two sockets takes the
+   flash, and how the board enters download mode, is not traced. In the
+   unpacked folder, on a bench whose settings stay:
 
    ```bash
-   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+   esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash @flash_args
    ```
 
    On a new bench, or to start from the default settings:
 
    ```bash
-   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+   esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
    ```
+
+   The ESP32-S3 panel's last release, 0.22.1, is `rcbench-panel-v0.22.1.zip`
+   (no `p4` in the name), flashed with `--chip esp32s3` and the bridged
+   socket's switch on `UART1` ([§0](#0-before-power)).
 
    A browser flasher that writes one file at an offset, such as the ESP Web
    Tool, takes `rcbench-panel-merged.bin` at 0x0, with the same effect as
@@ -137,7 +147,7 @@ Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
 
 | What | Parts (`@flash_args`) | Merged image at 0x0 |
 | --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB at 0x9000) | kept | erased; the panel starts on its defaults |
+| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB; at 0xD000 on the ESP32-P4 panel, at 0x9000 on the ESP32-S3 panel) | kept | erased; the panel starts on its defaults |
 | Panel's stored board drawing | lost once; fetched again at link-up | lost once; fetched again at link-up |
 
 The IOmcu keeps its bindings, the supply's wiring and the current
@@ -477,7 +487,7 @@ cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
 # panel
-idf.py -C firmware/panel set-target esp32s3
+idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 ```

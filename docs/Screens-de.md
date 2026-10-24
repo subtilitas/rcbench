@@ -3097,7 +3097,7 @@ der Sprache des Panels. Sie hat zwei Teile.
 
 **Panel-Firmware.** Die installierte Version, eine Dateiauswahl, Hochladen
 mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die Datei
-ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei, die größer
+ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei, die größer
 als der Slot des Panels ist, 8 126 464 Bytes, wird abgewiesen, bevor ein
 Byte gesendet ist. Das Panel prüft das ganze Image, bevor es etwas fragt:
 den ESP-Image-Header für den ESP32-P4 (Chip-ID 0x0012), den Projektnamen `rcbench-panel`
@@ -4678,7 +4678,7 @@ sie nichts. Ihr Ergebnis steht auf UPDATES.
 Das Halten über 2s ist die einzige Bestätigung: Nach dem Download folgt
 keine Frage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz
 und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
-`rcbench-panel-v0.20.0.bin`. GitHub beantwortet beide mit einem Redirect zu
+`rcbench-panel-p4-v0.20.0.bin`. GitHub beantwortet beide mit einem Redirect zu
 seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 `github.com`, `release-assets.githubusercontent.com` und
 `objects.githubusercontent.com`. Dann:
@@ -4732,7 +4732,7 @@ Aktuelle Einschränkungen:
 - Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine
   Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von
   ESP-IDF).
-- Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und
+- Ein Release, dessen Dateien nicht `rcbench-panel-p4-vX.Y.Z.bin` und
   `SHA256SUMS` heißen, lässt sich nicht laden.
 
 ## Outputs

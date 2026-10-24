@@ -592,10 +592,12 @@ later releases are for the 7-inch ESP32-P4 display board from Waveshare.
 The panel's check reads GitHub's latest release with RELEASES set to
 STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
 TESTING; STABLE reads those 10 as well when the latest release is past the
-line and newer than the running build. On both settings it offers only a 0.22.x patch release newer than
-the version it runs ([Screens: The release line](Screens.md#the-release-line)).
+line and newer than the running build. On both settings the ESP32-S3
+panel offers only a 0.22.x patch release newer than the version it runs,
+and the ESP32-P4 panel any release newer than the version it runs
+([Screens: The release line](Screens.md#the-release-line)).
 A release also loads by hand: its
-`rcbench-panel-vX.Y.Z.bin` through the panel's browser page, or its
+`rcbench-panel-p4-vX.Y.Z.bin` through the panel's browser page, or its
 archives over USB (Universal Serial Bus), as in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's
 `rcbench-iomcu-vX.Y.Z.zip` and the image the panel carries are of the same

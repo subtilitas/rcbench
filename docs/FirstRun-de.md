@@ -25,7 +25,7 @@ das Oszilloskop und nicht auf einen Propeller.
 **Strombegrenzung:** so niedrig, dass ein kurzgeschlossener Output sie
 auslöst, statt eine Leiterbahn zu verbrennen.
 
-> ### Den UART-Schalter des Panels vor allem anderen auf `UART1` stellen
+> ### ESP32-S3-Panel (0.22.x und älter): den UART-Schalter vor allem anderen auf `UART1` stellen
 >
 > Neben den Tastern **BOOT** und **RESET** sitzt ein Schiebeschalter,
 > beschriftet mit **`UART1`** und **`UART2`**. Er wählt aus, womit die
@@ -46,7 +46,12 @@ auslöst, statt eine Leiterbahn zu verbrennen.
 
 ## 1. Beide Platinen flashen
 
-Was eine Bench für 0.22.1 lädt, und wie, hängt vom Release ab, das sie hat:
+0.23.0 ist das erste Release für das ESP32-P4-Panel und ein Testing-Release
+([Bauen: Releases](Building-de.md#releases)). Eine Bench mit dem
+ESP32-P4-Panel lädt es, wie [Aus den Release-Assets](#aus-den-release-assets)
+beschreibt. Das ESP32-S3-Panel nimmt es nicht: 0.22.1 ist sein letztes
+Release. Was eine Bench mit dem ESP32-S3-Panel für 0.22.1 lädt, und wie,
+hängt vom Release ab, das sie hat:
 
 | Bench hat | IOmcu | Panel |
 | --- | --- | --- |
@@ -101,8 +106,8 @@ SD-Karte](Screens-de.md#das-format-der-sd-karte)).
 | Asset | Enthält | Für |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des IOmcu: `rcbench-iomcu-install.uf2` |
-| `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | den USB-Flash des Panels |
-| `rcbench-panel-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem IOmcu-Image, das es über CAN anbietet | ein Update über WLAN auf einem Panel mit 0.20.0 oder neuer; nicht für USB |
+| `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | den USB-Flash des Panels |
+| `rcbench-panel-p4-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem IOmcu-Image, das es über CAN anbietet | ein Update über WLAN auf einem ESP32-P4-Panel; nicht für USB |
 | `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der drei Dateien oben | die Prüfung in Schritt 1 |
 
 Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
@@ -123,20 +128,26 @@ Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
    Das Modul startet neu in Slot A. Seine Konsole gibt alle 3s
    `rcbench-iomcu: running from slot A` aus
    ([unten](#die-partitionstabelle-des-iomcu)).
-3. **Panel.** `rcbench-panel-vX.Y.Z.zip` entpacken und die USB-C-Buchse des
-   Panels anschließen (gebrückte Buchse: Schalter auf `UART1`,
-   [§0](#0-vor-dem-einschalten)). Im entpackten Ordner, auf einer Bench,
-   deren Einstellungen bleiben:
+3. **Panel.** `rcbench-panel-p4-vX.Y.Z.zip` entpacken und die USB-C-Buchse
+   des ESP32-P4-Panels anschließen. Welche der zwei Buchsen des Boards das
+   Flashen annimmt und wie das Board in den Download-Modus kommt, ist nicht
+   nachverfolgt. Im entpackten Ordner, auf einer Bench, deren Einstellungen
+   bleiben:
 
    ```bash
-   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+   esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash @flash_args
    ```
 
    Auf einer neuen Bench, oder um mit den Standardeinstellungen zu beginnen:
 
    ```bash
-   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+   esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
    ```
+
+   Das letzte Release des ESP32-S3-Panels, 0.22.1, ist
+   `rcbench-panel-v0.22.1.zip` (ohne `p4` im Namen), geflasht mit
+   `--chip esp32s3` und dem Schalter der gebrückten Buchse auf `UART1`
+   ([§0](#0-vor-dem-einschalten)).
 
    Ein Browser-Flasher, der eine Datei an einen Offset schreibt, etwa das
    ESP Web Tool, nimmt `rcbench-panel-merged.bin` bei 0x0, mit derselben
@@ -148,7 +159,7 @@ Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
 
 | Was | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
 | --- | --- | --- |
-| Einstellungen und WLAN-Einstellungen des Panels, im NVS (non-volatile storage, 24KiB bei 0x9000) | bleiben | gelöscht; das Panel startet mit den Standardwerten |
+| Einstellungen und WLAN-Einstellungen des Panels, im NVS (non-volatile storage, 24KiB; beim ESP32-P4-Panel bei 0xD000, beim ESP32-S3-Panel bei 0x9000) | bleiben | gelöscht; das Panel startet mit den Standardwerten |
 | Gespeicherte Platinenzeichnung des Panels | einmal verloren; beim Link-Aufbau neu geladen | einmal verloren; beim Link-Aufbau neu geladen |
 
 Der IOmcu behält seine Bindungen, die Verdrahtung der Versorgung und
@@ -511,7 +522,7 @@ cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
 # Panel
-idf.py -C firmware/panel set-target esp32s3
+idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 ```

@@ -45,7 +45,7 @@ name, as a join from WI-FI does. The version text is read strictly
 (`shared/fwupdate` below), and only a release newer than the running build
 is offered. A 2s hold on
 the panel, after a check found a newer release, downloads that release's
-`rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` into PSRAM (pseudo-static
+`rcbench-panel-p4-vX.Y.Z.bin` and `SHA256SUMS` into PSRAM (pseudo-static
 random-access memory), following at most 3 redirects and only to
 `github.com`, `release-assets.githubusercontent.com` and
 `objects.githubusercontent.com`. Every server's certificate chain is checked
