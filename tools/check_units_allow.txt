@@ -30,6 +30,9 @@ docs/Performance-de.md: nothing taken for 30 s
 docs/Screens.md: I storage: SK64G mounted, exFAT, 61002 MB
 docs/Screens-de.md: I storage: SK64G mounted, exFAT, 61002 MB
 test/host/test_storage.c: "SK64G mounted, 61002 MB"
+docs/Building.md: clk: 32 kHz clock not found, switching to internal 150 kHz
+docs/Building-de.md: `clk: 32 kHz clock not found, switching to
+docs/Building-de.md: internal 150 kHz oscillator`
 
 # What curl prints for the rate test, by its -w format: `%{size_download} B`.
 docs/Performance.md: `200 16777216 B`
