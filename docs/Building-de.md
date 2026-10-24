@@ -194,10 +194,11 @@ Der Touch-Bus ist `I2C_NUM_0` mit `BOARD_I2C_PIN_SDA` GPIO7 und
 7-Zoll-Display-Board mit ESP32-P4 (Schaltplan vom 2025-09-25) erreicht er den
 Touch-Controller GT911 (0x5D), den Audio-Codec ES8311, den Audio-ADC ES7210,
 den Kameraanschluss und einen 4-poligen I2C-Header. Der Header führt SDA
-(GPIO7) und SCL (GPIO8) dieses Busses. Die Reihenfolge seiner vier Pins und
-was seine anderen beiden Pins führen, ist aus dem Schaltplan in diesem
-Repository nicht bekannt und nicht gemessen: SDA und SCL vor dem ersten
-Anschluss mit einem Multimeter an der vorliegenden Platine finden. Ob der Bus
+(GPIO7) und SCL (GPIO8) dieses Busses. Der Siebdruck
+ordnet seine vier Pins VCC, GND, SDA, SCL (Foto der Platine vom Projektinhaber,
+2026-10-22). Ein Jumper neben dem Pin VCC wählt 5V oder 3V3 dafür; seine
+Werksstellung ist nicht bekannt. Den Jumper vor dem ersten Anschluss mit einem
+Multimeter prüfen. Ob der Bus
 auf der Platine Pull-ups hat, ist nicht gemessen. Der Touch-Injector
 (`testbench/touch-injector/README.md`) und die Analyser-Leitungen aus
 `testbench/WIRING.md` schließen hier an. Der Knopf liegt nicht an diesem Header: Er hat einen eigenen Bus
@@ -723,7 +724,7 @@ Stable-Release. 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel,
 und spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von
 Waveshare. Die Suche des Panels liest mit RELEASES auf STABLE unter SETUP >
 UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 10
-neuesten Releases; Die Linie des ESP32-P4-Panels ist ohne Obergrenze: In beiden Stellungen
+neuesten Releases. Die Linie des ESP32-P4-Panels ist ohne Obergrenze: In beiden Stellungen
 bietet es jedes Release an, das neuer ist als die Version, die es hat. Die
 Grenze 0.22.x mit dem zweiten Lesen, das STABLE dafür macht, gehört nur zur
 Linie des ESP32-S3-Panels

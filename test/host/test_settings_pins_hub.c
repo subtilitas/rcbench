@@ -722,7 +722,7 @@ TEST_CASE(the_hub_holds_nine_tiles_and_sd_card_is_the_third)
     CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 2), -1);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD-KARTE");
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto-Logs");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User-Logs");
     ui_text_set_language(UI_LANG_EN);

@@ -28,6 +28,9 @@
  * - a_new_protocol_or_pin_set_redraws_the_row_and_a_throttle_keeps_it
  * - a_binding_that_reads_with_no_motor_pin_leaves_not_read
  * - a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not
+ * - arm_with_no_motor_pin_is_dimmed_and_refused_with_its_reason
+ * - a_pin_lost_under_a_held_arm_ends_the_hold
+ * - disarm_stays_live_with_no_motor_pin
  *
  * SPDX-License-Identifier: MIT
  */
@@ -626,6 +629,68 @@ TEST_CASE(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not)
     CHECK(fb[ARM_Y * W + ARM_X] != mark);
 }
 
+/*
+ * A binding that reads with no motor pin: ARM is drawn dimmed, a tap says
+ * why and no hold arms.  A pin brings the green and the arm back.
+ */
+TEST_CASE(arm_with_no_motor_pin_is_dimmed_and_refused_with_its_reason)
+{
+    fresh();
+    motor_screen_set_throttle_pins(1u << 2, true);
+    draw_once();
+    const gfx_color_t live = arm_px();
+    CHECK(green_of(live) > 120);
+
+    motor_screen_set_throttle_pins(0u, true);
+    tick_for(1);
+    draw_once();
+    CHECK(arm_px() != live);
+    CHECK(green_of(arm_px()) < green_of(live));
+
+    ui_router_set_alert(NULL);
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_NO_PIN));
+
+    /* Unread pins are not a refusal: the row says PINS NOT READ. */
+    ui_router_set_alert(NULL);
+    motor_screen_set_throttle_pins(0u, false);
+    tick_for(1);
+    draw_once();
+    CHECK_EQ(arm_px(), live);
+
+    motor_screen_set_throttle_pins(1u << 2, true);
+    tick_for(1);
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+}
+
+/* The pin goes while ARM is held: the hold ends and arms nothing. */
+TEST_CASE(a_pin_lost_under_a_held_arm_ends_the_hold)
+{
+    fresh();
+    motor_screen_set_throttle_pins(1u << 2, true);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    motor_screen_set_throttle_pins(0u, true);
+    tick_for(HOLD_TICKS);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
+/* An armed bench whose binding empties can still be switched to SAFE. */
+TEST_CASE(disarm_stays_live_with_no_motor_pin)
+{
+    fresh();
+    motor_screen_set_throttle_pins(1u << 2, true);
+    motor_screen_set_armed(true);
+    motor_screen_set_throttle_pins(0u, true);
+    tick_for(1);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+}
+
 int main(void)
 {
     RUN(arming_returns_the_throttle_to_zero);
@@ -650,5 +715,8 @@ int main(void)
     RUN(a_new_protocol_or_pin_set_redraws_the_row_and_a_throttle_keeps_it);
     RUN(a_binding_that_reads_with_no_motor_pin_leaves_not_read);
     RUN(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not);
+    RUN(arm_with_no_motor_pin_is_dimmed_and_refused_with_its_reason);
+    RUN(a_pin_lost_under_a_held_arm_ends_the_hold);
+    RUN(disarm_stays_live_with_no_motor_pin);
     return test_summary("motor_throttle");
 }

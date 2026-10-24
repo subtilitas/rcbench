@@ -187,9 +187,10 @@ The touch bus is `I2C_NUM_0` with `BOARD_I2C_PIN_SDA` GPIO7 and
 ESP32-P4 display board (schematic of 2025-09-25) it reaches the GT911 touch
 controller (0x5D), the ES8311 audio codec, the ES7210 audio ADC, the camera
 connector and a 4-pin I2C header. The header carries this bus's SDA (GPIO7)
-and SCL (GPIO8). The order of its four pins, and what its other two pins
-carry, are not known from the schematic in this repository and not measured:
-find SDA and SCL with a meter against the board in hand before a lead goes on.
+and SCL (GPIO8). The silkscreen
+orders its four pins VCC, GND, SDA, SCL (the owner's photo of the board,
+2026-10-22). A jumper by the VCC pin selects 5V or 3V3 for it; its factory
+position is not known. Check the jumper with a meter before a lead goes on.
 Whether the bus has pull-ups on the board is not measured. The touch
 injector (`testbench/touch-injector/README.md`)
 and the analyser leads of `testbench/WIRING.md` connect here. The knob is not on this header: it has its own bus
@@ -683,7 +684,7 @@ stable release. 0.22 is the last release line for the ESP32-S3 panel, and
 later releases are for the 7-inch ESP32-P4 display board from Waveshare.
 The panel's check reads GitHub's latest release with RELEASES set to
 STABLE on SETUP > UPDATES, the default, and the 10 newest releases with
-TESTING; The ESP32-P4 panel's line is uncapped: on both settings
+TESTING. The ESP32-P4 panel's line is uncapped: on both settings
 it offers any release newer than the version it runs. The 0.22.x cap, with
 the second read STABLE makes for it, belongs to the ESP32-S3 panel's
 line only ([Screens: The release line](Screens.md#the-release-line)).

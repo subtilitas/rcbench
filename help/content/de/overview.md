@@ -37,9 +37,9 @@ Die Marke folgt den Fähigkeits-Bits, die der IOmcu beim Link-Aufbau meldet:
 
 | Kachel | Ohne Marke, wenn |
 |---|---|
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, ANSCHLÜSSE eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, INTERFACES eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge (Pulsweitenmodulation) ansteuert |
-| SUPPLY | der PD mini unter SETUP, ANSCHLÜSSE eingeschaltet ist |
+| SUPPLY | der PD mini unter SETUP, INTERFACES eingeschaltet ist |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | nie markiert: sie enthalten keine Messung |
 

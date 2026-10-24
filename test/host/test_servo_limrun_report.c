@@ -190,6 +190,77 @@ TEST_CASE(a_first_connect_no_servo_answers_ends_as_not_kst)
     CHECK(strstr(g.report, "programming port session failed") == NULL);
 }
 
+/* A run that ended before its first search says what was asked and that no
+ * search ran, in each mode; a run that searched keeps the plain mode line.
+ * The German words are held by test_text.c. */
+TEST_CASE(the_mode_line_of_a_run_that_never_searched_says_so)
+{
+    for (int mode = 0; mode < 3; ++mode) {
+        rig_init(0u, false);
+        g.cfg.program = mode == 1;
+        g.cfg.set_pulses = mode == 2;
+        g.fail_at = 1u;
+        g.fail_no_servo = true;
+        CHECK(start());
+        run_for(RUN_MS);
+        CHECK(!g.run.searched);
+        CHECK(strstr(g.report, "(no search ran)") != NULL);
+        CHECK(strstr(g.report, "Searched:") == NULL);
+        if (mode == 0) {
+            CHECK(strstr(g.report, "search only (no search ran), nothing "
+                                   "written to the servo") != NULL);
+        }
+    }
+    rig_init(0u, false);
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(g.run.searched);
+    CHECK(strstr(g.report, "(no search ran)") == NULL);
+}
+
+/* The pulses are set before the first search: a run whose pulse write landed
+ * and that ended on the leave before any search says the pulses were set,
+ * and that no search ran; one whose write was refused or read back other
+ * than 1000 and 2000us says they are still to be set. */
+TEST_CASE(the_mode_line_says_set_pulses_that_landed_without_a_search)
+{
+    rig_init(0u, false);
+    g.cfg.program = false;
+    g.cfg.set_pulses = true;
+    g.leave_fails = true;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(!g.run.searched);
+    CHECK_EQ(g.pulse_ops, 1u);
+    CHECK(strstr(g.report, "search only (no search ran); PULSE LOWER and "
+                           "PULSE UPPER set to 1000 and 2000us first")
+          != NULL);
+    CHECK(strstr(g.report, "to be set") == NULL);
+
+    rig_init(0u, false);
+    g.cfg.program = false;
+    g.cfg.set_pulses = true;
+    g.refuse_write = 1u;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(!g.run.searched);
+    CHECK(strstr(g.report, "to be set to 1000 and 2000us first (no search "
+                           "ran)") != NULL);
+
+    /* A write that did not land reads back the old values: the pulses are
+     * not said to be set. */
+    rig_init(0u, false);
+    g.cfg.program = false;
+    g.cfg.set_pulses = true;
+    g.lose_write = 1u;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(!g.run.searched);
+    CHECK(!g.run.pulses_landed);
+    CHECK(strstr(g.report, "to be set to 1000 and 2000us first (no search "
+                           "ran)") != NULL);
+}
+
 /* Any other end of the first CONNECT is the session's failure. */
 TEST_CASE(a_first_connect_that_fails_otherwise_ends_as_a_session_failure)
 {
@@ -240,6 +311,8 @@ int main(void)
     RUN(every_reason_and_phase_has_its_words);
     RUN(the_share_the_overset_and_the_final_value);
     RUN(a_first_connect_no_servo_answers_ends_as_not_kst);
+    RUN(the_mode_line_of_a_run_that_never_searched_says_so);
+    RUN(the_mode_line_says_set_pulses_that_landed_without_a_search);
     RUN(a_first_connect_that_fails_otherwise_ends_as_a_session_failure);
     RUN(a_later_connect_that_fails_ends_as_a_session_failure);
     RUN(no_servo_answering_outside_a_connect_ends_nothing);

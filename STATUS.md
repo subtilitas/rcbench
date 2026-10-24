@@ -387,9 +387,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 346 | 339 | 98.0% |
+| `shared/ui/ui_widgets.c` | 350 | 343 | 98.0% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
-| `shared/ui/ui_band.c` | 270 | 257 | 95.2% |
+| `shared/ui/ui_band.c` | 272 | 259 | 95.2% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
@@ -402,17 +402,17 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
-| `shared/ui/motor_screen.c` | 260 | 253 | 97.3% |
-| `shared/ui/motor_events.c` | 165 | 161 | 97.6% |
+| `shared/ui/motor_screen.c` | 262 | 255 | 97.3% |
+| `shared/ui/motor_events.c` | 169 | 165 | 97.6% |
 | `shared/ui/motor_draw.c` | 359 | 347 | 96.7% |
 | `shared/ui/motor_workbench.c` | 167 | 160 | 95.8% |
-| `shared/ui/motor_settings_page.c` | 186 | 176 | 94.6% |
+| `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
 | `shared/ui/supply_screen.c` | 446 | 440 | 98.7% |
 | `shared/ui/supply_events.c` | 309 | 307 | 99.3% |
 | `shared/ui/supply_draw.c` | 392 | 383 | 97.7% |
 | `shared/ui/ui_keypad.c` | 283 | 281 | 99.3% |
-| `shared/ui/ui_setting_keypad.c` | 85 | 85 | 100.0% |
+| `shared/ui/ui_setting_keypad.c` | 117 | 114 | 97.4% |
 | `shared/ui/ui_textkey.c` | 356 | 345 | 96.9% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
@@ -422,8 +422,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_screen_draw.c` | 529 | 516 | 97.5% |
 | `shared/ui/servo_settings_panel.c` | 510 | 495 | 97.1% |
 | `shared/ui/servo_settings_draw.c` | 340 | 333 | 97.9% |
-| `shared/ui/servo_test_panel.c` | 431 | 419 | 97.2% |
-| `shared/ui/servo_limit_panel.c` | 408 | 369 | 90.4% |
+| `shared/ui/servo_test_panel.c` | 433 | 421 | 97.2% |
+| `shared/ui/servo_limit_panel.c` | 410 | 371 | 90.5% |
 | `shared/ui/servo_workbench.c` | 337 | 335 | 99.4% |
 | `shared/ui/kst_panel.c` | 339 | 335 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 160 | 160 | 100.0% |
@@ -449,7 +449,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_select.c` | 55 | 55 | 100.0% |
 | `shared/ui/log_text.c` | 138 | 136 | 98.5% |
 | `shared/ui/files_screen.c` | 620 | 593 | 95.7% |
-| `shared/ui/files_draw.c` | 332 | 321 | 96.7% |
+| `shared/ui/files_draw.c` | 335 | 324 | 96.7% |
 | `shared/ui/files_events.c` | 208 | 207 | 99.5% |
 | `shared/ui/settings_screen.c` | 494 | 488 | 98.8% |
 | `shared/ui/settings_draw.c` | 220 | 215 | 97.7% |
@@ -470,7 +470,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 271 | 270 | 99.6% |
 | `shared/ui/upd_screen.c` | 611 | 588 | 96.2% |
-| `shared/settings/settings.c` | 370 | 363 | 98.1% |
+| `shared/settings/settings.c` | 385 | 378 | 98.2% |
 | `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -503,8 +503,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_test.c` | 783 | 769 | 98.2% |
 | `shared/servo/servo_str.c` | 43 | 43 | 100.0% |
 | `shared/servo/servo_report.c` | 511 | 511 | 100.0% |
-| `shared/servo/servo_limrun.c` | 625 | 600 | 96.0% |
-| `shared/servo/servo_limrun_report.c` | 263 | 259 | 98.5% |
+| `shared/servo/servo_limrun.c` | 626 | 601 | 96.0% |
+| `shared/servo/servo_limrun_report.c` | 267 | 263 | 98.5% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
@@ -563,7 +563,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
 | `shared/bench/bench_state.c` | 220 | 216 | 98.2% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
-| `shared/outputs/outputs_pages.c` | 311 | 302 | 97.1% |
+| `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 517 | 506 | 97.9% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 236 | 234 | 99.2% |
@@ -628,7 +628,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_page.c` | 149 | 144 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **57005** | **55805** | **97.9%** |
+| **total** | **57080** | **55877** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -302,7 +302,10 @@ int test_blocked(void)
     if (!value_live()) {
         return SERVO_STR_START_NOT_ARMED;
     }
-    if (!servo_test_drained(&s.test) || servo_limrun_running(&s.lim)
+    if (servo_limrun_running(&s.lim)) {
+        return SERVO_STR_START_LIMIT_RUNS;
+    }
+    if (!servo_test_drained(&s.test)
         || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return SERVO_STR_START_BUSY;
     }

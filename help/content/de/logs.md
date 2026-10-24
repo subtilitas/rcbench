@@ -12,7 +12,7 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD-KARTE](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD-KARTE.` oder `USER-LOGS AUS unter SETUP > SD-KARTE.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD CARD](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD CARD.` oder `USER-LOGS AUS unter SETUP > SD CARD.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
 
 ## Eine Karte, die sich nicht einbinden lässt
 
@@ -24,7 +24,7 @@ Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Die Liste zeigt 7 Zeilen auf einmal, jede 48px (etwa 7,2mm) des Glases zum Tippen; jede Zeile ist eine Datei mit ihrer Größe.
+Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD CARD`. Die Liste zeigt 7 Zeilen auf einmal, jede 48px (etwa 7,2mm) des Glases zum Tippen; jede Zeile ist eine Datei mit ihrer Größe.
 
 | Tab | Ordner | Enthält |
 |---|---|---|
@@ -73,9 +73,9 @@ Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gesta
 
 Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als Protokoll 4.18, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
 
-AUTO-LOGS aus unter [SETUP > SD-KARTE](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; USER-LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `USER-LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
+AUTO-LOGS aus unter [SETUP > SD CARD](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; USER-LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `USER-LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
 
-Ordner Auto-Logs und Ordner User-Logs unter [SETUP > SD-KARTE](setup.md#sd-karte) stellen andere Ordner ein. Ein geänderter Ordner gilt ab der nächsten Datei, nummeriert nach dem, was dieser Ordner enthält. Dateien in einem vorher benutzten Ordner werden erst wieder gelistet, wenn der Ordner zurückgestellt ist.
+Ordner Auto-Logs und Ordner User-Logs unter [SETUP > SD CARD](setup.md#sd-card) stellen andere Ordner ein. Ein geänderter Ordner gilt ab der nächsten Datei, nummeriert nach dem, was dieser Ordner enthält. Dateien in einem vorher benutzten Ordner werden erst wieder gelistet, wenn der Ordner zurückgestellt ist.
 
 Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
 
