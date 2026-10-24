@@ -22,6 +22,7 @@
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "wall_clock.h"
 
 #include "files_int.h"
 
@@ -492,10 +493,13 @@ static void draw_info(gfx_canvas_t *c)
     y += FS_INFO_LH;
     if (reading) {
         snprintf(value, sizeof(value), "%s", TR(FM_INFO_READING));
-    } else if (s.info.mtime < 0) {
+    } else if (!wall_stamp_known(s.info.mtime)) {
+        /* No stamp, or one FatFs made from an unset clock: any time in
+         * 1980 (wall_clock.h).  The panel claims no date it lacks. */
         snprintf(value, sizeof(value), "%s", TR(FM_INFO_NO_TIME));
     } else {
-        files_time_text(value, sizeof(value), s.info.mtime);
+        /* The stamp in the zone SETUP holds, as FatFs wrote it. */
+        files_time_text(value, sizeof(value), wall_local_s(s.info.mtime));
     }
     info_row(c, y, TR(FM_INFO_TIME), value, UI_TEXT);
     y += FS_INFO_LH;

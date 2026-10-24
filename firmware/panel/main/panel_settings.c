@@ -8,21 +8,28 @@
  * control task reads it from there.  settings_changed() is the settings
  * model's observer; bring_up() (panel_boot.c) publishes every value once.
  * Screen rotation goes to the display (apply_rotation()), whose flush
- * turns picture and touch together from the next frame.
+ * turns picture and touch together from the next frame.  The time zone
+ * goes to the C library (publish_time_zone()), which FatFs's stamps and
+ * every localtime() read from the next call.
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "card_tree.h"
 #include "display.h"
 #include "endpoints_link.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "panel.h"
 #include "panel_main.h"
 #include "settings.h"
 #include "settings_sensors.h"
 #include "tone_link.h"
+#include "wall_clock.h"
 
 /*
  * A setting the far end keeps a copy of has changed.
@@ -172,10 +179,45 @@ static void apply_rotation(void)
     display_set_turned(settings_get_int(SET_SCREEN_ROT) != 0);
 }
 
+void publish_time_zone(void)
+{
+    /* setenv() and tzset() take newlib's environment and zone locks; a
+     * localtime_r() on the card's task reads the zone under the same
+     * zone lock, so it sees the old zone or the new one whole. */
+    (void)setenv("TZ", wall_zone_posix(settings_get_int(SET_TIME_ZONE)), 1);
+    tzset();
+}
+
+void log_clock_at_start(void)
+{
+    static const char *TAG = "clock";
+    struct timeval tv;
+    (void)gettimeofday(&tv, NULL);
+    if (!wall_valid((int64_t)tv.tv_sec)) {
+        /* A power-on: the board has no RTC chip, and the ESP32-P4's RTC
+         * timer starts at 1970 with the power. */
+        ESP_LOGI(TAG, "not set (%llds since 1970); file dates read 1980 "
+                 "until an NTP answer", (long long)tv.tv_sec);
+        return;
+    }
+    char utc[32];
+    char local[40];
+    struct tm tm;
+    const time_t t = tv.tv_sec;
+    (void)localtime_r(&t, &tm);
+    if (strftime(local, sizeof(local), "%Y-%m-%d %H:%M:%S %Z", &tm) == 0u) {
+        local[0] = '\0';
+    }
+    ESP_LOGI(TAG, "%s (%s), kept across the restart",
+             wall_utc_text(utc, sizeof(utc), (int64_t)tv.tv_sec), local);
+}
+
 void settings_changed(setting_id_t id)
 {
     if (id == SET_SCREEN_ROT) {
         apply_rotation();
+    } else if (id == SET_TIME_ZONE) {
+        publish_time_zone();
     } else if (id == SET_LOG_AUTO) {
         publish_log_auto();
     } else if (id == SET_MOTOR_POLES) {

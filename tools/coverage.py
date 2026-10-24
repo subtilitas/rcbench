@@ -301,6 +301,7 @@ TRACKED = [
     "shared/webaccess/wa_zip.c",
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
+    "shared/clock/wall_clock.c",
 ]
 
 # Sources under shared/ that are tables and hold no function: gcc gives them

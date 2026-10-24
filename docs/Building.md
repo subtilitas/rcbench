@@ -31,6 +31,7 @@ rcbench/
     sense/                INA228 and INA3221 current monitor drivers
     fwupdate/             panel firmware image check · upload staging · installer
     webaccess/            Wi-Fi session · card listing and ZIP stream · the page · mDNS
+    clock/                wall clock rules: real date or not · file stamps · time zones · the NTP request
     text/                 the interface's words, every language in one table (header only)
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
@@ -81,7 +82,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ✔ | ✔ | ✔ |
-| `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
+| `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | ✔ | | ✔ |
 | `openyge` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ✔ | ✔ | ✔ |
 
@@ -177,6 +178,49 @@ breakout's own pull-ups go to its VDD, here 3.3V.
 
 The knob is off until SETUP, PANEL, Rotary knob is switched on.
 [Screens](Screens.md#panel-the-rotary-knob) describes what it does.
+
+## The panel's clock
+
+The 7-inch ESP32-P4 display board (Waveshare ESP32-P4-WIFI6-Touch-LCD-7B,
+schematic of 2025-09-25) carries no RTC (real-time clock) chip. Its I2C bus
+(GPIO7, GPIO8) reaches the GT911 touch controller (0x5D), the ES8311 audio
+codec, the ES7210 audio ADC (analog-to-digital converter), the camera
+connector and the 4-pin I2C header; none of them keeps time. Waveshare's
+board support package 3.0.1 and its demo firmware (commit 9fcd49a8 of
+2026-08-21) have no RTC driver; the demo sets its clock by SNTP (Simple
+Network Time Protocol). The board has the ESP32-P4's own clock parts:
+
+| Part | What it is | Use in the panel |
+| --- | --- | --- |
+| Y3 | 32.768kHz crystal, 2.0 x 1.2mm, 22pF to GND on each side, 10MOhm across, on GPIO0 (XTAL_32K_N) and GPIO1 (XTAL_32K_P) | not used: the RTC timer runs from the internal RC oscillator (ESP-IDF's default, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| BAT1 | CR1220 coin-cell holder, "RTC BAT", on the ESP32-P4's VDD_BAT (pin 102); 3V3 charges it through D1 (B5819WS) with no series resistor; C41 1uF | not used. Waveshare: rechargeable 3 to 3.3V cells only. Whether a board ships with a cell is not known |
+
+The ESP32-P4 can keep its RTC timer running on VDD_BAT, but only from deep
+sleep: Espressif's battery backup guide for the ESP32-P4 (esp-iot-solution,
+"ESP32-P4 Battery Backup Solution") switches the low-power domain to VBAT
+in the sleep configuration, calls it a test scheme, and patches ESP-IDF to
+do it. The panel loses its power without warning, from the link cable or
+the switch, and never enters deep sleep. A cell in BAT1 therefore keeps no
+time for the panel.
+
+What the panel does instead
+([Screens](Screens.md#panel-time-zone-and-the-clock)):
+
+- A power-on starts the system time at 1970-01-01 00:00:00 UTC. A software
+  restart keeps it: ESP-IDF keeps the time in the RTC timer and two of its
+  store registers, which only a power-on resets
+  (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, the default).
+- Each join of the home network asks `pool.ntp.org` once
+  (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`).
+  lwIP's random start-up delay is off (`CONFIG_LWIP_SNTP_STARTUP_DELAY=n`),
+  so the request goes out at the join.
+- FatFs stamps files from `time()` through `localtime_r()`
+  (ESP-IDF `components/fatfs/diskio/diskio.c`, `get_fattime()`), so SETUP >
+  PANEL's Time zone applies to the stamps. A year before 1980 is stamped
+  as 1980.
+- The SNTP client runs in lwIP's task on core 0 and the request is moved on
+  by the Wi-Fi worker task. The control task on core 1, which owns STOP and
+  the heartbeat, reads no wall time and waits for none of it.
 
 ## Commands
 

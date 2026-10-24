@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 
 #include "card_tree.h"
 #include "log_name.h"
@@ -180,6 +181,8 @@ static bool s_tone_fed;
 static bool s_enc_on;
 /* Screen rotation stored at 180. */
 static bool s_rot_on;
+/* The time zone stored at LOS ANGELES, the longest option. */
+static bool s_tz_on;
 
 /* The settings model's ARMED source, as the panel's (panel_boot.c). */
 static bool router_armed(void)
@@ -197,6 +200,9 @@ static bool lang_load(float *values, int count)
     }
     if (s_rot_on && (int)SET_SCREEN_ROT < count) {
         values[SET_SCREEN_ROT] = 1.0f;
+    }
+    if (s_tz_on && (int)SET_TIME_ZONE < count) {
+        values[SET_TIME_ZONE] = 7.0f;
     }
     if (s_enc_on && (int)SET_ENC_CENTRE < count) {
         values[SET_ENC_EN]     = 1.0f;
@@ -2299,6 +2305,10 @@ static void band_view(const char *view, ui_bench_status_t *st)
 
 int main(int argc, char **argv)
 {
+    /* FILES INFO reads a stamp in the C library's zone (wall_local_s()):
+     * UTC for every shot, whatever the shell's zone. */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
         /* The table's IDs and their declared cells, for the fit check. */
         for (int i = 0; i < TX_COUNT; ++i) {
@@ -2325,6 +2335,7 @@ int main(int argc, char **argv)
     s_tap_on = strcmp(view, "setup-tap") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_rot_on = strcmp(view, "setup-rotation") == 0;
+    s_tz_on = strcmp(view, "setup-time-zone") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
@@ -3689,6 +3700,11 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-application") == 0
         || strcmp(view, "setup-rotation") == 0) {
         setup_tile(SET_CAT_APP);
+    }
+    /* PANEL scrolled to Time zone, stored at its longest option. */
+    if (strcmp(view, "setup-time-zone") == 0) {
+        setup_tile(SET_CAT_APP);
+        setup_scroll_rows(4);
     }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {

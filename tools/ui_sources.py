@@ -123,6 +123,7 @@ SOURCES = [
     "shared/files/fm_tree.c",
     "shared/files/fm_ops.c",
     "shared/files/fm_req.c",
+    "shared/clock/wall_clock.c",
     "shared/logfile/log_take.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
     # ESC STICK session lists and runs.
@@ -194,6 +195,7 @@ INCLUDES = [
     "shared/can/include",
     "shared/logfile/include",
     "shared/files/include",
+    "shared/clock/include",
     "shared/settings/include",
     "shared/servo/include",
     "shared/esc/include",

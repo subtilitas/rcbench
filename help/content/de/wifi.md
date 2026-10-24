@@ -116,7 +116,7 @@ Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei liste
 Die Seite spricht die Sprache des Panels.
 
 - **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei größer als 8.126.464 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
-- **Dateien auf der Karte**: jede Datei mit Name, Größe in Bytes und Zeit; jeder Name lädt diese Datei herunter. Die Seite schreibt nichts auf die Karte.
+- **Dateien auf der Karte**: jede Datei mit Name, Größe in Bytes und Zeit in der Zone von SETUP > PANEL, Zeitzone; ein Datum in 1980, das einer ungestellten Uhr, lässt die Zeit leer. Jeder Name lädt diese Datei herunter. Die Seite schreibt nichts auf die Karte.
 - **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer Kartenliste, brauchte 4,54s.
 
 Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.

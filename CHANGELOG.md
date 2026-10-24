@@ -8,6 +8,18 @@ history is in git.
 
 ### Added
 
+- The panel sets its clock by NTP (Network Time Protocol). Each join of
+  the home network, the release check at start included, asks
+  `pool.ntp.org` once, for at most 30000ms, inside the join, and logs
+  `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +...s from the old
+  clock`. SETUP > PANEL has a Time zone row: UTC, LONDON, BERLIN, HELSINKI,
+  NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO and SYDNEY, BERLIN by
+  default, with daylight saving. File stamps, FILES INFO, the Wi-Fi page and
+  the ZIP file use it. The board has no RTC (real-time clock) chip: the
+  clock starts unset at each power-on, and a software restart keeps it. A
+  1980 stamp, an unset clock's, reads `not known` on FILES INFO and leaves
+  the Wi-Fi page's time cell empty
+  ([Building](docs/Building.md#the-panels-clock)).
 - A SERVO run's log, `SERVOnnn.CSV`, has `pulse (us)` and `angle (deg)`
   before `source`: the pulse COMMANDED shows and the AS5600 angle MEASURED
   shows, empty without one. While an INA3221 channel is the servo rail's

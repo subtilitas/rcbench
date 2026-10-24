@@ -67,7 +67,7 @@ FILES writes only while the bench is SAFE and no run is being logged. While the 
 ![INFO on a file](view:files-info)
 ![INFO on a folder](view:files-info-folder)
 
-A job that takes longer than 0.25s shows its progress in a box; CANCEL stops a copy before its next 16KiB. INFO shows the time the card holds, read as UTC (Coordinated Universal Time).
+A job that takes longer than 0.25s shows its progress in a box; CANCEL stops a copy before its next 16KiB. INFO shows the time the card holds, in the zone of SETUP > PANEL's Time zone. A 1980 date reads `not known`: the clock was not set when the file was written ([Setup](setup.md#panel)).
 
 ## No card
 

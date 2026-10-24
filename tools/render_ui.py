@@ -297,6 +297,9 @@ SCREENS = {
     # PANEL with Screen rotation stored at 180 and the bench ARMED: the
     # row without keys.
     "setup-rotation": ("setup-rotation.png", "setup", "dark"),
+    # PANEL scrolled to Time zone, stored at LOS ANGELES, its longest
+    # option.
+    "setup-time-zone": ("setup-time-zone.png", "setup", "dark"),
     # SD CARD: AUTO LOGS and USER LOGS, AUTO LOG FOLDER and USER LOG
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),

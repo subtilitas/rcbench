@@ -136,5 +136,5 @@ Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum
 - TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
 - Die Release-Liste enthält die 10 nach Datum neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
-- Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
+- Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von ESP-IDF).
 - Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.

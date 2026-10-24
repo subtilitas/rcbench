@@ -5251,6 +5251,12 @@ UI_SETTING_LABEL(SET_UNITS,
 UI_SETTING_HELP(SET_UNITS,
     "",
     "")
+UI_SETTING_LABEL(SET_TIME_ZONE,
+    "Time zone",
+    "Zeitzone")
+UI_SETTING_HELP(SET_TIME_ZONE,
+    "Local time for file dates; NTP on the home network sets it",
+    "Ortszeit für Dateidaten; NTP im Heimnetz stellt die Uhr")
 UI_SETTING_LABEL(SET_DIM_AFTER,
     "Dim after",
     "Dimmen nach")
@@ -6039,6 +6045,21 @@ UI_OPTIONS(units)
 UI_OPTION("METRIC", "METRISCH")
 UI_OPTION("IMPERIAL", "IMPERIAL")
 UI_OPTIONS_END(units)
+
+/* The time zones, in wall_clock.c's order of POSIX TZ strings
+ * (wall_zone_posix()); Berlin is the default. */
+UI_OPTIONS(time_zone)
+UI_OPTION("UTC", NULL)
+UI_OPTION("LONDON", NULL)
+UI_OPTION("BERLIN", NULL)
+UI_OPTION("HELSINKI", NULL)
+UI_OPTION("NEW YORK", NULL)
+UI_OPTION("CHICAGO", NULL)
+UI_OPTION("DENVER", NULL)
+UI_OPTION("LOS ANGELES", NULL)
+UI_OPTION("TOKYO", NULL)
+UI_OPTION("SYDNEY", NULL)
+UI_OPTIONS_END(time_zone)
 
 /* The INA228's address, 0x40 + the option: A0 and A1 each to GND, VS, SDA
  * or SCL give sixteen. */

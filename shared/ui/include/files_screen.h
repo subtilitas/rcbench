@@ -185,8 +185,10 @@ bool files_screen_busy(void);
 void files_size_text(char *out, size_t n, uint64_t bytes);
 
 /**
- * @brief A time as INFO writes it: "2024-05-17 12:34", read as UTC (the
- *        panel keeps no time zone), or "" for -1.
+ * @brief A time as INFO writes it: "2024-05-17 12:34", read as UTC, or ""
+ *        for -1.  INFO hands it the stamp moved into the zone SETUP holds
+ *        (wall_local_s()), and writes FM_INFO_NO_TIME for a stamp
+ *        wall_stamp_known() refuses.
  * @param out    takes the text
  * @param n      bytes at @p out
  * @param mtime  seconds since 1970-01-01, or -1

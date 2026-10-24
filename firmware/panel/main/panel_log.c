@@ -396,11 +396,12 @@ static void log_open(uint32_t run, log_run_kind_t kind)
 
     /*
      * Numbered, not timestamped: no clock on this board survives a power
-     * cycle, so every file would carry the FAT (File Allocation Table)
-     * epoch, 1980-01-01.  The number is the only order the card carries,
-     * and the viewer reads it back with log_run_number() to decide which
-     * runs it can still show once a folder holds more of them than the
-     * screen does; log_name_build() is the one place the name is built.
+     * cycle, so a file written before an NTP answer carries a FAT (File
+     * Allocation Table) date in 1980.  The number is the only order the
+     * card carries, and the viewer reads it back with log_run_number() to
+     * decide which runs it can still show once a folder holds more of
+     * them than the screen does; log_name_build() is the one place the
+     * name is built.
      *
      * Every way to no file is said, and said on the panel rather than to
      * a console: the panel's console is not reachable on every bench, and
