@@ -106,8 +106,8 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
         gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, SUB_Y, (int16_t)w0, 20 },
                     line, MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
                     GFX_ALIGN_LEFT);
-        /* At its widest, a 10-digit count in German, 40 cells of 8 px:
-         * 320 of the line's 386 px. */
+        /* At its widest, a 10-digit count in German, 40 cells of 8px:
+         * 320 of the line's 386px. */
         char refused[48];
         if (ui_link_refused_label(st, refused, sizeof(refused))) {
             gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, SUB_Y + 22,
@@ -166,7 +166,7 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
  */
 static void draw_derived(gfx_canvas_t *c)
 {
-    /* Right of the card's tag: its 18 cells of 8 px and the tab's 26 px,
+    /* Right of the card's tag: its 18 cells of 8px and the tab's 26px,
      * on the title line in the 10 x 20 face. */
     const gfx_rect_t box = { (int16_t)(LEFT_X + 186), UP_Y + 1,
                              (int16_t)(LEFT_W - 186 - INNER), 20 };
@@ -200,7 +200,7 @@ static void draw_derived(gfx_canvas_t *c)
     }
     if (rated > 0 && measurable) {
         int pct = (int)(per_volt * 100.0f / (float)rated + 0.5f);
-        /* Over 100 % means the rated value is wrong, which is worth seeing;
+        /* Over 100% means the rated value is wrong, which is worth seeing;
          * it is capped only so the field cannot grow without bound. */
         if (pct > 199) {
             pct = 199;
@@ -218,8 +218,8 @@ static void draw_derived(gfx_canvas_t *c)
 
 /*
  * The table, in the legend's and the plot's place: its heading, a rule,
- * the four channels 32 px apart and, while the INA228 is BENCH's source,
- * the ESC's own figures in two rows 28 px apart.  Each row's columns: the
+ * the four channels 32px apart and, while the INA228 is BENCH's source,
+ * the ESC's own figures in two rows 28px apart.  Each row's columns: the
  * name, the value from TBL_VAL_DX, its unit from TBL_UNIT_DX and the
  * extreme from TBL_PK_DX, where the heading's NOW and PEAK stand.
  */
@@ -271,7 +271,7 @@ static void draw_esc_says(gfx_canvas_t *c)
                  ui_theme_color(UI_C_TEXT), 1);
         gfx_text(c, PLOT_X + TBL_UNIT_DX, y, mo_series[i].unit,
                  MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-        snprintf(line, sizeof(line), "%s %s %s", TR(MO_TABLE_DIFF), d,
+        snprintf(line, sizeof(line), "%s %s%s", TR(MO_TABLE_DIFF), d,
                  mo_series[i].unit);
         gfx_text(c, PLOT_X + TBL_PK_DX, y, line, MO_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
@@ -432,14 +432,14 @@ static void draw_heroes(gfx_canvas_t *c)
 }
 
 /* What the run has taken out of the pack, on the CONTROL card's title
- * line, right of its tag: STEUERUNG's 9 cells of 8 px and the tab's 26. */
+ * line, right of its tag: STEUERUNG's 9 cells of 8px and the tab's 26. */
 static void draw_totals(gfx_canvas_t *c)
 {
     const gfx_rect_t box = { (int16_t)(RIGHT_X + 110), (int16_t)(CTL_Y + 1),
                              (int16_t)(RIGHT_W - 110 - 12), 20 };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
     /* Each total only when the panel has counted it: a run with no current
-     * to count has no consumption, and 0 mAh reads as a measurement. */
+     * to count has no consumption, and 0mAh reads as a measurement. */
     char mah[16];
     char wh[16];
     if ((s.bench.counted & BENCH_COUNTED_CHARGE) != 0u) {
@@ -453,7 +453,7 @@ static void draw_totals(gfx_canvas_t *c)
         snprintf(wh, sizeof(wh), "--");
     }
     char line[48];
-    snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
+    snprintf(line, sizeof(line), "%smAh   %sWh", mah, wh);
     gfx_text_in(c, box, line, MO_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
 }
@@ -653,7 +653,7 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
 
     /*
      * Everything that comes from the numbers is painted only when there are
-     * new numbers.  The panel refreshes at 39 Hz and samples arrive at 20 Hz,
+     * new numbers.  The panel refreshes at 39Hz and samples arrive at 20Hz,
      * so about half of all frames would otherwise repaint an identical plot
      * and identical readouts into the PSRAM (pseudo-static random-access
      * memory) the LCD (liquid-crystal display) is scanning out of.

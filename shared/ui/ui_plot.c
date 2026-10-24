@@ -12,7 +12,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* Samples a scale stays above its target before it shrinks: 3 s at 20 Hz.
+/* Samples a scale stays above its target before it shrinks: 3s at 20Hz.
  * A shorter hold makes a single spike rescale the plot twice. */
 #define SHRINK_HOLD 60
 
@@ -273,7 +273,7 @@ void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
         char top[24];
         ui_fmt(top, sizeof(top), p->scale[k], p->series[k].decimals);
         char full[32];
-        snprintf(full, sizeof(full), " %s %s", top, p->series[k].unit);
+        snprintf(full, sizeof(full), " %s%s", top, p->series[k].unit);
         gfx_text(c, tx, cy - 8, full, UI_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
@@ -322,7 +322,7 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
         int prev_y = -1;
         for (int i = 0; i < cols; ++i) {
             const int back = cols - 1 - i;
-            /* A follower is dashed, 4 px drawn and 4 px left out.  The
+            /* A follower is dashed, 4px drawn and 4px left out.  The
              * pattern is fixed to the screen's columns and the trace scrolls
              * through it, so a level set point reads as a steady dash. */
             if (back >= p->filled || (follower && ((back >> 2) & 1) != 0)) {
@@ -354,7 +354,7 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
 
     if (p->focus >= 0 && p->focus < p->count && !p->hidden[p->focus]) {
         char top[24];
-        snprintf(top, sizeof(top), "%.*f %s",
+        snprintf(top, sizeof(top), "%.*f%s",
                  p->series[p->focus].decimals,
                  (double)p->scale[p->focus], p->series[p->focus].unit);
         gfx_text(c, r.x + 4, r.y + 3, top, &gfx_font_8x16,

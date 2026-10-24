@@ -60,10 +60,10 @@ static const ui_text_id_t k_heading[HD_COUNT] = {
 
 /*
  * Two columns, PACK and MOTOR on the left, THROTTLE OUTPUT on the right,
- * 295 px each.  Down a column: a heading 28 px, 8 px more under a row, then each row 68 px: its
- * label left of its 120 x 48 px value box, and its help line of up to 36
- * cells of 8 px under them.  The save line runs along the page's foot,
- * ending 4 px above the alert band.
+ * 295px each.  Down a column: a heading 28px, 8px more under a row, then each row 68px: its
+ * label left of its 120 x 48px value box, and its help line of up to 36
+ * cells of 8px under them.  The save line runs along the page's foot,
+ * ending 4px above the alert band.
  */
 #define TOP_Y      (PAGE_Y + 8)          /**< The first heading, px. */
 #define HEAD_H     28                    /**< A heading's line, px. */
@@ -72,7 +72,7 @@ static const ui_text_id_t k_heading[HD_COUNT] = {
 #define BOX_H      UI_TAP_MIN            /**< A value box's height, px. */
 #define BOX_W      120                   /**< Its width, px. */
 #define HELP_DY    (BOX_H + 2)           /**< The help line, in a row. */
-#define COL_W      ((PAGE_W - 30) / 2)   /**< A column: 295 px. */
+#define COL_W      ((PAGE_W - 30) / 2)   /**< A column: 295px. */
 /** @brief Column @p k's left edge, px. */
 #define COL_X(k)   (PAGE_X + 10 + (k) * (COL_W + 10))
 #define SAVE_Y     (STOP_FLOOR - 20)     /**< The save line, px. */
@@ -342,8 +342,7 @@ static void draw_row(gfx_canvas_t *c, int i, bool safe)
     char v[24], line[40];
     (void)ui_setting_value(id, v, sizeof(v));
     const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
-    snprintf(line, sizeof(line), "%s%s%s", v, (unit[0] != '\0') ? " " : "",
-             unit);
+    snprintf(line, sizeof(line), "%s%s", v, unit);
     ui_button_font(c, box_rect(i), line, ui_theme_color(UI_C_PANEL_SUNK),
                    p.pressed == i, !locked, MS_FONT);
 }

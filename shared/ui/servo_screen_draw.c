@@ -31,12 +31,12 @@
 
 /**
  * @brief The widths of the three readings on the line over the plot, in px
- *        of 10 px cells.
+ *        of 10px cells.
  *
  * Beside PD MINI 88, 88 and 90, the rest of the column.  Beside an INA3221
  * channel's 12-cell name, "INA 0x41 CH2", 64, 84 and 74, which hold the
- * widest reading of the part's registers: a voltage of 6 cells, `9.99 V`
- * or `65.5 V`, `-32.77 A`, and a power of 7 cells, `-99.9 W` or `-2147 W`.
+ * widest reading of the part's registers: a voltage of 6 cells, `9.99V`
+ * or `65.5V`, `-32.77A`, and a power of 7 cells, `-99.9W` or `-2147W`.
  */
 static const uint8_t k_line_w[2][PS_COUNT] = {
     { 88, 88, 90 },
@@ -216,7 +216,7 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
 
     /*
      * The lit part of each ring, over the top.  It is split on the side the
-     * arm comes in from, with a constant 9 px band of card either side of
+     * arm comes in from, with a constant 9px band of card either side of
      * the metal (ring_gap_deg), and each end fades into the unlit ring
      * beneath.
      *
@@ -439,17 +439,16 @@ static gfx_rect_t power_rect(void)
  * @param n its size
  * @param q the count
  * @param places 1 or 2
- * @param unit the unit after a space, or ""
+ * @param unit the unit right after the number, or ""
  */
 static void fixed_text(char *out, size_t n, int32_t q, int places,
                        const char *unit)
 {
     const int32_t  scale = (places == 2) ? 100 : 10;
     const uint32_t mag   = (q < 0) ? (uint32_t)(-(int64_t)q) : (uint32_t)q;
-    snprintf(out, n, "%s%u.%0*u%s%s", (q < 0) ? "-" : "",
+    snprintf(out, n, "%s%u.%0*u%s", (q < 0) ? "-" : "",
              (unsigned)(mag / (uint32_t)scale), places,
-             (unsigned)(mag % (uint32_t)scale), (unit[0] != '\0') ? " " : "",
-             unit);
+             (unsigned)(mag % (uint32_t)scale), unit);
 }
 
 /* The servo rail's voltage, current and power, read and plotted, under the
@@ -472,9 +471,9 @@ static void draw_power(gfx_canvas_t *c)
     const uint8_t *fw = k_line_w[ina ? 1 : 0];
     /* Hundredths of a volt, and tenths where those do not fit. */
     if (m.v_ok) {
-        snprintf(v, sizeof(v), "%.2f V", (double)m.v);
+        snprintf(v, sizeof(v), "%.2fV", (double)m.v);
         if (gfx_text_width(SV_FONT_LABEL, v, 1) > fw[PS_V]) {
-            snprintf(v, sizeof(v), "%.1f V", (double)m.v);
+            snprintf(v, sizeof(v), "%.1fV", (double)m.v);
         }
     } else {
         snprintf(v, sizeof(v), "-- V");
@@ -486,7 +485,7 @@ static void draw_power(gfx_canvas_t *c)
         const float p = isfinite(m.p) ? m.p : 0.0f;
         fixed_text(w, sizeof(w), svs_fixed_of(p, 10.0f), 1, "W");
         if (gfx_text_width(SV_FONT_LABEL, w, 1) > fw[PS_W]) {
-            snprintf(w, sizeof(w), "%ld W", (long)svs_fixed_of(p, 1.0f));
+            snprintf(w, sizeof(w), "%ldW", (long)svs_fixed_of(p, 1.0f));
         }
     } else {
         snprintf(w, sizeof(w), "-- W");
@@ -510,7 +509,7 @@ static void draw_power(gfx_canvas_t *c)
     ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
     /*
      * The readings of the panel's model are no measurement: the overview's
-     * pill, 110 px or as wide as a longer word and 26 px high, on the
+     * pill, 110px or as wide as a longer word and 26px high, on the
      * plot's top-left corner under the name, as the line beside the name
      * is full.
      */
@@ -526,7 +525,7 @@ static void draw_power(gfx_canvas_t *c)
 /**
  * @brief A reading's numerals at (@p x, @p y), left aligned in @p w px:
  *        in SV_FONT_NUM, or where they are wider than that -- a reading
- *        held at +-1000000.00 A is 12 cells -- in SV_FONT_HEAD, or in
+ *        held at +-1000000.00A is 12 cells -- in SV_FONT_HEAD, or in
  *        SV_FONT_LABEL.
  * @param c the canvas
  * @param x the column's left edge, px
@@ -656,8 +655,8 @@ static void draw_sup_row(gfx_canvas_t *c)
     gfx_text(c, RC_X, SUP_Y + 14, TR(SV_SET), SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     char v[12], a[12];
-    snprintf(v, sizeof(v), "%.2f V", (double)supply_screen_set_v());
-    snprintf(a, sizeof(a), "%.2f A", (double)supply_screen_set_i());
+    snprintf(v, sizeof(v), "%.2fV", (double)supply_screen_set_v());
+    snprintf(a, sizeof(a), "%.2fA", (double)supply_screen_set_i());
     /* Held by a programming port they take no press, and say so. */
     const bool held = supply_screen_port_held();
     const struct { const char *txt; gfx_color_t col; int op; } k[2] = {
@@ -690,7 +689,7 @@ static gfx_rect_t tag_rect(void)
  *        microseconds, in the danger colour when it is one that can
  *        destroy a servo not made for it.
  *
- * The longest, a 13-character type, 560 Hz and two 4-digit ends, is 32
+ * The longest, a 13-character type, 560Hz and two 4-digit ends, is 32
  * of the pill's 35 cells.
  * @param c the canvas
  */
@@ -702,7 +701,7 @@ static void draw_tag(gfx_canvas_t *c)
                                     : ui_theme_color(UI_C_PANEL_SUNK);
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL, fill);
     char line[40];
-    snprintf(line, sizeof(line), "%s  %u Hz  %u-%u", type()->name,
+    snprintf(line, sizeof(line), "%s  %uHz  %u-%u", type()->name,
              (unsigned)s.frame_hz, (unsigned)s.min_us, (unsigned)s.max_us);
     gfx_text_in(c, r, line, SV_FONT_LABEL,
                 danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
@@ -743,7 +742,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     /* SPEED's row says when SPEED, not CURVE, decides how a sweep moves:
      * the curves then look alike. */
     char buf[24];
-    snprintf(buf, sizeof(buf), "%d %%", s.speed_pct);
+    snprintf(buf, sizeof(buf), "%d%%", s.speed_pct);
     const bool limits = svs_speed_limits_sweep();
     gfx_text(c, RC_X, SPEED_Y, limits ? TR(SV_SPEED_LIMITS) : TR(SV_SPEED),
              SV_FONT_LABEL, limits ? ui_theme_color(UI_C_WARN)
@@ -1073,7 +1072,7 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
 
     /*
      * The grip, only while it breathes.  Clipped to the tip: repainting the
-     * 488x386 card at the frame rate to animate a ring of 36 px radius would
+     * 488x386 card at the frame rate to animate a ring of 36px radius would
      * cost most of the panel's bandwidth.
      */
     const int grip_r = 36;

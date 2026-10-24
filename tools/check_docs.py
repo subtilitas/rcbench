@@ -420,7 +420,7 @@ PRINTS = {"c": ".", "s": ".+?"}
 NUMBER = r"[-+]?[0-9A-Fa-f][0-9A-Fa-f.,]*"
 
 # A format is matched against a quote only when its words say something:
-# "%u ms" would match any number of milliseconds a page mentions.
+# "%ums" would match any number of milliseconds a page mentions.
 MIN_FORMAT_LETTERS = 4
 
 
@@ -1039,58 +1039,58 @@ FACTS = [
     ("STATUS.md", rf"Protocol version {N}\.{N}\.",
      ("LINK_PROTOCOL_MAJOR", "LINK_PROTOCOL_MINOR")),
     # The heartbeat.
-    ("docs/Safety.md", rf"\| Panel edge interval \| {N} ms \|",
+    ("docs/Safety.md", rf"\| Panel edge interval \| {N}ms \|",
      ("HEARTBEAT_PERIOD_MS",)),
-    ("docs/Safety-de.md", rf"\| Flankenabstand des Panels \| {N} ms \|",
+    ("docs/Safety-de.md", rf"\| Flankenabstand des Panels \| {N}ms \|",
      ("HEARTBEAT_PERIOD_MS",)),
-    ("docs/Safety.md", rf"\| Accepted interval \| {N}–{N} ms \|",
+    ("docs/Safety.md", rf"\| Accepted interval \| {N}–{N}ms \|",
      ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS")),
-    ("docs/Safety-de.md", rf"\| Akzeptierter Abstand \| {N}–{N} ms \|",
+    ("docs/Safety-de.md", rf"\| Akzeptierter Abstand \| {N}–{N}ms \|",
      ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS")),
     ("docs/Safety.md",
-     rf"\| Good intervals before the line is trusted \| {N} \| {N} ms",
+     rf"\| Good intervals before the line is trusted \| {N} \| {N}ms",
      ("HEARTBEAT_GOOD_RUN", "HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS")),
     ("docs/Safety-de.md",
-     rf"\| Gute Abstände, bevor der Leitung vertraut wird \| {N} \| {N} ms",
+     rf"\| Gute Abstände, bevor der Leitung vertraut wird \| {N} \| {N}ms",
      ("HEARTBEAT_GOOD_RUN", "HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS")),
-    ("docs/Safety.md", rf"The panel waits {N} ms, then reads the STATUS",
+    ("docs/Safety.md", rf"The panel waits {N}ms, then reads the STATUS",
      ("HEARTBEAT_SETTLE_MS",)),
-    ("docs/Safety-de.md", rf"Das Panel wartet {N} ms, liest dann",
+    ("docs/Safety-de.md", rf"Das Panel wartet {N}ms, liest dann",
      ("HEARTBEAT_SETTLE_MS",)),
     ("docs/Safety.md",
-     rf"one interval under {N} ms or over {N} ms, or {N} ms without an edge",
+     rf"one interval under {N}ms or over {N}ms, or {N}ms without an edge",
      ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS",
       "HEARTBEAT_MAX_GAP_MS")),
     ("docs/Safety-de.md",
-     rf"ein Abstand unter {N} ms oder über {N} ms, oder {N} ms ohne Flanke",
+     rf"ein Abstand unter {N}ms oder über {N}ms, oder {N}ms ohne Flanke",
      ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS",
       "HEARTBEAT_MAX_GAP_MS")),
-    ("STATUS.md", rf"\({N} to {N} ms between edges",
+    ("STATUS.md", rf"\({N} to {N}ms between edges",
      ("HEARTBEAT_MIN_GAP_MS", "HEARTBEAT_MAX_GAP_MS")),
-    ("STATUS.md", rf"The task runs every {N} ms; the line edges every {N} ms",
+    ("STATUS.md", rf"The task runs every {N}ms; the line edges every {N}ms",
      ("CONTROL_PERIOD_MS", "HEARTBEAT_PERIOD_MS")),
-    ("docs/Safety.md", rf"runs every {N} ms on the core that does not draw",
+    ("docs/Safety.md", rf"runs every {N}ms on the core that does not draw",
      ("CONTROL_PERIOD_MS",)),
-    ("docs/Safety-de.md", rf"alle {N} ms auf dem Kern läuft, der nicht",
+    ("docs/Safety-de.md", rf"alle {N}ms auf dem Kern läuft, der nicht",
      ("CONTROL_PERIOD_MS",)),
     # The link's two time limits.
-    ("docs/Safety.md", rf"IOmcu silence watchdog, {N} ms",
+    ("docs/Safety.md", rf"IOmcu silence watchdog, {N}ms",
      ("LINK_DEV_SILENCE_MS",)),
-    ("docs/Safety-de.md", rf"Stille-Watchdog des IOmcu, {N} ms",
+    ("docs/Safety-de.md", rf"Stille-Watchdog des IOmcu, {N}ms",
      ("LINK_DEV_SILENCE_MS",)),
-    ("docs/Safety.md", rf"\| Link silence \| {N} ms without a request",
+    ("docs/Safety.md", rf"\| Link silence \| {N}ms without a request",
      ("LINK_DEV_SILENCE_MS",)),
-    ("docs/Safety-de.md", rf"\| Stille auf dem Link \| {N} ms ohne Anfrage",
+    ("docs/Safety-de.md", rf"\| Stille auf dem Link \| {N}ms ohne Anfrage",
      ("LINK_DEV_SILENCE_MS",)),
-    ("docs/Link.md", rf"failsafe values after {N} ms without a request",
+    ("docs/Link.md", rf"failsafe values after {N}ms without a request",
      ("LINK_DEV_SILENCE_MS",)),
-    ("STATUS.md", rf"fails safe after {N} ms of link silence",
+    ("STATUS.md", rf"fails safe after {N}ms of link silence",
      ("LINK_DEV_SILENCE_MS",)),
-    ("docs/Safety.md", rf"after the {N} ms exchange timeout",
+    ("docs/Safety.md", rf"after the {N}ms exchange timeout",
      ("LINK_HOST_TIMEOUT_MS",)),
-    ("docs/Safety-de.md", rf"nach dem Timeout von {N} ms bemerkt",
+    ("docs/Safety-de.md", rf"nach dem Timeout von {N}ms bemerkt",
      ("LINK_HOST_TIMEOUT_MS",)),
-    ("STATUS.md", rf"the panel escalates after {N} s\.",
+    ("STATUS.md", rf"the panel escalates after {N}s\.",
      (("LINK_HOST_TIMEOUT_MS", 0.001),)),
     # Pins.
     ("docs/Safety.md", rf"The safety line is panel GPIO{N} ",
@@ -1115,9 +1115,9 @@ FACTS = [
      rf"SCK GP{N}, MOSI GP{N}, MISO GP{N}, CS GP{N}, INT GP{N};",
      ("IOMCU_CAN_PIN_SCK", "IOMCU_CAN_PIN_MOSI", "IOMCU_CAN_PIN_MISO",
       "IOMCU_CAN_PIN_CS", "IOMCU_CAN_PIN_INT")),
-    ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N} Mbit/s",
+    ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N}Mbit/s",
      (("IOMCU_CAN_BITRATE", 1e-6),)),
-    ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N} Mbit/s",
+    ("docs/Link.md", rf"\| Bus \| classic CAN [^|]*?, {N}Mbit/s",
      (("PANEL_CAN_BITRATE", 1e-6),)),
     # Limits a check enforces.
     ("CONTRIBUTING.md",
@@ -1194,7 +1194,7 @@ def check_constant_tables(problems: list[str],
                           docs: list[pathlib.Path] | None = None) -> None:
     """A table row that gives a C constant by name gives its value: the
     servo test's constants in Servo.md and Servo-de.md, and any row of the
-    same shape, `| \\`NAME\\` | 1000 ms |`, on any page."""
+    same shape, `| \\`NAME\\` | 1000ms |`, on any page."""
     table = defines() if table is None else table
     for page in (linked_pages() if docs is None else docs):
         german = page.name.endswith(DE_SUFFIX)

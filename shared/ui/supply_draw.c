@@ -117,7 +117,7 @@ void supply_screen_header_text(char *out, size_t size)
  * @brief The row right of the strip: where the numbers come from, and at
  *        its right end the range the set points may take.  The longest,
  *        `PD MINI TX GP12 RX GP13   ANTWORTET NICHT` and
- *        `3.3-21.0 V  0.50-5.00 A`, are 41 and 23 cells of the 68 the row
+ *        `3.3-21.0V  0.50-5.00A`, are 41 and 23 cells of the 68 the row
  *        holds.
  * @param c the canvas
  */
@@ -132,7 +132,7 @@ static void draw_header(gfx_canvas_t *c)
              s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
                           : ui_theme_color(UI_C_WARN), 1);
     char range[64];
-    snprintf(range, sizeof(range), "%.1f-%.1f V  %.2f-%.2f A",
+    snprintf(range, sizeof(range), "%.1f-%.1fV  %.2f-%.2fA",
              (double)s.eff.v_min, (double)s.eff.v_max,
              (double)s.eff.i_min, (double)s.eff.i_max);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, INFO_Y, (int16_t)(x1 - x0),
@@ -350,7 +350,7 @@ static void draw_table(gfx_canvas_t *c)
 /**
  * @brief What the run has taken from the supply, on the CONTROL card's
  *        title line, right of its tag: STEUERUNG's 9 cells and the tab's
- *        26 px.
+ *        26px.
  * @param c the canvas
  */
 static void draw_totals(gfx_canvas_t *c)
@@ -370,7 +370,7 @@ static void draw_totals(gfx_canvas_t *c)
         snprintf(wh, sizeof(wh), "--");
     }
     char line[48];
-    snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
+    snprintf(line, sizeof(line), "%smAh   %sWh", mah, wh);
     gfx_text_in(c, box, line, SU_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_RIGHT);
 }
@@ -397,7 +397,7 @@ static void draw_setters(gfx_canvas_t *c)
         gfx_text(c, LEFT_X + INNER, y, ui_tr(label[row]), SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char v[24];
-        snprintf(v, sizeof(v), "%.2f %s", (double)value[row], unit[row]);
+        snprintf(v, sizeof(v), "%.2f%s", (double)value[row], unit[row]);
         const bool pressed = s.pressed == ((row == 0) ? P_VALUE_V
                                                       : P_VALUE_I);
         const gfx_rect_t b = sup_set_value_rect(row);
@@ -460,7 +460,7 @@ static void row_value_text(int i, char *buf, size_t n)
     } else if (trip && !(v > 0.0f)) {
         snprintf(buf, n, "%s", TR(OFF));
     } else {
-        snprintf(buf, n, "%.*f %s", k_rows[i].decimals, (double)v, d->unit);
+        snprintf(buf, n, "%.*f%s", k_rows[i].decimals, (double)v, d->unit);
     }
 }
 
@@ -559,7 +559,7 @@ static void draw_confirm(gfx_canvas_t *c)
         gfx_text(c, tx, y + 10, k[i].label, SU_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[48];
-        snprintf(line, sizeof(line), "%.2f -> %.2f %s", (double)k[i].was,
+        snprintf(line, sizeof(line), "%.2f -> %.2f%s", (double)k[i].was,
                  (double)k[i].now, k[i].unit);
         gfx_text(c, tx + 170, y, line, SU_FONT_HEAD, k[i].col, 1);
         y += 50;
@@ -569,7 +569,7 @@ static void draw_confirm(gfx_canvas_t *c)
     ui_button_font(c, s.discard_btn, TR(CANCEL),
                    ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_DISCARD,
                    true, SU_FONT_LABEL);
-    /* At the foot: its last line ends 4 px above the alert band. */
+    /* At the foot: its last line ends 4px above the alert band. */
     const gfx_rect_t first = { (int16_t)tx, 0, (int16_t)tw, 24 };
     const int rows = ui_text_wrap(NULL, first, ASK_PITCH, TR(SUP_ASK_OFF),
                                   SU_FONT_BODY, 0);

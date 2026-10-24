@@ -501,8 +501,8 @@ def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
     if lang == "de":
         text = ("Zeilenabdeckung von `shared/` und `protocols/` durch die "
                 "Host-Suite: "
-                "**%s %%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
-                "%d %% gesamt oder unter %d %% in einer Datei fehl. "
+                "**%s%%**, %s von %s Zeilen in %d Dateien. CI schlägt unter "
+                "%d%% gesamt oder unter %d%% in einer Datei fehl. "
                 "Die Tabelle je Datei steht in "
                 "[STATUS.md](STATUS.md#tests-and-ci)."
                 % (("%.1f" % pct).replace(".", ","),
