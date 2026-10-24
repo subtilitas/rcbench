@@ -418,6 +418,29 @@ int ui_unit_is_symbol(const char *unit)
     return 1;
 }
 
+const char *ui_pin_holder(const char *held_by)
+{
+    static const struct {
+        const char  *word;
+        ui_text_id_t id;
+    } k_holders[] = {
+        { "heartbeat", TX_OUT_HELD_HEARTBEAT },
+        { "flash",     TX_OUT_HELD_FLASH },
+        { "debug",     TX_OUT_HELD_DEBUG },
+        { "sensor",    TX_OUT_HELD_SENSOR },
+        { "in use",    TX_OUT_HELD_IN_USE },
+    };
+    if (held_by == NULL) {
+        return "";
+    }
+    for (size_t i = 0; i < sizeof(k_holders) / sizeof(k_holders[0]); ++i) {
+        if (strcmp(held_by, k_holders[i].word) == 0) {
+            return ui_tr(k_holders[i].id);
+        }
+    }
+    return held_by;
+}
+
 const char *ui_unit_gap(const char *unit)
 {
     return (unit == NULL || unit[0] == '\0' || ui_unit_is_symbol(unit)) ? ""

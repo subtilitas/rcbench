@@ -256,6 +256,33 @@ gfx_rect_t stg_discard_rect(void)
 
 /* ------------------------------------------------------------ the warning */
 
+/**
+ * @brief A value of @p id as the leave question says it: with its unit,
+ *        joined to a symbol ("6.00V") and a space before a word ("4 GPIO");
+ *        no unit after OFF, a SENSORS shunt's 0; and a pin's -1 in the
+ *        words of the row's help, "open".
+ * @param id    the setting
+ * @param value its value
+ * @param out   takes the text
+ * @param n     bytes at @p out
+ */
+static void leave_value(setting_id_t id, float value, char *out, size_t n)
+{
+    const setting_def_t *d = settings_def(id);
+    const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
+    if (d != NULL && strcmp(unit, "GPIO") == 0 && value < 0.0f) {
+        snprintf(out, n, "%s", TR(SET_LEAVE_PIN_OPEN));
+        return;
+    }
+    const bool off = d != NULL && d->off_below > 0.0f && value == 0.0f;
+    /* GPIO, the schema's one word unit, keeps its space; every other unit
+     * of the schema is a symbol and joins its number. */
+    const char *gap = (strcmp(unit, "GPIO") == 0) ? " " : "";
+    char v[32];
+    (void)ui_setting_value_of(id, value, v, sizeof(v));
+    snprintf(out, n, "%s%s%s", v, off ? "" : gap, off ? "" : unit);
+}
+
 /* Change @p k, in schema order and the strings after the values, into
  * @p line as "name: saved -> now", each value with its unit. */
 static void change_line(int k, char *line, size_t n)
@@ -265,20 +292,10 @@ static void change_line(int k, char *line, size_t n)
         if (!settings_differs(id) || k-- > 0) {
             continue;
         }
-        const setting_def_t *d = settings_def(id);
-        const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
-        /* No unit after OFF, a SENSORS shunt's 0. */
-        const bool off_was = d != NULL && d->off_below > 0.0f
-                             && settings_stored(id) == 0.0f;
-        const bool off_now = d != NULL && d->off_below > 0.0f
-                             && settings_get(id) == 0.0f;
-        const char *u_was = off_was ? "" : unit;
-        const char *u_now = off_now ? "" : unit;
-        char was[32], now[32];
-        (void)ui_setting_value_of(id, settings_stored(id), was, sizeof(was));
-        (void)ui_setting_value(id, now, sizeof(now));
-        snprintf(line, n, "%s: %s%s -> %s%s", ui_setting_label(id), was,
-                 u_was, now, u_now);
+        char was[40], now[40];
+        leave_value(id, settings_stored(id), was, sizeof(was));
+        leave_value(id, settings_get(id), now, sizeof(now));
+        snprintf(line, n, "%s: %s -> %s", ui_setting_label(id), was, now);
         return;
     }
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {

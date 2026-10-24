@@ -1198,6 +1198,72 @@ TEST_CASE(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws)
     CHECK_EQ(ink(40, H, 0, W), 0);
 }
 
+/*
+ * A button that takes no press is dimmer than an enabled one in both
+ * themes: its fill is the ground, never a fill an enabled button takes,
+ * and its label is the faint text colour.
+ */
+TEST_CASE(a_disabled_button_is_dimmer_than_an_enabled_one_in_both_themes)
+{
+    static const ui_theme_id_t k_themes[] = { UI_THEME_DARK, UI_THEME_LIGHT };
+    for (size_t t = 0; t < sizeof(k_themes) / sizeof(k_themes[0]); ++t) {
+        canvas();
+        ui_theme_set(k_themes[t]);
+        const gfx_rect_t on  = { 100, 100, 160, 56 };
+        const gfx_rect_t off = { 300, 100, 160, 56 };
+        ui_button(&cv, on, "ON", UI_PANEL_HI, false, true);
+        ui_button(&cv, off, "OFF", UI_PANEL_HI, false, false);
+        /* Inside each body, clear of the label and the edge. */
+        const gfx_color_t body_off = fb[(off.y + 8) * W + off.x + 12];
+        CHECK_EQ(body_off, ui_button_off_fill());
+        CHECK_EQ(ui_button_off_fill(), UI_BG);
+        CHECK(body_off != UI_PANEL);
+        CHECK(body_off != UI_PANEL_HI);
+        CHECK(body_off != UI_PANEL_SUNK);
+        CHECK(body_off != UI_EDGE_HI);
+        CHECK_EQ(fb[(on.y + 8) * W + on.x + 12], UI_PANEL_HI);
+        /* The labels: the full ink on, the faint text colour off. */
+        const gfx_color_t ink = ui_is_light(UI_PANEL_HI) ? UI_TEXT_ON_LIGHT
+                                                         : UI_TEXT;
+        unsigned text_on = 0, faint_off = 0, text_off = 0;
+        for (int y = 0; y < 56; ++y) {
+            for (int x = 0; x < 160; ++x) {
+                text_on   += fb[(on.y + y) * W + on.x + x] == ink;
+                faint_off += fb[(off.y + y) * W + off.x + x] == UI_TEXT_FAINT;
+                text_off  += fb[(off.y + y) * W + off.x + x] == ink;
+            }
+        }
+        CHECK(text_on > 0u);
+        CHECK(faint_off > 0u);
+        CHECK_EQ(text_off, 0u);
+    }
+    ui_theme_set(UI_THEME_DARK);
+}
+
+/* The wordmark's text reads on its fill: near-black on a light fill (the
+ * dark theme's), the panel colour on a dark one (the light theme's). */
+TEST_CASE(the_wordmark_text_reads_on_its_fill_in_both_themes)
+{
+    static const ui_theme_id_t k_themes[] = { UI_THEME_DARK, UI_THEME_LIGHT };
+    for (size_t t = 0; t < sizeof(k_themes) / sizeof(k_themes[0]); ++t) {
+        canvas();
+        ui_theme_set(k_themes[t]);
+        const gfx_color_t fill = UI_TEXT;
+        ui_wordmark(&cv, "rcbench", fill);
+        const gfx_color_t ink = ui_is_light(fill) ? UI_TEXT_ON_LIGHT
+                                                  : UI_PANEL;
+        unsigned inked = 0;
+        for (int y = UI_TAG_Y; y < UI_TAG_Y + UI_TAG_H; ++y) {
+            for (int x = UI_TAG_X; x < UI_TAG_X + 200; ++x) {
+                inked += fb[y * W + x] == ink;
+            }
+        }
+        CHECK(inked > 100u);
+        CHECK(ink != fill);
+    }
+    ui_theme_set(UI_THEME_DARK);
+}
+
 int main(void)
 {
     RUN(the_scale_ladder_has_its_fine_steps);
@@ -1240,5 +1306,7 @@ int main(void)
     RUN(the_hold_refuses_a_null_rather_than_following_it);
     RUN(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset);
     RUN(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws);
+    RUN(a_disabled_button_is_dimmer_than_an_enabled_one_in_both_themes);
+    RUN(the_wordmark_text_reads_on_its_fill_in_both_themes);
     return test_summary("widgets");
 }

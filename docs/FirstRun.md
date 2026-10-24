@@ -207,7 +207,7 @@ image the new panel carries. Three faults of 0.20.0 shape the path:
 From GitHub, with a home network kept, the bench SAFE, the supply output
 off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`. The panel
 reads `releases/latest`, which names v0.22.1, and says `Version 0.22.1 is
-available.`. Hold `HOLD 2s: DOWNLOAD & INSTALL`; the panel downloads and
+available.`. Hold `HOLD 2s TO DOWNLOAD & INSTALL`; the panel downloads and
 checks the image, writes the slot it does not run from and restarts into
 it, and step 5 below follows. Through the browser page:
 
@@ -234,7 +234,7 @@ it, and step 5 below follows. Through the browser page:
    SETUP > UPDATES.`. The question opens on the menu while the bench is
    SAFE, the supply's output is off and the panel's Wi-Fi radio is off. It
    names 0.20.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2s,
-   or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP > UPDATES. The
+   or after CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP > UPDATES. The
    progress fills the screen ([Screens: IOmcu update](Screens.md#iomcu-update)),
    and the band then says `IOmcu updated to 0.22.1.`.
 
@@ -279,7 +279,7 @@ files from new folders on the SD (Secure Digital) card and moves none there
    panel that says `Unexpected answer from GitHub.` met the fault of 0.21.0
    and 0.21.1 [below](#the-check-on-0210-and-0211): press `CHECK FOR
    UPDATES` again at once.
-3. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
+3. **Panel.** Hold `HOLD 2s TO DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.21.0.
@@ -287,7 +287,7 @@ files from new folders on the SD (Secure Digital) card and moves none there
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.21.0 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 `RELEASES` is in force at once; SAVE on SETUP keeps it. A bench without a
@@ -295,7 +295,7 @@ home network takes the upload on the panel's browser page, in either
 language: SETUP > WI-FI > ACCESS POINT, join the network the screen names,
 open `http://192.168.4.1/`, enter the access code, choose
 `rcbench-panel-v0.22.1.bin` under `Panel firmware` and press `Upload`, then
-hold `HOLD 2s: INSTALL` on the panel. Step 4 above follows. A bench
+hold `HOLD 2s TO INSTALL` on the panel. Step 4 above follows. A bench
 without a phone or a computer on Wi-Fi flashes `rcbench-panel-v0.22.1.zip`
 over USB as in [step 3](#from-the-release-assets) above, and step 4
 follows.
@@ -320,7 +320,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
    panel that says `Unexpected answer from GitHub.` met the fault of 0.21.1
    [below](#the-check-on-0210-and-0211): press `CHECK FOR UPDATES` again
    at once.
-2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
+2. **Panel.** Hold `HOLD 2s TO DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.21.1.
@@ -328,7 +328,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.21.1 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 A bench without a home network takes the upload on the panel's browser
@@ -364,7 +364,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
 1. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
    either RELEASES value. The panel says `Version 0.22.1 is available.`.
-2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
+2. **Panel.** Hold `HOLD 2s TO DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.21.2.
@@ -372,7 +372,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.21.2 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 A bench without a home network takes the upload on the panel's browser
@@ -410,7 +410,7 @@ version numbers, so it finds another build and asks.
 1. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
    either RELEASES value. The panel says `Version 0.22.1 is available.`.
-2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
+2. **Panel.** Hold `HOLD 2s TO DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.22.0.
@@ -418,7 +418,7 @@ version numbers, so it finds another build and asks.
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.22.0 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 A bench without a home network takes the upload on the panel's browser

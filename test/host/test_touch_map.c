@@ -232,17 +232,31 @@ TEST_CASE(a_turn_reverses_both_axes_of_the_mapped_area_for_every_map)
     }
 }
 
+/**
+ * @brief Whether two maps are the same, field by field: a struct copy need
+ *        not copy the padding a memcmp() would read.
+ * @param a one map
+ * @param b the other
+ * @return true when every field matches
+ */
+static bool same_map(const touch_map_t *a, const touch_map_t *b)
+{
+    return a->src_w == b->src_w && a->src_h == b->src_h
+           && a->mirror_x == b->mirror_x && a->mirror_y == b->mirror_y
+           && a->rotation == b->rotation;
+}
+
 TEST_CASE(no_turn_keeps_the_map_and_two_turns_are_none)
 {
     const touch_map_t same = touch_map_turned(&k_board_glass, false);
-    CHECK(memcmp(&same, &k_board_glass, sizeof(same)) == 0);
+    CHECK(same_map(&same, &k_board_glass));
     const touch_map_t once = touch_map_turned(&k_board_glass, true);
     CHECK_EQ(once.rotation, TOUCH_ROTATION_180);
     CHECK_EQ(once.src_w, 1024);
     CHECK_EQ(once.src_h, 600);
     CHECK(once.mirror_x && once.mirror_y);
     const touch_map_t twice = touch_map_turned(&once, true);
-    CHECK(memcmp(&twice, &k_board_glass, sizeof(twice)) == 0);
+    CHECK(same_map(&twice, &k_board_glass));
     const touch_map_t none = touch_map_turned(NULL, true);
     CHECK_EQ(none.src_w, 0);
     CHECK_EQ(none.src_h, 0);

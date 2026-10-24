@@ -4444,7 +4444,6 @@ shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_MAX_CREDIT_S (macro defi
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_bar are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_button are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_card are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_chevron_left are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_choice_face_locked are not documented
@@ -4977,7 +4976,6 @@ shared/ui/motor_draw.c: warning: Member render_body(gfx_canvas_t *c, unsigned bi
 shared/ui/motor_draw.c: warning: Member render_session(gfx_canvas_t *c, unsigned bit, int buf, const prog_page_set_t *ps) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member tag_text(uint8_t tag, char *buf, size_t n) (function) of file motor_draw.c is not documented.
 shared/ui/motor_draw.c: warning: Member telemetry_tag(void) (function) of file motor_draw.c is not documented.
-shared/ui/motor_draw.c: warning: Member temp_text(char *out, size_t n, const char *label, float v, bool ok) (function) of file motor_draw.c is not documented.
 shared/ui/motor_events.c: warning: Member mo_event(const touch_event_t *evt) (function) of file motor_events.c is not documented.
 shared/ui/motor_events.c: warning: Member mo_safe_at(int x, int y) (function) of file motor_events.c is not documented.
 shared/ui/motor_events.c: warning: Member mo_tick(float dt_s) (function) of file motor_events.c is not documented.
@@ -5315,7 +5313,30 @@ shared/ui/picker_geometry.c: warning: Member pk_pop_rect(void) (function) of fil
 shared/ui/picker_geometry.c: warning: Member pk_pop_rows(void) (function) of file picker_geometry.c is not documented.
 shared/ui/picker_port.c: file has no @file block
 shared/ui/picker_port.h: file has no @file block
-shared/ui/picker_screen.c: file has no @file block
+shared/ui/picker_screen.c: warning: Member back(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member button_under(int x, int y) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member cancel(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member enter(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member event(const touch_event_t *evt) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member g_open_port (variable) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member g_prog_pins[LINK_PG_PORTS_MAX] (variable) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member leave(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pick(uint8_t proto) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pick_port(uint8_t port) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen_set_apply(picker_apply_fn fn) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen_set_drawing_source(picker_drawing_fn fn) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member picker_screen_set_select(picker_select_fn fn) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_channel_of(uint8_t index) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_drawing(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_iface_taken(uint8_t index) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_prog_taken(uint8_t index) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_proto_shown(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_s (variable) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_shape(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member pk_touched(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member reset(void) (function) of file picker_screen.c is not documented.
+shared/ui/picker_screen.c: warning: Member s_screen (variable) of file picker_screen.c is not documented.
 shared/ui/picker_screen_int.h: warning: Compound pk_state_t is not documented.
 shared/ui/picker_screen_int.h: warning: Member EBONY (macro definition) of file picker_screen_int.h is not documented.
 shared/ui/picker_screen_int.h: warning: Member GND_DROP (macro definition) of file picker_screen_int.h is not documented.

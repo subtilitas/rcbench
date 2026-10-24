@@ -153,6 +153,16 @@ int ui_unit_is_symbol(const char *unit);
  */
 const char *ui_unit_gap(const char *unit);
 
+/**
+ * @brief What holds a reserved pin, in the language showing: the words
+ *        out_bind.c gives a catalogue's LINK_PIN_* values ("heartbeat",
+ *        "flash", "debug", "sensor", "in use") from the text table, and any
+ *        other name ("CAN INT", "CAN") as it is.
+ * @param held_by  an outbind_pin_t's held_by, or NULL
+ * @return the text to show; "" for NULL
+ */
+const char *ui_pin_holder(const char *held_by);
+
 #ifdef GFX_TEXT_TRACE
 /** Defined by the fit check's harness: @p id was looked up. */
 void ui_text_trace(ui_text_id_t id);

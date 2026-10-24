@@ -255,8 +255,7 @@ Browser-Seite:
    einen anderen Build. Update unter SETUP > UPDATES.`. Die Frage öffnet
    sich auf dem Menü, solange die Bench SAFE ist, der Ausgang der
    Versorgung aus und der Funk des Panels aus. Sie nennt 0.20.0 auf dem
-   IOmcu und 0.22.1 im Panel. START 2s halten, oder nach CANCEL `2s
-   HALTEN: IOMCU AKTUALISIEREN` auf SETUP > UPDATES. Der Fortschritt füllt
+   IOmcu und 0.22.1 im Panel. START 2s halten, oder nach CANCEL `2s HALTEN ZUM IOMCU-UPDATE` auf SETUP > UPDATES. Der Fortschritt füllt
    den Bildschirm ([Bildschirme: IOmcu-Update](Screens-de.md#iomcu-update)),
    und danach meldet das Band `IOmcu auf 0.22.1 aktualisiert.`.
 
@@ -306,7 +305,7 @@ eigenen Dateien aus neuen Ordnern der SD-Karte (Secure Digital) und verschiebt k
    meldet, auf den Fehler von 0.21.0 und 0.21.1 getroffen
    ([unten](#die-prüfung-auf-0210-und-0211)): `NACH UPDATES SUCHEN` sofort
    noch einmal drücken.
-3. **Panel.** `2s HALTEN: LADEN & INSTALLIEREN` halten. Das Panel lädt das
+3. **Panel.** `2s HALTEN ZUM LADEN & INSTALLIEREN` halten. Das Panel lädt das
    Image, prüft es, schreibt den Slot, aus dem es nicht läuft, und startet
    neu in ihn. 0.22.1 startet auf Probe und bleibt, sobald Anzeige und
    Touch laufen; ein Start, der nicht so weit kommt, geht zurück zu 0.21.0.
@@ -314,7 +313,7 @@ eigenen Dateien aus neuen Ordnern der SD-Karte (Secure Digital) und verschiebt k
    Build. Update unter SETUP > UPDATES.`. Die Frage öffnet sich auf dem
    Menü, solange die Bench SAFE ist, der Ausgang der Versorgung aus und der
    Funk des Panels aus. Sie nennt 0.21.0 auf dem IOmcu und 0.22.1 im Panel.
-   START 2s halten, oder nach CANCEL `2s HALTEN: IOMCU AKTUALISIEREN` auf
+   START 2s halten, oder nach CANCEL `2s HALTEN ZUM IOMCU-UPDATE` auf
    SETUP > UPDATES. Danach meldet das Band `IOmcu auf 0.22.1 aktualisiert.`.
 
 `RELEASES` gilt sofort; SPEICHERN auf SETUP behält es. Eine Bench ohne
@@ -322,7 +321,7 @@ Heimnetz nimmt den Upload auf der Browser-Seite des Panels, in beiden
 Sprachen: SETUP > WI-FI > WLAN-HOTSPOT, das Netz verbinden, das der
 Bildschirm nennt, `http://192.168.4.1/` öffnen, den Zugangscode eingeben,
 unter `Panel-Firmware` `rcbench-panel-v0.22.1.bin` wählen und `Hochladen`
-drücken, dann am Panel `2s HALTEN: INSTALLIEREN` halten. Schritt 4 oben
+drücken, dann am Panel `2s HALTEN ZUM INSTALLIEREN` halten. Schritt 4 oben
 folgt. Eine Bench ohne Telefon oder Computer mit WLAN flasht
 `rcbench-panel-v0.22.1.zip` über USB wie in
 [Schritt 3](#aus-den-release-assets) oben, und Schritt 4 folgt.
@@ -349,7 +348,7 @@ SD-Karte wie 0.21.1; auf der Karte wird nichts verschoben.
    meldet, auf den Fehler von 0.21.1 getroffen
    ([unten](#die-prüfung-auf-0210-und-0211)): `NACH UPDATES SUCHEN` sofort
    noch einmal drücken.
-2. **Panel.** `2s HALTEN: LADEN & INSTALLIEREN` halten. Das Panel lädt das
+2. **Panel.** `2s HALTEN ZUM LADEN & INSTALLIEREN` halten. Das Panel lädt das
    Image, prüft es, schreibt den Slot, aus dem es nicht läuft, und startet
    neu in ihn. 0.22.1 startet auf Probe und bleibt, sobald Anzeige und
    Touch laufen; ein Start, der nicht so weit kommt, geht zurück zu 0.21.1.
@@ -357,7 +356,7 @@ SD-Karte wie 0.21.1; auf der Karte wird nichts verschoben.
    Build. Update unter SETUP > UPDATES.`. Die Frage öffnet sich auf dem
    Menü, solange die Bench SAFE ist, der Ausgang der Versorgung aus und der
    Funk des Panels aus. Sie nennt 0.21.1 auf dem IOmcu und 0.22.1 im Panel.
-   START 2s halten, oder nach CANCEL `2s HALTEN: IOMCU AKTUALISIEREN` auf
+   START 2s halten, oder nach CANCEL `2s HALTEN ZUM IOMCU-UPDATE` auf
    SETUP > UPDATES. Danach meldet das Band `IOmcu auf 0.22.1 aktualisiert.`.
 
 Eine Bench ohne Heimnetz nimmt den Upload auf der Browser-Seite des Panels,
@@ -395,7 +394,7 @@ SD-Karte wie 0.21.2; auf der Karte wird nichts verschoben.
    Versorgung aus und keinem offenen Log-Lauf: SETUP > UPDATES, `NACH
    UPDATES SUCHEN`, mit beiden Werten von RELEASES. Das Panel meldet
    `Version 0.22.1 ist verfügbar.`.
-2. **Panel.** `2s HALTEN: LADEN & INSTALLIEREN` halten. Das Panel lädt das
+2. **Panel.** `2s HALTEN ZUM LADEN & INSTALLIEREN` halten. Das Panel lädt das
    Image, prüft es, schreibt den Slot, aus dem es nicht läuft, und startet
    neu in ihn. 0.22.1 startet auf Probe und bleibt, sobald Anzeige und
    Touch laufen; ein Start, der nicht so weit kommt, geht zurück zu 0.21.2.
@@ -403,7 +402,7 @@ SD-Karte wie 0.21.2; auf der Karte wird nichts verschoben.
    Build. Update unter SETUP > UPDATES.`. Die Frage öffnet sich auf dem
    Menü, solange die Bench SAFE ist, der Ausgang der Versorgung aus und der
    Funk des Panels aus. Sie nennt 0.21.2 auf dem IOmcu und 0.22.1 im Panel.
-   START 2s halten, oder nach CANCEL `2s HALTEN: IOMCU AKTUALISIEREN` auf
+   START 2s halten, oder nach CANCEL `2s HALTEN ZUM IOMCU-UPDATE` auf
    SETUP > UPDATES. Danach meldet das Band `IOmcu auf 0.22.1 aktualisiert.`.
 
 Eine Bench ohne Heimnetz nimmt den Upload auf der Browser-Seite des Panels,
@@ -443,7 +442,7 @@ die Versionsnummern; es findet einen anderen Build und fragt.
    Versorgung aus und keinem offenen Log-Lauf: SETUP > UPDATES, `NACH
    UPDATES SUCHEN`, mit beiden Werten von RELEASES. Das Panel meldet
    `Version 0.22.1 ist verfügbar.`.
-2. **Panel.** `2s HALTEN: LADEN & INSTALLIEREN` halten. Das Panel lädt das
+2. **Panel.** `2s HALTEN ZUM LADEN & INSTALLIEREN` halten. Das Panel lädt das
    Image, prüft es, schreibt den Slot, aus dem es nicht läuft, und startet
    neu in ihn. 0.22.1 startet auf Probe und bleibt, sobald Anzeige und
    Touch laufen; ein Start, der nicht so weit kommt, geht zurück zu 0.22.0.
@@ -451,7 +450,7 @@ die Versionsnummern; es findet einen anderen Build und fragt.
    Build. Update unter SETUP > UPDATES.`. Die Frage öffnet sich auf dem
    Menü, solange die Bench SAFE ist, der Ausgang der Versorgung aus und der
    Funk des Panels aus. Sie nennt 0.22.0 auf dem IOmcu und 0.22.1 im Panel.
-   START 2s halten, oder nach CANCEL `2s HALTEN: IOMCU AKTUALISIEREN` auf
+   START 2s halten, oder nach CANCEL `2s HALTEN ZUM IOMCU-UPDATE` auf
    SETUP > UPDATES. Danach meldet das Band `IOmcu auf 0.22.1 aktualisiert.`.
 
 Eine Bench ohne Heimnetz nimmt den Upload auf der Browser-Seite des Panels,
