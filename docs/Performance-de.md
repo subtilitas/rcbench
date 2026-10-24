@@ -389,9 +389,9 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 424 | 1 744 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 440 | 1 728 |
 | `control` | `control_task` | 6 144 | 4 720 | 400 |
-| `runlog` | `log_task` | 6 656 | 4 112 | 1 520 |
+| `runlog` | `log_task` | 6 656 | 4 080 | 1 552 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 296 | 1 776 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 3 744 | 2 144 |
@@ -410,15 +410,15 @@ esp_http_client erreicht seinen Transport über einen Funktionszeiger. Sein
 Stack ist der des Servers der Seite, der nie neben ihm läuft; die Tiefe des
 Handshakes ist nicht gemessen.
 
-Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Größe einer
-Servodatei, die die Karte bedient (`kst_card_run()`, `kst_store_load()`,
-`io_size()`, `storage_stat()`), das erneute Einbinden einer Karte, die nicht
+Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
+Servodateien, die die Karte bedient (`kst_card_run()`, `kst_store_preset()`,
+`io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die nicht
 mehr antwortet (`storage_read_end()`, `mount_locked()`), und das
 `snprintf()` darunter. Das Werkzeug folgt jedem Aufruf, den das Einbinden
 machen kann, darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie
 erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
-ein (`storage_check()`). Die Kette braucht 4 112 Bytes; der Stack von 6 656
-Bytes lässt 1 520 über der Marge von 1 024 Bytes.
+ein (`storage_check()`). Die Kette braucht 4 080 Bytes; der Stack von 6 656
+Bytes lässt 1 552 über der Marge von 1 024 Bytes.
 
 Die tiefste Kette von `wifi_ctl` ist das Abschalten des Funks:
 `radio_down()`, die letzte Abfrage des NTP-Clients (Network Time Protocol,

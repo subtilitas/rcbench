@@ -2816,6 +2816,24 @@ NVS. Off, the page lists, sends files and takes an upload without a code,
 and the screen says `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the
 panel.
 
+Every request is checked before the access code, with the code on and
+off (`shared/webaccess/wa_guard.h`):
+
+| Check | Refused with |
+| --- | --- |
+| The `Host` header names the panel: `rcbench-3F7A.local`, `rcbench-3F7A` or the address the browser connected to (`192.168.4.1` as an access point), in any letter case, with no port or port 80. An IPv6 address is refused. | 421 Misdirected Request |
+| A page, file or ZIP request carries no body. | 400 Bad Request |
+| A code entry has at most 95 bytes of body. | 413 Content Too Large |
+| A code entry and an upload carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
+| An upload carries the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
+
+So another web page open in the same browser cannot reach the card under
+a DNS (domain name system) name of its own, cannot send codes that count
+toward the 16, and cannot send an image. A browser sends a header of its
+own on a request to another site only after asking that site, and the
+panel answers no such question with a yes. A refused request is answered
+before its body is read, and the connection closes with the answer.
+
 ### The page
 
 One HTML (hypertext markup language) page, with no script or style from

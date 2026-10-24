@@ -5,7 +5,7 @@
 # by the panel and by the host suite; the radio, the HTTP (hypertext
 # transfer protocol) server and client and the sockets are
 # firmware/panel/components/wifi_access.
-set(SRCS wa_session.c wa_text.c wa_walk.c wa_send.c wa_zip.c wa_page.c
+set(SRCS wa_session.c wa_text.c wa_walk.c wa_send.c wa_zip.c wa_page.c wa_guard.c
          wa_mdns.c wa_fetch.c)
 
 if(ESP_PLATFORM)

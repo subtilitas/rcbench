@@ -290,7 +290,11 @@ static fm_err_t io_mkdir(void *ctx, const char *path)
 static fm_err_t io_unlink(void *ctx, const char *path)
 {
     (void)ctx;
-    return path_call(path, 1);
+    /* Never beside the fault log's append (log_fault_lock()). */
+    log_fault_lock();
+    const fm_err_t e = path_call(path, 1);
+    log_fault_unlock();
+    return e;
 }
 
 /**
@@ -322,7 +326,12 @@ static fm_err_t io_rename(void *ctx, const char *from, const char *to)
     if (!full_path(from, a, sizeof(a)) || !full_path(to, b, sizeof(b))) {
         return FM_ERR_NAME;
     }
-    return (rename(a, b) == 0) ? FM_OK : err_of(errno);
+    /* Never beside the fault log's append (log_fault_lock()). */
+    log_fault_lock();
+    const int r = rename(a, b);
+    const int err = errno;
+    log_fault_unlock();
+    return (r == 0) ? FM_OK : err_of(err);
 }
 
 /**
@@ -493,6 +502,7 @@ static void job_bench(fm_bench_t *out, void *ctx)
     out->armed = s_snap.armed || s_snap.arm_wanted;
     out->link_up = s_snap.link_up;
     snap_unlock();
+    out->fault_busy = log_fault_busy();
     log_open_marks(&s_job_marks, s_job_run_dir, s_job_test_dir);
     out->marks = &s_job_marks;
 }
@@ -693,6 +703,7 @@ static void fio_bench(fm_bench_t *out, void *ctx)
     const ui_bench_status_t *st = ui_router_status();
     out->armed = st->armed;
     out->link_up = st->link_up;
+    out->fault_busy = log_fault_busy();
     log_open_marks(&s_ui_marks, s_ui_run_dir, s_ui_test_dir);
     out->marks = &s_ui_marks;
 }

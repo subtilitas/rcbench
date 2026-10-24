@@ -304,6 +304,7 @@ TRACKED = [
     "shared/webaccess/wa_zip.c",
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
+    "shared/webaccess/wa_guard.c",
     "shared/clock/wall_clock.c",
 ]
 
