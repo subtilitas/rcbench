@@ -430,7 +430,7 @@ static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
     return same_in(fb, want_fb, UI_MARGIN + 12, y, 596, h);
 }
 
-/* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2 S TO
+/* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2s TO
  * START on an armed one; an HV step makes START TEST a tap that opens the
  * warning and the line says so. */
 TEST_CASE(the_run_cards_say_what_their_start_needs)

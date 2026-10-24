@@ -353,10 +353,10 @@ typedef struct {
     char name[LOG_VIEWER_NAME_MAX];
     /* The footer message, kept as its text's ID and name, not as words,
      * so lv_message() words it in the language showing when it is drawn. */
-    lv_msg_kind_t msg_kind;           /* what the message holds          */
-    ui_text_id_t msg_id;              /* LV_MSG_TEXT: the text            */
-    log_err_t msg_err;                /* LV_MSG_ERR: the reader's verdict */
-    char msg_name[LOG_VIEWER_NAME_MAX]; /* the name it formats, or ""     */
+    lv_msg_kind_t msg_kind;           /**< what the message holds        */
+    ui_text_id_t msg_id;              /**< LV_MSG_TEXT: the text          */
+    log_err_t msg_err;                /**< LV_MSG_ERR: the verdict        */
+    char msg_name[LOG_VIEWER_NAME_MAX]; /**< the name it formats, or ""   */
     bool message_ok;  /* a result to report, not a failure */
 
     /*
