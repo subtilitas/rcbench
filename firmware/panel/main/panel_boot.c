@@ -23,6 +23,7 @@
 #include "log_viewer_screen.h"
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_perf.h"
 #include "panel_trial.h"
 #include "rcbench_version.h"
 #include "selftest.h"
@@ -183,6 +184,9 @@ bool bring_up(void)
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
     if (display_init(&dcfg) == ESP_OK) {
+        /* Before the first frame: nothing is painted yet that the probe's
+         * clears would spoil. */
+        perf_probe_psram();
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_OK, BOARD_DISPLAY_TEXT);
     } else {
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_FAIL, TR(SPLASH_NO_PANEL));
