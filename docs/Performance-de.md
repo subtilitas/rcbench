@@ -386,7 +386,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `runlog` | `log_task` | 6 656 | 4 112 | 1 520 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 296 | 1 776 |
-| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 744 | 352 |
+| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 3 744 | 2 144 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 344 | 1 728 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 3 040 | 4 128 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 3 504 | 2 128 |
@@ -416,7 +416,7 @@ Die tiefste Kette von `wifi_ctl` ist das Abschalten des Funks:
 `radio_down()`, die letzte Abfrage des NTP-Clients (Network Time Protocol,
 `wifi_ntp_poll()`) und die Zeitzeile, die er ausgibt (`wall_ntp_line()`,
 `wall_utc_text()`), deren `snprintf()` die Gleitkomma-Umwandlung von newlib
-erreicht. Sie lässt 352 Bytes über der Marge.
+erreicht. Sie lässt 2 144 Bytes über der Marge.
 
 Gemessen auf dem ESP32-P4-Build mit ESP-IDF v5.5.5 bei -O2. Von der Marge
 gehen 560 Bytes außerhalb der Frames auf:
@@ -506,7 +506,7 @@ gestellt, zeigt sie, was das Werkzeug nicht verfolgt.
 | `runlog` | 6 656 | nicht gemessen |
 | `knob` | 3 072 | nicht gemessen |
 | `touch` | 4 096 | nicht gemessen |
-| `wifi_ctl` | 5 120 | nicht gemessen |
+| `wifi_ctl` | 6 912 | nicht gemessen |
 | `mdns` | 4 096 | nicht gemessen |
 | `wifi_get` | 8 192 | nicht gemessen |
 | `cardjob` | 6 656 | nicht gemessen |
@@ -666,6 +666,11 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 `httpd_start` und das Anlegen der Tasks `wifi_ctl`, `wifi_get` und `mdns`.
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
+
+Die Funk-Task `wifi_ctl` belegt 6.912 Bytes internen RAM für ihren Stack,
+beim ersten Funkstart oder bei der ersten Release-Prüfung, und behält sie
+bis zum Neustart des Panels. Die statischen Werte des Builds für den
+internen RAM (unten) ändern sich dadurch nicht.
 
 Die Kartenaufgabe `cardjob` von FILES belegt 6.656 Bytes internen RAM für
 ihren Stack und 16.384 Bytes DMA-fähigen internen RAM für ihren

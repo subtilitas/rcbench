@@ -360,7 +360,7 @@ its stack less 1024 bytes.
 | `runlog` | `log_task` | 6,656 | 4,112 | 1,520 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,056 | 992 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,296 | 1,776 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,744 | 352 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 3,744 | 2,144 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,344 | 1,728 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 3,040 | 4,128 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 3,504 | 2,128 |
@@ -387,7 +387,7 @@ bytes leaves 1,520 above the 1,024-byte margin.
 `wifi_ctl`'s deepest chain is the radio's stop: `radio_down()`, the NTP
 (network time protocol) client's last poll (`wifi_ntp_poll()`) and the time
 line it logs (`wall_ntp_line()`, `wall_utc_text()`), whose `snprintf()`
-reaches newlib's float conversion. It leaves 352 bytes above the margin.
+reaches newlib's float conversion. It leaves 2,144 bytes above the margin.
 
 Measured on the ESP32-P4 build with ESP-IDF v5.5.5 at -O2. Of the margin,
 560 bytes are spent outside the frames:
@@ -470,7 +470,7 @@ not follow.
 | `runlog` | 6,656 | not measured |
 | `knob` | 3,072 | not measured |
 | `touch` | 4,096 | not measured |
-| `wifi_ctl` | 5,120 | not measured |
+| `wifi_ctl` | 6,912 | not measured |
 | `mdns` | 4,096 | not measured |
 | `wifi_get` | 8,192 | not measured |
 | `cardjob` | 6,656 | not measured |
@@ -619,6 +619,10 @@ event handlers, the network interface, `esp_wifi_init`,
 `httpd_start`, and the creation of the `wifi_ctl`, `wifi_get` and `mdns`
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
+
+The radio task `wifi_ctl` takes 6,912 bytes of internal RAM for its stack
+at the first radio start or release check and keeps it until the panel
+restarts. The build's static internal figures (below) do not change with it.
 
 FILES' card task `cardjob` takes 6,656 bytes of internal RAM for its stack
 and 16,384 bytes of DMA-capable internal RAM for its copy buffer. Both are
