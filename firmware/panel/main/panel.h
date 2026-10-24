@@ -31,6 +31,7 @@
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
+#include "files_screen.h"
 #include "hitec_rx_link.h"
 #include "kst_link.h"
 #include "kst_prog.h"
@@ -313,6 +314,11 @@ extern atomic_ullong s_servo_pins;
 extern atomic_bool   s_servo_pins_known;
 /* For the SERVO screen's runs: the SENSE page holds the encoder enabled. */
 extern atomic_bool   s_enc_held;
+
+/* ----------------------------------------------------------- panel_files.c */
+
+/** @brief FILES' way to the card: its requests run on the task cardjob. */
+extern const files_io_t k_files_io;
 
 /* ------------------------------------------------------------ panel_card.c */
 

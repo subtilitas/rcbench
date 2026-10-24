@@ -71,6 +71,7 @@ entries:
     kst_panel_draw (rcbench_extram_bss)
     analyser_screen (rcbench_extram_bss)
     wifi_screen (rcbench_extram_bss)
+    files_screen (rcbench_extram_bss)
     update_screen (rcbench_extram_bss)
     ui_band (rcbench_extram_bss)
     splash_screen (rcbench_extram_bss)

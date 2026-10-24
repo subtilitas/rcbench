@@ -375,6 +375,7 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_PICKER)) <= 32);
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_WIFI)) <= 32);
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_UPDATES)) <= 32);
+        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_FILES)) <= 32);
     }
     ui_text_set_language(UI_LANG_EN);
 }

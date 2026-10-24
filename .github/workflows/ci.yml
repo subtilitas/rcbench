@@ -249,9 +249,10 @@ jobs:
       # The analyser and the bug-shaped checks over the pure-C core, the
       # protocol cores and the host tests.  A module's rp2350/ folder is not
       # in the host build; cppcheck reads it with the firmware below.
-      # render_screen.c and bench_frame.c are built by tools/render_ui.py and
-      # tools/frame_cost.py, not by CMake, so they have no compile command
-      # here; render_ui.py builds the first with -Werror, cppcheck reads both.
+      # render_screen.c, render_files.c and bench_frame.c are built by
+      # tools/render_ui.py and tools/frame_cost.py, not by CMake, so they have
+      # no compile command here; render_ui.py builds the first two with
+      # -Werror, cppcheck reads all three.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.
       - name: clang-tidy
@@ -260,6 +261,7 @@ jobs:
                        'testbench/touch-injector/core/*.c' \
               | grep -v -e 'gfx_font' -e '/rp2350/' \
                         -e 'test/host/render_screen.c' \
+                        -e 'test/host/render_files.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 

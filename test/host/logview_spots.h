@@ -11,8 +11,8 @@
  *   - the file list from y 60, 1008 px wide: its rows under a 30 px heading
  *     at a pitch of 48 px, drawn 44 px tall from x 16; the scroll bar
  *     x 952 to 1008, from y 90, 332 px tall;
- *   - the footer y 440 to 492: RESCAN x 8, WI-FI x 156, DELETE x 728, OPEN
- *     x 876, 140 px each; the import's four buttons 246 px from x 8, 8 px
+ *   - the footer y 440 to 492: RESCAN x 8, DELETE x 728, OPEN x 876,
+ *     140 px each, WI-FI x 156 and FILES x 264, 100 px each; the import's four buttons 246 px from x 8, 8 px
  *     apart; the plot's BACK x 8 (140 px), < x 156 and > x 260 (96 px);
  *   - the import's column list from x 416, y 44: its rows at a pitch of
  *     48 px under a 30 px heading;
@@ -59,7 +59,8 @@
 #define LV_FOOT_Y     (UI_BODY_H - UI_ALERT_H - 4 - 52)
 #define LV_FOOT_CY    (LV_FOOT_Y + 26)          /**< Its middle row. */
 #define LV_RESCAN_CX  78            /**< RESCAN. */
-#define LV_WIFI_CX    226           /**< WI-FI. */
+#define LV_WIFI_CX    206           /**< WI-FI. */
+#define LV_FILES_CX   314           /**< FILES. */
 #define LV_DELETE_CX  798           /**< DELETE. */
 #define LV_OPEN_CX    946           /**< OPEN. */
 
@@ -77,9 +78,10 @@
 #define LV_WARN_Y     258
 #define LV_WARN_X0    16            /**< DETECTED's text, left. */
 #define LV_WARN_X1    392           /**< And right. */
-/** @brief A file message's line in the footer, WI-FI to DELETE: 400 px,
- *  33 cells of 12 x 24. */
-#define LV_MSG_W      400
+/** @brief A file message's line in the footer, FILES to DELETE: from x 380,
+ *  336 px, 28 cells of 12 x 24. */
+#define LV_MSG_X      380
+#define LV_MSG_W      336
 #define LV_MSG_LH     24            /**< A message line's pitch. */
 
 #define LV_PV_X0      16            /**< The plot's left column. */
