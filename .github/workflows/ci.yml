@@ -205,6 +205,66 @@ jobs:
     name: Lint and static analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the analysers
+        run: |
+          # Third-party lists this build never installs from; one serving a
+          # stale index fails the whole step.  See the note in the host job.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build clang-tidy
+          python3 -m pip install --quiet ruff==0.16.5
+
+      # clang-tidy needs to know how each file is compiled, and CMake can say.
+      - name: Describe the build
+        run: |
+          cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      # The analyser and the bug-shaped checks over the pure-C core, the
+      # protocol cores and the host tests.  A module's rp2350/ folder is not
+      # in the host build; cppcheck reads it with the firmware.
+      # render_screen.c, render_files.c and bench_frame.c are built by
+      # tools/render_ui.py and tools/frame_cost.py, not by CMake, so they have
+      # no compile command here; render_ui.py builds the first two with
+      # -Werror, cppcheck reads all three.
+      # Configuration and the reason for each disabled check are in
+      # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
+      # run; no result is kept between runs.
+      - name: clang-tidy
+        run: |
+          git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
+                       'testbench/touch-injector/core/*.c' \
+              | grep -v -e 'gfx_font' -e '/rp2350/' \
+                        -e 'test/host/render_screen.c' \
+                        -e 'test/host/render_files.c' \
+                        -e 'test/host/bench_frame.c' \
+              | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
+
+      # A translated format reaches snprintf() through a table lookup, which
+      # -Wformat cannot see; this compiles shared/ again with the English
+      # literals in place and fails on any format warning.
+      - name: Every translated format matches its call
+        run: python3 tools/check_formats.py
+
+      # The tools in tools/ are held to the same standard as the C: each of
+      # them can fail a build, so a bug in one is a bug in the gate.  Their
+      # tests are held to it too, and the script of the host suite.  The D
+      # rules ask for a Google-style docstring; ruff.toml lists the files
+      # excused some D codes, each with the codes on its line.
+      - name: ruff
+        run: ruff check tools/ test/tools/ test/host/
+
+  # cppcheck runs in a job of its own beside clang-tidy, which checks every
+  # file on every run: 4min to 9min (minutes) on the runners measured.
+  cppcheck:
+    name: cppcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       # cppcheck is built from the official source archive of this tag;
       # tools/install_cppcheck.sh stops when the SHA-256 differs.
@@ -221,16 +281,15 @@ jobs:
           path: ~/cppcheck-${{ env.CPPCHECK_VERSION }}
           key: cppcheck-${{ env.CPPCHECK_VERSION }}-${{ env.CPPCHECK_SHA256 }}-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Install the analysers
+      - name: Install the build tools
+        if: steps.cppcheck-cache.outputs.cache-hit != 'true'
         run: |
           # Third-party lists this build never installs from; one serving a
           # stale index fails the whole step.  See the note in the host job.
           sudo rm -fv /etc/apt/sources.list.d/*google* \
                       /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build clang-tidy
-          python3 -m pip install --quiet ruff==0.16.5
+          sudo apt-get install -y --no-install-recommends cmake ninja-build
 
       - name: Build cppcheck
         if: steps.cppcheck-cache.outputs.cache-hit != 'true'
@@ -246,30 +305,37 @@ jobs:
           "$HOME/cppcheck-$CPPCHECK_VERSION/bin/cppcheck" --version \
             | grep -qx "Cppcheck $CPPCHECK_VERSION"
 
-      # clang-tidy needs to know how each file is compiled, and CMake can say.
-      - name: Describe the build
+      # The options and include paths of the run below, in a file: the run
+      # reads them from it, and the build directory's cache is keyed on
+      # them and on the suppressions.
+      - name: Describe the cppcheck run
+        id: cppcheck-run
         run: |
-          cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          {
+            echo --error-exitcode=1 --std=c11 --quiet
+            echo --enable=warning,style,performance,portability
+            echo --inline-suppr --suppressions-list=.cppcheck-suppress
+            echo --check-level=exhaustive -Itest/host -Ifirmware/iomcu/include
+            git ls-files 'shared/**/include/*' \
+                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u
+            git ls-files 'protocols/**/include/*' \
+                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u
+            echo -Itestbench/touch-injector/core/include
+          } > "$RUNNER_TEMP/cppcheck-options"
+          echo "key=$(cat "$RUNNER_TEMP/cppcheck-options" .cppcheck-suppress \
+            | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
 
-      # The analyser and the bug-shaped checks over the pure-C core, the
-      # protocol cores and the host tests.  A module's rp2350/ folder is not
-      # in the host build; cppcheck reads it with the firmware below.
-      # render_screen.c, render_files.c and bench_frame.c are built by
-      # tools/render_ui.py and tools/frame_cost.py, not by CMake, so they have
-      # no compile command here; render_ui.py builds the first two with
-      # -Werror, cppcheck reads all three.
-      # Configuration and the reason for each disabled check are in
-      # .clang-tidy and test/host/.clang-tidy.
-      - name: clang-tidy
-        run: |
-          git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
-                       'testbench/touch-injector/core/*.c' \
-              | grep -v -e 'gfx_font' -e '/rp2350/' \
-                        -e 'test/host/render_screen.c' \
-                        -e 'test/host/render_files.c' \
-                        -e 'test/host/bench_frame.c' \
-              | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
+      # cppcheck re-reads a file only when its content or an included
+      # file's content differs from the record in the build directory, and
+      # replays the findings of the files it skips.  A run restores the
+      # newest directory its branch can see for this version, these options
+      # and these suppressions, and saves its own, also when a file fails.
+      - name: Restore the cppcheck build directory
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/cppcheck
+          key: cppcheck-build-${{ env.CPPCHECK_VERSION }}-${{ steps.cppcheck-run.outputs.key }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: cppcheck-build-${{ env.CPPCHECK_VERSION }}-${{ steps.cppcheck-run.outputs.key }}-
 
       # cppcheck sees different things: it is weaker on flow and better at
       # arithmetic and at the shapes that look wrong on their own.
@@ -278,20 +344,19 @@ jobs:
       - name: cppcheck
         run: |
           mkdir -p "$RUNNER_TEMP/cppcheck"
-          cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 --quiet \
-            --cppcheck-build-dir="$RUNNER_TEMP/cppcheck" \
-            --enable=warning,style,performance,portability \
-            --inline-suppr --suppressions-list=.cppcheck-suppress \
-            --check-level=exhaustive -Itest/host -Ifirmware/iomcu/include \
-            $(git ls-files 'shared/**/include/*' \
-                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
-            $(git ls-files 'protocols/**/include/*' \
-                | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
-            -Itestbench/touch-injector/core/include \
+          cppcheck -j "$(nproc)" --cppcheck-build-dir="$RUNNER_TEMP/cppcheck" \
+            $(cat "$RUNNER_TEMP/cppcheck-options") \
             $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
                 'testbench/touch-injector/core/*.c' \
                 | grep -v -e 'gfx_font' -e '/rp2350/') \
             $(git ls-files 'test/host/*.c')
+
+      - name: Save the cppcheck build directory
+        if: success() || failure()
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/cppcheck
+          key: cppcheck-build-${{ env.CPPCHECK_VERSION }}-${{ steps.cppcheck-run.outputs.key }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # The firmware and the pin drivers under protocols/*/rp2350 are
       # hardware access and wiring, and cppcheck reads them
@@ -327,20 +392,6 @@ jobs:
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             -Ifirmware/panel/main \
             firmware/panel/main/main.c
-
-      # A translated format reaches snprintf() through a table lookup, which
-      # -Wformat cannot see; this compiles shared/ again with the English
-      # literals in place and fails on any format warning.
-      - name: Every translated format matches its call
-        run: python3 tools/check_formats.py
-
-      # The tools in tools/ are held to the same standard as the C: each of
-      # them can fail a build, so a bug in one is a bug in the gate.  Their
-      # tests are held to it too, and the script of the host suite.  The D
-      # rules ask for a Google-style docstring; ruff.toml lists the files
-      # excused some D codes, each with the codes on its line.
-      - name: ruff
-        run: ruff check tools/ test/tools/ test/host/
 
   tools:
     name: Tool tests
