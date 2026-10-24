@@ -97,9 +97,16 @@ bool wifi_access_tick(wa_off_t gate, bool stop, bool may_write);
 void wifi_access_get(wifi_access_state_t *out);
 
 /**
- * Whether the radio is wholly off and no start of it is asked for; from
- * any task, without the lock.  A start asked for counts as up from the
- * call on, a close until the radio is off.
+ * @brief Whether the radio is wholly off and no start of it is asked for;
+ *        from any task, without the lock.
+ *
+ * A start asked for counts as up from the call on, a close until the
+ * station or access point is stopped and its interface is gone.  A GitHub
+ * fetch task still in a name lookup then does not hold it up: it sends
+ * nothing while the radio stays off, and no fetch job starts before it
+ * ends.
+ *
+ * @return true when the radio is off and nothing asks for it
  */
 bool wifi_access_down(void);
 
