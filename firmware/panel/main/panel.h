@@ -848,6 +848,18 @@ extern atomic_uint s_tq_published;
 extern uint32_t    s_lost_notice_seq;
 extern atomic_uint s_loss_gen;
 extern atomic_uint s_arm_ack;
+/** @brief The render loop's progress, for the control task's watchdog; see
+ *         frame_watch.h and main.c. */
+extern atomic_uint s_render_progress;
+
+/**
+ * @brief The render task made progress: a pass of its loop, or one card read
+ *        inside a pass.  Render task only.
+ */
+static inline void render_progress(void)
+{
+    atomic_fetch_add(&s_render_progress, 1u);
+}
 extern uint32_t    s_arm_take_gen;
 extern uint32_t    s_arm_take_drv;
 extern arm_watch_t s_arm_watch;

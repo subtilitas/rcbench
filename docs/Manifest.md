@@ -25,11 +25,11 @@ The original requirement list, in German:
 
 | Requirement | Implementation |
 | --- | --- |
-| External current sensors over I²C (Inter-Integrated Circuit) | On the I²C buses of the IO board's measurement IOmcu, the second of its two RP2354B (hardware/docs/IOBoard.md). The panel's I²C bus is reserved for the touch controller and the I/O expander. |
+| External current sensors over I²C (Inter-Integrated Circuit) | On the I²C buses of the IO board's measurement IOmcu, the second of its two RP2354B (hardware/docs/IOBoard.md). The panel's touch bus (GPIO7, GPIO8) carries the touch controller, and the rotary knob has an I²C bus of its own. |
 | ESC programmer (ESCs with AM32 and BLHeli_S firmware required) | One-wire half-duplex bootloader protocol at 19,200 baud on a PIO (programmable input/output) state machine |
 | Balancing with accelerometer and index sensor | Both sensors on the IOmcu, sampled on one timebase |
 | Servo tester with S.BUS and other protocols | Hardware PWM (pulse-width modulation) outputs; one PIO program per serial protocol |
-| Servo programming | The Hitec D-series protocol is published; other brands need a programmer to capture |
+| Servo programming | KST and Chaservo servos: a programmer on the SERVO screen with backup, limit checks and a write switch, over the IOmcu's programming port ([Servo programmer](ServoProgrammer.md)). Hitec servos: the wire protocol and the programming port are built, and a panel session is not ([The programming port for Hitec servos](LinkHitec.md)) |
 | Log viewer for several formats | `shared/logfile`: a CSV (comma-separated values) reader that accepts decimal comma or point, a units row and ragged rows |
 
 The state of each requirement is in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

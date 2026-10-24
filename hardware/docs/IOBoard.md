@@ -3,7 +3,7 @@
 What the IO board has to do, with the numbers the tree fixes. The IO
 board is the IOmcu board. It carries everything with a deadline:
 outputs, receiver inputs, sensor front ends, the power path and the CAN
-(Controller Area Network) link to the display. The display is the ESP32-S3
+(Controller Area Network) link to the display. The display is the ESP32-P4
 panel in `firmware/panel/`.
 
 **Status: draft.** No schematic exists. Round 1 of
@@ -520,7 +520,7 @@ pin catalogue's sensor holder: see
 - How each motor path's shunt value reaches the IOmcu: the SENSE page (0x2B) carries the shunt of one INA228 in µΩ, 50 to 20,000 (`docs/Link.md:765`), and the display's INA228 shunt setting takes the same range (`SET_INA228_UOHM` in `shared/settings/settings.c`), so a 50 µΩ external shunt can be entered. The page holds one INA228 set-up. How a second INA228 on the other shunt path is set up: not stated.
 - Which register carries the onboard shunt's temperature: not stated. The BENCH page has ESC and motor temperatures only (`LINK_BN_TEMP_ESC_DC`, `LINK_BN_TEMP_MOT_DC` in `shared/link/include/link_pages.h`; R8).
 - Which of the 2 motor temperature channels (F5) fills the BENCH page's one motor temperature register: not stated (`LINK_BN_TEMP_MOT_DC` in `shared/link/include/link_pages.h`). P1 of R12 asks the owner (Motor temperature sensor, above).
-- The IO board's own temperature: no register carries it. The die temperature on the display is the ESP32-S3's (`docs/Screens.md:135-139`). No question covers it.
+- The IO board's own temperature: no register carries it. The die temperature on the display is the ESP32-P4's (`docs/Screens.md`, MOTOR & ESC, the MCU temperature). No question covers it.
 - The cell monitor's part is ADBMS1818ASWAZ-RL (R9). Its balance-lead input network, its resolution and accuracy per cell, the balance-lead connector sizes, protection against a mis-plugged lead, and how cell samples align with the current for per-cell resistance under load: not stated (R9).
 - The link page for cell voltages: none is defined (`docs/Link.md:746-762`).
 - The highest rpm the rotation inputs and the vibration path follow: not stated. 10,000rpm is an example (`docs/Balance.md:60-69`; R11). The BENCH rpm register stops at 65,535rpm (`to_u16()` in `shared/bench/bench_state.c`).
