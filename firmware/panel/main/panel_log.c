@@ -28,6 +28,7 @@
 #include "log_viewer_screen.h"
 #include "log_writer.h"
 #include "panel.h"
+#include "panel_trial.h"
 #include "storage.h"
 #include "ui_card_text.h"
 #include "ui_text.h"
@@ -947,5 +948,7 @@ void log_task(void *arg)
          * waits. */
         kst_record_write();
         kst_card_serve();
+        /* One pass done: a step a new build's trial waits for. */
+        atomic_store(&s_trial_logger_ran, true);
     }
 }

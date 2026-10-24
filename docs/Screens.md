@@ -2934,9 +2934,32 @@ download started.
 
 ![The write failed](img/panel-update-failed.png)
 
-A new build's first start is a trial. The build is kept once the display and
-touch are up. A start that does not get there, by a fault, a restart or a
-missing touch controller, goes back to the build before it, which says
+A new build's first start is a trial. Without touch the panel restarts into
+the build before it at the touch step: a bench without touch has no STOP.
+With the display and touch up, the build is kept once the panel works as a
+whole:
+
+- the card was tried, and a missing or unreadable card counts;
+- the settings are loaded;
+- the control task and the logger task have each run one pass;
+- a whole frame reached the display, and the screen loop ticked once after
+  it.
+
+The IOmcu is not waited for: a panel without one is kept the same way.
+30s after the start the build is kept once the screen loop ticks, whatever
+else is missing. Keeping writes otadata, so it waits for a moment that can
+take a flash write, by the rule the settings save follows: not while the
+bench is ARMED or an arm waits, not while the supply output is on, and not
+while a board drawing is fetched or kept. The console says which way it
+went:
+
+    I (…) rcbench: 0.22.1 on trial: kept once every task runs and a frame is on the display, or at 30s after the start with the screen loop running
+    I (…) rcbench: 0.22.1 kept: every task runs and a frame is on the display, 4210ms after the start
+    W (…) rcbench: 0.22.1 kept at the 30s bound with the screen loop running; not seen: logger task
+
+The figure 4210ms is an example; the time is not measured. A start that
+does not get there, by a panic, a watchdog reset, a restart or a power
+cut, goes back to the build before it, which says
 `Panel firmware 0.22.1 failed to start. Version 0.22.0 is running again.` on the band.
 A failed start is never kept: when marking it invalid fails, the panel
 restarts with the trial unconfirmed, and the bootloader goes back all the
@@ -2948,6 +2971,11 @@ Current limitations:
 
 - A power cut during the trial start loses that line; the panel still goes
   back to the build before.
+- A trial start that stops before the screen loop runs, in a card mount
+  that does not return for example, is not kept and not reset either: the
+  task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is
+  off). The panel stays on the splash until a restart or a power cut,
+  which goes back to the build before.
 - How long the erase and the write take is not measured. The dark display
   at each erase is reported on 0.20.0 and not measured on 0.21.x.
 

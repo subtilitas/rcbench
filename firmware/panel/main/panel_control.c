@@ -29,6 +29,7 @@
 #include "outputs.h"
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_trial.h"
 #include "servo_link.h"
 #include "telemetry_sim.h"
 #include "touch.h"
@@ -505,6 +506,9 @@ void control_task(void *arg)
         /* --- last, after every arm and ON this pass applied: a sector of
          * the drawing's keep, on a safe bench only ---------------------- */
         art_keep_service();
+
+        /* One pass done: a step a new build's trial waits for. */
+        atomic_store(&s_trial_control_ran, true);
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
     }

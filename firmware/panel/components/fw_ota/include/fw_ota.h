@@ -1,13 +1,16 @@
-/*
- * The application slots, as the installer and the start-up need them.
+/**
+ * @file fw_ota.h
+ * @brief The application slots, as the installer and the start-up need
+ *        them.
  *
  * The flash holds two application slots, ota_0 and ota_1, and otadata, which
  * names the one the bootloader starts.  An update writes the slot that is
  * not running (fw_ota_flash()), checks it and names it in otadata.  The
  * bootloader is built with rollback (CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE):
- * a new build's first start is a trial, and a start that does not reach
- * fw_ota_boot_check() with the display and touch up goes back to the build
- * before it at the next restart.
+ * a new build's first start is a trial, and a start that resets before
+ * fw_ota_boot_check() keeps it goes back to the build before it.  When the
+ * panel calls it to keep the build is shared/fwupdate/fw_trial.h's rule
+ * (firmware/panel/main/panel_trial.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,26 +29,44 @@
 extern "C" {
 #endif
 
-/** Bytes of the slot an update writes; 0 when the table has no second slot. */
+/**
+ * @brief The slot an update writes.
+ * @return Its bytes; 0 when the table has no second slot.
+ */
 uint32_t fw_ota_slot_bytes(void);
 
-/** The running build: version and ELF (executable and linkable format)
- *  SHA-256, as fw_offer() compares them.  False when its version does not
- *  parse. */
+/**
+ * @brief The running build: version and ELF (executable and linkable
+ *        format) SHA-256, as fw_offer() compares them.
+ * @param out Where they go.
+ * @return False when its version does not parse.
+ */
 bool fw_ota_running(fw_image_info_t *out);
 
-/** The slot that is not running, for fw_install_begin(). */
+/**
+ * @brief The slot that is not running, for fw_install_begin().
+ * @return Its writer.
+ */
 const fw_flash_t *fw_ota_flash(void);
 
 /**
- * Before the restart into a written slot: what the next start reports when
- * that build does not stay.  @p version is the written build's.  Kept in
- * memory a software restart keeps and a power cut clears.
+ * @brief Before the restart into a written slot: what the next start
+ *        reports when that build does not stay.  Kept in memory a
+ *        software restart keeps and a power cut clears.
+ * @param version The written build's version.
  */
 void fw_ota_note_restart(const char *version);
 
 /**
- * Once, after the display and touch came up (@p ui_up), or did not.
+ * @brief Whether the running build is on its first start after an update
+ *        (pending verify), and fw_ota_boot_check() still settles it.
+ * @return True on a trial start.
+ */
+bool fw_ota_trial_pending(void);
+
+/**
+ * @brief Once per start: with @p ui_up false at the display or touch failing, or
+ * with @p ui_up true once the start is known to work (fw_trial.h).
  *
  * On a build's first start after an update: @p ui_up keeps it
  * (FW_BOOT_UPDATED, or FW_BOOT_UNCONFIRMED when otadata could not be
@@ -53,6 +74,12 @@ void fw_ota_note_restart(const char *version);
  * does not return (fw_boot_decide()).  After a start that went back:
  * FW_BOOT_ROLLED_BACK with the written build's version in @p other, when
  * fw_ota_note_restart() was called before it and no power cut came between.
+ *
+ * @param ui_up     Whether the start is kept (true) or goes back (false).
+ * @param other     Where the written build's version goes; may be NULL
+ *                  with @p other_cap 0.
+ * @param other_cap Bytes at @p other.
+ * @return What the check found.
  */
 fw_boot_t fw_ota_boot_check(bool ui_up, char *other, uint32_t other_cap);
 
