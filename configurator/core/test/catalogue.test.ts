@@ -868,12 +868,12 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   // A row of the data moved off its line in the tree.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const doc = lines(files, 'docs/FirstRun.md');
-    doc.splice(801, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
+    doc.splice(500, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:812 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:813 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:814 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:502 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:503 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:504 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -884,14 +884,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 812 SDA, 813 SCL,
-  // 814 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 502 SDA, 503 SCL,
+  // 504 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 812, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 813, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 502, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 503, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 814, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 504, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
