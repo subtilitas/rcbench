@@ -34,7 +34,7 @@ With the PD mini enabled, the header names the module and the IOmcu pins that ca
 | Header | Meaning |
 |---|---|
 | `ONLINE 38400` | the module answers; the number is the baud rate in use |
-| `NOT ANSWERING` | no IOmcu that speaks protocol 4.3 answers, or the readings are older than 1500ms; an output that is on is switched off |
+| `NOT ANSWERING` | no IOmcu of 0.10.0 or later answers, or the readings are older than 1500ms; an output that is on is switched off |
 
 Before the first switch-on the plot reads `Output has not been switched on yet.`, and the cards show dashes until a reading arrives.
 

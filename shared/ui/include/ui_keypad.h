@@ -170,7 +170,8 @@ const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k);
 /**
  * @brief The range line of the keypad's header: "3.30 to 21.00V", the
  *        unit joined to a symbol and after a space to a word
- *        (ui_unit_gap()), with the keypad's decimals.
+ *        (ui_unit_gap()), with the keypad's decimals.  A pin word
+ *        (ui_unit_is_prefix()) leads: "GPIO 0 to 54".
  * @param k The keypad.
  * @param buf Takes the line.
  * @param n Bytes at @p buf.

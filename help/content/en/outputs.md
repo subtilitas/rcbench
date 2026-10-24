@@ -75,12 +75,12 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![The PROG PORT entry](view:outputs-port)
 
-The open protocol list shows one PROG PORT entry per programming port the IOmcu reports, in a second column beside the protocols: 4 from protocol 4.26, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
+The open protocol list shows one PROG PORT entry per programming port the IOmcu reports, in a second column beside the protocols: 4 from IOmcu 0.22.0, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than 0.17.0 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
 
 | Row | Shows and does |
 |---|---|
 | PIN | `PIN GP13`, `SET A PIN`, `PIN GP14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
-| FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 4.28 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
+| FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 0.22.0 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
@@ -121,7 +121,7 @@ Every tick is written at once. The panel then reads the IOmcu's pages back and s
 | `NO LINK` | an exchange got no answer within 1000ms, or the link is down |
 | `REFUSED` | the IOmcu refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |
 
-An IOmcu of protocol 4.10 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
+An IOmcu of 0.15.0 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
 
 ## A binding that is not confirmed
 

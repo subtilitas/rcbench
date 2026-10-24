@@ -196,8 +196,9 @@ static void draw_row(gfx_canvas_t *c, int index)
     }
     c->clip = saved;
 
-    /* Value, then the unit after it, both right-aligned against the + key
-     * and centred in the row's height.  A value takes the body face, a
+    /* Value, then the unit after it (a pin word before it: "GPIO 4"), both
+     * right-aligned against the + key and centred in the row's height.
+     * A value takes the body face, a
      * number and a switch's or a choice's word alike.  A value wider than
      * the gap takes the label face, because a clipped value is worse than
      * a small one; no value of the present schema needs it
@@ -205,9 +206,11 @@ static void draw_row(gfx_canvas_t *c, int index)
     char buf[32];
     ui_setting_value(id, buf, sizeof(buf));
     int ux = VALUE_R;
-    if (d->unit && d->unit[0]
-        && !(d->off_below > 0.0f && settings_get(id) == 0.0f)) {
-        const int uw = gfx_text_width(STG_F_LABEL, d->unit, 1);
+    const bool has_unit = d->unit && d->unit[0]
+        && !(d->off_below > 0.0f && settings_get(id) == 0.0f);
+    const bool before = has_unit && ui_unit_is_prefix(d->unit);
+    const int uw = has_unit ? gfx_text_width(STG_F_LABEL, d->unit, 1) : 0;
+    if (has_unit && !before) {
         gfx_text(c, VALUE_R - uw,
                  r.y + (ROW_H - gfx_text_height(STG_F_LABEL, 1)) / 2 + 2,
                  d->unit, STG_F_LABEL, UI_TEXT_DIM, 1);
@@ -215,10 +218,16 @@ static void draw_row(gfx_canvas_t *c, int index)
     }
     const gfx_font_t *vf = STG_F_BODY;
     int vw = gfx_text_width(vf, buf, 1);
-    const int avail = ux - (MINUS_X + BTN_W + 8);
+    const int avail = ux - (MINUS_X + BTN_W + 8) - (before ? uw + 6 : 0);
     if (vw > avail) {
         vf = STG_F_LABEL;
         vw = gfx_text_width(vf, buf, 1);
+    }
+    if (before) {
+        /* A pin word leads its number: "GPIO 4". */
+        gfx_text(c, ux - vw - 6 - uw,
+                 r.y + (ROW_H - gfx_text_height(STG_F_LABEL, 1)) / 2 + 2,
+                 d->unit, STG_F_LABEL, UI_TEXT_DIM, 1);
     }
     int vy = r.y + (ROW_H - gfx_text_height(vf, 1)) / 2;
     gfx_text(c, ux - vw, vy, buf, vf, unheld ? UI_WARN : UI_ACCENT, 1);

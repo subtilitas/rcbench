@@ -924,6 +924,20 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
     CHECK_STR_EQ(ui_unit_gap(NULL), "");
 }
 
+/* A pin word leads its number ("GPIO 4"); no other unit does, and no unit
+ * that is not the exact word. */
+TEST_CASE(only_the_pin_word_leads_its_number)
+{
+    CHECK(ui_unit_is_prefix("GPIO"));
+    CHECK(!ui_unit_is_prefix("gpio"));
+    CHECK(!ui_unit_is_prefix("GPIO "));
+    CHECK(!ui_unit_is_prefix("GPIOs"));
+    CHECK(!ui_unit_is_prefix("V"));
+    CHECK(!ui_unit_is_prefix("cells"));
+    CHECK(!ui_unit_is_prefix(""));
+    CHECK(!ui_unit_is_prefix(NULL));
+}
+
 /* A reserved pin's holder: the catalogue's words from the table, upper
  * case, in German where German differs; any other name as it is; NULL as
  * the empty text. */
@@ -975,6 +989,7 @@ int main(void)
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     RUN(the_card_slot_has_three_words_at_every_place);
     RUN(a_number_joins_a_unit_symbol_and_spaces_a_word);
+    RUN(only_the_pin_word_leads_its_number);
     RUN(a_pin_holder_is_named_in_the_language_showing);
     return test_summary("text");
 }

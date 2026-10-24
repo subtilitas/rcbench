@@ -446,3 +446,8 @@ const char *ui_unit_gap(const char *unit)
     return (unit == NULL || unit[0] == '\0' || ui_unit_is_symbol(unit)) ? ""
                                                                          : " ";
 }
+
+int ui_unit_is_prefix(const char *unit)
+{
+    return unit != NULL && strcmp(unit, "GPIO") == 0;
+}

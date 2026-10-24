@@ -3380,6 +3380,12 @@ takes in place of the range, listed from the same rule: GPIO 5 typed shows
 
 ![GPIO 5 refused for Sensor SDA](img/setup-sda-why.png)
 
+A pin is written with the word first, `GPIO 1`, in the keypad's entry, on the
+row and in the question on leaving SETUP unsaved. The keypad's header gives
+the range the same way, `GPIO -1 to 47`.
+
+![The keypad of Sensor SDA, GPIO 1 typed](img/setup-sda-keypad.png)
+
 Stored settings: the `sns_scl` key is not read. Sensor SCL is derived from
 the stored Sensor SDA, and the key is saved with the derived value. A stored
 Sensor SDA outside the values above loads as 16, with no alert and without

@@ -482,9 +482,9 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
  * @param chip the chip
  * @param dot its dot's colour, 0 for none
  * @param fill its fill
- * @param ink its text colour: the theme's text, and on FAULT's warning
- *        fill the dark text of the buttons on bright fills (11.7:1 in the
- *        dark theme, 10.1:1 in the light one)
+ * @param ink its text colour: the theme's text, and on the bright fills of
+ *        FAULT's warning and of the armed badge the dark text of the
+ *        buttons on bright fills
  */
 static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
                       gfx_color_t *dot, gfx_color_t *fill, gfx_color_t *ink)
@@ -501,6 +501,7 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
          * pulse, and one on SERVO the motor. */
         if (st->armed) {
             *fill = ui_theme_color(UI_C_DANGER);
+            *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
         }
         break;
     case UI_BAND_CHIP_FAULT:
@@ -514,6 +515,24 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
     default:
         break;
     }
+}
+
+bool ui_band_chip_colors(const ui_bench_status_t *st, ui_band_chip_t chip,
+                         gfx_color_t *fill, gfx_color_t *ink)
+{
+    if (st == NULL || chip <= UI_BAND_CHIP_NONE
+        || chip >= UI_BAND_CHIP_COUNT) {
+        return false;
+    }
+    gfx_color_t dot, f, i;
+    chip_look(st, chip, &dot, &f, &i);
+    if (fill != NULL) {
+        *fill = f;
+    }
+    if (ink != NULL) {
+        *ink = i;
+    }
+    return true;
 }
 
 /** @brief One step of the 32-bit FNV-1a hash over @p n bytes at @p p. */

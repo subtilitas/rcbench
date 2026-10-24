@@ -71,7 +71,7 @@ Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gesta
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
 
-Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als Protokoll 4.18, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
+Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als 0.18.0, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
 
 AUTO-LOGS aus unter [SETUP > SD CARD](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; USER-LOGS aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `USER-LOGS AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
 
