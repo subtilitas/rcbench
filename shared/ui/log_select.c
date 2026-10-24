@@ -110,24 +110,7 @@ void log_select_sort(log_viewer_file_t *set, int count)
     qsort(set, (size_t)count, sizeof(set[0]), by_display_order);
 }
 
-/* ------------------------------------------------- reports standing alone */
-
-/** @brief Whether bit @p n of @p bits is set.
- *  @param bits  a prefix's bits
- *  @param n     a run number, LOG_RUN_FIRST to LOG_RUN_LAST
- *  @return the bit */
-static bool bit(const uint8_t *bits, int n)
-{
-    return (bits[n / 8] & (uint8_t)(1u << (n % 8))) != 0u;
-}
-
-/** @brief Set bit @p n of @p bits.
- *  @param bits  a prefix's bits
- *  @param n     a run number, LOG_RUN_FIRST to LOG_RUN_LAST */
-static void set_bit(uint8_t *bits, int n)
-{
-    bits[n / 8] = (uint8_t)(bits[n / 8] | (1u << (n % 8)));
-}
+/* ------------------------------------------------- which names are listed */
 
 /** @brief Whether @p name ends in ".csv", case folded, after a base name.
  *  @param name  a file's name
@@ -148,59 +131,7 @@ static bool is_csv(const char *name)
     return true;
 }
 
-void log_lone_begin(log_lone_t *l)
+bool log_select_lists(const char *name)
 {
-    if (l != NULL) {
-        memset(l, 0, sizeof(*l));
-    }
-}
-
-bool log_lone_first(log_lone_t *l, const char *name)
-{
-    if (name == NULL) {
-        return false;
-    }
-    log_prefix_t k = LOG_PREFIX_ATEST;
-    bool report = false;
-    const int n = log_name_parse(name, &k, &report);
-    if (n < 0) {
-        return is_csv(name);
-    }
-    if (!report) {
-        if (l != NULL) {
-            set_bit(l->csv[k], n);
-        }
-        return true;
-    }
-    if (k == LOG_PREFIX_LIMIT) {
-        return true;        /* a limit run writes no CSV */
-    }
-    if (l != NULL) {
-        set_bit(l->txt[k], n);
-    }
-    return false;
-}
-
-bool log_lone_again(const log_lone_t *l)
-{
-    if (l == NULL) {
-        return false;
-    }
-    for (int k = 0; k < (int)LOG_PREFIX_COUNT; ++k) {
-        for (int i = 0; i < LOG_LONE_BYTES; ++i) {
-            if ((l->txt[k][i] & (uint8_t)~l->csv[k][i]) != 0u) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool log_lone_second(const log_lone_t *l, const char *name)
-{
-    log_prefix_t k = LOG_PREFIX_ATEST;
-    bool report = false;
-    const int n = (l != NULL) ? log_name_parse(name, &k, &report) : -1;
-    return n >= 0 && report && k != LOG_PREFIX_LIMIT && bit(l->txt[k], n)
-           && !bit(l->csv[k], n);
+    return name != NULL && (is_csv(name) || log_report_number(name) >= 0);
 }

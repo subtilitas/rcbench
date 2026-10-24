@@ -113,6 +113,17 @@ history is in git.
 
 ### Fixed
 
+- LOGS lists every report: `ATESTnnn.TXT` beside its `ATESTnnn.CSV`, which
+  it left off its list, now stands as a row of its own after the run's CSV
+  and opens as text. FILES' OPEN on a file its list labels REPORT
+  (BERICHT) in ROOT, USER or BENCH opens it in LOGS on that tab, where it
+  refused `ATESTnnn.TXT` beside its CSV with `LOGS opens .csv files and
+  reports in ROOT, USER and BENCH.` Both take one rule
+  (`log_select_lists()`), the one FILES labels a report by. A file the
+  logger still writes greys OPEN and reads `ATEST012.TXT is being written.`;
+  a file gone since FILES listed it reads
+  `LIMIT013.TXT is not on the card. Tap RESCAN.` The panel walks a folder
+  once a page; the second walk and its 1,750 bytes of PSRAM are gone.
 - The `wifi_ctl` task, which stops the radio and logs the NTP result,
   runs on a stack of 6912 bytes instead of 5120. Its deepest call chain,
   3744 bytes through `snprintf()`, left 352 bytes above the 1024-byte
