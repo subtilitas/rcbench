@@ -332,6 +332,19 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
         {"(4 kB)", 1u, 4u, TEXT_HL_UNIT},
         {"x 3.0 MB", 2u, 6u, TEXT_HL_UNIT},
         {"x 2.0 s", 2u, 5u, TEXT_HL_UNIT},
+        /* Joined, as the reports write a unit: no space between. */
+        {"x 6.00V", 2u, 5u, TEXT_HL_VOLT},
+        {"x 6.00V,", 2u, 5u, TEXT_HL_VOLT},
+        {"6.00V", 0u, 5u, TEXT_HL_VOLT},
+        {"x 12mV", 2u, 4u, TEXT_HL_VOLT},
+        {"x +0.15A", 2u, 6u, TEXT_HL_CURR},
+        {"x 333Hz)", 2u, 5u, TEXT_HL_RATE},
+        {"x 40s", 2u, 3u, TEXT_HL_UNIT},
+        {"x 1500us", 2u, 6u, TEXT_HL_UNIT},
+        {"x 10.0/s", 2u, 6u, TEXT_HL_UNIT},
+        {"x 100.0m\xCE\xA9,", 2u, 8u, TEXT_HL_UNIT},
+        {"x 120\xCE\xA9", 2u, 5u, TEXT_HL_UNIT},
+        {"x 800-2200us", 6u, 6u, TEXT_HL_UNIT},
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
         const size_t n = hl_line(k[i].line, 3u, TEXT_HL_KIND_TEXT);
@@ -342,8 +355,12 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
     }
     static const char *const k_text[] = {
         "x 1.8 x free", "AS5600 x", "GP13 A", "rcbench 0.0.0 V", "x 20k_sel",
-        "x 5V", "x 3 Ab", "x 4.80  V", "x 1.5.", "x 800-2200", "x 3. A",
+        "x 3 Ab", "x 4.80  V", "x 1.5.", "x 800-2200", "x 3. A",
         "Stretch = x1", "x 1500 usx", "x 5 v", "x 5 \xCE\xA9x", "x 5 m\xCE",
+        /* A word joined to a number is no unit, nor are the letters of
+         * one that run on. */
+        "x 6.00Volt", "x 5x", "x 5x free", "x 3Ab", "x 5v", "x 1500usx",
+        "x 5\xCE\xA9x", "x 5m\xCE", "x 4.80Vs", "x 5V_",
     };
     for (size_t i = 0u; i < sizeof(k_text) / sizeof(k_text[0]); ++i) {
         const size_t n = hl_line(k_text[i], 3u, TEXT_HL_KIND_TEXT);
@@ -451,6 +468,27 @@ TEST_CASE(the_servo_test_report_is_classed_line_by_line)
             if (heads < (how == 2 ? 2u : 5u)) {
                 T_FAIL("lang %d run %d: %zu headings", lang, how, heads);
             }
+        }
+    }
+    /* The units the report joins to its numbers ("6.00V") are classed. */
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        run_in(lang, 0);
+        size_t volts = 0u;
+        for (const char *ln = g.report; *ln != '\0';) {
+            const size_t len = strcspn(ln, "\n");
+            char line[200];
+            if (len < sizeof(line)) {
+                memcpy(line, ln, len);
+                line[len] = '\0';
+                const size_t n = hl_line(line, 20u, TEXT_HL_KIND_TEXT);
+                for (size_t sp = 0u; sp < n; ++sp) {
+                    volts += (hl_spans[sp].cls == TEXT_HL_VOLT) ? 1u : 0u;
+                }
+            }
+            ln += len + (ln[len] == '\n' ? 1u : 0u);
+        }
+        if (volts < 3u) {
+            T_FAIL("lang %d: %zu voltages classed", lang, volts);
         }
     }
     /* The step table's rows are numbers alone: text. */
