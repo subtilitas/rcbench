@@ -75,9 +75,8 @@ static bool host_name_ok(const char *s, size_t n, const wa_self_t *self)
  */
 static bool host_part_ok(const char *s, size_t n, const wa_self_t *self)
 {
-    if (n == 0u || s[0] == '[') {
-        return false;               /* nothing, or IPv6 */
-    }
+    /* An empty host and an IPv6 literal match no name: the literal's first
+     * ':' starts no port of "80". */
     const char *colon = memchr(s, ':', n);
     size_t name_n = n;
     if (colon != NULL) {
