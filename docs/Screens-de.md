@@ -3499,6 +3499,18 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   Verbindung, wie sie war. Wie lange eine Antwort in einem echten Netz
   braucht, ist nicht gemessen; im Heimnetz des Prüfstands kam eine 7,2s
   nach der Adresse.
+- Eine GitHub-Anfrage, die noch auf ihre Namensauflösung wartet, hält das
+  Funkteil nicht an: Das Funkteil wartet höchstens 1,5s auf die Anfrage,
+  geht dann aus, und die Auflösung endet, wenn lwIP sie aufgibt. Bis dahin
+  startet keine neue Suche und kein Download.
+- Nach jeder Verbindung nennt die Konsole die DNS-Server (Domain Name
+  System), die das Heimnetz vergeben hat, in der Reihenfolge, in der lwIP
+  sie fragt, zum Beispiel `wifi: dns 192.0.2.53, 192.0.2.1`.
+- Aktuelle Einschränkung: Ein erster DNS-Server, der nicht antwortet,
+  verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, die der
+  NTP-Anfrage wie die der Release-Prüfung. lwIP fragt einen Server bei 0s,
+  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v5.5.5 bietet keinen der
+  beiden Werte in seiner Konfiguration an.
 - Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
   die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -4452,6 +4464,11 @@ es zur Release-Linie des Panels gehört und neuer als der laufende Build ist.
 Die Linie des ESP32-P4-Panels enthält jedes Release
 ([Die Release-Linie](#die-release-linie)).
 
+Aktuelle Einschränkung beider Einstellungen: Ein erster DNS-Server (Domain
+Name System) des Heimnetzes, der nicht antwortet, verzögert jede
+Namensauflösung um etwa 7s, von den 30s der Suche
+([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)).
+
 Aktuelle Einschränkungen von `TESTING`: GitHub beantwortet ohne Konto 60
 API-Anfragen pro Stunde und öffentlicher IP-Adresse (Internet Protocol), und
 die Geräte hinter einer Adresse teilen sie sich. Jede Suche ist eine
@@ -4463,7 +4480,8 @@ ist.
 
 Die Karte zeigt den Schritt (`Verbindung mit Workshop 2.4 wird aufgebaut`, `GitHub wird geprüft.`)
 und die verbleibenden Sekunden (`noch 26s`). Das Ergebnis bleibt auf der
-Karte bis zur nächsten Suche:
+Karte bis zur nächsten Suche; eine für WI-FI abgebrochene Suche verschwindet,
+sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist:
 
 ![Ein neueres Release](img/de/updates-newer.png)
 ![Aktuell](img/de/updates-current.png)
@@ -4482,7 +4500,7 @@ Karte bis zur nächsten Suche:
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` und `Neuestes Release auf GitHub: 0.22.1.` | Die Version des laufenden Builds ist nicht lesbar. Kein Release wird angeboten. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header (`STABLE`) oder die Antwort der API (`TESTING`) fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabellen unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
-| `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
+| `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. Die Zeile verschwindet, sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist. |
 | `Abgebrochen: IOmcu-Update gestartet.` | Das Update des IOmcu begann. |
 | `Abgebrochen.` | ABBRECHEN. |
 | `WLAN konnte nicht starten.` | Der Funk kam nicht hoch. |

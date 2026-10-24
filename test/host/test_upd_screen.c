@@ -491,6 +491,75 @@ TEST_CASE(a_running_job_says_its_step_and_the_time_left)
     upd_result_text(&g_v, a, sizeof(a), NULL, 0u);
 }
 
+/*
+ * A job stopped for WI-FI says WI-FI is using Wi-Fi: once the radio is off
+ * and nothing asks for it, the line goes, in both languages, and no other
+ * result goes with it.
+ */
+TEST_CASE(a_stop_for_wifi_clears_once_the_radio_is_free)
+{
+    char a[96], b[96];
+    fresh();
+    g_v.job = UPD_JOB_CHECK;
+    g_v.phase = UPD_PH_ENDED;
+    g_v.got = UPD_GOT_ABORTED;
+    g_v.why = UPD_WHY_FILES;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Stopped: the WI-FI screen is using Wi-Fi.");
+    g_v.radio_free = true;
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+        for (int job = 0; job < 2; ++job) {
+            g_v.job = (upd_job_t)job;
+            g_v.got = UPD_GOT_ABORTED;
+            upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+            CHECK_STR_EQ(a, "");
+            CHECK_STR_EQ(b, "");
+            g_v.got = UPD_GOT_BLOCKED;
+            upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+            CHECK_STR_EQ(a, "");
+            CHECK_STR_EQ(b, "");
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    g_v.job = UPD_JOB_CHECK;
+    /* Back up for a session: the line is back while it lasts. */
+    g_v.got = UPD_GOT_ABORTED;
+    g_v.radio_free = false;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Stopped: the WI-FI screen is using Wi-Fi.");
+    /* Every other reason stays with the radio free. */
+    g_v.radio_free = true;
+    for (int why = 0; why <= UPD_WHY_DRAWING; ++why) {
+        if (why == UPD_WHY_FILES) {
+            continue;
+        }
+        g_v.why = (upd_why_t)why;
+        g_v.got = UPD_GOT_ABORTED;
+        upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+        CHECK(a[0] != '\0');
+        g_v.got = UPD_GOT_BLOCKED;
+        upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+        CHECK(a[0] != '\0');
+    }
+    g_v.why = UPD_WHY_ARMED;
+    g_v.got = UPD_GOT_ABORTED;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Wi-Fi switched off: bench ARMED.");
+    /* Another result that carries the reason's leftover stays. */
+    g_v.why = UPD_WHY_FILES;
+    g_v.got = UPD_GOT_CONNECT;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "No connection to GitHub.");
+    /* A job under way says its step, the radio free or not. */
+    g_v.got = UPD_GOT_NONE;
+    g_v.phase = UPD_PH_JOINING;
+    g_v.left_s = 30u;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Connecting to workshop");
+    CHECK_STR_EQ(b, "30s left");
+}
+
 TEST_CASE(a_result_cut_to_a_short_buffer_stays_terminated)
 {
     char a[8], b[4];
@@ -1003,6 +1072,7 @@ int main(void)
     RUN(the_download_hold_ends_unfired_when_the_gate_closes_under_it);
     RUN(every_result_has_a_text_in_both_languages);
     RUN(a_running_job_says_its_step_and_the_time_left);
+    RUN(a_stop_for_wifi_clears_once_the_radio_is_free);
     RUN(a_result_cut_to_a_short_buffer_stays_terminated);
     RUN(the_reminder_opens_on_a_safe_overview_only);
     RUN(the_reminder_yields_unanswered_and_comes_back);
