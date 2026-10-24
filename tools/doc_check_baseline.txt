@@ -976,7 +976,6 @@ firmware/panel/main/panel_boot.c: warning: Member TAG (variable) of file panel_b
 firmware/panel/main/panel_boot.c: warning: Member poll_identity(link_host_t *host, link_msg_t *reply) (function) of file panel_boot.c is not documented.
 firmware/panel/main/panel_boot.c: warning: Member pump(void) (function) of file panel_boot.c is not documented.
 firmware/panel/main/panel_boot.c: warning: Member s_busfault (variable) of file panel_boot.c is not documented.
-firmware/panel/main/panel_card.c: warning: Compound card_pick_t is not documented.
 firmware/panel/main/panel_card.c: warning: Compound esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member CARD_PATH_MAX (macro definition) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member ESC_CARD_DIR (macro definition) of file panel_card.c is not documented.
@@ -996,7 +995,6 @@ firmware/panel/main/panel_card.c: warning: Member card_written(log_viewer_tab_t 
 firmware/panel/main/panel_card.c: warning: Member esc_card_take(const storage_entry_t *entry, void *ctx) (function) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member esc_profiles_load(void) (function) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member esc_profiles_read(void) (function) of file panel_card.c is not documented.
-firmware/panel/main/panel_card.c: warning: Member files (variable) of struct card_pick_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member files (variable) of struct esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member held (variable) of struct esc_card_t is not documented.
 firmware/panel/main/panel_card.c: warning: Member k_card_io (variable) of file panel_card.c is not documented.
@@ -1026,7 +1024,6 @@ firmware/panel/main/panel_card.c: warning: Member s_kst_path_new[64] (variable) 
 firmware/panel/main/panel_card.c: warning: Member s_log_open_run (variable) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member s_test_open_run (variable) of file panel_card.c is not documented.
 firmware/panel/main/panel_card.c: warning: Member s_test_open_txt (variable) of file panel_card.c is not documented.
-firmware/panel/main/panel_card.c: warning: Member sel (variable) of struct card_pick_t is not documented.
 firmware/panel/main/panel_control.c: warning: Member TAG (variable) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member beat(bool alive) (function) of file panel_control.c is not documented.
 firmware/panel/main/panel_control.c: warning: Member control_pump(void) (function) of file panel_control.c is not documented.

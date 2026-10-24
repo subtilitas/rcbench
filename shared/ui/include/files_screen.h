@@ -11,8 +11,9 @@
  * while the folder holds more than one page of FM_PAGE_MAX entries.
  *
  * The footer holds OPEN, COPY, MOVE, RENAME, DELETE, NEW, INFO and RESCAN.
- * OPEN enters a folder, and hands a .CSV file or a report standing alone in
- * one of LOGS' three folders to LOGS (log_viewer_show()).  DELETE asks
+ * OPEN enters a folder, and hands a .CSV file or a report in one of LOGS'
+ * three folders to LOGS (log_viewer_show()): the names LOGS' list holds
+ * (log_select_lists()), less a file the logger has open.  DELETE asks
  * first.  NEW makes a folder or an empty text file, its name typed on the
  * file-name keyboard (ui_textkey_open_file()), as RENAME takes one.  INFO
  * shows an entry's name, folder, kind, size and time, and a folder's

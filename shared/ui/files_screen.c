@@ -24,6 +24,7 @@
 #include "fm_name.h"
 #include "fm_ops.h"
 #include "log_name.h"
+#include "log_select.h"
 #include "log_viewer_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -518,7 +519,9 @@ static bool logs_tab_of(const char *dir, log_viewer_tab_t *tab)
 
 /**
  * @brief Whether LOGS shows entry @p e of folder @p dir: a .csv file, or a
- *        report, in the folder of one of its tabs.
+ *        report, in the folder of one of its tabs.  The names are the ones
+ *        LOGS' list holds (log_select_lists()); a report is the name the
+ *        list here labels one (fm_kind_of(), log_report_number()).
  * @param dir  the entry's folder
  * @param e    the entry
  * @return true when OPEN hands it to LOGS
@@ -526,11 +529,7 @@ static bool logs_tab_of(const char *dir, log_viewer_tab_t *tab)
 static bool logs_shows(const char *dir, const fm_entry_t *e)
 {
     log_viewer_tab_t tab;
-    if (e->is_dir || !logs_tab_of(dir, &tab)) {
-        return false;
-    }
-    return e->kind == FM_KIND_RUN || e->kind == FM_KIND_CSV
-           || e->kind == FM_KIND_REPORT;
+    return !e->is_dir && logs_tab_of(dir, &tab) && log_select_lists(e->name);
 }
 
 /* --------------------------------------------------------------- footer */
@@ -546,6 +545,9 @@ bool fs_foot_live(fs_foot_t b, fm_err_t *why)
     case FS_OPEN:
         if (e == NULL || (!e->is_dir && !logs_shows(here->dir, e))) {
             err = FM_ERR_ARG;
+        } else if (!e->is_dir && fm_busy(&s.bench, here->dir, e->name)) {
+            /* The logger's open file: LOGS leaves it off its list. */
+            err = FM_ERR_BUSY;
         }
         break;
     case FS_COPY:
@@ -608,7 +610,8 @@ static void start_job(fm_err_t err, const char *name)
 
 /**
  * @brief OPEN on a file LOGS shows: LOGS, on that file's tab, with it
- *        open.
+ *        open.  A file LOGS' list does not hold now, one gone from the
+ *        card since this list was read, stays here with FM_E_NOT_FOUND.
  * @param e  the entry
  */
 static void open_in_logs(const fm_entry_t *e)
@@ -623,7 +626,7 @@ static void open_in_logs(const fm_entry_t *e)
         return;
     }
     if (r != LOG_SHOW_OPEN) {
-        fs_say(false, TX_FM_OPEN_WHERE, NULL, NULL);
+        fs_say_err(FM_ERR_NOT_FOUND, e->name);
         return;
     }
     ui_router_goto(SCREEN_LOGS);
@@ -651,7 +654,7 @@ void fs_foot(fs_foot_t b)
     if (!fs_foot_live(b, &why)) {
         if (e == NULL && why == FM_ERR_ARG) {
             fs_say(false, TX_FM_SELECT_FIRST, NULL, NULL);
-        } else if (b == FS_OPEN) {
+        } else if (b == FS_OPEN && why == FM_ERR_ARG) {
             fs_say(false, TX_FM_OPEN_WHERE, NULL, NULL);
         } else {
             fs_say_err(why, name);
