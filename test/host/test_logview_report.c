@@ -1,19 +1,20 @@
 /**
  * @file test_logview_report.c
- * @brief Host tests for the reports standing alone on LOGS.
+ * @brief Host tests for the reports on LOGS.
  *
- * A LIMIT RUN writes LIMITnnn.TXT and no CSV (comma-separated values), and
+ * A servo automatic test writes ATESTnnn.CSV (comma-separated values) and
+ * its report ATESTnnn.TXT, a LIMIT RUN writes LIMITnnn.TXT and no CSV, and
  * firmware 0.21.0 and older wrote a limit run's SERVOnnn.TXT alone into the
- * card's root.  The failures under test: such a report missing from the
- * list, a run's report listed beside its CSV, a report sorted after the runs
- * it is newer than, a page that loses or doubles an entry when the reports
- * arrive in a second walk, a report opened in the CSV import, a frame that
- * reads the whole text to draw its last rows, and a report's 32KiB kept
- * after its view is left.  The rows themselves are test_log_text.c's.
+ * card's root.  The failures under test: a report missing from the list,
+ * beside its run's CSV or without it, a text file that is no report listed,
+ * the list's rule and FILES' report label apart, a report sorted after the
+ * runs it is newer than, a page that loses or doubles an entry, a report
+ * opened in the CSV import, a frame that reads the whole text to draw its
+ * last rows, and a report's 32KiB kept after its view is left.  The rows
+ * themselves are test_log_text.c's.
  *
- * The fake card offers each folder through the notes of log_select.h, as
- * the panel's lister does: the CSV files and the LIMIT reports in the first
- * walk, the other reports standing alone in a second one.
+ * The fake card offers each folder through log_select_lists(), as the
+ * panel's lister does, in one walk.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,6 +24,7 @@
 #include <stdlib.h>
 
 #include "card_tree.h"
+#include "fm_rules.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "log_text.h"
@@ -52,7 +54,7 @@ static fake_file_t g_files[FAKE_MAX];
 static int g_n;
 static char g_dir[CARD_DIR_MAX];
 static log_mem_ctx_t g_mem;
-static int g_walks;             /* walks of a folder, both passes counted */
+static int g_walks;             /* walks of a folder */
 static bool g_open_refuses;
 static char g_removed[LOG_VIEWER_NAME_MAX];
 
@@ -91,36 +93,23 @@ static bool here(int i)
     return !g_files[i].gone && strcmp(g_files[i].dir, g_dir) == 0;
 }
 
-/** @brief The panel's walks of one folder, into @p sel.
+/** @brief The panel's walk of one folder, into @p sel.
  *  @param sel  the page being chosen
  *  @return the files the list holds */
 static int walk(log_select_page_t *sel)
 {
-    static log_lone_t lone;
-    log_lone_begin(&lone);
     int n = 0;
-    for (int pass = 0; pass < 2; ++pass) {
-        if (pass == 1 && !log_lone_again(&lone)) {
-            break;
+    ++g_walks;
+    for (int i = 0; i < g_n; ++i) {
+        if (!here(i) || !log_select_lists(g_files[i].name)) {
+            continue;
         }
-        ++g_walks;
-        for (int i = 0; i < g_n; ++i) {
-            if (!here(i)) {
-                continue;
-            }
-            const bool listed = (pass == 0)
-                                    ? log_lone_first(&lone, g_files[i].name)
-                                    : log_lone_second(&lone, g_files[i].name);
-            if (!listed) {
-                continue;
-            }
-            log_viewer_file_t f;
-            memset(&f, 0, sizeof(f));
-            snprintf(f.name, sizeof(f.name), "%s", g_files[i].name);
-            f.size = strlen(g_files[i].text);
-            log_select_page_offer(sel, &f);
-            ++n;
-        }
+        log_viewer_file_t f;
+        memset(&f, 0, sizeof(f));
+        snprintf(f.name, sizeof(f.name), "%s", g_files[i].name);
+        f.size = strlen(g_files[i].text);
+        log_select_page_offer(sel, &f);
+        ++n;
     }
     return n;
 }
@@ -294,63 +283,70 @@ static void rows(char *out, size_t n)
 
 /* ----------------------------------------------- which names are listed --- */
 
-TEST_CASE(the_notes_list_csv_files_and_reports_standing_alone)
+TEST_CASE(the_list_holds_csv_files_and_every_report)
 {
-    static log_lone_t l;
-    log_lone_begin(&l);
-    /* The first walk: CSV files and LIMIT reports at once. */
-    CHECK(log_lone_first(&l, "ATEST001.CSV"));
-    CHECK(!log_lone_first(&l, "ATEST001.TXT"));
-    CHECK(log_lone_first(&l, "LIMIT002.TXT"));
-    CHECK(log_lone_first(&l, "limit003.txt"));
-    CHECK(!log_lone_first(&l, "SERVO004.TXT"));
-    CHECK(log_lone_first(&l, "SWEEP_920KV.CSV"));
-    CHECK(log_lone_first(&l, "sweep.csv"));
-    CHECK(!log_lone_first(&l, "NOTES.TXT"));
-    CHECK(!log_lone_first(&l, "KST.TXT"));
-    CHECK(!log_lone_first(&l, ".csv"));
-    CHECK(!log_lone_first(&l, "RUN.CSV.BAK"));
-    CHECK(!log_lone_first(&l, NULL));
-    /* SERVO004.TXT has no CSV: a second walk, which offers it alone. */
-    CHECK(log_lone_again(&l));
-    CHECK(log_lone_second(&l, "SERVO004.TXT"));
-    CHECK(log_lone_second(&l, "servo004.txt"));
-    CHECK(!log_lone_second(&l, "ATEST001.TXT"));    /* beside its CSV    */
-    CHECK(!log_lone_second(&l, "LIMIT002.TXT"));    /* offered already   */
-    CHECK(!log_lone_second(&l, "ATEST001.CSV"));
-    CHECK(!log_lone_second(&l, "SERVO005.TXT"));    /* not in the folder */
-    CHECK(!log_lone_second(&l, "NOTES.TXT"));
-    CHECK(!log_lone_second(&l, NULL));
-    CHECK(!log_lone_second(NULL, "SERVO004.TXT"));
-    /* Its CSV found later in the walk: no longer alone, no second walk. */
-    CHECK(log_lone_first(&l, "SERVO004.CSV"));
-    CHECK(!log_lone_again(&l));
-    CHECK(!log_lone_second(&l, "SERVO004.TXT"));
-    /* Without notes the CSV files and the LIMIT reports are still listed. */
-    CHECK(log_lone_first(NULL, "MOTOR001.CSV"));
-    CHECK(log_lone_first(NULL, "LIMIT001.TXT"));
-    CHECK(!log_lone_first(NULL, "ATEST001.TXT"));
-    CHECK(!log_lone_again(NULL));
-    log_lone_begin(NULL);
+    /* A run's CSV and its report, with the CSV there or not. */
+    CHECK(log_select_lists("ATEST001.CSV"));
+    CHECK(log_select_lists("ATEST001.TXT"));
+    CHECK(log_select_lists("atest002.txt"));
+    CHECK(log_select_lists("LIMIT002.TXT"));
+    CHECK(log_select_lists("limit003.txt"));
+    CHECK(log_select_lists("SERVO004.TXT"));
+    CHECK(log_select_lists("SWEEP_920KV.CSV"));
+    CHECK(log_select_lists("sweep.csv"));
+    /* The edges of a report's number: 001 and 999 are, 000 and four
+     * digits are not. */
+    CHECK(log_select_lists("ATEST999.TXT"));
+    CHECK(!log_select_lists("ATEST000.TXT"));
+    CHECK(!log_select_lists("LIMIT1000.TXT"));
+    /* Text files that are no report, and names that are no CSV. */
+    CHECK(!log_select_lists("NOTES.TXT"));
+    CHECK(!log_select_lists("KST.TXT"));
+    CHECK(!log_select_lists(".csv"));
+    CHECK(!log_select_lists("RUN.CSV.BAK"));
+    CHECK(!log_select_lists(""));
+    CHECK(!log_select_lists(NULL));
+}
+
+/*
+ * One rule: the list holds a name exactly when FILES labels it a run, a CSV
+ * or a report (fm_kind_of()), in each of LOGS' three folders.
+ */
+TEST_CASE(the_list_and_files_report_label_are_one_rule)
+{
+    static const char *const names[] = {
+        "ATEST001.CSV", "ATEST001.TXT", "ATEST000.TXT", "LIMIT002.TXT",
+        "LIMIT1000.TXT", "SERVO004.TXT", "BENCH041.CSV", "MOTOR999.CSV",
+        "SWEEP_920KV.CSV", "NOTES.TXT", "MG90S.TXT", "PROFILE.JSON",
+        "RCBENCH.LOG", "ATEST001.TXT.BAK", "atest003.txt",
+    };
+    static const char *const dirs[] = { CARD_USER_LOGS, CARD_AUTO_LOGS,
+                                        CARD_ROOT };
+    for (size_t d = 0; d < sizeof(dirs) / sizeof(dirs[0]); ++d) {
+        for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+            const fm_kind_t k = fm_kind_of(dirs[d], names[i], false);
+            const bool files = k == FM_KIND_RUN || k == FM_KIND_CSV
+                               || k == FM_KIND_REPORT;
+            if (files != log_select_lists(names[i])) {
+                T_FAIL("%s/%s: FILES kind %d, LOGS lists %d", dirs[d],
+                       names[i], (int)k, (int)log_select_lists(names[i]));
+            }
+            if ((k == FM_KIND_REPORT) != (log_report_number(names[i]) >= 0)) {
+                T_FAIL("%s: the report label is not log_report_number()",
+                       names[i]);
+            }
+        }
+    }
 }
 
 TEST_CASE(a_report_and_a_run_of_one_prefix_and_number_are_told_apart)
 {
-    static log_lone_t l;
-    log_lone_begin(&l);
-    /* One number under two prefixes, a card edited on a computer: BENCH007's
-     * CSV does not make SERVO007.TXT a run's report. */
-    CHECK(log_lone_first(&l, "BENCH007.CSV"));
-    CHECK(!log_lone_first(&l, "SERVO007.TXT"));
-    CHECK(log_lone_again(&l));
-    CHECK(log_lone_second(&l, "SERVO007.TXT"));
-    /* The first and the last number. */
-    CHECK(!log_lone_first(&l, "ESC001.TXT"));
-    CHECK(!log_lone_first(&l, "BENCH999.TXT"));
-    CHECK(log_lone_second(&l, "ESC001.TXT"));
-    CHECK(log_lone_second(&l, "BENCH999.TXT"));
-    CHECK(log_lone_first(&l, "BENCH999.CSV"));
-    CHECK(!log_lone_second(&l, "BENCH999.TXT"));
+    /* One number under two prefixes, a card edited on a computer: both
+     * are listed, each its own row. */
+    CHECK(log_select_lists("BENCH007.CSV"));
+    CHECK(log_select_lists("SERVO007.TXT"));
+    CHECK(log_select_lists("ESC001.TXT"));
+    CHECK(log_select_lists("BENCH999.TXT"));
 
     log_prefix_t k = LOG_PREFIX_COUNT;
     bool report = false;
@@ -372,7 +368,7 @@ TEST_CASE(a_report_and_a_run_of_one_prefix_and_number_are_told_apart)
 
 /* --------------------------------------------------------------- LOGS --- */
 
-TEST_CASE(a_lone_limit_report_is_listed_and_chosen_as_the_newest)
+TEST_CASE(a_limit_report_and_a_runs_report_are_listed_newest_first)
 {
     fresh();
     add(CARD_USER_LOGS, "ATEST004.CSV", k_csv_text);
@@ -381,11 +377,10 @@ TEST_CASE(a_lone_limit_report_is_listed_and_chosen_as_the_newest)
     show(LOG_TAB_USER);
     char list[256];
     rows(list, sizeof(list));
-    CHECK_STR_EQ(list, "LIMIT005.TXT ATEST004.CSV");
+    CHECK_STR_EQ(list, "LIMIT005.TXT ATEST004.CSV ATEST004.TXT");
     char title[64];
     log_viewer_browse_title(title, sizeof(title));
     CHECK_STR_EQ(title, "FILES");
-    /* ATEST004.TXT stands beside its CSV: one walk. */
     CHECK_EQ(g_walks, 1);
     /* The newest number is chosen, and OPEN opens it as text. */
     tap(OPEN_X, FOOT_CY);
@@ -394,7 +389,7 @@ TEST_CASE(a_lone_limit_report_is_listed_and_chosen_as_the_newest)
     draw();
 }
 
-TEST_CASE(a_lone_servo_report_of_an_older_card_is_listed_in_the_root)
+TEST_CASE(a_servo_report_of_an_older_card_is_listed_in_the_root)
 {
     fresh();
     add(CARD_ROOT, "SERVO042.CSV", k_csv_text);
@@ -406,32 +401,58 @@ TEST_CASE(a_lone_servo_report_of_an_older_card_is_listed_in_the_root)
     show(LOG_TAB_ROOT);
     char list[256];
     rows(list, sizeof(list));
-    CHECK_STR_EQ(list, "SERVO043.TXT SERVO042.CSV BENCH041.CSV "
+    CHECK_STR_EQ(list, "SERVO043.TXT SERVO042.CSV SERVO042.TXT BENCH041.CSV "
                        "SWEEP_920KV.CSV");
-    /* SERVO043.TXT is known alone only after the whole folder: two walks. */
-    CHECK_EQ(g_walks, 2);
+    CHECK_EQ(g_walks, 1);
     tap(400, BR_ROW_Y(0));                  /* chosen already: opens */
     CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
     CHECK_STR_EQ(log_viewer_open_name(), "SERVO043.TXT");
 }
 
-TEST_CASE(a_run_with_its_report_lists_and_opens_as_before)
+/*
+ * The tester's folder: a servo automatic test's CSV with its report, and a
+ * report whose CSV was deleted on a computer.  Both reports are rows, and
+ * OPEN reads a run's CSV into the import and its report as text.
+ */
+TEST_CASE(a_runs_report_is_a_row_with_its_csv_there_or_not)
 {
     fresh();
     add(CARD_USER_LOGS, "ATEST001.TXT", k_limit_text);
     add(CARD_USER_LOGS, "ATEST001.CSV", k_csv_text);
+    add(CARD_USER_LOGS, "ATEST002.TXT", k_limit_text);
     show(LOG_TAB_USER);
     char list[128];
     rows(list, sizeof(list));
-    CHECK_STR_EQ(list, "ATEST001.CSV");
+    CHECK_STR_EQ(list, "ATEST002.TXT ATEST001.CSV ATEST001.TXT");
     CHECK_EQ(g_walks, 1);
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK_STR_EQ(log_viewer_open_name(), "ATEST002.TXT");
+    tap(TX_BACK_X, FOOT_CY);
+    tap(400, BR_ROW_Y(1));                  /* the run's CSV */
     tap(OPEN_X, FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     CHECK(log_viewer_analysis() != NULL);
     CHECK(log_viewer_text() == NULL);
+    screen()->back();
+    tap(400, BR_ROW_Y(2));                  /* its report */
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK_STR_EQ(log_viewer_open_name(), "ATEST001.TXT");
+    CHECK(log_viewer_text() != NULL);
+    /* The same OPEN as FILES hands over: each report by its name. */
+    screen()->back();
+    CHECK_EQ(log_viewer_show(LOG_TAB_USER, "ATEST001.TXT", 0u),
+             LOG_SHOW_OPEN);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK_EQ(log_viewer_show(LOG_TAB_USER, "ATEST002.TXT", 0u),
+             LOG_SHOW_OPEN);
+    CHECK_STR_EQ(log_viewer_open_name(), "ATEST002.TXT");
+    CHECK_EQ(log_viewer_show(LOG_TAB_USER, "ATEST003.TXT", 0u),
+             LOG_SHOW_NOT_LISTED);
 }
 
-TEST_CASE(a_card_of_lone_reports_only_lists_them_newest_first)
+TEST_CASE(a_card_of_reports_only_lists_them_newest_first)
 {
     fresh();
     add(CARD_USER_LOGS, "LIMIT001.TXT", k_limit_text);
@@ -450,7 +471,7 @@ TEST_CASE(a_card_of_lone_reports_only_lists_them_newest_first)
     show(LOG_TAB_ROOT);
     rows(list, sizeof(list));
     CHECK_STR_EQ(list, "SERVO009.TXT SERVO007.TXT");
-    CHECK_EQ(g_walks, 2);
+    CHECK_EQ(g_walks, 1);
     draw();
 }
 
@@ -467,8 +488,8 @@ TEST_CASE(reports_sort_among_the_runs_by_their_number)
     show(LOG_TAB_USER);
     char list[256];
     rows(list, sizeof(list));
-    CHECK_STR_EQ(list, "LIMIT004.TXT ATEST003.CSV LIMIT002.TXT ATEST001.CSV "
-                       "MY_TEST.CSV");
+    CHECK_STR_EQ(list, "LIMIT004.TXT ATEST003.CSV ATEST003.TXT LIMIT002.TXT "
+                       "ATEST001.CSV ATEST001.TXT MY_TEST.CSV");
     /* The rank: a report by its number, a run first on one number. */
     CHECK(log_name_rank("LIMIT004.TXT", "ATEST003.CSV") < 0);
     CHECK(log_name_rank("SERVO005.TXT", "BENCH001.CSV") < 0);
@@ -482,59 +503,53 @@ TEST_CASE(reports_sort_among_the_runs_by_their_number)
 /*
  * A full folder: 999 numbers, every third a LIMIT report, the rest ATEST
  * runs with their reports, and every seventh of those runs' CSV deleted on
- * a computer, which leaves its report alone for the second walk.  The
- * pages, read from the first with NEXT's key, hold every listed name once,
- * in rank order, and the count is the list's.
+ * a computer, which leaves its report without it.  The pages, read from the
+ * first with NEXT's key, hold every listed name once, in rank order, and
+ * the count is the list's: 1,570 names, one walk a page.
  */
 TEST_CASE(pages_of_a_full_folder_hold_every_listed_name_once_in_order)
 {
     fresh();
-    static char names[LOG_RUN_LAST + 1][2][16];
+    static char names[2 * LOG_RUN_LAST][16];
     int listed = 0;
-    for (int r = 1; r <= LOG_RUN_LAST; ++r) {
+    for (int r = LOG_RUN_LAST; r >= 1; --r) {
         if (r % 3 == 0) {
-            log_name_build(names[r][0], 16, LOG_PREFIX_LIMIT, r, true);
-            add(CARD_USER_LOGS, names[r][0], k_limit_text);
-            ++listed;
+            log_name_build(names[listed], 16, LOG_PREFIX_LIMIT, r, true);
+            add(CARD_USER_LOGS, names[listed++], k_limit_text);
             continue;
         }
-        log_name_build(names[r][0], 16, LOG_PREFIX_ATEST, r, false);
-        log_name_build(names[r][1], 16, LOG_PREFIX_ATEST, r, true);
         if (r % 7 != 0) {
-            add(CARD_USER_LOGS, names[r][0], k_csv_text);
+            log_name_build(names[listed], 16, LOG_PREFIX_ATEST, r, false);
+            add(CARD_USER_LOGS, names[listed++], k_csv_text);
         }
-        add(CARD_USER_LOGS, names[r][1], k_limit_text);
-        ++listed;
+        log_name_build(names[listed], 16, LOG_PREFIX_ATEST, r, true);
+        add(CARD_USER_LOGS, names[listed++], k_limit_text);
     }
+    CHECK_EQ(listed, 333 + 666 + 666 - 95);
     fake_folder(CARD_USER_LOGS, NULL);
     log_viewer_file_t page[LOG_VIEWER_MAX_FILES];
     log_viewer_page_t q;
     memset(&q, 0, sizeof(q));
     q.dir = LOG_PAGE_FROM;
     int seen = 0;
-    int expect = LOG_RUN_LAST;
-    char last[LOG_VIEWER_NAME_MAX] = "";
-    for (int p = 0; p < 30; ++p) {
+    g_walks = 0;
+    int pages = 0;
+    for (int p = 0; p < 60; ++p) {
         const int total = fake_list(page, LOG_VIEWER_MAX_FILES, &q, NULL);
         CHECK_EQ(total, listed);
         CHECK_EQ(q.ahead, seen);
         if (q.held == 0) {
             break;
         }
+        ++pages;
         for (int i = 0; i < q.held; ++i) {
-            /* Every number once, newest first: the CSV where it is there,
-             * the report where it stands alone. */
-            const bool alone = expect % 3 != 0 && expect % 7 == 0;
-            const char *want = names[expect][alone ? 1 : 0];
-            if (strcmp(page[i].name, want) != 0) {
+            /* Every name once, newest number first, a run's CSV before
+             * its report. */
+            if (strcmp(page[i].name, names[seen + i]) != 0) {
                 T_FAIL("page %d row %d: %s, want %s", p, i, page[i].name,
-                       want);
+                       names[seen + i]);
                 return;
             }
-            CHECK(last[0] == '\0' || log_name_rank(last, page[i].name) < 0);
-            snprintf(last, sizeof(last), "%.*s", (int)sizeof(last) - 1,
-                     page[i].name);
-            --expect;
         }
         seen += q.held;
         q.dir = LOG_PAGE_AFTER;
@@ -542,7 +557,8 @@ TEST_CASE(pages_of_a_full_folder_hold_every_listed_name_once_in_order)
                  page[q.held - 1].name);
     }
     CHECK_EQ(seen, listed);
-    CHECK_EQ(expect, 0);
+    CHECK_EQ(pages, (listed + LOG_VIEWER_MAX_FILES - 1) / LOG_VIEWER_MAX_FILES);
+    CHECK_EQ(g_walks, pages + 1);          /* the last, empty read too */
     /* The screen's own count: the tab names the part of the folder. */
     show(LOG_TAB_USER);
     char title[64];
@@ -550,7 +566,7 @@ TEST_CASE(pages_of_a_full_folder_hold_every_listed_name_once_in_order)
     char want[64];
     snprintf(want, sizeof(want), "FILES 1 TO 48 OF %d", listed);
     CHECK_STR_EQ(title, want);
-    CHECK_EQ(g_walks, 2);
+    CHECK_EQ(g_walks, 1);
 }
 
 /* ------------------------------------------------------- the text view --- */
@@ -1011,12 +1027,13 @@ TEST_CASE(an_io_without_open_says_so_in_the_language_showing)
 
 int main(void)
 {
-    RUN(the_notes_list_csv_files_and_reports_standing_alone);
+    RUN(the_list_holds_csv_files_and_every_report);
+    RUN(the_list_and_files_report_label_are_one_rule);
     RUN(a_report_and_a_run_of_one_prefix_and_number_are_told_apart);
-    RUN(a_lone_limit_report_is_listed_and_chosen_as_the_newest);
-    RUN(a_lone_servo_report_of_an_older_card_is_listed_in_the_root);
-    RUN(a_run_with_its_report_lists_and_opens_as_before);
-    RUN(a_card_of_lone_reports_only_lists_them_newest_first);
+    RUN(a_limit_report_and_a_runs_report_are_listed_newest_first);
+    RUN(a_servo_report_of_an_older_card_is_listed_in_the_root);
+    RUN(a_runs_report_is_a_row_with_its_csv_there_or_not);
+    RUN(a_card_of_reports_only_lists_them_newest_first);
     RUN(reports_sort_among_the_runs_by_their_number);
     RUN(pages_of_a_full_folder_hold_every_listed_name_once_in_order);
     RUN(opening_a_report_shows_its_rows_and_back_returns_to_the_list);

@@ -36,7 +36,7 @@ Eine Taste, die abgelehnt würde, ist gedimmt. Ein Tipp darauf nennt den Grund i
 
 | Taste | Was sie tut |
 |---|---|
-| ÖFFNEN | öffnet einen Ordner. Eine CSV-Datei oder ein Bericht in STAMM, USER oder BENCH öffnet auf [LOGS](logs.md) |
+| ÖFFNEN | öffnet einen Ordner. Eine CSV-Datei oder ein Bericht in STAMM, USER oder BENCH öffnet auf [LOGS](logs.md), ein Bericht als Text. Eine Datei, die der Prüfstand noch schreibt, bleibt hier, `ATEST012.TXT wird gerade geschrieben.`, und jede andere Datei zeigt `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |

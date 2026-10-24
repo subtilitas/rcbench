@@ -540,14 +540,16 @@ TEST_CASE(open_hands_a_log_folders_csv_to_logs)
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     CHECK(strstr(log_viewer_message(), "ATEST006.CSV") != NULL);
-    /* A name LOGS does not list stays in FILES and says where files
-     * open. */
+    /* A report LOGS' list does not hold, as one gone from the card since
+     * FILES read it (this list() holds two CSV files only), stays in FILES
+     * and says it is not on the card. */
     ui_router_goto(SCREEN_FILES);
     settle();
     CHECK(pick(1, "LIMIT006.TXT"));
     tap_foot(FS_SPOT_OPEN);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
-    CHECK_STR_EQ(files_screen_message(), TR(FM_OPEN_WHERE));
+    CHECK_STR_EQ(files_screen_message(),
+                 msg(TX_FM_E_NOT_FOUND, "LIMIT006.TXT"));
     /* A text file of the root is no file LOGS shows. */
     CHECK(pick(0, "NOTES.TXT"));
     tap_foot(FS_SPOT_OPEN);

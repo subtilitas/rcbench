@@ -44,7 +44,7 @@ STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
 
 # The screens (ui_sources.py), the renderer, and what only its views
 # drive: the KST programmer's link module, the IOmcu's port and the wire
-# under it, and the card's choice of log files.
+# under it.
 SOURCES = [
     "test/host/render_screen.c",
     *ui_sources.SOURCES,
@@ -53,7 +53,6 @@ SOURCES = [
     "shared/link/link_dev.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
-    "shared/ui/log_select.c",
     # FILES' views run its requests on a card in memory, behind the host
     # card task.
     "test/host/render_files.c",

@@ -2,7 +2,7 @@
  * @file log_text.h
  * @brief A text file as LOGS shows it: read whole, broken into rows.
  *
- * LOGS opens a report standing alone, LIMITnnn.TXT or SERVOnnn.TXT
+ * LOGS opens a report, ATESTnnn.TXT, LIMITnnn.TXT or SERVOnnn.TXT
  * (log_select.h), as text.  The file is read once into memory, up to
  * LOG_TEXT_MAX bytes, and its lines are broken into rows of at most a given
  * number of cells (code points, gfx_text_cells()): a line wider than a row

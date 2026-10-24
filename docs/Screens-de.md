@@ -2407,20 +2407,23 @@ oder die Karte schreibgeschützt oder voll ist, meldet
 `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.` Nach einem
 gescheiterten Lauf liest das Panel den Ordner beim nächsten Mal neu, sodass
 eine inzwischen gelöschte Datei ihre Nummer freigibt. Die Liste zeigt die
-CSV-Dateien und die allein stehenden Berichte, und LÖSCHEN auf einem Lauf
-löscht den Bericht mit demselben Namen und derselben Nummer mit. Ein Bericht
-steht allein, wenn keine CSV-Datei mit seinem Namen und seiner Nummer im
-Ordner liegt: `LIMITnnn.TXT` immer, und im Stammverzeichnis `SERVOnnn.TXT`
-allein, der Endlagenlauf von Firmware 0.21.0 und älter. `ATESTnnn.TXT` neben
-`ATESTnnn.CSV` steht nicht in der Liste: ÖFFNEN auf dem Lauf liest die
-CSV-Datei. Andere `.TXT`-Dateien stehen nicht in der Liste. Die Läufe stehen
-nach Nummer, der neueste zuerst, über alle Namen im Ordner, ein allein
-stehender Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
-`MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
+CSV-Dateien und die Berichte, und LÖSCHEN auf einem Lauf löscht den Bericht
+mit demselben Namen und derselben Nummer mit. Ein Bericht ist eine
+`.TXT`-Datei mit dem Namen eines Laufs (`log_report_number()`), dieselbe
+Regel, nach der FILES einen Bericht kennzeichnet: `ATESTnnn.TXT` neben
+`ATESTnnn.CSV` oder ohne sie, `LIMITnnn.TXT`, das ein ENDLAGENLAUF ohne
+CSV-Datei schreibt, und im Stammverzeichnis `SERVOnnn.TXT` von Firmware
+0.21.0 und älter. Ein Lauf und sein Bericht sind zwei Zeilen, die CSV-Datei
+zuerst: ÖFFNEN auf der CSV-Datei liest sie in den Import, ÖFFNEN auf dem
+Bericht zeigt seinen Text. Andere `.TXT`-Dateien stehen nicht in der Liste.
+Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen im
+Ordner, ein Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
+`MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SERVO042.TXT`, dann
+`SUPPL041.CSV`.
 
 ![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
 
-ÖFFNEN auf einem allein stehenden Bericht zeigt ihn als Text an Stelle der
+ÖFFNEN auf einem Bericht zeigt ihn als Text an Stelle der
 Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 15
 Zeilen zu bis zu 92 Zeichen in der Schrift 10 x 20 auf dem Bildschirm, 22px
 auseinander. ZURÜCK ist 140 x 52px groß, links in der Fußzeile. Eine Zeile, die länger ist
@@ -2465,7 +2468,7 @@ diesem Ordner, gleich welcher Tab inzwischen gewählt ist.
 
 Die Liste zeigt den Ordner in Seiten zu 48 Einträgen, und ein Ordner fasst
 bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe und
-die allein stehenden Berichte nach Nummer, die höchste zuerst, dann die
+die Berichte nach Nummer, die höchste zuerst, dann die
 Dateien, die der Prüfstand nicht geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
 Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im
 Namen: Das Datum einer Datei ist nur so gut wie die Uhr des Panels, die bei
@@ -2494,17 +2497,10 @@ verarbeitet. Bei 999 Läufen braucht die Auswahl auf einem Desktop-Rechner
 das Verzeichnis sind 63 Sektoren zu 512 Bytes, etwa 25ms beim SPI-Takt (SPI:
 Serial Peripheral Interface) der Karte von 20MHz, oder 125 Sektoren, etwa
 50ms, mit einem Bericht neben jedem Lauf. Beides ist auf dem Panel nicht
-gemessen. Die Größe jedes Eintrags kommt mit dem Lesen des Verzeichnisses,
-eine Seite kostet also einen Durchlauf und die Auswahl. Ein Ordner mit einem
-Bericht außer `LIMITnnn.TXT`, neben dem keine CSV-Datei mit seinem Namen und
-seiner Nummer liegt, etwa das Stammverzeichnis einer Karte von Firmware
-0.21.0 mit einem Endlagenlauf darauf, wird je Seite zweimal gelesen: Der
-erste Durchlauf findet, welche Berichte allein stehen, der zweite bietet sie
-an. Die Durchläufe halten ihre Notizen in 1 750 Bytes PSRAM (pseudo-static
-RAM), belegt beim ersten Lesen nach einem Start. Ohne sie enthält die Liste
-die CSV-Dateien und die Berichte `LIMITnnn.TXT`, ein allein stehendes
-`SERVOnnn.TXT` steht nicht darin, und die Konsole meldet
-`no PSRAM for the list's notes`.
+gemessen. Ein Ordner mit einem Bericht neben jedem Lauf listet bis zu 1 998
+Einträge; die Zeit der Auswahl dafür ist nicht gemessen. Die Größe jedes
+Eintrags kommt mit dem Lesen des Verzeichnisses, eine Seite kostet also
+einen Durchlauf und die Auswahl.
 
 Der Rollbalken am rechten Rand der Liste ist 56px breit, 8,4mm bei den 0,150
 mm Pixelabstand, die für das Panel angenommen sind (nicht gemessen). Die Länge
@@ -2790,7 +2786,7 @@ der Meldungszeile, zwei Zeilen in der Schrift 12 x 24 über der Fußzeile.
 
 | Taste | Was sie tut |
 |---|---|
-| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein allein stehender Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs); eine Datei, die LOGS nicht öffnet, eine über 2GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs) im Tab dieses Ordners, ein Bericht als Text: die Namen, die LOGS listet (`log_select_lists()`), darunter jede Datei, die die Liste als BERICHT kennzeichnet; eine Datei, die LOGS nicht öffnet, eine über 2GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; eine Datei, die seit dem Listen nicht mehr auf der Karte ist, meldet `LIMIT013.TXT ist nicht auf der Karte. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
