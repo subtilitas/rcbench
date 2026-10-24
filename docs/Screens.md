@@ -409,7 +409,7 @@ line under them shows how many, in 8 x 16: `Rejected link frames: 37`. An
 IOmcu older than protocol 4.21 sends no count, and the line shows none
 ([Refused frames](Link.md#refused-frames)). The three temperatures are on
 the line over the rail on every task. ESC and MOT come from the bench page.
-MCU is the panel's own die, read from the ESP32-S3's sensor: it is the
+MCU is the panel's own die, read from the ESP32-P4's sensor: it is the
 display board's temperature, not the IOmcu's.
 
 ![MOTOR & ESC with 37 refused link frames](img/motor-refused.png)
@@ -1111,7 +1111,10 @@ one fails.
 - LIVE's CURRENT numerals are repainted when their digits or their colour
   change, and by themselves.
 
-The automatic test reads the supply whichever meter the rail has.
+The automatic test reads the servo rail's meter as the panel names it at
+START TEST: the INA3221 channel while the INA3221 is that meter and the
+supply is the PD mini, the PD mini's readings otherwise, and the model's
+with the supply modelled ([The meter](Servo.md#the-meter)).
 
 MEASURED is the horn's angle from the centre count while AS5600 is on in
 SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0 deg`,
@@ -2725,13 +2728,16 @@ Current limitations:
   the access code and every file cross the network unencrypted. The screen
   says so while joined.
 - An uploaded image is checked against its own SHA-256, not against a
-  signature. Any image built as `rcbench-panel` for the ESP32-S3 installs
+  signature. Any image built as `rcbench-panel` for the ESP32-P4 installs
   after the 2 s hold, and on a home network a device between the browser
   and the panel can replace the image on its way. The IOmcu image a
   panel image carries comes with it and is offered to the IOmcu at the
   next link-up.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
+- The page is slow to arrive. On a home network the page, 18.9kB with its
+  card listing, took 4.54s, about 4.2kB/s, against a download's
+  688-757kB/s. The cause is not measured.
 
 ### The access code
 
@@ -2755,21 +2761,21 @@ panel's language. It has two parts.
 **Panel firmware.** The version installed, a file picker, Upload with a
 progress bar, and the panel's answer as a line of text. The file is the
 release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than the panel's
-slot, 4,063,232 bytes, is refused before a byte is sent. The panel checks
+slot, 8,126,464 bytes, is refused before a byte is sent. The panel checks
 the whole image before it asks anything: the ESP image header for the
-ESP32-S3, the application's project name `rcbench-panel`, a version of the
+ESP32-P4 (chip ID 0x0012), the application's project name `rcbench-panel`, a version of the
 form MAJOR.MINOR.PATCH and the appended SHA-256 (secure hash algorithm, 256
 bits). A second upload while one waits is refused until CANCEL on the panel.
 The screen shows the bytes received while an upload runs. The upload
 writes no flash: the panel keeps the file in PSRAM (pseudo-static
 random-access memory) until PANEL UPDATE writes it.
 The panel writes the image to flash only after the hold on PANEL UPDATE
-([Installing: PANEL UPDATE](#installing-panel-update)). While it writes, the
-display goes fully dark at each flash erase and comes back after it, about
-every 0.5 s (reported on 0.20.0; 0.21.x not measured, the write path is the
-same code). This is expected: the RGB (red, green, blue) panel cannot scan
-while the main flash is busy (`CONFIG_LCD_RGB_ISR_IRAM_SAFE=n` in
-`firmware/panel/sdkconfig.defaults`).
+([Installing: PANEL UPDATE](#installing-panel-update)). While it writes,
+the DSI (Display Serial Interface) host goes on scanning the frame buffers
+out of PSRAM by DMA (direct memory access), and its interrupt runs during
+each flash erase (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
+`firmware/panel/sdkconfig.defaults`). What the display shows during the
+erases is not measured.
 
 **Files on the card.** Every file, folder by folder, with its name, its size
 in bytes and its modification time as the card has it. Each name downloads
@@ -2803,11 +2809,14 @@ end for the ZIP file's directory.
   download short; the browser reports it as failed. The rotation of
   `BENCH/RCBENCH.LOG` at 1 MiB is a rename.
 
-The transfer rate is not measured; [Performance](Performance.md#wi-fi-downloads)
-gives what bounds it, an expected 300,000 to 1,000,000 B/s on a home
-network, and the steps to measure it. A download of S bytes at a rate of R
-bytes per second takes S / R seconds: at 1,000,000 B/s, a 50,000,000-byte
-card takes 50 s. The page answers one request at a time, so a request made
+On a home network a download of a 16MiB file ran at 688-757kB/s, the card
+read and the radio together, not separated, and an upload of a 2.56MB image
+to `/update` at 556-599kB/s. The ping averaged 14.6ms; no SDIO (Secure
+Digital input/output) error was logged and the panel drew 60fps during the
+downloads. The range is not measured.
+[Performance](Performance.md#wi-fi-downloads) gives what bounds the rate and
+the steps to measure it. A download of S bytes at a rate of R bytes per
+second takes S / R seconds: at 700kB/s, a 50MB card takes about 71s. The page answers one request at a time, so a request made
 during a download waits for its end. A card pulled during a download ends
 the download short, and so does a browser that takes nothing for 30 s; the
 browser reports it as failed, and the panel runs on.
@@ -2844,9 +2853,8 @@ whole screen, with no band and no STOP: nothing can be switched to ARMED
 behind it. A 64 px bar holds the title; the bytes stand in the 20 x 36 px
 face over a bar 36 px tall and 976 px wide, and the lines under it are in
 the 12 x 24 px face. It writes the slot that is not running in pieces of 64 KiB and
-shows the bytes and the percentage. The display goes fully dark at each
-flash erase, about every 0.5 s (reported on 0.20.0; 0.21.x not measured),
-and is in place again from the first whole frame after each erase.
+shows the bytes and the percentage. The display's scan-out goes on during
+each flash erase; what the display shows then is not measured.
 Then the slot is read back and checked, it becomes the one that starts, and
 the panel restarts.
 
@@ -3620,8 +3628,8 @@ state is the same on the tiles and on every list.
 ![A changed value, with SAVE offered](img/setup-dirty.png)
 
 The press asks; it does not write. Writing settings commits a page of NVS
-(non-volatile storage), and a flash operation on the ESP32-S3 disables the
-instruction cache, so neither core runs for its duration. The write is taken
+(non-volatile storage), and a flash operation on the ESP32-P4 disables the
+cache, so neither core runs code from flash for its duration. The write is taken
 on the first frame at which the bench is SAFE with no switch to ARMED waiting, the
 supply's output is off with no ON queued, and no board drawing is being
 fetched or kept. On the settings screen that is the next frame, and
@@ -4126,7 +4134,7 @@ and `objects.githubusercontent.com`. Then:
 1. `SHA256SUMS` is 4096 bytes at most, and holds exactly one line for the
    image's file name.
 2. The image announces its size before a byte is kept. An image without a
-   size, of 0 bytes, or larger than the slot (4,063,232 bytes) is refused.
+   size, of 0 bytes, or larger than the slot (8,126,464 bytes) is refused.
    The image is kept in PSRAM (pseudo-static random-access memory).
 3. The image's SHA-256 (Secure Hash Algorithm, 256 bits) must equal its line
    in `SHA256SUMS`.
@@ -4534,6 +4542,15 @@ in 20 x 36; IN USE is on the right, 168 px wide. Both tables stand 8 px
 clear of the outermost key a 600 px board can have, a pad on its very edge
 included. The protocol list opens as on Outputs: the protocols in a column
 of 48 px rows, the PROG PORT entries in a second column beside it.
+
+Current limitation: the head stays where it is whatever the board. On a
+board whose shape page puts a pin in the top-left corner of its outline,
+the keys of the upper rows reach as far left as x 187, under the protocol
+list's face (x 8 to 288), the count and the reason (to x 358). Such a key
+is drawn over them, and a press on its part over the face opens the
+protocol list instead of taking the pin. The RP2350-CAN's pads in that
+corner are rails and ground, so none of its keys lies there
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
 
 A key's colour says what a tap on it does:
 
