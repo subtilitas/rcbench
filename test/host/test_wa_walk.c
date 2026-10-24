@@ -160,6 +160,19 @@ TEST_CASE(paths_over_384_bytes_and_folders_past_16_deep_are_counted)
     CHECK(strstr(g_log, "F d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/f 1\n") != NULL);
     CHECK(strstr(g_log, "d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/d/d") == NULL);
     CHECK_EQ(fs.dirs_open_max, (int)WA_WALK_DEPTH + 1);
+    /* Given up at the deepest level: every level's handle is closed, and a
+     * second end closes nothing twice. */
+    const wa_fs_t w = fake_wa(&fs);
+    wa_walk_t wk;
+    wa_walk_begin(&wk, &w);
+    while (fs.dirs_open < (int)WA_WALK_DEPTH + 1) {
+        CHECK(wa_walk_next(&wk) != WA_WALK_END);
+    }
+    CHECK_EQ(wk.depth, WA_WALK_DEPTH);
+    wa_walk_end(&wk);
+    CHECK_EQ(fs.dirs_open, 0);
+    wa_walk_end(&wk);
+    CHECK_EQ(fs.dirs_open, 0);
     fake_free(&fs);
 }
 

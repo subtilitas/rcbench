@@ -153,9 +153,9 @@ TEST_CASE(bodies_are_bounded_before_a_byte_is_read)
     CHECK_EQ(wa_guard(WA_REQ_READ, &r, &k_sta), WA_GUARD_BODY);
     r.body = 0u;
     CHECK_EQ(wa_guard(WA_REQ_READ, &r, &k_sta), WA_GUARD_OK);
-    r.body = WA_CODE_BODY_MAX;
+    r.body = 95u;
     CHECK_EQ(wa_guard(WA_REQ_CODE, &r, &k_sta), WA_GUARD_OK);
-    r.body = WA_CODE_BODY_MAX + 1u;
+    r.body = 96u;
     CHECK_EQ(wa_guard(WA_REQ_CODE, &r, &k_sta), WA_GUARD_BIG);
     r.body = 2000000000u;
     CHECK_EQ(wa_guard(WA_REQ_CODE, &r, &k_sta), WA_GUARD_BIG);

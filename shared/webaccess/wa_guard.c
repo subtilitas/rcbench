@@ -7,13 +7,15 @@
 
 #include "wa_guard.h"
 
+#include "wa_session.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 
-/** @brief Bytes of a host part the guard looks at; a longer one is no
- *         name of the panel's. */
-#define HOST_MAX 64u
+/** @brief Bytes of the longest name the guard compares with,
+ *         "rcbench-1A2B.local.", and its terminator. */
+#define HOST_MAX (WA_NAME_MAX + 7u)
 
 /**
  * @brief Whether @p n bytes at @p s are @p want, letters compared without
@@ -73,8 +75,8 @@ static bool host_name_ok(const char *s, size_t n, const wa_self_t *self)
  */
 static bool host_part_ok(const char *s, size_t n, const wa_self_t *self)
 {
-    if (n == 0u || n >= HOST_MAX || s[0] == '[') {
-        return false;               /* nothing, too long, or IPv6 */
+    if (n == 0u || s[0] == '[') {
+        return false;               /* nothing, or IPv6 */
     }
     const char *colon = memchr(s, ':', n);
     size_t name_n = n;
