@@ -388,6 +388,11 @@ int motor_screen_keypad_setting(void)
     return (p.kp.open && p.kp_row >= 0) ? (int)k_rows[p.kp_row].id : -1;
 }
 
+const ui_keypad_t *motor_screen_keypad(void)
+{
+    return &p.kp;
+}
+
 int motor_settings_rows(setting_id_t *out, int max)
 {
     for (int i = 0; i < ROW_COUNT && i < max; ++i) {

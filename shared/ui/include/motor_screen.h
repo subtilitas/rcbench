@@ -19,6 +19,7 @@
 #include "endpoints_link.h"
 #include "gfx.h"
 #include "settings.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -183,6 +184,13 @@ bool motor_screen_target_locked(void);
 
 /** The setting SETTINGS' keypad types, or -1 while it is closed. */
 int motor_screen_keypad_setting(void);
+
+/**
+ * @brief SETTINGS' keypad, open or closed, for a test to read what it
+ *        opened with and where its keys are.
+ * @return The keypad; never NULL.
+ */
+const ui_keypad_t *motor_screen_keypad(void);
 
 /** SETTINGS' rows in their order, at most @p max into @p out (NULL counts
  *  them).  Returns how many there are. */
