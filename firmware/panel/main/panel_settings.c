@@ -10,7 +10,9 @@
  * Screen rotation goes to the display (apply_rotation()), whose flush
  * turns picture and touch together from the next frame.  The time zone
  * goes to the C library (publish_time_zone()), which FatFs's stamps and
- * every localtime() read from the next call.
+ * every localtime() read from the next call.  log_clock_at_start() says
+ * at each start which slow clock the RTC (real-time clock) timer counts
+ * and what time it kept.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,11 +25,14 @@
 #include "display.h"
 #include "endpoints_link.h"
 #include "esp_log.h"
+#include "esp_private/esp_clk.h"
 #include "freertos/FreeRTOS.h"
 #include "panel.h"
 #include "panel_main.h"
+#include "sdkconfig.h"
 #include "settings.h"
 #include "settings_sensors.h"
+#include "soc/rtc.h"
 #include "tone_link.h"
 #include "wall_clock.h"
 
@@ -188,9 +193,40 @@ void publish_time_zone(void)
     tzset();
 }
 
+/**
+ * @brief The slow clock the RTC timer counts, on the console: the 32.768kHz
+ *        crystal Y3, or the internal RC oscillator ESP-IDF falls back to
+ *        when the crystal does not start (esp_system's clk.c,
+ *        select_rtc_slow_clk()), and its frequency as calibrated at
+ *        start-up.  A fallback is a warning.
+ * @param tag The log tag.
+ */
+static void log_slow_clock(const char *tag)
+{
+    const soc_rtc_slow_clk_src_t s = rtc_clk_slow_src_get();
+    const wall_slow_src_t src = (s == SOC_RTC_SLOW_CLK_SRC_XTAL32K)
+                                ? WALL_SLOW_CRYSTAL
+                                : (s == SOC_RTC_SLOW_CLK_SRC_RC_SLOW)
+                                ? WALL_SLOW_RC : WALL_SLOW_OTHER;
+#ifdef CONFIG_RTC_CLK_SRC_EXT_CRYS
+    const bool crystal = true;
+#else
+    const bool crystal = false;
+#endif
+    char line[96];
+    (void)wall_slow_clock_line(line, sizeof(line), src, crystal,
+                               esp_clk_slowclk_cal_get());
+    if (wall_slow_fell_back(src, crystal)) {
+        ESP_LOGW(tag, "%s", line);
+    } else {
+        ESP_LOGI(tag, "%s", line);
+    }
+}
+
 void log_clock_at_start(void)
 {
     static const char *TAG = "clock";
+    log_slow_clock(TAG);
     struct timeval tv;
     (void)gettimeofday(&tv, NULL);
     if (!wall_valid((int64_t)tv.tv_sec)) {

@@ -218,7 +218,7 @@ selbst:
 
 | Teil | Was es ist | Nutzung im Panel |
 | --- | --- | --- |
-| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | nicht genutzt: Der RTC-Timer läuft vom internen RC-Oszillator (Vorgabe von ESP-IDF, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | genutzt: Der RTC-Timer zählt ihn (`CONFIG_RTC_CLK_SRC_EXT_CRYS` in `firmware/panel/sdkconfig.defaults`); ein Quarz, der nicht anschwingt, lässt ihn auf dem internen RC-Oszillator |
 | BAT1 | Knopfzellenhalter CR1220, "RTC BAT", an VDD_BAT des ESP32-P4 (Pin 102); 3V3 lädt ihn über D1 (B5819WS) ohne Vorwiderstand; C41 1uF | nicht genutzt. Waveshare: nur wiederaufladbare Zellen mit 3 bis 3.3V. Ob eine Platine mit Zelle kommt, ist nicht bekannt |
 
 Der ESP32-P4 kann seinen RTC-Timer an VDD_BAT weiterlaufen lassen, aber nur
@@ -236,6 +236,10 @@ Was das Panel stattdessen tut
   Software-Neustart behält sie: ESP-IDF hält die Zeit im RTC-Timer und in
   zwei seiner Speicherregister, die nur ein Einschalten zurücksetzt
   (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, die Vorgabe).
+- Über einen Neustart ist die Uhr so gut wie der langsame Takt des
+  RTC-Timers. Auf dem internen RC-Oszillator lag sie an der Station nach
+  etwa 2h um 4.357s daneben, etwa 600ppm (gemessen). Auf dem Quarz Y3 ist
+  die Abweichung über einen Neustart nicht gemessen.
 - Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal
   (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`). Die
   zufällige Startverzögerung von lwIP ist aus
@@ -253,6 +257,65 @@ Was das Panel stattdessen tut
   bewegt die Wi-Fi-Worker-Task weiter. Die Steuer-Task auf Kern 1, die STOP
   und den Heartbeat besitzt, liest keine Uhrzeit und wartet auf nichts
   davon.
+
+### Der langsame RTC-Takt
+
+Der RTC-Timer zählt den Quarz Y3 mit 32.768kHz an GPIO0 und GPIO1. Keine
+andere Funktion der Panel-Firmware nutzt diese beiden Pins. ESP-IDF v5.5.5
+startet den Quarz und fällt auf den internen RC-Oszillator (136kHz
+nominal) zurück, wenn er nicht anschwingt:
+
+1. Der Bootloader schaltet den Quarz früh ein, damit er anschwingt,
+   während die Anwendung lädt
+   (`components/bootloader_support/src/bootloader_clock_init.c`, Zeilen 91
+   bis 95). Auf dem ESP32-P4 tun die Bootstrap-Zyklen
+   (`CONFIG_ESP_SYSTEM_RTC_EXT_XTAL_BOOTSTRAP_CYCLES`) nichts:
+   `rtc_clk_32k_bootstrap()` schaltet nur den Quarz ein
+   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, Zeilen 45 bis 52).
+2. Der Start der Anwendung zählt 3000 Takte des Quarzes gegen den
+   Hauptquarz mit 40MHz (`CONFIG_RTC_CLK_CAL_CYCLES=3000`), etwa 92ms.
+   Eine Zählung, die in die Zeitgrenze läuft oder mehr als 0.05% von
+   32.768kHz abweicht, gibt 0 zurück
+   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, Zeilen 175 bis
+   190).
+3. Eine Zählung mit 0 wird wiederholt, 4 Versuche insgesamt. Nach dem
+   vierten schreibt ESP-IDF `clk: 32 kHz clock not found, switching to
+   internal 150 kHz oscillator`, schaltet den Quarz ab und läuft auf dem
+   RC (`components/esp_system/port/soc/esp32p4/clk.c`,
+   `select_rtc_slow_clk()`, Zeilen 164 und 184 bis 193). Das Panel startet
+   auf dem RC. Die Meldung von ESP-IDF sagt 150kHz; der RC des ESP32-P4
+   hat nominal 136kHz.
+4. `CONFIG_RTC_CLK_CAL_CYCLES` bleibt über 0: Bei 0 entfällt die Zählung,
+   und der Quarz wird ungeprüft gewählt (`clk.c`, Zeile 184).
+
+Bei jedem Start nennt die Konsole den langsamen Takt und seine kalibrierte
+Frequenz (`log_clock_at_start()`, `firmware/panel/main/panel_settings.c`):
+
+```text
+I (...) clock: rtc slow clock 32k crystal, 32768.012Hz calibrated
+W (...) clock: rtc slow clock internal RC, 136012.345Hz calibrated: the 32k crystal did not start
+```
+
+Die Kosten beim Start, aus den Zählungen im Quelltext, nicht gemessen:
+
+| Langsamer Takt | Zählungen beim Start | Zeit |
+| --- | --- | --- |
+| Interner RC, `CONFIG_RTC_CLK_SRC_INT_RC` | 1024 Takte bei 136kHz | etwa 8ms |
+| Quarz, der den ersten Versuch besteht | 3000 Takte bei 32.768kHz, zweimal | etwa 183ms |
+| Quarz ohne Takt | 4 Versuche bis zur Zeitgrenze, dann 3000 Takte des RC | etwa 1.25s, wenn die Zeitgrenze von 3000 x 4096 Zählschritten in Takten zu 40MHz zählt; die Quellen von ESP-IDF nennen die Einheit nicht |
+
+Ein Update vom Panel aus schreibt einen Anwendungsplatz und lässt den
+Bootloader, wie er geflasht wurde. Ein Bootloader, der vor dieser
+Einstellung gebaut ist, schaltet den Quarz nicht früh ein; der Start der
+Anwendung schaltet ihn ein und zählt sofort. Ob ein Quarz dann innerhalb
+der 4 Versuche besteht, ist nicht gemessen. Ein Flashen des ganzen Images
+über USB schreibt auch den Bootloader.
+
+Aktuelle Einschränkung: Ein Quarz, der nach dem Start stehen bleibt, wird
+nicht erkannt. ESP-IDF v5.5.5 bietet auf dem ESP32-P4 keinen
+XTAL32K-Watchdog. Die Systemzeit läuft vom Hauptquarz weiter (esp_timer),
+und der RTC-Timer steht; der nächste Software-Neustart stellt die Uhr um
+die Zeit zurück, die er stand.
 
 ## Befehle
 
