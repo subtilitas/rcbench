@@ -111,7 +111,7 @@ static void ask_delete(void)
     snprintf(s.doomed, sizeof(s.doomed), "%s", s.files[s.sel].name);
     s.doomed_size = s.files[s.sel].size;
     s.q_down = false;
-    s.message[0] = '\0';
+    lv_quiet();
 }
 
 /**
@@ -132,7 +132,7 @@ static void delete_doomed(void)
     if (s.io.remove == NULL || !s.io.remove(name, s.io.ctx)) {
         /* The list stays as it was, selection included: the file is still
          * there as far as anybody knows, and RESCAN says otherwise if not. */
-        lv_set_message(TR(LOG_CANNOT_DELETE), name);
+        lv_say(TX_LOG_CANNOT_DELETE, name);
         return;
     }
     /* What the import, plot and text views hold was read from that
@@ -154,7 +154,7 @@ static void delete_doomed(void)
     s.sel = -1;
     s.scroll = scroll;
     clamp_scroll(&s.scroll, s.n_files, BR_ROWS);
-    lv_set_message(TR(LOG_DELETED), name);
+    lv_say(TX_LOG_DELETED, name);
     s.message_ok = true;
 }
 

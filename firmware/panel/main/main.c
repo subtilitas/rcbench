@@ -139,6 +139,7 @@ void publish_throttle_ramp(void)
 #include "fw_install.h"
 #include "fw_ota.h"
 #include "fw_release.h"
+#include "fw_trial.h"
 #include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
@@ -149,6 +150,7 @@ void publish_throttle_ramp(void)
 
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_trial.h"
 
 static const char *TAG = "rcbench";
 
@@ -848,6 +850,10 @@ void app_main(void)
     /* The servo programmer's record of a write that a restart cut
      * short. */
     kst_record_load(false);
+    /* The card was tried, with its reads at the start, and the settings
+     * are handed on: two of the steps a new build's trial waits for
+     * (panel_trial.h). */
+    panel_trial_mark(FW_TRIAL_CARD | FW_TRIAL_SETTINGS);
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));

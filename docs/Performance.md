@@ -556,14 +556,13 @@ on. The same definition sizes that array.
 
 `-v` lists all of them, and each task's deepest chain.
 
-The UI keeps its frames small where it is cheap. A page's drawer is a
-separate function, so only the page on screen holds its buffers: in ESC
-STICK, `esc_stick_panel_render()`'s frame is 32 bytes and the largest
-page's 464. MOTOR & ESC's `mo_render()` takes 48 bytes and calls the session's
-way and its body's, 416 bytes, as two functions, so a session's pages do not
-sit on the body's frame. A
-line copied for display is copied without `snprintf()`, which reaches
-newlib's float conversion: 2,368 bytes deep in the call graph.
+The panel's UI keeps its frames small where it is cheap. A page's drawer
+is a separate function, so only the page on screen holds its buffers: in
+ESC STICK, `esc_stick_panel_render()` calls the page on screen, and MOTOR &
+ESC's `mo_render()` calls the session's way and its body's as two
+functions, so a session's pages do not sit on the body's frame. A line
+copied for display is copied without `snprintf()`, which reaches newlib's
+float conversion. The frame sizes on the ESP32-P4 are not measured.
 
 ## Internal RAM
 
@@ -639,15 +638,15 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 30,720 | 243,080 |
-| .bss in PSRAM (`.ext_ram.bss`) | 212,360 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,384 | 340,744 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,409,376 | 2,409,376 |
+| .bss in internal RAM (DIRAM) | 30,952 | 243,504 |
+| .bss in PSRAM (`.ext_ram.bss`) | 212,552 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,624 | 341,176 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,439,488 | 2,439,488 |
 
 All figures are bytes. The column without the fragment adds the PSRAM .bss
 to the internal figures; it is not a build of its own. ESP-IDF's own PSRAM entries for lwIP (lightweight
 IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment
-defines, which the P4 build does not include; lwIP's 3,551 bytes of .bss
+defines, which the P4 build does not include; lwIP's 3,774 bytes of .bss
 stay in internal RAM.
 
 ## Wi-Fi downloads

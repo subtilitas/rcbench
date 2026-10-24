@@ -232,28 +232,41 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
 
 - **Tastenfeld.** Eine Titelzeile von 32px, die Eingabe von 60px, dann
   4 x 4 Tasten mit 8px Abstand, 8px vom Rand der Fläche; die Tasten enden
-  spätestens 4px über dem Alarmband (unten). Über der linken Spalte von
-  SERVO, 488 x 524px, ist eine Taste 112 x 88px groß (16,8 x 13,2mm);
-  über der von SUPPLY, 546 x 494px, 126 x 80px.
+  spätestens 4px über dem Alarmband (unten). Auf SERVO ist eine Taste
+  145 x 88px groß (21,8 x 13,2mm), auf SUPPLY 145 x 76px.
   Titel und Bereich stehen im Font 10 x 20, oder in 8 x 16, wo beide nicht
   nebeneinander passen. Die Eingabe steht in den Ziffern 32 x 44 mit der
   Einheit in 12 x 24; eine Eingabe, die nicht passt, nimmt die Ziffern
-  24 x 30 mit der Einheit in 10 x 20. Ziffern und Punkt stehen in 12 x 24.
-  DEL, CLR, ABBRECHEN, OK und `+/-` teilen einen Font: den größten von
-  12 x 24, 10 x 20 und 8 x 16, in dem alle mit 6px Rand je Seite auf ihre
-  Taste passen. `ABBRECHEN` braucht für 12 x 24 eine Taste von 120px, für
-  10 x 20 eine von 102px.
+  24 x 30 mit der Einheit in 10 x 20. Ziffern und Punkt stehen im größten
+  von 20 x 36, 16 x 28, 12 x 24 und 10 x 20, dessen Zelle mit 6px Rand je
+  Seite auf eine Zifferntaste passt, sonst in 8 x 16; 20 x 36 braucht
+  eine Taste von 32 x 48px und ist der Font jedes Tastenfelds, das das
+  Panel öffnet. DEL, CLR, ABBRECHEN, OK und `+/-` teilen einen Font: den
+  größten derselben Fonts, nie größer als der der Ziffern, in dem alle
+  mit 6px Rand je Seite auf ihre Taste passen. Das englische Wort für
+  ABBRECHEN braucht für 20 x 36 eine Taste von 132px. `ABBRECHEN` braucht für 20 x 36 192px,
+  für 16 x 28 156px, für 12 x 24 120px und für 10 x 20 102px; die
+  deutschen Tastenfelder von SERVO, SUPPLY und den SETTINGS von
+  MOTOR & ESC zeigen ihre Wörter darum in 12 x 24.
 - **Tastatur.** Eine Titelzeile von 32px, das Textfeld von 52px, dann 5
   Tastenreihen mit 6px Abstand. Titel und Zähler stehen in 10 x 20, oder
   in 8 x 16, wo beide nicht nebeneinander passen. Der Text steht im Font
   20 x 36, wenn 23 Zeichen und die Schreibmarke ins Feld passen, sonst in
-  16 x 28. Buchstaben, Ziffern und Zeichen stehen in 12 x 24. Die
-  Worttasten (die untere Reihe, DEL, `ABC`, `abc`, `#+=`) teilen einen
-  Font: den größten von 12 x 24, 10 x 20 und 8 x 16, in dem alle mit 4px
-  Rand je Seite auf ihre Taste passen; VERBERGEN zählt dabei wie ANZEIGEN,
-  so ändert ein Tippen den Font nicht. Auf WI-FI nimmt die Tastatur den
-  Körper über dem Alarmband, 1008 x 484px, mit Tasten von 93 x 71px
-  (14,0 x 10,7mm) und jedem Wort in 12 x 24.
+  16 x 28. Buchstaben, Ziffern und Zeichen stehen im größten von 20 x 36,
+  16 x 28, 12 x 24 und 10 x 20, dessen Zelle mit 4px Rand je Seite auf
+  eine Zeichentaste passt, sonst in 8 x 16; 20 x 36 braucht eine Taste
+  von 28 x 44px und ist der Font jeder Tastatur, die das Panel öffnet.
+  Die Worttasten (die untere Reihe, DEL, `ABC`, `abc`, `#+=`) teilen
+  einen Font: den größten derselben Fonts, nie größer als der der
+  Zeichen, in dem alle mit 4px Rand je Seite auf ihre Taste passen;
+  VERBERGEN zählt dabei wie ANZEIGEN, so ändert ein Tippen den Font
+  nicht. Auf WI-FI nimmt die Tastatur den Körper über dem Alarmband,
+  1008 x 484px, mit Tasten von 93 x 71px (14,0 x 10,7mm) und jedem Wort
+  in 20 x 36; die Wörter der Passworttastatur stehen auf Deutsch in
+  16 x 28, da `LEERZEICHEN` zwei Tasten von 192px hat. Die
+  Namenstastaturen von SERVO, Tasten von 55 x 72px, zeigen ihre Wörter
+  in 12 x 24, die Suchtastatur von ESC STICK, Tasten von 59 x 57px, in
+  16 x 28.
 - **Auswahlliste.** Ein Feld oder eine Zeile ab 56px Höhe zeigt den Text
   im Font 20 x 36, 12px eingerückt, mit einem 11px breiten Winkel 28px
   vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10px
@@ -281,8 +294,8 @@ Tastenraster enden auf jedem Bildschirm 4px über dem Alarmband, bei
 Körper-y 492. Ein Tastenfeld oder eine Tastatur, deren Fläche weiter reicht,
 malt die ganze Fläche und lässt ihre Tasten dort enden, so verdeckt ein
 Alert keine Taste. Auf SERVO sind die Tasten der Tastenfelder dann
-112 x 88px groß und die der Tastaturen 41 x 72px; auf SUPPLY die des
-Tastenfelds 126 x 80px; auf der Suchtastatur von ESC STICK 59 x 57px; auf
+145 x 88px groß und die der Tastaturen 55 x 72px; auf SUPPLY die des
+Tastenfelds 145 x 76px; auf der Suchtastatur von ESC STICK 59 x 57px; auf
 SETTINGS von MOTOR & ESC die des Tastenfelds 145 x 89px; auf BALANCE die
 des Tastenfelds der Blattzahl 242 x 72px.
 
@@ -3220,10 +3233,33 @@ Download von GitHub dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
-Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
-Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
-Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
-zum Build davor, der dann
+Der erste Start eines neuen Builds ist ein Versuch. Ohne Touch startet das
+Panel beim Touch-Schritt in den Build davor neu: Ein Prüfstand ohne Touch hat
+kein STOP. Laufen Display und Touch, bleibt der Build, sobald das Panel als
+Ganzes läuft:
+
+- die Karte wurde versucht, eine fehlende oder unlesbare Karte zählt;
+- die Einstellungen sind geladen;
+- der Steuer-Task und der Logger-Task sind je einen Durchlauf gelaufen;
+- ein ganzes Bild hat das Display erreicht, und die Bildschirmschleife ist
+  danach einmal gelaufen.
+
+Auf den IOmcu wird nicht gewartet: Ein Panel ohne IOmcu bleibt genauso.
+30s nach dem Start bleibt der Build, sobald die Bildschirmschleife läuft,
+was auch sonst fehlt. Das Behalten schreibt otadata und wartet darum auf
+einen Moment, der einen Flash-Schreibvorgang verträgt, nach der Regel des
+Speicherns der Einstellungen: nicht, solange der Prüfstand ARMED ist oder ein
+Schalten auf ARMED wartet, nicht bei eingeschaltetem Netzteilausgang und nicht,
+solange eine Platinenzeichnung abgerufen oder gespeichert wird. Die Konsole
+sagt, wie es ausging:
+
+    I (…) rcbench: 0.22.1 on trial: kept once every task runs and a frame is on the display, or at 30s after the start with the screen loop running
+    I (…) rcbench: 0.22.1 kept: every task runs and a frame is on the display, 4210ms after the start
+    W (…) rcbench: 0.22.1 kept at the 30s bound with the screen loop running; not seen: logger task
+
+Die 4210ms sind ein Beispiel; die Zeit ist nicht gemessen. Ein Start, der
+nicht so weit kommt, durch einen Panic, einen Watchdog-Reset, einen Neustart
+oder einen Stromausfall, geht zurück zum Build davor, der dann
 `Panel-Firmware 0.22.1 ist nicht gestartet. Version 0.22.0 läuft wieder.` im Band
 zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
 ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
@@ -3236,6 +3272,11 @@ Aktuelle Einschränkungen:
 
 - Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
   Panel geht trotzdem zum Build davor zurück.
+- Ein Versuchsstart, der vor der Bildschirmschleife stehen bleibt, etwa in
+  einem Einhängen der Karte, das nicht zurückkehrt, bleibt nicht und wird
+  auch nicht zurückgesetzt: Der Task-Watchdog meldet und startet nicht neu
+  (CONFIG_ESP_TASK_WDT_PANIC ist aus). Das Panel bleibt auf dem Splash bis
+  zu einem Neustart oder Stromausfall, der zum Build davor zurückgeht.
 - Wie lange Löschen und Schreiben dauern, ist nicht gemessen. Die dunkle
   Anzeige bei jedem Löschen ist auf 0.20.0 gemeldet und auf 0.21.x nicht
   gemessen.
@@ -3482,7 +3523,12 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   leer.
 - Ein Software-Neustart behält die Uhr: ein Firmware-Update, ein Neustart
   nach einem Fehler. ESP-IDF hält die Systemzeit im RTC-Timer des ESP32-P4,
-  den nur das Einschalten zurücksetzt. Auf der Platine nicht gemessen.
+  den nur das Einschalten zurücksetzt. Der Timer zählt den Quarz Y3 der
+  Platine mit 32.768kHz, oder den internen RC-Oszillator, wenn der Quarz
+  nicht anschwingt ([Aufbau](Building-de.md#der-langsame-rtc-takt)). Auf
+  dem RC lag die Uhr an der Station nach etwa 2h über einen Neustart um
+  4.357s daneben, etwa 600ppm (gemessen). Auf dem Quarz ist die
+  Abweichung über einen Neustart nicht gemessen.
 - Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal über SNTP
   (Simple Network Time Protocol): die Release-Prüfung beim Start, NACH
   UPDATES SUCHEN und der Download unter [Updates](#updates) und das
@@ -3519,6 +3565,10 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
   Keine Antwort: `ntp: no answer from pool.ntp.org in 30000ms; clock unchanged`.
   Eine Verbindung, die zuerst endet: `ntp: join ended before an answer from pool.ntp.org; clock unchanged`.
+- Bei jedem Start nennt die Konsole den langsamen Takt, den der RTC-Timer
+  zählt: `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`, oder
+  als Warnung `clock: rtc slow clock internal RC, 136012.345Hz calibrated:
+  the 32k crystal did not start`.
 - Bei jedem Start sagt die Konsole, was die Uhr hält: `clock: not set
   (...s since 1970); file dates read 1980 until an NTP answer` nach dem
   Einschalten, oder die über einen Neustart behaltene Zeit in UTC und in der

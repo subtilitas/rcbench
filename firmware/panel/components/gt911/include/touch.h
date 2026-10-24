@@ -117,7 +117,7 @@ uint32_t touch_age_ms(void);
  * @brief Whether a touch injector (testbench/touch-injector) is attached: it
  * answered at start-up and has not been silent for 1000ms since, or a
  * probe has re-attached it.  Always true when the injector is the only touch
- * device (no GT911 at 0x5D).  Declared in a build with RCBENCH_TOUCH_INJECTOR
+ * device (nothing at 0x5D, and the product ID "9INJ" at 0x14).  Declared in a build with RCBENCH_TOUCH_INJECTOR
  * (the default) only; touch_inject.h has the rest.
  *
  * @return true while an injector is attached

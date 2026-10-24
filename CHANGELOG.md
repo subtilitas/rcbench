@@ -23,6 +23,12 @@ history is in git.
   1980 stamp, an unset clock's, reads `not known` on FILES INFO and leaves
   the Wi-Fi page's time cell empty
   ([Building](docs/Building.md#the-panels-clock)).
+- The panel's RTC timer, which keeps the clock across a software restart,
+  counts the board's 32.768kHz crystal Y3 instead of the internal RC
+  oscillator, which was 4.357s off after about 2h. A crystal that does not
+  start leaves the panel on the RC. Each start logs the slow clock, e.g.
+  `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`
+  ([Building](docs/Building.md#the-rtc-slow-clock)).
 - A SERVO run's log, `SERVOnnn.CSV`, has `pulse (us)` and `angle (deg)`
   before `source`: the pulse COMMANDED shows and the AS5600 angle MEASURED
   shows, empty without one. While an INA3221 channel is the servo rail's
@@ -92,8 +98,44 @@ history is in git.
   close failed, 212 lines sent` at its close, and the same for
   `LIMITnnn.TXT`. A test that gets no file logs `no test file in ... (take
   n); this test is not recorded`.
+- ESP32-P4 panel: the frame cost and the stacks are modelled and held in
+  CI. `tools/frame_cost.py` counts L2 cache-line fills under the P4's L1
+  (64KiB, 2-way) and L2 (128KiB, 8-way) caches and holds 27 modes to
+  ceilings; `tools/stack_check.py` decodes the P4's RISC-V code
+  (`tools/stack_riscv.py`) and holds every panel task's deepest chain and
+  1024 bytes to its stack. The console logs, with the build option
+  `RCBENCH_PERF_LOG` (default ON), at most one line a frame: a rate line
+  every 300 frames with fps, DRAW, WAIT, TURN and VSYNC, a window line with
+  DRAW, WAIT and TURN as min/mean/max on the screen shown, the PSRAM probe
+  at start-up, and every stack's high-water mark and the internal heap's
+  lowest figure, the stacks scanned every 6th rate line on a SAFE bench
+  with the supply off ([Performance](docs/Performance.md#on-the-board)).
 
 ### Fixed
+
+- LOGS words its footer message when it draws it, so a change of
+  SET_LANGUAGE rewords a message already standing: a refused open or
+  delete, a deleted file's name and the reader's verdict on a file.
+
+- A new panel build's first start is kept once the panel works as a whole:
+  the card tried, the settings loaded, the control and logger tasks one
+  pass each, a whole frame on the display and a screen loop tick after it,
+  or 30s after the start once the screen loop ticks. The IOmcu is not
+  waited for. A panic or reset before that goes back to the build before
+  it. A build kept at display and touch that failed after that restarted
+  for ever and needed USB (Universal Serial Bus) to recover
+  ([Screens: PANEL UPDATE](docs/Screens.md#installing-panel-update)).
+
+- A glass GT911 that latches I2C (Inter-Integrated Circuit) address 0x14
+  at its reset is read as the glass, with both axes mirrored and the 180°
+  turn, and no longer as the touch injector through its unmirrored map,
+  which landed every touch point-reflected: STOP missed, and a finger on
+  the reflected point of ARM held ARM. The panel tells the injector by its
+  product ID `9INJ`, which no Goodix controller reports, not by its
+  address. Beside a glass at 0x5D, a GT911 at 0x14 without it is not read.
+  The touch injector reports `9INJ` and its `ping` reply ends with
+  `id=9INJ`; an injector image without it has to be flashed again
+  ([touch injector](testbench/touch-injector/README.md)).
 
 - A line on OUTPUTS and PICK A PIN no longer ends with a number alone on
   the next line: `SERVO TESTER DRIVES PROG PORT 1` broke before its `1` at
@@ -149,6 +191,13 @@ history is in git.
 
 ### Changed
 
+- A battery's cell count joins its number as a unit symbol: the pack's
+  Cells keypad gives its range as `1 to 14S` (`1 bis 14S`). A unit keeps
+  its own case in a label of capitals: SERVO's run cards say `HOLD 2s TO
+  START` (`2s HALTEN ZUM STARTEN`), and the automatic test's steps read
+  `4.8 6.0V BROWN-OUT`. `tools/check_units.py --check` fails on a cell count
+  after a space and on a unit in capitals after a number in the texts the
+  panel shows (`500MS`, `50 HZ`).
 - The ESC profiles' texts the panel shows write a number and its unit
   together, as the rest of the interface does: `1.2-1.8ms`, `Nach 2s`,
   `8kHz`, 683 numbers in 624 texts of 67 of the 72 profiles. These are the

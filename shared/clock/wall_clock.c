@@ -174,3 +174,41 @@ wall_ntp_do_t wall_ntp_hold_step(wall_ntp_t *n, bool joined, bool lingers,
     const bool asking = n != NULL && n->state == WALL_NTP_ASKING;
     return wall_ntp_step(n, joined || (lingers && asking), answered, now_ms);
 }
+
+uint64_t wall_slow_mhz(uint32_t cal)
+{
+    if (cal == 0u) {
+        return 0u;
+    }
+    /* f = 1e6 * 2^19 / cal Hz; in mHz the dividend is 1e9 * 2^19, below
+     * 2^59, so it cannot overflow. */
+    const uint64_t dividend = 1000000000ULL << 19;
+    return (dividend + cal / 2u) / cal;
+}
+
+bool wall_slow_fell_back(wall_slow_src_t src, bool crystal)
+{
+    return crystal && src != WALL_SLOW_CRYSTAL;
+}
+
+char *wall_slow_clock_line(char *out, size_t n, wall_slow_src_t src,
+                           bool crystal, uint32_t cal)
+{
+    if (out == NULL || n == 0u) {
+        return NULL;
+    }
+    const char *name = (src == WALL_SLOW_CRYSTAL) ? "32k crystal"
+                       : (src == WALL_SLOW_RC)    ? "internal RC"
+                                                  : "other source";
+    const char *tail = wall_slow_fell_back(src, crystal)
+                       ? ": the 32k crystal did not start" : "";
+    const uint64_t mhz = wall_slow_mhz(cal);
+    if (mhz == 0u) {
+        snprintf(out, n, "rtc slow clock %s, frequency not known%s", name,
+                 tail);
+    } else {
+        snprintf(out, n, "rtc slow clock %s, %" PRIu64 ".%03" PRIu64
+                 "Hz calibrated%s", name, mhz / 1000u, mhz % 1000u, tail);
+    }
+    return out;
+}

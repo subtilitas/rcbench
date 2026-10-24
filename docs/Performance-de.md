@@ -600,15 +600,15 @@ bestimmt die Größe dieses Arrays.
 
 `-v` listet sie alle auf, und die tiefste Kette jeder Task.
 
-Die UI hält ihre Frames klein, wo das wenig kostet. Der Zeichner einer Seite
-ist eine eigene Funktion, sodass nur die angezeigte Seite ihre Puffer hält:
-in ESC STICK ist der Frame von `esc_stick_panel_render()` 32 Bytes groß und
-der der größten Seite 464. `mo_render()` von MOTOR & ESC nimmt 48 Bytes und ruft
-den Weg der Sitzung und den seines Körpers, 416 Bytes, als zwei Funktionen
-auf, sodass die Seiten einer Sitzung nicht auf dem Frame des Körpers
-liegen. Eine Zeile, die zur Anzeige kopiert wird, wird ohne `snprintf()`
-kopiert, das die Gleitkommawandlung von newlib erreicht: 2 368 Bytes tief im
-Aufrufgraphen.
+Die UI des Panels hält ihre Frames klein, wo das wenig kostet. Der
+Zeichner einer Seite ist eine eigene Funktion, sodass nur die angezeigte
+Seite ihre Puffer hält: in ESC STICK ruft `esc_stick_panel_render()` die
+angezeigte Seite auf, und `mo_render()` von MOTOR & ESC ruft den Weg der
+Sitzung und den seines Körpers als zwei Funktionen auf, sodass die Seiten
+einer Sitzung nicht auf dem Frame des Körpers liegen. Eine Zeile, die zur
+Anzeige kopiert wird, wird ohne `snprintf()` kopiert, das die
+Gleitkommawandlung von newlib erreicht. Die Frame-Größen auf dem ESP32-P4
+sind nicht gemessen.
 
 ## Interner RAM
 
@@ -687,16 +687,16 @@ Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
 
 | Posten | Mit dem Fragment | Ohne es |
 | --- | ---: | ---: |
-| .bss im internen RAM (DIRAM) | 30 720 | 243 080 |
-| .bss im PSRAM (`.ext_ram.bss`) | 212 360 | 0 |
-| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 128 384 | 340 744 |
-| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 409 376 | 2 409 376 |
+| .bss im internen RAM (DIRAM) | 30 952 | 243 504 |
+| .bss im PSRAM (`.ext_ram.bss`) | 212 552 | 0 |
+| interner RAM, den das Image belegt: .text, .data und .bss im DIRAM, von 655 360 | 128 624 | 341 176 |
+| Anwendungs-Image, gebaut ohne `RCBENCH_IOMCU_BIN` (ohne IOmcu-Image) | 2 439 488 | 2 439 488 |
 
 Alle Zahlen sind Bytes. Die Spalte ohne Fragment zählt das .bss im PSRAM
 zu den internen Zahlen; sie ist kein eigener Build. Die PSRAM-Einträge von ESP-IDF für lwIP
 (Lightweight IP Stack) und wpa_supplicant nutzen ein Schema, das nur das
 Fragment von `esp_wifi` definiert, und der P4-Build bindet es nicht ein;
-die 3 551 Bytes .bss von lwIP bleiben im internen RAM.
+die 3 774 Bytes .bss von lwIP bleiben im internen RAM.
 
 ## WLAN-Downloads
 

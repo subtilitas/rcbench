@@ -17,7 +17,7 @@
  * Commands (one line each, at most INJ_LINE_MAX characters, LF or CRLF):
  *
  *   ping                       pong rcbench-touch 1 addr=0x14 res=1024x600
- *                              state=listen|active
+ *                              state=listen|active id=9INJ
  *   wiring                     ok wiring, then the verdict line
  *   confirm scl=GP5            ok confirm
  *   status                     status \<state\> reads= acks= last_read_ms=

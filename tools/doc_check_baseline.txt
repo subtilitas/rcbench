@@ -206,9 +206,6 @@ firmware/panel/components/can_twai/include/can_twai.h: warning: return type of m
 firmware/panel/components/display/display.c: warning: Member EK_CMD_ADDRESS_MODE (macro definition) of file display.c is not documented.
 firmware/panel/components/display/display.c: warning: Member RESET_WAIT_MS (macro definition) of file display.c is not documented.
 firmware/panel/components/display/display.c: warning: Member TAG (variable) of file display.c is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: file has no @file block
-firmware/panel/components/fw_ota/fw_ota.c: warning: Compound ota_ctx_t is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Compound restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member check (variable) of struct restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member h (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member magic (variable) of struct restart_note_t is not documented.
@@ -216,7 +213,6 @@ firmware/panel/components/fw_ota/fw_ota.c: warning: Member next (variable) of st
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member open (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member part (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member version[FW_TEXT_MAX] (variable) of struct restart_note_t is not documented.
-firmware/panel/components/fw_ota/include/fw_ota.h: file has no @file block
 firmware/panel/components/gt911/gt911.c: file has no @file block
 firmware/panel/components/gt911/gt911.c: warning: Compound gt911_dev_t is not documented.
 firmware/panel/components/gt911/gt911.c: warning: Member addr (variable) of struct gt911_dev_t is not documented.
@@ -3914,7 +3910,6 @@ shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_analysis is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_cursor is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_data is not documented
-shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_message is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_open_name is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_series_color is not documented
 shared/ui/include/log_viewer_screen.h: warning: return type of member log_viewer_tab is not documented
@@ -4235,7 +4230,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warn_line is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
-shared/ui/include/supply_screen.h: file has no @file block
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
@@ -4878,11 +4872,9 @@ shared/ui/log_viewer_int.h: warning: Member lv_rescan(void) (function) of file l
 shared/ui/log_viewer_int.h: warning: Member lv_run_analysis(void) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_s (variable) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_series_color[LOG_MAX_SERIES] (variable) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member lv_set_message(const char *fmt,...) (function) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_span[LOG_MAX_SERIES][PV_W][2] (variable) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_tab_at[LOG_TAB_COUNT] (variable) of file log_viewer_int.h is not documented.
 shared/ui/log_viewer_int.h: warning: Member lv_volume_now(void) (function) of file log_viewer_int.h is not documented.
-shared/ui/log_viewer_int.h: warning: Member message[80] (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member message_ok (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member mounts (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member n_card (variable) of struct lv_state_t is not documented.
@@ -4927,13 +4919,11 @@ shared/ui/log_viewer_int.h: warning: Member volume[LOG_VIEWER_NAME_MAX] (variabl
 shared/ui/log_viewer_int.h: warning: Member win0 (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member win_n (variable) of struct lv_state_t is not documented.
 shared/ui/log_viewer_int.h: warning: Member written_seen (variable) of struct lv_state_t is not documented.
-shared/ui/log_viewer_load.c: warning: Member err_text(log_err_t err) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_compute_spans(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_delim_text(char delimiter) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_load_data(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_open_selected(void) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member lv_run_analysis(void) (function) of file log_viewer_load.c is not documented.
-shared/ui/log_viewer_load.c: warning: Member lv_set_message(const char *fmt,...) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_load.c: warning: Member open_name(log_source_t *src) (function) of file log_viewer_load.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member cancel(void) (function) of file log_viewer_screen.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member enter(void) (function) of file log_viewer_screen.c is not documented.
@@ -5836,7 +5826,6 @@ shared/ui/servo_test_panel.c: warning: Member test_file_name(char *b, size_t n) 
 shared/ui/servo_test_panel.c: warning: Member test_ina_why(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_meter_follow(servo_source_id_t id, uint32_t changes) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_on_ina_now(void) (function) of file servo_test_panel.c is not documented.
-shared/ui/servo_test_panel.c: warning: Member test_plan(char *plan, size_t size) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_restore_service(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_signature(void) (function) of file servo_test_panel.c is not documented.
 shared/ui/servo_test_panel.c: warning: Member test_steps(float *v) (function) of file servo_test_panel.c is not documented.
@@ -6060,12 +6049,6 @@ shared/ui/supply_screen.c: warning: Member sup_propose(int from) (function) of f
 shared/ui/supply_screen.c: warning: Member sup_refresh_limits(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen.c: warning: Member sup_s (variable) of file supply_screen.c is not documented.
 shared/ui/supply_screen.c: warning: Member sup_series[S_COUNT] (variable) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_invalidate(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_model(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_output_on(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_port_held(void) (function) of file supply_screen.c is not documented.
-shared/ui/supply_screen.c: warning: Member supply_screen_set_i(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen_int.h: warning: Compound limit_row_t is not documented.
 shared/ui/supply_screen_int.h: warning: Compound sup_state_t is not documented.
 shared/ui/supply_screen_int.h: warning: Member ROW_COUNT (macro definition) of file supply_screen_int.h is not documented.

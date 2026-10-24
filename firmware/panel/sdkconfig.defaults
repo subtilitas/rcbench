@@ -8,6 +8,29 @@ CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n
 CONFIG_ESP32P4_REV_MIN_301=y
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_400=y
 
+# RTC slow clock -----------------------------------------------------------
+# The RTC (real-time clock) timer, which keeps the system time across a
+# software restart, counts the 32.768kHz crystal Y3 on GPIO0 (XTAL_32K_N)
+# and GPIO1 (XTAL_32K_P), not the internal RC oscillator, ESP-IDF's
+# default.  At the station the RC carried the clock 4.357s off across a
+# restart after about 2h, about 600ppm.  The drift on the crystal is not
+# measured.
+#
+# The bootloader starts the crystal (bootloader_clock_init.c); the start-up
+# code waits for it by calibrating 3000 of its cycles against the 40MHz
+# main crystal, about 92ms a try.  A crystal that gives no clock, or one
+# more than 0.05% off, fails the try; after 4 failed tries ESP-IDF logs
+# "32 kHz clock not found, switching to internal 150 kHz oscillator" and
+# runs the RC (esp_system/port/soc/esp32p4/clk.c, select_rtc_slow_clk()).
+# A board without a working crystal therefore still starts.  The
+# calibration must stay above 0: at 0 ESP-IDF skips the check and selects
+# the crystal unchecked.  ESP-IDF's bootstrap cycles
+# (CONFIG_ESP_SYSTEM_RTC_EXT_XTAL_BOOTSTRAP_CYCLES) do nothing on the
+# ESP32-P4 (rtc_clk_32k_bootstrap() only enables the crystal).
+# log_clock_at_start() (main/panel_settings.c) names the clock that runs.
+CONFIG_RTC_CLK_SRC_EXT_CRYS=y
+CONFIG_RTC_CLK_CAL_CYCLES=3000
+
 # Flash --------------------------------------------------------------------
 # 32 MB of NOR flash on the board.
 CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
@@ -103,8 +126,10 @@ CONFIG_FATFS_USE_LABEL=y
 #
 # Two application slots and otadata (partitions.csv).  An update writes the
 # slot that is not running; the bootloader starts a new build once as a
-# trial, and a start that does not reach fw_ota_boot_check() with the
-# display and touch up goes back to the build before it.  No anti-rollback,
+# trial, and a start that resets before the panel keeps it goes back to the
+# build before it.  The panel keeps it once every task runs and a frame is
+# on the display, 30s after the start at the latest with the screen loop
+# running (shared/fwupdate/fw_trial.h).  No anti-rollback,
 # no secure boot, no flash encryption, no signing: an image is checked by
 # its header, its project name and its appended SHA-256 (secure hash
 # algorithm, 256 bits), which say what it is and that it arrived whole, and

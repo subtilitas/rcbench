@@ -268,7 +268,11 @@ int log_viewer_cursor(void);
  */
 void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
 
-/** The browse view's footer message, "" for none. */
+/**
+ * @brief The footer message: the last result or refusal, worded in the
+ *        language showing; "" for none.
+ * @return the message, in a buffer the next call overwrites
+ */
 const char *log_viewer_message(void);
 
 /**

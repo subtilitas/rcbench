@@ -32,6 +32,7 @@
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_perf.h"
+#include "panel_trial.h"
 #include "pdmini.h"
 #include "picker_screen.h"
 #include "sensors_rows.h"
@@ -698,7 +699,16 @@ void panel_frame_loop(void)
         const uint32_t draw_us = perf_now_us() - draw_start;
         /* Blocks until the swap has taken effect.  A flip that saw no
          * frame-done event in 200ms is counted for the console. */
-        const bool timed_out = (display_flip() == ESP_ERR_TIMEOUT);
+        const esp_err_t flipped = display_flip();
+        const bool timed_out = (flipped == ESP_ERR_TIMEOUT);
+        /*
+         * A new build's first start is kept here, once the panel works as
+         * a whole (panel_trial.h): a frame on the display and a tick after
+         * it, at a moment that can take a flash write, by the settings
+         * save's rule above.
+         */
+        panel_trial_frame(flipped == ESP_OK,
+                          quiet && !s_artbusy && !atomic_load(&s_keeping));
 
         /*
          * The console's frame, stack and heap lines (panel_perf.h), at

@@ -208,7 +208,7 @@ Network Time Protocol). The board has the ESP32-P4's own clock parts:
 
 | Part | What it is | Use in the panel |
 | --- | --- | --- |
-| Y3 | 32.768kHz crystal, 2.0 x 1.2mm, 22pF to GND on each side, 10MΩ across, on GPIO0 (XTAL_32K_N) and GPIO1 (XTAL_32K_P) | not used: the RTC timer runs from the internal RC oscillator (ESP-IDF's default, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| Y3 | 32.768kHz crystal, 2.0 x 1.2mm, 22pF to GND on each side, 10MΩ across, on GPIO0 (XTAL_32K_N) and GPIO1 (XTAL_32K_P) | used: the RTC timer counts it (`CONFIG_RTC_CLK_SRC_EXT_CRYS` in `firmware/panel/sdkconfig.defaults`); a crystal that does not start leaves it on the internal RC oscillator |
 | BAT1 | CR1220 coin-cell holder, "RTC BAT", on the ESP32-P4's VDD_BAT (pin 102); 3V3 charges it through D1 (B5819WS) with no series resistor; C41 1uF | not used. Waveshare: rechargeable 3 to 3.3V cells only. Whether a board ships with a cell is not known |
 
 The ESP32-P4 can keep its RTC timer running on VDD_BAT, but only from deep
@@ -226,6 +226,10 @@ What the panel does instead
   restart keeps it: ESP-IDF keeps the time in the RTC timer and two of its
   store registers, which only a power-on resets
   (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, the default).
+- Across a restart the clock is as good as the RTC timer's slow clock. On
+  the internal RC oscillator it was 4.357s off after about 2h at the
+  station, about 600ppm (measured). On the crystal Y3 the drift across a
+  restart is not measured.
 - Each join of the home network asks `pool.ntp.org` once
   (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`).
   lwIP's random start-up delay is off (`CONFIG_LWIP_SNTP_STARTUP_DELAY=n`),
@@ -241,6 +245,60 @@ What the panel does instead
 - The SNTP client runs in lwIP's task on core 0 and the request is moved on
   by the Wi-Fi worker task. The control task on core 1, which owns STOP and
   the heartbeat, reads no wall time and waits for none of it.
+
+### The RTC slow clock
+
+The RTC timer counts the 32.768kHz crystal Y3 on GPIO0 and GPIO1. No
+other function of the panel firmware uses those two pins. ESP-IDF v5.5.5
+starts the crystal and falls back to the internal RC oscillator (136kHz
+nominal) when it does not start:
+
+1. The bootloader enables the crystal early, so it starts while the
+   application loads (`components/bootloader_support/src/bootloader_clock_init.c`,
+   lines 91 to 95). On the ESP32-P4 the bootstrap cycles
+   (`CONFIG_ESP_SYSTEM_RTC_EXT_XTAL_BOOTSTRAP_CYCLES`) do nothing:
+   `rtc_clk_32k_bootstrap()` only enables the crystal
+   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, lines 45 to 52).
+2. The application's start-up counts 3000 crystal cycles against the
+   40MHz main crystal (`CONFIG_RTC_CLK_CAL_CYCLES=3000`), about 92ms. A
+   count that times out, or one more than 0.05% off 32.768kHz, returns 0
+   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, lines 175 to
+   190).
+3. A count of 0 is tried again, 4 tries in all. After the fourth, ESP-IDF
+   logs `clk: 32 kHz clock not found, switching to internal 150 kHz
+   oscillator`, switches the crystal off and runs the RC
+   (`components/esp_system/port/soc/esp32p4/clk.c`, `select_rtc_slow_clk()`,
+   lines 164 and 184 to 193). The panel starts on the RC. ESP-IDF's message
+   says 150kHz; the ESP32-P4's RC is 136kHz nominal.
+4. `CONFIG_RTC_CLK_CAL_CYCLES` stays above 0: at 0 the count is skipped
+   and the crystal is selected unchecked (`clk.c`, line 184).
+
+At each start the console names the slow clock and its calibrated
+frequency (`log_clock_at_start()`, `firmware/panel/main/panel_settings.c`):
+
+```text
+I (...) clock: rtc slow clock 32k crystal, 32768.012Hz calibrated
+W (...) clock: rtc slow clock internal RC, 136012.345Hz calibrated: the 32k crystal did not start
+```
+
+The start-up cost, from the counts in the source, not measured:
+
+| Slow clock | Counts at start | Time |
+| --- | --- | --- |
+| Internal RC, `CONFIG_RTC_CLK_SRC_INT_RC` | 1024 cycles at 136kHz | about 8ms |
+| Crystal that passes the first try | 3000 cycles at 32.768kHz, twice | about 183ms |
+| Crystal that gives no clock | 4 tries to the time-out, then 3000 RC cycles | about 1.25s, if the time-out of 3000 x 4096 counts is in 40MHz cycles; ESP-IDF's sources do not name the unit |
+
+An update from the panel writes an application slot and leaves the
+bootloader as it was flashed. A bootloader built before this setting does
+not enable the crystal early; the application's start-up enables it and
+counts at once. Whether a crystal then passes within the 4 tries is not
+measured. A USB flash of the whole image writes the bootloader too.
+
+Current limitation: a crystal that stops after the start is not detected.
+ESP-IDF v5.5.5 offers no XTAL32K watchdog on the ESP32-P4. The system time
+runs on from the main crystal (esp_timer), and the RTC timer stands still;
+the next software restart sets the clock back by the time it stood.
 
 ## Commands
 
@@ -327,7 +385,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every module under `shared/` and `protocols/`, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, [Performance](Performance.md) has no ceiling table while `ci.yml` has no `--max-lines` argument, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
 | `tools/wiki_links.py` | rewrites the links of a copy of `docs/` for the wiki, where pages are addressed by title: `Page.md` becomes `Page`, a target above `docs/` a repository URL (`blob`, `tree`, `raw` for an image); compares each page with its rewrite through markdown-it-py 3.0.0 and exits 1 on any other difference, with page and line; `--check` changes nothing; `--verify` fails on a converted page whose links a wiki cannot open |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
-| `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files other than the ESC profiles' panel texts and released CHANGELOG sections are not covered |
+| `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`, a cell count `6S`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol, on a unit in capitals after a number in the texts the panel shows (`500MS`, `50 HZ`; S alone is the cell count) and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files other than the ESC profiles' panel texts and released CHANGELOG sections are not covered |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | move the interface's words from the per-file form (English in `ui_text.def` and the schema, German in `ui_text_de.c`) into the one table, `shared/text/include/ui_text.def`; `merge BASE THEIRS` carries the text changes of a branch still in the per-file form into the table during a merge ([Interface language](Language.md#adding-a-text)) |
 | `tools/gen_font.py` | regenerates the seven embedded fonts from DejaVu Sans Mono, the five text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |

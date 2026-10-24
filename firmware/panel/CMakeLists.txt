@@ -51,6 +51,14 @@ option(RCBENCH_PERF_LOG "Log the frame times, stacks and heap on the console" ON
 #   idf.py -D RCBENCH_DISPLAY_BARS=ON build
 option(RCBENCH_DISPLAY_BARS "Show the DSI host's colour bars at start-up" OFF)
 
+# A test build for the trial start's rollback (main/panel_trial.c): a
+# trial start aborts at the moment it would be kept, and the bootloader
+# starts the build before it.  A start that is no trial, such as a flash
+# over USB, runs as any other.  Never in a release: the release workflow
+# fails on a build cache that has it ON.
+#   idf.py -D RCBENCH_TRIAL_CRASH=ON build
+option(RCBENCH_TRIAL_CRASH "Abort a trial start where it would be kept" OFF)
+
 # ESP-IDF's fatfs component with exFAT on, in place of its own; the reason
 # and the mechanism are in the file.
 include("${CMAKE_CURRENT_LIST_DIR}/fatfs_exfat.cmake")

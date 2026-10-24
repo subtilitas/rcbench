@@ -72,7 +72,7 @@ static int16_t keypad_w(int kw)
 
 /* ------------------------------------------------------------- the keypad */
 
-TEST_CASE(a_keypad_over_a_workbench_card_has_large_keys_in_12x24)
+TEST_CASE(a_keypad_over_a_workbench_card_has_large_keys_in_20x36)
 {
     ui_keypad_t k;
     memset(&k, 0, sizeof(k));
@@ -85,25 +85,40 @@ TEST_CASE(a_keypad_over_a_workbench_card_has_large_keys_in_12x24)
     const gfx_rect_t seven = ui_keypad_key_rect(&k, UI_KEY_7);
     CHECK_EQ(seven.w, 145);
     CHECK_EQ(seven.h, 84);
-    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
-        ui_text_set_language((ui_lang_t)lang);
-        CHECK(ui_keypad_word_font(&k) == &gfx_font_12x24);
-    }
+    CHECK(ui_keypad_digit_font(&k) == &gfx_font_20x36);
+    /* CANCEL takes 132px in 20 x 36; ABBRECHEN 120px in 12 x 24, as
+     * 16 x 28 needs 156. */
+    CHECK(ui_keypad_word_font(&k) == &gfx_font_20x36);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(ui_keypad_word_font(&k) == &gfx_font_12x24);
+    CHECK(ui_keypad_digit_font(&k) == &gfx_font_20x36);
     ui_text_set_language(UI_LANG_EN);
     CHECK(ui_keypad_word_font(NULL) == &gfx_font_8x16);
+    CHECK(ui_keypad_digit_font(NULL) == &gfx_font_8x16);
 }
 
-/* ABBRECHEN, the longest word on a keypad, sets the face of all of them:
- * 12 x 24 needs a 120px key, 10 x 20 a 102px one, 8 x 16 an 84px one. */
-TEST_CASE(the_longest_german_word_sets_the_keypads_word_face)
+/* ABBRECHEN, the longest word on a keypad, sets the face of all of them in
+ * German, CANCEL in English: a face needs its cells and 6px each side. */
+TEST_CASE(the_longest_word_sets_the_keypads_word_face)
 {
     static const struct {
         int kw;
         const gfx_font_t *de;
+        const gfx_font_t *en;
     } k_at[] = {
-        { 120, &gfx_font_12x24 }, { 119, &gfx_font_10x20 },
-        { 102, &gfx_font_10x20 }, { 101, &gfx_font_8x16 },
-        { 84, &gfx_font_8x16 },
+        { 192, &gfx_font_20x36, &gfx_font_20x36 },
+        { 191, &gfx_font_16x28, &gfx_font_20x36 },
+        { 156, &gfx_font_16x28, &gfx_font_20x36 },
+        { 155, &gfx_font_12x24, &gfx_font_20x36 },
+        { 132, &gfx_font_12x24, &gfx_font_20x36 },
+        { 131, &gfx_font_12x24, &gfx_font_16x28 },
+        { 120, &gfx_font_12x24, &gfx_font_16x28 },
+        { 119, &gfx_font_10x20, &gfx_font_16x28 },
+        { 108, &gfx_font_10x20, &gfx_font_16x28 },
+        { 107, &gfx_font_10x20, &gfx_font_12x24 },
+        { 102, &gfx_font_10x20, &gfx_font_12x24 },
+        { 101, &gfx_font_8x16, &gfx_font_12x24 },
+        { 84, &gfx_font_8x16, &gfx_font_12x24 },
     };
     for (size_t i = 0; i < sizeof(k_at) / sizeof(k_at[0]); ++i) {
         ui_keypad_t k;
@@ -111,12 +126,50 @@ TEST_CASE(the_longest_german_word_sets_the_keypads_word_face)
         ui_keypad_open(&k, gfx_rect_make(0, 0, keypad_w(k_at[i].kw), 476),
                        "V", "V", 1.0f, 0.0f, 9.0f, 1);
         CHECK_EQ(ui_keypad_key_rect(&k, UI_KEY_CANCEL).w, k_at[i].kw);
+        CHECK(ui_keypad_digit_font(&k) == &gfx_font_20x36);
         ui_text_set_language(UI_LANG_DE);
         CHECK(ui_keypad_word_font(&k) == k_at[i].de);
         ui_text_set_language(UI_LANG_EN);
-        /* CANCEL is 6 cells: 12 x 24 down to an 84px key. */
-        CHECK(ui_keypad_word_font(&k) == &gfx_font_12x24);
+        CHECK(ui_keypad_word_font(&k) == k_at[i].en);
     }
+}
+
+/* The digits take the largest face whose cell and 6px each side fit the
+ * key: 20 x 36 needs a key of 32 x 48px, 16 x 28 one of 28 x 40px,
+ * 12 x 24 36px tall, 10 x 20 32px tall.  An area 140px taller than four
+ * keys, 8px apart with the header and the entry above, holds keys
+ * exactly that tall.  The words are never larger than the digits. */
+TEST_CASE(the_keypads_digits_take_the_largest_face_their_key_holds)
+{
+    static const struct {
+        int kh;
+        const gfx_font_t *f;
+    } k_tall[] = {
+        { 48, &gfx_font_20x36 }, { 47, &gfx_font_16x28 },
+        { 40, &gfx_font_16x28 }, { 39, &gfx_font_12x24 },
+        { 36, &gfx_font_12x24 }, { 35, &gfx_font_10x20 },
+        { 32, &gfx_font_10x20 }, { 31, &gfx_font_8x16 },
+    };
+    for (size_t i = 0; i < sizeof(k_tall) / sizeof(k_tall[0]); ++i) {
+        ui_keypad_t k;
+        memset(&k, 0, sizeof(k));
+        ui_keypad_open(&k, gfx_rect_make(0, 0, 620,
+                                         (int16_t)(140 + 4 * k_tall[i].kh)),
+                       "V", "V", 1.0f, 0.0f, 9.0f, 1);
+        CHECK_EQ(ui_keypad_key_rect(&k, UI_KEY_7).h, k_tall[i].kh);
+        CHECK(ui_keypad_digit_font(&k) == k_tall[i].f);
+        /* CANCEL's 145px key would take 20 x 36 by its width alone. */
+        CHECK(ui_keypad_word_font(&k) == k_tall[i].f);
+    }
+    /* 32px wide takes 20 x 36; 31px, 16 x 28. */
+    ui_keypad_t k;
+    memset(&k, 0, sizeof(k));
+    ui_keypad_open(&k, gfx_rect_make(0, 0, keypad_w(32), 476), "V", "V",
+                   1.0f, 0.0f, 9.0f, 1);
+    CHECK(ui_keypad_digit_font(&k) == &gfx_font_20x36);
+    ui_keypad_open(&k, gfx_rect_make(0, 0, keypad_w(31), 476), "V", "V",
+                   1.0f, 0.0f, 9.0f, 1);
+    CHECK(ui_keypad_digit_font(&k) == &gfx_font_16x28);
 }
 
 /* The entry, the faint value and the refusal draw inside the area at both
@@ -143,7 +196,10 @@ TEST_CASE(the_keypad_draws_inside_its_area_at_either_numeral_face)
 
 /* ----------------------------------------------------------- the keyboard */
 
-TEST_CASE(the_wifi_keyboard_draws_every_word_in_12x24)
+/* Over the WI-FI screen's 1008 x 484px a key is 93 x 71px: the characters
+ * and every word in 20 x 36, but for the German password's LEERZEICHEN in
+ * two keys of 192px, which needs 16 x 28. */
+TEST_CASE(the_wifi_keyboard_draws_its_keys_in_20x36)
 {
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
@@ -152,25 +208,72 @@ TEST_CASE(the_wifi_keyboard_draws_every_word_in_12x24)
             memset(&k, 0, sizeof(k));
             ui_textkey_open_wifi(&k, gfx_rect_make(8, 8, 1008, 484), "", "",
                                  secret != 0);
-            CHECK(ui_textkey_word_font(&k) == &gfx_font_12x24);
+            const gfx_rect_t q = ui_textkey_key_rect(&k, 0);
+            CHECK_EQ(q.w, 93);
+            CHECK_EQ(q.h, 71);
+            CHECK(ui_textkey_char_font(&k) == &gfx_font_20x36);
+            CHECK(ui_textkey_word_font(&k)
+                  == ((lang == UI_LANG_DE && secret != 0) ? &gfx_font_16x28
+                                                          : &gfx_font_20x36));
         }
     }
     ui_text_set_language(UI_LANG_EN);
     CHECK(ui_textkey_word_font(NULL) == &gfx_font_8x16);
+    CHECK(ui_textkey_char_font(NULL) == &gfx_font_8x16);
 }
 
-/* Over a 488px area a character key is 41px: DEL needs 10 x 20, and the
- * German CANCEL, ABBRECHEN in two keys of 88px, needs 8 x 16. */
+/* Over a 488px area a character key is 41px: the characters in 20 x 36,
+ * DEL in 10 x 20, and the German CANCEL, ABBRECHEN in two keys of 88px,
+ * in 8 x 16. */
 TEST_CASE(a_narrow_keyboard_takes_the_face_its_longest_word_fits)
 {
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
     ui_textkey_open(&k, gfx_rect_make(8, 8, 488, 416), "NAME", "", 16);
     CHECK_EQ(ui_textkey_key_rect(&k, 0).w, 41);
+    CHECK(ui_textkey_char_font(&k) == &gfx_font_20x36);
     CHECK(ui_textkey_word_font(&k) == &gfx_font_10x20);
     ui_text_set_language(UI_LANG_DE);
     CHECK(ui_textkey_word_font(&k) == &gfx_font_8x16);
     ui_text_set_language(UI_LANG_EN);
+}
+
+/* The characters take the largest face whose cell and 4px each side fit
+ * the key: 20 x 36 needs 28 x 44px, 16 x 28 24 x 36px, 12 x 24 32px tall,
+ * 10 x 20 28px tall.  An area 128px taller than five keys, 6px apart with
+ * the title and the text above, holds keys exactly that tall.  The words
+ * are never larger than the characters. */
+TEST_CASE(the_keyboards_characters_take_the_largest_face_their_key_holds)
+{
+    static const struct {
+        int kh;
+        const gfx_font_t *f;
+    } k_tall[] = {
+        { 44, &gfx_font_20x36 }, { 43, &gfx_font_16x28 },
+        { 36, &gfx_font_16x28 }, { 35, &gfx_font_12x24 },
+        { 32, &gfx_font_12x24 }, { 31, &gfx_font_10x20 },
+        { 28, &gfx_font_10x20 }, { 27, &gfx_font_8x16 },
+    };
+    for (size_t i = 0; i < sizeof(k_tall) / sizeof(k_tall[0]); ++i) {
+        ui_textkey_t k;
+        memset(&k, 0, sizeof(k));
+        ui_textkey_open(&k, gfx_rect_make(0, 0, 1008,
+                                          (int16_t)(128 + 5 * k_tall[i].kh)),
+                        "NAME", "", 16);
+        CHECK_EQ(ui_textkey_key_rect(&k, 0).h, k_tall[i].kh);
+        CHECK(ui_textkey_char_font(&k) == k_tall[i].f);
+        /* SPACE's 4 keys of 93px would take 20 x 36 by width alone. */
+        CHECK(ui_textkey_word_font(&k) == k_tall[i].f);
+    }
+    /* 28px wide takes 20 x 36; 27px, 16 x 28. */
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open(&k, gfx_rect_make(0, 0, 70 + 10 * 28, 484), "N", "", 16);
+    CHECK_EQ(ui_textkey_key_rect(&k, 0).w, 28);
+    CHECK(ui_textkey_char_font(&k) == &gfx_font_20x36);
+    ui_textkey_open(&k, gfx_rect_make(0, 0, 70 + 10 * 27, 484), "N", "", 16);
+    CHECK_EQ(ui_textkey_key_rect(&k, 0).w, 27);
+    CHECK(ui_textkey_char_font(&k) == &gfx_font_16x28);
 }
 
 /* The face does not change with a press: the password's SHOW and HIDE,
@@ -470,11 +573,13 @@ TEST_CASE(the_plot_ring_holds_one_sample_per_panel_column)
 
 int main(void)
 {
-    RUN(a_keypad_over_a_workbench_card_has_large_keys_in_12x24);
-    RUN(the_longest_german_word_sets_the_keypads_word_face);
+    RUN(a_keypad_over_a_workbench_card_has_large_keys_in_20x36);
+    RUN(the_longest_word_sets_the_keypads_word_face);
+    RUN(the_keypads_digits_take_the_largest_face_their_key_holds);
     RUN(the_keypad_draws_inside_its_area_at_either_numeral_face);
-    RUN(the_wifi_keyboard_draws_every_word_in_12x24);
+    RUN(the_wifi_keyboard_draws_its_keys_in_20x36);
     RUN(a_narrow_keyboard_takes_the_face_its_longest_word_fits);
+    RUN(the_keyboards_characters_take_the_largest_face_their_key_holds);
     RUN(the_keyboards_word_face_holds_across_its_states);
     RUN(the_keyboard_draws_inside_its_area_at_every_width);
     RUN(tabs_take_10x20_when_tall_and_every_label_fits);

@@ -214,26 +214,38 @@ the faces and the spacing inside are theirs.
 
 - **Keypad.** A title row of 32px, the entry of 60px, then 4 x 4 keys
   8px apart, 8px from the area's edge, the keys ending 4px above the
-  alert band at the latest (below). Over SERVO's left column, 488 x 524px,
-  a key is 112 x 88px (16.8 x 13.2mm); over SUPPLY's, 546 x 494px,
-  126 x 80px. The title and the range are in the
+  alert band at the latest (below). On SERVO a key is 145 x 88px
+  (21.8 x 13.2mm); on SUPPLY 145 x 76px. The title and the range are in the
   10 x 20 face, or in 8 x 16 where the two do not fit side by side. The
   entry is in the 32 x 44 numerals with the unit in 12 x 24; an entry that
   does not fit takes the 24 x 30 numerals with the unit in 10 x 20. The
-  digits and the point are in 12 x 24. DEL, CLR, CANCEL, OK and `+/-` share
-  one face: the largest of 12 x 24, 10 x 20 and 8 x 16 in which all of them
-  fit their keys with 6px each side. German `ABBRECHEN` needs a key of
-  120px for 12 x 24 and 102px for 10 x 20.
+  digits and the point are in the largest of 20 x 36, 16 x 28, 12 x 24
+  and 10 x 20 whose cell fits a digit key with 6px each side, else in
+  8 x 16; 20 x 36 needs a key of 32 x 48px and is the face of every
+  keypad the panel opens. DEL, CLR, CANCEL, OK and `+/-` share one face:
+  the largest of the same faces, never larger than the digits', in which
+  all of them fit their keys with 6px each side. `CANCEL` needs a key of
+  132px for 20 x 36. German `ABBRECHEN` needs 192px for 20 x 36, 156px
+  for 16 x 28, 120px for 12 x 24 and 102px for 10 x 20, so the German
+  keypads of SERVO, SUPPLY and MOTOR & ESC's SETTINGS draw their words in
+  12 x 24.
 - **Keyboard.** A title row of 32px, the text field of 52px, then 5 rows
   of keys 6px apart. The title and the count are in 10 x 20, or in 8 x 16
   where the two do not fit side by side. The text is in the 20 x 36 face
   when 23 characters and the caret fit the field, else in 16 x 28. The
-  letters, digits and marks are in 12 x 24. The word keys (the bottom row,
-  DEL, `ABC`, `abc`, `#+=`) share one face: the largest of 12 x 24, 10 x 20
-  and 8 x 16 in which all of them fit their keys with 4px each side, HIDE
-  measured in place of SHOW too, so a press does not change it. On WI-FI the
-  keyboard takes the body above the alert band, 1008 x 484px, with keys of
-  93 x 71px (14.0 x 10.7mm) and every word in 12 x 24.
+  letters, digits and marks are in the largest of 20 x 36, 16 x 28,
+  12 x 24 and 10 x 20 whose cell fits a character key with 4px each side,
+  else in 8 x 16; 20 x 36 needs a key of 28 x 44px and is the face of
+  every keyboard the panel opens. The word keys (the bottom row, DEL,
+  `ABC`, `abc`, `#+=`) share one face: the largest of the same faces,
+  never larger than the characters', in which all of them fit their keys
+  with 4px each side, HIDE measured in place of SHOW too, so a press does
+  not change it. On WI-FI the keyboard takes the body above the alert
+  band, 1008 x 484px, with keys of 93 x 71px (14.0 x 10.7mm) and every
+  word in 20 x 36; the German password's in 16 x 28, as `LEERZEICHEN`
+  has two keys of 192px. SERVO's name keyboards, keys of 55 x 72px, draw
+  their words in 12 x 24; the ESC STICK search keyboard, keys of
+  59 x 57px, in 16 x 28.
 - **Choice list.** A face or a row 56px tall or taller draws its text in
   the 20 x 36 face, 12px in, with an 11px chevron 28px from the face's
   right edge. A shorter one draws in 16 x 28, 10px in, with a 7px chevron
@@ -258,8 +270,8 @@ the faces and the spacing inside are theirs.
 Key grids end 4px above the alert band, at body y 492, on every screen.
 A keypad or a keyboard whose area reaches further paints its whole area
 and stops its keys there, so an alert covers no key. On SERVO the keypads'
-keys are then 112 x 88px and the keyboards' 41 x 72px; on SUPPLY the
-keypad's are 126 x 80px; on the ESC STICK search keyboard 59 x 57px; on
+keys are then 145 x 88px and the keyboards' 55 x 72px; on SUPPLY the
+keypad's are 145 x 76px; on the ESC STICK search keyboard 59 x 57px; on
 MOTOR & ESC's SETTINGS the keypad's are 145 x 89px; on BALANCE the blade
 count's keypad's are 242 x 72px.
 
@@ -2916,9 +2928,32 @@ download started.
 
 ![The write failed](img/panel-update-failed.png)
 
-A new build's first start is a trial. The build is kept once the display and
-touch are up. A start that does not get there, by a fault, a restart or a
-missing touch controller, goes back to the build before it, which says
+A new build's first start is a trial. Without touch the panel restarts into
+the build before it at the touch step: a bench without touch has no STOP.
+With the display and touch up, the build is kept once the panel works as a
+whole:
+
+- the card was tried, and a missing or unreadable card counts;
+- the settings are loaded;
+- the control task and the logger task have each run one pass;
+- a whole frame reached the display, and the screen loop ticked once after
+  it.
+
+The IOmcu is not waited for: a panel without one is kept the same way.
+30s after the start the build is kept once the screen loop ticks, whatever
+else is missing. Keeping writes otadata, so it waits for a moment that can
+take a flash write, by the rule the settings save follows: not while the
+bench is ARMED or an arm waits, not while the supply output is on, and not
+while a board drawing is fetched or kept. The console says which way it
+went:
+
+    I (…) rcbench: 0.22.1 on trial: kept once every task runs and a frame is on the display, or at 30s after the start with the screen loop running
+    I (…) rcbench: 0.22.1 kept: every task runs and a frame is on the display, 4210ms after the start
+    W (…) rcbench: 0.22.1 kept at the 30s bound with the screen loop running; not seen: logger task
+
+The figure 4210ms is an example; the time is not measured. A start that
+does not get there, by a panic, a watchdog reset, a restart or a power
+cut, goes back to the build before it, which says
 `Panel firmware 0.22.1 failed to start. Version 0.22.0 is running again.` on the band.
 A failed start is never kept: when marking it invalid fails, the panel
 restarts with the trial unconfirmed, and the bootloader goes back all the
@@ -2930,6 +2965,11 @@ Current limitations:
 
 - A power cut during the trial start loses that line; the panel still goes
   back to the build before.
+- A trial start that stops before the screen loop runs, in a card mount
+  that does not return for example, is not kept and not reset either: the
+  task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is
+  off). The panel stays on the splash until a restart or a power cut,
+  which goes back to the build before.
 - How long the erase and the write take is not measured. The dark display
   at each erase is reported on 0.20.0 and not measured on 0.21.x.
 
@@ -3150,7 +3190,12 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   Wi-Fi page's file list leaves its time empty.
 - A software restart keeps the clock: a firmware update, a restart after
   a fault. ESP-IDF keeps the system time in the ESP32-P4's RTC timer,
-  which only a power-on resets. Not measured on the board.
+  which only a power-on resets. The timer counts the board's 32.768kHz
+  crystal Y3, or the internal RC oscillator when the crystal does not
+  start ([Building](Building.md#the-rtc-slow-clock)). On the RC the clock
+  was 4.357s off after about 2h across a restart at the station, about
+  600ppm (measured). On the crystal the drift across a restart is not
+  measured.
 - Each join of the home network asks `pool.ntp.org` once by SNTP (Simple
   Network Time Protocol): the release check at start, CHECK FOR UPDATES
   and the download on [Updates](#updates), and WI-FI's home network
@@ -3184,6 +3229,10 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
   No answer: `ntp: no answer from pool.ntp.org in 30000ms; clock unchanged`.
   A join that ends first: `ntp: join ended before an answer from pool.ntp.org; clock unchanged`.
+- At each start the console names the slow clock the RTC timer counts:
+  `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`, or as a
+  warning `clock: rtc slow clock internal RC, 136012.345Hz calibrated:
+  the 32k crystal did not start`.
 - At each start the console says what the clock holds: `clock: not set
   (...s since 1970); file dates read 1980 until an NTP answer` after a
   power-on, or the time kept across a restart in UTC and in the zone.

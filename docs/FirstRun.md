@@ -3,7 +3,7 @@
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
 Both boards powered with the heartbeat wire fitted, and every number below
-read on an instrument. Written for 0.8.1. Every step says what "good" looks like and what to write down when it is not.
+read on an instrument. Every step says what "good" looks like and what to write down when it is not.
 
 Work down the list. Each step assumes the one above it passed.
 
@@ -11,21 +11,14 @@ Work down the list. Each step assumes the one above it passed.
 
 ## 0. Before power
 
-> ### Set the panel's UART switch to `UART1` before anything else
+> ### The panel's console and its USB-C sockets
 >
-> A slide switch beside the **BOOT** and **RESET** buttons is marked
-> **`UART1`** and **`UART2`**. It selects what the bridged USB-C socket's
-> serial side is connected to, and the console needs it on **`UART1`**.
->
-> On the other setting the socket still enumerates: a COM port appears and
-> the operating system names the CH343. Nothing crosses it in either
-> direction — no console output and no flashing — which is the same symptom
-> a broken cable or a broken board gives.
->
-> The panel's other USB-C socket carries native USB on GPIO19 and GPIO20,
-> which the multiplexer hands to CAN about a second into every boot. It
-> flashes the board and it cannot watch a running one. The bridged socket is
-> the panel's only console while the bench runs.
+> The panel's console is UART0, with USB-Serial-JTAG (the ESP32-P4's
+> built-in USB serial and debug bridge) as the secondary console. The
+> 7-inch ESP32-P4 board has two USB-C sockets. Which of them reaches UART0
+> and which USB-Serial-JTAG is not traced
+> ([Bring-up](Bringup.md#panel)). `esptool.py` flashes the board over
+> either serial port it shows.
 
 **Have to hand:** an oscilloscope, one servo, one ESC that speaks
 bidirectional DShot, a bench supply with current limit, and the USB cable for
@@ -43,59 +36,40 @@ than burning a track.
 
 ## 1. Flash both boards
 
-What a bench loads, and how, for 0.22.1 depends on the release it runs:
+The panel is the 7-inch ESP32-P4 display board from Waveshare
+(ESP32-P4-WIFI6-Touch-LCD-7B). A new board holds no rcbench image, so the
+panel's first load is over USB (Universal Serial Bus),
+[step 3](#from-the-release-assets). Releases 0.22.1 and older run on the
+ESP32-S3 panel and not on this board ([README](../README.md#display-change-esp32-p4-panel-from-0230)). The IOmcu
+is the same board on both panels. What it loads, and how, depends on the
+release it runs:
 
-| Bench runs | IOmcu | Panel |
-| --- | --- | --- |
-| nothing (a new bench), or 0.18.0 and older | over USB (Universal Serial Bus), [step 2](#from-the-release-assets) | over USB, [step 3](#from-the-release-assets) |
-| 0.19.0 | over CAN (Controller Area Network) from the panel ([From 0.19.0](#from-0190)) | over USB, [step 3](#from-the-release-assets) |
-| 0.20.0 | over CAN from the panel ([From 0.20.0](#from-0200)) | over Wi-Fi: CHECK FOR UPDATES, or the German browser page; over USB with Rotary knob ON saved |
-| 0.21.0 | over CAN from the panel ([From 0.21.0](#from-0210)) | over Wi-Fi: CHECK FOR UPDATES, or the upload on the browser page |
-| 0.21.1 | over CAN from the panel ([From 0.21.1](#from-0211)) | over Wi-Fi: CHECK FOR UPDATES, or the upload on the browser page |
-| 0.21.2 | over CAN from the panel ([From 0.21.2](#from-0212)) | over Wi-Fi: CHECK FOR UPDATES, or the upload on the browser page |
-| 0.22.0 | over CAN from the panel ([From 0.22.0](#from-0220)) | over Wi-Fi: CHECK FOR UPDATES, or the upload on the browser page |
-| 0.22.1 and later 0.22.x | over CAN from the panel | over Wi-Fi |
+| IOmcu runs | IOmcu loads |
+| --- | --- |
+| nothing (a new module), or 0.18.0 and older | over USB, [step 2](#from-the-release-assets) |
+| 0.19.0 or later | over CAN (Controller Area Network) from the panel, [The IOmcu over CAN](#the-iomcu-over-can) |
 
-The USB load of a new bench, or of one on 0.18.0 and older, puts the
-IOmcu's partition table and the panel's two application slots in
-place, and neither comes over the link. A 0.19.0 panel takes no image over
-Wi-Fi: ACCESS POINT stops with `Wi-Fi could not start.` as it is pressed, and
-by the estimate of internal RAM (random-access memory) in
-[Performance](Performance.md#internal-ram) JOIN HOME NETWORK stops the same
-way. From 0.20.0 on, the panel installs a release over Wi-Fi ([Screens:
-Wi-Fi](Screens.md#wi-fi)) or downloads it from GitHub
-([Screens: Updates](Screens.md#updates)), and the IOmcu takes its
-image over CAN from the panel.
-
-0.22.1 is a stable release ([Building: Releases](Building.md#releases)).
-0.22 is the last release line for the ESP32-S3 panel; its newest release
-is 0.22.1. Later releases are for the 7-inch ESP32-P4 display board from
-Waveshare. CHECK FOR UPDATES with
-`RELEASES: STABLE` reads `releases/latest`, which names the newest stable
-release, v0.22.1; a 0.20.0 panel, which has no RELEASES setting, reads the
-same. A panel on 0.22.0 or later is offered 0.22.x patch releases only
-([Screens: The release line](Screens.md#the-release-line)). A panel older
-than 0.22.0 has no release line and is offered whatever newer release
-GitHub names, also one for the ESP32-P4 panel; the panel's checks refuse an
-image built for another chip with `The firmware did not pass the panel's
-checks.` (0.20.0: `The image failed the panel's checks.`), and the panel
-keeps its build. Such a panel loads 0.22.1 by the upload on its browser
-page or over USB.
+Once the panel runs, it installs a later release over Wi-Fi ([Screens:
+Wi-Fi](Screens.md#wi-fi)) or downloads it from GitHub ([Screens:
+Updates](Screens.md#updates)). Both take the release asset
+`rcbench-panel-p4-vX.Y.Z.bin`; the update check looks for that name in the
+release's `SHA256SUMS`.
 
 The SD (Secure Digital) card holds a FAT32, FAT16, FAT12 or exFAT
 (extended FAT) volume, so a card of up to 2 TB mounts in the format it is
-sold in. 0.21.1 and older do not read exFAT. 0.22.1 does not read NTFS (New
-Technology File System), a card with a GPT (GUID partition table) or a
-volume over 2 TiB, and the panel formats no card ([Screens: The SD card's
-format](Screens.md#the-sd-cards-format)).
+sold in. The panel does not read NTFS (New Technology File System), a card
+with a GPT (GUID partition table) or a volume over 2 TiB, and it formats no
+card ([Screens: The SD card's format](Screens.md#the-sd-cards-format)). A
+card from a bench of 0.21.0 or older holds files in folders the panel does
+not read ([below](#the-sd-card-of-0210-and-older)).
 
 ### From the release assets
 
 | Asset | Holds | For |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | the IOmcu's USB load: `rcbench-iomcu-install.uf2` |
-| `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | the panel's USB flash |
-| `rcbench-panel-vX.Y.Z.bin` | the panel's application alone, with the IOmcu image it offers over CAN | an update over Wi-Fi of a panel that runs 0.20.0 or later; not for USB |
+| `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | the panel's USB flash |
+| `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the IOmcu image it offers over CAN | an update over Wi-Fi; not for USB |
 | `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the three files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
@@ -114,342 +88,71 @@ Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
 
    The module restarts into slot A. Its console prints `rcbench-iomcu:
    running from slot A` every 3s ([below](#the-iomcus-partition-table)).
-3. **Panel.** Unpack `rcbench-panel-vX.Y.Z.zip` and connect the panel's
-   USB-C socket (bridged socket: switch on `UART1`, [§0](#0-before-power)).
-   In the unpacked folder, on a bench whose settings stay:
+   An IOmcu on 0.19.0 or later skips this step.
+3. **Panel.** Unpack `rcbench-panel-p4-vX.Y.Z.zip` and connect a USB-C
+   socket of the panel ([§0](#0-before-power)). In the unpacked folder, on
+   a new board, or to start from the default settings:
 
    ```bash
-   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+   esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
    ```
 
-   On a new bench, or to start from the default settings:
+   On a panel whose settings stay:
 
    ```bash
-   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+   esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash @flash_args
    ```
 
    A browser flasher that writes one file at an offset, such as the ESP Web
    Tool, takes `rcbench-panel-merged.bin` at 0x0, with the same effect as
-   the second command.
-4. Power both boards with the link wired. The panel finds the build it
-   carries on the IOmcu and offers no update. It fetches the board
-   drawing again ([§4](#4-first-link-up-the-board-drawing)).
+   the first command.
+4. Power both boards with the link wired. An IOmcu loaded in step 2 runs
+   the build the panel carries, and the panel offers no update. The panel
+   fetches the board drawing ([§4](#4-first-link-up-the-board-drawing)).
 
-| What | Parts (`@flash_args`) | Merged image at 0x0 |
+| What | Merged image at 0x0 | Parts (`@flash_args`) |
 | --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB at 0x9000) | kept | erased; the panel starts on its defaults |
-| Panel's stored board drawing | lost once; fetched again at link-up | lost once; fetched again at link-up |
+| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB at 0xD000) | erased; the panel starts on its defaults | kept |
+| Panel's stored board drawings, `boardart` at 0x7E0000 | kept: the image ends with the application in `ota_0` | kept |
 
 The IOmcu keeps its bindings, the supply's wiring and the current
 monitors' set-up, with the exception for an RP2350 of stepping A2 stated
 [below](#the-iomcus-partition-table).
 
-The panel can go first. A panel of 0.19.0 or later linked to an IOmcu
-without the partition table shows `IOmcu cannot update over CAN. Install firmware once via USB.` until step 2 is done; the link runs meanwhile.
+The panel can go first. Linked to an IOmcu without the partition table,
+the panel shows `IOmcu cannot update over CAN. Install firmware once via
+USB.` until step 2 is done; the link runs meanwhile.
 
-### From 0.19.0
+### The IOmcu over CAN
 
-A bench on 0.19.0 loads the panel over USB, and only the panel. The
-IOmcu carries the partition table from the USB load of 0.19.0 and
-takes 0.22.1 over CAN from the image the new panel carries. The link
-protocol of 0.22.1 is 4.28 and that of 0.19.0 is 4.22; the major, 4, is
-the same, so the two boards link before and after the update.
+An IOmcu on 0.19.0 or later carries the partition table from its USB load
+and takes the image the panel carries over CAN. The panel's link protocol
+is 4.28, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
+4, is the same, so the two boards link before and after the update.
 
-1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
-   of the three files.
-2. **Panel.** Flash `rcbench-panel-v0.22.1.zip` as in
-   [step 3](#from-the-release-assets) above: `write_flash @flash_args` to
-   keep the settings, or `rcbench-panel-merged.bin` at 0x0, from
-   `esptool.py` or the browser flasher, to start from the default settings.
-3. Power both boards with the link wired. At link-up the panel compares the
-   IOmcu's running image with the image it carries by SHA-256, finds
-   another build, and the band says `IOmcu runs a different build. Update it under SETUP > UPDATES.`.
-4. **IOmcu.** The question opens on the menu while the bench is SAFE,
-   the supply's output is off and the panel's Wi-Fi radio is off. It names
-   0.19.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2s.
-   The progress fills the screen ([Screens: IOmcu
-   update](Screens.md#iomcu-update)), and back on the menu the band
-   says `IOmcu updated to 0.22.1.`.
+1. Power both boards with the link wired. At link-up the panel compares
+   the IOmcu's running image with the image it carries by SHA-256, finds
+   another build, and the band says `IOmcu runs a different build. Update
+   it under SETUP > UPDATES.`.
+2. The question opens on the menu while the bench is SAFE, the supply's
+   output is off and the panel's Wi-Fi radio is off. It names the version
+   on the IOmcu and the version in the panel. Hold START for 2s, or after
+   CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP > UPDATES. The progress fills
+   the screen ([Screens: IOmcu update](Screens.md#iomcu-update)), and back
+   on the menu the band says `IOmcu updated to X.Y.Z.`.
 
-| What | Parts (`@flash_args`) | Merged image at 0x0 |
-| --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (24KiB at 0x9000) | kept | erased; the panel starts on its defaults |
-| Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the last part ends with the application, about 2.1MB from 0x0 | kept: the image ends with the application, about 2.1MB from 0x0 |
-
-The panel shows the stored drawing again when the IOmcu's ARTWORK
-page names the same drawing, and fetches it otherwise
-([§4](#4-first-link-up-the-board-drawing)). The setting REMINDER AT START
-is new in 0.20.0 and starts on.
-
-The IOmcu's update writes the slot it does not run from. Its
-bindings, the supply's wiring and the current monitors' set-up stay: they
-are in the store partition at 0x3FC000, or before its first save in the old
-store at 0x3FE000, and the update writes neither. CANCEL on the
-question leaves the IOmcu on 0.19.0; the panel asks again after its
-next start. Power lost during the update leaves the old image running, and
-the next link-up offers the update again. An IOmcu that missed the USB
-load of 0.19.0 has no partition table: the band says `IOmcu cannot update over CAN. Install firmware once via USB.`, and it takes
-[step 2](#from-the-release-assets). The time of the update over CAN is not
-measured.
-
-### From 0.20.0
-
-A bench on 0.20.0 loads the panel over Wi-Fi, from GitHub or through the
-German version of the panel's browser page, and the IOmcu over CAN from the
-image the new panel carries. Three faults of 0.20.0 shape the path:
-
-| 0.20.0 fault | Effect | Path around it |
-| --- | --- | --- |
-| The script of the English browser page does not parse: the text `The file is larger than the panel's slot.` ends its string at the apostrophe. | Upload sends the form without the file, to `/?`. | The page follows the panel's language; the German page takes the upload. |
-| One auth-class drop ends a join. | JOIN HOME NETWORK, CHECK FOR UPDATES and the download can end with `Join failed: password refused.` on a correct password. | Press again; ACCESS POINT joins no network. |
-| Rotary knob ON polls an AS5600 at 0x36, one of the CH422G I/O expander's command addresses. | The panel blanks at the knob's first poll after each start, CAN leaves the link and the touch controller can be held in reset. | A panel with Rotary knob ON saved loads over USB. |
-
-From GitHub, with a home network kept, the bench SAFE, the supply output
-off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`. The panel
-reads `releases/latest`, which names v0.22.1, and says `Version 0.22.1 is
-available.`. Hold `HOLD 2s: DOWNLOAD & INSTALL`; the panel downloads and
-checks the image, writes the slot it does not run from and restarts into
-it, and step 5 below follows. Through the browser page:
-
-1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
-   of the three files.
-2. **Language.** SETUP > APPLICATION, Language `DEUTSCH`. It is in force
-   at once; leave it unsaved, and the restart in step 4 starts 0.22.1 in
-   the language saved. A panel in German skips this step.
-3. **Wi-Fi.** With the bench SAFE, the supply output off and no log run
-   open: LOGS > WLAN > ACCESS POINT. On a phone or a computer, join the
-   network the screen names, `rcbench-` and 4 hex digits, with the
-   8-character password it shows. Open `http://192.168.4.1/` and enter the
-   access code the screen shows.
-4. **Panel.** Under `Panel-Firmware`, choose `rcbench-panel-v0.22.1.bin`
-   and press `Hochladen`. The panel checks the whole image and asks `PANEL-FIRMWARE
-   INSTALLIEREN?` with both versions. Hold `2s HALTEN: INSTALL`. The panel
-   switches the radio off, writes the slot it does not run from, checks it
-   and restarts into it. 0.22.1 starts on trial and is kept once the
-   display and touch are up; a start that does not get there goes back to
-   0.20.0.
-5. **IOmcu.** At link-up the panel compares the IOmcu's running image with
-   the image it carries by SHA-256 (Secure Hash Algorithm), finds another
-   build, and the band says `IOmcu runs a different build. Update it under
-   SETUP > UPDATES.`. The question opens on the menu while the bench is
-   SAFE, the supply's output is off and the panel's Wi-Fi radio is off. It
-   names 0.20.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2s,
-   or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP > UPDATES. The
-   progress fills the screen ([Screens: IOmcu update](Screens.md#iomcu-update)),
-   and the band then says `IOmcu updated to 0.22.1.`.
-
-A panel with Rotary knob ON saved, or a bench without a phone or a
-computer on Wi-Fi, flashes `rcbench-panel-v0.22.1.zip` over USB as in
-[step 3](#from-the-release-assets) above, and step 5 follows. The parts,
-`write_flash @flash_args`, keep the settings with Rotary knob ON: 0.22.1
-reads the knob as an MT6701 at 0x06 and puts no device at 0x36. The merged
-image at 0x0 erases the settings, and the knob starts OFF.
-
-| What | Install over Wi-Fi | Parts (`@flash_args`) | Merged image at 0x0 |
-| --- | --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB at 0x9000) | kept | kept | erased; the panel starts on its defaults |
-| Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the install writes the application slot only | kept | kept |
-| IOmcu bindings, the supply's wiring, the current monitors' set-up | kept: the update writes the slot the IOmcu does not run from | kept | kept |
-
-The link protocol of 0.22.1 is 4.28 and that of 0.20.0 is 4.22; the major,
-4, is the same, so the two boards link before and after the IOmcu's update.
-CANCEL on the question leaves the IOmcu on 0.20.0; the panel asks again
-after its next start, and SETUP > UPDATES starts the update meanwhile. An IOmcu that missed the USB load of 0.19.0 has no
-partition table: the band says `IOmcu cannot update over CAN. Install
+The update writes the slot the IOmcu does not run from. Its bindings, the
+supply's wiring and the current monitors' set-up stay: they are in the
+store partition at 0x3FC000, or before its first save in the old store at
+0x3FE000, and the update writes neither. The store record becomes version
+8 at the first save; an IOmcu image older than 0.22.0 reads no version 8
+record and starts as from an empty store. CANCEL on the question leaves
+the IOmcu on its build; the panel asks again after its next start. Power
+lost during the update leaves the old image running, and the next link-up
+offers the update again. An IOmcu that missed the USB load of 0.19.0 has
+no partition table: the band says `IOmcu cannot update over CAN. Install
 firmware once via USB.`, and it takes [step 2](#from-the-release-assets).
-The SD card's files move by hand as for 0.21.0
-([below](#the-sd-card-of-0210-and-older)). The time of the download, of the
-upload and of the update over CAN is not measured.
-
-### From 0.21.0
-
-A bench on 0.21.0 loads the panel over Wi-Fi and the IOmcu over CAN from
-the image the new panel carries. From 0.21.1 on, the panel reads its own
-files from new folders on the SD (Secure Digital) card and moves none there
-([below](#the-sd-card-of-0210-and-older)).
-
-1. **SD card.** With the panel off, take out the card. On a computer, move
-   the ESC profiles from `/ESC/` to `/BENCH/ESC/CONF/`, and the servo files
-   with `KST.TXT` and `KST.NEW` from `/KST/` to `/BENCH/KST/CONF/`. Create
-   each missing folder. Put the card back.
-2. **Check.** With a home network kept, the bench SAFE, the supply output
-   off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`. The
-   panel says `Version 0.22.1 is available.`. `RELEASES: USABLE` reads
-   `releases/latest`, which names v0.22.1. With `RELEASES: TESTING`, a
-   panel that says `Unexpected answer from GitHub.` met the fault of 0.21.0
-   and 0.21.1 [below](#the-check-on-0210-and-0211): press `CHECK FOR
-   UPDATES` again at once.
-3. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
-   checks the image, writes the slot it does not run from and restarts into
-   it. 0.22.1 starts on trial and is kept once the display and touch are
-   up; a start that does not get there goes back to 0.21.0.
-4. **IOmcu.** At link-up the band says `IOmcu runs a different build.
-   Update it under SETUP > UPDATES.`. The question opens on the menu while
-   the bench is SAFE, the supply's output is off and the panel's Wi-Fi
-   radio is off. It names 0.21.0 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
-   UPDATES. The band then says `IOmcu updated to 0.22.1.`.
-
-`RELEASES` is in force at once; SAVE on SETUP keeps it. A bench without a
-home network takes the upload on the panel's browser page, in either
-language: SETUP > WI-FI > ACCESS POINT, join the network the screen names,
-open `http://192.168.4.1/`, enter the access code, choose
-`rcbench-panel-v0.22.1.bin` under `Panel firmware` and press `Upload`, then
-hold `HOLD 2s: INSTALL` on the panel. Step 4 above follows. A bench
-without a phone or a computer on Wi-Fi flashes `rcbench-panel-v0.22.1.zip`
-over USB as in [step 3](#from-the-release-assets) above, and step 4
-follows.
-
-The install keeps the panel's settings, its Wi-Fi settings and its board
-drawing; the IOmcu's update keeps its bindings, the supply's wiring and
-the current monitors' set-up. The link protocol of 0.22.1 is 4.28 and
-that of 0.21.0 is 4.22; the major, 4, is the same, so the two boards link
-before and after the IOmcu's update. The time of the download and of the
-update over CAN is not measured.
-
-### From 0.21.1
-
-A bench on 0.21.1 loads the panel over Wi-Fi and the IOmcu over CAN from
-the image the new panel carries. 0.22.1 reads the SD card's folders as
-0.21.1 does; nothing on the card moves.
-
-1. **Check.** With a home network kept, the bench SAFE, the supply output
-   off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`. The
-   panel says `Version 0.22.1 is available.`. `RELEASES: STABLE` reads
-   `releases/latest`, which names v0.22.1. With `RELEASES: TESTING`, a
-   panel that says `Unexpected answer from GitHub.` met the fault of 0.21.1
-   [below](#the-check-on-0210-and-0211): press `CHECK FOR UPDATES` again
-   at once.
-2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
-   checks the image, writes the slot it does not run from and restarts into
-   it. 0.22.1 starts on trial and is kept once the display and touch are
-   up; a start that does not get there goes back to 0.21.1.
-3. **IOmcu.** At link-up the band says `IOmcu runs a different build.
-   Update it under SETUP > UPDATES.`. The question opens on the menu while
-   the bench is SAFE, the supply's output is off and the panel's Wi-Fi
-   radio is off. It names 0.21.1 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
-   UPDATES. The band then says `IOmcu updated to 0.22.1.`.
-
-A bench without a home network takes the upload on the panel's browser
-page, and a bench without a phone or a computer on Wi-Fi the USB flash, as
-[From 0.21.0](#from-0210) describes; step 3 above follows either. The
-install keeps the panel's settings, its Wi-Fi settings and its board
-drawing; the IOmcu's update keeps its bindings, the supply's wiring and the
-current monitors' set-up. The link protocol of 0.22.1 is 4.28 and that of
-0.21.1 is 4.23; the major, 4, is the same, so the two boards link before
-and after the IOmcu's update. The time of the download and of the update
-over CAN is not measured. A 0.21.1 set-up meets the changes of 0.21.2 below
-and those of [From 0.21.2](#from-0212).
-
-What a 0.21.1 set-up meets on 0.22.1:
-
-| On 0.21.1 | On 0.22.1 |
-| --- | --- |
-| PD mini TX and PD mini RX stored on one GPIO | loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS` and both rows on SETUP > INTERFACES say `TX and RX on one pin. The PD mini stays off.`; step one row to another GPIO and SAVE |
-| Backlight on SETUP > PANEL | no row; the backlight is on while the panel runs; the stored `backlight` key stays in the settings storage and is not read |
-| Sensor SDA and SCL with nothing wired to them: `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the monitors read as not answering; the test runs on the IOmcu and comes with step 3 |
-| INA228 address and INA3221 address wrap at their ends | stop at 0x40 and 0x4F (INA228), 0x40 and 0x43 (INA3221) |
-| an exFAT card, the format of SDXC cards of 64GB to 2 TB: `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | mounts and lists; files of 4GiB and more list with their size |
-| a card with no FAT or exFAT volume (NTFS, GPT, not formatted): `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | `not FAT32/exFAT` on the splash, `Card is neither FAT32 nor exFAT. Format it on a computer.` on LOGS, `Card is neither FAT32 nor exFAT. Run not recorded.` at a run's start; format the card FAT32 or exFAT on a computer ([Screens: The SD card's format](Screens.md#the-sd-cards-format)) |
-| a card that does not mount for another reason: `no card` | `unreadable` on the splash, `Cannot read the card. Check it on a computer, then tap RESCAN.` on LOGS |
-| a tap on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN while the alert band covers it or a chip's help box is open: clears the band or closes the box only; the alert band covers the lower 22px of SERVO's DISARM | acts on the first press and clears the band or closes the box; ARM and OUTPUT ON under the band or the box still start no hold |
-
-### From 0.21.2
-
-A bench on 0.21.2 loads the panel over Wi-Fi and the IOmcu over CAN from
-the image the new panel carries. 0.22.1 reads the SD card's folders as
-0.21.2 does; nothing on the card moves.
-
-1. **Check.** With a home network kept, the bench SAFE, the supply output
-   off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
-   either RELEASES value. The panel says `Version 0.22.1 is available.`.
-2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
-   checks the image, writes the slot it does not run from and restarts into
-   it. 0.22.1 starts on trial and is kept once the display and touch are
-   up; a start that does not get there goes back to 0.21.2.
-3. **IOmcu.** At link-up the band says `IOmcu runs a different build.
-   Update it under SETUP > UPDATES.`. The question opens on the menu while
-   the bench is SAFE, the supply's output is off and the panel's Wi-Fi
-   radio is off. It names 0.21.2 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
-   UPDATES. The band then says `IOmcu updated to 0.22.1.`.
-
-A bench without a home network takes the upload on the panel's browser
-page, and a bench without a phone or a computer on Wi-Fi the USB flash, as
-[From 0.21.0](#from-0210) describes; step 3 above follows either. The
-install keeps the panel's settings, its Wi-Fi settings and its board
-drawing. The IOmcu's update keeps its bindings, the supply's wiring and the
-current monitors' set-up: its store record becomes version 8 at the first
-save, and an IOmcu image older than 0.22.0 reads no version 8 record and
-starts as from an empty store. The link protocol of 0.22.1 is 4.28 and that
-of 0.21.2 is 4.23; the major, 4, is the same, so the two boards link before
-and after the IOmcu's update. The time of the download and of the update
-over CAN is not measured.
-
-What a 0.21.2 set-up meets on 0.22.1:
-
-| On 0.21.2 | On 0.22.1 |
-| --- | --- |
-| The INA3221 rows on SETUP > INTERFACES: INA3221, address, shunt, channels | SETUP > SENSORS, seeded at the first start from the stored rows: the part at the stored address fitted when the INA3221 was ON, its CH1 on the stored shunt, CH2 and CH3 on it with CH1+2+3 and OFF with CH1, CH1 watching PORT 1 when the servo tester's target was the programming port and OUT 1 otherwise ([Screens: SENSORS](Screens.md#sensors-the-ina3221-parts)); the stored keys stay unchanged for a panel taken back to 0.21 |
-| One programming port, PROG PORT | PROG PORT 1, PROG PORT 2, PROG PORT 3 and PROG PORT 4 on SETUP > OUTPUTS; a servo tester TARGET of PROG PORT reads as PORT 1; ports 2 to 4 start on FUNCTION NONE with no pin |
-| The run log's INA3221 columns `ch1` to `ch3` | one group of current, max and voltage per watching channel, named after its target (`port 1 current (A)`), at most 3 groups |
-| LOGS' tabs in the order USER, BENCH, ROOT | ROOT, USER, BENCH; the remembered tab and the folders stay |
-
-### From 0.22.0
-
-A bench on 0.22.0 loads the panel over Wi-Fi and the IOmcu over CAN from
-the image the new panel carries. 0.22.1 reads the SD card's folders as
-0.22.0 does; nothing on the card moves. The link protocol, 4.28, and the
-IOmcu's store record, version 8, are the same on both releases. The IOmcu
-image differs only in the version it reports, 0.22.1; it runs as 0.22.0
-does. The panel compares the SHA-256 (Secure Hash Algorithm)
-of the image the IOmcu runs with that of the image it carries, not the
-version numbers, so it finds another build and asks.
-
-1. **Check.** With a home network kept, the bench SAFE, the supply output
-   off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
-   either RELEASES value. The panel says `Version 0.22.1 is available.`.
-2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
-   checks the image, writes the slot it does not run from and restarts into
-   it. 0.22.1 starts on trial and is kept once the display and touch are
-   up; a start that does not get there goes back to 0.22.0.
-3. **IOmcu.** At link-up the band says `IOmcu runs a different build.
-   Update it under SETUP > UPDATES.`. The question opens on the menu while
-   the bench is SAFE, the supply's output is off and the panel's Wi-Fi
-   radio is off. It names 0.22.0 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
-   UPDATES. The band then says `IOmcu updated to 0.22.1.`.
-
-A bench without a home network takes the upload on the panel's browser
-page, and a bench without a phone or a computer on Wi-Fi the USB flash, as
-[From 0.21.0](#from-0210) describes; step 3 above follows either. The
-install keeps the panel's settings, its Wi-Fi settings and its board
-drawing. The IOmcu's update keeps its bindings, the supply's wiring and the
-current monitors' set-up. The time of the download and of the update over
-CAN is not measured.
-
-0.22.1 lists on LOGS a report that stands alone, such as `LIMITnnn.TXT` of
-a limit run, and opens it as text ([Screens: Logs](Screens.md#logs)). The
-card's ZIP download sends each file at the size it had when the download
-started.
-
-### The check on 0.21.0 and 0.21.1
-
-`RELEASES: TESTING` reads GitHub's list of releases
-(`api.github.com/repos/subtilitas/rcbench/releases?per_page=10`). GitHub
-sends it in one of two forms. A request its cache does not hold comes back
-in chunks (`Transfer-Encoding: chunked`) with no `Content-Length`; the same
-request from the cache comes back with `Content-Length`. GitHub keeps the
-answer for 60s (`Cache-Control: s-maxage=60`). 0.21.0 and 0.21.1 read
-only the form with a length: a chunked answer ends the check with
-`Unexpected answer from GitHub.` and `The response does not specify a
-size.`, the check at start-up included. A second `CHECK FOR UPDATES` at
-once gets the cached form. Measured 2026-10-19: 4 requests more than 60s
-apart came back chunked, and a repeat of each within 1s came back with
-`Content-Length`, 4 times of 4. Each check counts against GitHub's limit of
-60 API (application programming interface) requests an hour per address.
-0.21.2 and later read both forms.
+The time of the update over CAN is not measured.
 
 ### The SD card of 0.21.0 and older
 
@@ -467,7 +170,6 @@ The panel keeps its files on the SD (Secure Digital) card in folders under
 A record `KST.TXT` or `KST.NEW` left in `/KST` is not seen at start-up:
 the restore it offers for an interrupted servo write needs the file moved
 first.
-Firmware 0.21.0 and older does not read the `BENCH` folders.
 
 ### From a source tree
 
@@ -477,7 +179,7 @@ cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
 # panel
-idf.py -C firmware/panel set-target esp32s3
+idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 ```
@@ -651,15 +353,13 @@ On the panel console, in this order:
 **What to expect while it runs:**
 
 - 26 blocks of 62 bytes over CAN, in a 15ms slice of each 50ms poll.
-- **A display stall** when it writes to flash: one per flash operation, 4
-  for this drawing (2 sector erases of 4kB, the payload, the header). A
-  flash operation closes the cache the panel's bounce-buffer refill reads
-  PSRAM through, so the panel stops for the length of each. An operation
-  that holds the refill off for more than 512us restarts the scan at the
-  first VBlank (vertical blanking interval) interrupt after it ends, which
-  can be mid-frame, and the console prints `display: scan restarted`; the
-  first whole frame after it is in place.
-  Settings saves do the same.
+- **Flash operations** when it writes: 4 for this drawing (2 sector erases
+  of 4kB, the payload, the header). The DSI (Display Serial Interface) host
+  scans the frame buffers out of PSRAM by DMA (direct memory access) with no
+  bounce buffer, and its interrupt runs during a flash operation
+  (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay
+  through each. What the picture does during the write is not measured.
+  Settings saves write the flash the same way.
 - **The write waits for a safe bench.** It takes one step per 5ms control
   pass, and only while the bench is SAFE with the supply off. ARMED or with
   the supply on, `keeping hardware 1's drawing waits for a bench in SAFE
