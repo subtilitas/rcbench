@@ -23,6 +23,7 @@
 
 #include "arming.h"
 #include "board_pins.h"
+#include "frame_watch.h"
 #include "gfx.h"
 #include "heartbeat.h"
 #include "outputs.h"
@@ -114,6 +115,43 @@ atomic_bool s_stop_live;
 static touch_seq_rx_t s_drv_rx = { .next = 1u };   /* touch_seq_rx_init() */
 /* s_touch_q's numbers, this task's alone; see s_tq_published, main.c. */
 static uint32_t    s_tq_seq;
+/** @brief The render loop's watchdog, this task's alone; see
+ *         render_watch(). */
+static frame_watch_t s_frame_watch;
+
+/* ALERT_SCREEN_STALLED names the timeout. */
+_Static_assert(FRAME_WATCH_MS == 1000u,
+               "ALERT_SCREEN_STALLED says 1s: change both together");
+
+/**
+ * @brief The render loop, watched while the bench is ARMED or the supply's
+ *        output is on (frame_watch.h).
+ *
+ * A render loop that has stopped leaves STOP working, through this task's
+ * own hit test, and nothing else: DISARM, the throttle slider, the servo
+ * dial and OUTPUT OFF are the loop's, and the outputs hold their last
+ * command.  A counter that has stood still for FRAME_WATCH_MS is answered
+ * as a STOP of the bench's own, the way an arm the watch undoes is:
+ * arming_stop() drops the heartbeat in this pass, the IOmcu fails safe
+ * within HEARTBEAT_MAX_GAP_MS (150ms), supply_pump() switches the output off
+ * in this pass, and service_arming() lets go of the rest.  Nothing here arms
+ * or switches anything on, so a loop that comes back finds the latch as a
+ * STOP leaves it.  The alert shows when the loop draws again.
+ *
+ * Called from control_pump(), here and inside every exchange's wait, before
+ * the supply's pump.
+ */
+static void render_watch(void)
+{
+    if (frame_watch_step(&s_frame_watch, atomic_load(&s_render_progress),
+                         outputs_armed(&s_out), atomic_load(&s_supply_live),
+                         now_ms())) {
+        ESP_LOGW(TAG, "render loop still for %u ms: stopped",
+                 (unsigned)frame_watch_still_ms(&s_frame_watch, now_ms()));
+        arming_stop(&s_arm);
+        control_alert(TR(ALERT_SCREEN_STALLED));
+    }
+}
 
 /*
  * Touch, STOP, the outputs and the heartbeat -- everything with a deadline,
@@ -297,6 +335,9 @@ void control_pump(void)
         arming_stop(&s_arm);
         control_alert(TR(ALERT_TOUCH_LOST_ARMING));
     }
+    /* And a render loop that has stopped, before the supply's pump, so the
+     * stop it counts switches the output off in this pass. */
+    render_watch();
     /*
      * touch_age_ms() is the time since the controller last answered a poll,
      * not since the last touch.  An untouched panel is healthy; a controller
@@ -362,6 +403,10 @@ void control_task(void *arg)
     /* Before anything that can start a run: a run's start sets its clock. */
     log_cadence_init(&s_log_cad, now_ms());
     control_setup(&sim, &bench);
+    /* From here: the bench starts SAFE with the supply off, so the start-up
+     * passes before the first frame stop nothing. */
+    frame_watch_init(&s_frame_watch, atomic_load(&s_render_progress),
+                     now_ms());
 
     uint32_t last_poll     = 0;
     uint32_t last_status   = 0;
