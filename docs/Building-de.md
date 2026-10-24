@@ -400,7 +400,6 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, [Performance](Performance-de.md) hat keine Tabelle der Obergrenzen, solange `ci.yml` kein `--max-lines`-Argument hat, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt die Links einer Kopie von `docs/` für das Wiki um, das Seiten über ihren Titel adressiert: `Page.md` wird zu `Page`, ein Ziel oberhalb von `docs/` zu einer Repository-URL (`blob`, `tree`, `raw` für ein Bild); vergleicht jede Seite über markdown-it-py 3.0.0 mit ihrer Umschreibung und endet bei jeder anderen Abweichung mit 1, mit Seite und Zeile; `--check` ändert nichts; `--verify` schlägt bei einer umgeschriebenen Seite fehl, deren Links ein Wiki nicht öffnen kann |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
-| `tools/tidy_cache.py` | lässt clang-tidy über die übergebenen Dateien laufen und überspringt jede Datei, deren Schlüssel zu einem gespeicherten bestandenen Lauf in seinem Cache-Verzeichnis passt; der Schlüssel umfasst den Inhalt jeder Datei, die das `clang` neben clang-tidy für die Datei liest, ihre Compile-Kommandos, jede `.clang-tidy`, die Binaries von clang-tidy und clang und das Skript; ohne ein `clang` in der Version von clang-tidy daneben läuft jede Datei; speichert nur bestandene Läufe; `--prune` entfernt die Einträge nicht mehr geprüfter Dateien; Exit-Status 1, wenn clang-tidy eine Datei meldet, 2 bei einer Datei ohne Compile-Kommando |
 | `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`, eine Zellenzahl `6S`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen, bei einer Einheit in Großbuchstaben nach einer Zahl in den Texten, die das Panel zeigt (`500MS`, `50 HZ`; S allein ist die Zellenzahl), und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien außer den Panel-Texten der ESC-Profile und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | bringen die Wörter der Oberfläche aus der Form in mehreren Dateien (Englisch in `ui_text.def` und im Schema, Deutsch in `ui_text_de.c`) in die eine Tabelle, `shared/text/include/ui_text.def`; `merge BASE THEIRS` übernimmt beim Merge die Textänderungen eines Branches, der noch die alte Form hat, in die Tabelle ([Sprache der Oberfläche](Language-de.md#einen-text-hinzufügen)) |
 | `tools/gen_font.py` | erzeugt die sieben eingebetteten Fonts aus DejaVu Sans Mono neu, die fünf Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
@@ -647,27 +646,18 @@ Host-Tests werden mit den Flags der Bibliotheken gebaut: `-Wall -Wextra
 -Werror -Wshadow -Wconversion -Wno-sign-conversion`; `test/host/.clang-tidy`
 listet die für sie abgeschalteten Checks, jeweils mit Grund.
 
-clang-tidy und cppcheck behalten zwischen CI-Läufen einen Cache.
-`tools/tidy_cache.py` speichert je Datei einen bestandenen Lauf unter einem
-SHA-256-Schlüssel über den Inhalt jeder Datei, die das `clang` neben
-clang-tidy für sie liest (`clang -M` mit den Argumenten des
-Compile-Kommandos, System-Header eingeschlossen), ihr Compile-Kommando, jede
-`.clang-tidy`, die Binaries von clang-tidy und clang und das Skript, und
-startet clang-tidy nur für Dateien ohne gespeicherten Lauf. Dieses `clang`
-stammt aus derselben LLVM-Installation wie clang-tidy, so steht ein Header,
-der nur unter `__clang__` eingebunden wird, im Schlüssel; fehlt es oder
-weicht seine Version von der von clang-tidy ab, wird nichts gespeichert und
-jede Datei läuft. Eine fehlschlagende Datei wird
-nicht gespeichert und läuft erneut. cppcheck behält sein Build-Verzeichnis
-(`--cppcheck-build-dir`): es liest eine Datei neu, wenn sie oder eine
-eingebundene Datei von ihrem Eintrag abweicht, und gibt die Befunde der
-übersprungenen Dateien erneut aus. Der Cache des Build-Verzeichnisses hat
-als Schlüssel die cppcheck-Version, seine Optionen, die Include-Pfade und
-`.cppcheck-suppress`. Ein Lauf stellt den neuesten Cache her, den sein Branch
-lesen kann: den eigenen, den des Basis-Branches seines Pull Requests, dann
-den von `main`; ein Branch bekommt einen Cache nur aus einem CI-Lauf auf ihm,
-und `ci.yml` läuft bei einem Push nur für `main` und Tags. cppcheck läuft im
-Job `cppcheck`, neben `Lint and static analysis`.
+cppcheck läuft im Job `cppcheck`, neben `Lint and static analysis`, der
+clang-tidy bei jedem Lauf über jede Datei laufen lässt. cppcheck behält
+sein Build-Verzeichnis (`--cppcheck-build-dir`) zwischen CI-Läufen: es
+liest eine Datei neu, wenn sie oder eine eingebundene Datei von ihrem
+Eintrag abweicht, und gibt die Befunde der übersprungenen Dateien erneut
+aus. Der Cache des Build-Verzeichnisses hat als Schlüssel die
+cppcheck-Version, seine Optionen, die Include-Pfade und
+`.cppcheck-suppress`. Ein Lauf stellt den neuesten Cache her, den sein
+Branch lesen kann: den eigenen, den des Basis-Branches seines Pull
+Requests, dann den von `main`; ein Branch bekommt einen Cache nur aus einem
+CI-Lauf auf ihm, und `ci.yml` läuft bei einem Push nur für `main` und
+Tags.
 
 CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5 und pytest 9.1.1 in
 genau diesen Versionen, Doxygen 1.18.0 aus dem offiziellen Linux-Release-Archiv

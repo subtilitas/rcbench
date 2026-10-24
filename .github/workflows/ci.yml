@@ -216,7 +216,7 @@ jobs:
                       /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build clang-tidy clang
+            cmake ninja-build clang-tidy
           python3 -m pip install --quiet ruff==0.16.5
 
       # clang-tidy needs to know how each file is compiled, and CMake can say.
@@ -224,20 +224,6 @@ jobs:
         run: |
           cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-
-      # A recorded pass per file, keyed by the content of every file the
-      # clang beside clang-tidy (same LLVM install and version) reads for
-      # it, the compile command, every .clang-tidy and both binaries;
-      # tools/tidy_cache.py lists the key.  Without that clang every file
-      # runs and nothing is recorded.  A run
-      # restores the newest record its branch can see (its own, its base's,
-      # main's) and saves its own, also when a file fails.
-      - name: Restore the clang-tidy results
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ runner.temp }}/clang-tidy
-          key: clang-tidy-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: clang-tidy-${{ runner.os }}-${{ runner.arch }}-
 
       # The analyser and the bug-shaped checks over the pure-C core, the
       # protocol cores and the host tests.  A module's rp2350/ folder is not
@@ -247,9 +233,8 @@ jobs:
       # no compile command here; render_ui.py builds the first two with
       # -Werror, cppcheck reads all three.
       # Configuration and the reason for each disabled check are in
-      # .clang-tidy and test/host/.clang-tidy.  A file with an unchanged key
-      # is skipped; every other file runs, one clang-tidy per file and
-      # distinct compile command, the slowest first.
+      # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
+      # run; no result is kept between runs.
       - name: clang-tidy
         run: |
           git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
@@ -258,15 +243,7 @@ jobs:
                         -e 'test/host/render_screen.c' \
                         -e 'test/host/render_files.c' \
                         -e 'test/host/bench_frame.c' \
-              | python3 tools/tidy_cache.py --build test/host/build \
-                  --cache "$RUNNER_TEMP/clang-tidy" --prune -j "$(nproc)" -
-
-      - name: Save the clang-tidy results
-        if: success() || failure()
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ runner.temp }}/clang-tidy
-          key: clang-tidy-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+              | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
       # A translated format reaches snprintf() through a table lookup, which
       # -Wformat cannot see; this compiles shared/ again with the English
@@ -282,8 +259,8 @@ jobs:
       - name: ruff
         run: ruff check tools/ test/tools/ test/host/
 
-  # cppcheck runs beside clang-tidy, in a job of its own: each takes about
-  # 4min (minutes) on a cold cache.
+  # cppcheck runs in a job of its own beside clang-tidy, which checks every
+  # file on every run: 4min to 9min (minutes) on the runners measured.
   cppcheck:
     name: cppcheck
     runs-on: ubuntu-latest

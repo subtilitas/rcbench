@@ -381,7 +381,6 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/check_docs.py` | holds the pages to the tree: links and anchors resolve, every image is used, the sidebar is complete, every page has a German counterpart, the suite list in `STATUS.md` matches CMake, the screenshot counts in `STATUS.md` match `docs/img`, the stick programming pages' red light table matches `esc_stick_reason_is_fault()`, the tree above lists every module under `shared/` and `protocols/`, every source file carries an SPDX (Software Package Data Exchange) line, the protocol version, the heartbeat and link timings, the heartbeat and CAN pins, the coverage floors and the stack margin a page states are the constants in the headers and tools (`FACTS` in the tool lists each sentence), a table row that names a C constant gives its value, [Performance](Performance.md) has no ceiling table while `ci.yml` has no `--max-lines` argument, the pin counts in `hardware/docs/Pins.md` match `pinmap.json`, a German page quotes in backticks the German the screen shows: interface strings and formats, setting labels, help, options and categories, and the servo test's words |
 | `tools/wiki_links.py` | rewrites the links of a copy of `docs/` for the wiki, where pages are addressed by title: `Page.md` becomes `Page`, a target above `docs/` a repository URL (`blob`, `tree`, `raw` for an image); compares each page with its rewrite through markdown-it-py 3.0.0 and exits 1 on any other difference, with page and line; `--check` changes nothing; `--verify` fails on a converted page whose links a wiki cannot open |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
-| `tools/tidy_cache.py` | runs clang-tidy over the files it is given and skips each file whose key matches a recorded pass in its cache directory; the key covers the content of every file the `clang` beside clang-tidy reads for the file, its compile commands, every `.clang-tidy`, the clang-tidy and clang binaries and the script; without a `clang` of clang-tidy's version beside it every file runs; records passes only; `--prune` drops the records of files no longer checked; exits 1 when clang-tidy reports on a file, 2 on a file without a compile command |
 | `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`, a cell count `6S`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol, on a unit in capitals after a number in the texts the panel shows (`500MS`, `50 HZ`; S alone is the cell count) and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files other than the ESC profiles' panel texts and released CHANGELOG sections are not covered |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | move the interface's words from the per-file form (English in `ui_text.def` and the schema, German in `ui_text_de.c`) into the one table, `shared/text/include/ui_text.def`; `merge BASE THEIRS` carries the text changes of a branch still in the per-file form into the table during a merge ([Interface language](Language.md#adding-a-text)) |
 | `tools/gen_font.py` | regenerates the seven embedded fonts from DejaVu Sans Mono, the five text faces with the German letters; `--check` fails if the committed tables differ |
@@ -614,24 +613,16 @@ are built with the library flags `-Wall -Wextra -Werror -Wshadow -Wconversion
 -Wno-sign-conversion`; `test/host/.clang-tidy` lists the checks that are off
 for them, each with its reason.
 
-clang-tidy and cppcheck keep a cache between CI runs. `tools/tidy_cache.py`
-records a pass per file under a SHA-256 key over the content of every file
-the `clang` beside clang-tidy reads for it (`clang -M` with the compile
-command's arguments, system headers included), its compile command, every
-`.clang-tidy`, the clang-tidy and clang binaries and the script, and runs
-clang-tidy only on the files without a recorded pass. That `clang` comes
-from the same LLVM install as clang-tidy, so a header included only under
-`__clang__` is in the key; when there is none, or its version differs from
-clang-tidy's, nothing is recorded and every file runs. A failing file is not
-recorded and runs again. cppcheck keeps its build directory
-(`--cppcheck-build-dir`): it re-reads a file when the file or an included
-file differs from its record, and replays the findings of the files it
-skips. The build directory's cache is keyed on the cppcheck version, its
-options, include paths and `.cppcheck-suppress`. A run restores the newest
-cache its branch can read: its own, its pull request's base branch's, then
-`main`'s; a branch gets a cache only from a CI run on it, and `ci.yml` runs
-on push only for `main` and tags. cppcheck runs in the job `cppcheck`,
-beside `Lint and static analysis`.
+cppcheck runs in the job `cppcheck`, beside `Lint and static analysis`,
+which runs clang-tidy over every file on every run. cppcheck keeps its
+build directory (`--cppcheck-build-dir`) between CI runs: it re-reads a
+file when the file or an included file differs from its record, and
+replays the findings of the files it skips. The build directory's cache is
+keyed on the cppcheck version, its options, include paths and
+`.cppcheck-suppress`. A run restores the newest cache its branch can read:
+its own, its pull request's base branch's, then `main`'s; a branch gets a
+cache only from a CI run on it, and `ci.yml` runs on push only for `main`
+and tags.
 
 CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at these
 exact versions, Doxygen 1.18.0 from the official Linux release archive

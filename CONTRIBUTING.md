@@ -94,13 +94,9 @@ cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 \
          $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/) \
          $(git ls-files 'test/host/*.c')
 cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-# clang-tidy, as in CI: a file whose inputs match a recorded pass in the
-# cache directory is skipped (tools/tidy_cache.py lists the key).
 git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
-             'testbench/touch-injector/core/*.c' \
-    | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c \
-              -e test/host/render_files.c -e test/host/bench_frame.c \
-    | python3 tools/tidy_cache.py --build test/host/build --cache /tmp/tidy-cache -
+    | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c -e test/host/bench_frame.c \
+    | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 ruff check tools/ test/tools/ test/host/   # with the docstring (D) rules
 ```
 
