@@ -3493,7 +3493,12 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   leer.
 - Ein Software-Neustart behält die Uhr: ein Firmware-Update, ein Neustart
   nach einem Fehler. ESP-IDF hält die Systemzeit im RTC-Timer des ESP32-P4,
-  den nur das Einschalten zurücksetzt. Auf der Platine nicht gemessen.
+  den nur das Einschalten zurücksetzt. Der Timer zählt den Quarz Y3 der
+  Platine mit 32.768kHz, oder den internen RC-Oszillator, wenn der Quarz
+  nicht anschwingt ([Aufbau](Building-de.md#der-langsame-rtc-takt)). Auf
+  dem RC lag die Uhr an der Station nach etwa 2h über einen Neustart um
+  4.357s daneben, etwa 600ppm (gemessen). Auf dem Quarz ist die
+  Abweichung über einen Neustart nicht gemessen.
 - Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal über SNTP
   (Simple Network Time Protocol): die Release-Prüfung beim Start, NACH
   UPDATES SUCHEN und der Download unter [Updates](#updates) und das
@@ -3530,6 +3535,10 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
   Keine Antwort: `ntp: no answer from pool.ntp.org in 30000ms; clock unchanged`.
   Eine Verbindung, die zuerst endet: `ntp: join ended before an answer from pool.ntp.org; clock unchanged`.
+- Bei jedem Start nennt die Konsole den langsamen Takt, den der RTC-Timer
+  zählt: `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`, oder
+  als Warnung `clock: rtc slow clock internal RC, 136012.345Hz calibrated:
+  the 32k crystal did not start`.
 - Bei jedem Start sagt die Konsole, was die Uhr hält: `clock: not set
   (...s since 1970); file dates read 1980 until an NTP answer` nach dem
   Einschalten, oder die über einen Neustart behaltene Zeit in UTC und in der

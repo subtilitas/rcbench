@@ -2,8 +2,9 @@
  * The panel's wall clock (shared/clock): whether the clock holds a real
  * date, whether a file's FAT stamp says anything, the time zones SETUP
  * offers and their row in the settings model, the console line of an NTP
- * answer, the one request a join makes, and the radio that request holds
- * up past a session that lingers (wa_session.h, wa_lingers()).
+ * answer, the one request a join makes, the radio that request holds up
+ * past a session that lingers (wa_session.h, wa_lingers()), and the slow
+ * clock's line at start.
  *
  * The panel's end -- esp_netif_sntp, setenv("TZ") and the Wi-Fi worker
  * (firmware/panel/components/wifi_access/wifi_ntp.c, main/panel_settings.c)
@@ -560,6 +561,63 @@ TEST_CASE(a_second_join_after_a_give_up_asks_and_holds_again)
     CHECK(!wall_ntp_holds(&n, true, 62500u));
 }
 
+/* ------------------------------------------------------------ slow clock */
+
+TEST_CASE(the_slow_clock_frequency_comes_from_the_calibration)
+{
+    /* 32768Hz is a period of 1e6 / 32768 microseconds, 16000000 in 19
+     * fractional bits. */
+    CHECK(wall_slow_mhz(16000000u) == 32768000ULL);
+    /* 10 counts shorter is 20mHz faster, about 0.6ppm. */
+    CHECK(wall_slow_mhz(15999990u) == 32768020ULL);
+    /* The internal RC near its 136kHz. */
+    CHECK(wall_slow_mhz(3855059u) == 135999994ULL);
+    /* Rounded to the nearest: 524288e9 / 3 ends in .67. */
+    CHECK(wall_slow_mhz(3u) == 174762666666667ULL);
+    /* The edges: none, the shortest period and the longest. */
+    CHECK(wall_slow_mhz(0u) == 0ULL);
+    CHECK(wall_slow_mhz(1u) == 524288000000000ULL);
+    CHECK(wall_slow_mhz(0xFFFFFFFFu) == 122070ULL);
+}
+
+TEST_CASE(the_slow_clock_line_names_the_source_and_a_fallback)
+{
+    char b[96];
+    CHECK_STR_EQ(wall_slow_clock_line(b, sizeof(b), WALL_SLOW_CRYSTAL, true,
+                                      16000000u),
+                 "rtc slow clock 32k crystal, 32768.000Hz calibrated");
+    CHECK(!wall_slow_fell_back(WALL_SLOW_CRYSTAL, true));
+    /* Asked for the crystal, running on the RC: ESP-IDF's fallback. */
+    CHECK_STR_EQ(wall_slow_clock_line(b, sizeof(b), WALL_SLOW_RC, true,
+                                      3855059u),
+                 "rtc slow clock internal RC, 135999.994Hz calibrated: the "
+                 "32k crystal did not start");
+    CHECK(wall_slow_fell_back(WALL_SLOW_RC, true));
+    CHECK(wall_slow_fell_back(WALL_SLOW_OTHER, true));
+    /* A build that asks for the RC: no fallback, whatever runs. */
+    CHECK_STR_EQ(wall_slow_clock_line(b, sizeof(b), WALL_SLOW_RC, false,
+                                      3855059u),
+                 "rtc slow clock internal RC, 135999.994Hz calibrated");
+    CHECK(!wall_slow_fell_back(WALL_SLOW_RC, false));
+    CHECK(!wall_slow_fell_back(WALL_SLOW_CRYSTAL, false));
+    CHECK_STR_EQ(wall_slow_clock_line(b, sizeof(b), WALL_SLOW_CRYSTAL, false,
+                                      0u),
+                 "rtc slow clock 32k crystal, frequency not known");
+    /* The longest line fits 96 bytes whole. */
+    CHECK_STR_EQ(wall_slow_clock_line(b, sizeof(b), WALL_SLOW_OTHER, true,
+                                      1u),
+                 "rtc slow clock other source, 524288000000.000Hz "
+                 "calibrated: the 32k crystal did not start");
+    CHECK(strlen(b) < sizeof(b));
+    /* A short buffer is cut, terminated; none at all is refused. */
+    char small[16];
+    CHECK_STR_EQ(wall_slow_clock_line(small, sizeof(small), WALL_SLOW_RC,
+                                      true, 0u),
+                 "rtc slow clock ");
+    CHECK(wall_slow_clock_line(NULL, 96u, WALL_SLOW_RC, true, 1u) == NULL);
+    CHECK(wall_slow_clock_line(b, 0u, WALL_SLOW_RC, true, 1u) == NULL);
+}
+
 int main(void)
 {
     RUN(a_clock_from_2026_on_holds_a_real_date);
@@ -577,5 +635,7 @@ int main(void)
     RUN(the_hold_ends_at_30000ms_unanswered_across_the_wrap);
     RUN(a_radio_off_request_during_the_hold_stops_the_request_at_once);
     RUN(a_second_join_after_a_give_up_asks_and_holds_again);
+    RUN(the_slow_clock_frequency_comes_from_the_calibration);
+    RUN(the_slow_clock_line_names_the_source_and_a_fallback);
     return test_summary("wall_clock");
 }

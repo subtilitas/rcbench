@@ -382,9 +382,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 146 | 146 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 347 | 340 | 98.0% |
+| `shared/ui/ui_widgets.c` | 343 | 336 | 98.0% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
-| `shared/ui/ui_band.c` | 272 | 259 | 95.2% |
+| `shared/ui/ui_band.c` | 270 | 257 | 95.2% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
@@ -397,17 +397,17 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
-| `shared/ui/motor_screen.c` | 262 | 255 | 97.3% |
-| `shared/ui/motor_events.c` | 169 | 165 | 97.6% |
+| `shared/ui/motor_screen.c` | 260 | 253 | 97.3% |
+| `shared/ui/motor_events.c` | 165 | 161 | 97.6% |
 | `shared/ui/motor_draw.c` | 359 | 347 | 96.7% |
 | `shared/ui/motor_workbench.c` | 167 | 160 | 95.8% |
-| `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
+| `shared/ui/motor_settings_page.c` | 186 | 176 | 94.6% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
 | `shared/ui/supply_screen.c` | 446 | 440 | 98.7% |
 | `shared/ui/supply_events.c` | 309 | 307 | 99.3% |
 | `shared/ui/supply_draw.c` | 392 | 383 | 97.7% |
 | `shared/ui/ui_keypad.c` | 273 | 271 | 99.3% |
-| `shared/ui/ui_setting_keypad.c` | 115 | 112 | 97.4% |
+| `shared/ui/ui_setting_keypad.c` | 85 | 85 | 100.0% |
 | `shared/ui/ui_textkey.c` | 346 | 335 | 96.8% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
@@ -417,8 +417,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_screen_draw.c` | 529 | 516 | 97.5% |
 | `shared/ui/servo_settings_panel.c` | 510 | 495 | 97.1% |
 | `shared/ui/servo_settings_draw.c` | 340 | 333 | 97.9% |
-| `shared/ui/servo_test_panel.c` | 432 | 420 | 97.2% |
-| `shared/ui/servo_limit_panel.c` | 410 | 371 | 90.5% |
+| `shared/ui/servo_test_panel.c` | 430 | 418 | 97.2% |
+| `shared/ui/servo_limit_panel.c` | 408 | 369 | 90.4% |
 | `shared/ui/servo_workbench.c` | 337 | 335 | 99.4% |
 | `shared/ui/kst_panel.c` | 339 | 335 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 160 | 160 | 100.0% |
@@ -444,7 +444,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_select.c` | 93 | 93 | 100.0% |
 | `shared/ui/log_text.c` | 138 | 136 | 98.5% |
 | `shared/ui/files_screen.c` | 621 | 594 | 95.7% |
-| `shared/ui/files_draw.c` | 335 | 324 | 96.7% |
+| `shared/ui/files_draw.c` | 332 | 321 | 96.7% |
 | `shared/ui/files_events.c` | 208 | 207 | 99.5% |
 | `shared/ui/settings_screen.c` | 492 | 486 | 98.8% |
 | `shared/ui/settings_draw.c` | 220 | 215 | 97.7% |
@@ -465,7 +465,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 271 | 270 | 99.6% |
 | `shared/ui/upd_screen.c` | 608 | 585 | 96.2% |
-| `shared/settings/settings.c` | 385 | 378 | 98.2% |
+| `shared/settings/settings.c` | 370 | 363 | 98.1% |
 | `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -499,7 +499,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_str.c` | 43 | 43 | 100.0% |
 | `shared/servo/servo_report.c` | 511 | 511 | 100.0% |
 | `shared/servo/servo_limrun.c` | 625 | 600 | 96.0% |
-| `shared/servo/servo_limrun_report.c` | 266 | 262 | 98.5% |
+| `shared/servo/servo_limrun_report.c` | 263 | 259 | 98.5% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
@@ -558,7 +558,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
 | `shared/bench/bench_state.c` | 220 | 216 | 98.2% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
-| `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
+| `shared/outputs/outputs_pages.c` | 311 | 302 | 97.1% |
 | `shared/outputs/out_bind.c` | 517 | 506 | 97.9% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 236 | 234 | 99.2% |
@@ -620,8 +620,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 386 | 375 | 97.2% |
 | `shared/webaccess/wa_page.c` | 149 | 144 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| `shared/clock/wall_clock.c` | 82 | 81 | 98.8% |
-| **total** | **56906** | **55700** | **97.9%** |
+| `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
+| **total** | **56854** | **55651** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -654,7 +654,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The heartbeat has no hardware backstop | the wire from the panel's heartbeat pin to the IOmcu's GP3 is fitted on the bring-up bench. What is not fitted is the retriggerable monostable the wire is supposed to pass through, so firmware at both ends is the only thing gating the outputs. The wire covers a panel that stops beating while the IOmcu is healthy: the monitor sees no edge for HEARTBEAT_MAX_GAP_MS (150ms) and the loop switches to SAFE. Uncovered is a panel that stops beating while the IOmcu cannot act -- nothing then removes the outputs. That is what the monostable does, retriggered by the panel's edges and needing no firmware. A healthy panel beside a misbehaving IOmcu is covered by neither, and by no hardware in this design | the monostable specified in [Safety](docs/Safety.md), on a board. `testbench/WIRING.md` carries the specification and deliberately no part numbers |
 | The control task has no test of its own | touch, STOP, the ARMED state, the outputs, the link and the heartbeat run in a task on the core that does not draw. Nothing exercises it deliberately: its files, `main.c`, `panel_link.c`, `panel_poll.c`, `panel_services.c`, `panel_supply.c`, `panel_arm.c`, `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: press ARM, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at the panel's heartbeat pin. Both cores share PSRAM bandwidth with the display's scan-out, and a scan-out that runs short is an underrun ESP-IDF's DPI driver logs. The control task touches no frame buffer, which is the reason to expect it is clear, not evidence that it is |
 | Screen rotation 180° on the board | the PPA copy of a turned frame is tested on the host with a fake engine (`test_gfx_turn`); its time on the board, the frame rate at 180° and the fallback after a PPA timeout are not measured. The host copies 77,093px a frame on average on SERVO LIVE sweeping and 192,911px on MOTOR & ESC LIVE ARMED | a station check: 180° on SETUP > PANEL turns the picture on the next frame; touch lands under the finger at the 4 corners and on STOP; STOP and DISARM work turned; the console's fps and `TURN` on SERVO LIVE at rest and sweeping, NORMAL against 180°; 180° kept over a restart |
-| The clock on the board | the NTP request, its console line and the time kept across a software restart are not measured on the board; how long an answer takes is not measured beyond one bench log, 7.2s after the address. A cell in the board's RTC battery holder BAT1 keeps no time: the ESP32-P4 keeps its RTC timer on VBAT only from deep sleep, which the panel never enters |
+| The clock on the board | the NTP request and its console line are not measured on the board. The time kept across a software restart on the internal RC oscillator was 4.357s off after about 2h at the station, about 600ppm; on the 32.768kHz crystal Y3, which the RTC timer counts, the drift and the boot line naming the crystal are not measured, nor the start-up time the crystal adds (about 183ms from ESP-IDF's counts); how long an answer takes is not measured beyond one bench log, 7.2s after the address. A cell in the board's RTC battery holder BAT1 keeps no time: the ESP32-P4 keeps its RTC timer on VBAT only from deep sleep, which the panel never enters |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The scan-out reads PSRAM by DMA (direct memory access) with no bounce buffer, and the DSI host's interrupt runs during the write (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay; not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's lines beside it |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
 | The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 248 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
