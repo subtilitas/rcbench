@@ -1,5 +1,7 @@
-/*
- * The SUPPLY screen: a programmable supply set, switched and watched.
+/**
+ * @file supply_screen.h
+ * @brief The SUPPLY screen: a programmable supply set, switched and
+ *        watched.
  *
  * MOTOR & ESC's layout with a supply's controls: the plot of voltage, current
  * and power on the left, the readouts on the right, the two set points below
@@ -29,6 +31,7 @@
 #include <stddef.h>
 
 #include "supply.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -47,6 +50,7 @@ typedef enum {
     SUPPLY_BY_STICK,        /* a stick run on ESC STICK             */
 } supply_by_t;
 
+/** @brief LIVE's views of the readings: the plot or the table. */
 typedef enum {
     SUPPLY_PANE_PLOT = 0,
     SUPPLY_PANE_TABLE,
@@ -93,6 +97,10 @@ void supply_screen_set_caps(const supply_caps_t *caps);
 
 /** Whether the numbers come from the panel's model rather than a supply. */
 void supply_screen_set_model(bool model);
+/**
+ * @brief Whether the numbers come from the panel's model.
+ * @return True for the model, false for a supply.
+ */
 bool supply_screen_model(void);
 
 /**
@@ -118,6 +126,11 @@ void supply_screen_header_text(char *out, size_t size);
 
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);
+/**
+ * @brief The current limit's set point as the screen holds it, snapped to
+ *        the caps.
+ * @return The set point, A.
+ */
 float supply_screen_set_i(void);
 
 /**
@@ -166,12 +179,23 @@ void supply_screen_put(float v, float i);
  * point, a question -- ends unanswered.
  */
 void supply_screen_set_port_held(bool held);
+/**
+ * @brief Whether a programming port holds the supply
+ *        (supply_screen_set_port_held()).
+ * @return True while it holds it.
+ */
 bool supply_screen_port_held(void);
 
 /** The set points a programming port gave the supply, onto the screen:
  *  supply_screen_put() for the one caller that reports and does not ask. */
 void supply_screen_adopt(float v, float i);
 
+/**
+ * @brief Whether the output is on as this screen believes it: what the
+ *        supply reported, with an OFF this screen asked for and has not
+ *        yet seen answered counted as off.
+ * @return True for on.
+ */
 bool supply_screen_output_on(void);
 
 /** The output on, or an ON asked for and still on its way: what a set
@@ -239,8 +263,21 @@ void supply_screen_set_on_coming(bool coming);
 /** True when anything was asked; clears it. */
 bool supply_screen_poll_cmd(supply_cmd_t *out);
 
+/** @brief Everything SUPPLY draws is drawn again on its next frame. */
 void supply_invalidate(void);
+/**
+ * @brief The SUPPLY screen as the router drives it.
+ * @return The screen; never NULL.
+ */
 const ui_screen_t *supply_screen(void);
+
+/**
+ * @brief The keypad of the set points and of SETTINGS' rows, open or
+ *        closed, for a test to read what it opened with and where its
+ *        keys are.
+ * @return The keypad; never NULL.
+ */
+const ui_keypad_t *supply_screen_keypad(void);
 
 #ifdef __cplusplus
 }
