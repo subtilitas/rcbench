@@ -180,7 +180,7 @@ history is in git.
 ### Changed
 
 - CI keeps the clang-tidy and cppcheck results between runs: clang-tidy
-  skips a file whose inputs match a recorded pass (`tools/tidy_cache.py`),
+  skips a file whose inputs, listed by the clang beside it, match a recorded pass (`tools/tidy_cache.py`),
   and cppcheck keeps its build directory. cppcheck runs in a job of its
   own, `cppcheck`, beside `Lint and static analysis`.
   `test/host/render_screen.c` poses the views of each screen group in a
