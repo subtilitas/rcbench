@@ -165,6 +165,35 @@ typedef struct {
 wall_ntp_do_t wall_ntp_step(wall_ntp_t *n, bool joined, bool answered,
                             uint32_t now_ms);
 
+/**
+ * @brief Whether the radio stays up past its session's end for this
+ *        request: the session lingers (wa_lingers() in wa_session.h) and
+ *        the request asks, less than WALL_NTP_TIMEOUT_MS after its START.
+ *        An answer at 29.9s ends the hold with it; the time-out at 30s ends
+ *        it unanswered.
+ * @param n       The request.
+ * @param lingers The session ended and lets the radio stay up.
+ * @param now_ms  The millisecond clock of wall_ntp_step(); its wrap is
+ *                taken.
+ * @return True while the radio waits for this request.
+ */
+bool wall_ntp_holds(const wall_ntp_t *n, bool lingers, uint32_t now_ms);
+
+/**
+ * @brief wall_ntp_step() across a session's end that lingers: a request
+ *        that asks counts the lingering station as joined, so it ends with
+ *        its answer (SET) or after WALL_NTP_TIMEOUT_MS (GAVE_UP), not with
+ *        the session (STOP).  A lingering station starts no request.
+ * @param n        The request; zeroed is IDLE.
+ * @param joined   The session holds an address on the home network.
+ * @param lingers  The session ended and lets the radio stay up.
+ * @param answered An answer has set the clock since START.
+ * @param now_ms   A millisecond clock; its wrap is taken.
+ * @return What the caller does now.
+ */
+wall_ntp_do_t wall_ntp_hold_step(wall_ntp_t *n, bool joined, bool lingers,
+                                 bool answered, uint32_t now_ms);
+
 #ifdef __cplusplus
 }
 #endif

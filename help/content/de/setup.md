@@ -122,7 +122,7 @@ Bilddrehung dreht das Bild, während jeder Frame hinausgeht, über die PPA (Pixe
 
 ![Bilddrehung auf 180° bei ARMED](view:setup-rotation)
 
-Das Panel hat keinen RTC-Chip (Real-Time Clock). Seine Uhr startet bei jedem Einschalten ungestellt und wird über NTP (Network Time Protocol) gestellt: Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal, höchstens 30000ms lang, und hält das Funkteil nie länger an als die Verbindung. Ein Software-Neustart behält die Uhr. Bis zu einer Antwort tragen Dateien, die das Panel schreibt, das Datum 1980; FILES INFO liest ein solches Datum als `nicht bekannt`. Der Access Point fragt keinen Zeitserver.
+Das Panel hat keinen RTC-Chip (Real-Time Clock). Seine Uhr startet bei jedem Einschalten ungestellt und wird über NTP (Network Time Protocol) gestellt: Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal, höchstens 30000ms lang. Eine Verbindung, die vor der Antwort endet, hält das Funkteil für sie an, höchstens 30000ms; ARM, STOP, die Versorgung, ein Log-Lauf und eine Installation nehmen das Funkteil sofort herunter. Ein Software-Neustart behält die Uhr. FAT speichert die Zeit einer Datei als Ortszeit im Moment des Schreibens: Ein späterer Wechsel der Zeitzone verschiebt die Zeiten der Dateien auf der Karte nicht. Bis zu einer Antwort tragen Dateien, die das Panel schreibt, das Datum 1980; FILES INFO liest ein solches Datum als `nicht bekannt`. Der Access Point fragt keinen Zeitserver.
 
 ![Zeitzone auf LOS ANGELES](view:setup-time-zone)
 

@@ -3135,6 +3135,10 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   (UTC+2) from the last Sunday of March 01:00 UTC to the last Sunday of
   October 01:00 UTC. The rules are POSIX TZ strings in
   `shared/clock/wall_clock.c`.
+- FAT stores a file's time as local time at the moment of writing, with no
+  zone (ESP-IDF's `get_fattime()` reads `localtime_r()`). A later change of
+  the zone does not move the times of files already on the card: a file
+  written at 12:00 still reads 12:00 after a step to a zone 1h behind.
 - The row is not locked while ARMED: it moves no control.
 - At each power-on the clock starts unset, at 1970-01-01 00:00:00 UTC. A
   file written then is stamped 1980-01-01 plus the time since the
@@ -3148,10 +3152,19 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   Network Time Protocol): the release check at start, CHECK FOR UPDATES
   and the download on [Updates](#updates), and WI-FI's home network
   ([Wi-Fi](#wi-fi)). The request goes out when the panel has its address.
-  It ends with the answer, after 30000ms without one, or when the join
-  ends, whichever comes first. It never keeps the radio on: when the
-  release check ends first, the clock stays as it was until the next join.
-  How long an answer takes on a real network is not measured.
+  It ends with the answer or after 30000ms without one, whichever comes
+  first.
+- A join that ends while the request is unanswered keeps the radio up for
+  it, to the answer or the 30000ms at most: the release check's own end,
+  OFF on WI-FI, leaving WI-FI and the 10min idle time-out. The console
+  says `wifi: radio held for the NTP answer, 30000ms at most from the
+  request`. ARM, an arm waiting, the supply coming on, a log run opening,
+  STOP, an install, START of an IOmcu update, a failed radio, a lost
+  network, 16 wrong access codes and a new WI-FI or GitHub session take
+  the radio down at once; the request then ends unanswered and the clock
+  stays as it was until the next join. How long an answer takes on a real
+  network is not measured; on the bench's home network one came 7.2s after
+  the address.
 - An answer sets the clock and writes one console line: the server, the
   time set in UTC and how far it moved the clock, for example
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -4022,8 +4035,9 @@ RELEASES sets the request:
 | `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or stable. The highest version among those that are no draft is the newest release, whatever their order; the highest of the release line among them is kept beside it. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30s at
-most, together. The join also asks an NTP server for the time, inside the
-same join ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). On either setting a release is offered only when it is of
+most, together. The join also asks an NTP server for the time; an answer
+still owed when the check ends keeps the radio up for 30s at most from the
+request ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)). On either setting a release is offered only when it is of
 the panel's release line and newer than the running build. The ESP32-P4
 panel's line holds every release ([The release line](#the-release-line)).
 

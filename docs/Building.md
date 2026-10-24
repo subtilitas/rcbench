@@ -217,7 +217,11 @@ What the panel does instead
 - FatFs stamps files from `time()` through `localtime_r()`
   (ESP-IDF `components/fatfs/diskio/diskio.c`, `get_fattime()`), so SETUP >
   PANEL's Time zone applies to the stamps. A year before 1980 is stamped
-  as 1980.
+  as 1980. FAT keeps no zone: a stamp is the local time at the write, and
+  a later zone change does not move it.
+- A join that ends while the request asks holds the radio up for it,
+  30000ms from the request at most (`wall_ntp_holds()`, `wa_lingers()` in
+  `shared/webaccess/wa_session.c`).
 - The SNTP client runs in lwIP's task on core 0 and the request is moved on
   by the Wi-Fi worker task. The control task on core 1, which owns STOP and
   the heartbeat, reads no wall time and waits for none of it.

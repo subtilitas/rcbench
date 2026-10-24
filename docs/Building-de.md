@@ -227,7 +227,11 @@ Was das Panel stattdessen tut
 - FatFs stempelt Dateien aus `time()` über `localtime_r()` (ESP-IDF
   `components/fatfs/diskio/diskio.c`, `get_fattime()`), also gilt SETUP >
   PANEL, `Zeitzone` für die Zeitstempel. Ein Jahr vor 1980 wird als 1980
-  gestempelt.
+  gestempelt. FAT kennt keine Zone: Ein Zeitstempel ist die Ortszeit beim
+  Schreiben, und ein späterer Wechsel der Zone verschiebt ihn nicht.
+- Eine Verbindung, die endet, während die Anfrage läuft, hält das Funkteil
+  für sie an, höchstens 30000ms ab der Anfrage (`wall_ntp_holds()`,
+  `wa_lingers()` in `shared/webaccess/wa_session.c`).
 - Der SNTP-Client läuft in der lwIP-Task auf Kern 0, und die Anfrage
   bewegt die Wi-Fi-Worker-Task weiter. Die Steuer-Task auf Kern 1, die STOP
   und den Heartbeat besitzt, liest keine Uhrzeit und wartet auf nichts

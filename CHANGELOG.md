@@ -10,9 +10,12 @@ history is in git.
 
 - The panel sets its clock by NTP (Network Time Protocol). Each join of
   the home network, the release check at start included, asks
-  `pool.ntp.org` once, for at most 30000ms, inside the join, and logs
+  `pool.ntp.org` once, for at most 30000ms, and logs
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +...s from the old
-  clock`. SETUP > PANEL has a Time zone row: UTC, LONDON, BERLIN, HELSINKI,
+  clock`. A join that ends before the answer, the release check's own end
+  included, keeps the radio up for it, 30000ms from the request at most;
+  ARM, STOP, the supply, a log run, an install and a failed radio take it
+  down at once. SETUP > PANEL has a Time zone row: UTC, LONDON, BERLIN, HELSINKI,
   NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO and SYDNEY, BERLIN by
   default, with daylight saving. File stamps, FILES INFO, the Wi-Fi page and
   the ZIP file use it. The board has no RTC (real-time clock) chip: the

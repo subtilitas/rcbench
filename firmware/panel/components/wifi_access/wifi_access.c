@@ -55,6 +55,7 @@
 #include "wa_text.h"
 #include "wa_walk.h"
 #include "wa_zip.h"
+#include "wall_clock.h"
 
 static const char *TAG = "wifi";
 
@@ -122,6 +123,7 @@ static struct {
     /* The worker's. */
     bool            net_ready;
     bool            radio_up;
+    bool            held;         /**< up past its session for the clock */
     uint32_t        up_gen;
     wa_mode_t       up_mode;
     esp_netif_t    *netif;
@@ -137,6 +139,8 @@ static struct {
      * by the worker as it reads the session, so wifi_access_down() never
      * sees a start that has not reached the radio as a radio off. */
     atomic_bool     asked;
+    atomic_bool     unlinger;     /**< wifi_access_end_linger() asked: the
+                                       worker ends the session's linger */
     atomic_bool     de;
     SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
@@ -1549,6 +1553,7 @@ static void radio_down(void)
         }
     }
     s.radio_up = false;
+    s.held = false;
     memset(s.ip, 0, sizeof(s.ip));
     if (!fetch_wait(FETCH_EXIT_MS)) {
         /* No new job starts while it lives (wifi_access_fetch_start()). */
@@ -1656,9 +1661,27 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
 }
 
 /**
+ * @brief Keep the radio up past its session's end for the clock's NTP
+ *        answer (wifi_ntp.h): the page's requests under way and the mDNS
+ *        name end now, the station and the interface stay until
+ *        radio_down().  Logged once a radio.
+ */
+static void radio_hold(void)
+{
+    if (!s.held) {
+        s.held = true;
+        atomic_store(&s.abort, true);
+        atomic_store(&s.mdns_run, false);
+        ESP_LOGI(TAG, "radio held for the NTP answer, %ums at most from "
+                 "the request", (unsigned)WALL_NTP_TIMEOUT_MS);
+    }
+}
+
+/**
  * @brief The task that owns the radio: compares what the session wants
  *        with what runs, and brings the radio up or down; a failed C6 link
- *        takes it down.
+ *        takes it down.  A session that ended and lingers (wa_lingers())
+ *        keeps the radio while the clock's NTP request asks.
  *
  * @param arg Unused.
  */
@@ -1668,14 +1691,25 @@ static void worker(void *arg)
     for (;;) {
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
         lock();
+        if (atomic_exchange(&s.unlinger, false)) {
+            wa_unlinger(&s.w);
+        }
         const bool want = wa_radio(&s.w);
         atomic_store(&s.asked, want);
         const uint32_t gen = s.gen;
         const wa_t w = s.w;
         const wa_conf_t c = s.conf;
         unlock();
+        /* The clock from the home network, once a join; this radio's
+         * session only, and never past a failed C6 link. */
+        const bool same = s.radio_up && gen == s.up_gen
+                          && !wifi_radio_failed();
+        const bool held = wifi_ntp_poll(same && w.state == WA_ST_JOINED,
+                                        same && wa_lingers(&w));
         if (s.radio_up || !atomic_load(&s.down)) {
-            if (!want || gen != s.up_gen || wifi_radio_failed()) {
+            if (held) {
+                radio_hold();
+            } else if (!want || gen != s.up_gen || wifi_radio_failed()) {
                 radio_down();
                 ESP_LOGI(TAG, "radio off");
             }
@@ -1696,8 +1730,6 @@ static void worker(void *arg)
                                           MALLOC_CAP_INTERNAL));
             }
         }
-        /* The clock from the home network, once a join (wifi_ntp.h). */
-        wifi_ntp_poll(s.radio_up && w.state == WA_ST_JOINED);
         if (s.radio_up && w.state == WA_ST_JOINED
             && !atomic_load(&s.mdns_alive) && !atomic_load(&s.mdns_run)
             && s.up_mode == WA_MODE_JOIN
@@ -1849,6 +1881,12 @@ bool wifi_access_down(void)
     return atomic_load(&s.down) && !atomic_load(&s.asked);
 }
 
+void wifi_access_end_linger(void)
+{
+    atomic_store(&s.unlinger, true);
+    poke();
+}
+
 bool wifi_access_save_net(const char *ssid, const char *pass)
 {
     lock();
@@ -1967,6 +2005,10 @@ void wifi_access_fetch_tick(wa_why_t abort)
         atomic_store(&s.fetch_stop, true);
         if (s.w.mode == WA_MODE_FETCH) {
             wa_close(&s.w, WA_OFF_ASKED);   /* not WI-FI's session */
+            /* Only the job's own end leaves the radio for the clock. */
+            if (abort != WA_WHY_NONE) {
+                wa_unlinger(&s.w);
+            }
         }
     }
     if (run) {

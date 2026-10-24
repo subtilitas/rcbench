@@ -122,7 +122,7 @@ Screen rotation turns the picture as each frame goes out, through the ESP32-P4's
 
 ![Screen rotation at 180° while ARMED](view:setup-rotation)
 
-The panel has no RTC (real-time clock) chip. Its clock starts unset at each power-on and is set by NTP (Network Time Protocol): each join of the home network asks `pool.ntp.org` once, for at most 30000ms, and never keeps the radio on longer than the join. A software restart keeps the clock. Until an answer, files the panel writes are dated 1980; FILES INFO reads such a date as `not known`. The access point asks no time server.
+The panel has no RTC (real-time clock) chip. Its clock starts unset at each power-on and is set by NTP (Network Time Protocol): each join of the home network asks `pool.ntp.org` once, for at most 30000ms. A join that ends before the answer keeps the radio up for it, 30000ms at most; ARM, STOP, the supply, a log run and an install take the radio down at once. A software restart keeps the clock. FAT stores a file's time as local time at the moment of writing: a later change of Time zone does not move the times of files already on the card. Until an answer, files the panel writes are dated 1980; FILES INFO reads such a date as `not known`. The access point asks no time server.
 
 ![Time zone set to LOS ANGELES](view:setup-time-zone)
 
