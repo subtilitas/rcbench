@@ -3147,7 +3147,12 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   Wi-Fi page's file list leaves its time empty.
 - A software restart keeps the clock: a firmware update, a restart after
   a fault. ESP-IDF keeps the system time in the ESP32-P4's RTC timer,
-  which only a power-on resets. Not measured on the board.
+  which only a power-on resets. The timer counts the board's 32.768kHz
+  crystal Y3, or the internal RC oscillator when the crystal does not
+  start ([Building](Building.md#the-rtc-slow-clock)). On the RC the clock
+  was 4.357s off after about 2h across a restart at the station, about
+  600ppm (measured). On the crystal the drift across a restart is not
+  measured.
 - Each join of the home network asks `pool.ntp.org` once by SNTP (Simple
   Network Time Protocol): the release check at start, CHECK FOR UPDATES
   and the download on [Updates](#updates), and WI-FI's home network
@@ -3181,6 +3186,10 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
   No answer: `ntp: no answer from pool.ntp.org in 30000ms; clock unchanged`.
   A join that ends first: `ntp: join ended before an answer from pool.ntp.org; clock unchanged`.
+- At each start the console names the slow clock the RTC timer counts:
+  `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`, or as a
+  warning `clock: rtc slow clock internal RC, 136012.345Hz calibrated:
+  the 32k crystal did not start`.
 - At each start the console says what the clock holds: `clock: not set
   (...s since 1970); file dates read 1980 until an NTP answer` after a
   power-on, or the time kept across a restart in UTC and in the zone.
