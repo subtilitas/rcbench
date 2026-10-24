@@ -6,71 +6,27 @@ The rendering budget for anyone adding or changing a screen.
 
 ## The constraint
 
-This section and the table below model the ESP32-S3 panel. The ESP32-P4
-panel scans 1024 x 600px out of PSRAM through its DSI (Display Serial
-Interface) host, behind another cache; its frame cost is not measured and no
-profile models it yet ([Ceilings](#ceilings)).
+The panel's DSI (Display Serial Interface) host scans one of two frame
+buffers of 1024 x 600px out of PSRAM (pseudo-static random-access memory)
+at 60.38Hz, about 74MB/s, by DMA (direct memory access). The CPU draws
+into the other buffer through the ESP32-P4's caches, and both share the
+PSRAM's bandwidth. What a frame costs on the ESP32-P4, in cache-line fills,
+in PSRAM traffic or in time, is not measured, and no profile of its caches
+models it ([Ceilings](#ceilings)).
 
-On the ESP32-S3 panel the frame rate is limited by PSRAM (pseudo-static random-access
-memory) bandwidth, not by the CPU. The LCD (liquid-crystal display) peripheral
-scans one framebuffer out of PSRAM continuously at about 30MB/s, and the
-framebuffers sit behind a write-back, write-allocate data cache (64KB, 8-way,
-64-byte lines). Every pixel the CPU writes costs a 64-byte line fill and a
-64-byte write-back unless the line is already resident. The cost of a frame is
-therefore a count of cache-line fills, which can be measured exactly on the
-host.
-
-`tools/frame_cost.py` builds the real screens for the host and runs them under
-cachegrind with the ESP32-S3's cache geometry. It reports the difference
-between rendering one frame and eleven, so process start-up and the first paint
-of each buffer cancel out.
+`tools/frame_cost.py` builds the real screens for the host and runs them
+under cachegrind with a model of the ESP32-S3 panel: a 64KiB, 8-way data
+cache of 64-byte lines, a scan-out at 39.0Hz and 39MB/s of PSRAM
+throughput for the CPU, at 800 x 480px. It reports the difference between
+rendering one frame and eleven, so process start-up and the first paint of
+each buffer cancel out. The renderer draws 1024 x 600px, and the model's
+cache is not the ESP32-P4's, so this page holds no table of its output.
 
 <!-- framecost:start -->
-```
-$ python3 tools/frame_cost.py
-panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
-
-mode       lines/frame     traffic   est. ms  est. fps
--------------------------------------------------------
-frame            7,874      984 KiB     25.8      19.5
-frame-idle        1,280      160 KiB      4.2      39.0
-held             4,430      554 KiB     14.5      39.0
-sim              8,843     1105 KiB     29.0      19.5
-throttle         9,580     1198 KiB     31.4      19.5
-chrome          31,995     3999 KiB    105.0       7.8
-overview           968      121 KiB      3.2      39.0
-servo           14,674     1834 KiB     48.2      19.5
-servo-grip        2,985      373 KiB      9.8      39.0
-servo-current        4,010      501 KiB     13.2      39.0
-supply           8,036     1004 KiB     26.4      19.5
-supply-chrome       30,534     3817 KiB    100.2       9.8
-analyser           868      108 KiB      2.8      39.0
-logs               877      110 KiB      2.9      39.0
-settings           876      110 KiB      2.9      39.0
-settings-list          876      110 KiB      2.9      39.0
-battery            889      111 KiB      2.9      39.0
-balance            876      110 KiB      2.9      39.0
-motor-stick        1,036      130 KiB      3.4      39.0
-balance-sim        2,379      297 KiB      7.8      39.0
-settings-sim        2,361      295 KiB      7.7      39.0
-battery-sim        2,387      298 KiB      7.8      39.0
-analyser-chrome       39,406     4926 KiB    129.3       6.5
-logs-chrome       16,466     2058 KiB     54.0      13.0
-settings-chrome       20,881     2610 KiB     68.5      13.0
-settings-list-chrome       23,791     2974 KiB     78.1       9.8
-battery-chrome       37,052     4632 KiB    121.6       7.8
-balance-chrome       40,552     5069 KiB    133.1       6.5
-motor-stick-chrome       31,195     3899 KiB    102.4       9.8
-picker             900      112 KiB      3.0      39.0
-picker-chrome       22,047     2756 KiB     72.4      13.0
-wifi               868      108 KiB      2.8      39.0
-wifi-chrome       13,704     1713 KiB     45.0      19.5
-wifi-keys       21,980     2748 KiB     72.1      13.0
-clear           12,007     1501 KiB     39.4      19.5
-vlines           8,160     1020 KiB     26.8      19.5
-hlines               0        0 KiB      0.0      39.0
-```
+No table: the frame cost on the ESP32-P4 panel is not measured.
 <!-- framecost:end -->
+
+The tool's modes:
 
 | Mode | What it measures |
 | --- | --- |
@@ -96,17 +52,19 @@ hlines               0        0 KiB      0.0      39.0
 
 Absolute counts shift by a few fills between machines, because argv and the
 environment share the cache with the framebuffer. `frame_cost.py --check-doc`
-therefore checks the table to a tolerance of 1%.
+therefore checks a table to a tolerance of 2%, and at least 100 fills.
 
 ## Rules
 
-**Draw row-major.** Seventeen full-height vertical lines cost 8,160 fills; the
-same pixel count as horizontal lines costs zero, because each line is resident
-from the previous pixel. The shell is laid out in horizontal bands, and a
-vertical rule is a deliberate expense.
+**Draw row-major.** A framebuffer row lies in consecutive bytes, so a
+horizontal line fills each cache line once and a vertical line fills one
+for every pixel. The shell is laid out in horizontal bands, and a vertical
+rule is a deliberate expense. What either costs on the ESP32-P4 is not
+measured.
 
-**Cache the chrome.** Repainting everything costs about thirty times the steady
-state. Every screen keeps a per-framebuffer bitmask of what it has already
+**Cache the chrome.** Repainting everything visits every pixel of the
+canvas, 614,400 at 1024 x 600px, where a steady frame visits what changed.
+Every screen keeps a per-framebuffer bitmask of what it has already
 painted; that is what the `buffer_index` argument of `render()` is for. The
 panel alternates between two buffers, so a screen that invalidates only the
 buffer being drawn leaves the other one a frame behind, which reads as flicker.
@@ -115,26 +73,25 @@ buffer being drawn leaves the other one a frame behind, which reads as flicker.
 whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes an
 IOmcu answering with simulated numbers. Rotated text scans its rotated
 bounding box, which corner to corner is the whole canvas, and rotates and
-divides per pixel to write the pixels the mark covers: 3,439 on an
-800 x 480px canvas, 0.9% of it, and 5,377 on 1024 x 600px. `ui_watermark`
-records those points once, in a table of 6,144, and writes them thereafter:
-on 800 x 480px, 144,721 instructions per frame in place of 8,412,078. The
-count on 1024 x 600px is not measured.
+divides per pixel to write the pixels the mark covers: 5,377 on 1024 x
+600px. `ui_watermark` records those points once, in a table of 6,144, and
+writes them thereafter. The instructions per frame at 1024 x 600px, with
+the table and without it, are not measured.
 
-**A count of fills is not a count of cycles.** The table above measures
-cache-line fills, and the mark costs only 1,586 of them: it is arithmetic per
-pixel, not traffic. It was 58 times the cost the table implied, and the table
-could not show it. Where a mode's measured frame time exceeds what its fills
+**A count of fills is not a count of cycles.** A cache model counts
+cache-line fills. The watermark writes few pixels and computes much for
+each, so its cost is arithmetic, not traffic, and a count of fills does
+not show it. Where a mode's measured frame time exceeds what its fills
 predict, count instructions before trusting the estimate.
 
-**Give a control that moves every frame its own counter.** A drag delivers a
-touch per frame. The motor screen's buttons and its throttle shared one
-revision, so dragging repainted every control beside it. The throttle now
-carries its own, and repaints the readout's box and the slider's painted
-region: the `throttle` mode in the table above measures it against a sample
-frame. The flip quantises to whole panel frames, so a drag either lands
-inside two of them or waits for a third: 19.5fps or 13.0. Measured on
-hardware at 50.5ms, the old drag took the third.
+**Give a control that moves every frame its own counter.** A drag delivers
+a touch per frame. The throttle on the motor screen carries its own
+revision, apart from the buttons beside it, and repaints the readout's box
+and the slider's painted region: the `throttle` mode of
+`tools/frame_cost.py` measures it against a sample frame. The flip
+quantises to whole panel frames, so a drag either lands inside two of them
+or waits for a third: at 60.38Hz, 30.2fps or 20.1fps. The drag's frame time
+on the ESP32-P4 is not measured.
 
 Clear what a widget paints, not what it occupies. The slider's thumb and its
 shadow stand proud of the track by 5px above and 7px below, and the hero
@@ -143,15 +100,14 @@ to the track or to the row leaves a thumb at every position the finger passed
 and the numerals' feet behind. `ui_slider_painted_rect()` reports the region
 rather than leaving a caller to derive it.
 
-**Paint only on frames that have something to paint.** Samples arrive at 20Hz
-and the panel refreshes faster, 39Hz on the ESP32-S3 and 60.38Hz on the
-ESP32-P4 (measured, the console's VSYNC figure), so most frames have nothing
-new. The P4's DPI (Display Pixel Interface) clock is 48MHz, not the 52MHz
-`board_pins.h` requests; at 48MHz its 1354 x 636 frame alone would give
-55.74Hz. ESP-IDF keeps the requested line time by shortening the bridge's
-front porch to a 1250-clock line, so the frame takes as long as 1354 x 636
-clocks at 52MHz: 60.38Hz. That this sets the rate is read from ESP-IDF's
-source, not from the registers.
+**Paint only on frames that have something to paint.** Samples arrive at
+20Hz and the panel refreshes at 60.38Hz (measured, the console's VSYNC
+figure), so most frames have nothing new. The DPI (Display Pixel
+Interface) clock is 48MHz, not the 52MHz `board_pins.h` requests; at 48MHz
+its 1354 x 636 frame alone would give 55.74Hz. ESP-IDF keeps the requested
+line time by shortening the bridge's front porch to a 1250-clock line, so
+the frame takes as long as 1354 x 636 clocks at 52MHz: 60.38Hz. That this
+sets the rate is read from ESP-IDF's source, not from the registers.
 The bench screen keeps the plot's push count and a control revision, each per
 framebuffer, and repaints the plot, the readouts and the controls only when the
 corresponding counter has moved. `each_framebuffer_is_updated_independently` in
@@ -183,12 +139,11 @@ position to SAFE plus six layers of the grip's box, a swept or dragged horn to
 
 No CI (continuous integration) step holds a frame to a ceiling in cache lines;
 `test_frame_work` holds budgets in pixel visits, as above.
-`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at 800 x 480
-px, and the table above is that model. The 7-inch ESP32-P4 panel scans 1024 x
-600px through a different cache. Its profile and the ceilings CI holds come
-with measurements on that board. The host renderer draws 1024 x 600px, so
-`frame_cost.py --check-doc` reports the table as not checked and
-`--update-doc` writes nothing until that profile replaces it.
+`tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at 800 x
+480px. The host renderer draws 1024 x 600px, so `frame_cost.py
+--check-doc` reports the table as not checked and `--update-doc` writes
+nothing. A profile of the ESP32-P4's caches, and the ceilings CI holds,
+need measurements on the board.
 `tools/check_docs.py` fails on a ceiling table in this page while
 `.github/workflows/ci.yml` holds none.
 
@@ -203,79 +158,42 @@ healthy frame is mostly WAIT.
 ## Stacks
 
 Every panel task runs on a fixed stack, and a call chain that runs past the
-end of one restarts the panel. `tools/stack_check.py` reads each task's
-deepest call chain out of the panel ELF (Executable and Linkable Format)
-file: the frame of every function is the `entry a1, N` it opens with, and the
-depth is the largest sum of frames along any chain from the task's entry
-point. A jump out of a function, the form a tail call takes, counts as a
-call. The tasks are every `xTaskCreatePinnedToCore()` and `xTaskCreate()`
-in `firmware/panel`, and the main task. The tool fails when a task's depth
-exceeds its stack less 1024 bytes.
+end of one restarts the panel. The depth of each task's deepest chain on
+the ESP32-P4 is not measured, and no CI step checks a panel task's stack.
 
-The tool decodes Xtensa code, the ESP32-S3's, and stops on an image of
-another machine. The ESP32-P4 builds RISC-V code. The stack depths of the
-P4 panel are not measured, no CI step checks a panel task's stack, and the
-table below holds the figures of the last ESP32-S3 build. A RISC-V decoder
-in the tool, or a run-time high-water log of every task's stack, is needed
-before the P4 panel has figures of its own. The IOmcu's stacks are checked in
-CI, as below.
+`tools/stack_check.py` reads each task's deepest call chain out of a panel
+ELF (Executable and Linkable Format) file of Xtensa code: the frame of every
+function is the `entry a1, N` it opens with, and the depth is the largest
+sum of frames along any chain from the task's entry point. The tool fails
+when a task's depth exceeds its stack less 1024 bytes. It stops on the
+ESP32-P4's image, which is RISC-V code. A RISC-V decoder in the tool, or a
+run-time high-water log of every task's stack, gives the ESP32-P4 its
+figures. The IOmcu's stacks are checked in CI, as below.
 
-| Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
-| --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,184 | 1,984 |
-| `control` | `control_task` | 6,144 | 4,512 | 608 |
-| `runlog` | `log_task` | 6,656 | 4,576 | 1,056 |
-| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,328 | 720 |
-| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,680 | 1,392 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
-| `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,808 | 1,264 |
-| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 2,832 | 4,336 |
+The tasks the panel creates, from `xTaskCreatePinnedToCore()` and
+`xTaskCreate()` in `firmware/panel`, and the main task:
+
+| Task | Entry | Stack (bytes) | Deepest chain |
+| --- | --- | ---: | --- |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | not measured |
+| `control` | `control_task` | 6,144 | not measured |
+| `runlog` | `log_task` | 6,656 | not measured |
+| `knob` | `knob_task`, the rotary knob's reader | 3,072 | not measured |
+| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | not measured |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | not measured |
+| `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | not measured |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | not measured |
+| `cardjob` | `files_task`, FILES' card jobs, started at FILES' first request (`main/panel_files.c`) | 6,656 | not measured |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the Wi-Fi driver, the TCP/IP (transmission control
 protocol, internet protocol) stack and the event loop on tasks of their own.
-ESP-IDF creates them, so they are not in the table: their depth is not
-measured. `wifi_get`'s depth leaves out the TLS (transport layer security)
-handshake and every read under it: esp_http_client reaches its transport
-through a function pointer. Its stack is the page server's, which never runs
-beside it; the handshake's depth is not measured.
+ESP-IDF creates them, and their depth is not measured either.
 
-`runlog`'s deepest chain mounts the SD card: a servo file listed in
-`BENCH/KST/CONF` (`kst_store_preset()`), the walk's `storage_walk()`, and
-the mount again of a card found gone (`storage_read_end()`,
-`esp_vfs_fat_sdspi_mount()`). The tool follows every call the mount can
-make, `f_mkfs()` among them, which a mount that never formats does not
-reach. A run's start mounts the card on this task as well
-(`storage_check()`). The chain needs 4,576 bytes; the stack of 6,656
-bytes leaves 1,056 above the 1,024-byte margin.
-
-Measured on the ESP32-S3 build with ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
-the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
-at the top of every stack, 192 for the frame an interrupt pushes, and 16 below
-the deepest frame. The other
-496 bytes cover what the tool cannot see, and each depth above is a lower
-bound for that reason:
-
-- calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table, and the link port's
-  callbacks, the drawing store's flash callbacks, the start check's after
-  an update, the SERVO screen link's callbacks into the panel, the
-  hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open
-  and the card functions the run logs, the fault log and the servo files
-  are written through,
-  which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  252 such
-  calls are reachable from `main_task`, most of them in ESP-IDF's storage
-  and display drivers;
-- calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
-  the ELF;
-- recursion: a function already on a chain is not entered again, so a
-  chain runs round a cycle at most once.
-
-`stack_check.py --check-doc` on an ESP32-S3 build fails when the table above
-or the count of calls through a pointer differs from that build.
+`runlog` mounts the SD card: at a run's start (`storage_check()`) and again
+for a card found gone (`storage_read_end()`, `esp_vfs_fat_sdmmc_mount()`).
+Its stack holds one line of a servo test, `SERVO_TEST_LINE_MAX` bytes,
+beside that chain.
 
 ### The IOmcu
 
@@ -359,23 +277,19 @@ on. The same definition sizes that array.
 
 `-v` lists all of them, and each task's deepest chain.
 
-The UI keeps its frames small where it is cheap. A page's drawer is a
-separate function, so only the page on screen holds its buffers: in ESC
-STICK, `esc_stick_panel_render()`'s frame is 32 bytes and the largest
-page's 464. MOTOR & ESC's `mo_render()` takes 48 bytes and calls the session's
-way and its body's, 416 bytes, as two functions, so a session's pages do not
-sit on the body's frame. A
-line copied for display is copied without `snprintf()`, which reaches
-newlib's float conversion: 2,368 bytes deep in the call graph.
+The panel's UI keeps its frames small where it is cheap. A page's drawer
+is a separate function, so only the page on screen holds its buffers: in
+ESC STICK, `esc_stick_panel_render()` calls the page on screen, and MOTOR &
+ESC's `mo_render()` calls the session's way and its body's as two
+functions, so a session's pages do not sit on the body's frame. A line
+copied for display is copied without `snprintf()`, which reaches newlib's
+float conversion. The frame sizes on the ESP32-P4 are not measured.
 
 ## Internal RAM
 
 The ESP32-P4 has no radio. Wi-Fi runs on the ESP32-C6 of the 7-inch board,
-which the P4 reaches over SDIO (secure digital input output). The S3 build's
-estimate of the internal RAM the radio takes, 51,200 bytes of DMA-capable
-(direct memory access) internal RAM at `esp_wifi_init()`, does not apply to
-the P4. The internal RAM free at run time is not measured, and no tool or
-CI step estimates it. The panel prints the free memory at start-up:
+which the P4 reaches over SDIO (secure digital input output). The internal
+RAM free at run time is not measured, and no tool or CI step estimates it. The panel prints the free memory at start-up:
 
 ```text
 I (…) rcbench: internal RAM: <n> B free, largest block <n> B; PSRAM: <n> B free
@@ -417,15 +331,15 @@ Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
-| .bss in internal RAM (DIRAM) | 30,720 | 243,080 |
-| .bss in PSRAM (`.ext_ram.bss`) | 212,360 | 0 |
-| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,384 | 340,744 |
-| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,409,376 | 2,409,376 |
+| .bss in internal RAM (DIRAM) | 30,912 | 243,464 |
+| .bss in PSRAM (`.ext_ram.bss`) | 212,552 | 0 |
+| internal RAM the image holds: .text, .data and .bss in DIRAM, of 655,360 | 128,576 | 341,128 |
+| application image, built without `RCBENCH_IOMCU_BIN` (no IOmcu image carried) | 2,435,744 | 2,435,744 |
 
 All figures are bytes. The column without the fragment adds the PSRAM .bss
 to the internal figures; it is not a build of its own. ESP-IDF's own PSRAM entries for lwIP (lightweight
 IP stack) and wpa_supplicant use a scheme that only `esp_wifi`'s fragment
-defines, which the P4 build does not include; lwIP's 3,551 bytes of .bss
+defines, which the P4 build does not include; lwIP's 3,774 bytes of .bss
 stay in internal RAM.
 
 ## Wi-Fi downloads

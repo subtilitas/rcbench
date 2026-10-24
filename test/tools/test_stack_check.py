@@ -18,11 +18,18 @@ def test_the_panel_decoder_reads_an_entry():
 
 EN = sc.PERFORMANCE[0][1]
 TABLE = EN + """
-| --- | --- | ---: | ---: | ---: |
+| --- | --- | ---: | ---: |
 | `main` | `main_task`, which runs the UI | 8,192 | 3,984 | 3,184 |
 | `knob` | `knob_task` | 3,072 | 1,360 | 688 |
 
 Measured.
+"""
+UNMEASURED = EN + """
+| --- | --- | ---: | --- |
+| `main` | `main_task`, which runs the UI | 8,192 | not measured |
+| `knob` | `knob_task` | 3,072 | not measured |
+
+Not measured.
 """
 
 
@@ -57,11 +64,24 @@ def test_a_task_the_table_lacks_and_one_it_invents_fail():
                    "image does not have"]
 
 
-def test_both_pages_carry_the_task_table_and_the_count():
-    for page, header, sentence in sc.PERFORMANCE:
+def test_a_depth_not_measured_holds_the_stack_only():
+    said = sc.doc_rows(UNMEASURED, EN)
+    assert said == {"main": [8192, None], "knob": [3072, None]}
+    measured = {"main": (8192, 3984, 3184), "knob": (3072, 1360, 688)}
+    assert sc.table_problems("P.md", said, measured) == []
+    measured["knob"] = (4096, 1360, 1712)
+    assert sc.table_problems("P.md", said, measured) == [
+        "P.md: the task table gives knob as [3072, None]; measured "
+        "[4096, 1360, 1712]"]
+
+
+def test_both_pages_carry_the_task_table_with_every_stack():
+    for page, header, _ in sc.PERFORMANCE:
         text = page.read_text(encoding="utf-8")
-        assert sc.doc_rows(text, header), page.name
-        assert re.search(sentence, " ".join(text.split())), page.name
+        rows = sc.doc_rows(text, header)
+        assert rows, page.name
+        assert all(r and isinstance(r[0], int) for r in rows.values()), \
+            page.name
 
 
 @pytest.mark.parametrize("rel, inside", [
