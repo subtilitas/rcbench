@@ -9,13 +9,13 @@
  *
  * Two wire families share one driver:
  *
- *   - Classic, the HS-5xxx and HS-7xxx servos: 19 200 bit/s, 8N1, least
+ *   - Classic, the HS-5xxx and HS-7xxx servos: 19 200bit/s, 8N1, least
  *     significant bit first, normal polarity (the line idles high, a start
  *     bit is low).  The servo makes the high level; the master pulls low.
  *     A command is 4 bytes `cmd p1 p2 sum` whose sum is 0 modulo 256; the
  *     servo answers 2 bytes and starts its first one inside the stop bit of
  *     the master's last byte.
- *   - D series: 115 200 bit/s, 8N1, least significant bit first, inverted
+ *   - D series: 115 200bit/s, 8N1, least significant bit first, inverted
  *     (inside a frame the line rests low, a start bit is high).  A write is
  *     7 bytes `96 ID addr 02 lo hi sum`, a read 5 bytes `96 ID addr 00 sum`,
  *     the answer 7 bytes `69 ID addr 02 lo hi sum`; the sum is the low byte
@@ -28,7 +28,7 @@
  * transaction asked for and give one result code per failed check.
  *
  * The timings are measured on an HS-5645MG, an HS-7955TG and a D485HW, with
- * the HPP-21 Plus and HFP-30 programmers, at a 1.4 V threshold.
+ * the HPP-21 Plus and HFP-30 programmers, at a 1.4V threshold.
  *
  * The module includes nothing outside the C standard headers and holds no
  * global state.
@@ -51,8 +51,8 @@ extern "C" {
 
 /** @brief The two servo families. */
 typedef enum {
-    HITEC_CLASSIC = 0,   /**< HS-5xxx, HS-7xxx: 19 200 bit/s, normal polarity */
-    HITEC_D       = 1,   /**< D series: 115 200 bit/s, inverted */
+    HITEC_CLASSIC = 0,   /**< HS-5xxx, HS-7xxx: 19 200bit/s, normal polarity */
+    HITEC_D       = 1,   /**< D series: 115 200bit/s, inverted */
 } hitec_family_t;
 
 /**
@@ -202,7 +202,7 @@ typedef enum {
 #define HITEC_TX_MAX   8u   /**< bytes one transaction sends */
 #define HITEC_GAP_MAX  6u   /**< idle bit times between two sent bytes */
 #define HITEC_RX_MAX  16u   /**< bytes one capture holds */
-/** @brief Longest lead, window and level time, 4 s. */
+/** @brief Longest lead, window and level time, 4s. */
 #define HITEC_TIME_MAX_US 4000000u
 
 /**
@@ -260,9 +260,9 @@ bool hitec_xfer_valid(const hitec_xfer_t *x);
 
 /**
  * @brief Idle bit times between two command bytes: 11 bit times start to start,
- *        572.9 us.
+ *        572.9us.
  *
- * The HPP-21 Plus sends 572 us start to start, the HFP-30 521 us.
+ * The HPP-21 Plus sends 572us start to start, the HFP-30 521us.
  */
 #define HITEC_C_GAP_BITS 1u
 /**
@@ -274,9 +274,9 @@ bool hitec_xfer_valid(const hitec_xfer_t *x);
  * @brief The first reply byte's start bit, from the start of the master's last
  *        byte.
  *
- * Measured 508 to 517 us after reads, up to 614 us after writes and after the
- * first read of a session; accepted 494.8 us (the middle of the master's stop
- * bit) to 1 ms.
+ * Measured 508 to 517us after reads, up to 614us after writes and after the
+ * first read of a session; accepted 494.8us (the middle of the master's stop
+ * bit) to 1ms.
  */
 #define HITEC_C_REPLY_MIN_NS  494792u
 #define HITEC_C_REPLY_MAX_NS 1000000u
@@ -300,7 +300,7 @@ void hitec_c_xfer(uint8_t cmd, uint8_t p1, uint8_t p2, hitec_xfer_t *out);
 
 /**
  * @brief The line driven low this long before the first start bit, as the
- *        HFP-30 does from a released line: 88 us.
+ *        HFP-30 does from a released line: 88us.
  */
 #define HITEC_D_LEAD_US 88u
 /**
@@ -311,9 +311,9 @@ void hitec_c_xfer(uint8_t cmd, uint8_t p1, uint8_t p2, hitec_xfer_t *out);
  * @brief The answer's first start bit, from the end of the request's last stop
  *        bit.
  *
- * Measured 5.9 to 6.5 ms with the HFP-30, and 5.93 to 6.52 ms over 153 reads by
- * PRECHARGE (D485HW, 2026-10-20); 15.2 ms is reported with another programmer.
- * Accepted 2 ms to 20 ms.
+ * Measured 5.9 to 6.5ms with the HFP-30, and 5.93 to 6.52ms over 153 reads by
+ * PRECHARGE (D485HW, 2026-10-20); 15.2ms is reported with another programmer.
+ * Accepted 2ms to 20ms.
  */
 #define HITEC_D_ANSWER_MIN_NS  2000000u
 #define HITEC_D_ANSWER_MAX_NS 20000000u
@@ -440,8 +440,8 @@ typedef enum {
  * @brief A byte of a reply starts 9.5 to 15 bit times after the start of the
  *        one before.
  *
- * Measured: classic 516 to 528 us (10 bit times are 520.8 us), D series 86 to
- * 87 us (86.8 us).
+ * Measured: classic 516 to 528us (10 bit times are 520.8us), D series 86 to
+ * 87us (86.8us).
  */
 #define HITEC_NEXT_MIN_HALF_BITS 19u
 #define HITEC_NEXT_MAX_HALF_BITS 30u
@@ -569,7 +569,7 @@ uint32_t hitec_elapsed_us(uint32_t now, uint32_t since);
  * @brief True when @p span_us or more have passed from @p since to @p now, also
  *        across the wrap of the clock.
  *
- * A span is shorter than 2^31 us.
+ * A span is shorter than 2^31us.
  *
  * @param now      Current time, in us.
  * @param since    Earlier time, in us.

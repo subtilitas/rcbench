@@ -63,7 +63,7 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
         /*
          * Each slot back at its own rate first.  The rate the SERVO page
          * holds was checked against the binding being replaced, and left in
-         * place a motor bound beside a 560 Hz surface would be refused by
+         * place a motor bound beside a 560Hz surface would be refused by
          * the silicon and stay still.  Nothing is written over a rate that
          * did not go back.
          */
@@ -131,7 +131,7 @@ bind_read_t bind_link_classify(bind_reading_t *out, uint16_t board,
     if (slots == NULL || cfg == NULL) {
         /*
          * Both pages or nothing: the slots page alone cannot say whether a
-         * 50 Hz pulse slot is a servo or a motor, and reading the binding
+         * 50Hz pulse slot is a servo or a motor, and reading the binding
          * without the roles rests an ESC (electronic speed controller) at
          * half throttle.
          */

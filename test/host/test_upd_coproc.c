@@ -1,7 +1,7 @@
 /*
  * SETUP > UPDATES' IOmcu section: the state coproc_update_section()
  * names, in its order; the line each state draws, in both languages and in
- * two lines of the left column; the hold at 1.99 s and 2.00 s, slid off,
+ * two lines of the left column; the hold at 1.99s and 2.00s, slid off,
  * cancelled and left; a link lost under it; a second hold while one runs;
  * the progress the driver opens for it and the way back to UPDATES, after
  * the update, after a START the control task spent and across a snapshot
@@ -26,7 +26,7 @@
 #include "ui_widgets.h"
 #include "upd_screen.h"
 
-/* The question's buttons, REMINDER AT START and HOLD 2 s: UPDATE IOMCU,
+/* The question's buttons, REMINDER AT START and HOLD 2s: UPDATE IOMCU,
  * in the body's coordinates. */
 #include "upd_spots.h"
 
@@ -509,7 +509,7 @@ TEST_CASE(a_link_loss_during_the_hold_ends_it_unfired)
     g_feed.reachable = false;
     (void)frame();
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_NO_LINK);
-    /* Held on past 2 s: the press was dropped with the state. */
+    /* Held on past 2s: the press was dropped with the state. */
     for (int i = 0; i < 8; ++i) {
         upd()->tick(UI_HOLD_MAX_CREDIT_S);
     }
@@ -635,7 +635,7 @@ static upd_cu_view_t cu_view(cu_sec_t sec)
 }
 
 /* Every state has its line, in both languages, and only READY takes the
- * hold; the line says why in the column's 360 px, two lines at most. */
+ * hold; the line says why in the column's 360px, two lines at most. */
 TEST_CASE(every_section_state_says_why_in_two_lines)
 {
     const gfx_rect_t line = gfx_rect_make(16, 0, 360, 18);

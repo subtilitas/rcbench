@@ -28,13 +28,13 @@ TEST_CASE(the_report_holds_the_run)
     CHECK(strstr(g.report, "PROG PORT GP13") != NULL);
     CHECK(strstr(g.report, "INA3221") != NULL);
     CHECK(strstr(g.report, "1.8") != NULL);
-    CHECK(strstr(g.report, "3.0 A") != NULL);
-    CHECK(strstr(g.report, "Pulse range:    centre 1500 us, 800-2200 us")
+    CHECK(strstr(g.report, "3.0A") != NULL);
+    CHECK(strstr(g.report, "Pulse range:    centre 1500us, 800-2200us")
           != NULL);
-    CHECK(strstr(g.report, "Searched:       from 1500 us out to 900 us and "
-                           "2100 us") != NULL);
-    CHECK(strstr(g.report, "Servo pulses:   NEUTRAL 1500.2 us, PULSE LOWER "
-                           "900.0 us, PULSE UPPER 2100.0 us") != NULL);
+    CHECK(strstr(g.report, "Searched:       from 1500us out to 900us and "
+                           "2100us") != NULL);
+    CHECK(strstr(g.report, "Servo pulses:   NEUTRAL 1500.2us, PULSE LOWER "
+                           "900.0us, PULSE UPPER 2100.0us") != NULL);
     CHECK(strstr(g.report, "Pulse write") == NULL);
     snprintf(want, sizeof(want), "LEFT ANGLE:     150 before, %u after",
              (unsigned)reg_get(KST_F_LEFT_ANGLE));
@@ -46,7 +46,7 @@ TEST_CASE(the_report_holds_the_run)
     CHECK(strstr(g.report, want) != NULL);
     snprintf(want, sizeof(want), "final %u", g.run.v2[1]);
     CHECK(strstr(g.report, want) != NULL);
-    CHECK(strstr(g.report, "overset +3 %") != NULL);
+    CHECK(strstr(g.report, "overset +3%") != NULL);
     snprintf(want, sizeof(want), "values written %u, writes sent %u",
              g.run.writes, g.run.write_ops);
     CHECK(strstr(g.report, want) != NULL);

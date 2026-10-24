@@ -81,7 +81,7 @@ void esc_profiles_load(void)
 
 static void esc_profiles_read(void)
 {
-    /* 4 KiB of names: static, off the start-up task's stack. */
+    /* 4KiB of names: static, off the start-up task's stack. */
     static esc_card_t c;
     memset(&c, 0, sizeof(c));
     if (storage_walk(ESC_CARD_DIR, ".json", esc_card_take, &c, NULL) < 0) {

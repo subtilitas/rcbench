@@ -19,8 +19,8 @@
 #define H UI_BODY_H   /* the router owns the band */
 
 /**
- * @brief The grid: four columns by two rows of 243 x 255 px tiles (36.5 x
- *        38.3 mm at 0.150 mm a pixel) with 10 px margins under the 60 px
+ * @brief The grid: four columns by two rows of 243 x 255px tiles (36.5 x
+ *        38.3mm at 0.150mm a pixel) with 10px margins under the 60px
  *        band.  COLS and ROWS are the grid, M its margin, TW and TH a
  *        tile's size.
  */
@@ -31,10 +31,10 @@
 #define TH   ((H - (ROWS + 1) * M) / ROWS) /**< a tile's height, px: 255 */
 
 /**
- * @brief Inside a tile, from its top: the 40 px icon box at 30, the name
+ * @brief Inside a tile, from its top: the 40px icon box at 30, the name
  *        in the head face (20 x 36) at 84, the line in the label face
- *        (10 x 20) at 128, a broken line's second row 24 px under it.  A
- *        row of the line holds 22 characters, 220 of the 227 px inside the
+ *        (10 x 20) at 128, a broken line's second row 24px under it.  A
+ *        row of the line holds 22 characters, 220 of the 227px inside the
  *        tile's UI_TILE_PAD.
  */
 #define T_ICON_DY  30 /**< the icon box's top, px */
@@ -51,10 +51,10 @@ static const ui_tile_look_t k_look = {
 };
 
 /**
- * @brief The SIMULATED mark: at least 120 x 32 px, 184 px under the tile's
+ * @brief The SIMULATED mark: at least 120 x 32px, 184px under the tile's
  *        top, its word in the label face (10 x 20) MARK_INSET px from its
- *        left edge, past the dot, and 8 px from its right edge.  On the
- *        lower row it ends at panel y 551, 5 px above the alert band, so an
+ *        left edge, past the dot, and 8px from its right edge.  On the
+ *        lower row it ends at panel y 551, 5px above the alert band, so an
  *        alert hides no mark.
  */
 #define MARK_W     120 /**< its least width, px */

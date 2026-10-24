@@ -293,8 +293,8 @@ static uint32_t stream(uint32_t t0, uint32_t every, uint32_t ms)
 
 /*
  * RATE is the frames of a whole second.  A stream of 100 frames a second
- * shows the same picture 1250 ms and 2500 ms after its start whether it
- * began at tick 0 or 500 ms or 1500 ms before the 2^32 ms wrap, and a
+ * shows the same picture 1250ms and 2500ms after its start whether it
+ * began at tick 0 or 500ms or 1500ms before the 2^32ms wrap, and a
  * stream of 50 frames a second shows another: the trace is as long as the
  * screen keeps it in all of them, so the pictures differ in the rate alone.
  */

@@ -224,8 +224,8 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
                                      char *out, size_t n);
 
 /**
- * @brief Where a key is drawn and hit: the grid ends 8 px inside the
- *        area, or at UI_KEYS_FOOT (4 px above the alert band, body
+ * @brief Where a key is drawn and hit: the grid ends 8px inside the
+ *        area, or at UI_KEYS_FOOT (4px above the alert band, body
  *        coordinates) where the area reaches further.
  * @param k   The keyboard.
  * @param key The key: 0 to UI_TK_OK, or UI_TK_SHOW on a password.
@@ -254,7 +254,7 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
  * @brief The face of the word keys (the bottom row, DEL, and the Wi-Fi
  *        layer keys) in the language shown: the largest of 12 x 24,
  *        10 x 20 and 8 x 16 in which every one of them fits its key with
- *        4 px each side, in every state it can show (SHOW and HIDE, ABC,
+ *        4px each side, in every state it can show (SHOW and HIDE, ABC,
  *        abc and #+=), so the words of one keyboard share one face and a
  *        press does not change it.  The character keys are always 12 x 24.
  * @param k The keyboard, opened.

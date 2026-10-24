@@ -36,7 +36,7 @@
  * newest version.
  *
  * Slots.  Version 8 is written into slots of two flash pages
- * (OUT_STORE_SLOT_BYTES, 512 bytes): 8 a 4 KiB sector, 16 in the store.
+ * (OUT_STORE_SLOT_BYTES, 512 bytes): 8 a 4KiB sector, 16 in the store.
  * Versions 3 to 7 lie in slots of one page (OUT_STORE_SLOT_BYTES_V7), 16
  * a sector, and are read from that layout while the store holds no
  * version 8 record.

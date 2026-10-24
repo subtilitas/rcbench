@@ -70,7 +70,7 @@ bool ui_text_fits(const gfx_font_t *f, const char *s, int w, int h, int pad);
 
 /**
  * @brief Where the key grid of the keypad and of the keyboard ends at the
- *        latest, in body coordinates: 4 px above the alert band, y 492.
+ *        latest, in body coordinates: 4px above the alert band, y 492.
  *
  * An overlay paints its whole area; its keys end here when the area
  * reaches further, so an alert covers no key on any screen.
@@ -184,15 +184,15 @@ void ui_clock(char *out, size_t n, uint32_t seconds);
 
 /*
  * The home tag, at the same place at the top left of every screen that has
- * one: 44 px tall (6.6 mm), 8 px from the band's top and left edges, the
+ * one: 44px tall (6.6mm), 8px from the band's top and left edges, the
  * title in UI_FONT_TAG (20 x 36).  The router hit-tests it before the
  * screen sees the event.
  */
-/** @brief The home tag's left edge: 8 px. */
+/** @brief The home tag's left edge: 8px. */
 #define UI_TAG_X 8
-/** @brief The home tag's top edge: 8 px. */
+/** @brief The home tag's top edge: 8px. */
 #define UI_TAG_Y 8
-/** @brief The home tag's height: 44 px (6.6 mm). */
+/** @brief The home tag's height: 44px (6.6mm). */
 #define UI_TAG_H 44
 
 /**
@@ -223,7 +223,14 @@ void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill);
 /** Left-pointing solid triangle, apex at (x, cy). */
 void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color);
 
-/** A 1 px horizontal rule. */
+/**
+ * @brief A 1px horizontal rule.
+ * @param c the canvas
+ * @param x its left end, px
+ * @param y its row, px
+ * @param w its length, px
+ * @param color its colour
+ */
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
 
 /* ----------------------------------------------------------- choice list */
@@ -234,18 +241,18 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
  * steps, which is the difference between this and a settings row.  The
  * outputs screen's protocol list and the pin picker's are this one.
  *
- * A face or a row UI_CHOICE_ROW_H (56 px, 8.4 mm) tall or taller draws its
+ * A face or a row UI_CHOICE_ROW_H (56px, 8.4mm) tall or taller draws its
  * text in the type scale's head face, 20 x 36 (UI_FONT_TAG), when the text
  * fits; a shorter one, and a text that does not fit, in the 16 x 28 face
  * (UI_FONT_HEAD).  A screen takes the larger face with the row height its
  * own layout gives.  The text is centred in the face's and each row's
- * height.  A face takes 10 px before its text and 33 px after it for a
- * 7 px chevron, 12 px and 43 px for an 11 px one when tall; a row 12 px
+ * height.  A face takes 10px before its text and 33px after it for a
+ * 7px chevron, 12px and 43px for an 11px one when tall; a row 12px
  * before and after its text.  Each face and row picks its own face: the
  * rows of one list can differ where one name does not fit.
  */
 /** @brief The row height from which a choice face or row draws in the
- *         20 x 36 face: 56 px (8.4 mm), the plan's choice row. */
+ *         20 x 36 face: 56px (8.4mm), the plan's choice row. */
 #define UI_CHOICE_ROW_H 56
 
 /**
@@ -273,7 +280,12 @@ void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
  *  draws a segment row: sunk, its text and chevron dim, no accent. */
 void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text);
 
-/** The open list's ground: a shadow 4 px down and right, then the panel. */
+/**
+ * @brief The open list's ground: a shadow 4px down and right, then the
+ *        panel.
+ * @param c the canvas
+ * @param r the list's box
+ */
 void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r);
 
 /** One row of the open list: @p chosen is the choice in force, accented. */
@@ -301,22 +313,22 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
 /*
  * The most one frame can add to a hold.  A frame's duration is measured at
  * its top and applied at its end, so without a cap a single late frame
- * completes a hold that began inside that same frame.  0.25 s puts at least
+ * completes a hold that began inside that same frame.  0.25s puts at least
  * eight frames with the press standing between a press and an arm.
  */
 #define UI_HOLD_MAX_CREDIT_S 0.25f
 
 /**
  * @brief The flash as the command goes, by time: phases of
- *        UI_HOLD_FLASH_PHASE_MS (25 ms) each, white, black, settled, the
- *        cycle twice, UI_HOLD_FLASH_MS (150 ms) in all: 9 frames at 60 Hz.
+ *        UI_HOLD_FLASH_PHASE_MS (25ms) each, white, black, settled, the
+ *        cycle twice, UI_HOLD_FLASH_MS (150ms) in all: 9 frames at 60Hz.
  */
 #define UI_HOLD_FLASH_PHASE_MS 25
 /** @brief The phases of one cycle: white, black, settled. */
 #define UI_HOLD_FLASH_CYCLE    3
 /** @brief The cycles of one flash. */
 #define UI_HOLD_FLASH_TIMES    2
-/** @brief The whole flash: 150 ms. */
+/** @brief The whole flash: 150ms. */
 #define UI_HOLD_FLASH_MS \
     (UI_HOLD_FLASH_PHASE_MS * UI_HOLD_FLASH_CYCLE * UI_HOLD_FLASH_TIMES)
 
@@ -330,9 +342,9 @@ gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s);
 /**
  * @brief The fill while the flash runs.
  *
- * 150 ms in all is short enough to read as a flash rather than an
+ * 150ms in all is short enough to read as a flash rather than an
  * animation.  The colour follows the time the flash has run, not the frames
- * drawn: a frame later than a phase (25 ms) skips that phase.
+ * drawn: a frame later than a phase (25ms) skips that phase.
  * @param settled  What the fill returns to: the settled phase and the end.
  * @param ms_left  The flash's time still to run, counting down from
  *                 UI_HOLD_FLASH_MS; 0 or less is no flash.
@@ -428,7 +440,7 @@ void ui_hold_flash_step(ui_hold_t *h, float dt_s);
  *
  * One step goes no further than the start of the next phase, so every
  * phase is drawn on at least one frame at any frame rate: at 10 frames a
- * second the flash takes 6 frames, 600 ms, instead of skipping phases.
+ * second the flash takes 6 frames, 600ms, instead of skipping phases.
  * @param ms_left The time left, in ms.
  * @param dt_s    The time passed, in seconds; under 0 counts as 0.
  * @return The time left, 0 at the least.

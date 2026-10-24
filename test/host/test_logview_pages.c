@@ -292,7 +292,7 @@ TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
     memset(&q, 0, sizeof(q));
     q.dir = LOG_PAGE_FROM;
     CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
-    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999 % 7 == 5 */
+    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999% 7 == 5 */
     CHECK_STR_EQ(set[1].name, "SUPPL998.CSV");
     CHECK_STR_EQ(set[2].name, "MOTOR997.CSV");
     CHECK_STR_EQ(set[3].name, "SERVO996.CSV");
@@ -826,8 +826,8 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
 {
     /* 48 runs: rows are runs 48 to 1 top down, and 41 is the last scroll. */
     runs_card(48);
-    /* The thumb is the rows shown against the page: 332 * 7 / 48 = 48 px,
-     * drawn 2 px in from each end, at the top of the track. */
+    /* The thumb is the rows shown against the page: 332 * 7 / 48 = 48px,
+     * drawn 2px in from each end, at the top of the track. */
     const int th = BAR_H * BR_ROWS_SEEN / 48;
     CHECK_EQ(th, 48);
     draw();
@@ -842,8 +842,8 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     tap(BAR_X, BAR_TOP + 1);
     CHECK_EQ(top_row_run(), 48);
 
-    /* A tap off the thumb brings the thumb's middle to the finger: 200 px
-     * down the track puts its top at 176 of 284 px of travel, scroll
+    /* A tap off the thumb brings the thumb's middle to the finger: 200px
+     * down the track puts its top at 176 of 284px of travel, scroll
      * (176 * 41 + 142) / 284 = 25, and the top row is run 48 - 25. */
     tap(BAR_X, BAR_TOP + 200);
     draw();
@@ -851,7 +851,7 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     CHECK_EQ(thumb_top(), BAR_TOP + (BAR_H - th) * 25 / 41 + 2);
     tap(BAR_X, BAR_TOP + 1);
 
-    /* Dragging the thumb (48 px at the top) by half the travel scrolls half
+    /* Dragging the thumb (48px at the top) by half the travel scrolls half
      * the page; past the track's end it stops at the end, and on a 49th
      * row there is nothing to scroll to. */
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + th / 2);

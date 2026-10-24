@@ -85,7 +85,7 @@ export const LABEL = { w: 16, h: 11 };
 export const SHIFTS: ReadonlyArray<number> = [0, 4, 8, 12, 16, 20, 24, 28, 32];
 /** Width and greatest length of the body of a component, the width of its band, the least length of each lead beside the body. */
 export const BODY = { w: 12, len: 20, band: 4, lead: 3 };
-/** Estimated width of 1 character of a component line in px, at the 12 px of the export form. The page draws 10 px. */
+/** Estimated width of 1 character of a component line in px, at the 12px of the export form. The page draws 10px. */
 export const TEXT_CHAR = 6.6;
 /** From the axis of a body to the centre of its number, and to its lines. */
 const BODY_NUMBER = BODY.w / 2 + 3 + LABEL.w / 2;
@@ -418,7 +418,7 @@ export function simplify(points: Pt[]): Pt[] {
   return out;
 }
 
-/** Length of a body on a run of `span` px: `BODY.len`, or what the run leaves beside 2 leads, at least the width of the band and 2 px on each side. */
+/** Length of a body on a run of `span` px: `BODY.len`, or what the run leaves beside 2 leads, at least the width of the band and 2px on each side. */
 const bodyLen = (span: number): number => Math.max(BODY.band + 4, Math.min(BODY.len, span - 2 * BODY.lead));
 
 function realise(plan: Plan, p: Placement): Routed {

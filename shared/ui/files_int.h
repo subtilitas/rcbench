@@ -29,8 +29,8 @@
 #include "ui_textkey.h"
 #include "ui_widgets.h"
 
-#define SCREEN_W UI_PANEL_W  /**< The body's width, 1024 px. */
-/** @brief The body's height, 540 px: the router owns the band and hands
+#define SCREEN_W UI_PANEL_W  /**< The body's width, 1024px. */
+/** @brief The body's height, 540px: the router owns the band and hands
  *         this screen the body. */
 #define SCREEN_H UI_BODY_H
 #define MAX_FBS  3           /**< The framebuffers the panel turns over. */
@@ -45,22 +45,22 @@
 #define FS_FONT_FINE  (&gfx_font_8x16)   /**< 8 x 16: a row's kind line. */
 #define FS_FONT_BODY  (&gfx_font_12x24)  /**< 12 x 24: prose. */
 
-/** @brief The screen's columns: UI_MARGIN (8 px) in from either edge. */
+/** @brief The screen's columns: UI_MARGIN (8px) in from either edge. */
 #define FS_L UI_MARGIN
 #define FS_R (SCREEN_W - UI_MARGIN)   /**< The right edge, x 1016. */
-#define FS_W (FS_R - FS_L)            /**< The width between, 1008 px. */
+#define FS_W (FS_R - FS_L)            /**< The width between, 1008px. */
 
 /* ---------------------------------------------------------------- panes */
 
 /**
- * @brief The two panes, 500 px wide at x 8 and x 516, 8 px apart.
+ * @brief The two panes, 500px wide at x 8 and x 516, 8px apart.
  *
  * A pane's header row, body y 4 to 52, holds UP: a button with the
- * folder's path that goes up one folder, 312 px wide; and while the folder
- * holds more than one page, PREV and NEXT, 88 x 48 px, at the pane's right
+ * folder's path that goes up one folder, 312px wide; and while the folder
+ * holds more than one page, PREV and NEXT, 88 x 48px, at the pane's right
  * end.  The list's panel from y 60 holds FS_ROWS rows at a pitch of
- * FS_ROW_H (48 px, UI_TAP_MIN) under its 30 px heading, the rows drawn
- * 44 px tall, and the scroll bar, FS_BAR_W (56 px) wide, at its right edge.
+ * FS_ROW_H (48px, UI_TAP_MIN) under its 30px heading, the rows drawn
+ * 44px tall, and the scroll bar, FS_BAR_W (56px) wide, at its right edge.
  */
 #define FS_PANE_W   500
 #define FS_PANE_GAP 8                                /**< Between them. */
@@ -85,30 +85,30 @@
 /** @brief Pane @p i's list panel: its heading and its rows. */
 #define FS_LIST(i)  gfx_rect_make(FS_PANE_X(i), FS_LIST_Y, FS_PANE_W, \
                                   FS_HEAD_H + FS_ROWS * FS_ROW_H + 4)
-#define FS_BAR_W    56          /**< The scroll bar's width: 8.4 mm. */
+#define FS_BAR_W    56          /**< The scroll bar's width: 8.4mm. */
 #define FS_BAR_MIN  32          /**< Its thumb's least height. */
 /** @brief Pane @p i's scroll bar's track. */
 #define FS_BAR(i)   gfx_rect_make(FS_PANE_X(i) + FS_PANE_W - 8 - FS_BAR_W, \
                                   FS_LIST_Y + FS_HEAD_H, FS_BAR_W, \
                                   FS_ROWS * FS_ROW_H - 4)
 #define FS_ROW_IN   8           /**< A row's inset from the panel's left. */
-/** @brief A row's width: from the inset to 8 px short of the bar. */
+/** @brief A row's width: from the inset to 8px short of the bar. */
 #define FS_ROW_W    (FS_PANE_W - FS_ROW_IN - 8 - FS_BAR_W - 8)
 #define FS_ICON     24          /**< A row's icon box. */
 #define FS_SIZE_W   90          /**< A row's size box: 9 cells. */
 
 /**
  * @brief The message line under the panes: two lines of the 12 x 24 face,
- *        84 cells each, 24 px apart, ending 4 px above the footer.
+ *        84 cells each, 24px apart, ending 4px above the footer.
  */
 #define FS_MSG_Y    388
 #define FS_MSG_LH   24          /**< A line's pitch. */
 
 /**
- * @brief The footer, body y 440 to 492, ending 4 px above the router's
+ * @brief The footer, body y 440 to 492, ending 4px above the router's
  *        alert band (y 496): OPEN, COPY, MOVE, RENAME, DELETE, NEW and INFO
- *        118 px wide, RESCAN 140 px for its German AKTUALISIEREN, 6 px
- *        apart, 52 px tall.
+ *        118px wide, RESCAN 140px for its German AKTUALISIEREN, 6px
+ *        apart, 52px tall.
  */
 #define FOOT_H      52
 #define FOOT_Y      (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)  /**< y 440. */
@@ -137,12 +137,12 @@ typedef enum {
 
 /**
  * @brief The DELETE question and the progress box, in place of the panes
- *        and the footer: 700 x 280 px, the buttons 300 x 56 px at its
+ *        and the footer: 700 x 280px, the buttons 300 x 56px at its
  *        foot, as LOGS' question.
  */
 #define FS_BOX_Y      100       /**< The box's top. */
 #define FS_BOX_H      280       /**< Its height. */
-/** @brief The box, 700 x 280 px. */
+/** @brief The box, 700 x 280px. */
 #define FS_BOX        gfx_rect_make(162, FS_BOX_Y, 700, FS_BOX_H)
 #define FS_Q_CANCEL   gfx_rect_make(186, 304, 300, 56)  /**< CANCEL. */
 #define FS_Q_DELETE   gfx_rect_make(538, 304, 300, 56)  /**< DELETE. */
@@ -152,24 +152,24 @@ typedef enum {
 #define FS_JOB_BAR    gfx_rect_make(186, 228, 652, 24)
 
 /**
- * @brief The INFO box: 800 x 420 px, its rows in the 10 x 20 face at a
+ * @brief The INFO box: 800 x 420px, its rows in the 10 x 20 face at a
  *        pitch of FS_INFO_LH under the heading, the key in FS_INFO_KEY_W
- *        px, CLOSE 300 x 56 px at its foot.
+ *        px, CLOSE 300 x 56px at its foot.
  */
 #define FS_INFO_Y     20        /**< The box's top. */
 #define FS_INFO_H     420       /**< Its height. */
-/** @brief The box, 800 x 420 px. */
+/** @brief The box, 800 x 420px. */
 #define FS_INFO_BOX   gfx_rect_make(112, FS_INFO_Y, 800, FS_INFO_H)
 #define FS_INFO_LH    32        /**< A row's pitch. */
 #define FS_INFO_KEY_W 160       /**< The key's column: 16 cells. */
 #define FS_INFO_CLOSE gfx_rect_make(362, 364, 300, 56)  /**< CLOSE. */
 
 /**
- * @brief NEW's choice: a list of two rows of 56 px (UI_CHOICE_ROW_H) over
- *        the panes, its right edge NEW's, its foot 8 px above the footer.
+ * @brief NEW's choice: a list of two rows of 56px (UI_CHOICE_ROW_H) over
+ *        the panes, its right edge NEW's, its foot 8px above the footer.
  */
 #define FS_NEW_W      300                             /**< Its width. */
-#define FS_NEW_ROW_H  UI_CHOICE_ROW_H                 /**< A row, 56 px. */
+#define FS_NEW_ROW_H  UI_CHOICE_ROW_H                 /**< A row, 56px. */
 #define FS_NEW_H      (2 * FS_NEW_ROW_H + 8)          /**< Its height. */
 /** @brief Its left edge: NEW's right edge less its width. */
 #define FS_NEW_X      (FS_L + 6 * (FOOT_W + FOOT_GAP) - FOOT_GAP - FS_NEW_W)
@@ -183,7 +183,7 @@ typedef enum {
 
 /**
  * @brief The keyboard for a name: over the body from y 4 to the footer's
- *        foot, 1008 px wide; its keys end at UI_KEYS_FOOT.
+ *        foot, 1008px wide; its keys end at UI_KEYS_FOOT.
  */
 #define FS_TK_AREA gfx_rect_make(FS_L, 4, FS_W, FOOT_Y + FOOT_H - 4)
 
@@ -219,7 +219,7 @@ typedef enum {
 } fs_hit_t;
 
 _Static_assert(FOOT_Y + FOOT_H + 4 <= SCREEN_H - UI_ALERT_H,
-               "the footer ends 4 px above the alert band");
+               "the footer ends 4px above the alert band");
 _Static_assert(FOOT_H >= UI_TAP_MIN, "the footer's buttons are a finger tall");
 _Static_assert(FS_L + (FOOT_N - 1) * (FOOT_W + FOOT_GAP) + FOOT_W_LAST
                    == FS_R,
@@ -228,25 +228,25 @@ _Static_assert(FS_ROW_H >= UI_TAP_MIN, "a row is a finger tall");
 _Static_assert(FS_HDR_H >= UI_TAP_MIN && FS_PG_W >= UI_TAP_MIN,
                "UP, PREV and NEXT are a finger tall and wide");
 _Static_assert(FS_UP_W + 8 <= FS_PANE_W - 2 * FS_PG_W - 4,
-               "UP ends 8 px short of PREV");
+               "UP ends 8px short of PREV");
 _Static_assert(FS_PANE_X(1) + FS_PANE_W == FS_R, "the right pane ends at the margin");
 _Static_assert(FS_HDR_Y + FS_HDR_H + 8 <= FS_LIST_Y,
-               "the header row ends 8 px above the list");
+               "the header row ends 8px above the list");
 _Static_assert(FS_LIST_Y + FS_HEAD_H + FS_ROWS * FS_ROW_H + 4 + 6 <= FS_MSG_Y,
                "the lists end above the message line");
 _Static_assert(FS_MSG_Y + 2 * FS_MSG_LH + 4 <= FOOT_Y,
-               "the message line's two lines end 4 px above the footer");
+               "the message line's two lines end 4px above the footer");
 _Static_assert(FS_ICON + 8 + 28 * 10 + 8 + FS_SIZE_W + 8 <= FS_ROW_W,
                "a row holds its icon, 28 cells of name and the size");
 _Static_assert((FS_ROWS * FS_ROW_H - 4) * FS_ROWS / FM_PAGE_MAX >= 32,
-               "the scroll bar's thumb is 32 px or more on a full page");
+               "the scroll bar's thumb is 32px or more on a full page");
 _Static_assert(FS_NEW_Y + FS_NEW_H + 8 <= FOOT_Y,
-               "NEW's choice ends 8 px above the footer");
+               "NEW's choice ends 8px above the footer");
 _Static_assert(FS_NEW_ROW_H >= UI_TAP_MIN, "a choice row is a finger tall");
 _Static_assert(FS_INFO_Y + FS_INFO_H <= SCREEN_H - UI_ALERT_H - 4,
-               "INFO ends 4 px above the alert band");
+               "INFO ends 4px above the alert band");
 _Static_assert(FS_BOX_Y + FS_BOX_H <= SCREEN_H - UI_ALERT_H - 4,
-               "the question ends 4 px above the alert band");
+               "the question ends 4px above the alert band");
 
 /** @brief The screen's state. */
 typedef struct {

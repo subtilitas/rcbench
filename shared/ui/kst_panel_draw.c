@@ -30,7 +30,7 @@
 #include "kst_panel_int.h"
 
 /** @brief A warning page's pitches between its lines, the widest that
- *         fits first: a line of one row at 28 px leaves 8 px under a row
+ *         fits first: a line of one row at 28px leaves 8px under a row
  *         of KP_FONT. */
 static const uint8_t k_warn_pitch[] = { 28, 26, 24, 22, LINE_H };
 
@@ -69,7 +69,7 @@ typedef struct {
 } note_t;
 
 #define NOTES_MAX 5
-/** @brief The notes' first place: 8 px under the SERVO tab's fifth row. */
+/** @brief The notes' first place: 8px under the SERVO tab's fifth row. */
 #define NOTE_Y    (ROW0 + 4 * PITCH + ROW_H + 8)
 
 static int note(note_t *n, int i, int slot, const char *s, gfx_color_t color)
@@ -473,7 +473,7 @@ static void plan_notes(notes_plan_t *p)
 }
 
 /**
- * @brief The highest a note rises to: 4 px under the lowest row of the tab
+ * @brief The highest a note rises to: 4px under the lowest row of the tab
  *        shown, the area's top for a tab with none.
  * @return the y, body pixels
  */
@@ -503,8 +503,8 @@ static int rows_foot(void)
  * message, they yield to it: they page with the others, first, and one
  * taller than a page waits for the message to go.  Every line of the
  * message is drawn: the longest takes 5 rows of the 7 under the SERVO
- * tab's last row on SERVO's left card, which end 4 px above the alert band
- * (kpn_notes_foot()).  No note rises above 4 px under the tab's last row.
+ * tab's last row on SERVO's left card, which end 4px above the alert band
+ * (kpn_notes_foot()).  No note rises above 4px under the tab's last row.
  */
 static void layout_notes(notes_plan_t *p)
 {
@@ -827,7 +827,7 @@ static void draw_warning(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, edge);
     gfx_text(c, a.x + 12, a.y + 16, k.warn.title, KP_TITLE_FONT, edge, 1);
     {
-        /* The widest pitch at which the lines end 8 px above the buttons;
+        /* The widest pitch at which the lines end 8px above the buttons;
          * the builders keep them to kpn_warn_room(), which fit at
          * LINE_H. */
         const int rows = kpn_warn_rows();

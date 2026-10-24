@@ -599,10 +599,10 @@ TEST_CASE(the_search_narrows_the_list_and_keeps_its_box)
 /* --------------------------------------------------------- the view */
 
 /* SERVO's page area (page_area(): PAD, SV_PAGE_Y, LCARD_W, CARD_H), 620 x
- * 476 px from body y 56; its foot lies under the alert band. */
+ * 476px from body y 56; its foot lies under the alert band. */
 static const gfx_rect_t AREA = { 8, 56, 620, 476 };
 
-/* The lowest an entry may end: 4 px above the alert band. */
+/* The lowest an entry may end: 4px above the alert band. */
 #define LIST_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
 /* Seven rows fit above the alert band with no bar; the eighth brings
@@ -616,8 +616,8 @@ TEST_CASE(the_view_fits_seven_rows_and_pages_past_them)
 
     size_t n = fake_list(8, 0);
     prog_list_build(&l, g_rows, n, PROG_DEV_SERVO, UI_WB_PROGRAM, NULL);
-    /* Eight rows: 8 x 56 - 8 overruns the 426 px from the list's top to
-     * 4 px above the alert band, so the list pages and the bar holds "^"
+    /* Eight rows: 8 x 56 - 8 overruns the 426px from the list's top to
+     * 4px above the alert band, so the list pages and the bar holds "^"
      * and "v" but no SEARCH. */
     CHECK(prog_view_has_bar(&v, &l));
     CHECK_EQ(prog_view_search_rect(&v, &l).w, 0);

@@ -156,7 +156,7 @@ static uint32_t pre_words_us(const hitec_line_t *l, uint32_t words)
 /**
  * @brief The pad to the sampler, and the sampler started: the pin's control and
  *        pad registers kept, the pin in the sampler's block with no input
- *        override, 2 mA and slow slew, the samples to the line object.
+ *        override, 2mA and slow slew, the samples to the line object.
  */
 static void pre_take(hitec_line_t *l)
 {
@@ -228,7 +228,7 @@ static bool pre_rx_stalled(const hitec_line_t *l)
  *
  * True when samples went missing: the receive FIFO ran full while the channel
  * still had words to take.  Once the channel has every word, the state machine
- * runs on until this stops it and fills the FIFO in 8 words, 278 us at 150 MHz;
+ * runs on until this stops it and fills the FIFO in 8 words, 278us at 150MHz;
  * that stall loses nothing.
  */
 static bool pre_give(hitec_line_t *l)

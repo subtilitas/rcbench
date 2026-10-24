@@ -59,15 +59,15 @@ static const char *TAG = "display";
 #define LFB_ALIGN 128
 
 /**
- * @brief The panel's reset: low for 10 ms (the EK79007 needs 1 ms), then 20 ms
+ * @brief The panel's reset: low for 10ms (the EK79007 needs 1ms), then 20ms
  * before the first command (the datasheet states no minimum).
  */
 #define RESET_LOW_MS   10
 #define RESET_WAIT_MS  20
 
 /**
- * @brief After sleep out (0x11): the EK79007 takes the next command after 5 ms
- * and shows a picture about 7 frames later.  120 ms covers both.
+ * @brief After sleep out (0x11): the EK79007 takes the next command after 5ms
+ * and shows a picture about 7 frames later.  120ms covers both.
  */
 #define SLEEP_OUT_MS   120
 
@@ -554,7 +554,7 @@ static esp_err_t start(const display_config_t *c)
     ESP_RETURN_ON_ERROR(esp_lcd_panel_init(s_disp.panel), TAG, "video");
 
 #ifdef RCBENCH_DISPLAY_BARS
-    /* The DSI host's own colour bars for 3 s: a picture that needs no
+    /* The DSI host's own colour bars for 3s: a picture that needs no
      * frame buffer, for a first look at a new board. */
     ESP_RETURN_ON_ERROR(
         esp_lcd_dpi_panel_set_pattern(s_disp.panel,
@@ -638,7 +638,7 @@ esp_err_t display_wait_vsync(uint32_t timeout_ms)
                ? ESP_OK : ESP_ERR_TIMEOUT;
 }
 
-/** @brief Count a flip and update the rolling rate every 500 ms. */
+/** @brief Count a flip and update the rolling rate every 500ms. */
 static void account_frame(void)
 {
     s_disp.frames++;

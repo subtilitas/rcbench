@@ -193,14 +193,14 @@ void panel_frame_loop(void)
          *
          * What this does not cover: a run that both arms and disarms between
          * two frames is never seen armed here, so it leaves no trace at all.
-         * That is a run shorter than one frame, about 17 ms at 60 Hz.
+         * That is a run shorter than one frame, about 17ms at 60Hz.
          */
         if (motor_armed_now && !motor_armed) {
             /*
              * A run starts at the arm, so what the queue is holding from
              * before it is not part of it.  Dropped rather than pushed: the
-             * queue can hold SAMPLE_Q_LEN samples, 400 ms at
-             * PANEL_SAMPLE_HZ, and without this the first 400 ms of a run's
+             * queue can hold SAMPLE_Q_LEN samples, 400ms at
+             * PANEL_SAMPLE_HZ, and without this the first 400ms of a run's
              * trace would be readings taken while the bench was not driving.
              */
             bench_state_t stale;
@@ -313,7 +313,7 @@ void panel_frame_loop(void)
         const bool supply_real = atomic_load(&s_supply_real);
         /* The PD mini is given no more than its input less PDMINI_CAP_MV:
          * the screen's voltage cap follows the input as the page reads it,
-         * moved only on a change of 100 mV or more. */
+         * moved only on a change of 100mV or more. */
         unsigned vcap = 0u;
         if (supply_real) {
             const unsigned vin = atomic_load(&s_supply_vin_mv);
@@ -600,7 +600,7 @@ void panel_frame_loop(void)
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a
          * second read that caught the zero would test now_ms() - 0, the
-         * uptime, against LINK_LOST_SCREEN_MS: past 4000 ms of uptime that
+         * uptime, against LINK_LOST_SCREEN_MS: past 4000ms of uptime that
          * passes, and the screen takes over on a link that is up.
          */
         const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
@@ -673,7 +673,7 @@ void panel_frame_loop(void)
          * happen is flash_gate_open()'s rule, the one the drawing's keep
          * asks too: not while the bench is armed or an arm waits -- the
          * control task beats the safety line and its ceiling is
-         * HEARTBEAT_MAX_GAP_MS (150 ms) -- and not while the supply's output
+         * HEARTBEAT_MAX_GAP_MS (150ms) -- and not while the supply's output
          * is on or an ON is queued: OUTPUT OFF, STOP and the trips are the
          * control task's, and a flash write would stall them for its length.
          * Nor while the board's drawing is being fetched or kept: one flash
@@ -695,7 +695,7 @@ void panel_frame_loop(void)
         ui_router_render(c, display_back_index());
         const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
         /* Blocks until the swap has taken effect.  A flip that saw no
-         * frame-done event in 200 ms is counted for the console line. */
+         * frame-done event in 200ms is counted for the console line. */
         if (display_flip() == ESP_ERR_TIMEOUT) {
             ++flip_timeouts;
         }
@@ -707,7 +707,7 @@ void panel_frame_loop(void)
          * is mostly WAIT, the loop paced by the panel.  DRAW climbing
          * until WAIT reaches zero is the frame budget being spent.  VSYNC is the panel's refresh as
          * measured here, FLIP TIMEOUTS the flips since start-up that waited
-         * 200 ms for a frame-done event in vain.  Printed every 300 frames.
+         * 200ms for a frame-done event in vain.  Printed every 300 frames.
          */
         if (++frames % 300u == 0u) {
             /* And the panel's own refresh, from its VSYNC (vertical sync)

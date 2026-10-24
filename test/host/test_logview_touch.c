@@ -24,7 +24,7 @@
  * The cases below put finger frames through the tracker (touch_feed.h) and
  * hand its events to the screen.  A button or a row is a tap: pressed and
  * released in place it acts, and a finger that leaves it, crosses it or
- * travels past 8 px does nothing.
+ * travels past 8px does nothing.
  */
 #define TAP_ID 3
 
@@ -119,18 +119,18 @@ TEST_CASE(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less)
         f_to(c->x - 110, c->y, 9);
         f_lift();
         moved += (look() != was) ? 2 : 0;
-        /* A swipe across it from 110 px to its left. */
+        /* A swipe across it from 110px to its left. */
         f_at(c->x - 110, c->y);
         f_to(c->x + 110, c->y, 9);
         f_lift();
         moved += (look() != was) ? 4 : 0;
-        /* Pressed, carried 60 px away and back onto it. */
+        /* Pressed, carried 60px away and back onto it. */
         f_at(c->x, c->y);
         f_to(c->x + 60, c->y, 9);
         f_to(c->x, c->y, 9);
         f_lift();
         moved += (look() != was) ? 8 : 0;
-        /* 9 px from the press, in one report and px by px. */
+        /* 9px from the press, in one report and px by px. */
         f_at(c->x, c->y);
         f_to(c->x + 9, c->y, 9);
         f_lift();
@@ -138,7 +138,7 @@ TEST_CASE(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less)
         f_to(c->x - 9, c->y, 1);
         f_lift();
         moved += (look() != was) ? 16 : 0;
-        /* The contact next reported 300 px away, in the header row right
+        /* The contact next reported 300px away, in the header row right
          * of the tabs (x 368 on), where nothing acts: the tracker's
          * release. */
         f_at(c->x, c->y);
@@ -149,7 +149,7 @@ TEST_CASE(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less)
             T_FAIL("%s acted without a tap (%d)", c->name, moved);
         }
 
-        /* A tap acts; so does one that moves 8 px, or wobbles. */
+        /* A tap acts; so does one that moves 8px, or wobbles. */
         for (int k = 0; k < 3; ++k) {
             c->page();
             feed_reset();
@@ -248,7 +248,7 @@ TEST_CASE(a_press_left_behind_holds_nothing_on_the_way_back_in)
  * on the DELETE question, a tap changes nothing and goes nowhere on every
  * 16th px of the band's top row, middle row and bottom row (body y 496, 518
  * and 539).  A control that reaches into the band from above crosses the
- * top row; one inside it at least 16 px wide and 22 px high crosses a row
+ * top row; one inside it at least 16px wide and 22px high crosses a row
  * and a column of the grid.  960 taps, each followed by a full frame of
  * 1024 x 600: a finer grid pushes gfx.c's fill loop past the 2^32 hits
  * gcovr accepts.
@@ -296,8 +296,8 @@ TEST_CASE(nothing_that_acts_is_under_the_alert_band)
 }
 
 /*
- * The import's warnings break into lines of DETECTED's 368 px, 36 cells of
- * the 10 x 20 face, and its file messages into the footer's 400 px between
+ * The import's warnings break into lines of DETECTED's 368px, 36 cells of
+ * the 10 x 20 face, and its file messages into the footer's 400px between
  * WI-FI and DELETE, 33 cells of the 12 x 24 face: ui_text.def declares two
  * lines of 33 cells, 66 cells, for each warning, and this holds each to the
  * two lines as the screen breaks it, the longest count and file name

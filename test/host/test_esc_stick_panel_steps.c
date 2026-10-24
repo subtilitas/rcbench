@@ -307,7 +307,7 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK(r.pct == ESC_STICK_PCT_MAX);
     CHECK(esc_stick_panel_hand_shown() == false);
     CHECK_STR_EQ(esc_stick_panel_left_text(),
-                 "Without DONE within %u s, the run ends and power switches "
+                 "Without DONE within %us, the run ends and power switches "
                  "off. The ESC may lock itself.");
     draws();                                 /* the prompt */
     for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
@@ -363,7 +363,7 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK_EQ(run->phase, ESC_STICK_HAND_END);
     CHECK(esc_stick_hand(run) != NULL && !esc_stick_hand(run)->locks);
     CHECK_STR_EQ(esc_stick_panel_left_text(),
-                 "Without DONE within %u s, the run ends and power switches "
+                 "Without DONE within %us, the run ends and power switches "
                  "off. The mode may not be saved.");
     draws();                                 /* the prompt */
     rig_run(&r, ESC_STICK_HAND_WAIT_MS + 1000u);

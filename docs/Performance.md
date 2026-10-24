@@ -13,8 +13,8 @@ profile models it yet ([Ceilings](#ceilings)).
 
 On the ESP32-S3 panel the frame rate is limited by PSRAM (pseudo-static random-access
 memory) bandwidth, not by the CPU. The LCD (liquid-crystal display) peripheral
-scans one framebuffer out of PSRAM continuously at about 30 MB/s, and the
-framebuffers sit behind a write-back, write-allocate data cache (64 KB, 8-way,
+scans one framebuffer out of PSRAM continuously at about 30MB/s, and the
+framebuffers sit behind a write-back, write-allocate data cache (64KB, 8-way,
 64-byte lines). Every pixel the CPU writes costs a 64-byte line fill and a
 64-byte write-back unless the line is already resident. The cost of a frame is
 therefore a count of cache-line fills, which can be measured exactly on the
@@ -116,10 +116,10 @@ whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes an
 IOmcu answering with simulated numbers. Rotated text scans its rotated
 bounding box, which corner to corner is the whole canvas, and rotates and
 divides per pixel to write the pixels the mark covers: 3,439 on an
-800 x 480 px canvas, 0.9% of it, and 5,377 on 1024 x 600 px. `ui_watermark`
+800 x 480px canvas, 0.9% of it, and 5,377 on 1024 x 600px. `ui_watermark`
 records those points once, in a table of 6,144, and writes them thereafter:
-on 800 x 480 px, 144,721 instructions per frame in place of 8,412,078. The
-count on 1024 x 600 px is not measured.
+on 800 x 480px, 144,721 instructions per frame in place of 8,412,078. The
+count on 1024 x 600px is not measured.
 
 **A count of fills is not a count of cycles.** The table above measures
 cache-line fills, and the mark costs only 1,586 of them: it is arithmetic per
@@ -133,17 +133,17 @@ revision, so dragging repainted every control beside it. The throttle now
 carries its own, and repaints the readout's box and the slider's painted
 region: the `throttle` mode in the table above measures it against a sample
 frame. The flip quantises to whole panel frames, so a drag either lands
-inside two of them or waits for a third: 19.5 fps or 13.0. Measured on
-hardware at 50.5 ms, the old drag took the third.
+inside two of them or waits for a third: 19.5fps or 13.0. Measured on
+hardware at 50.5ms, the old drag took the third.
 
 Clear what a widget paints, not what it occupies. The slider's thumb and its
-shadow stand proud of the track by 5 px above and 7 px below, and the hero
-numerals are 32 px tall with 3 px of slant on a 30 px row, so a clear sized
+shadow stand proud of the track by 5px above and 7px below, and the hero
+numerals are 32px tall with 3px of slant on a 30px row, so a clear sized
 to the track or to the row leaves a thumb at every position the finger passed
 and the numerals' feet behind. `ui_slider_painted_rect()` reports the region
 rather than leaving a caller to derive it.
 
-**Paint only on frames that have something to paint.** Samples arrive at 20 Hz
+**Paint only on frames that have something to paint.** Samples arrive at 20Hz
 and the panel refreshes faster, 39Hz on the ESP32-S3 and 60.38Hz on the
 ESP32-P4 (measured, the console's VSYNC figure), so most frames have nothing
 new. The P4's DPI (Display Pixel Interface) clock is 48MHz, not the 52MHz
@@ -185,8 +185,8 @@ No CI (continuous integration) step holds a frame to a ceiling in cache lines;
 `test_frame_work` holds budgets in pixel visits, as above.
 `tools/frame_cost.py` models the ESP32-S3's cache and bandwidth at 800 x 480
 px, and the table above is that model. The 7-inch ESP32-P4 panel scans 1024 x
-600 px through a different cache. Its profile and the ceilings CI holds come
-with measurements on that board. The host renderer draws 1024 x 600 px, so
+600px through a different cache. Its profile and the ceilings CI holds come
+with measurements on that board. The host renderer draws 1024 x 600px, so
 `frame_cost.py --check-doc` reports the table as not checked and
 `--update-doc` writes nothing until that profile replaces it.
 `tools/check_docs.py` fails on a ceiling table in this page while
@@ -322,17 +322,17 @@ recurse. The planner's job, the plan and the staged image are held in the
 session's and the port's state, not on the stack.
 
 The port plans a write in slices. The write command checks the request and
-starts the planner's job, 64 us of planner work. Each pass of core 0's
+starts the planner's job, 64us of planner work. Each pass of core 0's
 main loop then runs 1 slice in `kst_session_step()`, 100 to 109 units of
-work: 892 us at most, 816 us the longest found. The planning ends after
+work: 892us at most, 816us the longest found. The planning ends after
 216,000 units, at most 2,161 passes, with a plan, with no plan, or with
 the result "too complex" when the units are spent first. The costliest
-request found takes 120,136 units, at most 1,202 passes and 397 to 647 ms
-of planner time. All times are for 150 MHz, computed in an emulator from
+request found takes 120,136 units, at most 1,202 passes and 397 to 647ms
+of planner time. All times are for 150MHz, computed in an emulator from
 the instructions executed with ARM GNU 14.2 at -O3, and not measured on
 hardware. The time of a pass with the link, the heartbeat and the outputs
 in it is not measured. The heartbeat gap that switches every output off is
-150 ms.
+150ms.
 
 Each depth is a lower bound:
 
@@ -442,7 +442,7 @@ during the downloads. What bounds the rate:
 | Link | Setting | Bound |
 | --- | --- | --- |
 | power save | none while joined to a home network (`esp_wifi_set_ps(WIFI_PS_NONE)`); an access point does not sleep | none |
-| send buffer | 11,520 bytes, 8 segments of 1,440 bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11,520 bytes per round trip: 1,152,000 B/s at a 10 ms round trip, 576,000 B/s at 20 ms |
+| send buffer | 11,520 bytes, 8 segments of 1,440 bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11,520 bytes per round trip: 1,152,000B/s at a 10ms round trip, 576,000B/s at 20ms |
 | card | SDMMC (the SD/MMC host), 4 data lines at 20MHz (`BOARD_SD_FREQ_KHZ`), 10,000,000B/s on the wire | not measured |
 | radio | the ESP32-C6 over SDIO, 4 data lines at 40MHz (`BOARD_C6_FREQ_KHZ`), 20,000,000B/s on the wire, on the SDMMC host the card uses | not measured |
 | processor | the server's task at priority 1 on core 0, beside the UI (user interface) loop at priority 1 | not measured |
@@ -450,10 +450,10 @@ during the downloads. What bounds the rate:
 ESP-IDF's default power save, `WIFI_PS_MIN_MODEM`, wakes the radio for
 each DTIM (delivery traffic indication message) beacon only. The access
 point holds the frames for the panel until then, TCP's acknowledgements
-among them, so each send buffer waits up to one DTIM period: 102.4 ms at
-the common beacon interval and a DTIM period of 1, 307.2 ms at a DTIM
+among them, so each send buffer waits up to one DTIM period: 102.4ms at
+the common beacon interval and a DTIM period of 1, 307.2ms at a DTIM
 period of 3. With ESP-IDF's default send buffer of 5,760 bytes, that is
-18,750 to 56,250 B/s. Without power save the radio draws more current
+18,750 to 56,250B/s. Without power save the radio draws more current
 while it runs; how much more on the panel is not measured.
 
 The page's piece buffer, 4,096 bytes, is in PSRAM. ESP-IDF v5.5.5 reads a
@@ -467,11 +467,11 @@ during the measured downloads.
 
 A download ends early, and the connection is reset, when
 
-- the receiver closes the connection: seen within 250 ms
+- the receiver closes the connection: seen within 250ms
   (`WA_SEND_SLICE_MS`, `shared/webaccess/include/wa_send.h`);
 - the connection fails;
-- the receiver takes nothing for 30 s (`WA_SEND_QUIET_MS`);
-- the radio goes off: within 250 ms;
+- the receiver takes nothing for 30s (`WA_SEND_QUIET_MS`);
+- the radio goes off: within 250ms;
 - the card read fails, or the file is not the size the response announced.
 
 The browser then has fewer bytes than announced and reports the download
@@ -510,7 +510,7 @@ Linux, `iw`:
 6. A receiver that stops reading: a connection that asks for the file and
    then reads nothing,
    `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
-   then after 35 s
+   then after 35s
    `curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
    The console logs `file: nothing taken for 30 s`; the request
    answers `200`.

@@ -1,8 +1,8 @@
 ;
 ; One Hitec transaction on one pin: a lead, bit times out, the pad released,
 ; bytes received with a stamp each, an optional answer to the first byte.
-; Both wire families run it: classic at 19 200 bit/s, the D series at
-; 115 200 bit/s.
+; Both wire families run it: classic at 19 200bit/s, the D series at
+; 115 200bit/s.
 ;
 ; The pad is the state machine's OUT, SET, IN and JMP pin.  The clock
 ; divider makes one bit 16 cycles.  Autopull at 32 bits, the output shift

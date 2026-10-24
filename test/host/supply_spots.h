@@ -8,20 +8,20 @@
  * the screen's suites, test_safe_press.c, test_nav_drag.c and
  * render_screen.c.
  *
- *   - the strip: LIVE and SETTINGS from x 9, 150 px each, 4 px apart,
+ *   - the strip: LIVE and SETTINGS from x 9, 150px each, 4px apart,
  *     y 8 to 48; the header right of it from x 328;
- *   - LIVE's output card from y 56: PLOT | TABLE from x 18, 200 px for the
+ *   - LIVE's output card from y 56: PLOT | TABLE from x 18, 200px for the
  *     two, y 82 to 122; the plot y 150 to 286;
- *   - SET POINTS from y 304: each row's step keys 72 x 48 px at x 18 and
+ *   - SET POINTS from y 304: each row's step keys 72 x 48px at x 18 and
  *     418, the track x 98 to 410, the value's box x 498 to 618; the
  *     voltage's controls y 354 to 402, the current limit's y 436 to 484;
- *   - the rail from x 636, 380 px: the cards 64 px tall from y 56, 68 px
+ *   - the rail from x 636, 380px: the cards 64px tall from y 56, 68px
  *     apart; the CONTROL card from y 332: RESET PEAKS y 366 to 414 and
  *     OUTPUT ON / OFF y 424 to 484, both x 648 to 1004;
  *   - SETTINGS' page and the keypad over the left column, x 8 to 628,
- *     y 56 to 532; the page's values 120 x 48 px at x 158 (left column)
- *     and 498 (right), rows 56 px apart;
- *   - the question's APPLY and CANCEL, 240 x 60 px from y 296.
+ *     y 56 to 532; the page's values 120 x 48px at x 158 (left column)
+ *     and 498 (right), rows 56px apart;
+ *   - the question's APPLY and CANCEL, 240 x 60px from y 296.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -55,7 +55,7 @@
 #define SU_CTRL_H         48            /**< Keys, track and value, px. */
 
 #define SU_CARD_X         826           /**< The rail's cards. */
-#define SU_CARD_T(i)      (56 + (i) * 68) /**< Card @p i's top, 64 px. */
+#define SU_CARD_T(i)      (56 + (i) * 68) /**< Card @p i's top, 64px. */
 #define SU_CARD_Y(i)      (SU_CARD_T(i) + 32) /**< Card @p i's middle. */
 #define SU_CARD_L         636           /**< The cards' left edge. */
 #define SU_CARD_R         1016          /**< Their right edge. */
@@ -88,5 +88,5 @@
 #define SU_ASK_Y          346           /**< Inside both, on no LIVE or
                                              SETTINGS control. */
 
-/** @brief SETTINGS' save line, 4 px above the alert band. */
+/** @brief SETTINGS' save line, 4px above the alert band. */
 #define SU_SAVE_LINE_Y    (UI_ALERT_Y - UI_BAND_H - 4 - 20)

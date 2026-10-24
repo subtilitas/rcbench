@@ -4,7 +4,7 @@
  * test_servo_test_replay.c and test_servo_test_enc.c.
  *
  * The rig: servo_sim's servo, supply_sim's supply and the run stepped
- * together at the panel's 20 ms frame; the supply's readings and rows; an
+ * together at the panel's 20ms frame; the supply's readings and rows; an
  * encoder reading the horn's angle from a count; and the run's outbox
  * kept, its CSV rows checked as they come, its report and its files
  * counted.  Every function is static inline and `g` is the rig's one
@@ -59,7 +59,7 @@ typedef struct {
     float    set_v_max;      /* the highest voltage ever asked */
     bool     released;
     bool     off_asked;
-    /* The output encoder: the horn's angle at enc_deg_per_us from 1500 us,
+    /* The output encoder: the horn's angle at enc_deg_per_us from 1500us,
      * read from a count with its centre at ENC_CENTRE_COUNT, every
      * enc_every ms, with the IOmcu's still time (a 12-count anchor)
      * kept at the frame rate. */
@@ -93,7 +93,7 @@ typedef struct {
 static rig_t g;
 
 #define ENC_CENTRE_COUNT 3000u
-#define ENC_DEG_PER_US   0.09f      /* 90 degrees across 1000 us */
+#define ENC_DEG_PER_US   0.09f      /* 90 degrees across 1000us */
 
 static inline void cfg_defaults(servo_test_cfg_t *c)
 {
@@ -130,7 +130,7 @@ static inline void rig_fresh(void)
     servo_test_init(&g.t);
     servo_sim_cfg_t sc;
     servo_sim_defaults(&sc);
-    /* Free at both ends the test drives to: 1100 and 1900 us. */
+    /* Free at both ends the test drives to: 1100 and 1900us. */
     sc.stop_lo_us = 1000u;
     sc.stop_hi_us = 2000u;
     servo_sim_init(&g.servo, &sc);
@@ -372,5 +372,5 @@ static inline servo_test_start_t start(const servo_test_cfg_t *c)
     return servo_test_start(&g.t, c, g.now, &last, g.v_min, g.v_max);
 }
 
-/* The modelled servo's own time end to end: 800 us at 1.2 us/ms. */
+/* The modelled servo's own time end to end: 800us at 1.2us/ms. */
 #define TRAVEL_MS 667u

@@ -118,7 +118,7 @@ extern "C" {
  * @brief And one the port reports busy for this long from its start is aborted
  *        too.
  *
- * A chosen value: the longest wait of the port is the 10000 ms of a
+ * A chosen value: the longest wait of the port is the 10000ms of a
  *  LEAVE, and the duration of the longest write is not measured.
  */
 #define KST_PROG_RUN_MAX_MS 120000u

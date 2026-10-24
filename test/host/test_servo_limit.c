@@ -18,7 +18,7 @@
 #include "servo_sim.h"
 #include "tick_wrap.h"
 
-#define SAMPLE_MS 5u   /* a 200 Hz current sensor */
+#define SAMPLE_MS 5u   /* a 200Hz current sensor */
 
 /* Run the search to a conclusion, or until it has plainly hung.  Returns the
  * number of milliseconds it took. */
@@ -65,10 +65,10 @@ TEST_CASE(it_finds_the_upper_stop_and_stops_short_of_it)
      * window wide enough to be comfortable also accepts the position that
      * bound instead of the last free one, or a missing backoff.
      *
-     *   baseline          0.12 A free
+     *   baseline          0.12A free
      *   knee needs        > 0.12 x 1.8 = 0.216 and > 0.12 + 0.15 = 0.27
-     *   the model gives   0.12 + 2.28 x over/45 A
-     *   so it binds at    over > 3 us, i.e. the first step past 1880
+     *   the model gives   0.12 + 2.28 x over/45A
+     *   so it binds at    over > 3us, i.e. the first step past 1880
      *   steps of 10 from 1500 put that step at 1890, last free at 1880
      *   backoff 25        1880 - 25 = 1855
      */
@@ -186,7 +186,7 @@ TEST_CASE(elevated_current_under_the_ceiling_still_times_out)
      * stop and staying there.  The stall timer must fire rather than let the
      * search run its travel out with the servo pushing the whole way.
      */
-    lc.stall_above_a = 0.5f;   /* the sim stalls at 1.0 A */
+    lc.stall_above_a = 0.5f;   /* the sim stalls at 1.0A */
     servo_limit_init(&lf, &lc);
     search(&lf, &sim, 120000);
     CHECK_EQ(lf.state, SERVO_LIMIT_FAULT);
@@ -259,9 +259,9 @@ TEST_CASE(a_preloaded_centre_does_not_blind_the_search)
     CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
     /*
      * The same 1855 as the unloaded case: averaging the loaded centre with
-     * the two free positions after it puts the baseline at 0.20 A, and the
+     * the two free positions after it puts the baseline at 0.20A, and the
      * knee still lands on the step past 1880.  Taking the baseline from the
-     * centre alone puts it at 0.37 A, which needs 0.67 A to beat; the first
+     * centre alone puts it at 0.37A, which needs 0.67A to beat; the first
      * bound step only reaches 0.63, so the search walks one step further
      * into the stop and answers 1865.
      */
@@ -306,7 +306,7 @@ TEST_CASE(a_large_servos_own_noise_does_not_clear_the_margin_test)
     sc.stop_hi_us = 2500;      /* again, nothing to find */
     sc.free_a     = 1.00f;     /* a big servo on a big surface */
     sc.stall_a    = 8.0f;
-    sc.noise_a    = 2.00f;     /* scatter that clears 0.15 A after averaging */
+    sc.noise_a    = 2.00f;     /* scatter that clears 0.15A after averaging */
     servo_sim_t sim;
     servo_sim_init(&sim, &sc);
 
@@ -328,10 +328,10 @@ TEST_CASE(a_large_servos_own_noise_does_not_clear_the_margin_test)
  * as well as a ratio.
  *
  * A tight spot in a linkage is not the end of its travel.  On a lightly
- * loaded surface (20 mA to hold it) an extra 50 mA from a bellcrank that
+ * loaded surface (20mA to hold it) an extra 50mA from a bellcrank that
  * binds slightly is nearly four times the baseline, so a ratio alone stops
- * there and reports it as the mechanical limit.  The 0.15 A margin is what
- * rules 50 mA out.
+ * there and reports it as the mechanical limit.  The 0.15A margin is what
+ * rules 50mA out.
  */
 TEST_CASE(a_tight_spot_in_the_linkage_is_not_the_end_of_the_travel)
 {
@@ -376,7 +376,7 @@ TEST_CASE(a_slow_servo_is_measured_after_it_arrives_not_while_it_travels)
 {
     servo_sim_cfg_t sc;
     servo_sim_defaults(&sc);
-    sc.slew_us_per_ms = 0.12f;   /* a 10 us step takes 83 ms */
+    sc.slew_us_per_ms = 0.12f;   /* a 10us step takes 83ms */
     servo_sim_t sim;
     servo_sim_init(&sim, &sc);
 
@@ -402,7 +402,7 @@ TEST_CASE(the_search_takes_a_workable_amount_of_time)
 
     CHECK_EQ(lf.state, SERVO_LIMIT_FOUND);
     /*
-     * 380 us of travel in 10 us steps at 200 ms a step is about 8 s.  The
+     * 380us of travel in 10us steps at 200ms a step is about 8s.  The
      * bound holds the procedure to a length an operator sits through.
      */
     CHECK(took < 12000);
@@ -418,8 +418,8 @@ TEST_CASE(progress_runs_from_nothing_to_all_of_it)
     CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
 }
 
-/* A stop 20 us from centre binds at the first position judged, 30 us out:
- * the last free position is 20 us out and backing off by 25 us would put
+/* A stop 20us from centre binds at the first position judged, 30us out:
+ * the last free position is 20us out and backing off by 25us would put
  * the endpoint on the other side of centre. */
 TEST_CASE(a_bind_at_the_first_judged_position_stays_on_the_searched_side)
 {
@@ -463,7 +463,7 @@ TEST_CASE(a_step_of_zero_is_refused)
     CHECK_NEAR(servo_limit_progress(&lf), 1.0f, 0.001f);
 }
 
-/* No command leaves 500 to 2500 us, whatever the centre and the travel. */
+/* No command leaves 500 to 2500us, whatever the centre and the travel. */
 TEST_CASE(no_command_leaves_the_pulse_range)
 {
     for (int up = 0; up < 2; ++up) {
@@ -535,7 +535,7 @@ TEST_CASE(the_end_of_the_travel_is_measured_before_no_limit)
     } k[] = {
         { 2403u, 600u, true,  2500u },      /* clamped to the pulse range */
         { 597u,  600u, false, 500u  },
-        { 1500u, 605u, true,  2105u },      /* 60.5 steps of 10 us */
+        { 1500u, 605u, true,  2105u },      /* 60.5 steps of 10us */
         { 1500u, 605u, false, 895u  },
     };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
@@ -571,7 +571,7 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 }
 
 /* The search's settle, measure and stall times are differences of two
- * times: a search with the 2^32 ms wrap inside it finds the endpoint a
+ * times: a search with the 2^32ms wrap inside it finds the endpoint a
  * search at tick 0 finds, after the same time. */
 static uint32_t g_search_ms;
 
@@ -594,7 +594,7 @@ static void a_search_finds_the_upper_stop(uint32_t t0)
 TEST_CASE(a_search_takes_the_same_time_across_the_tick_wrap)
 {
     /* Each start puts the wrap in another settle or measure of the search:
-     * 1 ms, 62 ms and 2501 ms after the start. */
+     * 1ms, 62ms and 2501ms after the start. */
     static const uint32_t k_before[] = { 1u, 62u, 2501u };
     for (unsigned i = 0; i < sizeof(k_before) / sizeof(k_before[0]); ++i) {
         at_tick_0_and_before_the_wrap(a_search_finds_the_upper_stop,
@@ -603,7 +603,7 @@ TEST_CASE(a_search_takes_the_same_time_across_the_tick_wrap)
 }
 
 /* The stall timer the same: a current above stall_above_a ends the search
- * stall_ms after it rose and not 1 ms earlier, wherever the clock is. */
+ * stall_ms after it rose and not 1ms earlier, wherever the clock is. */
 static void a_held_servo_times_out(uint32_t t0)
 {
     servo_limit_cfg_t lc;

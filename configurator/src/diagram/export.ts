@@ -2,7 +2,7 @@
 // Graphics) document without a reference to another file, for the painter of
 // `src/export/svg.ts`. It uses svg, g, rect, circle, path with M and L, and
 // text, styled by attributes only. Text has no class: the painter gives it
-// the 12 px of the rule `svg text` of the style sheet, the size the attributes
+// the 12px of the rule `svg text` of the style sheet, the size the attributes
 // state.
 //
 // Placement, routes, stroke widths and wire colours are those of the page.

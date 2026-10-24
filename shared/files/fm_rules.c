@@ -248,7 +248,7 @@ static fm_err_t fault_allows(const fm_bench_t *bench, fm_op_t op)
         return FM_OK;
     case FM_OP_COPY:
     case FM_OP_DELETE:
-        /* Written while the link is down, a line every 5 s. */
+        /* Written while the link is down, a line every 5s. */
         return (bench != NULL && bench->link_up) ? FM_OK : FM_ERR_BUSY;
     case FM_OP_EDIT:
     case FM_OP_MOVE:

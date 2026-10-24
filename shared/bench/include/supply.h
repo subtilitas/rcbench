@@ -36,7 +36,7 @@ typedef struct {
 
 /**
  * @brief The range a USB-PD PPS (Programmable Power Supply) source offers in
- *        its widest profile, 3.3 to 21 V in 20 mV steps and up to 5 A in 50 mA
+ *        its widest profile, 3.3 to 21V in 20mV steps and up to 5A in 50mA
  *        steps.
  *
  * The panel's model uses it until a PD mini driver reports what that board
@@ -173,7 +173,7 @@ void supply_trip_reset(supply_trip_t *t);
  * trip that is off forgets its count, and so does one whose threshold changed.
  * A trip time of 0 fires on the first reading over.  Returns which trip fired,
  * once the time over reaches lim->trip_s; nothing while the output is off.
- * @p dt_s is clamped to 0 .. 1 s, as the totals' steps are.
+ * @p dt_s is clamped to 0 .. 1s, as the totals' steps are.
  *
  * @param t    The trip state.
  * @param lim  The trip limits.
@@ -204,7 +204,7 @@ float supply_snap(float value, float min, float max, float step);
  *        readings that arrived; a maximum with nothing under it starts at 0.
  *
  * The minimum voltage is a reading only while the output is on: an output
- * switched off reads 0 V, and a floor of 0 V reads as a collapsed rail.
+ * switched off reads 0V, and a floor of 0V reads as a collapsed rail.
  *
  * @param s The supply state.
  */
@@ -228,7 +228,7 @@ void supply_reset_totals(supply_state_t *s);
  * @brief Add @p dt_s of the readings to the run's charge and energy while the
  *        output is on, only what arrived; @p dt_s is clamped to 0 ..
  *
- * 1 s, as the bench's totals are.
+ * 1s, as the bench's totals are.
  *
  * @param s    The supply state.
  * @param dt_s The time since the last call, in s.
@@ -245,7 +245,7 @@ void supply_count_totals(supply_state_t *s, float dt_s);
  * SUPPLY_SIM_PERIOD_S a burst of SUPPLY_SIM_BURST_A for SUPPLY_SIM_BURST_S,
  * which is what a servo moving under load draws.  When the load would draw
  * more than the limit the model holds the limit and the voltage falls with
- * it (CC); otherwise it holds the set voltage less a 0.05 ohm source
+ * it (CC); otherwise it holds the set voltage less a 0.05ohm source
  * resistance (CV).  Deterministic, so a screenshot is the same every time.
  */
 #define SUPPLY_SIM_LOAD_OHMS  6.0f

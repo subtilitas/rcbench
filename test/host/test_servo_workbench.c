@@ -209,7 +209,7 @@ TEST_CASE(a_tab_switch_drops_a_start_hold)
     open_test();
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 50; ++i) {
-        scr->tick(0.02f);                               /* 1 s of the 2 s */
+        scr->tick(0.02f);                               /* 1s of the 2s */
     }
     ev(SV_TAB_LIVE_X, SV_TAB_Y, TOUCH_EVENT_DOWN, 2);
     ev(SV_TAB_LIVE_X, SV_TAB_Y, TOUCH_EVENT_UP, 2);
@@ -414,8 +414,8 @@ TEST_CASE(the_target_row_opens_on_the_drive_not_the_setting)
 
 /* Buffer 0 drawn, and whether line @p i of card @p k (its state line is
  * 0) reads @p text in @p col on the card's fill, and nothing else: the
- * AUTOMATIC TEST card's lines in the 10 x 20 face 22 px apart, the LIMIT
- * RUN card's in the 8 x 16 face 18 px apart under its output line. */
+ * AUTOMATIC TEST card's lines in the 10 x 20 face 22px apart, the LIMIT
+ * RUN card's in the 8 x 16 face 18px apart under its output line. */
 static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
@@ -576,7 +576,7 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
 
 /* ----------------------------------------------------------- PROGRAM */
 
-/* The strip reads LIVE, TEST, PROGRAM, SETTINGS from the left, 150 px a
+/* The strip reads LIVE, TEST, PROGRAM, SETTINGS from the left, 150px a
  * tab; a tap on each selects it, and PROGRAM shows its list with no
  * session open. */
 TEST_CASE(the_strip_reads_live_test_program_settings)
@@ -595,7 +595,7 @@ TEST_CASE(the_strip_reads_live_test_program_settings)
         CHECK_EQ(servo_screen_task(), (int)k[i].task);
         CHECK(!kst_panel_is_open());
     }
-    /* The tabs in order, 154 px apart from x 9. */
+    /* The tabs in order, 154px apart from x 9. */
     for (int t = 0; t < (int)UI_WB_TASKS; ++t) {
         CHECK_EQ(SV_TAB_LIVE_X + 154 * t,
                  (t == 0) ? SV_TAB_LIVE_X : (t == 1) ? SV_TAB_TEST_X
@@ -806,8 +806,8 @@ static bool keypad_opened(void)
 
 /*
  * The rows a finger taps are UI_TAP_MIN tall: a SETTINGS row and a run's
- * value take a press 1 px inside each edge, the 8 px between two SETTINGS
- * rows and the 10 px between two of a run's columns take none, and the SET
+ * value take a press 1px inside each edge, the 8px between two SETTINGS
+ * rows and the 10px between two of a run's columns take none, and the SET
  * row's values take one at their edges as well.
  */
 TEST_CASE(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing)
@@ -879,7 +879,7 @@ static int stop_height(int x, int y)
 }
 
 /* The points of the body under the alert band the screen names as a stop,
- * every 2 px. */
+ * every 2px. */
 static int stops_under_the_alert_band(void)
 {
     int n = 0;
@@ -891,7 +891,7 @@ static int stops_under_the_alert_band(void)
     return n;
 }
 
-/* The body row 4 px over the alert band: no text of the left card
+/* The body row 4px over the alert band: no text of the left card
  * reaches it. */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
@@ -916,7 +916,7 @@ static int ink_under_the_alert_band(void)
 /*
  * In both languages the text at the foot of the left card ends above the
  * alert band: TEST's caps line, the AUTOMATIC TEST's stall note on its
- * settings (said as shipped: 2.00 A at a limit of 2.00 A), the OUTPUT
+ * settings (said as shipped: 2.00A at a limit of 2.00A), the OUTPUT
  * page's notes at their longest, a refused or unsupported rate, and the
  * save line at its longest, SETUP's changes not saved.
  */

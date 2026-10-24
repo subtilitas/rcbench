@@ -387,7 +387,7 @@ void read_outputs_binding(void)
  * The edge: an IOmcu started answering.
  *
  * All of it costs a transaction and none of it changes while the link is up,
- * so it runs once per edge rather than once per 50 ms poll.  reply is the
+ * so it runs once per edge rather than once per 50ms poll.  reply is the
  * identity page that detected the edge.
  */
 static void link_came_up(const link_msg_t *reply)
@@ -560,7 +560,7 @@ static void read_status_counters(void)
  * The far end: one poll, and everything that hangs off whether it answered.
  *
  * Every value it maintains belongs to the control loop and is passed in.
- * link_up is both the gate's period -- 50 ms up, 1000 ms down -- and this
+ * link_up is both the gate's period -- 50ms up, 1000ms down -- and this
  * poll's answer; last_poll and last_status are the two gates' clocks.
  * Returns whether this pass produced a bench sample.
  */
@@ -577,8 +577,8 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
      * whether a bench sample or an identity arrived and takes no part.
      *
      * Set since the last poll, it is this poll's answer at once: ahead of
-     * the 50 ms gate, and without a read that would wait another
-     * LINK_HOST_TIMEOUT_MS (1000 ms) to learn the same.  An armed bench has
+     * the 50ms gate, and without a read that would wait another
+     * LINK_HOST_TIMEOUT_MS (1000ms) to learn the same.  An armed bench has
      * been stopped already, where the exchange ended.
      */
     if (s_link_quiet
@@ -640,7 +640,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             /*
              * An armed bench stops with the link, and so does an arm still
              * waiting for the line.  The far end has failed safe on its own
-             * 200 ms of silence, or it has started again; either way the
+             * 200ms of silence, or it has started again; either way the
              * bank and the command kept here would be written to it as
              * ARM = 1 at the first poll it answers, with nobody having
              * asked.  The stop also withholds the heartbeat.
@@ -814,12 +814,12 @@ static void rail_sample(const bench_state_t *bench, float dt_s, bool driving)
  * The model's step, the run's totals and the bench log's rows, each decided
  * for this pass.
  *
- * The model runs on its own 50 ms gate, not on the poll's.  The poll's runs
- * at 1 Hz while the link is down, which would step the model once per
- * 1000 ms of wall clock instead of twenty times -- the plot's axis twenty
+ * The model runs on its own 50ms gate, not on the poll's.  The poll's runs
+ * at 1Hz while the link is down, which would step the model once per
+ * 1000ms of wall clock instead of twenty times -- the plot's axis twenty
  * times slow.  Its step is the time that passed, capped at a second like
  * the totals: a probe for the IOmcu's identity can hold this loop for
- * its whole 1000 ms timeout.
+ * its whole 1000ms timeout.
  *
  * The log has no gate: a pass that brought a sample writes one row for
  * each INA3221 window the poll handed over and one row when it handed over
@@ -836,7 +836,7 @@ void advance_model_and_log(bool link_up, float emitted,
     }
     /*
      * The run's totals, from the sample either source just wrote, over the
-     * time since the last one -- measured, not the 50 ms the model's cadence
+     * time since the last one -- measured, not the 50ms the model's cadence
      * aims at: a link probe can hold this loop for a second, and an
      * IOmcu sample arrives on the poll's clock.
      */

@@ -1,7 +1,7 @@
 /*
  * The IOmcu's sensor service (sense_svc.h): core 1's step, against
  * the modelled INA228 and INA3221 of fake_ina.h, a bus that opens and
- * closes on pins, and a clock the suite moves 1 ms a step.
+ * closes on pins, and a clock the suite moves 1ms a step.
  *
  * Under test: a set-up opening the bus on its pins and reading both
  * parts, a new one closing it and opening it again, one with no part
@@ -15,9 +15,9 @@
  * and the reset counts in the snapshot, a part found reset reported
  * offline and its capture lost, and both starting again with a set-up;
  * each channel's window judged against its limit once, as it closes, at
- * the limit and 1 mA under it, a channel of a part not fitted never, the
+ * the limit and 1mA under it, a channel of a part not fitted never, the
  * counts running on across a set-up, a clipped window against the top of
- * the range on 5 mOhm (32,755 over, 32,760 not), a part judged by its
+ * the range on 5mOhm (32,755 over, 32,760 not), a part judged by its
  * state as the window rolled, also when it drops later in that tick; and
  * every snapshot field.
  *
@@ -480,7 +480,7 @@ TEST_CASE(a_line_held_under_the_scan_starts_the_recovery)
     CHECK_EQ(snap.errors, (uint16_t)(errors + 3u));
     CHECK_EQ(g_recoveries, 0u);
     step();
-    CHECK_EQ(g_recoveries, 1u);              /* within 1 ms */
+    CHECK_EQ(g_recoveries, 1u);              /* within 1ms */
     steps(SENSE_RECOVER_MS);
     CHECK_EQ(g_recoveries, 2u);
     CHECK_EQ(g_asks, 1u);                    /* no scan on a stuck bus */
@@ -559,7 +559,7 @@ TEST_CASE(the_snapshot_carries_the_ring_and_the_reset_counts)
     }
     CHECK_EQ(snap.i228_resets, 0u);
     CHECK_EQ(snap.i3221_resets[0], 0u);
-    /* Window n draws 0.1 A times n + 1; the step at 50 ms closes the
+    /* Window n draws 0.1A times n + 1; the step at 50ms closes the
      * first. */
     for (unsigned n = 0; n < 6u; ++n) {
         i3221->amps[0] = 0.1 * (double)(n + 1u);
@@ -662,14 +662,14 @@ static uint16_t to_next_window(void)
 TEST_CASE(each_window_is_judged_against_its_limit_as_it_closes)
 {
     rig();
-    /* 0.12 A on 0.1 Ohm: 300 codes of 0.4 mA, 120.0 mA exactly. */
+    /* 0.12A on 0.1Ohm: 300 codes of 0.4mA, 120.0mA exactly. */
     cmd.limit_ma[0] = 120u;
     cmd.limit_ma[3] = 1u;           /* 0x41 is not fitted */
     steps(120u);
     (void)to_next_window();
     CHECK_EQ(snap.win[0].i_max_ua, 120000);
     CHECK_EQ(snap.over_n[0], 0u);
-    /* 1 mA under the reading: each window that closes counts once. */
+    /* 1mA under the reading: each window that closes counts once. */
     cmd.limit_ma[0] = 119u;
     const uint16_t n0 = to_next_window();
     CHECK_EQ(snap.over_n[0], 1u);
@@ -699,7 +699,7 @@ TEST_CASE(each_window_is_judged_against_its_limit_as_it_closes)
 
 TEST_CASE(a_clipped_window_is_judged_against_the_top_of_the_range)
 {
-    /* 5 mOhm: the top code reads 32,760 mA; 40 A clips every sample. */
+    /* 5mOhm: the top code reads 32,760mA; 40A clips every sample. */
     static const struct { uint16_t lim; bool over; } k[] = {
         { 32755u, true }, { 32759u, true }, { 32760u, false },
         { 32767u, false },

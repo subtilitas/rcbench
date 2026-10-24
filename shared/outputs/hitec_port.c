@@ -820,7 +820,7 @@ static void step_busy(hitec_port_t *p, uint32_t now_ms)
         finish(p);
         return;
     }
-    /* The sampler precharges the line every 1.1 us: not into a servo
+    /* The sampler precharges the line every 1.1us: not into a servo
      * whose supply went off under it, asked off, or read off after it
      * read on (the PD mini's protection leaves OUTPUT asked on). */
     if (p->rx_line == (uint8_t)LINK_HITEC_RX_PRECHARGE && p->supply_on != 0u) {

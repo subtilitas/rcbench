@@ -33,7 +33,7 @@
 
 /*
  * The red bar across the top, and the verdict under it:
- * The bar is 64 px tall; the verdict runs across the whole width: 48 cells
+ * The bar is 64px tall; the verdict runs across the whole width: 48 cells
  * of BF_FONT_HEAD.
  */
 /** @brief The red bar's height, px. */
@@ -43,8 +43,8 @@
 
 /*
  * The two columns under the verdict:
- * What it means and what to do on the left, 712 px: 59 cells of
- * BF_FONT_BODY, its text wrapped; what was measured on the right, 240 px:
+ * What it means and what to do on the left, 712px: 59 cells of
+ * BF_FONT_BODY, its text wrapped; what was measured on the right, 240px:
  * 24 cells of BF_FONT_LABEL.
  */
 /** @brief The two columns' top. */
@@ -75,7 +75,7 @@
 /*
  * The meaning, the list and the notes:
  * The meaning takes up to two lines from COLS_Y; the heading in
- * BF_FONT_LABEL under it; up to LIST_MAX checks 32 px apart, a check wider
+ * BF_FONT_LABEL under it; up to LIST_MAX checks 32px apart, a check wider
  * than the column wrapping under itself at WRAP_PITCH; the three notes from
  * NOTE_Y, which the fullest list (five checks, two of them wrapped) ends
  * above.
@@ -97,11 +97,11 @@
 
 /*
  * The acknowledgement, across the bottom:
- * 976 x 56 px, 16 px above the panel's edge; the rule 8 px over it.
+ * 976 x 56px, 16px above the panel's edge; the rule 8px over it.
  */
 /** @brief The acknowledgement's height, px. */
 #define ACK_H     56
-/** @brief The acknowledgement's top, 16 px above the panel's edge. */
+/** @brief The acknowledgement's top, 16px above the panel's edge. */
 #define ACK_Y     (H - ACK_H - 16)
 #define ACK_X     COL_X
 #define ACK_W     (W - 2 * COL_X)
@@ -425,7 +425,7 @@ static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
  * @brief The acknowledge button's fill.
  *
  * Danger red while it is waiting to be held, fading to the OK green it
- * settles on, and the same 150 ms flash ARM gives as the command goes.
+ * settles on, and the same 150ms flash ARM gives as the command goes.
  * The direction is the other way round from ARM because what it does is the
  * other way round: this one leaves a fault behind rather than entering one.
  * @return The fill for this frame.

@@ -15,15 +15,15 @@
  *
  *   PD mini   the supply's own readings (servo_test_reading()), about 10 a
  *             second.  The model stands in for it with no IOmcu.
- *   INA3221   the 50 ms windows of the INA3221's CH1
+ *   INA3221   the 50ms windows of the INA3221's CH1
  *             (servo_test_window()), 20 a second: each one's mean current
  *             and mean bus voltage are the reading, its highest and lowest
- *             1 ms sample give the peak, its lowest bus voltage the step's
+ *             1ms sample give the peak, its lowest bus voltage the step's
  *             lowest voltage.  The supply is still read for its state --
  *             answering, output, trip, set point, mode -- and none of its
  *             voltages or currents is used or logged.
  *
- * A reading is a point in time on the PD mini and 50 ms long on the
+ * A reading is a point in time on the PD mini and 50ms long on the
  * INA3221 (cfg.meter.span_ms).  IDLE and HOLD take the windows that lie
  * wholly inside them: a window that began before the phase is in neither.
  * The window open at a command is MOVE's.  Moves are timed by the panel
@@ -33,7 +33,7 @@
  *
  * Signed current.  A negative current is a reading.  The limits, the peak
  * and STALL AT compare its magnitude, in whole mA (servo_test_over_a()),
- * and the CSV keeps the sign.  A clipped window -- a 1 ms sample at an end
+ * and the CSV keeps the sign.  A clipped window -- a 1ms sample at an end
  * of the INA3221's range -- is a reading as well: its figures are the
  * values the part gave, a lower bound, and the report counts such windows.
  *
@@ -95,7 +95,7 @@
  *            command: the angle has stayed within SERVO_TEST_ENC_TOL_COUNTS
  *            counts (1.05 degrees) of an anchor for that long.  The travel
  *            time is the start of that stillness minus the command, which
- *            the IOmcu's 2 ms sample interval resolves whatever the
+ *            the IOmcu's 2ms sample interval resolves whatever the
  *            polling interval.  It includes the command's way from the
  *            panel to the pin, up to one poll interval and one PWM frame,
  *            not measured;
@@ -193,10 +193,10 @@ extern "C" {
 
 /* ---------------------------------------------------------- the method */
 
-/** @brief The characterisation steps a run can carry: 4.8, 6.0, 7.4, 8.4 V. */
+/** @brief The characterisation steps a run can carry: 4.8, 6.0, 7.4, 8.4V. */
 #define SERVO_TEST_STEPS_MAX         4u
 /** @brief Above this a step is an HV (high voltage) step: a standard servo's
- *         rating is 4.8 to 6.0 V. */
+ *         rating is 4.8 to 6.0V. */
 #define SERVO_TEST_HV_ABOVE_V        6.0f
 
 /** @brief The brown-out walk: where it starts, how far each step goes down, and
@@ -242,7 +242,7 @@ extern "C" {
 /** @brief The supply in constant current for this long ends the run. */
 #define SERVO_TEST_CC_ABORT_MS       1000u
 /** @brief A run on the INA3221: no window for this long ends it, 4 windows of
- *         50 ms.
+ *         50ms.
  *
  * The limit run (servo_limrun.h) takes the same figure. */
 #define SERVO_TEST_WIN_STALE_MS      200u
@@ -276,7 +276,7 @@ extern "C" {
 /** @brief Which meter a run reads. */
 typedef enum {
     SERVO_TEST_METER_PDMINI = 0,    /**< the supply's own readings      */
-    SERVO_TEST_METER_INA3221,       /**< CH1's 50 ms windows            */
+    SERVO_TEST_METER_INA3221,       /**< CH1's 50ms windows             */
     SERVO_TEST_METER_MODEL,         /**< the panel's model of the supply */
 } servo_test_meter_kind_t;
 
@@ -289,7 +289,7 @@ typedef enum {
     SERVO_TEST_INA_SILENT,      /**< the part does not answer            */
     SERVO_TEST_INA_NO_WINDOW,   /**< no fresh window with current        */
     SERVO_TEST_INA_RESET,       /**< it reset itself                     */
-    SERVO_TEST_INA_SETTLING,    /**< working for less than 1 s           */
+    SERVO_TEST_INA_SETTLING,    /**< working for less than 1s            */
     SERVO_TEST_INA_MODEL,       /**< the supply is the panel's model     */
     SERVO_TEST_INA_COUNT
 } servo_test_ina_t;
@@ -300,7 +300,7 @@ typedef struct {
     uint8_t  kind;          /**< servo_test_meter_kind_t                */
     uint16_t span_ms;       /**< how long one reading is: 0 for a point
                                  in time, 50 for a window               */
-    uint16_t shunt_dmohm;   /**< the INA3221's shunt in 0.1 mOhm, as SETUP
+    uint16_t shunt_dmohm;   /**< the INA3221's shunt in 0.1mOhm, as SETUP
                                  holds it; 0 for none stated            */
     uint16_t range_ma;      /**< the current at the end of its range; 0
                                  for none stated                        */
@@ -315,8 +315,8 @@ typedef struct {
                                  TIME is reported, not checked          */
 } servo_test_meter_t;
 
-/** @brief The PD mini's own meter: read every 102 to 106 ms, a change of
- *         current shows about 300 ms later (median 0.31 s over two runs,
+/** @brief The PD mini's own meter: read every 102 to 106ms, a change of
+ *         current shows about 300ms later (median 0.31s over two runs,
  *         2026-10-07), and its value often repeats over several readings. */
 #define SERVO_TEST_PDMINI_LAG_MS     300u
 
@@ -336,15 +336,15 @@ void servo_test_meter_pdmini(servo_test_meter_t *m);
 void servo_test_meter_model(servo_test_meter_t *m);
 
 /**
- * @brief An INA3221 channel on a shunt of @p shunt_dmohm, in 0.1 mOhm (1000 for
- *        0.1 Ohm, which ends the range at 1.638 A), named "INA3221" until the
- *        caller names the channel, read in 50 ms windows: a change of current
- *        shows in the window that closes after it, up to 50 ms later, and the
+ * @brief An INA3221 channel on a shunt of @p shunt_dmohm, in 0.1mOhm (1000 for
+ *        0.1Ohm, which ends the range at 1.638A), named "INA3221" until the
+ *        caller names the channel, read in 50ms windows: a change of current
+ *        shows in the window that closes after it, up to 50ms later, and the
  *        panel times a move from the windows, so travel times are an upper
  *        bound.
  *
  * @param m           Meter description to fill. NULL is ignored.
- * @param shunt_dmohm Shunt resistance, 0.1 mOhm.
+ * @param shunt_dmohm Shunt resistance, 0.1mOhm.
  */
 void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm);
 
@@ -508,11 +508,11 @@ typedef struct {
     servo_test_mean_t move; /**< the readings while travelling          */
     servo_test_mean_t hold[2];   /**< at the low end, at the high end   */
     float    move_peak_a;   /**< the reading of the largest magnitude
-                                 while travelling; on the INA3221 the 1 ms
+                                 while travelling; on the INA3221 the 1ms
                                  sample                                 */
     float    peak_a;        /**< likewise, of every reading after SETTLE */
-    uint32_t travel_max_ms;
-    uint32_t travel_sum_ms;
+    uint32_t travel_max_ms; /**< the longest travel of a move that arrived */
+    uint32_t travel_sum_ms; /**< and the sum of their travels          */
     uint16_t travels;       /**< moves that arrived                     */
     uint16_t moves;         /**< moves counted                          */
     uint16_t no_rise;       /**< counted moves with no movement seen:
@@ -612,7 +612,7 @@ typedef struct {
     bool     stalled;       /**< a characterisation reading over STALL AT */
     float    stall_peak_a;  /**< the characterisation reading of the
                                  largest magnitude                       */
-    float    move_peak_now; /**< the 1 ms sample of the largest magnitude
+    float    move_peak_now; /**< the 1ms sample of the largest magnitude
                                  since the command, on the INA3221       */
 
     /* The supply's state, on either meter. */
@@ -815,7 +815,7 @@ bool servo_test_running(const servo_test_t *t);
 
 /**
  * @brief How long a move of @p t may take before it is late, or unseen:
- *        SERVO_TEST_TRAVEL_TIMEOUT_MS plus the meter's lag, 3300 ms on the PD
+ *        SERVO_TEST_TRAVEL_TIMEOUT_MS plus the meter's lag, 3300ms on the PD
  *        mini.
  *
  * @param t Run state. NULL uses no meter lag.

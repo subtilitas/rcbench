@@ -537,14 +537,14 @@ TEST_CASE(the_tracker_flags_the_up_and_the_down_it_makes_for_a_jump)
     CHECK_EQ(ev[0].type, TOUCH_EVENT_DOWN);
     CHECK_EQ(ev[0].flags, 0);
 
-    /* 120 px is one drag. */
+    /* 120px is one drag. */
     a.x = 160;
     a.y = 160;
     CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 1);
     CHECK_EQ(ev[0].type, TOUCH_EVENT_MOVE);
     CHECK_EQ(ev[0].flags, 0);
 
-    /* 121 px is a release where it was and a press where it is. */
+    /* 121px is a release where it was and a press where it is. */
     a.x = 281;
     CHECK_EQ(touch_tracker_update(&t, &a, 1, ev, 8), 2);
     CHECK_EQ(ev[0].type, TOUCH_EVENT_UP);

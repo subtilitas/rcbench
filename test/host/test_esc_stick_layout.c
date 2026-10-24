@@ -1,6 +1,6 @@
 /**
  * @file test_esc_stick_layout.c
- * @brief ESC STICK's layout on the 1024 x 540 px body: tap targets, the
+ * @brief ESC STICK's layout on the 1024 x 540px body: tap targets, the
  *        alert band, the fullest pages and the longest labels, through
  *        the session's private seam (esc_stick_panel_int.h).
  *
@@ -29,7 +29,7 @@
 #include "esc_stick_panel_int.h"
 
 /** @brief The alert band's top in body pixels, and where a control at the
- *         foot ends at the latest: 4 px above it. */
+ *         foot ends at the latest: 4px above it. */
 #define BAND_TOP (UI_ALERT_Y - UI_BAND_H)
 #define FOOT     (BAND_TOP - 4)
 
@@ -48,7 +48,7 @@ static bool overlap(gfx_rect_t a, gfx_rect_t b)
 }
 
 /** @brief @p r is a tap target: UI_TAP_MIN each way at least, inside the
- *         body's margins, under the output strip and ending 4 px above the
+ *         body's margins, under the output strip and ending 4px above the
  *         alert band. */
 static void target(gfx_rect_t r)
 {
@@ -122,8 +122,8 @@ TEST_CASE(every_control_is_a_tap_target_above_the_alert_band)
     target(s.st.hold_btn);
     target(s.st.steps_btn);
     target(s.st.cancel_btn);
-    /* RUN, ABORT and OK end 4 px above the alert band; the panels' HOLD
-     * TO RUN, DONE, CANCEL and ABORT end 4 px above the foot row, so a
+    /* RUN, ABORT and OK end 4px above the alert band; the panels' HOLD
+     * TO RUN, DONE, CANCEL and ABORT end 4px above the foot row, so a
      * second tap on RUN's place lands on none of them. */
     CHECK_EQ(pg.write_btn.y + pg.write_btn.h, FOOT);
     CHECK_EQ(pg.write_btn.h, UI_BTN_H_TALL);
@@ -162,7 +162,7 @@ TEST_CASE(no_two_controls_of_a_page_overlap)
 }
 
 /* Between two rows' keys, and between a row's name, value and keys, lie
- * 8 px: six rows of 48 px at a 56 px pitch, the parameter card's header
+ * 8px: six rows of 48px at a 56px pitch, the parameter card's header
  * moved to the side column's page keys. */
 TEST_CASE(the_steppers_keep_a_finger_between_rows)
 {
@@ -177,10 +177,10 @@ TEST_CASE(the_steppers_keep_a_finger_between_rows)
         CHECK_EQ(value_rect(i).x - (pg.row[i].x + pg.row[i].w), 8);
         CHECK_EQ(pg.down[i].x - (value_rect(i).x + value_rect(i).w), 8);
         CHECK_EQ(pg.up[i].x - (pg.down[i].x + pg.down[i].w), 8);
-        /* "+" ends inside the parameter card, 8 px from its edge. */
+        /* "+" ends inside the parameter card, 8px from its edge. */
         CHECK_EQ(pg.up[i].x + pg.up[i].w, PAD + PARM_W - 8);
     }
-    /* The side column right of the card, 8 px apart. */
+    /* The side column right of the card, 8px apart. */
     CHECK_EQ(SIDE_X, PAD + PARM_W + 8);
     CHECK_EQ(SIDE_X + SIDE_W, W - PAD);
     CHECK(pg.page_up.x >= SIDE_X && s.st.hand_btn.x >= SIDE_X);
@@ -208,7 +208,7 @@ TEST_CASE(the_fullest_pages_end_above_their_footers)
     CHECK(s.st.rows[0].x + UI_TAP_MIN < SP_DOCK_X - 8);
 }
 
-/* The labels drawn in a control fit it with 4 px a side in every
+/* The labels drawn in a control fit it with 4px a side in every
  * language: MANUAL INTERVENTION REQUIRED, TIMING's title beside the page
  * keys, CHANGE with the fullest count, the value column's longest word,
  * BACK, and the foot row's buttons. */
@@ -224,7 +224,7 @@ TEST_CASE(the_longest_labels_fit_their_controls_in_every_language)
         CHECK(SIDE_IN + gfx_text_cells(ui_tr_in(lang, TX_SP_TIMING_TITLE))
                             * SP_CELL
               <= pg.page_up.x - 8);
-        /* "10-15 of 15" beside CHANGE, 8 px from either. */
+        /* "10-15 of 15" beside CHANGE, 8px from either. */
         char count[40];
         snprintf(count, sizeof(count), ui_tr_in(lang, TX_PG_RANGE_OF), 10,
                  15, 15);

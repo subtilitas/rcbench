@@ -2,7 +2,7 @@
 // `src/export/layout.ts`, and the sweep that runs the check over every
 // distinct setup in both languages. A finding is one line of text.
 //
-// The sweep takes about 8 ms per document. 4 test files share it, one part
+// The sweep takes about 8ms per document. 4 test files share it, one part
 // each, so the test runner works on them in parallel.
 
 import assert from 'node:assert/strict';

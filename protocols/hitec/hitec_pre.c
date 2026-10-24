@@ -182,7 +182,7 @@ static void dec_byte(hitec_pre_dec_t *d, const hitec_pre_timing_t *t,
         }
     }
     /* A stop bit at the rest level is the low sample a start bit follows,
-     * so a byte back to back from a servo up to 4 % fast is not missed; a
+     * so a byte back to back from a servo up to 4% fast is not missed; a
      * stop bit read high waits for the rest level. */
     if (hitec_pre_sample(words, s + t->mid[HITEC_PRE_FRAME_BITS - 1u])
         != 0u) {

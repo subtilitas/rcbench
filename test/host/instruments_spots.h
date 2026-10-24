@@ -8,17 +8,17 @@
  * If the layout moves these move with it.  Taken by the screens' suites
  * and render_screen.c.
  *
- *   - RECEIVER: CHANNELS | RAW DATA from x 11, 150 px each, 4 px apart,
+ *   - RECEIVER: CHANNELS | RAW DATA from x 11, 150px each, 4px apart,
  *     y 8 to 56; the lanes' card from y 64, x 8 to 748; eight lanes of
- *     52 px from y 72 in two columns 362 px apart from x 16; the state
- *     card x 756 to 1016, its counter rows 32 px from y 182, CH17 and
- *     CH18 44 px tall from y 384, 8 px apart;
+ *     52px from y 72 in two columns 362px apart from x 16; the state
+ *     card x 756 to 1016, its counter rows 32px from y 182, CH17 and
+ *     CH18 44px tall from y 384, 8px apart;
  *   - BATTERY: the plot card x 8 to 648, the right card x 656 to 1016,
  *     the cells row's voltages from y 440;
- *   - BALANCE: BALANCE | TEST RIG | AIRCRAFT from x 11, 150 px each, 4 px
+ *   - BALANCE: BALANCE | TEST RIG | AIRCRAFT from x 11, 150px each, 4px
  *     apart, y 8 to 56; both cards from y 64, the right one x 656 to
- *     1016 with its column x 670 to 1002; PROPELLER and EDF 162 x 48 px
- *     at y 102, 8 px apart; the BLADES row y 160 to 208: the count x 760
+ *     1016 with its column x 670 to 1002; PROPELLER and EDF 162 x 48px
+ *     at y 102, 8px apart; the BLADES row y 160 to 208: the count x 760
  *     to 874, "-" x 882 to 938, "+" x 946 to 1002.
  *
  * SPDX-License-Identifier: MIT
@@ -28,7 +28,7 @@
 #include "ui_layout.h"
 
 /** @brief The lowest row a control or a line of text reaches on these
- *         screens: 4 px above the alert band, body y 492. */
+ *         screens: 4px above the alert band, body y 492. */
 #define IN_TEXT_FLOOR      (UI_ALERT_Y - UI_BAND_H - 4)
 
 /** @brief The tabs' middle row, both screens. */

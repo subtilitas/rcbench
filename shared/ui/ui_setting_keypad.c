@@ -125,7 +125,7 @@ const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
         if (buf == NULL || n == 0u) {
             return "";
         }
-        /* The row's own figures: a shunt's 0.1 mOhm, a limit's 1 mA. */
+        /* The row's own figures: a shunt's 0.1mOhm, a limit's 1mA. */
         const setting_def_t *d = settings_def(id);
         const int dec = ui_setting_keypad_decimals(id);
         snprintf(buf, n, TR(KEYPAD_WHY_OFF), dec, (double)d->off_below, dec,

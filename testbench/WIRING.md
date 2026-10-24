@@ -8,7 +8,7 @@ later in a capture that reads plausibly.
 what to connect.
 
 **Nothing is powered while anything is being connected.** The one exception is
-the Pi, which stays on for the checks and whose 3.3 V and 5 V pins are not
+the Pi, which stays on for the checks and whose 3.3V and 5V pins are not
 used for any of them.
 
 ---
@@ -21,8 +21,8 @@ used for any of them.
 | Signal relays | two per board -- one for BOOT, one for RESET -- with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
 | Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level** -- pull-down for an active-high driver, pull-up for active-low. GP16 to GP19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
 | Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
-| Two 120 Ω terminators | one at each end of the CAN pair. Two in parallel are the 60 Ω the pair should measure |
-| Level translation | for any line that leaves the 3.3 V island: a translator that senses the target's rail, not a divider chosen once |
+| Two 120Ω terminators | one at each end of the CAN pair. Two in parallel are the 60Ω the pair should measure |
+| Level translation | for any line that leaves the 3.3V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
 | The monostable | required by `docs/Safety.md`, on no board, **and not specified anywhere in this tree**. It cannot be built from this guide. What it has to do is below; what it is made of is a decision nobody has taken |
 
@@ -70,7 +70,7 @@ part of the wiring rather than something assumed:
 | | |
 |---|---|
 | The Pi | its own supply |
-| The RP2350 | its own USB, from a charger or a powered hub -- **not from the Pi**, and **not from the Pi's 3.3 V pin**. A cable to the Pi grounds the two a second time, through the USB shell, and the star lead in step 2 is then one of two return paths rather than the only one |
+| The RP2350 | its own USB, from a charger or a powered hub -- **not from the Pi**, and **not from the Pi's 3.3V pin**. A cable to the Pi grounds the two a second time, through the USB shell, and the star lead in step 2 is then one of two return paths rather than the only one |
 | The IOmcu | its own USB |
 | The panel | its own USB-C, on the socket it is flashed from |
 | Relay coils | their own supply, through the driver |
@@ -98,7 +98,7 @@ leads: the star is what makes the measurements above mean anything.
 ## 2. SWD, from the Pi to the RP2350
 
 Three wires: SWCLK, SWDIO, and the ground that is already part of the star.
-**No supply wire.** The Pi's 3.3 V pin is a regulated output, not a reference,
+**No supply wire.** The Pi's 3.3V pin is a regulated output, not a reference,
 and the RP2350 has its own.
 
 | Pi GPIO | Header pin | To the RP2350 |
@@ -140,7 +140,7 @@ claims that line and `linuxgpiod` cannot have it. SPI is off on the bench host
 
 The RP1 sits behind PCIe, and OpenOCD's `interface/raspberrypi5-gpiod.cfg`
 warns that under any other policy the first few pulses can be clocked as fast
-as 20 MHz. Whether that costs a connection is unmeasured -- no target has been
+as 20MHz. Whether that costs a connection is unmeasured -- no target has been
 on these pins -- so this is a setting OpenOCD asks for and not a fault anyone
 has seen. It does not survive a reboot. `host/selftest.sh` prints the policy it
 finds.
@@ -219,8 +219,8 @@ is on it.
 ends before `capture.sh` starts puts the only transition outside the trace,
 and the channel then reads flat whether the lead is on the pin or not --
 which is the reading this check exists to rule out. `-t 100ms` toggles the
-line every 100 ms and repeats until the process is killed, so the capture
-spans 2 s and about twenty edges land inside it. One process holds the line
+line every 100ms and repeats until the process is killed, so the capture
+spans 2s and about twenty edges land inside it. One process holds the line
 for the whole run, so the trace has no undriven gap; the check asks only that
 the level change.
 
@@ -260,7 +260,7 @@ step 7 without it.
 | GP22 | heartbeat injection, step 7 | out |
 
 GP22 is a plain output, and it is an input at every other moment. It drives
-the heartbeat junction with an edge every 20 ms inside step 7 alone.
+the heartbeat junction with an edge every 20ms inside step 7 alone.
 
 **The panel's link is open before it drives; the monostable's stays closed.**
 The panel drives its end push-pull, so that node carries one driver at a time
@@ -310,7 +310,7 @@ It answers at 0x14; the real controller stays at 0x5D.
 
 **Which two lines on the panel.** `BOARD_I2C_PIN_SDA` is GPIO8 and
 `BOARD_I2C_PIN_SCL` is GPIO9, on `I2C_NUM_0` at `BOARD_I2C_FREQ_HZ`
-(400,000 Hz) -- `firmware/panel/components/board/include/board_pins.h`. The
+(400,000Hz) -- `firmware/panel/components/board/include/board_pins.h`. The
 bus is brought out on the panel's 4-pin PH2.0 I²C connector:
 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL, as `docs/Building.md` gives it. Check the
 order with a meter against the board in hand before the first lead goes on.
@@ -334,7 +334,7 @@ second time through the Pi. No isolator sits in that lead, and the second
 ground path is accepted for this lead alone. Keep its GND wire short and run
 it to the star point, not to the panel's connector pin 2.
 
-400 kHz is also what sets the capture rate below: 4 MHz is ten samples a bit.
+400kHz is also what sets the capture rate below: 4MHz is ten samples a bit.
 
 **Do not probe this bus with the Pi.** The panel is the master. A second
 master is a fault, not a measurement.
@@ -356,7 +356,7 @@ the panel is powered and its ground returns only through the star lead before
 either capture below.
 
 **Check, one: the tap.** Capture SCL and SDA while the panel starts. 2m
-samples at 4 MHz is 0.5 s, and the panel's first transaction is somewhere in
+samples at 4MHz is 0.5s, and the panel's first transaction is somewhere in
 a start-up nobody can time to half a second, so the capture is triggered on
 the first clock edge rather than started and hoped over:
 
@@ -364,7 +364,7 @@ the first clock edge rather than started and hoped over:
 
 Start it, then pulse RESET on the panel -- section 4 wired that contact, so it
 is one relay away. The trigger is what makes the order safe: sigrok waits at
-the first falling SCL and the 0.5 s runs from there, so a reset five seconds
+the first falling SCL and the 0.5s runs from there, so a reset five seconds
 late costs nothing. Without it the window has to be hit by hand, and a miss
 reads as a bus with nothing on it.
 
@@ -380,7 +380,7 @@ running, open its port on the Pi and ask:
     wiring    ->  ok wiring
               ->  wiring ok scl=GP5 sda=GP4 tx=<n> named=<n> agree=<pct> rate=<Msps>
 
-`wiring` listens to the panel's polling for 500 ms and names the line that
+`wiring` listens to the panel's polling for 500ms and names the line that
 carries SCL from the START and STOP conditions. `swapped` means the two
 leads are crossed: swap them and ask again. `idle` means no traffic, `low`
 names a line held low, and `noise` means no verdict. Only after `ok`:
@@ -391,8 +391,8 @@ The injector then answers at 0x14. A panel image
 finds it at its next start (a panel looks at start-up only): pulse its
 RESET, and the status band's MODE chip reads `INJECT`. After an injector
 reset the panel needs no RESET if it found the injector at start-up: it
-detached the silent injector after 1000 ms and
-re-attaches it within about 1 s of `confirm`. Capture one again: the decode now
+detached the silent injector after 1000ms and
+re-attaches it within about 1s of `confirm`. Capture one again: the decode now
 shows 0x14 polled after every read of 0x5D.
 
 ---
@@ -400,15 +400,15 @@ shows 0x14 polled after every read of 0x5D.
 ## 6. The link
 
 **The bus first, then the probes.** CANH to CANH and CANL to CANL between the
-two transceivers, with 120 Ω at both ends -- `docs/Link.md` gives the
-termination and the 1 Mbit/s rate.
+two transceivers, with 120Ω at both ends -- `docs/Link.md` gives the
+termination and the 1Mbit/s rate.
 
 **Twisted, short, and away from the motor leads.** The two wires are twisted
 together over their whole run, each board's branch off the bus stays under
-30 cm, and the bus as a whole stays under 5 m. Those are the three the panel
+30cm, and the bus as a whole stays under 5m. Those are the three the panel
 itself prints when its self-test comes back corrupt or lossy
 (`shared/ui/busfault_screen.c`), and a bench built from loose jumper leads
-meets none of them by default: 60 Ω across the pair says both terminators are
+meets none of them by default: 60Ω across the pair says both terminators are
 fitted and says nothing about reflections or about a servo lead run beside the
 pair. A bus that is marginal this way passes every check in this section and
 fails as intermittent frame loss later, which is the fault this bench exists
@@ -417,8 +417,8 @@ transmitter gets no acknowledgement, retries, and goes bus-off: the capture
 below would show nothing and the panel's start-up self-test would fail, and
 neither would be telling you about the probes.
 
-Measured across CANH and CANL with everything unpowered, two 120 Ω
-terminators in parallel read about 60 Ω. One terminator, or none, reads 120 Ω
+Measured across CANH and CANL with everything unpowered, two 120Ω
+terminators in parallel read about 60Ω. One terminator, or none, reads 120Ω
 or open, and that is the commonest way this is built wrong.
 
 **And the panel has to be in CAN mode to be on that bus at all.** GPIO19 and
@@ -453,18 +453,18 @@ a link that works without them: a lead that is off or on the wrong pin changes
 nothing about the traffic, and a capture of CS and RXCAN alone passes with all
 three wrong. Every one of the five has to move.
 
-24 MHz for a 10 MHz clock is the lowest rate that resolves it; at 8 MHz the
+24MHz for a 10MHz clock is the lowest rate that resolves it; at 8MHz the
 clock aliases and the decode is worse than no capture.
 
 **If CS moves and RXCAN is flat, do not move the probe first.** A crossed pair
 gives exactly this picture and the probe is already right: CANH to CANL
-measures the same 60 Ω, the panel keeps polling its controller over SPI, and
+measures the same 60Ω, the panel keeps polling its controller over SPI, and
 the IOmcu's RXCAN sits recessive until the transmitter gives up and goes
 bus-off. In order of what costs least to check:
 
 1. **The multiplexer.** The panel is only on the bus with CH422G EXIO5 set to
    CAN. In USB mode it is not transmitting at all.
-2. **Polarity.** CANH to CANH and CANL to CANL. Crossed reads 60 Ω and works
+2. **Polarity.** CANH to CANH and CANL to CANL. Crossed reads 60Ω and works
    for nobody.
 3. **What the ends say.** The panel's start-up self-test gives a verdict, and
    the IOmcu's error counters say whether it has been transmitting into
@@ -495,9 +495,9 @@ What it has to do, so that a circuit can be designed against it and checked:
 
 | | |
 |---|---|
-| Input | edges from the panel's GPIO28, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
+| Input | edges from the panel's GPIO28, nominally one every 20ms, which is a 40ms cycle: `heartbeat_gen_step()` toggles the level once per period |
 | Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
-| Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the IOmcu's 200 ms link failsafe |
+| Window | about 150ms. Above the 20ms period with margin for a late task, and below the IOmcu's 200ms link failsafe |
 | Gates | two, both downstream of the IOmcu's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
@@ -511,11 +511,11 @@ A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
 one thing the interlock exists for -- a panel that has crashed, wedged, reset
 or browned out taking the outputs down without asking firmware at either end
--- would be absent. The window is about 150 ms, inside the IOmcu's
-200 ms link failsafe.
+-- would be absent. The window is about 150ms, inside the IOmcu's
+200ms link failsafe.
 
-A servo or an ESC signal line that runs at 5 V goes through the translator on
-its way to anything at 3.3 V. The analyser can watch a 5 V line directly with
+A servo or an ESC signal line that runs at 5V goes through the translator on
+its way to anything at 3.3V. The analyser can watch a 5V line directly with
 its threshold set for it, which is a per-run setting and an argument to
 `capture.sh` rather than something left where the last run put it.
 
@@ -523,14 +523,14 @@ its threshold set for it, which is a per-run setting and an argument to
 
     testbench/host/capture.sh heartbeat D3 1m 2m 1.65
 
-An edge every 20 ms, so a 40 ms cycle: 20 ms high then 20 ms low. A gap longer
-than 150 ms is what the monostable and the IOmcu both act on, and should
+An edge every 20ms, so a 40ms cycle: 20ms high then 20ms low. A gap longer
+than 150ms is what the monostable and the IOmcu both act on, and should
 not be there on a healthy panel.
 
 **Check, two: the interlock, and only the interlock.** Stopping the edges is
 not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
 calls `outputs_off()` when it has been quiet for HEARTBEAT_MAX_GAP_MS
-(150 ms) -- the same threshold, by design, since both watch the same wire. So
+(150ms) -- the same threshold, by design, since both watch the same wire. So
 an output that stops when the edges stop proves nothing: a bench with no
 monostable at all passes that.
 
@@ -543,10 +543,10 @@ nodes, so what they do is the hardware's doing.
 **Two instruments, and both are needed.**
 
 *The analyser, on logic only.* The output enable takes a lead directly. The
-servo and ESC power do not: a servo rail is 8.4 V, the IO board's adjustable supply up to 15 V and an ESC pack higher,
+servo and ESC power do not: a servo rail is 8.4V, the IO board's adjustable supply up to 15V and an ESC pack higher,
 every analyser lead here is a direct connection with a series resistor, and
 `capture.sh`'s threshold argument sets a comparator level rather than
-attenuating anything. An LA2016 input is rated to 5 V. So the analyser takes
+attenuating anything. An LA2016 input is rated to 5V. So the analyser takes
 the **switch's control node** -- the gate or enable pin of whatever passes the
 rail -- which is logic and carries the timing.
 
@@ -554,17 +554,17 @@ rail -- which is logic and carries the timing.
 was told to open. It does not say the rail went down: a switch that is
 bypassed, miswired or failed short deasserts its gate exactly the same way.
 `docs/Safety.md` requires the **power path** to be gated, so the verdict is
-measured on the switched side, with a probe rated for 8.4 V, 15 V or whatever the
+measured on the switched side, with a probe rated for 8.4V, 15V or whatever the
 ESC pack is.
 
 **A meter is not enough.** It says the rail is down by the time you look,
-which is a different claim from down within 150 ms: a switch with a slow gate
+which is a different claim from down within 150ms: a switch with a slow gate
 drive, a rail with a bulk capacitor, or a load light enough not to discharge
 one, all read zero eventually and miss the deadline.
 
 **Two channels on one scope, triggered on the rail.** The monostable's trigger
 input goes on one channel and the switched rail on the other, and the scope
-triggers on the **rail crossing its threshold downward**, with at least 200 ms
+triggers on the **rail crossing its threshold downward**, with at least 200ms
 of pre-trigger. Triggering on a heartbeat edge cannot work: every edge is
 identical and no ordinary edge trigger knows which one is the last, so the
 instrument fires on an arbitrary one and the rail's fall lands outside the
@@ -609,9 +609,9 @@ Split it before injecting anything, which is what the two links are for:
 1. **Open the panel's branch.** Nothing of the panel's is driving now, so the
    next step is not contention.
 2. **Have the RP2350 drive the junction from GP22** with one edge every
-   20 ms -- a 40 ms cycle, not a 40 ms edge spacing and not a 20 ms cycle --
+   20ms -- a 40ms cycle, not a 40ms edge spacing and not a 20ms cycle --
    so `heartbeat_poll()` on the IOmcu never expires. The monitor rejects only
-   edges closer than 4 ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10 ms is
+   edges closer than 4ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10ms is
    accepted and a wrong rate here is injected rather than caught.
 
 The monostable's trigger branch stays **closed** for now, and that is the
@@ -619,7 +619,7 @@ change that makes the test measurable. Both the firmware and the interlock are
 being fed at this point, which is the state the run has to start from: the
 enable asserted, the load side live, and edges on the trigger to measure a
 window from. Opening that branch first instead leaves nothing in the trace but
-an enable that is already down, and an enable that fell in 120 ms, one that
+an enable that is already down, and an enable that fell in 120ms, one that
 took four seconds and one that was never asserted at all are the same picture.
 
 Firmware is being told the panel is alive, and so is the interlock -- until the
@@ -636,7 +636,7 @@ undoes it on the way. In order:
 3. **Command it away from rest** -- throttle above zero, or the horn off
    centre. ARMED is what makes the pin drive at all; a command away from rest
    is what makes the trace unambiguous, since a DShot zero-throttle frame and
-   a 1500 us centre pulse are both edges and neither is distinctive.
+   a 1500us centre pulse are both edges and neither is distinctive.
 
 Then capture **after the gate** -- the load-facing side of the gated output,
 and the monostable's output-enable -- on whichever channels the run is not
@@ -646,24 +646,24 @@ them: **D14 the output-enable, D15 the load-facing side.**
 
 Two captures, because the two questions want opposite settings.
 
-**One: the window.** 1 MHz over 4m samples, which is 4 s:
+**One: the window.** 1MHz over 4m samples, which is 4s:
 
     testbench/host/capture.sh interlock-window D0,D3,D14,D15 1m 4m 1.65
 
 **Open the monostable's trigger branch while this one is running**, not
 before it. The window is measured from the last edge into the trigger, so
 that edge and the enable falling have to be in one trace, and the branch has
-to come out inside the first 3.8 s for the 150 ms after it to still be in the
-trace. 24 MHz over the same 4m samples covers 167 ms, which is 17 ms more
-than the 150 ms window and not less -- and 17 ms is the whole budget for
-reaching the link by hand and for the two or three 20 ms heartbeat edges
+to come out inside the first 3.8s for the 150ms after it to still be in the
+trace. 24MHz over the same 4m samples covers 167ms, which is 17ms more
+than the 150ms window and not less -- and 17ms is the whole budget for
+reaching the link by hand and for the two or three 20ms heartbeat edges
 before the pull that make the last one readable as the last one. There is no
 trigger to align the trace on: the pull is a hand on a link, and a trigger on
 D3 falling fires on every heartbeat edge. Span is what this capture needs, and
-1 us resolution on a 150 ms window is already finer than the number is worth
+1us resolution on a 150ms window is already finer than the number is worth
 quoting to.
 
-D0 aliases at 1 MHz: a DShot600 bit is 1.67 us and is sampled once or twice,
+D0 aliases at 1MHz: a DShot600 bit is 1.67us and is sampled once or twice,
 so the trace shows the pin changing without being decodable. Changing is all
 this capture asks of it.
 
@@ -673,12 +673,12 @@ steady state rather than a transient, so it is sampled on its own:
 
     testbench/host/capture.sh interlock-quiet D0,D15 24m 2m 1.65
 
-24 MHz, not 1 MHz. The output under test may be DShot600, whose zero-bit high
-is about 0.63 us: sampled once a microsecond, narrow activity leaking through
+24MHz, not 1MHz. The output under test may be DShot600, whose zero-bit high
+is about 0.63us: sampled once a microsecond, narrow activity leaking through
 a failed gate falls between samples and the load side is reported quiet. The
 rate has to out-sample whatever D0 is carrying, and DShot600 is the fastest
-this bench binds. 2m samples at 24 MHz is 83 ms, which is 83 DShot frames at
-the IOmcu's 1,000 Hz update rate and four servo frames at 50 Hz, so a
+this bench binds. 2m samples at 24MHz is 83ms, which is 83 DShot frames at
+the IOmcu's 1,000Hz update rate and four servo frames at 50Hz, so a
 leak that repeats at all repeats inside it.
 
 **`capture.sh` warns that D15 never changed, and here that warning is the
@@ -705,8 +705,8 @@ Four things have to be seen, and each answers a different question:
 |---|---|---|
 | D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the switch to ARMED worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
 | D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
-| D14, the enable | the window capture | deasserted, within 150 ms of that last edge |
-| D15, the load side | both captures | it stops in the window capture, and the 24 MHz one is what says it is quiet rather than carrying something too narrow for 1 MHz to see |
+| D14, the enable | the window capture | deasserted, within 150ms of that last edge |
+| D15, the load side | both captures | it stops in the window capture, and the 24MHz one is what says it is quiet rather than carrying something too narrow for 1MHz to see |
 
 An actively driven input, blocked downstream, is the whole of the claim.
 Leaving D0 out of the capture turns a failed switch to ARMED into a passing interlock
@@ -772,7 +772,7 @@ now.
   so the panel's version does not cause it and reflashing the panel for this
   symptom changes nothing.
 - A real gap after the first request. `shared/link/link_dev.c` latches the
-  failsafe after 200 ms of silence, and 200 ms of silence has causes that have
+  failsafe after 200ms of silence, and 200ms of silence has causes that have
   nothing to do with the build: a save to the IOmcu's flash stops that
   core long enough to lose CAN frames, and an intermittent lead or a marginal
   termination does the same.

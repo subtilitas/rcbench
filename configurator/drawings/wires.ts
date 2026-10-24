@@ -22,7 +22,7 @@ export const MIN_RATIO = 3;
 
 /**
  * A colour of the palette: the core, and a casing or null. A casing is an outline
- * of 1 px on each side of the core. Black and white carry one: no single colour
+ * of 1px on each side of the core. Black and white carry one: no single colour
  * reaches 3:1 on both the light and the dark backgrounds.
  */
 export type Colour = { core: string; casing: string | null };
@@ -51,7 +51,7 @@ export const PLUS = 'red';
 export const MINUS = 'black';
 
 /**
- * Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3 V and VBUS of the
+ * Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3V and VBUS of the
  * IOmcu, the V pin of a strip of the Osoyoo breakout board and the plus of its DC input.
  */
 export const PLUS_NETS: ReadonlySet<string> = new Set([

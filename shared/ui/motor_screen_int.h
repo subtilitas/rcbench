@@ -39,7 +39,7 @@
 #define INNER     10        /**< A card's own padding, px. */
 
 /**
- * @brief The left column's width, px: SERVO's left card, 620 px.  The page
+ * @brief The left column's width, px: SERVO's left card, 620px.  The page
  *        on the left, the readouts and the CONTROL card on a rail on the
  *        right, so a glance at the numbers and a hand on the throttle do
  *        not compete for the same part of the screen.  The rail is the
@@ -48,29 +48,29 @@
 #define LEFT_W    620
 #define LEFT_X    PAD                      /**< The left column, px. */
 #define RIGHT_X   (LEFT_X + LEFT_W + 8)    /**< The rail: x 636. */
-#define RIGHT_W   (W - PAD - RIGHT_X)      /**< The rail's width: 380 px. */
+#define RIGHT_W   (W - PAD - RIGHT_X)      /**< The rail's width: 380px. */
 /** @brief The rail's inner column, as SERVO's output card's: x 648. */
 #define RC_X      (RIGHT_X + 12)
-#define RC_W      (RIGHT_W - 24)           /**< Its width: 356 px. */
+#define RC_W      (RIGHT_W - 24)           /**< Its width: 356px. */
 
 /**
  * @brief The task strip at the 1024 x 600 sizes, as SERVO's: tabs of 150 x
- *        40 px, 4 px apart, from y 8, and the page from y 56.  LIVE |
- *        PROGRAM | SETTINGS take 458 px of the left column.  The shared
- *        UI_WB_ figures stay at their 24 px strip for SUPPLY until it is
+ *        40px, 4px apart, from y 8, and the page from y 56.  LIVE |
+ *        PROGRAM | SETTINGS take 458px of the left column.  The shared
+ *        UI_WB_ figures stay at their 24px strip for SUPPLY until it is
  *        laid out at the new sizes; these are MOTOR & ESC's own, the
  *        shared figures plus the difference.
  */
 #define MO_STRIP_X UI_WB_STRIP_X
-#define MO_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8 px. */
-#define MO_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40 px. */
-#define MO_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150 px. */
-#define MO_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4 px. */
-#define MO_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56 px. */
+#define MO_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8px. */
+#define MO_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40px. */
+#define MO_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150px. */
+#define MO_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4px. */
+#define MO_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
 
 /**
  * @brief The lowest row a control that stops what the bench drives, or a
- *        line of text, may reach: 4 px above the alert band.
+ *        line of text, may reach: 4px above the alert band.
  */
 #define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
@@ -111,7 +111,7 @@
 #define TARGET_H  UI_TAP_MIN              /**< Its height, px. */
 #define RESET_Y   (TARGET_Y + TARGET_H + 10) /**< RESET PEAKS, px. */
 #define ARM_Y     (RESET_Y + BTN_H + 10)  /**< ARM and DISARM, px. */
-#define ARM_H     60                      /**< ARM's height: 9.0 mm. */
+#define ARM_H     60                      /**< ARM's height: 9.0mm. */
 _Static_assert(ARM_Y + ARM_H <= STOP_FLOOR,
                "DISARM ends above the alert band");
 _Static_assert(ARM_Y + ARM_H <= CTL_Y + CTL_H,
@@ -137,9 +137,9 @@ _Static_assert(ARM_H >= UI_TAP_MIN, "ARM is a finger tall");
  * tab switches the task under an open keypad.
  */
 #define PAGE_X    LEFT_X                  /**< The page's left edge. */
-#define PAGE_Y    MO_PAGE_Y               /**< Its top: 56 px. */
-#define PAGE_W    LEFT_W                  /**< Its width: 620 px. */
-#define PAGE_H    (H - PAGE_Y - PAD)      /**< Its height: 476 px. */
+#define PAGE_Y    MO_PAGE_Y               /**< Its top: 56px. */
+#define PAGE_W    LEFT_W                  /**< Its width: 620px. */
+#define PAGE_H    (H - PAGE_Y - PAD)      /**< Its height: 476px. */
 
 _Static_assert(MO_STRIP_X + 3 * MO_TAB_W + 2 * MO_TAB_GAP + 3 <= RIGHT_X,
                "the strip ends left of the rail");

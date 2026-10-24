@@ -70,7 +70,7 @@ static inline uint32_t fw_fix_make(const fw_fix_t *f, uint8_t *buf)
     buf[0] = f->magic;
     buf[1] = f->segments;
     buf[2] = 2u;                   /* DIO */
-    buf[3] = 0x2Fu;                /* 8 MB, 80 MHz */
+    buf[3] = 0x2Fu;                /* 8MB, 80MHz */
     fw_put32(buf + 4, 0x40375000u);
     buf[12] = (uint8_t)f->chip;
     buf[13] = (uint8_t)(f->chip >> 8);

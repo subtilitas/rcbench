@@ -18,9 +18,9 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/** @brief The screen's width: the panel's 1024 px. */
+/** @brief The screen's width: the panel's 1024px. */
 #define SCREEN_W UI_PANEL_W
-#define SCREEN_H UI_BODY_H    /**< The body under the band: 540 px. */
+#define SCREEN_H UI_BODY_H    /**< The body under the band: 540px. */
 #define MAX_FBS  3     /**< Framebuffers the chrome is cached for. */
 
 /** @brief The count under the protocol list ("4 OF 8 PINS"), and under it
@@ -35,11 +35,11 @@
 /**
  * @brief UNBIND ALL PINS, shown only while the pages read describe no
  *        binding: held for UI_HOLD_S, it writes a binding with no pin.
- *        Below the reason's second line, 300 x 56 px; its label on two
+ *        Below the reason's second line, 300 x 56px; its label on two
  *        lines where it needs them.
  */
 #define CLR_Y    (REASON_Y + 2 * OU_LINE + 8)
-#define CLR_H    UI_BTN_H_TALL /**< Its height, px (8.4 mm). */
+#define CLR_H    UI_BTN_H_TALL /**< Its height, px (8.4mm). */
 
 /** @brief LAST WRITE, and under it the result in OU_FONT_HEAD on one line,
  *  or two RESULT_PITCH apart where it is wider than the column; the last
@@ -59,24 +59,24 @@ _Static_assert(CLR_Y + CLR_H + 8 <= LAST_Y,
  * run of consecutive GPIOs.  Twenty-six pins leave the last two cells empty,
  * which is better than a grid that has to be read across.
  *
- * A cell is 167 x 64 px (25.1 x 9.6 mm): seven rows 6 px apart from y 8
- * end at body y 492, 4 px above the alert band; four columns 8 px apart
- * from x 324 end 8 px from the screen's right edge.  The tick box is
- * 24 px, the GP name beside it in OU_FONT_HEAD, and the line under them
- * in OU_FONT_FINE from 8 px in holds 18 cells (144 px) inside the cell:
+ * A cell is 167 x 64px (25.1 x 9.6mm): seven rows 6px apart from y 8
+ * end at body y 492, 4px above the alert band; four columns 8px apart
+ * from x 324 end 8px from the screen's right edge.  The tick box is
+ * 24px, the GP name beside it in OU_FONT_HEAD, and the line under them
+ * in OU_FONT_FINE from 8px in holds 18 cells (144px) inside the cell:
  * "PWM CH OF GP0", "SLICE VON GP13" and "DSHOT600 BIDIR" whole.
  */
 #define GRID_X   (COL_X + COL_W + 8) /**< The grid's left edge. */
-/** @brief The pin grid's width, to 8 px from the right edge: 692 px. */
+/** @brief The pin grid's width, to 8px from the right edge: 692px. */
 #define GRID_W   (SCREEN_W - 8 - GRID_X)
 #define GRID_Y   8            /**< Its top. */
 #define GRID_COLS 4           /**< Columns of cells. */
 #define GRID_ROWS 7           /**< Cells down a column. */
 #define CELL_GAP 8     /**< Between columns, px. */
 #define ROW_GAP  6     /**< Between rows, px. */
-/** @brief A cell's width: 167 px. */
+/** @brief A cell's width: 167px. */
 #define CELL_W   ((GRID_W - (GRID_COLS - 1) * CELL_GAP) / GRID_COLS)
-#define CELL_H   64           /**< Its height, px (9.6 mm). */
+#define CELL_H   64           /**< Its height, px (9.6mm). */
 #define BOX      24           /**< The tick box, px. */
 #define CELL_PAD 8     /**< The tick box and the sub-line from the edge. */
 #define CELL_LABEL_Y 44 /**< The sub-line's top in the cell. */
@@ -92,9 +92,9 @@ _Static_assert(CELL_PAD + CELL_CELLS * 8 < CELL_W - 8,
 
 /*
  * The dropdown, when it is open, covers the pins: the protocols in a
- * column of 48 px rows (UI_TAP_MIN) from the face's top, and the PROG PORT
+ * column of 48px rows (UI_TAP_MIN) from the face's top, and the PROG PORT
  * entries in a second column of the same rows beside it, the list
- * 600 x 392 px with them.  With its 4 px margins and 4 px shadow the list
+ * 600 x 392px with them.  With its 4px margins and 4px shadow the list
  * ends at body y 440, above the alert band.
  */
 #define POP_X    COL_X        /**< The open list's left edge. */
@@ -871,7 +871,7 @@ static void draw_left(gfx_canvas_t *c)
         gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
         gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0,
                                  UI_DANGER);
-        /* One line in the middle, or two 22 px apart about it, 10 px in
+        /* One line in the middle, or two 22px apart about it, 10px in
          * from either end. */
         const char *label = TR(OUT_HOLD_UNBIND);
         const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, 20);
@@ -962,7 +962,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
     gfx_text(c, bx + BOX + 10, r.y + 4, name, OU_FONT_HEAD, ink, 1);
 
     /* Under the box and the name, from the box's left edge: 18 cells,
-     * 144 px of the cell's 167. */
+     * 144px of the cell's 167. */
     char label[32];
     gfx_color_t lc = UI_TEXT_FAINT;
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {

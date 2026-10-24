@@ -50,19 +50,19 @@ static void put16(uint8_t *p, uint16_t v)
 static void sample_payload(uint8_t *p)
 {
     memset(p, 0, OPENYGE_TELEMETRY_BYTES);
-    p[1] = 40 + 63;                  /* 63 C */
-    put16(p + 2, 2512);              /* 25.12 V */
-    put16(p + 4, 4310);              /* 43.10 A */
+    p[1] = 40 + 63;                  /* 63C */
+    put16(p + 2, 2512);              /* 25.12V */
+    put16(p + 4, 4310);              /* 43.10A */
     put16(p + 6, 1234);              /* mAh */
-    put16(p + 8, 4200);              /* 42,000 eRPM */
+    put16(p + 8, 4200);              /* 42,000eRPM */
     p[10] = (uint8_t)(int8_t)72;     /* pwm % */
     p[11] = (uint8_t)(int8_t)70;     /* throttle % */
-    put16(p + 12, 8100);             /* 8.100 V BEC */
-    put16(p + 14, 1900);             /* 1.900 A BEC */
-    p[16] = 40 + 51;                 /* BEC 51 C */
+    put16(p + 12, 8100);             /* 8.100V BEC */
+    put16(p + 14, 1900);             /* 1.900A BEC */
+    p[16] = 40 + 51;                 /* BEC 51C */
     p[17] = 0x0E;                    /* RUNNING */
-    p[18] = 40 + 44;                 /* cap 44 C */
-    p[19] = 40 + 39;                 /* aux 39 C */
+    p[18] = 40 + 44;                 /* cap 44C */
+    p[19] = 40 + 39;                 /* aux 39C */
     p[20] = 0x5A;                    /* status2, carried not read */
     put16(p + 22, 20);               /* pidx */
     put16(p + 24, 14);               /* pdata */
@@ -230,9 +230,9 @@ TEST_CASE(temperatures_below_zero_decode_as_negative)
 {
     uint8_t pay[OPENYGE_TELEMETRY_BYTES], buf[64];
     sample_payload(pay);
-    pay[1] = 0;      /* -40 C */
-    pay[16] = 35;    /* -5 C */
-    pay[18] = 255;   /* 215 C, the top of the range */
+    pay[1] = 0;      /* -40C */
+    pay[16] = 35;    /* -5C */
+    pay[18] = 255;   /* 215C, the top of the range */
     const size_t n = make_tele(buf, 3, OPENYGE_FT_TELE_AUTO, 0, 1, pay);
 
     openyge_decoder_t d; openyge_frame_t f; openyge_telemetry_t t;

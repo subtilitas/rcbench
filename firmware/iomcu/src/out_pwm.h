@@ -85,9 +85,9 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us);
  * the frame's last 2 counts -- a write there could meet the wrap that
  * latches it, and the frame it lands in would be unknown -- so the write
  * lands in the frame the counter was read in, and that frame ends
- * (wrap - counter + 1) counts later.  One count is 1 us, from clk_sys
- * divided to 1 MHz; the timer ticks at 1 MHz from the same crystal.  The
- * stamp is good to the 1 us of each, within +-1 us.
+ * (wrap - counter + 1) counts later.  One count is 1us, from clk_sys
+ * divided to 1MHz; the timer ticks at 1MHz from the same crystal.  The
+ * stamp is good to the 1us of each, within +-1us.
  *
  * False, with the level written and nothing stamped, for a pin not bound
  * or a slice whose counter does not leave the frame's end within

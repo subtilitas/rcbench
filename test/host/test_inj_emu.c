@@ -205,7 +205,7 @@ TEST_CASE(a_tap_presses_for_its_length_and_releases)
         CHECK_EQ(seen[i].n, 1);
     }
     CHECK_EQ(seen[nseen - 1].n, 0);
-    /* Down from the first read to the release read: 100 ms to 110 ms. */
+    /* Down from the first read to the release read: 100ms to 110ms. */
     const uint32_t held = seen[nseen - 1].t - seen[0].t;
     CHECK(held >= 100u && held <= 110u);
 
@@ -331,8 +331,8 @@ TEST_CASE(one_gesture_at_a_time)
     CHECK_STR_EQ(last(), "ok tap");
 }
 
-/* A swipe never moves more than 100 px between two frames the panel reads,
- * so the panel's 120 px jump split never cuts it. */
+/* A swipe never moves more than 100px between two frames the panel reads,
+ * so the panel's 120px jump split never cuts it. */
 TEST_CASE(a_fast_swipe_is_slowed_under_the_jump_split)
 {
     active(0);
@@ -486,7 +486,7 @@ TEST_CASE(a_closed_port_lifts_the_contact_silently)
     CHECK_EQ(seen[nseen - 2].n, 1);
 }
 
-/* The release frame itself not read: the release ends after 100 ms and
+/* The release frame itself not read: the release ends after 100ms and
  * the frame is withdrawn. */
 TEST_CASE(an_unread_release_frame_is_withdrawn)
 {

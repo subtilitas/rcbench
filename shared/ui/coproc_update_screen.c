@@ -30,9 +30,9 @@
 
 /*
  * The question, in the body under the band:
- * A box 860 x 248 px, its lines in CU_FONT_BODY 36 px apart from 44 px
- * under its top edge, CANCEL and START side by side under them, 398 x 56 px
- * each, 16 px apart.  START's foot is body y 344, 152 px above the alert
+ * A box 860 x 248px, its lines in CU_FONT_BODY 36px apart from 44px
+ * under its top edge, CANCEL and START side by side under them, 398 x 56px
+ * each, 16px apart.  START's foot is body y 344, 152px above the alert
  * band.  On the panel CANCEL's middle is (305, 376) and START's (719, 376).
  */
 /** @brief The question's box, in the body. */
@@ -46,9 +46,9 @@
 
 /*
  * The progress, on the whole panel:
- * A 64 px title bar; the step in CU_FONT_HEAD and the versions under it;
- * the bar 36 px tall across the panel less 24 px each side; the block count
- * under it; the three notes in CU_FONT_BODY, 28 px apart.
+ * A 64px title bar; the step in CU_FONT_HEAD and the versions under it;
+ * the bar 36px tall across the panel less 24px each side; the block count
+ * under it; the three notes in CU_FONT_BODY, 28px apart.
  */
 /** @brief The panel's width, px. */
 #define W        UI_PANEL_W
@@ -56,13 +56,13 @@
 #define BAR_H    64
 /** @brief The progress's left edge. */
 #define COL_X    24
-#define COL_W    (W - 2 * COL_X)    /**< 976 px: 81 cells of CU_FONT_BODY */
+#define COL_W    (W - 2 * COL_X)    /**< 976px: 81 cells of CU_FONT_BODY */
 #define PITCH    28                 /**< a CU_FONT_BODY line's pitch */
 /** @brief The step's top. */
 #define STEP_Y   (BAR_H + 20)
 /** @brief The versions' top. */
 #define FROM_Y   (STEP_Y + 48)
-/** @brief The progress bar, 36 px tall. */
+/** @brief The progress bar, 36px tall. */
 #define PBAR     gfx_rect_make(COL_X, 180, COL_W, 36)
 /** @brief The block count's top. */
 #define COUNT_Y  228

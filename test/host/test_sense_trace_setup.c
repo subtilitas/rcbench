@@ -1,5 +1,5 @@
 /*
- * The trace of CH1's 1 ms samples (sense_trace.h), the set-up's records,
+ * The trace of CH1's 1ms samples (sense_trace.h), the set-up's records,
  * over sense_trace_rig.h: a set-up record with the time of the tick it was
  * seen in, and one that found no room; a stop on a full ring; a changed
  * set-up and a state change under a backlog, each in its place among the
@@ -28,7 +28,7 @@ static const sense_trace_rec_t *newest_of(sense_trace_kind_t kind)
 
 TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
 {
-    /* The part offline: no sample for 2 s.  A command, and 300 ms after
+    /* The part offline: no sample for 2s.  A command, and 300ms after
      * it another shunt: the command was given under the old one, and its
      * line is in the trace that ends at the change. */
     rig();
@@ -108,7 +108,7 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
 TEST_CASE(a_set_up_record_that_found_no_room_keeps_its_time_or_the_rings)
 {
     /* The ring full when the set-up changes, and the console takes
-     * nothing for 5 ms: the record is written with the time of the tick
+     * nothing for 5ms: the record is written with the time of the tick
      * the change was seen in. */
     rig_size(8u);
     run(20u);
@@ -169,7 +169,7 @@ TEST_CASE(a_stop_on_a_full_ring_counts_what_was_dropped_before_it)
     run(20u);
     sense_trace_key(&tr, 't', g_us);
     run(20u);
-    /* 30 ms with no room on a ring of 8: records are dropped, and the
+    /* 30ms with no room on a ring of 8: records are dropped, and the
      * count of them rides on the first record kept after the stop. */
     stall(30u);
     CHECK(tr.src.lost > 20u);
@@ -198,7 +198,7 @@ TEST_CASE(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed)
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     sense_trace_key(&tr, 't', g_us);
     run(100u);
-    /* 300 ms wait in the ring; then another shunt, and 100 ms more. */
+    /* 300ms wait in the ring; then another shunt, and 100ms more. */
     stall(300u);
     ++cmd.cfg_gen;
     cmd.parts.i3221.shunt_uohm[0] = 50000u;
@@ -226,7 +226,7 @@ TEST_CASE(a_changed_set_up_under_a_backlog_ends_the_trace_where_it_changed)
     CHECK_EQ(seen.z_e, 's');
     CHECK_EQ(seen.z_s, seen.n_s);
     CHECK_EQ(seen.shunt, I3221_UOHM);
-    /* The 400 ms before the change, each at the header's scale, and no
+    /* The 400ms before the change, each at the header's scale, and no
      * sample of the new set-up. */
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
     CHECK_EQ(seen.n_s, pre + 400u);
@@ -263,7 +263,7 @@ TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
     sense_trace_key(&tr, 't', g_us);
     run(100u);
     /* The console is behind when the set-up changes, and still behind
-     * when a command comes 50 ms later: the trace looks open, and ended
+     * when a command comes 50ms later: the trace looks open, and ended
      * before the command. */
     stall(200u);
     ++cmd.cfg_gen;
@@ -293,7 +293,7 @@ TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
     CHECK(sense_trace_active(&tr));
 }
 
-/* A trace by the console, 100 ms written and then the console behind:
+/* A trace by the console, 100ms written and then the console behind:
  * the set-up changes after @p before ms of that and @p after ms pass. */
 static void behind_at_a_change(unsigned before, unsigned after)
 {
@@ -426,8 +426,8 @@ TEST_CASE(a_slewed_commands_end_goes_with_its_command_into_the_next_trace)
 
 TEST_CASE(a_trigger_past_the_next_traces_end_overwrites_none_that_waited)
 {
-    /* The console behind for 12 s.  Two commands after a changed set-up,
-     * 5 s apart, and one past the end the trace seems to have: the first
+    /* The console behind for 12s.  Two commands after a changed set-up,
+     * 5s apart, and one past the end the trace seems to have: the first
      * starts the next trace, the second lies past that trace's end and
      * waits, and the third still waits behind it. */
     behind_at_a_change(100u, 100u);
@@ -498,7 +498,7 @@ TEST_CASE(a_state_change_under_a_backlog_keeps_its_place)
     run(200u);
     sense_trace_key(&tr, 't', g_us);
     run(100u);
-    /* 200 ms wait in the ring when the part stops answering; it is
+    /* 200ms wait in the ring when the part stops answering; it is
      * offline 3 failed reads later. */
     stall(200u);
     i3221->present = false;
@@ -509,7 +509,7 @@ TEST_CASE(a_state_change_under_a_backlog_keeps_its_place)
     CHECK_EQ(seen.n_st, 1u);
     CHECK_EQ(seen.st_on, 0u);
     /* The $S line stands after the last sample taken before the outage:
-     * 300 ms of them after the trigger. */
+     * 300ms of them after the trigger. */
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
     CHECK_EQ(seen.st_at, pre + 300u);
     CHECK_EQ(seen.n_s, pre + 300u);

@@ -6,7 +6,7 @@
  *
  * See wifi_radio.h.
  *
- * The link: SDIO slot 1, 4 data lines at 40 MHz, the pins of board_pins.h
+ * The link: SDIO slot 1, 4 data lines at 40MHz, the pins of board_pins.h
  * (BOARD_C6_*), which esp_hosted reads from sdkconfig.defaults; the checks
  * below fail the build when the two differ.  esp_hosted sets up its 6 tasks
  * and the SDMMC (SD/MMC host) controller before app_main(); it resets and
@@ -144,7 +144,7 @@ void wifi_radio_mac(uint8_t mac[6])
  * esp_hosted's tasks keep running after a failure.  A C6 that holds DAT1
  * (its interrupt line) low would keep esp_hosted's read task, priority 23
  * on core 0, failing and logging in a loop.  EN low holds the C6 in reset;
- * its SDIO pins let go, the 51 kOhm pull-ups take DAT1 high, and the read
+ * its SDIO pins let go, the 51kOhm pull-ups take DAT1 high, and the read
  * task waits.  The C6 stays in reset until the panel restarts.
  *
  * @param why What failed, for the log.
@@ -233,7 +233,7 @@ static bool wait_up(void)
  *
  * A C6 firmware that predates the version request answers it with an
  * error or not at all; the request then ends after esp_hosted's response
- * time-out, 5 s, once.
+ * time-out, 5s, once.
  */
 static void version_once(void)
 {

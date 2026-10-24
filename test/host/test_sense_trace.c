@@ -1,5 +1,5 @@
 /*
- * The trace of CH1's 1 ms samples (sense_trace.h), core 0's triggers and
+ * The trace of CH1's 1ms samples (sense_trace.h), core 0's triggers and
  * the console, over sense_trace_rig.h: the newest SENSE_TRACE_PRE records
  * kept while idle; a trace from each trigger with its header, its records
  * from before the trigger and its length; a trigger during a trace adding
@@ -7,7 +7,7 @@
  * SENSE_TRACE_HOLD_MS and one step either side; a trace the console never
  * takes, dropped before its times wrap; a slewed command and the $D line
  * that ends it; traces across the wrap of the millisecond tick and of the
- * 0.1 ms count; whole lines only, whatever room the console has; a console
+ * 0.1ms count; whole lines only, whatever room the console has; a console
  * with no room for seconds, inside a trace and across its end, and one not
  * connected.
  *
@@ -61,7 +61,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
     CHECK_EQ(seen.on, 1u);
     CHECK_EQ(seen.rst, 0u);
     CHECK_EQ(seen.mark_t[0], t0);
-    /* The samples from before the trigger, then 10 s of them. */
+    /* The samples from before the trigger, then 10s of them. */
     CHECK(seen.first_dt < 0 && seen.first_dt >= -640);
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
     CHECK_EQ(seen.n_s, pre + 10000u);
@@ -78,7 +78,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
     CHECK_EQ(seen.z_id, 1u);
     CHECK_EQ(seen.z_s, seen.n_s);
     CHECK_EQ(seen.z_v, seen.n_v);
-    CHECK(seen.n_v >= 416u && seen.n_v <= 420u);   /* every 24 ms */
+    CHECK(seen.n_v >= 416u && seen.n_v <= 420u);   /* every 24ms */
     CHECK_EQ(seen.z_l, 0u);
     CHECK_EQ(seen.z_m, 1u);
     CHECK_EQ(seen.z_ml, 0u);
@@ -101,7 +101,7 @@ TEST_CASE(a_command_and_an_edge_give_four_seconds)
     rig();
     run(300u);
     const uint32_t t0 = (uint32_t)(g_us / 100u);
-    /* The frame that carries the pulse starts 12.3 ms ahead. */
+    /* The frame that carries the pulse starts 12.3ms ahead. */
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us + 12300u, 3u, 1900u);
     run(4100u);
     CHECK(!sense_trace_active(&tr));
@@ -114,7 +114,7 @@ TEST_CASE(a_command_and_an_edge_give_four_seconds)
     CHECK_EQ(seen.mark_ch, 3u);
     CHECK_EQ(seen.mark_us, 1900u);
     CHECK_EQ(seen.mark_t[0], t0 + 123u);
-    /* The last sample is the last before the end: 4000 ms after the
+    /* The last sample is the last before the end: 4000ms after the
      * frame's start. */
     CHECK(seen.t[seen.n_s - 1u] < t0 + 123u + 40000u);
     CHECK(seen.t[seen.n_s - 1u] >= t0 + 123u + 40000u - 10u);
@@ -143,7 +143,7 @@ TEST_CASE(a_trigger_during_a_trace_moves_its_end_and_never_back)
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1100u);
     run(3999u);
     CHECK(sense_trace_active(&tr));
-    /* 1 ms before its end: a second command, and 4 s more. */
+    /* 1ms before its end: a second command, and 4s more. */
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1900u);
     run(3999u);
     CHECK(sense_trace_active(&tr));
@@ -159,7 +159,7 @@ TEST_CASE(a_trigger_during_a_trace_moves_its_end_and_never_back)
     CHECK_EQ(seen.z_m, 2u);
     CHECK_EQ(seen.z_s, seen.n_s);
 
-    /* A 10 s trace is not cut short by a command 1 s into it. */
+    /* A 10s trace is not cut short by a command 1s into it. */
     g_len = 0u;
     const uint32_t t1 = (uint32_t)(g_us / 100u);
     sense_trace_key(&tr, 'T', g_us);
@@ -189,17 +189,17 @@ TEST_CASE(a_slots_pulse_is_a_command_after_it_held_still)
     /* The first change is a command, whenever it comes. */
     us += 2000u;
     CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us));
-    /* 49.9 ms after it: the same command still slewing. */
+    /* 49.9ms after it: the same command still slewing. */
     CHECK(!sense_trace_pulse(&tr, 2u, 5u, 1890u, us + 49900u));
-    /* 50.0 ms after that one: a command of its own. */
+    /* 50.0ms after that one: a command of its own. */
     us += 49900u;
     CHECK(sense_trace_pulse(&tr, 2u, 5u, 1100u, us + 50000u));
     us += 50000u;
-    /* And 50.1 ms. */
+    /* And 50.1ms. */
     CHECK(sense_trace_pulse(&tr, 2u, 5u, 1900u, us + 50100u));
     us += 50100u;
     /* The bank letting go is no command; the pulse after it is one,
-     * 100 ms later and 1 ms later. */
+     * 100ms later and 1ms later. */
     CHECK(!sense_trace_pulse(&tr, 2u, 5u, 0u, us + 100000u));
     CHECK(sense_trace_pulse(&tr, 2u, 5u, 1500u, us + 200000u));
     us += 200000u;
@@ -210,7 +210,7 @@ TEST_CASE(a_slots_pulse_is_a_command_after_it_held_still)
     CHECK(sense_trace_pulse(&tr, 7u, 5u, 1501u, us));
     CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 5u, 1500u, us));
     CHECK(!sense_trace_pulse(&tr, SENSE_TRACE_SLOTS, 5u, 1501u, us));
-    /* The hold across the 0.1 ms count's wrap. */
+    /* The hold across the 0.1ms count's wrap. */
     us = ((uint64_t)1u << 32) * 100u - 20000u;
     CHECK(sense_trace_pulse(&tr, 0u, 5u, 1500u, us) == false);
     CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, us));
@@ -221,8 +221,8 @@ TEST_CASE(a_slots_pulse_is_a_command_after_it_held_still)
 TEST_CASE(a_slot_still_for_longer_than_the_count_tells_is_a_command_again)
 {
     /* A slot's pulse is seen every pass.  Still for 2^31 counts of
-     * 0.1 ms (59.6 h), 50 ms less and 50 ms more, and for 2^32 less
-     * 1 ms: the next change is a command each time. */
+     * 0.1ms (59.6h), 50ms less and 50ms more, and for 2^32 less
+     * 1ms: the next change is a command each time. */
     static const uint64_t still_us[] = {
         ((uint64_t)1u << 31) * 100u - 50000u,
         ((uint64_t)1u << 31) * 100u,
@@ -235,7 +235,7 @@ TEST_CASE(a_slot_still_for_longer_than_the_count_tells_is_a_command_again)
         CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, us));
         CHECK(sense_trace_pulse(&tr, 1u, 5u, 1900u, us + 1000u));
         us += 1000u;
-        /* A pass 50 ms after the change, as every pass after it. */
+        /* A pass 50ms after the change, as every pass after it. */
         CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1900u, us + 50000u));
         CHECK(!tr.out.watch[1].changed);
         CHECK(sense_trace_pulse(&tr, 1u, 5u, 1100u, us + still_us[k]));
@@ -255,8 +255,8 @@ TEST_CASE(a_slot_still_for_longer_than_the_count_tells_is_a_command_again)
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1700u, g_us + 70000u));
     CHECK_EQ(tr.out.q_n, 2u);
     /* Let go inside the hold: the last change is forgotten there, and
-     * the pulse after it is a command, at once and 50 ms later.  A
-     * change 1 ms after that command is its slew. */
+     * the pulse after it is a command, at once and 50ms later.  A
+     * change 1ms after that command is its slew. */
     rig();
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1500u, g_us));
     CHECK(sense_trace_pulse(&tr, 1u, 5u, 1600u, g_us + 1000u));
@@ -281,7 +281,7 @@ TEST_CASE(a_trace_the_console_never_takes_is_dropped_before_its_times_wrap)
                         1500u);
     CHECK_EQ(tr.out.wait_n, 1u);
     stall(100u);
-    /* 0.1 ms short of 2^30 counts after its end: still the trace. */
+    /* 0.1ms short of 2^30 counts after its end: still the trace. */
     g_us = end_us + ((uint64_t)SENSE_TRACE_OWED_MAX_T - 1u) * 100u;
     pass_as(0u, true);
     CHECK(sense_trace_active(&tr));
@@ -314,7 +314,7 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
     run(300u);
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1100u, g_us));
-    /* 800 us of travel at 1 us a millisecond: a change every pass. */
+    /* 800us of travel at 1us a millisecond: a change every pass. */
     unsigned commands = 0u;
     for (unsigned k = 1u; k <= 800u; ++k) {
         if (sense_trace_pulse(&tr, 0u, 5u, (uint16_t)(1100u + k), g_us)) {
@@ -325,7 +325,7 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
         run(1u);
     }
     CHECK_EQ(commands, 1u);
-    /* Open 4 s past the last change, not past the first.  The slot
+    /* Open 4s past the last change, not past the first.  The slot
      * renders its last pulse in every pass. */
     for (unsigned k = 0; k < 3990u; ++k) {
         CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1900u, g_us));
@@ -387,8 +387,8 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
 }
 
 /* A $D line names its command's $C time: a slew let go and a new command
- * 11 ms after its last change each end with their own command, across
- * the 0.1 ms count's wrap. */
+ * 11ms after its last change each end with their own command, across
+ * the 0.1ms count's wrap. */
 TEST_CASE(a_d_line_names_the_command_it_ends)
 {
     rig();
@@ -509,7 +509,7 @@ TEST_CASE(an_edge_or_a_key_during_a_slew_is_no_command_of_channel_0)
     CHECK(strstr(g_log, want) != NULL);
 }
 
-/* A trace of 4 s from an edge at @p edge_us, the clock 300 ms before it. */
+/* A trace of 4s from an edge at @p edge_us, the clock 300ms before it. */
 static void trace_at(uint64_t edge_us)
 {
     rig();
@@ -522,7 +522,7 @@ static void trace_at(uint64_t edge_us)
 
 TEST_CASE(a_trace_runs_across_the_millisecond_ticks_wrap)
 {
-    /* The edge 1 ms before the tick wraps at 2^32 ms. */
+    /* The edge 1ms before the tick wraps at 2^32ms. */
     const uint64_t wrap_us = ((uint64_t)1u << 32) * 1000u;
     trace_at(wrap_us - 1000u);
     CHECK(!sense_trace_active(&tr));
@@ -535,7 +535,7 @@ TEST_CASE(a_trace_runs_across_the_millisecond_ticks_wrap)
     CHECK_EQ(seen.t[seen.n_s - 1u], (uint32_t)seen.t0 + 40000u - 10u);
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
     CHECK_EQ(seen.n_s, pre + 4000u);
-    /* At the wrap, and 1 ms past it. */
+    /* At the wrap, and 1ms past it. */
     trace_at(wrap_us);
     CHECK_EQ(seen.ms0, 0u);
     CHECK_EQ(seen.n_z, 1u);
@@ -548,8 +548,8 @@ TEST_CASE(a_trace_runs_across_the_millisecond_ticks_wrap)
 
 TEST_CASE(a_trace_runs_across_the_tenth_millisecond_counts_wrap)
 {
-    /* The count the lines carry wraps at 2^32 * 0.1 ms: 1 s into this
-     * trace, at its first sample, and 1 ms before its end. */
+    /* The count the lines carry wraps at 2^32 * 0.1ms: 1s into this
+     * trace, at its first sample, and 1ms before its end. */
     const uint64_t wrap_us = ((uint64_t)1u << 32) * 100u;
     const uint64_t at[] = { wrap_us - 1000000u, wrap_us - 100u, wrap_us,
                             wrap_us - 3999000u, wrap_us - 4000000u };
@@ -612,8 +612,8 @@ TEST_CASE(a_console_with_no_room_loses_samples_and_says_how_many)
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     sense_trace_key(&tr, 't', g_us);
     run(1000u);
-    /* The console takes nothing for 6 s: the ring fills after about
-     * 3.9 s and the rest is dropped.  Nothing waits: every tick returns. */
+    /* The console takes nothing for 6s: the ring fills after about
+     * 3.9s and the rest is dropped.  Nothing waits: every tick returns. */
     for (unsigned k = 0; k < 6000u; ++k) {
         tick();
         pass_as(0u, true);
@@ -629,7 +629,7 @@ TEST_CASE(a_console_with_no_room_loses_samples_and_says_how_many)
     CHECK_EQ(seen.z_l, seen.lost);
     CHECK_EQ(seen.z_s, seen.n_s);
     CHECK_EQ(seen.z_v, seen.n_v);
-    /* What is written and what is missing are the 10 s: 10000 samples.
+    /* What is written and what is missing are the 10s: 10000 samples.
      * A dropped sample's voltage is not written and not counted; a
      * voltage that found the ring full behind its sample is counted. */
     const unsigned pre = (unsigned)(-seen.first_dt) / 10u;
@@ -647,8 +647,8 @@ TEST_CASE(a_console_with_no_room_across_the_end_ends_the_trace_there)
     const uint32_t t0 = (uint32_t)(g_us / 100u);
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
     run(3000u);
-    /* No room from 1 s before the end to 1 s after it: the ring holds
-     * the 2 s, and the samples past the end are not the trace's. */
+    /* No room from 1s before the end to 1s after it: the ring holds
+     * the 2s, and the samples past the end are not the trace's. */
     for (unsigned k = 0; k < 2000u; ++k) {
         tick();
         pass_as(0u, true);

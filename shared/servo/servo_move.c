@@ -29,9 +29,9 @@ float servo_move_threshold_a(float noise_a)
 
 /*
  * The lag is added to the window rather than the window's last part left
- * unjudged: a servo that arrives at 2900 ms shows it on the PD mini at
- * about 3200 ms, and waiting for that reading times the move.  A move that
- * never arrives is still late, only 300 ms later; a window left unjudged
+ * unjudged: a servo that arrives at 2900ms shows it on the PD mini at
+ * about 3200ms, and waiting for that reading times the move.  A move that
+ * never arrives is still late, only 300ms later; a window left unjudged
  * would need the same wait to tell the two apart.
  */
 uint32_t servo_move_window_ms(uint32_t lag_ms)
@@ -277,7 +277,7 @@ servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
     m->run_hi = hi;
     if (c == SERVO_MOVE_CLIP_NONE) {
         /* The peak from the first valued sample, so a move whose samples
-         * all lie below 0 A reports the highest of them. */
+         * all lie below 0A reports the highest of them. */
         if (m->n == 0u || i > m->peak) {
             m->peak = i;
         }

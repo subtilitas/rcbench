@@ -22,7 +22,7 @@
 /* ------------------------------------------------------ the windows */
 
 /*
- * SERVO_SENSE every poll: four 50 ms windows in a row each give one row
+ * SERVO_SENSE every poll: four 50ms windows in a row each give one row
  * for the log, keyed by the window number, and a window read twice gives
  * none.  A clip in one window, gone in the next, is still said.
  */
@@ -118,7 +118,7 @@ TEST_CASE(a_row_is_unheld_from_its_edit_to_the_acknowledgement)
         }
         want(&w);
         CHECK_EQ(sense_link_unheld(&sl), k[i].row);
-        /* Still resting 450 ms later, and written by 550 ms. */
+        /* Still resting 450ms later, and written by 550ms. */
         polls(9);
         CHECK_EQ(sense_link_unheld(&sl), k[i].row);
         polls(2);
@@ -334,12 +334,12 @@ TEST_CASE(a_part_the_page_cannot_enable_is_unheld)
 
 /*
  * The rest after an edit and the retry of refused pins, each with the
- * 2^32 ms tick wrapping inside it: the mark stays and goes at the same
+ * 2^32ms tick wrapping inside it: the mark stays and goes at the same
  * poll as away from the wrap.
  */
 TEST_CASE(a_row_is_unheld_for_the_same_time_across_the_tick_wrap)
 {
-    /* An edit 250 ms before the wrap: resting at 450 ms, written by 550. */
+    /* An edit 250ms before the wrap: resting at 450ms, written by 550. */
     fresh(9u);
     polls(2);
     now = 0xFFFFFFFFu - 249u;
@@ -356,7 +356,7 @@ TEST_CASE(a_row_is_unheld_for_the_same_time_across_the_tick_wrap)
     CHECK_EQ(sense_link_unheld(&sl), 0u);
     CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 18u);
 
-    /* Pins an output holds, refused 1000 ms before the wrap: marked until
+    /* Pins an output holds, refused 1000ms before the wrap: marked until
      * the retry SENSE_LINK_BUS_RETRY_MS later, which is past it, finds
      * the pin free. */
     fresh(9u);
@@ -377,10 +377,10 @@ TEST_CASE(a_row_is_unheld_for_the_same_time_across_the_tick_wrap)
     const unsigned before = writes;
     polls((int)(SENSE_LINK_BUS_RETRY_MS / 50u) - 1);
     CHECK_EQ(now, 4000u);                       /* the tick has wrapped */
-    CHECK_EQ(writes, before);                   /* 4950 ms: not offered */
+    CHECK_EQ(writes, before);                   /* 4950ms: not offered */
     CHECK_EQ(sense_link_unheld(&sl), refused);
     CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 16u);
-    polls(1);                                   /* 5000 ms: offered, taken */
+    polls(1);                                   /* 5000ms: offered, taken */
     CHECK_EQ(writes, before + 1u);
     CHECK_EQ(sense_link_unheld(&sl), 0u);
     CHECK_EQ(pg.sense[LINK_SN_SDA_PIN], 18u);
@@ -585,7 +585,7 @@ TEST_CASE(the_encoders_angle_is_handed_over_while_the_read_is_fresh)
     CHECK(!sense_link_enc(&sl, now, &e));
     CHECK(!sense_link_enc(&sl, now, NULL));
     CHECK(!sense_link_enc(NULL, now, &e));
-    /* Read every 40 ms: two polls of 50 ms never go by unread. */
+    /* Read every 40ms: two polls of 50ms never go by unread. */
     far_enc(ENC_OK, 7u, 1u, 1u);
     uint32_t last = 0u;
     for (int k = 0; k < 10; ++k) {
@@ -965,9 +965,9 @@ TEST_CASE(encoder_events_come_after_the_current_monitors)
              SENSE_LINK_EV_ENC_SILENT);
 }
 
-/* The ESC's telemetry is handed over for SENSE_LINK_STALE_MS less 1 ms
+/* The ESC's telemetry is handed over for SENSE_LINK_STALE_MS less 1ms
  * after the read that brought it and the totals for SENSE_LINK_TOTALS_MS
- * less 1 ms, wherever on the clock that read was. */
+ * less 1ms, wherever on the clock that read was. */
 static void a_status_read_is_fresh_for_its_time(uint32_t t0)
 {
     fresh(7u);
@@ -1009,7 +1009,7 @@ TEST_CASE(a_status_read_is_fresh_for_its_time_across_the_tick_wrap)
 }
 
 /* The encoder's angle the same: handed over for SENSE_LINK_STALE_MS less
- * 1 ms after its read. */
+ * 1ms after its read. */
 static void an_angle_is_fresh_for_its_time(uint32_t t0)
 {
     enc_wanted(9u);

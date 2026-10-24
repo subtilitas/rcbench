@@ -155,7 +155,7 @@ static bool resumable(const servo_page_t *p, const uint16_t *next)
  * back to their own.  A programming port: its own pin alone, which shares no
  * slice with a slot; a pin that shares its slice with another port's stays at
  * PROG_PORT_RATE_HZ, and a port whose pulse is on takes no rate its endpoints
- * do not fit.  0 always fits: the port goes back to 50 Hz, whose 19999 us frame
+ * do not fit.  0 always fits: the port goes back to 50Hz, whose 19999us frame
  * holds every endpoint the pages take.
  *
  * @param p The page state, for the target and the port masks.
@@ -366,8 +366,8 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * A hold keeps each surface at the command it was frozen at, while the
      * panel repeats it.  Stamped with the time of the last repeat, not this
      * pass, so the channel's own timeout runs from the panel's last word as
-     * it does for any command: silence rests it 500 ms after that, not
-     * 500 ms after this end stopped holding.
+     * it does for any command: silence rests it 500ms after that, not
+     * 500ms after this end stopped holding.
      */
     if (p != NULL && o != NULL && p->holding) {
         if (!outputs_role_armed(o, OUT_ROLE_SURFACE)

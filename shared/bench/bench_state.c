@@ -15,10 +15,10 @@
 
 /* The scales of the BENCH page registers, matching link_pages.h.  A scale
  * that disagrees with the wire produces a wrong reading, not a crash. */
-#define CV_PER_V   100.0f   /* 10 mV steps  */
-#define CA_PER_A   100.0f   /* 10 mA steps  */
-#define DC_PER_C    10.0f   /* 0.1 C steps  */
-#define DWH_PER_WH  10.0f   /* 0.1 Wh steps */
+#define CV_PER_V   100.0f   /**< 10mV steps */
+#define CA_PER_A   100.0f   /**< 10mA steps */
+#define DC_PER_C    10.0f   /**< 0.1C steps */
+#define DWH_PER_WH  10.0f   /**< 0.1Wh steps */
 
 /**
  * @brief Decodes an unsigned register value into units.
@@ -170,7 +170,7 @@ void bench_state_reset_peaks(bench_state_t *b)
         return;
     }
     /* The minimum resets to the current reading, not to zero: a sag floor
-     * of 0 V reads as a collapsed pack. */
+     * of 0V reads as a collapsed pack. */
     b->voltage_min = b->voltage;
     b->current_max = b->current;
     b->power_max   = b->power;
@@ -369,7 +369,7 @@ void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
             && mah >= BENCH_CHARGE_MAH_MAX - BENCH_FINE_MAH_TOL)) {
         b->charge_mah = mah;
     }
-    /* Nor more than 65535 mAh or 6553.5 Wh: past that BENCH reads its
+    /* Nor more than 65535mAh or 6553.5Wh: past that BENCH reads its
      * ceiling, and a finer figure at or above it is the only one. */
     const float coarse_wh = b->energy_wh;
     if (fabsf(wh - coarse_wh) <= BENCH_FINE_WH_TOL

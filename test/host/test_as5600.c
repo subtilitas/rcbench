@@ -13,9 +13,9 @@
  * AGC 1, MAGNITUDE 2), never across the increment-suppressing registers;
  * the part offline after three failed reads and back after a probe a second
  * later; the schedule reading the angle 500 times, STATUS 480 times and
- * AGC with MAGNITUDE 20 times in 1000 ms, on the odd ticks, with the bus
+ * AGC with MAGNITUDE 20 times in 1000ms, on the odd ticks, with the bus
  * time the header states and without moving the rate of any other read;
- * the angle sampled every 2 ms through the field slots; the still time: counting up inside the 12-count tolerance, restarting
+ * the angle sampled every 2ms through the field slots; the still time: counting up inside the 12-count tolerance, restarting
  * at a sample outside it, across the wrap, on a ramp, cleared by an offline
  * part and by a sample without a magnet; the service opening the bus for the encoder alone and handing the
  * readings over.
@@ -287,7 +287,7 @@ static uint64_t now_us(void *ctx)
     return g_us;
 }
 
-/* The encoder alone, or with the INA3221 beside it; the clock at 10 s. */
+/* The encoder alone, or with the INA3221 beside it; the clock at 10s. */
 static void rig(bool with_ina)
 {
     sense_bus_t scratch;
@@ -349,8 +349,8 @@ TEST_CASE(the_angle_is_read_500_times_and_the_field_20_in_a_second)
     CHECK_EQ(s.enc.magnitude, 1500u);
     CHECK_EQ(s.enc.agc, 100u);
     /* Bus time: 480 slots of STATUS (39 clocks) and RAW ANGLE (48), 20 of
-     * RAW ANGLE, AGC (39) and MAGNITUDE (48): 44460 clocks of 2.5 us,
-     * 111.15 ms of the second, 11.1 %. */
+     * RAW ANGLE, AGC (39) and MAGNITUDE (48): 44460 clocks of 2.5us,
+     * 111.15ms of the second, 11.1%. */
     CHECK_EQ(enc->clocks, 480u * (39u + 48u) + 20u * (48u + 39u + 48u));
     CHECK_EQ(enc->clocks, 44460u);
 }
@@ -389,7 +389,7 @@ TEST_CASE(the_encoders_slot_is_217_or_337_us_of_a_tick)
      * a tick's reads are 48 clocks on an even tick, and on an odd tick
      * 48 plus the encoder's 87 (STATUS, RAW ANGLE) or 135 (RAW ANGLE, AGC,
      * MAGNITUDE).  The header adds the INA228's slot and the pair to that:
-     * 840 us at most. */
+     * 840us at most. */
     rig(true);
     tick();
     unsigned worst = 0u, field = 0u, plain = 0u;
@@ -407,7 +407,7 @@ TEST_CASE(the_encoders_slot_is_217_or_337_us_of_a_tick)
     }
     CHECK_EQ(plain + field, 200u);
     CHECK_EQ(field, 8u);
-    CHECK(worst <= 48u + 135u);                    /* 457.5 us */
+    CHECK(worst <= 48u + 135u);                    /* 457.5us */
 }
 
 TEST_CASE(the_encoder_moves_no_other_reads_rate)
@@ -505,8 +505,8 @@ TEST_CASE(a_ramp_keeps_restarting_it_and_a_stop_lets_it_count)
     rig(false);
     enc->raw = 100u;
     ticks(10u);
-    /* 3 counts a 2 ms slot, 1.5 counts a ms: the anchor moves every
-     * fifth slot, about 10 ms. */
+    /* 3 counts a 2ms slot, 1.5 counts a ms: the anchor moves every
+     * fifth slot, about 10ms. */
     for (unsigned k = 0; k < 100u; ++k) {
         enc->raw = (uint16_t)(enc->raw + 1u + (k & 1u));
         tick();
@@ -651,7 +651,7 @@ TEST_CASE(the_still_time_saturates_at_65535)
     rig(false);
     enc->raw = 5u;
     ticks(4u);
-    g_us += 70000000u;                             /* 70 s with no tick */
+    g_us += 70000000u;                             /* 70s with no tick */
     CHECK_EQ(sense_sched_enc_still_ms(&s), 65535u);
 }
 

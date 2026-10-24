@@ -51,7 +51,7 @@ export function componentText(wire: Pick<Wire, 'route' | 'signal'>, pad: Text): 
 /**
  * True for a wire that carries load current: the supply of the ESC or of the
  * servo, plus and minus. The data file marks these wires with the class
- * `power`. The supply of a board from 3.3 V or VBUS has the class `logic`.
+ * `power`. The supply of a board from 3.3V or VBUS has the class `logic`.
  */
 export const carriesLoad = (wire: Pick<Wire, 'cls' | 'kind'>): boolean => wire.kind !== 'component' && wire.cls === 'power';
 

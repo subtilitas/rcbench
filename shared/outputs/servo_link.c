@@ -133,7 +133,7 @@ static bool write_regs(uint8_t page, uint8_t offset, uint8_t count,
  */
 /*
  * How often the servo's position is said again, against the far end's
- * OUT_DEFAULT_TIMEOUT_MS of 500 ms.  Five times the margin, and one
+ * OUT_DEFAULT_TIMEOUT_MS of 500ms.  Five times the margin, and one
  * register on the wire each time.
  */
 #define SERVO_HOLD_MS   100u
@@ -550,7 +550,7 @@ static bool write_servo(const servo_cmd_t sv)
         const uint32_t took = sl_now_ms();
         /*
          * A pause whose HOLD was answered only at a retry may have frozen at
-         * an earlier attempt, been let go 500 ms later and frozen again
+         * an earlier attempt, been let go 500ms later and frozen again
          * where resting had got it; an exchange that outlasted a HOLD's life
          * may have been let go meanwhile too.  Where the output is held is
          * then not known here, and an angle drawn from the tap would be
@@ -564,7 +564,7 @@ static bool write_servo(const servo_cmd_t sv)
             /*
              * The HOLD just acknowledged is live there, and while it is the
              * far end stamps every surface with that HOLD's arrival: a
-             * position written under it would go to rest 500 ms after the
+             * position written under it would go to rest 500ms after the
              * arrival, at once and unslewed.  So it is ended first with a
              * stop; one that does not land is written before the next
              * command instead.
@@ -710,7 +710,7 @@ static bool write_servo(const servo_cmd_t sv)
          */
         /*
          * The endpoints the screen named, not this file's.  A narrow servo
-         * runs 660 to 860 us and its centre is below a standard servo's
+         * runs 660 to 860us and its centre is below a standard servo's
          * floor, so clamping it against 1000 to 2000 would send its whole
          * travel to one end.  A command that names no range keeps the
          * standard one.
@@ -909,7 +909,7 @@ static bool write_servo(const servo_cmd_t sv)
          * transaction and the far end steps its outputs between them, so a
          * range that had not arrived would clamp the pulse against the one
          * before it: a narrow servo selected against a standard configuration
-         * renders 1500 us, past its 860 us maximum.  The 100 ms refresh is
+         * renders 1500us, past its 860us maximum.  The 100ms refresh is
          * the retry.
          *
          * Both waits can take a second and the pump runs inside them, so a
@@ -945,7 +945,7 @@ static bool write_servo(const servo_cmd_t sv)
  * The SERVO page: the frame rate of the PWM target -- every PWM output
  * rendering a surface for the standard target, the one programming port
  * for a port target (protocol 4.19).  An IOmcu before protocol 4.1 has
- * no such page and runs each slot at its binding's rate, 50 Hz for a servo.
+ * no such page and runs each slot at its binding's rate, 50Hz for a servo.
  * From 4.19 a TARGET change sets the page back to 0; prog_link_rate() says
  * so and servo_link_rate_reset_note() records it here.
  *
@@ -1023,7 +1023,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
  *        SERVO_HZ_UNKNOWN.
  *
  * @return  SERVO_HZ_UNKNOWN; otherwise the acknowledged rate, or SERVO_BIND_HZ
- *          (50 Hz) for 0, which is each slot's own rate.
+ *          (50Hz) for 0, which is each slot's own rate.
  */
 static uint16_t servo_rate_now(void)
 {
@@ -1037,8 +1037,8 @@ static uint16_t servo_rate_now(void)
  * @brief One position with its rate.
  *
  * The pins must never carry a fast rate with the wider pulses of a slower
- * profile: a 760 us tail servo going back to STANDARD PWM takes 50 Hz first and
- * then 1000 to 2000 us, never 1500 us at 560 Hz.  So a rate going up follows
+ * profile: a 760us tail servo going back to STANDARD PWM takes 50Hz first and
+ * then 1000 to 2000us, never 1500us at 560Hz.  So a rate going up follows
  * the pulse widths, and only once every one of them landed; any other rate
  * leads them, and a position waits for it unless the pins are known to run no
  * faster than it.  A rate not known counts as fast.  A position held back is
@@ -1073,7 +1073,7 @@ static bool write_servo_and_rate(const servo_cmd_t sv)
  * Each slot back at its own rate.
  *
  * Before a binding: the rate the SERVO page holds was checked against the
- * binding being replaced, and left in place a motor bound beside a 560 Hz
+ * binding being replaced, and left in place a motor bound beside a 560Hz
  * surface would be refused by the silicon and stay still.  At link-up: a panel
  * that restarted, or a link that only went quiet, can leave the far end holding
  * a heli rate the screen no longer shows.  True when it landed, or there is no
@@ -1282,7 +1282,7 @@ void servo_link_let_go(void)
  * Say the servo's position again before the far end stops believing it,
  * and pay off a release that is owed.
  *
- * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to
+ * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500ms) goes to
  * its rest, which for a surface is mid-travel: a servo held at an endpoint
  * would swing back to centre half a second after the finger stopped, with
  * the screen still showing where it was put.  The throttle is kept alive by

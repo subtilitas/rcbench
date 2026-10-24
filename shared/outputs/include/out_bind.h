@@ -107,9 +107,9 @@ typedef struct {
     uint8_t pad;        /**< the number printed on the board                */
     uint8_t kind;       /**< a link_pad_kind_t                              */
     /**
-     * Tenths of a volt. Zero on a rail means it is not a fixed voltage --
-     * an input follows whatever feeds it -- and is not the same as 0 V,
-     * which is what a ground is.
+     * @brief Tenths of a volt. Zero on a rail means it is not a fixed voltage
+     *        -- an input follows whatever feeds it -- and is not the same as
+     *        0V, which is what a ground is.
      */
     uint8_t decivolts;
 } outbind_pad_t;
@@ -393,12 +393,12 @@ typedef struct {
     uint8_t      max_pins;  /**< PPM is one pin by definition               */
     uint8_t      channels;  /**< channels one pin of it renders             */
     /**
-     * What the channels this entry renders are for.
+     * @brief What the channels this entry renders are for.
      *
      * Carried by the entry rather than derived from the driver: a pulse at
-     * 50 Hz is a servo on one pin and an ESC (electronic speed controller)
+     * 50Hz is a servo on one pin and an ESC (electronic speed controller)
      * on the next, and the two rest in different places -- centred at
-     * 1500 us, or stopped at the low end.  The driver cannot tell them
+     * 1500us, or stopped at the low end.  The driver cannot tell them
      * apart, so the operator does, by choosing the entry.
      */
     out_role_t   role;
@@ -723,7 +723,7 @@ uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
  *
  * @p min_us and @p max_us go to the throttle channels only, through
  * outputs_chan_cfg_set_throttle_range(); every surface channel keeps the
- * schema's 1000 to 2000 us.  Endpoints that page would refuse are not
+ * schema's 1000 to 2000us.  Endpoints that page would refuse are not
  * written at all.
  *
  * @param b       The selection.  NULL leaves @p regs at the defaults.

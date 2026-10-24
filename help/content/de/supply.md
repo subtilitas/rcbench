@@ -23,18 +23,18 @@ Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte und die Karte 
 
 ![SUPPLY mit abgeschaltetem PD mini: SIMULIERTES NETZTEIL](view:supply)
 
-Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6 Ohm mit einem Stromstoß von 1,4 A für 0,6 s alle 3 s, hinter einem Quellwiderstand von 0,05 Ohm. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
+Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ohm mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ohm. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
 
 ## Der PD mini
 
 ![Der PD mini eingeschaltet, kein IOmcu liest ihn: ANTWORTET NICHT](view:supply-offline)
 
-Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des IOmcu, die es tragen, zum Beispiel `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und PD mini RX. Ist einer der Pins nicht gesetzt oder liegen beide auf einem GPIO, lautet er `PD MINI OHNE PINS`. Das Panel liest die SUPPLY-Seite des IOmcu alle 100 ms.
+Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des IOmcu, die es tragen, zum Beispiel `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und PD mini RX. Ist einer der Pins nicht gesetzt oder liegen beide auf einem GPIO, lautet er `PD MINI OHNE PINS`. Das Panel liest die SUPPLY-Seite des IOmcu alle 100ms.
 
 | Kopf | Bedeutung |
 |---|---|
 | `ONLINE 38400` | das Modul antwortet; die Zahl ist die verwendete Baudrate |
-| `ANTWORTET NICHT` | kein IOmcu mit Protokoll 4.3 antwortet, oder die Messwerte sind älter als 1500 ms; ein eingeschalteter Ausgang wird abgeschaltet |
+| `ANTWORTET NICHT` | kein IOmcu mit Protokoll 4.3 antwortet, oder die Messwerte sind älter als 1500ms; ein eingeschalteter Ausgang wird abgeschaltet |
 
 Vor dem ersten Einschalten zeigt die Grafik `Ausgang wurde noch nicht eingeschaltet.`, und die Karten zeigen Striche, bis ein Messwert ankommt.
 
@@ -47,16 +47,16 @@ Vor dem ersten Einschalten zeigt die Grafik `Ausgang wurde noch nicht eingeschal
 | LEIST. | die Ausgangsleistung und die Spitze des Laufs |
 | MODUS | CV (Constant Voltage) an der eingestellten Spannung, CC (Constant Current) an der Strombegrenzung, ABGESCHALTET nach einer Abschaltung; CC steht in der Warnfarbe |
 
-Die Grafik zeigt Spannung, Strom und Leistung über die letzten 30 s, jeden Sollwert als gestrichelte Linie. TABELLE listet dieselben Werte. Der Wert in Klammern ist der Sollwert, den das Netzteil meldet; solange es nicht antwortet, der, den der Bildschirm hält.
+Die Grafik zeigt Spannung, Strom und Leistung über die letzten 30s, jeden Sollwert als gestrichelte Linie. TABELLE listet dieselben Werte. Der Wert in Klammern ist der Sollwert, den das Netzteil meldet; solange es nicht antwortet, der, den der Bildschirm hält.
 
 ## Sollwerte
 
 | Sollwert | Modell | PD mini | Schritttasten |
 |---|---|---|---|
-| SPANNUNG | 3,3 bis 21 V, Schritte von 20 mV | 1 bis 20 V, Schritte von 10 mV | 0,1 V |
-| STROMBEGRENZUNG | 0,5 bis 5 A, Schritte von 50 mA | 0,05 bis 3 A, Schritte von 10 mA | 0,1 A |
+| SPANNUNG | 3,3 bis 21V, Schritte von 20mV | 1 bis 20V, Schritte von 10mV | 0,1V |
+| STROMBEGRENZUNG | 0,5 bis 5A, Schritte von 50mA | 0,05 bis 3A, Schritte von 10mA | 0,1A |
 
-Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini gibt nicht mehr ab, als er bekommt: Seine Spannung ist auf 0,7 V unter der Eingangsspannung begrenzt, die er meldet; ein Eingang von 5 V erlaubt höchstens 4,3 V. Die Obergrenzen in OPTIONEN engen beide Bereiche ein, und der gültige Bereich steht am rechten Ende der Kopfzeile.
+Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini gibt nicht mehr ab, als er bekommt: Seine Spannung ist auf 0,7V unter der Eingangsspannung begrenzt, die er meldet; ein Eingang von 5V erlaubt höchstens 4,3V. Die Obergrenzen in OPTIONEN engen beide Bereiche ein, und der gültige Bereich steht am rechten Ende der Kopfzeile.
 
 - Einen Schieberegler ziehen oder auf seine Spur tippen, um den Wert unter dem Finger zu setzen.
 - `-0.1` und `+0.1` ändern den Wert schrittweise.
@@ -74,13 +74,13 @@ Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die
 
 ## AUSGANG EIN und AUS
 
-AUSGANG EIN ist ein Halten von 2 s, mit dem Übergang, den ARM verwendet. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
+AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
 
 - STOP, auf jedem Bildschirm;
 - Verlassen von SUPPLY, für einen Ausgang, den SUPPLY eingeschaltet hat;
-- einem Netzteil, das nicht mehr antwortet oder 3000 ms keinen Messwert sendet;
+- einem Netzteil, das nicht mehr antwortet oder 3000ms keinen Messwert sendet;
 - einer Abschaltung;
-- einer Eingangsspannung des PD mini unter dem Sollwert plus 0,5 V bei 2 Lesungen in Folge;
+- einer Eingangsspannung des PD mini unter dem Sollwert plus 0,5V bei 2 Lesungen in Folge;
 - einem Modul, das seinen Ausgang selbst abschaltet;
 - einer Änderung an Pins, Baudrate oder Einschalt-Einstellung des PD mini.
 
@@ -94,13 +94,13 @@ OPTIONEN, der zweite Reiter der Leiste, zeigt die Optionen in der linken Spalte.
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
-| SPANNUNG MAX | 3,3 bis 21 V | 21,00 V | die höchste Spannung, die ein Sollwert annimmt |
-| STROM MAX | 0,5 bis 5 A | 5,00 A | die höchste Strombegrenzung, die ein Sollwert annimmt |
-| STARTSPANNUNG | bis SPANNUNG MAX | 6,00 V | der Spannungssollwert nach einem Neustart |
-| STARTSTROM | bis STROM MAX | 2,00 A | die Strombegrenzung nach einem Neustart |
-| ÜBERSTROM | 0 bis 5 A | AUS | Ausgang aus, sobald der Strom ABSCHALTZEIT lang darüber liegt |
-| ÜBERSPANNUNG | 0 bis 21 V | AUS | Ausgang aus, sobald die Spannung ABSCHALTZEIT lang darüber liegt |
-| ABSCHALTZEIT | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einer Schwelle liegen muss, bevor sie auslöst |
+| SPANNUNG MAX | 3,3 bis 21V | 21,00V | die höchste Spannung, die ein Sollwert annimmt |
+| STROM MAX | 0,5 bis 5A | 5,00A | die höchste Strombegrenzung, die ein Sollwert annimmt |
+| STARTSPANNUNG | bis SPANNUNG MAX | 6,00V | der Spannungssollwert nach einem Neustart |
+| STARTSTROM | bis STROM MAX | 2,00A | die Strombegrenzung nach einem Neustart |
+| ÜBERSTROM | 0 bis 5A | AUS | Ausgang aus, sobald der Strom ABSCHALTZEIT lang darüber liegt |
+| ÜBERSPANNUNG | 0 bis 21V | AUS | Ausgang aus, sobald die Spannung ABSCHALTZEIT lang darüber liegt |
+| ABSCHALTZEIT | 0 bis 5000ms | 100ms | wie lange ein Messwert über einer Schwelle liegen muss, bevor sie auslöst |
 | REGLER UND SCHRITTE | EIN, AUS | EIN | Rückfrage, bevor der Schieberegler einen eingeschalteten Ausgang ändert |
 | TASTENFELD | EIN, AUS | EIN | Rückfrage, bevor das Tastenfeld einen eingeschalteten Ausgang ändert |
 
@@ -116,7 +116,7 @@ Mit dem PD mini als Netzteil bieten die OPTIONEN zusätzlich PD MINI ZURÜCKSETZ
 
 Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh in der Titelzeile von STEUERUNG zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
 
-Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) geschrieben, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist, eine Zeile alle 50 ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
+Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) geschrieben, solange Auto-Logs unter [SETUP](setup.md#sd-karte) > SD-KARTE EIN ist, eine Zeile alle 50ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
 
 ## Verwandte Seiten
 

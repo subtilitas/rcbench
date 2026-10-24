@@ -105,7 +105,7 @@ static void sv_fresh(void)
     sv_drain();
 }
 
-/* ARM held 2.3 s with no alert showing, and the bench's answer. */
+/* ARM held 2.3s with no alert showing, and the bench's answer. */
 static bool sv_armed(void)
 {
     sv_fresh();
@@ -133,7 +133,7 @@ TEST_CASE(disarm_ends_above_the_alert_band)
     CHECK(P(MO_ARM_T + MO_ARM_H - 1) < UI_ALERT_Y);
 }
 
-/* DISARM tapped 1.0 s after the hold, with an alert that arrived with the
+/* DISARM tapped 1.0s after the hold, with an alert that arrived with the
  * arm: the tap disarms, and the alert stays. */
 TEST_CASE(disarm_beside_the_alert_disarms_at_once)
 {
@@ -146,7 +146,7 @@ TEST_CASE(disarm_beside_the_alert_disarms_at_once)
     CHECK(alert_shows());
 }
 
-/* The same in the frame the alert arrives in, and 15 s into its 30 s. */
+/* The same in the frame the alert arrives in, and 15s into its 30s. */
 TEST_CASE(disarm_beside_the_alert_from_its_arrival_to_its_end)
 {
     const int at[] = { 0, 1, (int)(15.0f / FRAME_S),
@@ -312,7 +312,7 @@ static void open_bubble(bool armed)
 }
 
 /* With a help bubble open, DISARM disarms on the first tap and the bubble
- * closes; ARM held 3 s closes the bubble and starts no hold. */
+ * closes; ARM held 3s closes the bubble and starts no hold. */
 TEST_CASE(the_help_bubble_takes_no_disarm_and_starts_no_arm)
 {
     CHECK(sv_armed());
@@ -427,7 +427,7 @@ static bool su_took(supply_cmd_t *c)
 }
 
 /* SUPPLY's OUTPUT OFF acts under the help bubble on the first tap; OUTPUT
- * ON held 3 s under it switches nothing on. */
+ * ON held 3s under it switches nothing on. */
 TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
 {
     supply_cmd_t c;
@@ -454,7 +454,7 @@ TEST_CASE(output_off_acts_under_the_bubble_and_output_on_does_not)
 /* ------------------------------------------------- under the alert band */
 
 /* The points of the body under the alert band that @p scr names as a stop,
- * every 2 px. */
+ * every 2px. */
 static int stops_under_the_band(const ui_screen_t *scr)
 {
     int n = 0;

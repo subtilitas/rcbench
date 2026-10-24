@@ -6,8 +6,8 @@
  * cycled, refusing and not answering, and each timer across the wrap of
  * the millisecond clock.
  *
- * The clock: a pass is 100 us on the wire's clock, and every tenth pass is
- * 1 ms on the port's.
+ * The clock: a pass is 100us on the wire's clock, and every tenth pass is
+ * 1ms on the port's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,7 +37,7 @@ typedef enum {
     SUPPLY_OFFLINE,  /* callbacks, and no PD mini answers */
     SUPPLY_OFF,      /* a PD mini, asked off and read off */
     SUPPLY_ON,       /* asked on at MV and read on */
-    SUPPLY_ON_HIGH,  /* asked on at 7400 mV and read on */
+    SUPPLY_ON_HIGH,  /* asked on at 7400mV and read on */
 } supply_kind_t;
 
 static sim_t g_sim;
@@ -345,7 +345,7 @@ static void run_ms(unsigned ms)
     }
 }
 
-/* Pass until no operation runs; 20 s is the bound. */
+/* Pass until no operation runs; 20s is the bound. */
 static void settle(void)
 {
     for (unsigned i = 0; i < 200000u && flag(LINK_KS_F_BUSY); ++i) {
@@ -815,7 +815,7 @@ TEST_CASE(the_staged_registers_are_taken_in_any_windows)
     CHECK_EQ(g_port.supply_mv, 6000);
     CHECK_EQ(g_port.supply_ma, 1200);
 
-    /* The wait of a LEAVE: 100 ms until it is written, and any value is
+    /* The wait of a LEAVE: 100ms until it is written, and any value is
      * taken here. */
     CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
     in[0] = 1100;
@@ -2194,7 +2194,7 @@ TEST_CASE(enter_lowers_a_supply_that_is_on_above_the_staged_voltage)
     CHECK_EQ(state(), LINK_KST_PROGRAMMING);
     CHECK_EQ(g_hw.sets, 1);
 
-    /* Leaving does not raise it again: the cycle ends at 5.0 V. */
+    /* Leaving does not raise it again: the cycle ends at 5.0V. */
     CHECK_EQ(cmd(LINK_KST_OP_POWER_CYCLED, CH, 0, 0), 0);
     settle();
     CHECK_EQ(state(), LINK_KST_PWM);
@@ -3191,7 +3191,7 @@ static void leaves_with(supply_kind_t supply)
     CHECK_EQ(kst_port_quiet_mask(&g_port), 1u << CH);
     CHECK_EQ(kst_port_pin_mask(&g_port), 1u << CH);
     CHECK(flag(LINK_KS_F_IN_MODE));
-    /* The default, 100 ms: nothing wrote the register. */
+    /* The default, 100ms: nothing wrote the register. */
     run_ms(LINK_KST_LEAVE_MS_DEFAULT - 1u);
     CHECK_EQ(state(), LINK_KST_LEAVING);
     CHECK_EQ(g_hw.gives, 0);
@@ -3556,7 +3556,7 @@ TEST_CASE(the_wait_of_a_leave_is_the_registers_from_0_to_10_000_ms)
     leave_time(1, true, 0);
     leave_time(100, true, 0);
     leave_time(10000, true, 0);
-    /* Never written: 100 ms. */
+    /* Never written: 100ms. */
     leave_time(LINK_KST_LEAVE_MS_DEFAULT, false, 0);
 }
 
@@ -3643,7 +3643,7 @@ TEST_CASE(the_wait_is_the_one_the_command_found)
     CHECK_EQ(g_hw.gives, 3);
 }
 
-/* An abort @p after ms into a wait of 200 ms. */
+/* An abort @p after ms into a wait of 200ms. */
 static void leave_aborted(supply_kind_t supply, unsigned after)
 {
     unsigned frames;
@@ -3993,7 +3993,7 @@ static void rail_time_case(uint32_t t0)
     kst_port_step(&g_port, true, false, off);
     CHECK_EQ(state(), LINK_KST_RAIL_OFF);
     CHECK(!g_hw.v.asked_on);
-    /* Read off 1 ms later: the off time counts from there. */
+    /* Read off 1ms later: the off time counts from there. */
     supply_reads();
     off += 1u;
     kst_port_step(&g_port, true, false, off);
@@ -4003,7 +4003,7 @@ static void rail_time_case(uint32_t t0)
     kst_port_step(&g_port, true, false, off + KST_PORT_RAIL_OFF_MS);
     CHECK_EQ(state(), LINK_KST_RAIL_WAIT);
     CHECK(g_hw.v.asked_on);
-    /* Read on 1 ms later. */
+    /* Read on 1ms later. */
     supply_reads();
     on = off + KST_PORT_RAIL_OFF_MS + 1u;
     kst_port_step(&g_port, true, false, on);

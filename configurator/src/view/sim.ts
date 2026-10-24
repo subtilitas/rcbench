@@ -24,7 +24,7 @@ export function percent(heat: SimHeat): number {
   return heat.level === 'over' ? Math.ceil(x) : Math.floor(x);
 }
 
-/** "4S, 16.8 V". */
+/** "4S, 16.8V". */
 export const packText = (lang: Lang, cells: number): string => `${cells}S, ${voltsText(lang, cells * CELL_VOLTS)}`;
 
 const WIRING: Record<SimSettings['wiring'], Key> = { delta: 'simDelta', star: 'simStar' };

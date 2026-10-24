@@ -120,7 +120,7 @@ const char *lim_blocked(void)
 
 /* Why the programming is not offered, or NULL: only a servo on the
  * programming port, with the port in PWM, and a PD mini on and set where a
- * session can run, or without one a servo rail read at 4.8 V or more. */
+ * session can run, or without one a servo rail read at 4.8V or more. */
 const char *lim_prog_why(void)
 {
     if (s.drive_target == 0u || s.drive_target == SERVO_SCREEN_TARGET_UNKNOWN
@@ -143,7 +143,7 @@ const char *lim_prog_why(void)
         return TR(SV_LIM_PROG_LOW);
     }
     /* No PD mini to set: an external supply, or the model.  The servo
-     * rail as the INA3221's last window read it holds the same 4.8 V the
+     * rail as the INA3221's last window read it holds the same 4.8V the
      * IOmcu asks of a PD mini, which it cannot check here.  At the
      * start only: the rail is the run's to watch after it. */
     if (!servo_limrun_running(&s.lim) && !lim_pd_answers()
@@ -482,7 +482,7 @@ static void lim_end_text(char *b, size_t n, const servo_limrun_side_t *e)
     if (!e->done) {
         snprintf(b, n, "-");
     } else if (e->bound) {
-        snprintf(b, n, "%u us", (unsigned)e->limit_us);
+        snprintf(b, n, "%uus", (unsigned)e->limit_us);
     } else {
         snprintf(b, n, "%s", ui_servo_str(SERVO_STR_L_FREE));
     }
@@ -661,8 +661,8 @@ void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
 }
 
 /**
- * @brief The LIMIT RUN card's first line, 2 px under START LIMIT RUN: its
- *        four lines at LIM_LINE_P end 2 px inside the card, which is the
+ * @brief The LIMIT RUN card's first line, 2px under START LIMIT RUN: its
+ *        four lines at LIM_LINE_P end 2px inside the card, which is the
  *        AUTOMATIC TEST card's size and holds three.
  */
 #define LIM_LINE_DY (RUN_BTN_DY + RUN_BTN_H + 2)

@@ -24,9 +24,9 @@ static const char *TAG = "knob";
  * @brief The longest one transaction waits, in milliseconds.
  *
  * The bus is the knob's alone, so a transaction waits for nothing else.
- * The three transactions of one poll take about 0.3 ms at 400 kHz.  A
+ * The three transactions of one poll take about 0.3ms at 400kHz.  A
  * failed one costs more: the driver resets the controller and clears the
- * bus, which waits up to 50 ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held
+ * bus, which waits up to 50ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held
  * low.
  */
 #define KNOB_I2C_TIMEOUT_MS 5
@@ -152,8 +152,8 @@ void knob_task_start(void)
         return;     /* nothing to poll; the knob stays inert */
     }
     /*
-     * Core 0 beside the renderer, below it in nothing it needs: 10 ms polls
-     * of about 0.2 ms each.  Priority 2, under the card task's 3, and not on
+     * Core 0 beside the renderer, below it in nothing it needs: 10ms polls
+     * of about 0.2ms each.  Priority 2, under the card task's 3, and not on
      * core 1 where the control task owns the deadlines.  Stack 3072 bytes:
      * the task's deepest chain is the I2C driver's transaction.
      */

@@ -35,27 +35,27 @@
 
 /**
  * @brief The pane tabs, BALANCE | TEST RIG | AIRCRAFT: three tabs of
- *        150 x 48 px, 4 px apart, from x 11 and y 8, a finger tall.
+ *        150 x 48px, 4px apart, from x 11 and y 8, a finger tall.
  */
 #define TAB_X   (PAD + 3)
 #define TAB_Y   8                       /**< The tabs' top, px. */
-#define TAB_H   UI_TAP_MIN              /**< A tab's height: 48 px. */
-#define TAB_ROW_W (3 * 150 + 2 * 4)     /**< The row: 458 px. */
+#define TAB_H   UI_TAP_MIN              /**< A tab's height: 48px. */
+#define TAB_ROW_W (3 * 150 + 2 * 4)     /**< The row: 458px. */
 #define CARD_Y  64                      /**< Both cards' top, px. */
 
 /**
- * @brief The lowest row a control or a line of text may reach: 4 px above
+ * @brief The lowest row a control or a line of text may reach: 4px above
  *        the alert band, body y 492.
  */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
-/** @brief The rotor's card: 640 px, the right card 360. */
+/** @brief The rotor's card: 640px, the right card 360. */
 #define LCARD_W 640
 #define RCARD_X (PAD + LCARD_W + 8)            /**< x 656. */
-#define RCARD_W (W - RCARD_X - PAD)            /**< 360 px. */
-#define CARD_H  (H - PAD - CARD_Y)             /**< 468 px, to y 532. */
+#define RCARD_W (W - RCARD_X - PAD)            /**< 360px. */
+#define CARD_H  (H - PAD - CARD_Y)             /**< 468px, to y 532. */
 #define RC_X    (RCARD_X + 14)                 /**< The right column: x 670. */
-#define RC_W    (RCARD_W - 28)                 /**< Its width: 332 px. */
+#define RC_W    (RCARD_W - 28)                 /**< Its width: 332px. */
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in:
@@ -70,16 +70,16 @@
 /*
  * The BALANCE pane's right column, top down: ROTOR and its two buttons,
  * BLADES with its count and its "-" and "+" keys, the four readings in
- * rows of 36 px, the SIMULATED pill and the note.
+ * rows of 36px, the SIMULATED pill and the note.
  */
 #define ROTOR_Y   (CARD_Y + 38)   /**< PROPELLER and EDF: y 102. */
-#define ROTOR_H   UI_TAP_MIN      /**< Their height: 48 px. */
+#define ROTOR_H   UI_TAP_MIN      /**< Their height: 48px. */
 #define BLADES_Y  (ROTOR_Y + ROTOR_H + 10)  /**< The BLADES row: y 160. */
 #define STEP_W    56              /**< The "-" and "+" keys' width, px. */
-#define STEP_H    UI_TAP_MIN      /**< Their height: 48 px. */
+#define STEP_H    UI_TAP_MIN      /**< Their height: 48px. */
 #define READ_Y    (BLADES_Y + STEP_H + 18)  /**< The first reading: y 226. */
 #define READ_H    36              /**< A reading's row, px. */
-/** @brief The SIMULATED pill under the readings, 20 px high. */
+/** @brief The SIMULATED pill under the readings, 20px high. */
 #define MARK_Y    (READ_Y + 4 * READ_H + 8)  /**< y 378. */
 #define NOTE_Y    (MARK_Y + 38)   /**< The note's first line: y 416. */
 _Static_assert(NOTE_Y + 42 + 16 <= TEXT_FLOOR,
@@ -94,15 +94,15 @@ _Static_assert(RULE_Y0 + 5 * RULE_PITCH + 58 <= TEXT_FLOOR,
                "the sixth rule ends above the alert band");
 
 /*
- * The placement drawings of TEST RIG and AIRCRAFT keep their 450 px card's
- * coordinates and are drawn in a window centred in the 640 px card, from
+ * The placement drawings of TEST RIG and AIRCRAFT keep their 450px card's
+ * coordinates and are drawn in a window centred in the 640px card, from
  * the card's top.
  */
 #define FIG_X     ((LCARD_W - 450) / 2)              /**< x 95. */
 #define FIG_Y     (CARD_Y - 40)                      /**< y 24. */
 
-/* The blade count's keypad: over both cards, from the cards' top to 4 px
- * above the alert band, 1008 x 428 px. */
+/* The blade count's keypad: over both cards, from the cards' top to 4px
+ * above the alert band, 1008 x 428px. */
 /** @brief The keypad's top, px. */
 #define KP_Y    CARD_Y
 /** @brief The keypad's height, px: 428. */
@@ -137,7 +137,7 @@ static const ui_text_id_t k_tabs[] = { TX_BAL_TAB_BALANCE, TX_BAL_TAB_RIG,
 #define DISC_CX  (PAD + LCARD_W / 2)            /**< x 328. */
 #define DISC_CY  ((CARD_Y + TEXT_FLOOR) / 2)     /**< y 278. */
 /** @brief The disc's radius, px: a ducted fan's numbers at DISC_R + 38
- *         and 10 px tall end inside the card and above the alert band. */
+ *         and 10px tall end inside the card and above the alert band. */
 #define DISC_R   160
 #define HUB_R    32                              /**< The hub's, px. */
 _Static_assert(DISC_CY + DISC_R + 38 + 10 <= TEXT_FLOOR,
@@ -623,7 +623,7 @@ static void draw_measure(gfx_canvas_t *c)
      * you cannot reach a blade tip, so the correction goes on the hub. */
     /*
      * The rings are pairs of filled discs, not thin arcs.  An arc closed on
-     * itself lays some pixels twice and misses others, and at 1 or 2 px wide
+     * itself lays some pixels twice and misses others, and at 1 or 2px wide
      * that stipples.  They are safe to fill because they are drawn before
      * the blades.
      */
@@ -757,9 +757,9 @@ static void draw_readings(gfx_canvas_t *c)
 
     const float ang = balance_screen_angle();
     char v_amp[32], v_ang[32], v_mass[32], v_where[32];
-    snprintf(v_amp,  sizeof(v_amp),  "0.42 g");
-    snprintf(v_ang,  sizeof(v_ang),  "%d deg", (int)ang);
-    snprintf(v_mass, sizeof(v_mass), "0.35 g");
+    snprintf(v_amp,  sizeof(v_amp),  "0.42g");
+    snprintf(v_ang,  sizeof(v_ang),  "%ddeg", (int)ang);
+    snprintf(v_mass, sizeof(v_mass), "0.35g");
     int lo, hi;
     balance_nearest_blades(ang, s.blades, &lo, &hi);
     if (s.rotor == ROTOR_EDF) {
@@ -794,7 +794,7 @@ static void draw_readings(gfx_canvas_t *c)
 
     /*
      * The angle and both masses are fixed values, not a measurement: the
-     * overview's pill, 88 px or as wide as a longer word, 20 px high, and
+     * overview's pill, 88px or as wide as a longer word, 20px high, and
      * the words beside it.
      */
     int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(BAL_MODELLED), 1);

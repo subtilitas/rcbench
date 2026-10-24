@@ -41,7 +41,7 @@ typedef struct {
 } face_t;
 
 /* Cap top and baseline are the rows 'H' (text faces) and '0' (numerals)
- * occupy; the measured cap heights are 12, 15, 23 and 40 px; the 20x36 face is
+ * occupy; the measured cap heights are 12, 15, 23 and 40px; the 20x36 face is
  * generated at TrueType size 31 so that its descenders end inside the cell. */
 static const face_t k_faces[] = {
     { &gfx_font_10x20,     "10x20", 10, 20, false, 'H', 3, 15 },

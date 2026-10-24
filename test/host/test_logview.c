@@ -277,7 +277,7 @@ TEST_CASE(an_empty_card_is_not_the_same_as_no_card)
      * would pass with one message for both, which is the defect.
      *
      * The panel is drawn at (104,150) 816x160 and the reason sits at
-     * box.y + 52, 24 px tall, so the band below covers that line and
+     * box.y + 52, 24px tall, so the band below covers that line and
      * nothing else.
      */
     int differing = 0;
@@ -438,7 +438,7 @@ TEST_CASE(a_directory_row_cannot_be_opened_as_a_log)
 
 /*
  * OPEN reads through stdio, whose seek takes a 32-bit long on the panel: a
- * file of 2 GiB and more is listed with its size and refused at OPEN with
+ * file of 2GiB and more is listed with its size and refused at OPEN with
  * a message, never opened, so no part of it passes for the whole run.
  */
 TEST_CASE(a_file_of_2_gib_or_more_is_listed_and_refused_at_open)
@@ -487,18 +487,18 @@ TEST_CASE(a_size_is_written_in_its_unit_up_to_an_sdxc_card)
         uint64_t bytes;
         const char *text;
     } k[] = {
-        { 0u,                    "0 B" },
-        { 1023u,                 "1023 B" },
-        { 1024u,                 "1 kB" },
-        { 1024u * 1024u - 1u,    "1023 kB" },
-        { 1024u * 1024u,         "1.0 MB" },
-        { 0x3FFFFFFFull,         "1024.0 MB" },
-        { 0x40000000ull,         "1.00 GB" },
-        { 0x7FFFFFFFull,         "2.00 GB" },
-        { 0xFFFFFFFFull,         "4.00 GB" },
-        { 0x100000000ull,        "4.00 GB" },
-        { 0x200000000ull,        "8.00 GB" },
-        { 0x20000000000ull,      "2048.00 GB" },  /* 2 TiB, SDXC's top */
+        { 0u,                    "0B" },
+        { 1023u,                 "1023B" },
+        { 1024u,                 "1kB" },
+        { 1024u * 1024u - 1u,    "1023kB" },
+        { 1024u * 1024u,         "1.0MB" },
+        { 0x3FFFFFFFull,         "1024.0MB" },
+        { 0x40000000ull,         "1.00GB" },
+        { 0x7FFFFFFFull,         "2.00GB" },
+        { 0xFFFFFFFFull,         "4.00GB" },
+        { 0x100000000ull,        "4.00GB" },
+        { 0x200000000ull,        "8.00GB" },
+        { 0x20000000000ull,      "2048.00GB" },  /* 2 TiB, SDXC's top */
     };
     char out[16];
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {

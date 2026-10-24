@@ -1,7 +1,7 @@
 /*
- * The rig of the suites of the trace of CH1's 1 ms samples
+ * The rig of the suites of the trace of CH1's 1ms samples
  * (sense_trace.h): the modelled INA3221 of fake_ina.h read by the
- * IOmcu's sensor service, a clock the suite moves 1 ms a step, and a
+ * IOmcu's sensor service, a clock the suite moves 1ms a step, and a
  * console that takes as many bytes a pass as the suite gives it; the
  * console's lines parsed into seen; a ring of 8 fed without a reader; a
  * console that takes nothing; a log cut after its first trace.
@@ -77,7 +77,7 @@ static inline sense_err_t ask(void *ctx, uint8_t addr)
                                                          : SENSE_NACK;
 }
 
-/* The INA3221 with CH1 on a 0.1 Ω shunt, 0.12 A and 6.0 V; the service
+/* The INA3221 with CH1 on a 0.1Ω shunt, 0.12A and 6.0V; the service
  * with its bus not yet open; a trace over a ring of @p size. */
 static inline void rig_size(uint32_t size)
 {

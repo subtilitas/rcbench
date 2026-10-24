@@ -4,10 +4,10 @@
  *
  * Under test: the layout and the minor; every register range of a write
  * and a limit at 0, 32767 and 32768; a refused write storing nothing; a
- * window's highest current at limit - 1, limit and limit + 1 mA, across
+ * window's highest current at limit - 1, limit and limit + 1mA, across
  * the rounding to mA and at the highest limit (sense_window_over()); a
  * clipped sample against a range top below, at and above the limit,
- * unrounded (163.8 mA on 1 Ohm), the bottom end, a negative current, no
+ * unrounded (163.8mA on 1Ohm), the bottom end, a negative current, no
  * samples and no limit; core 1's counts into OVER and OVER_COUNT, several
  * windows in one snapshot, a stale set-up's snapshot, a set-up, the count's
  * wrap; the limits in core 1's order; OVER sticky until a read covers it,
@@ -39,8 +39,8 @@ static void fresh(void)
     sense_page_init(&pg);
 }
 
-/* Parts @p fit in force, every channel of theirs on 1000 (0.1 Ohm, a
- * range top of 1638 mA). */
+/* Parts @p fit in force, every channel of theirs on 1000 (0.1Ohm, a
+ * range top of 1638mA). */
 static void map_all(uint16_t fit)
 {
     uint16_t m[LINK_SM_KEPT];
@@ -57,7 +57,7 @@ static void map_all(uint16_t fit)
 }
 
 /* Window @p number under the set-up in force, every channel with samples
- * and a highest current of 0 mA. */
+ * and a highest current of 0mA. */
 static sense_snap_t snapshot(uint16_t number)
 {
     sense_snap_t s;
@@ -186,11 +186,11 @@ TEST_CASE(a_clipped_sample_is_over_when_the_unrounded_top_is)
     sense_window_t w;
     memset(&w, 0, sizeof(w));
     w.clip_hi = true;
-    /* 0.1 Ohm: 1638.000 mA. */
+    /* 0.1Ohm: 1638.000mA. */
     CHECK(sense_window_over(&w, 1638000, 1637u));
     CHECK(!sense_window_over(&w, 1638000, 1638u));
     CHECK(!sense_window_over(&w, 1638000, 1639u));
-    /* 1 Ohm: 163.800 mA, above a limit of 163 mA. */
+    /* 1Ohm: 163.800mA, above a limit of 163mA. */
     CHECK(sense_window_over(&w, 163800, 163u));
     CHECK(!sense_window_over(&w, 163800, 164u));
     /* A channel with no shunt has no top; the bottom end never counts. */

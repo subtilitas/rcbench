@@ -16,8 +16,8 @@
 #define CODE20_MIN (-524288)
 
 /** @brief Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1). */
-#define FS_NARROW_NV  40960000u    /* ±40.96 mV, ADCRANGE 1  */
-#define FS_WIDE_NV   163840000u    /* ±163.84 mV, ADCRANGE 0 */
+#define FS_NARROW_NV  40960000u    /**< ±40.96mV, ADCRANGE 1  */
+#define FS_WIDE_NV   163840000u    /**< ±163.84mV, ADCRANGE 0 */
 
 _Static_assert(INA228_SHUNT_CAL_ADC <= 0x7FFFu,
                "SHUNT_CAL is a 15-bit field (Table 7-7)");
@@ -169,12 +169,12 @@ sense_value_t ina228_vshunt_nv(const ina228_cal_t *cal, int32_t code)
 
 int32_t ina228_vbus_uv(int32_t code)
 {
-    return (int32_t)((int64_t)code * 3125 / 16);     /* 195.3125 µV */
+    return (int32_t)((int64_t)code * 3125 / 16);     /* 195.3125µV */
 }
 
 int32_t ina228_dietemp_mdegc(uint16_t raw)
 {
-    return sense_sext32(raw, 16u) * 125 / 16;        /* 7.8125 m°C */
+    return sense_sext32(raw, 16u) * 125 / 16;        /* 7.8125m°C */
 }
 
 uint64_t ina228_power_uw(const ina228_cal_t *cal, uint32_t raw24)

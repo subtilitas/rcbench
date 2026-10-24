@@ -1,7 +1,8 @@
-/*
- * The panel's Wi-Fi: the radio, the page's HTTP (hypertext transfer
- * protocol) server, the mDNS (multicast domain name system) name and the
- * NVS (non-volatile storage) entry of the home network.
+/**
+ * @file
+ * @brief The panel's Wi-Fi: the radio, the page's HTTP (hypertext transfer
+ *        protocol) server, the mDNS (multicast domain name system) name and
+ *        the NVS (non-volatile storage) entry of the home network.
  *
  * What the radio may do and when is shared/webaccess (wa_session.h), which
  * the host suite holds; this file carries it out.  The radio is off at every
@@ -40,7 +41,7 @@
 extern "C" {
 #endif
 
-/** The access point's channel, 2.4 GHz band. */
+/** @brief The access point's channel, 2.4GHz band. */
 #define WIFI_ACCESS_AP_CHANNEL 6u
 
 /** What the screen draws, as a copy. */

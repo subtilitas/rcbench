@@ -572,7 +572,7 @@ static long labs_(long v) { return v < 0 ? -v : v; }
  * @param now_ms The clock.
  * @param x The column.
  * @param y The row.
- * @return Whether the 100 px step limit shortened this step.
+ * @return Whether the 100px step limit shortened this step.
  */
 static bool swipe_point(const inj_contact_t *c, uint32_t now_ms, uint16_t *x,
                         uint16_t *y)
@@ -593,7 +593,7 @@ static bool swipe_point(const inj_contact_t *c, uint32_t now_ms, uint16_t *x,
     const long dist = labs_(dx) + labs_(dy);
     bool slowed = false;
     if (c->down_published && dist > (long)INJ_SWIPE_STEP_PX) {
-        /* Under the panel's 120 px jump split (touch_map.h). */
+        /* Under the panel's 120px jump split (touch_map.h). */
         tx = (uint16_t)((long)c->px + dx * (long)INJ_SWIPE_STEP_PX / dist);
         ty = (uint16_t)((long)c->py + dy * (long)INJ_SWIPE_STEP_PX / dist);
         slowed = true;

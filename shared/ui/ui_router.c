@@ -782,17 +782,17 @@ const char *ui_router_alert(void)
 }
 
 /* The alert's text, in UI_FONT_BAND (10 x 20): from x 12, the panel's width
- * less 12 px at the left and 36 px at the right, which clears the "x"
- * (976 px, 97 cells of 10 px, on the 1024 px panel).  Text wider than one
- * line breaks at a space onto a second, 20 px under the first: two rows
- * fill 40 of the band's 44 px, 2 px from its top. */
-/** @brief The alert text's left edge: 12 px. */
+ * less 12px at the left and 36px at the right, which clears the "x"
+ * (976px, 97 cells of 10px, on the 1024px panel).  Text wider than one
+ * line breaks at a space onto a second, 20px under the first: two rows
+ * fill 40 of the band's 44px, 2px from its top. */
+/** @brief The alert text's left edge: 12px. */
 #define ALERT_TEXT_X 12
-/** @brief The alert text's width: 976 px, 97 cells, clear of the "x". */
+/** @brief The alert text's width: 976px, 97 cells, clear of the "x". */
 #define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
-/** @brief An alert row to the next: 20 px. */
+/** @brief An alert row to the next: 20px. */
 #define ALERT_PITCH  20
-/** @brief The alert's face: 10 x 20 px. */
+/** @brief The alert's face: 10 x 20px. */
 #define ALERT_FONT   UI_FONT_BAND
 
 int ui_router_alert_rows(const char *text)

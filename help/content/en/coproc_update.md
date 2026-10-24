@@ -16,7 +16,7 @@ The question opens from the [menu](overview.md), with UPDATE in the band, while 
 
 | Control | What it does |
 |---|---|
-| HOLD 2 s TO START | starts the update after a 2 s hold, with the gesture and fade of ARM |
+| HOLD 2s TO START | starts the update after a 2s hold, with the gesture and fade of ARM |
 | CANCEL | closes the question; the panel does not ask again for that version until it restarts, and [Updates](updates.md#the-iomcu) still starts the update |
 
 Leaving the question another way declines it as CANCEL does.
@@ -33,8 +33,8 @@ Once the hold completes, the update has the panel to itself. The link goes down,
 
 | Step | Shown while |
 |---|---|
-| `Preparing firmware.` | the panel hashes the image, 8 KiB a step |
-| `Sending firmware.` | the blocks go out, 64 bytes each, counted as `Block 1497 of 2994, 50 %` |
+| `Preparing firmware.` | the panel hashes the image, 8KiB a step |
+| `Sending firmware.` | the blocks go out, 64 bytes each, counted as `Block 1497 of 2994, 50%` |
 | `IOmcu is checking the firmware.` | the IOmcu hashes the slot it wrote |
 | `IOmcu is starting the new firmware.` | it restarts into the new slot, on trial |
 | `Keeping the new firmware.` | the panel reads the new image's identity and keeps it |
@@ -48,12 +48,12 @@ The screen returns to the menu when the update ends, or to [Updates](updates.md#
 | Alert | Meaning |
 |---|---|
 | `IOmcu updated to 0.22.0.` | the new image runs and is kept |
-| `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
+| `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4s |
 | `IOmcu update stopped: refused, error 6. Previous firmware is running.` | the IOmcu refused a step |
 | `IOmcu update stopped: firmware check failed. Previous firmware is running.` | the slot's SHA-256 is not the image's |
-| `IOmcu update stopped: flash memory stayed busy. Previous firmware is running.` | the flash stayed busy for 10 s |
+| `IOmcu update stopped: flash memory stayed busy. Previous firmware is running.` | the flash stayed busy for 10s |
 | `IOmcu update stopped: IOmcu restarted 3 times. Previous firmware is running.` | three starts from block 0 |
-| `IOmcu update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12 s |
+| `IOmcu update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12s |
 | `IOmcu cannot update over CAN. Install firmware once via USB.` | the IOmcu has no update pages or no partition table; flash it once over USB (Universal Serial Bus) |
 | `New IOmcu firmware kept.` | an image found on trial at link-up was kept |
 

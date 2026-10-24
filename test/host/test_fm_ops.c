@@ -1,8 +1,8 @@
 /**
  * @file test_fm_ops.c
  * @brief The file manager's jobs over a card in memory (fm_fake.h), and the
- *        rules they ask first (fm_rules.h): copies of 0 B, 1 B, 16,383 B,
- *        16,384 B, 16,385 B and 1 MiB; a copy stopped after each chunk, by
+ *        rules they ask first (fm_rules.h): copies of 0B, 1B, 16,383B,
+ *        16,384B, 16,385B and 1MiB; a copy stopped after each chunk, by
  *        CANCEL, by a full card, by a card pulled and by the gate; every
  *        overwrite refused; move, rename, delete and NEW at their refusals;
  *        the save sequence cut after the write, after the delete and after

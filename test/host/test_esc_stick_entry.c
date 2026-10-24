@@ -138,7 +138,7 @@ TEST_CASE(the_supply_goes_off_before_the_stick_moves)
  * module transaction later.  A power cycle and a planned end wait for the
  * supply's own report, in readings taken after the request, with the
  * current down; the stick never moves while the module is still on.  The
- * reviewers' proof: sunrise-pro with two changes and the module 300 ms
+ * reviewers' proof: sunrise-pro with two changes and the module 300ms
  * behind moved the stick at full power.
  */
 TEST_CASE(the_stick_waits_for_the_supplys_own_off)
@@ -366,7 +366,7 @@ TEST_CASE(each_power_up_enters_from_the_position_of_its_change)
     CHECK_EQ(r.moved_while_on, 0u);
 }
 
-/* SUN PLUS waits 5 s for modes 4 to 6 and 2 s for the rest: the button
+/* SUN PLUS waits 5s for modes 4 to 6 and 2s for the rest: the button
  * is asked for when the mode's own wait is over, not the scheme's. */
 TEST_CASE(a_value_waits_its_own_entry_time)
 {

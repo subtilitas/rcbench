@@ -100,7 +100,7 @@ TEST_CASE(the_format_check_sees_what_is_read)
     char a[32];
     conversions("%d of %d", a, sizeof(a));
     CHECK_STR_EQ(a, "d,d,");
-    conversions("100 %% at %-6s %5.2f %lu %+d %.*f %02X", a, sizeof(a));
+    conversions("100%% at %-6s %5.2f %lu %+d %.*f %02X", a, sizeof(a));
     CHECK_STR_EQ(a, "s,f,lu,d,*f,X,");
     conversions("none", a, sizeof(a));
     CHECK_STR_EQ(a, "");
@@ -491,7 +491,7 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* How many cells @p s takes, as the 8 px face draws it. */
+/* How many cells @p s takes, as the 8px face draws it. */
 static int cells_of(const char *s)
 {
     int n = 0;
@@ -501,9 +501,9 @@ static int cells_of(const char *s)
     return n;
 }
 
-/* A run's reason is a line of the SERVO screen's result box, 250 px for
+/* A run's reason is a line of the SERVO screen's result box, 250px for
  * 31 cells, and the two lines that say STALL AT cannot be reached go
- * across the settings card under START TEST, 468 px for 58 cells with
+ * across the settings card under START TEST, 468px for 58 cells with
  * their numbers in: in every language. */
 TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
 {
@@ -543,7 +543,7 @@ TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
         }
     }
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_CC),
-                 "constant current for 1 s");
+                 "constant current for 1s");
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_INA_METER),
                  "INA3221 no longer the meter");
 }

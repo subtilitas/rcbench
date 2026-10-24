@@ -103,9 +103,9 @@ TEST_CASE(no_guidance_runs_off_its_card)
 }
 
 /*
- * The angle (265 deg) and both masses (0.42 g, 0.35 g) are fixed values, so
- * the BALANCE pane carries the MODELLED pill under the readings: 88 px by
- * 20 px at y 378, its fill clear of the dot and the word, and the
+ * The angle (265deg) and both masses (0.42g, 0.35g) are fixed values, so
+ * the BALANCE pane carries the MODELLED pill under the readings: 88px by
+ * 20px at y 378, its fill clear of the dot and the word, and the
  * words "Not measured." beside it.  The other panes carry none.  In German
  * the pill and the words are the German ones, and both fit inside the card.
  */
@@ -468,7 +468,7 @@ TEST_CASE(a_negative_angle_does_not_index_before_the_first_blade)
 }
 
 /* Tab centres, from the tab row reset() lays out: from x 11, three tabs of
- * 150 px, 4 px apart. */
+ * 150px, 4px apart. */
 #define TAB0_X   IN_TAB_X(0)
 #define TAB1_X   IN_TAB_X(1)
 #define TAB2_X   IN_TAB_X(2)

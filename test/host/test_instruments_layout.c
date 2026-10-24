@@ -105,7 +105,7 @@ static void push(uint32_t now, bool failsafe, bool lost)
     analyser_screen_push(&f, &d, raw, SBUS_FRAME_BYTES, now);
 }
 
-/** @brief The pixels from IN_TEXT_FLOOR to 12 px above the cards' foot,
+/** @brief The pixels from IN_TEXT_FLOOR to 12px above the cards' foot,
  *         clear of their edges, that are not the cards' fill; the screen
  *         drawn whole first.
  *  @param scr  The screen.
@@ -131,8 +131,8 @@ static int ink_under_the_band(const ui_screen_t *scr, void (*inv)(void),
 
 /*
  * The tabs of RECEIVER and BALANCE are UI_TAP_MIN tall and take a tap at
- * every corner of their 150 x 48 px: a tap 1 px inside each corner of the
- * second tab switches the pane, one 1 px outside its left edge does not
+ * every corner of their 150 x 48px: a tap 1px inside each corner of the
+ * second tab switches the pane, one 1px outside its left edge does not
  * (that is the first tab's gap).
  */
 TEST_CASE(the_tabs_are_a_finger_tall_and_act_to_their_edges)
@@ -174,9 +174,9 @@ TEST_CASE(the_tabs_are_a_finger_tall_and_act_to_their_edges)
 }
 
 /*
- * BALANCE's PROPELLER and EDF are 162 x 48 px, its "-" and "+" 56 x 48 px
- * and its count 114 x 48 px, 8 px apart, all above the alert band; each
- * acts on a tap 1 px inside its corners.
+ * BALANCE's PROPELLER and EDF are 162 x 48px, its "-" and "+" 56 x 48px
+ * and its count 114 x 48px, 8px apart, all above the alert band; each
+ * acts on a tap 1px inside its corners.
  */
 TEST_CASE(balance_controls_are_a_finger_tall_and_act_to_their_edges)
 {
@@ -285,7 +285,7 @@ TEST_CASE(receiver_draws_nothing_under_the_alert_band)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/** @brief A pack of @p n cells about 3.8 V, the last @p dip_mv low.
+/** @brief A pack of @p n cells about 3.8V, the last @p dip_mv low.
  *  @param n      Cells.
  *  @param dip_mv The last cell's departure, mV. */
 static void pack(int n, float dip_mv)

@@ -1,8 +1,8 @@
 /*
  * The HITEC page's stops and supply (shared/outputs/hitec_port.c): a stop
  * in each state and what it blocks until CLEAR, an unsafe bench, CLOSE, the
- * POWER cycle with its 4800 to 6000 mV bounds, a supply that does not read
- * off or refuses the ON, the 10 s abort, and each timer across the wrap of
+ * POWER cycle with its 4800 to 6000mV bounds, a supply that does not read
+ * off or refuses the ON, the 10s abort, and each timer across the wrap of
  * the millisecond clock.  The rig is hitec_port_rig.h.
  *
  * SPDX-License-Identifier: MIT
@@ -172,7 +172,7 @@ static void power_cycle_at(uint32_t t0)
     CHECK(hitec_port_supply_hold(&g_port));
     CHECK_EQ(g_hw.offs, 1);
     CHECK(!g_hw.v.asked_on);
-    /* Read off LAG_MS later; on 1000 ms after that read. */
+    /* Read off LAG_MS later; on 1000ms after that read. */
     for (unsigned i = 0; i < 5000u && g_hw.ons == 0u; ++i) {
         tick();
     }
@@ -225,7 +225,7 @@ TEST_CASE(power_takes_4800_to_6000_mv_only)
         CHECK_EQ(refusal(), LINK_HITEC_REF_SUPPLY_RANGE);
         CHECK_EQ(state(), LINK_HITEC_OPEN);
     }
-    /* Under the input with the module's cap: 6000 mV needs 6700 mV in. */
+    /* Under the input with the module's cap: 6000mV needs 6700mV in. */
     g_hw.v.vin_mv = 6699u;
     stage_power(6000u, MA, 0u);
     CHECK_EQ(cmd(LINK_HITEC_OP_POWER, CH, 0), 0);
@@ -363,7 +363,7 @@ TEST_CASE(a_stop_in_the_listen_of_a_power_cuts_it)
     open_classic();
     g_drv.boot_byte = 0x00u;
     stage_power(MV, MA, 10u);
-    /* A listen of 4 s that hears its byte at 30 ms. */
+    /* A listen of 4s that hears its byte at 30ms. */
     st32(LINK_HT_W_WINDOW_LO, 4000000u);
     SST(LINK_HT_W_RX) = 2u;
     CHECK_EQ(cmd(LINK_HITEC_OP_POWER, CH, 0), 0);

@@ -105,14 +105,14 @@ typedef enum {
  * @brief Units per kst_plan_step() call of a caller that must not block: a call
  *        takes 100 to 109 units.
  *
- * Cost on a Cortex-M33 at 150 MHz, computed in an emulator from the
+ * Cost on a Cortex-M33 at 150MHz, computed in an emulator from the
  * instructions a call executes, with ARM GNU 14.2 at -O3; not measured on
  * hardware.  The upper estimate counts 1 cycle per instruction, 1 more per
  * load and per store and 2 per basic block.  The costliest call found:
- * 122,397 cycles, 816 us, over the 71 costliest requests found.  The
+ * 122,397 cycles, 816us, over the 71 costliest requests found.  The
  * costliest single unit found is 1,228 cycles, which puts a call of 109
- * units at 133,852 cycles, 892 us, or less.  A begin call: 9,670
- * cycles, 64 us.
+ * units at 133,852 cycles, 892us, or less.  A begin call: 9,670
+ * cycles, 64us.
  */
 #define KST_PLAN_SLICE_UNITS 100u
 /**

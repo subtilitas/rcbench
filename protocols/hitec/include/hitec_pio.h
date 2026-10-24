@@ -86,10 +86,10 @@ extern "C" {
  */
 #define HITEC_PIO_SYNC_SYS_CYCLES 2u
 /**
- * @brief Largest bit time error a clock may give, in parts per million: 0.05 %.
+ * @brief Largest bit time error a clock may give, in parts per million: 0.05%.
  *
  * The 8 fractional bits of the divider and a divider of 4 or more keep every
- * clock within 489 ppm.
+ * clock within 489ppm.
  */
 #define HITEC_PIO_MAX_ERROR_PPM 500u
 
@@ -175,8 +175,8 @@ typedef struct {
 /**
  * @brief The divider for @p family at a system clock of @p sys_hz.
  *
- * False when the divider is below HITEC_PIO_MIN_DIV (a clock below 1.2282 MHz
- * classic, 7.3692 MHz D series: 64 bit rates less half a step of the divider),
+ * False when the divider is below HITEC_PIO_MIN_DIV (a clock below 1.2282MHz
+ * classic, 7.3692MHz D series: 64 bit rates less half a step of the divider),
  * its integer part above HITEC_PIO_MAX_DIV, or the bit time it gives more than
  * HITEC_PIO_MAX_ERROR_PPM from the family's.  @p out is left as it was on
  * false.

@@ -77,7 +77,7 @@ static unsigned drawn_under_the_band(void)
 
 /*
  * A cell is UI_TAP_MIN or more each way and acts on a press at its last
- * row and column; a press in the 6 px between two rows or the 8 px
+ * row and column; a press in the 6px between two rows or the 8px
  * between two columns ticks nothing.  The seventh row ends at OU_FOOT.
  */
 TEST_CASE(a_cell_takes_a_press_to_its_edges_and_none_between)
@@ -121,7 +121,7 @@ TEST_CASE(a_cell_takes_a_press_to_its_edges_and_none_between)
 TEST_CASE(the_protocol_list_rows_are_a_finger_tall_and_end_above_the_band)
 {
     CHECK_EQ(OU_POP_ROW, UI_TAP_MIN);
-    /* The protocols' column, its 4 px margins and its 4 px shadow. */
+    /* The protocols' column, its 4px margins and its 4px shadow. */
     CHECK(OU_DD_Y + 8 + (int)OUTBIND_PROTOS * OU_POP_ROW + 4 <= OU_FOOT);
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
         ui_text_set_language((ui_lang_t)l);

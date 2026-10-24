@@ -18,10 +18,10 @@ image, and no firmware calls it.
 - A frame is 25 bytes: the header 0x0F, 22 bytes of 16 channels at 11 bits
   each, a flag byte and a footer.
 - S.BUS has no checksum. The header value occurs inside channel data, so the
-  decoder frames on silence: a gap of 2000 us or more (`SBUS_GAP_US`) starts
+  decoder frames on silence: a gap of 2000us or more (`SBUS_GAP_US`) starts
   a frame. The caller passes a timestamp in microseconds with every byte.
-- Bytes inside a frame are 120 us apart. Frames are at least 4 ms apart.
-- A raw channel value is 0 to 2047. 172 maps to 1000 us and 1811 to 2000 us.
+- Bytes inside a frame are 120us apart. Frames are at least 4ms apart.
+- A raw channel value is 0 to 2047. 172 maps to 1000us and 1811 to 2000us.
 - The flags `failsafe` and `frame_lost` are decoded and not acted on. A
   caller that drives anything from S.BUS treats `failsafe` as a stop.
 

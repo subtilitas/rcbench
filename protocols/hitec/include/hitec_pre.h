@@ -18,10 +18,10 @@
  * every 32 samples, and this module decodes them as inverted 8N1 into the
  * hitec_capture_t the PULL-UP receiver gives.
  *
- * Measured on one D485HW at a 150 MHz system clock, 5 reads per setting:
- * every read passes with the sample 40 to 187 ns after the release and a
- * precharge of 6.7 to 200 ns; at 213 ns a precharge of 1 cycle fails; from
- * 267 ns no read passes; with no precharge every sample is low.  This
+ * Measured on one D485HW at a 150MHz system clock, 5 reads per setting:
+ * every read passes with the sample 40 to 187ns after the release and a
+ * precharge of 6.7 to 200ns; at 213ns a precharge of 1 cycle fails; from
+ * 267ns no read passes; with no precharge every sample is low.  This
  * module takes the middle: a precharge of HITEC_PRE_CHARGE_NS and the
  * sample HITEC_PRE_SAMPLE_NS after the release, rounded to system clock
  * cycles.
@@ -32,7 +32,7 @@
  * clock cycles after the state machine starts, through the input
  * synchroniser's HITEC_PIO_SYNC_SYS_CYCLES.
  *
- * The decoder.  Inverted 8N1 at 115 200 bit/s: the line rests low, a
+ * The decoder.  Inverted 8N1 at 115 200bit/s: the line rests low, a
  * start bit is high, a data bit low is a 1, the stop bit is low.  As the
  * PULL-UP receiver does, it first waits for the rest level, then for a
  * start bit; a start bit is the first high sample after a low one, and a
@@ -73,7 +73,7 @@ extern "C" {
 /** @brief How a D series line receives. */
 typedef enum {
     /** @brief Released for the answer; a pull-up on the board makes the high
-     *  level (2.2 kOhm to the servo supply on the bench). */
+     *  level (2.2kOhm to the servo supply on the bench). */
     HITEC_RX_PULL_UP = 0,
     /** @brief No pull-up: precharge and sample, this module. */
     HITEC_RX_PRECHARGE = 1,
@@ -87,7 +87,7 @@ typedef enum {
 /**
  * @brief The precharge and the wait from the release to the sample the cycle
  *        counts aim at, ns: the middle of the passing window measured on a
- *        D485HW, a precharge of 6.7 to 200 ns and a sample 40 to 187 ns after
+ *        D485HW, a precharge of 6.7 to 200ns and a sample 40 to 187ns after
  *        the release.
  */
 #define HITEC_PRE_CHARGE_NS 100u
@@ -106,7 +106,7 @@ typedef enum {
  *        the wait, and 1/8 of a bit holds the precharge, the wait and the
  *        sample.
  *
- * The bench ran at 150 MHz.
+ * The bench ran at 150MHz.
  */
 #define HITEC_PRE_MIN_HZ  48000000u
 #define HITEC_PRE_MAX_HZ 250000000u
@@ -141,8 +141,8 @@ typedef struct {
  *
  * False, and @p out left as it was, for a clock outside HITEC_PRE_MIN_HZ to
  * HITEC_PRE_MAX_HZ or one whose rounded precharge or wait falls outside the
- * measured window. At 150 MHz: a period of 163 cycles (1086.7 ns, 7.99 samples
- * a bit), a precharge of 15 cycles (100.0 ns) and the sample 17 cycles (113.3
+ * measured window. At 150MHz: a period of 163 cycles (1086.7ns, 7.99 samples
+ * a bit), a precharge of 15 cycles (100.0ns) and the sample 17 cycles (113.3
  * ns) after the release.
  *
  * @param sys_hz  System clock, in Hz.

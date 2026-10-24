@@ -176,7 +176,7 @@ bool files_screen_busy(void);
 
 /**
  * @brief A size as the panes and INFO write it, no space before the unit:
- *        "300B", "4kB", "3.0MB" from 1 MiB, "8.00GB" from 1 GiB.  The units
+ *        "300B", "4kB", "3.0MB" from 1MiB, "8.00GB" from 1GiB.  The units
  *        are binary: 1kB is 1024 bytes.
  * @param out    takes the text
  * @param n      bytes at @p out

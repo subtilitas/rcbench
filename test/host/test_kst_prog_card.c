@@ -315,7 +315,7 @@ TEST_CASE(an_edited_file_is_named_as_one)
     CHECK(as_typed(KST_F_DUTY, (uint16_t)(duty - 10u)) != duty);
     CHECK_EQ(draft(KST_F_DUTY), as_typed(KST_F_DUTY, (uint16_t)(duty - 10u)));
     /* A line that reads as the servo shows the value changes nothing: 1
-     * step of 255 is below the 1 % the line is written in. */
+     * step of 255 is below the 1% the line is written in. */
     f = file_with("FINE", KST_F_DUTY, (uint16_t)(duty - 1u));
     f->kind = KST_PROG_FILE_EDITED;
     load("FINE");

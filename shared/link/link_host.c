@@ -172,7 +172,7 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
          * offset, and its refusal carries that offset back.
          *
          * A refusal counted as a mismatch costs its reason.  The transaction
-         * then runs to LINK_HOST_TIMEOUT_MS (1000 ms), and the caller reads
+         * then runs to LINK_HOST_TIMEOUT_MS (1000ms), and the caller reads
          * the silence as a dead link: write_output_binding() in
          * firmware/panel/main/panel_arm.c maps a refusal to OUTPUTS_REFUSED
          * and a timeout to OUTPUTS_NO_LINK, which sends the operator to the
@@ -302,7 +302,7 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
     /*
      * And say the link is down, once.  A different fact on a different clock:
      * a request times out from when it was sent, the link is reported down
-     * when nothing has been answered for 1 s.
+     * when nothing has been answered for 1s.
      */
     if (!h->escalated
         && elapsed(now_ms, h->last_reply_ms, LINK_HOST_TIMEOUT_MS)) {

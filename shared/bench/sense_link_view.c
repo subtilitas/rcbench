@@ -174,7 +174,7 @@ void sense_link_meter(const sense_link_t *s, sense_link_meter_t *out)
     }
     out->page   = s->page;
     /* With the map FAST on any channel; without, CH1 of the one part,
-     * the channel an older IOmcu reads at 1 kHz. */
+     * the channel an older IOmcu reads at 1kHz. */
     out->wanted = s->want_set && s->want_i3221 && !s->want_unwatched
                   && (s->map
                       || ((s->want[LINK_SN_I3221_CHANNELS] & 0x01u) != 0u

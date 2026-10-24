@@ -116,12 +116,12 @@ uint16_t sbus_to_us(uint16_t raw)
      * Linear through the two points the protocol defines, in integers.  A
      * receiver may send outside them (172 and 1811 are where a transmitter at
      * its endpoints lands, not the limits of the field), so the result is
-     * clamped to 800..2200 us, a pulse width no servo is damaged by, rather
+     * clamped to 800..2200us, a pulse width no servo is damaged by, rather
      * than to the raw range.
      */
     const int32_t span_raw = (int32_t)SBUS_RAW_2000US - (int32_t)SBUS_RAW_1000US;
     /* Rounded to the nearest, halves away from zero: C division truncates
-     * toward zero, so the half is added above the 1000 us point and
+     * toward zero, so the half is added above the 1000us point and
      * subtracted below it. */
     const int32_t num = ((int32_t)raw - (int32_t)SBUS_RAW_1000US) * 1000;
     int32_t us = 1000 + (num >= 0 ? (num + span_raw / 2) / span_raw

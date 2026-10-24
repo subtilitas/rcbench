@@ -1,12 +1,12 @@
 /**
  * @file
- * @brief The fault log, BENCH/RCBENCH.LOG: one line every 5 s while the link to
+ * @brief The fault log, BENCH/RCBENCH.LOG: one line every 5s while the link to
  *        the IOmcu is down, written whatever SETUP > SD CARD says.
  *
- * The file is held to FAULT_LOG_CAP, 1 MiB (1,048,576 bytes).  A line that
+ * The file is held to FAULT_LOG_CAP, 1MiB (1,048,576 bytes).  A line that
  * would take it past the cap first renames it to BENCH/RCBENCH.OLD,
  * replacing the old one, and starts a new BENCH/RCBENCH.LOG with that line.
- * The card holds at most 2 MiB of fault log; at 208 bytes a line every 5 s,
+ * The card holds at most 2MiB of fault log; at 208 bytes a line every 5s,
  * one file is about 7 hours of link loss.
  *
  * A file that ends at the cap exactly is kept: the cap is the most bytes the
@@ -53,7 +53,7 @@ extern "C" {
 /**
  * @brief The most bytes BENCH/RCBENCH.LOG holds.
  */
-#define FAULT_LOG_CAP 1048576u     /* 1 MiB */
+#define FAULT_LOG_CAP 1048576u     /* 1MiB */
 
 /**
  * @brief The card.

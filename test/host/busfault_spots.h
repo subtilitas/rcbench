@@ -4,9 +4,9 @@
  *        mirrored from busfault_screen.c.
  *
  * If the layout moves these move with it.  Taken by the screen's suites.
- * The acknowledgement runs 976 x 56 px from x 24, 16 px above the panel's
- * foot; the rule over it is 8 px higher; the three notes start at y 432,
- * 28 px apart; the number column at x 760.
+ * The acknowledgement runs 976 x 56px from x 24, 16px above the panel's
+ * foot; the rule over it is 8px higher; the three notes start at y 432,
+ * 28px apart; the number column at x 760.
  *
  * SPDX-License-Identifier: MIT
  */

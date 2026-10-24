@@ -35,7 +35,7 @@ typedef struct {
     uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
 } servo_test_reading_t;
 
-/** @brief One 50 ms window of INA3221 CH1, as the window ring carries it
+/** @brief One 50ms window of INA3221 CH1, as the window ring carries it
  *         (sense_link_win_t).
  *
  * A clipped sample counts in the three currents at the end of the range it
@@ -45,11 +45,15 @@ typedef struct {
     bool     current;       /**< it holds current samples               */
     bool     voltage;       /**< it holds bus voltage samples           */
     uint8_t  clipped;       /**< samples at an end of the range         */
-    int16_t  mean_ma, max_ma, min_ma;   /**< mA, signed                 */
-    uint16_t mean_mv, min_mv;           /**< at the load side of the shunt */
+    int16_t  mean_ma;       /**< the mean current, mA, signed           */
+    int16_t  max_ma;        /**< the highest current, mA, signed        */
+    int16_t  min_ma;        /**< the lowest current, mA, signed         */
+    uint16_t mean_mv;       /**< the mean bus voltage at the load side
+                                 of the shunt, mV                       */
+    uint16_t min_mv;        /**< the lowest of it, mV                   */
     /** @brief The latest it can have closed, on the run's clock
      *         (sense_link_win_t.taken_ms): windows that arrive together carry
-     *         times 50 ms apart.
+     *         times 50ms apart.
      *
      * The window began SERVO_TEST_WIN_MS before. */
     uint32_t taken_ms;
@@ -57,7 +61,7 @@ typedef struct {
 
 /** @brief Readings of the encoder kept for matching with the supply's rows.
  *
- * The panel has one about every 40 ms, so 16 span 640 ms: more than
+ * The panel has one about every 40ms, so 16 span 640ms: more than
  * SERVO_TEST_ENC_STALE_MS. */
 #define SERVO_TEST_ENC_HIST          16u
 

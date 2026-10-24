@@ -49,7 +49,7 @@ bool log_cadence_row(log_cadence_t *c, uint32_t now_ms, bool new_sample,
                      bool bench_run, float *t_s)
 {
     /* Summed in 64 bits from differences of the 32-bit tick: neither the
-     * tick's wrap nor a run longer than 2^32 ms folds the time back. */
+     * tick's wrap nor a run longer than 2^32ms folds the time back. */
     c->run_ms += (uint32_t)(now_ms - c->seen_ms);
     c->seen_ms = now_ms;
     if (!new_sample || !bench_run) {

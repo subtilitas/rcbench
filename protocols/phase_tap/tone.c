@@ -156,7 +156,7 @@ static float hz_of(const tone_t *d, uint32_t n, uint64_t ticks)
  * never divided down to whole ticks: at a few ticks a period, a mean cut
  * to a whole tick is off by tens of percent.  Sizes: a sum is at most a
  * beep's length in ticks, a count at most its periods, split_pct at most
- * 100; the products below stay under 2^63 for beeps of hours at 37.5 MHz.
+ * 100; the products below stay under 2^63 for beeps of hours at 37.5MHz.
  */
 typedef struct {
     uint64_t s;              /**< ticks                                   */

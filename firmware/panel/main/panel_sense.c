@@ -50,7 +50,7 @@ void publish_sense(void)
     const uint8_t i228_addr = (uint8_t)(LINK_SN_I228_ADDR_MIN
                               + (unsigned)settings_get_int(SET_INA228_ADDR));
     /* FAST's part on the INA228's address is left out of the map
-     * (sense_map_link.h): no channel is read at 1 kHz then. */
+     * (sense_map_link.h): no channel is read at 1kHz then. */
     const bool fast_out = i228 && m.fast != LINK_SM_FAST_NONE
                           && i228_addr == LINK_SN_I3221_ADDR_MIN + m.fast / 3u;
     const sense_setup_t w = {

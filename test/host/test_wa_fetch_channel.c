@@ -672,7 +672,7 @@ TEST_CASE(a_chunked_answer_that_is_empty_cut_or_overruns)
     wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
     CHECK_EQ(out.rel, FW_REL_OVERRUN);
-    /* Pieces of 4 bytes, 2 s each, from 25 s on: the budget ends it. */
+    /* Pieces of 4 bytes, 2s each, from 25s on: the budget ends it. */
     fresh(25000u);
     chunked_answer(body, n);
     g.a.read_ms = 2000u;
@@ -805,7 +805,7 @@ static void api_within_the_budget(uint32_t t0)
     static const char body[] = "[{\"a\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\","
                                "\"tag_name\":\"v0.22.1\"}]";
     const uint32_t n = (uint32_t)strlen(body);
-    /* The join took 25 s: the request waits 5 s at most. */
+    /* The join took 25s: the request waits 5s at most. */
     fresh(t0 + 25000u);
     api_answer(body, n);
     wa_run_t r = run_for(WA_CH_TESTING, V(0, 22, 0), true, t0);
@@ -813,7 +813,7 @@ static void api_within_the_budget(uint32_t t0)
     wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_NEWER);
     CHECK(g.last_timeout <= 5000u);
-    /* Each read takes 2 s from 25 s on: the budget ends mid-body. */
+    /* Each read takes 2s from 25s on: the budget ends mid-body. */
     fresh(t0 + 25000u);
     api_answer(body, n);
     g.a.read_ms = 2000u;

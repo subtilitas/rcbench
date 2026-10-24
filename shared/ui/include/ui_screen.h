@@ -2,8 +2,8 @@
  * @file
  * @brief Screen router.
  *
- * The router owns the top 60 px of the panel, the status band with STOP, and
- * hands each screen a sub-canvas of the remaining 1024 x 540 px through
+ * The router owns the top 60px of the panel, the status band with STOP, and
+ * hands each screen a sub-canvas of the remaining 1024 x 540px through
  * gfx_canvas_sub, so a screen cannot draw over STOP.  The band is horizontal
  * because horizontal spans are the cheap direction on a panel whose frame
  * rate is bound by PSRAM (pseudo-static random-access memory) bandwidth.
@@ -130,8 +130,8 @@ typedef struct {
 /**
  * @brief The rows the alert band gives @p text.
  *
- * The band draws two rows of the 10 x 20 face (UI_FONT_BAND), 20 px apart,
- * each 97 cells (ALERT_TEXT_W in ui_router.c: 976 px of the 1024 px panel).
+ * The band draws two rows of the 10 x 20 face (UI_FONT_BAND), 20px apart,
+ * each 97 cells (ALERT_TEXT_W in ui_router.c: 976px of the 1024px panel).
  * @param text The alert's text.
  * @return 1 for a text of up to 97 cells, 2 when it breaks at a space onto
  *         a second row, more for a text the band cannot hold.
@@ -324,8 +324,8 @@ bool ui_router_take_stop(void);
 #define UI_ALERT_SHOW_S 30.0f
 
 /**
- * Show @p text in a 34 px band across the bottom of every screen, or NULL to
- * clear it.
+ * @brief Show @p text in a 34px band across the bottom of every screen, or
+ *        NULL to clear it.
  *
  * For faults the screen itself does not show, such as a touch controller that
  * has stopped answering.  At the bottom, it covers controls rather than
@@ -333,7 +333,10 @@ bool ui_router_take_stop(void);
  * when a tap lands on it and lifts there; a tap on the band reaches no
  * screen.  A press on a control under it that stops what the bench drives
  * -- DISARM, ABORT, STOP TEST -- reaches the screen as if the band were not
- * there, and clears the band (ui_screen_t's safe_at).  Setting an alert again, even the same text, restarts its time.
+ * there, and clears the band (ui_screen_t's safe_at).  Setting an alert
+ * again, even the same text, restarts its time.
+ *
+ * @param text the alert, or NULL to clear it
  */
 void ui_router_set_alert(const char *text);
 

@@ -113,7 +113,7 @@ Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
    ```
 
    The module restarts into slot A. Its console prints `rcbench-iomcu:
-   running from slot A` every 3 s ([below](#the-iomcus-partition-table)).
+   running from slot A` every 3s ([below](#the-iomcus-partition-table)).
 3. **Panel.** Unpack `rcbench-panel-vX.Y.Z.zip` and connect the panel's
    USB-C socket (bridged socket: switch on `UART1`, [§0](#0-before-power)).
    In the unpacked folder, on a bench whose settings stay:
@@ -137,7 +137,7 @@ Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
 
 | What | Parts (`@flash_args`) | Merged image at 0x0 |
 | --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24 KiB at 0x9000) | kept | erased; the panel starts on its defaults |
+| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB at 0x9000) | kept | erased; the panel starts on its defaults |
 | Panel's stored board drawing | lost once; fetched again at link-up | lost once; fetched again at link-up |
 
 The IOmcu keeps its bindings, the supply's wiring and the current
@@ -166,15 +166,15 @@ the same, so the two boards link before and after the update.
    another build, and the band says `IOmcu runs a different build. Update it under SETUP > UPDATES.`.
 4. **IOmcu.** The question opens on the menu while the bench is SAFE,
    the supply's output is off and the panel's Wi-Fi radio is off. It names
-   0.19.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2 s.
+   0.19.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2s.
    The progress fills the screen ([Screens: IOmcu
    update](Screens.md#iomcu-update)), and back on the menu the band
    says `IOmcu updated to 0.22.1.`.
 
 | What | Parts (`@flash_args`) | Merged image at 0x0 |
 | --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (24 KiB at 0x9000) | kept | erased; the panel starts on its defaults |
-| Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the last part ends with the application, about 2.1 MB from 0x0 | kept: the image ends with the application, about 2.1 MB from 0x0 |
+| Panel settings and Wi-Fi settings, in NVS (24KiB at 0x9000) | kept | erased; the panel starts on its defaults |
+| Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the last part ends with the application, about 2.1MB from 0x0 | kept: the image ends with the application, about 2.1MB from 0x0 |
 
 The panel shows the stored drawing again when the IOmcu's ARTWORK
 page names the same drawing, and fetches it otherwise
@@ -207,7 +207,7 @@ image the new panel carries. Three faults of 0.20.0 shape the path:
 From GitHub, with a home network kept, the bench SAFE, the supply output
 off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`. The panel
 reads `releases/latest`, which names v0.22.1, and says `Version 0.22.1 is
-available.`. Hold `HOLD 2 s: DOWNLOAD & INSTALL`; the panel downloads and
+available.`. Hold `HOLD 2s: DOWNLOAD & INSTALL`; the panel downloads and
 checks the image, writes the slot it does not run from and restarts into
 it, and step 5 below follows. Through the browser page:
 
@@ -223,7 +223,7 @@ it, and step 5 below follows. Through the browser page:
    access code the screen shows.
 4. **Panel.** Under `Panel-Firmware`, choose `rcbench-panel-v0.22.1.bin`
    and press `Hochladen`. The panel checks the whole image and asks `PANEL-FIRMWARE
-   INSTALLIEREN?` with both versions. Hold `2 s HALTEN: INSTALL`. The panel
+   INSTALLIEREN?` with both versions. Hold `2s HALTEN: INSTALL`. The panel
    switches the radio off, writes the slot it does not run from, checks it
    and restarts into it. 0.22.1 starts on trial and is kept once the
    display and touch are up; a start that does not get there goes back to
@@ -233,8 +233,8 @@ it, and step 5 below follows. Through the browser page:
    build, and the band says `IOmcu runs a different build. Update it under
    SETUP > UPDATES.`. The question opens on the menu while the bench is
    SAFE, the supply's output is off and the panel's Wi-Fi radio is off. It
-   names 0.20.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2 s,
-   or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP > UPDATES. The
+   names 0.20.0 on the IOmcu and 0.22.1 in the panel. Hold START for 2s,
+   or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP > UPDATES. The
    progress fills the screen ([Screens: IOmcu update](Screens.md#iomcu-update)),
    and the band then says `IOmcu updated to 0.22.1.`.
 
@@ -247,7 +247,7 @@ image at 0x0 erases the settings, and the knob starts OFF.
 
 | What | Install over Wi-Fi | Parts (`@flash_args`) | Merged image at 0x0 |
 | --- | --- | --- | --- |
-| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24 KiB at 0x9000) | kept | kept | erased; the panel starts on its defaults |
+| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24KiB at 0x9000) | kept | kept | erased; the panel starts on its defaults |
 | Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the install writes the application slot only | kept | kept |
 | IOmcu bindings, the supply's wiring, the current monitors' set-up | kept: the update writes the slot the IOmcu does not run from | kept | kept |
 
@@ -279,7 +279,7 @@ files from new folders on the SD (Secure Digital) card and moves none there
    panel that says `Unexpected answer from GitHub.` met the fault of 0.21.0
    and 0.21.1 [below](#the-check-on-0210-and-0211): press `CHECK FOR
    UPDATES` again at once.
-3. **Panel.** Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel downloads and
+3. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.21.0.
@@ -287,7 +287,7 @@ files from new folders on the SD (Secure Digital) card and moves none there
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.21.0 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2 s, or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 `RELEASES` is in force at once; SAVE on SETUP keeps it. A bench without a
@@ -295,7 +295,7 @@ home network takes the upload on the panel's browser page, in either
 language: SETUP > WI-FI > ACCESS POINT, join the network the screen names,
 open `http://192.168.4.1/`, enter the access code, choose
 `rcbench-panel-v0.22.1.bin` under `Panel firmware` and press `Upload`, then
-hold `HOLD 2 s: INSTALL` on the panel. Step 4 above follows. A bench
+hold `HOLD 2s: INSTALL` on the panel. Step 4 above follows. A bench
 without a phone or a computer on Wi-Fi flashes `rcbench-panel-v0.22.1.zip`
 over USB as in [step 3](#from-the-release-assets) above, and step 4
 follows.
@@ -320,7 +320,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
    panel that says `Unexpected answer from GitHub.` met the fault of 0.21.1
    [below](#the-check-on-0210-and-0211): press `CHECK FOR UPDATES` again
    at once.
-2. **Panel.** Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel downloads and
+2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.21.1.
@@ -328,7 +328,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.21.1 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2 s, or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 A bench without a home network takes the upload on the panel's browser
@@ -350,10 +350,10 @@ What a 0.21.1 set-up meets on 0.22.1:
 | Backlight on SETUP > PANEL | no row; the backlight is on while the panel runs; the stored `backlight` key stays in the settings storage and is not read |
 | Sensor SDA and SCL with nothing wired to them: `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the monitors read as not answering; the test runs on the IOmcu and comes with step 3 |
 | INA228 address and INA3221 address wrap at their ends | stop at 0x40 and 0x4F (INA228), 0x40 and 0x43 (INA3221) |
-| an exFAT card, the format of SDXC cards of 64 GB to 2 TB: `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | mounts and lists; files of 4 GiB and more list with their size |
+| an exFAT card, the format of SDXC cards of 64GB to 2 TB: `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | mounts and lists; files of 4GiB and more list with their size |
 | a card with no FAT or exFAT volume (NTFS, GPT, not formatted): `no card` on the splash, `No card. Insert one and tap RESCAN.` on LOGS | `not FAT32/exFAT` on the splash, `Card is neither FAT32 nor exFAT. Format it on a computer.` on LOGS, `Card is neither FAT32 nor exFAT. Run not recorded.` at a run's start; format the card FAT32 or exFAT on a computer ([Screens: The SD card's format](Screens.md#the-sd-cards-format)) |
 | a card that does not mount for another reason: `no card` | `unreadable` on the splash, `Cannot read the card. Check it on a computer, then tap RESCAN.` on LOGS |
-| a tap on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN while the alert band covers it or a chip's help box is open: clears the band or closes the box only; the alert band covers the lower 22 px of SERVO's DISARM | acts on the first press and clears the band or closes the box; ARM and OUTPUT ON under the band or the box still start no hold |
+| a tap on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN while the alert band covers it or a chip's help box is open: clears the band or closes the box only; the alert band covers the lower 22px of SERVO's DISARM | acts on the first press and clears the band or closes the box; ARM and OUTPUT ON under the band or the box still start no hold |
 
 ### From 0.21.2
 
@@ -364,7 +364,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
 1. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
    either RELEASES value. The panel says `Version 0.22.1 is available.`.
-2. **Panel.** Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel downloads and
+2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.21.2.
@@ -372,7 +372,7 @@ the image the new panel carries. 0.22.1 reads the SD card's folders as
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.21.2 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2 s, or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 A bench without a home network takes the upload on the panel's browser
@@ -410,7 +410,7 @@ version numbers, so it finds another build and asks.
 1. **Check.** With a home network kept, the bench SAFE, the supply output
    off and no log run open: SETUP > UPDATES, `CHECK FOR UPDATES`, with
    either RELEASES value. The panel says `Version 0.22.1 is available.`.
-2. **Panel.** Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel downloads and
+2. **Panel.** Hold `HOLD 2s: DOWNLOAD & INSTALL`. The panel downloads and
    checks the image, writes the slot it does not run from and restarts into
    it. 0.22.1 starts on trial and is kept once the display and touch are
    up; a start that does not get there goes back to 0.22.0.
@@ -418,7 +418,7 @@ version numbers, so it finds another build and asks.
    Update it under SETUP > UPDATES.`. The question opens on the menu while
    the bench is SAFE, the supply's output is off and the panel's Wi-Fi
    radio is off. It names 0.22.0 on the IOmcu and 0.22.1 in the panel.
-   Hold START for 2 s, or after CANCEL `HOLD 2 s: UPDATE IOMCU` on SETUP >
+   Hold START for 2s, or after CANCEL `HOLD 2s: UPDATE IOMCU` on SETUP >
    UPDATES. The band then says `IOmcu updated to 0.22.1.`.
 
 A bench without a home network takes the upload on the panel's browser
@@ -441,12 +441,12 @@ started.
 sends it in one of two forms. A request its cache does not hold comes back
 in chunks (`Transfer-Encoding: chunked`) with no `Content-Length`; the same
 request from the cache comes back with `Content-Length`. GitHub keeps the
-answer for 60 s (`Cache-Control: s-maxage=60`). 0.21.0 and 0.21.1 read
+answer for 60s (`Cache-Control: s-maxage=60`). 0.21.0 and 0.21.1 read
 only the form with a length: a chunked answer ends the check with
 `Unexpected answer from GitHub.` and `The response does not specify a
 size.`, the check at start-up included. A second `CHECK FOR UPDATES` at
-once gets the cached form. Measured 2026-10-19: 4 requests more than 60 s
-apart came back chunked, and a repeat of each within 1 s came back with
+once gets the cached form. Measured 2026-10-19: 4 requests more than 60s
+apart came back chunked, and a repeat of each within 1s came back with
 `Content-Length`, 4 times of 4. Each check counts against GitHub's limit of
 60 API (application programming interface) requests an hour per address.
 0.21.2 and later read both forms.
@@ -487,14 +487,14 @@ The IOmcu build prints its own size check:
     -- rcbench: image 191808 bytes, 9% of the 2084864 bytes of one slot
 
 **Watch for:** the module used for bring-up is a Waveshare RP2350-CAN with
-**4 MB**, while `PICO_BOARD` defaults to a board file claiming **16 MB**. The
-linker measures against 16 MB and will not warn. The line above is the only
+**4MB**, while `PICO_BOARD` defaults to a board file claiming **16MB**. The
+linker measures against 16MB and will not warn. The line above is the only
 thing that will, so read it.
 
 ### The IOmcu's partition table
 
 The IOmcu's flash carries a partition table: two image slots of
-2036 KiB each and the output store's own 8 KiB partition
+2036KiB each and the output store's own 8KiB partition
 ([Link](Link.md#firmware-update-over-the-link) has the layout). The panel
 sends later IOmcu images over CAN into the slot that is not running.
 A new module and an IOmcu loaded with 0.18.0 or older (an image of
@@ -513,14 +513,14 @@ picotool partition info
 ```
 
 **Good:** the IOmcu's console prints `rcbench-iomcu: running from
-slot A` every 3 s. The bindings, the supply's wiring and the current
+slot A` every 3s. The bindings, the supply's wiring and the current
 monitors' set-up are read from the old store at 0x3FE000 until the first
 save writes the new one. `no partition table -- firmware updates over CAN
 need one USB load of rcbench-iomcu-install.uf2` means the image runs without
 the table: load `rcbench-iomcu-install.uf2` again.
 
 On an RP2350 of stepping A2 the load also writes the RP2350-E10 workaround
-block, which lands in the last 4 KiB sector of the 4 MB, 0x3FF000: the old
+block, which lands in the last 4KiB sector of the 4MB, 0x3FF000: the old
 store's second sector. Bindings whose newest save sits there are lost, and
 the newest save in 0x3FE000 comes back instead. Check OUTPUTS after the load.
 The stepping of the bring-up module is not known.
@@ -542,19 +542,19 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 The panel's flash holds two application slots of 4,063,232 bytes, `ota_0`
 and `ota_1`, so it can update itself over Wi-Fi ([Screens:
 Wi-Fi](Screens.md#wi-fi)). A panel flashed with 0.18.0 or older
-has one 3 MiB `factory` slot and reaches the new layout with one flash over
+has one 3MiB `factory` slot and reaches the new layout with one flash over
 USB:
 
 | Offset | 0.18.0 and older | 0.19.0 and later |
 | --- | --- | --- |
-| 0x9000 | `nvs`, 24 KiB | `nvs`, 24 KiB |
-| 0xF000 | `phy_init`, 4 KiB | `phy_init`, 4 KiB |
-| 0x10000 | `factory`, 3 MiB | `otadata`, 8 KiB |
-| 0x20000 | | `ota_0`, 3,968 KiB |
-| 0x310000 | `storage`, 1 MiB, unused | |
-| 0x400000 | | `ota_1`, 3,968 KiB |
-| 0x410000 | `boardart`, 2 MiB | |
-| 0x7E0000 | | `boardart`, 128 KiB |
+| 0x9000 | `nvs`, 24KiB | `nvs`, 24KiB |
+| 0xF000 | `phy_init`, 4KiB | `phy_init`, 4KiB |
+| 0x10000 | `factory`, 3MiB | `otadata`, 8KiB |
+| 0x20000 | | `ota_0`, 3,968KiB |
+| 0x310000 | `storage`, 1MiB, unused | |
+| 0x400000 | | `ota_1`, 3,968KiB |
+| 0x410000 | `boardart`, 2MiB | |
+| 0x7E0000 | | `boardart`, 128KiB |
 
 The parts keep the settings: they write the bootloader at 0x0, the
 partition table at 0x8000, `otadata` at 0x10000 and the application at
@@ -568,7 +568,7 @@ From the release archive, `esptool.py ... write_flash @flash_args` in its
 unpacked folder, as in [step 3](#from-the-release-assets).
 
 The merged image at offset 0 covers the flash from 0x0 to the end of the
-application in `ota_0`, about 2 MB, and fills the gaps between the parts
+application in `ota_0`, about 2MB, and fills the gaps between the parts
 with 0xFF. `nvs` at 0x9000 lies in such a gap, so the merged image erases
 the settings.
 
@@ -582,12 +582,12 @@ installs later releases over Wi-Fi from the release asset
 
 ## 2. The link, before anything else
 
-The panel runs the CAN echo self-test itself, at every start-up, for 1200 ms
+The panel runs the CAN echo self-test itself, at every start-up, for 1200ms
 inside the splash. It answers one question: do frames cross the bus intact? It
 uses no page protocol, so if it passes and the link still does not work, the
 fault is above the wire.
 
-**Good looks like nothing:** the splash shows `LINK  OK  CAN 1 Mbit/s` and
+**Good looks like nothing:** the splash shows `LINK  OK  CAN 1Mbit/s` and
 hands over to the menu.
 
 **A failure is a screen**, before the menu, with the verdict, what to check in
@@ -612,7 +612,7 @@ one:
 |---|---|
 | Panel end | **GPIO28**, IO28 of the 12-pin header P3 of the 7-inch ESP32-P4 board (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
 | IOmcu end | **GP3** |
-| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the IOmcu is healthy: it switches to SAFE after 150 ms of silence. What is uncovered is a panel that stops beating while the IOmcu cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
+| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the IOmcu is healthy: it switches to SAFE after 150ms of silence. What is uncovered is a panel that stops beating while the IOmcu cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
 
 Without this wire the IOmcu refuses every switch to ARMED, and that is the interlock
 working, not a fault.
@@ -621,14 +621,14 @@ working, not a fault.
 
 | | |
 |---|---|
-| Edge period | 20 ms |
-| Gap accepted | 4 ms to 150 ms |
+| Edge period | 20ms |
+| Gap accepted | 4ms to 150ms |
 | Edges before it counts as alive | 4 |
 
-So the line must be edging for roughly **80 ms** before a switch to ARMED can succeed.
+So the line must be edging for roughly **80ms** before a switch to ARMED can succeed.
 
-**On the scope, at GP3:** a square wave, edge to edge 20 ms. If the gap ever
-exceeds 150 ms the IOmcu drops it and the next switch to ARMED is refused.
+**On the scope, at GP3:** a square wave, edge to edge 20ms. If the gap ever
+exceeds 150ms the IOmcu drops it and the next switch to ARMED is refused.
 
 **Where the edges come from:** the panel's control task, inside its poll loop.
 Anything that stalls that task stops the heartbeat — which is why nothing
@@ -651,17 +651,17 @@ On the panel console, in this order:
 
 **What to expect while it runs:**
 
-- 26 blocks of 62 bytes over CAN, in a 15 ms slice of each 50 ms poll.
+- 26 blocks of 62 bytes over CAN, in a 15ms slice of each 50ms poll.
 - **A display stall** when it writes to flash: one per flash operation, 4
-  for this drawing (2 sector erases of 4 kB, the payload, the header). A
+  for this drawing (2 sector erases of 4kB, the payload, the header). A
   flash operation closes the cache the panel's bounce-buffer refill reads
   PSRAM through, so the panel stops for the length of each. An operation
-  that holds the refill off for more than 512 us restarts the scan at the
+  that holds the refill off for more than 512us restarts the scan at the
   first VBlank (vertical blanking interval) interrupt after it ends, which
   can be mid-frame, and the console prints `display: scan restarted`; the
   first whole frame after it is in place.
   Settings saves do the same.
-- **The write waits for a safe bench.** It takes one step per 5 ms control
+- **The write waits for a safe bench.** It takes one step per 5ms control
   pass, and only while the bench is SAFE with the supply off. ARMED or with
   the supply on, `keeping hardware 1's drawing waits for a bench in SAFE
   with the supply off` appears once on the console and `kept` follows after
@@ -692,12 +692,12 @@ Nothing is wired to an output yet. This step tests the interlock, not a pin.
    answers `NOT_ARMED` because `!beat.alive`. The panel shows the refusal.
 2. **Heartbeat wire fitted, panel ARMED** → the IOmcu accepts.
 3. **Pull the heartbeat wire while ARMED** → it must fail safe within
-   **150 ms**.
+   **150ms**.
 4. **Press STOP** → latches. It must take an explicit ARM to leave, not a
    link that recovers.
 5. **Pull the CAN wire while ARMED** → the IOmcu gives up after
-   **200 ms**; the panel escalates after **1 s**.
-6. **Cover the touch panel / let touch die** → after **500 ms** of silence
+   **200ms**; the panel escalates after **1s**.
+6. **Cover the touch panel / let touch die** → after **500ms** of silence
    switching to ARMED is blocked.
 
 Every one of these is host-tested. **None of the numbers below has been seen on an instrument:** no scope or analyser has read any pulse width, frame period or reply delay in this tree.
@@ -731,9 +731,9 @@ board drawing — grounds are marked `G`, rails carry their voltage.
 
 | | |
 |---|---|
-| Frame rate | 40 to 560 Hz (50 Hz by default) |
-| Pulse | 400 to 2500 µs, refused outside |
-| Resolution | 1 µs |
+| Frame rate | 40 to 560Hz (50Hz by default) |
+| Pulse | 400 to 2500µs, refused outside |
+| Resolution | 1µs |
 
 **Measure and record:** the actual frame period, the pulse at both ends of
 travel, and the jitter. Bit timings are the largest unverified surface in the
@@ -741,15 +741,15 @@ tree.
 
 **Then:** confirm the servo screen lets go when it is told to, and only
 then. Lifting the finger does not stop the output: the screen holds the
-position it was given and says it again every **100 ms** (`SERVO_HOLD_MS`),
-against the IOmcu's **500 ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
+position it was given and says it again every **100ms** (`SERVO_HOLD_MS`),
+against the IOmcu's **500ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
 stays where it was put. **RELEASE** returns the surfaces to centre; it does
 not clear the slot and the pin keeps pulsing. What stops the edges is a
 switch to SAFE, a STOP, or leaving the screen, which switches to SAFE. Check on the scope that
 RELEASE moves the pulse to the middle of the channel's travel and that a
 switch to SAFE is what stops it.
 
-A channel nobody is refreshing does still go to rest after 500 ms, which is
+A channel nobody is refreshing does still go to rest after 500ms, which is
 what happens to a bound pin the servo screen is not holding.
 
 ---
@@ -762,7 +762,7 @@ builds. Record real values for each:
 - **Every DShot bit timing**, against an ESC's tolerance rather than the spec.
 - **The reply rate** of five quarters of the DShot rate.
 - **The leading-bit convention** of the group code.
-- **The turnaround delay** — whether 30 µs is what an ESC actually waits.
+- **The turnaround delay** — whether 30µs is what an ESC actually waits.
 - **The extended-telemetry frame types** and their units.
 - **The PPM DMA ring** playing a frame.
 - **The flash erase window** on the IOmcu, and whether the heartbeat
@@ -773,21 +773,21 @@ builds. Record real values for each:
 ## 8. Current monitors (INA228, INA3221)
 
 The IOmcu's core 1 reads an INA228 in the ESC's power path and an
-INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400 kHz,
-every 1 ms. Every step below says what good
+INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400kHz,
+every 1ms. Every step below says what good
 looks like; anything else is a finding to write down.
 
 **Have to hand:** the MATEK I2C-INA-BM (INA228, 200 µΩ) at the address it
-ships with, the DAOKAI INA3221 (0.1 Ω per channel, 1.638 A full scale) with
+ships with, the DAOKAI INA3221 (0.1Ω per channel, 1.638A full scale) with
 its A0 solder bridge closed to GND for 0x40 (as shipped all four A0 bridges
 are open and the address floats between 0x40 and 0x41), two
-2.2 kΩ resistors, a multimeter, a scope or logic analyser with I2C decode,
+2.2kΩ resistors, a multimeter, a scope or logic analyser with I2C decode,
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
 **Set it up on the panel.** SETUP → INTERFACES: `INA228` ON; SETUP →
 SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
-above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1 Ω on each
+above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1Ω on each
 channel and CH1 watching OUT 1, SDA on GP16 and SCL on GP17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
 parts at the page's defaults while no set-up is stored in flash:
 
@@ -802,16 +802,16 @@ cmake --build firmware/iomcu/build-sense
 |---|---|---|
 | SDA | GP16 (pad 21) | INA3221 SDA, MATEK SDA |
 | SCL | GP17 (pad 22) | INA3221 SCL, MATEK SCL |
-| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |
+| Pull-ups | 2.2kΩ from SDA and from SCL | 3V3 (pad 36) |
 | INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |
-| MATEK power | VBUS (pad 40, 5 V from USB), GND | MATEK 5V, G |
+| MATEK power | VBUS (pad 40, 5V from USB), GND | MATEK 5V, G |
 
 The firmware switches the pads' own pull-ups and pull-downs off on both
-pins: the bus runs on the modules' pull-ups and the two 2.2 kΩ. **Before
+pins: the bus runs on the modules' pull-ups and the two 2.2kΩ. **Before
 connecting the IOmcu**, power the modules and measure SDA and SCL to
-GND: both must read 3.3 V or less. The MATEK's pull-up rail is not known.
+GND: both must read 3.3V or less. The MATEK's pull-up rail is not known.
 
-**The console.** Every 3 s, while a part is enabled, the IOmcu prints
+**The console.** Every 3s, while a part is enabled, the IOmcu prints
 three lines:
 
 ```
@@ -824,8 +824,8 @@ rcbench-iomcu: sense map fit 0x1 fast 0 flags 0x0201 | mA 120 0 0 0 0 0 0 0 0 0 
 identity read was an INA228's, 0x0004 something else answers at its
 address, 0x0008 a current clipped, 0x0010, 0x0020 and 0x0040 the same for
 the INA3221, 0x0100 the bus is open, 0x0200 the bus is stuck. `present`
-has bit n for address 0x40 + n. `bench` is the BENCH page: 10 mV and
-10 mA steps, charge in mAh, energy in 0.1 Wh, and its flags (0x01
+has bit n for address 0x40 + n. `bench` is the BENCH page: 10mV and
+10mA steps, charge in mAh, energy in 0.1Wh, and its flags (0x01
 voltage, 0x02 current, 0x20 the INA228's, 0x40 the INA228's totals).
 The third line is the INA3221 map, SENSE_MAP: the parts fitted, the FAST
 channel, its flags (0x0200 derived from SENSE), each channel's mean
@@ -847,9 +847,9 @@ not rising between two lines.
 
 Probe SDA and SCL at the IOmcu.
 
-**Good:** SCL at 400 kHz (2.5 µs a clock); rise time, 30 % to 70 %, at most
-300 ns; a read of the INA3221's register 0x01 every 1.0 ms; the INA228's
-registers 0x07 and 0x05 in turn, one each 1.0 ms; no NACK in the decode.
+**Good:** SCL at 400kHz (2.5µs a clock); rise time, 30% to 70%, at most
+300ns; a read of the INA3221's register 0x01 every 1.0ms; the INA228's
+registers 0x07 and 0x05 in turn, one each 1.0ms; no NACK in the decode.
 
 **Write down:** the rise time, the clock, the time from one transaction's
 STOP to the next START (the controller's own time, not measured), and the
@@ -859,23 +859,23 @@ period of the CH1 read.
 
 Run a steady current through the MATEK's shunt and measure it and the
 pack voltage with the meter. Then a servo, or a resistor drawing under
-1.6 A, on INA3221 CH1, with the meter in series.
+1.6A, on INA3221 CH1, with the meter in series.
 
 **Good:** `bench` voltage and current, and `CH1` mA and mV (CH1's voltage
 is at the load side of the shunt), agree with the meter within the meter's
 accuracy and the shunt's tolerance, which is not known for either module.
-`temp` near room temperature, in 0.1 °C. `ch_flags 0x01`; 0x10 appears
-when CH1 passes 1.638 A, and CH1's current is then a bound, not a value.
+`temp` near room temperature, in 0.1°C. `ch_flags 0x01`; 0x10 appears
+when CH1 passes 1.638A, and CH1's current is then a bound, not a value.
 
 **Write down:** each pair of numbers, the meter's and the console's.
 
 ### 8.4 A run: peaks and totals
 
-Press ARM on MOTOR & ESC and hold a steady current for 60 s, then switch to SAFE.
+Press ARM on MOTOR & ESC and hold a steady current for 60s, then switch to SAFE.
 
 **Good:** `bench flags` reads 0x63 (with 0x04 and 0x08 too when a
-bidirectional ESC answers). `mAh` counts current × time: 2.00 A for 60 s
-is 33 mAh. A new switch to ARMED starts charge and energy from 0.
+bidirectional ESC answers). `mAh` counts current × time: 2.00A for 60s
+is 33mAh. A new switch to ARMED starts charge and energy from 0.
 The MOTOR & ESC screen shows the INA228's voltage and current.
 
 **Write down:** current, time and the charge reached, and the peaks the
@@ -883,24 +883,24 @@ panel shows against the scope or meter.
 
 ### 8.5 A lead pulled mid-run
 
-While ARMED, pull the MATEK's SDA for about 5 s, then plug it back.
+While ARMED, pull the MATEK's SDA for about 5s, then plug it back.
 
-**Good:** within about 6 ms `flags` loses 0x0001 and keeps 0x0002; `bench
+**Good:** within about 6ms `flags` loses 0x0001 and keeps 0x0002; `bench
 flags` reads 0x20: the INA228 is still the source, its fields empty, not
-the ESC's numbers; `errors` rises; the bench stays ARMED. About 1 s after
+the ESC's numbers; `errors` rises; the bench stays ARMED. About 1s after
 the lead is back, 0x0001 returns, and 0x40 stays clear until the next switch to ARMED.
 With the bench SAFE and the lead out, `bench` carries the ESC's telemetry again.
 
 ### 8.6 A stuck bus
 
-Hold SDA to GND with a wire for 2 s, then let go. The lines are open drain:
+Hold SDA to GND with a wire for 2s, then let go. The lines are open drain:
 the pin is never driven high, so the short is safe.
 
 **Good:** `flags` gains 0x0200 while it is held; on SCL the scope shows 9
-clocks and a STOP every 100 ms; after release, 0x0200 clears and both
-parts are online within about 1 s.
+clocks and a STOP every 100ms; after release, 0x0200 clears and both
+parts are online within about 1s.
 
-**Write down:** the clock rate of the 9 clocks (meant to be 100 kHz), and
+**Write down:** the clock rate of the 9 clocks (meant to be 100kHz), and
 how long the parts took to come back.
 
 ### 8.7 A save while reading
@@ -917,16 +917,16 @@ printed: core 1 is parked in RAM for each.
 
 ### 8.8 Not reachable yet
 
-The move capture on SERVO_SENSE -- the PWM frame stamped to 1 µs and the
+The move capture on SERVO_SENSE -- the PWM frame stamped to 1µs and the
 travel times -- is armed by the panel's servo test, which does not use it
 yet. A travel time against a scope on the PWM pin and on the shunt waits
 for that.
 
-### 8.9 CH1's 1 ms samples on the console
+### 8.9 CH1's 1ms samples on the console
 
 An IOmcu image built with `-DSENSE_TRACE=ON` prints INA3221 CH1's
-1 ms samples on its USB (Universal Serial Bus) console as text. The link
-carries 50 ms windows only, so this build is the one way to see the single
+1ms samples on its USB (Universal Serial Bus) console as text. The link
+carries 50ms windows only, so this build is the one way to see the single
 samples. It is a debug build: a released image is built without the option
 and holds none of its code. `tools/sense_trace.py` reads the captured
 console. The bench session has two
@@ -937,29 +937,29 @@ on the servo's shaft.
 
 | Trigger | Trace |
 | --- | --- |
-| a PWM (pulse-width modulation) output renders another pulse width than in the pass before, 50 ms or more after that output's last change | 4 s from the frame that carries the pulse; trigger line `$C` |
-| `t` typed on the console | 10 s; trigger line `$K` |
-| the capture's PWM edge | 4 s; trigger line `$E`. No released panel arms the capture, so this trigger does not occur with one |
+| a PWM (pulse-width modulation) output renders another pulse width than in the pass before, 50ms or more after that output's last change | 4s from the frame that carries the pulse; trigger line `$C` |
+| `t` typed on the console | 10s; trigger line `$K` |
+| the capture's PWM edge | 4s; trigger line `$E`. No released panel arms the capture, so this trigger does not occur with one |
 
 Every MOVE of the automatic servo test is a changed pulse, so a test with
 the released panel is traced without a capture. A trigger during a trace
-adds its line and moves the end to 4 s (10 s for `t`) after itself when
-that is later: moves less than 4 s apart are one trace. A command that is
+adds its line and moves the end to 4s (10s for `t`) after itself when
+that is later: moves less than 4s apart are one trace. A command that is
 slewed changes the pulse in every pass: its `$C` line has the first pulse,
 and a `$D` line the pulse it ended at, once the output has held still for
-50 ms. The `$D` line's `cmd=` is its command's `$C` time, and the tool
+50ms. The `$D` line's `cmd=` is its command's `$C` time, and the tool
 ends that command there, also when the output was let go and the next
-command came within 30 ms. A command that waits for the next trace takes its later changes
-with it: that trace ends 4 s after the last of them and has the `$D`
+command came within 30ms. A command that waits for the next trace takes its later changes
+with it: that trace ends 4s after the last of them and has the `$D`
 line. An output that is let go ends a slewed command there; the next
 pulse on it is a command, however soon it comes. The automatic test's
 moves are steps and have no `$D` line. `x` on the console
 ends a trace; a trigger line whose time lies at or after the stop is
-dropped. Each trace also holds the samples of up to 64 ms before its
+dropped. Each trace also holds the samples of up to 64ms before its
 trigger.
 
-**What it costs.** Core 1 reads CH1 every 1 ms as in the released image
-and copies the sample into a ring of 4096 records (49,152 bytes; 3.9 s of
+**What it costs.** Core 1 reads CH1 every 1ms as in the released image
+and copies the sample into a ring of 4096 records (49,152 bytes; 3.9s of
 1000 samples and 50 bus voltages a second). No bus transaction is added
 to the tick. A change of the part's set-up or state is a record in the
 same ring, so it keeps its place among the samples. Core 0 writes whole lines into the room the console's 64-byte
@@ -988,31 +988,31 @@ $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 
 The lines after the first two stand in the order of their times, except a
 `$D` line: a trigger line follows the samples taken before it. A `$D` line
-is written once the output's pulse has stood still for 50 ms, so it follows
-samples up to about 50 ms later than its `t=`; its `t=` is its time. Core 0 writes a trigger line and
+is written once the output's pulse has stood still for 50ms, so it follows
+samples up to about 50ms later than its `t=`; its `t=` is its time. Core 0 writes a trigger line and
 the end line once core 1 has finished a tick that started at or after the
 line's time. The end line's `e=` is the reason the trace ended: `t` its
 time, `s` a changed set-up, `k` the console. A capital letter (`T`, `S`,
 `K`) says that core 1 was not seen past a trigger line's time or the end
-within 100 ms and the line was written all the same: a sample from before
+within 100ms and the line was written all the same: a sample from before
 that time can be missing or stand after the line. The tool reports such a
 trace as a problem and replays none of its moves.
 
-A sample line is the time since the sample before it in 0.1 ms and the
-shunt code, 40 µV a step: 0.4 mA on the 0.1 Ω shunt. A sample line 1 ms
+A sample line is the time since the sample before it in 0.1ms and the
+shunt code, 40µV a step: 0.4mA on the 0.1Ω shunt. A sample line 1ms
 after the sample before it is 8 bytes with a 3-digit code and 10 bytes at
 most with a 4-digit code. The first sample line of a trace counts from the
 trigger time, so a sample from before the trigger carries a negative time,
 and a sample after dropped records carries a longer one: those lines are
 longer, up to the full signed 32-bit range of the time. With the
 voltage lines (a 7-byte line, one in 20 samples in the output of
-`sense_trace_gen`) a trace is 8.35 bytes a sample, 8.35 kB a second, at the
-simulated servo's 0.12 A, whose codes have 3 digits. Above about 0.4 A on the
-0.1 Ω shunt the codes have 4 digits and the rate is 9.35 kB a second. Every
+`sense_trace_gen`) a trace is 8.35 bytes a sample, 8.35kB a second, at the
+simulated servo's 0.12A, whose codes have 3 digits. Above about 0.4A on the
+0.1Ω shunt the codes have 4 digits and the rate is 9.35kB a second. Every
 line ends in CR LF. The rate on hardware is not measured.
 
 **Have to hand:** the PD mini (WeAct PD Power Mini V1) at a limit of
-2.00 A, the INA3221 module with CH1's 0.1 Ω shunt in the servo's supply,
+2.00A, the INA3221 module with CH1's 0.1Ω shunt in the servo's supply,
 the servos to measure, and a Windows PC with PuTTY. Part A needs no
 encoder. Part B needs an AS5600 on the servo's shaft.
 
@@ -1046,20 +1046,20 @@ pressed, with no Enter.
 
 2. Flash `firmware/iomcu/build-trace/rcbench-iomcu.uf2`: hold BOOTSEL,
    plug the module into the PC, copy the file to its drive.
-3. Open the port in PuTTY with logging on. Within 3 s it prints a line
+3. Open the port in PuTTY with logging on. Within 3s it prints a line
    starting `rcbench-iomcu:`. On the panel, SETUP → SENSORS: `0x40
    fitted` ON.
 4. Noise, no servo: with no servo connected and the supply's output on at
-   6.00 V, press `t`. 10 s later the console prints a line starting `$Z`.
+   6.00V, press `t`. 10s later the console prints a line starting `$Z`.
    Close PuTTY; this log is `noise.log`.
 5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
-   centre, supply on at 4.80 V. Press `t` and wait for the `$Z` line.
+   centre, supply on at 4.80V. Press `t` and wait for the `$Z` line.
 6. Moves, in the same log: on the SERVO screen's TEST task, in the
    AUTOMATIC TEST card's SETTINGS, set TEST LENGTH BY
-   to MOVEMENTS, MOVEMENTS 20, DWELL TIME 1000 ms, STEP 4.8 V on and every
+   to MOVEMENTS, MOVEMENTS 20, DWELL TIME 1000ms, STEP 4.8V on and every
    other step and BROWN-OUT off. START TEST. The trace runs from the first
-   move to 4 s after the last; wait for its `$Z` line, then close PuTTY.
-7. Repeat steps 5 and 6 at 6.00 V with STEP 6.0 V, and both for each
+   move to 4s after the last; wait for its `$Z` line, then close PuTTY.
+7. Repeat steps 5 and 6 at 6.00V with STEP 6.0V, and both for each
    servo: one log file per servo and voltage.
 8. On the host, for each log:
 
@@ -1076,10 +1076,10 @@ the end line; the mean, the standard deviation and the largest distance
 from the mean of the samples before the first command, as read and through
 a moving mean of 4 and of 8 samples; then every move replayed through
 `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the
-band at 0.02, 0.05 and 0.10 A: seen or not, and the arrival in ms from the
+band at 0.02, 0.05 and 0.10A: seen or not, and the arrival in ms from the
 frame. For the log as a whole: the settings that see every move and time
 its arrival, each setting's median arrival and its distance from the
-capture's setting (filter 4, band 0.05 A), and how far apart the settings
+capture's setting (filter 4, band 0.05A), and how far apart the settings
 put one move's arrival. It ends `not compared with the horn`: without an
 encoder an arrival is the current back at its holding level, which can
 lead or lag the horn. One `<log>-trace-<n>.csv` per trace holds four
@@ -1087,7 +1087,7 @@ columns, separated by `;`: time in ms, current in A, the bus voltage in V
 on the rows that have one, and `clipped`. `clipped` is 1 for a sample at
 or past the top of the range, -1 at or past the bottom, and 0 for a value.
 A clipped row's current is the end of the range, a bound and not a value:
-1.6380 A or -1.6384 A on a 0.1 Ω shunt. A file with three columns has no
+1.6380A or -1.6384A on a 0.1Ω shunt. A file with three columns has no
 clip mark, and its clipped rows read as values.
 
 **What the tool refuses.** Between a trace's `$T` and `$Z` line every
@@ -1098,12 +1098,12 @@ each number in the range the IOmcu holds it in: a `$C` or `$D` line
 has `ch=` and `us=`, a `$D` line `cmd=` after them, a `$E` or `$K` line
 has neither. The tool reads format versions 3 and 2 (`$T v=`). A version 2
 `$D` line has no `cmd=`, and the tool ends with it the latest command of
-its channel no more than 30 ms after its `t=`: a command that follows a
-let-go output within 30 ms takes that `$D` line as its own. A `$D` line of
+its channel no more than 30ms after its `t=`: a command that follows a
+let-go output within 30ms takes that `$D` line as its own. A `$D` line of
 the other version's form is damage. A line ends LF or
 CR LF. Anything else is damage. So are a second `$H` line, a line other
-than `$L` before the `$H` line, a trace length other than 4000 ms
-(10000 ms for `t`), a sample period other than 1000 µs, a sample timed
+than `$L` before the `$H` line, a trace length other than 4000ms
+(10000ms for `t`), a sample period other than 1000µs, a sample timed
 before the one before it, a second voltage for one sample, a `$S` line
 that repeats the state before it, and a line of a trace outside a trace.
 A `$L` line before the `$H` line counts records missing before the
@@ -1117,9 +1117,9 @@ A move's levels come from four windows of samples:
 | Window | What is taken from it |
 | --- | --- |
 | the samples before the trace's first command | every move's threshold; the holding level of a move to a pulse width that no earlier move left |
-| the 50 ms before the move | its level before |
-| the 200 ms before the move | its threshold; the holding level of each later move back to the pulse width this move left |
-| from 50 ms before the move to the next move or the trace's end | the samples the replay is fed |
+| the 50ms before the move | its level before |
+| the 200ms before the move | its threshold; the holding level of each later move back to the pulse width this move left |
+| from 50ms before the move to the next move or the trace's end | the samples the replay is fed |
 
 A window with no sample, with a `$L` line in it or at either end, or with
 a `$S` line in it or at either end gives no level. Each move that needs
@@ -1134,7 +1134,7 @@ ascending pin order, 1 channel per PWM pin. With GP0, GP1, GP2 and GP4
 bound, GP2 is channel 2 and GP4 is channel 3. The shunt carries the
 current of every servo on the supply, and the SERVO screen commands every
 servo output in the same frame. The tool replays no command that has
-another command within 30 ms of it, so with 2 servo outputs bound it
+another command within 30ms of it, so with 2 servo outputs bound it
 replays no move. `--loaded-channel N` names a channel with a servo
 connected to its pin; the option repeats, 1 channel each:
 
@@ -1143,8 +1143,8 @@ python3 tools/sense_trace.py mg90s-4v8.log --loaded-channel 2
 ```
 
 The `$C` and `$D` lines of every other channel are then no moves and
-count for no 30 ms. A `$E` line has no channel: the commands of the named
-channels take their edge lines first, and an edge line left within 30 ms
+count for no 30ms. A `$E` line has no channel: the commands of the named
+channels take their edge lines first, and an edge line left within 30ms
 of another channel's command is left out. The report's second line names
 the channels and counts what is left out:
 
@@ -1154,21 +1154,21 @@ loaded channel(s) 2: 25 command line(s) of channel(s) 1, 3 left out
 
 It ends `no command line of channel(s) N` for a named channel that no `$C`
 line of the log has; the exit code stays 0. Two named channels commanded
-within 30 ms of each other are not replayed. Without the option every
+within 30ms of each other are not replayed. Without the option every
 channel counts. The tool does not check that a named channel's pin has a
 servo on it: a servo on a channel that is not named moves in the replayed
 current.
 
-`--floor` takes 0.000001 A to 1000 A, `--pair-ms` more than 0 ms up to
-60000 ms, `--csv-offset` up to 1e9 s either side of 0, `--loaded-channel`
+`--floor` takes 0.000001A to 1000A, `--pair-ms` more than 0ms up to
+60000ms, `--csv-offset` up to 1e9 s either side of 0, `--loaded-channel`
 a whole number from 0 to 65535 with no sign and no leading zero; any
 other value exits 2. A servo CSV file
 that cannot be read, a CSV file that cannot be written and a replay that
 answers another number of moves than it was sent exit 2.
 
 **Write down:** the tool's output for each log. Part A answers: the noise
-of CH1's 1 ms samples with no servo and with a servo at rest, against the
-threshold's floor (`SERVO_MOVE_MIN_A`, 0.020 A); which filter lengths and
+of CH1's 1ms samples with no servo and with a servo at rest, against the
+threshold's floor (`SERVO_MOVE_MIN_A`, 0.020A); which filter lengths and
 bands see all 22 moves of each test (2 that place the servo and 20
 counted); and how much the arrival moves with the setting. It does not
 answer whether an arrival is the horn's.
@@ -1189,7 +1189,7 @@ answer whether an arrival is the horn's.
 The tool then also prints, per move, the arrival less the encoder's
 `travel angle (ms)`, and its median per setting. Part B answers what the
 capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
-(`SERVO_MOVE_BAND_A`, 0.05 A) are to be: both are chosen, not measured.
+(`SERVO_MOVE_BAND_A`, 0.05A) are to be: both are chosen, not measured.
 
 **Not known:**
 
@@ -1199,7 +1199,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   poll and one frame, not measured.
 - A command's frame time is computed from the PWM counter read after the
   pulse is written. A frame that ends between the two puts that one
-  command's time one frame (20 ms at 50 Hz) late. How often: not measured.
+  command's time one frame (20ms at 50Hz) late. How often: not measured.
 - Part B: the two files have different clocks. The tool pairs rows and commands by
   the spacing of the moves; when two offsets pair equally many rows, and
   not the same rows with the same moves, it says so, exits 1 and takes
@@ -1213,13 +1213,13 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   boot do not lie after those of the boot before it, it pairs no row, says
   so and exits 1: evaluate each boot's part of the log with its part of
   the CSV file.
-- Commands within 30 ms of each other, as two outputs written in one
+- Commands within 30ms of each other, as two outputs written in one
   frame, change the current together. The tool lists them and replays
   none of them, unless `--loaded-channel` leaves all but one of them
   out. A command that follows another output's command later
   than that, before the first servo arrived, is replayed with the first
   servo's current in it; the tool does not tell the two apart.
-- Whether a terminal keeps up with 8.35 to 9.35 kB a second without loss. A trace
+- Whether a terminal keeps up with 8.35 to 9.35kB a second without loss. A trace
   whose line counts do not match its end line is reported and exits 1.
 - The line format has no check value. A line cut inside its last number
   is a whole line with another number, and the tool reads it as that: a
@@ -1237,12 +1237,12 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 
 | Symptom | Look here first |
 |---|---|
-| Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150 ms. Scope GP3. |
-| Switch to ARMED refused, no obvious reason | Touch dead for 500 ms blocks it. Touch the panel. |
+| Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150ms. Scope GP3. |
+| Switch to ARMED refused, no obvious reason | Touch dead for 500ms blocks it. Touch the panel. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
 | Heartbeat drops at the first link-up | **The drawing transfer or the flash keeper.** See §4. |
 | Display freezes briefly | A flash write. Expected while the board drawing is kept, once per flash operation, 4 for the RP2350-CAN's drawing. |
-| IOmcu does not boot after flashing | Image past 4 MB. Check the size line from §1. |
+| IOmcu does not boot after flashing | Image past 4MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
 | Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
 | Pulses stop altogether | Not the timeout. Something released the pin, switched the bench to SAFE, or stopped the bench |

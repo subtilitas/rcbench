@@ -276,7 +276,7 @@ static inline void publish(void)
     kst_prog_feed(&g_p, &f);
 }
 
-/* 1 ms: the IOmcu, one exchange, the control task, the screen's
+/* 1ms: the IOmcu, one exchange, the control task, the screen's
  * frame and the card. */
 static inline void frame(void)
 {
@@ -363,7 +363,7 @@ static inline bool at_rest(void)
         || st == KST_PROG_DOWN || st == KST_PROG_NO_PAGE;
 }
 
-/* Until nothing runs; 60 s is the bound. */
+/* Until nothing runs; 60s is the bound. */
 static inline void settle(void)
 {
     frame();

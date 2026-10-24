@@ -34,13 +34,13 @@
 #define MAX_FBS  3
 
 /**
- * @brief The hub: three columns by three rows of 328 x 130 px tiles
- *        (49.2 x 19.5 mm) with 10 px margins, and under them the strip
+ * @brief The hub: three columns by three rows of 328 x 130px tiles
+ *        (49.2 x 19.5mm) with 10px margins, and under them the strip
  *        that holds SAVE.
  *
- * Coordinates are in the 540 px body the router hands this screen; the
+ * Coordinates are in the 540px body the router hands this screen; the
  * band and the home tag are above it.  The list has the same strip, so
- * SAVE stays where it is between the two.  The strip ends 4 px above the
+ * SAVE stays where it is between the two.  The strip ends 4px above the
  * router's alert band, which covers the bottom UI_ALERT_H px of the body:
  * nothing that acts sits under it.
  */
@@ -51,9 +51,9 @@
 #define HUB_TH 130 /**< a tile's height, px */
 
 /**
- * @brief Inside a hub tile, from its top: the 36 px icon box at 14, the
+ * @brief Inside a hub tile, from its top: the 36px icon box at 14, the
  *        name in the body face (12 x 24) at 60, the line in the label face
- *        (10 x 20) at 94, which leaves 16 px under the line.  A line holds
+ *        (10 x 20) at 94, which leaves 16px under the line.  A line holds
  *        32 characters on one row; the tile has no room for a second.
  */
 #define HUB_ICON_DY 14 /**< the icon box's top, px */
@@ -71,14 +71,14 @@
 #define STG_F_LABEL (&gfx_font_10x20) /**< help, units, keys, buttons, change lines: 10 x 20 */
 
 /** @brief The strip under the grid and under the list: three columns,
- *         the hub's, UI_BTN_H (48 px) tall. */
+ *         the hub's, UI_BTN_H (48px) tall. */
 #define STRIP_H UI_BTN_H /**< the strip's height, px */
 #define STRIP_Y (SCREEN_H - UI_ALERT_H - 4 - STRIP_H) /**< the strip's top, px: 444 */
 
 /**
  * @brief The list: from the first column's left edge to the scroll bar,
- *        from under the band to 8 px above the strip.  A row is 64 px
- *        tall at a 70 px pitch: 6 rows show whole.  The scroll bar is
+ *        from under the band to 8px above the strip.  A row is 64px
+ *        tall at a 70px pitch: 6 rows show whole.  The scroll bar is
  *        SCROLL_W px wide at the third column's right edge and takes no
  *        touch.
  */
@@ -95,9 +95,9 @@
 #define ROW_HELP_DY 40 /**< the help line's top, px */
 
 /**
- * @brief A row's "-" and "+" keys: 56 x 48 px (8.4 x 7.2 mm), the "+" 12 px
- *        in from the row's right edge, 166 px between them: the value's
- *        150 px and 8 px on each side.
+ * @brief A row's "-" and "+" keys: 56 x 48px (8.4 x 7.2mm), the "+" 12px
+ *        in from the row's right edge, 166px between them: the value's
+ *        150px and 8px on each side.
  */
 #define BTN_W 56 /**< a key's width, px */
 #define BTN_H UI_TAP_MIN /**< a key's height, px: 48 */
@@ -106,7 +106,7 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define PLUS_X (LIST_X + LIST_W - 12 - BTN_W) /**< the "+" key's left edge, px: 926 */
 #define MINUS_X (PLUS_X - 8 - VALUE_FIELD - 8 - BTN_W) /**< the "-" key's left edge, px: 704 */
 #define VALUE_R (PLUS_X - 8) /**< the value's and its unit's right edge, px */
-/** @brief The left edge of a number's value, px: the 166 px between its
+/** @brief The left edge of a number's value, px: the 166px between its
  *         "-" and its "+" key, over the row's height, where a tap opens
  *         the keypad. */
 #define VALUE_X  (MINUS_X + BTN_W)
@@ -121,11 +121,11 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
  * anywhere on it, the keys included, so a key that stepped on the press
  * would step under every scroll that starts on one.
  *
- * A key held repeats: a 0 to 30,000 mAh range is 300 taps otherwise.  The
+ * A key held repeats: a 0 to 30,000mAh range is 300 taps otherwise.  The
  * first step comes REPEAT_DELAY_S after the press, then REPEAT_SLOW_HZ, and
  * REPEAT_FAST_HZ once the key is held REPEAT_FAST_S longer.  The time runs
  * only while the contact stays on the key within the slop, and one frame
- * counts for at most UI_HOLD_MAX_CREDIT_S (0.25 s); the release of a key
+ * counts for at most UI_HOLD_MAX_CREDIT_S (0.25s); the release of a key
  * that has repeated adds no step.
  */
 #define REPEAT_DELAY_S 0.45f
@@ -237,7 +237,7 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
 
 /**
  * @brief The keypad a number's value opens: the keyboard's area, 1004 x
- *        482 px, its foot 4 px above the alert band.  Nothing under it presses while it
+ *        482px, its foot 4px above the alert band.  Nothing under it presses while it
  *        is open; OK, CANCEL and the home tag close it as they close the
  *        keyboard.
  */

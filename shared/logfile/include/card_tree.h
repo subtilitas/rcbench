@@ -11,8 +11,8 @@
  *     ESC/CONF/                ESC (electronic speed controller) profiles
  *     KST/CONF/                KST and Chaservo servo files
  *     HITEC/CONF/              Hitec servo files
- *     RCBENCH.LOG              the fault log, at most 1 MiB
- *     RCBENCH.OLD              the fault log before the last 1 MiB
+ *     RCBENCH.LOG              the fault log, at most 1MiB
+ *     RCBENCH.OLD              the fault log before the last 1MiB
  *   /USER/
  *     LOGS/                    user-started tests: ATESTnnn, LIMITnnn
  *                              (USER LOG FOLDER, the default)
@@ -91,7 +91,7 @@ extern "C" {
 #define CARD_HITEC_CONF  "BENCH/HITEC/CONF"
 
 /**
- * @brief The fault log: a line every 5 s while the link to the IOmcu is down.
+ * @brief The fault log: a line every 5s while the link to the IOmcu is down.
  */
 #define CARD_FAULT_LOG   "BENCH/RCBENCH.LOG"
 

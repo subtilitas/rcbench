@@ -94,11 +94,11 @@ static bool on_page(const char *s)
     return false;
 }
 
-/* The notes' foot: 4 px above the alert band, in body pixels. */
+/* The notes' foot: 4px above the alert band, in body pixels. */
 #define NOTES_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
 /* Both standing lines of the SERVO tab on the page shown, and the notes
- * and the message between the tab's last row and 4 px above the alert
+ * and the message between the tab's last row and 4px above the alert
  * band. */
 static void standing_shown(void)
 {
@@ -143,7 +143,7 @@ static int max_int(int a, int b)
 }
 
 /* The standing lines take up to two rows each and every message up to
- * three lines.  Between the SERVO tab's last row and 4 px above the alert
+ * three lines.  Between the SERVO tab's last row and 4px above the alert
  * band there are 7 rows: the tallest message fits whole in them in both
  * languages, and in English the tallest pair fits beside it.  In German
  * they take 9; the pair yields to the message (kst_panel_pack_notes()). */
@@ -205,10 +205,10 @@ TEST_CASE(every_message_fits_whole_under_the_servo_tab)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* An area 460 px tall: 6 rows of notes under the SERVO tab. */
+/* An area 460px tall: 6 rows of notes under the SERVO tab. */
 static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 460 };
 
-/* Every line of the message shown is drawn, and nothing passes 4 px above
+/* Every line of the message shown is drawn, and nothing passes 4px above
  * the alert band. */
 static void message_whole(void)
 {
@@ -281,7 +281,7 @@ TEST_CASE(a_servo_in_doubt_keeps_every_line_of_its_message)
 }
 
 /* The notes of a servo in doubt with no message, in German, in the area
- * 460 px tall: two pages. */
+ * 460px tall: two pages. */
 static void doubt_no_message(void)
 {
     fresh();

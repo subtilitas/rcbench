@@ -20,7 +20,7 @@
 #include "tone_cap.pio.h"
 #include "tone_svc.h"
 
-/** @brief 16 kB, on a 16 kB boundary: the DMA wraps its write address on it. */
+/** @brief 16kB, on a 16kB boundary: the DMA wraps its write address on it. */
 #define RING_BYTES (TONE_RING_WORDS * 4u)
 #define RING_BITS  14u
 _Static_assert(RING_BYTES == (1u << RING_BITS), "the ring's size is 2^14");

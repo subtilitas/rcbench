@@ -40,14 +40,14 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 
 ![ANSCHLÜSSE, alles gespeichert](view:setup-interfaces)
 
-Die Liste ist 984 px breit und zeigt 6 Zeilen zu 64 px. Darunter trägt eine Leiste, 48 px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4 px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
+Die Liste ist 984px breit und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
 Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
 
-- **Tipp**: Eine Taste schaltet einmal, wenn der Finger innerhalb von 8 px um den Druckpunkt auf der Taste abhebt.
-- **Halten**: Eine gehaltene Taste schaltet zuerst nach 0,45 s, dann 8-mal pro Sekunde und ab 2,25 s 30-mal pro Sekunde.
-- **Scrollen**: Ein senkrechtes Ziehen über mehr als 8 px irgendwo auf der Liste scrollt sie und ändert keinen Wert.
-- **Tastenfeld**: Ein Tippen auf den Wert einer Zahl, zwischen ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt so viele Stellen nach dem Punkt, wie der Schritt hat. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 73 % Helligkeit sind 75 %. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es offen und nennt dort stattdessen den Grund in der Warnfarbe: `0 oder 5.0 bis 1000.0 mOhm` für einen Shunt zwischen 0 und 5,0 mOhm, `0 oder 10 bis 32767 mA` für eine Stromgrenze zwischen 0 und 10 mA, `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für Sensor-SDA, den der Bus nicht haben kann, `Diesen GPIO hält der andere PD-mini-Pin` für den GPIO des anderen PD-mini-Pins. Die nächste Taste bringt den Bereich zurück. ABBRECHEN und das Home-Tag ändern nichts. -1, ein nicht gesetzter Pin, wird mit `-` gesetzt: Das Tastenfeld eines Pins hat keine Taste `+/-`.
+- **Tipp**: Eine Taste schaltet einmal, wenn der Finger innerhalb von 8px um den Druckpunkt auf der Taste abhebt.
+- **Halten**: Eine gehaltene Taste schaltet zuerst nach 0,45s, dann 8-mal pro Sekunde und ab 2,25s 30-mal pro Sekunde.
+- **Scrollen**: Ein senkrechtes Ziehen über mehr als 8px irgendwo auf der Liste scrollt sie und ändert keinen Wert.
+- **Tastenfeld**: Ein Tippen auf den Wert einer Zahl, zwischen ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt so viele Stellen nach dem Punkt, wie der Schritt hat. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 73% Helligkeit sind 75%. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es offen und nennt dort stattdessen den Grund in der Warnfarbe: `0 oder 5.0 bis 1000.0mOhm` für einen Shunt zwischen 0 und 5,0mOhm, `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA, `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für Sensor-SDA, den der Bus nicht haben kann, `Diesen GPIO hält der andere PD-mini-Pin` für den GPIO des anderen PD-mini-Pins. Die nächste Taste bringt den Bereich zurück. ABBRECHEN und das Home-Tag ändern nichts. -1, ein nicht gesetzter Pin, wird mit `-` gesetzt: Das Tastenfeld eines Pins hat keine Taste `+/-`.
 - Ein Finger zur selben Zeit: Ein zweiter Finger tut nichts, solange einer drückt oder scrollt.
 
 Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück.
@@ -105,15 +105,15 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Design | DUNKEL, HELL | DUNKEL | das Farbschema, ab dem nächsten Frame |
-| Helligkeit | 20 bis 100 %, Schritte von 5 | 100 | skaliert die Palette |
-| Kontrast | 60 bis 140 %, Schritte von 5 | 100 | drückt Farben weg vom Mittelgrau |
+| Helligkeit | 20 bis 100%, Schritte von 5 | 100 | skaliert die Palette |
+| Kontrast | 60 bis 140%, Schritte von 5 | 100 | drückt Farben weg vom Mittelgrau |
 | Bilddrehung | NORMAL, 180° | NORMAL | dreht Bild und Touch um 180°, ab dem nächsten Frame; gesperrt bei ARMED |
 | Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
 | Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
-| Dimmen nach | 0 bis 60 min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
+| Dimmen nach | 0 bis 60min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
-| Knopf-Skala | 90 bis 720 deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
+| Knopf-Skala | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
@@ -125,13 +125,13 @@ Bilddrehung dreht das Bild, während jeder Frame hinausgeht, über die PPA (Pixe
 
 ### Der Drehknopf
 
-- Der Knopf bewegt einen Wert um den Drehweg, nie dorthin, wohin er zeigt. Bei 270 deg bewegt eine Vierteldrehung den Throttle um 33,3 Punkte.
+- Der Knopf bewegt einen Wert um den Drehweg, nie dorthin, wohin er zeigt. Bei 270deg bewegt eine Vierteldrehung den Throttle um 33,3 Punkte.
 - Er schaltet nie auf ARMED. Solange der Prüfstand SAFE ist, bewegt eine Drehung nichts und wird nicht gemerkt.
 - Der erste Messwert nach dem Einschalten, oder nachdem der Sensor nicht mehr antwortete, setzt einen Bezug und bewegt nichts.
 - Ein Finger auf dem Throttle-Balken oder dem SERVO-Zifferblatt hat den Wert, solange er aufliegt.
-- Der Sensor wird alle 10 ms gelesen. Ein Sprung über 90 deg zwischen zwei Messwerten wird verworfen.
+- Der Sensor wird alle 10ms gelesen. Ein Sprung über 90deg zwischen zwei Messwerten wird verworfen.
 
-Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Panel spricht für ihn nie 0x14, 0x20 bis 0x27, 0x30 bis 0x3F oder 0x5D an, wo der I/O-Expander CH422G und der Touch-Controller GT911 der Platine antworten, und auch nicht 0x00 bis 0x03 oder 0x78 bis 0x7F, die die I2C-Spezifikation reserviert. Ohne Sensor prüft `Drehknopf` EIN alle 100 ms mit einer Adressprobe, ob 0x06 antwortet. Die Host-Tests zeigen, dass das sonst nichts ändert; am Panel ist es nicht gemessen. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
+Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Panel spricht für ihn nie 0x14, 0x20 bis 0x27, 0x30 bis 0x3F oder 0x5D an, wo der I/O-Expander CH422G und der Touch-Controller GT911 der Platine antworten, und auch nicht 0x00 bis 0x03 oder 0x78 bis 0x7F, die die I2C-Spezifikation reserviert. Ohne Sensor prüft `Drehknopf` EIN alle 100ms mit einer Adressprobe, ob 0x06 antwortet. Die Host-Tests zeigen, dass das sonst nichts ändert; am Panel ist es nicht gemessen. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
 
 ## SD-KARTE
 

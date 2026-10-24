@@ -17,7 +17,7 @@
 #include "reset_cause.h"
 
 /* Slot B's start in flash as this firmware's update reboots into it:
- * XIP_BASE + 2036 KiB. */
+ * XIP_BASE + 2036KiB. */
 #define SLOT_B_XIP 0x101FD000u
 
 /** @brief A boot word for partition @p part and boot type @p type. */
@@ -131,7 +131,7 @@ TEST_CASE(flash_update_reboot_reads_flash_update)
 }
 
 /*
- * The boot ROM's 16.7 s TBYB timer: an update not bought.  The watchdog
+ * The boot ROM's 16.7s TBYB timer: an update not bought.  The watchdog
  * counts down, the boot is NORMAL, and SCRATCH2 still holds the update's
  * p0.
  */

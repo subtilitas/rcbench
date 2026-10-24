@@ -81,9 +81,9 @@ test('the warning above the rating, the hint from half of it', () => {
 
 test('the percent never contradicts the level: down below the rating, up above it', () => {
   const at = (cells: number, ohms: number, watts: number): number => percent(simHeat({ cells, ohms, watts, wiring: 'delta' }));
-  assert.equal(at(5, 220, 2), 101); // 100.2 % is above the rating
-  assert.equal(at(4, 560, 1), 50); // 50.4 %
-  assert.equal(at(5, 180, 5), 49); // 49.0 %
+  assert.equal(at(5, 220, 2), 101); // 100.2% is above the rating
+  assert.equal(at(4, 560, 1), 50); // 50.4%
+  assert.equal(at(5, 180, 5), 49); // 49.0%
   for (const sim of grid()) {
     const heat = simHeat(sim);
     const p = percent(heat);

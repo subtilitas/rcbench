@@ -4,7 +4,7 @@
  *
  * On the ESP32-P4's TWAI
  * (Two-Wire Automotive Interface) controller 0, GPIO22 TX and GPIO21 RX
- * (board_pins.h), clocked from the 40 MHz crystal.  The bit timing comes
+ * (board_pins.h), clocked from the 40MHz crystal.  The bit timing comes
  * from shared/can, which is host-tested; this file holds the peripheral's
  * configuration and the send and receive calls.
  *
@@ -21,7 +21,7 @@
 #include "link_can.h"
 
 /**
- * @brief Start TWAI at a bit rate made exactly from the 40 MHz crystal.
+ * @brief Start TWAI at a bit rate made exactly from the 40MHz crystal.
  * @param bitrate Bits per second; PANEL_CAN_BITRATE on the link.
  * @return ESP_OK; ESP_ERR_INVALID_ARG for a rate the crystal does not
  *         make exactly; otherwise the TWAI driver's error, with the driver
@@ -49,10 +49,11 @@ typedef enum {
 } can_twai_health_t;
 
 /**
- * Look at the controller and put it back on the bus if it has fallen off.
+ * @brief Look at the controller and put it back on the bus if it has fallen
+ *        off.
  *
  * A transmitter nobody answers reaches the bus-off threshold in about four
- * milliseconds at 1 Mbit/s, and this peripheral does not recover on its own:
+ * milliseconds at 1Mbit/s, and this peripheral does not recover on its own:
  * without this call every later transmit fails and the link is gone until the
  * panel is power-cycled. Call it while the link is down; it takes one step
  * per call and never blocks.

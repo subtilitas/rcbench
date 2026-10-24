@@ -36,7 +36,7 @@ PROGRAMMIEREN listet die ESC-Programmierer. Seine eine Zeile, `ESCs per Gasknüp
 
 ESC STICK öffnet über die volle Breite, über der linken und der rechten Spalte. Anstelle der Reiter zeigt die Zeile der Leiste den Ausgangsstreifen, eine Zeile:
 
-`ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE`
+`ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60V  1.00A   SAFE`
 
 - ZIEL: das Protokoll und die Pins, die der Lauf treibt, in der Warnfarbe, solange kein Pin gebunden oder die Bindung nicht gelesen ist.
 - NETZTEIL: der Ausgang des PD mini, wie er liest, `NETZTEIL EIN` ohne Messwerte, `NETZTEIL AUS` oder `NETZTEIL --`, solange das Netzteil nicht antwortet.
@@ -79,9 +79,9 @@ ARM schaltet die ganze Gruppe der Throttle-Ausgänge auf ARMED, nicht nur die hi
 
 ![Ein Lauf bei ARMED ohne IOmcu: SIM und das Wasserzeichen SIMULATION](view:motor)
 
-1. ARM 2 s halten. Die Füllung geht von Grün nach Rot über; der Prüfstand schaltet auf ARMED, wenn der Übergang vollständig ist. Früheres Loslassen schaltet nichts.
+1. ARM 2s halten. Die Füllung geht von Grün nach Rot über; der Prüfstand schaltet auf ARMED, wenn der Übergang vollständig ist. Früheres Loslassen schaltet nichts.
 2. Den Throttle ziehen. Er bewegt sich um den Weg des Fingers, nicht dorthin, wo der Finger aufsetzt. `-1` und `+1` ändern um einen Prozentpunkt.
-3. DISARM tippen oder STOP drücken, um den Lauf zu beenden. Beide stoppen den Ausgang sofort, ohne Rampe, und setzen den Throttle auf 0 %.
+3. DISARM tippen oder STOP drücken, um den Lauf zu beenden. Beide stoppen den Ausgang sofort, ohne Rampe, und setzen den Throttle auf 0%.
 
 Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der Grafik steht `JETZT`. ARM ist gesperrt gezeichnet, solange der [Servo-Programmierer](servo-programmer.md) einen Port hält.
 
@@ -90,11 +90,11 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 | Der Balken | abgelehnt; gedimmt gezeichnet | bewegt den Throttle um den Weg des Fingers |
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | ändern um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt den Throttle von seinem Wert aus |
-| ARM | schaltet nach 2 s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
+| ARM | schaltet nach 2s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
 | SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
 | GRAFIK, TABELLE | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 
-Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0 %.
+Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0%.
 
 Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
 
@@ -102,7 +102,7 @@ Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer übe
 
 ![Die Grafik hält den Lauf nach dem Schalten auf SAFE](view:motor-held)
 
-Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TELEMETRIE`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 600 Spalten bei 20 Messungen pro Sekunde, 30,0 s. Ein längerer Lauf zeigt seine letzten 30,0 s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
+Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TELEMETRIE`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 600 Spalten bei 20 Messungen pro Sekunde, 30,0s. Ein längerer Lauf zeigt seine letzten 30,0s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
 
 Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben immer live, ARMED oder nicht.
 
@@ -118,7 +118,7 @@ Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und dan
 
 TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze. Ein Kanal, für den nichts geantwortet hat, zeigt `--`.
 
-- Ist der INA228 unter SETUP, ANSCHLÜSSE eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20 Hz. Die Überschrift nennt `INA228`.
+- Ist der INA228 unter SETUP, ANSCHLÜSSE eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
 - `ÜBERSTEUERT` folgt der Überschrift, solange ein Strom das Ende des Messbereichs erreicht hat: Strom und Leistung sind dann Grenzen, keine Werte.
 - `ESC MELDET` listet Spannung und Strom aus der eigenen Telemetrie des ESC, und `Abw.` ist der Wert des ESC minus dem des INA228.
 - Ohne INA228 sind die Kanäle die Telemetrie des ESC, und `ESC MELDET` fehlt.
@@ -126,7 +126,7 @@ TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze.
 
 ## kV, rpm/V und EFF
 
-Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und EFF, das Zweite geteilt durch das Erste, begrenzt auf 199 %. Der Nenn-kV-Wert ist die Einstellung `Nenn-kV` unter MOTOR & ESC, OPTIONEN, 0 bis 10000 rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF fehlt. EFF zählt nur Kupferverluste und schließt die Verluste des ESC ein; es ist eine obere Grenze, kein Wirkungsgrad an der Welle.
+Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und EFF, das Zweite geteilt durch das Erste, begrenzt auf 199%. Der Nenn-kV-Wert ist die Einstellung `Nenn-kV` unter MOTOR & ESC, OPTIONEN, 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF fehlt. EFF zählt nur Kupferverluste und schließt die Verluste des ESC ein; es ist eine obere Grenze, kein Wirkungsgrad an der Welle.
 
 ## Das Log eines Laufs
 

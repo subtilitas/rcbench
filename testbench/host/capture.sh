@@ -9,14 +9,14 @@
 #   capture.sh servo-5v      D2 8m 1m 2.5
 #
 # The threshold is in volts and is required, not defaulted: this bench has a
-# 3.3 V island next to level-shifted 5 V devices, and a capture taken at the
+# 3.3V island next to level-shifted 5V devices, and a capture taken at the
 # threshold the last run left behind is an artefact that reads plausibly and
-# means nothing.  Halfway is the usual choice -- 1.65 V for 3.3 V logic, 2.5 V
-# for 5 V.
+# means nothing.  Halfway is the usual choice -- 1.65V for 3.3V logic, 2.5V
+# for 5V.
 #
 # The sample rate is the first thing to get right: a DShot600 bit is about
-# 1.67 us, so 24 MHz gives 40 samples a bit and a rate low enough to hold
-# 16 channels.  Reading a 1 us servo step needs no more than 8 MHz; reading a
+# 1.67us, so 24MHz gives 40 samples a bit and a rate low enough to hold
+# 16 channels.  Reading a 1us servo step needs no more than 8MHz; reading a
 # bit edge does.
 #
 # Writes captures/<name>-<threshold>v-<timestamp>.sr and prints the path.

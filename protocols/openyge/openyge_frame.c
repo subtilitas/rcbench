@@ -308,13 +308,13 @@ bool openyge_telemetry_parse(const openyge_frame_t *f, openyge_telemetry_t *out)
 
     /* p[0] is reserved. */
     out->temp_c          = (int16_t)((int)p[1] - OPENYGE_TEMP_OFFSET);
-    out->volts           = (float)rd16(p + 2) / 100.0f;   /* 10 mV */
-    out->amps            = (float)rd16(p + 4) / 100.0f;   /* 10 mA */
+    out->volts           = (float)rd16(p + 2) / 100.0f;   /* 10mV */
+    out->amps            = (float)rd16(p + 4) / 100.0f;   /* 10mA */
     out->consumption_mah = rd16(p + 6);
     /*
-     * The field is described as "0.1 eRPM" (electrical revolutions per
+     * The field is described as "0.1eRPM" (electrical revolutions per
      * minute) and the reference code multiplies by ten.  Multiplying is the
-     * assumption here: 65535 x 10 = 655350 eRPM is a plausible ceiling, 6553
+     * assumption here: 65535 x 10 = 655350eRPM is a plausible ceiling, 6553
      * is not.  Unconfirmed: it is item 1 of the measurement list in
      * docs/OpenYGE.md, because the wrong choice reads a hundredfold out.
      */
@@ -328,7 +328,7 @@ bool openyge_telemetry_parse(const openyge_frame_t *f, openyge_telemetry_t *out)
     out->cap_temp_c      = (int16_t)((int)p[18] - OPENYGE_TEMP_OFFSET);
     out->aux_temp_c      = (int16_t)((int)p[19] - OPENYGE_TEMP_OFFSET);
     out->status2         = p[20];
-    /* p[21] reserved; possibly a consumption high byte above 65 Ah. */
+    /* p[21] reserved; possibly a consumption high byte above 65Ah. */
     out->pidx            = rd16(p + 22);
     out->pdata           = rd16(p + 24);
     return true;

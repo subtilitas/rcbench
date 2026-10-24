@@ -172,7 +172,7 @@ TEST_CASE(the_heartbeat_follows_the_stop_and_the_touch_only)
 TEST_CASE(the_run_clock_times_the_run)
 {
     arming_init(&a, 0, SETTLE_MS);
-    uint32_t t = 10000;                  /* the panel has been up 10 s */
+    uint32_t t = 10000;                  /* the panel has been up 10s */
     arming_touch_seen(&a, t);
     (void)arming_step(&a, t);
     CHECK_EQ(arming_run_seconds(&a), 0u);
@@ -347,8 +347,8 @@ TEST_CASE(a_settling_arm_is_abandoned_when_touch_dies)
      * the two seconds would arm from a gesture nobody has re-made.
      */
     /*
-     * A settle longer than the bench's, so a 500 ms outage fits inside it.
-     * The bench settles in about 100 ms, which is shorter than the silence
+     * A settle longer than the bench's, so a 500ms outage fits inside it.
+     * The bench settles in about 100ms, which is shorter than the silence
      * that declares touch dead; the rule under test is the policy's, and it
      * has to hold for whatever settle it is given.
      */
@@ -464,7 +464,7 @@ TEST_CASE(the_panel_passes_the_shared_settle_and_bound)
     CHECK_EQ(HEARTBEAT_SETTLE_MS, 100);
     CHECK_EQ(SETTLE_MS, HEARTBEAT_SETTLE_MS);
     CHECK_EQ(ARMING_LINE_WAIT_MS, 200);
-    /* Inside the 500 ms after which touch counts as dead, so an arm that is
+    /* Inside the 500ms after which touch counts as dead, so an arm that is
      * given up was not abandoned for touch first. */
     CHECK(HEARTBEAT_SETTLE_MS + ARMING_LINE_WAIT_MS < ARMING_TOUCH_DEAD_MS);
 }
@@ -557,8 +557,8 @@ TEST_CASE(an_arm_the_far_end_never_trusts_is_given_up_at_the_bound)
 
 TEST_CASE(the_wait_for_the_line_survives_a_millisecond_wrap)
 {
-    /* The request 50 ms before the wrap: the settle ends 50 ms after it and
-     * the bound 250 ms after it. */
+    /* The request 50ms before the wrap: the settle ends 50ms after it and
+     * the bound 250ms after it. */
     const uint32_t t0 = 0xFFFFFFFFu - 49u;
     init_asking(t0 - 10u);
     arming_request_arm(&a, t0);
@@ -624,7 +624,7 @@ TEST_CASE(a_wait_for_the_line_ends_with_whatever_ends_an_arm)
     arming_line_report(&a, false);
     CHECK_EQ(arming_step(&a, 750 + ARMING_TOUCH_DEAD_MS - 1), ARMING_ACT_NONE);
     CHECK(a.arming);
-    /* Dead 50 ms ahead of the bound: abandoned, not given up. */
+    /* Dead 50ms ahead of the bound: abandoned, not given up. */
     CHECK_EQ(arming_step(&a, 750 + ARMING_TOUCH_DEAD_MS), ARMING_ACT_NONE);
     CHECK(!a.arming);
     CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS + WAIT_MS), ARMING_ACT_NONE);
@@ -817,7 +817,7 @@ TEST_CASE(a_write_nobody_answers_is_a_stop_and_a_refusal_is_not)
 
 /*
  * The question about the line is an exchange, and an exchange can take up
- * to 1000 ms to come back.  A yes that comes back after the bound arms
+ * to 1000ms to come back.  A yes that comes back after the bound arms
  * nothing: the bound is on when the bench may start driving, not on when
  * the question was asked.
  */
@@ -858,7 +858,7 @@ TEST_CASE(a_trusted_report_past_the_bound_arms_nothing)
         CHECK(!a.arming);
         CHECK(!a.stopped);
 
-        /* And 700 ms past, an exchange that all but timed out. */
+        /* And 700ms past, an exchange that all but timed out. */
         init_asking(t0 - 10u);
         arming_touch_seen(&a, t0);
         arming_request_arm(&a, t0);
@@ -891,7 +891,7 @@ TEST_CASE(with_no_far_end_in_the_pass_the_settle_alone_decides)
     CHECK_EQ(arming_step(&a, 1000 + SETTLE_MS), ARMING_ACT_ARM);
 
     /* A pass a second late behind a probe nobody answered: still armed,
-     * one past the bound and 700 ms past it, and across the wrap. */
+     * one past the bound and 700ms past it, and across the wrap. */
     const uint32_t bases[2] = { 1000u, 0xFFFFFFFFu - 249u };
     for (unsigned b = 0; b < 2u; ++b) {
         const uint32_t bound = bases[b] + SETTLE_MS + WAIT_MS;
@@ -1219,7 +1219,7 @@ TEST_CASE(the_arms_deadline_holds_through_the_handshake)
             }
         }
 
-        /* 700 ms past, an exchange that all but timed out, at both. */
+        /* 700ms past, an exchange that all but timed out, at both. */
         handed_out(t0, t0 + SETTLE_MS);
         CHECK(!arming_handshake_open(&a, dl + 700u, false));
         CHECK(!a.stopped);
@@ -1772,7 +1772,7 @@ static uint32_t run_at(uint32_t at)
 /*
  * Any tick is a start the run clock counts from, 0 included.  A clock that
  * took a zero start for "not started" restarted itself at the next pass of a
- * run that began on tick 0, the tick every 2^32 ms (49.7 days) wraps to.
+ * run that began on tick 0, the tick every 2^32ms (49.7 days) wraps to.
  */
 TEST_CASE(every_tick_is_a_start_the_run_clock_counts_from)
 {
@@ -1798,10 +1798,10 @@ TEST_CASE(every_tick_is_a_start_the_run_clock_counts_from)
 
 /*
  * Each timeout fires at its documented millisecond and not one before, on
- * both sides of the wrap and straddling it: the settle (SETTLE_MS, 100 ms
+ * both sides of the wrap and straddling it: the settle (SETTLE_MS, 100ms
  * from the hold), the bound (ARMING_LINE_WAIT_MS past the settle), the
  * handshake's deadline (the bound) and dead touch (ARMING_TOUCH_DEAD_MS,
- * 500 ms from the last answer).
+ * 500ms from the last answer).
  */
 TEST_CASE(every_timeout_fires_at_its_millisecond_across_the_wrap)
 {
@@ -1857,7 +1857,7 @@ TEST_CASE(every_timeout_fires_at_its_millisecond_across_the_wrap)
  * the run's length, and the next run counts from zero. */
 TEST_CASE(a_run_across_the_wrap_ends_and_holds_whatever_ends_it)
 {
-    const uint32_t s0 = 0xFFFFFFFFu - 1499u;  /* the wrap 1.5 s in */
+    const uint32_t s0 = 0xFFFFFFFFu - 1499u;  /* the wrap 1.5s in */
     for (int how = 0; how < 5; ++how) {
         run_from(s0);
         uint32_t t = s0 + 3000u;              /* 1500 past the wrap */
@@ -1876,7 +1876,7 @@ TEST_CASE(a_run_across_the_wrap_ends_and_holds_whatever_ends_it)
             AT_BASE(arming_link_lost(&a, true), how);
             AT_BASE(arming_step(&a, t) == ARMING_ACT_NONE, how);
             break;
-        case 3:   /* touch stops answering, 500 ms after its last answer */
+        case 3:   /* touch stops answering, 500ms after its last answer */
             AT_BASE(arming_step(&a, t + ARMING_TOUCH_DEAD_MS - 1u)
                         == ARMING_ACT_NONE, how);
             AT_BASE(a.armed, how);
@@ -2105,7 +2105,7 @@ TEST_CASE(a_role_switch_restarts_the_run_clock)
     CHECK_EQ(arming_run_seconds(&a), 2u);
 }
 
-/* The settle the docs state is 100 ms. */
+/* The settle the docs state is 100ms. */
 _Static_assert(HEARTBEAT_SETTLE_MS == 100u, "the role switch settles 100 ms");
 
 int main(void)

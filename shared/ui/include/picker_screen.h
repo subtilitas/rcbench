@@ -188,14 +188,14 @@ bool picker_screen_row(uint8_t k, picker_row_t *out);
  * other protocol's pins under its name, groups in the order their first
  * pin falls.
  *
- * The rows are 20 px for a name and 28 px for a pin, with the GPIO in the
+ * The rows are 20px for a name and 28px for a pin, with the GPIO in the
  * 16 x 28 face: OFF selected, the port listed and 8 pins over 6 protocols
- * take 392 px of the 432 the table has under its heading.  When that runs
+ * take 392px of the 432 the table has under its heading.  When that runs
  * past the table's foot, as with 4 ports beside that binding (7 names and
- * 12 pins), every pin row is 20 px with the GPIO in the label face, and
- * 16 px in 8 x 16 where 20 px still runs past it.  Where 16 px pin rows
- * still run past it, the names are 16 px too: 4 ports, 6 protocols and
- * every interface on take 27 lines, the whole 432 px.  Where even that
+ * 12 pins), every pin row is 20px with the GPIO in the label face, and
+ * 16px in 8 x 16 where 20px still runs past it.  Where 16px pin rows
+ * still run past it, the names are 16px too: 4 ports, 6 protocols and
+ * every interface on take 27 lines, the whole 432px.  Where even that
  * runs past it the table holds the lines that fit and ends in a
  * PICKER_USE_MORE line, "+N", N the lines left out.
  */
@@ -229,7 +229,7 @@ typedef struct {
                               PICKER_USE_IFACE()                          */
     uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
     int8_t     channel;  /**< PICKER_USE_PIN: its channel, -1 for the port  */
-    bool       compact;  /**< drawn in the 20 or 16 px pin rows             */
+    bool       compact;  /**< drawn in the 20 or 16px pin rows              */
     gfx_rect_t rect;     /**< the line's box, inside PICKER_AREA_IN_USE     */
 } picker_use_t;
 

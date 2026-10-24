@@ -16,7 +16,7 @@
  */
 #include "kst_panel_rig.h"
 
-/* The alert band's top in body pixels, and the 4 px a control at the foot
+/* The alert band's top in body pixels, and the 4px a control at the foot
  * keeps above it. */
 #define BAND_TOP (UI_ALERT_Y - UI_BAND_H)
 #define FOOT     (BAND_TOP - 4)
@@ -32,8 +32,8 @@ static bool overlap(gfx_rect_t a, gfx_rect_t b)
            && b.y < a.y + a.h;
 }
 
-/* @p r is a tap target: 48 px each way at least, inside the area and
- * ending 4 px above the alert band. */
+/* @p r is a tap target: 48px each way at least, inside the area and
+ * ending 4px above the alert band. */
 static void target(gfx_rect_t r)
 {
     CHECK(r.w >= UI_TAP_MIN);
@@ -110,7 +110,7 @@ TEST_CASE(no_two_controls_of_a_page_overlap)
             }
         }
     }
-    /* A stepped row's keys keep 4 px from its value. */
+    /* A stepped row's keys keep 4px from its value. */
     CHECK(val(PG_TUNE, 0, 0).x
           >= kst_panel_step_rect(PG_TUNE, 0, false).x
                  + kst_panel_step_rect(PG_TUNE, 0, false).w + 4);
@@ -119,8 +119,8 @@ TEST_CASE(no_two_controls_of_a_page_overlap)
 }
 
 /* FILES with more files than a list holds: the entry that saves, five
- * files and the entry for the next, each a tap target 8 px apart, the last
- * 8 px above CANCEL. */
+ * files and the entry for the next, each a tap target 8px apart, the last
+ * 8px above CANCEL. */
 TEST_CASE(the_fullest_list_ends_above_cancel)
 {
     const kst_image_t sv = sim_bench_image();
@@ -209,7 +209,7 @@ static void fullest_write_page(void)
 }
 
 /* Ten values changed, a first write with a card: the page with the most
- * lines.  Its rows end 8 px above the buttons in English and German, and
+ * lines.  Its rows end 8px above the buttons in English and German, and
  * both buttons are tap targets above the alert band. */
 TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
 {
@@ -233,7 +233,7 @@ TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* An area that ends above the alert band: its buttons end 8 px above its
+/* An area that ends above the alert band: its buttons end 8px above its
  * foot, the band does not move them, and the fullest write page keeps its
  * lines to the 14 rows above them in English and German. */
 TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
@@ -266,7 +266,7 @@ TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
  * SERVO tab of a connected servo and of a servo in doubt with its two
  * standing lines (the tallest pair in German, 4 rows), in English and
  * German: every line of the message is drawn, and the notes and the
- * message end 4 px above the alert band and under the tab's last row. */
+ * message end 4px above the alert band and under the tab's last row. */
 TEST_CASE(no_note_or_message_lies_under_the_alert_band)
 {
     static const unsigned args[] = { 0u, 9u, 255u, 0xFFFFu };

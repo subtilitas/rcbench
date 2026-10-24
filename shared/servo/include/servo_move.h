@@ -34,8 +34,8 @@
  *
  * The same rules run at two rates.  The panel's servo test feeds the PD
  * mini's readings, about 10 a second, with time in ms, settle_n 2 and no
- * filter.  The IOmcu feeds INA3221 CH1 samples at 1 kHz with time in
- * 0.1 ms (sense_sched.h).  The time unit is the caller's: cmd_t, window_t
+ * filter.  The IOmcu feeds INA3221 CH1 samples at 1kHz with time in
+ * 0.1ms (sense_sched.h).  The time unit is the caller's: cmd_t, window_t
  * and every sample's time are in it.
  *
  * Filter.  With filter_n above 1 each sample is judged as the mean of the

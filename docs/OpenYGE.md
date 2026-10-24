@@ -21,7 +21,7 @@ Together, ° and section 8 are everything on this page that is uncertain.
 | Signalling | UART (universal asynchronous receiver-transmitter), 115200 baud, 8N1 |
 | Byte order | little-endian throughout |
 | Topology | half duplex, one master and up to 127 addressable ESCs |
-| Rate | about 20 Hz telemetry |
+| Rate | about 20Hz telemetry |
 
 The master hears its own transmission: a sender discards as many received bytes
 as it sent. The connection is a single wire with TX and RX commoned.
@@ -31,15 +31,15 @@ TX and RX tied through a resistor and the echo discarded, or a PIO
 (programmable input/output) soft UART. It cannot share the panel link, which is
 CAN (Controller Area Network); see [The link](Link.md).
 
-Timing at 115200 8N1, 86.81 µs per byte:
+Timing at 115200 8N1, 86.81µs per byte:
 
 | | |
 | --- | ---: |
-| 34-byte telemetry reply | 2.95 ms |
-| 12-byte request | 1.04 ms |
-| One poll, both directions | 3.99 ms plus the ESC's turnaround |
+| 34-byte telemetry reply | 2.95ms |
+| 12-byte request | 1.04ms |
+| One poll, both directions | 3.99ms plus the ESC's turnaround |
 
-That is 8% of the line at a 50 ms cycle.
+That is 8% of the line at a 50ms cycle.
 
 ---
 
@@ -116,10 +116,10 @@ frame is 34 bytes; a legacy one is 32.
 | ---: | ---: | ---: | --- | --- | --- |
 | 0 | 6 | 1 | `reserved` | | |
 | 1 | 7 | u8 | `temperature` | °C + 40 | `°C = v − 40`, −40…215 |
-| 2 | 8 | u16 | `voltage` | 10 mV | `V = v / 100` |
-| 4 | 10 | u16 | `current` | 10 mA | `A = v / 100` |
+| 2 | 8 | u16 | `voltage` | 10mV | `V = v / 100` |
+| 4 | 10 | u16 | `current` | 10mA | `A = v / 100` |
 | 6 | 12 | u16 | `consumption` | mAh | as is |
-| 8 | 14 | u16 | `rpm` | 10 eRPM (electrical revolutions per minute) | `eRPM = v × 10`, see below |
+| 8 | 14 | u16 | `rpm` | 10eRPM (electrical revolutions per minute) | `eRPM = v × 10`, see below |
 | 10 | 16 | i8 | `pwm` | % | output duty, signed |
 | 11 | 17 | i8 | `throttle` | % | input setpoint, signed |
 | 12 | 18 | u16 | `bec_voltage` | mV | as is |
@@ -129,7 +129,7 @@ frame is 34 bytes; a legacy one is 32.
 | 18 | 24 | u8 | `cap_temp` | °C + 40 | capacitor pack |
 | 19 | 25 | u8 | `aux_temp` | °C + 40 | |
 | 20 | 26 | u8 | `status2` | | undocumented; carry, do not interpret |
-| 21 | 27 | u8 | `reserved1` | | possibly a consumption high byte above 65 Ah ° |
+| 21 | 27 | u8 | `reserved1` | | possibly a consumption high byte above 65Ah ° |
 | 22 | 28 | u16 | `pidx` | | parameter index, section 5 |
 | 24 | 30 | u16 | `pdata` | | parameter value, section 5 |
 
@@ -140,8 +140,8 @@ on strict-alignment targets.
 
 ### `rpm` scale
 
-The field is described as "0.1 eRPM" while the reference code multiplies by
-ten. Multiplying is the assumption here: 65535 × 10 = 655,350 eRPM is a
+The field is described as "0.1eRPM" while the reference code multiplies by
+ten. Multiplying is the assumption here: 65535 × 10 = 655,350eRPM is a
 plausible ceiling, 6,553 is not. Measure it (section 8).
 
 Mechanical RPM (revolutions per minute) needs the pole count, parameter 20:
@@ -162,7 +162,7 @@ table and the master collects. A master builds the table by caching each pair,
 reading parameter 0 (the parameter count), and treating the table as complete
 only when every index `0 … count−1` has been seen.
 
-At 20 Hz and 32 parameters that takes about 1.6 s. Show it as progress; never
+At 20Hz and 32 parameters that takes about 1.6s. Show it as progress; never
 present a partial table as the ESC's settings.
 
 - Stop accepting cached values while writes are outstanding, or a frame already
@@ -243,7 +243,7 @@ labelled 26), so at least one of those three is wrong in the reference.
 | # | Setting | Meaning |
 | ---: | --- | --- |
 | 8 | Cut-off type | at the low-voltage limit: `0` none, `1` reduce power gradually, `2` cut power |
-| 9 | Cut-off voltage per cell | offset where `0` = 2.9 V; the step is not stated, 0.1 V per count is the assumption ° |
+| 9 | Cut-off voltage per cell | offset where `0` = 2.9V; the step is not stated, 0.1V per count is the assumption ° |
 | 27 | Current limit | ° |
 | 16 | mAh alarm limit | consumption at which the ESC raises a telemetry warning |
 
@@ -251,7 +251,7 @@ labelled 26), so at least one of those three is wrong in the reference.
 
 | # | Setting | Meaning |
 | ---: | --- | --- |
-| 2 | BEC (battery eliminator circuit) voltage | regulated output to receiver and servos, in 0.1 V. A value above the servos' rating damages them |
+| 2 | BEC (battery eliminator circuit) voltage | regulated output to receiver and servos, in 0.1V. A value above the servos' rating damages them |
 
 #### Input signal calibration
 
@@ -370,7 +370,7 @@ plausible sync.
 ## 9. Status in rcbench
 
 Neither board runs the protocol yet: the IOmcu image links the module,
-the panel image does not, and nothing calls it. The design puts it on the IOmcu: a 20 Hz request and
+the panel image does not, and nothing calls it. The design puts it on the IOmcu: a 20Hz request and
 response loop with a turnaround in microseconds and a timeout that fires
 whether or not bytes arrive. The panel would see the result as a `bench_state`
 through the page protocol; no OpenYGE frame would cross the panel link. A

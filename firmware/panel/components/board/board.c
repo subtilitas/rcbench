@@ -133,7 +133,7 @@ esp_err_t board_touch_reset_sequence(void)
     vTaskDelay(pdMS_TO_TICKS(20));
     ESP_RETURN_ON_ERROR(gpio_set_level((gpio_num_t)pin, 1), TAG,
                         "release touch reset");
-    /* The GT911 answers on the bus about 50 ms after the reset ends. */
+    /* The GT911 answers on the bus about 50ms after the reset ends. */
     vTaskDelay(pdMS_TO_TICKS(60));
     ESP_LOGI(TAG, "GT911 reset on GPIO%d done", pin);
     return ESP_OK;

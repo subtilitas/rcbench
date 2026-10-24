@@ -3,7 +3,7 @@
 # rotation 180 through the PPA (pixel-processing accelerator) driver,
 # esp_driver_ppa, as ppa_dig734.cmake builds it.
 #   idf.py -D RCBENCH_DISPLAY_BARS=ON build
-# shows the DSI host's colour bars for 3 s at start-up.
+# shows the DSI host's colour bars for 3s at start-up.
 idf_component_register(
     SRCS "display.c"
     INCLUDE_DIRS "include"

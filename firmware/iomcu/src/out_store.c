@@ -21,7 +21,7 @@
 
 /**
  * @brief Where it goes: the data partition "store" of partitions.json, two
- * sectors at 4 MiB - 16 KiB (0x3FC000), below the last 8 KiB the layout
+ * sectors at 4MiB - 16KiB (0x3FC000), below the last 8KiB the layout
  * leaves unused.
  *
  * The build reads the offset out of that file (IOMCU_STORE_OFFSET).
@@ -57,7 +57,7 @@
 
 /**
  * @brief Where a build without a partition table kept the store: the last
- * two sectors of the 4 MiB.  Read once, by out_store_load(), when the store
+ * two sectors of the 4MiB.  Read once, by out_store_load(), when the store
  * holds no record yet, so the bindings survive the USB load that installs
  * the partition table.  Never written.
  */

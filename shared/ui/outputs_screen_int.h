@@ -33,18 +33,18 @@
 
 /**
  * @brief The lowest row the screen draws or takes a press on, in the
- *        screen's coordinates: 4 px above the alert band, body y 492.
+ *        screen's coordinates: 4px above the alert band, body y 492.
  */
 #define OU_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
 /**
  * @brief The left column: the protocol and what the choice adds up to.
  *
- * 300 px from x 16, so 30 cells of OU_FONT_LABEL: the longest reason
+ * 300px from x 16, so 30 cells of OU_FONT_LABEL: the longest reason
  * breaks into two lines of 30 cells at most in every language
- * (test_outputs_screen_draw).  The protocol list's face is 300 x 64 px
+ * (test_outputs_screen_draw).  The protocol list's face is 300 x 64px
  * under the PROTOCOL label; the longest protocol name, "DSHOT600 BIDIR",
- * draws in the 16 x 28 face there (224 px of the 245 px left of the
+ * draws in the 16 x 28 face there (224px of the 245px left of the
  * chevron), every other name in 20 x 36.
  */
 #define COL_X    16
@@ -52,7 +52,7 @@
 #define COL_Y    16    /**< The PROTOCOL label's top. */
 
 #define DD_Y     44    /**< The protocol list's face: its top. */
-#define DD_H     64    /**< Its height, px (9.6 mm). */
+#define DD_H     64    /**< Its height, px (9.6mm). */
 
 /* The entry's state laid out and dropped, as the screen's reset() does:
  * no entry shown. */

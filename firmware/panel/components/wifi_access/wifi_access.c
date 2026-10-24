@@ -314,7 +314,7 @@ static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
         memcpy(d->path + d->len + 1u, e->d_name, nl);
         d->path[d->len + 1u + nl] = '\0';
         /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads
-         * an exFAT file of 4 GiB and more as a small one. */
+         * an exFAT file of 4GiB and more as a small one. */
         storage_stat_t st;
         const esp_err_t r = storage_stat(d->path, &st);
         d->path[d->len] = '\0';
@@ -606,7 +606,7 @@ static esp_err_t h_update(httpd_req_t *r)
         const int got = httpd_req_recv(r, (char *)b->io,
                                        (left < IO_CHUNK) ? left : IO_CHUNK);
         if (got == HTTPD_SOCK_ERR_TIMEOUT && ++waits < 6u) {
-            continue;       /* 6 waits of the server's 5 s: 30 s quiet */
+            continue;       /* 6 waits of the server's 5s: 30s quiet */
         }
         if (got <= 0) {
             whole = false;
@@ -1516,7 +1516,7 @@ static bool fetch_wait(uint32_t wait_ms)
  *
  * After a failed C6 link, esp_wifi_stop() and esp_wifi_deinit() are not
  * called: each is a request to the C6, which is held in reset then, and
- * would end only at esp_hosted's response time-out, 5 s each.
+ * would end only at esp_hosted's response time-out, 5s each.
  */
 static void radio_down(void)
 {

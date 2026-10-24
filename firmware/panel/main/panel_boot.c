@@ -81,8 +81,8 @@ static void pump(void)
 }
 
 /*
- * How long to keep asking who is there: 3000 ms is about three attempts,
- * because a poll with no answer costs the 1000 ms host timeout.
+ * How long to keep asking who is there: 3000ms is about three attempts,
+ * because a poll with no answer costs the 1000ms host timeout.
  */
 #define IDENTITY_WAIT_MS 3000u
 
@@ -256,7 +256,7 @@ bool bring_up(void)
     const bool link_open = (can_twai_start(PANEL_CAN_BITRATE) == ESP_OK);
     splash_screen_set(SPLASH_STEP_LINK,
                       link_open ? SPLASH_OK : SPLASH_WARN,
-                      link_open ? "CAN 1 Mbit/s" : TR(SPLASH_NOT_OPENED));
+                      link_open ? "CAN 1Mbit/s" : TR(SPLASH_NOT_OPENED));
     /*
      * After the bus is up, so the echo test measures the bus rather than
      * reporting "nothing came back" regardless of the hardware, and before
@@ -272,7 +272,7 @@ bool bring_up(void)
         s_bus_ok = can_selftest_run(CAN_SELFTEST_MS, &s_busfault);
         splash_screen_set(SPLASH_STEP_LINK,
                           s_bus_ok ? SPLASH_OK : SPLASH_FAIL,
-                          s_bus_ok ? "CAN 1 Mbit/s"
+                          s_bus_ok ? "CAN 1Mbit/s"
                                    : busfault_verdict_text(
                                          s_busfault.verdict));
         if (!s_bus_ok) {

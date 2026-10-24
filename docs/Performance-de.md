@@ -15,8 +15,8 @@ Frame sind nicht gemessen, und noch kein Profil bildet sie nach
 Die Frame Rate des ESP32-S3-Panels begrenzt die Bandbreite des PSRAM (Pseudo-Static
 Random-Access Memory), nicht die CPU (Central Processing Unit). Die
 LCD-Einheit (Liquid-Crystal Display) liest ununterbrochen einen Framebuffer
-mit etwa 30 MB/s aus dem PSRAM, und die Framebuffer liegen hinter einem
-Write-Back-, Write-Allocate-Datencache (64 KB, 8-fach assoziativ,
+mit etwa 30MB/s aus dem PSRAM, und die Framebuffer liegen hinter einem
+Write-Back-, Write-Allocate-Datencache (64KB, 8-fach assoziativ,
 64-Byte-Lines). Jedes Pixel, das die CPU schreibt, kostet einen
 64-Byte-Line-Fill und ein 64-Byte-Write-Back, sofern die Line nicht schon
 geladen ist. Die Kosten eines Frames sind deshalb eine Anzahl von
@@ -99,7 +99,7 @@ hlines               0        0 KiB      0.0      39.0
 Die absoluten Zahlen verschieben sich zwischen Maschinen um einige Fills, weil
 argv und die Umgebungsvariablen denselben Cache belegen wie der Framebuffer.
 `frame_cost.py --check-doc` prüft die Tabelle deshalb mit einer Toleranz von
-1 %.
+1%.
 
 ## Regeln
 
@@ -122,10 +122,10 @@ also auch bei einem IOmcu, der mit simulierten Werten antwortet.
 Gedrehter Text scannt seine gedrehte Bounding-Box, von Ecke zu Ecke also die
 ganze Canvas, und rotiert und dividiert je Pixel, um die Pixel zu
 schreiben, die das Watermark bedeckt: 3 439 auf einer Canvas von
-800 x 480 px, 0,9 % davon, und 5 377 auf 1024 x 600 px. `ui_watermark` nimmt
+800 x 480px, 0,9% davon, und 5 377 auf 1024 x 600px. `ui_watermark` nimmt
 diese Punkte einmal auf, in eine Tabelle mit 6 144 Plätzen, und schreibt sie
-danach nur noch: bei 800 x 480 px mit 144 721 Instruktionen je Frame statt
-8 412 078. Die Zahl bei 1024 x 600 px ist nicht gemessen.
+danach nur noch: bei 800 x 480px mit 144 721 Instruktionen je Frame statt
+8 412 078. Die Zahl bei 1024 x 600px ist nicht gemessen.
 
 **Eine Zahl von Fills ist keine Zahl von Zyklen.** Die Tabelle oben misst
 Cache-Line-Fills, und das Watermark kostet davon nur 1 586: es ist Arithmetik
@@ -141,19 +141,19 @@ Bedienelement daneben neu zeichnete. Das Gas hat jetzt seinen eigenen
 und zeichnet die Box der Anzeige und die bemalte Region des Sliders neu:
 Der Modus `throttle` in der Tabelle oben misst das gegen einen Sample-Frame.
 Der Flip quantisiert auf ganze Panel-Frames: ein Drag liegt entweder
-innerhalb von zwei davon oder wartet auf einen dritten, also 19,5 fps oder
-13,0. Auf der Hardware mit 50,5 ms gemessen, nahm der alte Drag den dritten.
+innerhalb von zwei davon oder wartet auf einen dritten, also 19,5fps oder
+13,0. Auf der Hardware mit 50,5ms gemessen, nahm der alte Drag den dritten.
 
 Zu löschen ist, was ein Widget bemalt, nicht was es einnimmt. Der Daumen des
-Sliders und sein Schatten stehen 5 px oben und 7 px unten über den Track
-hinaus, und die Hero-Ziffern sind 32 px hoch mit 3 px Schräge auf einer 30 px
+Sliders und sein Schatten stehen 5px oben und 7px unten über den Track
+hinaus, und die Hero-Ziffern sind 32px hoch mit 3px Schräge auf einer 30px
 hohen Zeile. Ein Clear in der Grösse des Tracks oder der Zeile lässt daher an
 jeder Position, die der Finger passiert hat, einen Daumen und die Füsse der
 Ziffern stehen. `ui_slider_painted_rect()` liefert die Region, statt sie den
 Aufrufer herleiten zu lassen.
 
 **Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
-20 Hz, das Panel zeichnet schneller, mit 39Hz auf dem ESP32-S3 und 60,38Hz
+20Hz, das Panel zeichnet schneller, mit 39Hz auf dem ESP32-S3 und 60,38Hz
 auf dem ESP32-P4 (gemessen, der VSYNC-Wert der Konsole), also hat der größte
 Teil der Frames nichts Neues. Der DPI-Takt (Display Pixel Interface) des P4
 ist 48MHz, nicht die 52MHz, die `board_pins.h` anfordert; bei 48MHz ergäbe
@@ -197,10 +197,10 @@ Ruhe bei 300 000.
 Kein CI-Schritt (Continuous Integration) hält einen Frame an eine Obergrenze in
 Cache-Lines; `test_frame_work` hält Budgets in Pixelbesuchen, wie oben.
 `tools/frame_cost.py` bildet den Cache und die Bandbreite des ESP32-S3 bei 800
-x 480 px nach, und die Tabelle oben ist dieses Modell. Das 7-Zoll-Panel mit
-dem ESP32-P4 gibt 1024 x 600 px über einen anderen Cache aus. Sein Profil und
+x 480px nach, und die Tabelle oben ist dieses Modell. Das 7-Zoll-Panel mit
+dem ESP32-P4 gibt 1024 x 600px über einen anderen Cache aus. Sein Profil und
 die Obergrenzen, die CI hält, kommen mit Messungen auf diesem Board. Der
-Host-Renderer zeichnet 1024 x 600 px, daher meldet `frame_cost.py --check-doc`
+Host-Renderer zeichnet 1024 x 600px, daher meldet `frame_cost.py --check-doc`
 die Tabelle als nicht geprüft, und `--update-doc` schreibt nichts, bis dieses
 Profil sie ersetzt. `tools/check_docs.py` schlägt bei einer
 Obergrenzen-Tabelle auf dieser Seite fehl, solange `.github/workflows/ci.yml`
@@ -346,18 +346,18 @@ Job des Planers, der Plan und das bereitgestellte Image liegen im Zustand
 der Session und des Ports, nicht auf dem Stack.
 
 Der Port plant einen Schreibauftrag in Slices. Das Schreibkommando prüft
-den Auftrag und startet den Job des Planers, 64 us Planerarbeit. Jeder
+den Auftrag und startet den Job des Planers, 64us Planerarbeit. Jeder
 Durchlauf der Hauptschleife von Kern 0 fährt dann 1 Slice in
-`kst_session_step()`, 100 bis 109 Einheiten Arbeit: höchstens 892 us, der
-längste gefundene 816 us. Das Planen endet nach 216 000 Einheiten,
+`kst_session_step()`, 100 bis 109 Einheiten Arbeit: höchstens 892us, der
+längste gefundene 816us. Das Planen endet nach 216 000 Einheiten,
 höchstens 2 161 Durchläufen, mit einem Plan, ohne Plan oder mit dem
 Ergebnis "too complex", wenn die Einheiten vorher verbraucht sind. Der
 teuerste gefundene Auftrag braucht 120 136 Einheiten, höchstens 1 202
-Durchläufe und 397 bis 647 ms Planerzeit. Alle Zeiten gelten für 150 MHz,
+Durchläufe und 397 bis 647ms Planerzeit. Alle Zeiten gelten für 150MHz,
 sind in einem Emulator aus den ausgeführten Instruktionen mit ARM GNU 14.2
 bei -O3 berechnet und nicht auf Hardware gemessen. Die Zeit eines
 Durchlaufs mit Link, Heartbeat und Ausgängen ist nicht gemessen. Die
-Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150 ms.
+Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150ms.
 
 Jede Tiefe ist eine Untergrenze:
 
@@ -475,7 +475,7 @@ während der Downloads 60fps. Was die Rate begrenzt:
 | Glied | Einstellung | Grenze |
 | --- | --- | --- |
 | Power Save | keiner, solange das Panel einem Heimnetz beigetreten ist (`esp_wifi_set_ps(WIFI_PS_NONE)`); ein Access Point schläft nicht | keine |
-| Sendepuffer | 11 520 Bytes, 8 Segmente zu 1 440 Bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11 520 Bytes pro Umlauf: 1 152 000 B/s bei 10 ms Umlaufzeit, 576 000 B/s bei 20 ms |
+| Sendepuffer | 11 520 Bytes, 8 Segmente zu 1 440 Bytes (`CONFIG_LWIP_TCP_SND_BUF_DEFAULT`) | 11 520 Bytes pro Umlauf: 1 152 000B/s bei 10ms Umlaufzeit, 576 000B/s bei 20ms |
 | Karte | SDMMC (der SD/MMC-Host), 4 Datenleitungen mit 20MHz (`BOARD_SD_FREQ_KHZ`), 10 000 000B/s auf der Leitung | nicht gemessen |
 | Funk | der ESP32-C6 über SDIO, 4 Datenleitungen mit 40MHz (`BOARD_C6_FREQ_KHZ`), 20 000 000B/s auf der Leitung, am SDMMC-Host, den auch die Karte nutzt | nicht gemessen |
 | Prozessor | die Task des Servers mit Priorität 1 auf Kern 0, neben der UI-Schleife (User Interface) mit Priorität 1 | nicht gemessen |
@@ -484,9 +484,9 @@ Der Power Save, den ESP-IDF vorgibt, `WIFI_PS_MIN_MODEM`, weckt das Funkteil
 nur zu jedem DTIM-Beacon (Delivery Traffic Indication Message). Bis dahin
 hält der Access Point die Frames für das Panel zurück, die Bestätigungen
 von TCP darunter, also wartet jeder Sendepuffer bis zu einer DTIM-Periode:
-102,4 ms beim üblichen Beacon-Intervall und einer DTIM-Periode von 1,
-307,2 ms bei einer DTIM-Periode von 3. Mit dem Sendepuffer von 5 760 Bytes,
-den ESP-IDF vorgibt, sind das 18 750 bis 56 250 B/s. Ohne Power Save
+102,4ms beim üblichen Beacon-Intervall und einer DTIM-Periode von 1,
+307,2ms bei einer DTIM-Periode von 3. Mit dem Sendepuffer von 5 760 Bytes,
+den ESP-IDF vorgibt, sind das 18 750 bis 56 250B/s. Ohne Power Save
 braucht das Funkteil mehr Strom, solange es läuft; wie viel mehr am Panel,
 ist nicht gemessen.
 
@@ -503,11 +503,11 @@ Downloads 60fps.
 Ein Download endet vorzeitig, und die Verbindung wird zurückgesetzt (Reset),
 wenn
 
-- der Empfänger die Verbindung schließt: erkannt innerhalb von 250 ms
+- der Empfänger die Verbindung schließt: erkannt innerhalb von 250ms
   (`WA_SEND_SLICE_MS`, `shared/webaccess/include/wa_send.h`);
 - die Verbindung fehlschlägt;
-- der Empfänger 30 s lang nichts annimmt (`WA_SEND_QUIET_MS`);
-- das WLAN ausgeht: innerhalb von 250 ms;
+- der Empfänger 30s lang nichts annimmt (`WA_SEND_QUIET_MS`);
+- das WLAN ausgeht: innerhalb von 250ms;
 - das Lesen der Karte fehlschlägt oder die Datei nicht die angekündigte
   Größe hat.
 
@@ -548,7 +548,7 @@ Linux, `iw`:
 6. Ein Empfänger, der nicht mehr liest: eine Verbindung, die die Datei
    anfragt und dann nichts liest,
    `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
-   dann nach 35 s
+   dann nach 35s
    `curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
    Die Konsole protokolliert `file: nothing taken for 30 s`; die
    Anfrage antwortet `200`.

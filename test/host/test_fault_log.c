@@ -1,5 +1,5 @@
 /*
- * The fault log under its 1 MiB cap, fault_log_note(), over a card held in
+ * The fault log under its 1MiB cap, fault_log_note(), over a card held in
  * memory: a line that ends the file at the cap exactly, one that would pass
  * it, RCBENCH.OLD replaced, the folder made, and every failure that writes
  * nothing past the cap.
@@ -228,7 +228,7 @@ TEST_CASE(the_old_file_is_replaced_not_kept_twice)
     CHECK_STR_EQ(g.old.last, "the last of the full");
     CHECK_EQ(g.old.size, (int64_t)FAULT_LOG_CAP);
     CHECK_STR_EQ(g.log.last, "new");
-    /* 2 MiB at most on the card: the two files, each at the cap or
+    /* 2MiB at most on the card: the two files, each at the cap or
      * under. */
     CHECK(g.old.size + g.log.size <= 2 * (int64_t)FAULT_LOG_CAP);
 }

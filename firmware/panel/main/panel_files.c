@@ -24,7 +24,7 @@
  * The bench the write gate reads is the control task's snapshot: ARMED
  * and an arm waiting count as ARMED, the IOmcu link as it stands, and the
  * logger's open files (log_open_marks()).  A job reads it before each
- * chunk, so an ARM stops a copy at its next 16 KiB.
+ * chunk, so an ARM stops a copy at its next 16KiB.
  *
  * Each copy logs its bytes, its time and its rate, and the stack cardjob
  * left unused: the card's rate on this board is not measured.

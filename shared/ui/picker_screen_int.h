@@ -33,7 +33,7 @@
 
 /**
  * @brief The lowest row the screen draws or takes a press on, in the
- *        screen's coordinates: 4 px above the alert band, body y 492.
+ *        screen's coordinates: 4px above the alert band, body y 492.
  */
 #define FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
@@ -41,25 +41,25 @@
  * @brief The faces of the 1024 x 600 type scale PICK A PIN draws in.
  *
  * PK_FONT_LABEL (10 x 20) for the count, the reason, the PAD head, a
- * channel, a pad number, a name in IN USE and a pin there in the 20 px
+ * channel, a pad number, a name in IN USE and a pin there in the 20px
  * rows; PK_FONT_FINE (8 x 16) for a rail's voltage, BY OTHERS and the
- * 16 px rows of IN USE; PK_FONT_PIN (16 x 28) for a ground's G and a pin
- * in IN USE's 28 px rows; PK_FONT_HEAD (20 x 36) for PINS, IN USE, a GP
+ * 16px rows of IN USE; PK_FONT_PIN (16 x 28) for a ground's G and a pin
+ * in IN USE's 28px rows; PK_FONT_HEAD (20 x 36) for PINS, IN USE, a GP
  * name under PINS and a key's GPIO number.
  */
 #define PK_FONT_LABEL (&gfx_font_10x20)
-#define PK_FONT_FINE  (&gfx_font_8x16)    /**< 8 x 16: rails, 16 px rows. */
+#define PK_FONT_FINE  (&gfx_font_8x16)    /**< 8 x 16: rails, 16px rows. */
 #define PK_FONT_PIN   (&gfx_font_16x28)   /**< 16 x 28: IN USE's pins. */
 #define PK_FONT_HEAD  (&gfx_font_20x36)   /**< 20 x 36: heads, GP names. */
 #define PK_CELL       10 /**< PK_FONT_LABEL's cell width, px. */
 
 /**
- * @brief The board's box: 600 px wide and as tall as its outline makes
- *        it, up to 240 px, centred between the body's top and FOOT.
+ * @brief The board's box: 600px wide and as tall as its outline makes
+ *        it, up to 240px, centred between the body's top and FOOT.
  *
- * 240 px leaves 126 px above and below for two tiers of 56 px keys with
- * their gaps.  The RP2350-CAN's outline, 51 x 21 mm, draws 582 x 240 px,
- * a 0.1 in pitch at 29 px.
+ * 240px leaves 126px above and below for two tiers of 56px keys with
+ * their gaps.  The RP2350-CAN's outline, 51 x 21mm, draws 582 x 240px,
+ * a 0.1 in pitch at 29px.
  */
 #define BOARD_W  600
 #define BOARD_MAX_H 240   /**< The box's tallest, px. */
@@ -67,9 +67,9 @@
 /**
  * @brief Two staggered tiers of keys above the board and two below.
  *
- * A key is 50 x 56 px (7.5 x 8.4 mm).  The tier alternates along a pad
- * row, so two keys in one tier stand two pads apart at least: 58 px at
- * the RP2350-CAN's pitch, 8 px between them.  TGAP is between the two
+ * A key is 50 x 56px (7.5 x 8.4mm).  The tier alternates along a pad
+ * row, so two keys in one tier stand two pads apart at least: 58px at
+ * the RP2350-CAN's pitch, 8px between them.  TGAP is between the two
  * tiers, GAP between the board's edge and the nearer tier.
  */
 #define TIERS 2               /**< Tiers above and below. */
@@ -84,13 +84,13 @@ _Static_assert(BTNW >= UI_TAP_MIN && KEY_H >= UI_TAP_MIN,
                "a key is a finger wide and tall");
 
 /*
- * The marks inside the board.  A ground is a round marker 36 px across, 40
+ * The marks inside the board.  A ground is a round marker 36px across, 40
  * px in from its pad: a servo lead needs a ground as much as a signal, so it
  * is as legible as a button, and grounds are five pads apart, so it has
- * nothing to collide with.  A rail is 32 px across, enough for "5V0", at one
+ * nothing to collide with.  A rail is 32px across, enough for "5V0", at one
  * of two depths that alternate along the row: rails sit on neighbouring
- * pads, 29 px apart, and a rail beside a ground goes below the ground's
- * marker -- 78 px is the ground's 40 plus both radii and both rings.
+ * pads, 29px apart, and a rail beside a ground goes below the ground's
+ * marker -- 78px is the ground's 40 plus both radii and both rings.
  */
 #define GND_R       18
 #define GND_DROP    40
@@ -104,10 +104,10 @@ _Static_assert(BTNW >= UI_TAP_MIN && KEY_H >= UI_TAP_MIN,
  *        protocol list's face, the count, and the reason no pin can be
  *        added.
  *
- * The face is 280 x 56 px: the longest protocol name, "DSHOT600 BIDIR",
- * draws in the 16 x 28 face there (224 px of the 225 px left of its
+ * The face is 280 x 56px: the longest protocol name, "DSHOT600 BIDIR",
+ * draws in the 16 x 28 face there (224px of the 225px left of its
  * chevron), every other name in 20 x 36.  The reason takes a second line
- * where it needs one: the first holds 35 cells (350 px), beside the keys
+ * where it needs one: the first holds 35 cells (350px), beside the keys
  * above the board; the second, beside the board itself, what is left of
  * it, 17 cells at most (test_picker_screen_table holds every reason to
  * it), so it ends at x 178, left of the widest board's edge at x 212.
@@ -125,7 +125,7 @@ _Static_assert(BTNW >= UI_TAP_MIN && KEY_H >= UI_TAP_MIN,
 
 /*
  * The open list covers the board, as it covers the pins on OUTPUTS: the
- * protocols in a column of 48 px rows from the face's top, the PROG PORT
+ * protocols in a column of 48px rows from the face's top, the PROG PORT
  * entries in a second column beside it.  With its margins and shadow it
  * ends at body y 404.
  */
@@ -136,13 +136,13 @@ _Static_assert(HEAD_Y + (int)OUTBIND_PROTOS * POP_ROW + 8 + 4 <= FOOT,
                "the protocol list ends above the alert band");
 
 /**
- * @brief The PINS table, left of the board: 171 px, "CH7" in the label
- *        face, "GP28" in the head face from 40 px in, and the pad number
+ * @brief The PINS table, left of the board: 171px, "CH7" in the label
+ *        face, "GP28" in the head face from 40px in, and the pad number
  *        right-aligned.
  *
- * It starts under the reason's second line; its 8 rows of 36 px, the
+ * It starts under the reason's second line; its 8 rows of 36px, the
  * most a protocol holds, end at body y 484.  A row is read, not tapped.
- * It ends at x 179, 8 px left of the leftmost a key can stand: half a key
+ * It ends at x 179, 8px left of the leftmost a key can stand: half a key
  * left of the widest board's edge (x 212), where a board that reports its
  * own shape may put its first pad.
  */
@@ -155,16 +155,16 @@ _Static_assert(HEAD_Y + (int)OUTBIND_PROTOS * POP_ROW + 8 + 4 <= FOOT,
 _Static_assert(PINS_TOP + (int)LINK_OUT_SLOTS * ROW_H <= FOOT,
                "the PINS table holds 8 pins above the alert band");
 _Static_assert(PINS_X + PINS_W + 8 <= (SCREEN_W - BOARD_W) / 2 - BTNW / 2,
-               "the PINS table ends 8 px left of any key");
+               "the PINS table ends 8px left of any key");
 
 /**
- * @brief The IN USE table, right of the board: 168 px from x 848, 8 px
+ * @brief The IN USE table, right of the board: 168px from x 848, 8px
  *        right of the rightmost a key can stand (x 837).
  *
  * Its lines start under the heading, the rule and the BY OTHERS line and
- * end at FOOT.  A name is 20 px; a pin is 28 px with the GPIO in
- * PK_FONT_PIN, or 20 px with it in the label face when the 28 px rows run
- * past the foot, and 16 px in 8 x 16 when the 20 px rows do.
+ * end at FOOT.  A name is 20px; a pin is 28px with the GPIO in
+ * PK_FONT_PIN, or 20px with it in the label face when the 28px rows run
+ * past the foot, and 16px in 8 x 16 when the 20px rows do.
  */
 #define USE_W       168       /**< Its width, px. */
 #define USE_X       (SCREEN_W - 8 - USE_W) /**< The table's left edge. */
@@ -174,12 +174,12 @@ _Static_assert(PINS_X + PINS_W + 8 <= (SCREEN_W - BOARD_W) / 2 - BTNW / 2,
 #define USE_NAME_H  20        /**< A name's line, px. */
 #define USE_PIN_H   28        /**< A pin's line, px. */
 #define USE_PIN_H_C 20        /**< A pin's line past the foot at 28. */
-#define USE_PIN_H_D 16        /**< And where 20 px does. */
+#define USE_PIN_H_D 16        /**< And where 20px does. */
 
 _Static_assert(USE_X >= (SCREEN_W + BOARD_W) / 2 + BTNW / 2 + 8,
-               "the IN USE table starts 8 px right of any key");
+               "the IN USE table starts 8px right of any key");
 
-/* With no interface on, every line fits at the 16 px pin rows: every port,
+/* With no interface on, every line fits at the 16px pin rows: every port,
  * every protocol's name and every slot's pin. */
 _Static_assert(USE_TOP
                    + (1 + (int)OUTBIND_PROTOS - 1) * USE_NAME_H
@@ -187,7 +187,7 @@ _Static_assert(USE_TOP
                          * USE_PIN_H_D
                    <= USE_FOOT,
                "the IN USE table holds a binding beside 4 ports");
-/* And with every interface on as well, at 16 px a line: 27 lines.  PPM's
+/* And with every interface on as well, at 16px a line: 27 lines.  PPM's
  * one pin takes all 8 slots, so at most 6 protocols share them, one name
  * fewer than PICKER_USE_MAX counts. */
 _Static_assert(USE_TOP + ((int)PICKER_USE_MAX - 1) * USE_PIN_H_D

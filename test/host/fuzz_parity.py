@@ -34,8 +34,8 @@ prints the file, so it is run again with
     fuzz_parity.py <esc_parse_dump> --seed <seed> --count <count>
 
 The default run is 2 seeds of 1500 cases each.  Measured on one x86-64
-host: 6.2 s, and 8.1 s with esc_parse_dump built under the sanitizers.
-ctest stops it after 120 s.
+host: 6.2s, and 8.1s with esc_parse_dump built under the sanitizers.
+ctest stops it after 120s.
 
 usage: fuzz_parity.py <esc_parse_dump> [--seed N ...] [--count N]
 """

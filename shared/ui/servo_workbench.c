@@ -501,7 +501,7 @@ void test_page_down(const touch_event_t *evt)
     if (gfx_rect_contains(test_start_rect(), x, y)) {
         ov_take(evt, OP_TEST_START, -1);
         /* A hold, unless a run is under way (a tap stops it), a step is
-         * past 6.0 V (a tap opens the HV warning, whose hold starts it), or
+         * past 6.0V (a tap opens the HV warning, whose hold starts it), or
          * it cannot run now (a tap says why). */
         s.test_note = 0;
         if (!servo_test_running(&s.test) && test_blocked() == 0
@@ -605,7 +605,7 @@ void draw_target(gfx_canvas_t *c)
 #define TARGET_PROTOCOL "SERVO PWM"
 /** @brief Characters the TARGET row's value holds in the 10 x 20 face
  *         ui_target_row draws a row UI_TARGET_TALL_H or taller in: the
- *         column less the label, 268 px, less 8 px each side, 25 cells. */
+ *         column less the label, 268px, less 8px each side, 25 cells. */
 #define TARGET_CELLS ((unsigned)((RC_W - UI_TARGET_LABEL_W_TALL - 16) / 10))
 _Static_assert(TARGET_H >= UI_TARGET_TALL_H,
                "the TARGET row is tall enough for the 10 x 20 face");

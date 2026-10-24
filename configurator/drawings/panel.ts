@@ -3,7 +3,7 @@
 // panel. tools/gen_board_drawing.py turns `panel.json` into the table the
 // IOmcu serves over the link.
 //
-// Units: 0.01 mm (cmm). Origin: the top-left corner of the board outline seen
+// Units: 0.01mm (cmm). Origin: the top-left corner of the board outline seen
 // from the component side, pad 1 at the bottom left. X runs along the board,
 // Y across it.
 //

@@ -65,6 +65,7 @@ python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on eve
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
+python3 tools/check_units.py --check  # a number and its unit without a space
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
@@ -197,8 +198,8 @@ python3 tools/mutate.py --list                # the mutants, without a run
 python3 tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0
 ```
 
-It runs at most 60 mutants and stops starting new ones after 1200 s; a run
-ends within 2700 s. The working tree is not written. CI runs it on every
+It runs at most 60 mutants and stops starting new ones after 1200s; a run
+ends within 2700s. The working tree is not written. CI runs it on every
 pull request and puts the survivors in the job summary; a survivor does not
 fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
@@ -206,8 +207,8 @@ pull request why the two lines behave the same.
 `mutation.yml` runs every mutant of every line of `shared/safety` and
 `shared/outputs` (3032 mutants) each Sunday at 03:17 UTC and on demand. It has
 no mutant limit and runs in 6 shards of files (file i of the sorted list goes
-to shard i mod 6). A shard starts no mutant after 18000 s, stops one build or
-suite run after 600 s and ends within 21000 s; the mutants left are reported as
+to shard i mod 6). A shard starts no mutant after 18000s, stops one build or
+suite run after 600s and ends within 21000s; the mutants left are reported as
 not run. The share of mutants that run within the budget on a hosted runner is
 not measured. A survivor does not fail the job. The result is the job summaries
 and the artifacts `mutation-full-0` to `mutation-full-5`.
@@ -331,7 +332,7 @@ A screen, tab, overlay, prompt or automatic run that drives an output names
 that output while it is shown: the pin, the port with its pin, or the supply
 with its voltage. A screen that talks to a module over a serial link names
 the link's pins as well. Examples of the form, not texts of any screen: `GP4`,
-`PROG PORT GP13`, `PD MINI 7.40 V`. Nothing bound, a binding not yet read and
+`PROG PORT GP13`, `PD MINI 7.40V`. Nothing bound, a binding not yet read and
 a target out of reach show as a warning. The label reads the state the drive
 path reads, not the setting that asks for it (`prog_link_target()`, not
 `SET_SERVO_TARGET`). A screen added or changed meets the rule and comes
@@ -463,7 +464,7 @@ pull requests and issues.
   document.
 - Lead with what a thing does and its constraints, then how to use it. A
   command or a code block beats a paragraph describing one.
-- Unknowns are stated as unknown ("not measured", "untested above 40 V"), never
+- Unknowns are stated as unknown ("not measured", "untested above 40V"), never
   asserted and never omitted.
 - Commit messages and pull request bodies: the change and its effect, in the
   imperative mood, without the debugging path.

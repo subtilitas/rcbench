@@ -39,17 +39,17 @@
  * @brief The overlay's layout, in pixels from the area's top left.  Every
  *        width that is not a control's own comes from the area's width.
  *
- * On SERVO's left card of 620 px: five tabs of 95 px and CLOSE of 120 px
- * in one row 48 px tall, rows 48 px tall at a 56 px pitch, two columns of
- * 295 px, a value of 150 px (15 cells of KP_FONT), a wide row's of 260 px
- * with minus and plus keys of 56 px.  Every control ends at kpn_foot().
+ * On SERVO's left card of 620px: five tabs of 95px and CLOSE of 120px
+ * in one row 48px tall, rows 48px tall at a 56px pitch, two columns of
+ * 295px, a value of 150px (15 cells of KP_FONT), a wide row's of 260px
+ * with minus and plus keys of 56px.  Every control ends at kpn_foot().
  */
 #define TAB_Y    8            /**< the tabs' and CLOSE's top */
-#define TAB_H    UI_TAP_MIN   /**< their height, 48 px, as every row's */
+#define TAB_H    UI_TAP_MIN   /**< their height, 48px, as every row's */
 #define CLOSE_W  120          /**< CLOSE's width */
-#define ROW0     64           /**< the first row's top: the tabs and 8 px */
-#define PITCH    56           /**< a row's pitch: 8 px between two */
-#define ROW_H    UI_TAP_MIN   /**< a row's height, 48 px */
+#define ROW0     64           /**< the first row's top: the tabs and 8px */
+#define PITCH    56           /**< a row's pitch: 8px between two */
+#define ROW_H    UI_TAP_MIN   /**< a row's height, 48px */
 #define VAL_W    150          /**< a value, 15 cells of KP_FONT */
 #define WIDE_W   260          /**< a wide row's value, keys included */
 #define STEP_W   56           /**< a stepped row's minus and plus keys */
@@ -67,7 +67,7 @@
 #define LINE_H        20                /**< a wrapped row's pitch, px */
 
 /** @brief The space between the bottom of a control at the foot and the
- *         alert band's top: 4 px, as every screen's footer. */
+ *         alert band's top: 4px, as every screen's footer. */
 #define FOOT_GAP 4
 
 /* The plus and minus keys repeat as SETUP's do. */
@@ -126,8 +126,8 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 #define CHOICE_MAX 7
 #define WARN_LINES 12
 /** @brief The rows a page's lines take at most, wrapped to the page's
- *         width: 16 rows at LINE_H take 320 px of the 356 px from WARN_TOP
- *         to 8 px above the buttons on SERVO's left card.  A shorter area
+ *         width: 16 rows at LINE_H take 320px of the 356px from WARN_TOP
+ *         to 8px above the buttons on SERVO's left card.  A shorter area
  *         takes fewer (kpn_warn_room()). */
 #define WARN_ROWS 16
 /* The lines a page gives to the warnings of soft limits. */
@@ -135,7 +135,7 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 /* The lines the page of a file gives to its values. */
 #define FILE_VALUES 4
 /** @brief A warning page's first line under the area's top: the title in
- *         KP_TITLE_FONT from 16 px, 36 px tall, and 12 px. */
+ *         KP_TITLE_FONT from 16px, 36px tall, and 12px. */
 #define WARN_TOP 64
 
 /** @brief The overlay's state. */
@@ -271,13 +271,13 @@ int kpn_text_rows(gfx_canvas_t *c, int x, int y, const char *s,
 gfx_rect_t kpn_tabs_rect(void);
 /**
  * @brief Where a control at the area's foot ends.
- * @return the lower of 8 px above the area's foot and FOOT_GAP above the
+ * @return the lower of 8px above the area's foot and FOOT_GAP above the
  *         alert band, in the area's coordinates (body pixels)
  */
 int kpn_foot(void);
 /**
  * @brief Where the notes and the message under a page end.
- * @return the lower of 6 px above the area's foot and FOOT_GAP above the
+ * @return the lower of 6px above the area's foot and FOOT_GAP above the
  *         alert band, in the area's coordinates (body pixels): no text
  *         lies under the band
  */
@@ -315,8 +315,8 @@ void kpn_write_n(char *out, size_t size, unsigned n);
 int kpn_warn_rows(void);
 /**
  * @brief The rows a warning page's lines may take in the area: those that
- *        fit between WARN_TOP and 8 px above the buttons, WARN_ROWS at
- *        most; 14 in an area 420 px tall.
+ *        fit between WARN_TOP and 8px above the buttons, WARN_ROWS at
+ *        most; 14 in an area 420px tall.
  * @return the rows
  */
 int kpn_warn_room(void);

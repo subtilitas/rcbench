@@ -19,9 +19,9 @@
  *    fed with the edges the program sampled, at the ticks it stamped,
  *    including the lows at and beside the hold-off and edges that arrive
  *    during the push and swallow paths;
- *  - a carrier of 8 to 144 kHz at 10, 50 and 90 % duty, with jitter, comes
+ *  - a carrier of 8 to 144kHz at 10, 50 and 90% duty, with jitter, comes
  *    out as the rule says: the hold-off swallows every carrier low above
- *    125 kHz and keeps the tone's own;
+ *    125kHz and keeps the tone's own;
  *  - against the rule on ideal ticks (the edge's cycle over 4), no stamp is
  *    more than 3 ticks away, and a low of 4 ticks more or less than the
  *    hold-off is decided as the rule decides it;
@@ -48,7 +48,7 @@
 
 #define CPU_HZ   150000000ull
 #define TICK     TONE_SVC_TICK_HZ
-#define HOLD     300u                 /* 8 us in ticks */
+#define HOLD     300u                 /* 8us in ticks */
 #define M31      0x7FFFFFFFu
 #define SYNC     2u                   /* the input synchroniser, cycles */
 #define MAX_PROG 32u
@@ -594,8 +594,8 @@ TEST_CASE(x_counts_through_its_wrap_and_the_words_stay_right)
     run_cfg_t c = cfg_default();
     c.x0 = 100u;
     CHECK(run_and_check(us(400.0), &c));
-    /* Three rises and two falls: the 10 us pulse at 60 us follows a 40 us
-     * low and leaves a 130 us one, both longer than 8 us. */
+    /* Three rises and two falls: the 10us pulse at 60us follows a 40us
+     * low and leaves a 130us one, both longer than 8us. */
     CHECK_EQ(nwords, 5u);
 }
 
@@ -638,7 +638,7 @@ TEST_CASE(a_low_shorter_than_the_hold_off_is_swallowed_and_a_longer_one_kept)
 
 /* The hold-off's threshold, found by scanning the low's length one cycle at
  * a time over the four phases of the 4-cycle grid: a low of the rule's 300
- * ticks (1200 cycles, 8 us) is always kept and one of 1196 cycles never. */
+ * ticks (1200 cycles, 8us) is always kept and one of 1196 cycles never. */
 TEST_CASE(the_hold_off_threshold_is_the_rules_to_within_a_tick)
 {
     CHECK(assemble(TONE_CAP_PIO));
@@ -704,7 +704,7 @@ TEST_CASE(a_carrier_comes_out_as_the_hold_off_rule_says)
         for (size_t j = 0; j < 3u; ++j) {
             for (unsigned jit = 0; jit <= 6u; jit += 6u) {
                 nraw = 0;
-                /* 20 bursts of 2.5 kHz, 120 us long, chopped. */
+                /* 20 bursts of 2.5kHz, 120us long, chopped. */
                 const uint64_t end = beep(1500u, 20u, 2500.0, 120.0, car[i],
                                           duty[j], jit);
                 if (!run_and_check(end + 6000u, &c)) {
@@ -746,7 +746,7 @@ TEST_CASE(an_unchopped_tone_is_two_words_a_burst_at_the_edges_ticks)
         }
         CHECK_EQ(edge_word_level(words[i]), raw[i].level);
     }
-    /* A beep of 1 kHz is 37500 ticks a period: 50 periods hold the rate to
+    /* A beep of 1kHz is 37500 ticks a period: 50 periods hold the rate to
      * a tick in 1.9 million. */
     const int64_t span = (int64_t)(((0u - edge_word_count(words[98])) & M31))
                          - (int64_t)(((0u - edge_word_count(words[0])) & M31));
@@ -784,9 +784,9 @@ TEST_CASE(a_dma_that_keeps_up_drops_no_word_at_247000_edges_a_second)
 {
     CHECK(assemble(TONE_CAP_PIO));
     run_cfg_t c = cfg_default();
-    /* Pulses and lows of 4 us: the lows are under the hold-off, so use
-     * lows of 8.1 us, the fastest the program reports: 2 words per
-     * 8.1 us + 0.1 us pulse. */
+    /* Pulses and lows of 4us: the lows are under the hold-off, so use
+     * lows of 8.1us, the fastest the program reports: 2 words per
+     * 8.1us + 0.1us pulse. */
     nraw = 0;
     uint64_t t = 1000u;
     for (unsigned i = 0; i < 20000u; ++i) {

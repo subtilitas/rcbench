@@ -13,7 +13,7 @@
 
 #include "heartbeat.h"
 
-/* Drive the generator for @p ms of wall clock in 1 ms steps from @p t0,
+/* Drive the generator for @p ms of wall clock in 1ms steps from @p t0,
  * counting the edges it asks for.  Returns the number of edges. */
 static int run_gen(heartbeat_gen_t *g, uint32_t t0, uint32_t ms, bool alive)
 {
@@ -51,7 +51,7 @@ TEST_CASE(the_generator_starts_low_and_edges_at_the_asked_rate)
      * from a timestamp that means nothing. */
     CHECK_EQ(heartbeat_gen_step(&g, 1000, true), false);
 
-    /* One second at 20 ms a toggle is 50 edges, give or take the boundary. */
+    /* One second at 20ms a toggle is 50 edges, give or take the boundary. */
     heartbeat_gen_init(&g);
     const int edges = run_gen(&g, 1000, 1000, true);
     CHECK(edges >= 48 && edges <= 51);
@@ -79,7 +79,7 @@ TEST_CASE(withdrawing_alive_drops_the_line_in_the_same_call)
 /*
  * Coming back is a fresh start, not a resumption.  A generator that kept the
  * pre-stop timestamp would emit its first edge after whatever remained of
- * the period, possibly under the monitor's 4 ms floor, and the recovery
+ * the period, possibly under the monitor's 4ms floor, and the recovery
  * would be rejected as noise.
  */
 TEST_CASE(recovery_waits_a_full_period_before_the_first_edge)
@@ -133,7 +133,7 @@ TEST_CASE(a_line_edging_too_fast_is_noise_and_not_a_heartbeat)
     heartbeat_mon_t m;
     heartbeat_mon_init(&m);
 
-    (void)feed(&m, 0, 1, 400);          /* 1 ms apart: 500 Hz, not a panel */
+    (void)feed(&m, 0, 1, 400);          /* 1ms apart: 500Hz, not a panel */
     CHECK_EQ(heartbeat_mon_alive(&m, 400), false);
     CHECK(m.rejected_fast > 0);
     CHECK_EQ(m.rejected_slow, 0);       /* it was never quiet */
@@ -159,7 +159,7 @@ TEST_CASE(a_line_that_goes_quiet_dies_without_anything_arriving_to_say_so)
     uint32_t t = feed(&m, 0, 20, 10);
     CHECK(heartbeat_mon_alive(&m, t));
 
-    /* Still alive 1 ms inside the window ... */
+    /* Still alive 1ms inside the window ... */
     CHECK(heartbeat_mon_alive(&m, t + HEARTBEAT_MAX_GAP_MS - 1));
     /* ... and dead at it, with no edge having been delivered either way. */
     CHECK_EQ(heartbeat_mon_alive(&m, t + HEARTBEAT_MAX_GAP_MS), false);
@@ -186,8 +186,8 @@ TEST_CASE(recovering_from_silence_earns_trust_again_from_scratch)
 }
 
 /*
- * The real rate, not the requested one.  The generator asks for 20 ms and the
- * render loop delivers 26 to 52 ms, so the monitor accepts what the panel
+ * The real rate, not the requested one.  The generator asks for 20ms and the
+ * render loop delivers 26 to 52ms, so the monitor accepts what the panel
  * produces, including the slow frames of a bench under load.
  */
 TEST_CASE(the_monitor_accepts_the_rate_the_render_loop_really_delivers)
@@ -236,7 +236,7 @@ TEST_CASE(both_ends_survive_the_millisecond_counter_wrapping)
 /* --------------------------------------------------- the window's limits */
 
 /* A monitor that trusts the line, its last edge at @p t0: the edges before
- * it are 20 ms apart and end there, wherever on the clock @p t0 is. */
+ * it are 20ms apart and end there, wherever on the clock @p t0 is. */
 static void trusted_at(heartbeat_mon_t *m, uint32_t t0)
 {
     const uint32_t n = 2u * HEARTBEAT_GOOD_RUN;
@@ -262,13 +262,13 @@ static void floor_case(uint32_t t0)
     CHECK_EQ(m.rejected_fast, 0);
     CHECK_EQ(m.rejected_slow, 0);
 
-    /* ... and so is 1 ms above it ... */
+    /* ... and so is 1ms above it ... */
     one_edge_after(&m, t0, HEARTBEAT_MIN_GAP_MS + 1u);
     CHECK(heartbeat_mon_alive(&m,
                               (uint32_t)(t0 + HEARTBEAT_MIN_GAP_MS + 1u)));
     CHECK_EQ(m.rejected_fast, 0);
 
-    /* ... and 1 ms under it is noise, counted once as fast. */
+    /* ... and 1ms under it is noise, counted once as fast. */
     one_edge_after(&m, t0, HEARTBEAT_MIN_GAP_MS - 1u);
     CHECK_EQ(heartbeat_mon_alive(&m,
                                  (uint32_t)(t0 + HEARTBEAT_MIN_GAP_MS - 1u)),
@@ -277,7 +277,7 @@ static void floor_case(uint32_t t0)
     CHECK_EQ(m.rejected_slow, 0);
 }
 
-/* With the clock started 2 ms before the wrap, every gap here ends after
+/* With the clock started 2ms before the wrap, every gap here ends after
  * it. */
 TEST_CASE(an_interval_at_the_floor_is_taken_and_1_ms_under_it_is_not)
 {
@@ -288,7 +288,7 @@ static void ceiling_case(uint32_t t0)
 {
     heartbeat_mon_t m;
 
-    /* 1 ms under the ceiling and the ceiling itself are a heartbeat ... */
+    /* 1ms under the ceiling and the ceiling itself are a heartbeat ... */
     one_edge_after(&m, t0, HEARTBEAT_MAX_GAP_MS - 1u);
     CHECK(heartbeat_mon_alive(&m,
                               (uint32_t)(t0 + HEARTBEAT_MAX_GAP_MS - 1u)));
@@ -299,7 +299,7 @@ static void ceiling_case(uint32_t t0)
     CHECK_EQ(m.rejected_slow, 0);
     CHECK_EQ(m.rejected_fast, 0);
 
-    /* ... and 1 ms over it is a stall, counted once as slow.  The edge
+    /* ... and 1ms over it is a stall, counted once as slow.  The edge
      * handler says so: no poll has seen the silence. */
     one_edge_after(&m, t0, HEARTBEAT_MAX_GAP_MS + 1u);
     CHECK_EQ(m.alive, false);
@@ -311,7 +311,7 @@ static void ceiling_case(uint32_t t0)
     CHECK_EQ(m.rejected_fast, 0);
 }
 
-/* The wrap 2 ms into the interval, and 1 ms before the ceiling. */
+/* The wrap 2ms into the interval, and 1ms before the ceiling. */
 TEST_CASE(an_interval_at_the_ceiling_is_taken_and_1_ms_over_it_is_not)
 {
     at_tick_0_and_before_the_wrap(ceiling_case, 2u);
@@ -473,7 +473,7 @@ TEST_CASE(a_stop_while_the_line_is_high_resumes_low)
                                   HEARTBEAT_PERIOD_MS + 5u);
 }
 
-/* The generator edges at the period and not 1 ms before it, on either side
+/* The generator edges at the period and not 1ms before it, on either side
  * of the wrap. */
 static void period_case(uint32_t t0)
 {

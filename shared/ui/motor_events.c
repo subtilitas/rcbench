@@ -278,7 +278,7 @@ void mo_event(const touch_event_t *evt)
 
 /*
  * The two animations ARM carries.  Each advances its own counter, so a frame
- * of either repaints the button's 180 x 28 px and nothing else: the control
+ * of either repaints the button's 180 x 28px and nothing else: the control
  * row is 800 x 90, and an animation that asked for the row would put the
  * screen back where the throttle drag was.
  */

@@ -378,7 +378,7 @@ void lv_open_selected(void)
     }
     if (s.files[s.sel].size > LOG_VIEWER_OPEN_MAX) {
         /* Past what the reader's seek reaches.  Said, not read in part:
-         * an import of the first 2 GiB would look like the whole run. */
+         * an import of the first 2GiB would look like the whole run. */
         lv_set_message(TR(LOG_TOO_BIG), s.files[s.sel].name);
         return;
     }

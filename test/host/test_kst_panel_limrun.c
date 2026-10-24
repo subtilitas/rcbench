@@ -17,13 +17,13 @@
  * The limit run on the rig: the servo on programming port 1 behind
  * servo_sim's current model, the horn where its registers put it for the
  * pulse (kst_sim.h sim_horn_us(): linear from NEUTRAL to PULSE LOWER and
- * PULSE UPPER, LEFT ANGLE and RIGHT ANGLE the full travel at 4 us a count;
- * the bench image's 150 counts are 600 us, past both stops at 1150 and
- * 1880 us); the INA3221's CH1 windows from it every 50 ms; and a bench
+ * PULSE UPPER, LEFT ANGLE and RIGHT ANGLE the full travel at 4us a count;
+ * the bench image's 150 counts are 600us, past both stops at 1150 and
+ * 1880us); the INA3221's CH1 windows from it every 50ms; and a bench
  * that goes SAFE and ARMED as the screen asks, an ARM dropped while the
  * programmer holds the port, as the panel's control task drops it.  The
- * SERVO screen's PULSE MIN and MAX are STANDARD PWM's, 1000 and 2000 us,
- * the bench image's PULSE LOWER and UPPER 900 and 2100 us: a run with
+ * SERVO screen's PULSE MIN and MAX are STANDARD PWM's, 1000 and 2000us,
+ * the bench image's PULSE LOWER and UPPER 900 and 2100us: a run with
  * SERVO PULSES at KEEP is refused after the read, one at 1000-2000 runs.
  */
 #define LR_MODE_X  100          /* the LIMIT RUN settings' left column */
@@ -43,7 +43,7 @@ static struct {
     bool armed;
     bool ina;                   /* the windows arrive */
     bool pin;                   /* the target is the bench's GP2 */
-    uint16_t rail_mv;           /* the windows' rail; 0 is 6000 mV */
+    uint16_t rail_mv;           /* the windows' rail; 0 is 6000mV */
     uint16_t win_no;
     uint32_t win_end;
     float sum;
@@ -168,7 +168,7 @@ static void lr_fresh(bool reversion)
     img = rig_servo();
     (void)kst_field_set(&img, KST_F_REVERSION, reversion ? 1u : 0u);
     memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
-    servo_sim_defaults(&sc);                /* stops at 1150 and 1880 us */
+    servo_sim_defaults(&sc);                /* stops at 1150 and 1880us */
     servo_sim_init(&lr.sv, &sc);
     lr.sv.position_us = 1500.0f;
     lr.cmd = 1500u;
@@ -182,7 +182,7 @@ static void lr_fresh(bool reversion)
     lr_ms(400u);
 }
 
-/* TEST, and START LIMIT RUN on its card held for 2.3 s. */
+/* TEST, and START LIMIT RUN on its card held for 2.3s. */
 static void lr_hold_start(void)
 {
     screen_tap(SV_TAB_TEST_X, BTN_Y);
@@ -194,7 +194,7 @@ static void lr_hold_start(void)
 
 /* The LIMIT RUN settings: LIMIT RUN to SEARCH+PROG, SERVO PULSES to
  * 1000-2000 where @p pulses; the home tag back to TEST, and START LIMIT
- * RUN held for 2.3 s. */
+ * RUN held for 2.3s. */
 static void lr_start_with(bool pulses)
 {
     lr_run_list();
@@ -220,11 +220,11 @@ static void lr_run_out(void)
 }
 
 /* SEARCH+PROG with SERVO PULSES at 1000-2000, REVERSION off and on: PULSE
- * LOWER and PULSE UPPER at 1000.0 and 2000.0 us, both ends found bound,
+ * LOWER and PULSE UPPER at 1000.0 and 2000.0us, both ends found bound,
  * LEFT ANGLE and RIGHT ANGLE lowered so neither binds, the servo's full
  * travel inside both stops, the bench back to ARMED after every session,
  * one backup file, PASS in the report with the writes made, and RESTORE
- * putting the servo back as the run found it, 900.0 and 2100.0 us. */
+ * putting the servo back as the run found it, 900.0 and 2100.0us. */
 TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
 {
     for (int rev = 0; rev < 2; ++rev) {
@@ -240,8 +240,8 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         CHECK(strstr(lr.report, "Writes:") != NULL);
         CHECK_EQ(lr.opens_txt, 1u);
         CHECK_EQ(lr.ends, 1u);
-        CHECK(strstr(lr.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0 "
-                                "us, PULSE UPPER 2100.0 -> 2000.0 us") != NULL);
+        CHECK(strstr(lr.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0"
+                                "us, PULSE UPPER 2100.0 -> 2000.0us") != NULL);
         CHECK(servo(KST_F_LEFT_ANGLE) < 150u);
         CHECK(servo(KST_F_RIGHT_ANGLE) < 150u);
         CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER),
@@ -251,8 +251,8 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
                                 &d));
         CHECK_EQ(d, 20000);
         /* The full travel, at the pulse limits, inside both stops by the
-         * model's resolution: a push of 3.0 us past a stop draws less
-         * than the +0.15 A a bind needs, and the command rounds to 0.5 us
+         * model's resolution: a push of 3.0us past a stop draws less
+         * than the +0.15A a bind needs, and the command rounds to 0.5us
          * (test_servo_limrun.c, every_stop_position_passes). */
         CHECK(sim_horn_us(g_rig.sim.reg, 1000u, 4.0f, false) > 1150.0f - 3.5f);
         CHECK(sim_horn_us(g_rig.sim.reg, 2000u, 4.0f, false) < 1880.0f + 3.5f);
@@ -311,8 +311,8 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
     }
 }
 
-/* SERVO PULSES at KEEP: the bench's PULSE MIN and MAX, 1000 and 2000 us,
- * do not hold the servo's 900 and 2100 us.  The run reads the servo,
+/* SERVO PULSES at KEEP: the bench's PULSE MIN and MAX, 1000 and 2000us,
+ * do not hold the servo's 900 and 2100us.  The run reads the servo,
  * gives the port back and ends as FAIL with the bench SAFE: nothing
  * driven, nothing written, both ranges in the report. */
 TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
@@ -329,8 +329,8 @@ TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
      * card, the programmer does not open over it. */
     CHECK(!kst_panel_holds_port());
     CHECK(!kst_panel_is_open());
-    CHECK(strstr(lr.report, "Range:          servo pulses 900.0-2100.0 us "
-                            "outside PULSE MIN/MAX 1000-2000 us") != NULL);
+    CHECK(strstr(lr.report, "Range:          servo pulses 900.0-2100.0us "
+                            "outside PULSE MIN/MAX 1000-2000us") != NULL);
     CHECK_EQ(lr.disarms, 1u);
     CHECK_EQ(lr.arms, 0u);
     CHECK(!lr.armed);
@@ -492,8 +492,8 @@ TEST_CASE(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave)
 }
 
 /* With no PD mini to set, the servo rail as the INA3221 reads it holds
- * the programmer's 4.8 V: 4799 mV refuses every run on the programming
- * port before anything is driven, 4800 mV starts one. */
+ * the programmer's 4.8V: 4799mV refuses every run on the programming
+ * port before anything is driven, 4800mV starts one. */
 TEST_CASE(a_run_on_the_programming_port_needs_4_8_v_on_the_rail)
 {
     lr_fresh(false);
@@ -634,8 +634,8 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     lr_run_out();
     CHECK(strstr(lr.report, "search only, nothing") != NULL);
     CHECK(strstr(lr.report, "Pulse write") == NULL);
-    CHECK(strstr(lr.report, "Searched:       from 1500 us out to 1000 us "
-                            "and 2000 us") != NULL);
+    CHECK(strstr(lr.report, "Searched:       from 1500us out to 1000us "
+                            "and 2000us") != NULL);
     CHECK_EQ(lr.disarms, 0u);
     {
         kst_image_t was = sim_bench_image(), now = rig_servo();

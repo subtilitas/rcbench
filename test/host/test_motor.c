@@ -338,7 +338,7 @@ TEST_CASE(a_short_press_on_arm_does_nothing)
 
 /*
  * Arming flashes the whole button twice: white, black, the danger red, and
- * again, 25 ms each. A fill that merely decayed towards the settled colour
+ * again, 25ms each. A fill that merely decayed towards the settled colour
  * would not read as a flash.
  */
 TEST_CASE(arming_flashes_the_whole_button)

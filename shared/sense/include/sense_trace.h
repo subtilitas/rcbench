@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief A trace of INA3221 CH1's 1 ms samples as text lines, for a debug build
+ * @brief A trace of INA3221 CH1's 1ms samples as text lines, for a debug build
  * of the IOmcu (its SENSE_TRACE build option).
  *
  * No released image links this file.  CH1 here is the schedule's FAST channel
@@ -9,7 +9,7 @@
  *
  * Two sides, one on each core, with a ring of records between them:
  *
- *   Core 1  sense_trace_feed(), once per 1 ms tick after the schedule has
+ *   Core 1  sense_trace_feed(), once per 1ms tick after the schedule has
  *           run.  It reads the schedule's memory and nothing else: no bus
  *           transaction, no clock.  CH1's newest sample comes out of the
  *           schedule's own history (sense_sched_t.hist), CH1's newest bus
@@ -78,8 +78,8 @@
  * same way.  Core 1 not seen past the time SENSE_TRACE_STALL_MS after
  * it: the line is written all the same, and the end line says so.
  *
- * Times are counts of 0.1 ms modulo 2^32, compared as the later of two
- * that lie less than 2^31 (59.6 h) apart.  None is kept to be compared
+ * Times are counts of 0.1ms modulo 2^32, compared as the later of two
+ * that lie less than 2^31 (59.6h) apart.  None is kept to be compared
  * for longer: a slot's last change is forgotten once the slot is seen
  * SENSE_TRACE_HOLD_MS past it, and a trace the console has not taken
  * SENSE_TRACE_OWED_MAX_T after its end is dropped with the triggers that
@@ -106,7 +106,7 @@
  *
  * Lines, format version SENSE_TRACE_FORMAT.  Each ends CR LF and is at
  * most SENSE_TRACE_LINE_MAX bytes with them.  Times t are the 64-bit
- * microsecond clock divided by 100, modulo 2^32: 0.1 ms, as the capture
+ * microsecond clock divided by 100, modulo 2^32: 0.1ms, as the capture
  * counts.
  *
  *   $T v=3 n=N trig=cmd|edge|key t=T ms=M len=L
@@ -115,7 +115,7 @@
  *       in ms the trigger asks for.
  *   $H dt_us=1000 shunt_uohm=R cfg=0xCCCC on=B rst=K
  *       The sample period, CH1's shunt in micro-ohms, the Configuration
- *       value the driver holds and reads back every 40 ms, whether the
+ *       value the driver holds and reads back every 40ms, whether the
  *       part is online, and its reset count modulo 256: as they stand at
  *       the trace's first record.  All 0 with the bus closed.
  *   The lines after these two are in the order of their times, a $D line
@@ -129,15 +129,15 @@
  *                        its last change, S its $C line's T: the command
  *                        the line ends.  Counted with the trigger lines.
  *                        Written once the pulse has stood still for
- *                        SENSE_TRACE_HOLD_MS (50 ms), so it follows the
- *                        sample lines up to about 50 ms past T; T, not
+ *                        SENSE_TRACE_HOLD_MS (50ms), so it follows the
+ *                        sample lines up to about 50ms past T; T, not
  *                        the line's place, is its time.
  *   $E t=T               an edge trigger
  *   $K t=T               a key trigger
  *   D,I                  a CH1 sample: D is its time less the previous
- *                        sample's, 0.1 ms, for the first sample less the
+ *                        sample's, 0.1ms, for the first sample less the
  *                        header's T (negative for a sample from before
- *                        the trigger); I is the shunt code, 40 µV a step:
+ *                        the trigger); I is the shunt code, 40µV a step:
  *                        I * 40 / R amps.  A clipped sample reads the
  *                        end of the range it is at or past, 4095 or
  *                        -4096; 4094 and -4095 are values.
@@ -194,7 +194,7 @@ extern "C" {
  */
 #define SENSE_TRACE_LINE_MAX    64u
 /**
- * @brief Records kept from before a trigger: 64 ms of samples less the 3
+ * @brief Records kept from before a trigger: 64ms of samples less the 3
  * voltages read in that time.
  */
 #define SENSE_TRACE_PRE         64u
@@ -209,7 +209,7 @@ extern "C" {
 #define SENSE_TRACE_HOLD_MS     50u
 /**
  * @brief With the ring empty, a line that waits for core 1 to pass its time is
- * written this long after that time at the latest, ms: 5 times the 19 ms a
+ * written this long after that time at the latest, ms: 5 times the 19ms a
  * flash write parks core 1 for.
  */
 #define SENSE_TRACE_STALL_MS   100u
@@ -217,15 +217,15 @@ extern "C" {
 #define SENSE_TRACE_SLOTS        8u
 /** @brief Trigger lines waiting for the console. */
 #define SENSE_TRACE_MARKS        8u
-/** @brief The trace's time unit: 0.1 ms. */
+/** @brief The trace's time unit: 0.1ms. */
 #define SENSE_TRACE_T_PER_MS    10u
 /** @brief CH1's sample period, µs: the schedule's tick. */
 #define SENSE_TRACE_PERIOD_US 1000u
 /** @brief The most records a record's count of missing ones holds. */
 #define SENSE_TRACE_LOST_MAX  0xFFFFFFu
 /**
- * @brief A trace whose end lies this far back, 0.1 ms, and whose lines the
- * console has not taken is dropped as with no console: 29.8 h, half of what two
+ * @brief A trace whose end lies this far back, 0.1ms, and whose lines the
+ * console has not taken is dropped as with no console: 29.8h, half of what two
  * times can lie apart and still be told which is the later.
  */
 #define SENSE_TRACE_OWED_MAX_T (1u << 30)
@@ -261,7 +261,7 @@ typedef enum {
 
 /** @brief One record: 12 bytes. */
 typedef struct {
-    uint32_t t;      /**< 0.1 ms.  A sample's and its voltage's: when
+    uint32_t t;      /**< 0.1ms.  A sample's and its voltage's: when
                           the sample was read.  A set-up record's: the
                           start of the tick the change was seen in, or
                           the time of the last record kept since then.
@@ -317,8 +317,8 @@ typedef struct {
     bool     orphan;      /**< the command's trigger found a queue full:
                                its end is not said                         */
     uint16_t pulse;
-    uint32_t changed_t;   /**< its last change, 0.1 ms                     */
-    uint32_t cmd_t;       /**< its last command's trigger time, 0.1 ms     */
+    uint32_t changed_t;   /**< its last change, 0.1ms                      */
+    uint32_t cmd_t;       /**< its last command's trigger time, 0.1ms      */
 } sense_trace_watch_t;
 
 /** @brief Where the header stands. */
@@ -376,11 +376,11 @@ typedef struct {
                                        sum of the counts the records kept
                                        carry and of the count the next one
                                        will; core 1 moves it, at the drop  */
-    atomic_uint_fast32_t fed;     /**< the start, 0.1 ms, of the last tick
+    atomic_uint_fast32_t fed;     /**< the start, 0.1ms, of the last tick
                                        whose records are in; core 1 moves
                                        it, after the tick's drops          */
-    sense_trace_src_t src;
-    sense_trace_out_t out;
+    sense_trace_src_t src;        /**< core 1's own                      */
+    sense_trace_out_t out;        /**< core 0's own                      */
 } sense_trace_t;
 
 /**

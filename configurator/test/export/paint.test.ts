@@ -194,7 +194,7 @@ test('the painter reads the path commands M L H V C Z in both cases', () => {
 test('the painter sets text in the embedded font with anchor, weight and fitted length', () => {
   const f = fonts();
   const plain = paintSvg(svg('<text x="10" y="20">A  µ\n Ω</text>'), css(), f);
-  // The sheet sets 12 px and the ink of the print set.
+  // The sheet sets 12px and the ink of the print set.
   assert.match(plain.ops, /BT\n\/F1 12 Tf\n1 0 0 -1 10 20 Tm\n<[0-9A-F]{20}> Tj\nET/);
   assert.equal(plain.texts.length, 1);
   const t = plain.texts[0] as (typeof plain.texts)[number];
@@ -207,7 +207,7 @@ test('the painter sets text in the embedded font with anchor, weight and fitted 
   assert.ok(Math.abs((mid.x1 + mid.x2) / 2 - 50) < 1e-9);
   const end = paint('<text x="50" y="20" text-anchor="end">abc</text>').texts[0] as { x1: number; x2: number };
   assert.ok(Math.abs(end.x2 - 50) < 1e-9);
-  // Classes of the sheet: .mt is 13 px at weight 600, which is the bold face.
+  // Classes of the sheet: .mt is 13px at weight 600, which is the bold face.
   assert.match(paint('<text class="mt" y="9">abc</text>').ops, /\/F2 13 Tf/);
   assert.match(paint('<text class="ms" y="9">abc</text>').ops, /\/F1 11 Tf/);
   // The style of a group reaches its text; the sheet outweighs the attribute.

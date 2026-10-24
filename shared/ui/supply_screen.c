@@ -133,7 +133,7 @@ gfx_rect_t sup_card_rect(int i)
 }
 
 /**
- * @brief The strip's row with its trough's 3 px around it.
+ * @brief The strip's row with its trough's 3px around it.
  * @return the row, px
  */
 gfx_rect_t sup_strip_area(void)
@@ -302,7 +302,7 @@ static void reset(void)
     s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
     s.modreset_btn = (gfx_rect_t){ OV_COL0_X, (int16_t)(OV_Y + OV_MODRESET_DY),
                                    OV_COL_W, OV_ROW_H };
-    /* The question's buttons stand clear of its last lines, which end 4 px
+    /* The question's buttons stand clear of its last lines, which end 4px
      * above the alert band. */
     s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), ASK_BTN_Y,
                                   ASK_BTN_W, ASK_BTN_H };
@@ -508,7 +508,7 @@ void supply_screen_settings_loaded(void)
 bool sup_confirm_needed(int from)
 {
     /* Live from the moment an ON is asked for: the first sample to show it
-     * can be 50 ms behind, and a step button acts on its press. */
+     * can be 50ms behind, and a step button acts on its press. */
     if (!s.on && !s.on_asked) {
         return false;
     }

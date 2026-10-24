@@ -6,21 +6,21 @@
  * If the layout moves these move with it.  Taken by logview_rig.h, the
  * screen's suites and render_screen.c.
  *
- *   - the header row y 4 to 52: ROOT, USER, BENCH 110 x 40 px from x 11,
- *     4 px apart; PREV x 728 and NEXT x 876, 140 x 48 px;
- *   - the file list from y 60, 1008 px wide: its rows under a 30 px heading
- *     at a pitch of 48 px, drawn 44 px tall from x 16; the scroll bar
- *     x 952 to 1008, from y 90, 332 px tall;
+ *   - the header row y 4 to 52: ROOT, USER, BENCH 110 x 40px from x 11,
+ *     4px apart; PREV x 728 and NEXT x 876, 140 x 48px;
+ *   - the file list from y 60, 1008px wide: its rows under a 30px heading
+ *     at a pitch of 48px, drawn 44px tall from x 16; the scroll bar
+ *     x 952 to 1008, from y 90, 332px tall;
  *   - the footer y 440 to 492: RESCAN x 8, DELETE x 728, OPEN x 876,
- *     140 px each, WI-FI x 156 and FILES x 264, 100 px each; the import's four buttons 246 px from x 8, 8 px
- *     apart; the plot's BACK x 8 (140 px), < x 156 and > x 260 (96 px);
+ *     140px each, WI-FI x 156 and FILES x 264, 100px each; the import's four buttons 246px from x 8, 8px
+ *     apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px);
  *   - the import's column list from x 416, y 44: its rows at a pitch of
- *     48 px under a 30 px heading;
+ *     48px under a 30px heading;
  *   - the plot x 16 to 1008, y 88 to 404;
- *   - the DELETE question's CANCEL x 186 and DELETE x 538, 300 x 56 px
+ *   - the DELETE question's CANCEL x 186 and DELETE x 538, 300 x 56px
  *     from y 304;
  *   - the TEXT view's rows in the list's panel from x 24, y 90: 15 rows of
- *     92 cells of 10 x 20 at a pitch of 22 px; BACK x 8, 140 x 52 px.
+ *     92 cells of 10 x 20 at a pitch of 22px; BACK x 8, 140 x 52px.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -55,7 +55,7 @@
 #define LV_BAR_TOP    (LV_LIST_Y + 30)          /**< Its track's top. */
 #define LV_BAR_H      (LV_ROWS * LV_ROW_PITCH - 4)  /**< Its height. */
 
-/** @brief The footer's top: 52 px ending 4 px above the alert band. */
+/** @brief The footer's top: 52px ending 4px above the alert band. */
 #define LV_FOOT_Y     (UI_BODY_H - UI_ALERT_H - 4 - 52)
 #define LV_FOOT_CY    (LV_FOOT_Y + 26)          /**< Its middle row. */
 #define LV_RESCAN_CX  78            /**< RESCAN. */
@@ -70,7 +70,7 @@
 /** @brief The middle of the import's column row @p i on screen. */
 #define LV_IM_ROW_CY(i) (44 + 30 + (i) * 48 + 22)
 #define LV_IM_ROW_CX  700           /**< A point inside every column row. */
-/** @brief DETECTED's warning lines: 368 px, 36 cells of 10 x 20. */
+/** @brief DETECTED's warning lines: 368px, 36 cells of 10 x 20. */
 #define LV_WARN_W     368
 #define LV_WARN_LH    22            /**< A warning line's pitch. */
 /** @brief The first warning line's top: under the six key rows and the
@@ -79,7 +79,7 @@
 #define LV_WARN_X0    16            /**< DETECTED's text, left. */
 #define LV_WARN_X1    392           /**< And right. */
 /** @brief A file message's line in the footer, FILES to DELETE: from x 380,
- *  336 px, 28 cells of 12 x 24. */
+ *  336px, 28 cells of 12 x 24. */
 #define LV_MSG_X      380
 #define LV_MSG_W      336
 #define LV_MSG_LH     24            /**< A message line's pitch. */
@@ -95,7 +95,7 @@
 #define LV_PV_NEXT_CX 308           /**< >. */
 
 /** @brief The empty list's box: the reason's line from LV_EMPTY_WHY_Y, what
- *  the folder holds from LV_EMPTY_HINT_Y, both 24 px tall, x LV_EMPTY_X0
+ *  the folder holds from LV_EMPTY_HINT_Y, both 24px tall, x LV_EMPTY_X0
  *  to LV_EMPTY_X1. */
 #define LV_EMPTY_WHY_Y  202
 #define LV_EMPTY_HINT_Y 242         /**< The second line's top. */

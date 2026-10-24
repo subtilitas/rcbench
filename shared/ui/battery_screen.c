@@ -2,7 +2,7 @@
  * @file
  * @brief The battery screen: each cell's departure from the pack's mean.
  *
- * Six cell voltages that agree to two decimals hide a cell 40 mV adrift, so
+ * Six cell voltages that agree to two decimals hide a cell 40mV adrift, so
  * the cells are drawn as departures from their own mean, and the verdict
  * follows the spread: the widest gap between any two cells.  The absolute
  * voltage of each cell is printed under its bar.
@@ -27,10 +27,10 @@
 /** @brief The plot card's width, px: 640, the right card 360. */
 #define LCARD_W 640
 #define RCARD_X (PAD + LCARD_W + 8)            /**< x 656. */
-#define RCARD_W (W - RCARD_X - PAD)            /**< 360 px. */
+#define RCARD_W (W - RCARD_X - PAD)            /**< 360px. */
 
 /**
- * @brief The lowest row a line of text may reach: 4 px above the alert
+ * @brief The lowest row a line of text may reach: 4px above the alert
  *        band, body y 492.
  */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
@@ -48,7 +48,7 @@
 #define BT_FONT_HEAD  (&gfx_font_20x36)  /**< 20 x 36. */
 
 #define PLOT_X  (PAD + 18)               /**< The plot's left edge: x 26. */
-#define PLOT_W  (LCARD_W - 36)           /**< Its width: 604 px. */
+#define PLOT_W  (LCARD_W - 36)           /**< Its width: 604px. */
 #define MEAN_Y  232                      /**< The mean's row, px. */
 #define REACH   164   /**< Pixels for the full divergence scale. */
 #define NUM_Y   (MEAN_Y + REACH + 14)    /**< The cell numbers' row: y 410. */
@@ -60,7 +60,7 @@ _Static_assert(MEAN_Y - REACH - 4 >= 48, "the scale's top is under the title");
 
 /*
  * The right card, top down: the verdict box, its reason in up to two
- * wrapped lines of the 12 x 24 face (27 cells), six rows of 36 px and the
+ * wrapped lines of the 12 x 24 face (27 cells), six rows of 36px and the
  * note in lines of the 10 x 20 face (33 cells).
  */
 #define VERDICT_Y 20                     /**< The verdict box's top, px. */
@@ -80,9 +80,9 @@ _Static_assert(NOTE_Y + NOTE_LINES * NOTE_PITCH <= TEXT_FLOOR,
 /*
  * The scale floor, in millivolts at full deflection.
  *
- * The range autoscales to the pack: a fixed 100 mV scale draws a healthy
+ * The range autoscales to the pack: a fixed 100mV scale draws a healthy
  * pack and a pack with one weak cell as the same six near-flat bars.  The
- * floor stops a pack that agrees to 1 mV from being drawn as if it were
+ * floor stops a pack that agrees to 1mV from being drawn as if it were
  * diverging.
  */
 #define SCALE_FLOOR_MV 12.0f /**< The scale's floor, mV. */
@@ -215,14 +215,14 @@ static void draw_cells(gfx_canvas_t *c)
     }
 
     /* Autoscaled, so the scale has to be on the picture: without it a bar
-     * that fills the plot could be 4 mV or 40 mV. */
+     * that fills the plot could be 4mV or 40mV. */
     char sc[24];
-    snprintf(sc, sizeof(sc), "+%d mV", (int)(full + 0.5f));
+    snprintf(sc, sizeof(sc), "+%dmV", (int)(full + 0.5f));
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(PLOT_X + PLOT_W - 120),
                                  (int16_t)(MEAN_Y - REACH - 4), 120, 16 },
                 sc, BT_FONT_FINE, ui_theme_color(UI_C_TEXT_FAINT), 1,
                 GFX_ALIGN_RIGHT);
-    snprintf(sc, sizeof(sc), "-%d mV", (int)(full + 0.5f));
+    snprintf(sc, sizeof(sc), "-%dmV", (int)(full + 0.5f));
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(PLOT_X + PLOT_W - 120),
                                  (int16_t)(MEAN_Y + REACH - 12), 120, 16 },
                 sc, BT_FONT_FINE, ui_theme_color(UI_C_TEXT_FAINT), 1,
@@ -457,16 +457,16 @@ static void draw_right(gfx_canvas_t *c)
 
     snprintf(buf, sizeof(buf), "%dS", s.b.cells & 0xFF);
     row(c, 0, TR(BAT_CELLS), buf, ink);
-    snprintf(buf, sizeof(buf), "%.2f V", (double)pack);
+    snprintf(buf, sizeof(buf), "%.2fV", (double)pack);
     row(c, 1, TR(BAT_PACK), buf, ink);
-    snprintf(buf, sizeof(buf), "%.3f V", (double)mean);
+    snprintf(buf, sizeof(buf), "%.3fV", (double)mean);
     row(c, 2, TR(BAT_MEAN), buf, ink);
-    snprintf(buf, sizeof(buf), "%d mV", (int)(spread + 0.5f));
+    snprintf(buf, sizeof(buf), "%dmV", (int)(spread + 0.5f));
     row(c, 3, TR(BAT_SPREAD), buf,
         (spread >= SPREAD_BAD_MV)   ? ui_theme_color(UI_C_DANGER)
       : (spread >= SPREAD_WATCH_MV) ? ui_theme_color(UI_C_WARN)
                                     : ui_theme_color(UI_C_OK));
-    snprintf(buf, sizeof(buf), "%.1f mOhm", (double)ir);
+    snprintf(buf, sizeof(buf), "%.1fmOhm", (double)ir);
     row(c, 4, TR(BAT_PACK_IR), buf, ink);
     snprintf(buf, sizeof(buf), TR(BAT_USED_OF),
              (int)s.b.drawn_mah, (int)s.b.capacity_mah);

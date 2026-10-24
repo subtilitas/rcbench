@@ -3,9 +3,9 @@
 
 Frame rate on this board is decided by memory bandwidth, not by the CPU
 (central processing unit) and not by the panel: the framebuffer is in PSRAM
-(pseudo-static random-access memory) behind a 64 KiB write-back,
+(pseudo-static random-access memory) behind a 64KiB write-back,
 write-allocate cache with 64-byte lines, and the LCD (liquid-crystal display)
-scan-out reads about 30 MB/s of that bus continuously.
+scan-out reads about 30MB/s of that bus continuously.
 
 Every cache-line fill is 64 bytes fetched from PSRAM, and every dirty line
 evicted is 64 bytes written back -- so a frame's traffic is roughly
@@ -42,7 +42,7 @@ DOC_START = "<!-- framecost:start -->"
 DOC_END = "<!-- framecost:end -->"
 
 # The canvas the table in docs/Performance.md models: the ESP32-S3 panel's
-# 800 x 480 px.  The renderer draws the size in ui_layout.h; while the two
+# 800 x 480px.  The renderer draws the size in ui_layout.h; while the two
 # differ, --check-doc reports the table as not checked and --update-doc
 # writes nothing.  The ESP32-P4 profile replaces both.
 DOC_MODEL = (800, 480)
@@ -72,9 +72,9 @@ LL = "8388608,16,64"
 MISS_RE = re.compile(r"D1\s+misses:\s*([0-9,]+)")
 
 # Effective CPU-side PSRAM throughput while the LCD is scanning, in bytes per
-# second.  Calibrated against the board: 3.0 MB/frame measured at 13 fps.
+# second.  Calibrated against the board: 3.0MB/frame measured at 13fps.
 EFFECTIVE_BW = 39e6
-# 16 MHz pclk over 820 x 500 total clocks.
+# 16MHz pclk over 820 x 500 total clocks.
 PANEL_HZ = 16e6 / (820 * 500)
 
 
@@ -111,7 +111,7 @@ def misses(exe: pathlib.Path, frames: int, mode: str) -> int:
 ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
 # Absolute fills depend on the machine (argv, environment and stack layout
 # land in the same cache), so the doc table is checked to a tolerance rather
-# than byte for byte.  1 % of the steady-state frame is about 100 fills: two
+# than byte for byte.  1% of the steady-state frame is about 100 fills: two
 # orders of magnitude above the run-to-run variation and two below a change
 # worth documenting.
 # 2%, not 1%.  The hyphenated modes were skipped by the row pattern until

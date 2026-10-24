@@ -88,10 +88,10 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
 {
     switch (r->kind) {
     case R_TYPE:    snprintf(buf, n, "%s", type()->name); return;
-    case R_RATE:    snprintf(buf, n, "%u Hz", (unsigned)s.frame_hz); return;
-    case R_MIN:     snprintf(buf, n, "%u us", (unsigned)s.min_us); return;
-    case R_CENTRE:  snprintf(buf, n, "%u us", (unsigned)s.centre_us); return;
-    case R_MAX:     snprintf(buf, n, "%u us", (unsigned)s.max_us); return;
+    case R_RATE:    snprintf(buf, n, "%uHz", (unsigned)s.frame_hz); return;
+    case R_MIN:     snprintf(buf, n, "%uus", (unsigned)s.min_us); return;
+    case R_CENTRE:  snprintf(buf, n, "%uus", (unsigned)s.centre_us); return;
+    case R_MAX:     snprintf(buf, n, "%uus", (unsigned)s.max_us); return;
     case R_TRIM:    snprintf(buf, n, "%+d", (int)s.trim_us); return;
     case R_TRAVEL:  snprintf(buf, n, "+/-%d", (int)s.travel_deg); return;
     case R_REVERSE: snprintf(buf, n, "%s", ui_on_off(s.reverse)); return;
@@ -125,7 +125,7 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     } else if (limit && !(v > 0.0f)) {
         snprintf(buf, n, "%s", TR(OFF));
     } else {
-        snprintf(buf, n, "%.*f %s", decimals_of(r->id), (double)v, d->unit);
+        snprintf(buf, n, "%.*f%s", decimals_of(r->id), (double)v, d->unit);
     }
 }
 
@@ -192,7 +192,7 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     return warn;
 }
 
-/** @brief A line of a page's note: the page less 10 px each side, 60
+/** @brief A line of a page's note: the page less 10px each side, 60
  *         cells. */
 #define NOTE_CELLS ((OV_W - 20) / SV_CELL)
 
@@ -326,7 +326,7 @@ void draw_rows_page(gfx_canvas_t *c)
         char l1[96], l2[96];
         snprintf(l1, sizeof(l1), TR(SV_FASTEST),
                  (unsigned)max_rate_for(s.type, cmd_top()),
-                 type()->heli ? "0.5 ms" : "1 ms");
+                 type()->heli ? "0.5ms" : "1ms");
         snprintf(l2, sizeof(l2), "%s", TR(SV_AT_START));
         const char *const lines[] = { l1, l2 };
         draw_note(c, nx, OV_NOTE_Y, lines, 2);
@@ -395,7 +395,7 @@ void draw_warn_apply(gfx_canvas_t *c)
                    s.warn.down, true, SV_FONT_LABEL);
 }
 
-/** @brief A line of a warning: the left column less 20 px left and 12 px
+/** @brief A line of a warning: the left column less 20px left and 12px
  *         right, in cells of SV_FONT_BODY, 49. */
 #define WARN_CELLS ((OV_W - 32) / 12)
 /** @brief A warning's title, what it is about, and its first line. */
@@ -405,7 +405,7 @@ void draw_warn_apply(gfx_canvas_t *c)
 #define WARN_PITCH    28  /**< Its lines' pitch in SV_FONT_BODY, px. */
 
 /**
- * @brief The red frame of a warning, 3 px, around the left column.
+ * @brief The red frame of a warning, 3px, around the left column.
  * @param c the canvas
  * @param a the left column
  * @param red the frame's colour
@@ -551,7 +551,7 @@ static void draw_ask(gfx_canvas_t *c)
         gfx_text(c, a.x + 20, y + 8, k[i].label, SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[48];
-        snprintf(line, sizeof(line), "%.2f -> %.2f %s", (double)k[i].was,
+        snprintf(line, sizeof(line), "%.2f -> %.2f%s", (double)k[i].was,
                  (double)k[i].now, k[i].unit);
         gfx_text(c, a.x + 200, y, line, SV_FONT_HEAD, k[i].col, 1);
         y += 56;

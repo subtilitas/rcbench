@@ -80,14 +80,14 @@ static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
     return w;
 }
 
-/* "55 A" and "25 V" or "25.2 V" for a model's current and voltage; "-"
+/* "55A" and "25V" or "25.2V" for a model's current and voltage; "-"
  * where it states none. */
 static void sp_amps(char *out, size_t n, const esc_model_t *m)
 {
     if (m->current_a == 0u) {
         snprintf(out, n, "-");
     } else {
-        snprintf(out, n, "%u A", (unsigned)m->current_a);
+        snprintf(out, n, "%uA", (unsigned)m->current_a);
     }
 }
 
@@ -96,9 +96,9 @@ static void sp_volts(char *out, size_t n, const esc_model_t *m)
     if (m->v_max_mv == 0u) {
         snprintf(out, n, "-");
     } else if (m->v_max_mv % 1000u == 0u) {
-        snprintf(out, n, "%u V", (unsigned)(m->v_max_mv / 1000u));
+        snprintf(out, n, "%uV", (unsigned)(m->v_max_mv / 1000u));
     } else {
-        snprintf(out, n, "%u.%u V", (unsigned)(m->v_max_mv / 1000u),
+        snprintf(out, n, "%u.%uV", (unsigned)(m->v_max_mv / 1000u),
                  (unsigned)(m->v_max_mv % 1000u / 100u));
     }
 }
@@ -218,7 +218,7 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
     } else {
         snprintf(right, sizeof(right), "%s", why);
     }
-    /* The right text in 260 px, or as wide as it is up to the family's
+    /* The right text in 260px, or as wide as it is up to the family's
      * column (SP_WHY_CELLS); the MANUAL tag left of it where both fit, and
      * the family in what is left, from 3 cells. */
     const int room = SP_WHY_CELLS * SP_CELL;
@@ -417,7 +417,7 @@ static void sp_setting_text(setting_id_t id, char *out, size_t n)
     }
     char v[24];
     ui_setting_value(id, v, sizeof(v));
-    snprintf(out, n, "%s %s", v, settings_def(id)->unit);
+    snprintf(out, n, "%s%s", v, settings_def(id)->unit);
 }
 
 /*

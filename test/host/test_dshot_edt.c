@@ -10,8 +10,8 @@
  *   - a zero-throttle frame clears the repeat count (Src/dshot.c:152-154);
  *   - the ESC arms itself after a second of zero input, counted from the
  *     first frame it hears (Src/main.c:1353-1356);
- *   - it restarts, forgetting everything, after 0.5 s without a frame while
- *     armed and 2 s while not (Src/main.c:1977-2002);
+ *   - it restarts, forgetting everything, after 0.5s without a frame while
+ *     armed and 2s while not (Src/main.c:1977-2002);
  *   - taking command 13 sends the status frame 0xE00 once, then voltage
  *     frames interleaved with speed (Src/dshot.c:271, 258-260).
  *
@@ -182,7 +182,7 @@ TEST_CASE(one_ask_at_the_start_of_a_run_never_reaches_am32)
     /*
      * What the bench did before: DSHOT_CMD_REPEATS frames of command 13 on
      * the edge into driving, then throttle, from a line that was silent.
-     * AM32 has not armed 10 ms after the line came alive, so it drops them,
+     * AM32 has not armed 10ms after the line came alive, so it drops them,
      * and nothing asks again.
      */
     am32_t esc;
@@ -235,7 +235,7 @@ TEST_CASE(an_esc_that_takes_the_first_ask_is_heard_on_it)
 {
     /* An ESC already armed when the run starts -- Bluejay, which takes
      * commands without arming, or an AM32 the bench left for less than its
-     * 0.5 s restart -- takes the first ask on its sixth repeat.  Its status
+     * 0.5s restart -- takes the first ask on its sixth repeat.  Its status
      * frame arrives before that ask has finished. */
     bench_t b;
     bench_init(&b, 0u);
@@ -357,7 +357,7 @@ TEST_CASE(the_retry_clock_survives_the_millisecond_wrap)
         }
         ++b.now_ms;
     }
-    /* Asks start at 0, 509, 1018, 1527, 2036, 2545 ms after the bind; the
+    /* Asks start at 0, 509, 1018, 1527, 2036, 2545ms after the bind; the
      * wrap falls between the second and the third. */
     CHECK_EQ(asks_seen, 6u);
 }
@@ -383,7 +383,7 @@ TEST_CASE(the_extended_units_are_the_documented_ones)
 {
     CHECK_EQ(dshot_edt_millivolts(0u), 0u);
     CHECK_EQ(dshot_edt_millivolts(1u), 250u);
-    CHECK_EQ(dshot_edt_millivolts(48u), 12000u);     /* 12.00 V */
+    CHECK_EQ(dshot_edt_millivolts(48u), 12000u);     /* 12.00V */
     CHECK_EQ(dshot_edt_millivolts(255u), 63750u);   /* the top count */
     CHECK_EQ(dshot_edt_amps(37u), 37u);
     CHECK_EQ(dshot_edt_amps(255u), 255u);

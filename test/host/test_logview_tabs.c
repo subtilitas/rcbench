@@ -162,7 +162,7 @@ static const log_viewer_io_t k_fc_io = {
 
 #define TAB_X(t)    LV_TAB_CX(TAB_POS(t))
 
-/* A pixel 6 px inside the left edge of the tab at position @p i. */
+/* A pixel 6px inside the left edge of the tab at position @p i. */
 #define TAB_EDGE(i) (LV_TAB_X0 + (i) * LV_TAB_PITCH + 6)
 
 /* A card in the target layout, behind the folder I/O, LOGS just opened. */
@@ -336,19 +336,19 @@ static int name_edge(const char *a, const char *b, int runs)
 TEST_CASE(the_card_name_ends_the_header_row_and_stops_short_of_prev)
 {
     /* The last letter differs: the difference is the name's right end,
-     * within one 10 px cell.  Without PREV and NEXT it ends at the list's
+     * within one 10px cell.  Without PREV and NEXT it ends at the list's
      * right edge, LV_HEAD_FAR. */
     int edge = name_edge("UNITEST", "UNITESX", 3);
     CHECK(edge >= LV_HEAD_FAR - 10 && edge < LV_HEAD_FAR);
     /* Exactly one page: still no PREV and NEXT. */
     edge = name_edge("UNITEST", "UNITESX", LOG_VIEWER_MAX_FILES);
     CHECK(edge >= LV_HEAD_FAR - 10 && edge < LV_HEAD_FAR);
-    /* With PREV and NEXT showing (more than 48 runs) it ends 8 px short
+    /* With PREV and NEXT showing (more than 48 runs) it ends 8px short
      * of PREV, at LV_HEAD_END. */
     edge = name_edge("UNITEST", "UNITESX", 150);
     CHECK(edge >= LV_HEAD_END - 10 && edge < LV_HEAD_END);
     /* The longest label, 11 characters, and the longest folder share the
-     * 352 px to PREV: the name's left end stays right of the folder's. */
+     * 352px to PREV: the name's left end stays right of the folder's. */
     edge = name_edge("ABCDEFGHIJK", "ABCDEFGHIJX", 150);
     CHECK(edge >= LV_HEAD_END - 10 && edge < LV_HEAD_END);
 }
@@ -372,7 +372,7 @@ TEST_CASE(the_tabs_switch_with_no_card)
             CHECK_EQ(g_list_calls, calls + 1);
             CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
             draw();
-            /* The selected tab's fill against the other two's, 6 px in
+            /* The selected tab's fill against the other two's, 6px in
              * from each tab's left edge. */
             const gfx_color_t on = gfx_pixel_get(&s_c, TAB_EDGE(TAB_POS(t)),
                                                  TAB_Y);

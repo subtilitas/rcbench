@@ -24,7 +24,7 @@ A card in the slot that holds NTFS (New Technology File System), a GPT (GUID par
 
 ![The file list](view:logs)
 
-The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and names the card by its volume label, `UNITEST`, at the right end of the row; a card without a label shows the name the card reports, or `SD CARD`. The list shows 7 rows at a time, each 48 px (about 7.2 mm) of the glass to tap; each row is one file with its size.
+The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and names the card by its volume label, `UNITEST`, at the right end of the row; a card without a label shows the name the card reports, or `SD CARD`. The list shows 7 rows at a time, each 48px (about 7.2mm) of the glass to tap; each row is one file with its size.
 
 | Tab | Folder | Holds |
 |---|---|---|
@@ -48,14 +48,14 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, a report standing alone by its own number, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
-- The scroll bar at the right edge, 56 px (about 8.4 mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
+- The scroll bar at the right edge, 56px (about 8.4mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
 - Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
 - A card put in, taken out or swapped while the panel runs is found by the next RESCAN, the next opening of LOGS, the next page or OPEN, and the next run's start, with no restart. A new card opens on its first page; an empty slot says `No card. Insert one and tap RESCAN.`.
 - Newest means the highest number in the name. The panel has no clock that survives a power cycle, so every file is dated 1980-01-01.
 - A run being written is not listed. Its number in another folder is.
-- A row takes a tap. A drag of more than 8 px on the rows scrolls the list and selects nothing.
+- A row takes a tap. A drag of more than 8px on the rows scrolls the list and selects nothing.
 
 ## What a run writes
 
@@ -83,7 +83,7 @@ Each folder has its own series: a new run takes one above the highest number in 
 
 Firmware 0.21.0 and older writes to the root and does not read `BENCH/LOGS` or `USER/LOGS`.
 
-A run is committed to the card every 20 rows or 1000 ms, whichever comes first. A power loss mid-run costs under 1.0 s of rows while the card keeps up, up to 84 rows, 4.20 s at 20 Hz, when it has stalled.
+A run is committed to the card every 20 rows or 1000ms, whichever comes first. A power loss mid-run costs under 1.0s of rows while the card keeps up, up to 84 rows, 4.20s at 20Hz, when it has stalled.
 
 The band reports what the card did to a run:
 
@@ -111,7 +111,7 @@ OPEN on a report standing alone shows its text: the file's name heads the panel,
 - A drag on the rows or on the scroll bar scrolls them. BACK returns to the list and frees the text; leaving LOGS frees it too.
 - A line ends at a line feed, at a carriage return and at a pair of both.
 - A file of 0 bytes shows `The file is empty.`
-- The view holds the first 32 KiB of a file. A longer file ends with `Only the first 32 kB are shown.`
+- The view holds the first 32KiB of a file. A longer file ends with `Only the first 32kB are shown.`
 - A report that cannot be opened stays on the list, and the footer says why, for example `Cannot open LIMIT044.TXT.`
 
 [Wi-Fi](wifi.md) downloads every report, the ones beside a CSV file included.
@@ -143,7 +143,7 @@ The header names the file, its rows, its duration and its sample rate. Each colu
 
 - One finger, `<` and `>` move the cursor. The line at the bottom right shows its time and sample.
 - Two fingers zoom: spread to zoom in, pinch to zoom out, move both to pan. The narrowest view is 8 samples, the widest the whole run.
-- With SETUP, PANEL, One finger pans on, a finger that moves more than 10 px drags a zoomed view sideways.
+- With SETUP, PANEL, One finger pans on, a finger that moves more than 10px drags a zoomed view sideways.
 - BACK returns to the import view.
 
 The rows are spaced evenly by row number. The labels under the plot are the file's time column, so a gap in the rows is a jump in the labels.
@@ -156,11 +156,11 @@ DELETE opens a question that names the file and its size. Only its own DELETE, p
 
 ## Card formats
 
-The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allocation Table): the whole card, or the first of the 4 partitions of an MBR (master boot record) that holds one of them. SDHC cards (4 GB to 32 GB) come as FAT32, SDXC cards (64 GB to 2 TB) as exFAT; both mount as they come.
+The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allocation Table): the whole card, or the first of the 4 partitions of an MBR (master boot record) that holds one of them. SDHC cards (4GB to 32GB) come as FAT32, SDXC cards (64GB to 2 TB) as exFAT; both mount as they come.
 
 - Not supported: GPT (GUID Partition Table; GUID: globally unique identifier) partitioning, volumes over 2 TiB, NTFS, ext4, HFS+ and APFS. Such a card does not mount. The panel never formats a card.
 - To format a card, use the SD Association's SD Memory Card Formatter, or on a computer FAT32 or exFAT on an MBR (on macOS: Scheme `Master Boot Record`).
-- A file of 4 GiB and more on an exFAT card is listed with its size, for example `8.00 GB`. OPEN reads files up to 2 GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2 GB or larger. Not opened.` [Wi-Fi](wifi.md) downloads it.
+- A file of 4GiB and more on an exFAT card is listed with its size, for example `8.00GB`. OPEN reads files up to 2GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2GB or larger. Not opened.` [Wi-Fi](wifi.md) downloads it.
 
 ## Related pages
 

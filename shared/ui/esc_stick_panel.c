@@ -336,7 +336,7 @@ bool sp_warn_gated(void)
 /*
  * Whether the warning shows every before-power step whole: under its
  * lines (sp_draw_warning(): five, the profile, the supply and the
- * unverified line from the panel's top + 68 at 22 px, then the steps'
+ * unverified line from the panel's top + 68 at 22px, then the steps'
  * label), each
  * step wrapped to two lines, and room kept for the line about later steps,
  * above HOLD TO RUN.

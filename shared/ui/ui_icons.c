@@ -43,7 +43,7 @@ void ui_icon_motor(gfx_canvas_t *c, int x, int y, int size,
 
     ring(c, cx, cy, r, 2, color);
     for (int i = 0; i < 3; ++i) {
-        float a = (float)i * 2.0944f - 1.5708f;       /* 120 deg apart, one up */
+        float a = (float)i * 2.0944f - 1.5708f;       /* 120deg apart, one up */
         int tx = cx + (int)(cosf(a) * (float)(r - 6));
         int ty = cy + (int)(sinf(a) * (float)(r - 6));
         gfx_thick_line(c, cx, cy, tx, ty, size / 9, color);
@@ -177,7 +177,7 @@ void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size,
 
 /*
  * A cell with its terminal and three bars.  Three rather than four because at
- * 30 px a fourth bar is two pixels wide and reads as noise.
+ * 30px a fourth bar is two pixels wide and reads as noise.
  */
 void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 {
@@ -200,7 +200,7 @@ void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
  */
 void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 {
-    const int r = (size - 1) / 2;          /* 2r + 1 px across, in the box */
+    const int r = (size - 1) / 2;          /* 2r + 1px across, in the box */
     gfx_draw_circle(c, x, y, r, color);
     gfx_draw_circle(c, x, y, r / 4, color);
     /* The heavy spot, up and to the right. */

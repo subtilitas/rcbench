@@ -1,7 +1,7 @@
 /**
  * @file inj_rig.h
  * @brief The touch injector's core driven as the RP2350 build drives it,
- * with a simulated panel that reads the emulator every 10 ms exactly as
+ * with a simulated panel that reads the emulator every 10ms exactly as
  * firmware/panel/components/gt911/gt911.c does: the status byte, the points
  * when the status says ready, then the acknowledge.
  *
@@ -154,7 +154,7 @@ static inline const char *reply_with(const char *prefix)
     return NULL;
 }
 
-/** @brief Run @p ms milliseconds: the injector every 1 ms, the panel every
+/** @brief Run @p ms milliseconds: the injector every 1ms, the panel every
  *  panel_period ms while it is on. */
 static inline void run(uint32_t ms)
 {
@@ -207,7 +207,7 @@ static inline void confirm_ok(void)
     nreplies = 0;
 }
 
-/** @brief An active injector with the panel polling every 10 ms. */
+/** @brief An active injector with the panel polling every 10ms. */
 static inline void active(uint32_t t0)
 {
     fresh(t0);

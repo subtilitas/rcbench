@@ -5,13 +5,13 @@
 # talking through a read and a write callback, so the host suite runs them
 # against a fake that answers as each part does.  The schedule's move
 # capture judges moves by servo_move's rules.  sense_svc.c is what the
-# IOmcu's core 1 runs each 1 ms tick: the schedule driven by core 0's
+# IOmcu's core 1 runs each 1ms tick: the schedule driven by core 0's
 # orders, and a snapshot of what it read.  Both images compile them,
 # through shared/outputs, whose SENSE page validates an INA228 set-up with
 # ina228_calibrate() and publishes the snapshot; the IOmcu runs them.
 #
 # sense_trace_feed.c (core 1's feed) and sense_trace.c (core 0's side) turn
-# CH1's 1 ms samples into text lines for a debug build of the IOmcu
+# CH1's 1ms samples into text lines for a debug build of the IOmcu
 # (its SENSE_TRACE option).  The panel does not compile them; an IOmcu
 # image built without the option does not link them.
 set(SRCS sense_bus.c ina228.c ina3221.c as5600.c sense_sched.c sense_sched_cap.c

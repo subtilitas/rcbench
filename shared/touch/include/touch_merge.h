@@ -93,7 +93,7 @@ typedef struct {
 } touch_merge_t;
 
 /**
- * @brief Forget both sets: no contacts, the injector attached at 0 ms.
+ * @brief Forget both sets: no contacts, the injector attached at 0ms.
  * @param m The merge; NULL does nothing.
  */
 void touch_merge_reset(touch_merge_t *m);

@@ -3,7 +3,7 @@
  * @brief The panel's layout header: the figures every screen reads, and the
  *        relations between them that the screens assume.
  *
- * The values are the 1024 x 600 px panel's.  A panel of another size changes
+ * The values are the 1024 x 600px panel's.  A panel of another size changes
  * the figures here and in the same commit; the relations hold for any size.
  *
  * SPDX-License-Identifier: MIT

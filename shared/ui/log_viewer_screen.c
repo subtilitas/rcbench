@@ -123,27 +123,19 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
     const float lo_f = (float)lo;
     const float hi_f = (float)hi;
     const bool has_unit = unit && unit[0];
-    /* One decimal below 1000, then the widths decide: a text wider than the
-     * box drops the decimal, and then the space before the unit. */
+    /* One decimal below 1000, then the width decides: a text wider than
+     * the box drops the decimal. */
     int decimals = (fabsf(lo_f) >= 999.95f || fabsf(hi_f) >= 999.95f) ? 0 : 1;
-    bool space = has_unit;
     for (;;) {
         char a[16];
         char b[16];
         ui_fmt(a, sizeof(a), lo_f, decimals);
         ui_fmt(b, sizeof(b), hi_f, decimals);
-        snprintf(out, n, "%s..%s%s%s", a, b, space ? " " : "",
-                 has_unit ? unit : "");
-        if (gfx_text_cells(out) <= (int)LOG_RANGE_CELLS) {
+        snprintf(out, n, "%s..%s%s", a, b, has_unit ? unit : "");
+        if (gfx_text_cells(out) <= (int)LOG_RANGE_CELLS || decimals == 0) {
             return;
         }
-        if (decimals > 0) {
-            decimals = 0;
-        } else if (space) {
-            space = false;
-        } else {
-            return;
-        }
+        decimals = 0;
     }
 }
 

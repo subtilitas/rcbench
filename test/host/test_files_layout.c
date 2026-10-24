@@ -73,7 +73,7 @@ TEST_CASE(nothing_that_acts_lies_under_the_alert_band)
     while (fh_run(&g_h)) {
         settle();
     }
-    /* And every control ends 4 px above it. */
+    /* And every control ends 4px above it. */
     CHECK(FS_SPOT_FOOT_BOT + 4 <= UI_BODY_H - UI_ALERT_H);
     CHECK(FS_SPOT_CLOSE_CY + 28 + 4 <= UI_BODY_H - UI_ALERT_H);
 }
@@ -94,7 +94,7 @@ TEST_CASE(every_label_fits_its_button_in_both_languages)
         CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_NEXT), 88, 48, 4));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(CANCEL), 300, 56, 4));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(FM_CLOSE), 300, 56, 4));
-        /* LOGS' FILES and WI-FI, 100 px. */
+        /* LOGS' FILES and WI-FI, 100px. */
         CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_FILES), 100, 52, 8));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_WIFI), 100, 52, 8));
         /* A row's kind and its state word in its 8 x 16 line. */

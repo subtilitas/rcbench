@@ -622,7 +622,7 @@ TEST_CASE(each_way_a_join_fails_is_named)
     CHECK(!wa_radio(&g_w));
 }
 
-/* A join in @p mode, started at 0 ms. */
+/* A join in @p mode, started at 0ms. */
 static void joining(wa_mode_t mode)
 {
     wa_init(&g_w);
@@ -717,7 +717,7 @@ TEST_CASE(a_join_time_out_after_an_auth_drop_refuses_the_password)
         CHECK(!wa_on_drop(&g_w, false));
         CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
     }
-    /* The 3rd at WA_JOIN_MS - 1 ms ends the join itself. */
+    /* The 3rd at WA_JOIN_MS - 1ms ends the join itself. */
     joining(WA_MODE_FETCH);
     CHECK(wa_on_drop(&g_w, true));
     CHECK(wa_on_drop(&g_w, true));

@@ -28,9 +28,9 @@ extern "C" {
 #define BENCH_CHW_CHANNELS 12u
 
 /**
- * @brief One 50 ms window of every INA3221 channel, from SENSE_WIN_A and
- *        SENSE_WIN_B (protocol 4.25), for the log's columns per watched target:
- *        channel c = 3 a + CHn - 1 of the part at 0x40 + a.
+ * @brief One 50ms window of every INA3221 channel, from SENSE_WIN_A and
+ *        SENSE_WIN_B (protocol 4.25), for the log's columns per watched
+ *        target: channel c = 3 a + CHn - 1 of the part at 0x40 + a.
  *
  * Bit c of ok says channel c's window holds readings and was read under the
  * window number window; of no_current that it holds no current sample, of
@@ -83,7 +83,7 @@ typedef struct {
      *
      * The sag floor is the one peak that cannot start at the live reading
      * when there is no live reading: a run whose first samples arrive before
-     * the first voltage does would keep a floor of 0 V and reject every real
+     * the first voltage does would keep a floor of 0V and reject every real
      * reading after it, and report a collapsed pack for the whole run.
      */
     bool     sag_seeded;
@@ -106,7 +106,7 @@ typedef struct {
     bool     clipped;
 
     /*
-     * One 50 ms window of the INA3221's channels, from SERVO_WIN (CH1) and
+     * One 50ms window of the INA3221's channels, from SERVO_WIN (CH1) and
      * SERVO_SENSE, for the log: servo_new while it has not been written to
      * a row, so each window reaches the log once, keyed by its number.
      * Per channel the mean and highest current in mA, signed, and the
@@ -148,7 +148,7 @@ static inline bool bench_state_simulated(const bench_state_t *b)
  * @brief Decode a BENCH page into @p b.
  *
  * A short read fills what arrived and leaves the rest alone, so a host that
- * polls the first four registers at 20 Hz and the whole page once a second
+ * polls the first four registers at 20Hz and the whole page once a second
  * gets a coherent state either way.
  *
  * @param b      The state the registers are decoded into.
@@ -172,7 +172,7 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
  *        page @p regs built from it -- charge and energy 0 and
  *        LINK_BN_TOTALS_OK clear -- and every other register stays.
  *
- * For the IOmcu, on the edge into driving: it rebuilds the page at its 50 Hz
+ * For the IOmcu, on the edge into driving: it rebuilds the page at its 50Hz
  * sample, and until the next one a panel reading the page would see the last
  * run's totals marked as this run's.  Either pointer may be NULL.
  *
@@ -271,7 +271,7 @@ bool bench_state_ina_current(const bench_state_t *b, float *out);
 #define BENCH_FINE_WH_TOL  0.2f
 
 /**
- * @brief The most BENCH's charge (1 mAh) and energy (0.1 Wh) registers carry: a
+ * @brief The most BENCH's charge (1mAh) and energy (0.1Wh) registers carry: a
  *        run past them reads the ceiling there, and only SENSE's 32-bit totals
  *        go on.
  */
@@ -280,16 +280,16 @@ bool bench_state_ina_current(const bench_state_t *b, float *out);
 
 /**
  * @brief With LINK_BN_TOTALS_OK, the INA228's totals in the SENSE page's finer
- *        steps -- @p charge_cmah in 0.01 mAh, @p energy_cwh in 0.01 Wh, read in
- *        the same poll -- over BENCH's 1 mAh and 0.1 Wh, each where it agrees
+ *        steps -- @p charge_cmah in 0.01mAh, @p energy_cwh in 0.01Wh, read in
+ *        the same poll -- over BENCH's 1mAh and 0.1Wh, each where it agrees
  *        with BENCH's within the tolerance above, or where BENCH reads its
  *        ceiling and the finer figure is at or above it.
  *
  * Nothing changes without TOTALS_OK.
  *
  * @param b           The state whose totals are set.
- * @param charge_cmah The INA228 charge in 0.01 mAh.
- * @param energy_cwh  The INA228 energy in 0.01 Wh.
+ * @param charge_cmah The INA228 charge in 0.01mAh.
+ * @param energy_cwh  The INA228 energy in 0.01Wh.
  */
 void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
                              uint32_t energy_cwh);
@@ -339,9 +339,9 @@ typedef struct {
 /**
  * @brief How long into a run the INA228's totals are not taken, in seconds.
  *
- * An IOmcu builds the BENCH page from its 50 Hz sample, so one that does not
+ * An IOmcu builds the BENCH page from its 50Hz sample, so one that does not
  * clear the page on the arm (bench_state_run_starts()) can carry the last run's
- * totals with LINK_BN_TOTALS_OK for up to 20 ms after it; the panel counts on
+ * totals with LINK_BN_TOTALS_OK for up to 20ms after it; the panel counts on
  * its own until five such samples have passed.
  */
 #define BENCH_TOTALS_SETTLE_S 0.1f

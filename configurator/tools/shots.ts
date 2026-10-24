@@ -2,7 +2,7 @@
 //
 //   node tools/shots.ts <output directory>
 //
-// Writes one full-page PNG per width (360 px, 1280 px), theme (light, dark),
+// Writes one full-page PNG per width (360px, 1280px), theme (light, dark),
 // language (en, de) and selection (base, servo, full): 24 files.
 
 import { mkdirSync } from 'node:fs';

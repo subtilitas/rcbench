@@ -187,7 +187,7 @@ TEST_CASE(a_dial_drag_that_leaves_by_the_band_ends_at_the_edge)
     CHECK(k.value_us != held);
     const uint16_t turned = servo_screen_commanded();
 
-    /* 190 px right of the shaft: outside the arc, which ends at 174 px. */
+    /* 190px right of the shaft: outside the arc, which ends at 174px. */
     finger(FEED_LONE, SV_SHAFT_P_X + 190, SV_SHAFT_P_Y);
     const servo_cmd_t d = servo_took();
     glide(FEED_LONE, SV_SHAFT_P_X + 150, SV_SHAFT_P_Y, 8);
@@ -465,7 +465,7 @@ TEST_CASE(a_release_made_for_the_finger_activates_nothing_but_stop)
     to_overview();
     feed_reset();
 
-    /* A tile, 90 px under the band, carried into the band in one report. */
+    /* A tile, 90px under the band, carried into the band in one report. */
     finger(FEED_LONE, 110, UI_BAND_H + 90);
     finger(FEED_LONE, 110, UI_BAND_H - 8);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
@@ -573,7 +573,7 @@ TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
     motor_screen_set_armed(false);
 }
 
-/* SERVO: the strip's SETTINGS and LIVE tabs lie 18 px under the band.
+/* SERVO: the strip's SETTINGS and LIVE tabs lie 18px under the band.
  * Carried into it, they are released for the screen where they were
  * pressed, and neither switches the task. */
 TEST_CASE(servo_strip_tabs_carried_into_the_band_do_nothing)

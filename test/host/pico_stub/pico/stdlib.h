@@ -21,7 +21,7 @@ static inline absolute_time_t get_absolute_time(void)
 }
 
 /* As the SDK's: the millisecond count truncated to 32 bits, so it wraps at
- * 2^32 ms (49.7 days). */
+ * 2^32ms (49.7 days). */
 static inline uint32_t to_ms_since_boot(absolute_time_t t)
 {
     return (uint32_t)(t / 1000u);

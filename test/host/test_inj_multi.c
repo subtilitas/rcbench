@@ -2,7 +2,7 @@
  * The touch injector with several contacts at once: id= on tap, hold, swipe
  * and release, the contacts command, and the GT911 frames that carry up to
  * five contacts, each with its own track ID, per report period.  The
- * simulated panel reads every 10 ms as the panel does (inj_rig.h).
+ * simulated panel reads every 10ms as the panel does (inj_rig.h).
  *
  * The station's case: a drag under way on one contact while a second taps
  * DISARM or STOP; and a two-finger pinch for the LOGS plot's zoom.
@@ -218,7 +218,7 @@ TEST_CASE(a_frame_carries_five_points)
 /*
  * The station's step: a drag on contact 0 (the protocol-1 swipe), and a tap
  * on contact 1 while it runs.  Every frame read while the tap is down holds
- * both contacts; the drag keeps its pace and its 100 px step.
+ * both contacts; the drag keeps its pace and its 100px step.
  */
 TEST_CASE(a_tap_on_a_second_contact_during_a_drag)
 {
@@ -264,7 +264,7 @@ TEST_CASE(a_tap_on_a_second_contact_during_a_drag)
         }
     }
     CHECK(tap_seen && tap_gone);
-    CHECK(with_tap >= 9 && with_tap <= 12);   /* 100 ms of 10 ms frames */
+    CHECK(with_tap >= 9 && with_tap <= 12);   /* 100ms of 10ms frames */
     CHECK_EQ(seen[nseen - 1].n, 0);
 }
 
@@ -331,7 +331,7 @@ TEST_CASE(a_pinch_moves_both_contacts_every_frame)
     CHECK_EQ(seen[nseen - 1].n, 0);
 }
 
-/* Five holds of 100 ms to 500 ms: the frame holds five, then one fewer at
+/* Five holds of 100ms to 500ms: the frame holds five, then one fewer at
  * each deadline, ids and points intact. */
 TEST_CASE(five_contacts_lift_one_by_one)
 {

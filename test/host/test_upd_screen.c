@@ -417,7 +417,7 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     g_v.got = UPD_GOT_TIMEOUT;
     g_v.budget_s = 30u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "No response within 30 s.");
+    CHECK_STR_EQ(a, "No response within 30s.");
     g_v.got = UPD_GOT_REFUSED;
     g_v.status = 503;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
@@ -473,12 +473,12 @@ TEST_CASE(a_running_job_says_its_step_and_the_time_left)
     g_v.left_s = 29u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "Connecting to workshop");
-    CHECK_STR_EQ(b, "29 s left");
+    CHECK_STR_EQ(b, "29s left");
     g_v.phase = UPD_PH_ASKING;
     g_v.left_s = 0u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "Checking GitHub.");
-    CHECK_STR_EQ(b, "0 s left");
+    CHECK_STR_EQ(b, "0s left");
     /* None ran: nothing to say. */
     base_view();
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
@@ -948,7 +948,7 @@ TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
 
 /*
  * The card of UPDATES and of FILES & UPDATE breaks a text into lines of
- * its 352 px, 44 cells.  A text no view draws declares 88 cells in
+ * its 352px, 44 cells.  A text no view draws declares 88 cells in
  * ui_text.def, two of those lines, or fewer where another screen draws it
  * on one line; here each is held to the two lines as the card breaks it.
  */

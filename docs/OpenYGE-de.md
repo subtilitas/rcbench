@@ -30,7 +30,7 @@ alles, was auf dieser Seite unsicher ist.
 | Signalisierung | UART (Universal Asynchronous Receiver-Transmitter), 115200 Baud, 8N1 |
 | Bytereihenfolge | durchgehend Little-Endian |
 | Topologie | Half Duplex, ein Master und bis zu 127 adressierbare ESCs |
-| Rate | etwa 20 Hz Telemetrie |
+| Rate | etwa 20Hz Telemetrie |
 
 Der Master hört seine eigene Sendung mit: ein Sender verwirft so viele
 empfangene Bytes, wie er gesendet hat. Die Verbindung ist eine einzelne
@@ -42,15 +42,15 @@ Echo, oder einen Soft-UART in PIO (Programmable Input/Output). Den Panel-Link
 kann es nicht mitbenutzen; der ist CAN (Controller Area Network); siehe [Der
 Link](Link-de.md).
 
-Zeitbedarf bei 115200 8N1, 86,81 µs je Byte:
+Zeitbedarf bei 115200 8N1, 86,81µs je Byte:
 
 | | |
 | --- | ---: |
-| 34-Byte-Telemetrieantwort | 2,95 ms |
-| 12-Byte-Anfrage | 1,04 ms |
-| Ein Poll, beide Richtungen | 3,99 ms plus die Umschaltzeit des ESC |
+| 34-Byte-Telemetrieantwort | 2,95ms |
+| 12-Byte-Anfrage | 1,04ms |
+| Ein Poll, beide Richtungen | 3,99ms plus die Umschaltzeit des ESC |
 
-Das sind 8 % der Leitung bei einem 50-ms-Zyklus.
+Das sind 8% der Leitung bei einem 50-ms-Zyklus.
 
 ---
 
@@ -128,10 +128,10 @@ v3-Telemetrieframe hat 34 Bytes, ein Legacy-Frame 32.
 | ---: | ---: | ---: | --- | --- | --- |
 | 0 | 6 | 1 | `reserved` | | |
 | 1 | 7 | u8 | `temperature` | °C + 40 | `°C = v − 40`, −40…215 |
-| 2 | 8 | u16 | `voltage` | 10 mV | `V = v / 100` |
-| 4 | 10 | u16 | `current` | 10 mA | `A = v / 100` |
+| 2 | 8 | u16 | `voltage` | 10mV | `V = v / 100` |
+| 4 | 10 | u16 | `current` | 10mA | `A = v / 100` |
 | 6 | 12 | u16 | `consumption` | mAh | unverändert |
-| 8 | 14 | u16 | `rpm` | 10 eRPM (elektrische Umdrehungen pro Minute) | `eRPM = v × 10`, siehe unten |
+| 8 | 14 | u16 | `rpm` | 10eRPM (elektrische Umdrehungen pro Minute) | `eRPM = v × 10`, siehe unten |
 | 10 | 16 | i8 | `pwm` | % | Ausgangstastgrad, vorzeichenbehaftet |
 | 11 | 17 | i8 | `throttle` | % | Eingangssollwert, vorzeichenbehaftet |
 | 12 | 18 | u16 | `bec_voltage` | mV | unverändert |
@@ -141,7 +141,7 @@ v3-Telemetrieframe hat 34 Bytes, ein Legacy-Frame 32.
 | 18 | 24 | u8 | `cap_temp` | °C + 40 | Kondensatorpaket |
 | 19 | 25 | u8 | `aux_temp` | °C + 40 | |
 | 20 | 26 | u8 | `status2` | | undokumentiert; mitführen, nicht interpretieren |
-| 21 | 27 | u8 | `reserved1` | | möglicherweise ein High-Byte des Verbrauchs über 65 Ah ° |
+| 21 | 27 | u8 | `reserved1` | | möglicherweise ein High-Byte des Verbrauchs über 65Ah ° |
 | 22 | 28 | u16 | `pidx` | | Parameterindex, Abschnitt 5 |
 | 24 | 30 | u16 | `pdata` | | Parameterwert, Abschnitt 5 |
 
@@ -153,8 +153,8 @@ Ausrichtung Undefined Behaviour sind.
 
 ### Skalierung von `rpm`
 
-Das Feld ist als „0.1 eRPM“ beschrieben, der Referenzcode multipliziert aber
-mit zehn. Multiplizieren ist hier die Annahme: 65535 × 10 = 655 350 eRPM ist
+Das Feld ist als „0.1eRPM“ beschrieben, der Referenzcode multipliziert aber
+mit zehn. Multiplizieren ist hier die Annahme: 65535 × 10 = 655 350eRPM ist
 eine plausible Obergrenze, 6 553 nicht. Messen (Abschnitt 8).
 
 Die mechanische Drehzahl in RPM (Umdrehungen pro Minute) braucht die Polzahl,
@@ -177,7 +177,7 @@ indem er jedes Paar zwischenspeichert, Parameter 0 (die Parameteranzahl)
 liest und die Tabelle erst dann als vollständig behandelt, wenn jeder Index
 `0 … count−1` gesehen wurde.
 
-Bei 20 Hz und 32 Parametern dauert das etwa 1,6 s. Als Fortschritt anzeigen;
+Bei 20Hz und 32 Parametern dauert das etwa 1,6s. Als Fortschritt anzeigen;
 eine unvollständige Tabelle nie als die Einstellungen des ESC ausgeben.
 
 - Solange Schreibvorgänge offen sind, keine zwischengespeicherten Werte mehr
@@ -261,7 +261,7 @@ drei in der Referenz falsch.
 | # | Einstellung | Bedeutung |
 | ---: | --- | --- |
 | 8 | Cut-off type | an der Unterspannungsgrenze: `0` nichts, `1` Leistung allmählich reduzieren, `2` Leistung abschalten |
-| 9 | Cut-off voltage per cell | Offset mit `0` = 2,9 V; die Schrittweite ist nicht angegeben, 0,1 V je Zähler ist die Annahme ° |
+| 9 | Cut-off voltage per cell | Offset mit `0` = 2,9V; die Schrittweite ist nicht angegeben, 0,1V je Zähler ist die Annahme ° |
 | 27 | Current limit | ° |
 | 16 | mAh alarm limit | Verbrauch, bei dem der ESC eine Telemetriewarnung auslöst |
 
@@ -269,7 +269,7 @@ drei in der Referenz falsch.
 
 | # | Einstellung | Bedeutung |
 | ---: | --- | --- |
-| 2 | BEC voltage | geregelte Ausgangsspannung des BEC (Battery Eliminator Circuit) zu Empfänger und Servos, in 0,1 V. Ein Wert über der Nennspannung der Servos beschädigt sie |
+| 2 | BEC voltage | geregelte Ausgangsspannung des BEC (Battery Eliminator Circuit) zu Empfänger und Servos, in 0,1V. Ein Wert über der Nennspannung der Servos beschädigt sie |
 
 #### Kalibrierung des Eingangssignals
 
@@ -392,7 +392,7 @@ hinter Rauschen mit einem plausiblen Sync ankommt.
 
 Keines der beiden Boards führt das Protokoll aus: das IOmcu-Image bindet das
 Modul ein, das Panel-Image nicht, und nichts ruft es auf. Der Entwurf legt es auf den
-IOmcu: eine Anfrage-Antwort-Schleife mit 20 Hz, einer
+IOmcu: eine Anfrage-Antwort-Schleife mit 20Hz, einer
 Umschaltzeit im Mikrosekundenbereich und einem Timeout, das feuert, ob Bytes
 kommen oder nicht. Das Panel sähe das Ergebnis als `bench_state` über das
 Page-Protokoll; kein OpenYGE-Frame überquerte den Panel-Link. Ein Gaskommando

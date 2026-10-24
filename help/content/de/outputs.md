@@ -28,10 +28,10 @@ Jeder abgehakte Pin ist ein Slot der OUTPUTS-Seite des IOmcu, in Pin-Reihenfolge
 | Protokoll | Signal | Pins |
 |---|---|---|
 | OFF | bindet nichts; zeigt die ganze Bindung | 0 |
-| SERVO PWM | PWM (Pulsweitenmodulation) mit 50 Hz, für ein Servo oder ein Ruder | bis 8 |
-| MOTOR PWM | derselbe Puls mit 50 Hz, für einen ESC; von Leerlaufpuls bis Vollpuls | bis 8 |
-| PPM | PPM (Pulspositionsmodulation): 8 Kanäle auf einem Pin mit 40 Hz | 1 |
-| DSHOT300, DSHOT600 | digitaler DShot-Throttle mit 300 oder 600 kbit/s | bis 8 |
+| SERVO PWM | PWM (Pulsweitenmodulation) mit 50Hz, für ein Servo oder ein Ruder | bis 8 |
+| MOTOR PWM | derselbe Puls mit 50Hz, für einen ESC; von Leerlaufpuls bis Vollpuls | bis 8 |
+| PPM | PPM (Pulspositionsmodulation): 8 Kanäle auf einem Pin mit 40Hz | 1 |
+| DSHOT300, DSHOT600 | digitaler DShot-Throttle mit 300 oder 600kbit/s | bis 8 |
 | DSHOT300 BIDIR, DSHOT600 BIDIR | DShot mit Drehzahl-Telemetrie vom ESC auf derselben Leitung | bis 8 |
 
 Ein Servokanal zentriert, wenn nichts ihn ansteuert; ein Motorkanal stoppt. Der Puls kann nicht sagen, was am Pin hängt, also sagt es das Protokoll. Der Throttle von MOTOR & ESC treibt jeden Kanal, der als MOTOR PWM oder mit einem DShot-Eintrag gebunden ist, und lässt die Servokanäle in Ruhe. PPM braucht 8 Kanäle; ein Prüfstand mit gebundenem PPM hat für nichts anderes Platz.
@@ -42,9 +42,9 @@ Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Pins abgehakt 
 
 ## Leerlaufpuls und Vollpuls
 
-Ein MOTOR-PWM-Kanal sendet 0 % Throttle als Leerlaufpuls und 100 % als Vollpuls, ab Werk 1000 us und 2000 us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10 us: Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us. Ein SERVO-PWM-Kanal behält 1000 bis 2000 us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300 ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
+Ein MOTOR-PWM-Kanal sendet 0% Throttle als Leerlaufpuls und 100% als Vollpuls, ab Werk 1000us und 2000us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10us: Leerlaufpuls 800 bis 1600us, Vollpuls 1400 bis 2400us. Ein SERVO-PWM-Kanal behält 1000 bis 2000us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
 
-Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012 us sendet, 980 us und 2020 us.
+Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012us sendet, 980us und 2020us.
 
 ## Was eine Pin-Zelle zeigt
 
@@ -80,7 +80,7 @@ Die offene Protokollliste zeigt einen Eintrag PROG-PORT je Programmierport, den 
 | Zeile | Zeigt und tut |
 |---|---|
 | PIN | `PIN GP13`, `PIN WÄHLEN`, `PIN GP14 ABGELEHNT` oder `KEIN PIN BEKANNT`; ein Tipp öffnet [PICK A PIN](picker.md) auf dem Port, wo ein Tipp auf einen Pin ihn setzt |
-| FUNKTION | was der Pin trägt, solange keine Programmiersitzung ihn hält; ein Tipp öffnet die Liste. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin; DSHOT150, DSHOT300 und DSHOT600 (IOmcu ab 4.28) senden DShot mit dem Gas von MOTOR & ESC, ein Frame alle 1 ms, solange für das Gas ARMED, auf jedem freien Pin |
+| FUNKTION | was der Pin trägt, solange keine Programmiersitzung ihn hält; ein Tipp öffnet die Liste. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin; DSHOT150, DSHOT300 und DSHOT600 (IOmcu ab 4.28) senden DShot mit dem Gas von MOTOR & ESC, ein Frame alle 1ms, solange für das Gas ARMED, auf jedem freien Pin |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSOREN überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS oder PORT n: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt |
 | PORT-PWM | EIN oder AUS: der Puls des Ports, der das Ziel des Testers ist |
@@ -118,7 +118,7 @@ Jeder Haken wird sofort geschrieben. Danach liest das Panel die Seiten des IOmcu
 |---|---|
 | `NICHT GESCHRIEBEN` | seit dem Start des Panels nichts geschrieben |
 | `GESCHRIEBEN` | der IOmcu hat das Schreiben bestätigt |
-| `KEINE VERBINDUNG` | ein Austausch bekam binnen 1000 ms keine Antwort, oder der Link steht nicht |
+| `KEINE VERBINDUNG` | ein Austausch bekam binnen 1000ms keine Antwort, oder der Link steht nicht |
 | `ABGELEHNT` | der IOmcu hat abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei ARMED oder eine Frame Rate, die er nicht zurücksetzen konnte |
 
 Ein IOmcu mit Protokoll 4.10 oder neuer übernimmt die Bindung als Ganzes: `KEINE VERBINDUNG` und `ABGELEHNT` lassen die gültige Bindung, wie sie war.
@@ -127,11 +127,11 @@ Ein IOmcu mit Protokoll 4.10 oder neuer übernimmt die Bindung als Ganzes: `KEIN
 
 ![Die zuletzt gelesene Bindung nach einem gescheiterten Lesen](view:outputs-unread)
 
-Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange eine Seite nicht gelesen wurde, behält der Bildschirm die zuletzt gelesene Bindung, gedimmt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.`. Ein Tipp auf einen Pin tut nichts, hier und auf PICK A PIN. Das Panel liest bei jedem Link-Aufbau und alle 500 ms erneut.
+Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange eine Seite nicht gelesen wurde, behält der Bildschirm die zuletzt gelesene Bindung, gedimmt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.`. Ein Tipp auf einen Pin tut nichts, hier und auf PICK A PIN. Das Panel liest bei jedem Link-Aufbau und alle 500ms erneut.
 
 ![Seiten, die keine Bindung beschreiben](view:outputs-odd)
 
-Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` an. 2 s gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2 s oder das Verlassen des Bildschirms bricht das Halten ab.
+Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` an. 2s gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2s oder das Verlassen des Bildschirms bricht das Halten ab.
 
 ## Der IOmcu behält die Bindung
 

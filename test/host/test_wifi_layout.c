@@ -34,7 +34,7 @@
 
 #define W UI_PANEL_W
 
-/** @brief One frame at 39 Hz, and enough of them for the 2 s hold. */
+/** @brief One frame at 39Hz, and enough of them for the 2s hold. */
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
 
@@ -134,8 +134,8 @@ static void staged(wifi_offer_t offer, wifi_gate_t gate)
 
 /*
  * Every control is UI_TAP_MIN or taller and wider, the gap between two
- * neighbours is 8 px or more, and the lowest of each view ends at
- * WF_FOOT, 4 px above the alert band, or higher.
+ * neighbours is 8px or more, and the lowest of each view ends at
+ * WF_FOOT, 4px above the alert band, or higher.
  */
 TEST_CASE(the_spots_are_a_finger_tall_and_end_above_the_alert_band)
 {
@@ -182,8 +182,8 @@ static void setup_question(void)
 }
 
 /**
- * @brief Taps 2 px inside each corner of a @p w x @p h button at
- *        (@p x, @p y) ask for @p want; taps 3 px outside each edge ask for
+ * @brief Taps 2px inside each corner of a @p w x @p h button at
+ *        (@p x, @p y) ask for @p want; taps 3px outside each edge ask for
  *        none of it.
  * @param set  The view's set-up, run before each tap.
  * @param x    Left edge.
@@ -227,7 +227,7 @@ TEST_CASE(every_button_acts_inside_and_not_beside_its_rectangle)
           WIFI_REQ_DISCARD);
 }
 
-/** @brief A press held at (@p x, @p y) for the 2 s hold, then lifted.
+/** @brief A press held at (@p x, @p y) for the 2s hold, then lifted.
  *  @return what the screen asked for */
 static unsigned hold_at(int x, int y)
 {
@@ -240,9 +240,9 @@ static unsigned hold_at(int x, int y)
 }
 
 /*
- * A row opens the password keyboard from 2 px inside its corners and not
- * from the 4 px between two rows; HIDDEN NETWORK opens the name keyboard
- * and CANCEL closes the list where they are drawn; HOLD 2 s: INSTALL
+ * A row opens the password keyboard from 2px inside its corners and not
+ * from the 4px between two rows; HIDDEN NETWORK opens the name keyboard
+ * and CANCEL closes the list where they are drawn; HOLD 2s: INSTALL
  * installs from its corners and not from beside them.
  */
 TEST_CASE(every_scan_row_and_the_hold_act_where_they_are_drawn)
@@ -397,7 +397,7 @@ static void pose(view_id_t id, ui_lang_t lang)
 
 /*
  * No view paints a pixel on the body rows from WF_FOOT down: the alert
- * band and its 4 px stay the router's, in English and in German.
+ * band and its 4px stay the router's, in English and in German.
  */
 TEST_CASE(nothing_lies_under_the_alert_band)
 {
@@ -436,10 +436,10 @@ static int not_of(gfx_rect_t r, gfx_color_t col)
 }
 
 /*
- * The tallest card, every line at once, ends 16 px or more above the
+ * The tallest card, every line at once, ends 16px or more above the
  * card's foot; the question's longest sentences end above its buttons; the
- * button labels fit their buttons in 10 x 20 with 8 px each side, the row
- * labels their 240 px; in English and German.
+ * button labels fit their buttons in 10 x 20 with 8px each side, the row
+ * labels their 240px; in English and German.
  */
 TEST_CASE(the_longest_texts_stay_inside_their_cards_and_buttons)
 {
@@ -514,7 +514,7 @@ static int left_of(int y0, int y1, int xa, int xb, gfx_color_t col)
 
 /*
  * A network name of 32 characters (WIFI_SSID_MAX) shows its 32nd
- * character: in the scan list in 12 x 24, left of its signal "-100 dBm";
+ * character: in the scan list in 12 x 24, left of its signal "-100dBm";
  * as the joined network's value in 20 x 36; in the German joining line;
  * and whole in the password keyboard's title.
  */

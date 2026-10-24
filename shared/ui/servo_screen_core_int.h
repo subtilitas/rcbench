@@ -27,16 +27,16 @@
 /**
  * @brief The output shaft, which everything on LIVE's card is drawn around.
  *
- * It sits on the top face of the case, where a servo's output is, 392 px
- * into the card: the lead's left end, 298 px left of it, and the +45
- * label's right edge, 200 px right of it, stay inside the card.  In y it is
+ * It sits on the top face of the case, where a servo's output is, 392px
+ * into the card: the lead's left end, 298px left of it, and the +45
+ * label's right edge, 200px right of it, stay inside the card.  In y it is
  * midway between the card's top and the readings' labels.
  */
 #define SHAFT_X (PAD + 392)
 /* Integer division on purpose: this is a pixel row. */
 /* NOLINTNEXTLINE(bugprone-integer-division) */
 #define SHAFT_Y ((CARD_Y + READ_LBL_Y) / 2) /**< The shaft's row, px. */
-#define ARC_R   150 /**< The dial's radius, px: 22.5 mm. */
+#define ARC_R   150 /**< The dial's radius, px: 22.5mm. */
 #define HORN_L  98  /**< The horn's length, shaft to tip, px. */
 #define BODY_W  260 /**< The case's length, px. */
 #define BODY_H  88  /**< The case's width, px. */
@@ -138,8 +138,11 @@ float svs_cmd_to_us(float cmd);
 /** @brief The angle the pin drives on an armed bench while nothing
  *         commands it: the outputs layer's rest for a surface. */
 float svs_rest_deg(void);
-/** @brief SPEED @p pct as the bench's slew, channel-span units a second;
- *         0 at 100 %, which is no slew. */
+/**
+ * @brief SPEED as the bench's slew.
+ * @param pct SPEED, %
+ * @return channel-span units a second; 0 at 100%, which is no slew
+ */
 uint16_t svs_slew_of(int pct);
 
 /* servo_screen_sweep.c */

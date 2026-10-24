@@ -74,15 +74,15 @@ TEST_CASE(temperature_survives_going_below_zero)
     CHECK_NEAR(out.temp_motor, -0.1f, 0.1f);
 }
 
-/* A value past what 16 bits hold clamps rather than wraps: 700 A wrapped
- * would read as about 44 A. */
+/* A value past what 16 bits hold clamps rather than wraps: 700A wrapped
+ * would read as about 44A. */
 TEST_CASE(an_out_of_range_value_clamps_rather_than_wraps)
 {
     bench_state_t in;
     memset(&in, 0, sizeof(in));
-    in.voltage = 900.0f;      /* past 655.35 V */
-    in.current = 700.0f;      /* past 655.35 A */
-    in.temp_esc = 5000.0f;    /* past 3276.7 C */
+    in.voltage = 900.0f;      /* past 655.35V */
+    in.current = 700.0f;      /* past 655.35A */
+    in.temp_esc = 5000.0f;    /* past 3276.7C */
     in.rpm = -50.0f;
 
     uint16_t regs[LINK_BN_COUNT];
@@ -99,7 +99,7 @@ TEST_CASE(an_out_of_range_value_clamps_rather_than_wraps)
 
 /*
  * A short read fills what arrived and leaves the rest alone, so a host that
- * polls four registers at 20 Hz and the whole page once a second gets a
+ * polls four registers at 20Hz and the whole page once a second gets a
  * coherent state either way.
  */
 TEST_CASE(a_partial_page_leaves_the_rest_alone)
@@ -359,7 +359,7 @@ TEST_CASE(charge_and_energy_count_what_was_measured_while_driving)
     bench_totals_reset(&t);
     const bench_state_t b = measured(16.0f, 36.0f,
                                      LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
-    for (int i = 0; i < 100; ++i) {          /* 100 s at 36 A and 576 W */
+    for (int i = 0; i < 100; ++i) {          /* 100s at 36A and 576W */
         bench_totals_count(&t, &b, 1.0f, true);
     }
     CHECK_NEAR(t.mah, 1000.0f, 0.5f);
@@ -393,8 +393,8 @@ TEST_CASE(nothing_is_counted_while_disarmed_or_unmeasured)
 TEST_CASE(one_count_runs_through_a_change_of_source)
 {
     /*
-     * The IOmcu's readings for 10 s, the panel's model for 2 s while
-     * the link is down, then the IOmcu again for 3 s.  Each source
+     * The IOmcu's readings for 10s, the panel's model for 2s while
+     * the link is down, then the IOmcu again for 3s.  Each source
      * writes its own charge over the field -- the IOmcu its empty
      * register -- and the count is shown over it every time.  It never goes
      * back, and the model's seconds are in it.
@@ -491,7 +491,7 @@ TEST_CASE(the_ina228_counts_while_its_totals_are_the_runs)
     CHECK_NEAR(t.mah, 120.0f, 0.001f);
 
     /* The part stopped answering: BENCH's fields empty, the bit gone, and
-     * the count goes on from 120 mAh with nothing to add. */
+     * the count goes on from 120mAh with nothing to add. */
     b = measured(0.0f, 0.0f, LINK_BN_SENSED);
     bench_totals_count(&t, &b, 1.0f, true);
     bench_totals_show(&t, &b);
@@ -501,7 +501,7 @@ TEST_CASE(the_ina228_counts_while_its_totals_are_the_runs)
 
 /*
  * The IOmcu's edge into driving: the last run's totals leave the
- * BENCH page at once, so a poll before its next 50 Hz sample reads no
+ * BENCH page at once, so a poll before its next 50Hz sample reads no
  * totals rather than the last run's marked as this one's.  The live
  * readings, the peaks and every other flag stay.
  */
@@ -554,7 +554,7 @@ TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
 {
     const uint16_t sensed = (uint16_t)(LINK_BN_SENSED | LINK_BN_TOTALS_OK);
     bench_state_t b = measured(0.0f, 0.0f, sensed);
-    b.charge_mah = 123.0f;          /* BENCH's 1 mAh and 0.1 Wh steps */
+    b.charge_mah = 123.0f;          /* BENCH's 1mAh and 0.1Wh steps */
     b.energy_wh  = 2.9f;
     bench_state_fine_totals(&b, 12274, 287u);
     CHECK_NEAR(b.charge_mah, 122.74f, 0.001f);
@@ -583,7 +583,7 @@ TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
 }
 
 /*
- * A run past BENCH's 65535 mAh or 6553.5 Wh, or below 0 mAh: the
+ * A run past BENCH's 65535mAh or 6553.5Wh, or below 0mAh: the
  * registers read their bound, SENSE's 32-bit totals go on, and the count
  * goes on with them -- through a poll with no SENSE read too, which offers
  * only the bound.
@@ -817,7 +817,7 @@ TEST_CASE(a_window_only_row_carries_the_window_and_no_sample)
 /* ---------------------------------------- the IOmcu's ESC telemetry */
 
 /* A speed, a voltage, a current and a temperature, all fresh: 14 magnets,
- * 7 pole pairs; 100 counts of 250 mV, 30 A, 45 C. */
+ * 7 pole pairs; 100 counts of 250mV, 30A, 45C. */
 static bench_telem_t telem_fresh(void)
 {
     bench_telem_t t;
@@ -841,7 +841,7 @@ TEST_CASE(the_escs_telemetry_fills_the_live_readings_in_their_units)
     bench_state_from_telem(&b, &t);
     CHECK_EQ(b.flags, LINK_BN_RPM_OK | LINK_BN_VOLTAGE_OK
                       | LINK_BN_CURRENT_OK | LINK_BN_TEMP_OK);
-    CHECK_NEAR(b.rpm, 10000.0f, 0.0f);       /* 70,000 eRPM over 7 pairs */
+    CHECK_NEAR(b.rpm, 10000.0f, 0.0f);       /* 70,000eRPM over 7 pairs */
     CHECK_NEAR(b.voltage, 25.0f, 0.0f);
     CHECK_NEAR(b.current, 30.0f, 0.0f);
     CHECK_NEAR(b.power, 750.0f, 0.0f);
@@ -850,7 +850,7 @@ TEST_CASE(the_escs_telemetry_fills_the_live_readings_in_their_units)
     CHECK((b.flags & LINK_BN_TEMP_MOT_OK) == 0u);
 }
 
-/* The speed's limit is inclusive: 200 ms old is reported, 201 ms is not. */
+/* The speed's limit is inclusive: 200ms old is reported, 201ms is not. */
 TEST_CASE(a_speed_goes_empty_past_200_ms)
 {
     const uint32_t ages[] = { BENCH_RPM_STALE_MS - 1u, BENCH_RPM_STALE_MS,
@@ -870,8 +870,8 @@ TEST_CASE(a_speed_goes_empty_past_200_ms)
     }
 }
 
-/* Each extended-telemetry reading on its own: 2,000 ms old is reported,
- * 2,001 ms is not, and the speed's 200 ms do not apply. */
+/* Each extended-telemetry reading on its own: 2,000ms old is reported,
+ * 2,001ms is not, and the speed's 200ms do not apply. */
 TEST_CASE(an_extended_reading_goes_empty_past_2000_ms)
 {
     const uint32_t ages[] = { BENCH_EDT_STALE_MS - 1u, BENCH_EDT_STALE_MS,

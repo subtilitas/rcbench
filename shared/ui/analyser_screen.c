@@ -26,31 +26,31 @@
 #define PAD     UI_MARGIN /**< The screen's outer margin, px. */
 
 /**
- * @brief The pane tabs, CHANNELS | RAW DATA: two tabs of 150 x 48 px, 4 px
+ * @brief The pane tabs, CHANNELS | RAW DATA: two tabs of 150 x 48px, 4px
  *        apart, from x 11 and y 8, a finger tall.
  */
 #define TAB_X   (PAD + 3)
 #define TAB_Y   8                       /**< The tabs' top, px. */
-#define TAB_H   UI_TAP_MIN              /**< A tab's height: 48 px. */
+#define TAB_H   UI_TAP_MIN              /**< A tab's height: 48px. */
 #define TAB_W   150                     /**< A tab's width, px. */
-#define TAB_ROW_W (2 * TAB_W + 4)       /**< The row: 304 px. */
+#define TAB_ROW_W (2 * TAB_W + 4)       /**< The row: 304px. */
 #define LCARD_Y 64                      /**< The left card's top, px. */
 
 /**
- * @brief The lowest row a line of text or a lane may reach: 4 px above the
+ * @brief The lowest row a line of text or a lane may reach: 4px above the
  *        alert band, body y 492.
  */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
 /**
  * @brief The state card's width, px: the word KEIN SIGNAL in the 20 x 36
- *        face is 220 px, inside the card's 12 px margins.  The rest of the
+ *        face is 220px, inside the card's 12px margins.  The rest of the
  *        width goes to the traces.
  */
 #define RCARD_W 260
 #define RCARD_X (W - PAD - RCARD_W)            /**< x 756. */
-#define LCARD_W (RCARD_X - 8 - PAD)            /**< 740 px. */
-#define LCARD_H (H - PAD - LCARD_Y)            /**< 468 px, to y 532. */
+#define LCARD_W (RCARD_X - 8 - PAD)            /**< 740px. */
+#define LCARD_H (H - PAD - LCARD_Y)            /**< 468px, to y 532. */
 
 /**
  * @brief The faces of the 1024 x 600 type scale this screen draws in:
@@ -74,28 +74,28 @@
  * A lane is history, then the current value: the trace answers which
  * channel moved, the bar answers how far it is from neutral.
  */
-/** @brief Samples a lane keeps: one pixel a sample, about 2.8 s of S.BUS
- *         frames 14 ms apart. */
+/** @brief Samples a lane keeps: one pixel a sample, about 2.8s of S.BUS
+ *         frames 14ms apart. */
 #define HIST      200
 #define PITCH     1                  /**< Pixels a sample. */
 
 /* Eight rows of two. */
 #define COLS      2                  /**< Lane columns. */
 #define ROWS      8                  /**< Lanes a column. */
-#define COL_W     ((LCARD_W - 16) / COLS)  /**< A column's pitch: 362 px. */
+#define COL_W     ((LCARD_W - 16) / COLS)  /**< A column's pitch: 362px. */
 #define LANE_H    52                 /**< A lane's height, px. */
 #define LANE_TOP  (LCARD_Y + 8)      /**< The first lane's top: y 72. */
 
 #define LAB_W     48   /**< The channel's name, CH01 at 10 x 20, and a gap. */
-#define TRACE_W   (HIST * PITCH)     /**< The trace: 200 px. */
+#define TRACE_W   (HIST * PITCH)     /**< The trace: 200px. */
 #define BAR_GAP   8                  /**< Between the trace and the bar. */
 #define BAR_W     56                 /**< The bar, px. */
 #define VAL_GAP   6                  /**< Between the bar and the value. */
 #define VAL_W     32                 /**< The value: 4 cells of 8 x 16. */
-/** @brief A lane's width from its column's left edge: 350 px. */
+/** @brief A lane's width from its column's left edge: 350px. */
 #define LANE_W    (LAB_W + TRACE_W + BAR_GAP + BAR_W + VAL_GAP + VAL_W)
 
-_Static_assert(LANE_W + 12 <= COL_W, "a lane leaves 12 px to the next column");
+_Static_assert(LANE_W + 12 <= COL_W, "a lane leaves 12px to the next column");
 _Static_assert(LANE_TOP + ROWS * LANE_H <= TEXT_FLOOR,
                "the last lane ends above the alert band");
 _Static_assert(TAB_H >= UI_TAP_MIN, "a tab is a finger tall");
@@ -104,7 +104,7 @@ _Static_assert(TAB_Y + TAB_H + 3 < LCARD_Y, "the tabs end above the lanes' card"
 
 /*
  * The state card, top down: the state word in its box, its line in up to
- * three wrapped lines, the counters in rows of 32 px, and the two digital
+ * three wrapped lines, the counters in rows of 32px, and the two digital
  * channels.
  */
 #define BADGE_Y   20                  /**< The state box's top, px. */
@@ -313,7 +313,7 @@ static void draw_lane(gfx_canvas_t *c, int ch)
          * Clipped to the trough while the trace is drawn.  Three things put
          * ink outside it otherwise: the newest column starts at the right
          * edge and is a whole pitch wide, a span between two samples is drawn
-         * 1 px taller than it measures so a flat run stays visible, and the
+         * 1px taller than it measures so a flat run stays visible, and the
          * trough's corners are rounded while the columns are not.
          */
         const gfx_rect_t trough = { (int16_t)tx, (int16_t)(mid - gh / 2),
@@ -580,7 +580,7 @@ static void draw_right(gfx_canvas_t *c)
 
     char buf[24];
     stat_row(c, 0, "BUS", "S.BUS");
-    snprintf(buf, sizeof(buf), "%u Hz", s.rate_hz);
+    snprintf(buf, sizeof(buf), "%uHz", s.rate_hz);
     stat_row(c, 1, "RATE", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.frames);
     stat_row(c, 2, "FRAMES", s.have ? buf : "---");
@@ -592,7 +592,7 @@ static void draw_right(gfx_canvas_t *c)
     gfx_hline(c, x, RULE2_Y, w, ui_theme_color(UI_C_EDGE));
     gfx_text(c, x, DIG_Y, "DIGITAL", AN_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    /* Stacked, so the card stays 260 px wide and the width goes to the
+    /* Stacked, so the card stays 260px wide and the width goes to the
      * traces. */
     for (int i = 0; i < 2; ++i) {
         const bool on = s.have && ((i == 0) ? s.frame.ch17 : s.frame.ch18);

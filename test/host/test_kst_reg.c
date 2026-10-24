@@ -36,7 +36,7 @@ static kst_image_t with(kst_field_id_t id, unsigned raw)
     return img;
 }
 
-/* The bench image with Neutral at exactly 1500.0 us. */
+/* The bench image with Neutral at exactly 1500.0us. */
 static kst_image_t centred(void)
 {
     return with(KST_F_NEUTRAL, 3455);
@@ -60,19 +60,19 @@ TEST_CASE(the_bench_image_decodes_to_what_the_vendor_tool_shows)
 {
     const kst_image_t img = sim_bench_image();
 
-    CHECK_EQ(shown(&img, KST_F_DEAD_BAND), 20);        /* 2.0 us */
-    CHECK_EQ(shown(&img, KST_F_DUTY), 96);             /* 96 % */
-    CHECK_EQ(shown(&img, KST_F_BOOST), 3000);          /* 300 us */
+    CHECK_EQ(shown(&img, KST_F_DEAD_BAND), 20);        /* 2.0us */
+    CHECK_EQ(shown(&img, KST_F_DUTY), 96);             /* 96% */
+    CHECK_EQ(shown(&img, KST_F_BOOST), 3000);          /* 300us */
     CHECK_EQ(shown(&img, KST_F_STRETCH), 1);
     CHECK_EQ(shown(&img, KST_F_LOCK), 1);
-    CHECK_EQ(shown(&img, KST_F_PULSE_LOWER), 9000);    /* 900 us */
-    CHECK_EQ(shown(&img, KST_F_NEUTRAL), 15002);       /* 1500.2 us */
-    CHECK_EQ(shown(&img, KST_F_PULSE_UPPER), 21000);   /* 2100 us */
-    CHECK_EQ(shown(&img, KST_F_UNCONT_POS), 15000);    /* 1500 us */
-    CHECK_EQ(shown(&img, KST_F_UNCONT_TIME), 20);      /* 2.0 s */
+    CHECK_EQ(shown(&img, KST_F_PULSE_LOWER), 9000);    /* 900us */
+    CHECK_EQ(shown(&img, KST_F_NEUTRAL), 15002);       /* 1500.2us */
+    CHECK_EQ(shown(&img, KST_F_PULSE_UPPER), 21000);   /* 2100us */
+    CHECK_EQ(shown(&img, KST_F_UNCONT_POS), 15000);    /* 1500us */
+    CHECK_EQ(shown(&img, KST_F_UNCONT_TIME), 20);      /* 2.0s */
     CHECK_EQ(shown(&img, KST_F_LEFT_ANGLE), 150);
     CHECK_EQ(shown(&img, KST_F_RIGHT_ANGLE), 150);
-    CHECK_EQ(shown(&img, KST_F_SPD), 10);              /* 1.0 % */
+    CHECK_EQ(shown(&img, KST_F_SPD), 10);              /* 1.0% */
     CHECK_EQ(shown(&img, KST_F_20K_SEL), 1);
     CHECK_EQ(shown(&img, KST_F_SOFT_START), 1);
     CHECK_EQ(shown(&img, KST_F_SPD_SEL), 0);
@@ -81,7 +81,7 @@ TEST_CASE(the_bench_image_decodes_to_what_the_vendor_tool_shows)
     CHECK_EQ(shown(&img, KST_F_GYRO), 0);
     CHECK_EQ(shown(&img, KST_F_PROT1_EN), 0);
     CHECK_EQ(shown(&img, KST_F_PROT1_CANCLE), 0);
-    CHECK_EQ(shown(&img, KST_F_PROT1_TIME), 1);        /* 0.1 s */
+    CHECK_EQ(shown(&img, KST_F_PROT1_TIME), 1);        /* 0.1s */
     CHECK_EQ(shown(&img, KST_F_PROT1_PWM), 0);
     CHECK_EQ(shown(&img, KST_F_PROT_POT_ERR), 0);
     CHECK_EQ(shown(&img, KST_F_PROT_PWM_ERR), 0);
@@ -307,7 +307,7 @@ TEST_CASE(max_duty_is_percent_of_255_with_the_vendor_rounding)
     CHECK_EQ(disp(KST_F_DUTY, 127), 50);
     CHECK_EQ(disp(KST_F_DUTY, 128), 50);
     CHECK_EQ(disp(KST_F_DUTY, 26), 10);
-    /* 50 % is written as 127: the tie goes down. */
+    /* 50% is written as 127: the tie goes down. */
     CHECK_EQ(raw_of(KST_F_DUTY, 50), 127);
     CHECK_EQ(raw_of(KST_F_DUTY, 96), 245);
     CHECK_EQ(raw_of(KST_F_DUTY, 98), 250);
@@ -330,7 +330,7 @@ TEST_CASE(boost_is_50_us_plus_12_5_us_per_count)
     CHECK_EQ(disp(KST_F_BOOST, 255), 32375);
     CHECK_EQ(raw_of(KST_F_BOOST, 499), -1);
     CHECK_EQ(raw_of(KST_F_BOOST, 500), 0);
-    /* Half a step, 6.25 us, is the tie: 562 rounds down, 563 up. */
+    /* Half a step, 6.25us, is the tie: 562 rounds down, 563 up. */
     CHECK_EQ(raw_of(KST_F_BOOST, 562), 0);
     CHECK_EQ(raw_of(KST_F_BOOST, 563), 1);
     CHECK_EQ(raw_of(KST_F_BOOST, 32375), 255);
@@ -366,7 +366,7 @@ TEST_CASE(dead_band_falls_0_2_us_per_count)
     CHECK_EQ(raw_of(KST_F_DEAD_BAND, 20), 55);
     CHECK_EQ(raw_of(KST_F_DEAD_BAND, 10), 60);
     CHECK_EQ(raw_of(KST_F_DEAD_BAND, 4), 63);
-    /* 6 bits hold no value below 0.4 us or above 13.0 us. */
+    /* 6 bits hold no value below 0.4us or above 13.0us. */
     CHECK_EQ(raw_of(KST_F_DEAD_BAND, 3), -1);
     CHECK_EQ(raw_of(KST_F_DEAD_BAND, 0), -1);
     CHECK_EQ(raw_of(KST_F_DEAD_BAND, 130), 0);
@@ -515,7 +515,7 @@ TEST_CASE(decoding_and_encoding_every_field_of_an_image_gives_the_image_back)
                     || !kst_field_raw_from_display(id, d, &raw)) {
                     continue;
                 }
-                /* Max. Duty 96 % is raw 245 here; the copy stays as read. */
+                /* Max. Duty 96% is raw 245 here; the copy stays as read. */
                 CHECK(kst_field_set(&img, id, raw));
             }
             CHECK_EQ(memcmp(&img, &images[k], sizeof(img)), 0);
@@ -836,7 +836,7 @@ TEST_CASE(an_end_point_keeps_100_us_from_neutral)
     kst_image_t img = centred();
 
     CHECK(kst_limits_image(&img) == 0u);
-    /* Lower 1400.0 us: 100.0 us below Neutral. */
+    /* Lower 1400.0us: 100.0us below Neutral. */
     CHECK(kst_field_edit(&img, KST_F_PULSE_LOWER, 1750));
     CHECK(kst_limits_image(&img) == 0u);
     CHECK(kst_field_edit(&img, KST_F_PULSE_LOWER, 1751));
@@ -851,7 +851,7 @@ TEST_CASE(an_end_point_keeps_100_us_from_neutral)
     CHECK(kst_field_edit(&img, KST_F_PULSE_UPPER, 1999));
     CHECK(kst_limits_image(&img) == RULE(KST_H_UPPER_MARGIN));
 
-    /* Neutral is compared in its own unit: one count of it, 0.2 us, decides. */
+    /* Neutral is compared in its own unit: one count of it, 0.2us, decides. */
     img = centred();
     CHECK(kst_field_edit(&img, KST_F_PULSE_LOWER, 1750));
     CHECK(kst_field_edit(&img, KST_F_NEUTRAL, 3454));
@@ -1114,7 +1114,7 @@ TEST_CASE(dead_band_asks_when_narrowed_and_below_1_us)
     CHECK(kst_limits_edit(&backup, &target, 0, NULL)
           == (RULE(KST_S_DEAD_BAND_NARROWED)
               | RULE(KST_S_DEAD_BAND_BELOW_1US)));
-    /* Widened and still below 1.0 us. */
+    /* Widened and still below 1.0us. */
     {
         const kst_image_t narrow = with(KST_F_DEAD_BAND, 63);
 
@@ -1136,7 +1136,7 @@ TEST_CASE(a_narrow_dead_band_with_gain_asks_once_more)
     CHECK(kst_field_edit(&target, KST_F_STRETCH, 0));
     CHECK(kst_field_edit(&target, KST_F_BOOST, 21));
     CHECK(asks(&backup, &target, KST_S_NARROW_BAND_GAIN));
-    /* At 1.0 us the combination does not ask. */
+    /* At 1.0us the combination does not ask. */
     CHECK(kst_field_edit(&target, KST_F_DEAD_BAND, KST_DEAD_BAND_RAW_1US));
     CHECK(kst_field_edit(&target, KST_F_STRETCH, 5));
     CHECK(!asks(&backup, &target, KST_S_NARROW_BAND_GAIN));
@@ -1166,7 +1166,7 @@ TEST_CASE(the_failsafe_asks_when_enabled_far_out_or_short)
     on = target;
     CHECK(kst_limits_edit(&on, &backup, 0, NULL) == 0u);
 
-    /* 300.0 us above Neutral, then one count more. */
+    /* 300.0us above Neutral, then one count more. */
     CHECK(kst_field_edit(&target, KST_F_UNCONT_POS, 2250));
     CHECK(kst_limits_edit(&on, &target, 0, NULL) == 0u);
     CHECK(kst_field_edit(&target, KST_F_UNCONT_POS, 2251));
@@ -1201,7 +1201,7 @@ TEST_CASE(an_end_point_asks_within_300_us_of_neutral_and_100_us_from_its_backup)
     const kst_image_t backup = centred();
     kst_image_t target = backup;
 
-    /* Lower 900 us: 100.0 us up and down. */
+    /* Lower 900us: 100.0us up and down. */
     CHECK(kst_field_edit(&target, KST_F_PULSE_LOWER, 1250));
     CHECK(kst_limits_edit(&backup, &target, 0, NULL) == 0u);
     CHECK(kst_field_edit(&target, KST_F_PULSE_LOWER, 1251));
@@ -1212,7 +1212,7 @@ TEST_CASE(an_end_point_asks_within_300_us_of_neutral_and_100_us_from_its_backup)
     CHECK(kst_field_edit(&target, KST_F_PULSE_LOWER, 999));
     CHECK(kst_limits_edit(&backup, &target, 0, NULL)
           == RULE(KST_S_LOWER_MOVED));
-    /* 300.0 us below Neutral. */
+    /* 300.0us below Neutral. */
     CHECK(kst_field_edit(&target, KST_F_PULSE_LOWER, 1500));
     CHECK(!asks(&backup, &target, KST_S_LOWER_NEAR));
     CHECK(kst_field_edit(&target, KST_F_PULSE_LOWER, 1501));
@@ -1278,7 +1278,7 @@ TEST_CASE(reversion_the_angles_and_the_mode_ask)
     CHECK(kst_limits_edit(&target, &backup, 0, NULL)
           == RULE(KST_S_REVERSION_CHANGED));
 
-    /* Max. Duty is 96 % on this servo: more travel asks twice. */
+    /* Max. Duty is 96% on this servo: more travel asks twice. */
     target = with(KST_F_LEFT_ANGLE, 151);
     CHECK(kst_limits_edit(&backup, &target, 0, NULL)
           == (RULE(KST_S_LEFT_RAISED) | RULE(KST_S_HIGH_DUTY_TRAVEL)));

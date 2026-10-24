@@ -110,7 +110,7 @@ TEST_CASE(a_run_that_cannot_work_is_refused_before_it_starts)
           "THRESHOLD above HYSTERESIS" },
         { offsetof(esc_stick_timing_t, entry_ms), 500u,
           "ENTRY above 500 ms" },
-        /* The item has to be moved on within 3000 ms of its tone. */
+        /* The item has to be moved on within 3000ms of its tone. */
         { offsetof(esc_stick_timing_t, group_gap_ms), 2800u,
           "GROUP GAP misses the select window" },
     };
@@ -421,7 +421,7 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
              ESC_STICK_RATING_OK);
     CHECK_EQ(esc_stick_rating(p, six, esc_stick_model_mv(p, six), 1000u,
                               false), ESC_STICK_RATING_OK);
-    /* The current: FlyFun-6A is rated 6 A. */
+    /* The current: FlyFun-6A is rated 6A. */
     CHECK_EQ(esc_stick_model_ma_max(p, six), 6000u);
     CHECK_EQ(esc_stick_rating(p, six, 7600u, 6100u, true),
              ESC_STICK_RATING_I_OVER);
@@ -474,7 +474,7 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
     CHECK_EQ(esc_stick_model_v_max(p, (int)p->model_count), 0u);
     CHECK_EQ(esc_stick_model_ma_max(p, (int)p->model_count), 0u);
 
-    /* The lowest input: Hacker Master Basic 90 Opto takes 12 V and up. */
+    /* The lowest input: Hacker Master Basic 90 Opto takes 12V and up. */
     const esc_profile_t *hb = esc_profiles_find("hacker-master-basic");
     CHECK(hb != NULL);
     for (int m = 0; hb != NULL && m < (int)hb->model_count; ++m) {
@@ -493,7 +493,7 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
 
     /* The automatic voltage of every model of record stays within its
      * rating, at or over its lowest input, and the CURRENT LIMIT's most
-     * (3 A) under every stated current. */
+     * (3A) under every stated current. */
     for (size_t i = 0; i < esc_profiles_count(); ++i) {
         const esc_profile_t *x = esc_profiles_at(i);
         for (int m = 0; m < (int)x->model_count; ++m) {
@@ -518,10 +518,10 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
 }
 
 /*
- * What the PD mini's 20 V leaves out, as the docs count it: of the profiles
+ * What the PD mini's 20V leaves out, as the docs count it: of the profiles
  * the engine runs, one family whose lowest cell count needs more
- * (hobbywing-skywalker-v2-hv-opto, 22.8 V), and six model rows, each at
- * 22.8 V: its two models and four of families that open.
+ * (hobbywing-skywalker-v2-hv-opto, 22.8V), and six model rows, each at
+ * 22.8V: its two models and four of families that open.
  */
 TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
 {
@@ -588,8 +588,8 @@ TEST_CASE(an_entry_time_that_cannot_work_is_refused)
     CHECK_STR_EQ(why, "ENTRY above 500 ms");
 }
 
-/* Values asking 2 s and 3 s, with a button held 5 s at power-up: the run
- * waits 5 s for either, so they share a power-up.  The check compares what
+/* Values asking 2s and 3s, with a button held 5s at power-up: the run
+ * waits 5s for either, so they share a power-up.  The check compares what
  * the run waits, not what the values ask. */
 TEST_CASE(shared_entry_times_compare_what_the_run_waits)
 {
@@ -624,7 +624,7 @@ TEST_CASE(shared_entry_times_compare_what_the_run_waits)
     CHECK_EQ(esc_stick_change_entry_ms(&two, &c[0], &r.t), 5000u);
     CHECK_EQ(esc_stick_change_entry_ms(&two, &c[1], &r.t), 5000u);
     CHECK(esc_stick_check(&two, c, 2, &r.t, &why));
-    /* A hold shorter than one of them: 3 s against 2.5 s, refused. */
+    /* A hold shorter than one of them: 3s against 2.5s, refused. */
     static const esc_manual_t short_hold[] = {
         { ESC_MANUAL_AT_POWER_UP, "Hold SET.", 2500u, NULL, false, false },
     };

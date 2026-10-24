@@ -66,7 +66,7 @@ static inline void press(touch_event_type_t type, int x, int y)
     scr->event(&e);
 }
 
-/** @brief Holds the warning's button for @p seconds seconds in 0.25 s ticks. */
+/** @brief Holds the warning's button for @p seconds seconds in 0.25s ticks. */
 static inline void hold_for(float seconds)
 {
     press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y);
@@ -76,7 +76,7 @@ static inline void hold_for(float seconds)
     press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
 }
 
-/** @brief The supply reading off for 300 ms: its own state off, the current at
+/** @brief The supply reading off for 300ms: its own state off, the current at
  * 0, as the warning needs before it asks for a step at the ESC. */
 static inline void supply_reads_off(void)
 {
@@ -197,7 +197,7 @@ static inline int drain_cmds(motor_cmd_kind_t want)
 
 /* The modelled bench a run goes to, as the panel's without an IOmcu:
  * the arm and the supply follow what is asked, the supply is read every
- * 50 ms, and the simulated ESC draws the current. */
+ * 50ms, and the simulated ESC draws the current. */
 typedef struct {
     esc_sim_t sim;
     bool      armed, on;
@@ -449,7 +449,7 @@ static inline void at_timing(void)
 }
 /** @brief Opens the session on the Jazz steps page. */
 static inline void at_steps(void)     { fresh(); descend_to_jazz(); }
-/** @brief Holds the warning for 2.25 s, then taps ABORT: the result shows. */
+/** @brief Holds the warning for 2.25s, then taps ABORT: the result shows. */
 static inline void at_result(void)
 {
     at_warning();

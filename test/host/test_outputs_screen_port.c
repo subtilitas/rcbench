@@ -16,7 +16,7 @@
 
 /* ------------------------------------------------------ the PROG PORT entry */
 
-/* SERVO TESTER and PORT PWM, two segments of 145 px 4 px apart from x 19,
+/* SERVO TESTER and PORT PWM, two segments of 145px 4px apart from x 19,
  * under their labels (outputs_spots.h). */
 #define SEG_X(i)      OU_SEG_X(i)
 

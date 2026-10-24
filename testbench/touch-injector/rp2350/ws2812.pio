@@ -1,7 +1,7 @@
 ;
-; One WS2812 data bit in 10 cycles of an 8 MHz state machine clock: 1.25 us.
-; A 1 is high for 6 cycles (0.75 us), a 0 for 3 (0.375 us); the WS2812
-; datasheet asks 0.8 us and 0.4 us, each +-0.15 us.  The side-set pin is the
+; One WS2812 data bit in 10 cycles of an 8MHz state machine clock: 1.25us.
+; A 1 is high for 6 cycles (0.75us), a 0 for 3 (0.375us); the WS2812
+; datasheet asks 0.8us and 0.4us, each +-0.15us.  The side-set pin is the
 ; data line.  24 bits a pixel, most significant first, green-red-blue.
 ;
 ; SPDX-License-Identifier: MIT

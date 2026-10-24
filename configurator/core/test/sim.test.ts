@@ -107,11 +107,11 @@ test('the level: over above the rating, hint from half of it, ok below', () => {
   }
   // The grid points nearest the 2 thresholds.
   const level = (cells: number, ohms: number, watts: number, wiring: SimSettings['wiring']): string => simHeat({ cells, ohms, watts, wiring }).level;
-  assert.equal(level(5, 220, 2, 'delta'), 'over'); // 100.2 %
-  assert.equal(level(4, 560, 0.5, 'delta'), 'over'); // 100.8 %
-  assert.equal(level(4, 560, 1, 'delta'), 'hint'); // 50.4 %
-  assert.equal(level(5, 180, 5, 'delta'), 'ok'); // 49.0 %
-  assert.equal(level(4, 470, 2, 'delta'), 'ok'); // 30.0 %, the default
+  assert.equal(level(5, 220, 2, 'delta'), 'over'); // 100.2%
+  assert.equal(level(4, 560, 0.5, 'delta'), 'over'); // 100.8%
+  assert.equal(level(4, 560, 1, 'delta'), 'hint'); // 50.4%
+  assert.equal(level(5, 180, 5, 'delta'), 'ok'); // 49.0%
+  assert.equal(level(4, 470, 2, 'delta'), 'ok'); // 30.0%, the default
 });
 
 test('the default values: 0.601 W in the hottest resistor, 30 % of 2 W', () => {

@@ -264,7 +264,7 @@ TEST_CASE(a_link_up_holds_until_an_answer)
 
 /* --------------------------------------------- the switch to ARMED on it */
 
-/* An arm inside the 300 ms rest is refused, the bench stays SAFE and the
+/* An arm inside the 300ms rest is refused, the bench stays SAFE and the
  * reason is the endpoints'; the hold pressed again after the payment
  * arms. */
 TEST_CASE(an_arm_inside_the_rest_is_refused)
@@ -283,7 +283,7 @@ TEST_CASE(an_arm_inside_the_rest_is_refused)
     CHECK(a.armed);
 }
 
-/* The poll before the arm ran 299, 300 or 301 ms after the edit. */
+/* The poll before the arm ran 299, 300 or 301ms after the edit. */
 TEST_CASE(an_arm_after_a_poll_at_299_300_and_301_ms)
 {
     const uint32_t bases[] = { 10000u, 0xFFFFFFFFu - 150u };
@@ -355,7 +355,7 @@ TEST_CASE(a_page_holds_the_pair_on_every_throttle_channel)
     CHECK(endpoints_page_holds(page, 1100u, 1940u));
     CHECK(!endpoints_page_holds(page, 1100u, 1950u));
     CHECK(!endpoints_page_holds(page, 1090u, 1940u));
-    /* One throttle channel off by 10 us is a page that differs. */
+    /* One throttle channel off by 10us is a page that differs. */
     page[LINK_CC_STRIDE + LINK_CC_MAX_US] = 1930u;
     CHECK(!endpoints_page_holds(page, 1100u, 1940u));
     /* The last channel, as a throttle. */
@@ -555,7 +555,7 @@ TEST_CASE(a_link_lost_while_owed_leaves_no_stuck_refusal)
     /* The link goes: no poll pays, and the arm is this end's alone. */
     CHECK_EQ(arm_at(400u, false), ARMING_HS_LOCAL);
     CHECK(endpoints_owed(&d));
-    /* Switched to SAFE again, the link returns at 5000 ms. */
+    /* Switched to SAFE again, the link returns at 5000ms. */
     endpoints_link_up(&d);
     CHECK_EQ(arm_at(5000u, true), ARMING_HS_ENDPOINTS);
     check_safe_and_still(5000u, true);
@@ -618,7 +618,7 @@ TEST_CASE(stop_works_while_the_pair_is_owed)
 /* The rest and the refusal across the millisecond wrap. */
 TEST_CASE(the_refusal_holds_across_the_millisecond_wrap)
 {
-    const uint32_t e = 0xFFFFFFFFu - 99u;   /* wraps 100 ms after the edit */
+    const uint32_t e = 0xFFFFFFFFu - 99u;   /* wraps 100ms after the edit */
     debt_reset();
     endpoints_publish(&d, 1000u, 2000u, e);
     CHECK_EQ(poll_at(e + 150u, true, ENDPOINTS_TAKEN), ENDPOINTS_WAIT_SETTLE);

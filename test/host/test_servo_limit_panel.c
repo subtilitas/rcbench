@@ -32,10 +32,10 @@
 /*
  * The LIMIT RUN card, mirrored from servo_limit_panel.c and
  * servo_workbench_int.h: TEST's second card at y 264 (SV_RUN_CARD_Y(1)),
- * its lines from 116 px down, 2 px under START LIMIT RUN, 20 px apart in
- * the 10 x 20 face, their text 10 px into the card (x UI_MARGIN + 20); the
+ * its lines from 116px down, 2px under START LIMIT RUN, 20px apart in
+ * the 10 x 20 face, their text 10px into the card (x UI_MARGIN + 20); the
  * run's own settings list with LIMIT RUN across row 0 and the mode's note
- * 6 px under the top of row 2 (y 260, SV_LIM_NOTE_Y, servo_settings_draw.c).
+ * 6px under the top of row 2 (y 260, SV_LIM_NOTE_Y, servo_settings_draw.c).
  */
 #define LIM_CARD    1
 #define LIM_MODE_Y  LROW_Y(0)
@@ -44,7 +44,7 @@
 
 /* Buffer 0 drawn with TEST open, and whether the LIMIT RUN card's line
  * @p i reads @p text in @p col on the card's fill, and nothing else: from
- * the text's left edge to 10 px inside the card's right, clear of its
+ * the text's left edge to 10px inside the card's right, clear of its
  * rounded corners beside the last line. */
 static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
 {
@@ -90,7 +90,7 @@ static bool lim_box_reads(int i, const char *text, ui_color_id_t col)
 }
 
 /* bench_on_ina() with the supply's output on, as the operator leaves it
- * for a limit run, and servo_sim's own stops at 1150 and 1880 us. */
+ * for a limit run, and servo_sim's own stops at 1150 and 1880us. */
 static void lim_bench(void)
 {
     bench_on_ina();
@@ -115,7 +115,7 @@ static void lim_page(void)
     open_test();
 }
 
-/* The run to its end, 120 s at most. */
+/* The run to its end, 120s at most. */
 static void lim_run_out(void)
 {
     for (int i = 0; i < 240 && servo_screen_limit_running(); ++i) {
@@ -127,7 +127,7 @@ static void lim_run_out(void)
 
 /* START LIMIT RUN starts nothing until the bench is armed and the INA3221
  * is the servo rail's meter, and the page says which is missing; a tap or a
- * hold under 2 s starts nothing either.  The PD mini and the model as the
+ * hold under 2s starts nothing either.  The PD mini and the model as the
  * meter are refused: the run reads the INA3221 or nothing. */
 TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
 {
@@ -224,8 +224,8 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
 }
 
 /* A limit run starts on a powered servo rail only: the last INA3221
- * window's voltage read and at least SERVO_LIMRUN_RAIL_MIN_MV, 3.0 V.  An
- * output that is off reads 0 V.  On the bench's own outputs a SERVO PWM
+ * window's voltage read and at least SERVO_LIMRUN_RAIL_MIN_MV, 3.0V.  An
+ * output that is off reads 0V.  On the bench's own outputs a SERVO PWM
  * output is bound too, as the TARGET row names it. */
 TEST_CASE(a_limit_run_needs_a_powered_rail_and_a_bound_output)
 {
@@ -233,14 +233,14 @@ TEST_CASE(a_limit_run_needs_a_powered_rail_and_a_bound_output)
         ui_text_set_language((ui_lang_t)lang);
         for (int k = 0; k < 4; ++k) {
             lim_bench();
-            if (k == 0) {               /* 1 mV under the threshold */
+            if (k == 0) {               /* 1mV under the threshold */
                 bench.rail_set = true;
                 bench.rail_mv = SERVO_LIMRUN_RAIL_MIN_MV - 1u;
-            } else if (k == 1) {        /* the output off: 0 V */
+            } else if (k == 1) {        /* the output off: 0V */
                 bench.out = false;
             } else if (k == 2) {        /* no voltage in the window */
                 bench.no_volt = true;
-            } else {                    /* 0 V from another source */
+            } else {                    /* 0V from another source */
                 bench.rail_set = true;
                 bench.rail_mv = 0u;
             }
@@ -341,7 +341,7 @@ static int stop_rows_at(int x)
     return n;
 }
 
-/* The points under the alert band the screen names as a stop, every 2 px. */
+/* The points under the alert band the screen names as a stop, every 2px. */
 static int stops_under_the_band(void)
 {
     int n = 0;
@@ -392,7 +392,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     CHECK(strstr(bench.report, "RCBENCH SERVO LIMIT REPORT\n") == bench.report);
     CHECK(strstr(bench.report, "FOUND") != NULL);
     CHECK(strstr(bench.report, "search only, nothing written") != NULL);
-    CHECK(strstr(bench.report, "INA3221 0x40 CH1, 50 ms windows") != NULL);
+    CHECK(strstr(bench.report, "INA3221 0x40 CH1, 50ms windows") != NULL);
     CHECK(strstr(bench.report, "Not run: search only.") != NULL);
     CHECK(strstr(bench.report, "RESTORE") == NULL);
     unsigned lo = 0u, hi = 0u;
@@ -402,7 +402,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     if (l != NULL && h != NULL) {
         CHECK(sscanf(strstr(l, "endpoint"), "endpoint %u", &lo) == 1);
         CHECK(sscanf(strstr(h, "endpoint"), "endpoint %u", &hi) == 1);
-        /* Inside the stops, by the 25 us backoff and a step or two. */
+        /* Inside the stops, by the 25us backoff and a step or two. */
         CHECK(lo > 1150u && lo < 1220u);
         CHECK(hi < 1880u && hi > 1810u);
     }
@@ -411,8 +411,8 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     snprintf(want, sizeof(want), TR(SV_LIM_VERDICT),
              ui_servo_str(SERVO_STR_L_FOUND));
     CHECK(lim_box_reads(0, want, UI_C_ACCENT));
-    snprintf(a, sizeof(a), "%u us", lo);
-    snprintf(z, sizeof(z), "%u us", hi);
+    snprintf(a, sizeof(a), "%uus", lo);
+    snprintf(z, sizeof(z), "%uus", hi);
     snprintf(want, sizeof(want), TR(SV_LIM_ENDS), a, z);
     CHECK(lim_box_reads(1, want, UI_C_TEXT));
     /* Under them the output they were found on, SERVO PWM GP2.  It stays
@@ -533,7 +533,7 @@ TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
         case 4:                         /* the screen left */
             scr->leave();
             break;
-        case 5:                         /* no window for 200 ms */
+        case 5:                         /* no window for 200ms */
             bench.ina = false;
             bench_frames(160u);
             CHECK(servo_screen_limit_running());
@@ -572,7 +572,7 @@ TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
             CHECK(strstr(bench.report, "ABORTED") != NULL);
         }
         if (how == 5) {
-            CHECK(strstr(bench.report, "no INA3221 window for 0.2 s")
+            CHECK(strstr(bench.report, "no INA3221 window for 0.2s")
                   != NULL);
             /* The box says it too, under ABORTED. */
             char want[64];

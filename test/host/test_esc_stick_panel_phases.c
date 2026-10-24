@@ -258,7 +258,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     settings_set(SET_STICK_V, 7.4f);
     scr->tick(0.02f);
     CHECK_STR_EQ(esc_stick_panel_note(),
-                 "VOLTAGE 7.4 V: check the ESC's voltage rating. It is unknown.");
+                 "VOLTAGE 7.4V: check the ESC's voltage rating. It is unknown.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -400,7 +400,7 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
 }
 
 /* The reviewers' proof through the screen: the SUPPLY flag goes off with
- * the request, the module 300 ms later.  The run waits for the module. */
+ * the request, the module 300ms later.  The run waits for the module. */
 TEST_CASE(the_screen_passes_the_supplys_own_state)
 {
     fresh();

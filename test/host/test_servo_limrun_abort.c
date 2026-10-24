@@ -3,9 +3,9 @@
  *
  * Under test: every abort source at every phase, the output asked off and
  * RESTORE named once anything was written; the run's own timeouts; the
- * 3.0 A ceiling, a clipped sample, 1.0 A for 400 ms, a supply changed
+ * 3.0A ceiling, a clipped sample, 1.0A for 400ms, a supply changed
  * while a search drives the servo and left alone while the programmer holds
- * the port; no window for 199, 200 and 201 ms, also across the 2^32 ms tick
+ * the port; no window for 199, 200 and 201ms, also across the 2^32ms tick
  * wrap; windows without the rail voltage or a current; a whole run across
  * the wrap.
  *
@@ -284,8 +284,8 @@ TEST_CASE(a_sample_at_3_a_ends_the_run_in_every_phase)
         servo_limrun_window(&g.run, &w);
         CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_HARD);
 
-        /* The reading's most negative value, -32768 mA, in mean, minimum
-         * and maximum and not marked clipped: 32768 mA as a magnitude, not
+        /* The reading's most negative value, -32768mA, in mean, minimum
+         * and maximum and not marked clipped: 32768mA as a magnitude, not
          * a negative value under the ceiling. */
         CHECK(to_phase_at(ph, at));
         w = win_at(g.now, INT16_MIN, INT16_MIN);
@@ -301,7 +301,7 @@ TEST_CASE(a_sample_at_3_a_ends_the_run_in_every_phase)
         servo_limrun_window(&g.run, &w);
         CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_CLIPPED);
 
-        /* Above 1.0 A for 400 ms, in every phase too. */
+        /* Above 1.0A for 400ms, in every phase too. */
         CHECK(to_phase_at(ph, at));
         const uint32_t t = g.now;
         for (uint32_t m = 1; m <= 8u; ++m) {
@@ -314,7 +314,7 @@ TEST_CASE(a_sample_at_3_a_ends_the_run_in_every_phase)
     }
 }
 
-/* Window means above 1.0 A: 399 ms of them run on, 400 ms end it, timed
+/* Window means above 1.0A: 399ms of them run on, 400ms end it, timed
  * from the start of the first window. */
 TEST_CASE(above_1_a_for_400_ms_ends_the_run)
 {
@@ -326,7 +326,7 @@ TEST_CASE(above_1_a_for_400_ms_ends_the_run)
             servo_test_win_t w = win_at(t + 50u * m, 1001, 1100);
             servo_limrun_window(&g.run, &w);
         }
-        /* 350 ms from the first window's start */
+        /* 350ms from the first window's start */
         CHECK(servo_limrun_running(&g.run));
         servo_test_win_t w = win_at(t + 349u, 1001, 1100);
         servo_limrun_window(&g.run, &w);
@@ -336,7 +336,7 @@ TEST_CASE(above_1_a_for_400_ms_ends_the_run)
         CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_STALL);
         CHECK_EQ(g.run.end_ms, t + 350u);
 
-        /* 1000 mA is not above it; one window under resets the time. */
+        /* 1000mA is not above it; one window under resets the time. */
         rig_init(k == 0 ? 0u : 0u - 200u, false);
         CHECK(start());
         for (uint32_t m = 0; m < 20u; ++m) {
@@ -360,7 +360,7 @@ TEST_CASE(a_changed_supply_ends_a_search_but_not_a_session)
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
     CHECK_EQ(g.offs, 1u);
 
-    /* The rail 1.0 V low: runs on; 1.001 V low: ends. */
+    /* The rail 1.0V low: runs on; 1.001V low: ends. */
     CHECK(to_phase(SERVO_LIMRUN_PH_SEARCH));
     run_for(500u);
     g.rail_mv = 5000u;
@@ -582,11 +582,11 @@ TEST_CASE(a_supply_that_answers_late_ends_the_run)
     }
 }
 
-/* Every search window holds 3.0 V on the rail, the first included: a rail
+/* Every search window holds 3.0V on the rail, the first included: a rail
  * that goes off in the read session ends the run at the first search
  * window.  The search holds the centre for SERVO_LIMRUN_RETURN_MS first;
  * the run is followed past that, so a run that went on would have
- * stepped.  3000 mV searches on and steps. */
+ * stepped.  3000mV searches on and steps. */
 TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
 {
     for (int k = 0; k < 3; ++k) {
@@ -612,7 +612,7 @@ TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
             CHECK_EQ(g.run.rail_mv, (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV);
         }
     }
-    /* A search already under way: the band of 1.0 V and the floor. */
+    /* A search already under way: the band of 1.0V and the floor. */
     rig_init(0u, false);
     g.rail_mv = 3500u;
     CHECK(start());
@@ -663,7 +663,7 @@ TEST_CASE(an_abort_behind_the_arm_leaves_the_bench_safe)
 
 /* --- the meter's silence ------------------------------------------------- */
 
-/* The last window at t: the run goes on at t + 199 ms and ends at t + 200
+/* The last window at t: the run goes on at t + 199ms and ends at t + 200
  * ms (also when the step comes at t + 201), at tick 0 and with the wrap
  * between the window and the step; on the programming port, where the run
  * starts with the servo held at the centre for the read, and on the PWM
@@ -699,7 +699,7 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
             }
         }
     }
-    /* No window at all: 200 ms from the start. */
+    /* No window at all: 200ms from the start. */
     rig_init(0u - 150u, false);
     CHECK(start());
     servo_limrun_in_t in = { true, false, false, 0.0f };
@@ -886,7 +886,7 @@ TEST_CASE(a_window_without_a_current_is_not_counted)
 
 /* --- the clock ----------------------------------------------------------- */
 
-/* The same run from tick 0 and from 60 s before the wrap: the same values,
+/* The same run from tick 0 and from 60s before the wrap: the same values,
  * the same writes, the same duration; with SERVO PULSES 1000-2000 as well. */
 TEST_CASE(a_run_across_the_tick_wrap_ends_as_at_tick_0)
 {

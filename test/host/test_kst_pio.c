@@ -20,18 +20,18 @@
  *
  * Under test:
  *  - the frame: every half-cell of a read, a write and the sync burst is
- *    3810 cycles at 150 MHz and every edge lies on that grid; at 125, 133,
- *    48 and 12 MHz the half-cell is within 0.2 % of 25.40 us;
- *  - the pad: driven from the start of the stream, released 50 us after
- *    the last edge, driven low again at the end of the window or 165 us
+ *    3810 cycles at 150MHz and every edge lies on that grid; at 125, 133,
+ *    48 and 12MHz the half-cell is within 0.2% of 25.40us;
+ *  - the pad: driven from the start of the stream, released 50us after
+ *    the last edge, driven low again at the end of the window or 165us
  *    after the last rising edge, never driven high after the last edge;
  *  - the samples: 4 cycles apart on every path of the capture;
  *  - the stamps: the edges of a reply as kst_sim.h shapes it come back
  *    within one tick, at every phase of the 4-cycle sample, and decode;
  *  - a line that is high at the release, one that stays high, one that
  *    moves more often than the buffer holds, a stamp no count gives;
- *  - the clock: refused below 8 MHz and where the half-cell is off by more
- *    than 0.2 %; the stream's layout for 1, 31, 32, 63 and 127 half-cells
+ *  - the clock: refused below 8MHz and where the half-cell is off by more
+ *    than 0.2%; the stream's layout for 1, 31, 32, 63 and 127 half-cells
  *    and the arguments it refuses.
  *
  * Not tested here, because the host has no PIO: that the chip's input
@@ -545,7 +545,7 @@ static void check_reply_edges(const kst_capture_t *sent,
                               const kst_capture_t *got)
 {
     const uint32_t tick = kst_pio_tick_ns(&clk);
-    /* The model moves the line on a cycle: half a cycle, and 8 ns for the
+    /* The model moves the line on a cycle: half a cycle, and 8ns for the
      * rounding of both conversions. */
     const uint32_t slack = 500000000u / clk.sys_hz + 8u;
 
@@ -602,14 +602,14 @@ TEST_CASE(a_read_frame_is_27_bits_of_3810_cycles_and_the_pad_follows_the_rule)
     CHECK_EQ(kst_pio_half_cell_ns(&clk), KST_HALF_CELL_NS);
     CHECK_EQ(kst_pio_tick_ns(&clk), 27u);
     check_frame_on_pad(&f, 3810u);
-    /* Released 50 us after the last edge, to the cycle. */
+    /* Released 50us after the last edge, to the cycle. */
     CHECK_EQ(m.release - m.e0, 7500u);
     CHECK_EQ(pad_at(&m, m.release - 1u), 0);
     CHECK_EQ(pad_at(&m, m.release), -1);
     CHECK_EQ(m.first_sample - m.release, KST_PIO_SAMPLE_LEAD);
     CHECK_EQ(m.bad_gaps, 0u);
     /* No reply: low again at the end of the window, not before it and
-     * within 1 us after it. */
+     * within 1us after it. */
     CHECK(m.redrive - m.e0 >= 225000u);
     CHECK(m.redrive - m.e0 < 225150u);
     CHECK_EQ(pad_at(&m, m.redrive), 0);
@@ -630,7 +630,7 @@ TEST_CASE(a_write_frame_and_the_sync_burst_keep_the_same_half_cell)
     check_frame_on_pad(&f, 3810u);
     CHECK_EQ(m.release - m.e0, 7500u);
     CHECK_EQ(m.bad_gaps, 0u);
-    /* 8 ms of window. */
+    /* 8ms of window. */
     CHECK(m.redrive - m.e0 >= 1200000u);
     CHECK(m.redrive - m.e0 < 1200150u);
 
@@ -670,7 +670,7 @@ TEST_CASE(a_reply_comes_back_edge_for_edge_and_decodes)
         CHECK_EQ(r.value, values[i]);
         CHECK_NEAR((double)r.delay_ns, (double)shape.delay_ns, 40.0);
         CHECK_NEAR((double)r.half_cell_ns, (double)SIM_HALF_NS, 10.0);
-        /* Low again 165 us after the last rising edge, which is 60 us or
+        /* Low again 165us after the last rising edge, which is 60us or
          * more after the reply's last level change, and never high. */
         for (unsigned k = 0; k < m.n_ext; ++k) {
             last_change = m.ext[k].at;
@@ -717,7 +717,7 @@ TEST_CASE(an_edge_at_any_phase_of_the_sample_is_stamped_within_one_tick)
     kst_frame_t f;
 
     CHECK(kst_frame_read(0x01, &f));
-    /* 150 MHz: 20 ns is 3 cycles, so 0 to 100 ns walks every phase. */
+    /* 150MHz: 20ns is 3 cycles, so 0 to 100ns walks every phase. */
     for (uint32_t shift = 0; shift <= 100u; shift += 20u) {
         const sim_shape_t shape = sim_shape(SIM_READ_DELAY_NS + shift);
         kst_capture_t sent;
@@ -763,7 +763,7 @@ TEST_CASE(a_line_high_at_the_release_sets_the_start_level)
     kst_reply_t r;
 
     CHECK(kst_frame_read(0x01, &f));
-    /* High before the release, low 100 us after the last edge. */
+    /* High before the release, low 100us after the last edge. */
     sim_cap_clear(&sent, KST_READ_WINDOW_NS);
     sent.level0 = 1;
     sim_cap_edge(&sent, 100000u);
@@ -775,7 +775,7 @@ TEST_CASE(a_line_high_at_the_release_sets_the_start_level)
     check_reply_edges(&sent, &got);
     CHECK_EQ(kst_reply_decode(&got, KST_EXPECT_READ, &r),
              KST_RX_START_LEVEL);
-    /* Low again 165 us after the first sample, the only rise seen. */
+    /* Low again 165us after the first sample, the only rise seen. */
     CHECK(m.redrive - m.e0 >= 7500u + 24750u);
     CHECK(m.redrive - m.e0 < 7500u + 24750u + 20u);
 }
@@ -810,8 +810,8 @@ TEST_CASE(an_edge_before_the_reply_ends_the_capture_early)
     const sim_shape_t shape = sim_shape(SIM_READ_DELAY_NS);
 
     CHECK(kst_frame_read(0x01, &f));
-    /* A 10 us pulse 100 us after the last edge: the quiet time runs out
-     * 265 us after the last edge, before the reply at 438 us. */
+    /* A 10us pulse 100us after the last edge: the quiet time runs out
+     * 265us after the last edge, before the reply at 438us. */
     sim_reply(&sent, KST_READ_WINDOW_NS, 3, 0x12, &shape);
     sim_cap_edge(&sent, 100000u);
     sim_cap_edge(&sent, 110000u);
@@ -962,20 +962,20 @@ TEST_CASE(a_clock_too_slow_or_off_the_half_cell_is_refused)
     memset(&c, 0x5A, sizeof(c));
     CHECK(!kst_pio_clock(0u, &c));
     CHECK(!kst_pio_clock(150000000u, NULL));
-    /* A tick of 500 ns is 8 MHz. */
+    /* A tick of 500ns is 8MHz. */
     CHECK(!kst_pio_clock(7999999u, &c));
     CHECK(!kst_pio_clock(5000000u, &c));
     CHECK(kst_pio_clock(8000000u, &c));
     CHECK_EQ(kst_pio_tick_ns(&c), 500u);
-    /* 8.01 MHz gives 203 cycles, 25.343 us: 0.22 % short. */
+    /* 8.01MHz gives 203 cycles, 25.343us: 0.22% short. */
     CHECK(!kst_pio_clock(8010000u, &c));
-    /* 8.1 MHz gives 206 cycles, 25.432 us: 0.13 % long. */
+    /* 8.1MHz gives 206 cycles, 25.432us: 0.13% long. */
     CHECK(kst_pio_clock(8100000u, &c));
     CHECK_EQ(c.half_cycles, 206u);
     /* A refused clock leaves the counts as they were. */
     CHECK(!kst_pio_clock(8010000u, &c));
     CHECK_EQ(c.half_cycles, 206u);
-    /* From 9.9 MHz up every clock passes. */
+    /* From 9.9MHz up every clock passes. */
     for (uint32_t hz = 9900000u; hz < 10100000u; hz += 997u) {
         CHECK(kst_pio_clock(hz, &c));
     }

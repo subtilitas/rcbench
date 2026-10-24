@@ -8,7 +8,7 @@
  * list, a run's report listed beside its CSV, a report sorted after the runs
  * it is newer than, a page that loses or doubles an entry when the reports
  * arrive in a second walk, a report opened in the CSV import, a frame that
- * reads the whole text to draw its last rows, and a report's 32 KiB kept
+ * reads the whole text to draw its last rows, and a report's 32KiB kept
  * after its view is left.  The rows themselves are test_log_text.c's.
  *
  * The fake card offers each folder through the notes of log_select.h, as
@@ -868,7 +868,7 @@ TEST_CASE(a_report_over_the_cap_is_cut_and_the_view_says_so)
 /*
  * A frame draws 15 rows.  It reads those and at most LOG_TEXT_MARK - 1
  * rows before them, wherever the text is scrolled to: the bottom of a
- * 32 KiB report costs what its top does, not the 32 KiB above it.
+ * 32KiB report costs what its top does, not the 32KiB above it.
  */
 /** @brief Bytes the TEXT view's row lookups read to draw one frame.
  *  @return the bytes, 0 with no report open */

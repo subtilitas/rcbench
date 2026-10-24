@@ -5,7 +5,7 @@
 # components/fatfs/src/ffconf.h line 282 by a plain #define.  No Kconfig
 # option (CONFIG_FATFS_...) reaches it in either release, and a -D on the
 # compiler line cannot either: the header's #define comes after it.  A card
-# formatted exFAT, which every SDXC (SD eXtended Capacity, 64 GB and up)
+# formatted exFAT, which every SDXC (SD eXtended Capacity, 64GB and up)
 # card is out of the box, then fails to mount with FatFs 13
 # (FR_NO_FILESYSTEM).
 #

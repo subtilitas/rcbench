@@ -19,7 +19,7 @@
 /** @brief The panel's height, px. */
 #define H UI_PANEL_H
 
-/* Hold after the last step has answered, before the menu: 1.6 s to read
+/* Hold after the last step has answered, before the menu: 1.6s to read
  * seven lines.  A tap skips it; a failed step stays reported on screen. */
 /** @brief The hold after the last step has answered, s. */
 #define HOLD_S 1.6f
@@ -135,7 +135,7 @@ static const char *mark_of(splash_result_t r)
  * SP_FONT_MARK (20 x 36) at scale 2, centred from MARK_Y.  The tagline in
  * SP_FONT_BODY (12 x 24) centred under it.  The seven steps in rows of
  * ROW_H from LIST_Y, each its label, its mark and its detail in
- * SP_FONT_BODY; the detail 47 cells from DETAIL_X to 24 px short of the
+ * SP_FONT_BODY; the detail 47 cells from DETAIL_X to 24px short of the
  * panel's edge.  The credit in SP_FONT_LABEL (10 x 20) at the foot.
  */
 /** @brief The mark's face, drawn at MARK_SCALE: 20 x 36. */
@@ -148,7 +148,7 @@ static const char *mark_of(splash_result_t r)
 #define MARK_SCALE    2
 /** @brief The mark's top. */
 #define MARK_Y        40
-#define MARK_H        (MARK_SCALE * UI_TAG_H)     /**< 88 px */
+#define MARK_H        (MARK_SCALE * UI_TAG_H)     /**< 88px */
 #define MARK_PAD      (MARK_SCALE * 12)          /**< text to either edge */
 /** @brief The mark's chamfer, px. */
 #define MARK_CHAMFER  (MARK_SCALE * UI_CHAMFER)

@@ -344,7 +344,7 @@ function shownHelp(): HTMLElement[] {
 
 /**
  * The band of the viewport a bubble of `row` shows in: above the bar of the narrow layout, and inside each
- * scrolling ancestor, #choose at 1024 px and wider, which clips what lies outside its box.
+ * scrolling ancestor, #choose at 1024px and wider, which clips what lies outside its box.
  */
 function helpRoom(row: HTMLElement): { top: number; bottom: number } {
   let top = 0;

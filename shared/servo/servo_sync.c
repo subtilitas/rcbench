@@ -31,7 +31,7 @@ void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us)
     cfg->centre_us     = centre_us;
     cfg->deflection_us = 300;
     /*
-     * 40 us each way is about 3.6 degrees at 11 us per degree, more
+     * 40us each way is about 3.6 degrees at 11us per degree, more
      * disagreement than a flown installation has.  The scan narrows fast, so
      * a window wider than needed costs one round rather than proportional
      * time.
@@ -40,7 +40,7 @@ void servo_sync_defaults(servo_sync_cfg_t *cfg, uint16_t centre_us)
     cfg->points        = 7;
     cfg->rounds        = 3;
     cfg->settle_ms     = 120;
-    /* A standard servo slews about 1.2 us/ms unloaded; 0.8 leaves margin
+    /* A standard servo slews about 1.2us/ms unloaded; 0.8 leaves margin
      * for load. */
     cfg->slew_us_per_ms = 0.8f;
     cfg->measure_ms    = 100;

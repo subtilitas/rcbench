@@ -30,7 +30,7 @@ A motor, ESC (electronic speed controller) and servo test bench on two
 processors: an ESP32-P4 touch panel, the Waveshare ESP32-P4 7B (user
 interface on a 1024x600 MIPI DSI display, settings, SD card, Wi-Fi through its
 ESP32-C6), and an RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
-protocol with timing requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
+protocol with timing requirements), connected over CAN (Controller Area Network) at 1Mbit/s.
 
 Release 0.22.1 runs on the ESP32-S3 panel. What its update check offers
 is in [Screens: The release line](docs/Screens.md#the-release-line).
@@ -126,7 +126,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 55,439 of 56,644 lines in 245 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 55,429 of 56,635 lines in 245 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

@@ -122,7 +122,7 @@ TEST_CASE(a_card_of_999_runs_offers_the_newest_that_fit)
         log_viewer_file_t f;
         memset(&f, 0, sizeof(f));
         log_run_name(f.name, sizeof(f.name), i);
-        f.size = ((uint64_t)i << 32) | (uint64_t)i;   /* past 4 GiB */
+        f.size = ((uint64_t)i << 32) | (uint64_t)i;   /* past 4GiB */
         held = log_select_keep(set, held, LOG_VIEWER_MAX_FILES, &f);
     }
     CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
@@ -271,7 +271,7 @@ TEST_CASE(a_count_above_the_list_does_not_reach_past_it)
     g_card_runs = 200;
     log_viewer_refresh();
 
-    /* Three drags: one press scrolls by its own travel, 1000 px or 20 rows,
+    /* Three drags: one press scrolls by its own travel, 1000px or 20 rows,
      * and the bottom of a 48-row list is further down than that. */
     for (int i = 0; i < 3; ++i) {
         send(TOUCH_EVENT_DOWN, 400, 300);

@@ -15,8 +15,8 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
 | REMINDER AT START: ON / OFF | switches the check at start and its reminder; kept with SAVE on [Setup](setup.md#keeping-the-values); on by default |
 | RELEASES: STABLE / TESTING | sets which releases a check reads, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); STABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
-| HOLD 2 s: DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
-| HOLD 2 s: UPDATE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
+| HOLD 2s: DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
+| HOLD 2s: UPDATE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 
 ## What the check needs
 
@@ -34,7 +34,7 @@ The download also needs no board drawing being fetched or kept.
 
 An odd minor number is a testing release, published on GitHub as a pre-release (0.21.x). An even minor number is a stable release (0.22.x).
 
-The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Security) request and reads the newest release's tag from the answer. Then the radio goes off. The join, the address and the request take 30 s at most, together. The card shows the step and the seconds left.
+The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Security) request and reads the newest release's tag from the answer. Then the radio goes off. The join, the address and the request take 30s at most, together. The card shows the step and the seconds left.
 
 | RELEASES | Request | What is read |
 |---|---|---|
@@ -52,8 +52,8 @@ On both settings a release is offered only when it is of the panel's release lin
 | `Version 0.22.1 is available.` | the newest release is newer than the running build; the hold appears |
 | `Up to date. Panel version: 0.22.0.` | the newest release is the running version or older |
 | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | a panel held to the 0.22 line only: the newest release is newer than the running build and past the release line; it is not offered, and the reminder at start does not open for it |
-| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | the join failed, as on Files and update |
-| `No response within 30 s.` | the 30 s ran out |
+| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15s.`, `Connection to the home network lost.` | the join failed, as on Files and update |
+| `No response within 30s.` | the 30s ran out |
 | `No connection to GitHub.` | the name lookup, the connection or the certificate check failed |
 | `GitHub rejected the request: HTTP 404.` | an answer other than a redirect, or with TESTING other than 200 |
 | `GitHub's request limit is reached: HTTP 403.` | TESTING: GitHub answered 403 or 429; it takes 60 API requests an hour per address without an account |
@@ -91,7 +91,7 @@ With TESTING, when the highest of the 10 newest releases is past the line, the h
 
 ## The download
 
-The 2 s hold is the one confirmation: no question follows. The panel joins the home network within 30 s and fetches `SHA256SUMS` and `rcbench-panel-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
+The 2s hold is the one confirmation: no question follows. The panel joins the home network within 30s and fetches `SHA256SUMS` and `rcbench-panel-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
 
 1. `SHA256SUMS` is 4096 bytes at most and holds exactly one line for the image.
 2. The image announces its size first; an image without a size, of 0 bytes or over 8,126,464 bytes is refused. It is kept in PSRAM (pseudo-static random-access memory).
@@ -102,7 +102,7 @@ Only then the [panel update](update.md) writes it, as INSTALL does. Nothing touc
 
 ![The download](view:panel-download)
 
-CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board drawing being fetched and 180 s from the hold end it too. The running build stays; CLOSE goes back to UPDATES, or to the menu when the hold was the reminder's.
+CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board drawing being fetched and 180s from the hold end it too. The running build stays; CLOSE goes back to UPDATES, or to the menu when the hold was the reminder's.
 
 ![A download that stopped](view:panel-download-failed)
 
@@ -110,7 +110,7 @@ CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board dra
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Carried: 0.22.0`). HOLD 2 s: UPDATE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
+Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Carried: 0.22.0`). HOLD 2s: UPDATE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
 
 The hold takes what the question takes: an IOmcu that runs another build, the bench SAFE, the supply output off, the Wi-Fi radio wholly off and no panel install under way. Otherwise it is grey and the line above it says why, the first of these that holds:
 

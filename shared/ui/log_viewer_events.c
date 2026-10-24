@@ -83,7 +83,7 @@ static bool tap_on(const touch_event_t *e, gfx_rect_t r)
            && gfx_rect_contains(r, e->point.x, e->point.y);
 }
 
-/* Row @p r of the rows showing in a list: under its 30 px heading. */
+/* Row @p r of the rows showing in a list: under its 30px heading. */
 static gfx_rect_t list_row_rect(gfx_rect_t list, int row_h, int r)
 {
     return gfx_rect_make(list.x, list.y + 30 + r * row_h, list.w, row_h);

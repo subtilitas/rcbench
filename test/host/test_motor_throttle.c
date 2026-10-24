@@ -51,7 +51,7 @@ static void fed(void)
 }
 
 /*
- * 60.5 % on the slider of a disarmed bench.  No control puts a value there
+ * 60.5% on the slider of a disarmed bench.  No control puts a value there
  * (test_motor_arm.c); the application's hook does, and the cases below hold
  * the arm edge to what it does with one.
  */
@@ -63,9 +63,9 @@ static void set_disarmed(void)
 }
 
 /*
- * An arm starts from nothing.  A slider at 60.5 % on a disarmed bench is at
- * 0 % once the bench is armed, and the step buttons, which move the
- * slider's value by one point, start from there: + posts 1.0 %, not 61.5 %.
+ * An arm starts from nothing.  A slider at 60.5% on a disarmed bench is at
+ * 0% once the bench is armed, and the step buttons, which move the
+ * slider's value by one point, start from there: + posts 1.0%, not 61.5%.
  */
 TEST_CASE(arming_returns_the_throttle_to_zero)
 {
@@ -95,7 +95,7 @@ TEST_CASE(arming_returns_the_throttle_to_zero)
 }
 
 /* At the limits of the slider and one step inside each: every value a
- * disarmed bench can show arms to 0 %. */
+ * disarmed bench can show arms to 0%. */
 TEST_CASE(arming_returns_every_throttle_to_zero)
 {
     static const float from[] = { 0.0f, 1.0f, 60.5f, 99.0f, 100.0f };
@@ -333,7 +333,7 @@ TEST_CASE(a_drag_under_way_ends_at_the_disarm)
     motor_screen_set_armed(true);
     finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
     glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
-    CHECK(motor_screen_throttle() > 45.0f);   /* 200 of 421 px */
+    CHECK(motor_screen_throttle() > 45.0f);   /* 200 of 421px */
 
     motor_screen_set_throttle(0.0f);    /* the panel's disarm edge */
     (void)last_cmd();
@@ -436,7 +436,7 @@ TEST_CASE(the_target_row_names_the_protocol_and_the_pins)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The row's value box holds 25 cells of 10 px.  In a
+/* The row's value box holds 25 cells of 10px.  In a
  * box of 18 cells the pins give way to a count. */
 TEST_CASE(many_throttle_pins_end_in_a_count_within_the_box)
 {

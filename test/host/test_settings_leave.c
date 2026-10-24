@@ -326,7 +326,7 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
     CHECK_EQ(warn_lines(), 1);
-    CHECK_STR_EQ(warn_line(0), "Capacity: 5000 mAh -> 5200 mAh");
+    CHECK_STR_EQ(warn_line(0), "Capacity: 5000mAh -> 5200mAh");
     CHECK_STR_EQ(warn_line(1), "");
 
     /* An enum and a switch by their words, translated. */
@@ -436,7 +436,7 @@ TEST_CASE(a_save_asked_holds_nothing_and_a_failed_one_warns)
     warn_up();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
-    CHECK_STR_EQ(warn_line(0), "Cells: 6 S -> 4 S");
+    CHECK_STR_EQ(warn_line(0), "Cells: 6S -> 4S");
     ui_router_render(&s_c, 0);
     settings_set_store(NULL);
 }

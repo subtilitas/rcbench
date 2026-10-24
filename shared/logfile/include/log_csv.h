@@ -3,7 +3,7 @@
  * @brief CSV (comma-separated values) and TSV (tab-separated values) import for
  *        a board that cannot hold the file it is reading.
  *
- * The source is a card, a log can be tens of megabytes, and the 8 MB of PSRAM
+ * The source is a card, a log can be tens of megabytes, and the 8MB of PSRAM
  * (pseudo-static random-access memory) already hold two framebuffers.  So the
  * reader works through a callback and never keeps more than one row: analysis
  * is two streaming passes, and only the columns the user plots are
@@ -197,7 +197,7 @@ typedef struct {
     int parsed;                      /**< cells that parsed as numbers     */
     bool unit_from_values;           /**< the unit came from the cells     */
     bool mixed_units;                /**< the cells carry more than one unit */
-    bool numeric; /**< at least 80 % of its non-empty cells parsed */
+    bool numeric; /**< at least 80% of its non-empty cells parsed */
     bool monotonic;                  /**< the values never fall            */
     double min;                      /**< smallest value                   */
     double max;                      /**< largest value                    */

@@ -23,17 +23,17 @@ A balance result is a magnitude and an angle. The right card sets the rotor and 
 | ADD | the mass to add, in g |
 | WHERE | where the mass goes: between two blades, or on the hub at an angle |
 
-No sensor is fitted in this release. VIBRATION, ANGLE and ADD are fixed values, 0.42 g, 265 deg and 0.35 g, not a measurement. A SIMULATED pill and `Not measured.` stand under them. The blade arithmetic works: WHERE turns the angle into a blade reference for the blade count set.
+No sensor is fitted in this release. VIBRATION, ANGLE and ADD are fixed values, 0.42g, 265deg and 0.35g, not a measurement. A SIMULATED pill and `Not measured.` stand under them. The blade arithmetic works: WHERE turns the angle into a blade reference for the blade count set.
 
 ![A five-blade ducted fan](view:balance-edf)
 
-For a ducted fan the correction is an angle on the hub, `hub, 265 deg`, because a blade tip inside a duct cannot be reached.
+For a ducted fan the correction is an angle on the hub, `hub, 265deg`, because a blade tip inside a duct cannot be reached.
 
 ![The blade count's keypad, 5 typed](view:balance-keypad)
 
 The keypad covers both cards. OK takes 2 to 6; any other count keeps it open and names the range in the warning colour. CANCEL, the home tag and a tab close it and change nothing.
 
-Without an index pulse, balancing takes four runs: a baseline, then a trial mass at 0, 120 and 240 deg. An index pulse halves that.
+Without an index pulse, balancing takes four runs: a baseline, then a trial mass at 0, 120 and 240deg. An index pulse halves that.
 
 ## The TEST RIG tab
 

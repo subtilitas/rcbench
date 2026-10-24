@@ -41,8 +41,8 @@
 
 /*
  * One row per setting.  Ranges are the physical ones: a pack cannot have zero
- * cells, a servo pulse below 800 us is not a pulse, and an ESC (electronic
- * speed controller) that ramps faster than 300 %/s is not ramping.
+ * cells, a servo pulse below 800us is not a pulse, and an ESC (electronic
+ * speed controller) that ramps faster than 300%/s is not ramping.
  */
 static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_PACK_CELLS] = {
@@ -107,12 +107,12 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * The current monitors, on the IOmcu's I2C (Inter-Integrated
      * Circuit) bus and written to its SENSE page by the panel (protocol
      * 4.7).  The ranges are the page's: an INA228 shunt of 50 to 20000 uOhm
-     * and a range of 1.0 to 300.0 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
+     * and a range of 1.0 to 300.0A, an INA3221 shunt of 5mOhm to 1Ohm.
      * The defaults are the modules the bench is built with: the MATEK
-     * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8 A, and the
+     * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8A, and the
      * bus on GP16 and GP17; the INA3221 parts are SENSORS'
      * (settings_sensors.c).  The bus clock is not a setting: the
-     * page takes 400 kHz and nothing else.  The address keys are new ones:
+     * page takes 400kHz and nothing else.  The address keys are new ones:
      * the INA228's old key held an index into four addresses, which read
      * as one of sixteen would name another address.
      */
@@ -159,8 +159,8 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * The phase tap, written to the IOmcu's TONE page (protocol
      * 4.8): one GPIO that reads an ESC's beeps off one motor phase.  The
      * ranges and defaults are the page's (LINK_TN_*): the pin GP22 (pad 29),
-     * tones from 400 to 6500 Hz, a new beep when the pitch moves 8 %, a
-     * silence of 3 ms ending a beep, 3 tone periods making one.  The tap is
+     * tones from 400 to 6500Hz, a new beep when the pitch moves 8%, a
+     * silence of 3ms ending a beep, 3 tone periods making one.  The tap is
      * off until it is enabled here and the pin is wired.
      */
     [SET_TONE_EN] = {
@@ -194,7 +194,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "optical_pin", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 48, 1, -1, NULL, 0 },
     /*
-     * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3 V.
+     * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3V.
      * IOmcu GPIO, written to its SUPPLY page by the panel; the pins
      * are -1 until the module is wired, and the page drives nothing then.
      */
@@ -213,7 +213,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     /*
      * How the IOmcu receives a Hitec D series answer on its programming
      * port (the HITEC page's register 23, link_hitec_rx_t): PULL-UP, the
-     * line released with a 2.2 kOhm pull-up on the signal wire, or
+     * line released with a 2.2kOhm pull-up on the signal wire, or
      * PRECHARGE, with none.  The IOmcu takes it at its next OPEN of a
      * D series line; classic servos need neither.
      */
@@ -263,7 +263,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * and for how long -- the supply steps it repeats that at, and the
      * limits it judges the servo by.  A pass/fail limit of 0 is not
      * checked.  The servo's own type, pulse widths and frame rate are not
-     * here: they start at STANDARD PWM and 50 Hz at every restart, so a
+     * here: they start at STANDARD PWM and 50Hz at every restart, so a
      * servo plugged in later never meets a rate meant for another.
      */
     [SET_SERVO_CURVE] = {
@@ -937,7 +937,7 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max)
     return n;
 }
 
-/** @brief The most digits after the point a step carries: 0.001 A, the
+/** @brief The most digits after the point a step carries: 0.001A, the
  *         servo programmer's current. */
 #define DECIMALS_MAX 3
 
@@ -949,7 +949,7 @@ int settings_decimals(setting_id_t id)
     }
     float step = d->step;
     int decimals = 0;
-    /* A step of 0.1 is 1.0000000149 once multiplied: whole within 0.1 %. */
+    /* A step of 0.1 is 1.0000000149 once multiplied: whole within 0.1%. */
     while (decimals < DECIMALS_MAX
            && fabsf(step - roundf(step)) > 1e-3f * step) {
         step *= 10.0f;

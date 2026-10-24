@@ -65,7 +65,7 @@ static uint8_t mwrite(unsigned r, uint16_t v)
 }
 
 /* The whole kept map: @p fit, FAST @p fast, every channel of a fitted
- * part on 1000 (0.1 Ohm), nothing watched. */
+ * part on 1000 (0.1Ohm), nothing watched. */
 static uint8_t map_all(uint16_t fit, uint16_t fast)
 {
     uint16_t m[LINK_SM_KEPT];
@@ -379,7 +379,7 @@ TEST_CASE(a_set_up_moves_for_the_bus_and_not_for_a_watch)
 }
 
 /* A snapshot of @p fitted parts online, each channel c's window at
- * (c + 1) x 10 mA and 5000 + c mV. */
+ * (c + 1) x 10mA and 5000 + c mV. */
 static sense_snap_t snapshot(uint8_t online)
 {
     sense_snap_t s;

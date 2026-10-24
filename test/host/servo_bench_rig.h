@@ -45,7 +45,7 @@
 
 /* A bench for the screen's run: the servo model on the output, SUPPLY's
  * switch and set points as the panel would carry them, and a reading every
- * 100 ms stamped on the panel's clock. */
+ * 100ms stamped on the panel's clock. */
 static struct {
     servo_sim_t sv;
     bool     out;
@@ -61,7 +61,7 @@ static struct {
     size_t   report_len;
     char     csv_head[256];     /* the CSV's first line */
     /* The output encoder: the horn at 0.09 degrees a us from 1500, counted
-     * from 3000, read every 40 ms with a 12-count still time. */
+     * from 3000, read every 40ms with a 12-count still time. */
     bool     enc;
     uint32_t enc_next;
     bool     enc_anchored;
@@ -70,7 +70,7 @@ static struct {
     /* The supply's samples arrive with a meter count one behind the one in
      * force (servo_screen_supply_at()). */
     bool     behind;
-    /* The INA3221's CH1 windows: one every 50 ms with the servo's current,
+    /* The INA3221's CH1 windows: one every 50ms with the servo's current,
      * under the meter last named (meter()), while ina is set. */
     bool     ina;
     bool     rail_set;          /* the windows' rail at rail_mv, not the
@@ -257,8 +257,8 @@ static inline void bench_frames(uint32_t ms)
     }
 }
 
-/* Frames drawn as the panel draws them, 20 ms each, so the flashes a hold
- * or an output switched on starts, 150 ms each, are over. */
+/* Frames drawn as the panel draws them, 20ms each, so the flashes a hold
+ * or an output switched on starts, 150ms each, are over. */
 static inline void settle_drawn(void)
 {
     two_buffers();
@@ -298,7 +298,7 @@ static inline void hold_start_on(int card, float secs)
         if (bench.ina) {
             /* The INA3221's windows go on under the finger, as on the
              * panel: a run that starts before the release reads them, and
-             * ends after 200 ms without one. */
+             * ends after 200ms without one. */
             bench_frames(20u);
             continue;
         }

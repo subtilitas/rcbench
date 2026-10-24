@@ -147,7 +147,7 @@ TEST_CASE(timing_constants_are_the_measured_ones)
 {
     kst_frame_t f;
 
-    /* 25.40 us is 3810 cycles of 150 MHz. */
+    /* 25.40us is 3810 cycles of 150MHz. */
     CHECK_EQ(KST_HALF_CELL_NS, 25400);
     CHECK_EQ((uint64_t)KST_HALF_CELL_CYCLES_150MHZ * 1000000000u / 150000000u,
              KST_HALF_CELL_NS);
@@ -344,7 +344,7 @@ TEST_CASE(a_glitch_inside_a_cell_is_removed_below_1500_ns_only)
         CHECK_EQ(r.value, 0xC3);
         CHECK_EQ(r.glitches, 1);
     }
-    /* A level that lasts 1500 ns is a level change.  Placed around the
+    /* A level that lasts 1500ns is a level change.  Placed around the
      * confirm point of a cell it makes both halves read alike. */
     shape.glitch_at_ns = SIM_READ_DELAY_NS + 2u * SIM_HALF_NS
                          + KST_RX_CONFIRM_NS - 700u;
@@ -377,7 +377,7 @@ TEST_CASE(chatter_on_an_edge_ends_on_its_last_edge)
     kst_reply_t r;
 
     sim_reply(&cap, KST_READ_WINDOW_NS, 3, 0x81, &shape);
-    /* The first rising edge bounces: up, down, up within 800 ns. */
+    /* The first rising edge bounces: up, down, up within 800ns. */
     sim_cap_edge(&cap, SIM_READ_DELAY_NS + 400u);
     sim_cap_edge(&cap, SIM_READ_DELAY_NS + 800u);
     CHECK_EQ(kst_reply_decode(&cap, KST_EXPECT_READ, &r), KST_RX_OK);
@@ -390,7 +390,7 @@ TEST_CASE(a_stretched_last_half_cell_is_not_a_bit)
     sim_shape_t shape = sim_shape(SIM_READ_DELAY_NS);
     kst_reply_t r;
 
-    /* 32 us at a 1.4 V threshold, 59 us at 0.1 V. */
+    /* 32us at a 1.4V threshold, 59us at 0.1V. */
     shape.tail_ns = 32000;
     CHECK_EQ(decode_read(0x01, &shape, &r), KST_RX_OK);
     CHECK_EQ(r.value, 0x01);
@@ -508,7 +508,7 @@ TEST_CASE(a_cell_without_opposite_halves_is_refused)
     }
     CHECK_EQ(kst_reply_decode(&cap, KST_EXPECT_READ, &r), KST_RX_CELL);
 
-    /* The start cell: a pulse of 6 us is no half-cell of high. */
+    /* The start cell: a pulse of 6us is no half-cell of high. */
     sim_cap_clear(&cap, KST_READ_WINDOW_NS);
     sim_cap_edge(&cap, SIM_READ_DELAY_NS);
     sim_cap_edge(&cap, SIM_READ_DELAY_NS + 6000u);

@@ -1,6 +1,7 @@
-/*
- * A draggable value with presets: the throttle, and any other control that
- * needs coarse reach and fine adjustment in one place.
+/**
+ * @file
+ * @brief A draggable value with presets: the throttle, and any other control
+ *        that needs coarse reach and fine adjustment in one place.
  *
  * Two contracts about presses that do not end where they began, because
  * those are the presses that command a motor by accident:
@@ -33,7 +34,7 @@ extern "C" {
  *
  * The thumb stands proud of the track, and a caller that clears only the
  * track rectangle before redrawing leaves that overhang behind.  The thumb's
- * shadow is offset 2 px below it, so the painted region is not symmetric and
+ * shadow is offset 2px below it, so the painted region is not symmetric and
  * this constant alone does not describe it: use ui_slider_painted_rect().
  */
 #define UI_SLIDER_OVERHANG 5
@@ -75,7 +76,14 @@ void ui_slider_init(ui_slider_t *s, gfx_rect_t track, float min, float max,
 /** Draw @p n scale divisions across the track.  0 turns them off. */
 void ui_slider_set_ticks(ui_slider_t *s, int n);
 
-/** Presets are laid out in a row inside @p row, with 4 px gaps. */
+/**
+ * @brief Sets the presets, laid out in a row inside @p row with 4px gaps.
+ * @param s the slider
+ * @param values the presets' values
+ * @param labels their labels
+ * @param count how many
+ * @param row the row they take
+ */
 void ui_slider_set_presets(ui_slider_t *s, const float *values,
                            const char *const *labels, int count,
                            gfx_rect_t row);

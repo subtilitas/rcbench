@@ -101,7 +101,7 @@ int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side)
  * @param r    Run state.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
  * @param p_us Pulse width, microseconds.
- * @return distance from NEUTRAL, outward positive, 0.1 us.
+ * @return distance from NEUTRAL, outward positive, 0.1us.
  */
 static int32_t dist_now(const servo_limrun_t *r, uint8_t side, uint16_t p_us)
 {
@@ -361,9 +361,9 @@ static bool prepare_side(servo_limrun_t *r, uint8_t side, unsigned reg)
         return false;
     }
     /* The overset from the first bound pulse: at or past the stop, so the
-     * stop the overset moves out stays inside the pulse limit by the 3 %. */
+     * stop the overset moves out stays inside the pulse limit by the 3%. */
     const uint16_t v1 = servo_limrun_overset(v0, r->db_dus[side], span, lo);
-    /* The move the model gives the stop, 0.1 us: d0 x (v0 / v1 - 1), the
+    /* The move the model gives the stop, 0.1us: d0 x (v0 / v1 - 1), the
      * last free pulse the stop's nearest estimate. */
     const bool skip = v1 >= v0
                       || (int64_t)d0 * (int64_t)(v0 - v1)
@@ -719,7 +719,7 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
 }
 
 /**
- * @brief A current's magnitude, mA.  Wider than the reading: -32768 mA is 32768
+ * @brief A current's magnitude, mA.  Wider than the reading: -32768mA is 32768
  *        mA, past every ceiling, not a negative value under them.
  *
  * @param ma Current, mA, signed.
@@ -744,7 +744,7 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)
     ++r->windows;
     r->have_win    = true;
     r->last_win_ms = at;
-    /* Every 1 ms sample against the ceiling, and a sample at the meter's
+    /* Every 1ms sample against the ceiling, and a sample at the meter's
      * end as one past it: its true value is not known. */
     if (w->clipped != 0u) {
         abort_why(r, SERVO_LIMRUN_WHY_CLIPPED, at);

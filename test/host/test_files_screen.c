@@ -188,7 +188,7 @@ TEST_CASE(a_list_scrolls_by_a_drag_and_by_its_bar)
     CHECK(open_dir(0, "MANY"));
     CHECK_EQ(files_screen_pane(0)->held, 20);
     CHECK_EQ(files_screen_scroll(0), 0);
-    /* A drag up of 100 px moves the list 2 rows, and selects nothing. */
+    /* A drag up of 100px moves the list 2 rows, and selects nothing. */
     send(TOUCH_EVENT_DOWN, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(4));
     send(TOUCH_EVENT_MOVE, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(4) - 100);
     send(TOUCH_EVENT_UP, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(4) - 100);

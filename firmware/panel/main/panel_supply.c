@@ -1,7 +1,9 @@
-/*
- * The programmable supply, on the control task: the PD (USB Power
- * Delivery) mini over the IOmcu's SUPPLY page, or the panel's model,
- * its steps at the sample cadence, its run's rows for the log, and its page.
+/**
+ * @file
+ * @brief The programmable supply, on the control task: the PD (USB Power
+ *        Delivery) mini over the IOmcu's SUPPLY page, or the panel's model,
+ *        its steps at the sample cadence, its run's rows for the log, and its
+ *        page.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -459,7 +461,7 @@ static void supply_watch_service(void)
 
 /*
  * The supply, from control_pump(): at the top of every pass and inside every
- * exchange's wait, which can last LINK_HOST_TIMEOUT_MS (1000 ms) a time.  A
+ * exchange's wait, which can last LINK_HOST_TIMEOUT_MS (1000ms) a time.  A
  * stop, an OFF and a touch loss cut the output here, and the supply is
  * stepped, logged and published every 1/PANEL_SAMPLE_HZ whatever the link is
  * doing -- the supply is the panel's own and an unanswered IOmcu is

@@ -69,22 +69,22 @@ extern "C" {
 
 /**
  * @brief The DSI link: 2 data lanes.  The lane rate is one define; 1000, 900 and
- * 500 Mbit/s per lane are the three to try on a board.  RGB565 at 60 Hz
- * carries 297 Mbit/s of pixels a lane.  The EK79007 datasheet states
- * 500 Mbit/s as its maximum; Waveshare's examples run 900 and 1000.
+ * 500Mbit/s per lane are the three to try on a board.  RGB565 at 60Hz
+ * carries 297Mbit/s of pixels a lane.  The EK79007 datasheet states
+ * 500Mbit/s as its maximum; Waveshare's examples run 900 and 1000.
  */
 #define BOARD_DSI_LANES             2
 #define BOARD_DSI_LANE_MBPS         1000
 
 /**
  * @brief The DSI PHY (physical layer) supply: on-chip LDO (low-dropout
- *        regulator) channel 3 at 2500 mV, on before the bus starts.
+ *        regulator) channel 3 at 2500mV, on before the bus starts.
  */
 #define BOARD_DSI_PHY_LDO_CHAN      3
 #define BOARD_DSI_PHY_LDO_MV        2500
 
 /**
- * @brief LCD reset, active low; a 10 kOhm pull-down holds the panel in
+ * @brief LCD reset, active low; a 10kOhm pull-down holds the panel in
  *        reset until firmware drives the pin.
  */
 #define BOARD_LCD_PIN_RST           GPIO_NUM_33
@@ -104,8 +104,8 @@ extern "C" {
  * @brief The backlight's PWM (pulse-width modulation) on GPIO32.
  *
  * GPIO32 feeds the backlight boost converter's feedback node through
- * 10 kOhm: a higher level dims.  LEDC (the LED pulse-width modulation
- * controller) drives it inverted, so a duty of 100 % is a constant low and
+ * 10kOhm: a higher level dims.  LEDC (the LED pulse-width modulation
+ * controller) drives it inverted, so a duty of 100% is a constant low and
  * full brightness.  Whether a constant high is fully dark is not measured.
  */
 #define BOARD_BL_PIN                GPIO_NUM_32
@@ -132,7 +132,7 @@ extern "C" {
  *
  * GT911 at 0x5D, 0x14 its second address.  Its INT line reaches only J3
  * and a test point, so the touch task polls.  The schematic routes GPIO23
- * to the GT911's reset through a 0 Ohm resistor; GPIO_NUM_NC here runs no
+ * to the GT911's reset through a 0Ohm resistor; GPIO_NUM_NC here runs no
  * reset sequence.
  */
 #define BOARD_TOUCH_I2C_ADDR        0x5D
@@ -172,9 +172,9 @@ extern "C" {
 /*
  * The ESP32-C6-MINI-1 that carries Wi-Fi, an SDIO (Secure Digital
  * input/output) device on SDMMC slot 1, 4-bit, through the GPIO matrix.
- * C6 IO19 is CLK, IO18 CMD, IO20 to IO23 D0 to D3; each line has a 51 kOhm
- * pull-up.  The C6's EN (chip enable) has a 10 kOhm pull-up and 1 uF and
- * reaches GPIO54 through 0 Ohm: a low holds the C6 in reset.  esp_hosted
+ * C6 IO19 is CLK, IO18 CMD, IO20 to IO23 D0 to D3; each line has a 51kOhm
+ * pull-up.  The C6's EN (chip enable) has a 10kOhm pull-up and 1uF and
+ * reaches GPIO54 through 0Ohm: a low holds the C6 in reset.  esp_hosted
  * reads these from sdkconfig.defaults; wifi_radio.c fails the build when
  * the two differ.  Header H4 carries the C6's UART0 (TXD0, RXD0), GND
  * and its strapping pin IO9.
@@ -196,14 +196,14 @@ extern "C" {
  *
  * TWAI (Two-Wire Automotive Interface, the ESP32-P4's CAN controller) to
  * the TJA1051T/3 transceiver on header H11.  Pin 1 of H11 is the board's
- * 5 V rail, so the link cable can power the board.
+ * 5V rail, so the link cable can power the board.
  */
 #define PANEL_CAN_PIN_TX   GPIO_NUM_22
 #define PANEL_CAN_PIN_RX   GPIO_NUM_21
 
 /**
- * @brief The link's bit rate.  Both ends must agree.  1 Mbit/s is what
- *        the IOmcu's 16 MHz crystal reaches exactly; see IOMCU_CAN_BITRATE
+ * @brief The link's bit rate.  Both ends must agree.  1Mbit/s is what
+ *        the IOmcu's 16MHz crystal reaches exactly; see IOMCU_CAN_BITRATE
  *        and docs/Link.md.
  */
 #define PANEL_CAN_BITRATE  1000000u

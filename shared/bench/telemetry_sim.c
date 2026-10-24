@@ -36,7 +36,7 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     const telemetry_sim_cfg_t *c = &s->cfg;
     const float duty = throttle_pct / 100.0f;
 
-    /* The open-circuit voltage droops by up to 0.35 V per cell as the pack
+    /* The open-circuit voltage droops by up to 0.35V per cell as the pack
      * empties. */
     const float used = (c->pack_mah > 0.0f) ? (s->drawn_mah / c->pack_mah) : 0.0f;
     const float soc  = (used > 1.0f) ? 1.0f : used;
@@ -64,7 +64,7 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     s->drawn_mah += current * dt_s * (1000.0f / 3600.0f);
     s->drawn_wh  += power   * dt_s * (1.0f / 3600.0f);
 
-    /* Heating with a leak back to 24 C ambient; the ESC (electronic speed
+    /* Heating with a leak back to 24C ambient; the ESC (electronic speed
      * controller) heats faster than the motor. */
     s->temp_esc   += (power * 0.0016f - (s->temp_esc - 24.0f) * 0.08f) * dt_s;
     s->temp_motor += (power * 0.0011f - (s->temp_motor - 24.0f) * 0.05f) * dt_s;

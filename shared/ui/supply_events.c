@@ -88,7 +88,7 @@ static void keypad_done(ui_keypad_result_t r, float v)
             sup_propose(FROM_KEYPAD);
         } else if (s.kp_target == KP_SETTING) {
             /* Onto the setting's own step the safe way: a cap rounds down,
-             * so a typed 12.01 V allows no more than 12.00 V; a trip typed
+             * so a typed 12.01V allows no more than 12.00V; a trip typed
              * above 0 stays a trip, never rounded to off. */
             const setting_def_t *d = settings_def(s.kp_setting);
             if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX

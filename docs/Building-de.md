@@ -95,8 +95,8 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | ARM GNU Toolchain | 14.2 | jede `arm-none-eabi`-Version für Cortex-M33 |
 
 `firmware/panel/sdkconfig.defaults` setzt den ESP32-P4 auf Chiprevision 3.1
-oder neuer und 400 MHz, 32 MB Flash, das PSRAM im Gehäuse (PSRAM:
-Pseudo-Static Random-Access Memory) auf 200 MHz, Code und Konstanten im
+oder neuer und 400MHz, 32MB Flash, das PSRAM im Gehäuse (PSRAM:
+Pseudo-Static Random-Access Memory) auf 200MHz, Code und Konstanten im
 Flash statt im PSRAM, die nullinitialisierten Daten, die
 `main/psram_bss.lf` nennt, im PSRAM ([Interner RAM](Performance-de.md#interner-ram)),
 den Interrupt des DSI-Hosts (DSI: Display Serial Interface), der auch
@@ -121,10 +121,10 @@ ESP32-P4, auf zwei freien Header-Pins der 7-Zoll-ESP32-P4-Displayplatine:
 `BOARD_KNOB_PIN_SDA` und `BOARD_KNOB_PIN_SCL` in
 `firmware/panel/components/board/include/board_pins.h`: GPIO30 (SDA) und
 GPIO31 (SCL), die Pins IO30 und IO31 des 12-poligen Headers P3 (3V3, GND, IO2
-bis IO5, IO28 bis IO31, IO34, IO36). Der Sensor nimmt 3,3 V und GND vom
+bis IO5, IO28 bis IO31, IO34, IO36). Der Sensor nimmt 3,3V und GND vom
 selben Header. Das Panel schaltet die internen Pull-ups des ESP32-P4 ein; ob
-sie allein 400 kHz auf den Leitungen des Knopfs halten, ist nicht gemessen,
-ein Sensor ohne eigene Pull-ups bekommt daher welche von 4,7 kOhm nach 3,3 V,
+sie allein 400kHz auf den Leitungen des Knopfs halten, ist nicht gemessen,
+ein Sensor ohne eigene Pull-ups bekommt daher welche von 4,7kOhm nach 3,3V,
 wie die I2C-Schaltung des Datenblatts.
 
 Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
@@ -137,20 +137,20 @@ SOP-8-Gehäuse, aus dem
 
 | MT6701-Pin | Anschluss an |
 | --- | --- |
-| 1 VDD | 3,3 V vom Header. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V |
-| 2 MODE | VDD. Ein interner Pull-up von 200 kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
+| 1 VDD | 3,3V vom Header. Die Versorgung des Datenblatts ist 3,3 bis 5,0V |
+| 2 MODE | VDD. Ein interner Pull-up von 200kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
 | 3 OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
 | 4 GND | GND |
 | 5 PUSH | nicht angeschlossen |
-| 6 A/SDA | SDA |
-| 7 B/SCL | SCL |
+| 6A/SDA | SDA |
+| 7B/SCL | SCL |
 | 8 Z/CSN | VDD, wie Abbildung 17 |
 
 Ein Breakout führt weniger Pins heraus. Dort prüfen, dass MODE an VDD liegt
-(ein Pin, eine Brücke oder ein Pull-up) und dass sein Versorgungspin 3,3 V
-nimmt. Die I2C-Schaltung des Datenblatts hat Pull-ups von 4,7 kOhm an SDA und
+(ein Pin, eine Brücke oder ein Pull-up) und dass sein Versorgungspin 3,3V
+nimmt. Die I2C-Schaltung des Datenblatts hat Pull-ups von 4,7kOhm an SDA und
 SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
-3,3 V.
+3,3V.
 
 - Adresse: 0x06, die Voreinstellung des Datenblatts. Das Panel liest nur
   0x06. Eine EEPROM-Programmierung kann die Adresse auf 0x46 legen (Version
@@ -162,8 +162,8 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
   von CH422G und GT911 des ESP32-S3-Panels. 0x06 liegt außerhalb. Es ist
   einer der Hs-Mode-Mastercodes (Hs: High-Speed) der Spezifikation, 0x04
   bis 0x07, die kein Gerät an diesem Bus benutzt.
-- Bustakt: 400 kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
-  Clock) ab 1 us und Anstiegs- und Abfallzeiten von höchstens 150 ns. Die
+- Bustakt: 400kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
+  Clock) ab 1us und Anstiegs- und Abfallzeiten von höchstens 150ns. Die
   Anstiegszeit am Anschluss ist nicht gemessen.
 - Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip.
 - Die I2C-Register tragen keinen Feldstatus: Die Bits für zu schwaches und
@@ -172,7 +172,7 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 - Jede Abfrage liest 0x03, 0x04 und noch einmal 0x03 und verwirft eine
   Abfrage, deren zwei 0x03-Bytes sich unterscheiden. Ein High-Byte, das sich
   dazwischen ändert und wieder zurückändert, wird angenommen; ein Schritt von
-  bis zu 64 Zählern (0,52 % des Wegs bei 270 deg) an einem Reglerende bleibt
+  bis zu 64 Zählern (0,52% des Wegs bei 270deg) an einem Reglerende bleibt
   also möglich; wie oft, ist nicht gemessen.
 - Drehrichtung: Beim MT6701CT-STD mit DIR (Register 0x29 Bit 1, im EEPROM)
   auf seinem Standard 0 steigt der Winkel gegen den Uhrzeigersinn, von der
@@ -199,7 +199,7 @@ idf.py -C firmware/panel set-target esp32p4
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
-# Panel mit den Farbbalken des DSI-Hosts für 3 s beim Start, für einen
+# Panel mit den Farbbalken des DSI-Hosts für 3s beim Start, für einen
 # ersten Blick auf eine Platine
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
@@ -224,7 +224,7 @@ export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
-# IOmcu, debug build that prints INA3221 CH1's 1 ms samples
+# IOmcu, debug build that prints INA3221 CH1's 1ms samples
 cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
 cmake --build firmware/iomcu/build-trace
 
@@ -250,7 +250,7 @@ Pfad, und das Panel bietet es dann über CAN an
 bietet kein IOmcu-Update an.
 
 `PICO_BOARD` steht standardmäßig auf `pimoroni_pico_plus2_rp2350`. Das für die
-Inbetriebnahme verwendete Modul ist ein Waveshare RP2350-CAN (RP2350A, 4 MB
+Inbetriebnahme verwendete Modul ist ein Waveshare RP2350-CAN (RP2350A, 4MB
 Flash), für das das SDK (Software Development Kit) keine Board-Datei hat; der
 Standardwert baut und läuft darauf. Überschreiben mit `-DPICO_BOARD=`. Die
 endgültige Platine braucht einen RP2350B: der geplante Pinbedarf liegt bei 27
@@ -260,23 +260,24 @@ bis 32 GPIO (General-Purpose Input/Output).
 
 | Werkzeug | Zweck |
 | --- | --- |
-| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94 % gesamt, 85 % je Datei) und schreibt die Tabelle in `STATUS.md` und den Wert in `README.md` und `README-de.md`; `--check` schlägt bei Abweichung fehl, ebenso bei einer C-Datei unter `shared/` oder einer Kern-Datei unter `protocols/`, die nicht in der Messung steht oder keine Zähler hat |
-| `tools/mutate.py` | ändert in einer Kopie des Baums jeweils eine Zeile von `shared/` oder eines Kerns unter `protocols/` (ein Vergleich umgedreht, eine Grenze plus oder minus 1, eine gespeicherte Zuweisung entfernt), baut die Host-Suite, führt sie aus und meldet die Änderungen, mit denen die Suite besteht; standardmäßig die seit `origin/main` geänderten Zeilen, höchstens 60 Mutanten und 2700 s; CI führt es bei Pull Requests aus und schlägt bei einem Überlebenden nicht fehl |
+| `tools/coverage.py` | misst die Line Coverage der Host-Suite, erzwingt die Untergrenzen (94% gesamt, 85% je Datei) und schreibt die Tabelle in `STATUS.md` und den Wert in `README.md` und `README-de.md`; `--check` schlägt bei Abweichung fehl, ebenso bei einer C-Datei unter `shared/` oder einer Kern-Datei unter `protocols/`, die nicht in der Messung steht oder keine Zähler hat |
+| `tools/mutate.py` | ändert in einer Kopie des Baums jeweils eine Zeile von `shared/` oder eines Kerns unter `protocols/` (ein Vergleich umgedreht, eine Grenze plus oder minus 1, eine gespeicherte Zuweisung entfernt), baut die Host-Suite, führt sie aus und meldet die Änderungen, mit denen die Suite besteht; standardmäßig die seit `origin/main` geänderten Zeilen, höchstens 60 Mutanten und 2700s; CI führt es bei Pull Requests aus und schlägt bei einem Überlebenden nicht fehl |
 | `tools/check_sanitizers.py` | konfiguriert den Sanitizer-Build und schlägt fehl, wenn nicht jeder Compile-Befehl unter `shared/`, `protocols/` und `test/host/` `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` und `-fno-omit-frame-pointer` trägt und kein anderes Flag dieser Familie |
 | `tools/check_protocols.py` | hält jedes Modul unter `protocols/` an der Regel, nach der es in einem anderen pico-sdk-Projekt gebaut wird: eine Kern-Datei bindet nur C-Standard-Header und die eigenen Header des Kerns ein, eine Datei unter `rp2350/` außerdem die Treiber-Header des Moduls, sein erzeugtes `.pio.h` und pico-sdk-Header, der Header eines Treibers bindet keinen pico-sdk-Header ein, jeder öffentliche Header trägt `extern "C"` und kompiliert für sich als C11 und als C++17 mit `-Wall -Wextra -Werror`, kein Include eines Moduls nennt einen Pfad mit `..`, einen absoluten Pfad oder ein Makro oder hat ein Token nach seinem Operanden, kein `#include_next` nennt einen anderen Header als einen C-Standard-Header oder, in einer C-Datei unter `rp2350/`, einen pico-sdk-Header, der Name `__has_include` steht außerhalb eines Literals nur als Operand von `#ifdef`, `#ifndef`, `#elifdef` oder `#elifndef` oder eines `defined`-Terms in einer `#if`- oder `#elif`-Zeile, die nur solche Terme, Leerraum, `(`, `)`, `!`, `&` und `|` enthält, keine Zeile besteht nur aus `#`, gelesen nach den Literal-Regeln von ISO C, GNU C, C23 und C++ und in einer `.pio`-Datei in dem C, das pioasm in den erzeugten Header schreibt, keine C-Datei, kein Header und kein C einer `.pio`-Datei enthält einen Trigraph (`??` gefolgt von einem aus `= / ' ( ) ! < > -`), keine Datei enthält ein NUL-Byte, das Modul hat eine `README.md` mit einer Überschrift „Interface“, einer Überschrift mit „Trademark“ darin, wo sie eine Marke nennt (die Marke gilt an jeder Stelle der Datei, in jeder Schreibweise, auch innerhalb eines Bezeichners, Dateinamens, einer Adresse oder Zahl, nicht neben einem Buchstaben, also nicht in `KSTART` oder `KstSession`), und den Worten „no pin driver“, wo es keinen Ordner `rp2350/` hat, seine CMake-Dateien nennen kein anderes Modul, und jedes `_Static_assert` außerhalb von `protocols/` auf Konstanten eines Moduls steht nach Datei und Bedingung im Werkzeug und ist noch vorhanden (CMake-Include-Verzeichnisse und Link-Ziele werden nicht geprüft, und ein mit `##` zusammengesetztes `__has_include` besteht die Prüfung, und `""R"(` und `''R"(` werden wie in C gelesen, als Literal und Raw-String, sodass ein Include nicht gefunden wird, das eine solche Folge in C verbirgt und C++11 oder später liest, wo `R` ein Literal-Suffix ist); `--check` gibt nur die gebrochenen Regeln aus |
 | `tools/security_parsers.py` | listet die Module unter `shared/` und `protocols/`, deren öffentliche Header eine Funktion `parse`, `decode`, `unpack`, `_rx`, `_feed`, `_write`, `_read`, `_done` oder `_utf8_next` deklarieren, dazu die im Werkzeug erzwungenen Module, die Eingaben von außen unter anderen Namen annehmen, je mit Begründung (`shared/settings`, `shared/touch`); `--check` schlägt fehl, wenn die Parser-Tabelle in `SECURITY.md` und diese Liste abweichen oder ein erzwungener Eintrag ein Modul nennt, das es nicht gibt oder das die Namensregel schon findet; ein Modul ausgenommen wird nur durch einen Eintrag mit Begründung im Werkzeug |
 | `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, [Performance](Performance-de.md) hat keine Tabelle der Obergrenzen, solange `ci.yml` kein `--max-lines`-Argument hat, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt die Links einer Kopie von `docs/` für das Wiki um, das Seiten über ihren Titel adressiert: `Page.md` wird zu `Page`, ein Ziel oberhalb von `docs/` zu einer Repository-URL (`blob`, `tree`, `raw` für ein Bild); vergleicht jede Seite über markdown-it-py 3.0.0 mit ihrer Umschreibung und endet bei jeder anderen Abweichung mit 1, mit Seite und Zeile; `--check` ändert nichts; `--verify` schlägt bei einer umgeschriebenen Seite fehl, deren Links ein Wiki nicht öffnen kann |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
+| `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | bringen die Wörter der Oberfläche aus der Form in mehreren Dateien (Englisch in `ui_text.def` und im Schema, Deutsch in `ui_text_de.c`) in die eine Tabelle, `shared/text/include/ui_text.def`; `merge BASE THEIRS` übernimmt beim Merge die Textänderungen eines Branches, der noch die alte Form hat, in die Tabelle ([Sprache der Oberfläche](Language-de.md#einen-text-hinzufügen)) |
 | `tools/gen_font.py` | erzeugt die sieben eingebetteten Fonts aus DejaVu Sans Mono neu, die fünf Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
-| `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind mit dem Cache des ESP32-S3 bei den 1024 x 600 px des Renderers; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) an einem lokalen Build, solange beide 800 x 480 px haben, und meldet sie sonst als nicht geprüft; CI führt es nicht aus |
+| `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind mit dem Cache des ESP32-S3 bei den 1024 x 600px des Renderers; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) an einem lokalen Build, solange beide 800 x 480px haben, und meldet sie sonst als nicht geprüft; CI führt es nicht aus |
 | `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; dekodiert nur Xtensa-Code und hält beim RISC-V-Image des ESP32-P4 an, sodass CI es auf dem Panel nicht ausführt; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das IOmcu-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der IOmcu-Tabelle, die Zahl der von `main` aus erreichbaren Aufrufe über ein Register in beiden Performance-Seiten und den Satz zu Kern 0 in `STATUS.md`; der ELF-Leser und der Aufrufgraph stehen in `tools/stack_elf.py`, die IOmcu-Hälfte in `tools/stack_iomcu.py` |
 | `tools/image_slot.py` | liest die Partitionstabelle eines Panel-Builds und schlägt fehl, wenn das Image größer ist als der kleinere der zwei OTA-Anwendungsslots (Over-the-Air), wenn die Tabelle weniger als zwei solche Slots hat oder wenn sie sich in der Größe unterscheiden; gibt den verbleibenden Platz aus; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
 | `tools/psram_bss.py` | liest die Linker-Map eines Panel-Builds und schlägt fehl, wenn eine Zeile in den Einträgen eines Mappings in `firmware/panel/main/psram_bss.lf` nicht `<object> (rcbench_extram_bss)` lautet, wenn ein Objekt, das das Fragment in den PSRAM (Pseudo-Static Random-Access Memory) legt, kein .bss in `.ext_ram.bss` hat oder .bss im internen RAM behält; gibt die verschobenen Bytes aus; `--list N` listet außerdem jedes Objekt mit mehr als N Bytes .bss im internen RAM; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
 | `tools/check_sizes.py` | zählt die Code-Zeilen jeder Datei, die git verfolgt (eine Code-Zeile ist weder leer noch nur Kommentar: Kommentare und Doxygen-Blöcke in C, C++, Headern, TypeScript und JavaScript sowie `#`-Kommentare und Docstrings in Python zählen nicht; andere Dateiarten zählen ihre nicht leeren Zeilen), und hält die Dateien über 1 000 Code-Zeilen an `tools/check_sizes.txt`, das für jede den Grund nennt, warum sie ganz bleibt, und für einige eine Code-Zeilenzahl mit Toleranz; `--check` schlägt fehl bei einer Datei über 1 000 Code-Zeilen, die die Liste nicht nennt, einer gelisteten Datei mit 1 000 Code-Zeilen oder weniger, einer Zahl außerhalb ihrer Toleranz und einem Ausschluss, der nichts trifft; eine Datei, deren Kopf das `tools/gen_*.py` nennt, das sie erzeugt, steht nicht in der Liste, wenn CI diesen Generator mit `--check` ausführt |
-| `tools/sense_trace.py` | liest die mitgeschnittene Konsole eines IOmcu, der mit `-DSENSE_TRACE=ON` gebaut ist: liest jede Zeile gegen das Zeilenformat und jeden Trace der 1-ms-Samples von INA3221 CH1 gegen seine Endzeile, schreibt je Trace eine CSV-Datei (Comma-Separated Values) und spielt jede Bewegung durch `shared/servo/servo_move.c`, mit dem Filter bei 1, 4 und 8 Samples und dem Band bei 0,02, 0,05 und 0,10 A; `--servo-csv` ergänzt die Ankunft abzüglich der Stellzeit des AS5600, `--loaded-channel` nennt die Ausgangskanäle mit angeschlossenem Servo und lässt die Kommandos der anderen aus ([Erster Lauf](FirstRun-de.md#89-die-1-ms-samples-von-ch1-auf-der-konsole)) |
+| `tools/sense_trace.py` | liest die mitgeschnittene Konsole eines IOmcu, der mit `-DSENSE_TRACE=ON` gebaut ist: liest jede Zeile gegen das Zeilenformat und jeden Trace der 1-ms-Samples von INA3221 CH1 gegen seine Endzeile, schreibt je Trace eine CSV-Datei (Comma-Separated Values) und spielt jede Bewegung durch `shared/servo/servo_move.c`, mit dem Filter bei 1, 4 und 8 Samples und dem Band bei 0,02, 0,05 und 0,10A; `--servo-csv` ergänzt die Ankunft abzüglich der Stellzeit des AS5600, `--loaded-channel` nennt die Ausgangskanäle mit angeschlossenem Servo und lässt die Kommandos der anderen aus ([Erster Lauf](FirstRun-de.md#89-die-1-ms-samples-von-ch1-auf-der-konsole)) |
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/ioboard-pinmap-draft.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
@@ -316,7 +317,7 @@ layer security) laufen auf dem P4; der C6 betreibt das Funkteil.
 | D0 bis D3 | GPIO14 bis GPIO17 | IO20 bis IO23 |
 | EN (chip enable), Low setzt zurück | GPIO54 | EN |
 
-SDIO läuft mit 4 Bit Breite und 40 MHz.
+SDIO läuft mit 4 Bit Breite und 40MHz.
 `components/board/include/board_pins.h` nennt die Pins (`BOARD_C6_*`),
 `firmware/panel/sdkconfig.defaults` gibt sie an esp_hosted, und
 `wifi_radio.c` bricht den Build ab, wenn beide abweichen.
@@ -354,16 +355,16 @@ ausführen und die neue Lock-Datei einchecken.
 Der C6 betreibt Espressifs esp_hosted-Co-Prozessor-Firmware. Mit welcher
 Version das Board ausgeliefert wird, ist nicht veröffentlicht und hier nicht
 bekannt. Beim ersten Wi-Fi-Start nach dem Einschalten setzt esp_hosted den C6
-zurück: GPIO54 (EN) geht für 10 ms auf Low, dann wartet esp_hosted fest
-1 500 ms (`CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS`), startet den C6 als
-SDIO-Karte und fragt alle 200 ms nach seinem Start-Event. Danach schreibt
+zurück: GPIO54 (EN) geht für 10ms auf Low, dann wartet esp_hosted fest
+1 500ms (`CONFIG_ESP_HOSTED_SDIO_RESET_DELAY_MS`), startet den C6 als
+SDIO-Karte und fragt alle 200ms nach seinem Start-Event. Danach schreibt
 das Panel die Version des C6 auf die Konsole:
 
 ```
 wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
 ```
 
-Eine C6-Firmware ohne die Versionsabfrage antwortet nach bis zu 5 s mit
+Eine C6-Firmware ohne die Versionsabfrage antwortet nach bis zu 5s mit
 `wifi: C6: firmware version not reported, host 2.13.0`. esp_hosted meldet
 außerdem `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`, wenn Haupt-
 oder Nebenversion abweichen. Laut Espressif läuft ein Host, der neuer ist als
@@ -378,14 +379,14 @@ Verbindung stehend vor und setzen nichts zurück.
 `esp_hosted_connect_to_slave()` gibt `ESP_OK` zurück, ob der C6
 hochgekommen ist oder nicht (`esp_hosted_api.c` 177-192). Das Panel nimmt
 das Event `ESP_HOSTED_EVENT_TRANSPORT_UP` von esp_hosted als Antwort und
-wartet darauf höchstens 1 000 ms, nachdem dieser Aufruf zurückgekehrt ist
+wartet darauf höchstens 1 000ms, nachdem dieser Aufruf zurückgekehrt ist
 (`wifi_radio.c`).
 
 - Ein C6, der nicht als SDIO-Karte startet: esp_hosted gibt nach dem Start
-  der Karte auf, mindestens 1 500 ms nach dem Reset von 1 520 ms; 1 Reset.
+  der Karte auf, mindestens 1 500ms nach dem Reset von 1 520ms; 1 Reset.
 - Ein C6, der als Karte startet und kein Start-Event schickt: esp_hosted
-  fragt 100-mal im Abstand von 200 ms und setzt den C6 nach 50 und nach 100
-  Abfragen erneut zurück (`transport_drv.c` 227-252); 3 Resets, etwa 25 s.
+  fragt 100-mal im Abstand von 200ms und setzt den C6 nach 50 und nach 100
+  Abfragen erneut zurück (`transport_drv.c` 227-252); 3 Resets, etwa 25s.
 - In beiden Fällen scheitert der Start, WI-FI zeigt den gescheiterten
   Start, und das Panel hält den C6 bis zum nächsten Neustart im Reset
   (GPIO54 auf Low). Spätere Starts scheitern sofort, ohne Reset. Prüfstand
@@ -402,11 +403,11 @@ wartet darauf höchstens 1 000 ms, nachdem dieser Aufruf zurückgekehrt ist
   (`CONFIG_ESP_HOSTED_TRANSPORT_RESTART_ON_FAILURE=n`): ein Neustart würde
   den Link zum IOmcu und den Heartbeat unterbrechen.
 - Vom Ausfall bis Wi-Fi aus: die Event-Schleife stellt das Event zu (nicht
-  gemessen), der Task des Funkteils sieht es binnen 100 ms und nimmt das
+  gemessen), der Task des Funkteils sieht es binnen 100ms und nimmt das
   Funkteil ohne die zwei Anfragen an den C6 herunter, `esp_wifi_stop()` und
   `esp_wifi_deinit()`, die jeweils erst mit der Antwort-Zeitüberschreitung
-  von esp_hosted nach 5 s enden würden. Das Herunterfahren wartet bis zu
-  1 500 ms auf eine laufende GitHub-Abfrage und bis zu 20 000 ms auf das
+  von esp_hosted nach 5s enden würden. Das Herunterfahren wartet bis zu
+  1 500ms auf eine laufende GitHub-Abfrage und bis zu 20 000ms auf das
   Ende ihres Tasks. Die Zeit auf einem Board ist nicht gemessen.
 
 Bekannte Einschränkungen, alle in esp_hosted. Jede hält das Panel mit einem
@@ -500,7 +501,7 @@ Funkteil.
 | --- | --- | --- |
 | `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.5.5 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF`, der fehlschlägt, wenn er ein Injector-Symbol enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
-| `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000 s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
+| `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
 | `pages.yml` | Pull Request und Push auf `main`, der `configurator/`, `help/`, `docs/img/`, den Hilfe-Generator, das `Doxyfile` oder `tools/install_doxygen.sh` berührt; ein Push auf `main` auch, wenn er die C-Quellen berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; der Bau der Webhilfe mit `tools/help_site.py`; die C-API-Referenz, gebaut von Doxygen 1.18.0; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages, mit der Webhilfe unter `help/` und der API-Referenz unter `api/`. Ein Lauf, der nur die C-Quellen, das `Doxyfile` oder `tools/install_doxygen.sh` ändert, baut die Seite des Configurators ohne ihre Prüfungen und startet keinen Browser-Test |
 
@@ -520,8 +521,8 @@ den Wert in `ci.yml` und bricht bei Abweichung ab; der Build wird nach Version
 und Hash gecacht). Das cppcheck der Distribution ist älter (2.13 unter Ubuntu
 24.04) und meldet anders; lokal 2.17.1 mit `tools/install_cppcheck.sh 2.17.1
 <SHA-256 aus ci.yml> ~/cppcheck-2.17.1` oder aus einem Distributionspaket von
-2.17.1 installieren. Jeder Job hat ein `timeout-minutes`-Limit: 100 min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400 s, 90 min), 10 bis 60 min für die übrigen. ctest
-bricht einen Test nach 120 s ab. Ist die Umgebungsvariable `CI` gesetzt,
+2.17.1 installieren. Jeder Job hat ein `timeout-minutes`-Limit: 100min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400s, 90min), 10 bis 60min für die übrigen. ctest
+bricht einen Test nach 120s ab. Ist die Umgebungsvariable `CI` gesetzt,
 lässt ein fehlender C++-Compiler den CMake-Configure-Schritt der Host-Suite
 fehlschlagen, und ein fehlendes `git`, `cmake` oder `cc` lässt die
 End-to-End-Fälle von `tools/mutate.py` fehlschlagen. `tools/check_docs.py`

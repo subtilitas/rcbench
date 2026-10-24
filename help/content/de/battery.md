@@ -20,15 +20,15 @@ In diesem Release speist keine Firmware diesen Bildschirm: Keine der beiden Plat
 
 Das Bild stammt aus dem Host-Renderer, der den Bildschirm mit Zellspannungen speist.
 
-- ZELLENABWEICHUNG zeichnet jede Zelle als ihre Abweichung vom Mittelwert des Akkus. Ab einer Streuung von 30 mV ist die schwächste Zelle rot gezeichnet.
-- Die Skala folgt dem Akku bis hinunter zu einer Untergrenze von 12 mV und steht neben der Grafik.
+- ZELLENABWEICHUNG zeichnet jede Zelle als ihre Abweichung vom Mittelwert des Akkus. Ab einer Streuung von 30mV ist die schwächste Zelle rot gezeichnet.
+- Die Skala folgt dem Akku bis hinunter zu einer Untergrenze von 12mV und steht neben der Grafik.
 - Unter jedem Balken: die Nummer der Zelle und ihre Spannung.
 
 | Urteil | Zeile | Streuung |
 |---|---|---|
-| GUT | `Zellwerte sind unter Last gleichmäßig.` | unter 30 mV |
-| BEOBACHTEN | `Der Unterschied zwischen den Zellen wächst.` | ab 30 mV |
-| ERSETZEN | `Eine Zelle weicht von den anderen ab.` | ab 60 mV |
+| GUT | `Zellwerte sind unter Last gleichmäßig.` | unter 30mV |
+| BEOBACHTEN | `Der Unterschied zwischen den Zellen wächst.` | ab 30mV |
+| ERSETZEN | `Eine Zelle weicht von den anderen ab.` | ab 60mV |
 | KEIN AKKU | `Kein Akku am Balancer-Anschluss.` | keine Zellen |
 
 Die Streuung ist der größte Abstand zwischen zwei beliebigen Zellen.

@@ -369,7 +369,7 @@ bool sense_link_win_on(const sense_link_t *s)
     /* With the map in force SERVO_WIN carries FAST, whichever channel of
      * whichever part that is, and only once the page holds the map asked:
      * the ring is the held FAST's.  Without it, CH1 of the one part: FAST
-     * on CH2 or CH3 is not what an older IOmcu reads at 1 kHz. */
+     * on CH2 or CH3 is not what an older IOmcu reads at 1kHz. */
     return s != NULL && s->win_page && s->known
            && (s->held[LINK_SN_ENABLE] & LINK_SN_EN_I3221) != 0u
            && (s->map ? !s->want_unwatched && s->map_held
@@ -799,7 +799,7 @@ static void judge_win(sense_link_t *s, const uint16_t *regs, unsigned n,
         s->win_moved_ms = now_ms;
         s->win_stands   = false;
     } else if ((uint32_t)(now_ms - s->win_moved_ms) >= SENSE_LINK_STALE_MS) {
-        /* Latched, so a number that stands for 2^32 ms does not read as
+        /* Latched, so a number that stands for 2^32ms does not read as
          * one that has just moved. */
         s->win_stands = true;
     }

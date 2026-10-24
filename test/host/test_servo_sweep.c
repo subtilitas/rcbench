@@ -56,7 +56,7 @@ TEST_CASE(a_configuration_outside_its_ranges_is_refused)
 /* A sine starts at the centre, so a sweep begins without a jump. */
 TEST_CASE(a_sine_is_at_its_ends_at_the_quarters)
 {
-    sweep_t w = make(SWEEP_SINE, 1000u, 400u, 0u, 0u);   /* 1 Hz */
+    sweep_t w = make(SWEEP_SINE, 1000u, 400u, 0u, 0u);   /* 1Hz */
     CHECK_EQ(at(&w, 0u),   500u);
     CHECK_EQ(at(&w, 250u), 900u);
     CHECK_EQ(at(&w, 500u), 500u);
@@ -96,7 +96,7 @@ TEST_CASE(the_dwell_holds_each_end)
     CHECK_EQ(at(&w, 700u),  500u);
     CHECK_EQ(at(&w, 950u),  100u);
     CHECK_EQ(at(&w, 1149u), 100u);
-    CHECK_EQ(at(&w, 1400u), 500u);                 /* the cycle is 1.4 s */
+    CHECK_EQ(at(&w, 1400u), 500u);                 /* the cycle is 1.4s */
     CHECK_EQ(at(&w, 1650u), 900u);
 
     sweep_t sq = make(SWEEP_SQUARE, 1000u, 400u, 200u, 0u);
@@ -147,7 +147,7 @@ TEST_CASE(the_clock_may_wrap)
     const sweep_cfg_t cfg = { SWEEP_SINE, 1000u, 400u, 0u, 0u };
     CHECK(sweep_start(&w, &cfg, UINT32_MAX - 100u));
     uint16_t c = 0;
-    CHECK(sweep_step(&w, 149u, &c));               /* 250 ms after the start */
+    CHECK(sweep_step(&w, 149u, &c));               /* 250ms after the start */
     CHECK_EQ(c, 900u);
 }
 
@@ -165,7 +165,7 @@ TEST_CASE(a_long_sweep_keeps_its_period)
 
 /*
  * The slew a curve outruns: 4 f A for a triangle, 2 pi f A for a sine, and
- * any slew at all for a square's jump.  At 1 Hz and 400 units those are
+ * any slew at all for a square's jump.  At 1Hz and 400 units those are
  * 1600 and 2513.3 units a second.
  */
 TEST_CASE(a_slew_limits_a_sweep_that_asks_for_a_faster_change)
@@ -202,7 +202,7 @@ TEST_CASE(no_slew_and_no_amplitude_limit_nothing)
 
 /*
  * The figures are the curve's own: the steepest change sweep_step() makes
- * in any 4 ms of a cycle sits between the slews either side of the limit.
+ * in any 4ms of a cycle sits between the slews either side of the limit.
  */
 TEST_CASE(the_limit_is_the_steepest_change_the_curve_makes)
 {
@@ -216,7 +216,7 @@ TEST_CASE(the_limit_is_the_steepest_change_the_curve_makes)
                                        : (unsigned)(b - a);
             steepest = (d > steepest) ? d : steepest;
         }
-        const unsigned per_s = steepest * 250u;   /* units in 4 ms, a second */
+        const unsigned per_s = steepest * 250u;   /* units in 4ms, a second */
         CHECK(sweep_slew_limited(&w.cfg, (uint16_t)(per_s * 9u / 10u)));
         CHECK(!sweep_slew_limited(&w.cfg, (uint16_t)(per_s * 11u / 10u)));
     }
@@ -237,9 +237,9 @@ TEST_CASE(a_paused_sweep_resumes_where_it_was)
     CHECK(!sweep_step(&w, 5000u, &c));             /* paused: the centre */
     CHECK_EQ(c, SWEEP_CENTRE);
     CHECK(sweep_resume(&w, 9000u));
-    CHECK(sweep_step(&w, 9000u + 40u, &c));        /* 340 ms: still held */
+    CHECK(sweep_step(&w, 9000u + 40u, &c));        /* 340ms: still held */
     CHECK_EQ(c, 900u);
-    CHECK(sweep_step(&w, 9000u + 175u, &c));       /* 475 ms: on the way */
+    CHECK(sweep_step(&w, 9000u + 175u, &c));       /* 475ms: on the way */
     CHECK_EQ(c, 700u);
     CHECK_EQ(sweep_moves(&w, 9000u + 175u), 1u);
     CHECK(!sweep_resume(&w, 9500u));               /* once */

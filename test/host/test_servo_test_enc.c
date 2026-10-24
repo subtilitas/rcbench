@@ -78,7 +78,7 @@ TEST_CASE(a_reversed_profile_reads_the_encoder_in_the_commanded_direction)
     float deg = 0.0f;
     CHECK(servo_test_enc_at(&g.t, g.now, &deg));
     CHECK(fabsf(deg) <= 36.5f);
-    CHECK(strstr(g.report, "Commanded: +36.0 deg at the low end, -36.0 deg at the high end.") != NULL);
+    CHECK(strstr(g.report, "Commanded: +36.0deg at the low end, -36.0deg at the high end.") != NULL);
 }
 
 TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
@@ -117,8 +117,8 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
     CHECK(strstr(g.report, "Encoder:        AS5600 on the horn shaft, centre count 3000,") != NULL);
     CHECK(strstr(g.report, "ENCODER (angles in degrees from the centre count, times in ms)") != NULL);
     CHECK(strstr(g.report, "Set V  End lo   Err lo   End hi   Err hi   Travel Longest Moves Unmoved Late") != NULL);
-    CHECK(strstr(g.report, "Commanded: -36.0 deg at the low end, +36.0 deg at the high end.") != NULL);
-    CHECK(strstr(g.report, "Settled: the angle has stayed within 1.05 deg for 100 ms.") != NULL);
+    CHECK(strstr(g.report, "Commanded: -36.0deg at the low end, +36.0deg at the high end.") != NULL);
+    CHECK(strstr(g.report, "Settled: the angle has stayed within 1.05deg for 100ms.") != NULL);
     CHECK(strstr(g.report, "Deadband: not measured; the moves go end to end.") != NULL);
     CHECK(strstr(g.report, "Position: the AS5600 measures the horn;") != NULL);
     CHECK(strstr(g.report, "Position: nothing measures the horn") == NULL);
@@ -230,7 +230,7 @@ TEST_CASE(a_servo_that_does_not_move_is_counted_unmoved_by_the_angle)
     CHECK_EQ(s->enc_unmoved, 3u);
     CHECK_EQ(s->enc_travels, 0u);
     CHECK_EQ(s->enc_late, 0u);
-    CHECK(strstr(g.report, "Unmoved: the angle did not leave 2.0 deg of its start.") != NULL);
+    CHECK(strstr(g.report, "Unmoved: the angle did not leave 2.0deg of its start.") != NULL);
 }
 
 TEST_CASE(an_encoder_that_gives_nothing_is_said_so)
@@ -268,7 +268,7 @@ TEST_CASE(an_invalid_reading_ends_the_angle_until_the_next)
 }
 
 /* Runs until a counted move has begun with a start angle and has not moved
- * yet; false when none does within 60 s. */
+ * yet; false when none does within 60s. */
 static bool run_to_counted_move_start(void)
 {
     for (uint32_t k = 0; k < 60000u; k += FRAME_MS) {
@@ -430,7 +430,7 @@ TEST_CASE(a_row_takes_the_newest_angle_not_later_than_itself)
     servo_test_init(&t);
     const servo_test_enc_t w = { true, 700u, 0u, 0xFFFFFFF0u, false, false, false, false };
     servo_test_encoder(&t, &w);
-    CHECK(servo_test_enc_at(&t, 20u, &deg));               /* 36 ms later */
+    CHECK(servo_test_enc_at(&t, 20u, &deg));               /* 36ms later */
     CHECK_NEAR(deg, servo_test_enc_deg(700u, 0u), 0.0001f);
     CHECK(!servo_test_enc_at(&t, 0xFFFFFFE0u, &deg));      /* before it */
 }
@@ -489,13 +489,13 @@ TEST_CASE(a_stillness_from_before_the_command_is_not_the_end_of_the_move)
     t.enc_end = 1u;
     t.enc_cmd_ms = 10000u;
     t.enc_start_raw = 0u;
-    /* Moved 5 degrees, still for 200 ms, the stillness older than the
+    /* Moved 5 degrees, still for 200ms, the stillness older than the
      * command: not settled. */
     servo_test_enc_t e = { true, (uint16_t)(5.0f * 4096.0f / 360.0f), 200u, 10100u, false, false, false, false };
     servo_test_encoder(&t, &e);
     CHECK(t.enc_moved);
     CHECK(!t.enc_settled);
-    /* Still for 100 ms from 10050: after the command, settled at 50 ms. */
+    /* Still for 100ms from 10050: after the command, settled at 50ms. */
     e.taken_ms = 10150u;
     e.still_ms = 100u;
     servo_test_encoder(&t, &e);
@@ -528,7 +528,7 @@ TEST_CASE(a_start_angle_older_than_half_a_second_leaves_the_move_unjudged)
 {
     servo_test_cfg_t c;
     enc_rig(ENC_DEG_PER_US, &c);
-    g.enc_every = 2000u;            /* a reading every 2 s: too old to start from */
+    g.enc_every = 2000u;            /* a reading every 2s: too old to start from */
     CHECK_EQ(start(&c), SERVO_TEST_START_OK);
     run_out(120000u);
     const servo_test_step_t *s = &g.t.steps[0];
@@ -582,7 +582,7 @@ TEST_CASE(end_angles_either_side_of_the_half_turn_average_on_the_circle)
     servo_test_cfg_t c;
     enc_rig(ENC_DEG_PER_US, &c);
     c.moves = 4u;
-    const uint16_t hi_count = (uint16_t)(ENC_CENTRE_COUNT + 410u);  /* +36 deg */
+    const uint16_t hi_count = (uint16_t)(ENC_CENTRE_COUNT + 410u);  /* +36deg */
     c.enc_centre = (uint16_t)(hi_count - 2048u);
     c.enc_cmd_deg[0] = 108.0f;
     c.enc_cmd_deg[1] = 180.0f;
@@ -646,7 +646,7 @@ TEST_CASE(ends_more_than_180_degrees_apart_are_reported_within_one_turn)
     CHECK_NEAR(lo, 0.0f, 0.5f);
     CHECK_NEAR(hi, -160.0f, 0.5f);
     CHECK(fabsf(elo) < 0.5f && fabsf(ehi) < 0.5f);
-    CHECK(strstr(g.report, "End: the settled angle, -180 to +180 deg from the "
+    CHECK(strstr(g.report, "End: the settled angle, -180 to +180deg from the "
                            "centre count. Err: End minus commanded, the "
                            "shortest way round.") != NULL);
 }

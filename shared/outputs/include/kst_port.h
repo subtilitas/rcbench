@@ -56,8 +56,8 @@
  *   - LEAVE returns the port to PWM without a supply cycle, with a PD
  *     mini or without one.  The port goes to LEAVING: the wire driver
  *     keeps the pin low and no frame goes out for the staged
- *     LINK_KS_W_LEAVE_MS (0 to LINK_KST_LEAVE_MS_MAX, 10 000 ms;
- *     LINK_KST_LEAVE_MS_DEFAULT, 100 ms, until written), counted from the
+ *     LINK_KS_W_LEAVE_MS (0 to LINK_KST_LEAVE_MS_MAX, 10 000ms;
+ *     LINK_KST_LEAVE_MS_DEFAULT, 100ms, until written), counted from the
  *     command.  Then the pin is the generator's, the port is in PWM and
  *     LINK_KS_F_IN_MODE is clear.  The supply is not switched and its set
  *     points are not changed: one this port switched on stays on.  LEAVE
@@ -107,7 +107,7 @@
  *
  * A stop is the heartbeat lost, the link silent or the bank disarmed.  On a
  * stop the running operation is aborted: a frame on the wire is finished,
- * which takes at most 12 ms, and no other starts.  The pin is low or an
+ * which takes at most 12ms, and no other starts.  The pin is low or an
  * input afterwards.  LINK_KS_F_MUST_READ is set, and until a read of all
  * registers has succeeded the port takes ENTER, READ_ALL, ABORT,
  * POWER_CYCLED and REBOOT only.  The operation ABORT does the same to an
@@ -141,8 +141,8 @@
  *   - a RESTORE whose result cannot be checked, without the confirmation:
  *     KST_SES_ERR_UNCONFIRMED, nothing sent.
  *
- * A slice is 892 us or less and the frame's part 64 us on a Cortex-M33 at
- * 150 MHz, computed from the instructions executed (docs/Performance.md);
+ * A slice is 892us or less and the frame's part 64us on a Cortex-M33 at
+ * 150MHz, computed from the instructions executed (docs/Performance.md);
  * not measured on hardware.  A RELEASE has one write at most and no
  * search.
  *
@@ -182,7 +182,7 @@ extern "C" {
 #endif
 
 /** @brief The port renders no pulse this long before the generator gives up the
- *  pin: 2 frames at 40 Hz, the lowest PWM rate. */
+ *  pin: 2 frames at 40Hz, the lowest PWM rate. */
 #define KST_PORT_STOP_MS 50u
 /** @brief The driver holds the pin low this long before the session starts. */
 #define KST_PORT_LOW_MS 100u
@@ -345,7 +345,7 @@ void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
  *
  * @p safe: the heartbeat is trusted and the link is not silent.
  * @p stop: the bank was switched off or disarmed since the last pass.
- * Steps the session and the port's timers; a pass every 1 ms or faster
+ * Steps the session and the port's timers; a pass every 1ms or faster
  * keeps the session's pacing.  A pass does one slice of planning at most
  * and never a whole search.
  *

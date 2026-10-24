@@ -1,7 +1,7 @@
 /**
  * @file sense_limit_link.h
  * @brief The panel's half of SENSE_LIMIT (0x36, protocol 4.27): a current
- *        limit per INA3221 channel, and the channels whose 50 ms window
+ *        limit per INA3221 channel, and the channels whose 50ms window
  *        passed it.
  *
  * An alert only: a limit passed stops nothing and drives nothing.

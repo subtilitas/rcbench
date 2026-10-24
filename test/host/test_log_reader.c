@@ -348,8 +348,8 @@ static size_t long_log(char *text, size_t cap, const char *tail)
 /*
  * Past the row cap, a source that can seek is not read to its end for the
  * cut row: the analysis stops at the first row past the cap and reads the
- * last bytes of the file.  20000 rows and a cap of 100 read under 16 KiB of
- * a file over 200 KiB, and the flags match the source that can only be read
+ * last bytes of the file.  20000 rows and a cap of 100 read under 16KiB of
+ * a file over 200KiB, and the flags match the source that can only be read
  * on to its end.
  */
 TEST_CASE(a_capped_file_is_not_read_to_its_end_for_the_cut_row)
@@ -597,11 +597,11 @@ TEST_CASE(a_read_error_is_not_a_clean_end_of_file)
  * the other passes refuse one: the statistics would describe the readable
  * part and nothing would say so.
  *
- * The fixture is a 40 s run logged at 10 Hz, its time column in milliseconds
+ * The fixture is a 40s run logged at 10Hz, its time column in milliseconds
  * under a bare header.  With no unit to read, the unit is guessed from the
- * span: 39,900 ms over the whole file reads as "ms", while the 3,000 ms of
+ * span: 39,900ms over the whole file reads as "ms", while the 3,000ms of
  * the 31 rows a failure 300 bytes in leaves reads as "s".  Accepting that
- * hands the plot a time axis 1000x too long -- 39,900 s instead of 39.9 s --
+ * hands the plot a time axis 1000x too long -- 39,900s instead of 39.9s --
  * and nothing on the screen is drawn in UI_WARN.
  */
 TEST_CASE(a_column_pass_that_fails_is_refused_like_the_others)

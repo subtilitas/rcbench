@@ -70,9 +70,15 @@ static inline gfx_color_t ui_theme_color(ui_color_id_t id)
 
 /** Recompute the palette.  Call ui_router_invalidate() after. */
 void ui_theme_set(ui_theme_id_t theme);
-/** 20..100 %.  Scales the whole palette. */
+/**
+ * @brief Scales the whole palette.
+ * @param percent the brightness, 20..100%
+ */
 void ui_theme_set_brightness(int percent);
-/** 60..140 %.  Pushes colours away from mid-grey, or pulls them toward it. */
+/**
+ * @brief Pushes colours away from mid-grey, or pulls them toward it.
+ * @param percent the contrast, 60..140%
+ */
 void ui_theme_set_contrast(int percent);
 
 ui_theme_id_t ui_theme_get(void);
@@ -115,9 +121,9 @@ int ui_theme_contrast(void);
 
 /* ----------------------------------------------------------------- metrics */
 
-/** @brief A card's or a button's cut corner: 10 px. */
+/** @brief A card's or a button's cut corner: 10px. */
 #define UI_CHAMFER       10
-/** @brief A chip's or a small control's cut corner: 5 px. */
+/** @brief A chip's or a small control's cut corner: 5px. */
 #define UI_CHAMFER_SM    5
 
 /*
@@ -130,7 +136,7 @@ int ui_theme_contrast(void);
  * The bench's numeral style, in one place: the four readings and the throttle
  * share it.  Thickness is an eighth of the height; a fatter segment makes the
  * horizontals, which only span the gap between the two verticals, shorter
- * than they are thick.  The slant of 3 px is the lean of a panel meter.
+ * than they are thick.  The slant of 3px is the lean of a panel meter.
  */
 static inline gfx_seg_style_t ui_seg_hero(void)
 {
@@ -146,7 +152,7 @@ static inline gfx_seg_style_t ui_seg_hero(void)
 
 /*
  * Roles of the faces of the 1024 x 600 type scale.  LABEL, HEAD and NUM
- * above are the faces the screens are laid out in, 8 px cells.  The band,
+ * above are the faces the screens are laid out in, 8px cells.  The band,
  * the home tag, the help bubbles and the alert band draw with the scale's
  * faces: UI_FONT_BAND and UI_FONT_TAG.
  */

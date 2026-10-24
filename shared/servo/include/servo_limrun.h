@@ -6,8 +6,8 @@
  *        neither end binds.
  *
  * The search.  A side is searched from its centre outward, a servo_limit
- * search in steps of 10 us, the position bound once its current is above
- * 1.8 times the free current and 0.15 A above it.  A side whose end is
+ * search in steps of 10us, the position bound once its current is above
+ * 1.8 times the free current and 0.15A above it.  A side whose end is
  * measured free is free.  The endpoints are reported; the bench's own pulse
  * range is not changed.  Where the search runs depends on the target:
  *
@@ -25,10 +25,10 @@
  *     (SERVO_LIMRUN_WHY_RANGE), the bench left SAFE and nothing driven.
  *
  * SERVO PULSES (cfg.set_pulses, programming port only).  At 1000-2000 the
- * read session writes PULSE LOWER 1000.0 us and PULSE UPPER 2000.0 us
+ * read session writes PULSE LOWER 1000.0us and PULSE UPPER 2000.0us
  * before anything is driven, and reads them back; NEUTRAL is not written.
  * A servo at those values already gets no write.  The search then runs
- * out to 1000 us and 2000 us.  The pulse write counts toward
+ * out to 1000us and 2000us.  The pulse write counts toward
  * SERVO_LIMRUN_WRITES_MAX and RESTORE takes it back with the rest.
  *
  * The programming (cfg.program).  LEFT ANGLE and RIGHT ANGLE are the
@@ -61,18 +61,18 @@
  *      still gives the final value below; no further overset follows.
  *   2.  The final value: v2 = floor(v1 x f1), f1 the share at the overset
  *      search's last free pulse, at least the smallest value.  No margin is
- *      added: the last free pulse lies a 10 us step short of the bound one.
+ *      added: the last free pulse lies a 10us step short of the bound one.
  *
- * Worked: NEUTRAL 1500.2 us, PULSE LOWER 900.0 us, v0 150, the stop at
- * 1000 us.  The first search is free at 1000 us and bound at 990 us:
+ * Worked: NEUTRAL 1500.2us, PULSE LOWER 900.0us, v0 150, the stop at
+ * 1000us.  The first search is free at 1000us and bound at 990us:
  * fb = 510.2 / 600.2 = 0.850, v1 = ceil(150 x 0.850 x 1.03) = 132.  A
- * linear servo at 132 is free out to 930 us: f1 = 570.2 / 600.2 = 0.950,
- * v2 = floor(132 x 0.950) = 125.  At 125 the full travel ends at 1000.2 us.
+ * linear servo at 132 is free out to 930us: f1 = 570.2 / 600.2 = 0.950,
+ * v2 = floor(132 x 0.950) = 125.  At 125 the full travel ends at 1000.2us.
  *
  * The overset is left out, and the first search counts as its search,
  * where v1 would not lie below v0 (fb above about 0.97) or where the model
  * moves the stop, estimated at the first search's last free pulse, less
- * than SERVO_LIMRUN_MOVED_US further out: d0 x (v0 - v1) / v1 under 20 us,
+ * than SERVO_LIMRUN_MOVED_US further out: d0 x (v0 - v1) / v1 under 20us,
  * d0 that pulse's distance from NEUTRAL.  A search could not tell that move
  * from no move.  The final value is then v2 = floor(v0 x f0), f0 the share
  * at the first search's last free pulse.
@@ -108,7 +108,7 @@
  *
  * Protections, for the whole run, whatever phase it is in:
  *
- *   - a 1 ms sample of the window at or above SERVO_LIMRUN_HARD_MA, or a
+ *   - a 1ms sample of the window at or above SERVO_LIMRUN_HARD_MA, or a
  *     clipped one (the INA3221 at the end of its range), ends it;
  *   - window means above SERVO_LIMRUN_STALL_MA for SERVO_LIMRUN_STALL_MS
  *     end it;
@@ -165,28 +165,28 @@ extern "C" {
  *         first bound pulse: the stop stays in reach, close to the pulse
  *         limit. */
 #define SERVO_LIMRUN_OVERSET_PCT  3u
-/** @brief The pulses SERVO PULSES at 1000-2000 writes, 0.1 us. */
+/** @brief The pulses SERVO PULSES at 1000-2000 writes, 0.1us. */
 #define SERVO_LIMRUN_STD_LOWER_DUS 10000u
 #define SERVO_LIMRUN_STD_UPPER_DUS 20000u
 /** @brief An endpoint that moves this far out moved; one within it stayed. */
 #define SERVO_LIMRUN_MOVED_US     20u
-/** @brief One search of one side at most: 1000 us of travel, PULSE MIN 500 us
- *         to a 1500 us centre, is 100 positions of 250 ms, 25 s; the baseline's
+/** @brief One search of one side at most: 1000us of travel, PULSE MIN 500us
+ *         to a 1500us centre, is 100 positions of 250ms, 25s; the baseline's
  *         three and the slower windows of a busy panel fit in the rest. */
 #define SERVO_LIMRUN_SEARCH_MS    40000u
 /** @brief Each search starts with the servo held at PULSE CENTRE this long, and
  *         each session waits this long at PULSE CENTRE before the bench is
- *         asked to SAFE: the return from the last end, 600 us at 0.67 us/ms
- *         (0.3 s for 60 degrees) is 900 ms, and the search's baseline is not to
+ *         asked to SAFE: the return from the last end, 600us at 0.67us/ms
+ *         (0.3s for 60 degrees) is 900ms, and the search's baseline is not to
  *         see it travel. */
 #define SERVO_LIMRUN_RETURN_MS    1000u
 /** @brief One step of the programmer -- CONNECT with its read, a write, LEAVE
- *         -- at most: past the programmer's own 120 s of an operation. */
+ *         -- at most: past the programmer's own 120s of an operation. */
 #define SERVO_LIMRUN_PROG_MS      150000u
 /** @brief The bench switches to SAFE, or to ARMED, within this of being
  *         asked. */
 #define SERVO_LIMRUN_BENCH_MS     3000u
-/** @brief The protections: a 1 ms sample, and the window means for a time. */
+/** @brief The protections: a 1ms sample, and the window means for a time. */
 #define SERVO_LIMRUN_HARD_MA      3000
 #define SERVO_LIMRUN_STALL_MA     1000
 #define SERVO_LIMRUN_STALL_MS     400u
@@ -196,11 +196,11 @@ extern "C" {
  *         ends the run as a changed supply. */
 #define SERVO_LIMRUN_RAIL_DV_MV   1000
 /** @brief The servo rail a run starts on at least, the last INA3221 window's
- *         mean (the screen's START check): an output that is off reads 0 V, and
+ *         mean (the screen's START check): an output that is off reads 0V, and
  *         a search there finds two free ends on a servo that never moved.
  *
- * 3.0 V lies under the 4.8 V servos are commonly specified from, so a single
- * lithium cell's rail, 3.0 V to 4.2 V, still starts.  The voltage a given servo
+ * 3.0V lies under the 4.8V servos are commonly specified from, so a single
+ * lithium cell's rail, 3.0V to 4.2V, still starts.  The voltage a given servo
  * stops moving at is not measured. */
 #define SERVO_LIMRUN_RAIL_MIN_MV  3000
 
@@ -226,14 +226,14 @@ typedef struct {
     bool     program;     /**< lower LEFT and RIGHT ANGLE after the search;
                                read only */
     bool     set_pulses;  /**< PULSE LOWER and PULSE UPPER to 1000 and
-                               2000 us before the search; read only */
+                               2000us before the search; read only */
 
     /* For the report only. */
     char     dut[24];
     char     type[20];
     uint16_t frame_hz;
     char     output[28];  /**< what it drives: "PROG PORT GP13", "GP2"  */
-    uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1 mOhm           */
+    uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1mOhm            */
     char     meter[20];   /**< its channel: "INA3221 0x41 CH2"; "" names
                                it "INA3221"                             */
     bool     enc_on;      /**< an AS5600 reads the horn shaft           */
@@ -251,7 +251,7 @@ typedef struct {
     uint16_t hi_raw;
     bool     reversion;   /**< REVERSION on                               */
     unsigned type;        /**< the servo's type number, 0 not known       */
-    /** @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us. */
+    /** @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us. */
     uint16_t pulse_dus[3];
     /** @brief The file the values before the run are backed up in; "" for the
      *         panel's memory only. */
@@ -278,8 +278,8 @@ typedef struct {
     bool     write;       /**< the programmer: these two values           */
     uint16_t angle[2];
     bool     pulses;      /**< the programmer: PULSE LOWER and PULSE UPPER,
-                               0.1 us                                     */
-    uint16_t pulse_dus[2];
+                               0.1us                                      */
+    uint16_t pulse_dus[2]; /**< PULSE LOWER and PULSE UPPER, 0.1us       */
     bool     leave;       /**< the programmer: LEAVE                      */
 } servo_limrun_do_t;
 
@@ -512,7 +512,7 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
  *
  * @param r         Run state.
  * @param ok        false ends the run as ABORTED with WRITE.
- * @param pulse_dus NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us. NULL ends the
+ * @param pulse_dus NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us. NULL ends the
  *        run as WRITE.
  * @param now_ms    Time of the answer, ms.
  */
@@ -710,22 +710,22 @@ servo_str_t servo_limrun_why_str(const servo_limrun_t *r);
 servo_str_t servo_limrun_phase_str(servo_limrun_phase_t ph);
 
 /**
- * @brief The share of travel, 0.1 us of pulse: @p p_us's distance from NEUTRAL
+ * @brief The share of travel, 0.1us of pulse: @p p_us's distance from NEUTRAL
  *        on @p side, positive outward, and the pulse limit's.
  *
- * @param sv   Servo pulses, 0.1 us.
+ * @param sv   Servo pulses, 0.1us.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
  * @param p_us Pulse width, microseconds.
- * @return distance of p_us from NEUTRAL on side, 0.1 us, positive outward.
+ * @return distance of p_us from NEUTRAL on side, 0.1us, positive outward.
  */
 int32_t servo_limrun_dist(const servo_limrun_servo_t *sv, uint8_t side,
                           uint16_t p_us);
 /**
  * @brief Span of one side, as servo_limrun_span() reports it.
  *
- * @param sv   Servo pulses, 0.1 us.
+ * @param sv   Servo pulses, 0.1us.
  * @param side SERVO_LIMRUN_LO or SERVO_LIMRUN_HI.
- * @return distance from NEUTRAL to the side pulse limit, 0.1 us.
+ * @return distance from NEUTRAL to the side pulse limit, 0.1us.
  */
 int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side);
 /**
@@ -733,9 +733,9 @@ int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side);
  *        x (100 + SERVO_LIMRUN_OVERSET_PCT) / 100), within @p lo_raw to @p v0.
  *
  * @param v0     Register value at the read.
- * @param d      Distance of the bound pulse from NEUTRAL, 0.1 us. 0 or less
+ * @param d      Distance of the bound pulse from NEUTRAL, 0.1us. 0 or less
  *        returns the lower bound.
- * @param span   Span of the side, 0.1 us. 0 or less returns the lower bound.
+ * @param span   Span of the side, 0.1us. 0 or less returns the lower bound.
  * @param lo_raw Smallest value the hard rules take.
  * @return overset value, within lo_raw to v0; v0 when lo_raw is above v0.
  */
@@ -746,9 +746,9 @@ uint16_t servo_limrun_overset(uint16_t v0, int32_t d, int32_t span,
  *        share), within @p lo_raw to @p v.
  *
  * @param v      Value the share applies to.
- * @param d      Distance of the free pulse from NEUTRAL, 0.1 us. 0 or less
+ * @param d      Distance of the free pulse from NEUTRAL, 0.1us. 0 or less
  *        returns the lower bound.
- * @param span   Span of the side, 0.1 us. 0 or less returns the lower bound.
+ * @param span   Span of the side, 0.1us. 0 or less returns the lower bound.
  * @param lo_raw Smallest value the hard rules take.
  * @return final value, within lo_raw to v; v when lo_raw is above v.
  */

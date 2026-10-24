@@ -54,22 +54,22 @@
  */
 #define LCARD_W 620
 #define RCARD_X (PAD + LCARD_W + 8) /**< The output card's left edge, px. */
-#define RCARD_W (W - RCARD_X - PAD) /**< The output card's width: 380 px. */
+#define RCARD_W (W - RCARD_X - PAD) /**< The output card's width: 380px. */
 /**
  * @brief SERVO's task strip at the 1024 x 600 sizes: four tabs of 150 x
- *        40 px, 4 px apart, from y 8, and the page from y 56.
+ *        40px, 4px apart, from y 8, and the page from y 56.
  *
- * The shared UI_WB_ figures stay at their 24 px strip for MOTOR & ESC and
+ * The shared UI_WB_ figures stay at their 24px strip for MOTOR & ESC and
  * SUPPLY until those are laid out at the new sizes; these are SERVO's own,
  * the shared figures plus the difference.  SV_PAGE_Y is the top of the
  * page area a task and PROGRAM's sessions draw in.
  */
 #define SV_STRIP_X UI_WB_STRIP_X
-#define SV_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8 px. */
-#define SV_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40 px. */
-#define SV_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150 px. */
-#define SV_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4 px. */
-#define SV_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56 px. */
+#define SV_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8px. */
+#define SV_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40px. */
+#define SV_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150px. */
+#define SV_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4px. */
+#define SV_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
 /** @brief The left card's top: the page area under SERVO's strip. */
 #define CARD_Y  SV_PAGE_Y
 #define CARD_H  (H - CARD_Y - PAD) /**< The left card's height, px. */
@@ -82,7 +82,7 @@
 #define RCARD_H (H - 2 * PAD) /**< The output card's height, px. */
 /**
  * @brief The lowest row a control that stops what the bench drives may
- *        reach, in the screen's coordinates: 4 px above the alert band.
+ *        reach, in the screen's coordinates: 4px above the alert band.
  */
 #define STOP_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 
@@ -108,14 +108,14 @@
  * row tapped is UI_TAP_MIN or taller; ARM ends above the alert band.
  */
 #define RC_X      (RCARD_X + 12) /**< The output card's inner column, px. */
-#define RC_W      (RCARD_W - 24) /**< Its width: 356 px. */
+#define RC_W      (RCARD_W - 24) /**< Its width: 356px. */
 #define TAG_Y     (RCARD_Y + 12) /**< The type pill's top, px. */
 #define TAG_H     44             /**< The type pill's height, px. */
 /** @brief The line over the plot: the meter's name and three readings. */
 #define PWR_TXT_Y (TAG_Y + TAG_H + 8)
 /**
- * @brief The meter's name before the readings (k_line_w): 90 px for PD
- *        MINI, 134 px for "INA 0x41 CH2", 12 cells of 10 px and a gap.
+ * @brief The meter's name before the readings (k_line_w): 90px for PD
+ *        MINI, 134px for "INA 0x41 CH2", 12 cells of 10px and a gap.
  */
 #define PWR_LAB_W     90
 #define PWR_LAB_W_INA 134 /**< The same beside an INA3221 channel's name. */
@@ -124,8 +124,8 @@
 /**
  * @brief The supply's set points, each a value the keypad opens on, and
  *        OUTPUT ON and OFF: the same set points and switch as SUPPLY's,
- *        not a copy.  SET (SOLL) takes the first 48 px, each value 84 px,
- *        8 px apart, and the switch the rest, 124 px: AUSGANG AUS is 11
+ *        not a copy.  SET (SOLL) takes the first 48px, each value 84px,
+ *        8px apart, and the switch the rest, 124px: AUSGANG AUS is 11
  *        cells.
  */
 #define SUP_Y     (PWR_Y + PWR_H + 8)
@@ -141,7 +141,7 @@
 /**
  * @brief The TARGET row, what the tester drives and the control that
  *        picks it, clear of SPEED's thumb and its shadow, which paint
- *        UI_SLIDER_OVERHANG + 2 px below the track.
+ *        UI_SLIDER_OVERHANG + 2px below the track.
  */
 #define TARGET_Y  (SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 7)
 #define TARGET_H  UI_TAP_MIN           /**< The TARGET row's height, px. */
@@ -149,7 +149,7 @@
 #define BTN_H     UI_TAP_MIN           /**< Their height, px. */
 #define BTN_GAP   8                    /**< Between two of them, px. */
 #define ARM_Y     (BTN_Y + BTN_H + 10) /**< ARM and DISARM, px. */
-#define ARM_H     60                   /**< ARM's height, px: 9.0 mm. */
+#define ARM_H     60                   /**< ARM's height, px: 9.0mm. */
 _Static_assert(SV_STRIP_X + 4 * SV_TAB_W + 3 * SV_TAB_GAP + 3 <= RCARD_X,
                "SERVO's strip ends left of the output card");
 _Static_assert(SV_STRIP_Y + SV_STRIP_H + 3 <= SV_PAGE_Y,
@@ -166,7 +166,7 @@ _Static_assert(ARM_Y + ARM_H <= RCARD_Y + RCARD_H,
  * FIRST under it, the dial in the middle and, along the bottom, the three
  * readings in SV_FONT_NUM, a third of the card each.
  */
-#define READ_W     ((LCARD_W - 24) / 3) /**< A reading's column: 198 px. */
+#define READ_W     ((LCARD_W - 24) / 3) /**< A reading's column: 198px. */
 /** @brief Reading @p k's column (0 COMMANDED, 1 MEASURED, 2 CURRENT). */
 #define READ_X(k)  (PAD + 12 + (k) * READ_W)
 #define READ_NUM_H 44                    /**< A reading's numerals, px. */
@@ -202,25 +202,25 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
  */
 #define OV_TAB_Y  (CARD_Y + 8)    /**< SETTINGS' page tabs, px. */
 #define OV_TAB_H  40              /**< Their height, px. */
-#define OV_TAB_W  (OV_W - 20)     /**< Their row: three of 200 px. */
+#define OV_TAB_W  (OV_W - 20)     /**< Their row: three of 200px. */
 #define OV_ROW0   (CARD_Y + 52)   /**< SETTINGS' first row, px. */
 #define OV_PITCH  52              /**< From row to row, px. */
 #define OV_ROW_H  UI_TAP_MIN      /**< A row's height, px. */
-#define OV_COL_W  ((OV_W - 30) / 2) /**< A column of SETTINGS: 295 px. */
+#define OV_COL_W  ((OV_W - 30) / 2) /**< A column of SETTINGS: 295px. */
 #define OV_VAL_W  140             /**< A row's value, px. */
-/** @brief The OUTPUT page's notes, 2 px under its fifth row. */
+/** @brief The OUTPUT page's notes, 2px under its fifth row. */
 #define OV_NOTE_Y (OV_ROW0 + 4 * OV_PITCH + OV_ROW_H + 2)
 #define NOTE_PITCH 21             /**< A note's line pitch, px. */
 #define RL_ROW0   (CARD_Y + 56)   /**< A run's first row, px. */
 #define RL_PITCH  71              /**< From row to row: label and value. */
 #define RL_LBL_H  21              /**< A run's row's label over its value. */
-#define RL_COL_W  ((OV_W - 40) / 3) /**< A column of a run's: 193 px. */
+#define RL_COL_W  ((OV_W - 40) / 3) /**< A column of a run's: 193px. */
 #define RL_ROWS   5               /**< The rows a column holds. */
 /** @brief A run's note under its rows: the automatic test's stall note,
- *         4 px under the last value. */
+ *         4px under the last value. */
 #define RL_NOTE_Y (RL_ROW0 + RL_ROWS * RL_PITCH + 2)
-/** @brief The save line under SETTINGS' rows and notes, 20 px tall,
- *         ending 4 px above the alert band. */
+/** @brief The save line under SETTINGS' rows and notes, 20px tall,
+ *         ending 4px above the alert band. */
 #define OV_SAVE_Y (STOP_FLOOR - 20)
 _Static_assert(OV_NOTE_Y + 4 * NOTE_PITCH + 20 <= OV_SAVE_Y,
                "the OUTPUT page's five note lines end above the save line");
@@ -229,11 +229,11 @@ _Static_assert(RL_NOTE_Y + 20 <= STOP_FLOOR,
 
 /*
  * A pulse needs a pause before the next frame.  STANDARD PWM, WIDE and
- * NARROW 760 keep one of at least 1 ms -- a 100 % margin on the 1 ms a
+ * NARROW 760 keep one of at least 1ms -- a 100% margin on the 1ms a
  * standard servo's own decoder needs -- so their fastest frame rate is
- * 1 / (longest pulse + 1 ms): 333 Hz for 2000 us.  The heli profiles run
+ * 1 / (longest pulse + 1ms): 333Hz for 2000us.  The heli profiles run
  * at their published rates, which leave less, so theirs is set by the
- * profile and a pause of at least 0.5 ms.
+ * profile and a pause of at least 0.5ms.
  */
 #define PWM_MIN_PAUSE_US  1000u
 #define HELI_MIN_PAUSE_US 500u
@@ -290,7 +290,7 @@ enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
 
 /* What the question or the HV warning applies: a typed set point, the
  * supply's output switched on, or the automatic test started with steps
- * above 6.0 V. */
+ * above 6.0V. */
 enum { ASK_SET = 0, ASK_ON, ASK_TEST };
 
 #define CHOICE_MAX 10
@@ -357,7 +357,7 @@ typedef struct {
 
 /* The screen's state, the pages' with it. */
 typedef struct {
-    /* The profile in force, for this session only: STANDARD PWM at 50 Hz
+    /* The profile in force, for this session only: STANDARD PWM at 50Hz
      * at every restart. */
     int      type;
     uint16_t min_us, centre_us, max_us;
@@ -667,7 +667,7 @@ typedef struct {
      * every restart, as a profile that can destroy a servo is.
      */
     servo_test_t test;
-    bool      test_hv;       /**< HV SERVO: 7.4 and 8.4 V run          */
+    bool      test_hv;       /**< HV SERVO: 7.4 and 8.4V run           */
     ui_hold_t test_hold;
     bool      test_down;
     uint32_t  test_rev;
@@ -703,7 +703,7 @@ typedef struct {
      * The limit run (servo_limrun.h): the limit search on the INA3221's
      * windows, and with LIMIT RUN at SEARCH+PROG, LEFT ANGLE and RIGHT
      * ANGLE of a KST or Chaservo servo on the programming port lowered.
-     * Its START is the LIMIT RUN card's, held 2 s; its box is the test's
+     * Its START is the LIMIT RUN card's, held 2s; its box is the test's
      * place on LIVE's card.  One of the two runs at a time.
      */
     servo_limrun_t lim;
@@ -1071,7 +1071,7 @@ static inline gfx_rect_t sup_val_rect(int k)
 
 /**
  * @brief HOLD TO APPLY, or APPLY, bottom left of a warning or the question.
- * @return the button, 240 x 56 px
+ * @return the button, 240 x 56px
  */
 static inline gfx_rect_t warn_apply_rect(void)
 {
@@ -1107,7 +1107,7 @@ static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
  * @brief The run's box on LIVE's card, left, under the horn's angle and
  *        ARM FIRST: four lines of BOX_CELLS cells of SV_FONT_LABEL,
  *        BOX_PITCH px apart, over its one button, STOP TEST while it runs,
- *        CLOSE after.  Its right edge stays 36 px left of the shaft, so the
+ *        CLOSE after.  Its right edge stays 36px left of the shaft, so the
  *        horn, its boss and its rings show at every angle while the box is
  *        up; it covers the case's left half.
  */
@@ -1127,7 +1127,7 @@ _Static_assert(ARM_NOTE_Y + 28 + BOX_BTN_DY + UI_TAP_MIN + 10
                    <= READ_LBL_Y - 8,
                "the run's box ends above LIVE's readings");
 
-/** @brief The box's button. @return STOP TEST or CLOSE, 150 x 48 px */
+/** @brief The box's button. @return STOP TEST or CLOSE, 150 x 48px */
 static inline gfx_rect_t test_btn_rect(void)
 {
     const gfx_rect_t b = test_box_rect();

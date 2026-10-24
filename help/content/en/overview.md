@@ -12,7 +12,7 @@ The menu is the panel's home screen. It opens after the splash and holds one til
 
 ![The menu with the link up](view:overview)
 
-Eight tiles, 243 x 255 px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
+Eight tiles, 243 x 255px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
 
 | Tile | Line under the name | Page |
 |---|---|---|
@@ -55,7 +55,7 @@ SETUP, PANEL, Theme switches between DARK and LIGHT. The change applies on the n
 
 ![An alert across the bottom of the menu](view:overview-alert)
 
-A fault that the open screen does not show appears in a red band, 44 px high, across the bottom of every screen with the status band. It clears 30 s after it arrived, or on a tap on the band. The [status band](band.md#the-alert-band) page lists how it behaves.
+A fault that the open screen does not show appears in a red band, 44px high, across the bottom of every screen with the status band. It clears 30s after it arrived, or on a tap on the band. The [status band](band.md#the-alert-band) page lists how it behaves.
 
 ## At start: the splash
 
@@ -65,8 +65,8 @@ At power-on the splash lists each subsystem as it comes up: board, display, touc
 
 - A missing SD (Secure Digital) card or an unusable NVS (non-volatile storage) is a warning.
 - A touch controller that does not answer, or an IOmcu with another protocol major version, is a failure. The bench then does not switch to ARMED.
-- When every step has answered, the menu follows after 1.6 s. A tap skips the wait.
-- At every start the panel runs a CAN (Controller Area Network) self-test for 1200 ms. A bus that fails it opens the [bus-fault screen](busfault.md) instead of the menu.
+- When every step has answered, the menu follows after 1.6s. A tap skips the wait.
+- At every start the panel runs a CAN (Controller Area Network) self-test for 1200ms. A bus that fails it opens the [bus-fault screen](busfault.md) instead of the menu.
 
 ## Related pages
 

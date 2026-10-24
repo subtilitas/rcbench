@@ -23,7 +23,7 @@ SPEICHERN sie übernimmt.
 Aktuelle Einschränkungen:
 
 - Ein Alarm, der schon im Band steht, bleibt in der Sprache, in der er
-  entstand, bis er ersetzt, weggetippt oder nach 30 s (`UI_ALERT_SHOW_S`)
+  entstand, bis er ersetzt, weggetippt oder nach 30s (`UI_ALERT_SHOW_S`)
   gelöscht wird. Der gehaltene Alarm für einen Touch-Controller, der beim
   Start nicht antwortete, entsteht in der Sprache aus dem NVS und bleibt bis
   zum Neustart; ohne Touch lässt sich die Sprache bis dahin nicht ändern.
@@ -40,12 +40,12 @@ Aktuelle Einschränkungen:
 ## Zahlen
 
 Die Seiten, der TXT-Bericht und die CSV schreiben in jeder Sprache den
-Dezimalpunkt: 7.4 V, 0.05 A. Es ist das Trennzeichen des Senders, der
+Dezimalpunkt: 7.4V, 0.05A. Es ist das Trennzeichen des Senders, der
 ESC-Konfiguratoren und der eigenen Anzeige des Netzteils, und eine CSV mit
 Dezimalkomma bräuchte ein anderes Feldtrennzeichen. Die deutschen Seiten
 dieser Dokumentation schreiben im Fließtext das deutsche Dezimalkomma
-(7,4 V); ein Text, der vom Bildschirm zitiert wird, behält seinen Punkt
-(`seit 1.5 s kein Messwert`).
+(7,4V); ein Text, der vom Bildschirm zitiert wird, behält seinen Punkt
+(`seit 1.5s kein Messwert`).
 
 ## Begriffe, die Englisch bleiben
 
@@ -191,11 +191,11 @@ eine Zelle:
   und die sieben deutschen Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC,
   U+00DF, U+00E4, U+00F6, U+00FC), je 103 Glyphen. Die beiden Ziffern-Fonts enthalten nur Ziffern und
   Satzzeichen.
-- Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23 px und
+- Die Fonts 10x20, 12x24 und 20x36 haben Versalhöhen von 12, 15 und 23px und
   zeichnen jedes Glyph innerhalb der Zelle; sonst schlägt
-  `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40 px)
-  schneidet am Zellenrand Tinte in sechs Zeichen ab: `#` 5 px, `$` 16 px,
-  `(` 12 px, `)` 12 px, `,` 23 px und `/` 6 px (Pixel mit Deckung ab 128
+  `gen_font.py --check` fehl. Der Ziffern-Font 32x44 (Versalhöhe 40px)
+  schneidet am Zellenrand Tinte in sechs Zeichen ab: `#` 5px, `$` 16px,
+  `(` 12px, `)` 12px, `,` 23px und `/` 6px (Pixel mit Deckung ab 128
   außerhalb der Zelle). `gen_font.py --check` gibt diese Zahlen aus.
 - Ein Codepoint, den ein Font nicht enthält, erscheint als `?`. Ein Byte,
   das keine gültige Folge beginnt, eine abgeschnittene Folge und eine
@@ -278,9 +278,12 @@ nicht. Ein deutscher Eintrag `NULL` zeigt auch dort sein Englisch
    ID `SET_`; eine Optionsliste ist ein Block `UI_OPTIONS`, den
    `ENUM_OPTS(name)` in `shared/settings/settings.c` an seine Einstellung
    bindet.
-3. Die Host-Suite, `python3 tools/render_ui.py --fit`,
-   `python3 tools/check_formats.py` und `python3 tools/check_docs.py`
-   ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
+3. Zahl und Einheit ohne Leerzeichen schreiben, in beiden Sprachen: `40s`,
+   `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. Ein Wort nach einer Zahl behält
+   sein Leerzeichen: `3 Servos`.
+4. Die Host-Suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
+   und `python3 tools/check_docs.py` ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
    einem deutschen Format, das andere Argumente wandelt als sein Englisch,
    bei einem Text, der breiter ist als seine angegebenen Zellen, bei einem
    Buchstaben, den die Fonts nicht enthalten, bei einem Byte, das kein

@@ -12,9 +12,9 @@
  * start.  While an injector that answered at start-up is
  * attached, the touch task reads it after the glass on every poll and
  * merges the two contact sets (touch_merge.h), and touch_age_ms() is the
- * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000 ms) is
+ * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000ms) is
  * detached: its age no longer counts, and the touch task reads its product
- * ID once every TOUCH_MERGE_PROBE_MS (1000 ms) until it answers, which
+ * ID once every TOUCH_MERGE_PROBE_MS (1000ms) until it answers, which
  * re-attaches it.  In a build with the injector, a controller that answers
  * only at 0x14 is taken as the injector and refused as the glass.  The
  * injector's contacts are panel pixels of the UI's area, mapped unmirrored

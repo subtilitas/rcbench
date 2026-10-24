@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The tone service: what core 1 runs for the phase tap each 1 ms tick.
+ * @brief The tone service: what core 1 runs for the phase tap each 1ms tick.
  *
  * The PIO (programmable input/output) program stamps the edges of one motor
  * phase and applies the capture's hold-off (tone.h, tone_holdoff_t); a DMA
@@ -16,11 +16,11 @@
  * nothing and reports not running.
  *
  * The present tick.  The caller passes the ticks elapsed since the capture
- * started, from the 1 MHz timer (tone_svc_ticks()); the words' own counts
+ * started, from the 1MHz timer (tone_svc_ticks()); the words' own counts
  * are exact, and this only places them among the 2^31 ticks a count
  * repeats in.  The detector is advanced no further than the present less
  * TONE_SVC_MARGIN_US, which covers the timer's offset from the counter
- * (about 2 us), a word in the FIFO or in flight to the ring (under 1 us),
+ * (about 2us), a word in the FIFO or in flight to the ring (under 1us),
  * and the pass's own delay, so that no word stamped before the horizon is
  * still to come.
  *
@@ -48,12 +48,12 @@ extern "C" {
  */
 #define TONE_SVC_SYS_HZ   150000000u  /**< system clock, Hz                   */
 #define TONE_SVC_TICK_HZ  (TONE_SVC_SYS_HZ / 4u)  /**< the capture's tick, Hz */
-/** @brief The hold-off the capture applies, 8 us. */
+/** @brief The hold-off the capture applies, 8us. */
 #define TONE_SVC_HOLD_NS  8000u
 /** @brief How far behind the present the detector is advanced. */
 #define TONE_SVC_MARGIN_US 20u
 /**
- * @brief The capture ring, in 32-bit words: 16 kB, 42.7 ms at 96,000 edges/s.
+ * @brief The capture ring, in 32-bit words: 16kB, 42.7ms at 96,000 edges/s.
  */
 #define TONE_RING_WORDS   4096u
 /** @brief Edges taken in one pass. */
@@ -77,10 +77,10 @@ typedef struct {
 /** @brief A finished beep, in the TONE page's units. */
 typedef struct {
     uint32_t start_ms;       /**< first rise, ms since the capture started  */
-    uint16_t len_dms;        /**< first rise to last edge, 0.1 ms, clipped  */
-    uint16_t freq_dhz;       /**< 0.1 Hz, clipped                           */
+    uint16_t len_dms;        /**< first rise to last edge, 0.1ms, clipped   */
+    uint16_t freq_dhz;       /**< 0.1Hz, clipped                            */
     uint16_t bursts;         /**< clipped                                   */
-    uint16_t carrier_hhz;    /**< 100 Hz steps, clipped; 0 unchopped        */
+    uint16_t carrier_hhz;    /**< 100Hz steps, clipped; 0 unchopped         */
     uint8_t  flags;          /**< tone_beep_flag_t                          */
 } tone_rec_t;
 
@@ -146,7 +146,7 @@ uint64_t tone_svc_ticks(uint64_t us);
  * ends and the status shows the overrun. The caller reads the flag before @p
  * wr, so the next pass's boundary lies after the flag was cleared; words the
  * FIFO still held at the drop reach the ring before that boundary unless the
- * DMA stalls for a whole pass, 1 ms, and a stall that long overflows the FIFO
+ * DMA stalls for a whole pass, 1ms, and a stall that long overflows the FIFO
  * again.  The beeps finished go to @p rec, at most TONE_SVC_BEEPS; the count is
  * returned.  @p st is always written.
  *

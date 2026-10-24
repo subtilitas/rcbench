@@ -255,8 +255,8 @@ TEST_CASE(the_scl_key_is_saved_with_the_derived_pin)
 }
 
 /* INTERFACES scrolled so Sensor SDA and Sensor SCL are both on the glass:
- * the I2C BUS heading and the 8 monitor rows above them, 9 rows of 58 px,
- * less the 8 px a finger moves before the list takes it for a scroll. */
+ * the I2C BUS heading and the 8 monitor rows above them, 9 rows of 58px,
+ * less the 8px a finger moves before the list takes it for a scroll. */
 static void pins_screen(void)
 {
     gesture_screen(SET_CAT_IFACE);
@@ -853,7 +853,7 @@ static bool ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, ink_t *out)
 /*
  * A tile's icon sits over its name.  The icon's drawn ink, from its
  * leftmost to its rightmost pixel, is centred on the name's line of text,
- * which ui_tile() centres in the tile, to 1 px; the name's own ink lies in
+ * which ui_tile() centres in the tile, to 1px; the name's own ink lies in
  * that line (its glyphs leave blank columns in their cells, so the ink of
  * "MOTOR & ESC" is centred left of its line).  The icon's ink stays in its
  * box, clear of the name under it.  @p r is in canvas coordinates, on a
@@ -902,7 +902,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },
         { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
     };
-    /* The menu's tile, 243 x 255 px: the 40 px icon 30 px down, the name
+    /* The menu's tile, 243 x 255px: the 40px icon 30px down, the name
      * in the head face at 84 (overview_screen.c). */
     static const ui_tile_look_t k_menu = {
         .icon_dy = 30, .icon = 40, .name_dy = 84, .line_dy = 128,
@@ -916,7 +916,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         icon_over_name(r, &k_menu, menu[i].name, menu[i].name);
     }
     /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
-     * PICK A PIN, WI-FI, UPDATES and FILES.  The 36 px icon's box starts 14 px
+     * PICK A PIN, WI-FI, UPDATES and FILES.  The 36px icon's box starts 14px
      * down, the name in the body face at 60 (settings_screen_int.h). */
     static const ui_tile_look_t k_hub = {
         .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,

@@ -9,17 +9,17 @@
  *
  *   - the left column x 16 to 316: PROTOCOL from y 16, the protocol
  *     list's face y 44 to 108;
- *   - the open list over it from y 44: the 8 protocols in rows of 48 px
+ *   - the open list over it from y 44: the 8 protocols in rows of 48px
  *     from x 20, the PROG PORT entries in a second column of the same rows
- *     from x 320, each row 4 px in from its column's edge, the list and
+ *     from x 320, each row 4px in from its column's edge, the list and
  *     its shadow ending at y 440;
  *   - UNBIND ALL PINS, while the pages describe no binding, y 218 to 274;
- *   - the grid of 4 x 7 cells of 167 x 64 px from x 324, y 8: 8 px between
- *     columns, 6 px between rows, the last row ending at y 492;
+ *   - the grid of 4 x 7 cells of 167 x 64px from x 324, y 8: 8px between
+ *     columns, 6px between rows, the last row ending at y 492;
  *   - a PROG PORT entry's column: PIN y 112 to 160; FUNCTION's face
- *     x 19 to 313, y 188 to 236, its list's rows of 48 px from y 244;
+ *     x 19 to 313, y 188 to 236, its list's rows of 48px from y 244;
  *     SERVO TESTER y 292 to 340 and PORT PWM y 370 to 418, two segments
- *     of 145 px 4 px apart from x 19.
+ *     of 145px 4px apart from x 19.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -32,7 +32,7 @@
 #define OU_DD_Y        44            /**< The protocol list's face. */
 #define OU_DD_H        64            /**< Its height, px. */
 
-/** @brief The lowest row the screen draws on: 4 px above the alert band. */
+/** @brief The lowest row the screen draws on: 4px above the alert band. */
 #define OU_FOOT        (UI_ALERT_Y - UI_BAND_H - 4)
 
 /** @brief The open list's row height: UI_TAP_MIN. */
@@ -42,7 +42,7 @@
 /** @brief The middle row of list row @p r of a column. */
 #define OU_POP_ROW_Y(r) (OU_DD_Y + 4 + (r) * OU_POP_ROW + OU_POP_ROW / 2)
 /** @brief A column a press lands in: 0 the protocols, 1 the PROG PORT
- *         entries; 40 px into its row. */
+ *         entries; 40px into its row. */
 #define OU_POP_X(col)  (OU_COL_X + (col) * OU_POP_COL_W + 40)
 
 #define OU_CLR_Y       218           /**< UNBIND ALL PINS' top. */

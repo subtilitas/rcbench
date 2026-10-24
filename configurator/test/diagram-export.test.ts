@@ -58,7 +58,7 @@ test('the export form draws a load wire 7 px wide, every other wire 3 px, plus r
       const core = new RegExp(`stroke="${colour ? colour.core : INK}" stroke-width="(\\d+)"`).exec(groups[i]!);
       assert.ok(core, `wire ${wire.n}: no core line in its colour`);
       const width = Number(core[1]);
-      // A USB-C cable: a sheath of the width of the wire, and inside it a core of 3 px in the colour of its net.
+      // A USB-C cable: a sheath of the width of the wire, and inside it a core of 3px in the colour of its net.
       const cable = CABLE_NETS.has(wire.net) && wire.kind === 'wire';
       assert.equal(routed.cable === true, cable, `wire ${wire.n}: cable`);
       assert.equal(width, cable ? THIN : carriesLoad(wire) ? THICK : wire.kind === 'component' ? 2 : THIN, `wire ${wire.n}`);
@@ -74,7 +74,7 @@ test('the export form draws a load wire 7 px wide, every other wire 3 px, plus r
       if (routed.colour === PLUS) seen.plus++;
       if (routed.colour === MINUS) seen.minus++;
     });
-    // The painter writes the width of every stroke: a 7 px stroke exists exactly when a load wire does.
+    // The painter writes the width of every stroke: a 7px stroke exists exactly when a load wire does.
     const ops = paintSvg(svg, css(), fonts()).ops;
     assert.equal(/(^|\n)7 w\n/.test(ops), d.wires.some((w) => w.thick));
   }

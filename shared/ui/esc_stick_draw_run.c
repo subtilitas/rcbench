@@ -27,7 +27,7 @@
  * One lens or the base of the stack light: a cylinder seen from the side.
  * Lit, the colour runs to a near-white band down the middle; unlit, the
  * same colour greyed and dark.  Both darken toward the edges, and a darker
- * line every 6 px is a rib of the lens.  Drawn row by row in runs of one
+ * line every 6px is a rib of the lens.  Drawn row by row in runs of one
  * colour, since the panel's frame buffer is cached by rows.
  */
 static void sp_cylinder(gfx_canvas_t *c, int x, int y, int w, int h,
@@ -304,7 +304,7 @@ static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
     if (!r->read || r->win_freq_dhz == 0u) {
         snprintf(pitch_txt, sizeof(pitch_txt), "--");
     } else {
-        snprintf(pitch_txt, sizeof(pitch_txt), "%u.%u Hz",
+        snprintf(pitch_txt, sizeof(pitch_txt), "%u.%uHz",
                  (unsigned)(r->win_freq_dhz / 10u),
                  (unsigned)(r->win_freq_dhz % 10u));
     }

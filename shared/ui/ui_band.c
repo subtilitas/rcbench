@@ -18,13 +18,13 @@
 #define PANEL_W UI_PANEL_W
 
 /*
- * STOP is 168 x 48 px (25.2 x 7.2 mm) at the right edge of the band, from
+ * STOP is 168 x 48px (25.2 x 7.2mm) at the right edge of the band, from
  * x 850, sized for a thumb rather than for its label.  It is the only
  * control in the band, so no other control can be hit on the way to it.
  */
-/** @brief STOP's width: 168 px. */
+/** @brief STOP's width: 168px. */
 #define STOP_W 168
-/** @brief STOP's margin to the band's top, bottom and right edges: 6 px. */
+/** @brief STOP's margin to the band's top, bottom and right edges: 6px. */
 #define STOP_M 6
 
 gfx_rect_t ui_band_stop_rect(void)
@@ -110,30 +110,30 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 }
 
 /*
- * Chips are laid out right to left from 8 px left of STOP, each placed at
+ * Chips are laid out right to left from 8px left of STOP, each placed at
  * the right edge the previous one leaves, so no chip needs another's width
  * in advance and a long mode string cannot push the clock under the ARMED
  * badge.  One layout for drawing and for hit-testing, so a tap finds the
- * chip that is drawn.  A chip is 44 px tall, 8 px from the band's top, its
+ * chip that is drawn.  A chip is 44px tall, 8px from the band's top, its
  * label in UI_FONT_BAND.  Chips stand CHIP_GAP (6) px apart and each takes
- * the 3 px beside it for a tap, so the strips meet without overlapping.  A
+ * the 3px beside it for a tap, so the strips meet without overlapping.  A
  * label starts CHIP_INSET (28) px into its chip and ends CHIP_PAD_R (4) px
- * short of its right edge, LINK's 16 px.  The widest row, a clock of 10
+ * short of its right edge, LINK's 16px.  The widest row, a clock of 10
  * hours or more, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German, is
- * 566 px and starts at x 276, right of MOTOR & ESC's home tag, the widest
+ * 566px and starts at x 276, right of MOTOR & ESC's home tag, the widest
  * (test_nav_bubble measures every screen's), which ends at x 268.
  */
-/** @brief A chip's top, from the band's: 8 px. */
+/** @brief A chip's top, from the band's: 8px. */
 #define CHIP_Y     8
-/** @brief A chip's height: 44 px. */
+/** @brief A chip's height: 44px. */
 #define CHIP_H     44
-/** @brief The gap between two chips: 6 px. */
+/** @brief The gap between two chips: 6px. */
 #define CHIP_GAP   6
-/** @brief A label's start from its chip's left edge: 28 px. */
+/** @brief A label's start from its chip's left edge: 28px. */
 #define CHIP_INSET 28
-/** @brief A label's end from its chip's right edge: 4 px. */
+/** @brief A label's end from its chip's right edge: 4px. */
 #define CHIP_PAD_R 4
-/** @brief LINK's dot: 12 px more right of its label. */
+/** @brief LINK's dot: 12px more right of its label. */
 #define CHIP_DOT_W 12      /* more right of LINK's label */
 /** @brief The chips from STOP leftwards. */
 static const ui_band_chip_t k_order[] = {
@@ -208,25 +208,25 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
 
 /*
  * The bubble is the DELETE question's box of LOGS: a panel with its border
- * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4 px under
- * the band, 8 px in from the panel's edges at most.  A bubble is 640 px
- * wide, 60 cells of text; FAULT's spans the panel less 8 px each side and
- * the text's 16 px padding: 976 px, 97 cells on the 1024 px panel, so the
+ * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4px under
+ * the band, 8px in from the panel's edges at most.  A bubble is 640px
+ * wide, 60 cells of text; FAULT's spans the panel less 8px each side and
+ * the text's 16px padding: 976px, 97 cells on the 1024px panel, so the
  * seven bits and their advice fit above the alert band in either language.
  */
-/** @brief A help bubble's width: 640 px, 60 cells of text. */
+/** @brief A help bubble's width: 640px, 60 cells of text. */
 #define HELP_W       640
-/** @brief A bubble's least distance to the panel's edges: 8 px. */
+/** @brief A bubble's least distance to the panel's edges: 8px. */
 #define HELP_M       8
-/** @brief A bubble's top under the band: 4 px. */
+/** @brief A bubble's top under the band: 4px. */
 #define HELP_GAP     4
 #define HELP_PAD     16     /**< text from the bubble's sides            */
 #define HELP_TOP     30     /**< the first line from the top: tab and 10 */
-/** @brief The last line to the bubble's bottom edge: 10 px. */
+/** @brief The last line to the bubble's bottom edge: 10px. */
 #define HELP_BOTTOM  10
-/** @brief A bubble line to the next: 21 px. */
+/** @brief A bubble line to the next: 21px. */
 #define HELP_PITCH   21
-/** @brief More between two paragraphs: 4 px. */
+/** @brief More between two paragraphs: 4px. */
 #define HELP_PARA    4      /* more between two paragraphs             */
 
 /* One paragraph, and one line of it.  Static: the bubble is drawn by the

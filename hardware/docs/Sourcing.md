@@ -53,14 +53,14 @@ copy at `yaqwsx.github.io/jlcparts/data/` held 985,000 rows in
 and its distributor LCSC give each part. It held none of the round 1 fixed
 inputs or held parts. The full copy held 7,161,863. The full copy of 2026-09-14
 is kept on the research server ([Research](Research.md#sourcing-rules), rule
-3). In it, 25.1 % of rows have an empty maker field, so a search that filters
+3). In it, 25.1% of rows have an empty maker field, so a search that filters
 on the maker drops parts such as INA238AIDGSR (C2868250). Before a later copy
 replaces it, check its row count and that known LCSC numbers are present.
 
 ## Digi-Key
 
 Ask Digi-Key's API, Product Information V4, with the owner's credentials in
-`DIGIKEY_CLIENT_ID` and `DIGIKEY_CLIENT_SECRET`. A token lasts 599 s:
+`DIGIKEY_CLIENT_ID` and `DIGIKEY_CLIENT_SECRET`. A token lasts 599s:
 
 ```bash
 TOKEN=$(curl -s -X POST https://api.digikey.com/v1/oauth2/token \

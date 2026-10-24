@@ -499,7 +499,7 @@ TEST_CASE(a_throttle_protocol_makes_throttles_and_a_pulse_one_makes_surfaces)
 TEST_CASE(the_esc_endpoints_reach_the_motor_and_not_the_servo_beside_it)
 {
     /* MOTOR PWM and SERVO PWM bound together, the case the OUTPUTS screen
-     * allows.  An ESC calibrated on a transmitter sending 985 to 2012 us
+     * allows.  An ESC calibrated on a transmitter sending 985 to 2012us
      * needs 980 and 2020; a servo given that range would rest at 1500, and
      * one given an asymmetric range would rest off centre while the motor
      * runs. */
@@ -680,7 +680,7 @@ TEST_CASE(a_motor_and_a_servo_on_the_same_pulse_read_back_apart)
 
 TEST_CASE(a_mixed_page_keeps_each_slot_on_its_own_entry)
 {
-    /* A servo on GP0 and a motor on GP4, both PWM at 50 Hz.  Each slot is
+    /* A servo on GP0 and a motor on GP4, both PWM at 50Hz.  Each slot is
      * read by its own channel's role, not by the first slot's. */
     outbind_t a, back;
     init(&a);
@@ -1542,14 +1542,14 @@ TEST_CASE(the_pico_shape_places_its_pads_where_the_board_has_them)
 
     /*
      * And it agrees with the board itself.  The pad centres were measured
-     * off the rectified photograph at 500 px for a 51.00 mm outline and fit
+     * off the rectified photograph at 500px for a 51.00mm outline and fit
      * x = 13.55 + 24.888 i pixels; these are the same points from the
      * outline's own numbers, so the two must land together.
      */
     for (uint8_t i = 0; i < 20u; ++i) {
         uint16_t x, y;
         CHECK(outbind_pad_xy(sh, (uint8_t)(i + 1u), &x, &y));
-        /* 0.01 mm -> px at 500 px across 51.00 mm, rounded. */
+        /* 0.01mm -> px at 500px across 51.00mm, rounded. */
         const int px = (int)(((uint32_t)x * 500u + 2550u) / 5100u);
         const int want = (int)(13.55 + 24.888 * (double)i + 0.5);
         if (px < want - 1 || px > want + 1) {
@@ -1747,7 +1747,7 @@ TEST_CASE(the_board_says_which_pads_are_ground_and_which_are_rails)
         }
         if (pads[i].kind == LINK_PAD_GROUND) {
             ++grounds;
-            CHECK_EQ(pads[i].decivolts, 0);   /* a ground is 0 V, not unknown */
+            CHECK_EQ(pads[i].decivolts, 0);   /* a ground is 0V, not unknown */
         } else if (pads[i].kind == LINK_PAD_POWER) {
             ++rails;
         }

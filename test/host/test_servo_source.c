@@ -5,16 +5,16 @@
  * pages, and the panel's sense_link.
  *
  * Under test: the INA3221 the meter only while every condition holds and
- * has held for 1000 ms, at 999, 1000 and 1001 ms; each of the conditions 1
- * to 6 failing alone, the PD mini the meter in that step, and the 1000 ms
+ * has held for 1000ms, at 999, 1000 and 1001ms; each of the conditions 1
+ * to 6 failing alone, the PD mini the meter in that step, and the 1000ms
  * counted again from the step they all hold; a SENSE read and a window
- * number fresh at 199 ms and not at 200 and 201 ms; the reset count moving
+ * number fresh at 199ms and not at 200 and 201ms; the reset count moving
  * between two reads with the part online in both, and across 255 to 0; a
  * set-up taken starting the count again without a reset said; the model
  * while no IOmcu answers; an IOmcu older than 4.11 never the
  * INA3221's, said once per link and once per switching on, and not said
- * for one without SENSE; the events one at a time, 5000 ms apart, put back
- * when the band never showed them; every timer across the 2^32 ms tick
+ * for one without SENSE; the events one at a time, 5000ms apart, put back
+ * when the band never showed them; every timer across the 2^32ms tick
  * wrap; a clipped window and a negative current changing nothing.
  *
  * SPDX-License-Identifier: MIT
@@ -43,7 +43,7 @@ static sense_link_meter_t good(uint32_t now)
     return m;
 }
 
-/* A poll every 50 ms for @p ms with the facts good and fresh; returns the
+/* A poll every 50ms for @p ms with the facts good and fresh; returns the
  * tick after the last. */
 static uint32_t hold(uint32_t now, uint32_t ms)
 {
@@ -54,7 +54,7 @@ static uint32_t hold(uint32_t now, uint32_t ms)
     return now + ms;
 }
 
-/* The INA3221 as the meter at @p now: good facts for 1000 ms before. */
+/* The INA3221 as the meter at @p now: good facts for 1000ms before. */
 static void settled(uint32_t now)
 {
     servo_source_init(&src);
@@ -100,7 +100,7 @@ TEST_CASE(a_change_of_meter_is_counted_once)
     uint32_t now = hold(100u, 1000u);
     CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_PDMINI);
     CHECK_EQ(servo_source_changes(&src), 1u);
-    /* Settled: the INA3221, and it stays for 2 s of polls. */
+    /* Settled: the INA3221, and it stays for 2s of polls. */
     now = hold(now, 2000u);
     CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_INA3221);
     CHECK_EQ(servo_source_changes(&src), 2u);
@@ -113,7 +113,7 @@ TEST_CASE(a_change_of_meter_is_counted_once)
     CHECK_EQ(servo_source_step(&src, now + 50u, true, 11u, &m),
              SERVO_SOURCE_PDMINI);
     CHECK_EQ(servo_source_changes(&src), 3u);
-    /* Back after 1000 ms, and gone with the link. */
+    /* Back after 1000ms, and gone with the link. */
     now = hold(now + 100u, 1050u);
     CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_INA3221);
     CHECK_EQ(servo_source_changes(&src), 4u);
@@ -130,8 +130,8 @@ TEST_CASE(a_change_of_meter_is_counted_once)
     CHECK_EQ(servo_source_changes(&src), 0u);
 }
 
-/* The INA3221 is the meter 1000 ms after every condition holds: not at
- * 999 ms, at 1000 and at 1001 ms.  At tick 0 and across the wrap. */
+/* The INA3221 is the meter 1000ms after every condition holds: not at
+ * 999ms, at 1000 and at 1001ms.  At tick 0 and across the wrap. */
 TEST_CASE(the_ina3221_is_the_meter_after_1000_ms_of_good_readings)
 {
     static const uint32_t k_start[] = { 0u, 5000u, 0xFFFFFC00u,
@@ -160,21 +160,21 @@ TEST_CASE(the_ina3221_is_the_meter_after_1000_ms_of_good_readings)
     }
 }
 
-/* A meter that stays is not asked for its clock again: 2^32 ms on, with
+/* A meter that stays is not asked for its clock again: 2^32ms on, with
  * the facts good at every poll, it is still the INA3221. */
 TEST_CASE(a_meter_that_stays_outlasts_the_tick_wrap)
 {
     settled(0xFFFFF000u);
     CHECK_EQ(servo_source_id(&src), SERVO_SOURCE_INA3221);
     uint32_t t = 0xFFFFF000u + 50u;
-    for (unsigned i = 0u; i < 400u; ++i) {     /* 20 s, across the wrap */
+    for (unsigned i = 0u; i < 400u; ++i) {     /* 20s, across the wrap */
         const sense_link_meter_t m = good(t);
         CHECK_EQ(servo_source_step(&src, t, true, 11u, &m),
                  SERVO_SOURCE_INA3221);
         t += 50u;
     }
     CHECK(t < 0x00010000u);
-    /* And with good_ms exactly 2^32 ms back. */
+    /* And with good_ms exactly 2^32ms back. */
     src.good_ms = t;
     const sense_link_meter_t m = good(t);
     CHECK_EQ(servo_source_step(&src, t, true, 11u, &m),
@@ -253,8 +253,8 @@ static void spoil_reset(sense_link_meter_t *m, uint16_t *minor)
 }
 
 /* Each condition failing alone, for one poll: the PD mini in that step,
- * the reason named, and the INA3221 back 1000 ms after the first step
- * they all hold again, not 999 ms. */
+ * the reason named, and the INA3221 back 1000ms after the first step
+ * they all hold again, not 999ms. */
 TEST_CASE(each_condition_failing_alone_drops_to_the_pd_mini)
 {
     static const struct { spoil_t spoil; servo_source_why_t why; } k_c[] = {
@@ -303,7 +303,7 @@ TEST_CASE(each_condition_failing_alone_drops_to_the_pd_mini)
     }
 }
 
-/* A loose wire: a condition that fails every 900 ms never lets the 1000 ms
+/* A loose wire: a condition that fails every 900ms never lets the 1000ms
  * pass, and the meter does not change back and forth. */
 TEST_CASE(a_part_that_drops_out_every_900_ms_is_never_the_meter)
 {
@@ -322,8 +322,8 @@ TEST_CASE(a_part_that_drops_out_every_900_ms_is_never_the_meter)
     CHECK_EQ(was_ina, 0u);
 }
 
-/* A SENSE read and the newest window's number count for less than 200 ms:
- * fresh at 199, not at 200 and 201 ms.  At every phase of the tick wrap. */
+/* A SENSE read and the newest window's number count for less than 200ms:
+ * fresh at 199, not at 200 and 201ms.  At every phase of the tick wrap. */
 TEST_CASE(a_read_is_fresh_for_199_ms_and_not_for_200)
 {
     static const uint32_t k_at[] = { 20000u, 0xFFFFFFFFu, 0xFFFFFF9Cu,
@@ -483,8 +483,8 @@ TEST_CASE(an_older_coprocessor_is_said_once_per_link_and_per_switching_on)
     CHECK_EQ(servo_source_event(&src, 1000u), 0u);
 }
 
-/* One event a turn, the older IOmcu first, the next 5000 ms later
- * and not 4999 ms; across the tick wrap.  One the band never showed goes
+/* One event a turn, the older IOmcu first, the next 5000ms later
+ * and not 4999ms; across the tick wrap.  One the band never showed goes
  * back, and not once the link has gone. */
 TEST_CASE(events_are_handed_out_one_at_a_time_5000_ms_apart)
 {
@@ -577,7 +577,7 @@ static unsigned until(servo_source_id_t want, unsigned most)
 }
 
 /* A 4.11 bench with the part answering: the PD mini for the first
- * 1000 ms of good readings, then the INA3221, and it stays -- at 53 ms
+ * 1000ms of good readings, then the INA3221, and it stays -- at 53ms
  * polls, with a reply lost now and then, and across the tick wrap. */
 TEST_CASE(a_working_ina3221_becomes_the_meter_and_stays)
 {
@@ -586,7 +586,7 @@ TEST_CASE(a_working_ina3221_becomes_the_meter_and_stays)
         chain_fresh(LINK_PROTOCOL_MINOR, k_tick0[a]);
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
         const unsigned n = until(SERVO_SOURCE_INA3221, 60u);
-        /* 1000 ms from the first poll with a window: 19 to 21 polls. */
+        /* 1000ms from the first poll with a window: 19 to 21 polls. */
         CHECK(n >= 18u && n <= 22u);
         for (unsigned i = 0u; i < 400u; ++i) {
             if (i % 30u == 5u) {
@@ -620,7 +620,7 @@ TEST_CASE(clipped_and_negative_readings_leave_the_meter_alone)
 }
 
 /* The part gone from the bus: the PD mini from the poll that shows it,
- * and the INA3221 again 1000 ms after it is back and read. */
+ * and the INA3221 again 1000ms after it is back and read. */
 TEST_CASE(a_part_that_stops_answering_drops_to_the_pd_mini)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
@@ -632,7 +632,7 @@ TEST_CASE(a_part_that_stops_answering_drops_to_the_pd_mini)
     }
     CHECK(servo_source_why(&src) == SERVO_SOURCE_WHY_SILENT);
     chain.i3221->present = true;
-    /* Found by the next scan, up to 1000 ms; then 1000 ms of readings. */
+    /* Found by the next scan, up to 1000ms; then 1000ms of readings. */
     const unsigned n = until(SERVO_SOURCE_INA3221, 80u);
     CHECK(n >= 19u && n <= 42u);
     CHECK_EQ(said, 0u);
@@ -653,10 +653,10 @@ TEST_CASE(a_stuck_bus_drops_to_the_pd_mini)
 }
 
 /* The part resets itself.  Polled throughout, the panel sees it offline
- * for 1000 ms.  With the panel's loop held for 1300 ms the IOmcu
+ * for 1000ms.  With the panel's loop held for 1300ms the IOmcu
  * finds the reset, repairs it and has the part online again before the
  * next read: only the count shows it.  Either way the PD mini, the reset
- * said once, and the INA3221 again after 1000 ms of good readings. */
+ * said once, and the INA3221 again after 1000ms of good readings. */
 TEST_CASE(a_reset_repaired_between_two_reads_shows_in_the_count)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
@@ -665,7 +665,7 @@ TEST_CASE(a_reset_repaired_between_two_reads_shows_in_the_count)
     CHECK(until(SERVO_SOURCE_PDMINI, 5u) <= 1u);
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_SILENT);
     const unsigned back = until(SERVO_SOURCE_INA3221, 80u);
-    CHECK(back >= 36u && back <= 42u);          /* 1000 ms and 1000 ms */
+    CHECK(back >= 36u && back <= 42u);          /* 1000ms and 1000ms */
     CHECK_EQ(said_reset, 1u);
     CHECK_EQ(said_old, 0u);
 
@@ -683,12 +683,12 @@ TEST_CASE(a_reset_repaired_between_two_reads_shows_in_the_count)
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_RESET);
     CHECK_EQ(said_reset, 1u);
     const unsigned n = until(SERVO_SOURCE_INA3221, 60u);
-    CHECK(n >= 17u && n <= 20u);                /* 1000 ms at 53 ms */
+    CHECK(n >= 17u && n <= 20u);                /* 1000ms at 53ms */
     CHECK_EQ(said_reset, 1u);
 }
 
 /* An edit on SETUP: not held from the edit until the page has taken it,
- * and the INA3221 again 1000 ms after the first good poll under it.  The
+ * and the INA3221 again 1000ms after the first good poll under it.  The
  * count that starts again with the set-up is no reset. */
 TEST_CASE(a_setup_the_page_does_not_hold_drops_to_the_pd_mini)
 {
@@ -704,7 +704,7 @@ TEST_CASE(a_setup_the_page_does_not_hold_drops_to_the_pd_mini)
     CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_PDMINI);
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NOT_HELD);
     const unsigned n = until(SERVO_SOURCE_INA3221, 80u);
-    CHECK(n >= 28u && n <= 34u);                /* 500 ms rest, 1000 ms */
+    CHECK(n >= 28u && n <= 34u);                /* 500ms rest, 1000ms */
     CHECK_EQ(said_reset, 1u);                   /* 1 to 0 is no reset */
 
     /* A bank that drives: the edit waits, and so does the meter. */
@@ -734,8 +734,8 @@ TEST_CASE(a_setup_the_page_does_not_hold_drops_to_the_pd_mini)
     CHECK_EQ(said, SERVO_SOURCE_EV_RESET);
 }
 
-/* The panel's loop held: the last reads age.  Polls 150 ms apart keep the
- * meter; a hold of 250 ms drops it. */
+/* The panel's loop held: the last reads age.  Polls 150ms apart keep the
+ * meter; a hold of 250ms drops it. */
 TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
@@ -746,7 +746,7 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
     for (unsigned i = 0u; i < 5u; ++i) {
         CHECK_EQ(chain_step(53u, true), SERVO_SOURCE_INA3221);
     }
-    /* SERVO_WIN's replies lost for 5 polls, 265 ms: the number stands. */
+    /* SERVO_WIN's replies lost for 5 polls, 265ms: the number stands. */
     chain.lose_win = 5u;
     unsigned dropped = 0u;
     for (unsigned i = 0u; i < 5u; ++i) {
@@ -755,7 +755,7 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
             CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NO_WINDOW);
         }
     }
-    CHECK_EQ(dropped, 2u);              /* at 212 and 265 ms, not at 159 */
+    CHECK_EQ(dropped, 2u);              /* at 212 and 265ms, not at 159 */
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
     /* SENSE's replies lost: the read stands. */
     chain.lose_status = 5u;
@@ -770,8 +770,8 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
 }
 
 /* The IOmcu's schedule stops: the window number stands while every
- * read is answered.  The PD mini from 200 ms on, and still 2^32 ms later,
- * when the tick has come round to within 200 ms of the last move. */
+ * read is answered.  The PD mini from 200ms on, and still 2^32ms later,
+ * when the tick has come round to within 200ms of the last move. */
 TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
 {
     chain_fresh(LINK_PROTOCOL_MINOR, 1000u);
@@ -785,7 +785,7 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
         }
         ++held_for;
     }
-    CHECK(held_for >= 3u && held_for <= 4u);        /* under 200 ms */
+    CHECK(held_for >= 3u && held_for <= 4u);        /* under 200ms */
     CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NO_WINDOW);
     for (unsigned i = 0u; i < 20u; ++i) {
         chain_far_late(50u);
@@ -794,7 +794,7 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
     sense_link_meter_t m;
     sense_link_meter(&chain.sl, &m);
     CHECK(!m.win);
-    /* The tick 2^32 ms on, less what brings the last move to 100 ms ago. */
+    /* The tick 2^32ms on, less what brings the last move to 100ms ago. */
     chain.tick0 += (uint32_t)(0u - (chain_now() - m.win_ms)) + 100u;
     sense_link_meter(&chain.sl, &m);
     CHECK_EQ((uint32_t)(chain_now() - m.win_ms), 100u);
@@ -803,7 +803,7 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
         CHECK_EQ(chain_step(0u, true), SERVO_SOURCE_PDMINI);
         CHECK_EQ(servo_source_why(&src), SERVO_SOURCE_WHY_NO_WINDOW);
     }
-    /* The schedule runs again: the number moves, and 1000 ms later the
+    /* The schedule runs again: the number moves, and 1000ms later the
      * INA3221 is the meter. */
     chain.exch_ms = 1u;
     const unsigned n = until(SERVO_SOURCE_INA3221, 60u);
@@ -835,7 +835,7 @@ TEST_CASE(a_4_10_coprocessor_is_never_the_ina3221s_and_is_said_once)
 }
 
 /* The link lost: the model.  Back: the PD mini, and the INA3221 after
- * 1000 ms of good readings counted from the link-up, across the wrap. */
+ * 1000ms of good readings counted from the link-up, across the wrap. */
 TEST_CASE(a_link_lost_is_the_model_and_its_return_settles_again)
 {
     static const uint32_t k_tick0[] = { 1000u, 0xFFFFF000u };
@@ -856,7 +856,7 @@ TEST_CASE(a_link_lost_is_the_model_and_its_return_settles_again)
 }
 
 /* The schedule stops with every read answered: the window number that
- * stands is CH1's window for SENSE_LINK_STALE_MS less 1 ms after it last
+ * stands is CH1's window for SENSE_LINK_STALE_MS less 1ms after it last
  * moved and no window from then on, with the wrap inside that time. */
 static void a_standing_number_is_no_window_at_500_ms(uint32_t t0)
 {
@@ -891,7 +891,7 @@ static void a_standing_number_is_no_window_at_500_ms(uint32_t t0)
 TEST_CASE(a_standing_window_number_goes_stale_at_500_ms_across_the_tick_wrap)
 {
     /* How long the chain takes to make the INA3221 the meter, for a stop
-     * 250 ms before the wrap. */
+     * 250ms before the wrap. */
     chain_fresh(LINK_PROTOCOL_MINOR, 0u);
     CHECK(until(SERVO_SOURCE_INA3221, 60u) < 60u);
     at_tick_0_and_before_the_wrap(a_standing_number_is_no_window_at_500_ms,

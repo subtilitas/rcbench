@@ -138,7 +138,7 @@ static bool file_rewind(void *ctx)
 }
 
 /**
- * @brief fseek and ftell take a long: 2 GiB less 1 byte on the panel.
+ * @brief fseek and ftell take a long: 2GiB less 1 byte on the panel.
  *
  * A file longer than that answers false, and the analysis reads it on instead.
  *

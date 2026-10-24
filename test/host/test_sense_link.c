@@ -157,7 +157,7 @@ TEST_CASE(enabling_a_part_writes_the_bus_frame_and_reads_identity)
     CHECK(!sense_link_take_caps(&sl, &caps));
     CHECK(sense_link_settled(&sl));
 
-    /* Then SENSE's read-only registers at 20 Hz and no SERVO_SENSE. */
+    /* Then SENSE's read-only registers at 20Hz and no SERVO_SENSE. */
     const unsigned before = reads;
     polls(20);
     CHECK_EQ(reads - before, 20u);
@@ -265,7 +265,7 @@ TEST_CASE(a_refused_frame_is_not_written_again_and_its_part_stays_off)
     sense_setup_t w = setup_default();
     w.i228 = true;
     w.i3221 = true;
-    /* 20000 uOhm at 300 A is 6 V across the shunt: no range reads it. */
+    /* 20000 uOhm at 300A is 6V across the shunt: no range reads it. */
     w.i228_uohm = 20000u;
     w.i228_max_da = 3000u;
     want(&w);
@@ -281,7 +281,7 @@ TEST_CASE(a_refused_frame_is_not_written_again_and_its_part_stays_off)
     CHECK_EQ(writes, before);
     CHECK_EQ(sense_link_events(&sl), 0u);
 
-    /* An edit asks again: 8.0 A puts 160 mV across 20000 uOhm. */
+    /* An edit asks again: 8.0A puts 160mV across 20000 uOhm. */
     w.i228_max_da = 80u;
     want(&w);
     polls(14);
@@ -332,19 +332,19 @@ TEST_CASE(a_part_refusal_stands_until_the_page_takes_the_frame)
     sense_setup_t w = setup_default();
     w.i228 = true;
     w.i228_uohm = 20000u;
-    w.i228_max_da = 3000u;                  /* 6 V across the shunt */
+    w.i228_max_da = 3000u;                  /* 6V across the shunt */
     want(&w);
     polls(14);
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_I228_REFUSED);
     CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
     polls(40);
     CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
-    /* Stepped to a range the shunt can read, 8.0 A for 160 mV: owed,
+    /* Stepped to a range the shunt can read, 8.0A for 160mV: owed,
      * resting, then written. */
     w.i228_max_da = 80u;
     want(&w);
     CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
-    polls(9);                               /* 450 ms of the rest */
+    polls(9);                               /* 450ms of the rest */
     CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_I228_REFUSED));
     polls(2);
     CHECK_EQ(pg.sense[LINK_SN_ENABLE], LINK_SN_EN_I228);
@@ -655,7 +655,7 @@ TEST_CASE(a_part_that_does_not_answer_is_said_once)
     sense_setup_t w = setup_default();
     w.i228 = true;
     want(&w);
-    /* Written at 10500 ms, so the wait ends at 13000 ms. */
+    /* Written at 10500ms, so the wait ends at 13000ms. */
     polls(12);
     far_flags(LINK_SN_BUS_OPEN);
     /* Not while the IOmcu may still be finding it. */
@@ -973,7 +973,7 @@ TEST_CASE(an_event_that_never_reached_the_band_goes_back)
 }
 
 /* The second of two events waits SENSE_LINK_EVENT_GAP_MS from the first
- * and not 1 ms less, wherever on the clock the first was handed out. */
+ * and not 1ms less, wherever on the clock the first was handed out. */
 static void the_second_event_waits_the_gap(uint32_t t0)
 {
     fresh(7u);

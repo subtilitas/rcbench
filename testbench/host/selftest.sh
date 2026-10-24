@@ -113,7 +113,7 @@ else
     # next write, and under pipefail that non-zero status becomes the
     # pipeline's -- so the check would report the driver missing exactly when
     # it is present. It needs the output after the entry to exceed the pipe
-    # buffer, 64 KB, which 13 kB of driver list does not reach today. A
+    # buffer, 64KB, which 13kB of driver list does not reach today. A
     # here-string is a file descriptor and cannot signal upstream at all.
     drivers=$(sigrok-cli --list-supported 2>/dev/null) || drivers=
     if ! grep -qE '^[[:space:]]+kingst-la2016([[:space:]]|$)' <<<"$drivers"; then
@@ -152,7 +152,7 @@ fi
 # PCIe active-state power management changes how fast the RP1's pins can be
 # reached. OpenOCD's interface/raspberrypi5-gpiod.cfg warns that with the
 # policy anything but "performance" the first few pulses can be clocked as
-# fast as 20 MHz, and asks for it to be switched. Whether that costs a
+# fast as 20MHz, and asks for it to be switched. Whether that costs a
 # connection is unmeasured -- no target has been on these pins -- so this is
 # reported and does not fail the run.
 aspm=/sys/module/pcie_aspm/parameters/policy

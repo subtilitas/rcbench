@@ -101,8 +101,8 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define RS_STEP_CY(i)  ST_STEP_CY(i)
 
 
-/* MOTOR & ESC's PROGRAM tab, the second of the strip's (150 px a tab, 4 px
- * apart from x 9, 40 px high from y 8), and the STICK MENU row of its list,
+/* MOTOR & ESC's PROGRAM tab, the second of the strip's (150px a tab, 4px
+ * apart from x 9, 40px high from y 8), and the STICK MENU row of its list,
  * the first under its heading (prog_view.c). */
 #define MO_TAB_PROGRAM_X 234
 #define MO_TAB_Y         28
@@ -685,9 +685,9 @@ static void setup_value(setting_cat_t cat, setting_id_t id)
 }
 
 /**
- * @brief SETUP's open list dragged up by @p rows rows and the 8 px the
+ * @brief SETUP's open list dragged up by @p rows rows and the 8px the
  *        finger travels before the screen takes it for a scroll, from
- *        8 px above the pane's foot.
+ *        8px above the pane's foot.
  * @param rows The rows to scroll by, at most 5.
  */
 static void setup_scroll_rows(int rows)
@@ -1253,7 +1253,7 @@ static void servo_run_view(bool to_the_end, bool ina)
     servo_screen_clock(now);
     if (ina) {
         /* The INA3221 on in SETUP and the rail's meter: the run reads its
-         * windows, one every 50 ms. */
+         * windows, one every 50ms. */
         settings_set(SET_INA_FIT(0), 1.0f);
         servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     }
@@ -1269,7 +1269,7 @@ static void servo_run_view(bool to_the_end, bool ina)
         servo_screen_clock(now);
         if (ina && (now / 50u) != ((now - 20u) / 50u)) {
             /* The windows go on under the finger: a run that starts
-             * before the release ends after 200 ms without one. */
+             * before the release ends after 200ms without one. */
             const int ma = (int)(servo_sim_step(&sv, cmd, now) * 1000.0f);
             sense_link_win_t w;
             memset(&w, 0, sizeof(w));
@@ -1368,11 +1368,11 @@ static void servo_run_view(bool to_the_end, bool ina)
  * The limit run of LIMITS, on the bench of the host tests (test_kst_panel_limrun.c):
  * the simulated KST servo on programming port 1, GP13, behind the servo
  * model, the horn where its NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE
- * and RIGHT ANGLE put it at 4 us a count (kst_sim.h sim_horn_us()); its
- * stops at 1150 and 1880 us; the INA3221's CH1 windows from it every 50
+ * and RIGHT ANGLE put it at 4us a count (kst_sim.h sim_horn_us()); its
+ * stops at 1150 and 1880us; the INA3221's CH1 windows from it every 50
  * ms; a bench that goes SAFE and ARMED as the screen asks.  One frame of
- * the rig is 1 ms.  The bench's PULSE MIN and MAX are STANDARD PWM's, 1000
- * and 2000 us; the servo's PULSE LOWER and UPPER 900 and 2100 us, so every
+ * the rig is 1ms.  The bench's PULSE MIN and MAX are STANDARD PWM's, 1000
+ * and 2000us; the servo's PULSE LOWER and UPPER 900 and 2100us, so every
  * view but -range runs with SERVO PULSES at 1000-2000.
  *
  *   -ready    LIMITS with SEARCH+PROG and SERVO PULSES 1000-2000 chosen,
@@ -1566,7 +1566,7 @@ static void limrun_view(const char *view)
         return;
     }
     if (strcmp(v, "-stopped") == 0) {
-        /* STOP 3 s into the probe after the first write. */
+        /* STOP 3s into the probe after the first write. */
         unsigned sessions = 0u;
         bool held = false;
         for (int i = 0; i < 400000 && sessions < 2u; ++i) {
@@ -1626,11 +1626,11 @@ static void limrun_view(const char *view)
 }
 
 /*
- * The TEST page's sine, 0.5 Hz over 80 % of the travel, swept with SPEED at
- * the left end of its track, 12 %: the curve asks for 1257 units a second
+ * The TEST page's sine, 0.5Hz over 80% of the travel, swept with SPEED at
+ * the left end of its track, 12%: the curve asks for 1257 units a second
  * at the centre and SPEED allows 240, so SPEED's row says it limits the
  * sweep.  Geometry from servo_screen.c, offset by the band: the SPEED
- * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8 s in and
+ * track's left end and SWEEP.  With @p pause, PAUSE is tapped 0.8s in and
  * the frames after it show the paused button.
  */
 static void servo_sweep_view(bool pause)
@@ -1643,7 +1643,7 @@ static void servo_sweep_view(bool pause)
     servo_screen_feedback(0u, 0.0f, false);
     uint32_t now = 100000u;
     servo_screen_clock(now);
-    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + SV_SPEED_Y);              /* SPEED 12 % */
+    tap(SV_RC_X + (SV_RC_W - 1) * 2 / 90 + 1, UI_BAND_H + SV_SPEED_Y);              /* SPEED 12% */
     tap(SV_SWEEP_X, UI_BAND_H + SV_BTN_Y);                      /* SWEEP */
     servo_cmd_t taken;
     uint16_t start_seq = 0u;
@@ -1676,7 +1676,7 @@ static void servo_sweep_view(bool pause)
 /*
  * A stick run on a modelled bench, as the panel drives one with no
  * IOmcu: the bench arms when asked, the supply switches when asked and
- * is read every 50 ms, and the simulated ESC draws the current.  One
+ * is read every 50ms, and the simulated ESC draws the current.  One
  * millisecond a step.
  */
 typedef struct {
@@ -1714,7 +1714,7 @@ static void stick_step(stick_rig_t *r)
     motor_screen_set_armed(r->armed);   /* the output strip's SAFE/ARMED */
     s_stick_armed = r->armed;
     if (s_tone_fed) {
-        /* The tap running on a phase that sounds 1523.4 Hz, and the last
+        /* The tap running on a phase that sounds 1523.4Hz, and the last
          * four beeps it reported. */
         tone_readout_t t;
         memset(&t, 0, sizeof(t));
@@ -1786,7 +1786,7 @@ static void stick_type(const char *text)
     }
 }
 
-/* The supply reading off for 300 ms, as the warning needs before it asks
+/* The supply reading off for 300ms, as the warning needs before it asks
  * for a step at the ESC. */
 static void stick_supply_off(void)
 {
@@ -1807,7 +1807,7 @@ static void stick_supply_off(void)
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * esc_stick_panel.c (stick_spots.h: from y 84, 56 px apart, 7 to a page)
+ * esc_stick_panel.c (stick_spots.h: from y 84, 56px apart, 7 to a page)
  * and its ^ and v at RS_LIST_UP_X and RS_LIST_DN_X on the crumb row. */
 static void stick_tap_row(int at)
 {
@@ -2350,7 +2350,7 @@ int main(int argc, char **argv)
     /*
      * A scripted run, so the bench screenshot shows the same moment every
      * time: spin up, hold, a burst, then settle.  One sample per plot column
-     * at the panel's poll rate, 20 Hz.
+     * at the panel's poll rate, 20Hz.
      */
     /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
      * output strip names it. */
@@ -2405,8 +2405,8 @@ int main(int argc, char **argv)
             if (strcmp(view, "motor-table") == 0
                 || strcmp(view, "motor-refused") == 0) {
                 /* An IOmcu reading an INA228: BENCH's numbers are the
-                 * INA228's, and the ESC's own telemetry reads 0.18 V and
-                 * 12 % of the current high beside them. */
+                 * INA228's, and the ESC's own telemetry reads 0.18V and
+                 * 12% of the current high beside them. */
                 bench.flags = (uint16_t)((bench.flags
                                           & (uint16_t)~LINK_BN_SIMULATED)
                                          | LINK_BN_SENSED);
@@ -2461,7 +2461,7 @@ int main(int argc, char **argv)
         }
     } else if (id == SCREEN_SUPPLY) {
         /* A run of the panel's model, as the panel drives it: the output on
-         * at 6 V and a 2 A limit, the load's bursts holding the limit, the
+         * at 6V and a 2A limit, the load's bursts holding the limit, the
          * extremes and totals counted from the switch-on. */
         supply_sim_t m;
         supply_sim_init(&m);
@@ -2469,7 +2469,7 @@ int main(int argc, char **argv)
         supply_state_t st;
         memset(&st, 0, sizeof(st));
         /* Limits an operator testing a standard servo would set: an HV
-         * servo's 8.4 V cap and a trip under the stall current. */
+         * servo's 8.4V cap and a trip under the stall current. */
         settings_set(SET_SUPPLY_V_MAX, 8.4f);
         settings_set(SET_SUPPLY_TRIP_I, 2.5f);
         settings_set(SET_SUPPLY_TRIP_MS, 200.0f);
@@ -2501,7 +2501,7 @@ int main(int argc, char **argv)
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
         } else if (strcmp(view, "supply-confirm") == 0) {
-            /* +0.1 V on a live output: the question, as the settings'
+            /* +0.1V on a live output: the question, as the settings'
              * default asks it. */
             ui_router_goto(SCREEN_SUPPLY);
             tap(SU_UP_X, UI_BAND_H + SU_V_ROW_Y);
@@ -2864,7 +2864,7 @@ int main(int argc, char **argv)
      * the screen. */
     if (id == SCREEN_BATTERY && strcmp(view, "battery-none") != 0) {
         /*
-         * A 6S pack with one cell 40 mV down under load, the case the screen
+         * A 6S pack with one cell 40mV down under load, the case the screen
          * exists to show.  At rest the six voltages agree to two decimals.
          */
         battery_state_t b;
@@ -2877,8 +2877,8 @@ int main(int argc, char **argv)
             b.volts[i] = v[i];
             b.milliohms[i] = ir[i];
         }
-        /* The fit check's: the two other verdicts, the weak cell 15 mV
-         * and 75 mV under the next lowest. */
+        /* The fit check's: the two other verdicts, the weak cell 15mV
+         * and 75mV under the next lowest. */
         if (strcmp(view, "battery-healthy") == 0) {
             b.volts[2] = 3.795f;
         } else if (strcmp(view, "battery-replace") == 0) {
@@ -3417,11 +3417,11 @@ int main(int argc, char **argv)
             servo_screen_supply(&sst);
         }
         /*
-         * The INA3221 as the servo rail's meter: 13 s of CH1's windows from
+         * The INA3221 as the servo rail's meter: 13s of CH1's windows from
          * a servo of the same model stepped between two positions every
-         * 2 s, the bus voltage 0.25 V lower for each amp.  In the clipped
+         * 2s, the bus voltage 0.25V lower for each amp.  In the clipped
          * view the last window holds samples at the top of the range of a
-         * 0.1 Ohm shunt, 1.638 A.  The channel is 0x41 CH2, watching
+         * 0.1Ohm shunt, 1.638A.  The channel is 0x41 CH2, watching
          * OUT 1, and names the plot.
          */
         if (strcmp(view, "servo-ina") == 0
@@ -3458,7 +3458,7 @@ int main(int argc, char **argv)
                 servo_screen_window(&w, SERVO_SOURCE_INA3221, 1u);
             }
         }
-        /* An IOmcu that took the screen's 50 Hz; one that refused it,
+        /* An IOmcu that took the screen's 50Hz; one that refused it,
          * and one with no SERVO page, for the OUTPUT page's note. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
         if (strcmp(view, "servo-rate-refused") == 0) {
@@ -3511,7 +3511,7 @@ int main(int argc, char **argv)
             }
         } else if (strcmp(view, "servo-hv") == 0
                    || strcmp(view, "servo-hv-live") == 0) {
-            /* The voltage on the SET line, typed past 6.0 V: the HV
+            /* The voltage on the SET line, typed past 6.0V: the HV
              * warning, and in servo-hv-live with the output on.  The
              * keypad's keys from a probe opened where the screen opens its
              * own, over the left card. */
@@ -3567,7 +3567,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo-encoder") == 0) {
             tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_TAB_Y); /* DUT */
         } else if (strcmp(view, "servo-trim-keypad") == 0) {
-            /* TRIM's value, between its steps: the signed keypad, -25 us
+            /* TRIM's value, between its steps: the signed keypad, -25us
              * typed. */
             tap((526 + 570) / 2, UI_BAND_H + SV_ROW_Y(3));
             kp_type(servo_screen_keypad(), "-25");
@@ -3754,7 +3754,7 @@ int main(int argc, char **argv)
 
     /*
      * SETUP > SENSORS: 0x40 and 0x41 fitted, 0x41's CH2 watching PORT 1
-     * with a limit of 800 mA, and its CH3 off.  At the top, 0x40 online;
+     * with a limit of 800mA, and its CH3 off.  At the top, 0x40 online;
      * scrolled to 0x41's heading, an IOmcu older than 4.25 reading 0x40
      * alone; and scrolled to 0x41 CH2, both online on an IOmcu older than
      * 4.27, which judges no limit.
@@ -3787,13 +3787,13 @@ int main(int argc, char **argv)
                                                | (SENS_PART_SILENT << 4)));
         }
         /* 0x40 CH1's shunt, scrolled into view and its value tapped:
-         * 44.4 mOhm typed, the station's value. */
+         * 44.4mOhm typed, the station's value. */
         if (strcmp(view, "setup-sensors-keypad") == 0) {
             settings_set(SET_INA_FIT(0), 1.0f);
             setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
             kp_type(settings_screen_keypad(), "44.4");
         }
-        /* The same shunt, 3 mOhm typed and refused: the reason in place
+        /* The same shunt, 3mOhm typed and refused: the reason in place
          * of the range. */
         if (strcmp(view, "setup-sensors-why") == 0) {
             settings_set(SET_INA_FIT(0), 1.0f);
@@ -3899,7 +3899,7 @@ int main(int argc, char **argv)
 
     /*
      * Arming flashes the ARM button for UI_HOLD_FLASH_MS, which runs by
-     * time: ten frames of 50 ms end it.  Drawn after the frame above, which
+     * time: ten frames of 50ms end it.  Drawn after the frame above, which
      * has already painted everything else, so these repaint the button and
      * nothing more.
      */

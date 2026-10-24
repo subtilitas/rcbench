@@ -232,7 +232,7 @@ static int fmt(char *out, size_t cap, float v, int decimals)
  *        move, and the commit comes on rows or on the run's own clock,
  *        whichever is first.
  *
- * The clock bound is what holds when rows arrive slower than 20 Hz -- the far
+ * The clock bound is what holds when rows arrive slower than 20Hz -- the far
  * end answering every other poll, say -- where waiting for
  * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
  *
@@ -431,7 +431,7 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
      * Power carries both halves because it is their product.  Charge and
      * energy carry what the panel counted (bench_state_t.counted): a run
      * with no current to count has no consumption to record, and its record
-     * must not show 0 mAh that nothing counted.
+     * must not show 0mAh that nothing counted.
      */
     /*
      * On a SERVO run's row voltage, current, power, charge and energy are the
