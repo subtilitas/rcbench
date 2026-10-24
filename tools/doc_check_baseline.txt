@@ -377,7 +377,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member NVS_NS (mac
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member SCAN_READ (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member TAG (variable) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member WORKER_PRIO (macro definition) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member WORKER_STACK (macro definition) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member abort (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member answer_upload(httpd_req_t *r, fw_err_t e, const fw_image_info_t *info, bool same, bool cut) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member asked (variable) of struct [struct].s is not documented.

@@ -113,6 +113,11 @@ history is in git.
 
 ### Fixed
 
+- The `wifi_ctl` task, which stops the radio and logs the NTP result,
+  runs on a stack of 6912 bytes instead of 5120. Its deepest call chain,
+  3744 bytes through `snprintf()`, left 352 bytes above the 1024-byte
+  margin and now leaves 2144. The 1792 bytes come from internal RAM
+  ([Performance](docs/Performance.md#stacks)).
 - In the light theme a button that takes no press drew as a dark slab,
   darker than the enabled buttons beside it. A disabled button now takes
   the theme's ground colour with a dim edge and a faint label in both
