@@ -69,12 +69,20 @@ static void draw_arm(gfx_canvas_t *c)
                    MO_FONT_LABEL);
 }
 
-/* "44C", or "--" when nothing has answered. */
+/**
+ * @brief A temperature as the header line says it: "ESC 44°C", or
+ *        "ESC --" when nothing has answered.
+ * @param out   takes the text
+ * @param n     bytes at @p out
+ * @param label what it is the temperature of
+ * @param v     the temperature, °C
+ * @param ok    whether @p v was read
+ */
 static void temp_text(char *out, size_t n, const char *label, float v,
                       bool ok)
 {
     if (ok && isfinite(v)) {
-        snprintf(out, n, "%s %dC", label, (int)(v + 0.5f));
+        snprintf(out, n, "%s %d°C", label, (int)(v + 0.5f));
     } else {
         snprintf(out, n, "%s --", label);
     }
@@ -119,17 +127,17 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
 
     /*
      * The protocol carries a flag per channel for exactly this: a bench whose
-     * IOmcu has no temperature sensor sends zero, and "ESC 0C" is a
+     * IOmcu has no temperature sensor sends zero, and "ESC 0°C" is a
      * reading rather than a gap.
      */
     const bool temp_ok = s.bench.valid
                          && (s.bench.flags & LINK_BN_TEMP_OK) != 0u;
     /* The motor's sensor is its own, and usually there is not one: an ESC
      * reporting its own temperature says nothing about the motor it drives,
-     * and one flag for both would draw "MOT 0C" as a reading. */
+     * and one flag for both would draw "MOT 0°C" as a reading. */
     const bool mot_ok = s.bench.valid
                         && (s.bench.flags & LINK_BN_TEMP_MOT_OK) != 0u;
-    char esc[16], mot[16], mcu[16], temps[52];
+    char esc[20], mot[20], mcu[20], temps[64];
     temp_text(esc, sizeof(esc), "ESC", s.bench.temp_esc, temp_ok);
     temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, mot_ok);
     temp_text(mcu, sizeof(mcu), "MCU", st->mcu_temp_c,

@@ -65,7 +65,7 @@ static void pose_three_protocols(void)
 /* The pins past GP2 of the bench of three_protocols(): free pins print the
  * pad number on the board, reserved ones what holds them. */
 #define TRACE_GP3_TO_GP12                                                     \
-    "GP3 reserved 'heartbeat'\n"                                              \
+    "GP3 reserved 'HEARTBEAT'\n"                                              \
     "GP4 free 'PAD 6'\n"                                                      \
     "GP5 free 'PAD 7'\n"                                                      \
     "GP6 free 'PAD 9'\n"                                                      \

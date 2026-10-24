@@ -455,11 +455,12 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
         CHECK_STR_EQ(l, TR(OUT_IFACE_TAP));
         CHECK_EQ(outputs_screen_cell(idx(22u), NULL, 0), OUTPUTS_CELL_FREE);
 
-        /* A tap pin the TONE page refuses, an ADC pin, holds nothing;
-         * nor does a bus or a tap the IOmcu refused, until it holds it
+        /* An ADC pin, which the TONE page refuses, is no tap pin: the
+         * setting takes the default instead, and the ADC pin stays free.
+         * A bus or a tap the IOmcu refused holds nothing until it holds it
          * again. */
         settings_set(SET_TONE_PIN, 26.0f);
-        CHECK_EQ(outputs_iface_pins(OUTPUTS_IFACE_TAP), 0ull);
+        CHECK_EQ(settings_get_int(SET_TONE_PIN), 22);
         CHECK_EQ(outputs_screen_cell(idx(26u), NULL, 0), OUTPUTS_CELL_FREE);
         settings_set(SET_TONE_PIN, 21.0f);
         CHECK_EQ(outputs_screen_cell(idx(21u), NULL, 0),

@@ -31,12 +31,11 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
-/* sdkconfig.defaults sets the main task's stack to 8192 bytes.  The UI's
- * deepest chain on the ESP32-P4's RISC-V code is not measured:
- * tools/stack_check.py reads Xtensa code only.  ESP-IDF reads the defaults
- * only when it creates sdkconfig, so a checkout whose sdkconfig predates
- * that line builds with 3584 bytes, below what the UI needs.  Such a build
- * stops here. */
+/* sdkconfig.defaults sets the main task's stack to 8192 bytes, which
+ * tools/stack_check.py holds to the UI's deepest chain.  ESP-IDF reads the
+ * defaults only when it creates sdkconfig, so a checkout whose sdkconfig
+ * predates that line builds with 3584 bytes, below what the UI needs.  Such
+ * a build stops here. */
 #if CONFIG_ESP_MAIN_TASK_STACK_SIZE < 8192
 #error "CONFIG_ESP_MAIN_TASK_STACK_SIZE is under 8192: delete firmware/panel/sdkconfig so sdkconfig.defaults applies"
 #endif
@@ -140,6 +139,7 @@ void publish_throttle_ramp(void)
 #include "fw_install.h"
 #include "fw_ota.h"
 #include "fw_release.h"
+#include "fw_trial.h"
 #include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
@@ -150,6 +150,7 @@ void publish_throttle_ramp(void)
 
 #include "panel.h"
 #include "panel_main.h"
+#include "panel_trial.h"
 
 static const char *TAG = "rcbench";
 
@@ -451,6 +452,13 @@ uint32_t           s_lost_notice_seq;
 atomic_uint s_loss_gen;
 atomic_uint s_arm_ack;
 
+/**
+ * @brief The render loop's progress: moved once a pass of panel_frame_loop()
+ *        and once per card read the loop makes on LOGS (panel_card.c), read
+ *        by the control task's watchdog (frame_watch.h, control_pump()).
+ */
+atomic_uint s_render_progress;
+
 /*
  * The arm in flight, control task only.  An arm's two stamps are kept from
  * the moment it is taken, because the exchanges that apply it can take two
@@ -601,8 +609,7 @@ atomic_bool s_enc_held;
 /*
  * The SERVO screen's link (shared/outputs/servo_link.c) reaches this task's
  * state through these: the output bank, the arming policy, the alerts and
- * the disarm.  stack_check.py names each (SERVO_CALLS) for its Xtensa
- * decoder, which does not read the ESP32-P4's RISC-V code.
+ * the disarm.  stack_check.py follows each by name (SERVO_CALLS).
  */
 static bool servo_ctx_armed(void *ctx)
 {
@@ -843,6 +850,10 @@ void app_main(void)
     /* The servo programmer's record of a write that a restart cut
      * short. */
     kst_record_load(false);
+    /* The card was tried, with its reads at the start, and the settings
+     * are handed on: two of the steps a new build's trial waits for
+     * (panel_trial.h). */
+    panel_trial_mark(FW_TRIAL_CARD | FW_TRIAL_SETTINGS);
 
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
@@ -855,6 +866,7 @@ void app_main(void)
     s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_win_item_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
+    s_note_mx   = xSemaphoreCreateMutex();
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
     s_snap_lock = xSemaphoreCreateMutex();
     s_draw_lock = xSemaphoreCreateMutex();
@@ -867,7 +879,8 @@ void app_main(void)
                      && s_sample_q != NULL && s_supply_q != NULL
                      && s_enc_q != NULL && s_win_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
-                     && s_note_q != NULL && s_snap_lock != NULL)
+                     && s_note_q != NULL && s_note_mx != NULL
+                     && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     if (!healthy) {
@@ -896,10 +909,8 @@ void app_main(void)
      * leaves rather than beside it on the core the renderer uses.  Its
      * stack holds one line of a servo test, SERVO_TEST_LINE_MAX bytes, and
      * the deepest card chain: the card mounted again under a servo file's
-     * walk, as a run's start mounts it (storage_check()).  6656 bytes is
-     * the ESP32-S3's figure; the chain's depth on the ESP32-P4's RISC-V
-     * code is not measured, because tools/stack_check.py reads Xtensa code
-     * only.
+     * walk, as a run's start mounts it (storage_check()).
+     * tools/stack_check.py holds 6656 bytes to that chain.
      */
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(log_task, "runlog", 6656,
                                             NULL, 3, NULL, 1) == pdPASS

@@ -26,8 +26,8 @@ Die Bilder dieses Abschnitts stammen aus dem Host-Renderer, der den Bildschirm m
 | Zustandsblock | KEIN SIGNAL, FRAME LOST, FAILSAFE oder LIVE, mit einer Zeile darunter |
 | BUS | `S.BUS` |
 | RATE | Frames pro Sekunde, in Hz |
-| FRAMES, RESYNC, BAD TAIL | dekodierte Frames, Neusynchronisierungen, Frames mit einem Abschluss, den der Decoder ablehnt |
-| DIGITAL | CH17 und CH18, leuchtend, solange gesetzt |
+| FRAMES, RESYNC, ENDBYTE FALSCH | dekodierte Frames, Neusynchronisierungen, Frames mit einem Abschluss, den der Decoder ablehnt |
+| DIGITAL | CH17 und CH18 als Leuchten: der Punkt leuchtet, solange der Kanal gesetzt ist; sie nehmen keinen Tipp an |
 
 Ein Störimpuls ist eine Spitze in einer Spur. Ein Aussetzer ist eine Kerbe quer über alle sechzehn Spuren im selben Moment.
 

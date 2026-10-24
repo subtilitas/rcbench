@@ -302,7 +302,10 @@ int test_blocked(void)
     if (!value_live()) {
         return SERVO_STR_START_NOT_ARMED;
     }
-    if (!servo_test_drained(&s.test) || servo_limrun_running(&s.lim)
+    if (servo_limrun_running(&s.lim)) {
+        return SERVO_STR_START_LIMIT_RUNS;
+    }
+    if (!servo_test_drained(&s.test)
         || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return SERVO_STR_START_BUSY;
     }
@@ -604,8 +607,12 @@ void draw_test_start(gfx_canvas_t *c)
                    running || test_blocked() == 0, SV_FONT_LABEL);
 }
 
-/* The steps a run would take, as the card says them: "4.8 6.0V
- * BROWN-OUT", or NO STEP CHOSEN. */
+/**
+ * @brief The steps a run would take, as the card says them: "4.8 6.0V
+ *        BROWN-OUT", the unit joined to the last step, or NO STEP CHOSEN.
+ * @param plan  takes the line
+ * @param size  bytes at @p plan
+ */
 static void test_plan(char *plan, size_t size)
 {
     float v[SERVO_TEST_STEPS_MAX];
@@ -617,7 +624,8 @@ static void test_plan(char *plan, size_t size)
     plan[0] = '\0';
     int k = 0;
     for (uint8_t j = 0; j < n && k >= 0 && (size_t)k < size; ++j) {
-        k += snprintf(plan + k, size - (size_t)k, "%.1f ", (double)v[j]);
+        k += snprintf(plan + k, size - (size_t)k, "%s%.1f",
+                      (j > 0u) ? " " : "", (double)v[j]);
     }
     if (k >= 0 && (size_t)k < size) {
         snprintf(plan + k, size - (size_t)k, "%s%s",

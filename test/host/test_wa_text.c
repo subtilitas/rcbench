@@ -330,6 +330,40 @@ TEST_CASE(a_form_field_is_read_whole_or_not_at_all)
     CHECK_STR_EQ(v, "");
 }
 
+TEST_CASE(a_cookie_is_found_behind_1000_bytes_of_other_cookies)
+{
+    /* The panel at the access point's 192.168.4.1 shares the host's
+     * cookies with every other gadget at that address: its own comes last
+     * in a header of 1,000 bytes and more.  The server's header limit is
+     * 1,024 bytes (CONFIG_HTTPD_MAX_REQ_HDR_LEN). */
+    static char hdr[1100];
+    const char *own = "rcbench_code=k3m9p2xq";
+    const size_t one = strlen("gadget00=; ") + 32u;
+    size_t at = 0u;
+    for (int i = 0; at + one + strlen(own) <= 1000u; ++i) {
+        at += (size_t)snprintf(hdr + at, sizeof(hdr) - at,
+                               "gadget%02d=%s; ", i,
+                               "0123456789abcdef0123456789abcdef");
+    }
+    /* Padded so the whole header is 1,000 bytes exactly. */
+    while (at + strlen(own) < 1000u) {
+        hdr[at++] = ' ';
+    }
+    memcpy(hdr + at, own, strlen(own) + 1u);
+    CHECK_EQ(strlen(hdr), 1000u);
+    char v[16];
+    CHECK(wa_cookie_get(hdr, "rcbench_code", v, sizeof(v)));
+    CHECK_STR_EQ(v, "k3m9p2xq");
+    /* And with more cookies after it, at the header limit. */
+    snprintf(hdr + strlen(hdr), sizeof(hdr) - strlen(hdr), "; z=%s",
+             "0123456789");
+    CHECK(strlen(hdr) <= 1023u);
+    CHECK(wa_cookie_get(hdr, "rcbench_code", v, sizeof(v)));
+    CHECK_STR_EQ(v, "k3m9p2xq");
+    /* A gadget's cookie of the same name's tail is not the panel's. */
+    CHECK(!wa_cookie_get(hdr, "code", v, sizeof(v)));
+}
+
 TEST_CASE(a_cookie_is_read_by_its_whole_name)
 {
     char v[16];
@@ -411,6 +445,7 @@ int main(void)
     RUN(output_goes_in_pieces_and_stops_when_refused);
     RUN(a_form_field_is_read_whole_or_not_at_all);
     RUN(a_cookie_is_read_by_its_whole_name);
+    RUN(a_cookie_is_found_behind_1000_bytes_of_other_cookies);
     RUN(a_download_keeps_its_name_in_ascii_and_in_utf8);
     RUN(times_read_as_calendar_dates);
     return test_summary("wa_text");

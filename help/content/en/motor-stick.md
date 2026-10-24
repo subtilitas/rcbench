@@ -65,7 +65,7 @@ None of the timings is measured. CLOSE asks for them to be saved; the save waits
 
 ![PROPELLER REMOVED? MOTOR SECURED?](view:motor-stick-warning)
 
-RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD TO RUN starts the run after a 2s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL or the home tag closes the warning.
+RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD 2s TO RUN starts the run after a 2s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL or the home tag closes the warning.
 
 ![A run counting item groups](view:motor-stick-run)
 
@@ -82,7 +82,7 @@ With the phase tap enabled on SETUP, INTERFACES, the page adds a read-only reado
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture overran since the tap was enabled |
 | `WAITING` | no link, or no fresh answer from the IOmcu's tone page in the last 500ms |
-| `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
+| `NO TONE PAGE` | the IOmcu is older than 0.14.0 |
 | `PIN NOT FREE` | the tap's pin is bound elsewhere |
 | `NOT RUNNING` | enabled, and the set-up was refused or is not written yet |
 
@@ -107,7 +107,7 @@ Some ESCs enter their programming mode only when a person fits a jumper or press
 ![The warning with a step before power-up](view:motor-stick-hand-warning)
 ![Four steps before power-up, read under ALL STEPS](view:motor-stick-hand-steps)
 
-The warning lists the steps due before the power-up. When they do not all fit, ALL STEPS opens them, and HOLD TO RUN counts only after ALL STEPS was opened and closed with OK.
+The warning lists the steps due before the power-up. When they do not all fit, ALL STEPS opens them, and HOLD 2s TO RUN counts only after ALL STEPS was opened and closed with OK.
 
 ![The run waiting for the jumper](view:motor-stick-hand-prompt)
 

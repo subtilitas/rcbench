@@ -29,6 +29,7 @@
 #include "motor_screen.h"
 #include "settings.h"
 #include "ui_keypad.h"
+#include "ui_setting_keypad.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -261,14 +262,22 @@ void msp_event(const touch_event_t *evt, bool safe)
         float v = 0.0f;
         const uint32_t before = p.kp.revision;
         const ui_keypad_result_t r = ui_keypad_event(&p.kp, evt, &v);
+        bool refused = false;
         if (r == UI_KEYPAD_OK && p.kp_row >= 0
             && !row_locked(p.kp_row, safe)) {
             /* Onto the setting's step inside its range (settings_set()),
-             * in force at once, and kept when the bench is next SAFE. */
-            settings_set(k_rows[p.kp_row].id, v);
-            settings_request_save();
+             * in force at once, and kept when the bench is next SAFE.  A
+             * pulse that leaves less than LINK_CC_THROTTLE_GAP_US between
+             * Idle and Full is refused: the keypad stays open with the
+             * reason, and the row keeps its value. */
+            const ui_setkey_result_t res =
+                ui_setting_keypad_ok(&p.kp, k_rows[p.kp_row].id, v);
+            refused = (res == UI_SETKEY_REFUSED);
+            if (res == UI_SETKEY_SET) {
+                settings_request_save();
+            }
         }
-        if (r != UI_KEYPAD_NONE) {
+        if (r != UI_KEYPAD_NONE && !refused) {
             p.kp_row = -1;
         }
         if (r != UI_KEYPAD_NONE || p.kp.revision != before) {
@@ -386,6 +395,11 @@ void msp_render(gfx_canvas_t *c, bool safe)
 int motor_screen_keypad_setting(void)
 {
     return (p.kp.open && p.kp_row >= 0) ? (int)k_rows[p.kp_row].id : -1;
+}
+
+const ui_keypad_t *motor_screen_keypad(void)
+{
+    return &p.kp;
 }
 
 int motor_settings_rows(setting_id_t *out, int max)

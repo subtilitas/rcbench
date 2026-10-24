@@ -1,5 +1,6 @@
-/*
- * Receiving an image. See fw_upload.h.
+/**
+ * @file
+ * @brief Receiving an image. See fw_upload.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,7 +20,7 @@ void fw_upload_init(fw_upload_t *u, uint8_t *buf, uint32_t cap,
 
 fw_err_t fw_upload_begin(fw_upload_t *u, uint32_t bytes)
 {
-    if (u->state == FW_UP_RECEIVING || u->state == FW_UP_STAGED) {
+    if (fw_upload_busy(u) || u->state == FW_UP_STAGED) {
         return FW_ERR_BUSY;
     }
     if (bytes == 0u) {
@@ -39,6 +40,12 @@ fw_err_t fw_upload_begin(fw_upload_t *u, uint32_t bytes)
     return FW_OK;
 }
 
+/**
+ * @brief FAILED with @p e.
+ * @param u  the upload
+ * @param e  the reason
+ * @return @p e
+ */
 static fw_err_t refuse(fw_upload_t *u, fw_err_t e)
 {
     u->state = FW_UP_FAILED;
@@ -48,7 +55,7 @@ static fw_err_t refuse(fw_upload_t *u, fw_err_t e)
 
 fw_err_t fw_upload_add(fw_upload_t *u, const uint8_t *data, uint32_t len)
 {
-    if (u->state != FW_UP_RECEIVING) {
+    if (u->state != FW_UP_RECEIVING || u->checking) {
         return FW_ERR_BUSY;
     }
     if (len > u->bytes - u->done) {
@@ -61,21 +68,55 @@ fw_err_t fw_upload_add(fw_upload_t *u, const uint8_t *data, uint32_t len)
     return FW_OK;
 }
 
-fw_err_t fw_upload_end(fw_upload_t *u, bool whole)
+fw_err_t fw_upload_seal(fw_upload_t *u, bool whole)
 {
+    if (u->checking) {
+        return FW_ERR_BUSY;
+    }
     if (u->state != FW_UP_RECEIVING) {
         return (u->state == FW_UP_FAILED) ? u->err : FW_ERR_BUSY;
     }
     if (!whole || u->done != u->bytes) {
         return refuse(u, FW_ERR_READ);
     }
-    const fw_err_t e = fw_image_check(u->buf, u->bytes, u->slot, &u->info);
+    u->checking = true;
+    return FW_OK;
+}
+
+fw_err_t fw_upload_checked(fw_upload_t *u, fw_err_t e,
+                           const fw_image_info_t *info)
+{
+    if (!u->checking) {
+        return FW_ERR_BUSY;
+    }
+    u->checking = false;
+    if (u->state != FW_UP_RECEIVING) {
+        return FW_ERR_BUSY;           /* discarded during the check */
+    }
+    u->info = *info;
     if (e != FW_OK) {
         return refuse(u, e);
     }
     u->state = FW_UP_STAGED;
     u->err   = FW_OK;
     return FW_OK;
+}
+
+fw_err_t fw_upload_end(fw_upload_t *u, bool whole)
+{
+    const fw_err_t s = fw_upload_seal(u, whole);
+    if (s != FW_OK) {
+        return s;
+    }
+    fw_image_info_t info;
+    memset(&info, 0, sizeof(info));
+    const fw_err_t e = fw_image_check(u->buf, u->bytes, u->slot, &info);
+    return fw_upload_checked(u, e, &info);
+}
+
+bool fw_upload_busy(const fw_upload_t *u)
+{
+    return u->state == FW_UP_RECEIVING || u->checking;
 }
 
 void fw_upload_discard(fw_upload_t *u)

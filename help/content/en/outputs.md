@@ -42,7 +42,7 @@ Picking a protocol writes nothing. It chooses which pins show as ticked and whic
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
+A MOTOR PWM channel sends 0% throttle as Idle pulse and 100% as Full pulse, 1000us and 2000us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10us: Idle pulse 800 to 1600us, Full pulse 1400 to 2400us. A SERVO PWM channel keeps 1000 to 2000us, or the range SERVO sends. A change reaches the IOmcu 300ms after the last edit while the bench is SAFE. An Idle pulse that is not 100us or more below Full pulse is not sent, and the band says `Idle pulse must be 100us or more below Full pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012us, 980us and 2020us.
 
@@ -75,12 +75,12 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![The PROG PORT entry](view:outputs-port)
 
-The open protocol list shows one PROG PORT entry per programming port the IOmcu reports, in a second column beside the protocols: 4 from protocol 4.26, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
+The open protocol list shows one PROG PORT entry per programming port the IOmcu reports, in a second column beside the protocols: 4 from IOmcu 0.22.0, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than 0.17.0 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows:
 
 | Row | Shows and does |
 |---|---|
 | PIN | `PIN GP13`, `SET A PIN`, `PIN GP14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
-| FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 4.28 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
+| FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 0.22.0 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
@@ -99,7 +99,7 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
 | `SERVO TESTER DRIVES PROG PORT 3` | the tester drives another port |
 | `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot |
-| `IOMCU OLDER THAN 4.26: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
+| `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
 Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The tester's two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`.
@@ -121,7 +121,7 @@ Every tick is written at once. The panel then reads the IOmcu's pages back and s
 | `NO LINK` | an exchange got no answer within 1000ms, or the link is down |
 | `REFUSED` | the IOmcu refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |
 
-An IOmcu of protocol 4.10 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
+An IOmcu of 0.15.0 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
 
 ## A binding that is not confirmed
 
@@ -131,7 +131,7 @@ The screen edits a binding only after reading it. While a page did not read, the
 
 ![Pages no binding describes](view:outputs-odd)
 
-When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD: CLEAR ALL PIN ASSIGNMENTS`. Held for 2s, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
+When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`. Held, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
 
 ## The IOmcu keeps the binding
 

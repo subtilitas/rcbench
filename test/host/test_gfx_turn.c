@@ -581,8 +581,12 @@ TEST_CASE(frames_through_the_driver_shape_turn)
     gfx_turn_t t;
     engine_t clock = engine(SW, SH);
     gfx_turn_init(&t, SW, SH);
-    fake_drv_t d = { .mode = DRV_DONE };
-    fake_disp_t disp = { 0, 0 };
+    /* Static: s_eng, a file-scope engine, keeps their addresses past the
+     * case, which a local's would leave dangling. */
+    static fake_drv_t d;
+    static fake_disp_t disp;
+    d = (fake_drv_t){ .mode = DRV_DONE };
+    disp = (fake_disp_t){ 0, 0 };
     s_eng = fake_engine(&d, &disp);
     const gfx_turn_ops_t o = { eng_job_copy, eng_now, &clock };
     for (int i = 0; i < 8; ++i) {

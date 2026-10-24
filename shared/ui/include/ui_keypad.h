@@ -147,11 +147,21 @@ void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason);
 gfx_rect_t ui_keypad_key_rect(const ui_keypad_t *k, ui_key_t key);
 
 /**
+ * @brief The face of the digits and the point: the largest of 20 x 36,
+ *        16 x 28, 12 x 24 and 10 x 20 whose cell fits a digit key with 6px
+ *        on each side, else 8 x 16.  Over SUPPLY's 620 x 476px a key is
+ *        145 x 76px and takes 20 x 36.
+ * @param k The keypad, opened.
+ * @return The face; 8 x 16 for NULL.
+ */
+const gfx_font_t *ui_keypad_digit_font(const ui_keypad_t *k);
+
+/**
  * @brief The face of the word keys (DEL, CLR, CANCEL, OK, +/-) in the
- *        language shown: the largest of 12 x 24, 10 x 20 and 8 x 16 in
- *        which every one of them fits its key with 6px each side, so the
- *        words of one keypad share one face.  Digits and the point are
- *        always 12 x 24.
+ *        language shown: the largest of 20 x 36, 16 x 28, 12 x 24 and
+ *        10 x 20, never larger than ui_keypad_digit_font(), in which every
+ *        one of them fits its key with 6px each side, so the words of one
+ *        keypad share one face; else 8 x 16.
  * @param k The keypad, opened.
  * @return The face; 8 x 16 for NULL.
  */
@@ -160,7 +170,8 @@ const gfx_font_t *ui_keypad_word_font(const ui_keypad_t *k);
 /**
  * @brief The range line of the keypad's header: "3.30 to 21.00V", the
  *        unit joined to a symbol and after a space to a word
- *        (ui_unit_gap()), with the keypad's decimals.
+ *        (ui_unit_gap()), with the keypad's decimals.  A pin word
+ *        (ui_unit_is_prefix()) leads: "GPIO 0 to 54".
  * @param k The keypad.
  * @param buf Takes the line.
  * @param n Bytes at @p buf.
@@ -172,8 +183,8 @@ const char *ui_keypad_range(const ui_keypad_t *k, char *buf, size_t n);
  * @brief The whole keypad over its area: the title and the range in
  *        10 x 20 (8 x 16 where they do not fit side by side), the entry in
  *        the 32 x 44 numerals with its unit in 12 x 24 (24 x 30 and 10 x 20
- *        where those do not fit), the digits in 12 x 24 and the words in
- *        ui_keypad_word_font(); the +/- key only on a signed keypad.
+ *        where those do not fit), the digits in ui_keypad_digit_font()
+ *        and the words in ui_keypad_word_font(); the +/- key only on a signed keypad.
  *        Nothing while it is closed.
  * @param k The keypad.
  * @param c The canvas.

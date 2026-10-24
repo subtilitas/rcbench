@@ -473,7 +473,7 @@ TEST_CASE(every_reserved_pin_is_named_and_has_no_button)
         char who[32];
         gfx_rect_t r;
         CHECK_EQ(picker_screen_pin(i, who, sizeof(who)), PICKER_PIN_RESERVED);
-        CHECK_STR_EQ(who, bd->pins[i].held_by);
+        CHECK_STR_EQ(who, ui_pin_holder(bd->pins[i].held_by));
         CHECK(!picker_screen_button_rect(i, &r));
     }
     CHECK_EQ(reserved, 6u);             /* GP3 and GP8 to GP12 */

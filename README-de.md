@@ -7,46 +7,41 @@
 
 ## Displaywechsel: ESP32-P4-Panel ab 0.23.0
 
-Das Panel wechselt vom 7-Zoll-ESP32-S3-Displayboard von Waveshare
-(ESP32-S3-Touch-LCD-7, 800 x 480 Pixel) auf das 7-Zoll-ESP32-P4-Displayboard
-von Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 Pixel, MIPI DSI
-(Display Serial Interface), ESP32-C6 für Wi-Fi).
+Ab 0.23.0 ist das Panel das 7-Zoll-ESP32-P4-Displayboard von Waveshare
+(ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 Pixel, MIPI DSI (Mobile Industry
+Processor Interface, Display Serial Interface), ESP32-C6 für Wi-Fi). Bis 0.22
+ist es das 7-Zoll-ESP32-S3-Displayboard von Waveshare
+(ESP32-S3-Touch-LCD-7, 800 x 480 Pixel).
 
 - 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel; ihr neuestes
-  Release ist 0.22.1. Die Unterstützung dafür endet mit 0.22. Einem
-  ESP32-S3-Panel werden nur noch 0.22.x-Patch-Releases angeboten.
+  Release ist 0.22.1. Einem ESP32-S3-Panel werden nur 0.22.x-Patch-Releases
+  angeboten.
 - 0.23.0 ist das erste Release für das ESP32-P4-Panel, ein Testing-Release.
   Seine Bedienoberfläche ist für 1024 x 600 neu aufgeteilt; sie ist nicht
   das hochskalierte 800-x-480-Layout.
 - Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v5.5.5).
-- Der IOmcu, das IO-Board und der CAN-Link bleiben, wie sie sind.
+- Beide Panels nutzen denselben IOmcu, dasselbe IO-Board und denselben CAN-Link.
 - Auf dem ESP32-P4-Board ist der Heartbeat IO28 und der Drehknopf IO30
   (SDA) und IO31 (SCL), alle auf der 12-poligen Stiftleiste P3.
 
 ## Was rcbench ist
 
 Ein Motor-, ESC- (Electronic Speed Controller, Motorregler) und Servoprüfstand
-auf zwei Prozessoren: ein ESP32-P4-Touchpanel, das Waveshare ESP32-P4 7B
-(Bedienoberfläche auf einem 1024x600-Display an MIPI DSI, Einstellungen, SD-Karte,
-Wi-Fi über seinen ESP32-C6), und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
-Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1Mbit/s.
+auf zwei Prozessoren. Das Panel ist ein ESP32-P4-Touchpanel, das Waveshare
+ESP32-P4 7B: Bedienoberfläche auf einem 1024x600-Display an MIPI DSI,
+Einstellungen, SD-Karte (Secure Digital) und Wi-Fi über seinen ESP32-C6. Der
+IOmcu ist ein RP2350 (Input/Output-Mikrocontroller): Messung, Ausgänge und
+jedes Protokoll mit Zeitanforderungen. CAN (Controller Area Network) mit
+1Mbit/s verbindet die beiden.
 
-Release 0.23.0 läuft auf dem ESP32-P4-Panel. Was seine Update-Suche
-anbietet, steht in
+Releases bis 0.22.1 laufen auf dem ESP32-S3-Panel. Was die Update-Suche
+jedes Panels anbietet, steht in
 [Bildschirme: Die Release-Linie](docs/Screens-de.md#die-release-linie).
 
-**Stand: im Aufbau.** Das Projekt ist in Entwicklung, und seine Funktionen
-sind nicht auf Hardware verifiziert. Das Panel bootet, und jeder Bildschirm
-existiert. Die Ausgangstreiber sind gebaut. Ein ARM nennt die Rollen, die es
-treibt: die Throttle-Ausgänge von MOTOR & ESC aus, die Surfaces von SERVO
-aus. Eine Rolle in ARMED treibt jeden an sie gebundenen Pin auf ihrer
-Ruhelage, ob etwas ihn kommandiert oder nicht. Nicht gemessen ist das
-Timing an einem Messgerät -- keine Bitbreite, keine Rahmenperiode und keine
-Antwortverzögerung in diesem Baum ist auf einem Oszilloskop oder einem
-Logikanalysator gesehen worden. Die übrigen Messungen warten auf Bauteile, die
-nicht bestückt sind. Bildschirme mit simulierten Werten sind mit SIMULATION
-markiert.
-
+**Stand.** Das Panel und der IOmcu laufen über CAN mit 1Mbit/s zusammen auf
+einem Prüfstand mit einem PD mini als Netzteil, Servos und einem ESC, und ein
+Betatester setzt Release-Builds ein. Das Timing der Ausgänge (Bitbreiten,
+Rahmenperioden, Antwortverzögerungen) ist an keinem Messgerät gemessen.
 [STATUS.md](STATUS.md) (englisch) hält fest, was gebaut ist, was offen ist und
 was nicht geplant ist.
 
@@ -62,11 +57,11 @@ wirken beim Aufsetzen des Fingers, nicht beim Abheben.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des IOmcu und ein STOP-Kommando über
-den Link. Die Leitung läuft von GPIO28 des Panels (`PANEL_HEARTBEAT_PIN`,
-IO28 des 12-poligen Headers P3 des 7-Zoll-ESP32-P4-Boards) zu GP3 des
-IOmcu. Das retriggerbare Monoflop des Heartbeats ist auf keiner Platine
-vorhanden, die Ausgänge hängen also allein an der Firmware an beiden Enden,
-ohne Hardware-Rückfallebene dahinter.
+den Link. Die Heartbeat-Leitung läuft von IO28 des Panels (`PANEL_HEARTBEAT_PIN`,
+am 12-poligen Header P3 des 7-Zoll-ESP32-P4-Boards) zu GP3 des IOmcu. Keine
+Platine trägt das retriggerbare Monoflop des Heartbeats. Die Firmware an
+beiden Enden schaltet die Ausgänge, und dahinter sitzt keine
+Hardware-Rückfallebene.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de)
 spezifiziert alle drei.
 
@@ -78,19 +73,19 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
 | Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC; simulierte Werte, solange kein IOmcu antwortet |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom IOmcu gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche, der Abgleich und der Programmierer sind auf dem Host gegen ein Servomodell getestet |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom IOmcu gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV-Datei (Comma-Separated Values) und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche, der Abgleich und der Programmierer sind auf dem Host gegen ein Servomodell getestet |
 | Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der IOmcu steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Receiver | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / KEIN SIGNAL | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
 | Motor & ESC > Programmieren | [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle; Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos | Aufgabe gebaut. Profile eingebaut und aus `/BENCH/ESC/CONF/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon aus ESC STICK aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels. Die Parametertabellen sind Daten: kein Protokoll auf einer Leitung, keine Zeile in einer Liste von PROGRAMMIEREN |
-| Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
-| Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
-| Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang nach `BENCH/LOGS` aufgezeichnet, Tests nach `USER/LOGS` (die vorgegebenen Ordner), beides abschaltbar und einstellbar unter SETUP > SD-KARTE | gebaut |
+| Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Beschleunigungssensor und Indexsensor sind nicht bestückt, es wird also nichts gemessen |
+| Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; aus einem Modell gezeichnet |
+| Logs | CSV von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang nach `BENCH/LOGS` aufgezeichnet, Tests nach `USER/LOGS` (die vorgegebenen Ordner), beides abschaltbar und einstellbar unter SETUP > SD-KARTE | gebaut |
 | Files | die SD-Karte (Secure Digital) in zwei Panes: Dateien kopieren, verschieben, umbenennen und löschen, Ordner und leere Textdateien anlegen, Dateiinformation; schreibt nur, solange der Prüfstand auf SAFE steht und keine Logdatei offen ist, und verweigert die eigenen Ordner des Prüfstands und die Dateien, die der Logger schreibt | Bildschirm gebaut und auf dem Host getestet; öffnet aus Logs und aus Setup |
 | WLAN | das Funkmodul des Panels, nur an, solange der Bildschirm offen ist und für Update-Prüfungen: ein eigener Access Point (WPA2 (Wi-Fi Protected Access 2), 2,4GHz Kanal 6, 1 Client) oder ein gemerktes Heimnetz (WPA2 oder WPA3 personal); eine Browser-Seite lädt jede Datei der Karte oder die ganze Karte als eine ZIP-Datei herunter und lädt ein Panel-Firmware-Image hoch, das ein 2s-Hold am Panel installiert | gebaut und auf dem Host getestet; ein Download von 16MiB lief in einem Heimnetz mit 688-757kB/s; Reichweite nicht gemessen |
 | Updates | fragt GitHub nach dem neuesten Panel-Release (STABLE oder TESTING), erinnert einmal je Start, lädt es über HTTPS herunter und installiert es auf einen 2s-Hold; installiert das IOmcu-Image, das das Panel trägt, auf einen 2s-Hold auf dem IOmcu | gebaut und auf dem Host getestet; die Dauer einer Prüfung und eines Downloads in einem echten Netz ist nicht gemessen |
 | Outputs | die an Pins des IOmcu gebundenen Protokolle und die Pins, die jedes treibt, hinter der Kachel OUTPUTS; PICK A PIN zeichnet die IOmcu-Platine maßstäblich und zeigt, wohin die Leitung eines Pins gehört | gebaut und auf dem Host getestet |
-| Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut |
-| Setup > Panel | `Zeitzone` (10 Zonen, standardmäßig BERLIN) bestimmt die Zone, in der Dateidaten geschrieben und gezeigt werden. Die Uhr startet bei jedem Einschalten ungestellt und wird bei jedem Beitritt zum Heimnetz einmal binnen 30000ms per SNTP (Simple Network Time Protocol) von `pool.ntp.org` gestellt. `Bilddrehung` dreht Bild und Touch um 180° | gebaut und auf dem Host getestet; die Platine hat keinen RTC-Chip (Real-Time Clock); die Zeit eines gedrehten Flips auf der Platine ist nicht gemessen |
+| Setup | Einstellungen im dunklen und im hellen Theme, gespeichert im NVS (Non-Volatile Storage) | gebaut |
+| Setup > Panel | `Zeitzone` (10 Zonen, standardmäßig BERLIN) bestimmt die Zone, in der Dateidaten geschrieben und gezeigt werden. Die Uhr startet bei jedem Einschalten ungestellt und wird bei jedem Beitritt zum Heimnetz einmal binnen 30000ms per SNTP (Simple Network Time Protocol) von `pool.ntp.org` gestellt. `Bilddrehung` dreht Bild und Touch um 180° | gebaut und auf dem Host getestet; die Platine hat keinen RTC-Chip (Real-Time Clock); ein gedrehtes Bild auf SERVO LIVE im Sweep brauchte 3,8 bis 4,8ms (TURN) bei 30,2fps, ungedreht 39 bis 45fps; 180° im Stillstand ist nicht gemessen |
 
 ## Bauen
 
@@ -137,7 +132,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9%**, 55 604 von 56 811 Zeilen in 246 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9%**, 55 990 von 57 194 Zeilen in 250 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

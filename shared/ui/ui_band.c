@@ -476,17 +476,22 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
 /* ----------------------------------------------------------- the band */
 
 /**
- * @brief How @p chip is drawn for @p st: its dot, 0 for none, and its fill.
+ * @brief How @p chip is drawn for @p st: its dot, 0 for none, its fill and
+ *        its text.
  * @param st the bench's status
  * @param chip the chip
  * @param dot its dot's colour, 0 for none
  * @param fill its fill
+ * @param ink its text colour: the theme's text, and on the bright fills of
+ *        FAULT's warning and of the armed badge the dark text of the
+ *        buttons on bright fills
  */
 static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
-                      gfx_color_t *dot, gfx_color_t *fill)
+                      gfx_color_t *dot, gfx_color_t *fill, gfx_color_t *ink)
 {
     *dot  = 0;
     *fill = ui_theme_color(UI_C_PANEL_SUNK);
+    *ink  = ui_theme_color(UI_C_TEXT);
     switch (chip) {
     case UI_BAND_CHIP_ARMED:
         /* ARMED is a filled badge rather than a coloured dot, so the
@@ -496,10 +501,12 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
          * pulse, and one on SERVO the motor. */
         if (st->armed) {
             *fill = ui_theme_color(UI_C_DANGER);
+            *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
         }
         break;
     case UI_BAND_CHIP_FAULT:
         *fill = ui_theme_color(UI_C_WARN);
+        *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
         break;
     case UI_BAND_CHIP_LINK:
         *dot = st->link_up ? ui_theme_color(UI_C_OK)
@@ -508,6 +515,24 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
     default:
         break;
     }
+}
+
+bool ui_band_chip_colors(const ui_bench_status_t *st, ui_band_chip_t chip,
+                         gfx_color_t *fill, gfx_color_t *ink)
+{
+    if (st == NULL || chip <= UI_BAND_CHIP_NONE
+        || chip >= UI_BAND_CHIP_COUNT) {
+        return false;
+    }
+    gfx_color_t dot, f, i;
+    chip_look(st, chip, &dot, &f, &i);
+    if (fill != NULL) {
+        *fill = f;
+    }
+    if (ink != NULL) {
+        *ink = i;
+    }
+    return true;
 }
 
 /** @brief One step of the 32-bit FNV-1a hash over @p n bytes at @p p. */
@@ -547,8 +572,8 @@ uint32_t ui_band_key(const char *title, bool show_home,
         }
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
-        gfx_color_t look[2];
-        chip_look(st, chip, &look[0], &look[1]);
+        gfx_color_t look[3];
+        chip_look(st, chip, &look[0], &look[1], &look[2]);
         const int16_t box[5] = { (int16_t)chip, l.r[chip].x, l.r[chip].y,
                                  l.r[chip].w, l.r[chip].h };
         h = fnv(h, box, sizeof(box));
@@ -590,8 +615,9 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         }
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
-        gfx_color_t dot, fill;
-        chip_look(st, chip, &dot, &fill);
-        ui_pill_font(c, l.r[chip], label, dot, fill, CHIP_INSET, UI_FONT_BAND);
+        gfx_color_t dot, fill, ink;
+        chip_look(st, chip, &dot, &fill, &ink);
+        ui_pill_ink(c, l.r[chip], label, dot, fill, ink, CHIP_INSET,
+                    UI_FONT_BAND);
     }
 }

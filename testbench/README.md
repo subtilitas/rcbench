@@ -597,7 +597,10 @@ answers at 0x5D and the injector at 0x14, so nothing on the bus collides.
 (`RCBENCH_TOUCH_INJECTOR` defaults to ON) probes 0x14 once at start-up,
 after it has found the glass. When 0x14 does not answer, the injector is off
 until the next start: 0x14 is not read or probed again, the band never shows
-INJECT, and touch is the glass alone. When 0x14 answers as a GT911, the touch task
+INJECT, and touch is the glass alone. The panel tells the injector by its
+product ID `9INJ`, not by its address (`touch-injector/README.md`): a GT911
+at 0x14 with another product ID is not read. When 0x14 answers as a GT911
+with `9INJ`, the touch task
 reads it every poll after the glass and merges the two
 (`shared/touch/touch_merge.c`):
 
@@ -617,7 +620,7 @@ reads it every poll after the glass and merges the two
   counts, the glass alone decides, and the heartbeat comes back. The bench
   stays SAFE until somebody arms it again.
 - A detached injector has its product ID read once every 1000ms. The first
-  answer re-attaches it, with no contacts down and its age counted again
+  `9INJ` re-attaches it, with no contacts down and its age counted again
   from that answer.
 
 A panel built with `-D RCBENCH_TOUCH_INJECTOR=OFF` compiles none of this

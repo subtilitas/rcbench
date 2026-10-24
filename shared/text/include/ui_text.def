@@ -238,6 +238,11 @@ UI_TEXT(BH_F_FLASH, 0,
 UI_TEXT(KEYPAD_RANGE, 0,
     "%.*f to %.*f%s%s",
     "%.*f bis %.*f%s%s")
+/* The range of a pin setting: the pin word first, as in "GPIO 0 to 54"
+ * (ui_unit_is_prefix()). */
+UI_TEXT(KEYPAD_RANGE_PRE, 0,
+    "%s %.*f to %.*f",
+    "%s %.*f bis %.*f")
 /* Why a setting's keypad refused a value inside its range, in place of the
  * range (ui_setting_keypad.c): a value between 0 and the row's off_below
  * (the row's off_below, maximum and unit, with its step's decimals: a
@@ -251,6 +256,17 @@ UI_TEXT(KEYPAD_WHY_OFF, 0,
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
+/* The first number is the largest Idle pulse (the smallest Full pulse) the
+ * pair takes, the second the gap, LINK_CC_THROTTLE_GAP_US. */
+UI_TEXT(KEYPAD_WHY_IDLE_GAP, 58,
+    "Idle pulse at most %uus (%uus below Full pulse)",
+    "Leerlaufpuls höchstens %uus (%uus unter Vollpuls)")
+UI_TEXT(KEYPAD_WHY_FULL_GAP, 58,
+    "Full pulse at least %uus (%uus above Idle pulse)",
+    "Vollpuls mindestens %uus (%uus über Leerlaufpuls)")
+UI_TEXT(KEYPAD_WHY_TAP, 0,
+    "Pins the tap takes: %s",
+    "Pins, die der Abgriff nimmt: %s")
 UI_TEXT(KEYPAD_WHY_PDMINI, 0,
     "The other PD mini pin holds this GPIO",
     "Diesen GPIO hält der andere PD-mini-Pin")
@@ -356,6 +372,14 @@ UI_TEXT(SPLASH_LINK, 0,
 UI_TEXT(SPLASH_IOMCU, 0,
     "IOMCU",
     "IOMCU")
+/* The BOARD and IOMCU steps' details, 47 cells of the body face: the
+ * board's name and the panel's release; the IOmcu's protocol and release. */
+UI_TEXT(SPLASH_PANEL_FW, 47,
+    "%s, panel firmware %s",
+    "%s, Panel-Firmware %s")
+UI_TEXT(SPLASH_IOMCU_FW, 47,
+    "protocol %u.%u, firmware %u.%u.%u",
+    "Protokoll %u.%u, Firmware %u.%u.%u")
 UI_TEXT(SPLASH_TAGLINE, 0,
     "motor, ESC and servo test bench",
     "Prüfstand für Motor, ESC und Servo")
@@ -707,9 +731,13 @@ UI_TEXT(OUT_PORT_WATCH_NONE, 0,
 UI_TEXT(OUT_PORT_NOT_READ, 60,
     "PORTS NOT READ YET",
     "PORTS NOCH NICHT GELESEN")
+/* An IOmcu too old for a page is named by the first release whose IOmcu
+ * speaks it, the number UPDATES shows: link protocol 4.6 is 0.13.0, 4.9
+ * 0.15.0, 4.11 0.16.0, 4.13 and 4.15 0.17.0, 4.23 0.21.1, 4.24 to 4.27
+ * 0.22.0 (LINK_PROTOCOL_MINOR at each release tag). */
 UI_TEXT(OUT_PORT_FN_OLD, 60,
-    "IOMCU OLDER THAN 4.26: SERVO PWM ONLY",
-    "IOMCU ÄLTER ALS 4.26: NUR SERVO PWM")
+    "IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY",
+    "IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM")
 UI_TEXT(OUT_PORT_ASK_WAIT, 60,
     "WAITS FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMER",
     "WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER")
@@ -790,9 +818,28 @@ UI_TEXT(OUT_NOT_READ, 60,
 UI_TEXT(OUT_NOT_MAPPED, 60,
     "NO VALID ASSIGNMENT IN THE PAGES",
     "KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES")
+/* What holds a reserved pin, under its GPIO on OUTPUTS and PICK A PIN
+ * (ui_pin_holder()), 14 cells as PROG PORT: the IOmcu catalogue's
+ * LINK_PIN_* kinds.  HEARTBEAT,
+ * FLASH, DEBUG and SENSOR are the field's words in German too. */
+UI_TEXT(OUT_HELD_HEARTBEAT, 14,
+    "HEARTBEAT",
+    "HEARTBEAT")
+UI_TEXT(OUT_HELD_FLASH, 14,
+    "FLASH",
+    "FLASH")
+UI_TEXT(OUT_HELD_DEBUG, 14,
+    "DEBUG",
+    "DEBUG")
+UI_TEXT(OUT_HELD_SENSOR, 14,
+    "SENSOR",
+    "SENSOR")
+UI_TEXT(OUT_HELD_IN_USE, 14,
+    "IN USE",
+    "BELEGT")
 UI_TEXT(OUT_HOLD_UNBIND, 56,
-    "HOLD: CLEAR ALL PIN ASSIGNMENTS",
-    "HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN")
+    "HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS",
+    "2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN")
 
 /* ---------------------------------------------------------- pin picker */
 UI_TEXT(PK_PINS, 0,
@@ -866,6 +913,24 @@ UI_TEXT(AN_WHY_LOST, 0,
 UI_TEXT(AN_WHY_LIVE, 0,
     "Signal received from the transmitter.",
     "Signal vom Sender empfangen.")
+/* The state card's counters, left of their values in the label face.  BUS,
+ * RATE, FRAMES and RESYNC are the S.BUS field's own words in German too;
+ * BAD TAIL counts frames whose end byte is wrong. */
+UI_TEXT(AN_STAT_BUS, 0,
+    "BUS",
+    "BUS")
+UI_TEXT(AN_STAT_RATE, 0,
+    "RATE",
+    "RATE")
+UI_TEXT(AN_STAT_FRAMES, 0,
+    "FRAMES",
+    "FRAMES")
+UI_TEXT(AN_STAT_RESYNC, 0,
+    "RESYNC",
+    "RESYNC")
+UI_TEXT(AN_STAT_BAD_TAIL, 0,
+    "BAD TAIL",
+    "ENDBYTE FALSCH")
 
 /* ------------------------------------------------------------- battery */
 UI_TEXT(BAT_NO_MONITOR, 56,
@@ -1131,10 +1196,10 @@ UI_TEXT(SET_HD_TAP, 40,
     "PHASENABGRIFF")
 UI_TEXT(SET_HD_BALANCE, 40,
     "BALANCE SENSORS",
-    "BALANCE-SENSOREN")
+    "BALANCE SENSORS")
 UI_TEXT(SET_HD_SUPPLY, 40,
     "SUPPLY",
-    "NETZTEIL")
+    "SUPPLY")
 UI_TEXT(SET_HD_PROG, 40,
     "PROG PORT",
     "PROG-PORT")
@@ -1172,17 +1237,17 @@ UI_TEXT(SENS_ST_SAME_ADDR, 56,
     "INA228 ON THIS ADDRESS",
     "INA228 AUF DIESER ADRESSE")
 UI_TEXT(SENS_ST_OLD, 56,
-    "IOMCU OLDER THAN 4.25: NOT READ",
-    "IOMCU ÄLTER ALS 4.25: NICHT GELESEN")
+    "IOMCU OLDER THAN 0.22.0: NOT READ",
+    "IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN")
 UI_TEXT(SENS_ST_NO_BUS, 56,
     "SENSOR SDA OR SCL UNSET",
     "SENSOR-SDA ODER -SCL NICHT FESTGELEGT")
 UI_TEXT(SET_SENS_OLD, 65,
-    "IOmcu older than 4.25: one INA3221, CH1 at 1kHz.",
-    "IOmcu älter als 4.25: ein INA3221, CH1 mit 1kHz.")
+    "IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.",
+    "IOmcu älter als 0.22.0: ein INA3221, CH1 mit 1kHz.")
 UI_TEXT(SET_SENS_LIM_OLD, 65,
-    "IOmcu older than 4.27: no limit is judged.",
-    "IOmcu älter als 4.27: keine Grenze wird geprüft.")
+    "IOmcu older than 0.22.0: no limit is judged.",
+    "IOmcu älter als 0.22.0: keine Grenze wird geprüft.")
 UI_TEXT(SET_SENS_DARK, 65,
     "Every channel off. The IOmcu takes no such part.",
     "Alle Kanäle aus. Der IOmcu nimmt so keinen Baustein.")
@@ -1191,7 +1256,7 @@ UI_TEXT(SET_SENS_SAME_ADDR, 65,
     "Der INA228 nutzt diese Adresse. Keiner wird gelesen.")
 UI_TEXT(SET_SENS_NO_BUS, 65,
     "Sensor SDA or SCL unset. Set both on INTERFACES.",
-    "SDA oder SCL der Sensoren fehlt. Beide auf ANSCHLÜSSE festlegen.")
+    "SDA oder SCL der Sensoren fehlt. Beide auf INTERFACES festlegen.")
 UI_TEXT(SET_RESET, 0,
     "RESET CATEGORY",
     "KATEGORIE ZURÜCKSETZEN")
@@ -1211,11 +1276,11 @@ UI_TEXT(SET_UNHELD, 0,
     "Not accepted by the IOmcu.",
     "Vom IOmcu nicht übernommen.")
 UI_TEXT(SET_HITEC_RX_OLD, 0,
-    "IOmcu older than 4.24: receives with PULL-UP.",
-    "IOmcu älter als 4.24: empfängt mit PULL-UP.")
+    "IOmcu older than 0.22.0: receives with PULL-UP.",
+    "IOmcu älter als 0.22.0: empfängt mit PULL-UP.")
 UI_TEXT(SET_HITEC_RX_NO_LINE, 0,
-    "IOmcu older than 4.23: no Hitec line.",
-    "IOmcu älter als 4.23: keine Hitec-Leitung.")
+    "IOmcu older than 0.21.1: no Hitec line.",
+    "IOmcu älter als 0.21.1: keine Hitec-Leitung.")
 /* Hitec D receive's help line at PRECHARGE, unmarked; PULL-UP keeps the
  * setting's help. */
 UI_TEXT(SET_HITEC_RX_PRE, 0,
@@ -1232,6 +1297,10 @@ UI_TEXT(SET_LEAVE_TITLE, 0,
 UI_TEXT(SET_LEAVE_WHY, 0,
     "Your changes are active, but not saved. Tap SAVE to keep them after a restart.",
     "Deine Änderungen sind aktiv, aber noch nicht gespeichert. Tippe auf SPEICHERN, sonst gehen sie beim Neustart verloren.")
+/* A pin setting's -1 in the leave question, as the row's help says it. */
+UI_TEXT(SET_LEAVE_PIN_OPEN, 0,
+    "open",
+    "offen")
 UI_TEXT(SET_LEAVE_MORE, 0,
     "and %d more",
     "und %d weitere")
@@ -1591,7 +1660,7 @@ UI_TEXT(LOG_DELETE, 0,
     "LÖSCHEN")
 UI_TEXT(LOG_SD_CARD, 60,
     "SD CARD",
-    "SD-KARTE")
+    "SD CARD")
 UI_TEXT(LOG_NO_LOGS, 64,
     "NO RECORDINGS",
     "KEINE AUFZEICHNUNGEN")
@@ -1627,10 +1696,10 @@ UI_TEXT(LOG_ROOT_HERE, 64,
     "Läufe von Firmware 0.21.0 und älter.")
 UI_TEXT(LOG_AUTO_OFF, 64,
     "AUTO LOGS OFF in SETUP > SD CARD.",
-    "AUTO-LOGS AUS unter SETUP > SD-KARTE.")
+    "AUTO-LOGS AUS unter SETUP > SD CARD.")
 UI_TEXT(LOG_USER_OFF, 64,
     "USER LOGS OFF in SETUP > SD CARD.",
-    "USER-LOGS AUS unter SETUP > SD-KARTE.")
+    "USER-LOGS AUS unter SETUP > SD CARD.")
 /* The folder tabs: the card's folder names, the same in every language
  * but the root's. */
 UI_TEXT(LOG_TAB_USER, 0,
@@ -1800,7 +1869,8 @@ UI_TEXT(LOG_TEXT_EMPTY, 92,
     "Die Datei ist leer.")
 
 /* --------------------------------------------------------------- FILES */
-/* The footer's buttons, 118px of the 10 x 20 face: 11 cells at most.
+/* The footer's buttons, 118px: a label that leaves under 6px at each side
+ * in the 10 x 20 face (10 cells at most) is drawn in the 8 x 16 face.
  * OPEN, DELETE and RESCAN are LOGS' (LOG_OPEN, LOG_DELETE, LOG_RESCAN). */
 UI_TEXT(FM_COPY, 0,
     "COPY",
@@ -2053,7 +2123,7 @@ UI_TEXT(FM_RULE_FREE, 0,
     "keine")
 UI_TEXT(FM_RULE_FIXED, 0,
     "A folder of the bench: no RENAME, MOVE or DELETE.",
-    "Ordner des Prüfstands: kein UMBENENNEN, VERSCHIEBEN, LÖSCHEN.")
+    "Prüfstand-Ordner: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")
@@ -2710,11 +2780,11 @@ UI_TEXT(SP_WARN_UNVERIFIED, 0,
     "This profile is unverified. All beep times are defaults.",
     "Dieses Profil ist ungeprüft. Alle Pieptonzeiten sind Vorgaben.")
 UI_TEXT(SP_HOLD_TO_RUN, 0,
-    "HOLD TO RUN",
-    "HALTEN ZUM STARTEN")
+    "HOLD 2s TO RUN",
+    "2s HALTEN ZUM STARTEN")
 UI_TEXT(SP_WARN_HAND, 0,
-    "AT THE ESC, BEFORE HOLD TO RUN:",
-    "AM ESC, VOR HALTEN ZUM STARTEN:")
+    "AT THE ESC, BEFORE HOLD 2s TO RUN:",
+    "AM ESC, VOR 2s HALTEN ZUM STARTEN:")
 UI_TEXT(SP_WARN_HAND_WAIT, 184,
     "Supply OFF is not confirmed. Switch it off. Manual steps appear once OFF is confirmed.",
     "Netzteil AUS ist nicht bestätigt. Schalte es aus. Die Handgriffe erscheinen, sobald AUS bestätigt ist.")
@@ -2722,8 +2792,8 @@ UI_TEXT(SP_WARN_HAND_LATER, 0,
     "The run pauses for each later manual step. Tap DONE to continue.",
     "Der Lauf pausiert bei jedem späteren Handgriff. Tippe danach auf ERLEDIGT.")
 UI_TEXT(SP_WARN_HAND_READ, 90,
-    "%u steps: read them all under ALL STEPS to enable HOLD TO RUN.",
-    "%u Handgriffe: Lies alle unter ALLE HANDGRIFFE. Danach ist HALTEN ZUM STARTEN verfügbar.")
+    "%u steps: read them all under ALL STEPS to enable HOLD 2s TO RUN.",
+    "%u Handgriffe: Lies alle unter ALLE HANDGRIFFE. Dann ist 2s HALTEN ZUM STARTEN verfügbar.")
 UI_TEXT(SP_STEPS_BTN, 30,
     "ALL STEPS",
     "ALLE HANDGRIFFE")
@@ -3214,8 +3284,8 @@ UI_TEXT(SV_TAP_HV, 29,
     "TAP: HV WARNING",
     "TIPPEN: HV-WARNUNG")
 UI_TEXT(SV_HOLD_START, 29,
-    "HOLD 2 S TO START",
-    "2 S HALTEN ZUM STARTEN")
+    "HOLD 2s TO START",
+    "2s HALTEN ZUM STARTEN")
 UI_TEXT(SV_FASTEST, 0,
     "Highest rate with these pulses: %uHz (%s gap).",
     "Höchste Rate mit diesen Pulsen: %uHz (%s Pause).")
@@ -3334,7 +3404,7 @@ UI_TEXT(SV_DUT_NOTE, 58,
     "Dieser Name steht oben auf jedem Testbericht.")
 UI_TEXT(SV_ENC_NOTE_1, 58,
     "AS5600 on or off: SETUP > INTERFACES.",
-    "AS5600 ein oder aus: SETUP > ANSCHLÜSSE.")
+    "AS5600 ein oder aus: SETUP > INTERFACES.")
 UI_TEXT(SV_ENC_NOTE_2, 58,
     "Centre the servo, then tap ENC CENTRE.",
     "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
@@ -3356,8 +3426,8 @@ UI_TEXT(SV_CAPS, 0,
     "Caps %.2fV %.2fA: SUPPLY > SETTINGS",
     "Grenzen %.2fV %.2fA: SUPPLY > OPTIONEN")
 UI_TEXT(SV_HOLD_TO_APPLY, 0,
-    "HOLD TO APPLY",
-    "HALTEN ZUM ÜBERNEHMEN")
+    "HOLD 2s TO APPLY",
+    "2s HALTEN ZUM ÜBERNEHMEN")
 UI_TEXT(SV_DESTROY, 0,
     "CAN DESTROY THE SERVO",
     "KANN DAS SERVO ZERSTÖREN")
@@ -3476,8 +3546,8 @@ UI_TEXT(ALERT_PULSE_RANGE_UNKNOWN, 94,
     "The IOmcu did not report its pulse range.",
     "Der IOmcu hat seinen Pulsbereich nicht gemeldet.")
 UI_TEXT(ALERT_PULSE_ORDER, 94,
-    "Idle pulse must be shorter than full-throttle pulse. Not sent.",
-    "Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.")
+    "Idle pulse must be 100us or more below Full pulse. Not sent.",
+    "Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.")
 UI_TEXT(ALERT_PULSE_REFUSED, 94,
     "The IOmcu rejected the pulse range.",
     "Der IOmcu hat den Pulsbereich abgelehnt.")
@@ -3505,6 +3575,11 @@ UI_TEXT(ALERT_TOUCH_ARM_AGAIN, 94,
 UI_TEXT(ALERT_TOUCH_STOPPED, 94,
     "Touchscreen stopped responding. Switched to SAFE.",
     "Touchscreen antwortet nicht mehr. Auf SAFE geschaltet.")
+/* The render loop stood still for FRAME_WATCH_MS (frame_watch.h) on an
+ * ARMED bench or under a live supply output; shown once it draws again. */
+UI_TEXT(ALERT_SCREEN_STALLED, 94,
+    "Screen stopped updating for 1s. Switched to SAFE, output off.",
+    "Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet, Ausgang aus.")
 UI_TEXT(ALERT_SERVO_NOT_RELEASED, 94,
     "Servo output not released. Hold ARM again.",
     "Servoausgang nicht freigegeben. ARM erneut halten.")
@@ -3518,8 +3593,8 @@ UI_TEXT(ALERT_ARM_RANGE_UNKNOWN, 94,
     "No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.",
     "Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_ORDER, 94,
-    "Idle pulse is not below Full pulse. Change one, then hold ARM again.",
-    "Leerlaufpuls liegt nicht unter Vollpuls. Einen ändern, dann ARM erneut halten.")
+    "Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.",
+    "Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_REFUSED, 94,
     "The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.",
     "Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.")
@@ -3532,9 +3607,12 @@ UI_TEXT(ALERT_ARM_REFUSED, 94,
 UI_TEXT(ALERT_ARM_PROG, 94,
     "Cannot switch to ARMED: a port is in use by the servo programmer.",
     "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.")
+UI_TEXT(ALERT_ARM_NO_PIN, 94,
+    "Cannot switch to ARMED: no motor pin. Choose a TARGET on OUTPUTS.",
+    "ARMED gesperrt: kein Motor-Pin. Unter OUTPUTS ein ZIEL wählen.")
 UI_TEXT(ALERT_SWEEP_RESUME_OLD, 94,
-    "IOmcu firmware older than 4.6. Sweep starts again.",
-    "IOmcu-Firmware älter als 4.6. Sweep beginnt von vorn.")
+    "IOmcu firmware older than 0.13.0. Sweep starts again.",
+    "IOmcu-Firmware älter als 0.13.0. Sweep beginnt von vorn.")
 UI_TEXT(ALERT_SWEEP_RESUME_REFUSED, 94,
     "IOmcu could not resume. Sweep starts again.",
     "IOmcu hat das Fortsetzen abgelehnt. Sweep beginnt von vorn.")
@@ -3561,7 +3639,7 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_ON, 94,
     "Netzteil ließ sich nicht einschalten. Ausgang aus.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
     "PD mini pins rejected. Check SETUP > INTERFACES.",
-    "PD-mini-Pins abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
     "PD-mini-Ausgang ließ sich nicht schalten.")
@@ -3591,22 +3669,22 @@ UI_TEXT(ALERT_NO_SENSE_PAGE, 94,
     "IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.")
 UI_TEXT(ALERT_SENSE_PINS_UNSET, 94,
     "Sensor SDA or SCL not set. Check SETUP > INTERFACES.",
-    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.")
+    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_SAME_ADDR, 94,
     "INA228 and INA3221 both use 0x%02X. Check SETUP > INTERFACES.",
-    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > ANSCHLÜSSE prüfen.")
+    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_PINS, 94,
     "Sensor pins GP%d/GP%d rejected. Check SETUP > INTERFACES.",
-    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
     "INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.",
-    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I3221_SETUP, 94,
     "INA3221 settings rejected. Check SETUP > SENSORS.",
-    "INA3221-Einstellungen abgelehnt. SETUP > SENSOREN prüfen.")
+    "INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_DARK, 94,
     "INA3221 0x%02X has every channel off. Check SETUP > SENSORS.",
-    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSOREN prüfen.")
+    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_SILENT, 94,
     "%s is not responding at 0x%02X.",
     "%s antwortet nicht unter 0x%02X.")
@@ -3633,13 +3711,13 @@ UI_TEXT(ALERT_SENSE_OVER_LOST, 94,
     "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.")
 UI_TEXT(ALERT_SENSE_LIMITS, 94,
     "INA3221 limits rejected. Check SETUP > SENSORS.",
-    "INA3221-Grenzen abgelehnt. SETUP > SENSOREN prüfen.")
+    "INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_ENC_OLD, 94,
-    "IOmcu firmware older than 4.9. AS5600 not read.",
-    "IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.")
+    "IOmcu firmware older than 0.15.0. AS5600 not read.",
+    "IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.")
 UI_TEXT(ALERT_SERVO_METER_OLD, 94,
-    "IOmcu firmware older than 4.11. Servo current is read from the PD mini.",
-    "IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.")
+    "IOmcu firmware older than 0.16.0. Servo current is read from the PD mini.",
+    "IOmcu-Firmware älter als 0.16.0. Servostrom wird vom PD mini ausgelesen.")
 UI_TEXT(ALERT_I3221_RESET, 94,
     "INA3221 has reset. Check its power supply.",
     "INA3221 hat sich zurückgesetzt. Versorgung prüfen.")
@@ -3663,10 +3741,10 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
     "Phase tap on GP%u, %u to %uHz rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
     "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.")
+    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_BUSY, 94,
     "Phase tap pin GP%u is in use. Capture not running.",
     "Pin GP%u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")
@@ -3858,20 +3936,20 @@ UI_TEXT(KP_LEAVE_TITLE, 27,
     "LEAVE PROGRAMMING",
     "PROGRAMMIERMODUS VERLASSEN")
 UI_TEXT(KP_HOLD_ENABLE, 30,
-    "HOLD TO ENABLE",
-    "HALTEN ZUM FREIGEBEN")
+    "HOLD 2s TO ENABLE",
+    "2s HALTEN ZUM FREIGEBEN")
 UI_TEXT(KP_HOLD_WRITE, 30,
-    "HOLD TO WRITE",
-    "HALTEN ZUM SCHREIBEN")
+    "HOLD 2s TO WRITE",
+    "2s HALTEN ZUM SCHREIBEN")
 UI_TEXT(KP_HOLD_RESTORE, 30,
-    "HOLD TO RESTORE",
-    "HALTEN ZUM ZURÜCKSPIELEN")
+    "HOLD 2s TO RESTORE",
+    "2s HALTEN ZUM ZURÜCKSPIELEN")
 UI_TEXT(KP_HOLD_NEXT, 30,
-    "HOLD TO CONTINUE",
-    "HALTEN ZUM FORTFAHREN")
+    "HOLD 2s TO CONTINUE",
+    "2s HALTEN ZUM FORTFAHREN")
 UI_TEXT(KP_HOLD_LEAVE, 30,
-    "HOLD TO LEAVE",
-    "HALTEN ZUM VERLASSEN")
+    "HOLD 2s TO LEAVE",
+    "2s HALTEN ZUM VERLASSEN")
 UI_TEXT(KP_HORN_FREE, 116,
     "Keep the servo horn clear. Disconnect the linkage.",
     "Halte das Ruderhorn frei. Löse das Gestänge.")
@@ -3975,8 +4053,8 @@ UI_TEXT(KP_LEAVE_2, 116,
     "The servo will receive the tester's signal and may move.",
     "Das Servo erhält wieder das Testsignal und kann sich bewegen.")
 UI_TEXT(KP_NO_PAGE_2, 116,
-    "Update the IOmcu to version 4.13 or later.",
-    "IOmcu auf Version 4.13 oder neuer aktualisieren.")
+    "Update the IOmcu to version 0.17.0 or later.",
+    "IOmcu auf Version 0.17.0 oder neuer aktualisieren.")
 UI_TEXT(KP_STATE_SYNC, 116,
     "Reading the port state from the IOmcu.",
     "Portzustand wird vom IOmcu ausgelesen.")
@@ -4083,14 +4161,14 @@ UI_TEXT(KP_M_LEFT, 116,
     "The port is back in tester mode.",
     "Der Port ist wieder im Testermodus.")
 UI_TEXT(KP_M_LEAVE_SUPPLY, 116,
-    "Leaving with a PD mini requires IOmcu firmware 4.15 or later.",
-    "Verlassen mit PD mini erfordert IOmcu-Firmware ab 4.15.")
+    "Leaving with a PD mini requires IOmcu firmware 0.17.0 or later.",
+    "Verlassen mit PD mini erfordert IOmcu-Firmware ab 0.17.0.")
 UI_TEXT(KP_M_LEAVE_SUPPLY_2, 116,
     "STOP ends the session and switches the supply off.",
     "STOP beendet die Sitzung und schaltet die Versorgung aus.")
 UI_TEXT(KP_M_LEFT_NO_WAIT, 116,
-    "IOmcu firmware older than 4.15. PWM starts without a delay.",
-    "IOmcu-Firmware älter als 4.15. PWM startet ohne Wartezeit.")
+    "IOmcu firmware older than 0.17.0. PWM starts without a delay.",
+    "IOmcu-Firmware älter als 0.17.0. PWM startet ohne Wartezeit.")
 UI_TEXT(KP_M_LEFT_DOUBT, 116,
     "The session state was uncertain. PWM starts without a delay.",
     "Sitzungszustand war unklar. PWM startet ohne Wartezeit.")
@@ -4194,8 +4272,8 @@ UI_TEXT(KP_FILE_TITLE, 27,
     "CHECK THIS FILE",
     "DIESE DATEI PRÜFEN")
 UI_TEXT(KP_HOLD_LOAD, 30,
-    "HOLD TO LOAD",
-    "HALTEN ZUM LADEN")
+    "HOLD 2s TO LOAD",
+    "2s HALTEN ZUM LADEN")
 UI_TEXT(KP_FILE_EDITED, 116,
     "Edited file. Values are checked as manual entries.",
     "Bearbeitete Datei. Werte werden wie manuelle Eingaben geprüft.")
@@ -4840,7 +4918,7 @@ UI_TEXT(WF_Q_NEW, 0,
     "Empfangen: %s")
 UI_TEXT(WF_Q_RUN, 0,
     "Running: %s",
-    "Aktuelle Version: %s")
+    "Läuft: %s")
 UI_TEXT(WF_Q_OLDER, 0,
     "Version %s is older than the running version %s.",
     "Version %s ist älter als die laufende Version %s.")
@@ -4863,8 +4941,8 @@ UI_TEXT(WF_Q_COPROC, 0,
     "Installation is waiting for the IOmcu update to finish.",
     "Installation wartet auf das Ende des IOmcu-Updates.")
 UI_TEXT(WF_HOLD_INSTALL, 0,
-    "HOLD 2s: INSTALL",
-    "2s HALTEN: INSTALLIEREN")
+    "HOLD 2s TO INSTALL",
+    "2s HALTEN ZUM INSTALLIEREN")
 UI_TEXT(UP_TITLE, 0,
     "WRITING PANEL FIRMWARE %s",
     "PANEL-FIRMWARE %s WIRD GESCHRIEBEN")
@@ -4907,8 +4985,8 @@ UI_TEXT(UPD_CHAN_TESTING, 0,
     "RELEASES: TESTING",
     "RELEASES: TESTING")
 UI_TEXT(UPD_HOLD_DL, 0,
-    "HOLD 2s: DOWNLOAD & INSTALL",
-    "2s HALTEN: LADEN & INSTALLIEREN")
+    "HOLD 2s TO DOWNLOAD & INSTALL",
+    "2s HALTEN ZUM LADEN & INSTALLIEREN")
 UI_TEXT(UPD_KEEP_NET, 0,
     "Save a network under SETUP > WI-FI.",
     "Speichere ein Netzwerk unter SETUP > WI-FI.")
@@ -4926,8 +5004,8 @@ UI_TEXT(UPD_CU_NOT_KNOWN, 0,
     "not known",
     "unbekannt")
 UI_TEXT(UPD_CU_HOLD, 0,
-    "HOLD 2s: UPDATE IOMCU",
-    "2s HALTEN: IOMCU AKTUALISIEREN")
+    "HOLD 2s TO UPDATE THE IOMCU",
+    "2s HALTEN ZUM IOMCU-UPDATE")
 UI_TEXT(UPD_CU_NO_IMAGE, 0,
     "This panel carries no IOmcu firmware.",
     "Dieses Panel enthält keine IOmcu-Firmware.")
@@ -5998,22 +6076,22 @@ UI_SETTING_CATEGORY(SET_CAT_APP,
     "PANEL")
 UI_SETTING_CATEGORY(SET_CAT_IFACE,
     "INTERFACES",
-    "ANSCHLÜSSE")
+    "INTERFACES")
 UI_SETTING_CATEGORY(SET_CAT_CARD,
     "SD CARD",
-    "SD-KARTE")
+    "SD CARD")
 UI_SETTING_CATEGORY(SET_CAT_SENSORS,
     "SENSORS",
-    "SENSOREN")
+    "SENSORS")
 UI_SETTING_CATEGORY(SET_CAT_ESC,
     "ESC / BENCH",
-    "ESC / PRÜFSTAND")
+    "ESC / BENCH")
 UI_SETTING_CATEGORY(SET_CAT_SUPPLY,
     "SUPPLY",
-    "NETZTEIL")
+    "SUPPLY")
 UI_SETTING_CATEGORY(SET_CAT_SERVO,
     "SERVO TEST",
-    "SERVOTEST")
+    "SERVO TEST")
 UI_SETTING_CATEGORY(SET_CAT_STICK,
     "ESC STICK",
     "ESC STICK")
@@ -6294,6 +6372,12 @@ UI_SERVO_TEXT(SERVO_STR_START_NOT_ARMED,
 UI_SERVO_TEXT(SERVO_STR_START_BUSY,
     "LAST REPORT STILL WRITING",
     "LETZTER BERICHT SCHREIBT NOCH")
+UI_SERVO_TEXT(SERVO_STR_START_TEST_RUNS,
+    "AUTOMATIC TEST IS RUNNING",
+    "AUTOMATISCHER TEST LÄUFT")
+UI_SERVO_TEXT(SERVO_STR_START_LIMIT_RUNS,
+    "LIMIT RUN IS RUNNING",
+    "ENDLAGENLAUF LÄUFT")
 /* The report.  The labels pad to column 17, so the values line up. */
 UI_SERVO_TEXT(SERVO_STR_R_TITLE,
     "RCBENCH SERVO TEST REPORT",
@@ -6735,10 +6819,10 @@ UI_SERVO_TEXT(SERVO_STR_R_INA_UNUSED,
     "INA3221:        not used: %s",
     "INA3221:         nicht verwendet: %s")
 UI_SERVO_TEXT(SERVO_STR_R_INA_OLD,
-    "the IOmcu is older than link "
-    "protocol 4.11",
-    "der IOmcu ist älter als Link-"
-    "Protokoll 4.11")
+    "the IOmcu is older than firmware "
+    "0.16.0",
+    "der IOmcu ist älter als Firmware "
+    "0.16.0")
 UI_SERVO_TEXT(SERVO_STR_R_INA_NOT_HELD,
     "the IOmcu does not hold its set-up",
     "der IOmcu hält seine Einstellung "
@@ -6932,6 +7016,33 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES,
     "Modus:           nur Suche; PULSE LOWER "
     "und PULSE UPPER zuerst auf 1000 und "
     "2000us gesetzt")
+/* The same modes for a run that ended before its first search. */
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_SEARCH_NONE,
+    "Mode:           search only (no search "
+    "ran), nothing written to the servo",
+    "Modus:           nur Suche (keine Suche "
+    "gelaufen), nichts ins Servo geschrieben")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE,
+    "Mode:           search, then LEFT ANGLE "
+    "and RIGHT ANGLE to be programmed (no "
+    "search ran)",
+    "Modus:           Suche, dann LEFT ANGLE "
+    "und RIGHT ANGLE zu programmieren (keine "
+    "Suche gelaufen)")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_NONE,
+    "Mode:           search only; PULSE LOWER "
+    "and PULSE UPPER to be set to 1000 and "
+    "2000us first (no search ran)",
+    "Modus:           nur Suche; PULSE LOWER "
+    "und PULSE UPPER zuerst auf 1000 und "
+    "2000us zu setzen (keine Suche gelaufen)")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_SET_NONE,
+    "Mode:           search only (no search "
+    "ran); PULSE LOWER and PULSE UPPER set to "
+    "1000 and 2000us first",
+    "Modus:           nur Suche (keine Suche "
+    "gelaufen); PULSE LOWER und PULSE UPPER "
+    "zuerst auf 1000 und 2000us gesetzt")
 UI_SERVO_TEXT(SERVO_STR_L_R_SEARCH,
     "Searched:       from %uus out to %uus "
     "and %uus",
@@ -6953,7 +7064,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_RULE,
     "ms, mean of 80ms; bound above %.1f x "
     "free and +%.2fA",
     "Suchregel:       Schritte zu 10us, 120"
-    "ms warten, Mittel über 80ms; angelaufen "
+    "ms warten, Mittel über 80ms; blockiert "
     "über %.1f x frei und +%.2fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_PROTECT,
     "Protections:    a sample at %.1fA, above "
@@ -6979,8 +7090,8 @@ UI_SERVO_TEXT(SERVO_STR_L_R_HIGH,
 UI_SERVO_TEXT(SERVO_STR_L_R_END_BOUND,
     "%sbound at %uus, endpoint %uus; free "
     "%.3fA, bound %.3fA",
-    "%sangelaufen bei %uus, Endpunkt %uus; "
-    "frei %.3fA, angelaufen %.3fA")
+    "%sblockiert bei %uus, Endpunkt %uus; "
+    "frei %.3fA, blockiert %.3fA")
 UI_SERVO_TEXT(SERVO_STR_L_R_END_FREE,
     "%sfree to %uus; free %.3fA",
     "%sfrei bis %uus; frei %.3fA")
@@ -7046,7 +7157,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_REG_LIN,
     "                share free %s, bound %s; "
     "overset %s, share %s; final %s",
     "                 Anteil frei %s, "
-    "angelaufen %s; Vorhalt %s, Anteil %s; "
+    "blockiert %s; Vorhalt %s, Anteil %s; "
     "Endwert %s")
 UI_SERVO_TEXT(SERVO_STR_L_R_SIDE_LO,
     "limits the low end",
@@ -7064,7 +7175,7 @@ UI_SERVO_TEXT(SERVO_STR_L_R_METHOD,
     "found free",
     "Verfahren:       linear im Puls; Vorhalt "
     "+%u%% auf den Anteil am ersten "
-    "angelaufenen Puls, dann der Anteil, den "
+    "blockierten Puls, dann der Anteil, den "
     "seine Suche frei fand")
 UI_SERVO_TEXT(SERVO_STR_L_R_WRITES,
     "Writes:         values written %u, writes "

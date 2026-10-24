@@ -661,8 +661,7 @@ the run.
   sample 1.637A. A run on the PD mini goes on with it when the INA3221
   becomes the meter under it.
 - **Why not the INA3221.** A run on the PD mini with an INA3221 fitted on
-  SETUP > SENSORS has the report line `INA3221: not used: <reason>`: `the IOmcu
-  is older than link protocol 4.11`, `the IOmcu does not hold its
+  SETUP > SENSORS has the report line `INA3221: not used: <reason>`: `the IOmcu is older than firmware 0.16.0`, `the IOmcu does not hold its
   set-up`, `it does not answer`, `no window with current in the last 200
   ms`, `it reset itself`, `it has worked for less than 1s`, or `the supply
   is the panel's model`.

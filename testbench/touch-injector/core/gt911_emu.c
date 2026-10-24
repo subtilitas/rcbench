@@ -42,10 +42,9 @@ uint8_t gt911_emu_peek(const gt911_emu_t *e, uint16_t reg)
     default:
         break;
     }
-    if (reg >= 0x8140u && reg < 0x8144u) {
-        /* The product ID, "911" and a NUL. */
-        static const uint8_t id[4] = { '9', '1', '1', 0 };
-        return id[reg - 0x8140u];
+    if (reg >= GT911_EMU_REG_PRODUCT && reg < GT911_EMU_REG_PRODUCT + 4u) {
+        /* The product ID, GT911_EMU_PRODUCT_ID, 4 bytes without its NUL. */
+        return (uint8_t)GT911_EMU_PRODUCT_ID[reg - GT911_EMU_REG_PRODUCT];
     }
     if (reg >= GT911_EMU_REG_POINT1
         && reg < GT911_EMU_REG_POINT1 + sizeof(e->point)) {

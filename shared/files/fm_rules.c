@@ -236,9 +236,17 @@ bool fm_busy(const fm_bench_t *bench, const char *dir, const char *name)
 
 /**
  * @brief What the fault log's place lets @p op do.
+ *
+ * FatFs runs without its file lock (CONFIG_FATFS_FS_LOCK 0) and removes a
+ * file the logger has open for its append; the append then writes into
+ * clusters the removal freed.  A copy or a delete waits while the logger
+ * may write a line: the link down, or a line queued or under way.  The
+ * delete itself runs under the logger's lock as well
+ * (firmware/panel/main/panel_files.c).
+ *
  * @param bench  the bench; may be NULL
  * @param op     the operation
- * @return FM_OK, FM_ERR_BUSY while the link is down, or FM_ERR_FIXED
+ * @return FM_OK, FM_ERR_BUSY while a line may be written, or FM_ERR_FIXED
  */
 static fm_err_t fault_allows(const fm_bench_t *bench, fm_op_t op)
 {
@@ -248,8 +256,10 @@ static fm_err_t fault_allows(const fm_bench_t *bench, fm_op_t op)
         return FM_OK;
     case FM_OP_COPY:
     case FM_OP_DELETE:
-        /* Written while the link is down, a line every 5s. */
-        return (bench != NULL && bench->link_up) ? FM_OK : FM_ERR_BUSY;
+        /* Written while the link is down, a line every 5s, and the lines
+         * queued before it came up. */
+        return (bench != NULL && bench->link_up && !bench->fault_busy)
+               ? FM_OK : FM_ERR_BUSY;
     case FM_OP_EDIT:
     case FM_OP_MOVE:
     case FM_OP_RENAME:

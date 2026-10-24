@@ -590,6 +590,8 @@ supply_limits_t supply_screen_limits(void)
 
 supply_caps_t supply_screen_caps(void) { return s.eff; }
 
+const ui_keypad_t *supply_screen_keypad(void) { return &s.kp; }
+
 bool supply_screen_typed_asks(void) { return sup_confirm_needed(FROM_KEYPAD); }
 
 void supply_screen_set_port_held(bool held)

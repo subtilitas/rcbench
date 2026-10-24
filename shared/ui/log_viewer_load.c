@@ -3,8 +3,8 @@
  * @brief The log viewer's loading: a file the browse view opens is analysed
  *        (its delimiter, decimal convention and time column, see
  *        shared/logfile), its chosen columns are read, and lv_compute_spans()
- *        turns them into the plot's scaled traces; a report standing alone
- *        is read whole into the TEXT view.  log_viewer_screen.c holds
+ *        turns them into the plot's scaled traces; a report is read whole
+ *        into the TEXT view.  log_viewer_screen.c holds
  *        the state, the card's listing and paging and the screen's interface
  *        (log_viewer_screen.h); log_viewer_int.h is what the screen's four
  *        files share.
@@ -13,7 +13,6 @@
  */
 
 #include <math.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -28,20 +27,12 @@
 
 /* ------------------------------------------------------------- loading --- */
 
-void lv_set_message(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    /* The analyser cannot follow va_start through this wrapper and reports the
-     * list as uninitialised; it is initialised on the line above. */
-    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
-    vsnprintf(s.message, sizeof(s.message), fmt, ap);
-    va_end(ap);
-    s.message_ok = false;
-}
-
-/* The reader's verdict in the language showing; log_err_str() is the
- * English the console logs. */
+/**
+ * @brief The reader's verdict in the language showing; log_err_str() is the
+ *        English the console logs.
+ * @param err  the verdict
+ * @return the words, from the text table
+ */
 static const char *err_text(log_err_t err)
 {
     switch (err) {
@@ -55,6 +46,65 @@ static const char *err_text(log_err_t err)
     case LOG_ERR_ARG:              return TR(LOG_ERR_ARG);
     default:                       return TR(LOG_ERR_UNKNOWN);
     }
+}
+
+/** @brief Keep @p id and @p name as the footer message (log_viewer_int.h). */
+void lv_say(ui_text_id_t id, const char *name)
+{
+    s.msg_kind = LV_MSG_TEXT;
+    s.msg_id = id;
+    s.msg_err = LOG_OK;
+    snprintf(s.msg_name, sizeof(s.msg_name), "%s",
+             (name != NULL) ? name : "");
+    s.message_ok = false;
+}
+
+/** @brief Keep @p err as the footer message (log_viewer_int.h). */
+void lv_say_err(log_err_t err)
+{
+    s.msg_kind = LV_MSG_ERR;
+    s.msg_err = err;
+    s.msg_name[0] = '\0';
+    s.message_ok = false;
+}
+
+/** @brief Clear the footer message (log_viewer_int.h). */
+void lv_quiet(void)
+{
+    s.msg_kind = LV_MSG_NONE;
+}
+
+/** @brief Word the footer message into @p buf (log_viewer_int.h). */
+const char *lv_message(char *buf, size_t n)
+{
+    buf[0] = '\0';
+    if (s.msg_kind == LV_MSG_ERR) {
+        snprintf(buf, n, "%s", err_text(s.msg_err));
+    } else if (s.msg_kind == LV_MSG_TEXT) {
+        /* Each format by its own ID, so tools/check_formats.py sees it. */
+        const char *nm = s.msg_name;
+        switch (s.msg_id) {
+        case TX_LOG_CANNOT_OPEN:
+            snprintf(buf, n, TR(LOG_CANNOT_OPEN), nm);
+            break;
+        case TX_LOG_IS_FOLDER:
+            snprintf(buf, n, TR(LOG_IS_FOLDER), nm);
+            break;
+        case TX_LOG_TOO_BIG:
+            snprintf(buf, n, TR(LOG_TOO_BIG), nm);
+            break;
+        case TX_LOG_CANNOT_DELETE:
+            snprintf(buf, n, TR(LOG_CANNOT_DELETE), nm);
+            break;
+        case TX_LOG_DELETED:
+            snprintf(buf, n, TR(LOG_DELETED), nm);
+            break;
+        default:
+            snprintf(buf, n, "%s", ui_tr(s.msg_id));
+            break;
+        }
+    }
+    return buf;
 }
 
 /* A delimiter's name, as log_csv_delimiter_label() gives it in English. */
@@ -102,14 +152,14 @@ void lv_run_analysis(void)
     lv_drop_data();
 
     if (s.io.open == NULL) {
-        lv_set_message("%s", TR(LOG_NO_SOURCE));
+        lv_say(TX_LOG_NO_SOURCE, NULL);
         return;
     }
 
     log_source_t src;
     lv_point(s.open_tab);
     if (!open_name(&src)) {
-        lv_set_message(TR(LOG_CANNOT_OPEN), s.name);
+        lv_say(TX_LOG_CANNOT_OPEN, s.name);
         return;
     }
 
@@ -126,12 +176,12 @@ void lv_run_analysis(void)
     }
 
     if (err != LOG_OK) {
-        lv_set_message("%s", err_text(err));
+        lv_say_err(err);
         return;
     }
 
     s.have_analysis = true;
-    s.message[0] = '\0';
+    lv_quiet();
 
     /*
      * Keep what the operator chose: lv_run_analysis() runs again from both
@@ -301,7 +351,7 @@ void lv_load_data(void)
     log_source_t src;
     lv_point(s.open_tab);
     if (!open_name(&src)) {
-        lv_set_message(TR(LOG_CANNOT_OPEN), s.name);
+        lv_say(TX_LOG_CANNOT_OPEN, s.name);
         return;
     }
     log_err_t err = log_csv_build(&src, &s.an, s.picked, s.n_picked, &s.data);
@@ -310,7 +360,7 @@ void lv_load_data(void)
     }
 
     if (err != LOG_OK) {
-        lv_set_message("%s", err_text(err));
+        lv_say_err(err);
         return;
     }
 
@@ -320,7 +370,7 @@ void lv_load_data(void)
     s.win_n = s.data.count;
     s.pinch = false;
     s.panning = false;
-    s.message[0] = '\0';
+    lv_quiet();
     lv_compute_spans();
     s.view = VIEW_PLOT;
 }
@@ -337,13 +387,13 @@ static void open_text(void)
     log_text_free(&s.text);
     s.text_scroll = 0;
     if (s.io.open == NULL) {
-        lv_set_message("%s", TR(LOG_NO_SOURCE));
+        lv_say(TX_LOG_NO_SOURCE, NULL);
         return;
     }
     log_source_t src;
     lv_point(s.open_tab);
     if (!open_name(&src)) {
-        lv_set_message(TR(LOG_CANNOT_OPEN), s.name);
+        lv_say(TX_LOG_CANNOT_OPEN, s.name);
         return;
     }
     const log_err_t err = log_text_load(&s.text, &src, TX_COLS);
@@ -351,16 +401,16 @@ static void open_text(void)
         s.io.close(s.io.ctx);
     }
     if (err != LOG_OK) {
-        lv_set_message("%s", err_text(err));
+        lv_say_err(err);
         return;
     }
-    s.message[0] = '\0';
+    lv_quiet();
     s.view = VIEW_TEXT;
 }
 
 /*
  * OPEN on the selected row: a CSV file to the import view, a report
- * standing alone to the TEXT view (open_text()).  A folder and a file over
+ * (log_report_number()) to the TEXT view (open_text()).  A folder and a file over
  * LOG_VIEWER_OPEN_MAX are not opened; the footer says why.  What the
  * import, the plot and the text held was another file's and is dropped.
  */
@@ -373,20 +423,20 @@ void lv_open_selected(void)
         /* Subdirectories are listed (storage_list applies the suffix filter
          * to files only).  There is no directory navigation, so opening one
          * reports a message rather than running the analysis on it. */
-        lv_set_message(TR(LOG_IS_FOLDER), s.files[s.sel].name);
+        lv_say(TX_LOG_IS_FOLDER, s.files[s.sel].name);
         return;
     }
     if (s.files[s.sel].size > LOG_VIEWER_OPEN_MAX) {
         /* Past what the reader's seek reaches.  Said, not read in part:
          * an import of the first 2GiB would look like the whole run. */
-        lv_set_message(TR(LOG_TOO_BIG), s.files[s.sel].name);
+        lv_say(TX_LOG_TOO_BIG, s.files[s.sel].name);
         return;
     }
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.open_mounts = s.mounts;
-    /* A report the list holds stands alone (log_select.h): its text, and
-     * no import.  What the import and the plot held was another file's. */
+    /* A report, its run's CSV beside it or not (log_select.h): its text,
+     * and no import.  What the import and the plot held was another file's. */
     if (log_report_number(s.name) >= 0) {
         s.have_analysis = false;
         lv_drop_data();

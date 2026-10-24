@@ -194,10 +194,11 @@ Der Touch-Bus ist `I2C_NUM_0` mit `BOARD_I2C_PIN_SDA` GPIO7 und
 7-Zoll-Display-Board mit ESP32-P4 (Schaltplan vom 2025-09-25) erreicht er den
 Touch-Controller GT911 (0x5D), den Audio-Codec ES8311, den Audio-ADC ES7210,
 den Kameraanschluss und einen 4-poligen I2C-Header. Der Header führt SDA
-(GPIO7) und SCL (GPIO8) dieses Busses. Die Reihenfolge seiner vier Pins und
-was seine anderen beiden Pins führen, ist aus dem Schaltplan in diesem
-Repository nicht bekannt und nicht gemessen: SDA und SCL vor dem ersten
-Anschluss mit einem Multimeter an der vorliegenden Platine finden. Ob der Bus
+(GPIO7) und SCL (GPIO8) dieses Busses. Der Siebdruck
+ordnet seine vier Pins VCC, GND, SDA, SCL (Foto der Platine vom Projektinhaber,
+2026-10-22). Ein Jumper neben dem Pin VCC wählt 5V oder 3V3 dafür; seine
+Werksstellung ist nicht bekannt. Den Jumper vor dem ersten Anschluss mit einem
+Multimeter prüfen. Ob der Bus
 auf der Platine Pull-ups hat, ist nicht gemessen. Der Touch-Injector
 (`testbench/touch-injector/README.md`) und die Analyser-Leitungen aus
 `testbench/WIRING.md` schließen hier an. Der Knopf liegt nicht an diesem Header: Er hat einen eigenen Bus
@@ -218,7 +219,7 @@ selbst:
 
 | Teil | Was es ist | Nutzung im Panel |
 | --- | --- | --- |
-| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | nicht genutzt: Der RTC-Timer läuft vom internen RC-Oszillator (Vorgabe von ESP-IDF, `CONFIG_RTC_CLK_SRC_INT_RC`) |
+| Y3 | Quarz 32.768kHz, 2.0 x 1.2mm, 22pF nach GND auf jeder Seite, 10MΩ parallel, an GPIO0 (XTAL_32K_N) und GPIO1 (XTAL_32K_P) | genutzt: Der RTC-Timer zählt ihn (`CONFIG_RTC_CLK_SRC_EXT_CRYS` in `firmware/panel/sdkconfig.defaults`); ein Quarz, der nicht anschwingt, lässt ihn auf dem internen RC-Oszillator |
 | BAT1 | Knopfzellenhalter CR1220, "RTC BAT", an VDD_BAT des ESP32-P4 (Pin 102); 3V3 lädt ihn über D1 (B5819WS) ohne Vorwiderstand; C41 1uF | nicht genutzt. Waveshare: nur wiederaufladbare Zellen mit 3 bis 3.3V. Ob eine Platine mit Zelle kommt, ist nicht bekannt |
 
 Der ESP32-P4 kann seinen RTC-Timer an VDD_BAT weiterlaufen lassen, aber nur
@@ -236,6 +237,13 @@ Was das Panel stattdessen tut
   Software-Neustart behält sie: ESP-IDF hält die Zeit im RTC-Timer und in
   zwei seiner Speicherregister, die nur ein Einschalten zurücksetzt
   (`CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT`, die Vorgabe).
+- Die Uhr ist so gut wie der langsame Takt des RTC-Timers. Mit dem Quarz Y3
+  (32.768kHz) beträgt die Abweichung höchstens etwa 30ppm, gemessen über
+  65min. Auf dem internen RC-Oszillator, der Rückfallebene, ist sie kein
+  fester Wert: 584ppm über 2h04min in einem Lauf, unter 15ppm über 1h51min
+  in einem anderen. Die Abweichung summiert sich nur über einen
+  Hardware-Reset; ein Software-Neustart (`esp_restart`) setzt die Uhr bei
+  der nächsten Verbindung wieder auf die NTP-Zeit.
 - Jede Verbindung mit dem Heimnetz fragt `pool.ntp.org` einmal
   (`components/wifi_access/wifi_ntp.c`, `shared/clock/wall_clock.c`). Die
   zufällige Startverzögerung von lwIP ist aus
@@ -253,6 +261,65 @@ Was das Panel stattdessen tut
   bewegt die Wi-Fi-Worker-Task weiter. Die Steuer-Task auf Kern 1, die STOP
   und den Heartbeat besitzt, liest keine Uhrzeit und wartet auf nichts
   davon.
+
+### Der langsame RTC-Takt
+
+Der RTC-Timer zählt den Quarz Y3 mit 32.768kHz an GPIO0 und GPIO1. Keine
+andere Funktion der Panel-Firmware nutzt diese beiden Pins. ESP-IDF v5.5.5
+startet den Quarz und fällt auf den internen RC-Oszillator (136kHz
+nominal) zurück, wenn er nicht anschwingt:
+
+1. Der Bootloader schaltet den Quarz früh ein, damit er anschwingt,
+   während die Anwendung lädt
+   (`components/bootloader_support/src/bootloader_clock_init.c`, Zeilen 91
+   bis 95). Auf dem ESP32-P4 tun die Bootstrap-Zyklen
+   (`CONFIG_ESP_SYSTEM_RTC_EXT_XTAL_BOOTSTRAP_CYCLES`) nichts:
+   `rtc_clk_32k_bootstrap()` schaltet nur den Quarz ein
+   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, Zeilen 45 bis 52).
+2. Der Start der Anwendung zählt 3000 Takte des Quarzes gegen den
+   Hauptquarz mit 40MHz (`CONFIG_RTC_CLK_CAL_CYCLES=3000`), etwa 92ms.
+   Eine Zählung, die in die Zeitgrenze läuft oder mehr als 0.05% von
+   32.768kHz abweicht, gibt 0 zurück
+   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, Zeilen 175 bis
+   190).
+3. Eine Zählung mit 0 wird wiederholt, 4 Versuche insgesamt. Nach dem
+   vierten schreibt ESP-IDF `clk: 32 kHz clock not found, switching to
+   internal 150 kHz oscillator`, schaltet den Quarz ab und läuft auf dem
+   RC (`components/esp_system/port/soc/esp32p4/clk.c`,
+   `select_rtc_slow_clk()`, Zeilen 164 und 184 bis 193). Das Panel startet
+   auf dem RC. Die Meldung von ESP-IDF sagt 150kHz; der RC des ESP32-P4
+   hat nominal 136kHz.
+4. `CONFIG_RTC_CLK_CAL_CYCLES` bleibt über 0: Bei 0 entfällt die Zählung,
+   und der Quarz wird ungeprüft gewählt (`clk.c`, Zeile 184).
+
+Bei jedem Start nennt die Konsole den langsamen Takt und seine kalibrierte
+Frequenz (`log_clock_at_start()`, `firmware/panel/main/panel_settings.c`):
+
+```text
+I (...) clock: rtc slow clock 32k crystal, 32768.012Hz calibrated
+W (...) clock: rtc slow clock internal RC, 136012.345Hz calibrated: the 32k crystal did not start
+```
+
+Die Kosten beim Start, aus den Zählungen im Quelltext, nicht gemessen:
+
+| Langsamer Takt | Zählungen beim Start | Zeit |
+| --- | --- | --- |
+| Interner RC, `CONFIG_RTC_CLK_SRC_INT_RC` | 1024 Takte bei 136kHz | etwa 8ms |
+| Quarz, der den ersten Versuch besteht | 3000 Takte bei 32.768kHz, zweimal | etwa 183ms |
+| Quarz ohne Takt | 4 Versuche bis zur Zeitgrenze, dann 3000 Takte des RC | etwa 1.25s, wenn die Zeitgrenze von 3000 x 4096 Zählschritten in Takten zu 40MHz zählt; die Quellen von ESP-IDF nennen die Einheit nicht |
+
+Ein Update vom Panel aus schreibt einen Anwendungsplatz und lässt den
+Bootloader, wie er geflasht wurde. Ein Bootloader, der vor dieser
+Einstellung gebaut ist, schaltet den Quarz nicht früh ein; der Start der
+Anwendung schaltet ihn ein und zählt sofort. Ob ein Quarz dann innerhalb
+der 4 Versuche besteht, ist nicht gemessen. Ein Flashen des ganzen Images
+über USB schreibt auch den Bootloader.
+
+Aktuelle Einschränkung: Ein Quarz, der nach dem Start stehen bleibt, wird
+nicht erkannt. ESP-IDF v5.5.5 bietet auf dem ESP32-P4 keinen
+XTAL32K-Watchdog. Die Systemzeit läuft vom Hauptquarz weiter (esp_timer),
+und der RTC-Timer steht; der nächste Software-Neustart stellt die Uhr um
+die Zeit zurück, die er stand.
 
 ## Befehle
 
@@ -281,6 +348,12 @@ idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-
 # (testbench/touch-injector); RCBENCH_TOUCH_INJECTOR=OFF lässt diesen Code
 # weg. Die Option steht standardmäßig auf ON
 idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF build
+
+# Panel ohne die Frame-, Stack- und Heap-Zeilen der Konsole (Performance-de.md,
+# Auf dem Board); die Option RCBENCH_PERF_LOG steht standardmäßig auf ON,
+# und der Release-Workflow baut mit OFF; für das Image eines Releases mit
+# den Zeilen ohne das Flag bauen
+idf.py -C firmware/panel -B firmware/panel/build-noperf -D RCBENCH_PERF_LOG=OFF build
 
 # panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
 # 0x2000 inside it); it erases the settings in nvs
@@ -337,12 +410,13 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/check_docs.py` | hält die Seiten am Quellbaum: Links und Anker führen irgendwohin, jedes Bild wird benutzt, die Sidebar ist vollständig, jede Seite hat ein deutsches Gegenstück, die Suite-Liste in `STATUS.md` stimmt mit CMake überein, die Zahlen der Screenshots in `STATUS.md` stimmen mit `docs/img` überein, die Tabelle der roten Leuchte auf den Seiten zur Stick-Programmierung stimmt mit `esc_stick_reason_is_fault()` überein, der Baum oben nennt jedes Modul unter `shared/` und `protocols/`, jede Quelldatei trägt eine SPDX-Zeile (SPDX: Software Package Data Exchange), die Protokollversion, die Zeiten von Heartbeat und Link, die Pins von Heartbeat und CAN, die Coverage-Untergrenzen und die Stack-Marge, die eine Seite nennt, sind die Konstanten in den Headern und Werkzeugen (`FACTS` im Werkzeug führt jeden Satz), eine Tabellenzeile, die eine C-Konstante nennt, gibt deren Wert an, [Performance](Performance-de.md) hat keine Tabelle der Obergrenzen, solange `ci.yml` kein `--max-lines`-Argument hat, die Pinzahlen in `hardware/docs/Pins.md` stimmen mit `pinmap.json` überein, eine deutsche Seite zitiert in Backticks das Deutsch, das der Bildschirm zeigt: Texte und Formate der Oberfläche, Namen, Hilfetexte, Optionen und Kategorien der Einstellungen und die Wörter des Servotests |
 | `tools/wiki_links.py` | schreibt die Links einer Kopie von `docs/` für das Wiki um, das Seiten über ihren Titel adressiert: `Page.md` wird zu `Page`, ein Ziel oberhalb von `docs/` zu einer Repository-URL (`blob`, `tree`, `raw` für ein Bild); vergleicht jede Seite über markdown-it-py 3.0.0 mit ihrer Umschreibung und endet bei jeder anderen Abweichung mit 1, mit Seite und Zeile; `--check` ändert nichts; `--verify` schlägt bei einer umgeschriebenen Seite fehl, deren Links ein Wiki nicht öffnen kann |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
-| `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien außer den Panel-Texten der ESC-Profile und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
+| `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`, eine Zellenzahl `6S`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen, bei einer Einheit in Großbuchstaben nach einer Zahl in den Texten, die das Panel zeigt (`500MS`, `50 HZ`; S allein ist die Zellenzahl), und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien außer den Panel-Texten der ESC-Profile und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | bringen die Wörter der Oberfläche aus der Form in mehreren Dateien (Englisch in `ui_text.def` und im Schema, Deutsch in `ui_text_de.c`) in die eine Tabelle, `shared/text/include/ui_text.def`; `merge BASE THEIRS` übernimmt beim Merge die Textänderungen eines Branches, der noch die alte Form hat, in die Tabelle ([Sprache der Oberfläche](Language-de.md#einen-text-hinzufügen)) |
 | `tools/gen_font.py` | erzeugt die sieben eingebetteten Fonts aus DejaVu Sans Mono neu, die fünf Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
-| `tools/frame_cost.py` | misst Cache-Line-Fills je Frame unter cachegrind mit dem Cache des ESP32-S3 bei den 1024 x 600px des Renderers; `--check-doc` hält die Tabelle in [Performance](Performance-de.md) an einem lokalen Build, solange beide 800 x 480px haben, und meldet sie sonst als nicht geprüft; CI führt es nicht aus |
-| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; dekodiert nur Xtensa-Code und hält beim RISC-V-Image des ESP32-P4 an, sodass CI es auf dem Panel nicht ausführt; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das IOmcu-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der IOmcu-Tabelle, die Zahl der von `main` aus erreichbaren Aufrufe über ein Register in beiden Performance-Seiten und den Satz zu Kern 0 in `STATUS.md`; der ELF-Leser und der Aufrufgraph stehen in `tools/stack_elf.py`, die IOmcu-Hälfte in `tools/stack_iomcu.py` |
+| `tools/frame_cost.py` | misst L2-Cache-Line-Fills je Frame unter cachegrind mit dem L1- und dem L2-Cache des ESP32-P4 bei 1024 x 600px; `--max-lines N` schlägt fehl, wenn ein Modus N überschreitet, wie CI es je Gruppe von Modi ausführt; `--check-doc` hält den Block in [Performance](Performance-de.md) an der Messung, mit einer Toleranz von 2%, und die Zeile der Startmessung in der Tabelle des Boards an `PROBE_CLEAR_US`; `--update-doc` schreibt den Block |
+| `tools/stack_check.py` | liest die tiefste Aufrufkette jeder Panel-Task aus der gebauten ELF-Datei (Executable and Linkable Format) und schlägt fehl, wenn eine ihren Stack abzüglich 1024 Bytes überschreitet; dekodiert den RISC-V-Code des ESP32-P4 mit `tools/stack_riscv.py` und hält bei einer ELF-Datei einer anderen Maschine an; CI führt es nach beiden Panel-Builds aus; nimmt das Build-Verzeichnis, Standard `firmware/panel/build`; `-v` gibt jede tiefste Kette und jeden Aufruf aus, dem es nicht folgen kann; `--check-doc` hält die Task-Tabelle in [Performance](Performance-de.md#stacks) am Build; `--iomcu` liest stattdessen das IOmcu-Image und schlägt fehl, wenn die tiefste Kette eines Kerns, ein Interrupt und 256 Bytes seinen Stack überschreiten; mit `--check-doc` hält es die Zeile von Kern 0 der IOmcu-Tabelle, die Zahl der von `main` aus erreichbaren Aufrufe über ein Register in beiden Performance-Seiten und den Satz zu Kern 0 in `STATUS.md`; der ELF-Leser und der Aufrufgraph stehen in `tools/stack_elf.py`, die IOmcu-Hälfte in `tools/stack_iomcu.py` |
+| `tools/check_perf_log.py` | liest eine ELF-Datei des Panels auf den Text der Start-up-Messung, den Text des Stack-Scans und das Symbol `scan_stacks`: `off ELF` schlägt fehl, wenn das Image eines davon enthält, `on ELF`, wenn ihm eines fehlt; `ci.yml` führt beides auf seinen zwei Panel-Builds aus und `release.yml` führt `off` auf dem Release-Image aus, so dass ein Release-Build, der `-D RCBENCH_PERF_LOG=OFF` nicht mehr übergibt, fehlschlägt |
 | `tools/image_slot.py` | liest die Partitionstabelle eines Panel-Builds und schlägt fehl, wenn das Image größer ist als der kleinere der zwei OTA-Anwendungsslots (Over-the-Air), wenn die Tabelle weniger als zwei solche Slots hat oder wenn sie sich in der Größe unterscheiden; gibt den verbleibenden Platz aus; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
 | `tools/psram_bss.py` | liest die Linker-Map eines Panel-Builds und schlägt fehl, wenn eine Zeile in den Einträgen eines Mappings in `firmware/panel/main/psram_bss.lf` nicht `<object> (rcbench_extram_bss)` lautet, wenn ein Objekt, das das Fragment in den PSRAM (Pseudo-Static Random-Access Memory) legt, kein .bss in `.ext_ram.bss` hat oder .bss im internen RAM behält; gibt die verschobenen Bytes aus; `--list N` listet außerdem jedes Objekt mit mehr als N Bytes .bss im internen RAM; nimmt das Build-Verzeichnis, Standard `firmware/panel/build` |
 | `tools/check_sizes.py` | zählt die Code-Zeilen jeder Datei, die git verfolgt (eine Code-Zeile ist weder leer noch nur Kommentar: Kommentare und Doxygen-Blöcke in C, C++, Headern, TypeScript und JavaScript sowie `#`-Kommentare und Docstrings in Python zählen nicht; andere Dateiarten zählen ihre nicht leeren Zeilen), und hält die Dateien über 1 000 Code-Zeilen an `tools/check_sizes.txt`, das für jede den Grund nennt, warum sie ganz bleibt, und für einige eine Code-Zeilenzahl mit Toleranz; `--check` schlägt fehl bei einer Datei über 1 000 Code-Zeilen, die die Liste nicht nennt, einer gelisteten Datei mit 1 000 Code-Zeilen oder weniger, einer Zahl außerhalb ihrer Toleranz und einem Ausschluss, der nichts trifft; eine Datei, deren Kopf das `tools/gen_*.py` nennt, das sie erzeugt, steht nicht in der Liste, wenn CI diesen Generator mit `--check` ausführt |
@@ -570,10 +644,10 @@ Funkteil.
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.5.5 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF`, der fehlschlägt, wenn er ein Injector-Symbol enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.5.5 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors, die Frame-Zeilen der Konsole (`tools/check_perf_log.py`) und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF` und `RCBENCH_PERF_LOG=OFF`, der fehlschlägt, wenn er ein Injector-Symbol oder eine Frame-Zeile enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
-| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
+| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, das des Panels mit `-D RCBENCH_PERF_LOG=OFF` und einer Prüfung, dass es keine Frame-Zeile enthält, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
 | `pages.yml` | Pull Request und Push auf `main`, der `configurator/`, `help/`, `docs/img/`, den Hilfe-Generator, das `Doxyfile` oder `tools/install_doxygen.sh` berührt; ein Push auf `main` auch, wenn er die C-Quellen berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; der Bau der Webhilfe mit `tools/help_site.py`; die C-API-Referenz, gebaut von Doxygen 1.18.0; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages, mit der Webhilfe unter `help/` und der API-Referenz unter `api/`. Ein Lauf, der nur die C-Quellen, das `Doxyfile` oder `tools/install_doxygen.sh` ändert, baut die Seite des Configurators ohne ihre Prüfungen und startet keinen Browser-Test |
 
 clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
@@ -582,6 +656,19 @@ Klasse style von cppcheck läuft ebenfalls nicht über `firmware/`. Die
 Host-Tests werden mit den Flags der Bibliotheken gebaut: `-Wall -Wextra
 -Werror -Wshadow -Wconversion -Wno-sign-conversion`; `test/host/.clang-tidy`
 listet die für sie abgeschalteten Checks, jeweils mit Grund.
+
+cppcheck läuft im Job `cppcheck`, neben `Lint and static analysis`, der
+clang-tidy bei jedem Lauf über jede Datei laufen lässt. cppcheck behält
+sein Build-Verzeichnis (`--cppcheck-build-dir`) zwischen CI-Läufen: es
+liest eine Datei neu, wenn sie oder eine eingebundene Datei von ihrem
+Eintrag abweicht, und gibt die Befunde der übersprungenen Dateien erneut
+aus. Der Cache des Build-Verzeichnisses hat als Schlüssel die
+cppcheck-Version, seine Optionen, die Include-Pfade und
+`.cppcheck-suppress`. Ein Lauf stellt den neuesten Cache her, den sein
+Branch lesen kann: den eigenen, den des Basis-Branches seines Pull
+Requests, dann den von `main`; ein Branch bekommt einen Cache nur aus einem
+CI-Lauf auf ihm, und `ci.yml` läuft bei einem Push nur für `main` und
+Tags.
 
 CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5 und pytest 9.1.1 in
 genau diesen Versionen, Doxygen 1.18.0 aus dem offiziellen Linux-Release-Archiv
@@ -640,7 +727,7 @@ Stable-Release. 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel,
 und spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von
 Waveshare. Die Suche des Panels liest mit RELEASES auf STABLE unter SETUP >
 UPDATES, dem Standard, das Latest-Release von GitHub und mit TESTING die 10
-neuesten Releases; Die Linie des ESP32-P4-Panels ist ohne Obergrenze: In beiden Stellungen
+neuesten Releases. Die Linie des ESP32-P4-Panels ist ohne Obergrenze: In beiden Stellungen
 bietet es jedes Release an, das neuer ist als die Version, die es hat. Die
 Grenze 0.22.x mit dem zweiten Lesen, das STABLE dafür macht, gehört nur zur
 Linie des ESP32-S3-Panels

@@ -395,6 +395,26 @@ void log_set_folder(log_folder_t kind, const char *dir);
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 
 /**
+ * @brief Whether the logger may write a fault log line now: one queued in
+ *        s_note_q, or under way.  The file manager's bench reads it
+ *        (fm_bench_t.fault_busy).
+ * @return true while a line waits or is written
+ */
+bool log_fault_busy(void);
+
+/**
+ * @brief Take the fault log's lock, which the logger holds across each
+ *        line's open, write and close.  The file manager holds it across an
+ *        unlink and a rename: FatFs runs without its file lock
+ *        (CONFIG_FATFS_FS_LOCK 0) and removes a file open for append.
+ *        Neither holder takes another lock under it.
+ */
+void log_fault_lock(void);
+
+/** @brief Give the fault log's lock back. */
+void log_fault_unlock(void);
+
+/**
  * @brief One sample on its way to the card, filled by the control task.
  *
  * It carries which run it belongs to, because that is the only thing that
@@ -439,6 +459,8 @@ typedef struct {
 
 extern QueueHandle_t s_log_q;
 extern QueueHandle_t s_note_q;
+/** @brief The fault log's lock (log_fault_lock()). */
+extern SemaphoreHandle_t s_note_mx;
 extern QueueHandle_t s_test_q;
 /* The run being recorded, or 0: the control task's level, which the logger
  * follows. */
@@ -848,6 +870,18 @@ extern atomic_uint s_tq_published;
 extern uint32_t    s_lost_notice_seq;
 extern atomic_uint s_loss_gen;
 extern atomic_uint s_arm_ack;
+/** @brief The render loop's progress, for the control task's watchdog; see
+ *         frame_watch.h and main.c. */
+extern atomic_uint s_render_progress;
+
+/**
+ * @brief The render task made progress: a pass of its loop, or one card read
+ *        inside a pass.  Render task only.
+ */
+static inline void render_progress(void)
+{
+    atomic_fetch_add(&s_render_progress, 1u);
+}
 extern uint32_t    s_arm_take_gen;
 extern uint32_t    s_arm_take_drv;
 extern arm_watch_t s_arm_watch;

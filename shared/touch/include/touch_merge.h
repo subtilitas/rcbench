@@ -56,11 +56,81 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "touch_map.h"
 #include "touch_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @brief The glass's GT911 address; the GT911's first strap address. */
+#define TOUCH_MERGE_GLASS_ADDR  0x5Du
+
+/** @brief The touch injector's address; the GT911's second strap address,
+ *         which the glass latches instead when its INT line is low at the
+ *         end of its reset. */
+#define TOUCH_MERGE_INJECT_ADDR 0x14u
+
+/**
+ * @brief The product ID the touch injector reports at 0x8140..0x8143: 4
+ *        ASCII bytes, no NUL.
+ *
+ * A Goodix controller reports its part number there, digits with at most
+ * one trailing letter: "911" and a NUL on the GT911 the panel's glass
+ * carries, "9271", "917S".  This ID has letters from its second byte on, so
+ * no glass reports it.  '9' first keeps the GT911 driver's probe, which
+ * wants a '9' there, accepting it.  testbench/touch-injector reports it
+ * (GT911_EMU_PRODUCT_ID).
+ */
+#define TOUCH_MERGE_INJECT_PRODUCT "9INJ"
+
+/** @brief What a controller found at start-up is to the touch task. */
+typedef enum {
+    TOUCH_ROLE_NONE,      /**< not read                                     */
+    TOUCH_ROLE_GLASS,     /**< the glass: mirrors, rotation, and the turn   */
+    TOUCH_ROLE_INJECTOR,  /**< the injector: logical pixels, never turned   */
+} touch_role_t;
+
+/**
+ * @brief Whether @p product_id is the touch injector's.
+ * @param product_id The 4 bytes read at 0x8140; NULL is not the injector.
+ * @return True for TOUCH_MERGE_INJECT_PRODUCT exactly.
+ */
+bool touch_merge_is_injector(const char *product_id);
+
+/**
+ * @brief The role of a controller that answered as a GT911 at start-up.
+ *
+ * - At TOUCH_MERGE_GLASS_ADDR: the glass, whatever its product ID.
+ * - At TOUCH_MERGE_INJECT_ADDR with TOUCH_MERGE_INJECT_PRODUCT: the
+ *   injector, beside a glass at 0x5D or alone.
+ * - At TOUCH_MERGE_INJECT_ADDR with any other product ID: the glass when
+ *   nothing answered at 0x5D (@p glass_found false); not read when the
+ *   glass answered at 0x5D, so 0x5D wins.
+ * - At any other address: not read.
+ *
+ * @param addr The address it answered at.
+ * @param glass_found Whether a glass answered at TOUCH_MERGE_GLASS_ADDR
+ *                    before it.
+ * @param product_id Its 4-byte product ID; NULL when the read failed.
+ * @return Its role.
+ */
+touch_role_t touch_merge_role(uint16_t addr, bool glass_found,
+                              const char *product_id);
+
+/**
+ * @brief The map for one report of a controller with role @p role.
+ * @param role Its role.
+ * @param glass The glass's map: its resolution, mirrors and rotation.
+ * @param inject The injector's map (logical pixels).
+ * @param turned Whether the turned picture is on the glass
+ *               (gfx_turn_shown()); false again after the turn falls back.
+ * @return @p glass turned by @p turned for TOUCH_ROLE_GLASS; @p inject,
+ *         never turned, for TOUCH_ROLE_INJECTOR; a zeroed map for
+ *         TOUCH_ROLE_NONE or a NULL map.
+ */
+touch_map_t touch_merge_role_map(touch_role_t role, const touch_map_t *glass,
+                                 const touch_map_t *inject, bool turned);
 
 /** @brief Set in the track id of every injected contact. */
 #define TOUCH_MERGE_INJECT_ID  0x80u

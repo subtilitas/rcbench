@@ -30,7 +30,7 @@ und nie über 500 oder 2500µs hinaus. Ein letzter Schritt unter 10µs erreicht
 dieses Ende, so wird das Ende selbst gemessen.
 Nach jedem Schritt wartet sie 120ms, bis das Servo steht, und mittelt den
 Strom über 80ms. Solange die Fläche frei läuft, ist der Strom flach und
-niedrig. Das Gestänge gilt als angelaufen, wenn der Strom das 1,8-Fache des
+niedrig. Das Gestänge gilt als blockiert, wenn der Strom das 1,8-Fache des
 Grundstroms im freien Lauf übersteigt und mindestens 0,15A darüber liegt. Die
 Suche hält beim ersten solchen Schritt an, nimmt 25µs zurück und meldet diese
 Pulsweite als Endpunkt.
@@ -66,7 +66,7 @@ kürzeres Halten startet nichts.
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
 Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
-und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSOREN das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
+und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
 geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
 Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
 Ausgangskarte bleibt ebenfalls sichtbar.
@@ -81,7 +81,7 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSOREN das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
+| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000ms gehalten, oder kein Fenster mit Strom in den letzten 200ms |
 | `SERVOVERSORGUNG UNTER 3.0V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
@@ -170,17 +170,17 @@ f = (p - NEUTRAL) / (P_lim - NEUTRAL)
 mit P_lim gleich PULSE LOWER auf der unteren und PULSE UPPER auf der oberen
 Seite, so wie das Servo sie während der Suche hält. Die Einheit von LEFT
 ANGLE und RIGHT ANGLE ist unbekannt, und der lineare Zusammenhang ist eine
-Annahme, keine Messung. Eine angelaufene Seite, deren letzter freier Puls
+Annahme, keine Messung. Eine blockierte Seite, deren letzter freier Puls
 nicht jenseits von NEUTRAL liegt, beendet den Lauf vor jedem Schreiben als
 NICHT BESTANDEN, `freies Ende vor NEUTRAL`.
 
-#### Zwei Schreibvorgänge je angelaufener Seite
+#### Zwei Schreibvorgänge je blockierter Seite
 
 v0 ist der Wert, den das Register der Seite beim Lesen hält.
 
 1. Der Vorhalt: `v1 = ceil(v0 x fb x 1.03)`, fb der Anteil am ersten
-   angelaufenen Puls der ersten Suche, höchstens v0 und mindestens der
-   kleinste Wert. Der erste angelaufene Puls liegt am Anschlag oder
+   blockierten Puls der ersten Suche, höchstens v0 und mindestens der
+   kleinste Wert. Der erste blockierte Puls liegt am Anschlag oder
    dahinter, also bleibt der Anschlag bei v1 erreichbar und rückt nahe an
    die Pulsgrenze. Die Seite wird erneut gesucht. Ist sie dort frei, endet
    der Lauf als NICHT BESTANDEN, `kein Anschlag nach dem Vorhalt`, ohne
@@ -188,7 +188,7 @@ v0 ist der Wert, den das Register der Seite beim Lesen hält.
 2. Der Endwert: `v2 = floor(v1 x f1)`, f1 der Anteil am letzten freien Puls
    der Vorhalt-Suche, mindestens der kleinste Wert. Kein Abstand kommt
    hinzu: der letzte freie Puls liegt einen Schritt von 10µs vor dem
-   angelaufenen. Eine Vorhalt-Suche, die weit innerhalb der Pulsgrenze
+   blockierten. Eine Vorhalt-Suche, die weit innerhalb der Pulsgrenze
    anläuft, ergibt v2 ebenso; kein weiterer Vorhalt folgt.
 
 Durchgerechnet am modellierten Servo des Hosts: NEUTRAL 1500,2µs, PULSE
@@ -209,7 +209,7 @@ Anteil an ihrem letzten freien Puls: ein Schreibvorgang für diese Seite.
 
 Die Protokollnotizen sagen nicht, welche Pulsseite jedes Register begrenzt,
 und nicht, wie REVERSION das ändert. Der Lauf findet es beim ersten
-Schreiben der ersten angelaufenen Seite: dieser Wert geht nur an LEFT ANGLE
+Schreiben der ersten blockierten Seite: dieser Wert geht nur an LEFT ANGLE
 (an RIGHT ANGLE, wo LEFT ANGLE schon den kleinsten Wert hat), und die Seite
 wird gesucht. Das Ende hat sich bewegt, wenn es jetzt frei ist oder sein
 Endpunkt 20µs weiter außen liegt. Ein Ende, das innerhalb von 20µs blieb,
@@ -255,7 +255,7 @@ er wieder schreibt.
 | Konstante | Wert | Zweck |
 | --- | ---: | --- |
 | `SERVO_LIMRUN_WRITES_MAX` | 8 | Registerwerte, die ein Lauf höchstens schreibt: PULSE LOWER und PULSE UPPER (2), Vorhalt und Endwert auf jeder Seite (4), und das erste Schreiben von LEFT ANGLE mit seinem Wert zurück, wenn RIGHT ANGLE diese Seite begrenzt (2). Eine Sitzung, deren Werte darüber gingen, wird nicht gesendet: NICHT BESTANDEN `Grenze von 8 Werten erreicht` |
-| `SERVO_LIMRUN_OVERSET_PCT` | 3% | der Vorhalt über dem Anteil am ersten angelaufenen Puls |
+| `SERVO_LIMRUN_OVERSET_PCT` | 3% | der Vorhalt über dem Anteil am ersten blockierten Puls |
 | `SERVO_LIMRUN_STD_LOWER_DUS`, `SERVO_LIMRUN_STD_UPPER_DUS` | 1000,0µs, 2000,0µs | was SERVOPULSE auf 1000-2000 schreibt |
 | `SERVO_LIMRUN_MOVED_US` | 20µs | ein Ende, das sich bewegt hat oder blieb; die kleinste Verschiebung des Anschlags, für die ein Vorhalt geschrieben wird |
 | `SERVO_LIMRUN_RETURN_MS` | 1000ms | in der Mitte vor jeder Suche und vor jedem SAFE |
@@ -266,7 +266,7 @@ Registerschreiben, das der Programmierer zurückliest. Ob ein KST-Servo den
 Wert bei jedem Schreiben im EEPROM (elektrisch löschbarer programmierbarer
 Nur-Lese-Speicher) ablegt und wie viele Schreibvorgänge dieser Speicher
 verträgt, ist unbekannt; die Grenze hält einen Lauf bei 8 Werten. Ein Lauf
-mit beiden Enden angelaufen und SERVOPULSE auf 1000-2000 schrieb am
+mit beiden Enden blockiert und SERVOPULSE auf 1000-2000 schrieb am
 modellierten Servo des Hosts 6 Werte in 4 Schreibvorgängen und 4
 Sitzungen, 85,6s, mit REVERSION AUS, und 8 Werte in 5 Schreibvorgängen
 und 5 Sitzungen, 97,7s, mit REVERSION EIN.
@@ -339,7 +339,7 @@ Schreiben sichert eine eigene Sicherungsdatei.
 
 - Ein Endpunkt wird bereits um 25µs zurückgenommen gemeldet.
 - „Keine Endlage gefunden“ (`FREI`) heißt: die Suche hat das Ende ihres
-  Wegs gemessen, ohne dass das Gestänge angelaufen ist: PULS MIN oder PULS
+  Wegs gemessen, ohne dass das Gestänge blockiert ist: PULS MIN oder PULS
   MAX an einem SERVO-PWM-Pin, PULSE LOWER oder PULSE UPPER des Servos am
   PROG-PORT.
 - Eine Endlage nahe der Mitte kann eine Schwergängigkeit im Gestänge sein,
@@ -365,8 +365,8 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
 daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
 unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit User-Logs AUS unter
-SETUP > SD-KARTE wird kein Bericht geschrieben
-([Setup](Screens-de.md#sd-karte-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder das
+SETUP > SD CARD wird kein Bericht geschrieben
+([Setup](Screens-de.md#sd-card-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
 läuft durch den Lauf weiter, wie seine Summen. Vom Start des Laufs, bis die
 Karte den Bericht geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
@@ -386,24 +386,24 @@ Ausgang:         PROG-PORT 1 GP13, 50Hz
 Pulsbereich:     Mitte 1500us, 1000-2000us
 Gesucht:         von 1500us bis 1000us und 2000us
 Strom:           INA3221 0x40 CH1, Fenster zu 50ms, Shunt 100.0mΩ
-Suchregel:       Schritte zu 10us, 120ms warten, Mittel über 80ms; angelaufen über 1.8 x frei und +0.15A
+Suchregel:       Schritte zu 10us, 120ms warten, Mittel über 80ms; blockiert über 1.8 x frei und +0.15A
 Schutz:          ein Messwert ab 3.0A, über 1.0A für 400ms, 200ms kein Fenster, 40s je Suche
 Dauer:           85.6s
 AS5600:          nicht eingebaut, keine Winkel
 
 ENDEN (die Suche vor dem Programmieren)
-Unteres Ende:    angelaufen bei 1200us, Endpunkt 1235us; frei 0.120A, angelaufen 0.627A
-Oberes Ende:     angelaufen bei 1820us, Endpunkt 1785us; frei 0.120A, angelaufen 0.322A
+Unteres Ende:    blockiert bei 1200us, Endpunkt 1235us; frei 0.120A, blockiert 0.627A
+Oberes Ende:     blockiert bei 1820us, Endpunkt 1785us; frei 0.120A, blockiert 0.322A
 
 PROGRAMMIEREN (LEFT ANGLE und RIGHT ANGLE, Einheit unbekannt)
 Servo:           Typ 6, REVERSION AUS
 Servopulse:      NEUTRAL 1500.2us, PULSE LOWER 900.0us, PULSE UPPER 2100.0us
 Pulse schreiben: PULSE LOWER 900.0 -> 1000.0us, PULSE UPPER 2100.0 -> 2000.0us
 LEFT ANGLE:      150 vorher, 87 nachher; begrenzt das untere Ende
-                 Anteil frei 0.580, angelaufen 0.600; Vorhalt 93, Anteil 0.940; Endwert 87
+                 Anteil frei 0.580, blockiert 0.600; Vorhalt 93, Anteil 0.940; Endwert 87
 RIGHT ANGLE:     150 vorher, 95 nachher; begrenzt das obere Ende
-                 Anteil frei 0.620, angelaufen 0.640; Vorhalt 99, Anteil 0.960; Endwert 95
-Verfahren:       linear im Puls; Vorhalt +3% auf den Anteil am ersten angelaufenen Puls, dann der Anteil, den seine Suche frei fand
+                 Anteil frei 0.620, blockiert 0.640; Vorhalt 99, Anteil 0.960; Endwert 95
+Verfahren:       linear im Puls; Vorhalt +3% auf den Anteil am ersten blockierten Puls, dann der Anteil, den seine Suche frei fand
 Schreibvorgänge: Werte geschrieben 6, Schreibvorgänge gesendet 4, Grenze 8 Werte; Sitzungen 4
 Sicherung:       KST001, die Werte vor dem Lauf
 
@@ -482,7 +482,7 @@ ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
 (Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
 (siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
-Power Mini V1), wenn SETUP ANSCHLÜSSE ihn freigibt, sonst am Netzteilmodell
+Power Mini V1), wenn SETUP INTERFACES ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den
@@ -715,8 +715,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
   0,390A und der höchste 1-ms-Messwert des INA3221 1,637A. Ein Lauf am PD
   mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
 - **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem ein INA3221
-  unter SETUP > SENSOREN bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
-  `der IOmcu ist älter als Link-Protokoll 4.11`, `der IOmcu hält
+  unter SETUP > SENSORS bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
+  `der IOmcu ist älter als Firmware 0.16.0`, `der IOmcu hält
   seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
   den letzten 200ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
   als 1s` oder `das Netzteil ist vom Panel simuliert`.
@@ -783,7 +783,7 @@ bis 0,342A.
 ### Der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
-SETUP, ANSCHLÜSSE unter AS5600 eingestellt (Standard AUS) und vom IOmcu
+SETUP, INTERFACES unter AS5600 eingestellt (Standard AUS) und vom IOmcu
 gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
@@ -985,7 +985,7 @@ eigene Task der SD-Karte schreibt seine Dateien dorthin: `ATESTnnn.CSV`, eine
 Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
 PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 `LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
-([Logs](Screens-de.md#logs)). Mit User-Logs AUS unter SETUP > SD-KARTE,
+([Logs](Screens-de.md#logs)). Mit User-Logs AUS unter SETUP > SD CARD,
 gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
 nennt `USER-LOGS AUS`. Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
@@ -1194,7 +1194,7 @@ erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
 Die Strommessung an der Servoschiene. Die Endlagensuche liest den
 INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet in SETUP
-ANSCHLÜSSE und bestückt in SETUP > SENSOREN, und sonst nichts. Der
+INTERFACES und bestückt in SETUP > SENSORS, und sonst nichts. Der
 Abgleich braucht einen Sensor über das Paar der Ausgänge, der nicht bestückt
 ist. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
 Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE

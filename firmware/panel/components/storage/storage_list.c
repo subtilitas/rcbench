@@ -1,7 +1,8 @@
 /**
  * @file storage_list.c
  * @brief Listing the mounted card: storage_walk(), storage_walk_counted(),
- *        storage_stat() and storage_path().
+ *        storage_stat(), storage_dir_open() and its reads, and
+ *        storage_path().
  *
  * Each read is made under a hold (storage_priv.h), and
  * its outcome goes back to storage.c, which decides whether the card is
@@ -20,6 +21,7 @@
 #include "storage_priv.h"
 /* ff.h for FatFs's own directory read and f_stat(). */
 #include "ff.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 
 /** @brief The log tag of the storage component. */
@@ -328,4 +330,78 @@ esp_err_t storage_stat(const char *path, storage_stat_t *out)
     const esp_err_t err = stat_held(path + mp, out, &fr);
     (void)storage_read_end(fr, "stat", false);
     return err;
+}
+
+/** @brief An open folder: FatFs's handle, its entry, and the last read's
+ *         answer for the close. */
+struct storage_dir {
+    FF_DIR  dir;   /**< FatFs's folder                            */
+    FILINFO info;  /**< the entry read last                       */
+    int     fr;    /**< the last failed read's FRESULT, or FR_OK  */
+};
+
+storage_dir_t *storage_dir_open(const char *path)
+{
+    const size_t mp = sizeof(STORAGE_MOUNT_POINT) - 1u;
+    if (path == NULL || strncmp(path, STORAGE_MOUNT_POINT, mp) != 0
+        || (path[mp] != '\0' && path[mp] != '/')) {
+        return NULL;
+    }
+    if (!storage_hold()) {
+        return NULL;
+    }
+    storage_dir_t *d = heap_caps_malloc(sizeof(*d), MALLOC_CAP_SPIRAM);
+    if (d == NULL) {
+        storage_release();
+        return NULL;
+    }
+    d->fr = (int)FR_OK;
+    /* The drive and a path of the Wi-Fi page's 384 bytes at most. */
+    char full[STORAGE_NAME_MAX * 8];
+    const int n = snprintf(full, sizeof(full), "%s%s", storage_drive(),
+                           (path[mp] == '\0') ? "/" : path + mp);
+    const FRESULT fr = (n > 0 && (size_t)n < sizeof(full))
+                       ? f_opendir(&d->dir, full) : FR_INVALID_NAME;
+    if (fr != FR_OK) {
+        heap_caps_free(d);
+        /* A folder not there is no read that failed. */
+        (void)storage_read_end((fr == FR_NO_PATH || fr == FR_NO_FILE
+                                || fr == FR_INVALID_NAME)
+                               ? (int)FR_OK : (int)fr, "open folder", false);
+        return NULL;
+    }
+    return d;
+}
+
+int storage_dir_read(storage_dir_t *d, char *name, size_t cap,
+                     storage_stat_t *out)
+{
+    const FRESULT fr = f_readdir(&d->dir, &d->info);
+    if (fr != FR_OK) {
+        d->fr = (int)fr;
+        return -1;
+    }
+    if (d->info.fname[0] == '\0') {
+        return 0;
+    }
+    const size_t len = strlen(d->info.fname);
+    if (len >= cap) {
+        return -1;
+    }
+    memcpy(name, d->info.fname, len + 1u);
+    out->is_dir = (d->info.fattrib & AM_DIR) != 0;
+    out->size = out->is_dir ? 0u : (uint64_t)d->info.fsize;
+    out->mtime = fat_mtime(d->info.fdate, d->info.ftime);
+    return 1;
+}
+
+void storage_dir_close(storage_dir_t *d)
+{
+    if (d == NULL) {
+        return;
+    }
+    (void)f_closedir(&d->dir);
+    const int fr = d->fr;
+    heap_caps_free(d);
+    (void)storage_read_end(fr, "folder", false);
 }

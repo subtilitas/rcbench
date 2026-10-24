@@ -28,6 +28,7 @@
 #include "log_viewer_screen.h"
 #include "log_writer.h"
 #include "panel.h"
+#include "panel_trial.h"
 #include "storage.h"
 #include "ui_card_text.h"
 #include "ui_text.h"
@@ -72,6 +73,7 @@ static const char *TAG = "rcbench";
 
 QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
 QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
+SemaphoreHandle_t s_note_mx;
 
 /*
  * Which run is being recorded, or 0 for none.
@@ -719,6 +721,29 @@ static void test_write(const test_line_t *l)
 
 /* Whether log_note() holds the volume for its line. */
 static bool s_note_held;
+/** @brief Set from before the logger takes a queued line until the last
+ *         one is written (log_fault_busy()). */
+static atomic_bool s_note_writing;
+
+bool log_fault_busy(void)
+{
+    return atomic_load(&s_note_writing)
+           || (s_note_q != NULL && uxQueueMessagesWaiting(s_note_q) > 0u);
+}
+
+void log_fault_lock(void)
+{
+    if (s_note_mx != NULL) {
+        (void)xSemaphoreTake(s_note_mx, portMAX_DELAY);
+    }
+}
+
+void log_fault_unlock(void)
+{
+    if (s_note_mx != NULL) {
+        (void)xSemaphoreGive(s_note_mx);
+    }
+}
 
 static bool note_mounted(void *ctx)
 {
@@ -797,12 +822,14 @@ static void log_note(const char *line)
         .append   = note_append,
     };
     bool rotated = false;
+    log_fault_lock();
     s_note_held = storage_hold();
     const fault_log_t r = fault_log_note(&io, line, &rotated);
     if (s_note_held) {
         storage_release();
         s_note_held = false;
     }
+    log_fault_unlock();
     if (rotated) {
         ESP_LOGI(TAG, "%s full at %u bytes, now %s", CARD_FAULT_LOG,
                  (unsigned)FAULT_LOG_CAP, CARD_FAULT_OLD);
@@ -901,9 +928,16 @@ void log_task(void *arg)
             log_close();
         }
 
+        /* Busy from before the first line is taken off the queue, so the
+         * file manager never sees a line between the queue and the card
+         * as none (log_fault_busy()). */
         char note[LOG_NOTE_MAX];
-        while (xQueueReceive(s_note_q, note, 0) == pdTRUE) {
-            log_note(note);
+        if (uxQueueMessagesWaiting(s_note_q) > 0u) {
+            atomic_store(&s_note_writing, true);
+            while (xQueueReceive(s_note_q, note, 0) == pdTRUE) {
+                log_note(note);
+            }
+            atomic_store(&s_note_writing, false);
         }
         /* The servo test's lines, as many as wait. */
         test_line_t tl;
@@ -914,5 +948,7 @@ void log_task(void *arg)
          * waits. */
         kst_record_write();
         kst_card_serve();
+        /* One pass done: a step a new build's trial waits for. */
+        atomic_store(&s_trial_logger_ran, true);
     }
 }

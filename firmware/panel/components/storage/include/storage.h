@@ -258,6 +258,44 @@ int storage_walk_counted(const char *dir, const char *suffixes,
  */
 esp_err_t storage_stat(const char *path, storage_stat_t *out);
 
+/** @brief A folder open for storage_dir_read(). */
+typedef struct storage_dir storage_dir_t;
+
+/**
+ * @brief Open a folder by its full path under STORAGE_MOUNT_POINT, "/sdcard"
+ *        for the root, to read it one entry at a time.
+ *
+ * FatFs's own f_opendir() and f_readdir(), as storage_walk() reads: each
+ * entry comes with its size, kind and time, so a listing costs one pass and
+ * no f_stat() per entry.  The volume is held (storage_hold()) until
+ * storage_dir_close().  The handle is in PSRAM (pseudo-static random-access
+ * memory).
+ *
+ * @param path  the folder's full path
+ * @return the folder, or NULL when nothing is mounted, @p path is not under
+ *         the mount point or names no folder, or no memory is left
+ */
+storage_dir_t *storage_dir_open(const char *path);
+
+/**
+ * @brief The next entry of @p d.
+ * @param d     the folder
+ * @param name  takes the entry's name, NUL-terminated
+ * @param cap   bytes of @p name
+ * @param out   takes its size (0 for a folder), kind and time
+ * @return 1 for an entry, 0 at the end, -1 on a failed read or a name of
+ *         @p cap bytes or more
+ */
+int storage_dir_read(storage_dir_t *d, char *name, size_t cap,
+                     storage_stat_t *out);
+
+/**
+ * @brief Close @p d and give its hold back.  A failed read is weighed as
+ *        storage_walk() weighs one, without mounting again.
+ * @param d  the folder; NULL does nothing
+ */
+void storage_dir_close(storage_dir_t *d);
+
 /** Full path for a name inside @p dir, ready for fopen(). */
 void storage_path(const char *dir, const char *name, char *out, size_t out_size);
 
