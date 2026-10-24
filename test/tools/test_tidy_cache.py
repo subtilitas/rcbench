@@ -46,15 +46,14 @@ print("3 warnings generated.", file=sys.stderr)
 '''
 
 
-@pytest.fixture
-def tree(tmp_path, monkeypatch):
+def make_tree(base, monkeypatch):
     """Builds a tree of three C files and a compile database.
 
     Two of the files include one header.  The stand-in clang-tidy logs to
-    a file in tmp_path.
+    a file in base.
 
     Args:
-        tmp_path: The case's directory.
+        base: The directory to build it in.
         monkeypatch: Sets the stand-in's log path.
 
     Returns:
@@ -63,7 +62,7 @@ def tree(tmp_path, monkeypatch):
     cc = shutil.which("cc")
     if cc is None:
         skip_or_fail("cc not found")
-    root = tmp_path / "tree"
+    root = base / "tree"
     (root / "build").mkdir(parents=True)
     (root / "src").mkdir()
     (root / ".clang-tidy").write_text("Checks: '-*,fake-check'\n")
@@ -71,13 +70,27 @@ def tree(tmp_path, monkeypatch):
     (root / "src" / "a.c").write_text('#include "common.h"\nint a;\n')
     (root / "src" / "b.c").write_text('#include "common.h"\nint b;\n')
     (root / "src" / "c.c").write_text("int c;\n")
-    fake = tmp_path / "fake-tidy"
+    fake = base / "fake-tidy"
     fake.write_text(FAKE)
     fake.chmod(0o755)
-    log = tmp_path / "calls.log"
+    log = base / "calls.log"
     monkeypatch.setenv("FAKE_TIDY_LOG", str(log))
     write_db(root, ["a.c", "b.c", "c.c"])
-    return root, fake, log, tmp_path / "cache"
+    return root, fake, log, base / "cache"
+
+
+@pytest.fixture
+def tree(tmp_path, monkeypatch):
+    """The tree of make_tree in the case's directory.
+
+    Args:
+        tmp_path: The case's directory.
+        monkeypatch: Sets the stand-in's log path.
+
+    Returns:
+        The tree, the stand-in, its log and the cache directory.
+    """
+    return make_tree(tmp_path, monkeypatch)
 
 
 def write_db(root, names, extra=()):
@@ -95,19 +108,21 @@ def write_db(root, names, extra=()):
         src = root / "src" / name
         entries.append({
             "directory": str(build),
-            "command": f"cc {flag} -I{root}/src -o {out} -c {src}",
+            "arguments": ["cc", flag, f"-I{root}/src", "-o", out, "-c",
+                          str(src)],
             "file": str(src),
         })
     (build / "compile_commands.json").write_text(json.dumps(entries))
 
 
-def run(tree, *names, prune=False):
+def run(tree, *names, prune=False, extra=()):
     """Runs the script over the tree.
 
     Args:
         tree: The fixture.
         *names: The files; all three when empty.
         prune: Passes --prune.
+        extra: Further arguments for the script.
 
     Returns:
         The exit status, the output and the files the stand-in was
@@ -118,7 +133,7 @@ def run(tree, *names, prune=False):
         log.unlink()
     argv = [sys.executable, TOOL, "--build", str(root / "build"),
             "--cache", str(cache), "--clang-tidy", str(fake),
-            "--root", str(root), "-j", "1"]
+            "--root", str(root), "-j", "1", *extra]
     if prune:
         argv.append("--prune")
     files = names or ("src/a.c", "src/b.c", "src/c.c")
@@ -326,3 +341,57 @@ def test_the_script_runs_as_a_program():
     assert done.returncode == 0
     assert os.path.basename(TOOL) == "tidy_cache.py"
     assert Path(TOOL).stat().st_mode & 0o100
+
+
+def test_a_tree_path_with_a_space_keeps_its_inputs(tmp_path, monkeypatch):
+    """A tree path with a space keeps its inputs in the key.
+
+    The compiler writes the space as a backslash and a space; the file's
+    content is still hashed, so an edit runs it again.
+    """
+    base = tmp_path / "with space"
+    base.mkdir()
+    tree = make_tree(base, monkeypatch)
+    root = tree[0]
+    assert run(tree)[0] == 0
+    assert run(tree)[2] == []
+    (root / "src" / "c.c").write_text("int BAD;\n")
+    status, _, calls = run(tree)
+    assert status == 1
+    assert calls == ["src/c.c"]
+    (root / "src" / "common.h").write_text("#define COMMON 2\n")
+    _, _, calls = run(tree)
+    assert sorted(calls) == ["src/a.c", "src/b.c", "src/c.c"]
+
+
+def test_an_unreadable_input_is_never_recorded(tree, tmp_path):
+    """A listed input that cannot be read leaves the file unrecorded."""
+    root = tree[0]
+    lister = tmp_path / "lister-cc"
+    lister.write_text("#!/bin/sh\necho 'c.o: /nonexistent/gone.h'\n")
+    lister.chmod(0o755)
+    entries = json.loads((root / "build" / "compile_commands.json")
+                         .read_text())
+    entries[2]["arguments"][0] = str(lister)
+    (root / "build" / "compile_commands.json").write_text(
+        json.dumps(entries))
+    run(tree)
+    _, _, calls = run(tree)
+    assert calls == ["src/c.c"]
+
+
+def test_extra_clang_tidy_arguments_are_refused(tree):
+    """An argument for clang-tidy is a usage error.
+
+    Only the compile command decides what clang-tidy reads.
+    """
+    status, out, calls = run(tree, extra=("--extra-arg=-DX",))
+    assert status == 2
+    assert calls == []
+
+
+def test_parse_deps_unescapes_paths():
+    """A backslash-space, a backslash-# and $$ are one character each."""
+    rule = ("a.o: /x\\ y/a.c /x\\ y/h\\#1.h \\\n"
+            " /p$$q/r.h\n")
+    assert tc.parse_deps(rule) == ["/x y/a.c", "/x y/h#1.h", "/p$q/r.h"]

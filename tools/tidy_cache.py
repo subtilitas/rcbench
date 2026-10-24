@@ -7,7 +7,6 @@ key is a SHA-256 over:
 - the clang-tidy version text and the clang-tidy binary;
 - the compiler's version text (it lists the dependencies);
 - every .clang-tidy file in the tree, and this script;
-- the extra arguments given to clang-tidy;
 - the file's compile command, with the tree's path replaced by a token;
 - the path and the content of every file the compiler reads for the
   translation unit (`cc -M`): the source, each project header and each
@@ -17,11 +16,13 @@ Raw content is hashed, not preprocessed text, so a changed comment such as
 a NOLINT in a header counts as a change too.  A header change reaches every
 file that includes it.  Only a pass is recorded: a failing file runs again
 on every call.  A file the compiler cannot list the dependencies of always
-runs.
+runs, and so does a file one of whose inputs cannot be read.  clang-tidy
+gets no arguments beyond the file and the compile database, so the
+compile command alone decides what it reads.
 
     tools/tidy_cache.py --build test/host/build --cache DIR \
         [--clang-tidy clang-tidy] [-j N] [--prune] [--root DIR] \
-        [--extra-arg ARG]... FILE... | -
+        FILE... | -
 
 `-` reads the file names from standard input, one per line.  `--prune`
 deletes the records no file of this call matched, so a restored cache
@@ -112,14 +113,12 @@ def config_files(root: Path) -> list[Path]:
     return sorted(found)
 
 
-def static_key(clang_tidy: str, compiler: str, extra: list[str],
-               root: Path) -> str:
+def static_key(clang_tidy: str, compiler: str, root: Path) -> str:
     """Hashes the inputs every file shares.
 
     Args:
         clang_tidy: The clang-tidy command.
         compiler: The compiler of the compile commands.
-        extra: The extra clang-tidy arguments.
         root: The top of the tree.
 
     Returns:
@@ -135,7 +134,6 @@ def static_key(clang_tidy: str, compiler: str, extra: list[str],
         h.update(str(cfg.relative_to(root)).encode() + b"\0")
         h.update(cfg.read_bytes())
     h.update(Path(__file__).read_bytes())
-    h.update("\0".join(extra).encode())
     return h.hexdigest()
 
 
@@ -181,15 +179,41 @@ def deps_args(args: list[str]) -> list[str]:
 def parse_deps(text: str) -> list[str]:
     """Reads the file list of a make rule as `cc -M` writes it.
 
+    The compiler escapes a space and a # in a path with a backslash and a $
+    as $$; a backslash before a newline continues the line.
+
     Args:
         text: The rule.
 
     Returns:
-        The prerequisites, in order.
+        The prerequisites, in order, unescaped.
     """
     body = text.replace("\\\n", " ")
-    _, _, prereq = body.partition(":")
-    return prereq.split()
+    _, _, prereq = body.partition(": ")
+    out: list[str] = []
+    cur: list[str] = []
+    i = 0
+    while i < len(prereq):
+        ch = prereq[i]
+        nxt = prereq[i + 1] if i + 1 < len(prereq) else ""
+        if ch == "\\" and nxt in (" ", "#"):
+            cur.append(nxt)
+            i += 2
+            continue
+        if ch == "$" and nxt == "$":
+            cur.append("$")
+            i += 2
+            continue
+        if ch.isspace():
+            if cur:
+                out.append("".join(cur))
+                cur = []
+        else:
+            cur.append(ch)
+        i += 1
+    if cur:
+        out.append("".join(cur))
+    return out
 
 
 def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
@@ -223,7 +247,10 @@ def entry_hash(entry: dict, root: Path, memo: dict[str, str]) -> str | None:
     for dep in deps:
         path = Path(os.path.realpath(os.path.join(cwd, dep)))
         h.update(b"\0" + str(path).replace(top, "@ROOT@").encode() + b"\0")
-        h.update(sha_file(path, memo).encode())
+        digest = sha_file(path, memo)
+        if digest == "missing":
+            return None
+        h.update(digest.encode())
     return h.hexdigest()
 
 
@@ -324,14 +351,13 @@ def quiet(text: str) -> str:
                    if not COUNT_LINE.match(line))
 
 
-def run_one(clang_tidy: str, build: Path, extra: list[str],
-            name: str, root: Path) -> tuple[str, int, str, float]:
+def run_one(clang_tidy: str, build: Path, name: str,
+            root: Path) -> tuple[str, int, str, float]:
     """Runs clang-tidy over one file.
 
     Args:
         clang_tidy: The clang-tidy command.
         build: The directory of the compile database to use.
-        extra: The extra clang-tidy arguments.
         name: The file, relative to the tree.
         root: The top of the tree.
 
@@ -341,7 +367,7 @@ def run_one(clang_tidy: str, build: Path, extra: list[str],
     start = time.monotonic()
     try:
         done = subprocess.run(
-            [clang_tidy, "-p", str(build), "--quiet", *extra, name],
+            [clang_tidy, "-p", str(build), "--quiet", name],
             cwd=root, capture_output=True, text=True, check=False)
         status, text = done.returncode, done.stdout + done.stderr
     except OSError as err:
@@ -366,8 +392,6 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prune", action="store_true")
     ap.add_argument("--root", type=Path, default=ROOT,
                     help="the top of the tree; the repository by default")
-    ap.add_argument("--extra-arg", action="append", default=[],
-                    help="an argument passed on to clang-tidy")
     ap.add_argument("files", nargs="+")
     args = ap.parse_args(argv)
 
@@ -393,7 +417,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     jobs = max(1, args.jobs)
     compiler = command_args(commands[rels[0]][0])[0]
-    base = static_key(args.clang_tidy, compiler, args.extra_arg, root)
+    base = static_key(args.clang_tidy, compiler, root)
     args.cache.mkdir(parents=True, exist_ok=True)
 
     memo: dict[str, str] = {}
@@ -417,8 +441,8 @@ def main(argv: list[str] | None = None) -> int:
         db = Path(tmp)
         (db / "compile_commands.json").write_text(json.dumps(
             [e for n in todo for e in commands[n]], indent=1))
-        runs = pool.map(lambda n: run_one(args.clang_tidy, db,
-                                          args.extra_arg, n, root), todo)
+        runs = pool.map(lambda n: run_one(args.clang_tidy, db, n, root),
+                        todo)
         for name, status, text, took in runs:
             times[name] = round(took, 2)
             text = quiet(text)
