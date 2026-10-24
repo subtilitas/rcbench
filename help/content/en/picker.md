@@ -23,6 +23,8 @@ A pad is under 40 px across, smaller than a fingertip. So each pin has a key, 50
 
 A tap on a key writes the binding at once, with the same results as a tick on Outputs.
 
+Current limitation: on a board with a pin in the top-left corner of its outline, the keys of the upper rows lie under the protocol list, the count and the reason. A press on the part of such a key over the protocol list opens the list instead of taking the pin. The RP2350-CAN has no pin there.
+
 The board also marks the other wires of a servo lead:
 
 | Mark | Pad |

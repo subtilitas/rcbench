@@ -441,7 +441,7 @@ sendet keine Zahl, und die Zeile zeigt keine
 ([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Die drei Temperaturen
 stehen auf jeder Aufgabe in der Zeile über der rechten Leiste. ESC und MOT
 kommen von der Bench-Page. MCU ist der eigene Die des Panels, gelesen vom
-Sensor des ESP32-S3: die Temperatur der Displayplatine, nicht die des
+Sensor des ESP32-P4: die Temperatur der Displayplatine, nicht die des
 IOmcu.
 
 ![MOTOR & ESC mit 37 abgelehnten Link-Frames](img/de/motor-refused.png)
@@ -1218,8 +1218,11 @@ eine nicht gilt.
 - Die Ziffern von STROM auf LIVE werden neu gezeichnet, wenn sich ihre
   Ziffern oder ihre Farbe ändern, und für sich allein.
 
-Der automatische Test liest das Netzteil, welches Messgerät die Schiene auch
-hat.
+Der automatische Test liest das Messgerät der Servo-Schiene, wie das Panel
+es bei START TEST nennt: den INA3221-Kanal, solange der INA3221 dieses
+Messgerät ist und das Netzteil der PD mini, sonst die Messwerte des PD
+mini, und die des Modells, wenn das Netzteil modelliert ist
+([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)).
 
 GEMESSEN ist der Winkel des Horns ab dem Mittenwert, solange AS5600 in SETUP,
 ANSCHLÜSSE eingeschaltet ist, der Sensor antwortet und seinen Magneten
@@ -2834,7 +2837,7 @@ Aktuelle Einschränkungen:
   gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der
   Bildschirm sagt es, solange das Panel verbunden ist.
 - Ein hochgeladenes Image wird gegen seinen eigenen SHA-256 geprüft, nicht
-  gegen eine Signatur. Jedes Image, das als `rcbench-panel` für den ESP32-S3
+  gegen eine Signatur. Jedes Image, das als `rcbench-panel` für den ESP32-P4
   gebaut ist, wird nach dem 2-s-Halten installiert, und im Heimnetz kann ein
   Gerät zwischen Browser und Panel das Image unterwegs austauschen. Das
   IOmcu-Image, das ein Panel-Image mitbringt, kommt mit und wird dem
@@ -2842,6 +2845,9 @@ Aktuelle Einschränkungen:
 - Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
   Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
   nicht gebaut.
+- Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
+  mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
+  Downloads. Die Ursache ist nicht gemessen.
 
 ### Der Zugangscode
 
@@ -2867,9 +2873,9 @@ der Sprache des Panels. Sie hat zwei Teile.
 **Panel-Firmware.** Die installierte Version, eine Dateiauswahl, Hochladen
 mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die Datei
 ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei, die größer
-als der Slot des Panels ist, 4 063 232 Bytes, wird abgewiesen, bevor ein
+als der Slot des Panels ist, 8 126 464 Bytes, wird abgewiesen, bevor ein
 Byte gesendet ist. Das Panel prüft das ganze Image, bevor es etwas fragt:
-den ESP-Image-Header für den ESP32-S3, den Projektnamen `rcbench-panel`
+den ESP-Image-Header für den ESP32-P4 (Chip-ID 0x0012), den Projektnamen `rcbench-panel`
 der Anwendung, eine Version der Form MAJOR.MINOR.PATCH und den angehängten
 SHA-256 (Secure Hash Algorithm, 256 Bit). Ein zweiter Upload, während einer
 wartet, wird abgewiesen, bis ABBRECHEN am Panel. Während ein Upload läuft,
@@ -2878,11 +2884,11 @@ Flash: Das Panel hält die Datei im PSRAM (Pseudo-Static Random-Access
 Memory), bis PANEL UPDATE sie schreibt. Das Panel
 schreibt das Image erst nach dem Halten auf PANEL UPDATE in den Flash
 ([Installieren: PANEL UPDATE](#installieren-panel-update)). Während es
-schreibt, wird die Anzeige bei jedem Flash-Löschen ganz dunkel und kommt
-danach zurück, etwa alle 0,5 s (gemeldet auf 0.20.0; 0.21.x nicht gemessen,
-der Schreibweg ist derselbe Code). Das ist erwartet: Das RGB-Panel (Rot,
-Grün, Blau) kann nicht abtasten, solange der Haupt-Flash beschäftigt ist
-(`CONFIG_LCD_RGB_ISR_IRAM_SAFE=n` in `firmware/panel/sdkconfig.defaults`).
+schreibt, tastet der DSI-Host (Display Serial Interface) die Framebuffer
+weiter per DMA (Direct Memory Access) aus dem PSRAM ab, und sein Interrupt
+läuft während jedes Flash-Löschens (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
+`firmware/panel/sdkconfig.defaults`). Was die Anzeige während des Löschens
+zeigt, ist nicht gemessen.
 
 **Dateien auf der Karte.** Jede Datei, Ordner für Ordner, mit Namen, Größe
 in Bytes und Änderungszeit, wie die Karte sie hat. Jeder Name lädt seine
@@ -2922,11 +2928,15 @@ ZIP-Datei.
   Browser meldet ihn als fehlgeschlagen. Das Rotieren von
   `BENCH/RCBENCH.LOG` bei 1 MiB ist ein Umbenennen.
 
-Die Übertragungsrate ist nicht gemessen; [Performance](Performance-de.md#wlan-downloads)
-nennt, was sie begrenzt, erwartete 300 000 bis 1 000 000 B/s in einem
-Heimnetz und die Schritte, sie zu messen. Ein Download von S Bytes bei einer
-Rate von R Bytes pro Sekunde dauert S / R Sekunden: bei 1 000 000 B/s
-braucht eine Karte mit 50 000 000 Bytes 50 s. Die Seite beantwortet eine
+In einem Heimnetz lief ein Download einer Datei von 16MiB mit 688-757kB/s,
+Kartenlesen und Funk zusammen, nicht getrennt, und ein Upload eines Image
+von 2,56MB über `/update` mit 556-599kB/s. Der Ping lag im Mittel bei
+14,6ms; kein SDIO-Fehler (Secure Digital Input/Output) wurde gemeldet, und
+das Panel zeichnete während der Downloads 60fps. Die Reichweite ist nicht
+gemessen. [Performance](Performance-de.md#wlan-downloads) nennt, was die
+Rate begrenzt, und die Schritte, sie zu messen. Ein Download von S Bytes
+bei einer Rate von R Bytes pro Sekunde dauert S / R Sekunden: bei 700kB/s
+braucht eine Karte mit 50MB etwa 71s. Die Seite beantwortet eine
 Anfrage nach der anderen, also wartet eine Anfrage während eines Downloads
 auf dessen Ende. Eine Karte, die während eines Downloads gezogen wird,
 beendet den Download zu kurz, ebenso ein Browser, der 30 s lang nichts
@@ -2968,9 +2978,8 @@ Titel; die Bytes stehen in der Schrift 20 x 36 px über einem Balken von
 36 px Höhe und 976 px Breite, die Zeilen darunter in der Schrift
 12 x 24 px. Es schreibt den Slot, der nicht
 läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Die
-Anzeige wird bei jedem Flash-Löschen ganz dunkel, etwa alle 0,5 s (gemeldet
-auf 0.20.0; 0.21.x nicht gemessen), und sitzt ab dem ersten ganzen Bild nach
-jedem Löschen wieder an ihrem Platz. Dann wird der Slot
+Anzeige wird während jedes Flash-Löschens weiter abgetastet; was sie dann
+zeigt, ist nicht gemessen. Dann wird der Slot
 zurückgelesen und geprüft, er wird der Slot, der startet, und das Panel
 startet neu.
 
@@ -3807,8 +3816,8 @@ derselbe.
 
 Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
 eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
-ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
-keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
+ESP32-P4 schaltet den Cache ab, es läuft also für ihre Dauer auf keinem der
+beiden Kerne Code aus dem Flash. Geschrieben wird im ersten Frame, in dem der
 Prüfstand SAFE ist und kein Schalten auf ARMED wartet, der Ausgang des
 Netzteils aus ist und kein ON eingereiht ist und keine Zeichnung der Platine geholt
 oder abgelegt wird. Auf
@@ -4358,7 +4367,7 @@ seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 1. `SHA256SUMS` hat höchstens 4096 Bytes und genau eine Zeile für den
    Dateinamen des Image.
 2. Das Image kündigt seine Größe an, bevor ein Byte behalten wird. Ein Image
-   ohne Größe, mit 0 Bytes oder größer als der Slot (4.063.232 Bytes) wird
+   ohne Größe, mit 0 Bytes oder größer als der Slot (8.126.464 Bytes) wird
    abgelehnt. Das Image liegt im PSRAM (Pseudo-Static Random-Access Memory).
 3. Der SHA-256 (Secure Hash Algorithm, 256 Bit) des Image muss seiner Zeile
    in `SHA256SUMS` gleichen.
@@ -4793,6 +4802,16 @@ Tabellen stehen 8 px frei von der äußersten Taste, die eine 600 px breite
 Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
 Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
 Zeilen von 48 px, die Einträge PROG-PORT in einer zweiten Spalte daneben.
+
+Aktuelle Einschränkung: Der Kopf bleibt, wo er ist, welche Platine es auch
+ist. Auf einer Platine, deren Shape-Page einen Pin in die obere linke Ecke
+ihres Umrisses legt, reichen die Tasten der oberen Reihen bis x 187 nach
+links, unter die Fläche der Protokoll-Liste (x 8 bis 288), die Anzahl und
+den Grund (bis x 358). Eine solche Taste wird über sie gezeichnet, und ein
+Druck auf ihren Teil über der Fläche öffnet die Protokoll-Liste, statt den
+Pin zu nehmen. Die Pads des RP2350-CAN in dieser Ecke sind Schienen und
+Masse, also liegt keine seiner Tasten dort
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 

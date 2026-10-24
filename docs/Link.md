@@ -44,7 +44,7 @@ answers reaches the bus-off threshold of 256 in about 4 ms, so any moment with
 no second node on the bus — the IOmcu unpowered, reset, or held with
 interrupts off long enough — takes the panel's controller off the bus.
 
-The ESP32-S3's TWAI (Two-Wire Automotive Interface) controller does not return
+The ESP32-P4's TWAI (Two-Wire Automotive Interface) controller does not return
 on its own. `can_twai_recover()` runs on the identity poll while the link is
 down, once per second: it calls `twai_initiate_recovery()` from the bus-off
 state, waits out the 128 bus-free signals the controller counts in the
@@ -1492,7 +1492,7 @@ bit:
 
 | Controller | Clock | Prescaler | Quanta per bit | tseg1 | tseg2 | sjw |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| TWAI (ESP32-S3) | 80 MHz APB (advanced peripheral bus) | 4 | 20 | 14 | 5 | 4 |
+| TWAI (ESP32-P4) | 40MHz crystal | 2 | 20 | 14 | 5 | 4 |
 | XL2515 | 16 MHz crystal, halved internally | 1 | 8 | 5 | 2 | 2 |
 
 Eight quanta is the minimum a bit may have. That is why the XL2515 needs a 16

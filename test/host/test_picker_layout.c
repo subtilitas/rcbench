@@ -6,7 +6,8 @@
  *        alert band in English or German, with no pin bound, at the
  *        fullest tables, with the list open beside 4 ports and with no
  *        board to draw; the keys clear the tables on a board with no end
- *        margin; 4 PROG PORT entries take a second column of 48 px rows.
+ *        margin; 4 PROG PORT entries take a second column of 48px rows;
+ *        the built-in board's keys clear the head.
  *
  * PICK A PIN drives no output and has no stop control: its safe_at is
  * NULL, so none lies under the alert band.
@@ -17,6 +18,7 @@
  * - nothing_is_drawn_under_the_alert_band
  * - keys_clear_the_tables_on_a_board_with_no_end_margin
  * - the_list_holds_four_ports_in_a_second_column
+ * - the_built_in_boards_keys_clear_the_head
  *
  * SPDX-License-Identifier: MIT
  */
@@ -286,6 +288,31 @@ TEST_CASE(the_list_holds_four_ports_in_a_second_column)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * The head (the protocol list's face, the count and the reason) is top
+ * left, where the upper tiers' keys of a board with pins in its top-left
+ * corner would reach: the documented limitation of a learned board.  The
+ * built-in board has rails and ground there, so none of its keys lies
+ * under the head, with the shape and with the drawing.
+ */
+TEST_CASE(the_built_in_boards_keys_clear_the_head)
+{
+    for (int pass = 0; pass < 2; ++pass) {
+        fresh();
+        if (pass == 1) { CHECK(serve_drawing()); }
+        const gfx_rect_t head = picker_screen_area(PICKER_AREA_HEAD);
+        const outbind_board_t *bd = outbind_board(BOARD);
+        unsigned keys = 0;
+        for (uint8_t i = 0; i < bd->count; ++i) {
+            gfx_rect_t r;
+            if (!picker_screen_button_rect(i, &r)) { continue; }
+            ++keys;
+            CHECK(r.x >= head.x + head.w || r.y >= head.y + head.h);
+        }
+        CHECK(keys > 0u);
+    }
+}
+
 int main(void)
 {
     RUN(every_key_is_the_same_finger_sized_key);
@@ -293,5 +320,6 @@ int main(void)
     RUN(nothing_is_drawn_under_the_alert_band);
     RUN(keys_clear_the_tables_on_a_board_with_no_end_margin);
     RUN(the_list_holds_four_ports_in_a_second_column);
+    RUN(the_built_in_boards_keys_clear_the_head);
     return test_summary("picker_layout");
 }

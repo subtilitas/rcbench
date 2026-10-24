@@ -94,7 +94,7 @@ With TESTING, when the highest of the 10 newest releases is past the line, the h
 The 2 s hold is the one confirmation: no question follows. The panel joins the home network within 30 s and fetches `SHA256SUMS` and `rcbench-panel-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
 
 1. `SHA256SUMS` is 4096 bytes at most and holds exactly one line for the image.
-2. The image announces its size first; an image without a size, of 0 bytes or over 4,063,232 bytes is refused. It is kept in PSRAM (pseudo-static random-access memory).
+2. The image announces its size first; an image without a size, of 0 bytes or over 8,126,464 bytes is refused. It is kept in PSRAM (pseudo-static random-access memory).
 3. The image's SHA-256 (Secure Hash Algorithm, 256 bits) equals its line in `SHA256SUMS`.
 4. Every check of an uploaded image runs, and the image names the release's version.
 

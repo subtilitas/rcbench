@@ -48,7 +48,7 @@ ein Frame, den niemand beantwortet, die Bus-off-Schwelle von 256 in etwa 4 ms
 vom Bus: IOmcu ohne Strom, nach einem Reset, oder lange genug mit
 abgeschalteten Interrupts.
 
-Der TWAI-Controller (Two-Wire Automotive Interface) des ESP32-S3 kommt nicht
+Der TWAI-Controller (Two-Wire Automotive Interface) des ESP32-P4 kommt nicht
 von selbst zurück. `can_twai_recover()` läuft am Identity-Poll, solange der
 Link unten ist, einmal pro Sekunde: aus dem Zustand Bus off ruft es
 `twai_initiate_recovery()`, wartet die 128 Bus-frei-Signale ab, die der
@@ -1621,7 +1621,7 @@ bei 75 % des Bits ab:
 
 | Controller | Takt | Prescaler | Quanta je Bit | tseg1 | tseg2 | sjw |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| TWAI (ESP32-S3) | 80 MHz APB (Advanced Peripheral Bus) | 4 | 20 | 14 | 5 | 4 |
+| TWAI (ESP32-P4) | 40-MHz-Quarz | 2 | 20 | 14 | 5 | 4 |
 | XL2515 | 16-MHz-Quarz, intern halbiert | 1 | 8 | 5 | 2 | 2 |
 
 Acht Quanta sind das Minimum für ein Bit. Deshalb braucht der XL2515 für

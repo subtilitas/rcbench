@@ -987,14 +987,70 @@ firmware/panel/main/panel_control.c: warning: Member tsens_read(void) (function)
 firmware/panel/main/panel_frame.c: warning: Member LINK_LOST_SCREEN_MS (macro definition) of file panel_frame.c is not documented.
 firmware/panel/main/panel_frame.c: warning: Member TAG (variable) of file panel_frame.c is not documented.
 firmware/panel/main/panel_link.c: file has no @file block
-firmware/panel/main/panel_log.c: file has no @file block
 firmware/panel/main/panel_log.c: warning: Compound take_ctx_t is not documented.
 firmware/panel/main/panel_log.c: warning: Compound take_walk_t is not documented.
+firmware/panel/main/panel_log.c: warning: Member LOG_QUIET_MS (macro definition) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member LOG_TICK_MS (macro definition) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member NOTE_PATH_MAX (macro definition) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member TAG (variable) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member ctx (variable) of struct take_walk_t is not documented.
+firmware/panel/main/panel_log.c: warning: Member file_flush(void *ctx) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member file_write(void *ctx, const void *data, size_t len) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member folder_take(log_folder_t kind, char *dir) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member fp (variable) of struct take_ctx_t is not documented.
 firmware/panel/main/panel_log.c: warning: Member held (variable) of struct take_ctx_t is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_close(void) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_drop(void) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_note(const char *line) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_open(uint32_t run, log_run_kind_t kind) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_set_folder(log_folder_t kind, const char *dir) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member log_task(void *arg) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member mark (variable) of struct take_ctx_t is not documented.
+firmware/panel/main/panel_log.c: warning: Member note_append(void *ctx, const char *path, const char *line) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member note_mounted(void *ctx) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member note_remove(void *ctx, const char *path) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member note_rename(void *ctx, const char *from, const char *to) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member note_size(void *ctx, const char *path) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member panel_card_make_dir(void *ctx, const char *level) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member run_prefix(log_run_kind_t kind) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_card_written (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_card_written_tab (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_dir_mux (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_dir_open[LOG_FOLDERS][CARD_DIR_MAX] (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_dir_took[LOG_FOLDERS][CARD_DIR_MAX] (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_dir_want[LOG_FOLDERS][CARD_DIR_MAX] (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_log (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_log_file (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_log_last_row_ms (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_log_run_id (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_log_run_now (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_note_held (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_series (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_series_mount (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_dir[CARD_DIR_MAX] (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_ends_done (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_ends_sent (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_failed (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_file (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_fp (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_lines (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_num (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_opens_done (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_opens_sent (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_report (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_txt (variable) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member s_test_txt_bad (variable) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member tab (variable) of struct take_ctx_t is not documented.
+firmware/panel/main/panel_log.c: warning: Member take(const char *dir, log_prefix_t prefix, bool report, FILE **fp, atomic_uint *mark, int tab, int *number) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_alert(log_take_t r, const char *dir, const char *other) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_create(void *ctx, const char *dir, const char *name, int number) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_exists(void *ctx, const char *dir, const char *name) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_make_dir(void *ctx, const char *dir) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_mounted(void *ctx) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_path(const char *dir, const char *name, char *path, size_t n) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_walk(void *ctx, const char *dir, log_take_visit_fn visit, void *visit_ctx) (function) of file panel_log.c is not documented.
+firmware/panel/main/panel_log.c: warning: Member take_walk_entry(const storage_entry_t *entry, void *ctx) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member visit (variable) of struct take_walk_t is not documented.
 firmware/panel/main/panel_main.h: warning: Member publish_endpoints(void) (function) of file panel_main.h is not documented.
 firmware/panel/main/panel_main.h: warning: Member publish_hitec_rx(void) (function) of file panel_main.h is not documented.
@@ -3723,26 +3779,44 @@ shared/ui/include/motor_screen.h: warning: return type of member motor_settings_
 shared/ui/include/motor_screen.h: warning: return type of member motor_settings_rows is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_target_cells is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_throttle_target is not documented
-shared/ui/include/outputs_screen.h: file has no @file block
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen(void) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.h is not documented.
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_clash_label are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_clash_reason are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_at are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_name are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_pins are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_reason_of are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_cell are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_open_on are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_pin are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select_port are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_binding are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_iface_held are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_port_watch are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_pin are not documented
+shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_ports are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_reading are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_wrap are not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_clash_label is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_clash_reason is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_at is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_name is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_pins is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_reason_of is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_binding is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_cell is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_editable is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_entries is not documented
+shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_pin is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_reason is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_port_shown is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_read_state is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_reason is not documented
-shared/ui/include/outputs_screen.h: warning: return type of member outputs_wrap is not documented
 shared/ui/include/overview_screen.h: file has no @file block
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_set_supply_real are not documented
 shared/ui/include/overview_screen.h: warning: parameters of member overview_screen_tile are not documented

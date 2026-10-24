@@ -20,14 +20,15 @@ von Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, 1024 x 600 Pixel, MIPI DSI
   das hochskalierte 800-x-480-Layout.
 - Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v5.5.5).
 - Der IOmcu, das IO-Board und der CAN-Link bleiben, wie sie sind.
-- Der Heartbeat-Pin und die Pins des Drehknopfs auf dem ESP32-P4-Board sind
-  noch nicht festgelegt.
+- Auf dem ESP32-P4-Board ist der Heartbeat IO28 und der Drehknopf IO30
+  (SDA) und IO31 (SCL), alle auf der 12-poligen Stiftleiste P3.
 
 ## Was rcbench ist
 
 Ein Motor-, ESC- (Electronic Speed Controller, Motorregler) und Servoprüfstand
-auf zwei Prozessoren: ein ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen,
-SD-Karte) und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
+auf zwei Prozessoren: ein ESP32-P4-Touchpanel, das Waveshare ESP32-P4 7B
+(Bedienoberfläche auf einem 1024x600-Display an MIPI DSI, Einstellungen, SD-Karte,
+Wi-Fi über seinen ESP32-C6), und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 
 Release 0.22.1 läuft auf dem ESP32-S3-Panel. Was seine Update-Suche
@@ -77,7 +78,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
 | Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC; simulierte Werte, solange kein IOmcu antwortet |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom IOmcu gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche und der Abgleich sind auf dem Host gegen ein Servomodell getestet und laufen auf keiner Platine; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom IOmcu gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche, der Abgleich und der Programmierer sind auf dem Host gegen ein Servomodell getestet |
 | Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der IOmcu steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Receiver | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / KEIN SIGNAL | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
 | Motor & ESC > Programmieren | [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle; Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos | Aufgabe gebaut. Profile eingebaut und aus `/BENCH/ESC/CONF/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon aus ESC STICK aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels. Die Parametertabellen sind Daten: kein Protokoll auf einer Leitung, keine Zeile in einer Liste von PROGRAMMIEREN |
@@ -131,7 +132,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 54 003 von 55 168 Zeilen in 241 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 54 015 von 55 180 Zeilen in 241 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
