@@ -281,7 +281,7 @@ jobs:
         run: ruff check tools/ test/tools/ test/host/
 
   # cppcheck runs beside clang-tidy, in a job of its own: each takes about
-  # 9min (minutes) on a cold cache.
+  # 4min (minutes) on a cold cache.
   cppcheck:
     name: cppcheck
     runs-on: ubuntu-latest
