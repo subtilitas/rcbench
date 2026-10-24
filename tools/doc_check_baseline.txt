@@ -583,7 +583,6 @@ firmware/panel/main/main.c: warning: Member servo_ctx_stopped(void *ctx) (functi
 firmware/panel/main/main.c: warning: Member servo_testing_told(bool running) (function) of file main.c is not documented.
 firmware/panel/main/panel.h: warning: Compound cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Compound knob_turn_t is not documented.
-firmware/panel/main/panel.h: warning: Compound log_row_t is not documented.
 firmware/panel/main/panel.h: warning: Compound panel_cmd_t is not documented.
 firmware/panel/main/panel.h: warning: Compound panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Compound servo_win_item_t is not documented.
@@ -613,7 +612,6 @@ firmware/panel/main/panel.h: warning: Member art_keep_service(void) (function) o
 firmware/panel/main/panel.h: warning: Member art_slice(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member art_stop(const char *why) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member bench (variable) of struct panel_snap_t is not documented.
-firmware/panel/main/panel.h: warning: Member bench (variable) of union log_row_t::[union].u is not documented.
 firmware/panel/main/panel.h: warning: Member block (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member blocks (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member changes (variable) of struct servo_win_item_t is not documented.
@@ -674,7 +672,6 @@ firmware/panel/main/panel.h: warning: Member log_follow_runs(void) (function) of
 firmware/panel/main/panel.h: warning: Member log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member log_post(log_row_t *row) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member log_set_folder(log_folder_t kind, const char *dir) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member log_task(void *arg) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member mcu_temp_c (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member mismatch (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member motor (variable) of struct panel_cmd_t is not documented.
@@ -707,7 +704,6 @@ firmware/panel/main/panel.h: warning: Member read_bench(link_host_t *host, bench
 firmware/panel/main/panel.h: warning: Member read_outputs_binding(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member read_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member route (variable) of struct knob_turn_t is not documented.
-firmware/panel/main/panel.h: warning: Member run (variable) of struct log_row_t is not documented.
 firmware/panel/main/panel.h: warning: Member run_seconds (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member running (variable) of struct cu_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member s_arm (variable) of file panel.h is not documented.
@@ -877,7 +873,6 @@ firmware/panel/main/panel.h: warning: Member steps (variable) of struct knob_tur
 firmware/panel/main/panel.h: warning: Member stopped (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member stops (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member supply (variable) of struct panel_snap_t is not documented.
-firmware/panel/main/panel.h: warning: Member supply (variable) of union log_row_t::[union].u is not documented.
 firmware/panel/main/panel.h: warning: Member supply_follow_set(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member supply_follow_stops(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member supply_link_service(void) (function) of file panel.h is not documented.
@@ -886,7 +881,6 @@ firmware/panel/main/panel.h: warning: Member supply_log_tail(void) (function) of
 firmware/panel/main/panel.h: warning: Member supply_pump(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member supply_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member supply_switch(bool on) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member t_s (variable) of struct log_row_t is not documented.
 firmware/panel/main/panel.h: warning: Member test_lines_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member text[SERVO_TEST_LINE_MAX] (variable) of struct test_line_t is not documented.
 firmware/panel/main/panel.h: warning: Member throttle_to_zero(void) (function) of file panel.h is not documented.
@@ -894,7 +888,6 @@ firmware/panel/main/panel.h: warning: Member tone (variable) of struct panel_sna
 firmware/panel/main/panel.h: warning: Member tone_link_alerts(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member tone_link_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member tone_wanted(void) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member u (variable) of struct log_row_t is not documented.
 firmware/panel/main/panel.h: warning: Member upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member win (variable) of struct servo_win_item_t is not documented.
@@ -902,7 +895,6 @@ firmware/panel/main/panel.h: warning: Member wiring_of(unsigned word) (function)
 firmware/panel/main/panel.h: warning: Member write_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel_arm.c: warning: Member DISARM_INHIBIT_MS (macro definition) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member apply_motor_cmd(const motor_cmd_t *mc, bool link_up, bench_state_t *bench) (function) of file panel_arm.c is not documented.
-firmware/panel/main/panel_arm.c: warning: Member arm_applied(void) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member arm_watch_service(bool link_up) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member control_setup(telemetry_sim_t *sim, bench_state_t *bench) (function) of file panel_arm.c is not documented.
 firmware/panel/main/panel_arm.c: warning: Member disarm_here(bool link_up) (function) of file panel_arm.c is not documented.
@@ -1005,7 +997,6 @@ firmware/panel/main/panel_log.c: warning: Member log_note(const char *line) (fun
 firmware/panel/main/panel_log.c: warning: Member log_open(uint32_t run, log_run_kind_t kind) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member log_set_folder(log_folder_t kind, const char *dir) (function) of file panel_log.c is not documented.
-firmware/panel/main/panel_log.c: warning: Member log_task(void *arg) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member mark (variable) of struct take_ctx_t is not documented.
 firmware/panel/main/panel_log.c: warning: Member note_append(void *ctx, const char *path, const char *line) (function) of file panel_log.c is not documented.
 firmware/panel/main/panel_log.c: warning: Member note_mounted(void *ctx) (function) of file panel_log.c is not documented.

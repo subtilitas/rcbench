@@ -117,6 +117,12 @@ history is in git.
   it does for a scan the radio refuses. The console logs each scan's start,
   its done report (status, counted, read, listed, left off) and an ignored
   report.
+- A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
+  `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
+  reading at each row, current to 0.001A, and charge and energy counted
+  from those readings since the switch to ARMED. These cells were empty on
+  a bench without an ESC or an INA228. The header and a MOTOR run's rows
+  stay as they are.
 
 ### Changed
 

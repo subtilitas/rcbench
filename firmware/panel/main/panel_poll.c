@@ -804,9 +804,13 @@ void advance_model_and_log(bool link_up, float emitted,
      */
     if (*new_sample) {
         const uint32_t t = now_ms();
-        bench_totals_count(&s_totals, bench,
-                           (float)(uint32_t)(t - s_totals_ms) / 1000.0f,
-                           outputs_armed(&s_out));
+        const float dt_s = (float)(uint32_t)(t - s_totals_ms) / 1000.0f;
+        const bool driving = outputs_armed(&s_out);
+        bench_totals_count(&s_totals, bench, dt_s, driving);
+        /* And the supply's, for a SERVO run's rows: its last reading at
+         * this sample, counted over the same step. */
+        log_rail_take(&s_rail, &s_supply, bench_state_simulated(bench));
+        log_rail_count(&s_rail_totals, &s_rail, dt_s, driving);
         s_totals_ms = t;
     }
     /*
@@ -835,6 +839,10 @@ void advance_model_and_log(bool link_up, float emitted,
         if (logged) {
             log_row_t row = { .kind = s_log_kind, .t_s = t_s };
             bench_state_log_row(bench, k + 1u == rows, &row.u.bench);
+            /* The supply's figures go with the sample, on the last row. */
+            if (s_log_kind == LOG_RUN_SERVO && k + 1u == rows) {
+                row.rail = s_rail;
+            }
             log_post(&row);
         }
         /* The window is in that row and in no later one. */

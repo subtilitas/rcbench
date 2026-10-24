@@ -811,13 +811,15 @@ static void log_note(const char *line)
     }
 }
 
-/*
- * Everything that touches the card.
+/**
+ * @brief Everything that touches the card.
  *
  * On the control task's core and below it in priority: the control task
  * blocks for CONTROL_PERIOD_MS (5 ms) every pass and inside every receive
  * window of a link exchange, and this runs in those gaps.  It touches no
  * PSRAM, so it does not share bandwidth with the display's scan-out.
+ *
+ * @param arg Unused.
  */
 void log_task(void *arg)
 {
@@ -861,6 +863,9 @@ void log_task(void *arg)
         if (got && s_log_file != NULL) {
             if (row.kind == LOG_RUN_SUPPLY) {
                 (void)log_writer_supply_row(&s_log, row.t_s, &row.u.supply);
+            } else if (row.kind == LOG_RUN_SERVO) {
+                (void)log_writer_servo_row(&s_log, row.t_s, &row.u.bench,
+                                           &row.rail);
             } else {
                 (void)log_writer_row(&s_log, row.t_s, &row.u.bench);
             }
