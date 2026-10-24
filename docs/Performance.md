@@ -53,7 +53,7 @@ mode                   lines/frame     traffic
 ----------------------------------------------
 frame                        9,323    1165 KiB
 frame-idle                       0       0 KiB
-held                         4,830     604 KiB
+held                         4,937     617 KiB
 sim                         12,941    1618 KiB
 throttle                    11,119    1390 KiB
 chrome                      51,495    6437 KiB
@@ -81,7 +81,7 @@ battery-chrome              58,030    7254 KiB
 balance-chrome              63,359    7920 KiB
 motor-stick-chrome          41,802    5225 KiB
 picker                           0       0 KiB
-picker-chrome               40,100    5012 KiB
+picker-chrome               41,261    5158 KiB
 wifi                             0       0 KiB
 wifi-chrome                 22,129    2766 KiB
 wifi-keys                   36,923    4615 KiB
@@ -421,7 +421,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  226 such
+  227 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- PICK A PIN draws a cat: one of 8 drawings (3 sitting, 1 with a paw
+  raised, 2 asleep, 1 looking over an edge, 1 loaf), picked at random on
+  each visit among those whose spot, bottom left or bottom right, has no
+  row, key or list within 4px. It is drawn with the screen's static parts,
+  so a frame that repaints nothing draws nothing for it, and it takes no
+  taps. `tools/gen_cats.py` draws the cats and writes them as run-length
+  encoded RGB565 (red, green, blue in 5, 6 and 5 bits) with 4-bit alpha,
+  117579 bytes for the 8; CI (continuous integration) checks the table
+  with `--check` ([Screens](docs/Screens.md#pick-a-pin)).
 - The panel sets its clock by NTP (Network Time Protocol). Each join of
   the home network, the release check at start included, asks
   `pool.ntp.org` once, for at most 30000ms, and logs

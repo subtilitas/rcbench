@@ -57,7 +57,7 @@ mode                   lines/frame     traffic
 ----------------------------------------------
 frame                        9,323    1165 KiB
 frame-idle                       0       0 KiB
-held                         4,830     604 KiB
+held                         4,937     617 KiB
 sim                         12,941    1618 KiB
 throttle                    11,119    1390 KiB
 chrome                      51,495    6437 KiB
@@ -85,7 +85,7 @@ battery-chrome              58,030    7254 KiB
 balance-chrome              63,359    7920 KiB
 motor-stick-chrome          41,802    5225 KiB
 picker                           0       0 KiB
-picker-chrome               40,100    5012 KiB
+picker-chrome               41,261    5158 KiB
 wifi                             0       0 KiB
 wifi-chrome                 22,129    2766 KiB
 wifi-keys                   36,923    4615 KiB
@@ -454,7 +454,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
-  226
+  227
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion

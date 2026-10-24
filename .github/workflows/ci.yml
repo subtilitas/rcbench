@@ -130,6 +130,12 @@ jobs:
       - name: The checked-in board drawings match the configurator's
         run: python3 tools/gen_board_drawing.py --check
 
+      # The cat drawings PICK A PIN shows are drawn with Pillow and carried
+      # as generated run-length tables, so the firmware build needs no
+      # Python.
+      - name: The checked-in cat tables match their generator
+        run: python3 tools/gen_cats.py --check
+
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.
       - name: The checked-in ESC profile tables match their JSON
@@ -452,9 +458,12 @@ jobs:
 
       # The runner image carries git, cmake and a C compiler, which the
       # end-to-end cases of the mutation tool build a three-file project
-      # with; a case skips when one is missing.
+      # with; a case skips when one is missing.  test_gen_cats.py draws the
+      # cats with the Pillow the checked-in tables were made with.
       - name: Install pytest
-        run: python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
+        run: >-
+          python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
+          pillow==12.3.0
 
       # test/tools/test_doc_check.py runs Doxygen on a scratch tree.
       # The archive is 115MB; the cache holds it, and the script checks

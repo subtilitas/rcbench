@@ -69,6 +69,7 @@
 #include "supply_spots.h"
 #include "logview_spots.h"
 #include "ui_band.h"
+#include "ui_cats.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -3259,6 +3260,10 @@ static void pose_outputs_views(ui_screen_id_t id, const char *view)
 static void pose_picker_views(ui_screen_id_t id, const char *view)
 {
     if (id == SCREEN_PICKER) {
+        /* The first cat pose wherever it fits, so every shot is
+         * repeatable; picker-cat-N draws pose N. */
+        ui_cats_force(strncmp(view, "picker-cat-", 11) == 0
+                          ? (int)strtol(view + 11, NULL, 10) : 0);
         /*
          * The same bench the outputs screen is posed with: four servo leads
          * and an ESC, so the picture shows a pin this protocol holds, pins

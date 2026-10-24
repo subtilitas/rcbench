@@ -78,6 +78,9 @@ set(SRCS
     picker_screen.c
     picker_geometry.c
     picker_draw.c
+    picker_cat.c
+    ui_cats.c
+    ui_cats_art.c
     picker_port.c
     board_drawing.c
     busfault_screen.c

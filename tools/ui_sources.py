@@ -23,6 +23,7 @@ SOURCES = [
     "shared/gfx/gfx_damage.c",
     "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
+    "shared/gfx/gfx_sprite.c",
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
     "shared/gfx/gfx_font_num24x30.c",
@@ -106,6 +107,10 @@ SOURCES = [
     "shared/ui/picker_screen.c",
     "shared/ui/picker_geometry.c",
     "shared/ui/picker_draw.c",
+    "shared/ui/picker_cat.c",
+    # The cats a screen with a free spot shows, and their drawings.
+    "shared/ui/ui_cats.c",
+    "shared/ui/ui_cats_art.c",
     "shared/ui/picker_port.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
