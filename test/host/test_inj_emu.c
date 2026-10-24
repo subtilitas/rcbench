@@ -34,6 +34,10 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x804C), 5);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8157), 0);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0xFFFF), 0);
+    /* The product ID's edges: the byte before it and the one after. */
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT - 1u), 0);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT + 3u), 'J');
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT + 4u), 0x01);
 
     /* The command registers keep what was written; others ignore it. */
     const uint8_t cmd[2] = { 0xAA, 0x55 };
