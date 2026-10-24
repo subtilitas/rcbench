@@ -101,6 +101,15 @@ history is in git.
 
 ### Fixed
 
+- A new panel build's first start is kept once the panel works as a whole:
+  the card tried, the settings loaded, the control and logger tasks one
+  pass each, a whole frame on the display and a screen loop tick after it,
+  or 30s after the start once the screen loop ticks. The IOmcu is not
+  waited for. A panic or reset before that goes back to the build before
+  it. A build kept at display and touch that failed after that restarted
+  for ever and needed USB (Universal Serial Bus) to recover
+  ([Screens: PANEL UPDATE](docs/Screens.md#installing-panel-update)).
+
 - A glass GT911 that latches I2C (Inter-Integrated Circuit) address 0x14
   at its reset is read as the glass, with both axes mirrored and the 180°
   turn, and no longer as the touch injector through its unmirrored map,
