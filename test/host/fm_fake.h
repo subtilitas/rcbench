@@ -93,6 +93,8 @@ typedef struct {
                                      this many entries and mounts it
                                      again, once; -1 never               */
     fk_file_t files[FK_FILES];  /**< open files                          */
+    int64_t mtime;              /**< every entry's time as stat() answers
+                                     it; -1, none, from fk_init()        */
 } fk_card_t;
 
 /**

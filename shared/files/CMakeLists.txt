@@ -7,9 +7,10 @@
 # The card is a table of functions (fm_io.h): one page of a folder kept
 # while it is read (fm_select.c), a pane of the card (fm_tree.c), the
 # places the bench keeps and the write gate (fm_rules.c), and the jobs that
-# copy, move, rename, delete, make, save and load (fm_ops.c).  Nothing here
-# draws or reaches a card: the panel supplies the card (firmware/panel), the
-# host suite a card in memory that fails on request.
+# copy, move, rename, delete, make, save and load (fm_ops.c), and the
+# runner of the FILES screen's requests on the card's task (fm_req.c).
+# Nothing here draws or reaches a card: the panel supplies the card
+# (firmware/panel), the host suite a card in memory that fails on request.
 set(SRCS
     text_buf.c
     text_hl.c
@@ -18,6 +19,7 @@ set(SRCS
     fm_rules.c
     fm_tree.c
     fm_ops.c
+    fm_req.c
 )
 
 if(ESP_PLATFORM)

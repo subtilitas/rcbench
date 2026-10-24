@@ -33,6 +33,7 @@
 #include "wifi_screen.h"
 #include "wifi_spots.h"
 #include "coproc_update_screen.h"
+#include "render_files.h"
 #include "sense_link.h"
 #include "settings.h"
 #include "sense_limit_link.h"
@@ -1867,6 +1868,7 @@ static ui_screen_id_t id_of(const char *name)
         { "servo",      SCREEN_SERVO },
         { "analyser",   SCREEN_ANALYSER },
         { "logs",       SCREEN_LOGS },
+        { "files",      SCREEN_FILES },
         { "setup",      SCREEN_SETUP },
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
@@ -3619,6 +3621,7 @@ int main(int argc, char **argv)
                        && strcmp(view, "servo-limrun-stopped") != 0
                        && strcmp(view, "servo-limrun-range") != 0)
                    || strcmp(view, "setup-leave-armed") == 0
+                   || render_files_armed(view)
                    || strcmp(view, "setup-rotation") == 0
                    || (mo_prog && s_stick_armed);
     /* An arm covers the role of the screen that asked for it. */
@@ -3642,7 +3645,13 @@ int main(int argc, char **argv)
             coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
         }
     }
+    if (id == SCREEN_FILES) {
+        render_files_prepare(view);
+    }
     ui_router_goto(id);
+    if (id == SCREEN_FILES) {
+        render_files_pose(view);
+    }
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
     }

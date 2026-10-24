@@ -137,22 +137,28 @@
 #define BR_SIZE_W 160
 
 /**
- * @brief The footer's buttons, 140 x 52 px, in the order browse_event()
- *        hit-tests them: DELETE and OPEN under PREV and NEXT.
+ * @brief The footer's buttons, 52 px tall, in the order browse_event()
+ *        hit-tests them: RESCAN, DELETE and OPEN 140 px wide, DELETE and
+ *        OPEN under PREV and NEXT; WI-FI and FILES BR_SMALL_W (100 px)
+ *        wide after RESCAN.
  */
 #define BR_RESCAN gfx_rect_make(LV_L, FOOT_Y, BR_PG_W, FOOT_H)
+#define BR_SMALL_W 100  /**< WI-FI's and FILES' width. */
 /** @brief WI-FI. */
-#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, FOOT_Y, BR_PG_W, FOOT_H)
+#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, FOOT_Y, BR_SMALL_W, FOOT_H)
+/** @brief FILES, the card's folders and files (files_screen.h). */
+#define BR_FILES  gfx_rect_make(LV_L + BR_PG_W + 8 + BR_SMALL_W + 8, FOOT_Y, \
+                                BR_SMALL_W, FOOT_H)
 /** @brief OPEN. */
 #define BR_OPEN   gfx_rect_make(LV_R - BR_PG_W, FOOT_Y, BR_PG_W, FOOT_H)
 #define BR_DELETE gfx_rect_make(LV_R - 2 * BR_PG_W - 8, FOOT_Y, BR_PG_W, \
                                 FOOT_H)  /**< DELETE. */
 /**
- * @brief A message's left edge in the footer: two lines of 33 cells of the
- *        12 x 24 face to DELETE, the 28 a message about a file declares and
- *        the file's name.  BR_MSG_LH is a line's pitch.
+ * @brief A message's left edge in the footer: two lines of 28 cells of the
+ *        12 x 24 face from FILES to DELETE, the 28 a message about a file
+ *        declares and the file's name.  BR_MSG_LH is a line's pitch.
  */
-#define BR_MSG_X  (LV_L + 2 * BR_PG_W + 8 + 16)
+#define BR_MSG_X  (LV_L + BR_PG_W + 8 + 2 * (BR_SMALL_W + 8) + 8)
 #define BR_MSG_LH 24  /**< A line's pitch. */
 
 /** @brief The box an empty list shows in its place: two lines of 64 cells
@@ -278,8 +284,10 @@ _Static_assert(LV_L + 3 + 3 * BR_TAB_W + 2 * 4 + 3 + 16 <= BR_HEAD_X,
                "the tabs end before the header's text");
 _Static_assert(BR_HEAD_X + (11 + 17) * 10 + 16 <= BR_HEAD_END,
                "the header's text ends at PREV");
-_Static_assert(BR_MSG_X + 33 * 12 + 8 <= LV_R - 2 * BR_PG_W - 8,
-               "a footer message's 33 cells stand between WI-FI and DELETE");
+_Static_assert(BR_MSG_X + 28 * 12 + 8 <= LV_R - 2 * BR_PG_W - 8,
+               "a footer message's 28 cells stand between FILES and DELETE");
+_Static_assert(BR_SMALL_W >= 7 * 10 + 2 * 8,
+               "WI-FI and FILES hold DATEIEN's 7 cells of 10 x 20");
 _Static_assert(BR_SIZE_W >= 15 * 10 + 8,
                "a row's size box holds LOG_DIR's 15 cells");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,

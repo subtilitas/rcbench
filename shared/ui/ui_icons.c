@@ -1,5 +1,7 @@
-/*
- * The menu icons, drawn from primitives rather than stored as bitmaps.
+/**
+ * @file ui_icons.c
+ * @brief The menu icons, drawn from primitives rather than stored as
+ *        bitmaps.
  *
  * Each icon is a few rings, capsules and strokes scaled to the requested
  * size.  A drawn icon is sharp at any size and needs no image data in flash.
@@ -15,6 +17,15 @@
 
 #include "ui_theme.h"
 
+/**
+ * @brief A ring of @p thick circles inward from radius @p outer.
+ * @param c      the canvas
+ * @param cx     the centre, x
+ * @param cy     the centre, y
+ * @param outer  the outer radius, px
+ * @param thick  the ring's width, px
+ * @param color  the colour
+ */
 static void ring(gfx_canvas_t *c, int cx, int cy, int outer, int thick,
                  gfx_color_t color)
 {
@@ -267,5 +278,49 @@ void ui_icon_wifi(gfx_canvas_t *c, int x, int y, int size,
     gfx_fill_circle(c, x, cy, size / 12, color);
     for (int i = 1; i <= 3; ++i) {
         gfx_arc(c, x, cy, size * 7 * i / 30, thick, 50.0f, 130.0f, color);
+    }
+}
+
+/*
+ * A folder: a tab on the back's top left, the body under it.
+ */
+void ui_icon_folder(gfx_canvas_t *c, int x, int y, int size,
+                    gfx_color_t color)
+{
+    const int left = x - size / 2 + size / 12;
+    const int w = size - 2 * (size / 12);
+    const int h = (size * 2) / 3;
+    const int top = y - h / 2 + size / 12;
+    const int tab_w = w * 2 / 5;
+    const int tab_h = size / 8 + 1;
+    gfx_fill_rect(c, left, top - tab_h, tab_w, tab_h + 1, color);
+    gfx_fill_rect(c, left, top, w, h, color);
+}
+
+/*
+ * A page of a file: its outline, the top right corner folded, and three
+ * lines of text.
+ */
+void ui_icon_file(gfx_canvas_t *c, int x, int y, int size,
+                  gfx_color_t color)
+{
+    const int w = (size * 2) / 3;
+    const int h = size - size / 8;
+    const int left = x - w / 2;
+    const int top = y - h / 2;
+    const int fold = w / 3;
+    gfx_hline(c, left, top, w - fold, color);
+    gfx_vline(c, left, top, h, color);
+    gfx_hline(c, left, top + h - 1, w, color);
+    gfx_vline(c, left + w - 1, top + fold, h - fold, color);
+    for (int i = 0; i < fold; ++i) {
+        /* The fold's diagonal, and its edges. */
+        gfx_fill_rect(c, left + w - fold + i, top + i, 1, 1, color);
+    }
+    gfx_vline(c, left + w - fold, top, fold, color);
+    gfx_hline(c, left + w - fold, top + fold, fold, color);
+    for (int i = 0; i < 3; ++i) {
+        gfx_hline(c, left + 3, top + fold + 3 + i * (h - fold - 4) / 3,
+                  w - 6, color);
     }
 }

@@ -59,6 +59,9 @@ typedef enum {
     /* Not reachable from the menu: the panel opens it on OVERVIEW when the
      * start-up check found a newer release. */
     SCREEN_UPD_REMIND,
+    /* FILES, from SETUP and from LOGS: the card's folders and files in two
+     * panes. */
+    SCREEN_FILES,
     SCREEN_COUNT
 } ui_screen_id_t;
 
@@ -143,11 +146,15 @@ void ui_router_goto(ui_screen_id_t id);
 ui_screen_id_t ui_router_current(void);
 
 /**
- * Where the home tag of screen @p id leads when it leaves the screen.  A
+ * @brief Where the home tag of screen @p id leads when it leaves the
+ *        screen.  A
  * screen with several openers returns to the one that last opened it:
- * WI-FI to LOGS or SETUP, OUTPUTS to MOTOR & ESC, SERVO or SETUP.  A screen
- * a tile of SETUP opens returns to SETUP, and every other to the menu.
- * WI-FI or OUTPUTS not yet opened from an opener returns to SETUP.
+ * WI-FI and FILES to LOGS or SETUP, OUTPUTS to MOTOR & ESC, SERVO or SETUP.
+ * A screen a tile of SETUP opens returns to SETUP, and every other to the
+ * menu.  WI-FI, FILES or OUTPUTS not yet opened from an opener returns to
+ * SETUP.
+ * @param id  the screen
+ * @return the screen the home tag leads to
  */
 ui_screen_id_t ui_router_parent(ui_screen_id_t id);
 

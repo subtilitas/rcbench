@@ -7,14 +7,24 @@
 
 #include "log_take.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+
+/** @brief log_series_forget_all()'s count: written by any task, read by
+ *         the one that takes. */
+static atomic_uint s_edits;
 
 void log_series_init(log_series_set_t *set)
 {
     if (set != NULL) {
         memset(set, 0, sizeof(*set));
     }
+}
+
+void log_series_forget_all(void)
+{
+    atomic_fetch_add(&s_edits, 1u);
 }
 
 /**
@@ -140,6 +150,12 @@ log_take_t log_take(log_series_set_t *set, const log_take_io_t *io,
     }
     if (card_make_dirs(dir, take_level, (void *)io) != CARD_DIR_OK) {
         return LOG_TAKE_NO_FOLDER;
+    }
+    const unsigned edits = atomic_load(&s_edits);
+    if (edits != set->edits) {
+        /* Another hand changed the card's files since the last take. */
+        log_series_init(set);
+        set->edits = edits;
     }
     log_series_t *sr = log_series_of(set, dir);
     if (sr == NULL) {

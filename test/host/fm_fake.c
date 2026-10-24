@@ -297,6 +297,7 @@ static fm_err_t k_stat(void *ctx, const char *path, fm_stat_t *out)
     }
     out->size = c->n[i].size;
     out->is_dir = c->n[i].dir;
+    out->mtime = c->mtime;
     return FM_OK;
 }
 
@@ -531,6 +532,7 @@ void fk_init(fk_card_t *c)
     c->mount = 1u;
     c->free_bytes = UINT64_MAX / 2u;
     c->gone_at_entry = -1;
+    c->mtime = -1;
 }
 
 void fk_free(fk_card_t *c)
