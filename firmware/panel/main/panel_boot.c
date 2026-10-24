@@ -31,6 +31,7 @@
 #include "storage.h"
 #include "touch.h"
 #include "ui_card_text.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 #include "wifi_access.h"
 
@@ -58,11 +59,21 @@ char               s_boot_alert[ALERT_MAX];
 
 /* ------------------------------------------------------------------- boot */
 
+/**
+ * @brief Whether the bench is ARMED, as the router's status says; the
+ *        settings model's ARMED source (settings_set_armed()).
+ * @return True while ARMED.
+ */
+static bool bench_armed(void)
+{
+    return ui_router_status()->armed;
+}
+
 static void pump(void)
 {
     /* Draw between init steps so the splash fills in as it happens, rather
      * than appearing complete at the end. */
-    gfx_canvas_t *c = display_canvas();
+    gfx_canvas_t *c = panel_canvas();
     if (c != NULL) {
         ui_router_render(c, display_back_index());
         display_flip();
@@ -124,6 +135,9 @@ bool bring_up(void)
      * the IOmcu the same way an edit made later is. */
     settings_set_observer(settings_changed);
     settings_set_text_observer(publish_log_folder);
+    /* Screen rotation is held while ARMED, as the router's status says:
+     * the status DISCARD on SETUP waits on. */
+    settings_set_armed(bench_armed);
     settings_init();
     /* And once unconditionally, whatever settings_init() told the observer:
      * a bench left at the defaults still has to tell the far end what it

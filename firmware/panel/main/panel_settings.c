@@ -7,12 +7,15 @@
  * under a spinlock, beside the debt its write to the IOmcu is, and the
  * control task reads it from there.  settings_changed() is the settings
  * model's observer; bring_up() (panel_boot.c) publishes every value once.
+ * Screen rotation goes to the display (apply_rotation()), whose flush
+ * turns picture and touch together from the next frame.
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
 
 #include "card_tree.h"
+#include "display.h"
 #include "endpoints_link.h"
 #include "freertos/FreeRTOS.h"
 #include "panel.h"
@@ -158,9 +161,22 @@ void publish_hitec_rx(void)
     atomic_store(&s_hitec_rx_want, (unsigned)settings_get_int(SET_HITEC_RX));
 }
 
+/**
+ * @brief Screen rotation to the display.  The next flip takes it: the
+ *        picture turns in the flush, and touch follows the frame on the
+ *        glass (display.h).  At the load, before display_init(), the
+ *        display keeps it for its start.
+ */
+static void apply_rotation(void)
+{
+    display_set_turned(settings_get_int(SET_SCREEN_ROT) != 0);
+}
+
 void settings_changed(setting_id_t id)
 {
-    if (id == SET_LOG_AUTO) {
+    if (id == SET_SCREEN_ROT) {
+        apply_rotation();
+    } else if (id == SET_LOG_AUTO) {
         publish_log_auto();
     } else if (id == SET_MOTOR_POLES) {
         publish_poles();

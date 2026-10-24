@@ -31,6 +31,16 @@
  * frame from *two* flips ago, not the one just shown.  Redraw everything
  * each frame, or keep a per-buffer record keyed on display_back_index().
  *
+ * Screen rotation 180° (display_set_turned()) turns the picture in the
+ * flush.  The canvas then points at one of two logical buffers of the same
+ * size, 2,457,600 bytes of PSRAM in all, allocated at display_init(), and
+ * display_flip() copies what the frame drew into the frame buffer of the
+ * same index, turned, through the PPA (pixel-processing accelerator)
+ * before it hands that buffer over (gfx_turn.h).  The touch map turns by
+ * the same flag, gfx_turn_shown(), once the turned frame is on the glass.
+ * A copy that takes longer than 50ms in a flip makes that frame go out
+ * unturned and the panel NORMAL until the next start.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -148,6 +158,41 @@ float display_fps(void);
  * @return The count; it wraps at 2^32.
  */
 uint32_t display_vsync_count(void);
+
+/**
+ * @brief Screen rotation: 180°, or NORMAL, from the next display_flip()
+ *        on.  May be called from any task, also before display_init().
+ * @param turned true for 180°
+ */
+void display_set_turned(bool turned);
+
+/**
+ * @brief Whether the picture on the glass is turned by 180°: the flag the
+ *        touch map turns by (gfx_turn_shown()).
+ * @return true while turned
+ */
+bool display_turned(void);
+
+/**
+ * @brief Whether the UI must repaint everything before it draws the next
+ *        frame: the canvas changed between a logical buffer and a frame
+ *        buffer.  Clears it.  Call it from the task that flips.
+ * @return true once per switch
+ */
+bool display_take_repaint(void);
+
+/**
+ * @brief Whether the alert that Screen rotation 180° fell back to NORMAL
+ *        is due.  Clears it.  Call it from the task that flips.
+ * @return true once per start at most
+ */
+bool display_take_turn_alert(void);
+
+/**
+ * @brief The time the last display_flip() spent copying turned blocks.
+ * @return Microseconds, 0 in NORMAL.
+ */
+uint32_t display_last_turn_us(void);
 
 /**
  * @brief Backlight at 100 % or 0 %.

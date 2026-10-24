@@ -3144,7 +3144,9 @@ Auswahl springt vom letzten Wert auf den ersten.
   nimmt einen Druck an. Ein Schalter, eine Auswahl, INA228 Adresse und
   Sensor-SCL öffnen kein Tastenfeld, und ein Drag, der auf einem Wert
   beginnt, scrollt und öffnet nichts. Der Zustand des Prüfstands sperrt das
-  Tastenfeld nicht, so wie er die Tasten nicht sperrt.
+  Tastenfeld nicht. Er sperrt die Tasten einer Zeile, `Bilddrehung`,
+  solange der Prüfstand ARMED ist
+  ([PANEL: Bilddrehung](#panel-bilddrehung)).
 - Ein Finger zur Zeit. Solange einer drückt oder scrollt, bewirkt ein zweiter
   Finger auf diesem Bildschirm nichts.
 
@@ -3156,6 +3158,64 @@ Zwei Grenzen:
   Abheben und neues Aufsetzen an. Liegt das neue Aufsetzen auf einer Taste
   und hebt dort ab, ohne sich zu bewegen, ist es ein Tippen. Wie oft der
   GT911 einen bewegten Kontakt in einem Report auslässt, ist nicht gemessen.
+
+### PANEL: Bilddrehung
+
+`Bilddrehung` dreht Bild und Touch um 180°, für ein Panel, das kopfüber
+eingebaut ist.
+
+| Einstellung | Werte | Standard |
+| --- | --- | --- |
+| `Bilddrehung` | NORMAL, 180° | NORMAL |
+
+![Bilddrehung auf 180°, während der Prüfstand ARMED ist: die Zeile hat keine Tasten](img/de/setup-rotation.png)
+
+- Der Flush dreht das Bild. Bei 180° zeichnet jeder Bildschirm das aufrechte
+  Bild in einen logischen Puffer, je einen neben den beiden Frame Buffern
+  (2 x 1.228.800 Byte PSRAM, Pseudo-Static RAM, beim Start in beiden
+  Einstellungen belegt). Jeder Flip kopiert, was der Frame gezeichnet hat,
+  als höchstens 8 Rechtecke aus 16-zeiligen Bändern in den Frame Buffer,
+  den das Panel abtastet, um 180° gedreht, über die PPA (Pixel-Processing
+  Accelerator) des ESP32-P4. NORMAL zeichnet direkt in den Frame Buffer und
+  kopiert nichts. Die eigene Scanrichtung des EK79007 (DCS-Befehl 0x36,
+  DCS: Display Command Set) kann das Bild auf diesem Board nicht drehen:
+  Der Strap an seinem PINCTL-Pin hält die Scanrichtung fest, beim Start wie
+  bei laufendem Video.
+- Die Kopie läuft in der Render-Schleife, im Flip. Der Steuer-Task, dem
+  STOP gehört, wartet nie auf sie. Ihre Zeit je Flip ist der Wert `TURN`
+  der Konsole; auf dem Board ist sie nicht gemessen. Auf dem Host kopiert
+  SERVO LIVE beim Schwenken im Mittel 77.093 px je Frame, MOTOR & ESC LIVE
+  bei ARMED 192.911 px, ein ruhender Bildschirm 0 px (`test_gfx_turn`).
+- Die Kontakte des Glases drehen sich mit dem Bild. Ein Kontakt, den das
+  Glas bei NORMAL am logischen Pixel (x, y) meldet, meldet es bei 180° an
+  (1023 - x, 599 - y). Beide lesen ein Flag: das, das der Flip setzt,
+  sobald der gedrehte Frame auf dem Glas ist. Jeder Bildschirm, das Band,
+  STOP und die Sicherheitsregeln sehen in beiden Einstellungen logische
+  Pixel.
+- Kontakte des Touch-Injectors sind in beiden Einstellungen logische Pixel
+  und drehen sich nicht. Station-Skripte und die Koordinaten im README des
+  Injectors gelten in beiden.
+- Ein Schritt wirkt ab dem nächsten Frame, ohne Neustart, mit einem
+  vollständigen Neuzeichnen und zwei vollständigen Kopien. SPEICHERN behält
+  ihn, und der nächste Start zeichnet schon sein erstes Bild, den
+  Startbildschirm, gedreht.
+- Ein Flip, dessen Kopien länger als 50ms brauchen oder den die PPA
+  ablehnt, schickt seinen Frame ungedreht hinaus. Bild und Touch sind ab
+  diesem Frame NORMAL, das Band sagt `Bilddrehung 180° fehlgeschlagen.
+  NORMAL bis zum Neustart.`, und die Konsole sagt `rotation 180 off: PPA
+  timeout` (oder `PPA error`). Die gespeicherte Einstellung bleibt 180°, und
+  der nächste Start dreht wieder. Eine Kopie, die die PPA nach ihrem
+  Timeout beendet, schreibt ihren Block noch einmal: Dieser Block steht
+  gedreht, bis sein Bildschirm ihn neu zeichnet.
+- Die SRM-Einheit der PPA (Scale, Rotate, Mirror) läuft mit Espressifs
+  Workaround für den Hardwarefehler DIG-734 bei jeder Kopie, so wie
+  Espressifs esp_lvgl_adapter 0.6.4 ihn patcht
+  (`firmware/panel/ppa_dig734.cmake`).
+- Gesperrt, solange der Prüfstand ARMED ist: Die Zeile hat keine Tasten,
+  und KATEGORIE ZURÜCKSETZEN und VERWERFEN lassen sie stehen. Eine Drehung
+  bewegt jedes Bedienelement unter dem Finger weg, STOP eingeschlossen. Die
+  Regel ist die von Leerlaufpuls und Vollpuls auf MOTOR & ESC,
+  EINSTELLUNGEN: ein Wert nur für einen Prüfstand in SAFE.
 
 ### PANEL: der Drehknopf
 

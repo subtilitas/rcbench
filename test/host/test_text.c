@@ -221,8 +221,8 @@ static void drawn_tx(int i, int l)
     }
 }
 
-/** @brief The text faces hold printable ASCII and the German letters; any
- * other code point draws as '?'.  Every string of the table the panel
+/** @brief The text faces hold printable ASCII, the degree sign and the
+ * German letters; any other code point draws as '?'.  Every string of the table the panel
  * draws, in every language, keeps to them: the screens' strings, the
  * settings' words and the servo test's, which the SERVO screen shows.  The
  * Wi-Fi page is a browser's and is not held to them. */
