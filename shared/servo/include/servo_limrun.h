@@ -412,6 +412,7 @@ typedef struct {
     unsigned writes;        /**< register values written                  */
     unsigned write_ops;     /**< writes sent, one that failed included    */
     unsigned sessions;
+    bool     pulses_landed; /**< the pulse write of a set-pulses run landed */
     bool     programmed;    /**< a value differs from the servo's own, or
                                  *   a write failed once sent              */
 

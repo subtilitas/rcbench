@@ -193,13 +193,17 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
         return true;
     }
     /* The mode asked for, said as asked while no search ran: a run that
-     * ended before its first search did not search, program or set. */
+     * ended before its first search did not search or program.  The pulses
+     * are set before the first search, so a pulse write that landed is
+     * said as done whether or not a search followed. */
     const bool ran = r->searched;
+    const bool pulsed = g->set_pulses && r->pulses_landed;
     const servo_str_t mode =
         g->program      ? (ran ? SERVO_STR_L_R_MODE_PROGRAM
                                : SERVO_STR_L_R_MODE_PROGRAM_NONE)
-        : g->set_pulses ? (ran ? SERVO_STR_L_R_MODE_PULSES
-                               : SERVO_STR_L_R_MODE_PULSES_NONE)
+        : g->set_pulses ? (ran      ? SERVO_STR_L_R_MODE_PULSES
+                           : pulsed ? SERVO_STR_L_R_MODE_PULSES_SET_NONE
+                                    : SERVO_STR_L_R_MODE_PULSES_NONE)
                         : (ran ? SERVO_STR_L_R_MODE_SEARCH
                                : SERVO_STR_L_R_MODE_SEARCH_NONE);
     if (text_line(c, mode)) {

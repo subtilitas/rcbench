@@ -6978,6 +6978,13 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_NONE,
     "Modus:           nur Suche; PULSE LOWER "
     "und PULSE UPPER zuerst auf 1000 und "
     "2000us zu setzen (keine Suche gelaufen)")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PULSES_SET_NONE,
+    "Mode:           search only (no search "
+    "ran); PULSE LOWER and PULSE UPPER set to "
+    "1000 and 2000us first",
+    "Modus:           nur Suche (keine Suche "
+    "gelaufen); PULSE LOWER und PULSE UPPER "
+    "zuerst auf 1000 und 2000us gesetzt")
 UI_SERVO_TEXT(SERVO_STR_L_R_SEARCH,
     "Searched:       from %uus out to %uus "
     "and %uus",

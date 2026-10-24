@@ -1109,6 +1109,7 @@ void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
                  + (unsigned)(pulse_dus[SERVO_LIMRUN_P_UPPER]
                               != r->pulse_now[SERVO_LIMRUN_P_UPPER]);
     r->write_ops += 1u;
+    r->pulses_landed = true;
     memcpy(r->pulse_now, pulse_dus, sizeof(r->pulse_now));
     mark_programmed(r);
     r->pulse_op = false;
