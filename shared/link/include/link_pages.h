@@ -359,7 +359,7 @@ enum {
 #define LINK_CC_CEILING_US  2500u
 
 /**
- * The least distance, in microseconds, between a throttle's Idle pulse
+ * @brief The least distance, in microseconds, between a throttle's Idle pulse
  * (CHAN_CFG MIN_US) and its Full pulse (MAX_US).  The panel's keypad for
  * either pulse, the panel's payment of the pair to the IOmcu
  * (outputs_chan_cfg_set_throttle_range()) and the order check ARM waits on

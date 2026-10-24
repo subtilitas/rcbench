@@ -377,7 +377,7 @@ bool settings_cycles(setting_id_t id);
 bool settings_sense_sda_valid(int gpio);
 
 /**
- * Whether Tap pin takes @p gpio: an IOmcu GPIO the RP2350-CAN brings out
+ * @brief Whether Tap pin takes @p gpio: an IOmcu GPIO the RP2350-CAN brings out
  * and does not reserve, outbind_reserved_mask(), that is no ADC pin -- the
  * TONE page refuses GP26 to GP29 of the RP2350A and GP40 to GP47 of the
  * RP2354B.  That leaves 0, 1, 2, 4, 5, 6, 7 and 13 to 22.  A pin an output,

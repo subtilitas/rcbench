@@ -214,9 +214,13 @@ const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
                                      - (int)LINK_CC_THROTTLE_GAP_US
                                : settings_get_int(SET_OUT_MIN_US)
                                      + (int)LINK_CC_THROTTLE_GAP_US;
-        snprintf(buf, n, ui_tr(idle ? TX_KEYPAD_WHY_IDLE_GAP
-                                    : TX_KEYPAD_WHY_FULL_GAP),
-                 (unsigned)bound, (unsigned)LINK_CC_THROTTLE_GAP_US);
+        if (idle) {
+            snprintf(buf, n, TR(KEYPAD_WHY_IDLE_GAP), (unsigned)bound,
+                     (unsigned)LINK_CC_THROTTLE_GAP_US);
+        } else {
+            snprintf(buf, n, TR(KEYPAD_WHY_FULL_GAP), (unsigned)bound,
+                     (unsigned)LINK_CC_THROTTLE_GAP_US);
+        }
         return buf;
     }
     case WHY_PDMINI:
