@@ -617,6 +617,17 @@ are built with the library flags `-Wall -Wextra -Werror -Wshadow -Wconversion
 -Wno-sign-conversion`; `test/host/.clang-tidy` lists the checks that are off
 for them, each with its reason.
 
+cppcheck runs in the job `cppcheck`, beside `Lint and static analysis`,
+which runs clang-tidy over every file on every run. cppcheck keeps its
+build directory (`--cppcheck-build-dir`) between CI runs: it re-reads a
+file when the file or an included file differs from its record, and
+replays the findings of the files it skips. The build directory's cache is
+keyed on the cppcheck version, its options, include paths and
+`.cppcheck-suppress`. A run restores the newest cache its branch can read:
+its own, its pull request's base branch's, then `main`'s; a branch gets a
+cache only from a CI run on it, and `ci.yml` runs on push only for `main`
+and tags.
+
 CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at these
 exact versions, Doxygen 1.18.0 from the official Linux release archive
 (`tools/install_doxygen.sh` checks its SHA-256 against the value in
