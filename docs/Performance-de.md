@@ -267,6 +267,14 @@ Code dahinter: die Render-Schleife liest dann keine Uhr für DRAW und ruft
 für sie nichts auf. CI baut das, zusammen ohne den Touch-Injector, als den
 zusätzlichen Panel-Build.
 
+Release-Images werden mit `RCBENCH_PERF_LOG=OFF` gebaut und geben keine
+dieser Zeilen aus. Der CI-Build, ein lokales `idf.py build` und ein Build
+mit `-D RCBENCH_PERF_LOG=ON` behalten sie; um auf den Quellen eines
+Releases zu messen, ohne das Flag bauen. `tools/check_perf_log.py` hält das
+Release-Image an die Einstellung: Es schlägt fehl, wenn das Image den Text
+der Messung beim Start, den Text des Stack-Scans oder das Symbol
+`scan_stacks` enthält.
+
 Die Konsole ist UART0 mit 115 200 Baud ohne installierten Treiber, neben dem
 USB-Serial/JTAG-Port. Eine Zeile, die nicht in den 128-Byte-Sende-FIFO
 (First In, First Out) der UART passt, hält die Render-Schleife 87us für jedes

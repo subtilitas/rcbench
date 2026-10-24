@@ -684,19 +684,11 @@ jobs:
           fi
 
       # And the default image holds the frame lines' code, the build
-      # without RCBENCH_PERF_LOG none of it.
+      # without RCBENCH_PERF_LOG none of it (tools/check_perf_log.py).
       - name: The frame lines are in the default build only
         run: |
-          for s in scan_stacks "PSRAM probe:" "stack scan:"; do
-            if ! grep -aqF "$s" firmware/panel/build/rcbench-panel.elf; then
-              echo "::error::the default image lacks the frame lines: $s"
-              exit 1
-            fi
-            if grep -aqF "$s" firmware/panel/build-noinject/rcbench-panel.elf; then
-              echo "::error::the build without RCBENCH_PERF_LOG holds: $s"
-              exit 1
-            fi
-          done
+          python3 tools/check_perf_log.py on firmware/panel/build/rcbench-panel.elf
+          python3 tools/check_perf_log.py off firmware/panel/build-noinject/rcbench-panel.elf
 
       - uses: actions/upload-artifact@v7
         with:

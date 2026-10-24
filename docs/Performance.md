@@ -248,6 +248,13 @@ them: the render loop then reads no clock for DRAW and calls nothing for
 them. CI builds that, with the touch injector left out as well, as the
 extra panel build.
 
+Release images are built with `RCBENCH_PERF_LOG=OFF` and print none of
+these lines. The CI build, a local `idf.py build` and a build with
+`-D RCBENCH_PERF_LOG=ON` keep them; to measure on a release's sources,
+build without the flag. `tools/check_perf_log.py` holds the release image
+to the setting: it fails when the image holds the start-up probe's text,
+the stack scan's text or the `scan_stacks` symbol.
+
 The console is UART0 at 115,200 baud with no driver installed, beside the
 USB Serial/JTAG port. A line that does not fit the UART's 128-byte transmit
 FIFO (first in, first out) holds the render loop 87us for each byte past
