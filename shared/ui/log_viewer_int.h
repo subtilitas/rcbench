@@ -26,6 +26,7 @@
 #include "touch_types.h"
 #include "ui_screen.h"
 #include "ui_tabs.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 
 #define SCREEN_W UI_PANEL_W
@@ -306,6 +307,17 @@ _Static_assert(CHIP_X + 4 * CHIP_W + 3 * CHIP_GAP <= LV_R,
 /** @brief The view on screen. */
 typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT, VIEW_TEXT } view_t;
 
+/** @brief The footer message's longest text, bytes with its NUL: a text
+ *         of the table with a LOG_VIEWER_NAME_MAX name in it. */
+#define LV_MSG_MAX 160
+
+/** @brief What the footer message holds. */
+typedef enum {
+    LV_MSG_NONE = 0,      /**< nothing                              */
+    LV_MSG_TEXT,          /**< a text of the table: msg_id          */
+    LV_MSG_ERR            /**< the reader's verdict: msg_err        */
+} lv_msg_kind_t;
+
 typedef struct {
     view_t view;
     log_viewer_io_t io;
@@ -339,7 +351,12 @@ typedef struct {
     int bar_grab;
 
     char name[LOG_VIEWER_NAME_MAX];
-    char message[80];
+    /* The footer message, kept as its text's ID and name, not as words,
+     * so lv_message() words it in the language showing when it is drawn. */
+    lv_msg_kind_t msg_kind;           /* what the message holds          */
+    ui_text_id_t msg_id;              /* LV_MSG_TEXT: the text            */
+    log_err_t msg_err;                /* LV_MSG_ERR: the reader's verdict */
+    char msg_name[LOG_VIEWER_NAME_MAX]; /* the name it formats, or ""     */
     bool message_ok;  /* a result to report, not a failure */
 
     /*
@@ -489,10 +506,36 @@ void lv_close_text(void);
 
 /* --- log_viewer_load.c -------------------------------------------------- */
 
-/* A format, so the compiler checks every call against its arguments --
- * tools/check_formats.py sees the translated ones the same way. */
-void lv_set_message(const char *fmt, ...)
-    __attribute__((format(printf, 1, 2)));
+/**
+ * @brief The footer message says @p id, a refusal or a failure.
+ *
+ * The message keeps the ID and the name, and lv_message() words it in the
+ * language showing, so a change of SET_LANGUAGE rewords it.
+ *
+ * @param id    the text: LOG_CANNOT_OPEN, LOG_IS_FOLDER, LOG_TOO_BIG,
+ *              LOG_CANNOT_DELETE and LOG_DELETED format @p name; any other
+ *              is shown as it is
+ * @param name  the file's name, or NULL
+ */
+void lv_say(ui_text_id_t id, const char *name);
+
+/**
+ * @brief The footer message says the reader's verdict @p err, a failure.
+ * @param err  the verdict of log_csv_analyse(), log_csv_build() or
+ *             log_text_load()
+ */
+void lv_say_err(log_err_t err);
+
+/** @brief The footer message says nothing. */
+void lv_quiet(void);
+
+/**
+ * @brief The footer message in the language showing.
+ * @param buf  takes the message
+ * @param n    bytes at @p buf, LV_MSG_MAX for the longest
+ * @return @p buf, "" for no message; "" also for a NULL @p buf or a zero @p n
+ */
+const char *lv_message(char *buf, size_t n);
 const char *lv_delim_text(char delimiter);
 void lv_run_analysis(void);
 void lv_compute_spans(void);

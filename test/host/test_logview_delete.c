@@ -18,6 +18,7 @@
  * - a_refused_delete_keeps_the_file_listed
  * - a_rescan_or_leaving_the_screen_closes_the_question
  * - the_question_leaves_no_stale_pixels
+ * - the_footer_message_follows_the_language
  *
  * SPDX-License-Identifier: MIT
  */
@@ -275,6 +276,68 @@ TEST_CASE(the_question_leaves_no_stale_pixels)
     }
 }
 
+/**
+ * @brief The footer message in @p lang for @p id with @p name.
+ * @param lang  the language
+ * @param id    the text, a format of one name
+ * @param name  the name
+ * @return the message, in a buffer the next call overwrites
+ */
+static const char *line_in(ui_lang_t lang, ui_text_id_t id, const char *name)
+{
+    static char out[160];
+    snprintf(out, sizeof(out), ui_tr_in(lang, id), name);
+    return out;
+}
+
+/*
+ * The footer message is worded when it is read, so a change of language
+ * rewords a message already standing: a refused delete said in English, a
+ * delete said in German, and the reader's verdict on a file.
+ */
+TEST_CASE(the_footer_message_follows_the_language)
+{
+    fresh();
+    g_remove_refuses = true;
+    ask_to_delete(0);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK(strcmp(ui_tr_in(UI_LANG_EN, TX_LOG_CANNOT_DELETE),
+                 ui_tr_in(UI_LANG_DE, TX_LOG_CANNOT_DELETE)) != 0);
+    CHECK_STR_EQ(log_viewer_message(),
+                 line_in(UI_LANG_EN, TX_LOG_CANNOT_DELETE, "BENCH_01.CSV"));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(log_viewer_message(),
+                 line_in(UI_LANG_DE, TX_LOG_CANNOT_DELETE, "BENCH_01.CSV"));
+    draw();
+
+    /* Said in German, read in English. */
+    g_remove_refuses = false;
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_STR_EQ(log_viewer_message(),
+                 line_in(UI_LANG_DE, TX_LOG_DELETED, "BENCH_01.CSV"));
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(log_viewer_message(),
+                 line_in(UI_LANG_EN, TX_LOG_DELETED, "BENCH_01.CSV"));
+    draw();
+
+    /* The reader's verdict on a header with no row under it. */
+    fresh();
+    snprintf(g_long, sizeof(g_long), "%s", "t,v\n");
+    g_removed[0] = g_removed[1] = g_removed[2] = true;
+    log_viewer_refresh();
+    open_file(5);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_EN, TX_LOG_ERR_NO_ROWS));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(log_viewer_message(),
+                 ui_tr_in(UI_LANG_DE, TX_LOG_ERR_NO_ROWS));
+    draw();
+    ui_text_set_language(UI_LANG_EN);
+    g_long[0] = '\0';
+}
+
 int main(void)
 {
     RUN(delete_asks_first_and_deletes_only_the_file_it_named);
@@ -289,5 +352,6 @@ int main(void)
     RUN(a_refused_delete_keeps_the_file_listed);
     RUN(a_rescan_or_leaving_the_screen_closes_the_question);
     RUN(the_question_leaves_no_stale_pixels);
+    RUN(the_footer_message_follows_the_language);
     return test_summary("logview_delete");
 }
