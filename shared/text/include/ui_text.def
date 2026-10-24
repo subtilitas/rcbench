@@ -236,8 +236,8 @@ UI_TEXT(BH_F_FLASH, 0,
 
 /* ------------------------------------------------------- keypads */
 UI_TEXT(KEYPAD_RANGE, 0,
-    "%.*f to %.*f %s",
-    "%.*f bis %.*f %s")
+    "%.*f to %.*f%s%s",
+    "%.*f bis %.*f%s%s")
 /* Why a setting's keypad refused a value inside its range, in place of the
  * range (ui_setting_keypad.c): a value between 0 and the row's off_below
  * (the row's off_below, maximum and unit, with its step's decimals: a
@@ -246,8 +246,8 @@ UI_TEXT(KEYPAD_RANGE, 0,
  * settings_sense_sda_valid() takes, listed where it is drawn), the other
  * PD mini pin's GPIO. */
 UI_TEXT(KEYPAD_WHY_OFF, 0,
-    "0 or %.*f to %.*f %s",
-    "0 oder %.*f bis %.*f %s")
+    "0 or %.*f to %.*f%s%s",
+    "0 oder %.*f bis %.*f%s%s")
 UI_TEXT(KEYPAD_WHY_SDA, 0,
     "Pins the bus takes: %s",
     "Pins, die der Bus nimmt: %s")
@@ -3497,8 +3497,8 @@ UI_TEXT(ALERT_SUPPLY_NO_READING, 94,
     "No readings from the supply. Output off.",
     "Keine Messwerte vom Netzteil. Ausgang aus.")
 UI_TEXT(ALERT_SUPPLY_TRIP, 94,
-    "Supply exceeded %u.%02u %s. Output off.",
-    "Netzteil hat %u.%02u %s überschritten. Ausgang aus.")
+    "Supply exceeded %u.%02u%s. Output off.",
+    "Netzteil hat %u.%02u%s überschritten. Ausgang aus.")
 UI_TEXT(ALERT_TOUCH_ARM_AGAIN, 94,
     "Touch signal lost while switching to ARMED. Hold ARM again.",
     "Touch-Signal beim Wechsel zu ARMED verloren. ARM erneut halten.")

@@ -3,6 +3,8 @@
 SPDX-License-Identifier: MIT
 """
 
+import re
+
 import pytest
 
 import check_units as cu
@@ -165,3 +167,13 @@ def test_every_text_the_generator_compiles_is_held():
                     *(v["name"] for it in p["items"] for v in it["values"])]
         for s in compiled:
             assert s == "" or s in held, (path.name, s)
+
+
+def test_the_panels_unit_symbols_are_the_checkers():
+    """ui_text.c's k_unit_symbols holds UNITS, "%%" as "%", once each."""
+    src = (cu.ROOT / "shared" / "ui" / "ui_text.c").read_text(encoding="utf-8")
+    start = src.index("k_unit_symbols[] = {")
+    body = src[start:src.index("};", start)]
+    panel = re.findall(r'"([^"]*)"', body)
+    assert len(panel) == len(set(panel))
+    assert set(panel) == {"%" if u == "%%" else u for u in cu.UNITS}

@@ -350,3 +350,76 @@ const char *ui_card_text(card_state_t state, ui_card_at_t at)
 {
     return ui_tr(ui_card_text_id(state, at));
 }
+
+/* ---------------------------------------------------------------- units */
+
+/**
+ * @brief The unit symbols, as tools/check_units.py's UNITS lists them ("%%",
+ *        its printf spelling of "%", as "%"); test_check_units.py holds the
+ *        two lists to each other.
+ */
+static const char *const k_unit_symbols[] = {
+    "kbit/s", "Mbit/s", "bit/s", "kB/s", "MB/s", "KB/s", "B/s", "KiB/s",
+    "MiB/s", "°/s", "deg/s",
+    "mAh", "mWh", "kWh", "Wh", "Ah",
+    "GHz", "MHz", "kHz", "Hz",
+    "µs", "μs", "us", "ns", "ms", "min", "s", "h",
+    "kV", "mV", "µV", "μV", "V", "mA", "µA", "μA", "uA", "nA", "A", "mW",
+    "kW", "W",
+    "mΩ", "kΩ", "MΩ", "Ω", "mOhm", "kOhm", "Ohm", "ohm",
+    "°C", "°F", "°", "%", "deg",
+    "KiB", "MiB", "GiB", "kB", "KB", "MB", "GB", "B", "kbps", "Mbps", "bps",
+    "px", "dBm", "dB", "rpm", "RPM", "eRPM", "fps", "ppm", "sps",
+    "mm", "cm", "µm", "nm", "m", "kg", "g", "Ncm", "Nm", "N",
+    "µF", "μF", "uF", "nF", "pF", "mF", "F", "µH", "uH", "mH", "nH", "H", "K",
+    "C",
+};
+
+/**
+ * @brief Whether @p s, up to its end or its "/", is one of the symbols.
+ * @param s  the part
+ * @param n  its bytes
+ * @return 1 for a symbol, else 0
+ */
+static int is_symbol_part(const char *s, size_t n)
+{
+    for (size_t k = 0; k < sizeof(k_unit_symbols) / sizeof(k_unit_symbols[0]);
+         ++k) {
+        if (strlen(k_unit_symbols[k]) == n
+            && memcmp(k_unit_symbols[k], s, n) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int ui_unit_is_symbol(const char *unit)
+{
+    if (unit == NULL || unit[0] == '\0') {
+        return 0;
+    }
+    if (is_symbol_part(unit, strlen(unit))) {
+        return 1;
+    }
+    /* A compound, every part a symbol: "rpm/V", "%/s". */
+    for (const char *p = unit; *p != '\0';) {
+        const size_t n = strcspn(p, "/");
+        if (n == 0u || !is_symbol_part(p, n)) {
+            return 0;
+        }
+        p += n;
+        if (*p == '/') {
+            ++p;
+            if (*p == '\0') {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+const char *ui_unit_gap(const char *unit)
+{
+    return (unit == NULL || unit[0] == '\0' || ui_unit_is_symbol(unit)) ? ""
+                                                                         : " ";
+}

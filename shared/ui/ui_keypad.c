@@ -439,6 +439,19 @@ static void entry_text(gfx_canvas_t *c, gfx_rect_t box, const char *number,
     }
 }
 
+const char *ui_keypad_range(const ui_keypad_t *k, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (k != NULL) {
+        snprintf(buf, n, TR(KEYPAD_RANGE), k->decimals, (double)k->min,
+                 k->decimals, (double)k->max, ui_unit_gap(k->unit), k->unit);
+    }
+    return buf;
+}
+
 void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
 {
     if (k == NULL || c == NULL || !k->open) {
@@ -457,8 +470,7 @@ void ui_keypad_render(const ui_keypad_t *k, gfx_canvas_t *c)
     if (k->refused && k->reason[0] != '\0') {
         snprintf(range, sizeof(range), "%s", k->reason);   /* why, instead */
     } else {
-        snprintf(range, sizeof(range), TR(KEYPAD_RANGE), k->decimals,
-                 (double)k->min, k->decimals, (double)k->max, k->unit);
+        (void)ui_keypad_range(k, range, sizeof(range));
     }
     const gfx_font_t *hf = header_face(hdr, k->title, range);
     gfx_text_in(c, hdr, k->title, hf, ui_theme_color(UI_C_TEXT), 1,
