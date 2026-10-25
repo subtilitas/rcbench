@@ -792,6 +792,10 @@ static bool known_for_set(const hitec_image_t *img,
 {
     switch (p->enc) {
     case ENC_D_DIR:
+        if (hitec_image_reg(img, 0x5E) > 1u) {
+            return true;   /* 0x5E alone: no mirror */
+        }
+        /* fall through */
     case ENC_D_POS:
         return hitec_image_known(img, 0xC2) && hitec_image_known(img, 0xB2)
                && hitec_image_known(img, 0xB0);
@@ -1137,6 +1141,19 @@ static bool d_op_changed(const hitec_image_t *from, const hitec_image_t *to,
 }
 
 /**
+ * @brief True when a plan from @p from writes item @p it of setting @p op:
+ *        from a direction that is neither 0 nor 1 the direction's setting
+ *        writes 0x5E alone.
+ *
+ */
+static bool d_item_written(const hitec_image_t *from, size_t op,
+                           const d_item_t *it)
+{
+    return !(op == D_OP_DIRECTION && it->how != D_TRIG
+             && hitec_image_reg(from, 0x5E) > 1u);
+}
+
+/**
  * @brief The D series plan; both images are D series.
  *
  */
@@ -1144,7 +1161,6 @@ static hitec_plan_result_t plan_d(const hitec_image_t *from,
                                   const hitec_image_t *to, hitec_plan_t *out)
 {
     uint8_t written[HITEC_MEM_SIZE / 8u] = { 0 };
-    const bool raw_dir = hitec_image_reg(from, 0x5E) > 1u;
     bool unknown = false;
 
     for (size_t i = 0; i < D_OP_COUNT; ++i) {
@@ -1157,7 +1173,8 @@ static hitec_plan_result_t plan_d(const hitec_image_t *from,
         for (size_t j = 0; j < D_ITEM_COUNT && k_d_ops[i][j].addr != 0u;
              ++j) {
             const d_item_t *it = &k_d_ops[i][j];
-            if (it->how != D_CONST && !hitec_image_known(to, it->addr)) {
+            if (it->how != D_CONST && d_item_written(from, i, it)
+                && !hitec_image_known(to, it->addr)) {
                 return HITEC_PLAN_ERR_UNKNOWN;
             }
         }
@@ -1167,10 +1184,7 @@ static hitec_plan_result_t plan_d(const hitec_image_t *from,
             const unsigned bit = 1u << (it->addr / 2u % 8u);
             uint8_t *w = &written[it->addr / 16u];
 
-            if (raw_dir && i == D_OP_DIRECTION && it->how != D_TRIG) {
-                continue;   /* no mirror from a direction not known */
-            }
-            if ((*w & bit) == 0u) {
+            if (d_item_written(from, i, it) && (*w & bit) == 0u) {
                 *w = (uint8_t)(*w | bit);
                 push(out, HITEC_STEP_D_WRITE, it->addr,
                      it->how == D_CONST ? it->value

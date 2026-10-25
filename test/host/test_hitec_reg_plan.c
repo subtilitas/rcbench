@@ -500,6 +500,25 @@ TEST_CASE(a_raw_value_is_replaced_by_a_table_value)
     CHECK_EQ(p.n, 4);
     check_step(&p.step[0], HITEC_STEP_D_WRITE, 0x5E, 1);
     check_step(&p.step[1], HITEC_STEP_D_WRITE, 0xC2, 9000);
+    /* The registers a raw direction does not write are not needed: 0x4C
+     * and the positions unread. */
+    hitec_image_init(&from, HITEC_D);
+    hitec_image_put_reg(&from, 0x5E, 2);
+    to = from;
+    CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION,
+                             HITEC_CCW), HITEC_SET_OK);
+    CHECK_EQ(hitec_plan(&from, &to, &p), HITEC_PLAN_OK);
+    CHECK_EQ(p.n, 3);
+    check_step(&p.step[0], HITEC_STEP_D_WRITE, 0x5E, 1);
+    check_save(&p);
+    /* The same image with a decoded direction needs them for the mirror. */
+    hitec_image_put_reg(&from, 0x5E, 0);
+    to = from;
+    CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION,
+                             HITEC_CCW), HITEC_SET_ERR_UNKNOWN);
+    hitec_image_put_reg(&to, 0x5E, 1);
+    CHECK_EQ(hitec_plan(&from, &to, &p), HITEC_PLAN_ERR_UNKNOWN);
+    CHECK_EQ(p.n, 0);
     /* D series: speed 7 to 30%. */
     d485(&from);
     hitec_image_put_reg(&from, 0x54, 7);

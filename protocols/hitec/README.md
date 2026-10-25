@@ -255,7 +255,7 @@ the name.
 - D series: per setting the registers the HFP-30 writes for it: direction
   0xC2, 0xB2, 0xB0, 0x4C (unchanged), 0x5E, and 0x5E alone from a read
   0x5E that is neither 0 nor 1: the servo's present direction is not
-  known, so the positions are not mirrored; overload protection 0x9C,
+  known, so the positions are not mirrored and need not be read; overload protection 0x9C,
   0x9A = 3, 0x98 = 200; smart sensor 0x72 = 0x4E54, 0x6C, 0x44; every
   other setting its own register. A register goes out once. A plan with a
   write ends with the save and the reboot. `hitec_d_factory_plan()` is

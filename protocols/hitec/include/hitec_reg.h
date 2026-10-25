@@ -631,7 +631,8 @@ bool hitec_writable(uint8_t series, uint8_t addr);
  * 0xB2; right end 0xB0; dead band 0x4E; speed 0x54; fail-safe 0x4C; soft
  * start 0x60; overload protection 0x9C, 0x9A = 3, 0x98 = 200; smart sensor
  * 0x72 = 0x4E54, 0x6C, 0x44.  A register already written with the same
- * value is not written again.  The save and the reboot end a plan with a
+ * value is not written again.  A register the plan does not write need not
+ * be known.  The save and the reboot end a plan with a
  * write.
  *
  * @param from  Image the servo holds.
