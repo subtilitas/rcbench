@@ -1,7 +1,7 @@
 /*
  * The string tables: every language complete, every format converting what
- * the English converts, every string inside the field it is drawn in, and
- * the language following SET_LANGUAGE.
+ * the English converts, every string inside the field it is drawn in, every
+ * pin named "GPIO 13", and the language following SET_LANGUAGE.
  *
  * The widths of the strings a screenshot shows are measured on the screen
  * by tools/render_ui.py --fit; the ones no screenshot reaches carry their
@@ -896,6 +896,104 @@ TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
     CHECK_STR_EQ(ui_unit_gap(NULL), "");
 }
 
+/** @brief One entry of a text table: its macro, its ID and its columns. */
+typedef struct {
+    const char *table;   /**< the macro: "UI_TEXT", "UI_OPTION", ...      */
+    const char *id;      /**< the entry's ID; "" for an option            */
+    const char *en;      /**< the English                                  */
+    const char *de;      /**< the German; NULL shows the English           */
+} text_entry_t;
+
+/** @brief Every entry of every table of ui_text.def, read here from the
+ *  file itself: the screens', the settings' labels, help lines,
+ *  categories and options, the servo test's and the Wi-Fi page's. */
+static const text_entry_t k_entries[] = {
+#define UI_TEXT(id, cells, en, de) { "UI_TEXT", #id, (en), (de) },
+#define UI_SETTING_LABEL(id, en, de) { "UI_SETTING_LABEL", #id, (en), (de) },
+#define UI_SETTING_HELP(id, en, de) { "UI_SETTING_HELP", #id, (en), (de) },
+#define UI_SETTING_CATEGORY(id, en, de) \
+    { "UI_SETTING_CATEGORY", #id, (en), (de) },
+#define UI_OPTION(en, de) { "UI_OPTION", "", (en), (de) },
+#define UI_SERVO_TEXT(id, en, de) { "UI_SERVO_TEXT", #id, (en), (de) },
+#define UI_WEB_TEXT(id, en, de) { "UI_WEB_TEXT", #id, (en), (de) },
+#include "ui_text.def"
+};
+
+/**
+ * @brief Where @p s names a pin the old way: "GP" directly followed by a
+ *        digit or by a conversion ("GP13", "GP%u", "GP%d").  "GPIO 13",
+ *        "GPIO %u" and "GPS" are not.
+ * @param s  the string, or NULL
+ * @return the "GP" found, or NULL
+ */
+static const char *old_pin_name(const char *s)
+{
+    for (const char *p = s; p != NULL && (p = strstr(p, "GP")) != NULL;
+         ++p) {
+        if ((p[2] >= '0' && p[2] <= '9') || p[2] == '%') {
+            return p;
+        }
+    }
+    return NULL;
+}
+
+/** @brief The entries allowed to write a pin as "GPn", by ID, each with
+ *  its reason.  None: every entry names a pin "GPIO n". */
+static const struct {
+    const char *id;
+    const char *why;
+} k_old_pin_allowed[] = {
+    { NULL, NULL },
+};
+
+/**
+ * @brief Whether entry @p id is listed in k_old_pin_allowed with a reason.
+ * @param id  the entry's ID
+ * @return true for a listed entry whose reason is written
+ */
+static bool old_pin_allowed(const char *id)
+{
+    for (size_t k = 0; k_old_pin_allowed[k].id != NULL; ++k) {
+        if (strcmp(k_old_pin_allowed[k].id, id) == 0) {
+            return k_old_pin_allowed[k].why != NULL
+                   && k_old_pin_allowed[k].why[0] != '\0';
+        }
+    }
+    return false;
+}
+
+/* Every entry of every text table, English and German, names a pin as
+ * ui_pin_name() does, "GPIO 13", and a conversion as "GPIO %u": no "GP"
+ * directly followed by a digit or a conversion.  The walk reads ui_text.def
+ * itself, so a new table entry is held as soon as it is written. */
+TEST_CASE(every_text_names_a_pin_gpio_and_its_number)
+{
+    CHECK(old_pin_name("GP13") != NULL);
+    CHECK(old_pin_name("PIN GP%u") != NULL);
+    CHECK(old_pin_name("TX GP%d RX GP%d") != NULL);
+    CHECK(old_pin_name("SLICE OF GPIO 4, GP0") != NULL);
+    CHECK(old_pin_name("GPIO 13") == NULL);
+    CHECK(old_pin_name("GPIO %u: SAME PWM CHANNEL AS GPIO %u") == NULL);
+    CHECK(old_pin_name("GPS_ GP") == NULL);
+    CHECK(old_pin_name(NULL) == NULL);
+    const size_t n = sizeof(k_entries) / sizeof(k_entries[0]);
+    CHECK(n > (size_t)TX_COUNT);
+    for (size_t i = 0; i < n; ++i) {
+        const text_entry_t *e = &k_entries[i];
+        if (old_pin_allowed(e->id)) {
+            continue;
+        }
+        if (old_pin_name(e->en) != NULL) {
+            T_FAIL("%s(%s) English names a pin GPn: \"%s\"", e->table,
+                   e->id, e->en);
+        }
+        if (old_pin_name(e->de) != NULL) {
+            T_FAIL("%s(%s) German names a pin GPn: \"%s\"", e->table,
+                   e->id, e->de);
+        }
+    }
+}
+
 /* A pin word leads its number ("GPIO 4"); no other unit does, and no unit
  * that is not the exact word. */
 TEST_CASE(only_the_pin_word_leads_its_number)
@@ -960,6 +1058,7 @@ int main(void)
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     RUN(the_card_slot_has_three_words_at_every_place);
     RUN(a_number_joins_a_unit_symbol_and_spaces_a_word);
+    RUN(every_text_names_a_pin_gpio_and_its_number);
     RUN(only_the_pin_word_leads_its_number);
     RUN(a_pin_holder_is_named_in_the_language_showing);
     return test_summary("text");

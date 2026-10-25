@@ -6,7 +6,8 @@
  * Pure functions, no drawing and no I/O (input/output).  Every screen and
  * report that names a pin formats it here, so a pin reads the same
  * everywhere.  A text table entry that names a pin writes the same form,
- * "GPIO %u" (test_text holds every entry to it).
+ * "GPIO %u": test_text fails on any entry of ui_text.def, English or
+ * German, with "GP" directly followed by a digit or a conversion.
  *
  * SPDX-License-Identifier: MIT
  */
