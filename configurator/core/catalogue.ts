@@ -823,7 +823,7 @@ const CAN_RESERVED: Text = t(
   'Vom CAN-Controller der Platine belegt.',
 );
 
-/** Terminal prints of the Osoyoo breakout board that differ from the pad name. */
+/** Terminal prints of the Osoyoo breakout board that differ from the print of the pad. */
 const BREAKOUT_LABELS: Record<number, string> = {
   31: '26 A0',
   32: '27 A1',
@@ -845,17 +845,19 @@ const PAD_ROWS: Array<[number, string, number | null, number]> = [
   [37, '3V3_EN', null, 98], [38, 'GND', null, 99], [39, 'VSYS', null, 100], [40, 'VBUS', null, 101],
 ];
 
-const pads: Pad[] = PAD_ROWS.map(([n, name, gpio, line]): Pad => {
+const pads: Pad[] = PAD_ROWS.map(([n, print, gpio, line]): Pad => {
   const pad: Pad = {
     n,
-    name,
+    // A GPIO pad is named "GPIO 13"; the second column of PAD_ROWS is the
+    // print of the boards ("GP13"), which the Osoyoo breakout board keeps.
+    name: gpio !== null ? `GPIO ${gpio}` : print,
     gpio,
-    breakoutLabel: BREAKOUT_LABELS[n] ?? name,
+    breakoutLabel: BREAKOUT_LABELS[n] ?? print,
     // The row of the firmware table opens with the GPIO and the pad, or with
     // the pad and its kind.
     src: repo(OUT_BIND, line, gpio !== null ? `{ ${gpio}, ${n},` : `{ ${n}, LINK_PAD_`),
   };
-  // GP8 to GP12 are the interrupt and the SPI bus of the CAN controller.
+  // GPIO 8 to GPIO 12 are the interrupt and the SPI bus of the CAN controller.
   if (gpio !== null && gpio >= 8 && gpio <= 12) pad.reserved = CAN_RESERVED;
   return pad;
 });
@@ -926,8 +928,8 @@ const SERVO_STRIP_NOTE = t(
   'Für ein kleines Servo. Mit dem Jumper V Selector auf 5V zieht das Servo aus dem DC-Eingang der Platine über den XL1509-Wandler, mit dem Jumper auf 3V3 aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist.',
 );
 const STRIP_V = t(
-  'V pin of the S V G strip at GP2 of the Osoyoo breakout board',
-  'V-Pin der S-V-G-Leiste an GP2 der Osoyoo-Breakout-Platine',
+  'V pin of the S V G strip at GPIO 2 (print GP2) of the Osoyoo breakout board',
+  'V-Pin der S-V-G-Leiste an GPIO 2 (Aufdruck GP2) der Osoyoo-Breakout-Platine',
 );
 const DC_IN_POS = t(
   'plus of the DC input of the Osoyoo breakout board: the centre pin of the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
@@ -991,8 +993,8 @@ const wires: Wire[] = [
     n: 6, kind: 'wire', a: 'estop.NC2', b: 'pad.5', net: 'hb_in', cls: 'hb',
     signal: HB,
     note: t(
-      'Optional: 10 kΩ from GP3 to GND on a long lead.',
-      'Optional: 10 kΩ von GP3 nach GND bei langer Leitung.',
+      'Optional: 10 kΩ from GPIO 3 to GND on a long lead.',
+      'Optional: 10 kΩ von GPIO 3 nach GND bei langer Leitung.',
     ),
     when: { has: 'estop' }, stage: 5, route: { kind: 'L', lane: 4 }, pin: 'fixed',
     src: guide('wires'),
@@ -1150,8 +1152,8 @@ const wires: Wire[] = [
     n: 26, kind: 'wire', a: 'pad.21', b: 'ina3221.SDA', net: 'sda', cls: 'sda',
     signal: SDA,
     note: t(
-      'One bus for all sensors, 400 kHz. No output on GP16 or GP17.',
-      'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
+      'One bus for all sensors, 400 kHz. No output on GPIO 16 or GPIO 17.',
+      'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GPIO 16 oder GPIO 17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
     src: repo('docs/FirstRun.md', 502, '| SDA | GP16 (pad 21) |'),
@@ -1345,8 +1347,8 @@ const wires: Wire[] = [
     n: 52, kind: 'wire', a: 'pad.29', b: 'tap.OUT', net: 'tap', cls: 'phase',
     signal: t('tap signal, 3.22 V or less', 'Abgriffsignal, höchstens 3,22 V'),
     note: t(
-      'Under 30 cm. No output on GP22 while the tap is on.',
-      'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.',
+      'Under 30 cm. No output on GPIO 22 while the tap is on.',
+      'Unter 30 cm. Kein Ausgang auf GPIO 22, solange der Abgriff eingeschaltet ist.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
     src: repo(SETTINGS, 166, 'the pin GP22 (pad 29)'),
@@ -1355,8 +1357,8 @@ const wires: Wire[] = [
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
     signal: t('zener clamp', 'Z-Dioden-Klemme'),
     note: t(
-      '3.0 V zener diode across the two adjacent pads, band (cathode) to GP22.',
-      '3,0-V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GP22.',
+      '3.0 V zener diode across the two adjacent pads, band (cathode) to GPIO 22.',
+      '3,0-V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GPIO 22.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'Z' }, pin: 'default',
     src: guide('wires'),
@@ -1717,16 +1719,16 @@ const checks: Check[] = [
   {
     id: 'servo-pin', kind: 'note',
     text: t(
-      'GP2 for the servo is a proposal of this page. The example of the build guide is GP0. GP0 and GP16 share a compare register, and GP16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
-      'GP2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GP0. GP0 und GP16 teilen sich ein Vergleichsregister, und GP16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
+      'GPIO 2 for the servo is a proposal of this page. The example of the build guide is GPIO 0. GPIO 0 and GPIO 16 share a compare register, and GPIO 16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
+      'GPIO 2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GPIO 0. GPIO 0 und GPIO 16 teilen sich ein Vergleichsregister, und GPIO 16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
     ),
     when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 133, 'Six of those pairs are both free on the header the IOmcu offers: GP0 and'),
   },
   {
     id: 'pd-pins', kind: 'note',
     text: t(
-      'GP7 (PD mini TX) and GP6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
-      'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
+      'GPIO 7 (PD mini TX) and GPIO 6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
+      'GPIO 7 (PD mini TX) und GPIO 6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
     ),
     when: { has: 'pdmini' }, src: OWNER,
   },
@@ -1850,16 +1852,16 @@ const checks: Check[] = [
   {
     id: 'strip-esc', kind: 'note',
     text: t(
-      'Osoyoo breakout board: the ESC lead uses the S and G pins of the strip at GP5 only. The V pin in the middle carries the voltage of the jumper V Selector and stays free: the plus wire of the ESC lead is connected nowhere.',
-      'Osoyoo-Breakout-Platine: Das ESC-Kabel nutzt nur die Pins S und G der Leiste an GP5. Der V-Pin in der Mitte führt die Spannung des Jumpers V Selector und bleibt frei: Die Plusader des ESC-Kabels wird nirgends angeschlossen.',
+      'Osoyoo breakout board: the ESC lead uses the S and G pins of the strip at GPIO 5 (print GP5) only. The V pin in the middle carries the voltage of the jumper V Selector and stays free: the plus wire of the ESC lead is connected nowhere.',
+      'Osoyoo-Breakout-Platine: Das ESC-Kabel nutzt nur die Pins S und G der Leiste an GPIO 5 (Aufdruck GP5). Der V-Pin in der Mitte führt die Spannung des Jumpers V Selector und bleibt frei: Die Plusader des ESC-Kabels wird nirgends angeschlossen.',
     ),
     when: { all: [{ has: 'esc' }, { opt: 'connection', is: 'osoyoo' }] }, src: OWNER,
   },
   {
     id: 'strip-servo-plus', kind: 'note',
     text: t(
-      'Osoyoo breakout board, servo supply other than the strip: the servo lead connects only its signal and GND to the board, at the S pin of the strip at GP2 (GP13 with the servo programmer) and a G pin. Its plus wire goes to the servo supply, the external supply or the PD mini, as the drawing shows; with the INA3221 board in the setup it goes to VIN1- of that board, and the supply to VIN1+. The V pin of the strip stays free. All 40 V pins are 1 net fed through the jumper V Selector: a supply on 1 V pin reaches every strip and the output of the converter or the regulator.',
-      'Osoyoo-Breakout-Platine, Servoversorgung nicht über die Leiste: Das Servokabel verbindet nur Signal und GND mit der Platine, am S-Pin der Leiste an GP2 (GP13 mit dem Servo-Programmierer) und an einem G-Pin. Seine Plusader geht an die Servoversorgung, die externe Versorgung oder den PD mini, wie die Zeichnung zeigt; mit der INA3221-Platine im Aufbau geht sie an VIN1- dieser Platine und die Versorgung an VIN1+. Der V-Pin der Leiste bleibt frei. Alle 40 V-Pins sind 1 Netz, gespeist über den Jumper V Selector: Eine Versorgung an 1 V-Pin erreicht jede Leiste und den Ausgang des Wandlers oder des Reglers.',
+      'Osoyoo breakout board, servo supply other than the strip: the servo lead connects only its signal and GND to the board, at the S pin of the strip at GPIO 2 (print GP2; GPIO 13 with the servo programmer) and a G pin. Its plus wire goes to the servo supply, the external supply or the PD mini, as the drawing shows; with the INA3221 board in the setup it goes to VIN1- of that board, and the supply to VIN1+. The V pin of the strip stays free. All 40 V pins are 1 net fed through the jumper V Selector: a supply on 1 V pin reaches every strip and the output of the converter or the regulator.',
+      'Osoyoo-Breakout-Platine, Servoversorgung nicht über die Leiste: Das Servokabel verbindet nur Signal und GND mit der Platine, am S-Pin der Leiste an GPIO 2 (Aufdruck GP2; GPIO 13 mit dem Servo-Programmierer) und an einem G-Pin. Seine Plusader geht an die Servoversorgung, die externe Versorgung oder den PD mini, wie die Zeichnung zeigt; mit der INA3221-Platine im Aufbau geht sie an VIN1- dieser Platine und die Versorgung an VIN1+. Der V-Pin der Leiste bleibt frei. Alle 40 V-Pins sind 1 Netz, gespeist über den Jumper V Selector: Eine Versorgung an 1 V-Pin erreicht jede Leiste und den Ausgang des Wandlers oder des Reglers.',
     ),
     when: { all: [{ has: 'servo' }, { opt: 'connection', is: 'osoyoo' }, { any: [{ has: 'pdmini' }, { opt: 'servoPower', is: 'external' }] }] },
     src: OWNER,
@@ -1875,8 +1877,8 @@ const checks: Check[] = [
   {
     id: 'prog-target', kind: 'note',
     text: t(
-      'Servo programmer: the servo is on the programming port, GP13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GP13 leaves the port without a pin.',
-      'Servo-Programmierer: Das Servo hängt am Programmierport, GP13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GP13 lässt den Port ohne Pin.',
+      'Servo programmer: the servo is on the programming port, GPIO 13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GPIO 13 leaves the port without a pin.',
+      'Servo-Programmierer: Das Servo hängt am Programmierport, GPIO 13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GPIO 13 lässt den Port ohne Pin.',
     ),
     when: SERVO_PROG, src: repo(PROGRAMMER, 85, "| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) |"),
   },
@@ -1901,8 +1903,8 @@ const checks: Check[] = [
   {
     id: 'prog-level', kind: 'unknown',
     text: t(
-      "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
-      'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
+      "High level of the servo's reply on GPIO 13: not measured, at most 5 V and typically 3.3 V. GPIO 13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
+      'Pegel der Antwort des Servos an GPIO 13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GPIO 13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
     when: SERVO_PROG, src: repo(PROGRAMMER, 193, 'The level is not measured. GP13 is rated 5.5V while the'),
   },
@@ -1941,8 +1943,8 @@ const checks: Check[] = [
   {
     id: 'strip-measure', kind: 'measure',
     text: t(
-      'Osoyoo breakout board, output check: measure the V pin of the strip at GP2 to the G pin of the same strip before the servo is plugged in. Expected per position of the jumper V Selector: 5V with a DC supply connected and the switch on ON, the output of the converter, 5 V nominal (its range is in the converter entry); 5V without a DC supply or with the switch on OFF, 0 V; 3V3, 3.3 V where the regulator is powered (whether USB alone powers it is not resolved).',
-      'Osoyoo-Breakout-Platine, Ausgangsprüfung: Vor dem Einstecken des Servos den V-Pin der Leiste an GP2 gegen den G-Pin derselben Leiste messen. Erwartet je Stellung des Jumpers V Selector: 5V mit angeschlossener DC-Versorgung und Schalter auf ON der Ausgang des Wandlers, 5 V nominal (sein Bereich steht im Wandler-Eintrag); 5V ohne DC-Versorgung oder mit Schalter auf OFF 0 V; 3V3 3,3 V, wo der Regler versorgt ist (ob USB allein ihn versorgt, ist nicht geklärt).',
+      'Osoyoo breakout board, output check: measure the V pin of the strip at GPIO 2 (print GP2) to the G pin of the same strip before the servo is plugged in. Expected per position of the jumper V Selector: 5V with a DC supply connected and the switch on ON, the output of the converter, 5 V nominal (its range is in the converter entry); 5V without a DC supply or with the switch on OFF, 0 V; 3V3, 3.3 V where the regulator is powered (whether USB alone powers it is not resolved).',
+      'Osoyoo-Breakout-Platine, Ausgangsprüfung: Vor dem Einstecken des Servos den V-Pin der Leiste an GPIO 2 (Aufdruck GP2) gegen den G-Pin derselben Leiste messen. Erwartet je Stellung des Jumpers V Selector: 5V mit angeschlossener DC-Versorgung und Schalter auf ON der Ausgang des Wandlers, 5 V nominal (sein Bereich steht im Wandler-Eintrag); 5V ohne DC-Versorgung oder mit Schalter auf OFF 0 V; 3V3 3,3 V, wo der Regler versorgt ist (ob USB allein ihn versorgt, ist nicht geklärt).',
     ),
     when: SERVO_STRIP, src: OSOYOO_SCHEMATIC,
   },
@@ -2013,16 +2015,16 @@ const checks: Check[] = [
   {
     id: 'strip-plug', kind: 'note',
     text: t(
-      'Osoyoo breakout board: the servo lead plugs onto the strip at GP2. S carries the signal of wire 7, V the plus of wire 61 and G the GND of wire 8. The plug replaces these 3 wires.',
-      'Osoyoo-Breakout-Platine: Das Servokabel steckt auf der Leiste an GP2. S führt das Signal von Draht 7, V das Plus von Draht 61 und G das GND von Draht 8. Der Stecker ersetzt diese 3 Drähte.',
+      'Osoyoo breakout board: the servo lead plugs onto the strip at GPIO 2 (print GP2). S carries the signal of wire 7, V the plus of wire 61 and G the GND of wire 8. The plug replaces these 3 wires.',
+      'Osoyoo-Breakout-Platine: Das Servokabel steckt auf der Leiste an GPIO 2 (Aufdruck GP2). S führt das Signal von Draht 7, V das Plus von Draht 61 und G das GND von Draht 8. Der Stecker ersetzt diese 3 Drähte.',
     ),
     when: { all: [SERVO_STRIP, SERVO_OUTPUTS, { not: { has: 'ina3221' } }] }, src: OWNER,
   },
   {
     id: 'strip-prog', kind: 'note',
     text: t(
-      'Osoyoo breakout board with the servo programmer: the servo lead does not plug onto the strip at GP2 as a whole. S of the lead goes to GP13 by wire 64, the plus and GND go where the drawing shows them. The S pin of the strip at GP2 stays free.',
-      'Osoyoo-Breakout-Platine mit dem Servo-Programmierer: Das Servokabel steckt nicht als Ganzes auf der Leiste an GP2. S des Kabels geht über Draht 64 an GP13, Plus und GND gehen dorthin, wo die Zeichnung sie zeigt. Der S-Pin der Leiste an GP2 bleibt frei.',
+      'Osoyoo breakout board with the servo programmer: the servo lead does not plug onto the strip at GPIO 2 (print GP2) as a whole. S of the lead goes to GPIO 13 by wire 64, the plus and GND go where the drawing shows them. The S pin of the strip at GPIO 2 stays free.',
+      'Osoyoo-Breakout-Platine mit dem Servo-Programmierer: Das Servokabel steckt nicht als Ganzes auf der Leiste an GPIO 2 (Aufdruck GP2). S des Kabels geht über Draht 64 an GPIO 13, Plus und GND gehen dorthin, wo die Zeichnung sie zeigt. Der S-Pin der Leiste an GPIO 2 bleibt frei.',
     ),
     when: { all: [SERVO_STRIP, SERVO_PROG] }, src: OWNER,
   },

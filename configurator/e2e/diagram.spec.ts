@@ -474,7 +474,7 @@ for (const [board, option] of [['soldered pads', 'pd'], ['screw terminal board',
       await expect(wire.locator('rect.cb')).toHaveCount(1);
       await expect(wire.locator('rect.cbd')).toHaveCount(1);
       const text = (await wire.locator('text.ct').allTextContents()).join(' ');
-      expect(text).toMatch(lang === 'en' ? /^3\.0 V zener diode, band to .*GP22/ : /^3,0-V-Z-Diode, Ring an .*GP22/);
+      expect(text).toMatch(lang === 'en' ? (option === 'pd' ? /^3\.0 V zener diode, band to .*GPIO 22/ : /^3\.0 V zener diode, band to .*GP22/) : (option === 'pd' ? /^3,0-V-Z-Diode, Ring an .*GPIO 22/ : /^3,0-V-Z-Diode, Ring an .*GP22/));
       // The band lies inside the body, and the body lies inside the picture.
       const box = async (sel: string) => (await wire.locator(sel).boundingBox())!;
       const [body, band, pic] = [await box('rect.cb'), await box('rect.cbd'), (await page.locator('svg.picture').boundingBox())!];

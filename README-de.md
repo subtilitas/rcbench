@@ -58,7 +58,7 @@ wirken beim Aufsetzen des Fingers, nicht beim Abheben.
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des IOmcu und ein STOP-Kommando über
 den Link. Die Heartbeat-Leitung läuft von IO28 des Panels (`PANEL_HEARTBEAT_PIN`,
-am 12-poligen Header P3 des 7-Zoll-ESP32-P4-Boards) zu GP3 des IOmcu. Keine
+am 12-poligen Header P3 des 7-Zoll-ESP32-P4-Boards) zu GPIO 3 des IOmcu. Keine
 Platine trägt das retriggerbare Monoflop des Heartbeats. Die Firmware an
 beiden Enden schaltet die Ausgänge, und dahinter sitzt keine
 Hardware-Rückfallebene.

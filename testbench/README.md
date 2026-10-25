@@ -390,19 +390,19 @@ Proposed channel map, to be checked against the wiring as built:
 
 | Channel | Signal | Source | Note |
 |---|---|---|---|
-| 0 | GP0 output | IOmcu | whatever OUTPUTS binds first |
-| 1 | GP1 output | IOmcu | |
-| 2 | GP2 output | IOmcu | the servo screen's own pin |
-| 3 | heartbeat | panel GPIO28 (IO28 of header P3) to IOmcu GP3 | an edge every 20ms (40ms cycle), the safety line |
-| 4 | CAN SCK | IOmcu GP10, pad 14 | the XL2515's SPI clock |
-| 5 | CAN MOSI | IOmcu GP11, pad 15 | |
-| 6 | CAN MISO | IOmcu GP12, pad 16 | with SCK and MOSI, every register the driver writes |
-| 7 | CAN CS | IOmcu GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
+| 0 | GPIO 0 output | IOmcu | whatever OUTPUTS binds first |
+| 1 | GPIO 1 output | IOmcu | |
+| 2 | GPIO 2 output | IOmcu | the servo screen's own pin |
+| 3 | heartbeat | panel GPIO28 (IO28 of header P3) to IOmcu GPIO 3 | an edge every 20ms (40ms cycle), the safety line |
+| 4 | CAN SCK | IOmcu GPIO 10, pad 14 | the XL2515's SPI clock |
+| 5 | CAN MOSI | IOmcu GPIO 11, pad 15 | |
+| 6 | CAN MISO | IOmcu GPIO 12, pad 16 | with SCK and MOSI, every register the driver writes |
+| 7 | CAN CS | IOmcu GPIO 9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
 | 8 | RXCAN | XL2515 to transceiver | the bit stream itself, which is when a frame actually arrived |
 | 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the injector at 0x14 |
 | 10 | touch SDA | panel's I²C bus | with SCL, which address answered and what it said |
 | 11 | DShot reply | ESC to IOmcu | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
-| 12 | KST port | IOmcu GP13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
+| 12 | KST port | IOmcu GPIO 13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
 | 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
 | 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |

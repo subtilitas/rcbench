@@ -34,8 +34,8 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Liest den Winkel des Ruderhorns mit einem AS5600-Magnetsensor an der Abtriebswelle: 12 Bit, 500 Messungen pro Sekunde.',
   ),
   servoprog: t(
-    'Reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servo signal moves to the programming port, GP13.',
-    'Liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Das Servosignal wechselt an den Programmierport, GP13.',
+    'Reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servo signal moves to the programming port, GPIO 13.',
+    'Liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Das Servosignal wechselt an den Programmierport, GPIO 13.',
   ),
   esc: t(
     'Sends a PWM or DShot throttle signal to an ESC over signal and GND. The ESC takes its power from its own battery (ESC power A) or from the PD mini (ESC power B).',

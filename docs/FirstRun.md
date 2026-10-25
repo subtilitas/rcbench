@@ -312,7 +312,7 @@ is not traced:
 | | |
 |---|---|
 | Panel end | **GPIO28**, IO28 of the 12-pin header P3 of the 7-inch ESP32-P4 board (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
-| IOmcu end | **GP3** |
+| IOmcu end | **GPIO 3** |
 | Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the IOmcu is healthy: it switches to SAFE after 150ms of silence. What is uncovered is a panel that stops beating while the IOmcu cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
 
 Without this wire the IOmcu refuses every switch to ARMED, and that is the interlock
@@ -328,7 +328,7 @@ working, not a fault.
 
 So the line must be edging for roughly **80ms** before a switch to ARMED can succeed.
 
-**On the scope, at GP3:** a square wave, edge to edge 20ms. If the gap ever
+**On the scope, at GPIO 3:** a square wave, edge to edge 20ms. If the gap ever
 exceeds 150ms the IOmcu drops it and the next switch to ARMED is refused.
 
 **Where the edges come from:** the panel's control task, inside its poll loop.
@@ -408,16 +408,16 @@ Every one of these is host-tested. **None of the numbers below has been seen on 
 Use a **servo**, not the ESC. A servo is the forgiving case and the one the
 scope reads most easily.
 
-**Pins free for an output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13 to GP22
-and GP26 to GP28. GP13 is the programming port's pin on an IOmcu that
+**Pins free for an output:** GPIO 0, GPIO 1, GPIO 2, GPIO 4, GPIO 5, GPIO 6, GPIO 7, GPIO 13 to GPIO 22
+and GPIO 26 to GPIO 28. GPIO 13 is the programming port's pin on an IOmcu that
 has stored none and is refused for an output until the port's pin is moved
 ([Link](Link.md#the-programming-ports)).
-**Reserved and refused:** GP3 (heartbeat), GP8–GP12 (CAN), GP23, GP24, GP25 and
-GP29 (used by the module, not on the header) and GP30 and up (not on the part).
+**Reserved and refused:** GPIO 3 (heartbeat), GPIO 8–GPIO 12 (CAN), GPIO 23, GPIO 24, GPIO 25 and
+GPIO 29 (used by the module, not on the header) and GPIO 30 and up (not on the part).
 **Refused as a second PWM pin:** a pin whose PWM compare register is already
 taken by a bound pin. On the RP2350 the slice is `(pin / 2) modulo 8` below
-GP32 and the channel is the pin's low bit, so GP0 and GP16, GP1 and GP17, GP2
-and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 are pairs that share one
+GPIO 32 and the channel is the pin's low bit, so GPIO 0 and GPIO 16, GPIO 1 and GPIO 17, GPIO 2
+and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22 are pairs that share one
 compare register. The second of a pair is refused rather than muxed onto the
 first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
@@ -487,7 +487,7 @@ supply.
 **Set it up on the panel.** SETUP → INTERFACES: `INA228` ON; SETUP →
 SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
 above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1Ω on each
-channel and CH1 watching OUT 1, SDA on GP16 and SCL on GP17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
+channel and CH1 watching OUT 1, SDA on GPIO 16 and SCL on GPIO 17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
 parts at the page's defaults while no set-up is stored in flash:
 
 ```bash
@@ -499,8 +499,8 @@ cmake --build firmware/iomcu/build-sense
 
 | Wire | From | To |
 |---|---|---|
-| SDA | GP16 (pad 21) | INA3221 SDA, MATEK SDA |
-| SCL | GP17 (pad 22) | INA3221 SCL, MATEK SCL |
+| SDA | GPIO 16 (pad 21) | INA3221 SDA, MATEK SDA |
+| SCL | GPIO 17 (pad 22) | INA3221 SCL, MATEK SCL |
 | Pull-ups | 2.2kΩ from SDA and from SCL | 3V3 (pad 36) |
 | INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |
 | MATEK power | VBUS (pad 40, 5V from USB), GND | MATEK 5V, G |
@@ -829,8 +829,8 @@ clipped.
 
 **More than one output.** `ch=` in a `$C` or `$D` line is the output
 channel, not the pin: the channels count from 0 over the bound pins in
-ascending pin order, 1 channel per PWM pin. With GP0, GP1, GP2 and GP4
-bound, GP2 is channel 2 and GP4 is channel 3. The shunt carries the
+ascending pin order, 1 channel per PWM pin. With GPIO 0, GPIO 1, GPIO 2 and GPIO 4
+bound, GPIO 2 is channel 2 and GPIO 4 is channel 3. The shunt carries the
 current of every servo on the supply, and the SERVO screen commands every
 servo output in the same frame. The tool replays no command that has
 another command within 30ms of it, so with 2 servo outputs bound it
@@ -936,7 +936,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 
 | Symptom | Look here first |
 |---|---|
-| Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150ms. Scope GP3. |
+| Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150ms. Scope GPIO 3. |
 | Switch to ARMED refused, no obvious reason | Touch dead for 500ms blocks it. Touch the panel. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
 | Heartbeat drops at the first link-up | **The drawing transfer or the flash keeper.** See §4. |

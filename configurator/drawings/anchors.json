@@ -683,8 +683,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-1",
      "label": {
-      "en": "GP0",
-      "de": "GP0"
+      "en": "GPIO 0",
+      "de": "GPIO 0"
      }
     },
     "pad.40": {
@@ -703,8 +703,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-2",
      "label": {
-      "en": "GP1",
-      "de": "GP1"
+      "en": "GPIO 1",
+      "de": "GPIO 1"
      }
     },
     "pad.39": {
@@ -743,8 +743,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-4",
      "label": {
-      "en": "GP2",
-      "de": "GP2"
+      "en": "GPIO 2",
+      "de": "GPIO 2"
      }
     },
     "pad.37": {
@@ -763,8 +763,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-5",
      "label": {
-      "en": "GP3",
-      "de": "GP3"
+      "en": "GPIO 3",
+      "de": "GPIO 3"
      }
     },
     "pad.36": {
@@ -783,8 +783,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-6",
      "label": {
-      "en": "GP4",
-      "de": "GP4"
+      "en": "GPIO 4",
+      "de": "GPIO 4"
      }
     },
     "pad.35": {
@@ -803,8 +803,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-7",
      "label": {
-      "en": "GP5",
-      "de": "GP5"
+      "en": "GPIO 5",
+      "de": "GPIO 5"
      }
     },
     "pad.34": {
@@ -813,8 +813,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-34",
      "label": {
-      "en": "GP28",
-      "de": "GP28"
+      "en": "GPIO 28",
+      "de": "GPIO 28"
      }
     },
     "pad.8": {
@@ -843,8 +843,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-9",
      "label": {
-      "en": "GP6",
-      "de": "GP6"
+      "en": "GPIO 6",
+      "de": "GPIO 6"
      }
     },
     "pad.32": {
@@ -853,8 +853,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-32",
      "label": {
-      "en": "GP27",
-      "de": "GP27"
+      "en": "GPIO 27",
+      "de": "GPIO 27"
      }
     },
     "pad.10": {
@@ -863,8 +863,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-10",
      "label": {
-      "en": "GP7",
-      "de": "GP7"
+      "en": "GPIO 7",
+      "de": "GPIO 7"
      }
     },
     "pad.31": {
@@ -873,8 +873,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-31",
      "label": {
-      "en": "GP26",
-      "de": "GP26"
+      "en": "GPIO 26",
+      "de": "GPIO 26"
      }
     },
     "pad.11": {
@@ -883,8 +883,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-11",
      "label": {
-      "en": "GP8",
-      "de": "GP8"
+      "en": "GPIO 8",
+      "de": "GPIO 8"
      }
     },
     "pad.30": {
@@ -903,8 +903,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-12",
      "label": {
-      "en": "GP9",
-      "de": "GP9"
+      "en": "GPIO 9",
+      "de": "GPIO 9"
      }
     },
     "pad.29": {
@@ -913,8 +913,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-29",
      "label": {
-      "en": "GP22",
-      "de": "GP22"
+      "en": "GPIO 22",
+      "de": "GPIO 22"
      }
     },
     "pad.13": {
@@ -943,8 +943,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-14",
      "label": {
-      "en": "GP10",
-      "de": "GP10"
+      "en": "GPIO 10",
+      "de": "GPIO 10"
      }
     },
     "pad.27": {
@@ -953,8 +953,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-27",
      "label": {
-      "en": "GP21",
-      "de": "GP21"
+      "en": "GPIO 21",
+      "de": "GPIO 21"
      }
     },
     "pad.15": {
@@ -963,8 +963,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-15",
      "label": {
-      "en": "GP11",
-      "de": "GP11"
+      "en": "GPIO 11",
+      "de": "GPIO 11"
      }
     },
     "pad.26": {
@@ -973,8 +973,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-26",
      "label": {
-      "en": "GP20",
-      "de": "GP20"
+      "en": "GPIO 20",
+      "de": "GPIO 20"
      }
     },
     "pad.16": {
@@ -983,8 +983,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-16",
      "label": {
-      "en": "GP12",
-      "de": "GP12"
+      "en": "GPIO 12",
+      "de": "GPIO 12"
      }
     },
     "pad.25": {
@@ -993,8 +993,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-25",
      "label": {
-      "en": "GP19",
-      "de": "GP19"
+      "en": "GPIO 19",
+      "de": "GPIO 19"
      }
     },
     "pad.17": {
@@ -1003,8 +1003,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-17",
      "label": {
-      "en": "GP13",
-      "de": "GP13"
+      "en": "GPIO 13",
+      "de": "GPIO 13"
      }
     },
     "pad.24": {
@@ -1013,8 +1013,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-24",
      "label": {
-      "en": "GP18",
-      "de": "GP18"
+      "en": "GPIO 18",
+      "de": "GPIO 18"
      }
     },
     "pad.18": {
@@ -1043,8 +1043,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-19",
      "label": {
-      "en": "GP14",
-      "de": "GP14"
+      "en": "GPIO 14",
+      "de": "GPIO 14"
      }
     },
     "pad.22": {
@@ -1053,8 +1053,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-22",
      "label": {
-      "en": "GP17",
-      "de": "GP17"
+      "en": "GPIO 17",
+      "de": "GPIO 17"
      }
     },
     "pad.20": {
@@ -1063,8 +1063,8 @@
      "side": "W",
      "labelId": "cop-lbl-pad-20",
      "label": {
-      "en": "GP15",
-      "de": "GP15"
+      "en": "GPIO 15",
+      "de": "GPIO 15"
      }
     },
     "pad.21": {
@@ -1073,8 +1073,8 @@
      "side": "E",
      "labelId": "cop-lbl-pad-21",
      "label": {
-      "en": "GP16",
-      "de": "GP16"
+      "en": "GPIO 16",
+      "de": "GPIO 16"
      }
     },
     "can.H": {

@@ -56,12 +56,12 @@ On a board that is wired by hand, no output pin is fixed in the firmware. A slot
 page](Link.md#page-map) carries its pin number, so the pin is a setting rather
 than a build.
 
-The IOmcu refuses a pin it must not drive: GP3 (the safety heartbeat),
-GP8 to GP12 (the CAN (Controller Area Network) controller's SPI (Serial
+The IOmcu refuses a pin it must not drive: GPIO 3 (the safety heartbeat),
+GPIO 8 to GPIO 12 (the CAN (Controller Area Network) controller's SPI (Serial
 Peripheral Interface) and interrupt), the four pins the bring-up module uses
-and does not bring out — GP23 (the MODE pin of the module's power converter),
-GP24 (VBUS sense), GP25 (LED1) and GP29 (VSYS sense) — and any number above
-the last GPIO (general-purpose input/output) the module has: GP30 and up, 29
+and does not bring out — GPIO 23 (the MODE pin of the module's power converter),
+GPIO 24 (VBUS sense), GPIO 25 (LED1) and GPIO 29 (VSYS sense) — and any number above
+the last GPIO (general-purpose input/output) the module has: GPIO 30 and up, 29
 being the top of the RP2350A. The set is the module's own and does not follow
 the SDK board file the image is built for. The PD mini's pins on the SUPPLY
 page are held to the same set. A refused slot is left unbound. The page still reads back what was asked for, and no register on it
@@ -121,17 +121,17 @@ would do the same -- a surface turned throttle, a throttle bound beside a
 surface -- is refused too. It is not kept: a restart runs each slot at its own
 rate.
 
-GPIO numbers fold onto the 12 slices. GP0 to GP31 take slice (pin / 2) modulo
-8; GP32 to GP47 take slice 8 + (pin / 2) modulo 4; the channel is the low bit
-of the pin number in both ranges. Two pins 16 apart below GP32 are therefore
-the same channel of the same slice, and above GP32 the distance is 8. A
+GPIO numbers fold onto the 12 slices. GPIO 0 to GPIO 31 take slice (pin / 2) modulo
+8; GPIO 32 to GPIO 47 take slice 8 + (pin / 2) modulo 4; the channel is the low bit
+of the pin number in both ranges. Two pins 16 apart below GPIO 32 are therefore
+the same channel of the same slice, and above GPIO 32 the distance is 8. A
 channel is one compare register and a compare register is one pulse width, so
 the second pin of such a pair is refused rather than bound: binding it would
 mux it onto the first pin's pulse width, and one lead would follow the other
 with nothing on any screen to say so.
 
-Six of those pairs are both free on the header the IOmcu offers: GP0 and
-GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22.
+Six of those pairs are both free on the header the IOmcu offers: GPIO 0 and
+GPIO 16, GPIO 1 and GPIO 17, GPIO 2 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22.
 Either pin of a pair may be used; the two together may not.
 
 ## PPM
@@ -371,7 +371,7 @@ One reading is not on this list. It is against one ESC with no instrument on the
 
 - **Bidirectional DShot600 against one ESC** (#172): a Skystars 35A running AM32 2.21, target `JUPITER_35A_F421` (the AM32
   configurator shows it cut to `JUPITER_35A_F42`), on a 4S pack, bound to
-  GP0. Release 0.8.2 decoded its speed (2593rpm). Release 0.9.1, with the
+  GPIO 0. Release 0.8.2 decoded its speed (2593rpm). Release 0.9.1, with the
   repeated ask above, turned its extended telemetry on: at 0% throttle
   MOTOR & ESC showed 14.75V, 72.0A and an ESC temperature of 41°C. The
   tester reported the voltage as correct. The current and the temperature

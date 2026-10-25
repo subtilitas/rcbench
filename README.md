@@ -55,7 +55,7 @@ single press and act when the finger comes down, not when it lifts.
 Three stop mechanisms are designed in: a heartbeat whose absence removes
 the outputs, the IOmcu's own link watchdog, and a STOP command over the
 link. The heartbeat line runs from the panel's IO28 (`PANEL_HEARTBEAT_PIN`,
-on the 12-pin header P3 of the 7-inch ESP32-P4 board) to the IOmcu's GP3.
+on the 12-pin header P3 of the 7-inch ESP32-P4 board) to the IOmcu's GPIO 3.
 No board carries the heartbeat's retriggerable monostable. Firmware at both
 ends gates the outputs, and no hardware backstop sits behind it.
 [Safety](https://github.com/subtilitas/rcbench/wiki/Safety) specifies all

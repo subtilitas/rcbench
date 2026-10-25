@@ -62,13 +62,13 @@ festgelegt. Ein Slot auf der
 [OUTPUTS-Page](Link-de.md#page-map) trägt seine Pinnummer, der Pin ist also eine
 Einstellung und kein Build.
 
-Der IOmcu verweigert einen Pin, den er nicht treiben darf: GP3 (die
-Safety-Heartbeat-Leitung), GP8 bis GP12 (SPI (Serial Peripheral Interface) und
+Der IOmcu verweigert einen Pin, den er nicht treiben darf: GPIO 3 (die
+Safety-Heartbeat-Leitung), GPIO 8 bis GPIO 12 (SPI (Serial Peripheral Interface) und
 Interrupt des CAN-Controllers (Controller Area Network)), die vier Pins, die das
-Bring-up-Modul belegt und nicht herausführt — GP23 (der MODE-Pin des
-Wandlers auf dem Modul), GP24 (VBUS-Messung), GP25 (LED1) und GP29
+Bring-up-Modul belegt und nicht herausführt — GPIO 23 (der MODE-Pin des
+Wandlers auf dem Modul), GPIO 24 (VBUS-Messung), GPIO 25 (LED1) und GPIO 29
 (VSYS-Messung) — und jede Nummer über dem letzten GPIO (General-Purpose
-Input/Output), den das Modul hat: GP30 und aufwärts, 29 ist der höchste Pin des
+Input/Output), den das Modul hat: GPIO 30 und aufwärts, 29 ist der höchste Pin des
 RP2350A. Die Menge gehört zum Modul und folgt nicht der SDK-Board-Datei, für die
 das Image gebaut wird. Die PD-mini-Pins der SUPPLY-Page werden an dieselbe Menge
 gebunden. Ein verweigerter Slot bleibt ungebunden. Die Page liest weiterhin
@@ -134,19 +134,19 @@ eine Surface, die Throttle wird, ein Throttle, der neben eine Surface gebunden
 wird. Sie wird nicht gespeichert: Nach einem Neustart läuft jeder Slot mit
 seiner eigenen Rate.
 
-GPIO-Nummern falten sich auf die 12 Slices. GP0 bis GP31 nehmen Slice
-(Pin / 2) modulo 8, GP32 bis GP47 nehmen Slice 8 + (Pin / 2) modulo 4, und der
+GPIO-Nummern falten sich auf die 12 Slices. GPIO 0 bis GPIO 31 nehmen Slice
+(Pin / 2) modulo 8, GPIO 32 bis GPIO 47 nehmen Slice 8 + (Pin / 2) modulo 4, und der
 Kanal ist in beiden Bereichen das unterste Bit der Pinnummer. Zwei Pins mit
-Abstand 16 unterhalb von GP32 sind damit derselbe Kanal desselben Slice,
-oberhalb von GP32 ist der Abstand 8. Ein Kanal ist ein Compare-Register und ein
+Abstand 16 unterhalb von GPIO 32 sind damit derselbe Kanal desselben Slice,
+oberhalb von GPIO 32 ist der Abstand 8. Ein Kanal ist ein Compare-Register und ein
 Compare-Register ist eine Pulsweite, der zweite Pin eines solchen Paars wird
 also verweigert statt gebunden: Ihn zu binden würde ihn auf die Pulsweite des
 ersten Pins legen, und eine Leitung folgte der anderen, ohne dass ein
 Bildschirm es sagt.
 
 Sechs dieser Paare sind auf dem Header, den der IOmcu anbietet, beide
-frei: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21,
-GP6 und GP22. Jeder Pin eines Paars ist benutzbar, beide zusammen nicht.
+frei: GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21,
+GPIO 6 und GPIO 22. Jeder Pin eines Paars ist benutzbar, beide zusammen nicht.
 
 ## PPM
 
@@ -397,7 +397,7 @@ Eine Lesung steht nicht auf dieser Liste. Sie ist gegen einen ESC und ohne Messg
 
 - **Bidirektionales DShot600 gegen einen ESC** (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
   AM32-Konfigurator zeigt es gekürzt als `JUPITER_35A_F42`), an einem
-  4S-Pack, gebunden auf GP0. Version 0.8.2 hat seine Drehzahl dekodiert
+  4S-Pack, gebunden auf GPIO 0. Version 0.8.2 hat seine Drehzahl dekodiert
   (2593rpm). Version 0.9.1 hat mit der wiederholten Anfrage oben seine
   Extended Telemetry eingeschaltet: bei 0% Gas zeigte MOTOR & ESC 14,75V,
   72,0A und eine ESC-Temperatur von 41°C. Der Tester hat die Spannung als

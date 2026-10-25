@@ -35,8 +35,8 @@ CAN self-test is running. The two together say which end has stopped:
 | climbing | `NO LINK` | requests arrive and the answers do not get back |
 
 `CAN did not answer on SPI` means the controller did not report configuration
-mode after reset. The fault is on SPI (module not fitted, wiring on GP8 to
-GP12), not on the CAN bus.
+mode after reset. The fault is on SPI (module not fitted, wiring on GPIO 8 to
+GPIO 12), not on the CAN bus.
 
 ### Panel
 

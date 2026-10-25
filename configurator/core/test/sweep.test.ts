@@ -151,7 +151,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
     }
   }
   for (const [gpio, set] of signals) {
-    assert.equal(set.size, 1, `GP${gpio} carries ${[...set].join(', ')} for ${where}`);
+    assert.equal(set.size, 1, `GPIO ${gpio} carries ${[...set].join(', ')} for ${where}`);
   }
 
   // 18: every part has a reason.

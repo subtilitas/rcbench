@@ -136,7 +136,7 @@ test('a function that sets a variant names it', () => {
     }
   }
   assert.ok(functionHelp(view({}), 'stick')!.needs.includes('Variant: ESC power B.'));
-  assert.ok(functionHelp(view({}), 'servoprog')!.needs.includes('Variant: Servo signal on the programming port, GP13.'));
+  assert.ok(functionHelp(view({}), 'servoprog')!.needs.includes('Variant: Servo signal on the programming port, GPIO 13.'));
   assert.ok(functionHelp(view({}, 'de'), 'stick')!.needs.includes('Variante: ESC-Versorgung B.'));
 });
 
