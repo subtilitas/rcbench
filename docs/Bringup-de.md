@@ -155,7 +155,9 @@ mit weniger als 4 Polls sagt `link healthy`; ein ausgefallener Link wird
 etwa einmal pro Sekunde abgefragt, sein 5s-Fenster hält also 4 oder 5
 Polls. Ein Zähler des IOmcu unter seinem Wert beim vorigen Bericht zählt
 wieder ab 0 (der IOmcu ist neu gestartet, oder ein 16-Bit-Statusregister
-ist übergelaufen), und das Fenster nimmt seinen neuen Wert.
+ist übergelaufen), und das Fenster nimmt seinen neuen Wert. `crc` und
+`resync` des IOmcu sind Stände, keine Zählungen, und stehen in der Zeile
+`last` so, wie sie gelesen wurden: siehe unten.
 
 | Diagnose | Bedeutung |
 | --- | --- |
@@ -181,7 +183,9 @@ zählen.
 
 Die Spalten `crc` und `resync` der IOmcu-Zeile tragen den Empfangs- und
 den Sendefehlerzähler des XL2515 (Statusregister `LINK_ST_CRC_ERRORS` und
-`LINK_ST_RESYNCS`). Die letzte Zahl der Zeile ist die der CAN-Frames, die der
+`LINK_ST_RESYNCS`). Jeder liegt zwischen 0 und 255, steigt mit einem
+fehlerhaften Frame und fällt mit einem guten; beide gelten so, wie sie beim
+Bericht stehen, im Fenster wie in den Summen. Die letzte Zahl der Zeile ist die der CAN-Frames, die der
 IOmcu seit dem Einschalten empfangen und nicht dekodiert hat
 (`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`, Protokoll 4.21; 0 von einem
 älteren IOmcu). Siehe [Abgelehnte Frames](Link-de.md#abgelehnte-frames).

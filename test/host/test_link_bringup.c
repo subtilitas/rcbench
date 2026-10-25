@@ -226,6 +226,36 @@ TEST_CASE(a_burst_inside_the_window_is_stale)
 }
 
 /*
+ * The IOmcu's CAN error counters are levels: one that reads the same at
+ * two reports, errors and good frames balancing, still says corrupt.
+ */
+TEST_CASE(the_iomcu_error_counters_are_levels_not_counts)
+{
+    link_bringup_t prev = healthy();
+    prev.polls          = 5000u;
+    prev.replies        = 5000u;
+    prev.dev_frames     = 5000u;
+    prev.dev_crc_errors = 40u;
+    prev.dev_resyncs    = 12u;
+
+    link_bringup_t now = prev;
+    now.polls      = 6200u;
+    now.replies    = 6200u;
+    now.dev_frames = 6200u;
+    link_bringup_t w;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.dev_crc_errors, 40u);
+    CHECK_EQ(w.dev_resyncs, 12u);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_CORRUPT);
+
+    /* Good frames brought the level to 0: healthy again. */
+    now.dev_crc_errors = 0u;
+    now.dev_resyncs    = 0u;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_OK);
+}
+
+/*
  * An IOmcu that restarted counts from 0 again.  Its counters below the
  * previous report's are the window's counts, not a wrap to 4 billion.
  */
@@ -251,7 +281,7 @@ TEST_CASE(an_iomcu_that_restarted_counts_from_its_new_values)
     link_bringup_window(&now, &prev, &w);
     CHECK_EQ(w.polls, 1200u);
     CHECK_EQ(w.dev_frames, 1180u);
-    CHECK_EQ(w.dev_crc_errors, 1u);
+    CHECK_EQ(w.dev_crc_errors, 1u);   /* a level: taken as it is */
     CHECK_EQ(w.dev_resyncs, 0u);
     CHECK_EQ(w.dev_refused, 0u);
     CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_CORRUPT);
@@ -663,6 +693,7 @@ int main(void)
     RUN(an_iomcu_that_restarted_counts_from_its_new_values);
     RUN(the_first_window_is_everything_so_far);
     RUN(the_window_keeps_identity_flags_and_round_trip_of_now);
+    RUN(the_iomcu_error_counters_are_levels_not_counts);
     RUN(a_window_of_under_four_polls_draws_no_conclusion);
     RUN(a_window_without_a_snapshot_is_refused);
     RUN(the_round_trip_keeps_its_extremes_and_its_mean);

@@ -43,7 +43,12 @@ typedef struct {
      * until a status read succeeds, which is itself informative. */
     bool     have_status;
     uint32_t dev_frames;    /**< requests it decoded */
+    /** @brief The IOmcu's CAN receive error counter (REC, 0 to 255) at the
+     *         status read: it rises with bad frames and falls with good
+     *         ones, a level rather than a count. */
     uint32_t dev_crc_errors;
+    /** @brief The IOmcu's CAN transmit error counter (TEC, 0 to 255), a
+     *         level as dev_crc_errors. */
     uint32_t dev_resyncs;
     /**
      * @brief The last status read carried LINK_ST_REFUSED_LO and _HI: protocol
@@ -122,9 +127,12 @@ link_diag_t link_bringup_diagnose(const link_bringup_t *b);
  * time of @p now is not told from one that kept counting, and its window
  * count is short by the previous figure.
  *
- * Flags, identity and the round-trip figures are taken from @p now:
- * have_status, have_refused, have_identity, proto_major, proto_minor,
- * rt_samples, rt_min_us, rt_max_us and rt_mean_us.
+ * Flags, identity, the round-trip figures and the IOmcu's two CAN error
+ * counters are taken from @p now: have_status, have_refused,
+ * have_identity, proto_major, proto_minor, rt_samples, rt_min_us,
+ * rt_max_us, rt_mean_us, dev_crc_errors and dev_resyncs.  The error
+ * counters are levels that good frames lower, so a difference of two
+ * readings can be 0 while errors keep coming.
  *
  * @param now The counters at this report.
  * @param prev The counters at the previous report; NULL for the first

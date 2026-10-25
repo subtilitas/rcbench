@@ -177,8 +177,9 @@ void link_bringup_window(const link_bringup_t *now,
         w.rx_crc_errors  = since(now->rx_crc_errors, prev->rx_crc_errors);
         w.rx_resyncs     = since(now->rx_resyncs, prev->rx_resyncs);
         w.dev_frames     = since(now->dev_frames, prev->dev_frames);
-        w.dev_crc_errors = since(now->dev_crc_errors, prev->dev_crc_errors);
-        w.dev_resyncs    = since(now->dev_resyncs, prev->dev_resyncs);
+        /* dev_crc_errors and dev_resyncs stay as in now: the IOmcu fills
+         * them with its CAN controller's receive and transmit error
+         * counters, which fall with good frames and rise with bad ones. */
         w.dev_refused    = since(now->dev_refused, prev->dev_refused);
     }
     *out = w;
