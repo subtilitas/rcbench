@@ -55,7 +55,10 @@ typedef struct {
     bool       no_capture; /**< no capture runs this boot: core 1 did not
                                 start (tone_page_no_capture())            */
     /* What core 1 last said, under set-up gen. */
-    bool       running, overrun, beep, tone;  /**< core 1's last status bits */
+    bool       running;     /**< core 1's last status: an order with run was taken */
+    bool       overrun;     /**< core 1's last status: a lap or a FIFO overflow */
+    bool       beep;        /**< core 1's last status: a run of bursts is under way */
+    bool       tone;        /**< core 1's last status: the last window held a tone */
     uint16_t   window, win_freq_dhz, win_periods;
     uint32_t   lost, glitches;   /**< counted across set-ups              */
     uint32_t   seen_lost, seen_glitches;   /**< the status's own, last    */

@@ -261,7 +261,7 @@ pdmini_frame_t pdmini_reply_frame(uint8_t cmd, const uint8_t *buf, size_t n);
 typedef struct {
     void (*attach)(void *ctx);                       /**< UART onto the pins */
     void (*detach)(void *ctx);                       /**< pins pulled down   */
-    void (*send)(void *ctx, const uint8_t *p, size_t n);
+    void (*send)(void *ctx, const uint8_t *p, size_t n);  /**< sends n bytes at p */
     void *ctx;
 } pdmini_io_t;
 
@@ -270,11 +270,12 @@ typedef struct {
     bool     online;      /**< it answered WHO_AM_I and has since        */
     bool     output;      /**< READ_OUTPUT_STATE says the output is on   */
     uint8_t  mode;        /**< PDMINI_MODE_*                             */
-    uint16_t v_mv, i_ma;  /**< at the terminals, READ_OUTPUT_DISPLAY     */
+    uint16_t v_mv;        /**< voltage at the terminals, READ_OUTPUT_DISPLAY, mV */
+    uint16_t i_ma;        /**< current at the terminals, READ_OUTPUT_DISPLAY, mA */
     uint16_t set_mv;      /**< the active slot's set points, read back   */
-    uint16_t set_ma;
+    uint16_t set_ma;                    /**< the active slot's current limit, mA */
     uint8_t  in_state;    /**< READ_INPUT_STATE: 5 PD, 4 QC, 6 DC, ...   */
-    uint16_t vin_mv;
+    uint16_t vin_mv;                    /**< the module's input voltage, mV */
     bool     stuck;       /**< the output would not reach what was asked */
     bool     set_stuck;   /**< the set points would not take             */
     bool     tripped;     /**< the module switched it off; held off      */

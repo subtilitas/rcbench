@@ -115,7 +115,7 @@ typedef struct {
     uint8_t  result;          /**< a link_uph_result_t                    */
     uint8_t  error;           /**< the IOmcu's link_upd_err_t       */
     bool     missing;         /**< the last exchange went unanswered      */
-    uint8_t  restarts;
+    uint8_t  restarts;                  /**< restarts of the session so far */
     uint8_t  block_tries;
     uint8_t  after_resync;    /**< the phase a RESYNC was entered from    */
     bool     aborted;         /**< check: a session found was ended       */
@@ -123,14 +123,14 @@ typedef struct {
     uint8_t  build[LINK_SHA256_BYTES];   /**< this end's build hash       */
     uint8_t  expect[LINK_SHA256_BYTES];  /**< the image as sent           */
     uint8_t  digest[LINK_SHA256_BYTES];  /**< what the IOmcu said   */
-    link_image_hash_t hash;
+    link_image_hash_t hash;             /**< the hash being computed */
 
     uint16_t block;           /**< the block to send next                 */
-    uint16_t blocks;
+    uint16_t blocks;                    /**< blocks in the image */
     uint16_t slot;            /**< LINK_UPD_SLOT before the restart        */
     uint16_t block_tried;     /**< the block block_tries counts for        */
     bool     busy;            /**< waiting for the gate since busy_ms     */
-    uint32_t busy_ms;
+    uint32_t busy_ms;                   /**< when the wait for the gate began, ms */
     uint32_t since_ms;        /**< when the phase's wait began            */
     uint32_t missing_ms;      /**< when the exchanges stopped being answered */
 

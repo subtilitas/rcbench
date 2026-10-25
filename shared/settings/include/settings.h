@@ -205,14 +205,14 @@ typedef enum {
 typedef struct {
     const char        *key;      /**< NVS key, 15 chars or fewer   */
     const char        *unit;     /**< shown beside the value; "" none */
-    setting_cat_t      cat;
+    setting_cat_t      cat;             /**< the category the setting is listed in */
     setting_type_t     type;
     float              min;
     float              max;
     float              step;
     float              def;
     const char *const *options;  /**< SET_TYPE_ENUM only */
-    uint8_t            option_count;
+    uint8_t            option_count;    /**< number of options in options */
     /** A number whose values between 0 and this are not taken: 0 is
      *  "off" and the next value up is this one.  0 for none. */
     float              off_below;

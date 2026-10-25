@@ -704,7 +704,7 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 typedef struct {
     kst_file_t *f;
     unsigned rows_left;   /**< lines of the register block still to come */
-    bool has_block;
+    bool has_block;                     /**< whether a register block was seen */
     kst_type_t stated;    /**< by the type line */
     unsigned type_line;   /**< 0: the file has none */
     /**

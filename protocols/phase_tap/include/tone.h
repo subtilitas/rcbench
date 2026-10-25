@@ -250,10 +250,11 @@ typedef struct {
 
     bool     seen;           /**< any time given yet                      */
     uint64_t now;            /**< the latest time given                   */
-    bool     have_edge;
-    uint64_t last_edge;
+    bool     have_edge;                 /**< whether an edge was given */
+    uint64_t last_edge;                 /**< the latest edge's time */
     bool     high;           /**< the line's level after the last edge    */
-    uint64_t last_rise, last_fall;
+    uint64_t last_rise;      /**< time of the last rising edge           */
+    uint64_t last_fall;      /**< time of the last falling edge          */
 
     /* The run: bursts with no silence of gap between them. */
     bool     in_run;

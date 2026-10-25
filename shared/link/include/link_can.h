@@ -93,7 +93,7 @@ typedef enum {
 typedef struct {
     uint32_t id;      /**< 29-bit extended identifier */
     uint8_t  dlc;     /**< payload bytes, 0..8 */
-    uint8_t  data[8];
+    uint8_t  data[8];                   /**< the payload, dlc bytes of it */
 } link_can_frame_t;
 
 /**

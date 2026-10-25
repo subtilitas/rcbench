@@ -248,7 +248,7 @@ typedef struct {
     bool     ok;          /**< read, a KST or Chaservo servo, editable   */
     uint16_t angle[2];    /**< LEFT and RIGHT ANGLE                       */
     uint16_t lo_raw;      /**< the smallest value the hard rules take    */
-    uint16_t hi_raw;
+    uint16_t hi_raw;                    /**< the largest value the hard rules take */
     bool     reversion;   /**< REVERSION on                               */
     unsigned type;        /**< the servo's type number, 0 not known       */
     /** @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us. */
@@ -269,14 +269,14 @@ typedef struct {
 /** @brief What the run wants done. */
 typedef struct {
     bool     command;     /**< the servo to cmd_us, at once               */
-    uint16_t cmd_us;
+    uint16_t cmd_us;                    /**< the pulse, µs */
     bool     release;     /**< the servo let go                           */
     bool     off;         /**< the supply's output off                    */
     bool     disarm;      /**< the bench to SAFE: the run's own           */
     bool     arm;         /**< the bench to ARMED: the run's own          */
     bool     connect;     /**< the programmer: CONNECT, which reads       */
     bool     write;       /**< the programmer: these two values           */
-    uint16_t angle[2];
+    uint16_t angle[2];                  /**< LEFT and RIGHT ANGLE */
     bool     pulses;      /**< the programmer: PULSE LOWER and PULSE UPPER,
                                0.1us                                      */
     uint16_t pulse_dus[2]; /**< PULSE LOWER and PULSE UPPER, 0.1us       */
@@ -352,8 +352,10 @@ typedef struct {
     uint16_t limit_us;      /**< the endpoint; the end of the travel if free */
     uint16_t bind_us;       /**< the first bound position                  */
     uint16_t free_us;       /**< the last free position                    */
-    float    baseline_a, knee_a;
+    float    baseline_a;    /**< the current before the knee, A            */
+    float    knee_a;        /**< the current at the knee, A                */
     bool     enc;           /**< enc_deg is the angle at the last free one */
+    /** @brief The angle at the last free position, from ENC CENTRE */
     float    enc_deg;
 } servo_limrun_side_t;
 

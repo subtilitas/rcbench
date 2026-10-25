@@ -95,9 +95,9 @@ typedef struct {
     char     line[PAGE_CONSOLE_LINE_MAX + 1u];
     uint16_t len;
     uint8_t  overlong;   /**< the line ran past PAGE_CONSOLE_LINE_MAX */
-    char     out[PAGE_CONSOLE_OUT_MAX];
+    char     out[PAGE_CONSOLE_OUT_MAX];  /**< the output ring */
     uint16_t head;       /**< the next byte to take */
-    uint16_t used;
+    uint16_t used;                      /**< bytes in the ring */
     uint32_t dropped;
     uint16_t staged[LINK_HT_W_STAGED];
     uint8_t  watch;      /**< a HITEC operation runs: report its end */

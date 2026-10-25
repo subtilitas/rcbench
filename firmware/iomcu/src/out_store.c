@@ -240,12 +240,12 @@ static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
 typedef struct {
     uint32_t off;
     bool     erase;       /* a sector erase; else a program of data        */
-    bool     done;        /* the operation ran                             */
-    uint32_t window_us;
+    bool     done;                /**< the operation ran                       */
+    uint32_t window_us;           /**< how long the window held interrupts off, µs */
     const uint8_t *data;  /* what a program writes                         */
-    uint32_t len;         /* and how many bytes of it                      */
-    void   (*call)(void *); /* in place of either: the boot ROM's BUY      */
-    void    *arg;
+    uint32_t len;                 /**< and how many bytes of it                */
+    void   (*call)(void *);       /**< in place of either: the boot ROM's BUY  */
+    void    *arg;                 /**< the argument of call                    */
 } flash_op_t;
 
 /**

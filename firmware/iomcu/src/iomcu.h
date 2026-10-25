@@ -64,8 +64,8 @@ typedef struct {
     uint16_t status[LINK_ST_COUNT];
     uint16_t bench[LINK_BN_COUNT];
     uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
-    uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
-    uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
+    uint16_t chan_cfg[LINK_CC_COUNT];   /**< what each channel is */
+    uint16_t slots[LINK_OS_COUNT];      /**< which driver drives what */
 } iomcu_state_t;
 
 /**

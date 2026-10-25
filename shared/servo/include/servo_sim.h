@@ -76,7 +76,7 @@ typedef struct {
 typedef struct {
     servo_sim_cfg_t cfg;
     float    position_us;   /**< where the horn is, not where it was told */
-    uint32_t last_ms;
+    uint32_t last_ms;                   /**< bench time of the last step, ms */
     uint32_t seed;
     bool     started;
 } servo_sim_t;

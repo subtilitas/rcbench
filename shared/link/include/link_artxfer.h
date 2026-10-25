@@ -48,10 +48,10 @@ typedef struct {
 typedef struct {
     link_art_meta_t meta;
     uint8_t  *buf;     /**< where the payload lands                        */
-    uint32_t  cap;
+    uint32_t  cap;                      /**< capacity of buf, bytes */
     uint32_t  at;      /**< bytes assembled so far                         */
     uint16_t  next;    /**< the block to ask for                           */
-    bool      begun;
+    bool      begun;                    /**< whether the transfer started */
 } link_artxfer_t;
 
 /**

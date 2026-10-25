@@ -44,8 +44,8 @@ typedef struct {
 
     int      dma_data;  /**< data channel: plays the run counts */
     int      dma_ctrl;  /**< control channel: restarts the data channel */
-    dma_channel_config cfg_data;
-    dma_channel_config cfg_ctrl;
+    dma_channel_config cfg_data;        /**< the data channel's configuration */
+    dma_channel_config cfg_ctrl;        /**< the control channel's configuration */
 
     uint32_t buf[PPM_MAX_RUNS];   /**< run counts, see RUN_TO_COUNT() */
     uint32_t words;               /**< runs in buf */

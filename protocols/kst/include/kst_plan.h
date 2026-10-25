@@ -145,7 +145,7 @@ typedef struct {
     uint8_t kind;            /**< kst_plan_kind_t */
     uint8_t n;               /**< number of writes */
     uint8_t unchecked;       /**< 1: a restore whose order is not checked */
-    kst_write_t step[KST_PLAN_MAX_STEPS];
+    kst_write_t step[KST_PLAN_MAX_STEPS];  /**< the writes in order */
 } kst_plan_t;
 
 /**
@@ -161,7 +161,7 @@ typedef struct {
     kst_rules_t allowed;     /**< hard rules the end points break themselves */
     kst_plan_t *plan;        /**< the plan the job builds */
     uint32_t spent;          /**< units since the job began */
-    uint32_t cap;
+    uint32_t cap;                       /**< units after which the job gives up */
     kst_image_t img;         /**< the image after the writes emitted so far */
     uint8_t open[32];        /**< bit x: the extra write of x is untried */
     uint8_t dead[16];        /**< bit t: the subset t has no valid order */
@@ -170,18 +170,18 @@ typedef struct {
     uint8_t order[7];        /**< the index written at each depth */
     uint8_t tried[7];        /**< bit i: done with at this depth */
     uint8_t held[7];         /**< the value the write at each depth replaced */
-    uint8_t phase;
+    uint8_t phase;                      /**< the step the job is in, PH_* */
     uint8_t result;          /**< kst_plan_result_t */
-    uint8_t may_be_unchecked;
-    uint8_t group;
+    uint8_t may_be_unchecked;           /**< 1: the plan may end unchecked */
+    uint8_t group;                      /**< the register group worked on: 0 position, 1 speed */
     uint8_t todo_all;        /**< the group's registers that change */
     uint8_t todo;            /**< those of them not written at this depth */
-    uint8_t depth;
-    uint8_t entered;
-    uint8_t in_detour;
+    uint8_t depth;                      /**< writes ordered so far: the search depth */
+    uint8_t entered;                    /**< 1: the depth was entered, not returned to */
+    uint8_t in_detour;                  /**< 1: a detour value is being searched */
     uint8_t field;           /**< the field whose low byte takes the detour */
     uint8_t lo;              /**< index of that byte in the group */
-    uint8_t lo_before;
+    uint8_t lo_before;                  /**< the low byte's value before the detour */
     uint8_t extra;           /**< the detour value under search */
     uint8_t settle;          /**< writes whose settled mark is set */
     uint16_t x;              /**< detour values checked so far */

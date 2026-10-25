@@ -65,11 +65,11 @@ typedef struct {
 typedef struct {
     uint16_t board;
     uint16_t format;  /**< a link_art_format_t, never LINK_ART_NONE         */
-    uint16_t width;
-    uint16_t height;
+    uint16_t width;                     /**< width, px */
+    uint16_t height;                    /**< height, px */
     uint16_t crc;     /**< link_crc() over the payload, seeded zero        */
     uint32_t hash;    /**< link_fnv1a32() over the payload                 */
-    uint32_t bytes;
+    uint32_t bytes;                     /**< payload length, bytes */
 } art_entry_t;
 
 /**
@@ -223,7 +223,7 @@ typedef struct {
     uint32_t           done;     /**< bytes of the phase done                */
     uint16_t           crc;      /**< of what has been read back so far      */
     uint32_t           hash;     /**< the same, link_fnv1a32()               */
-    uint8_t            buf[ART_KEEP_READ_BYTES];
+    uint8_t            buf[ART_KEEP_READ_BYTES];  /**< the chunk read back from flash */
 } art_keep_t;
 
 /**

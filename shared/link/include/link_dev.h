@@ -43,6 +43,7 @@ extern "C" {
 typedef struct {
     uint8_t page;
     uint8_t count;    /**< registers in this page, 1..LINK_MAX_REGS */
+    /** @brief Reads count registers of the page from offset into out */
     void  (*read)(void *ctx, uint8_t offset, uint8_t count, uint16_t *out);
     /** @brief Returns 0 to accept, or a link_nack_t to refuse with a reason. */
     uint8_t (*write)(void *ctx, uint8_t offset, uint8_t count,
