@@ -967,10 +967,7 @@ hitec_set_t hitec_param_set(hitec_image_t *img, uint8_t layout, uint8_t id,
         return HITEC_SET_ERR_UNKNOWN;
     }
     got = hitec_param_get(img, layout, id, &now);
-    if (got == HITEC_GET_RAW) {
-        return HITEC_SET_ERR_RAW;
-    }
-    if (now.value == value) {
+    if (got == HITEC_GET_OK && now.value == value) {
         return HITEC_SET_OK;
     }
     draft = *img;

@@ -21,8 +21,8 @@ history is in git.
   as one 256-byte image, a parameter table of 34 parameters with the
   registers or cells, encoding, edit limits, layouts and source of each,
   the HFP-30's encodings for the D series and the HPP-21 Plus's for
-  classic servos, a stored value that fits no encoding shown raw and not
-  edited, model identification from register 0x00 or the name cells, and
+  classic servos, a stored value that fits no encoding shown raw and
+  replaced only by a value of the table on an edit, model identification from register 0x00 or the name cells, and
   write plans: the classic balance in 0x1C after every setting of cells
   up to 0x1B, the D series registers per setting, then save and reboot.
   Nothing calls it yet

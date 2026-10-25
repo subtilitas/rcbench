@@ -223,12 +223,14 @@ Classic, encodings of the HPP-21 Plus:
 | resolution, HS-7xxx | 0x22 | 00 Normal; 01 and the factory 0B High | read only | CAPTURED |
 
 A stored value that fits no encoding decodes as `HITEC_GET_RAW` with the
-raw value, and `hitec_param_set()` refuses to edit it
-(`HITEC_SET_ERR_RAW`). Every decode returns the stored value beside the
-decoded one. On the bench reads this holds for the HS-5645MG's dead band
-(02) and overload protection (0x20 = FF) and for the HS-5955TG's: neither
-can be edited until a restore or a factory reset writes a value of the
-table.
+raw value, and the interface shows no decoded value beside it. Every
+decode returns the stored value beside the decoded one. An edit of such a
+parameter takes any value of the table, with its side effects; the raw
+value cannot be entered by an edit, only written back by a restore. On the
+bench reads this holds for the HS-5645MG's and the HS-5955TG's dead band
+(02) and overload protection (0x20 = FF): an edit to dead band 2 writes
+0x02 = 04 and the balance, an edit to overload protection 10% writes
+0x20 = 0A and 0x21 = FF with no balance.
 
 `hitec_param_clamp()` gives the nearest value an edit takes, a tie going
 up; `hitec_param_ok()` tests one. An edit of a value equal to the decoded
@@ -649,14 +651,15 @@ notice is in the repository's
 ## Tests
 
 `test/host/test_hitec_reg.c` (14 cases) and
-`test/host/test_hitec_reg_plan.c` (8 cases) run the register models on the
+`test/host/test_hitec_reg_plan.c` (9 cases) run the register models on the
 bench reads of the D485HW, the HS-5645MG, the HS-7955TG and the HS-5955TG
 (`test/host/hitec_reg_fix.h`). The first: every encoding at both ends of
 its range and one step past, the clamp, the raw fallback, every refusal of
 an edit, the checksum across its wrap modulo 256 and the identification of
 every model. The second: the edits' side effects, the balance after every
-classic setting, and the plan of every setting of both series against the
-vendor programmers' captured writes.
+classic setting, the plan of every setting of both series against the
+vendor programmers' captured writes, and an edit from a raw value to a
+table value on the HS-5645MG and the HS-5955TG.
 `test/host/test_hitec_pre.c` (18 cases) runs the precharge receiver's
 core: the counts at 150MHz and at every clock from 48 to 250MHz, the
 sampler's program stepped instruction by instruction, a 7-byte answer at

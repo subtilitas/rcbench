@@ -449,6 +449,51 @@ TEST_CASE(the_writable_set_and_the_d_factory_reset)
     hitec_d_factory_plan(NULL);
 }
 
+TEST_CASE(a_raw_value_is_replaced_by_a_table_value)
+{
+    hitec_image_t from;
+    hitec_image_t to;
+    hitec_plan_t p;
+
+    /* HS-5645MG: dead band 02 to step 2 (04), overload 0x20 = FF to 10%. */
+    hs5645(&from);
+    to = from;
+    CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_HS5, HITEC_P_C_DEAD_BAND, 2),
+             HITEC_SET_OK);
+    CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_HS5, HITEC_P_C_OVERLOAD, 10),
+             HITEC_SET_OK);
+    CHECK_EQ(hitec_plan(&from, &to, &p), HITEC_PLAN_OK);
+    CHECK_EQ(p.n, 4);
+    check_step(&p.step[0], HITEC_STEP_C_CELL, 0x02, 0x04);
+    check_step(&p.step[1], HITEC_STEP_C_SUM, 0x1C, 0x8A);
+    check_step(&p.step[2], HITEC_STEP_C_CELL, 0x20, 0x0A);
+    check_step(&p.step[3], HITEC_STEP_C_CELL, 0x21, 0xFF);
+    CHECK_EQ(get(&to, HITEC_LAYOUT_HS5, HITEC_P_C_DEAD_BAND,
+                 HITEC_GET_OK).value, 2);
+    CHECK_EQ(get(&to, HITEC_LAYOUT_HS5, HITEC_P_C_OVERLOAD,
+                 HITEC_GET_OK).value, 10);
+    /* HS-5955TG, the same; its 0x21 reads 00 and the layout writes FF. */
+    hs5955(&from);
+    to = from;
+    CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_HS5, HITEC_P_C_DEAD_BAND, 2),
+             HITEC_SET_OK);
+    CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_HS5, HITEC_P_C_OVERLOAD, 10),
+             HITEC_SET_OK);
+    CHECK_EQ(hitec_plan(&from, &to, &p), HITEC_PLAN_OK);
+    CHECK_EQ(p.n, 4);
+    check_step(&p.step[0], HITEC_STEP_C_CELL, 0x02, 0x04);
+    check_step(&p.step[1], HITEC_STEP_C_SUM, 0x1C, 0xC5);
+    check_step(&p.step[2], HITEC_STEP_C_CELL, 0x20, 0x0A);
+    check_step(&p.step[3], HITEC_STEP_C_CELL, 0x21, 0xFF);
+    /* D series: speed 7 to 30%. */
+    d485(&from);
+    hitec_image_put_reg(&from, 0x54, 7);
+    p = plan_edit(&from, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 30);
+    CHECK_EQ(p.n, 3);
+    check_step(&p.step[0], HITEC_STEP_D_WRITE, 0x54, 6);
+    check_save(&p);
+}
+
 int main(void)
 {
     RUN(classic_edits_write_the_hpp21_side_effects);
@@ -459,5 +504,6 @@ int main(void)
     RUN(a_d_direction_change_mirrors_as_the_hfp30_wrote_it);
     RUN(a_d_plan_writes_only_what_it_knows);
     RUN(the_writable_set_and_the_d_factory_reset);
+    RUN(a_raw_value_is_replaced_by_a_table_value);
     return test_summary("hitec_reg_plan");
 }

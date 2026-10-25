@@ -459,26 +459,29 @@ TEST_CASE(the_classic_reads_decode_as_the_hpp21_shows_them)
     get(&img, HITEC_LAYOUT_HS5, HITEC_P_C_OVERLOAD, HITEC_GET_RAW);
 }
 
-TEST_CASE(a_value_fitting_no_encoding_is_raw_and_not_edited)
+TEST_CASE(a_value_fitting_no_encoding_is_raw_and_an_edit_sets_a_table_value)
 {
     static const struct {
         uint8_t id;
         uint8_t addr;
         uint16_t raw;
+        int32_t set;      /* the table value an edit sets */
+        uint16_t stored;  /* the register it writes */
     } d[] = {
-        { HITEC_P_D_ID, 0x32, 256 },
-        { HITEC_P_D_DIRECTION, 0x5E, 2 },
-        { HITEC_P_D_NEUTRAL, 0xC2, 16384 },
-        { HITEC_P_D_LEFT_END, 0xB2, 65535 },
-        { HITEC_P_D_DEAD_BAND, 0x4E, 2 },   /* the manual's step 2 */
-        { HITEC_P_D_DEAD_BAND, 0x4E, 0 },
-        { HITEC_P_D_SPEED, 0x54, 7 },
-        { HITEC_P_D_SPEED, 0x54, 0 },
-        { HITEC_P_D_SPEED, 0x54, 22 },
-        { HITEC_P_D_FAILSAFE, 0x4C, 5001 },
-        { HITEC_P_D_SOFT_START, 0x60, 10 }, /* the manual's 100% */
-        { HITEC_P_D_OVERLOAD, 0x9C, 25 },
-        { HITEC_P_D_OVERLOAD, 0x9C, 0 },
+        { HITEC_P_D_ID, 0x32, 256, 7, 7 },
+        { HITEC_P_D_DIRECTION, 0x5E, 2, HITEC_CCW, 1 },
+        { HITEC_P_D_NEUTRAL, 0xC2, 16384, 8000, 8000 },
+        { HITEC_P_D_LEFT_END, 0xB2, 65535, 3000, 3000 },
+        /* the manual's step 2: the raw 2 is not the step 2 */
+        { HITEC_P_D_DEAD_BAND, 0x4E, 2, 2, 4 },
+        { HITEC_P_D_DEAD_BAND, 0x4E, 0, 1, 1 },
+        { HITEC_P_D_SPEED, 0x54, 7, 30, 6 },
+        { HITEC_P_D_SPEED, 0x54, 0, 10, 2 },
+        { HITEC_P_D_SPEED, 0x54, 22, 100, 20 },
+        { HITEC_P_D_FAILSAFE, 0x4C, 5001, 1500, 1500 },
+        { HITEC_P_D_SOFT_START, 0x60, 10, 100, 100 },  /* the manual's 100% */
+        { HITEC_P_D_OVERLOAD, 0x9C, 25, 30, 30 },
+        { HITEC_P_D_OVERLOAD, 0x9C, 0, HITEC_OVERLOAD_OFF, 100 },
     };
     hitec_image_t img;
     hitec_value_t v;
@@ -489,19 +492,34 @@ TEST_CASE(a_value_fitting_no_encoding_is_raw_and_not_edited)
         v = get(&img, HITEC_LAYOUT_D, d[i].id, HITEC_GET_RAW);
         CHECK_EQ(v.value, d[i].raw);
         CHECK_EQ(v.raw, d[i].raw);
-        CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, d[i].id,
-                                 hitec_param(HITEC_LAYOUT_D, d[i].id)->max),
-                 HITEC_SET_ERR_RAW);
-        CHECK_EQ(hitec_image_reg(&img, d[i].addr), d[i].raw);
+        CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, d[i].id, d[i].set),
+                 HITEC_SET_OK);
+        CHECK_EQ(hitec_image_reg(&img, d[i].addr), d[i].stored);
+        CHECK_EQ(get(&img, HITEC_LAYOUT_D, d[i].id, HITEC_GET_OK).value,
+                 d[i].set);
     }
+    /* The raw value is no value an edit takes. */
+    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 7),
+             HITEC_SET_ERR_RANGE);
+    CHECK(!hitec_param_ok(HITEC_LAYOUT_D, HITEC_P_D_OVERLOAD, 25));
+    /* A raw direction: the edit mirrors as from the other direction. */
+    d485(&img);
+    hitec_image_put_reg(&img, 0x5E, 2);
+    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION,
+                             HITEC_CW), HITEC_SET_OK);
+    CHECK_EQ(hitec_image_reg(&img, 0x5E), 0);
+    CHECK_EQ(hitec_image_reg(&img, 0xB2), 16384 - 13003);
     /* The smart sensor: neither the on nor the off pattern. */
     d485(&img);
     hitec_image_put_reg(&img, 0x6C, 2500);
     v = get(&img, HITEC_LAYOUT_D, HITEC_P_D_SMART_SENSOR, HITEC_GET_RAW);
     CHECK_EQ(v.value, 2500);
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SMART_SENSOR,
-                             HITEC_ON), HITEC_SET_ERR_RAW);
+                             HITEC_ON), HITEC_SET_OK);
+    CHECK_EQ(hitec_image_reg(&img, 0x6C), 0);
+    CHECK_EQ(hitec_image_reg(&img, 0x44), 0);
     /* The off pattern, and the comparison values not read. */
+    hitec_image_put_reg(&img, 0x6C, 2500);
     hitec_image_put_reg(&img, 0x44, 4350);
     CHECK_EQ(get(&img, HITEC_LAYOUT_D, HITEC_P_D_SMART_SENSOR,
                  HITEC_GET_OK).value, HITEC_OFF);
@@ -516,11 +534,15 @@ TEST_CASE(a_value_fitting_no_encoding_is_raw_and_not_edited)
     CHECK_EQ(get(&img, HITEC_LAYOUT_HS7, HITEC_P_C_SPEED,
                  HITEC_GET_RAW).value, 2);
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS7, HITEC_P_C_SPEED, 50),
-             HITEC_SET_ERR_RAW);
+             HITEC_SET_OK);
+    CHECK_EQ(img.mem[0x06], 0x1C);
+    CHECK_EQ(hitec_c_eeprom_sum(&img), 0);
     img.mem[0x21] = 0x33;
     get(&img, HITEC_LAYOUT_HS7, HITEC_P_C_OVERLOAD, HITEC_GET_RAW);
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_HS7, HITEC_P_C_OVERLOAD, 10),
-             HITEC_SET_ERR_RAW);
+             HITEC_SET_OK);
+    CHECK_EQ(img.mem[0x21], 0x0A);
+    CHECK_EQ(img.mem[0x20], 0x00);
     /* Dates: day 0, day 32, month 0, month 13. */
     static const uint8_t bad_dates[][2] = { { 0, 1 }, { 32, 1 }, { 1, 0 },
                                             { 1, 13 } };
@@ -907,7 +929,7 @@ int main(void)
     RUN(the_table_has_one_row_per_parameter_and_layout);
     RUN(the_d485hw_read_decodes_as_the_hfp30_shows_it);
     RUN(the_classic_reads_decode_as_the_hpp21_shows_them);
-    RUN(a_value_fitting_no_encoding_is_raw_and_not_edited);
+    RUN(a_value_fitting_no_encoding_is_raw_and_an_edit_sets_a_table_value);
     RUN(a_parameter_needs_its_bytes_read);
     RUN(every_encoding_round_trips_at_its_limits);
     RUN(every_step_of_every_table_encodes_as_captured);

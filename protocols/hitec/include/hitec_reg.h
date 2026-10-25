@@ -23,8 +23,9 @@
  * from the image and encoded into it with the encoding the vendor
  * programmers use: the HFP-30 for the D series, measured on a D485HW; the
  * HPP-21 Plus for classic servos, measured on an HS-5645MG and an
- * HS-7955TG.  A raw value that fits no encoding is shown raw and is not
- * edited.  Every value is an integer in the unit of its hitec_unit_t; no
+ * HS-7955TG.  A raw value that fits no encoding is shown raw; an edit
+ * replaces it with a value of the table, and only a restore writes the raw
+ * value back.  Every value is an integer in the unit of its hitec_unit_t; no
  * floating point is used.
  *
  * An edit (hitec_param_set()) changes a draft image as the vendor
@@ -440,7 +441,7 @@ const hitec_param_info_t *hitec_param(uint8_t layout, uint8_t id);
 typedef enum {
     HITEC_GET_OK = 0,     /**< value is the decoded value */
     HITEC_GET_RAW,        /**< the stored value fits no encoding: value is
-                               the raw value, and the parameter is not edited */
+                               the raw value; an edit sets a table value */
     HITEC_GET_UNKNOWN,    /**< a byte the decode needs was not read */
     HITEC_GET_ERR_ARG,    /**< NULL, a parameter the layout lacks, an image
                                of the other series */
@@ -476,9 +477,8 @@ typedef enum {
                                 of the other series */
     HITEC_SET_ERR_RO,      /**< a read-only parameter */
     HITEC_SET_ERR_RANGE,   /**< a value no step of the encoding gives */
-    /** @brief The stored value fits no encoding; also a D series position
-     *         edit beside a position above 16383, and smart sensor off with
-     *         0x8A = 0x8C = 0, which reads as on. */
+    /** @brief D series: a position edit beside a position above 16383, and
+     *         smart sensor off with 0x8A = 0x8C = 0, which reads as on. */
     HITEC_SET_ERR_RAW,
     HITEC_SET_ERR_UNKNOWN, /**< a byte the edit reads or writes was not read */
     HITEC_SET_ERR_MIRROR,  /**< D direction: a position the mirror leaves */
@@ -489,6 +489,8 @@ typedef enum {
  * @brief Edit a draft: encode @p value and write its side effects.
  *
  * A value equal to the decoded one changes nothing, side effects included.
+ * A stored value that fits no encoding is replaced by the table value of
+ * @p value, with the side effects; no edit writes a raw value.
  * Side effects, as the vendor programmers write them:
  *
  *   D direction     0xC2, 0xB2, 0xB0 mirrored (hitec_d_mirror()), 0xB2 from
