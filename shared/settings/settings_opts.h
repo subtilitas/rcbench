@@ -17,8 +17,10 @@
 #define UI_OPTIONS(name) enum { settings_opts_n_##name = 0
 /* A term of the sum, not an expression of its own. */
 /* NOLINTNEXTLINE(bugprone-macro-parentheses) */
+/// @cond X_MACRO
 #define UI_OPTION(en, de) + 1
 #define UI_OPTIONS_END(name)                                               \
     };                                                                     \
     extern const char *const settings_opts_##name[settings_opts_n_##name];
 #include "ui_text.def"
+/// @endcond

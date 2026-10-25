@@ -41,8 +41,10 @@ typedef enum {
 
 /** @brief The screens' strings, TX_<ID> for each UI_TEXT() of ui_text.def. */
 typedef enum {
+/// @cond X_MACRO
 #define UI_TEXT(id, cells, en, de) TX_##id,
 #include "ui_text.def"
+/// @endcond
     TX_COUNT
 } ui_text_id_t;
 
@@ -56,8 +58,8 @@ typedef struct {
     const char *const *text;             /**< [TX_COUNT]                  */
     const char *const *setting_label;    /**< [SETTING_COUNT]             */
     const char *const *setting_help;     /**< [SETTING_COUNT]             */
-    /** One per UI_OPTIONS() of ui_text.def, in its order
-     *  (settings_option_list()), each as long as the English list. */
+    /** @brief One per UI_OPTIONS() of ui_text.def, in its order
+     *         (settings_option_list()), each as long as the English list. */
     const char *const *const *options;
     const char *const *category;         /**< [SET_CAT_COUNT]             */
     const char *const *servo;            /**< [SERVO_STR_COUNT]           */

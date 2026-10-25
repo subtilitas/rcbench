@@ -116,7 +116,7 @@ typedef struct {
     uint8_t  error;           /**< the IOmcu's link_upd_err_t       */
     bool     missing;         /**< the last exchange went unanswered      */
     uint8_t  restarts;                  /**< restarts of the session so far */
-    uint8_t  block_tries;
+    uint8_t  block_tries;               /**< tries of the block block_tried names */
     uint8_t  after_resync;    /**< the phase a RESYNC was entered from    */
     bool     aborted;         /**< check: a session found was ended       */
 

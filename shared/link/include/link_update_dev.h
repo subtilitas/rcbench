@@ -99,7 +99,7 @@ typedef struct {
     uint8_t  digest_of;         /**< a link_upd_digest_t                     */
     uint8_t  digest[LINK_SHA256_BYTES];  /**< the digest the image hashes to */
     uint8_t  expect[LINK_SHA256_BYTES];  /**< the digest the host expects */
-    link_image_hash_t hash;
+    link_image_hash_t hash;             /**< the hash of the image so far */
 
     bool     restart_due;
     bool     restart_timed;

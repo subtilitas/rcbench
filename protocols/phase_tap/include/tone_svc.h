@@ -109,8 +109,10 @@ typedef struct {
     tone_t         det;
     tone_holdoff_t hold;     /**< only its horizon is used                  */
     edge_ring_t    ring;                /**< the ring of edges */
-    uint16_t       gen, cap_gen;
-    bool           active;
+    uint16_t       gen;                  /**< the set-up generation last seen      */
+    uint16_t       cap_gen;              /**< the capture generation last seen     */
+    bool           active;              /**< whether the capture runs */
+    /** @brief Whether a lap or a FIFO overflow happened since the start */
     bool           overrun;
     /**
      * @brief Passes still to discard after a FIFO overflow: the one that sees

@@ -385,7 +385,8 @@ typedef struct {
      */
     float    idle_max_a;    /**< the idle current's pass limit, A       */
     float    hold_max_a;    /**< the holding current's pass limit, A    */
-    uint16_t travel_max_ms;
+    uint16_t travel_max_ms;             /**< the travel time's pass limit, ms */
+    /** @brief The stall current's limit, A; the stall check always runs */
     float    stall_a;
 
     bool     report;        /**< a TXT report beside the CSV            */

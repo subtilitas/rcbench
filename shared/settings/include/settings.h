@@ -206,11 +206,11 @@ typedef struct {
     const char        *key;      /**< NVS key, 15 chars or fewer   */
     const char        *unit;     /**< shown beside the value; "" none */
     setting_cat_t      cat;             /**< the category the setting is listed in */
-    setting_type_t     type;
-    float              min;
-    float              max;
-    float              step;
-    float              def;
+    setting_type_t     type;            /**< the type of the value */
+    float              min;             /**< the lowest value */
+    float              max;             /**< the highest value */
+    float              step;            /**< the step of the value's keys and slider */
+    float              def;             /**< the default value */
     const char *const *options;  /**< SET_TYPE_ENUM only */
     uint8_t            option_count;    /**< number of options in options */
     /** A number whose values between 0 and this are not taken: 0 is

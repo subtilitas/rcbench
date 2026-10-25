@@ -705,6 +705,9 @@ enum {
  * The one rule for the page, the bus that opens the pins, the panel's writes
  * and the values SETUP offers.  It does not say the pins are free, or that the
  * board has them.
+ * @param sda the GPIO of the data line
+ * @param scl the GPIO of the clock line
+ * @return true when the pair is one I2C block's pair
  */
 static inline bool link_sn_pins_pair(unsigned sda, unsigned scl)
 {
@@ -1971,6 +1974,9 @@ enum {
 
 /**
  * @brief The CRC of @p n page registers, low byte first, seeded 0xFFFF.
+ * @param regs the page registers
+ * @param n the number of registers
+ * @return the CRC
  */
 static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
 {

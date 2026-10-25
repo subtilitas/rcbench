@@ -98,8 +98,8 @@ typedef struct {
     char     out[PAGE_CONSOLE_OUT_MAX];  /**< the output ring */
     uint16_t head;       /**< the next byte to take */
     uint16_t used;                      /**< bytes in the ring */
-    uint32_t dropped;
-    uint16_t staged[LINK_HT_W_STAGED];
+    uint32_t dropped;                   /**< bytes dropped from the output ring */
+    uint16_t staged[LINK_HT_W_STAGED];  /**< the registers staged for the HITEC page */
     uint8_t  watch;      /**< a HITEC operation runs: report its end */
     /* Work space, here rather than on the caller's stack. */
     char       fmt[PAGE_CONSOLE_OUT_LINE];

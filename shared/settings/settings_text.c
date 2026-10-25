@@ -24,28 +24,36 @@ _Static_assert(settings_opts_n_old_addr == 4 && settings_opts_n_old_ch == 2,
                "the kept INA3221 rows name 4 addresses and 2 channel sets");
 
 /** @brief settings_opts_<name>: each option list's English. */
+/// @cond X_MACRO
 #define UI_OPTIONS(name) const char *const settings_opts_##name[] = {
 #define UI_OPTION(en, de) (en),
 #define UI_OPTIONS_END(name) };
 #include "ui_text.def"
+/// @endcond
 
 /** @brief The settings' labels in English, by setting. */
 static const char *const k_labels[SETTING_COUNT] = {
+/// @cond X_MACRO
 #define UI_SETTING_LABEL(id, en, de) [id] = (en),
 #include "ui_text.def"
+/// @endcond
 };
 
 /** @brief The settings' help lines in English, by setting. */
 static const char *const k_helps[SETTING_COUNT] = {
+/// @cond X_MACRO
 #define UI_SETTING_HELP(id, en, de) [id] = (en),
 #include "ui_text.def"
+/// @endcond
 };
 
 /** @brief The option lists in the order of ui_text.def's UI_OPTIONS(),
  *  which a language's options follow. */
 static const char *const *const k_lists[] = {
+/// @cond X_MACRO
 #define UI_OPTIONS(name) settings_opts_##name,
 #include "ui_text.def"
+/// @endcond
 };
 
 const char *settings_label(setting_id_t id)

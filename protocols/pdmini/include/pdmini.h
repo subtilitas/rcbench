@@ -262,7 +262,7 @@ typedef struct {
     void (*attach)(void *ctx);                       /**< UART onto the pins */
     void (*detach)(void *ctx);                       /**< pins pulled down   */
     void (*send)(void *ctx, const uint8_t *p, size_t n);  /**< sends n bytes at p */
-    void *ctx;
+    void *ctx;                          /**< the context passed to each function */
 } pdmini_io_t;
 
 /** @brief What the module has said, read back rather than assumed. */
