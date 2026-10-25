@@ -140,6 +140,19 @@ bool hitec_image_put_reg(hitec_image_t *img, uint8_t addr, uint16_t value);
 bool hitec_image_put_version(hitec_image_t *img, uint8_t version);
 
 /**
+ * @brief Mark a cell or a D series register as not known: the servo may
+ *        hold another value than the image.
+ *
+ * The bytes keep their values; decodes and plans that need them fail with
+ * an UNKNOWN code until they are stored again.
+ *
+ * @param img   Image.
+ * @param addr  Classic cell, or the even address of a D series register.
+ * @return false, and no change, for NULL or an odd D series address.
+ */
+bool hitec_image_forget(hitec_image_t *img, uint8_t addr);
+
+/**
  * @brief True when byte @p addr was read.
  *
  * @param img   Image; NULL gives false.

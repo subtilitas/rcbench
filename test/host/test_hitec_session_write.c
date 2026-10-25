@@ -149,8 +149,10 @@ TEST_CASE(a_classic_write_without_its_ack_is_tried_3_times)
     CHECK_EQ(r->log[39].st.xfer.tx[1], 0x06);
     CHECK_EQ(r->log[41].st.xfer.tx[1], 0x06);
     CHECK_EQ(r->log[44].st.xfer.tx[1], 0x1C);
-    /* The cell took: the servo's checksum is off, the image says so. */
-    CHECK(hitec_c_eeprom_sum(&r->s.image) != 0);
+    /* The cell took with its `+ +`; the balance may have: not known. */
+    CHECK(hitec_image_known(&r->s.image, 0x06));
+    CHECK_EQ(hitec_image_cell(&r->s.image, 0x06), 0x1C);
+    CHECK(!hitec_image_known(&r->s.image, 0x1C));
 }
 
 TEST_CASE(a_write_the_servo_did_not_take_fails_the_read_back)
@@ -341,19 +343,41 @@ TEST_CASE(a_d_leave_waits_1000ms_for_the_reboot)
     }
 }
 
-TEST_CASE(a_d_write_whose_read_back_fails_keeps_the_old_value)
+/* A D series rig read whole, with a draft of speed 30% (0x54 = 6). */
+static void d_read_with_draft(rig_t *r)
 {
-    rig_t *r = &g;
     static const uint8_t script[] = { SC_ENTER_ON, SC_READ_ALL, SC_END };
-    const uint16_t old = 4095u;
 
     rig_init(r, HITEC_D, HITEC_SES_CLOCK_MS, 0);
     CHECK_EQ(rig_run(r, script), HITEC_SES_OK);
-    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), old);
+    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), 4095);
     r->target = r->s.image;
     CHECK_EQ(hitec_param_set(&r->target, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 30),
              HITEC_SET_OK);
-    /* 0x54, save, reboot, then the read-back's 0x00 silent 3 times. */
+}
+
+/* Every register of the full read is not known in the image. */
+static void check_d_forgotten(const hitec_session_t *s)
+{
+    size_t n = 0;
+    const uint8_t *d = hitec_d_read_list(&n);
+
+    for (size_t i = 0; i < n; ++i) {
+        if (hitec_image_known(&s->image, d[i])) {
+            T_FAIL("0x%02X still known", d[i]);
+        }
+    }
+}
+
+TEST_CASE(a_d_write_whose_read_back_fails_forgets_the_full_read)
+{
+    rig_t *r = &g;
+    hitec_image_t before;
+
+    d_read_with_draft(r);
+    before = r->s.image;
+    /* 0x54, save, reboot, then the read-back's 0x00 silent 3 times: the
+     * servo holds 6, the session has confirmed nothing. */
     r->n = 0;
     for (unsigned i = 3; i < 6u; ++i) {
         rig_force(r, i, HITEC_SES_RAN, HITEC_RX_ERR_SILENT);
@@ -363,15 +387,86 @@ TEST_CASE(a_d_write_whose_read_back_fails_keeps_the_old_value)
     }
     CHECK_EQ(hitec_session_result(&r->s), HITEC_SES_ERR_NO_SERVO);
     CHECK_EQ(r->s.step_index, 3);
-    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), old);
-    /* The servo is not confirmed at 6: the same draft plans the write
-     * again and the read-back confirms it. */
-    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+    CHECK_EQ(r->mem[0x54], 6);
+    check_d_forgotten(&r->s);
+    /* A restore to 4095 is refused until a read: no empty plan, no OK. */
+    CHECK_EQ(hitec_session_write(&r->s, &before), HITEC_SES_ERR_PLAN);
+    CHECK_EQ(r->s.plan_result, HITEC_PLAN_ERR_UNKNOWN);
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_ERR_PLAN);
+    CHECK_EQ(hitec_session_read_all(&r->s), HITEC_SES_BUSY);
+    while (rig_step(r) != HITEC_SES_STEP_DONE) {
+    }
+    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), 6);
+    CHECK_EQ(hitec_session_write(&r->s, &before), HITEC_SES_BUSY);
     CHECK_EQ(r->s.plan.n, 3);
     while (rig_step(r) != HITEC_SES_STEP_DONE) {
     }
     CHECK_EQ(hitec_session_result(&r->s), HITEC_SES_OK);
-    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), 6);
+    CHECK_EQ(r->mem[0x54] | (r->mem[0x55] << 8), 4095);
+    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), 4095);
+}
+
+TEST_CASE(an_abort_after_the_first_d_write_forgets_the_full_read)
+{
+    rig_t *r = &g;
+    hitec_ses_step_t st;
+
+    d_read_with_draft(r);
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+    r->n = 0;
+    while (r->n == 0u) {
+        (void)rig_step(r);  /* the gap, then 0x54 = 6 goes out */
+    }
+    CHECK_EQ(r->log[0].st.xfer.tx[2], 0x54);
+    CHECK_EQ(hitec_session_next(&r->s, r->now, &st), HITEC_SES_STEP_WAIT);
+    CHECK(!hitec_session_abort(&r->s));
+    CHECK_EQ(hitec_session_result(&r->s), HITEC_SES_ERR_ABORTED);
+    check_d_forgotten(&r->s);
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_ERR_PLAN);
+    /* An abort before any step ran forgets nothing. */
+    d_read_with_draft(r);
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+    CHECK(!hitec_session_abort(&r->s));
+    CHECK(hitec_image_known(&r->s.image, 0x54));
+    /* Nor does a refused one, nor a read-back that ran to its compare. */
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+    r->ignore = 1;
+    r->ign = 0x54;
+    while (rig_step(r) != HITEC_SES_STEP_DONE) {
+    }
+    CHECK_EQ(hitec_session_result(&r->s), HITEC_SES_ERR_VERIFY);
+    CHECK(hitec_image_known(&r->s.image, 0x54));
+    CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), 4095);
+}
+
+TEST_CASE(a_classic_write_with_no_ack_on_its_last_try_forgets_its_cell)
+{
+    rig_t *r = &g;
+    hitec_image_t before;
+
+    rig_init(r, HITEC_CLASSIC, HITEC_SES_CLOCK_MS, 0);
+    /* 3 entry steps and 36 reads; the cell 0x06 gets no `+ +` on any of
+     * its 3 tries (steps 39 to 41); the servo took it on the last. */
+    for (unsigned i = 39; i < 42u; ++i) {
+        rig_force(r, i, HITEC_SES_RAN, HITEC_RX_ERR_LATE);
+    }
+    CHECK_EQ(rig_run(r, (const uint8_t[]){ SC_ENTER, SC_READ_BLOCK, SC_END }),
+             HITEC_SES_OK);
+    before = r->s.image;
+    CHECK_EQ(rig_run(r, (const uint8_t[]){ SC_WRITE, SC_END }),
+             HITEC_SES_ERR_WRITE);
+    CHECK_EQ(r->n, 42);
+    CHECK_EQ(r->s.step_index, 0);
+    CHECK_EQ(r->mem[0x06], 0x1C);
+    CHECK(!hitec_image_known(&r->s.image, 0x06));
+    CHECK(!hitec_image_known(&r->s.image, 0x1C));
+    for (uint8_t c = 0; c < HITEC_C_BLOCK_LEN; ++c) {
+        if (c != 0x06 && c != 0x1C) {
+            CHECK(hitec_image_known(&r->s.image, c));
+        }
+    }
+    CHECK_EQ(hitec_session_write(&r->s, &before), HITEC_SES_ERR_PLAN);
+    CHECK_EQ(r->s.plan_result, HITEC_PLAN_ERR_UNKNOWN);
 }
 
 int main(void)
@@ -385,6 +480,8 @@ int main(void)
     RUN(the_classic_gap_holds_across_both_clock_wraps);
     RUN(the_longest_plan_wait_is_reported_whole);
     RUN(a_d_leave_waits_1000ms_for_the_reboot);
-    RUN(a_d_write_whose_read_back_fails_keeps_the_old_value);
+    RUN(a_d_write_whose_read_back_fails_forgets_the_full_read);
+    RUN(an_abort_after_the_first_d_write_forgets_the_full_read);
+    RUN(a_classic_write_with_no_ack_on_its_last_try_forgets_its_cell);
     return test_summary("hitec_session_write");
 }

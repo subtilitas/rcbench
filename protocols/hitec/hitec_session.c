@@ -168,8 +168,73 @@ static uint32_t series_gap(const hitec_session_t *s)
 /* --- operations ----------------------------------------------------------- */
 
 /**
+ * @brief True when the read-back of the running write has read @p addr.
+ *
+ * @param s     Session.
+ * @param addr  Address.
+ * @return true for an address of the read-back's set it has read.
+ */
+static bool read_back(const hitec_session_t *s, uint8_t addr)
+{
+    bool in_set = false;
+
+    if (s->phase != PH_READ) {
+        return false;
+    }
+    if (s->series == HITEC_CLASSIC) {
+        in_set = addr < HITEC_C_BLOCK_LEN;
+    } else {
+        size_t n = 0;
+        const uint8_t *d = hitec_d_read_list(&n);
+
+        for (size_t i = 0; i < n; ++i) {
+            in_set = in_set || d[i] == addr;
+        }
+    }
+    return in_set && !hitec_ses_in_set(s->todo, addr);
+}
+
+/**
+ * @brief After a write that failed: mark every address the servo may have
+ *        changed and the read-back has not read as not known.
+ *
+ * D series: every register of the full read and every register the plan
+ * names; a save, a reboot or a factory reset may change any of them.
+ * Classic: the cell of the step that ran with no `+ +`, and the balance.
+ *
+ * @param s  Session.
+ */
+static void forget_unsure(hitec_session_t *s)
+{
+    size_t n = 0;
+    const uint8_t *d = hitec_d_read_list(&n);
+
+    for (unsigned a = 0; a < SET_BITS; ++a) {
+        const uint8_t addr = (uint8_t)a;
+        bool may = false;
+
+        if (s->series == HITEC_CLASSIC) {
+            may = addr == HITEC_C_SUM_LAST
+                  || (s->unsure != 0u && s->phase == PH_WRITE
+                      && addr == s->plan.step[s->step_index].addr);
+        } else if ((addr & 1u) == 0u) {
+            for (size_t i = 0; i < n; ++i) {
+                may = may || d[i] == addr;
+            }
+            for (unsigned i = 0; i < s->plan.n; ++i) {
+                may = may || s->plan.step[i].addr == addr;
+            }
+        }
+        if (may && !read_back(s, addr)) {
+            (void)hitec_image_forget(&s->image, addr);
+        }
+    }
+}
+
+/**
  * @brief End the operation with @p res; an abort asked for ends it with
- *        HITEC_SES_ERR_ABORTED.
+ *        HITEC_SES_ERR_ABORTED.  A write that ends with an error after a
+ *        step ran forgets what the servo may have changed.
  *
  * @param s    Session.
  * @param res  Result.
@@ -179,6 +244,9 @@ static hitec_ses_t finish(hitec_session_t *s, hitec_ses_t res)
 {
     if (s->abort != 0u) {
         res = HITEC_SES_ERR_ABORTED;
+    }
+    if (s->op == OP_WRITE && res != HITEC_SES_OK && s->sent != 0u) {
+        forget_unsure(s);
     }
     s->op = OP_NONE;
     s->out = 0;
@@ -374,6 +442,8 @@ static hitec_ses_t start_plan(hitec_session_t *s, bool compare)
 {
     memset(s->diff, 0, sizeof(s->diff));
     s->step_index = 0;
+    s->sent = 0;
+    s->unsure = 0;
     s->compare = compare ? 1u : 0u;
     if (s->plan.n == 0u) {
         s->result = HITEC_SES_OK;
@@ -712,6 +782,7 @@ static hitec_ses_t write_took(hitec_session_t *s, uint32_t now)
     if (s->series == HITEC_CLASSIC) {
         (void)hitec_image_put_cell(&s->image, w->addr, (uint8_t)w->value);
     }
+    s->unsure = 0;
     ++s->step_index;
     if (w->wait_ms > gap) {
         gap = w->wait_ms;
@@ -807,6 +878,10 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
     /* Every result starts the series gap first, an abort's included; a
      * step with a longer wait sets that below. */
     gap_from(s, now, series_gap(s));
+    if (s->phase == PH_WRITE && r->run == HITEC_SES_RAN) {
+        s->sent = 1;
+        s->unsure = 1;  /* until write_took() has its `+ +` */
+    }
     if (r->run == HITEC_SES_CUT) {
         return finish(s, HITEC_SES_ERR_CUT);
     }

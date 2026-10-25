@@ -38,6 +38,7 @@ int hitec_headers_link(void)
     }
     hitec_image_init(&img, HITEC_D);
     (void)hitec_image_put_reg(&img, HITEC_D_REG_MODEL, 34485u);
+    (void)hitec_image_forget(&img, 0x54);
     (void)hitec_param_get(&img, HITEC_LAYOUT_D, HITEC_P_D_MODEL, &v);
     (void)hitec_plan(&img, &img, &plan);
     if (hitec_session_init(&ses, HITEC_D, HITEC_SES_CLOCK_MS)
