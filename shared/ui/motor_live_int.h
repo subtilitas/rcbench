@@ -102,116 +102,212 @@ enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
  * The panel polls at 20Hz, one sample per plot column, so the time base is
  * the plot width in samples: PLOT_W / 20s.
  */
+/**
+ * @brief The panel's polling rate, 20Hz: one sample per plot column, so the
+ *        time base is PLOT_W / 20s.
+ */
 #define SAMPLE_HZ 20.0f
+/**
+ * @brief MOTOR & ESC's LIVE state: the plot, the throttle slider and the
+ *        bench's report, the ARM gate, the knob's pending command, the
+ *        revisions each frame buffer last drew and the touches tracked.
+ */
 typedef struct {
-    ui_plot_t     plot;
-    ui_slider_t   slider;
-    ui_tabs_t     tabs;
-    bench_state_t bench;
+    ui_plot_t     plot;                 /**< plot of volts, amps, power and RPM */
+    ui_slider_t   slider;               /**< throttle slider */
+    ui_tabs_t     tabs;                 /**< PLOT | TABLE tabs */
+    bench_state_t bench;                /**< the bench's report */
     /* Whether the throttle follows its controls (ui_value_gate.h): the
      * bench's report, an ARM the hold has asked for and a DISARM or STOP not
      * yet answered.  gate.armed is what the ARM button reads. */
+    /**
+     * @brief Whether the throttle follows its controls; gate.armed is what the
+     *        ARM button reads
+     */
     ui_value_gate_t gate;
-    motor_cmd_t   pending;
+    motor_cmd_t   pending;              /**< the command waiting for the application */
     /* The knob's throttle command waiting in `pending`, and what to put back
      * if it is withdrawn: the slider's value before the knob moved it, and
      * whether a throttle was pending before it. */
+    /** @brief Whether the knob's throttle command waits in pending */
     bool          knob_pending;
+    /** @brief Whether a throttle was pending before the knob moved */
     bool          knob_had_cmd;
-    float         knob_prev;
+    float         knob_prev;            /**< slider value before the knob moved it */
     /* A finger owned the slider at some point since knob_frame(). */
+    /** @brief Whether a finger owned the slider since knob_frame() */
     bool          knob_finger;
+    /** @brief Bit per frame buffer: its title and strip were drawn */
     unsigned      drawn_mask;
     /* The arm state of the bench itself, which is what bounds a run.  Kept
      * apart from the gate: leave() reads the bench as disarmed for a disarm
      * it has only asked for. */
-    bool          bench_armed;
+    bool          bench_armed;          /**< arm state of the bench itself, which bounds a run */
     /* The push count last painted into each framebuffer; UINT32_MAX
      * means "no paint recorded", which is not a count push can reach. */
+    /**
+     * @brief Push count last painted into each frame buffer; UINT32_MAX for
+     *        none
+     */
     uint32_t      drawn_push[2];
     /* And the plot revision, which moves for fewer reasons: a stopped plot
      * takes no samples, so a disarmed bench repaints its readouts and leaves
      * the trace alone. */
-    uint32_t      drawn_plot[2];
+    uint32_t      drawn_plot[2];        /**< plot revision last painted into each frame buffer */
     /* The telemetry tag last painted, 0xFF for none.  It changes on an arm
      * edge rather than with the numbers, so it cannot ride drawn_push. */
+    /**
+     * @brief Telemetry tag last painted into each frame buffer; 0xFF for none
+     */
     uint8_t       drawn_title[2];
     /* Bumped by anything that changes a button's or the tab row's
      * appearance.  The throttle carries its own, because a drag moves it on
      * every frame and repainting the buttons with it costs the row's full
      * 800 x 90px rather than the readout's 396 x 30. */
-    uint32_t      ctrl_rev;
-    uint32_t      drawn_ctrl[2];
-    uint32_t      thr_rev;
-    uint32_t      drawn_thr[2];
+    uint32_t      ctrl_rev;             /**< revision of the buttons and the tab row */
+    uint32_t      drawn_ctrl[2];        /**< ctrl_rev last painted into each frame buffer */
+    uint32_t      thr_rev;              /**< revision of the throttle's readout and track */
+    uint32_t      drawn_thr[2];         /**< thr_rev last painted into each frame buffer */
     /* ARM animates, so it gets a third counter and repaints its own rect. */
-    uint32_t      arm_rev;
-    uint32_t      drawn_arm[2];
+    uint32_t      arm_rev;              /**< revision of the ARM button, which animates */
+    uint32_t      drawn_arm[2];         /**< arm_rev last painted into each frame buffer */
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
     /* The GPIOs bound as throttle (bit n is GPIO n) and whether a binding
      * was read: what the throttle panel names as its target. */
-    uint64_t      thr_pins;
-    bool          thr_pins_known;
+    uint64_t      thr_pins;             /**< GPIOs bound as throttle, bit n for GPIO n */
+    bool          thr_pins_known;       /**< whether a binding was read */
     /* The protocol they are bound as: an outbind_protos() index, 0 for
      * none known, MOTOR_PROTO_MIXED for several. */
+    /**
+     * @brief Protocol they are bound as: an outbind_protos() index, 0 for none
+     *        known, MOTOR_PROTO_MIXED for several
+     */
     uint8_t       thr_proto;
     /* port_view_revision() when the TARGET row last named the DShot
      * programming ports. */
+    /**
+     * @brief Port_view_revision() when the TARGET row last named the DShot
+     *        programming ports
+     */
     uint32_t      thr_ports_rev;
     /* The strip's and SETTINGS' page's revisions last painted into each
      * framebuffer, and whether the TARGET row was drawn locked. */
-    uint32_t      drawn_strip[2];
+    uint32_t      drawn_strip[2];       /**< strip revision last painted into each frame buffer */
+    /** @brief SETTINGS page revision last painted into each frame buffer */
     uint32_t      drawn_page[2];
-    bool          target_locked;
+    bool          target_locked;        /**< whether the TARGET row was drawn locked */
     /* PROGRAM's session as each framebuffer last had it: whether it was
      * shown, its revision, and the output strip's text (a signature). */
+    /** @brief Whether PROGRAM's session was shown in each frame buffer */
     bool          drawn_sess_shown[2];
-    uint32_t      drawn_sess[2];
+    uint32_t      drawn_sess[2];        /**< the session's revision in each frame buffer */
+    /** @brief The output strip's text signature in each frame buffer */
     uint32_t      drawn_ostrip[2];
     /* Whether each channel's peak is a measurement: a valid live reading
      * has arrived since the run started.  Kept apart from the live flags,
      * which a source that stops answering mid-run clears while the run's
      * peaks it measured stand. */
-    bool          pk_ok[S_COUNT];
+    bool          pk_ok[S_COUNT];       /**< per channel: whether its peak is a measurement */
     ui_hold_t     arm;           /**< the ARM gesture: ui_widgets owns it  */
     bool          kst_held;      /**< the servo programmer holds a port    */
     bool          no_pin;        /**< the binding is read, with no motor pin */
-    gfx_rect_t    arm_rect;
-    gfx_rect_t    reset_rect;
+    gfx_rect_t    arm_rect;             /**< ARM and DISARM */
+    gfx_rect_t    reset_rect;           /**< RESET PEAKS */
     gfx_rect_t    down_rect;    /**< one percentage point down */
     gfx_rect_t    up_rect;      /**< and one up                */
     int           pressed;      /**< 0 none, 1 arm, 2 reset, 3 -1, 4 +1 */
-    uint8_t       press_id;
-    bool          have_press;
+    uint8_t       press_id;             /**< touch id of the press */
+    bool          have_press;           /**< whether a press is on the glass */
 } mo_state_t;
 
 /* Defined in motor_screen.c. */
+/** @brief MOTOR & ESC's LIVE state, in motor_screen.c. */
 extern mo_state_t mo_s;
+/** @brief Short name for mo_s inside the MOTOR & ESC files. */
 #define s mo_s
 
 /* --- motor_screen.c: the channels, the state's rules and the commands --- */
 
+/** @brief The four channels' plot series: volts, amps, power and RPM. */
 extern const ui_plot_series_t mo_series[S_COUNT];
+/** @brief Per channel, the bench report flags that make its reading valid. */
 extern const uint16_t mo_ok[S_COUNT];
+/** @brief Per channel, the text id of its name. */
 extern const ui_text_id_t mo_names[S_COUNT];
 
+/** @brief Sets the plot's and the slider's colours from the active theme. */
 void mo_bind_colours(void);
+/**
+ * @brief Returns whether the throttle follows its controls: only in
+ *        UI_VALUE_LIVE, not on a disarmed bench, not between the ARM hold and
+ *        the bench's answer, and not after a DISARM or STOP until the bench
+ *        reports disarmed.
+ * @return true when the throttle is live
+ */
 bool mo_value_live(void);
+/** @brief Ends a drag on the track and keeps the knob out of the frame. */
 void mo_end_drag(void);
+/**
+ * @brief Posts a command in the one slot, coalescing: a new command overwrites
+ *        the pending one, except that a pending DISARM survives everything.
+ * @param kind the command
+ * @param value the throttle for MOTOR_CMD_THROTTLE, percent
+ */
 void mo_post(motor_cmd_kind_t kind, float value);
 bool mo_arm_locked(void);
 bool mo_no_motor_pin(void);
+/**
+ * @brief Puts the slider, the readout and the step keys at 0% across an arm or
+ *        disarm edge, drops a pending throttle and releases a drag.
+ */
 void mo_throttle_from_zero(void);
+/**
+ * @brief Returns whether the bench is SAFE as this screen sees it: disarmed,
+ *        with no ARM or DISARM asked and unanswered.
+ * @return true when SAFE
+ */
 bool mo_bench_safe(void);
+/**
+ * @brief Returns whether the Idle pulse and Full pulse may change: SAFE and
+ *        ARM not held.
+ * @return true when the endpoints are free
+ */
 bool mo_endpoints_free(void);
+/**
+ * @brief Returns whether the TARGET row takes no press: the bench is not SAFE,
+ *        ARM is held or the servo programmer holds its port.
+ * @return true when the row is locked
+ */
 bool mo_target_locked(void);
 
 /* --- motor_events.c ----------------------------------------------------- */
 
+/**
+ * @brief Returns whether a DOWN at (@p x, @p y) is on a control whose press
+ *        stops what the bench drives: a session's ABORT, or DISARM while the
+ *        button reads DISARM.
+ * @param x column, px
+ * @param y row, px
+ * @return true when the point is on such a control
+ */
 bool mo_safe_at(int x, int y);
+/**
+ * @brief Takes a touch event.
+ * @param evt the event
+ */
 void mo_event(const touch_event_t *evt);
+/**
+ * @brief Advances the screen by one frame: the ARM hold and flash animations,
+ *        the knob and the polled state.
+ * @param dt_s time since the last tick, s
+ */
 void mo_tick(float dt_s);
 
 /* --- motor_draw.c ------------------------------------------------------- */
 
+/**
+ * @brief Draws the screen into frame buffer @p buffer_index.
+ * @param c canvas drawn on
+ * @param buffer_index the frame buffer
+ */
 void mo_render(gfx_canvas_t *c, int buffer_index);
