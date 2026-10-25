@@ -95,15 +95,16 @@ const char *sp_when_text(const esc_manual_t *m)
     return "?";
 }
 
-/*
- * The stick engine's refusals are English, held where the engine writes
- * them (esc_stick.c); the screen shows each in the language showing by
- * matching the engine's words.  One the table does not know shows as the
- * engine wrote it.
+/**
+ * @var k_why
+ * @brief The stick engine's refusals, English, held where the engine writes
+ *        them (esc_stick.c), each with the text the screen shows in the
+ *        language showing.  A refusal the table does not know shows as the
+ *        engine wrote it.
  */
 static const struct {
-    const char *engine;
-    ui_text_id_t text;
+    const char *engine;                 /**< the engine's words */
+    ui_text_id_t text;                  /**< the text id shown for them */
 } k_why[] = {
     { "no profile", TX_ESC_WHY_NO_PROFILE },
     { "needs a person at the ESC", TX_ESC_WHY_PERSON },
@@ -287,8 +288,10 @@ uint32_t sp_list_key(void)
     return (v << 16) ^ cap;
 }
 
-/* @p a against @p b with the letters A to Z folded, as the search folds
- * them: the makers' order and their grouping. */
+/**
+ * @brief @p a against @p b with the letters A to Z folded, as the search folds
+ *        them: the makers' order and their grouping.
+ */
 static int sp_casecmp(const char *a, const char *b)
 {
     for (;; ++a, ++b) {
@@ -308,11 +311,11 @@ bool sp_model_runs(const esc_profile_t *p, int model)
     return sp_model_why(p, model, buf, sizeof(buf)) == NULL;
 }
 
-/*
- * The first level: every maker, alphabetical with case folded, that the
- * search finds a model of (esc_model_matches(); every one while it is
- * empty), with its models, those found and those of them that run.  A
- * card profile joins its maker as a built-in one does.
+/**
+ * @brief The first level: every maker, alphabetical with case folded, that the
+ *        search finds a model of (esc_model_matches(); every one while it is
+ *        empty), with its models, those found and those of them that run.  A
+ *        card profile joins its maker as a built-in one does.
  */
 static void sp_build_makers(stick_t *t)
 {
@@ -357,7 +360,9 @@ static void sp_build_makers(stick_t *t)
     t->count = k;
 }
 
-/* One key of the models' order: smaller first, 0 -- not stated -- last. */
+/**
+ * @brief One key of the models' order: smaller first, 0 -- not stated -- last.
+ */
 static int sp_key_cmp(uint32_t a, uint32_t b)
 {
     if (a == b) {
@@ -369,8 +374,10 @@ static int sp_key_cmp(uint32_t a, uint32_t b)
     return (a < b) ? -1 : 1;
 }
 
-/* Current, then voltage, then name with case folded; a key a model does
- * not state sorts it last on that key.  Ties keep the registry's order. */
+/**
+ * @brief Current, then voltage, then name with case folded; a key a model does
+ *        not state sorts it last on that key.  Ties keep the registry's order.
+ */
 static int sp_by_model(const void *a, const void *b)
 {
     const sp_row_t *x = a, *y = b;
@@ -390,11 +397,11 @@ static int sp_by_model(const void *a, const void *b)
     return c;
 }
 
-/*
- * The second level: the open maker's models the search finds, one row a
- * model, by current, voltage and name; each row is its family's profile.
- * The registry holds a maker to ESC_MAKER_MODELS_MAX, SP_MODELS, so every
- * one of them has a row.
+/**
+ * @brief The second level: the open maker's models the search finds, one row a
+ *        model, by current, voltage and name; each row is its family's profile.
+ *        The registry holds a maker to ESC_MAKER_MODELS_MAX, SP_MODELS, so every
+ *        one of them has a row.
  */
 static void sp_build_models(stick_t *t)
 {

@@ -28,8 +28,10 @@
 
 /* ------------------------------------------- the stick class, drawn ----- */
 
-/* The search field: what is searched for, or SEARCH; X clears it while
- * the keyboard is closed. */
+/**
+ * @brief The search field: what is searched for, or SEARCH; X clears it while
+ *        the keyboard is closed.
+ */
 static DRAWER void sp_draw_find(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -56,14 +58,16 @@ static DRAWER void sp_draw_find(gfx_canvas_t *c)
 /** @brief The red MANUAL tag's height, px: drawn, not tapped. */
 #define SP_TAG_H 28
 
-/* The red MANUAL tag's width, px. */
+/** @brief The red MANUAL tag's width, px. */
 static int sp_tag_w(void)
 {
     return gfx_text_cells(TR(SP_HAND_TAG)) * SP_CELL + 14;
 }
 
-/* The red MANUAL tag, its right edge at @p right, in the middle of the row
- * from @p y; its width, px. */
+/**
+ * @brief The red MANUAL tag, its right edge at @p right, in the middle of the row
+ *        from @p y; its width, px.
+ */
 static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
 {
     const char *tag = TR(SP_HAND_TAG);
@@ -80,8 +84,10 @@ static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
     return w;
 }
 
-/* "55A" and "25V" or "25.2V" for a model's current and voltage; "-"
- * where it states none. */
+/**
+ * @brief "55A" and "25V" or "25.2V" for a model's current and voltage; "-"
+ *        where it states none.
+ */
 static void sp_amps(char *out, size_t n, const esc_model_t *m)
 {
     if (m->current_a == 0u) {
@@ -91,6 +97,10 @@ static void sp_amps(char *out, size_t n, const esc_model_t *m)
     }
 }
 
+/**
+ * @brief Writes a model's voltage as "25V" or "25.2V" into @p out, "-" where
+ *        it states none.
+ */
 static void sp_volts(char *out, size_t n, const esc_model_t *m)
 {
     if (m->v_max_mv == 0u) {
@@ -103,7 +113,9 @@ static void sp_volts(char *out, size_t n, const esc_model_t *m)
     }
 }
 
-/* The run mark of a narrowed row: filled in the accent, or a ring. */
+/**
+ * @brief The run mark of a narrowed row: filled in the accent, or a ring.
+ */
 static void sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs)
 {
     const int mx = r.x + r.w - 14, my = r.y + r.h / 2;
@@ -114,9 +126,11 @@ static void sp_mark_runs(gfx_canvas_t *c, gfx_rect_t r, bool runs)
     }
 }
 
-/* A maker's row: its name, the MANUAL tag where a model it lists has
- * manual steps, and its models: those that run of all, or while a search
- * is typed those found of all and those of them that run. */
+/**
+ * @brief A maker's row: its name, the MANUAL tag where a model it lists has
+ *        manual steps, and its models: those that run of all, or while a search
+ *        is typed those found of all and those of them that run.
+ */
 static DRAWER void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r,
                                  const sp_maker_t *m, bool dock,
                                  bool searching)
@@ -159,8 +173,10 @@ static DRAWER void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r,
                      : ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
 }
 
-/* A model's row: its name, current and voltage, its family, the MANUAL
- * tag, and what its family's profile is or why it does not run. */
+/**
+ * @brief A model's row: its name, current and voltage, its family, the MANUAL
+ *        tag, and what its family's profile is or why it does not run.
+ */
 static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
                                  const sp_row_t *row, bool dock)
 {
@@ -245,11 +261,11 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
                 GFX_ALIGN_RIGHT);
 }
 
-/*
- * The list: the crumb and the search field above, a level's rows, and the
- * footer: the count at the right under the rows, or beside the docked
- * keyboard at the left; the line that no profile is verified while the
- * keyboard is closed.
+/**
+ * @brief The list: the crumb and the search field above, a level's rows, and the
+ *        footer: the count at the right under the rows, or beside the docked
+ *        keyboard at the left; the line that no profile is verified while the
+ *        keyboard is closed.
  */
 static DRAWER void sp_draw_list(gfx_canvas_t *c)
 {
@@ -409,6 +425,10 @@ static void sp_row_shade(gfx_canvas_t *c, int i)
                         ui_theme_color(UI_C_PANEL_SUNK));
 }
 
+/**
+ * @brief Writes a setting's value with its unit into @p out; the voltage reads
+ *        as the profile's own when set to 0.
+ */
 static void sp_setting_text(setting_id_t id, char *out, size_t n)
 {
     if (id == SET_STICK_V && !(settings_get(id) > 0.0f)) {
@@ -420,10 +440,10 @@ static void sp_setting_text(setting_id_t id, char *out, size_t n)
     snprintf(out, n, "%s%s", v, settings_def(id)->unit);
 }
 
-/*
- * TIMING: the settings in the parameter card; in the side column the
- * title and the page keys, the note that the values are defaults, and the
- * picked setting's label and help; DEFAULTS and CLOSE at the foot.
+/**
+ * @brief TIMING: the settings in the parameter card; in the side column the
+ *        title and the page keys, the note that the values are defaults, and the
+ *        picked setting's label and help; DEFAULTS and CLOSE at the foot.
  */
 static DRAWER void sp_draw_timing(gfx_canvas_t *c)
 {
@@ -575,11 +595,11 @@ static DRAWER void sp_draw_values(gfx_canvas_t *c, const esc_item_t *it,
     (void)sp_wrap(c, SIDE_IN, y, LINE_P, line, SIDE_CELLS, room, ink);
 }
 
-/*
- * A profile's items in the parameter card; in the side column CHANGE and
- * the page keys, MANUAL INTERVENTION REQUIRED, how the menu works, and
- * the picked item's values and where it applies; the note and RUN at the
- * foot.
+/**
+ * @brief A profile's items in the parameter card; in the side column CHANGE and
+ *        the page keys, MANUAL INTERVENTION REQUIRED, how the menu works, and
+ *        the picked item's values and where it applies; the note and RUN at the
+ *        foot.
  */
 static DRAWER void sp_draw_items(gfx_canvas_t *c)
 {
@@ -695,8 +715,10 @@ static DRAWER void sp_draw_items(gfx_canvas_t *c)
                        : ui_theme_color(UI_C_PANEL_HI), false, can, SP_FONT);
 }
 
-/* The profile page's crumb: BACK and the profile's name in
- * SP_FONT_CRUMB, up to TIMING where the page shows it. */
+/**
+ * @brief The profile page's crumb: BACK and the profile's name in
+ *        SP_FONT_CRUMB, up to TIMING where the page shows it.
+ */
 static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
 {
     const stick_t *t = &s.st;
@@ -770,6 +792,11 @@ static void sp_draw_device(gfx_canvas_t *c)
     }
 }
 
+/**
+ * @brief Draws the page set by the stage: the manual steps, the prompt, the
+ *        warning, the list or the profile's page.
+ * @param c the canvas
+ */
 void esc_stick_panel_render(gfx_canvas_t *c)
 {
     if (s.st.hand_open && s.st.hand_p != NULL) {

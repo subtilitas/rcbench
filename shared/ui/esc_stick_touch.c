@@ -28,11 +28,19 @@
  * may meet. */
 #include "esc_stick_panel_int.h"
 
+/**
+ * @brief Returns whether a press at (@p px, @p py) is on rectangle @p r and
+ *        nothing has claimed it yet.
+ */
 static bool hit_down(gfx_rect_t r, int px, int py)
 {
     return pg.pass == PASS_PRESS && !pg.found && gfx_rect_contains(r, px, py);
 }
 
+/**
+ * @brief Follows the warning's hold: the contact leaving the button ends it; a
+ *        release ends it.
+ */
 static void sp_track(const touch_event_t *evt)
 {
     stick_t *t = &s.st;
@@ -59,7 +67,7 @@ int sp_rows_shown(int total, int scroll)
     return (n > ROWS_MAX) ? ROWS_MAX : (n < 0) ? 0 : n;
 }
 
-/* The search's keyboard, docked right of the narrowed rows. */
+/** @brief The search's keyboard, docked right of the narrowed rows. */
 static gfx_rect_t sp_dock(void)
 {
     return (gfx_rect_t){ SP_DOCK_X, SP_ROW_Y0, (int16_t)(W - PAD - SP_DOCK_X),
@@ -87,10 +95,10 @@ void sp_find_close(void)
     }
 }
 
-/*
- * One event for the search's keyboard.  Every key that changes the text
- * filters the list at once; OK keeps the text, CANCEL goes back to the
- * search the keyboard opened on.
+/**
+ * @brief One event for the search's keyboard.  Every key that changes the text
+ *        filters the list at once; OK keeps the text, CANCEL goes back to the
+ *        search the keyboard opened on.
  */
 static void sp_find_event(const touch_event_t *evt)
 {
@@ -227,9 +235,11 @@ uint32_t esc_stick_panel_showing(uint32_t h)
     return h;
 }
 
-/* BACK on the list climbs a level: a maker's models to the makers, with
- * the makers' scroll and the search kept; the makers close the session,
- * back to PROGRAM's list.  The keyboard closes, the search as typed. */
+/**
+ * @brief BACK on the list climbs a level: a maker's models to the makers, with
+ *        the makers' scroll and the search kept; the makers close the session,
+ *        back to PROGRAM's list.  The keyboard closes, the search as typed.
+ */
 static void sp_list_up(void)
 {
     stick_t *t = &s.st;
@@ -244,7 +254,9 @@ static void sp_list_up(void)
     ++pg.rev;
 }
 
-/* BACK on a profile's page: the list it was picked from, its scroll kept. */
+/**
+ * @brief BACK on a profile's page: the list it was picked from, its scroll kept.
+ */
 static void sp_to_list(void)
 {
     s.st.shown = false;
@@ -253,7 +265,7 @@ static void sp_to_list(void)
     ++pg.rev;
 }
 
-/* TIMING closes; what it changed is asked to be saved. */
+/** @brief TIMING closes; what it changed is asked to be saved. */
 static void sp_timing_close(void)
 {
     s.st.timing = false;
