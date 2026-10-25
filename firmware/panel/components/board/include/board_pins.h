@@ -26,13 +26,13 @@ extern "C" {
 
 /** @brief The board and the display as the splash names them. */
 #define BOARD_NAME_TEXT             "ESP32-P4 7B"
-#define BOARD_DISPLAY_TEXT          "1024x600 DSI"
+#define BOARD_DISPLAY_TEXT          "1024x600 DSI"  /**< the display as the splash names it */
 
 /* ------------------------------------------------------------------ panel */
 
 /** @brief The panel's size in pixels. */
 #define BOARD_LCD_H_RES             1024
-#define BOARD_LCD_V_RES             600
+#define BOARD_LCD_V_RES             600  /**< panel height, rows */
 
 /**
  * @brief The area the UI (user interface) draws: the whole panel, 1024 x
@@ -60,12 +60,12 @@ extern "C" {
  * 70.3MHz at 60Hz.
  */
 #define BOARD_LCD_DPI_CLOCK_MHZ     52.0f
-#define BOARD_LCD_HSYNC_PULSE_WIDTH 10
-#define BOARD_LCD_HSYNC_BACK_PORCH  160
-#define BOARD_LCD_HSYNC_FRONT_PORCH 160
-#define BOARD_LCD_VSYNC_PULSE_WIDTH 1
-#define BOARD_LCD_VSYNC_BACK_PORCH  23
-#define BOARD_LCD_VSYNC_FRONT_PORCH 12
+#define BOARD_LCD_HSYNC_PULSE_WIDTH 10  /**< horizontal sync pulse width, pixel clocks */
+#define BOARD_LCD_HSYNC_BACK_PORCH  160  /**< horizontal back porch, pixel clocks */
+#define BOARD_LCD_HSYNC_FRONT_PORCH 160  /**< horizontal front porch, pixel clocks */
+#define BOARD_LCD_VSYNC_PULSE_WIDTH 1   /**< vertical sync pulse width, lines */
+#define BOARD_LCD_VSYNC_BACK_PORCH  23  /**< vertical back porch, lines */
+#define BOARD_LCD_VSYNC_FRONT_PORCH 12  /**< vertical front porch, lines */
 
 /**
  * @brief The DSI link: 2 data lanes.  The lane rate is one define; 1000, 900 and
@@ -74,14 +74,14 @@ extern "C" {
  * 500Mbit/s as its maximum; Waveshare's examples run 900 and 1000.
  */
 #define BOARD_DSI_LANES             2
-#define BOARD_DSI_LANE_MBPS         1000
+#define BOARD_DSI_LANE_MBPS         1000  /**< per-lane rate, Mbit/s */
 
 /**
  * @brief The DSI PHY (physical layer) supply: on-chip LDO (low-dropout
  *        regulator) channel 3 at 2500mV, on before the bus starts.
  */
 #define BOARD_DSI_PHY_LDO_CHAN      3
-#define BOARD_DSI_PHY_LDO_MV        2500
+#define BOARD_DSI_PHY_LDO_MV        2500  /**< DSI PHY supply voltage, mV */
 
 /**
  * @brief LCD reset, active low; a 10kOhm pull-down holds the panel in
@@ -109,10 +109,10 @@ extern "C" {
  * full brightness.  Whether a constant high is fully dark is not measured.
  */
 #define BOARD_BL_PIN                GPIO_NUM_32
-#define BOARD_BL_LEDC_TIMER         1
-#define BOARD_BL_LEDC_CHANNEL       1
-#define BOARD_BL_PWM_HZ             5000
-#define BOARD_BL_DUTY_BITS          10
+#define BOARD_BL_LEDC_TIMER         1   /**< LEDC timer of the backlight, 1 */
+#define BOARD_BL_LEDC_CHANNEL       1   /**< LEDC channel of the backlight, 1 */
+#define BOARD_BL_PWM_HZ             5000  /**< backlight PWM frequency, 5000Hz */
+#define BOARD_BL_DUTY_BITS          10  /**< backlight PWM resolution, 10 bits */
 
 /* -------------------------------------------------------------------- I2C */
 
@@ -121,9 +121,9 @@ extern "C" {
  *        reach the touch connector J3.
  */
 #define BOARD_I2C_PORT              0
-#define BOARD_I2C_PIN_SDA           GPIO_NUM_7
-#define BOARD_I2C_PIN_SCL           GPIO_NUM_8
-#define BOARD_I2C_FREQ_HZ           400000
+#define BOARD_I2C_PIN_SDA           GPIO_NUM_7  /**< I2C data line, GPIO7 */
+#define BOARD_I2C_PIN_SCL           GPIO_NUM_8  /**< I2C clock line, GPIO8 */
+#define BOARD_I2C_FREQ_HZ           400000  /**< I2C clock, 400kHz */
 
 /* ------------------------------------------------------------------ touch */
 
@@ -137,7 +137,7 @@ extern "C" {
  */
 #define BOARD_TOUCH_I2C_ADDR        0x5D
 #define BOARD_TOUCH_I2C_ADDR_ALT    0x14
-#define BOARD_TOUCH_PIN_RST         GPIO_NUM_23
+#define BOARD_TOUCH_PIN_RST         GPIO_NUM_23  /**< GT911 reset line, GPIO23 */
 
 /**
  * @brief Touch mirroring, 1 to mirror an axis.
@@ -147,7 +147,7 @@ extern "C" {
  * BOARD_LCD_ADDRESS_MODE 0x02.  Not measured.
  */
 #define BOARD_TOUCH_MIRROR_X        1
-#define BOARD_TOUCH_MIRROR_Y        1
+#define BOARD_TOUCH_MIRROR_Y        1   /**< mirror the touch Y axis: 1 */
 
 /* -------------------------------------------------------------- SD card --- */
 
@@ -157,15 +157,15 @@ extern "C" {
  * on-chip LDO channel 4.
  */
 #define BOARD_SD_SLOT               0
-#define BOARD_SD_WIDTH              4
-#define BOARD_SD_PIN_CLK            GPIO_NUM_43
-#define BOARD_SD_PIN_CMD            GPIO_NUM_44
-#define BOARD_SD_PIN_D0             GPIO_NUM_39
-#define BOARD_SD_PIN_D1             GPIO_NUM_40
-#define BOARD_SD_PIN_D2             GPIO_NUM_41
-#define BOARD_SD_PIN_D3             GPIO_NUM_42
-#define BOARD_SD_LDO_CHAN           4
-#define BOARD_SD_FREQ_KHZ           20000
+#define BOARD_SD_WIDTH              4   /**< SD bus width, bits */
+#define BOARD_SD_PIN_CLK            GPIO_NUM_43  /**< SD clock, GPIO43 */
+#define BOARD_SD_PIN_CMD            GPIO_NUM_44  /**< SD command, GPIO44 */
+#define BOARD_SD_PIN_D0             GPIO_NUM_39  /**< SD data 0, GPIO39 */
+#define BOARD_SD_PIN_D1             GPIO_NUM_40  /**< SD data 1, GPIO40 */
+#define BOARD_SD_PIN_D2             GPIO_NUM_41  /**< SD data 2, GPIO41 */
+#define BOARD_SD_PIN_D3             GPIO_NUM_42  /**< SD data 3, GPIO42 */
+#define BOARD_SD_LDO_CHAN           4   /**< on-chip LDO channel that supplies the card, 4 */
+#define BOARD_SD_FREQ_KHZ           20000  /**< SD clock, 20000kHz */
 
 /* ------------------------------------------------------------------ radio */
 
@@ -179,15 +179,16 @@ extern "C" {
  * the two differ.  Header H4 carries the C6's UART0 (TXD0, RXD0), GND
  * and its strapping pin IO9.
  */
-#define BOARD_C6_SLOT               1
-#define BOARD_C6_WIDTH              4
-#define BOARD_C6_FREQ_KHZ           40000
-#define BOARD_C6_PIN_CLK            GPIO_NUM_18
-#define BOARD_C6_PIN_CMD            GPIO_NUM_19
-#define BOARD_C6_PIN_D0             GPIO_NUM_14
-#define BOARD_C6_PIN_D1             GPIO_NUM_15
-#define BOARD_C6_PIN_D2             GPIO_NUM_16
-#define BOARD_C6_PIN_D3             GPIO_NUM_17
+#define BOARD_C6_SLOT               1   /**< SDMMC slot of the ESP32-C6 radio, 1 */
+#define BOARD_C6_WIDTH              4   /**< radio bus width, bits */
+#define BOARD_C6_FREQ_KHZ           40000  /**< radio clock, 40000kHz */
+#define BOARD_C6_PIN_CLK            GPIO_NUM_18  /**< radio clock, GPIO18 */
+#define BOARD_C6_PIN_CMD            GPIO_NUM_19  /**< radio command, GPIO19 */
+#define BOARD_C6_PIN_D0             GPIO_NUM_14  /**< radio data 0, GPIO14 */
+#define BOARD_C6_PIN_D1             GPIO_NUM_15  /**< radio data 1, GPIO15 */
+#define BOARD_C6_PIN_D2             GPIO_NUM_16  /**< radio data 2, GPIO16 */
+#define BOARD_C6_PIN_D3             GPIO_NUM_17  /**< radio data 3, GPIO17 */
+/** @brief ESP32-C6 chip enable, GPIO54; low holds it in reset */
 #define BOARD_C6_PIN_EN             GPIO_NUM_54
 
 /* -------------------------------------------------------------------- CAN */
@@ -199,7 +200,7 @@ extern "C" {
  * 5V rail, so the link cable can power the board.
  */
 #define PANEL_CAN_PIN_TX   GPIO_NUM_22
-#define PANEL_CAN_PIN_RX   GPIO_NUM_21
+#define PANEL_CAN_PIN_RX   GPIO_NUM_21  /**< CAN receive from the transceiver, GPIO21 */
 
 /**
  * @brief The link's bit rate.  Both ends must agree.  1Mbit/s is what
