@@ -47,8 +47,8 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 
-/*
- * A link that was up and stopped, said on the panel rather than on a console.
+/**
+ * @brief A link that was up and stopped, said on the panel rather than on a console.
  *
  * The panel has no console an operator can reach while the bench runs: the
  * board sits beside the bench with no computer on its USB (Universal Serial

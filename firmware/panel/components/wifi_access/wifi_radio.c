@@ -57,16 +57,17 @@ _Static_assert(BOARD_C6_SLOT != BOARD_SD_SLOT, "the SD card's slot");
 #endif
 
 /**
- * How long wifi_radio_link() waits for esp_hosted's TRANSPORT_UP event
+ * @brief How long wifi_radio_link() waits for esp_hosted's TRANSPORT_UP event
  * after esp_hosted_connect_to_slave() has returned, in ms.  esp_hosted
  * posts the event before its connect returns on a C6 that answered, so the
  * wait covers the event loop's delivery only.
  */
 #define WIFI_RADIO_UP_WAIT_MS 1000u
 
-/** The poll period of that wait, in ms. */
+/** @brief The poll period of that wait, in ms. */
 #define WIFI_RADIO_UP_POLL_MS 10u
 
+/** @brief Log tag. */
 static const char *TAG = "wifi";
 
 static atomic_bool s_failed;   /**< the link has failed since start-up */
@@ -106,7 +107,7 @@ BaseType_t __real_xTaskCreatePinnedToCore(TaskFunction_t fn, const char *name,
  * and a task created for a given core stays on it.  xTaskCreateStatic() and
  * the xTaskCreate*WithCaps() calls do not come through here; esp_hosted
  * uses them only with CONFIG_ESP_HOSTED_DFLT_TASK_FROM_SPIRAM, which the
- * #error above refuses.
+ * \#error above refuses.
  *
  * Not covered by the wrap: the SD card and the C6 share ESP-IDF's SDMMC
  * request mutex, which inherits priority.  While the run log task on

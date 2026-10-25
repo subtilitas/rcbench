@@ -37,12 +37,13 @@
 #include "ui_text.h"
 #include "wifi_access.h"
 
+/** @brief Log tag. */
 static const char *TAG = "rcbench";
 
 /* ------------------------------------------------------------ the CAN bus */
 
-/*
- * How long the start-up echo test runs.
+/**
+ * @brief How long the start-up echo test runs.
  *
  * A verdict needs CAN_SELFTEST_MIN_PROBES (8) probes and one probe is in
  * flight at a time, so with a far end that answers this is hundreds of
@@ -52,9 +53,13 @@ static const char *TAG = "rcbench";
  */
 #define CAN_SELFTEST_MS 1200u
 
+/**
+ * @brief The start check's bus-fault report, shown on the band after the
+ *        splash
+ */
 static busfault_report_t s_busfault;
-bool                     s_bus_ok = true;   /* until the test says otherwise */
-bool                     s_touch_ok = true; /* touch_init() answered    */
+bool                     s_bus_ok = true;  /**< whether the CAN self-test passed */
+bool                     s_touch_ok = true;  /**< whether touch_init() answered */
 
 /* What the start check found, for the band once the splash has gone. */
 char               s_boot_alert[ALERT_MAX];
@@ -71,6 +76,10 @@ static bool bench_armed(void)
     return ui_router_status()->armed;
 }
 
+/**
+ * @brief Draws one frame of the splash between initialisation steps, so the
+ *        splash fills in as it happens.
+ */
 static void pump(void)
 {
     /* Draw between init steps so the splash fills in as it happens, rather
@@ -82,15 +91,15 @@ static void pump(void)
     }
 }
 
-/*
- * How long to keep asking who is there: 3000ms is about three attempts,
- * because a poll with no answer costs the 1000ms host timeout.
+/**
+ * @brief How long to keep asking who is there: 3000ms is about three attempts,
+ *        because a poll with no answer costs the 1000ms host timeout.
  */
 #define IDENTITY_WAIT_MS 3000u
 
 
-/*
- * Ask the IOmcu who it is, repeatedly, for IDENTITY_WAIT_MS.
+/**
+ * @brief Ask the IOmcu who it is, repeatedly, for IDENTITY_WAIT_MS.
  *
  * The two boards do not finish booting at the same instant, and a first frame
  * onto a bus whose far end is not listening is retransmitted in silicon until

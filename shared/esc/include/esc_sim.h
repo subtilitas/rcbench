@@ -95,12 +95,12 @@ typedef struct {
     /* What is being sounded. */
     uint8_t              loop[ESC_SIM_LOOP_MAX];  /**< group numbers, in the
                                                        loop                  */
-    uint8_t              loop_n, loop_i, rep;  /**< loop: groups in it;
-                                                    loop_i: group sounding;
-                                                    rep: repeats done       */
+    uint8_t loop_n,                         /**< groups in the loop                    */
+            loop_i,                         /**< group sounding                        */
+            rep;                            /**< repeats done                          */
     uint8_t              pulse[ESC_SIM_PULSE_MAX];  /**< 1 long, 0 short   */
-    uint8_t              pulse_n, pulse_i;  /**< pulses in the group; index
-                                                 of the pulse sounding      */
+    uint8_t pulse_n,                        /**< pulses in the group                   */
+            pulse_i;                        /**< index of the pulse sounding           */
     uint8_t              seg;          /**< esc_sim.c's seg_t               */
     uint32_t             seg_end;      /**< when the current segment ends   */
     bool                 menu_group;   /**< the group is a menu entry       */

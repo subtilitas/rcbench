@@ -77,7 +77,7 @@ extern "C" {
 typedef struct {
     uint16_t channel[SBUS_CHANNELS]; /**< 0..2047, as sent */
     bool     ch17;                   /**< the two digital channels */
-    bool     ch18;
+    bool     ch18;                      /**< digital channel 18 */
     /** @brief This frame did not arrive intact at the receiver. */
     bool     frame_lost;
     /**

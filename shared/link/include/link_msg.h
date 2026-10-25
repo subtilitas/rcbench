@@ -54,10 +54,10 @@ typedef enum {
  */
 typedef struct {
     uint8_t  op;     /**< a link_op_t                                       */
-    uint8_t  page;
+    uint8_t  page;                      /**< the page the message is for */
     uint8_t  offset; /**< first register within the page                    */
     uint8_t  count;  /**< registers meant, 0..LINK_MAX_REGS                 */
-    uint16_t regs[LINK_MAX_REGS];
+    uint16_t regs[LINK_MAX_REGS];       /**< the values, count of them */
 } link_msg_t;
 
 #ifdef __cplusplus

@@ -16,8 +16,9 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* The area below the band: 1024 x 540px. */
+/** @brief The area below the band: 1024 x 540px. */
 #define W UI_PANEL_W
+/** @brief The body's height under the band, UI_BODY_H px. */
 #define H UI_BODY_H
 
 /**

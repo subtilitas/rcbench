@@ -45,6 +45,10 @@ void kpn_close_editors(void)
     ui_hold_reset(&k.warn.hold);
 }
 
+/**
+ * @brief Opens the list of choices of kind @p kind with its title; the entries
+ *        follow in choice_add().
+ */
 static void choice_open(int kind, const char *title)
 {
     k.ch.open = true;
@@ -59,6 +63,9 @@ static void choice_open(int kind, const char *title)
 _Static_assert(KST_PROG_FILES_MAX + 2u <= CHOICE_MAX,
                "the FILES list fits CHOICE_MAX entries");
 
+/**
+ * @brief Adds an entry to the open list while it has room, CHOICE_MAX at most.
+ */
 static void choice_add(const char *label, int value)
 {
     if (k.ch.count < CHOICE_MAX) {
@@ -68,6 +75,7 @@ static void choice_add(const char *label, int value)
     }
 }
 
+/** @brief Opens the file-name keyboard for the reason @p why. */
 static void name_open(unsigned why)
 {
     ui_textkey_open(&k.tk, k.area,
@@ -89,7 +97,9 @@ void kpn_name_done(const char *name)
     }
 }
 
-/* The list of files as the card gave it, under the entry that saves. */
+/**
+ * @brief The list of files as the card gave it, under the entry that saves.
+ */
 static void files_open(void)
 {
     const kst_prog_t *p = &k.prog;
@@ -124,7 +134,7 @@ static void files_open(void)
     }
 }
 
-/* Ask for the list from file @p first on. */
+/** @brief Ask for the list from file @p first on. */
 static void files_ask(unsigned first)
 {
     k.files_seq = kst_prog_files_seq(&k.prog);
@@ -164,7 +174,7 @@ void kpn_card_moved(void)
     }
 }
 
-/* What an edit came to: a warning page for a soft limit. */
+/** @brief What an edit came to: a warning page for a soft limit. */
 static void edited(const row_t *r, kst_prog_edit_t e)
 {
     if (e == KST_PROG_EDIT_SOFT) {
@@ -214,16 +224,20 @@ void kpn_edit_field(const row_t *r)
     k.kp_row = (int)(r - kpn_rows);
 }
 
-/* The highest programming voltage the keypad takes: a standard servo's
- * until HV SERVO is on, then the port's. */
+/**
+ * @brief The highest programming voltage the keypad takes: a standard servo's
+ *        until HV SERVO is on, then the port's.
+ */
 static uint16_t supply_max_mv(void)
 {
     return k.hv ? (uint16_t)KST_PORT_SUPPLY_MAX_MV
                 : (uint16_t)KST_PANEL_STD_MV;
 }
 
-/* A voltage as the settings hold it: a standard servo's at most, and the
- * port's lowest at least. */
+/**
+ * @brief A voltage as the settings hold it: a standard servo's at most, and the
+ *        port's lowest at least.
+ */
 static uint16_t std_mv(long mv)
 {
     if (mv < (long)KST_PORT_SUPPLY_MIN_MV) {

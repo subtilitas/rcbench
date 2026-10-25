@@ -64,8 +64,8 @@ typedef struct {
     uint16_t status[LINK_ST_COUNT];
     uint16_t bench[LINK_BN_COUNT];
     uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
-    uint16_t chan_cfg[LINK_CC_COUNT];   /* what each channel is            */
-    uint16_t slots[LINK_OS_COUNT];      /* which driver drives what        */
+    uint16_t chan_cfg[LINK_CC_COUNT];   /**< what each channel is */
+    uint16_t slots[LINK_OS_COUNT];      /**< which driver drives what */
 } iomcu_state_t;
 
 /**
@@ -92,7 +92,7 @@ extern servo_page_t s_servo;
 extern supply_page_t s_supply;
 extern pdmini_t      s_pd;
 extern bool          s_pd_open;      /* the UART claimed for its pins */
-extern uint8_t       s_pd_rate;      /* the rate it runs at, 0..6     */
+extern uint8_t       s_pd_rate;         /**< the rate it runs at, 0..6 */
 /**
  * @brief Wiring taken and not yet in flash: no ON until it is, so a restart
  * in the run finds the wiring that drives the module and can switch it off.

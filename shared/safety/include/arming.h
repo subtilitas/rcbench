@@ -143,7 +143,7 @@ typedef struct {
      */
     bool     switching;
     uint32_t settle_ms;       /**< how long the line is given             */
-    uint32_t settle_until_ms;
+    uint32_t settle_until_ms;           /**< the instant the settle ends, ms */
     /**
      * @brief How long past the settle an arm waits for the far end to report
      *        the line trusted; 0 when there is no far end to ask and the settle

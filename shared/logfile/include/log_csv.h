@@ -60,7 +60,7 @@ extern "C" {
  */
 typedef struct {
     size_t (*read)(void *ctx, char *buf, size_t max); /**< 0: end of input */
-    bool (*rewind)(void *ctx);
+    bool (*rewind)(void *ctx);          /**< rewinds to the top; false when the source cannot */
     /**
      * @brief Did the last read fail, as opposed to reaching the end?
      *
@@ -239,7 +239,7 @@ typedef struct {
 typedef struct {
     char delimiter;          /**< 0 sniffs                                  */
     log_conv_t convention;   /**< LOG_CONV_AUTO infers                      */
-    log_ambig_t ambiguous_as;
+    log_ambig_t ambiguous_as;           /**< how an ambiguous number is read */
     int time_index;          /**< -2 detects, -1 forces none, >= 0 forces it */
     const char *time_unit;   /**< NULL guesses                              */
     int max_rows;            /**< 0 uses LOG_DEFAULT_MAX_ROWS               */

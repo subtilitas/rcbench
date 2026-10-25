@@ -61,7 +61,7 @@ enum {
 #define INA3221_DIE       0x3220u   /**< §8.2.20 */
 #define INA3221_ADDR_MIN    0x40u   /**< A0 at GND, Table 7-1 */
 #define INA3221_ADDR_MAX    0x43u   /**< A0 at SCL */
-#define INA3221_CHANNELS       3u
+#define INA3221_CHANNELS       3u       /**< channels of one part */
 
 /**
  * @brief Below this the top code, 163.8mV over the shunt, is more µA than an

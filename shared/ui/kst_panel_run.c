@@ -26,7 +26,9 @@ enum { RUN_OP_NONE = 0, RUN_OP_CONNECT, RUN_OP_WRITE, RUN_OP_LEAVE };
 
 /* --- the limit run's sessions ---------------------------------------------- */
 
-/* Whatever the overlay has open goes: the run's step is no operator's. */
+/**
+ * @brief Whatever the overlay has open goes: the run's step is no operator's.
+ */
 static void run_close_editors(void)
 {
     kpn_close_editors();
@@ -66,7 +68,9 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
     return m;
 }
 
-/* A field set for the run's write; false where the model refuses it. */
+/**
+ * @brief A field set for the run's write; false where the model refuses it.
+ */
 static bool run_edit(kst_field_id_t id, uint16_t raw)
 {
     kst_prog_t *p = &k.prog;
@@ -81,7 +85,9 @@ static bool run_edit(kst_field_id_t id, uint16_t raw)
     return e == KST_PROG_EDIT_OK;
 }
 
-/* Write two fields, @p a to @p va and @p b to @p vb, and nothing else. */
+/**
+ * @brief Write two fields, @p a to @p va and @p b to @p vb, and nothing else.
+ */
 static kst_prog_msg_id_t run_write2(kst_field_id_t a, uint16_t va,
                                     kst_field_id_t b, uint16_t vb)
 {
@@ -158,6 +164,11 @@ kst_prog_msg_id_t kst_panel_run_leave(void)
     return m;
 }
 
+/**
+ * @brief Reports how the limit run's step ended and takes the end.
+ * @return KST_PANEL_RUN_NONE when no step is asked, KST_PANEL_RUN_BUSY while
+ *        it runs, then OK or FAILED once
+ */
 kst_panel_run_t kst_panel_run_poll(void)
 {
     kst_prog_t *p = &k.prog;
@@ -279,6 +290,10 @@ void kst_panel_run_end(void)
     ++k.rev;
 }
 
+/**
+ * @brief Gives the model the overlay holds.
+ * @return the model
+ */
 kst_prog_t *kst_panel_model(void)
 {
     return &k.prog;

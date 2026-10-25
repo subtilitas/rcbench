@@ -147,6 +147,7 @@ void storage_card_name(char *out, size_t n);
  * @brief What went wrong, in a few words for the console and the start-up line:
  * "no card", "no FAT volume", "FatFs <n>", "LDO <error>" or
  * ESP-IDF's error name.  "" when all is well.  At most 47 characters.
+ * @return the text, static; "" when all is well
  */
 const char *storage_status(void);
 

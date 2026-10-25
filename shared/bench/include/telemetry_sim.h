@@ -31,11 +31,11 @@ extern "C" {
 typedef struct {
     float cells;
     float cell_nominal_v;
-    float internal_ohms;
+    float internal_ohms;                /**< pack internal resistance, Ω */
     float kv;              /**< rpm per volt, unloaded  */
-    float no_load_amps;
+    float no_load_amps;                 /**< motor current without load, A */
     float stall_amps;      /**< current at full throttle, loaded */
-    float pack_mah;
+    float pack_mah;                     /**< pack capacity, mAh */
     float rpm_tau_s;       /**< how slowly rpm follows a step    */
 } telemetry_sim_cfg_t;
 
@@ -55,12 +55,12 @@ typedef struct {
  * @brief The state of the telemetry model.
  */
 typedef struct {
-    telemetry_sim_cfg_t cfg;
+    telemetry_sim_cfg_t cfg;            /**< the model's configuration */
     float rpm;             /**< the lagged state                  */
-    float drawn_mah;
-    float drawn_wh;
-    float temp_esc;
-    float temp_motor;
+    float drawn_mah;                    /**< charge drawn so far, mAh */
+    float drawn_wh;                     /**< energy drawn so far, Wh */
+    float temp_esc;                     /**< ESC temperature, °C */
+    float temp_motor;                   /**< motor temperature, °C */
 } telemetry_sim_t;
 
 /**

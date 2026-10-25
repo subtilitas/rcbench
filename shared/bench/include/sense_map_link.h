@@ -150,11 +150,11 @@ typedef struct {
 
     bool     want_set;
     uint16_t want[LINK_SM_KEPT];  /**< as it is to be written               */
-    uint8_t  dark;
+    uint8_t  dark;                      /**< parts left out because the settings leave them dark */
     uint8_t  clash;           /**< parts left out for the INA228's address  */
     uint8_t  fitted;          /**< parts fitted, enabled or not             */
     bool     nobus;           /**< every part left out: no sensor bus       */
-    uint32_t want_ms;
+    uint32_t want_ms;                   /**< when want was set, ms */
 
     uint16_t held[LINK_SM_KEPT];
     bool     refused;         /**< the page refused want                    */
@@ -167,17 +167,17 @@ typedef struct {
     bool     asked;
     uint32_t asked_ms;
     bool     have_status;     /**< IDs and FLAGS read under this map        */
-    uint16_t ids[LINK_SM_PARTS];
+    uint16_t ids[LINK_SM_PARTS];        /**< per part, the ID read */
     uint16_t wrong_id[LINK_SM_PARTS];  /**< the ID a WRONG event names    */
-    uint16_t flags;
-    uint16_t was_flags;
+    uint16_t flags;                     /**< FLAGS as last read */
+    uint16_t was_flags;                 /**< FLAGS before that read */
 
     bool     silent_told[LINK_SM_PARTS];
     bool     online_seen[LINK_SM_PARTS];
     uint8_t  ev_parts[4];     /**< per event bit, the parts it names        */
-    uint8_t  events;
+    uint8_t  events;                    /**< events pending, a bit each */
     bool     told;            /**< an event was handed out at told_ms       */
-    uint32_t told_ms;
+    uint32_t told_ms;                   /**< when the event was handed out, ms */
 } sense_map_link_t;
 
 /**

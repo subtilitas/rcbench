@@ -23,12 +23,12 @@
  * may meet. */
 #include "esc_stick_panel_int.h"
 
-/*
- * One lens or the base of the stack light: a cylinder seen from the side.
- * Lit, the colour runs to a near-white band down the middle; unlit, the
- * same colour greyed and dark.  Both darken toward the edges, and a darker
- * line every 6px is a rib of the lens.  Drawn row by row in runs of one
- * colour, since the panel's frame buffer is cached by rows.
+/**
+ * @brief One lens or the base of the stack light: a cylinder seen from the side.
+ *        Lit, the colour runs to a near-white band down the middle; unlit, the
+ *        same colour greyed and dark.  Both darken toward the edges, and a darker
+ *        line every 6px is a rib of the lens.  Drawn row by row in runs of one
+ *        colour, since the panel's frame buffer is cached by rows.
  */
 static void sp_cylinder(gfx_canvas_t *c, int x, int y, int w, int h,
                         gfx_color_t base, bool lit, bool ribs)
@@ -65,7 +65,7 @@ static void sp_cylinder(gfx_canvas_t *c, int x, int y, int w, int h,
     }
 }
 
-/* A lens, lit or dark, with a glow around it when lit. */
+/** @brief A lens, lit or dark, with a glow around it when lit. */
 static void sp_lens(gfx_canvas_t *c, int x, int y, gfx_color_t colour,
                     bool lit)
 {
@@ -84,10 +84,10 @@ static void sp_lens(gfx_canvas_t *c, int x, int y, gfx_color_t colour,
     sp_cylinder(c, x, y, SP_TOWER_W, SP_TOWER_LENS, off, false, true);
 }
 
-/*
- * The stack light: red over green on a light grey base, as a signal tower
- * on a machine.  Green: the detector holds a beep.  Red: the run ended for
- * a reason esc_stick_reason_is_fault() names.
+/**
+ * @brief The stack light: red over green on a light grey base, as a signal tower
+ *        on a machine.  Green: the detector holds a beep.  Red: the run ended for
+ *        a reason esc_stick_reason_is_fault() names.
  */
 static void sp_draw_tower(gfx_canvas_t *c, bool red, bool green)
 {
@@ -112,13 +112,14 @@ static void sp_draw_tower(gfx_canvas_t *c, bool red, bool green)
                 false);
 }
 
-/* "MIN", "MID" or "MAX" for a percentage the run commands. */
+/** @brief "MIN", "MID" or "MAX" for a percentage the run commands. */
 static const char *sp_pos(float pct)
 {
     return (pct >= ESC_STICK_PCT_MAX) ? "MAX"
          : (pct >= ESC_STICK_PCT_MID) ? "MID" : "MIN";
 }
 
+/** @brief Returns the help line for a run's end, in the language showing. */
 static const char *sp_reason_help(esc_stick_reason_t r)
 {
     switch (r) {
@@ -149,8 +150,10 @@ static const char *sp_reason_help(esc_stick_reason_t r)
     }
 }
 
-/* The run's phase and its end in the language showing; the engine's
- * esc_stick_phase_text() and esc_stick_reason_text() are the English. */
+/**
+ * @brief The run's phase and its end in the language showing; the engine's
+ *        esc_stick_phase_text() and esc_stick_reason_text() are the English.
+ */
 static const char *sp_phase_text(esc_stick_phase_t ph)
 {
     switch (ph) {
@@ -173,6 +176,7 @@ static const char *sp_phase_text(esc_stick_phase_t ph)
     return "?";
 }
 
+/** @brief Returns the name of a run's end, in the language showing. */
 static const char *sp_reason_text(esc_stick_reason_t r)
 {
     switch (r) {
@@ -199,7 +203,7 @@ static const char *sp_reason_text(esc_stick_reason_t r)
     return "?";
 }
 
-/* "3 Cutoff mode -> 2 hard cutoff" for a change. */
+/** @brief "3 Cutoff mode -> 2 hard cutoff" for a change. */
 static void sp_change_text(const esc_stick_change_t *ch, char *out, size_t n)
 {
     const esc_item_t *it = &s.st.p->items[ch->item];
@@ -208,10 +212,10 @@ static void sp_change_text(const esc_stick_change_t *ch, char *out, size_t n)
              (unsigned)v->number, v->name);
 }
 
-/*
- * "POWER-UP AT MID" for the positions the power-ups of @p n changes take,
- * in the order first met: "MAX, MID" where a one-stage run takes both.
- * False, and nothing written, when every one is MIN.
+/**
+ * @brief "POWER-UP AT MID" for the positions the power-ups of @p n changes take,
+ *        in the order first met: "MAX, MID" where a one-stage run takes both.
+ *        False, and nothing written, when every one is MIN.
  */
 static bool sp_power_up_text(const esc_profile_t *p,
                              const esc_stick_change_t *ch, size_t n,
@@ -238,7 +242,9 @@ static bool sp_power_up_text(const esc_profile_t *p,
     return true;
 }
 
-/* The longest hold of the profile's at_power_up steps, ms; 0 for none. */
+/**
+ * @brief The longest hold of the profile's at_power_up steps, ms; 0 for none.
+ */
 static uint32_t sp_hold_ms(const esc_profile_t *p)
 {
     uint32_t hold = 0u;
@@ -251,7 +257,7 @@ static uint32_t sp_hold_ms(const esc_profile_t *p)
     return hold;
 }
 
-/* The phase tap's state as its readout is worded. */
+/** @brief The phase tap's state as its readout is worded. */
 static const char *sp_tone_state(const tone_readout_t *r)
 {
     switch (r->state) {
@@ -270,8 +276,10 @@ static const char *sp_tone_state(const tone_readout_t *r)
     }
 }
 
-/* One beep of the readout: its number, length in ms and pitch in Hz, to
- * the tenth, as the page reports them. */
+/**
+ * @brief One beep of the readout: its number, length in ms and pitch in Hz, to
+ *        the tenth, as the page reports them.
+ */
 static void sp_tone_beep(const tone_beep_t *b, char *buf, size_t n)
 {
     snprintf(buf, n, TR(SP_TONE_BEEP), (unsigned)b->seq,
@@ -279,12 +287,12 @@ static void sp_tone_beep(const tone_beep_t *b, char *buf, size_t n)
              (unsigned)(b->freq_dhz / 10u), (unsigned)(b->freq_dhz % 10u));
 }
 
-/* The beeps' two columns and the cells each takes. */
+/** @brief The beeps' two columns and the cells each takes. */
 #define SP_TONE_COL_CELLS 30
 
-/*
- * The phase tap, read only, on the run's page while the tap is enabled
- * on SETUP: a head line, then the last four beeps two to a line.
+/**
+ * @brief The phase tap, read only, on the run's page while the tap is enabled
+ *        on SETUP: a head line, then the last four beeps two to a line.
  */
 static DRAWER void sp_draw_tone(gfx_canvas_t *c, int y, int pitch)
 {
@@ -666,9 +674,11 @@ DRAWER void sp_draw_result(gfx_canvas_t *c)
  * session's pages, saying what the run does to the ESC and what may happen
  * to a motor on it.
  */
-/* A panel over the session's pages, edged and titled in the danger colour:
- * the warning's, the manual steps' and the prompt's.  The output strip
- * above it stays in sight.  Its area. */
+/**
+ * @brief A panel over the session's pages, edged and titled in the danger colour:
+ *        the warning's, the manual steps' and the prompt's.  The output strip
+ *        above it stays in sight.  Its area.
+ */
 static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
 {
     const gfx_rect_t a = { PAD, SP_PANEL_Y, (int16_t)(W - 2 * PAD),
@@ -687,10 +697,10 @@ static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
     return a;
 }
 
-/*
- * The before-power-up steps of the profile, under the warning's lines: the
- * hold that starts the run is the operator's word that they are done.
- * Then, where the run asks for more on its way, a line that it will.
+/**
+ * @brief The before-power-up steps of the profile, under the warning's lines: the
+ *        hold that starts the run is the operator's word that they are done.
+ *        Then, where the run asks for more on its way, a line that it will.
  */
 static DRAWER void sp_draw_warning_hand(gfx_canvas_t *c,
                                         const esc_profile_t *p,

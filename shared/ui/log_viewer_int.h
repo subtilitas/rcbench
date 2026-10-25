@@ -29,10 +29,13 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 
+/** @brief The screen's width, UI_PANEL_W px. */
 #define SCREEN_W UI_PANEL_W
 /* The router owns the band and hands this screen a sub-canvas of what is
  * left, so the screen's own height is the body rather than the panel. */
+/** @brief The screen's height, UI_BODY_H px: the body under the band. */
 #define SCREEN_H UI_BODY_H
+/** @brief Frame buffers the router renders into. */
 #define MAX_FBS  3
 
 /* ------------------------------------------------------------- browse ---- */
@@ -318,70 +321,80 @@ typedef enum {
     LV_MSG_ERR            /**< the reader's verdict: msg_err        */
 } lv_msg_kind_t;
 
+/**
+ * @brief The log viewer's state: the browse list and its page of the card,
+ *        the footer message, the DELETE question, the import's analysis,
+ *        the plot's samples, window and cursor, and the touches tracked.
+ */
 typedef struct {
-    view_t view;
-    log_viewer_io_t io;
+    view_t view;                        /**< the view on screen */
+    log_viewer_io_t io;                 /**< the I/O the screen reads the card through */
 
     /* The folder the browse view lists, and its three tabs. */
-    log_viewer_tab_t tab;
-    ui_tabs_t tabs;
+    log_viewer_tab_t tab;               /**< folder tab the browse view lists */
+    ui_tabs_t tabs;                     /**< the three folder tabs */
     /* The tab of the file s.name names: the plot and the import read it
      * again from there whatever the tabs show since. */
-    log_viewer_tab_t open_tab;
+    log_viewer_tab_t open_tab;          /**< tab of the file named by name */
     /* The logger's count of files created, as this screen last saw it. */
-    unsigned written_seen;
+    unsigned written_seen;              /**< the logger's count of files created, as last seen */
 
-    log_viewer_file_t files[LOG_VIEWER_MAX_FILES];
-    int n_files;  /* rows on the page, never above LOG_VIEWER_MAX_FILES */
-    int n_card;   /* what the volume holds; above n_files when paged */
-    int first;    /* entries ahead of the page, in log_name_rank() order */
-    int listed;   /* -1 no volume, 0 not read, 1 read     */
-    card_state_t card;  /* what the slot holds while listed is -1     */
-    int sel;      /* highlighted file                     */
-    int scroll;
+    log_viewer_file_t files[LOG_VIEWER_MAX_FILES];  /**< the page of the card's entries */
+    int n_files;                        /**< rows on the page, at most LOG_VIEWER_MAX_FILES */
+    int n_card;                         /**< entries the volume holds; above n_files when paged */
+    int first;                          /**< entries ahead of the page, in log_name_rank() order */
+    int listed;                         /**< -1 no volume, 0 not read, 1 read */
+    card_state_t card;                  /**< what the slot holds while listed is -1 */
+    int sel;                            /**< highlighted file, -1 for none */
+    int scroll;                         /**< first row shown */
     /* The card's name when the page was read: another name on RESCAN is
      * another card, and it opens on its first page. */
-    char volume[LOG_VIEWER_NAME_MAX];
-    unsigned mounts;    /* the io's mount number when the page was read */
-    unsigned open_mounts;   /* and when the open file's page was read */
+    char volume[LOG_VIEWER_NAME_MAX];   /**< the card's name when the page was read */
+    unsigned mounts;                    /**< the I/O's mount number when the page was read */
+    unsigned open_mounts;               /**< the mount number when the open file's page was read */
 
     /* A finger on the scroll bar: the thumb follows it, held where it took
      * the thumb, grab px below the thumb's top. */
-    bool bar_drag;
-    int bar_grab;
+    bool bar_drag;                      /**< whether a finger holds the scroll bar's thumb */
+    int bar_grab;                       /**< px below the thumb's top where the finger took it */
 
-    char name[LOG_VIEWER_NAME_MAX];
+    char name[LOG_VIEWER_NAME_MAX];     /**< the open file's name */
     /* The footer message, kept as its text's ID and name, not as words,
      * so lv_message() words it in the language showing when it is drawn. */
     lv_msg_kind_t msg_kind;           /**< what the message holds        */
     ui_text_id_t msg_id;              /**< LV_MSG_TEXT: the text          */
     log_err_t msg_err;                /**< LV_MSG_ERR: the verdict        */
     char msg_name[LOG_VIEWER_NAME_MAX]; /**< the name it formats, or ""   */
-    bool message_ok;  /* a result to report, not a failure */
+    /** @brief Whether the message reports a result rather than a failure */
+    bool message_ok;
 
     /*
      * The file DELETE asked about, or "" while no question is open.  A copy
      * of the name rather than an index into the list: the question has to
      * delete the file it named, whatever happens to the list behind it.
      */
+    /**
+     * @brief Name of the file DELETE asked about; "" while no question is open
+     */
     char doomed[LOG_VIEWER_NAME_MAX];
-    uint64_t doomed_size;
+    uint64_t doomed_size;               /**< its size, bytes */
     /* The one contact whose press on the question counts: the panel reports
      * up to five, and a second finger lifting off DELETE did not press it. */
+    /** @brief Whether the contact that counts is down on the question */
     bool q_down;
-    uint8_t q_id;
+    uint8_t q_id;                       /**< touch id of that contact */
 
-    log_analysis_t an;
-    bool have_analysis;
-    int delim_index;      /* -1 auto, else index into log_csv_delimiters */
-    log_conv_t conv;      /* LOG_CONV_AUTO respects the file            */
-    int picked[LOG_MAX_SERIES];
-    int n_picked;
-    int col_scroll;
+    log_analysis_t an;                  /**< the import's analysis of the open file */
+    bool have_analysis;                 /**< whether an holds an analysis */
+    int delim_index;                    /**< -1 auto, else index into log_csv_delimiters */
+    log_conv_t conv;                    /**< number convention; LOG_CONV_AUTO respects the file */
+    int picked[LOG_MAX_SERIES];         /**< column indices picked as series */
+    int n_picked;                       /**< number of picked columns */
+    int col_scroll;                     /**< first column row shown on the import view */
 
-    log_data_t data;
-    bool have_data;
-    int cursor;
+    log_data_t data;                    /**< the plot's samples */
+    bool have_data;                     /**< whether data is loaded */
+    int cursor;                         /**< cursor sample index, -1 for none */
 
     log_text_t text;      /**< the report the TEXT view shows */
     int text_scroll;      /**< the TEXT view's first row on screen */
@@ -390,20 +403,20 @@ typedef struct {
      * The samples the plot shows: [win0, win0 + win_n).  The whole file
      * until two fingers zoom in, and it stays where they leave it.
      */
-    int win0;
-    int win_n;
+    int win0;                           /**< first sample shown */
+    int win_n;                          /**< samples shown */
 
     /*
      * Two fingers on the plot: spreading or pinching zooms, moving both
      * together pans.  The sample under the fingers' midpoint at the start
      * stays under the midpoint as they move.
      */
-    bool pinch;
-    uint8_t pinch_id[2];
-    int16_t pinch_x[2];
-    float pinch_d0;      /* distance at the start, px          */
-    float pinch_s0;      /* sample under the start midpoint    */
-    float pinch_n0;      /* window width at the start, samples */
+    bool pinch;                         /**< whether two fingers are on the plot */
+    uint8_t pinch_id[2];                /**< touch ids of the two fingers */
+    int16_t pinch_x[2];                 /**< their x at the start, px */
+    float pinch_d0;                     /**< distance at the start, px */
+    float pinch_s0;                     /**< sample under the start midpoint */
+    float pinch_n0;                     /**< window width at the start, samples */
 
     /*
      * One finger panning a zoomed view (SET_PLOT_PAN).  Until the finger has
@@ -411,57 +424,111 @@ typedef struct {
      * pans, the cursor goes back to where it was before the touch, and the
      * sample under the finger stays under it.
      */
-    bool panning;
-    int16_t pan_x0;      /* finger x where the pan began       */
-    int pan_win0;        /* window start where the pan began   */
-    int pan_cursor0;     /* cursor before the touch            */
+    bool panning;                       /**< whether one finger pans the zoomed view */
+    int16_t pan_x0;                     /**< finger x where the pan began, px */
+    int pan_win0;                       /**< window start where the pan began */
+    int pan_cursor0;                    /**< cursor before the touch */
 
     /* press tracking, shared by the list views */
-    bool pressing;
-    int press_row;
-    int press_y0;
-    int press_scroll0;
-    bool dragged;
-    int press_btn;
-    uint8_t press_id;    /* the finger that holds the plot cursor */
-    int16_t press_x;
+    bool pressing;                      /**< whether a press is on a list row or button */
+    int press_row;                      /**< row pressed */
+    int press_y0;                       /**< y where the press began, px */
+    int press_scroll0;                  /**< scroll where the press began */
+    bool dragged;                       /**< whether the press moved far enough to be a drag */
+    int press_btn;                      /**< button pressed */
+    uint8_t press_id;                   /**< the finger that holds the plot cursor */
+    int16_t press_x;                    /**< x of the press, px */
 
     /* The contact that holds a press on a button or a row, where it came
      * down, and whether it has been further than the slop from there: its
      * release is asked whether it is a tap (tap_on()). */
-    bool tap_have;
-    bool tap_moved;
-    uint8_t tap_id;
-    int16_t tap_x0, tap_y0;
+    bool tap_have;                      /**< whether a contact holds a press on a button or row */
+    bool tap_moved;                     /**< whether it has moved further than the slop */
+    uint8_t tap_id;                     /**< touch id of that contact */
+    int16_t tap_x0,                         /**< x where it came down, px */
+            tap_y0;                         /**< y where it came down, px */
 
-    bool valid[MAX_FBS];
+    bool valid[MAX_FBS];                /**< per frame buffer: whether its content is current */
 } lv_state_t;
 
 /* Defined in log_viewer_screen.c. */
+/** @brief The viewer's state, in log_viewer_screen.c. */
 extern lv_state_t lv_s;
+/** @brief Short name for lv_s inside the viewer's files. */
 #define s lv_s
 
 /* --- log_viewer_screen.c: the series' colours, the plot's traces, the
  *     tabs, the card's listing and paging -------------------------------- */
 
+/** @brief Colour id of each plot series. */
 extern const ui_color_id_t lv_series_color[LOG_MAX_SERIES];
 /* Filled by lv_compute_spans() (log_viewer_load.c). */
+/**
+ * @brief Per series and pixel column, the plot's minimum and maximum row,
+ *        filled by lv_compute_spans().
+ */
 extern int16_t lv_span[LOG_MAX_SERIES][PV_W][2];
+/** @brief One band of PV_BAND rows of the plot, drawn at a time. */
 extern gfx_color_t lv_band[PV_W * PV_BAND];
+/** @brief Per series, the lowest value in the window. */
 extern float lv_lo[LOG_MAX_SERIES];
+/** @brief Per series, the highest value in the window. */
 extern float lv_hi[LOG_MAX_SERIES];
+/** @brief Folder tab shown for each tab index. */
 extern const log_viewer_tab_t lv_tab_at[LOG_TAB_COUNT];
 
+/**
+ * @brief Points the I/O at the folder of @p tab, for the call that follows.
+ * @param tab the folder tab
+ */
 void lv_point(log_viewer_tab_t tab);
+/**
+ * @brief Returns the card's name as the I/O reports it now.
+ * @return the name, "" when there is none
+ */
 const char *lv_volume_now(void);
+/**
+ * @brief Returns the I/O's mount number now.
+ * @return the mount number, 0 without one
+ */
 unsigned lv_mounts_now(void);
+/**
+ * @brief Returns the entry on the page that log_name_rank() puts first or
+ *        last: the edges PREV, NEXT and RESCAN name.
+ * @param sign 1 for the first entry, -1 for the last
+ * @return the entry's name, "" with an empty page
+ */
 const char *lv_page_edge(int sign);
 void lv_read_page(log_page_dir_t dir, const char *key);
+/**
+ * @brief Reads the page on screen again: the first page from the top, any
+ *        other from its first entry; another card's name reads from its first
+ *        page.
+ */
 void lv_rescan(void);
+/**
+ * @brief Returns whether the card holds more than the page shows, either side
+ *        of it.
+ * @return true when the list is paged
+ */
 bool lv_paged(void);
+/**
+ * @brief Returns whether a page precedes this one.
+ * @return true when PREV is enabled
+ */
 bool lv_can_prev(void);
+/**
+ * @brief Returns whether a page follows this one.
+ * @return true when NEXT is enabled
+ */
 bool lv_can_next(void);
+/** @brief Frees the plot's samples and clears the cursor. */
 void lv_drop_data(void);
+/**
+ * @brief Returns whether DELETE is offered: the I/O can delete and a file is
+ *        selected.
+ * @return true when DELETE is enabled
+ */
 bool lv_can_delete(void);
 void lv_bar_thumb(int *y, int *h);
 int lv_bar_scroll_at(int top);
@@ -536,16 +603,46 @@ void lv_quiet(void);
  * @return @p buf, "" for no message
  */
 const char *lv_message(char *buf, size_t n);
+/**
+ * @brief Returns a delimiter's name in the language showing.
+ * @param delimiter ';', ',', tab or '|'
+ * @return the name, "?" for any other
+ */
 const char *lv_delim_text(char delimiter);
+/**
+ * @brief Analyses the open file with the chosen delimiter and number
+ *        convention, keeping the picked columns by name.
+ */
 void lv_run_analysis(void);
+/**
+ * @brief Reduces the window's samples to a minimum and maximum row per pixel
+ *        column and series, and the series' ranges.
+ */
 void lv_compute_spans(void);
+/**
+ * @brief Loads the picked columns of the open file into the plot's samples.
+ */
 void lv_load_data(void);
+/**
+ * @brief Opens the selected row: a CSV file to the import view, a report to
+ *        the TEXT view; a folder or an oversized file is refused with a
+ *        message.
+ */
 void lv_open_selected(void);
 
 /* --- log_viewer_draw.c -------------------------------------------------- */
 
+/**
+ * @brief Draws the view on screen into frame buffer @p buffer_index.
+ * @param c canvas drawn on
+ * @param buffer_index the frame buffer, 0 to MAX_FBS - 1
+ */
 void lv_render(gfx_canvas_t *c, int buffer_index);
 
 /* --- log_viewer_events.c ------------------------------------------------ */
 
+/**
+ * @brief Takes a touch event for the view on screen.
+ * @param e the event
+ */
 void lv_event(const touch_event_t *e);

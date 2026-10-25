@@ -17,7 +17,10 @@
 
 static const char *TAG = "board";
 
-/** @brief The board's state, set once by board_init(). */
+/**
+ * @var s_board
+ * @brief The board's state, set once by board_init().
+ */
 static struct {
     bool initialised;               /**< board_init() succeeded            */
     i2c_master_bus_handle_t bus;    /**< the touch bus                     */

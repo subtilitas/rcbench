@@ -36,6 +36,10 @@ void log_viewer_size_text(char *out, size_t n, uint64_t bytes)
     }
 }
 
+/**
+ * @brief Draws the DELETE question: the box, the file's name and size, CANCEL
+ *        and DELETE.
+ */
 static void render_question(gfx_canvas_t *c)
 {
     const gfx_rect_t box = DQ_BOX;
@@ -92,8 +96,10 @@ static void render_bar(gfx_canvas_t *c)
     render_bar_of(c, s.n_files, BR_ROWS, s.scroll);
 }
 
-/* The empty list's two lines: why it is empty, and what the folder holds
- * when it does not. */
+/**
+ * @brief The empty list's two lines: why it is empty, and what the folder holds
+ *        when it does not.
+ */
 static void empty_lines(char *why, size_t n, const char **hint)
 {
     if (s.listed == -1) {
@@ -119,6 +125,10 @@ static void empty_lines(char *why, size_t n, const char **hint)
     }
 }
 
+/**
+ * @brief Draws the browse view: the tabs, the header, the file list with its
+ *        scroll bar and the footer.
+ */
 static void render_browse(gfx_canvas_t *c)
 {
     /* The folder on screen after the tabs, "BENCH/LOGS" (nothing for the
@@ -248,6 +258,10 @@ static void render_browse(gfx_canvas_t *c)
 
 /* -------------------------------------------------------------- import --- */
 
+/**
+ * @brief Returns the label of a number convention: an example of its format,
+ *        or AUTO.
+ */
 static const char *conv_label(log_conv_t v)
 {
     switch (v) {
@@ -257,6 +271,10 @@ static const char *conv_label(log_conv_t v)
     }
 }
 
+/**
+ * @brief Draws the import view: what was detected, the column list and the
+ *        footer's buttons.
+ */
 static void render_import(gfx_canvas_t *c)
 {
     gfx_text_in(c, gfx_rect_make(LV_L + 4, 0, LV_W - 8, IM_TOP - 4), s.name,
@@ -485,6 +503,10 @@ static void render_import(gfx_canvas_t *c)
 
 /* ---------------------------------------------------------------- plot --- */
 
+/**
+ * @brief Draws the plot's grid into the band of @p rows rows that starts at
+ *        row @p band_y0.
+ */
 static void draw_grid_band(gfx_canvas_t *band, int band_y0, int rows)
 {
     for (int i = 1; i < PV_DIV_X; ++i) {
@@ -500,6 +522,10 @@ static void draw_grid_band(gfx_canvas_t *band, int band_y0, int rows)
     }
 }
 
+/**
+ * @brief Draws series @p k's trace into the band of @p rows rows that starts
+ *        at row @p band_y0.
+ */
 static void draw_trace_band(gfx_canvas_t *band, int k, int band_y0, int rows)
 {
     gfx_color_t col = ui_theme_color(lv_series_color[k]);
@@ -515,6 +541,7 @@ static void draw_trace_band(gfx_canvas_t *band, int k, int band_y0, int rows)
     }
 }
 
+/** @brief Returns the pixel column of the cursor. */
 static int cursor_x(void)
 {
     if (!s.have_data || s.win_n <= 1 || s.cursor < s.win0 ||
@@ -525,6 +552,10 @@ static int cursor_x(void)
                         (s.win_n - 1));
 }
 
+/**
+ * @brief Draws the plot view: the summary, the series' chips, the traces in
+ *        bands, the time axis and the footer.
+ */
 static void render_plot(gfx_canvas_t *c)
 {
     char line[160];

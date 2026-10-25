@@ -58,7 +58,7 @@ typedef struct {
     uint32_t   pending;      /**< rows written since the last commit */
     float      last_s;       /**< t_s of the last row written */
     float      committed_s;  /**< t_s of the row the last commit ended at */
-    bool       header_done;
+    bool       header_done;             /**< whether the header row is written */
     bool       failed;     /**< a write failed; the file is not trustworthy */
     /**
      * @brief The INA3221 columns go by cols (log_writer_set_cols()), not CH1 to

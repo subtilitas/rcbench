@@ -180,33 +180,33 @@ typedef struct {
     hitec_capture_t cap;    /**< the last capture */
     hitec_reply_t reply;    /**< its decoding */
     hitec_port_run_t info;  /**< the driver's word at the last start */
-    uint32_t t0_ms;
-    uint32_t t1_ms;
-    uint32_t start_us;
+    uint32_t t0_ms;                     /**< bench time of the transaction's start, ms */
+    uint32_t t1_ms;                     /**< bench time of its end, ms */
+    uint32_t start_us;                  /**< driver time of its start, µs */
     uint32_t cap_us;        /**< from the start to the capture */
-    uint16_t seq;
+    uint16_t seq;                       /**< sequence number of the last transaction */
     uint16_t count;         /**< transactions since the port was taken */
     uint16_t mv;            /**< the running POWER's set points */
-    uint16_t ma;
-    uint16_t off_ms;
+    uint16_t ma;                        /**< the running POWER's current limit, mA */
+    uint16_t off_ms;                    /**< the POWER off time, ms */
     uint8_t  state;         /**< link_hitec_state_t */
-    uint8_t  port;
-    uint8_t  pin;
-    uint8_t  family;
-    uint8_t  drive;
+    uint8_t  port;                      /**< the programming port */
+    uint8_t  pin;                       /**< the port's GPIO */
+    uint8_t  family;                    /**< the servo family */
+    uint8_t  drive;                     /**< whether the port drives */
     uint8_t  op;            /**< link_hitec_op_t of the last operation */
     uint8_t  result;        /**< link_hitec_result_t of that operation */
     uint8_t  refusal;       /**< link_hitec_refusal_t of the last command */
     uint8_t  rx;            /**< hitec_rx_t of the last decoding */
     uint8_t  dec;           /**< link_hitec_dec_t of the last transaction */
-    uint8_t  dec_arg;
-    uint8_t  view;
-    uint8_t  safe;
-    uint8_t  armed;
+    uint8_t  dec_arg;                   /**< argument of dec */
+    uint8_t  view;                      /**< the supply's view of the port */
+    uint8_t  safe;                      /**< 0 while the bench is not SAFE */
+    uint8_t  armed;                     /**< whether the bank is armed */
     uint8_t  other;         /**< ports the KST page holds */
-    uint8_t  has_pin;
-    uint8_t  has_cap;
-    uint8_t  stopped;
+    uint8_t  has_pin;                   /**< whether pin holds a GPIO */
+    uint8_t  has_cap;                   /**< whether a capture is held */
+    uint8_t  stopped;                   /**< whether the port was stopped */
     uint8_t  keyed;         /**< the last transaction puts a byte out */
     uint8_t  cutting;       /**< the driver was told to abort */
     uint8_t  off_seen;      /**< POWER: the supply read off */

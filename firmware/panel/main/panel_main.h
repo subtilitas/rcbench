@@ -56,10 +56,18 @@ void publish_log_folder(setting_text_id_t id);
 /** @brief Each value once, at the start-up, whatever the observer was
  *         told. */
 void publish_poles(void);
+/**
+ * @brief Publishes the throttle's pulse endpoints (Idle pulse, Full pulse) to
+ *        the control task.
+ */
 void publish_endpoints(void);
+/** @brief Publishes the PD mini's wiring to the control task. */
 void publish_pdmini(void);
+/** @brief Publishes the phase tap's set-up to the control task. */
 void publish_tone(void);
+/** @brief Publishes the AUTO LOGS setting to the control task. */
 void publish_log_auto(void);
+/** @brief Publishes the Hitec receive set-up to the control task. */
 void publish_hitec_rx(void);
 /**
  * @brief The time zone setting to the C library: setenv("TZ") and

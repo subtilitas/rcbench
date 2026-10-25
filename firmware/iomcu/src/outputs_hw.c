@@ -65,9 +65,9 @@ static slot_state_t s_state[OUT_MAX_SLOTS];
  */
 typedef struct {
     bool         bound;    /* the pin is held: bound, or parked */
-    bool         parked;   /* FUNC NONE: an input with its pull-down */
-    out_slot_t   as;       /* driver PWM, or DSHOT for a DShot port */
-    slot_state_t st;
+    bool         parked;                /**< FUNC NONE: an input with its pull-down */
+    out_slot_t   as;                    /**< driver PWM, or DSHOT for a DShot port */
+    slot_state_t st;                    /**< the slot's state */
 } port_state_t;
 
 static port_state_t s_port[LINK_PG_PORTS_MAX];

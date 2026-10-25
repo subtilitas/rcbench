@@ -1,6 +1,7 @@
-/*
- * The panel's application image, read from memory: what it is, whether it is
- * whole, and whether it is one this panel should run.
+/**
+ * @file fw_image.h
+ * @brief The panel's application image, read from memory: what it is, whether it is
+ *        whole, and whether it is one this panel should run.
  *
  * An ESP-IDF (Espressif Internet-of-Things Development Framework) app image
  * starts with a 24-byte image header (first byte 0xE9, the chip ID at offset
@@ -35,16 +36,16 @@
 extern "C" {
 #endif
 
-/** Image header, first segment header and the application descriptor. */
+/** @brief Image header, first segment header and the application descriptor. */
 #define FW_HEAD_BYTES     288u
-#define FW_IMAGE_MAGIC    0xE9u
+#define FW_IMAGE_MAGIC    0xE9u  /**< first byte of an ESP-IDF app image */
 /** @brief esp_chip_id_t of the ESP32-P4: ESP_CHIP_ID_ESP32P4, 0x0012, in
  *         ESP-IDF's esp_app_format.h. */
 #define FW_CHIP_ESP32P4   0x0012u
-#define FW_DESC_MAGIC     0xABCD5432uL
-/** The CMake project name, which the descriptor carries. */
+#define FW_DESC_MAGIC     0xABCD5432uL  /**< magic word of the application descriptor */
+/** @brief The CMake project name, which the descriptor carries. */
 #define FW_PROJECT        "rcbench-panel"
-/** esp_app_desc_t.version and .project_name, terminator included. */
+/** @brief esp_app_desc_t.version and .project_name, terminator included. */
 #define FW_TEXT_MAX       32u
 /** ESP_IMAGE_MAX_SEGMENTS. */
 #define FW_MAX_SEGMENTS   16u
@@ -86,41 +87,74 @@ typedef struct {
     uint8_t      elf_sha[FW_SHA256_BYTES];
 } fw_image_info_t;
 
-/** The English name of @p e, for the console. */
+/**
+ * @brief The English name of @p e, for the console.
+ * @param e the result
+ * @return the name, static
+ */
 const char *fw_err_str(fw_err_t e);
 
 /**
- * Parse "MAJOR.MINOR.PATCH" from at most @p n bytes of @p text: digits only,
- * each number 0 to 65535, terminated by '\0' or by the end of the field.
+ * @brief Parses "MAJOR.MINOR.PATCH" from at most @p n bytes of @p text: digits
+ *        only, each number 0 to 65535, terminated by '\0' or by the end of
+ *        the field.
+ *
  * Anything else ("4184795", "0.19.0-dirty", "1..2") is false.
+ *
+ * @param text the version text
+ * @param n the bytes of @p text that may be read
+ * @param out the version, written on success
+ * @return true when the text parses
  */
 bool fw_version_parse(const char *text, size_t n, fw_version_t *out);
 
-/** Negative, zero or positive as @p a is older, the same or newer. */
+/**
+ * @brief Compares two versions.
+ * @param a the first version
+ * @param b the second version
+ * @return negative, zero or positive as @p a is older, the same or newer
+ */
 int fw_version_cmp(fw_version_t a, fw_version_t b);
 
 /**
- * Check the first @p have bytes of an image of @p bytes in all, for a slot
- * of @p slot bytes: size, magic, chip, descriptor, project and version.
+ * @brief Checks the first @p have bytes of an image of @p bytes in all, for a
+ *        slot of @p slot bytes: size, magic, chip, descriptor, project and
+ *        version.
+ *
  * The length and the hash need the whole image and are not checked.
  * @p have below FW_HEAD_BYTES with @p bytes at or above it reads as the
  * source failing (FW_ERR_READ).  @p out is filled on FW_OK.
+ *
+ * @param head the first bytes of the image
+ * @param have the number of bytes at @p head
+ * @param bytes the length of the image
+ * @param slot the size of the slot, bytes
+ * @param out what the image says about itself
+ * @return FW_OK or the first check that failed
  */
 fw_err_t fw_image_head(const uint8_t *head, uint32_t have, uint32_t bytes,
                        uint32_t slot, fw_image_info_t *out);
 
 /**
- * Check a whole image of @p bytes at @p img for a slot of @p slot bytes:
- * everything fw_image_head() checks, then that the segments add up to the
- * image's length and that the last 32 bytes are the SHA-256 of all bytes
- * before them.  @p out is filled on FW_OK.
+ * @brief Checks a whole image of @p bytes at @p img for a slot of @p slot
+ *        bytes: everything fw_image_head() checks, then that the segments add
+ *        up to the image's length and that the last 32 bytes are the SHA-256
+ *        of all bytes before them.
+ *
+ * @p out is filled on FW_OK.
+ *
+ * @param img the image
+ * @param bytes the length of the image
+ * @param slot the size of the slot, bytes
+ * @param out what the image says about itself
+ * @return FW_OK or the first check that failed
  */
 fw_err_t fw_image_check(const uint8_t *img, uint32_t bytes, uint32_t slot,
                         fw_image_info_t *out);
 
 /* ------------------------------------------------------ against the panel */
 
-/** What a checked image is to the panel running now. */
+/** @brief What a checked image is to the panel running now. */
 typedef enum {
     FW_OFFER_NEWER = 0,  /**< a higher version                               */
     FW_OFFER_OLDER,      /**< a lower version: allowed, and the question says */
@@ -128,10 +162,20 @@ typedef enum {
     FW_OFFER_INSTALLED,  /**< the build that is running: not offered          */
 } fw_offer_t;
 
+/**
+ * @brief Classifies a checked image against the panel running now.
+ * @param running the running image
+ * @param image the image offered
+ * @return what the image is to the panel
+ */
 fw_offer_t fw_offer(const fw_image_info_t *running,
                     const fw_image_info_t *image);
 
-/** Whether an offer is one INSTALL may act on. */
+/**
+ * @brief Whether an offer is one INSTALL may act on.
+ * @param o the offer
+ * @return true when INSTALL may act on it
+ */
 bool fw_offer_installable(fw_offer_t o);
 
 #ifdef __cplusplus

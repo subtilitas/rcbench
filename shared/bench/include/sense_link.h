@@ -196,7 +196,8 @@ typedef enum {
 typedef struct {
     bool     i228, i3221;     /**< enabled                              */
     bool     as5600;          /**< the output encoder, enabled          */
-    int8_t   sda, scl;        /**< IOmcu GPIO; -1 not set         */
+    int8_t sda,                             /**< IOmcu GPIO of the data line; -1 not set */
+           scl;                             /**< IOmcu GPIO of the clock line; -1 not set */
     uint8_t  i228_addr;       /**< 0x40 to 0x4F                         */
     uint16_t i228_uohm;       /**< shunt, uOhm                          */
     uint16_t i228_max_da;     /**< the current its range is set for, 0.1A */
@@ -310,7 +311,8 @@ typedef struct {
     sense_link_op_kind_t kind;
     bool     write;           /**< a write of regs; otherwise a read   */
     uint8_t  page;            /**< link_page_id_t                      */
-    uint8_t  off, n;
+    uint8_t off,                            /**< first register of the page          */
+            n;                              /**< registers                           */
     uint16_t regs[4];         /**< a write's registers                 */
 } sense_link_op_t;
 
@@ -833,8 +835,8 @@ typedef struct {
     uint16_t samples;     /**< angle reads, modulo 65536                  */
     uint16_t still_ms;    /**< held within the tolerance, ms, at the read */
     uint32_t taken_ms;    /**< when the panel had the read                */
-    bool     weak, strong;/**< STATUS ML, MH: a position, its noise not
-                               specified (as5600.h)                       */
+    bool weak,                              /**< STATUS ML: a position, its noise not specified (as5600.h) */
+         strong;                            /**< STATUS MH: a position, its noise not specified (as5600.h) */
 } sense_link_enc_t;
 
 /**

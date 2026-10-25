@@ -25,6 +25,7 @@
 
 /* ------------------------------------------------------------------ keypad */
 
+/** @brief Opens the keypad for a set point or a setting. */
 static void open_keypad(int target, setting_id_t id)
 {
     if (target == KP_SET_V) {
@@ -69,6 +70,7 @@ static void open_keypad(int target, setting_id_t id)
     supply_invalidate();
 }
 
+/** @brief Takes the keypad's result: applies the value or closes it. */
 static void keypad_done(ui_keypad_result_t r, float v)
 {
     if (r == UI_KEYPAD_NONE) {
@@ -113,7 +115,9 @@ static void keypad_done(ui_keypad_result_t r, float v)
 
 /* ------------------------------------------------------------------ events */
 
-/* A set point moved by @p dv volts and @p di amps, snapped to the caps. */
+/**
+ * @brief A set point moved by @p dv volts and @p di amps, snapped to the caps.
+ */
 static void nudge(float dv, float di)
 {
     ui_slider_set(&s.v_slider, supply_snap(s.v_slider.value + dv, s.eff.v_min,
@@ -124,6 +128,7 @@ static void nudge(float dv, float di)
     sup_propose(FROM_SLIDER);
 }
 
+/** @brief Takes a press: remembers its contact and what it is on. */
 static void take(const touch_event_t *evt, int code)
 {
     s.have_press = true;
@@ -256,7 +261,7 @@ static void down(const touch_event_t *evt)
     }
 }
 
-/* The release of the press, over the control it began on. */
+/** @brief The release of the press, over the control it began on. */
 static void released(int was, int row, int x, int y)
 {
     switch (was) {
@@ -364,10 +369,10 @@ void sup_drop_press(void)
     ++s.out_rev;
 }
 
-/*
- * The strip switched the task.  A keypad open goes with the task it was
- * opened on, typed or not, as its CANCEL does; PLOT | TABLE and the set
- * points keep what they were.  A tab switch is no navigation level.
+/**
+ * @brief The strip switched the task.  A keypad open goes with the task it was
+ *        opened on, typed or not, as its CANCEL does; PLOT | TABLE and the set
+ *        points keep what they were.  A tab switch is no navigation level.
  */
 static void task_changed(void)
 {

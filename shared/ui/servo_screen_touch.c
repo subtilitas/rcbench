@@ -76,7 +76,9 @@ bool svs_safe_at(int x, int y)
 
 /* ------------------------------------------------------------------ events */
 
-/* Whether a touch is close enough to the horn's sweep to mean the horn. */
+/**
+ * @brief Whether a touch is close enough to the horn's sweep to mean the horn.
+ */
 static bool on_the_dial(int px, int py, float *deg)
 {
     const float dx = (float)(px - SHAFT_X);

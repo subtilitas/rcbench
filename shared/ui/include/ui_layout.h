@@ -41,6 +41,9 @@
  * UI_ALERT_H is its height and UI_ALERT_Y its top, in panel coordinates.
  */
 #define UI_ALERT_H 44
+/**
+ * @brief The alert band's top in panel coordinates: UI_PANEL_H - UI_ALERT_H.
+ */
 #define UI_ALERT_Y (UI_PANEL_H - UI_ALERT_H)
 
 /** @brief The height of the body below the band, the sub-canvas a screen gets. */

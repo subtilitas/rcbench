@@ -184,7 +184,8 @@ typedef struct {
     tone_link_op_kind_t kind;
     bool     write;           /**< a write of regs; otherwise a read   */
     uint8_t  page;            /**< link_page_id_t                      */
-    uint8_t  off, n;
+    uint8_t off,                            /**< first register of the page          */
+            n;                              /**< registers                           */
     uint16_t regs[4];         /**< a write's registers                 */
 } tone_link_op_t;
 

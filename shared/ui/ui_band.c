@@ -15,6 +15,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief The panel's width, UI_PANEL_W px. */
 #define PANEL_W UI_PANEL_W
 
 /*

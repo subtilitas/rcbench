@@ -30,13 +30,14 @@
 
 /* ------------------------------------------------------------------- sweep */
 
-/*
- * The sweep the SWEEP page describes, under the profile in force: CURVE,
- * SPEED and DWELL as they are, and RANGE as a share of the travel the
- * servo may make -- TRAVEL, and the nearer of PULSE MIN and MAX, so a sweep
- * about the centre reaches neither end it may not.  In the command units of
- * the range a command carries (cmd_range()), centred on PULSE CENTRE.  Trim
- * is not applied: the sweep turns about the centre a release rests at.
+/**
+ * @brief The sweep the SWEEP page describes, under the profile in force: CURVE,
+ *        SPEED and DWELL as they are, and RANGE as a share of the travel the
+ *        servo may make -- TRAVEL, and the nearer of PULSE MIN and MAX, so a sweep
+ *        about the centre reaches neither end it may not.  In the command units of
+ *        the range a command carries (cmd_range()), centred on PULSE CENTRE.  Trim
+ *        is not applied: the sweep turns about the centre a release rests at.
+ * @return the curve
  */
 sweep_cfg_t sweep_cfg_now(void)
 {
@@ -67,7 +68,7 @@ sweep_cfg_t sweep_cfg_now(void)
     return c;
 }
 
-/* A command of the sweep, as the angle it puts the horn at. */
+/** @brief A command of the sweep, as the angle it puts the horn at. */
 static float sweep_deg(uint16_t cmd)
 {
     uint16_t lo, hi;
@@ -77,8 +78,10 @@ static float sweep_deg(uint16_t cmd)
     return us_to_deg((uint16_t)(us + 0.5f));
 }
 
-/* The sweep ended, running or paused.  A pause is ended by the command
- * that follows; the button reads SWEEP from now. */
+/**
+ * @brief The sweep ended, running or paused.  A pause is ended by the command
+ *        that follows; the button reads SWEEP from now.
+ */
 void stop_sweep(void)
 {
     s.lineage         = 0u;
@@ -151,7 +154,7 @@ void svs_hold_sweep(void)
     ++s.ctrl_rev;
 }
 
-/* The start or resume just posted, as it will be sent. */
+/** @brief The start or resume just posted, as it will be sent. */
 static void record_start(void)
 {
     if (s.pending.kind != SERVO_CMD_SWEEP) {
@@ -163,11 +166,11 @@ static void record_start(void)
     s.start_rec.speed_pct = s.speed_pct;
 }
 
-/*
- * Start the sweep, or carry on with a changed one from its beginning, as the
- * IOmcu does.  Only while the value is live (value_live()) and on an
- * IOmcu that sweeps: the far end refuses one otherwise.  Drawn once
- * the start is acknowledged (servo_screen_sweep_started()).
+/**
+ * @brief Start the sweep, or carry on with a changed one from its beginning, as the
+ *        IOmcu does.  Only while the value is live (value_live()) and on an
+ *        IOmcu that sweeps: the far end refuses one otherwise.  Drawn once
+ *        the start is acknowledged (servo_screen_sweep_started()).
  */
 static void start_sweep(void)
 {
@@ -229,13 +232,13 @@ bool svs_same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
            && a->amplitude == b->amplitude && a->dwell_ms == b->dwell_ms;
 }
 
-/*
- * A tap on PAUSED: the paused sweep carried on from where it was paused.
- * The command asks the panel for a resume; an IOmcu older than 4.6, or
- * one that refuses, starts the curve over instead.  Either way the far end
- * stays held until then, so the horn does too, and the acknowledgement
- * (servo_screen_sweep_started()) draws it from there.  A curve changed on
- * the TEST page since the pause is a new sweep.
+/**
+ * @brief A tap on PAUSED: the paused sweep carried on from where it was paused.
+ *        The command asks the panel for a resume; an IOmcu older than 4.6, or
+ *        one that refuses, starts the curve over instead.  Either way the far end
+ *        stays held until then, so the horn does too, and the acknowledgement
+ *        (servo_screen_sweep_started()) draws it from there.  A curve changed on
+ *        the TEST page since the pause is a new sweep.
  */
 static void resume_sweep(void)
 {
@@ -359,10 +362,10 @@ void servo_screen_released(uint16_t pause_seq)
     ++s.ctrl_rev;
 }
 
-/*
- * The drawn output's slew at @p speed_pct, command units a millisecond, as
- * the far end's: SPEED_FULL_SPAN_S times the share, and at 100% none --
- * the command goes straight through (svs_slew_of()), which is negative here.
+/**
+ * @brief The drawn output's slew at @p speed_pct, command units a millisecond, as
+ *        the far end's: SPEED_FULL_SPAN_S times the share, and at 100% none --
+ *        the command goes straight through (svs_slew_of()), which is negative here.
  */
 static float slew_per_ms(int speed_pct)
 {
@@ -372,9 +375,11 @@ static float slew_per_ms(int speed_pct)
     return (float)svs_slew_of(speed_pct) / 1000.0f;
 }
 
-/* One step of the drawn output towards @p want, at most @p step command
- * units: the slew the far end applies, as the drawing models it.  A
- * negative step is no slew: there at once. */
+/**
+ * @brief One step of the drawn output towards @p want, at most @p step command
+ *        units: the slew the far end applies, as the drawing models it.  A
+ *        negative step is no slew: there at once.
+ */
 static float chase_cmd(float from, float want, float step)
 {
     const float d = want - from;
@@ -384,8 +389,10 @@ static float chase_cmd(float from, float want, float step)
     return from + ((d > 0.0f) ? step : -step);
 }
 
-/* Where the horn was drawn @p ago_ms ago, from the trail; the oldest kept
- * for anything older. */
+/**
+ * @brief Where the horn was drawn @p ago_ms ago, from the trail; the oldest kept
+ *        for anything older.
+ */
 static float shown_cmd_ago(uint32_t ago_ms)
 {
     const uint32_t when = s.clock_ms - ago_ms;
@@ -471,12 +478,12 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
     s.shown_deg = us_to_deg_f(svs_cmd_to_us(s.shown_cmd));
 }
 
-/*
- * The drawn output after @p ms more of the sweep @p w from @p phase_ms in,
- * starting at @p from: each step the curve's command, chased as tick()
- * chases it at @p speed_pct -- for a pause, the SPEED in force at the tap,
- * the far end's slew until the HOLD reached it.  Steps of 4ms, under a
- * frame, so a turn of the curve is followed as the drawing follows it.
+/**
+ * @brief The drawn output after @p ms more of the sweep @p w from @p phase_ms in,
+ *        starting at @p from: each step the curve's command, chased as tick()
+ *        chases it at @p speed_pct -- for a pause, the SPEED in force at the tap,
+ *        the far end's slew until the HOLD reached it.  Steps of 4ms, under a
+ *        frame, so a turn of the curve is followed as the drawing follows it.
  */
 static float drawn_after(const sweep_t *w, uint32_t phase_ms, uint32_t ms,
                          float from, int speed_pct)
@@ -586,7 +593,9 @@ void servo_screen_set_sweep(bool able)
     ++s.ctrl_rev;
 }
 
-/* The trail servo_screen_sweep_started() reads where a frozen output was. */
+/**
+ * @brief The trail servo_screen_sweep_started() reads where a frozen output was.
+ */
 static void remember_shown(void)
 {
     s.trail[s.trail_head].t   = s.clock_ms;

@@ -33,7 +33,7 @@ typedef struct {
 typedef enum {
     LEX_SYNTAX = 0,
     LEX_DUP,            /**< a key an object already had            */
-    LEX_NUL,            /**< \u0000, which would end a C string     */
+    LEX_NUL,            /**< \\u0000, which would end a C string     */
     LEX_SURROGATE,      /**< half a surrogate pair                  */
     LEX_UTF8,           /**< bytes that are not UTF-8               */
     LEX_MEMBERS,        /**< an object with more than 64 members    */

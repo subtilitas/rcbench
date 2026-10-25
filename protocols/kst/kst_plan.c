@@ -37,7 +37,7 @@ enum {
 
 /** @brief Units of the work that is no image check, by its cost against one. */
 #define UNITS_CHOOSE KST_PLAN_PIECE_UNITS  /* a pass over 256 detour values */
-#define UNITS_SETTLE 4u                    /* the settled mark of one write */
+#define UNITS_SETTLE 4u                 /**< the settled mark of one write */
 
 static bool bit_of(const uint8_t *set, unsigned i)
 {

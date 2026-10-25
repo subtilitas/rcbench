@@ -58,12 +58,13 @@ _Static_assert(PAD + 10 + BOX_W <= SHAFT_X - 36,
  * it and the case, and the hole positions follow from the same margin top
  * and bottom.
  */
-#define TAB_HOLE_R  12
-#define TAB_MARGIN  6                  /* material outside the bore     */
-#define TAB_INNER   8                  /* between the bore and the case */
-#define TAB_OVER    6                  /* how far the case laps over it */
-#define TAB_W       (TAB_MARGIN + 2 * TAB_HOLE_R + TAB_INNER + TAB_OVER)
-#define TAB_H       BODY_H
+#define TAB_HOLE_R  12                  /**< radius of a mounting bore, px */
+#define TAB_MARGIN  6                   /**< material outside the bore, px */
+#define TAB_INNER   8                   /**< between the bore and the case, px */
+#define TAB_OVER    6                   /**< how far the case laps over the flange, px */
+#define TAB_W       (TAB_MARGIN + 2 * TAB_HOLE_R + TAB_INNER + TAB_OVER)  /**< flange width, px */
+#define TAB_H       BODY_H              /**< flange height: the case's width, px */
+/** @brief Bore's offset from the flange's centre line, px */
 #define TAB_HOLE_DY (BODY_H / 2 - TAB_MARGIN - TAB_HOLE_R)
 
 /*
@@ -72,6 +73,10 @@ _Static_assert(PAD + 10 + BOX_W <= SHAFT_X - 36,
  * The case lies along the card with its output at the right-hand end; zero
  * is the arm pointing straight out, and positive is counter-clockwise, the
  * convention every other angle on the bench uses.
+ */
+/**
+ * @brief Screen angle from servo angle @p a: the identity, as zero is the arm
+ *        pointing straight out and positive is counter-clockwise.
  */
 #define PHI(a) (a)
 
@@ -91,11 +96,20 @@ enum { PS_V = 0, PS_A, PS_W, PS_COUNT };
  * anybody who never touches the slider gets the servo at its own rate,
  * with nothing in front of it.
  */
+/**
+ * @brief SPEED's full span: two spans of OUT_SPAN a second, which is 360
+ *        degrees a second.
+ */
 #define SPEED_FULL_SPAN_S (2u * OUT_SPAN)
 
 /* What the servo rail's meter reads, at the precision it is drawn with. */
+/**
+ * @brief What the servo rail's meter reads, at the precision it is drawn
+ *        with.
+ */
 typedef struct {
-    bool    v_ok, i_ok;
+    bool v_ok,                              /**< whether a voltage arrived                      */
+         i_ok;                              /**< whether a current arrived                      */
     float   v;        /**< V                                              */
     float   i;        /**< A, signed                                      */
     float   p;        /**< W                                              */
@@ -104,6 +118,7 @@ typedef struct {
 } rail_t;
 
 /* What the CURRENT row shows: the dashes, or the digits and their colour. */
+/** @brief The CURRENT row's key when it shows the dashes: INT32_MIN. */
 #define CUR_KEY_NONE INT32_MIN
 
 /* --- the functions one file calls of another ---------------------------- */
@@ -122,21 +137,52 @@ void svs_drop_motion(void);
 /** @brief DISARM asked of an armed bench: the value leaves LIVE now. */
 void svs_ask_disarm(void);
 /** @brief The angle @p deg as a pulse, us, through the profile, the trim,
- *         REVERSE and the ends; svs_deg_to_us() rounds it. */
+ *         REVERSE and the ends; svs_deg_to_us() rounds it.
+ * @param deg the angle, degrees
+ * @return the pulse, us
+ */
 float svs_deg_to_us_f(float deg);
+/**
+ * @brief The angle @p deg as a pulse, us, rounded.
+ * @param deg the angle, degrees
+ * @return the pulse, us
+ */
 uint16_t svs_deg_to_us(float deg);
-/** @brief The mapping in force now. */
+/**
+ * @brief The mapping in force now.
+ * @return the mapping
+ */
 servo_map_t svs_map_now(void);
-/** @brief A command of @p m's range as a pulse, us. */
+/**
+ * @brief A command of @p m's range as a pulse, us.
+ * @param m the mapping
+ * @param cmd the command, 0 to OUT_SPAN
+ * @return the pulse, us
+ */
 float svs_map_cmd_to_us(const servo_map_t *m, float cmd);
-/** @brief A pulse as @p m's angle, degrees, held to its TRAVEL. */
+/**
+ * @brief A pulse as @p m's angle, degrees, held to its TRAVEL.
+ * @param m the mapping
+ * @param us the pulse, us
+ * @return the angle, degrees
+ */
 float svs_map_us_to_deg(const servo_map_t *m, float us);
 /** @brief A pulse as the far end's command, 0..OUT_SPAN of the range a
- *         command carries, and back. */
+ *         command carries, and back.
+ * @param us the pulse, us
+ * @return the command, 0 to OUT_SPAN
+ */
 float svs_us_to_cmd(float us);
+/**
+ * @brief A far-end command, 0 to OUT_SPAN, as a pulse, us.
+ * @param cmd the command
+ * @return the pulse, us
+ */
 float svs_cmd_to_us(float cmd);
 /** @brief The angle the pin drives on an armed bench while nothing
- *         commands it: the outputs layer's rest for a surface. */
+ *         commands it: the outputs layer's rest for a surface.
+ * @return the angle, degrees
+ */
 float svs_rest_deg(void);
 /**
  * @brief SPEED as the bench's slew.
@@ -162,7 +208,9 @@ void svs_toggle_sweep(void);
  */
 bool svs_same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b);
 /** @brief Whether SPEED is slower than the fastest change the curve asks
- *         for, so the slew and not the curve shapes the sweep. */
+ *         for, so the slew and not the curve shapes the sweep.
+ * @return true when SPEED limits the sweep
+ */
 bool svs_speed_limits_sweep(void);
 /**
  * @brief The frame step: the holds, the supply followed, the sweep drawn
@@ -182,13 +230,17 @@ void svs_tick_body(float dt_s);
  */
 int32_t svs_fixed_of(float x, float per);
 /** @brief The servo rail as its meter reads it: what arrived, at the
- *         precision it is drawn with. */
+ *         precision it is drawn with.
+ * @return the meter's reading
+ */
 rail_t svs_rail_now(void);
 
 /* servo_screen_touch.c */
 
 /** @brief Whether ARM takes no press: the programmer or a limit run holds
- *         the port and the bench is not armed. */
+ *         the port and the bench is not armed.
+ * @return true when ARM is locked
+ */
 bool svs_arm_locked(void);
 /**
  * @brief Whether a DOWN at (x, y) lands on a control whose press stops

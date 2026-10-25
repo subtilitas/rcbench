@@ -809,11 +809,12 @@ servo_test_start_t servo_test_start(servo_test_t *t,
  * @brief One reading of the run's meter: a reading of the supply, or a window.
  */
 typedef struct {
-    float    i;         /* A, signed: the reading, a window's mean        */
-    float    i_peak;    /* the sample of the largest magnitude in it      */
-    float    v, v_min;  /* V: the reading, and the lowest in it           */
-    uint32_t at;        /* when the panel had it                          */
-    uint32_t from;      /* when it began: at, less the meter's span       */
+    float    i;         /**< A, signed: the reading, a window's mean        */
+    float    i_peak;    /**< the sample of the largest magnitude in it      */
+    float v,                                /**< V: the reading                                 */
+          v_min;                            /**< V: the lowest in it                            */
+    uint32_t at;        /**< when the panel had it                          */
+    uint32_t from;      /**< when it began: at, less the meter's span       */
 } sample_t;
 
 /**

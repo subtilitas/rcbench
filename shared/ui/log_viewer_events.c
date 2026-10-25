@@ -23,6 +23,7 @@
 
 /* --------------------------------------------------------------- events -- */
 
+/** @brief Returns the index of the first rectangle that holds (@p x, @p y). */
 static int hit_button(const gfx_rect_t *rects, int n, int x, int y)
 {
     for (int i = 0; i < n; ++i) {
@@ -33,14 +34,16 @@ static int hit_button(const gfx_rect_t *rects, int n, int x, int y)
     return -1;
 }
 
-/* A press that moves further than this, in x or in y, is not a tap; on a
- * list, vertical travel past it is a scroll. */
+/**
+ * @brief A press that moves further than this, in x or in y, is not a tap; on a
+ *        list, vertical travel past it is a scroll.
+ */
 #define DRAG_SLOP 8
 
-/*
- * A button or a row is a tap: the press arms it and the release activates
- * it.  One contact holds the press from its DOWN to its UP; another
- * presses nothing and ends nothing.
+/**
+ * @brief A button or a row is a tap: the press arms it and the release activates
+ *        it.  One contact holds the press from its DOWN to its UP; another
+ *        presses nothing and ends nothing.
  */
 static bool tap_begin(const touch_event_t *e)
 {
@@ -58,12 +61,15 @@ static bool tap_begin(const touch_event_t *e)
     return true;
 }
 
+/** @brief Returns whether @p e belongs to the contact that holds the press. */
 static bool tap_mine(const touch_event_t *e)
 {
     return s.tap_have && e->point.id == s.tap_id;
 }
 
-/* Whether @p e is further than the slop from the press, in x or in y. */
+/**
+ * @brief Whether @p e is further than the slop from the press, in x or in y.
+ */
 static bool tap_far(const touch_event_t *e)
 {
     int dx = e->point.x - s.tap_x0, dy = e->point.y - s.tap_y0;
@@ -72,10 +78,10 @@ static bool tap_far(const touch_event_t *e)
     return dx > DRAG_SLOP || dy > DRAG_SLOP;
 }
 
-/*
- * Whether the release @p e is a tap on @p r: inside it, the contact never
- * further than the slop from its press, and the release made by the finger,
- * not for it (TOUCH_FLAG_NO_TAP).
+/**
+ * @brief Whether the release @p e is a tap on @p r: inside it, the contact never
+ *        further than the slop from its press, and the release made by the finger,
+ *        not for it (TOUCH_FLAG_NO_TAP).
  */
 static bool tap_on(const touch_event_t *e, gfx_rect_t r)
 {
@@ -83,12 +89,15 @@ static bool tap_on(const touch_event_t *e, gfx_rect_t r)
            && gfx_rect_contains(r, e->point.x, e->point.y);
 }
 
-/* Row @p r of the rows showing in a list: under its 30px heading. */
+/**
+ * @brief Row @p r of the rows showing in a list: under its 30px heading.
+ */
 static gfx_rect_t list_row_rect(gfx_rect_t list, int row_h, int r)
 {
     return gfx_rect_make(list.x, list.y + 30 + r * row_h, list.w, row_h);
 }
 
+/** @brief Limits @p scroll to 0 through @p total - @p visible rows. */
 static void clamp_scroll(int *scroll, int total, int visible)
 {
     int max = total - visible;
@@ -103,6 +112,10 @@ static void clamp_scroll(int *scroll, int total, int visible)
     }
 }
 
+/**
+ * @brief Opens the DELETE question for the selected file, if DELETE is
+ *        offered.
+ */
 static void ask_delete(void)
 {
     if (!lv_can_delete()) {
@@ -158,6 +171,10 @@ static void delete_doomed(void)
     s.message_ok = true;
 }
 
+/**
+ * @brief Takes a touch event for the DELETE question: CANCEL and DELETE, one
+ *        contact at a time.
+ */
 static void question_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[2] = { DQ_CANCEL, DQ_DELETE };
@@ -205,6 +222,10 @@ static void question_event(const touch_event_t *e)
     }
 }
 
+/**
+ * @brief Takes a touch event for the browse view: the tabs, the list and its
+ *        scroll bar, and the footer's buttons.
+ */
 static void browse_event(const touch_event_t *e)
 {
     if (s.doomed[0] != '\0') {
@@ -338,6 +359,10 @@ static void browse_event(const touch_event_t *e)
     }
 }
 
+/**
+ * @brief Toggles column @p i of the import as a plotted series; the time
+ *        column is not offered.
+ */
 static void toggle_column(int i)
 {
     if (i < 0 || i >= s.an.n_columns || i == s.an.time_index) {
@@ -358,6 +383,10 @@ static void toggle_column(int i)
     s.picked[s.n_picked++] = i;
 }
 
+/**
+ * @brief Takes a touch event for the import view: its footer buttons and the
+ *        column list.
+ */
 static void import_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[4] = {
@@ -453,6 +482,9 @@ static void import_event(const touch_event_t *e)
     }
 }
 
+/**
+ * @brief Puts the cursor on the sample under pixel column @p x of the plot.
+ */
 static void set_cursor_from_x(int x)
 {
     if (!s.have_data || s.data.count <= 1) {
@@ -468,7 +500,7 @@ static void set_cursor_from_x(int x)
     s.cursor = s.win0 + (int)(((long)rel * (s.win_n - 1)) / (PV_W - 1));
 }
 
-/* Keep the cursor's sample on screen after an arrow press. */
+/** @brief Keep the cursor's sample on screen after an arrow press. */
 static void follow_cursor(void)
 {
     if (s.cursor < s.win0) {
@@ -480,18 +512,22 @@ static void follow_cursor(void)
     }
 }
 
+/** @brief Returns the distance between the two pinch fingers, px. */
 static float pinch_dist(void)
 {
     float d = (float)(s.pinch_x[1] - s.pinch_x[0]);
     return d < 0.0f ? -d : d;
 }
 
+/** @brief Returns the midpoint of the two pinch fingers, px. */
 static float pinch_mid(void)
 {
     return 0.5f * (float)(s.pinch_x[0] + s.pinch_x[1]);
 }
 
-/* A second finger lands on the plot: the gesture starts from here. */
+/**
+ * @brief A second finger lands on the plot: the gesture starts from here.
+ */
 static void pinch_start(uint8_t id0, int16_t x0, uint8_t id1, int16_t x1)
 {
     s.pinch = true;
@@ -509,7 +545,7 @@ static void pinch_start(uint8_t id0, int16_t x0, uint8_t id1, int16_t x1)
                  (pinch_mid() - (float)PV_X) * s.pinch_n0 / (float)PV_W;
 }
 
-/* Both fingers' positions changed: set the window from them. */
+/** @brief Both fingers' positions changed: set the window from them. */
 static void pinch_apply(void)
 {
     const int count = s.data.count;
@@ -544,14 +580,18 @@ static void pinch_apply(void)
     }
 }
 
-/* A drag pans only a view that is zoomed in, and only when the setting asks. */
+/**
+ * @brief A drag pans only a view that is zoomed in, and only when the setting asks.
+ */
 static bool pan_enabled(void)
 {
     return settings_get_bool(SET_PLOT_PAN) && s.have_data &&
            s.win_n < s.data.count;
 }
 
-/* The finger is at @p x: keep the sample that was under it where it began. */
+/**
+ * @brief The finger is at @p x: keep the sample that was under it where it began.
+ */
 static void pan_apply(int x)
 {
     const int max0 = s.data.count - s.win_n;
@@ -570,6 +610,10 @@ static void pan_apply(int x)
     }
 }
 
+/**
+ * @brief Takes a touch event for the plot: the cursor, the pinch zoom, the pan
+ *        and the footer's buttons.
+ */
 static void plot_event(const touch_event_t *e)
 {
     const gfx_rect_t btns[3] = {

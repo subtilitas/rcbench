@@ -67,7 +67,11 @@ typedef struct {
     uint16_t cap_gen;        /**< moves each time the capture starts again;
                                   its counter and ring begin anew          */
     bool     run;            /**< the capture runs and the ring is filling  */
-    uint32_t f_min_hz, f_max_hz, split_pct, gap_ms, min_periods;
+    uint32_t f_min_hz,                      /**< lowest tone, Hz                           */
+             f_max_hz,                      /**< highest tone, Hz                          */
+             split_pct,                     /**< split, percent                            */
+             gap_ms,                        /**< gap, ms                                   */
+             min_periods;                   /**< periods a beep needs                      */
 /**
  * @brief f_min_hz, f_max_hz: tone range, Hz; split_pct: percent; gap_ms: ms;
  *        min_periods: periods a beep needs.
@@ -93,10 +97,10 @@ typedef struct {
     bool     beep;           /**< a run of bursts is under way              */
     bool     tone;           /**< the last window held a tone               */
     uint16_t window;         /**< that window's number, modulo 65536        */
-    uint16_t win_freq_dhz;
-    uint16_t win_periods;
+    uint16_t win_freq_dhz;              /**< the last window's frequency, 0.1Hz */
+    uint16_t win_periods;               /**< the last window's periods */
     uint32_t lost;           /**< beeps dropped by the detector's queue     */
-    uint32_t glitches;
+    uint32_t glitches;                  /**< glitches counted */
 } tone_status_t;
 
 /** @brief State of the tone service: the detector, the ring reader and the
@@ -104,9 +108,11 @@ typedef struct {
 typedef struct {
     tone_t         det;
     tone_holdoff_t hold;     /**< only its horizon is used                  */
-    edge_ring_t    ring;
-    uint16_t       gen, cap_gen;
-    bool           active;
+    edge_ring_t    ring;                /**< the ring of edges */
+    uint16_t gen,                           /**< the set-up generation last seen      */
+             cap_gen;                       /**< the capture generation last seen     */
+    bool           active;              /**< whether the capture runs */
+    /** @brief Whether a lap or a FIFO overflow happened since the start */
     bool           overrun;
     /**
      * @brief Passes still to discard after a FIFO overflow: the one that sees

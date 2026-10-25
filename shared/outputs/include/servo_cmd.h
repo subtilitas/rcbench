@@ -96,7 +96,10 @@ typedef struct {
      *
      * Zero otherwise.
      */
-    uint16_t         sweep_kind, sweep_mhz, sweep_span, sweep_dwell_ms;
+    uint16_t sweep_kind,                    /**< the curve's kind                    */
+             sweep_mhz,                     /**< cycles a second, thousandths        */
+             sweep_span,                    /**< command units either side of the centre */
+             sweep_dwell_ms;                /**< the hold at each end, ms            */
     /** @brief This command ends a sweep the screen was running: a HOLD, a
      *        finger on the dial, CENTRE.
      *

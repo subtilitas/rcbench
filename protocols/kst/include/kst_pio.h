@@ -100,7 +100,7 @@ typedef struct {
     uint32_t sys_hz;
     uint32_t half_cycles;     /**< cycles of one transmit half-cell */
     uint32_t release_cycles;  /**< last edge to the release of the pad */
-    uint32_t quiet_ticks;
+    uint32_t quiet_ticks;               /**< the quiet time, PIO ticks */
 } kst_pio_clock_t;
 
 /** @brief One transaction, as kst_pio_tx() laid it out. */

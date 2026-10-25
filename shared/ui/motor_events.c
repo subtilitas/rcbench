@@ -26,11 +26,11 @@
 
 /* ------------------------------------------------------------------ events */
 
-/*
- * Another task is shown.  A press on the page that went goes with it: a
- * drag on the throttle, a step button, PLOT or TABLE half pressed, a value
- * on SETTINGS.  ARM is on the rail, which stays, and keeps its press.  The
- * page is repainted whole.
+/**
+ * @brief Another task is shown.  A press on the page that went goes with it: a
+ *        drag on the throttle, a step button, PLOT or TABLE half pressed, a value
+ *        on SETTINGS.  ARM is on the rail, which stays, and keeps its press.  The
+ *        page is repainted whole.
  */
 static void task_changed(void)
 {
@@ -48,13 +48,13 @@ static void task_changed(void)
     ++s.arm_rev;
 }
 
-/*
- * A session opened over the body: the presses the screen held go, as at a
- * change of task -- a hold of ARM, a throttle drag, a step button, a tab --
- * and the session's first frame is painted whole.  ARM and the throttle
- * are out of sight under it, so a bench that is not SAFE switches to SAFE
- * first: a DISARM held by another finger, whose release the session takes,
- * is posted here, and no output drives under a session that hides DISARM.
+/**
+ * @brief A session opened over the body: the presses the screen held go, as at a
+ *        change of task -- a hold of ARM, a throttle drag, a step button, a tab --
+ *        and the session's first frame is painted whole.  ARM and the throttle
+ *        are out of sight under it, so a bench that is not SAFE switches to SAFE
+ *        first: a DISARM held by another finger, whose release the session takes,
+ *        is posted here, and no output drives under a session that hides DISARM.
  */
 static void session_opened(void)
 {
@@ -74,14 +74,14 @@ static void session_opened(void)
     ++s.arm_rev;
 }
 
-/*
- * The TARGET row tapped: OUTPUTS, where the throttle's pins are bound, on
- * the protocol they are bound as; on the PROG PORT entry of a DShot
- * programming port the throttle drives alone; on the overview while they
- * are bound as several or none is known.  The router leaves this screen for it, which
- * switches the bench to SAFE as any way out does (leave()); the row takes
- * the tap only on a SAFE bench.  The home tag there comes back here
- * (ui_router_parent()), on the task the row was tapped on.
+/**
+ * @brief The TARGET row tapped: OUTPUTS, where the throttle's pins are bound, on
+ *        the protocol they are bound as; on the PROG PORT entry of a DShot
+ *        programming port the throttle drives alone; on the overview while they
+ *        are bound as several or none is known.  The router leaves this screen for it, which
+ *        switches the bench to SAFE as any way out does (leave()); the row takes
+ *        the tap only on a SAFE bench.  The home tag there comes back here
+ *        (ui_router_parent()), on the task the row was tapped on.
  */
 static void open_outputs(void)
 {

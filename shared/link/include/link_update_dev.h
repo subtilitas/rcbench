@@ -97,9 +97,9 @@ typedef struct {
     uint16_t data[LINK_UPD_DATA_COUNT];
 
     uint8_t  digest_of;         /**< a link_upd_digest_t                     */
-    uint8_t  digest[LINK_SHA256_BYTES];
-    uint8_t  expect[LINK_SHA256_BYTES];
-    link_image_hash_t hash;
+    uint8_t  digest[LINK_SHA256_BYTES];  /**< the digest the image hashes to */
+    uint8_t  expect[LINK_SHA256_BYTES];  /**< the digest the host expects */
+    link_image_hash_t hash;             /**< the hash of the image so far */
 
     bool     restart_due;
     bool     restart_timed;
@@ -110,7 +110,7 @@ typedef struct {
     uint32_t heard_ms;          /**< the poll that saw the last one         */
     bool     sweep;             /**< the other slot's first sector is owed
                                  *   its erase (LINK_UPD_SLOT_OTHER)        */
-    bool     sweep_tried;
+    bool     sweep_tried;               /**< whether the sweep was tried */
     uint32_t sweep_ms;          /**< the last try                           */
 
     uint8_t  first[LINK_UPD_SECTOR_BYTES];  /**< the slot's first sector    */

@@ -30,7 +30,9 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief The panel's width, UI_PANEL_W px. */
 #define W UI_PANEL_W
+/** @brief The body's height under the band, UI_BODY_H px. */
 #define H UI_BODY_H
 
 /**

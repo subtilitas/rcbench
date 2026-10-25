@@ -66,7 +66,8 @@ bool servo_limrun_drained(const servo_limrun_t *r)
  *        one asked for.
  */
 typedef struct {
-    unsigned want, at;      /**< index asked for; index of the next line */
+    unsigned want,                          /**< index asked for                        */
+             at;                            /**< index of the next line                 */
     char    *buf;           /**< out: the line                          */
     size_t   n;             /**< size of buf, bytes                     */
     const char *const *text;    /**< the language table; NULL for English */

@@ -225,6 +225,9 @@ _Static_assert(OV_HELP_DY + 3 * OV_HELP_PITCH <= OV_CONFIRM_DY,
 #define ASK_PITCH 26                      /**< Its sentences' lines, px. */
 
 /* The sample rate of the panel's loop, which is the plot's time base. */
+/**
+ * @brief The panel loop's sample rate, 20Hz, which is the plot's time base.
+ */
 #define SAMPLE_HZ 20.0f
 
 /*
@@ -250,14 +253,26 @@ enum { KP_NONE = 0, KP_SET_V, KP_SET_I, KP_SETTING };
  * The settings SETTINGS' page edits, in two columns.  A start value is
  * capped like the set point it starts, and a trip of 0 is off.
  */
+/**
+ * @brief One row of SETTINGS' page: the setting it edits, its label, its
+ *        column and its place from the overlay's top.
+ */
 typedef struct {
-    setting_id_t id;
-    ui_text_id_t label;
+    setting_id_t id;                    /**< setting the row edits */
+    ui_text_id_t label;                 /**< text id of the row's label */
+    /**
+     * @brief Column: 0 left (caps and start values), 1 right (trips and
+     *        confirmations)
+     */
     int          col;
-    int          y;          /* from the overlay's top */
-    int          decimals;
+    int          y;                     /**< top of the row, px from the overlay's top */
+    int          decimals;              /**< digits after the point in the value */
 } limit_row_t;
 
+/**
+ * @brief The settings SETTINGS' page edits, in two columns; a start value is
+ *        capped like the set point it starts and a trip of 0 is off.
+ */
 static const limit_row_t k_rows[] = {
     { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 36,  2 },
     { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 92,  2 },
@@ -269,120 +284,228 @@ static const limit_row_t k_rows[] = {
     { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 296, 0 },
     { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 352, 0 },
 };
+/** @brief Number of rows in k_rows. */
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
+/**
+ * @brief The supply screen's state: the plot, the sliders, the set points
+ *        and what the supply reports, the question about a change, the
+ *        keypad and the revisions the two frame buffers last drew.
+ */
 typedef struct {
-    ui_plot_t       plot;
-    ui_wb_strip_t   wb;       /* LIVE | SETTINGS                        */
-    uint32_t        strip_rev;
-    uint32_t        drawn_strip[2];
-    ui_tabs_t       tabs;     /* PLOT | TABLE, on LIVE                  */
-    ui_slider_t     v_slider;
-    ui_slider_t     i_slider;
-    supply_caps_t   caps;     /* what the supply can be set to          */
-    supply_limits_t lim;      /* what the operator allows               */
-    supply_caps_t   eff;      /* the caps narrowed by the limits        */
-    supply_state_t  sup;
+    ui_plot_t       plot;               /**< plot of the three readings and two set points */
+    ui_wb_strip_t   wb;                 /**< the LIVE | SETTINGS strip */
+    uint32_t        strip_rev;          /**< revision of the strip, counted up when it changes */
+    uint32_t        drawn_strip[2];     /**< strip revision each frame buffer last drew */
+    ui_tabs_t       tabs;               /**< PLOT | TABLE tabs, on LIVE */
+    ui_slider_t     v_slider;           /**< voltage slider */
+    ui_slider_t     i_slider;           /**< current slider */
+    supply_caps_t   caps;               /**< what the supply can be set to */
+    supply_limits_t lim;                /**< what the operator allows */
+    supply_caps_t   eff;                /**< the caps narrowed by the limits */
+    supply_state_t  sup;                /**< the supply's reported state */
     /*
      * The set points the supply is given.  The sliders show them, except
      * while a drag is under way or a change waits for its confirmation;
      * see sup_propose().
      */
-    float           cv, ci;
+    float cv,                               /**< voltage set point given to the supply, V */
+          ci;                               /**< current limit given to the supply, A */
     /* An ON this screen has asked for and not yet seen applied: the output
      * is treated as live from the moment it is asked; see
      * sup_confirm_needed(). */
+    /** @brief Whether an ON this screen asked for is not yet seen applied */
     bool            on_asked;
     /* A servo programming port is out of PWM: the IOmcu takes an OFF
      * and nothing else, so this screen offers nothing else; see
      * supply_screen_set_port_held(). */
+    /**
+     * @brief Whether a servo programming port is out of PWM and holds the
+     *        supply
+     */
     bool            port_held;
     /* The screen whose ON the output is, while it is on or an ON is on
      * its way; and an OFF owed for leaving it while a programming port
      * held the supply, sent when the port lets go.  See
      * supply_screen_left(). */
-    supply_by_t     owner;
+    supply_by_t     owner;              /**< screen whose ON the output is */
+    /**
+     * @brief Whether an OFF is owed for leaving the screen while a port held
+     *        the supply
+     */
     bool            off_owed;
-    bool            confirm_open;
-    uint32_t        off_count;      /* reported ON-to-OFF edges */
+    bool            confirm_open;       /**< whether the question about a change is open */
+    uint32_t        off_count;          /**< reported ON-to-OFF edges */
     /* Stops seen (supply_screen_cancel_on()), and the count the question
      * was asked under: see sup_confirm_stands(). */
-    uint32_t        stops;
-    uint32_t        confirm_stops;
+    uint32_t        stops;              /**< stops seen */
+    uint32_t        confirm_stops;      /**< stop count the question was asked under */
     /* Whether OUTPUT's press began on a live output: an OFF tap rather
      * than an ON hold, whatever the output does before it lifts. */
+    /** @brief Whether OUTPUT's press began on a live output (an OFF tap) */
     bool            press_on;
-    float           pend_v, pend_i;
-    gfx_rect_t      apply_btn, discard_btn;
-    bool            model;
-    uint32_t        baud;          /* PD mini UART rate; 0: not shown */
-    int             tx1, rx1;      /* PD mini UART pins, GPIO + 1; 0 none */
+    float pend_v,                           /**< voltage change waiting for its question, V */
+          pend_i;                           /**< current change waiting for its question, A */
+    gfx_rect_t apply_btn,                   /**< APPLY of the question            */
+               discard_btn;                 /**< CANCEL of the question           */
+    bool            model;              /**< whether the panel runs against its model supply */
+    uint32_t        baud;               /**< PD mini UART rate, baud; 0 when not shown */
+    int tx1,                                /**< PD mini UART transmit pin, GPIO + 1; 0 for none */
+        rx1;                                /**< PD mini UART receive pin, GPIO + 1; 0 for none */
     /* The output as this screen believes it: what the supply reported, and
      * an OFF this screen has asked for and not yet seen answered. */
-    bool            on;
+    bool            on;                 /**< the output as this screen believes it */
     /* The output as the supply reports it, which bounds a run. */
-    bool            out_reported;
-    supply_cmd_t    pending;
+    bool            out_reported;       /**< the output as the supply reports it */
+    supply_cmd_t    pending;            /**< the commands waiting to go to the supply */
+    /** @brief Bit per frame buffer: its title and strip were drawn */
     unsigned        drawn_mask;
-    uint32_t        drawn_push[2];
-    uint32_t        drawn_plot[2];
-    uint8_t         drawn_title[2];
-    uint32_t        ctrl_rev;
-    uint32_t        drawn_ctrl[2];
-    uint32_t        set_rev;
-    uint32_t        drawn_set[2];
-    uint32_t        out_rev;
-    uint32_t        drawn_out[2];
-    uint32_t        ov_rev;
-    uint32_t        drawn_ov[2];
-    uint8_t         drawn_save[2];
-    uint32_t        drawn_kp[2];
-    ui_hold_t       hold;
-    gfx_rect_t      out_rect;
-    gfx_rect_t      reset_rect;
-    gfx_rect_t      modreset_btn;   /* RESET PD MINI, on SETTINGS */
-    gfx_rect_t      v_down, v_up, i_down, i_up;
-    ui_keypad_t     kp;
-    int             kp_target;
+    uint32_t        drawn_push[2];      /**< plot pushes each frame buffer last drew */
+    uint32_t        drawn_plot[2];      /**< plot revision each frame buffer last drew */
+    uint8_t         drawn_title[2];     /**< title tag each frame buffer last drew */
+    uint32_t        ctrl_rev;           /**< revision of the CONTROL card */
+    uint32_t        drawn_ctrl[2];      /**< CONTROL revision each frame buffer last drew */
+    uint32_t        set_rev;            /**< revision of the set points */
+    uint32_t        drawn_set[2];       /**< set point revision each frame buffer last drew */
+    uint32_t        out_rev;            /**< revision of OUTPUT */
+    uint32_t        drawn_out[2];       /**< OUTPUT revision each frame buffer last drew */
+    uint32_t        ov_rev;             /**< revision of SETTINGS' page */
+    uint32_t        drawn_ov[2];        /**< SETTINGS revision each frame buffer last drew */
+    uint8_t         drawn_save[2];      /**< save-line state each frame buffer last drew */
+    uint32_t        drawn_kp[2];        /**< keypad revision each frame buffer last drew */
+    ui_hold_t       hold;               /**< hold counter of OUTPUT ON */
+    gfx_rect_t      out_rect;           /**< OUTPUT ON / OFF */
+    gfx_rect_t      reset_rect;         /**< RESET PEAKS */
+    gfx_rect_t      modreset_btn;       /**< RESET PD MINI, on SETTINGS */
+    gfx_rect_t v_down,                      /**< voltage fine step down           */
+               v_up,                        /**< voltage fine step up             */
+               i_down,                      /**< current fine step down           */
+               i_up;                        /**< current fine step up             */
+    ui_keypad_t     kp;                 /**< the keypad */
+    int             kp_target;          /**< what the keypad types, KP_* */
+    /** @brief Setting the keypad types when kp_target is KP_SETTING */
     setting_id_t    kp_setting;
-    int             pressed;
-    int             press_row;
-    uint8_t         press_id;
-    bool            have_press;
+    int             pressed;            /**< what the press is on, P_* */
+    int             press_row;          /**< SETTINGS row the press is on */
+    uint8_t         press_id;           /**< touch id of the press */
+    bool            have_press;         /**< whether a press is on the glass */
 } sup_state_t;
 
 /* Defined in supply_screen.c. */
+/** @brief The supply screen's state, in supply_screen.c. */
 extern sup_state_t sup_s;
+/** @brief Short name for sup_s inside the supply screen's files. */
 #define s sup_s
 
 /* --- supply_screen.c: the series, the geometry, the rules and the
  *     commands ------------------------------------------------------------ */
 
+/**
+ * @brief The plot's five series: voltage, current, power, and the voltage and
+ *        current set points.
+ */
 extern const ui_plot_series_t sup_series[S_COUNT];
 
+/**
+ * @brief Sets the plot's series colours from the active theme.
+ */
 void sup_bind_colours(void);
 gfx_rect_t sup_set_value_rect(int row);
+/**
+ * @brief Returns the rectangle of reading card @p i on the rail.
+ * @param i card index, 0 to 3
+ * @return the card's rectangle
+ */
 gfx_rect_t sup_card_rect(int i);
 gfx_rect_t sup_strip_area(void);
+/**
+ * @brief Returns whether the LIVE task shows.
+ * @return true on LIVE, false on SETTINGS
+ */
 bool sup_on_live(void);
+/**
+ * @brief Returns the area the keypad, the question and SETTINGS' page take.
+ * @return the left column under the strip, 620px wide
+ */
 gfx_rect_t sup_overlay_area(void);
 gfx_rect_t sup_row_rect(int i);
 gfx_rect_t sup_row_value_rect(int i);
+/**
+ * @brief Re-reads the operator's limits from the settings and narrows the
+ *        caps.
+ */
 void sup_refresh_limits(void);
+/**
+ * @brief Clears the owner and any owed OFF once the output is off with no ON
+ *        asked.
+ */
 void sup_owner_settle(void);
+/**
+ * @brief Asks for the output ON, unless an OFF is pending or a programming
+ *        port holds the supply.
+ * @param by the screen the ON belongs to
+ */
 void sup_post_on(supply_by_t by);
+/**
+ * @brief Asks for the output OFF.
+ */
 void sup_post_off(void);
+/**
+ * @brief Ends the press on a slider or key and lets the set points follow the
+ *        supply.
+ */
 void sup_let_go(void);
+/**
+ * @brief Returns whether a change waits for a confirmation: only while the
+ *        output is on and as the operator's settings ask.
+ * @param from where the change came from, FROM_SLIDER or FROM_KEYPAD
+ * @return true when the question is asked
+ */
 bool sup_confirm_needed(int from);
+/**
+ * @brief Gives a set point change to the supply, or opens the question when
+ *        one is needed.
+ * @param from where the change came from, FROM_SLIDER or FROM_KEYPAD
+ */
 void sup_propose(int from);
+/**
+ * @brief Returns whether the question about a live output still stands: the
+ *        output on or an ON on its way, and no stop since it was asked.
+ * @return true when APPLY may still apply the change
+ */
 bool sup_confirm_stands(void);
+/**
+ * @brief Closes the question, applying the pending change or dropping it.
+ * @param apply true for APPLY, false for CANCEL
+ */
 void sup_confirm_close(bool apply);
 
 /* --- supply_events.c ---------------------------------------------------- */
 
+/**
+ * @brief Drops the press as a lost release: a gesture asks for nothing, except
+ *        a tap on OUTPUT OFF, which is sent.
+ */
 void sup_drop_press(void);
+/**
+ * @brief Returns whether (@p x, @p y) is on OUTPUT OFF, the one control here
+ *        whose press stops what the bench drives.
+ * @param x column, px
+ * @param y row, px
+ * @return true when the point is on OUTPUT OFF while the output is on
+ */
 bool sup_safe_at(int x, int y);
+/**
+ * @brief Takes a touch event: presses, drags and releases on the screen's
+ *        controls.
+ * @param evt the event
+ */
 void sup_event(const touch_event_t *evt);
+/**
+ * @brief Advances the screen by one frame: holds, repeats and the question
+ *        about a live output.
+ * @param dt_s time since the last tick, s
+ */
 void sup_tick(float dt_s);
 
 /* --- supply_draw.c ------------------------------------------------------ */

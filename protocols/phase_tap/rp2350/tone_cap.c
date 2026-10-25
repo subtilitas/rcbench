@@ -37,8 +37,8 @@ static uint              s_sm;
 static uint              s_offset;
 static int               s_dma = -1;
 static volatile uint32_t s_wr_base;      /**< the ring's address            */
-static uint8_t           s_pin;
-static uint64_t          s_start_us;
+static uint8_t           s_pin;         /**< the capture pin, GPIO */
+static uint64_t          s_start_us;    /**< the capture's start, µs */
 
 void tone_cap_rest(uint8_t pin)
 {

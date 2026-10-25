@@ -382,10 +382,10 @@ typedef struct {
     uint8_t  long_equals_short;  /**< 0: every beep is short             */
 
     bool     counting;           /**< else only the floor is tracked     */
-    bool     seeded;
+    bool     seeded;                    /**< whether floor_x16 has its first reading */
     int32_t  floor_x16;          /**< the idle current, mA x 16          */
-    bool     have_prev;
-    uint32_t prev_ms;
+    bool     have_prev;                 /**< whether prev_ms holds a reading time */
+    uint32_t prev_ms;                   /**< bench time of the previous reading, ms */
     uint32_t iv_max_ms;          /**< longest interval not late          */
 
     bool     high;
@@ -393,13 +393,13 @@ typedef struct {
     uint32_t n_high;
     bool     stuck_told;
     bool     wait_quiet;         /**< no group opens until a quiet gap   */
-    bool     quiet_known;
+    bool     quiet_known;               /**< whether quiet_from is set */
     uint32_t quiet_from;         /**< the quiet began here               */
     bool     busy;               /**< not quiet while waiting            */
-    uint32_t busy_from;
+    uint32_t busy_from;                 /**< when the line was last busy, ms */
     bool     fell;               /**< a pulse has ended (fall_ms is set) */
     uint32_t fall_ms;            /**< first low reading after a pulse    */
-    uint32_t n_low;
+    uint32_t n_low;                     /**< consecutive low readings since the pulse ended */
 
     bool     group_open, group_bad;
     uint8_t  shorts, longs;
@@ -596,7 +596,7 @@ typedef struct {
     esc_stick_phase_t    phase;
     esc_stick_reason_t   reason;
     uint32_t             phase_ms;      /**< when this phase began       */
-    uint32_t             now_ms;
+    uint32_t             now_ms;        /**< the bench time of the newest step, ms */
 
     uint32_t             stops0;
     uint32_t             pressed0;
@@ -608,7 +608,7 @@ typedef struct {
     uint32_t             off_asked_ms;  /**< when the run asked it off   */
     uint32_t             off_seq;       /**< the reading count then      */
     uint32_t             off_since_ms;  /**< reported off from here      */
-    bool                 off_since_known;
+    bool                 off_since_known;  /**< whether off_since_ms is set */
     uint8_t              store_step;    /**< moves made after the
                                              selection (esc_stick_store_
                                              move())                      */
@@ -616,7 +616,7 @@ typedef struct {
     bool                 sig_moved;     /**< the first power-up's: the
                                              stick at the entry, the supply
                                              read off                     */
-    bool                 armed_seen;
+    bool                 armed_seen;    /**< whether the bench has been seen ARMED during ARMING */
 
     esc_stick_out_t      out;
 

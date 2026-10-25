@@ -37,14 +37,15 @@
 #include "ui_band.h"
 #include "ui_text.h"
 
+/** @brief Log tag. */
 static const char *TAG = "rcbench";
 
 /* ------------------------------------------------------------ the heartbeat */
 
-/*
- * Driven from the loop that reads touch and draws STOP.  The line asserts
- * that the processor owning the STOP button is running its loop, which a
- * level cannot assert and a crashed panel cannot fake.
+/**
+ * @brief Driven from the loop that reads touch and draws STOP.  The line asserts
+ *        that the processor owning the STOP button is running its loop, which a
+ *        level cannot assert and a crashed panel cannot fake.
  *
  * The monostable the line gates is on no board: the edges reach a header
  * pin of the panel (PANEL_HEARTBEAT_PIN) and the IOmcu's monitor.  They
@@ -73,15 +74,17 @@ void heartbeat_init(void)
 
 /* ------------------------------------------------------------ die temperature */
 
-/*
- * The panel's own die, not the IOmcu's.  The two boards sit in
- * different air and run different loads, and this is the one the ESP32-P4
- * can measure without a wire.  Read once a second; the sensor is slow and
- * nothing on the screen changes faster.
+/**
+ * @brief The panel's own die, not the IOmcu's.  The two boards sit in
+ *        different air and run different loads, and this is the one the ESP32-P4
+ *        can measure without a wire.  Read once a second; the sensor is slow and
+ *        nothing on the screen changes faster.
  */
 static temperature_sensor_handle_t s_tsens;
-/* Read and published by the control task; app_main takes it from the
- * snapshot with everything else that crosses between the two. */
+/**
+ * @brief Read and published by the control task; app_main takes it from the
+ *        snapshot with everything else that crosses between the two.
+ */
 float s_mcu_c = NAN;
 
 void tsens_init(void)
@@ -94,6 +97,7 @@ void tsens_init(void)
     }
 }
 
+/** @brief Reads the MCU's own die temperature into s_mcu_c. */
 static void tsens_read(void)
 {
     float c = 0.0f;
@@ -102,6 +106,10 @@ static void tsens_read(void)
     }
 }
 
+/**
+ * @brief Steps the heartbeat generator and drives PANEL_HEARTBEAT_PIN with its
+ *        level.
+ */
 static void beat(bool alive)
 {
     const bool level = heartbeat_gen_step(&s_beat, now_ms(), alive);
@@ -112,8 +120,10 @@ static void beat(bool alive)
  * (panel_frame.c). */
 atomic_bool s_stop_live;
 /* The driver's queue, numbered (touch_loss.h); see s_drv_gaps, main.c. */
-static touch_seq_rx_t s_drv_rx = { .next = 1u };   /* touch_seq_rx_init() */
-/* s_touch_q's numbers, this task's alone; see s_tq_published, main.c. */
+static touch_seq_rx_t s_drv_rx = { .next = 1u };  /**< touch_seq_rx_init() */
+/**
+ * @brief S_touch_q's numbers, this task's alone; see s_tq_published, main.c.
+ */
 static uint32_t    s_tq_seq;
 /** @brief The render loop's watchdog, this task's alone; see
  *         render_watch(). */
@@ -164,8 +174,8 @@ static void render_watch(void)
  * its failsafe.  The loop that owns STOP really is still running during that
  * wait; this is what makes the line say so.
  */
-/*
- * Offer one item to s_touch_q, numbered.  Returns whether the queue holds it.
+/**
+ * @brief Offer one item to s_touch_q, numbered.  Returns whether the queue holds it.
  *
  * The consumer is behind when the send fails.  The oldest entry is dropped
  * and the newest kept, which is what the GT911's own event queue and the
@@ -203,10 +213,10 @@ static bool touch_q_put(const touch_event_t *evt, bool lost)
     return kept;
 }
 
-/*
- * The driver's stream lost @p n events.  Found on the event after the gap,
- * before that event goes through the STOP branch, or at the end of a drain
- * against the number the driver last published.
+/**
+ * @brief The driver's stream lost @p n events.  Found on the event after the gap,
+ *        before that event goes through the STOP branch, or at the end of a drain
+ *        against the number the driver last published.
  *
  * The render loop is told by an item in s_touch_q, ahead of the events that
  * followed the gap, so it drops the screens' gestures before it handles any
@@ -223,6 +233,10 @@ static void drv_lost(uint32_t n)
     (void)touch_q_put(NULL, true);
 }
 
+/**
+ * @brief Drains the touch driver's queue, answers sequence gaps, applies a
+ *        STOP at its press and passes the events on to the render loop.
+ */
 void control_pump(void)
 {
     /*

@@ -27,10 +27,13 @@
 #include "ui_text.h"
 #include "ui_textkey.h"
 
+/** @brief The screen's width, UI_PANEL_W px. */
 #define SCREEN_W UI_PANEL_W
 /* The router owns the top UI_BAND_H px and the home tag; this screen gets
  * the body. */
+/** @brief The screen's height, UI_BODY_H px: the body under the band. */
 #define SCREEN_H UI_BODY_H
+/** @brief Frame buffers the router renders into. */
 #define MAX_FBS  3
 
 /**
@@ -128,12 +131,17 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
  * counts for at most UI_HOLD_MAX_CREDIT_S (0.25s); the release of a key
  * that has repeated adds no step.
  */
-#define REPEAT_DELAY_S 0.45f
-#define REPEAT_SLOW_HZ 8.0f
+#define REPEAT_DELAY_S 0.45f            /**< delay before the first repeat, 0.45s */
+#define REPEAT_SLOW_HZ 8.0f             /**< repeat rate after the delay, 8Hz */
+/** @brief Time from the first repeat until the fast rate, 1.8s */
 #define REPEAT_FAST_S  1.8f
-#define REPEAT_FAST_HZ 30.0f
+#define REPEAT_FAST_HZ 30.0f            /**< repeat rate once fast, 30Hz */
 
 /* A press that moves further than this is a scroll, not a tap. */
+/**
+ * @brief A press that moves further than DRAG_SLOP px, 8px, is a scroll and no
+ *        tap.
+ */
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
@@ -175,18 +183,30 @@ enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
  * strip's free columns, which is not built: the build stops at a tenth
  * entry (the assertion under the table), and so does test_settings_pins_hub.
  */
+/**
+ * @brief One tile of the hub: a category's list or a screen it opens.
+ */
 typedef struct {
-    ui_icon_fn     icon;
+    ui_icon_fn     icon;                /**< icon the tile draws */
     int8_t         cat;      /**< the category its list shows, or -1      */
     ui_screen_id_t screen;   /**< else the screen it opens                */
     ui_text_id_t   line;     /**< the line under the name                 */
 } hub_tile_t;
 
+/**
+ * @brief Tile that opens category @p cat_ with icon @p icon_; its line counts
+ *        the settings.
+ */
 #define HUB_CATEGORY(cat_, icon_) \
     { (icon_), (int8_t)(cat_), SCREEN_SETUP, TX_SET_COUNT }
+/**
+ * @brief Tile that opens screen @p screen_ with icon @p icon_ and the line @p
+ *        line_ under its name.
+ */
 #define HUB_SCREEN(screen_, line_, icon_) \
     { (icon_), -1, (screen_), (line_) }
 
+/** @brief The hub's tiles in grid order, row by row. */
 static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
     HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
@@ -199,6 +219,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_SCREEN(SCREEN_FILES,   TX_SET_HUB_FILES,   ui_icon_folder),
 };
 
+/** @brief Number of tiles, at most SETTINGS_HUB_SLOTS (9). */
 #define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
 
 _Static_assert(TILE_COUNT <= SETTINGS_HUB_SLOTS,
@@ -221,8 +242,16 @@ _Static_assert(HUB_ICON_DY + HUB_ICON <= HUB_NAME_DY
 
 /* The strings' names, for the warning, a row and its keyboard's title,
  * and the help line of a row; the DUT name has no row on SETUP. */
-static const struct { ui_text_id_t label; ui_text_id_t help; }
-    k_text_ui[SETTING_TEXT_COUNT] = {
+/**
+ * @var k_text_ui
+ * @brief Per string setting: the name for the warning, a row and its
+ *        keyboard's title, and the row's help line.  The DUT name has no
+ *        row on SETUP.
+ */
+static const struct {
+    ui_text_id_t label;  /**< the string's name for the warning, a row and its keyboard's title */
+    ui_text_id_t help;   /**< the row's help line, TX_COUNT for none */
+} k_text_ui[SETTING_TEXT_COUNT] = {
     [SET_TEXT_DUT_NAME]     = { TX_SET_DUT_NAME, TX_COUNT },
     [SET_TEXT_LOG_AUTO_DIR] = { TX_SET_AUTO_DIR, TX_SET_AUTO_DIR_HELP },
     [SET_TEXT_LOG_USER_DIR] = { TX_SET_USER_DIR, TX_SET_USER_DIR_HELP },
@@ -232,6 +261,10 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
  * The keyboard a string's row opens: over the list and the strip, the
  * warning's card.  Nothing under it presses while it is open; OK and
  * CANCEL are its own, and the home tag closes it as CANCEL does.
+ */
+/**
+ * @brief Height of the keyboard's area, px: from the warning's top to the
+ *        strip's foot.
  */
 #define TK_AREA_H (STRIP_Y + STRIP_H - WARN_Y)
 
@@ -243,30 +276,37 @@ static const struct { ui_text_id_t label; ui_text_id_t help; }
  */
 #define KP_AREA gfx_rect_make(WARN_X, WARN_Y, WARN_W, TK_AREA_H)
 
+/**
+ * @brief SETUP's state: the open list and its scroll, the contact that
+ *        holds the screen, the key repeat, the warning, the keyboard and
+ *        the keypad, and what the last frame drew of each.
+ */
 typedef struct {
     /* The list of cat is open; the hub shows while this is false. */
+    /** @brief Whether the list of cat is open; the hub shows while false */
     bool     list;
-    setting_cat_t cat;
-    int      scroll;
-    int      scroll_max;
+    setting_cat_t cat;                  /**< the category the list shows */
+    int      scroll;                    /**< list scroll, px */
+    int      scroll_max;                /**< largest scroll, px */
 
     /* One contact holds the screen from its DOWN to its UP; any other
      * presses nothing and ends nothing. */
-    bool     have_press;
-    uint8_t  press_id;
+    bool     have_press;                /**< whether a contact holds the screen */
+    uint8_t  press_id;                  /**< touch id of that contact */
 
-    int      hit_kind;
-    int      hit_index;      /* tile index, or row index */
-    bool     dragging;
-    int      press_x, press_y;
-    int      last_y;
+    int      hit_kind;                  /**< what the press hit, HIT_* */
+    int      hit_index;                 /**< tile index, or row index */
+    bool     dragging;                  /**< whether the press became a scroll */
+    int press_x,                            /**< x where the press began, px */
+        press_y;                            /**< y where the press began, px */
+    int      last_y;                    /**< y of the last move, px */
 
-    float    held_for;
-    bool     repeating;
+    float    held_for;                  /**< seconds a key has been held within the slop */
+    bool     repeating;                 /**< whether the held key has begun to repeat */
 
-    bool     chrome_valid[MAX_FBS];
-    bool     drawn_list;
-    setting_cat_t drawn_cat;
+    bool     chrome_valid[MAX_FBS];     /**< per frame buffer: whether its chrome is current */
+    bool     drawn_list;                /**< whether the list showed at the last draw */
+    setting_cat_t drawn_cat;            /**< category the last draw showed */
 
     /*
      * The save button's three inputs as the last frame drew them.  The
@@ -275,24 +315,24 @@ typedef struct {
      * touch to invalidate the cached framebuffers.  Without this, a
      * refusal keeps drawing WHEN IDLE until something else repaints.
      */
-    bool     drawn_dirty;
-    bool     drawn_asked;
-    bool     drawn_failed;
+    bool     drawn_dirty;               /**< whether the save button read dirty at the last draw */
+    bool     drawn_asked;               /**< whether it read save asked */
+    bool     drawn_failed;              /**< whether it read failed */
 
     /* The warning is open and holds the way out to warn_to.  drawn_* are
      * what the last frame drew of it. */
-    bool     warn;
-    ui_screen_id_t warn_to;
-    bool     drawn_warn;
+    bool     warn;                      /**< whether the warning is open */
+    ui_screen_id_t warn_to;             /**< screen the warning's way out leads to */
+    bool     drawn_warn;                /**< whether the warning was drawn */
     bool     drawn_armed;    /**< ARMED at the last full draw: the
                                   warning's DISCARD and a list's SAFE-only
                                   rows */
 
     /* The keyboard of string tk_text, and its revision as last drawn. */
-    ui_textkey_t tk;
-    setting_text_id_t tk_text;
-    bool     drawn_tk;
-    uint32_t drawn_tk_rev;
+    ui_textkey_t tk;                    /**< the keyboard of string tk_text */
+    setting_text_id_t tk_text;          /**< string the keyboard types */
+    bool     drawn_tk;                  /**< whether the keyboard was open at the last draw */
+    uint32_t drawn_tk_rev;              /**< its revision at the last draw */
 
     /* The keypad of number kp_id, and its revision as last drawn. */
     ui_keypad_t  kp;            /**< the keypad a number's value opens */
@@ -302,22 +342,78 @@ typedef struct {
 } stg_state_t;
 
 /* Defined in settings_screen.c. */
+/** @brief SETUP's state, in settings_screen.c. */
 extern stg_state_t stg_s;
+/** @brief Short name for stg_s inside the SETUP files. */
 #define s stg_s
 
 /* --- settings_screen.c: the geometry and the rows settings_draw.c reads -- */
 
+/**
+ * @brief Returns the rectangle of hub tile @p i.
+ * @param i tile index, 0 to TILE_COUNT - 1
+ * @return the tile's rectangle
+ */
 gfx_rect_t stg_tile_rect(int i);
+/**
+ * @brief Returns column @p col of the strip under the grid and the list.
+ * @param col strip column, 0 to 2
+ * @return the column's rectangle
+ */
 gfx_rect_t stg_strip_rect(int col);
+/**
+ * @brief Returns the rectangle of RESET, the strip's middle column.
+ * @return the rectangle
+ */
 gfx_rect_t stg_reset_rect(void);
+/**
+ * @brief Returns the rectangle of SAVE, the strip's last column.
+ * @return the rectangle
+ */
 gfx_rect_t stg_save_rect(void);
+/**
+ * @brief Returns whether SAVE is offered: a setting is changed and no save is
+ *        asked for.
+ * @return true when SAVE is enabled
+ */
 bool stg_save_offered(void);
+/**
+ * @brief Returns whether the bench is ARMED; DISCARD changes nothing then.
+ * @return true when ARMED
+ */
 bool stg_bench_armed(void);
+/**
+ * @brief Returns the rectangle of STAY, the warning's first column.
+ * @return the rectangle
+ */
 gfx_rect_t stg_stay_rect(void);
+/**
+ * @brief Returns the rectangle of DISCARD, the warning's middle column.
+ * @return the rectangle
+ */
 gfx_rect_t stg_discard_rect(void);
+/**
+ * @brief Returns the number of rows in the open category's list.
+ * @return the row count
+ */
 int stg_row_count(void);
+/**
+ * @brief Limits the list's scroll to 0 to the content's height less the
+ *        list's.
+ */
 void stg_clamp_scroll(void);
+/**
+ * @brief Returns the rectangle of list row @p index, from the list's scroll.
+ * @param index row index
+ * @return the row's rectangle
+ */
 gfx_rect_t stg_row_rect(int index);
+/**
+ * @brief Returns the entry of row @p index; a heading's carries heading or
+ *        part >= 0, a string's text >= 0.
+ * @param index row index
+ * @return the entry
+ */
 settings_row_t stg_row_entry(int index);
 
 /* --- settings_draw.c ---------------------------------------------------- */

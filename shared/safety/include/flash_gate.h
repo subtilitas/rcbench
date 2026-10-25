@@ -37,26 +37,14 @@ extern "C" {
 /**
  * @brief Whether a flash operation may start now.
  *
- * @p armed   the bank is armed, or an arm is waiting for the line to settle
- *            (arming_link_needed()): a stall inside the settle can cost the
- *            far end's trust in the heartbeat and so the arm.
- * @p supply the supply's output is on, or an ON for it is queued and not
- *            yet taken.
+ * True only when both @p armed and @p supply are false.
  *
- * True only when both are false.
- *
- * @param armed the bank is armed, or an arm is waiting for the line to settle
- *            (arming_link_needed()): a stall inside the settle can cost the
- *            far end's trust in the heartbeat and so the arm.
- * @param supply the supply's output is on, or an ON for it is queued and not
- *            yet taken.
- *
- * True only when both are false.
- *
- * @param armed true when the bank is armed, or an arm waits for the line to
- *        settle.
- * @param supply true when the supply output is on or an ON is queued.
- * @return true only when both are false.
+ * @param armed true when the bank is armed, or an arm is waiting for the line
+ *        to settle (arming_link_needed()): a stall inside the settle can cost
+ *        the far end's trust in the heartbeat and so the arm.
+ * @param supply true when the supply's output is on, or an ON for it is queued
+ *        and not yet taken.
+ * @return true when a flash operation may start.
  */
 bool flash_gate_open(bool armed, bool supply);
 
@@ -69,25 +57,14 @@ bool flash_gate_open(bool armed, bool supply);
  * 19ms window, and an OFF asked over the link would wait for it.  A KST
  * session: a flash write stalls the pass that steps it.
  *
- * @p driving      the bank is driving (outputs_driving()).
- * @p supply_on    the SUPPLY page's output register is non-zero.
- * @p pd_on        the PD mini is open and may be on (pdmini_may_be_on()).
- * @p kst_session the KST port is out of PWM.
+ * False only when all four arguments are false.
  *
- * False only when all four are false.
- *
- * @param driving the bank is driving (outputs_driving()).
- * @param supply_on the SUPPLY page's output register is non-zero.
- * @param pd_on the PD mini is open and may be on (pdmini_may_be_on()).
- * @param kst_session the KST port is out of PWM.
- *
- * False only when all four are false.
- *
- * @param driving true when the bank is driving.
- * @param supply_on true when the SUPPLY page output register is non-zero.
- * @param pd_on true when the PD mini may be on.
+ * @param driving true when the bank is driving (outputs_driving()).
+ * @param supply_on true when the SUPPLY page's output register is non-zero.
+ * @param pd_on true when the PD mini is open and may be on
+ *        (pdmini_may_be_on()).
  * @param kst_session true when the KST port is out of PWM.
- * @return false only when all four are false.
+ * @return true when the flash may not be written.
  */
 bool flash_gate_busy(bool driving, bool supply_on, bool pd_on,
                      bool kst_session);

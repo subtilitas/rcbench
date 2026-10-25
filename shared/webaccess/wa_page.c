@@ -16,6 +16,7 @@
 
 /** @brief The page's texts, P_<ID> for each UI_WEB_TEXT() of ui_text.def. */
 typedef enum {
+/** @brief One identifier per UI_WEB_TEXT() entry. */
 #define UI_WEB_TEXT(id, en, de) id,
 #include "ui_text.def"
     P_COUNT
@@ -23,6 +24,7 @@ typedef enum {
 
 /** @brief The page's texts in English. */
 static const char *const k_en[P_COUNT] = {
+/** @brief One English entry per identifier. */
 #define UI_WEB_TEXT(id, en, de) [id] = (en),
 #include "ui_text.def"
 };
@@ -39,6 +41,7 @@ static const char *const k_en[P_COUNT] = {
 
 /** @brief The page's texts in German; NULL where the table has no German. */
 static const char *const k_de[P_COUNT] = {
+/** @brief One German entry per identifier. */
 #define UI_WEB_TEXT(id, en, de) [id] = WA_PAGE_DE(id, de),
 #include "ui_text.def"
 };

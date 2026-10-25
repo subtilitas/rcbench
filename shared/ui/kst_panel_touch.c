@@ -24,6 +24,10 @@
 
 /* -------------------------------------------------------------------- touch */
 
+/**
+ * @brief Takes a press: remembers its contact, what it is on and its row, and
+ *        starts counting its hold.
+ */
 static void take(const touch_event_t *evt, int what, int row)
 {
     k.have = true;
@@ -33,12 +37,16 @@ static void take(const touch_event_t *evt, int what, int row)
     k.held_s = 0.0f;
 }
 
+/** @brief Ends the press. */
 static void let_go(void)
 {
     k.have = false;
     k.pressed = P_NONE;
 }
 
+/**
+ * @brief Takes a DOWN event: finds the control under it and takes the press.
+ */
 static void down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -157,6 +165,7 @@ uint8_t kst_panel_pin(void)
     return k.prog.f.port_pin[port];
 }
 
+/** @brief Takes a MOVE or UP event of the press held. */
 static void rest(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;

@@ -255,37 +255,37 @@ typedef struct {
     kst_session_t session;
     kst_image_t work;    /**< the staged image of a command: not on the
                               stack */
-    uint16_t staged[LINK_KS_W_STAGED];
-    uint16_t last_cmd[LINK_KS_W_CMD_FRAME];
-    uint32_t t0_ms;
-    uint32_t t1_ms;
-    uint16_t seq;
-    uint16_t frames;
+    uint16_t staged[LINK_KS_W_STAGED];  /**< the registers staged for the next command */
+    uint16_t last_cmd[LINK_KS_W_CMD_FRAME];  /**< the last command frame */
+    uint32_t t0_ms;                     /**< bench time of the operation's start, ms */
+    uint32_t t1_ms;                     /**< bench time of its end, ms */
+    uint16_t seq;                       /**< sequence number of the last operation */
+    uint16_t frames;                    /**< frames the port sent */
     uint16_t supply_mv;  /**< staged: what the next ENTER asks */
-    uint16_t supply_ma;
+    uint16_t supply_ma;                 /**< staged: the current limit of the next ENTER, mA */
     uint16_t want_mv;    /**< what the running ENTER asks */
-    uint16_t want_ma;
+    uint16_t want_ma;                   /**< the running ENTER's current limit, mA */
     uint16_t back_mv;    /**< what RAIL_WAIT switches on at */
-    uint16_t back_ma;
+    uint16_t back_ma;                   /**< the current RAIL_WAIT switches on at, mA */
     uint16_t leave_ms;   /**< staged: how long the next LEAVE waits */
     uint16_t wait_ms;    /**< how long the running LEAVE waits */
     uint8_t  state;      /**< link_kst_state_t */
-    uint8_t  port;
-    uint8_t  pin;
+    uint8_t  port;                      /**< the programming port */
+    uint8_t  pin;                       /**< the port's GPIO */
     uint8_t  op;         /**< link_kst_op_t of the last operation started */
     uint8_t  result;     /**< kst_ses_t of that operation, or a
                               LINK_KST_RESULT_* */
     uint8_t  refusal;    /**< link_kst_refusal_t of the last command */
-    uint8_t  fail_reg;
-    uint8_t  steps_done;
-    uint8_t  seen_step;
+    uint8_t  fail_reg;                  /**< the register the last operation failed on */
+    uint8_t  steps_done;                /**< steps of the operation done */
+    uint8_t  seen_step;                 /**< the step last seen */
     uint8_t  busy;       /**< an operation runs */
     uint8_t  running;    /**< it is the session's */
     uint8_t  leaving;    /**< why PROGRAMMING ends when the session has */
     uint8_t  framed;     /**< a frame went out since the servo had no power */
-    uint8_t  must_read;
-    uint8_t  view;
-    uint8_t  safe;
+    uint8_t  must_read;                 /**< whether the registers must be read again */
+    uint8_t  view;                      /**< the supply's view of the port */
+    uint8_t  safe;                      /**< 0 while the bench is not SAFE */
     uint8_t  armed;       /**< the bank is armed: no ENTER is taken */
     uint8_t  other;      /**< ports the HITEC page holds */
     uint8_t  has_pin;    /**< the pin is the wire driver's */

@@ -121,8 +121,8 @@ typedef struct {
     uint8_t  aborted;
     uint8_t  kept;      /**< bytes received before an abort */
     uint8_t  cut;       /**< the abort came while the answer was due */
-    uint32_t tx[HITEC_PIO_TX_WORDS];
-    uint32_t rx[HITEC_RX_MAX];
+    uint32_t tx[HITEC_PIO_TX_WORDS];    /**< the words to send */
+    uint32_t rx[HITEC_RX_MAX];          /**< the words received */
     /* PRECHARGE: the sampler and its run. */
     uint8_t  rx_mode;   /**< hitec_rx_mode_t of the open line */
     uint8_t  pre_on;    /**< the running transaction is the sampler's */

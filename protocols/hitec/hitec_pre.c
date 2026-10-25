@@ -24,6 +24,7 @@
 #define PIO_SET_PINDIRS(v, d) ((uint16_t)(0xE080u | (v) | PIO_DELAY(d)))
 #define PIO_IN_PINS_1(d)      ((uint16_t)(0x4001u | PIO_DELAY(d)))
 #define PIO_NOP(d)            ((uint16_t)(0xA042u | PIO_DELAY(d)))  /* mov y, y */
+/** @brief Largest delay a PIO instruction carries: 31 cycles. */
 #define PIO_DELAY_MAX 31u
 
 _Static_assert(HITEC_RX_MAX <= 16u, "framing is a 16-bit mask");

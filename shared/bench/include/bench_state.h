@@ -55,11 +55,11 @@ typedef struct {
     float voltage;      /**< V   */
     float current;      /**< A   */
     float power;        /**< W   */
-    float rpm;
+    float rpm;                          /**< motor speed, rpm */
     float temp_esc;     /**< C   */
     float temp_motor;   /**< C   */
-    float charge_mah;
-    float energy_wh;
+    float charge_mah;                   /**< charge drawn, mAh */
+    float energy_wh;                    /**< energy drawn, Wh */
 
     /* Peaks and sag, tracked by the end that has the fast samples. */
     float voltage_min;
@@ -429,10 +429,10 @@ typedef struct {
     uint16_t poles;         /**< MOTOR_POLES: magnets, not pole pairs     */
     bool     erpm_ok;       /**< the driver has a speed (outputs_hw_erpm()) */
     uint32_t erpm;          /**< electrical rpm                            */
-    uint32_t erpm_age_ms;
-    bench_edt_reading_t voltage;
-    bench_edt_reading_t current;
-    bench_edt_reading_t temperature;
+    uint32_t erpm_age_ms;               /**< age of the speed, ms; stale past BENCH_RPM_STALE_MS */
+    bench_edt_reading_t voltage;        /**< voltage reading */
+    bench_edt_reading_t current;        /**< current reading */
+    bench_edt_reading_t temperature;    /**< temperature reading */
 } bench_telem_t;
 
 /**

@@ -383,8 +383,10 @@ typedef struct {
     /**
      * @brief The pass/fail limits; 0 is not checked, and STALL AT always is.
      */
-    float    idle_max_a, hold_max_a;
-    uint16_t travel_max_ms;
+    float idle_max_a,                       /**< the idle current's pass limit, A       */
+          hold_max_a;                       /**< the holding current's pass limit, A    */
+    uint16_t travel_max_ms;             /**< the travel time's pass limit, ms */
+    /** @brief The stall current's limit, A; the stall check always runs */
     float    stall_a;
 
     bool     report;        /**< a TXT report beside the CSV            */
@@ -501,7 +503,7 @@ typedef struct {
     servo_test_mean_t v;    /**< the voltage after SETTLE               */
     float    v_min;         /**< the lowest voltage after SETTLE, while
                                  v holds a reading                      */
-    servo_test_mean_t idle;
+    servo_test_mean_t idle;             /**< the idle readings */
     float    idle_sq;       /**< the idle readings' squares, summed     */
     float    noise_a;       /**< the idle readings' standard deviation  */
     float    move_a;        /**< the threshold, once IDLE is over        */
@@ -552,7 +554,7 @@ typedef struct {
     uint32_t phase_ms;      /**< when the phase began                    */
     float    v_max;         /**< the cap as last told                    */
     float    floor_v;       /**< where the brown-out walk stops           */
-    float    bo_start_v;
+    float    bo_start_v;                /**< the brown-out walk's start voltage, V */
 
     servo_test_step_t steps[SERVO_TEST_STEP_SLOTS];
     uint8_t  step;          /**< the step running                        */

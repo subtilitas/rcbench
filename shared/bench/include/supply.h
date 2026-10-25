@@ -30,8 +30,12 @@ extern "C" {
  * A driver reports its own.
  */
 typedef struct {
-    float v_min, v_max, v_step;   /**< output voltage, V               */
-    float i_min, i_max, i_step;   /**< current limit, A                */
+    float v_min,                            /**< lowest output voltage, V        */
+          v_max,                            /**< highest output voltage, V       */
+          v_step;                           /**< output voltage step, V          */
+    float i_min,                            /**< lowest current limit, A         */
+          i_max,                            /**< highest current limit, A        */
+          i_step;                           /**< current limit step, A           */
 } supply_caps_t;
 
 /**
@@ -68,7 +72,7 @@ typedef struct {
     float         v;          /**< at the output, V                      */
     float         i;          /**< out of it, A                          */
     float         p;          /**< v * i, W                              */
-    supply_mode_t mode;
+    supply_mode_t mode;                 /**< off, constant voltage or constant current */
     bool          output;     /**< the output is switched on             */
     bool          online;     /**< the supply answers                    */
     bool          modelled;   /**< the panel's model produced the readings */
@@ -260,8 +264,9 @@ void supply_count_totals(supply_state_t *s, float dt_s);
 typedef struct {
     supply_caps_t caps;
     float         t;          /**< time since the output came on, s      */
-    float         set_v, set_i;
-    bool          output;
+    float set_v,                            /**< voltage set point, V                  */
+          set_i;                            /**< current limit set point, A            */
+    bool          output;               /**< whether the output is on */
 } supply_sim_t;
 
 /**

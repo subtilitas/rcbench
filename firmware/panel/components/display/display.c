@@ -63,6 +63,7 @@ static const char *TAG = "display";
  * before the first command (the datasheet states no minimum).
  */
 #define RESET_LOW_MS   10
+/** @brief Wait after the reset, ms: no minimum is stated in the datasheet */
 #define RESET_WAIT_MS  20
 
 /**
@@ -73,7 +74,7 @@ static const char *TAG = "display";
 
 /** @brief DCS (Display Command Set) commands, EK79007 register list. */
 #define EK_CMD_SLEEP_OUT     0x11
-#define EK_CMD_ADDRESS_MODE  0x36
+#define EK_CMD_ADDRESS_MODE  0x36       /**< EK79007 address mode command, DCS 0x36 */
 #define EK_CMD_PANEL_CTRL2   0xB2   /**< bit 4: 2 lanes; bit 6: normally black */
 
 /** @brief One register write: a command and its one parameter byte. */

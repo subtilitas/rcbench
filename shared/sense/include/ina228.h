@@ -111,22 +111,22 @@ enum {
 #define INA228_CONFIG_ADCRANGE 0x0010u
 
 /** @brief DIAG_ALRT bits, Table 7-16. */
-#define INA228_DIAG_ALATCH    0x8000u
-#define INA228_DIAG_CNVR      0x4000u
-#define INA228_DIAG_SLOWALERT 0x2000u
-#define INA228_DIAG_APOL      0x1000u
+#define INA228_DIAG_ALATCH    0x8000u   /**< alert latch enable */
+#define INA228_DIAG_CNVR      0x4000u   /**< conversion-ready flag on the ALERT pin */
+#define INA228_DIAG_SLOWALERT 0x2000u   /**< alert on a slow-alert average */
+#define INA228_DIAG_APOL      0x1000u   /**< alert polarity */
 #define INA228_DIAG_ENERGYOF  0x0800u   /**< ENERGY rolled over; cleared by
                                              reading ENERGY              */
 #define INA228_DIAG_CHARGEOF  0x0400u   /**< CHARGE rolled over; cleared by
                                              reading CHARGE              */
 #define INA228_DIAG_MATHOF    0x0200u   /**< current and power may be
                                              invalid                    */
-#define INA228_DIAG_TMPOL     0x0080u
-#define INA228_DIAG_SHNTOL    0x0040u
-#define INA228_DIAG_SHNTUL    0x0020u
-#define INA228_DIAG_BUSOL     0x0010u
-#define INA228_DIAG_BUSUL     0x0008u
-#define INA228_DIAG_POL       0x0004u
+#define INA228_DIAG_TMPOL     0x0080u   /**< temperature over-limit */
+#define INA228_DIAG_SHNTOL    0x0040u   /**< shunt voltage over-limit */
+#define INA228_DIAG_SHNTUL    0x0020u   /**< shunt voltage under-limit */
+#define INA228_DIAG_BUSOL     0x0010u   /**< bus voltage over-limit */
+#define INA228_DIAG_BUSUL     0x0008u   /**< bus voltage under-limit */
+#define INA228_DIAG_POL       0x0004u   /**< power over-limit */
 #define INA228_DIAG_CNVRF     0x0002u   /**< a conversion cycle completed */
 #define INA228_DIAG_MEMSTAT   0x0001u   /**< 1: trim memory checksum good */
 

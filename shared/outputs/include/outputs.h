@@ -143,7 +143,7 @@ typedef struct {
 typedef struct {
     out_channel_t channel[OUT_MAX_CHANNELS];  /**< per-channel state */
     out_slot_t    slot[OUT_MAX_SLOTS];        /**< per-slot configuration */
-    bool          armed;
+    bool          armed;                /**< whether the bank is armed */
     uint8_t       roles;        /**< what an arm covers, OUT_ROLE_BIT()s   */
     uint32_t      timeout_ms;   /**< silence after which a channel rests   */
     uint32_t      last_step_ms;   /**< time of the last outputs_step() */

@@ -1,5 +1,6 @@
-/*
- * The panel's application image. See fw_image.h.
+/**
+ * @file fw_image.c
+ * @brief The panel's application image. See fw_image.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,26 +10,28 @@
 #include <string.h>
 
 /* Offsets in the image, from esp_app_format.h and esp_app_desc.h. */
-#define OFF_SEGMENTS    1u
-#define OFF_CHIP        12u
-#define OFF_HASHED      23u
-#define HEADER_BYTES    24u
-#define SEGHEAD_BYTES   8u
-#define OFF_DESC        (HEADER_BYTES + SEGHEAD_BYTES)
-#define DESC_BYTES      256u
-#define OFF_VERSION     (OFF_DESC + 16u)
-#define OFF_PROJECT     (OFF_DESC + 48u)
-#define OFF_ELF_SHA     (OFF_DESC + 144u)
+#define OFF_SEGMENTS    1u                /**< segment count */
+#define OFF_CHIP        12u               /**< chip ID, 2 bytes */
+#define OFF_HASHED      23u               /**< hash-appended flag */
+#define HEADER_BYTES    24u               /**< image header, bytes */
+#define SEGHEAD_BYTES   8u                /**< one segment header, bytes */
+#define OFF_DESC        (HEADER_BYTES + SEGHEAD_BYTES)  /**< application descriptor, 32 */
+#define DESC_BYTES      256u              /**< application descriptor, bytes */
+#define OFF_VERSION     (OFF_DESC + 16u)  /**< version text, at 48 */
+#define OFF_PROJECT     (OFF_DESC + 48u)  /**< project name, at 80 */
+#define OFF_ELF_SHA     (OFF_DESC + 144u) /**< the ELF file's SHA-256, at 176 */
 
 _Static_assert(OFF_DESC + DESC_BYTES == FW_HEAD_BYTES,
                "the head is the header, one segment header and the descriptor");
 
+/** @brief Reads 4 bytes at @p p as a little-endian number. */
 static uint32_t le32(const uint8_t *p)
 {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16)
            | ((uint32_t)p[3] << 24);
 }
 
+/** @brief Reads 2 bytes at @p p as a little-endian number. */
 static uint16_t le16(const uint8_t *p)
 {
     return (uint16_t)(p[0] | (p[1] << 8));
@@ -160,10 +163,10 @@ fw_err_t fw_image_head(const uint8_t *head, uint32_t have, uint32_t bytes,
     return FW_OK;
 }
 
-/*
- * The length the segment table gives: the header, each segment's header and
- * data, the checksum byte padded to 16, and the hash.  0 when a segment runs
- * past @p bytes, which is a file cut short.
+/**
+ * @brief The length the segment table gives: the header, each segment's header and
+ *        data, the checksum byte padded to 16, and the hash.  0 when a segment runs
+ *        past @p bytes, which is a file cut short.
  */
 static uint32_t image_length(const uint8_t *img, uint32_t bytes)
 {

@@ -51,6 +51,9 @@ static void kp_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 
 /* --------------------------------------------------------------------- draw */
 
+/**
+ * @brief Returns the text colour of a warning level: danger, warning or plain.
+ */
 static gfx_color_t level_color(unsigned level)
 {
     return level == KST_PROG_DANGER ? ui_theme_color(UI_C_DANGER)
@@ -58,29 +61,33 @@ static gfx_color_t level_color(unsigned level)
                                     : ui_theme_color(UI_C_TEXT);
 }
 
-/* A note under a page's rows.  Its place is @p slot rows under the last
- * row of the SERVO tab; a note above it that wraps, or the message under
- * it, moves it. */
+/**
+ * @brief A note under a page's rows.  Its place is @p slot rows under the last
+ *        row of the SERVO tab; a note above it that wraps, or the message under
+ *        it, moves it.
+ */
 typedef struct {
-    const char *s;
-    int         slot;
-    gfx_color_t color;
-    bool        standing;   /* stays on the first page, whole */
+    const char *s;                      /**< the note's text */
+    int         slot;                   /**< place in rows under the last row of the SERVO tab */
+    gfx_color_t color;                  /**< the text colour */
+    bool        standing;               /**< stays on the first page, whole */
 } note_t;
 
+/** @brief Most notes a page holds. */
 #define NOTES_MAX 5
 /** @brief The notes' first place: 8px under the SERVO tab's fifth row. */
 #define NOTE_Y    (ROW0 + 4 * PITCH + ROW_H + 8)
 
+/** @brief Writes note @p i of @p n and returns the next index. */
 static int note(note_t *n, int i, int slot, const char *s, gfx_color_t color)
 {
     n[i] = (note_t){ .s = s, .slot = slot, .color = color };
     return i + 1;
 }
 
-/*
- * What stands until it is dealt with: up to two lines on the SERVO tab.
- * Returns the lines used; @p warn is set for amber, cleared for red.
+/**
+ * @brief What stands until it is dealt with: up to two lines on the SERVO tab.
+ *        Returns the lines used; @p warn is set for amber, cleared for red.
  */
 static int standing(const char *out[2], bool *warn)
 {
@@ -153,8 +160,10 @@ const char *kst_panel_standing_line(int i)
     return i >= 0 && i < standing(st, &warn) ? st[i] : NULL;
 }
 
-/* The lines of the last message the overlay shows.  One that only
- * repeats what stands on the SERVO tab is left out. */
+/**
+ * @brief The lines of the last message the overlay shows.  One that only
+ *        repeats what stands on the SERVO tab is left out.
+ */
 static int message_shown(char text[KST_PANEL_MSG_LINES][KST_PANEL_LINE])
 {
     const int n = kst_panel_message_lines(kst_prog_message(&k.prog), text);
@@ -168,6 +177,7 @@ static int message_shown(char text[KST_PANEL_MSG_LINES][KST_PANEL_LINE])
     return n;
 }
 
+/** @brief Writes the programmer's state, with the port, into @p out. */
 static void state_line(char *out, size_t n)
 {
     const kst_prog_t *p = &k.prog;
@@ -232,7 +242,9 @@ static void state_line(char *out, size_t n)
     }
 }
 
-/* The line under the state: what the state needs, or the servo's type. */
+/**
+ * @brief The line under the state: what the state needs, or the servo's type.
+ */
 static const char *state_second(bool *type)
 {
     const kst_prog_t *p = &k.prog;
@@ -264,7 +276,7 @@ const char *kst_panel_status_line(int i)
     return i == 1 ? state_second(&type) : NULL;
 }
 
-/* What stands until it is dealt with, over the last message. */
+/** @brief What stands until it is dealt with, over the last message. */
 static int notes_standing(note_t *n, int i)
 {
     const char *st[2];
@@ -279,8 +291,10 @@ static int notes_standing(note_t *n, int i)
     return i;
 }
 
-/* The notes of the page shown, in their order down the page.  Their text
- * is static: the caller draws it after this returns. */
+/**
+ * @brief The notes of the page shown, in their order down the page.  Their text
+ *        is static: the caller draws it after this returns.
+ */
 static int page_notes(note_t *n)
 {
     static char buf[3][KST_PANEL_LINE];
@@ -410,33 +424,43 @@ int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
     return pages;
 }
 
-/* Static: the message's lines, written on the UI task's deepest path. */
+/**
+ * @brief Static: the message's lines, written on the UI task's deepest path.
+ */
 static char s_msg[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
 
-/* Where the notes go: their rows from the first note's place to the
- * message, the page each takes, and where the shown page puts each line. */
+/**
+ * @brief Where the notes go: their rows from the first note's place to the
+ *        message, the page each takes, and where the shown page puts each line.
+ */
 typedef struct {
-    note_t n[NOTES_MAX];
-    int    count;
-    int    rows[NOTES_MAX];
-    int    lines;            /* the message's lines in s_msg */
-    int    msg_rows;
-    int    top;              /* the first note's place */
-    int    bottom;
-    int    room;             /* rows for the notes above the message */
-    int    page[NOTES_MAX];
-    int    pages;
-    int    on;               /* the page shown */
-    int    y[NOTES_MAX];     /* each note's first row; -1 off the page */
-    int    count_y;          /* the page count's row; -1 for none */
-    int    msg_y;
-    int    msg_shown;        /* the message's lines that are drawn */
+    note_t n[NOTES_MAX];                /**< the notes, in their order down the page */
+    int    count;                       /**< notes used */
+    int    rows[NOTES_MAX];             /**< rows each note takes */
+    int    lines;                       /**< the message's lines in s_msg */
+    int    msg_rows;                    /**< rows the message takes */
+    int    top;                         /**< the first note's place */
+    int    bottom;                      /**< the lowest row the notes may reach */
+    int    room;                        /**< rows for the notes above the message */
+    int    page[NOTES_MAX];             /**< page each note is on */
+    int    pages;                       /**< pages in all */
+    int    on;                          /**< the page shown */
+    int    y[NOTES_MAX];                /**< each note's first row; -1 off the page */
+    int    count_y;                     /**< the page count's row; -1 for none */
+    int    msg_y;                       /**< the message's first row; -1 for none */
+    int    msg_shown;                   /**< the message's lines that are drawn */
 } notes_plan_t;
 
-/* Static: the notes are planned on the UI task's deepest path.  One plan
- * serves the draw and every query; none of them calls another. */
+/**
+ * @brief Static: the notes are planned on the UI task's deepest path.  One plan
+ *        serves the draw and every query; none of them calls another.
+ */
 static notes_plan_t s_plan;
 
+/**
+ * @brief Plans the notes of the page shown: their rows, pages and places, and
+ *        the message's.
+ */
 static void plan_notes(notes_plan_t *p)
 {
     bool held[NOTES_MAX] = { false };
@@ -491,20 +515,20 @@ static int rows_foot(void)
     return y;
 }
 
-/*
- * The page's notes from the top, each at its place or under the one above,
- * and the last message from the area's last row up: three rows for one
- * that takes fewer.  Notes that need more rows than there are above the
- * message take pages: the standing notes are on the first, whole, the
- * other notes page after them, the area's last notes row counts the pages,
- * and a tap on the notes shows the next.  Where the standing notes and the
- * message leave no row for the count, the other notes wait for the message
- * to go.  Where the standing notes leave no row for the count beside the
- * message, they yield to it: they page with the others, first, and one
- * taller than a page waits for the message to go.  Every line of the
- * message is drawn: the longest takes 5 rows of the 7 under the SERVO
- * tab's last row on SERVO's left card, which end 4px above the alert band
- * (kpn_notes_foot()).  No note rises above 4px under the tab's last row.
+/**
+ * @brief The page's notes from the top, each at its place or under the one above,
+ *        and the last message from the area's last row up: three rows for one
+ *        that takes fewer.  Notes that need more rows than there are above the
+ *        message take pages: the standing notes are on the first, whole, the
+ *        other notes page after them, the area's last notes row counts the pages,
+ *        and a tap on the notes shows the next.  Where the standing notes and the
+ *        message leave no row for the count, the other notes wait for the message
+ *        to go.  Where the standing notes leave no row for the count beside the
+ *        message, they yield to it: they page with the others, first, and one
+ *        taller than a page waits for the message to go.  Every line of the
+ *        message is drawn: the longest takes 5 rows of the 7 under the SERVO
+ *        tab's last row on SERVO's left card, which end 4px above the alert band
+ *        (kpn_notes_foot()).  No note rises above 4px under the tab's last row.
  */
 static void layout_notes(notes_plan_t *p)
 {
@@ -566,6 +590,7 @@ static void layout_notes(notes_plan_t *p)
     }
 }
 
+/** @brief Draws the notes and the message of the page shown. */
 static void draw_notes(gfx_canvas_t *c)
 {
     notes_plan_t *p = &s_plan;
@@ -596,6 +621,7 @@ static void draw_notes(gfx_canvas_t *c)
     }
 }
 
+/** @brief Returns the area the notes take, for the page-turning press. */
 static gfx_rect_t notes_rect(const notes_plan_t *p)
 {
     return (gfx_rect_t){ k.area.x, (int16_t)p->top, k.area.w,
@@ -671,6 +697,10 @@ gfx_rect_t kst_panel_notes_drawn(void)
                                           (int16_t)(y - top) };
 }
 
+/**
+ * @brief Writes the value of an action row, from the programmer's state, into
+ *        @p out.
+ */
 static void act_value(const row_t *r, char *out, size_t n)
 {
     const kst_prog_t *p = &k.prog;
@@ -717,6 +747,10 @@ const char *kst_panel_button(int page, int row, int col)
     return buf;
 }
 
+/**
+ * @brief Draws row @p i of the page shown: its label and its control,
+ *        highlighted while pressed.
+ */
 static void draw_row(gfx_canvas_t *c, int i)
 {
     const row_t *r = &kpn_rows[i];
@@ -779,6 +813,7 @@ static void draw_row(gfx_canvas_t *c, int i)
     }
 }
 
+/** @brief Draws the page shown: the tabs, CLOSE, its rows and its notes. */
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&k.tabs, c);
@@ -794,6 +829,9 @@ static void draw_page(gfx_canvas_t *c)
     draw_notes(c);
 }
 
+/**
+ * @brief Draws the list of choices: its title, an entry per value and CANCEL.
+ */
 static void draw_choice(gfx_canvas_t *c)
 {
     const row_t *r = &kpn_rows[k.kp_row >= 0 ? k.kp_row : 0];
@@ -816,6 +854,7 @@ static void draw_choice(gfx_canvas_t *c)
               k.have && k.pressed == P_CHOICE_CANCEL, true);
 }
 
+/** @brief Draws the warning page: the title, its lines and the hold button. */
 static void draw_warning(gfx_canvas_t *c)
 {
     const gfx_rect_t a = k.area;
@@ -857,6 +896,11 @@ static void draw_warning(gfx_canvas_t *c)
               k.have && k.pressed == P_CANCEL, true);
 }
 
+/**
+ * @brief Draws the overlay: the keypad or the keyboard alone while one is
+ *        open, else the warning, the list of choices or the page.
+ * @param c the canvas
+ */
 void kst_panel_render(gfx_canvas_t *c)
 {
     const gfx_rect_t a = k.area;

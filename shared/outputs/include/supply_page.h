@@ -90,7 +90,7 @@ typedef struct {
                              than asked, with nothing stuck */
     bool     off;       /**< read off, and not maybe on */
     uint16_t set_mv;    /**< SET_MV and SET_MA as asked */
-    uint16_t set_ma;
+    uint16_t set_ma;                    /**< the current limit asked for, mA */
     uint16_t vin_mv;    /**< the PD mini's input, 0 while not read */
 } supply_port_view_t;
 

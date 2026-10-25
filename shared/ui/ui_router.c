@@ -33,9 +33,12 @@
 #include "ui_watermark.h"
 #include "ui_widgets.h"
 
+/** @brief The panel's width, UI_PANEL_W px. */
 #define PANEL_W UI_PANEL_W
+/** @brief The panel's height, UI_PANEL_H px. */
 #define PANEL_H UI_PANEL_H
-#define ALERT_H UI_ALERT_H    /* the alert band, across the bottom */
+/** @brief The alert band's height, across the bottom. */
+#define ALERT_H UI_ALERT_H
 
 static struct {
     ui_screen_id_t    current;
