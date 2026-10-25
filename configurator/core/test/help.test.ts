@@ -56,7 +56,7 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
   // The Osoyoo variant names terminals, not pads: the function text names the pin alone.
   assert.doesNotMatch(help('servoprog').en, /\bpad\b/i);
   assert.doesNotMatch(help('servoprog').de, /\bPad\b/);
-  assert.match(help('servoprog').en, /programming port, GP13\./);
+  assert.match(help('servoprog').en, /programming port, GPIO 13\./);
   // The two states of the bench carry the names of the status band of the panel, SAFE and ARMED, in both
   // languages; no text names them in prose.
   assert.match(help('logs').en, /while the bench is ARMED, and while it is SAFE with the supply output on;/);

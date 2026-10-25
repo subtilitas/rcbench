@@ -42,13 +42,16 @@ image.
 
 | RP2350-Zero | Connects to | Notes |
 | --- | --- | --- |
-| GP4 | panel I2C SDA (the header's SDA pin) | I2C0 SDA once confirmed; an input before |
-| GP5 | panel I2C SCL (the header's SCL pin) | I2C0 SCL once confirmed; an input before |
+| GPIO 4 | panel I2C SDA (the header's SDA pin) | I2C0 SDA once confirmed; an input before |
+| GPIO 5 | panel I2C SCL (the header's SCL pin) | I2C0 SCL once confirmed; an input before |
 | GND | the bench's star point | short wire; the one second ground path the bench accepts (`testbench/WIRING.md`, section 5) |
-| GP6 | not connected | reserved for the GT911 INT line; an input, never driven |
-| GP7 | not connected | reserved for a panel reset sense; an input |
-| GP16 | on-board WS2812 LED, bytes in RGB order | status, see below |
+| GPIO 6 | not connected | reserved for the GT911 INT line; an input, never driven |
+| GPIO 7 | not connected | reserved for a panel reset sense; an input |
+| GPIO 16 | on-board WS2812 LED, bytes in RGB order | status, see below |
 | 3V3 | not connected | the Zero runs from its own USB port |
+
+The RP2350-Zero prints these pins as `GP4`, `GP5`, `GP6`, `GP7` and `GP16`.
+The console of the injector writes the I2C pins as `GP4` and `GP5`.
 
 The connector is the board's 4-pin I2C header ("The touch bus header" in
 `docs/Building.md`); the order of its pins is not known, so SDA and SCL are
@@ -110,7 +113,7 @@ a longer one.
 
 ## States
 
-After every reset the injector is in LISTEN. GP4 to GP7 are inputs with
+After every reset the injector is in LISTEN. GPIO 4 to GPIO 7 are inputs with
 their pulls off, the I2C block is not attached, and nothing on the bus is
 acknowledged. It leaves LISTEN only on `confirm scl=GP5` after a `wiring`
 check that read `ok`. ACTIVE answers at 0x14 until the next reset.
@@ -294,7 +297,7 @@ fails the check. `release` lifts every contact at once.
 
 ## Wiring check
 
-`wiring` samples GP4 and GP5 for 500ms and applies two rules to every
+`wiring` samples GPIO 4 and GPIO 5 for 500ms and applies two rules to every
 transaction: out of idle the line that falls first is SDA (START), into idle
 the line that rises last is SDA (STOP). Idle is both lines high for at least
 10µs. A transaction names a line when both rules name the same one.
@@ -323,7 +326,7 @@ reaches is not measured; the verdict line reports it as `rate=`.
 
 ## Bring-up on the bench
 
-1. Wire GP4, GP5 and GND as in the pin table. Leave 3V3, GP6 and GP7 open.
+1. Wire GPIO 4, GPIO 5 and GND as in the pin table. Leave 3V3, GPIO 6 and GPIO 7 open.
 2. Power the panel and let it run. Plug the Zero into the Pi.
 3. `ping` returns `state=listen`. The LED blinks white at 1Hz.
 4. `wiring` returns `wiring ok scl=GP5 sda=GP4 ...`. Any other verdict: fix

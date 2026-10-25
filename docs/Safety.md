@@ -107,7 +107,7 @@ the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
 The monostable is on no board. On the bring-up bench the edges reach the
-IOmcu's GP3 by a direct wire from the panel's heartbeat pin, which is what lets that bench switch to ARMED.
+IOmcu's GPIO 3 by a direct wire from the panel's heartbeat pin, which is what lets that bench switch to ARMED.
 
 The monostable is retriggered by the panel's edges and removes the outputs
 when they stop. What it adds over the direct wire is that it does this without

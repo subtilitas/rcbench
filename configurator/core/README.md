@@ -94,8 +94,8 @@ The current the supply must deliver is not stated.
 
 The option `servoPort` is `outputs` (default) or `prog`. It is never shown
 and the hash holds no token for it: the function `servoprog` forces `prog`.
-With `outputs` the servo signal is wire 7, from pad 4 (GP2), a slot of
-SETUP → OUTPUTS. With `prog` it is wire 64, from pad 17 (GP13), the
+With `outputs` the servo signal is wire 7, from pad 4 (GPIO 2), a slot of
+SETUP → OUTPUTS. With `prog` it is wire 64, from pad 17 (GPIO 13), the
 programming port of the IOmcu (`PROG_PORT_DEFAULT_PIN` in
 `shared/outputs/include/prog_port.h`), and SERVO TESTER on the PROG PORT
 entry of SETUP → OUTPUTS is PROG PORT, so the other servo functions drive
@@ -316,13 +316,13 @@ header at `HEAD` that names another release, `--strict` fails.
 
 The 7 pin rules:
 
-1. A signal is on a General Purpose Input/Output (GPIO) pin of its allowed set, and not on a reserved pad (GP8 to GP12).
+1. A signal is on a General Purpose Input/Output (GPIO) pin of its allowed set, and not on a reserved pad (GPIO 8 to GPIO 12).
 2. A GPIO carries one signal.
-3. The clock line of the sensor bus (SCL) is the data line (SDA) plus 1. SDA is one of GP0, GP4, GP6, GP14, GP16, GP18, GP20, GP26, or -1 for off.
+3. The clock line of the sensor bus (SCL) is the data line (SDA) plus 1. SDA is one of GPIO 0, GPIO 4, GPIO 6, GPIO 14, GPIO 16, GPIO 18, GPIO 20, GPIO 26, or -1 for off.
 4. Two outputs do not share a pulse-width modulation (PWM) slice.
-5. An output does not share a compare register with another signal. The partner of GP0 to GP5 is the same pin plus 16.
-6. The tap pin is not GP26, GP27 or GP28.
-7. The heartbeat pin is GP3 and fixed.
+5. An output does not share a compare register with another signal. The partner of GPIO 0 to GPIO 5 is the same pin plus 16.
+6. The tap pin is not GPIO 26, GPIO 27 or GPIO 28.
+7. The heartbeat pin is GPIO 3 and fixed.
 
 ## Tests
 
@@ -437,8 +437,8 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - Panel: the data describes the 7-inch ESP32-P4 display board from Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B). Its pins come from the Waveshare schematic of 2025-09-25, cited by the source kind `doc`: CAN header H11 (pin 1 5V, 2 GND, 3 CAN H, 4 CAN L) and the 12-pin header P3. The heartbeat pin is IO28 of header P3 (`PANEL_HEARTBEAT_PIN` in `firmware/panel/components/board/include/board_pins.h`); the pin `HB` is confirmed. The rotary knob is not a part in the data; its pins IO30 (SDA) and IO31 (SCL) and its 3V3 and GND are on P3, named in the entry `knob` of the list "not in a release". The current the panel draws is not measured; Waveshare states 3A as the maximum. No photo of the board is in the picture folder.
 - Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.23.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
-- The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
-- The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
+- The pin for the servo signal (GPIO 2) is a proposal of this data file. The repository names no servo pin.
+- The pins of the PD mini serial lines (GPIO 7 transmit, GPIO 6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
 - The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. With this module the data holds no direct wire between the minus of the source and the minus of the ESC: wire 56 (battery) or wire 57 (PD mini) ends on the pin BAT− of the module and wire 58 runs from the pin ESC− to the ESC. The wires 15 and 23 belong to the MATEK board and to a setup without the sensor. The check entry `ina228-xt90-pads` states the pads and the 2 rails.
 - INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the IOmcu. A connection between the minus output of the PD mini and GND of the IOmcu is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.

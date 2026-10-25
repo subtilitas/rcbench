@@ -43,7 +43,7 @@ bevor man sich auf ein Schreiben verlässt.
   ![Ein IOmcu ohne den Port](img/de/servo-kst-nopage.png)
 
 - Das Servo hängt an einem Programmierport des IOmcu, PROG-PORT 1 bis 4,
-  mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GP13, Pad 17 des
+  mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GPIO 13, Pad 17 des
   Bring-up-Moduls, solange kein anderer Pin dafür gespeichert ist; die
   Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT gesetzt ist.
   Ein Port ist kein Ausgangskanal und kein Slot von OUTPUTS.
@@ -140,7 +140,7 @@ Seite des Ports im IOmcu, und der Tester sendet dem Port kein
 Kommando und keine Freigabe. Eine dem Port geschuldete Freigabe geht
 hinaus, sobald der Port wieder in PWM ist.
 
-Ein Port ohne Pin kann nicht das Ziel sein: ein Slot von OUTPUTS, der GP13
+Ein Port ohne Pin kann nicht das Ziel sein: ein Slot von OUTPUTS, der GPIO 13
 hält, lässt dem Port keinen. Der Tester behält dann die Standardausgänge,
 was immer die Zeile sagt.
 
@@ -210,12 +210,12 @@ PROGRAMMIEREN wieder offen.
 
 Der Signalpin des Servos ist ein GPIO (General-Purpose Input/Output) eines
 Mikrocontrollers. Der High-Pegel seiner Antwort ist höchstens 5V und
-typisch 3,3V. Der Pegel ist nicht gemessen. GP13 ist für 5,5V
+typisch 3,3V. Der Pegel ist nicht gemessen. GPIO 13 ist für 5,5V
 spezifiziert, solange IOVDD (die Ein-/Ausgangsversorgung) des IOmcu
 auf 3,3V liegt (`hardware/docs/IOBoard.md`, Pin ratings); der Port hat
 deshalb keinen Pegelwandler und keine Klemmung.
 
-Ohne Versorgung des IOmcu ist GP13 für 3,63V spezifiziert. Ein
+Ohne Versorgung des IOmcu ist GPIO 13 für 3,63V spezifiziert. Ein
 Servo, das die Leitung mit 5V treibt, während der IOmcu aus ist,
 überschreitet diesen Wert. Was der Pin des Servos im Leerlauf bei
 ausgeschaltetem Prüfstand tut, ist nicht gemessen.
@@ -613,9 +613,9 @@ Zahl der erfolgten Schreibvorgänge: `Register 03. 1 Schreibvorgang abgeschlosse
 Zeilen `journal=`, `target=`, `port=` und `pin=` und `check=` mit der
 CRC-16 (zyklische Redundanzprüfung) der Bytes davor. `pin=` hält den GPIO
 (General-Purpose Input/Output), den der Port beim Schreiben trieb, in zwei
-Hexadezimalziffern: `0D` für GP13, `FF`, wenn das Panel für den Port keinen
+Hexadezimalziffern: `0D` für GPIO 13, `FF`, wenn das Panel für den Port keinen
 Pin kannte. Ein Vermerk der Version 1 (`RCBENCH KST 1`, keine Zeile
-`pin=`) wird gelesen und nennt nur den Port. Ein Pin über GP47 wird ebenso
+`pin=`) wird gelesen und nennt nur den Port. Ein Pin über GPIO 47 wird ebenso
 gelesen: der Vermerk bleibt, und seine Zeilen nennen den Port. Eine Datei, deren Prüfsumme
 nicht stimmt, wird nicht benutzt:
 `KST.TXT auf der Karte ist nicht lesbar. Die Datei wird nicht verwendet.` Der Name `KST`
@@ -1193,7 +1193,7 @@ Codes.
   nicht erneut eingebunden.
 - Ist der IOmcu ohne Versorgung und das Servo aus einer anderen
   Versorgung gespeist, überschreitet ein Servo, das die Signalleitung über
-  3,63V treibt, den für GP13 spezifizierten Wert
+  3,63V treibt, den für GPIO 13 spezifizierten Wert
   ([der Signalpegel](#der-signalpegel)).
 - Wie lange ein Einbindeversuch ohne Karte den Bildschirm anhält, ist nicht
   gemessen.

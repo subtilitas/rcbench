@@ -40,7 +40,7 @@ before a write is relied on.
   ![An IOmcu without the port](img/servo-kst-nopage.png)
 
 - The servo is on one of the IOmcu's programming ports, PROG PORT 1 to 4,
-  with FUNCTION SERVO PWM and a pin: port 1 is GP13, pad 17 of the
+  with FUNCTION SERVO PWM and a pin: port 1 is GPIO 13, pad 17 of the
   bring-up module, unless another pin is stored for it; ports 2 to 4 have
   the pin set on their PROG PORT entry. A port is no output channel and no
   slot of OUTPUTS.
@@ -129,7 +129,7 @@ port no command and no release. A release owed to the port goes out once
 the port is back in PWM.
 
 A port without a pin cannot be the target: a slot of OUTPUTS that holds
-GP13 leaves the port none. The tester then keeps the standard outputs,
+GPIO 13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
 With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP > OUTPUTS.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
@@ -190,12 +190,12 @@ the overlay is open again on PROGRAM at the next entry.
 
 The servo's signal pin is a microcontroller GPIO (general-purpose
 input/output). The high level of its reply is at most 5V and typically
-3.3V. The level is not measured. GP13 is rated 5.5V while the
+3.3V. The level is not measured. GPIO 13 is rated 5.5V while the
 IOmcu's IOVDD (input/output supply) is at 3.3V
 (`hardware/docs/IOBoard.md`, pin ratings), so the port has no level shifter
 and no clamp.
 
-With the IOmcu unpowered GP13 is rated 3.63V. A servo that drives
+With the IOmcu unpowered GPIO 13 is rated 3.63V. A servo that drives
 the wire at 5V while the IOmcu is off exceeds that rating. What the
 servo's pin does at idle with the bench off is not measured.
 
@@ -564,9 +564,9 @@ the card's folder `BENCH/KST/CONF` with the line `RCBENCH KST 2`, the lines
 `journal=`, `target=`, `port=` and `pin=`, and `check=` with the CRC-16
 (cyclic redundancy check) of the bytes before it. `pin=` holds the GPIO
 (general-purpose input/output) the port drove at the write, in two
-hexadecimal digits: `0D` for GP13, `FF` when the panel knew no pin for the
+hexadecimal digits: `0D` for GPIO 13, `FF` when the panel knew no pin for the
 port. A record of version 1 (`RCBENCH KST 1`, no `pin=` line) is read and
-names the port only. A pin above GP47 reads the same way: the record
+names the port only. A pin above GPIO 47 reads the same way: the record
 stands and its lines name the port. A file whose check fails is not
 used: `Cannot read KST.TXT on the card. The file will not be used.` The name `KST`
 is the record's: no servo file takes it, and the list of files leaves it
@@ -1087,7 +1087,7 @@ line. [The link page](LinkKST.md) lists the codes.
   programmer has the port; the set points and **OUTPUT ON** are.
 - With the IOmcu unpowered and the servo fed from another supply, a
   servo that drives the signal wire above 3.63V exceeds the rating of
-  GP13 ([the signal level](#the-signal-level)).
+  GPIO 13 ([the signal level](#the-signal-level)).
 - With the simulated supply selected (no PD mini wired) the panel dims the
   same controls, and the servo's supply is whatever feeds it.
 - The TARGET row and the segments **SERVO TESTER** and **PORT PWM** follow the port's state one

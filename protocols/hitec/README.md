@@ -225,7 +225,7 @@ reads of 19 registers passed with a 10ms window and 30 of 30 with a
 25ms window, equal to the HFP-30's reads of the same registers. The
 answer started 5.2 to 5.9ms into the bench reader's window.
 
-With this module's values on GP13 and no pull-up (D485HW, 2026-10-20),
+With this module's values on GPIO 13 and no pull-up (D485HW, 2026-10-20),
 the D decoder's delay, from the end of the request's last stop bit, was
 5.93 to 6.52ms over 153 reads.
 

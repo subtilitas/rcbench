@@ -388,7 +388,7 @@ test('every component of the data file is in the picture of every setup that hol
   }
 });
 
-test('the zener diode of the phase tap: body between pad 29 and pad 28, band towards GP22, 1 number, its lines in both languages', () => {
+test('the zener diode of the phase tap: body between pad 29 and pad 28, band towards GPIO 22, 1 number, its lines in both languages', () => {
   for (const connection of ['pads', 'osoyoo'] as const) {
     const v = view({ functions: ['tap'], options: { ...DEFAULT_OPTIONS, connection } });
     const d = diagramOf(sceneOf(v.setup, ANCHORS));
@@ -397,10 +397,12 @@ test('the zener diode of the phase tap: body between pad 29 and pad 28, band tow
     const rec = ANCHORS.files[copro.file]!;
     const gp22 = copro.iy + rec.pins['pad.29']!.y;
     const gnd = copro.iy + rec.pins['pad.28']!.y;
-    assert.equal(rec.pins['pad.29']!.label.en, 'GP22');
+    // The pad label is the pad name on the soldered pads and the print of the board on the breakout board.
+    const gp22Label = connection === 'pads' ? 'GPIO 22' : 'GP22';
+    assert.equal(rec.pins['pad.29']!.label.en, gp22Label);
     assert.equal(rec.pins['pad.28']!.label.en, 'GND');
     const b = z.body!;
-    // The body stands upright beside the east edge, between the 2 pads, the band on the side of GP22.
+    // The body stands upright beside the east edge, between the 2 pads, the band on the side of GPIO 22.
     assert.equal(b.upright, true);
     assert.ok(b.x > copro.ix + copro.iw && b.x < copro.ix + copro.iw + BAND, `${connection}: x ${b.x}`);
     assert.ok(gp22 < gnd && b.y > gp22 && b.y < gnd, `${connection}: y ${b.y}`);
@@ -414,8 +416,8 @@ test('the zener diode of the phase tap: body between pad 29 and pad 28, band tow
     const end = tap.paths[0]!.find((p) => p[0] === copro.ix + rec.pins['pad.29']!.x)!;
     assert.ok(end[1] < z.paths[0]![0]![1], `${connection}: wire 52 at ${end[1]}, diode lead at ${z.paths[0]![0]![1]}`);
     assert.deepEqual(z.text, {
-      en: ['3.0 V zener diode,', 'band to GP22'],
-      de: ['3,0-V-Z-Diode,', 'Ring an GP22'],
+      en: ['3.0 V zener diode,', `band to ${gp22Label}`],
+      de: ['3,0-V-Z-Diode,', `Ring an ${gp22Label}`],
     });
     for (const lang of ['en', 'de'] as Lang[]) {
       const html = picture(view({ functions: ['tap'], options: { ...DEFAULT_OPTIONS, connection } }, lang));
@@ -443,11 +445,11 @@ test('the lines of a component follow the data file, and the strip beside the ed
       assert.ok(w.note!.de.startsWith(STRINGS.diaZener[1].split(',')[0]!), w.note!.de);
     }
   }
-  const pad = { en: 'GP22', de: 'GP22' };
-  assert.deepEqual(componentText({ route: { kind: 'Z' }, signal: { en: 's', de: 's' } }, pad).en, ['3.0 V zener diode,', 'band to GP22']);
+  const pad = { en: 'GPIO 22', de: 'GPIO 22' };
+  assert.deepEqual(componentText({ route: { kind: 'Z' }, signal: { en: 's', de: 's' } }, pad).en, ['3.0 V zener diode,', 'band to GPIO 22']);
   // Another component takes the signal name of its wire. A text without a comma is 1 line.
   assert.deepEqual(componentText({ route: { kind: 'S' }, signal: { en: 'fuse 2 A', de: 'Sicherung 2 A' } }, pad),
-    { en: ['fuse 2 A,', 'band to GP22'], de: ['Sicherung 2 A,', 'Ring an GP22'] });
+    { en: ['fuse 2 A,', 'band to GPIO 22'], de: ['Sicherung 2 A,', 'Ring an GPIO 22'] });
   // The strip: 38px to the axis of the body, 6 + 3 + 16 + 4px to the lines, the longest line, 6px, on the 8px grid.
   assert.equal(bayOf(undefined), 80);
   assert.equal(bayOf({ en: ['x'], de: [] }), 80);

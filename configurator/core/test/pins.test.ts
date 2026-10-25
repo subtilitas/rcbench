@@ -22,7 +22,7 @@ function pin(c: Catalogue, signal: PinDefault['signal']): PinDefault {
 /** Moves a signal to another GPIO and its pad. The wires stay where they are. */
 function move(c: Catalogue, signal: PinDefault['signal'], gpio: number): void {
   const pad = c.pads.find((p) => p.gpio === gpio);
-  assert.ok(pad, `GP${gpio} is on a pad`);
+  assert.ok(pad, `GPIO ${gpio} is on a pad`);
   const entry = pin(c, signal);
   entry.gpio = gpio;
   entry.pad = pad.n;
@@ -57,7 +57,7 @@ test('PWM slices and compare-register partners', () => {
   assert.equal(sliceOf(2), 1);
   assert.equal(sliceOf(5), 2);
   assert.equal(sliceOf(15), 7);
-  // The slice number wraps at GP16: GP16 shares slice 0 with GP0.
+  // The slice number wraps at GPIO 16: GPIO 16 shares slice 0 with GPIO 0.
   assert.equal(sliceOf(16), 0);
   assert.equal(sliceOf(28), 6);
   for (const [a, b] of COMPARE_PARTNERS) {
@@ -80,11 +80,11 @@ test('the output catalogue is the 20 GPIOs that are neither reserved nor the hea
 test('rule 1: a GPIO outside the allowed set, or on a reserved pad', () => {
   const outside = copy();
   move(outside, 'servo', 3);
-  reports(checkPins(outside), 'pin.servo', /GP3 is not in the allowed set/);
+  reports(checkPins(outside), 'pin.servo', /GPIO 3 is not in the allowed set/);
 
   const reserved = copy();
   move(reserved, 'esc', 8);
-  reports(checkPins(reserved), 'pin.esc', /GP8 is on a reserved pad/);
+  reports(checkPins(reserved), 'pin.esc', /GPIO 8 is on a reserved pad/);
   reports(checkPins(reserved), 'pin.esc', /not in the allowed set/);
 
   // Both ends of the reserved range, and the pads beside it.
@@ -96,34 +96,34 @@ test('rule 1: a GPIO outside the allowed set, or on a reserved pad', () => {
   for (const gpio of [7, 13]) {
     const c = copy();
     move(c, 'esc', gpio);
-    assert.ok(!checkPins(c).some((f) => /reserved pad/.test(f.msg)), `GP${gpio}`);
+    assert.ok(!checkPins(c).some((f) => /reserved pad/.test(f.msg)), `GPIO ${gpio}`);
   }
 
   const list = copy();
   pin(list, 'heartbeat').allowed = [4];
-  reports(checkPins(list), 'pin.heartbeat', /GP3 is not in the allowed set/);
+  reports(checkPins(list), 'pin.heartbeat', /GPIO 3 is not in the allowed set/);
 
   const pad = copy();
   pin(pad, 'servo').pad = 6;
-  reports(checkPins(pad), 'pin.servo', /pad 6 is not GP2/);
+  reports(checkPins(pad), 'pin.servo', /pad 6 is not GPIO 2/);
 
   const noPad = copy();
   pin(noPad, 'servo').pad = 41;
-  reports(checkPins(noPad), 'pin.servo', /pad 41 is not GP2/);
+  reports(checkPins(noPad), 'pin.servo', /pad 41 is not GPIO 2/);
 });
 
 test('rule 2: two signals on one GPIO', () => {
   const c = copy();
   move(c, 'servo', 5);
-  reports(checkPins(c), 'pins', /GP5 carries two signals/);
+  reports(checkPins(c), 'pins', /GPIO 5 carries two signals/);
 });
 
 test('rule 3: SCL is SDA + 1, and both lists are the ones the firmware offers', () => {
   const scl = copy();
   move(scl, 'scl', 19);
-  reports(checkPins(scl), 'pin.scl', /GP19 is not SDA \+ 1/);
+  reports(checkPins(scl), 'pin.scl', /GPIO 19 is not SDA \+ 1/);
 
-  // GP2 as SDA: its pair GP3 is the heartbeat input.
+  // GPIO 2 as SDA: its pair GPIO 3 is the heartbeat input.
   const sda = copy();
   pin(sda, 'sda').allowed = [-1, 0, 2, 4, 6, 14, 16, 18, 20, 26];
   reports(checkPins(sda), 'pin.sda', /allowed set is not -1, 0, 4, 6, 14, 16, 18, 20, 26/);
@@ -142,59 +142,59 @@ test('rule 3: SCL is SDA + 1, and both lists are the ones the firmware offers', 
 });
 
 test('rule 4: two outputs on one PWM slice', () => {
-  // GP4 and GP5 are slice 2.
+  // GPIO 4 and GPIO 5 are slice 2.
   const c = copy();
   move(c, 'servo', 4);
   reports(checkPins(c), 'pins', /two outputs share PWM slice 2/);
 
-  // GP21 is slice 2 as well, 16 pins up; it is also the compare partner of GP5.
+  // GPIO 21 is slice 2 as well, 16 pins up; it is also the compare partner of GPIO 5.
   const wrapped = copy();
   move(wrapped, 'servo', 21);
   reports(checkPins(wrapped), 'pins', /two outputs share PWM slice 2/);
 
-  // GP6 is slice 3: no finding of this rule.
+  // GPIO 6 is slice 3: no finding of this rule.
   const free = copy();
   move(free, 'servo', 6);
   assert.ok(!checkPins(free).some((f) => /PWM slice/.test(f.msg)));
 });
 
 test('rule 5: an output whose compare-register partner carries a signal', () => {
-  // GP0 is the example of the build guide; GP16 is the sensor bus SDA.
+  // GPIO 0 is the example of the build guide; GPIO 16 is the sensor bus SDA.
   const guide = copy();
   move(guide, 'servo', 0);
-  reports(checkPins(guide), 'pin.servo', /GP0 shares a compare register with GP16 \(sda\)/);
+  reports(checkPins(guide), 'pin.servo', /GPIO 0 shares a compare register with GPIO 16 \(sda\)/);
 
   const scl = copy();
   move(scl, 'servo', 1);
-  reports(checkPins(scl), 'pin.servo', /GP1 shares a compare register with GP17 \(scl\)/);
+  reports(checkPins(scl), 'pin.servo', /GPIO 1 shares a compare register with GPIO 17 \(scl\)/);
 
   const tap = copy();
   move(tap, 'esc', 6);
-  reports(checkPins(tap), 'pin.esc', /GP6 shares a compare register with GP22 \(tap\)/);
+  reports(checkPins(tap), 'pin.esc', /GPIO 6 shares a compare register with GPIO 22 \(tap\)/);
 
   // The partner of an output is another output.
   const outputs = copy();
   move(outputs, 'esc', 18);
-  reports(checkPins(outputs), 'pin.esc', /GP18 shares a compare register with GP2 \(servo\)/);
-  reports(checkPins(outputs), 'pin.servo', /GP2 shares a compare register with GP18 \(esc\)/);
+  reports(checkPins(outputs), 'pin.esc', /GPIO 18 shares a compare register with GPIO 2 \(servo\)/);
+  reports(checkPins(outputs), 'pin.servo', /GPIO 2 shares a compare register with GPIO 18 \(esc\)/);
 
   // A bus pin on the partner of a free GPIO is no finding: the rule reads outputs.
   const bus = copy();
   move(bus, 'tap', 21);
-  reports(checkPins(bus), 'pin.esc', /GP5 shares a compare register with GP21 \(tap\)/);
+  reports(checkPins(bus), 'pin.esc', /GPIO 5 shares a compare register with GPIO 21 \(tap\)/);
   assert.ok(!checkPins(bus).some((f) => f.id === 'pin.tap'));
 
-  // GP13 has no partner.
+  // GPIO 13 has no partner.
   const none = copy();
   move(none, 'servo', 13);
   assert.ok(!checkPins(none).some((f) => /compare register/.test(f.msg)));
 });
 
-test('rule 6: the tap pin is not GP26 to GP28', () => {
+test('rule 6: the tap pin is not GPIO 26 to GPIO 28', () => {
   for (const gpio of [26, 27, 28]) {
     const c = copy();
     move(c, 'tap', gpio);
-    reports(checkPins(c), 'pin.tap', new RegExp(`GP${gpio} is an analogue pin`));
+    reports(checkPins(c), 'pin.tap', new RegExp(`GPIO ${gpio} is an analogue pin`));
   }
   const below = copy();
   move(below, 'tap', 21);
@@ -205,14 +205,14 @@ test('rule 6: the tap pin is not GP26 to GP28', () => {
   reports(checkPins(missing), 'pins', /tap is missing/);
 });
 
-test('rule 7: the heartbeat pin is GP3 and fixed', () => {
+test('rule 7: the heartbeat pin is GPIO 3 and fixed', () => {
   const moved = copy();
   move(moved, 'heartbeat', 4);
-  reports(checkPins(moved), 'pin.heartbeat', /not fixed on GP3/);
+  reports(checkPins(moved), 'pin.heartbeat', /not fixed on GPIO 3/);
 
   const choice = copy();
   pin(choice, 'heartbeat').choice = 'default';
-  reports(checkPins(choice), 'pin.heartbeat', /not fixed on GP3/);
+  reports(checkPins(choice), 'pin.heartbeat', /not fixed on GPIO 3/);
 
   const missing = copy();
   missing.pinDefaults = missing.pinDefaults.filter((d) => d.signal !== 'heartbeat');
@@ -269,7 +269,7 @@ test('wires and the pin table agree', () => {
   const wrongSrc = copy();
   wrongSrc.wires[6]!.src = { kind: 'owner', date: '2026-10-11' };
   reports(checkPins(wrongSrc), 'wire.7', /Pin from an owner statement of/);
-  reports(checkPins(wrongSrc), 'wire.7', /no check entry states that GP2 is from an owner statement/);
+  reports(checkPins(wrongSrc), 'wire.7', /no check entry states that GPIO 2 is from an owner statement/);
 
   const example = copy();
   example.wires[10]!.note = null;
@@ -278,10 +278,10 @@ test('wires and the pin table agree', () => {
   // A proposed pin without a check entry that says so.
   const check = copy();
   check.checks = check.checks.filter((k) => k.id !== 'servo-pin');
-  reports(checkPins(check), 'wire.7', /no check entry states that GP2 is a proposal/);
+  reports(checkPins(check), 'wire.7', /no check entry states that GPIO 2 is a proposal/);
 
   const pd = copy();
   pd.checks = pd.checks.filter((k) => k.id !== 'pd-pins');
-  reports(checkPins(pd), 'wire.16', /GP7 is from an owner statement/);
-  reports(checkPins(pd), 'wire.17', /GP6 is from an owner statement/);
+  reports(checkPins(pd), 'wire.16', /GPIO 7 is from an owner statement/);
+  reports(checkPins(pd), 'wire.17', /GPIO 6 is from an owner statement/);
 });

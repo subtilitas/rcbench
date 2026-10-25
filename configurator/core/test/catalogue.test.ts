@@ -346,7 +346,7 @@ test('wire ends: an undeclared pin, a pad out of range and a reserved pad are re
   zero.wires[6]!.a = 'pad.0';
   reports(checkEnds(zero), 'wire.7', /not a pad/);
 
-  // Pad 11 is GP8, a CAN pin of the board.
+  // Pad 11 is GPIO 8, a CAN pin of the board.
   const reserved = copy();
   reserved.wires[6]!.a = 'pad.11';
   reports(checkEnds(reserved), 'wire.7', /reserved/);
@@ -999,23 +999,23 @@ test('tree: the firmware parsers read the table formats of the release', () => {
 test('tree: a data file that is stale against the firmware tables is reported', () => {
   assert.deepEqual(checkTree(CATALOGUE, fakeTree(CATALOGUE)), []);
 
-  // The firmware reserves GP5, the ESC signal pin of the data.
+  // The firmware reserves GPIO 5, the ESC signal pin of the data.
   const reservedNow = fakeTree(CATALOGUE, (files) => {
     lines(files, OUT_BIND)[42] = '    { 5, 7, true, "tacho" },';
   });
-  reports(checkTree(CATALOGUE, reservedNow), 'pad.7', /reserves GP5/);
+  reports(checkTree(CATALOGUE, reservedNow), 'pad.7', /reserves GPIO 5/);
 
   // The firmware frees a pad the data marks reserved.
   const freed = fakeTree(CATALOGUE, (files) => {
     lines(files, OUT_BIND)[45] = '    { 8, 11, false, NULL },';
   });
-  reports(checkTree(CATALOGUE, freed), 'pad.11', /does not reserve GP8/);
+  reports(checkTree(CATALOGUE, freed), 'pad.11', /does not reserve GPIO 8/);
 
   // A pad carries another GPIO.
   const moved = fakeTree(CATALOGUE, (files) => {
     lines(files, OUT_BIND)[37] = '    { 23, 1, false, NULL },';
   });
-  reports(checkTree(CATALOGUE, moved), 'pad.1', /GP0 in the data and GP23/);
+  reports(checkTree(CATALOGUE, moved), 'pad.1', /GPIO 0 in the data and GPIO 23/);
 
   // A row moves by one line: the anchor of the data is stale.
   const shifted = fakeTree(CATALOGUE, (files) => {
@@ -1057,7 +1057,7 @@ test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
     lines(files, SETTINGS)[145] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
-  reports(checkTree(CATALOGUE, sda), 'pin.sda', /GP16 in the data and 18/);
+  reports(checkTree(CATALOGUE, sda), 'pin.sda', /GPIO 16 in the data and 18/);
 
   // The firmware has a default for a pin the data calls a proposal.
   const pd = fakeTree(CATALOGUE, (files) => {
@@ -1077,7 +1077,7 @@ test('tree: stale pin defaults are reported', () => {
   const heartbeat = fakeTree(CATALOGUE, (files) => {
     lines(files, IOMCU_PINS)[45] = '#define IOMCU_HEARTBEAT_PIN  4';
   });
-  reports(checkTree(CATALOGUE, heartbeat), 'pin.heartbeat', /GP3 in the data and GP4/);
+  reports(checkTree(CATALOGUE, heartbeat), 'pin.heartbeat', /GPIO 3 in the data and GPIO 4/);
 
   const undefinedPin = fakeTree(CATALOGUE, (files) => {
     lines(files, IOMCU_PINS)[45] = '/* text */';
@@ -1186,7 +1186,7 @@ test('counts: a missing safety note, stage or pad is reported', () => {
 
   const gpio = copy();
   gpio.pads[0]!.gpio = 1;
-  reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
+  reports(checkCounts(gpio), 'pads', /GPIO 1 is on two pads/);
 
   const release = copy();
   release.release = '0.24.0';

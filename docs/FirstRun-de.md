@@ -328,7 +328,7 @@ zu welcher führt, ist nicht verfolgt:
 | | |
 |---|---|
 | Panel-Seite | **GPIO28**, IO28 des 12-poligen Headers P3 des 7-Zoll-ESP32-P4-Boards (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
-| IOmcu-Seite | **GP3** |
+| IOmcu-Seite | **GPIO 3** |
 | Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der IOmcu gesund ist: Er schaltet nach 150ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der IOmcu nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der IOmcu jedes Schalten auf ARMED, und das ist die
@@ -344,7 +344,7 @@ Verriegelung, die arbeitet — kein Fehler.
 
 Die Leitung muss also rund **80ms** flanken, bevor ein Arm gelingen kann.
 
-**Am Oszilloskop, an GP3:** ein Rechteck, Flanke zu Flanke 20ms.
+**Am Oszilloskop, an GPIO 3:** ein Rechteck, Flanke zu Flanke 20ms.
 Überschreitet die Lücke je 150ms, verwirft der IOmcu sie und das
 nächste Schalten auf ARMED wird verweigert.
 
@@ -430,19 +430,19 @@ Jeder dieser Punkte ist host-getestet. **Keine der Zahlen unten wurde an einem M
 Ein **Servo** nehmen, nicht den ESC. Ein Servo ist der gutmütige Fall und der,
 den das Oszilloskop am leichtesten liest.
 
-**Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13 bis
-GP22 und GP26 bis GP28. GP13 ist der Pin des Programmierports an einem
+**Freie Pins für einen Output:** GPIO 0, GPIO 1, GPIO 2, GPIO 4, GPIO 5, GPIO 6, GPIO 7, GPIO 13 bis
+GPIO 22 und GPIO 26 bis GPIO 28. GPIO 13 ist der Pin des Programmierports an einem
 IOmcu, der keinen gespeichert hat, und wird für einen Output
 verweigert, bis der Pin des Ports verlegt ist
 ([Link](Link-de.md#die-programmierports)).
-**Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN), GP23, GP24, GP25
-und GP29 (vom Modul belegt, nicht auf der Stiftleiste) und GP30 aufwärts (nicht
+**Reserviert und verweigert:** GPIO 3 (Heartbeat), GPIO 8–GPIO 12 (CAN), GPIO 23, GPIO 24, GPIO 25
+und GPIO 29 (vom Modul belegt, nicht auf der Stiftleiste) und GPIO 30 aufwärts (nicht
 im Bauteil).
 **Als zweiter PWM-Pin verweigert:** ein Pin, dessen PWM-Compare-Register schon
 von einem gebundenen Pin belegt ist. Auf dem RP2350 ist die Slice unterhalb
-von GP32 `(Pin / 2) modulo 8` und der Kanal das niedrigste Bit des Pins, also
-teilen sich GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und
-GP21, GP6 und GP22 je ein Compare-Register. Der zweite eines Paares wird
+von GPIO 32 `(Pin / 2) modulo 8` und der Kanal das niedrigste Bit des Pins, also
+teilen sich GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und
+GPIO 21, GPIO 6 und GPIO 22 je ein Compare-Register. Der zweite eines Paares wird
 verweigert, statt auf die Pulsbreite des ersten gemuxt zu werden. Die
 OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
@@ -518,8 +518,8 @@ einem Netzteil mit Strombegrenzung.
 **Am Panel einrichten.** SETUP → INTERFACES: `INA228` auf ON; SETUP →
 SENSORS: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
 der Vorgabe zu den Modulen oben: INA228 auf 0x45 mit 200 µΩ, der INA3221 auf
-0x40 mit 0,1Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GP16 und SCL an
-GP17. Ohne Panel gibt die Build-Option `IOMCU_SENSE_BRINGUP=ON` beide
+0x40 mit 0,1Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GPIO 16 und SCL an
+GPIO 17. Ohne Panel gibt die Build-Option `IOMCU_SENSE_BRINGUP=ON` beide
 Bauteile mit den Vorgaben der Page frei, solange im Flash keine
 Konfiguration liegt:
 
@@ -532,8 +532,8 @@ cmake --build firmware/iomcu/build-sense
 
 | Draht | Von | Nach |
 |---|---|---|
-| SDA | GP16 (Pad 21) | INA3221 SDA, MATEK SDA |
-| SCL | GP17 (Pad 22) | INA3221 SCL, MATEK SCL |
+| SDA | GPIO 16 (Pad 21) | INA3221 SDA, MATEK SDA |
+| SCL | GPIO 17 (Pad 22) | INA3221 SCL, MATEK SCL |
 | Pull-ups | 2,2kΩ von SDA und von SCL | 3V3 (Pad 36) |
 | Versorgung INA3221 | 3V3 (Pad 36), GND | INA3221 VS, GND |
 | Versorgung MATEK | VBUS (Pad 40, 5V vom USB), GND | MATEK 5V, G |
@@ -893,8 +893,8 @@ liegen.
 
 **Mehr als ein Ausgang.** `ch=` in einer Zeile `$C` oder `$D` ist der
 Ausgangskanal, nicht der Pin: die Kanäle zählen ab 0 über die gebundenen
-Pins in aufsteigender Pin-Reihenfolge, 1 Kanal je PWM-Pin. Sind GP0, GP1,
-GP2 und GP4 gebunden, ist GP2 Kanal 2 und GP4 Kanal 3. Der Shunt führt den
+Pins in aufsteigender Pin-Reihenfolge, 1 Kanal je PWM-Pin. Sind GPIO 0, GPIO 1,
+GPIO 2 und GPIO 4 gebunden, ist GPIO 2 Kanal 2 und GPIO 4 Kanal 3. Der Shunt führt den
 Strom jedes Servos an der Versorgung, und der Bildschirm SERVO kommandiert
 jeden Servo-Ausgang im selben Frame. Das Tool spielt kein Kommando nach,
 das ein anderes Kommando im Abstand von höchstens 30ms hat; mit 2
@@ -1012,7 +1012,7 @@ gewählt, nicht gemessen.
 
 | Symptom | Zuerst hier nachsehen |
 |---|---|
-| Schalten auf ARMED verweigert, Draht gesteckt | Heartbeat hat noch keine 4 Flanken, oder Lücke über 150ms. GP3 messen. |
+| Schalten auf ARMED verweigert, Draht gesteckt | Heartbeat hat noch keine 4 Flanken, oder Lücke über 150ms. GPIO 3 messen. |
 | Arm verweigert, kein offensichtlicher Grund | Touch 500ms tot sperrt es. Das Panel berühren. |
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
 | Heartbeat fällt beim ersten Link-Aufbau aus | **Die Übertragung der Zeichnung oder der Flash-Keeper.** Siehe §4. |

@@ -674,7 +674,7 @@ test('the INA3221 moves the plus wire of the servo through its shunt', () => {
   assert.ok([9, 10, 20, 29].every((n) => !wireNumbers(pd).includes(n)));
 });
 
-test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the PD mini optional', () => {
+test('the servo programmer: the 2 boards, the servo on GPIO 13 at pad 17, and the PD mini optional', () => {
   const entry = CATALOGUE.functions.find((f) => f.id === 'servoprog');
   assert.deepEqual([entry?.group, entry?.needs, entry?.drives, entry?.forces], ['servo', [], 'servo', { servoPort: 'prog' }]);
   const prog = CATALOGUE.pinDefaults.find((d) => d.signal === 'prog');
@@ -704,8 +704,8 @@ test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the P
   assert.deepEqual(pd.power.filter((p) => p.used).map((p) => p.source.id), ['usb', 'pd-servo']);
 
   // The bench feeds the servo under the other variant: the 5V pin, or the
-  // V pin of a strip of the Osoyoo breakout board, whose plug is at GP2 and so
-  // not the plug of a servo on GP13.
+  // V pin of a strip of the Osoyoo breakout board, whose plug is at GPIO 2 and so
+  // not the plug of a servo on GPIO 13.
   assert.deepEqual(wireNumbers(resolve(CATALOGUE, select(['servoprog'], [], { servoPower: 'bench' }))), [1, 2, 3, 4, 8, 59, 64]);
   const strip = resolve(CATALOGUE, select(['servoprog'], [], { servoPower: 'bench', connection: 'osoyoo' }));
   assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 8, 61, 64, 65, 66]);

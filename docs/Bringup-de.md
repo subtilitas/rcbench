@@ -39,7 +39,7 @@ beiden, welches Ende aufgehört hat:
 
 `CAN did not answer on SPI` heißt, dass der Controller nach dem Reset nicht
 den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
-Peripheral Interface; Modul nicht bestückt, Verdrahtung an GP8 bis GP12),
+Peripheral Interface; Modul nicht bestückt, Verdrahtung an GPIO 8 bis GPIO 12),
 nicht am CAN-Bus.
 
 ### Panel

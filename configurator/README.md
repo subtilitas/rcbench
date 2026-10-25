@@ -268,14 +268,14 @@ stated" for the current. "Small" carries no number: no source states a current
 limit. An ESC takes signal and GND only, in every variant.
 
 "Program a KST or Chaservo servo" (`servoprog`) needs the panel and the
-IOmcu alone. Its tick moves the servo signal from wire 7 (pad 4, GP2,
-a slot of SETUP → OUTPUTS) to wire 64 (pad 17, GP13), the programming port
+IOmcu alone. Its tick moves the servo signal from wire 7 (pad 4, GPIO 2,
+a slot of SETUP → OUTPUTS) to wire 64 (pad 17, GPIO 13), the programming port
 of an IOmcu that has stored no other pin for it. The result carries 3
 notes and 1 unknown: SERVO TESTER on the PROG PORT entry of SETUP → OUTPUTS
 is PROG PORT; with the PD mini, CONNECT sets the servo supply, 4.8 to 6.0V or up to 8.4V with HV
 SERVO on, and 50 to 3000mA; without the PD mini the servo takes the supply
 of the servo power variant, and the programming voltage and current limit
-are stored and not applied; the level of the servo's reply on GP13 is not
+are stored and not applied; the level of the servo's reply on GPIO 13 is not
 measured. The pin is no visible variant and the hash holds no token for it:
 the function sets it.
 
@@ -604,7 +604,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The wiring picture shows them. They
 count against the 1MB of the size budget.
 
-Drawing folder: 48 files, 458.9kB.
+Drawing folder: 48 files, 459.1kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 

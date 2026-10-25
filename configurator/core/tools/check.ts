@@ -553,7 +553,7 @@ export function checkCounts(c: Catalogue): Finding[] {
     if (pad.n !== i + 1) out.push(err(`pad.${pad.n}`, 'pads are not numbered 1 to 40 in order'));
   });
   for (const gpio of duplicates(c.pads.filter((p) => p.gpio !== null).map((p) => p.gpio as number))) {
-    out.push(err(`pads`, `GP${gpio} is on two pads`));
+    out.push(err(`pads`, `GPIO ${gpio} is on two pads`));
   }
   if (c.hashVersion !== 1) out.push(err('hashVersion', 'is not 1'));
   if (!/^[0-9]+\.[0-9]+\.[0-9]+$/.test(c.release)) out.push(err('release', 'is not a version number'));
@@ -643,17 +643,17 @@ export function checkPins(c: Catalogue): Finding[] {
     const id = `pin.${pin.signal}`;
     const pad = pads.get(pin.pad);
     if (!pad || pad.gpio !== pin.gpio) {
-      out.push(err(id, `pad ${pin.pad} is not GP${pin.gpio}`));
+      out.push(err(id, `pad ${pin.pad} is not GPIO ${pin.gpio}`));
       continue;
     }
     // Rule 1: allowed in the firmware, and not on a reserved pad.
-    if (!allowedSet(c, pin).includes(pin.gpio)) out.push(err(id, `GP${pin.gpio} is not in the allowed set`));
-    if (pad.reserved) out.push(err(id, `GP${pin.gpio} is on a reserved pad`));
+    if (!allowedSet(c, pin).includes(pin.gpio)) out.push(err(id, `GPIO ${pin.gpio} is not in the allowed set`));
+    if (pad.reserved) out.push(err(id, `GPIO ${pin.gpio} is on a reserved pad`));
   }
 
   // Rule 2: no two signals share a GPIO.
   for (const gpio of duplicates(c.pinDefaults.map((d) => d.gpio))) {
-    out.push(err('pins', `GP${gpio} carries two signals`));
+    out.push(err('pins', `GPIO ${gpio} carries two signals`));
   }
 
   // Rule 3: SCL is SDA + 1, and the two lists are the ones the firmware offers.
@@ -662,7 +662,7 @@ export function checkPins(c: Catalogue): Finding[] {
   if (!sda || !scl) {
     out.push(err('pins', 'sda or scl is missing'));
   } else {
-    if (scl.gpio !== sda.gpio + 1) out.push(err('pin.scl', `GP${scl.gpio} is not SDA + 1`));
+    if (scl.gpio !== sda.gpio + 1) out.push(err('pin.scl', `GPIO ${scl.gpio} is not SDA + 1`));
     const offered = sdaAllowed(c);
     if (sda.allowed === 'catalogue' || sda.allowed.join() !== offered.join()) {
       out.push(err('pin.sda', `allowed set is not ${offered.join(', ')}`));
@@ -684,19 +684,19 @@ export function checkPins(c: Catalogue): Finding[] {
   for (const pin of outputs) {
     const partner = partnerOf(pin.gpio);
     if (partner !== null && used.has(partner)) {
-      out.push(err(`pin.${pin.signal}`, `GP${pin.gpio} shares a compare register with GP${partner} (${used.get(partner)})`));
+      out.push(err(`pin.${pin.signal}`, `GPIO ${pin.gpio} shares a compare register with GPIO ${partner} (${used.get(partner)})`));
     }
   }
 
-  // Rule 6: the tap pin is not GP26 to GP29.
+  // Rule 6: the tap pin is not GPIO 26 to GPIO 29.
   const tap = bySignal.get('tap');
   if (!tap) out.push(err('pins', 'tap is missing'));
-  else if (tap.gpio >= 26 && tap.gpio <= 29) out.push(err('pin.tap', `GP${tap.gpio} is an analogue pin`));
+  else if (tap.gpio >= 26 && tap.gpio <= 29) out.push(err('pin.tap', `GPIO ${tap.gpio} is an analogue pin`));
 
-  // Rule 7: the heartbeat pin is GP3.
+  // Rule 7: the heartbeat pin is GPIO 3.
   const heartbeat = bySignal.get('heartbeat');
   if (!heartbeat) out.push(err('pins', 'heartbeat is missing'));
-  else if (heartbeat.gpio !== 3 || heartbeat.choice !== 'fixed') out.push(err('pin.heartbeat', 'is not fixed on GP3'));
+  else if (heartbeat.gpio !== 3 || heartbeat.choice !== 'fixed') out.push(err('pin.heartbeat', 'is not fixed on GPIO 3'));
 
   // Wires and the pin table agree: a wire on a GPIO pad names the choice of
   // that pad's signal, and a wire on no GPIO pad names none.
@@ -850,12 +850,12 @@ export function checkTree(c: Catalogue, tree: Tree): Finding[] {
           out.push(err(id, `${OUT_BIND} has no GPIO on this pad`));
           continue;
         }
-        if (row.gpio !== pad.gpio) out.push(err(id, `is GP${pad.gpio} in the data and GP${row.gpio} in ${OUT_BIND}`));
-        if (pad.name !== `GP${pad.gpio}`) out.push(err(id, `name ${pad.name} is not GP${pad.gpio}`));
+        if (row.gpio !== pad.gpio) out.push(err(id, `is GPIO ${pad.gpio} in the data and GPIO ${row.gpio} in ${OUT_BIND}`));
+        if (pad.name !== `GPIO ${pad.gpio}`) out.push(err(id, `name ${pad.name} is not GPIO ${pad.gpio}`));
         // The firmware reserves the pads the data marks reserved, and the heartbeat input.
         const expected = pad.reserved !== undefined || pad.gpio === heartbeat?.gpio;
         if (row.reserved !== expected) {
-          out.push(err(id, `${OUT_BIND} ${row.reserved ? 'reserves' : 'does not reserve'} GP${pad.gpio}; the data says otherwise`));
+          out.push(err(id, `${OUT_BIND} ${row.reserved ? 'reserves' : 'does not reserve'} GPIO ${pad.gpio}; the data says otherwise`));
         }
         if (anchored !== row.line) out.push(err(id, `src is not the row of this pad, ${OUT_BIND}:${row.line}`));
       } else {
@@ -875,7 +875,7 @@ export function checkTree(c: Catalogue, tree: Tree): Finding[] {
   const hb = iomcu === null ? null : /#define\s+IOMCU_HEARTBEAT_PIN\s+(\d+)/.exec(iomcu);
   if (!hb) out.push(err('pin.heartbeat', `${IOMCU_PINS} defines no IOMCU_HEARTBEAT_PIN at ${RELEASE_TAG}`));
   else if (heartbeat && Number(hb[1]) !== heartbeat.gpio) {
-    out.push(err('pin.heartbeat', `is GP${heartbeat.gpio} in the data and GP${hb[1]} in ${IOMCU_PINS}`));
+    out.push(err('pin.heartbeat', `is GPIO ${heartbeat.gpio} in the data and GPIO ${hb[1]} in ${IOMCU_PINS}`));
   }
 
   const settings = tree.read(SETTINGS);
@@ -892,7 +892,7 @@ export function checkTree(c: Catalogue, tree: Tree): Finding[] {
         continue;
       }
       if (pin.choice === 'default' && found.def !== pin.gpio) {
-        out.push(err(id, `default is GP${pin.gpio} in the data and ${found.def} in ${SETTINGS}`));
+        out.push(err(id, `default is GPIO ${pin.gpio} in the data and ${found.def} in ${SETTINGS}`));
       }
       if (pin.choice === 'proposal' && found.def !== -1) {
         out.push(err(id, `is a proposal in the data; ${SETTINGS} has the default ${found.def}`));

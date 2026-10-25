@@ -331,8 +331,8 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
 A screen, tab, overlay, prompt or automatic run that drives an output names
 that output while it is shown: the pin, the port with its pin, or the supply
 with its voltage. A screen that talks to a module over a serial link names
-the link's pins as well. Examples of the form, not texts of any screen: `GP4`,
-`PROG PORT GP13`, `PD MINI 7.40V`. Nothing bound, a binding not yet read and
+the link's pins as well. Examples of the form, not texts of any screen: `GPIO 4`,
+`PROG PORT GPIO 13`, `PD MINI 7.40V`. Nothing bound, a binding not yet read and
 a target out of reach show as a warning. The label reads the state the drive
 path reads, not the setting that asks for it (`prog_link_target()`, not
 `SET_SERVO_TARGET`). A screen added or changed meets the rule and comes

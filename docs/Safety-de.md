@@ -116,7 +116,7 @@ statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
 verspäteten Task überlebt.
 
 Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
-Flanken über eine direkte Leitung vom Heartbeat-Pin des Panels den GP3 des IOmcu, weshalb
+Flanken über eine direkte Leitung vom Heartbeat-Pin des Panels den GPIO 3 des IOmcu, weshalb
 dieser Prüfstand auf ARMED schalten kann.
 
 Das Monoflop wird von den Flanken des Panels nachgetriggert und nimmt die

@@ -19,7 +19,7 @@ used for any of them.
 |---|---|
 | Jumper leads | female-to-female for headers, and a few female-to-pin for probe tips |
 | Signal relays | two per board -- one for BOOT, one for RESET -- with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
-| Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level** -- pull-down for an active-high driver, pull-up for active-low. GP16 to GP19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
+| Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level** -- pull-down for an active-high driver, pull-up for active-low. GPIO 16 to GPIO 19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
 | Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
 | Two 120Ω terminators | one at each end of the CAN pair. Two in parallel are the 60Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3V island: a translator that senses the target's rail, not a divider chosen once |
@@ -253,13 +253,13 @@ step 7 without it.
 
 | RP2350 pin | Carries | Direction |
 |---|---|---|
-| GP16 | panel RESET relay | out |
-| GP17 | panel BOOT relay | out |
-| GP18 | IOmcu RESET relay | out |
-| GP19 | IOmcu BOOT relay | out |
-| GP22 | heartbeat injection, step 7 | out |
+| GPIO 16 | panel RESET relay | out |
+| GPIO 17 | panel BOOT relay | out |
+| GPIO 18 | IOmcu RESET relay | out |
+| GPIO 19 | IOmcu BOOT relay | out |
+| GPIO 22 | heartbeat injection, step 7 | out |
 
-GP22 is a plain output, and it is an input at every other moment. It drives
+GPIO 22 is a plain output, and it is an input at every other moment. It drives
 the heartbeat junction with an edge every 20ms inside step 7 alone.
 
 **The panel's link is open before it drives; the monostable's stays closed.**
@@ -269,10 +269,10 @@ The monostable's branch is not in the way -- it only listens -- and it has to
 stay closed so the interlock is still being fed when the capture starts.
 Opening it early is what makes the window unmeasurable: step 7 takes it out
 while the capture runs, so the last trigger edge and the enable falling are in
-one trace. GP22 is tri-stated before either link is closed again.
+one trace. GPIO 22 is tri-stated before either link is closed again.
 
-The relays are at GP16 to GP19 rather than at the start of the header so that
-GP0 to GP15 stay free for the analyser leads and for a stimulus generator this
+The relays are at GPIO 16 to GPIO 19 rather than at the start of the header so that
+GPIO 0 to GPIO 15 stay free for the analyser leads and for a stimulus generator this
 guide does not yet describe.
 
 **Before the panel half of this check**, set the panel's UART selector to
@@ -318,12 +318,14 @@ first lead goes on.
 
 | RP2350-Zero | Goes to | Notes |
 |---|---|---|
-| GP4 | the header's SDA pin | an input until confirmed, then I²C0 SDA, open drain |
-| GP5 | the header's SCL pin | an input until confirmed, then I²C0 SCL, open drain |
+| GPIO 4 | the header's SDA pin | an input until confirmed, then I²C0 SDA, open drain |
+| GPIO 5 | the header's SCL pin | an input until confirmed, then I²C0 SCL, open drain |
 | GND | the star point | short wire; see below |
-| GP6 | not connected | reserved for the GT911 INT line |
-| GP7 | not connected | reserved for a panel reset sense |
+| GPIO 6 | not connected | reserved for the GT911 INT line |
+| GPIO 7 | not connected | reserved for a panel reset sense |
 | 3V3 | not connected | the Zero runs from its own USB port |
+
+The RP2350-Zero prints these pins as `GP4`, `GP5`, `GP6` and `GP7`.
 
 No pull-up is added on the Zero: a second set changes the rise time on a bus
 this bench measures, and the injector enables none. Whether the board's bus
@@ -374,7 +376,7 @@ answering. That says the probes are on the right two lines. With the injector
 still listening, nothing answers at 0x14.
 
 **Check, two: the injector's own leads.** After every reset the injector only
-listens: GP4 and GP5 are inputs and it acknowledges nothing. With the panel
+listens: GPIO 4 and GPIO 5 are inputs and it acknowledges nothing. With the panel
 running, open its port on the Pi and ask:
 
     ping      ->  pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen id=9INJ
@@ -430,8 +432,8 @@ or open, and that is the commonest way this is built wrong.
 a TJA1051T/3 transceiver on header H11, and neither pin carries anything else
 (`board_pins.h`). `docs/Link.md` has the detail.
 
-Then four leads on the IOmcu's SPI to the XL2515 -- SCK on GP10 pad 14, MOSI
-on GP11 pad 15, MISO on GP12 pad 16, CS on GP9 pad 12 -- and one on RXCAN
+Then four leads on the IOmcu's SPI to the XL2515 -- SCK on GPIO 10 pad 14, MOSI
+on GPIO 11 pad 15, MISO on GPIO 12 pad 16, CS on GPIO 9 pad 12 -- and one on RXCAN
 between the controller and its transceiver.
 
 **RXCAN is a net here and not yet a point.** The four SPI leads name a pin and
@@ -478,12 +480,12 @@ bus-off. In order of what costs least to check:
 
 ## 7. The outputs, and the heartbeat through the monostable
 
-GP0, GP1 and GP2 for whatever OUTPUTS binds.
+GPIO 0, GPIO 1 and GPIO 2 for whatever OUTPUTS binds.
 
 **The heartbeat does not go straight from the panel to the IOmcu.** It
 leaves the panel at GPIO28, which is IO28 of the 12-pin header P3, drives the
 retriggerable monostable, and the monostable gates the IOmcu's output enable and the servo and ESC power
-path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
+path; GPIO 3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 
 **The circuit does not exist yet.** `docs/Safety.md` requires it and says it
@@ -502,7 +504,7 @@ What it has to do, so that a circuit can be designed against it and checked:
 | Gates | two, both downstream of the IOmcu's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
-| Two links, both removable | one in the panel's GPIO28 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GP3. The differential test needs to split that node three ways, and the panel drives GPIO28 push-pull, so it cannot simply be joined |
+| Two links, both removable | one in the panel's GPIO28 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GPIO 3. The differential test needs to split that node three ways, and the panel drives GPIO28 push-pull, so it cannot simply be joined |
 
 Part numbers are deliberately absent: `hardware/README.md` says a part is not
 chosen until it is available at a vendor, and this belongs in `hardware/` as
@@ -600,7 +602,7 @@ same failure on another one.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
-The heartbeat is one node: the panel's GPIO28, the IOmcu's GP3 and the
+The heartbeat is one node: the panel's GPIO28, the IOmcu's GPIO 3 and the
 monostable's trigger all meet on it. The panel drives its end **push-pull**
 (`firmware/panel/main/panel_control.c`), so a second driver on that node is contention
 rather than a test -- a corrupted reading at best and a damaged pin at worst.
@@ -609,7 +611,7 @@ Split it before injecting anything, which is what the two links are for:
 
 1. **Open the panel's branch.** Nothing of the panel's is driving now, so the
    next step is not contention.
-2. **Have the RP2350 drive the junction from GP22** with one edge every
+2. **Have the RP2350 drive the junction from GPIO 22** with one edge every
    20ms -- a 40ms cycle, not a 40ms edge spacing and not a 20ms cycle --
    so `heartbeat_poll()` on the IOmcu never expires. The monitor rejects only
    edges closer than 4ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10ms is
@@ -631,7 +633,7 @@ screens switch to SAFE as they are left (`shared/ui/motor_screen.c`,
 `shared/ui/servo_screen.c`), so switching to ARMED and then walking to OUTPUTS to bind
 undoes it on the way. In order:
 
-1. **SETTINGS/OUTPUTS**: bind the output the capture watches, which is GP0 on
+1. **SETTINGS/OUTPUTS**: bind the output the capture watches, which is GPIO 0 on
    D0 here.
 2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and press ARM there.
 3. **Command it away from rest** -- throttle above zero, or the horn off
@@ -690,13 +692,13 @@ being asked for: D0 in the same trace is what separates a quiet gate from a
 dead lead, which is why it is captured alongside.
 
 **Probe D3 on the monostable's side of that link, not on the junction.** The
-channel map puts D3 at the GPIO28/GP3 node, and GP22 goes on driving that node
+channel map puts D3 at the node of the panel's GPIO28 and the IOmcu's GPIO 3, and GPIO 22 goes on driving that node
 throughout -- a probe there keeps edging after the link comes out and gives no
 last edge at all. What has to go quiet is the monostable's own input, which is
 what the link disconnects. Move the lead, or put a second one there and
 capture it instead.
 
-The IOmcu keeps seeing GP22 on the junction throughout, so firmware
+The IOmcu keeps seeing GPIO 22 on the junction throughout, so firmware
 stays happy and D0 keeps toggling. Only the interlock is starved, which is the
 whole point of the test.
 
@@ -705,7 +707,7 @@ Four things have to be seen, and each answers a different question:
 | | Where | What it has to show |
 |---|---|---|
 | D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the switch to ARMED worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
-| D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
+| D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GPIO 22 |
 | D14, the enable | the window capture | deasserted, within 150ms of that last edge |
 | D15, the load side | both captures | it stops in the window capture, and the 24MHz one is what says it is quiet rather than carrying something too narrow for 1MHz to see |
 
@@ -717,22 +719,22 @@ D0 keeps toggling throughout, and expecting it to stop is the mistake that
 reads as a failed interlock on a bench that is wired correctly. It is the
 input to the gate, not the output of it.
 
-**Putting the heartbeat back, in this order.** The test leaves GP22 driving
+**Putting the heartbeat back, in this order.** The test leaves GPIO 22 driving
 the junction and both links open, which is not a state to walk away from: the
 first power-up in section 9 cannot acquire a heartbeat with the panel's branch
-open, and closing that branch while GP22 still drives is the push-pull
+open, and closing that branch while GPIO 22 still drives is the push-pull
 contention this section opened by warning about -- the panel's GPIO28 against
 the RP2350's output, at whatever levels the two happen to be on.
 
 1. **Switch the bench to SAFE**, so nothing is driving an output while the interlock
    is about to change state.
-2. **Tri-state GP22.** Not "drive it high" and not "drive it low": an input,
+2. **Tri-state GPIO 22.** Not "drive it high" and not "drive it low": an input,
    off the node entirely. This is the step that makes the next two safe.
 3. **Close the monostable's trigger branch.**
 4. **Close the panel's branch.**
 
 The heartbeat is one node again, with one driver on it. Section 9 expects
-that, and a bench left with GP22 driving fails there with a symptom that
+that, and a bench left with GPIO 22 driving fails there with a symptom that
 points at the panel.
 
 ---
