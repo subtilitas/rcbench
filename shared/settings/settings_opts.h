@@ -15,9 +15,9 @@
 /** @brief settings_opts_n_<name>, the count of a list's UI_OPTION() rows,
  *  and the declaration of settings_opts_<name> with that length. */
 #define UI_OPTIONS(name) enum { settings_opts_n_##name = 0
+/// @cond X_MACRO
 /* A term of the sum, not an expression of its own. */
 /* NOLINTNEXTLINE(bugprone-macro-parentheses) */
-/// @cond X_MACRO
 #define UI_OPTION(en, de) + 1
 #define UI_OPTIONS_END(name)                                               \
     };                                                                     \

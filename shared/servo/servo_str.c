@@ -30,9 +30,9 @@ static const char *const k_str[SERVO_STR_COUNT] = {
 /** @brief The count of UI_SERVO_TEXT entries in ui_text.def. */
 enum {
     k_str_entries = 0
+/// @cond X_MACRO
 /* A term of the sum, not an expression of its own. */
 /* NOLINTNEXTLINE(bugprone-macro-parentheses) */
-/// @cond X_MACRO
 #define UI_SERVO_TEXT(id, en, de) + 1
 #include "ui_text.def"
 /// @endcond
