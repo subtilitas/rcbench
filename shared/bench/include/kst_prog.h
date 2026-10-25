@@ -289,7 +289,7 @@ typedef struct {
     uint8_t id;        /**< kst_prog_msg_id_t                       */
     uint8_t level;     /**< kst_prog_level_t                        */
     uint8_t reg;       /**< the register a result names; 0xFF none  */
-    uint16_t arg;
+    uint16_t arg;                       /**< the message's argument, as its id says */
     uint32_t seq;      /**< counts the messages                     */
 } kst_prog_msg_t;
 
@@ -422,7 +422,7 @@ typedef struct {
     kst_prog_cmd_kind_t kind;
     uint32_t id;               /**< a start's comes back in
                                     kst_prog_feed_t.answer_id */
-    kst_link_request_t req;
+    kst_link_request_t req;             /**< the request for kind */
 } kst_prog_cmd_t;
 
 /**
@@ -507,7 +507,7 @@ typedef struct {
     uint32_t answer_id;        /**< the last command carried out; 0 none */
     kst_link_start_t answer;   /**< what kst_link_start() said */
     uint32_t outcomes;         /**< counts kst_link_outcome() handing one out */
-    kst_link_outcome_t outcome;
+    kst_link_outcome_t outcome;         /**< the outcome handed out */
     bool     supply_read;      /**< out_mv and out_ma are a reading of the
                                     PD mini                               */
     uint16_t out_mv;           /**< its output, mV                        */
@@ -527,7 +527,7 @@ typedef struct {
     uint8_t port_pin[LINK_PG_PORTS_MAX]; /**< the GPIO programming port n
                                               drives, when bit n of
                                               port_pin_known is set */
-    uint8_t port_pin_known;
+    uint8_t port_pin_known;             /**< bit n set: port_pin[n] holds a GPIO */
 } kst_prog_feed_t;
 
 /**
@@ -547,6 +547,7 @@ typedef struct {
     bool journal_open;        /**< and the servo was not compared  */
     bool journal_other;       /**< the servo read is not the journal's */
     bool need_read;           /**< the servo's image is in doubt   */
+    /** @brief The programming port the journal's image was read on */
     uint8_t journal_port;
     uint8_t journal_pin;      /**< the GPIO of journal_port at the write,
                                    KST_PROG_NO_PIN not known       */
@@ -558,11 +559,11 @@ typedef struct {
     bool backed_up;           /**< a file holds this session's servo */
     bool no_file;             /**< a write went with no card for one */
     bool held_no_file;        /**< and the held write is such a one  */
-    uint8_t port;
+    uint8_t port;                       /**< the programming port the session works on */
     uint16_t supply_mv;       /**< what an ENTER asks of the PD mini */
-    uint16_t supply_ma;
+    uint16_t supply_ma;                 /**< what an ENTER asks of the PD mini, mA */
     uint16_t caps_mv;         /**< the supply's limits, 0 for none   */
-    uint16_t caps_ma;
+    uint16_t caps_ma;                   /**< the supply's current limit, mA; 0 for none */
     uint16_t floor_mv;        /**< the lowest voltage of a session; 0
                                    for none                          */
     uint16_t pwm_wait_ms;     /**< from the end of a session to PWM */
@@ -587,20 +588,20 @@ typedef struct {
     bool leave_doubt;         /**< the exit runs without LEAVE: the
                                    port asks for a read or holds a
                                    servo in doubt, no PD mini answers */
-    uint32_t wait_ms;
+    uint32_t wait_ms;                   /**< when the wait for the port began, ms */
     uint32_t run_ms;          /**< when the wait for the outcome began */
-    uint32_t fetch_ms;
-    bool fetched;
-    bool cmd_fetch;
-    uint32_t wait_id;
-    bool cmd_ready;
-    kst_prog_cmd_t cmd;
+    uint32_t fetch_ms;                  /**< when the backup was last fetched, ms */
+    bool fetched;                       /**< whether a backup was fetched this session */
+    bool cmd_fetch;                     /**< whether a FETCH command is owed to the link task */
+    uint32_t wait_id;                   /**< id of the start the session waits for */
+    bool cmd_ready;                     /**< whether cmd holds a command not yet taken */
+    kst_prog_cmd_t cmd;                 /**< the command waiting to be taken */
     kst_link_request_t held;  /**< the request the file goes before */
     kst_image_t held_target;  /**< and what it is to leave */
     bool held_journal;        /**< the held write recorded the journal */
     bool held_over;           /**< over the record of an earlier write,
                                    whose target is in held_before      */
-    kst_image_t held_before;
+    kst_image_t held_before;            /**< the target of the earlier write's record */
     kst_prog_gate_t *gate;    /**< kst_prog_gate_set()             */
     bool cmd_out;             /**< the START awaited was handed out */
     bool cmd_run;             /**< and its pass was taken: it is carried
@@ -608,34 +609,35 @@ typedef struct {
     bool keep;                /**< keep_draft holds the pending values
                                    of before a restore that is not
                                    started yet                      */
-    bool keep_soft;
-    bool keep_soft_load;
-    kst_image_t keep_draft;
+    bool keep_soft;                     /**< the soft limits kept with keep_draft */
+    bool keep_soft_load;                /**< whether the kept edit is a file */
+    kst_image_t keep_draft;             /**< the pending values kept before a restore */
 
     uint8_t card_op;          /**< kst_prog_card_op_t on its way   */
     bool card_ready;          /**< and not taken yet               */
     bool card_auto;           /**< the save a write waits for      */
     bool soft_load;           /**< the edit that waits is a file   */
-    kst_field_set_t load_skipped;
+    kst_field_set_t load_skipped;       /**< fields of the loaded file the servo's model skipped */
     kst_field_set_t soft_skipped;   /**< of the file that waits */
-    uint8_t file_types[KST_PROG_FILES_MAX];
+    uint8_t file_types[KST_PROG_FILES_MAX];  /**< per listed file, its kst_prog_file_kind_t */
     uint8_t load_kind;        /**< kst_prog_file_kind_t            */
     uint8_t load_named;       /**< fields the file gives a value for */
     uint8_t load_fields;      /**< of this many; 0 not counted     */
     char card_name[KST_PROG_NAME_MAX];  /**< the file saved or loaded */
     char preset[KST_PROG_NAME_MAX];     /**< the next preset name     */
     char backup[KST_PROG_NAME_MAX];     /**< the file of backed_up    */
+    /** @brief Number of the card operation on its way; 0 is never used */
     uint32_t card_id;
-    uint32_t card_ms;
+    uint32_t card_ms;                   /**< when the card operation was started, ms */
     uint32_t late_id;         /**< the save given up at KST_PROG_CARD_MS;
                                    0 for none                       */
     kst_image_t late_img;     /**< and the image it was asked with */
-    uint8_t files_n;
-    uint16_t files_total;
+    uint8_t files_n;                    /**< files in the list */
+    uint16_t files_total;               /**< files the card holds in all */
     uint16_t files_first;     /**< of the last list                */
     uint16_t card_first;      /**< of the list asked for           */
     uint32_t files_seq;       /**< counts the lists that arrived   */
-    char files[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];
+    char files[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];  /**< the listed files' names */
 
     bool soft;
     kst_image_t soft_img;
@@ -652,7 +654,7 @@ typedef struct {
                                    write that waits: its answer is not
                                    that write's                     */
     bool file_retry;          /**< the card owes the file          */
-    uint32_t file_retry_ms;
+    uint32_t file_retry_ms;             /**< when the card last owed the file, ms */
     uint8_t file_next;        /**< what the write wanted is for    */
     uint8_t file_for;         /**< what the write on its way is for */
 

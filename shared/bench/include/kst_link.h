@@ -206,21 +206,22 @@ typedef struct {
     link_kst_op_t op;          /**< the last operation the port started   */
     uint16_t frames;           /**< frames it has sent, to 4095           */
     bool     have_image;       /**< kst_link_image() has one              */
-    bool     have_backup;
+    bool     have_backup;               /**< kst_link_backup() has one */
     bool     have_results;     /**< the fields below were read            */
     uint16_t fp_rules;         /**< bit n: fingerprint rule n is broken   */
     uint32_t fp_regs;          /**< bit n: register n deviates from it    */
     uint16_t half_min_ns;      /**< the servo's half-cell, 0 none measured */
-    uint16_t half_max_ns;
+    uint16_t half_max_ns;               /**< the servo's longest half-cell, ns; 0 none measured */
     uint16_t delay_min_us;     /**< reply delay, 0 none measured          */
-    uint16_t delay_max_us;
+    uint16_t delay_max_us;              /**< reply delay, longest, µs; 0 none measured */
 } kst_link_readout_t;
 
 /** @brief One exchange for the caller to make. */
 typedef struct {
     bool     write;            /**< a write of regs; otherwise a read     */
     uint8_t  page;             /**< link_page_id_t                        */
-    uint8_t  off, n;
+    uint8_t  off;              /**< first register of the page             */
+    uint8_t  n;                /**< registers                              */
     uint16_t regs[4];          /**< a write's registers                   */
 } kst_link_xfer_t;
 

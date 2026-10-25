@@ -115,15 +115,15 @@ typedef struct {
     uint8_t  rate;                 /**< a prog_link_rate_t not yet asked   */
     bool     known;                /**< regs holds a read of it            */
     bool     read_once;            /**< read_ms is a time                  */
-    uint32_t read_ms;
+    uint32_t read_ms;                   /**< when the page was last read, ms */
     uint16_t regs[LINK_PG_REGS];
     uint8_t  want_target;          /**< 0, or 1 + n for port n             */
-    bool     want_pwm;
+    bool     want_pwm;                  /**< whether the wanted target is a PWM port */
     bool     held;                 /**< the programmer has a port          */
     bool     func;                 /**< from 4.26: FUNC and 28 registers  */
     bool     dshot;                /**< from 4.28: FUNC takes DShot       */
     uint8_t  ask_state;            /**< a prog_link_ask_state_t            */
-    uint8_t  ask_port;
+    uint8_t  ask_port;                  /**< port the ask is for */
     uint8_t  ask_kind;             /**< a prog_link_ask_kind_t             */
     uint16_t ask_value;            /**< the register value to write        */
     bool     reread;               /**< an ask was written: nothing more
