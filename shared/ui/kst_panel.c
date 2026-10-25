@@ -520,7 +520,7 @@ int kst_panel_editor(void)
 
 /* --------------------------------------------------------------- the caller */
 
-/* Not part of k: a start of the screens leaves it. */
+/** @brief Not part of k: a start of the screens leaves it. */
 static kst_prog_gate_t *s_gate;
 
 void kst_panel_gate(kst_prog_gate_t *g)
@@ -529,9 +529,11 @@ void kst_panel_gate(kst_prog_gate_t *g)
     kst_prog_gate_set(&k.prog, g);
 }
 
-/* The settings that reach the port: what the tester drives and whether the
- * port renders its pulse.  Held while nothing but the programmer reaches
- * the port. */
+/**
+ * @brief The settings that reach the port: what the tester drives and whether the
+ *        port renders its pulse.  Held while nothing but the programmer reaches
+ *        the port.
+ */
 static bool holds_setting(setting_id_t id)
 {
     return (id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM)
@@ -550,10 +552,12 @@ void kst_panel_init(gfx_rect_t area)
     k.tk.pressed = -1;
 }
 
-/* The options are read where the settings are there: at a screen entry and
- * at an opening, never at kst_panel_init(), which runs before the settings
- * are loaded.  A session keeps the values it began with, except one found
- * running by a panel that has read none yet. */
+/**
+ * @brief The options are read where the settings are there: at a screen entry and
+ *        at an opening, never at kst_panel_init(), which runs before the settings
+ *        are loaded.  A session keeps the values it began with, except one found
+ *        running by a panel that has read none yet.
+ */
 static void options_fresh(void)
 {
     if (!k.loaded || !kst_panel_holds_port()) {
@@ -604,7 +608,7 @@ uint32_t kst_panel_hold_revision(void)
     return k.hold_rev;
 }
 
-/* Everything of the model a render shows, as one number. */
+/** @brief Everything of the model a render shows, as one number. */
 static uint32_t signature(void)
 {
     const kst_prog_t *p = &k.prog;
@@ -637,6 +641,11 @@ static uint32_t signature(void)
     return h;
 }
 
+/**
+ * @brief Follows the model's state after a feed or an operation: closes
+ *        editors that asked for the state they were opened in and counts the
+ *        revision when the picture changes.
+ */
 static void model_moved(void)
 {
     const kst_prog_state_t st = kst_prog_state(&k.prog);

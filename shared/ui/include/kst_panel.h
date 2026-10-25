@@ -60,7 +60,15 @@ void kst_panel_init(gfx_rect_t area);
 /** The SERVO screen was entered: ENABLE WRITE TO SERVO goes off. */
 void kst_panel_screen_entry(void);
 
+/**
+ * @brief Opens the overlay and reads the programmer's options from the
+ *        settings.
+ */
 void kst_panel_open(void);
+/**
+ * @brief Returns whether the overlay is open.
+ * @return true when open
+ */
 bool kst_panel_is_open(void);
 
 /**
@@ -114,6 +122,11 @@ uint32_t kst_panel_hold_revision(void);
 
 /* --- the control task's side ------------------------------------------------ */
 
+/**
+ * @brief Gives the model the link task's feed for this frame and updates the
+ *        overlay's revision.
+ * @param f the feed
+ */
 void kst_panel_feed(const kst_prog_feed_t *f);
 /** HV SERVO of the SERVO screen: off, the programming voltage stays at or
  *  below KST_PANEL_STD_MV, and one set above it goes back to
@@ -130,6 +143,11 @@ void kst_panel_bench_armed(bool armed);
  *  with a feed: the caller, which has the card, looks at the slot, mounts
  *  a card put in or swapped and lets one taken out go. */
 bool kst_panel_card_look(void);
+/**
+ * @brief Takes the next command for the link task.
+ * @param out the command
+ * @return true when a command was taken
+ */
 bool kst_panel_take(kst_prog_cmd_t *out);
 /** The gate the task that owns the link module claims each START at
  *  (kst_prog_gate_set()).  Kept over kst_panel_init().  NULL for none. */
@@ -137,9 +155,30 @@ void kst_panel_gate(kst_prog_gate_t *g);
 /** The servo files: a request for the task that has the card, and what it
  *  made of it (kst_card_run()). */
 bool kst_panel_card_take(kst_prog_card_req_t *out);
+/**
+ * @brief Gives the model the outcome of a card operation.
+ * @param done the outcome
+ */
 void kst_panel_card_done(const kst_prog_card_done_t *done);
+/**
+ * @brief Takes the name of the file the card is to hold; the text itself is
+ *        copied into @p out.
+ * @param out buffer written to
+ * @param n size of @p out, bytes
+ * @return the length written
+ */
 size_t kst_panel_file_take(char *out, size_t n);
+/**
+ * @brief Gives the model the result of the file write the card made.
+ * @param ok true when the card wrote the file
+ */
 void kst_panel_file_done(bool ok);
+/**
+ * @brief Loads the text of a servo file the card read into the draft.
+ * @param text the file's text
+ * @param len the length of @p text, bytes
+ * @return true when the model took the file
+ */
 bool kst_panel_file_load(const char *text, size_t len);
 /** The same for the file of a card mounted after the start.  A record the
  *  model holds already stands, before and after the read that follows the
