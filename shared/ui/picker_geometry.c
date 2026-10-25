@@ -256,6 +256,11 @@ bool picker_screen_marker_rect(uint8_t entry, gfx_rect_t *out)
     return true;
 }
 
+/**
+ * @brief Gives the rectangle of one of the screen's tables.
+ * @param area the table
+ * @return its rectangle
+ */
 gfx_rect_t picker_screen_area(picker_area_t area)
 {
     switch (area) {
@@ -289,8 +294,12 @@ gfx_rect_t pk_pop_rect(void)
                          (int)OUTBIND_PROTOS * POP_ROW + 8);
 }
 
-/* Row @p proto: a protocol in the first column, PROG PORT entry
- * proto - OUTBIND_PROTOS in the second, from the same top. */
+/**
+ * @brief Row @p proto: a protocol in the first column, PROG PORT entry
+ *        proto - OUTBIND_PROTOS in the second, from the same top.
+ * @param proto the protocol index, or OUTBIND_PROTOS + n for PROG PORT entry n
+ * @return the row's rectangle
+ */
 gfx_rect_t picker_screen_list_row(uint8_t proto)
 {
     const int col = (proto < OUTBIND_PROTOS) ? 0 : 1;
@@ -300,4 +309,8 @@ gfx_rect_t picker_screen_list_row(uint8_t proto)
                          HEAD_Y + 4 + row * POP_ROW, POP_W - 8, POP_ROW);
 }
 
+/**
+ * @brief Returns whether the protocol list is open.
+ * @return true when open
+ */
 bool picker_screen_list_open(void) { return s.open; }

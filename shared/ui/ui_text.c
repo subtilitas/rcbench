@@ -22,12 +22,14 @@
 
 /** @brief The screens' strings in English, by TX_ ID. */
 static const char *const k_en[TX_COUNT] = {
+/** @brief One English entry per TX_ identifier. */
 #define UI_TEXT(id, cells, en, de) [TX_##id] = (en),
 #include "ui_text.def"
 };
 
 /** @brief The cells each string's field has, 0 where --fit measures it. */
 static const unsigned char k_cells[TX_COUNT] = {
+/** @brief One width in cells per TX_ identifier. */
 #define UI_TEXT(id, cells, en, de) [TX_##id] = (unsigned char)(cells),
 #include "ui_text.def"
 };
@@ -56,31 +58,37 @@ static const char *const k_names[TX_COUNT] = {
 /** @brief The screens' strings in German, by TX_ ID; NULL shows the
  *  English. */
 static const char *const k_de_text[TX_COUNT] = {
+/** @brief One German entry per TX_ identifier. */
 #define UI_TEXT(id, cells, en, de) [TX_##id] = DE(en, de),
 #include "ui_text.def"
 };
 
 /** @brief The settings' labels in German, by setting ID. */
 static const char *const k_de_label[SETTING_COUNT] = {
+/** @brief One German setting label. */
 #define UI_SETTING_LABEL(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };
 
 /** @brief The settings' help lines in German, by setting ID. */
 static const char *const k_de_help[SETTING_COUNT] = {
+/** @brief One German setting help line. */
 #define UI_SETTING_HELP(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };
 
 /** @brief The settings categories' names in German. */
 static const char *const k_de_category[SET_CAT_COUNT] = {
+/** @brief One German category name. */
 #define UI_SETTING_CATEGORY(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };
 
 /** @brief One array k_de_opts_<name> per option list, in German. */
 #define UI_OPTIONS(name) static const char *const k_de_opts_##name[] = {
+/** @brief One German option. */
 #define UI_OPTION(en, de) DE(en, de),
+/** @brief Ends a German option list. */
 #define UI_OPTIONS_END(name) };
 #include "ui_text.def"
 
@@ -93,6 +101,7 @@ static const char *const *const k_de_options[] = {
 
 /** @brief The servo test's words in German, by SERVO_STR_ ID. */
 static const char *const k_de_servo[SERVO_STR_COUNT] = {
+/** @brief One German servo test text. */
 #define UI_SERVO_TEXT(id, en, de) [id] = DE(en, de),
 #include "ui_text.def"
 };

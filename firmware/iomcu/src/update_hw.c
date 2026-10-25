@@ -40,6 +40,7 @@ static link_update_dev_t s_upd;
 static link_update_io_t  s_io;
 static bool            (*s_busy)(void);
 static uint32_t          s_target_off;   /* the slot written, from flash 0 */
+/** @brief Offset of the running image's slot from the start of flash */
 static uint32_t          s_running_off;
 static int               s_slot = -1;
 

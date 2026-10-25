@@ -25,7 +25,9 @@
 
 #include "picker_screen_int.h"
 
-/* The board itself: the IOmcu's drawing, or its outline and pads. */
+/**
+ * @brief The board itself: the IOmcu's drawing, or its outline and pads.
+ */
 static void draw_board(gfx_canvas_t *c)
 {
     int bx, by, bw, bh;
@@ -60,7 +62,7 @@ static void draw_board(gfx_canvas_t *c)
 
 /* --------------------------------------------------------------- drawing */
 
-/* A cross with a dark halo, on a pad that has no button. */
+/** @brief A cross with a dark halo, on a pad that has no button. */
 static void cross(gfx_canvas_t *c, int x, int y, gfx_color_t col, int r,
                   int w)
 {
@@ -74,14 +76,20 @@ static void cross(gfx_canvas_t *c, int x, int y, gfx_color_t col, int r,
     }
 }
 
+/**
+ * @brief Draws a vertical trace from @p y0 to @p y1 at column @p x with a dark
+ *        halo.
+ */
 static void trace(gfx_canvas_t *c, int x, int y0, int y1, gfx_color_t col)
 {
     for (int o = -3; o <= 3; ++o) { gfx_line(c, x + o, y0, x + o, y1, HALO); }
     for (int o = -1; o <= 1; ++o) { gfx_line(c, x + o, y0, x + o, y1, col); }
 }
 
-/* A disc with a dark ring, as a rounded square so the fit check sees the
- * shape the label sits on. */
+/**
+ * @brief A disc with a dark ring, as a rounded square so the fit check sees the
+ *        shape the label sits on.
+ */
 static void disc(gfx_canvas_t *c, int x, int y, int r, gfx_color_t col)
 {
     gfx_fill_round_rect(c, x - r - RING, y - r - RING, 2 * (r + RING),
@@ -89,9 +97,9 @@ static void disc(gfx_canvas_t *c, int x, int y, int r, gfx_color_t col)
     gfx_fill_round_rect(c, x - r, y - r, 2 * r, 2 * r, r, col);
 }
 
-/*
- * The grounds and the rails, marked inside the board on a short trace; RUN
- * and the enable crossed dim on the pad.
+/**
+ * @brief The grounds and the rails, marked inside the board on a short trace; RUN
+ *        and the enable crossed dim on the pad.
  *
  * A servo lead has three wires and the buttons describe one of them. These
  * are the other two, and they go inside the outline because that is the only
@@ -150,6 +158,7 @@ static void draw_pads_that_are_not_pins(gfx_canvas_t *c)
     }
 }
 
+/** @brief Draws the pin buttons of both tiers, the picked ones lit. */
 static void draw_buttons(gfx_canvas_t *c)
 {
     const uint16_t board = s.bind.board;
@@ -217,7 +226,9 @@ static void draw_buttons(gfx_canvas_t *c)
     }
 }
 
-/* Above the PINS table: the protocol list's face, the count, the reason. */
+/**
+ * @brief Above the PINS table: the protocol list's face, the count, the reason.
+ */
 static void draw_head(gfx_canvas_t *c)
 {
     char buf[96];
@@ -237,8 +248,10 @@ static void draw_head(gfx_canvas_t *c)
     }
 }
 
-/* The left column: what this protocol holds, in channel order, with the
- * pad number printed on the board beside each. */
+/**
+ * @brief The left column: what this protocol holds, in channel order, with the
+ *        pad number printed on the board beside each.
+ */
 static void draw_mine(gfx_canvas_t *c)
 {
     /* OFF holds no pin, so a table of its pins says nothing, as the count
@@ -280,7 +293,7 @@ static void draw_mine(gfx_canvas_t *c)
     }
 }
 
-/* A line of the IN USE table, its box not yet placed. */
+/** @brief A line of the IN USE table, its box not yet placed. */
 static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
                        uint8_t proto, uint8_t gpio, int8_t channel)
 {
@@ -294,13 +307,13 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
     return (uint8_t)(n + 1u);
 }
 
-/*
- * The IN USE table: the programming port's pin first, because a pin the port
- * drives is the one a lead must not go on without knowing; then what SETUP
- * > INTERFACES holds, for the same reason; then the pins other protocols
- * hold, groups in the order their first pin falls, so the channels count
- * down the page rather than jumping about with the protocol numbering.
- * Returns the number of lines.
+/**
+ * @brief The IN USE table: the programming port's pin first, because a pin the port
+ *        drives is the one a lead must not go on without knowing; then what SETUP
+ *        > INTERFACES holds, for the same reason; then the pins other protocols
+ *        hold, groups in the order their first pin falls, so the channels count
+ *        down the page rather than jumping about with the protocol numbering.
+ *        Returns the number of lines.
  */
 static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
 {
@@ -406,8 +419,10 @@ bool picker_screen_in_use(uint8_t k, picker_use_t *out)
     return true;
 }
 
-/* The right column: the programming port's pin, then pins another protocol
- * holds, and which one. */
+/**
+ * @brief The right column: the programming port's pin, then pins another protocol
+ *        holds, and which one.
+ */
 static void draw_theirs(gfx_canvas_t *c)
 {
     const int tx = USE_X;
@@ -469,6 +484,7 @@ static void draw_theirs(gfx_canvas_t *c)
     }
 }
 
+/** @brief Draws the open protocol list with its PROG PORT entries. */
 static void draw_list(gfx_canvas_t *c)
 {
     ui_choice_list(c, pk_pop_rect());

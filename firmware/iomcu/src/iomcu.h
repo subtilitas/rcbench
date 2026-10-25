@@ -92,7 +92,7 @@ extern servo_page_t s_servo;
 extern supply_page_t s_supply;
 extern pdmini_t      s_pd;
 extern bool          s_pd_open;      /* the UART claimed for its pins */
-extern uint8_t       s_pd_rate;      /* the rate it runs at, 0..6     */
+extern uint8_t       s_pd_rate;         /**< the rate it runs at, 0..6 */
 /**
  * @brief Wiring taken and not yet in flash: no ON until it is, so a restart
  * in the run finds the wiring that drives the module and can switch it off.

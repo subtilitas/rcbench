@@ -24,7 +24,7 @@
 
 /* ---------------------------------------------------------------- the texts */
 
-/* A message's first line and, where it has one, its second. */
+/** @brief A message's first line and, where it has one, its second. */
 static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_NONE]            = { -1, -1 },
     [KST_PROG_MSG_READ]            = { TX_KP_M_READ, -1 },
@@ -92,8 +92,10 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_SUPPLY_CAPS]     = { TX_KP_M_SUPPLY_CAPS,
                                        TX_KP_M_SUPPLY_CAPS_2 },
 };
+/** @brief The number of rows in k_fixed. */
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
+/** @brief Text of each kst_link_start_t result. */
 static const int16_t k_start[] = {
     [KST_LINK_START_OK]        = TX_KP_ST_OK,
     [KST_LINK_START_DOWN]      = TX_KP_ST_DOWN,
@@ -104,8 +106,10 @@ static const int16_t k_start[] = {
     [KST_LINK_START_NO_IMAGE]  = TX_KP_M_NEED_READ,
     [KST_LINK_START_NO_OP]     = TX_KP_ST_NO_OP,
 };
+/** @brief The number of rows in k_start. */
 #define START_COUNT ((unsigned)(sizeof(k_start) / sizeof(k_start[0])))
 
+/** @brief Text of each kst_link_outcome_t. */
 static const int16_t k_out[] = {
     [KST_LINK_OUT_NONE]      = TX_KP_O_NONE,
     [KST_LINK_OUT_DONE]      = TX_KP_O_DONE,
@@ -115,8 +119,10 @@ static const int16_t k_out[] = {
     [KST_LINK_OUT_RESTARTED] = TX_KP_O_RESTARTED,
     [KST_LINK_OUT_DROPPED]   = TX_KP_O_DROPPED,
 };
+/** @brief The number of rows in k_out. */
 #define OUT_COUNT ((unsigned)(sizeof(k_out) / sizeof(k_out[0])))
 
+/** @brief Text of each LINK_KST_REF_* refusal. */
 static const int16_t k_ref[] = {
     [LINK_KST_REF_NONE]            = TX_KP_O_DONE,
     [LINK_KST_REF_BUSY]            = TX_KP_R_BUSY,
@@ -139,8 +145,10 @@ static const int16_t k_ref[] = {
     [LINK_KST_REF_LOCKED]          = TX_KP_R_LOCKED,
     [LINK_KST_REF_SUPPLY_LOW]      = TX_KP_R_SUPPLY_LOW,
 };
+/** @brief The number of rows in k_ref. */
 #define REF_COUNT ((unsigned)(sizeof(k_ref) / sizeof(k_ref[0])))
 
+/** @brief Text of each KST_SES_* session result. */
 static const int16_t k_ses[] = {
     [KST_SES_OK]               = TX_KP_O_DONE,
     [KST_SES_BUSY]             = TX_KP_ST_BUSY,
@@ -167,6 +175,7 @@ static const int16_t k_ses[] = {
     [LINK_KST_RESULT_NO_PATH]  = TX_KP_R_PLAN_NO_PATH,
     [LINK_KST_RESULT_TOO_COMPLEX] = TX_KP_S_TOO_COMPLEX,
 };
+/** @brief The number of rows in k_ses. */
 #define SES_COUNT ((unsigned)(sizeof(k_ses) / sizeof(k_ses[0])))
 
 const int16_t kpn_rule[KST_RULE_COUNT] = {
@@ -229,7 +238,7 @@ const char *kst_panel_rule_text(unsigned rule)
                ? ui_tr((ui_text_id_t)kpn_rule[rule]) : TR(KP_M_OUTSIDE);
 }
 
-/* A session result that leaves a servo nobody should use. */
+/** @brief A session result that leaves a servo nobody should use. */
 static bool do_not_use(unsigned id)
 {
     return id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_TORN
@@ -291,6 +300,10 @@ void kpn_kind_line(char *out, int text)
     }
 }
 
+/**
+ * @brief Writes the line that says how many values stay as they are after a
+ *        file load.
+ */
 static void file_stay_line(char *out, unsigned n)
 {
     if (n == 1u) {

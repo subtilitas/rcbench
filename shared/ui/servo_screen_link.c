@@ -28,8 +28,8 @@
  * (W, H, PAD), which no header included after it may meet. */
 #include "servo_screen_core_int.h"
 
-/*
- * What an edge of the value's state does, in one place.
+/**
+ * @brief What an edge of the value's state does, in one place.
  *
  * Into LIVE: the value is the rest.
  *
@@ -39,6 +39,8 @@
  * say again -- and a motion command not yet taken is not sent.  The value
  * shown stays where it was last driven: the release a run ends with moves
  * none, because the value is no longer live (release()).
+ * @param edge the edge of the value's state
+ * @param why why a run ended, when one does
  */
 void value_edge(ui_value_edge_t edge, servo_test_abort_t why)
 {
@@ -359,13 +361,19 @@ rail_t svs_rail_now(void)
     return r;
 }
 
+/**
+ * @brief Returns the CURRENT row's key: twice the current in hundredths of an
+ *        amp plus 1 when clipped, CUR_KEY_NONE for none.
+ */
 static int32_t cur_key_of(const rail_t *r)
 {
     return r->i_ok ? r->q_a * 2 + (r->clipped ? 1 : 0) : CUR_KEY_NONE;
 }
 
-/* The CURRENT row after its meter or the meter's reading changed: redrawn
- * only when what it shows did, hundredths of an amp and the colour. */
+/**
+ * @brief The CURRENT row after its meter or the meter's reading changed: redrawn
+ *        only when what it shows did, hundredths of an amp and the colour.
+ */
 static void cur_follow(void)
 {
     const rail_t r = svs_rail_now();
@@ -376,8 +384,10 @@ static void cur_follow(void)
     }
 }
 
-/* One point of the plot from the meter's reading: a quantity that did not
- * arrive is a gap, not a zero. */
+/**
+ * @brief One point of the plot from the meter's reading: a quantity that did not
+ *        arrive is a gap, not a zero.
+ */
 static void rail_plot(void)
 {
     const rail_t r = svs_rail_now();
@@ -391,6 +401,11 @@ static void rail_plot(void)
     ++s.power_rev;
 }
 
+/**
+ * @brief Gives the servo test the supply's reading.
+ * @param st the supply's state
+ * @return the reading
+ */
 servo_test_reading_t test_reading_of(const supply_state_t *st)
 {
     servo_test_reading_t r;
@@ -412,8 +427,10 @@ servo_test_reading_t test_reading_of(const supply_state_t *st)
     return r;
 }
 
-/* One sample of the supply.  @p in_force: it was taken under the meter in
- * force, and not under one replaced since. */
+/**
+ * @brief One sample of the supply.  @p in_force: it was taken under the meter in
+ *        force, and not under one replaced since.
+ */
 static void supply_sample(const supply_state_t *st, bool in_force)
 {
     s.sup = *st;
@@ -451,11 +468,11 @@ static void supply_sample(const supply_state_t *st, bool in_force)
     cur_follow();
 }
 
-/*
- * The meter @p id as decided at change count @p changes, unless the meter in
- * force was decided at a later one: the snapshot, the windows and the
- * supply's samples reach the render task on three paths, and each can be
- * the oldest.  Returns whether it is the meter in force.
+/**
+ * @brief The meter @p id as decided at change count @p changes, unless the meter in
+ *        force was decided at a later one: the snapshot, the windows and the
+ *        supply's samples reach the render task on three paths, and each can be
+ *        the oldest.  Returns whether it is the meter in force.
  */
 static bool source_take(servo_source_id_t id, uint32_t changes)
 {
@@ -573,6 +590,12 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
 
 int servo_screen_power_points(void) { return s.power.filled; }
 
+/**
+ * @brief Returns a sample of the power plot.
+ * @param series the series
+ * @param back samples back from the newest
+ * @return the value
+ */
 float servo_screen_power_sample(int series, int back)
 {
     return ui_plot_sample(&s.power, series, back);
@@ -623,6 +646,10 @@ uint16_t servo_screen_drawn(void) { return svs_deg_to_us(s.shown_deg); }
 
 uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
+/**
+ * @brief Returns the name of the servo type in force.
+ * @return the name
+ */
 const char *servo_screen_type_name(void) { return type()->name; }
 
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz)

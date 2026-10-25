@@ -1039,7 +1039,7 @@ enum {
 #define LINK_SM_WATCH_NONE    0x00u
 #define LINK_SM_WATCH_OUT(n)  (0x01u + (unsigned)(n))   /**< output channel n, 0..7 */
 #define LINK_SM_WATCH_PORT(n) (0x10u + (unsigned)(n))   /**< programming port n, 0..3 */
-#define LINK_SM_WATCH_SUPPLY  0x20u
+#define LINK_SM_WATCH_SUPPLY  0x20u     /**< WATCH value: the supply */
 /** @brief FLAGS' bits. */
 #define LINK_SM_ONLINE(a)    (1u << (unsigned)(a))
 #define LINK_SM_ID_WRONG(a)  (1u << (4u + (unsigned)(a)))
@@ -1969,7 +1969,9 @@ enum {
  */
 #define LINK_KST_LEAVE_MS_DEFAULT 100u
 
-/** @brief The CRC of @p n page registers, low byte first, seeded 0xFFFF. */
+/**
+ * @brief The CRC of @p n page registers, low byte first, seeded 0xFFFF.
+ */
 static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
 {
     uint16_t crc = 0xFFFFu;
@@ -2514,6 +2516,7 @@ enum {
 #define LINK_ARM_ALL       0x0001u /**< every role                          */
 #define LINK_ARM_THROTTLE  0x0002u /**< outputs bound as a motor            */
 #define LINK_ARM_SURFACE   0x0004u /**< outputs bound as a servo, and ports */
+/** @brief Both roles an ARM can name: throttle and surface outputs. */
 #define LINK_ARM_ROLES     (LINK_ARM_THROTTLE | LINK_ARM_SURFACE)
 
 /** @brief Throttle is hundredths of a percent: 0..10000 inclusive. */

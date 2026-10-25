@@ -29,16 +29,18 @@
 
 #include "motor_live_int.h"
 
-/* Voltage's interesting extreme is the minimum -- what the pack does under
- * load is how far down it goes -- and every other channel's is the maximum. */
+/**
+ * @brief Voltage's interesting extreme is the minimum -- what the pack does under
+ *        load is how far down it goes -- and every other channel's is the maximum.
+ */
 static const ui_text_id_t k_extreme[S_COUNT] = { TX_HERO_MIN, TX_HERO_PEAK,
                                                  TX_HERO_PEAK, TX_HERO_PEAK };
 /* ----------------------------------------------------------------- drawing */
 
-/*
- * Green while it will arm, red by the time the fade completes, and white for
- * the flash as the arm takes effect.  With nothing held and nothing flashing
- * this is the plain OK or WARN the button has always carried.
+/**
+ * @brief Green while it will arm, red by the time the fade completes, and white for
+ *        the flash as the arm takes effect.  With nothing held and nothing flashing
+ *        this is the plain OK or WARN the button has always carried.
  */
 static gfx_color_t arm_fill(void)
 {
@@ -149,9 +151,9 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
                 GFX_ALIGN_RIGHT);
 }
 
-/*
- * The rated kV, what the motor is actually turning per volt, and what the
- * ratio of the two says about the drivetrain.
+/**
+ * @brief The rated kV, what the motor is actually turning per volt, and what the
+ *        ratio of the two says about the drivetrain.
  *
  * The arithmetic is sound and the number is still an estimate, which is why
  * it is labelled EFF rather than efficiency.  Terminal voltage splits into
@@ -243,12 +245,12 @@ static void draw_derived(gfx_canvas_t *c)
 _Static_assert(ESC_ROW_Y(1) + 20 <= UP_Y + UP_H - INNER,
                "the ESC's second row ends inside the telemetry card");
 
-/*
- * What the ESC says beside what the INA228 measures, while the INA228 is
- * BENCH's source: the ESC's own telemetry voltage and current from the
- * SENSE page, and how far each is from the INA228's, the ESC's less the
- * INA228's.  An ESC that reports a current with no sensor behind it shows
- * here as a difference the size of the reading.
+/**
+ * @brief What the ESC says beside what the INA228 measures, while the INA228 is
+ *        BENCH's source: the ESC's own telemetry voltage and current from the
+ *        SENSE page, and how far each is from the INA228's, the ESC's less the
+ *        INA228's.  An ESC that reports a current with no sensor behind it shows
+ *        here as a difference the size of the reading.
  */
 static void draw_esc_says(gfx_canvas_t *c)
 {
@@ -286,6 +288,10 @@ static void draw_esc_says(gfx_canvas_t *c)
     }
 }
 
+/**
+ * @brief Draws the readings table: a row per channel with its present value
+ *        and its extreme.
+ */
 static void draw_table(gfx_canvas_t *c)
 {
     static const ui_text_id_t rows[S_COUNT] = {
@@ -416,7 +422,9 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
                    def->color);
 }
 
-/* The rail: one card per channel, live value over its extreme. */
+/**
+ * @brief The rail: one card per channel, live value over its extreme.
+ */
 static void draw_heroes(gfx_canvas_t *c)
 {
     const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
@@ -439,8 +447,10 @@ static void draw_heroes(gfx_canvas_t *c)
     }
 }
 
-/* What the run has taken out of the pack, on the CONTROL card's title
- * line, right of its tag: STEUERUNG's 9 cells of 8px and the tab's 26. */
+/**
+ * @brief What the run has taken out of the pack, on the CONTROL card's title
+ *        line, right of its tag: STEUERUNG's 9 cells of 8px and the tab's 26.
+ */
 static void draw_totals(gfx_canvas_t *c)
 {
     const gfx_rect_t box = { (int16_t)(RIGHT_X + 110), (int16_t)(CTL_Y + 1),
@@ -476,15 +486,21 @@ static void draw_totals(gfx_canvas_t *c)
  * out the same tab for each and one repaints over another in place.
  */
 enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
+/** @brief Text of each telemetry tag: LIVE, HELD, IDLE. */
 static const ui_text_id_t k_tag[TAG_COUNT] = {
     TX_MO_TAG_LIVE, TX_MO_TAG_HELD, TX_MO_TAG_IDLE,
 };
 
+/** @brief Writes the tag's text, padded to the widest tag. */
 static const char *tag_text(uint8_t tag, char *buf, size_t n)
 {
     return ui_tr_pad(k_tag, TAG_COUNT, tag, buf, n);
 }
 
+/**
+ * @brief Returns the tag of the telemetry heading: LIVE while the plot is not
+ *        shown or runs, HELD or IDLE otherwise.
+ */
 static uint8_t telemetry_tag(void)
 {
     if (s.tabs.selected != MOTOR_PANE_PLOT || s.plot.running) {
@@ -547,9 +563,9 @@ static void draw_throttle(gfx_canvas_t *c, bool ctrl_moved)
                    s.pressed == 4, mo_value_live(), MO_FONT_LABEL);
 }
 
-/*
- * A session on PROGRAM, full width: the output strip in the strip row, on
- * its text, and the session under it, on its revision.
+/**
+ * @brief A session on PROGRAM, full width: the output strip in the strip row, on
+ *        its text, and the session under it, on its revision.
  */
 __attribute__((noinline))
 static void render_session(gfx_canvas_t *c, unsigned bit, int buf,
@@ -607,6 +623,10 @@ void mo_render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/**
+ * @brief Draws the screen's body into the frame buffer @p buf: the strip, the
+ *        page of the task and the rail.
+ */
 __attribute__((noinline))
 static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
 {

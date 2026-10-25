@@ -25,18 +25,18 @@
 
 /* ------------------------------------------------------------------ render */
 
-/*
- * Four states, and the label is the whole of the feedback: nothing to write
- * (SAVED), something to write (SAVE), something asked for and waiting for a
- * moment to write it in (WHEN IDLE), and an attempt the store refused (NOT
- * SAVED).  WHEN IDLE is seen only while the bench is armed or a transfer is
- * running; disarmed, the write is taken on the next frame.  SAVE takes the
- * accent rather than the warning colour: RESET CATEGORY sits beside it and
- * two amber buttons in a row read as one control.  NOT SAVED takes the
- * danger colour, because the values on this screen are not the values the
- * next boot will load and nothing else on the panel says so.  The same
- * button on the tiles and on a list: the values are one set, not one per
- * category.
+/**
+ * @brief Four states, and the label is the whole of the feedback: nothing to write
+ *        (SAVED), something to write (SAVE), something asked for and waiting for a
+ *        moment to write it in (WHEN IDLE), and an attempt the store refused (NOT
+ *        SAVED).  WHEN IDLE is seen only while the bench is armed or a transfer is
+ *        running; disarmed, the write is taken on the next frame.  SAVE takes the
+ *        accent rather than the warning colour: RESET CATEGORY sits beside it and
+ *        two amber buttons in a row read as one control.  NOT SAVED takes the
+ *        danger colour, because the values on this screen are not the values the
+ *        next boot will load and nothing else on the panel says so.  The same
+ *        button on the tiles and on a list: the values are one set, not one per
+ *        category.
  */
 static void draw_save(gfx_canvas_t *c)
 {
@@ -63,6 +63,7 @@ static const ui_tile_look_t k_hub_look = {
     .name_f = STG_F_BODY, .line_f = STG_F_LABEL,
 };
 
+/** @brief Draws the hub: the tiles in a grid, a tile lit while pressed. */
 static void draw_hub(gfx_canvas_t *c)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
@@ -81,12 +82,12 @@ static void draw_hub(gfx_canvas_t *c)
     }
 }
 
-/*
- * A string's row: its name and help on the left, its text on the right in
- * the value's colour, against the row's right edge where a setting's "+"
- * is.  No keys: a tap opens the keyboard, and the row's edge takes the
- * accent while it is pressed.  The text is in the body face, or in the
- * label face where it is wider than the gap left of it.
+/**
+ * @brief A string's row: its name and help on the left, its text on the right in
+ *        the value's colour, against the row's right edge where a setting's "+"
+ *        is.  No keys: a tap opens the keyboard, and the row's edge takes the
+ *        accent while it is pressed.  The text is in the body face, or in the
+ *        label face where it is wider than the gap left of it.
  */
 static void draw_text_row(gfx_canvas_t *c, int index, gfx_rect_t r,
                           setting_text_id_t id)
@@ -247,6 +248,10 @@ static void draw_row(gfx_canvas_t *c, int index)
                    STG_F_BODY);
 }
 
+/**
+ * @brief Draws the list of the open category: a row per setting, clipped to
+ *        the pane.
+ */
 static void draw_list(gfx_canvas_t *c)
 {
     /* The list is clipped rather than masked, so a part-scrolled row is cut
@@ -287,11 +292,11 @@ static void draw_list(gfx_canvas_t *c)
                    s.hit_kind == HIT_RESET, true, STG_F_LABEL);
 }
 
-/*
- * The warning: what differs from the stored values, one line each as
- * "name: saved -> now" with the values as the list shows them, and the
- * three answers.  DISCARD is drawn inert while the bench is ARMED, and a
- * note says why; another says that the last save failed.
+/**
+ * @brief The warning: what differs from the stored values, one line each as
+ *        "name: saved -> now" with the values as the list shows them, and the
+ *        three answers.  DISCARD is drawn inert while the bench is ARMED, and a
+ *        note says why; another says that the last save failed.
  */
 static void draw_warning(gfx_canvas_t *c)
 {

@@ -17,7 +17,9 @@
 #define UI_OPTIONS(name) enum { settings_opts_n_##name = 0
 /* A term of the sum, not an expression of its own. */
 /* NOLINTNEXTLINE(bugprone-macro-parentheses) */
+/** @brief One option of a list, counted. */
 #define UI_OPTION(en, de) + 1
+/** @brief Ends a list: closes the count and declares the array. */
 #define UI_OPTIONS_END(name)                                               \
     };                                                                     \
     extern const char *const settings_opts_##name[settings_opts_n_##name];

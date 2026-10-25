@@ -47,6 +47,7 @@ _Static_assert(PWR_LAB_W + 88 + 88 + 90 == RC_W,
 _Static_assert(PWR_LAB_W_INA + 64 + 84 + 74 == RC_W,
                "an INA3221 channel's line spans the column");
 
+/** @brief Gives the rectangle of the supply row on the rail. */
 static gfx_rect_t sup_row_rect(void)
 {
     return (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H };
@@ -86,8 +87,10 @@ static void at(float deg, int r, int *x, int *y)
     *y = SHAFT_Y - (int)((float)r * sinf(phi) + 0.5f);
 }
 
-/* The case, its tabs and its boss.  Drawn per framebuffer, not per frame:
- * thing on this card that moves is the horn. */
+/**
+ * @brief The case, its tabs and its boss.  Drawn per framebuffer, not per frame:
+ *        thing on this card that moves is the horn.
+ */
 static void draw_body(gfx_canvas_t *c)
 {
     const gfx_color_t shell = ui_theme_color(UI_C_PANEL_HI);
@@ -157,9 +160,9 @@ static void draw_body(gfx_canvas_t *c)
     }
 }
 
-/*
- * Where a ring of radius @p r has to stop so that a constant band of dark
- * card shows between its end and the arm.
+/**
+ * @brief Where a ring of radius @p r has to stop so that a constant band of dark
+ *        card shows between its end and the arm.
  *
  * A fixed angle does not do it: the arm is the same width at every radius,
  * so it subtends less angle further out, and two rings sharing one angular
@@ -250,6 +253,7 @@ static void draw_horn(gfx_canvas_t *c, float deg, gfx_color_t col)
     gfx_fill_circle_aa(c, SHAFT_X, SHAFT_Y, 6, col);
 }
 
+/** @brief Draws the dial: the ring, the scale, the labels and the horn. */
 static void draw_dial(gfx_canvas_t *c)
 {
     const gfx_color_t dim = ui_theme_color(UI_C_TEXT_FAINT);
@@ -398,9 +402,9 @@ static void draw_left(gfx_canvas_t *c)
     }
 }
 
-/*
- * The same fill as MOTOR & ESC's ARM, from the same widget: armed is the
- * danger red the press fades towards, and the flash is the whole button.
+/**
+ * @brief The same fill as MOTOR & ESC's ARM, from the same widget: armed is the
+ *        danger red the press fades towards, and the flash is the whole button.
  */
 static gfx_color_t arm_fill(void)
 {
@@ -425,6 +429,7 @@ static void draw_arm(gfx_canvas_t *c)
                    s.arm_down, !svs_arm_locked(), SV_FONT_LABEL);
 }
 
+/** @brief Gives the rectangle of the power readout on the rail. */
 static gfx_rect_t power_rect(void)
 {
     return (gfx_rect_t){ RC_X, (int16_t)(PWR_TXT_Y - 2), RC_W,
@@ -451,9 +456,11 @@ static void fixed_text(char *out, size_t n, int32_t q, int places,
              (unsigned)(mag % (uint32_t)scale), unit);
 }
 
-/* The servo rail's voltage, current and power, read and plotted, under the
- * name of its meter: the supply, or the INA3221 channel that watches the
- * tester's target, "INA 0x41 CH2", while that is the meter. */
+/**
+ * @brief The servo rail's voltage, current and power, read and plotted, under the
+ *        name of its meter: the supply, or the INA3221 channel that watches the
+ *        tester's target, "INA 0x41 CH2", while that is the meter.
+ */
 static void draw_power(gfx_canvas_t *c)
 {
     const gfx_rect_t r = power_rect();
@@ -576,8 +583,10 @@ static void cur_value(gfx_canvas_t *c)
                         : ui_theme_color(UI_C_TEXT));
 }
 
-/* The same over its own background: the row's repaint between two repaints
- * of the card. */
+/**
+ * @brief The same over its own background: the row's repaint between two repaints
+ *        of the card.
+ */
 static void draw_cur_value(gfx_canvas_t *c)
 {
     const gfx_rect_t r = cur_val_rect();
@@ -627,8 +636,10 @@ static void draw_readings(gfx_canvas_t *c)
     cur_value(c);
 }
 
-/* OUTPUT ON and OFF in SUPPLY's colours: off is the green the hold fades
- * from, on the danger red it fades to. */
+/**
+ * @brief OUTPUT ON and OFF in SUPPLY's colours: off is the green the hold fades
+ *        from, on the danger red it fades to.
+ */
 static gfx_color_t out_fill(void)
 {
     if (s.out_hold.flash_ms > 0) {
@@ -644,7 +655,7 @@ static gfx_color_t out_fill(void)
     return fill;
 }
 
-/* SET, the two set points, and the output switch. */
+/** @brief SET, the two set points, and the output switch. */
 static void draw_sup_row(gfx_canvas_t *c)
 {
     const gfx_rect_t r = sup_row_rect();
@@ -676,6 +687,7 @@ static void draw_sup_row(gfx_canvas_t *c)
                    out_fill(), s.out_down, s.out_on || !held, SV_FONT_LABEL);
 }
 
+/** @brief Gives the rectangle of the telemetry tag on the rail. */
 static gfx_rect_t tag_rect(void)
 {
     return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
@@ -776,7 +788,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     draw_arm(c);
 }
 
-/* Draw @p fn clipped to @p box. */
+/** @brief Draw @p fn clipped to @p box. */
 static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
 {
     gfx_rect_t old_clip = c->clip;
@@ -786,7 +798,9 @@ static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
     c->clip = old_clip;
 }
 
-/* The same for a session, drawn through its own function (PROG_CALLS). */
+/**
+ * @brief The same for a session, drawn through its own function (PROG_CALLS).
+ */
 static void clipped_session(gfx_canvas_t *c, gfx_rect_t box,
                             const prog_page_set_t *ps)
 {

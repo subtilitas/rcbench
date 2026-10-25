@@ -15,16 +15,22 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief Returns whether (@p x, @p y) is inside @p r. */
 static bool in(gfx_rect_t r, int x, int y) { return gfx_rect_contains(r, x, y); }
 
+/**
+ * @var u
+ * @brief PANEL UPDATE's state: the view, the press on the one button, and
+ *        which frame buffers drew it.
+ */
 static struct {
-    update_view_t v;
-    bool          close;
-    bool          cancel;
-    bool          have_press;
-    bool          pressed;
-    uint8_t       press_id;
-    unsigned      drawn_mask;
+    update_view_t v;              /**< the view shown                       */
+    bool          close;          /**< CLOSE was tapped, not yet taken      */
+    bool          cancel;         /**< CANCEL was tapped, not yet taken     */
+    bool          have_press;     /**< whether a contact holds the button   */
+    bool          pressed;        /**< whether the contact is on the button */
+    uint8_t       press_id;       /**< touch id of that contact             */
+    unsigned      drawn_mask;     /**< frame buffers that drew the view     */
 } u;
 
 /*
@@ -59,6 +65,7 @@ static struct {
 
 _Static_assert(56 >= UI_TAP_MIN, "CLOSE and CANCEL are a finger tall");
 
+/** @brief Clears the screen's state. */
 static void u_reset(void)
 {
     memset(&u, 0, sizeof(u));
@@ -90,13 +97,19 @@ bool update_screen_take_cancel(void)
     return was;
 }
 
-/* The one button: CLOSE after a failure, CANCEL while downloading. */
+/**
+ * @brief The one button: CLOSE after a failure, CANCEL while downloading.
+ */
 static bool u_has_button(void)
 {
     return u.v.state == UPDATE_FAILED || u.v.state == UPDATE_FETCH_FAILED
            || u.v.state == UPDATE_FETCHING;
 }
 
+/**
+ * @brief Takes a touch event: a press on the one button, its release and its
+ *        cancel.
+ */
 static void u_event(const touch_event_t *evt)
 {
     if (evt == NULL || !u_has_button()) {
@@ -128,6 +141,7 @@ static void u_event(const touch_event_t *evt)
     }
 }
 
+/** @brief Drops the press when touch events were lost. */
 static void u_cancel(void)
 {
     u.have_press = false;
@@ -233,6 +247,7 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
     u.drawn_mask |= bit;
 }
 
+/** @brief The screen's hooks for the router. */
 static const ui_screen_t k_update = {
     .title  = "PANEL UPDATE",
     .reset  = u_reset,

@@ -424,22 +424,23 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 static bool        s_servo_sweep_page;
 static bool        s_servo_sweeping;
 static bool        s_servo_holding;      /* LINK_SV_HOLD in force there */
-static uint32_t    s_servo_hold_ms;      /* when the far end last took it */
-static atomic_bool s_servo_hold_lost;    /* for the screen: it let go */
-static atomic_uint s_servo_hold_lost_seq; /* of this pause */
+static uint32_t    s_servo_hold_ms;     /**< when the far end last took it */
+static atomic_bool s_servo_hold_lost;   /**< for the screen: it let go */
+static atomic_uint s_servo_hold_lost_seq;  /**< of this pause */
+/** @brief Whether the far end's sweep ability is not known yet */
 static bool        s_servo_sweep_unknown;
-static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
-static uint16_t    s_servo_minor;        /* its protocol minor: 6 resumes */
+static atomic_bool s_servo_sweep_able;  /**< for the screen's SWEEP */
+static uint16_t    s_servo_minor;       /**< the far end's protocol minor */
 /** @brief The curve the far end last took, and when it started one: a curve
  *        that differs from the one running starts over there, and the screen
  *        draws the
  * horn from that moment rather than from its tap. */
 static uint16_t    s_servo_curve[4];
 static uint32_t    s_servo_curve_ms;   /* when the far end last took it */
-static atomic_uint s_sweep_start_ms;
-static atomic_uint s_sweep_start_from;   /* servo_sweep_from_t */
-static atomic_uint s_sweep_frozen_ms;    /* when it froze, for FROZEN */
-static atomic_bool s_sweep_start_new;
+static atomic_uint s_sweep_start_ms;    /**< servo_sweep_from_t */
+static atomic_uint s_sweep_start_from;  /**< when it froze, for FROZEN */
+static atomic_uint s_sweep_frozen_ms;   /**< whether a new start is to be handed to the screen */
+static atomic_bool s_sweep_start_new;   /**< the command the start acknowledges */
 static atomic_uint s_sweep_start_seq;    /* the command it acknowledges */
 /** @brief The far end's phase as acknowledgements time it, and the HOLD that
  * paused a running sweep: which pause, and the phase it kept. */

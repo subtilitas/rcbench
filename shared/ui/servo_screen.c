@@ -444,9 +444,11 @@ void svs_drop_motion(void)
 
 /* ------------------------------------------------------------- the profile */
 
-/*
- * A profile goes into force: a type with its own pulse widths when it is a
- * different type, and a frame rate no faster than its pulses allow.
+/**
+ * @brief A profile goes into force: a type with its own pulse widths when it is a
+ *        different type, and a frame rate no faster than its pulses allow.
+ * @param t the profile's index in k_types
+ * @param hz the frame rate asked for
  */
 void apply_profile(int t, uint16_t hz)
 {
@@ -462,10 +464,12 @@ void apply_profile(int t, uint16_t hz)
     ++s.ctrl_rev;
 }
 
-/*
- * A profile asked for: one that can destroy a servo not made for it opens
- * the warning, and goes into force only once that has been held; any other
- * goes into force at once.
+/**
+ * @brief A profile asked for: one that can destroy a servo not made for it opens
+ *        the warning, and goes into force only once that has been held; any other
+ *        goes into force at once.
+ * @param t the profile's index in k_types
+ * @param hz the frame rate asked for
  */
 void ask_profile(int t, uint16_t hz)
 {

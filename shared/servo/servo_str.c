@@ -21,6 +21,7 @@
 
 /** @brief The servo test's words in English, from ui_text.def. */
 static const char *const k_str[SERVO_STR_COUNT] = {
+/** @brief One entry of the servo test's English strings, from ui_text.def. */
 #define UI_SERVO_TEXT(id, en, de) [id] = (en),
 #include "ui_text.def"
 };
@@ -30,6 +31,7 @@ enum {
     k_str_entries = 0
 /* A term of the sum, not an expression of its own. */
 /* NOLINTNEXTLINE(bugprone-macro-parentheses) */
+/** @brief One term of the count of UI_SERVO_TEXT entries. */
 #define UI_SERVO_TEXT(id, en, de) + 1
 #include "ui_text.def"
 };

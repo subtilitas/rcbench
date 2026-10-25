@@ -25,18 +25,22 @@ _Static_assert(settings_opts_n_old_addr == 4 && settings_opts_n_old_ch == 2,
 
 /** @brief settings_opts_<name>: each option list's English. */
 #define UI_OPTIONS(name) const char *const settings_opts_##name[] = {
+/** @brief One option of a list in English. */
 #define UI_OPTION(en, de) (en),
+/** @brief Ends an option list in English. */
 #define UI_OPTIONS_END(name) };
 #include "ui_text.def"
 
 /** @brief The settings' labels in English, by setting. */
 static const char *const k_labels[SETTING_COUNT] = {
+/** @brief One setting label in English. */
 #define UI_SETTING_LABEL(id, en, de) [id] = (en),
 #include "ui_text.def"
 };
 
 /** @brief The settings' help lines in English, by setting. */
 static const char *const k_helps[SETTING_COUNT] = {
+/** @brief One setting help line in English. */
 #define UI_SETTING_HELP(id, en, de) [id] = (en),
 #include "ui_text.def"
 };

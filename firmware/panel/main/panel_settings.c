@@ -54,9 +54,9 @@ void publish_poles(void)
     atomic_store(&s_poles_owed, true);
 }
 
-/*
- * The throttle's pulse endpoints, Idle pulse and Full pulse, on their way to
- * the IOmcu.
+/**
+ * @brief The throttle's pulse endpoints, Idle pulse and Full pulse, on their way to
+ *        the IOmcu.
  *
  * Published the way the pole count is, and for the same reason: the settings
  * screen writes the model from app_main and the control task owns the link,
@@ -83,8 +83,10 @@ void publish_endpoints(void)
                       (uint16_t)settings_get_int(SET_OUT_MAX_US), now_ms());
 }
 
-/* The PD mini's wiring, as the settings screen left it; see
- * s_pdmini_wiring. */
+/**
+ * @brief The PD mini's wiring, as the settings screen left it; see
+ *        s_pdmini_wiring.
+ */
 void publish_pdmini(void)
 {
     const int tx = settings_get_int(SET_PDMINI_TX);
@@ -100,15 +102,15 @@ void publish_pdmini(void)
     atomic_store(&s_pdmini_wiring, word);
 }
 
-/*
- * The phase tap's set-up, as SETUP INTERFACES left it, for the control
- * task's TONE writes (tone_link.h).  Seven values do not fit an atomic
- * word, so the copy is taken under a spinlock both ways, as the current
- * monitors' is.  Written by the settings observer on app_main, read once a
- * poll by the control task.
+/**
+ * @brief The phase tap's set-up, as SETUP INTERFACES left it, for the control
+ *        task's TONE writes (tone_link.h).  Seven values do not fit an atomic
+ *        word, so the copy is taken under a spinlock both ways, as the current
+ *        monitors' is.  Written by the settings observer on app_main, read once a
+ *        poll by the control task.
  */
 static portMUX_TYPE  s_tone_mux = portMUX_INITIALIZER_UNLOCKED;
-static tone_setup_t  s_tone_want;
+static tone_setup_t  s_tone_want;       /**< the phase tap's set-up, guarded by s_tone_mux */
 
 void publish_tone(void)
 {
@@ -126,6 +128,11 @@ void publish_tone(void)
     taskEXIT_CRITICAL(&s_tone_mux);
 }
 
+/**
+ * @brief Returns the phase tap's set-up as SETUP INTERFACES left it, copied
+ *        under the spinlock.
+ * @return the set-up
+ */
 tone_setup_t tone_wanted(void)
 {
     taskENTER_CRITICAL(&s_tone_mux);
@@ -166,8 +173,10 @@ void publish_log_folder(setting_text_id_t id)
     }
 }
 
-/* Hitec D receive to the control task (s_hitec_rx_want), at the load and
- * at every edit, so the first write after a link-up is the kept mode. */
+/**
+ * @brief Hitec D receive to the control task (s_hitec_rx_want), at the load and
+ *        at every edit, so the first write after a link-up is the kept mode.
+ */
 void publish_hitec_rx(void)
 {
     atomic_store(&s_hitec_rx_want, (unsigned)settings_get_int(SET_HITEC_RX));

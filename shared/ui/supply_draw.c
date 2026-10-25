@@ -32,6 +32,10 @@
 
 /* ----------------------------------------------------------------- drawing */
 
+/**
+ * @brief Returns the OUTPUT button's fill: the OK green when off, the danger
+ *        red when on.
+ */
 static gfx_color_t out_fill(void)
 {
     /* Off is the OK green the hold fades from; on is the danger red, so the
@@ -59,6 +63,10 @@ static void draw_out_button(gfx_canvas_t *c)
                    SU_FONT_LABEL);
 }
 
+/**
+ * @brief Returns the mode's name: CV, CC, the tripped or off word, or "--"
+ *        when the supply does not answer.
+ */
 static const char *mode_text(void)
 {
     if (!s.sup.online) {
@@ -75,6 +83,10 @@ static const char *mode_text(void)
     }
 }
 
+/**
+ * @brief Returns the mode's explanation line: a held port, a trip, CC or CV;
+ *        "" when there is none.
+ */
 static const char *mode_line(void)
 {
     if (!s.sup.online) {
@@ -141,6 +153,7 @@ static void draw_header(gfx_canvas_t *c)
                 GFX_ALIGN_RIGHT);
 }
 
+/** @brief Draws the task strip, LIVE | SETTINGS, on the background. */
 static void draw_strip(gfx_canvas_t *c)
 {
     const gfx_rect_t a = sup_strip_area();
@@ -230,13 +243,19 @@ static void draw_card(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              color);
 }
 
-/* The set points as the supply reports holding them, or as this screen holds
- * them while it does not answer. */
+/**
+ * @brief The set points as the supply reports holding them, or as this screen holds
+ *        them while it does not answer.
+ */
 static float shown_set_v(void)
 {
     return s.sup.online ? s.sup.set_v : s.cv;
 }
 
+/**
+ * @brief Returns the current limit as the supply reports it, or as this screen
+ *        holds it while the supply does not answer.
+ */
 static float shown_set_i(void)
 {
     return s.sup.online ? s.sup.set_i : s.ci;
@@ -433,10 +452,10 @@ static void draw_steps(gfx_canvas_t *c)
                    SU_FONT_LABEL);
 }
 
-/*
- * Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
- * moment, 2 refused, 3 changed on SETUP and not asked to be saved -- which
- * nothing writes until SAVE there, or a change here, asks for it.
+/**
+ * @brief Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
+ *        moment, 2 refused, 3 changed on SETUP and not asked to be saved -- which
+ *        nothing writes until SAVE there, or a change here, asks for it.
  */
 static uint8_t save_state(void)
 {
@@ -449,6 +468,7 @@ static uint8_t save_state(void)
     return settings_dirty() ? 3u : 0u;
 }
 
+/** @brief Writes the value of SETTINGS' row @p i with its unit. */
 static void row_value_text(int i, char *buf, size_t n)
 {
     const setting_def_t *d = settings_def(k_rows[i].id);
@@ -582,12 +602,15 @@ static void draw_confirm(gfx_canvas_t *c)
 }
 
 enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
+/** @brief Text of each output tag: LIVE, HELD, IDLE. */
 static const ui_text_id_t k_tag[TAG_COUNT] = {
     TX_SUP_TAG_LIVE, TX_SUP_TAG_HELD, TX_SUP_TAG_IDLE,
 };
 
-/* The heading says what the output is doing, on either pane: a held run is
- * the plot's to show, so TABLE says IDLE where PLOT says HELD. */
+/**
+ * @brief The heading says what the output is doing, on either pane: a held run is
+ *        the plot's to show, so TABLE says IDLE where PLOT says HELD.
+ */
 static uint8_t output_tag(void)
 {
     if (s.plot.running) {

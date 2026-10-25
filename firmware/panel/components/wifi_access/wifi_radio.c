@@ -67,6 +67,7 @@ _Static_assert(BOARD_C6_SLOT != BOARD_SD_SLOT, "the SD card's slot");
 /** The poll period of that wait, in ms. */
 #define WIFI_RADIO_UP_POLL_MS 10u
 
+/** @brief Log tag. */
 static const char *TAG = "wifi";
 
 static atomic_bool s_failed;   /**< the link has failed since start-up */
