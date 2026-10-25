@@ -4,7 +4,8 @@
  * registers, the staged block and its command, and the clock.  The page is
  * shared/outputs/hitec_port.c.
  *
- * For test_hitec_port.c and test_hitec_port_stop.c.
+ * For test_hitec_port.c, test_hitec_port_stop.c, test_hitec_port_rx.c and
+ * test_hitec_port_hold.c.
  *
  * The clock: a pass is 1ms on the port's clock and 1000us on the
  * driver's.

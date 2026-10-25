@@ -30,14 +30,16 @@
  *   bits      B, bit times sent
  *   B / 16    words of 16 bit times, each bit time the direction (bit 2 i)
  *             and the level (bit 2 i + 1)
- *   answer    LISTEN with an answer only: 16 bit times, sent after the
- *             first byte received
+ *   answer    LISTEN with an answer only: 16 bit times, the first 6
+ *             released and dropped by the program, then the 10 of the byte
+ *             it sends after the first byte received
  *
  * Bit times at the lead's level fill the front of the first word, so the
  * last bit time ends a word and nothing of the stream is left when the
  * receiver starts.  The receiver answers when the answer word is still in
- * the output shift register after a byte; at the end of the window the
- * program drains the register, so an answer no byte called for is dropped.
+ * the output shift register after a byte, and waits again from the end of
+ * the answer's stop bit; at the end of the window the program drains the
+ * register, so an answer no byte called for is dropped.
  *
  * A tick is HITEC_PIO_TICK_CYCLES cycles, 1/8 of a bit.  The receiver samples
  * the pin every 1 or 2 cycles while it waits, and every byte it takes is one
@@ -100,26 +102,34 @@ extern "C" {
  *        the waiting: detection, 9.5 bits of samples and the push.
  */
 #define HITEC_PIO_BYTE_CYCLES 157u
-/** @brief Cycles an answer adds to the receive path of the first byte. */
-#define HITEC_PIO_ANSWER_CYCLES 261u
+/**
+ * @brief Cycles an answer adds to the receive path of the first byte: 5 to
+ *        its first bit time, its 10 bit times and the release.
+ */
+#define HITEC_PIO_ANSWER_CYCLES 165u
 /**
  * @brief Cycles from the sample that sees the first byte's start bit to the
  *        answer's first change of direction: 10 bit times.
  */
 #define HITEC_PIO_ANSWER_CYCLES_TO_EDGE 160u
-/** @brief Bit times of the answer word. */
-#define HITEC_PIO_ANSWER_BITS 16u
+/** @brief Bit times the answer sends: start bit, 8 data bits, stop bit. */
+#define HITEC_PIO_ANSWER_BITS 10u
+/**
+ * @brief Released bit times at the front of the answer word, which the
+ *        program drops (`out null, 12`) before it sends the other 10.
+ */
+#define HITEC_PIO_ANSWER_DROP_BITS 6u
 /** @brief Cycles of the drain on the way from the end of the window to idle. */
 #define HITEC_PIO_DRAIN_CYCLES 2u
 
 /** @brief Words of rp2350/hitec_line.pio. */
-#define HITEC_PIO_PROGRAM_WORDS 29u
+#define HITEC_PIO_PROGRAM_WORDS 30u
 /**
  * @brief Addresses in the program, from its first word.
  *
  * IDLE: the `out` the machine stalls on between transactions.  BIT to RELEASE -
  * 1: the bit times.  RELEASE: the release before the receiver.  ASK: the `jmp
- * !osre` after a byte.  ANSWER and ANSWER + 1: the way into the answer's bit
+ * !osre` after a byte.  ANSWER to ANSWER + 2: the way into the answer's bit
  * times.  DRAIN: the end of the window.
  */
 #define HITEC_PIO_IDLE_PC    1u
@@ -127,7 +137,8 @@ extern "C" {
 #define HITEC_PIO_RELEASE_PC 11u
 #define HITEC_PIO_ASK_PC     22u
 #define HITEC_PIO_ANSWER_PC  24u
-#define HITEC_PIO_DRAIN_PC   27u
+/** @brief The `mov osr, null` that starts the drain at the end of the window. */
+#define HITEC_PIO_DRAIN_PC   28u
 
 /**
  * @brief Bits of the tick counter a pushed word carries; the window is shorter.
@@ -229,8 +240,8 @@ unsigned hitec_pio_tx(const hitec_pio_clock_t *clock, uint8_t drive,
  *        received and the state machine at @p pc, counted from the program's
  *        first word.
  *
- * True only for a run with an answer, @p n of 1 and @p pc at ASK, at ANSWER or
- * ANSWER + 1, or in the bit times.  A receive that has its count waits for this
+ * True only for a run with an answer, @p n of 1 and @p pc at ASK, at ANSWER to
+ * ANSWER + 2, or in the bit times.  A receive that has its count waits for this
  * to turn false before the driver restarts the machine, so a LISTEN for 1 byte
  * sends its whole answer.
  *

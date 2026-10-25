@@ -25,6 +25,8 @@ _Static_assert((uint64_t)HITEC_TIME_MAX_US * HITEC_D_BIT_RATE
                    * HITEC_PIO_CYCLES_PER_BIT / 2u / 1000000u * 1001u / 1000u
                < HITEC_PIO_MAX_LEAD,
                "the longest level does not fit the lead count");
+_Static_assert(HITEC_PIO_ANSWER_DROP_BITS + HITEC_PIO_ANSWER_BITS == 16u,
+               "the answer word is 16 bit times");
 
 /**
  * @brief A bit time as the pad makes it: bit 0 the direction (1 drives), bit 1
@@ -249,13 +251,14 @@ unsigned hitec_pio_tx(const hitec_pio_clock_t *clock, uint8_t drive,
         words[n++] = pair_word(pairs + (size_t)w * 16u);
     }
     if (xfer->kind == HITEC_XFER_LISTEN && xfer->answer != 0u) {
-        uint8_t a[HITEC_PIO_ANSWER_BITS];
-        unsigned at = put_byte(xfer->family, drive, xfer->answer_byte, true,
-                               a, 0);
+        /* The released bit times the program drops, then the byte: the
+         * last bit time is the stop bit, and the receiver waits again
+         * right after it. */
+        uint8_t a[HITEC_PIO_ANSWER_DROP_BITS + HITEC_PIO_ANSWER_BITS];
 
-        while (at < HITEC_PIO_ANSWER_BITS) {
-            a[at++] = RELEASED;
-        }
+        memset(a, RELEASED, HITEC_PIO_ANSWER_DROP_BITS);
+        (void)put_byte(xfer->family, drive, xfer->answer_byte, true, a,
+                       HITEC_PIO_ANSWER_DROP_BITS);
         words[n++] = pair_word(a);
     }
 
@@ -288,8 +291,8 @@ bool hitec_pio_answer_due(const hitec_pio_run_t *run, unsigned n,
     if (run == NULL || run->answer == 0u || n != 1u) {
         return false;
     }
-    return pc == HITEC_PIO_ASK_PC || pc == HITEC_PIO_ANSWER_PC
-           || pc == HITEC_PIO_ANSWER_PC + 1u
+    return pc == HITEC_PIO_ASK_PC
+           || (pc >= HITEC_PIO_ANSWER_PC && pc <= HITEC_PIO_ANSWER_PC + 2u)
            || (pc >= HITEC_PIO_BIT_PC && pc < HITEC_PIO_RELEASE_PC);
 }
 

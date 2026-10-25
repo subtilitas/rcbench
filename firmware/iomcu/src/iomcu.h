@@ -1018,8 +1018,8 @@ static inline void ports_exclusive(void)
 }
 
 /**
- * @brief A wire page holds the SUPPLY page: the KST port out of PWM, or a
- * HITEC POWER running.
+ * @brief A wire page holds the SUPPLY page: the KST port out of PWM, or the
+ * HITEC port held, from its OPEN to its CLOSE.
  *
  * @return True when the SUPPLY page is held.
  */

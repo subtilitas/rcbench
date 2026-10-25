@@ -67,7 +67,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.28. The
+IOmcu transmits only in answer to a request. Protocol version 4.29. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -140,7 +140,12 @@ channel whose window passed it, an alert only; an older IOmcu refuses it
 with BAD_PAGE, and this build's panel writes no limit. From
 4.28 a port's FUNC also takes DSHOT150, DSHOT300 and DSHOT600, and FLAGS
 bits 12 to 15 say a port's DShot holds its pin; an older IOmcu refuses
-those values with BAD_VALUE and the panel offers them from 4.28 only. The
+those values with BAD_VALUE and the panel offers them from 4.28 only. From
+4.29 HITEC holds SUPPLY from the OPEN that takes a port to the CLOSE that
+gives it back, as KST holds it out of PWM; an older IOmcu holds it while a
+POWER runs only. The panel reads SUPPLY's flag bit 11 either way and writes
+nothing differently
+([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)). The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
