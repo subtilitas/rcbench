@@ -136,6 +136,11 @@ jobs:
       - name: The checked-in cat tables match their generator
         run: python3 tools/gen_cats.py --check
 
+      # The KiCad library of the modules is generated from the specs in
+      # hardware/kicad/modules and checked in, so KiCad users need no Python.
+      - name: The checked-in KiCad library matches its specs
+        run: python3 hardware/kicad/tools/gen_all.py --check
+
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.
       - name: The checked-in ESC profile tables match their JSON
@@ -313,7 +318,7 @@ jobs:
       # rules ask for a Google-style docstring; ruff.toml lists the files
       # excused some D codes, each with the codes on its line.
       - name: ruff
-        run: ruff check tools/ test/tools/ test/host/
+        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/
 
   # cppcheck runs in a job of its own beside clang-tidy, which checks every
   # file on every run: 4min to 9min (minutes) on the runners measured.

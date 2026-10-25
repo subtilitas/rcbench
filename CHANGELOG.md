@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- `hardware/kicad/`: a KiCad 10 library of the 12 modules the bench is built
+  from, for a carrier PCB: RP2350-CAN, INA3221, two INA228 boards (MATEK
+  I2C-INA-BM, XT90 board "BIFRC V1.1"), AS5600, WeAct PD Power Mini, the
+  USB-C tap, ADS1115, ADXL345 (GY-291), INA219, a USB-C PD trigger and a
+  mini buck DC-DC with EN. Footprints and symbols are generated from one
+  spec per module (`tools/gen_all.py`, `--check` in CI); geometry comes from
+  maker drawings, maker 3D models and photos, each spec naming its source
+  and accuracy. MIT, as the rest of the tree.
 - The register models of servos by Hitec, in `protocols/hitec/hitec_reg.c`:
   the classic EEPROM cells (HS-5xxx, HS-7xxx) and the D series registers
   as one 256-byte image, a parameter table of 34 parameters with the

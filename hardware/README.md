@@ -15,6 +15,7 @@ depends on.
 | [Power](docs/Power.md) | four ICs (integrated circuits) of the power path, with their alternatives and the stock at two vendors on 2026-09-01, and round 1's result for each: the TPS55285 refuted at 4.0A continuous and kept by the owner, four a board with the adjustable supply, each with a temperature shutdown, the INA238 short of stock and the INA228 fixed by the owner in its place, the BQ25713 selected as the charger and the INA3221 kept for the port monitors |
 | [Pins](docs/Pins.md) | the draft pin map of the two RP2354B, the main and the measurement IOmcu, checked against the pico-sdk's pin functions by `tools/pinmap_check.py` |
 | [Sourcing](docs/Sourcing.md) | how to obtain a stock figure from a vendor's own API (application programming interface), and which sources are not reliable |
+| [KiCad library](kicad/README.md) | footprints and symbols of the 12 modules the bench is built from, KiCad 10, generated from specs; the dimension source and accuracy of each |
 | [Where things stand](STATUS.md) | decided, open, not planned, and the order of work |
 
 ## Rules
