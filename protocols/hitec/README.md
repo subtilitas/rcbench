@@ -4,15 +4,17 @@ The signal-wire programming protocols of Hitec servos. The core holds the
 frames of both wire families, the transactions a driver runs, the reply
 decoders, the arithmetic of the PIO (programmable input/output) pin driver
 and the register models: the parameters, their encodings and the writes a
-change takes ([Register model](#register-model)). The pin driver puts the
-wire on one RP2350 pin. There is no session. In this repository the IOmcu's
-HITEC link page (`shared/outputs/hitec_port.c`,
-[The programming port for Hitec servos](../../docs/LinkHitec.md)) runs its
+change takes ([Register model](#register-model)), and the session: entry,
+reads, write plans and leave, handed out one step at a time to a caller
+that runs them ([Session](#session)). The pin driver puts the wire on one
+RP2350 pin. In this repository the IOmcu's HITEC link page
+(`shared/outputs/hitec_port.c`,
+[The programming port for Hitec servos](../../docs/LinkHitec.md)) runs the
 transactions on a programming port.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, `hitec_reg.c`, 4 headers under `include/` | C11 standard headers |
+| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, `hitec_reg.c`, `hitec_session.c`, 5 headers under `include/` | C11 standard headers |
 | RP2350 pin driver | `rp2350/hitec_line.pio`, `rp2350/hitec_line.c`, `rp2350/hitec_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
@@ -24,8 +26,8 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
 
 - Plain C11. Every header has `extern "C"` guards and compiles by itself as
   C11 and as C++17 (`tools/check_protocols.py`).
-  `test/host/hitec_headers.cpp` calls both parts, the precharge receiver
-  and the register model included, from C++11 and links
+  `test/host/hitec_headers.cpp` calls both parts, the precharge receiver,
+  the register model and the session included, from C++11 and links
   against the C library.
 - Includes `<stdint.h>`, `<stdbool.h>`, `<stddef.h>` and `<string.h>` and
   no other file outside this folder.
@@ -37,7 +39,10 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
   x86-64. A line (`hitec_line_t`) is 4,100 bytes with arm-none-eabi-gcc
   14.2, 3,712 of them the precharge sampler's sample buffer. An image
   (`hitec_image_t`) is 291 bytes and a plan (`hitec_plan_t`) 338 bytes on
-  both; `hitec_param_set()` holds one image on its stack.
+  both; `hitec_param_set()` holds one image on its stack. A session
+  (`hitec_session_t`) is 1,056 bytes, a step (`hitec_ses_step_t`) 36 bytes
+  on both; `hitec_session.c` is 2,640 bytes of code with
+  arm-none-eabi-gcc 14.2 at `-Os`.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
 ## Wire
@@ -285,6 +290,120 @@ Not measured:
   series manual allows 2 to 5000us.
 - ID 0 reaches every servo on the line: two D series servos on one port
   both take a plan.
+
+## Session
+
+`hitec_session.h` runs one servo through its operations as a state
+machine. It neither touches the wire nor reads a clock: the caller asks for
+the next step, runs it and hands back its result. Nothing in this
+repository calls it yet; the panel is to run it over the HITEC link page.
+
+```c
+static hitec_session_t s;               /* 1,056 bytes */
+hitec_ses_step_t st;
+hitec_ses_result_t r;
+
+hitec_session_init(&s, HITEC_D, HITEC_SES_CLOCK_MS);
+hitec_session_enter(&s, true, 0);       /* cycle the supply, off 0ms */
+
+/* every pass of the caller's loop: */
+switch (hitec_session_next(&s, now_ms, &st)) {
+case HITEC_SES_STEP_XFER:   /* run st.xfer, decode with st.decoder */
+case HITEC_SES_STEP_POWER:  /* supply off st.off_ms, on, then st.xfer */
+    /* once it has ended: */
+    hitec_session_feed(&s, now_ms, &r);
+    break;
+case HITEC_SES_STEP_WAIT:   /* nothing to run; st.wait_ms left */
+    break;
+case HITEC_SES_STEP_DONE:   /* hitec_session_result(&s) */
+    break;
+}
+```
+
+| Step | The caller | Result it feeds |
+|---|---|---|
+| XFER | runs `xfer` and decodes the capture with `decoder` and `dec_arg` | `run` RAN, the decoder's `rx` and `value` |
+| POWER | switches the supply off for `off_ms`, on at its own set points, and runs `xfer`, a LISTEN, from the ON | as XFER |
+| WAIT | nothing; `wait_ms` of the gap are left | none |
+| DONE | nothing; no operation runs | none |
+
+The decoders are 0 none, 1 `hitec_c_decode()` with the command byte, 2
+`hitec_d_decode()` with the register, 3 `hitec_listen_decode()` with the
+byte wanted: the values of the HITEC page's `DECODE` register. A step
+that was cut (an abort, a close, a stop) is fed as CUT, one that did not
+run (refused, not started, the supply refused, the link lost) as FAILED.
+
+| Operation | Classic | D series |
+|---|---|---|
+| `hitec_session_enter()` | POWER: off 500ms by default, on, a LISTEN of 2,000,000us that answers the servo's `+` with `+`; a LISTEN of 1,000,000us for the servo's next `+`, measured 250 to 267ms after its first; then `67 00 00 99`, whose reply is the version | with a supply cycle: POWER with a LISTEN of 1000us that waits for nothing, then 1000ms; without one, at once. Then a read of register 0x00, the model |
+| `hitec_session_read_all()` | the 100 cells of a full read | the 21 registers of a full read |
+| `hitec_session_read_set()` | 1 to 256 cells | 1 to 128 even registers |
+| `hitec_session_write()` | the plan from the image to the draft: per cell `62 cell value sum`, answered `+ +`, and the balance 0x1C after each setting of cells up to 0x1B; then a read of cells 0x00 to 0x23 | the plan: the writes, the save, the reboot, each a frame with no answer; then a read of the 21 registers |
+| `hitec_session_run_plan()` | a plan the caller built, run the same way | the same, such as `hitec_d_factory_plan()` |
+| `hitec_session_leave()` | POWER: off for the entry's off time, on, a LISTEN of 1000us with no answer | the reboot, `0x46 = 1` |
+
+- One operation runs at a time. A read, a write and a plan need a
+  successful entry; a leave clears `in_mode`. The off time is 0 to
+  10,000ms. A classic entry always cycles the supply; refusing one without
+  a supply the bench switches is the caller's.
+- Reads go in ascending address order, each address once. A full read
+  starts from an empty image and keeps the classic version; a read of a
+  set keeps the rest of the image.
+- Gaps, counted from the result of the transaction before: 2ms after a
+  classic transaction, 20ms after a D series transaction, and after a plan
+  write its own wait when that is longer: 100ms after the save, 1000ms
+  after the reboot.
+- Tries: a transaction with an answer has 3: a read, the first command, a
+  classic write (sent again only when its `+ +` did not come). A D series
+  write has no answer and goes once; the read-back finds one that did not
+  take. The two entry LISTENs have 1: the servo sends its `+` once per
+  power-up.
+- A decoded step's code: 0 goes on; 1 (`ARG`) ends the operation with
+  `HITEC_SES_ERR_STEP`, 2 (`ABORTED`) with `HITEC_SES_ERR_CUT`; 3 to 14
+  are a failed try. With no try left the operation ends with
+  `HITEC_SES_ERR_NO_SERVO` when the last try was 4 (`SILENT`), else with
+  `HITEC_SES_ERR_ENTRY`, `HITEC_SES_ERR_READ` or `HITEC_SES_ERR_WRITE`.
+  A step with no decoder (the D series POWER, a D series write, the leave)
+  goes on whatever code comes. CUT ends the operation with
+  `HITEC_SES_ERR_CUT`, FAILED with `HITEC_SES_ERR_LINK`.
+- The read-back holds every writable address (`hitec_writable()`) and the
+  classic balance as the draft holds it, where the draft knows it; `diff`
+  names the addresses that differ (`HITEC_SES_ERR_VERIFY`).
+- `hitec_session_abort()` ends the operation at once in a gap. With a step
+  out it ends at that step's result, which the caller owes after cutting
+  the step; the result is stored as far as it went, and the operation ends
+  with `HITEC_SES_ERR_ABORTED`.
+- The image holds what was read and every write that took; `step_index`
+  counts the plan's writes that took, `fail_addr` names the address that
+  failed, `last_rx` the last code, for a journal and the messages.
+
+Time is one free-running 32-bit clock the caller passes, in microseconds
+or milliseconds, chosen at `hitec_session_init()`. Gaps are unsigned
+differences of two readings, so the wraps at 2^32us (71.6 minutes) and
+2^32ms (49.7 days) do not shorten or lengthen one. A gap has passed when
+the clock has moved by more than the gap: one tick more, since a reading
+lies up to one tick behind the time.
+
+Limits:
+
+- The gap after an operation's last transaction carries into the next
+  operation. One started 2^32 ticks or more after that result can wait
+  once more, up to one gap, 1000ms at most.
+- The first command's bytes are the HPP-21 Plus's, `00 00`; the HFP-30
+  sends `89 74`.
+- The session checks no supply, holds no port and keeps no journal.
+
+Not measured:
+
+- No operation of this module has run against a servo. The classic entry
+  follows the IOmcu console runs of 2026-10-20 (POWER, the `+` answered,
+  `67`), with the servo's second `+` in a LISTEN of its own; the time from
+  the end of the POWER to that LISTEN is the caller's, and the servo's
+  second `+` comes 250 to 267ms after its first.
+- The classic EEPROM write time: the session spaces classic transactions
+  2ms apart; the HPP-21 Plus spaces two settings 121 to 128ms, with a read
+  of 0x00 to 0x23 between them.
+- Whether a classic servo answers a second try of the first command.
 
 ## Driver interface
 
@@ -652,6 +771,20 @@ notice is in the repository's
 
 ## Tests
 
+`test/host/test_hitec_session.c` (13 cases) and
+`test/host/test_hitec_session_write.c` (8 cases) run the session against
+a servo model that answers each step with a capture and decodes it with
+the decoder the step names, as the HITEC page does
+(`test/host/hitec_session_rig.h`). The first: the classic entry with the
+servo's `+` at 0.23ms and at 1999ms, none in the window, a byte after the
+`+`, `-` in its place and `-` to the first command; the D series entry's
+1000ms wait; a read answered on its first and third try and on none of
+3; every code 1 to 14 on each of 16 kinds of step; an abort, a cut and a
+step that did not run at each kind of step; every refusal. The second:
+the D series plan's order and waits and the classic cell and balance
+pairs, a write the servo does not take, a plan the caller built, leave,
+the gaps across the wrap of a microsecond and a millisecond clock, and
+the longest plan wait, 65535ms.
 `test/host/test_hitec_reg.c` (14 cases) and
 `test/host/test_hitec_reg_plan.c` (9 cases) run the register models on the
 bench reads of the D485HW, the HS-5645MG, the HS-7955TG and the HS-5955TG
