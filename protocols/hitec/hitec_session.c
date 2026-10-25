@@ -660,15 +660,13 @@ static hitec_ses_t fail(hitec_session_t *s, uint8_t rx)
 
 /**
  * @brief The read of s->addr took @p value: store it, then the next
- *        address or the operation's end.
+ *        address or the operation's end.  The gap is the one feed started.
  *
  * @param s      Session.
- * @param now    The clock.
  * @param value  The decoded value.
  * @return HITEC_SES_BUSY, or the result the operation ends with.
  */
-static hitec_ses_t read_took(hitec_session_t *s, uint32_t now,
-                             uint16_t value)
+static hitec_ses_t read_took(hitec_session_t *s, uint16_t value)
 {
     if (s->series == HITEC_CLASSIC) {
         (void)hitec_image_put_cell(&s->image, s->addr, (uint8_t)value);
@@ -680,7 +678,6 @@ static hitec_ses_t read_took(hitec_session_t *s, uint32_t now,
     if (s->abort != 0u) {
         return finish(s, HITEC_SES_ERR_ABORTED);
     }
-    gap_from(s, now, series_gap(s));
     s->tries = 0;
     if (set_first(s->todo, &s->addr)) {
         return HITEC_SES_BUSY;
@@ -696,8 +693,12 @@ static hitec_ses_t read_took(hitec_session_t *s, uint32_t now,
 }
 
 /**
- * @brief The write of plan.step[step_index] took: store it, then the next
- *        write or the read-back.
+ * @brief The write of plan.step[step_index] took: count it, start its
+ *        wait, then the next write or the read-back.
+ *
+ * A classic write answered `+ +` goes into the image.  A D series write
+ * has no answer and leaves the image alone: the read-back puts the value
+ * the servo holds there.
  *
  * @param s    Session.
  * @param now  The clock.
@@ -710,17 +711,15 @@ static hitec_ses_t write_took(hitec_session_t *s, uint32_t now)
 
     if (s->series == HITEC_CLASSIC) {
         (void)hitec_image_put_cell(&s->image, w->addr, (uint8_t)w->value);
-    } else if (w->kind == HITEC_STEP_D_WRITE) {
-        (void)hitec_image_put_reg(&s->image, w->addr, w->value);
     }
     ++s->step_index;
-    if (s->abort != 0u) {
-        return finish(s, HITEC_SES_ERR_ABORTED);
-    }
     if (w->wait_ms > gap) {
         gap = w->wait_ms;
     }
     gap_from(s, now, gap);
+    if (s->abort != 0u) {
+        return finish(s, HITEC_SES_ERR_ABORTED);
+    }
     s->tries = 0;
     if (s->step_index < s->plan.n) {
         return HITEC_SES_BUSY;
@@ -767,7 +766,6 @@ static hitec_ses_t decoded(hitec_session_t *s, uint32_t now, uint8_t rx,
         if (s->tries >= HITEC_SES_TRIES) {
             return fail(s, rx);
         }
-        gap_from(s, now, series_gap(s));
         return HITEC_SES_BUSY;
     }
     switch (s->phase) {
@@ -778,11 +776,11 @@ static hitec_ses_t decoded(hitec_session_t *s, uint32_t now, uint8_t rx,
         }
         s->tries = 0;
         if (s->phase == PH_C_POWER) {
+            /* The servo's next `+` comes 250ms on: listen at once. */
             s->phase = PH_C_NEXT;
             gap_from(s, now, 0u);
         } else {
             s->phase = PH_C_FIRST;
-            gap_from(s, now, HITEC_SES_C_GAP_MS);
         }
         return HITEC_SES_BUSY;
     case PH_C_FIRST:
@@ -790,11 +788,10 @@ static hitec_ses_t decoded(hitec_session_t *s, uint32_t now, uint8_t rx,
         if (s->abort != 0u) {
             return finish(s, HITEC_SES_ERR_ABORTED);
         }
-        gap_from(s, now, HITEC_SES_C_GAP_MS);
         s->in_mode = 1;
         return finish(s, HITEC_SES_OK);
     case PH_READ:
-        return read_took(s, now, value);
+        return read_took(s, value);
     default: /* PH_WRITE, classic */
         return write_took(s, now);
     }
@@ -807,6 +804,9 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
         return HITEC_SES_ERR_ARG;
     }
     s->out = 0;
+    /* Every result starts the series gap first, an abort's included; a
+     * step with a longer wait sets that below. */
+    gap_from(s, now, series_gap(s));
     if (r->run == HITEC_SES_CUT) {
         return finish(s, HITEC_SES_ERR_CUT);
     }
@@ -819,18 +819,20 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
     /* No decoder: the D series POWER, a D series write, the leave. */
     switch (s->phase) {
     case PH_D_POWER:
+        gap_from(s, now, HITEC_SES_D_ENTRY_WAIT_MS);
         if (s->abort != 0u) {
             return finish(s, HITEC_SES_ERR_ABORTED);
         }
         memset(s->todo, 0, sizeof(s->todo));
         set_add(s->todo, HITEC_D_REG_MODEL);
         begin_read(s);
-        gap_from(s, now, HITEC_SES_D_ENTRY_WAIT_MS);
         return HITEC_SES_BUSY;
     case PH_WRITE:
         return write_took(s, now);
     default: /* PH_LEAVE */
-        gap_from(s, now, series_gap(s));
+        if (s->series == HITEC_D) {
+            gap_from(s, now, HITEC_D_REBOOT_WAIT_MS);  /* it restarts */
+        }
         return finish(s, HITEC_SES_OK);
     }
 }

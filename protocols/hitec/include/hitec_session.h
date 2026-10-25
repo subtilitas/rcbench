@@ -169,8 +169,9 @@ typedef enum {
 /** @brief The session with one servo. */
 typedef struct {
     /* --- for the caller to read ------------------------------------------- */
-    hitec_image_t image;   /**< the servo as read: entry, reads, writes
-                                that took, read-back */
+    hitec_image_t image;   /**< what the servo confirmed: entry, reads,
+                                read-back, classic writes answered
+                                `+ +`; never a D series write alone */
     hitec_plan_t  plan;    /**< the plan of the running or last write */
     /** @brief Bit a of byte a / 8, bit a % 8: address a differs after a
      *         write's read-back. */
@@ -293,8 +294,16 @@ hitec_ses_t hitec_session_read_set(hitec_session_t *s, const uint8_t *addrs,
  *
  * The read-back must hold every writable address (hitec_writable()) and
  * the classic balance as @p target holds it, where @p target knows it;
- * diff names the ones that differ.  A write that took is in the image
- * and counts in step_index.
+ * diff names the ones that differ.  step_index counts the plan's writes
+ * that went out.
+ *
+ * The image holds only what the servo confirmed.  A classic write
+ * answered `+ +` goes into it.  A D series write has no answer and
+ * changes it not at all: a register keeps the value read before until the
+ * read-back reads it.  After a write that ends with anything but
+ * HITEC_SES_OK, the image holds at every address the plan wrote either
+ * the value read back or the value read before the write, so
+ * hitec_session_write() with the same draft plans that write again.
  *
  * @param s       Session.
  * @param target  The draft, copied.
@@ -326,8 +335,9 @@ hitec_ses_t hitec_session_run_plan(hitec_session_t *s,
  * @brief Leave programming mode.
  *
  * Classic: POWER (off off_ms, on, a LISTEN of HITEC_SES_POWER_WINDOW_US
- * with no answer).  D series: the reboot, `0x46 = 1`.  in_mode is 0 from
- * the start of the leave.  Taken in or out of mode.
+ * with no answer).  D series: the reboot, `0x46 = 1`, then
+ * HITEC_D_REBOOT_WAIT_MS before the next step of any operation.  in_mode
+ * is 0 from the start of the leave.  Taken in or out of mode.
  *
  * @param s  Session.
  * @return HITEC_SES_BUSY when the leave starts; HITEC_SES_ERR_BUSY,
@@ -376,6 +386,11 @@ hitec_ses_kind_t hitec_session_next(hitec_session_t *s, uint32_t now,
  * left goes again after its gap; one with none ends the operation with
  * HITEC_SES_ERR_NO_SERVO when the last try was HITEC_RX_ERR_SILENT, else
  * with the operation's error: ENTRY, READ or WRITE.
+ *
+ * Every result starts the gap of the step that ended before anything
+ * else: the series gap, a plan step's longer wait, the D series entry's
+ * 1000ms, the 1000ms after a D series leave.  An abort, an error or the
+ * end of the operation keeps it; the next operation waits it out.
  *
  * @param s    Session.
  * @param now  The clock when the step ended.

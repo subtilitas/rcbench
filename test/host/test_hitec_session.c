@@ -678,6 +678,42 @@ TEST_CASE(a_classic_full_read_keeps_the_version_and_takes_100_cells)
     CHECK(!hitec_image_known(&r->s.image, 0x34));
 }
 
+TEST_CASE(an_abort_keeps_the_wait_of_the_step_that_ran)
+{
+    static const struct {
+        uint8_t series;
+        pick_t pick;
+        unsigned nth;
+        uint8_t rx;
+        uint32_t gap_ms;
+    } k[] = {
+        { HITEC_D, p_d_power, 1, HITEC_RX_OK, 1000 },
+        { HITEC_D, p_d_read, 3, HITEC_RX_OK, 20 },
+        { HITEC_D, p_d_read, 3, HITEC_RX_ERR_SUM, 20 },
+        { HITEC_D, p_d_write, 1, HITEC_RX_OK, 20 },
+        { HITEC_D, p_d_save, 1, HITEC_RX_OK, 100 },
+        { HITEC_D, p_d_reboot, 1, HITEC_RX_OK, 1000 },
+        { HITEC_CLASSIC, p_first, 1, HITEC_RX_OK, 2 },
+        { HITEC_CLASSIC, p_c_read, 3, HITEC_RX_ERR_LATE, 2 },
+        { HITEC_CLASSIC, p_c_sum, 1, HITEC_RX_OK, 2 },
+    };
+    rig_t *r = &g;
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig_init(r, k[i].series, HITEC_SES_CLOCK_MS, 0xFFFFFF00u);
+        CHECK(rig_until(r, k[i].series == HITEC_CLASSIC ? k_c_script
+                                                         : k_d_script,
+                        k[i].pick, k[i].nth));
+        (void)hitec_session_next(&r->s, r->now, NULL);
+        CHECK(hitec_session_abort(&r->s));
+        CHECK_EQ(give(&r->s, r->now, HITEC_SES_RAN, k[i].rx, 0),
+                 HITEC_SES_ERR_ABORTED);
+        /* The next operation waits as long as the step that ran asks. */
+        CHECK_EQ(hitec_session_leave(&r->s), HITEC_SES_BUSY);
+        check_gap(&r->s, r->now, k[i].gap_ms);
+    }
+}
+
 int main(void)
 {
     RUN(a_classic_entry_cycles_the_supply_answers_and_sends_0x67);
@@ -693,5 +729,6 @@ int main(void)
     RUN(a_cut_or_a_step_that_did_not_run_ends_the_operation);
     RUN(every_refusal_of_an_operation);
     RUN(a_classic_full_read_keeps_the_version_and_takes_100_cells);
+    RUN(an_abort_keeps_the_wait_of_the_step_that_ran);
     return test_summary("hitec_session");
 }

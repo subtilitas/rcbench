@@ -41,7 +41,7 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
   (`hitec_image_t`) is 291 bytes and a plan (`hitec_plan_t`) 338 bytes on
   both; `hitec_param_set()` holds one image on its stack. A session
   (`hitec_session_t`) is 1,056 bytes, a step (`hitec_ses_step_t`) 36 bytes
-  on both; `hitec_session.c` is 2,640 bytes of code with
+  on both; `hitec_session.c` is 2,512 bytes of code with
   arm-none-eabi-gcc 14.2 at `-Os`.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
@@ -340,7 +340,7 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
 | `hitec_session_read_set()` | 1 to 256 cells | 1 to 128 even registers |
 | `hitec_session_write()` | the plan from the image to the draft: per cell `62 cell value sum`, answered `+ +`, and the balance 0x1C after each setting of cells up to 0x1B; then a read of cells 0x00 to 0x23 | the plan: the writes, the save, the reboot, each a frame with no answer; then a read of the 21 registers |
 | `hitec_session_run_plan()` | a plan the caller built, run the same way | the same, such as `hitec_d_factory_plan()` |
-| `hitec_session_leave()` | POWER: off for the entry's off time, on, a LISTEN of 1000us with no answer | the reboot, `0x46 = 1` |
+| `hitec_session_leave()` | POWER: off for the entry's off time, on, a LISTEN of 1000us with no answer | the reboot, `0x46 = 1`, then 1000ms before the next frame |
 
 - One operation runs at a time. A read, a write and a plan need a
   successful entry; a leave clears `in_mode`. The off time is 0 to
@@ -352,7 +352,9 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
 - Gaps, counted from the result of the transaction before: 2ms after a
   classic transaction, 20ms after a D series transaction, and after a plan
   write its own wait when that is longer: 100ms after the save, 1000ms
-  after the reboot.
+  after the reboot; 1000ms after a D series leave. Every result starts its
+  gap first, so an abort, an error or the end of an operation leaves it
+  running for the next operation.
 - Tries: a transaction with an answer has 3: a read, the first command, a
   classic write (sent again only when its `+ +` did not come). A D series
   write has no answer and goes once; the read-back finds one that did not
@@ -373,9 +375,14 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
   out it ends at that step's result, which the caller owes after cutting
   the step; the result is stored as far as it went, and the operation ends
   with `HITEC_SES_ERR_ABORTED`.
-- The image holds what was read and every write that took; `step_index`
-  counts the plan's writes that took, `fail_addr` names the address that
-  failed, `last_rx` the last code, for a journal and the messages.
+- The image holds what the servo confirmed: what was read, and each
+  classic write answered `+ +`. A D series write has no answer and does
+  not change the image; the read-back puts the register's value there.
+  A write that ends with an error leaves the value read before at every
+  address the read-back did not reach, so the same draft plans that
+  write again. `step_index` counts the plan's writes that went out,
+  `fail_addr` names the address that failed, `last_rx` the last code, for
+  a journal and the messages.
 
 Time is one free-running 32-bit clock the caller passes, in microseconds
 or milliseconds, chosen at `hitec_session_init()`. Gaps are unsigned
@@ -771,8 +778,8 @@ notice is in the repository's
 
 ## Tests
 
-`test/host/test_hitec_session.c` (13 cases) and
-`test/host/test_hitec_session_write.c` (8 cases) run the session against
+`test/host/test_hitec_session.c` (14 cases) and
+`test/host/test_hitec_session_write.c` (10 cases) run the session against
 a servo model that answers each step with a capture and decodes it with
 the decoder the step names, as the HITEC page does
 (`test/host/hitec_session_rig.h`). The first: the classic entry with the
@@ -780,11 +787,13 @@ servo's `+` at 0.23ms and at 1999ms, none in the window, a byte after the
 `+`, `-` in its place and `-` to the first command; the D series entry's
 1000ms wait; a read answered on its first and third try and on none of
 3; every code 1 to 14 on each of 16 kinds of step; an abort, a cut and a
-step that did not run at each kind of step; every refusal. The second:
+step that did not run at each kind of step, and the wait an aborted step
+leaves for the next operation; every refusal. The second:
 the D series plan's order and waits and the classic cell and balance
 pairs, a write the servo does not take, a plan the caller built, leave,
-the gaps across the wrap of a microsecond and a millisecond clock, and
-the longest plan wait, 65535ms.
+the gaps across the wrap of a microsecond and a millisecond clock, the
+longest plan wait, 65535ms, the 1000ms after a D series leave, and a D
+series write whose read-back fails, which the same draft writes again.
 `test/host/test_hitec_reg.c` (14 cases) and
 `test/host/test_hitec_reg_plan.c` (9 cases) run the register models on the
 bench reads of the D485HW, the HS-5645MG, the HS-7955TG and the HS-5955TG
