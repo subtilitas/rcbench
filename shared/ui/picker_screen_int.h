@@ -93,12 +93,13 @@ _Static_assert(BTNW >= UI_TAP_MIN && KEY_H >= UI_TAP_MIN,
  * pads, 29px apart, and a rail beside a ground goes below the ground's
  * marker -- 78px is the ground's 40 plus both radii and both rings.
  */
-#define GND_R       18
-#define GND_DROP    40
-#define RAIL_R      16
+#define GND_R       18                  /**< radius of a ground marker, px */
+#define GND_DROP    40                  /**< distance of a ground marker from its pad, px */
+#define RAIL_R      16                  /**< radius of a rail marker, px */
+/** @brief Distance of a rail marker from its pad at the first depth, px */
 #define RAIL_DROP_0 30
-#define RAIL_DROP_1 78
-#define RING        2       /* the dark ring around a marker */
+#define RAIL_DROP_1 78                  /**< distance at the second depth, px */
+#define RING        2                   /**< width of the dark ring around a marker, px */
 
 /**
  * @brief Over the PINS table, left of the first key above the board: the
@@ -202,39 +203,56 @@ _Static_assert(USE_TOP + ((int)PICKER_USE_MAX - 1) * USE_PIN_H_D
 #define NOART_W 640
 #define NOART_H 180   /**< Its height, px. */
 
-#define IVORY GFX_RGB(236, 235, 228)
-#define EBONY GFX_RGB(22, 23, 28)
-#define INK   GFX_RGB(10, 10, 14)
-#define HALO  GFX_RGB(6, 6, 8)
+#define IVORY GFX_RGB(236, 235, 228)    /**< board colour of the ivory (white) key */
+#define EBONY GFX_RGB(22, 23, 28)       /**< board colour of the ebony (black) key */
+#define INK   GFX_RGB(10, 10, 14)       /**< text colour on a marker */
+#define HALO  GFX_RGB(6, 6, 8)          /**< halo colour around a marker's text */
 
 enum { HIT_NONE = 0, HIT_FACE, HIT_ROW, HIT_BUTTON };
 
+/**
+ * @brief PICK A PIN's state: the binding shown, the callbacks that apply
+ *        and select, the IOmcu's drawing of the board, the press, the open
+ *        protocol list, the pins of each interface and the cat.
+ */
 typedef struct {
-    outbind_t         bind;
-    picker_apply_fn   apply;
-    picker_select_fn  select;
-    picker_drawing_fn source;
+    outbind_t         bind;             /**< the binding shown */
+    picker_apply_fn   apply;            /**< called to apply a change of the binding */
+    picker_select_fn  select;           /**< called to select a pin */
+    picker_drawing_fn source;           /**< called to fetch the board's drawing */
     /* The IOmcu's drawing, for the board drawing_board names; it
      * agreed with that board's catalogue when it was set. */
+    /**
+     * @brief The IOmcu's drawing, for the board drawing_board names; it agreed
+     *        with that board's catalogue when it was set
+     */
     link_drawing_t    drawing;
-    uint16_t          drawing_board;
-    bool              has_drawing;
+    uint16_t          drawing_board;    /**< board the drawing is for */
+    bool              has_drawing;      /**< whether drawing holds a drawing */
 
-    int      hit_kind;
+    int      hit_kind;                  /**< what the press is on, HIT_* */
     int      hit;            /**< row or catalogue index under the finger    */
     bool     open;           /**< the protocol list is open                  */
     /* The binding shown is not one a read confirmed: no button acts. */
+    /**
+     * @brief Whether the binding shown is not one a read confirmed: no button
+     *        acts
+     */
     bool     unread;
     /* The pin whose tap a PWM clash refused last, or -1: the reason line
      * says why, until another pick or tick. */
+    /**
+     * @brief Pin whose tap a PWM clash refused last, -1 for none; the reason
+     *        line says why
+     */
     int      refused;
     /* Each interface's pins at the last frame. */
-    uint64_t iface[OUTPUTS_IFACE_COUNT];
+    uint64_t iface[OUTPUTS_IFACE_COUNT];  /**< each interface's pins at the last frame */
     /* The PROG PORT picked, -1 for a protocol (picker_port.c), and the
      * ports' view drawn. */
-    int      port;
-    uint32_t view_rev;
-    bool     chrome_valid[MAX_FBS];
+    int      port;                      /**< PROG PORT picked, -1 for a protocol */
+    uint32_t view_rev;                  /**< revision of the ports' view as drawn */
+    bool     chrome_valid[MAX_FBS];     /**< per frame buffer: whether its chrome is current */
     /* The cat (picker_cat.c): picked on the first frame of a visit from
      * the roll entering took, and drawn while its box stays clear. */
     bool          cat_pending; /**< the pick is still to make           */
@@ -245,6 +263,7 @@ typedef struct {
 
 /* Defined in picker_screen.c. */
 extern pk_state_t pk_s;
+/** @brief Short name for pk_s inside the picker's files. */
 #define s pk_s
 
 /* --- picker_screen.c: the state the other two read -------------------- */
@@ -259,16 +278,68 @@ int8_t pk_channel_of(uint8_t index);
 
 /* --- picker_geometry.c ------------------------------------------------- */
 
+/**
+ * @brief Gives the box the board occupies: the drawing's outline or else the
+ *        shape's, centred across the screen between the body's top and FOOT.
+ * @param x takes the left edge, px
+ * @param y takes the top edge, px
+ * @param w takes the width, px
+ * @param h takes the height, px
+ */
 void pk_board_box(int *x, int *y, int *w, int *h);
+/**
+ * @brief Gives where a pad sits on screen, from the drawing's pad record or
+ *        else the shape's grid.
+ * @param pad the pad
+ * @param px takes the x of the pad's ring centre, px
+ * @param py takes the y of the pad's ring centre, px
+ * @return true when the pad is on the board
+ */
 bool pk_pad_xy(uint8_t pad, int *px, int *py);
+/**
+ * @brief Returns which of the two pad rows a pad is in.
+ * @param pad the pad
+ * @return true for the upper row
+ */
 bool pk_pad_is_top(uint8_t pad);
+/**
+ * @brief Gives the button of catalogue entry @p i and its tier; only a pin an
+ *        output may have gets one.
+ * @param i catalogue entry
+ * @param out takes the button's rectangle
+ * @param tier_out takes the tier, 0 for the row nearer the board
+ * @return true when the entry has a button
+ */
 bool pk_button_at(int i, gfx_rect_t *out, int *tier_out);
+/**
+ * @brief Gives the centre and radius of the marker of pad-list entry @p e.
+ * @param e pad-list entry
+ * @param mx takes the centre x, px
+ * @param my takes the centre y, px
+ * @param r takes the radius, px
+ * @return true when the pad has a marker
+ */
 bool pk_marker_at(uint8_t e, int *mx, int *my, int *r);
+/**
+ * @brief Returns the rows of the protocol list: the protocols, then one PROG
+ *        PORT entry per port.
+ * @return the row count
+ */
 int pk_pop_rows(void);
+/**
+ * @brief Returns the protocol list's rectangle: one column of POP_W px, two
+ *        with PROG PORT entries.
+ * @return the rectangle
+ */
 gfx_rect_t pk_pop_rect(void);
 
 /* --- picker_draw.c ------------------------------------------------------ */
 
+/**
+ * @brief Draws the screen into frame buffer @p buffer_index.
+ * @param c canvas drawn on
+ * @param buffer_index the frame buffer
+ */
 void pk_render(gfx_canvas_t *c, int buffer_index);
 
 /* --- picker_cat.c ------------------------------------------------------- */
