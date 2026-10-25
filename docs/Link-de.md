@@ -74,7 +74,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.28. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.29. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -153,6 +153,11 @@ Ab 4.28 nimmt die FUNC eines Ports auch DSHOT150, DSHOT300 und DSHOT600,
 und die FLAGS-Bits 12 bis 15 sagen, dass das DShot eines Ports seinen Pin
 hält; ein älterer IOmcu weist diese Werte mit BAD_VALUE ab, und das Panel
 bietet sie erst ab 4.28 an.
+Ab 4.29 hält HITEC die SUPPLY-Page vom OPEN, das einen Port nimmt, bis zum
+CLOSE, das ihn zurückgibt, so wie KST sie außerhalb von PWM hält; ein
+älterer IOmcu hält sie nur, solange ein POWER läuft. Das Panel liest das
+Flag-Bit 11 von SUPPLY in beiden Fällen und schreibt nichts anders
+([Die Versorgung, solange ein Port gehalten ist](LinkHitec-de.md#die-versorgung-solange-ein-port-gehalten-ist)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.

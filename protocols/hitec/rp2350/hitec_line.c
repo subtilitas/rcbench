@@ -142,6 +142,26 @@ static void rx_settle(const hitec_line_t *l)
     }
 }
 
+/**
+ * @brief Stop the machine and count the bytes it received.
+ *
+ * Stopped first, so it pushes nothing more; then the channel takes what is
+ * still in the receive FIFO, and only then is the count read.  A byte pushed
+ * just before the stop is counted, not cleared by the restart that follows.
+ * The machine stays stopped at its address, so answer_due() reads where it
+ * stopped.
+ *
+ * @param l The line, busy on its own state machine.
+ * @return The bytes the receive channel has written; 0 for a run that
+ *         receives none.
+ */
+static unsigned rx_stop_count(hitec_line_t *l)
+{
+    pio_sm_set_enabled(line_pio(l), l->sm, false);
+    rx_settle(l);
+    return l->run.max_rx > 0u ? rx_count(l) : 0u;
+}
+
 /* --- PRECHARGE: the sampler ---------------------------------------------- */
 
 /** @brief The longest @p words sample words take, in us, rounded up. */
@@ -595,13 +615,10 @@ void hitec_line_abort(hitec_line_t *line)
         line->aborted = 1;
         return;
     }
-    /* The bytes so far stay in the buffer.  The machine stops first, so it
-     * pushes nothing more; the channel takes what is still in the FIFO;
-     * the count is read before the restart stops the channel. */
-    pio_sm_set_enabled(line_pio(line), line->sm, false);
-    rx_settle(line);
+    /* The bytes so far stay in the buffer, counted before the restart
+     * stops the channel. */
     line->aborted = 1;
-    line->kept = line->run.max_rx > 0u ? (uint8_t)rx_count(line) : 0u;
+    line->kept = (uint8_t)rx_stop_count(line);
     line->cut = answer_due(line, line->kept) ? 1u : 0u;
     line_restart(line);
 }
@@ -725,6 +742,13 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out)
                 return false;
             }
             lost = true;
+        }
+        /* A receive that ran past its time: the machine stopped and the
+         * bytes it pushed before the stop counted, as an abort counts
+         * them. */
+        if (lost) {
+            n = rx_stop_count(l);
+            full = l->run.max_rx > 0u && n >= l->run.max_rx;
         }
         /* A receive that ended at its count or ran past its time still
          * runs: the pad is released and the machine waits again. */

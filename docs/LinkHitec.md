@@ -10,7 +10,10 @@ Hitec is a name or trademark of its owner. It is used here only to say which
 servos the page works with.
 
 The Hitec page (`HITEC`, 0x34) is new in 4.23; write register 23, the
-receive mode of a D series line, is new in 4.24. The page runs raw transactions of
+receive mode of a D series line, is new in 4.24. From 4.29 a held port
+holds the SUPPLY page from OPEN to CLOSE
+([The supply while a port is held](#the-supply-while-a-port-is-held)).
+The page runs raw transactions of
 the Hitec servo wire of [`protocols/hitec`](../protocols/hitec/README.md) on
 one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
 HS-7xxx, 19,200bit/s) or D series (115,200bit/s). The page holds no Hitec
@@ -52,7 +55,7 @@ OPEN takes the port:
    the pin's rating, are not measured
    ([Electrical](../protocols/hitec/README.md#electrical)).
 3. OPEN. A driver that gets no PIO (programmable input/output) state machine,
-   no 29 words of program space or no 2 DMA (direct memory access) channels
+   no 30 words of program space or no 2 DMA (direct memory access) channels
    leaves the port free with result 5 (`NO_LINE`). PRECHARGE needs a second
    state machine, 7 words of program space in another PIO block at 150MHz,
    and a third DMA channel; without them the port stays free with
@@ -60,12 +63,45 @@ OPEN takes the port:
 
 In OPEN a command starts one transaction (BUSY). The port is in OPEN again
 when the driver hands back the capture. The driver ends a transaction itself
-1ms after the longest it can take; a transaction that still runs after
-10,000ms is aborted by the page as well.
+1ms after the longest it can take: the capture keeps every byte received
+before that end and is marked overflow (`CAP` bit 10). A transaction that
+still runs after 10,000ms is aborted by the page as well.
 
 CLOSE gives the port back from any state but free: a running transaction is
 cut, the line closed and the pin the generator's. The supply is left as it
 is. ABORT cuts what runs and keeps the port.
+
+## The supply while a port is held
+
+From 4.29 the page holds the SUPPLY page while it holds a port: from the
+frame of the OPEN to the frame of the CLOSE, in STOPPING, OPEN, BUSY and
+POWER_OFF, a stopped port included. The KST page holds it the same way
+while its port is out of PWM
+([The programming port for KST and Chaservo servos](LinkKST.md)). While it
+is held:
+
+- bit 11 of SUPPLY's flags is set;
+- SUPPLY refuses with BAD_VALUE every write of its registers 4 to 6 that is
+  not an OFF: an ON of an output that is off, and any change of the voltage
+  or of the current limit;
+- a write with OUTPUT 0 is taken as an OFF, whatever set points come with
+  it, and the page keeps the set points it had;
+- a write that repeats an output that is on with the set points in force is
+  taken;
+- POWER switches the supply as staged: the hold holds the panel's writes,
+  not the port's own.
+
+Between two POWERs the set points are the last POWER's, or the ones in
+force at the OPEN. The hold ends with the port: at CLOSE, at an ABORT or a
+stop while the port is in STOPPING, at an OPEN that ends with result 5
+(`NO_LINE`), and at a restart of the IOmcu. A stop, an unsafe bench, an
+ABORT in OPEN, BUSY or POWER_OFF, and the abort after 10,000ms keep the port
+and the hold. A lost heartbeat or a silent link switches the supply off all
+the same: SUPPLY does that itself, held or not ([SUPPLY](Link.md)).
+
+An IOmcu of 4.23 to 4.28 holds SUPPLY only from the OFF of a POWER to the
+end of its LISTEN, and takes the panel's set points between two POWERs.
+The panel reads bit 11 from either.
 
 ## Receive mode
 
@@ -127,9 +163,15 @@ What is measured and what is not:
 | Operation | What goes on the wire | Key |
 | --- | --- | --- |
 | SEND | the lead at the idle level (D series: driven low), 1 to 8 bytes with 0 to 6 idle bit times between two, then the receiver for the window | always |
-| LISTEN | the receiver for the window; with an answer, one byte at the end of the stop bit of the first byte received | with an answer |
+| LISTEN | the receiver for the window; with an answer, one byte at the end of the stop bit of the first byte received, and the receiver again from the end of the answer's stop bit | with an answer |
 | LEVEL | the line held at a level for 1us to 4s, then released. Open drain drives low only | never |
 | POWER | the supply cycle below, then a LISTEN from the ON | with an answer |
+
+The answer is 10 bit times: start bit, 8 data bits, stop bit. Its start
+bit begins 10.0 to 10.13 bit times after the start bit of the first byte
+received. The receiver waits for the next start bit from the end of the
+answer's stop bit, so a byte the servo starts right after the answer is
+received.
 
 Leads, windows and levels run to 4,000,000us. A capture holds up to 16
 bytes. The window counts the time spent waiting for a start bit only. Each
@@ -163,10 +205,9 @@ The voltage is 4800 to 6000mV until a session knows the servo model. The
 current limit is 50 to 3000mA. The voltage plus 700mV has to be under the
 PD mini's input when the input is known. A set point outside these is
 refused with `SUPPLY_RANGE`. A supply that refuses the ON gives result 3; a
-LISTEN the driver refuses gives result 4 (`START`) with the supply on. From
-the OFF to the end of the LISTEN the SUPPLY page is held (flag bit 11): the
-panel can switch the supply off and cannot switch it on or move a set
-point.
+LISTEN the driver refuses gives result 4 (`START`) with the supply on. The
+SUPPLY page is held throughout and after it, until CLOSE
+([The supply while a port is held](#the-supply-while-a-port-is-held)).
 
 An OFF of the SUPPLY page waits for a byte that may be on the wire, 12ms
 at most: a SEND's lead and bytes, and the whole of a LISTEN or a POWER's
@@ -185,7 +226,7 @@ On a stop:
   SUPPLY page has it: off after a lost heartbeat or a silent link, on after
   a switch to SAFE alone;
 - the port stays held with the pin a released input, as a KST port stays in
-  PROGRAMMING;
+  PROGRAMMING, and so does the hold of the SUPPLY page;
 - a port still in STOPPING is free again;
 - bit 3 of `STATE` (`STOPPED`) is set.
 

@@ -11,7 +11,10 @@ Hitec ist ein Name oder eine Marke seines Inhabers. Er steht hier nur, um zu
 sagen, mit welchen Servos die Page arbeitet.
 
 Die Hitec-Page (`HITEC`, 0x34) ist neu in 4.23; das Schreibregister 23, der
-Empfangsmodus einer Leitung der D-Serie, ist neu in 4.24. Die Page fährt rohe Transaktionen
+Empfangsmodus einer Leitung der D-Serie, ist neu in 4.24. Ab 4.29 hält ein
+gehaltener Port die SUPPLY-Page von OPEN bis CLOSE
+([Die Versorgung, solange ein Port gehalten ist](#die-versorgung-solange-ein-port-gehalten-ist)).
+Die Page fährt rohe Transaktionen
 der Hitec-Servoleitung aus [`protocols/hitec`](../protocols/hitec/README.md)
 auf einem Port von [PROG](Link-de.md#die-programmierports): classic (HS-5xxx,
 HS-7xxx, 19.200bit/s) oder D-Serie (115.200bit/s). Die Page hält keine
@@ -56,7 +59,7 @@ OPEN nimmt den Port:
    Belastbarkeit des Pins bleibt, sind nicht gemessen
    ([Electrical](../protocols/hitec/README.md#electrical)).
 3. OPEN. Ein Treiber, der keine PIO-State-Machine (PIO: Programmable
-   Input/Output), keine 29 Worte Programmspeicher oder keine 2 DMA-Kanäle
+   Input/Output), keine 30 Worte Programmspeicher oder keine 2 DMA-Kanäle
    (Direct Memory Access) bekommt, lässt den Port mit Ergebnis 5 (`NO_LINE`)
    frei. PRECHARGE braucht eine zweite State-Machine, bei 150MHz 7 Worte
    Programmspeicher in einem anderen PIO-Block und einen dritten DMA-Kanal;
@@ -64,13 +67,48 @@ OPEN nimmt den Port:
 
 In OPEN startet ein Kommando eine Transaktion (BUSY). Der Port steht wieder
 in OPEN, wenn der Treiber den Mitschnitt zurückgibt. Der Treiber beendet eine
-Transaktion selbst 1ms nach der längsten Zeit, die sie dauern kann; eine
-Transaktion, die nach 10.000ms noch läuft, bricht zusätzlich die Page ab.
+Transaktion selbst 1ms nach der längsten Zeit, die sie dauern kann: der
+Mitschnitt behält jedes Byte, das vor diesem Ende empfangen wurde, und ist
+als Überlauf markiert (`CAP` Bit 10). Eine Transaktion, die nach 10.000ms
+noch läuft, bricht zusätzlich die Page ab.
 
 CLOSE gibt den Port aus jedem Zustand außer frei zurück: eine laufende
 Transaktion wird abgeschnitten, die Leitung geschlossen und der Pin gehört
 dem Generator. Die Versorgung bleibt, wie sie ist. ABORT schneidet ab, was
 läuft, und behält den Port.
+
+## Die Versorgung, solange ein Port gehalten ist
+
+Ab 4.29 hält die Page die SUPPLY-Page, solange sie einen Port hält: vom
+Frame des OPEN bis zum Frame des CLOSE, in STOPPING, OPEN, BUSY und
+POWER_OFF, ein gestoppter Port eingeschlossen. Die KST-Page hält sie ebenso,
+solange ihr Port nicht in PWM steht
+([Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)).
+Solange sie gehalten ist:
+
+- ist Bit 11 der Flags von SUPPLY gesetzt;
+- weist SUPPLY mit BAD_VALUE jedes Schreiben seiner Register 4 bis 6 ab,
+  das kein Ausschalten ist: ein Einschalten eines ausgeschalteten Ausgangs
+  und jede Änderung der Spannung oder der Stromgrenze;
+- wird ein Schreiben mit OUTPUT 0 als Ausschalten genommen, gleich welche
+  Sollwerte mitkommen, und die Page behält ihre Sollwerte;
+- wird ein Schreiben genommen, das einen eingeschalteten Ausgang mit den
+  geltenden Sollwerten wiederholt;
+- schaltet POWER die Versorgung wie bereitgestellt: das Halten hält die
+  Schreibzugriffe des Panels, nicht die des Ports selbst.
+
+Zwischen zwei POWER sind die Sollwerte die des letzten POWER oder die beim
+OPEN geltenden. Das Halten endet mit dem Port: bei CLOSE, bei einem ABORT
+oder einem Stopp, während der Port in STOPPING steht, bei einem OPEN, das
+mit Ergebnis 5 (`NO_LINE`) endet, und bei einem Neustart des IOmcu. Ein
+Stopp, eine unsichere Bank, ein ABORT in OPEN, BUSY oder POWER_OFF und der
+Abbruch nach 10.000ms behalten den Port und das Halten. Ein verlorener
+Heartbeat oder ein stiller Link schaltet die Versorgung trotzdem aus: das
+tut SUPPLY selbst, gehalten oder nicht ([SUPPLY](Link-de.md)).
+
+Ein IOmcu mit 4.23 bis 4.28 hält SUPPLY nur vom Ausschalten eines POWER bis
+zum Ende seines LISTEN und nimmt zwischen zwei POWER die Sollwerte des
+Panels. Das Panel liest Bit 11 von beiden.
 
 ## Empfangsmodus
 
@@ -136,9 +174,15 @@ Was gemessen ist und was nicht:
 | Operation | Was auf die Leitung geht | Schlüssel |
 | --- | --- | --- |
 | SEND | der Vorlauf auf dem Ruhepegel (D-Serie: auf Low getrieben), 1 bis 8 Bytes mit 0 bis 6 Ruhe-Bitzeiten dazwischen, dann der Empfänger für das Fenster | immer |
-| LISTEN | der Empfänger für das Fenster; mit Antwort ein Byte am Ende des Stoppbits des ersten empfangenen Bytes | mit Antwort |
+| LISTEN | der Empfänger für das Fenster; mit Antwort ein Byte am Ende des Stoppbits des ersten empfangenen Bytes, und der Empfänger wieder ab dem Ende des Stoppbits der Antwort | mit Antwort |
 | LEVEL | die Leitung 1us bis 4s auf einem Pegel gehalten, dann losgelassen. Open Drain treibt nur Low | nie |
 | POWER | das Aus- und Einschalten der Versorgung unten, dann ein LISTEN ab dem Einschalten | mit Antwort |
+
+Die Antwort dauert 10 Bitzeiten: Startbit, 8 Datenbits, Stoppbit. Ihr
+Startbit beginnt 10,0 bis 10,13 Bitzeiten nach dem Startbit des ersten
+empfangenen Bytes. Der Empfänger wartet ab dem Ende des Stoppbits der
+Antwort auf das nächste Startbit, ein Byte, das der Servo gleich nach der
+Antwort beginnt, wird also empfangen.
 
 Vorlauf, Fenster und Pegel reichen bis 4.000.000us. Ein Mitschnitt hält bis
 zu 16 Bytes. Das Fenster zählt nur die Zeit, die auf ein Startbit gewartet
@@ -174,10 +218,9 @@ Die Stromgrenze ist 50 bis 3000mA. Die Spannung plus 700mV muss unter dem
 Eingang des PD mini liegen, wenn der Eingang bekannt ist. Ein Sollwert
 außerhalb davon wird mit `SUPPLY_RANGE` abgewiesen. Eine Versorgung, die das
 Einschalten abweist, gibt Ergebnis 3; ein LISTEN, das der Treiber abweist,
-gibt Ergebnis 4 (`START`) bei eingeschalteter Versorgung. Vom Ausschalten
-bis zum Ende des LISTEN ist die SUPPLY-Page gehalten (Flag-Bit 11): das
-Panel kann die Versorgung ausschalten, aber nicht einschalten und keinen
-Sollwert verschieben.
+gibt Ergebnis 4 (`START`) bei eingeschalteter Versorgung. Die SUPPLY-Page
+ist währenddessen und danach gehalten, bis CLOSE
+([Die Versorgung, solange ein Port gehalten ist](#die-versorgung-solange-ein-port-gehalten-ist)).
 
 Ein Ausschalten der SUPPLY-Page wartet auf ein Byte, das auf der Leitung
 sein kann, höchstens 12ms: Vorlauf und Bytes eines SEND, und ein LISTEN
@@ -197,7 +240,7 @@ Bank auf SAFE. Bei einem Stopp:
   und die Versorgung ist, wie die SUPPLY-Page sie hat: aus nach verlorenem
   Heartbeat oder stillem Link, an nach einem Schalten auf SAFE allein;
 - bleibt der Port mit dem Pin als losgelassenem Eingang gehalten, so wie ein
-  KST-Port in PROGRAMMING bleibt;
+  KST-Port in PROGRAMMING bleibt, und mit ihm das Halten der SUPPLY-Page;
 - ist ein Port, der noch in STOPPING steht, wieder frei;
 - wird Bit 3 von `STATE` (`STOPPED`) gesetzt.
 

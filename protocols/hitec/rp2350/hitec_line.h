@@ -12,7 +12,7 @@
  * is a name or trademark of its owner; it is used here only to say which
  * servos this module works with (README.md, "Legal notice and disclaimer").
  *
- * Resources.  hitec_line_open() claims 1 state machine, 29 words of program
+ * Resources.  hitec_line_open() claims 1 state machine, 30 words of program
  * space in a PIO block that reaches the pin, and 2 DMA channels;
  * hitec_line_close() gives all of them back.  Every open line loads its own
  * copy of the program, so a block of 32 words holds 1 line and the RP2350's
@@ -51,8 +51,10 @@
  *
  * Every function is called from one context.  hitec_line_poll() ends a
  * transaction whose state machine still runs HITEC_LINE_GRACE_US after the
- * time the transaction can take: the state machine is restarted with the
- * pad released and the capture is marked as overflowed.
+ * time the transaction can take: the state machine is stopped, the receive
+ * channel takes the words still in the FIFO, the bytes are counted, and
+ * then the machine is restarted with the pad released.  The capture holds
+ * every byte pushed before the stop and is marked as overflowed.
  *
  * Not measured: no byte of this driver has been on a pin.
  *

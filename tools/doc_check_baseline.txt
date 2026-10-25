@@ -1261,7 +1261,6 @@ protocols/hitec/hitec_pre.c: warning: Member PIO_SET_PINDIRS(v, d) (macro defini
 protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_ANSWER_PC (macro definition) of file hitec_pio.h is not documented.
 protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_ASK_PC (macro definition) of file hitec_pio.h is not documented.
 protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_BIT_PC (macro definition) of file hitec_pio.h is not documented.
-protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_DRAIN_PC (macro definition) of file hitec_pio.h is not documented.
 protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_RELEASE_PC (macro definition) of file hitec_pio.h is not documented.
 protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_CHARGE_MAX_NS (macro definition) of file hitec_pre.h is not documented.
 protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_MAX_HZ (macro definition) of file hitec_pre.h is not documented.
@@ -2162,7 +2161,6 @@ shared/link/include/link_pages.h: warning: Member LINK_PG_F_REFUSED(port) (macro
 shared/link/include/link_pages.h: warning: Member LINK_PG_PIN_NONE (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_PG_REG(port, r) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_POLES_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_PROTOCOL_MINOR (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SH_CORNER(r) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SH_LAYOUT_OF(corner, per_side) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SH_PER_SIDE(r) (macro definition) of file link_pages.h is not documented.

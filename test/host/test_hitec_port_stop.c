@@ -152,7 +152,7 @@ TEST_CASE(close_cuts_a_running_transaction_and_leaves_the_supply)
 }
 
 /* POWER: the supply off, read off, held off, on, and the listen from the
- * ON, with the SUPPLY page held throughout. */
+ * ON, with the SUPPLY page held throughout and after it. */
 static void stage_power(uint16_t mv, uint16_t ma, uint16_t off_ms)
 {
     stage_listen(100000u, 1u, false, 0u, LINK_HITEC_DEC_LISTEN, 0x5Au);
@@ -187,7 +187,8 @@ static void power_cycle_at(uint32_t t0)
     CHECK_EQ(state(), LINK_HITEC_BUSY);
     CHECK(hitec_port_supply_hold(&g_port));
     settle();
-    CHECK(!hitec_port_supply_hold(&g_port));
+    /* The port is OPEN again and still holds the supply (4.29). */
+    CHECK(hitec_port_supply_hold(&g_port));
     CHECK_EQ(result(), LINK_HITEC_RESULT_DONE);
     CHECK_EQ(LINK_HT_OP_OF(reg(LINK_HT_OP)), LINK_HITEC_OP_POWER);
     CHECK_EQ(rx_code(), HITEC_RX_OK);
@@ -286,7 +287,7 @@ static void supply_not_off_at(uint32_t t0)
     CHECK_EQ(result(), LINK_HITEC_RESULT_SUPPLY);
     CHECK_EQ(g_hw.ons, 0);
     CHECK_EQ(g_drv.starts, 0);
-    CHECK(!hitec_port_supply_hold(&g_port));
+    CHECK(hitec_port_supply_hold(&g_port));
 }
 
 TEST_CASE(a_supply_that_does_not_read_off_ends_the_power_in_3_s)
@@ -330,7 +331,7 @@ TEST_CASE(a_stop_in_the_off_time_leaves_the_supply_off)
     CHECK_EQ(state(), LINK_HITEC_OPEN);
     CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
     CHECK(flag(LINK_HT_F_STOPPED));
-    CHECK(!hitec_port_supply_hold(&g_port));
+    CHECK(hitec_port_supply_hold(&g_port));
     run_ms(5000u);
     CHECK_EQ(g_hw.ons, 0);
     CHECK(!g_hw.v.asked_on);
@@ -376,7 +377,7 @@ TEST_CASE(a_stop_in_the_listen_of_a_power_cuts_it)
     CHECK_EQ(result(), LINK_HITEC_RESULT_CUT);
     CHECK(flag(LINK_HT_F_STOPPED));
     CHECK_EQ(rx_code(), HITEC_RX_ERR_ABORTED);
-    CHECK(!hitec_port_supply_hold(&g_port));
+    CHECK(hitec_port_supply_hold(&g_port));
     /* A disarm alone: the supply is as the SUPPLY page has it, on. */
     CHECK(g_hw.v.asked_on);
     CHECK_EQ(g_hw.offs, 1);

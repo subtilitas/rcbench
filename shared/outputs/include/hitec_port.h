@@ -41,10 +41,15 @@
  * on at the staged LINK_HITEC_SUPPLY_MIN_MV to LINK_HITEC_SUPPLY_MAX_MV
  * (4800 to 6000mV), and starts the staged listen in the same pass.  A
  * supply that refuses the ON gives LINK_HITEC_RESULT_SUPPLY; a listen the
- * driver refuses gives LINK_HITEC_RESULT_START with the supply on.  From
- * the OFF to the end of the listen the SUPPLY page is held
- * (hitec_port_supply_hold()): the panel can switch the supply off and
- * cannot switch it on or move a set point.
+ * driver refuses gives LINK_HITEC_RESULT_START with the supply on.
+ *
+ * The SUPPLY page is held (hitec_port_supply_hold(), protocol 4.29) in every
+ * state but free: from the OPEN that takes the port to the CLOSE that gives
+ * it back, as the KST page holds it out of PWM.  While it is held the panel
+ * can switch the supply off and cannot switch it on or move a set point;
+ * POWER switches it as staged.  A stop keeps the port and the hold.  The
+ * hold ends with the port: CLOSE, an ABORT or a stop in STOPPING, an OPEN
+ * that ends LINK_HITEC_RESULT_NO_LINE, and a restart of the IOmcu.
  *
  * The way out is CLOSE, from any state but free: a running transaction is
  * cut, the line closed and the pin the generator's.  The supply is left as
@@ -324,11 +329,12 @@ void hitec_port_bench_armed(hitec_port_t *p, bool armed);
 void hitec_port_other_mask(hitec_port_t *p, uint8_t mask);
 
 /**
- * @brief A POWER runs: the SUPPLY page is held (supply_page_hold()).
+ * @brief The port holds the SUPPLY page (supply_page_hold()): every state
+ *        but LINK_HITEC_FREE, from OPEN to CLOSE.
  *
  * @param p The port, or NULL.
- * @return true while a POWER runs, from the OFF to the end of its listen; false
- *         for a NULL p.
+ * @return true while the port is held, a stopped one included; false for a
+ *         free port and for a NULL p.
  */
 bool hitec_port_supply_hold(const hitec_port_t *p);
 
