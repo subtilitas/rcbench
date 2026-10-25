@@ -355,8 +355,9 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
   classic transaction, 20ms after a D series transaction, and after a plan
   write its own wait when that is longer: 100ms after the save, 1000ms
   after the reboot; 1000ms after a D series leave. Every result starts its
-  gap first, so an abort, an error or the end of an operation leaves it
-  running for the next operation.
+  gap first, whether the step ran, was cut or was lost, since its frame
+  may have reached the servo; an abort, an error or the end of an
+  operation leaves it running for the next operation.
 - Tries: a transaction with an answer has 3: a read, the first command, a
   classic write (sent again only when its `+ +` did not come). A D series
   write has no answer and goes once; the read-back finds one that did not
@@ -786,7 +787,7 @@ notice is in the repository's
 
 ## Tests
 
-`test/host/test_hitec_session.c` (14 cases) and
+`test/host/test_hitec_session.c` (15 cases) and
 `test/host/test_hitec_session_write.c` (13 cases) run the session against
 a servo model that answers each step with a capture and decodes it with
 the decoder the step names, as the HITEC page does
@@ -795,8 +796,8 @@ servo's `+` at 0.23ms and at 1999ms, none in the window, a byte after the
 `+`, `-` in its place and `-` to the first command; the D series entry's
 1000ms wait; a read answered on its first and third try and on none of
 3; every code 1 to 14 on each of 16 kinds of step; an abort, a cut and a
-step that did not run at each kind of step, and the wait an aborted step
-leaves for the next operation; every refusal. The second:
+step that did not run at each kind of step, and the wait an aborted, cut
+or lost step leaves for the next operation; every refusal. The second:
 the D series plan's order and waits and the classic cell and balance
 pairs, a write the servo does not take, a plan the caller built, leave,
 the gaps across the wrap of a microsecond and a millisecond clock, the

@@ -165,6 +165,34 @@ static uint32_t series_gap(const hitec_session_t *s)
                                       : HITEC_SES_D_GAP_MS;
 }
 
+/**
+ * @brief The wait the step that is out asks for once its result comes,
+ *        whether it ran, was cut or was lost.
+ *
+ * @param s  Session.
+ * @return The plan step's wait or the series gap for a write, whichever
+ *         is longer; HITEC_SES_D_ENTRY_WAIT_MS for the D series POWER;
+ *         HITEC_D_REBOOT_WAIT_MS for the D series leave; the series gap
+ *         for every other step.
+ */
+static uint32_t step_gap(const hitec_session_t *s)
+{
+    const uint32_t gap = series_gap(s);
+
+    if (s->phase == PH_WRITE) {
+        const uint32_t w = s->plan.step[s->step_index].wait_ms;
+
+        return w > gap ? w : gap;
+    }
+    if (s->phase == PH_D_POWER) {
+        return HITEC_SES_D_ENTRY_WAIT_MS;
+    }
+    if (s->phase == PH_LEAVE && s->series == HITEC_D) {
+        return HITEC_D_REBOOT_WAIT_MS;
+    }
+    return gap;
+}
+
 /* --- operations ----------------------------------------------------------- */
 
 /**
@@ -876,9 +904,9 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
         return HITEC_SES_ERR_ARG;
     }
     s->out = 0;
-    /* Every result starts the series gap first, an abort's included; a
-     * step with a longer wait sets that below. */
-    gap_from(s, now, series_gap(s));
+    /* Every result starts the step's wait first, a cut's, a lost step's
+     * and an abort's included: the frame may have reached the servo. */
+    gap_from(s, now, step_gap(s));
     if (s->phase == PH_WRITE) {
         /* Ran, cut or lost: the bytes may have reached the servo. */
         s->sent = 1;
@@ -896,7 +924,6 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
     /* No decoder: the D series POWER, a D series write, the leave. */
     switch (s->phase) {
     case PH_D_POWER:
-        gap_from(s, now, HITEC_SES_D_ENTRY_WAIT_MS);
         if (s->abort != 0u) {
             return finish(s, HITEC_SES_ERR_ABORTED);
         }
@@ -907,9 +934,6 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
     case PH_WRITE:
         return write_took(s, now);
     default: /* PH_LEAVE */
-        if (s->series == HITEC_D) {
-            gap_from(s, now, HITEC_D_REBOOT_WAIT_MS);  /* it restarts */
-        }
         return finish(s, HITEC_SES_OK);
     }
 }

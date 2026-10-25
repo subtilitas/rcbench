@@ -404,8 +404,9 @@ hitec_ses_kind_t hitec_session_next(hitec_session_t *s, uint32_t now,
  * with the operation's error: ENTRY, READ or WRITE.
  *
  * Every result starts the gap of the step that ended before anything
- * else: the series gap, a plan step's longer wait, the D series entry's
- * 1000ms, the 1000ms after a D series leave.  An abort, an error or the
+ * else, a cut or lost step's included, since its frame may have reached
+ * the servo: the series gap, a plan step's longer wait, the D series
+ * entry's 1000ms, the 1000ms after a D series leave.  An abort, an error or the
  * end of the operation keeps it; the next operation waits it out.
  *
  * @param s    Session.
