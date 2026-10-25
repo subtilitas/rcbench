@@ -138,11 +138,26 @@ IOmcu, bis er antwortet, dann die Bench-Page mit 20Hz und die
 Status-Page alle 500ms. Alle 5s, solange der Link ausgefallen ist, und einmal
 pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
-    I (…) rcbench: LINK works, and not every time
-    W (…) rcbench:   check: marginal timing, or a poll period tighter than the round trip
-    I (…) rcbench:   panel  polls 1200 replies 1187 timeouts 13 stale 0 nack 0 crc 0 resync 0
-    I (…) rcbench:   iomcu  frames 1187 crc 0 resync 0 refused 0
+    I (…) rcbench: LINK answers arrive too late
+    W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
+    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 stale 3 nack 0  iomcu frames 1200 crc 0 resync 0 refused 0
+    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 stale 7 nack 0 crc 0 resync 0
+    I (…) rcbench:   iomcu  frames 36000 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
+
+Die Diagnose und die Zeile `last` gelten für das Fenster seit dem
+vorigen Bericht: 60s, solange der Link läuft, 5s, solange er ausgefallen
+ist, und beim ersten Bericht die Zeit seit dem Start. Die Zeilen `panel`
+und `iomcu` sind Summen seit dem Start. Ein Schub später Antworten bei
+einem Ausfall des IOmcu ist die Diagnose des Berichts, der ihn enthält;
+der nächste Bericht eines gesunden Links sagt `link healthy`. Ein Fenster
+mit weniger als 4 Polls sagt `link healthy`; ein ausgefallener Link wird
+etwa einmal pro Sekunde abgefragt, sein 5s-Fenster hält also 4 oder 5
+Polls. Ein Zähler des IOmcu unter seinem Wert beim vorigen Bericht zählt
+wieder ab 0 (der IOmcu ist neu gestartet, oder ein 16-Bit-Statusregister
+ist übergelaufen), und das Fenster nimmt seinen neuen Wert. `crc` und
+`resync` des IOmcu sind Stände, keine Zählungen, und stehen in der Zeile
+`last` so, wie sie gelesen wurden: siehe unten.
 
 | Diagnose | Bedeutung |
 | --- | --- |
@@ -168,7 +183,9 @@ zählen.
 
 Die Spalten `crc` und `resync` der IOmcu-Zeile tragen den Empfangs- und
 den Sendefehlerzähler des XL2515 (Statusregister `LINK_ST_CRC_ERRORS` und
-`LINK_ST_RESYNCS`). Die letzte Zahl der Zeile ist die der CAN-Frames, die der
+`LINK_ST_RESYNCS`). Jeder liegt zwischen 0 und 255, steigt mit einem
+fehlerhaften Frame und fällt mit einem guten; beide gelten so, wie sie beim
+Bericht stehen, im Fenster wie in den Summen. Die letzte Zahl der Zeile ist die der CAN-Frames, die der
 IOmcu seit dem Einschalten empfangen und nicht dekodiert hat
 (`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`, Protokoll 4.21; 0 von einem
 älteren IOmcu). Siehe [Abgelehnte Frames](Link-de.md#abgelehnte-frames).

@@ -633,7 +633,6 @@ firmware/panel/main/panel.h: warning: Member kst_record_write(void) (function) o
 firmware/panel/main/panel.h: warning: Member kst_ui_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member link_errors (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member link_lost_report(busfault_report_t *r) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member link_report(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member link_up (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member log_folder_t (enumeration) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member log_follow_runs(void) (function) of file panel.h is not documented.
@@ -965,7 +964,6 @@ firmware/panel/main/panel_link.c: warning: Member exchange_unanswered(void) (fun
 firmware/panel/main/panel_link.c: warning: Member far_end_stop_here(void) (function) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member k_port (variable) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member link_lost_report(busfault_report_t *r) (function) of file panel_link.c is not documented.
-firmware/panel/main/panel_link.c: warning: Member link_report(void) (function) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member poles_service(void) (function) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member port_between(void *ctx) (function) of file panel_link.c is not documented.
 firmware/panel/main/panel_link.c: warning: Member port_exchange(void *ctx, link_host_t *host, const link_msg_t *req, link_msg_t *reply) (function) of file panel_link.c is not documented.
@@ -2069,8 +2067,6 @@ shared/gfx/include/gfx.h: warning: return type of member gfx_text_width is not d
 shared/gfx/include/gfx.h: warning: return type of member gfx_utf8_next is not documented
 shared/link/include/link_artxfer.h: warning: Member blocks (variable) of struct link_art_meta_t is not documented.
 shared/link/include/link_artxfer.h: warning: Member meta (variable) of struct link_artxfer_t is not documented.
-shared/link/include/link_bringup.h: warning: Member dev_crc_errors (variable) of struct link_bringup_t is not documented.
-shared/link/include/link_bringup.h: warning: Member dev_resyncs (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member have_identity (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member have_status (variable) of struct link_bringup_t is not documented.
 shared/link/include/link_bringup.h: warning: Member nacks (variable) of struct link_bringup_t is not documented.

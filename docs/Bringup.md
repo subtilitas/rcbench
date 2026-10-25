@@ -130,11 +130,24 @@ until it answers, then polls the bench page at 20Hz and the status page every
 500ms. Every 5s while the link is down, and once a minute while it is up, the
 panel prints a diagnosis:
 
-    I (…) rcbench: LINK works, and not every time
-    W (…) rcbench:   check: marginal timing, or a poll period tighter than the round trip
-    I (…) rcbench:   panel  polls 1200 replies 1187 timeouts 13 stale 0 nack 0 crc 0 resync 0
-    I (…) rcbench:   iomcu  frames 1187 crc 0 resync 0 refused 0
+    I (…) rcbench: LINK answers arrive too late
+    W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
+    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 stale 3 nack 0  iomcu frames 1200 crc 0 resync 0 refused 0
+    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 stale 7 nack 0 crc 0 resync 0
+    I (…) rcbench:   iomcu  frames 36000 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
+
+The diagnosis and the `last` line cover the window since the previous
+report: 60s while the link is up, 5s while it is down, and at the first
+report the time since start-up. The `panel` and `iomcu` lines are totals
+since start-up. One burst of late answers at an IOmcu drop is the
+diagnosis of the report that covers it; the next report of a healthy link
+says `link healthy`. A window of fewer than 4 polls says `link healthy`; a
+link that is down is probed about once a second, so its 5s window holds 4
+or 5 polls. An IOmcu counter below its figure at the previous report counts
+from 0 again (the IOmcu restarted, or a 16-bit status register wrapped), and
+the window takes its new value. The IOmcu's `crc` and `resync` are levels,
+not counts, and appear in the `last` line as read: see below.
 
 | Diagnosis | Meaning |
 | --- | --- |
@@ -158,7 +171,9 @@ offered again every 5s and counts one each time. `timeouts`, `stale` and
 
 The `crc` and `resync` columns of the IOmcu line carry the XL2515's
 receive and transmit error counters (status registers `LINK_ST_CRC_ERRORS` and
-`LINK_ST_RESYNCS`). `refused` is the count of CAN frames the IOmcu
+`LINK_ST_RESYNCS`). Each is 0 to 255, rises with a bad frame and falls with
+a good one, so both are read as they stand at the report, in the window as
+in the totals. `refused` is the count of CAN frames the IOmcu
 received and refused to decode since its power-up (`LINK_ST_REFUSED_LO` and
 `LINK_ST_REFUSED_HI`, protocol 4.21; 0 from an older IOmcu). See
 [Refused frames](Link.md#refused-frames).
