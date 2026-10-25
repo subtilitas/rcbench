@@ -1,13 +1,14 @@
-/*
- * The pin picker: the board itself, with a button on every pin an output may
- * have.
+/**
+ * @file
+ * @brief The pin picker: the board itself, with a button on every pin an output
+ * may have.
  *
  * The outputs screen lists pins in a grid, which answers "which GPIO
  * (general-purpose input/output) is bound" and not "where do I put the lead".
  * This screen answers the second one: a picture of the board with a straight
  * trace from each pad to a button large enough to press.
  *
- * The buttons are not the pads. At any size that fits a 480-pixel panel a pad
+ * The buttons are not the pads. At any size that fits a 1024 x 600 panel a pad
  * is under 40 pixels across, which is smaller than a fingertip; so the pads
  * are drawn where they are and the touching happens on staggered rows of
  * buttons beside the board, each wired to its own pad.
@@ -179,21 +180,24 @@ typedef struct {
 bool picker_screen_row(uint8_t k, picker_row_t *out);
 
 /**
+ * @brief The kinds of a line of the IN USE table.
+ *
  * A line of the IN USE table, right of the board: the programming ports'
  * pins first, under one PROG PORT name, then the pins SETUP > INTERFACES
  * holds, each function's under its name (outputs_iface_name()), then each
  * other protocol's pins under its name, groups in the order their first
  * pin falls.
  *
- * The rows are 20 px for a name and 28 px for a pin, with the GPIO in the
- * head face; when that runs past the table's foot, as with OFF selected,
- * the port listed and 8 pins over 6 protocols, every pin row is 20 px with
- * the GPIO in the label face, and 16 px where 20 px still runs past it, as
- * with 4 ports beside that binding (7 names and 12 pins, 332 px of the 360
- * the table has under its heading).  Where 16 px pin rows still run past
- * it, the names are 16 px too.  Where even that runs past it -- 4 ports, 6
- * protocols and every interface on -- the table holds the lines that fit
- * and ends in a PICKER_USE_MORE line, "+N", N the lines left out.
+ * The rows are 20px for a name and 28px for a pin, with the GPIO in the
+ * 16 x 28 face: OFF selected, the port listed and 8 pins over 6 protocols
+ * take 392px of the 432 the table has under its heading.  When that runs
+ * past the table's foot, as with 4 ports beside that binding (7 names and
+ * 12 pins), every pin row is 20px with the GPIO in the label face, and
+ * 16px in 8 x 16 where 20px still runs past it.  Where 16px pin rows
+ * still run past it, the names are 16px too: 4 ports, 6 protocols and
+ * every interface on take 27 lines, the whole 432px.  Where even that
+ * runs past it the table holds the lines that fit and ends in a
+ * PICKER_USE_MORE line, "+N", N the lines left out.
  */
 typedef enum {
     PICKER_USE_NAME = 0,  /**< a protocol's name, PROG PORT or a function
@@ -225,7 +229,7 @@ typedef struct {
                               PICKER_USE_IFACE()                          */
     uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
     int8_t     channel;  /**< PICKER_USE_PIN: its channel, -1 for the port  */
-    bool       compact;  /**< drawn in the 20 or 16 px pin rows             */
+    bool       compact;  /**< drawn in the 20 or 16px pin rows              */
     gfx_rect_t rect;     /**< the line's box, inside PICKER_AREA_IN_USE     */
 } picker_use_t;
 
@@ -287,11 +291,27 @@ typedef void (*picker_drawing_fn)(uint16_t board);
 void picker_screen_set_drawing_source(picker_drawing_fn fn);
 
 /**
- * The size in pixels a board outline of @p ow x @p oh (any unit) draws at:
- * 500 wide and the height its aspect gives, or, when that is taller than
- * 240, 240 high and the width its aspect gives.  A zero side gives 500 x 240.
+ * @brief The size in pixels a board outline draws at.
+ *
+ * 600 wide and the height its aspect gives, or, when that is taller than
+ * 240, 240 high and the width its aspect gives.  A zero side gives 600 x 240.
+ * @param ow The outline's width, any unit.
+ * @param oh Its height, in the same unit.
+ * @param w  The width drawn, px.
+ * @param h  The height drawn, px.
  */
 void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h);
+
+/**
+ * @brief The cat the last frame drew (picker_cat.c): one pose, picked at
+ *        random on a visit's first frame among the ones with a clear spot,
+ *        bottom left or bottom right.  It takes no touch.
+ * @param box the box it covers, empty for none; may be NULL
+ * @param pose its index into ui_cat_poses[], UI_CAT_NONE for none; may
+ *        be NULL
+ * @return true when a cat is drawn
+ */
+bool picker_screen_cat(gfx_rect_t *box, int *pose);
 
 /** Whether the board is drawn from the IOmcu's drawing. */
 bool picker_screen_has_drawing(void);

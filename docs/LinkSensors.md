@@ -10,7 +10,7 @@ SENSE_LIMIT (0x36) in 4.27.
 SENSE_MAP sets up to 4 TI INA3221 current monitors on the sensor bus SENSE
 opens, at 0x40 to 0x43: which parts are fitted, a shunt for each of their 12
 channels, what each channel measures, and the FAST channel. The two window
-pages carry every channel's last 50 ms window. SENSE_LIMIT holds a current
+pages carry every channel's last 50ms window. SENSE_LIMIT holds a current
 limit for each channel and flags the windows above it.
 `shared/outputs/sense_map.c` and `sense_limit.c` hold the rules;
 `test_sense_map` and `test_sense_limit` test them on the host.
@@ -23,8 +23,8 @@ is CH1 of the part at 0x40, channel 11 is CH3 of the part at 0x43.
 | Register | Name | Meaning |
 | ---: | --- | --- |
 | 0 | `ENABLE` | bit a: the part at 0x40 + a is fitted. 0 to 15 |
-| 1 | `FAST` | the channel read every 1 ms, 0 to 11, or 0xFF for none. SERVO_WIN carries its last 4 windows and SERVO_SENSE times a move on it |
-| 2 to 13 | `SHUNT[c]` | channel c's shunt in 0.1 mΩ, 50 to 10000 (5 mΩ to 1 Ω); 0 switches the channel off: it is never read |
+| 1 | `FAST` | the channel read every 1ms, 0 to 11, or 0xFF for none. SERVO_WIN carries its last 4 windows and SERVO_SENSE times a move on it |
+| 2 to 13 | `SHUNT[c]` | channel c's shunt in 0.1mΩ, 50 to 10000 (5mΩ to 1Ω); 0 switches the channel off: it is never read |
 | 14 to 25 | `WATCH[c]` | what channel c measures: 0 nothing named, 0x01 to 0x08 output channel 1 to 8, 0x10 to 0x13 programming port 1 to 4, 0x20 the supply. The IOmcu keeps it and acts on nothing in it |
 | 26 to 29 | `ID[a]` | read only: the die ID part a answered at its last probe, 0 before one |
 | 30 | `FLAGS` | read only: bit a part a online; bit 4 + a part a answered with another identity; bit 8 the map has been written and is kept (`IN_FORCE`); bit 9 it has never been written and is SENSE's one part (`DERIVED`) |
@@ -87,7 +87,7 @@ write taken.
 
 ## SENSE_WIN_A and SENSE_WIN_B
 
-Every channel's last complete 50 ms window: channels 0 to 5 on SENSE_WIN_A,
+Every channel's last complete 50ms window: channels 0 to 5 on SENSE_WIN_A,
 6 to 11 on SENSE_WIN_B. Every write is refused with READ_ONLY. Nothing is
 kept.
 
@@ -105,13 +105,13 @@ Entry k of SENSE_WIN_B is channel 6 + k. A clipped sample is left out of the
 figures, as on SERVO_SENSE. A channel that is off, or of a part not online,
 reads 0 throughout.
 
-The rates, per 1 ms tick at 400 kHz: `FAST` every 1 ms; every other channel
-with a shunt in turn, one a tick, 1000 / n Hz for n of them (500 Hz each for
-CH2 and CH3 of one part, 90.9 Hz each with 11); each bus voltage every 24 ms
-(41.7 Hz); each part's Mask/Enable and Configuration read back at 25 Hz. The
-longest tick holds 742.5 µs of bus time. 4 parts with 12 channels, the INA228
-and the AS5600 output encoder take 60.8 % of the bus; one part with 3
-channels and the INA228 take 43.4 %. At most one part is probed a tick.
+The rates, per 1ms tick at 400kHz: `FAST` every 1ms; every other channel
+with a shunt in turn, one a tick, 1000 / n Hz for n of them (500Hz each for
+CH2 and CH3 of one part, 90.9Hz each with 11); each bus voltage every 24ms
+(41.7Hz); each part's Mask/Enable and Configuration read back at 25Hz. The
+longest tick holds 742.5µs of bus time. 4 parts with 12 channels, the INA228
+and the AS5600 output encoder take 60.8% of the bus; one part with 3
+channels and the INA228 take 43.4%. At most one part is probed a tick.
 
 ## SENSE_LIMIT
 
@@ -131,12 +131,12 @@ one that reaches register 12 is refused with READ_ONLY, a value above 32767
 with BAD_VALUE, and a refused write stores none of its registers. A write is
 taken in any bank state.
 
-Core 1 judges each channel's 50 ms window once, as the window closes. A
+Core 1 judges each channel's 50ms window once, as the window closes. A
 window is over when its highest current, in mA as SENSE_WIN shows it, is
-above the limit: with a limit of 100 mA, 100.4 mA is not over and 100.5 mA
+above the limit: with a limit of 100mA, 100.4mA is not over and 100.5mA
 is. A window is also over when one of its samples read the top of the range
-and that top, not rounded, is above the limit: 163.8 mV across the shunt,
-1638.0 mA on 0.1 Ω, 163.8 mA on 1 Ω, so a limit of 163 mA on 1 Ω is passed.
+and that top, not rounded, is above the limit: 163.8mV across the shunt,
+1638.0mA on 0.1Ω, 163.8mA on 1Ω, so a limit of 163mA on 1Ω is passed.
 A negative current is never over. A channel that is off, or of a part not
 online when the window closes, is never over. Core 1 counts each channel's
 windows over; core 0 adds what the counts gained whenever it takes core 1's
@@ -173,7 +173,7 @@ version 8 record and starts as from an empty store.
 
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT |
 | --- | --- | --- |
-| 4.25 or later | 4.27 or later | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500 ms while a part is fitted. After a write taken it reads SENSE and IDENTITY again: capability bit 3 can change with `WATCH` alone. It reads SENSE_WIN_A whole while 0x40 or 0x41 is fitted in the map in force, and SENSE_WIN_B while 0x42 or 0x43 is, each on every poll after SERVO_WIN and at most every 40 ms, ARMED or SAFE, for the run log's columns ([Screens](Screens.md#table-and-what-the-esc-says)). It reads SENSE_LIMIT whole at every link-up, writes registers 0 to 11 in one write 500 ms after the last limit edit in any bank state and only where the page differs, and reads registers 12 and 13 every 200 ms while the page holds a limit that is not 0 ([Screens](Screens.md#sensors-the-ina3221-parts)) |
+| 4.25 or later | 4.27 or later | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500ms while a part is fitted. After a write taken it reads SENSE and IDENTITY again: capability bit 3 can change with `WATCH` alone. It reads SENSE_WIN_A whole while 0x40 or 0x41 is fitted in the map in force, and SENSE_WIN_B while 0x42 or 0x43 is, each on every poll after SERVO_WIN and at most every 40ms, ARMED or SAFE, for the run log's columns ([Screens](Screens.md#table-and-what-the-esc-says)). It reads SENSE_LIMIT whole at every link-up, writes registers 0 to 11 in one write 500ms after the last limit edit in any bank state and only where the page differs, and reads registers 12 and 13 every 200ms while the page holds a limit that is not 0 ([Screens](Screens.md#sensors-the-ina3221-parts)) |
 | 4.25 or later | 4.25 or 4.26 | SENSE_MAP and SENSE_WIN as above; the panel sends nothing to SENSE_LIMIT, and SETUP > SENSORS marks every limit that is not OFF as not judged |
 | 4.25 or later | 4.24 or older | the panel sends nothing to the four pages and sets SENSE's one INA3221 to one fitted part ([Screens](Screens.md)) |
 | 4.24 or older | 4.25 or later, map derived | the panel never reads or writes the four pages. SENSE runs as before. Kept limits are judged and `OVER` holds its bits until something reads it |
@@ -181,7 +181,7 @@ version 8 record and starts as from an empty store.
 
 ## On the console
 
-An image built with `IOMCU_CONSOLE=ON` prints the map every 3 s while a part
+An image built with `IOMCU_CONSOLE=ON` prints the map every 3s while a part
 on SENSE is enabled, after the two `sense` lines
 ([First run on hardware](FirstRun.md#8-current-monitors-ina228-ina3221)):
 

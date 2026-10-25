@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Maps link messages onto CAN frames and back; see link_can.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,6 +11,12 @@
 
 #include "link_pages.h"
 
+/**
+ * @brief Test whether an op is one the protocol defines.
+ *
+ * @param op The op to test.
+ * @return true for READ, WRITE, DATA, ACK and NACK.
+ */
 static bool op_is_known(uint8_t op)
 {
     switch (op) {
@@ -22,9 +31,15 @@ static bool op_is_known(uint8_t op)
     }
 }
 
-/* A READ says how many registers it wants and carries none of them; every
- * other op carries the registers it is about.  A property of the protocol,
- * not of the transport. */
+/**
+ * @brief A READ says how many registers it wants and carries none of them;
+ * every other op carries the registers it is about.
+ *
+ * A property of the protocol, not of the transport.
+ *
+ * @param op The op to test.
+ * @return false for READ, true for the other ops.
+ */
 static bool op_carries_payload(uint8_t op)
 {
     return op != (uint8_t)LINK_OP_READ;
@@ -42,7 +57,7 @@ link_can_prio_t link_can_priority(uint8_t page, uint8_t op)
         || page == LINK_PAGE_LIMITS || page == LINK_PAGE_SUPPLY) {
         return LINK_CAN_PRIO_CONTROL;
     }
-    /* A firmware update is 26,001 exchanges, 6.8 to 8.3 s of frames for a
+    /* A firmware update is 26,001 exchanges, 6.8 to 8.3s of frames for a
      * 184,872-byte image; any poll and any stop wins arbitration over it. */
     if (page == LINK_PAGE_UPDATE_CTL || page == LINK_PAGE_UPDATE_DATA) {
         return LINK_CAN_PRIO_BULK;

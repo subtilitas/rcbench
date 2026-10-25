@@ -1,7 +1,7 @@
 /*
  * SETUP > UPDATES' IOmcu section: the state coproc_update_section()
  * names, in its order; the line each state draws, in both languages and in
- * two lines of the left column; the hold at 1.99 s and 2.00 s, slid off,
+ * two lines of the left column; the hold at 1.99s and 2.00s, slid off,
  * cancelled and left; a link lost under it; a second hold while one runs;
  * the progress the driver opens for it and the way back to UPDATES, after
  * the update, after a START the control task spent and across a snapshot
@@ -26,16 +26,9 @@
 #include "ui_widgets.h"
 #include "upd_screen.h"
 
-/* Mirrored from coproc_update_screen.c: the buttons of the question. */
-#define CANCEL_X 264
-#define START_X  536
-#define BTN_Y    282
-/* Mirrored from upd_screen.c, in the body's coordinates: REMINDER AT
- * START and HOLD 2 s: UPDATE IOMCU. */
-#define BTN_X    196
-#define REMIND_Y 96
-#define UPD_CU_X 196
-#define UPD_CU_Y 392
+/* The question's buttons, REMINDER AT START and HOLD 2s: UPDATE IOMCU,
+ * in the body's coordinates. */
+#include "upd_spots.h"
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -185,7 +178,7 @@ static void on_updates(void)
  * UI_HOLD_MAX_CREDIT_S and less, without letting go. */
 static void hold_for(float seconds)
 {
-    upd_ev(TOUCH_EVENT_DOWN, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_DOWN, UP_BTN_X, UP_CU_Y);
     float left = seconds;
     while (left > 0.0f) {
         const float dt = (left > UI_HOLD_MAX_CREDIT_S) ? UI_HOLD_MAX_CREDIT_S
@@ -315,7 +308,7 @@ TEST_CASE(the_updates_hold_at_1_99_s_starts_nothing)
     on_updates();
     hold_for(1.99f);
     CHECK(!upd_screen_take_coproc());
-    upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
     upd()->tick(UI_HOLD_MAX_CREDIT_S);
     CHECK(!upd_screen_take_coproc());
     cu_hand_t h = frame();
@@ -333,7 +326,7 @@ TEST_CASE(the_updates_hold_at_2_00_s_starts_once_and_opens_the_progress)
     upd()->tick(UI_HOLD_MAX_CREDIT_S);
     upd()->tick(UI_HOLD_MAX_CREDIT_S);
     CHECK(!upd_screen_take_coproc());
-    upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
 
     /* Again, handed to the driver this time. */
     on_updates();
@@ -358,8 +351,8 @@ TEST_CASE(a_declined_offer_starts_from_updates_and_returns_there)
     feed_ready();
     offer();
     CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
-    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
-    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
     cu_hand_t h = frame();
     CHECK(h.decline);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
@@ -371,7 +364,7 @@ TEST_CASE(a_declined_offer_starts_from_updates_and_returns_there)
     (void)frame();
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_READY);
     hold_for(2.00f);
-    upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
     h = frame();
     CHECK_EQ(h.starts, 1u);
     CHECK(!h.decline);
@@ -409,9 +402,9 @@ TEST_CASE(a_declined_offer_starts_from_updates_and_returns_there)
     ui_router_goto(SCREEN_OVERVIEW);
     offer();
     CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
-    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
-    ev(TOUCH_EVENT_UP, 1, START_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     h = frame();
     CHECK_EQ(h.starts, 1u);
     g_feed.offered = false;
@@ -516,7 +509,7 @@ TEST_CASE(a_link_loss_during_the_hold_ends_it_unfired)
     g_feed.reachable = false;
     (void)frame();
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_NO_LINK);
-    /* Held on past 2 s: the press was dropped with the state. */
+    /* Held on past 2s: the press was dropped with the state. */
     for (int i = 0; i < 8; ++i) {
         upd()->tick(UI_HOLD_MAX_CREDIT_S);
     }
@@ -528,7 +521,7 @@ TEST_CASE(a_link_loss_during_the_hold_ends_it_unfired)
         upd()->tick(UI_HOLD_MAX_CREDIT_S);
     }
     CHECK(!upd_screen_take_coproc());
-    upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
     cu_hand_t h = frame();
     CHECK_EQ(h.starts, 0u);
     CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
@@ -573,7 +566,7 @@ TEST_CASE(every_gate_greys_the_hold_and_takes_no_press)
         coproc_update_drive(&g_drv, &g_feed, k[i].unsafe, &h);
         CHECK(upd_screen_coproc()->sec != CU_SEC_READY);
         hold_for(2.50f);
-        upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+        upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
         CHECK(!upd_screen_take_coproc());
         coproc_update_drive(&g_drv, &g_feed, k[i].unsafe, &h);
         CHECK_EQ(h.starts, 0u);
@@ -585,14 +578,14 @@ TEST_CASE(a_second_hold_while_one_runs_starts_nothing)
 {
     on_updates();
     hold_for(2.00f);
-    upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
     cu_hand_t h = frame();
     CHECK_EQ(h.starts, 1u);
     /* Not yet taken: an alert's jump back to UPDATES finds the hold grey. */
     ui_router_goto(SCREEN_UPDATES);
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_BUSY);
     hold_for(2.50f);
-    upd_ev(TOUCH_EVENT_UP, UPD_CU_X, UPD_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
     CHECK(!upd_screen_take_coproc());
     h = frame();
     CHECK_EQ(h.starts, 0u);
@@ -642,7 +635,7 @@ static upd_cu_view_t cu_view(cu_sec_t sec)
 }
 
 /* Every state has its line, in both languages, and only READY takes the
- * hold; the line says why in the column's 360 px, two lines at most. */
+ * hold; the line says why in the column's 360px, two lines at most. */
 TEST_CASE(every_section_state_says_why_in_two_lines)
 {
     const gfx_rect_t line = gfx_rect_make(16, 0, 360, 18);
@@ -703,9 +696,9 @@ TEST_CASE(only_a_ready_section_takes_the_hold)
         upd_fresh();
         const upd_cu_view_t v = cu_view((cu_sec_t)sec);
         upd_screen_set_coproc(&v);
-        scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UPD_CU_X, UPD_CU_Y, 0);
+        scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
         scr_ticks(upd(), HOLD_TICKS);
-        scr_ev(upd(), TOUCH_EVENT_UP, 1, UPD_CU_X, UPD_CU_Y, 0);
+        scr_ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_CU_Y, 0);
         CHECK_EQ(upd_screen_take_coproc(), sec == CU_SEC_READY);
         CHECK(!upd_screen_take_coproc());
         /* And asks for nothing else. */
@@ -719,15 +712,15 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     /* Slid off the button. */
     upd_fresh();
     upd_screen_set_coproc(&v);
-    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UPD_CU_X, UPD_CU_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ticks(upd(), HOLD_TICKS / 2);
-    scr_ev(upd(), TOUCH_EVENT_MOVE, 1, UPD_CU_X, UPD_CU_Y - 60, 0);
+    scr_ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_CU_Y - 60, 0);
     scr_ticks(upd(), HOLD_TICKS);
     CHECK(!upd_screen_take_coproc());
     /* Cancelled by the router. */
     upd_fresh();
     upd_screen_set_coproc(&v);
-    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UPD_CU_X, UPD_CU_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ticks(upd(), HOLD_TICKS / 2);
     upd()->cancel();
     scr_ticks(upd(), HOLD_TICKS);
@@ -735,7 +728,7 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     /* The screen left. */
     upd_fresh();
     upd_screen_set_coproc(&v);
-    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UPD_CU_X, UPD_CU_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ticks(upd(), HOLD_TICKS / 2);
     upd()->leave();
     upd()->enter();
@@ -744,9 +737,9 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     /* A second finger elsewhere does not end the first one's hold. */
     upd_fresh();
     upd_screen_set_coproc(&v);
-    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UPD_CU_X, UPD_CU_Y, 0);
-    scr_ev(upd(), TOUCH_EVENT_DOWN, 2, BTN_X, REMIND_Y, 0);
-    scr_ev(upd(), TOUCH_EVENT_UP, 2, BTN_X, REMIND_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_DOWN, 2, UP_BTN_X, UP_REMIND_Y, 0);
+    scr_ev(upd(), TOUCH_EVENT_UP, 2, UP_BTN_X, UP_REMIND_Y, 0);
     scr_ticks(upd(), HOLD_TICKS);
     CHECK(upd_screen_take_coproc());
 }
@@ -762,7 +755,7 @@ TEST_CASE(the_wifi_hint_names_setup)
 
 TEST_CASE(every_section_state_renders_inside_its_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     gfx_canvas_t c;
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
@@ -777,7 +770,7 @@ TEST_CASE(every_section_state_renders_inside_its_canvas)
                 v.known = (sec % 2 == 0);
                 v.running = (cu_version_t){ 65535, 65535, 65535 };
                 upd_screen_set_coproc(&v);
-                guard_canvas_init(&g, &c, px, 800, 432);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
                 upd_screen_invalidate();
                 upd()->render(&c, 0);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);

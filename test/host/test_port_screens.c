@@ -33,6 +33,7 @@
 #include "link_pages.h"
 #include "outputs_screen.h"
 #include "outputs_screen_int.h"
+#include "outputs_spots.h"
 #include "picker_port.h"
 #include "picker_screen.h"
 #include "sensors_rows.h"
@@ -45,22 +46,15 @@
 #include "ui_theme.h"
 
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
-#define COL_X 16
-#define DD_X  16
-#define DD_Y  44
-#define DD_W  266
-#define DD_H  54
-/* outputs_port_entry.c: the PIN button, then the segments under their
- * labels, two of 128 px 4 px apart from x 19. */
-#define PIN_X    (COL_X + 133)
-#define PIN_Y    (106 + 20)
-#define SEG_X(i) (19 + 64 + (i) * 132)
-#define FN_Y     (154 + 20 + 18)
-/* FUNCTION's face, 260 px from x 19, and its list's rows of 40 px from
- * y 218 under it. */
-#define FACE_X   (19 + 130)
-#define FN_ROW_Y(i) (218 + 20 + (i) * 40)
-#define TESTER_Y (242 + 20 + 18)
+/* outputs_spots.h: the PIN button, then the segments under their labels,
+ * FUNCTION's face and its list's rows. */
+#define PIN_X    (OU_COL_X + OU_COL_W / 2)
+#define PIN_Y    OU_PIN_Y
+#define SEG_X(i) OU_SEG_X(i)
+#define FN_Y     OU_FN_FACE_Y
+#define FACE_X   OU_FN_FACE_X
+#define FN_ROW_Y(i) OU_FN_ROW_Y(i)
+#define TESTER_Y OU_TESTER_Y
 
 /* What the ask hook was handed. */
 static struct {
@@ -178,10 +172,10 @@ static const char *out_reason(void)
 /* OUTPUTS alone, every pixel inside the canvas painted. */
 static void render_out(void)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->tick(0.016f);
     outputs_screen()->render(&c, -1);    /* no framebuffer: always drawn */
     CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -190,14 +184,14 @@ static void render_out(void)
 
 static void render_both(void)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     picker_screen()->render(&c, 0);
     CHECK_EQ(guard_canvas_touched(&g), 0u);
     CHECK_EQ(guard_canvas_unpainted(&g), 0u);
@@ -481,11 +475,11 @@ TEST_CASE(the_tester_takes_port_3_and_the_watch_line_follows_the_map)
     out_tap(SEG_X(1), TESTER_Y);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
     /* The watch line repaints with the map. */
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_BODY_H)];
     guard_canvas_t g;
     gfx_canvas_t c;
     out_port(0u);
-    guard_canvas_init(&g, &c, px, 800, 432);
+    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
     outputs_screen()->tick(0.02f);
     outputs_screen()->render(&c, 0);
     const uint32_t before = guard_canvas_sum(&g);
@@ -568,7 +562,7 @@ static void pk_port(uint8_t n)
     CHECK(picker_screen_list_open());
     const gfx_rect_t row =
         picker_screen_list_row((uint8_t)(OUTBIND_PROTOS + n));
-    CHECK(row.y + row.h <= 432);
+    CHECK(row.y + row.h <= UI_BODY_H);
     tap_on(picker_screen(), row.x + 20, row.y + row.h / 2);
     CHECK_EQ(picker_screen_port_shown(), (int)n);
     CHECK_EQ(outputs_screen_port_shown(), (int)n);

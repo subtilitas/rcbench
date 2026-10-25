@@ -1,5 +1,10 @@
-/*
- * The automatic servo test's TXT report, line by line.
+/**
+ * @file
+ * @brief The automatic servo test's TXT report, line by line.
+ *
+ * The lines come in sections, in this order: header, settings, steps,
+ * encoder, brown-out, limits and unmeasured notes; servo_report_line() picks
+ * one line by its index.
  *
  * Its words are entries of servo_str.c's table, looked up in the language
  * of the table the run was started with (S() below).  A report is UTF-8,
@@ -15,37 +20,61 @@
 
 /* ------------------------------------------------------------- the report */
 
-/*
- * The report is written a line at a time as the card takes it, so it is
- * not held anywhere whole.  Each line is found by counting: a cursor walks
- * the report's lines in order and the one asked for is printed.
+/**
+ * @brief Cursor that prints one report line, found by counting.
+ *
+ * The report is written a line at a time as the card takes it, so it is not
+ * held anywhere whole.  Each line is found by counting: a cursor walks the
+ * report's lines in order and the one asked for is printed.
  */
 typedef struct {
-    unsigned want;
-    unsigned at;
-    char    *buf;
-    size_t   n;
-    const char *const *text;    /* the run's language; NULL is English */
+    unsigned want;          /**< index of the line asked for              */
+    unsigned at;            /**< index of the next line counted           */
+    char    *buf;           /**< out: the line                            */
+    size_t   n;             /**< size of buf, bytes                       */
+    const char *const *text;    /**< the run's language; NULL is English */
 } cursor_t;
 
-/* A word or a line format of the report, in the run's language. */
+/** @brief A word or a line format of the report, in the run's language. */
 #define S(id) servo_str_in(c->text, SERVO_STR_##id)
 
+/**
+ * @brief Count one line, and tell whether it is the one asked for.
+ *
+ * @param c Cursor. Its count goes up whether or not this is the line.
+ * @return true when the line counted is the one asked for.
+ */
 static bool here(cursor_t *c)
 {
     return c->want == c->at++;
 }
 
-/* A limit's value, or OFF for 0. */
+/**
+ * @brief A limit's value, or OFF for 0.
+ *
+ * @param c Cursor; its text gives the language of OFF.
+ * @param b Out: the text.
+ * @param n Size of b, bytes.
+ * @param a Limit, A; 0 or less is OFF.
+ */
 static void limit_a(const cursor_t *c, char *b, size_t n, float a)
 {
     if (a > 0.0f) {
-        snprintf(b, n, "%.2f A", (double)a);
+        snprintf(b, n, "%.2fA", (double)a);
     } else {
         snprintf(b, n, "%s", S(R_OFF));
     }
 }
 
+/**
+ * @brief The word for one check: NOT CHECKED, NOT MEASURED, FAIL or PASS.
+ *
+ * @param c        Cursor; its text gives the language.
+ * @param checked  true when the check has a limit.
+ * @param measured true when a value was measured.
+ * @param over     true when the value is over the limit.
+ * @return the word, from the run's language table.
+ */
 static const char *verdict_word(const cursor_t *c, bool checked,
                                 bool measured, bool over)
 {
@@ -58,7 +87,13 @@ static const char *verdict_word(const cursor_t *c, bool checked,
     return over ? S(FAIL) : S(PASS);
 }
 
-/* A mean in amperes, or "--" for none. */
+/**
+ * @brief A mean in amperes, or "--" for none.
+ *
+ * @param b Out: the mean, 3 decimals, or "--".
+ * @param n Size of b, bytes.
+ * @param m Mean to print; no reading gives "--".
+ */
 static void amps(char *b, size_t n, const servo_test_mean_t *m)
 {
     if (m->n > 0u) {
@@ -68,8 +103,14 @@ static void amps(char *b, size_t n, const servo_test_mean_t *m)
     }
 }
 
-/* The first and the last brown-out voltage that ran to its end; NULL for
- * none. */
+/**
+ * @brief The first and the last brown-out voltage that ran to its end; NULL for
+ *        none.
+ *
+ * @param t     Run state.
+ * @param first Out: the first such step, or NULL for none. NULL to skip.
+ * @param last  Out: the last such step, or NULL for none. NULL to skip.
+ */
 static void brownout_ran(const servo_test_t *t, const servo_test_step_t **first,
                          const servo_test_step_t **last)
 {
@@ -90,6 +131,15 @@ static void brownout_ran(const servo_test_t *t, const servo_test_step_t **first,
     }
 }
 
+/**
+ * @brief The head of the report: title, result, device and firmware, the
+ *        meter and supply, the readings' rates, the counts, the duration and
+ *        the rows.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of the head's lines.
+ */
 static bool header_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_test_cfg_t *g = &t->cfg;
@@ -251,6 +301,15 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
+/**
+ * @brief The settings lines: the servo, the rate, the danger tag, HV, the
+ *        ends, the steps, the brown-out walk, the current limit, the timing,
+ *        the length and the limits.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of the settings lines.
+ */
 static bool settings_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_test_cfg_t *g = &t->cfg;
@@ -281,7 +340,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
     }
     if (here(c)) {
         /* What ran, not only the switch: HV SERVO on with both of its
-         * steps off runs nothing above 6.0 V. */
+         * steps off runs nothing above 6.0V. */
         bool above = false;
         for (unsigned s = 0; s < g->step_count; ++s) {
             above = above || g->steps_v[s] > SERVO_TEST_HV_ABOVE_V + 0.001f;
@@ -300,7 +359,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         int k = snprintf(b, n, "%s", S(R_STEPS));
         for (unsigned s = 0; s < g->step_count && k > 0 && (size_t)k < n; ++s) {
-            k += snprintf(b + k, n - (size_t)k, " %.2f V", (double)g->steps_v[s]);
+            k += snprintf(b + k, n - (size_t)k, " %.2fV", (double)g->steps_v[s]);
         }
         if (g->step_count == 0u && k > 0 && (size_t)k < n) {
             snprintf(b + k, n - (size_t)k, "%s", S(R_STEPS_NONE));
@@ -341,7 +400,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
         limit_a(c, hold, sizeof(hold), g->hold_max_a);
         char travel[24];
         if (g->travel_max_ms > 0u) {
-            snprintf(travel, sizeof(travel), "%u ms", (unsigned)g->travel_max_ms);
+            snprintf(travel, sizeof(travel), "%ums", (unsigned)g->travel_max_ms);
         } else {
             snprintf(travel, sizeof(travel), "%s", S(R_OFF));
         }
@@ -351,6 +410,14 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
+/**
+ * @brief The steps table: one line per characterisation step, then the
+ *        column notes and the threshold, arrival and late rules.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of these.
+ */
 static bool step_lines(const servo_test_t *t, cursor_t *c)
 {
     char *b = c->buf;
@@ -450,9 +517,18 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-/* A step's mean end angle at @p end and its error against the commanded
- * one, both on the circle (servo_test_enc_end()), signed, or "--" for
- * none. */
+/**
+ * @brief A step's mean end angle at @p end and its error against the commanded
+ *        one, both on the circle (servo_test_enc_end()), signed, or "--" for
+ *        none.
+ *
+ * @param t   Run state.
+ * @param s   Step.
+ * @param end 0 for the low end, 1 for the high end.
+ * @param b   Out: the mean angle, degrees, or "--" for none.
+ * @param eb  Out: the error, degrees, or "--" for none.
+ * @param n   Size of b and eb, bytes.
+ */
 static void deg_end(const servo_test_t *t, const servo_test_step_t *s,
                     unsigned end, char *b, char *eb, size_t n)
 {
@@ -466,6 +542,15 @@ static void deg_end(const servo_test_t *t, const servo_test_step_t *s,
     }
 }
 
+/**
+ * @brief The encoder lines: one line per characterisation step with its
+ *        end angles, then the counts and the rules.  Nothing when the encoder
+ *        is off.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of these.
+ */
 static bool encoder_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_test_cfg_t *g = &t->cfg;
@@ -568,6 +653,13 @@ static bool encoder_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
+/**
+ * @brief The brown-out lines: the walk's result, then the threshold rule.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of these.
+ */
 static bool brownout_lines(const servo_test_t *t, cursor_t *c)
 {
     char *b = c->buf;
@@ -610,7 +702,13 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
-/* STALL AT against the current limit, or against the meter's range. */
+/**
+ * @brief STALL AT against the current limit, or against the meter's range.
+ *
+ * @param c        Cursor; buf receives the line.
+ * @param g        Configuration of the run.
+ * @param by_limit true for the current limit, false for the meter's range.
+ */
 static void stall_line(const cursor_t *c, const servo_test_cfg_t *g,
                        bool by_limit)
 {
@@ -638,6 +736,14 @@ bool servo_test_stall_note(const servo_test_cfg_t *cfg, char *buf, size_t n)
     return true;
 }
 
+/**
+ * @brief The limits lines: the idle, hold, travel, stall, late and unseen
+ *        checks against their limits, and the first brown-out voltage.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of these.
+ */
 static bool limit_lines(const servo_test_t *t, cursor_t *c)
 {
     const servo_test_cfg_t *g = &t->cfg;
@@ -678,7 +784,7 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
              * an upper bound. */
             char lim[24];
             if (g->travel_max_ms > 0u) {
-                snprintf(lim, sizeof(lim), "%u ms", (unsigned)g->travel_max_ms);
+                snprintf(lim, sizeof(lim), "%ums", (unsigned)g->travel_max_ms);
             } else {
                 snprintf(lim, sizeof(lim), "%s", S(R_OFF));
             }
@@ -749,6 +855,14 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
     return false;
 }
 
+/**
+ * @brief The unmeasured notes: the heading and the lines that say what the
+ *        run did not measure.
+ *
+ * @param t Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of these.
+ */
 static bool unmeasured_lines(const servo_test_t *t, cursor_t *c)
 {
     const bool ina = t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_INA3221;

@@ -1,5 +1,6 @@
-/*
- * The visual language of the bench, resolved at runtime.
+/**
+ * @file
+ * @brief The visual language of the bench, resolved at runtime.
  *
  * Two palettes, dark and light.  In the dark palette the background is
  * near-black so the four telemetry colours run at full chroma; in both, every
@@ -21,6 +22,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "ui_layout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,9 +70,15 @@ static inline gfx_color_t ui_theme_color(ui_color_id_t id)
 
 /** Recompute the palette.  Call ui_router_invalidate() after. */
 void ui_theme_set(ui_theme_id_t theme);
-/** 20..100 %.  Scales the whole palette. */
+/**
+ * @brief Scales the whole palette.
+ * @param percent the brightness, 20..100%
+ */
 void ui_theme_set_brightness(int percent);
-/** 60..140 %.  Pushes colours away from mid-grey, or pulls them toward it. */
+/**
+ * @brief Pushes colours away from mid-grey, or pulls them toward it.
+ * @param percent the contrast, 60..140%
+ */
 void ui_theme_set_contrast(int percent);
 
 ui_theme_id_t ui_theme_get(void);
@@ -113,23 +121,22 @@ int ui_theme_contrast(void);
 
 /* ----------------------------------------------------------------- metrics */
 
-#define UI_CHAMFER       8
-#define UI_CHAMFER_SM    4
+/** @brief A card's or a button's cut corner: 10px. */
+#define UI_CHAMFER       10
+/** @brief A chip's or a small control's cut corner: 5px. */
+#define UI_CHAMFER_SM    5
 
 /*
- * Corner radii, one scale for the whole interface, so a card, a button and a
- * track read as the same material.  UI_CHAMFER is the 45-degree cut ui_panel
- * and the home tag use.
+ * Corner radii (UI_R_CARD, UI_R_CTL, UI_R_CHIP, in ui_layout.h) are one scale
+ * for the whole interface, so a card, a button and a track read as the same
+ * material.  UI_CHAMFER is the 45-degree cut ui_panel and the home tag use.
  */
-#define UI_R_CARD  8
-#define UI_R_CTL   6
-#define UI_R_CHIP  4
 
 /*
  * The bench's numeral style, in one place: the four readings and the throttle
  * share it.  Thickness is an eighth of the height; a fatter segment makes the
  * horizontals, which only span the gap between the two verticals, shorter
- * than they are thick.  The slant of 3 px is the lean of a panel meter.
+ * than they are thick.  The slant of 3px is the lean of a panel meter.
  */
 static inline gfx_seg_style_t ui_seg_hero(void)
 {
@@ -142,6 +149,24 @@ static inline gfx_seg_style_t ui_seg_hero(void)
 #define UI_FONT_LABEL    (&gfx_font_8x16)
 #define UI_FONT_HEAD     (&gfx_font_16x28)
 #define UI_FONT_NUM      (&gfx_font_num_24x30)
+
+/*
+ * Roles of the faces of the 1024 x 600 type scale.  LABEL, HEAD and NUM
+ * above are the faces the screens are laid out in, 8px cells.  The band,
+ * the home tag, the help bubbles and the alert band draw with the scale's
+ * faces: UI_FONT_BAND and UI_FONT_TAG.
+ */
+/** @brief The band's chip labels, the help bubbles' text and the alert
+ *  band's text: 10 x 20. */
+#define UI_FONT_BAND     (&gfx_font_10x20)
+/** @brief The home tag and the wordmark: 20 x 36. */
+#define UI_FONT_TAG      (&gfx_font_20x36)
+/** @brief The 8x16 face for data columns: log table, analyser values, pad
+ *  numbers. */
+#define UI_FONT_FINE     (&gfx_font_8x16)
+/** @brief The 12x24 face for prose: help text, warnings, questions, run
+ *  results. */
+#define UI_FONT_BODY     (&gfx_font_12x24)
 
 #ifdef __cplusplus
 }

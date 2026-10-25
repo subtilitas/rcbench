@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Search for a servo mechanical limit by current: the state machine.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -17,11 +20,26 @@
  */
 #define BASELINE_STEPS 3u
 
+/**
+ * @brief Tell whether a millisecond span has elapsed.
+ *
+ * @param now  Current time, ms.
+ * @param then Start of the span, ms.
+ * @param ms   Span length, ms.
+ * @return true when now - then is at least ms, across a counter wrap.
+ */
 static inline bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
 }
 
+/**
+ * @brief Clamp a pulse width to the search travel and the pulse range.
+ *
+ * @param cfg Configuration whose centre_us and max_travel_us bound the travel.
+ * @param us  Pulse width to clamp, us.
+ * @return the clamped width, SERVO_LIMIT_MIN_US to SERVO_LIMIT_MAX_US.
+ */
 static uint16_t clamp_travel(const servo_limit_cfg_t *cfg, int32_t us)
 {
     const int32_t centre = (int32_t)cfg->centre_us;
@@ -52,13 +70,13 @@ void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t centre_us,
     memset(cfg, 0, sizeof(*cfg));
     cfg->centre_us     = centre_us;
     /*
-     * 10 us is about 1 degree on a standard servo (1000 us of pulse width
+     * 10us is about 1 degree on a standard servo (1000us of pulse width
      * over about 90 degrees of travel).  The step has to be small enough that
      * one step cannot carry the horn from free to hard against the stop; the
      * method depends on meeting the knee rather than arriving past it.
      */
     cfg->step_us       = positive ? 10 : -10;
-    cfg->max_travel_us = 600;    /* 900..2100 us from a 1500 us centre */
+    cfg->max_travel_us = 600;    /* 900..2100us from a 1500us centre */
     cfg->settle_ms     = 120;    /* a slow digital servo arrives within this */
     cfg->measure_ms    = 80;
     cfg->knee_ratio    = 1.8f;
@@ -95,7 +113,13 @@ void servo_limit_init(servo_limit_t *lf, const servo_limit_cfg_t *cfg)
     }
 }
 
-/* Finish the search with the surface returned to centre. */
+/**
+ * @brief Finish the search with the surface returned to centre.
+ *
+ * @param lf    Search state to update.
+ * @param state Final state to store.
+ * @param fault Fault code to store.
+ */
 static void finish(servo_limit_t *lf, servo_limit_state_t state,
                    servo_limit_fault_t fault)
 {
@@ -104,13 +128,18 @@ static void finish(servo_limit_t *lf, servo_limit_state_t state,
     lf->cmd_us = lf->cfg.centre_us;
 }
 
-/*
- * Move one step further out.  A step that would pass the end of the
- * permitted travel stops at that end, so the end itself is measured.  With
- * the end measured free, the surface is free over the whole range asked
- * about, and that is reported as NO_LIMIT rather than as a mechanical limit.
+/**
+ * @brief Move one step further out.
+ *
+ * A step that would pass the end of the permitted travel stops at that end, so
+ * the end itself is measured. With the end measured free, the surface is free
+ * over the whole range asked about, and that is reported as NO_LIMIT rather
+ * than as a mechanical limit.
  *
  * Returns false if the search ended here.
+ *
+ * @param lf Search state to advance.
+ * @return false if the search ended here, true if the command moved.
  */
 static bool advance(servo_limit_t *lf)
 {
@@ -142,7 +171,12 @@ static bool advance(servo_limit_t *lf)
     return true;
 }
 
-/* One position's averaged current has arrived; decide what it means. */
+/**
+ * @brief One position's averaged current has arrived; decide what it means.
+ *
+ * @param lf    Search state to update.
+ * @param avg_a Current averaged over the measure phase at this position, A.
+ */
 static void judge(servo_limit_t *lf, float avg_a)
 {
     if (lf->baseline_steps < BASELINE_STEPS) {
@@ -163,7 +197,7 @@ static void judge(servo_limit_t *lf, float avg_a)
     if (bound) {
         /*
          * The first rise ends the search.  Confirming it by pushing further
-         * would cost another settle-and-measure cycle (200 ms at the
+         * would cost another settle-and-measure cycle (200ms at the
          * defaults) of a servo pushing against a stop already found.
          *
          * The endpoint is the last free position, backed off by backoff_us.

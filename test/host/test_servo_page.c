@@ -9,7 +9,7 @@
  * phase, RESUME carries it on from there, and RESUME is refused with no
  * phase kept or a curve changed since.  The frame rate is the target's:
  * the slots' with the standard servo ports, one port's pin otherwise,
- * judged per target, held at 50 Hz on a slice two ports share, and back at
+ * judged per target, held at 50Hz on a slice two ports share, and back at
  * 0 after a change of target.
  *
  * SPDX-License-Identifier: MIT
@@ -77,9 +77,9 @@ static uint8_t frame_hz(uint16_t hz)
 
 /*
  * A frame rate under which a surface would carry a pulse longer than its
- * frame is refused, and the page keeps the rate it had: 1000 to 2000 us
- * refuses 560 Hz (period 1785 us) and 500 Hz (2000 us) and takes 400 Hz;
- * 1000 to 1784 us takes 560 Hz, 1000 to 1785 us does not.  The throttle
+ * frame is refused, and the page keeps the rate it had: 1000 to 2000us
+ * refuses 560Hz (period 1785us) and 500Hz (2000us) and takes 400Hz;
+ * 1000 to 1784us takes 560Hz, 1000 to 1785us does not.  The throttle
  * keeps its own rate and is not judged at the page's.
  */
 TEST_CASE(a_frame_rate_too_fast_for_the_surface_endpoints_is_refused)
@@ -105,8 +105,8 @@ TEST_CASE(a_frame_rate_too_fast_for_the_surface_endpoints_is_refused)
 }
 
 /*
- * Going back to 0 is a rate change too: a surface at its own 400 Hz with
- * 2500 us, taken under a 50 Hz page rate, refuses 0.
+ * Going back to 0 is a rate change too: a surface at its own 400Hz with
+ * 2500us, taken under a 50Hz page rate, refuses 0.
  */
 TEST_CASE(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate)
 {
@@ -122,8 +122,8 @@ TEST_CASE(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate)
 
 /*
  * Protocol 4.19: with the standard servo ports as target the rate is the
- * slots' alone.  A programming port whose pulse is on stays at 50 Hz, so
- * channel 9 at 1000 to 2000 us does not refuse 560 Hz, and the slots take
+ * slots' alone.  A programming port whose pulse is on stays at 50Hz, so
+ * channel 9 at 1000 to 2000us does not refuse 560Hz, and the slots take
  * the rate (servo_page_slots_hz()).
  */
 TEST_CASE(the_standard_target_does_not_judge_the_ports)
@@ -143,9 +143,9 @@ TEST_CASE(the_standard_target_does_not_judge_the_ports)
 /*
  * With a programming port as target the rate is that port's alone: the
  * slots stay at their own rates and are not judged at it.  A surface at
- * 1000 to 2000 us, which refuses 560 Hz as the standard target, does not
- * refuse it for the port; nor does a surface beside a throttle at 400 Hz on
- * one slice, which refuses 300 Hz as the standard target.
+ * 1000 to 2000us, which refuses 560Hz as the standard target, does not
+ * refuse it for the port; nor does a surface beside a throttle at 400Hz on
+ * one slice, which refuses 300Hz as the standard target.
  */
 TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
 {
@@ -164,7 +164,7 @@ TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
     CHECK_EQ(rate[0], 50u);
     CHECK_EQ(rate[1], 400u);
     CHECK_EQ(frame_hz(300u), 0u);
-    /* The PWM driver's range holds for a port too: 40 to 560 Hz. */
+    /* The PWM driver's range holds for a port too: 40 to 560Hz. */
     CHECK_EQ(frame_hz(39u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(frame_hz(561u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(servo_page_hz(&pg), 300u);
@@ -174,12 +174,12 @@ TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
 
 /*
  * A port target whose pulse is on is judged against its own endpoints:
- * channel 9 at 1000 to 2000 us refuses 560 Hz (1784 us) and 500 Hz
- * (1999 us) and takes 499 Hz; at 410 to 1110 us, a 760 us tail servo's,
- * 560 Hz is taken, and at 1000 to 1784 us as well, 1785 us refused.  A
+ * channel 9 at 1000 to 2000us refuses 560Hz (1784us) and 500Hz
+ * (1999us) and takes 499Hz; at 410 to 1110us, a 760us tail servo's,
+ * 560Hz is taken, and at 1000 to 1784us as well, 1785us refused.  A
  * port whose pulse is off, and a pulsing port that is not the target, are
  * not judged.  0 is always taken: the port is back at
- * 50 Hz.
+ * 50Hz.
  */
 TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
 {
@@ -199,7 +199,7 @@ TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
     CHECK(outputs_set_endpoints(&o, 9u, 410u, 1110u));
     CHECK_EQ(frame_hz(560u), 0u);
     CHECK_EQ(frame_hz(0u), 0u);
-    /* The edge: an endpoint of the frame's last count, 1784 us at 560 Hz,
+    /* The edge: an endpoint of the frame's last count, 1784us at 560Hz,
      * fits; one microsecond more does not. */
     CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1784u));
     CHECK_EQ(frame_hz(560u), 0u);
@@ -210,8 +210,8 @@ TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
 
 /*
  * A slice counts against one wrap register.  A port whose pin shares its
- * slice with another port's pin runs at 50 Hz with it: as target it takes
- * 0 and 50 and refuses every other rate, 40 and 560 Hz included.  The
+ * slice with another port's pin runs at 50Hz with it: as target it takes
+ * 0 and 50 and refuses every other rate, 40 and 560Hz included.  The
  * standard target is not held by it.
  */
 TEST_CASE(a_port_sharing_a_slice_takes_only_50_hz)
@@ -235,7 +235,7 @@ TEST_CASE(a_port_sharing_a_slice_takes_only_50_hz)
 /*
  * A change of target returns the rate to 0, so the new target starts at
  * its own rate and never at a faster one meant for the old: the standard
- * ports at 400 Hz, then port 9, reads 0; port 9 at 300 Hz, named again,
+ * ports at 400Hz, then port 9, reads 0; port 9 at 300Hz, named again,
  * keeps it; the standard ports again read 0.  Armed, with a sweep running,
  * the change also stops the sweep.
  */
@@ -502,7 +502,7 @@ TEST_CASE(hold_keeps_the_surfaces_where_their_outputs_are)
         CHECK(!outputs_overdue(&o, 0, t));
     }
     CHECK_EQ(outputs_actual(&o, 0), rest);
-    /* Unrepeated, the channel rests 500 ms after the last repeat, as it
+    /* Unrepeated, the channel rests 500ms after the last repeat, as it
      * would after any command, and the hold ends with it. */
     const uint32_t last = T0 + 2000u;
     for (; t < last + OUT_DEFAULT_TIMEOUT_MS; ++t) {
@@ -587,7 +587,7 @@ static uint8_t say(uint16_t v, uint32_t now)
     return servo_page_write(&pg, LINK_SV_SWEEP, 1u, &v, &o, now);
 }
 
-/* Hold from @p from to @p to, repeated every 100 ms as the panel does. */
+/* Hold from @p from to @p to, repeated every 100ms as the panel does. */
 static void held(uint32_t from, uint32_t to)
 {
     for (uint32_t t = from; t <= to; t += 100u) {
@@ -598,8 +598,8 @@ static void held(uint32_t from, uint32_t to)
 
 /*
  * RESUME carries a held sweep on from the point it was held at, however
- * long the hold: a 1 Hz sine held 100 ms in is at 735 again on the first
- * pass after it, and at its peak 150 ms later.
+ * long the hold: a 1Hz sine held 100ms in is at 735 again on the first
+ * pass after it, and at its peak 150ms later.
  */
 TEST_CASE(resume_carries_a_held_sweep_on_in_phase)
 {
@@ -607,7 +607,7 @@ TEST_CASE(resume_carries_a_held_sweep_on_in_phase)
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 100u));
     const uint16_t at_hold = o.channel[0].command;
-    CHECK(at_hold > 730u && at_hold < 740u);       /* 500 + 400 sin 36 deg */
+    CHECK(at_hold > 730u && at_hold < 740u);       /* 500 + 400 sin 36deg */
     held(T0 + 100u, T0 + 2100u);
     CHECK_EQ(reg(LINK_SV_SWEEP), LINK_SV_HOLD);
     CHECK_EQ(say(LINK_SV_RESUME, T0 + 2150u), 0u);
@@ -619,7 +619,7 @@ TEST_CASE(resume_carries_a_held_sweep_on_in_phase)
     /* And the panel's repeats of the same curve carry it on. */
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 2350u), 0u);
     CHECK(servo_page_step(&pg, &o, T0 + 2550u));
-    CHECK_EQ(o.channel[0].command, 500u);           /* 500 ms into it */
+    CHECK_EQ(o.channel[0].command, 500u);           /* 500ms into it */
 }
 
 /* The ends reached go on from the count at the hold, and a movement count
@@ -636,10 +636,10 @@ TEST_CASE(resume_keeps_the_movements_reached)
     CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 1u);
     held(T0 + 600u, T0 + 1600u);
     CHECK_EQ(say(LINK_SV_RESUME, T0 + 1650u), 0u);
-    CHECK(servo_page_step(&pg, &o, T0 + 1650u + 200u));   /* 800 ms in */
+    CHECK(servo_page_step(&pg, &o, T0 + 1650u + 200u));   /* 800ms in */
     CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 2u);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0 + 1650u + 400u), 0u);
-    CHECK(servo_page_step(&pg, &o, T0 + 1650u + 600u));   /* 1200 ms in */
+    CHECK(servo_page_step(&pg, &o, T0 + 1650u + 600u));   /* 1200ms in */
     CHECK(!servo_page_step(&pg, &o, T0 + 1650u + 700u));  /* the third end */
     CHECK_EQ(reg(LINK_SV_SWEEP_DONE), 3u);
     CHECK_EQ(o.channel[0].command, SWEEP_CENTRE);
@@ -665,14 +665,14 @@ TEST_CASE(resume_slews_from_where_the_surfaces_were_held)
     CHECK_EQ(say(LINK_SV_RESUME, t + 100u), 0u);
     (void)servo_page_step(&pg, &o, t + 100u);
     outputs_step(&o, t + 100u);
-    CHECK(o.channel[0].command > 870u);            /* the curve, 200 ms in */
+    CHECK(o.channel[0].command > 870u);            /* the curve, 200ms in */
     const uint16_t moved = outputs_actual(&o, 0);
-    CHECK(moved > frozen && moved <= frozen + 21u);   /* 100 ms at 200/s */
+    CHECK(moved > frozen && moved <= frozen + 21u);   /* 100ms at 200/s */
 }
 
 /*
  * RESUME needs a held sweep: refused while one runs, after a hold of no
- * sweep, after 0, a disarm or 500 ms unwritten, and once the curve, its
+ * sweep, after 0, a disarm or 500ms unwritten, and once the curve, its
  * dwell or its movement count has changed since the hold.
  */
 TEST_CASE(resume_is_refused_with_no_sweep_held)
@@ -703,7 +703,7 @@ TEST_CASE(resume_is_refused_with_no_sweep_held)
     outputs_arm(&o, true, T0 + 240u);
     CHECK_EQ(say(LINK_SV_RESUME, T0 + 250u), LINK_NACK_BAD_VALUE);
 
-    /* 500 ms unwritten, before and after a pass has judged it. */
+    /* 500ms unwritten, before and after a pass has judged it. */
     for (int judged = 0; judged < 2; ++judged) {
         fresh(true);
         CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
@@ -772,8 +772,8 @@ TEST_CASE(a_write_after_the_timeout_and_before_the_step_finds_it_stopped)
  * A sweep with a movement count that has made its last movement has ended,
  * even when the HOLD is served before the pass that ends it: the surfaces
  * go to the centre the sweep ends on and are held there, no phase is kept,
- * and RESUME is refused -- the same as when the pass comes first.  A 1 Hz
- * sine with one movement ends 250 ms in.
+ * and RESUME is refused -- the same as when the pass comes first.  A 1Hz
+ * sine with one movement ends 250ms in.
  */
 TEST_CASE(a_hold_after_the_last_movement_finds_the_sweep_ended)
 {
@@ -874,13 +874,13 @@ TEST_CASE(the_host_times_the_far_ends_phase_across_holds)
     CHECK_EQ(servo_phase_held(NULL, 0u), 0u);
     servo_phase_started(NULL, 0u);
 
-    /* The page agrees: a 1 Hz sine started at 1000, held at 1400 and
+    /* The page agrees: a 1Hz sine started at 1000, held at 1400 and
      * resumed at 3000 is where a sweep started at 2600 would be. */
     fresh(true);
     CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, 1000u), 0u);
     held(1400u, 2900u);
     CHECK_EQ(say(LINK_SV_RESUME, 3000u), 0u);
-    CHECK(servo_page_step(&pg, &o, 3125u));            /* 525 ms in */
+    CHECK(servo_page_step(&pg, &o, 3125u));            /* 525ms in */
     sweep_t ref;
     const sweep_cfg_t cfg = { SWEEP_SINE, 1000u, 400u, 0u, 0u };
     CHECK(sweep_start(&ref, &cfg, 2600u));
@@ -922,7 +922,7 @@ TEST_CASE(a_stop_forgets_the_kept_phase_at_the_panel)
  * A hold the panel lets go of while it is live at the far end -- a late or
  * retried HOLD acknowledged -- must be ended with a stop before a position
  * is written.  Under a live hold the far end stamps the surface with the
- * HOLD's arrival, so a position written then goes to rest 500 ms after it,
+ * HOLD's arrival, so a position written then goes to rest 500ms after it,
  * at once and unslewed; after a stop the position is clocked by its own
  * writes and stays.
  */
@@ -942,7 +942,7 @@ TEST_CASE(a_position_after_a_let_go_hold_needs_the_stop_first)
         if (stopped) {
             CHECK_EQ(say(0u, arrival + 1u), 0u);
         }
-        /* A dial drag: positions every 100 ms from 50 ms on. */
+        /* A dial drag: positions every 100ms from 50ms on. */
         bool rested = false;
         for (t = arrival + 1u; t <= arrival + 700u; ++t) {
             if ((t - arrival) % 100u == 50u) {
@@ -1002,8 +1002,8 @@ TEST_CASE(the_curve_over_a_hold_starts_from_its_beginning)
 }
 
 /*
- * The panel's silence ends a sweep after 500 ms wherever the clock is: still
- * running 1 ms and 500 ms after the last write, stopped at 501 ms.
+ * The panel's silence ends a sweep after 500ms wherever the clock is: still
+ * running 1ms and 500ms after the last write, stopped at 501ms.
  */
 static void a_sweep_outlasts_500_ms_of_silence(uint32_t t0)
 {
@@ -1022,8 +1022,8 @@ TEST_CASE(a_sweep_ends_on_500_ms_of_silence_across_the_tick_wrap)
     at_tick_0_and_before_the_wrap(a_sweep_outlasts_500_ms_of_silence, 250u);
 }
 
-/* A hold the same: kept 1 ms and 500 ms after its last repeat, let go at
- * 501 ms, and the surface stamped with the repeat's time while it lasts. */
+/* A hold the same: kept 1ms and 500ms after its last repeat, let go at
+ * 501ms, and the surface stamped with the repeat's time while it lasts. */
 static void a_hold_outlasts_500_ms_of_silence(uint32_t t0)
 {
     fresh_at(true, t0);
@@ -1048,8 +1048,8 @@ TEST_CASE(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap)
     at_tick_0_and_before_the_wrap(a_hold_outlasts_500_ms_of_silence, 270u);
 }
 
-/* A finished sweep's centre is commanded for 500 ms after the last repeat
- * and not at 501 ms: the surface's stamp follows the pass up to there. */
+/* A finished sweep's centre is commanded for 500ms after the last repeat
+ * and not at 501ms: the surface's stamp follows the pass up to there. */
 static void a_finished_sweep_is_stamped_for_500_ms(uint32_t t0)
 {
     fresh_at(true, t0);
@@ -1077,7 +1077,7 @@ static void a_finished_sweep_is_stamped_for_500_ms(uint32_t t0)
 
 TEST_CASE(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap)
 {
-    /* The last repeat 250 ms before the wrap. */
+    /* The last repeat 250ms before the wrap. */
     at_tick_0_and_before_the_wrap(a_finished_sweep_is_stamped_for_500_ms,
                                   1050u);
 }

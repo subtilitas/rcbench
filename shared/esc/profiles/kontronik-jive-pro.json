@@ -49,8 +49,8 @@
     },
     {
       "when": "before_menu",
-      "action": "Pull the jumper cable off after the cell-count tones, within 10 s of power-up.",
-      "action_de": "Jumperkabel nach den Zellentönen abziehen, innerhalb 10 s nach dem Einschalten.",
+      "action": "Pull the jumper cable off after the cell-count tones, within 10s of power-up.",
+      "action_de": "Jumperkabel nach den Zellentönen abziehen, innerhalb 10s nach dem Einschalten.",
       "starts_menu": true,
       "source": "Kontronik_Jive_Pro.pdf p.7, p.11 (DE), p.22 (EN)"
     },
@@ -70,14 +70,14 @@
       "hold_ms": null,
       "confirm_signal": "Ascending three-tone sequence plus cell-count tones at power-up; descending three-tone sequence when the jumper is pulled.",
       "steps": [
-        "Transmitter on, throttle at motor-off (0 %). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+        "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
         "Operator: plug in the jumper cable.",
         "Connect the motor. Apply drive power.",
         "The ESC sounds an ascending three-tone sequence and single tones for the detected cell count (long tone = 4 cells, short tone = 1 cell). The LED flashes.",
         "Operator: pull the jumper cable. The ESC sounds a descending three-tone sequence.",
         "The ESC sounds mode series 1, 2, 3 ... one tone more per series; the LED flashes the same count.",
-        "Move the throttle to full (100 %) after the wanted tone count.",
-        "The ESC confirms with an ascending three-tone sequence and the mode as tones. Mode 2: a further stick position can then be set. Mode 6: move the stick to reverse (0 %) after the full-throttle confirmation.",
+        "Move the throttle to full (100%) after the wanted tone count.",
+        "The ESC confirms with an ascending three-tone sequence and the mode as tones. Mode 2: a further stick position can then be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
         "Wait for the confirmation before disconnecting power; otherwise the ESC treats programming as incomplete and locks (9 LED flashes)."
       ]
     },
@@ -118,7 +118,7 @@
         },
         {
           "number": 2,
-          "name": "Glider, ESC operation with EMK brake (default strength 92 %), optional separate motor-off position"
+          "name": "Glider, ESC operation with EMK brake (default strength 92%), optional separate motor-off position"
         },
         {
           "number": 3,
@@ -126,7 +126,7 @@
         },
         {
           "number": 4,
-          "name": "Helicopter governor with autorotation (AR on at 25 % throttle)"
+          "name": "Helicopter governor with autorotation (AR on at 25% throttle)"
         },
         {
           "number": 6,
@@ -134,7 +134,7 @@
         },
         {
           "number": 10,
-          "name": "BEC voltage setting, 5 to 8 V"
+          "name": "BEC voltage setting, 5 to 8V"
         }
       ],
       "applies_to": null,
@@ -147,67 +147,67 @@
       "values": [
         {
           "number": 0,
-          "name": "5.0 V (no tone)"
+          "name": "5.0V (no tone)"
         },
         {
           "number": 1,
-          "name": "5.2 V"
+          "name": "5.2V"
         },
         {
           "number": 2,
-          "name": "5.4 V"
+          "name": "5.4V"
         },
         {
           "number": 3,
-          "name": "5.6 V"
+          "name": "5.6V"
         },
         {
           "number": 4,
-          "name": "5.8 V"
+          "name": "5.8V"
         },
         {
           "number": 5,
-          "name": "6.0 V"
+          "name": "6.0V"
         },
         {
           "number": 6,
-          "name": "6.2 V"
+          "name": "6.2V"
         },
         {
           "number": 7,
-          "name": "6.4 V"
+          "name": "6.4V"
         },
         {
           "number": 8,
-          "name": "6.6 V"
+          "name": "6.6V"
         },
         {
           "number": 9,
-          "name": "6.8 V"
+          "name": "6.8V"
         },
         {
           "number": 10,
-          "name": "7.0 V"
+          "name": "7.0V"
         },
         {
           "number": 11,
-          "name": "7.2 V"
+          "name": "7.2V"
         },
         {
           "number": 12,
-          "name": "7.4 V"
+          "name": "7.4V"
         },
         {
           "number": 13,
-          "name": "7.6 V"
+          "name": "7.6V"
         },
         {
           "number": 14,
-          "name": "7.8 V"
+          "name": "7.8V"
         },
         {
           "number": 15,
-          "name": "8.0 V"
+          "name": "8.0V"
         }
       ],
       "applies_to": null,

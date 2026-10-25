@@ -1,6 +1,6 @@
 /*
  * Both watchdogs, driven through their transitions against a mock clock.
- * The IOmcu fails safe at 200 ms and the host escalates at 1000 ms, so
+ * The IOmcu fails safe at 200ms and the host escalates at 1000ms, so
  * the end holding the outputs is the more suspicious of the two.
  *
  * SPDX-License-Identifier: MIT
@@ -73,7 +73,7 @@ static void poll_at(uint32_t now)
     link_dev_dispatch(&dev, &req, &reply, now);
 }
 
-/* ------------------------------------------------- the IOmcu's 200 ms */
+/* ------------------------------------------------- the IOmcu's 200ms */
 
 TEST_CASE(the_coprocessor_fails_safe_after_two_hundred_milliseconds)
 {
@@ -484,8 +484,8 @@ TEST_CASE(the_host_watchdog_survives_the_millisecond_wrap)
 /* ------------------------------------------------------------ both together */
 
 /*
- * End to end: when the wire dies, the IOmcu fails safe at 200 ms,
- * 800 ms before the panel escalates.
+ * End to end: when the wire dies, the IOmcu fails safe at 200ms,
+ * 800ms before the panel escalates.
  */
 TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
 {

@@ -78,8 +78,8 @@
       "steps": [
         "Throttle signal at full power (transmitter on).",
         "Connect the drive battery; switch the BEC on where fitted.",
-        "Wait about 5 s for the four-tone melody.",
-        "Wait about 5 s more; the groups start."
+        "Wait about 5s for the four-tone melody.",
+        "Wait about 5s more; the groups start."
       ]
     },
     "announce": {
@@ -119,20 +119,20 @@
         },
         {
           "number": 2,
-          "name": "battery NiCd/NiMH, cutoff 0.7 V per cell, slow down"
+          "name": "battery NiCd/NiMH, cutoff 0.7V per cell, slow down"
         },
         {
           "number": 3,
-          "name": "battery Li-Ion/LiPo, cutoff 3.2 V per cell, slow down",
+          "name": "battery Li-Ion/LiPo, cutoff 3.2V per cell, slow down",
           "default": true
         },
         {
           "number": 4,
-          "name": "battery LiFe, cutoff 2.5 V per cell, slow down"
+          "name": "battery LiFe, cutoff 2.5V per cell, slow down"
         },
         {
           "number": 5,
-          "name": "operating mode switch from normal (plane) to heli mode: acceleration 10 s instead of 1 s, brake disabled"
+          "name": "operating mode switch from normal (plane) to heli mode: acceleration 10s instead of 1s, brake disabled"
         }
       ],
       "applies_to": null,

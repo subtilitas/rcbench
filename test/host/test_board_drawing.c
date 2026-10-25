@@ -234,7 +234,7 @@ TEST_CASE(a_drawing_that_says_another_thing_than_the_catalogue_is_refused)
     CHECK(!board_drawing_agrees(&d, board, &why));
     CHECK_STR_EQ(why, "the drawing has GPIO pads the catalogue does not");
 
-    /* The 3.3 V rail at 5.0 V, and a ground drawn as RUN's kind. */
+    /* The 3.3V rail at 5.0V, and a ground drawn as RUN's kind. */
     CHECK(copy(&d));
     pad_record(&d, 36u)[2] = 50u;
     CHECK(link_drawing_parse(&d, g_copy, d.bytes, NULL));
@@ -295,10 +295,10 @@ TEST_CASE(a_length_is_scaled_and_rounded_from_its_own_value)
     CHECK_EQ(board_drawing_scale(5100u, 500, 5100u), 500);
     CHECK_EQ(board_drawing_scale(0u, 500, 5100u), 0);
     CHECK_EQ(board_drawing_scale(2550u, 500, 5100u), 250);
-    /* 137 of 5100 at 500 px is 13.43: 13.  At 613 px it is 16.47: 16. */
+    /* 137 of 5100 at 500px is 13.43: 13.  At 613px it is 16.47: 16. */
     CHECK_EQ(board_drawing_scale(137u, 500, 5100u), 13);
     CHECK_EQ(board_drawing_scale(137u, 613, 5100u), 16);
-    /* A half rounds up: 51 of 5100 at 50 px is 0.5. */
+    /* A half rounds up: 51 of 5100 at 50px is 0.5. */
     CHECK_EQ(board_drawing_scale(51u, 50, 5100u), 1);
     CHECK_EQ(board_drawing_scale(50u, 50, 5100u), 0);
     /* At the 16-bit limit nothing wraps. */
@@ -312,7 +312,7 @@ TEST_CASE(a_length_is_scaled_and_rounded_from_its_own_value)
     /*
      * Forty pads at 0.1 inch scaled each from its own position: the last
      * one is where 4963 hundredths put it, not where 39 rounded pitches
-     * would (39 x 25 = 975 at 500 px against 973).
+     * would (39 x 25 = 975 at 500px against 973).
      */
     CHECK_EQ(board_drawing_scale(4963u, 500, 5100u), 487);
 }

@@ -1,6 +1,7 @@
-/*
- * What a record in the IOmcu's output store carries, and how a record
- * an earlier build wrote is read.
+/**
+ * @file
+ * @brief What a record in the IOmcu's output store carries, and how a record an
+ *        earlier build wrote is read.
  *
  * firmware/iomcu/src/out_store.c puts the record in flash; this file is the
  * part of it that has no flash in it -- the configuration's layout by
@@ -35,7 +36,7 @@
  * newest version.
  *
  * Slots.  Version 8 is written into slots of two flash pages
- * (OUT_STORE_SLOT_BYTES, 512 bytes): 8 a 4 KiB sector, 16 in the store.
+ * (OUT_STORE_SLOT_BYTES, 512 bytes): 8 a 4KiB sector, 16 in the store.
  * Versions 3 to 7 lie in slots of one page (OUT_STORE_SLOT_BYTES_V7), 16
  * a sector, and are read from that layout while the store holds no
  * version 8 record.
@@ -62,6 +63,10 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Record versions. A save writes OUT_STORE_VERSION; the older ones are
+ *        read from records an earlier build wrote.
+ */
 #define OUT_STORE_VERSION    8u
 #define OUT_STORE_VERSION_V7 7u
 #define OUT_STORE_VERSION_V6 6u
@@ -69,22 +74,27 @@ extern "C" {
 #define OUT_STORE_VERSION_V4 4u
 #define OUT_STORE_VERSION_V3 3u
 
-/** What is kept: the two pages that describe the outputs; the PD mini's
- *  wiring -- SUPPLY's ENABLE to BAUD -- so a module left on can be switched
- *  off after a restart before any panel has written the page; and the
- *  current monitors' set-up; and the phase tap's set-up; and where the
- *  programming ports are and how their pulse is shaped.  The supply's
- *  command is not kept. */
+/**
+ * @brief What is kept: the two pages that describe the outputs; the PD mini's
+ *        wiring -- SUPPLY's ENABLE to BAUD -- so a module left on can be
+ *        switched off after a restart before any panel has written the page;
+ *        and the current monitors' set-up; and the phase tap's set-up; and
+ *        where the programming ports are and how their pulse is shaped.
+ *
+ * The supply's command is not kept.
+ */
 typedef struct {
-    uint16_t slots[LINK_OS_COUNT];
-    uint16_t chan_cfg[LINK_CC_COUNT];
-    uint16_t supply[LINK_SP_OUTPUT];
-    uint16_t sense[LINK_SN_CONFIG_COUNT];
-    uint16_t tone[LINK_TN_CONFIG_COUNT];
-    /** Each port's function (protocol 4.26): bits 4n to 4n + 3 hold 1 +
-     *  port n's FUNC, 0 none stored (prog_port_kept_func()).  0 in a
-     *  record of version 6, of an image older than 4.26, or written by
-     *  one.  Makes the set a whole number of 32-bit words. */
+    uint16_t slots[LINK_OS_COUNT];      /**< the OUTPUTS page (version 3) */
+    uint16_t chan_cfg[LINK_CC_COUNT];   /**< the CHAN_CFG page (version 3) */
+    uint16_t supply[LINK_SP_OUTPUT];    /**< SUPPLY ENABLE to BAUD, version 4 */
+    uint16_t sense[LINK_SN_CONFIG_COUNT];  /**< SENSE 0 to 11 (version 5) */
+    uint16_t tone[LINK_TN_CONFIG_COUNT];   /**< TONE 0 to 6 (version 6) */
+    /** @brief Each port's function (protocol 4.26): bits 4n to 4n + 3 hold 1 +
+     *        port n's FUNC, 0 none stored (prog_port_kept_func()).
+     *
+     * 0 in a record of version 6, of an image older than 4.26, or written by
+     * one.  Makes the set a whole number of 32-bit words.
+     */
     uint16_t prog_func;
     uint16_t prog[LINK_PG_PORTS_MAX * 4u]; /**< prog_port_kept() */
     uint16_t sense_map[LINK_SM_KEPT];  /**< sense_map_kept()              */
@@ -93,74 +103,109 @@ typedef struct {
     uint16_t spare8;  /**< 0; a whole number of 32-bit words again        */
 } out_store_t;
 
-/** The slot a version 8 record is written into, and the one-page slot of
+/** @brief The slot a version 8 record is written into, and the one-page slot of
  *  versions 3 to 7. */
 #define OUT_STORE_SLOT_BYTES    512u
 #define OUT_STORE_SLOT_BYTES_V7 256u
 
-#define OUT_STORE_MAGIC 0x7263626FuL     /* "rcbo" */
+/** @brief Magic at the start of a record: "rcbo" in ASCII. */
+#define OUT_STORE_MAGIC 0x7263626FuL
 
-/** A record's head; the configuration follows it with no padding. */
+/** @brief A record's head; the configuration follows it with no padding. */
 typedef struct {
-    uint32_t magic;
+    uint32_t magic;           /**< OUT_STORE_MAGIC */
     uint32_t zeros;           /**< 0 bits from crc onwards, as written */
     uint32_t zeros_inv;       /**< ~zeros; no partial write keeps the pair */
     uint16_t crc;             /**< over every byte from version onwards */
-    uint16_t version;
-    uint32_t seq;
+    uint16_t version;         /**< an OUT_STORE_VERSION value */
+    uint32_t seq;             /**< the save's sequence number */
 } out_store_hdr_t;
 
-/** A record as the newest version writes it. */
+/** @brief A record as the newest version writes it. */
 typedef struct {
     out_store_hdr_t hdr;
     out_store_t     cfg;
 } out_store_record_t;
 
 /**
- * How many bytes of configuration a record of @p version carries, from the
- * start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5, 176 for
- * 6 (two of them the word prog_func), 208 for 7, 288 for 8.  0 for a
- * version this build does not read.
+ * @brief How many bytes of configuration a record of @p version carries, from
+ *        the start of an out_store_t: 128 for version 3, 136 for 4, 160 for 5,
+ *        176 for 6 (two of them the word prog_func), 208 for 7, 288 for 8.  0
+ *        for a version this build does not read.
+ *
+ * @param version Record version, one of the OUT_STORE_VERSION values.
+ * @return Configuration size in bytes, or 0 for a version not read.
  */
 size_t out_store_cfg_size(uint16_t version);
 
-/** A whole record of @p version, head and configuration: 308 bytes for
- *  version 8, 228 for 7.  0 for a version not read. */
+/**
+ * @brief A whole record of @p version, head and configuration: 308 bytes for
+ *        version 8, 228 for 7.  0 for a version not read.
+ *
+ * @param version Record version, one of the OUT_STORE_VERSION values.
+ * @return Record size in bytes, the head plus out_store_cfg_size(), or 0 for
+ *         a version not read.
+ */
 size_t out_store_rec_size(uint16_t version);
 
 /**
- * A record of @p version for @p cfg and @p seq into the @p slot bytes at
+ * @brief A record of @p version for @p cfg and @p seq into the @p slot bytes at
  * @p rec: the record, then 0xFF to the slot's end, as an erased slot
  * reads, so a program of the whole slot changes nothing past the record.
  * A save writes OUT_STORE_VERSION; an older version is what an earlier
  * build wrote.  False, and nothing written, for a version not read or a
  * record longer than @p slot.
+ *
+ * @param rec Receives the record and the 0xFF fill, @p slot bytes.
+ * @param slot Size of the slot in bytes.
+ * @param version Record version, one of the OUT_STORE_VERSION values.
+ * @param seq Sequence number stored in the head.
+ * @param cfg The configuration to store, out_store_cfg_size() bytes of it.
+ * @return true when the record is written, false when @p rec or @p cfg is
+ *         NULL, the version is not read, or the record is longer than @p slot.
  */
 bool out_store_rec_build(uint8_t *rec, size_t slot, uint16_t version,
                          uint32_t seq, const out_store_t *cfg);
 
 /**
- * Whether the @p avail bytes at @p rec start with a whole record of a
- * version this build reads, from @p min_version to @p max_version: magic,
- * version, zero count and checksum.  On true, its version and sequence
- * number.  A record longer than @p avail is no record.  The two-page
- * layout takes version 8 alone: a version 7 record that happens to start a
- * two-page slot is the layout before's, read with the rest of its slots.
+ * @brief Whether the @p avail bytes at @p rec start with a whole record of a
+ *        version this build reads, from @p min_version to @p max_version:
+ *        magic, version, zero count and checksum.
+ *
+ * On true, its version and sequence number.  A record longer than @p avail is
+ * no record.  The two-page layout takes version 8 alone: a version 7 record
+ * that happens to start a two-page slot is the layout before's, read with the
+ * rest of its slots.
+ *
+ * @param rec The bytes to check.
+ * @param avail Number of bytes at @p rec.
+ * @param min_version Lowest record version accepted.
+ * @param max_version Highest record version accepted.
+ * @param version Receives the record's version on true. May be NULL.
+ * @param seq Receives the record's sequence number on true. May be NULL.
+ * @return true when the record is whole and in range, false otherwise,
+ *         including when @p rec is NULL or @p avail is below the head size.
  */
 bool out_store_rec_check(const uint8_t *rec, size_t avail,
                          uint16_t min_version, uint16_t max_version,
                          uint16_t *version, uint32_t *seq);
 
 /**
- * A record's configuration, as @p version wrote it at @p cfg
- * (out_store_cfg_size() bytes), into @p out at the newest layout.  What the
- * version does not carry starts as its page does: the supply disabled at
- * the module's 19200 baud, both current monitors off at their defaults
+ * @brief A record's configuration, as @p version wrote it at @p cfg
+ *        (out_store_cfg_size() bytes), into @p out at the newest layout.
+ *
+ * What the version does not carry starts as its page does: the supply disabled
+ * at the module's 19200 baud, both current monitors off at their defaults
  * (sense_page_defaults()), the phase tap off at its defaults
- * (tone_page_defaults()), programming port 0 on PROG_PORT_DEFAULT_PIN and
- * the other ports without a pin (prog_port_defaults()).
+ * (tone_page_defaults()), programming port 0 on PROG_PORT_DEFAULT_PIN and the
+ * other ports without a pin (prog_port_defaults()).
  *
  * False for a version this build does not read, and @p out is untouched.
+ *
+ * @param version Record version the configuration was written with.
+ * @param cfg The configuration, out_store_cfg_size() bytes. Not NULL.
+ * @param out Receives the configuration in the newest layout. Not NULL.
+ * @return true when read, false for a version not read or a NULL pointer.
  */
 bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out);
 

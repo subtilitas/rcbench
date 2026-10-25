@@ -12,7 +12,7 @@
  * refuses to the panel it refuses here: a write of ARM while the arm latch
  * is set, a HITEC or KST transaction without the write key, a supply ON
  * without a heartbeat.  A request from here is not link traffic: it does
- * not hold the link's silence failsafe off (LINK_DEV_SILENCE_MS, 200 ms).
+ * not hold the link's silence failsafe off (LINK_DEV_SILENCE_MS, 200ms).
  * Every page that needs a trusted heartbeat and a link that is not silent
  * needs a running panel beside the console.
  *
@@ -79,13 +79,17 @@
 extern "C" {
 #endif
 
-/** The longest command line, without its end. */
+/** @brief The longest command line, without its end. */
 #define PAGE_CONSOLE_LINE_MAX 160u
-/** The longest output line, with its LF. */
+/** @brief The longest output line, with its LF. */
 #define PAGE_CONSOLE_OUT_LINE 200u
-/** The output buffer. */
+/** @brief The output buffer. */
 #define PAGE_CONSOLE_OUT_MAX 2048u
 
+/**
+ * @brief The console state: the command line being read, the output buffer,
+ *        the staged HITEC registers and the work space of the requests.
+ */
 typedef struct {
     const link_dev_t *dev;
     char     line[PAGE_CONSOLE_LINE_MAX + 1u];
@@ -105,40 +109,81 @@ typedef struct {
     uint16_t   data[3][16];
 } page_console_t;
 
-/** An empty console on the pages of @p dev. */
+/**
+ * @brief An empty console on the pages of @p dev.
+ *
+ * @param c   The console; zeroed first. A NULL c is ignored.
+ * @param dev The link device whose pages the console reads and writes.
+ */
 void page_console_init(page_console_t *c, const link_dev_t *dev);
 
-/** One character in.  CR or LF runs the line. */
+/**
+ * @brief One character in.
+ *
+ * CR or LF runs the line.
+ *
+ * @param c  The console.
+ * @param ch The character; a value below 0 is ignored, and so is a control
+ *           character other than CR, LF, BS and DEL.
+ */
 void page_console_key(page_console_t *c, int ch);
 
-/** Once a pass: the report of a HITEC operation that has ended. */
+/**
+ * @brief Once a pass: the report of a HITEC operation that has ended.
+ *
+ * @param c The console.
+ */
 void page_console_poll(page_console_t *c);
 
 /**
- * One line of output from outside the console, formatted as printf()
- * formats: the LF is added, and one the text ends with is not doubled.  At
- * most PAGE_CONSOLE_OUT_LINE bytes with the LF; a longer text is cut.
+ * @brief One line of output from outside the console, formatted as printf()
+ *        formats: the LF is added, and one the text ends with is not doubled.
+ *
+ * At most PAGE_CONSOLE_OUT_LINE bytes with the LF; a longer text is cut.
+ *
+ * @param c   The console.
+ * @param fmt The printf format.
+ * @param ... The arguments of @p fmt.
  */
 void page_console_say(page_console_t *c, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
-/** page_console_say() with a va_list. */
+/**
+ * @brief page_console_say() with a va_list.
+ *
+ * @param c   The console.
+ * @param fmt The printf format.
+ * @param ap  The argument list, started by the caller.
+ */
 void page_console_vsay(page_console_t *c, const char *fmt, va_list ap)
     __attribute__((format(printf, 2, 0)));
 
 /**
- * Whole lines of output, at most @p room bytes; the bytes copied.  A line
- * longer than @p room does not leave: a caller whose room can be smaller
+ * @brief Whole lines of output, at most @p room bytes; the bytes copied.
+ *
+ * A line longer than @p room does not leave: a caller whose room can be smaller
  * than PAGE_CONSOLE_OUT_LINE takes with page_console_take_part().
+ *
+ * @param c    The console.
+ * @param buf  Receives the bytes.
+ * @param room Size of buf in bytes.
+ * @return The number of bytes copied, whole lines only; 0 for a NULL c or buf.
  */
 size_t page_console_take(page_console_t *c, char *buf, size_t room);
 
 /**
- * The first @p room bytes of output, a line cut where the room ends: a line
- * longer than @p room leaves in pieces, and the rest of it comes first in
- * the next take.  Any @p room from 1 byte on moves the output.  A caller
- * that takes in parts keeps to this function: page_console_take() leaves a
- * part-taken line where it is until the rest of it fits.
+ * @brief The first @p room bytes of output, a line cut where the room ends: a
+ *        line longer than @p room leaves in pieces, and the rest of it comes
+ *        first in the next take.
+ *
+ * Any @p room from 1 byte on moves the output.  A caller that takes in parts
+ * keeps to this function: page_console_take() leaves a part-taken line where it
+ * is until the rest of it fits.
+ *
+ * @param c    The console.
+ * @param buf  Receives the bytes.
+ * @param room Size of buf in bytes.
+ * @return The number of bytes copied; 0 for a NULL c or buf.
  */
 size_t page_console_take_part(page_console_t *c, char *buf, size_t room);
 

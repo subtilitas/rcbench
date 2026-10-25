@@ -1,23 +1,41 @@
 #!/usr/bin/env python3
-"""Hold the files over 1,000 lines to the list of the ones that stay.
+"""Hold the files over 1,000 code lines to the list of the ones that stay.
 
-A file over LIMIT lines (1,000) is one of two kinds: a file someone weighed
-and keeps whole, with a reason, or one that grew past the line unseen.
-tools/check_sizes.txt lists the first kind.  This tool counts the lines of
-every file git tracks, as `wc -l` does, and compares.
+A file over LIMIT code lines (1,000) is one of two kinds: a file someone
+weighed and keeps whole, with a reason, or one that grew past the line
+unseen.  tools/check_sizes.txt lists the first kind.  This tool counts the
+code lines of every file git tracks and compares.
 
-    tools/check_sizes.py            every file over 1,000 lines and its entry
+A code line is a line that is not blank and not comment-only.
+
+- C, C++, headers, TypeScript and JavaScript (.c .h .cpp .cc .hpp .ts .tsx
+  .js .mjs .cjs): text inside a block comment or after `//` is a comment,
+  Doxygen blocks included, and so is the last line of a block comment
+  (" */").  A line that holds code and a trailing comment counts.  A
+  string, a character literal and, in TypeScript and JavaScript, a template
+  literal hide a `/*` or `//` they hold, and a template literal's lines all
+  count.  A regular-expression literal is not lexed: one that holds a quote
+  or a `//` can misread the rest of its line.
+- Python (.py): a `#` comment line and the lines of a module, class or
+  function docstring are not counted.  A file that does not parse is
+  counted as plain text with `#` lines left out.
+- Every other kind (Markdown, JSON, YAML, CMake, shell, SVG, CSV, text):
+  the non-blank lines.  The kinds have no one comment syntax, or none a
+  line count should depend on.
+
+    tools/check_sizes.py            every file over 1,000 code lines and its
+                                    entry
     tools/check_sizes.py --check    and exit 1 on any failure below
 
 It fails on
 
-- a file over 1,000 lines that the list does not name, unless an exclusion
-  covers it or it is generated;
-- a listed file at or under 1,000 lines, or not in the tree;
+- a file over 1,000 code lines that the list does not name, unless an
+  exclusion covers it or it is generated;
+- a listed file at or under 1,000 code lines, or not in the tree;
 - a listed file whose count is outside the figure and tolerance its entry
   records ("2422 +-100"; "none" records no figure);
 - a listed file that is generated;
-- an exclusion that covers no file over 1,000 lines;
+- an exclusion that covers no file over 1,000 code lines;
 - a line of the list that is not an entry, an exclusion or a comment, and
   a path listed twice.
 
@@ -40,10 +58,13 @@ SPDX-License-Identifier: MIT
 """
 
 import argparse
+import ast
 import fnmatch
+import io
 import re
 import subprocess
 import sys
+import tokenize
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,6 +72,10 @@ LIST = ROOT / "tools" / "check_sizes.txt"
 CI = ROOT / ".github" / "workflows" / "ci.yml"
 LIMIT = 1000
 HEAD_LINES = 10
+C_SUFFIXES = (".c", ".h", ".cpp", ".cc", ".hpp", ".ts", ".tsx", ".js",
+              ".mjs", ".cjs")
+TEMPLATE_SUFFIXES = (".ts", ".tsx", ".js", ".mjs", ".cjs")
+PY_SUFFIXES = (".py",)
 
 
 def die(msg: str) -> None:
@@ -58,7 +83,11 @@ def die(msg: str) -> None:
 
 
 def tracked() -> list:
-    """Every path git tracks under ROOT, relative and with '/'."""
+    """Every path git tracks under ROOT, relative and with '/'.
+
+    Returns:
+        The paths as text.
+    """
     try:
         out = subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z"],
                              capture_output=True, check=True).stdout
@@ -67,11 +96,157 @@ def tracked() -> list:
     return [p for p in out.decode("utf-8").split("\0") if p]
 
 
-def count(data: bytes) -> int | None:
-    """Lines as `wc -l` counts them; None for a binary file."""
+def count_c(text: str, templates: bool) -> int:
+    """Count the lines of C-style source that hold code.
+
+    A small lexer walks the text once.  It tracks block comments, `//`
+    comments (a trailing backslash continues one), string and character
+    literals (which end at a newline unless it follows a backslash) and,
+    when `templates` is set, backtick template literals, which span lines.
+
+    Args:
+        text: The source text.
+        templates: True to lex backtick template literals (TypeScript and
+            JavaScript).
+
+    Returns:
+        The number of lines with at least one character outside a comment
+        that is not whitespace.
+    """
+    n = len(text)
+    i = 0
+    total = 0
+    code = False       # the current line has code on it
+    block = False      # inside a block comment
+    line_comment = False
+    quote = ""         # the open string delimiter, or ""
+    while i < n:
+        c = text[i]
+        nxt = text[i + 1] if i + 1 < n else ""
+        if c == "\n":
+            if code:
+                total += 1
+            code = quote == "`"
+            if quote in ('"', "'") or line_comment:
+                prev = text[i - 1] if i else ""
+                if prev != "\\":
+                    quote = ""
+                    line_comment = False
+            i += 1
+            continue
+        if block:
+            if c == "*" and nxt == "/":
+                block = False
+                i += 2
+            else:
+                i += 1
+            continue
+        if line_comment:
+            i += 1
+            continue
+        if quote:
+            code = True
+            if c == "\\":
+                if nxt == "\n":
+                    i += 1       # the newline continues the literal
+                else:
+                    i += 2
+                continue
+            if c == quote:
+                quote = ""
+            i += 1
+            continue
+        if c == "/" and nxt == "*":
+            block = True
+            i += 2
+        elif c == "/" and nxt == "/":
+            line_comment = True
+            i += 2
+        else:
+            if c in ('"', "'") or (c == "`" and templates):
+                quote = c
+            if not c.isspace():
+                code = True
+            i += 1
+    if code:
+        total += 1
+    return total
+
+
+def docstring_nodes(tree: ast.AST) -> set:
+    """The (first line, last line) of every module, class and function
+    docstring in a parsed Python file.
+
+    Args:
+        tree: The parsed module.
+
+    Returns:
+        A set of (lineno, end_lineno) pairs.
+    """
+    spans = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef,
+                                 ast.AsyncFunctionDef)):
+            continue
+        body = node.body
+        if (body and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)):
+            spans.add((body[0].lineno, body[0].end_lineno))
+    return spans
+
+
+def count_python(text: str) -> int:
+    """Count the lines of Python source that hold code.
+
+    Comment-only lines, blank lines and docstring lines are left out.  A
+    file that does not tokenize or parse is counted by its lines that are
+    neither blank nor `#` lines.
+
+    Args:
+        text: The source text.
+
+    Returns:
+        The number of code lines.
+    """
+    try:
+        spans = docstring_nodes(ast.parse(text))
+        skip = (tokenize.COMMENT, tokenize.NL, tokenize.NEWLINE,
+                tokenize.INDENT, tokenize.DEDENT, tokenize.ENDMARKER)
+        rows = set()
+        for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+            if tok.type in skip:
+                continue
+            if tok.type == tokenize.STRING and (tok.start[0],
+                                                tok.end[0]) in spans:
+                continue
+            rows.update(range(tok.start[0], tok.end[0] + 1))
+        return len(rows)
+    except (SyntaxError, ValueError, tokenize.TokenError):
+        return sum(1 for ln in text.splitlines()
+                   if ln.strip() and not ln.lstrip().startswith("#"))
+
+
+def count(path: str, data: bytes) -> int | None:
+    """Code lines of a file; None for a binary file.
+
+    Args:
+        path: The path, whose suffix picks the comment syntax.
+        data: The file's bytes.
+
+    Returns:
+        The number of code lines (see the module docstring), or None when
+        the file holds a NUL byte.
+    """
     if b"\0" in data:
         return None
-    return data.count(b"\n")
+    text = data.decode("utf-8", errors="replace")
+    suffix = Path(path).suffix.lower()
+    if suffix in C_SUFFIXES:
+        return count_c(text, suffix in TEMPLATE_SUFFIXES)
+    if suffix in PY_SUFFIXES:
+        return count_python(text)
+    return sum(1 for ln in text.splitlines() if ln.strip())
 
 
 def parse_list(text: str) -> tuple:
@@ -136,12 +311,21 @@ def generator_of(path: str, data: bytes, ci_text: str) -> tuple:
 
 
 def check(files: dict, list_text: str, ci_text: str) -> tuple:
-    """(report, fails).  files: {path: bytes}.  report: (path, lines,
-    what) for every file over LIMIT, longest first."""
+    """Compare the tree with the list.
+
+    Args:
+        files: {path: bytes} of every tracked file.
+        list_text: The text of tools/check_sizes.txt.
+        ci_text: The text of .github/workflows/ci.yml.
+
+    Returns:
+        (report, fails).  report holds (path, code lines, what) for every
+        file over LIMIT code lines, longest first.
+    """
     entries, excludes, fails = parse_list(list_text)
     sizes = {}
     for path, data in files.items():
-        n = count(data)
+        n = count(path, data)
         if n is not None:
             sizes[path] = n
     over = {p: n for p, n in sizes.items() if n > LIMIT}
@@ -166,9 +350,9 @@ def check(files: dict, list_text: str, ci_text: str) -> tuple:
             what = f"excluded by {hit[0]}"
         else:
             what = "NOT LISTED"
-            fails.append(f"{path} is {n:,} lines, over {LIMIT:,}, and not "
-                         f"in {LIST.name}: split it, or list it with the "
-                         f"reason it stays whole")
+            fails.append(f"{path} is {n:,} code lines, over {LIMIT:,}, "
+                         f"and not in {LIST.name}: split it, or list it "
+                         f"with the reason it stays whole")
         report.append((path, n, what))
 
     for path, (figure, tol, _, line) in entries.items():
@@ -178,16 +362,16 @@ def check(files: dict, list_text: str, ci_text: str) -> tuple:
             continue
         n = sizes[path]
         if n <= LIMIT:
-            fails.append(f"{LIST.name}:{line}: {path} is {n:,} lines, at or "
-                         f"under {LIMIT:,}; take it out")
+            fails.append(f"{LIST.name}:{line}: {path} is {n:,} code lines, at "
+                         f"or under {LIMIT:,}; take it out")
         elif figure is not None and abs(n - figure) > tol:
-            fails.append(f"{LIST.name}:{line}: {path} is {n:,} lines; the "
-                         f"list records {figure:,} +-{tol:,}: update the "
+            fails.append(f"{LIST.name}:{line}: {path} is {n:,} code lines; "
+                         f"the list records {figure:,} +-{tol:,}: update the "
                          f"figure")
     for glob, _, line in excludes:
         if glob not in used:
             fails.append(f"{LIST.name}:{line}: exclude {glob} covers no file "
-                         f"over {LIMIT:,} lines; take it out")
+                         f"over {LIMIT:,} code lines; take it out")
     return report, fails
 
 
@@ -211,7 +395,7 @@ def main() -> int:
             print(f"{n:>6}  {path}  ({what})")
     for f in fails:
         print("FAIL " + f)
-    print(f"check_sizes: {len(report)} files over {LIMIT:,} lines, "
+    print(f"check_sizes: {len(report)} files over {LIMIT:,} code lines, "
           f"{len(fails)} failure(s)")
     return 1 if fails and args.check else 0
 

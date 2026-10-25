@@ -1,6 +1,7 @@
-/*
- * Taking a run's number in a folder of the card, and which open file keeps
- * a listed name out of reach.
+/**
+ * @file
+ * @brief Taking a run's number in a folder of the card, and which open file
+ *        keeps a listed name out of reach.
  *
  * The logger writes each run under a number from its folder's series
  * (log_name.h): one above the highest number the folder holds, under any
@@ -37,74 +38,132 @@ extern "C" {
 #endif
 
 /**
- * How many free numbers a failing create is given before the folder is
- * called full.  The walk has put the number above every one the folder
- * holds, so a refused create is the volume answering and not a name.
+ * @brief How many free numbers a failing create is given before the folder is
+ *        called full.
+ *
+ * The walk has put the number above every one the folder holds, so a refused
+ * create is the volume answering and not a name.
  */
 #define LOG_TAKE_TRIES 3u
 
-/** Receives one directory entry's name; it does not outlive the call. */
+/**
+ * @brief Receives one directory entry's name; it does not outlive the call.
+ */
 typedef void (*log_take_visit_fn)(const char *name, void *visit_ctx);
 
-/** The card.  @p dir is a path from the root, CARD_ROOT the root itself.
- *  All 5 functions are set. */
+/**
+ * @brief The card.  @p dir is a path from the root, CARD_ROOT the root itself.
+ *
+ * All 5 functions are set.
+ */
 typedef struct {
-    void *ctx;
-    /** Whether a card is mounted. */
+    void *ctx;                  /**< passed to every function               */
+    /**
+     * @brief Whether a card is mounted.
+     */
     bool (*mounted)(void *ctx);
-    /** Make @p dir a folder.  True when it is one now: made, or there
-     *  before.  False when a file holds the name, or the card takes no new
-     *  folder (write-protected or full). */
+    /**
+     * @brief Make @p dir a folder.
+     *
+     * True when it is one now: made, or there before.  False when a file holds
+     * the name, or the card takes no new folder (write-protected or full).
+     */
     bool (*make_dir)(void *ctx, const char *dir);
-    /** Hand the name of every entry of @p dir, files and folders, to
-     *  @p visit.  False when the folder does not read to its end. */
+    /**
+     * @brief Hand the name of every entry of @p dir, files and folders, to @p
+     *        visit.
+     *
+     * False when the folder does not read to its end.
+     */
     bool (*walk)(void *ctx, const char *dir, log_take_visit_fn visit,
                  void *visit_ctx);
-    /** Whether @p dir holds an entry named @p name, in any case. */
+    /**
+     * @brief Whether @p dir holds an entry named @p name, in any case.
+     */
     bool (*exists)(void *ctx, const char *dir, const char *name);
-    /** Create @p name in @p dir as the file of run @p number and keep it
-     *  open for the caller.  True when it is open. */
+    /**
+     * @brief Create @p name in @p dir as the file of run @p number and keep it
+     *        open for the caller.
+     *
+     * True when it is open.
+     */
     bool (*create)(void *ctx, const char *dir, const char *name, int number);
 } log_take_io_t;
 
-/** One folder's numbering. */
+/**
+ * @brief One folder's numbering.
+ */
 typedef struct {
     char dir[CARD_DIR_MAX];  /**< "" with the slot unused, or the folder */
     int  next;               /**< the first number to try                */
     bool numbered;           /**< next is above what the folder holds    */
 } log_series_t;
 
-/** The folders a run can be written to: the auto logs' and the user's. */
+/**
+ * @brief The folders a run can be written to: the auto logs' and the user's.
+ */
 #define LOG_SERIES_SLOTS 2
 
+/** @brief Numbering of the folders a run can be written to. */
 typedef struct {
-    log_series_t slot[LOG_SERIES_SLOTS];
+    log_series_t slot[LOG_SERIES_SLOTS];  /**< one per folder kept        */
     unsigned     evict;      /**< the slot a third folder takes next */
+    unsigned     edits;      /**< log_series_forget_all()'s count as this
+                                  set last took a number               */
 } log_series_set_t;
 
-/** Every folder's numbering forgotten: the next take walks its folder. */
+/**
+ * @brief Every folder's numbering forgotten: the next take walks its folder.
+ *
+ * @param set  The numbering set.
+ */
 void log_series_init(log_series_set_t *set);
 
 /**
- * The numbering of folder @p dir, case folded: its slot, or a free one, or
- * the slot @p set gives up next, cleared.  Two kinds of run in one folder
- * share one series.  NULL for a NULL argument or a @p dir that does not
- * fit CARD_DIR_MAX.
+ * @brief Every set forgets every folder's numbering before its next take:
+ *        the card's files were changed by another hand than the logger's
+ *        (FILES' copy, move, rename, new entry or delete), so a folder may
+ *        hold a higher number than a set handed out last.
+ *
+ * A count, safe to call from any task: log_take() compares it with the
+ * set's own and walks the folder when it moved.
+ */
+void log_series_forget_all(void);
+
+/**
+ * @brief The numbering of folder @p dir, case folded: its slot, or a free one,
+ *        or the slot @p set gives up next, cleared.
+ *
+ * Two kinds of run in one folder share one series.  NULL for a NULL argument or
+ * a @p dir that does not fit CARD_DIR_MAX.
+ *
+ * @param set  The numbering set.
+ * @param dir  The folder path.
+ * @return The slot of the folder, or NULL.
  */
 log_series_t *log_series_of(log_series_set_t *set, const char *dir);
 
 /**
- * One kind of file follows its folder setting: @p want is the folder of its
- * next take, and @p took (CARD_DIR_MAX bytes) the folder of the last one.
- * A folder other than @p took, case folded, is copied into it and forgets
- * every folder's numbering in @p set, so the next take of each kind walks
- * its folder and numbers from what that folder holds.  A file already open
- * stays in the folder it was opened in.  True when the folder changed;
- * false for the same folder, a NULL or a @p want that does not fit.
+ * @brief One kind of file follows its folder setting: @p want is the folder of
+ *        its next take, and @p took (CARD_DIR_MAX bytes) the folder of the last
+ *        one.
+ *
+ * A folder other than @p took, case folded, is copied into it and forgets every
+ * folder's numbering in @p set, so the next take of each kind walks its folder
+ * and numbers from what that folder holds.  A file already open stays in the
+ * folder it was opened in.  True when the folder changed; false for the same
+ * folder, a NULL or a @p want that does not fit.
+ *
+ * @param set   The numbering set.
+ * @param took  The folder of the last take, CARD_DIR_MAX bytes.
+ * @param want  The folder of the next take.
+ * @return true when the folder changed.
  */
 bool log_series_follow(log_series_set_t *set, char *took, const char *want);
 
-/** What a take came to. */
+/**
+ * @brief What a take came to.
+ */
 typedef enum {
     LOG_TAKE_OK = 0,
     LOG_TAKE_ARG,          /**< a NULL, a prefix not written, a long dir */
@@ -116,35 +175,52 @@ typedef enum {
 } log_take_t;
 
 /**
- * Make folder @p dir, take the next free number of its series and create
- * the run's file under @p prefix: the CSV, or with @p report the TXT.
- * @p number takes the number on LOG_TAKE_OK and -1 otherwise.
+ * @brief Make folder @p dir, take the next free number of its series and create
+ *        the run's file under @p prefix: the CSV, or with @p report the TXT. @p
+ *        number takes the number on LOG_TAKE_OK and -1 otherwise.
  *
  * @p prefix is one this firmware writes (below LOG_PREFIX_WRITTEN).
+ *
+ * @param set     The numbering set.
+ * @param io      The card functions.
+ * @param dir     The folder, from the root.
+ * @param prefix  The file prefix.
+ * @param report  true for the TXT report, false for the CSV.
+ * @param number  Receives the run number on LOG_TAKE_OK, else -1.
+ * @return LOG_TAKE_OK, or the reason no number was taken.
  */
 log_take_t log_take(log_series_set_t *set, const log_take_io_t *io,
                     const char *dir, log_prefix_t prefix, bool report,
                     int *number);
 
 /**
- * The files the logger has open, each with the folder it is in: the
- * automatic log's run in @p run_dir, and a test's CSV and report in
- * @p test_dir.  A number of 0 is no file open.
+ * @brief The files the logger has open, each with the folder it is in: the
+ *        automatic log's run in @p run_dir, and a test's CSV and report in @p
+ *        test_dir.
+ *
+ * A number of 0 is no file open.
  */
 typedef struct {
-    const char *run_dir;
-    unsigned    run;
-    const char *test_dir;
-    unsigned    test;
-    unsigned    txt;
+    const char *run_dir;   /**< folder of the automatic log's run          */
+    unsigned    run;       /**< its run number, 0 when none is open        */
+    const char *test_dir;  /**< folder of the test's files                 */
+    unsigned    test;      /**< the test's run number, 0 when none is open */
+    unsigned    txt;       /**< report number, 0 when none is open         */
 } log_marks_t;
 
 /**
- * Whether @p name in folder @p dir is a file the logger is still writing,
- * or one whose deletion would remove such a file (log_name_busy()), by the
- * marks of that folder alone: an open USER/LOGS/ATEST005.CSV does not hold
- * back BENCH/LOGS/SERVO005.CSV.  Folders compare with case folded.  With
- * both kinds in one folder, both kinds' marks apply.
+ * @brief Whether @p name in folder @p dir is a file the logger is still
+ *        writing, or one whose deletion would remove such a file
+ *        (log_name_busy()), by the marks of that folder alone: an open
+ *        USER/LOGS/ATEST005.CSV does not hold back BENCH/LOGS/SERVO005.CSV.
+ *
+ * Folders compare with case folded.  With both kinds in one folder, both kinds'
+ * marks apply.
+ *
+ * @param marks  The open files.
+ * @param dir    The folder of the file.
+ * @param name   The file name.
+ * @return true when the file is busy.
  */
 bool log_marks_busy(const log_marks_t *marks, const char *dir,
                     const char *name);

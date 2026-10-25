@@ -1,6 +1,10 @@
-/*
- * The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client and a
- * UDP (user datagram protocol) socket for the mDNS name.
+/**
+ * @file wifi_access.c
+ * @brief The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client
+ *        and a UDP (user datagram protocol) socket for the mDNS name.
+ *
+ * The radio under esp_wifi is the board's ESP32-C6 on SDIO, brought up by
+ * wifi_radio.h.
  *
  * Three tasks touch the session: the UI loop (start, close, tick), the event
  * loop (what the radio reports) and the HTTP server (requests).  Everything
@@ -16,8 +20,6 @@
 
 #include "wifi_access.h"
 
-#include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -31,7 +33,6 @@
 #include "esp_http_server.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
-#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_random.h"
 #include "esp_timer.h"
@@ -46,17 +47,31 @@
 #include "wa_mdns.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wifi_dns.h"
+#include "wifi_ntp.h"
+#include "wifi_radio.h"
+#include "wifi_req.h"
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
 #include "wa_zip.h"
+#include "wall_clock.h"
 
 static const char *TAG = "wifi";
 
 #define NVS_NS        "wifi"
-#define WORKER_STACK  5120u
+/** @brief Stack of the wifi_ctl task, in bytes, from internal RAM. The
+ *  deepest call chain, the radio stop down to snprintf(), is 3744 bytes;
+ *  6912 leaves 2144 above tools/stack_check.py's 1024-byte margin. */
+#define WORKER_STACK  6912u
 #define MDNS_STACK    4096u
 #define HTTPD_STACK   8192u
+/** @brief A receive or a send of the page's server waits this long at a
+ *         time, s: esp_http_server's own default (HTTPD_DEFAULT_CONFIG()),
+ *         written out.  A request whose client goes quiet for it ends. */
+#define HTTPD_WAIT_S  5u
+/** @brief Waits of HTTPD_WAIT_S an upload rides out: 30s quiet. */
+#define UPLOAD_WAITS  6u
 /* Below the UI loop's priority would starve the page; above it a ZIP
  * download would starve the frame.  Equal shares the core by time slice. */
 #define NET_PRIORITY  1u
@@ -72,11 +87,11 @@ static const char *TAG = "wifi";
 /* A read waits this long at a time, so a job ended from outside stops its
  * task within about this much once the data flows. */
 #define FETCH_SLICE_MS 1000u
-/* The radio goes off after this much, task ended or not: a connection or a
- * name lookup that waits on the network ends when the radio does. */
+/** @brief The radio goes off after this much, task ended or not, ms.  A
+ *         connection ends with the radio; a name lookup only when lwIP
+ *         gives up on it, up to about 7s a DNS server, and the radio does
+ *         not wait for that (wa_fetch_start_gate()). */
 #define FETCH_GRACE_MS 1500u
-/* And the task's end is waited for this long at most after it. */
-#define FETCH_EXIT_MS  20000u
 #define FETCH_AGENT    "rcbench-panel"
 /** @brief How long the worker waits for the event loop to pass the radio's
  *         last events at its stop (drain()), ms. */
@@ -117,6 +132,7 @@ static struct {
     /* The worker's. */
     bool            net_ready;
     bool            radio_up;
+    bool            held;         /**< up past its session for the clock */
     uint32_t        up_gen;
     wa_mode_t       up_mode;
     esp_netif_t    *netif;
@@ -132,11 +148,15 @@ static struct {
      * by the worker as it reads the session, so wifi_access_down() never
      * sees a start that has not reached the radio as a radio off. */
     atomic_bool     asked;
+    atomic_bool     unlinger;     /**< wifi_access_end_linger() asked: the
+                                       worker ends the session's linger */
     atomic_bool     de;
     SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
     /* The fetch task's.  fetch_alive from its creation to its last touch
-     * of anything shared; fetch_stop asks it to end. */
+     * of anything shared, which can be past the radio's end; fetch_stop
+     * asks it to end, and only a new job, never started while it lives,
+     * clears it. */
     atomic_bool     fetch_alive;
     atomic_bool     fetch_stop;
     fw_upload_t     fup;          /* its image, until staged            */
@@ -154,6 +174,9 @@ typedef struct {
     char            disp[WA_NAME_BYTES * 3u + 64u];
     char            head[WA_NAME_BYTES * 3u + 64u + 192u];
     char            path[WA_PATH_MAX + 1u];
+    wifi_req_bufs_t req;          /**< a request's headers for the guard */
+    /** @brief The Cookie header, whole up to the server's header limit. */
+    char            cookie[CONFIG_HTTPD_MAX_REQ_HDR_LEN + 1];
     wa_send_t       snd;
     uint8_t         mdns_q[WA_MDNS_MAX];
     uint8_t         mdns_out[WA_MDNS_MAX];
@@ -249,12 +272,6 @@ static const wa_store_t k_store = {
 
 /* ------------------------------------------------------------- the card */
 
-typedef struct {
-    DIR   *d;
-    size_t len;                 /* bytes of the folder's own path */
-    char   path[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + WA_NAME_BYTES + 2u];
-} card_dir_t;
-
 static size_t card_path(char *out, size_t cap, const char *rel)
 {
     const int n = snprintf(out, cap, "%s%s%s", STORAGE_MOUNT_POINT,
@@ -262,77 +279,52 @@ static size_t card_path(char *out, size_t cap, const char *rel)
     return (n < 0 || (size_t)n >= cap) ? 0u : (size_t)n;
 }
 
+/**
+ * @brief wa_fs_t.stopped(): a request under way ends now (s.abort).
+ * @param ctx  unused
+ * @return true once the radio is going down or held
+ */
+static bool card_stopped(void *ctx)
+{
+    (void)ctx;
+    return atomic_load(&s.abort);
+}
+
 /*
  * Every folder and file open here holds the volume (storage_hold()) until
  * its close, so a card swapped while a download runs is let go after the
- * download's last close and never under a read.
+ * download's last close and never under a read.  A folder is read with
+ * FatFs's own reads (storage_dir_open()): each entry with its size and
+ * time, no f_stat() per entry.
  */
 static void *card_opendir(void *ctx, const char *path)
 {
-    (void)ctx;
-    if (!storage_hold()) {
+    if (card_stopped(ctx)) {
         return NULL;
     }
-    card_dir_t *d = heap_caps_malloc(sizeof(*d), MALLOC_CAP_SPIRAM);
-    if (d == NULL) {
-        storage_release();
-        return NULL;
-    }
-    d->len = card_path(d->path, sizeof(d->path), path);
-    d->d = (d->len > 0u) ? opendir(d->path) : NULL;
-    if (d->d == NULL) {
-        heap_caps_free(d);
-        storage_release();
-        return NULL;
-    }
-    return d;
+    char full[sizeof(STORAGE_MOUNT_POINT) + WA_PATH_MAX + 2u];
+    return (card_path(full, sizeof(full), path) > 0u)
+           ? storage_dir_open(full) : NULL;
 }
 
 static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
 {
     (void)ctx;
-    card_dir_t *d = dir;
-    for (;;) {
-        errno = 0;
-        const struct dirent *e = readdir(d->d);
-        if (e == NULL) {
-            return (errno != 0) ? -1 : 0;
-        }
-        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
-            continue;
-        }
-        const size_t nl = strnlen(e->d_name, sizeof(e->d_name));
-        if (d->len + 1u + nl + 1u > sizeof(d->path)
-            || nl + 1u > sizeof(out->name)) {
-            return -1;
-        }
-        d->path[d->len] = '/';
-        memcpy(d->path + d->len + 1u, e->d_name, nl);
-        d->path[d->len + 1u + nl] = '\0';
-        /* storage_stat() rather than stat(): stat()'s 32-bit st_size reads
-         * an exFAT file of 4 GiB and more as a small one. */
-        storage_stat_t st;
-        const esp_err_t r = storage_stat(d->path, &st);
-        d->path[d->len] = '\0';
-        if (r != ESP_OK) {
-            return -1;
-        }
-        memset(out, 0, sizeof(*out));
-        memcpy(out->name, e->d_name, nl);
+    storage_stat_t st;
+    memset(out, 0, sizeof(*out));
+    const int r = storage_dir_read(dir, out->name, sizeof(out->name), &st);
+    if (r == 1) {
         out->dir = st.is_dir;
         out->size = st.size;
         out->mtime = st.mtime;
-        return 1;
     }
+    return r;
 }
 
 static void card_closedir(void *ctx, void *dir)
 {
     (void)ctx;
-    card_dir_t *d = dir;
-    (void)closedir(d->d);
-    heap_caps_free(d);
-    storage_release();
+    storage_dir_close(dir);
 }
 
 static void *card_open(void *ctx, const char *path)
@@ -366,7 +358,7 @@ static void card_close(void *ctx, void *file)
 
 static const wa_fs_t k_card = {
     card_opendir, card_readdir, card_closedir,
-    card_open, card_read, card_close, NULL,
+    card_open, card_read, card_close, NULL, card_stopped,
 };
 
 /* ------------------------------------------------------------- the page */
@@ -390,13 +382,30 @@ static void req_end(void)
     unlock();
 }
 
-/* The access code check, the cookie's.  Counted like a typed one. */
+/**
+ * @brief wifi_req_guard() before anything else of a handler's.
+ * @param r     the request
+ * @param kind  what it is
+ * @param e     takes the handler's return on a refusal
+ * @return true when the request may be answered
+ */
+static bool req_guard(httpd_req_t *r, wa_req_kind_t kind, esp_err_t *e)
+{
+    return wifi_req_guard(r, kind, s.name, &b->req, e);
+}
+
+/*
+ * The access code check, the cookie's.  Counted like a typed one.  The
+ * Cookie header is read whole, up to the server's header limit
+ * (CONFIG_HTTPD_MAX_REQ_HDR_LEN): at 192.168.4.1 it carries the cookies of
+ * every gadget at that address, the panel's among them.
+ */
 static wa_code_t req_code(httpd_req_t *r)
 {
-    char hdr[160], given[WA_SECRET_LEN + 2u];
+    char given[WA_SECRET_LEN + 2u];
     given[0] = '\0';
-    if (httpd_req_get_hdr_value_str(r, "Cookie", hdr, sizeof(hdr)) == ESP_OK
-        && !wa_cookie_get(hdr, WA_COOKIE, given, sizeof(given))) {
+    const char *hdr = wifi_req_hdr(r, "Cookie", b->cookie, sizeof(b->cookie));
+    if (hdr != NULL && !wa_cookie_get(hdr, WA_COOKIE, given, sizeof(given))) {
         given[0] = '\0';
     }
     lock();
@@ -447,6 +456,10 @@ static esp_err_t closed(httpd_req_t *r)
 
 static esp_err_t h_root(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_READ, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -463,10 +476,14 @@ static esp_err_t h_root(httpd_req_t *r)
 
 static esp_err_t h_code(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_CODE, &g)) {
+        return g;          /* no guess counted, no body read */
+    }
     if (!req_begin()) {
         return closed(r);
     }
-    char body[96];
+    char body[WA_CODE_BODY_MAX + 1u];
     size_t n = 0u;
     esp_err_t e = ESP_OK;
     while (n < (size_t)r->content_len && n < sizeof(body) - 1u) {
@@ -550,6 +567,10 @@ static esp_err_t answer_upload(httpd_req_t *r, fw_err_t e,
  */
 static esp_err_t h_update(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_UPLOAD, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -567,7 +588,7 @@ static esp_err_t h_update(httpd_req_t *r)
     fw_err_t e = FW_OK;
     if (s.taken) {
         e = FW_ERR_BUSY;
-    } else if (s.up.state != FW_UP_RECEIVING && s.up.state != FW_UP_STAGED) {
+    } else if (!fw_upload_busy(&s.up) && s.up.state != FW_UP_STAGED) {
         heap_caps_free(s.up.buf);
         s.up.buf = NULL;
         s.up.cap = 0u;
@@ -601,8 +622,8 @@ static esp_err_t h_update(httpd_req_t *r)
         }
         const int got = httpd_req_recv(r, (char *)b->io,
                                        (left < IO_CHUNK) ? left : IO_CHUNK);
-        if (got == HTTPD_SOCK_ERR_TIMEOUT && ++waits < 6u) {
-            continue;       /* 6 waits of the server's 5 s: 30 s quiet */
+        if (got == HTTPD_SOCK_ERR_TIMEOUT && ++waits < UPLOAD_WAITS) {
+            continue;
         }
         if (got <= 0) {
             whole = false;
@@ -621,15 +642,30 @@ static esp_err_t h_update(httpd_req_t *r)
         left -= (uint32_t)got;
     }
 
+    /* The check, a SHA-256 over up to the whole slot, runs without the
+     * lock: the seal keeps the buffer the check's (fw_upload_busy()), and
+     * every path that frees it asks first. */
+    lock();
+    e = fw_upload_seal(&s.up, whole);
+    const uint8_t *img = s.up.buf;
+    const uint32_t img_n = s.up.bytes;
+    const uint32_t img_slot = s.up.slot;
+    unlock();
+    fw_image_info_t got;
+    memset(&got, 0, sizeof(got));
+    const fw_err_t ce = (e == FW_OK)
+                        ? fw_image_check(img, img_n, img_slot, &got) : e;
     fw_image_info_t info;
     bool same = false;
     lock();
-    e = fw_upload_end(&s.up, whole);
+    if (e == FW_OK) {
+        e = fw_upload_checked(&s.up, ce, &got);
+    }
     info = s.up.info;
     if (e == FW_OK) {
         s.offer = fw_offer(&s.running, &info);
         same = (s.offer == FW_OFFER_INSTALLED);
-    } else if (s.up.state != FW_UP_RECEIVING && s.up.state != FW_UP_STAGED) {
+    } else if (!fw_upload_busy(&s.up) && s.up.state != FW_UP_STAGED) {
         heap_caps_free(s.up.buf);    /* refused: nothing to keep */
         s.up.buf = NULL;
         s.up.cap = 0u;
@@ -670,6 +706,10 @@ static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
 
 static esp_err_t h_file(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_READ, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -738,6 +778,10 @@ static esp_err_t h_file(httpd_req_t *r)
  */
 static esp_err_t h_zip(httpd_req_t *r)
 {
+    esp_err_t g = ESP_OK;
+    if (!req_guard(r, WA_REQ_READ, &g)) {
+        return g;
+    }
     if (!req_begin()) {
         return closed(r);
     }
@@ -812,6 +856,8 @@ static esp_err_t httpd_up(void)
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
     cfg.max_uri_handlers = 6;
+    cfg.recv_wait_timeout = HTTPD_WAIT_S;
+    cfg.send_wait_timeout = HTTPD_WAIT_S;
     esp_err_t e = httpd_start(&s.httpd, &cfg);
     if (e != ESP_OK) {
         s.httpd = NULL;
@@ -1216,8 +1262,9 @@ static bool auth_refused(uint8_t reason)
  *        times, while it is still the scan under way; a refusal ends the
  *        session WA_OFF_FAILED only while it still is.
  *
- * Called with the lock not held, from the event loop: a session can end
- * and another start while the request runs (wa_scan_begin()).
+ * Called with the lock not held, from the event loop: the request goes to
+ * the C6 and waits for its answer, and a session can end and another start
+ * meanwhile (wa_scan_begin()).
  *
  * @param tok The scan's token.
  * @param run The scan's number in the session, from 1.
@@ -1334,9 +1381,9 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_STA_START:
             if (s.up_mode == WA_MODE_SCAN) {
-                /* One scan at a time: a second esp_wifi_scan_start()
-                 * replaces the first, which then reports done with nothing
-                 * found. */
+                /* One scan at a time: esp_hosted can report one start
+                 * twice, and a second esp_wifi_scan_start() replaces the
+                 * first, which then reports done with nothing found. */
                 lock();
                 const uint32_t tok = wa_scan_begin(&s.w);
                 const unsigned run = s.w.scan_runs;
@@ -1393,9 +1440,9 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 
 /*
  * A step of a start that failed: its name, the error, and what internal
- * RAM held at that moment.  The Wi-Fi driver takes about 51 KB of
- * DMA-capable internal RAM (direct memory access) at esp_wifi_init(), and a
- * start that finds less fails there (tools/ram_budget.py).
+ * RAM held at that moment.  A start that finds too little internal RAM
+ * fails at the allocation that runs short; how much the radio's driver
+ * through the ESP32-C6 takes is not measured.
  */
 static void start_failed(const char *step, esp_err_t e)
 {
@@ -1505,6 +1552,22 @@ static bool fetch_wait(uint32_t wait_ms)
     return !atomic_load(&s.fetch_alive);
 }
 
+/**
+ * @brief Take the radio down: mDNS, the fetch, the page's server, the
+ *        driver and the interface.
+ *
+ * The fetch task gets FETCH_GRACE_MS.  One still in a name lookup after it
+ * is not waited for: the radio counts as down once the interface is gone,
+ * and the task ends when lwIP gives up on the lookup.  It reads no state
+ * the radio's end frees, its report is dropped by the job's generation,
+ * and no job starts while it lives (wa_fetch_start_gate()).  A lookup that
+ * a next session's station answers leads to one connection over it, whose
+ * result is dropped; f_stopped() ends the job before any further request.
+ *
+ * After a failed C6 link, esp_wifi_stop() and esp_wifi_deinit() are not
+ * called: each is a request to the C6, which is held in reset then, and
+ * would end only at esp_hosted's response time-out, 5s each.
+ */
 static void radio_down(void)
 {
     atomic_store(&s.abort, true);
@@ -1521,29 +1584,50 @@ static void radio_down(void)
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
+    /* Before the interface goes: SNTP sends through it. */
+    wifi_ntp_stop();
     if (s.radio_up) {
-        (void)esp_wifi_stop();
-        (void)esp_wifi_deinit();
-        drain();
+        if (!wifi_radio_failed()) {
+            (void)esp_wifi_stop();
+            (void)esp_wifi_deinit();
+            drain();
+        }
         if (s.netif != NULL) {
             esp_netif_destroy_default_wifi(s.netif);
             s.netif = NULL;
         }
     }
     s.radio_up = false;
+    s.held = false;
     memset(s.ip, 0, sizeof(s.ip));
-    if (!fetch_wait(FETCH_EXIT_MS)) {
-        /* No new job starts while it lives (wifi_access_fetch_start()). */
-        ESP_LOGW(TAG, "GitHub: the fetch task has not ended");
+    if (atomic_load(&s.fetch_alive)) {
+        /* In a name lookup: it ends on its own, and no job starts before. */
+        ESP_LOGW(TAG, "GitHub: the fetch task has not ended; radio off "
+                 "without it");
     }
     atomic_store(&s.abort, false);
     atomic_store(&s.down, true);
 }
 
+/**
+ * @brief Bring the radio up in @p mode: the C6's link, the interface, the
+ *        driver, the configuration and, in AP and JOIN, the page's server.
+ *
+ * @param mode The session's mode.
+ * @param w    The session, for the access point's password.
+ * @param c    The kept home network, for JOIN and FETCH.
+ * @return true when every step worked; false after the first that failed,
+ *         logged by start_failed().
+ */
 static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
 {
     atomic_store(&s.down, false);
     if (!net_once()) {
+        return false;
+    }
+    esp_err_t e = wifi_radio_link();
+    if (e != ESP_OK) {
+        start_failed("wifi_radio_link", e);
         return false;
     }
     s.up_mode = mode;
@@ -1557,7 +1641,7 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     }
     wifi_init_config_t ic = WIFI_INIT_CONFIG_DEFAULT();
     ic.nvs_enable = 0;   /* nothing of the radio's is kept */
-    esp_err_t e = esp_wifi_init(&ic);
+    e = esp_wifi_init(&ic);
     if (e != ESP_OK) {
         start_failed("esp_wifi_init", e);
         esp_netif_destroy_default_wifi(s.netif);
@@ -1622,20 +1706,57 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     return true;
 }
 
+/**
+ * @brief Keep the radio up past its session's end for the clock's NTP
+ *        answer (wifi_ntp.h): the page's requests under way and the mDNS
+ *        name end now, the station and the interface stay until
+ *        radio_down().  Logged once a radio.
+ */
+static void radio_hold(void)
+{
+    if (!s.held) {
+        s.held = true;
+        atomic_store(&s.abort, true);
+        atomic_store(&s.mdns_run, false);
+        ESP_LOGI(TAG, "radio held for the NTP answer, %ums at most from "
+                 "the request", (unsigned)WALL_NTP_TIMEOUT_MS);
+    }
+}
+
+/**
+ * @brief The task that owns the radio: compares what the session wants
+ *        with what runs, and brings the radio up or down; a failed C6 link
+ *        takes it down.  A session that ended and lingers (wa_lingers())
+ *        keeps the radio while the clock's NTP request asks.
+ *
+ * @param arg Unused.
+ */
 static void worker(void *arg)
 {
     (void)arg;
     for (;;) {
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
         lock();
+        if (atomic_exchange(&s.unlinger, false)) {
+            wa_unlinger(&s.w);
+        }
         const bool want = wa_radio(&s.w);
         atomic_store(&s.asked, want);
         const uint32_t gen = s.gen;
         const wa_t w = s.w;
         const wa_conf_t c = s.conf;
         unlock();
+        /* The clock from the home network, once a join; this radio's
+         * session only, and never past a failed C6 link. */
+        const bool same = s.radio_up && gen == s.up_gen
+                          && !wifi_radio_failed();
+        const bool held = wifi_ntp_poll(same && w.state == WA_ST_JOINED,
+                                        same && wa_lingers(&w));
+        wifi_dns_poll(s.netif, same && w.state == WA_ST_JOINED);
         if (s.radio_up || !atomic_load(&s.down)) {
-            if (!want || gen != s.up_gen) {
+            if (held) {
+                radio_hold();
+            } else if (!want || gen != s.up_gen || wifi_radio_failed()) {
                 radio_down();
                 ESP_LOGI(TAG, "radio off");
             }
@@ -1651,7 +1772,9 @@ static void worker(void *arg)
                 unlock();
             } else {
                 wa_mdns_tries_reset(&s.mdns_tries);
-                ESP_LOGI(TAG, "radio up, mode %d", (int)w.mode);
+                ESP_LOGI(TAG, "radio up, mode %d; internal RAM %u B free",
+                         (int)w.mode, (unsigned)heap_caps_get_free_size(
+                                          MALLOC_CAP_INTERNAL));
             }
         }
         if (s.radio_up && w.state == WA_ST_JOINED
@@ -1701,7 +1824,7 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     fw_upload_init(&s.up, NULL, 0u, slot);
     wa_fetch_init(&s.f, running->version);
     uint8_t mac[6] = { 0 };
-    (void)esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
+    wifi_radio_mac(mac);
     wa_name(mac, s.name);
     atomic_store(&s.down, true);
     return ESP_OK;
@@ -1805,6 +1928,12 @@ bool wifi_access_down(void)
     return atomic_load(&s.down) && !atomic_load(&s.asked);
 }
 
+void wifi_access_end_linger(void)
+{
+    atomic_store(&s.unlinger, true);
+    poke();
+}
+
 bool wifi_access_save_net(const char *ssid, const char *pass)
 {
     lock();
@@ -1836,13 +1965,15 @@ void wifi_access_set_code(bool on)
 void wifi_access_discard(void)
 {
     lock();
-    if (!s.taken && s.up.state != FW_UP_RECEIVING) {
+    if (!s.taken && !fw_upload_busy(&s.up)) {
         fw_upload_discard(&s.up);
         heap_caps_free(s.up.buf);
         s.up.buf = NULL;
         s.up.cap = 0u;
     } else if (!s.taken) {
-        /* Under way: refused now, and the sender's next piece finds it so. */
+        /* Under way or in its check: refused now, and the sender's next
+         * piece or the check's answer finds it so; the buffer is freed by
+         * h_update(). */
         fw_upload_discard(&s.up);
     }
     unlock();
@@ -1884,16 +2015,13 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
         no_worker = true;
     }
     lock();
-    wa_why_t g = gate;
-    if (g == WA_WHY_NONE
-        && (s.taken || atomic_load(&s.fetch_alive)
-            || (wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH))) {
-        g = WA_WHY_BUSY;
-    }
+    const wa_why_t g = wa_fetch_start_gate(
+        gate, s.taken, atomic_load(&s.fetch_alive),
+        wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH);
     const wa_got_t r = wa_fetch_start(&s.f, job, want, ch, s.conf.have_net,
                                       g, ms());
     if (r == WA_GOT_NONE) {
-        if (job == WA_JOB_DOWNLOAD && s.up.state != FW_UP_RECEIVING) {
+        if (job == WA_JOB_DOWNLOAD && !fw_upload_busy(&s.up)) {
             /* What the page left: the download takes its place. */
             fw_upload_discard(&s.up);
             heap_caps_free(s.up.buf);
@@ -1923,6 +2051,10 @@ void wifi_access_fetch_tick(wa_why_t abort)
         atomic_store(&s.fetch_stop, true);
         if (s.w.mode == WA_MODE_FETCH) {
             wa_close(&s.w, WA_OFF_ASKED);   /* not WI-FI's session */
+            /* Only the job's own end leaves the radio for the clock. */
+            if (abort != WA_WHY_NONE) {
+                wa_unlinger(&s.w);
+            }
         }
     }
     if (run) {

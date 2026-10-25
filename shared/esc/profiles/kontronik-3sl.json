@@ -85,8 +85,8 @@
     },
     {
       "when": "before_menu",
-      "action": "Pull the jumper off after 2 s or the three-tone sequence.",
-      "action_de": "Jumper nach 2 s oder dem Dreiklang abziehen.",
+      "action": "Pull the jumper off after 2s or the three-tone sequence.",
+      "action_de": "Jumper nach 2s oder dem Dreiklang abziehen.",
       "starts_menu": true,
       "source": "Kontronik_3SL.pdf p.5"
     },
@@ -108,7 +108,7 @@
         "Operator: fit the jumper on the programming contacts. Connect the motor if tones are to be audible.",
         "Transmitter and receiver on. Throttle to brake (stick back); mode 3 and 6: motor-off position.",
         "Apply drive power.",
-        "Wait 2 s or until the ESC sounds its tone sequence.",
+        "Wait 2s or until the ESC sounds its tone sequence.",
         "Operator: pull the jumper off.",
         "Mode series sounds; mode 7 is reached at the 7-fold signal.",
         "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake.",
@@ -153,7 +153,7 @@
         },
         {
           "number": 2,
-          "name": "Glider: brake about 0.5 s, cutoff 0.8 V per cell, RPM limit 50,000 at 4 poles, optional separate motor-off position"
+          "name": "Glider: brake about 0.5s, cutoff 0.8V per cell, RPM limit 50,000 at 4 poles, optional separate motor-off position"
         },
         {
           "number": 3,

@@ -1,5 +1,6 @@
-/*
- * fw_release.h says what is read and how strictly.
+/**
+ * @file fw_release.c
+ * @brief fw_release.h says what is read and how strictly.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -714,9 +715,23 @@ bool fw_release_scan_line(const fw_rel_scan_t *s, fw_version_t *out)
     return true;
 }
 
+/** @brief Whether the release line is capped; fw_release_line_capped(). */
+static bool s_line_capped = FW_REL_LINE_CAPPED;
+
+bool fw_release_line_capped(void)
+{
+    return s_line_capped;
+}
+
+void fw_release_set_line_capped(bool capped)
+{
+    s_line_capped = capped;
+}
+
 bool fw_release_in_line(fw_version_t v)
 {
-    return v.major == FW_REL_LINE_MAJOR && v.minor == FW_REL_LINE_MINOR;
+    return !s_line_capped
+           || (v.major == FW_REL_LINE_MAJOR && v.minor == FW_REL_LINE_MINOR);
 }
 
 bool fw_release_offered(fw_version_t found, fw_version_t running,
@@ -734,7 +749,7 @@ void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT])
 
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX])
 {
-    snprintf(out, FW_REL_NAME_MAX, "rcbench-panel-v%u.%u.%u.bin",
+    snprintf(out, FW_REL_NAME_MAX, "rcbench-panel-p4-v%u.%u.%u.bin",
              (unsigned)v.major, (unsigned)v.minor, (unsigned)v.patch);
 }
 

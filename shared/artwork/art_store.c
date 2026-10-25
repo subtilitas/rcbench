@@ -1,5 +1,8 @@
-/*
- * Keeping a board's drawing. See art_store.h.
+/**
+ * @file
+ * @brief Keeping a board's drawing.
+ *
+ * See art_store.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -41,11 +44,20 @@ _Static_assert(offsetof(art_head_t, hash) == 16u
                && offsetof(art_head_t, head) == 24u,
                "the header has no padding before its checksum");
 
+/**
+ * @brief The checksum of a slot header, over the fields before it.
+ */
 static uint16_t head_crc(const art_head_t *h)
 {
     return link_crc(0u, h, offsetof(art_head_t, head));
 }
 
+/**
+ * @brief Whether the flash has the geometry the store needs.
+ *
+ * @param f  Flash to check.
+ * @return   true when the store can use it.
+ */
 static bool usable(const art_flash_t *f)
 {
     return f != NULL && f->read != NULL && f->erase != NULL
@@ -65,7 +77,7 @@ uint32_t art_store_capacity(const art_flash_t *f)
     return usable(f) ? (ART_SLOT_BYTES - f->sector) : 0u;
 }
 
-/* The header of slot @p i, if it has one that checks out. */
+/** @brief The header of slot @p i, if it has one that checks out. */
 static bool slot_head(const art_flash_t *f, uint32_t i, art_head_t *out)
 {
     art_head_t h;
@@ -86,7 +98,7 @@ static bool slot_head(const art_flash_t *f, uint32_t i, art_head_t *out)
     return true;
 }
 
-/* Which slot holds @p board, or the count when none does. */
+/** @brief Which slot holds @p board, or the count when none does. */
 static uint32_t find_slot(const art_flash_t *f, uint16_t board)
 {
     const uint32_t n = art_store_slots(f);
@@ -161,9 +173,11 @@ bool art_store_read_same(const art_flash_t *f, const art_entry_t *key,
     return art_store_read(f, key->board, dst, cap);
 }
 
-/* A slot to put a drawing in: the board's own, else an empty one, else the
- * first -- something has to give, and a store this small is not worth an
- * eviction policy nobody can predict. */
+/**
+ * @brief A slot to put a drawing in: the board's own, else an empty one, else
+ *        the first -- something has to give, and a store this small is not
+ *        worth an eviction policy nobody can predict.
+ */
 static uint32_t slot_for(const art_flash_t *f, uint16_t board)
 {
     const uint32_t n = art_store_slots(f);
@@ -180,11 +194,13 @@ static uint32_t slot_for(const art_flash_t *f, uint16_t board)
     return 0u;
 }
 
-/*
- * What art_store_put() and art_keep_begin() both refuse before anything is
- * written: an entry this flash cannot hold, an empty payload, one with no
- * format, or one with no outline.  What the payload says inside is the
- * reader's to check (link_drawing_parse()); the store keeps bytes.
+/**
+ * @brief What art_store_put() and art_keep_begin() both refuse before anything
+ *        is written: an entry this flash cannot hold, an empty payload, one
+ *        with no format, or one with no outline.
+ *
+ * What the payload says inside is the reader's to check (link_drawing_parse());
+ * the store keeps bytes.
  */
 static bool entry_fits(const art_flash_t *f, const art_entry_t *e)
 {
@@ -259,8 +275,10 @@ bool art_keep_busy(const art_keep_t *k)
     return k != NULL && k->phase != KEEP_IDLE;
 }
 
-/* The first step chooses the slot, and erases its header with the same
- * call's first sector. */
+/**
+ * @brief The first step chooses the slot, and erases its header with the same
+ *        call's first sector.
+ */
 static bool keep_erase(art_keep_t *k)
 {
     const art_flash_t *f = k->f;
@@ -278,6 +296,12 @@ static bool keep_erase(art_keep_t *k)
     return true;
 }
 
+/**
+ * @brief Write one sector of the payload.
+ *
+ * @param k  Keep state.
+ * @return   true when the write succeeded.
+ */
 static bool keep_write(art_keep_t *k)
 {
     const art_flash_t *f = k->f;
@@ -298,10 +322,12 @@ static bool keep_write(art_keep_t *k)
     return true;
 }
 
-/*
- * Read back before the header is written.  A write that reported success and
- * did not take would otherwise be sealed with a header saying it did, and the
- * store would hand out a corrupt drawing for as long as the board is known.
+/**
+ * @brief Read back before the header is written.
+ *
+ * A write that reported success and did not take would otherwise be sealed with
+ * a header saying it did, and the store would hand out a corrupt drawing for as
+ * long as the board is known.
  */
 static bool keep_verify(art_keep_t *k)
 {
@@ -331,6 +357,12 @@ static bool keep_verify(art_keep_t *k)
     return true;
 }
 
+/**
+ * @brief Write the slot header, the last step of a keep.
+ *
+ * @param k  Keep state.
+ * @return   true when the write succeeded.
+ */
 static bool keep_head(art_keep_t *k)
 {
     const art_flash_t *f = k->f;

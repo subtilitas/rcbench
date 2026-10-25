@@ -65,13 +65,13 @@ serves over the link ([The board drawing](../../docs/Link.md#the-board-drawing))
 CI (continuous integration) runs `python3 tools/gen_board_drawing.py --check`,
 so the C file cannot drift from `panel.json`.
 
-- Units: 0.01 mm. Origin: the top-left corner of the outline seen from the
+- Units: 0.01mm. Origin: the top-left corner of the outline seen from the
   component side, x along the pad rows.
-- Outline 51.00 × 21.00 mm, pitch 2.54 mm, pad rows 1.61 mm in from the long
+- Outline 51.00 × 21.00mm, pitch 2.54mm, pad rows 1.61mm in from the long
   edges: `k_pico_shape` in `shared/outputs/out_bind.c`. Every pad sits where
   the panel places it.
 - 40 pads, each with its kind (`gpio`, `ground`, `rail`, `other`) and value
-  (the GPIO number, or a rail in 0.1 V). The kinds and values come from the
+  (the GPIO number, or a rail in 0.1V). The kinds and values come from the
   catalogue's pad list and `k_pico_pads`; the panel refuses a drawing that
   differs from its own catalogue.
 - 102 shapes of 4 kinds: `rect`, `rrect`, `disc`, `line`. Colours are flat:
@@ -93,7 +93,7 @@ pad kinds.
 
 ```json
 {
- "release": "0.22.1",
+ "release": "0.23.0",
  "files": {
   "estop.svg": {
    "part": "estop", "variant": null, "viewBox": [0, 0, 340, 200], "names": "catalogue",
@@ -162,7 +162,7 @@ same in the light and in the dark theme. A wire of the kind `component` is
 the lead of a part and has no colour.
 
 - Supply plus is red: the 10 nets of `PLUS_NETS` (battery plus, PD input and
-  output, servo supply, the output of both shunts, 3.3 V, VBUS, the V pin of
+  output, servo supply, the output of both shunts, 3.3V, VBUS, the V pin of
   a strip of the Osoyoo breakout board and the plus of its DC input).
 - Ground and supply minus are black: the 4 nets of `MINUS_NETS` (ground,
   battery minus, ESC (electronic speed controller) minus and the minus of
@@ -198,7 +198,7 @@ fifth is the card of the part drawings.
 `test/cli.test.ts` fails when this table differs from the output of
 `node drawings/cli.ts --palette`.
 
-Black and white carry a casing: an outline of 1 px on each side of the core.
+Black and white carry a casing: an outline of 1px on each side of the core.
 No single colour reaches 3:1 against both the light and the dark backgrounds.
 The table gives the higher of the 2 ratios and names its carrier.
 

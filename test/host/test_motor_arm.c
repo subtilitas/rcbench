@@ -1,7 +1,7 @@
 /*
  * The MOTOR & ESC screen's throttle against the bench's armed state: no
  * control changes it while the bench is not armed, a disarm returns it to
- * 0 %, and every arm starts from there.
+ * 0%, and every arm starts from there.
  *
  * Touch is fed as the panel produces it: frames of contacts through the
  * tracker and the router (touch_feed.h).  The bench's answers -- armed,
@@ -25,28 +25,29 @@
 #include "ui_screen.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "motor_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /*
- * Geometry in panel coordinates, mirrored from motor_screen.c with the
- * band's height added: the throttle track x 72..485, y 384..423, with -1 at
- * x 12..65 and +1 at x 492..545; ARM at x 564..787, y 348..383; RESET PEAKS
- * under it; the hint line under the track.
+ * Geometry in panel coordinates, from motor_spots.h with the band's height
+ * added: the throttle track x 98..520, with -1 left of it and +1 right of
+ * it; ARM at the CONTROL card's foot, RESET PEAKS over it; the hint line
+ * under the track.
  */
 #define P(y)      (UI_BAND_H + (y))
-#define TRACK_X   72
-#define TRACK_Y   P(356)
-#define DOWN_X    33
-#define UP_X      519
-#define ARM_X     676
-#define ARM_Y     P(342)
-#define RESET_X   676
-#define RESET_Y   P(402)
-#define HINT_Y    P(390)
-/* Throttle per px of travel on the track: 100 % over its 413 px. */
-#define PX_PCT    (100.0f / 413.0f)
+#define TRACK_X   MO_TRACK_X
+#define TRACK_Y   P(MO_TRACK_Y)
+#define DOWN_X    MO_DOWN_X
+#define UP_X      MO_UP_X
+#define ARM_X     MO_ARM_X
+#define ARM_Y     P(MO_ARM_Y)
+#define RESET_X   MO_RESET_X
+#define RESET_Y   P(MO_RESET_Y)
+#define HINT_Y    P(MO_HINT_Y)
+/* Throttle per px of travel on the track: 100% over its 421px of travel. */
+#define PX_PCT    (100.0f / (float)(MO_TRACK_W - 1))
 
 static gfx_color_t *fb;
 static gfx_color_t *fb_was;
@@ -94,11 +95,11 @@ static void frames(int n)
     }
 }
 
-/* Frames drawn into both buffers, so ARM's flash, spent one a drawn frame,
- * is over. */
+/* Frames drawn into both buffers, 26ms each, so ARM's flash, 150ms, is
+ * over. */
 static void settle(void)
 {
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
         ui_router_tick(0.026f);
         ui_router_render(&cv, i & 1);
     }
@@ -207,7 +208,7 @@ static bool every_control_is_refused(void)
 
 /* ------------------------------------------------------------- refusals */
 
-/* A bench never armed: the throttle is the 0 % it starts at, and stays. */
+/* A bench never armed: the throttle is the 0% it starts at, and stays. */
 TEST_CASE(no_throttle_control_moves_the_value_before_the_first_arm)
 {
     fresh();
@@ -216,7 +217,7 @@ TEST_CASE(no_throttle_control_moves_the_value_before_the_first_arm)
     CHECK_EQ(motor_screen_throttle(), 0.0f);
 }
 
-/* Disarmed after a run at 24 %: the throttle is 0 %, whatever is pressed,
+/* Disarmed after a run at 24%: the throttle is 0%, whatever is pressed,
  * dragged or turned. */
 TEST_CASE(no_throttle_control_moves_the_value_after_a_disarm)
 {
@@ -251,7 +252,7 @@ TEST_CASE(no_throttle_control_moves_the_value_before_the_bench_answers)
 }
 
 /* Under a disarm waiting to be taken every throttle is dropped, so the
- * value does not move either; the bench's answer returns it to 0 %. */
+ * value does not move either; the bench's answer returns it to 0%. */
 TEST_CASE(nothing_moves_the_throttle_under_a_disarm_not_yet_taken)
 {
     fresh();
@@ -275,7 +276,7 @@ TEST_CASE(nothing_moves_the_throttle_under_a_disarm_not_yet_taken)
  * A DISARM taken and not yet answered: the bench still reads armed here for
  * the frames its answer takes, and every control stays refused through
  * them.  Reporting the bench armed again in that time changes nothing; its
- * report of the disarm returns the throttle to 0 %, and the arm after it
+ * report of the disarm returns the throttle to 0%, and the arm after it
  * takes input again.
  */
 TEST_CASE(nothing_moves_the_throttle_between_a_disarm_and_its_answer)
@@ -360,14 +361,14 @@ TEST_CASE(a_press_on_the_disarmed_track_is_no_drag_after_the_arm)
 
 /* ---------------------------------------------------------- the arm edge */
 
-/* The first input after an arm starts from 0 %, whatever the run before it
- * ended at: +, the knob's 1 % and a drag of 40 px. */
+/* The first input after an arm starts from 0%, whatever the run before it
+ * ended at: +, the knob's 1% and a drag of 40px. */
 TEST_CASE(the_first_input_after_an_arm_starts_from_zero)
 {
     for (int input = 0; input < 3; ++input) {
         fresh();
         CHECK(arm());
-        drag(28, 250);                  /* 60.5 % */
+        drag(28, 266);                  /* 60.6% */
         CHECK(took().value > 60.0f);
         CHECK(disarm());
         CHECK(arm());
@@ -396,7 +397,7 @@ TEST_CASE(the_first_input_after_an_arm_starts_from_zero)
 }
 
 /* Turns made while disarmed are not kept: 50 of them, then an arm, and the
- * throttle is 0 %; the next 1 % is 1 %. */
+ * throttle is 0%; the next 1% is 1%. */
 TEST_CASE(knob_turns_on_a_disarmed_bench_are_not_accumulated)
 {
     fresh();
@@ -423,7 +424,7 @@ TEST_CASE(knob_turns_on_a_disarmed_bench_are_not_accumulated)
     CHECK_NEAR(took().value, 2.0f, 0.001f);
 }
 
-/* The disarm returns the throttle to 0 % itself, at the limits of the
+/* The disarm returns the throttle to 0% itself, at the limits of the
  * slider and one step inside each. */
 TEST_CASE(a_disarm_returns_every_throttle_to_zero)
 {
@@ -470,7 +471,7 @@ TEST_CASE(a_throttle_not_yet_sent_is_dropped_by_a_disarm_and_by_a_stop)
 /* ------------------------------------------------- every way out, in turn */
 
 /* Arm, drive, disarm, drag, arm, STOP, drag, arm: each disarmed drag is
- * refused and each arm starts from 0 %. */
+ * refused and each arm starts from 0%. */
 TEST_CASE(arm_drive_disarm_drag_arm_stop_drag_arm)
 {
     fresh();
@@ -504,8 +505,8 @@ TEST_CASE(arm_drive_disarm_drag_arm_stop_drag_arm)
 
 /*
  * A run each way it ends -- DISARM, STOP, the link going, another screen --
- * and the arm after it.  Disarmed, the throttle is 0 % and nothing moves
- * it; armed again, the first step is 1 %.
+ * and the arm after it.  Disarmed, the throttle is 0% and nothing moves
+ * it; armed again, the first step is 1%.
  */
 TEST_CASE(disarm_stop_link_loss_and_leaving_each_end_at_zero)
 {
@@ -516,7 +517,7 @@ TEST_CASE(disarm_stop_link_loss_and_leaving_each_end_at_zero)
         CHECK_EQ(took().kind, MOTOR_CMD_NONE);
         feed_tap(FEED_LONE, UP_X, TRACK_Y);
         CHECK_NEAR(took().value, 1.0f, 0.001f);
-        drag(28, 100 + 40 * way);
+        drag(28, 110 + 40 * way);
         CHECK(took().value > 24.0f);
         switch (way) {
         case 0:
@@ -616,7 +617,7 @@ TEST_CASE(the_throttle_is_dimmed_and_says_arm_first_while_disarmed)
     const gfx_color_t sunk  = ui_theme_color(UI_C_PANEL_SUNK);
     const gfx_color_t thumb = ui_theme_color(UI_C_TEXT);
     /* Inside each step button, clear of its label; and on the thumb, which
-     * at 0 % is centred 10 px into the track, between its grip lines. */
+     * at 0% is centred 10px into the track, between its grip lines. */
     const gfx_color_t down_off = px(DOWN_X - 16, TRACK_Y - 12);
     CHECK(down_off != sunk);
     CHECK_EQ(px(UP_X - 16, TRACK_Y - 12), down_off);
@@ -704,7 +705,7 @@ TEST_CASE(the_dimming_follows_the_arm_in_both_buffers)
         } else {
             CHECK(disarm());
         }
-        for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+        for (int i = 0; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
             ui_router_tick(0.026f);
             ui_router_render((i & 1) ? &cv1 : &cv, i & 1);
         }
@@ -733,7 +734,7 @@ TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
     ui_router_tick(0.026f);
     ui_router_render(&cv, 0);                   /* one frame of the flash */
     motor_screen_set_armed(false);
-    for (int i = 1; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+    for (int i = 1; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
         ui_router_tick(0.026f);
         ui_router_render((i & 1) ? &cv1 : &cv, i & 1);
     }
@@ -832,7 +833,7 @@ TEST_CASE(arm_reset_peaks_and_the_tabs_work_while_disarmed)
     feed_tap(FEED_LONE, RESET_X, RESET_Y);
     CHECK_EQ(took().kind, MOTOR_CMD_RESET_PEAKS);
     picture(fb_was);
-    feed_tap(FEED_LONE, 6 + 124 / 2 + 31, P(45));       /* TABLE */
+    feed_tap(FEED_LONE, MO_TABLE_TAB_X, P(MO_PANE_Y));  /* TABLE */
     CHECK(!picture_unchanged());
     CHECK(arm());
     CHECK(disarm());

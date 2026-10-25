@@ -1,4 +1,9 @@
-/*
+/**
+ * @file
+ * @brief CAN (Controller Area Network) bit timing: the segment counts
+ *        for a bit rate, and the limits of each controller.  See
+ *        can_timing.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -16,8 +21,8 @@ void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz)
     /*
      * The time quantum is TQ = 2 x (BRP + 1) / Fosc, with BRP the baud rate
      * prescaler and Fosc the crystal, so the divisor is even and runs
-     * 2..128.  The factor of two is in the silicon; it is why an 8 MHz
-     * crystal reaches 500 kbit/s and no more.
+     * 2..128.  The factor of two is in the silicon; it is why an 8MHz
+     * crystal reaches 500kbit/s and no more.
      */
     out->div_min   = 2;
     out->div_max   = 128;
@@ -39,9 +44,13 @@ void can_timing_limits_twai(can_timing_limits_t *out)
         return;
     }
     memset(out, 0, sizeof(*out));
-    out->clock_hz  = 80000000u;   /* the APB (advanced peripheral bus) clock */
+    /*
+     * The ESP32-P4's TWAI, clocked from the 40MHz crystal.  The prescaler
+     * takes even divisors from 2 to 32768: the register holds div / 2 - 1.
+     */
+    out->clock_hz  = 40000000u;
     out->div_min   = 2;
-    out->div_max   = 16384;
+    out->div_max   = 32768;
     out->div_step  = 2;
     out->tseg1_min = 1;
     out->tseg1_max = 16;

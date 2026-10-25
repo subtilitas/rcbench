@@ -5,14 +5,15 @@
 # by the panel and by the host suite; the radio, the HTTP (hypertext
 # transfer protocol) server and client and the sockets are
 # firmware/panel/components/wifi_access.
-set(SRCS wa_session.c wa_text.c wa_walk.c wa_send.c wa_zip.c wa_page.c
+set(SRCS wa_session.c wa_text.c wa_walk.c wa_send.c wa_zip.c wa_page.c wa_guard.c
          wa_mdns.c wa_fetch.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES fwupdate)
+                           REQUIRES fwupdate PRIV_REQUIRES text clock)
 else()
     add_library(rcbench_webaccess STATIC ${SRCS})
     target_include_directories(rcbench_webaccess PUBLIC include)
-    target_link_libraries(rcbench_webaccess PUBLIC rcbench_fwupdate)
+    target_link_libraries(rcbench_webaccess PUBLIC rcbench_fwupdate
+                          PRIVATE rcbench_text rcbench_clock)
 endif()

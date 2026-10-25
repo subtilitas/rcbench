@@ -55,8 +55,8 @@
   "manual": [
     {
       "when": "before_menu",
-      "action": "Press and release the button after 2 s or the tone sequence.",
-      "action_de": "Taster nach 2 s oder der Tonfolge drücken und loslassen.",
+      "action": "Press and release the button after 2s or the tone sequence.",
+      "action_de": "Taster nach 2s oder der Tonfolge drücken und loslassen.",
       "starts_menu": true,
       "source": "Kontronik_Smile.pdf p.4 (DE), p.17 (EN)"
     },
@@ -77,7 +77,7 @@
       "steps": [
         "Connect the motor. Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
         "Apply drive power.",
-        "Wait 2 s or until the ESC sounds its tone sequence.",
+        "Wait 2s or until the ESC sounds its tone sequence.",
         "Operator: press and release the button on the ESC ('Taster').",
         "Wait for the mode series; modes 7 and 9 are reached by waiting for the 7-fold or 9-fold signal.",
         "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then move the stick to brake (back).",
@@ -150,7 +150,7 @@
         },
         {
           "number": 9,
-          "name": "LiPo undervoltage cutoff, 3 V per cell, added on top of another mode"
+          "name": "LiPo undervoltage cutoff, 3V per cell, added on top of another mode"
         }
       ],
       "applies_to": null,

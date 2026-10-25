@@ -1,13 +1,14 @@
-/*
- * The interface's words, one table per language.
+/**
+ * @file
+ * @brief The interface's words, one table per language.
  *
  * Every string a screen shows in the operator's language has an ID in
- * ui_text.def, which also holds its English.  A language is a table of the
- * same IDs (ui_text_de.c for German); an entry the table leaves NULL shows
- * the English, so a partial table is a working one.  What stays English in
- * every language -- ARM, DISARM, STOP, the screen titles, protocol and mode
- * names, units, and the field's own terms -- is not in the table at all and
- * is written where it is drawn.
+ * ui_text.def (shared/text/include), which holds its English and its German
+ * side by side.  ui_text.c makes a table of each language's column; an
+ * entry a language leaves NULL shows the English, so a partial column is a
+ * working one.  What stays English in every language -- ARM, DISARM, STOP,
+ * the screen titles, protocol and mode names, units, and the field's own
+ * terms -- is not in the table at all and is written where it is drawn.
  *
  * Text is UTF-8; gfx decodes it and draws one cell per code point
  * (gfx.h).  A translated format string must convert the same arguments in
@@ -38,23 +39,26 @@ typedef enum {
     UI_LANG_COUNT
 } ui_lang_t;
 
+/** @brief The screens' strings, TX_<ID> for each UI_TEXT() of ui_text.def. */
 typedef enum {
-#define UI_TEXT(id, cells, en) TX_##id,
+#define UI_TEXT(id, cells, en, de) TX_##id,
 #include "ui_text.def"
-#undef UI_TEXT
     TX_COUNT
 } ui_text_id_t;
 
 /**
- * A language.  Every table is indexed by the ID beside it and may be NULL
- * or hold NULL entries, each of which shows the English.
+ * @brief A language: its column of ui_text.def.
+ *
+ * Every table is indexed by the ID beside it and may be NULL or hold NULL
+ * entries, each of which shows the English.
  */
 typedef struct {
     const char *const *text;             /**< [TX_COUNT]                  */
     const char *const *setting_label;    /**< [SETTING_COUNT]             */
     const char *const *setting_help;     /**< [SETTING_COUNT]             */
-    /** [SETTING_COUNT], each an array of that setting's option_count. */
-    const char *const *const *setting_options;
+    /** One per UI_OPTIONS() of ui_text.def, in its order
+     *  (settings_option_list()), each as long as the English list. */
+    const char *const *const *options;
     const char *const *category;         /**< [SET_CAT_COUNT]             */
     const char *const *servo;            /**< [SERVO_STR_COUNT]           */
 } ui_language_t;
@@ -127,6 +131,48 @@ const char *const *ui_servo_table(void);
 
 /** ON or OFF in the language showing. */
 const char *ui_on_off(int on);
+
+/* ---------------------------------------------------------------- units */
+
+/**
+ * @brief Whether @p unit is a unit symbol, written with no space after its
+ *        number: one of k_unit_symbols (ui_text.c), which holds the
+ *        symbols of tools/check_units.py, alone or followed by a "/" part
+ *        ("rpm/V", "%/s").
+ * @param unit  the unit, UTF-8 ("mΩ"); NULL or "" is none
+ * @return 1 for a symbol ("V", "S", a battery's cell count), 0 for a word
+ *         ("GPIO"), none or NULL
+ */
+int ui_unit_is_symbol(const char *unit);
+
+/**
+ * @brief What stands between a number and @p unit: "" before a symbol
+ *        ("6.00V", "1000.0mΩ", "40s") and before no unit, " " before a
+ *        word that follows its number.  A word that leads
+ *        (ui_unit_is_prefix(), "GPIO 4") also gets " ".
+ * @param unit  the unit, or NULL
+ * @return "" or " "
+ */
+const char *ui_unit_gap(const char *unit);
+
+/**
+ * @brief Whether @p unit is written before its number: "GPIO", so that
+ *        a pin reads "GPIO 4" and not as a count of four GPIOs.  Every
+ *        other unit follows its number.
+ * @param unit  the unit, or NULL
+ * @return 1 for a pin word, else 0
+ */
+int ui_unit_is_prefix(const char *unit);
+
+/**
+ * @brief What holds a reserved pin, in the language showing: the words
+ *        out_bind.c gives a catalogue's LINK_PIN_* values ("heartbeat",
+ *        "flash", "debug", "sensor", "in use") from the text table, and any
+ *        other name ("CAN INT", "CAN") as it is.
+ * @param held_by  an outbind_pin_t's held_by, or NULL
+ * @return the text to show; "" for NULL
+ */
+const char *ui_pin_holder(const char *held_by);
 
 #ifdef GFX_TEXT_TRACE
 /** Defined by the fit check's harness: @p id was looked up. */

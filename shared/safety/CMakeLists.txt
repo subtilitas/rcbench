@@ -5,8 +5,11 @@
 # is the IOmcu's decision to arm, from the monitor and the link's
 # watchdog together.  flash_gate.c is the panel's rule for when a write of
 # its own flash may start, and the IOmcu's for when one of its own may
-# not.
-set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c)
+# not.  reset_cause.c names why the IOmcu last started, from the
+# registers its boot leaves behind.  frame_watch.c is the panel's watchdog on
+# its render loop while the bench is ARMED or the supply's output is on.
+set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c
+         reset_cause.c frame_watch.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)

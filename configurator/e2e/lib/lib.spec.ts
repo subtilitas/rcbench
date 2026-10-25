@@ -72,7 +72,7 @@ test('an opaque black focus outline on white is no finding', async ({ page }) =>
 test('a black focus outline at 5 % opacity on white is a finding', async ({ page }) => {
   await page.setContent(button('rgba(0,0,0,0.05)'));
   const walk = await keyboardWalk(page);
-  // 5 % black over white is 242,242,242: 1.12:1 against white.
+  // 5% black over white is 242,242,242: 1.12:1 against white.
   expect(walk.stops[0]?.outlineContrast).toBeGreaterThan(1.1);
   expect(walk.stops[0]?.outlineContrast).toBeLessThan(1.15);
   expect(walkProblems(walk)).toEqual(['button#b has a focus outline with a contrast of 1.117:1']);

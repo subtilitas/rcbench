@@ -1,5 +1,6 @@
-/*
- * The motor and ESC (electronic speed controller) bench screen.
+/**
+ * @file
+ * @brief The motor and ESC (electronic speed controller) bench screen.
  *
  * Owns no hardware and performs no I/O (input/output).  It is handed a
  * bench_state_t and touch events, and commands are read back out, so the
@@ -18,6 +19,7 @@
 #include "endpoints_link.h"
 #include "gfx.h"
 #include "settings.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -49,7 +51,7 @@ typedef struct {
 void motor_screen_push(const bench_state_t *b);
 
 /**
- * What the bench is doing, which is what bounds a run.
+ * @brief What the bench is doing, which is what bounds a run.
  *
  * Arming clears the plot and starts it; disarming holds it as it stood.  The
  * caller reports the bench's own arm state, not a request made of it: a
@@ -61,7 +63,7 @@ void motor_screen_push(const bench_state_t *b);
  * buttons and motor_screen_knob() post nothing and move nothing, from the
  * first frame to the bench's answer to an ARM, and from a MOTOR_CMD_DISARM
  * being posted or motor_screen_cancel_arm() on an armed bench until this
- * is called with false.  The change to disarmed returns the slider to 0 %, drops a
+ * is called with false.  The change to disarmed returns the slider to 0%, drops a
  * throttle command waiting to be polled and ends a drag under way.
  *
  * The hold that posts MOTOR_CMD_ARM does the same.  The change to armed
@@ -84,11 +86,14 @@ motor_plot_state_t motor_screen_plot_state(void);
 int motor_screen_plot_samples(void);
 
 /**
- * Whether channel @p channel's peak is drawn as a value -- 0 voltage, 1
- * current, 2 power, 3 rpm: a valid reading of it has arrived since the run
+ * @brief Whether channel @p channel's peak is drawn as a value -- 0 voltage, 1
+ * current, 2 power, 3rpm: a valid reading of it has arrived since the run
  * started or the peaks were reset.  It stays drawn when the live reading
  * goes empty, as when a source stops answering mid-run and the run's peaks
  * it measured stand.
+ *
+ * @param channel 0 voltage, 1 current, 2 power, 3rpm
+ * @return true while that peak is drawn as a value
  */
 bool motor_screen_peak_shown(int channel);
 
@@ -179,6 +184,13 @@ bool motor_screen_target_locked(void);
 
 /** The setting SETTINGS' keypad types, or -1 while it is closed. */
 int motor_screen_keypad_setting(void);
+
+/**
+ * @brief SETTINGS' keypad, open or closed, for a test to read what it
+ *        opened with and where its keys are.
+ * @return The keypad; never NULL.
+ */
+const ui_keypad_t *motor_screen_keypad(void);
 
 /** SETTINGS' rows in their order, at most @p max into @p out (NULL counts
  *  them).  Returns how many there are. */

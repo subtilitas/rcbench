@@ -76,31 +76,31 @@ slot is bound. A pin no free block can reach is refused like any other.
 ## Servo PWM
 
 Hardware PWM, not PIO: the part has 12 slices and 24 channels, and a servo
-pulse is exactly what a slice does. The counter runs at 1 MHz, so a pulse is a
+pulse is exactly what a slice does. The counter runs at 1MHz, so a pulse is a
 count of microseconds and the frame period is 1,000,000 divided by the rate.
 
 | | |
 | --- | --- |
-| Frame rate | 40 to 560 Hz |
-| Pulse | 400 to 2500 µs and at most the period minus 1 µs, refused outside |
-| Resolution | 1 µs |
+| Frame rate | 40 to 560Hz |
+| Pulse | 400 to 2500µs and at most the period minus 1µs, refused outside |
+| Resolution | 1µs |
 
 A pulse is never as long as its frame. The longest one a frame carries is the
-period minus 1 µs, rounded down: the counter's last count, which leaves the
-pin low for 1 µs.
+period minus 1µs, rounded down: the counter's last count, which leaves the
+pin low for 1µs.
 
 | Rate | Period | Longest pulse |
 | ---: | ---: | ---: |
-| 560 Hz | 1785 µs | 1784 µs |
-| 500 Hz | 2000 µs | 1999 µs |
-| 400 Hz | 2500 µs | 2499 µs |
-| 399 Hz and below | 2506 µs and more | 2500 µs, the ceiling |
+| 560Hz | 1785µs | 1784µs |
+| 500Hz | 2000µs | 1999µs |
+| 400Hz | 2500µs | 2499µs |
+| 399Hz and below | 2506µs and more | 2500µs, the ceiling |
 
 A CHAN_CFG, OUTPUTS, BIND, SERVO or PROG write that would leave a PWM output
 with a longer endpoint is refused with BAD_VALUE, and nothing changes. The
 rate judged is the one the output runs at: SERVO's for a surface while that is
-not 0, the slot's own otherwise. A standard 1000 to 2000 µs servo therefore
-takes 499 Hz and is refused at 500 Hz and 560 Hz. A stored slot whose endpoint
+not 0, the slot's own otherwise. A standard 1000 to 2000µs servo therefore
+takes 499Hz and is refused at 500Hz and 560Hz. A stored slot whose endpoint
 does not fit its own rate starts unbound. The rule is `out_pwm_pulse_max()`
 and `outputs_pulse_check()`; [the link](Link.md#a-pulse-no-longer-than-its-frame)
 has the pages' side.
@@ -136,22 +136,22 @@ Either pin of a pair may be used; the two together may not.
 
 ## PPM
 
-One pin, up to eight channels. A frame is a run of 300 µs marks; the time from
+One pin, up to eight channels. A frame is a run of 300µs marks; the time from
 the start of one mark to the start of the next is one channel's pulse width.
 After the last channel comes a terminating mark and then the sync gap, and that
 gap is what tells a receiver where the next frame starts.
 
-Channels and frame rate are not independent. Eight channels at 2000 µs already
-spend 16 ms of a 22.5 ms frame. The bench refuses a frame whose sync gap would
-fall below 3000 µs, which is the shortest gap no receiver can read as a
-channel: the channel ceiling is 2500 µs.
+Channels and frame rate are not independent. Eight channels at 2000µs already
+spend 16ms of a 22.5ms frame. The bench refuses a frame whose sync gap would
+fall below 3000µs, which is the shortest gap no receiver can read as a
+channel: the channel ceiling is 2500µs.
 
 The shortest frame that carries n channels whatever they are commanded to is
 
-    n × 2500 µs + 300 µs + 3000 µs
+    n × 2500µs + 300µs + 3000µs
 
-which is 23.3 ms for eight channels — so eight channels at 50 Hz is refused and
-eight at 40 Hz is not. The refusal happens when the slot is configured, not when
+which is 23.3ms for eight channels — so eight channels at 50Hz is refused and
+eight at 40Hz is not. The refusal happens when the slot is configured, not when
 the sticks reach the end of their travel.
 
 Polarity is a pad inversion, not a different program.
@@ -176,7 +176,7 @@ both ends agree on the rate by configuration.
 
 The state machine runs at eight times the bit rate, because eight is the
 smallest number of cycles that makes both those fractions whole. DShot600 is
-therefore 4.8 MHz.
+therefore 4.8MHz.
 
 The value is not a throttle across its whole range:
 
@@ -199,9 +199,9 @@ above the span of 1000 maps to zero, motor stop, not to full throttle.
 returns false and leaves the old output running. A caller releases the pin
 first.
 
-Frames go out at 1 kHz. That rate is not on the wire: the OUTPUTS page's rate
+Frames go out at 1kHz. That rate is not on the wire: the OUTPUTS page's rate
 field is a bit rate for DShot rather than a frame rate, so the bench chooses it.
-1 kHz is twenty times the panel's poll rate and well inside every ESC's own
+1kHz is twenty times the panel's poll rate and well inside every ESC's own
 signal timeout.
 
 **Nothing is sent while the bench is not driving.** No frames means no edges,
@@ -217,9 +217,9 @@ separate driver number on the [OUTPUTS page](Link.md#page-map), not a flag: the
 two are different wires, not one wire with a setting.
 
 After each frame the IOmcu releases the line and the ESC answers on it,
-about 30 µs later, with 21 bits at five quarters of the DShot rate. The
+about 30µs later, with 21 bits at five quarters of the DShot rate. The
 turnaround happens inside the PIO block — the transmitter releases the pin and
-raises a flag, and the receiver starts on that flag — because 30 µs is not a
+raises a flag, and the receiver starts on that flag — because 30µs is not a
 deadline a loop can meet.
 
 The reply is group-coded. Each nibble of a 16-bit value becomes a five-bit code
@@ -276,7 +276,7 @@ the one number the wire does not carry. The panel sends it from the `Motor
 poles` setting when an IOmcu starts answering, again whenever the setting
 changes, and again before the write that switches to ARMED if a change is still owed, on
 the [CONTROL page](Link.md#page-map). A write nobody answers stays owed and
-goes out again at the next 50 ms poll; one the IOmcu refuses is not
+goes out again at the next 50ms poll; one the IOmcu refuses is not
 retried, and waits for the next edit or link-up edge.
 
 Until it arrives the IOmcu reports no speed at all. A speed derived from a
@@ -288,12 +288,12 @@ rpm valid bit -- an odd one is refused, because a typo that reached the far end
 would put a plausible wrong speed on the screen -- so an IOmcu holding an
 out-of-date count reports the actual speed times the motor's poles over the
 count it holds. Fitting a 12-pole motor to a bench still holding 14 reads
-14.3 % low; leaving 12 in place for a 14-pole motor reads 16.7 % high. The
+14.3% low; leaving 12 in place for a 14-pole motor reads 16.7% high. The
 direction follows the edit, and the ends of the range are a factor of 21
 either way: a 42-pole motor converted as 2 reads
 twenty-one times its speed, and a 2-pole motor converted as 42 reads a
 twenty-first of it. The ordinary edit is the one to watch, because a factor of
-21 is wrong on sight and 14 % is not.
+21 is wrong on sight and 14% is not.
 
 ### Extended telemetry
 
@@ -301,12 +301,12 @@ An ESC sent command 13 interleaves temperature, voltage, current, stress and
 status frames between the speed ones, marked by the top nibble of the payload.
 
 The bench asks with command 13 and asks again until the ESC answers. One ask
-is ten frames of command 13 in a row, 10 ms at 1 kHz. An ask goes out only in
+is ten frames of command 13 in a row, 10ms at 1kHz. An ask goes out only in
 place of a zero-throttle frame, so it never delays a throttle, and command 13
 is inside the command range, so nothing turns while it goes out:
 
 - the first ask starts at the first zero-throttle frame of a run;
-- the next starts 500 ms after the last repeat of the one before, while the
+- the next starts 500ms after the last repeat of the one before, while the
   throttle stays at zero;
 - a throttle above zero goes out on its own frame, and an ask it interrupts
   starts again from its first repeat;
@@ -317,13 +317,13 @@ is inside the command range, so nothing turns while it goes out:
 
 The repetition is for ESCs with AM32 firmware. An ESC with AM32 2.21 takes a
 command only while it is armed and its motor is stopped, and it arms itself
-after 1 s of zero throttle, counted from the first frame it hears (`Src/dshot.c:157`,
+after 1s of zero throttle, counted from the first frame it hears (`Src/dshot.c:157`,
 `Src/main.c:1353-1356`). A bench that is SAFE sends no frames, and the AM32
-firmware restarts after 0.5 s without one when armed and 2 s when not, so
+firmware restarts after 0.5s without one when armed and 2s when not, so
 every run starts from an ESC that has not armed. An ask made only in a run's
-first 10 ms arrives before the ESC can take it. `test_dshot_edt` holds the
+first 10ms arrives before the ESC can take it. `test_dshot_edt` holds the
 schedule against a model of those rules: an ESC with AM32 firmware starting
-from silence at zero throttle takes the third ask, 1.02 s into the run. Speed
+from silence at zero throttle takes the third ask, 1.02s into the run. Speed
 does not depend on any of this: an ESC with AM32 firmware answers a
 bidirectional frame with a period whether or not it was asked.
 
@@ -356,7 +356,7 @@ the case this cannot survive, and no such ESC has been tried.
 
 Temperature, voltage and current reach the bench numbers from here and from
 nowhere else: there is no measurement front end on the IOmcu. Each keeps
-its own staleness window of 2000 ms, against 200 ms for speed, because the
+its own staleness window of 2000ms, against 200ms for speed, because the
 extended frames are interleaved a few a second while a period comes back on
 every frame. Power is the product of voltage and current, and stays empty
 unless both arrived.
@@ -371,11 +371,11 @@ One reading is not on this list. It is against one ESC with no instrument on the
 
 - **Bidirectional DShot600 against one ESC** (#172): a Skystars 35A running AM32 2.21, target `JUPITER_35A_F421` (the AM32
   configurator shows it cut to `JUPITER_35A_F42`), on a 4S pack, bound to
-  GP0. Release 0.8.2 decoded its speed (2593 rpm). Release 0.9.1, with the
-  repeated ask above, turned its extended telemetry on: at 0 % throttle
-  MOTOR & ESC showed 14.75 V, 72.0 A and an ESC temperature of 41 °C. The
+  GP0. Release 0.8.2 decoded its speed (2593rpm). Release 0.9.1, with the
+  repeated ask above, turned its extended telemetry on: at 0% throttle
+  MOTOR & ESC showed 14.75V, 72.0A and an ESC temperature of 41°C. The
   tester reported the voltage as correct. The current and the temperature
-  were decoded and checked against nothing: 72.0 A at idle, and 81.00 A read
+  were decoded and checked against nothing: 72.0A at idle, and 81.00A read
   by DshotDisplay from the same ESC on another day, look like an input with
   no current sensor behind it rather than a measurement.
 
@@ -384,17 +384,17 @@ is unconfirmed beyond that one ESC:
 
 - the reply rate of five quarters of the DShot rate;
 - the leading-bit convention of the group code;
-- the turnaround delay, and whether 30 µs is what an ESC actually waits;
-- the units of the extended-telemetry current (1 A per count) and
-  temperature (1 °C per count) frames, and the stress, status and debug
-  frames; only the voltage (0.25 V per count) has been read against a value
+- the turnaround delay, and whether 30µs is what an ESC actually waits;
+- the units of the extended-telemetry current (1A per count) and
+  temperature (1°C per count) frames, and the stress, status and debug
+  frames; only the voltage (0.25V per count) has been read against a value
   the tester knew;
 - whether ESCs with firmware other than AM32 accept command 13 under the
   repeated ask: ESCs with Bluejay and BLHeli_32 firmware are untested;
-- whether the specification's "wait at least 35 ms" note belongs to command
+- whether the specification's "wait at least 35ms" note belongs to command
   13 or to command 12 (save settings). The table admits both readings, and
   the bench waits neither way: the frame after an ask's tenth repeat is the
-  throttle, or another zero-throttle frame, at the next 1 ms tick. Settling
+  throttle, or another zero-throttle frame, at the next 1ms tick. Settling
   it needs the specification text rather than a board;
 - every bit timing, against a real ESC's tolerance rather than against the
   specification.

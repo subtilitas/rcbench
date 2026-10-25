@@ -9,6 +9,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -98,7 +100,7 @@ TEST_CASE(the_format_check_sees_what_is_read)
     char a[32];
     conversions("%d of %d", a, sizeof(a));
     CHECK_STR_EQ(a, "d,d,");
-    conversions("100 %% at %-6s %5.2f %lu %+d %.*f %02X", a, sizeof(a));
+    conversions("100%% at %-6s %5.2f %lu %+d %.*f %02X", a, sizeof(a));
     CHECK_STR_EQ(a, "s,f,lu,d,*f,X,");
     conversions("none", a, sizeof(a));
     CHECK_STR_EQ(a, "");
@@ -144,6 +146,172 @@ TEST_CASE(every_translation_converts_what_the_english_does)
             same_conversions("servo string", servo_str((servo_str_t)i),
                              servo_str_in(t != NULL ? t->servo : NULL,
                                           (servo_str_t)i));
+        }
+    }
+}
+
+/**
+ * @brief Whether every code point of a string has a glyph of its own in a
+ *        face: the block first..last or one of the extra letters (gfx.h).
+ * A byte that starts no valid sequence decodes as '?' and draws as one;
+ * it is refused here, as the text it stands in has no glyph.
+ * @param f The face.
+ * @param s The string, UTF-8.
+ * @return True when the face holds every code point of @p s and @p s is
+ *         valid UTF-8.
+ */
+static bool in_face(const gfx_font_t *f, const char *s)
+{
+    const char *p = s;
+    for (;;) {
+        const char *at = p;
+        const uint32_t c = gfx_utf8_next(&p);
+        if (c == 0u) {
+            break;
+        }
+        if (c == (uint32_t)'?' && *at != '?') {
+            return false;
+        }
+        bool held = c >= f->first && c <= f->last;
+        for (int k = 0; !held && k < f->extra_count; ++k) {
+            held = f->extra[k] == c;
+        }
+        if (!held) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** @brief The five text faces, which hold the same letters. */
+static const gfx_font_t *const k_text_faces[] = {
+    &gfx_font_8x16, &gfx_font_10x20, &gfx_font_12x24, &gfx_font_16x28,
+    &gfx_font_20x36,
+};
+
+/** @brief Whether every text face holds every code point of @p s. */
+static bool in_text_faces(const char *s)
+{
+    for (size_t f = 0; f < sizeof(k_text_faces) / sizeof(k_text_faces[0]);
+         ++f) {
+        if (!in_face(k_text_faces[f], s)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** @brief Fails the case when a text face lacks a letter of @p s, naming
+ *  it by @p what, @p i and language @p l. */
+static void drawn(const char *what, int i, int l, const char *s)
+{
+    if (!in_text_faces(s)) {
+        T_FAIL("%s %d in language %d has a letter the fonts lack: \"%s\"",
+               what, i, l, s);
+    }
+}
+
+/** @brief As drawn(), for screen string @p i in language @p l. */
+static void drawn_tx(int i, int l)
+{
+    const char *s = ui_tr_in((ui_lang_t)l, (ui_text_id_t)i);
+    if (!in_text_faces(s)) {
+        T_FAIL("%s in language %d has a letter the fonts lack: \"%s\"",
+               ui_text_name((ui_text_id_t)i), l, s);
+    }
+}
+
+/** @brief The text faces hold printable ASCII, the degree sign and the
+ * German letters; any other code point draws as '?'.  Every string of the table the panel
+ * draws, in every language, keeps to them: the screens' strings, the
+ * settings' words and the servo test's, which the SERVO screen shows.  The
+ * Wi-Fi page is a browser's and is not held to them. */
+TEST_CASE(every_drawn_string_has_its_glyphs)
+{
+    settings_init();
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        for (int i = 0; i < TX_COUNT; ++i) {
+            drawn_tx(i, l);
+        }
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            drawn("label", i, l, ui_setting_label((setting_id_t)i));
+            drawn("help", i, l, ui_setting_help((setting_id_t)i));
+            const setting_def_t *d = settings_def((setting_id_t)i);
+            drawn("unit", i, l, (d->unit != NULL) ? d->unit : "");
+            for (int k = 0; k < d->option_count; ++k) {
+                drawn("option", i * 100 + k, l,
+                      ui_setting_option((setting_id_t)i, k));
+            }
+        }
+        for (int i = 0; i < SET_CAT_COUNT; ++i) {
+            drawn("category", i, l, ui_setting_category((setting_cat_t)i));
+        }
+        for (int i = 0; i < SERVO_STR_COUNT; ++i) {
+            drawn("servo", i, l, ui_servo_str((servo_str_t)i));
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* The check sees what is outside: a euro sign, and a byte that starts
+     * no sequence, which decodes as '?' and is refused; a '?' of the text
+     * is held. */
+    CHECK(!in_face(&gfx_font_8x16, "5 \xe2\x82\xac"));
+    CHECK(!in_face(&gfx_font_8x16, "A\x80" "B"));
+    CHECK(!in_face(&gfx_font_8x16, "GR\xc3" "E"));
+    CHECK(in_face(&gfx_font_8x16, "OK?"));
+    CHECK(in_face(&gfx_font_8x16, "GR\xc3\x96\xc3\x9f" "E"));
+    CHECK(in_text_faces("120\xce\xa9, 100.0m\xce\xa9, 2.2k\xce\xa9"));
+    CHECK(in_face(&gfx_font_16x28, ""));
+    CHECK(!in_text_faces("\xc3\xa9"));
+}
+
+/** @brief Fails the case when @p s spells the ohm in letters ("Ohm",
+ *  "ohm"), naming it by @p what, @p i and language @p l: the panel font's
+ *  O reads close to a zero, so "120Ohm" reads as "1200hm". */
+static void no_ohm_letters(const char *what, int i, int l, const char *s)
+{
+    if (strstr(s, "Ohm") != NULL || strstr(s, "ohm") != NULL) {
+        T_FAIL("%s %d in language %d spells the ohm in letters: \"%s\"",
+               what, i, l, s);
+    }
+}
+
+/** @brief Every string the panel draws or writes to a report writes the
+ *  ohm as the sign U+03A9 (120Ω, 100.0mΩ, 2.2kΩ): the
+ *  screens' strings, the settings' words and units and the servo test's
+ *  report lines, in every language. */
+TEST_CASE(every_string_writes_the_ohm_as_its_sign)
+{
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        for (int i = 0; i < TX_COUNT; ++i) {
+            no_ohm_letters("text", i, l, ui_tr_in((ui_lang_t)l,
+                                                 (ui_text_id_t)i));
+        }
+        ui_text_set_language((ui_lang_t)l);
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            const setting_def_t *d = settings_def((setting_id_t)i);
+            no_ohm_letters("label", i, l, ui_setting_label((setting_id_t)i));
+            no_ohm_letters("help", i, l, ui_setting_help((setting_id_t)i));
+            no_ohm_letters("unit", i, l, (d->unit != NULL) ? d->unit : "");
+        }
+        for (int i = 0; i < SERVO_STR_COUNT; ++i) {
+            no_ohm_letters("servo", i, l, ui_servo_str((servo_str_t)i));
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/** @brief Every SERVO_STR_ ID has English: an ID without its
+ *  UI_SERVO_TEXT entry reads as "" in every language.  Three are "" by
+ *  design: the phase and abort names of nothing, and a start that is OK. */
+TEST_CASE(every_servo_word_has_its_english)
+{
+    for (int i = 0; i < SERVO_STR_COUNT; ++i) {
+        const bool blank = i == SERVO_STR_PHASE_NONE ||
+                           i == SERVO_STR_AB_NONE || i == SERVO_STR_START_OK;
+        const char *s = servo_str((servo_str_t)i);
+        if ((s[0] == '\0') != blank) {
+            T_FAIL("SERVO_STR %d: \"%s\"", i, s);
         }
     }
 }
@@ -245,6 +413,7 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_PICKER)) <= 32);
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_WIFI)) <= 32);
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_UPDATES)) <= 32);
+        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_FILES)) <= 32);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -295,7 +464,7 @@ TEST_CASE(the_language_follows_the_setting)
     CHECK_EQ(ui_text_language(), UI_LANG_DE);
     CHECK_STR_EQ(TR(CANCEL), "ABBRECHEN");
     CHECK_STR_EQ(ui_setting_label(SET_PACK_CELLS), "Zellen");
-    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "ANSCHLÜSSE");
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
     CHECK_STR_EQ(ui_servo_str(SERVO_STR_PASS), "BESTANDEN");
     settings_set(SET_LANGUAGE, 0.0f);
     settings_apply_ui();
@@ -344,6 +513,21 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     char line[SERVO_TEST_LINE_MAX];
     CHECK(servo_report_line(&t, 0, line, sizeof(line)));
     CHECK_STR_EQ(line, "RCBENCH SERVOTEST-BERICHT");
+    /* The limit report's mode lines for a run that never searched. */
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_SEARCH_NONE),
+                 "nur Suche (keine Suche gelaufen), nichts ins Servo "
+                 "geschrieben") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PROGRAM_NONE),
+                 "(keine Suche gelaufen)") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PULSES_NONE),
+                 "(keine Suche gelaufen)") != NULL);
+    CHECK(strstr(servo_str_in(ui_servo_table(),
+                              SERVO_STR_L_R_MODE_PULSES_SET_NONE),
+                 "(keine Suche gelaufen); PULSE LOWER und PULSE UPPER "
+                 "zuerst auf 1000 und 2000us gesetzt") != NULL);
     t.cfg.text = NULL;
     CHECK(servo_report_line(&t, 0, line, sizeof(line)));
     CHECK_STR_EQ(line, "RCBENCH SERVO TEST REPORT");
@@ -360,7 +544,7 @@ TEST_CASE(the_report_is_translated_and_the_csv_is_not)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* How many cells @p s takes, as the 8 px face draws it. */
+/* How many cells @p s takes, as the 8px face draws it. */
 static int cells_of(const char *s)
 {
     int n = 0;
@@ -370,9 +554,9 @@ static int cells_of(const char *s)
     return n;
 }
 
-/* A run's reason is a line of the SERVO screen's result box, 250 px for
+/* A run's reason is a line of the SERVO screen's result box, 250px for
  * 31 cells, and the two lines that say STALL AT cannot be reached go
- * across the settings card under START TEST, 468 px for 58 cells with
+ * across the settings card under START TEST, 468px for 58 cells with
  * their numbers in: in every language. */
 TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
 {
@@ -412,7 +596,7 @@ TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
         }
     }
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_CC),
-                 "constant current for 1 s");
+                 "constant current for 1s");
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_INA_METER),
                  "INA3221 no longer the meter");
 }
@@ -708,12 +892,87 @@ TEST_CASE(the_card_slot_has_three_words_at_every_place)
                  "unreadable");
 }
 
+/* A unit symbol joins its number, a word keeps its space, and no unit
+ * takes none: at the empty unit, a word, a symbol, a compound and the
+ * two bytes of the ohm sign. */
+TEST_CASE(a_number_joins_a_unit_symbol_and_spaces_a_word)
+{
+    static const char *const k_symbol[] = {
+        "V", "mV", "A", "mA", "W", "Hz", "kHz", "ms", "us", "s", "%", "deg",
+        "\xC2\xB0", "m\xCE\xA9", "\xCE\xA9", "mAh", "rpm", "rpm/V", "%/s",
+        "kbit/s", "min", "S",
+    };
+    for (size_t i = 0; i < sizeof(k_symbol) / sizeof(k_symbol[0]); ++i) {
+        if (!ui_unit_is_symbol(k_symbol[i])
+            || strcmp(ui_unit_gap(k_symbol[i]), "") != 0) {
+            T_FAIL("\"%s\" is no symbol", k_symbol[i]);
+        }
+    }
+    static const char *const k_word[] = {
+        "GPIO", "SV", "Volt", "v", "ms/", "/s", "/", "rpm/Volt", "m\xCE",
+        "\xCE\xA9x", "V ", " V", "cells",
+    };
+    for (size_t i = 0; i < sizeof(k_word) / sizeof(k_word[0]); ++i) {
+        if (ui_unit_is_symbol(k_word[i])
+            || strcmp(ui_unit_gap(k_word[i]), " ") != 0) {
+            T_FAIL("\"%s\" is a symbol", k_word[i]);
+        }
+    }
+    CHECK(!ui_unit_is_symbol(""));
+    CHECK(!ui_unit_is_symbol(NULL));
+    CHECK_STR_EQ(ui_unit_gap(""), "");
+    CHECK_STR_EQ(ui_unit_gap(NULL), "");
+}
+
+/* A pin word leads its number ("GPIO 4"); no other unit does, and no unit
+ * that is not the exact word. */
+TEST_CASE(only_the_pin_word_leads_its_number)
+{
+    CHECK(ui_unit_is_prefix("GPIO"));
+    CHECK(!ui_unit_is_prefix("gpio"));
+    CHECK(!ui_unit_is_prefix("GPIO "));
+    CHECK(!ui_unit_is_prefix("GPIOs"));
+    CHECK(!ui_unit_is_prefix("V"));
+    CHECK(!ui_unit_is_prefix("cells"));
+    CHECK(!ui_unit_is_prefix(""));
+    CHECK(!ui_unit_is_prefix(NULL));
+}
+
+/* A reserved pin's holder: the catalogue's words from the table, upper
+ * case, in German where German differs; any other name as it is; NULL as
+ * the empty text. */
+TEST_CASE(a_pin_holder_is_named_in_the_language_showing)
+{
+    static const struct { const char *in, *en, *de; } k[] = {
+        { "heartbeat", "HEARTBEAT", "HEARTBEAT" },
+        { "flash",     "FLASH",     "FLASH" },
+        { "debug",     "DEBUG",     "DEBUG" },
+        { "sensor",    "SENSOR",    "SENSOR" },
+        { "in use",    "IN USE",    "BELEGT" },
+        { "CAN INT",   "CAN INT",   "CAN INT" },
+        { "CAN",       "CAN",       "CAN" },
+        { "Heartbeat", "Heartbeat", "Heartbeat" },  /* no case folding */
+        { "",          "",          "" },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        ui_text_set_language(UI_LANG_EN);
+        CHECK_STR_EQ(ui_pin_holder(k[i].in), k[i].en);
+        ui_text_set_language(UI_LANG_DE);
+        CHECK_STR_EQ(ui_pin_holder(k[i].in), k[i].de);
+    }
+    CHECK_STR_EQ(ui_pin_holder(NULL), "");
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
     RUN(german_has_every_string);
     RUN(every_translation_converts_what_the_english_does);
     RUN(every_string_fits_its_declared_field);
+    RUN(every_drawn_string_has_its_glyphs);
+    RUN(every_string_writes_the_ohm_as_its_sign);
+    RUN(every_servo_word_has_its_english);
     RUN(the_servo_device_line_names_a_series_and_no_model);
     RUN(alerts_and_details_fit_their_buffers);
     RUN(translated_settings_fit_where_they_are_drawn);
@@ -729,5 +988,8 @@ int main(void)
     RUN(a_makers_row_names_the_product);
     RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     RUN(the_card_slot_has_three_words_at_every_place);
+    RUN(a_number_joins_a_unit_symbol_and_spaces_a_word);
+    RUN(only_the_pin_word_leads_its_number);
+    RUN(a_pin_holder_is_named_in_the_language_showing);
     return test_summary("text");
 }

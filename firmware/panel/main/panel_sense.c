@@ -1,9 +1,10 @@
-/*
- * The current monitors' set-up on its way to the IOmcu: SETUP INTERFACES'
- * INA228, bus and encoder rows and SETUP > SENSORS' INA3221 parts,
- * published by the settings observer on app_main and taken by the control
- * task; and the SENSE_MAP page's service there (sense_map_link.h), with
- * what it tells the operator.
+/**
+ * @file panel_sense.c
+ * @brief The current monitors' set-up on its way to the IOmcu: SETUP
+ *        INTERFACES' INA228, bus and encoder rows and SETUP > SENSORS'
+ *        INA3221 parts, published by the settings observer on app_main and
+ *        taken by the control task; and the SENSE_MAP page's service there
+ *        (sense_map_link.h), with what it tells the operator.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,7 +50,7 @@ void publish_sense(void)
     const uint8_t i228_addr = (uint8_t)(LINK_SN_I228_ADDR_MIN
                               + (unsigned)settings_get_int(SET_INA228_ADDR));
     /* FAST's part on the INA228's address is left out of the map
-     * (sense_map_link.h): no channel is read at 1 kHz then. */
+     * (sense_map_link.h): no channel is read at 1kHz then. */
     const bool fast_out = i228 && m.fast != LINK_SM_FAST_NONE
                           && i228_addr == LINK_SN_I3221_ADDR_MIN + m.fast / 3u;
     const sense_setup_t w = {

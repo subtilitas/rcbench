@@ -131,8 +131,8 @@ def test_the_english_figure():
 
 def test_the_german_figure_uses_a_decimal_comma_and_spaced_thousands():
     text = cov.render_readme(RESULTS, "de")
-    assert "**97,0 %**, 3 245 von 3 345 Zeilen in 2 Dateien" in text
-    assert "unter 94 % gesamt oder unter 85 % in einer Datei fehl. " in text
+    assert "**97,0%**, 3 245 von 3 345 Zeilen in 2 Dateien" in text
+    assert "unter 94% gesamt oder unter 85% in einer Datei fehl. " in text
 
 
 def test_the_table_totals_its_rows(monkeypatch):

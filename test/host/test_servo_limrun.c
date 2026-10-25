@@ -6,7 +6,7 @@
  * at 1000-2000 and its write before anything moves, and the share from the
  * pulses written; the two writes a side, the overset from the first bound
  * pulse and the final value, with REVERSION off and on, on LEFT ANGLE and
- * on RIGHT ANGLE; the low stop from 920 to 1440 us in 3 us steps, every
+ * on RIGHT ANGLE; the low stop from 920 to 1440us in 3us steps, every
  * run PASS; the overset left out near the pulse limit; a servo free
  * after the overset; a square-law servo that still binds (FAIL, RESTORE);
  * the smallest value; a servo that never binds; the write cap; a write
@@ -19,7 +19,7 @@
 #include "servo_limrun_rig.h"
 
 /* Where a linear servo's horn stands at full travel for value @p v on
- * @p side, us: NEUTRAL 1500.2 us, 4 us a count. */
+ * @p side, us: NEUTRAL 1500.2us, 4us a count. */
 static float full_us(int side, uint16_t v)
 {
     const float n = (float)NEUTRAL_DUS / 10.0f;
@@ -89,8 +89,8 @@ static void converges(bool reversion)
     }
     CHECK_EQ(lo_v, g.run.v2[SERVO_LIMRUN_LO]);
     CHECK_EQ(hi_v, g.run.v2[SERVO_LIMRUN_HI]);
-    /* The stops at 1150 and 1880 us: 350.2 us is 87.55 counts, 379.8 us
-     * 94.95; the values land inside them, within the search's 10 us. */
+    /* The stops at 1150 and 1880us: 350.2us is 87.55 counts, 379.8us
+     * 94.95; the values land inside them, within the search's 10us. */
     CHECK_EQ(lo_v, 86u);
     CHECK_EQ(hi_v, 94u);
     CHECK(full_us(SERVO_LIMRUN_LO, lo_v) > 1150.0f);
@@ -135,10 +135,10 @@ TEST_CASE(both_sides_converge_with_reversion_on)
     converges(true);
 }
 
-/* servo_limrun.h's worked example: the low stop at 1000 us, the first
- * search free at 1000 us and bound at 990 us.  The share at the bound
+/* servo_limrun.h's worked example: the low stop at 1000us, the first
+ * search free at 1000us and bound at 990us.  The share at the bound
  * pulse 510.2 / 600.2, v1 = ceil(150 x 0.850 x 1.03) = 132; the overset's
- * search is free to 930 us, v2 = floor(132 x 570.2 / 600.2) = 125. */
+ * search is free to 930us, v2 = floor(132 x 570.2 / 600.2) = 125. */
 TEST_CASE(the_worked_example)
 {
     for (int rev = 0; rev < 2; ++rev) {
@@ -165,7 +165,7 @@ TEST_CASE(the_worked_example)
 /* Near the pulse limit the overset is left out and the first search
  * counts as its: with the bound pulse's share above about 0.97 the overset
  * would not lie below v0; a little further in the stop would move less
- * than 20 us, a move a search cannot tell from none.  One write then,
+ * than 20us, a move a search cannot tell from none.  One write then,
  * floor(v0 x f0), f0 the share the first search found free. */
 TEST_CASE(the_overset_is_left_out_near_the_pulse_limit)
 {
@@ -175,7 +175,7 @@ TEST_CASE(the_overset_is_left_out_near_the_pulse_limit)
         uint16_t overset, v2;
     } k[] = {
         { 915u, 920u, 5802, 5902, 150u, 145u }, /* v1 not below v0     */
-        { 940u, 940u, 5602, 5702, 147u, 140u }, /* the move 11.4 us    */
+        { 940u, 940u, 5602, 5702, 147u, 140u }, /* the move 11.4us     */
     };
     for (size_t i = 0; i < 2u; ++i) {
         rig_init(0u, false);
@@ -196,17 +196,17 @@ TEST_CASE(the_overset_is_left_out_near_the_pulse_limit)
         CHECK_EQ(g.run.writes, 1u);
         CHECK(strstr(g.report, "overset -, share -") != NULL);
     }
-    /* Further in, the overset is written: bound at 950 us, the stop's
-     * estimate, the last free pulse at 960 us, moves 540.2 us x 8 / 142 =
-     * 30.4 us. */
+    /* Further in, the overset is written: bound at 950us, the stop's
+     * estimate, the last free pulse at 960us, moves 540.2us x 8 / 142 =
+     * 30.4us. */
     CHECK_EQ(servo_limrun_overset(150u, 5502, 6002, 1u), 142u);
 }
 
-/* The low stop from 920 to 1440 us in 3 us steps -- 580 us to 60 us from
- * NEUTRAL -- with the servo's pulses at 900 and 2100 us and with SET
- * 1000-2000 (stops from 1010 us): every run passes, the low end's full
+/* The low stop from 920 to 1440us in 3us steps -- 580us to 60us from
+ * NEUTRAL -- with the servo's pulses at 900 and 2100us and with SET
+ * 1000-2000 (stops from 1010us): every run passes, the low end's full
  * travel inside the stop.  The overset from the first bound pulse keeps
- * the stop inside the pulse limit by 3 % of the share. */
+ * the stop inside the pulse limit by 3% of the share. */
 TEST_CASE(every_stop_position_passes)
 {
     for (int set = 0; set < 2; ++set) {
@@ -224,13 +224,13 @@ TEST_CASE(every_stop_position_passes)
             run_for(RUN_MS);
             ++runs;
             if (g.run.verdict != SERVO_LIMRUN_PASS) {
-                T_FAIL("stop %u us, SET %d: verdict %d why %d", stop, set,
+                T_FAIL("stop %uus, SET %d: verdict %d why %d", stop, set,
                        (int)g.run.verdict, (int)g.run.why);
                 continue;
             }
             /* Inside the stop by the model's own resolution: a push of
-             * up to 45 us x 0.15 A / 2.28 A = 3.0 us draws less than the
-             * +0.15 A a bind needs, and the command rounds to 0.5 us. */
+             * up to 45us x 0.15A / 2.28A = 3.0us draws less than the
+             * +0.15A a bind needs, and the command rounds to 0.5us. */
             CHECK(sim_horn_us(g.reg, set ? 1000u : 900u, g.upc, false)
                   > (float)stop - depth);
             CHECK(g.run.writes <= SERVO_LIMRUN_WRITES_MAX);
@@ -246,7 +246,7 @@ TEST_CASE(free_after_the_overset_fails)
 {
     for (int rev = 0; rev < 2; ++rev) {
         rig_init(0u, rev != 0);
-        g.shrink = 0.75f;           /* 91 counts: 273 us, short of 350 */
+        g.shrink = 0.75f;           /* 91 counts: 273us, short of 350 */
         CHECK(start());
         run_for(RUN_MS);
         CHECK_EQ(g.run.verdict, SERVO_LIMRUN_FAIL);
@@ -311,7 +311,7 @@ TEST_CASE(one_side_bound_leaves_the_other_register_as_it_was)
         CHECK_EQ(g.run.first[SERVO_LIMRUN_HI].limit_us, 2100u);
         CHECK(!g.run.after[SERVO_LIMRUN_HI].bound);
         CHECK_EQ(g.cmd_hi, 2100u);
-        CHECK(strstr(g.report, "free to 2100 us") != NULL);
+        CHECK(strstr(g.report, "free to 2100us") != NULL);
     }
 }
 
@@ -320,7 +320,7 @@ TEST_CASE(one_side_bound_leaves_the_other_register_as_it_was)
 TEST_CASE(a_servo_bound_at_the_smallest_value_fails_clearly)
 {
     rig_init(0u, false);
-    g.lo_raw = 100u;            /* 100 counts: 400 us, past both stops */
+    g.lo_raw = 100u;            /* 100 counts: 400us, past both stops */
     CHECK(start());
     run_for(RUN_MS);
     CHECK_EQ(g.run.verdict, SERVO_LIMRUN_FAIL);
@@ -441,8 +441,8 @@ TEST_CASE(search_only_reports_the_endpoints)
     CHECK(g.run.first[0].limit_us > 1150u && g.run.first[0].limit_us < 1200u);
     CHECK(g.run.first[1].limit_us < 1880u && g.run.first[1].limit_us > 1830u);
     CHECK(strstr(g.report, "search only") != NULL);
-    CHECK(strstr(g.report, "Searched:       from 1500 us out to 900 us and "
-                           "2100 us") != NULL);
+    CHECK(strstr(g.report, "Searched:       from 1500us out to 900us and "
+                           "2100us") != NULL);
     /* Nothing sent, so no backup: the line is left out. */
     CHECK(strstr(g.report, "Writes:         values written 0, writes "
                            "sent 0") != NULL);
@@ -465,8 +465,8 @@ TEST_CASE(the_pwm_pin_searches_out_to_min_and_max)
     CHECK_EQ(g.disarms, 0u);
     CHECK_EQ(g.cmd_lo, MIN_US);
     CHECK_EQ(g.cmd_hi, MAX_US);
-    CHECK(strstr(g.report, "Searched:       from 1500 us out to 800 us and "
-                           "2200 us") != NULL);
+    CHECK(strstr(g.report, "Searched:       from 1500us out to 800us and "
+                           "2200us") != NULL);
     CHECK(strstr(g.report, "Servo pulses") == NULL);
 
     /* Bound ends: FOUND, the bench never switched. */
@@ -518,8 +518,8 @@ TEST_CASE(a_bench_range_narrower_than_the_servos_is_refused)
         CHECK(!servo_limrun_restore(&g.run));
         char want[96];
         snprintf(want, sizeof(want),
-                 "servo pulses 900.0-2100.0 us outside PULSE MIN/MAX "
-                 "%u-%u us", g.cfg.min_us, g.cfg.max_us);
+                 "servo pulses 900.0-2100.0us outside PULSE MIN/MAX "
+                 "%u-%uus", g.cfg.min_us, g.cfg.max_us);
         CHECK(strstr(g.report, want) != NULL);
         CHECK(strstr(g.report, "servo pulses outside MIN/MAX") != NULL);
         /* Nothing searched: no line says where. */
@@ -573,7 +573,7 @@ TEST_CASE(set_1000_2000_writes_the_pulses_before_the_search)
         CHECK_EQ(g.run.end_us[SERVO_LIMRUN_LO], 1000u);
         CHECK_EQ(g.run.end_us[SERVO_LIMRUN_HI], 2000u);
         /* The share from the pulses written, not those read: 1000.0 and
-         * 2000.0 us, spans of 500.2 and 499.8 us. */
+         * 2000.0us, spans of 500.2 and 499.8us. */
         for (int s = 0; s < 2; ++s) {
             const int32_t span = s == SERVO_LIMRUN_LO ? 5002 : 4998;
             const int32_t n = NEUTRAL_DUS;
@@ -593,8 +593,8 @@ TEST_CASE(set_1000_2000_writes_the_pulses_before_the_search)
         CHECK(full_us(SERVO_LIMRUN_LO, reg_get(rev ? KST_F_RIGHT_ANGLE
                                                    : KST_F_LEFT_ANGLE))
               > 1150.0f);
-        CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0 "
-                               "us, PULSE UPPER 2100.0 -> 2000.0 us") != NULL);
+        CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0"
+                               "us, PULSE UPPER 2100.0 -> 2000.0us") != NULL);
         /* The values before the run, for RESTORE. */
         CHECK_EQ(g.run.servo.pulse_dus[SERVO_LIMRUN_P_LOWER], LOWER_DUS);
         CHECK_EQ(g.run.servo.pulse_dus[SERVO_LIMRUN_P_UPPER], UPPER_DUS);
@@ -614,7 +614,7 @@ TEST_CASE(set_1000_2000_on_a_servo_there_already_writes_nothing)
     CHECK_EQ(g.pulse_ops, 0u);
     CHECK_EQ(g.write_ops, 0u);
     CHECK_EQ(g.run.writes, 0u);
-    CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 1000.0 -> 1000.0 us")
+    CHECK(strstr(g.report, "Pulse write:    PULSE LOWER 1000.0 -> 1000.0us")
           != NULL);
 }
 

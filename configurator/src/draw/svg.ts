@@ -6,12 +6,12 @@ import { esc } from '../i18n.ts';
 import { layout } from './layout.ts';
 import type { Layout } from './layout.ts';
 
-/** Stroke width per signal class in px. The halo is 4 px wider. */
+/** Stroke width per signal class in px. The halo is 4px wider. */
 export const WIDTH: Record<SignalClass, number> = {
   canh: 2.5, canl: 2.5, gnd: 1.5, hb: 2.5, out: 2.5, uart: 2.5, sda: 2.5, scl: 2.5, logic: 3, power: 5, phase: 2, nc: 1.5,
 };
 
-/** Line sample of a signal class, 38 x 12 px, for the legend and the table. */
+/** Line sample of a signal class, 38 x 12px, for the legend and the table. */
 export function sample(cls: SignalClass): string {
   return `<svg class="sample" width="38" height="12" viewBox="0 0 38 12" aria-hidden="true" focusable="false"><path class="w c-${cls}" d="M1 6 H37"/></svg>`;
 }

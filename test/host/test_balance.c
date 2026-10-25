@@ -10,28 +10,30 @@
 #include "greatest.h"
 
 #include "balance_screen.h"
+#include "instruments_spots.h"
+#include "ui_band.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
-/* Mirrored from balance_screen.c. */
-#define PAD      6
-#define LCARD_W  450
-#define RCARD_X  (PAD + LCARD_W + 8)
+/* From instruments_spots.h, mirrored from balance_screen.c. */
+#define PAD      UI_MARGIN
+#define LCARD_W  (BL_RCARD_X - 8 - PAD)
+#define RCARD_X  BL_RCARD_X
 #define RCARD_W  (W - RCARD_X - PAD)
-#define BODY_Y   44
-#define CTRL_X   (RCARD_X + 14)
-#define CTRL_W   (RCARD_W - 28)
-/* Centres of the controls reset() lays out, from the same arithmetic. */
-#define BLADE_DN_X (CTRL_X + CTRL_W - 78 + 17)
-#define BLADE_UP_X (CTRL_X + CTRL_W - 34 + 17)
-#define BLADE_Y    (BODY_Y + 96 + 14)
-#define ROTOR0_X   (CTRL_X + (CTRL_W / 2 - 4) / 2)
-#define ROTOR1_X   (CTRL_X + (CTRL_W / 2 + 4) + (CTRL_W / 2 - 4) / 2)
-#define ROTOR_Y    (BODY_Y + 34 + 15)
+#define CTRL_X   BL_RC_X
+#define CTRL_W   BL_RC_W
+/* Centres of the controls reset() lays out. */
+#define BLADE_DN_X BL_DOWN_X
+#define BLADE_UP_X BL_UP_X
+#define BLADE_Y    BL_BLADES_Y
+#define ROTOR0_X   BL_PROP_X
+#define ROTOR1_X   BL_EDF_X
+#define ROTOR_Y    BL_ROTOR_Y
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -80,7 +82,7 @@ TEST_CASE(no_guidance_runs_off_its_card)
     for (int pane = 0; pane < 2; ++pane) {
         fresh();
         if (pane == 1) {
-            tap(200, 22);                   /* the AIRCRAFT tab */
+            tap(IN_TAB_X(2), IN_TAB_Y);     /* the AIRCRAFT tab */
         }
         scr->render(&cv, 0);
 
@@ -101,14 +103,14 @@ TEST_CASE(no_guidance_runs_off_its_card)
 }
 
 /*
- * The angle (265 deg) and both masses (0.42 g, 0.35 g) are fixed values, so
- * the BALANCE pane carries the MODELLED pill under the readings: 88 px by
- * 20 px at BODY_Y + 270, its fill clear of the dot and the word, and the
+ * The angle (265deg) and both masses (0.42g, 0.35g) are fixed values, so
+ * the BALANCE pane carries the MODELLED pill under the readings: 88px by
+ * 20px at y 378, its fill clear of the dot and the word, and the
  * words "Not measured." beside it.  The other panes carry none.  In German
  * the pill and the words are the German ones, and both fit inside the card.
  */
 #define MARK_X  CTRL_X
-#define MARK_Y  (BODY_Y + 270)
+#define MARK_Y  BL_MARK_Y
 
 TEST_CASE(the_readings_carry_the_modelled_mark)
 {
@@ -131,11 +133,11 @@ TEST_CASE(the_readings_carry_the_modelled_mark)
             }
         }
         CHECK(dim > 20);
-        /* Under the rule at BODY_Y + 296. */
-        CHECK_EQ(fb[(BODY_Y + 295) * W + MARK_X + 60],
+        /* Under the rule at y 406. */
+        CHECK_EQ(fb[(BL_NOTE_RULE_Y - 1) * W + MARK_X + 60],
                  ui_theme_color(UI_C_PANEL));
 
-        tap(200, 22);
+        tap(IN_TAB_X(1), IN_TAB_Y);
         CHECK(balance_screen_model_mark() == NULL);
         CHECK(balance_screen_model_note() == NULL);
     }
@@ -152,7 +154,7 @@ TEST_CASE(both_panes_draw_and_differ)
     REQUIRE_ALLOC(first);
     memcpy(first, fb, (size_t)W * H * sizeof(gfx_color_t));
 
-    tap(200, 22);
+    tap(IN_TAB_X(1), IN_TAB_Y);
     scr->render(&cv, 0);
     const int air = lit();
 
@@ -207,6 +209,198 @@ TEST_CASE(the_blade_count_clamps_two_to_six)
 
     tap(BLADE_DN_X, BLADE_Y);
     CHECK_EQ(balance_screen_blades(), 5);
+}
+
+/* ------------------------------------------------ the blade count keypad */
+
+/* The keypad's key @p key tapped. */
+static void kp_key(ui_key_t key)
+{
+    const gfx_rect_t r = ui_keypad_key_rect(balance_screen_keypad(), key);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/* A tap on the blade count: its keypad. */
+static void tap_count(void)
+{
+    const gfx_rect_t r = balance_screen_blades_rect();
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/* A tap on the count opens the keypad over both cards, above the alert
+ * band; the label beside it and the keys open nothing. */
+TEST_CASE(a_tap_on_the_blade_count_opens_its_keypad)
+{
+    fresh();
+    tap(CTRL_X + 10, BLADE_Y);                /* the label */
+    tap(BLADE_UP_X, BLADE_Y);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 3);
+    tap_count();
+    const ui_keypad_t *k = balance_screen_keypad();
+    CHECK(k->open);
+    CHECK_STR_EQ(k->title, TR(BAL_BLADES));
+    CHECK_NEAR(k->min, 2.0f, 1e-6f);
+    CHECK_NEAR(k->max, 6.0f, 1e-6f);
+    CHECK_EQ(k->decimals, 0);
+    CHECK_NEAR(k->value, 3.0f, 1e-6f);
+    CHECK(k->area.y + k->area.h <= UI_BODY_H - UI_ALERT_H);
+    CHECK(k->area.y >= BL_CARD_Y);
+    /* The count sits between its label and the "-" key. */
+    const gfx_rect_t v = balance_screen_blades_rect();
+    CHECK(v.x + v.w < BLADE_DN_X - 17);
+    CHECK(v.x > CTRL_X + 56);
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    balance_invalidate();
+    scr->render(&cv, 0);
+    const gfx_rect_t ok = ui_keypad_key_rect(k, UI_KEY_OK);
+    CHECK_EQ(fb[(ok.y + ok.h / 2) * W + ok.x + 4],
+             ui_theme_color(UI_C_ACCENT));
+}
+
+TEST_CASE(the_blade_keypad_takes_two_to_six_and_refuses_the_rest)
+{
+    fresh();
+    tap_count();
+    kp_key(UI_KEY_6);
+    kp_key(UI_KEY_OK);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 6);
+    tap_count();
+    kp_key(UI_KEY_2);
+    kp_key(UI_KEY_OK);
+    CHECK_EQ(balance_screen_blades(), 2);
+    tap_count();
+    kp_key(UI_KEY_7);                         /* above the maximum */
+    kp_key(UI_KEY_OK);
+    CHECK(balance_screen_keypad()->open);
+    CHECK(balance_screen_keypad()->refused);
+    CHECK_EQ(balance_screen_blades(), 2);
+    kp_key(UI_KEY_CLR);
+    kp_key(UI_KEY_1);                         /* under the minimum */
+    kp_key(UI_KEY_OK);
+    CHECK(balance_screen_keypad()->refused);
+    /* A count takes no point: "4.5" is typed as 45, and refused. */
+    kp_key(UI_KEY_CLR);
+    kp_key(UI_KEY_4);
+    kp_key(UI_KEY_DOT);
+    kp_key(UI_KEY_5);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "45");
+    kp_key(UI_KEY_OK);
+    CHECK(balance_screen_keypad()->refused);
+    CHECK_EQ(balance_screen_blades(), 2);
+    kp_key(UI_KEY_CANCEL);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+}
+
+/* The count typed is the count the steps reach. */
+TEST_CASE(a_typed_count_is_the_count_the_steps_reach)
+{
+    fresh();
+    tap(BLADE_UP_X, BLADE_Y);
+    tap(BLADE_UP_X, BLADE_Y);
+    const int stepped = balance_screen_blades();
+    fresh();
+    tap_count();
+    kp_key(UI_KEY_4);
+    kp_key(UI_KEY_OK);
+    CHECK_EQ(balance_screen_blades(), stepped);
+    CHECK_EQ(stepped, 4);
+}
+
+/* CANCEL, the home tag, leaving and a tab change nothing; the controls
+ * under the keypad press nothing while it is open. */
+TEST_CASE(the_blade_keypad_cancels_and_covers_what_is_under_it)
+{
+    fresh();
+    tap_count();
+    kp_key(UI_KEY_5);
+    CHECK(scr->back());                       /* the home tag: CANCEL */
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+    CHECK(!scr->back());                      /* then home */
+    tap_count();
+    kp_key(UI_KEY_5);
+    scr->leave();
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
+    tap_count();
+    tap(ROTOR1_X, ROTOR_Y);                   /* under it */
+    CHECK(balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_rotor(), ROTOR_PROP);
+    kp_key(UI_KEY_5);
+    tap(IN_TAB_X(1), IN_TAB_Y);               /* RIG's tab, above it */
+    CHECK(!balance_screen_keypad()->open);
+    CHECK(balance_screen_model_mark() == NULL);
+    CHECK_EQ(balance_screen_blades(), 2);
+    tap(IN_TAB_X(0), IN_TAB_Y);               /* back to BALANCE */
+    tap_count();
+    /* A press the touch stream lost is let go; the entry stays. */
+    kp_key(UI_KEY_3);
+    const gfx_rect_t r = ui_keypad_key_rect(balance_screen_keypad(),
+                                            UI_KEY_4);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 2, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(r.y + r.h / 2),
+                                   .strength = 40 } };
+    scr->event(&e);
+    CHECK(balance_screen_keypad()->pressed >= 0);
+    scr->cancel();
+    CHECK(balance_screen_keypad()->pressed < 0);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "3");
+    /* A press on the count that slides off opens nothing. */
+    kp_key(UI_KEY_CANCEL);
+    const gfx_rect_t v = balance_screen_blades_rect();
+    e = (touch_event_t){ .type = TOUCH_EVENT_DOWN,
+                         .point = { .id = 1, .x = (int16_t)(v.x + 4),
+                                    .y = (int16_t)(v.y + 4),
+                                    .strength = 40 } };
+    scr->event(&e);
+    e.type = TOUCH_EVENT_UP;
+    e.point.y = (int16_t)(v.y + v.h + 40);
+    scr->event(&e);
+    CHECK(!balance_screen_keypad()->open);
+}
+
+/* STOP in the band works over the keypad; the keypad stays with what was
+ * typed and the count as it was. */
+TEST_CASE(stop_over_the_blade_keypad_sets_nothing)
+{
+    ui_router_init();
+    ui_router_goto(SCREEN_BALANCE);
+    const gfx_rect_t v = balance_screen_blades_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(v.x + v.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + v.y + v.h / 2),
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(balance_screen_keypad()->open);
+    const gfx_rect_t k5 = ui_keypad_key_rect(balance_screen_keypad(),
+                                             UI_KEY_5);
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(k5.x + k5.w / 2);
+    e.point.y = (int16_t)(UI_BAND_H + k5.y + k5.h / 2);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    (void)ui_router_take_stop();
+    const gfx_rect_t r = ui_band_stop_rect();
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(r.x + r.w / 2);
+    e.point.y = (int16_t)(r.y + r.h / 2);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK(ui_router_take_stop());
+    CHECK(balance_screen_keypad()->open);
+    CHECK_STR_EQ(balance_screen_keypad()->entry, "5");
+    CHECK_EQ(balance_screen_blades(), 2);
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(!balance_screen_keypad()->open);
+    CHECK_EQ(balance_screen_blades(), 2);
 }
 
 /* The rotor type toggles between propeller and ducted fan. */
@@ -273,12 +467,12 @@ TEST_CASE(a_negative_angle_does_not_index_before_the_first_blade)
     CHECK_EQ(hi, 2);
 }
 
-/* Tab centres, from the tab bar reset() lays out: start 9, width 390, three
- * tabs of 130 each. */
-#define TAB0_X   74
-#define TAB1_X   204
-#define TAB2_X   334
-#define TAB_CY   22
+/* Tab centres, from the tab row reset() lays out: from x 11, three tabs of
+ * 150px, 4px apart. */
+#define TAB0_X   IN_TAB_X(0)
+#define TAB1_X   IN_TAB_X(1)
+#define TAB2_X   IN_TAB_X(2)
+#define TAB_CY   IN_TAB_Y
 
 /*
  * A cancel abandons a tab press: the panel's record of the glass is stale,
@@ -342,7 +536,7 @@ TEST_CASE(a_cancelled_tab_press_already_drawn_is_redrawn_released)
  */
 TEST_CASE(each_pane_draws_its_own_diagram)
 {
-    int prev = -1;
+    uint32_t seen[3] = { 0u, 0u, 0u };
     const int tabs[] = { TAB0_X, TAB1_X, TAB2_X };
     for (int i = 0; i < 3; ++i) {
         fresh();
@@ -352,8 +546,16 @@ TEST_CASE(each_pane_draws_its_own_diagram)
         if (drew < 5000) {
             T_FAIL("pane %d drew only %d pixels", i, drew);
         }
-        CHECK(drew != prev);            /* not the same picture as the last */
-        prev = drew;
+        /* Not the same picture as another pane's: the cards fill the same
+         * area on every pane, so the count of lit pixels cannot tell. */
+        uint32_t h = 2166136261u;
+        for (int k = 0; k < W * H; ++k) {
+            h = (h ^ fb[k]) * 16777619u;
+        }
+        seen[i] = h;
+        for (int j = 0; j < i; ++j) {
+            CHECK(seen[j] != h);
+        }
     }
 }
 
@@ -420,5 +622,10 @@ int main(void)
     RUN(a_cancelled_tab_press_already_drawn_is_redrawn_released);
     RUN(both_rotor_types_draw_on_the_measure_pane);
     RUN(every_blade_count_draws);
+    RUN(a_tap_on_the_blade_count_opens_its_keypad);
+    RUN(the_blade_keypad_takes_two_to_six_and_refuses_the_rest);
+    RUN(a_typed_count_is_the_count_the_steps_reach);
+    RUN(the_blade_keypad_cancels_and_covers_what_is_under_it);
+    RUN(stop_over_the_blade_keypad_sets_nothing);
     return test_summary("balance");
 }

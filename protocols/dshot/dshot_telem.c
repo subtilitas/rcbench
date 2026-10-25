@@ -1,7 +1,9 @@
-/*
- * The inbound half of DShot: the GCR (group-coded recording) burst an ESC
- * (electronic speed controller) sends back on the signal line.  See dshot.h
- * for the model.
+/**
+ * @file
+ * @brief The inbound half of DShot: the GCR (group-coded recording) burst an
+ *        ESC (electronic speed controller) sends back on the signal line.
+ *
+ * See dshot.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -10,8 +12,8 @@
 
 #include <stddef.h>
 
-/*
- * Sixteen five-bit codes, one per nibble.
+/**
+ * @brief Sixteen five-bit codes, one per nibble.
  *
  * The point of the code is that no code word has two adjacent zeros and none
  * has more than two adjacent ones at a join, so the line changes level often
@@ -23,7 +25,13 @@ static const uint8_t k_quintet[16] = {
     0x1Au, 0x09u, 0x0Au, 0x0Bu, 0x1Eu, 0x0Du, 0x0Eu, 0x0Fu,
 };
 
-/** 0xFF for the sixteen codes that are not in the table. */
+/**
+ * @brief 0xFF for the sixteen codes that are not in the table.
+ *
+ * @param quintet  Five-bit code, 0 to 31.
+ * @return         The nibble, 0 to 15, or 0xFF for the sixteen codes that
+ *                 are not in the table.
+ */
 static uint8_t nibble_of(uint8_t quintet)
 {
     for (uint8_t n = 0; n < 16u; ++n) {
@@ -34,10 +42,14 @@ static uint8_t nibble_of(uint8_t quintet)
     return 0xFFu;
 }
 
-/*
- * The checksum, folded over the twelve bits that carry the reading.  The
- * response inverts it, which is what stops a decoder locked onto the wrong
+/**
+ * @brief The checksum, folded over the twelve bits that carry the reading.
+ *
+ * The response inverts it, which is what stops a decoder locked onto the wrong
  * bit boundary from accepting a shifted copy of a valid frame.
+ *
+ * @param v  The payload, the twelve bits that carry the reading.
+ * @return   The folded checksum, 0 to 15.
  */
 static uint16_t fold(uint16_t v)
 {
@@ -49,12 +61,14 @@ static uint16_t fold(uint16_t v)
 
 /* ------------------------------------------------------------- the code */
 
-/*
- * The line is differential: each bit is the one before it exclusive-ored with
- * the data, so the data is recovered by exclusive-oring the line with itself
- * shifted down one.  Bit 20 is the seed and is not data; it is sent as zero,
- * because the line idles high in bidirectional DShot and the response has to
- * begin with a falling edge for a receiver to find it at all.
+/**
+ * @brief The line is differential: each bit is the one before it exclusive-ored
+ *        with the data, so the data is recovered by exclusive-oring the line
+ *        with itself shifted down one.
+ *
+ * Bit 20 is the seed and is not data; it is sent as zero, because the line
+ * idles high in bidirectional DShot and the response has to begin with a
+ * falling edge for a receiver to find it at all.
  */
 #define GCR_DATA_MASK  0x000FFFFFu   /* bits 19..0: four quintets */
 
@@ -98,13 +112,15 @@ bool dshot_gcr_decode(uint32_t line, uint16_t *out)
 
 /* --------------------------------------------------------- what it meant */
 
-/*
- * Extended telemetry types.  The type is the top nibble of the twelve-bit
- * payload and is always even, because an eRPM payload always has bit 8 set:
- * an ESC with extended telemetry enabled normalises its exponent so that it
- * does.  An ESC without it sends nothing but eRPM, and then bit 8 means what
- * it says -- which is why the caller has to declare whether the mode was
- * turned on rather than this file guessing from the bits.
+/**
+ * @brief Extended telemetry types.
+ *
+ * The type is the top nibble of the twelve-bit payload and is always even,
+ * because an eRPM payload always has bit 8 set: an ESC with extended telemetry
+ * enabled normalises its exponent so that it does.  An ESC without it sends
+ * nothing but eRPM, and then bit 8 means what it says -- which is why the
+ * caller has to declare whether the mode was turned on rather than this file
+ * guessing from the bits.
  */
 #define EDT_TYPE_TEMPERATURE  0x02u
 #define EDT_TYPE_VOLTAGE      0x04u
@@ -114,17 +130,26 @@ bool dshot_gcr_decode(uint32_t line, uint16_t *out)
 #define EDT_TYPE_STRESS       0x0Cu
 #define EDT_TYPE_STATUS       0x0Eu
 
-/** The payload an ESC sends for a motor that is not turning. */
+/** @brief The payload an ESC sends for a motor that is not turning. */
 #define ERPM_STOPPED  0x0FFFu
 
-/** One electrical revolution in microseconds, to electrical rpm. */
+/** @brief One electrical revolution in microseconds, to electrical rpm. */
 #define US_PER_MINUTE  60000000u
 
+/**
+ * @brief Fill an eRPM reading from a twelve-bit payload.
+ *
+ * The payload is a nine-bit mantissa in bits 8..0 and a three-bit exponent
+ * in bits 11..9.
+ *
+ * @param payload  The twelve-bit payload.
+ * @param out      Receives kind, period_us and erpm.
+ */
 static void erpm_from_payload(uint16_t payload, dshot_telem_t *out)
 {
     out->kind = DSHOT_TELEM_ERPM;
-    /* Nine bits of mantissa shifted by three bits of exponent: 1 us to
-     * 65408 us, which is 917 rpm to 60 million at one pole pair. */
+    /* Nine bits of mantissa shifted by three bits of exponent: 1us to
+     * 65408us, which is 917rpm to 60 million at one pole pair. */
     out->period_us = (uint32_t)(payload & 0x01FFu) << (payload >> 9);
     out->erpm = (payload == ERPM_STOPPED || out->period_us == 0u)
                     ? 0u
@@ -212,6 +237,13 @@ uint32_t dshot_rpm(uint32_t erpm, uint8_t pole_pairs)
 
 /* ------------------------------------------------------------ the capture */
 
+/**
+ * @brief Read one sample of the capture.
+ *
+ * @param samples  Capture words, one bit per sample, MSB of word 0 first.
+ * @param i        Sample index, 0 to 32 * words - 1.
+ * @return         true when sample @p i is high.
+ */
 static bool sample_at(const uint32_t *samples, size_t i)
 {
     return ((samples[i / 32u] >> (31u - (i % 32u))) & 1u) != 0u;

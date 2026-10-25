@@ -1,9 +1,10 @@
-/*
- * The automatic servo test's words by id: every string the run writes or
- * the SERVO screen shows about it is an entry of one table
- * (shared/servo/servo_str.c).  A caller that names an entry and nothing
- * else of the run includes this alone, as ui_text.h does; the engine is
- * servo_test.h.
+/**
+ * @file
+ * @brief The automatic servo test's words by id: every string the run writes
+ *        or the SERVO screen shows about it is an entry of one table
+ *        (UI_SERVO_TEXT in shared/text/include/ui_text.def).  A caller that
+ *        names an entry and nothing else of the run includes this alone, as
+ *        ui_text.h does; the engine is servo_test.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -64,6 +65,8 @@ typedef enum {
     /* The SERVO screen's, before a run is asked of the engine. */
     SERVO_STR_START_NOT_ARMED,
     SERVO_STR_START_BUSY,
+    SERVO_STR_START_TEST_RUNS,
+    SERVO_STR_START_LIMIT_RUNS,
     /* The TXT report, in the order it is written. */
     SERVO_STR_R_TITLE,
     SERVO_STR_R_RESULT,
@@ -218,6 +221,10 @@ typedef enum {
     SERVO_STR_L_R_MODE_SEARCH,
     SERVO_STR_L_R_MODE_PROGRAM,
     SERVO_STR_L_R_MODE_PULSES,
+    SERVO_STR_L_R_MODE_SEARCH_NONE,
+    SERVO_STR_L_R_MODE_PROGRAM_NONE,
+    SERVO_STR_L_R_MODE_PULSES_NONE,
+    SERVO_STR_L_R_MODE_PULSES_SET_NONE,
     SERVO_STR_L_R_SEARCH,
     SERVO_STR_L_R_OUTPUT,
     SERVO_STR_L_R_PULSE,

@@ -5,26 +5,26 @@
  * SENSE_TRACE build writes it, one core 1 tick and one core 0 pass a
  * millisecond.
  *
- * The session, in ms from its start, the clock at 20 s:
+ * The session, in ms from its start, the clock at 20s:
  *
  *   400    `t` on the console: a trace of the servo holding the centre
  *   900    `x`: that trace ends
- *   2000   the pulse goes from 1500 to 1800 µs; a trace starts
- *   3600   to 1200 µs, 5200 to 1800 µs, 6800 to 1200 µs: each 4 s of
+ *   2000   the pulse goes from 1500 to 1800µs; a trace starts
+ *   3600   to 1200µs, 5200 to 1800µs, 6800 to 1200µs: each 4s of
  *          trace more
  *   10800  the trace ends on its time
  *
- * A changed pulse reaches the servo at the next 20 ms frame, which is the
+ * A changed pulse reaches the servo at the next 20ms frame, which is the
  * time its trigger line carries.  The servo draws servo_sim's travel
- * current until its horn arrives, 1.2 µs of pulse a millisecond; the rail
- * sags 0.4 V an ampere under 6.0 V.  Two lines of the IOmcu's other
+ * current until its horn arrives, 1.2µs of pulse a millisecond; the rail
+ * sags 0.4V an ampere under 6.0V.  Two lines of the IOmcu's other
  * console output stand between the trace's lines.
  *
  * With a second argument, a servo test CSV file as the panel writes one
  * with the output encoder on: the header, and for each move a row with
  * `travel angle (ms)`, the time from the frame to the horn coming within
- * 12 µs of pulse of its end, on a row 100 ms to 150 ms after it and a
- * clock 12.345 s behind the IOmcu's.
+ * 12µs of pulse of its end, on a row 100ms to 150ms after it and a
+ * clock 12.345s behind the IOmcu's.
  *
  *   sense_trace_gen LOG [CSV]
  *
@@ -171,8 +171,8 @@ int main(int argc, char **argv)
         sense_svc_step(&svc, &cmd, &snap);
         sense_trace_feed(&tr, svc.open ? &svc.sched : NULL, g_us);
 
-        /* The horn within 12 µs of its end: the encoder's travel time,
-         * on a row 100 ms and up to 50 ms later. */
+        /* The horn within 12µs of its end: the encoder's travel time,
+         * on a row 100ms and up to 50ms later. */
         if (moved_us != 0u) {
             float off = sim.position_us - (float)at_pin;
             if (off < 0.0f) {

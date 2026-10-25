@@ -28,6 +28,7 @@
 #include "gfx.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "servo_spots.h"
 #include "settings.h"
 #include "splash_screen.h"
 #include "ui_band.h"
@@ -35,9 +36,10 @@
 #include "ui_theme.h"
 #include "ui_value_gate.h"
 #include "ui_widgets.h"
+#include "motor_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
 /* The states a cell starts in.  LEAVING three ways. */
@@ -82,11 +84,11 @@ static void frames(int n)
     }
 }
 
-/* Frames drawn into both buffers, so a flash, spent one a drawn frame, is
+/* Frames drawn into both buffers, 26ms each, so a flash, 150ms, is
  * over. */
 static void settle(void)
 {
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES + 2; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10 + 2; ++i) {
         ui_router_tick(0.026f);
         ui_router_render(&cv, i & 1);
     }
@@ -198,14 +200,14 @@ TEST_CASE(the_gate_moves_between_its_four_states)
 
 /* ============================================================ MOTOR & ESC */
 
-#define M_TRACK_X  72
-#define M_TRACK_Y  P(356)
-#define M_DOWN_X   33
-#define M_UP_X     519
-#define M_ARM_X    676
-#define M_ARM_Y    P(342)
-#define M_HINT_Y   P(390)
-#define M_PX_PCT   (100.0f / 413.0f)
+#define M_TRACK_X  MO_TRACK_X
+#define M_TRACK_Y  P(MO_TRACK_Y)
+#define M_DOWN_X   MO_DOWN_X
+#define M_UP_X     MO_UP_X
+#define M_ARM_X    MO_ARM_X
+#define M_ARM_Y    P(MO_ARM_Y)
+#define M_HINT_Y   P(MO_HINT_Y)
+#define M_PX_PCT   (100.0f / (float)(MO_TRACK_W - 1))
 
 enum { MC_TRACK = 0, MC_PLUS, MC_MINUS, MC_KNOB, MC_COUNT };
 
@@ -251,7 +253,7 @@ static bool m_arm(void)
 }
 
 /* MOTOR & ESC in state @p st.  Past OFF and ARMING the bench has been
- * driven to 24.2 %, 100 px of the track. */
+ * driven to 24.2%, 100px of the track. */
 static bool m_enter(int st)
 {
     router_up(SCREEN_MOTOR);
@@ -363,7 +365,7 @@ TEST_CASE(motor_an_input_is_taken_only_in_live)
                 CHECK(picture_unchanged());
                 CHECK(m_drawn_refused());
             }
-            /* The bench's answer to what was asked: LEAVING ends at 0 %. */
+            /* The bench's answer to what was asked: LEAVING ends at 0%. */
             if (is_leaving(st)) {
                 motor_screen_set_armed(false);
                 CHECK_EQ(motor_screen_throttle(), 0.0f);
@@ -390,7 +392,7 @@ static void m_activate(int control)
 
 /* The edge out of LIVE while the control is active: its command is not
  * sent, the finger's further travel moves nothing, and the value stays
- * until the bench reports disarmed, which returns it to 0 %. */
+ * until the bench reports disarmed, which returns it to 0%. */
 TEST_CASE(motor_the_edge_out_of_live_ends_an_active_control)
 {
     for (int edge = 0; edge < EDGE_COUNT; ++edge) {
@@ -442,7 +444,7 @@ TEST_CASE(motor_the_edge_out_of_live_ends_an_active_control)
 
 /* The edge into LIVE, and the edge from LEAVING to OFF, under a finger
  * that pressed the control while it was refused: the press is no drag and
- * no step afterwards, and the value is 0 %. */
+ * no step afterwards, and the value is 0%. */
 TEST_CASE(motor_an_edge_under_a_refused_press_starts_nothing)
 {
     for (int st = 0; st < ST_COUNT; ++st) {
@@ -465,7 +467,7 @@ TEST_CASE(motor_an_edge_under_a_refused_press_starts_nothing)
             CHECK_EQ(m_kinds(NULL), 0u);
             CHECK_EQ(motor_screen_throttle(), 0.0f);
             if (!is_leaving(st)) {
-                /* Live: the next press is taken, from 0 %. */
+                /* Live: the next press is taken, from 0%. */
                 CHECK(m_drawn_live());
                 feed_tap(FEED_LONE, M_UP_X, M_TRACK_Y);
                 CHECK_NEAR(m_took().value, 1.0f, 0.001f);
@@ -497,15 +499,17 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
 
 /* ================================================================= SERVO */
 
-#define SHAFT_X     300
-#define SHAFT_Y     P((H - UI_BAND_H) / 2)
-#define CENTRE_X    556
-#define SWEEP_X     647
-#define RELEASE_X   739
-#define BTN_Y       P(366)
-#define S_ARM_X     648
-#define S_ARM_Y     P(404)
-#define SPEED_Y     P(307)
+#define SHAFT_X     SV_SHAFT_X
+#define SHAFT_Y     P(SV_SHAFT_Y)
+#define CENTRE_X    SV_CENTRE_X
+#define SWEEP_X     SV_SWEEP_X
+#define RELEASE_X   SV_RELEASE_X
+#define BTN_Y       P(SV_BTN_Y)
+#define S_ARM_X     (SV_RC_X + SV_RC_W / 2)
+#define S_ARM_Y     P(SV_ARM_Y + SV_ARM_H / 2)
+#define SPEED_Y     P(SV_SPEED_Y)
+/* ARM FIRST, under the horn's angle at the top of the left card. */
+#define S_HINT_Y    P(SV_HINT_Y + 10)
 
 enum { SC_DIAL = 0, SC_KNOB, SC_CENTRE, SC_SWEEP, SC_HOOK, SC_RELEASE,
        SC_COUNT };
@@ -641,7 +645,7 @@ static bool s_drawn_live(void)
 {
     picture(fb);
     return px(CENTRE_X - 36, BTN_Y - 10) == ui_theme_color(UI_C_ACCENT)
-           && count_px(52, 200, P(396), ui_theme_color(UI_C_WARN)) == 0;
+           && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) == 0;
 }
 
 static bool s_drawn_refused(void)
@@ -649,7 +653,7 @@ static bool s_drawn_refused(void)
     picture(fb);
     return px(CENTRE_X - 36, BTN_Y - 10) != ui_theme_color(UI_C_ACCENT)
            && px(SHAFT_X + 22, SHAFT_Y) != ui_theme_color(UI_C_ACCENT)
-           && count_px(52, 200, P(396), ui_theme_color(UI_C_WARN)) > 0;
+           && count_px(52, 200, S_HINT_Y, ui_theme_color(UI_C_WARN)) > 0;
 }
 
 /*

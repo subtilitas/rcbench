@@ -15,8 +15,8 @@
 #include "ui_workbench.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -86,7 +86,7 @@ TEST_CASE(the_strip_holds_its_tasks_in_order_with_live_always)
         CHECK_EQ(all.w, k[i].count * UI_WB_TAB_W
                             + (k[i].count - 1) * UI_WB_TAB_GAP);
     }
-    /* Four tabs fit the 488 px page area. */
+    /* Four tabs fit the 488px page area. */
     CHECK(4 * UI_WB_TAB_W + 3 * UI_WB_TAB_GAP <= 488);
     ui_wb_strip_t w;
     ui_wb_strip_init(&w, UI_WB_HAS(UI_WB_TEST), 0, 0);
@@ -221,7 +221,7 @@ TEST_CASE(the_pieces_refuse_a_null)
 
 /* ------------------------------------------------------------ the TARGET row */
 
-/* The value box is the row less the label's 64 px, its text 8 px in from
+/* The value box is the row less the label's 64px, its text 8px in from
  * each side; a row no wider than the label has no box. */
 TEST_CASE(the_target_row_box_and_its_cells)
 {

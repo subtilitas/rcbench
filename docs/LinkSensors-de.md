@@ -24,8 +24,8 @@ Kanal 0 ist CH1 des Bauteils an 0x40, Kanal 11 ist CH3 des Bauteils an 0x43.
 | Register | Name | Bedeutung |
 | ---: | --- | --- |
 | 0 | `ENABLE` | Bit a: das Bauteil an 0x40 + a ist bestückt. 0 bis 15 |
-| 1 | `FAST` | der Kanal, der jede 1 ms gelesen wird, 0 bis 11, oder 0xFF für keinen. SERVO_WIN trägt seine letzten 4 Fenster, und SERVO_SENSE misst an ihm die Zeit einer Bewegung |
-| 2 bis 13 | `SHUNT[c]` | der Shunt von Kanal c in 0,1 mΩ, 50 bis 10000 (5 mΩ bis 1 Ω); 0 schaltet den Kanal ab: er wird nie gelesen |
+| 1 | `FAST` | der Kanal, der jede 1ms gelesen wird, 0 bis 11, oder 0xFF für keinen. SERVO_WIN trägt seine letzten 4 Fenster, und SERVO_SENSE misst an ihm die Zeit einer Bewegung |
+| 2 bis 13 | `SHUNT[c]` | der Shunt von Kanal c in 0,1mΩ, 50 bis 10000 (5mΩ bis 1Ω); 0 schaltet den Kanal ab: er wird nie gelesen |
 | 14 bis 25 | `WATCH[c]` | was Kanal c misst: 0 nichts genannt, 0x01 bis 0x08 Ausgangskanal 1 bis 8, 0x10 bis 0x13 Programmierport 1 bis 4, 0x20 die Versorgung. Der IOmcu hält den Wert und handelt nach nichts davon |
 | 26 bis 29 | `ID[a]` | nur lesbar: die Die-ID, die Bauteil a bei seiner letzten Abfrage geantwortet hat, 0 vor der ersten |
 | 30 | `FLAGS` | nur lesbar: Bit a Bauteil a online; Bit 4 + a Bauteil a hat mit einer anderen Identität geantwortet; Bit 8 die Map wurde geschrieben und wird gehalten (`IN_FORCE`); Bit 9 sie wurde nie geschrieben und ist das eine Bauteil von SENSE (`DERIVED`) |
@@ -113,13 +113,13 @@ Eintrag k von SENSE_WIN_B ist Kanal 6 + k. Ein Sample am Bereichsende bleibt
 aus den Werten heraus, wie auf SERVO_SENSE. Ein abgeschalteter Kanal oder
 einer eines Bauteils, das nicht online ist, liest durchweg 0.
 
-Die Raten, je 1-ms-Tick bei 400 kHz: `FAST` jede 1 ms; jeder andere Kanal
-mit einem Shunt reihum, einer je Tick, 1000 / n Hz bei n davon (500 Hz je
-für CH2 und CH3 eines Bauteils, 90,9 Hz je bei 11); jede Busspannung alle
-24 ms (41,7 Hz); Mask/Enable und das Zurücklesen der Konfiguration jedes
-Bauteils mit 25 Hz. Der längste Tick hält 742,5 µs Buszeit. 4 Bauteile mit
-12 Kanälen, der INA228 und der Ausgangs-Encoder AS5600 belegen 60,8 % des
-Busses; ein Bauteil mit 3 Kanälen und der INA228 43,4 %. Höchstens ein
+Die Raten, je 1-ms-Tick bei 400kHz: `FAST` jede 1ms; jeder andere Kanal
+mit einem Shunt reihum, einer je Tick, 1000 / n Hz bei n davon (500Hz je
+für CH2 und CH3 eines Bauteils, 90,9Hz je bei 11); jede Busspannung alle
+24ms (41,7Hz); Mask/Enable und das Zurücklesen der Konfiguration jedes
+Bauteils mit 25Hz. Der längste Tick hält 742,5µs Buszeit. 4 Bauteile mit
+12 Kanälen, der INA228 und der Ausgangs-Encoder AS5600 belegen 60,8% des
+Busses; ein Bauteil mit 3 Kanälen und der INA228 43,4%. Höchstens ein
 Bauteil wird je Tick abgefragt.
 
 ## SENSE_LIMIT
@@ -142,11 +142,11 @@ Register. Ein Schreiben wird in jedem Zustand der Bank angenommen.
 
 Core 1 prüft das 50-ms-Fenster jedes Kanals einmal, wenn das Fenster
 schließt. Ein Fenster liegt über der Grenze, wenn sein höchster Strom, in mA
-wie SENSE_WIN ihn zeigt, über der Grenze liegt: bei einer Grenze von 100 mA
-liegen 100,4 mA nicht darüber und 100,5 mA schon. Ein Fenster liegt auch
+wie SENSE_WIN ihn zeigt, über der Grenze liegt: bei einer Grenze von 100mA
+liegen 100,4mA nicht darüber und 100,5mA schon. Ein Fenster liegt auch
 darüber, wenn eines seiner Samples das obere Bereichsende gelesen hat und
-dieses Ende, ungerundet, über der Grenze liegt: 163,8 mV über dem Shunt,
-1638,0 mA an 0,1 Ω, 163,8 mA an 1 Ω, so dass eine Grenze von 163 mA an 1 Ω
+dieses Ende, ungerundet, über der Grenze liegt: 163,8mV über dem Shunt,
+1638,0mA an 0,1Ω, 163,8mA an 1Ω, so dass eine Grenze von 163mA an 1Ω
 überschritten wird. Ein negativer Strom liegt nie darüber. Ein
 abgeschalteter Kanal oder einer eines Bauteils, das beim Schließen des
 Fensters nicht online ist, liegt nie darüber. Core 1 zählt die Fenster jedes
@@ -190,15 +190,15 @@ Version 8 und startet wie mit einem leeren Speicher.
 
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B und SENSE_LIMIT |
 | --- | --- | --- |
-| 4.25 oder neuer | 4.27 oder neuer | bedient. Das Panel liest SENSE_MAP bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 25 in einem Schreiben so, wie SETUP > SENSOREN sie einstellt, und liest die Register 26 bis 30 alle 500 ms, solange ein Baustein bestückt ist. Nach einem angenommenen Schreiben liest es SENSE und IDENTITY neu: Fähigkeitsbit 3 kann sich schon mit `WATCH` allein ändern. SENSE_WIN_A liest es ganz, solange 0x40 oder 0x41 in der Map in Kraft bestückt ist, SENSE_WIN_B, solange 0x42 oder 0x43 es ist, jede in jedem Poll nach SERVO_WIN und höchstens alle 40 ms, in ARMED wie in SAFE, für die Spalten des Lauf-Logs ([Screens](Screens-de.md#tabelle-und-was-der-esc-meldet)). SENSE_LIMIT liest es bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 11 in einem Schreiben 500 ms nach der letzten Änderung einer Grenze, in jedem Zustand der Bank und nur, wo die Page abweicht, und liest die Register 12 und 13 alle 200 ms, solange die Page eine Grenze hält, die nicht 0 ist ([Screens](Screens-de.md#sensoren-die-ina3221-bausteine)) |
-| 4.25 oder neuer | 4.25 oder 4.26 | SENSE_MAP und SENSE_WIN wie oben; das Panel sendet nichts an SENSE_LIMIT, und SETUP > SENSOREN markiert jede Grenze, die nicht AUS ist, als nicht geprüft |
+| 4.25 oder neuer | 4.27 oder neuer | bedient. Das Panel liest SENSE_MAP bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 25 in einem Schreiben so, wie SETUP > SENSORS sie einstellt, und liest die Register 26 bis 30 alle 500ms, solange ein Baustein bestückt ist. Nach einem angenommenen Schreiben liest es SENSE und IDENTITY neu: Fähigkeitsbit 3 kann sich schon mit `WATCH` allein ändern. SENSE_WIN_A liest es ganz, solange 0x40 oder 0x41 in der Map in Kraft bestückt ist, SENSE_WIN_B, solange 0x42 oder 0x43 es ist, jede in jedem Poll nach SERVO_WIN und höchstens alle 40ms, in ARMED wie in SAFE, für die Spalten des Lauf-Logs ([Screens](Screens-de.md#tabelle-und-was-der-esc-meldet)). SENSE_LIMIT liest es bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 11 in einem Schreiben 500ms nach der letzten Änderung einer Grenze, in jedem Zustand der Bank und nur, wo die Page abweicht, und liest die Register 12 und 13 alle 200ms, solange die Page eine Grenze hält, die nicht 0 ist ([Screens](Screens-de.md#sensors-die-ina3221-bausteine)) |
+| 4.25 oder neuer | 4.25 oder 4.26 | SENSE_MAP und SENSE_WIN wie oben; das Panel sendet nichts an SENSE_LIMIT, und SETUP > SENSORS markiert jede Grenze, die nicht AUS ist, als nicht geprüft |
 | 4.25 oder neuer | 4.24 oder älter | das Panel sendet an keine der vier Pages und richtet den einen INA3221 von SENSE auf einen bestückten Baustein ein ([Screens](Screens-de.md)) |
 | 4.24 oder älter | 4.25 oder neuer, Map abgeleitet | das Panel liest und schreibt die vier Pages nie. SENSE läuft wie zuvor. Gehaltene Grenzen werden geprüft, und `OVER` hält seine Bits, bis etwas es liest |
 | 4.24 oder älter | 4.25 oder neuer, Map in Kraft | Bit 1 von ENABLE und die Register 8 bis 10 von SENSE lesen das Spiegelbauteil. Ein Schreiben an SENSE, das sie ändert, wird mit BAD_VALUE abgewiesen, so dass dieses Panel die INA3221-Konfiguration nicht ändern kann. Der INA228, der Encoder und die Pins bleiben seine |
 
 ## Auf der Konsole
 
-Ein mit `IOMCU_CONSOLE=ON` gebautes Image druckt die Map alle 3 s, solange
+Ein mit `IOMCU_CONSOLE=ON` gebautes Image druckt die Map alle 3s, solange
 ein Bauteil auf SENSE freigegeben ist, nach den beiden `sense`-Zeilen
 ([Erster Lauf auf der Hardware](FirstRun-de.md#8-strommonitore-ina228-ina3221)):
 

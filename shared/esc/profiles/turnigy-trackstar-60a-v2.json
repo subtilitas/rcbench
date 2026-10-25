@@ -96,20 +96,20 @@
       "values": [
         {
           "number": 1,
-          "name": "25 %"
+          "name": "25%"
         },
         {
           "number": 2,
-          "name": "50 %",
+          "name": "50%",
           "default": true
         },
         {
           "number": 3,
-          "name": "75 %"
+          "name": "75%"
         },
         {
           "number": 4,
-          "name": "100 %"
+          "name": "100%"
         }
       ],
       "applies_to": null,
@@ -122,20 +122,20 @@
       "values": [
         {
           "number": 1,
-          "name": "25 %"
+          "name": "25%"
         },
         {
           "number": 2,
-          "name": "50 %",
+          "name": "50%",
           "default": true
         },
         {
           "number": 3,
-          "name": "75 %"
+          "name": "75%"
         },
         {
           "number": 4,
-          "name": "100 %"
+          "name": "100%"
         }
       ],
       "applies_to": null,
@@ -183,19 +183,19 @@
         },
         {
           "number": 2,
-          "name": "10 %"
+          "name": "10%"
         },
         {
           "number": 3,
-          "name": "20 %"
+          "name": "20%"
         },
         {
           "number": 4,
-          "name": "30 %"
+          "name": "30%"
         },
         {
           "number": 5,
-          "name": "40 %"
+          "name": "40%"
         }
       ],
       "applies_to": null,
@@ -208,24 +208,24 @@
       "values": [
         {
           "number": 1,
-          "name": "large (0.1500 ms)"
+          "name": "large (0.1500ms)"
         },
         {
           "number": 2,
-          "name": "normal (0.1000 ms)",
+          "name": "normal (0.1000ms)",
           "default": true
         },
         {
           "number": 3,
-          "name": "small (0.0750 ms)"
+          "name": "small (0.0750ms)"
         },
         {
           "number": 4,
-          "name": "very small (0.0500 ms)"
+          "name": "very small (0.0500ms)"
         },
         {
           "number": 5,
-          "name": "smallest (0.0250 ms)"
+          "name": "smallest (0.0250ms)"
         }
       ],
       "applies_to": null,
@@ -247,19 +247,19 @@
         },
         {
           "number": 3,
-          "name": "5 V"
+          "name": "5V"
         },
         {
           "number": 4,
-          "name": "6 V"
+          "name": "6V"
         },
         {
           "number": 5,
-          "name": "9 V"
+          "name": "9V"
         },
         {
           "number": 6,
-          "name": "12 V"
+          "name": "12V"
         }
       ],
       "applies_to": null,

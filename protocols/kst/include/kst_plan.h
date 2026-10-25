@@ -1,5 +1,6 @@
-/*
- * KST servo programming protocol: the order of the writes for a change.
+/**
+ * @file
+ * @brief KST servo programming protocol: the order of the writes for a change.
  *
  * Implements the programming protocol of KST and Chaservo servos.  KST and
  * Chaservo are names or trademarks of their respective owners; they are used
@@ -67,18 +68,22 @@
 extern "C" {
 #endif
 
-/** 31 writable registers and 1 extra write in each of the 2 searched
- *  groups. */
+/**
+ * @brief 31 writable registers and 1 extra write in each of the 2 searched
+ *        groups.
+ */
 #define KST_PLAN_MAX_STEPS 33u
 
+/** @brief Kind of a plan. */
 typedef enum {
     KST_PLAN_EDIT = 0,         /**< a change of editable fields */
     KST_PLAN_RESTORE,          /**< back to the backup, locks lifted */
     KST_PLAN_RELEASE_PAIRING,  /**< register 0x1D to 0x00 */
 } kst_plan_kind_t;
 
+/** @brief Result of a planning request or job. */
 typedef enum {
-    KST_PLAN_OK = 0,
+    KST_PLAN_OK = 0,        /**< plan made; out holds the writes */
     KST_PLAN_ERR_ARG,      /**< a NULL argument */
     KST_PLAN_ERR_RULES,    /**< the target breaks a hard rule */
     KST_PLAN_ERR_R00,      /**< the target differs in register 0x00 */
@@ -88,28 +93,30 @@ typedef enum {
     KST_PLAN_ERR_TOO_COMPLEX,  /**< the job's cap is spent; no verdict */
 } kst_plan_result_t;
 
-/** No cap: a job runs until the planner has its verdict. */
+/** @brief No cap: a job runs until the planner has its verdict. */
 #define KST_PLAN_NO_CAP 0xFFFFFFFFu
-/** The most units one piece of work takes.  kst_plan_step() ends a call
- *  after the piece that brings its count to the budget, so a call takes
- *  less than its budget plus this. */
+/**
+ * @brief The most units one piece of work takes.  kst_plan_step() ends a call
+ *        after the piece that brings its count to the budget, so a call takes
+ *        less than its budget plus this.
+ */
 #define KST_PLAN_PIECE_UNITS 10u
 /**
- * Units per kst_plan_step() call of a caller that must not block: a call
- * takes 100 to 109 units.
+ * @brief Units per kst_plan_step() call of a caller that must not block: a call
+ *        takes 100 to 109 units.
  *
- * Cost on a Cortex-M33 at 150 MHz, computed in an emulator from the
+ * Cost on a Cortex-M33 at 150MHz, computed in an emulator from the
  * instructions a call executes, with ARM GNU 14.2 at -O3; not measured on
  * hardware.  The upper estimate counts 1 cycle per instruction, 1 more per
  * load and per store and 2 per basic block.  The costliest call found:
- * 122,397 cycles, 816 us, over the 71 costliest requests found.  The
+ * 122,397 cycles, 816us, over the 71 costliest requests found.  The
  * costliest single unit found is 1,228 cycles, which puts a call of 109
- * units at 133,852 cycles, 892 us, or less.  A begin call: 9,670
- * cycles, 64 us.
+ * units at 133,852 cycles, 892us, or less.  A begin call: 9,670
+ * cycles, 64us.
  */
 #define KST_PLAN_SLICE_UNITS 100u
 /**
- * The cap of such a caller: at most 2,161 calls of KST_PLAN_SLICE_UNITS.
+ * @brief The cap of such a caller: at most 2,161 calls of KST_PLAN_SLICE_UNITS.
  *
  * The costliest request found takes 120,136 units: a restore that ends
  * unchecked.  The cap is 1.8 times that.  The costliest edit found takes 118,776 units and
@@ -121,19 +128,20 @@ typedef enum {
  */
 #define KST_PLAN_WORK_CAP 216000u
 
-/** One write. */
+/** @brief One write. */
 typedef struct {
-    uint8_t reg;
-    uint8_t value;
+    uint8_t reg;            /**< register address */
+    uint8_t value;          /**< value written */
     uint8_t prev;     /**< the register's value before this write */
     uint8_t settled;  /**< 1: after this write no two-register field and no
                            duty pair is half written */
 } kst_write_t;
 
+/** @brief A plan: the writes that take the servo from start to target. */
 typedef struct {
     kst_image_t start;       /**< the image the servo must hold beforehand */
     kst_image_t target;      /**< the image after the last write */
-    kst_field_set_t unlocked;
+    kst_field_set_t unlocked;  /**< fields whose lock is lifted */
     uint8_t kind;            /**< kst_plan_kind_t */
     uint8_t n;               /**< number of writes */
     uint8_t unchecked;       /**< 1: a restore whose order is not checked */
@@ -141,15 +149,17 @@ typedef struct {
 } kst_plan_t;
 
 /**
- * The state of one planning job: 176 bytes.  The caller owns it and reads
- * no member.  It holds a pointer to the plan it builds: the plan is not
- * read until the job has ended, and it stays where it is, or the caller
- * that moves job and plan sets the member plan to the new place before the
- * next kst_plan_step().  Two jobs on two plans run side by side.
+ * @brief The state of one planning job: 176 bytes.
+ *
+ * The caller owns it and reads no member.  It holds a pointer to the plan it
+ * builds: the plan is not read until the job has ended, and it stays where it
+ * is, or the caller that moves job and plan sets the member plan to the new
+ * place before the next kst_plan_step().  Two jobs on two plans run side by
+ * side.
  */
 typedef struct {
     kst_rules_t allowed;     /**< hard rules the end points break themselves */
-    kst_plan_t *plan;
+    kst_plan_t *plan;        /**< the plan the job builds */
     uint32_t spent;          /**< units since the job began */
     uint32_t cap;
     kst_image_t img;         /**< the image after the writes emitted so far */
@@ -178,18 +188,28 @@ typedef struct {
 } kst_plan_job_t;
 
 /**
- * Check an edit from @p start to @p target and prepare @p job to plan it
- * into @p out.  KST_PLAN_BUSY: the job is ready for kst_plan_step().  Every
- * other result is final and is what kst_plan_edit() returns for the same
- * request before it searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES.
- * The call checks at most 4 images; its cost does not grow with the
- * request.
+ * @brief Check an edit from @p start to @p target and prepare @p job to plan it
+ *        into @p out.
+ *
+ * KST_PLAN_BUSY: the job is ready for kst_plan_step().  Every other result is
+ * final and is what kst_plan_edit() returns for the same request before it
+ * searches: KST_PLAN_ERR_ARG, _R00, _PAIRING, _RULES. The call checks at most 4
+ * images; its cost does not grow with the request.
  *
  * @p start and @p target are copied before @p out is cleared: either may
  * lie in @p out.  The same holds for kst_plan_restore_begin(),
  * kst_plan_edit(), kst_plan_restore() and kst_plan_release_pairing().
  *
  * @p cap is the most units the job may take, or KST_PLAN_NO_CAP.
+ *
+ * @param job       Job to prepare.
+ * @param start     Image the servo holds.
+ * @param target    Image to reach.
+ * @param unlocked  Fields whose KST_ACCESS_LOCKED is lifted.
+ * @param out       Receives the plan.
+ * @param violated  Receives the hard rules broken; may be NULL.
+ * @param cap       Most units the job may take, or KST_PLAN_NO_CAP.
+ * @return KST_PLAN_BUSY, or the final result of the request.
  */
 kst_plan_result_t kst_plan_edit_begin(kst_plan_job_t *job,
                                       const kst_image_t *start,
@@ -199,8 +219,17 @@ kst_plan_result_t kst_plan_edit_begin(kst_plan_job_t *job,
                                       kst_rules_t *violated,
                                       uint32_t cap);
 
-/** The same for kst_plan_restore(): KST_PLAN_BUSY, or KST_PLAN_ERR_ARG or
- *  KST_PLAN_ERR_R00 at once. */
+/**
+ * @brief The same for kst_plan_restore(): KST_PLAN_BUSY, or KST_PLAN_ERR_ARG or
+ *        KST_PLAN_ERR_R00 at once.
+ *
+ * @param job      Job to prepare.
+ * @param current  Image the servo holds.
+ * @param backup   Image to return to.
+ * @param out      Receives the plan.
+ * @param cap      Most units the job may take, or KST_PLAN_NO_CAP.
+ * @return KST_PLAN_BUSY, or the final result of the request.
+ */
 kst_plan_result_t kst_plan_restore_begin(kst_plan_job_t *job,
                                          const kst_image_t *current,
                                          const kst_image_t *backup,
@@ -208,9 +237,11 @@ kst_plan_result_t kst_plan_restore_begin(kst_plan_job_t *job,
                                          uint32_t cap);
 
 /**
- * Advance a job by @p budget units.  The call ends after the piece of work
- * that brings its count to @p budget or above; a piece is at most
- * KST_PLAN_PIECE_UNITS units.  @p budget 0 does nothing.
+ * @brief Advance a job by @p budget units.
+ *
+ * The call ends after the piece of work that brings its count to @p budget or
+ * above; a piece is at most KST_PLAN_PIECE_UNITS units.  @p budget 0 does
+ * nothing.
  *
  * KST_PLAN_BUSY while work is left.  Then the job's result, and the same
  * result on every later call: KST_PLAN_OK, KST_PLAN_ERR_NO_PATH, or
@@ -220,20 +251,36 @@ kst_plan_result_t kst_plan_restore_begin(kst_plan_job_t *job,
  *
  * A job whose begin call returned a final result gives that result.
  * KST_PLAN_ERR_ARG for NULL and for a job of zeroed memory.
+ *
+ * @param job     Job to advance.
+ * @param budget  Units to take.
+ * @return KST_PLAN_BUSY while work is left, then the job result.
  */
 kst_plan_result_t kst_plan_step(kst_plan_job_t *job, uint32_t budget);
 
-/** Units the job has taken so far. */
+/**
+ * @brief Units the job has taken so far.
+ *
+ * @param job  Job to read.
+ * @return Units taken so far.
+ */
 uint32_t kst_plan_units(const kst_plan_job_t *job);
 
 /**
- * Plan an edit from @p start to @p target.
+ * @brief Plan an edit from @p start to @p target.
  *
  * The hard rules of kst_limits_edit(@p start, @p target, @p unlocked) are
  * checked first; @p violated, when not NULL, receives the broken ones.  Soft
  * rules do not refuse a plan: the caller shows them and asks.
  *
  * @p out holds a plan with 0 writes when the result is not KST_PLAN_OK.
+ *
+ * @param start     Image the servo holds.
+ * @param target    Image to reach.
+ * @param unlocked  Fields whose KST_ACCESS_LOCKED is lifted.
+ * @param out       Receives the plan.
+ * @param violated  Receives the hard rules broken; may be NULL.
+ * @return KST_PLAN_OK, or the reason no plan was made.
  */
 kst_plan_result_t kst_plan_edit(const kst_image_t *start,
                                 const kst_image_t *target,
@@ -242,24 +289,45 @@ kst_plan_result_t kst_plan_edit(const kst_image_t *start,
                                 kst_rules_t *violated);
 
 /**
- * Plan the way from @p current back to @p backup.  Access classes and limits
- * do not apply: every value is one this servo held.  Register 0x1D is
- * written back like any other.  A difference in register 0x00 is refused.
+ * @brief Plan the way from @p current back to @p backup.
+ *
+ * Access classes and limits do not apply: every value is one this servo held.
+ * Register 0x1D is written back like any other.  A difference in register 0x00
+ * is refused.
+ *
+ * @param current  Image the servo holds.
+ * @param backup   Image to return to.
+ * @param out      Receives the plan.
+ * @return KST_PLAN_OK, or the reason no plan was made.
  */
 kst_plan_result_t kst_plan_restore(const kst_image_t *current,
                                    const kst_image_t *backup,
                                    kst_plan_t *out);
 
 /**
- * Plan the write of 0x00 to register 0x1D.  0x00 is the only value the
- * vendor's card does not refuse in any tested case.  The effect inside the
- * servo is not known.  A card identifier is never written.
+ * @brief Plan the write of 0x00 to register 0x1D.
+ *
+ * 0x00 is the only value the vendor's card does not refuse in any tested case.
+ * The effect inside the servo is not known.  A card identifier is never
+ * written.
+ *
+ * @param current  Image the servo holds.
+ * @param out      Receives the plan.
+ * @return KST_PLAN_OK, or the reason no plan was made.
  */
 kst_plan_result_t kst_plan_release_pairing(const kst_image_t *current,
                                            kst_plan_t *out);
 
-/** The image after the first @p steps writes of a plan.  False for more
- *  steps than the plan has. */
+/**
+ * @brief The image after the first @p steps writes of a plan.
+ *
+ * False for more steps than the plan has.
+ *
+ * @param plan   Plan to apply.
+ * @param steps  Number of writes to apply.
+ * @param out    Receives the image.
+ * @return true when steps does not exceed the plan length.
+ */
 bool kst_plan_image_after(const kst_plan_t *plan, unsigned steps,
                           kst_image_t *out);
 

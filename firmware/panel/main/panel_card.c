@@ -1,7 +1,9 @@
-/*
- * The card's files outside the run log: the ESC profiles read at start-up,
- * the log viewer's list, open and delete, and the servo programmer's record
- * and file requests, which the logger task serves (panel_log.c).
+/**
+ * @file panel_card.c
+ * @brief The card's files outside the run log: the ESC profiles read at
+ *        start-up, the log viewer's list, open and delete, and the servo
+ *        programmer's record and file requests, which the logger task serves
+ *        (panel_log.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,7 +81,7 @@ void esc_profiles_load(void)
 
 static void esc_profiles_read(void)
 {
-    /* 4 KiB of names: static, off the start-up task's stack. */
+    /* 4KiB of names: static, off the start-up task's stack. */
     static esc_card_t c;
     memset(&c, 0, sizeof(c));
     if (storage_walk(ESC_CARD_DIR, ".json", esc_card_take, &c, NULL) < 0) {
@@ -158,20 +160,53 @@ static void esc_profiles_read(void)
  */
 /*
  * What the viewer can actually open: a CSV file goes to log_csv_analyse(),
- * and a report standing alone, LIMITnnn.TXT, to the text view
- * (log_select.h decides which ".txt" are listed).  Nothing in the tree
- * decodes a Betaflight blackbox log, so offering .bfl here would list files
- * that fail to open.  The screen says the same thing; the two are kept
- * together deliberately.  CARD_REPORTS is the second walk's, which looks
- * for the reports the first one found without their CSV.
+ * and a report, ATESTnnn.TXT or LIMITnnn.TXT, to the text view
+ * (log_select_lists() decides which ".txt" are listed).  Nothing in the
+ * tree decodes a Betaflight blackbox log, so offering .bfl here would list
+ * files that fail to open.  The screen says the same thing; the two are
+ * kept together deliberately.
  */
-#define CARD_SUFFIXES ".csv .txt"
-#define CARD_REPORTS  ".txt"
+#define CARD_SUFFIXES ".csv .txt"  /**< the walk's suffixes */
 
 /* The file the viewer currently has open, so close() has something to close.
  * One at a time: the viewer opens a log, reads it and closes it before it
  * opens another. */
 static FILE *s_card_file;
+/** @brief The read of the source card_open() set up, which card_read()
+ *         wraps. */
+static size_t (*s_card_read)(void *ctx, char *buf, size_t max);
+
+/**
+ * @brief One read of the open log for the viewer, counted as the render
+ *        task's progress (render_progress()).
+ *
+ * The viewer reads a log whole inside one pass of the render loop, up to
+ * LOG_DEFAULT_MAX_ROWS (60,000) rows in two passes over the file, and that
+ * pass can last longer than the watchdog's FRAME_WATCH_MS (1000ms): a live
+ * supply output held by a programming port stays on while LOGS is open.
+ * Counted per read, the watchdog sees one read's length at a time, which a
+ * card that stops answering still exceeds.
+ *
+ * @param ctx The FILE * of the open log.
+ * @param buf Where the bytes go.
+ * @param max Room in @p buf, bytes.
+ * @return The bytes read; 0 at the end or on a failure.
+ */
+static size_t card_read(void *ctx, char *buf, size_t max)
+{
+    render_progress();
+    return s_card_read(ctx, buf, max);
+}
+
+/**
+ * @brief The walks' tick (storage_walk()): one directory entry read on the
+ *        render task, counted as its progress, for the reason card_read()
+ *        gives.
+ */
+static void card_tick(void)
+{
+    render_progress();
+}
 
 /*
  * The run the logger has open, as a run number, or 0 for none.
@@ -256,8 +291,8 @@ static unsigned card_written(log_viewer_tab_t *tab, void *ctx)
     return n;
 }
 
-/*
- * One directory entry on its way into the viewer's list.
+/**
+ * @brief One directory entry on its way into the viewer's list.
  *
  * The card takes LOG_RUN_LAST runs and a page of the list holds
  * LOG_VIEWER_MAX_FILES of them, so which of them arrive is a decision rather
@@ -265,46 +300,16 @@ static unsigned card_written(log_viewer_tab_t *tab, void *ctx)
  * log_select_page_offer(), which holds the page the viewer asked for.
  */
 typedef struct {
-    log_select_page_t sel;
-    int files;      /* what the card holds that this viewer could open */
-    bool again;     /* the second walk: the reports standing alone */
+    log_select_page_t sel;  /**< the page being chosen */
+    int files;              /**< what the card holds that this viewer could
+                                 open */
 } card_pick_t;
 
-/*
- * The notes of the folder's walks (log_lone_t), 1,750 bytes in PSRAM
- * (pseudo-static RAM), taken at the first listing and kept: the task that
- * renders' own, off its stack and out of internal RAM.  NULL when the
- * allocation failed: then the first walk lists the CSV files and the LIMIT
- * reports, there is no second walk, and a SERVOnnn.TXT standing alone is
- * not listed.
- */
-static log_lone_t *s_card_lone;
-static bool s_card_lone_tried;
-
 /**
- * @brief The notes of the folder's walks, allocated from PSRAM once.
- * @return the notes, or NULL when PSRAM did not give them
- */
-static log_lone_t *card_lone(void)
-{
-    if (!s_card_lone_tried) {
-        s_card_lone_tried = true;
-        s_card_lone = heap_caps_malloc(sizeof(*s_card_lone),
-                                       MALLOC_CAP_SPIRAM);
-        if (s_card_lone == NULL) {
-            ESP_LOGW(TAG, "no PSRAM for the list's notes: reports other "
-                     "than LIMITnnn.TXT stay unlisted");
-        }
-    }
-    return s_card_lone;
-}
-
-/**
- * @brief Offer one directory entry of a walk to the page.
+ * @brief Offer one directory entry of the walk to the page.
  *
- * A folder, a name the walk does not list (log_lone_first() in the first
- * walk, log_lone_second() in the second) and a file the logger has open
- * are left out; the rest is counted and offered.
+ * A folder, a name the list does not hold (log_select_lists()) and a file
+ * the logger has open are left out; the rest is counted and offered.
  *
  * @param entry  the entry, borrowed for the call
  * @param ctx    the walk's card_pick_t
@@ -323,13 +328,9 @@ static void card_take(const storage_entry_t *entry, void *ctx)
     if (entry->is_dir) {
         return;
     }
-    /* A CSV file and a report standing alone, and nothing else.  Asked
-     * before the busy check: a run's CSV the logger has open still says its
-     * report is not alone. */
-    const bool listed = pick->again
-                            ? log_lone_second(s_card_lone, entry->name)
-                            : log_lone_first(s_card_lone, entry->name);
-    if (!listed) {
+    /* A CSV file and a report, and nothing else: the names FILES labels
+     * a run, a CSV and a report. */
+    if (!log_select_lists(entry->name)) {
         return;
     }
     /* And not the run the logger still has open; see s_log_open_run.  Not
@@ -358,9 +359,8 @@ static void card_take(const storage_entry_t *entry, void *ctx)
  * @brief The viewer's list(): the page @p page names of the folder the
  *        viewer points at.
  *
- * One walk of ".csv .txt", and a second of ".txt" when the first found a
- * report other than LIMITnnn.TXT without its CSV (log_select.h).  A walk
- * that found another card mounted is walked again, both passes, once.
+ * One walk of ".csv .txt" (log_select_lists()).  A walk that found
+ * another card mounted is walked again, once.
  *
  * @param out          takes the page's entries, in the order the list draws
  * @param max_entries  room in @p out
@@ -401,9 +401,8 @@ static int card_list(log_viewer_file_t *out, int max_entries,
     }
     card_pick_t pick;
     /*
-     * No tick: this runs on the task that renders, which has no safety line
-     * to hold and nothing to pump.  One walk per page, PREV and NEXT
-     * included: the page is held and the rest of the card is counted, so a
+     * The tick counts the render task's progress for its watchdog
+     * (card_tick()).  One walk per page, PREV and NEXT included: the page is held and the rest of the card is counted, so a
      * page of a full card costs what the first page of it does.  A walk
      * that found the card gone and mounted the one in the slot is walked
      * once more, from nothing: what it handed over was the old card's.
@@ -412,26 +411,13 @@ static int card_list(log_viewer_file_t *out, int max_entries,
     for (int walks = 0; walks < 2 && total == STORAGE_WALK_REMOUNTED;
          ++walks) {
         pick.files = 0;
-        pick.again = false;
-        log_lone_begin(card_lone());
         log_select_page_begin(&pick.sel, out, max_entries, page);
         /* The walk holds its volume, so one mount number on both sides of
          * it is the mount it read; another task's mount in between is a
          * walk of the old card, and walked again. */
         s_card_mount = storage_mount_count();
         total = storage_walk(s_card_dir, CARD_SUFFIXES, card_take, &pick,
-                             NULL);
-        /* The reports standing alone, when the first walk found one other
-         * than a LIMIT report: a second walk of the folder, on the same
-         * mount, the reports alone (log_select.h). */
-        if (total >= 0 && log_lone_again(s_card_lone)) {
-            pick.again = true;
-            const int more = storage_walk(s_card_dir, CARD_REPORTS,
-                                          card_take, &pick, NULL);
-            if (more < 0) {
-                total = more;
-            }
-        }
+                             card_tick);
         if (total != STORAGE_WALK_REMOUNTED
             && storage_mount_count() != s_card_mount) {
             total = STORAGE_WALK_REMOUNTED;
@@ -502,6 +488,8 @@ static bool card_open(const char *name, log_source_t *src, void *ctx)
         return false;
     }
     log_source_stdio(src, s_card_file);
+    s_card_read = src->read;
+    src->read = card_read;
     return true;
 }
 
@@ -559,7 +547,9 @@ static bool card_remove(const char *name, void *ctx)
         return false;
     }
     /* The viewer closes what it reads before it lists again, so nothing is
-     * open here; closed anyway, because FAT will not delete an open file. */
+     * open here; closed anyway: FatFs runs without its file lock
+     * (CONFIG_FATFS_FS_LOCK 0), removes an open file without a word, and
+     * the handle's next write lands in clusters the removal freed. */
     if (s_card_file != NULL) {
         (void)storage_fclose(s_card_file);
         s_card_file = NULL;

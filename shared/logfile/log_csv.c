@@ -1,5 +1,6 @@
-/*
- * Reading a CSV log without knowing, in advance, what wrote it.
+/**
+ * @file
+ * @brief Reading a CSV log without knowing, in advance, what wrote it.
  *
  * A bench log can come from a transmitter, a charger, a datalogger or a
  * spreadsheet, and they disagree about nearly everything: comma, semicolon or
@@ -59,6 +60,12 @@ const char *log_err_str(log_err_t err)
 
 /* --------------------------------------------------------------- utils --- */
 
+/**
+ * @brief Strip white space from both ends of a string, in place.
+ *
+ * @param s  The string, changed in place.
+ * @return The first character after the leading white space.
+ */
 static char *trim(char *s)
 {
     while (*s != '\0' && isspace((unsigned char)*s)) {
@@ -71,6 +78,14 @@ static char *trim(char *s)
     return s;
 }
 
+/**
+ * @brief Copy a string into a buffer, cut to fit without splitting a UTF-8
+ * sequence.
+ *
+ * @param dst       Receives the copy, NUL-terminated.
+ * @param dst_size  Size of @p dst, bytes.
+ * @param src       The string to copy.
+ */
 static void copy_str(char *dst, size_t dst_size, const char *src)
 {
     size_t n = strlen(src);
@@ -84,6 +99,13 @@ static void copy_str(char *dst, size_t dst_size, const char *src)
     dst[n] = '\0';
 }
 
+/**
+ * @brief Whether two strings are equal without regard to case.
+ *
+ * @param a  The first string.
+ * @param b  The second string.
+ * @return true when the strings are equal without regard to case.
+ */
 static bool ci_equal(const char *a, const char *b)
 {
     while (*a != '\0' && *b != '\0') {
@@ -96,6 +118,13 @@ static bool ci_equal(const char *a, const char *b)
     return *a == *b;
 }
 
+/**
+ * @brief Whether a string contains another, without regard to case.
+ *
+ * @param hay     The string searched.
+ * @param needle  The string to find.
+ * @return true when @p needle occurs in @p hay, without regard to case.
+ */
 static bool ci_contains(const char *hay, const char *needle)
 {
     size_t n = strlen(needle);
@@ -123,6 +152,9 @@ void log_csv_opts_default(log_csv_opts_t *opts)
     opts->max_rows = LOG_DEFAULT_MAX_ROWS;
 }
 
+/**
+ * @brief One row read from the file: its text, its fields and their counts.
+ */
 typedef struct {
     char store[LOG_ROW_MAX];
     char *fields[LOG_MAX_COLUMNS];
@@ -132,7 +164,7 @@ typedef struct {
 
 /*
  * Scratch, file-static rather than on the stack: a row buffer and a unit
- * tally per column come to about 3 kB, which is too much for a UI task's
+ * tally per column come to about 3kB, which is too much for a UI task's
  * stack on this chip.  Analysis and build are called from one task, one file
  * at a time; they are not reentrant, and neither is the screen that drives
  * them.
@@ -140,7 +172,14 @@ typedef struct {
 static row_buf_t s_row;
 static log_unit_tally_t s_tally[LOG_MAX_COLUMNS];
 
-/** Read the next row that is not a blank line.  false at end of input. */
+/**
+ * @brief Read the next row that is not a blank line.  false at end of input.
+ *
+ * @param r          The row splitter.
+ * @param delimiter  The field delimiter.
+ * @param row        Receives the fields of the row.
+ * @return true when a row was read; false at the end of input.
+ */
 static bool next_row(log_reader_t *r, char delimiter, row_buf_t *row)
 {
     for (;;) {
@@ -158,7 +197,12 @@ static bool next_row(log_reader_t *r, char delimiter, row_buf_t *row)
     }
 }
 
-/** Does this row have anything in it at all? */
+/**
+ * @brief Does this row have anything in it at all?
+ *
+ * @param row  The row.
+ * @return true when a field is not white space.
+ */
 static bool row_has_content(row_buf_t *row)
 {
     for (int i = 0; i < row->n; ++i) {
@@ -174,6 +218,13 @@ static const char *const k_time_names[] = {
     "sekunden", "seconds", "millis", "micros",
 };
 
+/**
+ * @brief Guess the unit of a time column.
+ *
+ * @param col       The time column.
+ * @param out       Receives the unit.
+ * @param out_size  Size of @p out, bytes.
+ */
 static void guess_time_unit(const log_column_t *col, char *out, size_t out_size)
 {
     char u[LOG_UNIT_MAX];
@@ -215,10 +266,17 @@ static void guess_time_unit(const log_column_t *col, char *out, size_t out_size)
     copy_str(out, out_size, (span > 5e6) ? "us" : (span > 5e3) ? "ms" : "s");
 }
 
-/*
- * Sniffing the delimiter, which has to happen before anything can be split
- * into fields.  A source that cannot be rewound is a read error rather than
- * a guess: every pass below starts from the top.
+/**
+ * @brief Sniffing the delimiter, which has to happen before anything can be
+ *        split into fields.
+ *
+ * A source that cannot be rewound is a read error rather than a guess: every
+ * pass below starts from the top.
+ *
+ * @param src  The source; rewound and read again.
+ * @param opts The import options; a set delimiter is kept.
+ * @param out  Receives the delimiter.
+ * @return LOG_OK, or LOG_ERR_READ when the source cannot be rewound.
  */
 static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
                                  char *out)
@@ -277,6 +335,13 @@ static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
 #define TAIL_CHUNK 256u
 #define TAIL_LIMIT 4096u
 
+/**
+ * @brief Whether the source ends inside a row, read from its last bytes.
+ *
+ * @param src  The source.
+ * @return 1 when the source ends inside a row, 0 when it does not, -1 when the
+ * last bytes cannot be read.
+ */
 static int tail_cut(log_source_t *src)
 {
     size_t end = 0;
@@ -313,13 +378,20 @@ static int tail_cut(log_source_t *src)
     return 0;
 }
 
-/*
- * Pass one: how many columns there are, how many rows, and what the file
- * looks like as evidence for a decimal convention.
+/**
+ * @brief Pass one: how many columns there are, how many rows, and what the file
+ *        looks like as evidence for a decimal convention.
  *
  * Two passes rather than one because the convention decides how a cell
  * parses, and it is not known until every cell has voted.  The alternative is
  * holding the file, and the file is the one thing that does not fit.
+ *
+ * @param src       The source.
+ * @param delimiter  The field delimiter.
+ * @param opts       The import options.
+ * @param max_rows   Most rows to count.
+ * @param out        Receives the geometry and the evidence.
+ * @return LOG_OK, or the reason the source could not be analysed.
  */
 static log_err_t scan_geometry(log_source_t *src, char delimiter,
                                const log_csv_opts_t *opts, int max_rows,
@@ -386,8 +458,8 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
         /* Past the cap the reader goes on to the first row with content,
          * which makes the file truncated.  The cut row is then taken from
          * the file's last bytes (tail_cut), and the rows after that first
-         * one are not read: a 360 MB file reads no more of its rows than a
-         * 360 kB one.  A source without that answer is read on to its end:
+         * one are not read: a 360MB file reads no more of its rows than a
+         * 360kB one.  A source without that answer is read on to its end:
          * the rows past the cap are parsed into the static row buffer and
          * dropped, no statistics, no allocation, one sequential read of the
          * rest of the file. */
@@ -425,12 +497,17 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     return LOG_OK;
 }
 
-/*
- * Pass two: what is in each column, now that the convention is settled.
+/**
+ * @brief Pass two: what is in each column, now that the convention is settled.
  *
  * Bounded by the row count pass one arrived at, so a file that grew between
  * the two passes is read to the length that was measured rather than to a
  * different one.
+ *
+ * @param src       The source.
+ * @param delimiter  The field delimiter.
+ * @param out        The analysis from the first pass; receives the columns.
+ * @return LOG_OK, or the reason the source could not be read.
  */
 static log_err_t scan_columns(log_source_t *src, char delimiter,
                               log_analysis_t *out)
@@ -534,12 +611,15 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
     return LOG_OK;
 }
 
-/*
- * Which column is the time axis.
+/**
+ * @brief Which column is the time axis.
  *
  * Named first, then headed like one, then a first column that only ever
  * increases -- in that order, because a column called "time" is a statement
  * and a column that happens to rise is a guess.
+ *
+ * @param opts  The import options.
+ * @param out   The analysis; receives the time column and unit.
  */
 static void pick_time_column(const log_csv_opts_t *opts, log_analysis_t *out)
 {
@@ -640,6 +720,14 @@ void log_data_free(log_data_t *data)
     memset(data, 0, sizeof(*data));
 }
 
+/**
+ * @brief Compare two floats for qsort().
+ *
+ * @param a  Pointer to a float.
+ * @param b  Pointer to a float.
+ * @return negative, zero or positive as *a is less than, equal to or greater
+ * than *b.
+ */
 static int cmp_float(const void *a, const void *b)
 {
     float x = *(const float *)a;
@@ -647,13 +735,19 @@ static int cmp_float(const void *a, const void *b)
     return (x < y) ? -1 : (x > y) ? 1 : 0;
 }
 
-/*
- * Which columns the plot gets: the ones asked for, or every numeric one that
- * is not the time axis.
+/**
+ * @brief Which columns the plot gets: the ones asked for, or every numeric one
+ *        that is not the time axis.
  *
  * A column that is not numeric is dropped rather than refused, because a file
  * with a text column beside its numbers is an ordinary file and not a broken
  * one.
+ *
+ * @param a          The analysis.
+ * @param columns    Column indices asked for, or NULL for every numeric column.
+ * @param n_columns  Number of entries in @p columns.
+ * @param pick       Receives the chosen column indices.
+ * @return Number of columns chosen, at most LOG_MAX_SERIES.
  */
 static int pick_columns(const log_analysis_t *a, const int *columns,
                         int n_columns, int *pick)
@@ -678,13 +772,20 @@ static int pick_columns(const log_analysis_t *a, const int *columns,
     return n_pick;
 }
 
-/*
- * What each series is called, what it is measured in, and what it is
- * grouped with.
+/**
+ * @brief What each series is called, what it is measured in, and what it is
+ *        grouped with.
  *
  * The blackbox grouping when the names match, and otherwise by unit, which
  * keeps related channels together on a screen that has to draw them
  * somewhere.
+ *
+ * @param a     The analysis.
+ * @param pick  The chosen column indices.
+ * @param n_pick  Number of entries in @p pick.
+ * @param vmin  Smallest value of each chosen column.
+ * @param vmax  Largest value of each chosen column.
+ * @param out   Receives the fields.
  */
 static void name_fields(const log_analysis_t *a, const int *pick, int n_pick,
                         const double *vmin, const double *vmax,
@@ -714,10 +815,15 @@ static void name_fields(const log_analysis_t *a, const int *pick, int n_pick,
     }
 }
 
-/*
- * A time axis that runs backwards means the wrong column was picked, so the
- * samples are numbered instead and the axis loses its name -- a plot against
- * sample number is honest, and one against a column that is not time is not.
+/**
+ * @brief A time axis that runs backwards means the wrong column was picked, so
+ *        the samples are numbered instead and the axis loses its name -- a plot
+ *        against sample number is honest, and one against a column that is not
+ *        time is not.
+ *
+ * @param a      The analysis.
+ * @param out    The data; its time axis is replaced when it runs backwards.
+ * @param count  Number of samples in the time array.
  */
 static void undo_a_backwards_time_axis(const log_analysis_t *a,
                                        log_data_t *out, int count)
@@ -737,11 +843,19 @@ static void undo_a_backwards_time_axis(const log_analysis_t *a,
     }
 }
 
-/*
- * The time axis and the series, read together.
+/**
+ * @brief The time axis and the series, read together.
  *
  * One pass: a row's time and its values are the same row, and reading them
  * separately would need the file twice or the rows held.
+ *
+ * @param src       The source.
+ * @param a         The analysis.
+ * @param pick      The chosen column indices.
+ * @param n_pick    Number of entries in @p pick.
+ * @param out       Receives the samples.
+ * @param count_out Receives the number of samples read.
+ * @return LOG_OK, or the reason the samples could not be read.
  */
 static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
                              const int *pick, int n_pick, log_data_t *out,
@@ -883,13 +997,16 @@ static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
     return LOG_OK;
 }
 
-/*
- * What the samples add up to: how long, how fast, and the widest gap.
+/**
+ * @brief What the samples add up to: how long, how fast, and the widest gap.
  *
  * The median interval rather than the mean, because one long gap in a log
  * that is otherwise steady should not move the rate the screen reports. When
  * there is no room to sort for a median, the mean is reported and the screen
  * says which it is showing.
+ *
+ * @param out    The data; receives the statistics.
+ * @param count  Number of samples in the time array.
  */
 static void series_stats(log_data_t *out, int count)
 {

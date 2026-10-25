@@ -1,13 +1,19 @@
-/*
- * Taking a run's number in a folder of the card.
+/**
+ * @file
+ * @brief Taking a run's number in a folder of the card.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "log_take.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+
+/** @brief log_series_forget_all()'s count: written by any task, read by
+ *         the one that takes. */
+static atomic_uint s_edits;
 
 void log_series_init(log_series_set_t *set)
 {
@@ -16,7 +22,18 @@ void log_series_init(log_series_set_t *set)
     }
 }
 
-/* Whether @p a and @p b name one folder: FAT compares without case. */
+void log_series_forget_all(void)
+{
+    atomic_fetch_add(&s_edits, 1u);
+}
+
+/**
+ * @brief Whether @p a and @p b name one folder: FAT compares without case.
+ *
+ * @param a  The first path; NULL counts as "".
+ * @param b  The second path; NULL counts as "".
+ * @return true when the paths are equal without regard to case.
+ */
 static bool same_dir(const char *a, const char *b)
 {
     return log_name_case_cmp((a != NULL) ? a : "", (b != NULL) ? b : "")
@@ -61,9 +78,14 @@ log_series_t *log_series_of(log_series_set_t *set, const char *dir)
     return free_slot;
 }
 
-/* The highest number a walk sees, under any prefix, a folder's name too:
- * a folder called MOTOR003.CSV takes that number as a file does, because
- * no file of that name can be created beside it. */
+/**
+ * @brief The highest number a walk sees, under any prefix, a folder's name too:
+ *        a folder called MOTOR003.CSV takes that number as a file does, because
+ *        no file of that name can be created beside it.
+ *
+ * @param name  An entry name.
+ * @param ctx   Pointer to the highest number so far, an int.
+ */
 static void take_highest(const char *name, void *ctx)
 {
     int *highest = (int *)ctx;
@@ -73,8 +95,15 @@ static void take_highest(const char *name, void *ctx)
     }
 }
 
-/* One level of the folder, through the caller's make_dir().  A
- * card_make_fn, so its context stays a plain pointer. */
+/**
+ * @brief One level of the folder, through the caller's make_dir().
+ *
+ * A card_make_fn, so its context stays a plain pointer.
+ *
+ * @param ctx    The log_take_io_t the caller passed.
+ * @param level  The folder path to make.
+ * @return CARD_DIR_OK when the folder is there, else CARD_DIR_FAILED.
+ */
 // cppcheck-suppress constParameterCallback
 static card_dir_t take_level(void *ctx, const char *level)
 {
@@ -82,7 +111,14 @@ static card_dir_t take_level(void *ctx, const char *level)
     return io->make_dir(io->ctx, level) ? CARD_DIR_OK : CARD_DIR_FAILED;
 }
 
-/* None of number @p n's LOG_NAME_FORMS names is in @p dir. */
+/**
+ * @brief None of number @p n's LOG_NAME_FORMS names is in @p dir.
+ *
+ * @param io   The card functions.
+ * @param dir  The folder path.
+ * @param n    The run number.
+ * @return true when no name of the number exists in the folder.
+ */
 static bool number_free(const log_take_io_t *io, const char *dir, int n)
 {
     for (int form = 0; form < LOG_NAME_FORMS; ++form) {
@@ -114,6 +150,12 @@ log_take_t log_take(log_series_set_t *set, const log_take_io_t *io,
     }
     if (card_make_dirs(dir, take_level, (void *)io) != CARD_DIR_OK) {
         return LOG_TAKE_NO_FOLDER;
+    }
+    const unsigned edits = atomic_load(&s_edits);
+    if (edits != set->edits) {
+        /* Another hand changed the card's files since the last take. */
+        log_series_init(set);
+        set->edits = edits;
     }
     log_series_t *sr = log_series_of(set, dir);
     if (sr == NULL) {

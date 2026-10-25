@@ -1,5 +1,6 @@
-/*
- * The SERVO screen's automatic test: START TEST, on TEST's AUTOMATIC TEST
+/**
+ * @file
+ * @brief The SERVO screen's automatic test: START TEST, on TEST's AUTOMATIC TEST
  * card, runs it (servo_test.h).  This file hands the run the steps, the
  * servo's profile and ends, the meter and the supply's caps; does what the
  * run asks -- the servo's position, SUPPLY's set points and output --
@@ -68,7 +69,7 @@ void test_meter_follow(servo_source_id_t id, uint32_t changes)
 
 /* --------------------------------------------------------- the automatic test */
 
-/* The steps the run's settings name: 7.4 and 8.4 V only while HV SERVO is
+/* The steps the run's settings name: 7.4 and 8.4V only while HV SERVO is
  * on. */
 static uint8_t test_steps(float *v)
 {
@@ -164,7 +165,7 @@ static void test_cfg(servo_test_cfg_t *c)
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     if (in_force_dangerous()) {
-        snprintf(c->danger, sizeof(c->danger), "%s %u Hz", type()->name,
+        snprintf(c->danger, sizeof(c->danger), "%s %uHz", type()->name,
                  (unsigned)s.frame_hz);
     }
     c->hv         = s.test_hv;
@@ -301,7 +302,10 @@ int test_blocked(void)
     if (!value_live()) {
         return SERVO_STR_START_NOT_ARMED;
     }
-    if (!servo_test_drained(&s.test) || servo_limrun_running(&s.lim)
+    if (servo_limrun_running(&s.lim)) {
+        return SERVO_STR_START_LIMIT_RUNS;
+    }
+    if (!servo_test_drained(&s.test)
         || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return SERVO_STR_START_BUSY;
     }
@@ -490,9 +494,11 @@ static void test_file_name(char *b, size_t n)
     }
 }
 
-/*
- * The run on the left card: the step and phase while it runs, with STOP
- * TEST; PASS, FAIL or ABORTED and why, and the files, after it, with CLOSE.
+/**
+ * @brief The run on LIVE's card: the step and phase while it runs, with
+ *        STOP TEST; PASS, FAIL or ABORTED and why, and the files, after it,
+ *        with CLOSE.
+ * @param c the canvas
  */
 void draw_test_box(gfx_canvas_t *c)
 {
@@ -549,16 +555,19 @@ void draw_test_box(gfx_canvas_t *c)
         snprintf(l3, sizeof(l3), "%s%s", f,
                  (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
     }
-    gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
+    gfx_text(c, b.x + 10, b.y + 10, l1, SV_FONT_LABEL, head, 1);
     /* The second line takes the box's third as well where it is longer
      * than the box is wide; the third moves down to the fourth. */
-    const int n2 = wrap_text(c, b.x + 10, b.y + 28, 20, l2, BOX_CELLS,
-                             ui_theme_color(UI_C_TEXT));
-    gfx_text(c, b.x + 10, b.y + 28 + 20 * ((n2 > 1) ? n2 : 1), l3,
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    ui_button(c, test_btn_rect(), running ? TR(SV_STOP_TEST) : TR(SUP_CLOSE),
-              running ? ui_theme_color(UI_C_DANGER)
-                      : ui_theme_color(UI_C_PANEL_HI), false, true);
+    const int n2 = wrap_text(c, b.x + 10, b.y + 10 + BOX_PITCH, BOX_PITCH,
+                             l2, BOX_CELLS, ui_theme_color(UI_C_TEXT),
+                             SV_FONT_LABEL);
+    gfx_text(c, b.x + 10, b.y + 10 + BOX_PITCH * (1 + ((n2 > 1) ? n2 : 1)),
+             l3, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    ui_button_font(c, test_btn_rect(),
+                   running ? TR(SV_STOP_TEST) : TR(SUP_CLOSE),
+                   running ? ui_theme_color(UI_C_DANGER)
+                           : ui_theme_color(UI_C_PANEL_HI), false, true,
+                   SV_FONT_LABEL);
     /* The meter the run reads or read, beside the button, flush right. */
     const char *meter =
         (t->cfg.meter.kind == (uint8_t)SERVO_TEST_METER_MODEL)
@@ -572,13 +581,16 @@ void draw_test_box(gfx_canvas_t *c)
         meter = shortname;
     }
     const gfx_rect_t btn = test_btn_rect();
-    const int mw = gfx_text_width(&gfx_font_8x16, meter, 1);
-    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 8, meter, &gfx_font_8x16,
+    const int mw = gfx_text_width(SV_FONT_LABEL, meter, 1);
+    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 14, meter, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/* START TEST: green, fading to the danger red across its hold, as ARM;
- * STOP TEST in red while a run is under way. */
+/**
+ * @brief START TEST: green, fading to the danger red across its hold, as
+ *        ARM; STOP TEST in red while a run is under way.
+ * @param c the canvas
+ */
 void draw_test_start(gfx_canvas_t *c)
 {
     const bool running = servo_test_running(&s.test);
@@ -589,14 +601,18 @@ void draw_test_start(gfx_canvas_t *c)
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
                             s.test_hold.held_s);
     }
-    ui_button(c, test_start_rect(),
-              running ? TR(SV_STOP_TEST) : TR(SV_START_TEST), fill,
-              s.ov_have && s.ov_pressed == OP_TEST_START,
-              running || test_blocked() == 0);
+    ui_button_font(c, test_start_rect(),
+                   running ? TR(SV_STOP_TEST) : TR(SV_START_TEST), fill,
+                   s.ov_have && s.ov_pressed == OP_TEST_START,
+                   running || test_blocked() == 0, SV_FONT_LABEL);
 }
 
-/* The steps a run would take, as the card says them: "4.8 6.0 V
- * BROWN-OUT", or NO STEP CHOSEN. */
+/**
+ * @brief The steps a run would take, as the card says them: "4.8 6.0V
+ *        BROWN-OUT", the unit joined to the last step, or NO STEP CHOSEN.
+ * @param plan  takes the line
+ * @param size  bytes at @p plan
+ */
 static void test_plan(char *plan, size_t size)
 {
     float v[SERVO_TEST_STEPS_MAX];
@@ -608,7 +624,8 @@ static void test_plan(char *plan, size_t size)
     plan[0] = '\0';
     int k = 0;
     for (uint8_t j = 0; j < n && k >= 0 && (size_t)k < size; ++j) {
-        k += snprintf(plan + k, size - (size_t)k, "%.1f ", (double)v[j]);
+        k += snprintf(plan + k, size - (size_t)k, "%s%.1f",
+                      (j > 0u) ? " " : "", (double)v[j]);
     }
     if (k >= 0 && (size_t)k < size) {
         snprintf(plan + k, size - (size_t)k, "%s%s",
@@ -618,22 +635,30 @@ static void test_plan(char *plan, size_t size)
     }
 }
 
-/* A STALL AT the run's readings cannot pass, in the warning colour: the
- * current limit first, then the meter's range.  Nothing when it can. */
+/**
+ * @brief A STALL AT the run's readings cannot pass, in the warning colour:
+ *        the current limit first, then the meter's range.  Nothing when it
+ *        can.
+ * @param c the canvas
+ * @param x the line's left edge, px
+ * @param y its top, px
+ */
 void draw_test_stall(gfx_canvas_t *c, int x, int y)
 {
     servo_test_cfg_t tc;
     test_cfg(&tc);
     char note[96];
     if (servo_test_stall_note(&tc, note, sizeof(note))) {
-        gfx_text(c, x, y, note, &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);
+        gfx_text(c, x, y, note, SV_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
     }
 }
 
-/*
- * The AUTOMATIC TEST card's lines: over START TEST the steps and the
- * length of each, and under it why a run cannot start or what it does now,
- * the last result and its file, and a STALL AT no reading can pass.
+/**
+ * @brief The AUTOMATIC TEST card's lines: over START TEST the steps and
+ *        the length of each, and under it why a run cannot start or what it
+ *        does now, the last result and its file, and a STALL AT no reading
+ *        can pass.
+ * @param c the canvas
  */
 void draw_test_lines(gfx_canvas_t *c)
 {
@@ -649,7 +674,7 @@ void draw_test_lines(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(SV_SUM_TIME), plan,
                  (unsigned)settings_get_int(SET_SERVO_LEN_S));
     }
-    gfx_text(c, x, k.y + 34, line, &gfx_font_8x16,
+    gfx_text(c, x, k.y + RUN_SUM_DY, line, SV_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
 
     const int y = k.y + RUN_LINE_DY;
@@ -668,7 +693,7 @@ void draw_test_lines(gfx_canvas_t *c)
         snprintf(line, sizeof(line), "%s",
                  test_needs_hv() ? TR(SV_TAP_HV) : TR(SV_HOLD_START));
     }
-    gfx_text(c, x, y, line, &gfx_font_8x16, col, 1);
+    gfx_text(c, x, y, line, SV_FONT_LABEL, col, 1);
 
     if (s.test.state == SERVO_TEST_DONE && !servo_test_running(&s.test)) {
         char f[LOG_RUN_NAME_MAX + 4];
@@ -679,10 +704,10 @@ void draw_test_lines(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(SV_CARD_LAST),
                  ui_servo_str(servo_test_verdict_str(
                      servo_test_verdict(&s.test))), name);
-        gfx_text(c, x, y + 18, line, &gfx_font_8x16,
+        gfx_text(c, x, y + RUN_LINE_P, line, SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
-    draw_test_stall(c, x, y + 36);
+    draw_test_stall(c, x, y + 2 * RUN_LINE_P);
 }
 
 /* What the box and the AUTOMATIC TEST card show of the run, as one number. */

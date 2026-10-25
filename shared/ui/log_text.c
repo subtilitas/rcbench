@@ -15,11 +15,14 @@
 _Static_assert(LOG_TEXT_MAX <= UINT16_MAX,
                "a row's start fits a mark of 16 bits");
 
-/** Marks a text of LOG_TEXT_MAX rows takes: rows 0, MARK, 2 MARK, ... */
+/** @brief Marks a text of LOG_TEXT_MAX rows takes: rows 0, MARK, 2 MARK,
+ *         ... */
 #define MARKS ((LOG_TEXT_MAX / LOG_TEXT_MARK) + 1u)
 
 
+/** @brief Takes a text's buffer and marks (log_text_set_allocator()). */
 static void *(*s_alloc)(size_t) = malloc;
+/** @brief Gives them back. */
 static void (*s_free)(void *) = free;
 
 void log_text_set_allocator(void *(*alloc_fn)(size_t),

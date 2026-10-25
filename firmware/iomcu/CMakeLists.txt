@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 
 # PICO_BOARD defaults to pimoroni_pico_plus2_rp2350 because the SDK (software
 # development kit) has no board file for the Waveshare RP2350-CAN module the
-# bring-up runs on (RP2350A, 4 MB flash); the default builds and runs on it.
+# bring-up runs on (RP2350A, 4MB flash); the default builds and runs on it.
 # Override with -DPICO_BOARD=... for another module.  The final board needs an
 # RP2350B: servo outputs, servo inputs, the ESC (electronic speed controller)
 # channels, the one-wire programming lines, the host link, CAN (Controller
@@ -43,6 +43,8 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/safety" safety)
 # The move rules (servo_move.c) run in the sensor schedule's capture.  The
 # servo procedures beside them are not called here; --gc-sections drops
 # them from the image.
+# servo_str.c reads the servo test's English from the one text table.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/text"   text)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/servo"  servo)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
@@ -100,8 +102,8 @@ else()
     target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_SENSE_BRINGUP=0)
 endif()
 
-# A debug build that prints INA3221 CH1's 1 ms samples on the USB console:
-# for 4 s after a changed servo pulse or a capture edge, and for 10 s after
+# A debug build that prints INA3221 CH1's 1ms samples on the USB console:
+# for 4s after a changed servo pulse or a capture edge, and for 10s after
 # `t` on the console (shared/sense/sense_trace.h, docs/FirstRun.md 8.9).
 # Off in every image that is released: with it off the image holds no trace
 # code.
@@ -225,7 +227,7 @@ pico_enable_stdio_uart(rcbench-iomcu 0)
 # The flash layout is written once, in partitions.json: the boot ROM's
 # partition table, which the install UF2 (USB Flashing Format) below puts at
 # 0x0.  Two equal slots A and B for the image, the output store's own data
-# partition after them, and the last 8 KiB of the 4 MB part left unused: the
+# partition after them, and the last 8KiB of the 4MB part left unused: the
 # RP2350-E10 workaround block of an A2 chip's UF2 can erase the last sector.
 # The offsets reach the code as compile definitions, so out_store.c and the
 # update pages cannot disagree with the table.
@@ -277,7 +279,7 @@ pico_hash_binary(rcbench-iomcu)
 pico_add_extra_outputs(rcbench-iomcu)
 
 # The image has to fit one slot of the module fitted, not the flash the
-# board file names (sixteen megabytes): 2036 KiB = 2084864 bytes.
+# board file names (sixteen megabytes): 2036KiB = 2084864 bytes.
 add_custom_command(TARGET rcbench-iomcu POST_BUILD
     COMMAND ${CMAKE_COMMAND}
             -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.bin

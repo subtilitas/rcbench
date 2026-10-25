@@ -1,5 +1,6 @@
-/*
- * The servo bench: the outputs the binding marks as surfaces, commanded
+/**
+ * @file
+ * @brief The servo bench: the outputs the binding marks as surfaces, commanded
  * together by dragging one horn.
  *
  * A workbench (ui_workbench.h): the strip under the band shows LIVE (the
@@ -22,6 +23,7 @@
 #include "servo_source.h"
 #include "servo_test_io.h"
 #include "supply.h"
+#include "ui_keypad.h"
 #include "ui_screen.h"
 
 /** Drop the cached chrome, so the next frame repaints it. */
@@ -89,9 +91,9 @@ void servo_screen_encoder(const servo_test_enc_t *e);
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 
 /**
- * Whether the bench is armed for the surfaces, so the button can say it.
- * An arm for the motor alone is not one: ARM on this screen arms the
- * surfaces, and a bench armed for the motor disarms before it does.
+ * @brief Whether the bench is armed for the surfaces, so the button can say
+ *        it. An arm for the motor alone is not one: ARM on this screen arms
+ *        the surfaces, and a bench armed for the motor disarms before it does.
  *
  * The screen does not decide whether it is armed: arming is asked of the
  * policy and the answer comes back from the bench, the same way MOTOR & ESC
@@ -99,7 +101,7 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  *
  * The commanded value follows the bench.  At every arm it becomes the rest
  * the pins drive -- outputs_role_rest() across the range a command carries,
- * 1500 us for STANDARD PWM and 760 us for NARROW 760 -- and without
+ * 1500us for STANDARD PWM and 760us for NARROW 760 -- and without
  * feedback the horn is drawn there at once.  While the bench is disarmed no
  * input changes it: the dial, the knob, CENTRE, SWEEP and
  * servo_screen_set_commanded() post nothing and move nothing, and the value
@@ -141,6 +143,31 @@ void servo_screen_cancel_arm(void);
 
 /** Commanded pulse width, for the application and for tests. */
 uint16_t servo_screen_commanded(void);
+
+/**
+ * @brief The commanded pulse for a SERVO run's log row, as COMMANDED shows
+ *        it: none while a programming session holds the port.
+ *
+ * @param us Receives the pulse, us.
+ * @return true when a pulse is commanded; false with @p us NULL.
+ */
+bool servo_screen_log_pulse(uint16_t *us);
+
+/**
+ * @brief The encoder's angle for a SERVO run's log row, as MEASURED shows it:
+ *        AS5600 on in SETUP, a valid reading and the link up.
+ *
+ * @param deg Receives the horn's angle from the centre count, deg.
+ * @return true when an angle is shown; false with @p deg NULL.
+ */
+bool servo_screen_log_angle(float *deg);
+
+/**
+ * @brief The keypad over the left column: a set point's, a settings row's
+ *        or TRIM's, which is signed; for tests and the renderer.
+ * @return The keypad, open or closed.
+ */
+const ui_keypad_t *servo_screen_keypad(void);
 /** The value of the COMMANDED row as it is drawn: the pulse in us, and
  *  "---" while the servo programmer holds the port and no pulse is on it. */
 const char *servo_screen_commanded_text(void);
@@ -176,11 +203,12 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
                             uint32_t changes);
 
 /**
- * The servo rail's meter, as servo_source.h decides it, every frame before
- * that frame's windows and supply samples.  @p changes is
- * servo_source_changes() of the same poll: the meter is taken unless the one
- * in force was decided at a later count, which a window's or a supply
- * sample's can be (servo_screen_window(), servo_screen_supply_at()).
+ * @brief The servo rail's meter, as servo_source.h decides it, every frame
+ *        before that frame's windows and supply samples.  @p changes is
+ *        servo_source_changes() of the same poll: the meter is taken unless
+ *        the one in force was decided at a later count, which a window's or a
+ *        supply sample's can be (servo_screen_window(),
+ *        servo_screen_supply_at()).
  *
  * The CURRENT row, the line over the plot and the plot show that meter's
  * reading.  SERVO_SOURCE_INA3221: the last CH1 window -- mean current, mean
@@ -190,7 +218,7 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
  * model's; with the model (supply_screen_model()) the MODELLED pill sits on
  * the plot's top-left corner.  SERVO_SOURCE_MODEL until the first call.  The
  * name takes its cells from the readings beside it: beside INA3221 CH1 they
- * are 60, 64 and 56 px wide, and a power wider than that is drawn in whole
+ * are 60, 64 and 56px wide, and a power wider than that is drawn in whole
  * watts.
  *
  * The row is `---` and a reading on the line `--` while the meter has no
@@ -245,8 +273,9 @@ void servo_screen_source_why(servo_source_why_t why);
 void servo_screen_source_dropped(servo_source_why_t why, uint32_t at);
 
 /**
- * One 50 ms window of INA3221 CH1 (sense_link_take_win()), each one once, in
- * the order they arrive, with the meter @p id and its change count
+ * @brief One 50ms window of INA3221 CH1 (sense_link_take_win()), each one
+ *        once, in the order they arrive, with the meter @p id and its change
+ *        count
  * @p changes as decided in the poll that took the window.
  *
  * The windows wait on a queue and the meter of servo_screen_source() is read
@@ -261,6 +290,10 @@ void servo_screen_source_dropped(servo_source_why_t why, uint32_t at);
  * A run of the automatic test that started with the INA3221 as the meter
  * reads these windows and no supply sample: each one taken under the meter
  * in force is its reading.
+ *
+ * @param w the window
+ * @param id the meter decided in the poll that took it
+ * @param changes that meter's change count
  */
 void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
                          uint32_t changes);
@@ -272,13 +305,14 @@ int   servo_screen_power_points(void);
 float servo_screen_power_sample(int series, int back);
 
 /**
- * The OUTPUT page's note while a rate is SERVO_RATE_IN_FORCE: two lines into
+ * @brief The OUTPUT page's note while a rate is SERVO_RATE_IN_FORCE: two lines
+ *        into
  * @p l1 and @p l2 of @p size bytes each, for the rate @p hz, the drive
  * @p target / @p gpio / @p pwm (as servo_screen_set_drive()) and the PWM
  * TARGET setting @p setting (SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT, the
  * target the panel asks for).  The first line names the target the
- * IOmcu holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
- * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
+ * IOmcu holds, not the setting: "In force: OUTPUTS run at 50Hz.",
+ * "In force: PROG PORT GP13 runs at 560Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
  * says "The TARGET chosen is not active." while the setting and the
@@ -288,6 +322,16 @@ float servo_screen_power_sample(int series, int back);
  * target not known, a port without a known pin, or a port with its pulse
  * off.  Neither line is written with a NULL buffer or a @p size of 0, and
  * false is returned.
+ *
+ * @param l1 out: the first line
+ * @param l2 out: the second line
+ * @param size the size of each, bytes
+ * @param hz the rate in force
+ * @param target the drive's target, as servo_screen_set_drive()
+ * @param gpio the drive's pin, as servo_screen_set_drive()
+ * @param pwm whether the port renders a pulse, as servo_screen_set_drive()
+ * @param setting SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT
+ * @return whether the note takes the warning colour
  */
 bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
                          uint8_t target, uint8_t gpio, bool pwm, int setting);
@@ -451,7 +495,7 @@ void servo_screen_set_commanded(float deg);
 /*
  * START TEST on TEST's AUTOMATIC TEST card runs servo_test.h's automatic
  * test from this screen: a two-second hold, or HV SERVOS ONLY held for two
- * seconds when a step is above 6.0 V.  It needs an armed bench and a supply that answers,
+ * seconds when a step is above 6.0V.  It needs an armed bench and a supply that answers,
  * and it commands the servo and SUPPLY's set points and output itself.
  * Progress and the result are shown on its card and in LIVE's box.
  */

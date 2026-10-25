@@ -6,20 +6,20 @@
  * (servo_test_win_rig.h).
  *
  * Under test: a run on the INA3221 ended, never moved to the PD mini, when
- * no window arrives for 200 ms (at 199, 200 and 201 ms), windows without
+ * no window arrives for 200ms (at 199, 200 and 201ms), windows without
  * both quantities do not hold off that end, no supply reading arrives for
- * 1500 ms, or an idle has no reading on the PD mini; STALL AT on the
- * window's mean at 1 mA under, at and 1 mA over, its abort at 999, 1000
- * and 1001 ms and 20 windows in a row; constant current for 999 and 1000
+ * 1500ms, or an idle has no reading on the PD mini; STALL AT on the
+ * window's mean at 1mA under, at and 1mA over, its abort at 999, 1000
+ * and 1001ms and 20 windows in a row; constant current for 999 and 1000
  * ms on either meter, and a spell of it shorter than that counted and
  * failing nothing; STALL AT under, at and over the current limit and the
  * INA3221's range; every ending with the output asked off once, the servo
  * let go, the report marked, and nothing fed to the run afterwards
  * changing its verdict, its report or its file; every timer across the
- * 2^32 ms tick wrap; each condition of servo_source.h that drops the
+ * 2^32ms tick wrap; each condition of servo_source.h that drops the
  * meter; the CSV read back by the viewer's parser, with and without the
  * encoder's columns, beside files of the 13-column format; and a bench log
- * recorded on 0.14.0, which holds 35 % of its windows, ending a run at its
+ * recorded on 0.14.0, which holds 35% of its windows, ending a run at its
  * first gap.
  *
  * SPDX-License-Identifier: MIT
@@ -29,10 +29,10 @@
 
 /* ------------------------------------------- no window, and no reading */
 
-/* No window for 200 ms ends a run on the INA3221: a pass 199 ms after the
- * last window leaves it running, one at 200 ms and one at 201 ms end it.
+/* No window for 200ms ends a run on the INA3221: a pass 199ms after the
+ * last window leaves it running, one at 200ms and one at 201ms end it.
  * The supply's readings go on, and so does nothing else.  At tick 5000 and
- * with the 200 ms across the tick wrap. */
+ * with the 200ms across the tick wrap. */
 TEST_CASE(no_window_for_200_ms_ends_the_run)
 {
     static const uint32_t k_after[] = { 199u, 200u, 201u };
@@ -48,10 +48,10 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
             h_idle_by_hand(k_tick0[i], &c);
             const uint32_t last = h.t.last_ms;
             if (i > 0u) {
-                /* The 200 ms end on the wrap: tick 0 is the 200th. */
+                /* The 200ms end on the wrap: tick 0 is the 200th. */
                 CHECK_EQ(last, 0u - 200u);
             }
-            /* The supply answers throughout; passes run to 198 ms. */
+            /* The supply answers throughout; passes run to 198ms. */
             for (uint32_t at = h.now + 1u; (int32_t)(at - last) < 199;
                  ++at) {
                 if ((at - last) % 100u == 0u) {
@@ -66,7 +66,7 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
             if (k_after[k] < SERVO_TEST_WIN_STALE_MS) {
                 CHECK(servo_test_running(&h.t));
                 CHECK_EQ(h.offs, 0u);
-                /* And a window then keeps it running past 200 ms from
+                /* And a window then keeps it running past 200ms from
                  * the one before. */
                 h_win_at(h.now, 20);
                 h.now += 150u;
@@ -78,10 +78,10 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
             h_check_ended(SERVO_TEST_AB_WIN_STALE);
             CHECK(strstr(h.out.report,
                          "Result:         ABORTED - no INA3221 window for "
-                         "0.2 s\n") != NULL);
+                         "0.2s\n") != NULL);
         }
     }
-    /* A run that never has a window ends 200 ms after its start, here
+    /* A run that never has a window ends 200ms after its start, here
      * across the wrap. */
     h_fresh(0u - 100u);
     h.win_on = false;
@@ -96,8 +96,8 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
 }
 
 /* Windows that arrive without the rail voltage, or without a current, are
- * no window for the meter's silence either: with one every 50 ms, the last
- * at the 200 ms edge itself, the run still ends 200 ms after the last
+ * no window for the meter's silence either: with one every 50ms, the last
+ * at the 200ms edge itself, the run still ends 200ms after the last
  * window that held both. */
 TEST_CASE(windows_without_both_quantities_do_not_hold_off_the_200_ms_end)
 {
@@ -133,8 +133,8 @@ TEST_CASE(windows_without_both_quantities_do_not_hold_off_the_200_ms_end)
 }
 
 /* The supply's own silence ends a run on the INA3221 as it ends one on the
- * PD mini: no new reading for more than 1500 ms, the windows arriving
- * throughout.  Running at 1500 ms, ended at 1501, and across the wrap. */
+ * PD mini: no new reading for more than 1500ms, the windows arriving
+ * throughout.  Running at 1500ms, ended at 1501, and across the wrap. */
 TEST_CASE(no_supply_reading_for_1500_ms_ends_a_run_on_the_ina3221)
 {
     servo_test_cfg_t c;
@@ -164,8 +164,8 @@ TEST_CASE(no_supply_reading_for_1500_ms_ends_a_run_on_the_ina3221)
 }
 
 /* The supply's readings stopping as IDLE begins, on the PD mini: IDLE has
- * no reading to measure, and the run ends at IDLE's end, 1000 ms on, before
- * the 1500 ms without a reading are over. */
+ * no reading to measure, and the run ends at IDLE's end, 1000ms on, before
+ * the 1500ms without a reading are over. */
 TEST_CASE(an_idle_without_a_reading_ends_a_run_on_the_pd_mini)
 {
     servo_test_cfg_t c;
@@ -188,8 +188,8 @@ TEST_CASE(an_idle_without_a_reading_ends_a_run_on_the_pd_mini)
 
 /* ------------------------------------------------------------- stall */
 
-/* STALL AT is judged on the window's mean, in whole mA: a mean 1 mA under
- * STALL AT and one at it are no stall, one 1 mA over is, whatever the
+/* STALL AT is judged on the window's mean, in whole mA: a mean 1mA under
+ * STALL AT and one at it are no stall, one 1mA over is, whatever the
  * window's highest sample.  Negative means count by their magnitude. */
 TEST_CASE(stall_at_is_judged_on_the_windows_mean)
 {
@@ -204,7 +204,7 @@ TEST_CASE(stall_at_is_judged_on_the_windows_mean)
         servo_test_cfg_t c;
         h_cfg(&c, true);
         h_idle_by_hand(5000u, &c);
-        /* The highest sample of this window is 50 mA above its mean: over
+        /* The highest sample of this window is 50mA above its mean: over
          * STALL AT in every case, and no part of the rule. */
         h_win_at(h.now + 50u, k_case[k].ma);
         CHECK_EQ(h.t.stalled, k_case[k].stall);
@@ -227,9 +227,9 @@ TEST_CASE(stall_at_is_judged_on_the_windows_mean)
     CHECK(!servo_test_over_a(1.0f, INFINITY));
 }
 
-/* Windows over STALL AT end the run 1000 ms after the first one began: a
- * window taken 999 ms after that leaves it running, one at 1000 and one at
- * 1001 ms end it, and at 50 ms a window the twentieth in a row does.  At
+/* Windows over STALL AT end the run 1000ms after the first one began: a
+ * window taken 999ms after that leaves it running, one at 1000 and one at
+ * 1001ms end it, and at 50ms a window the twentieth in a row does.  At
  * tick 5000 and with the second across the wrap. */
 TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_windows)
 {
@@ -271,15 +271,15 @@ TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_windows)
             }
             CHECK_EQ(h.t.end_ms, at);
             h_check_ended(SERVO_TEST_AB_STALL);
-            CHECK(strstr(h.out.report, "Stall threshold  highest 1.001 A, "
-                                       "STALL AT 1.00 A: FAIL\n") != NULL);
+            CHECK(strstr(h.out.report, "Stall threshold  highest 1.001A, "
+                                       "STALL AT 1.00A: FAIL\n") != NULL);
         }
     }
 }
 
 /* On the PD mini the second counts from the first reading over STALL AT:
- * a reading 999 ms after it leaves the run running, one at 1000 and one at
- * 1001 ms end it.  At tick 5000 and across the wrap. */
+ * a reading 999ms after it leaves the run running, one at 1000 and one at
+ * 1001ms end it.  At tick 5000 and across the wrap. */
 TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_pd_mini)
 {
     static const uint32_t k_last[] = { 999u, 1000u, 1001u };
@@ -331,9 +331,9 @@ TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_pd_mini)
 
 /* ------------------------------------------------- constant current */
 
-/* The supply in constant current for 1000 ms ends a run, whichever meter
- * it reads and whatever STALL AT is: a reading 999 ms after the first in
- * constant current leaves it running, one at 1000 ms ends it.  At tick
+/* The supply in constant current for 1000ms ends a run, whichever meter
+ * it reads and whatever STALL AT is: a reading 999ms after the first in
+ * constant current leaves it running, one at 1000ms ends it.  At tick
  * 5000 and across the wrap. */
 TEST_CASE(constant_current_for_a_second_ends_the_run)
 {
@@ -378,9 +378,9 @@ TEST_CASE(constant_current_for_a_second_ends_the_run)
                 h_check_ended(SERVO_TEST_AB_CC);
                 CHECK(strstr(h.out.report,
                              "Result:         ABORTED - constant current "
-                             "for 1 s\n") != NULL);
+                             "for 1s\n") != NULL);
                 CHECK(strstr(h.out.report, "Const. current: 11 supply "
-                                           "readings, longest stretch 1000 "
+                                           "readings, longest stretch 1000"
                                            "ms\n") != NULL);
             }
         }
@@ -388,7 +388,7 @@ TEST_CASE(constant_current_for_a_second_ends_the_run)
 }
 
 /* A spell of constant current shorter than a second -- an inrush, as the
- * PD mini reports for 0.43 s on a healthy move -- ends nothing and fails
+ * PD mini reports for 0.43s on a healthy move -- ends nothing and fails
  * nothing: the report counts its readings and gives the longest spell. */
 TEST_CASE(a_spell_of_constant_current_is_counted_and_fails_nothing)
 {
@@ -414,7 +414,7 @@ TEST_CASE(a_spell_of_constant_current_is_counted_and_fails_nothing)
         CHECK(h.t.cc_longest_ms >= 312u && h.t.cc_longest_ms <= 416u);
         char want[96];
         snprintf(want, sizeof(want), "Const. current: %lu supply readings, "
-                 "longest stretch %lu ms\n", (unsigned long)h.t.cc_readings,
+                 "longest stretch %lums\n", (unsigned long)h.t.cc_readings,
                  (unsigned long)h.t.cc_longest_ms);
         CHECK(strstr(h.out.report, want) != NULL);
         if (ina != 0u) {
@@ -462,12 +462,12 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
         h_out();
         CHECK_EQ(h.t.why, SERVO_TEST_AB_NONE);
         char want[96];
-        snprintf(want, sizeof(want), "STALL AT %.2f A cannot be reached: "
-                 "current limit %.2f A\n", (double)k_case[k].stall,
+        snprintf(want, sizeof(want), "STALL AT %.2fA cannot be reached: "
+                 "current limit %.2fA\n", (double)k_case[k].stall,
                  (double)k_case[k].limit);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_limit);
-        snprintf(want, sizeof(want), "STALL AT %.2f A cannot be reached: "
-                 "INA3221 range 1.638 A\n", (double)k_case[k].stall);
+        snprintf(want, sizeof(want), "STALL AT %.2fA cannot be reached: "
+                 "INA3221 range 1.638A\n", (double)k_case[k].stall);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_range);
         CHECK_EQ(strstr(h.out.report, "cannot be reached") != NULL,
                  k_case[k].by_limit || k_case[k].by_range);
@@ -484,18 +484,18 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
     CHECK_STR_EQ(note, "");
     c.stall_a = 1.65f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 1.65 A cannot be reached: INA3221 range "
-                       "1.638 A");
+    CHECK_STR_EQ(note, "STALL AT 1.65A cannot be reached: INA3221 range "
+                       "1.638A");
     c.stall_a = 2.0f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 2.00 A cannot be reached: current limit "
-                       "2.00 A");
+    CHECK_STR_EQ(note, "STALL AT 2.00A cannot be reached: current limit "
+                       "2.00A");
     CHECK(!servo_test_stall_note(&c, NULL, 0u));
     CHECK(!servo_test_stall_note(&c, note, 0u));
 }
 
 /* A servo on a stop against a supply that holds its limit, on the
- * INA3221: the windows read the limit, 2.000 A on a 0.05 Ohm shunt.  One
+ * INA3221: the windows read the limit, 2.000A on a 0.05Ohm shunt.  One
  * step under the limit STALL AT ends the run; at the limit and above it
  * the constant-current rule does, a second after the supply reports it. */
 TEST_CASE(a_servo_held_at_the_limit_ends_the_run_on_either_rule)
@@ -518,7 +518,7 @@ TEST_CASE(a_servo_held_at_the_limit_ends_the_run_on_either_rule)
         h_start(&c);
         CHECK(h_until(SERVO_TEST_PH_HOLD));
         const uint32_t on_stop = h.now;
-        h.force_ma = 2000;          /* the limit, and not 1 mA over it */
+        h.force_ma = 2000;          /* the limit, and not 1mA over it */
         h.cc       = true;
         h.pd_a     = 2.0f;
         for (uint32_t ms = 0u; ms < 1200u && servo_test_running(&h.t);
@@ -526,7 +526,7 @@ TEST_CASE(a_servo_held_at_the_limit_ends_the_run_on_either_rule)
             h_ms();
         }
         /* 20 windows from the one that began at the stop; ten readings
-         * of the supply, 104 ms apart, after its first there. */
+         * of the supply, 104ms apart, after its first there. */
         CHECK(h.t.end_ms - on_stop >= 950u);
         CHECK(h.t.end_ms - on_stop <= 1150u);
         CHECK_EQ(h.t.stalled, k_case[k].why == SERVO_TEST_AB_STALL);
@@ -593,7 +593,7 @@ TEST_CASE(every_ending_of_a_run_on_the_ina3221_switches_off_and_is_marked)
     h_check_ended(SERVO_TEST_AB_SUPPLY_OFF);
 
     /* A set point not read back, and an output that does not come on: the
-     * windows arrive throughout, and the 3000 ms are the supply's. */
+     * windows arrive throughout, and the 3000ms are the supply's. */
     h_fresh(5000u);
     h.take_set = false;
     h.set_v    = 9.0f;
@@ -727,7 +727,7 @@ TEST_CASE(each_condition_that_drops_the_meter_ends_the_run)
         for (unsigned late = 0u; late < 2u; ++late) {
             servo_source_t src;
             servo_source_init(&src);
-            /* 1050 ms of good polls: the INA3221 is the meter. */
+            /* 1050ms of good polls: the INA3221 is the meter. */
             uint32_t at = 3900u;
             for (; at <= 4950u; at += 50u) {
                 const sense_link_meter_t m = facts_good(at);
@@ -921,13 +921,13 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
 /*
  * A bench log recorded on 0.14.0 beside a servo test of an MS24 digital
  * servo (fixtures/servo-ms24-windows.csv): 1310 rows for the 3817 windows
- * the INA3221 closed, since that firmware wrote a row for 35 % of them.
- * Its windows, each at 50 ms a number from the first, are fed to a run on
+ * the INA3221 closed, since that firmware wrote a row for 35% of them.
+ * Its windows, each at 50ms a number from the first, are fed to a run on
  * the INA3221 with a supply that answers throughout.
  *
  * The run reads every window the file holds up to its first gap longer
- * than 200 ms, five numbers or more, counts the numbers missing between
- * them as skipped, and ends 200 ms after the last window before that gap:
+ * than 200ms, five numbers or more, counts the numbers missing between
+ * them as skipped, and ends 200ms after the last window before that gap:
  * the 50th window, number 19804, followed by 20409.  A file with its
  * windows missing cannot feed a run.  The 0.14.0 log has no lowest
  * sample, no lowest voltage and no clip count: the mean stands in for the
@@ -997,7 +997,7 @@ TEST_CASE(a_recorded_log_with_windows_missing_ends_the_run_at_its_first_gap)
     servo_test_cfg_t c;
     h_cfg(&c, true);
     c.stall_a  = 3.0f;              /* as the recorded run's LIMITS page */
-    c.by_moves = false;             /* and its 60 s a step */
+    c.by_moves = false;             /* and its 60s a step */
     c.time_s   = 60u;
     h_start(&c);
     const uint32_t t0 = h.now;

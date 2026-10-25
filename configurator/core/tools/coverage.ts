@@ -54,7 +54,7 @@ export function figure(report: FileCoverage[]): string {
   const rows = MEASURED.map((name) => {
     const entry = report.find((r) => r.file === name);
     if (!entry) throw new Error(`the coverage report has no record for ${name}`);
-    return `| \`${name}\` | ${entry.hit} | ${entry.found} | ${percent(entry.hit, entry.found)} % |`;
+    return `| \`${name}\` | ${entry.hit} | ${entry.found} | ${percent(entry.hit, entry.found)}% |`;
   });
   return [
     BEGIN,

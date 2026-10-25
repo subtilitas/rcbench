@@ -4,8 +4,8 @@ The core of the rcbench bench configurator: one data file, one resolver and the
 checks on both. It has no runtime dependency and no build step. Node.js 24 runs
 the TypeScript files directly.
 
-The data describes release 0.22.1. Every record carries a source: a file and
-line at the tag `v0.22.1`, a section of the build guide, a photo taken for
+The data describes release 0.23.0. Every record carries a source: a file and
+line at the tag `v0.23.0`, a section of the build guide, a photo taken for
 the build guide, or a dated statement of the project owner. A fact that no source confirms is marked as unknown in the
 data and is not asserted.
 
@@ -15,12 +15,12 @@ data and is not asserted.
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
 | `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
-| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 24 functions of which 12 run on every setup, 7 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 24 functions of which 12 run on every setup, 7 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 11 pictures on 7 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
 | `buy.ts` | `buyRows(part, options)` returns the rows of the parts list that apply to a set of options; `brought(part)` tells whether the visitor brings the part. |
-| `sim.ts` | The motor simulator: the values a visitor chooses (1S to 6S, the E12 values from 100 Ω to 4.7 kΩ, 6 ratings, delta or star), `simHeat(sim)` with the current and the power of each resistor, `withSim(catalogue, sim)` with the part named and listed for the values. See "Motor simulator". |
+| `sim.ts` | The motor simulator: the values a visitor chooses (1S to 6S, the E12 values from 100Ω to 4.7kΩ, 6 ratings, delta or star), `simHeat(sim)` with the current and the power of each resistor, `withSim(catalogue, sim)` with the part named and listed for the values. See "Motor simulator". |
 | `help.ts` | `FUNCTION_HELP`: what each of the 12 functions with a tick does, in English and German. The help bubble of the chooser opens with it. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts`, `buy.ts` and `sim.ts`, `FUNCTION_HELP` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
@@ -67,7 +67,7 @@ use in one setup.
 | `esc-battery`, `pd-esc` | ESC |
 
 The option `servoPower` is `external` (default) or `bench`. With `bench` the
-plus of the servo is on pad 40 (VBUS, 5 V) of the IOmcu, or on the V
+plus of the servo is on pad 40 (VBUS, 5V) of the IOmcu, or on the V
 pin of the strip of the Osoyoo breakout board. The check entry
 `servo-bench-supply` is in every such setup: the source at the V pin depends
 on the jumper V Selector (5V from the converter of the DC input, 3V3 from the
@@ -78,18 +78,18 @@ takes signal and GND from the bench in every setup, never a supply.
 
 On the V pin of the strip the jumper sits on 5V, and position 5V takes its
 power from the DC input of the board alone. The rule `osoyoo-dc` adds the part
-`dcsup`, a DC supply of 7 to 12 V, under the condition of that warning: a
+`dcsup`, a DC supply of 7 to 12V, under the condition of that warning: a
 servo, no PD mini, `servoPower: bench`, `connection: osoyoo`. Its wires 65
 (plus, net `osoyoo_vin`) and 66 (minus, net `osoyoo_vin_neg`) are stubs to the
 DC jack, the VIN terminal or the header H4. The plus is PWRIN at all 3. The
 minus is VIN- at the VIN terminal and at H4, and GND of the board at the DC
 jack (schematic REV 1.0: DC1 pin 1 PWRIN, pins 2 and 3 GND). The jack takes a
-5.5 x 2.1 mm plug, centre positive. The product page names the socket
-DC005-2.1: the 2.1 mm pin follows from that name; the 5.5 mm outer diameter is
+5.5 x 2.1mm plug, centre positive. The product page names the socket
+DC005-2.1: the 2.1mm pin follows from that name; the 5.5mm outer diameter is
 the usual size of that socket family and is not stated by the vendor. The jack
 has no reverse-polarity protection: the SI2302 (Q3) joins VIN- to GND and
 protects the VIN terminal and H4 only. The gate of Q3 sits at PWRIN through
-R7, so above 12 V its gate-source voltage exceeds the ±12 V of its datasheet.
+R7, so above 12V its gate-source voltage exceeds the ±12V of its datasheet.
 The current the supply must deliver is not stated.
 
 The option `servoPort` is `outputs` (default) or `prog`. It is never shown
@@ -101,8 +101,8 @@ programming port of the IOmcu (`PROG_PORT_DEFAULT_PIN` in
 entry of SETUP → OUTPUTS is PROG PORT, so the other servo functions drive
 the same pin. The servo
 programmer needs the panel and the IOmcu alone. With the PD mini, the
-PD mini feeds the servo and CONNECT sets its voltage, 4.8 to 6.0 V or up to
-8.4 V with HV SERVO on, and its current limit, 50 to 3000 mA. Without it the servo takes the supply that
+PD mini feeds the servo and CONNECT sets its voltage, 4.8 to 6.0V or up to
+8.4V with HV SERVO on, and its current limit, 50 to 3000mA. Without it the servo takes the supply that
 `servoPower` names; the check entry `prog-supply-own` states that the
 programming voltage and the current limit are then stored and not applied.
 
@@ -181,9 +181,9 @@ its parts stay or leave, and in `objectsOut` the test objects that leave.
 Run from `configurator/core` with Node.js 24.
 
 ```sh
-npm run check                 # static checks; the tree at v0.22.1 is read when git and the tag are present
+npm run check                 # static checks; the tree at v0.23.0 is read when git and the tag are present
 npm run check -- --strict     # as above; fails when git or the tag is absent
-CONFIGURATOR_BEFORE_TAG=1 npm run check -- --strict   # before the tag: reads HEAD when its header names 0.22.1
+CONFIGURATOR_BEFORE_TAG=1 npm run check -- --strict   # before the tag: reads HEAD when its header names 0.23.0
 npm run check -- --wires      # prints the wire table as Markdown
 npm test                      # the test suite
 npm run coverage              # runs the suite and writes the figure into this file
@@ -194,9 +194,9 @@ Exit codes of `check`: 0 no error, 1 at least one error, 2 unknown argument.
 A warning does not change the exit code. Exit codes of `coverage`: 0 figure
 current or written, 1 drift or a failing suite, 2 unknown argument.
 
-`--strict` needs the tag `v0.22.1` in the clone. A shallow clone without tags
+`--strict` needs the tag `v0.23.0` in the clone. A shallow clone without tags
 fails it. With `CONFIGURATOR_BEFORE_TAG=1` and no tag, a `HEAD` whose
-firmware header names 0.22.1 is read in place of the tag; the variable is
+firmware header names 0.23.0 is read in place of the tag; the variable is
 for a clone that holds every tag, as the Configurator workflow's does.
 
 The type check needs the TypeScript compiler and the Node.js type
@@ -216,7 +216,7 @@ buy". A row:
 | Field | Meaning |
 | --- | --- |
 | `maker` | The maker's name as `../../NOTICE` and the trademark list of `../../README.md` write it. `null` for a generic part and for a modelled part. |
-| `order` | The ordering name as the maker writes it, in both languages. Without a maker it is the spec, for example "Resistor 2.2 kΩ, 0.25 W". |
+| `order` | The ordering name as the maker writes it, in both languages. Without a maker it is the spec, for example "Resistor 2.2kΩ, 0.25W". |
 | `check` | One short line in English and German: what to check before ordering, the variant traps. |
 | `page` | The maker's product page, https, no fragment, no tracking parameter. Absent when no maker page is known. |
 | `qty` | Pieces, 1 to 99. 1 when absent. |
@@ -233,15 +233,15 @@ A test object and a part with `yours: true` are brought: their rows name no
 maker and no page. A modelled part names no maker and no page either: its
 row gives the required spec.
 
-5 rows have a maker page: Waveshare ESP32-S3-Touch-LCD-7, Waveshare RP2350-CAN,
+5 rows have a maker page: Waveshare ESP32-P4-WIFI6-Touch-LCD-7B, Waveshare RP2350-CAN,
 Osoyoo Breakout Board for Pico series, WeAct Studio PD Power Mini V1 Buck (the
 maker's GitHub repository) and Matek I2C-INA-BM. Each answered with HTTP 200 on
-2026-10-13. The DAOKAI INA3221 board has no known maker page.
+2026-10-21. The DAOKAI INA3221 board has no known maker page.
 
 ## Motor simulator
 
 The part `sim` is 3 resistors on the phase wires of the ESC. The data file
-names it for the default values: 470 Ω, 2 W, delta. `withSim(catalogue, sim)`
+names it for the default values: 470Ω, 2W, delta. `withSim(catalogue, sim)`
 returns the catalogue with the name of the part and the order name and the
 check line of its row for other values; every other record is the same
 object, and the default values return the catalogue itself. The values change
@@ -249,7 +249,7 @@ no wire, no rule and no function, and the resolver does not read them.
 
 | Value | Offered | Default |
 | --- | --- | --- |
-| `cells` | 1 to 6, at `CELL_VOLTS` = 4.2 V per cell | 4 |
+| `cells` | 1 to 6, at `CELL_VOLTS` = 4.2V per cell | 4 |
 | `ohms` | 100, 120, 150, 180, 220, 270, 330, 390, 470, 560, 680, 820, 1000, 1200, 1500, 1800, 2200, 2700, 3300, 3900, 4700 | 470 |
 | `watts` | 0.25, 0.5, 1, 2, 3, 5 | 2 |
 | `wiring` | `delta`, `star` | `delta` |
@@ -264,8 +264,8 @@ no wire, no rule and no function, and the resolver does not read them.
 Its `level` is `over` above the rating, `hint` from `HINT_SHARE` (0.5) of the
 rating, else `ok`. The current limit of the ESC is not modelled.
 
-`test/sim.test.ts` holds the formulas to both check figures (470 Ω at 6S in
-delta: 53.6 mA, 1.35 W; 450 Ω at 16.8 V in star: 18.7 mA, 0.157 W), to both
+`test/sim.test.ts` holds the formulas to both check figures (470Ω at 6S in
+delta: 53.6mA, 1.35W; 450Ω at 16.8V in star: 18.7mA, 0.157W), to both
 wirings at 1S and 6S, to the sum of the 3 powers over all 1512 combinations,
 to the grid points next to both thresholds, and every name and row to the
 text rules.
@@ -283,7 +283,7 @@ text rules.
 | Help | A function with a tick has no entry in `FUNCTION_HELP`, an entry names a function of the base setup or no function, or its text breaks a rule of the row Text. |
 | Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known, or a document source (`doc`) has no title, no https address or no place in the document. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
-| Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480 px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |
+| Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |
 | Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 18, right 0 to 22, outer 0 to 7, channel 0 to 6). |
 | Parts list | A set of options gives a part no row, a variant of a part has no row of its own, `only` names an option value outside the type, a brought part names a maker or a page, a page is not https, does not parse, has a fragment or a tracking parameter, a page has no maker, a quantity is not a whole number from 1 to 99, `yours` is set on a locked or selectable part, more than 1 row of a part has no `id`, an `id` occurs twice in a part, or an `id` is not 1 to 12 lowercase letters and digits. |
 | Tree | The pads, the reserved pins, the heartbeat pin or a pin default differ from the firmware sources at the tag. |
@@ -295,7 +295,7 @@ run of white space read as one space. The texts are the export `ANCHOR_TEXTS`;
 they are not part of `CATALOGUE`. Build guide sections, photos and owner
 statements are checked by id, number and date only.
 
-A release tag newer than `v0.22.1` is a warning. `tools/check-annotate.sh`
+A release tag newer than `v0.23.0` is a warning. `tools/check-annotate.sh`
 runs the check and shows each warning as an annotation and in the summary of
 the run. The Configurator workflow runs it and fails on an error. The Release
 workflow runs it with `--warn-only` on every tag push: an error is a warning
@@ -371,7 +371,7 @@ Each removal is checked for: no refusal for a part of the bench beyond the
 base setup, the refusal `testObject` for a servo or an ESC, the part gone, the reported lists equal to the difference of the 2 setups, a cause
 for every function that goes off or comes on, and the function set restored
 when the part and the parts that left with it are added back. The suite takes
-about 27 s on one core of the build host.
+about 27s on one core of the build host.
 
 Further tests cover the empty selection, the full selection, each part and
 each function alone, unknown ids, a missing German string, a broken source
@@ -409,6 +409,15 @@ reachable, English and German for every text, no word of the list in
 `catalogue-osoyoo.test.ts` checks the facts, texts and sources of the Osoyoo strip data and the
 reader of the coverage report.
 
+`panel.test.ts` holds the panel part to
+`firmware/panel/components/board/include/board_pins.h` of the working tree,
+not of the tag: that pin map is newer than the tag the data names. The
+heartbeat pin is `PANEL_HEARTBEAT_PIN`, a GPIO of the 12-pin header P3 and
+none of the ESP32-C6 (GPIO6, GPIO14 to GPIO19, GPIO54). The pin `HB` is
+confirmed and no check entry names it as unknown. The knob pins
+`BOARD_KNOB_PIN_SDA` and `BOARD_KNOB_PIN_SCL` are GPIOs of the same header
+and are held to the entry `knob` of the list "not in a release".
+
 ## Coverage
 
 Line coverage of the resolver, the groups and the motor simulator, measured by `node --test --experimental-test-coverage`.
@@ -417,26 +426,27 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 <!-- coverage:begin -->
 | File | Lines run | Lines | Line coverage |
 | --- | ---: | ---: | ---: |
-| `resolve.ts` | 215 | 215 | 100.0 % |
-| `cond.ts` | 51 | 51 | 100.0 % |
-| `groups.ts` | 416 | 416 | 100.0 % |
-| `sim.ts` | 120 | 120 | 100.0 % |
+| `resolve.ts` | 215 | 215 | 100.0% |
+| `cond.ts` | 51 | 51 | 100.0% |
+| `groups.ts` | 416 | 416 | 100.0% |
+| `sim.ts` | 120 | 120 | 100.0% |
 <!-- coverage:end -->
 
 ## Unknown in the data
 
-- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.22.1` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
+- Panel: the data describes the 7-inch ESP32-P4 display board from Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B). Its pins come from the Waveshare schematic of 2025-09-25, cited by the source kind `doc`: CAN header H11 (pin 1 5V, 2 GND, 3 CAN H, 4 CAN L) and the 12-pin header P3. The heartbeat pin is IO28 of header P3 (`PANEL_HEARTBEAT_PIN` in `firmware/panel/components/board/include/board_pins.h`); the pin `HB` is confirmed. The rotary knob is not a part in the data; its pins IO30 (SDA) and IO31 (SCL) and its 3V3 and GND are on P3, named in the entry `knob` of the list "not in a release". The current the panel draws is not measured; Waveshare states 3A as the maximum. No photo of the board is in the picture folder.
+- Pins marked unconfirmed: `GPO` of the AS5600 board: no source at `v0.23.0` shows its print. `LP` of the INA3221 board: both sides of the board print GND, GND, VPU; the function of the 3 pads is not confirmed.
 - Emergency stop switch: the tab names C, NO, NC come from the wiring diagram of the seller, per an owner statement of 2026-10-11. No measurement is stated. The check entry `estop-tabs` is of kind `measure`.
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
 - The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. With this module the data holds no direct wire between the minus of the source and the minus of the ESC: wire 56 (battery) or wire 57 (PD mini) ends on the pin BAT− of the module and wire 58 runs from the pin ESC− to the ESC. The wires 15 and 23 belong to the MATEK board and to a setup without the sensor. The check entry `ina228-xt90-pads` states the pads and the 2 rails.
 - INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the IOmcu. A connection between the minus output of the PD mini and GND of the IOmcu is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
-- With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
+- With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
 - Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
-- Osoyoo breakout board: the jumper V Selector (header H3) sets the V pins of all 40 strips: 3V3 from the regulator U1 (input VSYS), 5V from the XL1509 converter U9 (input DC jack, VIN terminal or 2-pin header H4). The sources are the schematic REV 1.0 (file of 2024-12-03), the XL1509 datasheet Rev 2.0 and the product page of 2024-12-02, cited by the source kind `doc`. The currents 2 A at 5 V and 500 mA at 3.3 V are vendor values, not measured. The DC input range differs between the print (7 to 16 V), the vendor (7 to 12 V recommended, 7 to 18 V limit) and the chip (7 to 40 V). With USB alone and the jumper on 3V3 the schematic and the product page disagree; not measured.
-- DC supply of the Osoyoo breakout board (`dcsup`): the current it must deliver is not stated. The product page rates the output of the board at 2 A at 5 V; no source states the input current.
+- Osoyoo breakout board: the jumper V Selector (header H3) sets the V pins of all 40 strips: 3V3 from the regulator U1 (input VSYS), 5V from the XL1509 converter U9 (input DC jack, VIN terminal or 2-pin header H4). The sources are the schematic REV 1.0 (file of 2024-12-03), the XL1509 datasheet Rev 2.0 and the product page of 2024-12-02, cited by the source kind `doc`. The currents 2A at 5V and 500mA at 3.3V are vendor values, not measured. The DC input range differs between the print (7 to 16V), the vendor (7 to 12V recommended, 7 to 18V limit) and the chip (7 to 40V). With USB alone and the jumper on 3V3 the schematic and the product page disagree; not measured.
+- DC supply of the Osoyoo breakout board (`dcsup`): the current it must deliver is not stated. The product page rates the output of the board at 2A at 5V; no source states the input current.
 - DC jack of the Osoyoo breakout board: no reverse-polarity protection. A centre-negative plug puts the reverse voltage through the switch OFF/ON on the input of the XL1509 converter. The SI2302 (Q3) protects the VIN terminal and H4 only.
-- DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that name. The 5.5 mm outer diameter is the usual size of that socket family; no vendor source states it.
-- SI2302 (Q3) of the Osoyoo breakout board above 12 V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12 V (absolute maximum). Above 12 V Q3 is outside that rating; the print of 16 V and the vendor limit of 18 V are above it. The data keeps the range at 7 to 12 V.
-- ESC STICK programming: `docs/StickProgramming.md` at `v0.22.1` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
+- DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1mm pin follows from that name. The 5.5mm outer diameter is the usual size of that socket family; no vendor source states it.
+- SI2302 (Q3) of the Osoyoo breakout board above 12V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12V (absolute maximum). Above 12V Q3 is outside that rating; the print of 16V and the vendor limit of 18V are above it. The data keeps the range at 7 to 12V.
+- ESC STICK programming: `docs/StickProgramming.md` at `v0.23.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
 - 9 check entries of kind `unknown` state each open point in the text of a setup.

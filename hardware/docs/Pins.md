@@ -150,21 +150,21 @@ expander follows from that; it takes no GPIO.
   instruction words of a block, so ports 1 and 2 are on PIO0 and ports 3 and 4
   on PIO1; PIO2 carries PPM and the UART socket.
 - Every SPI chip select is a plain output (SIO), with an external pull-up of
-  about 10 kΩ. In SPI mode 0 the RP2350's SPI block raises its own chip select
+  about 10kΩ. In SPI mode 0 the RP2350's SPI block raises its own chip select
   between frames, which breaks an MCP2518FD instruction, and RP2350 pads come
-  out of reset pulled down, 32 to 86 kΩ, which would select every chip while
+  out of reset pulled down, 32 to 86kΩ, which would select every chip while
   its IOmcu resets.
 - The measurement IOmcu's SPI1 carries parts in different SPI modes: the
   ADS1235 in mode 1, the MAX31856 in mode 1 and the ADBMS1818 in mode 3 at
-  1 MHz at most. The firmware switches the format between transactions with
+  1MHz at most. The firmware switches the format between transactions with
   every chip select high.
-- The MCP2518FD limits its SPI clock to 0.85 × SYSCLK / 2, so the 10 MHz the
-  link uses needs its 40 MHz clock.
-- The MLX90614, an SMBus part at 100 kHz at most, and the TCA9548A of the Qwiic
+- The MCP2518FD limits its SPI clock to 0.85 × SYSCLK / 2, so the 10MHz the
+  link uses needs its 40MHz clock.
+- The MLX90614, an SMBus part at 100kHz at most, and the TCA9548A of the Qwiic
   ports sit on a third I²C bus that the measurement IOmcu makes with PIO.
   Sensor buses A and B then run faster, and a Qwiic device cannot collide with
   the internal addresses 0x18 to 0x1F, 0x40 to 0x4F and 0x74 to 0x75.
-- The encoder, at up to 5 MHz (F4), runs on R11's two-state-machine decoder:
+- The encoder, at up to 5MHz (F4), runs on R11's two-state-machine decoder:
   a pico-examples quadrature decoder reads at most one step every 10 system
   clocks.
 - The measurement IOmcu samples its copy of the optical index with PIO,
@@ -172,7 +172,7 @@ expander follows from that; it takes no GPIO.
 - USB VBUS reaches GPIO 37 through a divider, so the USB pull-up follows the
   cable.
 - The cell monitor reaches measurement SPI1 only across an isoSPI or
-  digital-isolator barrier rated 85 V DC working or more, because it sits on
+  digital-isolator barrier rated 85V DC working or more, because it sits on
   the ESC pack's negative (V189, owner, 2026-09-28). GPIO 15 and the SPI1
   lines drive the barrier's host side.
 - The ADS1235's START, RESET and PWDN each take a GPIO, beside its CS and

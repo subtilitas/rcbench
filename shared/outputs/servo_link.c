@@ -1,5 +1,6 @@
-/*
- * The panel's half of the SERVO screen on the link (servo_link.h).
+/**
+ * @file
+ * @brief The panel's half of the SERVO screen on the link (servo_link.h).
  *
  * The control task is the only caller but for the atomics servo_link.h
  * names: it is the only task that puts anything on the wire.
@@ -18,51 +19,97 @@
 #include "outputs.h"
 #include "servo_page.h"
 
-/* The panel, as servo_link_init() handed it over. */
+/** @brief The panel, as servo_link_init() handed it over. */
 static const servo_link_ctx_t *s_ctx;
 
-/*
- * The callbacks, each called from one function of its own.  Not inlined,
- * so tools/stack_check.py follows each by name (SERVO_CALLS).
+/**
+ * @brief The callbacks, each called from one function of its own.
+ *
+ * Not inlined, so tools/stack_check.py follows each by name (SERVO_CALLS).
+ */
+
+/**
+ * @brief The port's clock.
+ *
+ * @return  Milliseconds, from the port's now_ms callback.
  */
 static __attribute__((noinline)) uint32_t sl_now_ms(void)
 {
     return s_ctx->port->now_ms(s_ctx->port->ctx);
 }
 
+/**
+ * @brief Whether the output bank is armed, through the armed callback.
+ *
+ * @return  The callback's answer.
+ */
 static __attribute__((noinline)) bool sl_armed(void)
 {
     return s_ctx->armed(s_ctx->ctx);
 }
 
+/**
+ * @brief Whether a stop was applied or a disarm asked for, through the stopped
+ *        callback.
+ *
+ * @return  The callback's answer.
+ */
 static __attribute__((noinline)) bool sl_stopped(void)
 {
     return s_ctx->stopped(s_ctx->ctx);
 }
 
+/**
+ * @brief Raise an alert for the operator, through the alert callback.
+ *
+ * @param a  The alert to raise.
+ */
 static __attribute__((noinline)) void sl_alert(servo_link_alert_t a)
 {
     s_ctx->alert(s_ctx->ctx, a);
 }
 
+/**
+ * @brief Disarm the bench, through the disarm callback.
+ *
+ * @param link_up  Whether the link is up, passed on to the callback.
+ */
 static __attribute__((noinline)) void sl_disarm(bool link_up)
 {
     s_ctx->disarm(s_ctx->ctx, link_up);
 }
 
+/**
+ * @brief The arming policy's count of stops, through the stop_count callback.
+ *
+ * @return  The callback's count.
+ */
 static __attribute__((noinline)) uint32_t sl_stop_count(void)
 {
     return s_ctx->stop_count(s_ctx->ctx);
 }
 
+/**
+ * @brief Ask the arming policy to arm the surfaces and the programming ports,
+ *        and no motor, through the arm_surfaces callback.
+ */
 static __attribute__((noinline)) void sl_arm_surfaces(void)
 {
     s_ctx->arm_surfaces(s_ctx->ctx);
 }
 
-/*
- * A write of any width goes out one frame per exchange, each acknowledged
- * before the next is sent (link_write_acked()).
+/**
+ * @brief A write of any width goes out one frame per exchange, each
+ *        acknowledged before the next is sent (link_write_acked()).
+ *
+ * @param page    The page to write.
+ * @param offset  First register on the page.
+ * @param count   Registers to write.
+ * @param regs    The registers, @p count of them.
+ * @param reply   Receives the far end's reply: ACK, or the NACK of the first
+ *                frame it refused.
+ * @return        true when every frame was answered; false when a frame went
+ *                unanswered, and @p reply is then not meaningful.
  */
 static bool write_regs(uint8_t page, uint8_t offset, uint8_t count,
                        const uint16_t *regs, link_msg_t *reply)
@@ -71,12 +118,14 @@ static bool write_regs(uint8_t page, uint8_t offset, uint8_t count,
                             regs, reply);
 }
 
-/*
- * The servo bench's output is whichever channels the operator bound as
- * surfaces, and this file names no pin.  The wiring is described once, on the
- * OUTPUTS screen, and the horn asks the binding which channels carry it; a
- * pin named here as well would be a second record of the same wiring, and the
- * two would disagree the first time the operator rebound one.
+/**
+ * @brief The servo bench's output is whichever channels the operator bound as
+ *        surfaces, and this file names no pin.
+ *
+ * The wiring is described once, on the OUTPUTS screen, and the horn asks the
+ * binding which channels carry it; a pin named here as well would be a second
+ * record of the same wiring, and the two would disagree the first time the
+ * operator rebound one.
  *
  * The slots stay the operator's.  This screen writes channels and never the
  * OUTPUTS page, so no drag can take a pin away from what it was bound to, and
@@ -84,16 +133,25 @@ static bool write_regs(uint8_t page, uint8_t offset, uint8_t count,
  */
 /*
  * How often the servo's position is said again, against the far end's
- * OUT_DEFAULT_TIMEOUT_MS of 500 ms.  Five times the margin, and one
+ * OUT_DEFAULT_TIMEOUT_MS of 500ms.  Five times the margin, and one
  * register on the wire each time.
  */
 #define SERVO_HOLD_MS   100u
 #define SERVO_MIN_US    1000u
 #define SERVO_MAX_US    2000u
 
-/* A pulse in microseconds as a proportion of the servo's own travel, which is
- * what the CHANNELS page carries.  Clamped, not wrapped, below the range, as
- * the IOmcu's conversion is. */
+/**
+ * @brief A pulse in microseconds as a proportion of the servo's own travel,
+ *        which is what the CHANNELS page carries.
+ *
+ * Clamped, not wrapped, below the range, as the IOmcu's conversion is.
+ *
+ * @param us      The pulse, in microseconds.
+ * @param min_us  The pulse at the low end of the travel, in microseconds.
+ * @param max_us  The pulse at the high end of the travel, in microseconds.
+ * @return        0 to LINK_CH_SPAN; 0 when @p max_us is not above @p min_us or
+ *                @p us is at or below @p min_us.
+ */
 static uint16_t us_to_span(uint16_t us, uint16_t min_us, uint16_t max_us)
 {
     if (max_us <= min_us || us <= min_us) {
@@ -104,12 +162,13 @@ static uint16_t us_to_span(uint16_t us, uint16_t min_us, uint16_t max_us)
     return (span > LINK_CH_SPAN) ? (uint16_t)LINK_CH_SPAN : (uint16_t)span;
 }
 
-/* What the servo screen is holding, so it can be said again before the far
+/** @brief What the servo screen is holding, so it can be said again before the
+ *        far
  * end times it out.  SERVO_CMD_NONE means nothing is being held. */
 static servo_cmd_t s_servo_held;
 static uint32_t    s_servo_next_ms;
-/*
- * A position the far end still holds and this end has finished with.
+/**
+ * @brief A position the far end still holds and this end has finished with.
  *
  * Kept as a debt rather than written and forgotten: a screen left while the
  * link is down cannot send the release, and the far end keeps the channel
@@ -118,13 +177,16 @@ static uint32_t    s_servo_next_ms;
  */
 static bool        s_servo_release_owed;
 static atomic_bool s_servo_release_request;
-/* HOLD asked for: a sweep being written, which can take several exchanges,
- * gives way to it at once.  Cleared when the drain reaches a servo
+/** @brief HOLD asked for: a sweep being written, which can take several
+ *        exchanges, gives way to it at once.
+ *
+ * Cleared when the drain reaches a servo
  * command, the HOLD itself or one after it. */
 static atomic_bool s_servo_hold_request;
 
-/*
- * Which channels the horn drives: the ones the binding marks as surfaces.
+/**
+ * @brief Which channels the horn drives: the ones the binding marks as
+ *        surfaces.
  *
  * Written and read by the control task alone, which is the only task that
  * puts anything on the wire, and refreshed from the binding read back
@@ -136,16 +198,19 @@ static atomic_bool s_servo_hold_request;
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
-/* For the screen's SWEEP: a binding read, with a surface in it. */
+/** @brief For the screen's SWEEP: a binding read, with a surface in it. */
 static atomic_bool s_servo_surfaces;
-/* A sweep command with no surface to sweep: the screen stops waiting. */
+/**
+ * @brief A sweep command with no surface to sweep: the screen stops waiting.
+ */
 static atomic_bool s_sweep_refused;
-/* The pause the panel last let go of: commands asked during it and queued
+/** @brief The pause the panel last let go of: commands asked during it and
+ *        queued
  * behind the HOLD that ended it are not sent (servo_cmd_stale()). */
 static servo_pause_end_t s_pause_ended;
 
-/*
- * Whether that mask is an answer at all.
+/**
+ * @brief Whether that mask is an answer at all.
  *
  * Empty and unknown are different benches.  Empty is a binding that was read
  * and names no surface -- a bench carrying only a motor, which must still
@@ -160,8 +225,8 @@ static servo_pause_end_t s_pause_ended;
  */
 static bool s_servo_known;
 
-/*
- * And whether the last position actually reached any of them.
+/**
+ * @brief And whether the last position actually reached any of them.
  *
  * Separate from s_servo_channels because the two can differ: a write that
  * failed part way through leaves some surfaces holding a position and not
@@ -172,9 +237,10 @@ static bool s_servo_known;
 static uint8_t s_servo_written;
 
 /*
- * For the screen's SWEEP and its horn: there is something to move.  A
- * programming port as target is one output; with the standard outputs it is
- * a binding read with a surface in it.
+ * For the screen's SWEEP and its horn: there is something to move.
+ *
+ * A programming port as target is one output; with the standard outputs it is a
+ * binding read with a surface in it.
  */
 void servo_link_surfaces_publish(void)
 {
@@ -184,10 +250,18 @@ void servo_link_surfaces_publish(void)
                      || (s_servo_known && s_servo_channels != 0u)));
 }
 
-/*
- * One run's range and speed, to the standard outputs' CHAN_CFG or, with
- * programming port @p port (1 + n) as target, to that port's registers.  A
- * port is written as channel 0 of @p cfg.
+/**
+ * @brief One run's range and speed, to the standard outputs' CHAN_CFG or, with
+ *        programming port @p port (1 + n) as target, to that port's registers.
+ *
+ * A port is written as channel 0 of @p cfg.
+ *
+ * @param port   0 for the standard outputs, else 1 + the programming port.
+ * @param first  First channel of the run.
+ * @param count  Channels in the run.
+ * @param cfg    The CHAN_CFG page, LINK_CC_COUNT registers.
+ * @param reply  Receives the far end's reply.
+ * @return       true when the write was acknowledged (LINK_OP_ACK).
  */
 static bool servo_cfg_write(uint8_t port, uint8_t first, uint8_t count,
                             const uint16_t *cfg, link_msg_t *reply)
@@ -207,7 +281,16 @@ static bool servo_cfg_write(uint8_t port, uint8_t first, uint8_t count,
            && reply->op == LINK_OP_ACK;
 }
 
-/* And its command, 0 to LINK_CH_SPAN: CHANNELS, or the port's CMD. */
+/**
+ * @brief And its command, 0 to LINK_CH_SPAN: CHANNELS, or the port's CMD.
+ *
+ * @param port   0 for the standard outputs, else 1 + the programming port.
+ * @param first  First channel of the run.
+ * @param count  Channels in the run.
+ * @param cmd    Commands indexed by channel. A port takes its first entry.
+ * @param reply  Receives the far end's reply.
+ * @return       true when the write was acknowledged (LINK_OP_ACK).
+ */
 static bool servo_cmd_write(uint8_t port, uint8_t first, uint8_t count,
                             const uint16_t *cmd, link_msg_t *reply)
 {
@@ -221,7 +304,13 @@ static bool servo_cmd_write(uint8_t port, uint8_t first, uint8_t count,
            && reply->op == LINK_OP_ACK;
 }
 
-/* The channels of one run, as bits. */
+/**
+ * @brief The channels of one run, as bits.
+ *
+ * @param first  First channel of the run.
+ * @param count  Channels in the run.
+ * @return       Bit n set for each channel n of the run.
+ */
 static uint8_t servo_run_bits(uint8_t first, uint8_t count)
 {
     uint8_t bits = 0u;
@@ -231,12 +320,18 @@ static uint8_t servo_run_bits(uint8_t first, uint8_t count)
     return bits;
 }
 
-/*
- * The next run of set channels in @p mask at or after @p from.
+/**
+ * @brief The next run of set channels in @p mask at or after @p from.
  *
  * Runs rather than single channels: a binding's surfaces are contiguous
  * unless a motor sits between them, and each exchange on this wire can wait a
  * second.  Returns false when there is no run left.
+ *
+ * @param mask   Channel mask, bit n is channel n.
+ * @param from   First channel to examine.
+ * @param first  Receives the first channel of the run.
+ * @param count  Receives the number of channels in the run.
+ * @return       true when a run was found; false when none is left.
  */
 static bool servo_next_run(uint8_t mask, uint8_t from, uint8_t *first,
                            uint8_t *count)
@@ -256,12 +351,13 @@ static bool servo_next_run(uint8_t mask, uint8_t from, uint8_t *first,
     return true;
 }
 
-/*
- * One servo command, as configuration and pulse.
+/**
+ * @brief Whether the operator has asked, since this began, for the thing being
+ *        written to stop: a stop applied by the pump, or a disarm or release
+ *        posted while an exchange was on the wire.
+ *
+ * @return  true when a stop, a release or a hold has been asked for.
  */
-/* Whether the operator has asked, since this began, for the thing being
- * written to stop: a stop applied by the pump, or a disarm or release posted
- * while an exchange was on the wire. */
 static bool servo_countermanded(void)
 {
     return sl_stopped()
@@ -269,17 +365,25 @@ static bool servo_countermanded(void)
            || atomic_load(&s_servo_hold_request);
 }
 
-/*
- * The range and speed the SERVO screen last named.  A release goes to the
- * midpoint of the range the far end holds, which is the one the last
- * position carried; a profile chosen since, with no position under it yet,
- * would be released at the old profile's centre.  So a release restates the
- * range first.  Kind NONE until a command names one.
+/**
+ * @brief The range and speed the SERVO screen last named.
+ *
+ * A release goes to the midpoint of the range the far end holds, which is the
+ * one the last position carried; a profile chosen since, with no position under
+ * it yet, would be released at the old profile's centre.  So a release restates
+ * the range first.  Kind NONE until a command names one.
  */
 static servo_cmd_t s_servo_range;
 
-/* Whether a command names a range the far end takes.  A command that names
- * none keeps the standard one. */
+/**
+ * @brief Whether a command names a range the far end takes.
+ *
+ * A command that names none keeps the standard one.
+ *
+ * @param sv  The command.
+ * @return    true when the range is ordered and lies within LINK_CC_FLOOR_US to
+ *            LINK_CC_CEILING_US.
+ */
 static bool servo_named(const servo_cmd_t *sv)
 {
     return sv->max_us > sv->min_us
@@ -287,7 +391,12 @@ static bool servo_named(const servo_cmd_t *sv)
            && sv->max_us <= LINK_CC_CEILING_US;
 }
 
-/* The CHAN_CFG page for the surfaces under @p sv's range and speed. */
+/**
+ * @brief The CHAN_CFG page for the surfaces under @p sv's range and speed.
+ *
+ * @param sv   The command whose range and speed to use.
+ * @param cfg  Receives LINK_CC_COUNT registers, one entry per channel.
+ */
 static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 {
     const bool named = servo_named(sv);
@@ -303,13 +412,14 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
     }
 }
 
-/*
- * The sweep on the SERVO page (protocol 4.2).  While one runs the
- * IOmcu commands the surfaces itself every pass, so a centre or a
- * position written under it would last one pass: anything but a sweep stops
- * it first.  Not known after the link comes up: then the next command, a
- * sweep included, writes a stop first, which also clears a finished sweep
- * that the same curve would otherwise not start again.
+/**
+ * @brief The sweep on the SERVO page (protocol 4.2).
+ *
+ * While one runs the IOmcu commands the surfaces itself every pass, so a centre
+ * or a position written under it would last one pass: anything but a sweep
+ * stops it first.  Not known after the link comes up: then the next command, a
+ * sweep included, writes a stop first, which also clears a finished sweep that
+ * the same curve would otherwise not start again.
  */
 static bool        s_servo_sweep_page;
 static bool        s_servo_sweeping;
@@ -320,8 +430,9 @@ static atomic_uint s_servo_hold_lost_seq; /* of this pause */
 static bool        s_servo_sweep_unknown;
 static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
 static uint16_t    s_servo_minor;        /* its protocol minor: 6 resumes */
-/* The curve the far end last took, and when it started one: a curve that
- * differs from the one running starts over there, and the screen draws the
+/** @brief The curve the far end last took, and when it started one: a curve
+ *        that differs from the one running starts over there, and the screen
+ *        draws the
  * horn from that moment rather than from its tap. */
 static uint16_t    s_servo_curve[4];
 static uint32_t    s_servo_curve_ms;   /* when the far end last took it */
@@ -330,18 +441,23 @@ static atomic_uint s_sweep_start_from;   /* servo_sweep_from_t */
 static atomic_uint s_sweep_frozen_ms;    /* when it froze, for FROZEN */
 static atomic_bool s_sweep_start_new;
 static atomic_uint s_sweep_start_seq;    /* the command it acknowledges */
-/* The far end's phase as acknowledgements time it, and the HOLD that
+/** @brief The far end's phase as acknowledgements time it, and the HOLD that
  * paused a running sweep: which pause, and the phase it kept. */
 static servo_phase_t s_far_phase;
-/* A HOLD write that went unanswered: it may have reached the far end, so
+/** @brief A HOLD write that went unanswered: it may have reached the far end,
+ *        so
  * the phase it kept is not known here when a retry is acknowledged. */
 static bool          s_hold_unanswered;
 static atomic_uint s_sweep_held_seq;
 static atomic_uint s_sweep_held_kept;
 static atomic_bool s_sweep_held_new;
 
-/* The held sweep's resume has been taken: its repeats say the curve, and
- * publish no further resumed start. */
+/**
+ * @brief The held sweep's resume has been taken: its repeats say the curve,
+ *        and publish no further resumed start.
+ *
+ * @param start_seq  The start sequence the resume acknowledged.
+ */
 static void servo_resume_taken(uint16_t start_seq)
 {
     if (s_servo_held.kind == SERVO_CMD_SWEEP
@@ -350,6 +466,16 @@ static void servo_resume_taken(uint16_t start_seq)
     }
 }
 
+/**
+ * @brief One servo command, as configuration and pulse.
+ *
+ * A command for no surface returns true without a write, and a HOLD on an
+ * IOmcu that cannot sweep does too.
+ *
+ * @param sv  The command to send.
+ * @return    true when the command landed on the far end; false when it did
+ *            not, or was countermanded part way.
+ */
 static bool write_servo(const servo_cmd_t sv)
 {
     link_msg_t reply;
@@ -424,7 +550,7 @@ static bool write_servo(const servo_cmd_t sv)
         const uint32_t took = sl_now_ms();
         /*
          * A pause whose HOLD was answered only at a retry may have frozen at
-         * an earlier attempt, been let go 500 ms later and frozen again
+         * an earlier attempt, been let go 500ms later and frozen again
          * where resting had got it; an exchange that outlasted a HOLD's life
          * may have been let go meanwhile too.  Where the output is held is
          * then not known here, and an angle drawn from the tap would be
@@ -438,7 +564,7 @@ static bool write_servo(const servo_cmd_t sv)
             /*
              * The HOLD just acknowledged is live there, and while it is the
              * far end stamps every surface with that HOLD's arrival: a
-             * position written under it would go to rest 500 ms after the
+             * position written under it would go to rest 500ms after the
              * arrival, at once and unslewed.  So it is ended first with a
              * stop; one that does not land is written before the next
              * command instead.
@@ -584,7 +710,7 @@ static bool write_servo(const servo_cmd_t sv)
          */
         /*
          * The endpoints the screen named, not this file's.  A narrow servo
-         * runs 660 to 860 us and its centre is below a standard servo's
+         * runs 660 to 860us and its centre is below a standard servo's
          * floor, so clamping it against 1000 to 2000 would send its whole
          * travel to one end.  A command that names no range keeps the
          * standard one.
@@ -783,7 +909,7 @@ static bool write_servo(const servo_cmd_t sv)
          * transaction and the far end steps its outputs between them, so a
          * range that had not arrived would clamp the pulse against the one
          * before it: a narrow servo selected against a standard configuration
-         * renders 1500 us, past its 860 us maximum.  The 100 ms refresh is
+         * renders 1500us, past its 860us maximum.  The 100ms refresh is
          * the retry.
          *
          * Both waits can take a second and the pump runs inside them, so a
@@ -819,7 +945,7 @@ static bool write_servo(const servo_cmd_t sv)
  * The SERVO page: the frame rate of the PWM target -- every PWM output
  * rendering a surface for the standard target, the one programming port
  * for a port target (protocol 4.19).  An IOmcu before protocol 4.1 has
- * no such page and runs each slot at its binding's rate, 50 Hz for a servo.
+ * no such page and runs each slot at its binding's rate, 50Hz for a servo.
  * From 4.19 a TARGET change sets the page back to 0; prog_link_rate() says
  * so and servo_link_rate_reset_note() records it here.
  *
@@ -837,15 +963,28 @@ static uint16_t s_servo_hz_sent = SERVO_HZ_UNKNOWN;  /* acknowledged; 0 own */
 static uint16_t s_servo_hz_refused;  /* the last rate it refused; 0 none     */
 static atomic_uint s_servo_rate_shown;  /* (servo_rate_state_t << 16) | Hz */
 
+/**
+ * @brief Publish the rate's state and Hz for servo_link_rate_shown().
+ *
+ * @param st  The rate's state.
+ * @param hz  The rate, in Hz.
+ */
 static void servo_rate_show(servo_rate_state_t st, uint16_t hz)
 {
     atomic_store(&s_servo_rate_shown, ((unsigned)st << 16) | hz);
 }
 
-/* What became of a rate written: the pins run at it, the binding will not
+/** @brief What became of a rate written: the pins run at it, the binding will
+ *        not
  * have it -- final until something changes -- or nothing answered. */
 typedef enum { RATE_LANDED, RATE_REFUSED, RATE_NO_ANSWER } rate_result_t;
 
+/**
+ * @brief Write a frame rate to the SERVO page, and record what became of it.
+ *
+ * @param hz  The frame rate, in Hz. 0 names no rate and lands at once.
+ * @return    RATE_LANDED, RATE_REFUSED or RATE_NO_ANSWER.
+ */
 static rate_result_t write_servo_rate(uint16_t hz)
 {
     if (hz == 0u) {
@@ -879,8 +1018,13 @@ static rate_result_t write_servo_rate(uint16_t hz)
     return RATE_NO_ANSWER;
 }
 
-/* The rate the PWM target runs at as far as this end knows, or
- * SERVO_HZ_UNKNOWN. */
+/**
+ * @brief The rate the PWM target runs at as far as this end knows, or
+ *        SERVO_HZ_UNKNOWN.
+ *
+ * @return  SERVO_HZ_UNKNOWN; otherwise the acknowledged rate, or SERVO_BIND_HZ
+ *          (50Hz) for 0, which is each slot's own rate.
+ */
 static uint16_t servo_rate_now(void)
 {
     if (s_servo_hz_sent == SERVO_HZ_UNKNOWN) {
@@ -889,19 +1033,25 @@ static uint16_t servo_rate_now(void)
     return (s_servo_hz_sent != 0u) ? s_servo_hz_sent : (uint16_t)SERVO_BIND_HZ;
 }
 
-/*
- * One position with its rate.  The pins must never carry a fast rate with
- * the wider pulses of a slower profile: a 760 us tail servo going back to
- * STANDARD PWM takes 50 Hz first and then 1000 to 2000 us, never 1500 us at
- * 560 Hz.  So a rate going up follows the pulse widths, and only once every
- * one of them landed; any other rate leads them, and a position waits for
- * it unless the pins are known to run no faster than it.  A rate not known
- * counts as fast.  A position held back is asked again with the next hold.
+/**
+ * @brief One position with its rate.
+ *
+ * The pins must never carry a fast rate with the wider pulses of a slower
+ * profile: a 760us tail servo going back to STANDARD PWM takes 50Hz first and
+ * then 1000 to 2000us, never 1500us at 560Hz.  So a rate going up follows
+ * the pulse widths, and only once every one of them landed; any other rate
+ * leads them, and a position waits for it unless the pins are known to run no
+ * faster than it.  A rate not known counts as fast.  A position held back is
+ * asked again with the next hold.
  *
  * Done only when the rate is settled too: a rate nobody answered leaves a
  * release owed, so it is written again.  A refused one is settled -- the
  * screen says REFUSED and the pins keep the slower rate -- because a release
  * owed for ever would stop the bench arming.
+ *
+ * @param sv  The position and its frame rate.
+ * @return    true when the position was written and the rate settled, a
+ *            refused rate counting as settled; false when either was not.
  */
 static bool write_servo_and_rate(const servo_cmd_t sv)
 {
@@ -920,13 +1070,14 @@ static bool write_servo_and_rate(const servo_cmd_t sv)
 }
 
 /*
- * Each slot back at its own rate.  Before a binding: the rate the SERVO page
- * holds was checked against the binding being replaced, and left in place a
- * motor bound beside a 560 Hz surface would be refused by the silicon and
- * stay still.  At link-up: a panel that restarted, or a link that only went
- * quiet, can leave the far end holding a heli rate the screen no longer
- * shows.  True when it landed, or there is no page to reset; otherwise the
- * rate in force is not known.
+ * Each slot back at its own rate.
+ *
+ * Before a binding: the rate the SERVO page holds was checked against the
+ * binding being replaced, and left in place a motor bound beside a 560Hz
+ * surface would be refused by the silicon and stay still.  At link-up: a panel
+ * that restarted, or a link that only went quiet, can leave the far end holding
+ * a heli rate the screen no longer shows.  True when it landed, or there is no
+ * page to reset; otherwise the rate in force is not known.
  *
  * servo_link_rate_reset_note() is what a reset leaves behind at this end,
  * for the reset a binding's own sequence sends (bind_link_write()) as well.
@@ -943,6 +1094,12 @@ void servo_link_rate_reset_note(bool page, bool landed)
     servo_rate_show(SERVO_RATE_UNSENT, 0u);
 }
 
+/**
+ * @brief Put each slot back at its own rate: 0 written to the SERVO page's
+ *        frame rate, or nothing to write when the IOmcu has no such page.
+ *
+ * @return  true when the reset landed, or there is no page to reset.
+ */
 static bool servo_rate_reset(void)
 {
     if (!s_servo_rate_page) {
@@ -960,10 +1117,11 @@ static bool servo_rate_reset(void)
 
 /*
  * Whether the rate the surfaces run at is known, after one more try at
- * putting each slot back at its own rate if it is not.  Asked before every
- * arm: a panel that restarted while the far end held a heli rate, and whose
- * reset at link-up went unanswered, would otherwise arm the surfaces at it
- * from any screen, while the SERVO screen shows STANDARD PWM.
+ * putting each slot back at its own rate if it is not.
+ *
+ * Asked before every arm: a panel that restarted while the far end held a heli
+ * rate, and whose reset at link-up went unanswered, would otherwise arm the
+ * surfaces at it from any screen, while the SERVO screen shows STANDARD PWM.
  */
 bool servo_link_rate_settled(void)
 {
@@ -982,8 +1140,8 @@ bool servo_link_rate_settled(void)
  * part of it that matters most is at this end.
  */
 /*
- * A servo command, onto the link: a position goes with its frame rate, on
- * the SERVO page (see write_servo_and_rate()).
+ * A servo command, onto the link: a position goes with its frame rate,
+ * on the SERVO page (see write_servo_and_rate()).
  */
 void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
 {
@@ -1099,8 +1257,8 @@ void servo_link_apply(const servo_cmd_t sv, bool link_up, uint32_t stops)
 
 /*
  * Stop holding the servo, the way throttle_to_zero() stops holding the
- * throttle, and for the same reason: a disarm that leaves a position behind
- * is an arm that steps straight back to it.
+ * throttle, and for the same reason: a disarm that leaves a position
+ * behind is an arm that steps straight back to it.
  *
  * The far end keeps the channel command through a disarm and a failsafe, and
  * outputs_arm() stamps every channel's clock, so on the next arm the surface
@@ -1121,10 +1279,10 @@ void servo_link_let_go(void)
 }
 
 /*
- * Say the servo's position again before the far end stops believing it, and
- * pay off a release that is owed.
+ * Say the servo's position again before the far end stops believing it,
+ * and pay off a release that is owed.
  *
- * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500 ms) goes to
+ * A channel nobody has commanded for OUT_DEFAULT_TIMEOUT_MS (500ms) goes to
  * its rest, which for a surface is mid-travel: a servo held at an endpoint
  * would swing back to centre half a second after the finger stopped, with
  * the screen still showing where it was put.  The throttle is kept alive by

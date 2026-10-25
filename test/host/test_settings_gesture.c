@@ -17,13 +17,16 @@ static int steps_off(setting_id_t id)
 }
 
 /*
- * Swipes of 150 px that start on column x, from start points 29 px apart
+ * Swipes of 150px that start on column x, from start points 29px apart
  * down the list, up and down, at seven speeds, on every category.  The
  * upward ones from the upper rows run into the band.  A downward swipe
- * starts on a list scrolled 100 px, so it has somewhere to go.  Returns how
+ * starts on a list scrolled 100px, so it has somewhere to go.  Returns how
  * many changed a setting; *unscrolled counts those that stayed in the body,
  * moved as one contact and left the list where it was although it had room.
  */
+/* The start points down the list: from LIST_Y + 4, 29px apart. */
+#define STARTS ((LIST_H - 4 + 28) / 29)
+
 static int swipe_matrix(const int *cols, int ncols, int *unscrolled,
                         int *total)
 {
@@ -46,7 +49,7 @@ static int swipe_matrix(const int *cols, int ncols, int *unscrolled,
                         const int from = settings_screen_scroll(&max);
                         int y1 = y0 + dir * 150;
                         if (y1 < 2)   { y1 = 2; }
-                        if (y1 > 479) { y1 = 479; }
+                        if (y1 > H - 1) { y1 = H - 1; }
                         swipe(cols[c], y0, cols[c], y1, speeds[sp]);
                         idle(0.5f);
                         ++*total;
@@ -73,7 +76,7 @@ TEST_CASE(a_swipe_that_starts_on_a_key_column_scrolls_and_changes_no_value)
                                 PLUS_X, XP, PLUS_X + BTN_W - 1 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 6, &unscrolled, &total);
-    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 6 * 7 * 12 * 2);
+    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 6 * 7 * STARTS * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -86,7 +89,7 @@ TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
                                 PLUS_X + BTN_W, 783 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 9, &unscrolled, &total);
-    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 9 * 7 * 12 * 2);
+    CHECK_EQ(total, SET_CAT_SETUP_COUNT * 9 * 7 * STARTS * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -94,7 +97,7 @@ TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
 /*
  * Every list scrolled to its end shows its last row whole: the row inside
  * the list, above the strip, its bottom edge drawn and its help line in
- * the faint text colour.  Drags of 240 px until the scroll stops, in both
+ * the faint text colour.  Drags of 240px until the scroll stops, in both
  * languages, as the German labels are the longer.
  */
 TEST_CASE(every_list_at_its_end_shows_its_last_row_whole)
@@ -139,7 +142,7 @@ TEST_CASE(every_list_at_its_end_shows_its_last_row_whole)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* What a tester's panel showed: INA3221 shunt 99.9 mOhm and Sensor SDA 15
+/* What a tester's panel showed: INA3221 shunt 99.9mOhm and Sensor SDA 15
  * after the INTERFACES list was scrolled twice from its bottom row.  The
  * INA3221's rows are SENSORS' now; the INA228's shunt stands in. */
 TEST_CASE(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins)
@@ -200,13 +203,13 @@ TEST_CASE(a_tap_steps_each_kind_of_key_once)
     CHECK(seen[SET_TYPE_ENUM]);
 }
 
-/* A key held: nothing for 0.45 s, then 8 steps a second, 30 a second from
- * 2.25 s.  5 steps after 1.00 s and 38 after 3.00 s. */
+/* A key held: nothing for 0.45s, then 8 steps a second, 30 a second from
+ * 2.25s.  5 steps after 1.00s and 38 after 3.00s. */
 TEST_CASE(a_held_key_repeats_five_times_in_one_second_and_38_in_three)
 {
     gesture_screen(SET_CAT_IFACE);
     const int y = row_y(row_of(KEY_ID));
-    finger(FEED_LONE, XM, y);                 /* its tick: 0.01 s held */
+    finger(FEED_LONE, XM, y);                 /* its tick: 0.01s held */
     idle(0.43f);
     CHECK_EQ(steps_off(KEY_ID), 0);
     idle(0.56f);
@@ -220,9 +223,9 @@ TEST_CASE(a_held_key_repeats_five_times_in_one_second_and_38_in_three)
     CHECK_EQ(changed(), 1);
 }
 
-/* A frame that stalls is credited 0.25 s and no more: a 1 s stall, before
- * the delay ends, while the repeat runs at 8 Hz and while it runs at 30 Hz,
- * steps at most as often as 0.25 s of hold does, plus the step the
+/* A frame that stalls is credited 0.25s and no more: a 1s stall, before
+ * the delay ends, while the repeat runs at 8Hz and while it runs at 30Hz,
+ * steps at most as often as 0.25s of hold does, plus the step the
  * crossing of the delay adds. */
 TEST_CASE(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key)
 {
@@ -231,31 +234,31 @@ TEST_CASE(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key)
     const int y = row_y(row_of(KEY_ID));
     finger(FEED_LONE, XP, y);
 
-    /* Before the delay: 1 s in one frame is 0.25 s of hold, no step. */
+    /* Before the delay: 1s in one frame is 0.25s of hold, no step. */
     ui_router_tick(1.0f);
     CHECK_EQ(steps_off(KEY_ID), 0);
 
-    /* The slow rate: 0.25 s held, then 0.2 s more, then a 1 s stall. */
+    /* The slow rate: 0.25s held, then 0.2s more, then a 1s stall. */
     ui_router_tick(0.2f);
     ui_router_tick(0.2f);
     int before = steps_off(KEY_ID);
     ui_router_tick(1.0f);
     int stall = steps_off(KEY_ID) - before;
-    CHECK(stall >= 1 && stall <= 2);            /* 0.25 s at 8 Hz */
+    CHECK(stall >= 1 && stall <= 2);            /* 0.25s at 8Hz */
 
-    /* The fast rate, from 2.25 s held. */
+    /* The fast rate, from 2.25s held. */
     for (int i = 0; i < 20; ++i) {
         ui_router_tick(0.1f);
     }
     before = steps_off(KEY_ID);
     ui_router_tick(1.0f);
     stall = steps_off(KEY_ID) - before;
-    CHECK(stall >= 1 && stall <= 8);            /* 0.25 s at 30 Hz */
+    CHECK(stall >= 1 && stall <= 8);            /* 0.25s at 30Hz */
     lift(FEED_LONE);
 }
 
-/* The hold's limit: 449 ms is a tap that has not stepped yet, 450 ms is the
- * first step of the repeat.  Frames of at most 0.2 s, under the 0.25 s a
+/* The hold's limit: 449ms is a tap that has not stepped yet, 450ms is the
+ * first step of the repeat.  Frames of at most 0.2s, under the 0.25s a
  * frame is credited with; the timer adds frame times and reads no tick
  * counter, so it has no wrap. */
 TEST_CASE(the_repeat_starts_at_450_ms)
@@ -275,7 +278,7 @@ TEST_CASE(the_repeat_starts_at_450_ms)
         /* One step either way: the tap's, or the repeat's first. */
         CHECK_EQ(steps_off(KEY_ID), 1);
     }
-    /* In 10 ms frames: 44 are short of it and 46 are past it. */
+    /* In 10ms frames: 44 are short of it and 46 are past it. */
     for (int frames = 44; frames <= 46; frames += 2) {
         gesture_screen(SET_CAT_IFACE);
         feed_tick_per_report(0.0f);
@@ -293,7 +296,7 @@ TEST_CASE(the_repeat_starts_at_450_ms)
 }
 
 /* A held key that starts to scroll: it repeats while the finger is within
- * the 8 px, and stops at 9 px. */
+ * the 8px, and stops at 9px. */
 TEST_CASE(a_hold_that_turns_into_a_swipe_stops_repeating_at_the_slop)
 {
     for (int dir = -1; dir <= 1; dir += 2) {
@@ -304,7 +307,7 @@ TEST_CASE(a_hold_that_turns_into_a_swipe_stops_repeating_at_the_slop)
         CHECK_EQ(steps_off(KEY_ID), -5);
         feed_tick_per_report(0.0f);
         glide(FEED_LONE, XM, y + dir * 8, 1);
-        idle(0.50f);                          /* 1.50 s held: 4 more */
+        idle(0.50f);                          /* 1.50s held: 4 more */
         CHECK_EQ(steps_off(KEY_ID), -9);
         CHECK_EQ(settings_screen_scroll(NULL), 0);
         glide(FEED_LONE, XM, y + dir * 9, 1);
@@ -320,7 +323,7 @@ TEST_CASE(a_hold_that_turns_into_a_swipe_stops_repeating_at_the_slop)
     }
 }
 
-/* The slop of a tap: 8 px from the press in x or in y is a tap, 9 px is
+/* The slop of a tap: 8px from the press in x or in y is a tap, 9px is
  * not. */
 TEST_CASE(a_tap_may_move_8_px_and_not_9)
 {
@@ -352,7 +355,7 @@ TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
     gesture_screen(SET_CAT_IFACE);
     const int y = row_y(row_of(KEY_ID));
 
-    /* 300 px left onto the label, and held there. */
+    /* 300px left onto the label, and held there. */
     finger(FEED_LONE, XM, y);
     glide(FEED_LONE, XM - 300, y, 5);
     idle(1.0f);
@@ -367,7 +370,7 @@ TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
     lift(FEED_LONE);
     CHECK_EQ(changed(), 0);
 
-    /* Out of the key within the slop: 5 px left of its edge. */
+    /* Out of the key within the slop: 5px left of its edge. */
     finger(FEED_LONE, MINUS_X, y);
     glide(FEED_LONE, MINUS_X - 5, y, 1);
     idle(1.0f);
@@ -385,7 +388,7 @@ TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
     CHECK_EQ(settings_screen_scroll(NULL), 0);
 }
 
-/* A key is its column over its own row.  The 4 px between two rows belong
+/* A key is its column over its own row.  The 4px between two rows belong
  * to neither: a tap there steps nothing, and a press that leaves the row
  * into the gap is not a tap. */
 TEST_CASE(the_gap_between_two_rows_is_no_key)
@@ -422,7 +425,7 @@ TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
     gesture_screen(SET_CAT_IFACE);
     const int y = row_y(row_of(KEY_ID));
 
-    /* The first scrolls on the label; the second rests 2 s on a key. */
+    /* The first scrolls on the label; the second rests 2s on a key. */
     finger(0, XL, LIST_Y + 300);
     glide(0, XL, LIST_Y + 260, 4);
     const int mid = settings_screen_scroll(NULL);
@@ -498,11 +501,11 @@ TEST_CASE(a_contact_that_drops_out_of_a_swipe_changes_no_value)
     CHECK(settings_screen_scroll(NULL) > 100);
 }
 
-/* More than 120 px between two reports: the tracker ends the contact with a
+/* More than 120px between two reports: the tracker ends the contact with a
  * flagged UP and starts one with a flagged DOWN.  Neither steps a key. */
 TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
 {
-    /* Down a key column, 140 px a report, lifted on the column. */
+    /* Down a key column, 140px a report, lifted on the column. */
     gesture_screen(SET_CAT_IFACE);
     finger(FEED_LONE, XM, LIST_Y + 340);
     finger(FEED_LONE, XM, LIST_Y + 200);
@@ -579,7 +582,7 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
     idle(3.0f);
     CHECK_EQ(changed(), 0);
 
-    /* 8 px up inside the body first. */
+    /* 8px up inside the body first. */
     gesture_screen(SET_CAT_IFACE);
     finger(FEED_LONE, XM, top + 8);
     finger(FEED_LONE, XM, top);
@@ -637,7 +640,7 @@ TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
     CHECK_EQ(changed(), 1);
 
     /* The tracker's own release, of a jump: RESET CATEGORY pressed, the
-     * contact next reported 300 px away. */
+     * contact next reported 300px away. */
     finger(FEED_LONE, RESET_X + 100, RESET_Y + RESET_H / 2);
     finger(FEED_LONE, XL, RESET_Y - 200);
     lift(FEED_LONE);
@@ -649,7 +652,8 @@ TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
     CHECK_EQ(changed(), 0);
 }
 
-/* The columns' outer edges, and the scroll bar 19 px right of "+". */
+/* The columns' outer edges, and the scroll bar, 1002 to 1013px, 20px
+ * right of "+" and outside the list. */
 TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
 {
     gesture_screen(SET_CAT_IFACE);
@@ -659,7 +663,7 @@ TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
     CHECK_EQ(settings_screen_scroll(NULL), 200);
 
     gesture_screen(SET_CAT_IFACE);
-    swipe(789, LIST_Y + LIST_H - 8, 789, LIST_Y + LIST_H - 208, 9);
+    swipe(1008, LIST_Y + LIST_H - 8, 1008, LIST_Y + LIST_H - 208, 9);
     CHECK_EQ(changed(), 0);
     CHECK_EQ(settings_screen_scroll(NULL), 0);
 }

@@ -1,5 +1,8 @@
-/*
- * The output bank.  See outputs.h for the model.
+/**
+ * @file
+ * @brief The output bank.
+ *
+ * See outputs.h for the model.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,17 +12,18 @@
 #include <stddef.h>
 #include <string.h>
 
+/** @brief The driver table, indexed by out_driver_t. */
 static const out_driver_def_t k_drivers[OUT_DRIVER_COUNT] = {
     [OUT_DRIVER_NONE]  = { "none",  0, 0, 0, false, false,   0,     0 },
     /*
-     * PWM (pulse-width modulation): the 560 Hz ceiling is a 760 us tail
-     * servo's frame rate, the fastest a servo takes; below 40 Hz a servo
+     * PWM (pulse-width modulation): the 560Hz ceiling is a 760us tail
+     * servo's frame rate, the fastest a servo takes; below 40Hz a servo
      * audibly steps.
      */
     [OUT_DRIVER_PWM]   = { "PWM",   1, 1, 1, false, true,   40,   560 },
     /*
      * PPM (pulse-position modulation) is the reason the channel count is a
-     * range.  Eight channels in a 22.5 ms frame is the convention; more fits
+     * range.  Eight channels in a 22.5ms frame is the convention; more fits
      * only by shortening frames.
      */
     [OUT_DRIVER_PPM]   = { "PPM",   1, 8, 1, false, true,   20,    50 },
@@ -92,7 +96,15 @@ bool outputs_pin_available(const outputs_t *o, uint8_t pin)
     return (o->reserved & ((uint64_t)1u << pin)) == 0u;
 }
 
-/* Does [a0,a0+an) meet [b0,b0+bn)? */
+/**
+ * @brief Does [a0,a0+an) meet [b0,b0+bn)?
+ *
+ * @param a0 First index of the first range.
+ * @param an Length of the first range.
+ * @param b0 First index of the second range.
+ * @param bn Length of the second range.
+ * @return true when the two ranges share an index, false otherwise.
+ */
 static bool overlaps(unsigned a0, unsigned an, unsigned b0, unsigned bn)
 {
     return a0 < b0 + bn && b0 < a0 + an;
@@ -337,8 +349,8 @@ bool outputs_overdue(const outputs_t *o, uint8_t ch, uint32_t now_ms)
         return true;
     }
     /* Wrap-safe: the difference is compared, never the order.  The deadline
-     * is inclusive: a timeout of 500 ms is overdue at 500 ms and not at
-     * 499 ms. */
+     * is inclusive: a timeout of 500ms is overdue at 500ms and not at
+     * 499ms. */
     return (uint32_t)(now_ms - o->channel[ch].last_command_ms)
            >= o->timeout_ms;
 }
@@ -384,7 +396,7 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
             continue;
         }
         /* Immediate means immediate.  Testing the elapsed time first would
-         * make an unslewed channel wait 1 ms before it followed, which is an
+         * make an unslewed channel wait 1ms before it followed, which is an
          * unstated slew limit. */
         if (c->slew_per_s == 0u) {
             c->actual = c->command;

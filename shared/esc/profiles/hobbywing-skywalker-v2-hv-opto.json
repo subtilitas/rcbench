@@ -48,8 +48,8 @@
       "steps": [
         "Transmitter on, throttle at max",
         "Connect battery",
-        "Wait about 2000 ms: two short beeps",
-        "Wait about 5000 ms more: special tone, programming mode entered"
+        "Wait about 2000ms: two short beeps",
+        "Wait about 5000ms more: special tone, programming mode entered"
       ]
     },
     "announce": {
@@ -116,16 +116,16 @@
       "values": [
         {
           "number": 1,
-          "name": "low (60 %)",
+          "name": "low (60%)",
           "default": true
         },
         {
           "number": 2,
-          "name": "medium (90 %)"
+          "name": "medium (90%)"
         },
         {
           "number": 3,
-          "name": "high (100 %)"
+          "name": "high (100%)"
         }
       ],
       "applies_to": null,
@@ -194,16 +194,16 @@
         },
         {
           "number": 2,
-          "name": "low (about 2.8 V/cell)",
+          "name": "low (about 2.8V/cell)",
           "default": true
         },
         {
           "number": 3,
-          "name": "medium (about 3.0 V/cell)"
+          "name": "medium (about 3.0V/cell)"
         },
         {
           "number": 4,
-          "name": "high (about 3.4 V/cell)"
+          "name": "high (about 3.4V/cell)"
         }
       ],
       "applies_to": null,
@@ -216,16 +216,16 @@
       "values": [
         {
           "number": 1,
-          "name": "normal (about 400 ms)",
+          "name": "normal (about 400ms)",
           "default": true
         },
         {
           "number": 2,
-          "name": "soft (about 900 ms)"
+          "name": "soft (about 900ms)"
         },
         {
           "number": 3,
-          "name": "very soft (about 1500 ms)"
+          "name": "very soft (about 1500ms)"
         }
       ],
       "applies_to": null,
@@ -238,24 +238,24 @@
       "values": [
         {
           "number": 1,
-          "name": "5 deg"
+          "name": "5deg"
         },
         {
           "number": 2,
-          "name": "10 deg"
+          "name": "10deg"
         },
         {
           "number": 3,
-          "name": "15 deg",
+          "name": "15deg",
           "default": true
         },
         {
           "number": 4,
-          "name": "20 deg"
+          "name": "20deg"
         },
         {
           "number": 5,
-          "name": "25 deg"
+          "name": "25deg"
         }
       ],
       "applies_to": null,
@@ -291,15 +291,15 @@
         },
         {
           "number": 2,
-          "name": "5 min"
+          "name": "5min"
         },
         {
           "number": 3,
-          "name": "10 min"
+          "name": "10min"
         },
         {
           "number": 4,
-          "name": "15 min"
+          "name": "15min"
         }
       ],
       "applies_to": null,

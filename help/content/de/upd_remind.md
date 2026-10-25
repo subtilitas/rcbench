@@ -14,11 +14,11 @@ Die Erinnerung meldet, dass ein neueres Release der Panel-Firmware auf GitHub li
 |---|---|
 | JETZT NICHT | schließt die Erinnerung bis zum nächsten Start des Panels; Verlassen über den HOME-Tag wirkt genauso |
 | NICHT MEHR ERINNERN | schaltet ERINNERUNG BEIM START aus und fordert das Speichern an; SETUP > UPDATES schaltet sie wieder ein |
-| 2 s HALTEN: LADEN & INSTALLIEREN | dasselbe Halten wie unter [Updates](updates.md#der-download) |
+| 2s HALTEN ZUM LADEN & INSTALLIEREN | dasselbe Halten wie unter [Updates](updates.md#der-download) |
 
 ## Wann die Suche läuft
 
-Mit eingeschalteter Erinnerung und einem gespeicherten Heimnetz sucht das Panel einmal nach jedem Start. Die Suche wartet, bis der Splash vorbei ist, der Prüfstand SAFE, der Netzteilausgang aus, kein Log-Lauf offen, WI-FI geschlossen und kein Update des IOmcu angeboten oder im Gang ist. Findet sie 10 min nach dem Start keinen solchen Moment, läuft sie bei diesem Start nicht.
+Mit eingeschalteter Erinnerung und einem gespeicherten Heimnetz sucht das Panel einmal nach jedem Start. Die Suche wartet, bis der Splash vorbei ist, der Prüfstand SAFE, der Netzteilausgang aus, kein Log-Lauf offen, WI-FI geschlossen und kein Update des IOmcu angeboten oder im Gang ist. Findet sie 10min nach dem Start keinen solchen Moment, läuft sie bei diesem Start nicht.
 
 Die Erinnerung öffnet sich nicht, solange der Prüfstand ARMED ist oder ein Schalten auf ARMED wartet, solange der Netzteilausgang an ist und solange die Frage oder der Fortschritt des IOmcu-Updates zu sehen ist. Sie öffnet sich, sobald diese vorbei sind und das Menü zu sehen ist.
 

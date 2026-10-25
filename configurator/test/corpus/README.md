@@ -32,14 +32,14 @@ Entries by name:
 | `bad-cut-` | 14 | A link cut short. |
 | `bad-version-` | 19 | Another version, no version, the version twice. 1 of them, the key `h` without a version, is added after the start. |
 | `bad-id-` | 31 | Unknown ids, ids of the wrong kind, ids in upper case. 8 of them are added after the start: 6 for the key `h` (an unknown row, a row of another variant, of a part outside the setup, of an owned part, of a part the visitor brings, and malformed tokens), 2 for the key `m` (values the page does not offer, a value twice). |
-| `bad-limit-` | 7 | 64 and 65 ids, 2000 and 2001 characters, 3 hashes of 64 kB. |
+| `bad-limit-` | 7 | 64 and 65 ids, 2000 and 2001 characters, 3 hashes of 64kB. |
 | `bad-percent-` | 20 | Percent-encoding: encoded separators, broken escapes, a byte that is no UTF-8, a plus sign. |
 | `bad-shape-` | 20 | Input that is no key-value list: script text, repeated separators, other separators. |
 
 Every malformed entry gives a setup without an exception. An entry whose hash
 carries no readable selection gives the base setup.
 
-A hash of 64 kB is stored as a recipe `{ prefix, unit, count, suffix }`.
+A hash of 64kB is stored as a recipe `{ prefix, unit, count, suffix }`.
 
 ## Rules
 

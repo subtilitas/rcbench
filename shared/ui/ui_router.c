@@ -1,9 +1,14 @@
-/*
+/**
+ * @file
+ * @brief The screen router: the band, the alert band, and the touches between
+ * them and the screens.
+ *
  * SPDX-License-Identifier: MIT
  */
 
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
+#include "files_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
@@ -28,16 +33,16 @@
 #include "ui_watermark.h"
 #include "ui_widgets.h"
 
-#define PANEL_W 800
-#define PANEL_H 480
+#define PANEL_W UI_PANEL_W
+#define PANEL_H UI_PANEL_H
 #define ALERT_H UI_ALERT_H    /* the alert band, across the bottom */
 
 static struct {
     ui_screen_id_t    current;
     /* The screen that opened one with two openers, for its home tag;
-     * SCREEN_COUNT until one has.  One field for WI-FI and OUTPUTS: only
-     * the screen on top reads it, and entering either from an opener sets
-     * it. */
+     * SCREEN_COUNT until one has.  One field for WI-FI, FILES and OUTPUTS:
+     * only the screen on top reads it, and entering one from an opener
+     * sets it. */
     ui_screen_id_t    opener;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
@@ -81,6 +86,16 @@ static struct {
     gfx_rect_t     help_rect;
 
     /*
+     * What each framebuffer holds of the band: ui_band_key() of the band
+     * it last drew, valid where band_drawn has the buffer's bit.  The band
+     * is drawn whole in 102,288 pixel visits SAFE and 114,281 ARMED
+     * (test_frame_work) and changes once a second while the bench runs,
+     * so a frame repaints it only when it changed in that buffer.
+     */
+    uint32_t band_key[2];   /**< ui_band_key() of each buffer's band */
+    uint8_t  band_drawn;    /**< the buffers whose band_key holds, a bit each */
+
+    /*
      * The contacts the screen on top owns: each one whose DOWN it was
      * handed, with the last point it was handed, in panel coordinates.  A
      * screen is handed a MOVE or an UP only for a contact in this table, so
@@ -99,8 +114,9 @@ static bool has_band(ui_screen_id_t id);
 /*
  * The screens with more than one opener, each opener on a row of its own.
  * The home tag of such a screen returns to the one that opened it: WI-FI
- * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, OUTPUTS from
- * the TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
+ * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, FILES from
+ * LOGS' FILES button and from SETUP's FILES tile, OUTPUTS from the TARGET
+ * rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
  */
 static const struct {
     ui_screen_id_t screen;
@@ -108,6 +124,8 @@ static const struct {
 } k_openers[] = {
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_WIFI,    SCREEN_SETUP },
+    { SCREEN_FILES,   SCREEN_LOGS },
+    { SCREEN_FILES,   SCREEN_SETUP },
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
@@ -144,6 +162,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_COPROC_UPDATE: return coproc_update_screen();
     case SCREEN_UPDATES:  return upd_screen();
     case SCREEN_UPD_REMIND: return upd_remind_screen();
+    case SCREEN_FILES:    return files_screen();
     default:              return overview_screen();
     }
 }
@@ -217,6 +236,7 @@ uint32_t ui_router_dispatched(void) { return s.dispatched; }
 
 void ui_router_invalidate(void)
 {
+    s.band_drawn = 0u;
     splash_invalidate();
     overview_invalidate();
     motor_invalidate();
@@ -234,6 +254,7 @@ void ui_router_invalidate(void)
     wifi_screen_invalidate();
     update_screen_invalidate();
     upd_screen_invalidate();
+    files_screen_invalidate();
 }
 
 static void clear_alert(void)
@@ -760,36 +781,51 @@ const char *ui_router_alert(void)
     return s.has_held ? s.held : NULL;
 }
 
-/* The alert's text: 94 cells from x 12, clear of the "x" at x 780.  Text
- * wider than one line breaks at a space onto a second, 16 px under the
- * first: two rows of the 8x16 face fill 32 of the band's 34 px. */
+/* The alert's text, in UI_FONT_BAND (10 x 20): from x 12, the panel's width
+ * less 12px at the left and 36px at the right, which clears the "x"
+ * (976px, 97 cells of 10px, on the 1024px panel).  Text wider than one
+ * line breaks at a space onto a second, 20px under the first: two rows
+ * fill 40 of the band's 44px, 2px from its top. */
+/** @brief The alert text's left edge: 12px. */
 #define ALERT_TEXT_X 12
-#define ALERT_TEXT_W (94 * 8)
-#define ALERT_PITCH  16
+/** @brief The alert text's width: 976px, 97 cells, clear of the "x". */
+#define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
+/** @brief An alert row to the next: 20px. */
+#define ALERT_PITCH  20
+/** @brief The alert's face: 10 x 20px. */
+#define ALERT_FONT   UI_FONT_BAND
 
 int ui_router_alert_rows(const char *text)
 {
     return ui_text_wrap(NULL, gfx_rect_make(ALERT_TEXT_X, 0, ALERT_TEXT_W,
                                             ALERT_PITCH),
-                        ALERT_PITCH, text, &gfx_font_8x16, 0);
+                        ALERT_PITCH, text, ALERT_FONT, 0);
 }
 
+/**
+ * @brief Draw the alert band across the bottom of the panel.
+ * @param c        The canvas, the panel's.
+ * @param text     The alert, on one row centred or on two from the top.
+ * @param closable A tap closes it: the "x" at its right end shows.
+ */
 static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
     const int y = PANEL_H - ALERT_H;
+    /* One row centred in the band's height. */
+    const int y1 = y + (ALERT_H - gfx_text_height(ALERT_FONT, 1)) / 2;
     gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, ui_theme_color(UI_C_DANGER));
     if (ui_router_alert_rows(text) <= 1) {
-        gfx_text(c, ALERT_TEXT_X, y + 9, text, &gfx_font_8x16,
+        gfx_text(c, ALERT_TEXT_X, y1, text, ALERT_FONT,
                  ui_theme_color(UI_C_TEXT), 1);
     } else {
-        (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 1, ALERT_TEXT_W,
+        (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 2, ALERT_TEXT_W,
                                             ALERT_PITCH),
-                           ALERT_PITCH, text, &gfx_font_8x16,
+                           ALERT_PITCH, text, ALERT_FONT,
                            ui_theme_color(UI_C_TEXT));
     }
     if (closable) {
-        gfx_text(c, PANEL_W - 12 - 8, y + 9, "x", &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT), 1);
+        gfx_text(c, PANEL_W - 12 - gfx_text_width(ALERT_FONT, "x", 1), y1,
+                 "x", ALERT_FONT, ui_theme_color(UI_C_TEXT), 1);
     }
 }
 
@@ -801,6 +837,10 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     }
 
     if (!has_band(s.current)) {
+        /* The screen draws where the band goes: this buffer has no band
+         * any more, for when the band comes back on the same screen (the
+         * IOmcu update's question after its progress). */
+        s.band_drawn &= (uint8_t)~(1u << ((unsigned)buffer_index & 1u));
         scr->render(c, buffer_index);
         if (s.status.simulated) {
             ui_watermark(c);
@@ -808,10 +848,27 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         return;
     }
 
-    ui_band_render(c, ui_router_title(s.current), has_home(s.current),
-                   &s.status, s.band_press && s.on_stop,
-                   s.band_press && !s.on_stop
-                   && s.on_chip == UI_BAND_CHIP_NONE);
+    /*
+     * The band when it changed in this buffer, or the buffer has not got
+     * it.  Over a simulated bench the watermark is laid over it every
+     * frame, so it is drawn every frame, as the screens under it are.
+     */
+    {
+        const char *title = ui_router_title(s.current);
+        const bool home = has_home(s.current);
+        const bool stop_down = s.band_press && s.on_stop;
+        const bool home_down = s.band_press && !s.on_stop
+                               && s.on_chip == UI_BAND_CHIP_NONE;
+        const unsigned buf = (unsigned)buffer_index & 1u;
+        const uint32_t key = ui_band_key(title, home, &s.status, stop_down,
+                                         home_down);
+        if (s.status.simulated || (s.band_drawn & (1u << buf)) == 0u
+            || s.band_key[buf] != key) {
+            ui_band_render(c, title, home, &s.status, stop_down, home_down);
+            s.band_key[buf] = key;
+            s.band_drawn |= (uint8_t)(1u << buf);
+        }
+    }
 
     /*
      * The bubble as this frame draws it.  One that closed, moved or changed
@@ -835,8 +892,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      * A sub-canvas clipped to the body, so a screen cannot draw over the band
      * or STOP whatever offsets it uses.
      */
-    const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W,
-                              (int16_t)(PANEL_H - UI_BAND_H) };
+    const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W, UI_BODY_H };
     gfx_canvas_t sub;
     if (gfx_canvas_sub(c, body, &sub)) {
         scr->render(&sub, buffer_index);

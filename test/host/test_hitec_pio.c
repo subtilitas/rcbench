@@ -24,9 +24,9 @@
  * the servo sends.
  *
  * Under test:
- *  - the transmit: every bit is 16 cycles on a grid; classic at 572.9 us
+ *  - the transmit: every bit is 16 cycles on a grid; classic at 572.9us
  *    start to start, released at the start of the last stop bit, never
- *    driven high; the D series driven low 88 us first, back to back, its
+ *    driven high; the D series driven low 88us first, back to back, its
  *    last stop bit sent, released one bit later; push-pull driving both
  *    levels; the bytes on the wire are the frame;
  *  - the receive: the bytes of a reply, each start bit stamped within one
@@ -107,14 +107,14 @@ TEST_CASE(a_classic_command_is_16_cycles_a_bit_and_never_drives_high)
     ext_clear(true);                         /* the servo holds it high */
     CHECK(transact(150000000u, HITEC_DRIVE_OPEN_DRAIN, &x, 2, 0));
     CHECK(m.finished);
-    /* 150 MHz: 488.28125 system cycles a state machine cycle, exactly. */
+    /* 150MHz: 488.28125 system cycles a state machine cycle, exactly. */
     CHECK_EQ(clk.div256, 125000u);
     CHECK_EQ(clk.err_ppm, 0u);
     CHECK_EQ(hitec_pio_bit_ns(&clk), 52083u);
     CHECK(!pad_ever_high(0));
     CHECK_EQ(wire_bytes(0, m.release + 16u, false, got, at, 8), 4u);
     CHECK(memcmp(got, want, 4) == 0);
-    /* 11 bit times start to start: 572.9 us. */
+    /* 11 bit times start to start: 572.9us. */
     for (unsigned i = 1; i < 4u; ++i) {
         CHECK_EQ(at[i] - at[i - 1u], 176u);
     }
@@ -125,7 +125,7 @@ TEST_CASE(a_classic_command_is_16_cycles_a_bit_and_never_drives_high)
     CHECK_EQ(m.release - at[3], 9u * 16u);
     CHECK_EQ(pad_at(&m, m.release), -1);
     CHECK_EQ(next_dir(m.release, true), 0u);
-    /* No reply: the window's waiting, 1.5 ms, and the machine waits again. */
+    /* No reply: the window's waiting, 1.5ms, and the machine waits again. */
     CHECK_EQ(run.window_ticks, 231u);
     CHECK_NEAR(cyc_ns(2u * run.window_ticks), 1.5e6, cyc_ns(2));
     CHECK_EQ(m.end - m.release, 2u * run.window_ticks + 5u + HITEC_PIO_DRAIN_CYCLES);
@@ -190,7 +190,7 @@ TEST_CASE(a_start_bit_at_any_phase_of_the_sampling_is_stamped_within_a_cycle)
     hitec_xfer_t x;
 
     hitec_c_xfer(HITEC_C_READ_EEPROM, 0x00, 0x00, &x);
-    /* A cycle is 3.255 us at 150 MHz; 0 to 7 us in 0.4 us walks both
+    /* A cycle is 3.255us at 150MHz; 0 to 7us in 0.4us walks both
      * cycles of the 2-cycle sampling and the 1-cycle step into it. */
     for (double shift = 0.0; shift < 7000.0; shift += 400.0) {
         hitec_capture_t cap;
@@ -234,8 +234,8 @@ TEST_CASE(a_d_read_drives_low_88_us_then_sends_back_to_back_and_releases)
         CHECK_EQ(at[i] - at[i - 1u], 160u);   /* back to back */
     }
     check_grid(at[0], at[0], m.release);
-    /* Driven low for 88 us or more before the first start bit.  The 13
-     * bit times that pad the front of the stream make it 117 us here: the
+    /* Driven low for 88us or more before the first start bit.  The 13
+     * bit times that pad the front of the stream make it 117us here: the
      * lead's fixed 8 cycles and 208. */
     first_drive = next_dir(0, true);
     CHECK(first_drive > 0u);
@@ -249,7 +249,7 @@ TEST_CASE(a_d_read_drives_low_88_us_then_sends_back_to_back_and_releases)
     CHECK_EQ(pad_at(&m, last_drive_end), -1);
     CHECK_EQ(m.release, last_drive_end + 16u);
     CHECK_EQ(next_dir(last_drive_end, true), 0u);
-    /* Nothing came: the window's 25 ms of waiting. */
+    /* Nothing came: the window's 25ms of waiting. */
     CHECK_EQ(m.end - m.release, 2u * run.window_ticks + 5u + HITEC_PIO_DRAIN_CYCLES);
     CHECK_NEAR(cyc_ns(2u * run.window_ticks), 25e6, cyc_ns(2));
 }
@@ -264,7 +264,7 @@ TEST_CASE(a_d_answer_is_taken_with_the_byte_after_it_and_decodes)
 
     hitec_d_read_xfer(0x00, 0x0C, &x);
     memset(&m, 0, sizeof(m));
-    /* 6.46 ms from the end of the request, as on the bench. */
+    /* 6.46ms from the end of the request, as on the bench. */
     d_answer(6461000.0 - settle, a, sizeof(a));
     CHECK(transact(150000000u, HITEC_DRIVE_OPEN_DRAIN, &x, 8, 0));
     CHECK_EQ(m.n_rx, 8u);
@@ -414,7 +414,7 @@ TEST_CASE(a_listen_without_an_answer_never_drives)
     CHECK_EQ(cap.answered, 0);
     check_at(cap.byte[0].at_ns, 12000.0);
     check_at(cap.byte[1].at_ns, 3000000.0);
-    /* The window counts the waiting only: 500 ms and the 2 bytes, then
+    /* The window counts the waiting only: 500ms and the 2 bytes, then
      * the drain. */
     CHECK_NEAR(cyc_ns(m.end - m.release),
                500e6 + 2 * cyc_ns(157) + cyc_ns(HITEC_PIO_DRAIN_CYCLES),
@@ -427,7 +427,7 @@ TEST_CASE(a_level_holds_the_line_for_its_time_then_releases)
     uint64_t on;
     uint64_t off;
 
-    /* The classic probe: 6.7 ms low. */
+    /* The classic probe: 6.7ms low. */
     CHECK(hitec_level_xfer(HITEC_CLASSIC, 0, 6700u, &x));
     memset(&m, 0, sizeof(m));
     ext_clear(true);
@@ -641,7 +641,7 @@ TEST_CASE(other_system_clocks_give_the_bit_within_0_05_percent)
     check_clock_runs(200000000u);
     check_clock_runs(48000000u);
     check_clock_runs(12000000u);
-    CHECK_EQ(clk.div256 >> 8, 6u);          /* D series at 12 MHz: 6.51 */
+    CHECK_EQ(clk.div256 >> 8, 6u);          /* D series at 12MHz: 6.51 */
     check_clock_runs(2000000u);             /* classic only */
     CHECK(!hitec_pio_clock(2000000u, HITEC_D, &clk));
 }
@@ -669,7 +669,7 @@ TEST_CASE(a_clock_below_4_cycles_a_state_machine_cycle_is_refused)
     CHECK(hitec_pio_clock(low, HITEC_D, &c));
     CHECK_EQ(c.div256, 4u * 256u);
     CHECK(!hitec_pio_clock(low - 1u, HITEC_D, &c));
-    /* Every clock above gives the bit within 489 ppm. */
+    /* Every clock above gives the bit within 489ppm. */
     for (uint32_t hz = low; hz < 400000000u; hz = hz + hz / 97u + 13u) {
         CHECK(hitec_pio_clock(hz, HITEC_D, &c));
         CHECK(c.err_ppm <= 489u);
@@ -719,28 +719,28 @@ TEST_CASE(the_stream_pads_its_front_to_a_word_and_refuses_what_it_cannot_run)
     hitec_d_read_xfer(0x00, 0x0C, &x);
     n = hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run);
     CHECK_EQ(n, 7u);
-    /* 51 bit times, 13 in front: 216 cycles, more than the 162 of 88 us,
+    /* 51 bit times, 13 in front: 216 cycles, more than the 162 of 88us,
      * so no count. */
     CHECK_EQ(w[2], 64u);
     CHECK_EQ(w[0] & 3u, 2u);                 /* low and driven */
     CHECK_EQ(w[0] >> 2, 0u);
     CHECK_EQ(w[1], run.window_ticks);
-    CHECK_EQ(run.window_ticks, 23041u);      /* 25 ms in 1/8 bits */
+    CHECK_EQ(run.window_ticks, 23041u);      /* 25ms in 1/8 bits */
     /* A write: 71 bit times, 9 in front, 152 cycles; the count makes up
-     * the 11 to 163, 88 us rounded up, in steps of 2: 164 cycles,
-     * 88.97 us. */
+     * the 11 to 163, 88us rounded up, in steps of 2: 164 cycles,
+     * 88.97us. */
     hitec_d_write_xfer(0x00, 0x46, 1, &x);
     CHECK_EQ(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run), 8u);
     CHECK_EQ(w[2], 80u);
     CHECK_EQ(w[0] >> 2, 6u);
     CHECK_NEAR((double)run.lead_ns, cyc_ns(2u * 6u + 8u + 80u * 16u), 1.0);
     /* lead_ns, the lead's first edge to the release: the lead and every
-     * bit time.  705,283 ns, as docs/BenchConsole.md gives it. */
+     * bit time.  705,283ns, as docs/BenchConsole.md gives it. */
     CHECK_EQ(run.lead_ns, 705283u);
     hitec_d_read_xfer(0x00, 0x0C, &x);
     CHECK_EQ(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run), 7u);
-    /* A read: 117.2 us of lead, 50 bit times of bytes and 1 released, the
-     * 559,886 ns the station's console reported and the docs give. */
+    /* A read: 117.2us of lead, 50 bit times of bytes and 1 released, the
+     * 559,886ns the station's console reported and the docs give. */
     CHECK_NEAR((double)run.lead_ns, cyc_ns(8u + 64u * 16u), 1.0);
     CHECK_EQ(run.lead_ns, 559886u);
     CHECK_EQ(run.max_rx, 8u);
@@ -913,7 +913,7 @@ TEST_CASE(the_span_covers_every_run_of_the_model)
         CHECK(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run) > 0u);
         CHECK(run.span_us >= 2u * HITEC_TIME_MAX_US);
         CHECK(run.span_us < 2u * HITEC_TIME_MAX_US + 2000u);
-        /* At 1.2282 MHz, the lowest clock classic takes, too. */
+        /* At 1.2282MHz, the lowest clock classic takes, too. */
         hitec_c_xfer(HITEC_C_READ_EEPROM, 0x05, 0x00, &x);
         x.lead_us = HITEC_TIME_MAX_US;
         x.window_us = HITEC_TIME_MAX_US;

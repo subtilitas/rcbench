@@ -35,27 +35,29 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
+#include "motor_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 #define P(y) (UI_BAND_H + (y))
 
-/* Mirrored from motor_screen_int.h and ui_workbench.h: the strip's tabs,
- * 112 px a tab 4 px apart from x 9, 24 px high from y 6; the CONTROL
- * card's TARGET row and ARM; the keypad's area over the page and the
- * strip. */
-#define TAB_Y       P(6 + 12)
-#define TAB_X(i)    (9 + (i) * 116 + 56)
-#define TARGET_X    700
-#define TARGET_Y    P(309)
-#define ARM_X       676
-#define ARM_Y       P(342)
-#define TRACK_X     72
-#define TRACK_Y     P(356)
-#define KP_AREA     ((gfx_rect_t){ 6, 3, 546, 423 })
-/* LIVE's views, PLOT and TABLE, under the strip. */
-#define TABLE_X     99
-#define TABLE_Y     P(45)
+/* From motor_spots.h: the strip's tabs, 150px a tab 4px apart from x 9,
+ * 40px high from y 8; the CONTROL card's TARGET row and ARM; the keypad's
+ * area over the page and the strip. */
+#define TAB_Y       P(MO_TAB_Y)
+#define TAB_X(i)    MO_TAB_X(i)
+#define TARGET_X    MO_TARGET_X
+#define TARGET_Y    P(MO_TARGET_Y)
+#define ARM_X       MO_ARM_X
+#define ARM_Y       P(MO_ARM_Y)
+#define TRACK_X     MO_TRACK_X
+#define TRACK_Y     P(MO_TRACK_Y)
+#define KP_AREA     ((gfx_rect_t){ UI_MARGIN, 3, 620, UI_BODY_H - 3 - UI_MARGIN })
+/* SETTINGS' save line, 4px above the alert band (motor_settings_page.c). */
+#define SAVE_LINE_Y MO_SAVE_LINE_Y
+/* LIVE's views, PLOT and TABLE, in the telemetry card. */
+#define TABLE_X     MO_TABLE_TAB_X
+#define TABLE_Y     P(MO_PANE_Y)
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -393,10 +395,11 @@ TEST_CASE(the_settings_rows_are_esc_bench_under_three_headings)
 }
 
 /*
- * Every row fits its columns in both languages: the label 16 cells, the
- * help (or the lock's reason) 36, the value with its unit the box's 11 at
- * the setting's minimum and maximum.  The boxes stand apart, inside the
- * page, above the save line.
+ * Every row fits its column in both languages: the label 16 cells of 10px
+ * left of the 120px box, the help (or the lock's reason) 36 cells of 8px
+ * under them, the value with its unit the box's 11 at the setting's minimum
+ * and maximum.  The boxes are a finger tall, stand apart, inside the page,
+ * above the save line, which ends above the alert band.
  */
 TEST_CASE(every_row_fits_its_columns_in_both_languages)
 {
@@ -421,13 +424,18 @@ TEST_CASE(every_row_fits_its_columns_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
     for (int i = 0; i < n; ++i) {
         const gfx_rect_t a = motor_settings_box(i);
-        CHECK(a.x >= 6 && a.x + a.w <= 6 + 546);
-        CHECK(a.y >= 38 && a.y + a.h <= 432 - 6 - 24);
-        if (i > 0) {
-            const gfx_rect_t b = motor_settings_box(i - 1);
-            CHECK(a.y >= b.y + b.h + 4);
+        CHECK(a.x >= UI_MARGIN + 10 + 16 * 10 && a.x + a.w <= UI_MARGIN + 620);
+        CHECK(a.w >= 11 * 10 && a.h >= UI_TAP_MIN);
+        /* The box and its help line under it end over the save line. */
+        CHECK(a.y >= 56 && a.y + a.h + 2 + 16 <= SAVE_LINE_Y);
+        for (int k = 0; k < i; ++k) {
+            const gfx_rect_t b = motor_settings_box(k);
+            const bool apart = a.x >= b.x + b.w + 8 || b.x >= a.x + a.w + 8
+                               || a.y >= b.y + b.h + 4 || b.y >= a.y + a.h + 4;
+            CHECK(apart);
         }
     }
+    CHECK(SAVE_LINE_Y + 20 <= UI_ALERT_Y - UI_BAND_H - 4);
 }
 
 /*
@@ -605,7 +613,7 @@ TEST_CASE(the_pulse_rows_change_on_a_safe_bench_only)
 }
 
 /*
- * ARM held locks the pulse rows too.  An endpoint edit waits 300 ms before
+ * ARM held locks the pulse rows too.  An endpoint edit waits 300ms before
  * it goes to the IOmcu and the switch to ARMED sends no CHAN_CFG, so an OK
  * under a held ARM could be overtaken by the arm.  OK on an open keypad
  * while ARM is down changes nothing, the next frame closes the keypad, and
@@ -822,7 +830,7 @@ TEST_CASE(the_save_line_follows_the_store)
     gfx_color_t before[24 * 120];
     for (int y = 0; y < 24; ++y) {
         for (int x = 0; x < 120; ++x) {
-            before[y * 120 + x] = fb[(size_t)P(402 + y) * W + 16 + x];
+            before[y * 120 + x] = fb[(size_t)P(SAVE_LINE_Y + y) * W + UI_MARGIN + 10 + x];
         }
     }
     CHECK(settings_save_tick(true));
@@ -830,7 +838,7 @@ TEST_CASE(the_save_line_follows_the_store)
     int differ = 0;
     for (int y = 0; y < 24; ++y) {
         for (int x = 0; x < 120; ++x) {
-            differ += before[y * 120 + x] != fb[(size_t)P(402 + y) * W + 16 + x];
+            differ += before[y * 120 + x] != fb[(size_t)P(SAVE_LINE_Y + y) * W + UI_MARGIN + 10 + x];
         }
     }
     CHECK(differ > 0);
@@ -887,6 +895,10 @@ TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
     CHECK_STR_EQ(line, "DSHOT300 GP0 +1");
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
                                  true, 26u));
+    CHECK_STR_EQ(line, "DSHOT300 GP0 PORT 2");
+    /* In the CONTROL card's 25 cells both are named. */
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
+                                 true, 25u));
     CHECK_STR_EQ(line, "DSHOT300 GP0 PORT 2");
     /* Another rate: MIXED. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600, 1u,

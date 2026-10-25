@@ -1,5 +1,6 @@
-/*
- * Futaba S.BUS: sixteen channels in twenty-five bytes.
+/**
+ * @file
+ * @brief Futaba S.BUS: sixteen channels in twenty-five bytes.
  *
  * Implements the S.BUS receiver protocol of Futaba.  Futaba and S.BUS are
  * names or trademarks of their respective owners; they are used here only to
@@ -15,8 +16,8 @@
  * a decoder that trusts it locks onto the middle of a frame and reports
  * sixteen plausible channels that are all wrong.
  *
- * The frame boundary is the gap.  Frames arrive every 7 ms or 14 ms and take
- * 3 ms to send, so there are at least 4 ms of silence between them, against
+ * The frame boundary is the gap.  Frames arrive every 7ms or 14ms and take
+ * 3ms to send, so there are at least 4ms of silence between them, against
  * 120 microseconds between bytes within one.  The decoder is fed a timestamp
  * per byte and frames on that gap; the header and footer confirm.
  *
@@ -38,52 +39,60 @@
 extern "C" {
 #endif
 
-#define SBUS_FRAME_BYTES 25u
-#define SBUS_HEADER      0x0Fu
-#define SBUS_CHANNELS    16u
+/** @brief Frame layout: byte count, header byte and channel count. */
+#define SBUS_FRAME_BYTES 25u   /**< bytes per frame, header to footer */
+#define SBUS_HEADER      0x0Fu /**< first byte of every frame */
+#define SBUS_CHANNELS    16u   /**< channels per frame */
 
-/** Raw channel range: eleven bits. */
+/** @brief Raw channel range: eleven bits. */
 #define SBUS_RAW_MIN 0u
 #define SBUS_RAW_MAX 2047u
 
-/*
- * The two ends of the range a transmitter at its endpoints actually sends,
- * and what they mean in microseconds.  Not the raw limits: 172 and 1811 are
- * what the protocol settled on, and a receiver can send outside them.
+/**
+ * @brief The two ends of the range a transmitter at its endpoints actually
+ *        sends, and what they mean in microseconds.
+ *
+ * Not the raw limits: 172 and 1811 are what the protocol settled on, and a
+ * receiver can send outside them.
  */
-#define SBUS_RAW_1000US 172u
-#define SBUS_RAW_2000US 1811u
+#define SBUS_RAW_1000US 172u  /**< raw value of a 1000us pulse */
+#define SBUS_RAW_2000US 1811u /**< raw value of a 2000us pulse */
 
 /**
- * Silence that means a frame boundary.
+ * @brief Silence that means a frame boundary.
  *
  * Bytes within a frame are 120 microseconds apart at 100 kbaud 8E2; frames are
- * at least 4 ms apart. Two milliseconds sits clear of both, so it cannot split
+ * at least 4ms apart. Two milliseconds sits clear of both, so it cannot split
  * a frame and cannot join two.
  */
 #define SBUS_GAP_US 2000u
 
-/** Flag bits in byte 23. */
-#define SBUS_FLAG_CH17       0x01u
-#define SBUS_FLAG_CH18       0x02u
-#define SBUS_FLAG_FRAME_LOST 0x04u
-#define SBUS_FLAG_FAILSAFE   0x08u
+/** @brief Flag bits in byte 23. */
+#define SBUS_FLAG_CH17       0x01u /**< digital channel 17 */
+#define SBUS_FLAG_CH18       0x02u /**< digital channel 18 */
+#define SBUS_FLAG_FRAME_LOST 0x04u /**< frame did not arrive intact */
+#define SBUS_FLAG_FAILSAFE   0x08u /**< receiver is in failsafe */
 
+/** @brief One decoded S.BUS frame. */
 typedef struct {
     uint16_t channel[SBUS_CHANNELS]; /**< 0..2047, as sent */
     bool     ch17;                   /**< the two digital channels */
     bool     ch18;
-    /** This frame did not arrive intact at the receiver. */
+    /** @brief This frame did not arrive intact at the receiver. */
     bool     frame_lost;
-    /** The receiver has lost the transmitter and is generating these values. */
+    /**
+     * @brief The receiver has lost the transmitter and is generating these
+     *        values.
+     */
     bool     failsafe;
 } sbus_frame_t;
 
+/** @brief Decoder state for one S.BUS byte stream. */
 typedef struct {
-    uint8_t  buf[SBUS_FRAME_BYTES];
-    uint8_t  len;
-    uint32_t last_byte_us;
-    bool     have_time;
+    uint8_t  buf[SBUS_FRAME_BYTES]; /**< bytes of the frame being collected */
+    uint8_t  len;                   /**< bytes held in buf */
+    uint32_t last_byte_us;          /**< arrival time of the last byte, in us */
+    bool     have_time;             /**< true once last_byte_us is set */
 
     /* Diagnostics, for the analyser view. */
     uint32_t frames;
@@ -91,19 +100,36 @@ typedef struct {
     uint32_t bad_footer;    /**< right length, right header, wrong tail */
 } sbus_decoder_t;
 
+/**
+ * @brief Clear a decoder, including its diagnostic counters.
+ *
+ * @param d  Decoder to clear.  NULL is ignored.
+ */
 void sbus_decoder_reset(sbus_decoder_t *d);
 
 /**
- * Feed one byte with the time it arrived; true when @p out holds a frame.
+ * @brief Feed one byte with the time it arrived; true when @p out holds a
+ *        frame.
  *
  * @p now_us paces the framing.  A gap of SBUS_GAP_US or more starts a new
  * frame, whatever was half-collected before it; the gap is the only reliable
  * boundary this protocol has.
+ *
+ * @param d       Decoder state.  NULL returns false.
+ * @param byte    Received byte.
+ * @param now_us  Arrival time of the byte, in us.
+ * @param out     Receives the frame; may be NULL.
+ * @return true when a frame with a valid footer completes.
  */
 bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
                       sbus_frame_t *out);
 
-/** Microseconds for a raw channel value, clamped to a sane pulse. */
+/**
+ * @brief Microseconds for a raw channel value, clamped to a sane pulse.
+ *
+ * @param raw  Raw channel value.
+ * @return Pulse width in us, clamped to 800 to 2200.
+ */
 uint16_t sbus_to_us(uint16_t raw);
 
 #ifdef __cplusplus

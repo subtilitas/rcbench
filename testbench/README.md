@@ -37,13 +37,13 @@ Seven things the tree does that only an instrument can confirm:
 
 | | What is claimed | What has to be seen |
 |---|---|---|
-| DShot | 300 and 600 kbit/s, bit 0 is 37% high and bit 1 is 75% | the actual high time of each bit, against an ESC's tolerance rather than the specification |
-| Bidirectional DShot | the ESC replies at five quarters of the wire rate after a turnaround | the turnaround delay, and whether 30 µs is what a real ESC waits |
-| PPM (pulse position modulation) | 8 channels in a 25,000 µs frame at 40 Hz, direct memory access ring | the frame geometry with the ring running, and the gap between repeats |
-| Servo PWM (pulse-width modulation) | 50 Hz, 500 to 2500 µs, 1 µs resolution | the frame period, the pulse at both ends of travel, and the jitter |
-| SBUS | inverted serial, 100 kbit/s, 25 bytes | the framing, and what the panel makes of a receiver in failsafe |
+| DShot | 300 and 600kbit/s, bit 0 is 37% high and bit 1 is 75% | the actual high time of each bit, against an ESC's tolerance rather than the specification |
+| Bidirectional DShot | the ESC replies at five quarters of the wire rate after a turnaround | the turnaround delay, and whether 30µs is what a real ESC waits |
+| PPM (pulse position modulation) | 8 channels in a 25,000µs frame at 40Hz, direct memory access ring | the frame geometry with the ring running, and the gap between repeats |
+| Servo PWM (pulse-width modulation) | 50Hz, 500 to 2500µs, 1µs resolution | the frame period, the pulse at both ends of travel, and the jitter |
+| SBUS | inverted serial, 100kbit/s, 25 bytes | the framing, and what the panel makes of a receiver in failsafe |
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
-| KST wire | Manchester coding, half-cell 25.4 µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600 µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
+| KST wire | Manchester coding, half-cell 25.4µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
 
 The four ESC protocols and one servo protocol of the modelled programming
 tables are not on this list. The panel holds them as data and has no
@@ -96,7 +96,7 @@ captures.** Measured on the bench host on 2026-09-09, with the distribution's
 | --- | --- |
 | `ldd /opt/sigrok/bin/sigrok-cli` | `libsigrok.so.4 => /opt/sigrok/lib/libsigrok.so.4` |
 | scan | `kingst-la2016:conn=1.5 - Kingst LA2016 with 18 channels: CH0..CH15 PWM1 PWM2` |
-| capture | 948 lines from 1000 samples at 1 MHz |
+| capture | 948 lines from 1000 samples at 1MHz |
 
 The runpath decides against Debian's library on the default search path, which
 is the whole reason for the `/opt` prefix.
@@ -111,52 +111,52 @@ as a working instrument.
 
 Two readings that are not faults and are not explained here:
 
-A capture returns more than it is asked for. 1000 samples at 1 MHz returned
+A capture returns more than it is asked for. 1000 samples at 1MHz returned
 3746 bits per channel across 59 lines. Where the rounding happens is not
 chased. `host/selftest.sh` asks only for at least one line, so this has never
 mattered to it; a recipe that assumes it gets the sample count it asked for
 would be wrong.
 
 **The loop is closed and the analyser measures.** A jumper from `PWM1` to
-`CH0` uses the device's own generator as the source. Sampling at 200 MHz,
+`CH0` uses the device's own generator as the source. Sampling at 200MHz,
 4,000,000 samples per run:
 
 | Commanded | Measured | Error | Duty | Cycles |
 | --- | --- | --- | --- | ---: |
-| 1 kHz | 1000.0 Hz | +0.000% | 50.00% | 19 |
-| 10 kHz | 10000.0 Hz | +0.000% | 50.00% | 199 |
-| 100 kHz | 100000.0 Hz | -0.000% | 50.00% | 2000 |
-| 1 MHz | 1000000.0 Hz | +0.000% | 50.00% | 20008 |
+| 1kHz | 1000.0Hz | +0.000% | 50.00% | 19 |
+| 10kHz | 10000.0Hz | +0.000% | 50.00% | 199 |
+| 100kHz | 100000.0Hz | -0.000% | 50.00% | 2000 |
+| 1MHz | 1000000.0Hz | +0.000% | 50.00% | 20008 |
 
 **Those figures are against the device's own timebase and nothing else.** The
-period standard deviation is 0.0 ns on every run, and that is a tell rather
+period standard deviation is 0.0ns on every run, and that is a tell rather
 than a quality figure: the generator and the sample clock come off the same
 FPGA oscillator, so every period lands on an exact number of samples --
-1 kHz is precisely 200,000 samples at 200 MHz. What is proven is the capture
+1kHz is precisely 200,000 samples at 200MHz. What is proven is the capture
 path, the timing arithmetic and the duty resolution. A wrong crystal cannot be
 detected this way, because both halves would be wrong together. Absolute
 accuracy is untested; it needs an external reference and none has been
 applied. This is the same trap as a decoder written from the specification the
 firmware was written from: agreement for the same wrong reason.
 
-Duty cycle at 100 kHz, which is the half a self-agreeing clock cannot
+Duty cycle at 100kHz, which is the half a self-agreeing clock cannot
 manufacture -- a ratio does not depend on the timebase being right:
 
 | Commanded | Measured | High |
 | --- | --- | --- |
-| 10% | 10.00% | 1000 ns of 10000 ns |
-| 25% | 25.00% | 2500 ns |
-| 50% | 50.00% | 5000 ns |
-| 75% | 75.00% | 7500 ns |
-| 90% | 90.00% | 9000 ns |
+| 10% | 10.00% | 1000ns of 10000ns |
+| 25% | 25.00% | 2500ns |
+| 50% | 50.00% | 5000ns |
+| 75% | 75.00% | 7500ns |
+| 90% | 90.00% | 9000ns |
 
 Two things about driving `PWM1` from `sigrok-cli`, both of which present as
 absent hardware:
 
 `--channel-group PWM1` makes `samplerate` "not applicable", so one invocation
 cannot both set the stimulus and choose a sample rate, and the capture then
-runs at the 200 MHz default without saying so. Setting 1 kHz and capturing a
-0.51 ms window yields one edge on `CH0`, which reads as a dead output and is
+runs at the 200MHz default without saying so. Setting 1kHz and capturing a
+0.51ms window yields one edge on `CH0`, which reads as a dead output and is
 half a period of the default.
 
 The `PWM1` configuration does not survive the invocation. `--set` followed by
@@ -212,8 +212,8 @@ Building it:
              --prefix=/opt/sigrok LDFLAGS=-Wl,-rpath,/opt/sigrok/lib \
         && make -j"$(nproc)" && sudo make install )
 
-The sequence takes about 82 seconds on the bench host: 10 s for the packages,
-72 s cumulative through libsigrok, 82 s through sigrok-cli.
+The sequence takes about 82 seconds on the bench host: 10s for the packages,
+72s cumulative through libsigrok, 82s through sigrok-cli.
 
 **The package list is not tested on a host that has never had sigrok on it.**
 The sequence above has been walked on the bench host, which already carried
@@ -373,7 +373,7 @@ in three ways:
   frame, RXCAN says when it arrived, and the difference between those two is
   the polling interval. The controller's INT pin is not a probe point --
   `firmware/iomcu/src/xl2515.c` writes zero to CANINTE and polls CANINTF, so
-  INT never asserts. With RXCAN, the 1,000 ms host timeout and the 200 ms
+  INT never asserts. With RXCAN, the 1,000ms host timeout and the 200ms
   silence watchdog stop being numbers only the code believes.
 - **Touch becomes something a script can do.** See below; it is the one that
   matters most.
@@ -393,7 +393,7 @@ Proposed channel map, to be checked against the wiring as built:
 | 0 | GP0 output | IOmcu | whatever OUTPUTS binds first |
 | 1 | GP1 output | IOmcu | |
 | 2 | GP2 output | IOmcu | the servo screen's own pin |
-| 3 | heartbeat | panel J8 / GPIO6 to IOmcu GP3 | an edge every 20 ms (40 ms cycle), the safety line |
+| 3 | heartbeat | panel GPIO28 (IO28 of header P3) to IOmcu GP3 | an edge every 20ms (40ms cycle), the safety line |
 | 4 | CAN SCK | IOmcu GP10, pad 14 | the XL2515's SPI clock |
 | 5 | CAN MOSI | IOmcu GP11, pad 15 | |
 | 6 | CAN MISO | IOmcu GP12, pad 16 | with SCK and MOSI, every register the driver writes |
@@ -416,10 +416,10 @@ needs rather than everything at once: an output measurement wants channels 0
 to 3, a link measurement wants 4 to 8, and only a failure that crosses the two
 wants both.
 
-**Levels.** The RP2350 runs at 3.3 V and its pins are not 5 V tolerant.
-Servo and ESC signal lines are commonly 5 V, and a one-wire programming line
+**Levels.** The RP2350 runs at 3.3V and its pins are not 5V tolerant.
+Servo and ESC signal lines are commonly 5V, and a one-wire programming line
 idles high through a pull-up at whatever the device runs at. Anything crossing
-between the 3.3 V island and a 5 V device goes through a level shifter, and
+between the 3.3V island and a 5V device goes through a level shifter, and
 every probe point gets a series resistor so a mistake costs a resistor. The
 analyser's threshold is set per run rather than left where the last run put
 it.
@@ -535,21 +535,21 @@ attachment.
 `host/selftest.sh` reads the same three variables, so the wiring is stated
 once and nothing in the scripts has to know it.
 
-Three wires: SWCLK, SWDIO and ground, and nothing else. The Pi's 3.3 V header
+Three wires: SWCLK, SWDIO and ground, and nothing else. The Pi's 3.3V header
 pin is a regulated output rather than a reference input, so wiring it to a
 target that has its own supply ties two regulators together and back-powers
 one of them. Both boards here are powered already; the Pi contributes the two
 signals and the common ground.
 
-`linuxgpiod` drives the two signals at the Pi's own 3.3 V, which is what the
+`linuxgpiod` drives the two signals at the Pi's own 3.3V, which is what the
 RP2350 expects. A target at another voltage needs a level translator that
 senses the target's rail, not a wire from this header.
 
 There is no clock to set. OpenOCD prints `Note: The adapter "linuxgpiod"
 doesn't support configurable speed` when the driver initialises, so an
 `adapter speed` line is accepted and has no effect. Its
-`interface/raspberrypi5-gpiod.cfg` puts the fixed rate at about 800 kHz for
-SWD writes and 360 kHz for reads; neither is measured on this host.
+`interface/raspberrypi5-gpiod.cfg` puts the fixed rate at about 800kHz for
+SWD writes and 360kHz for reads; neither is measured on this host.
 
 A fixed rate is not the same as a suitable one, and nothing here has driven a
 target to find out. If a flash fails to verify, `adapter speed` is not the
@@ -563,7 +563,7 @@ Two host settings bear on it, both read on the bench host:
   somebody sets it, and setting it does not survive a reboot.
   `host/selftest.sh` prints the policy it finds. OpenOCD's Pi 5 configuration
   warns that under anything but `performance` the first few pulses are clocked
-  as fast as 20 MHz, and asks for:
+  as fast as 20MHz, and asks for:
 
       echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
 
@@ -597,7 +597,10 @@ answers at 0x5D and the injector at 0x14, so nothing on the bus collides.
 (`RCBENCH_TOUCH_INJECTOR` defaults to ON) probes 0x14 once at start-up,
 after it has found the glass. When 0x14 does not answer, the injector is off
 until the next start: 0x14 is not read or probed again, the band never shows
-INJECT, and touch is the glass alone. When 0x14 answers as a GT911, the touch task
+INJECT, and touch is the glass alone. The panel tells the injector by its
+product ID `9INJ`, not by its address (`touch-injector/README.md`): a GT911
+at 0x14 with another product ID is not read. When 0x14 answers as a GT911
+with `9INJ`, the touch task
 reads it every poll after the glass and merges the two
 (`shared/touch/touch_merge.c`):
 
@@ -608,16 +611,16 @@ reads it every poll after the glass and merges the two
 - STOP pressed on the glass during an injected gesture stops the bench. So
   does STOP pressed by the injector.
 - Three failed reads of 0x14 in a row drop the injected contacts. The next
-  read is tried 100 ms later.
+  read is tried 100ms later.
 - Touch counts as seen only while both controllers answer. An injector that
   goes silent ages the touch reading as a silent glass does, and an armed
-  bench goes SAFE at most 700 ms after its last answer: 200 ms until touch
-  reads as lost, then `ARMING_TOUCH_DEAD_MS` (500 ms).
-- 1000 ms after its last answer the injector is detached. Its age no longer
+  bench goes SAFE at most 700ms after its last answer: 200ms until touch
+  reads as lost, then `ARMING_TOUCH_DEAD_MS` (500ms).
+- 1000ms after its last answer the injector is detached. Its age no longer
   counts, the glass alone decides, and the heartbeat comes back. The bench
   stays SAFE until somebody arms it again.
-- A detached injector has its product ID read once every 1000 ms. The first
-  answer re-attaches it, with no contacts down and its age counted again
+- A detached injector has its product ID read once every 1000ms. The first
+  `9INJ` re-attaches it, with no contacts down and its age counted again
   from that answer.
 
 A panel built with `-D RCBENCH_TOUCH_INJECTOR=OFF` compiles none of this
@@ -631,21 +634,21 @@ from the simulator.
 
 Injected coordinates go through the same mapping as the glass's, which
 scales from the resolution the glass reports. They are panel pixels when the
-glass reports 800 x 480; the resolution of the panel's GT911 is not measured.
+glass reports 1024 x 600; the resolution of the panel's GT911 is not measured.
 
-A recipe says "press at (612, 396), hold 2.1 s, release" and the panel
+A recipe says "press at (612, 396), hold 2.1s, release" and the panel
 handles it as a finger. With the
 analyser on the heartbeat and the output pin at the same time, one capture
 holds the gesture and what the bench did about it:
 
 | Gesture the recipe drives | What the capture has to show |
 |---|---|
-| hold 2.1 s on ARM | the output starts driving, and not before 2.0 s |
-| hold 1.9 s and release | nothing drives |
+| hold 2.1s on ARM | the output starts driving, and not before 2.0s |
+| hold 1.9s and release | nothing drives |
 | hold, slide off the button, hold | nothing drives |
 | second contact lands, first leaves | nothing drives |
-| STOP while a hold is running | the heartbeat stops being asserted within 150 ms |
-| the injector stops answering | the bench goes SAFE within 700 ms, and the far end fails safe |
+| STOP while a hold is running | the heartbeat stops being asserted within 150ms |
+| the injector stops answering | the bench goes SAFE within 700ms, and the far end fails safe |
 
 The host suite checks that bound (`test_touch_merge`); here it is a wire
 going quiet on purpose.
@@ -695,7 +698,7 @@ controller that has crashed or lost power leaves both boards alone.
 
 What that makes possible:
 
-- **A cold start on demand.** The link-silent fault, the 1.6 s splash hold, the
+- **A cold start on demand.** The link-silent fault, the 1.6s splash hold, the
   CAN self-test and the heartbeat's first acquisition all happen once per
   power-up and have never been seen across a hundred of them. A reset under a
   script turns that into a loop.
@@ -732,7 +735,7 @@ leaves an artefact behind.
 3. **Decode** — a protocol decoder turns the capture into rows: one per bit,
    frame or pulse, with times in microseconds.
 4. **Verdict** — the recipe's assertion, printed as a number and a unit, not
-   as a pass. "37.2% high at 300 kbit/s, tolerance ±5%" is a result; "OK" is
+   as a pass. "37.2% high at 300kbit/s, tolerance ±5%" is a result; "OK" is
    not.
 
 The artefact is the capture plus the decoded rows plus the verdict. A claim in

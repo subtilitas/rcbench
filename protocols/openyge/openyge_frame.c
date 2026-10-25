@@ -1,23 +1,42 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"
 
 #include <string.h>
 
-/* Little-endian, assembled byte by byte rather than cast; see the header. */
+/**
+ * @brief Little-endian, assembled byte by byte rather than cast; see the
+ *        header.
+ *
+ * @param p  Two bytes, least significant first.
+ * @return   The 16-bit value.
+ */
 static inline uint16_t rd16(const uint8_t *p)
 {
     return (uint16_t)((uint16_t)p[0] | (uint16_t)((uint16_t)p[1] << 8));
 }
 
+/**
+ * @brief Write a little-endian 16-bit field.
+ *
+ * @param p  Two bytes to write, least significant first.
+ * @param v  The 16-bit value.
+ */
 static inline void wr16(uint8_t *p, uint16_t v)
 {
     p[0] = (uint8_t)(v & 0xFFu);
     p[1] = (uint8_t)(v >> 8);
 }
 
+/**
+ * @brief Whether a type byte is one of the frame types this speaks.
+ *
+ * @param t  Type byte from the header.
+ * @return   true for a known type.
+ */
 static bool type_is_known(uint8_t t)
 {
     switch (t) {
@@ -32,15 +51,29 @@ static bool type_is_known(uint8_t t)
     }
 }
 
-/* A frame from the ESC (electronic speed controller) carries telemetry; one
- * from the master carries the 4-byte control payload.  The parameter-write
- * acknowledgement is an ESC frame and carries telemetry too. */
+/**
+ * @brief A frame from the ESC (electronic speed controller) carries telemetry;
+ *        one from the master carries the 4-byte control payload.
+ *
+ * The parameter-write acknowledgement is an ESC frame and carries telemetry
+ * too.
+ *
+ * @param t  Type byte from the header.
+ * @return   true for a telemetry-carrying type.
+ */
 static bool type_carries_telemetry(uint8_t t)
 {
     return t == OPENYGE_FT_TELE_AUTO || t == OPENYGE_FT_TELE_RESP
            || t == OPENYGE_FT_WRITE_PARAM_RESP;
 }
 
+/**
+ * @brief Header length for a protocol version.
+ *
+ * @param version  Version byte from the header.
+ * @return         OPENYGE_HDR_V3 for version 3 and above, else
+ *                 OPENYGE_HDR_LEGACY.
+ */
 static uint8_t header_bytes(uint8_t version)
 {
     return (version >= OPENYGE_VERSION) ? OPENYGE_HDR_V3 : OPENYGE_HDR_LEGACY;
@@ -75,15 +108,26 @@ void openyge_decoder_reset(openyge_decoder_t *d)
     }
 }
 
+/** @brief Outcome of examining one sync candidate. */
 typedef enum {
-    PARSE_INVALID    = -1,
-    PARSE_INCOMPLETE = 0,
-    PARSE_OK         = 1,
+    PARSE_INVALID    = -1,  /**< not a frame: bad type, length, CRC, payload */
+    PARSE_INCOMPLETE = 0,   /**< the buffer ends before the frame does      */
+    PARSE_OK         = 1,   /**< a whole, verified frame                    */
 } parse_result_t;
 
-/*
- * Examine the candidate frame starting at @p at without modifying the
- * decoder, so several candidates can be weighed before one is committed to.
+/**
+ * @brief Examine the candidate frame starting at @p at without modifying the
+ *        decoder, so several candidates can be weighed before one is committed
+ *        to.
+ *
+ * @param d           Decoder holding the buffer.
+ * @param at          Index of the sync byte of the candidate.
+ * @param out         Receives the frame when PARSE_OK; NULL to skip.
+ * @param total_out   Receives the frame length when PARSE_OK.
+ * @param crc_failed  Set to true when the CRC does not match.
+ * @param rejected    Set to true when the CRC holds but the payload length does
+ *                    not fit the frame type.
+ * @return            PARSE_OK, PARSE_INCOMPLETE or PARSE_INVALID.
  */
 static parse_result_t parse_at(const openyge_decoder_t *d, size_t at,
                                openyge_frame_t *out, size_t *total_out,
@@ -153,6 +197,12 @@ static parse_result_t parse_at(const openyge_decoder_t *d, size_t at,
     return PARSE_OK;
 }
 
+/**
+ * @brief Discard the first @p n bytes of the decoder buffer.
+ *
+ * @param d  Decoder holding the buffer.
+ * @param n  Bytes to discard; more than the buffer holds empties it.
+ */
 static void drop(openyge_decoder_t *d, size_t n)
 {
     if (n == 0) {
@@ -258,13 +308,13 @@ bool openyge_telemetry_parse(const openyge_frame_t *f, openyge_telemetry_t *out)
 
     /* p[0] is reserved. */
     out->temp_c          = (int16_t)((int)p[1] - OPENYGE_TEMP_OFFSET);
-    out->volts           = (float)rd16(p + 2) / 100.0f;   /* 10 mV */
-    out->amps            = (float)rd16(p + 4) / 100.0f;   /* 10 mA */
+    out->volts           = (float)rd16(p + 2) / 100.0f;   /* 10mV */
+    out->amps            = (float)rd16(p + 4) / 100.0f;   /* 10mA */
     out->consumption_mah = rd16(p + 6);
     /*
-     * The field is described as "0.1 eRPM" (electrical revolutions per
+     * The field is described as "0.1eRPM" (electrical revolutions per
      * minute) and the reference code multiplies by ten.  Multiplying is the
-     * assumption here: 65535 x 10 = 655350 eRPM is a plausible ceiling, 6553
+     * assumption here: 65535 x 10 = 655350eRPM is a plausible ceiling, 6553
      * is not.  Unconfirmed: it is item 1 of the measurement list in
      * docs/OpenYGE.md, because the wrong choice reads a hundredfold out.
      */
@@ -278,7 +328,7 @@ bool openyge_telemetry_parse(const openyge_frame_t *f, openyge_telemetry_t *out)
     out->cap_temp_c      = (int16_t)((int)p[18] - OPENYGE_TEMP_OFFSET);
     out->aux_temp_c      = (int16_t)((int)p[19] - OPENYGE_TEMP_OFFSET);
     out->status2         = p[20];
-    /* p[21] reserved; possibly a consumption high byte above 65 Ah. */
+    /* p[21] reserved; possibly a consumption high byte above 65Ah. */
     out->pidx            = rd16(p + 22);
     out->pdata           = rd16(p + 24);
     return true;

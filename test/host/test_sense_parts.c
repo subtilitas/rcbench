@@ -1,13 +1,13 @@
 /*
  * Up to four INA3221 on the sensor bus (sense_sched.h, sense_svc.h,
  * sense_page.h), against the parts of fake_ina.h and a clock the suite
- * moves 1 ms a tick.
+ * moves 1ms a tick.
  *
  * Under test: with 4 parts and 12 channels, FAST read every tick, each
- * other channel 90 or 91 times a second, each bus voltage every 24 ms and
+ * other channel 90 or 91 times a second, each bus voltage every 24ms and
  * each part's Mask/Enable and Configuration 25 times a second; every tick
- * inside 1 ms of bus time, the longest the read-back read twice beside a
- * voltage, 742.5 us; the windows of 0, 1 and 12 channels; a shunt for
+ * inside 1ms of bus time, the longest the read-back read twice beside a
+ * voltage, 742.5us; the windows of 0, 1 and 12 channels; a shunt for
  * each channel; FAST on another part than 0x40, and none, with its ring
  * and its capture; FAST on a channel that is off taken as none; one probe
  * a tick; a part missing beside three that read, a part reset found
@@ -180,9 +180,9 @@ TEST_CASE(twelve_channels_are_read_at_their_rates)
     CHECK_EQ(fb.bad_width, 0u);
 }
 
-/* Each tick's bus time in clocks of 2.5 us: the longest even tick reads
+/* Each tick's bus time in clocks of 2.5us: the longest even tick reads
  * FAST, another channel, the INA228's current (57), a voltage and a
- * read-back read twice: 48 + 48 + 57 + 48 + 96 = 297, 742.5 us; the
+ * read-back read twice: 48 + 48 + 57 + 48 + 96 = 297, 742.5us; the
  * longest odd one the encoder's field slot, 48 + 48 + 57 + 135 = 288. */
 TEST_CASE(every_tick_with_twelve_channels_fits_a_millisecond)
 {
@@ -298,7 +298,7 @@ TEST_CASE(windows_of_none_one_and_twelve_channels)
     }
 }
 
-/* Each channel's shunt is its own: a part with R100 shunts read as 50 mOhm
+/* Each channel's shunt is its own: a part with R100 shunts read as 50mOhm
  * on CH2 shows twice the current there, and its clip ends follow. */
 TEST_CASE(each_channel_has_its_own_shunt)
 {
@@ -311,7 +311,7 @@ TEST_CASE(each_channel_has_its_own_shunt)
     CHECK(sense_sched_window(&s, 0u, &w));
     CHECK_EQ(w.i_mean_ua, 10000);
     CHECK(sense_sched_window(&s, 1u, &w));
-    CHECK_EQ(w.i_mean_ua, 40000);           /* 20 mA through 0.1 Ohm */
+    CHECK_EQ(w.i_mean_ua, 40000);           /* 20mA through 0.1Ohm */
     CHECK_EQ(s.ch_top_ua[0], 1638000);
     CHECK_EQ(s.ch_top_ua[1], 3276000);
     CHECK_EQ(s.ch_top_ua[3], 0);            /* not fitted */
@@ -541,7 +541,7 @@ TEST_CASE(the_sense_page_sets_up_its_part_as_the_map_and_shows_it)
     sense_page_init(&pg);
     pg.sense[LINK_SN_ENABLE] = LINK_SN_EN_I3221;
     pg.sense[LINK_SN_I3221_ADDR] = 0x42u;
-    pg.sense[LINK_SN_I3221_SHUNT_DMOHM] = 500u;        /* 50 mOhm */
+    pg.sense[LINK_SN_I3221_SHUNT_DMOHM] = 500u;        /* 50mOhm */
     pg.sense[LINK_SN_I3221_CHANNELS] = 0x06u;          /* CH2, CH3 */
     sense_cmd_t c;
     memset(&c, 0, sizeof(c));

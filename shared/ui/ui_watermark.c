@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The SIMULATION watermark along the canvas diagonal.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -12,18 +15,19 @@
 #define TEXT "SIMULATION"
 
 /*
- * 15 % opacity.  Below about 10 % the mark disappears against the plot grid
- * in a photograph; above about 20 % it competes with the readings.
+ * 15% opacity.  Below about 10% the mark disappears against the plot grid
+ * in a photograph; above about 20% it competes with the readings.
  */
 #define ALPHA 38   /* 0.15 * 255 */
 
-/* 3,439 points on the 800x480 panel; the rest is headroom for another
+/* 5,377 points on the 1024 x 600px panel; the rest is headroom for another
  * canvas size.  A mark that does not fit is drawn by scanning instead. */
-#define WM_MAX_POINTS 5120
+/** @brief The point table's size: 6,144 points, 24KB. */
+#define WM_MAX_POINTS 6144
 
 /*
  * Left zero so the table lands in .bss rather than .data: an initialiser on
- * any member puts all 20 KB in the image.  A width of zero is no canvas, so
+ * any member puts all 24KB in the image.  A width of zero is no canvas, so
  * it never matches and the first call builds.
  */
 static struct {
@@ -58,7 +62,7 @@ void ui_watermark(gfx_canvas_t *c)
     /*
      * The largest whole scale whose rotated bounding box fits the canvas.
      * Sizing against the diagonal alone ignores the text's height; at 5:3
-     * that overflows the canvas vertically by 26 px.
+     * that overflows the canvas vertically by 26px.
      */
     const int len = (int)strlen(TEXT);
     const float fw = (float)(len * gfx_font_16x28.width);
@@ -84,7 +88,7 @@ void ui_watermark(gfx_canvas_t *c)
      * comes from the canvas and the coverage from ALPHA, and neither moves.
      * Rotating and dividing per pixel costs a scan of the whole canvas to
      * write under 1% of it, so the points are recorded once and written
-     * thereafter.  On an 800x480 canvas the mark covers 3,439 pixels.
+     * thereafter.  On a 1024 x 600px canvas the mark covers 5,377 pixels.
      */
     if (s_cache.w != c->width || s_cache.h != c->height
         || s_cache.clip_x != c->clip.x || s_cache.clip_y != c->clip.y

@@ -49,7 +49,7 @@
     }
   ],
   "automatable": "assisted",
-  "automatable_note": "The manual has the user switch the ESC on after the throttle is at max and the transmitter is on, and the HV 240A needs a separate 5-6 V receiver supply. The bench could replace the ESC switch with supply output, but the manual does not say so.",
+  "automatable_note": "The manual has the user switch the ESC on after the throttle is at max and the transmitter is on, and the HV 240A needs a separate 5-6V receiver supply. The bench could replace the ESC switch with supply output, but the manual does not say so.",
   "manual": [
     {
       "when": "at_power_up",
@@ -114,39 +114,39 @@
         },
         {
           "number": 2,
-          "name": "12.0 V (4S)"
+          "name": "12.0V (4S)"
         },
         {
           "number": 3,
-          "name": "15.0 V (5S)"
+          "name": "15.0V (5S)"
         },
         {
           "number": 4,
-          "name": "18.0 V (6S)"
+          "name": "18.0V (6S)"
         },
         {
           "number": 5,
-          "name": "21.0 V (7S)"
+          "name": "21.0V (7S)"
         },
         {
           "number": 6,
-          "name": "24.0 V (8S)"
+          "name": "24.0V (8S)"
         },
         {
           "number": 7,
-          "name": "27.0 V (9S)"
+          "name": "27.0V (9S)"
         },
         {
           "number": 8,
-          "name": "30.0 V (10S)"
+          "name": "30.0V (10S)"
         },
         {
           "number": 9,
-          "name": "33.0 V (11S)"
+          "name": "33.0V (11S)"
         },
         {
           "number": 10,
-          "name": "36.0 V (12S)"
+          "name": "36.0V (12S)"
         }
       ],
       "applies_to": null,
@@ -164,7 +164,7 @@
         },
         {
           "number": 2,
-          "name": "soft brake (50 %)"
+          "name": "soft brake (50%)"
         }
       ],
       "applies_to": null,
@@ -177,15 +177,15 @@
       "values": [
         {
           "number": 1,
-          "name": "low (0-15 deg)"
+          "name": "low (0-15deg)"
         },
         {
           "number": 2,
-          "name": "middle (5-20 deg)"
+          "name": "middle (5-20deg)"
         },
         {
           "number": 3,
-          "name": "high (15-30 deg)"
+          "name": "high (15-30deg)"
         },
         {
           "number": 4,
@@ -243,16 +243,16 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz",
+          "name": "8kHz",
           "default": true
         },
         {
           "number": 2,
-          "name": "12 kHz"
+          "name": "12kHz"
         },
         {
           "number": 3,
-          "name": "16 kHz"
+          "name": "16kHz"
         }
       ],
       "applies_to": null,

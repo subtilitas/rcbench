@@ -8,8 +8,8 @@ import type { Project } from '@playwright/test';
 //          other, as a visitor with default settings.
 // lib      e2e/lib/lib.spec.ts, the helpers on documents with a known answer.
 // corpus   e2e/matrix/corpus.spec.ts, each stored link once.
-// matrix   the other specs of e2e/matrix in 8 cells: phone (360 x 740 px) and
-//          desktop (1280 x 800 px), English and German, light and dark, each
+// matrix   the other specs of e2e/matrix in 8 cells: phone (360 x 740px) and
+//          desktop (1280 x 800px), English and German, light and dark, each
 //          with reduced motion.
 
 const port = Number(process.env.E2E_PORT ?? 4173);

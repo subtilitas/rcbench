@@ -28,9 +28,9 @@
  * The levels are the frame's half-cells followed by one low half-cell,
  * whose start is the frame's last edge.  Low half-cells in front fill the
  * first word, so the levels end on a word boundary: the frame starts up to
- * 31 half-cells (787 us) after the stream is handed over.
+ * 31 half-cells (787us) after the stream is handed over.
  *
- * A tick is KST_PIO_TICK_CYCLES system clock cycles, 26.7 ns at 150 MHz.
+ * A tick is KST_PIO_TICK_CYCLES system clock cycles, 26.7ns at 150MHz.
  * The program stamps the tick counter at every level change and reloads it
  * with `quiet` at every rising edge:
  *
@@ -40,9 +40,9 @@
  *
  * When the counter runs out the pad drives low: at the end of the window
  * without a reply, and KST_PIO_QUIET_NS after the last rising edge of one.
- * Two rising edges of a reply are at most 2 cells (102.3 us) apart, and a
- * last high ends within 59 us of its rise, so the pad drives low 60 us to
- * 165 us after the reply's last level change.
+ * Two rising edges of a reply are at most 2 cells (102.3us) apart, and a
+ * last high ends within 59us of its rise, so the pad drives low 60us to
+ * 165us after the reply's last level change.
  *
  * The module includes nothing outside the C standard headers and holds no
  * global state.
@@ -61,35 +61,41 @@
 extern "C" {
 #endif
 
-/** System clock cycles between two samples of the pin. */
+/** @brief System clock cycles between two samples of the pin. */
 #define KST_PIO_TICK_CYCLES 4u
-/** Cycles one half-cell takes beyond its hold count. */
+/** @brief Cycles one half-cell takes beyond its hold count. */
 #define KST_PIO_BIT_OVERHEAD 4u
-/** Cycles from the last edge to the release beyond the half-cell and the
- *  low count. */
+/**
+ * @brief Cycles from the last edge to the release beyond the half-cell and the
+ *        low count.
+ */
 #define KST_PIO_LOW_OVERHEAD 2u
-/** Cycles from the release to the first sample. */
+/** @brief Cycles from the release to the first sample. */
 #define KST_PIO_SAMPLE_LEAD 3u
-/** Cycles the input synchroniser delays the pin. */
+/** @brief Cycles the input synchroniser delays the pin. */
 #define KST_PIO_SYNC_CYCLES 2u
 
-/** Time without a rising edge that ends a capture once one was seen. */
+/** @brief Time without a rising edge that ends a capture once one was seen. */
 #define KST_PIO_QUIET_NS 165000u
 
-/** Longest tick, and with it the coarsest stamp, a clock may give. */
+/** @brief Longest tick, and with it the coarsest stamp, a clock may give. */
 #define KST_PIO_MAX_TICK_NS 500u
 
-/** Largest half-cell error a clock may give, in parts per million. */
+/** @brief Largest half-cell error a clock may give, in parts per million. */
 #define KST_PIO_MAX_ERROR_PPM 2000u
 
-/** Words of the longest stream: 3 counts in front of 4 level words, 3
- *  behind. */
+/**
+ * @brief Words of the longest stream: 3 counts in front of 4 level words, 3
+ *        behind.
+ */
 #define KST_PIO_TX_WORDS 9u
-/** Stamps a transaction keeps: one for a line that is high at the start,
- *  KST_CAP_MAX_EDGES edges and one that shows an overflow. */
+/**
+ * @brief Stamps a transaction keeps: one for a line that is high at the start,
+ *        KST_CAP_MAX_EDGES edges and one that shows an overflow.
+ */
 #define KST_PIO_RX_WORDS (KST_CAP_MAX_EDGES + 2u)
 
-/** The counts a system clock gives. */
+/** @brief The counts a system clock gives. */
 typedef struct {
     uint32_t sys_hz;
     uint32_t half_cycles;     /**< cycles of one transmit half-cell */
@@ -97,7 +103,7 @@ typedef struct {
     uint32_t quiet_ticks;
 } kst_pio_clock_t;
 
-/** One transaction, as kst_pio_tx() laid it out. */
+/** @brief One transaction, as kst_pio_tx() laid it out. */
 typedef struct {
     uint32_t window_ns;      /**< as asked: end of the capture */
     uint32_t window_ticks;   /**< the stream's `window` */
@@ -105,36 +111,68 @@ typedef struct {
 } kst_pio_run_t;
 
 /**
- * The counts for a system clock of @p sys_hz.  False when a tick is longer
- * than KST_PIO_MAX_TICK_NS, which it is below 8 MHz, and when the half-cell
- * the clock gives is more than 0.2 % from KST_HALF_CELL_NS.  Every clock
- * from 9.9 MHz up gives one within 0.2 %, and a multiple of 5 MHz gives it
- * exactly.
+ * @brief The counts for a system clock of @p sys_hz.
+ *
+ * False when a tick is longer than KST_PIO_MAX_TICK_NS, which it is below 8
+ * MHz, and when the half-cell the clock gives is more than 0.2% from
+ * KST_HALF_CELL_NS.  Every clock from 9.9MHz up gives one within 0.2%, and a
+ * multiple of 5MHz gives it exactly.
+ *
+ * @param sys_hz  System clock, in Hz.
+ * @param out     Receives the counts; left unchanged when false is returned.
+ * @return true when the clock gives usable counts.
  */
 bool kst_pio_clock(uint32_t sys_hz, kst_pio_clock_t *out);
 
-/** The transmit half-cell of @p clock in ns, rounded to nearest. */
+/**
+ * @brief The transmit half-cell of @p clock in ns, rounded to nearest.
+ *
+ * @param clock  Counts of the clock.
+ * @return The transmit half-cell in ns, rounded to nearest.
+ */
 uint32_t kst_pio_half_cell_ns(const kst_pio_clock_t *clock);
 
-/** One tick of @p clock in ns, rounded up. */
+/**
+ * @brief One tick of @p clock in ns, rounded up.
+ *
+ * @param clock  Counts of the clock.
+ * @return One tick in ns, rounded up.
+ */
 uint32_t kst_pio_tick_ns(const kst_pio_clock_t *clock);
 
 /**
- * The word stream for @p frame and a capture until @p window_ns after its
- * last edge.  Returns the number of words written to @p words, at most
- * KST_PIO_TX_WORDS, or 0 for a frame without half-cells, one longer than
- * KST_FRAME_MAX_HALF_CELLS, or a window that ends before the release.
+ * @brief The word stream for @p frame and a capture until @p window_ns after
+ *        its last edge.
+ *
+ * Returns the number of words written to @p words, at most KST_PIO_TX_WORDS, or
+ * 0 for a frame without half-cells, one longer than KST_FRAME_MAX_HALF_CELLS,
+ * or a window that ends before the release.
+ *
+ * @param clock      Counts of the clock.
+ * @param frame      Frame to send.
+ * @param window_ns  Capture end, in ns after the last edge.
+ * @param words      Receives the word stream.
+ * @param run        Receives the layout of the transaction.
+ * @return Number of words written, or 0 for a frame that cannot be sent.
  */
 unsigned kst_pio_tx(const kst_pio_clock_t *clock, const kst_frame_t *frame,
                     uint32_t window_ns, uint32_t *words, kst_pio_run_t *run);
 
 /**
- * The capture from the @p n stamps of a transaction, in the order the
- * program gave them.  @p lost says the program gave more stamps than were
- * kept.  A first stamp equal to the window count is a line that was high at
- * the first sample: it sets level0 and is no edge.  More than
- * KST_CAP_MAX_EDGES edges, @p lost, and a stamp no count of the stream can
- * give set overflow.
+ * @brief The capture from the @p n stamps of a transaction, in the order the
+ *        program gave them.
+ *
+ * @p lost says the program gave more stamps than were kept.  A first stamp
+ * equal to the window count is a line that was high at the first sample: it
+ * sets level0 and is no edge.  More than KST_CAP_MAX_EDGES edges, @p lost, and
+ * a stamp no count of the stream can give set overflow.
+ *
+ * @param clock  Counts of the clock.
+ * @param run    Layout of the transaction.
+ * @param stamps Stamps the program gave, in order.
+ * @param n      Number of stamps.
+ * @param lost   true when the program gave more stamps than were kept.
+ * @param out    Receives the capture.
  */
 void kst_pio_capture(const kst_pio_clock_t *clock, const kst_pio_run_t *run,
                      const uint32_t *stamps, unsigned n, bool lost,

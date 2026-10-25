@@ -31,8 +31,8 @@
 
 #include "servo_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /*
  * Geometry in panel coordinates, mirrored from servo_screen.c with the
@@ -41,24 +41,24 @@
  * OUTPUT page's rows (servo_spots.h).
  */
 #define P(y)        (UI_BAND_H + (y))
-#define SHAFT_X     300
-#define SHAFT_Y     P((H - UI_BAND_H) / 2)
-#define CENTRE_X    556
-#define SWEEP_X     647
-#define RELEASE_X   739
-#define BTN_Y       P(366)
-#define ARM_X       648
-#define ARM_Y       P(404)
-#define SPEED_Y     P(307)
+#define SHAFT_X     SV_SHAFT_X
+#define SHAFT_Y     P(SV_SHAFT_Y)
+#define CENTRE_X    SV_CENTRE_X
+#define SWEEP_X     SV_SWEEP_X
+#define RELEASE_X   SV_RELEASE_X
+#define BTN_Y       P(SV_BTN_Y)
+#define ARM_X       (SV_RC_X + SV_RC_W / 2)
+#define ARM_Y       P(SV_ARM_Y + SV_ARM_H / 2)
+#define SPEED_Y     P(SV_SPEED_Y)
 #define SETB_X      SV_TAB_SETTINGS_X
 #define SETB_Y      P(SV_TAB_Y)
 #define CLOSE_X     SV_TAB_LIVE_X
 #define CLOSE_Y     P(SV_TAB_Y)
 #define ROW_L_X     100
 #define ROW_Y(r)    P(SV_ROW_Y(r))
-#define TRIM_UP_X   469
-#define CH_X(i)     (130 + 239 * ((i) / 5))
-#define CH_Y(i)     P(74 + 46 * ((i) % 5))
+#define TRIM_UP_X   594
+#define CH_X(i)     (165 + 305 * ((i) / 5))
+#define CH_Y(i)     P(UI_MARGIN + 56 + 24 + 56 * ((i) % 5))
 
 static gfx_color_t *fb;
 static gfx_color_t *fb_was;
@@ -132,7 +132,12 @@ static void dial_at(float deg, int *x, int *y)
     *y = SHAFT_Y - (int)(110.0f * sinf(deg * k) + 0.5f);
 }
 
-/* A press on the dial at @p deg, dragged to @p to and lifted. */
+/* Frames enough for the drag's filtered target to reach the finger's:
+ * 312ms, over 15 of its 20ms time constants. */
+#define DRAG_SETTLE 12
+
+/* A press on the dial at @p deg, dragged to @p to and lifted, and the
+ * frames the target takes to get there. */
 static void drag(float deg, float to)
 {
     int x, y, x2, y2;
@@ -141,6 +146,7 @@ static void drag(float deg, float to)
     finger(FEED_LONE, x, y);
     glide(FEED_LONE, x2, y2, 8);
     lift(FEED_LONE);
+    frames(DRAG_SETTLE);
 }
 
 /*
@@ -211,7 +217,7 @@ static uint16_t rest_us(void)
 static void open_settings(void)  { feed_tap(FEED_LONE, SETB_X, SETB_Y); }
 static void close_settings(void) { feed_tap(FEED_LONE, CLOSE_X, CLOSE_Y); }
 
-/* NARROW 760 chosen on the OUTPUT page: 660 to 860 us. */
+/* NARROW 760 chosen on the OUTPUT page: 660 to 860us. */
 static void choose_narrow(void)
 {
     open_settings();
@@ -292,6 +298,7 @@ TEST_CASE(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm)
     CHECK_EQ(took().kind, SERVO_CMD_ARM);
     servo_screen_set_armed(true);
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -318,9 +325,74 @@ TEST_CASE(a_drag_does_not_cross_a_disarm_and_the_next_arm)
     servo_screen_set_armed(true);
     drain();
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
+}
+
+/*
+ * The touch injector's station check (testbench/touch-injector/README.md),
+ * with its track ids: a dial drag under way on one contact, DISARM pressed
+ * by a second.  The disarm is taken at the press, the drag's moves before
+ * the bench's answer command nothing, and a hold on ARM from rest arms
+ * again.
+ */
+TEST_CASE(a_second_contact_disarms_a_drag_under_way)
+{
+    fresh();
+    CHECK(arm());
+    int x, y, x2, y2;
+    dial_at(30.0f, &x, &y);
+    dial_at(-30.0f, &x2, &y2);
+    finger(0x80, x, y);
+    CHECK_EQ(took().kind, SERVO_CMD_POSITION);
+    drain();
+    finger(0x81, ARM_X, ARM_Y);
+    CHECK_EQ(took().kind, SERVO_CMD_DISARM);    /* at the press */
+    frames(23);                                 /* held 600ms */
+    lift(0x81);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    glide(0x80, x2, y2, 8);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    servo_screen_set_armed(false);
+    lift(0x80);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK(arm());
+    finger(0x80, x2, y2);
+    CHECK_EQ(took().kind, SERVO_CMD_POSITION);
+    lift(0x80);
+}
+
+/*
+ * The same with STOP pressed by the second contact: the stop is latched at
+ * the press, the press ends the drag, and neither the drag's moves nor its
+ * filter command anything while the press is held 600ms or after.
+ */
+TEST_CASE(a_second_contact_on_stop_ends_a_drag_under_way)
+{
+    fresh();
+    CHECK(arm());
+    int x, y, x2, y2;
+    dial_at(30.0f, &x, &y);
+    dial_at(-30.0f, &x2, &y2);
+    finger(0x80, x, y);
+    glide(0x80, x2, y2, 8);     /* no frame: the filter is behind */
+    drain();
+    const uint16_t held = servo_screen_commanded();
+    const gfx_rect_t r = ui_band_stop_rect();
+    finger(0x81, r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(ui_router_take_stop());               /* at the press */
+    frames(23);
+    glide(0x80, x, y, 8);
+    frames(DRAG_SETTLE);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
+    CHECK_EQ(servo_screen_commanded(), held);
+    lift(0x81);
+    lift(0x80);
+    CHECK(!ui_router_take_stop());
+    frames(DRAG_SETTLE);
+    CHECK_EQ(took().kind, SERVO_CMD_NONE);
 }
 
 /* Under a disarm waiting to be taken every position is dropped, so the
@@ -380,7 +452,7 @@ TEST_CASE(nothing_moves_the_value_between_a_disarm_and_its_answer)
 /* ---------------------------------------------------------- the arm edge */
 
 /* STANDARD PWM: the arm sets the value to the rest the outputs layer
- * renders, 1500 us, from wherever the last run left it. */
+ * renders, 1500us, from wherever the last run left it. */
 TEST_CASE(an_arm_sets_the_value_to_the_channels_rest)
 {
     fresh();
@@ -399,7 +471,7 @@ TEST_CASE(an_arm_sets_the_value_to_the_channels_rest)
     CHECK_EQ(servo_screen_drawn(), rest_us());
 }
 
-/* NARROW 760, 660 to 860 us: the rest is that range's midpoint, 760 us. */
+/* NARROW 760, 660 to 860us: the rest is that range's midpoint, 760us. */
 TEST_CASE(an_arm_on_a_narrow_servo_sets_the_value_to_760_us)
 {
     fresh();
@@ -418,7 +490,7 @@ TEST_CASE(an_arm_on_a_narrow_servo_sets_the_value_to_760_us)
     CHECK(arm());
     CHECK_EQ(servo_screen_commanded(), 760);
     CHECK_EQ(servo_screen_drawn(), 760);
-    /* The first 1 % of the knob from there: 1.8 degrees, 2 us. */
+    /* The first 1% of the knob from there: 1.8 degrees, 2us. */
     knob(0.01f);
     const servo_cmd_t c = took();
     CHECK_EQ(c.kind, SERVO_CMD_POSITION);
@@ -426,13 +498,13 @@ TEST_CASE(an_arm_on_a_narrow_servo_sets_the_value_to_760_us)
 }
 
 /* The rest is the midpoint of the endpoints, which TRIM does not move: a
- * trimmed servo arms at 1500 us, and a position at 0 degrees is 1520 us. */
+ * trimmed servo arms at 1500us, and a position at 0 degrees is 1520us. */
 TEST_CASE(an_arm_sets_the_rest_and_not_the_trimmed_centre)
 {
     fresh();
     open_settings();
     for (int i = 0; i < 4; ++i) {
-        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));       /* +20 us */
+        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));       /* +20us */
     }
     close_settings();
     CHECK(arm());
@@ -451,7 +523,7 @@ TEST_CASE(the_value_follows_the_rest_through_a_change_of_type)
     fresh();
     open_settings();
     for (int i = 0; i < 4; ++i) {
-        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));       /* +20 us */
+        feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));       /* +20us */
     }
     close_settings();
     CHECK(arm());
@@ -465,19 +537,19 @@ TEST_CASE(the_value_follows_the_rest_through_a_change_of_type)
     feed_tap(FEED_LONE, x, y);
     CHECK_EQ(took().value_us, 780);
     open_settings();
-    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +25 us */
+    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +25us */
     close_settings();
     CHECK_EQ(took().value_us, 785);
     CHECK_EQ(servo_screen_commanded(), 785);
 }
 
-/* The first 1 % turn of the knob after an arm posts the rest plus 1 %:
- * 1.8 degrees of 90, 10 us of 500.  Not the value before the disarm. */
+/* The first 1% turn of the knob after an arm posts the rest plus 1%:
+ * 1.8 degrees of 90, 10us of 500.  Not the value before the disarm. */
 TEST_CASE(the_first_knob_turn_after_an_arm_starts_from_the_rest)
 {
     fresh();
     CHECK(arm());
-    drag(60.0f, 70.0f);                 /* 1889 us */
+    drag(60.0f, 70.0f);                 /* 1889us */
     CHECK(took().value_us > 1880);
     frames(40);
     CHECK(disarm());
@@ -495,11 +567,11 @@ TEST_CASE(the_first_dial_drag_after_an_arm_starts_from_the_rest)
 {
     fresh();
     CHECK(arm());
-    drag(-70.0f, -60.0f);               /* 1167 us */
+    drag(-70.0f, -60.0f);               /* 1167us */
     drain();
     frames(40);
     CHECK(disarm());
-    feed_tap(FEED_LONE, 521, SPEED_Y);  /* SPEED near its 10 % end */
+    feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);  /* SPEED near its 10% end */
     CHECK(arm());
     CHECK_EQ(servo_screen_drawn(), 1500);
     int x, y;
@@ -515,7 +587,7 @@ TEST_CASE(the_first_dial_drag_after_an_arm_starts_from_the_rest)
 }
 
 /* Turns made while disarmed are not kept: 50 of them, then an arm, and
- * the value is the rest; the next 1 % is 1 % from it. */
+ * the value is the rest; the next 1% is 1% from it. */
 TEST_CASE(knob_turns_on_a_disarmed_bench_are_not_accumulated)
 {
     fresh();
@@ -730,7 +802,7 @@ TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
         servo_screen_set_armed(true);           /* not yet answered */
         feed_tap(FEED_LONE, SWEEP_X, BTN_Y);
         seen |= kinds_over(4);
-        feed_tap(FEED_LONE, 521, SPEED_Y);
+        feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
         seen |= kinds_over(4);
         open_settings();
         feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
@@ -741,7 +813,7 @@ TEST_CASE(a_disarm_tap_ends_a_sweep_and_a_pause_at_the_tap)
         seen |= kinds_over(40);
         CHECK_EQ(seen & DRIVES, 0u);
         CHECK(!servo_screen_sweeping());
-        CHECK_EQ(servo_screen_commanded(), left + 5);   /* the trim's 5 us */
+        CHECK_EQ(servo_screen_commanded(), left + 5);   /* the trim's 5us */
 
         servo_screen_set_armed(false);
         CHECK_EQ(kinds_over(4) & DRIVES, 0u);
@@ -760,7 +832,7 @@ TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
     drain();
     feed_tap(FEED_LONE, ARM_X, ARM_Y);
     CHECK_EQ(took().kind, SERVO_CMD_DISARM);
-    feed_tap(FEED_LONE, 521, SPEED_Y);
+    feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
     unsigned seen = kinds_over(4);
     open_settings();
     feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));
@@ -774,11 +846,11 @@ TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
 static gfx_color_t px(int x, int y) { return fb[(size_t)y * W + x]; }
 
 /* Pixels of the warning colour where the left card says ARM FIRST, under
- * the angle. */
+ * the angle at its top. */
 static int arm_first_px(void)
 {
     int n = 0;
-    for (int y = P(396); y < P(412); ++y) {
+    for (int y = P(SV_HINT_Y); y < P(SV_HINT_Y + 20); ++y) {
         for (int x = 52; x < 200; ++x) {
             if (px(x, y) == ui_theme_color(UI_C_WARN)) {
                 ++n;
@@ -801,7 +873,7 @@ TEST_CASE(centre_and_the_horn_are_dimmed_while_disarmed)
     CHECK(px(SHAFT_X + 22, SHAFT_Y) != accent);
     CHECK(arm_first_px() > 0);
     CHECK(arm());
-    frames(2 * UI_HOLD_FLASH_FRAMES);
+    frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
     CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
     CHECK_EQ(px(SHAFT_X + 22, SHAFT_Y), accent);
@@ -819,7 +891,7 @@ TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
 {
     fresh();
     CHECK(arm());
-    frames(2 * UI_HOLD_FLASH_FRAMES);
+    frames(UI_HOLD_FLASH_MS / 10);
     const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
     feed_tap(FEED_LONE, ARM_X, ARM_Y);          /* DISARM, not yet taken */
     for (int taken = 0; taken < 2; ++taken) {
@@ -838,7 +910,7 @@ TEST_CASE(centre_and_the_horn_are_dimmed_from_the_disarm_tap_to_its_answer)
     }
     servo_screen_set_armed(false);
     CHECK(arm());
-    frames(2 * UI_HOLD_FLASH_FRAMES);
+    frames(UI_HOLD_FLASH_MS / 10);
     picture(fb);
     CHECK_EQ(px(CENTRE_X - 36, BTN_Y - 10), accent);
     CHECK_EQ(arm_first_px(), 0);
@@ -853,7 +925,7 @@ TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
     ui_router_tick(0.026f);
     ui_router_render(&cv, 0);                   /* one frame of the flash */
     servo_screen_set_armed(false);
-    for (int i = 0; i < 2 * UI_HOLD_FLASH_FRAMES; ++i) {
+    for (int i = 0; i < UI_HOLD_FLASH_MS / 10; ++i) {
         ui_router_tick(0.026f);
         ui_router_render(&cv, 0);
     }
@@ -881,7 +953,7 @@ TEST_CASE(release_speed_and_the_settings_work_while_disarmed)
 /* ------------------------------------------------------------- RELEASE */
 
 /* The three profiles RELEASE is held to: STANDARD PWM, NARROW 760, and
- * STANDARD PWM trimmed by +20 us, whose rest is not its 0 degrees. */
+ * STANDARD PWM trimmed by +20us, whose rest is not its 0 degrees. */
 enum { PROFILE_STANDARD = 0, PROFILE_NARROW, PROFILE_TRIMMED, PROFILE_COUNT };
 
 static void choose_profile(int profile)
@@ -891,15 +963,15 @@ static void choose_profile(int profile)
     } else if (profile == PROFILE_TRIMMED) {
         open_settings();
         for (int i = 0; i < 4; ++i) {
-            feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));   /* +20 us */
+            feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));   /* +20us */
         }
         close_settings();
     }
     drain();
 }
 
-/* The profile's rest, and the first 1 % of the knob from it: 1.8 degrees,
- * 10 us of a 500 us half-travel and 2 us of a 100 us one. */
+/* The profile's rest, and the first 1% of the knob from it: 1.8 degrees,
+ * 10us of a 500us half-travel and 2us of a 100us one. */
 static const uint16_t k_rest[PROFILE_COUNT]     = { 1500, 760, 1500 };
 static const uint16_t k_rest_1pct[PROFILE_COUNT] = { 1510, 762, 1510 };
 
@@ -936,8 +1008,8 @@ TEST_CASE(release_on_an_armed_bench_sets_the_value_to_the_rest)
     }
 }
 
-/* The first 1 % turn of the knob after a RELEASE posts the rest plus 1 %,
- * not the value before it plus 1 %. */
+/* The first 1% turn of the knob after a RELEASE posts the rest plus 1%,
+ * not the value before it plus 1%. */
 TEST_CASE(the_first_knob_turn_after_a_release_starts_from_the_rest)
 {
     for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
@@ -959,7 +1031,7 @@ TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
     for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
         const uint16_t driven = armed_and_driven(profile);
         CHECK(driven != 0u);
-        feed_tap(FEED_LONE, 521, SPEED_Y);  /* SPEED near its 10 % end */
+        feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);  /* SPEED near its 10% end */
         drain();
         feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
         CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
@@ -976,6 +1048,7 @@ TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
         const uint16_t early = servo_screen_drawn();
         CHECK(early >= k_rest[profile] && early < c.value_us);
         glide(FEED_LONE, x2, y2, 8);
+        frames(DRAG_SETTLE);
         CHECK(took().value_us > c.value_us);
         lift(FEED_LONE);
     }
@@ -996,6 +1069,7 @@ TEST_CASE(a_release_ends_a_drag_under_way)
     CHECK_EQ(took().kind, SERVO_CMD_RELEASE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     glide(1, x2, y2, 8);
+    frames(DRAG_SETTLE);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     CHECK_EQ(servo_screen_commanded(), 1500);
     lift(1);
@@ -1052,7 +1126,7 @@ TEST_CASE(a_position_after_a_release_in_one_frame_sends_the_position)
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     /* Commanded, so no longer the rest: a trim says the position again. */
     open_settings();
-    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +5 us */
+    feed_tap(FEED_LONE, TRIM_UP_X, ROW_Y(3));           /* +5us */
     close_settings();
     CHECK_EQ(took().value_us, c.value_us + 5);
 
@@ -1141,6 +1215,8 @@ int main(void)
     RUN(no_position_control_moves_the_value_after_a_disarm);
     RUN(a_press_on_the_disarmed_dial_is_no_drag_after_the_arm);
     RUN(a_drag_does_not_cross_a_disarm_and_the_next_arm);
+    RUN(a_second_contact_disarms_a_drag_under_way);
+    RUN(a_second_contact_on_stop_ends_a_drag_under_way);
     RUN(nothing_moves_the_value_under_a_disarm_not_yet_taken);
     RUN(nothing_moves_the_value_between_a_disarm_and_its_answer);
     RUN(an_arm_sets_the_value_to_the_channels_rest);

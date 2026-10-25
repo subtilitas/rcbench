@@ -4,7 +4,7 @@
  * Under test: a page that starts with no pin on any port; the build's port
  * count held to the model's four; the kept registers of a board that has
  * stored none; the kept set restored through the page's checks, with a pin
- * that is no generator pin dropped, endpoints outside 400 to 2500 us
+ * that is no generator pin dropped, endpoints outside 400 to 2500us
  * replaced, and a pin something else holds flagged refused; a PIN write
  * refused on a reserved pin, a taken pin, a slot's pin, the slice of a PWM
  * slot, a pin without a PWM slice and the pin or compare register of
@@ -17,7 +17,7 @@
  * does not have; a slot refused on a port's pin and beside it; a write
  * taken back; no endpoint longer than the frame on a port whose pulse is
  * on, each port judged at its own rate: the SERVO rate for the TARGET port,
- * 50 Hz for the others and for every port in a frame that changes the
+ * 50Hz for the others and for every port in a frame that changes the
  * TARGET; no pin moved onto the slice of a TARGET at a rate of its own; no
  * TARGET change that leaves a slot with a pulse longer than its own frame.
  *
@@ -741,9 +741,9 @@ TEST_CASE(a_write_is_taken_back_whole)
 /*
  * Protocol 4.16: no port whose pulse is on carries an endpoint longer than
  * its frame -- one microsecond under the period of the rate the port runs
- * at, which from 4.19 is the SERVO rate for the TARGET port.  At 560 Hz
- * (period 1785 us) 1784 us is taken and 1785 and 1786 us are refused; at
- * 500 Hz (2000 us) 1999 is taken and 2000 refused; at 50 Hz the 2500 us
+ * at, which from 4.19 is the SERVO rate for the TARGET port.  At 560Hz
+ * (period 1785us) 1784us is taken and 1785 and 1786us are refused; at
+ * 500Hz (2000us) 1999 is taken and 2000 refused; at 50Hz the 2500us
  * ceiling governs.  A pulse switched on under a range that does not fit is
  * refused as well, and a port whose pulse is off is not judged.
  */
@@ -760,7 +760,7 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
         CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
         prog_port_rate(&pg, k[i].hz);
         CHECK_EQ(prog_port_port_hz(&pg, 0u), k[i].hz);
-        /* 1000 to 2000 us does not fit: the pulse stays off. */
+        /* 1000 to 2000us does not fit: the pulse stays off. */
         if (k[i].period <= 2000u) {
             CHECK_EQ(put(LINK_PG_PWM, 1u), LINK_NACK_BAD_VALUE);
             CHECK_EQ(reg(LINK_PG_PWM), 0u);
@@ -795,7 +795,7 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
                                  off_range, &o, 0u, false, 0u), 0u);
         CHECK_EQ(put(LINK_PG_PWM, 1u), LINK_NACK_BAD_VALUE);
     }
-    /* At 50 Hz the frame holds the ceiling. */
+    /* At 50Hz the frame holds the ceiling. */
     fresh(2u);
     bind(0u, 13u);
     bind(1u, 14u);
@@ -804,8 +804,8 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
     CHECK_EQ(put(LINK_PG_PWM, 3u), 0u);
     CHECK_EQ(prog_port_pwm_channels(&pg), (uint16_t)((1u << 9) | (1u << 10)));
     /* Every port that pulses is judged at its own rate: port 0, the
-     * TARGET at 400 Hz, at 2500 us refuses a write to port 1 until it is
-     * shortened; port 1 stays at 50 Hz and takes 2500 us. */
+     * TARGET at 400Hz, at 2500us refuses a write to port 1 until it is
+     * shortened; port 1 stays at 50Hz and takes 2500us. */
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2499u), 0u);
     CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
     CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2500u), 0u);
@@ -820,9 +820,9 @@ TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
 
 /*
  * Protocol 4.19: the SERVO rate reaches the TARGET port alone.  With the
- * standard servo ports as TARGET every port runs at 50 Hz whatever the
+ * standard servo ports as TARGET every port runs at 50Hz whatever the
  * rate; with port 0 as TARGET port 0 runs at the rate named after the
- * change and port 1 at 50 Hz; a rate of 0 is 50 Hz.
+ * change and port 1 at 50Hz; a rate of 0 is 50Hz.
  */
 TEST_CASE(the_servo_rate_reaches_the_target_port_alone)
 {
@@ -842,8 +842,8 @@ TEST_CASE(the_servo_rate_reaches_the_target_port_alone)
     prog_port_rate(&pg, 0u);
     CHECK_EQ(prog_port_port_hz(&pg, 0u), PROG_PORT_RATE_HZ);
     CHECK_EQ(prog_port_port_hz(NULL, 0u), PROG_PORT_RATE_HZ);
-    /* A pulse at 2500 us on port 1 is taken at 50 Hz while port 0 runs at
-     * 560 Hz. */
+    /* A pulse at 2500us on port 1 is taken at 50Hz while port 0 runs at
+     * 560Hz. */
     prog_port_rate(&pg, 560u);
     CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_MAX_US), 2500u), 0u);
     CHECK_EQ(put(LINK_PG_PWM, 2u), 0u);
@@ -851,8 +851,8 @@ TEST_CASE(the_servo_rate_reaches_the_target_port_alone)
 
 /*
  * A TARGET change returns the SERVO rate to 0, so the write that makes it
- * is judged with every port at 50 Hz: port 0 at 1000 to 2000 us cannot
- * switch its pulse on as a 560 Hz TARGET, and can in the frame that moves
+ * is judged with every port at 50Hz: port 0 at 1000 to 2000us cannot
+ * switch its pulse on as a 560Hz TARGET, and can in the frame that moves
  * the TARGET to port 1.
  */
 TEST_CASE(a_target_change_judges_the_ports_at_50_hz)
@@ -874,9 +874,9 @@ TEST_CASE(a_target_change_judges_the_ports_at_50_hz)
  * The ports are bound before the SERVO page follows a TARGET change, and a
  * write the silicon refuses is taken back with the rate it found.  So the
  * write itself returns the rate to 0: right after it, before
- * prog_port_rate(), every port reads 50 Hz -- the standard servo ports at
- * 560 Hz leaving for port 0, and port 0 at 560 Hz leaving for port 1.  A
- * revert brings back the TARGET and its 560 Hz.  A write that keeps the
+ * prog_port_rate(), every port reads 50Hz -- the standard servo ports at
+ * 560Hz leaving for port 0, and port 0 at 560Hz leaving for port 1.  A
+ * revert brings back the TARGET and its 560Hz.  A write that keeps the
  * TARGET keeps the rate.
  */
 TEST_CASE(a_target_change_returns_the_ports_rate_to_0_until_reverted)
@@ -906,9 +906,9 @@ TEST_CASE(a_target_change_returns_the_ports_rate_to_0_until_reverted)
 }
 
 /*
- * The frame that changes the TARGET judges the new TARGET port at 50 Hz,
+ * The frame that changes the TARGET judges the new TARGET port at 50Hz,
  * not at the rate the old one ran at: with the standard servo ports at
- * 560 Hz, port 1 pulsing at 1000 to 2000 us becomes the TARGET.
+ * 560Hz, port 1 pulsing at 1000 to 2000us becomes the TARGET.
  */
 TEST_CASE(a_new_target_is_judged_at_50_hz_not_the_old_rate)
 {
@@ -921,7 +921,7 @@ TEST_CASE(a_new_target_is_judged_at_50_hz_not_the_old_rate)
     CHECK_EQ(put(LINK_PG_PWM, 2u), 0u);
     CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
     CHECK_EQ(prog_port_target(&pg), 2u);
-    /* And so with port 0 the TARGET at 560 Hz. */
+    /* And so with port 0 the TARGET at 560Hz. */
     CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
     prog_port_rate(&pg, 560u);
     CHECK_EQ(put(LINK_PG_TARGET, 2u), 0u);
@@ -930,10 +930,10 @@ TEST_CASE(a_new_target_is_judged_at_50_hz_not_the_old_rate)
 
 /*
  * A slice counts against one wrap register.  Port 0 on GP13 and GP28 share
- * slice 6 on different compares, so two ports may hold them -- at 50 Hz.
- * With port 0 the TARGET at 300 Hz, port 1 cannot move onto GP28; at 50 Hz
+ * slice 6 on different compares, so two ports may hold them -- at 50Hz.
+ * With port 0 the TARGET at 300Hz, port 1 cannot move onto GP28; at 50Hz
  * or 0 it can, and in the frame that moves the TARGET too.  Two ports on
- * one slice are named to the SERVO page as held at 50 Hz.  The last port
+ * one slice are named to the SERVO page as held at 50Hz.  The last port
  * as TARGET is held the same way.
  */
 TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
@@ -954,7 +954,7 @@ TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
     CHECK_EQ(put(PIN1, 14u), 0u);
     prog_port_rate(&pg, 0u);
     CHECK_EQ(put(PIN1, 28u), 0u);
-    /* At 300 Hz again, with a TARGET change in the same frame. */
+    /* At 300Hz again, with a TARGET change in the same frame. */
     CHECK_EQ(put(PIN1, 14u), 0u);
     prog_port_rate(&pg, 300u);
     /* TARGET to port 1's PIN, the registers between as they read. */
@@ -969,7 +969,7 @@ TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
     CHECK_EQ(prog_port_target(&pg), 0u);
     CHECK_EQ(reg(PIN1), 28u);
     CHECK_EQ(prog_port_sliced_channels(NULL), 0u);
-    /* The last port as TARGET, port 1 of 2 on GP13 at 300 Hz: port 0 cannot
+    /* The last port as TARGET, port 1 of 2 on GP13 at 300Hz: port 0 cannot
      * move onto GP28. */
     fresh(2u);
     bind(1u, 13u);
@@ -983,9 +983,9 @@ TEST_CASE(a_pin_does_not_move_onto_the_slice_of_a_target_at_its_own_rate)
 /*
  * A TARGET taken from the standard servo ports while they run at a SERVO
  * rate sends every slot back to its own rate.  A surface at its own
- * 560 Hz with 1000 to 2000 us, run at the SERVO page's 50 Hz, would carry a
+ * 560Hz with 1000 to 2000us, run at the SERVO page's 50Hz, would carry a
  * pulse longer than its frame: the TARGET change is refused until its
- * endpoint fits, 1784 us.  At a SERVO rate of 0 the slots are at their own
+ * endpoint fits, 1784us.  At a SERVO rate of 0 the slots are at their own
  * rates already and nothing is judged.
  */
 TEST_CASE(a_target_change_leaves_no_slot_with_a_pulse_too_long)
@@ -1011,10 +1011,10 @@ TEST_CASE(a_target_change_leaves_no_slot_with_a_pulse_too_long)
 
 /*
  * The slots are judged at their own rates only by the write that takes the
- * TARGET from the standard servo ports.  A surface at its own 500 Hz with
- * 1000 to 2400 us runs at the SERVO page's 333 Hz, a 3003 us frame: a
+ * TARGET from the standard servo ports.  A surface at its own 500Hz with
+ * 1000 to 2400us runs at the SERVO page's 333Hz, a 3003us frame: a
  * command to port 0 keeps the TARGET and is taken; the TARGET change that
- * would leave 2400 us in a 2000 us frame is refused.
+ * would leave 2400us in a 2000us frame is refused.
  */
 TEST_CASE(a_write_that_keeps_the_target_judges_no_slot)
 {
@@ -1035,7 +1035,7 @@ TEST_CASE(a_write_that_keeps_the_target_judges_no_slot)
  * A blocked port drives no pin: its kept pin, taken at start, is no pin on
  * the TARGET's slice.  Port 1 keeps GP28, taken, and port 0 holds GP13, the
  * same slice 6.  Port 0 becomes the TARGET, no channel is named as sliced,
- * and at 300 Hz a command to port 0 is taken.
+ * and at 300Hz a command to port 0 is taken.
  */
 TEST_CASE(a_blocked_port_on_the_targets_slice_holds_nothing_there)
 {

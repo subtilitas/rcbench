@@ -1,5 +1,8 @@
-/*
- * The tap's edge words and their ring.  See edge_ring.h.
+/**
+ * @file
+ * @brief The tap's edge words and their ring.
+ *
+ * See edge_ring.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,6 +11,7 @@
 
 #include <string.h>
 
+/** @brief Half the counter range: the limit of a wrap-safe distance. */
 #define HALF (1u << (EDGE_COUNT_BITS - 1u))
 
 uint32_t edge_word(uint32_t count, bool level)

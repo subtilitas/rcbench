@@ -1,5 +1,6 @@
-/*
- * SETUP > SENSORS' list.  See sensors_rows.h.
+/**
+ * @file sensors_rows.c
+ * @brief SETUP > SENSORS' list.  See sensors_rows.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,8 +28,8 @@ void sensors_rows_set_status(uint16_t word)
     }
 }
 
-/* The limits' marks as the control task last said: bits 0 to 11 the
- * channels, 12 to 15 sense_limit_st_t. */
+/** @brief The limits' marks as the control task last said: bits 0 to 11
+ *         the channels, 12 to 15 sense_limit_st_t. */
 static uint16_t s_limits;
 
 void sensors_rows_set_limits(uint16_t word)
@@ -39,7 +40,12 @@ void sensors_rows_set_limits(uint16_t word)
     }
 }
 
-/* Whether @p id is a LIMIT row, and its channel in @p c. */
+/**
+ * @brief Whether a row is a LIMIT row.
+ * @param id the row's setting
+ * @param c  its channel, 0 to 11, for a SENSORS channel row
+ * @return true for a LIMIT row
+ */
 static bool limit_row(setting_id_t id, int *c)
 {
     if (id < SET_INA_CH_0 || id > SET_INA_CH_LAST) {

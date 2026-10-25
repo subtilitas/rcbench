@@ -2,7 +2,7 @@
  * @file log_text.h
  * @brief A text file as LOGS shows it: read whole, broken into rows.
  *
- * LOGS opens a report standing alone, LIMITnnn.TXT or SERVOnnn.TXT
+ * LOGS opens a report, ATESTnnn.TXT, LIMITnnn.TXT or SERVOnnn.TXT
  * (log_select.h), as text.  The file is read once into memory, up to
  * LOG_TEXT_MAX bytes, and its lines are broken into rows of at most a given
  * number of cells (code points, gfx_text_cells()): a line wider than a row
@@ -35,15 +35,19 @@
 extern "C" {
 #endif
 
-/** The most of a file the view holds: 32 KiB. */
+/** @brief The most of a file the view holds: 32KiB. */
 #define LOG_TEXT_MAX ((size_t)32u * 1024u)
 
-/** Rows from one mark to the next.  A row takes 1 byte at least, so a text
- *  holds LOG_TEXT_MAX rows at most and LOG_TEXT_MAX / LOG_TEXT_MARK + 1
- *  marks, 2,049 of 2 bytes, allocated beside the text. */
+/**
+ * @brief Rows from one mark to the next.
+ *
+ * A row takes 1 byte at least, so a text holds LOG_TEXT_MAX rows at most and
+ * LOG_TEXT_MAX / LOG_TEXT_MARK + 1 marks, 2,049 of 2 bytes, allocated beside
+ * the text.
+ */
 #define LOG_TEXT_MARK 16
 
-/** One file's text and its rows.  The fields are log_text.c's. */
+/** @brief One file's text and its rows.  The fields are log_text.c's. */
 typedef struct {
     char  *buf;      /**< the text, terminated; NULL before a load       */
     size_t len;      /**< bytes in @c buf                                */

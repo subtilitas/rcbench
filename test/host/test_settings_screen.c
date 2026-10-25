@@ -584,7 +584,7 @@ TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK_EQ(d->type, SET_TYPE_BOOL);
     CHECK_EQ(d->cat, SET_CAT_IFACE);
-    CHECK_STR_EQ(d->label, "AS5600");
+    CHECK_STR_EQ(settings_label(SET_ENC_EN), "AS5600");
     d = settings_def(SET_ENC_CENTRE);
     CHECK_EQ(d->type, SET_TYPE_INT);
     CHECK_EQ(d->cat, SET_CAT_IFACE);
@@ -895,6 +895,132 @@ TEST_CASE(a_heading_shows_its_text_and_has_no_keys)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* ------------------------------------------------- Screen rotation */
+
+/* SETUP's ARMED source, as the panel installs it (panel_boot.c). */
+static bool router_armed(void)
+{
+    return ui_router_status()->armed;
+}
+
+static void set_bench_armed(bool armed)
+{
+    ui_bench_status_t st = *ui_router_status();
+    st.armed = armed;
+    ui_router_set_status(&st);
+}
+
+/* The sum of the pixels of the ">" key of PANEL's row @p index. */
+static unsigned long plus_key_sum(int index)
+{
+    unsigned long sum = 0;
+    const int y0 = row_y(index) - 20;
+    for (int y = y0; y < y0 + 40; ++y) {
+        for (int x = PLUS_X + 4; x < PLUS_X + BTN_W - 4; ++x) {
+            sum += (unsigned long)s_fb[y * W + x];
+        }
+    }
+    return sum;
+}
+
+TEST_CASE(screen_rotation_steps_when_safe_and_is_locked_while_armed)
+{
+    fresh_hub();
+    settings_set_armed(router_armed);
+    set_bench_armed(false);
+    open_category(SET_CAT_APP);
+    setting_id_t ids[32];
+    const int n = settings_in_category(SET_CAT_APP, ids, 32);
+    int row = -1;
+    for (int i = 0; i < n; ++i) {
+        if (ids[i] == SET_SCREEN_ROT) {
+            row = i;
+        }
+    }
+    CHECK(row >= 0);
+    if (row < 0) {
+        settings_set_armed(NULL);
+        return;
+    }
+    /* The row is in view with the list at its top: rows 0 to 5 show. */
+    CHECK(row < 6);
+
+    /* SAFE: ">" steps NORMAL -> 180 and back, "<" too. */
+    tap(PLUS_X + BTN_W / 2, row_y(row));
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    tap(MINUS_X + BTN_W / 2, row_y(row));
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    ui_router_render(&s_c, 0);
+    const unsigned long keys_safe = plus_key_sum(row);
+
+    /* ARMED: the next frame draws the row without keys, and a tap on
+     * where they were changes nothing. */
+    set_bench_armed(true);
+    ui_router_tick(0.016f);
+    ui_router_render(&s_c, 0);
+    const unsigned long keys_armed = plus_key_sum(row);
+    CHECK(keys_armed != keys_safe);
+    tap(PLUS_X + BTN_W / 2, row_y(row));
+    tap(MINUS_X + BTN_W / 2, row_y(row));
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    /* RESET CATEGORY while ARMED leaves it too. */
+    settings_set_armed(NULL);
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    settings_set_armed(router_armed);
+    tap(RESET_X + 40, RESET_Y + RESET_H / 2);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    /* Brightness, the row two above, steps while ARMED as before. */
+    const int bright = settings_get_int(SET_BRIGHTNESS);
+    tap(MINUS_X + BTN_W / 2, row_y(1));
+    CHECK(settings_get_int(SET_BRIGHTNESS) != bright);
+    tap(PLUS_X + BTN_W / 2, row_y(1));
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), bright);
+
+    /* SAFE again: the keys are back on the next frame and step. */
+    set_bench_armed(false);
+    ui_router_tick(0.016f);
+    ui_router_render(&s_c, 0);
+    CHECK_EQ(plus_key_sum(row), keys_safe);
+    tap(PLUS_X + BTN_W / 2, row_y(row));
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_set_armed(NULL);
+}
+
+/*
+ * The turn is the panel's scan (display.h): no screen draws differently.
+ * A frame drawn with Screen rotation 180 is the frame drawn with NORMAL,
+ * pixel for pixel, whole and in the partial repaint of the second
+ * buffer, so the dirty rectangles, the double-buffer copy and the band
+ * need no mapping.  The hub is drawn, where the value shows nowhere.
+ */
+TEST_CASE(screen_rotation_draws_the_same_frame_buffer)
+{
+    static gfx_color_t *normal;
+    if (normal == NULL) {
+        normal = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(normal);
+    }
+    for (int turned = 0; turned < 2; ++turned) {
+        fresh_hub();
+        /* Saved, so neither frame shows a value unsaved. */
+        settings_set_store(&s_mem_store);
+        settings_set(SET_SCREEN_ROT, (float)turned);
+        CHECK(settings_save());
+        CHECK(!settings_dirty());
+        ui_router_render(&s_c, 0);
+        ui_router_render(&s_c, 1);
+        ui_router_tick(0.016f);
+        ui_router_render(&s_c, 0);
+        if (turned == 0) {
+            memcpy(normal, s_fb, (size_t)W * H * sizeof(gfx_color_t));
+        } else {
+            CHECK(memcmp(normal, s_fb, (size_t)W * H * sizeof(gfx_color_t))
+                  == 0);
+        }
+    }
+    settings_set_store(NULL);
+}
+
 int main(void)
 {
     RUN(interfaces_has_five_headings_above_its_sections);
@@ -925,5 +1051,7 @@ int main(void)
     RUN(the_idle_save_reports_a_refusal);
     RUN(a_reset_that_changes_nothing_keeps_the_failure);
     RUN(a_refused_pending_write_repaints_the_button);
+    RUN(screen_rotation_steps_when_safe_and_is_locked_while_armed);
+    RUN(screen_rotation_draws_the_same_frame_buffer);
     return test_summary("settings_screen");
 }

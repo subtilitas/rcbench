@@ -1,5 +1,6 @@
-/*
- * What a column means, from what it is called.
+/**
+ * @file
+ * @brief What a column means, from what it is called.
  *
  * A log names its columns but not their roles: "Time(ms)", "t", "timestamp"
  * and "Zeit" are all the x-axis, and "V", "Volt" and "Spannung" are all a
@@ -16,6 +17,7 @@
 #include <stddef.h>
 #include <string.h>
 
+/** @brief How a rule's pattern is matched against a column name. */
 typedef enum {
     M_PREFIX = 0,   /**< name starts with pattern            */
     M_EXACT,        /**< name equals pattern                 */
@@ -23,14 +25,17 @@ typedef enum {
     M_ANY_OF        /**< equals one of a '|'-separated list  */
 } match_kind_t;
 
+/** @brief One naming rule: how to match, and the group and unit it gives. */
 typedef struct {
-    match_kind_t kind;
-    const char *pattern;
-    const char *group;
-    const char *unit;
+    match_kind_t kind;       /**< how pattern is matched                   */
+    const char *pattern;     /**< the name, prefix or list to match        */
+    const char *group;       /**< group the column belongs to              */
+    const char *unit;        /**< unit the column is measured in           */
 } rule_t;
 
-/* Order matters: the first match wins. */
+/**
+ * @brief Order matters: the first match wins.
+ */
 static const rule_t k_rules[] = {
     { M_EXACT,  "loopIteration",  "Meta",  ""      },
     { M_EXACT,  "time",           "Meta",  "s"     },
@@ -68,7 +73,7 @@ static const rule_t k_rules[] = {
     { M_EXACT,  "ina voltage",    "INA228", "V"    },
     { M_EXACT,  "ina current",    "INA228", "A"    },
     { M_EXACT,  "esc current",    "ESC",   "A"     },
-    /* And the INA3221's 50 ms window, once per window: CH1 to CH3, or with
+    /* And the INA3221's 50ms window, once per window: CH1 to CH3, or with
      * SENSE_MAP a group per watched target (log_cols.h). */
     { M_ANY_OF, "window|ch1 current|ch1 max|ch1 voltage|ch2 current|"
                 "ch2 max|ch2 voltage|ch3 current|ch3 max|ch3 voltage",
@@ -76,8 +81,18 @@ static const rule_t k_rules[] = {
     { M_PREFIX, "out ",           "INA3221", "" },
     { M_PREFIX, "port ",          "INA3221", "" },
     { M_PREFIX, "supply ",        "INA3221", "" },
+    /* A SERVO run's commanded pulse and measured angle. */
+    { M_ANY_OF, "pulse|angle",    "Servo", ""      },
 };
 
+/**
+ * @brief Whether a name starts with a prefix.
+ *
+ * @param s       The column name.
+ * @param prefix  The prefix to find.
+ * @param fold    true to compare letters without regard to case.
+ * @return true when @p s starts with @p prefix.
+ */
 static bool starts_with(const char *s, const char *prefix, bool fold)
 {
     while (*prefix != '\0') {
@@ -94,6 +109,13 @@ static bool starts_with(const char *s, const char *prefix, bool fold)
     return true;
 }
 
+/**
+ * @brief Whether a name equals one of a '|'-separated list.
+ *
+ * @param s     The column name.
+ * @param list  The names, separated by '|'.
+ * @return true when @p s equals one entry of @p list.
+ */
 static bool any_of(const char *s, const char *list)
 {
     size_t n = strlen(s);
@@ -143,4 +165,66 @@ log_field_meta_t log_field_meta(const char *name)
         }
     }
     return other;
+}
+
+/**
+ * @brief The index of the numeric column named @p name, not the time axis.
+ *
+ * @param an   The file's analysis.
+ * @param name The column name.
+ * @return The column's index, or -1.
+ */
+static int numeric_column(const log_analysis_t *an, const char *name)
+{
+    for (int c = 0; c < an->n_columns; ++c) {
+        if (c != an->time_index && an->columns[c].numeric
+            && strcmp(an->columns[c].name, name) == 0) {
+            return c;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Whether @p c is among the first @p n of @p picks.
+ *
+ * @param picks The columns picked.
+ * @param n     How many.
+ * @param c     The column.
+ * @return true when c is picked.
+ */
+static bool picked(const int *picks, int n, int c)
+{
+    for (int k = 0; k < n; ++k) {
+        if (picks[k] == c) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int log_fields_picks(const log_analysis_t *an, int *out, int max)
+{
+    if (an == NULL || out == NULL) {
+        return 0;
+    }
+    int n = 0;
+    if (numeric_column(an, "pulse") >= 0) {
+        static const char *const k_servo[] = { "pulse", "angle", "current",
+                                               "voltage" };
+        for (size_t i = 0; i < sizeof(k_servo) / sizeof(k_servo[0]) && n < max;
+             ++i) {
+            const int c = numeric_column(an, k_servo[i]);
+            if (c >= 0) {
+                out[n++] = c;
+            }
+        }
+    }
+    for (int c = 0; c < an->n_columns && n < max; ++c) {
+        if (c != an->time_index && an->columns[c].numeric
+            && !picked(out, n, c)) {
+            out[n++] = c;
+        }
+    }
+    return n;
 }

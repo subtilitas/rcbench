@@ -224,8 +224,8 @@ TEST_CASE(a_refused_chan_cfg_write_stores_none_of_its_registers)
     outputs_chan_cfg_defaults(regs);
     /*
      * One channel, four registers.  The role and the slew differ from the
-     * defaults so a half-applied write shows, and the minimum is 100 us,
-     * below the LINK_CC_FLOOR_US of 400 us.
+     * defaults so a half-applied write shows, and the minimum is 100us,
+     * below the LINK_CC_FLOOR_US of 400us.
      */
     const uint16_t in[LINK_CC_STRIDE] = {
         [LINK_CC_ROLE]   = LINK_CC_ROLE_THROTTLE,
@@ -565,7 +565,7 @@ TEST_CASE(the_tone_page_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_TN_FLAGS, 8);
     CHECK_EQ(LINK_TN_EVT_SEL, 13);
     CHECK_EQ(LINK_TN_EVT_START_HI - LINK_TN_EVT_START_LO, 1);
-    /* The 20 Hz read is registers 8 to 23: four frames of four. */
+    /* The 20Hz read is registers 8 to 23: four frames of four. */
     CHECK_EQ(LINK_TN_COUNT - LINK_TN_FLAGS, 16);
     CHECK_EQ(LINK_TN_RING, 64u);
 }
@@ -1094,7 +1094,7 @@ TEST_CASE(prog_func_takes_dshot_from_4_28)
     CHECK_EQ(LINK_PG_FN_DSHOT600, 4);
     CHECK_EQ(LINK_PG_FN_COUNT, 5);
     /* Every value a register holds: DShot is 2 to 4 and nothing else,
-     * 150, 300 and 600 kbit/s, 0 for the rest. */
+     * 150, 300 and 600kbit/s, 0 for the rest. */
     static const unsigned kbit[] = { 0u, 0u, 150u, 300u, 600u, 0u };
     for (uint32_t fn = 0u; fn <= 0xFFFFu; ++fn) {
         const bool dshot = fn >= 2u && fn <= 4u;
@@ -1241,7 +1241,7 @@ TEST_CASE(the_tone_page_is_served_in_frames_and_refuses_whole)
 {
     fresh_48();
     link_msg_t r;
-    /* The 20 Hz read: registers 8 to 23, 16 of them, four frames. */
+    /* The 20Hz read: registers 8 to 23, 16 of them, four frames. */
     CHECK(ask_read(LINK_PAGE_TONE, LINK_TN_FLAGS,
                    LINK_TN_COUNT - LINK_TN_FLAGS, &r));
     CHECK_EQ(r.op, LINK_OP_DATA);

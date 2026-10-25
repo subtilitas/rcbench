@@ -1,5 +1,6 @@
-/*
- * Run log names, and the order a bounded listing keeps them in.
+/**
+ * @file
+ * @brief Run log names, and the order a bounded listing keeps them in.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -11,16 +12,22 @@
 #include <stdio.h>
 #include <string.h>
 
+/** @brief Digits in a run number. */
 #define RUN_DIGITS     3
+/** @brief Suffix of a run log. */
 #define RUN_SUFFIX     ".CSV"
+/** @brief Suffix of a run's report. */
 #define REPORT_SUFFIX  ".TXT"
+/** @brief Length of a suffix, characters. */
 #define SUFFIX_LEN     4
 
 _Static_assert(sizeof(RUN_SUFFIX) - 1u == SUFFIX_LEN
                    && sizeof(REPORT_SUFFIX) == sizeof(RUN_SUFFIX),
                "a report's name is as long as its run's");
 
-/* The writers' prefixes, in log_prefix_t order. */
+/**
+ * @brief The writers' prefixes, in log_prefix_t order.
+ */
 static const char *const k_prefix[LOG_PREFIX_COUNT] = {
     [LOG_PREFIX_ATEST] = "ATEST",
     [LOG_PREFIX_LIMIT] = "LIMIT",
@@ -39,12 +46,17 @@ _Static_assert(LOG_PREFIX_WRITTEN == 5 && LOG_NAME_FORMS == 10,
                "five prefixes written, ten names probed");
 _Static_assert(5 + RUN_DIGITS <= 8, "an 8.3 base name");
 
-/*
- * Does @p name open with @p pat, case folded?  @p name holds at least
- * @p pat_len characters; the caller checks its length first.
+/**
+ * @brief Does @p name open with @p pat, case folded?  @p name holds at least @p
+ *        pat_len characters; the caller checks its length first.
  *
  * Case folded, because the same rule has to hold for a card taken to a
  * computer and written back as bench042.csv.
+ *
+ * @param name     The file name.
+ * @param pat      The prefix.
+ * @param pat_len  Length of @p pat, characters.
+ * @return true when the first @p pat_len characters match.
  */
 static bool prefix_matches(const char *name, const char *pat, size_t pat_len)
 {
@@ -107,9 +119,14 @@ void log_report_name(char *out, size_t out_size, int number)
     log_name_build(out, out_size, LOG_PREFIX_BENCH, number, true);
 }
 
-/*
- * The number in @p name under @p suffix, any prefix, or -1; @p prefix, when
- * not NULL, takes the prefix's index.
+/**
+ * @brief The number in @p name under @p suffix, any prefix, or -1; @p prefix,
+ *        when not NULL, takes the prefix's index.
+ *
+ * @param name    The file name.
+ * @param suffix  The suffix the name must end with.
+ * @param prefix  Receives the index of the prefix, or NULL.
+ * @return The run number, or -1 when the name is not one.
  */
 static int numbered(const char *name, const char *suffix, int *prefix)
 {
@@ -166,14 +183,7 @@ int log_name_number(const char *name)
     return (n >= 0) ? n : log_report_number(name);
 }
 
-/**
- * @brief Read a run log's or a report's name apart.
- * @param name    the name, case folded as log_run_number() folds it
- * @param prefix  takes the writer's prefix; may be NULL
- * @param report  takes whether it is the ".TXT" report; may be NULL
- * @return the number, or -1 for a name that is neither: then @p prefix and
- *         @p report are left as they were
- */
+/* Read a run log's or a report's name apart (log_name.h). */
 int log_name_parse(const char *name, log_prefix_t *prefix, bool *report)
 {
     int k = -1;

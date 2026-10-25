@@ -1,6 +1,6 @@
 /*
  * SETUP > SENSORS' settings: the INA3221 parts' rows of the schema, a
- * shunt's 0 below 5.0 mOhm, the seeds from the one INA3221 of 0.21, the
+ * shunt's 0 below 5.0mOhm, the seeds from the one INA3221 of 0.21, the
  * map the rows make (settings_sensors.h), and which rows SETUP lists
  * (sensors_rows.h).
  *
@@ -119,7 +119,7 @@ TEST_CASE(every_watch_option_is_the_page_code)
 }
 
 /*
- * A shunt takes 0, off, or 5.0 to 1000.0 mOhm: + from 0 is 5.0 and - from
+ * A shunt takes 0, off, or 5.0 to 1000.0mOhm: + from 0 is 5.0 and - from
  * 5.0 is 0, a held key runs on from there, and a stored word between 0 and
  * 5.0 is the nearer of the two.
  */
@@ -239,7 +239,7 @@ TEST_CASE(a_fresh_panel_starts_on_the_defaults)
     CHECK(!settings_dirty());
 }
 
-/* 0.21 with the INA3221 at 0x41 on 50 mOhm, CH1: the part is fitted, its
+/* 0.21 with the INA3221 at 0x41 on 50mOhm, CH1: the part is fitted, its
  * CH1 on the old shunt and watching the outputs, CH2 and CH3 off; every
  * other part as a fresh panel has it. */
 TEST_CASE(an_old_set_up_on_ch1_seeds_its_part)
@@ -260,7 +260,7 @@ TEST_CASE(an_old_set_up_on_ch1_seeds_its_part)
     /* The old keys stay as stored, for a panel taken back to 0.21. */
     CHECK(settings_get_bool(SET_INA3221_EN));
     CHECK_EQ(settings_get_int(SET_INA3221_ADDR), 1);
-    /* The bench reads as before: 0x41, 50 mOhm, CH1, the meter on it. */
+    /* The bench reads as before: 0x41, 50mOhm, CH1, the meter on it. */
     settings_sensors_map_t m;
     settings_sensors_map(&m);
     CHECK_EQ(m.fast, 3u);
@@ -442,7 +442,7 @@ TEST_CASE(a_fitted_part_with_every_channel_off_is_dark)
     CHECK_EQ(m.dark, 0x08u);
     CHECK_EQ(m.parts, 0x09u);
     CHECK_EQ(m.fast, 0u);
-    /* The one-part frame: CH1 off, CH2 on 50 mOhm, CH3 on 100 -- a
+    /* The one-part frame: CH1 off, CH2 on 50mOhm, CH3 on 100 -- a
      * shunt the frame does not carry, so CH2 alone. */
     settings_set(SET_INA_SH(0), 0.0f);
     settings_set(SET_INA_SH(1), 50.0f);
@@ -517,7 +517,7 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(!sensors_rows_unheld(SET_INA_FIT(1)));
     CHECK(!sensors_rows_unheld(SET_HITEC_RX));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(3)),
-                 "IOmcu older than 4.25: one INA3221, CH1 at 1 kHz.");
+                 "IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(6)),
                  "Every channel off. The IOmcu takes no such part.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(9)),
@@ -534,7 +534,7 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
 }
 
 /* A LIMIT row the IOmcu does not hold is marked, and only that row; on an
- * IOmcu older than 4.27 the line says no limit is judged.  A part's own
+ * IOmcu older than 0.22.0 (protocol 4.27) the line says no limit is judged.  A part's own
  * reason comes first. */
 TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
 {
@@ -552,7 +552,7 @@ TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
                                        | (1u << 11)));
     CHECK(sensors_rows_unheld(SET_INA_LIM(11)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
-                 "IOmcu older than 4.27: no limit is judged.");
+                 "IOmcu older than 0.22.0: no limit is judged.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(11)),
                  "Not accepted by the IOmcu.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_FIT(0)),
@@ -619,7 +619,7 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
         { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOMCU", UI_C_WARN },
         { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
         { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
-        { SENS_PART_OLD,       "IOMCU OLDER THAN 4.25: NOT READ", UI_C_WARN },
+        { SENS_PART_OLD,       "IOMCU OLDER THAN 0.22.0: NOT READ", UI_C_WARN },
         { SENS_PART_NO_BUS,    "SENSOR SDA OR SCL UNSET",   UI_C_WARN },
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -642,20 +642,20 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
 }
 
 /* The band alert names the part, the channel, what it watches and the
- * limit it passed in amperes, rounded to 10 mA, in both languages. */
+ * limit it passed in amperes, rounded to 10mA, in both languages. */
 TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
 {
     static const struct {
         unsigned ch; uint16_t ma; int watch; const char *en;
     } k[] = {
         { 0u, 10u, SENS_W_NONE,
-          "INA3221 0x40 CH1 over its 0.01 A limit." },
+          "INA3221 0x40 CH1 over its 0.01A limit." },
         { 4u, 990u, SENS_W_SUPPLY,
-          "INA3221 0x41 CH2 (SUPPLY) over its 0.99 A limit." },
+          "INA3221 0x41 CH2 (SUPPLY) over its 0.99A limit." },
         { 8u, 32760u, SENS_W_PORT_1,
-          "INA3221 0x42 CH3 (PORT 1) over its 32.76 A limit." },
+          "INA3221 0x42 CH3 (PORT 1) over its 32.76A limit." },
         { 11u, 32767u, SENS_W_OUT_1 + 7,
-          "INA3221 0x43 CH3 (OUT 8) over its 32.77 A limit." },
+          "INA3221 0x43 CH3 (OUT 8) over its 32.77A limit." },
     };
     char buf[UI_ALERT_MAX];
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -684,25 +684,25 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
                                     SENSE_LIMIT_LINK_EV_OVER, 0u, 10u,
                                     SENS_W_NONE),
                  "INA3221 0x40 CH1 \xc3\xbc"
-                 "ber der Grenze von 0.01 A.");
+                 "ber der Grenze von 0.01A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_OVER, 4u, 990u,
                                     SENS_W_SUPPLY),
                  "INA3221 0x41 CH2 (NETZTEIL) \xc3\xbc"
-                 "ber der Grenze von 0.99 A.");
+                 "ber der Grenze von 0.99A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_OVER, 8u, 32760u,
                                     SENS_W_PORT_1),
                  "INA3221 0x42 CH3 (PORT 1) \xc3\xbc"
-                 "ber der Grenze von 32.76 A.");
+                 "ber der Grenze von 32.76A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_OVER, 11u, 32767u,
                                     SENS_W_SUPPLY),
                  "INA3221 0x43 CH3 (NETZTEIL) \xc3\xbc"
-                 "ber der Grenze von 32.77 A.");
+                 "ber der Grenze von 32.77A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
-                 "INA3221-Grenzen abgelehnt. SETUP > SENSOREN pr"
+                 "INA3221-Grenzen abgelehnt. SETUP > SENSORS pr"
                  "\xc3\xbc" "fen.");
     ui_text_set_language(UI_LANG_EN);
 }

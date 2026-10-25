@@ -32,7 +32,7 @@ before a write is relied on.
 
 - The IOmcu runs protocol 4.13 or later. With an older one the overlay
   says `Unavailable: the IOmcu has no programming port.` and
-  `Update the IOmcu to version 4.13 or later.`, and every control but
+  `Update the IOmcu to version 0.17.0 or later.`, and every control but
   **CLOSE** is off.
 - **LEAVE** with its wait needs protocol 4.15 on the IOmcu. An older
   one is [named and handled without it](#an-iomcu-older-than-link-version-415).
@@ -140,11 +140,11 @@ With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer sho
 
 | State | Line on the SERVO tab | The port carries |
 | --- | --- | --- |
-| PWM, a PD mini answers | `Tester is using port 1. CONNECT sets 5.0 V and 1000 mA.` | the tester's pulses |
+| PWM, a PD mini answers | `Tester is using port 1. CONNECT sets 5.0V and 1000mA.` | the tester's pulses |
 | PWM, no PD mini | `Tester is using port 1. No PD mini: supply stays unchanged.` | the tester's pulses |
-| Connecting | `Connecting on port 1. PWM is off.` | no pulse for 50 ms, then low for 100 ms, then the entry sequence |
+| Connecting | `Connecting on port 1. PWM is off.` | no pulse for 50ms, then low for 100ms, then the entry sequence |
 | Programming | `Port 1 is in programming mode. PWM is off.` | frames only |
-| Programming, the supply read | `Port 1 in programming mode. PWM off. 5.00 V, 37 mA.` | frames only |
+| Programming, the supply read | `Port 1 in programming mode. PWM off. 5.00V, 37mA.` | frames only |
 | Working | `Operation in progress: 12 frames.` | frames of the running operation |
 | Working, a write of values | `Writing 3 registers. Frames sent: 94.`, or `Writing 1 register. Frames sent: 31.` | frames of the write; the count is the registers the write sets |
 | Working, a restore of the session's backup or a pairing release | `Writing. Frames sent: 12.` | frames of the write; the IOmcu plans it alone, and the panel has no count |
@@ -179,9 +179,9 @@ the overlay is open again on PROGRAM at the next entry.
 | `This programming port does not exist on the IOmcu.` | the IOmcu has fewer ports than the one asked for |
 | `Programming voltage or current exceeds the SUPPLY limits.` and `Lower the value under MORE, or raise the limit. Nothing was applied.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
 | `Tap DISARM first. The port cannot be taken over while ARMED.` | the bench is ARMED or asked to arm; the IOmcu refuses the same on its own with `Port busy. Try again.` |
-| `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage the session runs at less than 0.7 V under the input voltage of the PD mini; the supply is not changed |
-| `Supply below 4.8 V. Programming requires at least 4.8 V.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the IOmcu |
-| `The supply did not switch within 3000 ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
+| `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4V, the current limit outside 50 to 3000mA, or the voltage the session runs at less than 0.7V under the input voltage of the PD mini; the supply is not changed |
+| `Supply below 4.8V. Programming requires at least 4.8V.` | the programming voltage, or the voltage of an output that is on, is under 4.8V; the supply is not changed. With an output that is on and set under 4.8V the panel sends nothing to the IOmcu |
+| `The supply did not switch within 3000ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
 | `The IOmcu has not yet accepted the link. Try again.` | the IOmcu does not trust the heartbeat, or the link was silent |
 
 ![A port without a pin](img/servo-kst-nopin.png)
@@ -189,14 +189,14 @@ the overlay is open again on PROGRAM at the next entry.
 ### The signal level
 
 The servo's signal pin is a microcontroller GPIO (general-purpose
-input/output). The high level of its reply is at most 5 V and typically
-3.3 V. The level is not measured. GP13 is rated 5.5 V while the
-IOmcu's IOVDD (input/output supply) is at 3.3 V
+input/output). The high level of its reply is at most 5V and typically
+3.3V. The level is not measured. GP13 is rated 5.5V while the
+IOmcu's IOVDD (input/output supply) is at 3.3V
 (`hardware/docs/IOBoard.md`, pin ratings), so the port has no level shifter
 and no clamp.
 
-With the IOmcu unpowered GP13 is rated 3.63 V. A servo that drives
-the wire at 5 V while the IOmcu is off exceeds that rating. What the
+With the IOmcu unpowered GP13 is rated 3.63V. A servo that drives
+the wire at 5V while the IOmcu is off exceeds that rating. What the
 servo's pin does at idle with the bench off is not measured.
 
 Power the IOmcu before the servo's supply, or do not feed the servo
@@ -210,25 +210,25 @@ With the port in the tester's hands, **MORE** opens what **CONNECT** sets.
 
 | Entry | Range | Default | Does |
 | --- | --- | --- | --- |
-| PROGRAMMING VOLTAGE | 4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on | 5.0 V | the supply voltage of the servo in programming mode |
-| CURRENT LIMIT | 50 to 3000 mA | 1000 mA | the supply's current limit during programming |
-| WAIT BEFORE PWM | 0 to 10 000 ms | 100 ms | the time the port holds its line low between **LEAVE** and the first pulse |
+| PROGRAMMING VOLTAGE | 4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on | 5.0V | the supply voltage of the servo in programming mode |
+| CURRENT LIMIT | 50 to 3000mA | 1000mA | the supply's current limit during programming |
+| WAIT BEFORE PWM | 0 to 10 000ms | 100ms | the time the port holds its line low between **LEAVE** and the first pulse |
 
 Each entry opens the number keypad with its range. A value outside the range
 is not taken. All three are kept with the SERVO settings.
 
 **CONNECT** switches an output that is off on at the two values, and the
-session starts 1000 ms after the PD mini reads on. For an output that is
+session starts 1000ms after the PD mini reads on. For an output that is
 on, the session runs at the lower of the two voltages and the lower of the
 two current limits: a voltage above the programming voltage is lowered to
 it, a current limit above CURRENT LIMIT is lowered to it, and neither is
 raised. Leaving programming does not restore a value **CONNECT** lowered.
 
-The port programs at 4.8 V or more. The supply voltage a servo needs to
+The port programs at 4.8V or more. The supply voltage a servo needs to
 store a register is not measured. An
-output that is on under 4.8 V is not programmed at and stays as it is; the
-operator raises it first. A PD mini whose input voltage is under 5.5 V cannot give
-4.8 V, and no session starts on it.
+output that is on under 4.8V is not programmed at and stays as it is; the
+operator raises it first. A PD mini whose input voltage is under 5.5V cannot give
+4.8V, and no session starts on it.
 
 While the port is out of PWM the supply's set points are the port's. The
 IOmcu refuses every change of the voltage and of the current limit
@@ -242,29 +242,29 @@ port is back in PWM.
 
 An OFF that arrives while a frame is on the wire, from **OUTPUT OFF**,
 **STOP** or a lost heartbeat, reads off at once and reaches the PD mini
-when the port has cut the frame, 12 ms later at most. The PD mini's own
+when the port has cut the frame, 12ms later at most. The PD mini's own
 protection is not delayed. How long the PD mini's output takes to fall
 after its off command is not measured.
 
 ![The voltage keypad](img/servo-kst-voltage.png)
 ![The wait keypad](img/servo-kst-wait.png)
 
-A voltage above 6.0 V needs **HV SERVO** in the AUTOMATIC TEST card's settings on TEST;
-without it the keypad ends at 6.0 V. With it, a value above 6.0 V opens the
-warning page of the SERVO screen's high-voltage setting, and **HOLD TO
-APPLY** takes it after 2 s. Switching **HV SERVO** off sets a programming
-voltage above 6.0 V back to 5.0 V.
+A voltage above 6.0V needs **HV SERVO** in the AUTOMATIC TEST card's settings on TEST;
+without it the keypad ends at 6.0V. With it, a value above 6.0V opens the
+warning page of the SERVO screen's high-voltage setting, and **HOLD 2s TO
+APPLY** takes it after 2s. Switching **HV SERVO** off sets a programming
+voltage above 6.0V back to 5.0V.
 
-A voltage above 6.0 V is not stored. The SERVO settings keep 6.0 V for it,
-and a stored value above 6.0 V, from the settings page or a settings file,
-is loaded as 6.0 V and stored as that, with **HV SERVO** on or off. The
+A voltage above 6.0V is not stored. The SERVO settings keep 6.0V for it,
+and a stored value above 6.0V, from the settings page or a settings file,
+is loaded as 6.0V and stored as that, with **HV SERVO** on or off. The
 programmer reads the settings when it opens and at every entry of the SERVO
 screen while no port is held, and when the panel starts under a held port:
-each of these begins at 6.0 V or below, and a voltage above it takes the
-warning page and its hold of 2 s again. A session that holds its port keeps
+each of these begins at 6.0V or below, and a voltage above it takes the
+warning page and its hold of 2s again. A session that holds its port keeps
 the voltage it began with.
 
-![A programming voltage above 6.0 V](img/servo-kst-hv.png)
+![A programming voltage above 6.0V](img/servo-kst-hv.png)
 
 With a PD mini answering, the state line names the values before
 **CONNECT** and the measured output voltage and current in programming
@@ -292,7 +292,7 @@ without a PD mini by an IOmcu of link version 4.15 or later.
 | ENABLE WRITE TO SERVO | **OFF**, **ON** | [the write switch](#the-write-switch) |
 | CHANGES | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values](#writing) |
 
-In PWM with a PD mini answering the PORT row reads `PORT  5.0 V  1000 mA`:
+In PWM with a PD mini answering the PORT row reads `PORT  5.0V  1000mA`:
 the voltage and the current limit that **CONNECT** sets. A row whose button
 is drawn off takes no tap: **FILES** outside programming mode and while the
 servo is in doubt, **RESTORE** while an operation runs, the write switch
@@ -324,8 +324,8 @@ A numeric value opens the keypad. Its range is the range the hard limits
 accept in the draft as it stands, so a value outside cannot be entered.
 STRETCH opens a list of the 6 confirmed factors. An ON/OFF value flips on
 the tap. DEAD BAND and NEUTRAL have minus and plus keys: one raw count a
-tap, and while held 8 counts a second after 0.45 s and 30 a second after a
-further 1.8 s.
+tap, and while held 8 counts a second after 0.45s and 30 a second after a
+further 1.8s.
 
 ![The keypad with the range the limits accept](img/servo-kst-keypad.png)
 ![The stretch list](img/servo-kst-stretch.png)
@@ -335,12 +335,12 @@ further 1.8 s.
 | Row | Register field | Hard limit |
 | --- | --- | --- |
 | DEAD BAND | Dead Band, µs | the field's range |
-| MAX. DUTY | Max. Duty, % | 10 to 98 % |
-| BOOST | Boost, µs | at most 3000 µs |
+| MAX. DUTY | Max. Duty, % | 10 to 98% |
+| BOOST | Boost, µs | at most 3000µs |
 | STRETCH | Stretch, factor | x1 to x32; the 2 remaining codes are not offered |
 | SOFT START | Soft_Start, ON or OFF | none |
-| SPEED LIMIT | spd_sel, ON or OFF | ON needs SPEED at 5 % or above |
-| SPEED | SPD, % | at most 100 %; at least 5 % while SPEED LIMIT is ON |
+| SPEED LIMIT | spd_sel, ON or OFF | ON needs SPEED at 5% or above |
+| SPEED | SPD, % | at most 100%; at least 5% while SPEED LIMIT is ON |
 
 ### PULSE
 
@@ -348,15 +348,15 @@ further 1.8 s.
 
 | Row | Register field | Hard limit |
 | --- | --- | --- |
-| NEUTRAL | Neutral, µs | 1360 to 1640 µs; 100 µs or more from either end point |
-| PULSE LOWER | Pulse Lower, µs | 500 µs or more; 100 µs or more below NEUTRAL; 400 µs or more below PULSE UPPER |
-| PULSE UPPER | Pulse Upper, µs | 2500 µs or less; 100 µs or more above NEUTRAL |
+| NEUTRAL | Neutral, µs | 1360 to 1640µs; 100µs or more from either end point |
+| PULSE LOWER | Pulse Lower, µs | 500µs or more; 100µs or more below NEUTRAL; 400µs or more below PULSE UPPER |
+| PULSE UPPER | Pulse Upper, µs | 2500µs or less; 100µs or more above NEUTRAL |
 | LEFT ANGLE | Left Angle, the vendor tool's number | not 0 |
 | RIGHT ANGLE | Right Angle, the vendor tool's number | not 0 |
 | REVERSION | Reversion, ON or OFF | none |
 
 The NEUTRAL conversion between register and µs is a fit to 3 values and
-uncertain by about 1 µs. The tab says of the two angles `LEFT ANGLE, RIGHT ANGLE: raw servo values. The unit is unknown.` The screens write `us` for µs:
+uncertain by about 1µs. The tab says of the two angles `LEFT ANGLE, RIGHT ANGLE: raw servo values. The unit is unknown.` The screens write `us` for µs:
 their font has no micro sign.
 
 ### FAILSAFE
@@ -366,11 +366,11 @@ their font has no micro sign.
 | Row | Register field | Hard limit |
 | --- | --- | --- |
 | MOVE ON SIGNAL LOSS | Allow Uncont, ON or OFF | none |
-| POSITION | Uncontrolled Pos, µs | 500 to 2500 µs and within PULSE LOWER to PULSE UPPER |
-| AFTER | Uncontrolled Time, s | 0.4 to 13.0 s |
+| POSITION | Uncontrolled Pos, µs | 500 to 2500µs and within PULSE LOWER to PULSE UPPER |
+| AFTER | Uncontrolled Time, s | 0.4 to 13.0s |
 
 The limits are those of `protocols/kst/kst_limits.c`; the panel holds none
-of its own. The lower limit of MAX. DUTY and the 5 % of SPEED are choices,
+of its own. The lower limit of MAX. DUTY and the 5% of SPEED are choices,
 not readings of a servo.
 
 ### A value a hard limit refuses
@@ -384,14 +384,14 @@ A tap that would break a hard limit changes nothing and says which limit.
 A value inside the hard limits that breaks a soft limit opens CHECK THIS
 CHANGE with the field's line and one line per limit. The field's line
 counts from the servo's value, not from an edit before this one: `MAX.
-DUTY: 96 -> 97 %` is the value the servo holds, the new value and the unit.
-**HOLD TO APPLY** takes it after 2 s of holding; **CANCEL**, or a finger
+DUTY: 96 -> 97%` is the value the servo holds, the new value and the unit.
+**HOLD 2s TO APPLY** takes it after 2s of holding; **CANCEL**, or a finger
 that slides off, leaves the draft as it was.
 
 A limit confirmed for a value is confirmed for that value. A later edit of
 the field opens the page again when it moves the value further from the
-servo's than the value confirmed, or to its other side: 97 % confirmed, 98 %
-asks again and shows `MAX. DUTY: 96 -> 98 %`, and 97 % after that does not.
+servo's than the value confirmed, or to its other side: 97% confirmed, 98%
+asks again and shows `MAX. DUTY: 96 -> 98%`, and 97% after that does not.
 A write, a read and **DISCARD EDITS** end every confirmation.
 
 ![A soft limit](img/servo-kst-soft.png)
@@ -399,25 +399,25 @@ A write, a read and **DISCARD EDITS** end every confirmation.
 | Condition | Warning |
 | --- | --- |
 | MAX. DUTY above the servo's | `Higher duty increases stall current and heat.` |
-| MAX. DUTY below 50 % | `Low duty weakens the servo. It may not hold the control surface.` |
+| MAX. DUTY below 50% | `Low duty weakens the servo. It may not hold the control surface.` |
 | BOOST above the servo's | `Higher boost can cause buzzing and heat.` |
 | STRETCH above the servo's | `Higher stretch can cause servo oscillation.` |
 | SOFT START switched off | `Without soft start, the servo moves abruptly at power-on.` |
 | SPEED LIMIT switched on | `Speed limit active. The servo moves at the set speed.` |
-| SPEED below 30 % with SPEED LIMIT on | `A slow servo can cause loss of control of the model.` |
+| SPEED below 30% with SPEED LIMIT on | `A slow servo can cause loss of control of the model.` |
 | DEAD BAND below the servo's | `A narrow dead band can cause back-and-forth movement and heat.` |
-| DEAD BAND below 1.0 µs | `Very narrow dead band. Back-and-forth movement and heat are likely.` |
+| DEAD BAND below 1.0µs | `Very narrow dead band. Back-and-forth movement and heat are likely.` |
 | MOVE ON SIGNAL LOSS switched on | `On signal loss the servo moves to the failsafe position.` |
-| POSITION more than 300 µs from NEUTRAL, MOVE ON SIGNAL LOSS on | `Failsafe position is far from the centre.` |
-| AFTER below 1.0 s | `Short dropouts will trigger the failsafe move.` |
-| an end point less than 300 µs from NEUTRAL | `End point close to Neutral. Little travel remains on this side.` |
-| an end point more than 100 µs from the servo's | `End point changed. The servo travel per stick movement changes too.` |
-| NEUTRAL more than 20 µs from the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
+| POSITION more than 300µs from NEUTRAL, MOVE ON SIGNAL LOSS on | `Failsafe position is far from the centre.` |
+| AFTER below 1.0s | `Short dropouts will trigger the failsafe move.` |
+| an end point less than 300µs from NEUTRAL | `End point close to Neutral. Little travel remains on this side.` |
+| an end point more than 100µs from the servo's | `End point changed. The servo travel per stick movement changes too.` |
+| NEUTRAL more than 20µs from the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
 | REVERSION changed | `Direction reversed. Check all control surfaces before flight.` |
 | an angle above the servo's | `More travel can push the servo against its stop and burn it out.` |
 | an angle below 50 | `Small angle. Full stick movement gives little servo travel.` |
-| DEAD BAND below 1.0 µs with STRETCH above x1 | `Narrow dead band and higher gain can cause oscillation.` |
-| MAX. DUTY above 90 % with an angle above the servo's | `High duty and more travel: a stall can destroy the servo.` |
+| DEAD BAND below 1.0µs with STRETCH above x1 | `Narrow dead band and higher gain can cause oscillation.` |
+| MAX. DUTY above 90% with an angle above the servo's | `High duty and more travel: a stall can destroy the servo.` |
 
 "The servo's" in this table is the value of the session's backup, the
 servo as the session first read it. A write of the session does not move
@@ -446,7 +446,7 @@ known.
 ## The write switch
 
 **ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
-that names the risks; **HOLD TO ENABLE** switches it on after 2 s. A tap on
+that names the risks; **HOLD 2s TO ENABLE** switches it on after 2s. A tap on
 **ON** switches it off at once. A tap on **WRITE n VALUES** with the switch
 off opens the same page: its hold switches the switch on and writes
 nothing, and the next tap on **WRITE n VALUES** opens the write page.
@@ -491,11 +491,11 @@ change. With the switch off its tap opens
 
 ![Three changed values, the switch on](img/servo-kst-changes.png)
 
-A tap opens the write page. **HOLD TO WRITE** starts the write after 2 s.
+A tap opens the write page. **HOLD 2s TO WRITE** starts the write after 2s.
 The page has 12 lines.
 
 The changed values come first, in the order of the tabs, one line each:
-`DEAD BAND: 2.0 -> 1.6 us` is the servo's value, the new value and the
+`DEAD BAND: 2.0 -> 1.6us` is the servo's value, the new value and the
 unit. A value at fault for [a soft limit](#a-value-that-needs-a-second-look)
 is in the warning colour. With more values than lines the last of these
 lines counts the rest: `and 4 more`. A first write with a card shows 7
@@ -518,7 +518,7 @@ starting is not that first write: the lines stay for the next one.
 2. The panel records the image the servo holds, the image the write is to
    leave and the port: with a card in `BENCH/KST/CONF/KST.TXT`, without one in
    memory.
-   The page says which. With a card that takes no file within 3 s the write
+   The page says which. With a card that takes no file within 3s the write
    is not sent: `Could not save the file to the card. Nothing was written to the servo.`
 3. The panel sends the target image. The IOmcu checks it against the
    same limits, plans the register writes and runs them.
@@ -577,7 +577,7 @@ The panel writes the text to `KST.NEW`, and the file takes the name
 ends leaves `KST.TXT` as it was or a whole `KST.NEW`. At power-on a
 `KST.NEW` whose check holds is used and renamed; one whose check fails is
 removed and `KST.TXT` is used. A file the card does not take is written
-again every 5 s until the card takes it, so that a record discarded on the
+again every 5s until the card takes it, so that a record discarded on the
 panel does not stay on the card.
 
 ## Servo files
@@ -600,7 +600,7 @@ with a proposed name, `KST` and 3 digits, stand together at the place of
 the card. With more than 5 files
 the title counts them, `FILES 1 TO 5 OF 7`, and `Show more files.` turns
 the page, back to the first after the last. The panel asks the card for
-each page and waits at most 5 s for it.
+each page and waits at most 5s for it.
 
 ![The second page of 7 files](img/servo-kst-files-next.png)
 ![A card without servo files](img/servo-kst-files-none.png)
@@ -608,9 +608,9 @@ each page and waits at most 5 s for it.
 ### The servo type
 
 A servo and a file are V6 or V8. The 20k_sel field decides: 1 is V6, a
-20 kHz drive; 0 is V8, a 333 Hz drive. No other register enters the type.
+20kHz drive; 0 is V8, a 333Hz drive. No other register enters the type.
 Once a servo is read, the **SERVO** row reads `SERVO V6` or `SERVO V8` and
-the line below the rows says `Servo type V6: 20 kHz drive.` The type is
+the line below the rows says `Servo type V6: 20kHz drive.` The type is
 never edited and never written.
 
 ![A V8 servo and a V6 file](img/servo-kst-file-v6.png)
@@ -634,7 +634,7 @@ loaded; a line that names it shows its first 14 characters and `..`.
 | No card | `No card. Nothing saved or written to the servo.` |
 | Card full, or `KST001` to `KST999` all taken at the backup before a write | `Card full. Nothing saved or written to the servo.` |
 | The card is write protected, or `BENCH`, `BENCH/KST` or `BENCH/KST/CONF` on the card is a file and no folder | `Cannot save: card write-protected, or BENCH/KST/CONF is not a folder.` |
-| The card fails the write of the file, or does not answer within 5 s | `Card write error. Nothing was written to the servo.` |
+| The card fails the write of the file, or does not answer within 5s | `Card write error. Nothing was written to the servo.` |
 
 ![A name that exists](img/servo-kst-name-exists.png)
 ![A name that is not allowed](img/servo-kst-name-bad.png)
@@ -642,7 +642,7 @@ loaded; a line that names it shows its first 14 characters and `..`.
 ![No card](img/servo-kst-card-none.png)
 ![A full card](img/servo-kst-card-full.png)
 
-A save the card ends after the 5 s is the file it made. With no other file
+A save the card ends after the 5s is the file it made. With no other file
 operation running the line changes to `Servo settings saved to the card:` and
 the name. It is the session's backup file if the servo still holds the
 saved values and no write followed.
@@ -678,8 +678,8 @@ No card. No backup file will be saved.
 This session's backup is kept only in the bench's memory. It is lost when the session ends or the bench loses power.
 ```
 
-The page's one hold of 2 s confirms them; no second hold is asked for. A
-hold released before 2 s sends nothing.
+The page's one hold of 2s confirms them; no second hold is asked for. A
+hold released before 2s sends nothing.
 
 ![The write page without a card](img/servo-kst-write-nocard.png)
 
@@ -697,7 +697,7 @@ servo held before the write are then not recoverable from the bench.
 | The servo may hold written values and the panel does not hold the session's backup | the write goes without a file, and its page carries the three lines above: the servo as last read is not saved as the backup file |
 | The IOmcu starts again | its session and the session's backup are gone. **CONNECT** begins a session, and its first write saves the servo as that session finds it |
 | A save through **FILES** after a write without a card | saves the servo as it stands; it does not count as the backup file |
-| The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
+| The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
 | A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens and at each tap on **CONNECT**, **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open write page changes to the page with the file |
@@ -719,7 +719,7 @@ lines name what the panel found in place of `No card`
 A tap on a file loads it. Its editable fields become the draft, exactly as
 edits typed on the tabs: changed values are marked, **WRITE n VALUES**
 counts them, and nothing reaches the servo before the write switch, the
-write page and its 2 s hold.
+write page and its 2s hold.
 
 ![A file loaded](img/servo-kst-file-loaded.png)
 
@@ -736,7 +736,7 @@ write page and its 2 s hold.
 | Written by a later format version | `This file needs a newer bench version. Not loaded.` |
 | A value outside its hard limit | `Line 9: MAX. DUTY is outside its allowed range. Not loaded.` |
 | Values that break a hard limit together | `File not loaded. It fails a limit check:` and the limit's line |
-| The card does not read, or does not answer within 5 s | `Cannot read the card.` |
+| The card does not read, or does not answer within 5s | `Cannot read the card.` |
 | No servo file on the card | `No servo files on the card.` |
 
 ![A file of the other type](img/servo-kst-file-type.png)
@@ -756,7 +756,7 @@ opens CHECK THIS FILE before anything becomes the draft. The page has 12
 lines: the file's line, the line of an edited file, the values that differ
 as [the write page](#writing) lists them, 4 or 3 and `and 2 more`, and the
 same warning lines an edit past those limits shows; with more warnings than
-lines the last line counts the rest. **HOLD TO LOAD** for 2 s takes the
+lines the last line counts the rest. **HOLD 2s TO LOAD** takes the
 values into the draft. **CANCEL** leaves the draft as it was.
 
 ![The warnings of a file](img/servo-kst-file-soft.png)
@@ -785,7 +785,7 @@ register, and it ends with the session.
 ## Restore
 
 **RESTORE** opens the list of what there is to restore. Every restore needs
-the write switch and a 2 s hold.
+the write switch and a 2s hold.
 
 ![The restore list](img/servo-kst-restore-list.png)
 ![A restore of the session's backup](img/servo-kst-restore.png)
@@ -806,8 +806,8 @@ write sends it.
 A backup whose values pass a soft limit that the servo's own values keep
 opens CHECK THIS BACKUP first. The page lists the warnings of those limits,
 the same lines an edit past them shows, at most 5; with more than 5 the
-fifth line counts the rest. **HOLD TO CONTINUE** for 2 s opens the restore
-page, which needs a press and a 2 s hold of its own. The restore of the
+fifth line counts the rest. **HOLD 2s TO CONTINUE** opens the restore
+page, which needs a press and a 2s hold of its own. The restore of the
 session's backup is checked the same way while the servo's values are known.
 
 ![The warnings of a backup](img/servo-kst-restore-check.png)
@@ -862,10 +862,10 @@ TESTER is a port
 ([Servo procedures](Servo.md#programming-the-servos-travel-limits)). Its
 first session reads the servo, with SEARCH ONLY as well: CONNECT with its
 read, LEAVE. With SERVO PULSES at 1000-2000 that session also writes PULSE
-LOWER 1000.0 µs and PULSE UPPER 2000.0 µs. With SEARCH + PROGRAM each later
+LOWER 1000.0µs and PULSE UPPER 2000.0µs. With SEARCH + PROGRAM each later
 write is a session: CONNECT with its read, ENABLE WRITE TO SERVO on, LEFT
 ANGLE and RIGHT ANGLE written and read back, the write switch off, LEAVE. Whatever the overlay has open closes at each step. A
-value under 50 passes its soft limit without the page: the run's 2 s start
+value under 50 passes its soft limit without the page: the run's 2s start
 hold is the consent. A hard limit refuses a value as it refuses an edit,
 and the run ends. A write refused before it is sent switches ENABLE WRITE
 TO SERVO off again, as the end of a sent write does.
@@ -897,7 +897,7 @@ and the programmer opens on the left card.
   differ.
 - **DISCARD EDITS** sets the draft back to the servo's values.
 - **RELEASE PAIRING** sets register 1D to 00 after the write switch and a
-  2 s hold. What the servo does with the value is not known. A restore of
+  2s hold. What the servo does with the value is not known. A restore of
   the session's backup sets it back.
 
 ![Releasing the pairing](img/servo-kst-release.png)
@@ -986,7 +986,7 @@ switches the supply off -- unless SERVO is shown again first. After
 
 LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.` The
 page warns before changed values are lost and before a session ends that
-could still restore a servo in doubt. **HOLD TO LEAVE** for 2 s sends the
+could still restore a servo in doubt. **HOLD 2s TO LEAVE** sends the
 port's LEAVE operation of link version 4.15. No frame goes to the servo and
 no supply command to the PD mini. The port holds its line low for
 [**WAIT BEFORE PWM**](#the-supply) and then gives the pin to the PWM
@@ -1007,8 +1007,8 @@ read.
 
 ### The wait before PWM
 
-**WAIT BEFORE PWM** is 0 to 10 000 ms, 100 ms by default. The keypad takes
-no value above 10 000 ms, and no leave is sent with one. A wait of 0 ms
+**WAIT BEFORE PWM** is 0 to 10 000ms, 100ms by default. The keypad takes
+no value above 10 000ms, and no leave is sent with one. A wait of 0ms
 ends at the IOmcu's next pass. The time left of a running wait is not
 shown. The wait a servo needs is not measured.
 
@@ -1016,7 +1016,7 @@ shown. The wait a servo needs is not measured.
 | --- | --- |
 | **ABORT** | the port stays in programming mode with the session as it was; `Leaving was interrupted before the waiting time ended.`; **LEAVE** is taken again at once |
 | **STOP** or a switch to SAFE of the bench, no PD mini answering | the same line; the port stays in programming mode and asks for **READ ALL** |
-| The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 2000 ms, then the port is in PWM |
+| The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 2000ms, then the port is in PWM |
 | The link goes | as [a loss of the link](#stops-and-losses) |
 
 ### A port that is not left
@@ -1043,26 +1043,26 @@ Link versions 4.13 and 4.14 have no LEAVE. The panel sends none to them.
 
 | A PD mini answers | The panel | Lines |
 | --- | --- | --- |
-| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The port is back in tester mode.` and `IOmcu firmware older than 4.15. PWM starts without a delay.` |
-| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires IOmcu firmware 4.15 or later.` and `STOP ends the session and switches the supply off.` |
+| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The port is back in tester mode.` and `IOmcu firmware older than 0.17.0. PWM starts without a delay.` |
+| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires IOmcu firmware 0.17.0 or later.` and `STOP ends the session and switches the supply off.` |
 
 With a PD mini on such an IOmcu, **STOP** or the supply's output
-switched off ends the session: the supply stays off for 2000 ms and the
+switched off ends the session: the supply stays off for 2000ms and the
 port is in PWM again.
 
 ## Stops and losses
 
 | Event | Effect |
 | --- | --- |
-| **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12 ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 2000 ms after it reads off |
+| **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 2000ms after it reads off |
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
 | The IOmcu starts again | its session and backup are gone; `IOmcu restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
 | The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then tap CONNECT.` An operation that ended in the same reading keeps its own line |
-| The panel's control task takes no command for 2 s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
+| The panel's control task takes no command for 2s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
 | The IOmcu refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the IOmcu in a row stay unanswered | `No response from the IOmcu. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
-| No result of an operation for 30 s, counted from the last time the port reported the operation running or planning, or for 120 s from its start however long the port reports it running | the operation is aborted; `No result from the IOmcu. Tap READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
+| No result of an operation for 30s, counted from the last time the port reported the operation running or planning, or for 120s from its start however long the port reports it running | the operation is aborted; `No result from the IOmcu. Tap READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 | The result of an operation the programmer no longer waits for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
 | The IOmcu reports a result, a refusal or an outcome this panel has no line for | `The IOmcu reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
 
@@ -1086,7 +1086,7 @@ line. [The link page](LinkKST.md) lists the codes.
 - The limits and trip settings of the SUPPLY screen are not held while the
   programmer has the port; the set points and **OUTPUT ON** are.
 - With the IOmcu unpowered and the servo fed from another supply, a
-  servo that drives the signal wire above 3.63 V exceeds the rating of
+  servo that drives the signal wire above 3.63V exceeds the rating of
   GP13 ([the signal level](#the-signal-level)).
 - With the simulated supply selected (no PD mini wired) the panel dims the
   same controls, and the servo's supply is whatever feeds it.
@@ -1122,7 +1122,7 @@ line. [The link page](LinkKST.md) lists the codes.
   number is proposed, and the highest number is then not the latest file.
 - A page behind the first 64 files reads the directory once more per 64
   files in front of it. The time this takes is not measured; the panel
-  waits 5 s for a page.
+  waits 5s for a page.
 - A write without a card leaves no backup file. The session's backup is
   then the only copy of the servo as found and ends with **LEAVE**, an
   IOmcu restart or a power loss of the bench.
@@ -1146,7 +1146,7 @@ line. [The link page](LinkKST.md) lists the codes.
   lets go ([Screens](Screens.md#the-sd-cards-format)). A panel started without a card holds the record in
   memory and writes.
 - The record of a write that ended is cleared on the card after the write,
-  by a file write of its own that is repeated every 5 s until the card
+  by a file write of its own that is repeated every 5s until the card
   takes it. A power loss before it leaves the record of a finished write:
   at the next read the panel asks whether the servo is the record's.
 - The record of an interrupted write found at power-on is shown in the
@@ -1156,7 +1156,7 @@ line. [The link page](LinkKST.md) lists the codes.
 - LEFT ANGLE and RIGHT ANGLE are the vendor tool's numbers; their unit is
   not known.
 - The supply voltage a servo needs in programming mode is not measured.
-  The floor is 4.8 V.
+  The floor is 4.8V.
 - A session has no idle timeout. From **CONNECT** to **LEAVE** the port is
   held, the servo is in programming mode and a PD mini's output is on, on
   every screen and for as long as the bench is powered. **STOP**, a link
@@ -1164,7 +1164,7 @@ line. [The link page](LinkKST.md) lists the codes.
 - A card put in while the panel runs is read by the task that draws the
   screen. The screen does not change and takes no touch for the time of
   that read. The time is not measured.
-- The 120 s an operation is given from its start are chosen. The time the
+- The 120s an operation is given from its start are chosen. The time the
   longest write takes on a servo is not measured.
 
 ## Measurements still open
@@ -1183,7 +1183,7 @@ None of these is done.
 5. Write reliability: 1000 writes with read-back, the count that do not
    take, the count of registers that change unasked, the spread of the
    reply delay.
-6. The read error rate on a 1 m lead with other servos moving on
+6. The read error rate on a 1m lead with other servos moving on
    neighbouring outputs: 100,000 reads.
 7. The timing of entry and of exit: how long without power ends
    programming mode, whether a servo follows PWM after programming without
@@ -1191,7 +1191,7 @@ None of these is done.
 8. The function of each editable setting on a servo that may be lost:
    position, travel time, stall current, standing current and oscillation
    against the value.
-9. The tolerance of the transmit rate around 25.40 µs a half-cell, and the
+9. The tolerance of the transmit rate around 25.40µs a half-cell, and the
    shortest gap between frames the servo accepts.
 10. A second servo of the same type, and other generations: fingerprint,
     reply timing, half-cell.
@@ -1203,7 +1203,7 @@ None of these is done.
 14. Whether 20k_sel separates the servo generations as the type rule
     assumes: 1 servo is recorded, and no V8 servo has been read.
 15. A save, a list and a load on a card: the time each takes against the
-    5 s limit, and a card removed during a save.
+    5s limit, and a card removed during a save.
 
 ## Tests
 
@@ -1211,15 +1211,15 @@ None of these is done.
 pulse switch: a port without a pin, a target that waits for a bench at
 rest, an IOmcu that starts again, and a programmer that has the port
 for each of the 16 pairs of page and wanted values. `test_settings_screen`
-runs a held setting against every call that changes one, and `test_servo` the
+runs a held setting against every call that changes one, and `test_servo_target` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
-`test_kst_panel` the overlay, both against the IOmcu's port, a supply
+`test_kst_panel` and its siblings the overlay, both against the IOmcu's port, a supply
 model and the servo model through the link's dispatcher: the supply's
-ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and
-10 001 ms as the leave's wait, an abort, a switch to SAFE and a supply that goes
+ranges at their ends and one step outside, the wait at 0ms, 10 000ms and
+10 001ms as the leave's wait, an abort, a switch to SAFE and a supply that goes
 off in the wait, a leave on link versions 4.13 and 4.14 with and without a
-PD mini, **STOP** during a leave, every limit at its edge, the 2 s holds on both sides of the
+PD mini, **STOP** during a leave, every limit at its edge, the 2s holds on both sides of the
 threshold, every refusal and result with its line in both languages, the
 lines of the write page for 1 value, for more values than lines and for a
 value past a soft limit, a soft limit asked again for a value further from
@@ -1228,14 +1228,14 @@ state line and the tab's line of a running write, a message that goes when
 its condition ends, the rows that take no tap, the PORT row's label, no
 comma in a number of the German table, a
 write cut by a link loss, a restart, **ABORT** and **STOP**, a card that
-fails, and the timeouts across the 2^32 ms wrap of the clock. `test_kst_panel_files` runs the
+fails, and the timeouts across the 2^32ms wrap of the clock. `test_kst_panel_files` runs the
 servo files against a card model: every name result, every kind of file,
 both servo types and their mismatch in both directions, every refusal,
-the 5 s limit, a first write with a card that is full or failing.
+the 5s limit, a first write with a card that is full or failing.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
 removed under the write page. A command the control task takes after
-its 2 s have passed reaches no wire, for every kind of operation; a
+its 2s have passed reaches no wire, for every kind of operation; a
 refusal at each later exchange of each kind of operation asks for
 **READ ALL**; every result code of the session has a class, and a code
 without one fails the test; a restore that the card keeps from starting

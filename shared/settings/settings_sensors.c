@@ -1,27 +1,22 @@
-/*
- * SETUP > SENSORS: the INA3221 parts' rows of the schema, their migration
- * from the one INA3221 of 0.21, and the map they make.  See
- * settings_sensors.h.
+/**
+ * @file
+ * @brief SETUP > SENSORS: the INA3221 parts' rows of the schema, their
+ *        migration from the one INA3221 of 0.21, and the map they make.  See
+ *        settings_sensors.h.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "settings_sensors.h"
+#include "settings_opts.h"
 
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
 
-/* What a channel watches: the output channels, the programming ports and
- * the supply rail, in SENS_W_* order. */
-static const char *const k_watch[SENS_W_COUNT] = {
-    "NONE",
-    "OUT 1", "OUT 2", "OUT 3", "OUT 4", "OUT 5", "OUT 6", "OUT 7", "OUT 8",
-    "PORT 1", "PORT 2", "PORT 3", "PORT 4",
-    "SUPPLY",
-};
-
-#define WATCH_OPTS .options = k_watch, .option_count = (uint8_t)SENS_W_COUNT
+/** @brief A WATCHES row's options: list watch of ui_text.def. */
+#define WATCH_OPTS                                                         \
+    .options = settings_opts_watch, .option_count = (uint8_t)SENS_W_COUNT
 
 /* The rows' index in k_rows: an id less the first row's. */
 #define AT(id) ((int)(id) - (int)SET_INA_FIT_0)
@@ -29,31 +24,28 @@ static const char *const k_watch[SENS_W_COUNT] = {
 
 #define FIT_ROW(a)                                                         \
     [AT(SET_INA_FIT(a))] = {                                               \
-        "ina_fit_" #a, "0x4" #a " fitted", "An INA3221 at this address", "", \
+        "ina_fit_" #a, "",                                                 \
         SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0, 0.0f }
 
 /*
  * A channel's rows: WATCHES, SHUNT and LIMIT.  The shunt's range is the
- * page's, 5.0 to 1000.0 mOhm, and 0 switches the channel off; 100.0 mOhm
- * is the DAOKAI module's 0.1 Ohm, which reads to 1.638 A.  0x40 CH1
+ * page's, 5.0 to 1000.0mOhm, and 0 switches the channel off; 100.0mOhm
+ * is the DAOKAI module's 0.1Ohm, which reads to 1.638A.  0x40 CH1
  * watches OUT 1 by default (owner decision 1, 2026-10-20).  The limit's
- * range is SENSE_LIMIT's, 10 to 32767 mA, in 10 mA steps on the arrows,
+ * range is SENSE_LIMIT's, 10 to 32767mA, in 10mA steps on the arrows,
  * 0 (OFF) for none.
  */
 #define CH_ROWS(a, ch, watch_def)                                          \
     [AT(SET_INA_W(3 * (a) + (ch) - 1))] = {                                \
-        "ina_w_" #a #ch, "0x4" #a " CH" #ch " watches",                    \
-        "What the channel measures", "",                                   \
+        "ina_w_" #a #ch, "",                                               \
         SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, (watch_def), WATCH_OPTS,  \
         0.0f },                                                            \
     [AT(SET_INA_SH(3 * (a) + (ch) - 1))] = {                               \
-        "ina_sh_" #a #ch, "0x4" #a " CH" #ch " shunt",                     \
-        "0 switches the channel off", "mOhm",                              \
+        "ina_sh_" #a #ch, "mΩ",                                            \
         SET_CAT_SENSORS, SET_TYPE_FLOAT, 0.0f, 1000.0f, 0.1f, 100.0f,      \
         NULL, 0, 5.0f },                                                   \
     [AT(SET_INA_LIM(3 * (a) + (ch) - 1))] = {                              \
-        "ina_lim_" #a #ch, "0x4" #a " CH" #ch " limit",                    \
-        "Band alert above it; 0 none", "mA",                               \
+        "ina_lim_" #a #ch, "mA",                                           \
         SET_CAT_SENSORS, SET_TYPE_INT, 0, 32767, 10, 0, NULL, 0, 10.0f }
 
 #define PART_ROWS(a, w1)                                                   \
@@ -72,22 +64,19 @@ static const setting_def_t k_rows[N_ROWS] = {
  * taken back to it: in no category (SET_CAT_COUNT), so on no screen and in
  * no category's reset, and loaded and saved as stored.
  */
-static const char *const k_old_addr[] = { "0x40", "0x41", "0x42", "0x43" };
-static const char *const k_old_ch[]   = { "CH1", "CH1+2+3" };
-
 static const setting_def_t k_kept[4] = {
     {                                   /* SET_INA3221_EN */
-        "ina3221_en", "INA3221", "Three-channel servo rail monitor", "",
+        "ina3221_en", "",
         SET_CAT_COUNT, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0, 0.0f },
     {                                   /* SET_INA3221_ADDR */
-        "ina3221_adr", "INA3221 address", "DAOKAI module: A0 to GND for 0x40", "",
-        SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, k_old_addr, 4, 0.0f },
+        "ina3221_adr", "",
+        SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, settings_opts_old_addr, 4, 0.0f },
     {                                   /* SET_INA3221_MOHM */
-        "ina3221_mohm", "INA3221 shunt", "Per channel; 100 reads to 1.64 A", "mOhm",
+        "ina3221_mohm", "mΩ",
         SET_CAT_COUNT, SET_TYPE_FLOAT, 5.0f, 1000.0f, 0.1f, 100.0f, NULL, 0, 0.0f },
     {                                   /* SET_INA3221_CH */
-        "ina3221_ch", "INA3221 channels", "CH1 the servo test, CH2+3 a pair", "",
-        SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, k_old_ch, 2, 0.0f },
+        "ina3221_ch", "",
+        SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, settings_opts_old_ch, 2, 0.0f },
 };
 
 _Static_assert(SET_INA3221_CH - SET_INA3221_EN == 3,
@@ -201,7 +190,7 @@ uint16_t settings_sensors_limit_ma(int c)
     if (c < 0 || c >= SET_INA_CHANNELS) {
         return 0u;
     }
-    /* The row's range is the page's, 0 to 32767 mA (LINK_SL_MA_MAX). */
+    /* The row's range is the page's, 0 to 32767mA (LINK_SL_MA_MAX). */
     const long ma = lrintf(settings_get(SET_INA_LIM(c)));
     return (ma <= 0) ? 0u : (uint16_t)ma;
 }

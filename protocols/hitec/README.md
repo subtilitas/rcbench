@@ -15,7 +15,7 @@ transactions on a programming port.
 | RP2350 pin driver | `rp2350/hitec_line.pio`, `rp2350/hitec_line.c`, `rp2350/hitec_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
-D485HW with the HPP-21 Plus and HFP-30 programmers, at a 1.4 V threshold.
+D485HW with the HPP-21 Plus and HFP-30 programmers, at a 1.4V threshold.
 On a wire this code has run D series reads on a D485HW, answered with the
 pull-up under [Line levels](#line-levels); nothing else of it has.
 
@@ -41,15 +41,15 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
 
 | | Classic: HS-5xxx, HS-7xxx | D series |
 |---|---|---|
-| Bit rate | 19 200 bit/s, 52.08 us a bit | 115 200 bit/s, 8.68 us a bit |
+| Bit rate | 19 200bit/s, 52.08us a bit | 115 200bit/s, 8.68us a bit |
 | Format | 8N1, least significant bit first | 8N1, least significant bit first |
 | Polarity | normal: the line idles high, a start bit is low | inverted: inside a frame the line rests low, a start bit is high |
-| High level | made by the servo; with no servo the line is low | made by a pull-up; the servo has a 3 kOhm pull-down (reported with another programmer, not measured here) |
+| High level | made by the servo; with no servo the line is low | made by a pull-up; the servo has a 3kΩ pull-down (reported with another programmer, not measured here) |
 | Master frame | 4 bytes `cmd p1 p2 sum`; the 4 bytes sum to 0 modulo 256 | write 7 bytes `96 ID addr 02 lo hi sum`, read 5 bytes `96 ID addr 00 sum`; `sum` is the low byte of the sum of every byte after the header |
 | Reply | 2 bytes: value and `+`, `+ +`, or position high and low | 7 bytes `69 ID addr 02 lo hi sum`; a write is not answered |
-| Reply start | 508 to 517 us after the start of the master's last byte after reads, up to 614 us after writes and after the first read of a session: inside the master's stop bit | 5.9 to 6.5 ms after the end of the request (HFP-30); 5.93 to 6.52 ms over 153 reads by PRECHARGE (D485HW, 2026-10-20) |
-| Reply bytes | 516 to 528 us start to start (10 bits are 520.8 us) | back to back, 86 to 87 us start to start (86.8 us) |
-| Master bytes | 572 us start to start (HPP-21 Plus), 521 us (HFP-30) | back to back |
+| Reply start | 508 to 517us after the start of the master's last byte after reads, up to 614us after writes and after the first read of a session: inside the master's stop bit | 5.9 to 6.5ms after the end of the request (HFP-30); 5.93 to 6.52ms over 153 reads by PRECHARGE (D485HW, 2026-10-20) |
+| Reply bytes | 516 to 528us start to start (10 bits are 520.8us) | back to back, 86 to 87us start to start (86.8us) |
+| Master bytes | 572us start to start (HPP-21 Plus), 521us (HFP-30) | back to back |
 
 Classic command bytes: `0x61` read EEPROM (address; value, `+`), `0x62`
 write EEPROM (address, value; `+ +`), `0x64` write data memory (`+ +`),
@@ -60,12 +60,12 @@ HS-5xxx and not seen on the wire.
 
 On the D485HW the line also shows:
 
-- After a request the line is high for 0.02 to 0.49 ms, then low until the
+- After a request the line is high for 0.02 to 0.49ms, then low until the
   answer starts.
 - In 37 of 37 answers checked in 3 captures a byte 0x00 follows the 7
   bytes of the answer back to back. The line then stays low for 110 to
-  190 us and goes high.
-- From a high line the HFP-30 drives the line low 88 us before the first
+  190us and goes high.
+- From a high line the HFP-30 drives the line low 88us before the first
   start bit of a request.
 
 ## Transactions
@@ -80,20 +80,20 @@ A driver runs one `hitec_xfer_t` at a time:
 
 The receiver runs until `window_us` of waiting for a start bit have passed
 or `max_rx` bytes have come. Time inside bytes and in the answer does not
-count against the window. Windows, leads and levels are 4 s or shorter.
+count against the window. Windows, leads and levels are 4s or shorter.
 
 | Builder | Bytes | Gap | Lead | Window | Bytes received |
 |---|---|---|---|---|---|
-| `hitec_c_xfer()` | 4 | 1 bit time: 572.9 us start to start | none | 1.5 ms | 2 |
-| `hitec_d_read_xfer()` | 5 | 0 | 88 us driven low, at least (RP2350: 117.2 us) | 25 ms | 8: the answer and the byte 0x00 |
-| `hitec_d_write_xfer()` | 7 | 0 | 88 us driven low, at least (RP2350: 89.0 us) | none | none |
+| `hitec_c_xfer()` | 4 | 1 bit time: 572.9us start to start | none | 1.5ms | 2 |
+| `hitec_d_read_xfer()` | 5 | 0 | 88us driven low, at least (RP2350: 117.2us) | 25ms | 8: the answer and the byte 0x00 |
+| `hitec_d_write_xfer()` | 7 | 0 | 88us driven low, at least (RP2350: 89.0us) | none | none |
 | `hitec_listen_xfer()` | none | | | as given | as given |
 | `hitec_level_xfer()` | none | | | | |
 
 Where the receiver starts, which is time 0 of a capture:
 
 - Classic SEND: the start of the last byte's stop bit, 9 bit times
-  (468.75 us) after the start of that byte. The servo's first start bit
+  (468.75us) after the start of that byte. The servo's first start bit
   falls inside this stop bit, so the master does not send it.
 - D series SEND: the last stop bit is sent, then one released bit time
   (`HITEC_D_SETTLE_BITS`), then the receiver starts.
@@ -132,8 +132,8 @@ classic entry. Every failed check has its own code:
 
 | Accept window of the first byte | From | Accepted | Measured |
 |---|---|---|---|
-| Classic | the start of the master's last byte | 494.8 us (the middle of the master's stop bit) to 1 ms | 508 to 614 us |
-| D series | the end of the request's last stop bit | 2 ms to 20 ms | 5.9 to 6.5 ms (HFP-30); 5.93 to 6.52 ms over 153 reads by PRECHARGE (D485HW, 2026-10-20); 15.2 ms is reported with another programmer |
+| Classic | the start of the master's last byte | 494.8us (the middle of the master's stop bit) to 1ms | 508 to 614us |
+| D series | the end of the request's last stop bit | 2ms to 20ms | 5.9 to 6.5ms (HFP-30); 5.93 to 6.52ms over 153 reads by PRECHARGE (D485HW, 2026-10-20); 15.2ms is reported with another programmer |
 
 The D decoder checks the first 7 bytes and no byte after them: the byte
 0x00 the D485HW sends after its answer, and the release of the line,
@@ -186,13 +186,13 @@ not used.
 | Start bit time in a capture | within 1 cycle (1/16 bit) of the edge, and the input synchroniser's 2 system clock cycles |
 | Data bit samples | 23 to 25 cycles after the start bit's edge plus 16 per bit: 1.44 to 1.56 bit times into each bit |
 | Stop bit sample | 151 to 153 cycles after the edge, 9.44 to 9.56 bit times |
-| Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3 us at 19 200 bit/s. The programmers send theirs 0.52 to 0.55 ms after it. A push-pull line changes the level 1 cycle later |
-| Lead before the first start bit | the transaction's lead, rounded up to 2 cycles, or 8 cycles plus the bit times that pad the front of the stream to a word, whichever is longer: a D read is driven low 117.2 us, a D write 89.0 us |
+| Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3us at 19 200bit/s. The programmers send theirs 0.52 to 0.55ms after it. A push-pull line changes the level 1 cycle later |
+| Lead before the first start bit | the transaction's lead, rounded up to 2 cycles, or 8 cycles plus the bit times that pad the front of the stream to a word, whichever is longer: a D read is driven low 117.2us, a D write 89.0us |
 | Window end to idle | 7 cycles: the drain empties the output shift register, which drops an answer no byte called for |
 | Push-pull | the level moves 1 cycle after the direction would: the bits on the wire sit 1 cycle late, and the release cuts the last stop bit to 15 cycles |
 
 A receiver that samples once in the middle of each bit takes a sender
-whose bit time is 4.4 % shorter to 4.9 % longer than its own: the stop bit
+whose bit time is 4.4% shorter to 4.9% longer than its own: the stop bit
 sample at 9.44 to 9.56 bit times has to fall inside the sender's tenth bit.
 
 ## Receive by precharge and sample
@@ -208,61 +208,61 @@ high. The samples go to memory 32 to a word; the decoder reads them as
 inverted 8N1 into the `hitec_capture_t` the PULL-UP receiver gives, so
 `hitec_d_decode()` takes it unchanged.
 
-Measured on one D485HW, IOmcu at 150 MHz, no pull-up on the signal wire,
-servo supply 5.0 V from the PD mini, register 0x32 read 5 times per
+Measured on one D485HW, IOmcu at 150MHz, no pull-up on the signal wire,
+servo supply 5.0V from the PD mini, register 0x32 read 5 times per
 setting:
 
 | Sample after the release | Precharge | Reads that pass |
 | --- | --- | --- |
-| 40 to 187 ns (6 to 28 cycles) | 6.7 to 200 ns (1 to 30 cycles) | 5 of 5 at each setting |
-| 213 ns (32 cycles) | 13.3 ns or longer | 5 of 5 |
-| 213 ns (32 cycles) | 6.7 ns (1 cycle) | fail |
-| 267 ns and later | any | 0 of 5 |
+| 40 to 187ns (6 to 28 cycles) | 6.7 to 200ns (1 to 30 cycles) | 5 of 5 at each setting |
+| 213ns (32 cycles) | 13.3ns or longer | 5 of 5 |
+| 213ns (32 cycles) | 6.7ns (1 cycle) | fail |
+| 267ns and later | any | 0 of 5 |
 | any | none | 0 of 5, every sample low |
 
-With a 20 ns precharge and the sample 80 ns after the release, 133 of 133
-reads of 19 registers passed with a 10 ms window and 30 of 30 with a
-25 ms window, equal to the HFP-30's reads of the same registers. The
-answer started 5.2 to 5.9 ms into the bench reader's window.
+With a 20ns precharge and the sample 80ns after the release, 133 of 133
+reads of 19 registers passed with a 10ms window and 30 of 30 with a
+25ms window, equal to the HFP-30's reads of the same registers. The
+answer started 5.2 to 5.9ms into the bench reader's window.
 
 With this module's values on GP13 and no pull-up (D485HW, 2026-10-20),
 the D decoder's delay, from the end of the request's last stop bit, was
-5.93 to 6.52 ms over 153 reads.
+5.93 to 6.52ms over 153 reads.
 
 The module takes the middle of that window:
 
-| Quantity | At 150 MHz | Rule |
+| Quantity | At 150MHz | Rule |
 | --- | --- | --- |
-| Sample period | 163 cycles, 1086.7 ns, 7.99 samples a bit | the system clock cycles nearest to 1/8 of 8.68 us |
-| Precharge | 15 cycles, 100.0 ns | 100 ns rounded to cycles |
-| Sample after the release | 17 cycles, 113.3 ns | 113 ns rounded to cycles |
+| Sample period | 163 cycles, 1086.7ns, 7.99 samples a bit | the system clock cycles nearest to 1/8 of 8.68us |
+| Precharge | 15 cycles, 100.0ns | 100ns rounded to cycles |
+| Sample after the release | 17 cycles, 113.3ns | 113ns rounded to cycles |
 | Program | 7 words: `set pindirs, 1 [14]`, `set pindirs, 0 [16]`, `in pins, 1 [31]`, 4 `nop` | `hitec_pre_program()` |
-| Window | up to 30,000 us | `HITEC_PRE_WINDOW_MAX_US` |
-| Buffer | 928 words, 3,712 bytes: 30 ms and 16 bytes at every clock taken | `HITEC_PRE_WORDS` |
+| Window | up to 30,000us | `HITEC_PRE_WINDOW_MAX_US` |
+| Buffer | 928 words, 3,712 bytes: 30ms and 16 bytes at every clock taken | `HITEC_PRE_WORDS` |
 
 `hitec_pre_timing()` computes the counts from the system clock at the open.
-It takes 48 to 250 MHz and refuses a clock whose rounded precharge or wait
-falls outside the measured window; only 150 MHz is measured.
+It takes 48 to 250MHz and refuses a clock whose rounded precharge or wait
+falls outside the measured window; only 150MHz is measured.
 
 The decoder:
 
 - waits for the rest level (low), then for a start bit (the first high
   sample after a low one; a stop bit read low counts as that low sample);
 - samples the middle of each bit, floor((j + 1/2) x samples a bit) samples
-  after the start bit's first high sample, 3 to 75 at 150 MHz; a start bit
+  after the start bit's first high sample, 3 to 75 at 150MHz; a start bit
   whose middle reads low is a glitch, and the wait goes on;
 - counts every waiting sample against the window and none inside a byte,
   as the PULL-UP receiver does;
 - ends at the bytes asked for, at the window's end, or at the end of the
   samples; a byte whose samples are not all in waits for the next call;
-- decodes the servo's bit time 4 % short to 4 % long (host-tested; the
+- decodes the servo's bit time 4% short to 4% long (host-tested; the
   servo's own bit time is not measured);
 - gives a start bit's time as the middle between its first high sample
-  and the one before, within half a sample, 543 ns.
+  and the one before, within half a sample, 543ns.
 
 Integer arithmetic only. On the host (x86-64, gcc -Os) one call over a
-whole 30 ms window with 16 bytes takes 3.4 us; with every sample a start
-candidate (a line toggling every sample), 155 us. The RP2350 pin driver
+whole 30ms window with 16 bytes takes 3.4us; with every sample a start
+candidate (a line toggling every sample), 155us. The RP2350 pin driver
 decodes in each poll only the words written since the last one, about 29
 words a millisecond. The time on the RP2350 is not measured.
 
@@ -270,24 +270,24 @@ words a millisecond. The time on the RP2350 is not measured.
 the line's own state machine with no receiver (`hitec_pre_tx_xfer()`),
 then the sampler takes the pad; a LISTEN samples from its start; a SEND
 with no window (a write) and a LEVEL run as with PULL-UP; a LISTEN that
-answers, a window above 30,000 us and a classic transaction are refused.
+answers, a window above 30,000us and a classic transaction are refused.
 `hitec_pre_abort()` keeps the whole bytes in any phase.
 
 Classic servos need neither a pull-up nor a precharge: an HS-7955TG, an
 HS-5955TG and an HS-5645MG enter serial mode and answer every read on an
-open-drain port with neither, at a 5.0 V supply. The servo drives the high
-level itself, through about 1 kOhm, and its answer starts inside the
+open-drain port with neither, at a 5.0V supply. The servo drives the high
+level itself, through about 1kΩ, and its answer starts inside the
 master's stop bit. The line voltages are not measured. The pin driver
 refuses PRECHARGE for classic.
 
 Not measured: the current through the pad during a precharge while the
-servo pulls the line low (2 mA drive, 100 ns of every 1086.7 ns); a long
-run at the values this module chose (100 ns and 113.3 ns lie inside the
-passing window; the 133 reads ran at 20 ns and 80 ns); reads with the bank
+servo pulls the line low (2mA drive, 100ns of every 1086.7ns); a long
+run at the values this module chose (100ns and 113.3ns lie inside the
+passing window; the 133 reads ran at 20ns and 80ns); reads with the bank
 armed (the HITEC page refuses OPEN
 while it is); writes through a PRECHARGE line (a write has no window and
-takes no sampler); windows of 30 ms; any servo other than the one
-D485HW; any clock but 150 MHz.
+takes no sampler); windows of 30ms; any servo other than the one
+D485HW; any clock but 150MHz.
 
 ## RP2350 pin driver
 
@@ -300,7 +300,7 @@ reference circuit, or push-pull.
 | Resource | Use |
 |---|---|
 | PIO state machines | 1 per open line, in a PIO block that reaches the pin; PRECHARGE 1 more, the sampler |
-| PIO program space | 29 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3. PRECHARGE: the sampler's 7 words (at 150 MHz) in a block with room for them, another block than the line's |
+| PIO program space | 29 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3. PRECHARGE: the sampler's 7 words (at 150MHz) in a block with room for them, another block than the line's |
 | DMA (direct memory access) channels | 2 per open line: the words of a transaction and the received bytes; PRECHARGE 1 more, the samples |
 | Interrupts, PIO interrupt flags | none |
 | Memory | 1 `hitec_line_t` per line, held by the caller; no static state |
@@ -314,17 +314,17 @@ on a failure gives back everything it claimed before touching the pin.
 PRECHARGE on the pin: the first `poll()` that finds a SEND's request
 ended (the state machine idle with no word left) keeps the pin's IO_BANK0
 control register and its pad register, puts the pin in the sampler's PIO
-block with no input override, 2 mA drive and slow slew, and starts the
+block with no input override, 2mA drive and slow slew, and starts the
 sampler and its DMA channel; the pad's pull-up stays as it was. Each
 `poll()` reads the channel's write address and decodes the words written
 since the last one (`hitec_pre_step()`). At the decoder's end, at the last
 word, at `hitec_line_abort()` and at `hitec_line_close()` the sampler
 stops, its pad direction released, and the two registers are written back.
 A sampler whose receive FIFO ran full while its DMA channel still had
-words to take, or one that runs 1 ms past its last word, ends with the
+words to take, or one that runs 1ms past its last word, ends with the
 capture marked overflowed; an abort that finds it so marks the capture
 aborted and overflowed. The FIFO running full after the last word, when
-a poll comes more than 278 us late, loses no sample. An open fails with its own code for a pin the chip does not
+a poll comes more than 278us late, loses no sample. An open fails with its own code for a pin the chip does not
 have, an unknown family or drive, push-pull for classic, a clock the open
 refuses, no free state machine or program space, and fewer than 2 free DMA
 channels; a failed open claims nothing and leaves the pin as it was.
@@ -337,24 +337,24 @@ pico-sdk 2.3.0).
 
 ### Clock
 
-| Family | Divider at 150 MHz | Bit time | Lowest system clock |
+| Family | Divider at 150MHz | Bit time | Lowest system clock |
 |---|---|---|---|
-| Classic | 488 + 72/256, exact | 52.083 us | 1.2282 MHz |
-| D series | 81 + 97/256, 0.002 % short | 8.680 us | 7.3692 MHz |
+| Classic | 488 + 72/256, exact | 52.083us | 1.2282MHz |
+| D series | 81 + 97/256, 0.002% short | 8.680us | 7.3692MHz |
 
 The lowest clock is 64 bit rates less half a step of the divider. The
 open refuses a system clock that gives a divider below 4, where the
 input synchroniser's 2 system clock cycles would be more than half a state
-machine cycle, or a bit time more than 0.05 % from the family's. The 8
+machine cycle, or a bit time more than 0.05% from the family's. The 8
 fractional bits of the divider keep every clock from the lowest one up
-within 0.049 %, so the divider limit is the one that refuses. The limit is
+within 0.049%, so the divider limit is the one that refuses. The limit is
 the same for both families, for the same reason: the servo's bit time is
-not measured and takes the receive margin of 4.4 % and 4.9 %.
+not measured and takes the receive margin of 4.4% and 4.9%.
 
 | Family | What the bench shows of the servo's bit time |
 |---|---|
-| Classic | reply bytes 516 to 528 us start to start against 520.8 us for 10 bits: -0.9 % to +1.4 % per byte, stop bit included |
-| D series | answer bytes 86 to 87 us start to start against 86.8 us, at 1 us resolution |
+| Classic | reply bytes 516 to 528us start to start against 520.8us for 10 bits: -0.9% to +1.4% per byte, stop bit included |
+| D series | answer bytes 86 to 87us start to start against 86.8us, at 1us resolution |
 
 How far the servo's own receiver accepts the master's bit time is not
 measured.
@@ -368,12 +368,12 @@ measured.
 | A bit 0 | driven low | released (open drain), driven high (push-pull) |
 | A bit 1 | released | driven low |
 | Receive, end of the window, abort, restart | released | released |
-| PRECHARGE receive | | driven high 100.0 ns of every 1086.7 ns at 2 mA, slow slew, else released |
+| PRECHARGE receive | | driven high 100.0ns of every 1086.7ns at 2mA, slow slew, else released |
 | After close | an input, pull-down on, no override | an input, pull-up on, no override |
 
-The internal pulls are 50 to 80 kOhm. The D series needs a pull-up on the
+The internal pulls are 50 to 80kΩ. The D series needs a pull-up on the
 board. Tested with a D485HW: with the pad's pull-up alone the line stays
-below the 1.4 V threshold and the servo answers no read; with 2.2 kOhm
+below the 1.4V threshold and the servo answers no read; with 2.2kΩ
 from the signal wire to the servo supply it answers every read. The line
 voltages are not measured. The HFP-30 holds the line low after a write until its next request
 and releases it after a read; this driver releases it after every
@@ -382,7 +382,7 @@ transaction.
 Limits:
 
 - `hitec_line_poll()` ends a transaction whose state machine still runs
-  1 ms (`HITEC_LINE_GRACE_US`) after the longest time the transaction can
+  1ms (`HITEC_LINE_GRACE_US`) after the longest time the transaction can
   take: the state machine is restarted with the pad released and the
   capture is marked as overflowed. A line that keeps sending bytes back to
   back keeps the receiver from its window; a receive with a byte count ends
@@ -414,7 +414,7 @@ if (hitec_line_open(&line, 14, HITEC_D, HITEC_DRIVE_OPEN_DRAIN)
 
     hitec_d_read_xfer(0x00, 0x0C, &x);        /* position */
     if (d.start(d.ctx, &x)) {
-        while (!d.poll(d.ctx, &cap)) { /* call every 1 ms */ }
+        while (!d.poll(d.ctx, &cap)) { /* call every 1ms */ }
         if (hitec_d_decode(&cap, 0x0C, &r) == HITEC_RX_OK) {
             /* r.value */
         }
@@ -426,28 +426,28 @@ hitec_line_close(&line);
 ## Electrical
 
 Not measured: the line voltages, the edges and the servo's current; only
-the 1.4 V crossing is known.
+the 1.4V crossing is known.
 
 | Master | Rating of its pin | Against |
 |---|---|---|
-| RP2350 GPIO, IOVDD (input/output supply) at 3.3 V | 5.5 V | a servo whose high level is not measured; no level shifter, no clamp |
-| The same pin, IOVDD at 0 V | 3.63 V | a classic servo makes the high level itself and may drive the line while the master is off |
+| RP2350 GPIO, IOVDD (input/output supply) at 3.3V | 5.5V | a servo whose high level is not measured; no level shifter, no clamp |
+| The same pin, IOVDD at 0V | 3.63V | a classic servo makes the high level itself and may drive the line while the master is off |
 
 - Classic: whether the internal pull-down holds the line low with no servo
   is not measured.
-- D series: a pull-up of R to 3.3 V against the servo's 3 kOhm pull-down
-  gives 3.3 V x 3 / (3 + R) at the line. With the 3.3 kOhm of Hitec's
-  reference circuit that is 1.57 V, below the 2.0 V an RP2350 input needs
-  for a high at IOVDD 3.3 V. 1.95 kOhm or less gives 2.0 V; whether the
-  servo still pulls such a line low is not known. The pull-up for a 3.3 V
+- D series: a pull-up of R to 3.3V against the servo's 3kΩ pull-down
+  gives 3.3V x 3 / (3 + R) at the line. With the 3.3kΩ of Hitec's
+  reference circuit that is 1.57V, below the 2.0V an RP2350 input needs
+  for a high at IOVDD 3.3V. 1.95kΩ or less gives 2.0V; whether the
+  servo still pulls such a line low is not known. The pull-up for a 3.3V
   pin is not established.
-- D series, tested with a D485HW: 2.2 kOhm from the signal wire to the
+- D series, tested with a D485HW: 2.2kΩ from the signal wire to the
   servo supply, and every read is answered. The line voltages are not
-  measured. Against the 3 kOhm pull-down reported for the servo the
-  divider puts 58 % of the servo supply on the line (computed): whether
+  measured. Against the 3kΩ pull-down reported for the servo the
+  divider puts 58% of the servo supply on the line (computed): whether
   that stays within the pin's rating in the table above, also with the
   IOmcu unpowered, is not known. Push-pull drives the high level of a sent bit to
-  3.3 V, 1.1 mA into 3 kOhm; the servo's high bits still come from the
+  3.3V, 1.1mA into 3kΩ; the servo's high bits still come from the
   pull-up.
 - Which side drives each level of a D series answer is not measured.
 
@@ -474,12 +474,12 @@ D485HW's trailing byte.
 Not measured:
 
 - Whether a servo accepts this driver's timing: the answer at 520.8 to
-  527.3 us, a D read's lead of 117.2 us on a servo other than the D485HW,
-  the classic pacing of 572.9 us, the push-pull stop bit of 15/16 of a bit.
+  527.3us, a D read's lead of 117.2us on a servo other than the D485HW,
+  the classic pacing of 572.9us, the push-pull stop bit of 15/16 of a bit.
 - Bit time tolerances of the servos.
 - `0x63`, the `-` reply and a D series ID other than 0.
 - What sets the D series line level between transactions: the bench shows
-  it high in some 20 s windows and low in others.
+  it high in some 20s windows and low in others.
 - The electrical items above.
 - On a chip: that autopull refills the output shift register before the
   `jmp !osre` after the last count, that `mov osr, null` and
@@ -500,11 +500,11 @@ notice is in the repository's
 ## Tests
 
 `test/host/test_hitec_pre.c` (18 cases) runs the precharge receiver's
-core: the counts at 150 MHz and at every clock from 48 to 250 MHz, the
+core: the counts at 150MHz and at every clock from 48 to 250MHz, the
 sampler's program stepped instruction by instruction, a 7-byte answer at
-7.99 samples a bit and the servo 4 % fast and slow, a start bit on the
+7.99 samples a bit and the servo 4% fast and slow, a start bit on the
 first sample and on the window's last, a byte across the window's end, a
-framing error, no answer, a line stuck high, a glitch, the 30 ms window, a
+framing error, no answer, a line stuck high, a glitch, the 30ms window, a
 sampler that stops short, words fed one at a time, and an abort in every
 phase. `test/host/test_hitec_wire.c` (11 cases) runs the core: the sums, the
 transactions, every refusal of each decoder with its limits at both

@@ -31,19 +31,19 @@
  * only, so the file is opened where the suite runs. */
 #define HOST_FILE "test_storage_swap.tmp"
 
-/* The SK64G of the station: exFAT, 61002 MB, its own label. */
+/* The SK64G of the station: exFAT, 61002MB, its own label. */
 static void sk64g_in(void)
 {
     card_in(FS_EXFAT, 61002ull * 1024u * 1024u);
     g_label = "SK64G";
     storage_deinit();
-    g_bus_up = false;
+    CHECK(!g_pwr_on);
     CHECK_EQ(storage_init(), ESP_OK);
     CHECK_STR_EQ(name_now(), "SK64G");
     g_log_n = 0u;
     g_mounts = 0u;
     g_unmounts = 0u;
-    g_bus_inits = 1u;               /* the start-up's */
+    g_pwr_news = 1u;                /* the start-up's */
 }
 
 /* The card in the slot taken out. */
@@ -80,7 +80,7 @@ TEST_CASE(a_card_pulled_while_mounted_is_found_gone_on_the_next_check)
     CHECK_STR_EQ(name_now(), "");
     CHECK_STR_EQ(storage_status(), "no card");
     CHECK_EQ(g_unmounts, 1u);
-    CHECK(!g_cs);
+    CHECK(g_pwr_on);            /* the supply stays on for the next mount */
     /* The look was one status command, with the check off again after. */
     CHECK_EQ(g_status_asks, 1u);
     CHECK(!g_status_check);
@@ -115,7 +115,7 @@ TEST_CASE(rescan_twice_after_a_pull_reads_the_empty_slot_twice)
     }
     CHECK_EQ(gone, 1u);
     CHECK_EQ(none, 2u);
-    CHECK_EQ(g_bus_inits, 1u);
+    CHECK_EQ(g_pwr_news, 1u);
     CHECK(!g_lock_taken);
 }
 
@@ -155,7 +155,7 @@ TEST_CASE(a_swap_to_a_fat32_or_exfat_card_mounts_it_by_its_own_name)
         CHECK_STR_EQ(last_line()->text, k[i].line);
         CHECK_EQ(g_unmounts, 1u);
         CHECK_EQ(g_mounts, 1u);
-        CHECK(g_cs);
+        CHECK(g_pwr_on);
         CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
         /* The list is the new card's. */
         seen_t v;
@@ -177,7 +177,7 @@ TEST_CASE(a_card_put_into_the_empty_slot_is_mounted_by_the_next_check)
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
     CHECK_STR_EQ(name_now(), "UNITEST");
     CHECK_EQ(g_unmounts, 0u);
-    CHECK_EQ(g_bus_inits, 1u);
+    CHECK_EQ(g_pwr_news, 1u);
     CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
     CHECK(!g_lock_taken);
 }
@@ -208,7 +208,7 @@ TEST_CASE(a_card_pulled_during_a_run_is_let_go_at_the_close)
     /* The close lets it go; the next check finds what is in the slot. */
     CHECK_EQ(storage_fclose(f), 0);
     CHECK_EQ(g_unmounts, 1u);
-    CHECK(!g_cs);
+    CHECK(g_pwr_on);            /* the supply stays on for the next mount */
     swap_to(FR_OK, FS_FAT32, "BENCH2");
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);
     CHECK_STR_EQ(name_now(), "BENCH2");
@@ -445,7 +445,7 @@ TEST_CASE(a_read_that_ends_the_last_hold_of_a_gone_card_lets_it_go)
     CHECK_EQ(g_unmounts, 0u);
     CHECK(!storage_read_end(FR_OK, "walk", true));
     CHECK_EQ(g_unmounts, 1u);
-    CHECK(!g_cs);
+    CHECK(g_pwr_on);            /* the supply stays on for the next mount */
     /* And the next look finds what the slot holds. */
     swap_to(FR_OK, FS_EXFAT, "BENCH3");
     CHECK_EQ(storage_check(), CARD_STATE_MOUNTED);

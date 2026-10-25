@@ -1,169 +1,13 @@
 /*
  * The touch injector's core (testbench/touch-injector/core): the GT911
- * register file and the command and gesture engine, driven as the RP2350
- * build drives them.  A simulated panel reads the emulator every 10 ms
- * exactly as firmware/panel/components/gt911/gt911.c does: the status
- * byte, the points when the status says ready, then the acknowledge.
+ * register file and the command and gesture engine for one contact, the
+ * protocol-1 commands without id=, driven as the RP2350 build drives them
+ * (inj_rig.h).  Several contacts at once: test_inj_multi.c.
  *
  * SPDX-License-Identifier: MIT
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "greatest.h"
-
-#include "injector.h"
-
-static injector_t inj;
-static uint32_t   now;
-
-/* What the simulated panel saw: one entry per frame it read. */
-typedef struct {
-    uint32_t t;
-    uint8_t  n;
-    uint16_t x, y;
-    uint8_t  raw[8];
-} seen_t;
-
-static seen_t   seen[4096];
-static int      nseen;
-static bool     panel_on;
-static uint32_t panel_period = 10;
-
-/* -------------------------------------------------------- a GT911 master */
-
-static void m_write(uint16_t reg, const uint8_t *data, int n)
-{
-    gt911_emu_rx(&inj.emu, (uint8_t)(reg >> 8));
-    gt911_emu_rx(&inj.emu, (uint8_t)(reg & 0xFFu));
-    for (int i = 0; i < n; ++i) {
-        gt911_emu_rx(&inj.emu, data[i]);
-    }
-    gt911_emu_finish(&inj.emu);
-}
-
-static void m_read(uint16_t reg, uint8_t *out, int n)
-{
-    gt911_emu_rx(&inj.emu, (uint8_t)(reg >> 8));
-    gt911_emu_rx(&inj.emu, (uint8_t)(reg & 0xFFu));
-    gt911_emu_finish(&inj.emu);   /* the repeated START */
-    for (int i = 0; i < n; ++i) {
-        out[i] = gt911_emu_tx(&inj.emu);
-    }
-    gt911_emu_finish(&inj.emu);
-}
-
-/* gt911_read(): status, points if ready, acknowledge. */
-static void panel_poll(void)
-{
-    uint8_t st = 0;
-    m_read(GT911_EMU_REG_STATUS, &st, 1);
-    if ((st & 0x80u) == 0u) {
-        return;
-    }
-    const int n = st & 0x0F;
-    seen_t *s = &seen[nseen < 4095 ? nseen++ : nseen];
-    memset(s, 0, sizeof(*s));
-    s->t = now;
-    s->n = (uint8_t)n;
-    if (n > 0) {
-        m_read(GT911_EMU_REG_POINT1, s->raw, 8);
-        s->x = (uint16_t)(s->raw[1] | (s->raw[2] << 8));
-        s->y = (uint16_t)(s->raw[3] | (s->raw[4] << 8));
-    }
-    const uint8_t zero = 0;
-    m_write(GT911_EMU_REG_STATUS, &zero, 1);
-}
-
-/* ------------------------------------------------------------ the host */
-
-static char replies[64][INJ_REPLY_LEN];
-static int  nreplies;
-
-static void drain(void)
-{
-    char line[INJ_REPLY_LEN];
-    while (injector_take_reply(&inj, line, sizeof(line))) {
-        if (nreplies < 64) {
-            snprintf(replies[nreplies++], INJ_REPLY_LEN, "%s", line);
-        }
-    }
-}
-
-static void send(const char *line)
-{
-    injector_input(&inj, line, strlen(line), now);
-    injector_input(&inj, "\n", 1, now);
-    drain();
-}
-
-static const char *last(void)
-{
-    return nreplies > 0 ? replies[nreplies - 1] : "";
-}
-
-/* Run @p ms milliseconds: the injector every 1 ms, the panel every
- * panel_period ms while it is on. */
-static void run(uint32_t ms)
-{
-    for (uint32_t i = 0; i < ms; ++i) {
-        ++now;
-        if (panel_on && now % panel_period == 0u) {
-            panel_poll();
-        }
-        injector_poll(&inj, now);
-        drain();
-    }
-}
-
-/* Run until a reply starts with @p prefix, for at most @p ms. */
-static bool run_until(const char *prefix, uint32_t ms)
-{
-    for (uint32_t i = 0; i < ms; ++i) {
-        for (int k = 0; k < nreplies; ++k) {
-            if (strncmp(replies[k], prefix, strlen(prefix)) == 0) {
-                return true;
-            }
-        }
-        run(1);
-    }
-    return false;
-}
-
-static void fresh(uint32_t t0)
-{
-    injector_init(&inj);
-    now = t0;
-    nseen = 0;
-    nreplies = 0;
-    panel_on = false;
-    panel_period = 10;
-}
-
-static void confirm_ok(void)
-{
-    inj_line_result_t r = { .verdict = INJ_WIRING_OK, .tx = 50,
-                            .agree_pct = 100, .end_state = 3,
-                            .rate_ksps = 24500 };
-    send("wiring");
-    CHECK(injector_take_wiring(&inj));
-    injector_wiring_done(&inj, &r);
-    drain();
-    send("confirm scl=GP5");
-    CHECK_STR_EQ(last(), "ok confirm");
-    CHECK(injector_take_attach(&inj));
-    nreplies = 0;
-}
-
-/* An active injector with the panel polling every 10 ms. */
-static void active(uint32_t t0)
-{
-    fresh(t0);
-    confirm_ok();
-    panel_on = true;
-}
+#include "inj_rig.h"
 
 /* ------------------------------------------------------- the register file */
 
@@ -173,23 +17,27 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
     uint8_t id[6] = { 0 };
     m_read(GT911_EMU_REG_PRODUCT, id, 6);
     CHECK_EQ(id[0], '9');
-    CHECK_EQ(id[1], '1');
-    CHECK_EQ(id[2], '1');
-    CHECK_EQ(id[3], 0);
+    CHECK_EQ(id[1], 'I');
+    CHECK_EQ(id[2], 'N');
+    CHECK_EQ(id[3], 'J');
     CHECK_EQ(id[4], 0x01);
     CHECK_EQ(id[5], 0xE0);
     CHECK_EQ(inj.emu.product_reads, 1);
 
     uint8_t res[4] = { 0 };
     m_read(0x8048, res, 4);
-    CHECK_EQ(res[0] | (res[1] << 8), 800);
-    CHECK_EQ(res[2] | (res[3] << 8), 480);
-    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8146) | (gt911_emu_peek(&inj.emu, 0x8147) << 8), 800);
-    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8148) | (gt911_emu_peek(&inj.emu, 0x8149) << 8), 480);
+    CHECK_EQ(res[0] | (res[1] << 8), 1024);
+    CHECK_EQ(res[2] | (res[3] << 8), 600);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8146) | (gt911_emu_peek(&inj.emu, 0x8147) << 8), 1024);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8148) | (gt911_emu_peek(&inj.emu, 0x8149) << 8), 600);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8047), 0x41);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x804C), 5);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0x8157), 0);
     CHECK_EQ(gt911_emu_peek(&inj.emu, 0xFFFF), 0);
+    /* The product ID's edges: the byte before it and the one after. */
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT - 1u), 0);
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT + 3u), 'J');
+    CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_PRODUCT + 4u), 0x01);
 
     /* The command registers keep what was written; others ignore it. */
     const uint8_t cmd[2] = { 0xAA, 0x55 };
@@ -204,14 +52,14 @@ TEST_CASE(the_register_file_answers_as_a_gt911)
     m_read(0x8140, id, 2);
     id[0] = gt911_emu_tx(&inj.emu);
     gt911_emu_finish(&inj.emu);
-    CHECK_EQ(id[0], '1');
+    CHECK_EQ(id[0], 'N');
 }
 
 TEST_CASE(a_frame_waits_for_its_acknowledge)
 {
     fresh(0);
-    const gt911_emu_frame_t down = { .down = true, .x = 83, .y = 370 };
-    const gt911_emu_frame_t up = { .down = false };
+    const gt911_emu_frame_t down = { .n = 1, .pt = { { 0, 83, 370 } } };
+    const gt911_emu_frame_t up = { .n = 0 };
     CHECK(gt911_emu_publish(&inj.emu, &down));
     CHECK_EQ(gt911_emu_peek(&inj.emu, GT911_EMU_REG_STATUS), 0x81);
     /* Not acknowledged: the next is refused. */
@@ -234,7 +82,7 @@ TEST_CASE(a_frame_waits_for_its_acknowledge)
 TEST_CASE(nothing_is_published_or_withdrawn_mid_transfer)
 {
     fresh(0);
-    const gt911_emu_frame_t down = { .down = true, .x = 1, .y = 2 };
+    const gt911_emu_frame_t down = { .n = 1, .pt = { { 0, 1, 2 } } };
     gt911_emu_rx(&inj.emu, 0x81);   /* a transfer has started */
     CHECK(inj.emu.busy);
     CHECK(!gt911_emu_publish(&inj.emu, &down));
@@ -251,7 +99,7 @@ TEST_CASE(a_reset_listens_and_refuses_gestures)
 {
     fresh(0);
     send("ping");
-    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=800x480 state=listen");
+    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=listen id=9INJ");
     send("tap 10 10");
     CHECK_STR_EQ(last(), "err unconfirmed");
     send("hold 10 10 500");
@@ -304,7 +152,7 @@ TEST_CASE(confirm_needs_an_ok_verdict)
     }
     confirm_ok();
     send("ping");
-    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=800x480 state=active");
+    CHECK_STR_EQ(last(), "pong rcbench-touch 1 addr=0x14 res=1024x600 state=active id=9INJ");
     send("confirm scl=GP5");
     CHECK_STR_EQ(last(), "err state");
     send("wiring");
@@ -361,7 +209,7 @@ TEST_CASE(a_tap_presses_for_its_length_and_releases)
         CHECK_EQ(seen[i].n, 1);
     }
     CHECK_EQ(seen[nseen - 1].n, 0);
-    /* Down from the first read to the release read: 100 ms to 110 ms. */
+    /* Down from the first read to the release read: 100ms to 110ms. */
     const uint32_t held = seen[nseen - 1].t - seen[0].t;
     CHECK(held >= 100u && held <= 110u);
 
@@ -407,8 +255,8 @@ TEST_CASE(gestures_check_every_field_at_its_limits)
         const char *cmd;
         const char *reply;
     } cases[] = {
-        { "tap 800 0", "err range x" },
-        { "tap 0 480", "err range y" },
+        { "tap 1024 0", "err range x" },
+        { "tap 0 600", "err range y" },
         { "tap -1 0", "err range x" },
         { "tap 0 0 0", "err range ms" },
         { "tap 0 0 30001", "err range ms" },
@@ -420,8 +268,8 @@ TEST_CASE(gestures_check_every_field_at_its_limits)
         { "tap x 0", "err syntax tap" },
         { "tap 1.5 0", "err syntax tap" },
         { "tap - 0", "err syntax tap" },
-        { "swipe 0 0 800 0 10", "err range x" },
-        { "swipe 0 0 0 480 10", "err range y" },
+        { "swipe 0 0 1024 0 10", "err range x" },
+        { "swipe 0 0 0 600 10", "err range y" },
         { "swipe 0 0 1 1", "err syntax swipe" },
         { "swipe 0 0 1 1 1 1", "err syntax swipe" },
         { "release now", "err syntax release" },
@@ -438,10 +286,10 @@ TEST_CASE(gestures_check_every_field_at_its_limits)
         }
     }
     /* The far corners and the longest gesture are taken. */
-    send("tap 799 479 30000");
+    send("tap 1023 599 30000");
     CHECK_STR_EQ(last(), "ok tap");
     send("release");
-    send("swipe 0 0 799 479 1");
+    send("swipe 0 0 1023 599 1");
     CHECK_STR_EQ(last(), "ok swipe");
 }
 
@@ -487,8 +335,8 @@ TEST_CASE(one_gesture_at_a_time)
     CHECK_STR_EQ(last(), "ok tap");
 }
 
-/* A swipe never moves more than 100 px between two frames the panel reads,
- * so the panel's 120 px jump split never cuts it. */
+/* A swipe never moves more than 100px between two frames the panel reads,
+ * so the panel's 120px jump split never cuts it. */
 TEST_CASE(a_fast_swipe_is_slowed_under_the_jump_split)
 {
     active(0);
@@ -642,7 +490,7 @@ TEST_CASE(a_closed_port_lifts_the_contact_silently)
     CHECK_EQ(seen[nseen - 2].n, 1);
 }
 
-/* The release frame itself not read: the release ends after 100 ms and
+/* The release frame itself not read: the release ends after 100ms and
  * the frame is withdrawn. */
 TEST_CASE(an_unread_release_frame_is_withdrawn)
 {

@@ -22,7 +22,7 @@ kostet einen Registerzugriff je Schleifendurchlauf und beantwortet nur Frames
 an eine Page, die die Page Map nicht benutzt.
 
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
-alle 3 s wiederholt:
+alle 3s wiederholt:
 
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
 
@@ -44,7 +44,7 @@ nicht am CAN-Bus.
 
 ### Panel
 
-Der Test läuft bei jedem Start. Er dauert 1200 ms, innerhalb des Splash und
+Der Test läuft bei jedem Start. Er dauert 1200ms, innerhalb des Splash und
 vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
 und nicht als eine Identity, die nie geantwortet hat.
 
@@ -52,14 +52,15 @@ Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` bringt das Panel
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
 nichts aktiviert werden, und es wird keine Konsole gebraucht.
 
-Die Einzelheiten stehen auf der Konsole. Auf die UART-Buchse (Universal
-Asynchronous Receiver-Transmitter) schauen, nicht auf die native USB-Buchse.
-GPIO19 und GPIO20 (General-Purpose Input/Output) führen sowohl das native USB
-als auch den CAN-Transceiver, und der Multiplexer wählt eines aus; die Konsole
-liegt auf UART0 mit USB-Serial-JTAG (der eingebauten USB-Seriell- und
-Debug-Bridge des ESP32-S3) als Zweitkonsole. Ausgegeben wird:
+Die Einzelheiten stehen auf der Konsole. Sie liegt auf UART0 (Universal
+Asynchronous Receiver-Transmitter 0), mit USB-Serial-JTAG (der eingebauten
+USB-Seriell- und Debug-Bridge des ESP32-P4) als Zweitkonsole. Welche der
+zwei USB-C-Buchsen der Platine zu welcher führt, ist nicht verfolgt. Die
+Sendeleitung des CAN-Transceivers liegt an GPIO22 (General-Purpose
+Input/Output 22), seine Empfangsleitung an GPIO21; keiner der beiden trägt
+sonst etwas. Der Takt des Controllers ist der 40-MHz-Quarz. Ausgegeben wird:
 
-    I (…) can: 1000000 bit/s: brp 4, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us
@@ -133,8 +134,8 @@ Bus scheitert.
 ## Link-Bericht
 
 Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
-IOmcu, bis er antwortet, dann die Bench-Page mit 20 Hz und die
-Status-Page alle 500 ms. Alle 5 s, solange der Link ausgefallen ist, und einmal
+IOmcu, bis er antwortet, dann die Bench-Page mit 20Hz und die
+Status-Page alle 500ms. Alle 5s, solange der Link ausgefallen ist, und einmal
 pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
     I (…) rcbench: LINK works, and not every time
@@ -155,13 +156,13 @@ pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 `nack` in der Panel-Zeile zählt Anfragen, die der IOmcu mit einem NACK
 (Negative Acknowledge) beantwortet hat. Ein NACK ist eine Antwort: der Link
 arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
-Eine Einstellung aus SETUP ANSCHLÜSSE, die eine Page ablehnt, zählt je
+Eine Einstellung aus SETUP INTERFACES, die eine Page ablehnt, zählt je
 einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
 wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
-ein NACK für jeden Wert, den der IOmcu ablehnt -- Abgriff-Pause 2 ms mit
-Tiefster Ton 400 Hz, oder PD mini RX auf dem SCL des Sensorbusses --, und
+ein NACK für jeden Wert, den der IOmcu ablehnt -- Abgriff-Pause 2ms mit
+Tiefster Ton 400Hz, oder PD mini RX auf dem SCL des Sensorbusses --, und
 keines für die Werte, die er übernimmt. Ein Pin, der abgelehnt wurde, weil
-etwas anderes ihn hält, wird alle 5 s erneut angeboten und zählt jedes Mal
+etwas anderes ihn hält, wird alle 5s erneut angeboten und zählt jedes Mal
 einmal. `timeouts`, `stale` und `crc` sind die Spalten, die einen Linkfehler
 zählen.
 
@@ -172,6 +173,53 @@ IOmcu seit dem Einschalten empfangen und nicht dekodiert hat
 (`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`, Protokoll 4.21; 0 von einem
 älteren IOmcu). Siehe [Abgelehnte Frames](Link-de.md#abgelehnte-frames).
 
+## Warum der IOmcu zuletzt gestartet ist
+
+Beim Start und danach alle 3s nennt die Konsole des IOmcu, warum der IOmcu
+zuletzt gestartet ist, mit jedem Rohwert:
+
+    rcbench-iomcu: reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot 0x010104FF params 0x101FD000 0x00000000 scratch 0x101FD000 0x00000000)
+
+Die Zeile beim Start geht meist hinaus, bevor ein Host den USB-Port
+geöffnet hat; die Zeile alle 3s wiederholt sie. `chip_reset` ist POWMAN
+CHIP_RESET, `reason` WATCHDOG REASON, `boot` das Boot-Wort des Boot-ROM
+(0xttppbbdd: TBYB-Flags, Partition, Boot-Typ, Diagnose-Partition; `boot
+none`, wenn das Boot-ROM keines lieferte), `params` seine Reboot-Parameter,
+`scratch` WATCHDOG SCRATCH2 und SCRATCH3. Die Firmware liest sie einmal
+beim Boot und setzt SCRATCH2 und SCRATCH3 danach auf 0. Die längste Zeile
+hat 153 Byte mit ihrem LF.
+
+CHIP_RESET ändert sich nur bei einem Reset auf Chip-Ebene, und seine Bits
+sind nur lesbar (RP2350-Datenblatt, Abschnitte 7.3 und 7.4, Tabelle 489).
+Der Reboot des Boot-ROM setzt das System über die Power-on State Machine
+zurück, nicht den Chip: nach einem Update über CAN liest CHIP_RESET noch
+HAD_POR vom Einschalten, wie in der Zeile oben. Ein Reset auf Chip-Ebene
+setzt den Watchdog zurück, also heißt `reason 0x0`, dass CHIP_RESET zu
+diesem Start gehört. `reset_cause_decode()` in `shared/safety/reset_cause.c`
+wählt das Wort; die erste passende Zeile gilt:
+
+| Wort | Register | Ursache |
+| --- | --- | --- |
+| `FLASH_UPDATE` | Boot-Typ 4 | das Update über CAN, eine auf das BOOTSEL-Laufwerk kopierte UF2, `picotool load -x` |
+| `RAM_IMAGE` | Boot-Typ 3 | ein in den SRAM geladenes Image |
+| `BOOTSEL_REBOOT` | Boot-Typ 2; oder reason ungleich 0, Boot-Typ 0, scratch 0xFFFFFFFF 0x00000000 | zurück aus BOOTSEL über `picotool reboot`, das picotool auch nach jedem mit `-f` ausgeführten Befehl sendet. Der Weg in BOOTSEL ist die 1200-Baud-Anfrage oder die Reset-Anfrage von picotool über USB |
+| `SW_RESET` | reason 0x2 | der Watchdog sofort von Software ausgelöst |
+| `WATCHDOG` | reason 0x1 | der Watchdog ist abgelaufen: der 16,7-s-TBYB-Timer (Try Before You Buy) des Boot-ROM nach einem Update, das das Panel nicht gekauft hat, oder ein Reboot mit anderen Parametern |
+| `POR` | reason 0, HAD_POR (Bit 16) | Spannung angelegt |
+| `BOR` | reason 0, HAD_BOR (Bit 17) | Brown-out-Detektor |
+| `RUN_PIN` | reason 0, HAD_RUN_LOW (Bit 18) | RUN-Pin auf Low: der Reset-Taster oder ein Host, der RUN zieht |
+| `GLITCH` | reason 0, HAD_GLITCH_DETECT (Bit 26) | Glitch-Detektor der Versorgung |
+| `DEBUGGER` | reason 0, HAD_DP_RESET_REQ, HAD_RESCUE, HAD_HZD_SYS_RESET_REQ (Bits 19, 21, 27) | ein Reset durch einen Debugger |
+| `POWER_DOWN` | reason 0, HAD_SWCORE_PD (Bit 25) | Power-down des Switched Core |
+| `WATCHDOG` | reason 0, ein HAD_WATCHDOG_*-Bit (22, 23, 24, 28) | ein Watchdog, den POWMAN WDSEL den Chip zurücksetzen lässt; diese Firmware setzt keines |
+| `UNKNOWN` | nichts davon | keine Ursache aufgezeichnet |
+
+Der Reboot des Boot-ROM lässt den Watchdog im Timer-Modus laufen, also liest
+jeder Reboot durch ihn `reason 0x1`. Ein Warm-Reset eines Kerns durch einen
+Debugger löscht REASON ohne Reset auf Chip-Ebene, und der Start danach liest
+sich als der Reset auf Chip-Ebene davor. Die Zeilen `BOOTSEL_REBOOT` und
+`WATCHDOG` folgen dem Quelltext des RP2350-Boot-ROM und von picotool 2.x.
+
 ## Was festzuhalten ist
 
 Die Umlaufzeit, die Fehlerzähler beider Enden und der Overflow-Zähler des
@@ -179,4 +227,4 @@ IOmcu. Die Umlaufzeit legt fest, was eine Pollperiode schaffen muss;
 die Zähler sagen, ob der Bus oder die Software die Grenze setzt.
 
 Bei beiden Platinen unter Spannung außerdem am Oszilloskop bestätigen, dass
-GPIO6 auf J8 mit der Rate flankt, die [Sicherheit](Safety-de.md) vorgibt.
+GPIO28 (`PANEL_HEARTBEAT_PIN`) mit der Rate flankt, die [Sicherheit](Safety-de.md) vorgibt. GPIO28 ist IO28 des 12-poligen Headers P3.

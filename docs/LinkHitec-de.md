@@ -14,7 +14,7 @@ Die Hitec-Page (`HITEC`, 0x34) ist neu in 4.23; das Schreibregister 23, der
 Empfangsmodus einer Leitung der D-Serie, ist neu in 4.24. Die Page fährt rohe Transaktionen
 der Hitec-Servoleitung aus [`protocols/hitec`](../protocols/hitec/README.md)
 auf einem Port von [PROG](Link-de.md#die-programmierports): classic (HS-5xxx,
-HS-7xxx, 19.200 bit/s) oder D-Serie (115.200 bit/s). Die Page hält keine
+HS-7xxx, 19.200bit/s) oder D-Serie (115.200bit/s). Die Page hält keine
 Hitec-Session. Der Schreiber stellt eine Transaktion bereit, die Page fährt
 sie, und der Mitschnitt und seine Dekodierung bleiben bis zur nächsten auf
 der Page. Welche Bytes ein Servo nimmt und in welcher Reihenfolge, ist Sache
@@ -34,7 +34,7 @@ zurückgegeben. Der Bedarf an PIO und DMA ist der der Leitung, auf welchem
 Port sie auch liegt: eine Leitung, also höchstens 2 State Machines und 3
 DMA-Kanäle mit PRECHARGE.
 
-Das Panel liest `STATE` mit der PROG-Page alle 500 ms, ab 4.23. Solange es
+Das Panel liest `STATE` mit der PROG-Page alle 500ms, ab 4.23. Solange es
 einen gehaltenen Port nennt (STOPPING bis POWER_OFF), graut SERVO >
 PROGRAMMIEREN eine Zeile auf diesem Port mit `PORT BELEGT` aus
 ([Bildschirme](Screens-de.md#programmierer)).
@@ -43,14 +43,14 @@ PROGRAMMIEREN eine Zeile auf diesem Port mit `PORT BELEGT` aus
 
 OPEN nimmt den Port:
 
-1. STOPPING, 50 ms: der Port gibt keinen Puls aus, ein laufender Puls endet.
+1. STOPPING, 50ms: der Port gibt keinen Puls aus, ein laufender Puls endet.
 2. Der PWM-Generator gibt den Pin ab. Der Leitungstreiber öffnet die Leitung
    darauf als losgelassenen Eingang: classic mit dem Pull-down des Pads, die
    D-Serie mit seinem Pull-up und invertiertem Eingang. Die internen Pulls
-   haben 50 bis 80 kOhm; die D-Serie empfängt mit einem Pull-up auf der
+   haben 50 bis 80kΩ; die D-Serie empfängt mit einem Pull-up auf der
    Platine oder per PRECHARGE ([Empfangsmodus](#empfangsmodus)). Getestet
    mit einem D485HW: mit dem Pull-up des Pads allein bleibt die Leitung
-   unter 1,4 V und der Servo beantwortet kein Lesen; mit 2,2 kOhm von der
+   unter 1,4V und der Servo beantwortet kein Lesen; mit 2,2kΩ von der
    Signalleitung zur Servoversorgung beantwortet er jedes Lesen. Die
    Spannungen auf der Leitung, und ob der High-Pegel des Servos in der
    Belastbarkeit des Pins bleibt, sind nicht gemessen
@@ -58,14 +58,14 @@ OPEN nimmt den Port:
 3. OPEN. Ein Treiber, der keine PIO-State-Machine (PIO: Programmable
    Input/Output), keine 29 Worte Programmspeicher oder keine 2 DMA-Kanäle
    (Direct Memory Access) bekommt, lässt den Port mit Ergebnis 5 (`NO_LINE`)
-   frei. PRECHARGE braucht eine zweite State-Machine, bei 150 MHz 7 Worte
+   frei. PRECHARGE braucht eine zweite State-Machine, bei 150MHz 7 Worte
    Programmspeicher in einem anderen PIO-Block und einen dritten DMA-Kanal;
    ohne sie bleibt der Port ebenfalls mit `NO_LINE` frei.
 
 In OPEN startet ein Kommando eine Transaktion (BUSY). Der Port steht wieder
 in OPEN, wenn der Treiber den Mitschnitt zurückgibt. Der Treiber beendet eine
-Transaktion selbst 1 ms nach der längsten Zeit, die sie dauern kann; eine
-Transaktion, die nach 10.000 ms noch läuft, bricht zusätzlich die Page ab.
+Transaktion selbst 1ms nach der längsten Zeit, die sie dauern kann; eine
+Transaktion, die nach 10.000ms noch läuft, bricht zusätzlich die Page ab.
 
 CLOSE gibt den Port aus jedem Zustand außer frei zurück: eine laufende
 Transaktion wird abgeschnitten, die Leitung geschlossen und der Pin gehört
@@ -79,20 +79,20 @@ Antwort des Servos empfängt, ab dem nächsten OPEN. Das OPEN nimmt den Wert,
 den das Register hält, wenn das OPEN geschrieben wird; eine Änderung bei
 offener Leitung wartet auf das nächste OPEN. Ein OPEN einer classic-Leitung
 übergeht das Register: ein classic-Servo treibt seinen High-Pegel selbst,
-über etwa 1 kOhm, und antwortet an einem Open-Drain-Port ohne Pull-up und
+über etwa 1kΩ, und antwortet an einem Open-Drain-Port ohne Pull-up und
 ohne Precharge (gemessen an einem HS-7955TG, einem HS-5955TG und einem
-HS-5645MG bei 5,0 V Versorgung; die Leitungsspannungen sind nicht gemessen).
+HS-5645MG bei 5,0V Versorgung; die Leitungsspannungen sind nicht gemessen).
 
 | Wert | Name | Wie die Antwort empfangen wird |
 | ---: | --- | --- |
-| 0 | `PULL-UP` | die Leitung losgelassen; ein Pull-up von 2,2 kOhm von der Signalleitung zur Servoversorgung hebt sie. Die Voreinstellung und der Wert nach einem Neustart des IOmcu |
-| 1 | `PRECHARGE` | kein Pull-up. Alle 1086,7 ns treibt der IOmcu das Pad 100,0 ns auf High, lässt es los und tastet es 113,3 ns nach dem Loslassen ab |
+| 0 | `PULL-UP` | die Leitung losgelassen; ein Pull-up von 2,2kΩ von der Signalleitung zur Servoversorgung hebt sie. Die Voreinstellung und der Wert nach einem Neustart des IOmcu |
+| 1 | `PRECHARGE` | kein Pull-up. Alle 1086,7ns treibt der IOmcu das Pad 100,0ns auf High, lässt es los und tastet es 113,3ns nach dem Loslassen ab |
 
 Auf einer PRECHARGE-Leitung:
 
 - Ein SEND mit Empfangsfenster geht ohne Empfänger hinaus. Der erste
   Durchlauf der Hauptschleife des IOmcu, der die Anfrage beendet findet,
-  gibt das Pad an eine zweite State-Machine: 2 mA Treiberstärke, langsame
+  gibt das Pad an eine zweite State-Machine: 2mA Treiberstärke, langsame
   Flanke, Eingang nicht invertiert, der Pull-up des Pads wie zuvor. Ein
   DMA-Kanal schreibt die Abtastungen in den Speicher, und jeder Durchlauf
   dekodiert die seit dem letzten geschriebenen als invertiertes 8N1
@@ -101,10 +101,10 @@ Auf einer PRECHARGE-Leitung:
 - Der Mitschnitt ist der einer PULL-UP-Leitung: dieselben Register,
   dieselben Dekoder, dieselben Ergebniscodes. Die Zeit eines Bytes trägt
   den Start des Abtasters, abgelesen am Mikrosekunden-Timer des IOmcu,
-  stimmt also auf 1 us; die Flanke eines Startbits liegt höchstens eine
-  halbe Abtastung, 543 ns, neben der angegebenen Zeit.
+  stimmt also auf 1us; die Flanke eines Startbits liegt höchstens eine
+  halbe Abtastung, 543ns, neben der angegebenen Zeit.
 - Mit `RANGE` abgewiesen: ein LISTEN oder POWER, das antwortet, und ein
-  Empfangsfenster über 30.000 us.
+  Empfangsfenster über 30.000us.
 - Ein SEND ohne Fenster (ein Schreiben der D-Serie) und ein LEVEL laufen wie
   auf einer PULL-UP-Leitung: ohne Abtaster.
 - Am Ende des Empfangs, bei ABORT, CLOSE und einem Stopp hält der Abtaster
@@ -118,7 +118,7 @@ Auf einer PRECHARGE-Leitung:
   Start als an gelesen. Das LISTEN eines POWER startet im Durchlauf des
   ON, während der Ausgang noch als aus gelesen wird; es gilt ab dem ersten
   Durchlauf als an gelesen, der den Ausgang nicht als aus liest. Eines,
-  dessen Ausgang das ganze Fenster lang, höchstens 30.000 us, als aus
+  dessen Ausgang das ganze Fenster lang, höchstens 30.000us, als aus
   gelesen wird, läuft bis zu seinem Ende, mit Ergebnis 2. Ein
   Empfang, der bei ausgeschalteter Versorgung oder ohne PD mini startete,
   läuft bis zu seinem Ende.
@@ -127,7 +127,7 @@ Bit 7 von `STATE` liest das Register; Register 25 von `VIEW` 2, Bit 8, sagt,
 dass die offene Leitung per PRECHARGE empfängt. Ein IOmcu mit 4.23 weist
 ein Schreiben, das Register 23 erreicht, mit READ_ONLY ab und empfängt mit
 dem Pull-up; das Panel markiert dann die Einstellung unter SETUP
-([ANSCHLÜSSE: der Programmierport](Screens-de.md#anschlüsse-der-programmierport)).
+([INTERFACES: der Programmierport](Screens-de.md#interfaces-der-programmierport)).
 Was gemessen ist und was nicht:
 [`protocols/hitec`](../protocols/hitec/README.md#receive-by-precharge-and-sample).
 
@@ -137,10 +137,10 @@ Was gemessen ist und was nicht:
 | --- | --- | --- |
 | SEND | der Vorlauf auf dem Ruhepegel (D-Serie: auf Low getrieben), 1 bis 8 Bytes mit 0 bis 6 Ruhe-Bitzeiten dazwischen, dann der Empfänger für das Fenster | immer |
 | LISTEN | der Empfänger für das Fenster; mit Antwort ein Byte am Ende des Stoppbits des ersten empfangenen Bytes | mit Antwort |
-| LEVEL | die Leitung 1 us bis 4 s auf einem Pegel gehalten, dann losgelassen. Open Drain treibt nur Low | nie |
+| LEVEL | die Leitung 1us bis 4s auf einem Pegel gehalten, dann losgelassen. Open Drain treibt nur Low | nie |
 | POWER | das Aus- und Einschalten der Versorgung unten, dann ein LISTEN ab dem Einschalten | mit Antwort |
 
-Vorlauf, Fenster und Pegel reichen bis 4.000.000 us. Ein Mitschnitt hält bis
+Vorlauf, Fenster und Pegel reichen bis 4.000.000us. Ein Mitschnitt hält bis
 zu 16 Bytes. Das Fenster zählt nur die Zeit, die auf ein Startbit gewartet
 wird. Jedes empfangene Byte hat die Zeit seines Startbits in ns ab dem Start
 des Empfängers und sein Stoppbit, wie es abgetastet wurde.
@@ -163,14 +163,14 @@ Die Ergebniscodes der Dekoder sind `hitec_rx_t`: 0 OK, 1 ARG, 2 ABORTED,
 POWER braucht einen PD mini, der antwortet ([SUPPLY](Link-de.md)). Es:
 
 1. verlangt die Versorgung aus;
-2. wartet, bis sie aus gelesen wird, höchstens 3000 ms, sonst Ergebnis 3
+2. wartet, bis sie aus gelesen wird, höchstens 3000ms, sonst Ergebnis 3
    (`SUPPLY`);
-3. hält sie für die bereitgestellten 0 bis 10.000 ms aus;
+3. hält sie für die bereitgestellten 0 bis 10.000ms aus;
 4. verlangt sie an mit der bereitgestellten Spannung und Stromgrenze;
 5. startet im selben Durchlauf das bereitgestellte LISTEN.
 
-Die Spannung ist 4800 bis 6000 mV, bis eine Session das Servomodell kennt.
-Die Stromgrenze ist 50 bis 3000 mA. Die Spannung plus 700 mV muss unter dem
+Die Spannung ist 4800 bis 6000mV, bis eine Session das Servomodell kennt.
+Die Stromgrenze ist 50 bis 3000mA. Die Spannung plus 700mV muss unter dem
 Eingang des PD mini liegen, wenn der Eingang bekannt ist. Ein Sollwert
 außerhalb davon wird mit `SUPPLY_RANGE` abgewiesen. Eine Versorgung, die das
 Einschalten abweist, gibt Ergebnis 3; ein LISTEN, das der Treiber abweist,
@@ -180,7 +180,7 @@ Panel kann die Versorgung ausschalten, aber nicht einschalten und keinen
 Sollwert verschieben.
 
 Ein Ausschalten der SUPPLY-Page wartet auf ein Byte, das auf der Leitung
-sein kann, höchstens 12 ms: Vorlauf und Bytes eines SEND, und ein LISTEN
+sein kann, höchstens 12ms: Vorlauf und Bytes eines SEND, und ein LISTEN
 oder das LISTEN eines POWER, das antwortet, ganz, weil die Antwort geht,
 sobald das erste Byte gekommen ist.
 
@@ -257,9 +257,9 @@ Ein Schreiben sieht andere Register:
 | 15 | `ANSWER` | niederwertiges Byte die Antwort; Bit 8 der Pegel eines LEVEL |
 | 16, 17 | `LEVEL` | LEVEL: wie lange, us |
 | 18 | `DECODE` | Bits 0 und 1 der Dekoder, Bits 8 bis 15 sein Argument; Bits 2 bis 7 0 |
-| 19 | `SUPPLY_MV` | POWER: 4800 bis 6000 mV |
-| 20 | `SUPPLY_MA` | POWER: 50 bis 3000 mA |
-| 21 | `OFF_MS` | POWER: 0 bis 10.000 ms |
+| 19 | `SUPPLY_MV` | POWER: 4800 bis 6000mV |
+| 20 | `SUPPLY_MA` | POWER: 50 bis 3000mA |
+| 21 | `OFF_MS` | POWER: 0 bis 10.000ms |
 | 22 | `VIEW` | 0 bis 2. Gilt, sobald geschrieben, und fällt nicht unter die Prüfsumme |
 | 23 | `RX_MODE` | 0 PULL-UP, 1 PRECHARGE: wie eine Leitung der D-Serie empfängt, ab dem nächsten OPEN (4.24). Fällt nicht unter die Prüfsumme; 0 nach einem Neustart |
 
@@ -295,7 +295,7 @@ dieser Reihenfolge für eine Transaktion:
 | 9 | `STOPPED` | seither ein Stopp; erst CLEAR |
 | 5 | `UNSAFE` | dem Heartbeat wird nicht vertraut, oder der Link ist still |
 | 8 | `STAGED` | Register 4 bis 21 haben nicht die Prüfsumme, die `CRC` nennt |
-| 11 | `RANGE` | die bereitgestellte Transaktion ist keine, die die Leitung fährt, der Dekoder passt nicht zur Familie, oder ein reserviertes Bit ist gesetzt; auf einer PRECHARGE-Leitung auch ein LISTEN oder POWER, das antwortet, oder ein Empfangsfenster über 30.000 us |
+| 11 | `RANGE` | die bereitgestellte Transaktion ist keine, die die Leitung fährt, der Dekoder passt nicht zur Familie, oder ein reserviertes Bit ist gesetzt; auf einer PRECHARGE-Leitung auch ein LISTEN oder POWER, das antwortet, oder ein Empfangsfenster über 30.000us |
 | 13 | `NO_SUPPLY` | POWER ohne einen PD mini, der antwortet |
 | 12 | `SUPPLY_RANGE` | POWER: ein Sollwert oder die Auszeit außerhalb des Bereichs |
 | 3 | `HELD` | OPEN: die KST-Page hält den Port |
@@ -323,8 +323,8 @@ r 0x34 0 16
 ```
 
 Die ersten beiden Zeilen öffnen die Leitung, classic und Open Drain; die
-dritte liest nach 50 ms `STATE` 2 (OPEN). Die vierte stellt 4 Bytes mit 1
-Ruhebit dazwischen, ein Fenster von 1500 us für 2 Bytes und den Dekoder
+dritte liest nach 50ms `STATE` 2 (OPEN). Die vierte stellt 4 Bytes mit 1
+Ruhebit dazwischen, ein Fenster von 1500us für 2 Bytes und den Dekoder
 bereit; die fünfte sendet sie mit dem Schlüssel. 0x8135 und 0xE56A sind die
 Prüfsummen der beiden bereitgestellten Blöcke. `hitec open 0 c` und
 `hitec c 0 0x61 0x12 0` der Konsole tun dasselbe und rechnen `SEQ` und die

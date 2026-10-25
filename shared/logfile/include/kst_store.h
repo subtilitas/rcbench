@@ -1,5 +1,7 @@
-/*
- * Servo configuration files on the card: names, saving, listing, loading.
+/**
+ * @file
+ * @brief Servo configuration files on the card: names, saving, listing,
+ *        loading.
  *
  * The files live in the folder KST_STORE_DIR of the card, BENCH/KST/CONF
  * (card_tree.h), apart from the run logs.  The folder KST of firmware 0.21
@@ -38,36 +40,54 @@
 extern "C" {
 #endif
 
-/** The folder of the card that holds the files, made level by level on
- *  the first save. */
+/**
+ * @brief The folder of the card that holds the files, made level by level on
+ *        the first save.
+ */
 #define KST_STORE_DIR CARD_KST_CONF
 
-/** The extension of every file, added by this layer. */
+/**
+ * @brief The extension of every file, added by this layer.
+ */
 #define KST_STORE_EXT ".TXT"
 
-/** Characters of a base name at most. */
+/**
+ * @brief Characters of a base name at most.
+ */
 #define KST_STORE_BASE_MAX 32
 
-/** Room for a file name: base name, extension and terminator. */
+/**
+ * @brief Room for a file name: base name, extension and terminator.
+ */
 #define KST_STORE_NAME_MAX (KST_STORE_BASE_MAX + 4 + 1)
 
-/** The first and the last number of a proposed name. */
+/**
+ * @brief The first and the last number of a proposed name.
+ */
 #define KST_STORE_FIRST 1
 #define KST_STORE_LAST  999
 
-/** Room for "KST999" and its terminator. */
+/**
+ * @brief Room for "KST999" and its terminator.
+ */
 #define KST_STORE_PRESET_MAX 7
 
 /**
- * The base name this layer keeps free, in any case: "KST.TXT" in the
- * directory is the caller's record of a write under way and no servo file.
- * The name is refused as KST_STORE_NAME_RESERVED, so no save writes it and
- * no load reads it; kst_store_list() leaves the file out and does not count
- * it.  The layer itself never reads, writes or removes the file.
+ * @brief The base name this layer keeps free, in any case: "KST.TXT" in the
+ *        directory is the caller's record of a write under way and no servo
+ *        file.
+ *
+ * The name is refused as KST_STORE_NAME_RESERVED, so no save writes it and no
+ * load reads it; kst_store_list() leaves the file out and does not count it.
+ * The layer itself never reads, writes or removes the file.
  */
 #define KST_STORE_RECORD "KST"
 
-/** Whether a base name is taken.  The numbers are stable. */
+/**
+ * @brief Whether a base name is taken.
+ *
+ * The numbers are stable.
+ */
 typedef enum {
     KST_STORE_NAME_OK = 0,
     KST_STORE_NAME_EMPTY = 1,    /**< no character, or NULL */
@@ -83,7 +103,11 @@ typedef enum {
                                       at the end */
 } kst_store_name_t;
 
-/** The result of a call.  The numbers are stable. */
+/**
+ * @brief The result of a call.
+ *
+ * The numbers are stable.
+ */
 typedef enum {
     KST_STORE_OK = 0,
     KST_STORE_ARG = 1,          /**< a NULL argument or a buffer too small */
@@ -102,7 +126,9 @@ typedef enum {
                                      the directory */
 } kst_store_t;
 
-/** What the create function reports. */
+/**
+ * @brief What the create function reports.
+ */
 typedef enum {
     KST_STORE_IO_OK = 0,
     KST_STORE_IO_EXISTS,   /**< the name is taken; nothing was written */
@@ -114,72 +140,116 @@ typedef enum {
                                 written */
 } kst_store_io_result_t;
 
-/** Receives one directory entry.  @p name does not outlive the call. */
+/**
+ * @brief Receives one directory entry.  @p name does not outlive the call.
+ */
 typedef void (*kst_store_visit_fn)(const char *name, bool is_dir,
                                    void *visit_ctx);
 
-/** The card.  Every name is a name inside KST_STORE_DIR.  All 5 functions
- *  are set. */
+/**
+ * @brief The card.
+ *
+ * Every name is a name inside KST_STORE_DIR.  All 5 functions are set.
+ */
 typedef struct {
-    void *ctx;
-    /** Whether a card is mounted. */
+    void *ctx;                  /**< passed to every function               */
+    /**
+     * @brief Whether a card is mounted.
+     */
     bool (*mounted)(void *ctx);
-    /** Call @p visit for every entry of the directory, files and
-     *  directories, once each.  A directory that does not exist has no
-     *  entry.  False when the directory does not read to its end. */
+    /**
+     * @brief Call @p visit for every entry of the directory, files and
+     *        directories, once each.
+     *
+     * A directory that does not exist has no entry.  False when the directory
+     * does not read to its end.
+     */
     bool (*walk)(void *ctx, kst_store_visit_fn visit, void *visit_ctx);
-    /** Size of a file in bytes; -1 when no file has that name. */
+    /**
+     * @brief Size of a file in bytes; -1 when no file has that name.
+     */
     int32_t (*size)(void *ctx, const char *name);
-    /** Up to @p cap bytes from the start of the file.  Returns the count,
-     *  -1 on a failure. */
+    /**
+     * @brief Up to @p cap bytes from the start of the file.
+     *
+     * Returns the count, -1 on a failure.
+     */
     int32_t (*read)(void *ctx, const char *name, char *buf, size_t cap);
-    /** Create the directory when it is missing, create the file and fail
-     *  when the name exists, write @p len bytes, commit them to the card
-     *  and close. */
+    /**
+     * @brief Create the directory when it is missing, create the file and fail
+     *        when the name exists, write @p len bytes, commit them to the card
+     *        and close.
+     */
     kst_store_io_result_t (*create)(void *ctx, const char *name,
                                     const char *data, size_t len);
 } kst_store_io_t;
 
-/** One row of a list. */
+/**
+ * @brief One row of a list.
+ */
 typedef struct {
     char name[KST_STORE_NAME_MAX];  /**< the file name with its extension */
 } kst_store_entry_t;
 
-/** Whether @p base is a base name this layer writes. */
+/**
+ * @brief Whether @p base is a base name this layer writes.
+ *
+ * @param base  The base name, without extension.
+ * @return KST_STORE_NAME_OK, or the first rule the name breaks.
+ */
 kst_store_name_t kst_store_name_check(const char *base);
 
 /**
- * The file name of @p base: the base name and KST_STORE_EXT.  False, with
- * an empty string in @p out, for a base name that fails
+ * @brief The file name of @p base: the base name and KST_STORE_EXT.
+ *
+ * False, with an empty string in @p out, for a base name that fails
  * kst_store_name_check() and for an @p out_size under KST_STORE_NAME_MAX.
+ *
+ * @param base      The base name.
+ * @param out       Receives the file name.
+ * @param out_size  Size of @p out, bytes.
+ * @return true when @p out holds the file name.
  */
 bool kst_store_file_name(const char *base, char *out, size_t out_size);
 
 /**
- * Propose a base name: "KST" and 3 digits, one above the highest number
- * the directory holds.  A gap below the highest number is not filled, so a
- * higher number is a later file.  With KST999 taken the lowest free number
- * is proposed.  Files and directories count, in any case; a file with
- * another name counts for nothing.
+ * @brief Propose a base name: "KST" and 3 digits, one above the highest number
+ *        the directory holds.
+ *
+ * A gap below the highest number is not filled, so a higher number is a later
+ * file.  With KST999 taken the lowest free number is proposed.  Files and
+ * directories count, in any case; a file with another name counts for nothing.
  *
  * @p base_size is KST_STORE_PRESET_MAX or more.
+ *
+ * @param io         The card functions.
+ * @param base       Receives the proposed base name.
+ * @param base_size  Size of @p base, bytes.
+ * @return KST_STORE_OK, or the reason no name was proposed.
  */
 kst_store_t kst_store_preset(const kst_store_io_t *io, char *base,
                              size_t base_size);
 
 /**
- * Write @p len bytes of @p text as the file of @p base.
+ * @brief Write @p len bytes of @p text as the file of @p base.
  *
  * KST_STORE_BAD_NAME leaves the reason in @p why, when not NULL.  A name
  * the directory holds, compared without case, gives KST_STORE_EXISTS and
  * the file stays as it is.
+ *
+ * @param io    The card functions.
+ * @param base  The base name of the file.
+ * @param text  The bytes to write.
+ * @param len   Number of bytes in @p text.
+ * @param why   Receives the name reason when refused, or NULL.
+ * @return KST_STORE_OK, or the reason the file was not written.
  */
 kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
                            const char *text, size_t len,
                            kst_store_name_t *why);
 
 /**
- * List the files with KST_STORE_EXT.
+ * @brief List the files with KST_STORE_EXT.
  *
  * The order: by name without case.  The files named "KST" and 3 digits
  * stand in one run at the place of "KST000", by falling number.
@@ -193,21 +263,39 @@ kst_store_t kst_store_save(const kst_store_io_t *io, const char *base,
  * in none of the 3 numbers.  Each of the 3 may be NULL.
  * Directories are not listed.  A directory without a file gives
  * KST_STORE_OK and a count of 0.
+ *
+ * @param io       The card functions.
+ * @param entries  Receives the listed names.
+ * @param cap      Capacity of @p entries, in entries.
+ * @param count    Receives the number of entries written, or NULL.
+ * @param total    Receives the number of qualifying files, or NULL.
+ * @param skipped  Receives the number of files with a bad name, or NULL.
+ * @return KST_STORE_OK, or the reason the directory did not list.
  */
 kst_store_t kst_store_list(const kst_store_io_t *io,
                            kst_store_entry_t *entries, size_t cap,
                            size_t *count, size_t *total, size_t *skipped);
 
 /**
- * kst_store_list() from the file behind @p after on: @p entries receives
- * the first @p cap files the order has behind the name @p after, a file
- * name with its extension that need not exist.  NULL lists from the first
- * file on.  @p total and @p skipped count the whole directory as
- * kst_store_list() does.
+ * @brief kst_store_list() from the file behind @p after on: @p entries receives
+ *        the first @p cap files the order has behind the name @p after, a file
+ *        name with its extension that need not exist.
+ *
+ * NULL lists from the first file on.  @p total and @p skipped count the whole
+ * directory as kst_store_list() does.
  *
  * A caller reaches every file of a directory in a buffer of @p cap entries
  * by passing the last name of one call to the next; each call walks the
  * directory once.
+ *
+ * @param io       The card functions.
+ * @param after    The file name to list after, or NULL.
+ * @param entries  Receives the listed names.
+ * @param cap      Capacity of @p entries, in entries.
+ * @param count    Receives the number of entries written, or NULL.
+ * @param total    Receives the number of qualifying files, or NULL.
+ * @param skipped  Receives the number of files with a bad name, or NULL.
+ * @return KST_STORE_OK, or the reason the directory did not list.
  */
 kst_store_t kst_store_list_after(const kst_store_io_t *io, const char *after,
                                  kst_store_entry_t *entries, size_t cap,
@@ -215,8 +303,17 @@ kst_store_t kst_store_list_after(const kst_store_io_t *io, const char *after,
                                  size_t *skipped);
 
 /**
- * Read the file @p name, a name as kst_store_list() gives it, into @p buf.
- * @p len receives the number of bytes.  No terminator is written.
+ * @brief Read the file @p name, a name as kst_store_list() gives it, into @p
+ *        buf. @p len receives the number of bytes.
+ *
+ * No terminator is written.
+ *
+ * @param io    The card functions.
+ * @param name  The file name.
+ * @param buf   Receives the bytes.
+ * @param cap   Capacity of @p buf, bytes.
+ * @param len   Receives the number of bytes read.
+ * @return KST_STORE_OK, or the reason the file was not read.
  */
 kst_store_t kst_store_load(const kst_store_io_t *io, const char *name,
                            char *buf, size_t cap, size_t *len);

@@ -1,6 +1,7 @@
-/*
- * The panel's half of the link: poll, match the reply to the question, and
- * escalate when the answers stop.
+/**
+ * @file
+ * @brief The panel's half of the link: poll, match the reply to the question,
+ * and escalate when the answers stop.
  *
  * One request outstanding at a time, which is the protocol: the IOmcu
  * transmits only when asked, so there is one request in flight and nothing
@@ -23,11 +24,14 @@ extern "C" {
 #endif
 
 /**
- * How long the panel tolerates silence before it escalates: five times the
- * IOmcu's 200 ms, so the end holding the outputs gives up first.
+ * @brief How long the panel tolerates silence before it escalates: five times
+ * the IOmcu's 200ms, so the end holding the outputs gives up first.
  */
 #define LINK_HOST_TIMEOUT_MS 1000u
 
+/**
+ * @brief The panel's state for one link: the outstanding request, the counters and the reassembly buffer.
+ */
 typedef struct {
     /* The outstanding question, kept so an answer to an older one cannot be
      * mistaken for an answer to this one. */
@@ -58,20 +62,48 @@ typedef struct {
     uint32_t acc_seen;   /**< bit per register within the request's window */
 } link_host_t;
 
+/**
+ * @brief Set up the panel's link state.
+ *
+ * @param h The state to set up; NULL is ignored.
+ * @param now_ms The current time, in ms; starts the link-quiet clock.
+ */
 void link_host_init(link_host_t *h, uint32_t now_ms);
 
 /**
- * Build a request.  Returns false if the window does not fit a page or a
- * request is already outstanding: one at a time.
+ * @brief Build a request.
+ *
+ * Returns false if the window does not fit a page or a request is already
+ * outstanding: one at a time.
+ *
+ * @param h The panel's link state.
+ * @param page Page number to read.
+ * @param offset First register within the page.
+ * @param count Number of registers, 1 to LINK_MAX_REGS.
+ * @param now_ms The current time, in ms; starts the request's timeout.
+ * @param out Receives the request to send.
+ * @return true when the request was built, else false.
  */
 bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
                     uint8_t count, uint32_t now_ms, link_msg_t *out);
+/**
+ * @brief Build a write request.
+ *
+ * @param h The panel's link state.
+ * @param page Page number to write.
+ * @param offset First register within the page.
+ * @param count Number of registers, 1 to LINK_MAX_REGS.
+ * @param regs The count values to write.
+ * @param now_ms The current time, in ms; starts the request's timeout.
+ * @param out Receives the request to send.
+ * @return true when the request was built, else false.
+ */
 bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
                      uint8_t count, const uint16_t *regs, uint32_t now_ms,
                      link_msg_t *out);
 
 /**
- * Offer one received message against the outstanding request.
+ * @brief Offer one received message against the outstanding request.
  *
  * True when the request is answered, which for a read may take several
  * messages: @p whole then holds the reassembled reply.  Parts that land
@@ -82,12 +114,18 @@ bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
  * mismatch and refused.  A late reply can arrive after the panel has moved
  * on, and accepting it would attach one page's registers to another page's
  * request.
+ *
+ * @param h The panel's link state.
+ * @param part The received message.
+ * @param now_ms The current time, in ms.
+ * @param whole Receives the reassembled reply when the request is answered.
+ * @return true when the request is answered, else false.
  */
 bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
                       link_msg_t *whole);
 
 /**
- * Time out the outstanding request, and report the link down once.
+ * @brief Time out the outstanding request, and report the link down once.
  *
  * Two clocks: a request is abandoned when it has been outstanding for
  * LINK_HOST_TIMEOUT_MS, every time; the link is reported down when nothing
@@ -95,24 +133,34 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
  *
  * True if it abandoned a request or escalated; a caller waiting for a reply
  * stops waiting.
+ *
+ * @param h The panel's link state.
+ * @param now_ms The current time, in ms.
+ * @return true if it abandoned a request or escalated; a caller waiting for a
+ *       reply stops waiting.
  */
 bool link_host_tick(link_host_t *h, uint32_t now_ms);
 
 /**
- * Give up on the outstanding request.
+ * @brief Give up on the outstanding request.
  *
  * For a caller that failed to transmit it: nothing is on the wire to wait
  * for, and an outstanding request refuses every later one until its timeout.
+ *
+ * @param h The panel's link state.
  */
 void link_host_abandon(link_host_t *h);
 
 /**
- * Whether a request is outstanding.
+ * @brief Whether a request is outstanding.
  *
  * A caller waiting for an answer needs this rather than link_host_tick()'s
  * return, which is true for the link going quiet as well as for this
  * request's timeout: only one of the two releases the slot, and a wait that
  * ended on the other one left the host unable to send anything again.
+ *
+ * @param h The panel's link state.
+ * @return true while a request is outstanding.
  */
 bool link_host_pending(const link_host_t *h);
 

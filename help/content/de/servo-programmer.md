@@ -26,7 +26,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 
 ![Der Programmierer, während der Tester den Port hält](view:servo-kst)
 
-- Einen IOmcu mit Protokoll 4.13 oder neuer; VERLASSEN braucht 4.15.
+- Einen IOmcu mit 0.17.0 oder neuer (Protokoll 4.15, VERLASSEN eingeschlossen).
 - Das Servo an einem Programmierport des IOmcu, PROG-PORT 1 bis 4, mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist; die Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT von Ausgänge gesetzt ist.
 - SERVO-TESTER auf diesem Eintrag auf diesen Port, PORT 1, PORT 2, PORT 3 oder PORT 4; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
 - Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
@@ -46,9 +46,9 @@ WEITERES stellt, solange der Tester den Port hat, was VERBINDEN anwendet:
 
 | Eintrag | Bereich | Vorgabe |
 |---|---|---|
-| PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in Schritten von 0,1 V; bis 8,4 V mit HV-SERVO eingeschaltet | 5,0 V |
-| STROMBEGRENZUNG | 50 bis 3000 mA | 1000 mA |
-| WARTEZEIT VOR PWM | 0 bis 10000 ms | 100 ms |
+| PROGRAMMIERSPANNUNG | 4,8 bis 6,0V in Schritten von 0,1V; bis 8,4V mit HV-SERVO eingeschaltet | 5,0V |
+| STROMBEGRENZUNG | 50 bis 3000mA | 1000mA |
+| WARTEZEIT VOR PWM | 0 bis 10000ms | 100ms |
 
 ![Ein PD mini antwortet](view:servo-kst-supply)
 ![Die Versorgung im Programmiermodus](view:servo-kst-supplied)
@@ -71,7 +71,7 @@ Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Ne
 | SCHREIBEN INS SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
 | ÄNDERUNGEN | n WERTE SCHREIBEN | schreibt die geänderten Werte |
 
-V6 ist eine Ansteuerung mit 20 kHz, V8 eine mit 333 Hz. Der Typ wird nie bearbeitet und nie geschrieben.
+V6 ist eine Ansteuerung mit 20kHz, V8 eine mit 333Hz. Der Typ wird nie bearbeitet und nie geschrieben.
 
 ![Ein Servo unbekannter Belegung: nur lesen](view:servo-kst-readonly)
 
@@ -88,9 +88,9 @@ Ein Wert wird in einem Entwurf auf dem Panel bearbeitet. Vor dem Schreiben errei
 
 | Reiter | Zeilen |
 |---|---|
-| ABSTIMMEN | DEAD BAND, MAX. DUTY (10 bis 98 %), BOOST (bis 3000 us), STRETCH (x1 bis x32), SOFT START, TEMPOGRENZE, TEMPO |
-| PULS | NEUTRAL (1360 bis 1640 us), PULSE LOWER (ab 500 us), PULSE UPPER (bis 2500 us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
-| FAILSAFE | BEWEGEN BEI SIGNALVERLUST, POSITION (500 bis 2500 us), NACH (0,4 bis 13,0 s) |
+| ABSTIMMEN | DEAD BAND, MAX. DUTY (10 bis 98%), BOOST (bis 3000us), STRETCH (x1 bis x32), SOFT START, TEMPOGRENZE, TEMPO |
+| PULS | NEUTRAL (1360 bis 1640us), PULSE LOWER (ab 500us), PULSE UPPER (bis 2500us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
+| FAILSAFE | BEWEGEN BEI SIGNALVERLUST, POSITION (500 bis 2500us), NACH (0,4 bis 13,0s) |
 | GESPERRT | der Servotyp, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet |
 
 ![Der Reiter PULS](view:servo-kst-pulse)
@@ -104,7 +104,7 @@ Ein Tipp, der eine harte Grenze verletzen würde, ändert nichts und nennt die G
 
 ![ÄNDERUNG PRÜFEN](view:servo-kst-soft)
 
-Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2 s; ABBRECHEN lässt den Entwurf, wie er war. Ein [Endlagenlauf](servo.md#der-endlagenlauf) fragt hier nicht: Sein Halten von 2 s beim Start ist die Zustimmung zu einem LEFT ANGLE oder RIGHT ANGLE unter 50.
+Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. 2s HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2s; ABBRECHEN lässt den Entwurf, wie er war. Ein [Endlagenlauf](servo.md#der-endlagenlauf) fragt hier nicht: Sein Halten von 2s beim Start ist die Zustimmung zu einem LEFT ANGLE oder RIGHT ANGLE unter 50.
 
 ![Der Reiter GESPERRT](view:servo-kst-locked)
 
@@ -112,12 +112,12 @@ Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet 
 
 ![Das Schreiben freigeben](view:servo-kst-enable)
 
-SCHREIBEN INS SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Seite, die die Risiken nennt; HALTEN ZUM FREIGEBEN schaltet es nach 2 s ein. Es geht aus bei jedem Aufruf von SERVO, bei jedem STOP, VERBINDEN und VERLASSEN, bei verlorenem Link und wenn ein Servo unklar ist.
+SCHREIBEN INS SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Seite, die die Risiken nennt; 2s HALTEN ZUM FREIGEBEN schaltet es nach 2s ein. Es geht aus bei jedem Aufruf von SERVO, bei jedem STOP, VERBINDEN und VERLASSEN, bei verlorenem Link und wenn ein Servo unklar ist.
 
 ![Drei geänderte Werte, der Schalter an](view:servo-kst-changes)
 ![Die Seite zum Schreiben](view:servo-kst-write)
 
-n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAND: 2.0 -> 1.6 us`. HALTEN ZUM SCHREIBEN startet das Schreiben nach 2 s.
+n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAND: 2.0 -> 1.6us`. 2s HALTEN ZUM SCHREIBEN startet das Schreiben nach 2s.
 
 1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in eine neue Datei auf der SD-Karte (Secure Digital).
 2. Das Panel vermerkt das Schreiben in `BENCH/KST/CONF/KST.TXT`, oder ohne Karte im Speicher.
@@ -145,13 +145,13 @@ Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nic
 ![Die Liste von ZURÜCKSPIELEN](view:servo-kst-restore-list)
 ![Das Zurückspielen des Backups der Sitzung](view:servo-kst-restore)
 
-ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach VERBINDEN zuerst gelesen wurde, die Werte vor einem unterbrochenen Schreiben oder `Werte vor dem Endlagenlauf.`. Jedes Zurückspielen braucht den Schreibschalter und ein Halten von 2 s.
+ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach VERBINDEN zuerst gelesen wurde, die Werte vor einem unterbrochenen Schreiben oder `Werte vor dem Endlagenlauf.`. Jedes Zurückspielen braucht den Schreibschalter und ein Halten von 2s.
 
 ![WEITERES im Programmiermodus](view:servo-kst-more)
 
 - PRÜFEN liest alle Register und vergleicht sie mit dem gehaltenen Abbild.
 - ÄNDERUNGEN VERWERFEN setzt den Entwurf auf die Werte des Servos zurück.
-- PAIRING LÖSEN setzt Register 1D nach einem Halten von 2 s auf 00. Was das Servo mit dem Wert macht, ist nicht bekannt.
+- PAIRING LÖSEN setzt Register 1D nach einem Halten von 2s auf 00. Was das Servo mit dem Wert macht, ist nicht bekannt.
 
 ## Ein unterbrochenes Schreiben
 
@@ -165,7 +165,7 @@ Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu st
 
 ![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
 
-VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. HALTEN ZUM VERLASSEN übernimmt es nach 2 s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
+VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. 2s HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
 
 ## Verwandte Seiten
 

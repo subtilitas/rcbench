@@ -598,7 +598,7 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
 
     fresh();
     connected();
-    /* 5 steps of 255: more than the 1 % an edited file's line states. */
+    /* 5 steps of 255: more than the 1% an edited file's line states. */
     CHECK(as_typed(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) + 5u))
           > servo(KST_F_DUTY));
     f = file_with("UP", KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) + 5u));
@@ -614,7 +614,7 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
     CHECK(warns(want));
     CHECK(warns(kst_panel_rule_text(KST_S_DUTY_RAISED)));
     CHECK_EQ(kst_prog_changes(M), 0);
-    /* Short of 2 s nothing is taken. */
+    /* Short of 2s nothing is taken. */
     hold(1.9f);
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK_EQ(kst_prog_changes(M), 0);

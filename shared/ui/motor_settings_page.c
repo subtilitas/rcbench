@@ -1,5 +1,6 @@
-/*
- * MOTOR & ESC > SETTINGS: the ESC / BENCH category's 8 rows (SET_CAT_ESC),
+/**
+ * @file
+ * @brief MOTOR & ESC > SETTINGS: the ESC / BENCH category's 8 rows (SET_CAT_ESC),
  * under PACK, MOTOR and THROTTLE OUTPUT.  The rows are the settings SETUP
  * listed before they moved here: one home each, the same label, help and
  * value text.
@@ -16,8 +17,8 @@
  * Idle pulse and Full pulse are the throttle's endpoints, which the IOmcu
  * (the RP2350 board) takes only on a disarmed bench.  They take a press
  * only while the bench is SAFE and ARM is not held (motor_screen.c's
- * endpoints_free()); otherwise their help line says so, and a keypad open
- * for one closes.
+ * mo_endpoints_free()); otherwise their help line says so, and a keypad
+ * open for one closes.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,6 +29,7 @@
 #include "motor_screen.h"
 #include "settings.h"
 #include "ui_keypad.h"
+#include "ui_setting_keypad.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -58,29 +60,40 @@ static const ui_text_id_t k_heading[HD_COUNT] = {
 };
 
 /*
- * Down the page: a heading 24 px, a row 34 px with its 28 px value box.
- * Across: the label's 16 cells from x 16, the help's 36 cells from x 148,
- * the value box's 100 px to 10 px short of the page's edge.
+ * Two columns, PACK and MOTOR on the left, THROTTLE OUTPUT on the right,
+ * 295px each.  Down a column: a heading 28px, 8px more under a row, then each row 68px: its
+ * label left of its 120 x 48px value box, and its help line of up to 36
+ * cells of 8px under them.  The save line runs along the page's foot,
+ * ending 4px above the alert band.
  */
-#define TOP_Y      (PAGE_Y + 8)
-#define HEAD_H     24
-#define ROW_PITCH  34
-#define BOX_H      28
-#define LABEL_X    (PAGE_X + 10)
-#define HELP_X     (LABEL_X + 16 * 8 + 4)
-#define BOX_W      100
-#define BOX_X      (PAGE_X + PAGE_W - 10 - BOX_W)
-#define SAVE_Y     (PAGE_Y + PAGE_H - 24)
+#define TOP_Y      (PAGE_Y + 8)          /**< The first heading, px. */
+#define HEAD_H     28                    /**< A heading's line, px. */
+#define HEAD_GAP   8                     /**< Over a heading under a row. */
+#define ROW_PITCH  68                    /**< From row to row, px. */
+#define BOX_H      UI_TAP_MIN            /**< A value box's height, px. */
+#define BOX_W      120                   /**< Its width, px. */
+#define HELP_DY    (BOX_H + 2)           /**< The help line, in a row. */
+#define COL_W      ((PAGE_W - 30) / 2)   /**< A column: 295px. */
+/** @brief Column @p k's left edge, px. */
+#define COL_X(k)   (PAGE_X + 10 + (k) * (COL_W + 10))
+#define SAVE_Y     (STOP_FLOOR - 20)     /**< The save line, px. */
+#define MS_FONT    (&gfx_font_10x20)     /**< Labels, values, headings. */
+#define MS_FINE    UI_FONT_FINE          /**< The help lines: 8 x 16. */
+_Static_assert(TOP_Y + 2 * HEAD_H + HEAD_GAP + 4 * ROW_PITCH + HELP_DY + 16 + 4
+                   <= SAVE_Y,
+               "the left column's fifth row and its help end over the save "
+               "line");
 
+/** @brief The page's state. */
 static struct {
-    ui_keypad_t  kp;
-    int          kp_row;      /* the row the keypad types, or -1         */
-    int          pressed;     /* the row whose value is pressed, or -1   */
-    uint8_t      press_id;
-    uint32_t     rev;
-    uint8_t      drawn_save;  /* the save line's state last drawn        */
-    bool         drawn_safe;
-} p;
+    ui_keypad_t  kp;          /**< the keypad over the page and the strip */
+    int          kp_row;      /**< the row the keypad types, or -1        */
+    int          pressed;     /**< the row whose value is pressed, or -1  */
+    uint8_t      press_id;    /**< the contact of that press              */
+    uint32_t     rev;         /**< bumped when the page's look changes    */
+    uint8_t      drawn_save;  /**< the save line's state last drawn       */
+    bool         drawn_safe;  /**< whether the page was drawn SAFE        */
+} p; /**< the page's state */
 
 /* Whether the store reached the medium: 0 saved, 1 waiting for a quiet
  * moment, 2 refused, 3 changed on SETUP and not asked to be saved. */
@@ -95,16 +108,34 @@ static uint8_t save_state(void)
     return settings_dirty() ? 3u : 0u;
 }
 
-/* The top of row @p i: its heading's, the headings above it and its place
- * among the rows. */
+/**
+ * @brief The column row @p i is in: THROTTLE OUTPUT's rows on the right.
+ * @param i the row
+ * @return 0 left, 1 right
+ */
+static int col_of(int i)
+{
+    return (k_rows[i].heading == HD_THROTTLE) ? 1 : 0;
+}
+
+/**
+ * @brief The top of row @p i: its column's headings above it and its place
+ *        among the column's rows.
+ * @param i the row
+ * @return its top, px
+ */
 static int row_y(int i)
 {
     int y = TOP_Y;
     int head = -1;
     for (int k = 0; k <= i; ++k) {
+        if (col_of(k) != col_of(i)) {
+            continue;
+        }
         if ((int)k_rows[k].heading != head) {
+            /* A heading under a row stands HEAD_GAP clear of its help. */
+            y += (head >= 0) ? HEAD_H + HEAD_GAP : HEAD_H;
             head = (int)k_rows[k].heading;
-            y += HEAD_H;
         }
         if (k < i) {
             y += ROW_PITCH;
@@ -113,9 +144,15 @@ static int row_y(int i)
     return y;
 }
 
+/**
+ * @brief Row @p i's value box, at its column's right.
+ * @param i the row
+ * @return the box
+ */
 static gfx_rect_t box_rect(int i)
 {
-    return (gfx_rect_t){ BOX_X, (int16_t)row_y(i), BOX_W, BOX_H };
+    return (gfx_rect_t){ (int16_t)(COL_X(col_of(i)) + COL_W - BOX_W),
+                         (int16_t)row_y(i), BOX_W, BOX_H };
 }
 
 /* The throttle's endpoints, which change on a SAFE bench only. */
@@ -225,14 +262,22 @@ void msp_event(const touch_event_t *evt, bool safe)
         float v = 0.0f;
         const uint32_t before = p.kp.revision;
         const ui_keypad_result_t r = ui_keypad_event(&p.kp, evt, &v);
+        bool refused = false;
         if (r == UI_KEYPAD_OK && p.kp_row >= 0
             && !row_locked(p.kp_row, safe)) {
             /* Onto the setting's step inside its range (settings_set()),
-             * in force at once, and kept when the bench is next SAFE. */
-            settings_set(k_rows[p.kp_row].id, v);
-            settings_request_save();
+             * in force at once, and kept when the bench is next SAFE.  A
+             * pulse that leaves less than LINK_CC_THROTTLE_GAP_US between
+             * Idle and Full is refused: the keypad stays open with the
+             * reason, and the row keeps its value. */
+            const ui_setkey_result_t res =
+                ui_setting_keypad_ok(&p.kp, k_rows[p.kp_row].id, v);
+            refused = (res == UI_SETKEY_REFUSED);
+            if (res == UI_SETKEY_SET) {
+                settings_request_save();
+            }
         }
-        if (r != UI_KEYPAD_NONE) {
+        if (r != UI_KEYPAD_NONE && !refused) {
             p.kp_row = -1;
         }
         if (r != UI_KEYPAD_NONE || p.kp.revision != before) {
@@ -275,22 +320,30 @@ void msp_event(const touch_event_t *evt, bool safe)
 
 /* ----------------------------------------------------------------- drawing */
 
+/**
+ * @brief Row @p i: its label, its value box at the column's right and its
+ *        help line, or the lock's reason, under them.
+ * @param c the canvas
+ * @param i the row
+ * @param safe whether the pulse rows take a press
+ */
 static void draw_row(gfx_canvas_t *c, int i, bool safe)
 {
     const setting_id_t id = k_rows[i].id;
     const setting_def_t *d = settings_def(id);
     const int y = row_y(i);
+    const int x = COL_X(col_of(i));
     const bool locked = row_locked(i, safe);
-    gfx_text(c, LABEL_X, y + 6, ui_setting_label(id), &gfx_font_8x16,
+    gfx_text(c, x, y + 14, ui_setting_label(id), MS_FONT,
              ui_theme_color(UI_C_TEXT), 1);
-    /* The help, or why the row takes no press, clipped short of the box. */
+    /* The help, or why the row takes no press, under the label and the
+     * box, clipped to the column. */
     const bool armed_lock = safe_only(i) && !safe;
     const char *help = armed_lock ? TR(MO_SET_SAFE_ONLY) : ui_setting_help(id);
     const gfx_rect_t saved = gfx_clip_get(c);
-    gfx_clip_intersect(c, (gfx_rect_t){ HELP_X, (int16_t)y,
-                                        (int16_t)(BOX_X - 6 - HELP_X),
-                                        BOX_H });
-    gfx_text(c, HELP_X, y + 6, help, &gfx_font_8x16,
+    gfx_clip_intersect(c, (gfx_rect_t){ (int16_t)x, (int16_t)(y + HELP_DY),
+                                        COL_W, 16 });
+    gfx_text(c, x, y + HELP_DY, help, MS_FINE,
              armed_lock ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_FAINT), 1);
     c->clip = saved;
@@ -298,12 +351,13 @@ static void draw_row(gfx_canvas_t *c, int i, bool safe)
     char v[24], line[40];
     (void)ui_setting_value(id, v, sizeof(v));
     const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
-    snprintf(line, sizeof(line), "%s%s%s", v, (unit[0] != '\0') ? " " : "",
-             unit);
-    ui_button(c, box_rect(i), line, ui_theme_color(UI_C_PANEL_SUNK),
-              p.pressed == i, !locked);
+    snprintf(line, sizeof(line), "%s%s", v, unit);
+    ui_button_font(c, box_rect(i), line, ui_theme_color(UI_C_PANEL_SUNK),
+                   p.pressed == i, !locked, MS_FONT);
 }
 
+/* SETTINGS' page: the headings, the rows in their two columns and the save
+ * line at the page's foot, or the keypad over them (motor_screen_int.h). */
 void msp_render(gfx_canvas_t *c, bool safe)
 {
     p.drawn_safe = safe;
@@ -319,8 +373,9 @@ void msp_render(gfx_canvas_t *c, bool safe)
     for (int i = 0; i < ROW_COUNT; ++i) {
         if ((int)k_rows[i].heading != head) {
             head = (int)k_rows[i].heading;
-            gfx_text(c, LABEL_X, row_y(i) - HEAD_H + 4, ui_tr(k_heading[head]),
-                     &gfx_font_8x16, ui_theme_color(UI_C_ACCENT), 1);
+            gfx_text(c, COL_X(col_of(i)), row_y(i) - HEAD_H + 4,
+                     ui_tr(k_heading[head]), MS_FONT,
+                     ui_theme_color(UI_C_ACCENT), 1);
         }
         draw_row(c, i, safe);
     }
@@ -330,7 +385,7 @@ void msp_render(gfx_canvas_t *c, bool safe)
     };
     const uint8_t st = save_state();
     p.drawn_save = st;
-    gfx_text(c, LABEL_X, SAVE_Y, ui_tr(k_save[st]), &gfx_font_8x16,
+    gfx_text(c, COL_X(0), SAVE_Y, ui_tr(k_save[st]), MS_FONT,
              (st == 2u) ? ui_theme_color(UI_C_WARN)
                         : ui_theme_color(UI_C_TEXT_DIM), 1);
 }
@@ -340,6 +395,11 @@ void msp_render(gfx_canvas_t *c, bool safe)
 int motor_screen_keypad_setting(void)
 {
     return (p.kp.open && p.kp_row >= 0) ? (int)k_rows[p.kp_row].id : -1;
+}
+
+const ui_keypad_t *motor_screen_keypad(void)
+{
+    return &p.kp;
 }
 
 int motor_settings_rows(setting_id_t *out, int max)

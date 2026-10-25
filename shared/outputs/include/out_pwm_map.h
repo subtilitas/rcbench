@@ -1,5 +1,7 @@
-/*
- * Which PWM (pulse-width modulation) register drives which pin on the RP2350.
+/**
+ * @file
+ * @brief Which PWM (pulse-width modulation) register drives which pin on the
+ *        RP2350.
  *
  * The part has 12 slices of two channels, A and B. A slice counts against one
  * wrap register, so its two channels share a frame rate; each channel holds
@@ -32,12 +34,12 @@
 extern "C" {
 #endif
 
-/** Slices in the block, and channels in a slice. */
+/** @brief Slices in the block, and channels in a slice. */
 #define OUT_PWM_SLICES    12u
 #define OUT_PWM_CHANNELS   2u
 
 /**
- * The GPIO numbers the fold is defined over: 0 to 47.
+ * @brief The GPIO numbers the fold is defined over: 0 to 47.
  *
  * The widest RP2350 bank, the RP2350B's. The RP2350A brings out GP0 to GP29
  * and the rest of the fold is unreachable there, but which pins a package has
@@ -45,46 +47,71 @@ extern "C" {
  */
 #define OUT_PWM_GPIOS     48u
 
-/** Returned for a pin outside OUT_PWM_GPIOS, as a slice and as a channel. */
+/**
+ * @brief Returned for a pin outside OUT_PWM_GPIOS, as a slice and as a channel.
+ */
 #define OUT_PWM_NONE      0xFFu
 
-/** The slice @p pin is wired to, or OUT_PWM_NONE. */
+/**
+ * @brief The slice @p pin is wired to, or OUT_PWM_NONE.
+ *
+ * @param pin GPIO number, 0 to OUT_PWM_GPIOS - 1 (47).
+ * @return Slice index, 0 to 11. OUT_PWM_NONE for a pin of 48 or more.
+ */
 uint8_t out_pwm_slice_of(uint8_t pin);
 
-/** Which of that slice's channels: 0 is A, 1 is B. OUT_PWM_NONE for a pin
- *  outside OUT_PWM_GPIOS. */
+/**
+ * @brief Which of that slice's channels: 0 is A, 1 is B.
+ *
+ * OUT_PWM_NONE for a pin outside OUT_PWM_GPIOS.
+ *
+ * @param pin GPIO number, 0 to OUT_PWM_GPIOS - 1 (47).
+ * @return Channel index, 0 or 1. OUT_PWM_NONE for a pin of 48 or more.
+ */
 uint8_t out_pwm_channel_of(uint8_t pin);
 
 /**
- * Whether two GPIOs count against one wrap register.
+ * @brief Whether two GPIOs count against one wrap register.
  *
  * True for the two channels of a slice, which can carry different pulse
  * widths but not different frame rates. False when either pin is outside
  * OUT_PWM_GPIOS: a pin the fold does not reach shares nothing.
+ *
+ * @param a First GPIO number.
+ * @param b Second GPIO number.
+ * @return true when both pins are in range and fold to one slice, false
+ *         otherwise.
  */
 bool out_pwm_same_slice(uint8_t a, uint8_t b);
 
 /**
- * Whether two GPIOs are driven from one compare register.
+ * @brief Whether two GPIOs are driven from one compare register.
  *
  * True for a pin against itself, and for the folded pairs -- GP0 and GP16,
  * GP32 and GP40. Two such pins cannot carry different pulse widths at all,
  * so a driver that has one of them must refuse the other rather than bind
  * both. False when either pin is outside OUT_PWM_GPIOS.
+ *
+ * @param a First GPIO number.
+ * @param b Second GPIO number.
+ * @return true when both pins are in range and fold to one slice and one
+ *         channel, false otherwise.
  */
 bool out_pwm_same_compare(uint8_t a, uint8_t b);
 
 /**
- * The counter's tick: one count per microsecond, so a pulse width in
- * microseconds is a compare value and a frame of rate R Hz is
- * 1,000,000 / R counts, rounded down.
+ * @brief The counter's tick: one count per microsecond, so a pulse width in
+ *        microseconds is a compare value and a frame of rate R Hz is 1,000,000
+ *        / R counts, rounded down.
  */
 #define OUT_PWM_TICK_HZ 1000000u
 
 /**
- * The longest pulse a frame of @p rate_hz carries, in microseconds: the
- * frame's last count, one less than its period.  0 for a rate of 0 and for
- * a period the sixteen-bit counter cannot hold (below 16 Hz).
+ * @brief The longest pulse a frame of @p rate_hz carries, in microseconds: the
+ *        frame's last count, one less than its period.
+ *
+ * 0 for a rate of 0 and for a period the sixteen-bit counter cannot hold
+ * (below 16Hz).
  *
  * A pin is high while the counter is below the compare value, so a pulse of
  * this length leaves one count of low at the end of each frame.  One count
@@ -92,8 +119,12 @@ bool out_pwm_same_compare(uint8_t a, uint8_t b);
  * is the rule the output pages refuse an endpoint by, and the wrap
  * firmware/iomcu/src/out_pwm.c programs, so the two cannot disagree.
  *
- * 1784 us at 560 Hz, 1999 us at 500 Hz, 2499 us at 400 Hz and 19999 us at
- * 50 Hz.
+ * 1784us at 560Hz, 1999us at 500Hz, 2499us at 400Hz and 19999us at
+ * 50Hz.
+ *
+ * @param rate_hz Frame rate in Hz. The counter tick is OUT_PWM_TICK_HZ.
+ * @return Longest pulse in microseconds. 0 for a rate of 0 and for a period
+ *         above 65536 counts.
  */
 uint16_t out_pwm_pulse_max(uint16_t rate_hz);
 

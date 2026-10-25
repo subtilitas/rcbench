@@ -23,20 +23,9 @@
 #include "wa_fetch.h"
 #include "wifi_screen.h"
 
-/* Mirrored from upd_screen.c, in the body's coordinates. */
-#define BTN_X     196
-#define CHECK_Y   40
-#define REMIND_Y  96
-#define CHAN_Y    152
-#define DL_Y      208
-#define R_IGNORE_X 244
-#define R_NEVER_X  556
-#define R_ROW_Y    276
-#define R_HOLD_X   400
-#define R_HOLD_Y   352
-/* PANEL UPDATE's one button, on the whole panel. */
-#define U_BTN_X   144
-#define U_BTN_Y   434
+/* Where a finger lands: UPDATES and the reminder in the body's
+ * coordinates, PANEL UPDATE on the whole panel. */
+#include "upd_spots.h"
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -213,18 +202,50 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
 
 /* -------------------------------------------------------------- UPDATES */
 
+/* A check that ended for want of a home network says what the status lines
+ * say: the result card leaves its lines out while those show, and only
+ * then.  Every other ending, a run under way, a network kept or Wi-Fi not
+ * set up draws the result. */
+TEST_CASE(the_no_network_result_is_not_said_twice)
+{
+    CHECK(!upd_result_said_above(NULL));
+    upd_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.phase = UPD_PH_ENDED;
+    v.got = UPD_GOT_NO_NET;
+    CHECK(upd_result_said_above(&v));
+    char line[96], second[96];
+    upd_result_text(&v, line, sizeof(line), second, sizeof(second));
+    CHECK_STR_EQ(line, TR(WF_HOME_NONE));      /* the card's own words */
+    CHECK_STR_EQ(second, TR(UPD_KEEP_NET));
+
+    v.have_net = true;                          /* the card names a network */
+    CHECK(!upd_result_said_above(&v));
+    v.have_net = false;
+    v.unavailable = true;                       /* the card says unavailable */
+    CHECK(!upd_result_said_above(&v));
+    v.unavailable = false;
+    v.phase = UPD_PH_JOINING;                   /* a run under way */
+    CHECK(!upd_result_said_above(&v));
+    v.phase = UPD_PH_ENDED;
+    for (int g = 0; g <= (int)UPD_GOT_PAST_LINE; ++g) {
+        v.got = (upd_got_t)g;
+        CHECK_EQ(upd_result_said_above(&v), g == (int)UPD_GOT_NO_NET);
+    }
+}
+
 TEST_CASE(check_asks_once_with_a_home_network_and_the_gate_open)
 {
     fresh();
-    tap(upd(), BTN_X, CHECK_Y);
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
     CHECK_EQ(upd_screen_take(), UPD_REQ_CHECK);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* A release off the button, or a press that was no tap, asks nothing. */
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, CHECK_Y, 0);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, CHECK_Y + 200, 0);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, CHECK_Y, 0);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, CHECK_Y, TOUCH_FLAG_NO_TAP);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CHECK_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_CHECK_Y + 200, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CHECK_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_CHECK_Y, TOUCH_FLAG_NO_TAP);
     CHECK_EQ(upd_screen_take(), 0u);
 }
 
@@ -237,20 +258,20 @@ TEST_CASE(check_is_grey_without_a_network_wifi_or_the_gate)
     fresh();
     g_v.have_net = false;
     push();
-    tap(upd(), BTN_X, CHECK_Y);
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
     CHECK_EQ(upd_screen_take(), 0u);
 
     fresh();
     g_v.unavailable = true;
     push();
-    tap(upd(), BTN_X, CHECK_Y);
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
     CHECK_EQ(upd_screen_take(), 0u);
 
     for (size_t i = 0; i < sizeof(k_blocks) / sizeof(k_blocks[0]); ++i) {
         fresh();
         g_v.block = k_blocks[i];
         push();
-        tap(upd(), BTN_X, CHECK_Y);
+        tap(upd(), UP_BTN_X, UP_CHECK_Y);
         CHECK_EQ(upd_screen_take(), 0u);
     }
 }
@@ -267,7 +288,7 @@ TEST_CASE(a_running_check_turns_the_button_into_cancel)
         g_v.block = UPD_WHY_BUSY;
         push();
         CHECK(upd_busy(&g_v));
-        tap(upd(), BTN_X, CHECK_Y);
+        tap(upd(), UP_BTN_X, UP_CHECK_Y);
         CHECK_EQ(upd_screen_take(), UPD_REQ_CANCEL);
     }
     CHECK(!upd_busy(NULL));
@@ -277,11 +298,11 @@ TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
 {
     fresh();
     CHECK(settings_get_bool(SET_UPD_REMIND));    /* on by default */
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     /* It asks the application for nothing: the setting is the request. */
@@ -290,7 +311,7 @@ TEST_CASE(the_reminder_switch_flips_the_setting_and_asks_for_the_save)
      * needs none. */
     g_v.have_net = false;
     push();
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
 }
 
@@ -298,18 +319,18 @@ TEST_CASE(the_releases_switch_flips_the_channel_and_asks_for_the_save)
 {
     fresh();
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);    /* STABLE */
-    tap(upd(), BTN_X, CHAN_Y);
+    tap(upd(), UP_BTN_X, UP_CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);    /* TESTING */
     CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    tap(upd(), BTN_X, CHAN_Y);
+    tap(upd(), UP_BTN_X, UP_CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 0);
     CHECK(settings_save_tick(true));
     /* Without a home network, and during a check, too. */
     g_v.have_net = false;
     g_v.phase = UPD_PH_ASKING;
     push();
-    tap(upd(), BTN_X, CHAN_Y);
+    tap(upd(), UP_BTN_X, UP_CHAN_Y);
     CHECK_EQ(settings_get_int(SET_UPD_CHANNEL), 1);
     CHECK_EQ(upd_screen_take(), 0u);
 }
@@ -318,9 +339,9 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
 {
     fresh();
     /* No result: the row is empty and holds nothing. */
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Up to date: none either. */
@@ -328,28 +349,28 @@ TEST_CASE(the_download_hold_is_there_only_for_a_newer_release)
     g_v.phase = UPD_PH_ENDED;
     g_v.got = UPD_GOT_CURRENT;
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
 
     /* Newer: the whole hold asks once; a tap or half of it nothing. */
     set_newer();
     push();
-    tap(upd(), BTN_X, DL_Y);
+    tap(upd(), UP_BTN_X, UP_DL_Y);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), UPD_REQ_DOWNLOAD);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
 }
 
 TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
@@ -362,7 +383,7 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         fresh();
         set_newer();
         push();
-        ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
         ticks(upd(), HOLD_TICKS / 2);
         g_v.dl_block = k_blocks[i];
         push();
@@ -371,21 +392,21 @@ TEST_CASE(the_download_hold_ends_unfired_when_the_gate_closes_under_it)
         g_v.dl_block = UPD_WHY_NONE;
         push();
         ticks(upd(), HOLD_TICKS);
-        ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
+        ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
         CHECK_EQ(upd_screen_take(), 0u);
     }
     /* Sliding off abandons it too; and a lost gesture. */
     fresh();
     set_newer();
     push();
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, BTN_X, DL_Y + 120, 0);
-    ev(upd(), TOUCH_EVENT_MOVE, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y + 120, 0);
+    ev(upd(), TOUCH_EVENT_MOVE, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(upd(), TOUCH_EVENT_UP, 1, BTN_X, DL_Y, 0);
-    ev(upd(), TOUCH_EVENT_DOWN, 1, BTN_X, DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_UP, 1, UP_BTN_X, UP_DL_Y, 0);
+    ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_DL_Y, 0);
     ticks(upd(), HOLD_TICKS / 2);
     upd()->cancel();
     ticks(upd(), HOLD_TICKS);
@@ -428,7 +449,7 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     g_v.got = UPD_GOT_TIMEOUT;
     g_v.budget_s = 30u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "No response within 30 s.");
+    CHECK_STR_EQ(a, "No response within 30s.");
     g_v.got = UPD_GOT_REFUSED;
     g_v.status = 503;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
@@ -484,12 +505,12 @@ TEST_CASE(a_running_job_says_its_step_and_the_time_left)
     g_v.left_s = 29u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "Connecting to workshop");
-    CHECK_STR_EQ(b, "29 s left");
+    CHECK_STR_EQ(b, "29s left");
     g_v.phase = UPD_PH_ASKING;
     g_v.left_s = 0u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "Checking GitHub.");
-    CHECK_STR_EQ(b, "0 s left");
+    CHECK_STR_EQ(b, "0s left");
     /* None ran: nothing to say. */
     base_view();
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
@@ -500,6 +521,75 @@ TEST_CASE(a_running_job_says_its_step_and_the_time_left)
     CHECK_STR_EQ(a, "");
     upd_result_text(&g_v, NULL, 0u, b, sizeof(b));
     upd_result_text(&g_v, a, sizeof(a), NULL, 0u);
+}
+
+/*
+ * A job stopped for WI-FI says WI-FI is using Wi-Fi: once the radio is off
+ * and nothing asks for it, the line goes, in both languages, and no other
+ * result goes with it.
+ */
+TEST_CASE(a_stop_for_wifi_clears_once_the_radio_is_free)
+{
+    char a[96], b[96];
+    fresh();
+    g_v.job = UPD_JOB_CHECK;
+    g_v.phase = UPD_PH_ENDED;
+    g_v.got = UPD_GOT_ABORTED;
+    g_v.why = UPD_WHY_FILES;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Stopped: the WI-FI screen is using Wi-Fi.");
+    g_v.radio_free = true;
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+        for (int job = 0; job < 2; ++job) {
+            g_v.job = (upd_job_t)job;
+            g_v.got = UPD_GOT_ABORTED;
+            upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+            CHECK_STR_EQ(a, "");
+            CHECK_STR_EQ(b, "");
+            g_v.got = UPD_GOT_BLOCKED;
+            upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+            CHECK_STR_EQ(a, "");
+            CHECK_STR_EQ(b, "");
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    g_v.job = UPD_JOB_CHECK;
+    /* Back up for a session: the line is back while it lasts. */
+    g_v.got = UPD_GOT_ABORTED;
+    g_v.radio_free = false;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Stopped: the WI-FI screen is using Wi-Fi.");
+    /* Every other reason stays with the radio free. */
+    g_v.radio_free = true;
+    for (int why = 0; why <= UPD_WHY_DRAWING; ++why) {
+        if (why == UPD_WHY_FILES) {
+            continue;
+        }
+        g_v.why = (upd_why_t)why;
+        g_v.got = UPD_GOT_ABORTED;
+        upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+        CHECK(a[0] != '\0');
+        g_v.got = UPD_GOT_BLOCKED;
+        upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+        CHECK(a[0] != '\0');
+    }
+    g_v.why = UPD_WHY_ARMED;
+    g_v.got = UPD_GOT_ABORTED;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Wi-Fi switched off: bench ARMED.");
+    /* Another result that carries the reason's leftover stays. */
+    g_v.why = UPD_WHY_FILES;
+    g_v.got = UPD_GOT_CONNECT;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "No connection to GitHub.");
+    /* A job under way says its step, the radio free or not. */
+    g_v.got = UPD_GOT_NONE;
+    g_v.phase = UPD_PH_JOINING;
+    g_v.left_s = 30u;
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Connecting to workshop");
+    CHECK_STR_EQ(b, "30s left");
 }
 
 TEST_CASE(a_result_cut_to_a_short_buffer_stays_terminated)
@@ -596,7 +686,7 @@ TEST_CASE(ignore_now_closes_it_for_this_start_only)
 {
     drive_fresh();
     frame();
-    tap(rem(), R_IGNORE_X, R_ROW_Y);
+    tap(rem(), UP_R_IGNORE_X, UP_R_ROW_Y);
     frame();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     CHECK(g_drv.dismissed);
@@ -620,7 +710,7 @@ TEST_CASE(never_remind_me_switches_it_off_across_a_restart)
 {
     drive_fresh();
     frame();
-    tap(rem(), R_NEVER_X, R_ROW_Y);
+    tap(rem(), UP_R_NEVER_X, UP_R_ROW_Y);
     CHECK(!settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_asked());
     frame();
@@ -639,7 +729,7 @@ TEST_CASE(never_remind_me_switches_it_off_across_a_restart)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 
     /* SETUP > UPDATES turns it back on, and the start after that checks. */
-    tap(upd(), BTN_X, REMIND_Y);
+    tap(upd(), UP_BTN_X, UP_REMIND_Y);
     CHECK(settings_get_bool(SET_UPD_REMIND));
     CHECK(settings_save_tick(true));
     settings_init();
@@ -668,23 +758,23 @@ TEST_CASE(the_reminders_hold_asks_for_the_download_once)
 {
     drive_fresh();
     frame();
-    tap(rem(), R_HOLD_X, R_HOLD_Y);
+    tap(rem(), UP_R_HOLD_X, UP_R_HOLD_Y);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(rem(), TOUCH_EVENT_DOWN, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_DOWN, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS / 2);
-    ev(rem(), TOUCH_EVENT_MOVE, 1, R_HOLD_X, R_HOLD_Y - 150, 0);
-    ev(rem(), TOUCH_EVENT_MOVE, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_MOVE, 1, UP_R_HOLD_X, UP_R_HOLD_Y - 150, 0);
+    ev(rem(), TOUCH_EVENT_MOVE, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(rem(), TOUCH_EVENT_UP, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_UP, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
 
-    ev(rem(), TOUCH_EVENT_DOWN, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_DOWN, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), UPD_REQ_DOWNLOAD);
     ticks(rem(), HOLD_TICKS);
     CHECK_EQ(upd_screen_take(), 0u);
-    ev(rem(), TOUCH_EVENT_UP, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_UP, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     frame();
     CHECK(g_drv.dismissed);
     CHECK(settings_get_bool(SET_UPD_REMIND));
@@ -697,12 +787,12 @@ TEST_CASE(the_reminders_hold_is_grey_while_the_download_may_not_start)
     push();
     frame();
     CHECK_EQ(ui_router_current(), SCREEN_UPD_REMIND);
-    ev(rem(), TOUCH_EVENT_DOWN, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_DOWN, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     ticks(rem(), HOLD_TICKS);
-    ev(rem(), TOUCH_EVENT_UP, 1, R_HOLD_X, R_HOLD_Y, 0);
+    ev(rem(), TOUCH_EVENT_UP, 1, UP_R_HOLD_X, UP_R_HOLD_Y, 0);
     CHECK_EQ(upd_screen_take(), 0u);
     /* The taps still answer. */
-    tap(rem(), R_IGNORE_X, R_ROW_Y);
+    tap(rem(), UP_R_IGNORE_X, UP_R_ROW_Y);
     frame();
     CHECK(g_drv.dismissed);
 }
@@ -808,27 +898,27 @@ TEST_CASE(the_download_cancels_and_its_failure_closes)
     update_screen()->reset();
     v.state = UPDATE_FETCHING;
     update_screen_set(&v);
-    u_tap(U_BTN_X, U_BTN_Y);
+    u_tap(UP_U_BTN_X, UP_U_BTN_Y);
     CHECK(update_screen_take_cancel());
     CHECK(!update_screen_take_cancel());
     CHECK(!update_screen_take_close());
 
     v.state = UPDATE_FETCH_FAILED;
     update_screen_set(&v);
-    u_tap(U_BTN_X, U_BTN_Y);
+    u_tap(UP_U_BTN_X, UP_U_BTN_Y);
     CHECK(update_screen_take_close());
     CHECK(!update_screen_take_cancel());
 
     /* The write takes no touch: nothing stops a flash write half way. */
     v.state = UPDATE_WRITING;
     update_screen_set(&v);
-    u_tap(U_BTN_X, U_BTN_Y);
+    u_tap(UP_U_BTN_X, UP_U_BTN_Y);
     CHECK(!update_screen_take_close());
     CHECK(!update_screen_take_cancel());
     /* Nor a tap off the button. */
     v.state = UPDATE_FETCHING;
     update_screen_set(&v);
-    u_tap(U_BTN_X, 200);
+    u_tap(UP_U_BTN_X, 200);
     CHECK(!update_screen_take_cancel());
 }
 
@@ -836,7 +926,7 @@ TEST_CASE(the_download_cancels_and_its_failure_closes)
 
 TEST_CASE(every_view_renders_inside_its_canvas)
 {
-    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 480)];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(UI_PANEL_W, UI_PANEL_H)];
     gfx_canvas_t c;
     guard_canvas_t g;
     for (int lang = 0; lang < 2; ++lang) {
@@ -847,6 +937,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
                 base_view();
                 g_v.have_net = (net != 0);
                 g_v.unavailable = (net == 2);
+                g_v.line_capped = (net == 1);   /* the line's end drawn */
                 g_v.phase = (got == UPD_GOT_NONE) ? UPD_PH_IDLE
                                                   : UPD_PH_ENDED;
                 g_v.got = (upd_got_t)got;
@@ -859,12 +950,12 @@ TEST_CASE(every_view_renders_inside_its_canvas)
                 snprintf(g_v.found, sizeof(g_v.found), "%s",
                          "65535.65535.65535");
                 push();
-                guard_canvas_init(&g, &c, px, 800, 432);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
                 upd_screen_invalidate();
                 upd()->render(&c, 0);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);
                 CHECK_EQ(guard_canvas_unpainted(&g), 0u);
-                guard_canvas_init(&g, &c, px, 800, 432);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
                 upd_screen_invalidate();
                 rem()->render(&c, 1);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -875,7 +966,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
             base_view();
             g_v.phase = (upd_phase_t)ph;
             push();
-            guard_canvas_init(&g, &c, px, 800, 432);
+            guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
             upd_screen_invalidate();
             upd()->render(&c, 0);
             CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -900,7 +991,7 @@ TEST_CASE(every_view_renders_inside_its_canvas)
                 memset(v.what, 'x', sizeof(v.what) - 1u);
                 memset(v.why, 'y', sizeof(v.why) - 1u);
                 update_screen_set(&v);
-                guard_canvas_init(&g, &c, px, 800, 480);
+                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_PANEL_H);
                 update_screen_invalidate();
                 update_screen()->render(&c, 0);
                 CHECK_EQ(guard_canvas_touched(&g), 0u);
@@ -909,6 +1000,39 @@ TEST_CASE(every_view_renders_inside_its_canvas)
         }
     }
     ui_text_set_language(UI_LANG_EN);
+}
+
+/**
+ * @brief Draws UPDATES for the base view into @p px.
+ * @param px     UI_PANEL_W x UI_BODY_H pixels
+ * @param capped the view's line_capped
+ */
+static void draw_foot(gfx_color_t *px, bool capped)
+{
+    gfx_canvas_t c;
+    gfx_canvas_init(&c, px, UI_PANEL_W, UI_BODY_H, 0);
+    base_view();
+    g_v.line_capped = capped;
+    push();
+    upd_screen_invalidate();
+    upd()->render(&c, 0);
+}
+
+/* The card's foot says the release line ends only on a capped line (the
+ * ESP32-S3 panel's 0.22); the ESP32-P4 panel's card draws the three lines
+ * of the reminder and RELEASES alone.  The two feet differ on the canvas,
+ * and the same view draws the same pixels. */
+TEST_CASE(the_line_end_is_drawn_only_on_a_capped_line)
+{
+    static gfx_color_t open[UI_PANEL_W * UI_BODY_H];
+    static gfx_color_t again[UI_PANEL_W * UI_BODY_H];
+    static gfx_color_t capped[UI_PANEL_W * UI_BODY_H];
+    fresh();
+    draw_foot(open, false);
+    draw_foot(capped, true);
+    draw_foot(again, false);
+    CHECK(memcmp(open, capped, sizeof(open)) != 0);
+    CHECK(memcmp(open, again, sizeof(open)) == 0);
 }
 
 TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
@@ -925,7 +1049,7 @@ TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
 
 /*
  * The card of UPDATES and of FILES & UPDATE breaks a text into lines of
- * its 352 px, 44 cells.  A text no view draws declares 88 cells in
+ * its 352px, 44 cells.  A text no view draws declares 88 cells in
  * ui_text.def, two of those lines, or fewer where another screen draws it
  * on one line; here each is held to the two lines as the card breaks it.
  */
@@ -971,6 +1095,7 @@ TEST_CASE(every_card_text_takes_two_lines_at_most)
 int main(void)
 {
     RUN(the_enums_mirror_the_fetch_and_the_release_parser);
+    RUN(the_no_network_result_is_not_said_twice);
     RUN(check_asks_once_with_a_home_network_and_the_gate_open);
     RUN(check_is_grey_without_a_network_wifi_or_the_gate);
     RUN(a_running_check_turns_the_button_into_cancel);
@@ -980,6 +1105,7 @@ int main(void)
     RUN(the_download_hold_ends_unfired_when_the_gate_closes_under_it);
     RUN(every_result_has_a_text_in_both_languages);
     RUN(a_running_job_says_its_step_and_the_time_left);
+    RUN(a_stop_for_wifi_clears_once_the_radio_is_free);
     RUN(a_result_cut_to_a_short_buffer_stays_terminated);
     RUN(the_reminder_opens_on_a_safe_overview_only);
     RUN(the_reminder_yields_unanswered_and_comes_back);
@@ -994,6 +1120,7 @@ int main(void)
     RUN(the_startup_check_gives_up_after_its_window_across_a_wrap);
     RUN(the_download_cancels_and_its_failure_closes);
     RUN(every_view_renders_inside_its_canvas);
+    RUN(the_line_end_is_drawn_only_on_a_capped_line);
     RUN(both_screens_carry_the_band_and_the_home_tag);
     RUN(every_card_text_takes_two_lines_at_most);
     return test_summary("upd_screen");

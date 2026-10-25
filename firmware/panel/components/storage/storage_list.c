@@ -1,6 +1,10 @@
-/*
- * Listing the mounted card: storage_walk(), storage_stat() and
- * storage_path().  Each read is made under a hold (storage_priv.h), and
+/**
+ * @file storage_list.c
+ * @brief Listing the mounted card: storage_walk(), storage_walk_counted(),
+ *        storage_stat(), storage_dir_open() and its reads, and
+ *        storage_path().
+ *
+ * Each read is made under a hold (storage_priv.h), and
  * its outcome goes back to storage.c, which decides whether the card is
  * gone.
  *
@@ -17,8 +21,10 @@
 #include "storage_priv.h"
 /* ff.h for FatFs's own directory read and f_stat(). */
 #include "ff.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 
+/** @brief The log tag of the storage component. */
 static const char *TAG = "storage";
 
 void storage_path(const char *dir, const char *name, char *out, size_t out_size)
@@ -33,7 +39,12 @@ void storage_path(const char *dir, const char *name, char *out, size_t out_size)
     }
 }
 
-/* Case-insensitive suffix test against a space-separated list. */
+/**
+ * @brief Whether @p name ends in one of @p suffixes, case folded.
+ * @param name      a file's name
+ * @param suffixes  space-separated, lower case; NULL or "" takes every name
+ * @return true for a match
+ */
 static bool suffix_matches(const char *name, const char *suffixes)
 {
     if (suffixes == NULL || suffixes[0] == '\0') {
@@ -85,11 +96,20 @@ _Static_assert(sizeof(FSIZE_t) <= sizeof(((storage_entry_t *)0)->size),
 _Static_assert(sizeof(FSIZE_t) <= sizeof(((storage_stat_t *)0)->size),
                "storage_stat_t.size holds every FatFs size");
 
-/* The walk itself, under a hold; storage_walk()'s answers, with FatFs's
- * in @p fr_out when the answer is -1. */
+/**
+ * @brief The walk itself, under a hold.
+ * @param dir       the folder
+ * @param suffixes  the files' suffixes, or NULL
+ * @param visit     the visitor, or NULL
+ * @param ctx       passed to @p visit
+ * @param tick      called per entry read, or NULL
+ * @param fr_out    takes FatFs's answer when the walk answers -1
+ * @param left_out  counts the entries the name filters left out, or NULL
+ * @return storage_walk()'s answers
+ */
 static int walk_held(const char *dir, const char *suffixes,
                      storage_visit_fn visit, void *ctx, storage_tick_fn tick,
-                     int *fr_out)
+                     int *fr_out, unsigned *left_out)
 {
     *fr_out = (int)FR_OK;
     const char *drive = storage_drive();
@@ -149,7 +169,12 @@ static int walk_held(const char *dir, const char *suffixes,
             tick();
         }
         if (e->fname[0] == '.') {
-            continue; /* the metadata files a Mac leaves behind */
+            /* The metadata files a Mac leaves behind: counted, so that a
+             * folder holding only them is not called empty. */
+            if (left_out != NULL) {
+                ++*left_out;
+            }
+            continue;
         }
         const bool is_dir = (e->fattrib & AM_DIR) != 0;
         if (!is_dir && !suffix_matches(e->fname, suffixes)) {
@@ -160,6 +185,9 @@ static int walk_held(const char *dir, const char *suffixes,
             /* A name that does not fit cannot be reopened, so a truncated
              * version is not shown. */
             ESP_LOGW(TAG, "skipping over-long name (%u chars)", (unsigned)len);
+            if (left_out != NULL) {
+                ++*left_out;
+            }
             continue;
         }
 
@@ -186,11 +214,21 @@ static int walk_held(const char *dir, const char *suffixes,
 int storage_walk(const char *dir, const char *suffixes,
                  storage_visit_fn visit, void *ctx, storage_tick_fn tick)
 {
+    return storage_walk_counted(dir, suffixes, visit, ctx, tick, NULL);
+}
+
+int storage_walk_counted(const char *dir, const char *suffixes,
+                         storage_visit_fn visit, void *ctx,
+                         storage_tick_fn tick, unsigned *left_out)
+{
+    if (left_out != NULL) {
+        *left_out = 0u;
+    }
     if (!storage_hold()) {
         return -1;
     }
     int fr = (int)FR_OK;
-    const int n = walk_held(dir, suffixes, visit, ctx, tick, &fr);
+    const int n = walk_held(dir, suffixes, visit, ctx, tick, &fr, left_out);
     /* The hold given back; a card found gone with nothing else holding it
      * is let go and the slot mounted again once, and what was walked is
      * the old card's. */
@@ -200,10 +238,16 @@ int storage_walk(const char *dir, const char *suffixes,
     return n;
 }
 
-/* FAT's date and time stamp as local time, the way ESP-IDF's stat() reads
- * it (components/fatfs/vfs/vfs_fat.c, update_stat_struct()): the date's
- * bits 15..9 are years from 1980, 8..5 the month, 4..0 the day; the time's
- * 15..11 the hour, 10..5 the minute, 4..0 seconds in steps of 2. */
+/**
+ * @brief FAT's date and time stamp as local time, the way ESP-IDF's stat()
+ *        reads it (components/fatfs/vfs/vfs_fat.c, update_stat_struct()):
+ *        the date's bits 15..9 are years from 1980, 8..5 the month, 4..0
+ *        the day; the time's 15..11 the hour, 10..5 the minute, 4..0
+ *        seconds in steps of 2.
+ * @param fdate  FAT's date
+ * @param ftime  FAT's time
+ * @return the time as mktime() gives it
+ */
 static int64_t fat_mtime(WORD fdate, WORD ftime)
 {
     struct tm tm = {
@@ -218,8 +262,14 @@ static int64_t fat_mtime(WORD fdate, WORD ftime)
     return (int64_t)mktime(&tm);
 }
 
-/* storage_stat() under a hold, from the path below the mount point, ""
- * or "/...": FatFs's answer in @p fr_out. */
+/**
+ * @brief storage_stat() under a hold, from the path below the mount point,
+ *        "" or "/...".
+ * @param rel     the path below the mount point
+ * @param out     takes the answer
+ * @param fr_out  takes FatFs's answer
+ * @return storage_stat()'s answers
+ */
 static esp_err_t stat_held(const char *rel, storage_stat_t *out, int *fr_out)
 {
     *fr_out = (int)FR_OK;
@@ -280,4 +330,78 @@ esp_err_t storage_stat(const char *path, storage_stat_t *out)
     const esp_err_t err = stat_held(path + mp, out, &fr);
     (void)storage_read_end(fr, "stat", false);
     return err;
+}
+
+/** @brief An open folder: FatFs's handle, its entry, and the last read's
+ *         answer for the close. */
+struct storage_dir {
+    FF_DIR  dir;   /**< FatFs's folder                            */
+    FILINFO info;  /**< the entry read last                       */
+    int     fr;    /**< the last failed read's FRESULT, or FR_OK  */
+};
+
+storage_dir_t *storage_dir_open(const char *path)
+{
+    const size_t mp = sizeof(STORAGE_MOUNT_POINT) - 1u;
+    if (path == NULL || strncmp(path, STORAGE_MOUNT_POINT, mp) != 0
+        || (path[mp] != '\0' && path[mp] != '/')) {
+        return NULL;
+    }
+    if (!storage_hold()) {
+        return NULL;
+    }
+    storage_dir_t *d = heap_caps_malloc(sizeof(*d), MALLOC_CAP_SPIRAM);
+    if (d == NULL) {
+        storage_release();
+        return NULL;
+    }
+    d->fr = (int)FR_OK;
+    /* The drive and a path of the Wi-Fi page's 384 bytes at most. */
+    char full[STORAGE_NAME_MAX * 8];
+    const int n = snprintf(full, sizeof(full), "%s%s", storage_drive(),
+                           (path[mp] == '\0') ? "/" : path + mp);
+    const FRESULT fr = (n > 0 && (size_t)n < sizeof(full))
+                       ? f_opendir(&d->dir, full) : FR_INVALID_NAME;
+    if (fr != FR_OK) {
+        heap_caps_free(d);
+        /* A folder not there is no read that failed. */
+        (void)storage_read_end((fr == FR_NO_PATH || fr == FR_NO_FILE
+                                || fr == FR_INVALID_NAME)
+                               ? (int)FR_OK : (int)fr, "open folder", false);
+        return NULL;
+    }
+    return d;
+}
+
+int storage_dir_read(storage_dir_t *d, char *name, size_t cap,
+                     storage_stat_t *out)
+{
+    const FRESULT fr = f_readdir(&d->dir, &d->info);
+    if (fr != FR_OK) {
+        d->fr = (int)fr;
+        return -1;
+    }
+    if (d->info.fname[0] == '\0') {
+        return 0;
+    }
+    const size_t len = strlen(d->info.fname);
+    if (len >= cap) {
+        return -1;
+    }
+    memcpy(name, d->info.fname, len + 1u);
+    out->is_dir = (d->info.fattrib & AM_DIR) != 0;
+    out->size = out->is_dir ? 0u : (uint64_t)d->info.fsize;
+    out->mtime = fat_mtime(d->info.fdate, d->info.ftime);
+    return 1;
+}
+
+void storage_dir_close(storage_dir_t *d)
+{
+    if (d == NULL) {
+        return;
+    }
+    (void)f_closedir(&d->dir);
+    const int fr = d->fr;
+    heap_caps_free(d);
+    (void)storage_read_end(fr, "folder", false);
 }

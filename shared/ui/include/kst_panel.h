@@ -1,4 +1,7 @@
-/*
+/**
+ * @file kst_panel.h
+ * @brief The KST and Chaservo programmer's overlay on SERVO: its interface.
+ *
  * The programmer for KST and Chaservo servos on the SERVO screen: a
  * session over the screen's left column, opened from its row on SERVO >
  * PROGRAM (prog_registry.h) one level down.
@@ -40,8 +43,8 @@
 extern "C" {
 #endif
 
-/** The highest supply voltage a standard servo is rated for, mV: a
- *  programming voltage above it needs HV SERVO and a 2 s hold. */
+/** @brief The highest supply voltage a standard servo is rated for, mV: a
+ *  programming voltage above it needs HV SERVO and a 2s hold. */
 #define KST_PANEL_STD_MV 6000u
 /** Characters of a file name typed on the keyboard at most.  A file with a
  *  longer name, up to 32 characters, is listed and loaded; a line that
@@ -150,7 +153,7 @@ bool kst_panel_file_late(const char *text, size_t len);
  * A limit run lowers LEFT ANGLE and RIGHT ANGLE through the model the
  * overlay holds, a session at a time: CONNECT with its read, one write,
  * LEAVE.  Each call starts the step and kst_panel_run_poll() says how it
- * ended.  The run's start, held for 2 s, is the operator's consent: no
+ * ended.  The run's start, held for 2s, is the operator's consent: no
  * warning page is shown and the soft rules a value breaks are confirmed.
  * The rest is the model's: the hard rules, the file the first write of a
  * session saves (none for a later session of the run: kst_prog_run_hold()),
@@ -177,23 +180,41 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
 /** Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.
  *  The run's first write holds the servo as read (kst_prog_run_hold()). */
 kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right);
-/** Write PULSE LOWER and PULSE UPPER, 0.1 us, and nothing else; as
- *  kst_panel_run_write() otherwise. */
+/**
+ * @brief Write PULSE LOWER and PULSE UPPER and nothing else; as
+ *        kst_panel_run_write() otherwise.
+ * @param lower_dus PULSE LOWER, 0.1us
+ * @param upper_dus PULSE UPPER, 0.1us
+ * @return as kst_panel_run_write()
+ */
 kst_prog_msg_id_t kst_panel_run_pulses(uint16_t lower_dus, uint16_t upper_dus);
 /** LEAVE. */
 kst_prog_msg_id_t kst_panel_run_leave(void);
 kst_panel_run_t kst_panel_run_poll(void);
-/** Whether the CONNECT of kst_panel_run_connect() ended with no servo
- *  answering: the programmer's last message is KST_SES_ERR_NO_SERVO and was
- *  said after that call.  A message left from before it does not count.
- *  @return true for a CONNECT of a servo that is no KST or Chaservo, or not
- *  powered; false otherwise. */
+/**
+ * @brief Whether the CONNECT of kst_panel_run_connect() ended with no servo
+ *        answering.
+ *
+ * True when the programmer's last message is KST_SES_ERR_NO_SERVO and was
+ * said after that call.  A message left from before it does not count.
+ *
+ * @return True for a CONNECT of a servo that is no KST or Chaservo, or not
+ *         powered; false otherwise.
+ */
 bool kst_panel_run_no_servo(void);
-/** The servo as read: its two angles, the values both take by the hard
- *  rules, REVERSION, its type number, and NEUTRAL, PULSE LOWER and PULSE
- *  UPPER in 0.1 us (0 for one not shown).  False with none read, or one
- *  that is not editable (no KST or Chaservo servo, in doubt); the angles
- *  are filled then where a servo was read. */
+/**
+ * @brief The servo as read.
+ * @param angle out: its two angles; filled also when false is returned,
+ *        where a servo was read
+ * @param lo out: the value both angles take by the hard rules, at least
+ * @param hi out: and at most
+ * @param reversion out: REVERSION
+ * @param type out: its type number
+ * @param pulse_dus out: NEUTRAL, PULSE LOWER and PULSE UPPER in 0.1us, 0
+ *        for one not shown
+ * @return false with none read, or one that is not editable (no KST or
+ *         Chaservo servo, in doubt)
+ */
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
                          bool *reversion, unsigned *type,
                          uint16_t pulse_dus[3]);
@@ -214,24 +235,64 @@ kst_prog_t *kst_panel_model(void);
 int kst_panel_message_lines(const kst_prog_msg_t *m,
                             char out[KST_PANEL_MSG_LINES][KST_PANEL_LINE]);
 
-/** The rows of 8 x 16 cells a line of a message, a note or a warning page
- *  takes, wrapped at a space to the overlay's width less 10 px a side, one
- *  cell a row at least (before kst_panel_init(), say). */
+/**
+ * @brief The rows of 10 x 20 cells a line of a message, a note or a
+ *        warning page takes, wrapped at a space to the overlay's width less
+ *        10px a side, one cell a row at least (before kst_panel_init(),
+ *        say): 60 cells a row on SERVO's left card of 620px.
+ * @param s the line
+ * @return its rows, 0 for an empty line
+ */
 int kst_panel_text_rows(const char *s);
 
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
-/** Where things are, for a test's taps.  Rows by page, row and column.  A
- *  coordinate no row has gives an empty rectangle (value, step), false (live)
- *  or NULL (button, label). */
+/*
+ * Where things are, for a test's taps.  Rows by page, row and column.  A
+ * coordinate no row has gives an empty rectangle (value, step), false (live)
+ * or NULL (button, label).  Every control is UI_TAP_MIN (48px) tall or
+ * more and a control at the foot ends 4px above the alert band.
+ */
+/**
+ * @brief A tab, one fifth of the row left of CLOSE, 48px tall.
+ * @param page the tab, PG_SERVO to PG_LOCKED; another is the first
+ * @return its rectangle
+ */
 gfx_rect_t kst_panel_tab_rect(int page);
+/** @brief CLOSE, 120 x 48px at the top right.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_close_rect(void);
+/**
+ * @brief A row's value: 150px, a wide row's 260px less its keys.
+ * @param page the tab
+ * @param row the row, from the top
+ * @param col the column, 0 or 1
+ * @return its rectangle; empty for no such row
+ */
 gfx_rect_t kst_panel_value_rect(int page, int row, int col);
+/**
+ * @brief A stepped row's minus or plus key, 56 x 48px.
+ * @param page the tab
+ * @param row the row, from the top; column 0
+ * @param up the plus key; else the minus key
+ * @return its rectangle; empty for no such row
+ */
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up);
+/**
+ * @brief A list's entry, 48px tall at a 56px pitch under the title.
+ * @param i the entry, from 0
+ * @return its rectangle
+ */
 gfx_rect_t kst_panel_choice_rect(int i);
+/** @brief A list's CANCEL, 150 x 48px at the foot's right.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_choice_cancel_rect(void);
+/** @brief A warning page's hold button, 300 x 56px at the foot's left.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_apply_rect(void);
+/** @brief A warning page's CANCEL, 180 x 56px at the foot's right.
+ *  @return its rectangle */
 gfx_rect_t kst_panel_cancel_rect(void);
 ui_keypad_t *kst_panel_keypad(void);
 ui_textkey_t *kst_panel_textkey(void);
@@ -266,13 +327,21 @@ const char *kst_panel_choice_label(int i);
 const char *kst_panel_choice_title(void);
 
 /**
- * The page each of @p count notes of @p rows rows takes in @p room rows:
- * every note on page 0 when they fit, else pages that keep their last row
- * for the page count, a note never split.  A note marked in @p standing is
- * on page 0, and the others fill the rows left after the standing ones;
- * with no row left beside the standing notes for the count, the others
- * get page -1, shown on no page.  Writes @p page and returns the number of
- * pages.
+ * @brief The page each of @p count notes takes in @p room rows.
+ *
+ * Every note is on page 0 when they fit, else on pages that keep their
+ * last row for the page count, a note never split.  A note marked in
+ * @p standing is on page 0, and the others fill the rows left after the
+ * standing ones.  With no row left beside the standing notes for the
+ * count, they yield: every note pages in pages of @p room - 1 rows, the
+ * standing ones first, and a note taller than that gets page -1, shown on
+ * no page until the room grows.
+ * @param rows each note's rows
+ * @param standing whether each note stands
+ * @param count the notes
+ * @param room the rows they have
+ * @param page out: each note's page, -1 for none
+ * @return the number of pages
  */
 int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
                          int room, int *page);

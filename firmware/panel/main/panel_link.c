@@ -1,8 +1,9 @@
-/*
- * The link to the IOmcu: exchange(), through which every request to
- * the far end goes, and the control page, which carries ARM, THROTTLE, the
- * pole count, CLEAR and the throttle's endpoints.  The link report is here
- * too.  Control task only, and app_main before that task exists.
+/**
+ * @file
+ * @brief The link to the IOmcu: exchange(), through which every request to the
+ *        far end goes, and the control page, which carries ARM, THROTTLE, the
+ *        pole count, CLEAR and the throttle's endpoints.  The link report is
+ *        here too.  Control task only, and app_main before that task exists.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,7 +36,7 @@ static const char *TAG = "rcbench";
  * Every request to the far end goes through exchange(), and every way
  * exchange() ends without an answer goes through exchange_unanswered():
  * a frame that did not reach the wire, or a request that waited out
- * LINK_HOST_TIMEOUT_MS (1000 ms).  A refusal is an answer.  No caller
+ * LINK_HOST_TIMEOUT_MS (1000ms).  A refusal is an answer.  No caller
  * reports a missing answer to the link-loss rule and none can forget to.
  * Control task only, and app_main before that task exists.
  *
@@ -112,8 +113,8 @@ bool exchange(link_host_t *host, const link_msg_t *req,
         }
         /*
          * This wait runs to LINK_HOST_TIMEOUT_MS.  The safety loop cannot
-         * stop for that long, so it runs here too: one pump per 5 ms receive
-         * window keeps the heartbeat inside its 150 ms ceiling and STOP
+         * stop for that long, so it runs here too: one pump per 5ms receive
+         * window keeps the heartbeat inside its 150ms ceiling and STOP
          * inside a frame of the press.  Only during bring-up, before the
          * control task exists, is there nothing to pump.
          */
@@ -161,9 +162,9 @@ uint32_t port_now(void *ctx)
 
 /*
  * Between two frames of a write wider than one.  A page is 8 exchanges back
- * to back and a binding 17, and an exchange answered inside its first 5 ms
+ * to back and a binding 17, and an exchange answered inside its first 5ms
  * receive window returns without a pump.  The safety loop runs here once
- * 5 ms have passed since it last did: the heartbeat keeps its 20 ms edges
+ * 5ms have passed since it last did: the heartbeat keeps its 20ms edges
  * and STOP is read inside a frame of the press for as long as the write
  * takes.  A write of one frame never comes here.
  */
@@ -192,7 +193,7 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
 /*
  * ARM and THROTTLE travel together, offset 0 and count 2, at every poll while
  * the link is up: the IOmcu's throttle channel goes to its rest, which
- * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500 ms) without a
+ * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500ms) without a
  * write, so the panel keeps writing while armed.  The write that arms is
  * the same window widened to three, taking MOTOR_POLES (register 2) with
  * it.  CLEAR (register 3) is written on its own and only on an explicit
@@ -282,7 +283,7 @@ static bool control_write_poles(link_msg_t *reply)
  * A write nobody answered is put back and costs one more poll.  A write the
  * far end refused is not: the same request refused once is refused every
  * time, and a debt that stands through a refusal is a control write on every
- * 50 ms poll for as long as the link is up, against an IOmcu that has
+ * 50ms poll for as long as the link is up, against an IOmcu that has
  * already said no -- the missing-register case link_came_up() names is
  * exactly that. A refusal waits for a new edit or the next link-up edge.
  *
@@ -297,7 +298,7 @@ bool poles_service(void)
     /*
      * One exchange, which can wait LINK_HOST_TIMEOUT_MS.  An edit made while
      * it is on the wire raises the debt again behind the value already
-     * loaded and is paid at the next 50 ms poll; nothing waits on it here,
+     * loaded and is paid at the next 50ms poll; nothing waits on it here,
      * because the write that arms carries the count itself (control_arm())
      * and this is the path for a count edited at any other time.  A loop
      * until the debt clears would let an operator holding a key down keep
@@ -353,7 +354,7 @@ static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
     memcpy(cfg, ccr.regs, sizeof(cfg));
     if (!outputs_chan_cfg_set_throttle_range(cfg, lo, hi)) {
         /* Idle pulse and Full pulse overlap in their ranges (800 to 1600 and
-         * 1400 to 2400 us), so the pair can be inverted while it is being
+         * 1400 to 2400us), so the pair can be inverted while it is being
          * edited.  Said, and the far end keeps the last pair it took. */
         s_pulse_alert_gen = control_alert_numbered(TR(ALERT_PULSE_ORDER));
         return ENDPOINTS_ORDER;
@@ -492,20 +493,20 @@ static void exchange_unanswered(void)
 
 /*
  * One block naming the most fundamental fault rather than the loudest.
- * Printed every 5 s while the link is down and every 60 s while it is up.
+ * Printed every 5s while the link is down and every 60s while it is up.
  */
 /*
  * The same report, on its way to the card.
  *
  * A tester can send a file; a tester cannot send a console this board does
- * not have.  Only while the link is down and only at link_report()'s 5 s
+ * not have.  Only while the link is down and only at link_report()'s 5s
  * cadence, so the volume is a few hundred bytes a minute.
  *
  * Handed to the logger task rather than written here.  This runs on the task
  * that beats the safety line, and an append is three card transactions --
  * open, write, close -- each of which can block for as long as the card
  * takes.  A queue that is full drops the line: a report is worth less than
- * the beat, and the next one is 5 s away.
+ * the beat, and the next one is 5s away.
  */
 static void debug_log(const char *line)
 {
@@ -574,7 +575,7 @@ void link_report(void)
     /*
      * Left at zero.  link_bringup reads rx_crc_errors as "frames this end
      * received and found corrupt", and TWAI (Two-Wire Automotive Interface,
-     * the ESP32-S3's CAN controller) has no such counter: bus_error_count is
+     * the ESP32-P4's CAN controller) has no such counter: bus_error_count is
      * cumulative for the life of the driver and includes transmit-side
      * acknowledge errors, so one missing ACK (acknowledge) at power-on would
      * pin the diagnosis at "frames arrive corrupt" for the whole session.

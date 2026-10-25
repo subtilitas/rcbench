@@ -14,10 +14,10 @@
 #             and downloads only the ones that differ
 #
 # install writes the .deb files to ARCHIVE_DIR (apt's package cache for this
-# run), downloads them in up to 4 attempts of 300 s each, then installs from
+# run), downloads them in up to 4 attempts of 300s each, then installs from
 # that directory.  A resumed attempt continues the partial files, and apt
-# gives up on a connection that delivers no data for 30 s.  A mirror that
-# serves at 50 kB/s keeps delivering data, so the attempt limit is what ends
+# gives up on a connection that delivers no data for 30s.  A mirror that
+# serves at 50kB/s keeps delivering data, so the attempt limit is what ends
 # the step, at about 20 minutes.  The directory is handed back to the calling
 # user so the cache action can read it.  Needs sudo and Ubuntu's apt.
 set -euo pipefail

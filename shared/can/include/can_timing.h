@@ -1,6 +1,7 @@
-/*
- * CAN (Controller Area Network) bit timing: a wanted bit rate turned into
- * segment counts.
+/**
+ * @file
+ * @brief CAN (Controller Area Network) bit timing: a wanted bit rate turned
+ *        into segment counts.
  *
  * A CAN controller divides its source clock into time quanta and splits each
  * bit into one sync quantum plus two programmable segments.  A bit rate that
@@ -10,15 +11,15 @@
  *
  * The arithmetic is here, in pure C with tests, rather than in a table of
  * register values.  Two controllers use it: the panel's TWAI (Two-Wire
- * Automotive Interface, the ESP32-S3's CAN controller) and the IOmcu's
+ * Automotive Interface, the ESP32-P4's CAN controller) and the IOmcu's
  * XL2515.  They have different clocks and segment limits and the same
  * arithmetic.
  *
  * The rule this module enforces: the bit rate comes out exact.  CAN has no
  * framing to resynchronise against beyond its own bit stuffing, and two nodes
  * that disagree by 1% agree on short frames and fail on long ones.  A rate
- * that cannot be hit exactly is reported as impossible; an 8 MHz crystal
- * cannot make 1 Mbit/s.
+ * that cannot be hit exactly is reported as impossible; an 8MHz crystal
+ * cannot make 1Mbit/s.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -64,16 +65,16 @@ typedef struct {
 } can_timing_t;
 
 /**
- * The sample point CiA (CAN in Automation) recommends for rates above
- * 800 kbit/s, in permille.  Later is better for propagation delay and worse
+ * @brief The sample point CiA (CAN in Automation) recommends for rates above
+ * 800kbit/s, in permille.  Later is better for propagation delay and worse
  * for oscillator tolerance; 87.5% is the usual compromise.
  */
 #define CAN_SAMPLE_POINT_DEFAULT 875
 
 /**
- * The sample point this link uses, at both ends.
+ * @brief The sample point this link uses, at both ends.
  *
- * The IOmcu's XL2515 has one way to make 1 Mbit/s from a 16 MHz
+ * The IOmcu's XL2515 has one way to make 1Mbit/s from a 16MHz
  * crystal: the smallest divisor and 8 quanta per bit, the fewest a bit may
  * have, which puts the sample point at 75%.  The panel has slack and matches
  * the IOmcu, so both ends sample the bit in the same place.
@@ -98,7 +99,11 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 /** The IOmcu's XL2515 (MCP2515-compatible), given its crystal. */
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
-/** The panel's TWAI, off the 80 MHz APB (advanced peripheral bus) clock. */
+/**
+ * @brief The panel's TWAI on the ESP32-P4, off the 40MHz crystal: even
+ *        prescalers from 2 to 32768.
+ * @param out Filled with the limits; NULL is ignored.
+ */
 void can_timing_limits_twai(can_timing_limits_t *out);
 
 /* --------------------------------------------------- MCP2515 registers */

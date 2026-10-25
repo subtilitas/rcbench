@@ -124,7 +124,7 @@ static void map_polls(int n)
     }
 }
 
-/* A map: parts @p parts fitted, every shunt 100.0 mOhm, 0x40 CH1 watching
+/* A map: parts @p parts fitted, every shunt 100.0mOhm, 0x40 CH1 watching
  * OUT 1 and FAST. */
 static sense_map_want_t map_of(uint16_t parts)
 {
@@ -213,10 +213,10 @@ TEST_CASE(the_page_is_read_whole_then_the_map_written_whole)
     /* SENSE is read again, once. */
     CHECK(sense_map_link_take_reread(&ml));
     CHECK(!sense_map_link_take_reread(&ml));
-    /* Then IDs and FLAGS, every 500 ms, and nothing written again. */
+    /* Then IDs and FLAGS, every 500ms, and nothing written again. */
     const unsigned w0 = fm_writes;
     const unsigned r0 = fm_reads;
-    map_polls(40);                              /* 2 s */
+    map_polls(40);                              /* 2s */
     CHECK_EQ(fm_writes, w0);
     CHECK(fm_reads - r0 >= 4u && fm_reads - r0 <= 5u);
 }
@@ -249,7 +249,7 @@ TEST_CASE(a_map_waits_for_an_idle_bank_and_its_rest)
     /* An edit restarts the rest: written SENSE_MAP_LINK_SETTLE_MS after. */
     w.regs[LINK_SM_SHUNT(4)] = 500u;
     sense_map_link_want(&ml, &w, now);
-    map_polls(9);                               /* 450 ms */
+    map_polls(9);                               /* 450ms */
     CHECK_EQ(fm_writes, w0);
     map_polls(2);
     CHECK_EQ(fm_writes, w0 + 1u);
@@ -897,7 +897,7 @@ TEST_CASE(the_meter_follows_fast_with_the_map_and_ch1_without)
     want(&w);
     sense_link_meter(&sl, &m);
     CHECK(m.wanted);
-    /* FAST on CH2: an older IOmcu reads CH1 at 1 kHz, not the watcher. */
+    /* FAST on CH2: an older IOmcu reads CH1 at 1kHz, not the watcher. */
     w.i3221_fast_off_ch1 = true;
     want(&w);
     sense_link_meter(&sl, &m);

@@ -119,8 +119,8 @@ TEST_CASE(a_scan_runs_the_radio_and_ends_off)
 /* The token of the scan the platform runs, as wa_scan_begin() gave it. */
 static uint32_t g_tok;
 
-/* One scan session as the platform runs it: the station's start reported
- * twice, the scan ends with @p ok. */
+/* One scan session as the platform runs it: the station starts (twice, as
+ * esp_hosted can report it), the scan ends with @p ok. */
 static wa_scan_step_t scan_once(uint32_t now, bool ok)
 {
     CHECK_EQ(wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, now, counter_rand,
@@ -245,8 +245,8 @@ TEST_CASE(a_scan_the_radio_refuses_is_a_failure_not_an_empty_list)
     CHECK(!wa_scan_refused(&g_w, t));   /* once */
 }
 
-/* esp_wifi_scan_start() can wait for the radio; the session can end and
- * another start meanwhile.  The old call's refusal belongs to the old scan. */
+/* esp_wifi_scan_start() waits for the C6; the session can end and another
+ * start meanwhile.  The old call's refusal belongs to the old scan. */
 TEST_CASE(a_refusal_after_the_session_changed_leaves_the_new_session)
 {
     wa_init(&g_w);

@@ -11,11 +11,12 @@
 #include "tick_wrap.h"
 
 #include "analyser_screen.h"
+#include "instruments_spots.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -139,7 +140,7 @@ TEST_CASE(a_cancelled_tab_press_does_not_switch_the_pane)
     memcpy(chan, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-        .point = { .id = 1, .x = 200, .y = 20, .strength = 40 } };
+        .point = { .id = 1, .x = IN_TAB_X(1), .y = IN_TAB_Y, .strength = 40 } };
     scr->event(&e);
     scr->cancel();
     e.type = TOUCH_EVENT_UP;
@@ -172,7 +173,7 @@ TEST_CASE(a_cancelled_tab_press_already_drawn_is_redrawn_released)
     memcpy(idle, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-        .point = { .id = 1, .x = 200, .y = 20, .strength = 40 } };
+        .point = { .id = 1, .x = IN_TAB_X(1), .y = IN_TAB_Y, .strength = 40 } };
     scr->event(&e);
     /* A tab press alone does not repaint; telemetry arriving under the
      * finger does, which is what paints the press.  Forced here. */
@@ -198,9 +199,9 @@ TEST_CASE(both_panes_render_and_differ)
     memcpy(chan, fb, (size_t)W * H * sizeof(gfx_color_t));
 
     const touch_event_t down = { .type = TOUCH_EVENT_DOWN,
-        .point = { .id = 1, .x = 200, .y = 20, .strength = 40 } };
+        .point = { .id = 1, .x = IN_TAB_X(1), .y = IN_TAB_Y, .strength = 40 } };
     const touch_event_t up = { .type = TOUCH_EVENT_UP,
-        .point = { .id = 1, .x = 200, .y = 20, .strength = 40 } };
+        .point = { .id = 1, .x = IN_TAB_X(1), .y = IN_TAB_Y, .strength = 40 } };
     scr->event(&down);
     scr->event(&up);
     scr->render(&cv, 0);
@@ -292,8 +293,8 @@ static uint32_t stream(uint32_t t0, uint32_t every, uint32_t ms)
 
 /*
  * RATE is the frames of a whole second.  A stream of 100 frames a second
- * shows the same picture 1250 ms and 2500 ms after its start whether it
- * began at tick 0 or 500 ms or 1500 ms before the 2^32 ms wrap, and a
+ * shows the same picture 1250ms and 2500ms after its start whether it
+ * began at tick 0 or 500ms or 1500ms before the 2^32ms wrap, and a
  * stream of 50 frames a second shows another: the trace is as long as the
  * screen keeps it in all of them, so the pictures differ in the rate alone.
  */

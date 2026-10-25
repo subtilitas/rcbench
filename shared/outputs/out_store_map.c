@@ -1,5 +1,8 @@
-/*
- * Where the next copy of the output binding goes.  See out_store_map.h.
+/**
+ * @file
+ * @brief Where the next copy of the output binding goes.
+ *
+ * See out_store_map.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -8,8 +11,16 @@
 
 #include <stddef.h>
 
-/* A geometry this file can index: slots are addressed by uint8_t, and the
- * caller's plan carries them as one. */
+/**
+ * @brief A geometry this file can index: slots are addressed by uint8_t, and
+ *        the caller's plan carries them as one.
+ *
+ * @param recs The record slots, not NULL when usable.
+ * @param sectors Number of sectors, above 0 when usable.
+ * @param per_sector Record slots per sector, above 0 when usable.
+ * @return true when recs is not NULL, both counts are above 0 and the total
+ *         is at most 255, false otherwise.
+ */
 static bool usable(const out_store_rec_t *recs, uint8_t sectors,
                    uint8_t per_sector)
 {
@@ -17,6 +28,15 @@ static bool usable(const out_store_rec_t *recs, uint8_t sectors,
            && (uint16_t)sectors * (uint16_t)per_sector <= 255u;
 }
 
+/**
+ * @brief Whether every slot of one sector is erased.
+ *
+ * @param recs The record slots of the whole store.
+ * @param sector Sector index.
+ * @param per_sector Record slots per sector.
+ * @return true when all per_sector slots of @p sector are erased, false when
+ *         any of them is not.
+ */
 static bool sector_erased(const out_store_rec_t *recs, uint8_t sector,
                           uint8_t per_sector)
 {

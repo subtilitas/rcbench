@@ -6,8 +6,7 @@
  * IOmcu's port, the link dispatch and the panel's link module are
  * kst_rig.h.
  *
- * For test_kst_panel.c, test_kst_panel_files.c, test_kst_panel_nocard.c and
- * test_kst_panel_limrun.c.
+ * For test_kst_panel.c and test_kst_panel_*.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -41,19 +40,20 @@
 
 #include "servo_spots.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 /* The SERVO screen's left card, as servo_screen.c hands it over. */
-static const gfx_rect_t AREA = { 6, 6, 488, 420 };
+static const gfx_rect_t AREA = { UI_MARGIN, UI_MARGIN, 620,
+                                  UI_BODY_H - 2 * UI_MARGIN };
 
 /* The strip's PROGRAM, LIVE and SETTINGS tabs (servo_spots.h). */
 #define PROG_X SV_TAB_PROGRAM_X
 #define SETB_X SV_TAB_SETTINGS_X
 #define LIVE_X SV_TAB_LIVE_X
 #define BTN_Y  SV_TAB_Y
-#define ARM_X  648
-#define ARM_Y  404
+#define ARM_X  (SV_RC_X + SV_RC_W / 2)
+#define ARM_Y  (SV_ARM_Y + SV_ARM_H / 2)
 
 enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED };
 

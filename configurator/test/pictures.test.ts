@@ -33,7 +33,8 @@ const files = (id: string, options: Partial<Options> = {}): string[] =>
   picturesOf(part(id), { ...DEFAULT_OPTIONS, ...options }).map((p) => p.file);
 
 test('each part shows the pictures of its variant, the main one first', () => {
-  assert.deepEqual(files('panel'), ['01-panel-back']);
+  // No photo of the panel board is in the folder: its card shows the drawing alone.
+  assert.deepEqual(files('panel'), []);
   assert.deepEqual(files('pdmini'), ['02-pd-mini']);
   assert.deepEqual(files('usbtap'), ['04-usb-c-tap-closeup']);
   assert.deepEqual(files('copro'), ['08-rp2350-can-b']);
@@ -44,7 +45,7 @@ test('each part shows the pictures of its variant, the main one first', () => {
   assert.deepEqual(files('ina228', { ina228Board: 'xt90' }), ['15-current-sensor-top', '14-current-sensor-oblique']);
   assert.deepEqual(files('ina3221'), ['16-ina3221-front', '17-ina3221-back']);
   const withPictures = CATALOGUE.parts.filter((p) => (p.pictures ?? []).length > 0).map((p) => p.id);
-  assert.deepEqual(withPictures, ['panel', 'copro', 'pdmini', 'ina3221', 'as5600', 'ina228', 'estop', 'usbtap']);
+  assert.deepEqual(withPictures, ['copro', 'pdmini', 'ina3221', 'as5600', 'ina228', 'estop', 'usbtap']);
 });
 
 test('a card with a picture links the thumb to the full file, a card without one has no image and no frame', () => {
@@ -74,8 +75,8 @@ test('a card with a picture links the thumb to the full file, a card without one
         assert.equal(alt, p.alt[lang].replaceAll('&', '&amp;'));
       });
     }
-    // 8 parts carry a picture; the MATEK variant of the INA228 is not among the files.
-    assert.equal(withPicture, 11);
+    // 7 parts carry a picture; the MATEK variant of the INA228 is not among the files.
+    assert.equal(withPicture, 10);
   }
   const matek = view({ functions: FUNCTIONS });
   assert.ok(!result(matek, 'https://example.invalid/', []).includes('current-sensor'));
@@ -117,7 +118,7 @@ test('the 2 pads of channel 1 of the INA3221 carry their print: VIN1+ takes the 
   const label = (id: string) => ina.pins.find((p) => p.id === id)!.label;
   assert.deepEqual(label('C1A'), { en: 'VIN1+', de: 'VIN1+' });
   assert.deepEqual(label('C1B'), { en: 'VIN1-', de: 'VIN1-' });
-  // The supply side: the PD mini output, the servo supply or the 5 V pad of the IOmcu. The load side: the plus of the servo.
+  // The supply side: the PD mini output, the servo supply or the 5V pad of the IOmcu. The load side: the plus of the servo.
   const on = (pin: string) => CATALOGUE.wires.filter((w) => w.b === `ina3221.${pin}`).map((w) => [w.n, w.a]);
   assert.deepEqual(on('C1A'), [[28, 'pdmini.OP'], [29, 'ssup.POS'], [60, 'pad.40']]);
   assert.deepEqual(on('C1B'), [[30, 'servo.POS']]);
@@ -147,6 +148,6 @@ test('README.md states the file count and the size of the picture folder', () =>
   const names = readdirSync(DIR);
   const bytes = names.reduce((sum, name) => sum + statSync(`${DIR}${name}`).size, 0);
   const readme = readFileSync(fileURLToPath(new URL('../README.md', import.meta.url)), 'utf8');
-  const line = `Picture folder: ${names.length} files, ${(bytes / 1000).toFixed(1)} kB.`;
+  const line = `Picture folder: ${names.length} files, ${(bytes / 1000).toFixed(1)}kB.`;
   assert.ok(readme.includes(line), `README.md does not hold the line "${line}"`);
 });

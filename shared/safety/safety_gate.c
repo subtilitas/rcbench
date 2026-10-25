@@ -1,5 +1,6 @@
-/*
- * SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief SPDX-License-Identifier: MIT
  */
 
 #include "safety_gate.h"
@@ -33,7 +34,7 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
      * The line first.  Silence generates no event, so the monitor is asked
      * on every pass whether or not an edge arrived.  The edge out of trust
      * latches: the monitor trusts the line again after HEARTBEAT_GOOD_RUN
-     * good intervals, 80 ms at the panel's rate, and the panel's next
+     * good intervals, 80ms at the panel's rate, and the panel's next
      * write of a non-zero ARM can be later than that.
      */
     const bool was_alive = beat->alive;
@@ -88,7 +89,7 @@ uint8_t safety_gate_control_write(uint16_t *control, uint8_t off, uint8_t n,
          * fresh read.  A fresh read is later than the `now` that
          * link_dev_tick() receives in the same pass, and the wrap-safe
          * comparison there reads a timestamp in the future as
-         * 4,294,967,295 ms of silence, which fires the failsafe at once.
+         * 4,294,967,295ms of silence, which fires the failsafe at once.
          */
         link_dev_clear_failsafe(dev, dev->last_request_ms);
     }

@@ -1,5 +1,6 @@
-/*
- * The whole card as one ZIP archive, written as it is sent.
+/**
+ * @file wa_zip.h
+ * @brief The whole card as one ZIP archive, written as it is sent.
  *
  * Stored, not compressed (method 0): deflate would cost the panel's cores
  * and time, and log files are what the card mostly holds.  No temporary
@@ -136,39 +137,40 @@ typedef struct {
  */
 wa_zip_err_t wa_zip_plan(const wa_fs_t *fs, wa_zip_plan_t *out);
 
-/** One entry as the first walk found it, 24 bytes. */
+/** @brief One entry as the first walk found it, 24 bytes. */
 typedef struct {
     uint64_t size;    /**< bytes it is sent with; 0 for a folder          */
     uint32_t crc;     /**< CRC-32 of the bytes sent, kept by the second walk */
     uint32_t path;    /**< FNV-1a hash of its path, a folder's with "/"   */
     uint32_t mtime;   /**< seconds since 1980-01-01, in the DOS range     */
     uint16_t len;     /**< bytes of its name, a folder's with "/"         */
-    uint16_t spare;
+    uint16_t spare;   /**< unused; pads the slot to 24 bytes            */
 } wa_zip_slot_t;
 
-/** Slots to allocate beyond the entries wa_zip_plan() counted: entries
+/** @brief Slots to allocate beyond the entries wa_zip_plan() counted: entries
  *  added to the card before wa_zip_begin() walks it again. */
 #define WA_ZIP_SPARE 16u
 
+/** @brief One archive being sent.  The fields are wa_zip.c's. */
 typedef struct {
-    const wa_fs_t *fs;
-    wa_zip_plan_t  plan;
+    const wa_fs_t *fs;        /**< the card                               */
+    wa_zip_plan_t  plan;      /**< what the first walk counted            */
     wa_zip_slot_t *slot;      /**< one an entry, in walk order            */
     uint64_t       index;     /**< the entry being sent                   */
     uint64_t       at;        /**< bytes of archive produced              */
     uint64_t       cd_at;     /**< the third walk's local header offset   */
-    uint64_t       cd_bytes;
-    int            phase;
-    bool           in_file;
-    void          *file;
+    uint64_t       cd_bytes;  /**< bytes of the central directory sent    */
+    int            phase;     /**< the part of the archive being sent     */
+    bool           in_file;   /**< a file is open and being sent          */
+    void          *file;      /**< the open file                          */
     uint64_t       left;      /**< bytes of the open file still to send   */
-    uint64_t       size;
-    uint32_t       file_crc;
-    uint8_t        piece[WA_ZIP_PIECE_MAX];
-    size_t         piece_len;
-    size_t         piece_off;
-    wa_zip_err_t   err;
-    wa_walk_t      walk;
+    uint64_t       size;      /**< bytes the open file is sent with       */
+    uint32_t       file_crc;  /**< CRC-32 of the open file's bytes sent   */
+    uint8_t        piece[WA_ZIP_PIECE_MAX]; /**< a header or descriptor */
+    size_t         piece_len; /**< bytes in @c piece                      */
+    size_t         piece_off; /**< bytes of @c piece sent                 */
+    wa_zip_err_t   err;       /**< the failure the archive ended with     */
+    wa_walk_t      walk;      /**< the walk of the card under way         */
 } wa_zip_t;
 
 /**

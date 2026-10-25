@@ -1,6 +1,8 @@
-/*
- * CH1's 1 ms samples as text lines: core 0's side.  Core 1's feed is
- * sense_trace_feed.c.  See sense_trace.h.
+/**
+ * @file
+ * @brief CH1's 1ms samples as text lines: core 0's side.
+ *
+ * Core 1's feed is sense_trace_feed.c.  See sense_trace.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,17 +38,35 @@ static uint32_t to_t(uint64_t us)
     return (uint32_t)(us / 100u);
 }
 
-/* Whether @p a lies at or past @p b, modulo 2^32. */
+/**
+ * @brief Whether @p a lies at or past @p b, modulo 2^32.
+ *
+ * @param a The time to test.
+ * @param b The time to compare with.
+ * @return true when a is at or past b.
+ */
 static bool at_or_past(uint32_t a, uint32_t b)
 {
     return (int32_t)(a - b) >= 0;
 }
 
+/**
+ * @brief Read the ring's tail index.
+ *
+ * @param tr The trace.
+ * @return The tail index.
+ */
 static uint32_t tail_of(const sense_trace_t *tr)
 {
     return (uint32_t)atomic_load_explicit(&tr->tail, memory_order_relaxed);
 }
 
+/**
+ * @brief Read the ring's head index.
+ *
+ * @param tr The trace.
+ * @return The head index.
+ */
 static uint32_t head_of(const sense_trace_t *tr)
 {
     return (uint32_t)atomic_load_explicit(&tr->head, memory_order_acquire);
@@ -68,7 +88,7 @@ int32_t sense_trace_code(int32_t ua, uint32_t shunt_uohm)
         return 0;
     }
     /* ina3221_current_ua() cuts code * 40e6 / R towards 0; rounding the
-     * product back gives the code for every shunt up to 20 Ω. */
+     * product back gives the code for every shunt up to 20Ω. */
     const int64_t num = (int64_t)ua * (int64_t)shunt_uohm;
     const int64_t half = (num >= 0) ? 20000000 : -20000000;
     return (int32_t)((num + half) / 40000000);
@@ -79,19 +99,36 @@ uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top)
     return (pulse_us > top) ? (uint16_t)top : pulse_us;
 }
 
-/* The record at the tail, or NULL for an empty ring. */
+/**
+ * @brief The record at the tail, or NULL for an empty ring.
+ *
+ * @param tr The trace.
+ * @return The record at the tail, or NULL for an empty ring.
+ */
 static const sense_trace_rec_t *peek(const sense_trace_t *tr)
 {
     const uint32_t tail = tail_of(tr);
     return (head_of(tr) == tail) ? NULL : &tr->buf[tail & tr->mask];
 }
 
+/**
+ * @brief Test whether a record is a set-up record.
+ *
+ * @param r The record.
+ * @return true when its kind is SENSE_TRACE_CFG or later.
+ */
 static bool is_setup(const sense_trace_rec_t *r)
 {
     return META_KIND(r->meta) >= SENSE_TRACE_CFG;
 }
 
-/* The records dropped before @p r that no $L line has said yet. */
+/**
+ * @brief The records dropped before @p r that no $L line has said yet.
+ *
+ * @param o The output state.
+ * @param r The record.
+ * @return The number of records dropped before r that are not yet reported.
+ */
 static uint32_t lost_before(const sense_trace_out_t *o,
                             const sense_trace_rec_t *r)
 {
@@ -99,9 +136,15 @@ static uint32_t lost_before(const sense_trace_out_t *o,
     return (lost > o->ahead) ? lost - o->ahead : 0u;
 }
 
-/* The record at the tail leaves the ring; a set-up record leaves what it
- * says behind.  Every record leaves here, in a trace and out of one: the
- * count of dropped records it carried is read. */
+/**
+ * @brief The record at the tail leaves the ring; a set-up record leaves what it
+ * says behind.
+ *
+ * Every record leaves here, in a trace and out of one: the count of dropped
+ * records it carried is read.
+ *
+ * @param tr The trace.
+ */
 static void pop(sense_trace_t *tr)
 {
     sense_trace_out_t *o = &tr->out;
@@ -118,8 +161,14 @@ static void pop(sense_trace_t *tr)
     atomic_store_explicit(&tr->tail, tail + 1u, memory_order_release);
 }
 
-/* Whether @p r changes the shunt or the Configuration, and not the state
- * alone. */
+/**
+ * @brief Whether @p r changes the shunt or the Configuration, and not the state
+ * alone.
+ *
+ * @param o The output state.
+ * @param r The record.
+ * @return true when the record changes the shunt or the Configuration.
+ */
 static bool changes_setup(const sense_trace_out_t *o,
                           const sense_trace_rec_t *r)
 {
@@ -129,14 +178,29 @@ static bool changes_setup(const sense_trace_out_t *o,
     return ((uint32_t)r->v & 0xFFFFu) != (o->cfg & 0xFFFFu);
 }
 
-/* Whether the trace under way is still open at @p t: not stopped, and
- * @p t before its end.  The console may owe lines of a trace long over. */
+/**
+ * @brief Whether the trace under way is still open at @p t: not stopped, and @p
+ * t before its end.
+ *
+ * The console may owe lines of a trace long over.
+ *
+ * @param o The output state.
+ * @param t The time, in 0.1ms.
+ * @return true when a trace is under way, not stopped, and t lies before its
+ *       end.
+ */
 static bool open_at(const sense_trace_out_t *o, uint32_t t)
 {
     return o->stage != SENSE_TRACE_IDLE && !o->stopped
            && !at_or_past(t, o->end_t);
 }
 
+/**
+ * @brief Move the trace's end time forward, never back.
+ *
+ * @param o The output state.
+ * @param end_t Candidate end time, in 0.1ms.
+ */
 static void extend(sense_trace_out_t *o, uint32_t end_t)
 {
     if ((int32_t)(end_t - o->end_t) > 0) {
@@ -144,8 +208,16 @@ static void extend(sense_trace_out_t *o, uint32_t end_t)
     }
 }
 
-/* @p add more triggers that found a queue full, the first of them at
- * @p first and the last at @p last, onto a count and its two times. */
+/**
+ * @brief @p add more triggers that found a queue full, the first of them at @p
+ * first and the last at @p last, onto a count and its two times.
+ *
+ * @param n The count to add to.
+ * @param span The first and last times of the dropped triggers.
+ * @param add Number of triggers dropped.
+ * @param first Time of the first one, in 0.1ms.
+ * @param last Time of the last one, in 0.1ms.
+ */
 static void lost_add(uint32_t *n, uint32_t span[2], uint32_t add,
                      uint32_t first, uint32_t last)
 {
@@ -161,8 +233,20 @@ static void lost_add(uint32_t *n, uint32_t span[2], uint32_t add,
     *n = (add > UINT32_MAX - *n) ? UINT32_MAX : *n + add;
 }
 
-/* A line for the console's queue, or counted when it is full.  Whether
- * it found a place.  @p cmd_t is a $D line's command's time. */
+/**
+ * @brief A line for the console's queue, or counted when it is full.
+ *
+ * Whether it found a place.  @p cmd_t is a $D line's command's time.
+ *
+ * @param o The output state.
+ * @param kind The trigger kind.
+ * @param t Time of the mark, in 0.1ms.
+ * @param at_us Time of the trigger, in µs.
+ * @param ch The channel.
+ * @param us The pulse, in µs.
+ * @param cmd_t Time of the command, in 0.1ms.
+ * @return true when the mark was queued; false when the queue is full.
+ */
 static bool mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
                  uint64_t at_us, uint16_t ch, uint16_t us, uint32_t cmd_t)
 {
@@ -196,13 +280,23 @@ static bool mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
     return true;
 }
 
-/* Where a trigger went. */
+/** @brief Where a trigger went. */
 typedef enum {
     TRIG_LOST = 0,  /* a queue was full: counted                     */
     TRIG_PLACED,    /* its line is in the trace under way            */
     TRIG_WAITS,     /* it waits for the next trace                   */
 } place_t;
 
+/**
+ * @brief Record a trigger: start a trace, extend the one under way, or hold it for the next trace.
+ *
+ * @param tr The trace.
+ * @param kind The trigger kind.
+ * @param at_us Time of the trigger, in µs.
+ * @param ch The channel of a cmd trigger.
+ * @param us The pulse of a cmd trigger, in µs.
+ * @return Where the trigger went.
+ */
 static place_t trigger(sense_trace_t *tr, sense_trace_trig_t kind,
                        uint64_t at_us, uint16_t ch, uint16_t us)
 {
@@ -269,11 +363,21 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
     }
 }
 
-/* A slewed command of channel @p ch changed last at @p t, or with
- * SENSE_TRACE_MARK_DEST ended there, past the end of the trace under way:
- * kept behind the command where that waits for the next trace, one entry
- * for the command.  A command that does not wait has its line in a trace
- * that is over, or none. */
+/**
+ * @brief A slewed command of channel @p ch changed last at @p t, or with
+ * SENSE_TRACE_MARK_DEST ended there, past the end of the trace under way: kept
+ * behind the command where that waits for the next trace, one entry for the
+ * command.
+ *
+ * A command that does not wait has its line in a trace that is over, or none.
+ *
+ * @param o The output state.
+ * @param kind The mark kind.
+ * @param ch The channel.
+ * @param t Time of the mark, in 0.1ms.
+ * @param us The pulse, in µs.
+ * @param cmd_t Time of the command, in 0.1ms.
+ */
 static void wait_slew(sense_trace_out_t *o, sense_trace_trig_t kind,
                       uint16_t ch, uint32_t t, uint16_t us, uint32_t cmd_t)
 {
@@ -312,8 +416,14 @@ static void wait_slew(sense_trace_out_t *o, sense_trace_trig_t kind,
     m->cmd_t = cmd_t;
 }
 
-/* A slewed command of @p w has ended, at its last change: said in the
- * trace that change is in. */
+/**
+ * @brief A slewed command of @p w has ended, at its last change: said in the
+ * trace that change is in.
+ *
+ * @param o The output state.
+ * @param w The watch of the output slot.
+ * @param ch The channel.
+ */
 static void slew_ends(sense_trace_out_t *o, sense_trace_watch_t *w,
                       uint16_t ch)
 {
@@ -418,6 +528,12 @@ typedef struct {
     size_t n;
 } line_t;
 
+/**
+ * @brief Append one character to a line, when there is room.
+ *
+ * @param l The line.
+ * @param c The character.
+ */
 static void put_c(line_t *l, char c)
 {
     if (l->n < sizeof(l->s)) {
@@ -425,6 +541,12 @@ static void put_c(line_t *l, char c)
     }
 }
 
+/**
+ * @brief Append a string to a line.
+ *
+ * @param l The line.
+ * @param s The string.
+ */
 static void put_s(line_t *l, const char *s)
 {
     while (*s != '\0') {
@@ -432,6 +554,12 @@ static void put_s(line_t *l, const char *s)
     }
 }
 
+/**
+ * @brief Append an unsigned decimal number to a line.
+ *
+ * @param l The line.
+ * @param v The number.
+ */
 static void put_u(line_t *l, uint32_t v)
 {
     char d[10];
@@ -445,6 +573,12 @@ static void put_u(line_t *l, uint32_t v)
     }
 }
 
+/**
+ * @brief Append a signed decimal number to a line.
+ *
+ * @param l The line.
+ * @param v The number.
+ */
 static void put_i(line_t *l, int32_t v)
 {
     if (v < 0) {
@@ -455,6 +589,12 @@ static void put_i(line_t *l, int32_t v)
     }
 }
 
+/**
+ * @brief Append the low 16 bits as four upper-case hex digits.
+ *
+ * @param l The line.
+ * @param v The value.
+ */
 static void put_x4(line_t *l, uint32_t v)
 {
     static const char k_hex[] = "0123456789ABCDEF";
@@ -463,24 +603,48 @@ static void put_x4(line_t *l, uint32_t v)
     }
 }
 
-/* A key and its value, the value held to @p max. */
+/**
+ * @brief A key and its value, the value held to @p max.
+ *
+ * @param l The line.
+ * @param key The key text.
+ * @param v The value.
+ * @param max The largest value written.
+ */
 static void put_kv(line_t *l, const char *key, uint32_t v, uint32_t max)
 {
     put_s(l, key);
     put_u(l, (v > max) ? max : v);
 }
 
+/**
+ * @brief Append the line end, CR LF.
+ *
+ * @param l The line.
+ */
 static void put_eol(line_t *l)
 {
     put_s(l, "\r\n");
 }
 
+/**
+ * @brief Append the on and reset state of a set-up word.
+ *
+ * @param l The line.
+ * @param cfg The set-up word.
+ */
 static void put_state(line_t *l, uint32_t cfg)
 {
     put_kv(l, " on=", (cfg >> 16) & 1u, 1u);
     put_kv(l, " rst=", cfg >> 24, 255u);
 }
 
+/**
+ * @brief Write the start line of a trace: its id, trigger kind and time.
+ *
+ * @param o The output state.
+ * @param l The line.
+ */
 static void line_start(const sense_trace_out_t *o, line_t *l)
 {
     static const char *const k_trig[] = { "cmd", "edge", "key" };
@@ -494,6 +658,12 @@ static void line_start(const sense_trace_out_t *o, line_t *l)
     put_eol(l);
 }
 
+/**
+ * @brief Write a set-up line: sample period, shunt and Configuration.
+ *
+ * @param o The output state.
+ * @param l The line.
+ */
 static void line_setup(const sense_trace_out_t *o, line_t *l)
 {
     put_kv(l, "$H dt_us=", SENSE_TRACE_PERIOD_US, 9999u);
@@ -504,6 +674,12 @@ static void line_setup(const sense_trace_out_t *o, line_t *l)
     put_eol(l);
 }
 
+/**
+ * @brief Write a trigger or destination mark line.
+ *
+ * @param m The mark.
+ * @param l The line.
+ */
 static void line_mark(const sense_trace_mark_t *m, line_t *l)
 {
     static const char k_tag[] = { 'C', 'E', 'K', 'D' };
@@ -521,6 +697,15 @@ static void line_mark(const sense_trace_mark_t *m, line_t *l)
     put_eol(l);
 }
 
+/**
+ * @brief Write the end line of a trace.
+ *
+ * @param o The output state.
+ * @param why Why the trace ended.
+ * @param stalled true when the trace ended stalled.
+ * @param n_mlost Mark records dropped and not yet reported.
+ * @param l The line.
+ */
 static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
                      bool stalled, uint32_t n_mlost, line_t *l)
 {
@@ -538,7 +723,7 @@ static void line_end(const sense_trace_out_t *o, sense_trace_end_t why,
     put_eol(l);
 }
 
-/* What writing a line changes. */
+/** @brief What writing a line changes. */
 typedef enum {
     ACT_NONE = 0,   /* nothing to write yet                          */
     ACT_STAGE,      /* a header line: the stage moves on             */
@@ -551,7 +736,14 @@ typedef enum {
     ACT_END_SETUP,  /* the end line, at a set-up record              */
 } act_t;
 
-/* The end line of a trace that ran to its end. */
+/**
+ * @brief The end line of a trace that ran to its end.
+ *
+ * @param o The output state.
+ * @param stalled true when the trace ended stalled.
+ * @param l The line.
+ * @return ACT_END.
+ */
 static act_t ends(const sense_trace_out_t *o, bool stalled, line_t *l)
 {
     line_end(o, o->stopped ? SENSE_TRACE_END_KEY : SENSE_TRACE_END_TIME,
@@ -559,9 +751,15 @@ static act_t ends(const sense_trace_out_t *o, bool stalled, line_t *l)
     return ACT_END;
 }
 
-/* Whether a trigger is left for a trace of its own when this one ends:
- * one that waited, or -- unless the console stopped this trace -- one
- * whose line is not written. */
+/**
+ * @brief Whether a trigger is left for a trace of its own when this one ends:
+ * one that waited, or -- unless the console stopped this trace -- one whose
+ * line is not written.
+ *
+ * @param o The output state.
+ * @return true when a trigger waits or a mark is queued that is not a
+ *       destination mark.
+ */
 static bool next_starts(const sense_trace_out_t *o)
 {
     if (o->wait_n > 0u) {
@@ -576,27 +774,54 @@ static bool next_starts(const sense_trace_out_t *o)
     return false;
 }
 
-/* A trace that ends at a set-up record of time @p cut: the trigger lines
- * not written are all of after @p cut, and so the next trace's.  Whether
- * a trigger that found the queue full is the next trace's too, and
- * whether all of them are.  With no trigger left no trace follows, and
- * the count stays here. */
+/**
+ * @brief A trace that ends at a set-up record of time @p cut: the trigger lines
+ * not written are all of after @p cut, and so the next trace's.
+ *
+ * Whether a trigger that found the queue full is the next trace's too, and
+ * whether all of them are.  With no trigger left no trace follows, and the
+ * count stays here.
+ *
+ * @param o The output state.
+ * @param cut The cut time, in 0.1ms.
+ * @return true when the dropped marks lie past the cut and the next trace
+ *       starts.
+ */
 static bool lost_past(const sense_trace_out_t *o, uint32_t cut)
 {
     return o->n_mlost > 0u && (int32_t)(o->mlost_t[1] - cut) > 0
            && next_starts(o);
 }
 
+/**
+ * @brief Test whether all the dropped mark records lie before a cut time.
+ *
+ * @param o The output state.
+ * @param cut The cut time, in 0.1ms.
+ * @return true when lost_past() holds and the first dropped mark lies past the
+ *       cut.
+ */
 static bool lost_all_past(const sense_trace_out_t *o, uint32_t cut)
 {
     return lost_past(o, cut) && (int32_t)(o->mlost_t[0] - cut) > 0;
 }
 
-/* With the ring empty, whether a record of before @p t can still come:
- * NOT_YET while core 1 has not finished a tick that started at or past
- * @p t, STALLED when it has not SENSE_TRACE_STALL_MS after @p t. */
+/**
+ * @brief With the ring empty, whether a record of before @p t can still come:
+ * NOT_YET while core 1 has not finished a tick that started at or past @p t,
+ * STALLED when it has not SENSE_TRACE_STALL_MS after @p t.
+ */
 typedef enum { NOT_YET = 0, PASSED, STALLED } past_t;
 
+/**
+ * @brief Classify a record time against what has been fed and the clock.
+ *
+ * @param fed_t The time core 1 has fed, in 0.1ms.
+ * @param now_t The current time, in 0.1ms.
+ * @param t The record time, in 0.1ms.
+ * @return PASSED once fed_t has reached t, STALLED once now_t is
+ *       SENSE_TRACE_STALL_MS past t, else NOT_YET.
+ */
 static past_t past(uint32_t fed_t, uint32_t now_t, uint32_t t)
 {
     if (at_or_past(fed_t, t)) {
@@ -606,15 +831,31 @@ static past_t past(uint32_t fed_t, uint32_t now_t, uint32_t t)
                ? STALLED : NOT_YET;
 }
 
+/**
+ * @brief Write a lost-records line: the count of dropped records.
+ *
+ * @param n The number of records lost.
+ * @param l The line.
+ */
 static void line_lost(uint32_t n, line_t *l)
 {
     put_kv(l, "$L n=", n, SENSE_TRACE_LOST_MAX);
     put_eol(l);
 }
 
-/* The next line of the trace under way into @p l, and what it stands
- * for; for ACT_LOST_AHEAD the records it counts into @p ahead.  Changes
- * nothing else. */
+/**
+ * @brief The next line of the trace under way into @p l, and what it stands
+ * for; for ACT_LOST_AHEAD the records it counts into @p ahead.
+ *
+ * Changes nothing else.
+ *
+ * @param tr The trace.
+ * @param now_t The current time, in 0.1ms.
+ * @param l Receives the line.
+ * @param ahead Receives the count of dropped records that no record carries
+ *       yet.
+ * @return What the line stands for.
+ */
 static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l,
                        uint32_t *ahead)
 {
@@ -733,7 +974,11 @@ static act_t next_line(const sense_trace_t *tr, uint32_t now_t, line_t *l,
     return ACT_REC;
 }
 
-/* Idle from here: the scan for set-up records starts at the tail. */
+/**
+ * @brief Idle from here: the scan for set-up records starts at the tail.
+ *
+ * @param tr The trace.
+ */
 static void to_idle(sense_trace_t *tr)
 {
     tr->out.stage   = SENSE_TRACE_IDLE;
@@ -741,10 +986,15 @@ static void to_idle(sense_trace_t *tr)
     tr->out.scanned = tail_of(tr);
 }
 
-/* The end line is written: the triggers that waited for it start the
- * next trace, in their order, over what the ring holds since the end.
- * @p cut is the time of the set-up record the trace ended at, NULL for a
- * trace that ended on its time. */
+/**
+ * @brief The end line is written: the triggers that waited for it start the
+ * next trace, in their order, over what the ring holds since the end. @p cut is
+ * the time of the set-up record the trace ended at, NULL for a trace that ended
+ * on its time.
+ *
+ * @param tr The trace.
+ * @param cut The time the trace ended, in 0.1ms.
+ */
 static void ended(sense_trace_t *tr, const uint32_t *cut)
 {
     sense_trace_out_t *o = &tr->out;
@@ -822,8 +1072,14 @@ static void ended(sense_trace_t *tr, const uint32_t *cut)
     lost_add(&o->n_mlost, o->mlost_t, lost, lost_t[0], lost_t[1]);
 }
 
-/* The line @p act stood for is written; @p ahead is ACT_LOST_AHEAD's
- * count. */
+/**
+ * @brief The line @p act stood for is written; @p ahead is ACT_LOST_AHEAD's
+ * count.
+ *
+ * @param tr The trace.
+ * @param act The action the line stood for.
+ * @param ahead Records dropped ahead of the ring, as the line counted them.
+ */
 static void commit(sense_trace_t *tr, act_t act, uint32_t ahead)
 {
     sense_trace_out_t *o = &tr->out;
@@ -876,8 +1132,12 @@ static void commit(sense_trace_t *tr, act_t act, uint32_t ahead)
     }
 }
 
-/* No trace: the newest records stay for the one a trigger starts, none
- * of them older than the last set-up or state record. */
+/**
+ * @brief No trace: the newest records stay for the one a trigger starts, none
+ * of them older than the last set-up or state record.
+ *
+ * @param tr The trace.
+ */
 static void idle(sense_trace_t *tr)
 {
     sense_trace_out_t *o = &tr->out;

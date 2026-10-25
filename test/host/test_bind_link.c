@@ -7,11 +7,11 @@
  * The model is the part of the bench the defect lives in.  The IOmcu's
  * CAN (Controller Area Network) controller holds 2 received frames and is
  * read from a polled loop; a frame that arrives with both taken is lost.  A
- * frame is 125 us here (about 130 us at 1 Mbit/s), the loop takes every
+ * frame is 125us here (about 130us at 1Mbit/s), the loop takes every
  * buffered frame once a pass, and a deaf window is a stretch in which the
- * loop takes none.  The silence watchdog (200 ms) and the host's timeout
- * (1000 ms) are the real ones, run on the model's clock.  The store is
- * modelled as the firmware's is timed: what is in force is saved 400 ms
+ * loop takes none.  The silence watchdog (200ms) and the host's timeout
+ * (1000ms) are the real ones, run on the model's clock.  The store is
+ * modelled as the firmware's is timed: what is in force is saved 400ms
  * after its last change.
  *
  * The panel's control task is not in this suite.  panel_cmd() and
@@ -34,6 +34,7 @@
 #include "out_stage.h"
 #include "outputs_pages.h"
 #include "outputs_screen.h"
+#include "outputs_spots.h"
 #include "picker_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -55,7 +56,7 @@ typedef struct {
                                          * page's take finds them       */
     unsigned takes;                     /* pages put in force           */
 
-    /* The store: what is in force, 400 ms after its last change. */
+    /* The store: what is in force, 400ms after its last change. */
     uint16_t saved_cfg[LINK_CC_COUNT];
     uint16_t saved_slots[LINK_OS_COUNT];
     bool     dirty;
@@ -67,8 +68,8 @@ static far_t       far;
 static link_dev_t  dev;
 static link_host_t host;
 
-/* The clock: 125 us ticks from an offset in ms, so a case can start a few
- * hundred ms before the 2^32 ms wrap. */
+/* The clock: 125us ticks from an offset in ms, so a case can start a few
+ * hundred ms before the 2^32ms wrap. */
 #define TICKS_PER_MS 8u
 static uint64_t s_tick;
 static uint32_t s_ms0;
@@ -305,7 +306,7 @@ static void device_pass(void)
     }
 }
 
-/* One 125 us tick of everything. */
+/* One 125us tick of everything. */
 static void step(void)
 {
     ++s_tick;
@@ -672,9 +673,9 @@ TEST_CASE(a_write_that_cannot_be_built_sends_nothing)
 
 /*
  * The write as 0.14.0 sends it: one request of 32 registers, 8 frames back
- * to back.  With the loop taking frames every 125 us nothing is lost.  With
- * one 20 ms deaf window over the burst, 6 of the 8 find both buffers full:
- * the host waits its 1000 ms, the IOmcu latches at 200 ms, and the
+ * to back.  With the loop taking frames every 125us nothing is lost.  With
+ * one 20ms deaf window over the burst, 6 of the 8 find both buffers full:
+ * the host waits its 1000ms, the IOmcu latches at 200ms, and the
  * page is left with 2 of its 8 entries written.
  */
 TEST_CASE(frames_sent_back_to_back_are_lost_to_a_deaf_window)
@@ -762,8 +763,8 @@ TEST_CASE(an_older_coprocessor_is_written_page_by_page)
 }
 
 /*
- * One 20 ms deaf window, opened at every 125 us of the sequence and at
- * every loop pass time from 125 us to 5 ms.  A frame waits in the buffer;
+ * One 20ms deaf window, opened at every 125us of the sequence and at
+ * every loop pass time from 125us to 5ms.  A frame waits in the buffer;
  * none is lost, no exchange times out and the IOmcu does not latch.
  */
 TEST_CASE(a_deaf_window_anywhere_delays_the_sequence_and_loses_nothing)
@@ -810,8 +811,8 @@ TEST_CASE(a_deaf_window_anywhere_delays_the_sequence_and_loses_nothing)
 /*
  * A sequence spread over many passes does not starve the IOmcu's
  * silence watchdog: it counts from the last request heard, and every frame
- * of the sequence is one.  The loop here takes frames once in 22 ms, so the
- * 20 exchanges take about 440 ms, twice the 200 ms limit.
+ * of the sequence is one.  The loop here takes frames once in 22ms, so the
+ * 20 exchanges take about 440ms, twice the 200ms limit.
  */
 TEST_CASE(a_slow_sequence_does_not_latch_the_silence_failsafe)
 {
@@ -832,8 +833,8 @@ TEST_CASE(a_slow_sequence_does_not_latch_the_silence_failsafe)
 
 /*
  * The limit itself.  The watchdog fires when no request has been heard for
- * 200 ms, so one frame held 199 ms is in time and one held 200 ms is not.
- * The sequence still ends written in both: the host waits 1000 ms.
+ * 200ms, so one frame held 199ms is in time and one held 200ms is not.
+ * The sequence still ends written in both: the host waits 1000ms.
  */
 TEST_CASE(one_frame_held_200_ms_latches_and_199_ms_does_not)
 {
@@ -857,7 +858,7 @@ TEST_CASE(one_frame_held_200_ms_latches_and_199_ms_does_not)
 }
 
 /* An exchange nobody answers ends LINK_HOST_TIMEOUT_MS after it was sent,
- * and one answered 1 ms sooner is answered. */
+ * and one answered 1ms sooner is answered. */
 TEST_CASE(an_unanswered_frame_ends_after_1000_ms_and_not_before)
 {
     static const uint32_t k_deaf[] = { 999u, 1001u };
@@ -881,7 +882,7 @@ TEST_CASE(an_unanswered_frame_ends_after_1000_ms_and_not_before)
 
 /* ------------------------------------------------------- a frame is lost */
 
-/* After a sequence that ended unanswered: the store's 400 ms pass, the link
+/* After a sequence that ended unanswered: the store's 400ms pass, the link
  * comes back, and the pages are read. */
 static bind_read_t settle_and_read(bind_reading_t *r)
 {
@@ -945,8 +946,8 @@ TEST_CASE(a_lost_acknowledgement_never_leaves_a_mixed_binding)
     }
 }
 
-/* The same across the 2^32 ms wrap: the sequence starts 300 ms before it,
- * so the lost frame's 1000 ms and the watchdog's 200 ms both span it. */
+/* The same across the 2^32ms wrap: the sequence starts 300ms before it,
+ * so the lost frame's 1000ms and the watchdog's 200ms both span it. */
 TEST_CASE(a_lost_frame_is_timed_the_same_across_the_tick_wrap)
 {
     for (int at = 0; at < 18; ++at) {
@@ -960,7 +961,7 @@ TEST_CASE(a_lost_frame_is_timed_the_same_across_the_tick_wrap)
         CHECK(took <= LINK_HOST_TIMEOUT_MS + 3u);
         CHECK(now_ms() < 0x80000000u);          /* it did wrap */
         CHECK(bus.latched);
-        /* 200 ms after the last request the IOmcu heard. */
+        /* 200ms after the last request the IOmcu heard. */
         CHECK_EQ((uint32_t)(bus.latched_ms - bus.last_dispatch_ms),
                  LINK_DEV_SILENCE_MS);
         CHECK(far_holds(&s_old));
@@ -1444,7 +1445,7 @@ static void panel_cmd(void)
 }
 
 /* poll_far_end(): a quiet link is taken down, and found again by the next
- * identity probe, 1000 ms on. */
+ * identity probe, 1000ms on. */
 static void panel_poll(void)
 {
     if (bus.quiet) {
@@ -1467,28 +1468,21 @@ static void tap(const ui_screen_t *scr, int x, int y)
     scr->event(&u);
 }
 
-/* The outputs screen's geometry, as test_outputs_screen.c holds it. */
-#define COL_X  16
-#define COL_W  266
-#define DD_Y   44
-#define DD_H   54
-/* 41 px: the 8 protocols and 1 PROG PORT entry in the screen's height. */
-#define POP_ROW 41
-#define CLR_Y  (DD_Y + DD_H + 100)
-#define CLR_H  48
-#define GRID_X 288
-#define GRID_Y 16
-#define CELL_GAP 4
-#define CELL_W ((496 - 3 * CELL_GAP) / 4)
-#define CELL_H 53
-#define GRID_ROWS 7
+/* The outputs screen's geometry, as outputs_spots.h holds it. */
+#define COL_X  OU_COL_X
+#define COL_W  OU_COL_W
+#define DD_Y   OU_DD_Y
+#define DD_H   OU_DD_H
+/* The protocols' column of the open list. */
+#define POP_ROW OU_POP_ROW
+#define CLR_Y  OU_CLR_Y
+#define CLR_H  OU_CLR_H
 
 static void tap_pin(uint8_t gpio)
 {
     const uint8_t i = idx(gpio);
-    tap(outputs_screen(),
-        GRID_X + (i / GRID_ROWS) * (CELL_W + CELL_GAP) + CELL_W / 2,
-        GRID_Y + (i % GRID_ROWS) * (CELL_H + CELL_GAP) + CELL_H / 2);
+    tap(outputs_screen(), OU_CELL_X(i) + OU_CELL_W / 2,
+        OU_CELL_Y(i) + OU_CELL_H / 2);
 }
 
 static void pick(const char *name)
@@ -1738,7 +1732,7 @@ TEST_CASE(pages_no_binding_describes_are_shown_as_such_and_not_overwritten)
 
 /*
  * The way out of pages no binding describes: UNBIND ALL PINS held for
- * UI_HOLD_S (2 s).  A frame adds at most 0.25 s, so 8 frames at least.
+ * UI_HOLD_S (2s).  A frame adds at most 0.25s, so 8 frames at least.
  */
 TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
 {
@@ -1754,7 +1748,7 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
     lift_clear();
     CHECK_EQ(panel.applied, 0);
 
-    /* 1.75 s and a lift: nothing. */
+    /* 1.75s and a lift: nothing. */
     panel_fresh(10u);
     far_gets_odd_pages();
     panel_read();
@@ -1764,7 +1758,7 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
     outputs_screen()->tick(1.0f);
     CHECK_EQ(panel.applied, 0);
 
-    /* One late frame is worth 0.25 s, not the time it took. */
+    /* One late frame is worth 0.25s, not the time it took. */
     hold_clear(0.25f, 0.25f);
     outputs_screen()->tick(10.0f);
     CHECK_EQ(panel.applied, 0);
@@ -1820,7 +1814,7 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
         outputs_screen_select(was);
     }
 
-    /* 2.0 s: one call, with no pin, and it does not repeat. */
+    /* 2.0s: one call, with no pin, and it does not repeat. */
     hold_clear(1.75f, 0.25f);
     CHECK_EQ(panel.applied, 0);
     outputs_screen()->tick(0.25f);
@@ -1903,10 +1897,10 @@ TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
 
 /* ------------------------------------------------------------ PICK A PIN */
 
-#define SCREEN_W 800
-#define SCREEN_H (480 - UI_BAND_H)
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_BODY_H
 
-/* The button of a pin, found as test_picker_screen.c finds it: walk out
+/* The button of a pin, found as picker_screen_rig.h finds it: walk out
  * from the pad until a press acts.  The pin is left as it was. */
 static bool picker_button(uint8_t gpio, int *bx, int *by)
 {
@@ -1916,13 +1910,13 @@ static bool picker_button(uint8_t gpio, int *bx, int *by)
         || !outbind_pad_xy(bd->shape, bd->pins[idx(gpio)].pad, &xc, &yc)) {
         return false;
     }
-    const int bw = 500;
-    const int bh = (int)(((uint32_t)bw * bd->shape->height_cmm)
-                         / bd->shape->width_cmm);
+    int bw = 0, bh = 0;
+    picker_board_fit(bd->shape->width_cmm, bd->shape->height_cmm, &bw, &bh);
     const int px = (SCREEN_W - bw) / 2
                    + (int)(((uint32_t)xc * (uint32_t)bw)
                            / bd->shape->width_cmm);
-    const int py = (SCREEN_H - bh) / 2
+    /* The board centred between the body's top and OU_FOOT. */
+    const int py = (OU_FOOT - bh) / 2
                    + (int)(((uint32_t)yc * (uint32_t)bh)
                            / bd->shape->height_cmm);
     const int dir = (py < SCREEN_H / 2) ? -1 : 1;

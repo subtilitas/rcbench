@@ -44,8 +44,8 @@ target_compile_definitions(rcbench-touch-injector PRIVATE
     # At most 19 characters: pico-sdk cuts longer strings (rp2350/main.c
     # asserts it).
     USBD_PRODUCT="rcbench injector"
-    # A host that stops reading costs a write at most 10 ms, under the
-    # 200 ms watchdog.
+    # A host that stops reading costs a write at most 10ms, under the
+    # 200ms watchdog.
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=10000
 )
 

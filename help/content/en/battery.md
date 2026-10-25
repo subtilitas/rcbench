@@ -20,15 +20,15 @@ No firmware feeds this screen in this release: neither board reads a balance lea
 
 The picture comes from the host renderer, which feeds the screen with cell voltages.
 
-- CELL DIFFERENCE draws each cell as its departure from the pack's mean. From a spread of 30 mV the weakest cell is drawn red.
-- The scale follows the pack down to a floor of 12 mV and is printed beside the plot.
+- CELL DIFFERENCE draws each cell as its departure from the pack's mean. From a spread of 30mV the weakest cell is drawn red.
+- The scale follows the pack down to a floor of 12mV and is printed beside the plot.
 - Under each bar: the cell's number and its voltage.
 
 | Verdict | Line | Spread |
 |---|---|---|
-| HEALTHY | `Cell readings stay even under load.` | under 30 mV |
-| WATCH | `The difference between cells is growing.` | from 30 mV |
-| REPLACE | `One cell differs from the others.` | from 60 mV |
+| HEALTHY | `Cell readings stay even under load.` | under 30mV |
+| WATCH | `The difference between cells is growing.` | from 30mV |
+| REPLACE | `One cell differs from the others.` | from 60mV |
 | NO PACK | `No battery connected to the balance lead.` | no cells |
 
 The spread is the widest gap between any two cells.

@@ -1,5 +1,6 @@
-/*
- * The string tables and the lookup.  See include/ui_text.h.
+/**
+ * @file
+ * @brief The string tables and the lookup.  See include/ui_text.h.
  *
  * A lookup is two loads and a test: the language's entry, else the
  * English.  The language is an atomic int, read once per string, so the
@@ -19,26 +20,94 @@
 
 #include "gfx.h"
 
+/** @brief The screens' strings in English, by TX_ ID. */
 static const char *const k_en[TX_COUNT] = {
-#define UI_TEXT(id, cells, en) [TX_##id] = (en),
+#define UI_TEXT(id, cells, en, de) [TX_##id] = (en),
 #include "ui_text.def"
-#undef UI_TEXT
 };
 
+/** @brief The cells each string's field has, 0 where --fit measures it. */
 static const unsigned char k_cells[TX_COUNT] = {
-#define UI_TEXT(id, cells, en) [TX_##id] = (unsigned char)(cells),
+#define UI_TEXT(id, cells, en, de) [TX_##id] = (unsigned char)(cells),
 #include "ui_text.def"
-#undef UI_TEXT
 };
 
-/* The IDs' names are for the host's checks; the panel image carries none. */
+/** @brief The IDs' names, for the host's checks; the panel image carries
+ *  none. */
 #ifndef ESP_PLATFORM
 static const char *const k_names[TX_COUNT] = {
-#define UI_TEXT(id, cells, en) [TX_##id] = #id,
+#define UI_TEXT(id, cells, en, de) [TX_##id] = #id,
 #include "ui_text.def"
-#undef UI_TEXT
 };
 #endif
+
+/* ------------------------------------------------- the German column */
+
+/**
+ * @brief Picks the German column of an entry of ui_text.def.
+ *
+ * Each language but English is a block like this one: its tables are
+ * ui_text.def's entries with its pick choosing the language's column.  A
+ * language added to the table adds a column to every entry, a parameter to
+ * every entry macro and a block of its own.
+ */
+#define DE(en, de) (de)
+
+/** @brief The screens' strings in German, by TX_ ID; NULL shows the
+ *  English. */
+static const char *const k_de_text[TX_COUNT] = {
+#define UI_TEXT(id, cells, en, de) [TX_##id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief The settings' labels in German, by setting ID. */
+static const char *const k_de_label[SETTING_COUNT] = {
+#define UI_SETTING_LABEL(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief The settings' help lines in German, by setting ID. */
+static const char *const k_de_help[SETTING_COUNT] = {
+#define UI_SETTING_HELP(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief The settings categories' names in German. */
+static const char *const k_de_category[SET_CAT_COUNT] = {
+#define UI_SETTING_CATEGORY(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+/** @brief One array k_de_opts_<name> per option list, in German. */
+#define UI_OPTIONS(name) static const char *const k_de_opts_##name[] = {
+#define UI_OPTION(en, de) DE(en, de),
+#define UI_OPTIONS_END(name) };
+#include "ui_text.def"
+
+/** @brief The German option lists, in the order of the table, which is
+ *  the order settings_option_list() counts. */
+static const char *const *const k_de_options[] = {
+#define UI_OPTIONS(name) k_de_opts_##name,
+#include "ui_text.def"
+};
+
+/** @brief The servo test's words in German, by SERVO_STR_ ID. */
+static const char *const k_de_servo[SERVO_STR_COUNT] = {
+#define UI_SERVO_TEXT(id, en, de) [id] = DE(en, de),
+#include "ui_text.def"
+};
+
+#undef DE
+
+/** @brief The German tables, as ui_text.h declares them. */
+const ui_language_t ui_lang_de = {
+    .text          = k_de_text,
+    .setting_label = k_de_label,
+    .setting_help  = k_de_help,
+    .options       = k_de_options,
+    .category      = k_de_category,
+    .servo         = k_de_servo,
+};
 
 static const ui_language_t *const k_langs[UI_LANG_COUNT] = {
     [UI_LANG_EN] = NULL,
@@ -144,7 +213,7 @@ const char *ui_setting_label(setting_id_t id)
     }
     const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->setting_label, (int)id) : NULL;
-    return (t != NULL) ? t : d->label;
+    return (t != NULL) ? t : settings_label(id);
 }
 
 const char *ui_setting_help(setting_id_t id)
@@ -155,7 +224,7 @@ const char *ui_setting_help(setting_id_t id)
     }
     const ui_language_t *l = ui_text_table(ui_text_language());
     const char *t = (l != NULL) ? entry(l->setting_help, (int)id) : NULL;
-    return (t != NULL) ? t : d->help;
+    return (t != NULL) ? t : settings_help(id);
 }
 
 const char *ui_setting_category(setting_cat_t cat)
@@ -168,15 +237,27 @@ const char *ui_setting_category(setting_cat_t cat)
     return (t != NULL) ? t : settings_category_name(cat);
 }
 
+/**
+ * @brief A setting's option list in the language showing.
+ * @param id The setting.
+ * @return The list, as long as the English one, or NULL for English and
+ *         for a setting that is no choice.
+ */
+static const char *const *lang_options(setting_id_t id)
+{
+    const ui_language_t *l = ui_text_table(ui_text_language());
+    const int list = settings_option_list(id);
+    return (l != NULL && l->options != NULL && list >= 0)
+               ? l->options[list] : NULL;
+}
+
 const char *ui_setting_option(setting_id_t id, int k)
 {
     const setting_def_t *d = settings_def(id);
     if (d == NULL || d->options == NULL || k < 0 || k >= d->option_count) {
         return "?";
     }
-    const ui_language_t *l = ui_text_table(ui_text_language());
-    const char *const *opts = (l != NULL && l->setting_options != NULL)
-                                  ? l->setting_options[id] : NULL;
+    const char *const *opts = lang_options(id);
     return (opts != NULL && opts[k] != NULL) ? opts[k] : d->options[k];
 }
 
@@ -205,9 +286,7 @@ const char *ui_setting_value_of(setting_id_t id, float value, char *buf,
     }
     if (d->type == SET_TYPE_ENUM) {
         const int i = (int)lrintf(value);
-        const ui_language_t *l = ui_text_table(ui_text_language());
-        const char *const *opts = (l != NULL && l->setting_options != NULL)
-                                      ? l->setting_options[id] : NULL;
+        const char *const *opts = lang_options(id);
         if (opts != NULL && i >= 0 && i < d->option_count
             && opts[i] != NULL) {
             snprintf(buf, n, "%s", opts[i]);
@@ -270,4 +349,105 @@ ui_text_id_t ui_card_text_id(card_state_t state, ui_card_at_t at)
 const char *ui_card_text(card_state_t state, ui_card_at_t at)
 {
     return ui_tr(ui_card_text_id(state, at));
+}
+
+/* ---------------------------------------------------------------- units */
+
+/**
+ * @brief The unit symbols, as tools/check_units.py's UNITS lists them ("%%",
+ *        its printf spelling of "%", as "%"); test_check_units.py holds the
+ *        two lists to each other.
+ */
+static const char *const k_unit_symbols[] = {
+    "kbit/s", "Mbit/s", "bit/s", "kB/s", "MB/s", "KB/s", "B/s", "KiB/s",
+    "MiB/s", "°/s", "deg/s",
+    "mAh", "mWh", "kWh", "Wh", "Ah",
+    "GHz", "MHz", "kHz", "Hz",
+    "µs", "μs", "us", "ns", "ms", "min", "s", "h",
+    "kV", "mV", "µV", "μV", "V", "mA", "µA", "μA", "uA", "nA", "A", "mW",
+    "kW", "W",
+    "mΩ", "kΩ", "MΩ", "Ω", "mOhm", "kOhm", "Ohm", "ohm",
+    "°C", "°F", "°", "%", "deg",
+    "KiB", "MiB", "GiB", "kB", "KB", "MB", "GB", "B", "kbps", "Mbps", "bps",
+    "px", "dBm", "dB", "rpm", "RPM", "eRPM", "fps", "ppm", "sps",
+    "mm", "cm", "µm", "nm", "m", "kg", "g", "Ncm", "Nm", "N",
+    "µF", "μF", "uF", "nF", "pF", "mF", "F", "µH", "uH", "mH", "nH", "H", "K",
+    "C", "S",
+};
+
+/**
+ * @brief Whether @p s, up to its end or its "/", is one of the symbols.
+ * @param s  the part
+ * @param n  its bytes
+ * @return 1 for a symbol, else 0
+ */
+static int is_symbol_part(const char *s, size_t n)
+{
+    for (size_t k = 0; k < sizeof(k_unit_symbols) / sizeof(k_unit_symbols[0]);
+         ++k) {
+        if (strlen(k_unit_symbols[k]) == n
+            && memcmp(k_unit_symbols[k], s, n) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int ui_unit_is_symbol(const char *unit)
+{
+    if (unit == NULL || unit[0] == '\0') {
+        return 0;
+    }
+    if (is_symbol_part(unit, strlen(unit))) {
+        return 1;
+    }
+    /* A compound, every part a symbol: "rpm/V", "%/s". */
+    for (const char *p = unit; *p != '\0';) {
+        const size_t n = strcspn(p, "/");
+        if (n == 0u || !is_symbol_part(p, n)) {
+            return 0;
+        }
+        p += n;
+        if (*p == '/') {
+            ++p;
+            if (*p == '\0') {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+const char *ui_pin_holder(const char *held_by)
+{
+    static const struct {
+        const char  *word;
+        ui_text_id_t id;
+    } k_holders[] = {
+        { "heartbeat", TX_OUT_HELD_HEARTBEAT },
+        { "flash",     TX_OUT_HELD_FLASH },
+        { "debug",     TX_OUT_HELD_DEBUG },
+        { "sensor",    TX_OUT_HELD_SENSOR },
+        { "in use",    TX_OUT_HELD_IN_USE },
+    };
+    if (held_by == NULL) {
+        return "";
+    }
+    for (size_t i = 0; i < sizeof(k_holders) / sizeof(k_holders[0]); ++i) {
+        if (strcmp(held_by, k_holders[i].word) == 0) {
+            return ui_tr(k_holders[i].id);
+        }
+    }
+    return held_by;
+}
+
+const char *ui_unit_gap(const char *unit)
+{
+    return (unit == NULL || unit[0] == '\0' || ui_unit_is_symbol(unit)) ? ""
+                                                                         : " ";
+}
+
+int ui_unit_is_prefix(const char *unit)
+{
+    return unit != NULL && strcmp(unit, "GPIO") == 0;
 }

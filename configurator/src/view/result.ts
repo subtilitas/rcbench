@@ -72,7 +72,7 @@ export function picturesOf(part: Part, options: Options): Picture[] {
 }
 
 /**
- * One picture of a card: the 480 px thumb of a photo or the drawing, as a link
+ * One picture of a card: the 480px thumb of a photo or the drawing, as a link
  * to the full file. The browser loads the file when the card comes near the
  * viewport.
  */

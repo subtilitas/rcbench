@@ -24,19 +24,19 @@ electrically erasable programmable read-only memory.
 
 | Need | Part | Package | JLCPCB / Digi-Key stock, 2026-09-29 | Reason |
 | --- | --- | --- | --- | --- |
-| Cell monitor, 1 to 16 cells | ADBMS1818ASWAZ-RL (Analog Devices) | LQFP-64 | 12500 / 564 | total measurement error ±4.8 mV at 4.2 V over temperature, inside the ±6 mV check; rank 1 on JLCPCB stock and price of the parts that pass |
-| Converter for the accelerometer (Q4) | ADCS7476AIMFX/NOPB (Texas Instruments), 2 a board | SOT-23-6 | 2,312 / 88 | the owner's Q4 decision. ENOB (effective number of bits) 11.34 at least over −40 to 125 °C; aperture jitter 30 ps; a conversion starts on the chip-select edge the IOmcu drives |
-| Accelerometer | ADXL316WBCSZ (Analog Devices), on the sensor board | LFCSP-12 | 104 / 387 | meets every value with 100 pF on XOUT: 1.000 µs of delay variation at 1,092 Hz against a 1.244 µs share; 210 µg/√Hz. The accelerometer's requirement figures are not verified (below) |
-| Magnetic pickup | DRV5015A1QDBZR (Texas Instruments) | SOT-23 | 339 / 2831 | 0.7 mT typical operate point, the lowest found; 20 kHz guaranteed bandwidth |
-| Phase-wire clip | TLV3201AIDBVR (Texas Instruments), 2 a board | SOT-23-5 | 41679 / 0 | 55 ns maximum delay over temperature and 40 µA supply current. Its second source is the alternate TLV3601DBVR (JLCPCB 1623) |
-| Encoder input | AM26LV32EIDR (Texas Instruments) | SOIC-16 | 48987 / 13484 | one 3.3 V quad receiver takes A, B and I; 26 ns maximum delay and 6 ns maximum output skew |
+| Cell monitor, 1 to 16 cells | ADBMS1818ASWAZ-RL (Analog Devices) | LQFP-64 | 12500 / 564 | total measurement error ±4.8mV at 4.2V over temperature, inside the ±6mV check; rank 1 on JLCPCB stock and price of the parts that pass |
+| Converter for the accelerometer (Q4) | ADCS7476AIMFX/NOPB (Texas Instruments), 2 a board | SOT-23-6 | 2,312 / 88 | the owner's Q4 decision. ENOB (effective number of bits) 11.34 at least over −40 to 125°C; aperture jitter 30 ps; a conversion starts on the chip-select edge the IOmcu drives |
+| Accelerometer | ADXL316WBCSZ (Analog Devices), on the sensor board | LFCSP-12 | 104 / 387 | meets every value with 100pF on XOUT: 1.000µs of delay variation at 1,092Hz against a 1.244µs share; 210 µg/√Hz. The accelerometer's requirement figures are not verified (below) |
+| Magnetic pickup | DRV5015A1QDBZR (Texas Instruments) | SOT-23 | 339 / 2831 | 0.7 mT typical operate point, the lowest found; 20kHz guaranteed bandwidth |
+| Phase-wire clip | TLV3201AIDBVR (Texas Instruments), 2 a board | SOT-23-5 | 41679 / 0 | 55ns maximum delay over temperature and 40µA supply current. Its second source is the alternate TLV3601DBVR (JLCPCB 1623) |
+| Encoder input | AM26LV32EIDR (Texas Instruments) | SOIC-16 | 48987 / 13484 | one 3.3V quad receiver takes A, B and I; 26ns maximum delay and 6ns maximum output skew |
 | Encoder decode, rotation from the ESC, rotation inputs, BENCH rpm source, servo measured position | RP2354B (Raspberry Pi), no added part | QFN-80 | held 20 | two PIO (programmable input/output) state machines decode the encoder; firmware on the RP2354B does the rest. No program is in the tree, and the decoding figures are not verified (below) |
-| Motor temperature, thermocouple | MAX31856MUD+T (Analog Devices) | TSSOP-14 | 11,459 / 12,023 | a budget of ±1.51 °C against ±2 °C with no firmware calibration; open-thermocouple detection on chip; inputs rated ±45 V |
-| Motor temperature, infrared | MLX90614ESF-BCC-000-TU (Melexis), on the sensor board | TO-39 | 311 / 933 | 35° view, ±3 °C at most over 0 to 200 °C at 3.3 V |
+| Motor temperature, thermocouple | MAX31856MUD+T (Analog Devices) | TSSOP-14 | 11,459 / 12,023 | a budget of ±1.51°C against ±2°C with no firmware calibration; open-thermocouple detection on chip; inputs rated ±45V |
+| Motor temperature, infrared | MLX90614ESF-BCC-000-TU (Melexis), on the sensor board | TO-39 | 311 / 933 | 35° view, ±3°C at most over 0 to 200°C at 3.3V |
 | External I²C ports | TCA9548APWR (Texas Instruments) | TSSOP-24 | 39,690 / 0 | rank 1 on JLCPCB stock. Its second source is the alternate PCA9548APWR (JLCPCB 5,100) |
 | Non-volatile store (Q8) | MB85RC256VPNF-G-AMERE2 (RAMXEED, which S1's Fujitsu covers) | SOP-8 | 6,523 / 484 | the owner's Q8 decision. 32,768 bytes against 792 needed, 10^12 cycles a byte, no write wait |
-| Load-cell bridge ADC | ADS1235IRHBR (Texas Instruments) | VQFN-32 | 1340 / 0 | 0.13 µV RMS (root mean square) at 1200 samples a second and gain 128, against a limit of 0.170 µV; rank 1 on price of the three. Digi-Key holds 0: the owner's stock exception, below |
-| Load-cell excitation | BD450M2FP3-CE2 (ROHM) | SOT-223-4 | 3165 / 3618 | rank 1: its output band covers the full load of 0 to 60 mA with no added part |
+| Load-cell bridge ADC | ADS1235IRHBR (Texas Instruments) | VQFN-32 | 1340 / 0 | 0.13µV RMS (root mean square) at 1200 samples a second and gain 128, against a limit of 0.170µV; rank 1 on price of the three. Digi-Key holds 0: the owner's stock exception, below |
+| Load-cell excitation | BD450M2FP3-CE2 (ROHM) | SOT-223-4 | 3165 / 3618 | rank 1: its output band covers the full load of 0 to 60mA with no added part |
 
 The owner's decisions (owner, 2026-09-29): Q4, an external ADC,
 ADCS7476AIMFX/NOPB, the part R10 kept. Q8, an I²C FRAM (ferroelectric
@@ -54,7 +54,7 @@ part's row in [Parts](Parts.md).
 | --- | --- | --- |
 | Cell monitor | ADBMS1818ASWAZ-RL | ADBMS1818ASWAZ-R7 (the same part on a 300-piece reel), ADBMS1818ASWZ-RL (another land pattern), LTC6813HLWE-1#3ZZPBF and LTC6813HLWE-1#3ZZTRPBF; not verified |
 
-It needs an auxiliary V+ of at least 16 V for packs under 16 V, and round 2's
+It needs an auxiliary V+ of at least 16V for packs under 16V, and round 2's
 input network for a reversed lead.
 
 ## R10: converter for the accelerometer
@@ -96,7 +96,7 @@ the status of record, reads ACTIVE.
 | Function | Rank 1 | Alternatives |
 | --- | --- | --- |
 | Load-cell bridge ADC | ADS1235IRHBR | ADS1262IPWR, ADS1261IRHBR; not verified |
-| Load-cell excitation | BD450M2FP3-CE2 | TLE42754D, TPS7B8250QDGNRQ1, TPS7B8150DGNR, each needing a 1 mA preload; not verified |
+| Load-cell excitation | BD450M2FP3-CE2 | TLE42754D, TPS7B8250QDGNRQ1, TPS7B8150DGNR, each needing a 1mA preload; not verified |
 
 ## Budget of the Q4 and Q8 options
 
@@ -115,7 +115,7 @@ P5's budget in T5, as its critic upheld it
 
 Each item is reported to the owner, with its evidence; a part an item needs comes from a follow-up of its research category, or from round 2 for a passive, a connector, or the protection on the signal, sensor, balance-lead, link and heartbeat connectors ([Research](Research.md#scope)).
 
-- R11, optical index: not known; no part qualifies. No optical reflective sensor searched meets the delay-variation budget of V225, at most 1.244 µs at 1,092 Hz (65,535 rpm): VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000 and TCRT5000L state response times of 10 to 70 µs (`hardware/research/round1/FU-C2/002-P2-R11.json`). The magnetic pickup of the same category is selected. The phase-wire clip's TLV3201AIDBVR holds for a ground-referenced front end only; that front end is open again (Phase-wire clip front end in [hardware STATUS](../STATUS.md#open)).
+- R11, optical index: not known; no part qualifies. No optical reflective sensor searched meets the delay-variation budget of V225, at most 1.244µs at 1,092Hz (65,535rpm): VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000 and TCRT5000L state response times of 10 to 70µs (`hardware/research/round1/FU-C2/002-P2-R11.json`). The magnetic pickup of the same category is selected. The phase-wire clip's TLV3201AIDBVR holds for a ground-referenced front end only; that front end is open again (Phase-wire clip front end in [hardware STATUS](../STATUS.md#open)).
 
 The other conflicts and gaps up to T5 are on [Control](Control.md#not-known)
 and [Supply](Supply.md#not-known).

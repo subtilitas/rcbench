@@ -54,7 +54,7 @@ ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
 
 A file is refused when it:
 
-- is larger than 64 KiB, is not JSON, or is not UTF-8;
+- is larger than 64KiB, is not JSON, or is not UTF-8;
 - nests deeper than 16 levels below the top object, or has an object of
   more than 64 members;
 - has a key twice in one object, compared as it decodes (`"sch\u0065ma"` is
@@ -135,7 +135,7 @@ JSON. The panel does not load them.
 | `key` | 1 to 32 of `a-z 0-9 _`; one meaning across brands: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 to 255 of `{"number": 0-255, "name": "...", "default": true}`; numbers unique, at most one default |
 | `values[].entry_throttle` | `min`, `mid`, `max`: the stick position the manual programs this value from, where it is not the entry's; absent or null, the entry's. Stick programming powers the ESC up there for that value |
-| `values[].entry_hold_ms` | 0 to 600000: power-on to the menu when this value is programmed, where the manual gives a wait other than `scheme.entry.hold_ms`; absent or null, the entry's. Kontronik SUN PLUS modes 4 to 6 wait 5000 ms |
+| `values[].entry_hold_ms` | 0 to 600000: power-on to the menu when this value is programmed, where the manual gives a wait other than `scheme.entry.hold_ms`; absent or null, the entry's. Kontronik SUN PLUS modes 4 to 6 wait 5000ms |
 | `values[].after_select` | 1 to 4 of `min`, `mid`, `max`: the moves the manual asks for after this value's select move, in order, each once the ESC has answered the one before; absent or null, none. The Kontronik car modes and PIX mode 2 go to `min`, the brake. Each is a move: the first not where the stick is when they begin -- the profile's `scheme.store` move, else the select (or `value_select`) move -- and none the same as the one before; a file with one that stays put is refused. Stick programming makes each STORE after the one before, after the profile's `scheme.store` move; a two-stage profile takes none |
 | `applies_to` | model names of this profile, or null for all. Stick programming offers the item only on those models |
 | `applies_when` | a condition in words, e.g. `"model type heli"` |
@@ -152,7 +152,7 @@ power, in the order a run meets it. Absent or null: none.
 "manual": [
   {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
    "source": "Kontronik_Beat.pdf p.5"},
-  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+  {"when": "before_menu", "action": "Pull the jumper off after 2s or the tone sequence."}
 ]
 ```
 
@@ -194,7 +194,17 @@ regenerate the C file and check it:
 ```sh
 python3 tools/gen_esc_profiles.py
 python3 tools/gen_esc_profiles.py --check
+python3 tools/check_units.py --check
 ```
+
+The texts the panel carries write a number and its unit together: `2s`,
+`1.2-1.8ms`, `3.0V per cell`, `8kHz`. A word after a number keeps its space
+(`3 beeps`). These are `brand`, `family`, `automatable_note`, the entry's
+`steps`, a model's `name`, an item's `name` and `applies_when`, a value's
+`name` and a manual step's `action` and `action_de`, the strings
+`gen_esc_profiles.py` compiles into the C. `check_units.py` holds them; the
+research fields (`sources`, `notes`, `unknowns`, the descriptions, a model's
+`spec_source` and `firmware_note`) are not held.
 
 CI (continuous integration) runs `--check`. The host suite parses every file
 with the panel's reader and compares the result with the generated table,
@@ -211,7 +221,7 @@ differently.
 - The beep fields (`beep_ms`, `gap_ms`, `group_gap_ms`) are null in every
   profile and stick programming does not read them: its timing comes from
   its settings.
-- The bench supply is the PD mini, at most 20 V. ESCs whose minimum input is
+- The bench supply is the PD mini, at most 20V. ESCs whose minimum input is
   above that, such as 6S-and-up YGE Opto and Navy models, need an external
   supply.
 - Where a profile's menu is told apart by pitch rather than by count (the

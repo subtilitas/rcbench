@@ -1,9 +1,12 @@
-/*
- * Board bring-up: the shared I2C (Inter-Integrated Circuit) bus and the
- * CH422G I/O (input/output) expander between the SoC (system on chip) and
- * the panel's DISP and backlight enable, LCD (liquid-crystal display) reset,
- * touch reset, SD (Secure Digital) card chip select and USB (Universal
- * Serial Bus) / CAN (Controller Area Network) multiplexer.
+/**
+ * @file board.h
+ * @brief Board bring-up for the 7-inch ESP32-P4 display board: the touch
+ *        I2C (Inter-Integrated Circuit) bus, the backlight's PWM
+ *        (pulse-width modulation) and the touch controller's reset.
+ *
+ * Every line is a GPIO
+ * (general-purpose input/output) of the SoC (system on chip); the board
+ * has no I/O expander.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,40 +26,46 @@ extern "C" {
 #endif
 
 /**
- * Bring up the I2C master bus and put the CH422G into push-pull output mode
- * with BOARD_EXIO_DEFAULT applied.  Safe to call repeatedly.
+ * @brief Bring up the touch I2C bus and the backlight PWM, the backlight
+ *        at 0% (dark).
+ *
+ * Safe to call repeatedly: a second call returns at once.
+ *
+ * @return ESP_OK, or the error of the bus or LEDC call that failed.
  */
 esp_err_t board_init(void);
 
-/** The shared I2C bus (touch controller, expander, external sensors). */
+/**
+ * @brief The touch bus: the GT911 and, in a build with it, the touch
+ *        injector.
+ * @return The bus handle, or NULL before board_init() succeeded.
+ */
 i2c_master_bus_handle_t board_i2c_bus(void);
 
-/** Write the whole EXIO output byte in one transaction. */
-esp_err_t board_exio_write(uint8_t mask);
+/**
+ * @brief Set the backlight brightness.
+ * @param percent 0 to 100%; values outside are clamped.
+ * @return ESP_OK, ESP_ERR_INVALID_STATE before board_init(), or the LEDC
+ *         error.
+ */
+esp_err_t board_backlight_percent(int percent);
 
-/** Drive a single EXIO line (0..7) and remember the new state. */
-esp_err_t board_exio_set(int exio, bool level);
-
-/** Last value written to the expander. */
-uint8_t board_exio_state(void);
-
-/** Read the CH422G input byte. */
-esp_err_t board_exio_read(uint8_t *out);
-
-/** Panel DISP + backlight enable. */
+/**
+ * @brief Backlight at 100% or 0%.
+ * @param on true for 100%, false for 0% (dark).
+ * @return As board_backlight_percent().
+ */
 esp_err_t board_backlight(bool on);
 
 /**
- * Run the GT911 reset sequence.  INT is held low across the rising edge of
- * RST so the controller latches I2C address 0x5D.  Leaves INT as an input.
+ * @brief Run the GT911 reset on BOARD_TOUCH_PIN_RST: low 20ms, high, then 60ms
+ * before the first read.  Does nothing with GPIO_NUM_NC.  INT is not
+ * wired to the SoC, so the address the GT911 takes is its own choice;
+ * gt911_new() probes 0x5D, then 0x14.
+ *
+ * @return ESP_OK, the board_init() error, or the GPIO error.
  */
 esp_err_t board_touch_reset_sequence(void);
-
-/** Assert (true) or release (false) the SD card chip select. */
-esp_err_t board_sd_cs(bool asserted);
-
-/** false routes the USB-C data pins to the SoC, true to the CAN transceiver. */
-esp_err_t board_select_can(bool can);
 
 #ifdef __cplusplus
 }

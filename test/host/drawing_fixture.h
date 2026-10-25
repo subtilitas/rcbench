@@ -86,7 +86,7 @@ static inline void fx_draw_shape(uint8_t *b, unsigned pads, unsigned i,
                          + FX_SMALL_SHAPES * LINK_DRAW_SHAPE_BYTES)
 
 /*
- * A board 10 mm by 5 mm with a GPIO pad, a ground, a 3.3 V rail and a RUN
+ * A board 10mm by 5mm with a GPIO pad, a ground, a 3.3V rail and a RUN
  * pad, and one shape of every kind.  Returns its length, FX_SMALL_BYTES.
  */
 static inline uint32_t fx_draw_small(uint8_t *b)

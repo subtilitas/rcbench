@@ -1,6 +1,7 @@
-/*
- * Shared by log_csv.c and log_reader.c only; not part of the module's
- * interface (log_csv.h is).
+/**
+ * @file
+ * @brief Shared by log_csv.c and log_reader.c only; not part of the module's
+ *        interface (log_csv.h is).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -10,8 +11,14 @@
 
 #include <stdbool.h>
 
-/* The bytes after the last line feed that are no row: space, tab, CR.  The
- * documented set; isspace() would add LF, VT and FF. */
+/**
+ * @brief The bytes after the last line feed that are no row: space, tab, CR.
+ *
+ * The documented set; isspace() would add LF, VT and FF.
+ *
+ * @param c  The byte.
+ * @return true for space, tab or CR.
+ */
 static inline bool is_blank(int c)
 {
     return c == ' ' || c == '\t' || c == '\r';

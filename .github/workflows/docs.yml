@@ -35,7 +35,7 @@ jobs:
   publish:
     name: Publish docs to the wiki
     runs-on: ubuntu-latest
-    # ci_gate.py waits up to 5400 s (90 min) for CI; 100 min leaves 10 min
+    # ci_gate.py waits up to 5400s (90min) for CI; 100min leaves 10min
     # for the checkout, the clone and the push.
     timeout-minutes: 100
     steps:
@@ -43,7 +43,7 @@ jobs:
         with:
           path: source
 
-      # Before anything is cloned or pushed.  ci_gate.py waits up to 5400 s
+      # Before anything is cloned or pushed.  ci_gate.py waits up to 5400s
       # for the CI run on this commit and fails unless one passed.
       - name: CI passed on this commit
         env:

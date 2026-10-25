@@ -16,34 +16,38 @@ OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen
 |---|---|---|
 | TYP | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | das Servoprofil |
 | PULSRATE | die Liste des Typs, oder EIGENE EINSTELLUNG über das Tastenfeld | wie oft ein Puls gesendet wird |
-| PULS MIN, PULS MITTE, PULS MAX | 400 bis 2500 us; jedes Ende mindestens 50 us von PULS MITTE entfernt | -90 deg ist MIN, 0 ist MITTE, +90 deg ist MAX |
-| TRIMMUNG | -200 bis +200 us, 5 us je Schritt | wird zur Mitte addiert |
-| WEG | 10 bis 90 deg | wie weit das Horn je Richtung gehen darf |
+| PULS MIN, PULS MITTE, PULS MAX | 400 bis 2500us; jedes Ende mindestens 50us von PULS MITTE entfernt | -90deg ist MIN, 0 ist MITTE, +90deg ist MAX |
+| TRIMMUNG | -200 bis +200us, 5us je Schritt | wird zur Mitte addiert; ein Tippen auf den Wert öffnet das Tastenfeld mit der Taste `+/-` |
+| WEG | 10 bis 90deg | wie weit das Horn je Richtung gehen darf |
 | UMKEHREN | EIN, AUS | die Richtung, in der der Winkel auf den Puls abgebildet wird |
 
 | Typ | Mitte | Weg | Frame Rates |
 |---|---|---|---|
-| STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |
-| NARROW 760 | 760 us | 660-860 us | wie STANDARD PWM |
-| WIDE | 1500 us | 800-2200 us | wie STANDARD PWM, bis 312 Hz |
-| HELI CYCLIC | 1520 us | 820-2220 us | 50, 120, 200, 333 Hz |
-| HELI TAIL 760 | 760 us | 410-1110 us | 200, 333, 560 Hz |
+| STANDARD PWM | 1500us | 1000-2000us | 50, 60, 100, 150, 200, 250, 300, 333Hz |
+| NARROW 760 | 760us | 660-860us | wie STANDARD PWM |
+| WIDE | 1500us | 800-2200us | wie STANDARD PWM, bis 312Hz |
+| HELI CYCLIC | 1520us | 820-2220us | 50, 120, 200, 333Hz |
+| HELI TAIL 760 | 760us | 410-1110us | 200, 333, 560Hz |
 
-Ein Puls braucht eine Pause vor dem nächsten Frame: mindestens 1 ms bei STANDARD PWM, NARROW 760 und WIDE, 0,5 ms bei den Heli-Typen. Eine Frame Rate, die den Pulsen keine Pause lässt, wird abgelehnt.
+Ein Puls braucht eine Pause vor dem nächsten Frame: mindestens 1ms bei STANDARD PWM, NARROW 760 und WIDE, 0,5ms bei den Heli-Typen. Eine Frame Rate, die den Pulsen keine Pause lässt, wird abgelehnt.
 
-Die Optionen von AUSGANG gelten für die Sitzung. Jeder Neustart kehrt zu STANDARD PWM mit 50 Hz zurück.
+Die Optionen von AUSGANG gelten für die Sitzung. Jeder Neustart kehrt zu STANDARD PWM mit 50Hz zurück.
+
+![Das Tastenfeld der TRIMMUNG, -25us getippt](view:servo-trim-keypad)
+
+Das Tastenfeld der TRIMMUNG hat zwischen dem Punkt und OK eine Taste `+/-`: Sie setzt ein Minuszeichen vor die Eingabe oder nimmt es weg. OK nimmt -200 bis +200us und legt den Wert auf den näheren 5-us-Schritt: 13 wird 15, -12 wird -10. -201 lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe.
 
 ## Die Warnung bei schnellen Raten
 
 ![KANN DAS SERVO ZERSTÖREN](view:servo-warning)
 
-Ein Heli-Typ oder jede Frame Rate über 60 Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
+Ein Heli-Typ oder jede Frame Rate über 60Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
 
 Die Seite AUSGANG sagt, was aus der Rate wurde:
 
 | Hinweis | Bedeutung |
 |---|---|
-| `Aktiv: AUSGÄNGE laufen mit 330 Hz.` | der IOmcu fährt die Rate auf dem Ziel, das er hält |
+| `Aktiv: AUSGÄNGE laufen mit 330Hz.` | der IOmcu fährt die Rate auf dem Ziel, das er hält |
 | `Die Pulsrate wird mit der nächsten Position an den IOmcu gesendet.` | noch nicht geschrieben |
 | `ABGELEHNT: ...` | ein Puls ist länger als der Frame, oder ein Pin teilt den PWM-Slice mit anderer Rate; die Pins behalten ihre Rate |
 | `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein IOmcu antwortet |
@@ -55,8 +59,8 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | KURVE | RECHTECK, SINUS, DREIECK | SINUS | die Kurve von SWEEP und der Bewegungen des Tests |
-| TEMPO | 0,05 bis 5 Hz | 0,5 Hz | Kurven pro Sekunde |
-| BEREICH | 10 bis 100 % | 80 % | der Anteil des Wegs, der durchfahren wird |
+| TEMPO | 0,05 bis 5Hz | 0,5Hz | Kurven pro Sekunde |
+| BEREICH | 10 bis 100% | 80% | der Anteil des Wegs, der durchfahren wird |
 
 ## Die Optionen des automatischen Tests
 
@@ -67,21 +71,21 @@ OPTIONEN auf der Karte AUTOMATISCHER TEST öffnet sie.
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | TESTDAUER NACH | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
-| TESTZEIT | 5 bis 3600 s | 60 s | die Dauer einer Stufe |
+| TESTZEIT | 5 bis 3600s | 60s | die Dauer einer Stufe |
 | BEWEGUNGEN | 1 bis 1000 | 20 | die Bewegungen einer Stufe |
-| HALTEZEIT | 0 bis 5000 ms | 200 ms | an jedem Ende gehalten, im Test und bei SWEEP |
-| EINSCHWINGZEIT | 0 bis 10000 ms | 500 ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
-| BLOCKIERT AB | 0,1 bis 5,0 A | 2,00 A | über diesem Strom gilt das Servo als blockiert |
-| RUHESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert in Ruhe |
-| HALTESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
-| STUFE 4.8 V, STUFE 6.0 V | EIN, AUS | EIN | die Netzteilstufen |
-| HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4 V und STUFE 8.4 V hinzu; bei jedem Neustart aus |
-| BROWN-OUT | EIN, AUS | EIN | ab 5,0 V abwärts, bis das Servo stehen bleibt |
-| STELLZEIT | 0 bis 5000 ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
+| HALTEZEIT | 0 bis 5000ms | 200ms | an jedem Ende gehalten, im Test und bei SWEEP |
+| EINSCHWINGZEIT | 0 bis 10000ms | 500ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
+| BLOCKIERT AB | 0,1 bis 5,0A | 2,00A | über diesem Strom gilt das Servo als blockiert |
+| RUHESTROM | 0 bis 5,00A | 0, nicht geprüft | nicht bestanden über diesem Wert in Ruhe |
+| HALTESTROM | 0 bis 5,00A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
+| STUFE 4.8V, STUFE 6.0V | EIN, AUS | EIN | die Netzteilstufen |
+| HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4V und STUFE 8.4V hinzu; bei jedem Neustart aus |
+| BROWN-OUT | EIN, AUS | EIN | ab 5,0V abwärts, bis das Servo stehen bleibt |
+| STELLZEIT | 0 bis 5000ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
 
 ![HV-SERVO eingeschaltet](view:servo-hv)
 
-Ist HV-SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STARTEN auf der Karte zuerst NUR HV-SERVOS und nennt die höchste Stufe.
+Ist HV-SERVO eingeschaltet und eine Stufe über 6,0V gewählt, öffnet TEST STARTEN auf der Karte zuerst NUR HV-SERVOS und nennt die höchste Stufe.
 
 ## Die Optionen des Endlagenlaufs
 
@@ -92,11 +96,11 @@ OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
-| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0 us |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0us |
 
 ## Die Grenzen von SUPPLY
 
-Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und auf PRÜFLING: `Grenzen 21.00 V 5.00 A: SUPPLY > OPTIONEN`, die geltenden Werte. Eingestellt werden sie auf [SUPPLY](supply.md) > OPTIONEN.
+Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und auf PRÜFLING: `Grenzen 21.00V 5.00A: SUPPLY > OPTIONEN`, die geltenden Werte. Eingestellt werden sie auf [SUPPLY](supply.md) > OPTIONEN.
 
 ## PRÜFLING
 
@@ -106,7 +110,7 @@ Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Lau
 | Option | Was sie tut |
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
-| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD-KARTE EIN ist |
+| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD CARD EIN ist |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
 
 AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-interfaces.md) geschaltet. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.

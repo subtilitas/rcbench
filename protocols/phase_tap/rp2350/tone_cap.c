@@ -1,5 +1,8 @@
-/*
- * The phase tap's capture.  See tone_cap.h.
+/**
+ * @file
+ * @brief The phase tap's capture.
+ *
+ * See tone_cap.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,21 +20,23 @@
 #include "tone_cap.pio.h"
 #include "tone_svc.h"
 
-/* 16 kB, on a 16 kB boundary: the DMA wraps its write address on it. */
+/** @brief 16kB, on a 16kB boundary: the DMA wraps its write address on it. */
 #define RING_BYTES (TONE_RING_WORDS * 4u)
 #define RING_BITS  14u
 _Static_assert(RING_BYTES == (1u << RING_BITS), "the ring's size is 2^14");
 
 static uint32_t s_ring[TONE_RING_WORDS] __attribute__((aligned(RING_BYTES)));
 
-/* Written by core 0 while the capture is stopped or starting, read by
- * core 1: running is set last and cleared first. */
+/**
+ * @brief Written by core 0 while the capture is stopped or starting, read by
+ *        core 1: running is set last and cleared first.
+ */
 static volatile bool     s_running;
 static PIO               s_pio;
 static uint              s_sm;
 static uint              s_offset;
 static int               s_dma = -1;
-static volatile uint32_t s_wr_base;      /* the ring's address            */
+static volatile uint32_t s_wr_base;      /**< the ring's address            */
 static uint8_t           s_pin;
 static uint64_t          s_start_us;
 

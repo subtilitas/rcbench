@@ -33,6 +33,9 @@ import subprocess
 import sys
 import tempfile
 
+import gen_cats
+import ui_sources
+
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
 # The flags of the libraries in test/host/CMakeLists.txt, with -Werror: a
@@ -40,131 +43,22 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
           "-Wno-sign-conversion"]
 
+# The screens (ui_sources.py), the renderer, and what only its views
+# drive: the KST programmer's link module, the IOmcu's port and the wire
+# under it.
 SOURCES = [
     "test/host/render_screen.c",
-    "shared/gfx/gfx.c",
-    "shared/gfx/gfx_text.c",
-    "shared/gfx/gfx_seg.c",
-    "shared/gfx/gfx_font8x16.c",
-    "shared/gfx/gfx_font16x28.c",
-    "shared/gfx/gfx_font_num24x30.c",
-    "shared/ui/ui_theme.c",
-    "shared/ui/ui_widgets.c",
-    "shared/ui/ui_icons.c",
-    "shared/ui/ui_band.c",
-    "shared/ui/ui_plot.c",
-    "shared/ui/ui_slider.c",
-    "shared/ui/ui_tabs.c",
-    "shared/ui/ui_workbench.c",
-    "shared/ui/ui_target_row.c",
-    "shared/ui/prog_registry.c",
-    "shared/ui/ui_watermark.c",
-    "shared/ui/ui_router.c",
-    "shared/ui/ui_text.c",
-    "shared/ui/ui_text_de.c",
-    "shared/ui/splash_screen.c",
-    "shared/ui/overview_screen.c",
-    "shared/ui/motor_screen.c",
-    "shared/ui/motor_workbench.c",
-    "shared/ui/motor_settings_page.c",
-    "shared/ui/motor_program_page.c",
-    "shared/ui/supply_screen.c",
-    "shared/ui/ui_keypad.c",
-    "shared/ui/ui_textkey.c",
-    "shared/ui/ui_pinlist.c",
-    "shared/ui/servo_screen.c",
-    "shared/ui/servo_settings_panel.c",
-    "shared/ui/servo_test_panel.c",
-    "shared/ui/servo_limit_panel.c",
-    "shared/ui/servo_workbench.c",
-    # The programmer for KST and Chaservo servos on SERVO, and under it
-    # what the views drive it with: the link module, the IOmcu's
-    # port and the core.
-    "shared/ui/kst_panel.c",
-    "shared/bench/kst_prog.c",
-    "shared/bench/kst_prog_card.c",
-    "shared/bench/kst_prog_file.c",
-    "shared/bench/kst_card.c",
-    "shared/bench/prog_link.c",
-    "shared/logfile/kst_store.c",
-    "protocols/kst/kst_file.c",
+    *ui_sources.SOURCES,
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
-    "shared/link/link_crc.c",
-    "shared/link/link_drawing.c",
-    "protocols/kst/kst_reg.c",
-    "protocols/kst/kst_limits.c",
-    "protocols/kst/kst_plan.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
-    "shared/ui/analyser_screen.c",
-    "shared/ui/balance_screen.c",
-    "shared/ui/battery_screen.c",
-    "shared/ui/prog_models.c",
-    "shared/ui/esc_stick_pages.c",
-    "shared/ui/esc_stick_panel.c",
-    "shared/ui/outputs_screen.c",
-    "shared/ui/outputs_port.c",
-    "shared/ui/outputs_port_entry.c",
-    "shared/ui/port_view.c",
-    "shared/ui/picker_screen.c",
-    "shared/ui/picker_port.c",
-    "shared/ui/busfault_screen.c",
-    "shared/ui/wifi_screen.c",
-    "shared/ui/coproc_update_screen.c",
-    "shared/ui/upd_screen.c",
-    # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
-    # ESC STICK session lists and runs.
-    "shared/esc/esc_profiles_gen.c",
-    "shared/esc/esc_json.c",
-    "shared/esc/esc_json_lex.c",
-    "shared/esc/esc_registry.c",
-    "shared/esc/esc_stick.c",
-    "shared/esc/esc_stick_rules.c",
-    "shared/esc/esc_det.c",
-    "shared/esc/esc_stick_read.c",
-    "shared/esc/esc_sim.c",
-    # The board drawing the IOmcu serves: generated data, so the
-    # screenshot is the drawing a bench shows.
-    "firmware/iomcu/src/board_drawing_rp2350_can.c",
-    "shared/ui/board_drawing.c",
-    "shared/ui/log_viewer_screen.c",
-    "shared/ui/log_select.c",
-    "shared/ui/log_text.c",
-    "shared/ui/settings_screen.c",
-    "shared/ui/settings_rows.c",
-    "shared/ui/sensors_rows.c",
-    "shared/settings/settings.c",
-    "shared/settings/settings_sensors.c",
-    "shared/logfile/log_numbers.c",
-    "shared/logfile/log_csv.c",
-    "shared/logfile/log_reader.c",
-    "shared/logfile/log_fields.c",
-    "shared/logfile/log_name.c",
-    "shared/logfile/card_tree.c",
-    "shared/bench/bench_state.c",
-    "shared/bench/telemetry_sim.c",
-    "shared/bench/supply.c",
-    "shared/servo/servo_sim.c",
-    "shared/servo/servo_sweep.c",
-    "shared/servo/servo_move.c",
-    "shared/servo/servo_test.c",
-    "shared/servo/servo_str.c",
-    "shared/servo/servo_report.c",
-    "shared/servo/servo_limit.c",
-    "shared/servo/servo_limrun.c",
-    "shared/servo/servo_limrun_report.c",
-    "protocols/sbus/sbus.c",
-    "protocols/dshot/dshot_telem.c",
-    "shared/outputs/outputs.c",
-    "shared/outputs/outputs_pages.c",
-    "shared/outputs/out_pwm_map.c",
-    "shared/outputs/out_bind.c",
-    "shared/outputs/servo_cmd.c",
-    "shared/can/can_selftest.c",
-    "shared/link/link_can.c",
-    "shared/link/link_control.c",
+    # FILES' views run its requests on a card in memory, behind the host
+    # card task.
+    "test/host/render_files.c",
+    "test/host/files_host_io.c",
+    "test/host/fm_fake.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)
@@ -218,6 +112,8 @@ SCREENS = {
     # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
     # TEST card's settings and the LIMIT RUN card's, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
+    # TRIM's keypad, signed: the +/- key, -25us typed.
+    "servo-trim-keypad": ("servo-trim-keypad.png", "servo", "dark"),
     "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),
@@ -239,8 +135,8 @@ SCREENS = {
     # a run partway, run
     # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
     # with RESTORE named, RESTORE's list in the programmer after a STOP in a
-    # session, and SERVO PULSES at KEEP refused: the servo's 900-2100 us
-    # outside the bench's 1000-2000 us.
+    # session, and SERVO PULSES at KEEP refused: the servo's 900-2100us
+    # outside the bench's 1000-2000us.
     "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
     "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
     "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
@@ -261,7 +157,7 @@ SCREENS = {
     # The tester drives the standard outputs: PROGRAM is locked.
     "servo-kst-target": ("servo-kst-target.png", "servo", "dark"),
     # A PD mini answers: the voltage and limit CONNECT sets, the list
-    # that holds them, their keypads and the hold above 6.0 V.
+    # that holds them, their keypads and the hold above 6.0V.
     "servo-kst-supply": ("servo-kst-supply.png", "servo", "dark"),
     "servo-kst-options": ("servo-kst-options.png", "servo", "dark"),
     "servo-kst-voltage": ("servo-kst-voltage.png", "servo", "dark"),
@@ -342,6 +238,9 @@ SCREENS = {
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),
     "motor-stick-timing": ("motor-stick-timing.png", "motor", "dark"),
+    # TIMING's keypad: BEEP MIN's value tapped, 250 typed.
+    "motor-stick-timing-keypad": ("motor-stick-timing-keypad.png", "motor",
+                                  "dark"),
     "motor-stick-warning": ("motor-stick-warning.png", "motor", "dark"),
     "motor-stick-run": ("motor-stick-run.png", "motor", "dark"),
     # The run's page with the phase tap enabled and running, its readout
@@ -366,11 +265,28 @@ SCREENS = {
                                 "motor", "dark"),
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
+    # A SERVO run opened: pulse, angle, current and voltage chosen.
+    "logs-servo-plot": ("logs-servo-plot.png", "logs", "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
     # LOGS' USER tab: a LIMIT RUN's report opened as text.
     "logs-report": ("logs-report.png", "logs",     "dark"),
+    # FILES: the card in two panes, ARMED and logging, each box, the
+    # keyboard, no card, the second page of a big folder, the ESC and KST
+    # folders.
+    "files": ("files.png", "files", "dark"),
+    "files-armed": ("files-armed.png", "files", "dark"),
+    "files-logging": ("files-logging.png", "files", "dark"),
+    "files-delete": ("files-delete.png", "files", "dark"),
+    "files-copy": ("files-copy.png", "files", "dark"),
+    "files-info": ("files-info.png", "files", "dark"),
+    "files-info-folder": ("files-info-folder.png", "files", "dark"),
+    "files-new": ("files-new.png", "files", "dark"),
+    "files-name": ("files-name.png", "files", "dark"),
+    "files-nocard": ("files-nocard.png", "files", "dark"),
+    "files-paged": ("files-paged.png", "files", "dark"),
+    "files-conf": ("files-conf.png", "files", "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
@@ -378,6 +294,12 @@ SCREENS = {
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # PANEL: the language, the theme and the knob.
     "setup-application": ("setup-application.png", "setup", "dark"),
+    # PANEL with Screen rotation stored at 180 and the bench ARMED: the
+    # row without keys.
+    "setup-rotation": ("setup-rotation.png", "setup", "dark"),
+    # PANEL scrolled to Time zone, stored at LOS ANGELES, its longest
+    # option.
+    "setup-time-zone": ("setup-time-zone.png", "setup", "dark"),
     # SD CARD: AUTO LOGS and USER LOGS, AUTO LOG FOLDER and USER LOG
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
@@ -389,6 +311,17 @@ SCREENS = {
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
+    # The keypad of 0x40 CH1's shunt, 44.4mOhm typed.
+    "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
+    # Values inside the range the steps never reach, refused with the
+    # reason in place of the range: a 3mOhm shunt, GPIO 5 for Sensor SDA,
+    # and PD mini RX's GPIO 9 for PD mini TX.
+    "setup-sensors-why": ("setup-sensors-why.png", "setup", "dark"),
+    "setup-sda-why": ("setup-sda-why.png", "setup", "dark"),
+    # The same keypad with 1 typed: the range in its header and the entry
+    # name the pin word first, "GPIO -1 to 47" and "GPIO 1".
+    "setup-sda-keypad": ("setup-sda-keypad.png", "setup", "dark"),
+    "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
     # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
     # the mark on Sensor SDA and Sensor SCL.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
@@ -441,7 +374,7 @@ SCREENS = {
     # The protocol list open over the board.
     "picker-protocol": ("picker-protocol.png", "picker", "dark"),
     # OFF picked, GP13 the programming port's, 8 pins over 6 protocols:
-    # the tallest IN USE table, in its 20 px rows.
+    # the tallest IN USE table, in its 20px rows.
     "picker-off": ("picker-off.png", "picker", "dark"),
     # The same interfaces on PICK A PIN: held, and named under IN USE after
     # the programming port.
@@ -470,6 +403,8 @@ SCREENS = {
     "balance-rig": ("balance-rig.png", "balance", "dark"),
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
+    # The blade count's keypad, 5 typed.
+    "balance-keypad": ("balance-keypad.png", "balance", "dark"),
     # WI-FI from LOGS: the radio off with nothing kept; a home
     # network kept whose join failed, the access code off; the gate shut.
     "wifi": ("wifi.png", "wifi", "dark"),
@@ -521,23 +456,7 @@ SCREENS = {
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
                               "dark"),
 }
-INCLUDES = [
-    "shared/gfx/include",
-    "shared/touch/include",
-    "shared/ui/include",
-    "shared/bench/include",
-    "shared/outputs/include",
-    "shared/link/include",
-    "shared/can/include",
-    "shared/logfile/include",
-    "shared/settings/include",
-    "shared/servo/include",
-    "shared/esc/include",
-    "protocols/sbus/include",
-    "protocols/pdmini/include",
-    "protocols/kst/include",
-    "protocols/dshot/include",
-]
+INCLUDES = ui_sources.INCLUDES
 
 
 def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
@@ -587,6 +506,12 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
+    # one, refused with its reason.
+    "motor-settings-gap-idle": (None, "motor", "dark"),
+    "motor-settings-gap-full": (None, "motor", "dark"),
+    # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
+    "setup-tap-why": (None, "setup", "dark"),
     # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and
     # PRECHARGE held, with its own help line.
     "setup-prog-noline": (None, "setup", "dark"),
@@ -648,9 +573,14 @@ FIT_ONLY = {
     # BATTERY's two other verdicts, whose reasons wrap in the right card.
     "battery-healthy":  (None, "battery", "dark"),
     "battery-replace":  (None, "battery", "dark"),
-    # SUPPLY's MODE card after either trip, its line wrapped in the card.
+    # SUPPLY's MODE card after either trip, its line under the label.
     "supply-trip-i":    (None, "supply", "dark"),
     "supply-trip-v":    (None, "supply", "dark"),
+    # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
+    # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
+    "supply-table":     (None, "supply", "dark"),
+    "supply-port":      (None, "supply", "dark"),
+    "supply-offline-settings": (None, "supply", "dark"),
     # The SERVO PROGRAMMER's notes turned to their second page, where they
     # take more rows than there are above the message.
     "servo-kst-file-locked-p2": (None, "servo", "dark"),
@@ -668,7 +598,29 @@ FIT_ONLY = {
     "servo-test-done":  (None, "servo", "dark"),
     "servo-limrun-card": (None, "servo", "dark"),
     "servo-limrun-settings": (None, "servo", "dark"),
+    # FILES' other states: the bench's folders, a pane reading, an empty
+    # folder and one of a hidden file only, no USER LOG FOLDER, each
+    # refusal of the message line, a folder made, RENAME's keyboard and the
+    # question of a folder.
+    "files-bench": (None, "files", "dark"),
+    "files-reading": (None, "files", "dark"),
+    "files-empty": (None, "files", "dark"),
+    "files-hidden": (None, "files", "dark"),
+    "files-nofolder": (None, "files", "dark"),
+    "files-exists": (None, "files", "dark"),
+    "files-busy": (None, "files", "dark"),
+    "files-fixed": (None, "files", "dark"),
+    "files-locked": (None, "files", "dark"),
+    "files-made": (None, "files", "dark"),
+    "files-rename": (None, "files", "dark"),
+    "files-delete-folder": (None, "files", "dark"),
 }
+
+# Every cat pose but the first, on PICK A PIN posed as "picker" is:
+# picker-cat-1 and on, in tools/gen_cats.py's POSES order.  The first is the
+# one every view draws where it fits.
+FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
+                 for i in range(1, len(gen_cats.POSES))})
 
 # Views that open a drop-down, a chip's help bubble or the alert band over
 # the screen: the list, the bubble or the band covers the labels under it by

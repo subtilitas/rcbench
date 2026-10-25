@@ -1,5 +1,6 @@
-/*
- * The panel asking GitHub for its newest release, and fetching it.
+/**
+ * @file wa_fetch.h
+ * @brief The panel asking GitHub for its newest release, and fetching it.
  *
  * Two jobs, each on the home network the panel keeps (wa_session.h,
  * WA_MODE_FETCH: no page, no name), each with the radio on only for its
@@ -170,6 +171,25 @@ void wa_fetch_init(wa_fetch_t *f, fw_version_t running);
 /** The gate as wa_gate() takes it, plus the panel's own two. */
 wa_why_t wa_fetch_gate(bool armed, bool supply, bool run, bool coproc,
                        bool installing);
+
+/**
+ * @brief The gate a job's start takes, past the bench's own.
+ *
+ * The radio goes off without waiting for the last job's task: a name
+ * lookup under way when the radio goes ends only when lwIP gives up on it,
+ * up to about 7s per DNS (Domain Name System) server.  Until that task has
+ * ended no job starts, so it never runs beside the next job's; a session
+ * (WI-FI) starts without waiting for it.
+ *
+ * @param gate       the bench's gate (wa_fetch_gate()), or WA_WHY_NONE
+ * @param taken      an image is taken for the install
+ * @param task_alive the last job's task has not ended
+ * @param other      a session other than WA_MODE_FETCH asks for the radio
+ * @return @p gate when it is set; WA_WHY_BUSY for any of the other three;
+ *         WA_WHY_NONE otherwise
+ */
+wa_why_t wa_fetch_start_gate(wa_why_t gate, bool taken, bool task_alive,
+                             bool other);
 
 /**
  * Start @p job at @p now_ms for release @p want (DOWNLOAD; ignored by

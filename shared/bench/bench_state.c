@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The decoding, peaks and totals of the bench readings, see
+ *        bench_state.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -11,16 +15,31 @@
 
 /* The scales of the BENCH page registers, matching link_pages.h.  A scale
  * that disagrees with the wire produces a wrong reading, not a crash. */
-#define CV_PER_V   100.0f   /* 10 mV steps  */
-#define CA_PER_A   100.0f   /* 10 mA steps  */
-#define DC_PER_C    10.0f   /* 0.1 C steps  */
-#define DWH_PER_WH  10.0f   /* 0.1 Wh steps */
+#define CV_PER_V   100.0f   /**< 10mV steps */
+#define CA_PER_A   100.0f   /**< 10mA steps */
+#define DC_PER_C    10.0f   /**< 0.1C steps */
+#define DWH_PER_WH  10.0f   /**< 0.1Wh steps */
 
+/**
+ * @brief Decodes an unsigned register value into units.
+ *
+ * @param v        The raw register value.
+ * @param per_unit Register steps per unit.
+ * @return v divided by per_unit.
+ */
 static float from_u16(uint16_t v, float per_unit)
 {
     return (float)v / per_unit;
 }
 
+/**
+ * @brief Encodes a non-negative value into an unsigned register.
+ *
+ * @param v        The value in units.
+ * @param per_unit Register steps per unit.
+ * @return The rounded register value, 0 for a value not above zero and 65535 at
+ *         the top.
+ */
 static uint16_t to_u16(float v, float per_unit)
 {
     if (!(v > 0.0f)) {
@@ -30,11 +49,26 @@ static uint16_t to_u16(float v, float per_unit)
     return (scaled >= 65535.0f) ? 65535u : (uint16_t)scaled;
 }
 
+/**
+ * @brief Decodes a signed register value into units.
+ *
+ * @param v        The raw register value, two's complement.
+ * @param per_unit Register steps per unit.
+ * @return The signed value divided by per_unit.
+ */
 static float from_i16(uint16_t v, float per_unit)
 {
     return (float)(int16_t)v / per_unit;
 }
 
+/**
+ * @brief Encodes a signed value into a register, rounded and clamped to
+ *         int16_t.
+ *
+ * @param v        The value in units.
+ * @param per_unit Register steps per unit.
+ * @return The register value as two's complement.
+ */
 static uint16_t to_i16(float v, float per_unit)
 {
     float scaled = v * per_unit;
@@ -136,7 +170,7 @@ void bench_state_reset_peaks(bench_state_t *b)
         return;
     }
     /* The minimum resets to the current reading, not to zero: a sag floor
-     * of 0 V reads as a collapsed pack. */
+     * of 0V reads as a collapsed pack. */
     b->voltage_min = b->voltage;
     b->current_max = b->current;
     b->power_max   = b->power;
@@ -227,13 +261,30 @@ void bench_state_set_esc(bench_state_t *b, bool v_ok, float volts,
     b->clipped = clipped;
 }
 
+/**
+ * @brief True when the readings come from the INA228 (LINK_BN_SENSED).
+ *
+ * @param b The state to test.
+ *
+ * @return true when LINK_BN_SENSED is set in the flags of b.
+ */
 static bool sensed(const bench_state_t *b)
 {
     return (b->flags & (uint16_t)LINK_BN_SENSED) != 0u;
 }
 
-/* One of the ESC's figures: from SENSE while the INA228 is the source,
- * from BENCH's own register and flag otherwise. */
+/**
+ * @brief One of the ESC's figures: from SENSE while the INA228 is the source,
+ *        from BENCH's own register and flag otherwise.
+ *
+ * @param b         The state to read.
+ * @param esc_bit   The valid bit in esc_ok.
+ * @param esc       The SENSE value.
+ * @param bench_bit The valid bit in flags.
+ * @param bench     The BENCH value.
+ * @param out       Receives the value; untouched when false.
+ * @return true when the figure is available.
+ */
 static bool esc_figure(const bench_state_t *b, uint8_t esc_bit, float esc,
                        uint16_t bench_bit, float bench, float *out)
 {
@@ -271,6 +322,16 @@ bool bench_state_esc_current(const bench_state_t *b, float *out)
                          LINK_BN_CURRENT_OK, b->current, out);
 }
 
+/**
+ * @brief One INA228 figure, valid only while the INA228 is the source and bit
+ *         is set.
+ *
+ * @param b   The state to read.
+ * @param bit The valid bit in flags.
+ * @param v   The value.
+ * @param out Receives the value; untouched when false.
+ * @return true when the figure is valid.
+ */
 static bool ina_figure(const bench_state_t *b, uint16_t bit, float v,
                        float *out)
 {
@@ -308,7 +369,7 @@ void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
             && mah >= BENCH_CHARGE_MAH_MAX - BENCH_FINE_MAH_TOL)) {
         b->charge_mah = mah;
     }
-    /* Nor more than 65535 mAh or 6553.5 Wh: past that BENCH reads its
+    /* Nor more than 65535mAh or 6553.5Wh: past that BENCH reads its
      * ceiling, and a finer figure at or above it is the only one. */
     const float coarse_wh = b->energy_wh;
     if (fabsf(wh - coarse_wh) <= BENCH_FINE_WH_TOL

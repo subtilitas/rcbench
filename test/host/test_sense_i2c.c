@@ -32,7 +32,7 @@ i2c_inst_t fake_i2c[2];
 #define SCL 15u
 
 /* GP14 and GP15 as the bench found them: a probe lead on each, no part
- * and no pull-up; the pads raise them in 4 us. */
+ * and no pull-up; the pads raise them in 4us. */
 static void unwired(void)
 {
     memset(fake_pins, 0, sizeof(fake_pins));

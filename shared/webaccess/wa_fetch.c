@@ -1,6 +1,7 @@
-/*
- * wa_fetch.h says what the jobs do; fw_release.h how strictly answers are
- * read.
+/**
+ * @file wa_fetch.c
+ * @brief wa_fetch.h says what the jobs do; fw_release.h how strictly answers
+ *        are read.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,6 +36,15 @@ wa_why_t wa_fetch_gate(bool armed, bool supply, bool run, bool coproc,
         return WA_WHY_INSTALL;
     }
     return coproc ? WA_WHY_COPROC : WA_WHY_NONE;
+}
+
+wa_why_t wa_fetch_start_gate(wa_why_t gate, bool taken, bool task_alive,
+                             bool other)
+{
+    if (gate != WA_WHY_NONE) {
+        return gate;
+    }
+    return (taken || task_alive || other) ? WA_WHY_BUSY : WA_WHY_NONE;
 }
 
 bool wa_fetch_busy(const wa_fetch_t *f)

@@ -164,7 +164,7 @@ TEST_CASE(an_arm_asked_for_during_the_keep_stops_it_before_the_next_sector)
     }
     /*
      * ARM held to the end of its two seconds.  From the request on the
-     * policy is arming, before the bank is: the settle's 100 ms are where
+     * policy is arming, before the bank is: the settle's 100ms are where
      * the far end comes to trust the heartbeat, and a stall there would cost
      * the arm.  Not one more sector from here.
      */

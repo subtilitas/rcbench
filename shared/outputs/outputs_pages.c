@@ -1,6 +1,8 @@
-/*
- * The link's output pages, expressed as bank operations.  See
- * outputs_pages.h.
+/**
+ * @file
+ * @brief The link's output pages, expressed as bank operations.
+ *
+ * See outputs_pages.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -15,9 +17,13 @@
 #include "link_pages.h"
 #include "out_pwm_map.h"
 
-/*
- * The wire's driver numbers are a contract, so they are mapped rather than
- * cast: a reordered bank enum leaves this correct.
+/**
+ * @brief The wire's driver numbers are a contract, so they are mapped rather
+ *        than cast: a reordered bank enum leaves this correct.
+ *
+ * @param wire The LINK_DRIVER_* value from the wire.
+ * @return The bank driver, OUT_DRIVER_NONE for a number this build does not
+ *         know.
  */
 static out_driver_t driver_of(uint16_t wire)
 {
@@ -43,6 +49,12 @@ uint16_t link_driver_of(out_driver_t d)
     }
 }
 
+/**
+ * @brief Whether a wire driver number is one this build knows.
+ *
+ * @param wire The LINK_DRIVER_* value from the wire.
+ * @return true for LINK_DRIVER_NONE up to LINK_DRIVER_DSHOT_BIDIR, false above.
+ */
 static bool known_driver(uint16_t wire)
 {
     return wire <= LINK_DRIVER_DSHOT_BIDIR;
@@ -145,7 +157,8 @@ bool outputs_chan_cfg_set_throttle_range(uint16_t *regs, uint16_t min_us,
                                          uint16_t max_us)
 {
     if (regs == NULL || min_us < LINK_CC_FLOOR_US
-        || max_us > LINK_CC_CEILING_US || min_us >= max_us) {
+        || max_us > LINK_CC_CEILING_US
+        || (unsigned)max_us < (unsigned)min_us + LINK_CC_THROTTLE_GAP_US) {
         return false;
     }
     for (unsigned c = 0; c < LINK_OUT_CHANNELS; ++c) {
@@ -179,7 +192,15 @@ void outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs)
 
 /* ---------------------------------------------------------------- SERVO */
 
-/* Whether the SERVO page's rate, when not 0, is the one slot @p i runs at. */
+/**
+ * @brief Whether the SERVO page's rate, when not 0, is the one slot @p i runs
+ *        at.
+ *
+ * @param o The bank.
+ * @param i Slot index, 0 to OUT_MAX_SLOTS - 1.
+ * @return true for a PWM slot whose first channel is a surface, false
+ *         otherwise.
+ */
 static bool servo_rate_reaches(const outputs_t *o, unsigned i)
 {
     const out_slot_t *sl = &o->slot[i];
@@ -237,8 +258,10 @@ uint8_t outputs_servo_rate_check(const outputs_t *o, uint16_t hz)
     return 0u;
 }
 
-/* The bank a page write would leave, judged on a copy: the bank itself is
- * what drives, and a refused write must leave it as it was.  Static rather
+/** @brief The bank a page write would leave, judged on a copy: the bank itself
+ *        is what drives, and a refused write must leave it as it was.
+ *
+ * Static rather
  * than on the stack, which on the IOmcu is the link task's. */
 static outputs_t s_trial;
 
@@ -271,8 +294,17 @@ uint8_t outputs_slots_rate_check(const outputs_t *o, const uint16_t *slots,
     return outputs_servo_rate_check(&s_trial, servo_hz);
 }
 
-/* Whether channel @p ch's longer endpoint fits a frame of @p hz.  The bank
- * keeps the pair straightened, so max_us is the longer one. */
+/**
+ * @brief Whether channel @p ch's longer endpoint fits a frame of @p hz.
+ *
+ * The bank keeps the pair straightened, so max_us is the longer one.
+ *
+ * @param o The bank.
+ * @param ch Channel index.
+ * @param hz Frame rate in Hz.
+ * @return true when @p ch is below OUT_MAX_CHANNELS and its max_us is at most
+ *         out_pwm_pulse_max(@p hz).
+ */
 static bool pulse_fits(const outputs_t *o, unsigned ch, uint16_t hz)
 {
     return ch < OUT_MAX_CHANNELS

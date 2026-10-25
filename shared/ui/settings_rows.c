@@ -1,5 +1,6 @@
-/*
- * SETUP's list rows: a category's settings in schema order, a heading
+/**
+ * @file settings_rows.c
+ * @brief SETUP's list rows: a category's settings in schema order, a heading
  * above each section, a part's heading above its rows on SENSORS, and the
  * category's strings after its settings.  SENSORS lists the channel rows
  * of a fitted part only (sensors_rows.h).
@@ -13,8 +14,8 @@
 #include "settings_screen.h"
 #include "settings_sensors.h"
 
-/* The settings a category holds, at most: SENSORS' 40, 4 FITTED rows and
- * 3 rows for each of 12 channels. */
+/** @brief The settings a category holds, at most: SENSORS' 40, 4 FITTED
+ *         rows and 3 rows for each of 12 channels. */
 #define MAX_ROWS 40
 
 /*

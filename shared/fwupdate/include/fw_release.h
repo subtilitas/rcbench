@@ -1,5 +1,6 @@
-/*
- * What GitHub says about the panel's releases, read strictly.
+/**
+ * @file fw_release.h
+ * @brief What GitHub says about the panel's releases, read strictly.
  *
  * The panel asks GitHub two things over HTTPS (HTTP, hypertext transfer
  * protocol, over TLS, transport layer security).  Which release is the
@@ -19,15 +20,18 @@
  *            line: GitHub's order is by date, not by version.
  *
  * The panel's release line: 0.22 is the last release for the ESP32-S3
- * panel, and later releases are for the ESP32-P4 panel.  A check on either
- * channel offers a release of FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR only, a
- * 0.22.x patch release newer than the running build; 0.23.0 and later are
- * never offered.  Where STABLE's one tag is past the line and newer than
- * the running build, the check reads the release list once more for the
+ * panel, and later releases are for the ESP32-P4 panel.  The ESP32-P4
+ * panel's line holds every release: a check offers any release newer than
+ * the running build (FW_REL_LINE_CAPPED 0).  Held to the ESP32-S3 panel's
+ * line (fw_release_set_line_capped()), a check on either channel offers a
+ * release of FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR only, a 0.22.x patch
+ * release newer than the running build; 0.23.0 and later are never
+ * offered.  Where STABLE's one tag is past the line and newer than the
+ * running build, the check reads the release list once more for the
  * line's newest.
  *
  * And, for a download, two files of that release: SHA256SUMS and
- * rcbench-panel-vX.Y.Z.bin, each a redirect from github.com to a
+ * rcbench-panel-p4-vX.Y.Z.bin, each a redirect from github.com to a
  * githubusercontent.com host and then the file.
  *
  * Every piece of an answer is held to a fixed form here, before anything
@@ -91,19 +95,28 @@ extern "C" {
 
 /**
  * @name The panel's release line
- * @brief MAJOR and MINOR of the releases a check offers: 0.22, the last
- *        release line for the ESP32-S3 panel.
+ * @brief MAJOR and MINOR of the releases a check held to the line offers:
+ *        0.22, the last release line for the ESP32-S3 panel.
  * @{
  */
-#define FW_REL_LINE_MAJOR  0u
-#define FW_REL_LINE_MINOR  22u
+#define FW_REL_LINE_MAJOR  0u    /**< the line's MAJOR */
+#define FW_REL_LINE_MINOR  22u   /**< the line's MINOR */
 /** @} */
+
+/**
+ * @brief Whether a check is held to FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR at
+ *        start: 0 for the ESP32-P4 panel, which is offered every release
+ *        newer than its build; 1 for the ESP32-S3 panel's 0.22 line.
+ */
+#ifndef FW_REL_LINE_CAPPED
+#define FW_REL_LINE_CAPPED 0
+#endif
 
 /** "v65535.65535.65535": the longest tag. */
 #define FW_REL_TAG_MAX     18u
 /** "65535.65535.65535" and its terminator. */
 #define FW_REL_VER_TEXT    18u
-/** "rcbench-panel-v65535.65535.65535.bin" and its terminator. */
+/** "rcbench-panel-p4-v65535.65535.65535.bin" and its terminator. */
 #define FW_REL_NAME_MAX    40u
 /** A redirect's Location, in bytes; a longer one is refused. */
 #define FW_REL_URL_MAX     2048u
@@ -223,15 +236,15 @@ typedef struct {
     uint8_t      kn;      /**< key bytes kept                            */
     char         key[8];  /**< "tag_name" is the longest key read         */
     bool         klong;   /**< the key is longer, or escaped              */
-    bool         ended;
+    bool         ended;   /**< the scan has ended; err holds why          */
     uint8_t      tn;      /**< tag bytes kept                            */
-    char         tag[FW_REL_TAG_MAX];
+    char         tag[FW_REL_TAG_MAX]; /**< the tag under way's bytes       */
     uint8_t      dn;      /**< draft's value bytes, up to 255             */
     char         dval[5]; /**< "false" is the longest kept                */
     bool         have_tag;   /**< the release under way's               */
-    bool         have_draft;
-    bool         draft;
-    bool         have_best;
+    bool         have_draft; /**< the release under way's "draft" was read */
+    bool         draft;      /**< the release under way is a draft       */
+    bool         have_best;  /**< best holds a release                   */
     uint8_t      releases;   /**< read whole                             */
     fw_version_t cur;     /**< the release under way's tag                */
     fw_version_t best;    /**< the highest no-draft release so far        */
@@ -272,10 +285,27 @@ bool fw_release_scan_line(const fw_rel_scan_t *s, fw_version_t *out);
 /**
  * @brief Whether a version is of the panel's release line.
  * @param v the version
- * @return true for MAJOR FW_REL_LINE_MAJOR and MINOR FW_REL_LINE_MINOR,
- *         any PATCH
+ * @return true for every version while the line is not capped
+ *         (fw_release_line_capped()); once capped, true for MAJOR
+ *         FW_REL_LINE_MAJOR and MINOR FW_REL_LINE_MINOR, any PATCH
  */
 bool fw_release_in_line(fw_version_t v);
+
+/**
+ * @brief Whether the panel's release line is capped at
+ *        FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR.
+ * @return FW_REL_LINE_CAPPED until fw_release_set_line_capped() sets it
+ */
+bool fw_release_line_capped(void);
+
+/**
+ * @brief Caps the panel's release line at
+ *        FW_REL_LINE_MAJOR.FW_REL_LINE_MINOR, or lifts the cap.  The panel
+ *        keeps FW_REL_LINE_CAPPED; the host suite holds both lines.
+ * @param capped true for the ESP32-S3 panel's 0.22 line, false for every
+ *               release
+ */
+void fw_release_set_line_capped(bool capped);
 
 /**
  * @brief Whether a release is offered to the panel.
@@ -296,7 +326,16 @@ bool fw_release_offered(fw_version_t found, fw_version_t running,
 /** "0.20.0" into @p out of FW_REL_VER_TEXT bytes. */
 void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT]);
 
-/** "rcbench-panel-v0.20.0.bin" into @p out of FW_REL_NAME_MAX bytes. */
+/**
+ * @brief The file name of a release's panel image.
+ *
+ * Writes "rcbench-panel-p4-v0.20.0.bin" for version 0.20.0.  The longest
+ * name, for 65535.65535.65535, fills FW_REL_NAME_MAX bytes with its
+ * terminator.
+ *
+ * @param v   Version of the release.
+ * @param out Receives the name, terminated.
+ */
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX]);
 
 /**

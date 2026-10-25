@@ -1,5 +1,8 @@
-/*
- * A store record's configuration by version.  See out_store_rec.h.
+/**
+ * @file
+ * @brief A store record's configuration by version.
+ *
+ * See out_store_rec.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,7 +19,7 @@
 #include "supply_page.h"
 #include "tone_page.h"
 
-/* Each version appends: its size is where the next version's field
+/** @brief Each version appends: its size is where the next version's field
  * starts. */
 _Static_assert(offsetof(out_store_t, supply)
                == (LINK_OS_COUNT + LINK_CC_COUNT) * sizeof(uint16_t),
@@ -93,15 +96,27 @@ size_t out_store_rec_size(uint16_t version)
     return (cfg == 0u) ? 0u : sizeof(out_store_hdr_t) + cfg;
 }
 
-/* The checksum: from the version to the record's end. */
+/**
+ * @brief The checksum: from the version to the record's end.
+ *
+ * @param rec The record, at least @p size bytes.
+ * @param size Record size in bytes, from out_store_rec_size().
+ * @return CRC-16 over the bytes from the version field to @p size.
+ */
 static uint16_t rec_crc(const uint8_t *rec, size_t size)
 {
     const size_t at = offsetof(out_store_hdr_t, version);
     return link_crc(LINK_CRC_INIT, rec + at, size - at);
 }
 
-/* The 0 bits from the checksum to the record's end: everything but the
- * magic and the count itself. */
+/**
+ * @brief The 0 bits from the checksum to the record's end: everything but the
+ *        magic and the count itself.
+ *
+ * @param rec The record, at least @p size bytes.
+ * @param size Record size in bytes, from out_store_rec_size().
+ * @return Number of 0 bits in the bytes from the checksum field to @p size.
+ */
 static uint32_t rec_zeros(const uint8_t *rec, size_t size)
 {
     uint32_t zeros = 0u;

@@ -46,7 +46,7 @@ function define(source: string, name: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-/** Millivolts as the text writes them: "0.5 V" in English, "0,5 V" in German. */
+/** Millivolts as the text writes them: "0.5V" in English, "0,5V" in German. */
 const volts = (mv: number, lang: 'en' | 'de'): string => {
   const v = String(mv / 1000);
   return `${lang === 'de' ? v.replace('.', ',') : v} V`;
@@ -165,9 +165,15 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   assert.match(help('stick').de, new RegExp(`; ${runs[1]} der ${runs[2]} ESC-Profile laufen\\.`));
 
   // servo, German: the controls carry the labels of the German panel.
-  const de = read('shared/ui/ui_text_de.c');
-  const label = (key: string): string => new RegExp(`\\[${key}\\]\\s*=\\s*"([^"]+)"`).exec(de)![1]!;
-  const controls = ['TX_SV_ROW_TRIM', 'TX_SV_ROW_TRAVEL', 'TX_SV_ROW_REVERSE'].map(label);
+  // The German of a screen string: an entry of the one text table, its English then its German, or, in a
+  // release before that table, an entry of the German table.
+  const table = tree.read('shared/text/include/ui_text.def');
+  const label = table !== null
+    ? (key: string): string =>
+      new RegExp(`UI_TEXT\\(${key},\\s*\\d+,\\s*"[^"]*",\\s*"([^"]+)"\\)`).exec(table)![1]!
+    : (key: string): string =>
+      new RegExp(`\\[TX_${key}\\]\\s*=\\s*"([^"]+)"`).exec(read('shared/ui/ui_text_de.c'))![1]!;
+  const controls = ['SV_ROW_TRIM', 'SV_ROW_TRAVEL', 'SV_ROW_REVERSE'].map(label);
   assert.deepEqual(controls, ['TRIMMUNG', 'WEG', 'UMKEHREN']);
   assert.match(help('servo').de, new RegExp(`Pulsbreite, ${controls[0]}, ${controls[1]} und ${controls[2]},`));
 });

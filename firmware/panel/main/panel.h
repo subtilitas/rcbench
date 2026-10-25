@@ -1,7 +1,9 @@
-/*
- * What the panel's files share: firmware/panel/main/main.c and the files
- * cut from it.  One section per file, each holding what that file defines
- * and another file uses.  A file's own state stays static in that file.
+/**
+ * @file panel.h
+ * @brief What the panel's files share: firmware/panel/main/main.c and the
+ *        files cut from it.  One section per file, each holding what that
+ *        file defines and another file uses.  A file's own state stays static
+ *        in that file.
  *
  * Nothing in shared/ includes this header.
  *
@@ -29,6 +31,7 @@
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
+#include "files_screen.h"
 #include "hitec_rx_link.h"
 #include "kst_link.h"
 #include "kst_prog.h"
@@ -197,6 +200,17 @@ static inline void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
  * slot holds one alert; a later one replaces it.  Returns its number. */
 uint32_t control_alert_numbered(const char *text);
 
+/**
+ * @brief The canvas the next frame is drawn on (display_canvas()), after
+ *        what Screen rotation asks of the UI: a whole repaint when the
+ *        canvas changed between a logical buffer and a frame buffer, and
+ *        the band's alert when 180° fell back to NORMAL.  Every loop that
+ *        renders takes its canvas here, on the task that flips
+ *        (panel_frame.c).
+ * @return the canvas
+ */
+gfx_canvas_t *panel_canvas(void);
+
 /* Take back alert number @p gen, whose cause is over: one not yet taken
  * by a frame is dropped, and the last one a frame took is cleared from the
  * band if it is still showing (ui_router_withdraw_alert()).  An older
@@ -302,6 +316,11 @@ extern atomic_bool   s_servo_pins_known;
 /* For the SERVO screen's runs: the SENSE page holds the encoder enabled. */
 extern atomic_bool   s_enc_held;
 
+/* ----------------------------------------------------------- panel_files.c */
+
+/** @brief FILES' way to the card: its requests run on the task cardjob. */
+extern const files_io_t k_files_io;
+
 /* ------------------------------------------------------------ panel_card.c */
 
 /* Read once at start-up, from bring_up(). */
@@ -376,6 +395,26 @@ void log_set_folder(log_folder_t kind, const char *dir);
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 
 /**
+ * @brief Whether the logger may write a fault log line now: one queued in
+ *        s_note_q, or under way.  The file manager's bench reads it
+ *        (fm_bench_t.fault_busy).
+ * @return true while a line waits or is written
+ */
+bool log_fault_busy(void);
+
+/**
+ * @brief Take the fault log's lock, which the logger holds across each
+ *        line's open, write and close.  The file manager holds it across an
+ *        unlink and a rename: FatFs runs without its file lock
+ *        (CONFIG_FATFS_FS_LOCK 0) and removes a file open for append.
+ *        Neither holder takes another lock under it.
+ */
+void log_fault_lock(void);
+
+/** @brief Give the fault log's lock back. */
+void log_fault_unlock(void);
+
+/**
  * @brief One sample on its way to the card, filled by the control task.
  *
  * It carries which run it belongs to, because that is the only thing that
@@ -395,16 +434,18 @@ typedef struct {
     /** @brief The supply's reading and the run's totals of it, on a SERVO
      *         run's row that carries the sample; all 0 on any other row. */
     log_rail_t     rail;
+    /** @brief The pulse and angle, on the same rows as rail. */
+    log_servo_t    servo;
 } log_row_t;
 
 /*
- * Sixty-four rows is 3.2 s of run at PANEL_SAMPLE_HZ, against the 250 ms an
+ * Sixty-four rows is 3.2s of run at PANEL_SAMPLE_HZ, against the 250ms an
  * SD card may take over one write: a card that pauses costs no rows.
  */
 #define LOG_Q_LEN      64
 
 /* The report link_report() writes to the card, and how many may be in
- * flight.  The report is made every 5 s at its fastest. */
+ * flight.  The report is made every 5s at its fastest. */
 #define LOG_NOTE_MAX   208
 #define LOG_NOTE_Q_LEN 4
 
@@ -418,6 +459,8 @@ typedef struct {
 
 extern QueueHandle_t s_log_q;
 extern QueueHandle_t s_note_q;
+/** @brief The fault log's lock (log_fault_lock()). */
+extern SemaphoreHandle_t s_note_mx;
 extern QueueHandle_t s_test_q;
 /* The run being recorded, or 0: the control task's level, which the logger
  * follows. */
@@ -497,7 +540,7 @@ static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
 extern uint16_t s_arm_value;
 
 /*
- * ARM and THROTTLE, the write every 50 ms poll and every disarm makes.
+ * ARM and THROTTLE, the write every 50ms poll and every disarm makes.
  *
  * Two registers rather than the three the frame that arms carries.  This
  * write keeps a running bench running and stops a stopping one, and the
@@ -528,12 +571,12 @@ void endpoints_service(bool far_disarmed);
  *
  * An arm waits for this before CLEAR is written.  The heartbeat is withheld
  * while a stop is latched, and after it resumes the far end's monitor needs
- * five edges, 100 to 125 ms at a 5 ms pass and longer on a slower one: a
+ * five edges, 100 to 125ms at a 5ms pass and longer on a slower one: a
  * fixed wait is right for one pass period and refused at the next.  One
  * register, one frame each way.
  *
  * @p answered is false when nobody answered.  That exchange has then waited
- * LINK_HOST_TIMEOUT_MS (1000 ms), past the arm's whole bound, and it is the
+ * LINK_HOST_TIMEOUT_MS (1000ms), past the arm's whole bound, and it is the
  * link that is gone and not the line that is distrusted.
  */
 static inline bool far_line_trusted(bool *answered)
@@ -556,7 +599,7 @@ static inline bool control_clear_failsafe(link_msg_t *reply)
 }
 
 /* What the panel knows about a link that stopped; the link report, every
- * 5 s while the link is down and every 60 s while it is up. */
+ * 5s while the link is down and every 60s while it is up. */
 void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
@@ -724,7 +767,7 @@ static inline uint16_t panel_throttle_ramp(void)
 }
 
 /*
- * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
+ * The bench page is polled every 50ms, so a sample is 1/20s of plot.  The
  * motor screen scales its time axis by the same number; the two have to
  * agree or the axis lies about how long ago something happened.
  */
@@ -827,6 +870,18 @@ extern atomic_uint s_tq_published;
 extern uint32_t    s_lost_notice_seq;
 extern atomic_uint s_loss_gen;
 extern atomic_uint s_arm_ack;
+/** @brief The render loop's progress, for the control task's watchdog; see
+ *         frame_watch.h and main.c. */
+extern atomic_uint s_render_progress;
+
+/**
+ * @brief The render task made progress: a pass of its loop, or one card read
+ *        inside a pass.  Render task only.
+ */
+static inline void render_progress(void)
+{
+    atomic_fetch_add(&s_render_progress, 1u);
+}
 extern uint32_t    s_arm_take_gen;
 extern uint32_t    s_arm_take_drv;
 extern arm_watch_t s_arm_watch;
@@ -908,6 +963,10 @@ extern uint32_t       s_totals_ms;
 extern log_rail_t     s_rail;
 /** @brief The run's totals of s_rail since the arm.  Control task only. */
 extern bench_totals_t s_rail_totals;
+/** @brief The SERVO screen's pulse and angle for a SERVO run's rows,
+ *         packed (log_servo_pack()): stored by the render side each frame,
+ *         read by the control task. */
+extern atomic_uint    s_servo_log;
 void arm_watch_service(bool link_up);
 /* The latched stop, and the act the arming policy asks for. */
 void service_arming(bool link_up);

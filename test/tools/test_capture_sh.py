@@ -122,7 +122,7 @@ def test_a_channel_name_with_digits_is_not_a_level(tmp_path):
 
 def test_4_million_samples_are_checked_within_20_seconds(tmp_path):
     """The check is linear in the samples: 4 M samples of one channel take
-    about 1 s."""
+    about 1s."""
     n = 4_000_000
     err = run(tmp_path, listing([("D0", "1" * n)]), timeout=20)
     assert never_changed(err) == {"D0"}

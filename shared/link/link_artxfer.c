@@ -1,5 +1,8 @@
-/*
- * Assembling a board drawing. See link_artxfer.h.
+/**
+ * @file
+ * @brief Assembling a board drawing.
+ *
+ * See link_artxfer.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -11,7 +14,12 @@
 
 #include "link_crc.h"
 
-/* How many blocks a payload of this many bytes takes, rounded up. */
+/**
+ * @brief How many blocks a payload of this many bytes takes, rounded up.
+ *
+ * @param bytes Payload length in bytes.
+ * @return Blocks of LINK_AD_BYTES needed for bytes.
+ */
 static uint32_t blocks_for(uint32_t bytes)
 {
     return (bytes + LINK_AD_BYTES - 1u) / LINK_AD_BYTES;

@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief Writes a run as CSV rows to a sink, see log_writer.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -36,7 +39,12 @@ enum {
     RAIL_E,         /**< energy */
 };
 
-/* The last column of both files: what produced the row's values. */
+/**
+ * @brief The last column of both files: what produced the row's values.
+ *
+ * @param modelled true when the row's values are modelled.
+ * @return LOG_WRITER_SRC_MODEL or LOG_WRITER_SRC_MEASURED.
+ */
 static const char *source_word(bool modelled)
 {
     return modelled ? LOG_WRITER_SRC_MODEL : LOG_WRITER_SRC_MEASURED;
@@ -48,13 +56,20 @@ static const char *const k_supply_header =
     "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"
     "charge (mAh);energy (Wh);source\n";
 
-/*
- * A short write latches the writer, and the bytes the sink took stay in the
- * file: nothing takes them back out of a card.  Nothing is written after
- * them either, a line feed least of all.  The row they start has no line
- * feed, and that is what the reader drops it by (log_reader_row()): a row
- * cut after "95" of "9554" has its fields and a number that parses, and only
- * the missing terminator tells it from a whole row.
+/**
+ * @brief A short write latches the writer, and the bytes the sink took stay in
+ *        the file: nothing takes them back out of a card.
+ *
+ * Nothing is written after them either, a line feed least of all.  The row they
+ * start has no line feed, and that is what the reader drops it by
+ * (log_reader_row()): a row cut after "95" of "9554" has its fields and a
+ * number that parses, and only the missing terminator tells it from a whole
+ * row.
+ *
+ * @param w The writer.
+ * @param s The bytes.
+ * @param n The number of bytes.
+ * @return true when the sink took all n bytes.
  */
 static bool put(log_writer_t *w, const char *s, size_t n)
 {
@@ -80,8 +95,8 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink)
     }
 }
 
-/*
- * Tell the sink to keep what it has been given.
+/**
+ * @brief Tell the sink to keep what it has been given.
  *
  * A writer that has already failed is refused before anything is attempted.
  * The file has a hole in it from the row that failed, and a flush that
@@ -91,6 +106,9 @@ void log_writer_init(log_writer_t *w, const log_sink_t *sink)
  *
  * Nothing to commit is success, not a transaction: on a card an empty commit
  * costs a directory write and buys nothing.
+ *
+ * @param w The writer.
+ * @return true on success or when nothing is pending.
  */
 static bool commit(log_writer_t *w)
 {
@@ -139,7 +157,19 @@ void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols)
     }
 }
 
-bool log_writer_header(log_writer_t *w)
+/** @brief A SERVO run's file: the commanded pulse and the measured angle,
+ *         before source. */
+static const char *const k_servo_cols = "pulse (us);angle (deg);";
+
+/**
+ * @brief The header of a bench file: a motor run's, or with @p servo a
+ *        SERVO run's, which adds k_servo_cols before source.
+ *
+ * @param w     The writer.
+ * @param servo true for a SERVO run's file.
+ * @return true on success; false when a write failed.
+ */
+static bool header(log_writer_t *w, bool servo)
 {
     if (w == NULL || w->header_done) {
         return w != NULL && !w->failed;
@@ -148,8 +178,10 @@ bool log_writer_header(log_writer_t *w)
     if (!put(w, k_head, strlen(k_head))) {
         return false;
     }
+    const char *const tail_servo = servo ? k_servo_cols : "";
     if (!w->by_map) {
         return put(w, k_ch123, strlen(k_ch123))
+               && put(w, tail_servo, strlen(tail_servo))
                && put(w, k_tail, strlen(k_tail));
     }
     static const char *const k_what[3] = { "current (A)", "max (A)",
@@ -165,12 +197,28 @@ bool log_writer_header(log_writer_t *w)
             }
         }
     }
-    return put(w, k_tail, strlen(k_tail));
+    return put(w, tail_servo, strlen(tail_servo))
+           && put(w, k_tail, strlen(k_tail));
 }
 
-/* A reading that is not finite is written as an empty cell, which the reader
- * counts as absent.  "nan" is not a number to the reader, and 0 is a wrong
- * value. */
+bool log_writer_header(log_writer_t *w)
+{
+    return header(w, false);
+}
+
+/**
+ * @brief A reading that is not finite is written as an empty cell, which the
+ *        reader counts as absent.
+ *
+ * "nan" is not a number to the reader, and 0 is a wrong
+ * value.
+ *
+ * @param out      Receives the text.
+ * @param cap      The size of out, in bytes.
+ * @param v        The reading.
+ * @param decimals The digits after the point.
+ * @return The number of characters written; 0 for a value that is not finite.
+ */
 static int fmt(char *out, size_t cap, float v, int decimals)
 {
     if (!isfinite(v)) {
@@ -179,12 +227,20 @@ static int fmt(char *out, size_t cap, float v, int decimals)
     return snprintf(out, cap, "%.*f", decimals, (double)v);
 }
 
-/*
- * The end of every row, whichever kind: the line goes out, the counts move,
- * and the commit comes on rows or on the run's own clock, whichever is first.
- * The clock bound is what holds when rows arrive slower than 20 Hz -- the far
+/**
+ * @brief The end of every row, whichever kind: the line goes out, the counts
+ *        move, and the commit comes on rows or on the run's own clock,
+ *        whichever is first.
+ *
+ * The clock bound is what holds when rows arrive slower than 20Hz -- the far
  * end answering every other poll, say -- where waiting for
  * LOG_WRITER_FLUSH_ROWS would leave more than a second of run at risk.
+ *
+ * @param w    The writer.
+ * @param t_s  The time of the row, in s.
+ * @param line The row text.
+ * @param n    The length of line, in bytes.
+ * @return true when the row is written.
  */
 static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
 {
@@ -202,11 +258,20 @@ static bool finish_row(log_writer_t *w, float t_s, char *line, int n)
     return true;
 }
 
-/*
- * One cell of a row: the separator, then the value if @p present.  False
- * once the row no longer fits, checked before anything is written past what
- * the last cell left: snprintf answers the length it wanted, not the one it
- * had, so an offset taken from it unchecked points past the line.
+/**
+ * @brief One cell of a row: the separator, then the value if @p present.
+ *
+ * False once the row no longer fits, checked before anything is written past
+ * what the last cell left: snprintf answers the length it wanted, not the one
+ * it had, so an offset taken from it unchecked points past the line.
+ *
+ * @param line     The row text.
+ * @param cap      The size of line, in bytes.
+ * @param n        The length of the row so far; updated.
+ * @param present  true when v is written.
+ * @param v        The value.
+ * @param decimals The digits after the point.
+ * @return true when the cell fits.
  */
 static bool cell(char *line, size_t cap, int *n, bool present, float v,
                  int decimals)
@@ -225,6 +290,15 @@ static bool cell(char *line, size_t cap, int *n, bool present, float v,
     return true;
 }
 
+/**
+ * @brief Appends one text cell to a row.
+ *
+ * @param line The row text.
+ * @param cap  The size of line, in bytes.
+ * @param n    The length of the row so far; updated.
+ * @param text The text.
+ * @return true when the cell fits.
+ */
 static bool text_cell(char *line, size_t cap, int *n, const char *text)
 {
     if (*n < 0 || (size_t)*n + 2u >= cap) {
@@ -331,15 +405,17 @@ static bool rail_figure(const log_rail_t *r, unsigned which, float *v)
  * @param b     The bench sample.
  * @param servo true for a SERVO run's row.
  * @param rail  The supply's figures on a SERVO run's row, or NULL.
+ * @param sv    The pulse and angle on a SERVO run's row, or NULL.
  * @return true when the row is written.
  */
 static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
-                      bool servo, const log_rail_t *rail)
+                      bool servo, const log_rail_t *rail,
+                      const log_servo_t *sv)
 {
     if (w == NULL || b == NULL) {
         return false;
     }
-    if (!w->header_done && !log_writer_header(w)) {
+    if (!w->header_done && !header(w, servo)) {
         return false;
     }
 
@@ -355,7 +431,7 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
      * Power carries both halves because it is their product.  Charge and
      * energy carry what the panel counted (bench_state_t.counted): a run
      * with no current to count has no consumption to record, and its record
-     * must not show 0 mAh that nothing counted.
+     * must not show 0mAh that nothing counted.
      */
     /*
      * On a SERVO run's row voltage, current, power, charge and energy are the
@@ -385,7 +461,7 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
              RAIL_E, 2 },
     };
 
-    /* In the writer, not on the stack: 23 cells, every one checked
+    /* In the writer, not on the stack: up to 25 cells, every one checked
      * against the end. */
     char *line = w->line;
     const size_t cap = sizeof(w->line);
@@ -474,6 +550,14 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
                && cell(line, cap, &n, i, max / 1000.0f, 3)
                && cell(line, cap, &n, v, min / 1000.0f, 3);
     }
+    /* A SERVO run's pulse and angle, empty where there is none. */
+    if (servo) {
+        fits = fits
+               && cell(line, cap, &n, sv != NULL && sv->pulse_ok,
+                       (sv != NULL) ? (float)sv->pulse_us : 0.0f, 0)
+               && cell(line, cap, &n, sv != NULL && sv->angle_ok,
+                       (sv != NULL) ? sv->angle_deg : 0.0f, 1);
+    }
     fits = fits && text_cell(line, cap, &n,
                              source_word(bench_state_simulated(b)));
     if (!fits || (size_t)n + 2u >= cap) {
@@ -485,13 +569,67 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
 
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
 {
-    return bench_row(w, t_s, b, false, NULL);
+    return bench_row(w, t_s, b, false, NULL, NULL);
 }
 
 bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
-                          const log_rail_t *rail)
+                          const log_rail_t *rail, const log_servo_t *sv)
 {
-    return bench_row(w, t_s, b, true, rail);
+    return bench_row(w, t_s, b, true, rail, sv);
+}
+
+void log_rail_take_ina(log_rail_t *out, const sense_link_win_t *win,
+                       bool row_modelled)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (win == NULL) {
+        return;
+    }
+    if (row_modelled) {
+        out->withheld = true;   /* the part reads through the IOmcu */
+        return;
+    }
+    out->v = (float)win->mean_mv / 1000.0f;
+    out->i = (float)win->mean_ma / 1000.0f;
+    out->p = out->v * out->i;
+    out->ok = (uint8_t)((win->voltage ? SUPPLY_OK_VOLTAGE : 0u)
+                        | (win->current ? SUPPLY_OK_CURRENT : 0u));
+}
+
+/** @brief The packed angle that is no angle (log_servo_pack()). */
+#define LOG_SERVO_NO_ANGLE 0x8000u
+
+uint32_t log_servo_pack(bool pulse_ok, uint16_t pulse_us, bool angle_ok,
+                        float angle_deg)
+{
+    const uint32_t us = pulse_ok ? (uint32_t)pulse_us : 0u;
+    uint32_t angle = LOG_SERVO_NO_ANGLE;
+    if (angle_ok && isfinite(angle_deg)) {
+        const long cdeg = lroundf(angle_deg * 100.0f);
+        if (cdeg >= -32767L && cdeg <= 32767L) {
+            angle = (uint32_t)(uint16_t)(int16_t)cdeg;
+        }
+    }
+    return (us << 16) | angle;
+}
+
+void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    out->pulse_us = (uint16_t)(packed >> 16);
+    out->pulse_ok = out->pulse_us != 0u;
+    const uint16_t angle = (uint16_t)(packed & 0xFFFFu);
+    /* The encoder reads through the IOmcu: a modelled row has no angle. */
+    if (angle != LOG_SERVO_NO_ANGLE && !row_modelled) {
+        out->angle_deg = (float)(int16_t)angle / 100.0f;
+        out->angle_ok  = true;
+    }
 }
 
 void log_rail_take(log_rail_t *out, const supply_state_t *s,

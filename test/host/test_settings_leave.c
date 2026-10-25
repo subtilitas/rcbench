@@ -6,6 +6,8 @@
 #include "settings_rig.h"
 
 #include "outputs_screen.h"
+#include "outputs_spots.h"
+#include "settings_sensors.h"
 
 /* -------------------------------------------- the stored copy and leaving */
 
@@ -325,7 +327,7 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
     CHECK_EQ(warn_lines(), 1);
-    CHECK_STR_EQ(warn_line(0), "Capacity: 5000 mAh -> 5200 mAh");
+    CHECK_STR_EQ(warn_line(0), "Capacity: 5000mAh -> 5200mAh");
     CHECK_STR_EQ(warn_line(1), "");
 
     /* An enum and a switch by their words, translated. */
@@ -346,6 +348,54 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     tap(home_x(), home_y());
     CHECK(settings_screen_warning());
     ui_router_render(&s_c, 0);
+}
+
+/* A pin's -1 is named as the row's help says it, "open"; a pin number follows
+ * GPIO, a word unit, so that it does not read as a count; GP0 is a pin, not open; and a value
+ * whose 0 is OFF carries no unit there.  In German too. */
+TEST_CASE(the_warning_names_a_pin_open_and_leads_with_gpio)
+{
+    fresh_hub();
+    settings_set(SET_PDMINI_TX, 4.0f);
+    warn_up();
+    CHECK(settings_screen_warning());
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: open -> GPIO 4");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: offen -> GPIO 4");
+    ui_text_set_language(UI_LANG_EN);
+
+    /* GP0, the lowest pin, is a number like any other. */
+    settings_set(SET_PDMINI_TX, 0.0f);
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: open -> GPIO 0");
+
+    /* Back to -1 from a stored pin: the saved side shows the number. */
+    settings_set(SET_PDMINI_TX, 4.0f);
+    settings_set_store(&s_mem_store);
+    CHECK(settings_save());
+    settings_set(SET_PDMINI_TX, -1.0f);
+    CHECK_STR_EQ(warn_line(0), "PD mini TX: GPIO 4 -> open");
+    settings_set(SET_PDMINI_TX, 4.0f);
+    CHECK_STR_EQ(warn_line(0), "");
+
+    /* A shunt's 0 is OFF and takes no unit; a value takes mΩ joined. */
+    const setting_id_t sh = SET_INA_SH(0);
+    const float was = settings_get(sh);
+    settings_set(sh, 0.0f);
+    char want[64];
+    snprintf(want, sizeof(want), "%s: %.1fm\xCE\xA9 -> OFF",
+             ui_setting_label(sh), (double)was);
+    CHECK_STR_EQ(warn_line(0), want);
+    settings_set(sh, was);
+
+    /* The INA228's shunt, in uΩ, joins its number as well. */
+    const float uohm = settings_get(SET_INA228_UOHM);
+    settings_set(SET_INA228_UOHM, uohm + 50.0f);
+    snprintf(want, sizeof(want), "%s: %.0fu\xCE\xA9 -> %.0fu\xCE\xA9",
+             ui_setting_label(SET_INA228_UOHM), (double)uohm,
+             (double)(uohm + 50.0f));
+    CHECK_STR_EQ(warn_line(0), want);
+    ui_router_render(&s_c, 0);
+    settings_set_store(NULL);
 }
 
 /* A string has no row, and the warning names it all the same. */
@@ -435,7 +485,7 @@ TEST_CASE(a_save_asked_holds_nothing_and_a_failed_one_warns)
     warn_up();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
-    CHECK_STR_EQ(warn_line(0), "Cells: 6 S -> 4 S");
+    CHECK_STR_EQ(warn_line(0), "Cells: 6S -> 4S");
     ui_router_render(&s_c, 0);
     settings_set_store(NULL);
 }
@@ -690,7 +740,8 @@ TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
     CHECK(!settings_dirty());
     /* GP4, column 0 row 4 of the grid: no protocol, no write.  The same
      * tap with SERVO PWM picked ticks it, so the tap is on the pin. */
-    const int gp4_x = 288 + 60, gp4_y = UI_BAND_H + 16 + 4 * 57 + 26;
+    const int gp4_x = OU_CELL_X(4) + 60;
+    const int gp4_y = UI_BAND_H + OU_CELL_Y(4) + 26;
     tap(gp4_x, gp4_y);
     CHECK_EQ(s_out_applied, 0);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
@@ -738,6 +789,7 @@ int main(void)
     RUN(leaving_setup_with_nothing_changed_warns_nothing);
     RUN(leaving_with_one_change_warns_and_names_it);
     RUN(a_changed_string_is_named_in_the_warning);
+    RUN(the_warning_names_a_pin_open_and_leads_with_gpio);
     RUN(more_changes_than_fit_end_on_their_count);
     RUN(a_value_edited_back_holds_nothing);
     RUN(a_save_asked_holds_nothing_and_a_failed_one_warns);

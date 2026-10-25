@@ -1,9 +1,12 @@
-/*
- * Device settings: a typed schema, a value per entry, and a persistence seam.
+/**
+ * @file
+ * @brief Device settings: a typed schema, a value per entry, and a persistence
+ *        seam.
  *
- * The schema carries range, step, unit and help text, so the settings screen
- * is generic -- it renders whatever the table says rather than hard-coding a
- * control per option.  Adding a setting is one table row.
+ * The schema carries range, step and unit, so the settings screen is generic
+ * -- it renders whatever the table says rather than hard-coding a control per
+ * option.  Adding a setting is one table row, and its label and help line
+ * are two entries of ui_text.def (shared/text), with every language.
  *
  * Pure C.  Persistence is a pair of function pointers, so the host tests use
  * memory and the firmware uses NVS (non-volatile storage) without the model
@@ -23,7 +26,8 @@ extern "C" {
 #endif
 
 typedef enum {
-    SET_CAT_APP = 0,     /**< theme, brightness, language, units, plot  */
+    SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
+                              units, time zone, plot                   */
     SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
     SET_CAT_SENSORS,     /**< the INA3221 parts: fitted, shunts, what
@@ -55,9 +59,9 @@ typedef enum {
 /** @brief The INA3221 parts SETUP > SENSORS sets up: four, at 0x40 to
  *         0x43, three channels each, and the rows a channel has: WATCHES,
  *         SHUNT and LIMIT (settings_sensors.h). */
-#define SET_INA_PARTS    4
-#define SET_INA_CHANNELS 12
-#define SET_INA_CH_ROWS  3
+#define SET_INA_PARTS    4   /**< INA3221 parts, 0x40 to 0x43        */
+#define SET_INA_CHANNELS 12  /**< channels, three a part              */
+#define SET_INA_CH_ROWS  3   /**< a channel's rows: WATCHES, SHUNT, LIMIT */
 
 /** @brief Every setting's id, in schema order. */
 typedef enum {
@@ -74,8 +78,10 @@ typedef enum {
     SET_THEME,
     SET_BRIGHTNESS,
     SET_CONTRAST,
+    SET_SCREEN_ROT,
     SET_LANGUAGE,
     SET_UNITS,
+    SET_TIME_ZONE,
     SET_DIM_AFTER,
     SET_PLOT_PAN,
     SET_KNOB_EN,
@@ -191,11 +197,14 @@ typedef enum {
     SETTING_COUNT
 } setting_id_t;
 
+/**
+ * @brief A setting's row of the schema: its key, unit, category, type,
+ *        range, step, default and options.  Its label and help line are
+ *        ui_text.def's (settings_label(), settings_help()).
+ */
 typedef struct {
     const char        *key;      /**< NVS key, 15 chars or fewer   */
-    const char        *label;
-    const char        *help;
-    const char        *unit;
+    const char        *unit;     /**< shown beside the value; "" none */
     setting_cat_t      cat;
     setting_type_t     type;
     float              min;
@@ -258,11 +267,42 @@ typedef bool (*settings_hold_fn)(setting_id_t id);
 /** Who says which settings are held, or NULL for none.  Asked at every
  *  change, so a hold begins and ends with what it names. */
 void settings_set_hold(settings_hold_fn fn);
-/** Whether @p id is held now: settings_set(), settings_adjust(),
- *  settings_reset() and settings_reset_all() leave it, and SETUP draws its
- *  row without keys.  The servo tester's target and the port's pulse while
- *  the servo programmer holds the port (kst_panel.h). */
+/**
+ * @brief Whether @p id is held now: settings_set(), settings_adjust(),
+ *        settings_reset() and settings_reset_all() leave it, and SETUP
+ *        draws its row without keys.
+ *
+ * The servo tester's target and the port's pulse while the servo
+ * programmer holds the port (kst_panel.h); a SAFE-only setting while the
+ * bench is ARMED (settings_safe_only()).
+ *
+ * @param id The setting.
+ * @return True while held; false for an id out of range.
+ */
 bool settings_held(setting_id_t id);
+
+/**
+ * @brief Who says whether the bench is ARMED now.
+ * @return True while ARMED.
+ */
+typedef bool (*settings_armed_fn)(void);
+
+/**
+ * @brief Install who says whether the bench is ARMED, or NULL for a bench
+ *        that is never ARMED.  Asked at every change, as the hold is.
+ * @param fn The source; the panel's reads the router's status.
+ */
+void settings_set_armed(settings_armed_fn fn);
+
+/**
+ * @brief Whether @p id changes on a SAFE bench only: held while the
+ *        source settings_set_armed() installed says ARMED, as the throttle
+ *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
+ *        Screen rotation, which moves every control under the finger.
+ * @param id The setting.
+ * @return True for SET_SCREEN_ROT.
+ */
+bool settings_safe_only(setting_id_t id);
 
 const setting_def_t *settings_def(setting_id_t id);
 
@@ -270,7 +310,36 @@ const setting_def_t *settings_def(setting_id_t id);
  *  settings_adjust() leave it, and SETUP draws its row without keys.
  *  Sensor SCL, which is the GPIO after Sensor SDA. */
 bool settings_derived(setting_id_t id);
+/**
+ * @brief A category's name in English, from ui_text.def.
+ * @param cat The category.
+ * @return Its name; "" for one out of range.  ui_setting_category() gives
+ *         it in the language showing.
+ */
 const char *settings_category_name(setting_cat_t cat);
+/**
+ * @brief A setting's label in English, from ui_text.def.
+ * @param id The setting.
+ * @return Its label; "" for an id out of range.  ui_setting_label() gives
+ *         it in the language showing.
+ */
+const char *settings_label(setting_id_t id);
+/**
+ * @brief A setting's help line in English, from ui_text.def.
+ * @param id The setting.
+ * @return Its help line, "" for none and for an id out of range.
+ *         ui_setting_help() gives it in the language showing.
+ */
+const char *settings_help(setting_id_t id);
+/**
+ * @brief Which option list a setting shows, so a language's options are
+ *        found by it.
+ * @param id The setting.
+ * @return The list's place among the UI_OPTIONS() of ui_text.def, counted
+ *         from 0; -1 for a setting that is no choice and for an id out of
+ *         range.
+ */
+int settings_option_list(setting_id_t id);
 
 float settings_get(setting_id_t id);
 int   settings_get_int(setting_id_t id);
@@ -308,6 +377,19 @@ bool settings_cycles(setting_id_t id);
 bool settings_sense_sda_valid(int gpio);
 
 /**
+ * @brief Whether Tap pin takes @p gpio: an IOmcu GPIO the RP2350-CAN brings out
+ * and does not reserve, outbind_reserved_mask(), that is no ADC pin -- the
+ * TONE page refuses GP26 to GP29 of the RP2350A and GP40 to GP47 of the
+ * RP2354B.  That leaves 0, 1, 2, 4, 5, 6, 7 and 13 to 22.  A pin an output,
+ * the supply or the sensor bus holds is not known here; the page refuses it
+ * and SETUP marks the row.
+ *
+ * @param gpio An IOmcu GPIO number.
+ * @return true when Tap pin takes it.
+ */
+bool settings_tap_pin_valid(int gpio);
+
+/**
  * Whether PD mini TX and PD mini RX hold one GPIO, 0 or above.  The steps
  * never set that; a stored set-up can hold it.  The panel writes such a
  * wiring to the SUPPLY page disabled (supply_link.c), so the PD mini
@@ -323,9 +405,32 @@ void settings_reset_all(void);
 /** Ids in a category, in schema order.  Returns how many there are. */
 int settings_in_category(setting_cat_t cat, setting_id_t *out, int max);
 
-/** Render the value as it should appear on screen, unit excluded. */
+/**
+ * @brief The digits after the point a number of @p id is shown and typed
+ *        with: as many as its step has.
+ * @param id The setting.
+ * @return 0 for a step of 1 or more, 1 for 0.1, 2 for 0.05, 0.02 and 0.01,
+ *         3 for 0.001; 0 for an id out of range and a step of 0.
+ */
+int settings_decimals(setting_id_t id);
+
+/**
+ * @brief Render the value as it should appear on screen, unit excluded: a
+ *        float with settings_decimals() digits after the point.
+ * @param id The setting.
+ * @param buf Where the text goes.
+ * @param n The size of @p buf in bytes.
+ * @return @p buf; "" for a NULL @p buf or an @p n of 0.
+ */
 const char *settings_value_text(setting_id_t id, char *buf, size_t n);
-/** Render @p value as settings_value_text() renders the value of @p id. */
+/**
+ * @brief Render @p value as settings_value_text() renders the value of @p id.
+ * @param id The setting.
+ * @param value The value.
+ * @param buf Where the text goes.
+ * @param n Its size.
+ * @return @p buf; "" for no buffer.
+ */
 const char *settings_value_text_of(setting_id_t id, float value, char *buf,
                                    size_t n);
 

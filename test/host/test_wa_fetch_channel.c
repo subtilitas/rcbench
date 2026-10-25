@@ -436,6 +436,42 @@ TEST_CASE(only_a_newer_release_of_the_line_is_offered_on_either_channel)
     CHECK_EQ(u.found.minor, 20u);
 }
 
+/* The ESP32-P4 panel's line, as the panel starts: not capped.  0.23.0 and
+ * later are offered on either channel, STABLE asks GitHub once, and
+ * TESTING offers the highest release, a pre-release included.  Run
+ * before the cap is set. */
+TEST_CASE(the_p4_panel_is_offered_0_23_0_and_later_on_either_channel)
+{
+    CHECK(!fw_release_line_capped());
+    const wa_channel_t chs[] = { WA_CH_STABLE, WA_CH_TESTING };
+    for (size_t i = 0; i < 2u; ++i) {
+        const wa_channel_t ch = chs[i];
+        CHECK_EQ(offer(ch, "v0.23.0", V(0, 22, 0), true), WA_GOT_NEWER);
+        CHECK_EQ(offer(ch, "v0.24.0", V(0, 23, 0), true), WA_GOT_NEWER);
+        CHECK_EQ(offer(ch, "v1.0.0", V(0, 24, 0), true), WA_GOT_NEWER);
+        CHECK_EQ(offer(ch, "v0.23.0", V(0, 23, 0), true), WA_GOT_CURRENT);
+        CHECK_EQ(offer(ch, "v0.22.1", V(0, 23, 0), true), WA_GOT_CURRENT);
+    }
+    /* STABLE: one request, the latest redirect; the list is not read. */
+    fresh(0u);
+    latest_answer("v0.24.0");
+    wa_fetch_res_t u = check(WA_CH_STABLE, V(0, 23, 0), true);
+    CHECK_EQ(u.got, WA_GOT_NEWER);
+    CHECK_EQ(u.found.minor, 24u);
+    CHECK_EQ(g.api_opens, 0u);
+    /* TESTING: a 0.25.0 pre-release beside a later 0.22.1 patch release
+     * for the ESP32-S3 panel: the highest, 0.25.0, is offered. */
+    static const char pre[] = "[{\"tag_name\":\"v0.22.1\"},"
+                              "{\"tag_name\":\"v0.25.0\","
+                              "\"prerelease\":true},"
+                              "{\"tag_name\":\"v0.24.0\"}]";
+    fresh(0u);
+    api_answer(pre, (uint32_t)strlen(pre));
+    u = check(WA_CH_TESTING, V(0, 24, 0), true);
+    CHECK_EQ(u.got, WA_GOT_NEWER);
+    CHECK_EQ(u.found.minor, 25u);
+}
+
 /* ------------------------------------------------- the API's answer */
 
 TEST_CASE(the_request_limit_is_its_own_result)
@@ -636,7 +672,7 @@ TEST_CASE(a_chunked_answer_that_is_empty_cut_or_overruns)
     wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
     CHECK_EQ(out.rel, FW_REL_OVERRUN);
-    /* Pieces of 4 bytes, 2 s each, from 25 s on: the budget ends it. */
+    /* Pieces of 4 bytes, 2s each, from 25s on: the budget ends it. */
     fresh(25000u);
     chunked_answer(body, n);
     g.a.read_ms = 2000u;
@@ -769,7 +805,7 @@ static void api_within_the_budget(uint32_t t0)
     static const char body[] = "[{\"a\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\","
                                "\"tag_name\":\"v0.22.1\"}]";
     const uint32_t n = (uint32_t)strlen(body);
-    /* The join took 25 s: the request waits 5 s at most. */
+    /* The join took 25s: the request waits 5s at most. */
     fresh(t0 + 25000u);
     api_answer(body, n);
     wa_run_t r = run_for(WA_CH_TESTING, V(0, 22, 0), true, t0);
@@ -777,7 +813,7 @@ static void api_within_the_budget(uint32_t t0)
     wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_NEWER);
     CHECK(g.last_timeout <= 5000u);
-    /* Each read takes 2 s from 25 s on: the budget ends mid-body. */
+    /* Each read takes 2s from 25s on: the budget ends mid-body. */
     fresh(t0 + 25000u);
     api_answer(body, n);
     g.a.read_ms = 2000u;
@@ -903,6 +939,9 @@ TEST_CASE(an_offer_holds_only_for_the_channel_it_was_found_on)
 
 int main(void)
 {
+    RUN(the_p4_panel_is_offered_0_23_0_and_later_on_either_channel);
+    /* Every case after this one holds the ESP32-S3 panel's 0.22 line. */
+    fw_release_set_line_capped(true);
     RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_10th);
     RUN(stable_keeps_the_latest_redirect);
     RUN(stable_past_the_line_reads_the_list_once_for_the_lines_newest);

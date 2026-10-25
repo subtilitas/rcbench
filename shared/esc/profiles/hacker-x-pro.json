@@ -210,7 +210,7 @@
       "steps": [
         "Throttle signal at full power.",
         "Connect the drive battery (switch on where fitted); Opto versions need an external supply for the receiver connected first.",
-        "Wait 5 s for the two low plus two high tones.",
+        "Wait 5s for the two low plus two high tones.",
         "Brake: move throttle to stop right after these tones.",
         "Other items: keep full throttle until the wanted pattern sounds; move throttle to stop while its five repetitions are playing."
       ]
@@ -266,39 +266,39 @@
         },
         {
           "number": 2,
-          "name": "2 LiPo cells, 5.8 V"
+          "name": "2 LiPo cells, 5.8V"
         },
         {
           "number": 3,
-          "name": "3 LiPo cells, 8.7 V (2007, 2008) or 8.3 V (2016)"
+          "name": "3 LiPo cells, 8.7V (2007, 2008) or 8.3V (2016)"
         },
         {
           "number": 4,
-          "name": "4 LiPo cells, 11.6 V or 11.3 V"
+          "name": "4 LiPo cells, 11.6V or 11.3V"
         },
         {
           "number": 5,
-          "name": "5 LiPo cells, 14.5 V or 14.2 V"
+          "name": "5 LiPo cells, 14.5V or 14.2V"
         },
         {
           "number": 6,
-          "name": "6 LiPo cells, 17.4 V"
+          "name": "6 LiPo cells, 17.4V"
         },
         {
           "number": 7,
-          "name": "7 LiPo cells, 20.3 V, Opto only"
+          "name": "7 LiPo cells, 20.3V, Opto only"
         },
         {
           "number": 8,
-          "name": "8 LiPo cells, 23.2 V, Opto only"
+          "name": "8 LiPo cells, 23.2V, Opto only"
         },
         {
           "number": 9,
-          "name": "9 LiPo cells, 26.1 V, Opto only"
+          "name": "9 LiPo cells, 26.1V, Opto only"
         },
         {
           "number": 10,
-          "name": "10 LiPo cells, 29.0 V, Opto only"
+          "name": "10 LiPo cells, 29.0V, Opto only"
         }
       ],
       "applies_to": null,
@@ -374,12 +374,12 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz",
+          "name": "8kHz",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz"
+          "name": "16kHz"
         }
       ],
       "applies_to": null,

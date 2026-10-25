@@ -12,7 +12,7 @@ PICK A PIN zeigt die Platine des IOmcu, wie sie auf dem Prüfstand liegt, und bi
 
 ![Die Pin-Auswahl mit drei als SERVO PWM gebundenen Pins](view:picker)
 
-Ein Pad misst unter 40 px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 43 px breit, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
+Ein Pad misst unter 40px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 50 x 56px, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
 
 | Taste | Pin | Ein Tipp |
 |---|---|---|
@@ -22,6 +22,8 @@ Ein Pad misst unter 40 px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin e
 | keine Taste, rotes Kreuz auf dem Pad | reserviert: GP3 Heartbeat, GP8 bis GP12 CAN (Controller Area Network) | keiner |
 
 Ein Tipp auf eine Taste schreibt die Bindung sofort, mit denselben Ergebnissen wie ein Haken unter Ausgänge.
+
+Aktuelle Einschränkung: Auf einer Platine mit einem Pin in der oberen linken Ecke ihres Umrisses liegen die Tasten der oberen Reihen unter der Protokoll-Liste, der Anzahl und dem Grund. Ein Tipp auf den Teil einer solchen Taste über der Protokoll-Liste öffnet die Liste, statt den Pin zu nehmen. Der RP2350-CAN hat dort keinen Pin.
 
 Die Platine markiert auch die anderen Adern eines Servokabels:
 
@@ -68,13 +70,13 @@ Die Protokollliste endet mit den Einträgen PROG-PORT, wie auf [Outputs](outputs
 
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:picker-iface)
 
-Ein Pin, den [SETUP > ANSCHLÜSSE](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
+Ein Pin, den [SETUP > INTERFACES](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
 
 ![OFF gewählt: jeder gebundene Pin unter BELEGT](view:picker-off)
 
 ## Die Platinenzeichnung
 
-Der IOmcu trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01 mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
+Der IOmcu trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
 
 ![Die Pin-Auswahl, allein aus der Form gezeichnet](view:picker-drawn)
 

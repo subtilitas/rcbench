@@ -1,4 +1,13 @@
-/*
+/**
+ * @file touch.c
+ * @brief The GT911 polling task: reads contacts, maps them into the
+ *        panel's coordinates, crops them to the UI's area and publishes
+ *        snapshots and events.
+ *
+ * Screen rotation 180° turns the glass's contacts with the picture: the
+ * task reads the one flag the display's flush sets once a turned frame is
+ * on the glass (gfx_turn_shown()), once per report.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,7 +17,6 @@
 #include <string.h>
 
 #include "board.h"
-#include "driver/gpio.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -16,6 +24,7 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "gfx_turn.h"
 #include "gt911.h"
 #ifdef RCBENCH_TOUCH_INJECTOR
 #include "touch_inject.h"
@@ -31,6 +40,13 @@ typedef struct {
     gt911_handle_t gt911;
     touch_config_t cfg;
     touch_map_t map;
+#ifdef RCBENCH_TOUCH_INJECTOR
+    /** @brief What the controller gt911_new() found is: the glass, or the
+     *  touch injector alone at 0x14 (touch_merge_role()). */
+    touch_role_t role;
+    /** @brief The injector's map, for TOUCH_ROLE_INJECTOR. */
+    touch_map_t inject_map;
+#endif
 
     TaskHandle_t task;
     QueueHandle_t events;
@@ -43,7 +59,7 @@ typedef struct {
 
     /*
      * When the controller last answered, in milliseconds.  32 bits because
-     * an aligned 32-bit load is atomic on the ESP32-S3, so the application
+     * an aligned 32-bit load is atomic on the ESP32-P4, so the application
      * reads it from its own task without the lock, and unsigned subtraction
      * stays correct across the 49-day wrap.
      *
@@ -80,21 +96,16 @@ static uint32_t now_ms(void)
 
 static touch_state_t s_touch;
 
-static void IRAM_ATTR touch_isr(void *arg)
-{
-    TaskHandle_t task = (TaskHandle_t)arg;
-    BaseType_t woken = pdFALSE;
-    vTaskNotifyGiveFromISR(task, &woken);
-    if (woken == pdTRUE) {
-        portYIELD_FROM_ISR();
-    }
-}
-
+/** @brief Run the tracker over @p pts and queue its events, numbered. */
 static void publish(const touch_point_t *pts, int count)
 {
     touch_event_t evts[TOUCH_MAX_POINTS * 2];
     int n = touch_tracker_update(&s_touch.tracker, pts, count,
                                  evts, (int)(sizeof(evts) / sizeof(evts[0])));
+#ifdef RCBENCH_TOUCH_INJECTOR
+    /* An injected contact cut for a finger on the glass did not lift. */
+    touch_inject_mark(evts, n);
+#endif
 
     xSemaphoreTake(s_touch.lock, portMAX_DELAY);
     if (count > 0) {
@@ -125,19 +136,27 @@ static void publish(const touch_point_t *pts, int count)
     }
 }
 
+/**
+ * @brief Publish only the contacts inside the UI's area: the UI draws
+ *        BOARD_UI_H_RES x BOARD_UI_V_RES of the panel.
+ * @param pts Contacts in panel pixels, each source already mapped with its
+ *            own map; cropped in place.
+ * @param count How many.
+ */
+static void crop_and_publish(touch_point_t *pts, int count)
+{
+    publish(pts, touch_map_crop(pts, count, BOARD_UI_H_RES, BOARD_UI_V_RES));
+}
+
 static void touch_task(void *arg)
 {
     (void)arg;
     const TickType_t wait = pdMS_TO_TICKS(s_touch.cfg.poll_interval_ms ?: 10);
 
     while (!s_touch.stop) {
-        if (s_touch.cfg.use_interrupt) {
-            /* The timeout doubles as the polling fallback, so a controller
-             * whose INT polarity does not match still works. */
-            ulTaskNotifyTake(pdTRUE, wait);
-        } else {
-            vTaskDelay(wait);
-        }
+        /* Polled: the GT911's INT line does not reach the SoC.  The wait
+         * is a notification, so touch_deinit() ends it early. */
+        (void)ulTaskNotifyTake(pdTRUE, wait);
 
         touch_point_t raw[TOUCH_MAX_POINTS];
         int count = 0;
@@ -149,24 +168,33 @@ static void touch_task(void *arg)
             continue;
         }
         s_touch.last_ok_ms = now_ms();
+        /* The glass's report into panel pixels before any merge: the
+         * injector's contacts are panel pixels already (touch_inject.c). */
+        if (fresh) {
+            /* The picture's turn, read once per report, so one report is
+             * mapped whole one way.  The injector's map never turns. */
+#ifdef RCBENCH_TOUCH_INJECTOR
+            const touch_map_t glass = touch_merge_role_map(
+                s_touch.role, &s_touch.map, &s_touch.inject_map,
+                gfx_turn_shown());
+#else
+            const touch_map_t glass = touch_map_turned(&s_touch.map,
+                                                       gfx_turn_shown());
+#endif
+            touch_map_points(&glass, raw, count);
+        }
 #ifdef RCBENCH_TOUCH_INJECTOR
         /* The glass's report goes out before the injector is read, so a
          * slow or failing injector never delays a contact on the glass. */
         if (touch_inject_glass(raw, &count, fresh)) {
-            for (int i = 0; i < count; ++i) {
-                touch_map_point(&s_touch.map, &raw[i]);
-            }
-            publish(raw, count);
+            crop_and_publish(raw, count);
         }
         fresh = touch_inject_read(raw, &count, now_ms());
 #endif
         if (!fresh) {
             continue;
         }
-        for (int i = 0; i < count; ++i) {
-            touch_map_point(&s_touch.map, &raw[i]);
-        }
-        publish(raw, count);
+        crop_and_publish(raw, count);
     }
 
     s_touch.task = NULL;
@@ -193,12 +221,30 @@ esp_err_t touch_init(const touch_config_t *cfg)
     const gt911_config_t gt_cfg = { 0 }; /* probe 0x5D then 0x14 */
     ESP_RETURN_ON_ERROR(gt911_new(board_i2c_bus(), &gt_cfg, &s_touch.gt911),
                         TAG, "gt911 probe");
+    /*
+     * The GT911 takes 0x5D or 0x14 at the end of its reset from the level
+     * on its INT line, which no GPIO drives on this board; which one it
+     * takes is not measured.
+     */
+    const uint16_t glass_addr = gt911_address(s_touch.gt911);
+    ESP_LOGI(TAG, "GT911 answers at 0x%02x after the reset (0x5d probed "
+                  "first, then 0x14)", glass_addr);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
+    /*
+     * The product ID tells the injector from the glass, not the address:
+     * a glass that latched 0x14 reports "911" and is read as the glass,
+     * with its mirrors and the turn.  A failed read counts as the glass.
+     */
+    char product_id[5] = { 0 };
+    if (gt911_info(s_touch.gt911, product_id, NULL) != ESP_OK) {
+        memset(product_id, 0, sizeof(product_id));
+    }
+    s_touch.role = touch_merge_role(glass_addr, false, product_id);
+    s_touch.inject_map = touch_inject_map();
     /* Before the task exists: adding a device to the bus is not safe
      * against a transaction on it. */
-    touch_inject_attach(board_i2c_bus(), gt911_address(s_touch.gt911),
-                        now_ms());
+    touch_inject_attach(board_i2c_bus(), glass_addr, s_touch.role, now_ms());
 #endif
 
     uint16_t x_max = 0, y_max = 0;
@@ -215,6 +261,19 @@ esp_err_t touch_init(const touch_config_t *cfg)
         .mirror_y = s_touch.cfg.mirror_y,
         .rotation = s_touch.cfg.rotation,
     };
+#ifdef RCBENCH_TOUCH_INJECTOR
+    if (s_touch.role == TOUCH_ROLE_INJECTOR) {
+        /* Its contacts are logical pixels of the UI's area, unmirrored,
+         * and never turn. */
+        ESP_LOGW(TAG, "0x%02x reports product ID %s: touch is the touch "
+                      "injector alone, unmirrored and never turned",
+                 glass_addr, TOUCH_MERGE_INJECT_PRODUCT);
+    } else if (glass_addr == TOUCH_INJECT_ADDR) {
+        ESP_LOGW(TAG, "0x%02x reports product ID \"%s\", not the touch "
+                      "injector's %s: read as the glass",
+                 glass_addr, product_id, TOUCH_MERGE_INJECT_PRODUCT);
+    }
+#endif
     touch_tracker_reset(&s_touch.tracker);
     s_touch.point_count = 0;
     s_touch.stop = false;
@@ -239,32 +298,23 @@ esp_err_t touch_init(const touch_config_t *cfg)
     }
     ESP_RETURN_ON_FALSE(ok == pdPASS, ESP_ERR_NO_MEM, TAG, "touch task");
 
-    if (s_touch.cfg.use_interrupt) {
-        const gpio_config_t int_cfg = {
-            .pin_bit_mask = 1ULL << BOARD_TOUCH_PIN_INT,
-            .mode = GPIO_MODE_INPUT,
-            .pull_up_en = GPIO_PULLUP_DISABLE,
-            .pull_down_en = GPIO_PULLDOWN_DISABLE,
-            .intr_type = GPIO_INTR_NEGEDGE,
-        };
-        ESP_RETURN_ON_ERROR(gpio_config(&int_cfg), TAG, "int pin");
-        esp_err_t err = gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
-        if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
-            ESP_RETURN_ON_ERROR(err, TAG, "isr service");
-        }
-        ESP_RETURN_ON_ERROR(
-            gpio_isr_handler_add(BOARD_TOUCH_PIN_INT, touch_isr, s_touch.task),
-            TAG, "isr handler");
-    }
-
     /* Start the health clock here, so a stack that has just come up is not
      * momentarily reported as stale before its first poll. */
     s_touch.last_ok_ms = now_ms();
     s_touch.initialised = true;
-    ESP_LOGI(TAG, "GT911 ready at 0x%02x, %ux%u, rotation %d%s",
-             gt911_address(s_touch.gt911), x_max, y_max,
-             (int)s_touch.cfg.rotation * 90,
-             s_touch.cfg.use_interrupt ? ", INT enabled" : "");
+    /* The map one report of it is read through, unturned. */
+#ifdef RCBENCH_TOUCH_INJECTOR
+    const touch_map_t used = touch_merge_role_map(
+        s_touch.role, &s_touch.map, &s_touch.inject_map, false);
+#else
+    const touch_map_t used = s_touch.map;
+#endif
+    ESP_LOGI(TAG, "GT911 ready at 0x%02x, %dx%d, mirror x %d y %d, "
+                  "rotation %d, polled every %u ms",
+             gt911_address(s_touch.gt911), (int)used.src_w,
+             (int)used.src_h, (int)used.mirror_x, (int)used.mirror_y,
+             (int)used.rotation * 90,
+             (unsigned)s_touch.cfg.poll_interval_ms);
     return ESP_OK;
 }
 
@@ -272,9 +322,6 @@ esp_err_t touch_deinit(void)
 {
     if (!s_touch.initialised) {
         return ESP_OK;
-    }
-    if (s_touch.cfg.use_interrupt) {
-        gpio_isr_handler_remove(BOARD_TOUCH_PIN_INT);
     }
     s_touch.stop = true;
     if (s_touch.task) {
@@ -361,7 +408,7 @@ uint32_t touch_age_ms(void)
     }
 #ifdef RCBENCH_TOUCH_INJECTOR
     /* An injector that stops answering is touch that stops answering,
-     * until it is detached 1000 ms after its last answer. */
+     * until it is detached 1000ms after its last answer. */
     const uint32_t now = now_ms();
     return touch_merge_age(now - s_touch.last_ok_ms, touch_inject_age_ms(now));
 #else

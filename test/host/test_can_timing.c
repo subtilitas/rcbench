@@ -1,7 +1,8 @@
 /*
  * CAN (Controller Area Network) bit timing for the two controllers on the
- * link: the MCP2515-compatible XL2515 on the IOmcu and the ESP32-S3's
- * TWAI (Two-Wire Automotive Interface) controller on the panel.
+ * link: the MCP2515-compatible XL2515 on the IOmcu and the ESP32-P4's
+ * TWAI (Two-Wire Automotive Interface) controller on the panel, clocked
+ * from its 40MHz crystal.
  *
  * Wrong timing does not fail cleanly: a node a fraction of a percent off
  * works on a short bench cable with one other node and logs errors when the
@@ -30,8 +31,8 @@ TEST_CASE(a_16_mhz_mcp2515_reaches_one_megabit)
     can_timing_t t;
     CHECK(can_timing_solve(&lim, 1000000u, CAN_SAMPLE_POINT_DEFAULT, &t));
 
-    /* 16 MHz / (2 x 8) = 1 Mbit/s: the smallest divisor and the fewest quanta
-     * the part allows, which is why an 8 MHz crystal cannot reach it. */
+    /* 16MHz / (2 x 8) = 1Mbit/s: the smallest divisor and the fewest quanta
+     * the part allows, which is why an 8MHz crystal cannot reach it. */
     CHECK_EQ(t.div, 2);
     CHECK_EQ(t.tq, 8);
     CHECK_EQ(1u + t.tseg1 + t.tseg2, t.tq);
@@ -41,7 +42,7 @@ TEST_CASE(a_16_mhz_mcp2515_reaches_one_megabit)
 
 /*
  * The MCP2515 divides its crystal by two before the prescaler, and a bit needs
- * at least eight quanta, so an 8 MHz part tops out at 500 kbit/s whatever the
+ * at least eight quanta, so an 8MHz part tops out at 500kbit/s whatever the
  * register values.
  */
 TEST_CASE(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all)
@@ -55,22 +56,22 @@ TEST_CASE(an_8_mhz_mcp2515_cannot_do_one_megabit_at_all)
     CHECK_EQ(can_timing_solve(&lim, 800000u, CAN_SAMPLE_POINT_DEFAULT, &t),
              false);
 
-    /* 500 kbit/s is the ceiling, and it is reachable. */
+    /* 500kbit/s is the ceiling, and it is reachable. */
     CHECK(can_timing_solve(&lim, 500000u, CAN_SAMPLE_POINT_DEFAULT, &t));
     CHECK_EQ(achieved(&lim, &t), 500000u);
     CHECK_EQ(can_timing_max_bitrate(&lim), 500000u);
 
-    /* Against 1 Mbit/s on the 16 MHz part. */
+    /* Against 1Mbit/s on the 16MHz part. */
     can_timing_limits_t hi;
     can_timing_limits_mcp2515(&hi, 16000000u);
     CHECK_EQ(can_timing_max_bitrate(&hi), 1000000u);
 }
 
 /*
- * The module's crystal is 16 MHz, and the bandwidth budget rests on it.  The
+ * The module's crystal is 16MHz, and the bandwidth budget rests on it.  The
  * vendor's driver carries CNF (bit timing configuration register) triples for
  * ten standard rates; decoding those into divisor and quanta gives the
- * advertised rate at 16 MHz and at no other crystal.  A module with an 8 MHz
+ * advertised rate at 16MHz and at no other crystal.  A module with an 8MHz
  * crystal fails this case.
  */
 TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
@@ -112,7 +113,7 @@ TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
 
 /*
  * Both ends sample the bit in the same place.  The IOmcu has one way to
- * make 1 Mbit/s from 16 MHz, eight quanta, so its sample point is fixed at
+ * make 1Mbit/s from 16MHz, eight quanta, so its sample point is fixed at
  * 75% and the panel, which has slack, is solved to match.  Solved
  * independently, the panel lands at 87.5% with a phase 2 of one quantum and a
  * jump width of one: a node that absorbs an eighth of a bit of drift and no
@@ -190,7 +191,7 @@ TEST_CASE(a_rate_that_cannot_be_hit_exactly_is_refused)
     can_timing_limits_mcp2515(&lim, 16000000u);
     can_timing_t t;
 
-    /* 16 MHz will not divide into 999 kbit/s by any integer path. */
+    /* 16MHz will not divide into 999kbit/s by any integer path. */
     CHECK_EQ(can_timing_solve(&lim, 999000u, CAN_SAMPLE_POINT_DEFAULT, &t),
              false);
     CHECK_EQ(can_timing_solve(&lim, 333333u, CAN_SAMPLE_POINT_DEFAULT, &t),
@@ -313,8 +314,8 @@ TEST_CASE(the_jump_width_never_exceeds_phase_two)
 /* ------------------------------------------------------ register encoding */
 
 /*
- * The one worked example, checkable by hand against the datasheet: 16 MHz,
- * 500 kbit/s, sixteen quanta a bit.  SJW is the synchronisation jump width,
+ * The one worked example, checkable by hand against the datasheet: 16MHz,
+ * 500kbit/s, sixteen quanta a bit.  SJW is the synchronisation jump width,
  * BRP the baud rate prescaler, PRSEG the propagation segment, PS1 and PS2 the
  * phase segments, and BTLMODE the bit that makes PS2 programmable.
  *
@@ -404,6 +405,51 @@ TEST_CASE(a_segmentation_the_part_cannot_express_is_refused)
     CHECK_EQ(mcp2515_encode_timing(&t, cnf), false);
 }
 
+/*
+ * The panel's TWAI divides the 40MHz crystal by an even prescaler of 2 to
+ * 32768.  1Mbit/s is 40 quanta of 25ns: divisor 2 and 20 quanta a bit,
+ * 15 before the sample point and 5 after it, 75%.
+ */
+TEST_CASE(the_p4_twai_makes_one_megabit_from_its_40_mhz_crystal)
+{
+    can_timing_limits_t lim;
+    can_timing_limits_twai(&lim);
+    CHECK_EQ(lim.clock_hz, 40000000u);
+    CHECK_EQ(lim.div_min, 2);
+    CHECK_EQ(lim.div_max, 32768);
+    CHECK_EQ(lim.div_step, 2);
+
+    can_timing_t t;
+    CHECK(can_timing_solve(&lim, 1000000u, CAN_SAMPLE_POINT_LINK, &t));
+    CHECK_EQ(t.div, 2);
+    CHECK_EQ(t.tq, 20);
+    CHECK_EQ(t.tseg1, 14);
+    CHECK_EQ(t.tseg2, 5);
+    CHECK_EQ(t.sjw, 4);
+    CHECK_EQ(t.sample_permille, 750);
+    CHECK_EQ(achieved(&lim, &t), 1000000u);
+}
+
+/*
+ * The prescaler's top end: 50bit/s needs divisor 32000 with 25 quanta,
+ * inside the limit; 40bit/s needs at least 40000 and is refused rather
+ * than made from a divisor the register cannot hold.
+ */
+TEST_CASE(the_p4_twai_stops_at_its_largest_prescaler)
+{
+    can_timing_limits_t lim;
+    can_timing_limits_twai(&lim);
+    can_timing_t t;
+    CHECK(can_timing_solve(&lim, 50u, CAN_SAMPLE_POINT_DEFAULT, &t));
+    CHECK_EQ(t.div, 32000);
+    CHECK_EQ(t.tq, 25);
+    CHECK_EQ(achieved(&lim, &t), 50u);
+    CHECK(t.tseg1 <= lim.tseg1_max);
+    CHECK(t.tseg2 >= lim.tseg2_min && t.tseg2 <= lim.tseg2_max);
+    CHECK_EQ(can_timing_solve(&lim, 40u, CAN_SAMPLE_POINT_DEFAULT, &t),
+             false);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     can_timing_limits_t lim;
@@ -433,6 +479,8 @@ int main(void)
     RUN(both_ends_sample_the_bit_in_the_same_place);
     RUN(the_panel_never_gets_a_jump_width_of_one);
     RUN(the_panels_twai_reaches_every_rate_the_coprocessor_can);
+    RUN(the_p4_twai_makes_one_megabit_from_its_40_mhz_crystal);
+    RUN(the_p4_twai_stops_at_its_largest_prescaler);
     RUN(a_rate_that_cannot_be_hit_exactly_is_refused);
     RUN(the_sample_point_lands_near_the_target_and_the_segments_are_legal);
     RUN(no_legal_split_sits_closer_to_the_target);

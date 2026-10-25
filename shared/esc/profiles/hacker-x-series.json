@@ -114,8 +114,8 @@
       "steps": [
         "Throttle signal at full power.",
         "Connect the drive battery (switch on where fitted).",
-        "Wait 5 s for the two low plus two high tones.",
-        "Brake: move throttle to stop right after these tones (2010 edition) or within 5 s of them (2004 edition).",
+        "Wait 5s for the two low plus two high tones.",
+        "Brake: move throttle to stop right after these tones (2010 edition) or within 5s of them (2004 edition).",
         "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the wanted pattern is sounding."
       ]
     },
@@ -170,20 +170,20 @@
         },
         {
           "number": 2,
-          "name": "2 LiPo cells, 5.8 V (two beeps per group)"
+          "name": "2 LiPo cells, 5.8V (two beeps per group)"
         },
         {
           "number": 3,
-          "name": "3 LiPo cells (three beeps per group); 7.8 V in the 2004 edition, 8.3 V in the 2010 edition",
+          "name": "3 LiPo cells (three beeps per group); 7.8V in the 2004 edition, 8.3V in the 2010 edition",
           "default": true
         },
         {
           "number": 4,
-          "name": "4 LiPo cells, 11.3 V (four beeps per group), Opto only, 2010 edition"
+          "name": "4 LiPo cells, 11.3V (four beeps per group), Opto only, 2010 edition"
         },
         {
           "number": 5,
-          "name": "5 LiPo cells, 14.2 V (five beeps per group), Opto only, 2010 edition"
+          "name": "5 LiPo cells, 14.2V (five beeps per group), Opto only, 2010 edition"
         }
       ],
       "applies_to": null,
@@ -255,12 +255,12 @@
       "values": [
         {
           "number": 1,
-          "name": "8 kHz (falling tone)",
+          "name": "8kHz (falling tone)",
           "default": true
         },
         {
           "number": 2,
-          "name": "16 kHz (rising tone)"
+          "name": "16kHz (rising tone)"
         }
       ],
       "applies_to": null,

@@ -1,5 +1,7 @@
-/*
- * The settings, as a schema the screen draws rather than a screen per setting.
+/**
+ * @file
+ * @brief The settings, as a schema the screen draws rather than a screen per
+ *        setting.
  *
  * Every setting is one row in a table -- its type, its range, its step, its
  * default -- and the settings screen renders whatever the table says, so
@@ -26,121 +28,110 @@
 #include "link_pages.h"
 #include "out_bind.h"
 #include "settings_sensors.h"
+#include "settings_opts.h"
 
 /* A row of the schema, the SENSORS rows' included (settings_sensors.c). */
 #define DEF(i) (*settings_def((setting_id_t)(i)))
 
-static const char *const k_theme[]     = { "DARK", "LIGHT" };
-static const char *const k_language[]  = { "ENGLISH", "DEUTSCH" };
-static const char *const k_units[]     = { "METRIC", "IMPERIAL" };
-/* The INA228's address, 0x40 + the option: A0 and A1 each to GND, VS, SDA
- * or SCL give sixteen. */
-static const char *const k_ina228_addr[] = {
-    "0x40", "0x41", "0x42", "0x43", "0x44", "0x45", "0x46", "0x47",
-    "0x48", "0x49", "0x4A", "0x4B", "0x4C", "0x4D", "0x4E", "0x4F",
-};
-static const char *const k_servo_curve[] = { "SQUARE", "SINE", "TRIANGLE" };
-static const char *const k_servo_len_by[] = { "TIME", "MOVES" };
-/* What the SERVO tester drives: the standard servo outputs, or
- * programming port n as PORT n.  A value stored as PROG PORT (1) before
- * there were four reads as PORT 1. */
-static const char *const k_servo_target[] = { "OUTPUTS", "PORT 1", "PORT 2",
-                                              "PORT 3", "PORT 4" };
-static const char *const k_upd_channel[] = { "STABLE", "TESTING" };
-/* How a Hitec D series line on the programming port receives, in
- * link_hitec_rx_t's order. */
-static const char *const k_hitec_rx[] = { "PULL-UP", "PRECHARGE" };
-/* The PD mini's own UART Baudrate setting, 0 to 6, in its order. */
-static const char *const k_pdmini_baud[] = {
-    "9600", "19200", "38400", "57600", "115200", "230400", "460800", "AUTO",
-};
-
-#define ENUM_OPTS(a) .options = (a), .option_count = (uint8_t)(sizeof(a) / sizeof((a)[0]))
+/** @brief An enum row's options: list @p name of ui_text.def
+ *  (settings_opts.h). */
+#define ENUM_OPTS(name)                                                    \
+    .options = settings_opts_##name,                                       \
+    .option_count = (uint8_t)settings_opts_n_##name
 
 /*
  * One row per setting.  Ranges are the physical ones: a pack cannot have zero
- * cells, a servo pulse below 800 us is not a pulse, and an ESC (electronic
- * speed controller) that ramps faster than 300 %/s is not ramping.
+ * cells, a servo pulse below 800us is not a pulse, and an ESC (electronic
+ * speed controller) that ramps faster than 300%/s is not ramping.
  */
 static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_PACK_CELLS] = {
-        "pack_cells", "Cells", "Series count in the pack", "S",
+        "pack_cells", "S",
         SET_CAT_ESC, SET_TYPE_INT, 1, 14, 1, 6, NULL, 0 },
     [SET_PACK_MAH] = {
-        "pack_mah", "Capacity", "For the remaining-charge estimate", "mAh",
+        "pack_mah", "mAh",
         SET_CAT_ESC, SET_TYPE_INT, 0, 30000, 100, 5000, NULL, 0 },
     [SET_PACK_MOHM] = {
-        "pack_mohm", "Internal R", "Whole pack, for the sag model", "mOhm",
+        "pack_mohm", "mΩ",
         SET_CAT_ESC, SET_TYPE_FLOAT, 0, 200, 1, 18, NULL, 0 },
     [SET_MOTOR_POLES] = {
-        "motor_poles", "Motor poles", "eRPM divided by poles/2 gives RPM", "",
+        "motor_poles", "",
         SET_CAT_ESC, SET_TYPE_INT, 2, 42, 2, 14, NULL, 0 },
     [SET_MOTOR_KV] = {
-        "motor_kv", "Rated kV",
-        "If the ESC reports none; 0 = empty", "rpm/V",
+        "motor_kv", "rpm/V",
         SET_CAT_ESC, SET_TYPE_INT, 0, 10000, 10, 0, NULL, 0 },
     [SET_OUT_MIN_US] = {
-        "out_min_us", "Idle pulse", "Width at 0 % throttle", "us",
+        "out_min_us", "us",
         SET_CAT_ESC, SET_TYPE_INT, 800, 1600, 10, 1000, NULL, 0 },
     [SET_OUT_MAX_US] = {
-        "out_max_us", "Full pulse", "Width at 100 % throttle", "us",
+        "out_max_us", "us",
         SET_CAT_ESC, SET_TYPE_INT, 1400, 2400, 10, 2000, NULL, 0 },
     [SET_OUT_RAMP] = {
-        "out_ramp", "Ramp limit", "Slew of the modelled bench", "%/s",
+        "out_ramp", "%/s",
         SET_CAT_ESC, SET_TYPE_INT, 5, 300, 5, 55, NULL, 0 },
 
     [SET_THEME] = {
-        "theme", "Theme", "", "",
-        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_theme) },
+        "theme", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(theme) },
     [SET_BRIGHTNESS] = {
-        "brightness", "Brightness", "Scales the palette", "%",
+        "brightness", "%",
         SET_CAT_APP, SET_TYPE_INT, 20, 100, 5, 100, NULL, 0 },
     [SET_CONTRAST] = {
-        "contrast", "Contrast", "Pushes colours away from mid grey", "%",
+        "contrast", "%",
         SET_CAT_APP, SET_TYPE_INT, 60, 140, 5, 100, NULL, 0 },
+    /* The panel's scan and the glass's map turned by 180 degrees: 0
+     * NORMAL, 1 turned (display.h, touch.h). */
+    [SET_SCREEN_ROT] = {
+        "screen_rot", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(screen_rot) },
     [SET_LANGUAGE] = {
-        "language", "Language", "", "",
-        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_language) },
+        "language", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(language) },
     [SET_UNITS] = {
-        "units", "Units", "", "",
-        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_units) },
+        "units", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(units) },
+    /* The zone file dates are written in: an index into wall_clock.c's
+     * POSIX TZ strings, 2 Berlin (wall_zone_posix()). */
+    [SET_TIME_ZONE] = {
+        "time_zone", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 2, ENUM_OPTS(time_zone) },
     [SET_DIM_AFTER] = {
-        "dim_after", "Dim after", "0 keeps full brightness", "min",
+        "dim_after", "min",
         SET_CAT_APP, SET_TYPE_INT, 0, 60, 5, 0, NULL, 0 },
     [SET_PLOT_PAN] = {
-        "plot_pan1", "One finger pans", "Zoomed log plot: a drag moves the view", "",
+        "plot_pan1", "",
         SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_KNOB_EN] = {
-        "knob_en", "Rotary knob", "MT6701 turns the active slider", "",
+        "knob_en", "",
         SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_KNOB_SCALE] = {
-        "knob_scale", "Knob scale", "Degrees of knob per full slider span", "deg",
+        "knob_scale", "deg",
         SET_CAT_APP, SET_TYPE_INT, 90, 720, 10, 270, NULL, 0 },
 
     /*
      * The current monitors, on the IOmcu's I2C (Inter-Integrated
      * Circuit) bus and written to its SENSE page by the panel (protocol
      * 4.7).  The ranges are the page's: an INA228 shunt of 50 to 20000 uOhm
-     * and a range of 1.0 to 300.0 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
+     * and a range of 1.0 to 300.0A, an INA3221 shunt of 5mOhm to 1Ohm.
      * The defaults are the modules the bench is built with: the MATEK
-     * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8 A, and the
+     * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8A, and the
      * bus on GP16 and GP17; the INA3221 parts are SENSORS'
      * (settings_sensors.c).  The bus clock is not a setting: the
-     * page takes 400 kHz and nothing else.  The address keys are new ones:
+     * page takes 400kHz and nothing else.  The address keys are new ones:
      * the INA228's old key held an index into four addresses, which read
      * as one of sixteen would name another address.
      */
     [SET_INA228_EN] = {
-        "ina228_en", "INA228", "I2C current monitor in the ESC path", "",
+        "ina228_en", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_INA228_ADDR] = {
-        "ina228_adr", "INA228 address", "A0/A1; Matek module as shipped: 0x45", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(k_ina228_addr) },
+        "ina228_adr", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(ina228_addr) },
     [SET_INA228_UOHM] = {
-        "ina228_uohm", "INA228 shunt", "The shunt the INA228 measures across", "uOhm",
+        "ina228_uohm", "uΩ",
         SET_CAT_IFACE, SET_TYPE_INT, 50, 20000, 1, 200, NULL, 0 },
     [SET_INA228_MAX_A] = {
-        "ina228_max_a", "INA228 max current", "Highest current expected; sets range", "A",
+        "ina228_max_a", "A",
         SET_CAT_IFACE, SET_TYPE_FLOAT, 1.0f, 300.0f, 0.1f, 204.8f, NULL, 0 },
     /*
      * The bus's pins: IOmcu GPIO, one I2C block's SDA and SCL.
@@ -151,10 +142,10 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * build that reads both keys reads a pair.
      */
     [SET_SENSE_SDA] = {
-        "sns_sda", "Sensor SDA", "IOmcu GPIO; -1: no sensor bus", "GPIO",
+        "sns_sda", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },
     [SET_SENSE_SCL] = {
-        "sns_scl", "Sensor SCL", "Follows Sensor SDA: the GPIO after", "GPIO",
+        "sns_scl", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
     /*
      * The output encoder (protocol 4.9): an AS5600 magnetic angle sensor on
@@ -164,76 +155,76 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * screen's ENC CENTRE row sets it from the live reading.
      */
     [SET_ENC_EN] = {
-        "enc_en", "AS5600", "Angle sensor on the servo shaft", "",
+        "enc_en", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_ENC_CENTRE] = {
-        "enc_centre", "AS5600 centre", "Count at neutral; 4096 a turn", "",
+        "enc_centre", "",
         SET_CAT_IFACE, SET_TYPE_INT, 0, 4095, 1, 0, NULL, 0 },
     /*
      * The phase tap, written to the IOmcu's TONE page (protocol
      * 4.8): one GPIO that reads an ESC's beeps off one motor phase.  The
      * ranges and defaults are the page's (LINK_TN_*): the pin GP22 (pad 29),
-     * tones from 400 to 6500 Hz, a new beep when the pitch moves 8 %, a
-     * silence of 3 ms ending a beep, 3 tone periods making one.  The tap is
+     * tones from 400 to 6500Hz, a new beep when the pitch moves 8%, a
+     * silence of 3ms ending a beep, 3 tone periods making one.  The tap is
      * off until it is enabled here and the pin is wired.
      */
     [SET_TONE_EN] = {
-        "tone_en", "Phase tap", "ESC beeps heard on one motor phase", "",
+        "tone_en", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_TONE_PIN] = {
-        "tone_pin", "Tap pin", "IOmcu GPIO; GP22 is pad 29", "GPIO",
+        "tone_pin", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, 0, 47, 1, 22, NULL, 0 },
     [SET_TONE_F_MIN] = {
-        "tone_fmin", "Tap lowest tone", "Lower tones are not beeps", "Hz",
+        "tone_fmin", "Hz",
         SET_CAT_IFACE, SET_TYPE_INT, 50, 2000, 10, 400, NULL, 0 },
     [SET_TONE_F_MAX] = {
-        "tone_fmax", "Tap highest tone", "Above the lowest tone; to 6900 Hz", "Hz",
+        "tone_fmax", "Hz",
         SET_CAT_IFACE, SET_TYPE_INT, 100, 6900, 50, 6500, NULL, 0 },
     [SET_TONE_SPLIT] = {
-        "tone_split", "Tap pitch split", "Pitch step that splits a beep; 0 off", "%",
+        "tone_split", "%",
         SET_CAT_IFACE, SET_TYPE_INT, 0, 50, 1, 8, NULL, 0 },
     [SET_TONE_GAP] = {
-        "tone_gap", "Tap gap", "Silence that ends a beep", "ms",
+        "tone_gap", "ms",
         SET_CAT_IFACE, SET_TYPE_INT, 1, 100, 1, 3, NULL, 0 },
     [SET_TONE_PERIODS] = {
-        "tone_periods", "Tap min periods", "Tone periods that make a beep", "",
+        "tone_periods", "",
         SET_CAT_IFACE, SET_TYPE_INT, 1, 64, 1, 3, NULL, 0 },
     [SET_VIBE_EN] = {
-        "vibe_en", "Vibration", "Accelerometer for the balancing mode", "",
+        "vibe_en", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_OPTICAL_EN] = {
-        "optical_en", "Optical tacho", "Once per revolution, gives the phase", "",
+        "optical_en", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_OPTICAL_PIN] = {
-        "optical_pin", "Tacho pin", "-1 until one is wired", "GPIO",
+        "optical_pin", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 48, 1, -1, NULL, 0 },
     /*
-     * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3 V.
+     * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3V.
      * IOmcu GPIO, written to its SUPPLY page by the panel; the pins
      * are -1 until the module is wired, and the page drives nothing then.
      */
     [SET_PDMINI_EN] = {
-        "pdm_en", "PD mini", "Programmable supply on a UART", "",
+        "pdm_en", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_PDMINI_TX] = {
-        "pdm_tx", "PD mini TX", "Our TX, to the module's DM; -1 until wired", "GPIO",
+        "pdm_tx", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_RX] = {
-        "pdm_rx", "PD mini RX", "Our RX, from the module's DP; -1 until wired", "GPIO",
+        "pdm_rx", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_BAUD] = {
-        "pdm_baud", "PD mini baud", "The module's UART Baudrate; AUTO finds it", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(k_pdmini_baud) },
+        "pdm_baud", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(pdmini_baud) },
     /*
      * How the IOmcu receives a Hitec D series answer on its programming
      * port (the HITEC page's register 23, link_hitec_rx_t): PULL-UP, the
-     * line released with a 2.2 kOhm pull-up on the signal wire, or
+     * line released with a 2.2kOhm pull-up on the signal wire, or
      * PRECHARGE, with none.  The IOmcu takes it at its next OPEN of a
      * D series line; classic servos need neither.
      */
     [SET_HITEC_RX] = {
-        "hitec_rx", "Hitec D receive", "PULL-UP needs 2.2 kOhm on the signal wire", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_hitec_rx) },
+        "hitec_rx", "",
+        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(hitec_rx) },
 
     /*
      * The supply's.  The ranges are a USB-PD PPS (Programmable Power Supply)
@@ -243,33 +234,33 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * operator limits it; the start set points are a servo rail's.
      */
     [SET_SUPPLY_V_MAX] = {
-        "sup_v_max", "Voltage max", "The highest voltage a set point takes", "V",
+        "sup_v_max", "V",
         SET_CAT_SUPPLY, SET_TYPE_FLOAT, 3.3f, 21.0f, 0.02f, 21.0f, NULL, 0 },
     [SET_SUPPLY_I_MAX] = {
-        "sup_i_max", "Current max", "The highest current limit a set point takes", "A",
+        "sup_i_max", "A",
         SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.5f, 5.0f, 0.05f, 5.0f, NULL, 0 },
     [SET_SUPPLY_V_START] = {
-        "sup_v_start", "Start voltage", "The voltage set point after a restart", "V",
+        "sup_v_start", "V",
         SET_CAT_SUPPLY, SET_TYPE_FLOAT, 3.3f, 21.0f, 0.02f, 6.0f, NULL, 0 },
     [SET_SUPPLY_I_START] = {
-        "sup_i_start", "Start current", "The current limit after a restart", "A",
+        "sup_i_start", "A",
         SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.5f, 5.0f, 0.05f, 2.0f, NULL, 0 },
     [SET_SUPPLY_TRIP_I] = {
-        "sup_trip_i", "Current trip", "Output off above this current; 0 is off", "A",
+        "sup_trip_i", "A",
         SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.05f, 0.0f, NULL, 0 },
     [SET_SUPPLY_TRIP_V] = {
-        "sup_trip_v", "Voltage trip", "Output off above this voltage; 0 is off", "V",
+        "sup_trip_v", "V",
         SET_CAT_SUPPLY, SET_TYPE_FLOAT, 0.0f, 21.0f, 0.02f, 0.0f, NULL, 0 },
     [SET_SUPPLY_TRIP_MS] = {
-        "sup_trip_ms", "Trip time", "How long over before a trip", "ms",
+        "sup_trip_ms", "ms",
         SET_CAT_SUPPLY, SET_TYPE_INT, 0, 5000, 10, 100, NULL, 0 },
     /* Whether a set point changed while the output is on waits for a
      * confirmation: from the slider and its steps, and from the keypad. */
     [SET_SUPPLY_CONFIRM_SLIDE] = {
-        "sup_conf_sl", "Confirm slider", "Ask before the slider changes a live output", "",
+        "sup_conf_sl", "",
         SET_CAT_SUPPLY, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_SUPPLY_CONFIRM_KEYS] = {
-        "sup_conf_kp", "Confirm keypad", "Ask before the keypad changes a live output", "",
+        "sup_conf_kp", "",
         SET_CAT_SUPPLY, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
 
     /*
@@ -277,82 +268,82 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * and for how long -- the supply steps it repeats that at, and the
      * limits it judges the servo by.  A pass/fail limit of 0 is not
      * checked.  The servo's own type, pulse widths and frame rate are not
-     * here: they start at STANDARD PWM and 50 Hz at every restart, so a
+     * here: they start at STANDARD PWM and 50Hz at every restart, so a
      * servo plugged in later never meets a rate meant for another.
      */
     [SET_SERVO_CURVE] = {
-        "srv_curve", "Curve", "How the test moves the servo", "",
-        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(k_servo_curve) },
+        "srv_curve", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(servo_curve) },
     [SET_SERVO_TEST_HZ] = {
-        "srv_test_hz", "Speed", "Curves a second", "Hz",
+        "srv_test_hz", "Hz",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.05f, 5.0f, 0.05f, 0.5f, NULL, 0 },
     [SET_SERVO_TEST_RANGE] = {
-        "srv_range", "Range", "Share of the travel the test moves through", "%",
+        "srv_range", "%",
         SET_CAT_SERVO, SET_TYPE_INT, 10, 100, 5, 80, NULL, 0 },
     [SET_SERVO_LEN_BY] = {
-        "srv_len_by", "Length by", "A time, or a number of movements", "",
-        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_servo_len_by) },
+        "srv_len_by", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(servo_len_by) },
     [SET_SERVO_LEN_S] = {
-        "srv_len_s", "Test time", "How long each supply step runs", "s",
+        "srv_len_s", "s",
         SET_CAT_SERVO, SET_TYPE_INT, 5, 3600, 5, 60, NULL, 0 },
     [SET_SERVO_LEN_MOVES] = {
-        "srv_len_moves", "Movements", "How many movements each step makes", "",
+        "srv_len_moves", "",
         SET_CAT_SERVO, SET_TYPE_INT, 1, 1000, 1, 20, NULL, 0 },
     [SET_SERVO_DWELL_MS] = {
-        "srv_dwell_ms", "Dwell", "Held at each end before moving on", "ms",
+        "srv_dwell_ms", "ms",
         SET_CAT_SERVO, SET_TYPE_INT, 0, 5000, 10, 200, NULL, 0 },
     [SET_SERVO_SETTLE_MS] = {
-        "srv_settle_ms", "Settle", "Waited after a supply step before measuring", "ms",
+        "srv_settle_ms", "ms",
         SET_CAT_SERVO, SET_TYPE_INT, 0, 10000, 50, 500, NULL, 0 },
     [SET_SERVO_STEP_48] = {
-        "srv_step48", "Step 4.8 V", "", "",
+        "srv_step48", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_SERVO_STEP_60] = {
-        "srv_step60", "Step 6.0 V", "", "",
+        "srv_step60", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_SERVO_STEP_74] = {
-        "srv_step74", "Step 7.4 V", "", "",
+        "srv_step74", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_SERVO_STEP_84] = {
-        "srv_step84", "Step 8.4 V", "", "",
+        "srv_step84", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_SERVO_BROWNOUT] = {
-        "srv_brownout", "Brown-out", "From 5.0 V down until the servo stops moving", "",
+        "srv_brownout", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_SERVO_IDLE_MAX] = {
-        "srv_idle_max", "Idle current max", "Fail above this at rest; 0 is not checked", "A",
+        "srv_idle_max", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.01f, 0.0f, NULL, 0 },
     [SET_SERVO_HOLD_MAX] = {
-        "srv_hold_max", "Holding current max", "Fail above this holding an end; 0 is not checked", "A",
+        "srv_hold_max", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.01f, 0.0f, NULL, 0 },
     [SET_SERVO_TRAVEL_MAX_MS] = {
-        "srv_travel_ms", "Travel time max", "Fail above this end to end; 0 is not checked", "ms",
+        "srv_travel_ms", "ms",
         SET_CAT_SERVO, SET_TYPE_INT, 0, 5000, 10, 0, NULL, 0 },
     [SET_SERVO_STALL_A] = {
-        "srv_stall_a", "Stall threshold", "Above this the servo counts as stalled", "A",
+        "srv_stall_a", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.05f, 2.0f, NULL, 0 },
     /*
      * The servo programmer's, set on its own page.  The ranges are the
      * programming port's (kst_port.h) and the model's (kst_prog.h).
      */
     [SET_SERVO_PROG_V] = {
-        "srv_prog_v", "Programming voltage", "Supply of the servo while it is programmed", "V",
+        "srv_prog_v", "V",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 4.8f, 8.4f, 0.1f, 5.0f, NULL, 0 },
     [SET_SERVO_PROG_I] = {
-        "srv_prog_i", "Programming current", "The supply's limit while a servo is programmed", "A",
+        "srv_prog_i", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.05f, 3.0f, 0.001f, 1.0f, NULL, 0 },
     [SET_SERVO_PROG_WAIT] = {
-        "srv_prog_wait", "Wait before PWM", "From the end of programming to the first pulse", "ms",
+        "srv_prog_wait", "ms",
         SET_CAT_SERVO, SET_TYPE_INT, 0, 10000, 1, 100, NULL, 0 },
     /*
      * What the SERVO screen's tester drives: the standard servo outputs or
      * the programming port, and whether that port renders its pulse.
      */
     [SET_SERVO_TARGET] = {
-        "srv_target", "PWM target", "What the tester drives", "",
-        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_servo_target) },
+        "srv_target", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(servo_target) },
     [SET_SERVO_PORT_PWM] = {
-        "srv_port_pwm", "Port PWM", "The programming port's pulse while it is the target", "",
+        "srv_port_pwm", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
      * Stick programming's.  The supply it powers the ESC (electronic speed
@@ -361,49 +352,49 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * measurement; esc_stick_timing_defaults() holds the same numbers.
      */
     [SET_STICK_V] = {
-        "stk_v", "Voltage", "0 takes it from the profile's cell count", "V",
+        "stk_v", "V",
         SET_CAT_STICK, SET_TYPE_FLOAT, 0.0f, 20.0f, 0.1f, 0.0f, NULL, 0 },
     [SET_STICK_I] = {
-        "stk_i", "Current limit", "The supply's limit for the run", "A",
+        "stk_i", "A",
         SET_CAT_STICK, SET_TYPE_FLOAT, 0.1f, 3.0f, 0.05f, 1.0f, NULL, 0 },
     [SET_STICK_BEEP_MIN] = {
-        "stk_beep_min", "Beep min", "Shortest beep the ESC sounds", "ms",
+        "stk_beep_min", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 20, 2000, 10, 200, NULL, 0 },
     [SET_STICK_GAP_MIN] = {
-        "stk_gap_min", "Gap min", "Shortest silence between two beeps", "ms",
+        "stk_gap_min", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 20, 2000, 10, 200, NULL, 0 },
     [SET_STICK_LONG] = {
-        "stk_long", "Long", "A beep this long or longer is a long one", "ms",
+        "stk_long", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 50, 5000, 10, 500, NULL, 0 },
     [SET_STICK_LONG_MAX] = {
-        "stk_long_max", "Long max", "A pulse longer than this is no beep", "ms",
+        "stk_long_max", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 100, 10000, 50, 1500, NULL, 0 },
     [SET_STICK_GROUP_GAP] = {
-        "stk_group_gap", "Group gap", "Silence that ends a group of beeps", "ms",
+        "stk_group_gap", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 50, 10000, 50, 700, NULL, 0 },
     [SET_STICK_ENTRY] = {
-        "stk_entry", "Entry", "Power-on to the menu, where the profile gives no time", "ms",
+        "stk_entry", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 1000, 60000, 500, 5000, NULL, 0 },
     [SET_STICK_STORE] = {
-        "stk_store", "Store", "Held at the last selection before power-off", "ms",
+        "stk_store", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 0, 10000, 250, 2000, NULL, 0 },
     [SET_STICK_OFF] = {
-        "stk_off", "Off time", "Supply off between two entries", "ms",
+        "stk_off", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 500, 20000, 500, 3000, NULL, 0 },
     [SET_STICK_SILENCE] = {
-        "stk_silence", "Silence", "No beep for this long ends the run", "ms",
+        "stk_silence", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 1000, 60000, 1000, 10000, NULL, 0 },
     [SET_STICK_TIMEOUT] = {
-        "stk_timeout", "Timeout", "The wanted beeps not heard in this long", "ms",
+        "stk_timeout", "ms",
         SET_CAT_STICK, SET_TYPE_INT, 5000, 600000, 5000, 180000, NULL, 0 },
     [SET_STICK_THRESHOLD] = {
-        "stk_thresh", "Threshold", "Above the idle current: a beep", "mA",
+        "stk_thresh", "mA",
         SET_CAT_STICK, SET_TYPE_INT, 10, 2000, 10, 100, NULL, 0 },
     [SET_STICK_HYST] = {
-        "stk_hyst", "Hysteresis", "Below the threshold less this: silence", "mA",
+        "stk_hyst", "mA",
         SET_CAT_STICK, SET_TYPE_INT, 0, 1000, 10, 40, NULL, 0 },
     [SET_SERVO_REPORT] = {
-        "srv_report", "Report", "A text report beside each test's log", "",
+        "srv_report", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
      * Whether the panel asks GitHub for a newer release at start, on the
@@ -411,18 +402,19 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * switches it off; the UPDATES screen switches it back on.
      */
     [SET_UPD_REMIND] = {
-        "upd_remind", "Reminder at start", "Ask GitHub for a newer release at panel start", "",
+        "upd_remind", "",
         SET_CAT_UPDATE, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
      * Which releases a check reads.  STABLE: GitHub's latest release,
      * which is never a pre-release; a testing release (odd minor number) is
      * published as one.  TESTING: the newest release, testing or stable.
-     * Either way only a release of the panel's line, 0.22 (fw_release.h),
+     * Either way only a release of the panel's line (fw_release.h: every
+     * release on the ESP32-P4 panel, 0.22.x on the ESP32-S3 panel's line)
      * newer than the running build is offered.
      */
     [SET_UPD_CHANNEL] = {
-        "upd_channel", "Releases", "Both offer 0.22.x only; TESTING also reads testing releases", "",
-        SET_CAT_UPDATE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_upd_channel) },
+        "upd_channel", "",
+        SET_CAT_UPDATE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(upd_channel) },
     /*
      * Which logs reach the card (card_tree.h).  AUTO LOGS: a log of each
      * ARMED run and each switch-on of the SUPPLY output, in BENCH/LOGS.
@@ -430,23 +422,17 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * report, in USER/LOGS.  Off, nothing is written and no number taken.
      */
     [SET_LOG_AUTO] = {
-        "log_auto", "Auto logs", "A log of each ARMED and supply run", "",
+        "log_auto", "",
         SET_CAT_CARD, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     [SET_LOG_USER] = {
-        "log_user", "User logs", "AUTOMATIC TEST, LIMIT RUN", "",
+        "log_user", "",
         SET_CAT_CARD, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
 };
 
+/** @brief The categories' names in English, from ui_text.def. */
 static const char *const k_cat_names[SET_CAT_COUNT] = {
-    [SET_CAT_APP]    = "PANEL",
-    [SET_CAT_IFACE]  = "INTERFACES",
-    [SET_CAT_CARD]   = "SD CARD",
-    [SET_CAT_SENSORS] = "SENSORS",
-    [SET_CAT_ESC]    = "ESC / BENCH",
-    [SET_CAT_SUPPLY] = "SUPPLY",
-    [SET_CAT_SERVO]  = "SERVO TEST",
-    [SET_CAT_STICK]  = "ESC STICK",
-    [SET_CAT_UPDATE] = "UPDATES",
+#define UI_SETTING_CATEGORY(id, en, de) [id] = (en),
+#include "ui_text.def"
 };
 
 /* The string settings' keys, defaults and categories; NVS keys, 15
@@ -483,6 +469,7 @@ static struct {
     settings_observer_fn observer;
     settings_text_observer_fn text_observer;
     settings_hold_fn hold;
+    settings_armed_fn armed;   /**< says whether the bench is ARMED */
 } s;
 
 /*
@@ -568,9 +555,27 @@ void settings_set_hold(settings_hold_fn fn)
     s.hold = fn;
 }
 
+/** @brief Install the ARMED source (settings.h). */
+void settings_set_armed(settings_armed_fn fn)
+{
+    s.armed = fn;
+}
+
+/** @brief Whether @p id changes on a SAFE bench only (settings.h). */
+bool settings_safe_only(setting_id_t id)
+{
+    return id == SET_SCREEN_ROT;
+}
+
 bool settings_held(setting_id_t id)
 {
-    return id >= 0 && id < SETTING_COUNT && s.hold != NULL && s.hold(id);
+    if (id < 0 || id >= SETTING_COUNT) {
+        return false;
+    }
+    if (settings_safe_only(id) && s.armed != NULL && s.armed()) {
+        return true;
+    }
+    return s.hold != NULL && s.hold(id);
 }
 
 const char *settings_category_name(setting_cat_t cat)
@@ -604,6 +609,18 @@ bool settings_sense_sda_valid(int gpio)
            && (outbind_reserved_mask(OUTBIND_BOARD_PICO_HEADER) & pair) == 0u;
 }
 
+bool settings_tap_pin_valid(int gpio)
+{
+    if (gpio < 0 || gpio >= (int)OUT_MAX_PIN) {
+        return false;
+    }
+    if ((gpio >= 26 && gpio <= 29) || gpio >= 40) {
+        return false;                   /* the TONE page refuses ADC pins */
+    }
+    return (outbind_reserved_mask(OUTBIND_BOARD_PICO_HEADER)
+            & ((uint64_t)1u << (unsigned)gpio)) == 0u;
+}
+
 bool settings_pdmini_same_pin(void)
 {
     const int tx = (int)lrintf(s.values[SET_PDMINI_TX]);
@@ -619,6 +636,9 @@ static bool pin_takes(setting_id_t id, int pin)
             (id == SET_PDMINI_TX) ? SET_PDMINI_RX : SET_PDMINI_TX;
         return pin < 0 || pin != (int)lrintf(s.values[other]);
     }
+    if (id == SET_TONE_PIN) {
+        return settings_tap_pin_valid(pin);
+    }
     return settings_sense_sda_valid(pin);
 }
 
@@ -630,6 +650,13 @@ static float coerce(const setting_def_t *d, float v)
         const long pin = lrintf(v);
         return (pin >= (long)d->min && pin <= (long)d->max
                 && settings_sense_sda_valid((int)pin))
+                   ? (float)pin : d->def;
+    }
+    if (d == &k_defs[SET_TONE_PIN]) {
+        /* A stored pin the module does not bring out is a stale word. */
+        const long pin = lrintf(v);
+        return (pin >= (long)d->min && pin <= (long)d->max
+                && settings_tap_pin_valid((int)pin))
                    ? (float)pin : d->def;
     }
     switch (d->type) {
@@ -892,7 +919,8 @@ void settings_adjust(setting_id_t id, int steps)
         settings_set(id, (float)next);
         return;
     }
-    if (id == SET_SENSE_SDA || id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
+    if (id == SET_SENSE_SDA || id == SET_PDMINI_TX || id == SET_PDMINI_RX
+        || id == SET_TONE_PIN) {
         /* From one pin the row takes to the next, and no further than the
          * first and the last. */
         int pin = (int)lrintf(s.values[id]);
@@ -937,6 +965,27 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max)
     return n;
 }
 
+/** @brief The most digits after the point a step carries: 0.001A, the
+ *         servo programmer's current. */
+#define DECIMALS_MAX 3
+
+int settings_decimals(setting_id_t id)
+{
+    const setting_def_t *d = settings_def(id);
+    if (d == NULL || !(d->step > 0.0f)) {
+        return 0;
+    }
+    float step = d->step;
+    int decimals = 0;
+    /* A step of 0.1 is 1.0000000149 once multiplied: whole within 0.1%. */
+    while (decimals < DECIMALS_MAX
+           && fabsf(step - roundf(step)) > 1e-3f * step) {
+        step *= 10.0f;
+        ++decimals;
+    }
+    return decimals;
+}
+
 const char *settings_value_text(setting_id_t id, char *buf, size_t n)
 {
     return settings_value_text_of(id, settings_get(id), buf, n);
@@ -967,7 +1016,7 @@ const char *settings_value_text_of(setting_id_t id, float v, char *buf,
         break;
     }
     case SET_TYPE_FLOAT:
-        snprintf(buf, n, "%.1f", (double)v);
+        snprintf(buf, n, "%.*f", settings_decimals(id), (double)v);
         break;
     case SET_TYPE_INT:
     default:

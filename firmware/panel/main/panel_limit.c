@@ -24,18 +24,22 @@
 #include "settings.h"
 #include "settings_sensors.h"
 
-/* The limits and what each channel watches as the settings stand, under
- * s_limit_mux both ways: written by the settings observer on app_main,
- * read once a poll by the control task. */
+/**
+ * @brief Guards the limits and what each channel watches as the settings
+ *        stand, both ways: written by the settings observer on app_main,
+ *        read once a poll by the control task.
+ */
 static portMUX_TYPE s_limit_mux = portMUX_INITIALIZER_UNLOCKED;
+/** @brief Each channel's limit in mA, 0 for none; under s_limit_mux. */
 static uint16_t     s_limit_want[LINK_SL_KEPT];
-static uint8_t      s_limit_watch[LINK_SL_KEPT];  /* SENS_W_* options */
+/** @brief What each channel watches, SENS_W_* options; under s_limit_mux. */
+static uint8_t      s_limit_watch[LINK_SL_KEPT];
 
-/* The page's service; control task only. */
+/** @brief The page's service; control task only. */
 static sense_limit_link_t s_sense_limit;
 
-/* SETUP > SENSORS' LIMIT marks, sensors_rows_set_limits()'s word.
- * Control task writes, app_main reads. */
+/** @brief SETUP > SENSORS' LIMIT marks, sensors_rows_set_limits()'s word.
+ *         Control task writes, app_main reads. */
 atomic_uint s_sense_limits;
 
 void publish_limits(void)
@@ -63,7 +67,7 @@ void sense_limit_lost(void)
     atomic_store(&s_sense_limits, 0u);
 }
 
-/* The next alert into the band, when the band's slot is free. */
+/** @brief The next alert into the band, when the band's slot is free. */
 static void limit_alerts(void)
 {
     snap_lock();

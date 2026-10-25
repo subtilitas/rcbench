@@ -1,7 +1,8 @@
-/*
- * SETUP > SENSORS' list: which SENSORS rows show, the headings over them,
- * and what each fitted part is doing.  The list is SETUP's own list
- * renderer (settings_screen.c); this file decides its rows.
+/**
+ * @file sensors_rows.h
+ * @brief SETUP > SENSORS' list: which SENSORS rows show, the headings over
+ *        them, and what each fitted part is doing.  The list is SETUP's own
+ *        list renderer (settings_draw.c); this file decides its rows.
  *
  * The list: the heading INA3221 PARTS over 0x40 FITTED to 0x43 FITTED,
  * then per fitted part a heading "INA3221 0x4n" with the part's state on
@@ -85,7 +86,7 @@ const char *sensors_rows_why(setting_id_t id);
  * @param n     the size of @p buf, bytes; UI_ALERT_MAX holds every line.
  * @param ev    the alert, from sense_limit_link_event().
  * @param ch    for EV_OVER the channel, 0 to 11.
- * @param ma    for EV_OVER the limit it passed, mA, shown in A to 0.01 A.
+ * @param ma    for EV_OVER the limit it passed, mA, shown in A to 0.01A.
  * @param watch for EV_OVER the channel's WATCHES option, said in brackets;
  *              none for SENS_W_NONE.
  * @return @p buf; "" for EV_NONE, a channel past 11, or no buffer.

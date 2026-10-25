@@ -6,7 +6,7 @@ order: 2
 
 # Statusband und STOP
 
-Das Statusband sind die oberen 48 px jedes Bildschirms außer dem Splash, dem Busfehler-Bildschirm, PANEL UPDATE und dem Fortschritt eines IOmcu-Updates. Es nennt den Bildschirm, zeigt den Zustand des Prüfstands und trägt STOP.
+Das Statusband sind die oberen 60px jedes Bildschirms außer dem Splash, dem Busfehler-Bildschirm, PANEL UPDATE und dem Fortschritt eines IOmcu-Updates. Es nennt den Bildschirm, zeigt den Zustand des Prüfstands und trägt STOP.
 
 ## Was das Band zeigt
 
@@ -30,9 +30,9 @@ Das Home-Tag führt zum [Menü](overview.md).
 | SAFE | keine |
 | ARMED MOTOR | die Throttle-Ausgänge, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | ARMED SERVO | die Servo-Ausgänge und ein pulsender PROG PORT, von SERVO |
-| ARMED | jeder gebundene Ausgang, an einem IOmcu älter als Protokoll 4.18 |
+| ARMED | jeder gebundene Ausgang, an einem IOmcu älter als 0.18.0 |
 
-Ein Kanal ohne Befehl seit 500 ms steht bei ARMED in Ruhe: ein Throttle auf 0 %, ein Servo in der Mitte seines Wegs.
+Ein Kanal ohne Befehl seit 500ms steht bei ARMED in Ruhe: ein Throttle auf 0%, ein Servo in der Mitte seines Wegs.
 
 ## STOP
 
@@ -47,7 +47,7 @@ STOP wirkt auf jedem Bildschirm mit Band. Es schaltet den Prüfstand auf SAFE, s
 ![Der Kasten unter dem Chip VERBINDUNG](view:band-link)
 ![Der Kasten unter dem Chip SAFE](view:band-safe)
 
-Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 520 px breit und öffnet 4 px unter dem Band. Ein Tipp auf einen anderen Chip schließt ihn und öffnet den Kasten dieses Chips. Jeder andere Tipp schließt ihn und tut sonst nichts, außer auf DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN oder LAUF BEENDEN: Diese wirken mit demselben Druck, wie ohne Kasten. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
+Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 640px breit und öffnet 4px unter dem Band. Ein Tipp auf einen anderen Chip schließt ihn und öffnet den Kasten dieses Chips. Jeder andere Tipp schließt ihn und tut sonst nichts, außer auf DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN oder LAUF BEENDEN: Diese wirken mit demselben Druck, wie ohne Kasten. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
 
 ![Der Kasten unter ARMED MOTOR](view:band-armed)
 
@@ -59,11 +59,11 @@ Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, endet der Kasten vo
 
 ![Der Kasten von FEHLER mit drei gesetzten Bits](view:band-fault)
 
-Der Kasten von FEHLER reicht über das Panel, 784 px, mit einem Absatz je gesetztem Bit:
+Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetztem Bit:
 
 | Code | Name | In diesem Release gesetzt, wenn |
 |---|---|---|
-| 01 | LINK_SILENT | der IOmcu 200 ms keine Anfrage gehört und auf SAFE geschaltet hat; bleibt bis zum nächsten ARM |
+| 01 | LINK_SILENT | der IOmcu 200ms keine Anfrage gehört und auf SAFE geschaltet hat; bleibt bis zum nächsten ARM |
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
@@ -77,11 +77,11 @@ Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit
 
 ![Ein Alert über den unteren Rand des Menüs](view:overview-alert)
 
-Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 34 px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt, ARM eingeschlossen.
+Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt; ARM und die Bedienelemente, die den Prüfstand anhalten, enden darüber.
 
-- Es verschwindet 30 s nach seinem Eintreffen. Ein neuer Alert startet die 30 s neu.
+- Es verschwindet 30s nach seinem Eintreffen. Ein neuer Alert startet die 30s neu.
 - Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
-- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken beim ersten Druck, auch wo das Band sie verdeckt, und der Druck löscht das Band. Auf SERVO verdeckt das Band die unteren 22 px von DISARM. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
+- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN enden über dem Band: Ein Druck darauf gehört dem Bedienelement, und der Alert bleibt. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
 
 ## Berührungen nahe am Band

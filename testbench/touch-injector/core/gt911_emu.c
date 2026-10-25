@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The GT911 register file as an I2C target sees it (gt911_emu.h).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -13,7 +16,9 @@ void gt911_emu_init(gt911_emu_t *e, uint16_t res_x, uint16_t res_y)
     e->res_y = res_y;
 }
 
+/** @brief The low byte of @p v. */
 static uint8_t lo(uint16_t v) { return (uint8_t)(v & 0xFFu); }
+/** @brief The high byte of @p v. */
 static uint8_t hi(uint16_t v) { return (uint8_t)(v >> 8); }
 
 uint8_t gt911_emu_peek(const gt911_emu_t *e, uint16_t reg)
@@ -37,12 +42,12 @@ uint8_t gt911_emu_peek(const gt911_emu_t *e, uint16_t reg)
     default:
         break;
     }
-    if (reg >= 0x8140u && reg < 0x8144u) {
-        /* The product ID, "911" and a NUL. */
-        static const uint8_t id[4] = { '9', '1', '1', 0 };
-        return id[reg - 0x8140u];
+    if (reg >= GT911_EMU_REG_PRODUCT && reg < GT911_EMU_REG_PRODUCT + 4u) {
+        /* The product ID, GT911_EMU_PRODUCT_ID, 4 bytes without its NUL. */
+        return (uint8_t)GT911_EMU_PRODUCT_ID[reg - GT911_EMU_REG_PRODUCT];
     }
-    if (reg >= GT911_EMU_REG_POINT1 && reg < GT911_EMU_REG_POINT1 + 8u) {
+    if (reg >= GT911_EMU_REG_POINT1
+        && reg < GT911_EMU_REG_POINT1 + sizeof(e->point)) {
         return e->point[reg - GT911_EMU_REG_POINT1];
     }
     return 0;
@@ -99,22 +104,24 @@ void gt911_emu_finish(gt911_emu_t *e)
 
 bool gt911_emu_publish(gt911_emu_t *e, const gt911_emu_frame_t *f)
 {
-    if (e->busy || (e->status & GT911_EMU_READY) != 0u) {
+    if (e->busy || (e->status & GT911_EMU_READY) != 0u
+        || f->n > GT911_EMU_POINTS) {
         return false;
     }
     memset(e->point, 0, sizeof(e->point));
-    if (f->down) {
-        e->point[0] = 0;                    /* track ID */
-        e->point[1] = lo(f->x);
-        e->point[2] = hi(f->x);
-        e->point[3] = lo(f->y);
-        e->point[4] = hi(f->y);
-        e->point[5] = (uint8_t)GT911_EMU_SIZE;
-        e->point[6] = 0;
-        e->status = (uint8_t)(GT911_EMU_READY | 1u);
-    } else {
-        e->status = (uint8_t)GT911_EMU_READY;
+    for (unsigned i = 0; i < f->n; ++i) {
+        uint8_t *p = &e->point[(size_t)i * GT911_EMU_STRIDE];
+        const gt911_emu_point_t *q = &f->pt[i];
+        p[0] = q->id;
+        p[1] = lo(q->x);
+        p[2] = hi(q->x);
+        p[3] = lo(q->y);
+        p[4] = hi(q->y);
+        p[5] = (uint8_t)GT911_EMU_SIZE;
+        p[6] = 0;
+        p[7] = 0;
     }
+    e->status = (uint8_t)(GT911_EMU_READY | f->n);
     return true;
 }
 

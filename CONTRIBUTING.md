@@ -57,25 +57,23 @@ cmake --build test/host/build-san && ctest --test-dir test/host/build-san --outp
 python3 tools/coverage.py --check     # coverage floors, the STATUS.md table, the README figure
 python3 tools/check_docs.py           # links, translations, SPDX, the suite list, numbers against constants
 python3 tools/render_ui.py --check    # the committed screenshots match
-python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
 python3 tools/gen_board_drawing.py --check
 python3 tools/gen_esc_profiles.py --check
-python3 tools/check_sizes.py --check  # every file over 1,000 lines is in tools/check_sizes.txt
+python3 tools/check_sizes.py --check  # every file over 1,000 code lines is in tools/check_sizes.txt
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
+python3 tools/check_units.py --check  # a number and its unit without a space
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 -m pytest test/tools          # the tools' own tests
+python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
-# After a panel build, on ESP-IDF v5.4 for --check-doc: task stacks, and the
-# table in docs/Performance.md.
-python3 tools/stack_check.py firmware/panel/build --check-doc
-# After a panel build, on ESP-IDF v5.4 for --check-doc: internal RAM with
-# the largest Wi-Fi mode up, and its table in docs/Performance.md.
-python3 tools/ram_budget.py firmware/panel/build --check-doc
+# After a panel build on ESP-IDF v5.5.5 for the ESP32-P4: the image against
+# the smaller of its two update slots.
+python3 tools/image_slot.py firmware/panel/build
 # After an IOmcu build: the stacks of its two cores, and core 0's row
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
@@ -99,7 +97,7 @@ cmake -S test/host -B test/host/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
     | grep -v -e gfx_font -e /rp2350/ -e test/host/render_screen.c -e test/host/bench_frame.c \
     | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
-ruff check tools/ test/tools/ test/host/
+ruff check tools/ test/tools/ test/host/   # with the docstring (D) rules
 ```
 
 cppcheck also runs over `firmware/` and the pin drivers in
@@ -123,32 +121,32 @@ A change fails if:
 - a screen's render changes and the committed images in `docs/img/` were not
   regenerated with `tools/render_ui.py`. Review the new images before
   committing them;
-- drawing code exceeds its cache-line ceiling
-  ([Performance](docs/Performance.md));
-- a panel task's deepest call chain exceeds its stack less 1024 bytes, or
-  an IOmcu core's deepest chain, one interrupt and 256 bytes exceed
+- the panel image is larger than the smaller of its two update slots, or
+  the panel build lacks the IOmcu image, the touch injector or exFAT, or
+  the build without the injector holds its code;
+- an IOmcu core's deepest chain, one interrupt and 256 bytes exceed
   its stack ([Performance](docs/Performance.md#stacks)), or a stack figure
   or a count of calls not followed that Performance or `STATUS.md` gives
   differs from the build;
-- the panel's internal heap with the largest Wi-Fi mode up is under 32,768
-  bytes, a task, queue or semaphore in `firmware/panel` is one
-  `tools/ram_budget.py` cannot size, or the internal RAM table or the
-  PSRAM table in [Performance](docs/Performance.md#internal-ram) differs
-  from the ESP-IDF v5.4 build;
-- a file over 1,000 lines is not in `tools/check_sizes.txt` with the reason
-  it stays whole, a listed file is at or under 1,000 lines, or a listed
+- a file over 1,000 code lines (lines that are not blank and not
+  comment-only) is not in `tools/check_sizes.txt` with the reason it stays
+  whole, a listed file is at or under 1,000 code lines, or a listed
   line count is outside its tolerance;
 - a string overflows where it is drawn, in English or in German, and is not
   one of the overflows `tools/render_ui.py` lists as known;
 - a page states a protocol version, a timing, a pin, a coverage floor, a
-  stack margin, the internal RAM floor, a servo test constant or a
-  frame-cost ceiling that differs
+  stack margin, a servo test constant or an ESP-IDF or pico-sdk tag that
+  differs
   from the constant in the headers, the tools or `ci.yml`. A reworded
   sentence takes its entry in `FACTS` in `tools/check_docs.py` along;
 - a compile command of the sanitizer build lacks one of
   `-fsanitize=address,undefined`, `-fno-sanitize-recover=all` and
   `-fno-omit-frame-pointer`;
 - a case under `test/tools/` fails;
+- a C file the pull request adds has a Doxygen warning, a line it changes
+  carries one, a C file it changes has no `@file` block, the tree has a
+  warning that `tools/doc_check_baseline.txt` does not list, or the
+  baseline lists one that no longer occurs ([Comments](#comments));
 - a source file has no SPDX (Software Package Data Exchange) line, a wiki page
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`
@@ -200,8 +198,8 @@ python3 tools/mutate.py --list                # the mutants, without a run
 python3 tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0
 ```
 
-It runs at most 60 mutants and stops starting new ones after 1200 s; a run
-ends within 2700 s. The working tree is not written. CI runs it on every
+It runs at most 60 mutants and stops starting new ones after 1200s; a run
+ends within 2700s. The working tree is not written. CI runs it on every
 pull request and puts the survivors in the job summary; a survivor does not
 fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
@@ -209,8 +207,8 @@ pull request why the two lines behave the same.
 `mutation.yml` runs every mutant of every line of `shared/safety` and
 `shared/outputs` (3032 mutants) each Sunday at 03:17 UTC and on demand. It has
 no mutant limit and runs in 6 shards of files (file i of the sorted list goes
-to shard i mod 6). A shard starts no mutant after 18000 s, stops one build or
-suite run after 600 s and ends within 21000 s; the mutants left are reported as
+to shard i mod 6). A shard starts no mutant after 18000s, stops one build or
+suite run after 600s and ends within 21000s; the mutants left are reported as
 not run. The share of mutants that run within the budget on a hosted runner is
 not measured. A survivor does not fail the job. The result is the job summaries
 and the artifacts `mutation-full-0` to `mutation-full-5`.
@@ -334,7 +332,7 @@ A screen, tab, overlay, prompt or automatic run that drives an output names
 that output while it is shown: the pin, the port with its pin, or the supply
 with its voltage. A screen that talks to a module over a serial link names
 the link's pins as well. Examples of the form, not texts of any screen: `GP4`,
-`PROG PORT GP13`, `PD MINI 7.40 V`. Nothing bound, a binding not yet read and
+`PROG PORT GP13`, `PD MINI 7.40V`. Nothing bound, a binding not yet read and
 a target out of reach show as a warning. The label reads the state the drive
 path reads, not the setting that asks for it (`prog_link_target()`, not
 `SET_SERVO_TARGET`). A screen added or changed meets the rule and comes
@@ -349,6 +347,105 @@ of the screen. The screens that do not meet it are listed in
 - Test names are sentences: `a_refused_write_changes_nothing`.
 - Comments state the constraint or decision the code depends on, in present
   tense. No history of how the code came to be.
+
+## Comments
+
+C files under `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/`
+and `testbench/touch-injector/core/` carry Doxygen comments. The generated
+tables (`gfx_font*`, `*_gen.c`, `board_drawing_*`) do not.
+
+- Each file opens with a `@file` block that has a `@brief`.
+- Each public function, type and macro group has a `/** */` block with
+  `@brief`, a `@param` for every parameter and a `@return` for a non-void
+  result.
+- Each file-scope variable, `static` ones too, has a block with a
+  `@brief`; a struct member has one or a trailing `/**< */`.
+- A `static` helper in a `.c` file has at least a `@brief`.
+- Every `/**` or `/*!` block has a `@brief`, except a member's trailing
+  `/**< */`, a group block (`@{`, `@}`, `@name`) and the `@file` block.
+- A brief is an explicit `@brief`. The first sentence of a block is not
+  one (`JAVADOC_AUTOBRIEF = NO`).
+
+```c
+/**
+ * @file
+ * @brief Clamp a servo pulse to the endpoints of its channel.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/**
+ * @brief Clamp a pulse width to a channel's endpoints.
+ * @param ch The channel, 0 to 15.
+ * @param us The requested pulse width, in microseconds.
+ * @return The pulse width the channel drives, in microseconds.
+ */
+uint16_t servo_clamp(uint8_t ch, uint16_t us);
+```
+
+Python modules, public functions, classes and methods carry a Google-style
+docstring: a summary line, a blank line, then `Args:`, `Returns:` and
+`Raises:` as they apply.
+
+```python
+def read_baseline(path):
+    """Read a baseline file.
+
+    Args:
+        path: The file; a missing file is an empty baseline.
+
+    Returns:
+        Each line with the number of times it occurs.
+    """
+```
+
+Two checks hold the rule. They apply to new and touched code and list
+the gaps of the rest of the tree, so an old gap does not fail a pull
+request and a new one does.
+
+- `tools/doc_check.py --check` runs Doxygen 1.18.0 with the `Doxyfile`
+  and compares its warnings with `tools/doc_check_baseline.txt`. A
+  baseline line is a file and a message without the line number; code
+  that moves inside a file changes no line. In a pull request CI passes
+  `--base origin/<base branch>`, and these warnings fail, listed or not:
+  - every warning in a C file the pull request adds;
+  - in a C file it changes, every warning on a line it adds or rewrites
+    (`git diff -U0`, new side). A warning stands for the line Doxygen
+    reports and the comment block next to it, so a rewritten `@brief`
+    or `@param` counts for the function below it;
+  - a missing `@file` block or `@brief` in a C file it changes. Doxygen
+    reports nothing inside a file without the block;
+  - a `/**` or `/*!` block without `@brief` in a new file or on a changed
+    line. Doxygen takes such a block as detailed text and warns about
+    nothing.
+
+  A renamed or moved file counts as new, so splitting a file documents
+  every function that moves. An old gap on a line the pull request does
+  not touch stays listed.
+- ruff's D rules (pydocstyle, Google convention) in `ruff.toml`. A file
+  not listed under `[lint.per-file-ignores]` passes every D rule; a listed
+  file is excused the codes on its line.
+
+`doc_check.py` and `tools/install_doxygen.sh` run on Linux on x86-64, as
+in CI. On Windows (Git Bash), `doc_check.py` runs with a Doxygen 1.18.0
+on PATH or named by `--doxygen`; `install_doxygen.sh` installs the Linux
+binary only.
+
+When a gap is fixed, its baseline line goes in the same pull request:
+
+```bash
+# Doxygen 1.18.0, as in CI (another release stops doc_check.py with exit 2)
+tools/install_doxygen.sh 1.18.0 <DOXYGEN_SHA256 from ci.yml> ~/doxygen-1.18.0
+python3 tools/doc_check.py --update --doxygen ~/doxygen-1.18.0/bin/doxygen
+git diff tools/doc_check_baseline.txt    # removed lines only
+```
+
+For Python, delete the fixed codes from the file's line in `ruff.toml`,
+and the line when no code is left, then run `ruff check .`.
+
+`mkdir -p build/doxygen && doxygen` at the repository root writes the
+HTML to `build/doxygen/html/`; GitHub Pages publishes it as the
+[C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/).
 
 ## Writing
 
@@ -367,7 +464,7 @@ pull requests and issues.
   document.
 - Lead with what a thing does and its constraints, then how to use it. A
   command or a code block beats a paragraph describing one.
-- Unknowns are stated as unknown ("not measured", "untested above 40 V"), never
+- Unknowns are stated as unknown ("not measured", "untested above 40V"), never
   asserted and never omitted.
 - Commit messages and pull request bodies: the change and its effect, in the
   imperative mood, without the debugging path.

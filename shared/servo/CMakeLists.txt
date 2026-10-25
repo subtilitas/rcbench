@@ -3,18 +3,20 @@
 # against a modelled servo and the IOmcu runs the same code against a
 # real one (not wired in).  The automatic test (servo_test) is stepped by the
 # panel against the supply SUPPLY drives; its move rules (servo_move) also
-# judge the IOmcu's 1 kHz move capture (shared/sense/sense_sched.c).
+# judge the IOmcu's 1kHz move capture (shared/sense/sense_sched.c).
 # The limit run (servo_limrun) is stepped by the panel too: the limit search
 # against the INA3221's windows, then the servo's own LEFT and RIGHT ANGLE
-# through the programmer.
+# through the programmer.  The words of the test and its report are
+# ui_text.def's (servo_str.c).
 set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c servo_move.c
          servo_test.c servo_str.c servo_report.c servo_limrun.c servo_limrun_report.c)
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
+                           PRIV_REQUIRES text)
 else()
     add_library(rcbench_servo STATIC ${SRCS})
     target_include_directories(rcbench_servo PUBLIC include)
     # servo_move.c's noise figure takes a square root.
-    target_link_libraries(rcbench_servo PUBLIC m)
+    target_link_libraries(rcbench_servo PUBLIC m PRIVATE rcbench_text)
 endif()

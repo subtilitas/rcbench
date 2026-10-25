@@ -3395,7 +3395,7 @@ TEST_CASE(the_wait_before_pwm_is_the_leaves_wait)
         CHECK_EQ(cmd.req.port, CH);
         CHECK_EQ(cmd.req.leave_ms, waits[i]);
 
-        /* And the port waits that long: 1 frame is 1 ms, and the link's
+        /* And the port waits that long: 1 frame is 1ms, and the link's
          * exchanges come on top. */
         up();
         CHECK(kst_prog_wait_set(&g_p, waits[i]));
@@ -3661,7 +3661,7 @@ TEST_CASE(the_wait_before_pwm_keeps_its_limits)
     CHECK_EQ(kst_prog_wait_ms(&g_p), 0u);
     CHECK(kst_prog_wait_set(&g_p, KST_PROG_WAIT_MAX_MS));
     CHECK_EQ(kst_prog_wait_ms(&g_p), 10000u);
-    /* 1 ms above the range changes nothing, and nothing wraps. */
+    /* 1ms above the range changes nothing, and nothing wraps. */
     CHECK(!kst_prog_wait_set(&g_p, KST_PROG_WAIT_MAX_MS + 1u));
     CHECK_EQ(kst_prog_wait_ms(&g_p), 10000u);
     CHECK(!kst_prog_wait_set(&g_p, 65536u + 5u));
@@ -5003,7 +5003,7 @@ TEST_CASE(a_value_on_the_other_side_of_the_servos_is_asked_again)
     const kst_image_t sv = sim_bench_image();
     const uint16_t n0 = kst_field_get(&sv, KST_F_NEUTRAL);
 
-    /* 1 count of Neutral is 0.2 us: 110 counts are 22 us. */
+    /* 1 count of Neutral is 0.2us: 110 counts are 22us. */
     up();
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 110u)),
              KST_PROG_EDIT_SOFT);
@@ -5026,7 +5026,7 @@ TEST_CASE(the_soft_limits_compare_with_the_servo_as_the_session_found_it)
     const uint16_t n0 = kst_field_get(&sv, KST_F_NEUTRAL);
     const uint16_t duty = kst_field_get(&sv, KST_F_DUTY);
 
-    /* Neutral moved by 16 us, under the 20 us of the rule, and written. */
+    /* Neutral moved by 16us, under the 20us of the rule, and written. */
     up_enabled();
     CHECK(same(kst_prog_soft_base(&g_p), &sv));
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 80u)),
@@ -5037,7 +5037,7 @@ TEST_CASE(the_soft_limits_compare_with_the_servo_as_the_session_found_it)
     CHECK_EQ(kst_field_get(kst_prog_servo(&g_p), KST_F_NEUTRAL), n0 + 80u);
     /* The base is the servo as found, not as last read. */
     CHECK(same(kst_prog_soft_base(&g_p), &sv));
-    /* 16 us more are 32 us from where the session began: asked. */
+    /* 16us more are 32us from where the session began: asked. */
     CHECK_EQ(kst_prog_edit(&g_p, KST_F_NEUTRAL, (uint16_t)(n0 + 160u)),
              KST_PROG_EDIT_SOFT);
     CHECK_EQ(kst_prog_soft_rules(&g_p), KST_RULE_BIT(KST_S_NEUTRAL_MOVED));

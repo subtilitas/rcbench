@@ -1,4 +1,8 @@
-/*
+/**
+ * @file knob_task.c
+ * @brief The knob's I2C bus, its sensor's registration and the task that
+ *        polls it.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -7,27 +11,30 @@
 #include <stdatomic.h>
 #include <stddef.h>
 
+#include "board_pins.h"
+#include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "knob.h"
-#include "panel_i2c_dev.h"
 
 static const char *TAG = "knob";
 
-/*
- * Short, because the bus is shared with the touch controller, which the touch
- * task reads every 10 ms by default (and on the touch interrupt): a sensor
- * that holds the bus costs that task at most this long per transaction, far
- * under the 150 ms the safety line is watched against.  The three
- * transactions of one poll take about 0.3 ms at 400 kHz.  A failed one
- * costs more: the driver resets the controller and clears the bus, which
- * waits up to 50 ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held low.
+/**
+ * @brief The longest one transaction waits, in milliseconds.
+ *
+ * The bus is the knob's alone, so a transaction waits for nothing else.
+ * The three transactions of one poll take about 0.3ms at 400kHz.  A
+ * failed one costs more: the driver resets the controller and clears the
+ * bus, which waits up to 50ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held
+ * low.
  */
 #define KNOB_I2C_TIMEOUT_MS 5
 
 static atomic_bool s_on;
 static atomic_int  s_steps;
+/** @brief The knob's own bus; NULL when it did not come up. */
+static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev;
 /* Written by knob_task_attach() before the task exists, then the task's. */
 static knob_t s_knob;
@@ -43,17 +50,29 @@ static bool knob_read(uint8_t reg, uint8_t *byte)
                                        KNOB_I2C_TIMEOUT_MS) == ESP_OK;
 }
 
+/**
+ * @brief The polling task: one poll every KNOB_POLL_MS while the sensor
+ *        answers, every KNOB_POLL_IDLE_MS while it does not or the setting
+ *        is off.
+ *
+ * Logs one line when the sensor first answers and one when it stops
+ * answering after that: a change, not a poll.
+ *
+ * @param arg Unused.
+ */
 static void knob_task(void *arg)
 {
     (void)arg;
     knob_reset(&s_knob);
     uint32_t period_ms = KNOB_POLL_IDLE_MS;
+    bool found = false;     /* the last poll's answer, for the log lines */
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(period_ms));
         if (!atomic_load(&s_on)) {
             knob_reset(&s_knob);
             period_ms = KNOB_POLL_IDLE_MS;
+            found = false;
             continue;
         }
         uint8_t bytes[KNOB_POLL_READS] = { 0 };
@@ -62,8 +81,8 @@ static void knob_task(void *arg)
         /* No reference: an unlogged probe first, so a missing sensor costs
          * one address byte a poll and no driver error lines. */
         if (answered && knob_poll_probe_first(&s_knob)) {
-            answered = panel_i2c_probe((unsigned)addr, KNOB_I2C_TIMEOUT_MS)
-                       == ESP_OK;
+            answered = i2c_master_probe(s_bus, (uint16_t)addr,
+                                        KNOB_I2C_TIMEOUT_MS) == ESP_OK;
         }
         for (int i = 0; answered && i < KNOB_POLL_READS; ++i) {
             answered = knob_read(knob_poll_regs[i], &bytes[i]);
@@ -71,6 +90,18 @@ static void knob_task(void *arg)
         const int d = knob_poll_done(&s_knob, answered, bytes);
         if (d != 0) {
             atomic_fetch_add(&s_steps, d);
+        }
+        if (answered != found) {
+            found = answered;
+            if (found) {
+                ESP_LOGI(TAG, "found at 0x%02x on I2C%d (GPIO%d/%d)",
+                         (unsigned)addr, (int)BOARD_KNOB_I2C_PORT,
+                         (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+            } else {
+                ESP_LOGI(TAG, "lost at 0x%02x on I2C%d (GPIO%d/%d)",
+                         (unsigned)addr, (int)BOARD_KNOB_I2C_PORT,
+                         (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+            }
         }
         /* A sensor that does not answer backs off to the idle period. */
         period_ms = answered ? KNOB_POLL_MS : KNOB_POLL_IDLE_MS;
@@ -80,24 +111,36 @@ static void knob_task(void *arg)
 void knob_task_attach(void)
 {
     /*
-     * The touch task already reads the touch controller on this bus, every
-     * 10 ms by default and on the touch interrupt.  ESP-IDF v5.4's add
-     * inserts the device under the bus lock, so it waits out a touch
-     * transaction.  The handle is allocated once and stays registered; the
-     * setting only gates the polling.
-     *
-     * Two guards against an address the board answers at, which on this
-     * bus would be a CH422G command: knob_attach() refuses it for the polls
-     * (and is the one the host tests hold), and panel_i2c_add_device()
-     * refuses to register it.  Registering sends nothing.
+     * The knob's own controller on BOARD_KNOB_PIN_SDA and _SCL, with the
+     * internal pull-ups.  The bus and the device handle are made once and
+     * stay; the setting only gates the polling.  knob_attach() refuses an
+     * address of panel_i2c.h's table, and the host tests hold it.
+     * Registering sends nothing.
      */
     if (!knob_attach(&s_knob, KNOB_I2C_ADDR)) {
-        s_dev = NULL;
-        ESP_LOGE(TAG, "0x%02x is the board's on this bus; knob off",
-                 KNOB_I2C_ADDR);
+        ESP_LOGE(TAG, "0x%02x refused; knob off", KNOB_I2C_ADDR);
         return;
     }
-    if (panel_i2c_add_device(KNOB_I2C_ADDR, &s_dev) != ESP_OK) {
+    const i2c_master_bus_config_t bus_cfg = {
+        .i2c_port = BOARD_KNOB_I2C_PORT,
+        .sda_io_num = BOARD_KNOB_PIN_SDA,
+        .scl_io_num = BOARD_KNOB_PIN_SCL,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = true,
+    };
+    if (i2c_new_master_bus(&bus_cfg, &s_bus) != ESP_OK) {
+        s_bus = NULL;
+        ESP_LOGE(TAG, "bus on GPIO%d/%d not set up; knob off",
+                 (int)BOARD_KNOB_PIN_SDA, (int)BOARD_KNOB_PIN_SCL);
+        return;
+    }
+    const i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = KNOB_I2C_ADDR,
+        .scl_speed_hz = BOARD_KNOB_I2C_FREQ_HZ,
+    };
+    if (i2c_master_bus_add_device(s_bus, &dev_cfg, &s_dev) != ESP_OK) {
         s_dev = NULL;
         ESP_LOGE(TAG, "sensor not registered on the bus");
     }
@@ -109,8 +152,8 @@ void knob_task_start(void)
         return;     /* nothing to poll; the knob stays inert */
     }
     /*
-     * Core 0 beside the renderer, below it in nothing it needs: 10 ms polls
-     * of about 0.2 ms each.  Priority 2, under the card task's 3, and not on
+     * Core 0 beside the renderer, below it in nothing it needs: 10ms polls
+     * of about 0.2ms each.  Priority 2, under the card task's 3, and not on
      * core 1 where the control task owns the deadlines.  Stack 3072 bytes:
      * the task's deepest chain is the I2C driver's transaction.
      */

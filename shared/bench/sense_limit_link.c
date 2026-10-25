@@ -71,6 +71,11 @@ void sense_limit_link_want(sense_limit_link_t *s, const uint16_t *ma,
     s->flushed    = false;
 }
 
+/**
+ * @brief Whether any channel has a limit.
+ * @param ma LINK_SL_KEPT limits in mA
+ * @return true when one of them is not 0 (OFF)
+ */
 static bool any_limit(const uint16_t *ma)
 {
     for (unsigned c = 0u; c < LINK_SL_KEPT; ++c) {
@@ -81,6 +86,12 @@ static bool any_limit(const uint16_t *ma)
     return false;
 }
 
+/**
+ * @brief Whether the limits wanted are owed to the page.
+ * @param s the service
+ * @return true when a limit is wanted, not refused, and differs from what
+ *         the page holds
+ */
 static bool owed(const sense_limit_link_t *s)
 {
     return s->want_set && !s->refused
@@ -141,10 +152,17 @@ bool sense_limit_link_next(sense_limit_link_t *s, uint32_t now_ms,
     return false;
 }
 
-/* OVER and OVER_COUNT as a read returned them, each bit with the limit
- * the page held, the one it was judged by.  A count that moved with no
- * bit is a reply lost, its bits with it; a count of 0 is an IOmcu that
- * started again with no window over since. */
+/**
+ * @brief Takes OVER and OVER_COUNT as a read returned them, each bit with
+ *        the limit the page held, the one it was judged by.
+ *
+ * A count that moved with no bit is a reply lost, its bits with it; a
+ * count of 0 is an IOmcu that started again with no window over since.
+ *
+ * @param s     the service
+ * @param over  OVER, one bit a channel
+ * @param count OVER_COUNT
+ */
 static void take_over(sense_limit_link_t *s, uint16_t over, uint16_t count)
 {
     const uint16_t mask = (uint16_t)((1u << LINK_SL_KEPT) - 1u);

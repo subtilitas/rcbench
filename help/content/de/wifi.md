@@ -34,7 +34,7 @@ Das Funkmodul geht von selbst aus, und die Karte nennt den Grund in einer Zeile:
 | `WLAN ausgeschaltet: STOP.` | STOP |
 | `WLAN ausgeschaltet: Netzteilausgang ein.` | der Netzteilausgang wurde eingeschaltet |
 | `WLAN ausgeschaltet: Aufzeichnungslauf gestartet.` | ein Lauf begann aufzuzeichnen |
-| `WLAN nach 10 min ohne Anfrage ausgeschaltet.` | 10 min keine Anfrage |
+| `WLAN nach 10min ohne Anfrage ausgeschaltet.` | 10min keine Anfrage |
 | `WLAN nach 16 falschen Zugangscodes ausgeschaltet.` | 16 falsche Codes auf der Seite |
 | `WLAN konnte nicht starten.` | das Funkmodul ließ sich nicht starten |
 
@@ -48,7 +48,7 @@ WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein T
 
 | Eintrag | Wert |
 |---|---|
-| Band und Kanal | 2,4 GHz, Kanal 6 |
+| Band und Kanal | 2,4GHz, Kanal 6 |
 | Sicherheit | WPA2 (Wi-Fi Protected Access 2) Personal |
 | Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, zum Beispiel `rcbench-3F7A` |
 | Passwort | 8 Zeichen, bei jedem Start neu, ohne 0, 1, i, l und o |
@@ -65,7 +65,7 @@ WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein T
 ![Die Suche läuft](view:wifi-scanning)
 ![Die gefundenen Netze](view:wifi-scan)
 
-Das Panel kann stattdessen einem WPA2- oder WPA3-Personal-Netz beitreten. HEIMNETZ WÄHLEN sucht höchstens 10 s und listet dann bis zu 16 Netze, das stärkste zuerst, mit ihrem Signal in dBm. Netze ohne Namen, offene Netze und Enterprise-Netze fehlen.
+Das Panel kann stattdessen einem WPA2- oder WPA3-Personal-Netz beitreten. HEIMNETZ WÄHLEN sucht höchstens 10s und listet dann bis zu 16 Netze, das stärkste zuerst, mit ihrem Signal in dBm. Netze ohne Namen, offene Netze und Enterprise-Netze fehlen.
 
 - Ein Tipp auf ein Netz öffnet die Tastatur für sein Passwort.
 - VERSTECKTES NETZWERK fragt nach dem Namen eines Netzes, das sich nicht ankündigt, dann nach seinem Passwort.
@@ -100,32 +100,32 @@ MIT HEIMNETZ VERBINDEN verbindet mit dem gespeicherten Netz. Verbunden zeigt der
 
 | Zeile | Bedingung |
 |---|---|
-| `Verbindung fehlgeschlagen. Passwort abgelehnt.` | das Netz hat das Passwort 3-mal in Folge abgelehnt, oder zuletzt abgelehnt, als die 20 s abliefen |
-| `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.` | keine Verbindung innerhalb von 20 s, und der letzte Abbruch von anderer Art oder keiner |
-| `Keine Verbindung. Nach 15 s noch keine IP-Adresse.` | verbunden, aber keine Adresse innerhalb von 15 s |
+| `Verbindung fehlgeschlagen. Passwort abgelehnt.` | das Netz hat das Passwort 3-mal in Folge abgelehnt, oder zuletzt abgelehnt, als die 20s abliefen |
+| `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.` | keine Verbindung innerhalb von 20s, und der letzte Abbruch von anderer Art oder keiner |
+| `Keine Verbindung. Nach 15s noch keine IP-Adresse.` | verbunden, aber keine Adresse innerhalb von 15s |
 | `Verbindung zum Heimnetz verloren.` | verbunden, dann hat das Netz das Panel verloren |
 
 Ein gescheitertes Verbinden bietet WLAN-HOTSPOT an. WLAN AUS schaltet das Funkmodul ab.
 
 ## Der Zugangscode
 
-Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet oder einen Upload annimmt. Der Bildschirm zeigt den Code; er ist bei jedem Start des Funkmoduls neu. 16 falsche Codes schalten das Funkmodul ab. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2 s am Panel.
+Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet oder einen Upload annimmt. Der Bildschirm zeigt den Code; er ist bei jedem Start des Funkmoduls neu. 16 falsche Codes schalten das Funkmodul ab. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2s am Panel.
 
 ## Die Browserseite
 
 Die Seite spricht die Sprache des Panels.
 
-- **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei größer als 4.063.232 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
-- **Dateien auf der Karte**: jede Datei mit Name, Größe in Bytes und Zeit; jeder Name lädt diese Datei herunter. Die Seite schreibt nichts auf die Karte.
-- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1 MiB ist ein Umbenennen. Die Übertragungsrate ist nicht gemessen; erwartet sind 300.000 bis 1.000.000 B/s in einem Heimnetz.
+- **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei größer als 8.126.464 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
+- **Dateien auf der Karte**: jede Datei mit Name, Größe in Bytes und Zeit in der Zone von SETUP > PANEL, Zeitzone; ein Datum in 1980, das einer ungestellten Uhr, lässt die Zeit leer. Jeder Name lädt diese Datei herunter. Die Seite schreibt nichts auf die Karte.
+- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer Kartenliste, brauchte 4,54s.
 
-Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30 s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.
+Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.
 
 ## Ein Image installieren
 
 ![Ein neueres Image wartet](view:wifi-question)
 
-Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit beiden Versionen. INSTALL ist ein Halten von 2 s, `2 s HALTEN: INSTALLIEREN`; der Browser kann es nicht starten. ABBRECHEN verwirft das Image. Die Installation braucht den Prüfstand SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf, keine Platinenzeichnung, die geladen oder gespeichert wird, und kein laufendes IOmcu-Update.
+Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit beiden Versionen. INSTALL ist ein Halten von 2s, `2s HALTEN ZUM INSTALLIEREN`; der Browser kann es nicht starten. ABBRECHEN verwirft das Image. Die Installation braucht den Prüfstand SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf, keine Platinenzeichnung, die geladen oder gespeichert wird, und kein laufendes IOmcu-Update.
 
 ![Ein älteres Image, und eine Zeichnung wird gespeichert](view:wifi-older)
 

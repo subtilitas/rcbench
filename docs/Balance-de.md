@@ -21,7 +21,16 @@ Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
 gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
 drei“).
 
-Die Anzeigewerte (Vibration 0,42 g, Winkel 265°, zuzufügende Masse 0,35 g) sind
+`-` und `+` der Blattzahl stellen sie beim Aufsetzen. Ein Tipp auf die Zahl
+öffnet das Tastenfeld über beiden Karten, 1008 x 428px mit Tasten von
+242 x 72px, sein Fuß 4px über dem Alarmband. OK nimmt 2 bis 6; jede andere
+Zahl lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe.
+ABBRECHEN, OK ohne getippten Wert, das Home-Tag und ein Reiter schließen es
+und ändern nichts.
+
+![Das Tastenfeld der Blattzahl](img/de/balance-keypad.png)
+
+Die Anzeigewerte (Vibration 0,42g, Winkel 265°, zuzufügende Masse 0,35g) sind
 feste Werte und keine Messung. Eine Marke SIMULIERT und der Text „Nicht
 gemessen.“ stehen darunter, in derselben Pille wie im Menü. Nur der Reiter
 WUCHTEN trägt die Marke.
@@ -65,18 +74,18 @@ eine Blattspitze im Kanal nicht erreichbar ist:
 Ohne Indeximpuls gibt es keine Phasenreferenz, und gewuchtet wird nach der
 Vier-Lauf-Methode: ein Grundlauf, danach eine Probemasse bei 0°, 120° und
 240°. Die Methode misst keine Phase, eine konstante Sensorverzögerung wirkt
-sich also nicht aus. Sie braucht Bandbreite: bei 10 000 rpm (revolutions per
-minute, Umdrehungen pro Minute) liegt die Grundfrequenz bei 167 Hz, die eine
+sich also nicht aus. Sie braucht Bandbreite: bei 10 000rpm (revolutions per
+minute, Umdrehungen pro Minute) liegt die Grundfrequenz bei 167Hz, die eine
 IMU (Inertial Measurement Unit, Trägheitssensor), die fusionierte Lagedaten
-mit 100 Hz liefert, nicht auflösen kann. Einen analogen Sensor (Piezo oder
+mit 100Hz liefert, nicht auflösen kann. Einen analogen Sensor (Piezo oder
 analoger Beschleunigungssensor) an den ADC (Analog-Digital-Wandler) des
 IOmcu anschließen.
 
 Mit Indeximpuls halbiert sich die Zahl der Läufe, und nur die Schwankung der
 Sensorverzögerung zählt; ein konstanter Anteil kürzt sich heraus, weil der
-Probelauf die ganze Kette mitmisst. Ein analoger Sensor hat etwa 15 µs
-Verzögerung, unter 1° bei 10 000 rpm. Eine fusionierte IMU hat etwa 5 ms
-Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000 rpm.
+Probelauf die ganze Kette mitmisst. Ein analoger Sensor hat etwa 15µs
+Verzögerung, unter 1° bei 10 000rpm. Eine fusionierte IMU hat etwa 5ms
+Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000rpm.
 
 ## Was die Messung braucht
 

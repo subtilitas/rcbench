@@ -12,12 +12,12 @@ The module has two parts.
 ## Constraints
 
 - At most 8 channels per frame (`PPM_MAX_CHANNELS`).
-- A channel is 400 us to 2500 us, both ends included
+- A channel is 400us to 2500us, both ends included
   (`PPM_CHANNEL_MIN_US`, `PPM_CHANNEL_MAX_US`). A width outside the range is
   refused, not clamped.
-- The mark is 300 us and the frame 22.5 ms by default.
-- A frame whose sync gap is under 3000 us (`PPM_SYNC_MIN_US`) is refused.
-  8 channels at 2500 us do not fit a 22.5 ms frame.
+- The mark is 300us and the frame 22.5ms by default.
+- A frame whose sync gap is under 3000us (`PPM_SYNC_MIN_US`) is refused.
+  8 channels at 2500us do not fit a 22.5ms frame.
 - The state machine counts in microseconds: its clock divider is the system
   clock in MHz.
 - The driver takes 1 PIO (programmable input/output) state machine and 2 DMA

@@ -1,5 +1,6 @@
-/*
- * Touch events that never arrived, and an arm that must not outlive one.
+/**
+ * @file
+ * @brief Touch events that never arrived, and an arm that must not outlive one.
  *
  * Two queues carry touch on the panel: the GT911 driver's, from its task to
  * the control task, and the control task's, from there to the render loop on
@@ -39,7 +40,7 @@ extern "C" {
 /* ------------------------------------------------ numbered event streams */
 
 /**
- * The consumer's side of one numbered stream.
+ * @brief The consumer's side of one numbered stream.
  *
  * The producer numbers its events from 1, adding one per event it offers to
  * the queue whether or not the queue keeps it, and publishes the number of
@@ -51,22 +52,37 @@ typedef struct {
     uint32_t next;   /**< the number the next event should carry */
 } touch_seq_rx_t;
 
-/** Nothing taken yet: the first event is expected to carry 1. */
+/**
+ * @brief Nothing taken yet: the first event is expected to carry 1.
+ *
+ * @param rx Consumer state to initialise.
+ */
 void touch_seq_rx_init(touch_seq_rx_t *rx);
 
 /**
- * An event numbered @p seq has been taken off the queue.  Returns how many
- * events before it never arrived; nonzero means the consumer's record of the
- * glass is stale and has to be dropped before this event is handled.
+ * @brief An event numbered @p seq has been taken off the queue.
+ *
+ * Returns how many events before it never arrived; nonzero means the consumer's
+ * record of the glass is stale and has to be dropped before this event is
+ * handled.
+ *
+ * @param rx Consumer state.
+ * @param seq Number the event carries.
+ * @return The number of events that never arrived before this one.
  */
 uint32_t touch_seq_take(touch_seq_rx_t *rx, uint32_t seq);
 
 /**
- * The queue has been drained.  @p published is the producer's last published
- * number, read *before* the drain began: every event up to it had been
- * offered by then, so any of them not taken is lost.  Returns how many.
- * Read after the drain instead, it could name an event offered during it and
- * still in the queue.
+ * @brief The queue has been drained.
+ *
+ * @p published is the producer's last published number, read *before* the drain
+ * began: every event up to it had been offered by then, so any of them not
+ * taken is lost.  Returns how many. Read after the drain instead, it could name
+ * an event offered during it and still in the queue.
+ *
+ * @param rx Consumer state.
+ * @param published Producer's last published number, read before the drain.
+ * @return The number of events offered and not taken.
  */
 uint32_t touch_seq_tail(touch_seq_rx_t *rx, uint32_t published);
 
@@ -97,7 +113,7 @@ bool stop_mark_keeps(uint32_t mark, uint32_t cur, bool cur_is_event);
 /* --------------------------------------------------------- the arm watch */
 
 /**
- * Whether an arm stands until the render loop has seen it.
+ * @brief Whether an arm stands until the render loop has seen it.
  *
  * Two loss counts are compared, because the two queues are watched by two
  * tasks: @c loss_gen is how many times the render loop has dropped the
@@ -115,30 +131,56 @@ typedef struct {
 } arm_watch_t;
 
 /**
- * May an arm taken now go ahead?  False when the render loop has dropped
- * gestures since it posted the arm (@p loss_gen_now differs from
- * @p loss_gen_stamp), or when a loss notice for the render loop was queued
- * after the last event it had consumed when it posted (@p lost_notice_seq is
- * later than @p consumed_seq; both 0 means none).
+ * @brief May an arm taken now go ahead?
+ *
+ * False when the render loop has dropped gestures since it posted the arm (@p
+ * loss_gen_now differs from @p loss_gen_stamp), or when a loss notice for the
+ * render loop was queued after the last event it had consumed when it posted
+ * (@p lost_notice_seq is later than @p consumed_seq; both 0 means none).
+ *
+ * @param loss_gen_stamp Render loop loss count stamped on the arm.
+ * @param loss_gen_now Render loop loss count now.
+ * @param lost_notice_seq Sequence of the last loss notice queued; 0 for none.
+ * @param consumed_seq Sequence of the last event the render loop consumed; 0
+ *        for none.
+ * @return true when the arm may go ahead.
  */
 bool arm_watch_take_ok(uint32_t loss_gen_stamp, uint32_t loss_gen_now,
                        uint32_t lost_notice_seq, uint32_t consumed_seq);
 
-/** An arm was applied: watch it from here. */
+/**
+ * @brief An arm was applied: watch it from here.
+ *
+ * @param w Watch state.
+ * @param loss_gen_stamp Render loop loss count at posting.
+ * @param drv_gaps_at_take Control task gap count when the arm was taken.
+ * @param arm_gen Number of this arm.
+ */
 void arm_watch_begin(arm_watch_t *w, uint32_t loss_gen_stamp,
                      uint32_t drv_gaps_at_take, uint32_t arm_gen);
 
 /**
- * One look, once the snapshot has been published.  Returns true when the
- * arm has to be undone: a loss of either kind since it was taken, before the
- * render loop acknowledged @c arm_gen.  A loss is looked for before the
- * acknowledgement, so one that arrives with it still retires the arm.  The
- * watch ends either way it resolves.
+ * @brief One look, once the snapshot has been published.
+ *
+ * Returns true when the arm has to be undone: a loss of either kind since it
+ * was taken, before the render loop acknowledged @c arm_gen.  A loss is looked
+ * for before the acknowledgement, so one that arrives with it still retires the
+ * arm.  The watch ends either way it resolves.
+ *
+ * @param w Watch state.
+ * @param loss_gen_now Render loop loss count now.
+ * @param drv_gaps_now Control task gap count now.
+ * @param acked_arm_gen Arm number the render loop acknowledged.
+ * @return true when the arm has to be undone.
  */
 bool arm_watch_lost(arm_watch_t *w, uint32_t loss_gen_now,
                     uint32_t drv_gaps_now, uint32_t acked_arm_gen);
 
-/** The bench disarmed for any reason: nothing is left to watch. */
+/**
+ * @brief The bench disarmed for any reason: nothing is left to watch.
+ *
+ * @param w Watch state.
+ */
 void arm_watch_end(arm_watch_t *w);
 
 #ifdef __cplusplus

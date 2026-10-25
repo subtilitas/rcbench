@@ -1,7 +1,7 @@
 {
   "id": "spektrum-avian-smart",
   "brand": "Spektrum",
-  "family": "Avian Smart ESC 15-100 A",
+  "family": "Avian Smart ESC 15-100A",
   "models": [
     {
       "name": "Avian 15A (SPMXAE1015)",
@@ -96,7 +96,7 @@
       "steps": [
         "Transmitter on with throttle at full.",
         "Connect the battery: three ascending tones, then two short tones (full throttle accepted).",
-        "Keep full throttle for more than 5 s (do not lower the stick): the ESC plays another tone series and enters programming.",
+        "Keep full throttle for more than 5s (do not lower the stick): the ESC plays another tone series and enters programming.",
         "Two short tones, then the tones of parameter 1."
       ]
     },
@@ -267,28 +267,28 @@
         },
         {
           "number": 2,
-          "name": "2.8 V"
+          "name": "2.8V"
         },
         {
           "number": 3,
-          "name": "3.0 V",
+          "name": "3.0V",
           "default": true
         },
         {
           "number": 4,
-          "name": "3.2 V"
+          "name": "3.2V"
         },
         {
           "number": 5,
-          "name": "3.4 V"
+          "name": "3.4V"
         },
         {
           "number": 6,
-          "name": "3.6 V"
+          "name": "3.6V"
         },
         {
           "number": 7,
-          "name": "3.8 V"
+          "name": "3.8V"
         }
       ],
       "applies_to": null,
@@ -302,7 +302,7 @@
       "values": [
         {
           "number": 1,
-          "name": "5.2 V",
+          "name": "5.2V",
           "default": true
         }
       ],
@@ -318,12 +318,12 @@
       "values": [
         {
           "number": 1,
-          "name": "6 V",
+          "name": "6V",
           "default": true
         },
         {
           "number": 2,
-          "name": "7.2 V"
+          "name": "7.2V"
         }
       ],
       "applies_to": [
@@ -340,16 +340,16 @@
       "values": [
         {
           "number": 1,
-          "name": "6 V",
+          "name": "6V",
           "default": true
         },
         {
           "number": 2,
-          "name": "7.4 V"
+          "name": "7.4V"
         },
         {
           "number": 3,
-          "name": "8.4 V"
+          "name": "8.4V"
         }
       ],
       "applies_to": [

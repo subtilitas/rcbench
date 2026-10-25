@@ -1,5 +1,6 @@
-/*
- * Servo pulses from the RP2350's hardware PWM (pulse-width modulation).
+/**
+ * @file
+ * @brief Servo pulses from the RP2350's hardware PWM (pulse-width modulation).
  *
  * A servo pulse is a level held for a number of microseconds, repeated at a
  * frame rate, and that is what a PWM slice does with no processor involved.
@@ -26,7 +27,7 @@
 #include <stdint.h>
 
 /**
- * Take @p pin at @p rate_hz frames a second.
+ * @brief Take @p pin at @p rate_hz frames a second.
  *
  * Refuses a pin whose compare register another bound pin already holds, a pin
  * that is already bound to a different rate's slice, a pin the package does
@@ -37,27 +38,46 @@
  * A refused bind leaves the slot unbound and the OUTPUTS page reading back
  * what was asked for.  Nothing on the wire reports whether a slot is bound,
  * so an unbound slot is not distinguishable from a bound one at the panel.
+ *
+ * @param pin  GPIO number of the pin to bind.
+ * @param rate_hz  Frame rate in Hz. Zero is refused.
+ * @return True when the pin is bound at @p rate_hz. False when the bind
+ *         is refused.
  */
 bool out_pwm_bind(uint8_t pin, uint16_t rate_hz);
 
-/** Give the pin back: the counter stops and the pin is left low. */
+/**
+ * @brief Give the pin back: the counter stops and the pin is left low.
+ *
+ * @param pin  GPIO number of the pin to release. A pin that is not bound
+ *             is ignored.
+ */
 void out_pwm_release(uint8_t pin);
 
 /**
- * Emit @p pulse_us on every frame.  Zero stops the pin edging altogether,
+ * @brief Emit @p pulse_us on every frame.
+ *
+ * Zero stops the pin edging altogether,
  * which is what the bank means by not driving -- a servo held at a pulse it
  * was not commanded is worse than one that is let go.
+ *
+ * @param pin  GPIO number of a bound pin. A pin that is not bound is ignored.
+ * @param pulse_us  Pulse width in microseconds. A value above the frame's
+ *                  last count is clamped to it.
  */
 void out_pwm_write(uint8_t pin, uint16_t pulse_us);
 
-/** How long the stamped write may wait for the counter to leave the end
- *  of its frame, us.  Two counts at most when the slice runs. */
+/**
+ * @brief How long the stamped write may wait for the counter to leave the
+ * end of its frame, us.
+ *
+ * Two counts at most when the slice runs.
+ */
 #define OUT_PWM_STAMP_WAIT_US 5u
 
 /**
- * out_pwm_write(), and the time the first frame carrying @p pulse_us
- * starts, on the 64-bit microsecond timer (time_us_64()), into
- * @p frame_us.
+ * @brief out_pwm_write(), and the time the first frame carrying @p pulse_us
+ * starts, on the 64-bit microsecond timer (time_us_64()), into @p frame_us.
  *
  * The compare register is double-buffered: a level written during a frame
  * takes effect at the wrap that ends it, and the pin rises at counter 0.
@@ -65,13 +85,21 @@ void out_pwm_write(uint8_t pin, uint16_t pulse_us);
  * the frame's last 2 counts -- a write there could meet the wrap that
  * latches it, and the frame it lands in would be unknown -- so the write
  * lands in the frame the counter was read in, and that frame ends
- * (wrap - counter + 1) counts later.  One count is 1 us, from clk_sys
- * divided to 1 MHz; the timer ticks at 1 MHz from the same crystal.  The
- * stamp is good to the 1 us of each, within +-1 us.
+ * (wrap - counter + 1) counts later.  One count is 1us, from clk_sys
+ * divided to 1MHz; the timer ticks at 1MHz from the same crystal.  The
+ * stamp is good to the 1us of each, within +-1us.
  *
  * False, with the level written and nothing stamped, for a pin not bound
  * or a slice whose counter does not leave the frame's end within
  * OUT_PWM_STAMP_WAIT_US: one that is not counting.
+ *
+ * @param pin  GPIO number of a bound pin. A pin that is not bound is refused.
+ * @param pulse_us  Pulse width in microseconds. A value above the frame's
+ *                  last count is clamped to it.
+ * @param frame_us  Receives the start time of the frame. Written only when
+ *                  the function returns true.
+ * @return True when the write is stamped. See the description for the
+ *         false cases.
  */
 bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us);
 

@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/stat.h>
 
 #include "greatest.h"
@@ -180,7 +181,7 @@ TEST_CASE(every_file_is_listed_with_a_link_back_to_it)
     /* The upload is offered, with the slot as the size limit. */
     CHECK(strstr(g_p.buf, "f.size>4063232") != NULL);
     CHECK(strstr(g_p.buf, "Installed: 0.19.0") != NULL);
-    CHECK(strstr(g_p.buf, "INSTALL is held for 2 s on the panel") != NULL);
+    CHECK(strstr(g_p.buf, "INSTALL is held for 2s on the panel") != NULL);
     CHECK_EQ(fs.dirs_open, 0);
     fake_free(&fs);
 }
@@ -197,6 +198,10 @@ TEST_CASE(without_a_card_the_page_says_so_and_still_takes_an_upload)
     self_contained(g_p.buf);
     CHECK(strstr(g_p.buf, "No card, or the card cannot be read.") != NULL);
     CHECK(strstr(g_p.buf, "POST','/update'") != NULL);
+    /* The upload's own header, which the panel requires (wa_guard.h): a
+     * page of another site cannot send it without a preflight. */
+    CHECK(strstr(g_p.buf, "x.setRequestHeader('X-Rcbench-Upload','1');")
+          != NULL);
     CHECK(strstr(g_p.buf, "/card.zip") == NULL);
     begin(-1);
     wa_page_main(&g_o, &k_de, &w);
@@ -405,13 +410,39 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     wa_page_upload_result(&g_o, false, FW_OK, &info, false);
     CHECK(wa_out_flush(&g_o));
     CHECK_STR_EQ(g_p.buf, "Received and checked: panel firmware 0.20.1. To "
-                          "install, hold INSTALL on the panel for 2 s.");
+                          "install, hold INSTALL on the panel for 2s.");
     begin(-1);
     wa_page_upload_result(&g_o, true, FW_OK, &info, true);
     CHECK(wa_out_flush(&g_o));
     CHECK(strstr(g_p.buf, "0.20.1. Das ist der Build") != NULL);
     free(g_p.buf);
     memset(&g_p, 0, sizeof(g_p));
+}
+
+TEST_CASE(a_stamp_from_an_unset_clock_lists_no_date)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    /* 1980-01-02 06:54: FatFs's stamp from a clock 1d 6h 54min after a
+     * power-on (wall_clock.h). */
+    fake_add(&fs, "SERVO001.CSV", false, 11u, 315644040);
+    /* No stamp at all, and the epoch. */
+    fake_add(&fs, "SERVO002.CSV", false, 12u, -1);
+    fake_add(&fs, "SERVO003.CSV", false, 13u, 0);
+    /* 1981-01-03 00:00 UTC: a date, written. */
+    fake_add(&fs, "SERVO004.CSV", false, 14u, 347328000);
+    const wa_fs_t w = fake_wa(&fs);
+    begin(-1);
+    wa_page_main(&g_o, &k_en, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(strstr(g_p.buf, "<td class=\"n\">11</td><td></td>") != NULL);
+    CHECK(strstr(g_p.buf, "<td class=\"n\">12</td><td></td>") != NULL);
+    CHECK(strstr(g_p.buf, "<td class=\"n\">13</td><td></td>") != NULL);
+    CHECK(strstr(g_p.buf, "<td class=\"n\">14</td><td>1981-01-03 00:00"
+                          "</td>") != NULL);
+    CHECK(strstr(g_p.buf, "1980-") == NULL);
+    CHECK(strstr(g_p.buf, "1970-") == NULL);
+    fake_free(&fs);
 }
 
 TEST_CASE(the_bench_tree_lists_every_file_under_its_folder)
@@ -509,8 +540,13 @@ TEST_CASE(a_report_standing_alone_is_a_download_as_a_runs_report_is)
 
 int main(void)
 {
+    /* Dates as UTC whatever the shell's zone: the page and the ZIP read
+     * stamps in the C library's zone (wall_local_s()). */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     RUN(the_code_form_asks_for_the_code_and_shows_nothing_else);
     RUN(every_file_is_listed_with_a_link_back_to_it);
+    RUN(a_stamp_from_an_unset_clock_lists_no_date);
     RUN(the_bench_tree_lists_every_file_under_its_folder);
     RUN(a_report_standing_alone_is_a_download_as_a_runs_report_is);
     RUN(without_a_card_the_page_says_so_and_still_takes_an_upload);

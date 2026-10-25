@@ -22,7 +22,7 @@ kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
 Current limitations:
 
 - An alert already on the band keeps the language it was raised in until
-  it is replaced, tapped away or cleared after 30 s (`UI_ALERT_SHOW_S`).
+  it is replaced, tapped away or cleared after 30s (`UI_ALERT_SHOW_S`).
   The alert held for a touch controller that did not answer at start is
   raised in the language kept in NVS and stays until restart; without touch
   the language cannot change meanwhile.
@@ -39,11 +39,11 @@ Current limitations:
 ## Numbers
 
 The screens, the TXT report and the CSV write the decimal point in every
-language: 7.4 V, 0.05 A. It is the separator of the transmitter, the ESC
+language: 7.4V, 0.05A. It is the separator of the transmitter, the ESC
 configurators and the supply's own display, and a CSV with a decimal comma
 would need a different field separator. The German pages of this
-documentation write the German decimal comma in their prose (7,4 V); a
-string quoted from the screen keeps its point (`seit 1.5 s kein Messwert`).
+documentation write the German decimal comma in their prose (7,4V); a
+string quoted from the screen keeps its point (`seit 1.5s kein Messwert`).
 
 ## Terms that stay English
 
@@ -181,10 +181,22 @@ Every string is UTF-8 (Unicode Transformation Format, 8-bit), from the C
 source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
-- The two text faces hold printable ASCII (American Standard Code for
-  Information Interchange, 0x20 to 0x7E) and the seven German letters
-  Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF, U+00E4, U+00F6, U+00FC),
-  102 glyphs each. The numeral face holds digits and punctuation only.
+- The five text faces hold printable ASCII (American Standard Code for
+  Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0), the
+  seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
+  U+00E4, U+00F6, U+00FC) and the ohm sign Ω (U+03A9), 104 glyphs each.
+  The two numeral faces hold digits and punctuation only.
+- A resistance is written with Ω, in the screens' texts, the settings'
+  units and the `.TXT` reports: `120Ω`, `2.2kΩ`, `100.0mΩ`, `uΩ` for the
+  INA228's shunt. The faces' O reads close to a zero, so `120Ohm` would
+  read as `1200hm`. `every_string_writes_the_ohm_as_its_sign` in
+  `test_text` fails on an `Ohm` or `ohm` in any of them.
+- The 10x20, 12x24 and 20x36 faces have cap heights of 12, 15 and 23px and
+  draw every glyph inside the cell; `gen_font.py --check` fails otherwise.
+  The 32x44 numeral face (cap height 40px) cuts ink at the cell edge in six
+  characters: `#` 5px, `$` 16px, `(` 12px, `)` 12px, `,` 23px and `/`
+  6px (pixels of coverage 128 or more outside the cell). `gen_font.py
+  --check` prints these counts.
 - A code point a face does not hold draws as `?`. A byte that does not start
   a well-formed sequence, a sequence cut short and an overlong form are one
   `?` each, and the decoder never reads past the terminator.
@@ -201,15 +213,91 @@ functions above.
 
 ## The tables
 
-| File | Holds |
-| --- | --- |
-| `shared/ui/include/ui_text.def` | every translated string: its ID (identifier), the cells its field has where no screenshot shows it, and its English |
-| `shared/ui/ui_text_de.c` | the German, by ID; the settings' labels, help, options and categories; the servo test's words and the report |
-| `shared/ui/ui_text.c` | the lookup: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` and the rest |
+Every text the interface shows or writes in the operator's language is one
+entry of `shared/text/include/ui_text.def`, with its English and its German
+side by side, each on a line of its own:
 
-An entry a language leaves `NULL` shows the English, so a partial table
-works. A translated format converts the same arguments in the same order as
-its English.
+```c
+UI_TEXT(PL_GRP_PROG_PORT, 40,
+    "PROG PORT SERVOS",
+    "SERVOS AM PROG-PORT")
+```
+
+| Entry | Holds |
+| --- | --- |
+| `UI_TEXT(ID, cells, en, de)` | a screen's string, `TR(ID)`, and the cells its field has where no screenshot shows it (0 where `--fit` measures it) |
+| `UI_SETTING_LABEL(SET_..., en, de)` | a setting's label |
+| `UI_SETTING_HELP(SET_..., en, de)` | a setting's help line |
+| `UI_SETTING_CATEGORY(SET_CAT_..., en, de)` | a category's name |
+| `UI_OPTIONS(name)`, `UI_OPTION(en, de)`, `UI_OPTIONS_END(name)` | an enum setting's options, one row each in order |
+| `UI_SERVO_TEXT(SERVO_STR_..., en, de)` | the servo test's words and its TXT report |
+| `UI_WEB_TEXT(P_..., en, de)` | the panel's Wi-Fi page |
+
+`NULL` in the German column shows the English: the servo test's entries
+whose English is empty, and the options that are the same word in every
+language (the language names, addresses, channels, baud rates, `STABLE` and
+`TESTING`, `PULL-UP` and `PRECHARGE`). A translated format converts the
+same arguments in the same order as its English.
+
+The table stays one file, listed in `tools/check_sizes.txt`. A file that
+reads it defines the macros it needs and includes it; the table defines the
+others as empty and undefines all of them at its end. Only `UI_TEXT`
+entries stand under a condition, `#ifdef RCBENCH_TOUCH_INJECTOR`, and the
+define comes with the include path of `shared/text`, so every file that
+reads the table sees the same entries; `test/tools/test_merge_texts.py`
+fails on any other entry under a condition.
+
+| File | Reads |
+| --- | --- |
+| `shared/ui/include/ui_text.h` | the `TX_` IDs |
+| `shared/ui/ui_text.c` | the English and the cells of the screens' strings, every other language's tables, and the lookup: `TR(ID)`, `ui_setting_label()`, `ui_servo_str()` and the rest |
+| `shared/settings/settings_text.c`, `settings.c`, `settings_opts.h` | the settings' English: labels, help lines, options, categories |
+| `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
+| `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
+
+The five text faces hold printable ASCII (0x20 to 0x7E), the degree sign °,
+the 7 German letters Ä Ö Ü ä ö ü ß and the ohm sign Ω. Any other code point draws as `?`, and so does a
+byte that starts no valid UTF-8 sequence.
+`every_drawn_string_has_its_glyphs` in `test_text` holds every string of
+the table the panel draws, in every language, to that set and to valid
+UTF-8. The Wi-Fi page is drawn by the browser and is not held to it; a
+`NULL` German entry shows its English there as well (`test_wa_page_de`).
+
+## Adding a text
+
+1. Add an entry in the section of the screen that draws it, English first:
+   `UI_TEXT(ID, cells, "English", "Deutsch")`. `cells` is the field's width
+   in cells of its face where no screenshot shows the string, and 0 where a
+   rendered view does.
+2. Draw it with `TR(ID)`. A setting's label and help line are a
+   `UI_SETTING_LABEL` and a `UI_SETTING_HELP` entry for its `SET_` ID; an
+   option list is a `UI_OPTIONS` block, bound to its setting by
+   `ENUM_OPTS(name)` in `shared/settings/settings.c`.
+3. Write a number and its unit with no space, in both languages: `40s`,
+   `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. A word after a number keeps its
+   space: `3 servos`.
+4. Run the host suite, `python3 tools/render_ui.py --fit`,
+   `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
+   and `python3 tools/check_docs.py`.
+   `test_text` fails on an entry without German, on a German format that
+   converts other arguments than its English, on a string wider than its
+   declared cells, on a letter the fonts lack, on a byte that is not valid
+   UTF-8 and on a `SERVO_STR_` ID whose English is empty where it is not
+   meant to be. `servo_str.c` does not build when the count of
+   `UI_SERVO_TEXT` entries differs from `SERVO_STR_COUNT`.
+
+A branch that still holds the per-file form of the texts (English in
+`shared/ui/include/ui_text.def` and in the settings schema, German in
+`shared/ui/ui_text_de.c`) merges with `tools/merge_texts.py`:
+
+```bash
+git merge --no-commit origin/main
+python3 tools/merge_texts.py merge "$(git merge-base HEAD origin/main)" origin/main
+```
+
+It converts both sides of the merge and carries the branch's text changes
+into the table by a three-way merge; a change both sides made to the same
+lines is left with conflict markers.
 
 ## The fit checks
 
@@ -217,7 +305,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 283 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 324 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -262,18 +350,33 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-1. Add `UI_LANG_xx` to `ui_lang_t` in `shared/ui/include/ui_text.h`, and the
-   language's own name to `k_language` in `shared/settings/settings.c`, in
-   the same position.
-2. Copy `shared/ui/ui_text_de.c` to `ui_text_xx.c`, translate it, and add
-   `ui_lang_xx` to `k_langs` in `shared/ui/ui_text.c` and its declaration to
-   `ui_text.h`.
-3. Add the file to `shared/ui/CMakeLists.txt` and to `SOURCES` in
-   `tools/render_ui.py` and `tools/frame_cost.py`.
-4. A letter the fonts do not hold goes into the list in `FONTS` in
+A language is one more column in every entry of the table: 2,209 entries
+with an ID and 76 options, 10 of them with an empty English.
+
+1. Add the column to every entry of `shared/text/include/ui_text.def`, and
+   the parameter to every macro that reads a column: 7 empty defaults at the
+   head of the table and 20 `#define` lines in 7 files (`ui_text.h`,
+   `ui_text.c`, `settings.c`, `settings_text.c`, `settings_opts.h`,
+   `servo_str.c`, `wa_page.c`). `NULL` shows the English.
+2. Add `UI_LANG_xx` to `ui_lang_t` in `shared/ui/include/ui_text.h`, and the
+   language's own name to the `language` option list, in the same position.
+3. Copy the German block in `shared/ui/ui_text.c` (`DE()`, its tables and
+   `ui_lang_de`) for the new column, add `ui_lang_xx` to `k_langs` and its
+   declaration to `ui_text.h`.
+4. A letter the text faces do not hold goes into the list in `FONTS` in
    `tools/gen_font.py`, and `python3 tools/gen_font.py` regenerates them.
+   Each letter takes one byte a pixel in each of the five text faces: 128,
+   200, 288, 448 and 720 bytes in the 8x16, 10x20, 12x24, 16x28 and 20x36
+   faces, 1,784 bytes in all.
 5. Add the language to `LANGS` in `tools/render_ui.py` and to the argument
    `test/host/render_screen.c` takes, and run
    `python3 tools/render_ui.py --fit` and `python3 tools/render_ui.py`.
 6. Extend `german_has_every_string` in `test/host/test_text.c` to the new
    table, write its glossary here, and translate this page.
+
+Two readers take the German column by position: `TABLE_ENTRY` in
+`tools/check_docs.py` and the servo controls' check in
+`configurator/core/test/help.test.ts`. The Wi-Fi page chooses its language
+by a flag, `wifi_access_set_german()`, and an ESC profile carries its
+manual steps in English and in German (`action`, `action_de`); neither
+takes a third language without a change of its own.

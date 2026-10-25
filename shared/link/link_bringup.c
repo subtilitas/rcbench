@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief Bring-up of the link: status replies, round-trip times and the
+ *        diagnosis.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,17 +12,28 @@
 
 #include "link_pages.h"
 
-/*
- * The shortfall that counts as a fault: fewer replies than 9/10 of the polls.
+/**
+ * @brief The shortfall that counts as a fault: fewer replies than 9/10 of the
+ * polls.
+ *
  * Below that shortfall a link is working and occasionally missing, which is
  * INTERMITTENT.
  */
 #define SHORTFALL_NUM 9
 #define SHORTFALL_DEN 10
 
-/* Fewer replies than this and there is nothing to draw conclusions from. */
+/**
+ * @brief Fewer replies than this and there is nothing to draw conclusions from.
+ */
 #define ENOUGH_POLLS 4u
 
+/**
+ * @brief Test whether fewer replies came back than the shortfall ratio allows.
+ *
+ * @param got The replies received.
+ * @param of The polls sent.
+ * @return true when got is below 9/10 of of.
+ */
 static bool well_short(uint32_t got, uint32_t of)
 {
     /* got < of * 9/10, without overflowing on the multiply. */
@@ -76,7 +91,7 @@ void link_bringup_add_rtt(link_bringup_t *b, uint32_t us)
     }
     /*
      * A running mean rather than a sum: a microsecond sum overflows 32 bits
-     * after about 1 hour of polling.  Integer, biased low by at most 1 us per
+     * after about 1 hour of polling.  Integer, biased low by at most 1us per
      * sample.
      */
     ++b->rt_samples;

@@ -55,7 +55,7 @@ static uint32_t    s_stops_served;
  * When the outstanding disarm started holding the safety line down, and how
  * long that may go on for.
  *
- * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
+ * Twice HEARTBEAT_MAX_GAP_MS (150ms), so a far end that never answers has
  * certainly failed safe by then and the line can go back up: a disarm nobody
  * can deliver must not hold it down for ever.
  */
@@ -264,7 +264,7 @@ void service_arming(bool link_up)
      * was armed and whichever thing raised it -- a press, the far end, touch
      * that stopped answering.  A bench that was not armed still had a servo
      * held, and nothing else would have released it: the position would go on
-     * being refreshed every 100 ms, over the top of an outputs binding made
+     * being refreshed every 100ms, over the top of an outputs binding made
      * later.
      */
     service_disarm(link_up);
@@ -431,7 +431,7 @@ void service_arming(bool link_up)
              * at, is asked again before each of the two writes: the
              * exchanges above and the CLEAR are answered in about a
              * millisecond and can be answered up to LINK_HOST_TIMEOUT_MS
-             * (1000 ms) late.  Past it the arm is given up and nothing
+             * (1000ms) late.  Past it the arm is given up and nothing
              * further is written (arming_handshake_open()): before CLEAR
              * as a refusal, after it as a stop, whose withheld heartbeat
              * sets the far end's latch again.  The frame that arms is the

@@ -1,5 +1,8 @@
-/*
- * The KST wire on one RP2350 pin.  See kst_line.h.
+/**
+ * @file
+ * @brief The KST wire on one RP2350 pin.
+ *
+ * See kst_line.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,21 +20,30 @@
 
 #include "kst_line.pio.h"
 
-/* The instruction the state machine stalls on between transactions. */
+/** @brief The instruction the state machine stalls on between transactions. */
 #define IDLE_PC 1u
 
-/* A transfer count's low 28 bits are the count; the rest is the mode. */
+/**
+ * @brief A transfer count's low 28 bits are the count; the rest is the mode.
+ */
 #define DMA_COUNT_MASK 0x0FFFFFFFu
 
+/**
+ * @brief Get the PIO block of a line.
+ *
+ */
 static PIO line_pio(const kst_line_t *l)
 {
     return (PIO)l->pio;
 }
 
-/* The state machine waits for a stream: it stalls on the first `out`, the
- * FIFO is empty and the channel has handed over every word.  A stream is 6
- * words or more and the FIFO and the shift register hold 5, so this is
- * false from the start of a transfer to the end of the capture. */
+/**
+ * @brief The state machine waits for a stream: it stalls on the first `out`,
+ *        the FIFO is empty and the channel has handed over every word.
+ *
+ * A stream is 6 words or more and the FIFO and the shift register hold 5, so
+ * this is false from the start of a transfer to the end of the capture.
+ */
 static bool line_idle(const kst_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -41,8 +53,10 @@ static bool line_idle(const kst_line_t *l)
            && pio_sm_get_pc(pio, l->sm) == l->offset + IDLE_PC;
 }
 
-/* Put the state machine at the start of the program with the pad driven
- * low, whatever it was doing. */
+/**
+ * @brief Put the state machine at the start of the program with the pad driven
+ *        low, whatever it was doing.
+ */
 static void line_restart(kst_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -218,7 +232,7 @@ bool kst_line_poll(void *ctx, kst_capture_t *out)
     if (l == NULL || out == NULL || l->open == 0u || l->busy == 0u) {
         return false;
     }
-    /* The window by the clock, with 2 us for the hand-over and the
+    /* The window by the clock, with 2us for the hand-over and the
      * rounding. */
     const uint32_t total_us = (l->run.lead_ns + 999u) / 1000u
                               + (l->run.window_ns + 999u) / 1000u + 2u;

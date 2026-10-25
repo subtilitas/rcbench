@@ -13,7 +13,7 @@ The Hitec page (`HITEC`, 0x34) is new in 4.23; write register 23, the
 receive mode of a D series line, is new in 4.24. The page runs raw transactions of
 the Hitec servo wire of [`protocols/hitec`](../protocols/hitec/README.md) on
 one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
-HS-7xxx, 19,200 bit/s) or D series (115,200 bit/s). The page holds no Hitec
+HS-7xxx, 19,200bit/s) or D series (115,200bit/s). The page holds no Hitec
 session. The writer stages one transaction, the page runs it, and the
 capture and its decoding stay on the page until the next one. Which bytes a
 servo takes, and in which order, is the writer's business. A session on the
@@ -31,7 +31,7 @@ PWM port's, and given back to that function at CLOSE. The PIO and DMA use is
 the line's, whichever port it is on: one line, so at most 2 state machines
 and 3 DMA channels with PRECHARGE.
 
-The panel reads `STATE` with the PROG page, every 500 ms, from 4.23 on. While
+The panel reads `STATE` with the PROG page, every 500ms, from 4.23 on. While
 it names a port held (STOPPING to POWER_OFF), SERVO > PROGRAM dims a row on
 that port with `PORT IN USE`
 ([Screens](Screens.md#programmer)).
@@ -40,28 +40,28 @@ that port with `PORT IN USE`
 
 OPEN takes the port:
 
-1. STOPPING, 50 ms: the port renders no pulse, so a pulse that runs ends.
+1. STOPPING, 50ms: the port renders no pulse, so a pulse that runs ends.
 2. The PWM generator gives up the pin. The wire driver opens the line on it
    as a released input: classic with the pad's pull-down, the D series with
-   its pull-up and the input inverted. The internal pulls are 50 to 80 kOhm;
+   its pull-up and the input inverted. The internal pulls are 50 to 80kΩ;
    the D series receives with a pull-up on the board, or by PRECHARGE
    ([Receive mode](#receive-mode)). Tested with a D485HW: with the pad's
-   pull-up alone the line stays below 1.4 V and the servo answers no read;
-   with 2.2 kOhm from the signal wire to the servo supply it answers every
+   pull-up alone the line stays below 1.4V and the servo answers no read;
+   with 2.2kΩ from the signal wire to the servo supply it answers every
    read. The line voltages, and whether the servo's high level stays within
    the pin's rating, are not measured
    ([Electrical](../protocols/hitec/README.md#electrical)).
 3. OPEN. A driver that gets no PIO (programmable input/output) state machine,
    no 29 words of program space or no 2 DMA (direct memory access) channels
    leaves the port free with result 5 (`NO_LINE`). PRECHARGE needs a second
-   state machine, 7 words of program space in another PIO block at 150 MHz,
+   state machine, 7 words of program space in another PIO block at 150MHz,
    and a third DMA channel; without them the port stays free with
    `NO_LINE` as well.
 
 In OPEN a command starts one transaction (BUSY). The port is in OPEN again
 when the driver hands back the capture. The driver ends a transaction itself
-1 ms after the longest it can take; a transaction that still runs after
-10,000 ms is aborted by the page as well.
+1ms after the longest it can take; a transaction that still runs after
+10,000ms is aborted by the page as well.
 
 CLOSE gives the port back from any state but free: a running transaction is
 cut, the line closed and the pin the generator's. The supply is left as it
@@ -73,21 +73,21 @@ Write register 23 (`RX_MODE`) says how a D series line receives the
 servo's answer, from the next OPEN on. The OPEN takes the value the
 register holds when the OPEN is written; a change while a line is open
 waits for the next OPEN. An OPEN of a classic line ignores the register:
-a classic servo drives its high level itself, through about 1 kOhm, and
+a classic servo drives its high level itself, through about 1kΩ, and
 answers with neither a pull-up nor a precharge on an open-drain port
-(measured on an HS-7955TG, an HS-5955TG and an HS-5645MG at a 5.0 V
+(measured on an HS-7955TG, an HS-5955TG and an HS-5645MG at a 5.0V
 supply; the line voltages are not measured).
 
 | Value | Name | How the answer is received |
 | ---: | --- | --- |
-| 0 | `PULL-UP` | the line released; a 2.2 kOhm pull-up from the signal wire to the servo supply lifts it. The default, and the value after an IOmcu restart |
-| 1 | `PRECHARGE` | no pull-up. Every 1086.7 ns the IOmcu drives the pad high for 100.0 ns, releases it, and samples it 113.3 ns after the release |
+| 0 | `PULL-UP` | the line released; a 2.2kΩ pull-up from the signal wire to the servo supply lifts it. The default, and the value after an IOmcu restart |
+| 1 | `PRECHARGE` | no pull-up. Every 1086.7ns the IOmcu drives the pad high for 100.0ns, releases it, and samples it 113.3ns after the release |
 
 On a PRECHARGE line:
 
 - A SEND with a receive window goes out with no receiver. The first pass
   of the IOmcu's main loop that finds the request ended hands the pad to a
-  second state machine: 2 mA drive, slow slew, the input not inverted, the
+  second state machine: 2mA drive, slow slew, the input not inverted, the
   pad's pull-up as it was. A DMA channel writes the samples to memory, and
   each pass decodes the samples written since the last one as inverted
   8N1 (`protocols/hitec/include/hitec_pre.h`).
@@ -95,10 +95,10 @@ On a PRECHARGE line:
 - The capture is the one a PULL-UP line gives: the same registers, the
   same decoders, the same result codes. A byte's time carries the
   sampler's start, read off the IOmcu's microsecond timer, so it holds
-  to 1 us; a start bit's edge lies within half a sample, 543 ns, of the
+  to 1us; a start bit's edge lies within half a sample, 543ns, of the
   time given.
 - Refused with `RANGE`: a LISTEN or a POWER that answers, and a receive
-  window above 30,000 us.
+  window above 30,000us.
 - A SEND with no window (a D series write) and a LEVEL run as on a
   PULL-UP line: no sampler.
 - At the end of the receive, an ABORT, a CLOSE and a stop, the sampler
@@ -111,7 +111,7 @@ On a PRECHARGE line:
   POWER's LISTEN starts in the pass of the ON, while the output still
   reads off; it counts as read on from the first pass that does not read
   the output off. One whose output reads off for the whole window,
-  30,000 us at most, runs to its end with result 2 (`DONE`). A receive
+  30,000us at most, runs to its end with result 2 (`DONE`). A receive
   started with the supply off, or with no PD mini, runs to its end.
 
 `STATE` bit 7 reads the register; register 25 of `VIEW` 2, bit 8, says the
@@ -128,10 +128,10 @@ What is measured and what is not:
 | --- | --- | --- |
 | SEND | the lead at the idle level (D series: driven low), 1 to 8 bytes with 0 to 6 idle bit times between two, then the receiver for the window | always |
 | LISTEN | the receiver for the window; with an answer, one byte at the end of the stop bit of the first byte received | with an answer |
-| LEVEL | the line held at a level for 1 us to 4 s, then released. Open drain drives low only | never |
+| LEVEL | the line held at a level for 1us to 4s, then released. Open drain drives low only | never |
 | POWER | the supply cycle below, then a LISTEN from the ON | with an answer |
 
-Leads, windows and levels run to 4,000,000 us. A capture holds up to 16
+Leads, windows and levels run to 4,000,000us. A capture holds up to 16
 bytes. The window counts the time spent waiting for a start bit only. Each
 received byte has its start bit's time in ns from the receiver's start, and
 its stop bit as sampled.
@@ -154,13 +154,13 @@ The decoders' result codes are `hitec_rx_t`: 0 OK, 1 ARG, 2 ABORTED,
 POWER needs a PD mini that answers ([SUPPLY](Link.md)). It:
 
 1. asks the supply off;
-2. waits until it reads off, 3000 ms at most, else result 3 (`SUPPLY`);
-3. keeps it off for the staged 0 to 10,000 ms;
+2. waits until it reads off, 3000ms at most, else result 3 (`SUPPLY`);
+3. keeps it off for the staged 0 to 10,000ms;
 4. asks it on at the staged voltage and current limit;
 5. starts the staged LISTEN in the same pass.
 
-The voltage is 4800 to 6000 mV until a session knows the servo model. The
-current limit is 50 to 3000 mA. The voltage plus 700 mV has to be under the
+The voltage is 4800 to 6000mV until a session knows the servo model. The
+current limit is 50 to 3000mA. The voltage plus 700mV has to be under the
 PD mini's input when the input is known. A set point outside these is
 refused with `SUPPLY_RANGE`. A supply that refuses the ON gives result 3; a
 LISTEN the driver refuses gives result 4 (`START`) with the supply on. From
@@ -168,7 +168,7 @@ the OFF to the end of the LISTEN the SUPPLY page is held (flag bit 11): the
 panel can switch the supply off and cannot switch it on or move a set
 point.
 
-An OFF of the SUPPLY page waits for a byte that may be on the wire, 12 ms
+An OFF of the SUPPLY page waits for a byte that may be on the wire, 12ms
 at most: a SEND's lead and bytes, and the whole of a LISTEN or a POWER's
 LISTEN that answers, since the answer goes out when the first byte has
 come.
@@ -245,9 +245,9 @@ A write sees other registers:
 | 15 | `ANSWER` | low byte the answer; bit 8 the level of a LEVEL |
 | 16, 17 | `LEVEL` | LEVEL: how long, us |
 | 18 | `DECODE` | bits 0 and 1 the decoder, bits 8 to 15 its argument; bits 2 to 7 0 |
-| 19 | `SUPPLY_MV` | POWER: 4800 to 6000 mV |
-| 20 | `SUPPLY_MA` | POWER: 50 to 3000 mA |
-| 21 | `OFF_MS` | POWER: 0 to 10,000 ms |
+| 19 | `SUPPLY_MV` | POWER: 4800 to 6000mV |
+| 20 | `SUPPLY_MA` | POWER: 50 to 3000mA |
+| 21 | `OFF_MS` | POWER: 0 to 10,000ms |
 | 22 | `VIEW` | 0 to 2. In force when written, not covered by the check |
 | 23 | `RX_MODE` | 0 PULL-UP, 1 PRECHARGE: how a D series line receives, from the next OPEN on (4.24). Not covered by the check; 0 after a restart |
 
@@ -282,7 +282,7 @@ transaction:
 | 9 | `STOPPED` | a stop since; CLEAR first |
 | 5 | `UNSAFE` | heartbeat not trusted or link silent |
 | 8 | `STAGED` | registers 4 to 21 do not have the check `CRC` names |
-| 11 | `RANGE` | the staged transaction is not one the line runs, the decoder does not fit the family, or a reserved bit is set; on a PRECHARGE line also a LISTEN or POWER that answers, or a receive window above 30,000 us |
+| 11 | `RANGE` | the staged transaction is not one the line runs, the decoder does not fit the family, or a reserved bit is set; on a PRECHARGE line also a LISTEN or POWER that answers, or a receive window above 30,000us |
 | 13 | `NO_SUPPLY` | POWER without a PD mini that answers |
 | 12 | `SUPPLY_RANGE` | POWER: a set point or the off time out of range |
 | 3 | `HELD` | OPEN: the KST page holds the port |
@@ -309,8 +309,8 @@ r 0x34 0 16
 ```
 
 The first two lines open the line, classic and open drain; the third reads
-`STATE` 2 (OPEN) after 50 ms. The fourth stages 4 bytes with 1 idle bit
-between two, a window of 1500 us for 2 bytes and the decoder; the fifth
+`STATE` 2 (OPEN) after 50ms. The fourth stages 4 bytes with 1 idle bit
+between two, a window of 1500us for 2 bytes and the decoder; the fifth
 sends it with the key. 0x8135 and 0xE56A are the checks of the two staged
 blocks. The console's `hitec open 0 c` and `hitec c 0 0x61 0x12 0` do the
 same and compute `SEQ` and the checks.

@@ -1,9 +1,11 @@
-/*
- * Core 1: the sensor bus, read on a 1 ms tick, and the hand-over to core 0.
+/**
+ * @file
+ * @brief Core 1: the sensor bus, read on a 1ms tick, and the hand-over to
+ * core 0.
  *
  * Core 0 runs the link, the outputs, the supply and the flash store, as
  * before; it never touches the I2C (Inter-Integrated Circuit) block.
- * Core 1 runs one loop and nothing else: each 1 ms it takes core 0's
+ * Core 1 runs one loop and nothing else: each 1ms it takes core 0's
  * latest order, runs one step of sense_svc (shared/sense/sense_svc.h) --
  * the schedule, the parts, the bus clear -- and hands back a snapshot.
  * It then runs one pass of the phase tap's tone service (tone_core1.h),
@@ -38,27 +40,49 @@
 
 #include "sense_svc.h"
 
-/** The tick. */
+/**
+ * @brief The tick.
+ */
 #define SENSE_TICK_US 1000u
 
-/** How long core 0 waits at launch for core 1 to register for the flash
- *  lock-out.  It takes microseconds; the bound only keeps a core 1 that
- *  never starts from stopping core 0. */
+/**
+ * @brief How long core 0 waits at launch for core 1 to register for the
+ * flash lock-out.
+ *
+ * It takes microseconds; the bound only keeps a core 1 that
+ *  never starts from stopping core 0.
+ */
 #define SENSE_CORE1_START_MS 100u
 
 /**
- * Launch core 1 with @p first as its first order.  Returns whether core 1
+ * @brief Launch core 1 with @p first as its first order.
+ *
+ * Returns whether core 1
  * registered for the flash lock-out within SENSE_CORE1_START_MS.  False
  * means no flash window may open this boot: flash_safe_execute() would
  * refuse it, or assert where asserts are on.
+ *
+ * @param first  The first order for core 1.
+ * @return True when core 1 registered for the flash lock-out within
+ *         SENSE_CORE1_START_MS. False otherwise.
  */
 bool sense_core1_start(const sense_cmd_t *first);
 
-/** A new order for core 1, taken at its next tick. */
+/**
+ * @brief A new order for core 1, taken at its next tick.
+ *
+ * @param cmd  The order to copy into the shared slot.
+ */
 void sense_core1_order(const sense_cmd_t *cmd);
 
-/** The newest snapshot into @p out when one has arrived since the last
- *  call; false, and @p out untouched, when none has. */
+/**
+ * @brief The newest snapshot into @p out when one has arrived since the last
+ * call; false, and @p out untouched, when none has.
+ *
+ * @param out  Receives the snapshot when one has arrived.
+ * @return True when a snapshot was copied. False when none has arrived since
+ *         the last call.
+ */
 bool sense_core1_snapshot(sense_snap_t *out);
 
 #endif /* RCBENCH_SENSE_CORE1_H */

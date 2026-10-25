@@ -5,7 +5,7 @@
  *
  * The panel's path is the same as here: the merged frame goes through the
  * tracker, and the tracker's events to ui_router_event().  Touch health is
- * firmware/panel/main/main.c's rule: touch_age_ms() under 200 ms counts as
+ * firmware/panel/main/main.c's rule: touch_age_ms() under 200ms counts as
  * touch seen, and arming.h takes it from there.
  *
  * SPDX-License-Identifier: MIT
@@ -75,7 +75,14 @@ TEST_CASE(a_full_frame_drops_injected_points_never_glass)
         CHECK(out[k].id < 0x80);
     }
 
+    /* Cut, they stay out when the glass makes room, until the injector
+     * lifts them; reported again after that, they are new contacts. */
     touch_merge_glass(&m, g, 1);
+    CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 1);
+    (void)touch_merge_inject(&m, inj, TOUCH_MAX_POINTS, true, 0);
+    CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 1);
+    (void)touch_merge_inject(&m, inj, 0, true, 0);
+    CHECK(touch_merge_inject(&m, inj, TOUCH_MAX_POINTS, true, 0));
     CHECK_EQ(touch_merge_frame(&m, out, TOUCH_MAX_POINTS), 5);
     CHECK_EQ(out[0].y, 10);
     for (int k = 1; k < TOUCH_MAX_POINTS; ++k) {
@@ -130,7 +137,7 @@ TEST_CASE(three_failed_reads_drop_the_injected_contacts)
     CHECK_EQ(m.inject_n, 0);
     CHECK(!touch_merge_inject_failed(&m, 30));   /* nothing left to drop */
 
-    /* Asked again only every 100 ms from the last try. */
+    /* Asked again only every 100ms from the last try. */
     CHECK(!touch_merge_inject_due(&m, 31));
     CHECK(!touch_merge_inject_due(&m, 129));
     CHECK(touch_merge_inject_due(&m, 130));
@@ -199,7 +206,9 @@ TEST_CASE(counts_are_clamped_to_the_frame)
     CHECK_EQ(m.glass_n, TOUCH_MAX_POINTS);
     touch_merge_glass(&m, six, -1);
     CHECK_EQ(m.glass_n, 0);
-    CHECK(touch_merge_inject(&m, six, -1, true, 10));
+    /* All five were cut for the glass's five: their lift changes the
+     * injector's set and not the merged one. */
+    CHECK(!touch_merge_inject(&m, six, -1, true, 10));
     CHECK_EQ(m.inject_n, 0);
 }
 
@@ -336,10 +345,10 @@ TEST_CASE(an_injected_stop_stops)
 #define SETTLE_MS (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
 
 /*
- * The glass answers every 10 ms throughout; the injector stops at 1000 ms.
- * Touch reads as seen until its age reaches 200 ms, and ARMING_TOUCH_DEAD_MS
- * (500 ms) after the last time it was seen the bench disarms: at most
- * 700 ms after the injector's last answer, the bound the glass has.
+ * The glass answers every 10ms throughout; the injector stops at 1000ms.
+ * Touch reads as seen until its age reaches 200ms, and ARMING_TOUCH_DEAD_MS
+ * (500ms) after the last time it was seen the bench disarms: at most
+ * 700ms after the injector's last answer, the bound the glass has.
  */
 TEST_CASE(a_silent_injector_takes_the_bench_to_safe)
 {
@@ -411,8 +420,8 @@ static uint32_t panel_age(const touch_merge_t *m, uint32_t glass_age,
                                                   m->ok_ms, t));
 }
 
-/* Silent since its last good read at 0: attached and counting at 999 ms,
- * detached at 1000 ms and after. */
+/* Silent since its last good read at 0: attached and counting at 999ms,
+ * detached at 1000ms and after. */
 TEST_CASE(an_injector_silent_for_1000_ms_detaches)
 {
     touch_merge_t m;
@@ -433,7 +442,7 @@ TEST_CASE(an_injector_silent_for_1000_ms_detaches)
     CHECK(touch_merge_expire(&late, 1001));
     CHECK(!touch_merge_attached(&late));
 
-    /* The age stops counting at 1000 ms even before the touch task has
+    /* The age stops counting at 1000ms even before the touch task has
      * detached it: touch_age_ms() runs in another task. */
     CHECK_EQ(touch_merge_inject_age(true, 0, 999), 999);
     CHECK_EQ(touch_merge_inject_age(true, 0, 1000), 0);
@@ -493,7 +502,7 @@ TEST_CASE(a_detached_injector_leaves_the_glass_age)
     CHECK(!touch_merge_attached(&m));
 }
 
-/* Detached at 1000 ms: probed at 2000 ms, again at 3000 ms, and the first
+/* Detached at 1000ms: probed at 2000ms, again at 3000ms, and the first
  * answer re-attaches it with a fresh age. */
 TEST_CASE(the_first_good_probe_reattaches)
 {
@@ -521,7 +530,7 @@ TEST_CASE(the_first_good_probe_reattaches)
 }
 
 /* Reads that fail just after a re-attach do not detach it at once: the
- * 1000 ms run from the re-attach, and the next probe 1000 ms after that. */
+ * 1000ms run from the re-attach, and the next probe 1000ms after that. */
 TEST_CASE(a_read_failing_just_after_reattach)
 {
     touch_merge_t m;
@@ -557,7 +566,7 @@ TEST_CASE(no_probe_more_often_than_once_a_second)
             (void)touch_merge_probe(&m, false, t);
         }
     }
-    /* Detached at 1000 ms, probed at 2000, 3000, ... 20000 ms. */
+    /* Detached at 1000ms, probed at 2000, 3000, ... 20000ms. */
     CHECK_EQ(probes, 19);
 }
 
@@ -606,8 +615,8 @@ TEST_CASE(no_injected_press_survives_a_detach_and_reattach)
     CHECK_EQ(trk.prev_count, 1);
 }
 
-/* The glass answers every 10 ms; the injector stops at 1000 ms and never
- * comes back.  The bench disarms within 700 ms of its last answer, the
+/* The glass answers every 10ms; the injector stops at 1000ms and never
+ * comes back.  The bench disarms within 700ms of its last answer, the
  * heartbeat comes back at the detach, and nothing arms again. */
 TEST_CASE(a_detached_injector_gives_the_heartbeat_back)
 {
@@ -653,9 +662,9 @@ TEST_CASE(a_detached_injector_gives_the_heartbeat_back)
 
 /*
  * An injector that answers every probe and fails every read: attached for
- * 1000 ms, detached for 1000 ms, and again.  Its age never reaches
+ * 1000ms, detached for 1000ms, and again.  Its age never reaches
  * TOUCH_MERGE_DETACH_MS, so each loss of the heartbeat lasts at most from
- * 700 ms (200 ms to lose touch, then ARMING_TOUCH_DEAD_MS) to the detach,
+ * 700ms (200ms to lose touch, then ARMING_TOUCH_DEAD_MS) to the detach,
  * plus one poll.  Nothing arms in between.
  */
 TEST_CASE(a_flapping_injector_holds_the_heartbeat_no_longer)
@@ -684,7 +693,7 @@ TEST_CASE(a_flapping_injector_holds_the_heartbeat_no_longer)
         }
         arming_touch_poll(&a, t);
         (void)arming_step(&a, t);
-        /* Last good read at 490 ms: lost from 700 ms, dead from 1200 ms. */
+        /* Last good read at 490ms: lost from 700ms, dead from 1200ms. */
         if (t >= 490u + PANEL_TOUCH_FRESH_MS + ARMING_TOUCH_DEAD_MS + 10u) {
             CHECK(!a.armed);
         }
@@ -745,7 +754,7 @@ TEST_CASE(nothing_at_start_means_no_probe_ever_later)
     CHECK_EQ(out[0].id, 2);
 }
 
-/* Not found at start, found 10 s later: ignored until a restart, which
+/* Not found at start, found 10s later: ignored until a restart, which
  * starts the merge again. */
 TEST_CASE(an_injector_appearing_after_start_is_ignored_until_restart)
 {
@@ -767,7 +776,7 @@ TEST_CASE(an_injector_appearing_after_start_is_ignored_until_restart)
 }
 
 /* An injector that answered at start-up keeps today's behaviour: detached
- * after 1000 ms silent, probed once a second, back on the first answer. */
+ * after 1000ms silent, probed once a second, back on the first answer. */
 TEST_CASE(present_at_start_detaches_and_reattaches_as_before)
 {
     touch_merge_t m;
@@ -785,7 +794,7 @@ TEST_CASE(present_at_start_detaches_and_reattaches_as_before)
     CHECK(touch_merge_probe_due(&m, 3000u));
     CHECK(touch_merge_probe(&m, true, 3000u));
     CHECK(touch_merge_attached(&m));
-    /* Silent once more: detached 1000 ms after the re-attach. */
+    /* Silent once more: detached 1000ms after the re-attach. */
     CHECK(!touch_merge_expire(&m, 3999u));
     CHECK(touch_merge_expire(&m, 4000u));
 }
@@ -799,6 +808,131 @@ TEST_CASE(null_detach_calls_are_harmless)
     CHECK(!touch_merge_expire(NULL, 5000));
     CHECK(!touch_merge_probe_due(NULL, 5000));
     CHECK(!touch_merge_probe(NULL, true, 5000));
+}
+
+/* --------------------------------------- each source with its own map */
+
+/*
+ * The 7-inch ESP32-P4 board's two maps, as firmware/panel/components/gt911
+ * builds them: the glass reports 1024 x 600 and is mirrored in x and y
+ * (BOARD_TOUCH_MIRROR_X/Y); the injector sends panel pixels of the UI's
+ * 1024 x 600 area, the whole glass, unmirrored (touch_inject_map()).
+ */
+static const touch_map_t k_glass_map = {
+    .src_w = 1024, .src_h = 600, .mirror_x = true, .mirror_y = true,
+    .rotation = TOUCH_ROTATION_0,
+};
+static const touch_map_t k_inject_map = {
+    .src_w = 1024, .src_h = 600, .mirror_x = false, .mirror_y = false,
+    .rotation = TOUCH_ROTATION_0,
+};
+
+/* The touch task's order: each source mapped with its own map, merged,
+ * then cropped to the UI's 1024 x 600. */
+static int panel_frame(const touch_point_t *glass, int ng,
+                       const touch_point_t *inj, int ni, touch_point_t *out)
+{
+    touch_point_t g[TOUCH_MAX_POINTS];
+    touch_point_t i[TOUCH_MAX_POINTS];
+    if (ng > 0) {
+        memcpy(g, glass, sizeof(g[0]) * (size_t)ng);
+    }
+    if (ni > 0) {
+        memcpy(i, inj, sizeof(i[0]) * (size_t)ni);
+    }
+    touch_map_points(&k_glass_map, g, ng);
+    touch_map_points(&k_inject_map, i, ni);
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    touch_merge_glass(&m, g, ng);
+    (void)touch_merge_inject(&m, i, ni, true, 0);
+    const int n = touch_merge_frame(&m, out, TOUCH_MAX_POINTS);
+    return touch_map_crop(out, n, 1024, 600);
+}
+
+TEST_CASE(an_injected_point_lands_on_the_pixel_it_names)
+{
+    static const int k[][2] = {
+        { 0, 0 }, { 1023, 0 }, { 0, 599 }, { 1023, 599 }, { 512, 300 },
+        { 100, 50 },
+    };
+    for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
+        const touch_point_t inj = pt(0, k[c][0], k[c][1]);
+        touch_point_t out[TOUCH_MAX_POINTS];
+        CHECK_EQ(panel_frame(NULL, 0, &inj, 1, out), 1);
+        CHECK_EQ(out[0].x, k[c][0]);
+        CHECK_EQ(out[0].y, k[c][1]);
+        CHECK_EQ(out[0].id, 0x80);
+    }
+}
+
+TEST_CASE(an_injected_point_past_the_ui_is_clamped_to_its_edge)
+{
+    const touch_point_t inj = pt(0, 1024, 600);
+    touch_point_t out[TOUCH_MAX_POINTS];
+    CHECK_EQ(panel_frame(NULL, 0, &inj, 1, out), 1);
+    CHECK_EQ(out[0].x, 1023);
+    CHECK_EQ(out[0].y, 599);
+}
+
+TEST_CASE(the_glass_lands_mirrored_on_the_ui_corners_and_centre)
+{
+    /* Raw glass -> panel pixel: x' = 1023 - x, y' = 599 - y.  The UI is
+     * the whole glass, so every corner of the glass is a corner of it. */
+    static const int k[][4] = {
+        { 1023, 599, 0, 0 },     /* the UI's top-left */
+        { 0, 599, 1023, 0 },     /* top-right */
+        { 1023, 0, 0, 599 },     /* bottom-left */
+        { 0, 0, 1023, 599 },     /* bottom-right */
+        { 511, 299, 512, 300 },  /* centre */
+    };
+    for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
+        const touch_point_t g = pt(3, k[c][0], k[c][1]);
+        touch_point_t out[TOUCH_MAX_POINTS];
+        CHECK_EQ(panel_frame(&g, 1, NULL, 0, out), 1);
+        CHECK_EQ(out[0].x, k[c][2]);
+        CHECK_EQ(out[0].y, k[c][3]);
+        CHECK_EQ(out[0].id, 3);
+    }
+}
+
+TEST_CASE(no_point_of_the_glass_is_dropped)
+{
+    /* Raw (0, 0) is panel pixel (1023, 599); raw (223, 359) is (800, 240),
+     * a column the 800 x 480 area of a smaller UI would drop. */
+    const touch_point_t g[2] = { pt(0, 0, 0), pt(1, 223, 359) };
+    touch_point_t out[TOUCH_MAX_POINTS];
+    CHECK_EQ(panel_frame(g, 2, NULL, 0, out), 2);
+    CHECK_EQ(out[0].x, 1023);
+    CHECK_EQ(out[0].y, 599);
+    CHECK_EQ(out[1].x, 800);
+    CHECK_EQ(out[1].y, 240);
+}
+
+TEST_CASE(both_sources_at_once_keep_their_own_maps)
+{
+    /* The glass at the centre, the injector at (100, 50): each where it
+     * means, not the injector mirrored to (923, 549). */
+    const touch_point_t g = pt(0, 511, 299);
+    const touch_point_t inj = pt(0, 100, 50);
+    touch_point_t out[TOUCH_MAX_POINTS];
+    CHECK_EQ(panel_frame(&g, 1, &inj, 1, out), 2);
+    CHECK_EQ(out[0].x, 512);
+    CHECK_EQ(out[0].y, 300);
+    CHECK_EQ(out[1].x, 100);
+    CHECK_EQ(out[1].y, 50);
+    CHECK_EQ(out[1].id, 0x80);
+}
+
+TEST_CASE(mapping_no_points_or_no_map_changes_nothing)
+{
+    touch_point_t p = pt(0, 5, 6);
+    touch_map_points(&k_glass_map, &p, 0);
+    touch_map_points(&k_glass_map, &p, -1);
+    touch_map_points(NULL, &p, 1);
+    touch_map_points(&k_glass_map, NULL, 1);
+    CHECK_EQ(p.x, 5);
+    CHECK_EQ(p.y, 6);
 }
 
 int main(void)
@@ -833,5 +967,11 @@ int main(void)
     RUN(an_injector_appearing_after_start_is_ignored_until_restart);
     RUN(present_at_start_detaches_and_reattaches_as_before);
     RUN(null_detach_calls_are_harmless);
+    RUN(an_injected_point_lands_on_the_pixel_it_names);
+    RUN(an_injected_point_past_the_ui_is_clamped_to_its_edge);
+    RUN(the_glass_lands_mirrored_on_the_ui_corners_and_centre);
+    RUN(no_point_of_the_glass_is_dropped);
+    RUN(both_sources_at_once_keep_their_own_maps);
+    RUN(mapping_no_points_or_no_map_changes_nothing);
     return test_summary("touch_merge");
 }

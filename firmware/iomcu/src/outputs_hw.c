@@ -1,5 +1,8 @@
-/*
- * The bank rendered onto pins.  See outputs_hw.h.
+/**
+ * @file
+ * @brief The bank rendered onto pins.
+ *
+ * See outputs_hw.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,8 +21,8 @@
 #include "port_park.h"
 #include "ppm.h"
 
-/*
- * How often an ESC (electronic speed controller) is told what to do.
+/**
+ * @brief How often an ESC (electronic speed controller) is told what to do.
  *
  * The OUTPUTS page's rate field is a bit rate for DShot, not a frame rate, so
  * this is the one output timing the wire does not carry.  A kilohertz is
@@ -30,6 +33,10 @@
 #define DSHOT_UPDATE_HZ   1000u
 #define DSHOT_PERIOD_US   (1000000u / DSHOT_UPDATE_HZ)
 
+/**
+ * @brief Render state of one slot: its DShot schedule, extended telemetry and
+ * the last PWM pulse.
+ */
 typedef struct {
     bool     bound;
     uint32_t next_us;      /* DShot only: when the next frame is due */
@@ -49,9 +56,11 @@ typedef struct {
 static out_slot_t   s_shadow[OUT_MAX_SLOTS];
 static slot_state_t s_state[OUT_MAX_SLOTS];
 
-/*
- * The programming ports: pins of their own on the same generator, each
- * rendered from one channel of the bank.  `as` is the port as a slot of one
+/**
+ * @brief The programming ports: pins of their own on the same generator,
+ * each rendered from one channel of the bank.
+ *
+ * `as` is the port as a slot of one
  * PWM channel, so the rendering and the capture's edge are the slots' code.
  */
 typedef struct {
@@ -63,8 +72,10 @@ typedef struct {
 
 static port_state_t s_port[LINK_PG_PORTS_MAX];
 
-/* Every DShot port let go: no frame, its state machine free, held again
- * by the next outputs_hw_ports(). */
+/**
+ * @brief Every DShot port let go: no frame, its state machine free, held
+ * again by the next outputs_hw_ports().
+ */
 static void ports_release_dshot(void)
 {
     for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
@@ -75,23 +86,29 @@ static void ports_release_dshot(void)
         }
     }
 }
-/* The ports that render their pulse (outputs_hw_ports_drive()). */
+/**
+ * @brief The ports that render their pulse (outputs_hw_ports_drive()).
+ */
 static uint8_t s_port_drive;
 
-/* The capture's edge: the output channel watched, -1 for none, and the
- * frame stamped for it, until taken. */
+/**
+ * @brief The capture's edge: the output channel watched, -1 for none, and
+ * the frame stamped for it, until taken.
+ */
 static int      s_watch_ch = -1;
 static bool     s_edge_ready;
 static uint64_t s_edge_us;
 
-/* The millisecond clock the telemetry ages and the ask schedule run on. */
+/**
+ * @brief The millisecond clock the telemetry ages and the ask schedule run on.
+ */
 static uint32_t now_ms(void)
 {
     return (uint32_t)to_ms_since_boot(get_absolute_time());
 }
 
-/*
- * The last readings an ESC gave, with the clock each arrived on.
+/**
+ * @brief The last readings an ESC gave, with the clock each arrived on.
  *
  * Per slot, not per bank.  The binding allows eight outputs and any of them
  * may be bidirectional, and one set of readings shared between them would
@@ -115,14 +132,16 @@ typedef struct {
 
 static telem_t s_telem[OUT_MAX_SLOTS];
 
-/*
- * The slot whose readings the bench publishes: the lowest-numbered bound
- * bidirectional output.
+/**
+ * @brief The slot whose readings the bench publishes: the lowest-numbered
+ * bound bidirectional output.
  *
  * Defined rather than "whichever answered last", so the numbers on the screen
  * belong to one motor and stay with it. A bench running two ESCs reports the
  * first; the page carries one set of readings and choosing between them here
  * is the only place that choice can be made once.
+ *
+ * @return The slot index, or -1 when no bidirectional output is bound.
  */
 static int reporting_slot(void)
 {
@@ -155,6 +174,13 @@ bool outputs_hw_bound(uint8_t slot)
 
 /* -------------------------------------------------------------- binding */
 
+/**
+ * @brief Tells whether two slot configurations bind the same way.
+ *
+ * @param a  One slot.
+ * @param b  The other slot.
+ * @return True when driver, channels, pin and rate all match.
+ */
 static bool same(const out_slot_t *a, const out_slot_t *b)
 {
     return a->driver == b->driver
@@ -164,6 +190,11 @@ static bool same(const out_slot_t *a, const out_slot_t *b)
            && a->rate_hz == b->rate_hz;
 }
 
+/**
+ * @brief Releases the pin of a slot from its driver.
+ *
+ * @param s  The slot whose pin is released.
+ */
 static void unbind(const out_slot_t *s)
 {
     switch (s->driver) {
@@ -177,6 +208,12 @@ static void unbind(const out_slot_t *s)
     }
 }
 
+/**
+ * @brief Binds a slot's pin to its driver.
+ *
+ * @param s  The slot to bind.
+ * @return True when the driver took the pin.
+ */
 static bool bind(const out_slot_t *s)
 {
     switch (s->driver) {
@@ -285,12 +322,15 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
 
 /* ------------------------------------------------------------ rendering */
 
-/*
- * One reply, filed under what it turned out to be.
+/**
+ * @brief One reply, filed under what it turned out to be.
  *
  * Each kind keeps its own arrival clock because they do not arrive at one
  * rate: speed comes back on every frame and the extended kinds are
  * interleaved between them, a few a second at most.
+ *
+ * @param slot  The slot the reply came from. Ignored when out of range.
+ * @param t  The reply.
  */
 static void record_telem(unsigned slot, const dshot_telem_t *t)
 {
@@ -312,8 +352,8 @@ static void record_telem(unsigned slot, const dshot_telem_t *t)
     }
 }
 
-/*
- * Drop everything an ESC said.
+/**
+ * @brief Drop everything an ESC said.
  *
  * At the end of a run, because the next run need not be the same ESC: one can
  * be unplugged and another fitted between two arms, and a reading that
@@ -325,8 +365,12 @@ static void forget_telem(void)
     memset(s_telem, 0, sizeof(s_telem));
 }
 
-/* The same, for one slot: what it is bound to has changed, so what its ESC
- * said belongs to an output that is no longer there. */
+/**
+ * @brief The same, for one slot: what it is bound to has changed, so what
+ * its ESC said belongs to an output that is no longer there.
+ *
+ * @param slot  The slot. Ignored when out of range.
+ */
 static void forget_slot_telem(unsigned slot)
 {
     if (slot < OUT_MAX_SLOTS) {
@@ -334,6 +378,13 @@ static void forget_slot_telem(unsigned slot)
     }
 }
 
+/**
+ * @brief Renders one PPM slot for this pass.
+ *
+ * @param o  The output bank.
+ * @param s  The slot, bound as PPM.
+ * @param drive  True to write the channels' pulses, false to stop the pin.
+ */
 static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
 {
     if (!drive) {
@@ -352,6 +403,15 @@ static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
     (void)out_ppm_write(s->pin, us, n);
 }
 
+/**
+ * @brief Renders one DShot slot or port for this pass.
+ *
+ * @param o  The output bank.
+ * @param s  The slot or port, bound as DShot.
+ * @param st  Its render state.
+ * @param slot  Its slot index, or OUT_MAX_SLOTS for a programming port.
+ * @param drive  True while the bank is armed for its channel.
+ */
 static void service_dshot(const outputs_t *o, const out_slot_t *s,
                           slot_state_t *st, unsigned slot, bool drive)
 {
@@ -380,15 +440,15 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
         st->next_us = time_us_32();
         /*
          * And the ask is owed again.  Extended telemetry is a runtime setting
-         * an ESC forgets when it restarts -- AM32 restarts after 0.5 s
+         * an ESC forgets when it restarts -- AM32 restarts after 0.5s
          * without a frame, and a disarmed bench sends none -- and an ESC can
          * be swapped on a bench between one run and the next.
          *
          * What is not forgotten is that it was asked.  An ESC that keeps
          * power keeps the setting across a short disarm: reading the next
          * run's first replies as periods would take an interleaved
-         * temperature or current frame for a speed, and a current of 120 A
-         * decodes as 8,900 rpm -- a number nobody questions, latched into the
+         * temperature or current frame for a speed, and a current of 120A
+         * decodes as 8,900rpm -- a number nobody questions, latched into the
          * run's peak.  dshot_edt_idle() keeps asked; only a slot that moves or
          * a restart clears it.
          */
@@ -405,30 +465,29 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
      * The ask goes out in place of a stop frame and never in place of a
      * throttle.  A command is an ordinary frame and an ESC tells one from a
      * glitch by counting repeats, so one ask is DSHOT_CMD_REPEATS frames in a
-     * row, 10 ms at DSHOT_UPDATE_HZ, and it is repeated every
+     * row, 10ms at DSHOT_UPDATE_HZ, and it is repeated every
      * DSHOT_EDT_RETRY_MS while the throttle is zero until an extended frame
      * comes back: AM32 takes a command only once it has armed itself on a
-     * second of zero throttle, which a run's first 10 ms never are.
+     * second of zero throttle, which a run's first 10ms never are.
      * DSHOT_CMD_EDT_ENABLE is in the command range, so nothing turns while
      * it is being sent.
      *
      * An ESC that does not know the command ignores it and keeps sending
      * periods.  Those still read as periods: this decoder only takes a frame
      * for an extended one when the mantissa's top bit is clear and the type
-     * nibble is not zero, which an ESC that normalises its exponent never
-     * sends.
+     * nibble is not zero, which an ESC that normalises its exponent
+     * never sends.
      *
      * The telemetry bit is set on every one of the repeats, and it is not
-     * decoration.  On a value of 1 to 47 the bit is what marks the frame as
-     * a command: the BLHeli_S family (Bluejay) discards a command whose
-     * telemetry bit is clear and zeroes its repeat counter with it, so ten
-     * frames without the bit never reach the six repeats its command handler
-     * counts and extended telemetry never comes on.  AM32 has no such gate
-     * and takes the command either way.  On a bidirectional pin the word is
-     * 0x01B5 with the bit and 0x01A4 without it -- a different payload and a
-     * different checksum nibble.  The bit's other meaning is a request on
-     * the separate serial telemetry wire; nothing on this bench reads that
-     * wire.
+     * decoration.  On a value of 1 to 47 the bit is what marks the frame as a
+     * command: the BLHeli_S family (Bluejay) discards a command whose telemetry
+     * bit is clear and zeroes its repeat counter with it, so ten frames without
+     * the bit never reach the six repeats its command handler counts and
+     * extended telemetry never comes on.  AM32 has no such gate and takes the
+     * command either way.  On a bidirectional pin the word is 0x01B5 with the
+     * bit and 0x01A4 without it -- a different payload and a different checksum
+     * nibble.  The bit's other meaning is a request on the separate serial
+     * telemetry wire; nothing on this bench reads that wire.
      */
     const uint16_t value =
         dshot_throttle(outputs_actual(o, s->first_channel), OUT_SPAN);
@@ -530,11 +589,17 @@ bool outputs_hw_edge(uint64_t *us)
     return true;
 }
 
-/*
- * A PWM slot's pulse for this pass.  On the watched channel, the first
+/**
+ * @brief A PWM slot's pulse for this pass.
+ *
+ * On the watched channel, the first
  * pulse other than the last one rendered -- a changed command, not a
  * disarm -- is written stamped: the start of the frame that first carries
  * it is the capture's edge.  Once: the watch ends with it, stamped or not.
+ *
+ * @param st  The render state of the slot or port.
+ * @param s  The slot or port, bound as PWM.
+ * @param pulse  Pulse width in microseconds. 0 stops the pin edging.
  */
 static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
 {
@@ -553,10 +618,16 @@ static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
     st->pwm_have = true;
 }
 
-/*
- * Whether the bank is armed for the role of a channel of @p s, the slot as
- * this layer bound it.  The shadow rather than the bank's slot: the shadow is
+/**
+ * @brief Whether the bank is armed for the role of a channel of @p s, the
+ * slot as this layer bound it.
+ *
+ * The shadow rather than the bank's slot: the shadow is
  * what the pin is doing.
+ *
+ * @param o  The output bank.
+ * @param s  The slot, from s_shadow.
+ * @return True when any of the slot's channels is driving.
  */
 static bool slot_driving(const outputs_t *o, const out_slot_t *s)
 {

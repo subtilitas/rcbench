@@ -34,7 +34,7 @@ The radio goes off on its own, and the card names the reason in one line:
 | `Wi-Fi switched off: STOP.` | STOP |
 | `Wi-Fi switched off: supply output on.` | the supply output came on |
 | `Wi-Fi switched off: a recording session started.` | a run started recording |
-| `Wi-Fi switched off after 10 min without a request.` | no request for 10 min |
+| `Wi-Fi switched off after 10min without a request.` | no request for 10min |
 | `Wi-Fi switched off after 16 wrong access codes.` | 16 wrong codes on the page |
 | `Wi-Fi could not start.` | the radio failed to start |
 
@@ -48,7 +48,7 @@ ACCESS POINT starts the panel's own network. The screen shows what a phone or a 
 
 | Item | Value |
 |---|---|
-| Band and channel | 2.4 GHz, channel 6 |
+| Band and channel | 2.4GHz, channel 6 |
 | Security | WPA2 (Wi-Fi Protected Access 2) personal |
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, for example `rcbench-3F7A` |
 | Password | 8 characters, new at every start, without 0, 1, i, l and o |
@@ -65,7 +65,7 @@ ACCESS POINT starts the panel's own network. The screen shows what a phone or a 
 ![Scanning](view:wifi-scanning)
 ![The networks found](view:wifi-scan)
 
-The panel can join a WPA2 or WPA3 personal network instead. CHOOSE HOME NETWORK scans for 10 s at most, then lists up to 16 networks, strongest first, with their signal in dBm. Networks without a name, open networks and enterprise networks are left off.
+The panel can join a WPA2 or WPA3 personal network instead. CHOOSE HOME NETWORK scans for 10s at most, then lists up to 16 networks, strongest first, with their signal in dBm. Networks without a name, open networks and enterprise networks are left off.
 
 - A tap on a network opens the keyboard for its password.
 - HIDDEN NETWORK asks for the name of a network that does not announce itself, then for its password.
@@ -100,32 +100,32 @@ JOIN HOME NETWORK joins the kept network. Joined, the screen shows the network, 
 
 | Line | Condition |
 |---|---|
-| `Could not connect. Password rejected.` | the network refused the password 3 times in a row, or refused it last when 20 s ran out |
-| `Could not connect. Network not found.` | no association within 20 s, and the last drop of another kind, or none |
-| `Connection failed. No IP address within 15 s.` | associated, and no address within 15 s |
+| `Could not connect. Password rejected.` | the network refused the password 3 times in a row, or refused it last when 20s ran out |
+| `Could not connect. Network not found.` | no association within 20s, and the last drop of another kind, or none |
+| `Connection failed. No IP address within 15s.` | associated, and no address within 15s |
 | `Connection to the home network lost.` | joined, then the network dropped the panel |
 
 A failed join offers ACCESS POINT. WI-FI OFF switches the radio off.
 
 ## The access code
 
-The browser page asks for an 8-character code before it lists a file or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2 s hold on the panel.
+The browser page asks for an 8-character code before it lists a file or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
 
 ## The browser page
 
 The page uses the panel's language.
 
-- **Panel firmware**: the version installed, a file picker and Upload. The file is the release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than 4,063,232 bytes is refused before a byte is sent.
-- **Files on the card**: every file with its name, size in bytes and time; each name downloads that file. The page writes nothing on the card.
-- **Download all as one ZIP file**: the whole card, stored uncompressed. A file that grows by appending is sent as it was when the download started; a file added during it is left out. Removing or renaming a file during the download ends it as failed; the rotation of `BENCH/RCBENCH.LOG` at 1 MiB is a rename. The transfer rate is not measured; 300,000 to 1,000,000 B/s on a home network is expected.
+- **Panel firmware**: the version installed, a file picker and Upload. The file is the release asset `rcbench-panel-p4-vX.Y.Z.bin`. A file larger than 8,126,464 bytes is refused before a byte is sent.
+- **Files on the card**: every file with its name, size in bytes and time in the zone of SETUP > PANEL's Time zone; a 1980 date, an unset clock's, leaves the time empty. Each name downloads that file. The page writes nothing on the card.
+- **Download all as one ZIP file**: the whole card, stored uncompressed. A file that grows by appending is sent as it was when the download started; a file added during it is left out. Removing or renaming a file during the download ends it as failed; the rotation of `BENCH/RCBENCH.LOG` at 1MiB is a rename. On a home network a 16MiB file came down at 688-757kB/s and a 2.56MB image went up at 556-599kB/s. The page itself, 18.9kB with its card listing, took 4.54s.
 
-The page answers one request at a time: a request made during a download waits for its end. A download the browser takes nothing of for 30 s ends, and the browser reports it as failed.
+The page answers one request at a time: a request made during a download waits for its end. A download the browser takes nothing of for 30s ends, and the browser reports it as failed.
 
 ## Installing an image
 
 ![A newer image waits](view:wifi-question)
 
-An image the page received waits on the panel as a question with both versions. INSTALL is a 2 s hold, `HOLD 2 s: INSTALL`; the browser cannot start it. CANCEL drops the image. The install needs the bench SAFE, the supply output off, no log run open, no board drawing being fetched or kept and no IOmcu update running.
+An image the page received waits on the panel as a question with both versions. INSTALL is a 2s hold, `HOLD 2s TO INSTALL`; the browser cannot start it. CANCEL drops the image. The install needs the bench SAFE, the supply output off, no log run open, no board drawing being fetched or kept and no IOmcu update running.
 
 ![An older image, and a drawing being kept](view:wifi-older)
 

@@ -15,19 +15,19 @@ difference to the horn's travel time and its median; the CSV files; a log
 with CR LF and with LF line ends; a log cut off inside a trace, with a
 sample line missing, with a trace starting inside another, with records
 the IOmcu dropped, with no trace, with another format version and
-with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
+with a trace that has no shunt; times across the 2^32 wrap of the 0.1ms
 count; clipped samples and their mark in the CSV file; edge lines with
 the command line nearest to each, a command line with no edge line and an
-edge line with no command line; commands within 30 ms of each other; the
+edge line with no command line; commands within 30ms of each other; the
 report of record without --loaded-channel, and with it the commands, $D
 lines and edge lines of the other channels left out, a command of another
-channel 30 ms and 31 ms from a move, two loaded channels in one frame,
+channel 30ms and 31ms from a move, two loaded channels in one frame,
 every channel loaded, a loaded channel with no command in the log, a log
 with no command line and the option's values; a trace with trigger lines
 not written, a move with records missing inside it and a slewed command
 with its $D line before and after its $C line; a version 3 $D line bound
 to the command its cmd= names, a version 2 one to the latest command
-30 ms after it, one naming no command line, and each version's $D line in
+30ms after it, one naming no command line, and each version's $D line in
 a trace of the other; what the traces alone give; a servo CSV that pairs
 at two offsets, one set by hand, and one without the columns; two boots
 whose rows lie in their order, among each other and alike; the grammar of
@@ -151,7 +151,7 @@ def the_report_on_the_fixture() -> None:
     check("PROBLEM" not in out, "no problem")
     check("shunt 0.1 Ohm, Configuration 0x4007, part online, reset count 0"
           in out, "the set-up")
-    # The model's noise is 0.02 A peak to peak: 0.0104 A from the mean.
+    # The model's noise is 0.02A peak to peak: 0.0104A from the mean.
     check("noise of the whole trace, 562 samples:" in out, "noise, trace 1")
     check("filter 1: mean 0.1204 A, standard deviation 0.0058 A, largest "
           "distance from the mean 0.0104 A" in out, "its figures")
@@ -161,7 +161,7 @@ def the_report_on_the_fixture() -> None:
     check("move 3 at 3200.0 ms, channel 0 to 1800 us: before 0.120 A, "
           "holding 0.120 A (held before move 2), threshold 0.020 A, horn "
           "490 ms" in out, "move 3 takes the level its end was held at")
-    # The model's horn takes 250 ms for 300 us and 500 ms for 600 us; a
+    # The model's horn takes 250ms for 300us and 500ms for 600us; a
     # mean of n samples shows the fall n - 1 samples later.
     arrival = setting_rows(out, "  arrival, ms from the command:")
     diff = setting_rows(out, "  arrival less the horn's travel time")
@@ -191,7 +191,7 @@ def the_report_on_the_fixture() -> None:
           "370 voltages in trace 2")
     volts = [float(row.split(";")[2]) for row in two[1:]
              if row.split(";")[2]]
-    # 6.0 V less 0.4 V an ampere: 5.952 V holding, 5.62 V moving.
+    # 6.0V less 0.4V an ampere: 5.952V holding, 5.62V moving.
     check(max(volts) == 5.952 and min(volts) == 5.616, "the rail's sag")
     times = [float(row.split(";")[0]) for row in two[1:]]
     check(all(b - a == 1.0 for a, b in zip(times, times[1:], strict=False)),
@@ -330,8 +330,8 @@ def another_version_and_a_trace_without_a_shunt() -> None:
 
 def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
               high: int = 2000, edge_after: int = 120) -> str:
-    """A trace at @p t0: 0.12 A held, and after each (ms, us) command a
-    burst of @p high codes for 100 ms.  With @p edges an edge line
+    """A trace at @p t0: 0.12A held, and after each (ms, us) command a
+    burst of @p high codes for 100ms.  With @p edges an edge line
     @p edge_after tenths of a ms after each command line's time."""
     out = [f"$T v=2 n=1 trig=cmd t={t0} ms=0 len=4000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0"]
@@ -353,8 +353,8 @@ def synthetic(t0: int, moves: list[tuple[int, int]], edges: bool = False,
 
 
 def times_run_across_the_wrap_of_the_count() -> None:
-    # The trigger 20 ms before the 0.1 ms count wraps; the second command
-    # 1 s after it.
+    # The trigger 20ms before the 0.1ms count wraps; the second command
+    # 1s after it.
     t0 = (1 << 32) - 200
     traces, other, _ = sense_trace.parse_log(
         synthetic(t0, [(0, 1900), (1000, 1100)]))
@@ -426,7 +426,7 @@ def edge_lines_are_the_moves_when_there_are_any() -> None:
     text = synthetic(1000, [(0, 1900), (1000, 1100)], edges=True)
     r = tool(str(work("edge.log", text)), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
-    # Each edge 12 ms after its command line, with that line's pulse.
+    # Each edge 12ms after its command line, with that line's pulse.
     check("move 1 at 12.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
     check("move 2 at 1012.0 ms, channel 2 to 1100 us" in r.stdout, "move 2")
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
@@ -435,7 +435,7 @@ def edge_lines_are_the_moves_when_there_are_any() -> None:
 
 
 def an_edge_takes_the_command_line_nearest_to_it() -> None:
-    # A command line's time one frame late: 20 ms after its edge.  The
+    # A command line's time one frame late: 20ms after its edge.  The
     # edge still has its channel and pulse, and with them the level its
     # end was held at.
     moves = [(0, 1900), (1000, 1100), (2000, 1900)]
@@ -445,7 +445,7 @@ def an_edge_takes_the_command_line_nearest_to_it() -> None:
     check("move 1 at -20.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
     check("move 3 at 1980.0 ms, channel 2 to 1900 us" in r.stdout
           and "(held before move 2)" in r.stdout, "move 3's level")
-    # 31 ms apart is another command's: the edge is a move with no
+    # 31ms apart is another command's: the edge is a move with no
     # channel, and the command a move at its own time.
     r = tool(str(work("far.log", synthetic(1000, moves, edges=True,
                                            edge_after=-310))), "--no-csv")
@@ -472,7 +472,7 @@ def a_command_with_no_edge_line_is_a_move() -> None:
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["3/3", "3/3", "101.0", "113.0", "101.0"],
           f"{arrival[(1, '0.05')]}")
-    # A command line is one edge's: of two edge lines within 30 ms of it
+    # A command line is one edge's: of two edge lines within 30ms of it
     # the nearer has its channel and pulse, the other none.
     lines = synthetic(1000, [(0, 1900), (1000, 1100)],
                       edges=True).splitlines()
@@ -490,13 +490,13 @@ def a_command_with_no_edge_line_is_a_move() -> None:
 def edges_and_commands_are_paired_as_many_as_can_be() -> None:
     limit = 300
     pair = sense_trace.pair_near
-    # Commands at 80 and 115 ms, edges at 100 and 140 ms: the nearest
-    # pair of all, 100 with 115, leaves the edge at 140 ms none.
+    # Commands at 80 and 115ms, edges at 100 and 140ms: the nearest
+    # pair of all, 100 with 115, leaves the edge at 140ms none.
     check(pair([1000, 1400], [800, 1150], limit) == {0: 0, 1: 1},
           f"{pair([1000, 1400], [800, 1150], limit)}")
     # The same with the lists not in the order of their times.
     check(pair([1400, 1000], [1150, 800], limit) == {0: 0, 1: 1}, "order")
-    # The limit itself pairs, 0.1 ms more does not.
+    # The limit itself pairs, 0.1ms more does not.
     check(pair([1000], [700], limit) == {0: 0}, "at the limit")
     check(pair([1000], [699], limit) == {}, "past it")
     check(pair([1000], [1300], limit) == {0: 0}, "at the limit, after")
@@ -515,11 +515,11 @@ def edges_and_commands_are_paired_as_many_as_can_be() -> None:
     # Lines at one time: each edge one command.
     check(sorted(pair([1000, 1000], [1000, 1000], limit).values()) == [0, 1],
           "equal times")
-    # Through the tool: the commands' lines 20 ms and 25 ms before their
-    # edges, 35 ms apart.
+    # Through the tool: the commands' lines 20ms and 25ms before their
+    # edges, 35ms apart.
     out = synthetic(1000, [(0, 1900), (35, 1100), (1000, 1500)]
                     ).splitlines()
-    # Edge lines at 20 ms and 60 ms, each behind the samples of before
+    # Edge lines at 20ms and 60ms, each behind the samples of before
     # it: 15 sample lines before the second command's line, and 25 after.
     second = next(k for k, line in enumerate(out)
                   if line.startswith("$C t=1350 "))
@@ -535,7 +535,7 @@ def edges_and_commands_are_paired_as_many_as_can_be() -> None:
 
 
 def commands_within_30_ms_are_not_replayed() -> None:
-    # Two outputs commanded in one frame, and one alone 1 s later.
+    # Two outputs commanded in one frame, and one alone 1s later.
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     at = next(k for k, line in enumerate(lines) if line.startswith("$C"))
     lines.insert(at + 1, lines[at].replace("ch=2", "ch=3"))
@@ -549,7 +549,7 @@ def commands_within_30_ms_are_not_replayed() -> None:
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["1/3", "1/3", "-", "-", "113.0"],
           f"{arrival[(1, '0.05')]}")
-    # 30 ms apart is together.  31 ms is not: both are replayed, the
+    # 30ms apart is together.  31ms is not: both are replayed, the
     # first ends at the second, and the second starts inside the first's
     # current and does not come back to its level.
     for apart, want in ((30, ["1/3", "1/3", "-", "-", "113.0"]),
@@ -564,9 +564,9 @@ def commands_within_30_ms_are_not_replayed() -> None:
 def outputs_log(cmds: list[tuple[int, int, int]], drawing: tuple = (2,),
                 ends: tuple = (), edges: tuple = (),
                 trig: str = "cmd") -> str:
-    """A trace of several outputs on the one shunt: 0.12 A held, and
+    """A trace of several outputs on the one shunt: 0.12A held, and
     after each (ms, channel, us) command of a channel in @p drawing a
-    burst of 0.8 A for 100 ms.  @p ends are (ms, channel, us) $D lines,
+    burst of 0.8A for 100ms.  @p ends are (ms, channel, us) $D lines,
     @p edges the ms of edge lines."""
     t0 = 1000
     out = [f"$T v=2 n=1 trig={trig} t={t0} ms=0 len=4000",
@@ -661,9 +661,9 @@ def a_loaded_channel_leaves_out_the_other_channels_commands() -> None:
 
 
 def a_command_of_another_channel_30_ms_before_and_after_a_move() -> None:
-    # Channel 3 commanded 30 ms before the first move, 30 ms after the
-    # second, 1 ms before the third and 31 ms after the fourth: within
-    # the 30 ms each time but the last.
+    # Channel 3 commanded 30ms before the first move, 30ms after the
+    # second, 1ms before the third and 31ms after the fourth: within
+    # the 30ms each time but the last.
     moves = [*ONE, (3000, 2, 1100)]
     near = [(-30, 3, 1900), (1030, 3, 1100), (1999, 3, 1900),
             (3031, 3, 1100)]
@@ -679,7 +679,7 @@ def a_command_of_another_channel_30_ms_before_and_after_a_move() -> None:
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
     check(r.stdout.splitlines()[1] == "loaded channel(s) 2: 4 command "
           "line(s) of channel(s) 3 left out", r.stdout.splitlines()[1])
-    # The trace is 31 ms longer by its last command; below the trace's
+    # The trace is 31ms longer by its last command; below the trace's
     # own line the report is the one of the output alone.
     check(body(r, 3) == body(alone, 2) and len(body(r, 3)) > 20,
           "not the report of the one output")
@@ -785,8 +785,8 @@ def a_loaded_channel_is_a_channel_as_a_command_line_writes_it() -> None:
 
 
 def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
-    # Channel 2's command is slewed and ends at 1950 us; channel 3's too,
-    # at 1150 us, and its $D line is no end of channel 2's command.
+    # Channel 2's command is slewed and ends at 1950us; channel 3's too,
+    # at 1150us, and its $D line is no end of channel 2's command.
     cmds = [(0, 2, 1900), (500, 3, 1100), (1000, 2, 1100)]
     ends = [(40, 2, 1950), (540, 3, 1150)]
     log = str(work("ends.log", outputs_log(cmds, ends=ends)))
@@ -799,7 +799,7 @@ def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
           and "move 1 at 0.0 ms, channel 2 to 1950 us" in r.stdout
           and "move 2 at 1000.0 ms, channel 2 to 1100 us" in r.stdout,
           r.stdout[-900:])
-    # Edge lines carry no channel.  The first stands 12 ms after a frame
+    # Edge lines carry no channel.  The first stands 12ms after a frame
     # with both channels in it: the loaded one's command has it.  The
     # second has channel 3's command alone near it and is that output's.
     # The fourth has no command near it and is a move, as without the
@@ -816,7 +816,7 @@ def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
           and "move 1 at 12.0 ms, channel 2 to 1900 us" in r.stdout
           and "move 2 at 2012.0 ms, channel 2 to 1100 us" in r.stdout
           and "move 3 at 2400.0 ms, edge" in r.stdout, r.stdout[-1500:])
-    # 31 ms from channel 3's command the edge is no command's: a move.
+    # 31ms from channel 3's command the edge is no command's: a move.
     log = str(work("stamps-far.log",
                    outputs_log(cmds, edges=(12, 1031, 2012))))
     r = tool(log, "--no-csv", LOADED, "2")
@@ -825,7 +825,7 @@ def lines_that_end_and_stamp_another_channels_command_are_left_out() -> None:
     check("move 2 at 1031.0 ms, edge" in r.stdout
           and "move 3 at 2012.0 ms, channel 2 to 1100 us" in r.stdout,
           r.stdout[-1500:])
-    # 30 ms from it the edge is channel 3's.
+    # 30ms from it the edge is channel 3's.
     log = str(work("stamps-near.log",
                    outputs_log(cmds, edges=(12, 1030, 2012))))
     r = tool(log, "--no-csv", LOADED, "2")
@@ -884,7 +884,7 @@ def a_trace_with_trigger_lines_not_written_is_not_replayed() -> None:
 
 def a_move_with_records_missing_inside_it_is_not_replayed() -> None:
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
-    # 3 records dropped 50 ms into the first move's burst.
+    # 3 records dropped 50ms into the first move's burst.
     first = next(k for k, line in enumerate(lines) if line == "10,2000")
     at = first + 50
     body = (lines[:at] + ["$L n=3", "40,2000"] + lines[at + 4:-1])
@@ -916,22 +916,22 @@ def records_missing_at_the_ends_of_a_moves_samples() -> None:
     cmd2 = next(k for k, line in enumerate(lines)
                 if line.startswith("$C") and "us=1100" in line)
     # The last 3 samples before the second command: the end of the first
-    # move's samples, and inside the 50 ms the second takes its level
+    # move's samples, and inside the 50ms the second takes its level
     # from.
     r = tool(str(work("gap-end.log", "\n".join(gap(lines, cmd2 - 1)) + "\n")),
              "--no-csv")
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
           f"before the command: {arrival[(1, '0.05')]}")
-    # The 3 samples before the first of the second move's 50 ms: the
+    # The 3 samples before the first of the second move's 50ms: the
     # first move's samples, and the edge of the second's.
     r = tool(str(work("gap-edge.log",
                       "\n".join(gap(lines, cmd2 - 50)) + "\n")), "--no-csv")
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
           f"at the window's edge: {arrival[(1, '0.05')]}")
-    # 100 ms before the second command: the first move's samples, and
-    # the 200 ms the second takes its threshold from.
+    # 100ms before the second command: the first move's samples, and
+    # the 200ms the second takes its threshold from.
     r = tool(str(work("gap-hold.log",
                       "\n".join(gap(lines, cmd2 - 100)) + "\n")), "--no-csv")
     check("move 2 at 1000.0 ms, channel 2 to 1100 us: records are missing "
@@ -940,7 +940,7 @@ def records_missing_at_the_ends_of_a_moves_samples() -> None:
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
     check(arrival[(1, "0.05")] == ["0/2", "0/2", "-", "-"],
           f"in the 200 ms: {arrival[(1, '0.05')]}")
-    # 250 ms before the second command: the first move alone.
+    # 250ms before the second command: the first move alone.
     r = tool(str(work("gap-one.log",
                       "\n".join(gap(lines, cmd2 - 250)) + "\n")), "--no-csv")
     arrival = setting_rows(r.stdout, "  arrival, ms from the command:")
@@ -951,7 +951,7 @@ def records_missing_at_the_ends_of_a_moves_samples() -> None:
 def a_move_the_part_went_offline_in_is_not_replayed() -> None:
     lines = synthetic(1000, [(0, 1900), (1000, 1100)]).splitlines()
     first = next(k for k, line in enumerate(lines) if line == "10,2000")
-    # Offline 50 ms into the first burst, back 30 ms of samples later.
+    # Offline 50ms into the first burst, back 30ms of samples later.
     body = (lines[:first + 50] + ["$S on=0 rst=0"]
             + lines[first + 50:first + 80] + ["$S on=1 rst=0"]
             + lines[first + 80:])
@@ -965,9 +965,9 @@ def a_move_the_part_went_offline_in_is_not_replayed() -> None:
 
 
 def settings_are_compared_on_the_moves_both_time() -> None:
-    # Two moves: a burst of 100 ms, and one of a single sample 0.04 A
+    # Two moves: a burst of 100ms, and one of a single sample 0.04A
     # above the level, which a mean of 4 samples does not lift past the
-    # threshold of 0.020 A: the second is timed by filter 1 alone.
+    # threshold of 0.020A: the second is timed by filter 1 alone.
     lines = synthetic(1000, [(0, 1900), (1000, 1100)], high=400).splitlines()
     cmd2 = next(k for k, line in enumerate(lines)
                 if line.startswith("$C") and "us=1100" in line)
@@ -987,7 +987,7 @@ def settings_are_compared_on_the_moves_both_time() -> None:
     med = setting_rows(r.stdout, "median arrival, and the median distance "
                                  "from filter 4 band 0.05 A")
     # Filter 1 times both moves, the reference one of them: the distance
-    # is over that one move, 1 ms, not the medians' 50.5 ms.
+    # is over that one move, 1ms, not the medians' 50.5ms.
     check(med[(1, "0.05")] == ["63.5", "2", "-1.0", "1"],
           f"filter 1: {med[(1, '0.05')]}")
     check(med[(4, "0.05")] == ["114.0", "1", "+0.0", "1"],
@@ -1014,7 +1014,7 @@ def a_slewed_command_ends_at_its_d_line() -> None:
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
     check("move 1 at 0.0 ms, channel 2 to 1900 us" in r.stdout, "move 1")
     check("move 2 at 1000.0 ms, channel 2 to 1100 us" in r.stdout, "move 2")
-    # Back at 1900 us: the level it was held at before move 2.
+    # Back at 1900us: the level it was held at before move 2.
     check("move 3 at 2000.0 ms, channel 2 to 1900 us: before 0.120 A, "
           "holding 0.120 A (held before move 2)" in r.stdout,
           "move 3's level")
@@ -1043,8 +1043,8 @@ def a_slewed_command_ends_at_its_d_line() -> None:
 
 
 def let_go_log(version: int, cmd: str | None, t0: int = 1000) -> str:
-    """Two commands of channel 2 at 0 and 1000 ms; the first slews to
-    1700 us and is let go at 980 ms, 20 ms before the second.  Its $D
+    """Two commands of channel 2 at 0 and 1000ms; the first slews to
+    1700us and is let go at 980ms, 20ms before the second.  Its $D
     line names @p cmd as its command (version 3), or none."""
     lines = synthetic(t0, [(0, 1501), (1000, 1101)]).splitlines()
     lines[0] = lines[0].replace("v=2", f"v={version}")
@@ -1058,7 +1058,7 @@ def let_go_log(version: int, cmd: str | None, t0: int = 1000) -> str:
 
 def a_d_line_ends_the_command_it_names() -> None:
     # Version 3: the $D line is the first command's end, also with its
-    # command's time across the wrap of the 0.1 ms count.
+    # command's time across the wrap of the 0.1ms count.
     for t0 in (1000, (1 << 32) - 200):
         r = tool(str(work(f"let3-{t0}.log", let_go_log(3, str(t0), t0))),
                  "--no-csv")
@@ -1068,7 +1068,7 @@ def a_d_line_ends_the_command_it_names() -> None:
         check("move 2 at 1000.0 ms, channel 2 to 1101 us" in r.stdout,
               f"v3 move 2 at {t0}")
     # Version 2, the same lines with no cmd=: the latest command no more
-    # than 30 ms after the $D line's time takes it, as before.
+    # than 30ms after the $D line's time takes it, as before.
     r = tool(str(work("let2.log", let_go_log(2, None))), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
     check("move 1 at 0.0 ms, channel 2 to 1501 us" in r.stdout, "v2 move 1")
@@ -1081,7 +1081,7 @@ def a_d_line_ends_the_command_it_names() -> None:
     check("move 1 at 0.0 ms, channel 2 to 1501 us" in r.stdout
           and "move 2 at 1000.0 ms, channel 2 to 1101 us" in r.stdout,
           "an unknown command")
-    # The same 500 ms after the first command and before the second: the
+    # The same 500ms after the first command and before the second: the
     # earlier command of the channel is not taken for the one it names.
     r = tool(str(work("let3y.log", let_go_log(3, "6000"))), "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
@@ -1098,7 +1098,7 @@ def a_d_line_ends_the_command_it_names() -> None:
     # cmd= past 32 bits is no number of the line.
     r = tool(str(work("big.log", let_go_log(3, str(1 << 32)))), "--no-csv")
     check(r.returncode == 1 and "no whole line" in r.stdout, "cmd= range")
-    # A command of channel 1 in the same 0.1 ms tick as channel 2's first,
+    # A command of channel 1 in the same 0.1ms tick as channel 2's first,
     # either line first: the $D line of channel 1 at that time ends channel
     # 1's move alone.
     for first in (2, 1):
@@ -1119,7 +1119,7 @@ def a_d_line_ends_the_command_it_names() -> None:
 
 
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
-    # The second command 50 ms into the first move's burst; the third
+    # The second command 50ms into the first move's burst; the third
     # with no burst at all.
     text = synthetic(1000, [(0, 1900), (63, 1100), (2000, 1900)])
     lines = text.splitlines()
@@ -1194,7 +1194,7 @@ def the_servo_csv_pairs_by_time() -> None:
     check("PROBLEM: another offset between the two clocks pairs as many"
           in r.stdout, "the tie is said")
     check("more than one way" in r.stderr, r.stderr)
-    # Set by hand: the CSV's clock is 12.345 s behind.
+    # Set by hand: the CSV's clock is 12.345s behind.
     r = tool(log, "--servo-csv", str(two), "--csv-offset", "12.345",
              "--no-csv")
     check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
@@ -1221,8 +1221,8 @@ def the_servo_csv_pairs_by_time() -> None:
               f"{extra}: the tie")
     diff = setting_rows(r.stdout, "  arrival less the horn's travel")
     check(diff[(1, "0.05")] == ["+10.0"] * 4, f"{diff[(1, '0.05')]}")
-    # Spacings that differ between the files: commands 1.6 s apart in the
-    # trace, rows 1.8 s apart.  Only an offset between the two that put a
+    # Spacings that differ between the files: commands 1.6s apart in the
+    # trace, rows 1.8s apart.  Only an offset between the two that put a
     # row on a command pairs both.
     def shifted(row: str, by: float) -> str:
         cells = row.split(";")
@@ -1257,8 +1257,8 @@ def the_offset_that_pairs_the_most_is_found_between_the_obvious() -> None:
             self.abs_s = abs_s
             self.horn_ms = None
             self.horn_row = None
-    # Commands at 0.22, 0.32, 0.49 and 0.85 s; rows whose commands lie at
-    # 0, 0.09 and 0.14 s.  An offset of 0.27 s pairs all three, each with
+    # Commands at 0.22, 0.32, 0.49 and 0.85s; rows whose commands lie at
+    # 0, 0.09 and 0.14s.  An offset of 0.27s pairs all three, each with
     # a move of its own; no offset that puts a row on a command does.
     moves = [At(t) for t in (0.22, 0.32, 0.49, 0.85)]
     rows = [(c + 0.1 + 0.1, 100.0) for c in (0.0, 0.09, 0.14)]
@@ -1276,22 +1276,22 @@ def an_offset_that_puts_rows_at_the_tolerance_itself_is_tried() -> None:
             self.horn_row = None
 
     def rows_at(*cmds: float) -> list[tuple[float, float]]:
-        # The command lies the travel time and the 100 ms hold before
+        # The command lies the travel time and the 100ms hold before
         # the row: both exact in binary.
         return [(c + 0.5, 400.0) for c in cmds]
-    # Commands at 0 and 1 s, rows whose commands lie at 0 and 0.75 s, 125
-    # ms allowed: only the offset of 0.125 s pairs both, each at the
+    # Commands at 0 and 1s, rows whose commands lie at 0 and 0.75s, 125
+    # ms allowed: only the offset of 0.125s pairs both, each at the
     # tolerance itself.
     moves = [At(0.0), At(1.0)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.75), 0.125, None)
     check(n == 2 and not tie, f"{n} paired, tie {tie}")
     check([mv.horn_row for mv in moves] == [0, 1], "each its own")
-    # 1 ms less allowed: no offset pairs both.
+    # 1ms less allowed: no offset pairs both.
     moves = [At(0.0), At(1.0)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.75), 0.124, None)
     check(n == 1 and tie, f"{n} paired, tie {tie}")
-    # Times that are not exact in binary: 0.3 s apart and 0.1 s apart,
-    # 100 ms allowed.
+    # Times that are not exact in binary: 0.3s apart and 0.1s apart,
+    # 100ms allowed.
     moves = [At(0.1), At(0.4)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.7, 0.8), 0.1, None)
     check(n == 2 and not tie, f"{n} paired, tie {tie}")
@@ -1310,9 +1310,9 @@ def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
 
     def rows_at(*cmds: float) -> list[tuple[float, float]]:
         return [(c + 0.1 + 0.1, 100.0) for c in cmds]
-    # Commands 50 ms apart, rows whose commands lie at 0, 0.05 and 0.10 s:
-    # rows 1 and 2 fit as exactly as rows 2 and 3, at offsets 50 ms apart,
-    # which is inside the 150 ms a pair may lie apart.
+    # Commands 50ms apart, rows whose commands lie at 0, 0.05 and 0.10s:
+    # rows 1 and 2 fit as exactly as rows 2 and 3, at offsets 50ms apart,
+    # which is inside the 150ms a pair may lie apart.
     moves = [At(0.0), At(0.05)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05, 0.10), 0.15,
                                    None)
@@ -1325,7 +1325,7 @@ def offsets_that_give_rows_to_other_moves_are_two_answers() -> None:
     moves = [At(0.0), At(5.0)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0), 0.15, None)
     check(n == 1 and tie, f"{n} paired, tie {tie}")
-    # As many rows as commands, 50 ms apart: one answer, however many
+    # As many rows as commands, 50ms apart: one answer, however many
     # offsets inside the tolerance give it.
     moves = [At(0.0), At(0.05), At(0.10)]
     n, tie = sense_trace.pair_rows(moves, rows_at(0.0, 0.05, 0.10), 0.15,
@@ -1449,8 +1449,8 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     check(boots_of((3, 5000), (2, 9000)) == [0, 1], "a number back")
     check(boots_of((1, 5000), (32769, 9000)) == [0, 1], "32768 on")
     # A millisecond tick that lies before the last one's by more than
-    # INVERSION_MS is a restart, whatever the number: by 101 ms, and by
-    # 2^31 ms, which is as far on.  Up to INVERSION_MS back with the
+    # INVERSION_MS is a restart, whatever the number: by 101ms, and by
+    # 2^31ms, which is as far on.  Up to INVERSION_MS back with the
     # number on is the same boot: a command trigger's time is computed,
     # a frame ahead of the next trace's mark.
     check(boots_of((1, 5000), (2, 4899)) == [0, 1], "101 ms back")
@@ -1464,7 +1464,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
           "2^31 ms less 1 on")
     check(boots_of((1, 5000), (2, 5000 + (1 << 31))) == [0, 1],
           "2^31 ms back")
-    # The second trace starts 10 ms before the first and is one boot, on
+    # The second trace starts 10ms before the first and is one boot, on
     # the first's clock.
     early = synthetic(899900, [(0, 1900), (1000, 1100), (2500, 1900)])
     traces, _, _ = sense_trace.parse_log(numbered(a, 1, 20120)
@@ -1477,7 +1477,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
           "the tick's wrap")
     check(boots_of((1, 5000), (2, 9000), (1, 3000), (3, 8000), (2, 9000))
           == [0, 0, 1, 1, 2], "two restarts")
-    # Two traces of one boot 6 days apart: the 0.1 ms count wrapped once
+    # Two traces of one boot 6 days apart: the 0.1ms count wrapped once
     # between them, and the millisecond tick says so.
     day = 86400000
     first = numbered(a, 1, 5000)
@@ -1499,7 +1499,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
             "voltage (V);limit (A);current (A);power (W);mode;travel (ms);"
             "angle (deg);travel angle (ms)")
     rows = [head]
-    # The CSV's clock: 50 s at the first boot's first command, 80 s at
+    # The CSV's clock: 50s at the first boot's first command, 80s at
     # the second's.
     for base, at in ((50.0, (0.0, 1.0, 2.5)), (80.0, (0.0, 0.7, 1.9))):
         for cmd in at:
@@ -1563,8 +1563,8 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
 
 def a_floor_is_a_current_above_zero() -> None:
     log = str(ARGS.fixtures / "sense-trace-sim.log")
-    # The replay takes the threshold as whole uA: below 1 uA it is 0,
-    # and past 1000 A it is no current of a servo.
+    # The replay takes the threshold as whole uA: below 1uA it is 0,
+    # and past 1000A it is no current of a servo.
     for bad in ("0", "-0.01", "nan", "inf", "-inf", "1e30", "1000.1",
                 "0.0000009"):
         r = tool(log, f"--floor={bad}", "--no-csv")
@@ -2115,11 +2115,11 @@ def clipped_samples_in_a_level_are_the_last_value_before_the_end() -> None:
     cmd1 = next(k for k, line in enumerate(lines) if line.startswith("$C"))
     cmd2 = next(k for k, line in enumerate(lines)
                 if line.startswith("$C") and "us=1100" in line)
-    # 0.1 Ohm: a code is 0.4 mA.  The end codes are 4095 and -4096; the
+    # 0.1Ohm: a code is 0.4mA.  The end codes are 4095 and -4096; the
     # capture judges a sample at either as 4094 steps towards that end.
     for code, last in ((4095, 4094), (-4096, -4094)):
-        # The 50 ms before the first command clipped: 50 of the 60 samples
-        # before it, which are the idle level's and the 200 ms's too.
+        # The 50ms before the first command clipped: 50 of the 60 samples
+        # before it, which are the idle level's and the 200ms's too.
         body = (lines[:cmd1 - 50] + [f"10,{code}"] * 50 + lines[cmd1:])
         moves = moves_of("\n".join(body) + "\n")
         a = last * 0.0004
@@ -2134,7 +2134,7 @@ def clipped_samples_in_a_level_are_the_last_value_before_the_end() -> None:
         # The second move: its threshold has the idle level's distance.
         check(abs(moves[1].move_a - dev) < 1e-9 and moves[1].clipped == 50,
               f"{code}: move 2 {moves[1].move_a} {moves[1].clipped}")
-        # The 200 ms before the second command, 5 samples of them: the
+        # The 200ms before the second command, 5 samples of them: the
         # level the first move is held at is not the second's destination,
         # so the second's levels alone have them.
         body = (lines[:cmd2 - 100] + [f"10,{code}"] * 5
@@ -2183,7 +2183,7 @@ def records_missing_in_a_level_window_stop_each_move_that_needs_it() -> None:
         body = counted(lines[:at - 3] + ["$L n=3", f"40,{code}"]
                        + lines[at + 1:], lost=3)
         return whys("\n".join(body) + "\n")
-    # Among the samples before the first command, before the 50 ms: the
+    # Among the samples before the first command, before the 50ms: the
     # idle level, which every move's threshold has.
     idle = "records are missing before the first command"
     check(lost(cmd[0] - 54) == [idle, idle, idle], f"{lost(cmd[0] - 54)}")
@@ -2191,27 +2191,27 @@ def records_missing_in_a_level_window_stop_each_move_that_needs_it() -> None:
     body = counted(lines[:2] + ["$L n=3"] + lines[2:], lost=3)
     check(whys("\n".join(body) + "\n") == [idle, idle, idle],
           "before the trace")
-    # 100 ms before the second command: outside its 50 ms and its samples,
-    # inside its 200 ms; the third move returns to the pulse width the
+    # 100ms before the second command: outside its 50ms and its samples,
+    # inside its 200ms; the third move returns to the pulse width the
     # second left and takes its holding level from the same window.
     check(lost(cmd[1] - 100) == [
         "records are missing among its samples",
         "records are missing in the 200 ms before it",
         "records are missing in the 200 ms before move 2, its holding "
         "level"], f"{lost(cmd[1] - 100)}")
-    # At the start of the second move's 200 ms.
+    # At the start of the second move's 200ms.
     check(lost(cmd[1] - 200)[1:] == [
         "records are missing in the 200 ms before it",
         "records are missing in the 200 ms before move 2, its holding "
         "level"], f"{lost(cmd[1] - 200)}")
-    # Before the 200 ms: the first move alone.
+    # Before the 200ms: the first move alone.
     check(lost(cmd[1] - 205) == ["records are missing among its samples",
                                  "", ""], f"{lost(cmd[1] - 205)}")
-    # In the second move's 50 ms.
+    # In the second move's 50ms.
     check(lost(cmd[1] - 20)[1] == "records are missing in the 50 ms before "
           "it", f"{lost(cmd[1] - 20)}")
-    # 100 ms before the third command: the second move's samples and the
-    # third's 200 ms.
+    # 100ms before the third command: the second move's samples and the
+    # third's 200ms.
     check(lost(cmd[2] - 100) == [
         "", "records are missing among its samples",
         "records are missing in the 200 ms before it"],

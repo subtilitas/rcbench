@@ -695,7 +695,7 @@ TEST_CASE(a_writer_with_no_sink_fails_rather_than_crashes)
  * LOG_WRITER_FLUSH_ROWS of it uncommitted, and no uncommitted row is older
  * than LOG_WRITER_FLUSH_S.
  *
- * Driven at the panel's 20 Hz, where 20 rows and 1.0 s are the same instant.
+ * Driven at the panel's 20Hz, where 20 rows and 1.0s are the same instant.
  */
 TEST_CASE(no_more_than_one_interval_of_a_run_is_ever_uncommitted)
 {
@@ -754,8 +754,8 @@ TEST_CASE(what_a_power_cut_leaves_is_a_short_run_and_not_an_empty_file)
 }
 
 /*
- * Rows slower than 20 Hz are committed on the clock rather than on the count,
- * so a run whose samples arrive every 300 ms does not carry ten seconds of
+ * Rows slower than 20Hz are committed on the clock rather than on the count,
+ * so a run whose samples arrive every 300ms does not carry ten seconds of
  * itself uncommitted.
  */
 TEST_CASE(a_slow_run_is_committed_on_the_clock_rather_than_on_the_count)
@@ -768,17 +768,17 @@ TEST_CASE(a_slow_run_is_committed_on_the_clock_rather_than_on_the_count)
     for (int i = 1; i <= 3; ++i) {
         CHECK(log_writer_row(&w, (float)i * 0.3f, &b));
     }
-    CHECK_EQ(g_mem.commits, 0);            /* 0.9 s, three rows: not yet */
+    CHECK_EQ(g_mem.commits, 0);            /* 0.9s, three rows: not yet */
     CHECK_EQ((int)log_writer_pending(&w), 3);
 
-    CHECK(log_writer_row(&w, 1.2f, &b));   /* 1.2 s since the last commit */
+    CHECK(log_writer_row(&w, 1.2f, &b));   /* 1.2s since the last commit */
     CHECK_EQ(g_mem.commits, 1);
     CHECK_EQ((int)log_writer_pending(&w), 0);
 }
 
 /*
  * A bench run's rows carry the wall time since the arm (log_cadence.h): the
- * first row is not at 0, the rows come 52 to 53 ms apart, and a stretch
+ * first row is not at 0, the rows come 52 to 53ms apart, and a stretch
  * without samples is a step.  The reader counts time from the first row, so
  * the duration is the last row's time less the first's, the gap is found at
  * its length, and the rate is the rows' own.  The tick wraps inside the run.
@@ -792,14 +792,14 @@ TEST_CASE(a_run_stamped_with_wall_time_reads_back_with_its_gap)
     b.flags   = LINK_BN_VOLTAGE_OK;
     b.voltage = 12.0f;
 
-    uint32_t now = 0xFFFFF000u;                 /* 4.096 s ahead of the wrap */
+    uint32_t now = 0xFFFFF000u;                 /* 4.096s ahead of the wrap */
     log_cadence_t c;
     log_cadence_init(&c, now);
     float t = 0.0f;
     for (int i = 0; i < 300; ++i) {
-        now += (i % 10 == 9) ? 52u : 53u;       /* 52.9 ms on average */
+        now += (i % 10 == 9) ? 52u : 53u;       /* 52.9ms on average */
         if (i == 150) {
-            now += 30000u;                      /* 30 s with no sample */
+            now += 30000u;                      /* 30s with no sample */
         }
         CHECK(log_cadence_row(&c, now, true, true, &t));
         CHECK(log_writer_row(&w, t, &b));
@@ -827,7 +827,7 @@ TEST_CASE(a_run_stamped_with_wall_time_reads_back_with_its_gap)
     CHECK_NEAR(data.time[0], 0.0, 1e-6);
     CHECK_NEAR(data.time[149], 149.0 * 0.0529, 2e-3);
     CHECK_NEAR(data.time[150], 150.0 * 0.0529 + 30.0, 2e-3);
-    /* 299 intervals of 52.9 ms and the 30 s. */
+    /* 299 intervals of 52.9ms and the 30s. */
     CHECK_NEAR(data.duration_s, 299.0 * 0.0529 + 30.0, 2e-3);
     CHECK_NEAR(data.max_gap_s, 30.053, 2e-3);
     CHECK_NEAR(data.rate_hz, 1.0 / 0.053, 0.05);
@@ -1026,8 +1026,8 @@ static bench_state_t log_sample(void)
 }
 
 /*
- * An armed bench polled every 53 ms for 20 s, the tick wrapping inside the
- * run: every 50 ms window of the INA3221 is one row, in order and under
+ * An armed bench polled every 53ms for 20s, the tick wrapping inside the
+ * run: every 50ms window of the INA3221 is one row, in order and under
  * its own number, every poll's sample is in exactly one row, and the poll
  * that catches a window up writes two rows at one time.
  */
@@ -1071,7 +1071,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
     CHECK_EQ(r.with_sample, 380u);              /* each sample once   */
     CHECK_EQ(r.bare, r.rows - 380u);
     CHECK_EQ(r.same_time, r.bare);
-    CHECK(r.bare >= 20u);                       /* 3 ms a poll in 50  */
+    CHECK(r.bare >= 20u);                       /* 3ms a poll in 50   */
     CHECK_EQ(r.stepped, 0u);
     CHECK_EQ(r.wrong, 0u);
     CHECK_EQ(r.back, 0u);
@@ -1097,7 +1097,7 @@ TEST_CASE(a_bench_log_has_one_row_for_every_window_at_a_53_ms_poll)
 }
 
 /*
- * Polls 150 ms apart: three windows a poll, three rows at one time, the
+ * Polls 150ms apart: three windows a poll, three rows at one time, the
  * sample in the last.  And a poll without a window is still a row.
  */
 TEST_CASE(a_poll_that_brings_three_windows_writes_three_rows)
@@ -1262,7 +1262,7 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
 
 /*
  * The INA3221 resets itself at every phase of a window and is set up again
- * 1000 ms later, part way into a window.  No row carries a voltage of 0,
+ * 1000ms later, part way into a window.  No row carries a voltage of 0,
  * and none a mean current without the highest.
  */
 TEST_CASE(a_part_that_comes_back_mid_window_writes_no_zero_voltage)
@@ -1293,7 +1293,7 @@ TEST_CASE(a_part_that_comes_back_mid_window_writes_no_zero_voltage)
         CHECK_EQ(r.half, 0u);
         CHECK_EQ(r.wrong, 0u);
         CHECK_EQ(r.stepped, 0u);
-        CHECK(r.no_current >= 19u);             /* the 1000 ms offline */
+        CHECK(r.no_current >= 19u);             /* the 1000ms offline */
         CHECK(r.no_voltage >= r.no_current);
     }
 }

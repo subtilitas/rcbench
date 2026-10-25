@@ -1,7 +1,8 @@
-/*
- * The board's drawing: fetched from the IOmcu a slice of a poll at a
- * time on the control task, kept in flash a sector a pass on a safe bench,
- * and published for the picker on the UI task.
+/**
+ * @file
+ * @brief The board's drawing: fetched from the IOmcu a slice of a poll at a
+ *        time on the control task, kept in flash a sector a pass on a safe
+ *        bench, and published for the picker on the UI task.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -58,9 +59,9 @@ bool                      s_artbusy;
  * and carries on from the same step on the next safe pass.  Nothing is
  * findable for the board until the header, written last.
  *
- * The display stalls for each operation too: the panel's bounce-buffer refill
- * reads PSRAM through the cache a flash operation closes.  Settings saves
- * already cost that.
+ * A flash operation closes the cache for its length; the display's
+ * scan-out reads PSRAM by DMA and its interrupt runs regardless
+ * (CONFIG_LCD_DSI_ISR_CACHE_SAFE).
  */
 static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
 static art_entry_t  s_keepentry;
@@ -344,7 +345,7 @@ static void art_finish(void)
  * One bounded slice of the fetch.
  *
  * A block at a time until the slice is spent: this task also beats the
- * safety line, and its ceiling is 150 ms.  The sequence does exactly the
+ * safety line, and its ceiling is 150ms.  The sequence does exactly the
  * blocks it is given, so how much of a poll goes to a drawing is decided
  * here and nowhere else.
  */

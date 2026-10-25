@@ -4,7 +4,7 @@
  * port and its page (shared/outputs/kst_port.c), the session
  * (protocols/kst) and the simulated servo of kst_sim.h.
  *
- * The clock: 1 ms is 10 passes of the port at 100 us on the wire's clock
+ * The clock: 1ms is 10 passes of the port at 100us on the wire's clock
  * and one exchange on the link.
  *
  * SPDX-License-Identifier: MIT
@@ -241,7 +241,7 @@ static void run_ms(unsigned n)
     }
 }
 
-/* Run until the module hands an outcome out; 30 s is the bound. */
+/* Run until the module hands an outcome out; 30s is the bound. */
 static kst_link_outcome_t outcome(void)
 {
     kst_link_outcome_t out;
@@ -1150,7 +1150,7 @@ TEST_CASE(a_stop_at_the_coprocessor_shows_as_an_aborted_operation)
     conduct();
 }
 
-/* Run until @p n command frames have gone; 30 s is the bound. */
+/* Run until @p n command frames have gone; 30s is the bound. */
 static void until_cmds(unsigned n)
 {
     for (unsigned i = 0; i < 30000u && g_cmds < n; ++i) {
@@ -1228,7 +1228,7 @@ TEST_CASE(an_abort_after_the_silence_latch_drops_the_command_unrefused)
     kst_link_request_t r;
     kst_link_outcome_t out;
 
-    /* The frame is lost, the panel waits 1000 ms for its answer, and the
+    /* The frame is lost, the panel waits 1000ms for its answer, and the
      * IOmcu latches its failsafe in that silence. */
     up();
     r = small_write();
@@ -1839,7 +1839,7 @@ TEST_CASE(a_leave_sends_its_wait_and_then_the_command)
     CHECK_EQ(ro.port, LINK_KST_PWM);
     CHECK((ro.flags & (LINK_KS_F_IN_MODE | LINK_KS_F_MUST_READ)) == 0u);
 
-    /* A wait of 0 ms, and the whole range. */
+    /* A wait of 0ms, and the whole range. */
     CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
     CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
     r = leave_after(0);
@@ -2046,7 +2046,7 @@ TEST_CASE(an_abort_ends_a_leave_that_waits)
 /* --- a write the IOmcu plans (4.14) --------------------------------------- */
 
 /* An edit of 86,312 units of planning, as test_kst_session has it: 864
- * passes of the port, 86 ms here. */
+ * passes of the port, 86ms here. */
 static const char k_long_a[] =
     "00f5f514487704eff4b20fc710091400969600010b000000000000e301100000";
 static const char k_long_b[] =

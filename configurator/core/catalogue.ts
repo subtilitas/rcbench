@@ -89,6 +89,13 @@ const XL1509_DATASHEET = doc(
   'page 6, table XL1509-5.0 (4.8 to 5.2 V from 7 to 40 V in, 0.2 to 2 A); page 7, DC parameters (150 kHz, current limit 4 A)',
 );
 
+/** Schematic of the panel board, page 1 (circuit). */
+const P4_SCHEMATIC = doc(
+  'Waveshare schematic ESP32-P4-WIFI6-Touch-LCD-7B, 2 pages, file dated 2025-09-25',
+  'https://files.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-7B/ESP32-P4-WIFI6-Touch-LCD-7B.pdf',
+  'page 1: headers H11 and P3, jumper H5; page 2: prints',
+);
+
 /** A statement of the project owner, by its date. */
 function owner(date: string): Src {
   return { kind: 'owner', date };
@@ -110,7 +117,6 @@ function pin(id: string, label: Text, src: Src, confirmed = true): Pin {
 
 const OUT_BIND = 'shared/outputs/out_bind.c';
 const SETTINGS = 'shared/settings/settings.c';
-const BOARD_PINS = 'firmware/panel/components/board/include/board_pins.h';
 const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
 const PROG_PORT = 'shared/outputs/include/prog_port.h';
 const PROGRAMMER = 'docs/ServoProgrammer.md';
@@ -126,37 +132,31 @@ const PROGRAMMER = 'docs/ServoProgrammer.md';
 const parts: Part[] = [
   {
     id: 'panel',
-    name: t('Waveshare ESP32-S3-Touch-LCD-7 panel', 'Waveshare-ESP32-S3-Touch-LCD-7-Panel'),
+    name: t('7-inch ESP32-P4 display board from Waveshare', '7-Zoll-ESP32-P4-Displayplatine von Waveshare'),
     short: same('Panel'),
     role: t('Touch screen, STOP button, heartbeat source.', 'Touchscreen, STOP-Taste, Quelle des Heartbeat.'),
     locked: true,
     selectable: false,
     release: 'released',
-    slot: { column: 'L', order: 1, sub: same('ESP32-S3-Touch-LCD-7') },
+    slot: { column: 'L', order: 1, sub: t('ESP32-P4, 7 inch', 'ESP32-P4, 7 Zoll') },
     pins: [
-      // Prints as photo 01 of the owner shows them: the CAN socket reads H and
-      // L, the 3-pin socket J8 reads "Sensor AD" with the pins AD, GND, 3V3.
-      pin('CANH', same('CAN H'), OWNER),
-      pin('CANL', same('CAN L'), OWNER),
-      pin('J8G', same('J8 GND'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
-      pin('J8S', t('J8 GPIO6 (print AD)', 'J8 GPIO6 (Aufdruck AD)'), repo(BOARD_PINS, 189, 'GPIO6 is on J8')),
-    ],
-    pictures: [
-      {
-        kind: 'photo', file: '01-panel-back', width: 480, height: 297,
-        alt: t(
-          'Back of the panel on its metal plate: the board with the print ESP32-S3-Touch-LCD-7, 2 USB-C sockets, the ESP32-S3 module and the white sockets for I2C, CAN and RS-485.',
-          'Rückseite des Panels auf seiner Metallplatte: die Platine mit dem Aufdruck ESP32-S3-Touch-LCD-7, 2 USB-C-Buchsen, das ESP32-S3-Modul und die weißen Buchsen für I2C, CAN und RS-485.',
-        ),
-      },
+      // The 4-pin CAN header H11 prints CAN with L, H, GND, 5V: pins 4 to 1.
+      // Pin 1 (5V, the board's rail Core_5V) takes no wire: the panel runs
+      // from its USB-C charger.
+      pin('CANH', same('CAN H'), P4_SCHEMATIC),
+      pin('CANL', same('CAN L'), P4_SCHEMATIC),
+      pin('CANG', same('CAN GND'), P4_SCHEMATIC),
+      // The heartbeat: IO28 of the 12-pin header P3, PANEL_HEARTBEAT_PIN in
+      // board_pins.h.
+      pin('HB', same('IO28'), P4_SCHEMATIC),
     ],
     buy: [
-      buy('Waveshare', same('ESP32-S3-Touch-LCD-7'), t(
-        'The touch version with 800 × 480 pixels. Not the ESP32-S3-LCD-7 without touch, not the ESP32-S3-Touch-LCD-7B with 1024 × 600.',
-        'Die Touch-Version mit 800 × 480 Pixeln. Nicht das ESP32-S3-LCD-7 ohne Touch, nicht das ESP32-S3-Touch-LCD-7B mit 1024 × 600.',
-      ), { page: 'https://www.waveshare.com/esp32-s3-touch-lcd-7.htm' }),
+      buy('Waveshare', same('ESP32-P4-WIFI6-Touch-LCD-7B'), t(
+        'The 7-inch touch board with 1024 × 600 pixels and the ESP32-P4. Ask for chip revision 3.2 in the order note: older stock may ship otherwise.',
+        'Die 7-Zoll-Touch-Platine mit 1024 × 600 Pixeln und dem ESP32-P4. In der Bestellnotiz Chip-Revision 3.2 verlangen: Sonst kann ältere Ware kommen.',
+      ), { id: 'p47b', page: 'https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-7b.htm' }),
     ],
-    src: guide('parts'),
+    src: owner('2026-10-21'),
   },
   {
     id: 'copro',
@@ -209,8 +209,8 @@ const parts: Part[] = [
   {
     id: 'usb',
     name: t(
-      '2 USB-C cables with data lines, USB-C charger of at least 2 A',
-      '2 USB-C-Kabel mit Datenleitungen, USB-C-Ladegerät mit mindestens 2 A',
+      '2 USB-C cables with data lines, USB-C charger of at least 3 A',
+      '2 USB-C-Kabel mit Datenleitungen, USB-C-Ladegerät mit mindestens 3 A',
     ),
     short: t('USB-C cables', 'USB-C-Kabel'),
     role: t(
@@ -227,10 +227,10 @@ const parts: Part[] = [
         'Not a charge-only cable: the firmware of each board is flashed over USB.',
         'Kein reines Ladekabel: Die Firmware jeder Platine wird über USB geflasht.',
       ), { id: 'cable', qty: 2 }),
-      buy(null, t('USB-C charger, 5 V, 2 A', 'USB-C-Ladegerät, 5 V, 2 A'), t(
-        'At least 2 A at 5 V. It feeds the panel through a short cable.',
-        'Mindestens 2 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
-      ), { id: 'charger' }),
+      buy(null, t('USB-C charger, 5 V, 3 A', 'USB-C-Ladegerät, 5 V, 3 A'), t(
+        'At least 3 A at 5 V. It feeds the panel through a short cable.',
+        'Mindestens 3 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
+      ), { id: 'charger3a' }),
     ],
     src: guide('also-needed'),
   },
@@ -581,7 +581,7 @@ const parts: Part[] = [
     release: 'released',
     slot: { column: 'R', order: 12 },
     // Pin names are those of the MATEK board. The header of the module with
-    // XT90 plugs prints L A V G 5: L is SCL, A is SDA, V is the 3.3 V supply
+    // XT90 plugs prints L A V G 5: L is SCL, A is SDA, V is the 3.3V supply
     // of the chip, G is GND. Hole 5 has no pin. The supply pin differs by
     // board; the check entry `ina228-xt90-pads` states the print.
     pins: [
@@ -833,16 +833,16 @@ const BREAKOUT_LABELS: Record<number, string> = {
 };
 
 const PAD_ROWS: Array<[number, string, number | null, number]> = [
-  [1, 'GP0', 0, 34], [2, 'GP1', 1, 35], [3, 'GND', null, 87], [4, 'GP2', 2, 36],
-  [5, 'GP3', 3, 37], [6, 'GP4', 4, 38], [7, 'GP5', 5, 39], [8, 'GND', null, 88],
-  [9, 'GP6', 6, 40], [10, 'GP7', 7, 41], [11, 'GP8', 8, 42], [12, 'GP9', 9, 43],
-  [13, 'GND', null, 89], [14, 'GP10', 10, 44], [15, 'GP11', 11, 45], [16, 'GP12', 12, 46],
-  [17, 'GP13', 13, 47], [18, 'GND', null, 90], [19, 'GP14', 14, 48], [20, 'GP15', 15, 49],
-  [21, 'GP16', 16, 50], [22, 'GP17', 17, 51], [23, 'GND', null, 91], [24, 'GP18', 18, 52],
-  [25, 'GP19', 19, 53], [26, 'GP20', 20, 54], [27, 'GP21', 21, 55], [28, 'GND', null, 92],
-  [29, 'GP22', 22, 56], [30, 'RUN', null, 93], [31, 'GP26', 26, 57], [32, 'GP27', 27, 58],
-  [33, 'GND', null, 94], [34, 'GP28', 28, 59], [35, 'VREF', null, 95], [36, '3V3', null, 96],
-  [37, '3V3_EN', null, 97], [38, 'GND', null, 98], [39, 'VSYS', null, 99], [40, 'VBUS', null, 100],
+  [1, 'GP0', 0, 38], [2, 'GP1', 1, 39], [3, 'GND', null, 88], [4, 'GP2', 2, 40],
+  [5, 'GP3', 3, 41], [6, 'GP4', 4, 42], [7, 'GP5', 5, 43], [8, 'GND', null, 89],
+  [9, 'GP6', 6, 44], [10, 'GP7', 7, 45], [11, 'GP8', 8, 46], [12, 'GP9', 9, 47],
+  [13, 'GND', null, 90], [14, 'GP10', 10, 48], [15, 'GP11', 11, 49], [16, 'GP12', 12, 50],
+  [17, 'GP13', 13, 51], [18, 'GND', null, 91], [19, 'GP14', 14, 52], [20, 'GP15', 15, 53],
+  [21, 'GP16', 16, 54], [22, 'GP17', 17, 55], [23, 'GND', null, 92], [24, 'GP18', 18, 56],
+  [25, 'GP19', 19, 57], [26, 'GP20', 20, 58], [27, 'GP21', 21, 59], [28, 'GND', null, 93],
+  [29, 'GP22', 22, 60], [30, 'RUN', null, 94], [31, 'GP26', 26, 61], [32, 'GP27', 27, 62],
+  [33, 'GND', null, 95], [34, 'GP28', 28, 63], [35, 'VREF', null, 96], [36, '3V3', null, 97],
+  [37, '3V3_EN', null, 98], [38, 'GND', null, 99], [39, 'VSYS', null, 100], [40, 'VBUS', null, 101],
 ];
 
 const pads: Pad[] = PAD_ROWS.map(([n, name, gpio, line]): Pad => {
@@ -913,7 +913,7 @@ const SERVO_OUTPUTS: Cond = { all: [{ has: 'servo' }, { opt: 'servoPort', is: 'o
 /** The servo signal on the programming port: the function that programs a servo. */
 const SERVO_PROG: Cond = { all: [{ has: 'servo' }, { opt: 'servoPort', is: 'prog' }] };
 const SERVO_EXTERNAL: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'external' }] };
-/** The bench itself feeds the servo: the 5 V pin, or the V pin of a strip of the Osoyoo breakout board. */
+/** The bench itself feeds the servo: the 5V pin, or the V pin of a strip of the Osoyoo breakout board. */
 const SERVO_BENCH: Cond = { all: [...SERVO_NO_PD, { opt: 'servoPower', is: 'bench' }] };
 const SERVO_5V_PIN: Cond = { all: [SERVO_BENCH, { opt: 'connection', is: 'pads' }] };
 const SERVO_STRIP: Cond = { all: [SERVO_BENCH, { opt: 'connection', is: 'osoyoo' }] };
@@ -963,13 +963,13 @@ const wires: Wire[] = [
     when: null, stage: 1, route: { kind: 'L', lane: 1 }, src: guide('wires'),
   },
   {
-    n: 3, kind: 'wire', a: 'panel.J8G', b: 'pad.3', net: 'gnd', cls: 'gnd',
+    n: 3, kind: 'wire', a: 'panel.CANG', b: 'pad.3', net: 'gnd', cls: 'gnd',
     signal: GND,
     note: t('Common ground.', 'Gemeinsame Masse.'),
     when: null, stage: 1, route: { kind: 'L', lane: 2 }, src: guide('wires'),
   },
   {
-    n: 4, kind: 'wire', a: 'panel.J8S', b: 'pad.5', net: 'hb', cls: 'hb',
+    n: 4, kind: 'wire', a: 'panel.HB', b: 'pad.5', net: 'hb', cls: 'hb',
     signal: HB,
     note: t(
       'The interlock. The IOmcu refuses to arm without it.',
@@ -979,7 +979,7 @@ const wires: Wire[] = [
     src: guide('wires'),
   },
   {
-    n: 5, kind: 'wire', a: 'panel.J8S', b: 'estop.NC1', net: 'hb', cls: 'hb',
+    n: 5, kind: 'wire', a: 'panel.HB', b: 'estop.NC1', net: 'hb', cls: 'hb',
     signal: HB,
     note: t(
       'In place of wire 4. Use the 2 outer tabs C and NC. The middle tab NO stays unconnected.',
@@ -1154,14 +1154,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 803, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 502, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 804, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 503, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1349,7 +1349,7 @@ const wires: Wire[] = [
       'Unter 30 cm. Kein Ausgang auf GP22, solange der Abgriff eingeschaltet ist.',
     ),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
-    src: repo(SETTINGS, 184, 'GP22 is pad 29'),
+    src: repo(SETTINGS, 166, 'the pin GP22 (pad 29)'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
@@ -1405,7 +1405,7 @@ const wires: Wire[] = [
     when: { all: [{ has: 'esc' }, XT90_SHUNT] },
     stage: 5, route: { kind: 'X', left: 18, right: 22, channel: 6 }, src: OWNER,
   },
-  // The servo fed by the bench itself. Wires 59 and 60: the 5 V pin of the
+  // The servo fed by the bench itself. Wires 59 and 60: the 5V pin of the
   // IOmcu board. Wires 61 and 62: the V pin of the strip at the servo
   // pin of the Osoyoo breakout board; the strip is no pad of the IOmcu,
   // so the wire ends in the drawing as a stub with its target in words.
@@ -1457,7 +1457,7 @@ const wires: Wire[] = [
       'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SERVO-TESTER auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS auf PORT 1 stellen.',
     ),
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
-    src: repo(PROG_PORT, 82, '#define PROG_PORT_DEFAULT_PIN 13u'),
+    src: repo(PROG_PORT, 86, '#define PROG_PORT_DEFAULT_PIN 13u'),
   },
   // The DC supply of the Osoyoo breakout board, for the jumper on 5V. The DC
   // input is no pad of the IOmcu, so both leads end as stubs with their
@@ -1487,29 +1487,29 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], src: repo('STATUS.md', 115, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
+    needs: [], src: repo('STATUS.md', 124, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only.
-    needs: [], src: repo('STATUS.md', 118, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
+    needs: [], src: repo('STATUS.md', 127, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
   },
   {
     id: 'stop', group: 'bench',
     name: t('STOP command over the link', 'STOP-Befehl über die Verbindung'),
-    needs: [], src: repo('README.md', 60, 'and a STOP command over the link'),
+    needs: [], src: repo('README.md', 56, 'and a STOP command over the'),
   },
   {
     id: 'bind', group: 'bench',
     name: t('Bind protocols to pads on the OUTPUTS screen', 'Protokolle auf dem OUTPUTS-Bildschirm an Pads binden'),
-    needs: [], src: repo('STATUS.md', 123, 'Ticking or unticking a pin writes the binding and reads it back'),
+    needs: [], src: repo('STATUS.md', 132, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
     name: t('Send PWM and DShot signals on bound pads', 'PWM- und DShot-Signale auf gebundenen Pads ausgeben'),
-    needs: [], src: repo('STATUS.md', 120, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 129, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
@@ -1518,46 +1518,46 @@ const functions: Fn[] = [
       'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50 Hz',
     ),
     needs: [],
-    src: repo('STATUS.md', 108, 'a sweep (square, sine or triangle, run by the IOmcu)'),
+    src: repo('STATUS.md', 117, 'a sweep (square, sine or triangle, run by the IOmcu)'),
   },
   {
     id: 'ppm', group: 'bench',
     name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
-    needs: [], src: repo('STATUS.md', 120, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 129, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'settings', group: 'bench',
     name: t('Settings on the SETUP screen, kept in the flash of the panel', 'Einstellungen auf dem SETUP-Bildschirm, im Flash des Panels gespeichert'),
     needs: [],
-    src: repo('STATUS.md', 100, 'The panel loads and saves the values in NVS'),
+    src: repo('STATUS.md', 107, 'The panel loads and saves the values in NVS'),
   },
   {
     id: 'language', group: 'bench',
     name: t('User interface in English or German', 'Bedienoberfläche auf Englisch oder Deutsch'),
-    needs: [], src: repo('STATUS.md', 99, 'English and German, chosen by SETUP'),
+    needs: [], src: repo('STATUS.md', 106, 'English and German, chosen by SETUP'),
   },
   {
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel.
-    needs: [], src: repo('STATUS.md', 134, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 143, '72 families, 451 models, from 153 manuals'),
   },
   {
     id: 'wifi', group: 'bench',
     name: t('Panel update and card files in a browser over Wi-Fi', 'Panel-Update und Kartendateien im Browser über WLAN'),
     // The WI-FI screen. The upload works with no card; the file
     // list then says the card is missing (docs/Screens.md, "Wi-Fi").
-    needs: [], src: repo('STATUS.md', 104, 'Panel firmware update and card files over Wi-Fi'),
+    needs: [], src: repo('STATUS.md', 112, 'Panel firmware update and card files over Wi-Fi'),
   },
   {
     id: 'canupdate', group: 'bench',
     name: t('IOmcu firmware update over CAN from the panel', 'Firmware-Update des IOmcu über CAN vom Panel'),
-    needs: [], src: repo('STATUS.md', 119, 'IOmcu firmware update over CAN'),
+    needs: [], src: repo('STATUS.md', 128, 'IOmcu firmware update over CAN'),
   },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: [], drives: 'servo', src: repo('STATUS.md', 120, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'servo', src: repo('STATUS.md', 129, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'servotest', group: 'servo',
@@ -1568,12 +1568,12 @@ const functions: Fn[] = [
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1 ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 125, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 134, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
-    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 128, 'Output encoder (AS5600)'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 137, 'Output encoder (AS5600)'),
   },
   {
     id: 'servoprog', group: 'servo',
@@ -1588,12 +1588,12 @@ const functions: Fn[] = [
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: [], drives: 'esc', src: repo('STATUS.md', 120, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'esc', src: repo('STATUS.md', 129, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 125, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 134, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'stick', group: 'esc',
@@ -1601,22 +1601,22 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 135, 'ESC STICK on MOTOR & ESC > PROGRAM runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 144, 'ESC STICK on MOTOR & ESC > PROGRAM runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Read the beeps of the ESC (phase tap)', 'ESC-Pieptöne lesen (Phasenabgriff)'),
-    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 129, 'Phase tap (ESC tones)'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 138, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
     name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
-    needs: ['pdmini'], src: repo('STATUS.md', 110, 'the IOmcu runs it on a PIO UART on the pins the SUPPLY page'),
+    needs: ['pdmini'], src: repo('STATUS.md', 119, 'the IOmcu runs it on a PIO UART on the pins the SUPPLY page'),
   },
   {
     id: 'logs', group: 'bench',
     name: t('Run logs on a card', 'Laufprotokolle auf Karte'),
-    needs: ['sd'], src: repo('STATUS.md', 102, 'Logger | built: a run is written while ARMED'),
+    needs: ['sd'], src: repo('STATUS.md', 109, 'Logger | built: a run is written while ARMED'),
   },
   {
     id: 'estop', group: 'bench',
@@ -1701,10 +1701,10 @@ const checks: Check[] = [
   {
     id: 'panel-terminals', kind: 'note',
     text: t(
-      'Panel: the CAN socket has the print H and L. The 3-pin socket J8 has the print Sensor AD with the pins AD, GND and 3V3. The heartbeat (GPIO6) is the pin AD. The pin 3V3 takes no wire.',
-      'Panel: Die CAN-Buchse trägt den Aufdruck H und L. Die 3-polige Buchse J8 trägt den Aufdruck Sensor AD mit den Pins AD, GND und 3V3. Der Heartbeat (GPIO6) ist der Pin AD. Der Pin 3V3 bekommt keinen Draht.',
+      'Panel: the 4-pin CAN header H11 has the print CAN with L, H, GND and 5V. CAN H, CAN L and GND take wires 1 to 3. The pin 5V is the 5 V rail of the board and takes no wire: the panel runs from its USB-C charger. The heartbeat is the pin IO28 of the 12-pin header P3. The jumper H5 beside the print CAN sits on 120R: the 120 Ω termination. The slide switch at the print ON OFF sits on ON.',
+      'Panel: Die 4-polige CAN-Buchse H11 trägt den Aufdruck CAN mit L, H, GND und 5V. CAN H, CAN L und GND bekommen die Drähte 1 bis 3. Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht: Das Panel läuft an seinem USB-C-Ladegerät. Der Heartbeat ist der Pin IO28 der 12-poligen Buchse P3. Der Jumper H5 neben dem Aufdruck CAN steckt auf 120R: der 120-Ω-Abschluss. Der Schiebeschalter am Aufdruck ON OFF steht auf ON.',
     ),
-    when: null, src: OWNER,
+    when: null, src: P4_SCHEMATIC,
   },
   {
     id: 'same-release', kind: 'note',
@@ -1712,7 +1712,7 @@ const checks: Check[] = [
       'Both boards run the same release. With different protocol versions the panel shows "Protocol versions do not match. ARMED is blocked."',
       'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel „Protokollversionen passen nicht zusammen. ARMED ist gesperrt.“',
     ),
-    when: null, src: repo('docs/Link.md', 79, 'Protocol versions do not match. ARMED is blocked.'),
+    when: null, src: repo('docs/Link.md', 78, 'Protocol versions do not match. ARMED is blocked.'),
   },
   {
     id: 'servo-pin', kind: 'note',
@@ -1726,7 +1726,7 @@ const checks: Check[] = [
     id: 'pd-pins', kind: 'note',
     text: t(
       'GP7 (PD mini TX) and GP6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
-      'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → ANSCHLÜSSE einstellen.',
+      'GP7 (PD mini TX) und GP6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
     ),
     when: { has: 'pdmini' }, src: OWNER,
   },
@@ -1753,7 +1753,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 805, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 504, '| Pull-ups | 2.2kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1887,7 +1887,7 @@ const checks: Check[] = [
       'Servo-Programmierer mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV-SERVO auf EIN, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 213, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
+    src: repo(PROGRAMMER, 213, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
@@ -1904,7 +1904,7 @@ const checks: Check[] = [
       "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
       'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 193, 'The level is not measured. GP13 is rated 5.5 V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 193, 'The level is not measured. GP13 is rated 5.5V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
@@ -2134,11 +2134,11 @@ const notInRelease: Catalogue['notInRelease'] = [
   {
     id: 'knob',
     text: t(
-      'Rotary knob: the docs disagree. The page follows the build guide: no knob is read on this panel.',
-      'Drehknopf: Die Dokumente widersprechen sich. Die Seite folgt der Bauanleitung: An diesem Panel wird kein Knopf gelesen.',
+      'Rotary knob on the panel: not in this data. Its pins are IO30 (SDA) and IO31 (SCL) on the 12-pin header P3, with 3V3 and GND from the same header.',
+      'Drehknopf am Panel: nicht in diesen Daten. Seine Pins sind IO30 (SDA) und IO31 (SCL) an der 12-poligen Buchse P3, dazu 3V3 und GND von derselben Buchse.',
     ),
     release: 'planned',
-    src: guide('stage-5'),
+    src: owner('2026-10-21'),
   },
   {
     id: 'mt6701',
@@ -2165,7 +2165,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 692, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 764, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 
@@ -2177,23 +2177,23 @@ const notInRelease: Catalogue['notInRelease'] = [
 // ---------------------------------------------------------------------------
 
 const pinDefaults: PinDefault[] = [
-  { signal: 'heartbeat', gpio: 3, pad: 5, choice: 'fixed', role: 'input', allowed: [3], src: repo(IOMCU_PINS, 42, '#define IOMCU_HEARTBEAT_PIN 3') },
+  { signal: 'heartbeat', gpio: 3, pad: 5, choice: 'fixed', role: 'input', allowed: [3], src: repo(IOMCU_PINS, 46, '#define IOMCU_HEARTBEAT_PIN 3') },
   {
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
     allowed: [-1, 0, 4, 6, 14, 16, 18, 20, 26],
-    src: repo(SETTINGS, 154, '"sns_sda", "Sensor SDA"'),
+    src: repo(SETTINGS, 144, '[SET_SENSE_SDA] = {'),
   },
   {
     signal: 'scl', gpio: 17, pad: 22, choice: 'default', role: 'bus',
     // SCL follows SDA: the GPIO after it.
     allowed: [-1, 1, 5, 7, 15, 17, 19, 21, 27],
-    src: repo(SETTINGS, 157, '"sns_scl", "Sensor SCL"'),
+    src: repo(SETTINGS, 147, '[SET_SENSE_SCL] = {'),
   },
-  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 184, '"tone_pin", "Tap pin"') },
+  { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 174, '[SET_TONE_PIN] = {') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
-  { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 82, '#define PROG_PORT_DEFAULT_PIN 13u') },
+  { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 86, '#define PROG_PORT_DEFAULT_PIN 13u') },
   { signal: 'pd_tx', gpio: 7, pad: 10, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
   { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
@@ -2204,7 +2204,7 @@ const pinDefaults: PinDefault[] = [
 // own. Every other line is one sentence.
 //
 // The numbers of the PD mini are vendor values. No source states a current
-// for the 5 V pin or for the V pins of the Osoyoo breakout board.
+// for the 5V pin or for the V pins of the Osoyoo breakout board.
 // ---------------------------------------------------------------------------
 
 const VENDOR = t('Vendor values, not measured.', 'Herstellerangaben, nicht gemessen.');
@@ -2231,8 +2231,8 @@ const powerSources: PowerSource[] = [
     id: 'usb', feeds: 'logic',
     label: t('USB, 5 V, one supply per board', 'USB, 5 V, je Platine eine Versorgung'),
     text: t(
-      'The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 2 A with a short cable.',
-      'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 2 A.',
+      'The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 3 A with a short cable.',
+      'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 3 A.',
     ),
     volts: { min: 5, max: 5 }, amps: null, basis: null,
     pros: [t('Each board has its own supply.', 'Jede Platine hat ihre eigene Versorgung.')],
@@ -2240,7 +2240,10 @@ const powerSources: PowerSource[] = [
       'A servo on the 5 V pin, or on a V pin of the Osoyoo breakout board with the jumper on 3V3, draws from it.',
       'Ein Servo am 5-V-Pin, oder an einem V-Pin der Osoyoo-Breakout-Platine mit dem Jumper auf 3V3, zieht daraus.',
     )],
-    unknowns: [t('Current the IOmcu board draws: not stated.', 'Strom, den die IOmcu-Platine zieht: nicht angegeben.')],
+    unknowns: [
+      t('Current the IOmcu board draws: not stated.', 'Strom, den die IOmcu-Platine zieht: nicht angegeben.'),
+      t('Current the panel draws: not measured. Waveshare states 3 A as the maximum.', 'Strom, den das Panel zieht: nicht gemessen. Waveshare nennt 3 A als Maximum.'),
+    ],
     when: null, used: { has: 'usb' }, src: guide('also-needed'),
   },
   {

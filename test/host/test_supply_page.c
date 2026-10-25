@@ -720,7 +720,7 @@ TEST_CASE(a_held_supply_takes_off_from_the_panel_only)
     supply_page_hold(NULL, true);
 }
 
-/* A page that is wired, on at 5.0 V, and stepped once at @p t0. */
+/* A page that is wired, on at 5.0V, and stepped once at @p t0. */
 static pdmini_t on_at(uint32_t t0)
 {
     pdmini_t drv;

@@ -490,7 +490,7 @@ TEST_CASE(a_refused_rate_is_not_asked_again_until_a_reset)
     servo_cmd_t heli = pos(1500u);
     heli.frame_hz = 333u;
     servo_link_apply(heli, true, 0u);
-    /* Faster than 50 Hz: the pulse first, then the rate. */
+    /* Faster than 50Hz: the pulse first, then the rate. */
     CHECK_EQ(frames_to(LINK_PAGE_CHANNELS, 0u), 1u);
     CHECK_EQ(frames_to(LINK_PAGE_SERVO, LINK_SV_FRAME_HZ), 1u);
     CHECK(!servo_link_release_owed());
@@ -583,14 +583,14 @@ TEST_CASE(a_hold_unrepeated_for_more_than_500_ms_is_let_go)
     sweep_then_hold(7u);
     const uint32_t held_at = s_now;
 
-    s_now = held_at + OUT_DEFAULT_TIMEOUT_MS;   /* 500 ms: still held */
+    s_now = held_at + OUT_DEFAULT_TIMEOUT_MS;   /* 500ms: still held */
     servo_link_apply(hold(7u), true, 0u);
     CHECK(sweep_reg_sent(LINK_SV_HOLD));
     uint16_t seq = 0u;
     CHECK(!servo_link_take_hold_lost(&seq));
 
     clear_log();
-    s_now += OUT_DEFAULT_TIMEOUT_MS + 1u;       /* 501 ms: let go */
+    s_now += OUT_DEFAULT_TIMEOUT_MS + 1u;       /* 501ms: let go */
     servo_link_service(true);                   /* the HOLD said again */
     CHECK_EQ(bus.n, 0u);
     CHECK(servo_link_take_hold_lost(&seq));
@@ -685,7 +685,7 @@ TEST_CASE(a_hold_lost_at_501_ms_sends_no_faster_rate)
     sweep_then_hold(7u);
     s_now += OUT_DEFAULT_TIMEOUT_MS + 1u;
     servo_cmd_t fast = hold(7u);
-    fast.frame_hz = 333u;                       /* faster than the 50 Hz */
+    fast.frame_hz = 333u;                       /* faster than the 50Hz */
     servo_link_apply(fast, true, 0u);
     CHECK_EQ(frames_to(LINK_PAGE_SERVO, LINK_SV_FRAME_HZ), 0u);
     CHECK(servo_link_release_owed());
@@ -695,7 +695,7 @@ TEST_CASE(a_hold_answered_after_more_than_500_ms_ends_the_pause)
 {
     up(6u, 0x01u);
     servo_link_apply(sweep(1u, false), true, 0u);
-    bus.exchange_ms = OUT_DEFAULT_TIMEOUT_MS;   /* 500 ms: taken */
+    bus.exchange_ms = OUT_DEFAULT_TIMEOUT_MS;   /* 500ms: taken */
     clear_log();
     servo_link_apply(hold(3u), true, 0u);
     uint16_t seq = 0u;
@@ -706,7 +706,7 @@ TEST_CASE(a_hold_answered_after_more_than_500_ms_ends_the_pause)
 
     up(6u, 0x01u);
     servo_link_apply(sweep(1u, false), true, 0u);
-    bus.exchange_ms = OUT_DEFAULT_TIMEOUT_MS + 1u;   /* 501 ms: let go */
+    bus.exchange_ms = OUT_DEFAULT_TIMEOUT_MS + 1u;   /* 501ms: let go */
     clear_log();
     servo_link_apply(hold(3u), true, 0u);
     CHECK(sweep_reg_sent(LINK_SV_HOLD));
@@ -912,7 +912,7 @@ TEST_CASE(a_pulse_is_clamped_to_the_range_it_names)
         { 1000u, 2000u, 1250u, 250u, 1000u, 2000u },
         {  660u,  860u,  760u, 500u,  660u,  860u },   /* narrow servo  */
         {    0u,    0u, 1750u, 750u, 1000u, 2000u },   /* none named    */
-        {  300u, 2000u, 1500u, 500u, 1000u, 2000u },   /* below 400 us  */
+        {  300u, 2000u, 1500u, 500u, 1000u, 2000u },   /* below 400us   */
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         up(1u, 0x01u);

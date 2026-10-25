@@ -3,7 +3,7 @@
  *
  * Under test: which control asks for what with and without a kept home
  * network, with the radio's gate shut, the home network picked from a scan
- * and typed on the Wi-Fi keyboard, and INSTALL as a 2 s hold that a release,
+ * and typed on the Wi-Fi keyboard, and INSTALL as a 2s hold that a release,
  * a vanished image or a closed install gate ends without asking.  The
  * screens command nothing themselves; every test reads wifi_screen_take().
  *
@@ -23,26 +23,28 @@
 #include "ui_widgets.h"
 #include "wa_session.h"
 #include "wifi_screen.h"
+#include "wifi_spots.h"
 
-#define SCREEN_W 800
-#define SCREEN_H 480
-#define BODY_H   432
+#define SCREEN_W UI_PANEL_W
+#define SCREEN_H UI_PANEL_H
+#define BODY_H   UI_BODY_H
+/* The keyboard's area, as the screen opens it. */
+#define WF_KEY_AREA wifi_screen_key_area()
 
 /* Mirrored from wifi_screen.c. */
-#define BTN_CX(i)    (16 + 180)
-#define BTN_CY(i)    (16 + (i) * 68 + 28)
-#define OFF_CX       (16 + 120)
-#define OFF_CY       (360 + 28)
-#define Q_BY         (12 + 408 - 80)
-#define Q_CANCEL_CX  (32 + 120)
-#define INSTALL_CX   (408 + 180)
-#define Q_CY         (Q_BY + 32)
-#define ROW_CX(i)    (((i) < 8 ? 16 : 408) + 100)
-#define ROW_CY(i)    (16 + ((i) % 8) * 44 + 20)
-#define RESCAN_CX    (16 + 120)
-#define HIDDEN_CX    (272 + 128)
-#define SCAN_CANCEL_CX (544 + 120)
-#define SCAN_BY      (376 + 24)
+#define BTN_CX(i)    WF_BTN_CX(i)
+#define BTN_CY(i)    WF_BTN_CY(i)
+#define OFF_CX       WF_OFF_CX
+#define OFF_CY       WF_OFF_CY
+#define Q_CANCEL_CX  WF_Q_CANCEL_CX
+#define INSTALL_CX   WF_INSTALL_CX
+#define Q_CY         WF_Q_CY
+#define ROW_CX(i)    WF_ROW_CX(i)
+#define ROW_CY(i)    WF_ROW_CY(i)
+#define RESCAN_CX    WF_RESCAN_CX
+#define HIDDEN_CX    WF_HIDDEN_CX
+#define SCAN_CANCEL_CX WF_SCAN_CANCEL_CX
+#define SCAN_BY      WF_SCAN_CY
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -180,12 +182,12 @@ TEST_CASE(the_view_enums_mirror_the_session_and_the_installer)
 TEST_CASE(the_texts_name_the_session_limits)
 {
     CHECK_EQ(WA_IDLE_MS, 10u * 60u * 1000u);
-    CHECK(strstr(ui_tr(TX_WF_OFF_IDLE), "10 min") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_OFF_IDLE), "10min") != NULL);
     CHECK_EQ(WA_GUESS_MAX, 16u);
     CHECK(strstr(ui_tr(TX_WF_OFF_GUESSES), "16 ") != NULL);
     CHECK_EQ(WA_ADDRESS_MS, 15000u);
-    CHECK(strstr(ui_tr(TX_WF_JOIN_NO_ADDRESS), "15 s") != NULL);
-    CHECK(strstr(ui_tr(TX_WF_HOLD_INSTALL), "2 s") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_JOIN_NO_ADDRESS), "15s") != NULL);
+    CHECK(strstr(ui_tr(TX_WF_HOLD_INSTALL), "2s") != NULL);
     CHECK(UI_HOLD_S == 2.0f);
 }
 
@@ -371,8 +373,7 @@ static void type_wifi(const char *s)
         }
         ui_textkey_t probe;
         memset(&probe, 0, sizeof(probe));
-        ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "",
-                             true);
+        ui_textkey_open_wifi(&probe, WF_KEY_AREA, "", "", true);
         const gfx_rect_t r = ui_textkey_key_rect(&probe, (int)(p - lower));
         tap(r.x + r.w / 2, r.y + r.h / 2);
     }
@@ -382,7 +383,7 @@ static void key(int k)
 {
     ui_textkey_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "", true);
+    ui_textkey_open_wifi(&probe, WF_KEY_AREA, "", "", true);
     const gfx_rect_t r = ui_textkey_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
 }
@@ -534,6 +535,58 @@ TEST_CASE(a_hidden_network_is_typed_and_cancel_keeps_nothing)
     tap(SCAN_CANCEL_CX, SCAN_BY);
     tap(BTN_CX(0), BTN_CY(0));
     CHECK_EQ(wifi_screen_take(), WIFI_REQ_AP);
+}
+
+/*
+ * The keyboard over the whole body: every key at least 64 x UI_TAP_MIN px
+ * and above the alert band, so an alert covers no key.
+ */
+TEST_CASE(the_keyboard_keys_are_large_and_end_above_the_alert_band)
+{
+    const gfx_rect_t a = wifi_screen_key_area();
+    CHECK_EQ(a.x, UI_MARGIN);
+    CHECK_EQ(a.y, UI_MARGIN);
+    CHECK_EQ(a.w, UI_PANEL_W - 2 * UI_MARGIN);
+    CHECK_EQ(a.y + a.h, UI_ALERT_Y - UI_BAND_H - 4);
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open_wifi(&k, WF_KEY_AREA, "", "", true);
+    for (int i = 0; i <= UI_TK_SHOW; ++i) {
+        const gfx_rect_t r = ui_textkey_key_rect(&k, i);
+        CHECK(r.w >= 64);
+        CHECK(r.h >= UI_TAP_MIN);
+        CHECK(r.y + r.h <= UI_ALERT_Y - UI_BAND_H - 4);
+        CHECK(r.x >= UI_MARGIN && r.x + r.w <= UI_PANEL_W - UI_MARGIN);
+    }
+    /* A character key: 93 x 71px on the 1024 x 600 panel. */
+    const gfx_rect_t q = ui_textkey_key_rect(&k, 10);
+    CHECK_EQ(q.w, 93);
+    CHECK_EQ(q.h, 71);
+}
+
+/*
+ * A tap at the centre of a key of wifi_screen_key_area() types that key on
+ * the screen's own keyboard: what the cases here and the renderer's views
+ * type is what they aim at.
+ */
+TEST_CASE(a_tap_on_a_key_of_the_screens_area_types_that_key)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    (void)wifi_screen_take();
+    scan_result();
+    tap(HIDDEN_CX, SCAN_BY);
+    CHECK(wifi_screen_textkey()->open);
+    type_wifi("lab");
+    CHECK_STR_EQ(wifi_screen_textkey()->text, "lab");
+    /* CLR from the name keyboard's own row: its bottom row is not the
+     * password's that key() probes. */
+    const gfx_rect_t clr = ui_textkey_key_rect(wifi_screen_textkey(),
+                                               UI_TK_CLR);
+    tap(clr.x + clr.w / 2, clr.y + clr.h / 2);
+    key(UI_TK_OK);
+    CHECK_STR_EQ(wifi_screen_textkey()->text, "");
+    CHECK(wifi_screen_textkey()->refused);
 }
 
 /*
@@ -828,7 +881,8 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
     }
     CHECK(n > 10000);
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = 144, .y = 434 } };
+                        .point = { .id = 1, .x = 144,
+                                   .y = UI_PANEL_H - 18 - 28 } };
     u->event(&e);
     e.type = TOUCH_EVENT_UP;
     u->event(&e);
@@ -851,7 +905,7 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
 }
 
 /* WF_JOBS_1 and WF_JOBS_2 are one sentence: wrapped as one, it takes the
- * card's 44 cells twice, with no line of one word between its parts. */
+ * card's 49 cells twice, with no line of one word between its parts. */
 TEST_CASE(the_first_sentence_is_wrapped_once_in_two_lines)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -878,6 +932,8 @@ int main(void)
     RUN(scan_again_three_times_asks_three_scans_and_shows_each_list);
     RUN(a_failed_scan_says_so_and_not_that_none_was_found);
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
+    RUN(the_keyboard_keys_are_large_and_end_above_the_alert_band);
+    RUN(a_tap_on_a_key_of_the_screens_area_types_that_key);
     RUN(the_home_tag_climbs_from_the_list_to_the_buttons);
     RUN(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing);
     RUN(the_home_tag_answers_the_image_question_cancel);

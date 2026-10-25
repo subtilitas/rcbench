@@ -1,7 +1,9 @@
-/*
- * The automatic servo test: a servo stepped through supply voltages, its
- * current measured at rest, moving and holding, its travel timed from the
- * supply's current, then the voltage walked down until it no longer moves.
+/**
+ * @file
+ * @brief The automatic servo test: a servo stepped through supply voltages, its
+ *        current measured at rest, moving and holding, its travel timed from
+ *        the supply's current, then the voltage walked down until it no longer
+ *        moves.
  *
  * The servo is a PWM (pulse-width modulation) servo on the bench's surface
  * outputs, and the supply is the one SUPPLY drives: the PD mini, or the
@@ -13,15 +15,15 @@
  *
  *   PD mini   the supply's own readings (servo_test_reading()), about 10 a
  *             second.  The model stands in for it with no IOmcu.
- *   INA3221   the 50 ms windows of the INA3221's CH1
+ *   INA3221   the 50ms windows of the INA3221's CH1
  *             (servo_test_window()), 20 a second: each one's mean current
  *             and mean bus voltage are the reading, its highest and lowest
- *             1 ms sample give the peak, its lowest bus voltage the step's
+ *             1ms sample give the peak, its lowest bus voltage the step's
  *             lowest voltage.  The supply is still read for its state --
  *             answering, output, trip, set point, mode -- and none of its
  *             voltages or currents is used or logged.
  *
- * A reading is a point in time on the PD mini and 50 ms long on the
+ * A reading is a point in time on the PD mini and 50ms long on the
  * INA3221 (cfg.meter.span_ms).  IDLE and HOLD take the windows that lie
  * wholly inside them: a window that began before the phase is in neither.
  * The window open at a command is MOVE's.  Moves are timed by the panel
@@ -31,7 +33,7 @@
  *
  * Signed current.  A negative current is a reading.  The limits, the peak
  * and STALL AT compare its magnitude, in whole mA (servo_test_over_a()),
- * and the CSV keeps the sign.  A clipped window -- a 1 ms sample at an end
+ * and the CSV keeps the sign.  A clipped window -- a 1ms sample at an end
  * of the INA3221's range -- is a reading as well: its figures are the
  * values the part gave, a lower bound, and the report counts such windows.
  *
@@ -93,7 +95,7 @@
  *            command: the angle has stayed within SERVO_TEST_ENC_TOL_COUNTS
  *            counts (1.05 degrees) of an anchor for that long.  The travel
  *            time is the start of that stillness minus the command, which
- *            the IOmcu's 2 ms sample interval resolves whatever the
+ *            the IOmcu's 2ms sample interval resolves whatever the
  *            polling interval.  It includes the command's way from the
  *            panel to the pin, up to one poll interval and one PWM frame,
  *            not measured;
@@ -191,90 +193,95 @@ extern "C" {
 
 /* ---------------------------------------------------------- the method */
 
-/** The characterisation steps a run can carry: 4.8, 6.0, 7.4, 8.4 V. */
+/** @brief The characterisation steps a run can carry: 4.8, 6.0, 7.4, 8.4V. */
 #define SERVO_TEST_STEPS_MAX         4u
-/** Above this a step is an HV (high voltage) step: a standard servo's
- *  rating is 4.8 to 6.0 V. */
+/** @brief Above this a step is an HV (high voltage) step: a standard servo's
+ *         rating is 4.8 to 6.0V. */
 #define SERVO_TEST_HV_ABOVE_V        6.0f
 
-/** The brown-out walk: where it starts, how far each step goes down, and
- *  the lowest voltage it asks for.  A supply whose lowest set point is
- *  higher stops it there. */
+/** @brief The brown-out walk: where it starts, how far each step goes down, and
+ *         the lowest voltage it asks for.
+ *
+ * A supply whose lowest set point is higher stops it there. */
 #define SERVO_TEST_BROWNOUT_START_V  5.0f
 #define SERVO_TEST_BROWNOUT_STEP_V   0.2f
 #define SERVO_TEST_BROWNOUT_FLOOR_V  3.0f
-/** The steps from START to FLOOR, both included. */
+/** @brief The steps from START to FLOOR, both included. */
 #define SERVO_TEST_BROWNOUT_MAX      11u
-/** Moves at each brown-out voltage: centre to the high end, then to the
- *  low end. */
+/** @brief Moves at each brown-out voltage: centre to the high end, then to the
+ *         low end. */
 #define SERVO_TEST_BROWNOUT_MOVES    2u
 
-/** The smallest threshold.  A step's threshold is the larger of this and
- *  SERVO_TEST_NOISE_K times its idle noise.  A reading more than the
- *  threshold from the level before a command is the servo moving, and
- *  more than it above an end's holding level is the move not yet there.
- *  The move rules are servo_move.h's; these are its constants. */
+/** @brief The smallest threshold.
+ *
+ * A step's threshold is the larger of this and SERVO_TEST_NOISE_K times its
+ * idle noise.  A reading more than the threshold from the level before a
+ * command is the servo moving, and more than it above an end's holding level is
+ * the move not yet there.  The move rules are servo_move.h's; these are its
+ * constants. */
 #define SERVO_TEST_MOVE_MIN_A        SERVO_MOVE_MIN_A
 #define SERVO_TEST_NOISE_K           SERVO_MOVE_NOISE_K
-/** Back within this of the holding level, and not above it by the
- *  threshold, is the move arrived. */
+/** @brief Back within this of the holding level, and not above it by the
+ *         threshold, is the move arrived. */
 #define SERVO_TEST_BAND_A            SERVO_MOVE_BAND_A
 
 #define SERVO_TEST_IDLE_MS           1000u
-/** The shortest hold measured at an end, whatever DWELL says: at 10
- *  readings a second, six readings. */
+/** @brief The shortest hold measured at an end, whatever DWELL says: at 10
+ *         readings a second, six readings. */
 #define SERVO_TEST_HOLD_MIN_MS       600u
-/** A move not arrived this long after its command is late; a meter's lag
- *  is added, since its readings show an arrival that much later. */
+/** @brief A move not arrived this long after its command is late; a meter's lag
+ *         is added, since its readings show an arrival that much later. */
 #define SERVO_TEST_TRAVEL_TIMEOUT_MS SERVO_MOVE_TIMEOUT_MS
-/** A set point counts as taken once read back within this. */
+/** @brief A set point counts as taken once read back within this. */
 #define SERVO_TEST_SET_TOL_V         0.05f
 #define SERVO_TEST_SET_TIMEOUT_MS    3000u
-/** No new reading for this long ends the run: SUPPLY_LINK_STALE_MS. */
+/** @brief No new reading for this long ends the run: SUPPLY_LINK_STALE_MS. */
 #define SERVO_TEST_STALE_MS          1500u
-/** Above STALL AT for this long ends the run. */
+/** @brief Above STALL AT for this long ends the run. */
 #define SERVO_TEST_STALL_ABORT_MS    1000u
-/** The supply in constant current for this long ends the run. */
+/** @brief The supply in constant current for this long ends the run. */
 #define SERVO_TEST_CC_ABORT_MS       1000u
-/** A run on the INA3221: no window for this long ends it, 4 windows of
- *  50 ms.  The limit run (servo_limrun.h) takes the same figure. */
+/** @brief A run on the INA3221: no window for this long ends it, 4 windows of
+ *         50ms.
+ *
+ * The limit run (servo_limrun.h) takes the same figure. */
 #define SERVO_TEST_WIN_STALE_MS      200u
-/** One window of the INA3221: SENSE_WINDOW_MS. */
+/** @brief One window of the INA3221: SENSE_WINDOW_MS. */
 #define SERVO_TEST_WIN_MS            50u
-/** A run whose idle current is below minus this says the shunt is fitted
- *  the other way round. */
+/** @brief A run whose idle current is below minus this says the shunt is fitted
+ *         the other way round. */
 #define SERVO_TEST_NEG_IDLE_A        0.020f
-/** The INA3221's shunt voltage at the end of its range, in microvolts:
- *  code 4095 at 40 uV. */
+/** @brief The INA3221's shunt voltage at the end of its range, in microvolts:
+ *         code 4095 at 40 uV. */
 #define SERVO_TEST_INA3221_END_UV    163800u
-/** The most moves a step makes, LENGTH BY TIME included. */
+/** @brief The most moves a step makes, LENGTH BY TIME included. */
 #define SERVO_TEST_MOVES_MAX         1000u
 
 /* The output encoder's constants.  The tolerance is the IOmcu's
  * SENSE_ENC_STILL_TOL, test_as5600 holds the two equal. */
 #define SERVO_TEST_ENC_TOL_COUNTS    12u
-/** The same in degrees: 12 counts of 360 / 4096. */
+/** @brief The same in degrees: 12 counts of 360 / 4096. */
 #define SERVO_TEST_ENC_TOL_DEG       1.0547f
-/** The angle is still when its STILL_MS reaches this. */
+/** @brief The angle is still when its STILL_MS reaches this. */
 #define SERVO_TEST_ENC_HOLD_MS       100u
-/** A move has moved when the angle is further than this from where it
- *  started. */
+/** @brief A move has moved when the angle is further than this from where it
+ *         started. */
 #define SERVO_TEST_ENC_MOVED_DEG     2.0f
-/** The angle read before a command is the move's start while younger than
- *  this. */
+/** @brief The angle read before a command is the move's start while younger
+ *         than this. */
 #define SERVO_TEST_ENC_STALE_MS      500u
 
 /* ------------------------------------------------------ what it is told */
 
-/** Which meter a run reads. */
+/** @brief Which meter a run reads. */
 typedef enum {
     SERVO_TEST_METER_PDMINI = 0,    /**< the supply's own readings      */
-    SERVO_TEST_METER_INA3221,       /**< CH1's 50 ms windows            */
+    SERVO_TEST_METER_INA3221,       /**< CH1's 50ms windows             */
     SERVO_TEST_METER_MODEL,         /**< the panel's model of the supply */
 } servo_test_meter_kind_t;
 
-/** Why a run reads the PD mini with the INA3221 on in SETUP: the
- *  condition of servo_source.h that does not hold. */
+/** @brief Why a run reads the PD mini with the INA3221 on in SETUP: the
+ *         condition of servo_source.h that does not hold. */
 typedef enum {
     SERVO_TEST_INA_NONE = 0,    /**< not on in SETUP, or it is the meter */
     SERVO_TEST_INA_OLD,         /**< the IOmcu is older than 4.11  */
@@ -282,21 +289,22 @@ typedef enum {
     SERVO_TEST_INA_SILENT,      /**< the part does not answer            */
     SERVO_TEST_INA_NO_WINDOW,   /**< no fresh window with current        */
     SERVO_TEST_INA_RESET,       /**< it reset itself                     */
-    SERVO_TEST_INA_SETTLING,    /**< working for less than 1 s           */
+    SERVO_TEST_INA_SETTLING,    /**< working for less than 1s            */
     SERVO_TEST_INA_MODEL,       /**< the supply is the panel's model     */
     SERVO_TEST_INA_COUNT
 } servo_test_ina_t;
 
-/** What reads the servo's current, for what its travel times are worth. */
+/** @brief What reads the servo's current, for what its travel times are
+ *         worth. */
 typedef struct {
     uint8_t  kind;          /**< servo_test_meter_kind_t                */
     uint16_t span_ms;       /**< how long one reading is: 0 for a point
                                  in time, 50 for a window               */
-    uint16_t shunt_dmohm;   /**< the INA3221's shunt in 0.1 mOhm, as SETUP
+    uint16_t shunt_dmohm;   /**< the INA3221's shunt in 0.1mOhm, as SETUP
                                  holds it; 0 for none stated            */
     uint16_t range_ma;      /**< the current at the end of its range; 0
                                  for none stated                        */
-    /** For the report: "PD mini", "INA3221 0x41 CH2". */
+    /** @brief For the report: "PD mini", "INA3221 0x41 CH2". */
     char     name[20];
     uint16_t lag_ms;        /**< from a change of current to the first
                                  reading that shows it, typical; 0 for
@@ -307,30 +315,55 @@ typedef struct {
                                  TIME is reported, not checked          */
 } servo_test_meter_t;
 
-/** The PD mini's own meter: read every 102 to 106 ms, a change of current
- *  shows about 300 ms later (median 0.31 s over two runs, 2026-10-07), and
- *  its value often repeats over several readings. */
+/** @brief The PD mini's own meter: read every 102 to 106ms, a change of
+ *         current shows about 300ms later (median 0.31s over two runs,
+ *         2026-10-07), and its value often repeats over several readings. */
 #define SERVO_TEST_PDMINI_LAG_MS     300u
 
+/**
+ * @brief Describe the PD mini as the run meter.
+ *
+ * @param m Meter description to fill. NULL is ignored.
+ */
 void servo_test_meter_pdmini(servo_test_meter_t *m);
 
-/** The panel's model of the supply: no lag of its own and no repeats, and
- *  its travel times held to what a run on the PD mini can check. */
+/**
+ * @brief The panel's model of the supply: no lag of its own and no repeats, and
+ *        its travel times held to what a run on the PD mini can check.
+ *
+ * @param m Meter description to fill. NULL is ignored.
+ */
 void servo_test_meter_model(servo_test_meter_t *m);
 
-/** An INA3221 channel on a shunt of @p shunt_dmohm, in 0.1 mOhm (1000 for
- *  0.1 Ohm, which ends the range at 1.638 A), named "INA3221" until the
- *  caller names the channel, read in 50 ms windows: a
- *  change of current shows in the window that closes after it, up to 50 ms
- *  later, and the panel times a move from the windows, so travel times are
- *  an upper bound. */
+/**
+ * @brief An INA3221 channel on a shunt of @p shunt_dmohm, in 0.1mOhm (1000 for
+ *        0.1Ohm, which ends the range at 1.638A), named "INA3221" until the
+ *        caller names the channel, read in 50ms windows: a change of current
+ *        shows in the window that closes after it, up to 50ms later, and the
+ *        panel times a move from the windows, so travel times are an upper
+ *        bound.
+ *
+ * @param m           Meter description to fill. NULL is ignored.
+ * @param shunt_dmohm Shunt resistance, 0.1mOhm.
+ */
 void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm);
 
-/** Whether @p a is above @p limit_a: both in whole mA, @p a by its
- *  magnitude.  The one comparison the verdict and the report make of a
- *  current against IDLE CURRENT, HOLD CURRENT and STALL AT. */
+/**
+ * @brief Whether @p a is above @p limit_a: both in whole mA, @p a by its
+ *        magnitude.  The one comparison the verdict and the report make of a
+ *        current against IDLE CURRENT, HOLD CURRENT and STALL AT.
+ *
+ * @param a       Current, A.
+ * @param limit_a Limit, A.
+ * @return true when the magnitude of a, in whole mA, is above limit_a in whole
+ *        mA.
+ */
 bool servo_test_over_a(float a, float limit_a);
 
+/**
+ * @brief Configuration of a run: the plan, the servo, the limits and the
+ *        settings the report shows.
+ */
 typedef struct {
     /* What runs. */
     float    steps_v[SERVO_TEST_STEPS_MAX];
@@ -347,7 +380,9 @@ typedef struct {
     uint16_t moves;
     uint16_t time_s;
 
-    /* The pass/fail limits; 0 is not checked, and STALL AT always is. */
+    /**
+     * @brief The pass/fail limits; 0 is not checked, and STALL AT always is.
+     */
     float    idle_max_a, hold_max_a;
     uint16_t travel_max_ms;
     float    stall_a;
@@ -378,9 +413,9 @@ typedef struct {
                                  on in SETUP is not this run's meter    */
     char     firmware[16];
     /**
-     * The report's language: a table of SERVO_STR_COUNT entries, each NULL
-     * for the English, or NULL for English throughout.  The CSV is English
-     * whatever this says, so tools parse every run alike.
+     * @brief The report's language: a table of SERVO_STR_COUNT entries, each
+     *        NULL for the English, or NULL for English throughout.  The CSV is
+     *        English whatever this says, so tools parse every run alike.
      */
     const char *const *text;
 } servo_test_cfg_t;
@@ -436,12 +471,12 @@ typedef enum {
     SERVO_TEST_PASS = 0,
     SERVO_TEST_FAIL,
     SERVO_TEST_ABORTED,
-    /** Nothing failed, and a counted move showed no movement: the current
-     *  cannot tell that servo moving from one standing still. */
+    /** @brief Nothing failed, and a counted move showed no movement: the
+     *         current cannot tell that servo moving from one standing still. */
     SERVO_TEST_NOT_MEASURABLE,
 } servo_test_verdict_t;
 
-/** Why a run would not start. */
+/** @brief Why a run would not start. */
 typedef enum {
     SERVO_TEST_START_OK = 0,
     SERVO_TEST_START_NO_STEPS,   /**< no step and no brown-out chosen   */
@@ -451,13 +486,13 @@ typedef enum {
                                       centre                            */
 } servo_test_start_t;
 
-/** A mean, kept as a sum. */
+/** @brief A mean, kept as a sum. */
 typedef struct {
     float    sum;
     uint32_t n;
 } servo_test_mean_t;
 
-/** One voltage step's results. */
+/** @brief One voltage step's results. */
 typedef struct {
     float    set_v;
     bool     brownout;
@@ -473,11 +508,11 @@ typedef struct {
     servo_test_mean_t move; /**< the readings while travelling          */
     servo_test_mean_t hold[2];   /**< at the low end, at the high end   */
     float    move_peak_a;   /**< the reading of the largest magnitude
-                                 while travelling; on the INA3221 the 1 ms
+                                 while travelling; on the INA3221 the 1ms
                                  sample                                 */
     float    peak_a;        /**< likewise, of every reading after SETTLE */
-    uint32_t travel_max_ms;
-    uint32_t travel_sum_ms;
+    uint32_t travel_max_ms; /**< the longest travel of a move that arrived */
+    uint32_t travel_sum_ms; /**< and the sum of their travels          */
     uint16_t travels;       /**< moves that arrived                     */
     uint16_t moves;         /**< moves counted                          */
     uint16_t no_rise;       /**< counted moves with no movement seen:
@@ -503,7 +538,9 @@ typedef struct {
 
 /* --------------------------------------------------------- the outbox */
 
-/** Log rows waiting for the card.  A row is a reading, 10 to 20 a second. */
+/** @brief Log rows waiting for the card.
+ *
+ * A row is a reading, 10 to 20 a second. */
 #define SERVO_TEST_OUTBOX   16u
 
 typedef struct {
@@ -575,7 +612,7 @@ typedef struct {
     bool     stalled;       /**< a characterisation reading over STALL AT */
     float    stall_peak_a;  /**< the characterisation reading of the
                                  largest magnitude                       */
-    float    move_peak_now; /**< the 1 ms sample of the largest magnitude
+    float    move_peak_now; /**< the 1ms sample of the largest magnitude
                                  since the command, on the INA3221       */
 
     /* The supply's state, on either meter. */
@@ -600,14 +637,31 @@ typedef struct {
     servo_test_do_t pend;
 } servo_test_t;
 
+/**
+ * @brief Clear a run state to idle.
+ *
+ * @param t Run state to clear. NULL is ignored.
+ */
 void servo_test_init(servo_test_t *t);
 
 /**
- * Start a run at @p now_ms with the supply as @p last read it and its set
- * points' range @p v_min to @p v_max.  Refused, and nothing changed, for
- * no step and no brown-out, a step outside the range, a supply that does
- * not answer, or ends not either side of the centre.  A run that starts
- * hands over OPEN and the CSV header first.
+ * @brief Start a run at @p now_ms with the supply as @p last read it and its
+ *        set points' range @p v_min to @p v_max.
+ *
+ * Refused, and nothing changed, for no step and no brown-out, a step outside
+ * the range, a supply that does not answer, or ends not either side of the
+ * centre.  A run that starts hands over OPEN and the CSV header first.
+ *
+ * @param t      Run state to start. NULL is refused as NO_STEPS.
+ * @param cfg    Configuration of the run, copied into the state. NULL is
+ *               refused as NO_STEPS.
+ * @param now_ms Time of the start, ms.
+ * @param last   The supply as last read. NULL or offline is refused as
+ *               NO_SUPPLY.
+ * @param v_min  Lowest set point of the supply, V.
+ * @param v_max  Highest set point of the supply, V.
+ * @return SERVO_TEST_START_OK when the run started; otherwise the reason it
+ *        was refused.
  */
 servo_test_start_t servo_test_start(servo_test_t *t,
                                     const servo_test_cfg_t *cfg,
@@ -615,175 +669,404 @@ servo_test_start_t servo_test_start(servo_test_t *t,
                                     const servo_test_reading_t *last,
                                     float v_min, float v_max);
 
-/** A sample of the supply, with @p position_us the horn's measured pulse
- *  width or 0 for none.  One that repeats the last reading's sample count
- *  is checked for the supply's state and measures nothing.  In a run on
- *  the INA3221 no sample measures: each is the supply's state alone. */
+/**
+ * @brief A sample of the supply, with @p position_us the horn's measured
+ *        pulse width or 0 for none.
+ *
+ * One that repeats the last reading's sample count is checked for the
+ * supply's state and measures nothing.  In a run on the INA3221 no sample
+ * measures: each is the supply's state alone.
+ *
+ * @param t           Run state.
+ * @param r           The sample. NULL is ignored.
+ * @param position_us Horn pulse width, us; 0 for none.
+ */
 void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
                         uint16_t position_us);
 
 /**
- * A window of INA3221 CH1, each number once and in order, with
- * @p position_us as servo_test_reading() takes it.  The reading of a run on
- * the INA3221, and nothing to any other run.  A window without current or
- * without voltage samples, and one that repeats the last number, measures
- * nothing and does not count as a window that arrived.
+ * @brief A window of INA3221 CH1, each number once and in order, with
+ *        @p position_us as servo_test_reading() takes it.
+ *
+ * The reading of a run on the INA3221, and nothing to any other run.  A
+ * window without current or without voltage samples, and one that repeats
+ * the last number, measures nothing and does not count as a window that
+ * arrived.
+ *
+ * @param t           Run state.
+ * @param w           The window. NULL is ignored.
+ * @param position_us Horn pulse width, us; 0 for none.
  */
 void servo_test_window(servo_test_t *t, const servo_test_win_t *w,
                        uint16_t position_us);
 
-/** The servo rail's meter as one poll of the panel decided it
- *  (servo_source.h). */
+/**
+ * @brief The servo rail's meter as one poll of the panel decided it
+ *        (servo_source.h). */
 typedef struct {
     bool     ina3221;       /**< the INA3221 is the meter                */
     uint32_t changes;       /**< how often the meter has changed, modulo
                                  2^32                                    */
-    /** Why the INA3221 last stopped being the meter -- one of the
-     *  SERVO_TEST_AB_INA_ reasons or SERVO_TEST_AB_LINK -- and the change
-     *  count that step left; SERVO_TEST_AB_NONE while it never did. */
+    /** @brief Why the INA3221 last stopped being the meter -- one of the
+     *         SERVO_TEST_AB_INA_ reasons or SERVO_TEST_AB_LINK -- and the
+     *         change count that step left; SERVO_TEST_AB_NONE while it never
+     *         did. */
     servo_test_abort_t dropped;
     uint32_t dropped_at;
 } servo_test_meter_now_t;
 
 /**
- * The meter as a poll decided it, for every answer the caller has: with
- * each window, each supply sample and each frame.  A run on the INA3221
- * holds the change count of its start (cfg.meter_changes).  It ends, as
- * servo_test_abort() ends a run, at the first answer that is not the
- * INA3221 or carries another count: the meter changed under it, whatever
- * it is now.  The reason is @p m->dropped when that drop came after the
- * start, and SERVO_TEST_AB_INA_METER otherwise.  Nothing for a run on
- * another meter, which goes on with the meter it started with.
+ * @brief The meter as a poll decided it, for every answer the caller has: with
+ *        each window, each supply sample and each frame.  A run on the INA3221
+ *        holds the change count of its start (cfg.meter_changes).  It ends, as
+ *        servo_test_abort() ends a run, at the first answer that is not the
+ *        INA3221 or carries another count: the meter changed under it, whatever
+ *        it is now.  The reason is @p m->dropped when that drop came after the
+ *        start, and SERVO_TEST_AB_INA_METER otherwise.  Nothing for a run on
+ *        another meter, which goes on with the meter it started with.
+ *
+ * @param t      Run state.
+ * @param m      The answer of the poll. NULL is ignored.
+ * @param now_ms Time of the poll, ms.
  */
 void servo_test_meter_now(servo_test_t *t, const servo_test_meter_now_t *m,
                           uint32_t now_ms);
 
 /**
- * A reading of the output encoder, each one once.  Judged against the move
- * under way; kept as the angle the CSV and the SERVO screen show.  A reading
- * that is not valid, or that carries gap, ends the angle's validity before
- * it.  Nothing is judged without cfg.enc_on.
+ * @brief A reading of the output encoder, each one once.  Judged against the
+ *        move under way; kept as the angle the CSV and the SERVO screen show.
+ *
+ * A reading that is not valid, or that carries gap, ends the angle's validity
+ * before it.  Nothing is judged without cfg.enc_on.
+ *
+ * @param t Run state.
+ * @param e Encoder reading. NULL is ignored.
  */
 void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e);
 
-/** The angle at @p at_ms, degrees from cfg.enc_centre: the newest kept
- *  reading taken at or before @p at_ms (a signed difference, so a reading
- *  taken later than the row does not count), when it is no older than
- *  SERVO_TEST_ENC_STALE_MS.  False when there is none. */
+/**
+ * @brief The angle at @p at_ms, degrees from cfg.enc_centre: the newest kept
+ *        reading taken at or before @p at_ms (a signed difference, so a reading
+ *        taken later than the row does not count), when it is no older than
+ *        SERVO_TEST_ENC_STALE_MS.  False when there is none.
+ *
+ * @param t     Run state.
+ * @param at_ms Time of the row, ms.
+ * @param deg   Out: angle, degrees from the centre count.
+ * @return true when a kept reading no older than SERVO_TEST_ENC_STALE_MS was
+ *        taken at or before at_ms; deg is set then.
+ */
 bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg);
 
 /**
- * The mean settled end angle of step @p s at @p end (0 low, 1 high) into
- * @p deg, degrees from cfg.enc_centre in the commanded direction, -180 to
- * just under 180, and its error against cfg.enc_cmd_deg[end] into @p err,
- * the same range; either may be NULL.  The mean is taken on the circle,
- * from the first end angle of the step.  False when no move settled there.
- * End angles of one end that lie 180 degrees or more apart have no mean
- * that says anything.
+ * @brief The mean settled end angle of step @p s at @p end (0 low, 1 high) into
+ *        @p deg, degrees from cfg.enc_centre in the commanded direction, -180
+ *        to just under 180, and its error against cfg.enc_cmd_deg[end] into @p
+ *        err, the same range; either may be NULL.
+ *
+ * The mean is taken on the circle, from the first end angle of the step.  False
+ * when no move settled there. End angles of one end that lie 180 degrees or
+ * more apart have no mean that says anything.
+ *
+ * @param t   Run state.
+ * @param s   Step whose settled moves are averaged.
+ * @param end 0 for the low end, 1 for the high end.
+ * @param deg Out: mean end angle, degrees. NULL to skip.
+ * @param err Out: angle error, degrees. NULL to skip.
+ * @return true when a move settled at @p end; false when none did, or for a
+ *        NULL argument or an end above 1.
  */
 bool servo_test_enc_end(const servo_test_t *t, const servo_test_step_t *s,
                         unsigned end, float *deg, float *err);
 
-/** One pass at @p now_ms: the timers, and what the run wants done since the
- *  last pass into @p out. */
+/**
+ * @brief One pass at @p now_ms: the timers, and what the run wants done since
+ *        the last pass into @p out.
+ *
+ * @param t      Run state. NULL is ignored.
+ * @param now_ms Time of the pass, ms.
+ * @param in     What the caller knows: armed and the voltage cap. NULL keeps
+ *               the cap as it was and does not disarm the run.
+ * @param out    Out: what the run wants done. NULL is ignored.
+ */
 void servo_test_step(servo_test_t *t, uint32_t now_ms,
                      const servo_test_in_t *in, servo_test_do_t *out);
 
-/** End a running run for @p why: the output is asked off and the servo let
- *  go at the next servo_test_step().  Nothing for a run not running. */
+/**
+ * @brief End a running run for @p why: the output is asked off and the servo
+ *        let go at the next servo_test_step().
+ *
+ * Nothing for a run not running.
+ *
+ * @param t      Run state. NULL is ignored.
+ * @param why    Reason the run ends, reported as ABORTED.
+ * @param now_ms Time of the abort, ms.
+ */
 void servo_test_abort(servo_test_t *t, servo_test_abort_t why,
                       uint32_t now_ms);
 
+/**
+ * @brief Tell whether a run is under way.
+ *
+ * @param t Run state. NULL gives false.
+ * @return true while the state is RUNNING.
+ */
 bool servo_test_running(const servo_test_t *t);
 
-/** How long a move of @p t may take before it is late, or unseen:
- *  SERVO_TEST_TRAVEL_TIMEOUT_MS plus the meter's lag, 3300 ms on the PD
- *  mini. */
+/**
+ * @brief How long a move of @p t may take before it is late, or unseen:
+ *        SERVO_TEST_TRAVEL_TIMEOUT_MS plus the meter's lag, 3300ms on the PD
+ *        mini.
+ *
+ * @param t Run state. NULL uses no meter lag.
+ * @return SERVO_TEST_TRAVEL_TIMEOUT_MS plus the meter lag_ms, ms.
+ */
 uint32_t servo_test_travel_window_ms(const servo_test_t *t);
 
+/**
+ * @brief Verdict of a run.
+ *
+ * @param t Run state.
+ * @return ABORTED for NULL or an aborted run; FAIL on a stall, a limit exceeded
+ *        or a timed-out move; NOT_MEASURABLE when a counted move showed no
+ *        movement; otherwise PASS.
+ */
 servo_test_verdict_t servo_test_verdict(const servo_test_t *t);
 
-/** Steps planned, the brown-out counted as one, and the one running,
- *  1-based, for "step 2 of 3". */
+/**
+ * @brief Steps planned, the brown-out counted as one, and the one running,
+ *        1-based, for "step 2 of 3".
+ *
+ * @param t Run state. NULL gives 0.
+ * @return steps planned, the brown-out walk counted as one.
+ */
 unsigned servo_test_steps_planned(const servo_test_t *t);
+/**
+ * @brief Number of the step running.
+ *
+ * @param t Run state. NULL gives 0.
+ * @return 1-based number of the step running; 0 for NULL or a run with no
+ *        steps.
+ */
 unsigned servo_test_step_now(const servo_test_t *t);
 
-/** The highest, the longest and the lowest of a run, over its
- *  characterisation steps; false when none was measured.  A current is the
- *  one of the largest magnitude, with its sign. */
+/**
+ * @brief The highest, the longest and the lowest of a run, over its
+ *        characterisation steps; false when none was measured.  A current is
+ *        the one of the largest magnitude, with its sign.
+ *
+ * @param t Run state.
+ * @param a Out: idle current of largest magnitude, with its sign. NULL to skip.
+ * @return true when a characterisation step measured idle current.
+ */
 bool servo_test_max_idle(const servo_test_t *t, float *a);
+/**
+ * @brief Highest holding current of a run.
+ *
+ * @param t Run state.
+ * @param a Out: holding current of largest magnitude, with its sign. NULL to
+ *        skip.
+ * @return true when a characterisation step measured holding current.
+ */
 bool servo_test_max_hold(const servo_test_t *t, float *a);
+/**
+ * @brief Longest travel time of a run.
+ *
+ * @param t  Run state.
+ * @param ms Out: longest travel time, ms. NULL to skip.
+ * @return true when a counted move of a characterisation step arrived.
+ */
 bool servo_test_max_travel(const servo_test_t *t, uint32_t *ms);
-/** The lowest brown-out voltage the servo moved at, and whether one below
- *  it showed none. */
+/**
+ * @brief The lowest brown-out voltage the servo moved at, and whether one below
+ *        it showed none.
+ *
+ * @param t       Run state. NULL gives false.
+ * @param moved_v Out: lowest brown-out set point at which the servo moved, V.
+ *                NULL to skip.
+ * @param stopped Out: true when a brown-out step that ran showed no movement.
+ *                NULL to skip.
+ * @return true when a brown-out step moved.
+ */
 bool servo_test_brownout(const servo_test_t *t, float *moved_v,
                          bool *stopped);
 
-/** Whether a step's idle current reads below -SERVO_TEST_NEG_IDLE_A: the
- *  shunt is fitted the other way round. */
+/**
+ * @brief Whether a step's idle current reads below -SERVO_TEST_NEG_IDLE_A: the
+ *        shunt is fitted the other way round.
+ *
+ * @param t Run state.
+ * @return true when a step idle mean is below minus SERVO_TEST_NEG_IDLE_A, in
+ *        whole mA.
+ */
 bool servo_test_negative_at_rest(const servo_test_t *t);
 
-/** Whether STALL AT cannot be reached in a run of @p cfg: at or above the
- *  current limit, where the supply holds the current (@p by_limit), or at
- *  or above the end of the meter's range (@p by_range).  Either may be
- *  NULL.  Compared in whole mA. */
+/**
+ * @brief Whether STALL AT cannot be reached in a run of @p cfg: at or above the
+ *        current limit, where the supply holds the current (@p by_limit), or at
+ *        or above the end of the meter's range (@p by_range).
+ *
+ * Either may be NULL.  Compared in whole mA.
+ *
+ * @param cfg      Configuration of the run. NULL gives false.
+ * @param by_limit Out: true when STALL AT is at or above the current limit.
+ *                 NULL to skip.
+ * @param by_range Out: true when the meter is the INA3221 and STALL AT is at
+ *                 or above its range. NULL to skip.
+ * @return true when either holds.
+ */
 bool servo_test_stall_unreachable(const servo_test_cfg_t *cfg,
                                   bool *by_limit, bool *by_range);
 
-/** Readings that reached the run per second, the supply's own per second,
- *  and the mean interval between two readings; false before two. */
+/**
+ * @brief Readings that reached the run per second, the supply's own per second,
+ *        and the mean interval between two readings; false before two.
+ *
+ * @param t            Run state. NULL gives false.
+ * @param per_s        Out: readings per second that reached the run. NULL to
+ *                     skip.
+ * @param module_per_s Out: the supply's own samples per second. NULL to skip.
+ * @param interval_ms  Out: mean interval between two readings, ms. NULL to
+ *                     skip.
+ * @return true when two readings span time; false before two readings or
+ *        when they share a time.
+ */
 bool servo_test_rates(const servo_test_t *t, float *per_s,
                       float *module_per_s, uint32_t *interval_ms);
 
 /**
- * The next item for the card, without taking it: OPEN, the CSV's lines,
- * then once the run is over the report's (if REPORT) and END.  @p text is
- * the line, valid until the next call.  NONE while nothing waits.
+ * @brief The next item for the card, without taking it: OPEN, the CSV's lines,
+ *        then once the run is over the report's (if REPORT) and END.  @p text
+ *        is the line, valid until the next call.  NONE while nothing waits.
+ *
+ * @param t    Run state. NULL gives NONE.
+ * @param text Out: text of the item; empty when none.
+ * @return kind of the next item: queued lines first, then the report lines,
+ *        then END; NONE while nothing waits.
  */
 servo_test_out_t servo_test_peek(servo_test_t *t, const char **text);
 
-/** The item servo_test_peek() gave has been taken. */
+/**
+ * @brief The item servo_test_peek() gave has been taken.
+ *
+ * @param t Run state.
+ */
 void servo_test_pop(servo_test_t *t);
 
-/** Whether everything of the last run has been handed over. */
+/**
+ * @brief Whether everything of the last run has been handed over.
+ *
+ * @param t Run state.
+ * @return true for NULL, or when the run is not RUNNING, nothing is queued and
+ *        END was handed over.
+ */
 bool servo_test_drained(const servo_test_t *t);
 
 /* ------------------------------------------------------ words (servo_str.c) */
 
-/** The entries the names below come from, for a caller with its own
- *  table. */
+/**
+ * @brief The entries the names below come from, for a caller with its own
+ *        table.
+ *
+ * @param ph Phase to name.
+ * @return table entry for the phase.
+ */
 servo_str_t servo_test_phase_str(servo_test_phase_t ph);
+/**
+ * @brief Table entry for an abort reason.
+ *
+ * @param why Abort reason to name.
+ * @return table entry for the reason.
+ */
 servo_str_t servo_test_abort_str(servo_test_abort_t why);
+/**
+ * @brief Table entry for a verdict.
+ *
+ * @param v Verdict to name.
+ * @return table entry for the verdict.
+ */
 servo_str_t servo_test_verdict_str(servo_test_verdict_t v);
 
+/**
+ * @brief English name of a phase.
+ *
+ * @param ph Phase to name.
+ * @return name of the phase.
+ */
 const char *servo_test_phase_name(servo_test_phase_t ph);
+/**
+ * @brief English name of an abort reason.
+ *
+ * @param why Abort reason to name.
+ * @return name of the reason.
+ */
 const char *servo_test_abort_name(servo_test_abort_t why);
+/**
+ * @brief English name of a verdict.
+ *
+ * @param v Verdict to name.
+ * @return name of the verdict.
+ */
 const char *servo_test_verdict_name(servo_test_verdict_t v);
+/**
+ * @brief English name of a start refusal.
+ *
+ * @param why Refusal to name.
+ * @return name of the refusal.
+ */
 const char *servo_test_start_name(servo_test_start_t why);
 
-/** The CSV's header row: the 13 columns of every run, then the meter's
- *  six -- meter, window, current max, current min, voltage min, clipped. */
+/**
+ * @brief The CSV's header row: the 13 columns of every run, then the meter's
+ *        six -- meter, window, current max, current min, voltage min, clipped.
+ *
+ * @return header row of the CSV without the encoder columns.
+ */
 const char *servo_test_csv_header(void);
-/** And with the encoder's two columns, angle_deg and travel_angle_ms,
- *  between the two groups. */
+/**
+ * @brief And with the encoder's two columns, angle_deg and travel_angle_ms,
+ *        between the two groups.
+ *
+ * @return header row of the CSV with the encoder columns.
+ */
 const char *servo_test_csv_header_enc(void);
 
-/** The word a row's meter column carries: INA3221, PDMINI or MODEL. */
+/**
+ * @brief The word a row's meter column carries: INA3221, PDMINI or MODEL.
+ *
+ * @param kind Meter kind, servo_test_meter_kind_t.
+ * @return word for the meter column: INA3221, PDMINI or MODEL.
+ */
 const char *servo_test_meter_word(uint8_t kind);
 
 /* ------------------------------------------------- report (servo_report.c) */
 
 /**
- * The line that says STALL AT cannot be reached in a run of @p cfg, in the
- * language of @p cfg->text, into @p buf: against the current limit where
- * that is the reason, else against the meter's range
- * (servo_test_stall_unreachable()).  False, and @p buf empty, when a
- * reading can pass STALL AT.
+ * @brief The line that says STALL AT cannot be reached in a run of @p cfg, in
+ *        the language of @p cfg->text, into @p buf: against the current limit
+ *        where that is the reason, else against the meter's range
+ *        (servo_test_stall_unreachable()).  False, and @p buf empty, when a
+ *        reading can pass STALL AT.
+ *
+ * @param cfg Configuration of the run.
+ * @param buf Out: the line.
+ * @param n   Size of buf, bytes.
+ * @return true when the note was written; false when a reading can pass STALL
+ *        AT.
  */
 bool servo_test_stall_note(const servo_test_cfg_t *cfg, char *buf, size_t n);
 
-/** Line @p idx of the report into @p buf, in the language of
- *  @p t->cfg.text; false past the last. */
+/**
+ * @brief Line @p idx of the report into @p buf, in the language of @p
+ *        t->cfg.text; false past the last.
+ *
+ * @param t   Run state.
+ * @param idx Index of the line asked for.
+ * @param buf Out: the line. NULL is refused.
+ * @param n   Size of buf, bytes; 0 is refused.
+ * @return true when line @p idx exists and was written into buf; false past
+ *        the last line, or for a NULL argument or n of 0.
+ */
 bool servo_report_line(const servo_test_t *t, unsigned idx, char *buf,
                        size_t n);
 

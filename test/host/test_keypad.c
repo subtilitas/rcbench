@@ -16,8 +16,8 @@
 #include "ui_theme.h"
 #include "touch_feed.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static const gfx_rect_t k_area = { 6, 24, 546, 402 };
 
@@ -178,7 +178,9 @@ TEST_CASE(the_keys_tile_the_area_and_ok_spans_two)
     CHECK(rok.w > 2 * r0.w);
     CHECK(rok.y == r0.y);
     CHECK(r9.y < r0.y);
-    for (int k = 0; k < UI_KEY_COUNT; ++k) {
+    /* An unsigned keypad has no +/- key. */
+    CHECK_EQ(ui_keypad_key_rect(&kp, UI_KEY_SIGN).w, 0);
+    for (int k = 0; k < UI_KEY_SIGN; ++k) {
         const gfx_rect_t r = ui_keypad_key_rect(&kp, (ui_key_t)k);
         CHECK(r.x >= k_area.x && r.x + r.w <= k_area.x + k_area.w);
         CHECK(r.y >= k_area.y && r.y + r.h <= k_area.y + k_area.h);
@@ -519,13 +521,13 @@ TEST_CASE(a_network_name_takes_1_to_32_bytes)
 /* A password shows as "*" until SHOW, and SHOW again hides it. */
 TEST_CASE(a_password_is_masked_until_shown)
 {
-    gfx_color_t *fb = calloc((size_t)800 * 480, sizeof(gfx_color_t));
+    gfx_color_t *fb = calloc((size_t)UI_PANEL_W * UI_PANEL_H, sizeof(gfx_color_t));
     CHECK(fb != NULL);
     if (fb == NULL) {
         return;
     }
     gfx_canvas_t cv;
-    gfx_canvas_init(&cv, fb, 800, 480, 800);
+    gfx_canvas_init(&cv, fb, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
     char out[80];
     ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "secret99", true);
     const gfx_rect_t show = ui_textkey_key_rect(&tk, UI_TK_SHOW);
@@ -542,27 +544,27 @@ TEST_CASE(a_password_is_masked_until_shown)
     CHECK(!tk.show);
     CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHOW), "SHOW");
     ui_textkey_render(&tk, &cv);
-    gfx_color_t *masked = malloc((size_t)800 * 480 * sizeof(gfx_color_t));
+    gfx_color_t *masked = malloc((size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t));
     CHECK(masked != NULL);
     if (masked == NULL) {
         free(fb);
         return;
     }
-    memcpy(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t));
+    memcpy(masked, fb, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t));
     (void)tk_press(UI_TK_SHOW, out, sizeof(out));
     CHECK(tk.show);
     CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHOW), "HIDE");
     CHECK_EQ(tk.len, 8);                 /* SHOW types nothing */
     ui_textkey_render(&tk, &cv);
-    CHECK(memcmp(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t)) != 0);
+    CHECK(memcmp(masked, fb, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t)) != 0);
     (void)tk_press(UI_TK_SHOW, out, sizeof(out));
     CHECK(!tk.show);
     ui_textkey_render(&tk, &cv);
-    CHECK(memcmp(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t)) == 0);
+    CHECK(memcmp(masked, fb, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t)) == 0);
     /* The same password with other characters masks to the same picture. */
     ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "QQQQQQQQ", true);
     ui_textkey_render(&tk, &cv);
-    CHECK(memcmp(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t)) == 0);
+    CHECK(memcmp(masked, fb, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t)) == 0);
     free(masked);
     free(fb);
 }
@@ -705,27 +707,27 @@ TEST_CASE(a_folder_keyboard_refuses_what_the_card_check_refuses)
  * a different refusal. */
 TEST_CASE(a_folder_refusal_is_drawn_in_its_own_words)
 {
-    gfx_color_t *fb = calloc((size_t)800 * 480, sizeof(gfx_color_t));
-    gfx_color_t *first = calloc((size_t)800 * 480, sizeof(gfx_color_t));
+    gfx_color_t *fb = calloc((size_t)UI_PANEL_W * UI_PANEL_H, sizeof(gfx_color_t));
+    gfx_color_t *first = calloc((size_t)UI_PANEL_W * UI_PANEL_H, sizeof(gfx_color_t));
     REQUIRE_ALLOC(fb);
     REQUIRE_ALLOC(first);
     gfx_canvas_t cv;
-    gfx_canvas_init(&cv, fb, 800, 480, 800);
+    gfx_canvas_init(&cv, fb, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
     char out[CARD_DIR_MAX];
     ui_textkey_open_folder(&tk, k_area, "F", "BENCHLOGS");
     (void)tk_press(UI_TK_OK, out, sizeof(out));
     ui_textkey_render(&tk, &cv);
     int warn = 0;
-    for (int i = 0; i < 800 * 480; ++i) {
+    for (int i = 0; i < UI_PANEL_W * UI_PANEL_H; ++i) {
         warn += (fb[i] == ui_theme_color(UI_C_WARN)) ? 1 : 0;
     }
     CHECK(warn > 0);
-    memcpy(first, fb, (size_t)800 * 480 * sizeof(gfx_color_t));
+    memcpy(first, fb, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t));
     ui_textkey_open_folder(&tk, k_area, "F", "BENCH/KS");
     tk_type("T");
     (void)tk_press(UI_TK_OK, out, sizeof(out));
     CHECK_EQ(tk.why, (uint8_t)CARD_FOLDER_BENCH);
-    memset(fb, 0, (size_t)800 * 480 * sizeof(gfx_color_t));
+    memset(fb, 0, (size_t)UI_PANEL_W * UI_PANEL_H * sizeof(gfx_color_t));
     ui_textkey_render(&tk, &cv);
     /* The title row: the title the same, the line not. */
     const size_t row0 = (size_t)(k_area.y + 6) * 800u;

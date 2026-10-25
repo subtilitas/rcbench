@@ -1,5 +1,6 @@
-/*
- * upd_screen.h says what these two screens are for.
+/**
+ * @file upd_screen.c
+ * @brief upd_screen.h says what these two screens are for.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,34 +15,95 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* The area below the band: 800 x 432 px.  UPDATES lays out as FILES &
- * UPDATE does: the buttons on the left, what is kept and what last happened
- * on the right, each text broken into lines of the card's 44 cells, 20 px
- * apart.  Four rows of buttons, 48 px tall and 8 px apart: CHECK, the
- * reminder, RELEASES, and the download's hold. */
+/*
+ * The faces of the type scale these screens draw in:
+ * UPD_FONT_LABEL (10 x 20) for the buttons, the IOmcu section's lines and
+ * the reminder's buttons; UPD_FONT_BODY (12 x 24) for the card's text and
+ * the reminder's lines.
+ */
+/** @brief The buttons and the IOmcu section: 10 x 20. */
+#define UPD_FONT_LABEL (&gfx_font_10x20)
+/** @brief The card's text and the reminder's lines: 12 x 24. */
+#define UPD_FONT_BODY  UI_FONT_BODY
+
+/*
+ * UPDATES, in the body below the band: 1024 x 540px:
+ * The buttons on the left, 460 x 56px at a 64px pitch from y 16: CHECK,
+ * the reminder, RELEASES, and the download's hold.  The card on the right,
+ * x 484 to 1016, y 16 to 488: what is kept and what last happened, each
+ * text broken into lines of its 500px column (41 cells of UPD_FONT_BODY),
+ * 28px apart.
+ */
+/** @brief The buttons' left edge. */
 #define BX      16
-#define BW      360
-#define BH      48
-#define BPITCH  56
-#define RX      400
-#define RW      384
+/** @brief The buttons' width, px. */
+#define BW      460
+/** @brief The buttons' height, px. */
+#define BH      56
+/** @brief The step from one button to the next, px. */
+#define BPITCH  64
+/** @brief The card's left edge. */
+#define RX      484
+/** @brief The card's top, and the first button's. */
+#define RY      16
+/** @brief The card's width, px. */
+#define RW      532
+/** @brief The card's height, px. */
+#define RH      472
+/** @brief The card's inner padding, px. */
+#define RPAD    16
+/** @brief A UPD_FONT_BODY line's pitch, px. */
+#define PITCH   28
+/** @brief The download's hold's row. */
 #define DL_ROW  3
 
-/* The IOmcu section, in the left column under the fourth button's row:
- * its heading, the two versions, up to two lines of state, and the hold,
- * whose foot is the card's, 16 px above the body's. */
-#define CU_HEAD_Y  248
-#define CU_RUN_Y   272
-#define CU_CAR_Y   292
-#define CU_LINE_Y  320
-#define CU_BTN     gfx_rect_make(BX, 368, BW, BH)
+/*
+ * The IOmcu section, in the left column under the fourth row:
+ * Its heading, the two versions and up to two lines of state in
+ * UPD_FONT_LABEL 24px apart, and the hold, 460 x 56px, whose foot is
+ * body y 484, 12px above the alert band.
+ */
+/** @brief The IOmcu section's heading. */
+#define CU_HEAD_Y  280
+/** @brief The version the IOmcu runs. */
+#define CU_RUN_Y   304
+/** @brief The version this panel carries. */
+#define CU_CAR_Y   328
+/** @brief The first line of state. */
+#define CU_LINE_Y  356
+/** @brief The state's line pitch, px. */
+#define CU_PITCH   24
+/** @brief HOLD 2s: UPDATE IOMCU. */
+#define CU_BTN     gfx_rect_make(BX, 428, BW, BH)
 
-/* The reminder: a box with the title in its header, two taps side by side,
- * the hold under them. */
-#define R_BOX     gfx_rect_make(80, 24, 640, 384)
-#define R_IGNORE  gfx_rect_make(104, 248, 280, 56)
-#define R_NEVER   gfx_rect_make(416, 248, 280, 56)
-#define R_HOLD    gfx_rect_make(104, 320, 592, 64)
+/*
+ * The reminder:
+ * A box 860 x 480px from body y 8, its lines in UPD_FONT_BODY; NOT NOW and
+ * NEVER REMIND ME side by side, 398 x 56px, the hold 812 x 64px under
+ * them; the box's foot is body y 488.
+ */
+/** @brief The reminder's box, in the body. */
+#define R_BOX     gfx_rect_make(82, 8, 860, 480)
+/** @brief NOT NOW. */
+#define R_IGNORE  gfx_rect_make(106, 328, 398, 56)
+/** @brief NEVER REMIND ME. */
+#define R_NEVER   gfx_rect_make(520, 328, 398, 56)
+/** @brief The reminder's hold. */
+#define R_HOLD    gfx_rect_make(106, 400, 812, 64)
+
+/** @brief The body row 4px above the alert band: every control ends over
+ *         it. */
+#define UPD_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
+_Static_assert(BH >= UI_TAP_MIN, "UPDATES' buttons are a finger tall");
+_Static_assert(16 + DL_ROW * BPITCH + BH + 16 <= CU_HEAD_Y,
+               "the IOmcu section starts under the fourth row");
+_Static_assert(CU_LINE_Y + 2 * CU_PITCH + 20 < 428,
+               "two lines of state end over the IOmcu's hold");
+_Static_assert(428 + BH <= UPD_FLOOR, "the IOmcu's hold ends over the band");
+_Static_assert(RY + RH <= UPD_FLOOR, "the card ends over the alert band");
+_Static_assert(RX + RW <= UI_PANEL_W - UI_MARGIN, "the card keeps the margin");
+_Static_assert(8 + 480 <= UPD_FLOOR, "the reminder ends over the band");
+_Static_assert(400 + 64 + 24 <= 8 + 480, "the hold ends inside the box");
 
 enum {
     HIT_NONE = 0,
@@ -51,7 +113,7 @@ enum {
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
-    HIT_COPROC,         /* HOLD 2 s: UPDATE IOMCU */
+    HIT_COPROC,         /* HOLD 2s: UPDATE IOMCU */
 };
 
 /* What both screens show, and what they ask for. */
@@ -292,6 +354,12 @@ static const char *phase_text(upd_phase_t ph)
     }
 }
 
+bool upd_result_said_above(const upd_view_t *v)
+{
+    return v != NULL && v->phase == UPD_PH_ENDED
+           && v->got == UPD_GOT_NO_NET && !v->unavailable && !v->have_net;
+}
+
 void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
                      size_t n2)
 {
@@ -313,6 +381,11 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
         return;
     }
     if (v->phase != UPD_PH_ENDED) {
+        return;
+    }
+    /* "is using Wi-Fi" holds only while WI-FI's session has the radio. */
+    if ((v->got == UPD_GOT_ABORTED || v->got == UPD_GOT_BLOCKED)
+        && v->why == UPD_WHY_FILES && v->radio_free) {
         return;
     }
     switch (v->got) {
@@ -404,35 +477,76 @@ static gfx_color_t result_colour(void)
     }
 }
 
+/**
+ * @brief One line of @p t in @p f at (@p x, @p y), @p w wide.
+ * @param c   Canvas, the body.
+ * @param x   Its left edge.
+ * @param y   Its top.
+ * @param w   Its width.
+ * @param t   The text.
+ * @param f   Its face.
+ * @param col Its colour.
+ */
 static void text_in(gfx_canvas_t *c, int x, int y, int w, const char *t,
                     const gfx_font_t *f, gfx_color_t col)
 {
-    gfx_text_in(c, gfx_rect_make(x, y, w, (f == UI_FONT_HEAD) ? 30 : 18), t, f,
-                col, 1, GFX_ALIGN_LEFT);
+    gfx_text_in(c, gfx_rect_make(x, y, w, gfx_text_height(f, 1)), t, f, col,
+                1, GFX_ALIGN_LEFT);
 }
 
-/* @p t in the card from @p y, as many lines as it takes; returns the y
- * under its last line. */
+/**
+ * @brief @p t in UPD_FONT_BODY from @p y, as many lines of @p w as it
+ *        takes, PITCH apart.
+ * @param c   Canvas, the body, or NULL to count the lines only.
+ * @param x   The lines' left edge.
+ * @param y   The first line's top.
+ * @param w   The column's width.
+ * @param t   The text.
+ * @param col Its colour.
+ * @return The y one PITCH under its last line.
+ */
 static int para(gfx_canvas_t *c, int x, int y, int w, const char *t,
                 gfx_color_t col)
 {
-    return y + 20 * ui_text_wrap(c, gfx_rect_make(x, y, w, 18), 20, t,
-                                 UI_FONT_LABEL, col);
+    return y + PITCH * ui_text_wrap(c, gfx_rect_make(x, y, w,
+                                                     gfx_text_height(
+                                                         UPD_FONT_BODY, 1)),
+                                    PITCH, t, UPD_FONT_BODY, col);
 }
 
 static gfx_color_t hold_fill(const ui_hold_t *h)
 {
-    if (h->flash_left > 0) {
-        return ui_hold_flash(UI_OK, h->flash_left);
+    if (h->flash_ms > 0) {
+        return ui_hold_flash(UI_OK, h->flash_ms);
     }
     return ui_hold_fill(UI_PANEL_HI, UI_OK, h->held_s);
 }
 
+/**
+ * @brief A button of these screens: ui_button_font() in UPD_FONT_LABEL.
+ * @param c       Canvas, the body.
+ * @param r       The button.
+ * @param label   Its label.
+ * @param fill    Its fill.
+ * @param pressed Whether a finger is on it.
+ * @param enabled Whether it takes a press.
+ */
+static void button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t fill, bool pressed, bool enabled)
+{
+    ui_button_font(c, r, label, fill, pressed, enabled, UPD_FONT_LABEL);
+}
+
 /* ============================================================== UPDATES */
 
+/**
+ * @brief UPDATES' button in row @p row.
+ * @param row 0 CHECK, 1 the reminder, 2 RELEASES, DL_ROW the download.
+ * @return Its rectangle in the body.
+ */
 static gfx_rect_t btn(int row)
 {
-    return gfx_rect_make(BX, 16 + row * BPITCH, BW, BH);
+    return gfx_rect_make(BX, RY + row * BPITCH, BW, BH);
 }
 
 static bool testing_set(void) { return settings_get_int(SET_UPD_CHANNEL) == 1; }
@@ -551,10 +665,12 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_holds_if_gone();
-    if (s.hold.down || s.hold.flash_left > 0 || s.cu_hold.down
-        || s.cu_hold.flash_left > 0) {
+    if (s.hold.down || s.hold.flash_ms > 0 || s.cu_hold.down
+        || s.cu_hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
     }
+    ui_hold_flash_step(&s.hold, dt_s);
+    ui_hold_flash_step(&s.cu_hold, dt_s);
     if (download_allowed() && ui_hold_tick(&s.hold, dt_s)) {
         s_req |= UPD_REQ_DOWNLOAD;
         ui_hold_reached(&s.hold);
@@ -641,29 +757,41 @@ static void cu_version_text(char *out, size_t n, bool known, cu_version_t v)
     }
 }
 
-/* The IOmcu section: heading, versions, state, hold. */
+/**
+ * @brief The IOmcu section: heading, versions, state, hold.
+ * @param c Canvas, the body.
+ */
 static void render_coproc(gfx_canvas_t *c)
 {
     char ver[24], line[96];
-    text_in(c, BX, CU_HEAD_Y, BW, TR(UPD_CU_HEAD), UI_FONT_LABEL,
+    text_in(c, BX, CU_HEAD_Y, BW, TR(UPD_CU_HEAD), UPD_FONT_LABEL,
             UI_TEXT_DIM);
     cu_version_text(ver, sizeof(ver), s_cu.known, s_cu.running);
     snprintf(line, sizeof(line), TR(UPD_CU_RUNNING), ver);
-    text_in(c, BX, CU_RUN_Y, BW, line, UI_FONT_LABEL, UI_TEXT);
+    text_in(c, BX, CU_RUN_Y, BW, line, UPD_FONT_LABEL, UI_TEXT);
     cu_version_text(ver, sizeof(ver), s_cu.have_image, s_cu.carried);
     snprintf(line, sizeof(line), TR(UPD_CU_CARRIED), ver);
-    text_in(c, BX, CU_CAR_Y, BW, line, UI_FONT_LABEL, UI_TEXT);
+    text_in(c, BX, CU_CAR_Y, BW, line, UPD_FONT_LABEL, UI_TEXT);
 
     const char *state = "";
     gfx_color_t col = UI_TEXT;
     upd_cu_text(&s_cu, &state, &col);
-    (void)para(c, BX, CU_LINE_Y, BW, state, col);
+    (void)ui_text_wrap(c, gfx_rect_make(BX, CU_LINE_Y, BW,
+                                        gfx_text_height(UPD_FONT_LABEL, 1)),
+                       CU_PITCH, state, UPD_FONT_LABEL, col);
 
     const gfx_color_t fill = coproc_allowed() ? hold_fill(&s.cu_hold)
                                               : UI_PANEL_HI;
-    ui_button(c, CU_BTN, TR(UPD_CU_HOLD), fill, false, coproc_allowed());
+    ui_button_font(c, CU_BTN, TR(UPD_CU_HOLD), fill, false, coproc_allowed(),
+                   UPD_FONT_LABEL);
 }
 
+/**
+ * @brief UPDATES, drawn whole once per framebuffer and again after every
+ *        change and through a hold.
+ * @param c            Canvas, the body.
+ * @param buffer_index The framebuffer drawn into.
+ */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -674,26 +802,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     /* The buttons. */
     const bool busy = cancel_allowed();
-    ui_button(c, btn(0), busy ? TR(CANCEL) : TR(UPD_CHECK),
-              busy ? UI_PANEL_HI : UI_ACCENT,
-              s.have_press && s.hit == HIT_CHECK, busy || check_allowed());
+    button(c, btn(0), busy ? TR(CANCEL) : TR(UPD_CHECK),
+           busy ? UI_PANEL_HI : UI_ACCENT,
+           s.have_press && s.hit == HIT_CHECK, busy || check_allowed());
     const bool on = settings_get_bool(SET_UPD_REMIND);
-    ui_button(c, btn(1), on ? TR(UPD_REMIND_ON) : TR(UPD_REMIND_OFF),
-              UI_PANEL_HI, s.have_press && s.hit == HIT_REMIND, true);
-    ui_button(c, btn(2),
-              testing_set() ? TR(UPD_CHAN_TESTING) : TR(UPD_CHAN_STABLE),
-              UI_PANEL_HI, s.have_press && s.hit == HIT_CHANNEL, true);
+    button(c, btn(1), on ? TR(UPD_REMIND_ON) : TR(UPD_REMIND_OFF),
+           UI_PANEL_HI, s.have_press && s.hit == HIT_REMIND, true);
+    button(c, btn(2),
+           testing_set() ? TR(UPD_CHAN_TESTING) : TR(UPD_CHAN_STABLE),
+           UI_PANEL_HI, s.have_press && s.hit == HIT_CHANNEL, true);
     if (have_newer()) {
-        ui_button(c, btn(DL_ROW), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,
-                  download_allowed());
+        button(c, btn(DL_ROW), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,
+               download_allowed());
     }
     render_coproc(c);
 
     /* What is kept, what runs, what last happened. */
-    ui_card(c, gfx_rect_make(RX, 16, RW, 400), UI_PANEL);
-    const int x = RX + 16, w = RW - 32;
+    ui_card(c, gfx_rect_make(RX, RY, RW, RH), UI_PANEL);
+    const int x = RX + RPAD, w = RW - 2 * RPAD;
     char line[96], second[96];
-    int y = 32;
+    int y = RY + RPAD;
     snprintf(line, sizeof(line), TR(WF_Q_RUN), s_v.running);
     y = para(c, x, y, w, line, UI_TEXT) + 4;
     if (s_v.unavailable) {
@@ -707,9 +835,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, TR(UPD_KEEP_NET), UI_TEXT_DIM) + 12;
     }
 
-    /* The job under way, or how the last one ended. */
+    /* The job under way, or how the last one ended.  A check that ended
+     * for want of a home network says what the lines above already say,
+     * and is not said twice. */
     upd_result_text(&s_v, line, sizeof(line), second, sizeof(second));
-    if (line[0] != '\0') {
+    if (line[0] != '\0' && !upd_result_said_above(&s_v)) {
         const gfx_color_t col = upd_busy(&s_v) ? UI_TEXT : result_colour();
         y = para(c, x, y, w, line, col);
         y = para(c, x, y, w, second, UI_TEXT_DIM) + 12;
@@ -729,23 +859,31 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
     }
 
-    /* The release line's end, the reminder and RELEASES, at the card's
-     * foot: its last line ends 18 px above the card's bottom edge. */
-    static const ui_text_id_t k_about[] = { TX_UPD_LAST_LINE, TX_UPD_ABOUT_1,
-                                            TX_UPD_ABOUT_2, TX_UPD_ABOUT_3 };
+    /* The release line's end when it is capped, the reminder and RELEASES,
+     * at the card's foot: its last line ends 12px above the card's bottom
+     * edge.  The line's end is drawn in UI_TEXT, the rest dim. */
+    static const ui_text_id_t k_capped[] = { TX_UPD_LAST_LINE, TX_UPD_ABOUT_1,
+                                             TX_UPD_ABOUT_2,
+                                             TX_UPD_ABOUT_3_LINE };
+    static const ui_text_id_t k_open[] = { TX_UPD_ABOUT_1, TX_UPD_ABOUT_2,
+                                           TX_UPD_ABOUT_3 };
+    const ui_text_id_t *about = s_v.line_capped ? k_capped : k_open;
+    const size_t n_about = s_v.line_capped
+                               ? sizeof(k_capped) / sizeof(k_capped[0])
+                               : sizeof(k_open) / sizeof(k_open[0]);
     int foot = 0;
-    for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
-        foot += ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
-                             ui_tr(k_about[i]), UI_FONT_LABEL, UI_TEXT);
+    for (size_t i = 0; i < n_about; ++i) {
+        foot += ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 24), PITCH,
+                             ui_tr(about[i]), UPD_FONT_BODY, UI_TEXT);
     }
-    y = 16 + 400 - 16 - 20 * foot;
-    for (size_t i = 0; i < sizeof(k_about) / sizeof(k_about[0]); ++i) {
-        y = para(c, x, y, w, ui_tr(k_about[i]), i ? UI_TEXT_DIM : UI_TEXT);
+    y = RY + RH - 12 - gfx_text_height(UPD_FONT_BODY, 1)
+        - PITCH * (foot - 1);
+    for (size_t i = 0; i < n_about; ++i) {
+        const bool lit = s_v.line_capped && i == 0u;
+        y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
-    if (s.hold.flash_left > 0 || s.cu_hold.flash_left > 0) {
-        ui_hold_flash_step(&s.hold);
-        ui_hold_flash_step(&s.cu_hold);
+    if (s.hold.flash_ms > 0 || s.cu_hold.flash_ms > 0) {
         s.drawn_mask = 0u;
     } else {
         s.drawn_mask |= bit;
@@ -846,9 +984,10 @@ static void r_event(const touch_event_t *evt)
 static void r_tick(float dt_s)
 {
     drop_holds_if_gone();
-    if (s_rem.hold.down || s_rem.hold.flash_left > 0) {
+    if (s_rem.hold.down || s_rem.hold.flash_ms > 0) {
         touched();
     }
+    ui_hold_flash_step(&s_rem.hold, dt_s);
     if (!s_rem.answered && download_allowed() && ui_hold_tick(&s_rem.hold, dt_s)) {
         s_req |= UPD_REQ_DOWNLOAD;
         s_rem.answered = true;
@@ -887,6 +1026,12 @@ static void r_leave(void)
     ui_hold_reset(&s_rem.hold);
 }
 
+/**
+ * @brief The reminder, drawn whole once per framebuffer and again after
+ *        every change and through the hold's flash.
+ * @param c            Canvas, the body.
+ * @param buffer_index The framebuffer drawn into.
+ */
 static void r_render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -899,28 +1044,34 @@ static void r_render(gfx_canvas_t *c, int buffer_index)
     const int x = box.x + 24, w = box.w - 48;
     char line[112];
     snprintf(line, sizeof(line), TR(UPD_R_VERSIONS), s_v.found, s_v.running);
-    text_in(c, x, box.y + 48, w, line, UI_FONT_LABEL, UI_TEXT);
-    text_in(c, x, box.y + 80, w, TR(UPD_R_WHAT_1), UI_FONT_LABEL, UI_TEXT_DIM);
-    text_in(c, x, box.y + 100, w, TR(UPD_R_WHAT_2), UI_FONT_LABEL, UI_TEXT_DIM);
-    text_in(c, x, box.y + 128, w, TR(UPD_R_NEVER), UI_FONT_LABEL, UI_TEXT_DIM);
+    /* The versions, what the hold does, how to turn the reminder back on,
+     * and why the hold is grey: the lines of a group 28px apart, the
+     * groups 36 to 48px. */
+    text_in(c, x, box.y + 44, w, line, UPD_FONT_BODY, UI_TEXT);
+    text_in(c, x, box.y + 84, w, TR(UPD_R_WHAT_1), UPD_FONT_BODY,
+            UI_TEXT_DIM);
+    text_in(c, x, box.y + 84 + PITCH, w, TR(UPD_R_WHAT_2), UPD_FONT_BODY,
+            UI_TEXT_DIM);
+    text_in(c, x, box.y + 148, w, TR(UPD_R_NEVER), UPD_FONT_BODY,
+            UI_TEXT_DIM);
     if (!download_allowed()) {
         char second[96];
         const upd_why_t why = (s_v.dl_block != UPD_WHY_NONE)
                                   ? s_v.dl_block : UPD_WHY_BUSY;
         blocked_text(why, line, sizeof(line), second, sizeof(second));
-        text_in(c, x, box.y + 160, w, line, UI_FONT_LABEL, UI_WARN);
+        text_in(c, x, box.y + 196, w, line, UPD_FONT_BODY, UI_WARN);
         if (second[0] != '\0') {
-            text_in(c, x, box.y + 180, w, second, UI_FONT_LABEL, UI_WARN);
+            text_in(c, x, box.y + 196 + PITCH, w, second, UPD_FONT_BODY,
+                    UI_WARN);
         }
     }
-    ui_button(c, R_IGNORE, TR(UPD_IGNORE), UI_PANEL_HI,
-              s_rem.have_press && s_rem.hit == HIT_IGNORE, true);
-    ui_button(c, R_NEVER, TR(UPD_NEVER), UI_PANEL_HI,
-              s_rem.have_press && s_rem.hit == HIT_NEVER, true);
-    ui_button(c, R_HOLD, TR(UPD_HOLD_DL), hold_fill(&s_rem.hold), false,
-              download_allowed());
-    if (s_rem.hold.flash_left > 0) {
-        ui_hold_flash_step(&s_rem.hold);
+    button(c, R_IGNORE, TR(UPD_IGNORE), UI_PANEL_HI,
+           s_rem.have_press && s_rem.hit == HIT_IGNORE, true);
+    button(c, R_NEVER, TR(UPD_NEVER), UI_PANEL_HI,
+           s_rem.have_press && s_rem.hit == HIT_NEVER, true);
+    button(c, R_HOLD, TR(UPD_HOLD_DL), hold_fill(&s_rem.hold), false,
+           download_allowed());
+    if (s_rem.hold.flash_ms > 0) {
         s_rem.drawn_mask = 0u;
     } else {
         s_rem.drawn_mask |= bit;

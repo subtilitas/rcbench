@@ -1,7 +1,7 @@
 // Page layout of the PDF export: the document model as A4 pages of PDF content
 // operators, with the page-break plan.
 //
-// - A4 portrait, 595.28 x 841.89 pt, margins 42.52 pt (15 mm).
+// - A4 portrait, 595.28 x 841.89 pt, margins 42.52 pt (15mm).
 // - Every block is placed whole: a list entry, a safety note, a table row and
 //   the drawing never continue on the next page.
 // - A heading stays with the block after it.
@@ -33,7 +33,7 @@ const TOP = PAGE[1] - MARGIN;
 /** Column widths of the pin-to-pin table in pt. The sum is the text width. */
 export const COLUMNS: readonly number[] = [26, 106, 106, 86, 52, WIDTH - 376];
 const PAD = 4;
-/** Scale of a line sample: 38 x 12 px become 22.8 x 7.2 pt. */
+/** Scale of a line sample: 38 x 12px become 22.8 x 7.2 pt. */
 const SAMPLE = 0.6;
 const SAMPLE_W = 38 * SAMPLE;
 

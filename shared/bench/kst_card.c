@@ -1,5 +1,8 @@
-/*
- * The card's side of the servo programmer's files.  See kst_card.h.
+/**
+ * @file
+ * @brief The card's side of the servo programmer's files.
+ *
+ * See kst_card.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,6 +25,12 @@ static kst_file_t s_file;
 static kst_file_load_t s_load;
 static kst_store_entry_t s_list[KST_CARD_LIST_MAX];
 
+/**
+ * @brief The servo type as the number the screen prints.
+ *
+ * @param type The servo type.
+ * @return 6 or 8; 0 for any other type.
+ */
 static uint8_t type_no(kst_type_t type)
 {
     return type == KST_TYPE_V6 ? 6u : type == KST_TYPE_V8 ? 8u : 0u;
@@ -32,7 +41,13 @@ unsigned kst_card_type(const kst_image_t *img)
     return type_no(kst_type(img));
 }
 
-/* A result of the store as kst_prog.h names it. */
+/**
+ * @brief A result of the store as kst_prog.h names it.
+ *
+ * @param r    The store result.
+ * @param save true for a save, false for a list or a load.
+ * @return The card result, as kst_prog_card_result_t.
+ */
 static uint8_t store_result(kst_store_t r, bool save)
 {
     switch (r) {
@@ -56,7 +71,12 @@ static uint8_t store_result(kst_store_t r, bool save)
     }
 }
 
-/* The base name of a file name the store lists. */
+/**
+ * @brief The base name of a file name the store lists.
+ *
+ * @param file The file name the store lists.
+ * @param out  Receives the base name, at most KST_PROG_NAME_MAX - 1 characters.
+ */
 static void base_of(const char *file, char *out)
 {
     const size_t len = strlen(file);
@@ -67,6 +87,13 @@ static void base_of(const char *file, char *out)
     out[n < KST_PROG_NAME_MAX ? n : KST_PROG_NAME_MAX - 1u] = '\0';
 }
 
+/**
+ * @brief Carries out a save request.
+ *
+ * @param io   The card store.
+ * @param req  The request.
+ * @param done Receives the answer.
+ */
 static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {
@@ -90,8 +117,15 @@ static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
     }
 }
 
-/* The servo type the file @p name states; 0 for none and for a file that
- * does not read as a servo file. */
+/**
+ * @brief The servo type the file @p name states; 0 for none and for a file that
+ *        does not read as a servo file.
+ *
+ * @param io   The card store.
+ * @param name The file name.
+ * @return The type number, or 0 for none or for a file that is not a servo
+ *         file.
+ */
 static uint8_t type_of(const kst_store_io_t *io, const char *name)
 {
     size_t len = 0;
@@ -103,6 +137,13 @@ static uint8_t type_of(const kst_store_io_t *io, const char *name)
     return type_no(s_file.type);
 }
 
+/**
+ * @brief Carries out a list request.
+ *
+ * @param io   The card store.
+ * @param req  The request.
+ * @param done Receives the answer.
+ */
 static void list(const kst_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {
@@ -142,6 +183,12 @@ static void list(const kst_store_io_t *io, const kst_prog_card_req_t *req,
     }
 }
 
+/**
+ * @brief The lowest rule in a set of rules.
+ *
+ * @param set The set of rules, one bit each.
+ * @return The index of the lowest rule set, or KST_RULE_COUNT for none.
+ */
 static unsigned lowest(kst_rules_t set)
 {
     unsigned n = 0;
@@ -152,6 +199,13 @@ static unsigned lowest(kst_rules_t set)
     return n;
 }
 
+/**
+ * @brief Carries out a load request.
+ *
+ * @param io   The card store.
+ * @param req  The request.
+ * @param done Receives the answer.
+ */
 static void load(const kst_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {

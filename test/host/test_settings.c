@@ -15,7 +15,7 @@ TEST_CASE(defaults_come_from_the_schema)
         const setting_def_t *d = settings_def((setting_id_t)i);
         CHECK(d != NULL);
         CHECK(d->key != NULL && d->key[0] != '\0');
-        CHECK(d->label != NULL && d->label[0] != '\0');
+        CHECK(settings_label((setting_id_t)i)[0] != '\0');
         if (settings_get((setting_id_t)i) != d->def) {
             T_FAIL("%s: got %f, default %f", d->key,
                    (double)settings_get((setting_id_t)i), (double)d->def);
@@ -334,8 +334,19 @@ TEST_CASE(value_text_renders_every_type)
     settings_set(SET_PACK_CELLS, 6);
     CHECK_STR_EQ(settings_value_text(SET_PACK_CELLS, buf, sizeof(buf)), "6");
 
+    /* A float with the digits of its step: 1mOhm, 0.1A, 0.05A, 0.001A;
+     * a STICK current limit of 1.25A reads 1.25, as its keypad takes it. */
     settings_set(SET_PACK_MOHM, 18.0f);
-    CHECK_STR_EQ(settings_value_text(SET_PACK_MOHM, buf, sizeof(buf)), "18.0");
+    CHECK_STR_EQ(settings_value_text(SET_PACK_MOHM, buf, sizeof(buf)), "18");
+    settings_set(SET_INA228_MAX_A, 204.8f);
+    CHECK_STR_EQ(settings_value_text(SET_INA228_MAX_A, buf, sizeof(buf)),
+                 "204.8");
+    settings_set(SET_STICK_I, 1.25f);
+    CHECK_STR_EQ(settings_value_text(SET_STICK_I, buf, sizeof(buf)), "1.25");
+    settings_set(SET_SERVO_PROG_I, 0.123f);
+    CHECK_STR_EQ(settings_value_text(SET_SERVO_PROG_I, buf, sizeof(buf)),
+                 "0.123");
+    CHECK_EQ(settings_decimals((setting_id_t)SETTING_COUNT), 0);
 
     /* Degenerate arguments must not write anywhere. */
     CHECK(settings_value_text(SET_PACK_CELLS, NULL, 0) != NULL);
@@ -654,6 +665,38 @@ TEST_CASE(bad_ids_are_survivable)
     settings_adjust((setting_id_t)-1, 1);
     settings_adjust(SET_PACK_CELLS, 0);
     CHECK(settings_category_name((setting_cat_t)-1)[0] == '\0');
+    CHECK_STR_EQ(settings_label((setting_id_t)-1), "");
+    CHECK_STR_EQ(settings_label((setting_id_t)SETTING_COUNT), "");
+    CHECK_STR_EQ(settings_help((setting_id_t)-1), "");
+    CHECK_STR_EQ(settings_help((setting_id_t)SETTING_COUNT), "");
+    CHECK_EQ(settings_option_list((setting_id_t)-1), -1);
+    CHECK_EQ(settings_option_list((setting_id_t)SETTING_COUNT), -1);
+}
+
+/** @brief An enum setting finds its list among ui_text.def's, which a
+ * language's options follow; a number finds none.  Settings that show one
+ * list find the same one. */
+TEST_CASE(every_choice_finds_its_option_list)
+{
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const setting_def_t *d = settings_def((setting_id_t)i);
+        const int list = settings_option_list((setting_id_t)i);
+        if ((d->options != NULL) != (list >= 0)) {
+            T_FAIL("%s: options %p, list %d", d->key,
+                   (const void *)d->options, list);
+        }
+    }
+    CHECK_EQ(settings_option_list(SET_PACK_CELLS), -1);
+    CHECK_EQ(settings_option_list(SET_THEME), 0);
+    CHECK(settings_option_list(SET_INA_W_01) >= 0);
+    CHECK_EQ(settings_option_list(SET_INA_W_01),
+             settings_option_list(SET_INA_W_33));
+    CHECK(settings_option_list(SET_INA_W_01)
+          != settings_option_list(SET_SERVO_TARGET));
+    CHECK_STR_EQ(settings_label(SET_PACK_CELLS), "Cells");
+    CHECK_STR_EQ(settings_help(SET_PACK_CELLS), "Series count in the pack");
+    CHECK_STR_EQ(settings_label(SET_INA_SH_23), "0x42 CH3 shunt");
+    CHECK_STR_EQ(settings_help(SET_THEME), "");
 }
 
 /* ----------------------------------------------------------------- theme */
@@ -922,6 +965,129 @@ TEST_CASE(the_log_folders_are_strings_kept_reset_and_observed)
     settings_set_store(NULL);
 }
 
+/* ------------------------------------------------- Screen rotation */
+
+static bool s_armed_now;
+
+static bool armed_now(void)
+{
+    return s_armed_now;
+}
+
+TEST_CASE(screen_rotation_starts_normal_on_panel_and_offers_two_choices)
+{
+    fresh_model();
+    const setting_def_t *d = settings_def(SET_SCREEN_ROT);
+    CHECK(d != NULL);
+    if (d == NULL) {
+        return;
+    }
+    CHECK_STR_EQ(d->key, "screen_rot");
+    CHECK_EQ(d->cat, SET_CAT_APP);
+    CHECK_EQ(d->type, SET_TYPE_ENUM);
+    CHECK_EQ(d->option_count, 2);
+    CHECK_STR_EQ(d->options[0], "NORMAL");
+    CHECK_STR_EQ(d->options[1], "180\xc2\xb0");
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    CHECK(settings_cycles(SET_SCREEN_ROT));
+    CHECK(settings_safe_only(SET_SCREEN_ROT));
+    CHECK(!settings_safe_only(SET_BRIGHTNESS));
+    char buf[16];
+    CHECK_STR_EQ(settings_value_text(SET_SCREEN_ROT, buf, sizeof(buf)),
+                 "NORMAL");
+    /* PANEL lists it after Contrast, beside the other display rows. */
+    setting_id_t ids[32];
+    const int n = settings_in_category(SET_CAT_APP, ids, 32);
+    int at = -1;
+    for (int i = 0; i < n; ++i) {
+        if (ids[i] == SET_SCREEN_ROT) {
+            at = i;
+        }
+    }
+    CHECK(at > 0);
+    CHECK_EQ(at > 0 ? ids[at - 1] : SETTING_COUNT, SET_CONTRAST);
+}
+
+TEST_CASE(screen_rotation_survives_a_save_and_a_restart)
+{
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_set_observer(observer);
+    s_observed = 0;
+    settings_adjust(SET_SCREEN_ROT, 1);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    CHECK_EQ(s_observed, 1);
+    CHECK_EQ(s_last_observed, SET_SCREEN_ROT);
+    CHECK(settings_dirty());
+    CHECK(settings_save());
+    CHECK_EQ(s_saved[SET_SCREEN_ROT], 1.0f);
+
+    /* The restart: defaults, then the store, then every id to the
+     * observer, which is where the panel turns display and touch before
+     * either starts. */
+    s_observed = 0;
+    s_seen_ids[SET_SCREEN_ROT] = 0;
+    settings_set_observer(every_id_observer);
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    /* Heard at least once, the last time with the value loaded. */
+    CHECK(s_seen_ids[SET_SCREEN_ROT] >= 1);
+    CHECK(!settings_dirty());
+
+    /* A stored word off the list is coerced onto it, never past 180. */
+    s_saved[SET_SCREEN_ROT] = 7.0f;
+    settings_init();
+    CHECK(settings_get_int(SET_SCREEN_ROT) >= 0);
+    CHECK(settings_get_int(SET_SCREEN_ROT) <= 1);
+
+    /* The step wraps 180 -> NORMAL; RESET CATEGORY gives NORMAL. */
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    settings_adjust(SET_SCREEN_ROT, 1);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    settings_reset(SET_CAT_APP);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_set_observer(NULL);
+    settings_set_store(NULL);
+}
+
+TEST_CASE(screen_rotation_is_held_while_armed_and_free_when_safe)
+{
+    fresh_model();
+    settings_set_armed(armed_now);
+    s_armed_now = true;
+    CHECK(settings_held(SET_SCREEN_ROT));
+    CHECK(!settings_held(SET_BRIGHTNESS));
+
+    /* Every call that changes a value leaves it while ARMED. */
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    settings_adjust(SET_SCREEN_ROT, 1);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+    /* A PANEL row beside it still changes. */
+    settings_set(SET_BRIGHTNESS, 50.0f);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 50);
+
+    s_armed_now = false;
+    settings_set(SET_SCREEN_ROT, 1.0f);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+
+    /* RESET CATEGORY and a reset of all leave it while ARMED. */
+    s_armed_now = true;
+    settings_reset(SET_CAT_APP);
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+    CHECK_EQ(settings_get_int(SET_BRIGHTNESS),
+             (long)settings_def(SET_BRIGHTNESS)->def);
+    settings_reset_all();
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 1);
+
+    /* No source: never ARMED, never held. */
+    settings_set_armed(NULL);
+    CHECK(!settings_held(SET_SCREEN_ROT));
+    settings_reset_all();
+    CHECK_EQ(settings_get_int(SET_SCREEN_ROT), 0);
+}
+
 int main(void)
 {
     RUN(defaults_come_from_the_schema);
@@ -944,6 +1110,10 @@ int main(void)
     RUN(every_pole_count_the_schema_allows_is_one_the_link_takes);
     RUN(reset_restores_one_category_only);
     RUN(bad_ids_are_survivable);
+    RUN(every_choice_finds_its_option_list);
+    RUN(screen_rotation_starts_normal_on_panel_and_offers_two_choices);
+    RUN(screen_rotation_survives_a_save_and_a_restart);
+    RUN(screen_rotation_is_held_while_armed_and_free_when_safe);
     RUN(theme_switch_changes_the_palette);
     RUN(brightness_and_contrast_are_clamped_and_monotonic);
     RUN(the_card_switches_are_on_kept_and_on_after_an_update);

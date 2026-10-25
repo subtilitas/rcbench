@@ -1,5 +1,8 @@
-/*
- * The PD mini.  See pdmini.h.
+/**
+ * @file
+ * @brief The PD mini.
+ *
+ * See pdmini.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,6 +31,14 @@ void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms)
     }
 }
 
+/**
+ * @brief Clamp a value into a range.
+ *
+ * @param v   Value to clamp.
+ * @param lo  Lowest value returned.
+ * @param hi  Highest value returned.
+ * @return    @p v limited to [@p lo, @p hi].
+ */
 static uint16_t clamp16(uint16_t v, uint16_t lo, uint16_t hi)
 {
     return (v < lo) ? lo : (v > hi) ? hi : v;
@@ -233,7 +244,14 @@ void pdmini_finish(pdmini_t *d, uint32_t now, bool ok)
     }
 }
 
-/* Whether @p n bytes at @p p hold @p s. */
+/**
+ * @brief Whether @p n bytes at @p p hold @p s.
+ *
+ * @param p  Bytes to search.
+ * @param n  Number of bytes in @p p.
+ * @param s  Nul-terminated string to find.
+ * @return   true when @p s occurs in @p p.
+ */
 static bool holds(const uint8_t *p, size_t n, const char *s)
 {
     const size_t k = strlen(s);
@@ -252,7 +270,7 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  * the one that means on, and relied on -- for a blind OFF, and without
  * trying the other -- only once two ONs with it have both taken: the
  * module's own button or its AUTO OUT setting can switch the output on in
- * the same 250 ms as one guess.
+ * the same 250ms as one guess.
  */
 /*
  * The voltage set point the module is given: the one asked, but no more
@@ -269,7 +287,7 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  */
 uint16_t pdmini_cap_mv(uint32_t vin_mv)
 {
-    /* On the 10 mV grid the screen offers, rounded down; an input with no
+    /* On the 10mV grid the screen offers, rounded down; an input with no
      * room for the lowest set point gets the lowest, and an ON is then not
      * written (pdmini_sag_hold()). */
     uint32_t cap = PDMINI_V_MIN_MV;
@@ -313,13 +331,14 @@ void pdmini_sag_hold(pdmini_t *d)
     d->st.sagged   = true;
 }
 
-/*
- * An input reading, against a live output's set point: under it and the
- * headroom on PDMINI_SAG_READS readings in a row, the output is switched
- * off and held off until an OFF is asked.  Only an output read on with ON
- * asked and a set point read back; a reading at or over the line, or an
- * output not live, starts the count again.  A failed read is no reading
- * and leaves the count as it is.
+/**
+ * @brief An input reading, against a live output's set point: under it and the
+ *        headroom on PDMINI_SAG_READS readings in a row, the output is switched
+ *        off and held off until an OFF is asked.
+ *
+ * Only an output read on with ON asked and a set point read back; a reading at
+ * or over the line, or an output not live, starts the count again.  A failed
+ * read is no reading and leaves the count as it is.
  */
 static void sag_check(pdmini_t *d)
 {
@@ -335,6 +354,11 @@ static void sag_check(pdmini_t *d)
     pdmini_sag_hold(d);
 }
 
+/**
+ * @brief Learn the OUTPUT_EN argument that means on from a seen output.
+ *
+ * @param d  Driver state.
+ */
 static void learn_on(pdmini_t *d)
 {
     if (d->on_seen && d->on_value == d->en_value) {
@@ -346,6 +370,14 @@ static void learn_on(pdmini_t *d)
     }
 }
 
+/**
+ * @brief Act on a whole reply for the command under way.
+ *
+ * @param d    Driver state; the reply is in @c d->rx.
+ * @param now  Current time, in milliseconds.
+ * @return     true when the reply is taken; false when it cannot be the
+ *             module's answer and the transaction fails.
+ */
 static bool take_reply(pdmini_t *d, uint32_t now)
 {
     const uint8_t *r = d->rx;

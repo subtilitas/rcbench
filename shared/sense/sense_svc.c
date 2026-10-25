@@ -1,5 +1,8 @@
-/*
- * The IOmcu's sensor service.  See sense_svc.h.
+/**
+ * @file
+ * @brief The IOmcu's sensor service.
+ *
+ * See sense_svc.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,18 +17,35 @@ void sense_svc_init(sense_svc_t *v, const sense_svc_io_t *io)
     v->io = *io;
 }
 
+/**
+ * @brief The service's clock, in µs.
+ *
+ * @param v The service.
+ * @return The time the schedule's clock reads, in µs.
+ */
 static uint64_t now_us(const sense_svc_t *v)
 {
     return v->io.sched.now_us(v->io.sched.ctx);
 }
 
+/**
+ * @brief Test whether a configuration enables any part.
+ *
+ * @param c The schedule configuration.
+ * @return true when the INA228, an INA3221 or the output encoder is enabled.
+ */
 static bool any_part(const sense_sched_cfg_t *c)
 {
     return c->ina228_en || c->i3221.fitted != 0u || c->as5600_en;
 }
 
-/* The set-up: the bus closed, and opened again with a fresh schedule on
- * the command's pins when a part is enabled. */
+/**
+ * @brief The set-up: the bus closed, and opened again with a fresh schedule on
+ * the command's pins when a part is enabled.
+ *
+ * @param v The service.
+ * @param cmd The command.
+ */
 static void set_up(sense_svc_t *v, const sense_cmd_t *cmd)
 {
     if (v->open) {
@@ -66,16 +86,22 @@ bool sense_window_over(const sense_window_t *w, int32_t clip_ua,
     }
     const int64_t lim_ua = (int64_t)limit_ma * 1000;
     /* Rounded to mA, halves away from zero: above the limit from
-     * limit + 0.5 mA on. */
+     * limit + 0.5mA on. */
     const bool max_over = w->n_i > 0u
                           && (int64_t)w->i_max_ua >= lim_ua + 500;
     const bool clip_over = w->clip_hi && (int64_t)clip_ua > lim_ua;
     return max_over || clip_over;
 }
 
-/* The windows that closed in this tick, each channel against its limit,
- * once a window.  A part not online as the windows rolled (last_online)
- * is judged on nothing. */
+/**
+ * @brief The windows that closed in this tick, each channel against its limit,
+ * once a window.
+ *
+ * A part not online as the windows rolled (last_online) is judged on nothing.
+ *
+ * @param v The service.
+ * @param cmd The command, with the limits.
+ */
 static void judge(sense_svc_t *v, const sense_cmd_t *cmd)
 {
     const sense_sched_t *s = &v->sched;
@@ -97,6 +123,12 @@ static void judge(sense_svc_t *v, const sense_cmd_t *cmd)
     }
 }
 
+/**
+ * @brief Act on the capture part of a command, once per capture generation.
+ *
+ * @param v The service.
+ * @param cmd The command.
+ */
 static void capture(sense_svc_t *v, const sense_cmd_t *cmd)
 {
     if (cmd->cap_gen != v->cap_gen) {
@@ -118,7 +150,12 @@ static void capture(sense_svc_t *v, const sense_cmd_t *cmd)
     }
 }
 
-/* An enabled part that is not online, whose address a scan may find. */
+/**
+ * @brief An enabled part that is not online, whose address a scan may find.
+ *
+ * @param s The schedule.
+ * @return true when an enabled part is not online.
+ */
 static bool part_missing(const sense_sched_t *s)
 {
     if (s->cfg.ina228_en && ina228_state(&s->i228) != SENSE_PART_ONLINE) {
@@ -133,6 +170,12 @@ static bool part_missing(const sense_sched_t *s)
     return false;
 }
 
+/**
+ * @brief Test whether a capture is armed, waiting or moving.
+ *
+ * @param s The schedule.
+ * @return true while the capture is armed, waiting or moving.
+ */
 static bool capture_under_way(const sense_sched_t *s)
 {
     const sense_cap_state_t st = s->cap.state;
@@ -140,7 +183,13 @@ static bool capture_under_way(const sense_sched_t *s)
            || st == SENSE_CAP_MOVING;
 }
 
-/* The bit a part's address has in PRESENT while it is online, else 0. */
+/**
+ * @brief The bit a part's address has in PRESENT while it is online, else 0.
+ *
+ * @param st The part's state.
+ * @param addr The part's I2C address.
+ * @return The bit for the address when the part is online, else 0.
+ */
 static uint16_t online_bit(sense_state_t st, uint8_t addr)
 {
     if (st != SENSE_PART_ONLINE || addr < SENSE_SCAN_FIRST
@@ -150,6 +199,12 @@ static uint16_t online_bit(sense_state_t st, uint8_t addr)
     return (uint16_t)(1u << (addr - SENSE_SCAN_FIRST));
 }
 
+/**
+ * @brief The PRESENT mask of the parts online now.
+ *
+ * @param s The schedule.
+ * @return One bit per online part address.
+ */
 static uint16_t online_mask(const sense_sched_t *s)
 {
     uint16_t m = online_bit(ina228_state(&s->i228), s->i228.part.addr);
@@ -159,6 +214,12 @@ static uint16_t online_mask(const sense_sched_t *s)
     return m;
 }
 
+/**
+ * @brief Scan the addresses of the scan range for parts that may have appeared.
+ *
+ * @param v The service.
+ * @param now The current time, in µs.
+ */
 static void scan(sense_svc_t *v, uint64_t now)
 {
     sense_sched_t *s = &v->sched;
@@ -195,7 +256,12 @@ static void scan(sense_svc_t *v, uint64_t now)
                             | (v->present & (uint16_t)~answered) | online);
 }
 
-/* The capture's fields: the schedule's, or lost for an arm refused. */
+/**
+ * @brief The capture's fields: the schedule's, or lost for an arm refused.
+ *
+ * @param v The service.
+ * @param out Receives the snapshot.
+ */
 static void snap_capture(const sense_svc_t *v, sense_snap_t *out)
 {
     const sense_cap_t *c = &v->sched.cap;
@@ -217,6 +283,12 @@ static void snap_capture(const sense_svc_t *v, sense_snap_t *out)
     out->cap_clipped  = c->clipped;
 }
 
+/**
+ * @brief Fill a snapshot of the service's state.
+ *
+ * @param v The service.
+ * @param out Receives the snapshot.
+ */
 static void snap(const sense_svc_t *v, sense_snap_t *out)
 {
     memset(out, 0, sizeof(*out));

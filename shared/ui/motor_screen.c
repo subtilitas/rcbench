@@ -1,11 +1,14 @@
-/*
- * The motor and ESC (electronic speed controller) bench screen, a
+/**
+ * @file
+ * @brief The motor and ESC (electronic speed controller) bench screen, a
  * workbench (ui_workbench.h) with the tasks LIVE, PROGRAM and SETTINGS.
  *
  * This file is the screen and LIVE's page: the plot or the table, the
- * throttle, the readouts and the CONTROL card on the right.  The strip and
- * the CONTROL card's TARGET row are motor_workbench.c's, PROGRAM's list and
- * its sessions motor_program_page.c's, SETTINGS' page
+ * throttle, the readouts and the CONTROL card on the right.  It holds their
+ * state and commands; motor_events.c takes their touch events and frames,
+ * motor_draw.c draws them, and motor_live_int.h is what the three share.
+ * The strip and the CONTROL card's TARGET row are motor_workbench.c's,
+ * PROGRAM's list and its sessions motor_program_page.c's, SETTINGS' page
  * motor_settings_page.c's; the layout they share is motor_screen_int.h.
  * The rail on the right, the readouts and the CONTROL card with TARGET,
  * ARM and RESET PEAKS, is the same on every task, until a session on
@@ -17,13 +20,9 @@
 
 #include "motor_screen.h"
 
-#include <math.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "ui_band.h"
-#include "ui_hero.h"
 #include "ui_pinlist.h"
 #include "ui_plot.h"
 #include "link_pages.h"
@@ -41,58 +40,9 @@
 /* Last but one: motor_screen_int.h's layout macros have short names, which
  * no header included after it may meet. */
 #include "motor_screen_int.h"
+#include "motor_live_int.h"
 
-/* Inside the upper row's readouts: four stacked on the right. */
-#define HERO_H    ((UP_H - 3 * HERO_GAP) / 4)
-#define HERO_GAP  4
-
-/* Inside the telemetry panel: its title strip, the legend, then the plot. */
-#define LEG_Y     (UP_Y + TITLE_H + 4)
-#define LEG_H     30
-#define PLOT_X    (LEFT_X + INNER)
-#define PLOT_W    (LEFT_W - 2 * INNER)
-#define PLOT_Y    (LEG_Y + LEG_H + 4)
-#define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y)
-
-/* Inside the throttle panel: the readout shares the title strip, then the
- * track with a fine adjustment at each end. */
-#define ROW_Y     (LO_Y + TITLE_H + 2)
-#define ROW_H     34
-#define NUDGE_W   54
-#define CTRL_Y    (ROW_Y + 42)
-#define TRACK_H   40
-#define TRACK_X   (LEFT_X + INNER + NUDGE_W + 6)
-#define TRACK_W   (LEFT_W - 2 * INNER - 2 * (NUDGE_W + 6))
-#define HINT_Y    (CTRL_Y + TRACK_H + 14)
-
-/* The readout's box: from the panel's left edge to where the numerals end.
- * The hero numerals are 32 px tall with 3 px of slant on a 34 px row. */
-#define READOUT_W (LEFT_W - 2 * INNER)
-#define READOUT_H (CTRL_Y - ROW_Y - 4)
-
-/*
- * ARM is a hold, not a press: two seconds from the OK green to the danger
- * red, and the command goes when the fade completes.  A release before then
- * arms nothing, and neither does a finger that leaves the button: the
- * gesture is contact with the control, not with the panel.  A bench that
- * spins a propeller should not do it on a touch that could have been an
- * elbow.
- *
- * The timing, the fade and the flash are ui_widgets' (UI_HOLD_S,
- * ui_hold_fill, ui_hold_flash), so the other gesture that is held rather
- * than pressed cannot come to look different from this one.
- */
-#define ARM_HOLD_S    UI_HOLD_S
-#define ARM_FLASH_FRAMES UI_HOLD_FLASH_FRAMES
-
-/* LIVE's views, PLOT and TABLE, at the left of the line under the strip. */
-#define TAB_Y     HDR_Y
-#define TAB_H     HDR_H
-#define TAB_W     124
-
-enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
-
-static const ui_plot_series_t k_series[S_COUNT] = {
+const ui_plot_series_t mo_series[S_COUNT] = {
     { "VOLT", "V",   0, 2, 5.0f,    0 },
     { "CURR", "A",   0, 1, 1.0f,    0 },
     { "PWR",  "W",   0, 0, 50.0f,   0 },
@@ -101,110 +51,21 @@ static const ui_plot_series_t k_series[S_COUNT] = {
 
 /* Power has no flag of its own: it is voltage times current, and it is worth
  * no more than the weaker of the two. */
-static const uint16_t k_ok[S_COUNT] = {
+const uint16_t mo_ok[S_COUNT] = {
     LINK_BN_VOLTAGE_OK, LINK_BN_CURRENT_OK,
     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK, LINK_BN_RPM_OK,
 };
 
-/* Voltage's interesting extreme is the minimum -- what the pack does under
- * load is how far down it goes -- and every other channel's is the maximum. */
-static const ui_text_id_t k_extreme[S_COUNT] = { TX_HERO_MIN, TX_HERO_PEAK,
-                                                 TX_HERO_PEAK, TX_HERO_PEAK };
-
 /* The channels' names, looked up where the colours are bound: both follow a
  * setting. */
-static const ui_text_id_t k_names[S_COUNT] = { TX_MO_VOLT, TX_MO_CURR,
-                                               TX_MO_PWR, TX_MO_RPM };
-
-/*
- * The panel polls at 20 Hz, one sample per plot column, so the time base is
- * the plot width in samples: PLOT_W / 20 s.
- */
-#define SAMPLE_HZ 20.0f
+const ui_text_id_t mo_names[S_COUNT] = { TX_MO_VOLT, TX_MO_CURR,
+                                         TX_MO_PWR, TX_MO_RPM };
 
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
 
-static struct {
-    ui_plot_t     plot;
-    ui_slider_t   slider;
-    ui_tabs_t     tabs;
-    bench_state_t bench;
-    /* Whether the throttle follows its controls (ui_value_gate.h): the
-     * bench's report, an ARM the hold has asked for and a DISARM or STOP not
-     * yet answered.  gate.armed is what the ARM button reads. */
-    ui_value_gate_t gate;
-    motor_cmd_t   pending;
-    /* The knob's throttle command waiting in `pending`, and what to put back
-     * if it is withdrawn: the slider's value before the knob moved it, and
-     * whether a throttle was pending before it. */
-    bool          knob_pending;
-    bool          knob_had_cmd;
-    float         knob_prev;
-    /* A finger owned the slider at some point since knob_frame(). */
-    bool          knob_finger;
-    unsigned      drawn_mask;
-    /* The arm state of the bench itself, which is what bounds a run.  Kept
-     * apart from the gate: leave() reads the bench as disarmed for a disarm
-     * it has only asked for. */
-    bool          bench_armed;
-    /* The push count last painted into each framebuffer; UINT32_MAX
-     * means "no paint recorded", which is not a count push can reach. */
-    uint32_t      drawn_push[2];
-    /* And the plot revision, which moves for fewer reasons: a stopped plot
-     * takes no samples, so a disarmed bench repaints its readouts and leaves
-     * the trace alone. */
-    uint32_t      drawn_plot[2];
-    /* The telemetry tag last painted, 0xFF for none.  It changes on an arm
-     * edge rather than with the numbers, so it cannot ride drawn_push. */
-    uint8_t       drawn_title[2];
-    /* Bumped by anything that changes a button's or the tab row's
-     * appearance.  The throttle carries its own, because a drag moves it on
-     * every frame and repainting the buttons with it costs the row's full
-     * 800 x 90 px rather than the readout's 396 x 30. */
-    uint32_t      ctrl_rev;
-    uint32_t      drawn_ctrl[2];
-    uint32_t      thr_rev;
-    uint32_t      drawn_thr[2];
-    /* ARM animates, so it gets a third counter and repaints its own rect. */
-    uint32_t      arm_rev;
-    uint32_t      drawn_arm[2];
-    int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
-    /* The GPIOs bound as throttle (bit n is GPIO n) and whether a binding
-     * was read: what the throttle panel names as its target. */
-    uint64_t      thr_pins;
-    bool          thr_pins_known;
-    /* The protocol they are bound as: an outbind_protos() index, 0 for
-     * none known, MOTOR_PROTO_MIXED for several. */
-    uint8_t       thr_proto;
-    /* port_view_revision() when the TARGET row last named the DShot
-     * programming ports. */
-    uint32_t      thr_ports_rev;
-    /* The strip's and SETTINGS' page's revisions last painted into each
-     * framebuffer, and whether the TARGET row was drawn locked. */
-    uint32_t      drawn_strip[2];
-    uint32_t      drawn_page[2];
-    bool          target_locked;
-    /* PROGRAM's session as each framebuffer last had it: whether it was
-     * shown, its revision, and the output strip's text (a signature). */
-    bool          drawn_sess_shown[2];
-    uint32_t      drawn_sess[2];
-    uint32_t      drawn_ostrip[2];
-    /* Whether each channel's peak is a measurement: a valid live reading
-     * has arrived since the run started.  Kept apart from the live flags,
-     * which a source that stops answering mid-run clears while the run's
-     * peaks it measured stand. */
-    bool          pk_ok[S_COUNT];
-    ui_hold_t     arm;           /**< the ARM gesture: ui_widgets owns it  */
-    bool          kst_held;      /**< the servo programmer holds a port    */
-    gfx_rect_t    arm_rect;
-    gfx_rect_t    reset_rect;
-    gfx_rect_t    down_rect;    /**< one percentage point down */
-    gfx_rect_t    up_rect;      /**< and one up                */
-    int           pressed;      /**< 0 none, 1 arm, 2 reset, 3 -1, 4 +1 */
-    uint8_t       press_id;
-    bool          have_press;
-} s;
+/* The screen's state; motor_live_int.h names it s. */
+mo_state_t mo_s;
 
 void motor_invalidate(void)
 {
@@ -233,7 +94,7 @@ void motor_invalidate(void)
 
 /* The palette is not a compile-time constant -- it changes with the theme --
  * so the series colours are bound here rather than in the table above. */
-static void bind_colours(void)
+void mo_bind_colours(void)
 {
     s.plot.series[S_VOLT].color  = ui_theme_color(UI_C_VOLT);
     s.plot.series[S_CURR].color  = ui_theme_color(UI_C_CURR);
@@ -241,10 +102,14 @@ static void bind_colours(void)
     s.plot.series[S_RPM].color   = ui_theme_color(UI_C_RPM);
     s.slider.color = ui_theme_color(UI_C_ACCENT);
     for (int i = 0; i < S_COUNT; ++i) {
-        s.plot.series[i].name = ui_tr(k_names[i]);
+        s.plot.series[i].name = ui_tr(mo_names[i]);
     }
 }
 
+/**
+ * @brief The screen laid out afresh: the strip, the pages, the plot, PLOT |
+ *        TABLE, the throttle's track and step keys, ARM and RESET PEAKS.
+ */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -254,15 +119,15 @@ static void reset(void)
     mwb_reset();
     msp_reset();
     mpp_reset();
-    ui_plot_init(&s.plot, k_series, S_COUNT,
+    ui_plot_init(&s.plot, mo_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     /* A screen that has just reset has no run behind it and no bench in
      * front of it, so the trace does not advance until one arms. */
     ui_plot_set_running(&s.plot, false);
     ui_tabs_init_text(&s.tabs, k_tab_labels, MOTOR_PANE_COUNT,
-                 (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
+                      (gfx_rect_t){ PLOT_X, SUB_Y, SUB_W, SUB_H });
 
-    const gfx_rect_t track = { TRACK_X, CTRL_Y, TRACK_W, TRACK_H };
+    const gfx_rect_t track = { TRACK_X, TRACK_Y, TRACK_W, TRACK_H };
     ui_slider_init(&s.slider, track, 0.0f, 100.0f, 0);
     ui_slider_set_ticks(&s.slider, 4);   /* tick marks at the quarters */
 
@@ -272,15 +137,13 @@ static void reset(void)
      * thing to hit by accident on a bench that is about to spin something.
      */
     s.down_rect = (gfx_rect_t){ (int16_t)(LEFT_X + INNER), CTRL_Y,
-                                NUDGE_W, TRACK_H };
-    s.up_rect   = (gfx_rect_t){ (int16_t)(TRACK_X + TRACK_W + 6), CTRL_Y,
-                                NUDGE_W, TRACK_H };
+                                NUDGE_W, NUDGE_H };
+    s.up_rect   = (gfx_rect_t){ (int16_t)(TRACK_X + TRACK_W + 8), CTRL_Y,
+                                NUDGE_W, NUDGE_H };
 
-    s.arm_rect   = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), ARM_Y,
-                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
-    s.reset_rect = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), RESET_Y,
-                                 (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
-    bind_colours();
+    s.arm_rect   = (gfx_rect_t){ RC_X, ARM_Y, RC_W, ARM_H };
+    s.reset_rect = (gfx_rect_t){ RC_X, RESET_Y, RC_W, BTN_H };
+    mo_bind_colours();
 }
 
 /*
@@ -290,14 +153,14 @@ static void reset(void)
  * next arm, not between the ARM hold's ask and the bench's answer, and not
  * from a DISARM or a STOP until the bench reports itself disarmed.
  */
-static bool value_live(void)
+bool mo_value_live(void)
 {
     return ui_value_live(&s.gate);
 }
 
 /* End a drag on the track.  The finger owned the slider in this frame, so
  * the knob stays out of the frame. */
-static void end_drag(void)
+void mo_end_drag(void)
 {
     if (s.slider.dragging) {
         s.knob_finger = true;
@@ -305,30 +168,28 @@ static void end_drag(void)
     ui_slider_release(&s.slider);
 }
 
-static void throttle_from_zero(void);
-
 /*
  * What an edge of the value's state does, in one place.
  *
  * Out of LIVE: the owners of the value end -- a drag, and the knob's
  * command -- and a throttle not yet collected is not sent.  The value shown
- * stays until the bench reports disarmed, which returns it to 0 %.
+ * stays until the bench reports disarmed, which returns it to 0%.
  *
- * Into LIVE: 0 %, for an arm the hold did not ask for, as for a stick run
+ * Into LIVE: 0%, for an arm the hold did not ask for, as for a stick run
  * on PROGRAM.  The hold returned the slider to zero when it asked, and only
  * the application's hook can have set it since.
  */
 static void value_edge(ui_value_edge_t edge, ui_value_state_t before)
 {
     if (edge == UI_VALUE_EDGE_LEFT) {
-        end_drag();
+        mo_end_drag();
         if (s.pending.kind == MOTOR_CMD_THROTTLE) {
             s.pending.kind = MOTOR_CMD_NONE;
         }
         s.knob_pending = false;
     } else if (edge == UI_VALUE_EDGE_LIVE) {
         if (before != UI_VALUE_ARMING) {
-            throttle_from_zero();
+            mo_throttle_from_zero();
         }
     } else {
         return;
@@ -347,7 +208,7 @@ static void value_edge(ui_value_edge_t edge, ui_value_state_t before)
  * was stopped a moment before.  A DISARM takes the value out of LIVE where
  * it is posted, collected or not.
  */
-static void post(motor_cmd_kind_t kind, float value)
+void mo_post(motor_cmd_kind_t kind, float value)
 {
     s.knob_pending = false;
     if (kind == MOTOR_CMD_DISARM) {
@@ -381,7 +242,7 @@ void motor_screen_push(const bench_state_t *b)
     }
     s.bench = *b;
     for (int i = 0; i < S_COUNT; ++i) {
-        if (b->valid && (b->flags & k_ok[i]) == k_ok[i]) {
+        if (b->valid && (b->flags & mo_ok[i]) == mo_ok[i]) {
             s.pk_ok[i] = true;
         }
     }
@@ -408,11 +269,25 @@ bool motor_screen_peak_shown(int channel)
     return channel >= 0 && channel < S_COUNT && s.pk_ok[channel];
 }
 
-/* ARM takes no press while the servo programmer holds a port; DISARM
- * does. */
-static bool arm_locked(void)
+/**
+ * @brief Whether the throttle's binding is read and names no motor pin: no
+ *        GPIO (general-purpose input/output) pin and no DShot port.  The
+ *        TARGET row then reads NO MOTOR PIN, and nothing can be driven.
+ * @return true when the binding is read and empty
+ */
+bool mo_no_motor_pin(void)
 {
-    return kst_panel_holds_port() && !s.gate.armed;
+    return s.thr_pins_known && s.thr_pins == 0u && motor_dshot_ports() == 0u;
+}
+
+/**
+ * @brief Whether ARM takes no press: the servo programmer holds a port, or
+ *        the binding names no motor pin.  DISARM takes a press in both.
+ * @return true when ARM is dimmed and refused
+ */
+bool mo_arm_locked(void)
+{
+    return (kst_panel_holds_port() || mo_no_motor_pin()) && !s.gate.armed;
 }
 
 void motor_screen_cancel_arm(void)
@@ -445,16 +320,16 @@ void motor_screen_cancel_arm(void)
 /*
  * An arm starts from nothing and a disarm ends at nothing: the slider, the
  * readout and the step buttons, which all read the slider's value, are at
- * 0 %.  A throttle waiting to be collected was set on the other side of the
+ * 0%.  A throttle waiting to be collected was set on the other side of the
  * edge and goes with it, and so does what the knob would put back.  A drag
  * under way is released, so a finger resting on the track commands nothing
  * until it presses again: ui_slider_set() re-anchors a drag on the new value
  * and keeps its origin, and the next move would add the whole travel since
- * the press to 0 %.
+ * the press to 0%.
  */
-static void throttle_from_zero(void)
+void mo_throttle_from_zero(void)
 {
-    end_drag();
+    mo_end_drag();
     ui_slider_set(&s.slider, 0.0f);
     if (s.pending.kind == MOTOR_CMD_THROTTLE) {
         s.pending.kind = MOTOR_CMD_NONE;
@@ -484,10 +359,10 @@ void motor_screen_set_armed(bool armed)
             ui_plot_clear(&s.plot);
             memset(s.pk_ok, 0, sizeof(s.pk_ok));
         } else {
-            /* The value shown on a disarmed bench is 0 %, and no control
-             * moves it from there (value_live()).  A throttle not yet
+            /* The value shown on a disarmed bench is 0%, and no control
+             * moves it from there (mo_value_live()).  A throttle not yet
              * collected is not sent to the disarmed bench. */
-            throttle_from_zero();
+            mo_throttle_from_zero();
         }
         ui_plot_set_running(&s.plot, armed);
     }
@@ -548,7 +423,7 @@ void motor_screen_set_throttle_protocol(uint8_t proto)
 
 /* Whether the bench is SAFE as this screen sees it: disarmed, and no ARM
  * or DISARM asked and not yet answered (ui_value_gate.h's OFF). */
-static bool bench_safe(void)
+bool mo_bench_safe(void)
 {
     return ui_value_state(&s.gate) == UI_VALUE_OFF && !s.bench_armed;
 }
@@ -557,22 +432,22 @@ static bool bench_safe(void)
  * endpoint edit waits ENDPOINTS_SETTLE_MS on the panel before it goes to the
  * IOmcu, and the switch to ARMED sends no CHAN_CFG; an edit made under a
  * held ARM could be overtaken by the arm and run on the old range.  With ARM
- * down the keypad of an endpoint closes, and the 2 s hold leaves an edit
+ * down the keypad of an endpoint closes, and the 2s hold leaves an edit
  * made before it the time to go out. */
-static bool endpoints_free(void)
+bool mo_endpoints_free(void)
 {
-    return bench_safe() && s.pressed != 1;
+    return mo_bench_safe() && s.pressed != 1;
 }
 
 /* The TARGET row takes no press while the bench is not SAFE or ARM is held,
  * and while the servo programmer holds its port, which locks ARM too: what
  * the throttle drives changes only on a bench at rest. */
-static bool target_locked(void)
+bool mo_target_locked(void)
 {
-    return !bench_safe() || s.pressed == 1 || kst_panel_holds_port();
+    return !mo_bench_safe() || s.pressed == 1 || kst_panel_holds_port();
 }
 
-bool motor_screen_target_locked(void) { return target_locked(); }
+bool motor_screen_target_locked(void) { return mo_target_locked(); }
 
 int motor_screen_task(void) { return (int)mwb_task(); }
 
@@ -623,8 +498,8 @@ void motor_screen_knob(float span_fraction)
         return;
     }
     /* A turn while the value is not live moves nothing and is not kept: the
-     * next turn after an arm starts from 0 %. */
-    if (!value_live()) {
+     * next turn after an arm starts from 0%. */
+    if (!mo_value_live()) {
         return;
     }
     const float before = s.slider.value;
@@ -633,1030 +508,13 @@ void motor_screen_knob(float span_fraction)
     motor_screen_set_throttle(before
                               + span_fraction * (s.slider.max - s.slider.min));
     if (s.slider.value != before) {
-        post(MOTOR_CMD_THROTTLE, s.slider.value);
+        mo_post(MOTOR_CMD_THROTTLE, s.slider.value);
         if (!was_knob) {
             s.knob_prev    = before;
             s.knob_had_cmd = had_cmd;
         }
         s.knob_pending = true;
     }
-}
-
-/* ------------------------------------------------------------------ events */
-
-/*
- * Another task is shown.  A press on the page that went goes with it: a
- * drag on the throttle, a step button, PLOT or TABLE half pressed, a value
- * on SETTINGS.  ARM is on the rail, which stays, and keeps its press.  The
- * page is repainted whole.
- */
-static void task_changed(void)
-{
-    end_drag();
-    ui_tabs_cancel(&s.tabs);
-    msp_cancel();
-    mpp_cancel_press();
-    if (s.pressed == 3 || s.pressed == 4) {
-        s.pressed    = 0;
-        s.have_press = false;
-    }
-    motor_invalidate();
-    ++s.ctrl_rev;
-    ++s.thr_rev;
-    ++s.arm_rev;
-}
-
-/*
- * A session opened over the body: the presses the screen held go, as at a
- * change of task -- a hold of ARM, a throttle drag, a step button, a tab --
- * and the session's first frame is painted whole.  ARM and the throttle
- * are out of sight under it, so a bench that is not SAFE switches to SAFE
- * first: a DISARM held by another finger, whose release the session takes,
- * is posted here, and no output drives under a session that hides DISARM.
- */
-static void session_opened(void)
-{
-    if (!bench_safe()) {
-        post(MOTOR_CMD_DISARM, 0.0f);
-    }
-    end_drag();
-    ui_tabs_cancel(&s.tabs);
-    mwb_cancel();
-    if (s.pressed == 1 && !s.gate.armed) {
-        ui_hold_reset(&s.arm);
-    }
-    s.pressed    = 0;
-    s.have_press = false;
-    motor_invalidate();
-    ++s.ctrl_rev;
-    ++s.arm_rev;
-}
-
-/*
- * The TARGET row tapped: OUTPUTS, where the throttle's pins are bound, on
- * the protocol they are bound as; on the PROG PORT entry of a DShot
- * programming port the throttle drives alone; on the overview while they
- * are bound as several or none is known.  The router leaves this screen for it, which
- * switches the bench to SAFE as any way out does (leave()); the row takes
- * the tap only on a SAFE bench.  The home tag there comes back here
- * (ui_router_parent()), on the task the row was tapped on.
- */
-static void open_outputs(void)
-{
-    const uint8_t ports = motor_dshot_ports();
-    if (s.thr_pins == 0u && ports != 0u && (ports & (ports - 1u)) == 0u) {
-        /* One DShot programming port and no slot: its PROG PORT entry. */
-        uint8_t k = 0u;
-        while ((ports & (1u << k)) == 0u) {
-            ++k;
-        }
-        outputs_screen_open_on_port(k);
-    } else if (s.thr_proto != MOTOR_PROTO_MIXED
-               && s.thr_proto < OUTBIND_PROTOS) {
-        outputs_screen_open_on(s.thr_proto);
-    }
-    ui_router_goto(SCREEN_OUTPUTS);
-    mwb_opened_outputs();
-}
-
-/*
- * The controls whose press stops what the bench drives, where event() hands
- * a DOWN at (x, y) to them now: a session's own (a stick run's ABORT), or
- * DISARM on the rail while the button reads DISARM.  The router hands a
- * press on one through the alert band and the band's help bubble
- * (ui_screen_t's safe_at); ARM is none.
- */
-static bool safe_at(int x, int y)
-{
-    const prog_page_set_t *ps = mpp_shown();
-    if (ps != NULL) {
-        return prog_ps_safe_at(ps, x, y);
-    }
-    return s.gate.armed && gfx_rect_contains(s.arm_rect, x, y);
-}
-
-static void event(const touch_event_t *evt)
-{
-    if (evt == NULL) {
-        return;
-    }
-    /* A session on PROGRAM covers the body, the strip row and the rail with
-     * it: every press is the session's.  ARM is the session's too, through
-     * its own warning and hold. */
-    const prog_page_set_t *ps = mpp_shown();
-    if (ps != NULL) {
-        prog_ps_event(ps, evt);
-        return;
-    }
-    /* The strip and the TARGET row first: a press of theirs is theirs. */
-    const mwb_ev_t wb = mwb_event(evt, !msp_modal(), target_locked());
-    if (wb == MWB_TASK) {
-        task_changed();
-        return;
-    }
-    if (wb == MWB_TARGET) {
-        open_outputs();
-        return;
-    }
-    if (wb == MWB_TAKEN) {
-        ++s.ctrl_rev;           /* the TARGET row draws its press */
-        return;
-    }
-    /* SETTINGS' page or PROGRAM's list has the left column; the rail
-     * stays this file's.  A row's tap may open a session over all of it. */
-    const bool on_live = mwb_task() == UI_WB_LIVE;
-    if (mwb_task() == UI_WB_SETTINGS) {
-        msp_event(evt, endpoints_free());
-    } else if (mwb_task() == UI_WB_PROGRAM && mpp_event(evt)) {
-        if (mpp_shown() != NULL) {
-            session_opened();
-        }
-        return;
-    }
-    /*
-     * Each control bumps its own counter, rather than every touch bumping
-     * one.  A drag delivers a move per frame, and repainting the buttons
-     * with the throttle is what put the drag over two panel frames.
-     */
-    if (on_live && ui_tabs_event(&s.tabs, evt)) {
-        /* The other pane paints over this one's region, so the record of
-         * what was drawn there is void -- not merely the chrome's. */
-        motor_invalidate();
-    }
-    /* Refused while the value is not live: the track takes no press, so a
-     * bench armed under a finger resting on it moves nothing until the next
-     * press, and a drag under way ends.  Out of sight on SETTINGS, it takes
-     * none either. */
-    const bool live = value_live();
-    if (!live || !on_live) {
-        end_drag();
-    } else {
-        const bool was_dragging = s.slider.dragging;
-        const bool slider_moved = ui_slider_event(&s.slider, evt);
-        if (was_dragging || s.slider.dragging) {
-            s.knob_finger = true;
-        }
-        if (slider_moved) {
-            post(MOTOR_CMD_THROTTLE, s.slider.value);
-            ++s.thr_rev;
-        }
-    }
-
-    const int x = evt->point.x, y = evt->point.y;
-    if (evt->type == TOUCH_EVENT_DOWN) {
-        /* One percentage point, on the press rather than the release: this
-         * is a fine adjustment and it should feel immediate. */
-        if (on_live && (gfx_rect_contains(s.down_rect, x, y)
-                        || gfx_rect_contains(s.up_rect, x, y))) {
-            /* A throttle like any other, and refused like one: nothing
-             * is pressed, moved or posted. */
-            if (!live) {
-                return;
-            }
-            const bool up = gfx_rect_contains(s.up_rect, x, y);
-            motor_screen_set_throttle(s.slider.value + (up ? 1.0f : -1.0f));
-            post(MOTOR_CMD_THROTTLE, s.slider.value);
-            s.have_press = true;
-            s.press_id   = evt->point.id;
-            s.pressed    = up ? 4 : 3;
-            /* The button's own fill changes, so the row repaints; the value
-             * it moved is on the throttle's counter. */
-            ++s.ctrl_rev;
-            ++s.thr_rev;
-            return;
-        }
-        if (gfx_rect_contains(s.arm_rect, x, y)) {
-            if (s.gate.armed) {
-                /* DISARM acts on the press: a stop never waits for a lift
-                 * that may not come.  The press takes no hold, so a finger
-                 * left on the button arms nothing when it reads ARM again. */
-                post(MOTOR_CMD_DISARM, 0.0f);
-                ++s.arm_rev;
-                ++s.ctrl_rev;
-                return;
-            }
-            if (s.pressed == 1) {
-                return;   /* the hold belongs to the contact that began it */
-            }
-            if (arm_locked()) {
-                return;   /* programming and an armed bench are exclusive */
-            }
-            s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
-            ui_hold_begin(&s.arm);
-            ++s.arm_rev;
-            ++s.ctrl_rev;
-        } else if (gfx_rect_contains(s.reset_rect, x, y)) {
-            s.have_press = true; s.press_id = evt->point.id; s.pressed = 2;
-            ++s.ctrl_rev;
-        }
-        return;
-    }
-    if (!s.have_press || evt->point.id != s.press_id) {
-        return;   /* a second finger cannot steal the first one's release */
-    }
-    if (evt->type == TOUCH_EVENT_MOVE) {
-        /*
-         * A finger that leaves ARM abandons the hold -- see ui_hold_leave().
-         * A press that starts on ARM and slides onto the plot would otherwise
-         * arm the bench two seconds later.
-         */
-        if (s.pressed == 1 && !s.gate.armed && !gfx_rect_contains(s.arm_rect, x, y)
-            && ui_hold_leave(&s.arm)) {
-            s.pressed = 0;
-            ++s.arm_rev;
-            ++s.ctrl_rev;
-        }
-        return;
-    }
-    if (evt->type == TOUCH_EVENT_UP) {
-        const int was = s.pressed;
-        s.have_press = false;
-        s.pressed = 0;
-        if (was != 0) {
-            ++s.ctrl_rev;   /* the button comes back up */
-        }
-        if (was == 1) {
-            /* Whatever was held is abandoned: the fade goes back to green,
-             * and an arm that had not completed does not complete later. */
-            /* Arming is a hold that has already sent its command by the
-             * time the finger lifts; a release that armed nothing sends
-             * nothing.  DISARM acted on its press. */
-            (void)ui_hold_end(&s.arm);
-            ++s.arm_rev;
-        }
-        if (was == 2 && touch_event_is_tap_up(evt)
-            && gfx_rect_contains(s.reset_rect, x, y)) {
-            post(MOTOR_CMD_RESET_PEAKS, 0.0f);
-            /* The peaks start again from the live reading: a measurement
-             * only once one is. */
-            memset(s.pk_ok, 0, sizeof(s.pk_ok));
-        }
-    }
-}
-
-/*
- * The two animations ARM carries.  Each advances its own counter, so a frame
- * of either repaints the button's 180 x 28 px and nothing else: the control
- * row is 800 x 90, and an animation that asked for the row would put the
- * screen back where the throttle drag was.
- */
-static void tick(float dt_s)
-{
-    if (kst_panel_holds_port() != s.kst_held) {
-        s.kst_held = kst_panel_holds_port();
-        ++s.arm_rev;
-        ++s.ctrl_rev;
-    }
-    if (s.pressed == 1 && arm_locked()) {
-        /* The port was taken under a hold of ARM: the hold ends. */
-        s.pressed = 0;
-        ui_hold_reset(&s.arm);
-        ++s.arm_rev;
-        ++s.ctrl_rev;
-    }
-    if (s.pressed == 1 && !s.gate.armed) {
-        ++s.arm_rev;
-        if (ui_hold_tick(&s.arm, dt_s)) {
-            /* From the ask, not only from the bench's answer: the bench
-             * arms between two frames, and a step button pressed in a frame
-             * that still reads it as disarmed posts from this value onto a
-             * bench that is armed by the time the command lands. */
-            throttle_from_zero();
-            post(MOTOR_CMD_ARM, 0.0f);
-            ui_value_ask_arm(&s.gate);
-        }
-    }
-    if (s.arm.flash_left > 0) {
-        ++s.arm_rev;   /* keep the frames coming while it flashes */
-    }
-    /* The TARGET row follows the bench and the hold: drawn locked, or
-     * taking a press again. */
-    if (target_locked() != s.target_locked) {
-        s.target_locked = target_locked();
-        ++s.ctrl_rev;
-    }
-    /* And names the DShot ports the throttle drives as they are read. */
-    if (port_view_revision() != s.thr_ports_rev) {
-        s.thr_ports_rev = port_view_revision();
-        ++s.ctrl_rev;
-    }
-    msp_tick(endpoints_free());
-    mpp_armed(!bench_safe());
-    mpp_tick(dt_s);
-}
-
-/* ----------------------------------------------------------------- drawing */
-
-/*
- * Green while it will arm, red by the time the fade completes, and white for
- * the flash as the arm takes effect.  With nothing held and nothing flashing
- * this is the plain OK or WARN the button has always carried.
- */
-/* One colour per frame actually drawn, so "a frame each" means a frame each
- * however the render paths are gated. */
-static void arm_flash_advance(void)
-{
-    if (s.arm.flash_left > 0) {
-        ui_hold_flash_step(&s.arm);
-        /* The next colour needs a frame of its own, and this screen only
-         * paints when a counter moves.  Asking for it here rather than in
-         * tick() keeps the flash a property of the drawing. */
-        ++s.arm_rev;
-    }
-}
-
-static gfx_color_t arm_fill(void)
-{
-    /* Armed is the danger red the press fades towards, so the fade previews
-     * the colour the button is about to hold. */
-    gfx_color_t fill = s.gate.armed ? ui_theme_color(UI_C_DANGER)
-                               : ui_theme_color(UI_C_OK);
-    /* The flash is the whole button, one colour per drawn frame, and it
-     * overrides everything else while it runs. */
-    if (s.arm.flash_left > 0) {
-        return ui_hold_flash(ui_theme_color(UI_C_DANGER), s.arm.flash_left);
-    }
-    if (!s.gate.armed && s.arm.held_s > 0.0f) {
-        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER), s.arm.held_s);
-    }
-    return fill;
-}
-
-/* "44C", or "--" when nothing has answered. */
-static void temp_text(char *out, size_t n, const char *label, float v,
-                      bool ok)
-{
-    if (ok && isfinite(v)) {
-        snprintf(out, n, "%s %dC", label, (int)(v + 0.5f));
-    } else {
-        snprintf(out, n, "%s --", label);
-    }
-}
-
-/*
- * The line under the strip: on LIVE, the poll rate and the link's errors on
- * the left of it, after PLOT and TABLE; on every task, how hot the three
- * things that get hot, on the right, over the rail.  MCU is the panel's own
- * die, not the IOmcu's.
- */
-static void draw_header(gfx_canvas_t *c, bool on_live)
-{
-    const ui_bench_status_t *st = ui_router_status();
-    const int x0 = on_live ? LEFT_X + TAB_W + 10 : RIGHT_X;
-    gfx_fill_rect(c, x0, HDR_Y, W - PAD - x0, HDR_H,
-                  ui_theme_color(UI_C_BG));
-
-    /* The band already carries the output mode, so this strip does not
-     * repeat it: what it adds is the poll rate and the link's error count,
-     * and while the IOmcu has refused a frame, how many. */
-    if (on_live) {
-        char line[64];
-        snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
-                 (unsigned long)st->link_errors);
-        gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        /* At its widest, a 10-digit count after a 3-digit error count in
-         * German, the label ends at x = 572: left of the temperatures while
-         * the panel's own MCU reads under 100 C. */
-        char refused[48];
-        if (ui_link_refused_label(st, refused, sizeof(refused))) {
-            gfx_text(c, x0 + gfx_text_width(&gfx_font_8x16, line, 1) + 16,
-                     HDR_Y + 1, refused, &gfx_font_8x16,
-                     ui_theme_color(UI_C_TEXT_DIM), 1);
-        }
-    }
-
-    /*
-     * The protocol carries a flag per channel for exactly this: a bench whose
-     * IOmcu has no temperature sensor sends zero, and "ESC 0C" is a
-     * reading rather than a gap.
-     */
-    const bool temp_ok = s.bench.valid
-                         && (s.bench.flags & LINK_BN_TEMP_OK) != 0u;
-    /* The motor's sensor is its own, and usually there is not one: an ESC
-     * reporting its own temperature says nothing about the motor it drives,
-     * and one flag for both would draw "MOT 0C" as a reading. */
-    const bool mot_ok = s.bench.valid
-                        && (s.bench.flags & LINK_BN_TEMP_MOT_OK) != 0u;
-    char esc[16], mot[16], mcu[16], temps[52];
-    temp_text(esc, sizeof(esc), "ESC", s.bench.temp_esc, temp_ok);
-    temp_text(mot, sizeof(mot), "MOT", s.bench.temp_motor, mot_ok);
-    temp_text(mcu, sizeof(mcu), "MCU", st->mcu_temp_c,
-              isfinite(st->mcu_temp_c));
-    snprintf(temps, sizeof(temps), "%s  %s  %s", esc, mot, mcu);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, HDR_Y + 1,
-                                 (int16_t)(W - PAD - x0), 16 },
-                temps, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
-                GFX_ALIGN_RIGHT);
-}
-
-/*
- * The rated kV, what the motor is actually turning per volt, and what the
- * ratio of the two says about the drivetrain.
- *
- * The arithmetic is sound and the number is still an estimate, which is why
- * it is labelled EFF rather than efficiency.  Terminal voltage splits into
- * the resistive drop and the back-EMF, so rpm/V under load is the rated kV
- * scaled by the fraction of the voltage reaching the back-EMF, and in an
- * ideal motor that fraction is the conversion efficiency exactly.
- *
- * This motor is not that one.  The figure counts copper loss only, so iron
- * loss, friction and windage are missing and it is an upper bound rather
- * than a value.  The bench measures pack voltage rather than the motor's
- * terminals, so the ESC's losses are inside it and it describes the
- * drivetrain.  And it is only as good as the rated kV, an error in which
- * maps straight into the percentage.  docs/Screens.md says so in the words
- * an operator reads.
- *
- * The rated value comes from the connected ESC when it reports one, and from
- * SET_MOTOR_KV when it does not.  Nothing is assumed: with neither, the field
- * is drawn empty and no efficiency is shown, because a guessed kV produces a
- * plausible-looking percentage that is wrong.
- */
-static void draw_derived(gfx_canvas_t *c)
-{
-    /* Right of the panel's tag: its 20 cells and the tab's 26 px. */
-    const gfx_rect_t box = { (int16_t)(LEFT_X + 186), UP_Y + 2,
-                             (int16_t)(LEFT_W - 192), 16 };
-    gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
-
-    /* What the ESC says, or failing that what somebody typed in. */
-    const int rated = (s.esc_kv > 0) ? s.esc_kv
-                                     : settings_get_int(SET_MOTOR_KV);
-    const bool measurable =
-        s.bench.valid
-        && (s.bench.flags & LINK_BN_VOLTAGE_OK) != 0u
-        && (s.bench.flags & LINK_BN_RPM_OK) != 0u
-        && s.bench.voltage > 0.5f && s.bench.rpm > 1.0f;
-    const float per_volt = measurable ? (s.bench.rpm / s.bench.voltage) : 0.0f;
-
-    char kv[24], rv[24], eff[24];
-    if (rated > 0) {
-        snprintf(kv, sizeof(kv), "kV %d", rated);
-    } else {
-        snprintf(kv, sizeof(kv), "kV ----");
-    }
-    if (measurable) {
-        int shown = (int)(per_volt + 0.5f);
-        if (shown > 99999) {
-            shown = 99999;   /* the field has a width; a reading this high
-                              * is a broken sensor, not a motor */
-        }
-        snprintf(rv, sizeof(rv), "rpm/V %d", shown);
-    } else {
-        snprintf(rv, sizeof(rv), "rpm/V --");
-    }
-    if (rated > 0 && measurable) {
-        int pct = (int)(per_volt * 100.0f / (float)rated + 0.5f);
-        /* Over 100 % means the rated value is wrong, which is worth seeing;
-         * it is capped only so the field cannot grow without bound. */
-        if (pct > 199) {
-            pct = 199;
-        }
-        snprintf(eff, sizeof(eff), "EFF %d%%", pct);
-    } else {
-        snprintf(eff, sizeof(eff), "EFF --");
-    }
-
-    char line[96];
-    snprintf(line, sizeof(line), "%s  %s  %s", kv, rv, eff);
-    gfx_text_in(c, box, line, &gfx_font_8x16,
-                ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_RIGHT);
-}
-
-/* The table's rows, 26 px apart from under its heading rule. */
-#define TABLE_ROW_Y(i) (LEG_Y + 34 + (i) * 26)
-/* The ESC's own figures under the four channels, two rows 22 px apart. */
-#define ESC_RULE_Y     (TABLE_ROW_Y(S_COUNT) - 8)
-#define ESC_ROW_Y(i)   (ESC_RULE_Y + 8 + (i) * 22)
-_Static_assert(ESC_ROW_Y(1) + 16 <= UP_Y + UP_H - INNER,
-               "the ESC's second row ends inside the telemetry panel");
-
-/*
- * What the ESC says beside what the INA228 measures, while the INA228 is
- * BENCH's source: the ESC's own telemetry voltage and current from the
- * SENSE page, and how far each is from the INA228's, the ESC's less the
- * INA228's.  An ESC that reports a current with no sensor behind it shows
- * here as a difference the size of the reading.
- */
-static void draw_esc_says(gfx_canvas_t *c)
-{
-    ui_rule(c, PLOT_X, ESC_RULE_Y, PLOT_W, ui_theme_color(UI_C_EDGE));
-    for (int i = 0; i < 2; ++i) {
-        const int y = ESC_ROW_Y(i);
-        float esc = 0.0f;
-        const bool esc_ok = (i == S_VOLT)
-                                ? bench_state_esc_voltage(&s.bench, &esc)
-                                : bench_state_esc_current(&s.bench, &esc);
-        const float ina = (i == S_VOLT) ? s.bench.voltage : s.bench.current;
-        const bool ina_ok = (s.bench.flags & k_ok[i]) == k_ok[i];
-        char v[24], d[32], line[48];
-        ui_fmt(v, sizeof(v), esc_ok ? esc : NAN, k_series[i].decimals);
-        if (esc_ok && ina_ok) {
-            const float diff = esc - ina;
-            char mag[24];
-            ui_fmt(mag, sizeof(mag), fabsf(diff), k_series[i].decimals);
-            snprintf(d, sizeof(d), "%c%s", (diff < 0.0f) ? '-' : '+', mag);
-        } else {
-            snprintf(d, sizeof(d), "--");
-        }
-        if (i == 0) {
-            gfx_text(c, PLOT_X, y, TR(MO_ESC_SAYS), &gfx_font_8x16,
-                     ui_theme_color(UI_C_TEXT_DIM), 1);
-        }
-        gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 248, y, k_series[i].unit, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        snprintf(line, sizeof(line), "%s %s %s", TR(MO_TABLE_DIFF), d,
-                 k_series[i].unit);
-        gfx_text(c, PLOT_X + 348, y, line, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-}
-
-static void draw_table(gfx_canvas_t *c)
-{
-    static const ui_text_id_t rows[S_COUNT] = {
-        TX_MO_ROW_VOLTAGE, TX_MO_ROW_CURRENT, TX_MO_ROW_POWER, TX_MO_ROW_RPM,
-    };
-    const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
-                                 s.bench.power, s.bench.rpm };
-    const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
-                                 s.bench.power_max, s.bench.rpm_max };
-    /* Voltage's interesting extreme is the minimum, not the maximum: what a
-     * pack does under load is how far down it goes. */
-    static const ui_text_id_t pk_label[S_COUNT] = {
-        TX_HERO_MIN, TX_MO_TABLE_MAX, TX_MO_TABLE_MAX, TX_MO_TABLE_MAX,
-    };
-    const bool sensed = s.bench.valid
-                        && (s.bench.flags & LINK_BN_SENSED) != 0u;
-
-    gfx_text(c, PLOT_X, LEG_Y + 4, TR(MO_TABLE_HEAD),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    if (sensed) {
-        /* Where the numbers come from, and whether its current hit the end
-         * of its range: then current and power are bounds. */
-        char src[32];
-        snprintf(src, sizeof(src), "INA228%s%s", s.bench.clipped ? " " : "",
-                 s.bench.clipped ? TR(MO_TABLE_CLIPPED) : "");
-        gfx_text_in(c, (gfx_rect_t){ PLOT_X, LEG_Y + 4, PLOT_W, 16 }, src,
-                    &gfx_font_8x16,
-                    ui_theme_color(s.bench.clipped ? UI_C_WARN
-                                                   : UI_C_TEXT_DIM),
-                    1, GFX_ALIGN_RIGHT);
-    }
-    ui_rule(c, PLOT_X, LEG_Y + 24, PLOT_W, ui_theme_color(UI_C_EDGE));
-
-    for (int i = 0; i < S_COUNT; ++i) {
-        const int y = TABLE_ROW_Y(i);
-        /* A field nothing answered for is empty, as on the rail. */
-        const bool ok = s.bench.valid
-                        && (s.bench.flags & k_ok[i]) == k_ok[i];
-        char v[24], p[24];
-        ui_fmt(v, sizeof(v), ok ? now[i] : NAN, k_series[i].decimals);
-        ui_fmt(p, sizeof(p), s.pk_ok[i] ? pk[i] : NAN,
-               k_series[i].decimals);
-        gfx_text(c, PLOT_X, y, ui_tr(rows[i]), &gfx_font_8x16,
-                 s.plot.series[i].color, 1);
-        gfx_text(c, PLOT_X + 128, y, v, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, PLOT_X + 248, y, k_series[i].unit, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        char line[40];
-        snprintf(line, sizeof(line), "%s %s", ui_tr(pk_label[i]), p);
-        gfx_text(c, PLOT_X + 348, y, line, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-    if (sensed) {
-        draw_esc_says(c);
-    }
-}
-
-/*
- * One card of the right rail, 57 px high: the name and the extreme stacked
- * on the left, the live value in a numeral face that fits, right-aligned
- * with its unit.
- */
-static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
-                           const ui_hero_def_t *def, float value, float peak)
-{
-    ui_card(c, r, ui_theme_color(UI_C_PANEL));
-    gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, def->color);
-
-    gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, def->color);
-    gfx_text(c, r.x + 16, r.y + 6, def->label, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
-
-    if (isfinite(peak)) {
-        char pk[24], line[32];
-        ui_fmt(pk, sizeof(pk), peak, def->decimals);
-        snprintf(line, sizeof(line), "%s %s",
-                 (def->extreme_label != NULL) ? def->extreme_label
-                                              : TR(HERO_PEAK), pk);
-        gfx_text(c, r.x + 8, r.y + 26, line, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-
-    char number[24];
-    if (isfinite(value)) {
-        ui_fmt(number, sizeof(number), value, def->decimals);
-    } else {
-        snprintf(number, sizeof(number), "---");
-    }
-    /* Narrower and shorter than the hero face, so four of these stack in the
-     * height one hero card wants. */
-    const gfx_seg_style_t seg = { .digit_w = 15, .digit_h = 24,
-                                  .thickness = 3, .gap = 4, .slant = 2,
-                                  .ghost = true };
-    const int uw = gfx_text_width(&gfx_font_8x16, def->unit, 1);
-    const int nw = gfx_seg_width(number, &seg);
-    const int nx = r.x + r.w - 8 - uw - 6 - nw;
-    gfx_seg_text(c, nx, r.y + 16, number, &seg, def->color,
-                 gfx_lerp(ui_theme_color(UI_C_PANEL), def->color, 34));
-    gfx_text(c, nx + nw + 6, r.y + 30, def->unit, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-}
-
-/* The right rail: one card per channel, live value over its extreme. */
-static void draw_heroes(gfx_canvas_t *c)
-{
-    const float now[S_COUNT] = { s.bench.voltage, s.bench.current,
-                                 s.bench.power, s.bench.rpm };
-    const float pk[S_COUNT]  = { s.bench.voltage_min, s.bench.current_max,
-                                 s.bench.power_max, s.bench.rpm_max };
-    for (int i = 0; i < S_COUNT; ++i) {
-        const gfx_rect_t r = { RIGHT_X,
-                               (int16_t)(UP_Y + i * (HERO_H + HERO_GAP)),
-                               RIGHT_W, HERO_H };
-        gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_BG));
-        const ui_hero_def_t def = { ui_tr(k_names[i]), k_series[i].unit,
-                                    s.plot.series[i].color,
-                                    k_series[i].decimals,
-                                    ui_tr(k_extreme[i]) };
-        const bool ok = s.bench.valid
-                        && (s.bench.flags & k_ok[i]) == k_ok[i];
-        draw_rail_card(c, r, &def, ok ? now[i] : NAN,
-                       s.pk_ok[i] ? pk[i] : NAN);
-    }
-}
-
-/* What the run has taken out of the pack, under the arming button. */
-static void draw_totals(gfx_canvas_t *c)
-{
-    const gfx_rect_t box = { (int16_t)(RIGHT_X + INNER), TOTALS_Y,
-                             (int16_t)(RIGHT_W - 2 * INNER), 16 };
-    gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
-    /* Each total only when the panel has counted it: a run with no current
-     * to count has no consumption, and 0 mAh reads as a measurement. */
-    char mah[16];
-    char wh[16];
-    if ((s.bench.counted & BENCH_COUNTED_CHARGE) != 0u) {
-        snprintf(mah, sizeof(mah), "%.0f", (double)s.bench.charge_mah);
-    } else {
-        snprintf(mah, sizeof(mah), "--");
-    }
-    if ((s.bench.counted & BENCH_COUNTED_ENERGY) != 0u) {
-        snprintf(wh, sizeof(wh), "%.2f", (double)s.bench.energy_wh);
-    } else {
-        snprintf(wh, sizeof(wh), "--");
-    }
-    char line[48];
-    snprintf(line, sizeof(line), "%s mAh   %s Wh", mah, wh);
-    gfx_text_in(c, box, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_RIGHT);
-}
-
-/*
- * What the panel above the plot is called.
- *
- * The tag names what the panel is showing, so the TABLE pane reads
- * LIVE TELEMETRY whatever the plot is doing: that pane repaints on every
- * sample and is live on a disarmed bench.  Each is drawn padded to the
- * longest of the three in the language showing, so ui_panel_header() lays
- * out the same tab for each and one repaints over another in place.
- */
-enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
-static const ui_text_id_t k_tag[TAG_COUNT] = {
-    TX_MO_TAG_LIVE, TX_MO_TAG_HELD, TX_MO_TAG_IDLE,
-};
-
-static const char *tag_text(uint8_t tag, char *buf, size_t n)
-{
-    return ui_tr_pad(k_tag, TAG_COUNT, tag, buf, n);
-}
-
-static uint8_t telemetry_tag(void)
-{
-    if (s.tabs.selected != MOTOR_PANE_PLOT || s.plot.running) {
-        return (uint8_t)TAG_LIVE;
-    }
-    return (uint8_t)((s.plot.filled > 0) ? TAG_HELD : TAG_IDLE);
-}
-
-/*
- * LIVE's throttle panel: the readout, the step buttons and the track.  A
- * throttle that moved on its own clears the readout's own box and the
- * slider's painted region, not the panel: a drag asks for it on every
- * frame.  The slider's region is what the widget reports rather than its
- * track, because the thumb and its shadow stand proud of the track.
- */
-static void draw_throttle(gfx_canvas_t *c, bool ctrl_moved)
-{
-    if (ctrl_moved) {
-        /*
-         * Inside the chamfer, not inside the border.  ui_panel cuts the
-         * bottom-right corner by UI_CHAMFER and draws it once per
-         * framebuffer, so a clear that reached the corner would square it off
-         * for the life of that buffer with nothing to repaint it.
-         */
-        gfx_fill_rect(c, LEFT_X + 1, LO_Y + TITLE_H, LEFT_W - 2,
-                      LO_H - TITLE_H - 1 - UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, LEFT_X + 1, LO_Y + LO_H - 1 - UI_CHAMFER,
-                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-    } else {
-        gfx_fill_rect(c, LEFT_X + INNER, ROW_Y, READOUT_W, READOUT_H,
-                      ui_theme_color(UI_C_PANEL));
-        const gfx_rect_t sl = ui_slider_painted_rect(&s.slider);
-        gfx_fill_rect(c, sl.x, sl.y, sl.w, sl.h, ui_theme_color(UI_C_PANEL));
-    }
-
-    /* The throttle in the numeral face the readings use: it is a reading
-     * too, and the one the operator's hand is on. */
-    char pct[16];
-    snprintf(pct, sizeof(pct), "%.1f", (double)s.slider.value);
-    const gfx_seg_style_t seg = ui_seg_hero();
-    const int pw = gfx_seg_width(pct, &seg);
-    const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
-    /* The unlit segments are a ghost of the lit ones against whatever they
-     * sit on.  That is the panel now, not the screen's background; against
-     * the wrong base they read as a dark block behind the digits. */
-    gfx_seg_text(c, px, ROW_Y, pct, &seg, ui_theme_color(UI_C_ACCENT),
-                 gfx_lerp(ui_theme_color(UI_C_PANEL),
-                          ui_theme_color(UI_C_ACCENT), 34));
-    gfx_text(c, LEFT_X + LEFT_W - INNER - 14, ROW_Y + 14, "%",
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    /* Dimmed while the value is not live, as a button that takes no press
-     * is: the track and its step buttons take none. */
-    ui_button(c, s.down_rect, "-1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 3, value_live());
-    s.slider.dim = !value_live();
-    ui_slider_render(&s.slider, c);
-    ui_button(c, s.up_rect, "+1", ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 4, value_live());
-}
-
-/*
- * A session on PROGRAM, full width: the output strip in the strip row, on
- * its text, and the session under it, on its revision.
- */
-__attribute__((noinline))
-static void render_session(gfx_canvas_t *c, unsigned bit, int buf,
-                           const prog_page_set_t *ps)
-{
-    if ((s.drawn_mask & bit) == 0) {
-        gfx_clear(c, ui_theme_color(UI_C_BG));
-        s.drawn_mask |= bit;
-        s.drawn_sess[buf]   = UINT32_MAX;
-        s.drawn_ostrip[buf] = UINT32_MAX;
-    }
-    const uint32_t sig = mpp_strip_signature(s.thr_proto, s.thr_pins,
-                                             s.thr_pins_known, s.gate.armed);
-    if (s.drawn_ostrip[buf] != sig) {
-        s.drawn_ostrip[buf] = sig;
-        mpp_render_strip(c, s.thr_proto, s.thr_pins, s.thr_pins_known,
-                         s.gate.armed);
-    }
-    const uint32_t rev = prog_ps_revision(ps);
-    if (s.drawn_sess[buf] != rev) {
-        s.drawn_sess[buf] = rev;
-        prog_ps_render(ps, c);
-    }
-}
-
-static void render_body(gfx_canvas_t *c, unsigned bit, int buf);
-
-/*
- * The session's way and the body's are two functions: the body's frame,
- * 416 bytes on the panel, is not on the stack under a session's page
- * drawers (tools/stack_check.py).
- */
-static void render(gfx_canvas_t *c, int buffer_index)
-{
-    const unsigned bit = 1u << (buffer_index & 1);
-    const int buf = buffer_index & 1;
-    bind_colours();
-
-    /* A session opening or closing repaints the buffer whole. */
-    const prog_page_set_t *ps = mpp_shown();
-    if ((ps != NULL) != s.drawn_sess_shown[buf]) {
-        s.drawn_sess_shown[buf] = ps != NULL;
-        s.drawn_mask &= ~bit;
-        s.drawn_push[buf]  = UINT32_MAX;
-        s.drawn_ctrl[buf]  = UINT32_MAX;
-        s.drawn_thr[buf]   = UINT32_MAX;
-        s.drawn_arm[buf]   = UINT32_MAX;
-        s.drawn_plot[buf]  = UINT32_MAX;
-        s.drawn_title[buf] = 0xFFu;
-    }
-    if (ps != NULL) {
-        render_session(c, bit, buf, ps);
-    } else {
-        render_body(c, bit, buf);
-    }
-}
-
-__attribute__((noinline))
-static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
-{
-    const bool on_live = mwb_task() == UI_WB_LIVE;
-
-    /* Chrome per framebuffer, not per frame; the rest only when its counter
-     * moves.  tools/frame_cost.py measures the two cases as the `chrome` and
-     * `frame-idle` modes. */
-    const uint8_t tag = telemetry_tag();
-    char tag_buf[48];
-    if ((s.drawn_mask & bit) == 0) {
-        gfx_clear(c, ui_theme_color(UI_C_BG));
-        if (on_live) {
-            ui_panel(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                     tag_text(tag, tag_buf, sizeof(tag_buf)),
-                     ui_theme_color(UI_C_ACCENT));
-            ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
-                     TR(MO_THROTTLE), ui_theme_color(UI_C_ACCENT));
-        }
-        ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
-                 TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
-        s.drawn_mask |= bit;
-        s.drawn_title[buf] = tag;
-        s.drawn_strip[buf] = UINT32_MAX;
-        s.drawn_page[buf]  = UINT32_MAX;
-    }
-
-    /* The strip, unless SETTINGS' keypad covers it. */
-    const bool strip_covered = !on_live && msp_modal();
-    if (!strip_covered && s.drawn_strip[buf] != mwb_revision()) {
-        s.drawn_strip[buf] = mwb_revision();
-        mwb_render_strip(c);
-    }
-
-    /* Outside the pane branch, so an arm or a disarm repaints the tag on
-     * whichever pane is up.  All three strings are the same length, so this
-     * redraws the header's tab over itself without a clear. */
-    if (on_live && s.drawn_title[buf] != tag) {
-        s.drawn_title[buf] = tag;
-        ui_panel_header(c, (gfx_rect_t){ LEFT_X, UP_Y, LEFT_W, UP_H },
-                        tag_text(tag, tag_buf, sizeof(tag_buf)),
-                        ui_theme_color(UI_C_ACCENT));
-    }
-
-    if (s.drawn_ctrl[buf] != s.ctrl_rev
-        || s.drawn_push[buf] != s.plot.pushes) {
-        if (on_live) {
-            ui_tabs_render(&s.tabs, c);
-        }
-        draw_header(c, on_live);
-    }
-
-    /*
-     * Everything that comes from the numbers is painted only when there are
-     * new numbers.  The panel refreshes at 39 Hz and samples arrive at 20 Hz,
-     * so about half of all frames would otherwise repaint an identical plot
-     * and identical readouts into the PSRAM (pseudo-static random-access
-     * memory) the LCD (liquid-crystal display) is scanning out of.
-     *
-     * Per framebuffer, because the panel alternates between two: a buffer
-     * whose last paint was two samples ago still needs one even when the
-     * other is current.
-     */
-    /*
-     * The plot on its own gate.  A stopped plot takes no samples, so its
-     * revision stands still while the readouts beside it go on moving --
-     * which is most of the time, since a bench spends longer between runs
-     * than in them.
-     */
-    const bool data_moved = (s.drawn_push[buf] != s.plot.pushes);
-    if (mwb_task() == UI_WB_PROGRAM) {
-        /* PROGRAM's list, on its own counter. */
-        if (s.drawn_page[buf] != mpp_revision()) {
-            s.drawn_page[buf] = mpp_revision();
-            mpp_render_page(c);
-        }
-    } else if (!on_live) {
-        /* SETTINGS' page, on its own counter: a press, the keypad, the
-         * store's state. */
-        if (s.drawn_page[buf] != msp_revision()) {
-            s.drawn_page[buf] = msp_revision();
-            msp_render(c, endpoints_free());
-            /* The keypad covers the strip's row; with the page shown the
-             * row is cleared and the strip drawn again. */
-            s.drawn_strip[buf] = UINT32_MAX;
-            if (!msp_modal()) {
-                gfx_fill_rect(c, PAGE_X, 3, PAGE_W, PAGE_Y - 3,
-                              ui_theme_color(UI_C_BG));
-                s.drawn_strip[buf] = mwb_revision();
-                mwb_render_strip(c);
-            }
-        }
-    } else if (s.tabs.selected == MOTOR_PANE_PLOT) {
-        if (s.drawn_plot[buf] != s.plot.revision) {
-            s.drawn_plot[buf] = s.plot.revision;
-            /* Cleared first: the legend prints each channel's full scale,
-             * that scale autoranges, and a shorter number drawn over a
-             * longer one leaves the tail of the old one behind. */
-            gfx_fill_rect(c, PLOT_X, LEG_Y, PLOT_W, LEG_H,
-                          ui_theme_color(UI_C_PANEL));
-            ui_plot_render_legend(&s.plot, c,
-                                  (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W, LEG_H });
-            ui_plot_render(&s.plot, c,
-                           (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H });
-            /* An empty stopped plot is not a plot of zeroes.  The widget has
-             * no idea what a run is, so the sentence belongs here. */
-            if (!s.plot.running && s.plot.filled == 0) {
-                gfx_text_in(c, (gfx_rect_t){ PLOT_X, PLOT_Y, PLOT_W, PLOT_H },
-                            TR(MO_NO_RUN), &gfx_font_8x16,
-                            ui_theme_color(UI_C_TEXT_FAINT), 1,
-                            GFX_ALIGN_CENTER);
-            }
-        }
-    } else if (data_moved) {
-        gfx_fill_rect(c, LEFT_X + 1, UP_Y + TITLE_H, LEFT_W - 2,
-                      UP_H - TITLE_H - 1 - UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-        gfx_fill_rect(c, LEFT_X + 1, UP_Y + UP_H - 1 - UI_CHAMFER,
-                      LEFT_W - 2 - UI_CHAMFER, UI_CHAMFER,
-                      ui_theme_color(UI_C_PANEL));
-        draw_table(c);
-    }
-    if (data_moved) {
-        s.drawn_push[buf] = s.plot.pushes;
-        if (on_live) {
-            draw_derived(c);
-        }
-        draw_heroes(c);
-        draw_totals(c);
-    }
-
-    /*
-     * The controls change when somebody touches them, not when a sample
-     * arrives, so they get their own revision counter.  On a frame where
-     * neither the numbers nor a control moved, this screen paints nothing,
-     * which on a panel whose refresh outruns its sample rate is most frames.
-     */
-    const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
-    const bool thr_moved  = (s.drawn_thr[buf] != s.thr_rev);
-    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev);
-    if (!ctrl_moved && !thr_moved && !arm_moved) {
-        return;
-    }
-    s.drawn_ctrl[buf] = s.ctrl_rev;
-    s.drawn_thr[buf]  = s.thr_rev;
-    s.drawn_arm[buf]  = s.arm_rev;
-
-    /* ARM animating on its own repaints its own button and nothing else. */
-    if (arm_moved && !ctrl_moved && !thr_moved) {
-        ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-                  s.pressed == 1, !arm_locked());
-        arm_flash_advance();
-        return;
-    }
-
-    if (on_live) {
-        draw_throttle(c, ctrl_moved);
-    }
-    if (!ctrl_moved && !arm_moved) {
-        return;
-    }
-    ui_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM", arm_fill(),
-              s.pressed == 1, !arm_locked());
-    arm_flash_advance();
-    if (!ctrl_moved) {
-        return;
-    }
-    /* How the throttle is moved; disarmed, why it is not, in the words
-     * SERVO's dial uses. */
-    if (on_live && value_live()) {
-        gfx_text(c, LEFT_X + INNER, HINT_Y, TR(MO_HINT), &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    } else if (on_live) {
-        gfx_text(c, LEFT_X + INNER, HINT_Y,
-                 ui_servo_str(SERVO_STR_START_NOT_ARMED), &gfx_font_8x16,
-                 ui_theme_color(UI_C_WARN), 1);
-    }
-    draw_totals(c);
-    ui_button(c, s.reset_rect, TR(MO_RESET_PEAKS),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == 2, true);
-    /* What the throttle drives, on every task: `protocol pins`, in the
-     * warning colour while no pin is bound or the binding is not read. */
-    char line[32];
-    const bool warn = motor_throttle_target(line, sizeof(line), s.thr_proto,
-                                            s.thr_pins, s.thr_pins_known,
-                                            motor_target_cells());
-    mwb_render_target(c, line, warn, target_locked());
 }
 
 /*
@@ -1670,7 +528,7 @@ static void leave(void)
     /* No release will arrive for a finger that is on the track as the screen
      * changes, and a latched drag outlives the gesture. */
     ui_slider_release(&s.slider);
-    post(MOTOR_CMD_DISARM, 0.0f);
+    mo_post(MOTOR_CMD_DISARM, 0.0f);
     {
         const ui_value_state_t before = ui_value_state(&s.gate);
         value_edge(ui_value_hide(&s.gate), before);
@@ -1743,7 +601,7 @@ static void cancel(void)
      * nothing, which is correct.
      */
     if (s.gate.armed && s.pressed == 1 && !s.arm.fired) {
-        post(MOTOR_CMD_DISARM, 0.0f);
+        mo_post(MOTOR_CMD_DISARM, 0.0f);
     }
     /*
      * And an arm this screen has posted but the application has not yet
@@ -1784,12 +642,12 @@ static const ui_screen_t k_screen = {
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,
-    .tick   = tick,
-    .event  = event,
+    .tick   = mo_tick,
+    .event  = mo_event,
     .cancel = cancel,
-    .render = render,
+    .render = mo_render,
     .back   = back,
-    .safe_at = safe_at,
+    .safe_at = mo_safe_at,
 };
 
 const ui_screen_t *motor_screen(void) { return &k_screen; }

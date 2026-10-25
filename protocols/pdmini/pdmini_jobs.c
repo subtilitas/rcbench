@@ -1,6 +1,9 @@
-/*
- * The PD mini's jobs: which transaction goes next, and the step that runs
- * the phases of one.  See pdmini.h.
+/**
+ * @file
+ * @brief The PD mini's jobs: which transaction goes next, and the step that
+ *        runs the phases of one.
+ *
+ * See pdmini.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -9,10 +12,16 @@
 
 /* --------------------------------------------------------------- the jobs */
 
-/*
- * Whether an ON may be written: four writes that do not take leave the
- * output stuck -- an input not ready for an ON -- and it is tried again two
- * seconds on.  False while it waits out that pause.
+/**
+ * @brief Whether an ON may be written: four writes that do not take leave the
+ *        output stuck -- an input not ready for an ON -- and it is tried again
+ *        two seconds on.
+ *
+ * False while it waits out that pause.
+ *
+ * @param d    Driver state.
+ * @param now  Current time, in milliseconds.
+ * @return     true when an ON may be written.
  */
 static bool en_ready(pdmini_t *d, uint32_t now)
 {
@@ -28,14 +37,20 @@ static bool en_ready(pdmini_t *d, uint32_t now)
     return true;
 }
 
-/*
- * OUTPUT_EN towards what is asked: twice with the argument taken to mean
- * it, then -- until a read-back has shown which argument means on -- twice
- * with the other, in case this module reads it the way the vendor's sheet
- * says.  Written when the output reads otherwise, so an OFF that tries the
- * other argument goes only to an output that is on and cannot switch on
- * one that was off.  An ON is false when en_ready() says not now; an OFF
- * is never held back, and four that do not take only say stuck.
+/**
+ * @brief OUTPUT_EN towards what is asked: twice with the argument taken to mean
+ *        it, then -- until a read-back has shown which argument means on --
+ *        twice with the other, in case this module reads it the way the
+ *        vendor's sheet says.
+ *
+ * Written when the output reads otherwise, so an OFF that tries the other
+ * argument goes only to an output that is on and cannot switch on one that was
+ * off.  An ON is false when en_ready() says not now; an OFF is never held back,
+ * and four that do not take only say stuck.
+ *
+ * @param d    Driver state.
+ * @param now  Current time, in milliseconds.
+ * @return     true when the write was started; false when an ON must wait.
  */
 static bool write_en(pdmini_t *d, uint32_t now)
 {
@@ -64,12 +79,19 @@ static bool write_en(pdmini_t *d, uint32_t now)
     return true;
 }
 
-/*
- * The reading furthest past its due by @p margin ms or more, started;
- * false for none.  Furthest past its due, so a slow module answering every
- * display read near its period does not starve the others.  Unsigned, so a
- * reading untaken for 2^31 ms or more -- a module first seen 25 days after
- * start -- is late rather than early.
+/**
+ * @brief The reading furthest past its due by @p margin ms or more, started;
+ *        false for none.
+ *
+ * Furthest past its due, so a slow module answering every display read near its
+ * period does not starve the others.  Unsigned, so a reading untaken for 2^31
+ * ms or more -- a module first seen 25 days after start -- is late rather than
+ * early.
+ *
+ * @param d       Driver state.
+ * @param now     Current time, in milliseconds.
+ * @param margin  Least time past its due, in milliseconds.
+ * @return        true when a reading was started.
  */
 static bool poll(pdmini_t *d, uint32_t now, uint32_t margin)
 {
@@ -112,7 +134,13 @@ static bool poll(pdmini_t *d, uint32_t now, uint32_t margin)
     return true;
 }
 
-/* The next transaction, or false for none now. */
+/**
+ * @brief The next transaction, or false for none now.
+ *
+ * @param d    Driver state.
+ * @param now  Current time, in milliseconds.
+ * @return     true when a transaction was started; false for none now.
+ */
 static bool next_job(pdmini_t *d, uint32_t now)
 {
     /* The reads before an ON go one straight after the other: anything else
@@ -231,7 +259,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * set point to write or an ON to make: at rest it is a reading like the
      * others, and a module slow to answer leaves the display its share.
      * Before the reads for an ON, not between them: a module answering
-     * 145 ms or more late takes longer than PDMINI_STATE_MS for them, and
+     * 145ms or more late takes longer than PDMINI_STATE_MS for them, and
      * the ON would never be written.  It counts as the reading that goes
      * ahead of a set point (polled_late), so a set point follows it.
      */
@@ -272,7 +300,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
     /*
      * A reading PDMINI_POLL_LATE_MS past its due goes before the set
      * points: a slider dragged with no confirm slide hands a new set point
-     * every 50 ms or so, its write and read-back take about as long, and
+     * every 50ms or so, its write and read-back take about as long, and
      * the readings would otherwise stand until the drag stops.  The display
      * -- long enough for the panel to take the readings as stopped and cut
      * the output -- and the state, which shows an output the module
@@ -290,8 +318,8 @@ static bool next_job(pdmini_t *d, uint32_t now)
     }
     /* The state is not held back by the one-at-a-time rule: an overdue
      * state read goes straight after another reading, so a tripped output,
-     * or one on while an OFF is asked, is seen within 2.1 s on a module
-     * answering up to 390 ms late -- the display waiting instead. */
+     * or one on while an OFF is asked, is seen within 2.1s on a module
+     * answering up to 390ms late -- the display waiting instead. */
     if (on_step == 0u && polled_late && !d->en_pending
         && (uint32_t)(now - d->last_state)
                >= PDMINI_STATE_MS + PDMINI_POLL_LATE_MS) {
@@ -338,7 +366,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
                         && set_ok && input_ok;
     if (on_due && d->input_known && pdmini_under_line(d)) {
         /* The input already under the line for the set point: read under
-         * PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV, 1500 mV, with no room for
+         * PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV, 1500mV, with no room for
          * the lowest set point.  An ON sag_check() would cut 2 readings on
          * is not written. */
         pdmini_sag_hold(d);
@@ -361,10 +389,13 @@ static bool next_job(pdmini_t *d, uint32_t now)
     return poll(d, now, 0u);
 }
 
-/*
- * Whether an OFF waits on the transaction under way: next_job() would
- * write it to an output read on, or write it -- or read the state for it --
- * over an ON still being confirmed.
+/**
+ * @brief Whether an OFF waits on the transaction under way: next_job() would
+ *        write it to an output read on, or write it -- or read the state for it
+ *        -- over an ON still being confirmed.
+ *
+ * @param d  Driver state.
+ * @return   true when an OFF is waiting.
  */
 static bool off_now(const pdmini_t *d)
 {
@@ -373,12 +404,15 @@ static bool off_now(const pdmini_t *d)
                || (d->en_pending && d->en_for));
 }
 
-/*
- * Whether the write waiting for its pins has been overtaken: an OUTPUT_EN
- * towards what is no longer asked, an ON whose set points have changed
- * since they were read back for it, set points no longer the ones asked,
- * or a set point while an OFF is asked and the output is or may be on --
- * the OFF goes first.
+/**
+ * @brief Whether the write waiting for its pins has been overtaken: an
+ *        OUTPUT_EN towards what is no longer asked, an ON whose set points have
+ *        changed since they were read back for it, set points no longer the
+ *        ones asked, or a set point while an OFF is asked and the output is or
+ *        may be on -- the OFF goes first.
+ *
+ * @param d  Driver state.
+ * @return   true when the write is no longer wanted and is not sent.
  */
 static bool overtaken(const pdmini_t *d)
 {

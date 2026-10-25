@@ -1,15 +1,16 @@
-/*
- * SETUP > SENSORS: up to four INA3221 parts on the sensor bus, at 0x40 to
- * 0x43, and per channel its shunt and what it watches.
+/**
+ * @file settings_sensors.h
+ * @brief SETUP > SENSORS: up to four INA3221 parts on the sensor bus, at 0x40
+ *        to 0x43, and per channel its shunt and what it watches.
  *
  * Rows, in schema order: 0x40 FITTED to 0x43 FITTED, then per channel c --
  * c = 3 a + ch - 1 for part a's channel ch, 0 to 11 -- its WATCHES, its
  * SHUNT and its LIMIT.  A shunt of 0 switches the channel off; the next
- * value up is 5.0 mOhm (setting_def_t.off_below), and the top is
- * 1000.0 mOhm.  What a channel watches is one of NONE, OUT 1 to OUT 8,
+ * value up is 5.0mOhm (setting_def_t.off_below), and the top is
+ * 1000.0mOhm.  What a channel watches is one of NONE, OUT 1 to OUT 8,
  * PORT 1 to PORT 4 and SUPPLY: the output channels, the programming ports
- * and the supply rail.  LIMIT is the current a 50 ms window's highest
- * reading may reach before the band says so, 10 to 32767 mA in 10 mA steps
+ * and the supply rail.  LIMIT is the current a 50ms window's highest
+ * reading may reach before the band says so, 10 to 32767mA in 10mA steps
  * on the arrows, 0 (OFF) for none: SENSE_LIMIT's LIMIT_MA (protocol 4.27),
  * an alert only.
  *
@@ -26,15 +27,15 @@
  *
  *   - FITTED: the old part's address, when the old INA3221 was on;
  *   - SHUNT: the old part's CH1 the old shunt, CH2 and CH3 the old shunt
- *     with CH1+2+3 and 0 (off) with CH1; every other channel 100.0 mOhm;
+ *     with CH1+2+3 and 0 (off) with CH1; every other channel 100.0mOhm;
  *   - WATCHES: CH1 of the old part -- 0x40 while it was off -- PORT n
  *     while the servo tester's target is programming port n, else OUT 1;
  *     every other channel NONE;
  *   - LIMIT: OFF, which 0.21 and the builds up to 0.21 had none of.
  *
  * A fresh panel holds no key, and the old keys' defaults (off, 0x40,
- * 100.0 mOhm, CH1) seed the schema's defaults: nothing fitted, every shunt
- * 100.0 mOhm, 0x40 CH1 watching OUT 1.
+ * 100.0mOhm, CH1) seed the schema's defaults: nothing fitted, every shunt
+ * 100.0mOhm, 0x40 CH1 watching OUT 1.
  *
  * Pure C, as settings.c is.
  *
@@ -60,6 +61,7 @@ extern "C" {
 #define SET_INA_FIT(a) ((setting_id_t)(SET_INA_FIT_0 + (int)(a)))
 #define SET_INA_W(c)   ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS))
 #define SET_INA_SH(c)  ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 1))
+/** @brief Channel @p c's LIMIT row, 0 to 11. */
 #define SET_INA_LIM(c) ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 2))
 
 /** WATCHES' options, in their order. */
@@ -126,16 +128,17 @@ typedef struct {
     /** Fitted parts with every shunt 0: the page refuses such a map, so
      *  none is written while this is not 0. */
     uint8_t  dark;
-    uint8_t  fast;       /**< the channel read at 1 kHz, LINK_SM_FAST_NONE */
+    uint8_t  fast;       /**< the channel read at 1kHz, LINK_SM_FAST_NONE */
     /** The part SENSE's one-part frame names, 0 to 3: FAST's, else the
      *  lowest fitted part; 0xFF while none is fitted.  On an IOmcu older
      *  than 4.25 it is the one part read. */
     uint8_t  mirror;
-    /** SENSE registers 8 to 10 for an IOmcu older than 4.25: the mirror
-     *  part, its CH1 shunt or its first one not 0, and its channels on
-     *  that shunt -- the frame has one shunt for every channel it reads,
-     *  so a channel on another shunt is not read.  one_on false: no part to read; the frame then holds 0x40,
-     *  100.0 mOhm and CH1, values the page takes. */
+    /** @brief SENSE registers 8 to 10 for an IOmcu older than 4.25: the mirror
+     *        part, its CH1 shunt or its first one not 0, and its channels on
+     *        that shunt -- the frame has one shunt for every channel it reads,
+     *        so a channel on another shunt is not read.  one_on false: no part
+     *        to read; the frame then holds 0x40,
+     *  100.0mOhm and CH1, values the page takes. */
     bool     one_on;
     uint8_t  one_addr;
     uint16_t one_dmohm;
@@ -157,12 +160,18 @@ uint8_t settings_sensors_fast(void);
 /** The fitted parts: bit a for 0x40 + a. */
 uint8_t settings_sensors_fitted(void);
 
-/** The shunt of the channel the servo rail's meter reads, in 0.1 mOhm:
- *  FAST's, else the one-part frame's (settings_sensors_map_t); 0 for no
- *  part fitted. */
+/**
+ * @brief The shunt of the channel the servo rail's meter reads.
+ * @return FAST's shunt, else the one-part frame's
+ *         (settings_sensors_map_t), in 0.1mOhm; 0 for no part fitted
+ */
 uint16_t settings_sensors_meter_dmohm(void);
 
-/** Channel @p c's shunt as the map carries it, in 0.1 mOhm; 0 off. */
+/**
+ * @brief A channel's shunt as the map carries it.
+ * @param c the channel
+ * @return the shunt in 0.1mOhm; 0 off
+ */
 uint16_t settings_sensors_dmohm(int c);
 
 #ifdef __cplusplus

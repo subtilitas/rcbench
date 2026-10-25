@@ -1,12 +1,12 @@
-/*
- * The panel's CAN (Controller Area Network) driver, on the ESP32-S3's TWAI
- * (Two-Wire Automotive Interface) controller.  The bit timing comes from
- * shared/can, which is host-tested; this file holds the peripheral's
- * configuration and the send and receive calls.
+/**
+ * @file can_twai.h
+ * @brief The panel's CAN (Controller Area Network) driver.
  *
- * Starting CAN routes the board's multiplexer away from native USB
- * (Universal Serial Bus), because both live on GPIO19 and GPIO20.  That is
- * why it is an explicit call rather than part of board_init().
+ * On the ESP32-P4's TWAI
+ * (Two-Wire Automotive Interface) controller 0, GPIO22 TX and GPIO21 RX
+ * (board_pins.h), clocked from the 40MHz crystal.  The bit timing comes
+ * from shared/can, which is host-tested; this file holds the peripheral's
+ * configuration and the send and receive calls.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,14 +21,16 @@
 #include "link_can.h"
 
 /**
- * Route the board's multiplexer to CAN, then start TWAI at @p bitrate.
- *
- * Native USB is unavailable while it runs (board_pins.h); the console is on
- * UART0 (universal asynchronous receiver-transmitter) for that reason.
+ * @brief Start TWAI at a bit rate made exactly from the 40MHz crystal.
+ * @param bitrate Bits per second; PANEL_CAN_BITRATE on the link.
+ * @return ESP_OK; ESP_ERR_INVALID_ARG for a rate the crystal does not
+ *         make exactly; otherwise the TWAI driver's error, with the driver
+ *         uninstalled again.
  */
 esp_err_t can_twai_start(uint32_t bitrate);
 
-/** Stop, and give the multiplexer back to USB. */
+/** @brief Stop TWAI and uninstall its driver.  Does nothing when it is
+ *         not running. */
 void can_twai_stop(void);
 
 /** Queue one frame. @p timeout_ms of 0 does not block. */
@@ -47,10 +49,11 @@ typedef enum {
 } can_twai_health_t;
 
 /**
- * Look at the controller and put it back on the bus if it has fallen off.
+ * @brief Look at the controller and put it back on the bus if it has fallen
+ *        off.
  *
  * A transmitter nobody answers reaches the bus-off threshold in about four
- * milliseconds at 1 Mbit/s, and this peripheral does not recover on its own:
+ * milliseconds at 1Mbit/s, and this peripheral does not recover on its own:
  * without this call every later transmit fails and the link is gone until the
  * panel is power-cycled. Call it while the link is down; it takes one step
  * per call and never blocks.

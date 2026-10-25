@@ -1,5 +1,8 @@
-/*
- * Core 1: the sensor bus and the hand-over.  See sense_core1.h.
+/**
+ * @file
+ * @brief Core 1: the sensor bus and the hand-over.
+ *
+ * See sense_core1.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,7 +40,7 @@ static sense_svc_t  s_svc;
 static sense_cmd_t  s_cmd;
 static sense_snap_t s_snap;
 
-/* Core 1's stack, 4 kB: the default 2 kB was the sensor bus's, and the tone
+/* Core 1's stack, 4kB: the default 2kB was the sensor bus's, and the tone
  * service runs on it too. */
 static uint32_t s_stack[1024];
 
@@ -45,36 +48,71 @@ static uint32_t s_stack[1024];
 
 static uint32_t s_taken_seq;
 
+/**
+ * @brief Reads the 64-bit microsecond timer for the sensor schedule.
+ *
+ * @param ctx  Unused.
+ * @return The current time, in microseconds.
+ */
 static uint64_t clock_us(void *ctx)
 {
     (void)ctx;
     return time_us_64();
 }
 
+/**
+ * @brief Clears the sensor bus with sense_i2c_recover().
+ *
+ * @param ctx  Unused.
+ */
 static void recover(void *ctx)
 {
     (void)ctx;
     sense_i2c_recover();
 }
 
+/**
+ * @brief Opens the sensor bus on the given pins.
+ *
+ * @param ctx  Unused.
+ * @param sda  GPIO number of SDA.
+ * @param scl  GPIO number of SCL.
+ * @return True when the bus opened.
+ */
 static bool bus_open(void *ctx, uint8_t sda, uint8_t scl)
 {
     (void)ctx;
     return sense_i2c_open(sda, scl);
 }
 
+/**
+ * @brief Closes the sensor bus.
+ *
+ * @param ctx  Unused.
+ */
 static void bus_close(void *ctx)
 {
     (void)ctx;
     sense_i2c_close();
 }
 
+/**
+ * @brief Asks whether a device acknowledges on the sensor bus.
+ *
+ * @param ctx  Unused.
+ * @param addr  I2C address of the device.
+ * @return The result of sense_i2c_ask().
+ */
 static sense_err_t bus_ask(void *ctx, uint8_t addr)
 {
     (void)ctx;
     return sense_i2c_ask(addr);
 }
 
+/**
+ * @brief Core 1's entry point: runs the sensor loop, one step per
+ * tick, forever.
+ */
 static void core1_main(void)
 {
     /* First: the flash store may not stop this core before it can be
@@ -95,7 +133,7 @@ static void core1_main(void)
     uint64_t next = time_us_64();
     for (;;) {
         /* Paced on the timer, not on the work: a tick that ran long (a
-         * probe is 1.1 ms of bus, a scan 0.8 ms) is followed at once, and
+         * probe is 1.1ms of bus, a scan 0.8ms) is followed at once, and
          * one that ran past a whole tick starts the count again from now
          * rather than running the missed ones back to back. */
         while ((int64_t)(time_us_64() - next) < 0) {

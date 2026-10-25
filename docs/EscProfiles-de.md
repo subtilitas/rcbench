@@ -57,7 +57,7 @@ ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
 
 Abgelehnt wird eine Datei, die:
 
-- größer als 64 KiB ist, kein JSON ist oder kein UTF-8 ist;
+- größer als 64KiB ist, kein JSON ist oder kein UTF-8 ist;
 - tiefer als 16 Ebenen unter dem obersten Objekt verschachtelt ist oder ein
   Objekt mit mehr als 64 Einträgen hat;
 - in einem Objekt einen Schlüssel zweimal hat, verglichen nach dem Dekodieren
@@ -138,7 +138,7 @@ JSON. Das Panel lädt sie nicht.
 | `key` | 1 bis 32 aus `a-z 0-9 _`; eine Bedeutung über alle Marken: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 bis 255 aus `{"number": 0-255, "name": "...", "default": true}`; Nummern eindeutig, höchstens ein Standardwert |
 | `values[].entry_throttle` | `min`, `mid`, `max`: die Knüppelstellung, aus der das Handbuch diesen Wert programmiert, wo sie nicht die des Einstiegs ist; fehlt sie oder ist null, die des Einstiegs. Die Stick-Programmierung schaltet den ESC für diesen Wert dort ein |
-| `values[].entry_hold_ms` | 0 bis 600000: Einschalten bis Menü, wenn dieser Wert programmiert wird, wo das Handbuch eine andere Wartezeit als `scheme.entry.hold_ms` nennt; fehlt es oder ist null, die des Einstiegs. Kontronik SUN PLUS Modi 4 bis 6 warten 5000 ms |
+| `values[].entry_hold_ms` | 0 bis 600000: Einschalten bis Menü, wenn dieser Wert programmiert wird, wo das Handbuch eine andere Wartezeit als `scheme.entry.hold_ms` nennt; fehlt es oder ist null, die des Einstiegs. Kontronik SUN PLUS Modi 4 bis 6 warten 5000ms |
 | `values[].after_select` | 1 bis 4 aus `min`, `mid`, `max`: die Bewegungen, die das Handbuch nach der Auswahlbewegung dieses Werts verlangt, der Reihe nach, jede, wenn der ESC die vorige beantwortet hat; fehlt es oder ist null, keine. Die Kontronik-Car-Modi und PIX Modus 2 gehen auf `min`, die Bremse. Jede ist eine Bewegung: die erste nicht dorthin, wo der Knüppel steht, wenn sie beginnen -- die Bewegung `scheme.store` des Profils, sonst die Auswahlbewegung (oder `value_select`) --, und keine gleich der davor; eine Datei mit einer, die stehen bleibt, wird abgelehnt. Die Stick-Programmierung macht jede SPEICHERN nach der vorigen, nach der Bewegung `scheme.store` des Profils; ein zweistufiges Profil nimmt keine |
 | `applies_to` | Modellnamen dieses Profils, oder null für alle. Die Stick-Programmierung bietet den Punkt nur an diesen Modellen an |
 | `applies_when` | eine Bedingung in Worten, z. B. `"model type heli"` |
@@ -155,7 +155,7 @@ Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
 "manual": [
   {"when": "before_power", "action": "Fit the jumper on any 2 of the 3 programming contacts.",
    "source": "Kontronik_Beat.pdf p.5"},
-  {"when": "before_menu", "action": "Pull the jumper off after 2 s or the tone sequence."}
+  {"when": "before_menu", "action": "Pull the jumper off after 2s or the tone sequence."}
 ]
 ```
 
@@ -200,7 +200,18 @@ dann die C-Datei neu erzeugen und prüfen:
 ```sh
 python3 tools/gen_esc_profiles.py
 python3 tools/gen_esc_profiles.py --check
+python3 tools/check_units.py --check
 ```
+
+Die Texte, die das Panel mitführt, schreiben Zahl und Einheit zusammen:
+`2s`, `1.2-1.8ms`, `3.0V per cell`, `8kHz`. Ein Wort nach einer Zahl behält
+sein Leerzeichen (`3 beeps`). Das sind `brand`, `family`,
+`automatable_note`, die `steps` des Einstiegs, der `name` eines Modells, der
+`name` und `applies_when` eines Menüpunkts, der `name` eines Werts und
+`action` und `action_de` eines Handgriffs: die Strings, die
+`gen_esc_profiles.py` in die C-Datei übernimmt. `check_units.py` hält sie;
+die Recherchefelder (`sources`, `notes`, `unknowns`, die Beschreibungen,
+`spec_source` und `firmware_note` eines Modells) nicht.
 
 CI (Continuous Integration) führt `--check` aus. Die Host-Suite liest jede
 Datei mit dem Leser des Panels und vergleicht das Ergebnis Feld für Feld mit
@@ -218,7 +229,7 @@ Kartenleser verschieden lesen.
 - Die Pieptonfelder (`beep_ms`, `gap_ms`, `group_gap_ms`) sind in jedem
   Profil null, und die Stick-Programmierung liest sie nicht: ihre Zeiten
   kommen aus ihren Einstellungen.
-- Die Versorgung des Prüfstands ist das PD mini, höchstens 20 V. ESCs, deren
+- Die Versorgung des Prüfstands ist das PD mini, höchstens 20V. ESCs, deren
   Mindesteingang darüber liegt, etwa YGE Opto und Navy ab 6S, brauchen eine
   externe Versorgung.
 - Wo ein Menü die Punkte durch Tonhöhe statt durch Anzahl unterscheidet

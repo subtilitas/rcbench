@@ -1,5 +1,6 @@
-/*
- * DShot out, and the reply back on the same wire.
+/**
+ * @file
+ * @brief DShot out, and the reply back on the same wire.
  *
  * Implements the DShot protocol of ESCs.  DShot is the name of a protocol; it
  * is used here only to say which ESCs this module works with.  The project
@@ -8,8 +9,8 @@
  * Plain DShot is one state machine holding the line low between frames.
  * Bidirectional DShot is two: a transmitter that releases the line when the
  * frame ends and raises a flag, and a receiver that starts on that flag and
- * samples the reply.  The turnaround is about 30 us after a frame that is
- * itself 27 us long, so it happens in the PIO (programmable input/output)
+ * samples the reply.  The turnaround is about 30us after a frame that is
+ * itself 27us long, so it happens in the PIO (programmable input/output)
  * block and not in a loop on the processor.
  *
  * A frame is sent when the caller asks.  Nothing here has a rate of its own:
@@ -37,14 +38,17 @@
 extern "C" {
 #endif
 
-/** Pins that can be bound at one time.  A project that needs another
- *  number defines it for the whole build. */
+/**
+ * @brief Pins that can be bound at one time.
+ *
+ * A project that needs another number defines it for the whole build.
+ */
 #ifndef OUT_DSHOT_MAX_PINS
 #define OUT_DSHOT_MAX_PINS 8u
 #endif
 
 /**
- * Take @p pin at @p rate_kbit kbit/s.
+ * @brief Take @p pin at @p rate_kbit kbit/s.
  *
  * @p bidirectional inverts the line and claims a second state machine, which
  * has to be the one above the transmitter's in the same block: the two
@@ -56,14 +60,24 @@ extern "C" {
  * A pin that is already bound with the same rate and mode stays as it is and
  * the call returns true.  With a different rate or mode it returns false and
  * the old binding keeps running; release the pin first to change it.
+ *
+ * @param pin            GPIO number of the output.
+ * @param rate_kbit      Bit rate in kbit/s; 0 is refused.
+ * @param bidirectional  true inverts the line and claims a receiver.
+ * @return               true when bound, or already bound the same way;
+ *                       false otherwise.
  */
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional);
 
-/** Give back the pin and the state machines. */
+/**
+ * @brief Give back the pin and the state machines.
+ *
+ * @param pin  GPIO number of a bound output; other values do nothing.
+ */
 void out_dshot_release(uint8_t pin);
 
 /**
- * Send one frame.
+ * @brief Send one frame.
  *
  * @p value is 0..2047 and is used as given, so a caller can send a command as
  * readily as a throttle; dshot_throttle() is what maps travel onto it.  The
@@ -71,21 +85,27 @@ void out_dshot_release(uint8_t pin);
  * because a queue of stale throttle values is worse than a missed update.
  *
  * On a bidirectional pin this also arms the receiver for the reply.
+ *
+ * @param pin        GPIO number of a bound output; other values do nothing.
+ * @param value      Frame value, 0..2047, used as given.
+ * @param telemetry  true asks the ESC to answer on its telemetry wire.
  */
 void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry);
 
 /**
- * Stop sending.
+ * @brief Stop sending.
  *
  * No frames means no edges, which is what the output bank means by not
  * driving.  An ESC stops on silence after its own timeout; sending explicit
  * zeros instead would keep it armed and waiting, which is not what a disarmed
  * bench should look like from the ESC's side.
+ *
+ * @param pin  GPIO number of a bound output; other values do nothing.
  */
 void out_dshot_stop(uint8_t pin);
 
 /**
- * Take the last reply, if one arrived and decoded.
+ * @brief Take the last reply, if one arrived and decoded.
  *
  * Returns false on a bidirectional pin that has not answered, on a reply that
  * failed its checksum, and always on a plain DShot pin.  A false is not an
@@ -97,6 +117,12 @@ void out_dshot_stop(uint8_t pin);
  * it wrong only matters for an ESC that does not normalise its exponent: one
  * that does either sets the mantissa's top bit, which reads as a period, or
  * leaves the type nibble at zero, which reads as a period too.
+ *
+ * @param pin  GPIO number of a bound output.
+ * @param edt  true when extended telemetry was asked for and accepted.
+ * @param out  Receives the decoded reply when true is returned.
+ * @return     true for a decoded reply; false for none, a bad checksum, or a
+ *             plain DShot pin.
  */
 bool out_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *out);
 

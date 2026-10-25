@@ -48,7 +48,7 @@ LANGS = ("en", "de")
 # its screenshots sit under docs/img/: the layout render_ui.py writes.
 LANG_DIR = {"en": "", "de": "de/"}
 
-# Screens with no page: the splash shows for 1 s at start-up and offers
+# Screens with no page: the splash shows for 1s at start-up and offers
 # nothing to do.
 NO_PAGE = {"SCREEN_SPLASH"}
 
@@ -824,7 +824,7 @@ class Renderer:
                            "image's text alternative")
         alt = html.escape(text_of(cap))
         # The image links to itself: a row shows each at under half the
-        # column, and a tap opens the 800 x 480 px file.
+        # column, and a tap opens the 1024 x 600px file.
         src = html.escape(src)
         return (f'<figure><a href="{src}"><img src="{src}" alt="{alt}"'
                 f'{dims} loading="lazy"></a><figcaption>{cap}</figcaption>'

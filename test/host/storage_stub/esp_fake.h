@@ -1,17 +1,17 @@
 /*
  * The ESP-IDF calls firmware/panel/components/storage/storage.c makes,
- * for test_storage: an SPI bus that remembers it is up, a mount that finds
- * a card or none, and a log that records each line it would print with its
- * level and tag.  Each stands in as ESP-IDF v5.4 behaves where the suite
- * looks: spi_bus_initialize() on a bus already up logs an E line and
- * returns ESP_ERR_INVALID_STATE (spi_common.c:802), and
- * esp_vfs_fat_sdspi_mount() with no card logs "sdmmc_card_init failed
+ * for test_storage: a card supply on an on-chip LDO (low-dropout
+ * regulator) that remembers it is on, a mount that finds a card or none,
+ * and a log that records each line it would print with its level and tag.
+ * Each stands in as ESP-IDF v5.5 behaves where the suite looks:
+ * esp_vfs_fat_sdmmc_mount() with no card logs "sdmmc_card_init failed
  * (0x107)" at E level under the tag "vfs_fat_sdmmc" and returns
- * ESP_ERR_TIMEOUT (vfs_fat_sdmmc.c:378), and with a card FatFs does not
- * mount logs "failed to mount card (<FRESULT>)" at W level and answers
- * ESP_FAIL (vfs_fat_sdmmc.c:126).  The second look storage.c takes at such
- * a card -- a device on the bus, the card started, FatFs's f_mount() on
- * a drive of diskio_impl.h -- answers as the card in the slot would.  A
+ * ESP_ERR_TIMEOUT, and with a card FatFs does not mount logs "failed to
+ * mount card (<FRESULT>)" at W level and answers ESP_FAIL.  A card whose
+ * host carries no supply handle does not start.  The second look
+ * storage.c takes at such a card -- the SDMMC host and slot set up, the
+ * card started, FatFs's f_mount() on a drive of diskio_impl.h, the slot
+ * let go -- answers as the card in the slot would.  A
  * mounted card taken out or swapped fails every read with FR_DISK_ERR and
  * an E line under "diskio_sdmmc" (diskio_sdmmc.c:58), and f_getfree() with
  * the disk status check on answers FR_NOT_READY after an E line "Check
@@ -64,37 +64,50 @@ void fake_log(esp_log_level_t level, const char *tag, const char *text);
 #define ESP_LOGI(tag, ...) FAKE_LOG(ESP_LOG_INFO, tag, __VA_ARGS__)
 #define ESP_LOGD(tag, ...) FAKE_LOG(ESP_LOG_DEBUG, tag, __VA_ARGS__)
 
-/* board.h */
-#define BOARD_SD_PIN_MOSI  11
-#define BOARD_SD_PIN_MISO  13
-#define BOARD_SD_PIN_CLK   12
-#define BOARD_SD_SPI_HOST  1
+/* board_pins.h */
+#define BOARD_SD_SLOT      0
+#define BOARD_SD_WIDTH     4
+#define BOARD_SD_PIN_CLK   43
+#define BOARD_SD_PIN_CMD   44
+#define BOARD_SD_PIN_D0    39
+#define BOARD_SD_PIN_D1    40
+#define BOARD_SD_PIN_D2    41
+#define BOARD_SD_PIN_D3    42
+#define BOARD_SD_LDO_CHAN  4
 #define BOARD_SD_FREQ_KHZ  20000
-esp_err_t board_sd_cs(bool on);
 
-/* driver/spi_common.h */
-typedef struct {
-    int mosi_io_num, miso_io_num, sclk_io_num, quadwp_io_num, quadhd_io_num;
-    int max_transfer_sz;
-} spi_bus_config_t;
-#define SPI_DMA_CH_AUTO 3
-esp_err_t spi_bus_initialize(int host, const spi_bus_config_t *cfg, int dma);
-esp_err_t spi_bus_free(int host);
+/* sd_pwr_ctrl_by_on_chip_ldo.h */
+typedef struct fake_pwr *sd_pwr_ctrl_handle_t;
+typedef struct { int ldo_chan_id; } sd_pwr_ctrl_ldo_config_t;
+esp_err_t sd_pwr_ctrl_new_on_chip_ldo(const sd_pwr_ctrl_ldo_config_t *cfg,
+                                      sd_pwr_ctrl_handle_t *out);
+esp_err_t sd_pwr_ctrl_del_on_chip_ldo(sd_pwr_ctrl_handle_t handle);
 
-/* sdmmc_cmd.h, driver/sdspi_host.h */
+/* sdmmc_cmd.h, driver/sdmmc_host.h */
 typedef struct { char name[8]; } sdmmc_cid_t;
 typedef struct { sdmmc_cid_t cid; } sdmmc_card_t;
-typedef struct { int slot; int max_freq_khz; } sdmmc_host_t;
-#define SDSPI_HOST_DEFAULT() ((sdmmc_host_t){ .slot = 1, .max_freq_khz = 20000 })
-#define GPIO_NUM_NC (-1)
-typedef struct { int host_id; int gpio_cs; } sdspi_device_config_t;
-typedef int sdspi_dev_handle_t;
-esp_err_t sdspi_host_init_device(const sdspi_device_config_t *cfg,
-                                 sdspi_dev_handle_t *out);
-esp_err_t sdspi_host_remove_device(sdspi_dev_handle_t handle);
+typedef struct {
+    int slot;
+    int max_freq_khz;
+    sd_pwr_ctrl_handle_t pwr_ctrl_handle;
+    esp_err_t (*init)(void);
+    esp_err_t (*deinit_p)(int slot);
+} sdmmc_host_t;
+typedef struct {
+    int clk, cmd, d0, d1, d2, d3;
+    int width;
+    unsigned flags;
+} sdmmc_slot_config_t;
+#define SDMMC_SLOT_FLAG_INTERNAL_PULLUP 1u
+esp_err_t sdmmc_host_init(void);
+esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg);
+esp_err_t sdmmc_host_deinit_slot(int slot);
+#define SDMMC_HOST_DEFAULT() { .slot = 1, .max_freq_khz = 20000, \
+    .pwr_ctrl_handle = NULL, .init = sdmmc_host_init,               \
+    .deinit_p = sdmmc_host_deinit_slot }
+#define SDMMC_SLOT_CONFIG_DEFAULT() { .clk = 43, .cmd = 44, .d0 = 39, \
+    .d1 = 40, .d2 = 41, .d3 = 42, .width = 0, .flags = 0u }
 esp_err_t sdmmc_card_init(const sdmmc_host_t *host, sdmmc_card_t *card);
-#define SDSPI_DEVICE_CONFIG_DEFAULT() \
-    ((sdspi_device_config_t){ .host_id = 1, .gpio_cs = 34 })
 
 /* ff.h, diskio_sdmmc.h, as the panel builds FatFs: exFAT on
  * (firmware/panel/fatfs_exfat.cmake), so FSIZE_t is 64-bit. */
@@ -109,7 +122,7 @@ typedef enum {
     FR_WRITE_PROTECTED, FR_INVALID_DRIVE, FR_NOT_ENABLED, FR_NO_FILESYSTEM,
     FR_MKFS_ABORTED, FR_TIMEOUT,
 } FRESULT;
-typedef struct { int pos; } FF_DIR;
+typedef struct { int pos; int folder; } FF_DIR;
 typedef struct {
     FSIZE_t fsize;
     WORD fdate;
@@ -144,8 +157,8 @@ typedef struct {
     int max_files;
     size_t allocation_unit_size;
 } esp_vfs_fat_sdmmc_mount_config_t;
-esp_err_t esp_vfs_fat_sdspi_mount(const char *base, const sdmmc_host_t *host,
-                                  const sdspi_device_config_t *slot,
+esp_err_t esp_vfs_fat_sdmmc_mount(const char *base, const sdmmc_host_t *host,
+                                  const void *slot,
                                   const esp_vfs_fat_sdmmc_mount_config_t *cfg,
                                   sdmmc_card_t **out);
 esp_err_t esp_vfs_fat_sdcard_unmount(const char *base, sdmmc_card_t *card);

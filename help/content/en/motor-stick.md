@@ -18,7 +18,7 @@ No ESC has been recorded and no profile is verified. Every beep time is a defaul
 4. Connect the ESC's power leads to the supply output. Enable the PD mini on [Interfaces](setup-interfaces.md#the-pd-mini).
 5. Switch the supply output off.
 
-RUN opens nothing while one of these is missing, and the line beside RUN names the reason, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.`. RUN needs a supply reading no older than 1000 ms that reports the output off with at most 20 mA for 200 ms.
+RUN opens nothing while one of these is missing, and the line beside RUN names the reason, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.`. RUN needs a supply reading no older than 1000ms that reports the output off with at most 20mA for 200ms.
 
 ## Makers and models
 
@@ -49,36 +49,40 @@ SEARCH filters the level showing. Its keyboard docks on the right and every key 
 
 ![Two values picked: RUN 2](view:motor-stick-items)
 
-A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT A SETTING marks an item that is an action, such as a reset; NO OPTIONS an item with one value. The line under the list names the selected item's values and the default. RUN counts the values picked.
+A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT A SETTING marks an item that is an action, such as a reset; NO OPTIONS an item with one value. A page shows 6 items. The column at the right holds CHANGE with the items shown and `^` and `v`, which scroll them; MANUAL INTERVENTION REQUIRED where the profile has manual steps; the menu's kind, the supply's voltage and current for the run and the entry time; and the selected item's values and the default. RUN counts the values picked.
 
-The header shows the menu's kind, the supply's voltage and current for the run, and the entry time. TIMING opens the beep timings and the supply settings:
+TIMING opens the beep timings and the supply settings, laid out the same way:
 
 ![The timing settings](view:motor-stick-timing)
 
 None of the timings is measured. CLOSE asks for them to be saved; the save waits for the bench SAFE and the supply output off.
 
+`-` and `+` step a row. A tap on its value opens the keypad over the page. It names the setting, its range and its unit, and takes the step's digits after the point. OK sets the value as a step does, onto the nearer step: 1.23A is 1.25A. A value outside the range keeps the keypad open and names the range in the warning colour. CANCEL and the home tag change nothing; TIMING stays.
+
+![The keypad of Beep min, 250 typed](view:motor-stick-timing-keypad)
+
 ## The warning and the run
 
 ![PROPELLER REMOVED? MOTOR SECURED?](view:motor-stick-warning)
 
-RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD TO RUN starts the run after a 2 s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL or the home tag closes the warning.
+RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD 2s TO RUN starts the run after a 2s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL or the home tag closes the warning.
 
 ![A run counting item groups](view:motor-stick-run)
 
 The run switches the bench to ARMED MOTOR. The page shows the phase, the beeps of the group under way, the last group and whether it was in order, and the current against its floor. ABORT, the home tag, STOP and leaving the screen end the run with the throttle at MIN, the supply off and the bench SAFE. After ABORT or the home tag the result stays on the page.
 
-The stack light's green is lit while a beep is detected, for at least 150 ms.
+The stack light's green is lit while a beep is detected, for at least 150ms.
 
 ![A run with the phase tap running](view:motor-stick-tone)
 
-With the phase tap enabled on SETUP, INTERFACES, the page adds a read-only readout: the tap's state, the pitch of its last 8 ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
+With the phase tap enabled on SETUP, INTERFACES, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
 
 | Tap state | Meaning |
 |---|---|
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture overran since the tap was enabled |
-| `WAITING` | no link, or no fresh answer from the IOmcu's tone page in the last 500 ms |
-| `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
+| `WAITING` | no link, or no fresh answer from the IOmcu's tone page in the last 500ms |
+| `NO TONE PAGE` | the IOmcu is older than 0.14.0 |
 | `PIN NOT FREE` | the tap's pin is bound elsewhere |
 | `NOT RUNNING` | enabled, and the set-up was refused or is not written yet |
 
@@ -103,11 +107,11 @@ Some ESCs enter their programming mode only when a person fits a jumper or press
 ![The warning with a step before power-up](view:motor-stick-hand-warning)
 ![Four steps before power-up, read under ALL STEPS](view:motor-stick-hand-steps)
 
-The warning lists the steps due before the power-up. When they do not all fit, ALL STEPS opens them, and HOLD TO RUN counts only after ALL STEPS was opened and closed with OK.
+The warning lists the steps due before the power-up. When they do not all fit, ALL STEPS opens them, and HOLD 2s TO RUN counts only after ALL STEPS was opened and closed with OK.
 
 ![The run waiting for the jumper](view:motor-stick-hand-prompt)
 
-A step due during the run covers the page with DONE and ABORT. DONE is dark for its first 1000 ms. No DONE within 60 s ends the run with NOT CONFIRMED.
+A step due during the run covers the page with DONE and ABORT. DONE is dark for its first 1000ms. No DONE within 60s ends the run with NOT CONFIRMED.
 
 ![The steps after programming, at the end of a run](view:motor-stick-hand-after)
 

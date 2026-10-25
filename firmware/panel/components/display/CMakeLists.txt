@@ -1,35 +1,15 @@
-# The display, and the RGB (red, green, blue) panel driver it runs on:
-# ESP-IDF's own source, copied with a clean restart by
-# tools/patch_rgb_driver.py (include/rgb_panel_rcbench.h says why).  A
-# driver the tool cannot patch stops the configure step.
-idf_build_get_property(idf_path IDF_PATH)
-set(rgb_src "${idf_path}/components/esp_lcd/rgb/esp_lcd_panel_rgb.c")
-set(srcs "display.c")
-set(priv_includes "")
-
-if(NOT CMAKE_BUILD_EARLY_EXPANSION)
-    idf_build_get_property(python PYTHON)
-    set(rgb_tool "${CMAKE_CURRENT_LIST_DIR}/../../../../tools/patch_rgb_driver.py")
-    set(rgb_out "${CMAKE_CURRENT_BINARY_DIR}/esp_lcd_panel_rgb_rcbench.c")
-    execute_process(
-        COMMAND "${python}" "${rgb_tool}" --source "${rgb_src}" --out "${rgb_out}"
-        RESULT_VARIABLE rgb_rc)
-    if(NOT rgb_rc EQUAL 0)
-        message(FATAL_ERROR "tools/patch_rgb_driver.py failed on ${rgb_src}")
-    endif()
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-                 "${rgb_src}" "${rgb_tool}")
-    list(APPEND srcs "${rgb_out}")
-    # The driver's own private headers: esp_lcd_common.h and
-    # rgb_lcd_rotation_sw.h.
-    list(APPEND priv_includes "${idf_path}/components/esp_lcd/priv_include"
-                              "${idf_path}/components/esp_lcd/rgb")
-endif()
-
+# The display: the EK79007 panel on the ESP32-P4's MIPI DSI (Display Serial
+# Interface) host, through ESP-IDF's esp_lcd DSI driver, and Screen
+# rotation 180 through the PPA (pixel-processing accelerator) driver,
+# esp_driver_ppa, as ppa_dig734.cmake builds it.
+#   idf.py -D RCBENCH_DISPLAY_BARS=ON build
+# shows the DSI host's colour bars for 3s at start-up.
 idf_component_register(
-    SRCS ${srcs}
+    SRCS "display.c"
     INCLUDE_DIRS "include"
-    PRIV_INCLUDE_DIRS ${priv_includes}
     REQUIRES gfx board esp_lcd esp_timer
-    PRIV_REQUIRES esp_mm esp_psram esp_pm esp_hw_support esp_driver_gpio hal soc
+    PRIV_REQUIRES esp_hw_support esp_driver_gpio esp_driver_ppa
 )
+if(RCBENCH_DISPLAY_BARS)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_DISPLAY_BARS=1)
+endif()

@@ -10,11 +10,12 @@
 #include "greatest.h"
 
 #include "battery_screen.h"
+#include "instruments_spots.h"
 #include "ui_screen.h"
 #include "ui_theme.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -112,8 +113,8 @@ TEST_CASE(no_pack_is_not_a_flat_pack)
 }
 
 /*
- * The scale follows the pack.  A fixed scale draws a 10 mV spread and a
- * 20 mV spread as the same picture, so the two renders differ.
+ * The scale follows the pack.  A fixed scale draws a 10mV spread and a
+ * 20mV spread as the same picture, so the two renders differ.
  */
 TEST_CASE(the_scale_follows_the_pack)
 {
@@ -161,12 +162,12 @@ TEST_CASE(every_cell_count_draws)
         }
         /*
          * Nothing escapes the card it is drawn in.  The gutter is the seven
-         * columns 501 to 507 between the cards; the right card starts at
-         * 508.
+         * columns between the cards, 649 to 655; the right card starts at
+         * 656.
          */
         int stray = 0;
         for (int y = 0; y < H; ++y) {
-            for (int x = 501; x < 508; ++x) {
+            for (int x = UI_MARGIN + BT_LCARD_W + 1; x < BT_RCARD_X; ++x) {
                 if (fb[(size_t)y * W + x] != ui_theme_color(UI_C_BG)) {
                     ++stray;
                 }

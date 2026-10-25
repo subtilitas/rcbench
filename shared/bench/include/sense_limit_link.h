@@ -1,7 +1,7 @@
 /**
  * @file sense_limit_link.h
  * @brief The panel's half of SENSE_LIMIT (0x36, protocol 4.27): a current
- *        limit per INA3221 channel, and the channels whose 50 ms window
+ *        limit per INA3221 channel, and the channels whose 50ms window
  *        passed it.
  *
  * An alert only: a limit passed stops nothing and drives nothing.
@@ -67,6 +67,7 @@ extern "C" {
 /** @brief sense_limit_link_done()'s results besides a NACK's reason: the
  *         exchange answered, or not answered. */
 #define SENSE_LIMIT_LINK_ACK       0
+/** @brief sense_limit_link_done()'s result for an exchange not answered. */
 #define SENSE_LIMIT_LINK_NO_ANSWER (-1)
 
 /** @brief The exchanges the page is served with. */
@@ -79,10 +80,10 @@ typedef enum {
 
 /** @brief One exchange for the caller to make. */
 typedef struct {
-    sense_limit_link_op_kind_t kind;
-    bool            write;
-    uint8_t         off;
-    uint8_t         n;
+    sense_limit_link_op_kind_t kind;   /**< which exchange          */
+    bool            write;    /**< a write; a read otherwise            */
+    uint8_t         off;      /**< the first register                   */
+    uint8_t         n;        /**< registers, from off                  */
     const uint16_t *regs;     /**< a write's registers, n of them       */
 } sense_limit_link_op_t;
 
@@ -110,15 +111,15 @@ typedef struct {
     bool     page;            /**< it has SENSE_LIMIT (4.27)            */
     bool     known;           /**< the page has been read since link-up */
 
-    bool     want_set;
-    uint16_t want[LINK_SL_KEPT];
-    uint32_t want_ms;
-    uint16_t held[LINK_SL_KEPT];
-    bool     refused;
+    bool     want_set;        /**< want holds the settings' limits      */
+    uint16_t want[LINK_SL_KEPT]; /**< the limits asked, mA              */
+    uint32_t want_ms;         /**< when want last changed               */
+    uint16_t held[LINK_SL_KEPT]; /**< the limits the page holds, mA     */
+    bool     refused;         /**< the page refused want                */
 
-    sense_limit_link_op_kind_t pending;
-    bool     asked;
-    uint32_t asked_ms;
+    sense_limit_link_op_kind_t pending; /**< the exchange under way      */
+    bool     asked;           /**< OVER has been read since link-up     */
+    uint32_t asked_ms;        /**< when OVER was last read              */
     bool     pre_read;        /**< the OVER read pending goes before a
                                    write                                */
     bool     flushed;         /**< that read is done for the write owed  */
@@ -128,12 +129,12 @@ typedef struct {
 
     uint16_t over;            /**< bits not told yet                    */
     uint16_t ch_lim[LINK_SL_KEPT]; /**< the limit each bit was judged by */
-    bool     lost;
-    bool     ev_refused;
+    bool     lost;            /**< a channel passed; which was lost     */
+    bool     ev_refused;      /**< the refusal is still to be told      */
     bool     told;            /**< an alert went out at told_ms         */
-    uint32_t told_ms;
+    uint32_t told_ms;         /**< when the last alert went out         */
     uint16_t told_ch;         /**< bit c: told at ch_ms[c]              */
-    uint32_t ch_ms[LINK_SL_KEPT];
+    uint32_t ch_ms[LINK_SL_KEPT]; /**< when each channel was last told  */
     uint8_t  turn;            /**< the channel the next search starts at */
 } sense_limit_link_t;
 

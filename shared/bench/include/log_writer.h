@@ -1,6 +1,11 @@
-/*
- * Writes a run as CSV (comma-separated values) in the format shared/logfile
- * reads.
+/**
+ * @file
+ * @brief Writes a run as CSV (comma-separated values) in the format
+ *        shared/logfile reads.
+ *
+ * Three kinds of row: a bench run's (log_writer_row()), the same row with the
+ * supply's figures for a run ARMED from SERVO (log_writer_servo_row()), and a
+ * supply run's (log_writer_supply_row()).
  *
  * The sink is injected: the host suite writes into memory and the panel
  * writes into a FILE.  Nothing here depends on the card, so the writer is
@@ -16,17 +21,21 @@
 
 #include "bench_state.h"
 #include "log_cols.h"
+#include "sense_link.h"
 #include "supply.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * @brief The byte sink a log writer writes to, with its commit.
+ */
 typedef struct {
-    /** Returns bytes written, or a negative value on failure. */
+    /** @brief Returns bytes written, or a negative value on failure. */
     int (*write)(void *ctx, const void *data, size_t len);
     /**
-     * Commit what has been written, so that a power cut keeps it.
+     * @brief Commit what has been written, so that a power cut keeps it.
      *
      * NULL for a sink that needs no commit, such as memory.  Returns false
      * on failure.  Writing a row is not keeping it: on FAT (file allocation
@@ -37,9 +46,12 @@ typedef struct {
     void *ctx;
 } log_sink_t;
 
-/** The longest bench row, terminator included. */
+/** @brief The longest bench row, terminator included. */
 #define LOG_WRITER_LINE_MAX 256
 
+/**
+ * @brief A log writer: its sink, its counts and its latched failure.
+ */
 typedef struct {
     log_sink_t sink;
     uint32_t   rows;
@@ -48,12 +60,16 @@ typedef struct {
     float      committed_s;  /**< t_s of the row the last commit ended at */
     bool       header_done;
     bool       failed;     /**< a write failed; the file is not trustworthy */
-    /** The INA3221 columns go by cols (log_writer_set_cols()), not CH1 to
-     *  CH3. */
+    /**
+     * @brief The INA3221 columns go by cols (log_writer_set_cols()), not CH1 to
+     *        CH3.
+     */
     bool       by_map;
     log_cols_t cols;
-    /** A bench row as it is built: 23 cells, here rather than on the
-     *  stack of the task that writes the card. */
+    /**
+     * @brief A bench row as it is built: up to 25 cells, here rather than on the
+     *        stack of the task that writes the card.
+     */
     char       line[LOG_WRITER_LINE_MAX];
 } log_writer_t;
 
@@ -62,11 +78,11 @@ typedef struct {
  *
  * The writer commits every LOG_WRITER_FLUSH_ROWS rows, and again once
  * LOG_WRITER_FLUSH_S have passed on the run's own clock, whichever comes
- * first.  At the panel's 20 Hz sample rate the two are the same point: 20
- * rows is 1000 ms of run.
+ * first.  At the panel's 20Hz sample rate the two are the same point: 20
+ * rows is 1000ms of run.
  *
  * A run interrupted at any moment therefore loses at most 20 rows, spanning
- * less than 1.0 s of its own clock.  Twenty and not nineteen: the count
+ * less than 1.0s of its own clock.  Twenty and not nineteen: the count
  * reaches LOG_WRITER_FLUSH_ROWS before the commit is attempted and is
  * cleared only once the commit has succeeded, so those twenty rows are not
  * durable for as long as the sink takes.  The price is one commit per second per
@@ -76,7 +92,7 @@ typedef struct {
 #define LOG_WRITER_FLUSH_S    1.0f
 
 /**
- * Semicolon as the separator, full stop as the decimal point.
+ * @brief Semicolon as the separator, full stop as the decimal point.
  *
  * The reader infers a file's number convention from every value in it and
  * rejects values that do not conform.  With ';' as the separator, '.' is
@@ -86,36 +102,52 @@ typedef struct {
 #define LOG_WRITER_SEP ';'
 
 /**
- * The values of the last column, "source", of a bench file and a supply file:
- * "measured" for a row whose values a meter or a supply produced, "model"
- * for a row the panel's model produced (LINK_BN_SIMULATED on a bench row,
- * supply_state_t.modelled on a supply row).  A reader takes a file with the
- * column and a file without it; a file written without it ends at the
- * previous column.
+ * @brief The values of the last column, "source", of a bench file and a supply
+ *        file: "measured" for a row whose values a meter or a supply produced,
+ *        "model" for a row the panel's model produced (LINK_BN_SIMULATED on a
+ *        bench row, supply_state_t.modelled on a supply row).
+ *
+ * A reader takes a file with the column and a file without it; a file written
+ * without it ends at the previous column.
  */
 #define LOG_WRITER_SRC_MEASURED "measured"
 #define LOG_WRITER_SRC_MODEL    "model"
 
+/**
+ * @brief Sets up a writer on a sink.
+ *
+ * @param w    The writer to set up.
+ * @param sink The sink the rows go to.
+ */
 void log_writer_init(log_writer_t *w, const log_sink_t *sink);
 
 /**
- * The INA3221 columns of this file, before its header: with SENSE_MAP in
- * force a group per watched target (log_cols.h), read from the window
- * bench_state_t.chw carries; NULL for SERVO_SENSE's CH1 to CH3, as an
- * IOmcu older than 4.25 has them.  Taken until the header is written,
- * ignored after.
+ * @brief The INA3221 columns of this file, before its header: with SENSE_MAP in
+ *        force a group per watched target (log_cols.h), read from the window
+ *        bench_state_t.chw carries; NULL for SERVO_SENSE's CH1 to CH3, as an
+ *        IOmcu older than 4.25 has them.
+ *
+ * Taken until the header is written, ignored after.
+ *
+ * @param w    The writer.
+ * @param cols The INA3221 columns, or NULL.
  */
 void log_writer_set_cols(log_writer_t *w, const log_cols_t *cols);
 
 /**
- * Write the header row.  log_writer_row calls it if it has not been called,
+ * @brief Write the header row.
+ *
+ * log_writer_row calls it if it has not been called,
  * so a file cannot lack a header.
+ *
+ * @param w The writer.
+ * @return true on success; false when a write failed.
  */
 bool log_writer_header(log_writer_t *w);
 
 /**
- * Append one sample at @p t_s seconds, and commit when the row completes an
- * interval.
+ * @brief Append one sample at @p t_s seconds, and commit when the row completes
+ *        an interval.
  *
  * False means one of two things, and log_writer_failed() tells them apart:
  *
@@ -132,6 +164,12 @@ bool log_writer_header(log_writer_t *w);
  * it can pass either of those.  The panel cannot: its row carries a struct by
  * value and a finite time: a supply run's sum of steps, or a bench run's
  * wall time since the arm (log_cadence.h).
+ *
+ * @param w   The writer.
+ * @param t_s The time of the row, in s.
+ * @param b   The sample to write.
+ * @return true on success; false when refused or failed (see
+ *         log_writer_failed()).
  */
 bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b);
 
@@ -197,29 +235,88 @@ void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
                     bool driving);
 
 /**
+ * @brief The servo rail's INA3221 window for a SERVO run's row, into @p out,
+ *        with nothing counted: while an INA3221 channel is the rail's meter
+ *        (servo_source.h).
+ *
+ * The window's mean bus voltage, its mean current and their product, as
+ * SERVO's line shows them, each by the window's current and voltage flags.
+ * None on a modelled row, and out->withheld says so: the part reads through
+ * the IOmcu.  @p win NULL takes none.
+ *
+ * @param out          Receives the reading.
+ * @param win          The newest window of the rail's channel, or NULL.
+ * @param row_modelled true when the row is the panel's model.
+ */
+void log_rail_take_ina(log_rail_t *out, const sense_link_win_t *win,
+                       bool row_modelled);
+
+/**
+ * @brief A SERVO run's commanded pulse and measured angle on its row.
+ */
+typedef struct {
+    float    angle_deg;  /**< the horn's angle from the centre count, deg */
+    uint16_t pulse_us;   /**< the commanded pulse, us */
+    bool     pulse_ok;   /**< a pulse is commanded */
+    bool     angle_ok;   /**< an angle was measured */
+} log_servo_t;
+
+/**
+ * @brief The pulse and the angle in one 32-bit word, for the render side to
+ *        hand the control task in one atomic store.
+ *
+ * The pulse in bits 16 to 31, 0 for none; the angle in centidegrees, signed,
+ * in bits 0 to 15, 0x8000 for none.  An angle that is not finite or lies
+ * past +-327.67deg packs as none, and so does a pulse of 0.
+ *
+ * @param pulse_ok  true when a pulse is commanded.
+ * @param pulse_us  The commanded pulse, us.
+ * @param angle_ok  true when an angle was measured.
+ * @param angle_deg The angle, deg.
+ * @return The packed word.
+ */
+uint32_t log_servo_pack(bool pulse_ok, uint16_t pulse_us, bool angle_ok,
+                        float angle_deg);
+
+/**
+ * @brief log_servo_pack()'s word back into @p out, for a row: no angle on a
+ *        modelled row, whose figures the encoder did not produce.
+ *
+ * @param packed       The word.
+ * @param row_modelled true when the row is the panel's model.
+ * @param out          Receives the pulse and angle; NULL does nothing.
+ */
+void log_servo_unpack(uint32_t packed, bool row_modelled, log_servo_t *out);
+
+/**
  * @brief Append one sample of a run ARMED from SERVO: log_writer_row()'s row
  *        with voltage, current, power, charge and energy from @p rail.
  *
- * The header is the motor run's, so both files read by one rule.  The
+ * The header is the motor run's with `pulse (us);angle (deg)` before
+ * `source`, so both files read by one rule.  The
  * supply's cells are written as a supply file writes them: voltage and power
  * to 0.01, current to 0.001, charge to 1mAh, energy to 0.01Wh; a cell rail
  * has no reading or total of is empty, and so are all five with @p rail
  * NULL.  rpm, the temperatures, the INA228's and the ESC's columns, the
  * INA3221 window and source are @p b's, as log_writer_row() writes them.
- * Same returns, commits and latch as log_writer_row().
+ * The pulse is written in whole us and the angle to 0.1deg, each empty when
+ * @p sv has none, and both with @p sv NULL.  Same returns, commits and latch
+ * as log_writer_row().
  *
  * @param w    The writer.
  * @param t_s  The time of the row, in s.
  * @param b    The bench sample.
  * @param rail The supply's reading and totals, or NULL.
+ * @param sv   The pulse and angle, or NULL.
  * @return true on success; false when refused or failed (see
  *         log_writer_failed()).
  */
 bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
-                          const log_rail_t *rail);
+                          const log_rail_t *rail, const log_servo_t *sv);
 
 /**
- * Append one supply sample, for a run that is the supply's output being on.
+ * @brief Append one supply sample, for a run that is the supply's output being
+ *        on.
  *
  * The file's first row writes the supply header -- time; set (V);
  * voltage (V); limit (A); current (A); power (W); mode; charge (mAh);
@@ -227,12 +324,18 @@ bool log_writer_servo_row(log_writer_t *w, float t_s, const bench_state_t *b,
  * so.  Readings that did not arrive, and totals nothing counted, are empty
  * cells; the mode is CV, CC or OFF, and empty while the supply does not
  * answer.  Same returns, commits and latch as log_writer_row().
+ *
+ * @param w   The writer.
+ * @param t_s The time of the row, in s.
+ * @param s   The supply sample.
+ * @return true on success; false when refused or failed (see
+ *         log_writer_failed()).
  */
 bool log_writer_supply_row(log_writer_t *w, float t_s,
                            const supply_state_t *s);
 
 /**
- * Commit the rows written since the last commit.
+ * @brief Commit the rows written since the last commit.
  *
  * log_writer_row() calls it on the schedule above.  A caller calls it by
  * hand when a run has gone quiet with rows still uncommitted, and at the end
@@ -242,16 +345,30 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
  * it would be a transaction that buys nothing.  A commit that fails latches
  * the writer the way a failed write does, because a row the sink will not
  * keep is a row the file has lost.
+ *
+ * @param w The writer.
+ * @return true on success; false when the commit failed.
  */
 bool log_writer_commit(log_writer_t *w);
 
-/** Rows written and not yet committed: what a power cut would cost now. */
+/**
+ * @brief Rows written and not yet committed: what a power cut would cost now.
+ *
+ * @param w The writer.
+ * @return The rows written and not yet committed.
+ */
 static inline uint32_t log_writer_pending(const log_writer_t *w)
 {
     return (w == NULL) ? 0u : w->pending;
 }
 
-/** True once any write has failed: the file is incomplete, not merely short. */
+/**
+ * @brief True once any write has failed: the file is incomplete, not merely
+ *        short.
+ *
+ * @param w The writer.
+ * @return true once any write has failed.
+ */
 static inline bool log_writer_failed(const log_writer_t *w)
 {
     return w == NULL || w->failed;

@@ -6,13 +6,279 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.0 - 2026-10-25
+
+0.23.0 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It is the first
+release for the ESP32-P4 panel, the 7-inch ESP32-P4 display board from
+Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2, 1024 x 600
+pixels). 0.22 is the last release line for the ESP32-S3 panel and 0.22.1
+its last release: an ESP32-S3 panel is offered 0.22.x patch releases only,
+and no 0.23.0 or later release. The IO board and the CAN (Controller Area
+Network) link are as in 0.22.1; the IOmcu image adds the reset-cause report
+listed below, and the link protocol stays 4.28.
+
+A new bench loads 0.23.0 over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes: the IOmcu
+with `rcbench-iomcu-install.uf2`, the panel with `rcbench-panel-p4-v0.23.0.zip`
+and `esptool.py --chip esp32p4`. A later release reaches an ESP32-P4 panel
+over Wi-Fi: CHECK FOR UPDATES with RELEASES: STABLE reads `releases/latest`,
+which names 0.22.1 until a stable release for the ESP32-P4 panel exists, so
+it reads `Up to date. Panel version: 0.23.0.`; with RELEASES: TESTING it reads the 10 newest
+releases. At link-up the panel offers the IOmcu's update over CAN when the
+IOmcu runs another build. Which of the board's two USB-C sockets takes the
+flash, and how the board enters download mode, is not traced.
+
+### Added
+
+- PICK A PIN draws a cat: one of 8 drawings (3 sitting, 1 with a paw
+  raised, 2 asleep, 1 looking over an edge, 1 loaf), picked at random on
+  each visit among those whose spot, bottom left or bottom right, has no
+  row, key or list within 4px. It is drawn with the screen's static parts,
+  so a frame that repaints nothing draws nothing for it, and it takes no
+  taps. `tools/gen_cats.py` draws the cats and writes them as run-length
+  encoded RGB565 (red, green, blue in 5, 6 and 5 bits) with 4-bit alpha,
+  117579 bytes for the 8; CI (continuous integration) checks the table
+  with `--check` ([Screens](docs/Screens.md#pick-a-pin)).
+- The panel sets its clock by NTP (Network Time Protocol). Each join of
+  the home network, the release check at start included, asks
+  `pool.ntp.org` once, for at most 30000ms, and logs
+  `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +...s from the old
+  clock`. A join that ends before the answer, the release check's own end
+  included, keeps the radio up for it, 30000ms from the request at most;
+  ARM, STOP, the supply, a log run, an install and a failed radio take it
+  down at once. SETUP > PANEL has a Time zone row: UTC, LONDON, BERLIN, HELSINKI,
+  NEW YORK, CHICAGO, DENVER, LOS ANGELES, TOKYO and SYDNEY, BERLIN by
+  default, with daylight saving. File stamps, FILES INFO, the Wi-Fi page and
+  the ZIP file use it. The board has no RTC (real-time clock) chip: the
+  clock starts unset at each power-on, and a software restart keeps it. A
+  1980 stamp, an unset clock's, reads `not known` on FILES INFO and leaves
+  the Wi-Fi page's time cell empty
+  ([Building](docs/Building.md#the-panels-clock)).
+- The panel's RTC timer, which keeps the clock across a software restart,
+  counts the board's 32.768kHz crystal Y3 instead of the internal RC
+  oscillator. The crystal's drift is at most about 30ppm, measured over
+  65min; the RC's is not a fixed figure (584ppm over 2h04min in one run,
+  under 15ppm over 1h51min in another). A crystal that does not
+  start leaves the panel on the RC. Each start logs the slow clock, e.g.
+  `clock: rtc slow clock 32k crystal, 32768.012Hz calibrated`
+  ([Building](docs/Building.md#the-rtc-slow-clock)).
+- A SERVO run's log, `SERVOnnn.CSV`, has `pulse (us)` and `angle (deg)`
+  before `source`: the pulse COMMANDED shows and the AS5600 angle MEASURED
+  shows, empty without one. While an INA3221 channel is the servo rail's
+  meter, `voltage`, `current` and `power` are its newest 50ms window's,
+  otherwise the supply's. A MOTOR run's header and rows stay as they are.
+  LOGS reads up to 25 columns, the fullest SERVO file, and opens a SERVO
+  file with `pulse`, `angle`, `current` and `voltage` chosen.
+
+- The IOmcu says why it last started. A console line at start-up and every
+  3s names the cause and carries every raw value it was read from:
+  `reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot ... params ...
+  scratch ...)`, from POWMAN CHIP_RESET, WATCHDOG REASON, the boot ROM's
+  boot word and reboot parameters, and WATCHDOG SCRATCH2 and SCRATCH3. The
+  words are POR, BOR, RUN_PIN, GLITCH, DEBUGGER, POWER_DOWN, FLASH_UPDATE,
+  RAM_IMAGE, BOOTSEL_REBOOT, SW_RESET, WATCHDOG and UNKNOWN
+  ([Bring-up](docs/Bringup.md#why-the-iomcu-last-started)).
+- A tap on a number's value opens the keypad on every row that sets a
+  number: SETUP's PANEL, INTERFACES and SENSORS lists, ESC STICK's TIMING
+  and BALANCE's blade count, beside the `-` and `+` keys, which stay. The
+  keypad names the setting, its range and its unit and takes the step's
+  digits after the point. OK sets the value through the call a step ends
+  in, onto the nearer step, and SAVE keeps it as it keeps a step. A value
+  outside the range keeps the keypad open and names the range in the
+  warning colour. One the keys never reach keeps it open with the reason
+  in place of the range until the next key: `0 or 5.0 to 1000.0mΩ` for
+  a SENSORS shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a
+  LIMIT row between 0 and 10mA, `Pins the bus takes: 0 4 6 14
+  16 18 20 26` for a Sensor SDA pin the bus cannot have, listed from the
+  check the row's keys use, and `The other PD mini pin holds this GPIO`.
+  A shunt of 44.4mΩ from the 100.0 default is five keys, where `-`
+  takes 556 steps.
+- SERVO > SETTINGS > OUTPUT > TRIM opens a signed keypad: a `+/-` key
+  between the point and OK, -200 to +200us, onto the 5us steps of `-` and
+  `+`. Keypads of unsigned rows keep their keys where they were; a pin's
+  -1, not set, is still set with `-`.
+- A settings value with a step finer than 0.1 shows the step's digits after
+  the point, and one with a step of 1 none: ESC STICK's Current limit reads
+  1.25A where it read 1.2A, MOTOR & ESC's Internal R 18mΩ where it
+  read 18.0.
+- ESP32-P4 panel: Wi-Fi through the board's ESP32-C6 on SDIO (Secure
+  Digital input/output) slot 1, CLK GPIO18, CMD GPIO19, D0 to D3 GPIO14 to
+  GPIO17, the C6's enable on GPIO54, 4 bits at 40MHz. The `esp_wifi` calls
+  of the WI-FI session, the release check and the download reach the C6
+  through the managed components `esp_wifi_remote` 1.6.5 and `esp_hosted`
+  2.13.0 (Apache-2.0; esp_hosted carries the protobuf-c runtime,
+  BSD-2-Clause, in NOTICE), pinned in `firmware/panel/dependencies.lock`. The
+  first Wi-Fi start logs the C6's firmware version. A C6 that does not
+  answer at the first start, or an SDIO link that fails later, ends the
+  session, holds the C6 in reset (GPIO54 low) and leaves Wi-Fi off until
+  the next start; the panel does not restart for it. The card's mount
+  starts SDMMC slot 0 before ESP-IDF's mount, so a slot 0 that does not
+  start leaves the controller and the C6's link running. Every task created
+  through `xTaskCreate()` or `xTaskCreatePinnedToCore()` without a core
+  runs on core 0, so esp_hosted's 6 tasks at priority 23 stay off the
+  control task's core; the console lists every task's core and priority at
+  start-up.
+- Four glyph tables for the 1024 x 600 panel: 10x20, 12x24 and 20x36 text
+  faces and a 32x44 numeral face (20,400, 29,376, 73,440 and 38,016 bytes
+  of flash), and the roles `UI_FONT_FINE` (8x16) and `UI_FONT_BODY`
+  (12x24). Cap heights are 12, 15, 23 and 40px. The 32x44 numeral face
+  cuts `#` (5px), `$` (16px), `(` (12px), `)` (12px), `,` (23px) and
+  `/` (6px) at the cell edge; the three text faces cut nothing, which
+  `gen_font.py --check` verifies. The screens draw with them (see Changed).
+- The console names each SERVO test file as it opens and closes:
+  `logging to .../ATEST004.TXT` when the report opens after the CSV,
+  `.../ATEST004.CSV closed, 212 lines` or `... closed short: a write or the
+  close failed, 212 lines sent` at its close, and the same for
+  `LIMITnnn.TXT`. A test that gets no file logs `no test file in ... (take
+  n); this test is not recorded`.
+- ESP32-P4 panel: the frame cost and the stacks are modelled and held in
+  CI. `tools/frame_cost.py` counts L2 cache-line fills under the P4's L1
+  (64KiB, 2-way) and L2 (128KiB, 8-way) caches and holds 27 modes to
+  ceilings; `tools/stack_check.py` decodes the P4's RISC-V code
+  (`tools/stack_riscv.py`) and holds every panel task's deepest chain and
+  1024 bytes to its stack. The console logs, with the build option
+  `RCBENCH_PERF_LOG` (default ON), at most one line a frame: a rate line
+  every 300 frames with fps, DRAW, WAIT, TURN and VSYNC, a window line with
+  DRAW, WAIT and TURN as min/mean/max on the screen shown, the PSRAM probe
+  at start-up, and every stack's high-water mark and the internal heap's
+  lowest figure, the stacks scanned every 6th rate line on a SAFE bench
+  with the supply off ([Performance](docs/Performance.md#on-the-board)).
+
+- FILES, the SD card in two panes. SETUP's ninth tile, FOLDERS AND FILES,
+  and a FILES key in LOGS' footer open it. Each pane is 500px wide, shows 6
+  rows at a 48px pitch in pages of 48 entries and has a 56px scroll bar.
+  The footer keys are OPEN, COPY, MOVE, RENAME, DELETE, NEW, INFO and
+  RESCAN. An entry that starts with `.` or is longer than 63 bytes is
+  counted as `+ n NOT LISTED`. A name takes 59 bytes at most.
+  Writes run only while the bench is SAFE and no log file is open; a key
+  the rule refuses is drawn dimmed, and a tap says why. A copy, move or
+  delete runs on its own task (`cardjob`, priority 1, core 0, 6656 bytes of
+  stack) in chunks of 16KiB. It stops before the next chunk on CANCEL, on a
+  switch to ARMED and when a run starts logging, and it removes its `.NEW`
+  part file. The bench's folders are FIXED, the servo programmer's record
+  is LOCKED, a file the logger writes shows WRITING, and the fault log can
+  be copied or deleted only with the IOmcu link up. After each copy the
+  console logs the size, the time and the rate in kB/s. OPEN on a log CSV
+  or a report in the three log folders opens it on LOGS; OPEN on any other
+  file names where LOGS opens files. The text viewer and editor are not in
+  this release. The message line is worded when it is drawn, so a result or
+  refusal on it follows a change of the interface language.
+- SETUP > PANEL has a Screen rotation row, NORMAL or 180°, NORMAL by
+  default, after Contrast. A step applies on the next frame without a
+  restart, and SAVE keeps it. The row is held while the bench is ARMED:
+  it has no keys and the settings calls leave it. NORMAL draws into the
+  frame buffer as before. 180° draws into two logical buffers in PSRAM
+  (2 x 1,228,800 bytes, allocated at start-up in both settings) and
+  copies what a frame changed, in rectangles of 16-row bands, at most 8
+  per flip, into the frame buffer at the turned place with the PPA
+  (pixel-processing accelerator). Touch turns with the picture; the touch
+  injector's contacts stay in logical pixels. A flip has 50ms for its
+  copies. A copy that times out or that the PPA refuses makes the flip
+  copy the logical buffer unturned with the CPU; picture and touch both
+  fall back to NORMAL until the next start, the stored setting stays 180°,
+  and the band says `Screen rotation 180° failed. NORMAL until restart.`.
+  The PPA's copy time on the board is not measured; the console's
+  300-frame line carries `TURN <n> us`, the last flip's copy time. The
+  build copies ESP-IDF's `esp_driver_ppa` with the change that Espressif's
+  `esp_lvgl_adapter` 0.6.4 ships for the PPA hang DIG-734.
+- The touch injector (`testbench/touch-injector`) runs up to 5 contacts
+  at once, as the GT911 reports them: a frame carries every contact that
+  is down, lowest ID first. `tap`, `hold` and `swipe` take `id=N` (0 to
+  15), `release` takes it, `contacts` lists the contacts, and a sixth
+  contact answers `err full`. A command without `id=` drives contact 0 and
+  its reply is word for word as before; `ping` still reports protocol 1.
+  The station can press DISARM or STOP with a second contact while a drag
+  is under way.
+- The console says when the rotary knob's MT6701 first answers a poll and
+  when it stops: `knob: found at 0x06 on I2C1 (GPIO30/31)` and `knob:
+  lost at 0x06 on I2C1 (GPIO30/31)`. One line per change; a panel without a
+  knob prints nothing.
+- The release workflow names the panel's assets `rcbench-panel-p4-<tag>.zip`
+  and `rcbench-panel-p4-<tag>.bin`, and `SHA256SUMS` lists them. The update
+  check of an ESP32-P4 panel looks for `rcbench-panel-p4-vX.Y.Z.bin`
+  (`shared/fwupdate/fw_release.c`), so an ESP32-S3 panel, whose assets carry
+  no `p4`, finds no entry for 0.23.0. The ESP32-P4 panel's release line is
+  not capped: a check on STABLE or TESTING offers any release newer than the
+  running build (`FW_REL_LINE_CAPPED` 0); the ESP32-S3 panel's line stays
+  at 0.22.x.
+- The panel stops the bench when its render loop stands still. While the
+  bench is ARMED or the supply output is on, a render loop that completes
+  no pass for 1000ms (`FRAME_WATCH_MS`) is answered as a STOP: the
+  heartbeat drops, the IOmcu fails safe within 150ms and the supply output
+  goes off. The alert reads `Screen stopped updating for 1s. Switched to
+  SAFE, output off.` (`Bildschirm 1s ohne Aktualisierung. Auf SAFE
+  geschaltet, Ausgang aus.`). A SAFE bench with the supply off is never
+  stopped. Current limits: one card read of 1000ms or more on LOGS while a
+  programming port holds the supply on, and the servo programmer's card
+  look while its session holds the supply on, stop the bench; a display that
+  sends no frame-done event makes each flip wait 200ms and does not trip
+  the watch ([Safety](docs/Safety.md)).
+
 ### Fixed
 
+- LOGS lists every report: `ATESTnnn.TXT` beside its `ATESTnnn.CSV`, which
+  it left off its list, now stands as a row of its own after the run's CSV
+  and opens as text. FILES' OPEN on a file its list labels REPORT
+  (BERICHT) in ROOT, USER or BENCH opens it in LOGS on that tab, where it
+  refused `ATESTnnn.TXT` beside its CSV with `LOGS opens .csv files and
+  reports in ROOT, USER and BENCH.` Both take one rule
+  (`log_select_lists()`), the one FILES labels a report by. A file the
+  logger still writes greys OPEN and reads `ATEST012.TXT is being written.`;
+  a file gone since FILES listed it reads
+  `LIMIT013.TXT is not on the card. Tap RESCAN.` The panel walks a folder
+  once a page; the second walk and its 1,750 bytes of PSRAM are gone.
+- The `wifi_ctl` task, which stops the radio and logs the NTP result,
+  runs on a stack of 6912 bytes instead of 5120. Its deepest call chain,
+  3744 bytes through `snprintf()`, left 352 bytes above the 1024-byte
+  margin and now leaves 2144. The 1792 bytes come from internal RAM
+  ([Performance](docs/Performance.md#stacks)).
+- In the light theme a button that takes no press drew as a dark slab,
+  darker than the enabled buttons beside it. A disabled button now takes
+  the theme's ground colour with a dim edge and a faint label in both
+  themes. The overview's `rcbench` mark was near-black on a near-black
+  box in the light theme; its text now takes the panel colour on a dark
+  fill.
+- UPDATES without a home network said `No home network saved.` and the
+  line under it twice, once in the status lines and once as the check's
+  result. The result is left out while the status lines say it.
+- RECEIVER drew CH17 and CH18 as buttons that took no tap. They are lamps
+  now: a pill whose dot lights while the channel is set.
+- A host Release build (`-DCMAKE_BUILD_TYPE=Release`) stopped on -Werror
+  warnings that the Debug build does not raise: a buffer of 8 bytes for
+  `+%u` on MOTOR & ESC's TARGET, and four host tests. It builds and passes.
+- LOGS words its footer message when it draws it, so a change of
+  SET_LANGUAGE rewords a message already standing: a refused open or
+  delete, a deleted file's name and the reader's verdict on a file.
+
+- A new panel build's first start is kept once the panel works as a whole:
+  the card tried, the settings loaded, the control and logger tasks one
+  pass each, a whole frame on the display and a screen loop tick after it,
+  or 30s after the start once the screen loop ticks. The IOmcu is not
+  waited for. A panic or reset before that goes back to the build before
+  it. A build kept at display and touch that failed after that restarted
+  for ever and needed USB (Universal Serial Bus) to recover
+  ([Screens: PANEL UPDATE](docs/Screens.md#installing-panel-update)).
+
+- A glass GT911 that latches I2C (Inter-Integrated Circuit) address 0x14
+  at its reset is read as the glass, with both axes mirrored and the 180°
+  turn, and no longer as the touch injector through its unmirrored map,
+  which landed every touch point-reflected: STOP missed, and a finger on
+  the reflected point of ARM held ARM. The panel tells the injector by its
+  product ID `9INJ`, which no Goodix controller reports, not by its
+  address. Beside a glass at 0x5D, a GT911 at 0x14 without it is not read.
+  The touch injector reports `9INJ` and its `ping` reply ends with
+  `id=9INJ`; an injector image without it has to be flashed again
+  ([touch injector](testbench/touch-injector/README.md)).
+
+- A line on OUTPUTS and PICK A PIN no longer ends with a number alone on
+  the next line: `SERVO TESTER DRIVES PROG PORT 1` broke before its `1` at
+  30 cells, and now breaks before `PORT 1`. A word of digits alone goes
+  down with the word before it.
+
 - STOP and DISARM on MOTOR & ESC and on SERVO act on the press, not on the
-  release. On an ESP32-P4 panel, whose router and screens act the same, a
-  STOP held 600ms stopped the pulses 0.62s after the press, at the lift,
-  and a DISARM held 600ms 0.618s after it; not measured on an ESP32-S3
-  panel. The
+  release. On the panel a STOP held 600ms stopped the pulses 0.62s after
+  the press, at the lift, and a DISARM held 600ms 0.618s after it. The
   control task's own STOP test and the router's both act at the press; a
   press on DISARM takes no hold, so a finger left on it arms nothing. ARM
   stays a 2s hold.
@@ -20,26 +286,300 @@ history is in git.
   tag, a chip or the alert band -- ends a dial or slider drag another finger
   makes, as a press on the screen does. A STOP pressed during a SERVO dial
   drag let the pulse follow the drag for the whole press.
+- The SERVO dial's drag filter stops where it is when a press, a release
+  at the band's edge or a touch loss ends the drag, and at every command
+  other than its own and a restated position, the knob's included when it
+  comes to the filter's last pulse.
+- ESP32-P4 panel: the .bss that `firmware/panel/main/psram_bss.lf` names
+  is in PSRAM (pseudo-static random-access memory): 29 objects, 166,472
+  bytes of `.ext_ram.bss`; internal .bss is 29,408 bytes instead of
+  195,880. The fragment
+  defines its own scheme, `rcbench_extram_bss`: the `extram_bss` scheme it
+  named is defined only in `esp_wifi`'s fragment, which the P4 build does
+  not include, and ldgen skipped the mappings without a message. CI fails
+  through `tools/psram_bss.py` when a named object keeps .bss in internal
+  RAM.
+- WI-FI > CHOOSE HOME NETWORK: a failed scan no longer reads as an empty
+  list. A scan session starts one scan, however often the station's start
+  is reported: esp_hosted 2.13.0 sends it from `req_wifi_start()` and from
+  its event handler, and a second `esp_wifi_scan_start()` replaces the
+  first, which then reports done with nothing found. Each scan has a token
+  that the refusal, the done report and the retry carry: a call of a scan
+  that ended acts on nothing of the session started after it. At the
+  radio's stop the worker waits, 2000ms at most (`DRAIN_MS`), until the
+  event loop has handled the radio's last events, so a done report of a
+  radio taken down is never read as the next radio's. A failed
+  scan, a list that cannot be read and a read that does not hold what the
+  report counts (or a full buffer of 24) run the scan again, 3 scans at
+  most (`WA_SCAN_TRIES`) within the 10s; then the list's place says
+  `Wi-Fi could not start.` instead of `No WPA2 or WPA3 network found.`, as
+  it does for a scan the radio refuses. The console logs each scan's start,
+  its done report (status, counted, read, listed, left off) and an ignored
+  report.
 - A SERVO run's log, `SERVOnnn.CSV`, carries the supply's figures in
   `voltage`, `current`, `power`, `charge` and `energy`: the PD mini's last
   reading at each row, current to 0.001A, and charge and energy counted
   from those readings since the switch to ARMED. These cells were empty on
   a bench without an ESC or an INA228. The header and a MOTOR run's rows
   stay as they are.
-- WI-FI > CHOOSE HOME NETWORK: a failed scan no longer reads as an empty
-  list. A scan session starts one scan, however often the station's start
-  is reported. Each scan has a token that the refusal, the done report and
-  the retry carry: a call of a scan that ended acts on nothing of the
-  session started after it. At the radio's stop the worker waits, 2000ms
-  at most (`DRAIN_MS`), until the event loop has handled the radio's last
-  events, so a done report of a radio taken down is never read as the next
-  radio's. A failed scan, a list that cannot be read and a read that does
-  not hold what the report counts (or a full buffer of 24) run the scan again, 3 scans at most (`WA_SCAN_TRIES`) within the 10s;
-  then the list's place says `Wi-Fi could not start.` instead of
-  `No WPA2 or WPA3 network found.`, as it does for a scan the radio
-  refuses, where it said `Searching for networks.` until the screen closed.
-  The console logs each scan's start, its done report (status, counted,
-  read, listed, left off) and an ignored report.
+
+- Taking the radio down no longer waits for a name lookup that has not
+  answered. `radio_down()` gives the GitHub fetch task 1.5s
+  (`FETCH_GRACE_MS`), then stops the station, destroys the interface and
+  sets the radio down; the 20s wait for the task (`FETCH_EXIT_MS`) is gone.
+  While the task lives no fetch job starts (BUSY), and a WI-FI session does
+  not wait for it; its late report is dropped by the job's generation.
+  With the first DNS (Domain Name System) server not answering, an ARM
+  during the release check at start left a WI-FI JOIN tapped then waiting
+  13.9s; the station dropped 1.55s after the ARM on the bench. Not
+  measured on the board with this build. lwIP tries a first DNS server at
+  0s, 1s, 2s and 4s and the next at 7s, so a first server that does not
+  answer delays each name lookup after a join by about 7s;
+  `DNS_MAX_RETRIES` and `DNS_TMR_INTERVAL` are not in ESP-IDF v5.5.5's
+  Kconfig and stay at lwIP's defaults. The console logs one line per join
+  with the servers the interface holds: `wifi: dns <first>, <second>`.
+- UPDATES: a job ended or refused for the WI-FI screen shows no result line
+  once the radio is off and nothing asks for it, so `Stopped: the WI-FI
+  screen is using Wi-Fi.` no longer stays after the WI-FI session ended.
+- The panel's web page refuses requests that come from another site. The
+  Host header has to name the panel (`rcbench-XXXX.local`, the bare name
+  or the IPv4 address the connection came in on), otherwise the answer is
+  421. POST /code and POST /update need an `Origin`, or without one a
+  `Referer`, of `http://` plus such a host, otherwise 403; POST /update
+  also needs `X-Rcbench-Upload: 1`. A refused POST to /code does not count
+  toward the 16 wrong codes. A /code body over 95 bytes gets 413. The
+  Cookie header is read up to 1025 bytes. The SHA-256 check of an uploaded
+  image runs outside the lock the page's other requests take. Receive and
+  send time-outs are 5s; an upload ends after 30s without data. Three
+  limits on the home network stay and are listed in `SECURITY.md`: NTP
+  answers are not checked, mDNS (multicast DNS) answers unicast queries
+  from any source, and a slow request head holds the single server task.
+- The web page's listing of the card reads each folder once per pass
+  through FatFs's directory handle instead of one `f_stat()` per entry,
+  and stops at once on an abort. On the host model, 1000 files in one
+  folder cost 4,012 directory records instead of 2,006,020. The time on
+  the panel is not measured; the station measured 25.9s for a 168-row
+  listing before the change.
+- FILES' COPY and DELETE refuse `RCBENCH.LOG` and `RCBENCH.OLD` as busy
+  while the fault log has a line waiting or being written; OPEN still
+  works and RENAME stays refused.
+- SERVO > TEST names the running test as the reason: START LIMIT RUN reads
+  `AUTOMATIC TEST IS RUNNING` (`AUTOMATISCHER TEST LÄUFT`) while the
+  automatic test runs, and START TEST reads `LIMIT RUN IS RUNNING`
+  (`ENDLAGENLAUF LÄUFT`) during a limit run. `LAST REPORT STILL WRITING`
+  stays for a report that is being written.
+- MOTOR & ESC with TARGET `NO MOTOR PIN`: ARM is drawn dimmed and takes no
+  press; a tap says `Cannot switch to ARMED: no motor pin. Choose a TARGET
+  on OUTPUTS.` (`ARMED gesperrt: kein Motor-Pin. Unter OUTPUTS ein ZIEL
+  wählen.`). DISARM stays live. A hold under way when the pin goes ends
+  without arming.
+- A limit run report that ends before any search says in its mode line
+  that no search ran.
+- INTERFACES, Tap pin offers the pins of the RP2350-CAN module that are
+  brought out and not reserved: 0, 1, 2, 4 to 7 and 13 to 22, without the
+  ADC (analog-to-digital converter) pins GP26 to GP29. GP23, which the
+  module does not bring out, is gone. A stored pin outside the set becomes
+  the default 22; the keypad refuses a typed one and lists the pins
+  (`Pins the tap takes: %s`, `Pins, die der Abgriff nimmt: %s`).
+
+### Changed
+
+- The ARMED chip in the band draws the dark text of the buttons on bright
+  fills: 5.45:1 in the dark theme (3.51:1 before), 4.94:1 in the light one
+  (4.67:1 before).
+- The help pages name the IOmcu release where they named a link protocol
+  number: `older than 0.18.0`, not `older than protocol 4.18`.
+- Release images are built with `RCBENCH_PERF_LOG=OFF`: the panel prints no
+  rate, window, PSRAM probe, stack or heap lines. The CI build, the bench
+  builds and a local `idf.py build` keep the option ON. `release.yml` and
+  `ci.yml` run `tools/check_perf_log.py`, which fails when a release image
+  holds the start-up probe's text, the stack scan's text or `scan_stacks`
+  ([Performance](docs/Performance.md#on-the-board)).
+- CI keeps cppcheck's build directory between runs, so cppcheck re-reads
+  only the files whose content or included files changed. cppcheck runs in
+  a job of its own, `cppcheck`, beside `Lint and static analysis`, which
+  runs clang-tidy over every file on every run.
+  `test/host/render_screen.c` poses the views of each screen group in a
+  function of its own; cppcheck's exhaustive check of the file takes 144s
+  instead of 673s on one core of an AMD EPYC 7402P.
+- An IOmcu too old for a page is named by the first release whose IOmcu
+  speaks it, the number UPDATES shows, not by the link protocol: `IOMCU
+  OLDER THAN 0.22.0: SERVO PWM ONLY` instead of `4.26`, `Update the IOmcu
+  to version 0.17.0 or later.` instead of `4.13`. Protocol 4.6 is 0.13.0,
+  4.9 0.15.0, 4.11 0.16.0, 4.13 and 4.15 0.17.0, 4.23 0.21.1, 4.24 to 4.27
+  0.22.0; 13 texts in English and German.
+- Every hold names its time in one pattern: `HOLD 2s TO ...`, in German
+  `2s HALTEN ZUM ...`. The KST programmer's holds, HOLD 2s TO APPLY, ESC
+  STICK's HOLD 2s TO RUN, UPDATES' `HOLD 2s TO DOWNLOAD & INSTALL` and
+  `HOLD 2s TO UPDATE THE IOMCU`, WI-FI's `HOLD 2s TO INSTALL` and OUTPUTS'
+  `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` follow the BUSFAULT and SERVO
+  holds.
+- German texts that were English outside the text table: the pin holders
+  on OUTPUTS and PICK A PIN (`HEARTBEAT`, `BELEGT` for in use), RECEIVER's
+  `ENDBYTE FALSCH` for BAD TAIL, and the splash's `Panel-Firmware` and
+  `Protokoll 4.28, Firmware 0.22.1` lines. The plot legends VOLT, CURR,
+  PWR, RPM, VSET and ISET stay English, as the channel names.
+- Units: MOTOR & ESC's temperatures read `ESC 33°C`; SERVO's dial says
+  `deg` after its angle, as the readout under it; the SETUP leave question
+  names a pin's -1 as the row's help does and writes a pin as `GPIO 4`,
+  the word first, in the question, on the row, in the keypad's entry and in
+  its range line (`GPIO 0 to 54`): `PD mini TX: open -> GPIO 4`.
+
+- A battery's cell count joins its number as a unit symbol: the pack's
+  Cells keypad gives its range as `1 to 14S` (`1 bis 14S`). A unit keeps
+  its own case in a label of capitals: SERVO's run cards say `HOLD 2s TO
+  START` (`2s HALTEN ZUM STARTEN`), and the automatic test's steps read
+  `4.8 6.0V BROWN-OUT`. `tools/check_units.py --check` fails on a cell count
+  after a space and on a unit in capitals after a number in the texts the
+  panel shows (`500MS`, `50 HZ`).
+- The ESC profiles' texts the panel shows write a number and its unit
+  together, as the rest of the interface does: `1.2-1.8ms`, `Nach 2s`,
+  `8kHz`, 683 numbers in 624 texts of 67 of the 72 profiles. These are the
+  strings `tools/gen_esc_profiles.py` compiles into the panel, and
+  `tools/check_units.py --check` holds them; a word after a number keeps
+  its space (`3 beeps`), and the profiles' research fields stay as written.
+- A resistance reads with the ohm sign: `120Ω`, `2.2kΩ`, `100.0mΩ`, in the
+  screens' texts, the settings' units (`uΩ` for the INA228's shunt) and the
+  servo test's and the limit run's `.TXT` reports, in English and German.
+  The panel font's O reads close to a zero, so `120Ohm` read as `1200hm`.
+  The five text faces carry U+03A9, 1,784 bytes of glyphs more. The docs
+  and the web help write Ω too; the settings' stored keys (`pack_mohm`,
+  `ina228_uohm`) stay as they are.
+
+- A number and its unit stand together, with no space: `40s`, `6.00V`,
+  `20ms`, `100%`, `180°`, `100.0mΩ`, in English and German. This holds
+  for every screen text, the servo test's and the limit run's `.TXT`
+  reports, the Wi-Fi page, the web help, the docs and the code's comments.
+  A word after a number keeps its space (`3 servos`), and so do the log
+  and console lines, the CSV headers and the KST servo configuration file.
+  `tools/check_units.py --check` holds the rule in CI; its exceptions are
+  in `tools/check_units_allow.txt`, each with its reason.
+
+- `tools/check_sizes.py` counts code lines: a line that is not blank and
+  not comment-only. Block and `//` comments, Doxygen blocks included, and in
+  Python `#` comments and docstrings do not count; a line with code and a
+  trailing comment does. The limits are 1,000 and 1,300 code lines. 26
+  entries of `tools/check_sizes.txt` whose files hold 1,000 code lines or
+  fewer are removed, and the figure recorded for `shared/bench/kst_prog.c`
+  is 1,938 code lines.
+- Every text the interface shows or writes in the operator's language is
+  one entry of `shared/text/include/ui_text.def`, with its English and its
+  German side by side: the screens' strings, the settings' labels, help
+  lines, categories and options, the servo test's words and the Wi-Fi
+  page's. `shared/ui/ui_text_de.c` and the English in the settings schema,
+  `servo_str.c` and `wa_page.c` are gone; every string is unchanged.
+  `tools/merge_texts.py merge` carries text changes made in the old form
+  into the table ([Interface language](docs/Language.md#the-tables)).
+- The panel firmware targets the 7-inch ESP32-P4 display board from
+  Waveshare (ESP32-P4-WIFI6-Touch-LCD-7B, chip revision 3.2) and no longer
+  builds for the ESP32-S3-Touch-LCD-7. ESP-IDF v5.5.5, target `esp32p4`,
+  32MB flash with two application slots of 7936kB. The EK79007 panel runs
+  on 2 MIPI DSI (Display Serial Interface) lanes at 1000Mbit/s each, 1024 x
+  600 RGB565 at 60.38Hz (measured on the console's VSYNC figure), two
+  frame buffers in PSRAM; the UI draws the whole glass. Touch is polled
+  (the GT911's INT line does not reach the chip) and mirrored in x and y.
+  The card
+  mounts over SDMMC with 4 data lines; CAN runs on GPIO22 (TX) and GPIO21
+  (RX) from the 40MHz crystal; the rotary knob has an I2C controller of its
+  own. The heartbeat pin is IO28 and the knob pins are IO30 (SDA) and
+  IO31 (SCL), all on the 12-pin header P3. Its Wi-Fi radio is the
+  board's ESP32-C6 on SDIO, listed under Added.
+
+- The user interface is laid out for the 1024 x 600 glass; it is not the
+  800 x 480 layout scaled up. `shared/ui/include/ui_layout.h` holds the
+  geometry once: the band is 60px, the body 540px, the alert band 44px
+  (y 556 to 599), the margin 8px, a button 48px (tall 56px) and the
+  smallest tap target 48px. The type roles are 10x20 (`UI_FONT_BAND`,
+  labels, notes), 12x24 (`UI_FONT_BODY`, prose), 20x36 (`UI_FONT_TAG`,
+  heads) and the 32x44 numerals. STOP is 168 x 48px from x 850; the band's
+  chips are 44px tall, the home tag 44px; a help bubble is 640px (60
+  cells) and the FAULT bubble 1008px (97 cells); the alert band holds up to
+  2 rows of 97 cells. The hold flash runs by time, two cycles of 25ms
+  white, black and settled, 150ms in all, at any frame rate. Every stop
+  control ends above the alert band. The screens laid out: OVERVIEW (4 x 2
+  tiles of 243 x 255px), SETUP and its lists (3 x 3 tiles of 328 x 130px;
+  984 x 428px lists of 6 rows at a 70px pitch), the keypad (keys 145 x
+  84px) and the on-screen keyboards (key labels 10x20 to 20x36), LOGS,
+  SERVO (LIVE, TEST, SETTINGS, PROGRAM, the KST programmer and the limit
+  run), MOTOR & ESC (LIVE, TABLE, SETTINGS, PROGRAM and ESC STICK), SUPPLY,
+  OUTPUTS and PICK A PIN, RECEIVER, BATTERY, BALANCE, WI-FI, UPDATES, the
+  update screens, BUS FAULT and SPLASH. A plot holds 1,024 samples, 51.2s
+  at 20Hz. The touch map and the touch injector use 1024 x 600.
+- A clipped repaint draws what lies in its clip: a glyph, a seven-segment
+  digit, a disc, a capsule or a ring outside the clip is not walked, an
+  arc walks only the directions of the clip, and the band is repainted
+  only when what it shows has changed. Every golden image is unchanged. Host
+  model, instructions a frame: SERVO LIVE ARMED with a position held
+  2,376,262 to 943,052, sweeping 4,780,742 to 2,038,879; OVERVIEW SAFE at
+  rest 518,425 to 2,813. The frame rate on the board after the change is
+  not measured; before it, SERVO LIVE ran 60.4fps SAFE at rest and 30.2fps
+  ARMED.
+- The SERVO arm moves in fractions of a pixel. A change of the arm
+  repaints three boxes of LIVE's card: the horns, the angle's numerals and
+  the COMMANDED and MEASURED numerals. The arm, its holes and its rings are
+  placed at float positions: on a sweep the drawn tip's error against its
+  angle is 0.012px rms, 0.026px at most, where it was 0.675px and
+  1.337px (host render). A drag on the dial is filtered by a one-pole
+  filter with a 20ms time constant (`SV_DRAG_TAU_MS`): the press commands
+  at once, a move sets the goal, and each frame commands the filtered
+  angle, so the drawn arm and the posted pulse follow one target. The pulse
+  step per frame of a drag at 90°/s is 5 to 10us (3 to 12us before); the
+  finger leads the drawn arm by 1.65° on average (0.49° before). DISARM,
+  STOP and SAFE end the filter.
+- The configurator describes the 7-inch ESP32-P4 display board as the
+  panel: its part and buy row (chip revision 3.2) and its CAN pins on
+  header H11. It describes release 0.23.0. The ESP32-S3 catalogue stays at
+  the tag v0.22.0.
+- Keypad range lines and the supply trip texts write no space before a unit
+  symbol, through `ui_unit_gap()`; a word unit keeps its space.
+- C and C++ files carry Doxygen comments (`@file`, `@brief`, `@param`,
+  `@return`), and Python files carry Google docstrings. `tools/doc_check.py` fails CI
+  for a new or touched file that lacks them, against the baseline
+  `tools/doc_check_baseline.txt`, and the Doxygen HTML is published on
+  GitHub Pages under `api/`.
+- The screens that `tools/check_sizes.txt` held whole (LOGS, SUPPLY, MOTOR
+  & ESC, the pin picker, SETTINGS and WI-FI) and the SERVO, KST programmer
+  and ESC STICK screens are split by concept into files under 1,000 code
+  lines, and nine host test files of more than 2,000 lines are split into
+  suites of at most 946 lines. Functions and cases move unchanged.
+- CI caches the ARM toolchain's `.deb` files (`tools/install_arm_toolchain.sh`)
+  and bounds the apt download with a 30s timeout; the Configurator smoke
+  and matrix jobs have a 35min limit and the Chromium install a step limit
+  of its own, 15min.
+- MOTOR & ESC > SETTINGS: the keypad of Idle pulse refuses a value that is
+  not 100us or more below Full pulse, and the keypad of Full pulse one that
+  is not 100us or more above Idle pulse. The keypad stays open with the
+  reason in the warning colour and the row keeps its value. The panel's
+  send of the pair holds the same gap (`LINK_CC_THROTTLE_GAP_US`, 100us).
+  The IOmcu's own write check holds each pulse to 400 to 2500us and does
+  not read the gap, so a pair 1 to 99us apart written by another host is
+  taken.
+- The FAULT chip draws the dark text of the buttons on its warning fill:
+  11.83:1 in the dark theme (1.62:1 before), 10.30:1 in the light one
+  (9.73:1 before). Every chip of the band reads at 4.5:1 or more in both
+  themes.
+- Screen and tile names stay English in German: SETUP's categories read
+  INTERFACES, SD CARD, SENSORS, ESC / BENCH, SUPPLY and SERVO TEST, and the
+  INTERFACES headings BALANCE SENSORS and SUPPLY. The tab names (WUCHTEN,
+  PRÜFGESTELL, GRAFIK, TABELLE), the group heading PROG-PORT and the
+  option NETZTEIL stay German. In the limit run's German report
+  `blockiert` replaces `angelaufen`; UPDATES asks `Läuft:` where it asked
+  `Aktuelle Version:`.
+- A key of the FILES footer or of LOGS' RESCAN keeps 6px at each side of
+  its label: a label that does not leave 6px in the 10x20 face is drawn in
+  the 8x16 face (German VERSCHIEBEN and AKTUALISIEREN). English keeps
+  10x20 on every key.
+- The text keyboard draws its characters, and the keypad its digits, in
+  the largest of 20x36, 16x28, 12x24 and 10x20 whose cell fits the key
+  with its padding (4px keyboard, 6px keypad); 20x36 needs a key of 28x44px
+  on the keyboard and 32x48px on the keypad. The word keys share one face
+  per overlay, never larger than the characters'. The 145px keypads keep
+  German `ABBRECHEN` in 12x24, which needs a 120px key (192px at 20x36).
+
+### Removed
+
+- The panel firmware no longer builds for the ESP32-S3-Touch-LCD-7. 0.22.1
+  is the last release for the ESP32-S3 panel.
 
 ## 0.22.1 - 2026-10-22
 
@@ -3454,6 +3994,7 @@ The log viewer's plot has a setting, SETUP → APPLICATION → One finger pans
 in, a finger that moves more than 10 px pans the view; a shorter touch still
 selects a value. With it off, one finger moves the cursor and two fingers pan,
 as before.
+
 ### Added
 
 - **A rotary knob on the panel.** An AS5600 magnetic angle sensor on the
@@ -3797,6 +4338,7 @@ run on hardware.
   the longest travel time and not checked: `upper bound, not checked against
   the limit`. The run is told what reads the current (`servo_test_meter_t`),
   so a faster current sensor can have it checked.
+
 ## 0.13.1 - 2026-10-07
 
 PROGRAMMER no longer restarts the panel: the panel's main task, which runs

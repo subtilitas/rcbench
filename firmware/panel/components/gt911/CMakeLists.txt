@@ -4,13 +4,16 @@
 # and ESP-IDF (Espressif Internet-of-Things Development Framework) has one
 # flat component namespace.  The coordinate mapping and the press, move and
 # release state machine are pure C in shared/touch, where the host suite
-# tests them.
+# tests them.  gfx gives the flag Screen rotation 180 turns the contacts by
+# (gfx_turn.h).
 #
 # Every build reads a touch injector at 0x14 beside the glass
-# (testbench/touch-injector).  The option RCBENCH_TOUCH_INJECTOR defaults to
-# ON in firmware/panel/CMakeLists.txt;
+# (testbench/touch-injector), told from the glass by its product ID "9INJ"
+# (touch_merge.h).  The option RCBENCH_TOUCH_INJECTOR defaults to ON in
+# firmware/panel/CMakeLists.txt;
 #   idf.py -D RCBENCH_TOUCH_INJECTOR=OFF build
-# compiles none of it and never addresses 0x14.
+# compiles none of it and addresses 0x14 only as the glass's second
+# address, when nothing answers at 0x5D.
 set(srcs "gt911.c" "touch.c")
 if(RCBENCH_TOUCH_INJECTOR)
     list(APPEND srcs "touch_inject.c")
@@ -18,7 +21,7 @@ endif()
 idf_component_register(
     SRCS ${srcs}
     INCLUDE_DIRS "include"
-    REQUIRES board touch esp_driver_i2c esp_driver_gpio esp_timer
+    REQUIRES board touch gfx esp_driver_i2c esp_driver_gpio esp_timer
 )
 if(RCBENCH_TOUCH_INJECTOR)
     # PUBLIC: main.c names the injector on the band.

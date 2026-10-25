@@ -101,7 +101,7 @@ test('every supply plus wire of the data file is red, every minus wire black, an
     if (end === null) return null;
     const pin = end.slice(end.indexOf('.') + 1);
     if (/^(POS|OP|VS|VCC|V|V3|V5|BAT|ESC|C1A|C1B|USB)$/.test(pin) || end === 'pad.36' || end === 'pad.40') return 'plus';
-    if (/^(NEG|ON|G|GND|SG|J8G|BATN|ESCN)$/.test(pin) || ['pad.3', 'pad.8', 'pad.13', 'pad.18', 'pad.23', 'pad.38'].includes(end)) return 'minus';
+    if (/^(NEG|ON|G|GND|SG|CANG|BATN|ESCN)$/.test(pin) || ['pad.3', 'pad.8', 'pad.13', 'pad.18', 'pad.23', 'pad.38'].includes(end)) return 'minus';
     return null;
   };
   const seen = { plus: 0, minus: 0, signal: 0 };
@@ -178,10 +178,10 @@ const record = (pins: Record<string, [number, number]>): DrawingRecord => ({
 });
 
 test('neighbours are mutual and end at 1.6 times the distance to the nearest pin', () => {
-  // A row with a pitch of 10 px and 1 pin 100 px away.
+  // A row with a pitch of 10px and 1 pin 100px away.
   const n = neighbours(record({ a: [0, 0], b: [10, 0], c: [20, 0], far: [120, 0] }));
   assert.deepEqual(n, { a: ['b'], b: ['a', 'c'], c: ['b'], far: [] });
-  // At exactly 1.6 times the pitch the pin is a neighbour, 0.1 px further it is not.
+  // At exactly 1.6 times the pitch the pin is a neighbour, 0.1px further it is not.
   assert.deepEqual(neighbours(record({ a: [0, 0], b: [10, 0], c: [26, 0] }))['b'], ['a', 'c']);
   assert.deepEqual(neighbours(record({ a: [0, 0], b: [10, 0], c: [26.1, 0] }))['b'], ['a']);
   assert.deepEqual(neighbours(record({ a: [0, 0] })), { a: [] });

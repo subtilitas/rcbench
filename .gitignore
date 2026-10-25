@@ -8,6 +8,9 @@ sdkconfig
 sdkconfig.old
 managed_components/
 dependencies.lock
+# The panel's lock file pins the managed components of its Wi-Fi
+# (firmware/panel/components/wifi_access/idf_component.yml) and is kept.
+!firmware/panel/dependencies.lock
 
 # Host suite and coverage -------------------------------------------------
 test/host/build/

@@ -1,5 +1,6 @@
-/*
- * WI-FI: the panel's Wi-Fi, for two jobs in a browser -- every file
+/**
+ * @file
+ * @brief WI-FI: the panel's Wi-Fi, for two jobs in a browser -- every file
  * on the card to download, and a panel firmware image to upload -- and the
  * screen that writes an uploaded image (PANEL UPDATE).
  *
@@ -11,7 +12,7 @@
  * radio went off when it did.
  *
  * An uploaded image waits on the panel as a question naming both versions.
- * The browser cannot start the write: INSTALL is a 2 s hold here (UI_HOLD_S),
+ * The browser cannot start the write: INSTALL is a 2s hold here (UI_HOLD_S),
  * and the hold ends unfired when the image goes away under it -- a STOP, an
  * ARM, CANCEL -- or the install gate closes.
  *
@@ -33,14 +34,19 @@
 #include <stdint.h>
 
 #include "ui_screen.h"
+#include "ui_textkey.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** @brief The longest network name, in bytes. */
 #define WIFI_SSID_MAX   32
+/** @brief The longest password, in characters. */
 #define WIFI_PASS_MAX   63
+/** @brief The most networks a scan lists. */
 #define WIFI_SCAN_ROWS  16
+/** @brief The longest version string an image or a release carries. */
 #define WIFI_VER_MAX    32
 
 /** The radio, as the session has it (wa_state_t). */
@@ -148,13 +154,13 @@ typedef struct {
 #define WIFI_REQ_AP        0x001u   /**< start the access point          */
 #define WIFI_REQ_JOIN      0x002u   /**< join the kept home network      */
 #define WIFI_REQ_OFF       0x004u   /**< radio off                        */
-#define WIFI_REQ_SCAN      0x008u
+#define WIFI_REQ_SCAN      0x008u   /**< scan for networks              */
 #define WIFI_REQ_SAVE_NET  0x010u   /**< keep wifi_screen_net()'s network */
-#define WIFI_REQ_FORGET    0x020u
-#define WIFI_REQ_CODE_ON   0x040u
-#define WIFI_REQ_CODE_OFF  0x080u
+#define WIFI_REQ_FORGET    0x020u   /**< forget the kept home network    */
+#define WIFI_REQ_CODE_ON   0x040u   /**< the page asks for the access code */
+#define WIFI_REQ_CODE_OFF  0x080u   /**< the page asks for no access code  */
 #define WIFI_REQ_DISCARD   0x100u   /**< drop the staged image           */
-#define WIFI_REQ_INSTALL   0x200u   /**< the 2 s hold completed          */
+#define WIFI_REQ_INSTALL   0x200u   /**< the 2s hold completed           */
 
 /** Hand the screen what to show. */
 void wifi_screen_set(const wifi_view_t *v);
@@ -178,6 +184,24 @@ void wifi_screen_net(char ssid[WIFI_SSID_MAX + 1], char pass[WIFI_PASS_MAX + 1])
 /** Repaint on the next frame. */
 void wifi_screen_invalidate(void);
 
+/**
+ * @brief Where the keyboard opens: the body less UI_MARGIN at its sides and
+ *        top, ending 4px above the alert band, 1008 x 484px.
+ * @return The area, in the screen's coordinates.
+ */
+gfx_rect_t wifi_screen_key_area(void);
+
+/**
+ * @brief The screen's keyboard, open or closed; for tests and the
+ *        renderer, which check what a tap typed.
+ * @return The keyboard.
+ */
+const ui_textkey_t *wifi_screen_textkey(void);
+
+/**
+ * @brief The WI-FI screen, for the router.
+ * @return The screen.
+ */
 const ui_screen_t *wifi_screen(void);
 
 /** The lines the card's first sentence takes, WF_JOBS_1 and WF_JOBS_2
@@ -186,8 +210,9 @@ int wifi_screen_jobs_lines(void);
 
 /* ------------------------------------------------------ PANEL UPDATE */
 
+/** @brief Where PANEL UPDATE stands. */
 typedef enum {
-    UPDATE_WRITING = 0,
+    UPDATE_WRITING = 0,    /**< the image is being written               */
     UPDATE_RESTARTING,     /**< written and checked                       */
     UPDATE_FAILED,         /**< nothing changed: the running image stays  */
     /** SETUP > UPDATES' download from GitHub, before the write: joining,
@@ -207,6 +232,10 @@ typedef struct {
     char           why[96];
 } update_view_t;
 
+/**
+ * @brief Hand PANEL UPDATE what to show.
+ * @param v The view, copied.
+ */
 void update_screen_set(const update_view_t *v);
 
 /** True once CLOSE was tapped on a failed write or download; cleared when
@@ -216,8 +245,13 @@ bool update_screen_take_close(void);
 /** True once CANCEL was tapped on a download; cleared when read. */
 bool update_screen_take_cancel(void);
 
+/** @brief Repaint PANEL UPDATE on the next frame. */
 void update_screen_invalidate(void);
 
+/**
+ * @brief The PANEL UPDATE screen, for the router.
+ * @return The screen.
+ */
 const ui_screen_t *update_screen(void);
 
 #ifdef __cplusplus

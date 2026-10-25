@@ -1,5 +1,8 @@
-/*
- * The panel's half of the SUPPLY link page.  See supply_link.h.
+/**
+ * @file
+ * @brief The panel's half of the SUPPLY link page.
+ *
+ * See supply_link.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,8 +55,13 @@ void supply_link_lost(supply_link_t *s)
     s->on = false;
 }
 
-/* The wiring as the page is to hold it: disabled unless both pins are set
- * and differ, with unset pins written as 0. */
+/**
+ * @brief The wiring as the page is to hold it: disabled unless both pins are
+ *        set and differ, with unset pins written as 0.
+ *
+ * @param w The wiring the settings name.
+ * @return The wiring the page holds.
+ */
 static supply_wiring_t as_written(const supply_wiring_t *w)
 {
     supply_wiring_t out = *w;
@@ -69,6 +77,13 @@ static supply_wiring_t as_written(const supply_wiring_t *w)
     return out;
 }
 
+/**
+ * @brief Whether two wirings are the same, field by field.
+ *
+ * @param a The first wiring.
+ * @param b The second wiring.
+ * @return true when they are equal.
+ */
 static bool same_wiring(const supply_wiring_t *a, const supply_wiring_t *b)
 {
     return a->en == b->en && a->tx == b->tx && a->rx == b->rx

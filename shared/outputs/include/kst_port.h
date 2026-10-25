@@ -1,7 +1,7 @@
 /**
  * @file kst_port.h
- * @brief The KST programming protocol on a programming port, and its link
- *        page (0x32).
+ * @brief The KST programming protocol on a programming port, and its link page
+ *        (0x32).
  *
  * Whether a KST or Chaservo servo in programming mode follows PWM
  * (pulse-width modulation) pulses is not measured; the port is built for
@@ -56,8 +56,8 @@
  *   - LEAVE returns the port to PWM without a supply cycle, with a PD
  *     mini or without one.  The port goes to LEAVING: the wire driver
  *     keeps the pin low and no frame goes out for the staged
- *     LINK_KS_W_LEAVE_MS (0 to LINK_KST_LEAVE_MS_MAX, 10 000 ms;
- *     LINK_KST_LEAVE_MS_DEFAULT, 100 ms, until written), counted from the
+ *     LINK_KS_W_LEAVE_MS (0 to LINK_KST_LEAVE_MS_MAX, 10 000ms;
+ *     LINK_KST_LEAVE_MS_DEFAULT, 100ms, until written), counted from the
  *     command.  Then the pin is the generator's, the port is in PWM and
  *     LINK_KS_F_IN_MODE is clear.  The supply is not switched and its set
  *     points are not changed: one this port switched on stays on.  LEAVE
@@ -107,7 +107,7 @@
  *
  * A stop is the heartbeat lost, the link silent or the bank disarmed.  On a
  * stop the running operation is aborted: a frame on the wire is finished,
- * which takes at most 12 ms, and no other starts.  The pin is low or an
+ * which takes at most 12ms, and no other starts.  The pin is low or an
  * input afterwards.  LINK_KS_F_MUST_READ is set, and until a read of all
  * registers has succeeded the port takes ENTER, READ_ALL, ABORT,
  * POWER_CYCLED and REBOOT only.  The operation ABORT does the same to an
@@ -141,8 +141,8 @@
  *   - a RESTORE whose result cannot be checked, without the confirmation:
  *     KST_SES_ERR_UNCONFIRMED, nothing sent.
  *
- * A slice is 892 us or less and the frame's part 64 us on a Cortex-M33 at
- * 150 MHz, computed from the instructions executed (docs/Performance.md);
+ * A slice is 892us or less and the frame's part 64us on a Cortex-M33 at
+ * 150MHz, computed from the instructions executed (docs/Performance.md);
  * not measured on hardware.  A RELEASE has one write at most and no
  * search.
  *
@@ -181,34 +181,43 @@
 extern "C" {
 #endif
 
-/** The port renders no pulse this long before the generator gives up the
- *  pin: 2 frames at 40 Hz, the lowest PWM rate. */
+/** @brief The port renders no pulse this long before the generator gives up the
+ *  pin: 2 frames at 40Hz, the lowest PWM rate. */
 #define KST_PORT_STOP_MS 50u
-/** The driver holds the pin low this long before the session starts. */
+/** @brief The driver holds the pin low this long before the session starts. */
 #define KST_PORT_LOW_MS 100u
-/** The servo's supply stays off this long, counted from the read that
- *  shows it off.  The owner's value; what a KST servo needs is not
+/** @brief The servo's supply stays off this long, counted from the read that
+ *        shows it off.
+ *
+ * The owner's value; what a KST servo needs is not
  *  measured. */
 #define KST_PORT_RAIL_OFF_MS 2000u
-/** And the servo has this long to start, counted from the read that shows
+/** @brief And the servo has this long to start, counted from the read that
+ *        shows
  *  the supply on.  The owner's value; not measured. */
 #define KST_PORT_RAIL_WAIT_MS 1000u
-/** The PD mini has this long to read as asked after a switch. */
+/** @brief The PD mini has this long to read as asked after a switch. */
 #define KST_PORT_SUPPLY_MS 3000u
-/** The highest supply voltage ENTER takes: the highest servo rail of the
- *  IO board (hardware/docs/IOBoard.md).  What a KST servo accepts in
+/** @brief The highest supply voltage ENTER takes: the highest servo rail of the
+ *        IO board (hardware/docs/IOBoard.md).
+ *
+ * What a KST servo accepts in
  *  programming mode is not measured. */
 #define KST_PORT_SUPPLY_MAX_MV 8400u
-/** The lowest supply voltage a session runs at: an ENTER whose voltage, or
- *  the lower voltage of an output that is on, is under it is refused with
- *  LINK_KST_REF_SUPPLY_LOW.  The voltage a KST or Chaservo servo needs to
+/** @brief The lowest supply voltage a session runs at: an ENTER whose voltage,
+ *        or the lower voltage of an output that is on, is under it is refused
+ *        with LINK_KST_REF_SUPPLY_LOW.
+ *
+ * The voltage a KST or Chaservo servo needs to
  *  store a register is not measured. */
 #define KST_PORT_SUPPLY_MIN_MV 4800u
 
-/** What the port needs from the hardware. */
+/** @brief What the port needs from the hardware. */
 typedef struct {
+    /** @brief The caller's context, passed as the first argument of each hook.
+     */
     void *ctx;
-    /** Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
+    /** @brief Programming ports the build has, 1 to LINK_PG_PORTS_MAX. */
     uint8_t ports;
     /** The pin the PWM generator has for @p port, or a value above
      *  OUT_MAX_PIN while it has none. */
@@ -217,19 +226,30 @@ typedef struct {
      *  on it, which holds it low.  False when the driver gets no resources;
      *  give() returns the pin. */
     bool (*take)(void *ctx, uint8_t port, uint8_t pin);
-    /** Close the wire driver and give the pin back to the generator.
-     *  Called with the port in LINK_KST_PWM. */
+    /** @brief Close the wire driver and give the pin back to the generator.
+     *
+     * Called with the port in LINK_KST_PWM.
+     */
     void (*give)(void *ctx);
-    /** What the supply says now (supply_page_port_view()).  NULL, with
-     *  supply_set: the build has no supply to switch. */
+    /** @brief What the supply says now (supply_page_port_view()).
+     *
+     * NULL, with supply_set: the build has no supply to switch.
+     */
     void (*supply)(void *ctx, supply_port_view_t *out);
     /** Ask the supply on at @p mv and @p ma, or off (the set points are
      *  then not read).  False when it does not take the request. */
     bool (*supply_set)(void *ctx, bool on, uint16_t mv, uint16_t ma);
-    /** The wire driver.  now_us() works while the driver is closed. */
+    /** @brief The wire driver.
+     *
+     * now_us() works while the driver is closed.
+     */
     kst_driver_t driver;
 } kst_port_hw_t;
 
+/**
+ * @brief The state of one KST port: the hardware, the session, the staged
+ *        registers and the running or last operation.
+ */
 typedef struct {
     kst_port_hw_t hw;
     kst_session_t session;
@@ -277,57 +297,127 @@ typedef struct {
     uint8_t  from_pwm;   /**< the cycle started in PWM */
 } kst_port_t;
 
-/** Prepare a port in LINK_KST_PWM.  False when @p hw names no port, lacks
- *  a function other than the supply's two, or has one of those two. */
+/** @brief Prepare a port in LINK_KST_PWM.
+ *
+ * False when @p hw names no port, lacks
+ *  a function other than the supply's two, or has one of those two.
+ *
+ * @param p  The port to prepare.
+ * @param hw The hardware hooks, copied into the port.
+ * @return true when the port is prepared; false for a NULL p, or a hw that
+ *         fails the checks above.
+ */
 bool kst_port_init(kst_port_t *p, const kst_port_hw_t *hw);
 
 /**
- * A write of the page: 0, or the LINK_NACK_* reason with nothing changed.
+ * @brief A write of the page: 0, or the LINK_NACK_* reason with nothing
+ *        changed.
  *
  * A window that starts in registers 0 to 3 is a command and has to be
  * exactly those 4.  Registers 4 to 28 are taken in any windows; 29 and up
  * are LINK_NACK_READ_ONLY.
+ *
+ * @param p      The port.
+ * @param off    First register of the window.
+ * @param n      Number of registers in the window.
+ * @param in     The n register values to write.
+ * @param now_ms Current time in milliseconds.
+ * @return 0 when the write is applied or acknowledged; otherwise the
+ *         LINK_NACK_* reason.
  */
 uint8_t kst_port_write(kst_port_t *p, uint8_t off, uint8_t n,
                        const uint16_t *in, uint32_t now_ms);
 
-/** A read of the page, LINK_KS_*. */
+/**
+ * @brief A read of the page, LINK_KS_*.
+ *
+ * @param p   The port.
+ * @param off First register of the window.
+ * @param n   Number of registers to read.
+ * @param out Receives n register values; left unchanged for a NULL p or out, or
+ *            a window past LINK_KS_COUNT.
+ */
 void kst_port_read(const kst_port_t *p, uint8_t off, uint8_t n,
                    uint16_t *out);
 
 /**
- * One pass.  @p safe: the heartbeat is trusted and the link is not silent.
+ * @brief One pass.
+ *
+ * @p safe: the heartbeat is trusted and the link is not silent.
  * @p stop: the bank was switched off or disarmed since the last pass.
- * Steps the session and the port's timers; a pass every 1 ms or faster
+ * Steps the session and the port's timers; a pass every 1ms or faster
  * keeps the session's pacing.  A pass does one slice of planning at most
  * and never a whole search.
+ *
+ * @param p      The port.
+ * @param safe   true when the heartbeat is trusted and the link is not silent.
+ * @param stop   true when the bank was switched off or disarmed since the last
+ *               pass.
+ * @param now_ms Current time in milliseconds.
  */
 void kst_port_step(kst_port_t *p, bool safe, bool stop, uint32_t now_ms);
 
-/** Where the port is. */
+/**
+ * @brief Where the port is.
+ *
+ * @param p The port, or NULL.
+ * @return The state of the port; LINK_KST_PWM for a NULL p.
+ */
 link_kst_state_t kst_port_state(const kst_port_t *p);
 
-/** Bit n: programming port n renders no PWM pulse.  The held port in every
- *  state but LINK_KST_PWM. */
+/** @brief Bit n: programming port n renders no PWM pulse.
+ *
+ * The held port in every
+ *  state but LINK_KST_PWM.
+ *
+ * @param p The port, or NULL.
+ * @return Bit n set for port n while the port is not in PWM; 0 for a NULL p.
+ */
 uint8_t kst_port_quiet_mask(const kst_port_t *p);
 
-/** An operation of the session runs: a frame may be on the wire.  False
- *  from the pass in which an operation, or its cut, has ended. */
+/** @brief An operation of the session runs: a frame may be on the wire.
+ *
+ * False
+ *  from the pass in which an operation, or its cut, has ended.
+ *
+ * @param p The port, or NULL.
+ * @return true while an operation of the session may have a frame on the wire;
+ *         false for a NULL p.
+ */
 bool kst_port_frame_out(const kst_port_t *p);
 
-/** Whether the bank is armed.  An ENTER is refused with LINK_KST_REF_BUSY
- *  while it is; the caller arms no output while kst_port_quiet_mask() is
- *  not 0. */
+/** @brief Whether the bank is armed.
+ *
+ * An ENTER is refused with LINK_KST_REF_BUSY while it is; the caller arms no
+ * output while kst_port_quiet_mask() is
+ *  not 0.
+ *
+ * @param p     The port, or NULL; a NULL p is ignored.
+ * @param armed true when the bank is armed.
+ */
 void kst_port_bench_armed(kst_port_t *p, bool armed);
 
-/** Bit n: the HITEC page holds programming port n
- *  (hitec_port_quiet_mask()).  An ENTER on it, and a REBOOT taken in PWM,
- *  are refused with LINK_KST_REF_BUSY. */
+/** @brief Bit n: the HITEC page holds programming port n
+ *        (hitec_port_quiet_mask()).
+ *
+ * An ENTER on it, and a REBOOT taken in PWM,
+ *  are refused with LINK_KST_REF_BUSY.
+ *
+ * @param p    The port, or NULL; a NULL p is ignored.
+ * @param mask Bit n: the HITEC page holds programming port n.
+ */
 void kst_port_other_mask(kst_port_t *p, uint8_t mask);
 
-/** Bit n: programming port n's pin is the wire driver's, not the PWM
- *  generator's.  The held port from LINK_KST_LOW until it is back in
- *  LINK_KST_PWM; never for a REBOOT taken in PWM. */
+/** @brief Bit n: programming port n's pin is the wire driver's, not the PWM
+ *        generator's.
+ *
+ * The held port from LINK_KST_LOW until it is back in
+ *  LINK_KST_PWM; never for a REBOOT taken in PWM.
+ *
+ * @param p The port, or NULL.
+ * @return Bit n set for port n while the wire driver holds its pin; 0 for a
+ *         NULL p.
+ */
 uint8_t kst_port_pin_mask(const kst_port_t *p);
 
 #ifdef __cplusplus

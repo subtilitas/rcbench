@@ -1,8 +1,9 @@
-/*
- * Screen router.
+/**
+ * @file
+ * @brief Screen router.
  *
- * The router owns the top 48 px of the panel, the status band with STOP, and
- * hands each screen a sub-canvas of the remaining 800x432 px through
+ * The router owns the top 60px of the panel, the status band with STOP, and
+ * hands each screen a sub-canvas of the remaining 1024 x 540px through
  * gfx_canvas_sub, so a screen cannot draw over STOP.  The band is horizontal
  * because horizontal spans are the cheap direction on a panel whose frame
  * rate is bound by PSRAM (pseudo-static random-access memory) bandwidth.
@@ -21,6 +22,7 @@
 
 #include "gfx.h"
 #include "touch_types.h"
+#include "ui_layout.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +59,9 @@ typedef enum {
     /* Not reachable from the menu: the panel opens it on OVERVIEW when the
      * start-up check found a newer release. */
     SCREEN_UPD_REMIND,
+    /* FILES, from SETUP and from LOGS: the card's folders and files in two
+     * panes. */
+    SCREEN_FILES,
     SCREEN_COUNT
 } ui_screen_id_t;
 
@@ -114,23 +119,22 @@ typedef struct {
     bool (*safe_at)(int x, int y);
 } ui_screen_t;
 
-/** The band the router owns, in panel coordinates. */
-#define UI_BAND_H 48
-
-/**
- * The alert band the router draws across the bottom of the 480 px panel
- * while an alert shows: its height, and its top in panel coordinates.  It
- * takes the touches under it, so a screen puts nothing that acts there --
- * except a control that stops what the bench drives, whose press the router
- * hands through (ui_screen_t's safe_at).
+/*
+ * UI_BAND_H, the band the router owns, and UI_ALERT_H and UI_ALERT_Y, the
+ * alert band the router draws across the bottom of the panel while an alert
+ * shows, are in ui_layout.h.  The alert band takes the touches under it, so a
+ * screen puts nothing that acts there -- except a control that stops what the
+ * bench drives, whose press the router hands through (ui_screen_t's safe_at).
  */
-#define UI_ALERT_H 34
-#define UI_ALERT_Y (480 - UI_ALERT_H)
 
 /**
- * The rows the alert band gives @p text: 1 for a text of up to 94 cells,
- * 2 when it breaks at a space onto a second row, more for a text the band
- * cannot hold.  The band draws two rows of the 8x16 face, 16 px apart.
+ * @brief The rows the alert band gives @p text.
+ *
+ * The band draws two rows of the 10 x 20 face (UI_FONT_BAND), 20px apart,
+ * each 97 cells (ALERT_TEXT_W in ui_router.c: 976px of the 1024px panel).
+ * @param text The alert's text.
+ * @return 1 for a text of up to 97 cells, 2 when it breaks at a space onto
+ *         a second row, more for a text the band cannot hold.
  */
 int ui_router_alert_rows(const char *text);
 
@@ -142,11 +146,15 @@ void ui_router_goto(ui_screen_id_t id);
 ui_screen_id_t ui_router_current(void);
 
 /**
- * Where the home tag of screen @p id leads when it leaves the screen.  A
+ * @brief Where the home tag of screen @p id leads when it leaves the
+ *        screen.  A
  * screen with several openers returns to the one that last opened it:
- * WI-FI to LOGS or SETUP, OUTPUTS to MOTOR & ESC, SERVO or SETUP.  A screen
- * a tile of SETUP opens returns to SETUP, and every other to the menu.
- * WI-FI or OUTPUTS not yet opened from an opener returns to SETUP.
+ * WI-FI and FILES to LOGS or SETUP, OUTPUTS to MOTOR & ESC, SERVO or SETUP.
+ * A screen a tile of SETUP opens returns to SETUP, and every other to the
+ * menu.  WI-FI, FILES or OUTPUTS not yet opened from an opener returns to
+ * SETUP.
+ * @param id  the screen
+ * @return the screen the home tag leads to
  */
 ui_screen_id_t ui_router_parent(ui_screen_id_t id);
 
@@ -316,8 +324,8 @@ bool ui_router_take_stop(void);
 #define UI_ALERT_SHOW_S 30.0f
 
 /**
- * Show @p text in a 34 px band across the bottom of every screen, or NULL to
- * clear it.
+ * @brief Show @p text in a 34px band across the bottom of every screen, or
+ *        NULL to clear it.
  *
  * For faults the screen itself does not show, such as a touch controller that
  * has stopped answering.  At the bottom, it covers controls rather than
@@ -325,7 +333,10 @@ bool ui_router_take_stop(void);
  * when a tap lands on it and lifts there; a tap on the band reaches no
  * screen.  A press on a control under it that stops what the bench drives
  * -- DISARM, ABORT, STOP TEST -- reaches the screen as if the band were not
- * there, and clears the band (ui_screen_t's safe_at).  Setting an alert again, even the same text, restarts its time.
+ * there, and clears the band (ui_screen_t's safe_at).  Setting an alert
+ * again, even the same text, restarts its time.
+ *
+ * @param text the alert, or NULL to clear it
  */
 void ui_router_set_alert(const char *text);
 

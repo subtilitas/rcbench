@@ -1,6 +1,7 @@
-/*
- * The registry of programmers and runs: one static table that the PROGRAM
- * (and later TEST) lists of a workbench are built from.
+/**
+ * @file
+ * @brief The registry of programmers and runs: one static table that the
+ * PROGRAM (and later TEST) lists of a workbench are built from.
  *
  * A row is { device, task, name, group, transport, port, needs_capability,
  * page_set, full_width }:
@@ -28,7 +29,7 @@
  *     the right (SERVO's sessions).  Full width, it takes the whole body
  *     under the strip row, and the host draws a one-line output strip in
  *     that row in place of the card: what the session drives, `TARGET
- *     DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE` (MOTOR & ESC's
+ *     DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE` (MOTOR & ESC's
  *     sessions, ESC STICK).  The owner grants each full-width page set;
  *     prog_reg_check() holds each device to the one layout its host draws.
  *
@@ -95,18 +96,21 @@ typedef enum {
 #define PROG_ONE_CALL __attribute__((noinline))
 #endif
 
-/*
- * A full-width session's layout, in the host's body coordinates (800 x 432
- * px under the band): the output strip's line at the top, one line of the
- * 8 x 16 face from PROG_FULL_STRIP_Y, and the session's own area from
- * PROG_FULL_Y to the foot of the body.
+/**
+ * @brief A full-width session's layout, in the host's body coordinates
+ *        (1024 x 540px under the band): the output strip's line at the
+ *        top, one line of PROG_FULL_STRIP_FONT, the type scale's LABEL face
+ *        (10 x 20), from PROG_FULL_STRIP_Y, and the session's own area from
+ *        PROG_FULL_Y to the foot of the body.
  */
-#define PROG_FULL_STRIP_X 12
-#define PROG_FULL_STRIP_Y 6
-#define PROG_FULL_STRIP_H 16
-#define PROG_FULL_Y       26
-/** The cells the output strip's line holds: 776 px of 8 px cells. */
-#define PROG_FULL_STRIP_CELLS 97
+#define PROG_FULL_STRIP_X    12  /**< the strip's left, px            */
+#define PROG_FULL_STRIP_Y    4   /**< its top, px                     */
+#define PROG_FULL_STRIP_H    20  /**< its line's height, px           */
+#define PROG_FULL_Y          28  /**< the session's area's top, px    */
+#define PROG_FULL_STRIP_FONT (&gfx_font_10x20) /**< the strip's face  */
+/** @brief The cells the output strip's line holds: 1000px of 10px
+ *         cells. */
+#define PROG_FULL_STRIP_CELLS 100
 
 /** The list rules (see the top of this file). */
 #define PROG_LIST_SEARCH_OVER   9
@@ -317,18 +321,25 @@ void prog_list_build(prog_list_t *l, const prog_reg_row_t *rows, size_t n,
 
 /* --------------------------------------------------------------- the view */
 
-/*
- * A list drawn into a rectangle: a bar on top while the list offers SEARCH
- * or does not fit (SEARCH, "^", "v"), then its entries.  A row is 34 px
- * with 6 px under it, a heading 24 px with 4 px under it.  A row's press
- * is taken on its DOWN and is a tap on its release over the same row.
+/**
+ * @brief A list drawn into a rectangle: a bar on top while the list offers
+ *        SEARCH or does not fit (SEARCH, "^", "v"), then its entries.
+ *
+ * A row is 48px (UI_TAP_MIN) with 8px under it, a heading 28px with
+ * 4px under it; the bar is 48px, SEARCH 260px wide and "^" and "v"
+ * 56px each.  The text is in PROG_VIEW_FONT, the type scale's LABEL face
+ * (10 x 20).  A row's press is taken on its DOWN and is a tap on its
+ * release over the same row.
  */
-#define PROG_VIEW_PAD     10
-#define PROG_VIEW_BAR_H   30
-#define PROG_VIEW_ROW_H   34
-#define PROG_VIEW_ROW_P   40
-#define PROG_VIEW_HEAD_H  24
-#define PROG_VIEW_HEAD_P  28
+#define PROG_VIEW_PAD      10   /**< the area's inset, px            */
+#define PROG_VIEW_BAR_H    48   /**< the bar's height, px            */
+#define PROG_VIEW_ROW_H    48   /**< a row's height, px              */
+#define PROG_VIEW_ROW_P    56   /**< a row's pitch, px               */
+#define PROG_VIEW_HEAD_H   28   /**< a heading's height, px          */
+#define PROG_VIEW_HEAD_P   32   /**< a heading's pitch, px           */
+#define PROG_VIEW_SEARCH_W 260  /**< SEARCH's width, px              */
+#define PROG_VIEW_KEY_W    56   /**< the width of "^" and of "v", px */
+#define PROG_VIEW_FONT     (&gfx_font_10x20) /**< the text's face    */
 
 /** What a press is on: an entry from 0, or one of these. */
 enum { PROG_VIEW_P_NONE = -1, PROG_VIEW_P_SEARCH = -2, PROG_VIEW_P_UP = -3,
@@ -365,9 +376,26 @@ int prog_view_shown(const prog_view_t *v, const prog_list_t *l);
 gfx_rect_t prog_view_entry_rect(const prog_view_t *v, const prog_list_t *l,
                                 int k);
 
-/** SEARCH, "^" and "v" on the bar; empty when not drawn. */
+/**
+ * @brief SEARCH on the bar, PROG_VIEW_SEARCH_W wide from the left.
+ * @param v the view
+ * @param l the list it shows
+ * @return its rectangle; empty when not drawn
+ */
 gfx_rect_t prog_view_search_rect(const prog_view_t *v, const prog_list_t *l);
+/**
+ * @brief "^" on the bar, PROG_VIEW_KEY_W wide, 8px left of "v".
+ * @param v the view
+ * @param l the list it shows
+ * @return its rectangle; empty when the list does not page
+ */
 gfx_rect_t prog_view_up_rect(const prog_view_t *v, const prog_list_t *l);
+/**
+ * @brief "v" on the bar, PROG_VIEW_KEY_W wide at the right.
+ * @param v the view
+ * @param l the list it shows
+ * @return its rectangle; empty when the list does not page
+ */
 gfx_rect_t prog_view_down_rect(const prog_view_t *v, const prog_list_t *l);
 
 /**
@@ -382,10 +410,17 @@ prog_view_ev_t prog_view_event(prog_view_t *v, const prog_list_t *l,
 void prog_view_cancel(prog_view_t *v);
 
 /**
- * Draws the list: @p query in the SEARCH box ("SEARCH" while empty), each
- * row's name and prog_reg_detail(), a live row with ">" at its right
- * end, a dimmed one in the dim colour with its reason in the warning
- * colour.
+ * @brief Draws the list in PROG_VIEW_FONT: @p query in the SEARCH box
+ *        ("SEARCH" while empty), each row's name and prog_reg_detail(), a
+ *        live row with ">" at its right end, a dimmed one in the dim
+ *        colour with its reason in the warning colour.
+ * @param v the view
+ * @param l the list
+ * @param rows the registry's rows the list's entries index
+ * @param n their count
+ * @param caps the IOmcu's capabilities, for each row's state
+ * @param query the search typed, NULL or "" for none
+ * @param c the canvas
  */
 void prog_view_render(const prog_view_t *v, const prog_list_t *l,
                       const prog_reg_row_t *rows, size_t n, uint16_t caps,

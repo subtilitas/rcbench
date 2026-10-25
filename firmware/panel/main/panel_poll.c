@@ -1,5 +1,6 @@
-/*
- * The poll of the far end, once a control pass: the bench page and the
+/**
+ * @file panel_poll.c
+ * @brief The poll of the far end, once a control pass: the bench page and the
  * services while the IOmcu answers, its identity while it does not,
  * the link-up and link-lost edges, the model and the log while nothing
  * answers, and the snapshot the screen reads.
@@ -177,7 +178,7 @@ static bool probe_identity(link_msg_t *reply)
      * The bus first, because a controller that has fallen off it cannot ask
      * anything.  A transmitter nobody answers -- an IOmcu not powered
      * yet, or one that has reset -- adds 8 to its error counter per attempt
-     * and is off the bus in about four milliseconds, and the ESP32-S3's TWAI
+     * and is off the bus in about four milliseconds, and the ESP32-P4's TWAI
      * does not come back on its own.  Without this the first quiet moment on
      * the bus is permanent: every later transmit fails, the panel shows NO
      * LINK and only a power cycle clears it.
@@ -386,7 +387,7 @@ void read_outputs_binding(void)
  * The edge: an IOmcu started answering.
  *
  * All of it costs a transaction and none of it changes while the link is up,
- * so it runs once per edge rather than once per 50 ms poll.  reply is the
+ * so it runs once per edge rather than once per 50ms poll.  reply is the
  * identity page that detected the edge.
  */
 static void link_came_up(const link_msg_t *reply)
@@ -559,7 +560,7 @@ static void read_status_counters(void)
  * The far end: one poll, and everything that hangs off whether it answered.
  *
  * Every value it maintains belongs to the control loop and is passed in.
- * link_up is both the gate's period -- 50 ms up, 1000 ms down -- and this
+ * link_up is both the gate's period -- 50ms up, 1000ms down -- and this
  * poll's answer; last_poll and last_status are the two gates' clocks.
  * Returns whether this pass produced a bench sample.
  */
@@ -576,8 +577,8 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
      * whether a bench sample or an identity arrived and takes no part.
      *
      * Set since the last poll, it is this poll's answer at once: ahead of
-     * the 50 ms gate, and without a read that would wait another
-     * LINK_HOST_TIMEOUT_MS (1000 ms) to learn the same.  An armed bench has
+     * the 50ms gate, and without a read that would wait another
+     * LINK_HOST_TIMEOUT_MS (1000ms) to learn the same.  An armed bench has
      * been stopped already, where the exchange ended.
      */
     if (s_link_quiet
@@ -639,7 +640,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             /*
              * An armed bench stops with the link, and so does an arm still
              * waiting for the line.  The far end has failed safe on its own
-             * 200 ms of silence, or it has started again; either way the
+             * 200ms of silence, or it has started again; either way the
              * bank and the command kept here would be written to it as
              * ARM = 1 at the first poll it answers, with nobody having
              * asked.  The stop also withholds the heartbeat.
@@ -737,6 +738,13 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
     return new_sample;
 }
 
+/** @brief The newest window of the rail's INA3221 channel, from SERVO_WIN,
+ *         for the rows while the INA3221 is the rail's meter.  Control task
+ *         only. */
+static sense_link_win_t s_rail_win;
+/** @brief s_rail_win holds a window of the meter's current stretch. */
+static bool             s_rail_win_ok;
+
 /*
  * The INA3221's next window into @p bench's log fields, and a ring window
  * onto the queue to the render side as well.  Control task only.
@@ -754,6 +762,9 @@ static void servo_window_take(bench_state_t *bench)
         return;
     }
     sense_link_win_bench(&s_sense_link, &w, bench);
+    /* The rail's figures while the INA3221 is its meter. */
+    s_rail_win    = w;
+    s_rail_win_ok = true;
     /* And every watched channel's same window, for the log. */
     sense_win_attach(bench, true);
     /* With the meter as this poll decided it: the snapshot the render side
@@ -771,16 +782,44 @@ static void servo_window_take(bench_state_t *bench)
     }
 }
 
+/** @brief The pulse and the angle the render side last handed over
+ *         (log_servo_pack()), none until it does. */
+atomic_uint s_servo_log = 0x8000u;
+
+/**
+ * @brief The servo rail's reading for a SERVO run's row, into s_rail, and
+ *        the run's totals of it: the INA3221's newest window while an
+ *        INA3221 channel is the rail's meter, the supply's last reading
+ *        otherwise.
+ *
+ * @param bench   The sample, for its source.
+ * @param dt_s    The time since the last sample, s.
+ * @param driving true while the bank is ARMED.
+ */
+static void rail_sample(const bench_state_t *bench, float dt_s, bool driving)
+{
+    const bool modelled = bench_state_simulated(bench);
+    if (servo_source_id(&s_servo_source) == SERVO_SOURCE_INA3221) {
+        log_rail_take_ina(&s_rail, s_rail_win_ok ? &s_rail_win : NULL,
+                          modelled);
+    } else {
+        /* A window kept from before is not the meter's when it returns. */
+        s_rail_win_ok = false;
+        log_rail_take(&s_rail, &s_supply, modelled);
+    }
+    log_rail_count(&s_rail_totals, &s_rail, dt_s, driving);
+}
+
 /*
  * The model's step, the run's totals and the bench log's rows, each decided
  * for this pass.
  *
- * The model runs on its own 50 ms gate, not on the poll's.  The poll's runs
- * at 1 Hz while the link is down, which would step the model once per
- * 1000 ms of wall clock instead of twenty times -- the plot's axis twenty
+ * The model runs on its own 50ms gate, not on the poll's.  The poll's runs
+ * at 1Hz while the link is down, which would step the model once per
+ * 1000ms of wall clock instead of twenty times -- the plot's axis twenty
  * times slow.  Its step is the time that passed, capped at a second like
  * the totals: a probe for the IOmcu's identity can hold this loop for
- * its whole 1000 ms timeout.
+ * its whole 1000ms timeout.
  *
  * The log has no gate: a pass that brought a sample writes one row for
  * each INA3221 window the poll handed over and one row when it handed over
@@ -797,19 +836,16 @@ void advance_model_and_log(bool link_up, float emitted,
     }
     /*
      * The run's totals, from the sample either source just wrote, over the
-     * time since the last one -- measured, not the 50 ms the model's cadence
+     * time since the last one -- measured, not the 50ms the model's cadence
      * aims at: a link probe can hold this loop for a second, and an
      * IOmcu sample arrives on the poll's clock.
      */
+    float dt_s = 0.0f;
+    const bool driving = outputs_armed(&s_out);
     if (*new_sample) {
         const uint32_t t = now_ms();
-        const float dt_s = (float)(uint32_t)(t - s_totals_ms) / 1000.0f;
-        const bool driving = outputs_armed(&s_out);
+        dt_s = (float)(uint32_t)(t - s_totals_ms) / 1000.0f;
         bench_totals_count(&s_totals, bench, dt_s, driving);
-        /* And the supply's, for a SERVO run's rows: its last reading at
-         * this sample, counted over the same step. */
-        log_rail_take(&s_rail, &s_supply, bench_state_simulated(bench));
-        log_rail_count(&s_rail_totals, &s_rail, dt_s, driving);
         s_totals_ms = t;
     }
     /*
@@ -835,12 +871,22 @@ void advance_model_and_log(bool link_up, float emitted,
         if (k < windows) {
             servo_window_take(bench);
         }
+        const bool last = k + 1u == rows;
+        /* The servo rail's meter for a SERVO run's rows, after the pass's
+         * last window: its reading at this sample, counted over the same
+         * step as the bench's totals. */
+        if (last && *new_sample) {
+            rail_sample(bench, dt_s, driving);
+        }
         if (logged) {
             log_row_t row = { .kind = s_log_kind, .t_s = t_s };
-            bench_state_log_row(bench, k + 1u == rows, &row.u.bench);
-            /* The supply's figures go with the sample, on the last row. */
-            if (s_log_kind == LOG_RUN_SERVO && k + 1u == rows) {
+            bench_state_log_row(bench, last, &row.u.bench);
+            /* The rail's figures, the pulse and the angle go with the
+             * sample, on the last row. */
+            if (s_log_kind == LOG_RUN_SERVO && last) {
                 row.rail = s_rail;
+                log_servo_unpack(atomic_load(&s_servo_log),
+                                 bench_state_simulated(bench), &row.servo);
             }
             log_post(&row);
         }

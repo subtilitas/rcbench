@@ -1,14 +1,23 @@
-/*
- * Core 1's side of the trace of the FAST channel's 1 ms samples: each tick's records
- * into the ring, and the count of those it dropped.  See sense_trace.h.
+/**
+ * @file
+ * @brief Core 1's side of the trace of the FAST channel's 1ms samples: each
+ * tick's records into the ring, and the count of those it dropped.
+ *
+ * See sense_trace.h.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "sense_trace.h"
 
-/* A record that is not kept, counted as dropped.  The count core 0 reads
- * moves with the one the next record carries, and stops with it. */
+/**
+ * @brief A record that is not kept, counted as dropped.
+ *
+ * The count core 0 reads moves with the one the next record carries, and stops
+ * with it.
+ *
+ * @param tr The trace.
+ */
 static void drop(sense_trace_t *tr)
 {
     sense_trace_src_t *p = &tr->src;
@@ -19,8 +28,16 @@ static void drop(sense_trace_t *tr)
     }
 }
 
-/* One record into the ring; false, and counted as dropped, when it is
- * full. */
+/**
+ * @brief One record into the ring; false, and counted as dropped, when it is
+ * full.
+ *
+ * @param tr The trace.
+ * @param kind The record kind.
+ * @param t Time of the record, in 0.1ms.
+ * @param v The record value.
+ * @return true when the record was put in the ring.
+ */
 static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
                  int32_t v)
 {
@@ -45,13 +62,22 @@ static bool push(sense_trace_t *tr, sense_trace_kind_t kind, uint32_t t,
     return true;
 }
 
-/* The set-up and the state as they stand: a record for each that moved,
- * the shunt's first, written again at the next call while the ring has
- * no room for it.  A record's time is the start of the tick the change
- * was seen in, @p tick_t then: a tick with no sample has a time all the
- * same, and a trigger between the last sample and the change lies before
- * the change.  A record kept since, while this one found no room, moves
- * it to that record's time: the ring's times never run back. */
+/**
+ * @brief The set-up and the state as they stand: a record for each that moved,
+ * the shunt's first, written again at the next call while the ring has no room
+ * for it.
+ *
+ * A record's time is the start of the tick the change was seen in, @p tick_t
+ * then: a tick with no sample has a time all the same, and a trigger between
+ * the last sample and the change lies before the change.  A record kept since,
+ * while this one found no room, moves it to that record's time: the ring's
+ * times never run back.
+ *
+ * @param tr The trace.
+ * @param cfg The Configuration value of FAST's part.
+ * @param shunt FAST's shunt, in µΩ.
+ * @param tick_t Start of the tick, in 0.1ms.
+ */
 static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
                     uint32_t tick_t)
 {
@@ -97,7 +123,13 @@ static void publish(sense_trace_t *tr, uint32_t cfg, uint32_t shunt,
     }
 }
 
-/* The tick's records, when it has any.  @p tick_t is its start. */
+/**
+ * @brief The tick's records, when it has any.  @p tick_t is its start.
+ *
+ * @param tr The trace.
+ * @param s The schedule that has ticked; NULL when there is no bus.
+ * @param tick_t Start of the tick, in 0.1ms.
+ */
 static void feed(sense_trace_t *tr, const sense_sched_t *s, uint32_t tick_t)
 {
     sense_trace_src_t *p = &tr->src;

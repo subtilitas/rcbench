@@ -1,5 +1,6 @@
-/*
- * Panel updates from GitHub: SETUP's UPDATES screen and the reminder.
+/**
+ * @file upd_screen.h
+ * @brief Panel updates from GitHub: SETUP's UPDATES screen and the reminder.
  *
  * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
  * which release is the newest, over the home network the panel keeps; the
@@ -7,11 +8,11 @@
  * check on and off (SET_UPD_REMIND).  RELEASES switches between STABLE and
  * TESTING (SET_UPD_CHANNEL): which releases a check looks at; the
  * application drops a result found on the other channel from the view.
- * When a newer release was found, HOLD 2 s: DOWNLOAD & INSTALL fetches and
+ * When a newer release was found, HOLD 2s: DOWNLOAD & INSTALL fetches and
  * installs it.
  *
  * Its IOmcu section, under the buttons: the version the IOmcu
- * runs, the version of the image this panel carries, and HOLD 2 s: UPDATE
+ * runs, the version of the image this panel carries, and HOLD 2s: UPDATE
  * IOMCU, which starts the update the link-up's question starts, also
  * after that question was declined.  The hold is live only while
  * coproc_update_section() reads CU_SEC_READY; any other state greys it and
@@ -23,7 +24,7 @@
  * release.  It opens on OVERVIEW only, with the bench SAFE and the supply
  * off, and never over the IOmcu's update question or its progress,
  * which come first.  IGNORE NOW closes it until the next start; NEVER
- * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2 s:
+ * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2s:
  * DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
  * confirmation: no question follows the download.  Leaving it by the HOME
  * tag is IGNORE NOW.
@@ -141,8 +142,14 @@ typedef struct {
     bool        have_net;
     char        net[WIFI_SSID_MAX + 1];
     upd_why_t   block;         /**< why a check may not start now          */
+    bool        radio_free;    /**< the radio is off and no session asks
+                                    for it (wifi_access_down()): a job
+                                    stopped for WI-FI shows no result     */
     upd_why_t   dl_block;      /**< why a download may not start now       */
     char        running[WIFI_VER_MAX + 1];
+    bool        line_capped;   /**< the release line ends at 0.22
+                                    (fw_release_line_capped()): the card's
+                                    foot says so                          */
 
     /* The last job. */
     upd_job_t   job;
@@ -163,7 +170,7 @@ typedef struct {
 /** What the screens ask for: bits of upd_screen_take(). */
 #define UPD_REQ_CHECK     0x01u   /**< CHECK FOR UPDATES                  */
 #define UPD_REQ_CANCEL    0x02u   /**< CANCEL a check                     */
-#define UPD_REQ_DOWNLOAD  0x04u   /**< the 2 s hold completed             */
+#define UPD_REQ_DOWNLOAD  0x04u   /**< the 2s hold completed              */
 
 /** Hand the screens what to show. */
 void upd_screen_set(const upd_view_t *v);
@@ -184,7 +191,10 @@ void upd_screen_set_coproc(const upd_cu_view_t *v);
 /** What the section shows, for the driver and the tests. */
 const upd_cu_view_t *upd_screen_coproc(void);
 
-/** True once after HOLD 2 s: UPDATE IOMCU completed. */
+/**
+ * @brief Whether HOLD 2s: UPDATE IOMCU completed, once.
+ * @return true once after the hold completed; false until the next one
+ */
 bool upd_screen_take_coproc(void);
 
 /** The section's state line for @p v, and its colour. */
@@ -205,17 +215,29 @@ bool upd_busy(const upd_view_t *v);
  *        and the line under it.
  *
  * Both screens and the download's progress draw these.  Nothing is
- * written when @p out or @p second is NULL or has no room.
+ * written when @p out or @p second is NULL or has no room.  A job stopped
+ * for WI-FI (UPD_WHY_FILES) gives two empty lines once the view's
+ * radio_free is set: its line says WI-FI is using Wi-Fi, which then no
+ * longer holds.
  *
  * @param v      the view; NULL gives two empty lines
  * @param out    the first line, empty for none
  * @param n      bytes of @p out
  * @param second the line under it, or empty
  * @param n2     bytes of @p second
- * @return nothing; the lines are in @p out and @p second
  */
 void upd_result_text(const upd_view_t *v, char *out, size_t n,
                      char *second, size_t n2);
+
+/**
+ * @brief Whether the result card leaves out upd_result_text()'s lines
+ *        because the status lines above already say them: a check that
+ *        ended for want of a home network while the card shows "No home
+ *        network saved." (Wi-Fi set up, no network kept).
+ * @param v the view; NULL is false
+ * @return true when the result is not drawn
+ */
+bool upd_result_said_above(const upd_view_t *v);
 
 /** Repaint on the next frame. */
 void upd_screen_invalidate(void);

@@ -1,5 +1,6 @@
-/*
- * Run log names on the card, and which entries a bounded list keeps.
+/**
+ * @file
+ * @brief Run log names on the card, and which entries a bounded list keeps.
  *
  * A run is written under the name of what started it and a number from 001
  * to 999, in one of two folders (card_tree.h):
@@ -34,12 +35,13 @@
  * would rank last in a full list.  A folder holding a number 999 under any
  * prefix takes no further run.
  *
- * Nothing else about an entry's age is readable on this bench.  The board
- * carries no clock that survives a power cycle, so every file the panel
- * writes is dated 1980-01-01 in the FAT directory -- the epoch the filesystem
- * clamps an unset clock to -- and directory order is creation order only
- * until a file is deleted and its slot filled again.  The number in the name
- * is the only age there is.
+ * Nothing else about an entry's age is reliable on this bench.  The board
+ * carries no clock that survives a power cycle: until NTP sets it on the
+ * home network (wall_clock.h), a file the panel writes is dated 1980 in the
+ * FAT directory -- the year the filesystem clamps an unset clock to -- and
+ * directory order is creation order only until a file is deleted and its
+ * slot filled again.  The number in the name is the only age every file
+ * has.
  *
  * Both ends of that rule are here: the logger builds a name with
  * log_name_build(), the viewer reads the number back with log_run_number(),
@@ -60,17 +62,23 @@
 extern "C" {
 #endif
 
-/** The first and the last run number the panel writes. */
+/**
+ * @brief The first and the last run number the panel writes.
+ */
 #define LOG_RUN_FIRST 1
 #define LOG_RUN_LAST  999
 
-/** Room for the longest name, "SUPPL999.CSV" or "ATEST999.CSV", and its
- *  terminator. */
+/**
+ * @brief Room for the longest name, "SUPPL999.CSV" or "ATEST999.CSV", and its
+ *        terminator.
+ */
 #define LOG_RUN_NAME_MAX 13
 
 /**
- * Which writer a run's name says made it.  The first LOG_PREFIX_WRITTEN are
- * the names this firmware writes; BENCH and ESC are read and never written.
+ * @brief Which writer a run's name says made it.
+ *
+ * The first LOG_PREFIX_WRITTEN are the names this firmware writes; BENCH and
+ * ESC are read and never written.
  */
 typedef enum {
     LOG_PREFIX_ATEST = 0,   /**< "ATEST": the AUTOMATIC TEST               */
@@ -84,29 +92,39 @@ typedef enum {
     LOG_PREFIX_COUNT
 } log_prefix_t;
 
-/** How many prefixes this firmware writes: ATEST to SUPPL. */
+/**
+ * @brief How many prefixes this firmware writes: ATEST to SUPPL.
+ */
 #define LOG_PREFIX_WRITTEN ((int)LOG_PREFIX_BENCH)
 
 /**
- * Every name a number written now can be carried by: each written prefix
- * with ".CSV" and with ".TXT", 10 names.  A number is taken while any of
- * them is in the folder; the numbering walk reads all 7 prefixes.
+ * @brief Every name a number written now can be carried by: each written prefix
+ *        with ".CSV" and with ".TXT", 10 names.
+ *
+ * A number is taken while any of them is in the folder; the numbering walk
+ * reads all 7 prefixes.
  */
 #define LOG_NAME_FORMS (LOG_PREFIX_WRITTEN * 2)
 
 /**
- * Write the name of run @p number by writer @p prefix: "ATEST001.CSV", or
- * with @p report its report "ATEST001.TXT".
+ * @brief Write the name of run @p number by writer @p prefix: "ATEST001.CSV",
+ *        or with @p report its report "ATEST001.TXT".
  *
  * A number outside LOG_RUN_FIRST to LOG_RUN_LAST, a prefix outside the
  * table, or an @p out_size under LOG_RUN_NAME_MAX, writes an empty string
  * rather than a name that would name a different file.
+ *
+ * @param out       Receives the name.
+ * @param out_size  Size of @p out, bytes.
+ * @param prefix    The writer.
+ * @param number    The run number.
+ * @param report    true for the ".TXT" report, false for the ".CSV" log.
  */
 void log_name_build(char *out, size_t out_size, log_prefix_t prefix,
                     int number, bool report);
 
 /**
- * The writer of an ARMED run's log, by the screen that armed the bench.
+ * @brief The writer of an ARMED run's log, by the screen that armed the bench.
  *
  * @p asked: the arm recorded the roles it asked for (arming_roles() is not
  * 0).  @p asked_throttle: those roles hold the throttle, as MOTOR & ESC and
@@ -115,101 +133,165 @@ void log_name_build(char *out, size_t out_size, log_prefix_t prefix,
  * IOmcu older than protocol 4.18 armed beside them.  An arm with nothing
  * recorded is LOG_PREFIX_MOTOR while @p throttle_armed and LOG_PREFIX_SERVO
  * otherwise.  A supply run is LOG_PREFIX_SUPPL.
+ *
+ * @param asked           The arm recorded the roles it asked for.
+ * @param asked_throttle  Those roles hold the throttle.
+ * @param throttle_armed  The throttle outputs are armed.
+ * @return The writer prefix.
  */
 log_prefix_t log_name_armed_prefix(bool asked, bool asked_throttle,
                                    bool throttle_armed);
 
-/** log_name_build() for LOG_PREFIX_BENCH: "BENCH001.CSV" to "BENCH999.CSV",
- *  the name firmware 0.21.0 and older gave a run in the root. */
+/**
+ * @brief log_name_build() for LOG_PREFIX_BENCH: "BENCH001.CSV" to
+ *        "BENCH999.CSV", the name firmware 0.21.0 and older gave a run in the
+ *        root.
+ *
+ * @param out       Receives the name.
+ * @param out_size  Size of @p out, bytes.
+ * @param number    The run number.
+ */
 void log_run_name(char *out, size_t out_size, int number);
 
 /**
- * The run number in @p name, or -1 when the name is not a run log under
- * any of the 7 prefixes.
+ * @brief The run number in @p name, or -1 when the name is not a run log under
+ *        any of the 7 prefixes.
  *
  * Case is ignored, so a card taken to a computer and written back in lower
  * case still lists in run order.  The name has to be one of the prefixes,
  * exactly three digits in range, and the suffix, with nothing after it:
  * "BENCH12.CSV", "BENCH000.CSV", "SERVO001.CSV.BAK" and "ESCAPE01.CSV" are
  * not run logs.
+ *
+ * @param name  The file name.
+ * @return The run number, or -1.
  */
 int log_run_number(const char *name);
 
 /**
- * A run's report beside its log: "ATEST001.TXT", and "SERVO001.TXT" or
- * "BENCH001.TXT" in the root of a card written by firmware 0.21.0 or older.
- * log_report_number() reads any prefix, with the same rules for the number and the case as
- * log_run_number(); log_report_name() is log_name_build() for
- * LOG_PREFIX_BENCH with the report suffix.  A number belongs to a run while
- * either file carries it: the logger takes one above both, so a report whose
- * CSV was deleted is never overwritten by the next run's.
+ * @brief A run's report beside its log: "ATEST001.TXT", and "SERVO001.TXT" or
+ *        "BENCH001.TXT" in the root of a card written by firmware 0.21.0 or
+ *        older. log_report_number() reads any prefix, with the same rules for
+ *        the number and the case as log_run_number(); log_report_name() is
+ *        log_name_build() for LOG_PREFIX_BENCH with the report suffix.
+ *
+ * A number belongs to a run while either file carries it: the logger takes one
+ * above both, so a report whose CSV was deleted is never overwritten by the
+ * next run's.
+ *
+ * @param out       Receives the name.
+ * @param out_size  Size of @p out, bytes.
+ * @param number    The run number.
  */
 void log_report_name(char *out, size_t out_size, int number);
+
+/**
+ * @brief Run number of a report name.
+ *
+ * @param name  The file name.
+ * @return The run number, or -1 when the name is not a report.
+ */
 int log_report_number(const char *name);
 
 /**
- * The number @p name takes from its folder's series: a run log's or a
- * report's, under any of the 7 prefixes, or -1 for a name that takes none.
+ * @brief The number @p name takes from its folder's series: a run log's or a
+ *        report's, under any of the 7 prefixes, or -1 for a name that takes
+ *        none.
+ *
  * What the numbering walk reads.
+ *
+ * @param name  The file name.
+ * @return The number, or -1.
  */
 int log_name_number(const char *name);
 
 /**
  * @brief The writer, the kind and the number of a run log's or a report's
- * name: "LIMIT004.TXT" is LOG_PREFIX_LIMIT, a report, 4.
+ *        name: "LIMIT004.TXT" is LOG_PREFIX_LIMIT, a report, 4.
  *
  * The same rules for the number and the case as log_run_number().
  *
- * @param name    the name to read
- * @param prefix  takes the writer's prefix; may be NULL
- * @param report  takes true for a ".TXT" report, false for a ".CSV" log;
- *                may be NULL
- * @return the number, LOG_RUN_FIRST to LOG_RUN_LAST, or -1 for a name that
- *         is neither; then @p prefix and @p report are left as they were
+ * @param name    The name to read.
+ * @param prefix  Takes the writer's prefix; may be NULL.
+ * @param report  Takes true for a ".TXT" report, false for a ".CSV" log; may
+ *                be NULL.
+ * @return The number, LOG_RUN_FIRST to LOG_RUN_LAST, or -1 for a name that is
+ *         neither; then @p prefix and @p report are left as they were.
  */
 int log_name_parse(const char *name, log_prefix_t *prefix, bool *report);
 
 /**
- * Write the @p form'th of the LOG_NAME_FORMS names number @p number can be
- * carried by, 0 to LOG_NAME_FORMS - 1: form / 2 is the written prefix and
- * form % 2 the report.  An empty string for a form or a number outside
- * them.  The logger probes each before it takes a number.
+ * @brief Write the @p form'th of the LOG_NAME_FORMS names number @p number can
+ *        be carried by, 0 to LOG_NAME_FORMS - 1: form / 2 is the written prefix
+ *        and form % 2 the report.
+ *
+ * An empty string for a form or a number outside them.  The logger probes each
+ * before it takes a number.
+ *
+ * @param out       Receives the name.
+ * @param out_size  Size of @p out, bytes.
+ * @param number    The run number.
+ * @param form      Index of the name, 0 to LOG_NAME_FORMS - 1.
  */
 void log_name_form(char *out, size_t out_size, int number, int form);
 
 /**
- * The first number a run may take on a card whose highest number, by
- * log_name_number(), is @p highest (below LOG_RUN_FIRST for a card that holds
- * none): one above it.  Above LOG_RUN_LAST when the card holds 999: the card
- * is full, and a lower free number is not taken.
+ * @brief The first number a run may take on a card whose highest number, by
+ *        log_name_number(), is @p highest (below LOG_RUN_FIRST for a card that
+ *        holds none): one above it.
+ *
+ * Above LOG_RUN_LAST when the card holds 999: the card is full, and a lower
+ * free number is not taken.
+ *
+ * @param highest  The highest number the card holds.
+ * @return The first number a run may take.
  */
 int log_name_next(int highest);
 
 /**
- * Write the report that goes with run log @p run_name: the same prefix and
- * number, ".TXT", in upper case.  An empty string when @p run_name is not a
- * run log.  Deleting a run deletes this file with it.
+ * @brief Write the report that goes with run log @p run_name: the same prefix
+ *        and number, ".TXT", in upper case.
+ *
+ * An empty string when @p run_name is not a run log.  Deleting a run deletes
+ * this file with it.
+ *
+ * @param out       Receives the name.
+ * @param out_size  Size of @p out, bytes.
+ * @param run_name  The run log's file name.
  */
 void log_name_report_of(char *out, size_t out_size, const char *run_name);
 
 /**
- * Whether @p name is a file the logger is still writing, or one whose
- * deletion would remove such a file: a run log whose number is @p open_run
- * (the armed or supply run), @p open_test (an AUTOMATIC TEST's CSV) or
- * @p open_txt (a test's or a limit run's report, which a deleted run takes
- * with it), or a report whose number is @p open_txt.  0 is no file open.
- * The numbers are one series in a folder, so the prefix does not enter into
- * it; the caller passes 0 for a file open in another folder
- * (log_marks_busy() in log_take.h).
+ * @brief Whether @p name is a file the logger is still writing, or one whose
+ *        deletion would remove such a file: a run log whose number is @p
+ *        open_run (the armed or supply run), @p open_test (an AUTOMATIC TEST's
+ *        CSV) or @p open_txt (a test's or a limit run's report, which a deleted
+ *        run takes with it), or a report whose number is @p open_txt.  0 is no
+ *        file open.
+ *
+ * The numbers are one series in a folder, so the prefix does not enter into it;
+ * the caller passes 0 for a file open in another folder (log_marks_busy() in
+ * log_take.h).
+ *
+ * @param name       The file name.
+ * @param open_run   Number of the open armed or supply run, or 0.
+ * @param open_test  Number of the open AUTOMATIC TEST CSV, or 0.
+ * @param open_txt   Number of the open report, or 0.
+ * @return true when the file is busy.
  */
 bool log_name_busy(const char *name, unsigned open_run, unsigned open_test,
                    unsigned open_txt);
 
 /**
- * Compare two names with case folded: negative when @p a sorts first, as the
- * browse list orders what it draws.  A card written on a computer holds
- * "bench042.csv" and one written here holds "BENCH042.CSV", and the two are
- * one file.
+ * @brief Compare two names with case folded: negative when @p a sorts first, as
+ *        the browse list orders what it draws.
+ *
+ * A card written on a computer holds "bench042.csv" and one written here holds
+ * "BENCH042.CSV", and the two are one file.
+ *
+ * @param a  The first name.
+ * @param b  The second name.
+ * @return Negative, zero or positive as @p a sorts before, with or after @p b.
  */
 int log_name_case_cmp(const char *a, const char *b);
 
@@ -235,10 +317,10 @@ int log_name_case_cmp(const char *a, const char *b);
  * room on the first page for a file the bench did not write; the browse
  * panel says how many entries the card holds.
  *
- * @param a  a name; NULL ranks as ""
- * @param b  a name; NULL ranks as ""
- * @return negative when @p a ranks ahead, positive when @p b does, 0 for
- *         one name
+ * @param a  A name; NULL ranks as "".
+ * @param b  A name; NULL ranks as "".
+ * @return Negative when @p a ranks ahead, positive when @p b does, 0 for one
+ *         name.
  */
 int log_name_rank(const char *a, const char *b);
 

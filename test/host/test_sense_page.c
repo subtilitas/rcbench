@@ -166,22 +166,22 @@ TEST_CASE(the_ina228_set_up_is_taken_when_the_driver_calibrates_it)
     CHECK(taken > 0u);
     CHECK(refused > 0u);
 
-    /* MATEK I2C-INA-BM: 200 uOhm at 204.8 A is 40.96 mV, the top of
-     * ADCRANGE 1, and 204.9 A moves to ADCRANGE 0 at the same SHUNT_CAL. */
+    /* MATEK I2C-INA-BM: 200 uOhm at 204.8A is 40.96mV, the top of
+     * ADCRANGE 1, and 204.9A moves to ADCRANGE 0 at the same SHUNT_CAL. */
     fresh();
     CHECK_EQ(i228(0x45u, 200u, 2048u, 0u), 0u);
     CHECK_EQ(i228(0x45u, 200u, 2049u, 0u), 0u);
-    /* 163.84 mV exactly is inside; a step past it is not. */
+    /* 163.84mV exactly is inside; a step past it is not. */
     CHECK_EQ(i228(0x45u, 16384u, 100u, 0u), 0u);
     CHECK_EQ(i228(0x45u, 16385u, 100u, 0u), LINK_NACK_BAD_VALUE);
-    /* The page's 300 A on its smallest shunts stays inside ADCRANGE 1:
-     * 24.3 mV across 81 uOhm, so the 2000 A refusal of ADCRANGE 0 below
+    /* The page's 300A on its smallest shunts stays inside ADCRANGE 1:
+     * 24.3mV across 81 uOhm, so the 2000A refusal of ADCRANGE 0 below
      * 81.92 uOhm is never reached from the page. */
     CHECK_EQ(i228(0x45u, 50u, 3000u, 0u), 0u);
     CHECK_EQ(i228(0x45u, 81u, 3000u, 0u), 0u);
 }
 
-/* DAOKAI's R100: 163.8 mV across 0.1 Ohm is 1.638 A, and the 5 mOhm floor
+/* DAOKAI's R100: 163.8mV across 0.1Ohm is 1.638A, and the 5mOhm floor
  * keeps the full scale inside a register of signed mA. */
 TEST_CASE(the_ina3221_full_scale_follows_from_its_shunt)
 {
@@ -340,7 +340,7 @@ TEST_CASE(every_value_is_held_to_its_range)
 {
     fresh();
     CHECK_EQ(bus(8u, 16u, 17u, 400u, 0u), LINK_NACK_BAD_VALUE);
-    /* 400 kHz and no other clock: the 1 ms schedule needs it. */
+    /* 400kHz and no other clock: the 1ms schedule needs it. */
     CHECK_EQ(bus(0u, 16u, 17u, 100u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(bus(0u, 16u, 17u, 200u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(bus(0u, 16u, 17u, 1000u, 0u), LINK_NACK_BAD_VALUE);
@@ -598,7 +598,7 @@ TEST_CASE(a_capture_is_refused_what_it_cannot_time)
     CHECK_EQ(arm(LINK_SS_ARM_OF(2u, 0u), 900u, 100u, 50u),
              LINK_NACK_BAD_VALUE);
     /* CH3, which it reads: a capture is CH1's only, the others read at
-     * 50 Hz. */
+     * 50Hz. */
     CHECK_EQ(arm(LINK_SS_ARM_OF(3u, 0u), 900u, 100u, 50u),
              LINK_NACK_BAD_VALUE);
     CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
@@ -901,8 +901,8 @@ static sense_snap_t snapshot(void)
     s.run.have_p = true;
     s.run.p_max_uw = 480000000;
     s.run.totals_ok = true;
-    s.run.charge_uc = 3600000;              /* 1 mAh */
-    s.run.energy_mj = 36000;                /* 0.01 Wh */
+    s.run.charge_uc = 3600000;              /* 1mAh */
+    s.run.energy_mj = 36000;                /* 0.01Wh */
     s.cap_state = SENSE_CAP_ARRIVED;
     s.cap_seq = 4u;
     s.cap_move_t = 25u;
@@ -927,11 +927,11 @@ TEST_CASE(a_snapshot_fills_the_read_only_registers)
     CHECK_EQ(reg(LINK_SN_I228_ID), 0x2281u);
     CHECK_EQ(reg(LINK_SN_I3221_ID), 0x3220u);
     CHECK_EQ(reg(LINK_SN_ERRORS), 12u);
-    CHECK_EQ(reg(LINK_SN_I228_TEMP_DC), 255u);          /* 25.45 C */
+    CHECK_EQ(reg(LINK_SN_I228_TEMP_DC), 255u);          /* 25.45C */
     CHECK_EQ(reg(LINK_SN_I228_DIAG), 0x0001u);
-    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 100u);        /* 1.00 mAh */
+    CHECK_EQ(reg(LINK_SN_I228_CHARGE_LO), 100u);        /* 1.00mAh */
     CHECK_EQ(reg(LINK_SN_I228_CHARGE_HI), 0u);
-    CHECK_EQ(reg(LINK_SN_I228_ENERGY_LO), 1u);          /* 0.01 Wh */
+    CHECK_EQ(reg(LINK_SN_I228_ENERGY_LO), 1u);          /* 0.01Wh */
     CHECK_EQ(reg(LINK_SN_I228_ENERGY_HI), 0u);
     /* The windows, rounded to mA and mV. */
     CHECK_EQ(sreg(LINK_SS_CH_MEAN_MA), 120u);
@@ -1422,7 +1422,7 @@ TEST_CASE(a_new_set_up_clears_the_encoders_registers)
 
 /* ------------------------------------------------ protocol 4.11's three */
 
-/* The holding level is signed mA: an end that holds at -2 mA by the part's
+/* The holding level is signed mA: an end that holds at -2mA by the part's
  * offset can be armed.  Every value of the register is a level. */
 TEST_CASE(a_capture_takes_a_holding_level_of_any_sign)
 {
@@ -1443,7 +1443,7 @@ TEST_CASE(a_capture_takes_a_holding_level_of_any_sign)
         CHECK_EQ(c.cap.move_ua, 100000);
         CHECK_EQ(c.cap.band_ua, 50000);
     }
-    /* The threshold and the band stay 1 to 32767 mA. */
+    /* The threshold and the band stay 1 to 32767mA. */
     ready_to_capture();
     CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 0xFFFFu, 0xFFFFu, 50u),
              LINK_NACK_BAD_VALUE);
@@ -1499,7 +1499,7 @@ static uint16_t wreg(unsigned i)
     return v;
 }
 
-/* A ring entry of 50 samples at @p ma mA and 3 bus readings of 6 V. */
+/* A ring entry of 50 samples at @p ma mA and 3 bus readings of 6V. */
 static sense_ring_win_t ring_entry(int32_t ma)
 {
     return (sense_ring_win_t){ .closed = true, .n_i = 50u, .n_v = 3u,

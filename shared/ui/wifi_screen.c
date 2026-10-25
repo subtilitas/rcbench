@@ -1,5 +1,7 @@
-/*
- * wifi_screen.h says what these two screens are for.
+/**
+ * @file
+ * @brief WI-FI: wifi_screen.h says what the screen is for.  PANEL UPDATE, the
+ * screen the same header declares, is update_screen.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,49 +16,114 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* The area below the band: 800 x 432 px. */
-#define W 800
-#define H 432
+/* The area below the band: 1024 x 540px. */
+#define W UI_PANEL_W
+#define H UI_BODY_H
 
-/* With the radio off: the buttons on the left, what is kept and what last
- * happened on the right. */
-#define BX      16
-#define BW      360
-#define BH      56
-#define BPITCH  68
-#define RX      400
-#define RW      384
+/**
+ * @brief The faces of the 1024 x 600 type scale the screen draws in:
+ *        WF_FONT_LABEL (10 x 20) for the buttons, the row labels, the
+ *        card's lines and the signal column; WF_FONT_BODY (12 x 24) for
+ *        the lines under the rows, the network names of the list and the
+ *        question's sentences; WF_FONT_HEAD (20 x 36) for the row values,
+ *        the scan's heading and the question's title and versions.
+ */
+#define WF_FONT_LABEL (&gfx_font_10x20)
+#define WF_FONT_BODY  UI_FONT_BODY            /**< 12 x 24: sentences. */
+#define WF_FONT_HEAD  (&gfx_font_20x36)       /**< 20 x 36: values. */
 
-/* With the radio on: a label column and a value column. */
-#define LBL_X   16
-#define LBL_W   184
-#define VAL_X   208
-#define VAL_W   576
-#define ROW_Y   20
-#define ROW_P   46
-#define OFF_Y   360
-#define OFF_W   240
+/**
+ * @brief The lowest body row anything is drawn on, plus one: 4px above
+ *        the alert band, body y 492.
+ */
+#define FOOT    (UI_ALERT_Y - UI_BAND_H - 4)
 
-/* The scan list: two columns of eight rows. */
-#define SC_X0   16
-#define SC_X1   408
-#define SC_W    376
-#define SC_H    40
-#define SC_P    44
-#define SC_ROWS 8
-#define SC_BY   376
-#define SC_BH   48
+/*
+ * With the radio off: five buttons of 460 x 60px (69.0 x 9.0mm)
+ * 8px apart on the left, from body y 16; the card on the right,
+ * 16px beside them, to 8px from the right edge and down to FOOT.
+ * The card's lines are 49 cells of WF_FONT_LABEL, 24px apart.
+ */
+#define BX       16          /**< The buttons' left edge. */
+#define BY       16          /**< The first button's top. */
+#define BW       460         /**< A button's width, px. */
+#define BH       60          /**< A button's height, px. */
+#define BPITCH   68          /**< The buttons' pitch, px. */
+#define RX       (BX + BW + 16) /**< The card's left edge. */
+#define RY       16          /**< Its top. */
+#define RW       (W - UI_MARGIN - RX) /**< Its width: 524px. */
+#define RH       (FOOT - RY) /**< Its height: 476px. */
+#define CARD_P   24          /**< The card's line pitch, px. */
 
-/* The question. */
-#define Q_X     16
-#define Q_Y     12
-#define Q_W     768
-#define Q_H     408
-#define Q_BY    (Q_Y + Q_H - 80)
-#define Q_BH    64
+/*
+ * With the radio on: rows of 56px from body y 16, a label column
+ * of 240px and a value column of 740px, an SSID of 32 characters
+ * 640px of it in WF_FONT_HEAD; the lines under the rows in
+ * WF_FONT_BODY 28px apart; WI-FI OFF 460 x 60px, 8px above FOOT.
+ */
+#define LBL_X    16          /**< The label column's left edge. */
+#define LBL_W    240         /**< Its width, px. */
+#define VAL_X    (LBL_X + LBL_W + 8) /**< The value column's left edge. */
+#define VAL_W    740         /**< Its width, px. */
+#define ROW_Y    16          /**< The first row's top. */
+#define ROW_P    56          /**< The rows' pitch, px. */
+#define LINE_P   28          /**< The pitch of the lines under the rows, px. */
+#define OFF_Y    (FOOT - 8 - BH) /**< WI-FI OFF's top: body y 424. */
 
-/* The keyboard, over the whole area. */
-#define KEY_AREA gfx_rect_make(8, 8, 784, 416)
+/*
+ * The scan list: two columns of eight rows of 48px, 52px apart,
+ * each row 492px wide on a ground 4px larger every side, the two
+ * grounds 8px apart across the body; an SSID of 32 characters is
+ * 384px of the row in WF_FONT_BODY beside the signal's 80px.
+ * Under it SCAN AGAIN, HIDDEN NETWORK and CANCEL, 328 x 56px each,
+ * 12px apart, ending at FOOT.
+ */
+#define SC_X0    (UI_MARGIN + 4) /**< The left column's rows' left edge. */
+#define SC_X1    (W / 2 + 8) /**< The right column's. */
+#define SC_Y     (UI_MARGIN + 4) /**< The first row's top. */
+#define SC_W     492         /**< A row's width, px. */
+#define SC_H     48          /**< A row's height, px. */
+#define SC_P     52          /**< The rows' pitch, px. */
+#define SC_ROWS  8           /**< Rows a column. */
+#define SC_BW    328         /**< A scan button's width, px. */
+#define SC_BH    UI_BTN_H_TALL /**< Its height, px. */
+#define SC_BY    (FOOT - SC_BH) /**< The scan buttons' top: body y 436. */
+/** @brief Scan button @p i's left edge. */
+#define SC_BX(i) (UI_MARGIN + (i) * (SC_BW + 12))
+
+/*
+ * The question: a card of 1008 x 484px over the body from
+ * UI_MARGIN down to FOOT; CANCEL and HOLD 2s: INSTALL 460 x 72px
+ * at its foot, 16px in; its sentences in WF_FONT_BODY, 80 cells a
+ * line, 28px apart.
+ */
+#define Q_X      UI_MARGIN   /**< The question's left edge. */
+#define Q_Y      UI_MARGIN   /**< Its top. */
+#define Q_W      (W - 2 * UI_MARGIN) /**< Its width, px. */
+#define Q_H      (FOOT - Q_Y) /**< Its height, px. */
+#define Q_BW     460         /**< A button's width, px. */
+#define Q_BH     72          /**< Its height, px. */
+#define Q_BY     (Q_Y + Q_H - 16 - Q_BH) /**< The buttons' top: body y 404. */
+
+/* Every control a finger tall and above the alert band. */
+_Static_assert(BH >= UI_TAP_MIN && SC_H >= UI_TAP_MIN
+               && SC_BH >= UI_TAP_MIN && Q_BH >= UI_TAP_MIN,
+               "a WI-FI control under UI_TAP_MIN");
+_Static_assert(BY + 4 * BPITCH + BH <= OFF_Y && OFF_Y + BH <= FOOT,
+               "the buttons reach the alert band");
+_Static_assert(SC_Y + (SC_ROWS - 1) * SC_P + SC_H + 4 + 8 <= SC_BY,
+               "the scan list reaches its buttons");
+_Static_assert(SC_X1 + SC_W + 4 <= W - UI_MARGIN
+               && SC_BX(2) + SC_BW <= W - UI_MARGIN,
+               "the scan list leaves the body");
+
+/**
+ * @brief The keyboard, over the whole body, UI_MARGIN in from its sides and
+ *        top, and ending 4px above the alert band: 1008 x 484px, keys of
+ *        93 x 71px.
+ */
+#define KEY_AREA gfx_rect_make(UI_MARGIN, UI_MARGIN, W - 2 * UI_MARGIN, \
+                               FOOT - UI_MARGIN)
 
 typedef enum {
     SUB_MAIN = 0,
@@ -94,11 +161,21 @@ static struct {
     bool         have_press;
     ui_hold_t    hold;
     bool         installing;    /* INSTALL went: leaving keeps the image */
-    bool         q_cancelled;   /* the home tag answered the question */
-    unsigned     drawn_mask;
-} s;
+    bool         q_cancelled;   /**< the home tag answered the question */
+    unsigned     drawn_mask;    /**< the buffers drawn since a change   */
+} s;  /**< the screen's state: the view, the keyboard, the press */
 
 static void touched(void) { s.drawn_mask = 0u; }
+
+gfx_rect_t wifi_screen_key_area(void)
+{
+    return KEY_AREA;
+}
+
+const ui_textkey_t *wifi_screen_textkey(void)
+{
+    return &s.tk;
+}
 
 static void reset(void)
 {
@@ -179,34 +256,58 @@ void wifi_screen_net(char ssid[WIFI_SSID_MAX + 1], char pass[WIFI_PASS_MAX + 1])
 
 /* ------------------------------------------------------------ geometry */
 
+/**
+ * @brief Button @p row of the radio-off view.
+ * @param row 0 ACCESS POINT to 4 ACCESS CODE.
+ * @return Its rectangle, body coordinates.
+ */
 static gfx_rect_t btn(int row)
 {
-    return gfx_rect_make(BX, 16 + row * BPITCH, BW, BH);
+    return gfx_rect_make(BX, BY + row * BPITCH, BW, BH);
 }
 
-static gfx_rect_t off_rect(void) { return gfx_rect_make(BX, OFF_Y, OFF_W, BH); }
+/** @brief WI-FI OFF.  @return Its rectangle. */
+static gfx_rect_t off_rect(void) { return gfx_rect_make(BX, OFF_Y, BW, BH); }
 
+/** @brief The question's CANCEL.  @return Its rectangle. */
 static gfx_rect_t q_cancel_rect(void)
 {
-    return gfx_rect_make(Q_X + 16, Q_BY, 240, Q_BH);
+    return gfx_rect_make(Q_X + 16, Q_BY, Q_BW, Q_BH);
 }
 
+/** @brief HOLD 2s: INSTALL.  @return Its rectangle. */
 static gfx_rect_t install_rect(void)
 {
-    return gfx_rect_make(Q_X + Q_W - 16 - 360, Q_BY, 360, Q_BH);
+    return gfx_rect_make(Q_X + Q_W - 16 - Q_BW, Q_BY, Q_BW, Q_BH);
 }
 
+/**
+ * @brief Row @p i of the scan list: eight a column.
+ * @param i 0 to WIFI_SCAN_ROWS - 1.
+ * @return Its rectangle.
+ */
 static gfx_rect_t row_rect(int i)
 {
     return gfx_rect_make((i < SC_ROWS) ? SC_X0 : SC_X1,
-                         16 + (i % SC_ROWS) * SC_P, SC_W, SC_H);
+                         SC_Y + (i % SC_ROWS) * SC_P, SC_W, SC_H);
 }
 
-static gfx_rect_t rescan_rect(void) { return gfx_rect_make(16, SC_BY, 240, SC_BH); }
-static gfx_rect_t hidden_rect(void) { return gfx_rect_make(272, SC_BY, 256, SC_BH); }
+/** @brief SCAN AGAIN.  @return Its rectangle. */
+static gfx_rect_t rescan_rect(void)
+{
+    return gfx_rect_make(SC_BX(0), SC_BY, SC_BW, SC_BH);
+}
+
+/** @brief HIDDEN NETWORK.  @return Its rectangle. */
+static gfx_rect_t hidden_rect(void)
+{
+    return gfx_rect_make(SC_BX(1), SC_BY, SC_BW, SC_BH);
+}
+
+/** @brief The scan list's CANCEL.  @return Its rectangle. */
 static gfx_rect_t scan_cancel_rect(void)
 {
-    return gfx_rect_make(544, SC_BY, 240, SC_BH);
+    return gfx_rect_make(SC_BX(2), SC_BY, SC_BW, SC_BH);
 }
 
 static bool in(gfx_rect_t r, int x, int y) { return gfx_rect_contains(r, x, y); }
@@ -430,9 +531,10 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_hold_if_gone();
-    if (s.hold.down || s.hold.flash_left > 0) {
+    if (s.hold.down || s.hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
     }
+    ui_hold_flash_step(&s.hold, dt_s);
     if (install_allowed() && ui_hold_tick(&s.hold, dt_s)) {
         s.req |= WIFI_REQ_INSTALL;
         s.installing = true;
@@ -509,22 +611,46 @@ static void leave(void)
 
 /* ------------------------------------------------------------ drawing */
 
-static void text_in(gfx_canvas_t *c, int x, int y, int w, const char *t,
-                    const gfx_font_t *f, gfx_color_t col)
+/**
+ * @brief @p t left aligned in face @p f, in a box of @p w x @p h px from
+ *        (@p x, @p y), centred in its height.
+ * @param c   Canvas.
+ * @param x   Left edge.
+ * @param y   Top edge.
+ * @param w   Width.
+ * @param h   Height.
+ * @param t   The text.
+ * @param f   The face.
+ * @param col Its colour.
+ */
+static void text_in(gfx_canvas_t *c, int x, int y, int w, int h,
+                    const char *t, const gfx_font_t *f, gfx_color_t col)
 {
-    gfx_text_in(c, gfx_rect_make(x, y, w, (f == UI_FONT_HEAD) ? 30 : 18), t, f,
-                col, 1, GFX_ALIGN_LEFT);
+    gfx_text_in(c, gfx_rect_make(x, y, w, h), t, f, col, 1, GFX_ALIGN_LEFT);
 }
 
-/* @p t in the card from @p y, broken into lines of its 44 cells 20 px
- * apart; returns the y under its last line. */
+/**
+ * @brief @p t in the card from @p y, broken into lines of its 49 cells
+ *        CARD_P px apart.
+ * @param c   Canvas, or NULL to count the lines only.
+ * @param y   The first line's top.
+ * @param t   The text.
+ * @param col Its colour.
+ * @return The y under its last line.
+ */
 static int para(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
 {
-    return y + 20 * ui_text_wrap(c, gfx_rect_make(RX + 16, y, RW - 32, 18),
-                                 20, t, UI_FONT_LABEL, col);
+    return y + CARD_P * ui_text_wrap(c, gfx_rect_make(RX + 16, y, RW - 32,
+                                                      CARD_P),
+                                     CARD_P, t, WF_FONT_LABEL, col);
 }
 
-/* What the page is for: one sentence, given in two parts, wrapped once. */
+/**
+ * @brief What the page is for: one sentence, given in two parts, wrapped
+ *        once.
+ * @param out Where it goes.
+ * @param n   The bytes at @p out.
+ */
 static void jobs_text(char *out, size_t n)
 {
     snprintf(out, n, "%s %s", TR(WF_JOBS_1), TR(WF_JOBS_2));
@@ -535,8 +661,8 @@ int wifi_screen_jobs_lines(void)
     char jobs[128];
 
     jobs_text(jobs, sizeof(jobs));
-    return ui_text_wrap(NULL, gfx_rect_make(RX + 16, 0, RW - 32, 18), 20,
-                        jobs, UI_FONT_LABEL, UI_TEXT);
+    return ui_text_wrap(NULL, gfx_rect_make(RX + 16, 0, RW - 32, CARD_P),
+                        CARD_P, jobs, WF_FONT_LABEL, UI_TEXT);
 }
 
 static const char *why_text(void)
@@ -566,6 +692,26 @@ static const char *why_text(void)
     }
 }
 
+/**
+ * @brief A button in WF_FONT_LABEL.
+ * @param c       Canvas.
+ * @param r       Where.
+ * @param label   Its text.
+ * @param fill    Its fill.
+ * @param hit     The hit it answers, drawn pressed while held.
+ * @param enabled Whether it takes a press.
+ */
+static void button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t fill, int hit, bool enabled)
+{
+    ui_button_font(c, r, label, fill, s.have_press && s.hit == hit, enabled,
+                   WF_FONT_LABEL);
+}
+
+/**
+ * @brief The radio-off view: the buttons and the card.
+ * @param c Canvas.
+ */
 static void draw_main(gfx_canvas_t *c)
 {
     const bool free_ = (s.v.block == WIFI_WHY_NONE);
@@ -577,13 +723,12 @@ static void draw_main(gfx_canvas_t *c)
                          here && s.v.have_net, here };
     const int hits[5] = { HIT_AP, HIT_JOIN, HIT_CHOOSE, HIT_FORGET, HIT_CODE };
     for (int i = 0; i < 5; ++i) {
-        ui_button(c, btn(i), labels[i],
-                  (i == 0) ? UI_ACCENT : UI_PANEL_HI,
-                  s.have_press && s.hit == hits[i], on[i]);
+        button(c, btn(i), labels[i], (i == 0) ? UI_ACCENT : UI_PANEL_HI,
+               hits[i], on[i]);
     }
 
-    ui_card(c, gfx_rect_make(RX, 16, RW, 400), UI_PANEL);
-    int y = 32;
+    ui_card(c, gfx_rect_make(RX, RY, RW, RH), UI_PANEL);
+    int y = RY + 16;
     {
         char jobs[128];
 
@@ -625,13 +770,39 @@ static void draw_main(gfx_canvas_t *c)
     }
 }
 
+/**
+ * @brief Row @p i of the running view: its label and its value.
+ * @param c     Canvas.
+ * @param i     The row, 0 at the top.
+ * @param label The label, WF_FONT_LABEL.
+ * @param value The value, WF_FONT_HEAD.
+ */
 static void row(gfx_canvas_t *c, int i, const char *label, const char *value)
 {
     const int y = ROW_Y + i * ROW_P;
-    text_in(c, LBL_X, y + 6, LBL_W, label, UI_FONT_LABEL, UI_TEXT_DIM);
-    text_in(c, VAL_X, y, VAL_W, value, UI_FONT_HEAD, UI_TEXT);
+    text_in(c, LBL_X, y, LBL_W, ROW_P, label, WF_FONT_LABEL, UI_TEXT_DIM);
+    text_in(c, VAL_X, y, VAL_W, ROW_P, value, WF_FONT_HEAD, UI_TEXT);
 }
 
+/**
+ * @brief A line under the rows of the running view, WF_FONT_BODY across
+ *        the body.
+ * @param c   Canvas.
+ * @param y   Its top.
+ * @param t   The text.
+ * @param col Its colour.
+ * @return The y of the next line.
+ */
+static int line_at(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
+{
+    text_in(c, LBL_X, y, W - 2 * LBL_X, LINE_P, t, WF_FONT_BODY, col);
+    return y + LINE_P;
+}
+
+/**
+ * @brief The radio-on view: the rows, the lines under them, WI-FI OFF.
+ * @param c Canvas.
+ */
 static void draw_running(gfx_canvas_t *c)
 {
     char v[96];
@@ -639,16 +810,17 @@ static void draw_running(gfx_canvas_t *c)
                      || s.v.radio == WIFI_RADIO_AP);
     int n = 0;
     if (s.v.radio == WIFI_RADIO_STARTING) {
-        text_in(c, LBL_X, ROW_Y, W - 32, TR(WF_STARTING), UI_FONT_HEAD,
-                UI_TEXT);
+        text_in(c, LBL_X, ROW_Y, W - 2 * LBL_X, ROW_P, TR(WF_STARTING),
+                WF_FONT_BODY, UI_TEXT);
         n = 1;
     } else if (s.v.radio == WIFI_RADIO_JOINING
                || s.v.radio == WIFI_RADIO_ADDRESS) {
         snprintf(v, sizeof(v), TR(WF_JOINING), s.v.net);
-        text_in(c, LBL_X, ROW_Y, W - 32, v, UI_FONT_HEAD, UI_TEXT);
+        text_in(c, LBL_X, ROW_Y, W - 2 * LBL_X, ROW_P, v, WF_FONT_BODY,
+                UI_TEXT);
         if (s.v.radio == WIFI_RADIO_ADDRESS) {
-            text_in(c, LBL_X, ROW_Y + ROW_P, W - 32, TR(WF_WAIT_ADDRESS),
-                    UI_FONT_LABEL, UI_TEXT_DIM);
+            text_in(c, LBL_X, ROW_Y + ROW_P, W - 2 * LBL_X, ROW_P,
+                    TR(WF_WAIT_ADDRESS), WF_FONT_BODY, UI_TEXT_DIM);
         }
         n = 2;
     } else if (ap) {
@@ -669,53 +841,51 @@ static void draw_running(gfx_canvas_t *c)
         row(c, n, TR(WF_CODE), s.v.code_on ? s.v.code : TR(OFF));
         int y = ROW_Y + (n + 1) * ROW_P + 4;
         if (!s.v.code_on) {
-            text_in(c, LBL_X, y, W - 32, TR(WF_OPEN_ALL), UI_FONT_LABEL,
-                    UI_WARN);
-            y += 22;
+            y = line_at(c, y, TR(WF_OPEN_ALL), UI_WARN);
         }
         if (!ap) {
-            text_in(c, LBL_X, y, W - 32, TR(WF_PLAIN), UI_FONT_LABEL, UI_WARN);
-            y += 22;
+            y = line_at(c, y, TR(WF_PLAIN), UI_WARN);
         }
         if (ap && s.v.channel != 0u) {
             snprintf(v, sizeof(v), TR(WF_CHANNEL), (unsigned)s.v.channel);
-            text_in(c, LBL_X, y, W - 32, v, UI_FONT_LABEL, UI_TEXT_DIM);
-            y += 22;
+            y = line_at(c, y, v, UI_TEXT_DIM);
         }
         snprintf(v, sizeof(v), TR(WF_IDLE),
                  (unsigned)((s.v.idle_left_s + 59u) / 60u));
-        text_in(c, LBL_X, y, W - 32, v, UI_FONT_LABEL, UI_TEXT_DIM);
-        y += 30;
+        y = line_at(c, y, v, UI_TEXT_DIM) + 8;
         if (s.v.up == WIFI_UP_RECEIVING) {
             const unsigned pct = (s.v.total > 0u)
                 ? (unsigned)((uint64_t)s.v.received * 100u / s.v.total) : 0u;
             snprintf(v, sizeof(v), TR(WF_RECEIVING),
                      (unsigned long)s.v.received, (unsigned long)s.v.total,
                      pct);
-            text_in(c, LBL_X, y, W - 32, v, UI_FONT_LABEL, UI_TEXT);
+            (void)line_at(c, y, v, UI_TEXT);
         } else if (s.v.up == WIFI_UP_FAILED) {
-            text_in(c, LBL_X, y, W - 32, TR(WF_UP_REFUSED), UI_FONT_LABEL,
-                    UI_WARN);
+            (void)line_at(c, y, TR(WF_UP_REFUSED), UI_WARN);
         }
     }
-    ui_button(c, off_rect(), TR(WF_OFF), UI_PANEL_HI,
-              s.have_press && s.hit == HIT_OFF, true);
+    button(c, off_rect(), TR(WF_OFF), UI_PANEL_HI, HIT_OFF, true);
 }
 
+/**
+ * @brief The scan: the heading or the list, and its buttons.
+ * @param c Canvas.
+ */
 static void draw_scan(gfx_canvas_t *c)
 {
     if (s.v.radio == WIFI_RADIO_SCANNING) {
-        text_in(c, 16, 24, W - 32, TR(WF_SCANNING), UI_FONT_HEAD, UI_TEXT);
+        text_in(c, 16, SC_Y, W - 32, ROW_P, TR(WF_SCANNING), WF_FONT_HEAD,
+                UI_TEXT);
     } else if (s.v.scan_n == 0) {
         /* A scan that ended without a list says why the radio went off:
          * a failure is not an empty list. */
         const char *why = s.v.scanned ? NULL : why_text();
         if (why != NULL) {
-            text_in(c, 16, 24, W - 32, why, UI_FONT_LABEL, UI_WARN);
+            text_in(c, 16, SC_Y, W - 32, ROW_P, why, WF_FONT_LABEL, UI_WARN);
         } else {
-            text_in(c, 16, 24, W - 32, s.v.scanned ? TR(WF_SCAN_NONE)
-                                                   : TR(WF_SCANNING),
-                    UI_FONT_LABEL, UI_TEXT_DIM);
+            text_in(c, 16, SC_Y, W - 32, ROW_P,
+                    s.v.scanned ? TR(WF_SCAN_NONE) : TR(WF_SCANNING),
+                    WF_FONT_BODY, UI_TEXT_DIM);
         }
     }
     if (s.v.radio != WIFI_RADIO_SCANNING) {
@@ -723,89 +893,103 @@ static void draw_scan(gfx_canvas_t *c)
         for (int col = 0; col * SC_ROWS < s.v.scan_n && col < 2; ++col) {
             const int rows = (s.v.scan_n - col * SC_ROWS < SC_ROWS)
                                  ? s.v.scan_n - col * SC_ROWS : SC_ROWS;
-            ui_choice_list(c, gfx_rect_make((col == 0) ? SC_X0 - 4
-                                                       : SC_X1 - 4,
-                                            12, SC_W + 8,
-                                            rows * SC_P + 4));
+            ui_choice_list(c, gfx_rect_make(((col == 0) ? SC_X0 : SC_X1) - 4,
+                                            SC_Y - 4, SC_W + 8,
+                                            (rows - 1) * SC_P + SC_H + 8));
         }
         for (int i = 0; i < s.v.scan_n && i < WIFI_SCAN_ROWS; ++i) {
             const gfx_rect_t r = row_rect(i);
             const bool pressed = s.have_press && s.hit == HIT_ROW + i;
             ui_choice_row(c, r, "", false, pressed);
-            /* A name of 32 bytes takes 256 px in the label face. */
-            gfx_text_in(c, gfx_rect_make(r.x + 12, r.y, r.w - 112, r.h),
-                        s.v.scan[i], UI_FONT_LABEL, UI_TEXT, 1,
+            /* A name of 32 bytes takes 384px in the body face, 12px in;
+             * the signal 8 cells of the label face, 12px from the right. */
+            gfx_text_in(c, gfx_rect_make(r.x + 12, r.y, r.w - 108, r.h),
+                        s.v.scan[i], WF_FONT_BODY, UI_TEXT, 1,
                         GFX_ALIGN_LEFT);
             char dbm[16];
-            snprintf(dbm, sizeof(dbm), "%d dBm", (int)s.v.rssi[i]);
-            gfx_text_in(c, gfx_rect_make(r.x + r.w - 92, r.y, 84, r.h), dbm,
-                        UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
+            snprintf(dbm, sizeof(dbm), "%ddBm", (int)s.v.rssi[i]);
+            gfx_text_in(c, gfx_rect_make(r.x + r.w - 92, r.y, 80, r.h), dbm,
+                        WF_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_RIGHT);
         }
-        ui_button(c, rescan_rect(), TR(WF_RESCAN), UI_PANEL_HI,
-                  s.have_press && s.hit == HIT_RESCAN,
-                  s.v.block == WIFI_WHY_NONE);
-        ui_button(c, hidden_rect(), TR(WF_HIDDEN), UI_PANEL_HI,
-                  s.have_press && s.hit == HIT_HIDDEN, true);
+        button(c, rescan_rect(), TR(WF_RESCAN), UI_PANEL_HI, HIT_RESCAN,
+               s.v.block == WIFI_WHY_NONE);
+        button(c, hidden_rect(), TR(WF_HIDDEN), UI_PANEL_HI, HIT_HIDDEN,
+               true);
     }
-    ui_button(c, scan_cancel_rect(), TR(CANCEL), UI_PANEL_HI,
-              s.have_press && s.hit == HIT_SCAN_CANCEL, true);
+    button(c, scan_cancel_rect(), TR(CANCEL), UI_PANEL_HI, HIT_SCAN_CANCEL,
+           true);
 }
 
 static gfx_color_t install_fill(void)
 {
-    if (s.hold.flash_left > 0) {
-        return ui_hold_flash(UI_OK, s.hold.flash_left);
+    if (s.hold.flash_ms > 0) {
+        return ui_hold_flash(UI_OK, s.hold.flash_ms);
     }
     return ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
 }
 
+/**
+ * @brief @p t in the question from @p y, broken into lines of its 80
+ *        cells LINE_P px apart.
+ * @param c   Canvas.
+ * @param y   The first line's top.
+ * @param t   The text.
+ * @param col Its colour.
+ * @return The y under its last line.
+ */
+static int q_para(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
+{
+    return y + LINE_P * ui_text_wrap(c, gfx_rect_make(Q_X + 24, y, Q_W - 48,
+                                                      LINE_P),
+                                     LINE_P, t, WF_FONT_BODY, col);
+}
+
+/**
+ * @brief The question about a staged image.
+ * @param c Canvas.
+ */
 static void draw_question(gfx_canvas_t *c)
 {
     ui_card(c, gfx_rect_make(Q_X, Q_Y, Q_W, Q_H), UI_PANEL);
     const int x = Q_X + 24, w = Q_W - 48;
-    text_in(c, x, Q_Y + 20, w, TR(WF_Q_TITLE), UI_FONT_HEAD, UI_TEXT);
+    text_in(c, x, Q_Y + 16, w, 44, TR(WF_Q_TITLE), WF_FONT_HEAD, UI_TEXT);
     char line[96];
     snprintf(line, sizeof(line), TR(WF_Q_NEW), s.v.new_ver);
-    text_in(c, x, Q_Y + 70, w, line, UI_FONT_HEAD, UI_TEXT);
+    text_in(c, x, Q_Y + 72, w, 44, line, WF_FONT_HEAD, UI_TEXT);
     snprintf(line, sizeof(line), TR(WF_Q_RUN), s.v.run_ver);
-    text_in(c, x, Q_Y + 110, w, line, UI_FONT_HEAD, UI_TEXT_DIM);
-    int y = Q_Y + 160;
+    text_in(c, x, Q_Y + 120, w, 44, line, WF_FONT_HEAD, UI_TEXT_DIM);
+    int y = Q_Y + 176;
     switch (s.v.offer) {
     case WIFI_OFFER_OLDER:
         snprintf(line, sizeof(line), TR(WF_Q_OLDER), s.v.new_ver,
                  s.v.run_ver);
-        text_in(c, x, y, w, line, UI_FONT_LABEL, UI_WARN);
-        y += 24;
+        y = q_para(c, y, line, UI_WARN) + 8;
         break;
     case WIFI_OFFER_REBUILD:
-        text_in(c, x, y, w, TR(WF_Q_REBUILD), UI_FONT_LABEL, UI_WARN);
-        y += 24;
+        y = q_para(c, y, TR(WF_Q_REBUILD), UI_WARN) + 8;
         break;
     case WIFI_OFFER_INSTALLED:
-        text_in(c, x, y, w, TR(WF_Q_INSTALLED), UI_FONT_LABEL, UI_WARN);
-        y += 24;
+        y = q_para(c, y, TR(WF_Q_INSTALLED), UI_WARN) + 8;
         break;
     case WIFI_OFFER_NEWER:
     default:
         break;
     }
-    text_in(c, x, y, w, TR(WF_Q_NOTE_1), UI_FONT_LABEL, UI_TEXT_DIM);
-    text_in(c, x, y + 20, w, TR(WF_Q_NOTE_2), UI_FONT_LABEL, UI_TEXT_DIM);
-    y += 52;
+    y = q_para(c, y, TR(WF_Q_NOTE_1), UI_TEXT_DIM);
+    y = q_para(c, y, TR(WF_Q_NOTE_2), UI_TEXT_DIM) + 16;
     if (s.v.offer != WIFI_OFFER_INSTALLED && s.v.gate != WIFI_GATE_OPEN) {
         if (s.v.gate == WIFI_GATE_DRAWING) {
-            text_in(c, x, y, w, TR(WF_Q_DRAWING), UI_FONT_LABEL, UI_WARN);
+            (void)q_para(c, y, TR(WF_Q_DRAWING), UI_WARN);
         } else if (s.v.gate == WIFI_GATE_COPROC) {
-            text_in(c, x, y, w, TR(WF_Q_COPROC), UI_FONT_LABEL, UI_WARN);
+            (void)q_para(c, y, TR(WF_Q_COPROC), UI_WARN);
         } else {
-            text_in(c, x, y, w, TR(WF_NEEDS_1), UI_FONT_LABEL, UI_WARN);
-            text_in(c, x, y + 20, w, TR(WF_NEEDS_2), UI_FONT_LABEL, UI_WARN);
+            y = q_para(c, y, TR(WF_NEEDS_1), UI_WARN);
+            (void)q_para(c, y, TR(WF_NEEDS_2), UI_WARN);
         }
     }
-    ui_button(c, q_cancel_rect(), TR(CANCEL), UI_PANEL_HI,
-              s.have_press && s.hit == HIT_Q_CANCEL, true);
-    ui_button(c, install_rect(), TR(WF_HOLD_INSTALL), install_fill(), false,
-              install_allowed());
+    button(c, q_cancel_rect(), TR(CANCEL), UI_PANEL_HI, HIT_Q_CANCEL, true);
+    ui_button_font(c, install_rect(), TR(WF_HOLD_INSTALL), install_fill(),
+                   false, install_allowed(), WF_FONT_LABEL);
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
@@ -836,8 +1020,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         default:            draw_main(c);     break;
         }
     }
-    if (s.hold.flash_left > 0) {
-        ui_hold_flash_step(&s.hold);
+    if (s.hold.flash_ms > 0) {
         s.drawn_mask = 0u;
     } else {
         s.drawn_mask |= bit;
@@ -857,191 +1040,3 @@ static const ui_screen_t k_screen = {
 };
 
 const ui_screen_t *wifi_screen(void) { return &k_screen; }
-
-/* ================================================== PANEL UPDATE */
-
-static struct {
-    update_view_t v;
-    bool          close;
-    bool          cancel;
-    bool          have_press;
-    bool          pressed;
-    uint8_t       press_id;
-    unsigned      drawn_mask;
-} u;
-
-#define U_CLOSE gfx_rect_make(24, 480 - 18 - 56, 240, 56)
-
-static void u_reset(void)
-{
-    memset(&u, 0, sizeof(u));
-}
-
-void update_screen_set(const update_view_t *v)
-{
-    /* As wifi_screen_set(): padding costs a repaint at most. */
-    /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
-    if (v != NULL && memcmp(v, &u.v, sizeof(u.v)) != 0) {
-        u.v = *v;
-        u.drawn_mask = 0u;
-    }
-}
-
-void update_screen_invalidate(void) { u.drawn_mask = 0u; }
-
-bool update_screen_take_close(void)
-{
-    const bool was = u.close;
-    u.close = false;
-    return was;
-}
-
-bool update_screen_take_cancel(void)
-{
-    const bool was = u.cancel;
-    u.cancel = false;
-    return was;
-}
-
-/* The one button: CLOSE after a failure, CANCEL while downloading. */
-static bool u_has_button(void)
-{
-    return u.v.state == UPDATE_FAILED || u.v.state == UPDATE_FETCH_FAILED
-           || u.v.state == UPDATE_FETCHING;
-}
-
-static void u_event(const touch_event_t *evt)
-{
-    if (evt == NULL || !u_has_button()) {
-        return;
-    }
-    const bool on = in(U_CLOSE, evt->point.x, evt->point.y);
-    if (evt->type == TOUCH_EVENT_DOWN) {
-        if (!u.have_press && on) {
-            u.have_press = true;
-            u.pressed = true;
-            u.press_id = evt->point.id;
-            u.drawn_mask = 0u;
-        }
-        return;
-    }
-    if (!u.have_press || evt->point.id != u.press_id
-        || evt->type != TOUCH_EVENT_UP) {
-        return;
-    }
-    u.have_press = false;
-    u.pressed = false;
-    u.drawn_mask = 0u;
-    if (touch_event_is_tap_up(evt) && on) {
-        if (u.v.state == UPDATE_FETCHING) {
-            u.cancel = true;
-        } else {
-            u.close = true;
-        }
-    }
-}
-
-static void u_cancel(void)
-{
-    u.have_press = false;
-    u.pressed = false;
-    u.drawn_mask = 0u;
-}
-
-static void u_render(gfx_canvas_t *c, int buffer_index)
-{
-    const unsigned bit = 1u << (buffer_index & 1);
-    if ((u.drawn_mask & bit) != 0u) {
-        return;
-    }
-    /* The whole panel and no band: nothing on the bench runs while the
-     * flash is written, so there is nothing for a STOP to stop.  The
-     * download before it runs with the bench SAFE, the supply off and no
-     * log run; anything else ends it. */
-    gfx_clear(c, UI_BG);
-    const bool fetch = (u.v.state == UPDATE_FETCHING
-                        || u.v.state == UPDATE_FETCH_FAILED);
-    const bool failed = (u.v.state == UPDATE_FAILED
-                         || u.v.state == UPDATE_FETCH_FAILED);
-    const gfx_color_t head = failed ? UI_DANGER : UI_ACCENT;
-    gfx_fill_rect(c, 0, 0, 800, 56, head);
-    char line[96];
-    snprintf(line, sizeof(line), fetch ? TR(UPD_DL_TITLE) : TR(UP_TITLE),
-             u.v.version);
-    gfx_text_in(c, gfx_rect_make(24, 13, 752, 30), line, UI_FONT_HEAD,
-                ui_is_light(head) ? UI_TEXT_ON_LIGHT : GFX_WHITE, 1,
-                GFX_ALIGN_LEFT);
-    const unsigned pct = (u.v.total > 0u)
-        ? (unsigned)((uint64_t)u.v.written * 100u / u.v.total) : 0u;
-    if (!fetch || u.v.total > 0u) {
-        /* A download names its bytes once the image's size is known. */
-        snprintf(line, sizeof(line), TR(UP_BYTES),
-                 (unsigned long)u.v.written, (unsigned long)u.v.total, pct);
-        gfx_text_in(c, gfx_rect_make(24, 96, 752, 30), line, UI_FONT_HEAD,
-                    UI_TEXT, 1, GFX_ALIGN_LEFT);
-    }
-    ui_bar(c, gfx_rect_make(24, 140, 752, 24),
-           (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total : 0.0f,
-           -1.0f, failed ? UI_DANGER : UI_ACCENT);
-    int y = 200;
-    if (u.v.state == UPDATE_FETCHING) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), u.v.what, UI_FONT_HEAD,
-                    UI_TEXT, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 40, 752, 18), u.v.why,
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 80, 752, 18), TR(UPD_DL_NOTE_1),
-                    UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 104, 752, 18),
-                    TR(UPD_DL_NOTE_2), UI_FONT_LABEL, UI_TEXT_DIM, 1,
-                    GFX_ALIGN_LEFT);
-        ui_button(c, U_CLOSE, TR(CANCEL), UI_PANEL_HI, u.pressed, true);
-    } else if (u.v.state == UPDATE_FETCH_FAILED) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), TR(UPD_DL_FAILED),
-                    UI_FONT_HEAD, UI_DANGER, 1, GFX_ALIGN_LEFT);
-        y += 44;
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), u.v.what,
-                    UI_FONT_LABEL, UI_WARN, 1, GFX_ALIGN_LEFT);
-        if (u.v.why[0] != '\0') {
-            y += 24;
-            gfx_text_in(c, gfx_rect_make(24, y, 752, 18), u.v.why,
-                        UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        }
-        y += 32;
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), TR(UP_FAILED_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        ui_button(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed, true);
-    } else if (u.v.state == UPDATE_RESTARTING) {
-        /* Nothing under it: a line longer than the 47 cells breaks onto
-         * the next, 40 px lower. */
-        (void)ui_text_wrap(c, gfx_rect_make(24, y, 752, 30), 40,
-                           TR(UP_RESTART), UI_FONT_HEAD, UI_OK);
-    } else if (failed) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), TR(UP_FAILED),
-                    UI_FONT_HEAD, UI_DANGER, 1, GFX_ALIGN_LEFT);
-        y += 44;
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), TR(UP_FAILED_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        ui_button(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed, true);
-    } else {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 18), TR(UP_NOTE_1),
-                    UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 24, 752, 18), TR(UP_NOTE_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-        gfx_text_in(c, gfx_rect_make(24, y + 48, 752, 18), TR(WF_Q_NOTE_2),
-                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
-    }
-    u.drawn_mask |= bit;
-}
-
-static const ui_screen_t k_update = {
-    .title  = "PANEL UPDATE",
-    .reset  = u_reset,
-    .enter  = NULL,
-    .leave  = NULL,
-    .tick   = NULL,
-    .event  = u_event,
-    .cancel = u_cancel,
-    .render = u_render,
-};
-
-const ui_screen_t *update_screen(void) { return &k_update; }

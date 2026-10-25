@@ -26,13 +26,31 @@ def die(msg: str) -> None:
 
 class Elf:
     """The sections with contents, and the symbol table, of a 32-bit
-    little-endian ELF."""
+    little-endian ELF.
+
+    Attributes:
+        data: The file's bytes.
+        machine: e_machine of the header, for example EM_XTENSA.
+        sections: (address, file offset, size) of every allocated section
+            that has bytes in the file.
+        symbols: (address, kind, size, name, file of a local symbol,
+            absolute) of every symbol.
+    """
 
     def __init__(self, path: Path) -> None:
+        """Read an ELF file.
+
+        Args:
+            path: The file.
+
+        Raises:
+            SystemExit: The file is not a 32-bit little-endian ELF.
+        """
         d = path.read_bytes()
         if d[:4] != b"\x7fELF" or d[4] != 1 or d[5] != 1:
             die(f"{path} is not a 32-bit little-endian ELF")
         self.data = d
+        self.machine, = struct.unpack_from("<H", d, 0x12)    # e_machine
         shoff, = struct.unpack_from("<I", d, 0x20)
         shentsize, shnum = struct.unpack_from("<HH", d, 0x2E)
         heads = [struct.unpack_from("<IIIIIIIIII", d, shoff + i * shentsize)
@@ -71,6 +89,8 @@ class Elf:
 
 
 STT_OBJECT, STT_FUNC = 1, 2
+# e_machine of the processors the tools read.
+EM_XTENSA = 94
 
 
 # ---------------------------------------------------------- the decoders --
@@ -124,7 +144,7 @@ class Graph:
     limit to 20000, and the deepest panel chain is 31 functions."""
 
     # The visits to functions of one group a search from one entry into it
-    # makes before it fails: about 1 s.  The panel's largest group, 10
+    # makes before it fails: about 1s.  The panel's largest group, 10
     # functions in a ring, takes 80.
     VISIT_CAP = 1_000_000
 

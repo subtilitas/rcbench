@@ -1,5 +1,6 @@
-/*
- * MOTOR & ESC as a workbench (ui_workbench.h): the task strip at the top,
+/**
+ * @file
+ * @brief MOTOR & ESC as a workbench (ui_workbench.h): the task strip at the top,
  * and the CONTROL card's TARGET row.
  *
  * The strip shows LIVE (the plot or the table, and the throttle), PROGRAM
@@ -50,13 +51,33 @@ static struct {
     uint32_t        outputs_nav;
 } w;
 
+/**
+ * @brief The strip's tabs laid out again at MOTOR & ESC's sizes, MO_TAB_W x
+ *        MO_STRIP_H from (MO_STRIP_X, MO_STRIP_Y): the tasks, their order
+ *        and their labels as ui_wb_strip_init() set them.
+ */
+static void strip_widen(void)
+{
+    ui_tabs_t *t = &w.wb.tabs;
+    const int n = t->count;
+    ui_text_id_t ids[UI_TABS_MAX] = { (ui_text_id_t)0 };
+    for (int i = 0; i < n; ++i) {
+        ids[i] = (ui_text_id_t)t->text[i];
+    }
+    ui_tabs_init_text(t, ids, n,
+                      (gfx_rect_t){ MO_STRIP_X, MO_STRIP_Y,
+                                    (int16_t)(n * MO_TAB_W
+                                              + (n - 1) * MO_TAB_GAP),
+                                    MO_STRIP_H });
+}
+
+/** @brief The strip and the TARGET row laid out; LIVE. */
 void mwb_reset(void)
 {
     memset(&w, 0, sizeof(w));
-    ui_wb_strip_init(&w.wb, MOTOR_TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
-    ui_target_row_init(&w.trow, (gfx_rect_t){ (int16_t)(RIGHT_X + INNER),
-                                              TARGET_Y,
-                                              (int16_t)(RIGHT_W - 2 * INNER),
+    ui_wb_strip_init(&w.wb, MOTOR_TASKS, MO_STRIP_X, MO_STRIP_Y);
+    strip_widen();
+    ui_target_row_init(&w.trow, (gfx_rect_t){ RC_X, TARGET_Y, RC_W,
                                               TARGET_H });
 }
 
@@ -251,7 +272,8 @@ static void target_with_ports(char *out, size_t size, const char *name,
     }
     for (unsigned i = 0; i < count; ++i) {
         char item[16];
-        char more[8];
+        /* "+" and an unsigned of up to 10 digits. */
+        char more[12];
         item_text(i, pins, ports, item, sizeof(item));
         const unsigned left = count - i - 1u;
         snprintf(more, sizeof(more), "+%u", left);

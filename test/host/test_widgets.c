@@ -17,8 +17,8 @@
 #include "ui_widgets.h"
 #include "touch_feed.h"
 
-#define W 800
-#define H 480
+#define W UI_PANEL_W
+#define H UI_PANEL_H
 
 static gfx_color_t *fb;
 static gfx_canvas_t cv;
@@ -37,8 +37,8 @@ static void canvas(void)
 /* --------------------------------------------------------------- the ladder */
 
 /*
- * The ladder has finer steps than 1/2/5: a 6S pack (about 25 V, 28 V with
- * headroom) lands on a 0-30 V scale rather than on 0-50 V, which wastes half
+ * The ladder has finer steps than 1/2/5: a 6S pack (about 25V, 28V with
+ * headroom) lands on a 0-30V scale rather than on 0-50V, which wastes half
  * the plot.
  */
 TEST_CASE(the_scale_ladder_has_its_fine_steps)
@@ -115,7 +115,7 @@ TEST_CASE(a_non_finite_sample_cannot_poison_the_plot)
 
 TEST_CASE(a_gap_breaks_the_trace_and_draws_nothing_at_zero)
 {
-    /* A steady 10 V with gaps: nothing of the series' colour on the zero
+    /* A steady 10V with gaps: nothing of the series' colour on the zero
      * line, and columns of nothing where the gaps are. */
     ui_plot_t p;
     ui_plot_init(&p, k_series, 1, 24.0f);
@@ -171,7 +171,7 @@ TEST_CASE(the_scale_grows_at_once_and_shrinks_slowly)
         ++updates;
     }
     CHECK(p.scale[0] < grown);
-    /* About three seconds at 20 Hz, not one update and not a hundred. */
+    /* About three seconds at 20Hz, not one update and not a hundred. */
     CHECK(updates >= 40);
     CHECK(updates <= 120);
 }
@@ -366,8 +366,8 @@ TEST_CASE(a_follower_is_drawn_on_its_leaders_scale)
         ui_plot_push(&p, v);
     }
     ui_plot_update_scales(&p, 700);
-    /* The set point, not the reading, sets the voltage scale: 12 V with
-     * headroom is 15 V.  The follower draws on it. */
+    /* The set point, not the reading, sets the voltage scale: 12V with
+     * headroom is 15V.  The follower draws on it. */
     CHECK_NEAR(p.scale[0], 15.0f, 1e-3f);
     CHECK_EQ(ui_plot_map_y(&p, 1, 15.0f, 0, 101), 0);
     CHECK_EQ(ui_plot_map_y(&p, 0, 15.0f, 0, 101), 0);
@@ -412,7 +412,7 @@ TEST_CASE(a_follower_takes_no_legend_entry)
     ui_plot_init(&p, k_led, 3, 24.0f);
     canvas();
     ui_plot_render_legend(&p, &cv, (gfx_rect_t){ 0, 0, 600, 30 });
-    /* Two entries of 300 px: the second swatch is at x 300, in CURR's
+    /* Two entries of 300px: the second swatch is at x 300, in CURR's
      * colour, and nothing is in the follower's. */
     CHECK_EQ(fb[15 * W + 300], 0x4321);
     int set = 0;
@@ -596,7 +596,7 @@ TEST_CASE(a_press_on_the_track_commands_nothing)
 
 /*
  * Tap-to-set is per slider, and off unless asked for.  The throttle must not
- * take a value from one contact; a sweep speed on a 22 px track commands
+ * take a value from one contact; a sweep speed on a 22px track commands
  * nothing on its own and is used by tapping.
  */
 TEST_CASE(tap_to_set_is_off_unless_a_slider_asks_for_it)
@@ -669,7 +669,7 @@ TEST_CASE(setting_the_value_during_a_drag_re_anchors_it)
     ui_slider_set(&sl, 10.0f);
     (void)ev(200, 120, TOUCH_EVENT_DOWN, 1);
     ui_slider_set(&sl, 40.0f);              /* a nudge, mid-drag */
-    (void)ev(220, 120, TOUCH_EVENT_MOVE, 1); /* 20 px on, ~5 points */
+    (void)ev(220, 120, TOUCH_EVENT_MOVE, 1); /* 20px on, ~5 points */
     CHECK(sl.value > 42.0f && sl.value < 48.0f);
 }
 
@@ -680,7 +680,7 @@ TEST_CASE(a_drag_moves_by_how_far_it_travelled)
     fresh_slider();
     ui_slider_set(&sl, 40.0f);
     (void)ev(480, 120, TOUCH_EVENT_DOWN, 1);
-    CHECK(ev(380, 120, TOUCH_EVENT_MOVE, 1));   /* 100 px left of 400 */
+    CHECK(ev(380, 120, TOUCH_EVENT_MOVE, 1));   /* 100px left of 400 */
     CHECK(sl.value > 14.0f && sl.value < 16.0f);
     (void)ev(380, 120, TOUCH_EVENT_UP, 1);
 }
@@ -696,7 +696,7 @@ TEST_CASE(a_drag_that_leaves_the_track_keeps_the_value)
     ui_slider_set(&sl, 20.0f);
     (void)ev(150, 120, TOUCH_EVENT_DOWN, 1);
     CHECK(ev(400, 400, TOUCH_EVENT_MOVE, 1));   /* far below the track */
-    /* 250 px of a 400 px track is 62.5 points on top of the 20 it began on. */
+    /* 250px of a 400px track is 62.5 points on top of the 20 it began on. */
     CHECK(sl.value > 81.0f && sl.value < 84.0f);
     (void)ev(400, 400, TOUCH_EVENT_UP, 1);
     CHECK(!sl.dragging);
@@ -836,7 +836,7 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset)
     feed_to_handler(to_jump_tabs);
     s_jump_changed = false;
     finger(FEED_LONE, t1.x + 5, 20);
-    finger(FEED_LONE, 700, 400);              /* 121 px or more away */
+    finger(FEED_LONE, 700, 400);              /* 121px or more away */
     CHECK_EQ(s_jump_tabs.selected, 0);
     CHECK_EQ(s_jump_tabs.pressed, -1);
     lift(FEED_LONE);
@@ -1018,7 +1018,7 @@ TEST_CASE(one_late_frame_cannot_complete_a_hold)
     ui_hold_reset(&h);
     ui_hold_begin(&h);
 
-    /* A 2.5 s frame, which is longer than the hold itself. */
+    /* A 2.5s frame, which is longer than the hold itself. */
     CHECK(!ui_hold_tick(&h, 2.5f));
     CHECK_EQ((int)(h.held_s * 1000.0f), (int)(UI_HOLD_MAX_CREDIT_S * 1000.0f));
 
@@ -1049,7 +1049,7 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     ui_hold_begin(&h);
     CHECK(hold_advance(&h, UI_HOLD_S));
     ui_hold_reached(&h);
-    CHECK_EQ(h.flash_left, UI_HOLD_FLASH_FRAMES);
+    CHECK_EQ(h.flash_ms, UI_HOLD_FLASH_MS);
     /* Reaching it keeps the firing: the finger is still down on the press
      * that fired, and its release consumes it. */
     CHECK(h.fired);
@@ -1061,10 +1061,88 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
     /* And with no press down there is nothing to end. */
     CHECK(!ui_hold_left(&h));
 
-    for (int i = 0; i < UI_HOLD_FLASH_FRAMES; ++i) { ui_hold_flash_step(&h); }
-    CHECK_EQ(h.flash_left, 0);
-    ui_hold_flash_step(&h);
-    CHECK_EQ(h.flash_left, 0);
+    /* The first step spends nothing; 12 more at 60Hz spend the flash. */
+    for (int i = 0; i < 13; ++i) { ui_hold_flash_step(&h, 1.0f / 60.0f); }
+    CHECK_EQ(h.flash_ms, 0);
+    ui_hold_flash_step(&h, 1.0f / 60.0f);
+    CHECK_EQ(h.flash_ms, 0);
+}
+
+/* The flash runs by time: 25ms a phase, white, black, settled, twice,
+ * 150ms in all, whatever the frame rate. */
+TEST_CASE(the_flash_runs_by_time)
+{
+    const gfx_color_t settled = ui_theme_color(UI_C_DANGER);
+    CHECK_EQ(UI_HOLD_FLASH_MS, 150);
+    CHECK_EQ(ui_hold_flash(settled, 150), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 126), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 125), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 101), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 100), settled);
+    CHECK_EQ(ui_hold_flash(settled, 75), GFX_WHITE);
+    CHECK_EQ(ui_hold_flash(settled, 50), GFX_BLACK);
+    CHECK_EQ(ui_hold_flash(settled, 25), settled);
+    CHECK_EQ(ui_hold_flash(settled, 1), settled);
+    /* Over, and outside the flash at either end. */
+    CHECK_EQ(ui_hold_flash(settled, 0), settled);
+    CHECK_EQ(ui_hold_flash(settled, -1), settled);
+    CHECK_EQ(ui_hold_flash(settled, 151), settled);
+
+    /* A step stops at the next phase: 12 frames at 60Hz spend it, 6 at
+     * 39Hz, and a late frame ends one phase. */
+    int at60 = 0, at39 = 0;
+    for (int ms = UI_HOLD_FLASH_MS; ms > 0; ++at60) {
+        ms = ui_hold_flash_left(ms, 1.0f / 60.0f);
+    }
+    for (int ms = UI_HOLD_FLASH_MS; ms > 0; ++at39) {
+        ms = ui_hold_flash_left(ms, 1.0f / 39.0f);
+    }
+    CHECK_EQ(at60, 12);
+    CHECK_EQ(at39, 6);
+    CHECK_EQ(ui_hold_flash_left(UI_HOLD_FLASH_MS, 1.0f), 125);
+    CHECK_EQ(ui_hold_flash_left(25, 1.0f), 0);
+    /* No time, a negative one or a NaN spends nothing; none is left of
+     * none. */
+    CHECK_EQ(ui_hold_flash_left(100, 0.0f), 100);
+    CHECK_EQ(ui_hold_flash_left(100, -0.5f), 100);
+    CHECK_EQ(ui_hold_flash_left(100, (float)NAN), 100);
+    CHECK_EQ(ui_hold_flash_left(0, 0.5f), 0);
+    CHECK_EQ(ui_hold_flash_left(-3, 0.5f), 0);
+}
+
+/* The colours a flash draws, one a frame at @p dt_ms a frame, with the
+ * reach in the tick before the step as the screens have it; repeats
+ * folded.  'W' white, 'B' black, 'S' settled. */
+static void flash_drawn(int dt_ms, char *out, size_t n)
+{
+    const gfx_color_t settled = ui_theme_color(UI_C_DANGER);
+    ui_hold_t h;
+    ui_hold_reset(&h);
+    ui_hold_reached(&h);
+    size_t k = 0;
+    for (int frame = 0; frame < 40 && h.flash_ms > 0 && k + 1 < n; ++frame) {
+        ui_hold_flash_step(&h, (float)dt_ms / 1000.0f);
+        const gfx_color_t c = ui_hold_flash(settled, h.flash_ms);
+        const char ch = (c == GFX_WHITE) ? 'W' : (c == GFX_BLACK) ? 'B' : 'S';
+        if (k == 0 || out[k - 1] != ch) {
+            out[k++] = ch;
+        }
+    }
+    out[k] = '\0';
+}
+
+/* Every phase is drawn at least once, the first frame white, at any frame
+ * rate: 100, 30, 40 and 10 frames a second. */
+TEST_CASE(every_phase_of_the_flash_is_drawn)
+{
+    static const int k_dt[] = { 10, 25, 33, 100 };
+    for (size_t i = 0; i < sizeof(k_dt) / sizeof(k_dt[0]); ++i) {
+        char seen[16];
+        flash_drawn(k_dt[i], seen, sizeof(seen));
+        if (strcmp(seen, "WBSWBS") != 0) {
+            T_FAIL("at %d ms a frame the flash draws %s", k_dt[i], seen);
+        }
+    }
 }
 
 TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
@@ -1072,7 +1150,7 @@ TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
     ui_hold_reset(NULL);
     ui_hold_begin(NULL);
     ui_hold_reached(NULL);
-    ui_hold_flash_step(NULL);
+    ui_hold_flash_step(NULL, 1.0f);
     CHECK(!ui_hold_leave(NULL));
     CHECK(!ui_hold_end(NULL));
     CHECK(!ui_hold_tick(NULL, UI_HOLD_S));
@@ -1120,6 +1198,72 @@ TEST_CASE(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws)
     CHECK_EQ(ink(40, H, 0, W), 0);
 }
 
+/*
+ * A button that takes no press is dimmer than an enabled one in both
+ * themes: its fill is the ground, never a fill an enabled button takes,
+ * and its label is the faint text colour.
+ */
+TEST_CASE(a_disabled_button_is_dimmer_than_an_enabled_one_in_both_themes)
+{
+    static const ui_theme_id_t k_themes[] = { UI_THEME_DARK, UI_THEME_LIGHT };
+    for (size_t t = 0; t < sizeof(k_themes) / sizeof(k_themes[0]); ++t) {
+        canvas();
+        ui_theme_set(k_themes[t]);
+        const gfx_rect_t on  = { 100, 100, 160, 56 };
+        const gfx_rect_t off = { 300, 100, 160, 56 };
+        ui_button(&cv, on, "ON", UI_PANEL_HI, false, true);
+        ui_button(&cv, off, "OFF", UI_PANEL_HI, false, false);
+        /* Inside each body, clear of the label and the edge. */
+        const gfx_color_t body_off = fb[(off.y + 8) * W + off.x + 12];
+        CHECK_EQ(body_off, ui_button_off_fill());
+        CHECK_EQ(ui_button_off_fill(), UI_BG);
+        CHECK(body_off != UI_PANEL);
+        CHECK(body_off != UI_PANEL_HI);
+        CHECK(body_off != UI_PANEL_SUNK);
+        CHECK(body_off != UI_EDGE_HI);
+        CHECK_EQ(fb[(on.y + 8) * W + on.x + 12], UI_PANEL_HI);
+        /* The labels: the full label_ink on, the faint text colour off. */
+        const gfx_color_t label_ink = ui_is_light(UI_PANEL_HI) ? UI_TEXT_ON_LIGHT
+                                                         : UI_TEXT;
+        unsigned text_on = 0, faint_off = 0, text_off = 0;
+        for (int y = 0; y < 56; ++y) {
+            for (int x = 0; x < 160; ++x) {
+                text_on   += fb[(on.y + y) * W + on.x + x] == label_ink;
+                faint_off += fb[(off.y + y) * W + off.x + x] == UI_TEXT_FAINT;
+                text_off  += fb[(off.y + y) * W + off.x + x] == label_ink;
+            }
+        }
+        CHECK(text_on > 0u);
+        CHECK(faint_off > 0u);
+        CHECK_EQ(text_off, 0u);
+    }
+    ui_theme_set(UI_THEME_DARK);
+}
+
+/* The wordmark's text reads on its fill: near-black on a light fill (the
+ * dark theme's), the panel colour on a dark one (the light theme's). */
+TEST_CASE(the_wordmark_text_reads_on_its_fill_in_both_themes)
+{
+    static const ui_theme_id_t k_themes[] = { UI_THEME_DARK, UI_THEME_LIGHT };
+    for (size_t t = 0; t < sizeof(k_themes) / sizeof(k_themes[0]); ++t) {
+        canvas();
+        ui_theme_set(k_themes[t]);
+        const gfx_color_t fill = UI_TEXT;
+        ui_wordmark(&cv, "rcbench", fill);
+        const gfx_color_t label_ink = ui_is_light(fill) ? UI_TEXT_ON_LIGHT
+                                                  : UI_PANEL;
+        unsigned inked = 0;
+        for (int y = UI_TAG_Y; y < UI_TAG_Y + UI_TAG_H; ++y) {
+            for (int x = UI_TAG_X; x < UI_TAG_X + 200; ++x) {
+                inked += fb[y * W + x] == label_ink;
+            }
+        }
+        CHECK(inked > 100u);
+        CHECK(label_ink != fill);
+    }
+    ui_theme_set(UI_THEME_DARK);
+}
+
 int main(void)
 {
     RUN(the_scale_ladder_has_its_fine_steps);
@@ -1157,8 +1301,12 @@ int main(void)
     RUN(a_finger_that_leaves_the_control_ends_the_hold);
     RUN(one_late_frame_cannot_complete_a_hold);
     RUN(a_state_that_goes_away_under_a_press_ends_the_gesture);
+    RUN(the_flash_runs_by_time);
+    RUN(every_phase_of_the_flash_is_drawn);
     RUN(the_hold_refuses_a_null_rather_than_following_it);
     RUN(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset);
     RUN(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws);
+    RUN(a_disabled_button_is_dimmer_than_an_enabled_one_in_both_themes);
+    RUN(the_wordmark_text_reads_on_its_fill_in_both_themes);
     return test_summary("widgets");
 }

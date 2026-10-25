@@ -1,5 +1,6 @@
-/*
- * The IOmcu application.
+/**
+ * @file
+ * @brief The IOmcu application.
  *
  * Answers polls and never transmits unsolicited: every transmission here
  * follows a decoded request.
@@ -47,12 +48,13 @@
 #include "console_hw.h"
 #endif
 
-/*
- * This file's report lines.  The bench console build sends them through
- * the console's output: none lands inside a console line that leaves in
- * pieces, and none waits for the host.  Every other build prints them,
- * and printf() waits for the host for up to 500 ms
- * (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+/**
+ * @brief This file's report lines.
+ *
+ * The bench console build sends them through the console's output: none lands
+ * inside a console line that leaves in pieces, and none waits for the host.
+ * Every other build prints them, and printf() waits for the host for up to 500
+ * ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
@@ -62,7 +64,9 @@
 
 /* ------------------------------------------------------------- the state */
 
-/* What iomcu.h declares and describes. */
+/**
+ * @brief What iomcu.h declares and describes.
+ */
 iomcu_state_t   s_state;
 servo_page_t    s_servo;
 supply_page_t   s_supply;
@@ -92,14 +96,22 @@ uint32_t        s_frames;
 uint32_t        s_refused;
 uint32_t        s_now_ms;
 
-/* The bank was driving on the last pass: the edge into driving moves
- * s_run_gen. */
+/**
+ * @brief The bank was driving on the last pass: the edge into driving
+ * moves s_run_gen.
+ */
 static bool          s_pass_driving;
-/* The bank was asked to drive on the last pass: its falling edge stops a
- * session. */
+/**
+ * @brief The bank was asked to drive on the last pass: its falling edge
+ * stops a session.
+ */
 static bool          s_kst_armed;
 
-/* Whether the page holds a capture that has not finished. */
+/**
+ * @brief Whether the page holds a capture that has not finished.
+ *
+ * @return True while the capture is armed, waiting for a move, or moving.
+ */
 static bool sense_capture_open(void)
 {
     const uint16_t st = s_sense.servo[LINK_SS_CAP_STATE];
@@ -107,6 +119,10 @@ static bool sense_capture_open(void)
            || st == (uint16_t)LINK_CAP_MOVING;
 }
 
+/**
+ * @brief The link pages this application serves. A page with a NULL write
+ * handler is read-only.
+ */
 static const link_page_t k_pages[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_STATUS,   LINK_ST_COUNT, status_read,   NULL },
@@ -145,8 +161,8 @@ static const link_page_t k_pages[] = {
 
 /* ---------------------------------------------------------------- the loop */
 
-/*
- * The numbers, and only the ones something measured.
+/**
+ * @brief The numbers, and only the ones something measured.
  *
  * Speed, and the ESC's own voltage, current and temperature, come from a
  * bidirectional DShot ESC (electronic speed controller) answering on its
@@ -162,8 +178,8 @@ static const link_page_t k_pages[] = {
  */
 static bench_state_t s_bench;
 
-/*
- * The peaks belong to a run, and a run starts when the bank arms.
+/**
+ * @brief The peaks belong to a run, and a run starts when the bank arms.
  *
  * They are kept on this end because it has the fast samples and the panel
  * sees one poll in fifty of them, so only this end can see the peak at all.
@@ -172,6 +188,9 @@ static bench_state_t s_bench;
  */
 static bool s_was_driving;
 
+/**
+ * @brief Takes one 50Hz sample of the bench readings and publishes them.
+ */
 static void sample(void)
 {
     /*
@@ -205,7 +224,7 @@ static void sample(void)
 
     /* On the edge into driving, so a run's peaks are that run's.  The reset
      * takes the current reading rather than zero, which is what stops a sag
-     * floor of 0 V reading as a collapsed pack. */
+     * floor of 0V reading as a collapsed pack. */
     const bool driving = outputs_driving(&s_outputs);
     if (driving && !s_was_driving) {
         bench_state_reset_peaks(&s_bench);
@@ -216,8 +235,8 @@ static void sample(void)
      * first voltage of the run rather than by the reset that opened it. */
     bench_state_track_peaks(&s_bench);
     /* Then the INA228's numbers over the ESC's, while it is the source:
-     * the 50 ms window's voltage and current, the run's peaks from its
-     * 500 Hz samples, and its charge and energy (sense_page_bench()). */
+     * the 50ms window's voltage and current, the run's peaks from its
+     * 500Hz samples, and its charge and energy (sense_page_bench()). */
     sense_sync();
     sense_page_bench(&s_sense, &s_sense_snap, s_run_gen, driving, &s_bench);
     bench_state_to_regs(&s_bench, s_state.bench);
@@ -247,10 +266,10 @@ static void sample(void)
     s_state.status[LINK_ST_REFUSED_HI] = (uint16_t)(s_refused >> 16);
 }
 
-/*
- * The failsafe edge: disarm the one bank every output goes through, then
- * bring the pages into line with it so what the panel reads back is what the
- * bank holds.
+/**
+ * @brief The failsafe edge: disarm the one bank every output goes through,
+ * then bring the pages into line with it so what the panel reads back is
+ * what the bank holds.
  */
 static void outputs_off(void)
 {
@@ -273,10 +292,14 @@ static void outputs_off(void)
     outputs_hw_service(&s_outputs);
 }
 
-/*
- * Whether flash may not be written now: flash_gate_busy(), host-tested,
- * with this end's four inputs.  A function of its own because
+/**
+ * @brief Whether flash may not be written now: flash_gate_busy(),
+ * host-tested, with this end's four inputs.
+ *
+ * A function of its own because
  * update_hw_init() takes one.  The PD mini is asked only while it is open.
+ *
+ * @return True while a flash write must wait.
  */
 static bool flash_busy(void)
 {
@@ -286,9 +309,16 @@ static bool flash_busy(void)
                            ports_quiet() != 0u);
 }
 
+/**
+ * @brief Boots the IOmcu, then runs the main loop.
+ *
+ * @return Does not return.
+ */
 int main(void)
 {
     stdio_init_all();
+    /* Why this start happened, before anything else runs. */
+    reset_start();
 
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
@@ -368,8 +398,8 @@ int main(void)
      * interlock that stops working with nothing to show for it.
      *
      * The union of what shared/outputs greys out on the panel and what this
-     * file assigns, so the two disagreeing costs a pin rather than the safety
-     * line.
+     * file assigns, so the two disagreeing costs a pin rather than the
+     * safety line.
      */
     s_base_reserved = outbind_reserved_mask(IOMCU_BOARD_ID)
                       | IOMCU_RESERVED_PINS;
@@ -394,7 +424,7 @@ int main(void)
      * page with zero -- which is a throttle's rest and a surface's low
      * endpoint.  Applied as commands, that asks every bound surface for its
      * endpoint, and outputs_arm() restamps the clock, so the staleness
-     * timeout cannot return it to centre for a further 500 ms.  A servo
+     * timeout cannot return it to centre for a further 500ms.  A servo
      * bound beside a motor would drive its stop for that long on every arm
      * until something commanded it.
      */
@@ -537,7 +567,7 @@ int main(void)
      * A loop, because out_store_reclaim() erases one sector per call and a
      * store can have more than one to take: a store whose sectors all hold
      * records this build cannot read -- an earlier record version -- has one
-     * per sector.  Left to the main loop the second of those would be a 19 ms
+     * per sector.  Left to the main loop the second of those would be a 19ms
      * window with the controller already up.
      *
      * Bounded by the store's shape, not by the flash answering.
@@ -556,11 +586,10 @@ int main(void)
     }
 
     /*
-     * Core 1 and the sensor bus, after the boot's flash windows -- core 1
-     * is not running for them, so they need no lock-out -- and with the
-     * set-up restored above as its first order.  It opens the bus within
-     * its first tick.  The pins are already held from the outputs by the
-     * page.
+     * Core 1 and the sensor bus, after the boot's flash windows -- core 1 is
+     * not running for them, so they need no lock-out -- and with the set-up
+     * restored above as its first order.  It opens the bus within its first
+     * tick.  The pins are already held from the outputs by the page.
      */
     {
         sense_build(&s_sense_cmd);
@@ -575,7 +604,7 @@ int main(void)
          * would fault core 1 executing from flash.  The store is switched
          * off for this boot instead -- set-ups run from RAM -- and the
          * STATUS page says so in LINK_FAULT_STORE_OFF, which the panel's
-         * band shows as a fault; the console repeats it every 3 s.
+         * band shows as a fault; the console repeats it every 3s.
          */
         if (sense_core1_start(&s_sense_cmd)) {
             out_store_core1_parkable();   /* windows park core 1 from now */
@@ -602,8 +631,8 @@ int main(void)
     for (;;) {
         /*
          * ONE CLOCK PER PASS, used by everything below.  Every timeout here
-         * is a wrap-safe unsigned subtraction, so a timestamp 1 ms ahead of
-         * the `now` it is compared against reads as 4,294,967,295 ms of
+         * is a wrap-safe unsigned subtraction, so a timestamp 1ms ahead of
+         * the `now` it is compared against reads as 4,294,967,295ms of
          * silence, past every timeout there is.
          *
          * Published as s_now_ms for the same reason: the page callbacks run
@@ -628,14 +657,14 @@ int main(void)
          * Two independent watchdogs, and both before the bank is armed.  The
          * link watchdog says the panel has stopped talking; this one says the
          * panel has stopped running.  A panel wedged mid-frame can still have
-         * an interrupt answering polls, so the link watchdog alone would not
-         * fire.
+         * an interrupt answering polls, so the link watchdog alone would
+         * not fire.
          *
          * Both are polled here rather than left to the end of the pass,
          * because silence generates no event: s_beat.alive and s_dev.failsafe
          * are only as fresh as the last call that looked, and arming on last
          * pass's answer renders one more service of every output after the
-         * line has gone past HEARTBEAT_MAX_GAP_MS (150 ms) or the link past
+         * line has gone past HEARTBEAT_MAX_GAP_MS (150ms) or the link past
          * its own silence timeout.
          *
          * After can_service() above, so a frame that arrived this pass has
@@ -697,7 +726,7 @@ int main(void)
             ++s_run_gen;
             sense_order();
             /* And the last run's totals off the BENCH page now, not at the
-             * next 50 Hz sample: a panel polling in between would take
+             * next 50Hz sample: a panel polling in between would take
              * them, marked TOTALS_OK, as this run's. */
             bench_state_run_starts(&s_bench, s_state.bench);
         }
@@ -774,7 +803,7 @@ int main(void)
 #endif
         }
 
-        /* 50 Hz, which is faster than the panel polls, so a poll always finds
+        /* 50Hz, which is faster than the panel polls, so a poll always finds
          * a fresh sample rather than the one it was already shown. */
         if ((uint32_t)(now - last_sample) >= 20u) {
             sample();
@@ -786,23 +815,23 @@ int main(void)
          * and the bus has gone quiet.
          *
          * Writing flash stops this core with interrupts off -- an erase and a
-         * program together measured 19,178 us on the bring-up module -- and
+         * program together measured 19,178us on the bring-up module -- and
          * what that costs is CAN frames: the controller holds two, about
-         * 130 us each, and this loop collects none of them while the window is
+         * 130us each, and this loop collects none of them while the window is
          * open.  A frame lost there can be the CONTROL write that disarms, and this
          * loop steps no output while the window is open either, so the save
          * waits for a disarm: out_store_tick() is gated on outputs_driving(),
          * which is the bank's armed flag.
          *
          * The heartbeat is not what bounds the window.  The line edges every
-         * HEARTBEAT_PERIOD_MS (20 ms) and is sampled by this loop, so an edge
-         * inside a 19 ms window is timestamped when the loop resumes rather
+         * HEARTBEAT_PERIOD_MS (20ms) and is sampled by this loop, so an edge
+         * inside a 19ms window is timestamped when the loop resumes rather
          * than lost, and the stretched interval stays far under
-         * HEARTBEAT_MAX_GAP_MS (150 ms).  The interval after it can read short
-         * instead: under HEARTBEAT_MIN_GAP_MS (4 ms) the monitor rejects it
-         * and drops the line until HEARTBEAT_GOOD_RUN (4) good intervals have
-         * run, about 80 ms.  That is derived from the periods, not measured on
-         * hardware.
+         * HEARTBEAT_MAX_GAP_MS (150ms).  The interval after it can read short
+         * instead: under HEARTBEAT_MIN_GAP_MS (4ms) the monitor rejects it and
+         * drops the line until HEARTBEAT_GOOD_RUN (4) good intervals have run,
+         * about 80ms.  That is derived from the periods, not measured
+         * on hardware.
          *
          * The save also waits for the pages to stop arriving, so CHAN_CFG and
          * OUTPUTS are saved as the pair they are.  How long since a frame
@@ -824,9 +853,9 @@ int main(void)
             /*
              * Printed because it is the number that decides whether a save
              * costs a frame: this core answers nothing while it writes, the
-             * controller holds two frames of about 130 us each, and a request
-             * lost there costs the panel 1000 ms of waiting, which is past
-             * this end's 200 ms silence failsafe.
+             * controller holds two frames of about 130us each, and a request
+             * lost there costs the panel 1000ms of waiting, which is past
+             * this end's 200ms silence failsafe.
              */
             IOMCU_SAY("rcbench-iomcu: outputs saved, record %u, "
                       "program window %lu us\n",
@@ -882,19 +911,19 @@ int main(void)
          *
          * One clock per pass is the rule and it holds because a pass is
          * short.  Two things in this one are not.  A flash window stops this
-         * core for about 19 ms with interrupts off.  can_report() prints to a
-         * USB host, which blocks for as long as the host takes, up to 500 ms
+         * core for about 19ms with interrupts off.  can_report() prints to a
+         * USB host, which blocks for as long as the host takes, up to 500ms
          * (outside the bench console build, see IOMCU_SAY).  Everything
          * below measures elapsed time across whichever of them just ran:
          * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
          * from, so a frame collected after one of them and stamped with a
          * clock from before it reports a quiet bus at the moment a frame was
-         * handled.  The next page program then passes the 5 ms guard
+         * handled.  The next page program then passes the 5ms guard
          * immediately and lands in the same burst of requests, which is the
          * collision the guard exists to prevent.
          *
          * link_dev_tick() has the same reason with a bigger margin: tens of
-         * milliseconds against a 200 ms silence timeout.
+         * milliseconds against a 200ms silence timeout.
          *
          * Unconditional rather than after a window only.  A timer read costs
          * nothing beside either of the two, and a condition here is a list of

@@ -1,10 +1,13 @@
-/*
- * The picobin block loop, as the RP2350 datasheet sections 5.1.5 and 5.9.1
- * describe it: a block opens with PICOBIN_BLOCK_MARKER_START (0xffffded3), holds
- * items, closes its item list with a LAST item that counts their words, then
- * a word with the signed byte offset of the next block and the marker
- * 0xab123579.  An item's first byte is its type; bit 7 of the type says its
- * size in words is the 16-bit field in bytes 1 and 2 rather than byte 1.
+/**
+ * @file
+ * @brief The picobin block loop, as the RP2350 datasheet sections 5.1.5 and
+ * 5.9.1 describe it: a block opens with PICOBIN_BLOCK_MARKER_START
+ * (0xffffded3), holds items, closes its item list with a LAST item that counts
+ * their words, then a word with the signed byte offset of the next block and
+ * the marker 0xab123579.
+ *
+ * An item's first byte is its type; bit 7 of the type says its size in words is
+ * the 16-bit field in bytes 1 and 2 rather than byte 1.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,19 +22,33 @@
 #define ITEM_IMAGE_TYPE  0x42u
 #define ITEM_LAST        0xffu
 #define ITEM_SIZE_2BYTES 0x80u
-/* The largest block the boot ROM reads (PICOBIN_MAX_BLOCK_SIZE). */
+/** @brief The largest block the boot ROM reads (PICOBIN_MAX_BLOCK_SIZE). */
 #define MAX_BLOCK_BYTES  0x280u
 
+/**
+ * @brief Read a 32-bit little-endian word.
+ *
+ * @param p The image bytes.
+ * @param at Offset of the word.
+ * @return The word.
+ */
 static uint32_t word_at(const uint8_t *p, uint32_t at)
 {
     return (uint32_t)p[at] | ((uint32_t)p[at + 1u] << 8)
            | ((uint32_t)p[at + 2u] << 16) | ((uint32_t)p[at + 3u] << 24);
 }
 
-/*
- * The block at @p at: true when it is whole inside @p len, with the offset of
- * the next block in @p next and of its IMAGE_TYPE item in @p image_type (-1
- * for none).
+/**
+ * @brief The block at @p at: true when it is whole inside @p len, with the
+ * offset of the next block in @p next and of its IMAGE_TYPE item in @p
+ * image_type (-1 for none).
+ *
+ * @param img The image bytes.
+ * @param len Length of img in bytes.
+ * @param at Offset of the block's start marker; a multiple of 4.
+ * @param next Receives the offset of the next block.
+ * @param image_type Receives the offset of the IMAGE_TYPE item, or -1.
+ * @return true when the block is whole inside len, else false.
  */
 static bool parse_block(const uint8_t *img, uint32_t len, uint32_t at,
                         int64_t *next, int32_t *image_type)
@@ -126,6 +143,13 @@ void link_image_hash_begin(link_image_hash_t *h, uint32_t len,
     h->flag_set = flag_set;
 }
 
+/**
+ * @brief Set or clear the TBYB bit of a byte.
+ *
+ * @param v The byte.
+ * @param set true to set LINK_IMAGE_TBYB_BIT, false to clear it.
+ * @return The byte with the bit forced.
+ */
 static uint8_t flagged(uint8_t v, bool set)
 {
     return set ? (uint8_t)(v | LINK_IMAGE_TBYB_BIT)

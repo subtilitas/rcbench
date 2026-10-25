@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief S.BUS frame decoder: framing on the byte gap, footer check and
+ *        channel unpacking.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -6,12 +10,13 @@
 
 #include <string.h>
 
-/*
- * A footer of zero is what the specification says.  Receivers in the field
- * also send 0x04, 0x14, 0x24 and 0x34 -- the low nibble carries a frame
- * counter on some of them -- so the check is on the bits that are always
- * clear rather than on the whole byte.  Rejecting those would refuse frames
- * from hardware that works.
+/**
+ * @brief A footer of zero is what the specification says.
+ *
+ * Receivers in the field also send 0x04, 0x14, 0x24 and 0x34 -- the low nibble
+ * carries a frame counter on some of them -- so the check is on the bits that
+ * are always clear rather than on the whole byte.  Rejecting those would refuse
+ * frames from hardware that works.
  */
 static bool footer_ok(uint8_t b)
 {
@@ -25,11 +30,12 @@ void sbus_decoder_reset(sbus_decoder_t *d)
     }
 }
 
-/*
- * Sixteen channels of eleven bits, packed little-endian end to end across the
- * twenty-two payload bytes with no alignment.  Channel n starts at bit 11n,
- * which lands mid-byte for all but the first, so each value is read as a
- * three-byte window shifted down and masked.
+/**
+ * @brief Sixteen channels of eleven bits, packed little-endian end to end
+ *        across the twenty-two payload bytes with no alignment.
+ *
+ * Channel n starts at bit 11n, which lands mid-byte for all but the first, so
+ * each value is read as a three-byte window shifted down and masked.
  *
  * Written as arithmetic rather than as sixteen expanded expressions: a
  * transposed shift in an expanded form produces a channel that looks
@@ -110,12 +116,12 @@ uint16_t sbus_to_us(uint16_t raw)
      * Linear through the two points the protocol defines, in integers.  A
      * receiver may send outside them (172 and 1811 are where a transmitter at
      * its endpoints lands, not the limits of the field), so the result is
-     * clamped to 800..2200 us, a pulse width no servo is damaged by, rather
+     * clamped to 800..2200us, a pulse width no servo is damaged by, rather
      * than to the raw range.
      */
     const int32_t span_raw = (int32_t)SBUS_RAW_2000US - (int32_t)SBUS_RAW_1000US;
     /* Rounded to the nearest, halves away from zero: C division truncates
-     * toward zero, so the half is added above the 1000 us point and
+     * toward zero, so the half is added above the 1000us point and
      * subtracted below it. */
     const int32_t num = ((int32_t)raw - (int32_t)SBUS_RAW_1000US) * 1000;
     int32_t us = 1000 + (num >= 0 ? (num + span_raw / 2) / span_raw

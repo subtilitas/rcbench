@@ -116,7 +116,7 @@ for (const size of SIZES) {
           }
           await expect(page.locator('#dia-hint')).toContainText(STRINGS.diaUndrawn[col].replace('{n}', '31'));
 
-          // Load wires are 7 px wide, the others 3 px. A USB-C cable is a sheath of 7 px around a core of 3 px.
+          // Load wires are 7px wide, the others 3px. A USB-C cable is a sheath of 7px around a core of 3px.
           // The legend names both widths, the cable and both supply colours.
           const widths = await page.locator('svg.picture g.dw').evaluateAll((els) => els.map((el) => ({
             thick: el.classList.contains('thick'),
@@ -425,7 +425,8 @@ test('a drag moves the zoomed picture and does not mark the wire under it', asyn
       const m = el.getScreenCTM()!;
       return { x: p.x * m.a + p.y * m.c + m.e, y: p.x * m.b + p.y * m.d + m.f };
     };
-    window.scrollBy(0, at().y - window.innerHeight / 2);
+    // Instant: the page scrolls smoothly by default, and the point is read right after.
+    window.scrollBy({ top: at().y - window.innerHeight / 2, behavior: 'instant' });
     return at();
   });
   expect(spot.y).toBeGreaterThan(0);

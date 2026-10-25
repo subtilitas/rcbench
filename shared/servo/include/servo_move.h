@@ -1,6 +1,7 @@
-/*
- * One servo move judged from the servo's current, sample by sample: when
- * it started moving and when it arrived, from a step command to one end.
+/**
+ * @file
+ * @brief One servo move judged from the servo's current, sample by sample: when
+ *        it started moving and when it arrived, from a step command to one end.
  *
  * Nothing measures the horn.  Current rises while the motor drives and
  * falls back to the holding level as it stops, which can lead or lag the
@@ -33,8 +34,8 @@
  *
  * The same rules run at two rates.  The panel's servo test feeds the PD
  * mini's readings, about 10 a second, with time in ms, settle_n 2 and no
- * filter.  The IOmcu feeds INA3221 CH1 samples at 1 kHz with time in
- * 0.1 ms (sense_sched.h).  The time unit is the caller's: cmd_t, window_t
+ * filter.  The IOmcu feeds INA3221 CH1 samples at 1kHz with time in
+ * 0.1ms (sense_sched.h).  The time unit is the caller's: cmd_t, window_t
  * and every sample's time are in it.
  *
  * Filter.  With filter_n above 1 each sample is judged as the mean of the
@@ -66,22 +67,24 @@
 extern "C" {
 #endif
 
-/** The smallest threshold.  A sample more than the threshold from the
- *  level before a command is the servo moving, and more than it above an
- *  end's holding level is the move not yet there. */
+/** @brief The smallest threshold.
+ *
+ * A sample more than the threshold from the level before a command is the servo
+ * moving, and more than it above an end's holding level is the move not yet
+ * there. */
 #define SERVO_MOVE_MIN_A        0.020f
-/** The threshold in idle noises, where that is larger. */
+/** @brief The threshold in idle noises, where that is larger. */
 #define SERVO_MOVE_NOISE_K      3.0f
-/** Back within this of the holding level, and not above it by the
- *  threshold, is the move arrived. */
+/** @brief Back within this of the holding level, and not above it by the
+ *         threshold, is the move arrived. */
 #define SERVO_MOVE_BAND_A       0.05f
-/** A move not arrived this long after its command is late, or unseen; a
- *  meter's lag is added (servo_move_window_ms()). */
+/** @brief A move not arrived this long after its command is late, or unseen; a
+ *         meter's lag is added (servo_move_window_ms()). */
 #define SERVO_MOVE_TIMEOUT_MS   3000u
-/** The longest filter. */
+/** @brief The longest filter. */
 #define SERVO_MOVE_FILTER_MAX   8u
 
-/** Where a move stands. */
+/** @brief Where a move stands. */
 typedef enum {
     SERVO_MOVE_IDLE = 0,    /**< not begun                               */
     SERVO_MOVE_WAITING,     /**< begun, no movement yet                  */
@@ -93,7 +96,7 @@ typedef enum {
     SERVO_MOVE_UNSEEN,      /**< no movement in the window               */
 } servo_move_state_t;
 
-/** A sample at the end of the meter's range. */
+/** @brief A sample at the end of the meter's range. */
 typedef enum {
     SERVO_MOVE_CLIP_LOW  = -1,  /**< at or below the value given         */
     SERVO_MOVE_CLIP_NONE =  0,
@@ -138,50 +141,109 @@ typedef struct {
                                  and the peak lack it                    */
 } servo_move_t;
 
-/** The standard deviation of @p n samples given as their sum and the sum
- *  of their squares; 0 for none. */
+/**
+ * @brief The standard deviation of @p n samples given as their sum and the sum
+ *        of their squares; 0 for none.
+ *
+ * @param n      Number of samples.
+ * @param sum    Sum of the samples, A.
+ * @param sum_sq Sum of the squares of the samples, A^2.
+ * @return standard deviation, A; 0 when n is 0 or the variance is not positive.
+ */
 float servo_move_noise_a(uint32_t n, float sum, float sum_sq);
 
-/** The threshold for a noise at rest of @p noise_a. */
+/**
+ * @brief The threshold for a noise at rest of @p noise_a.
+ *
+ * @param noise_a Noise at rest, A.
+ * @return threshold, A: the larger of SERVO_MOVE_MIN_A and SERVO_MOVE_NOISE_K
+ *        times noise_a.
+ */
 float servo_move_threshold_a(float noise_a);
 
-/** SERVO_MOVE_TIMEOUT_MS plus a meter's lag of @p lag_ms. */
+/**
+ * @brief SERVO_MOVE_TIMEOUT_MS plus a meter's lag of @p lag_ms.
+ *
+ * @param lag_ms Lag of the meter readings, ms.
+ * @return window length, ms: SERVO_MOVE_TIMEOUT_MS plus lag_ms.
+ */
 uint32_t servo_move_window_ms(uint32_t lag_ms);
 
-/** A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
- *  cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
- *  SERVO_MOVE_FILTER_MAX. */
+/**
+ * @brief A move begins: commanded at cfg->cmd_t, from cfg->rise_a towards
+ *        cfg->ref_a.  settle_n below 2 is taken as 2; filter_n is held to 1 to
+ *        SERVO_MOVE_FILTER_MAX.
+ *
+ * @param m   Move state to initialise.
+ * @param cfg Configuration of the move.
+ */
 void servo_move_begin(servo_move_t *m, const servo_move_cfg_t *cfg);
 
-/** A sample taken before the move began, into the filter only, as the
- *  newest so far: a caller that held samples before it knew the command's
- *  time hands them over oldest first.  Decides nothing; nothing with
- *  filter_n 1 or once the move is over. */
+/**
+ * @brief A sample taken before the move began, into the filter only, as the
+ *        newest so far: a caller that held samples before it knew the command's
+ *        time hands them over oldest first.  Decides nothing; nothing with
+ *        filter_n 1 or once the move is over.
+ *
+ * @param m    Move state.
+ * @param a    Sample, A.
+ * @param clip Clip state of the sample.
+ */
 void servo_move_prime(servo_move_t *m, float a, servo_move_clip_t clip);
 
 /**
- * A sample taken at @p at: @p a amps, or for a clip the end of the range
- * it is at or past.  A sample taken before the command only fills the
- * filter; one at or past window_t after the command ends the move late
- * or unseen, as servo_move_tick() would, and is not judged.  Returns the
- * state after it; ARRIVED and SETTLED leave end_t at the arrival.  Nothing
- * once the move is over.
+ * @brief A sample taken at @p at: @p a amps, or for a clip the end of the range
+ *        it is at or past.
+ *
+ * A sample taken before the command only fills the filter; one at or past
+ * window_t after the command ends the move late or unseen, as servo_move_tick()
+ * would, and is not judged.  Returns the state after it; ARRIVED and SETTLED
+ * leave end_t at the arrival.  Nothing once the move is over.
+ *
+ * @param m    Move state.
+ * @param at   Time of the sample, in the caller time unit.
+ * @param a    Sample, A.
+ * @param clip SERVO_MOVE_CLIP_NONE for a sample; SERVO_MOVE_CLIP_LOW or
+ *             SERVO_MOVE_CLIP_HIGH when the reading is at the end of its range.
+ * @return state after the sample.
  */
 servo_move_state_t servo_move_sample(servo_move_t *m, uint32_t at, float a,
                                      servo_move_clip_t clip);
 
-/** The time is @p now: a move still under way at window_t after its
- *  command is over, late or unseen, with end_t at @p now.  A @p now before
- *  the command decides nothing. */
+/**
+ * @brief The time is @p now: a move still under way at window_t after its
+ *        command is over, late or unseen, with end_t at @p now.  A @p now
+ *        before the command decides nothing.
+ *
+ * @param m   Move state.
+ * @param now Current time, in the caller time unit.
+ * @return state after the tick.
+ */
 servo_move_state_t servo_move_tick(servo_move_t *m, uint32_t now);
 
-/** Whether the move is over: arrived, settled, late or unseen. */
+/**
+ * @brief Whether the move is over: arrived, settled, late or unseen.
+ *
+ * @param m Move state.
+ * @return true when the state is not IDLE and the move is not WAITING or
+ *        MOVING.
+ */
 bool servo_move_over(const servo_move_t *m);
 
-/** Whether the move arrived: ARRIVED or SETTLED. */
+/**
+ * @brief Whether the move arrived: ARRIVED or SETTLED.
+ *
+ * @param m Move state.
+ * @return true when the state is ARRIVED or SETTLED.
+ */
 bool servo_move_arrived(const servo_move_t *m);
 
-/** Whether movement was seen. */
+/**
+ * @brief Whether movement was seen.
+ *
+ * @param m Move state.
+ * @return true when the state is MOVING, LATE, ARRIVED or SETTLED.
+ */
 bool servo_move_moved(const servo_move_t *m);
 
 #ifdef __cplusplus

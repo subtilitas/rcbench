@@ -1,5 +1,6 @@
-/*
- * A write of any width, one frame in flight at a time.
+/**
+ * @file
+ * @brief A write of any width, one frame in flight at a time.
  *
  * link_host_write() builds one request, and the CAN (Controller Area
  * Network) mapping renders a request wider than LINK_CAN_REGS_PER_FRAME (4)
@@ -33,7 +34,7 @@ extern "C" {
 #endif
 
 /**
- * How a request reaches the far end and its answer comes back.
+ * @brief How a request reaches the far end and its answer comes back.
  *
  * `exchange` carries one request built by link_host_read() or
  * link_host_write() and returns true with the answer in @p reply, a refusal
@@ -57,9 +58,9 @@ typedef struct {
 } link_port_t;
 
 /**
- * Write @p count registers of @p page from @p offset, one frame of up to
- * LINK_CAN_REGS_PER_FRAME registers per exchange, each acknowledged before
- * the next is sent.
+ * @brief Write @p count registers of @p page from @p offset, one frame of up to
+ * LINK_CAN_REGS_PER_FRAME registers per exchange, each acknowledged before the
+ * next is sent.
  *
  * True when the far end answered every frame sent.  @p reply is then one of
  * two things: an ACK (acknowledge) for the whole window, carrying what the
@@ -74,14 +75,32 @@ typedef struct {
  * The frames before a refused or unanswered one stay applied at the far end:
  * the transport has no rollback.  A page that must change whole is written
  * through pages that prepare it; see LINK_PAGE_BIND.
+ *
+ * @param h The host state.
+ * @param port The transport and clock.
+ * @param page Page number to write.
+ * @param offset First register within the page.
+ * @param count Number of registers, 1 to LINK_MAX_REGS.
+ * @param regs The count values to write.
+ * @param reply Receives the ACK or the NACK.
+ * @return true when every frame sent was answered, else false.
  */
 bool link_write_acked(link_host_t *h, const link_port_t *port, uint8_t page,
                       uint8_t offset, uint8_t count, const uint16_t *regs,
                       link_msg_t *reply);
 
 /**
- * Read @p count registers of @p page from @p offset in one exchange.  True
- * when it was answered; @p reply is the data or the refusal.
+ * @brief Read @p count registers of @p page from @p offset in one exchange.
+ *
+ * True when it was answered; @p reply is the data or the refusal.
+ *
+ * @param h The host state.
+ * @param port The transport and clock.
+ * @param page Page number to read.
+ * @param offset First register within the page.
+ * @param count Number of registers to read.
+ * @param reply Receives the data or the refusal.
+ * @return true when it was answered, else false.
  */
 bool link_read_window(link_host_t *h, const link_port_t *port, uint8_t page,
                       uint8_t offset, uint8_t count, link_msg_t *reply);

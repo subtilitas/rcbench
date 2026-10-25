@@ -1,6 +1,7 @@
-/*
- * Which meter measures the servo rail: the INA3221's CH1, the PD mini (the
- * WeAct PD Power Mini supply) or the panel's model.
+/**
+ * @file
+ * @brief Which meter measures the servo rail: the INA3221's CH1, the PD mini
+ *        (the WeAct PD Power Mini supply) or the panel's model.
  *
  * One answer, decided here once per poll by the control task.  A consumer
  * reads the answer and never tests the conditions itself.
@@ -56,21 +57,23 @@
 extern "C" {
 #endif
 
-/** A SENSE read, and the newest window's number, count for this long. */
+/** @brief A SENSE read, and the newest window's number, count for this long. */
 #define SERVO_SOURCE_FRESH_MS  200u
-/** Conditions 1 to 6 hold this long before the INA3221 is the meter. */
+/** @brief Conditions 1 to 6 hold this long before the INA3221 is the meter. */
 #define SERVO_SOURCE_SETTLE_MS 1000u
-/** One event has the alert band this long before the next is handed out. */
+/**
+ * @brief One event has the alert band this long before the next is handed out.
+ */
 #define SERVO_SOURCE_EVENT_GAP_MS 5000u
 
-/** The servo rail's meter. */
+/** @brief The servo rail's meter. */
 typedef enum {
     SERVO_SOURCE_PDMINI  = 0,
     SERVO_SOURCE_INA3221 = 1,
     SERVO_SOURCE_MODEL   = 2,   /**< no IOmcu answers */
 } servo_source_id_t;
 
-/** Why the INA3221 is not the meter: the first condition that fails. */
+/** @brief Why the INA3221 is not the meter: the first condition that fails. */
 typedef enum {
     SERVO_SOURCE_WHY_NONE = 0,   /**< it is the meter                     */
     SERVO_SOURCE_WHY_NO_LINK,    /**< no IOmcu answers              */
@@ -84,15 +87,20 @@ typedef enum {
     SERVO_SOURCE_WHY_SETTLING,   /**< 7: 1 to 6 hold, not yet for long enough */
 } servo_source_why_t;
 
-/** Things the caller tells the operator about, each once. */
+/** @brief Things the caller tells the operator about, each once. */
 enum {
-    /** The INA3221 is on with CH1 and the IOmcu is older than 4.11:
-     *  the PD mini is the meter. */
+    /**
+     * @brief The INA3221 is on with CH1 and the IOmcu is older than 4.11:  the
+     *        PD mini is the meter.
+     */
     SERVO_SOURCE_EV_OLD   = 0x01,
-    /** The INA3221 reset itself: its reset count moved. */
+    /** @brief The INA3221 reset itself: its reset count moved. */
     SERVO_SOURCE_EV_RESET = 0x02,
 };
 
+/**
+ * @brief The state of which meter measures the servo rail.
+ */
 typedef struct {
     servo_source_id_t  id;
     servo_source_why_t why;
@@ -113,52 +121,95 @@ typedef struct {
     uint32_t event_ms;
 } servo_source_t;
 
-/** The meter is the model until a step says otherwise. */
+/**
+ * @brief The meter is the model until a step says otherwise.
+ *
+ * @param s The source state.
+ */
 void servo_source_init(servo_source_t *s);
 
 /**
- * One poll: the conditions judged at @p now_ms from @p link_up, the
- * IOmcu's protocol minor @p minor and @p m, sense_link_meter()'s
- * answer of the same poll.  Returns the meter.
+ * @brief One poll: the conditions judged at @p now_ms from @p link_up, the
+ *        IOmcu's protocol minor @p minor and @p m, sense_link_meter()'s answer
+ *        of the same poll.
+ *
+ * Returns the meter.
+ *
+ * @param s       The source state.
+ * @param now_ms  The time, in ms.
+ * @param link_up true while the IOmcu link is up.
+ * @param minor   The IOmcu's protocol minor version.
+ * @param m       The sense_link_meter() answer of this poll.
+ * @return The meter, a servo_source_id_t.
  */
 servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
                                     bool link_up, uint16_t minor,
                                     const sense_link_meter_t *m);
 
-/** The meter as of the last step. */
+/**
+ * @brief The meter as of the last step.
+ *
+ * @param s The source state.
+ * @return The meter as of the last step.
+ */
 servo_source_id_t servo_source_id(const servo_source_t *s);
 
 /**
- * How many times the meter has changed since servo_source_init(), modulo
- * 2^32.  It orders two answers taken at different polls: of two counts the
+ * @brief How many times the meter has changed since servo_source_init(), modulo
+ *        2^32.
+ *
+ * It orders two answers taken at different polls: of two counts the
  * one that is ahead by less than 2^31 is the later.
+ *
+ * @param s The source state.
+ * @return The change count, modulo 2^32.
  */
 uint32_t servo_source_changes(const servo_source_t *s);
 
-/** Why the INA3221 is not the meter, as of the last step. */
+/**
+ * @brief Why the INA3221 is not the meter, as of the last step.
+ *
+ * @param s The source state.
+ * @return Why the INA3221 is not the meter, as of the last step.
+ */
 servo_source_why_t servo_source_why(const servo_source_t *s);
 
 /**
- * Why the INA3221 last stopped being the meter: SERVO_SOURCE_WHY_RESET
- * when its reset count moved in that step, else the condition that failed
- * in it, or SERVO_SOURCE_WHY_NO_LINK.  @p at, when not NULL, takes
+ * @brief Why the INA3221 last stopped being the meter: SERVO_SOURCE_WHY_RESET
+ *        when its reset count moved in that step, else the condition that
+ *        failed in it, or SERVO_SOURCE_WHY_NO_LINK.
+ *
+ * @p at, when not NULL, takes
  * servo_source_changes() as that step left it.  SERVO_SOURCE_WHY_NONE while
  * the INA3221 has not stopped being the meter since servo_source_init().
+ *
+ * @param s  The source state.
+ * @param at Receives the change count of that step, or NULL.
+ * @return The reason the INA3221 last stopped being the meter, or
+ *         SERVO_SOURCE_WHY_NONE.
  */
 servo_source_why_t servo_source_dropped(const servo_source_t *s,
                                         uint32_t *at);
 
 /**
- * One event for the alert band, the older IOmcu before the reset,
- * cleared; 0 while none waits or while the last one handed out is younger
- * than SERVO_SOURCE_EVENT_GAP_MS at @p now_ms.
+ * @brief One event for the alert band, the older IOmcu before the reset,
+ *        cleared; 0 while none waits or while the last one handed out is
+ *        younger than SERVO_SOURCE_EVENT_GAP_MS at @p now_ms.
+ *
+ * @param s      The source state.
+ * @param now_ms The time, in ms.
+ * @return The event for the alert band, or 0 for none.
  */
 uint32_t servo_source_event(servo_source_t *s, uint32_t now_ms);
 
 /**
- * Put back an event servo_source_event() handed out that never reached
- * the band, so it is handed out again after the gap.  Not once the link
- * has gone: both events are about the IOmcu that answered.
+ * @brief Put back an event servo_source_event() handed out that never reached
+ *        the band, so it is handed out again after the gap.
+ *
+ * Not once the link has gone: both events are about the IOmcu that answered.
+ *
+ * @param s  The source state.
+ * @param ev The event to put back.
  */
 void servo_source_event_back(servo_source_t *s, uint32_t ev);
 

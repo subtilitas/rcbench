@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief The host end of the link: starting transactions, accepting replies and
+ *        timeouts.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -15,6 +19,14 @@
 
 #include <string.h>
 
+/**
+ * @brief Test whether a timeout has elapsed, across the 32-bit millisecond wrap.
+ *
+ * @param now The current time, in ms.
+ * @param then The time the wait started, in ms.
+ * @param ms The timeout, in ms.
+ * @return true when at least ms milliseconds have passed since then.
+ */
 static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
 {
     return (uint32_t)(now - then) >= ms;
@@ -29,6 +41,20 @@ void link_host_init(link_host_t *h, uint32_t now_ms)
     h->last_reply_ms = now_ms;
 }
 
+/**
+ * @brief Build a request and mark it outstanding.
+ *
+ * @param h The panel's link state.
+ * @param op LINK_OP_READ or LINK_OP_WRITE.
+ * @param page Page number.
+ * @param offset First register within the page.
+ * @param count Number of registers, 1 to LINK_MAX_REGS.
+ * @param regs The values of a write; NULL for a read.
+ * @param now_ms The current time, in ms; starts the request's timeout.
+ * @param out Receives the request.
+ * @return true when the request was built, false when h or out is NULL, when
+ *       one is already outstanding, or when the window does not fit a page.
+ */
 static bool start(link_host_t *h, uint8_t op, uint8_t page, uint8_t offset,
                   uint8_t count, const uint16_t *regs, uint32_t now_ms,
                   link_msg_t *out)
@@ -78,7 +104,12 @@ bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
     return start(h, LINK_OP_WRITE, page, offset, count, regs, now_ms, out);
 }
 
-/* Everything in the window has arrived. */
+/**
+ * @brief Everything in the window has arrived.
+ *
+ * @param h The panel's link state.
+ * @return true when all count bits of acc_seen are set.
+ */
 static bool window_complete(const link_host_t *h)
 {
     const uint32_t want = (h->count >= 32u) ? 0xFFFFFFFFu
@@ -86,6 +117,13 @@ static bool window_complete(const link_host_t *h)
     return (h->acc_seen & want) == want;
 }
 
+/**
+ * @brief Close the outstanding request as answered.
+ *
+ * @param h The panel's link state.
+ * @param now_ms The time of the answer, in ms.
+ * @param refused true when the answer is a NACK, counted in nacks.
+ */
 static void answered(link_host_t *h, uint32_t now_ms, bool refused)
 {
     h->pending       = false;
@@ -134,7 +172,7 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
          * offset, and its refusal carries that offset back.
          *
          * A refusal counted as a mismatch costs its reason.  The transaction
-         * then runs to LINK_HOST_TIMEOUT_MS (1000 ms), and the caller reads
+         * then runs to LINK_HOST_TIMEOUT_MS (1000ms), and the caller reads
          * the silence as a dead link: write_output_binding() in
          * firmware/panel/main/panel_arm.c maps a refusal to OUTPUTS_REFUSED
          * and a timeout to OUTPUTS_NO_LINK, which sends the operator to the
@@ -264,7 +302,7 @@ bool link_host_tick(link_host_t *h, uint32_t now_ms)
     /*
      * And say the link is down, once.  A different fact on a different clock:
      * a request times out from when it was sent, the link is reported down
-     * when nothing has been answered for 1 s.
+     * when nothing has been answered for 1s.
      */
     if (!h->escalated
         && elapsed(now_ms, h->last_reply_ms, LINK_HOST_TIMEOUT_MS)) {

@@ -13,35 +13,101 @@ hardware.
 | Mechanism | Covers | State |
 | --- | --- | --- |
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
-| IOmcu silence watchdog, 200 ms | the link is dead in either direction | built and tested |
+| IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
+| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED or the supply output is on | built; the decision is host-tested (`test_frame_watch`) |
 
 A pressed STOP stops the heartbeat, switches the panel's own output model to SAFE
 and writes ARM = 0 to the control page. While the link is up the panel
-writes ARM and THROTTLE at every 50 ms poll; an explicit switch to ARMED waits until the
+writes ARM and THROTTLE at every 50ms poll; an explicit switch to ARMED waits until the
 IOmcu reports the heartbeat trusted, writes CLEAR (0x5AFE) on its own,
 then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK (negative
 acknowledge) from the IOmcu to either leaves the panel SAFE.
 
+### Render-loop watchdog
+
+The control task reads touch, tests STOP's rectangle and beats the heartbeat
+without the render loop. A render loop that stops leaves STOP working and
+nothing else. DISARM, the throttle slider, the servo dial and OUTPUT OFF are
+the render loop's, and the outputs keep their last command.
+
+The render loop moves a counter once per pass. The control task reads it in
+every 5ms pass and inside every link exchange's wait. While the bench is
+ARMED, or while the supply output is on, a counter that has not moved for
+1000ms (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`) is a stop
+of the bench's own, through the path STOP takes:
+
+- the heartbeat drops in the same pass, and the IOmcu fails safe within
+  150ms;
+- the supply output switches off in the same pass;
+- the alert `Screen stopped updating for 1s. Switched to SAFE, output off.`
+  shows when the render loop draws again. A loop that never draws again
+  shows nothing new.
+
+The stop latches like STOP. A loop that recovers arms nothing and switches
+nothing on; only the next switch to ARMED clears the latch. One stall makes
+one stop, and the next stall starts at the counter's next move.
+
+The clock starts at the counter's last move, not at the arm. A loop that
+froze after it posted ARM or ON stops the bench in the first pass that finds
+it ARMED or the output on. A SAFE bench with the supply off is never
+stopped: the panel's update install, a log loaded on LOGS and a settings
+save stall the loop on a SAFE bench. The install starts only on a SAFE
+bench with the supply off and withholds the heartbeat on purpose while it
+writes. At start-up the bench is SAFE with the supply off.
+
+The timeout is 1000ms because of the longest passes the render loop makes
+on a screen that drives an output:
+
+| Call in the pass | Longest |
+| --- | --- |
+| PPA (Pixel-Processing Accelerator) copy for Screen rotation 180° | 50ms budget (`GFX_TURN_BUDGET_US`), then a copy of the 1,228,800-byte frame on a timeout, not measured |
+| Flip: the wait for the frame-done event | 200ms (`FLIP_WAIT_MS`) |
+| Paint, a full repaint included (a keypad opening, a screen change) | not measured on the ESP32-P4 |
+| A command to the control task into a full queue | 5ms per command |
+| The console line every 300 frames | about 11ms at 115200 baud, not measured |
+| Settings save | never on an ARMED bench, with an arm waiting, or with the supply on or an ON queued (`flash_gate_open()`) |
+| The servo programmer's look at the card (SERVO > PROGRAM) | one card status command or a mount, then the read of its record (`KST.TXT`); each card command is bounded by the driver's 1000ms, not measured |
+| LOGS: the list, a log's open and its plot | counted as progress per directory entry and per read (`panel_card.c`); one read is bounded by the card driver, not measured |
+
+The bounded part, 50ms + 200ms + the copy + the paint, is about 300ms.
+1000ms is about three times that, and twice the 500ms after which a silent
+touch controller switches the bench to SAFE.
+
+Current limitations:
+
+- A display that stops sending frame-done events makes every flip wait
+  200ms. The loop then passes about 4 times a second, and the watchdog does
+  not fire: DISARM and the other controls still act, on a picture that does
+  not change.
+- The servo programmer looks at the card on the render task, with the
+  supply output on during a session. A status command or a mount that takes
+  1000ms or more, for example behind another task's write on the same card,
+  stops the bench and ends the session.
+- Leaving SERVO while a programming port holds the supply keeps the output
+  on. A single card read of 1000ms or more on LOGS then stops the bench and
+  ends the port's session.
+
 ## Required external circuit: the monostable
 
-The safety line is panel GPIO6 (general-purpose input/output pin 6) on
-header J8 (3V3, GND, GPIO6). It carries
-edges, not a level. The IOmcu's output enable and the servo and ESC
-(electronic speed controller) power path must be gated by a retriggerable
-monostable that stays energised only while edges keep arriving. A crash, a
-wedged task, a reset, a brown-out and an unplugged cable then all produce the
-same result: no edges, no output, independent of firmware at both ends.
+The safety line is panel GPIO28 (general-purpose input/output pin 28), a free
+pin of the 7-inch ESP32-P4 display board: IO28 of the 12-pin header P3
+(`PANEL_HEARTBEAT_PIN` in `board_pins.h`). It carries edges, not a level. The
+IOmcu's output enable and the servo and ESC (electronic speed controller)
+power path must be gated by a retriggerable monostable that stays energised
+only while edges keep arriving. A crash, a wedged task, a reset, a brown-out
+and an unplugged cable then all produce the same result: no edges, no output,
+independent of firmware at both ends.
 
-Monostable window: about 150 ms. The heartbeat comes from the panel's control
-task, which runs every 5 ms on the core that does not draw, so its period does
-not depend on what a frame costs. The window stays at 150 ms, inside the
-IOmcu's 200 ms link failsafe, rather than tightening to the new period:
+Monostable window: about 150ms. The heartbeat comes from the panel's control
+task, which runs every 5ms on the core that does not draw, so its period does
+not depend on what a frame costs. The window stays at 150ms, inside the
+IOmcu's 200ms link failsafe, rather than tightening to the new period:
 the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
 The monostable is on no board. On the bring-up bench the edges reach the
-IOmcu's GP3 by a direct wire from J8, which is what lets that bench switch to ARMED.
+IOmcu's GP3 by a direct wire from the panel's heartbeat pin, which is what lets that bench switch to ARMED.
 
 The monostable is retriggered by the panel's edges and removes the outputs
 when they stop. What it adds over the direct wire is that it does this without
@@ -66,9 +132,9 @@ cannot distinguish a heartbeat from noise. Constants from
 
 | | Value | |
 | --- | ---: | --- |
-| Panel edge interval | 20 ms | `HEARTBEAT_PERIOD_MS`, one edge every 20 ms, 4 control-task periods of 5 ms, not one per frame |
-| Accepted interval | 4–150 ms | shorter is noise; longer means the loop that owns STOP has stopped |
-| Good intervals before the line is trusted | 4 | 80 ms at the panel's rate |
+| Panel edge interval | 20ms | `HEARTBEAT_PERIOD_MS`, one edge every 20ms, 4 control-task periods of 5ms, not one per frame |
+| Accepted interval | 4–150ms | shorter is noise; longer means the loop that owns STOP has stopped |
+| Good intervals before the line is trusted | 4 | 80ms at the panel's rate |
 
 The check is asymmetric: four good intervals before the line is trusted, one
 bad interval or one silent window to distrust it. The IOmcu refuses to
@@ -76,12 +142,12 @@ switch to ARMED while the line is not trusted, and switches its outputs to SAFE 
 latch when it stops.
 
 The heartbeat is generated by the control task, which owns STOP and runs
-every 5 ms on core 1, the core that does not draw. It is not generated by a
+every 5ms on core 1, the core that does not draw. It is not generated by a
 timer or a peripheral, and not by the loop that draws: a panel that has
 stopped drawing can still be stopped. The touch controller is read by a task
 of its own, priority 5 on core 0, the core that draws. The control task takes
 that task's events from a queue and judges the controller by the time since
-it last answered: 500 ms without an answer switches the bench to SAFE and stops the
+it last answered: 500ms without an answer switches the bench to SAFE and stops the
 heartbeat. The IOmcu's input is pulled down, so an unpowered or
 unplugged panel reads as a line that is not edging.
 
@@ -94,13 +160,13 @@ holds.
 | Sets the latch | Condition |
 | --- | --- |
 | An IOmcu start | power-on, a reset, the RUN pin, a reflash |
-| Link silence | 200 ms without a request, together with the link failsafe |
-| The heartbeat is distrusted | one interval under 4 ms or over 150 ms, or 150 ms without an edge |
+| Link silence | 200ms without a request, together with the link failsafe |
+| The heartbeat is distrusted | one interval under 4ms or over 150ms, or 150ms without an edge |
 | A refused ARM | an ARM answered NOT_ARMED, so a CLEAR followed by a refused ARM leaves the latch set |
 
 One thing clears it: a write of 0x5AFE to CLEAR on the control page. The
 panel writes CLEAR in one place, the switch to ARMED an operator completes by holding
-ARM for 2 s. The ARM the panel writes at every 50 ms poll while the
+ARM for 2s. The ARM the panel writes at every 50ms poll while the
 bench is ARMED carries no CLEAR, so it never brings a latched IOmcu back.
 
 The latch is separate from the link failsafe. The supply's ON and the STATUS
@@ -113,7 +179,7 @@ The panel has its own rule for the same events. When the IOmcu stops
 answering while the bench is ARMED, or while a switch to ARMED is waiting for the line,
 the panel latches a stop on that poll: its own bank is switched to SAFE, the throttle
 goes to zero, a held servo position is let go and the heartbeat stops. A
-missing answer is noticed after the 1000 ms exchange timeout, or at once
+missing answer is noticed after the 1000ms exchange timeout, or at once
 when the panel's CAN (Controller Area Network) controller is bus-off. Every
 exchange counts, not only the poll's read of the bench page: the write of
 ARM and THROTTLE that follows it, a page service, a servo refresh, the
@@ -128,7 +194,7 @@ written to it.
 ### An IOmcu restart during a run
 
 The IOmcu restores its output binding from flash and starts latched,
-with no command. The panel's bank is still ARMED for up to 1000 ms. Two
+with no command. The panel's bank is still ARMED for up to 1000ms. Two
 cases:
 
 - The panel notices the outage. It latches a stop and writes ARM = 0 from
@@ -138,7 +204,7 @@ cases:
   with NOT_ARMED, and the panel latches a stop on that answer.
 
 In both the outputs stay off until an operator holds ARM. Host-tested in
-`test_safety_gate` for outages of 5, 30, 50, 60, 300, 1000 and 5000 ms at 55
+`test_safety_gate` for outages of 5, 30, 50, 60, 300, 1000 and 5000ms at 55
 reset phases each and three models of the wire. How long
 the IOmcu takes from reset to its first answered frame is not measured.
 
@@ -146,33 +212,33 @@ the IOmcu takes from reset to its first answered frame is not measured.
 
 The heartbeat is withheld while a stop is latched. A switch to ARMED clears the panel's
 latch, the heartbeat resumes, and the IOmcu's monitor needs five edges
-before it trusts the line: 100 to 125 ms at the control task's 5 ms period.
-The panel waits 100 ms, then reads the STATUS fault register once per pass
+before it trusts the line: 100 to 125ms at the control task's 5ms period.
+The panel waits 100ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
-that switches to ARMED. If the bit has not cleared 300 ms after the hold completed, the
+that switches to ARMED. If the bit has not cleared 300ms after the hold completed, the
 panel gives the switch up with `The IOmcu refused to switch to ARMED.` and writes nothing,
 so the IOmcu's latch stays set. An answer that comes back later than
-those 300 ms is not used, whatever it says.
+those 300ms is not used, whatever it says.
 
-The same 300 ms hold through the writes that follow. The panel asks the
+The same 300ms hold through the writes that follow. The panel asks the
 deadline again before CLEAR and before the frame that switches to ARMED, because the
 servo release ahead of them and the CLEAR itself can be answered late. Past
 the deadline before CLEAR, the switch is given up as above with nothing
 written. Past it after an acknowledged CLEAR, no frame is written and the
 panel latches a stop: the CLEAR released the IOmcu's latch and no
 register sets it again, so the stop withholds the heartbeat and the
-IOmcu sets its latch when it stops trusting the line, within 150 ms.
+IOmcu sets its latch when it stops trusting the line, within 150ms.
 The limit of the bound is the frame that switches to ARMED itself. It is written at or
-before the deadline, and its acknowledgement can arrive up to the 1000 ms
+before the deadline, and its acknowledgement can arrive up to the 1000ms
 exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the IOmcu has then
 switched the role it was asked for to ARMED, at rest: throttle 0 for MOTOR & ESC and
 its stick runs, surfaces centred for SERVO. The panel does not
 undo it. An exchange of the switch that nobody
 answers -- the STATUS read, the servo release, CLEAR or the frame that switches to ARMED
--- has waited the 1000 ms exchange timeout or did not reach the wire: that is
+-- has waited the 1000ms exchange timeout or did not reach the wire: that is
 the link going quiet under a switch to ARMED, and the panel latches a stop as above. A
 refusal is an answer and leaves the panel SAFE with no stop. With no
-IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
+IOmcu connected the panel switches its own bank to ARMED after the 100ms.
 
 ### A pulse range on its way
 
@@ -180,8 +246,8 @@ The frame that switches to ARMED carries ARM, THROTTLE and the pole count,
 and no CHAN_CFG. The throttle's Idle pulse and Full pulse reach the IOmcu on
 their own path: an edit, a binding written on OUTPUTS or PICK A PIN, a
 link-up edge or the panel's start owes the IOmcu the pair. An IOmcu restart
-or update comes back as a link-up edge. The panel pays the debt at a 50 ms
-poll whose write of ARM = 0 was acknowledged, once 300 ms
+or update comes back as a link-up edge. The panel pays the debt at a 50ms
+poll whose write of ARM = 0 was acknowledged, once 300ms
 (`ENDPOINTS_SETTLE_MS`) have passed since the last edit. It reads CHAN_CFG,
 puts the pair on the throttle channels and writes the page when it differs.
 The IOmcu applies a CHAN_CFG write to its outputs before it acknowledges
@@ -193,13 +259,13 @@ it, and the acknowledgement carries what it stored.
 | the write is acknowledged and every throttle channel stored the pair | paid | goes on |
 | the read or the write is not answered | owed, sent again at the next poll | `Pulse range not yet sent to the IOmcu. Hold ARM again.` |
 | the read is refused | ended, `The IOmcu did not report its pulse range.` | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` |
-| Idle pulse is not below Full pulse | ended, nothing sent, `Idle pulse must be shorter than full-throttle pulse. Not sent.` | `Idle pulse is not below Full pulse. Change one, then hold ARM again.` |
+| Idle pulse is less than 100us below Full pulse | ended, nothing sent, `Idle pulse must be 100us or more below Full pulse. Not sent.` | `Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.` |
 | the write is refused | ended, `The IOmcu rejected the pulse range.` | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` |
 | the write is acknowledged and a throttle channel stored another pair | ended | `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` |
 
 The alert of a refused or an inverted pair leaves the band when a later
 payment finds the page holding the pair asked, or a write of it is
-acknowledged, before its 30 s are up. The same holds for `The IOmcu
+acknowledged, before its 30s are up. The same holds for `The IOmcu
 rejected the pole count.`: it leaves the band when a later pole count is
 taken.
 
@@ -230,16 +296,16 @@ An operator with an IOmcu that refuses the page reads `The IOmcu did not
 report its pulse range.` at the link-up, and `No pulse range from the
 IOmcu. Update the IOmcu firmware, then hold ARM again.` at every hold of
 ARM. The bench does not switch to ARMED with that IOmcu connected. The
-panel offers the IOmcu image it carries at the link-up, after its own 2 s
+panel offers the IOmcu image it carries at the link-up, after its own 2s
 hold; the IOmcu restarts after the update, and the link-up that follows
 owes the pair again. Without an IOmcu, the panel's own bank switches to
 ARMED as before.
 
-An edit at time 0 is paid at the first poll at or after 300 ms: a poll at
-299 ms leaves it owed, a poll at 300 ms pays it. The time is taken modulo
-2^32 ms, so the rest runs across the wrap of the millisecond clock. The
+An edit at time 0 is paid at the first poll at or after 300ms: a poll at
+299ms leaves it owed, a poll at 300ms pays it. The time is taken modulo
+2^32ms, so the rest runs across the wrap of the millisecond clock. The
 SETTINGS rows for the two values lock while ARM is held, and the hold takes
-2 s, so an edit made before the press is normally paid inside the hold.
+2s, so an edit made before the press is normally paid inside the hold.
 
 With no link the panel's own bank switches to ARMED and nothing is written.
 A link that comes back owes the pair again and holds the IOmcu SAFE until
@@ -257,15 +323,15 @@ reads the state and shows the alert, is not in the coverage figure.
   set point, though the supply reports its output off a sample later.
 - The PD mini's wiring (SETUP INTERFACES) changes, once the module has
   answered, only on a state read sent after the change that shows the output
-  off. A module that switched itself on in the 500 ms between two reads keeps
+  off. A module that switched itself on in the 500ms between two reads keeps
   its pins and so its OFF path; the IOmcu switches it off.
-- A live PD mini output whose input reads under the set point plus 0.5 V on
+- A live PD mini output whose input reads under the set point plus 0.5V on
   2 input reads in a row is switched off by the IOmcu, which tells the
   panel afterwards. A conservative rule chosen without a measurement: it may
-  cut a run that would have survived. Set points are capped 0.7 V under the
-  input voltage, 0.2 V above that line, so an input voltage dropping less
-  than 0.2 V under load cuts nothing. An ON asked while the input voltage
-  reads under 1.5 V is not written.
+  cut a run that would have survived. Set points are capped 0.7V under the
+  input voltage, 0.2V above that line, so an input voltage dropping less
+  than 0.2V under load cuts nothing. An ON asked while the input voltage
+  reads under 1.5V is not written.
 - Switching to ARMED is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Switching to SAFE (DISARM) is a press.
 - The panel writes its own flash only while the bench is SAFE, with no
@@ -275,8 +341,8 @@ reads the state and shows the alert, is not in the coverage figure.
   supply trips included. The rule is `flash_gate_open()` in
   `shared/safety/flash_gate.c`, under `test_flash_gate`. It holds back the
   settings save and the board drawing's keep. Switching to ARMED and the supply are
-  never refused for a write: the write waits. The keep (2 erases of 4 kB and
-  2 writes for the RP2350-CAN's 1,560-byte drawing) runs one sector per 5 ms
+  never refused for a write: the write waits. The keep (2 erases of 4kB and
+  2 writes for the RP2350-CAN's 1,560-byte drawing) runs one sector per 5ms
   control pass and stops between two sectors when the bench is ARMED or the
   supply comes on. It resumes from the same sector on the first safe pass.
   Its header is erased first and written last, so a keep that is paused or
@@ -284,7 +350,7 @@ reads the state and shows the alert, is not in the coverage figure.
   link-up fetches it again. The duration of
   one erase on the panel's flash is not measured.
 - A stick run on MOTOR & ESC > PROGRAM switches to ARMED through the same policy, after its warning
-  (PROPELLER REMOVED? MOTOR SECURED?) is held for 2 s. It then sets the throttle
+  (PROPELLER REMOVED? MOTOR SECURED?) is held for 2s. It then sets the throttle
   to the profile's entry position before it switches the supply on, which
   for most ESCs is the stick at MAX: that is how their menu is entered. The
   ESC then sounds its programming menu and does not drive, but in rare
@@ -297,7 +363,7 @@ reads the state and shows the alert, is not in the coverage figure.
   supply off and the bench SAFE, in one step. A run that ends as planned
   switches the supply off first and moves the stick once the supply itself
   reports the output off. [Stick programming](StickProgramming.md).
-- A hold is credited at most 250 ms per frame, so it spans at least eight
+- A hold is credited at most 250ms per frame, so it spans at least eight
   frames with the press standing. A frame's duration is measured at its top
   and applied at its end, and without the cap one late frame credits a hold
   that began while that same frame was dispatching its touch events. Both
@@ -338,7 +404,7 @@ reads the state and shows the alert, is not in the coverage figure.
 - A contact has one owner from its press to its release, and the router
   decides it. A screen is handed a move or a release only for a contact whose
   press it was handed. A contact that comes down on the status band (the top
-  48 px) or on the alert band is the router's until it lifts, wherever it
+  48px) or on the alert band is the router's until it lifts, wherever it
   travels. The exception is a press on a control that stops what the bench
   drives -- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN --
   which the screen names to the router (`safe_at` in ui_screen.h): under the
@@ -354,7 +420,7 @@ reads the state and shows the alert, is not in the coverage figure.
   with the same id that crosses from the band into the body moves the value
   by its own distance from the first drag's origin. The release carries a
   mark (`TOUCH_FLAG_NO_TAP`), and so does the release the tracker makes for a
-  contact that is more than 120 px from where the previous report had it.
+  contact that is more than 120px from where the previous report had it.
   A marked release ends a press or a drag and activates no control: the
   finger did not lift there. Two controls take it all the same, because
   they stop something: OUTPUT OFF, and START TEST while a servo test runs.
@@ -369,9 +435,9 @@ reads the state and shows the alert, is not in the coverage figure.
   reports; a sixth is handed to no screen.
 - A control that changes a setting acts on a tap, not on the press. On SETUP
   a `-` or `+` key steps when the finger that pressed it lifts inside it, no
-  more than 8 px from the press in x and in y; the list scrolls from
+  more than 8px from the press in x and in y; the list scrolls from
   anywhere, the keys included, and a scroll changes no value. A key held
-  steps from 0.45 s after the press. ESC STICK's controls follow the same
+  steps from 0.45s after the press. ESC STICK's controls follow the same
   rule, DEFAULTS and the stick timing's keys included. ABORT of a stick run
   acts on the press, and so does every stop on the bench screens, STOP and
   DISARM included: stopping never waits for a lift that may not come. A
@@ -406,7 +472,7 @@ reads the state and shows the alert, is not in the coverage figure.
   only when it began ARMED and found the stream whole. The control task
   looks inside every link exchange's wait, not only once a pass, and stops
   the bench from there as it does for STOP: the heartbeat drops at once and
-  the IOmcu fails safe within 150 ms, however long the exchange
+  the IOmcu fails safe within 150ms, however long the exchange
   backlog behind the ARM. A frame that
   began before the ARM was published cancels screens that still believe the
   bench is SAFE, which posts no DISARM, so the control task has to.
@@ -415,7 +481,7 @@ reads the state and shows the alert, is not in the coverage figure.
 - The throttle moves by how far a finger travels, not to where it lands. A
   press on the track commands nothing, so a touch at the far end asks for
   nothing; a drag across the whole track asks for the whole span, and one
-  completed inside a 50 ms poll is a 0 to 100 % step at the pin. Sliders that
+  completed inside a 50ms poll is a 0 to 100% step at the pin. Sliders that
   command nothing dangerous, such as the servo screen's sweep speed, keep
   tap-to-set.
 - An output value changes only while the bench is ARMED, on MOTOR & ESC and on
@@ -438,16 +504,16 @@ reads the state and shows the alert, is not in the coverage figure.
 - Every switch to ARMED starts from the channel's rest, not from where the last run left
   the control.
   - MOTOR & ESC: the throttle slider, its `-1` and `+1` steps and the knob
-    are the controls. A switch to SAFE returns the throttle to 0 %, and it stays
-    there until the next switch to ARMED, so the first step after it posts 1.0 %.
-    The ARM hold returns the slider to 0 % when it asks, and so does the
+    are the controls. A switch to SAFE returns the throttle to 0%, and it stays
+    there until the next switch to ARMED, so the first step after it posts 1.0%.
+    The ARM hold returns the slider to 0% when it asks, and so does the
     change to ARMED for a switch the hold did not ask for, as for a stick run
     on PROGRAM.
   - SERVO: the dial, the knob, CENTRE and SWEEP are the controls. While SAFE,
     the horn and the pulse width shown stay at the position last driven. At
     a switch to ARMED the value becomes the surface's rest, which the pins drive once
     the switch has paid its release: the midpoint of the channel's endpoints,
-    1500 us across 1000 to 2000 us and 760 us across 660 to 860 us. The
+    1500us across 1000 to 2000us and 760us across 660 to 860us. The
     first input after a switch to ARMED starts from there.
 - RELEASE on SERVO is not a position and is taken while the bench is SAFE, where
   it moves no value. While ARMED it puts the pins at the rest and the
@@ -460,11 +526,11 @@ reads the state and shows the alert, is not in the coverage figure.
   how far it turns, as the slider does, and the same rules hold. It never
   switches to ARMED: the only way is the ARM hold. On both screens a turn while the bench
   is SAFE moves nothing and is not kept; after a switch to ARMED the knob goes on
-  from 0 % on MOTOR & ESC and from the rest on SERVO. Leaving the screen
+  from 0% on MOTOR & ESC and from the rest on SERVO. Leaving the screen
   switches the bench to SAFE. The first
   reading after power-up, a reading that does not arrive (a NACK or a
-  5 ms timeout), and a step over
-  90 deg between two readings each set the reference again and move nothing,
+  5ms timeout), and a step over
+  90deg between two readings each set the reference again and move nothing,
   so a knob that stops answering stops contributing and no last value is held
   as a command. A finger on the track or dial owns the value against the
   knob for the whole frame in which it touched the control, and on SERVO a
@@ -476,26 +542,23 @@ reads the state and shows the alert, is not in the coverage figure.
   a horn position that is waiting for the frame: a completed ARM, a DISARM, a
   release and a peak reset stay, and its motion is dropped. The knob is read by
   a task of its own on the core the renderer uses, never by the control task,
-  with a 5 ms bus timeout on each transaction of a poll: a probe while it
+  with a 5ms bus timeout on each transaction of a poll: a probe while it
   has no reference, then three reads. A failed transaction also costs the
   driver's recovery, a controller reset and a bus clear that waits up to
-  50 ms more while SDA is held low. A sensor that holds SDA low therefore
-  delays the touch read by about 55 ms per transaction. That is under the
-  touch read's own 100 ms bus timeout (`GT911_I2C_TIMEOUT_MS`), and a touch
-  controller silent for 500 ms switches the bench to SAFE
+  50ms more while SDA is held low. The knob sits on an I2C controller of its
+  own (I2C_NUM_1, IO30 and IO31 of header P3) and nothing else is on that
+  bus, so a sensor that holds SDA low delays the knob task only. The touch
+  controller is on the other controller (I2C_NUM_0, GPIO7 and GPIO8), and
+  a touch controller silent for 500ms switches the bench to SAFE
   (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the heartbeat's path: the control task
-  generates the heartbeat and does not use the I2C bus. The board answers at
-  0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on that bus, and the CH422G I/O
-  expander takes a transaction at its addresses as a command: at 0x30 to 0x3F
-  the written byte becomes its output byte, which holds the backlight, the
-  touch reset and the USB/CAN (Universal Serial Bus / Controller Area
-  Network) select. The panel refuses to put the knob, or any other device of
-  the builder's, at those addresses or at the ones the I2C specification
+  generates the heartbeat and does not use either I2C bus. The touch bus
+  holds the GT911 at 0x5D, and the touch injector of a build with it at
+  0x14. The panel refuses to put the knob, or any other device of the
+  builder's, at those two addresses or at the ones the I2C specification
   reserves, 0x00 to 0x03 and 0x78 to 0x7F (`shared/bench/include/panel_i2c.h`).
-  That nothing on the board answers at the knob's 0x06 rests on the CH422G's
-  and the GT911's documented addressing: the board's one bus scan covered
-  0x08 to 0x77.
-- If the touch controller stops answering for 500 ms, the bench switches to SAFE and
+  That nothing answers at the knob's 0x06 on the knob's bus rests on the
+  bus being the knob's alone; what answers on the board is not measured.
+- If the touch controller stops answering for 500ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the IOmcu does not switch back to ARMED when traffic returns.
   Leaving the failsafe takes a write of a defined value (0x5AFE) to the control
@@ -517,26 +580,26 @@ reads the state and shows the alert, is not in the coverage figure.
   pulse, as while SAFE. An IOmcu older than protocol 4.18
   takes any non-zero ARM as the whole bank, so on it every bound pin drives.
 - A switch to ARMED for the other role goes through SAFE. The panel writes ARM = 0,
-  waits at least 100 ms, then writes the new roles; the IOmcu refuses
+  waits at least 100ms, then writes the new roles; the IOmcu refuses
   a change from one non-zero ARM to another with BAD_VALUE.
 - STOP, the heartbeat stopping, link silence and a switch to SAFE each zero the
   whole ARM, whatever roles it named, and every output stops.
 - A bench in ARMED drives every bound pin of the roles it armed, whether or not
-  anything is commanding it. A channel that has had no command for 500 ms is rendered at its role's
+  anything is commanding it. A channel that has had no command for 500ms is rendered at its role's
   rest: stopped for a throttle, centred for a surface. Centred is the midpoint
-  of that channel's own endpoints — 1500 us across the default 1000 to 2000 us,
-  and 760 us across the 660 to 860 us of a narrow servo. The timeout moves the
+  of that channel's own endpoints — 1500us across the default 1000 to 2000us,
+  and 760us across the 660 to 860us of a narrow servo. The timeout moves the
   channel to that rest and leaves the pin driving; switching to SAFE is what stops the
   edges.
-- A receiver output of 1500 us is about half throttle. What an ESC that has
-  seen no pulses does when it is then handed 1500 us is not measured on this
+- A receiver output of 1500us is about half throttle. What an ESC that has
+  seen no pulses does when it is then handed 1500us is not measured on this
   bench: it may run at about half throttle, and it may refuse to arm until it
   has seen a stop. A pin bound as a servo output can therefore carry a running
   motor.
 - The throttle does not reach a channel bound as a surface, because it
   commands the pins the binding calls motors. A write to the CHANNELS page
   does, because that page addresses channels by index rather than by role.
-- For the first 500 ms after a switch to ARMED, a channel is not at its rest. The switch
+- For the first 500ms after a switch to ARMED, a channel is not at its rest. The switch
   stamps every channel's clock, so a command given while the bench was
   SAFE is not overdue and is rendered until it goes overdue. What is
   rendered depends on the channel's slew: with no slew the first step is the
@@ -544,12 +607,12 @@ reads the state and shows the alert, is not in the coverage figure.
   switch to SAFE has already put it at rest and it ramps from there, covering at most
   `slew_per_s * 500 / 1000` before the timeout takes it back. Either way it is
   driving, and a switch to SAFE is what stops it.
-- The `Ramp limit` setting, 5 to 300 %/s, governs the panel's own throttle
+- The `Ramp limit` setting, 5 to 300%/s, governs the panel's own throttle
   bank. That bank is the modelled bench: its slewed value is read by the
   telemetry simulator and by nothing else, and only while the link is down. An
   IOmcu that is answering is sent the raw command instead, and
   `outbind_to_chan_cfg()` writes no slew for any channel, so a pin bound as a
-  throttle steps to it on the next 1 ms pass. The physical throttle is not
+  throttle steps to it on the next 1ms pass. The physical throttle is not
   ramped, by decision: the bank ramps a throttle upward only, so a ramp on
   the wire would slow the rise and nothing else. [STATUS.md, Not
   planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
