@@ -408,7 +408,8 @@ TEST_CASE(every_rx_code_on_every_step)
     rig_t *r = &g;
 
     for (unsigned i = 0; i < N_STEPS; ++i) {
-        for (uint8_t code = 1; code <= HITEC_RX_ERR_SUM; ++code) {
+        for (unsigned rx = 1; rx <= HITEC_RX_ERR_SUM; ++rx) {
+            const uint8_t code = (uint8_t)rx;
             hitec_ses_step_t first;
             hitec_ses_t res;
 
