@@ -34,7 +34,8 @@
  *    window's end with a byte just inside and just outside it, more bytes
  *    than the channel takes;
  *  - the answer: sent 10 to 10.125 bit times after the first byte's start
- *    bit, only after the first byte, and the time of the bytes after it;
+ *    bit, 10 bit times long, only after the first byte, the receiver back
+ *    from the end of its stop bit, and the time of the bytes after it;
  *  - a level held for its time, an abort, the clock's limits, the stream's
  *    layout and refusals, the time a transaction can take.
  *
@@ -88,8 +89,9 @@ TEST_CASE(the_words_are_the_ones_the_firmware_build_checks)
     CHECK_EQ(prog[HITEC_PIO_BIT_PC], 0x6081u);        /* out pindirs, 1 */
     CHECK_EQ(prog[HITEC_PIO_RELEASE_PC], 0xE080u);    /* set pindirs, 0 */
     CHECK_EQ(prog[HITEC_PIO_ASK_PC], 0x00F8u);        /* jmp !osre, answer */
-    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC], 0xE34Fu);     /* set y, 15 [3] */
-    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC + 1u], 0x0008u);  /* jmp bit */
+    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC], 0xE249u);     /* set y, 9 [2] */
+    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC + 1u], 0x606Cu);  /* out null, 12 */
+    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC + 2u], 0x0008u);  /* jmp bit */
     CHECK_EQ(prog[HITEC_PIO_DRAIN_PC], 0xA0E3u);      /* mov osr, null */
     CHECK_EQ(prog[HITEC_PIO_DRAIN_PC + 1u], 0x6060u); /* out null, 32 */
 }
@@ -380,8 +382,8 @@ TEST_CASE(a_listen_answers_the_first_byte_10_bit_times_after_its_start)
         CHECK_EQ(wire_bytes(edge - 1u, edge + 200u, false, got, at, 4), 1u);
         CHECK_EQ(got[0], HITEC_C_ACK);
         CHECK(!pad_ever_high(0));
-        /* Released after the answer, for good. */
-        CHECK_EQ(next_dir(edge + 16u * 16u, true), 0u);
+        /* Released after the answer's 10 bit times, for good. */
+        CHECK_EQ(next_dir(edge + 10u * 16u, true), 0u);
         captured(&cap, true);
         CHECK_EQ(cap.answered, 1);
         CHECK_EQ(cap.n, 2);
@@ -392,6 +394,71 @@ TEST_CASE(a_listen_answers_the_first_byte_10_bit_times_after_its_start)
         cap.n = 1;                    /* the first byte, as a 1-byte listen */
         CHECK_EQ(hitec_listen_decode(&cap, HITEC_C_ACK, &r), HITEC_RX_OK);
         CHECK_NEAR((double)r.delay_ns, t0, cyc_ns(1) + 20.0);
+    }
+}
+
+/*
+ * The servo's next byte half a bit after the answer's stop bit, and one back
+ * to back behind it: both taken at their times, and no second answer.  The
+ * answer is 10 bit times, and the receiver waits again from the end of its
+ * stop bit.  Classic open drain on a line the servo holds high; the D series
+ * push-pull on a line that idles low.
+ */
+TEST_CASE(a_byte_right_after_the_answer_is_taken)
+{
+    static const struct {
+        uint8_t family;
+        uint8_t drive;
+        bool idle;
+        uint8_t answer;
+    } c[] = {
+        { HITEC_CLASSIC, HITEC_DRIVE_OPEN_DRAIN, true, HITEC_C_ACK },
+        { HITEC_D, HITEC_DRIVE_PUSH_PULL, false, 0x96 },
+    };
+    static const uint8_t v[3] = { 0x2B, 0x5A, 0xC3 };
+
+    for (unsigned i = 0; i < sizeof(c) / sizeof(c[0]); ++i) {
+        const double bit = bit_ns(c[i].family);
+        const bool inv = c[i].family == HITEC_D;
+        double t[3];
+        hitec_xfer_t x;
+        hitec_capture_t cap;
+        uint8_t got[4] = { 0 };
+        uint64_t at[4] = { 0 };
+        uint64_t edge;
+
+        t[0] = 1000000.0;
+        t[1] = t[0] + 20.5 * bit;
+        t[2] = t[1] + 10.0 * bit;
+        CHECK(hitec_listen_xfer(c[i].family, 20000u, 3, true, c[i].answer,
+                                &x));
+        memset(&m, 0, sizeof(m));
+        ext_clear(c[i].idle);
+        for (unsigned k = 0; k < 3u; ++k) {
+            ext_byte(c[i].family, t[k], bit, v[k], true);
+        }
+        CHECK(transact(150000000u, c[i].drive, &x, 3, 0));
+        CHECK_EQ(m.answers, 1u);
+        CHECK_EQ(m.n_rx, 3u);
+        captured(&cap, true);
+        CHECK_EQ(cap.n, 3);
+        CHECK_EQ(cap.full, 1);
+        CHECK_EQ(cap.answered, 1);
+        CHECK_EQ(cap.overflow, 0);
+        for (unsigned k = 0; k < 3u; ++k) {
+            CHECK_EQ(cap.byte[k].value, v[k]);
+            CHECK_EQ(cap.byte[k].framing, 0);
+            check_at(cap.byte[k].at_ns, t[k]);
+        }
+        /* The answer on the wire, and the pad released 10 bit times after
+         * its start bit, for good. */
+        edge = next_dir(m.release, true);
+        CHECK(edge > 0u);
+        CHECK_EQ(wire_bytes(edge - 1u, edge + 16u, inv, got, at, 4), 1u);
+        CHECK_EQ(got[0], c[i].answer);
+        CHECK_EQ(next_dir(edge + HITEC_PIO_ANSWER_BITS * 16u, true), 0u);
+        CHECK(cyc_ns(edge + HITEC_PIO_ANSWER_BITS * 16u) - cyc_ns(m.release)
+              < t[1]);
     }
 }
 
@@ -826,7 +893,7 @@ TEST_CASE(a_one_byte_listen_holds_its_restart_until_the_answer_is_out)
     CHECK(m.pad[m.n_pad - 1u].cyc < m.due_end);
     CHECK_EQ(wire_bytes(edge - 1u, m.due_end, false, got, at, 4), 1u);
     CHECK_EQ(got[0], HITEC_C_ACK);
-    /* And it turns false at the release after the answer's 16 bit
+    /* And it turns false at the release after the answer's 10 bit
      * times, not later. */
     CHECK(m.due_end <= edge + HITEC_PIO_ANSWER_BITS * 16u + 2u);
     due_end = m.due_end;
@@ -858,12 +925,13 @@ TEST_CASE(a_one_byte_listen_holds_its_restart_until_the_answer_is_out)
     CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ASK_PC));
     CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC));
     CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC + 1u));
+    CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC + 2u));
     CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_BIT_PC));
     CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_RELEASE_PC - 1u));
     CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_BIT_PC - 1u));
     CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_RELEASE_PC));
     CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_ASK_PC + 1u));
-    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC + 2u));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC + 3u));
     CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_IDLE_PC));
     CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_DRAIN_PC));
     CHECK(!hitec_pio_answer_due(&run, 0, HITEC_PIO_ASK_PC));
@@ -939,6 +1007,7 @@ int main(void)
     RUN(the_release_after_the_answer_reads_as_a_byte_with_a_bad_stop_bit);
     RUN(a_push_pull_d_line_drives_both_levels_and_releases_after_the_stop);
     RUN(a_listen_answers_the_first_byte_10_bit_times_after_its_start);
+    RUN(a_byte_right_after_the_answer_is_taken);
     RUN(a_listen_without_an_answer_never_drives);
     RUN(a_level_holds_the_line_for_its_time_then_releases);
     RUN(a_byte_with_a_low_stop_bit_is_marked_and_the_next_one_is_taken);

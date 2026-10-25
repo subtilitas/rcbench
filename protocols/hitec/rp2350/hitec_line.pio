@@ -26,8 +26,11 @@
 ; word.  When X runs out the program goes to `drain` and on to `idle`.
 ;
 ; Answer.  After a byte, an answer word still in the output shift register
-; is sent: 16 bit times from the 160th cycle after the start bit was seen.
-; The answer empties the register, so only the first byte is answered.
+; is sent: `out null, 12` drops the 6 released bit times at the front of the
+; word, and the other 10, the byte with its start and stop bits, go out from
+; the 160th cycle after the start bit was seen.  The receiver waits for the
+; idle level again from the end of the answer's stop bit.  The answer empties
+; the register, so only the first byte is answered.
 ;
 ; Drain.  `drain` fills the output shift register with zeros and shifts all
 ; 32 out, which leaves it empty whatever it held: at the end of the window,
@@ -78,7 +81,8 @@ rbit:
     jmp !osre, answer
     jmp wait_hi
 answer:
-    set y, 15 [3]
+    set y, 9 [2]            ; 10 bit times
+    out null, 12            ; the 6 bit times in front of them
     jmp bit
 lo_next:
     jmp x--, wait_lo

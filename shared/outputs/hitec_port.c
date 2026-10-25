@@ -967,10 +967,7 @@ void hitec_port_other_mask(hitec_port_t *p, uint8_t mask)
 
 bool hitec_port_supply_hold(const hitec_port_t *p)
 {
-    return p != NULL
-           && (p->state == (uint8_t)LINK_HITEC_POWER_OFF
-               || (p->state == (uint8_t)LINK_HITEC_BUSY
-                   && p->op == (uint8_t)LINK_HITEC_OP_POWER));
+    return p != NULL && p->state != (uint8_t)LINK_HITEC_FREE;
 }
 
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms)

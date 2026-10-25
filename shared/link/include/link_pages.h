@@ -132,8 +132,11 @@ typedef enum {
  * From 4.28 FUNC takes DSHOT150, DSHOT300 and DSHOT600 (plain DShot,
  * the port's channel a throttle) and FLAGS bits 12 to 15 say a port's
  * DShot is bound; an older IOmcu refuses those values with
- * LINK_NACK_BAD_VALUE, and the panel offers them from 4.28 only.  An
- * IOmcu never asks the panel's minor; a page an older panel does not
+ * LINK_NACK_BAD_VALUE, and the panel offers them from 4.28 only.  From
+ * 4.29 the HITEC page holds SUPPLY (FLAGS bit 11, LINK_SP_PORT) from the
+ * OPEN that takes a port to the CLOSE that gives it back; an older IOmcu
+ * holds it only while a POWER runs, and the panel reads the bit either way.
+ * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
  * Frozen across majors.  Registers 0 to 6 of IDENTITY (LINK_ID_*) and the
@@ -145,7 +148,8 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 28u
+/** @brief The minor this build speaks: 29, the HITEC page's SUPPLY hold. */
+#define LINK_PROTOCOL_MINOR 29u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -286,6 +290,16 @@ typedef enum {
  * SENSE_LIMIT's.
  */
 #define LINK_MINOR_PROG_DSHOT 28u
+
+/**
+ * @brief The first minor whose HITEC page holds SUPPLY for its whole session:
+ * LINK_SP_PORT is set from the OPEN that takes a port to the CLOSE that gives
+ * it back, a stopped port included.
+ *
+ * An older minor holds SUPPLY from a POWER's OFF to the end of its listen
+ * only, and takes the panel's set points between two POWERs.
+ */
+#define LINK_MINOR_HITEC_HOLD 29u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -2199,6 +2213,10 @@ typedef enum {
  * taken whole or not at all, and the staged registers 4 to 21, written in
  * any windows before the command that names their CRC (cyclic redundancy
  * check, link_kst_crc()).  Nothing is kept in flash.
+ *
+ * From 4.29 (LINK_MINOR_HITEC_HOLD) a held port holds SUPPLY as well, from
+ * its OPEN to its CLOSE: SUPPLY sets LINK_SP_PORT and takes an OFF of the
+ * panel's and no other change of OUTPUT, SET_MV or SET_MA.
  */
 enum {
     LINK_HT_STATE  = 0,  /**< bits 0-2 link_hitec_state_t, bits 3-11 the

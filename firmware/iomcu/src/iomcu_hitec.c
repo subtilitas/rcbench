@@ -66,7 +66,8 @@ uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     const uint8_t nack = hitec_port_write(&s_hitec, off, n, in, s_now_ms);
 
     /* A command that takes the port is the KST page's to refuse from this
-     * frame on, and the SUPPLY page is held from the frame of a POWER. */
+     * frame on, and the SUPPLY page is held from the frame of the OPEN to
+     * the frame of the CLOSE. */
     ports_exclusive();
     supply_page_hold(&s_supply, ports_hold_supply());
     /* And its pulses end in this frame, as a KST command's do. */

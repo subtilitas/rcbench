@@ -186,7 +186,7 @@ not used.
 | Start bit time in a capture | within 1 cycle (1/16 bit) of the edge, and the input synchroniser's 2 system clock cycles |
 | Data bit samples | 23 to 25 cycles after the start bit's edge plus 16 per bit: 1.44 to 1.56 bit times into each bit |
 | Stop bit sample | 151 to 153 cycles after the edge, 9.44 to 9.56 bit times |
-| Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3us at 19 200bit/s. The programmers send theirs 0.52 to 0.55ms after it. A push-pull line changes the level 1 cycle later |
+| Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3us at 19 200bit/s. The programmers send theirs 0.52 to 0.55ms after it. A push-pull line changes the level 1 cycle later. The answer is 10 bit times; the receiver waits for the idle level again 1 cycle after its stop bit ends |
 | Lead before the first start bit | the transaction's lead, rounded up to 2 cycles, or 8 cycles plus the bit times that pad the front of the stream to a word, whichever is longer: a D read is driven low 117.2us, a D write 89.0us |
 | Window end to idle | 7 cycles: the drain empties the output shift register, which drops an answer no byte called for |
 | Push-pull | the level moves 1 cycle after the direction would: the bits on the wire sit 1 cycle late, and the release cuts the last stop bit to 15 cycles |
@@ -300,7 +300,7 @@ reference circuit, or push-pull.
 | Resource | Use |
 |---|---|
 | PIO state machines | 1 per open line, in a PIO block that reaches the pin; PRECHARGE 1 more, the sampler |
-| PIO program space | 29 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3. PRECHARGE: the sampler's 7 words (at 150MHz) in a block with room for them, another block than the line's |
+| PIO program space | 30 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3. PRECHARGE: the sampler's 7 words (at 150MHz) in a block with room for them, another block than the line's |
 | DMA (direct memory access) channels | 2 per open line: the words of a transaction and the received bytes; PRECHARGE 1 more, the samples |
 | Interrupts, PIO interrupt flags | none |
 | Memory | 1 `hitec_line_t` per line, held by the caller; no static state |
@@ -383,8 +383,10 @@ Limits:
 
 - `hitec_line_poll()` ends a transaction whose state machine still runs
   1ms (`HITEC_LINE_GRACE_US`) after the longest time the transaction can
-  take: the state machine is restarted with the pad released and the
-  capture is marked as overflowed. A line that keeps sending bytes back to
+  take: the state machine is stopped, the receive channel takes the words
+  still in the receive FIFO, the bytes are counted, and only then is the
+  machine restarted with the pad released. The capture holds every byte
+  pushed before the stop and is marked as overflowed. A line that keeps sending bytes back to
   back keeps the receiver from its window; a receive with a byte count ends
   at the count.
 - A receive that reaches `max_rx` ends at the next `poll()`; until then the
@@ -483,8 +485,12 @@ Not measured:
 - The electrical items above.
 - On a chip: that autopull refills the output shift register before the
   `jmp !osre` after the last count, that `mov osr, null` and
-  `out null, 32` leave it empty with autopull on and the FIFO empty, and
-  the DMA handshakes. The host suite models them.
+  `out null, 32` leave it empty with autopull on and the FIFO empty, that
+  `out null, 12` drops the front of the answer word, and the DMA
+  handshakes. The host suite models them.
+- On a chip: that a byte pushed just before the restart of a transaction
+  past its time reaches the capture. The pin driver is not in the host
+  build.
 
 ## Trademarks
 
@@ -509,7 +515,7 @@ sampler that stops short, words fed one at a time, and an abort in every
 phase. `test/host/test_hitec_wire.c` (11 cases) runs the core: the sums, the
 transactions, every refusal of each decoder with its limits at both
 edges, and the clock helpers across the wrap, with frames and reply times
-read off bench captures. `test/host/test_hitec_pio.c` (22 cases) assembles
+read off bench captures. `test/host/test_hitec_pio.c` (23 cases) assembles
 `hitec_line.pio` with its own assembler for the instructions the program
 uses, runs the words in a model of the state machine
 (`test/host/hitec_pio_model.h`), holds them to

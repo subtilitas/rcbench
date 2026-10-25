@@ -21,6 +21,30 @@ history is in git.
   lone DShot programming port reads `DSHOT300 PORT 2 GPIO 14` in MOTOR &
   ESC's 25-character TARGET box. A TARGET row holds fewer pins before
   `+N`: `SERVO PWM GPIO 2 +2` for three pins.
+- Link protocol 4.29: the HITEC page holds the SUPPLY page from the OPEN
+  that takes a port to the CLOSE that gives it back, a stopped port
+  included, as the KST page holds it out of PWM. SUPPLY sets FLAGS bit 11
+  and refuses every write of OUTPUT, SET_MV and SET_MA but an OFF or a
+  repeat of the set points in force; POWER switches the supply as staged.
+  CLOSE, an ABORT or a stop in STOPPING, an OPEN that ends `NO_LINE` and a
+  restart of the IOmcu end the hold. An IOmcu of 4.23 to 4.28 holds SUPPLY
+  while a POWER runs only; the panel reads bit 11 from either and writes
+  nothing differently
+  ([The supply while a port is held](docs/LinkHitec.md#the-supply-while-a-port-is-held)).
+
+### Fixed
+
+- The Hitec line's answer to the first byte of a LISTEN is 10 bit times:
+  start bit, 8 data bits, stop bit. The receiver waits for the next start
+  bit from the end of the answer's stop bit, so a byte the servo starts
+  right after the answer is received. The PIO (programmable input/output)
+  program drops the 6 released bit times at the front of the answer word
+  with `out null, 12` and is 30 words long.
+- A Hitec transaction that the driver ends 1ms past its longest time
+  keeps every byte the state machine pushed before the end: the machine
+  is stopped and the receive channel takes the words still in the FIFO
+  (first in, first out) before the bytes are counted and the machine
+  restarts.
 
 ## 0.23.0 - 2026-10-25
 
