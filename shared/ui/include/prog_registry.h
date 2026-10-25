@@ -29,7 +29,7 @@
  *     the right (SERVO's sessions).  Full width, it takes the whole body
  *     under the strip row, and the host draws a one-line output strip in
  *     that row in place of the card: what the session drives, `TARGET
- *     DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE` (MOTOR & ESC's
+ *     DSHOT300 GPIO 0 GPIO 1   SUPPLY 7.60V  1.00A   SAFE` (MOTOR & ESC's
  *     sessions, ESC STICK).  The owner grants each full-width page set;
  *     prog_reg_check() holds each device to the one layout its host draws.
  *
@@ -280,13 +280,19 @@ uint16_t prog_reg_missing(const prog_reg_row_t *row, uint16_t caps);
 const char *prog_reg_cap_name(uint16_t bit);
 
 /**
- * The text right of row @p i's name: for a live row on a port its number
- * and the session's pin ("PROG PORT 2 GP14", "PROG PORT 2" with the pin
- * not known), its transport and the pin for any other ("PROG PORT" with
- * the tester's port not known); its reason for a dimmed one ("IOMCU HAS
- * NO SERVO PWM", "PORT IN USE").
- * Writes at most @p size - 1 characters and returns whether the row is
- * dimmed.
+ * @brief The text right of row @p i's name: for a live row on a port its
+ *        number and the session's pin ("PROG PORT 2 GPIO 14", "PROG PORT
+ *        2" with the pin not known), its transport and the pin for any
+ *        other ("PROG PORT GPIO 13", "PROG PORT" with the tester's port not
+ *        known); its reason for a dimmed one ("IOMCU HAS NO SERVO PWM",
+ *        "PORT IN USE").
+ * @param rows  the registry's rows
+ * @param n     rows at @p rows
+ * @param i     the row
+ * @param caps  the IOmcu's capability bits
+ * @param out   takes at most @p size - 1 characters
+ * @param size  bytes at @p out
+ * @return whether the row is dimmed
  */
 bool prog_reg_detail(const prog_reg_row_t *rows, size_t n, size_t i,
                      uint16_t caps, char *out, size_t size);

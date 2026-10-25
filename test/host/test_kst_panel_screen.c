@@ -193,7 +193,7 @@ TEST_CASE(the_kst_row_names_the_ports_pin_from_the_feed)
     settle();
     CHECK_EQ(kst_panel_pin(), (uint8_t)RIG_PIN);
     CHECK(!prog_reg_detail(rows, n, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
-    snprintf(want, sizeof(want), "PROG PORT GP%u", (unsigned)RIG_PIN);
+    snprintf(want, sizeof(want), "PROG PORT GPIO %u", (unsigned)RIG_PIN);
     CHECK_STR_EQ(out, want);
 
     fresh_screen();

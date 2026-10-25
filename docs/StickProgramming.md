@@ -60,7 +60,7 @@ MOTOR & ESC, then PROGRAM, then the row `ESCs by throttle stick`:
 
 ESC STICK opens full width, under the output strip, which names the pins the
 run drives, the supply and the bench:
-`TARGET DSHOT300 GP0   SUPPLY --   SAFE`. The list has two levels.
+`TARGET DSHOT300 GPIO 0   SUPPLY --   SAFE`. The list has two levels.
 
 - **Makers.** One row a maker, alphabetical with case folded: its name, how
   many of its models run of all it lists (`10 OF 82 CAN RUN`), and the red

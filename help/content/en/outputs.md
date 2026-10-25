@@ -54,22 +54,22 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 |---|---|---|
 | ticked, `PAD 6` | bound in the selected protocol; the pad number printed on the board | gives it back |
 | greyed, the other protocol's name | held by another protocol | does nothing |
-| red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
-| `PROG PORT` | the pin of the IOmcu's programming port, GP13 by default | does nothing |
+| red, struck through | reserved: GPIO 3 carries the safety heartbeat, GPIO 8 to GPIO 12 the CAN (Controller Area Network) controller | does nothing |
+| `PROG PORT` | the pin of the IOmcu's programming port, GPIO 13 by default | does nothing |
 | red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > INTERFACES](setup-interfaces.md) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |
-| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
-| greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
+| greyed, `SLICE OF GPIO 13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GPIO 28 and GPIO 13 are slice 6 | does nothing; `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13` under the count |
+| greyed, `PWM CH OF GPIO 0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GPIO 0 and GPIO 16, GPIO 1 and GPIO 17, GPIO 2 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22) | does nothing; `GPIO 16: SAME PWM CHANNEL AS GPIO 0` under the count |
 | free, `PAD 7` | not bound | binds it |
 
 ![PPM with servo pins already bound](view:outputs-full)
 
 When the selected protocol can take no more pins, the reason stands under the count in amber: `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE` or `SERVO PWM TAKES 8 PINS`.
 
-![GP13 held by the programming port](view:outputs-prog)
+![GPIO 13 held by the programming port](view:outputs-prog)
 
 ![The sensor bus, the PD mini and the phase tap on their pins](view:outputs-iface)
 
-A stored binding that holds GP13 keeps it: the programming port then has no pin, and the [servo programmer](servo-programmer.md) says so on CONNECT.
+A stored binding that holds GPIO 13 keeps it: the programming port then has no pin, and the [servo programmer](servo-programmer.md) says so on CONNECT.
 
 ## The PROG PORT entry
 
@@ -79,13 +79,13 @@ The open protocol list shows one PROG PORT entry per programming port the IOmcu 
 
 | Row | Shows and does |
 |---|---|
-| PIN | `PIN GP13`, `SET A PIN`, `PIN GP14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
+| PIN | `PIN GPIO 13`, `SET A PIN`, `PIN GPIO 14 REFUSED` or `NO PIN KNOWN`; a tap opens [PICK A PIN](picker.md) on the port, where a tap on a pin sets it |
 | FUNCTION | what the pin carries while no programming session holds it; a tap opens the list. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 0.22.0 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
 
-The IOmcu keeps each port's pin and function in its flash, with the outputs' binding: they belong to the board. Port 1 starts as SERVO PWM on GP13, ports 2 to 4 as NONE with no pin. A FUNCTION tap and a pin tapped in PICK A PIN are asks: the panel writes them on a bench at rest and the amber line says how they stand.
+The IOmcu keeps each port's pin and function in its flash, with the outputs' binding: they belong to the board. Port 1 starts as SERVO PWM on GPIO 13, ports 2 to 4 as NONE with no pin. A FUNCTION tap and a pin tapped in PICK A PIN are asks: the panel writes them on a bench at rest and the amber line says how they stand.
 
 ![PROG PORT 2 with its ask waiting](view:outputs-port2)
 

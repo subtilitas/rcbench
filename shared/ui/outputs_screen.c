@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "ui_pinlist.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -62,9 +63,10 @@ _Static_assert(CLR_Y + CLR_H + 8 <= LAST_Y,
  * A cell is 167 x 64px (25.1 x 9.6mm): seven rows 6px apart from y 8
  * end at body y 492, 4px above the alert band; four columns 8px apart
  * from x 324 end 8px from the screen's right edge.  The tick box is
- * 24px, the GP name beside it in OU_FONT_HEAD, and the line under them
- * in OU_FONT_FINE from 8px in holds 18 cells (144px) inside the cell:
- * "PWM CH OF GP0", "SLICE VON GP13" and "DSHOT600 BIDIR" whole.
+ * 24px, the pin name beside it in OU_FONT_PIN ("GPIO 28", 112px, ends
+ * 154px in), and the line under them in OU_FONT_FINE from 8px in holds
+ * 18 cells (144px) inside the cell: "PWM CH OF GPIO 0", "KANAL VON
+ * GPIO 13" and "DSHOT600 BIDIR" whole.
  */
 #define GRID_X   (COL_X + COL_W + 8) /**< The grid's left edge. */
 /** @brief The pin grid's width, to 8px from the right edge: 692px. */
@@ -81,6 +83,9 @@ _Static_assert(CLR_Y + CLR_H + 8 <= LAST_Y,
 #define CELL_PAD 8     /**< The tick box and the sub-line from the edge. */
 #define CELL_LABEL_Y 44 /**< The sub-line's top in the cell. */
 #define CELL_CELLS 18  /**< The sub-line's cells of OU_FONT_FINE. */
+
+_Static_assert(CELL_PAD + BOX + 10 + 7 * 16 + 4 <= CELL_W,
+               "a pin name (GPIO 28) ends 4px inside its cell");
 
 _Static_assert(GRID_Y + GRID_ROWS * CELL_H + (GRID_ROWS - 1) * ROW_GAP
                    <= OU_FOOT,
@@ -955,11 +960,11 @@ static void draw_cell(gfx_canvas_t *c, int i)
         }
     }
 
-    char name[8];
-    snprintf(name, sizeof(name), "GP%u", (unsigned)pin->gpio);
+    char name[UI_PIN_NAME_SIZE];
+    (void)ui_pin_name(name, sizeof(name), pin->gpio);
     gfx_color_t ink = reserved ? UI_TEXT_FAINT
                                     : ((lit || can) ? UI_TEXT : UI_TEXT_DIM);
-    gfx_text(c, bx + BOX + 10, r.y + 4, name, OU_FONT_HEAD, ink, 1);
+    gfx_text(c, bx + BOX + 10, r.y + 6, name, OU_FONT_PIN, ink, 1);
 
     /* Under the box and the name, from the box's left edge: 18 cells,
      * 144px of the cell's 167. */

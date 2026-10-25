@@ -19,14 +19,17 @@
  * - null_events_are_refused_rather_than_dereferenced
  * - every_two_line_string_of_the_column_breaks_into_two
  * - a_number_goes_down_with_the_word_before_it
+ * - a_cell_names_its_pin_gpio_and_its_number
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "outputs_screen_rig.h"
+#include "text_mask.h"
+#include "ui_pinlist.h"
 #include "ui_widgets.h"
 
-/* The programming port on GP13, for the clash lines. */
+/* The programming port on GPIO 13, for the clash lines. */
 static const uint8_t k_gp13[1] = { 13u };
 
 /* --------------------------------------------------------------- rendering */
@@ -614,6 +617,45 @@ TEST_CASE(a_number_goes_down_with_the_word_before_it)
              2);
 }
 
+/* A cell names its pin as every screen does, ui_pin_name()'s "GPIO 0" to
+ * "GPIO 28", in the 16 x 28 face in the top 40px of the cell beside the
+ * tick box, in English and in German: a free pin, a reserved one, the
+ * programming port's default and the highest.  The short form "GP13" is
+ * in neither face. */
+TEST_CASE(a_cell_names_its_pin_gpio_and_its_number)
+{
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c;
+    gfx_canvas_init(&c, px, SCREEN_W, SCREEN_H, SCREEN_W);
+    static const uint8_t k_pins[] = { 0u, 8u, 13u, 28u };
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        fresh();
+        choose_named("SERVO PWM");
+        scr()->render(&c, 0);
+        for (size_t k = 0; k < sizeof(k_pins); ++k) {
+            int cx, cy;
+            cell_centre(k_pins[k], &cx, &cy);
+            const gfx_rect_t top = { (int16_t)(cx - CELL_W / 2),
+                                     (int16_t)(cy - CELL_H / 2),
+                                     (int16_t)CELL_W, 40 };
+            char want[UI_PIN_NAME_SIZE];
+            CHECK(ui_pin_name(want, sizeof(want), k_pins[k]) > 0u);
+            if (!text_mask_found(px, SCREEN_W, SCREEN_H, top,
+                                 &gfx_font_16x28, want)) {
+                T_FAIL("language %d: no \"%s\" in its cell", l, want);
+            }
+            char old[8];
+            snprintf(old, sizeof(old), "GP%u", (unsigned)k_pins[k]);
+            CHECK(!text_mask_found(px, SCREEN_W, SCREEN_H, top,
+                                   &gfx_font_16x28, old));
+            CHECK(!text_mask_found(px, SCREEN_W, SCREEN_H, top,
+                                   &gfx_font_20x36, old));
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_longest_protocol_name_fits_the_list_and_a_cell);
@@ -631,5 +673,6 @@ int main(void)
     RUN(null_events_are_refused_rather_than_dereferenced);
     RUN(every_two_line_string_of_the_column_breaks_into_two);
     RUN(a_number_goes_down_with_the_word_before_it);
+    RUN(a_cell_names_its_pin_gpio_and_its_number);
     return test_summary("outputs_screen_draw");
 }

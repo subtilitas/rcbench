@@ -125,9 +125,9 @@ Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protok
 
 | Zeile | Bedeutung |
 |---|---|
-| `SERVO PWM GP4`, `SERVO PWM GP2 GP4` | die als SERVO PWM gebundenen GPIOs (General-Purpose Inputs/Outputs); was nicht passt, steht als `+2` |
-| `PROG-PORT 1 GP13` | Programmierport 1 und sein Pin, in der Warnfarbe |
-| `PORT 1 GP13 PWM AUS` | der Port ist das Ziel und gibt keinen Puls aus |
+| `SERVO PWM GPIO 4`, `SERVO PWM GPIO 2 GPIO 4` | die als SERVO PWM gebundenen GPIOs (General-Purpose Inputs/Outputs); was nicht passt, steht als `+2` |
+| `PROG-PORT 1 GPIO 13` | Programmierport 1 und sein Pin, in der Warnfarbe |
+| `PORT 1 GPIO 13 PWM AUS` | der Port ist das Ziel und gibt keinen Puls aus |
 | `KEIN SERVO-PWM-PIN` | kein Pin ist als SERVO PWM gebunden |
 | `PINS NICHT AUSGELESEN` | keine Bindung wurde gelesen |
 | `UNBEKANNT` | die Programmierport-Seite des IOmcu ist nicht gelesen |

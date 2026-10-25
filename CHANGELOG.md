@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The panel names a pin `GPIO 13` on every screen, alert and report, as
+  SETUP's pin rows do, in place of `GP13`: OUTPUTS' grid and clash lines
+  (`SLICE OF GPIO 13`, `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13`),
+  PICK A PIN's PINS and IN USE tables, the TARGET rows of SERVO and MOTOR
+  & ESC (`SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`), the servo programmer,
+  SUPPLY's header (`PD MINI TX GPIO 12 RX GPIO 13`), the sensor and phase
+  tap alerts and the limit run's report line `Output:`. One function,
+  `ui_pin_name()`, writes the name; a text table entry writes `GPIO %u`.
+  OUTPUTS and PICK A PIN draw the name in the 16 x 28 face (112px for
+  `GPIO 28`), SUPPLY draws its set point range in the 8 x 16 face, and a
+  lone DShot programming port reads `DSHOT300 PORT 2 GPIO 14` in MOTOR &
+  ESC's 25-character TARGET box. A TARGET row holds fewer pins before
+  `+N`: `SERVO PWM GPIO 2 +2` for three pins.
+
 ## 0.23.0 - 2026-10-25
 
 0.23.0 is a testing release: its minor number, 23, is odd, and GitHub

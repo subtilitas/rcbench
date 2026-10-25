@@ -19,6 +19,7 @@
 #include "picker_port.h"
 #include "picker_screen.h"
 #include "port_view.h"
+#include "ui_pinlist.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -263,26 +264,26 @@ static void draw_mine(gfx_canvas_t *c)
     int ty = PINS_Y;
 
     gfx_text(c, tx, ty, TR(PK_PINS), PK_FONT_HEAD, UI_ACCENT, 1);
-    /* PAD once, as the head of its column: "GP13" and "PAD 17" together are
-     * wider than the column beside the board. */
+    /* PAD once, as the head of its column: "GPIO 13" and "PAD 17" together
+     * are wider than the column beside the board. */
     const char *pad = TR(PK_PAD);
     gfx_text(c, tx + PINS_W - gfx_text_width(PK_FONT_LABEL, pad, 1), ty + 12,
              pad, PK_FONT_LABEL, UI_TEXT_FAINT, 1);
     gfx_fill_rect(c, tx, ty + 38, PINS_W, 2, UI_EDGE_HI);
     ty = PINS_TOP;
 
-    /* A row's label-face text 8px down, level with the GP name's
-     * capitals. */
+    /* A row's label-face text 8px down, level with the pin name's
+     * capitals 4px down in PK_FONT_PIN. */
     picker_row_t row;
     uint8_t k = 0;
     for (; ty + ROW_H <= FOOT && picker_screen_row(k, &row); ++k) {
-        char buf[8];
+        char buf[UI_PIN_NAME_SIZE];
         if (row.channel >= 0) {
             snprintf(buf, sizeof(buf), "CH%d", row.channel);
             gfx_text(c, tx, ty + 8, buf, PK_FONT_LABEL, UI_TEXT_DIM, 1);
         }
-        snprintf(buf, sizeof(buf), "GP%u", (unsigned)row.gpio);
-        gfx_text(c, tx + 40, ty, buf, PK_FONT_HEAD, UI_ACCENT, 1);
+        (void)ui_pin_name(buf, sizeof(buf), row.gpio);
+        gfx_text(c, tx + PINS_NAME_X, ty + 4, buf, PK_FONT_PIN, UI_ACCENT, 1);
         snprintf(buf, sizeof(buf), "%u", (unsigned)row.pad);
         gfx_text(c, tx + PINS_W - gfx_text_width(PK_FONT_LABEL, buf, 1),
                  ty + 8, buf, PK_FONT_LABEL, UI_TEXT_FAINT, 1);
@@ -471,7 +472,7 @@ static void draw_theirs(gfx_canvas_t *c)
             snprintf(row, sizeof(row), "CH%d", t[i].channel);
             gfx_text(c, r.x + 4, label_y, row, lf, UI_TEXT_FAINT, 1);
         }
-        snprintf(row, sizeof(row), "GP%u", (unsigned)t[i].gpio);
+        (void)ui_pin_name(row, sizeof(row), t[i].gpio);
         if (t[i].compact) {
             gfx_text(c, r.x + 44, label_y, row, lf, grey, 1);
         } else {

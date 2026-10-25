@@ -73,7 +73,7 @@ Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO de
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Phasenabgriff | EIN, AUS | AUS | die Erfassung läuft auf dem IOmcu |
-| Abgriff-Pin | 0, 1, 2, 4 bis 7, 13 bis 22 | 22 | der GPIO des IOmcu; GP22 ist Pad 29. Die Pins, die das RP2350-CAN herausführt und nicht belegt, ohne die ADC-Pins GP26 bis GP29 |
+| Abgriff-Pin | 0, 1, 2, 4 bis 7, 13 bis 22 | 22 | der GPIO des IOmcu; GPIO 22 ist Pad 29. Die Pins, die das RP2350-CAN herausführt und nicht belegt, ohne die ADC-Pins GPIO 26 bis GPIO 29 |
 | Tiefster Ton | 50 bis 2000Hz, Schritte von 10Hz | 400 | ein tieferer Ton ist kein Piepton |
 | Höchster Ton | 100 bis 6900Hz, Schritte von 50Hz | 6500 | über dem tiefsten Ton |
 | Tonsprung | 0 bis 50% | 8 | ein so großer Tonhöhensprung beginnt einen neuen Piepton; 0 trennt nur an Stille |
@@ -101,7 +101,7 @@ Diese drei werden gespeichert. Kein Bildschirm und kein IOmcu liest sie in diese
 | PD mini RX | -1 bis 47 | -1 | der GPIO des IOmcu vom DP des Moduls |
 | PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | die UART-Rate (Universal Asynchronous Receiver-Transmitter) des Moduls; AUTO probiert jede der 7 Raten, eine pro Sekunde |
 
-Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, den die andere Zeile hält: mit RX auf GP18 geht TX von GP19 auf GP17. Am Ende des Bereichs tut die Taste dann nichts: mit RX auf GP47 bleibt TX auf GP46. Das Tastenfeld lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen GPIO hält der andere PD-mini-Pin`. Eine gespeicherte Einstellung mit beiden Zeilen auf einem GPIO wird so geladen; der PD mini bleibt aus, die SUPPLY-Kopfzeile sagt `PD MINI OHNE PINS`, und beide Zeilen sagen `TX und RX auf einem Pin. Der PD mini bleibt aus.`, bis eine von ihnen verstellt wird. Der Schalter PD mini schaltet das Modul ab. Der IOmcu lehnt einen Pin ab, der reserviert, an einen Ausgang gebunden, vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist: RX auf GP17 wird abgelehnt, solange Sensor-SCL GP17 ist. Die Meldung verlässt das Band, sobald der Pin auf einen zurückgestellt ist, den der IOmcu nimmt. Eine Änderung an den Pins, der Baudrate oder dem Einschalter schaltet den Netzteilausgang ab.
+Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, den die andere Zeile hält: mit RX auf GPIO 18 geht TX von GPIO 19 auf GPIO 17. Am Ende des Bereichs tut die Taste dann nichts: mit RX auf GPIO 47 bleibt TX auf GPIO 46. Das Tastenfeld lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen GPIO hält der andere PD-mini-Pin`. Eine gespeicherte Einstellung mit beiden Zeilen auf einem GPIO wird so geladen; der PD mini bleibt aus, die SUPPLY-Kopfzeile sagt `PD MINI OHNE PINS`, und beide Zeilen sagen `TX und RX auf einem Pin. Der PD mini bleibt aus.`, bis eine von ihnen verstellt wird. Der Schalter PD mini schaltet das Modul ab. Der IOmcu lehnt einen Pin ab, der reserviert, an einen Ausgang gebunden, vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist: RX auf GPIO 17 wird abgelehnt, solange Sensor-SCL GPIO 17 ist. Die Meldung verlässt das Band, sobald der Pin auf einen zurückgestellt ist, den der IOmcu nimmt. Eine Änderung an den Pins, der Baudrate oder dem Einschalter schaltet den Netzteilausgang ab.
 
 ![GPIO 9 von RX für PD mini TX abgelehnt](view:setup-pdmini-why)
 

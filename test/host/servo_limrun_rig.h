@@ -186,7 +186,7 @@ static inline void rig_init(uint32_t t0, bool reversion)
     g.cfg.read      = true;
     g.cfg.program   = true;
     snprintf(g.cfg.dut, sizeof(g.cfg.dut), "%s", "aileron left");
-    snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "PROG PORT GP13");
+    snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "PROG PORT 1 GPIO 13");
     g.cfg.frame_hz    = 333u;
     g.cfg.shunt_dmohm = 1000u;
     snprintf(g.cfg.firmware, sizeof(g.cfg.firmware), "%s", "0.19.0");
@@ -543,5 +543,5 @@ static inline void rig_pin(void)
 {
     g.cfg.read    = false;
     g.cfg.program = false;
-    snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "GP2");
+    snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "SERVO PWM GPIO 2");
 }

@@ -656,7 +656,9 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
 /*
  * The header names the PD mini's UART pins, so a second supply on other pins
  * would read differently.  No pin set, or only one, says so; the model has
- * none.  A change redraws the header and nothing else.
+ * none.  A change redraws the header and nothing else.  The row holds
+ * 680px: the range takes 23 cells of the 8px face at its right end
+ * (184px), so the text before it keeps to 47 cells of the 10px face.
  */
 TEST_CASE(the_header_names_the_pd_minis_uart_pins)
 {
@@ -672,14 +674,14 @@ TEST_CASE(the_header_names_the_pd_minis_uart_pins)
     ui_text_set_language(UI_LANG_EN);
     supply_screen_set_pins(12, 13);
     supply_screen_header_text(line, sizeof(line));
-    CHECK_STR_EQ(line, "PD MINI TX GP12 RX GP13   ONLINE 460800");
-    CHECK(strlen(line) <= 43u);
+    CHECK_STR_EQ(line, "PD MINI TX GPIO 12 RX GPIO 13   ONLINE 460800");
+    CHECK(strlen(line) <= 47u);
     supply_screen_set_pins(0, 1);
     supply_screen_header_text(line, sizeof(line));
-    CHECK_STR_EQ(line, "PD MINI TX GP0 RX GP1   ONLINE 460800");
+    CHECK_STR_EQ(line, "PD MINI TX GPIO 0 RX GPIO 1   ONLINE 460800");
     supply_screen_set_pins(47, 46);
     supply_screen_header_text(line, sizeof(line));
-    CHECK_STR_EQ(line, "PD MINI TX GP47 RX GP46   ONLINE 460800");
+    CHECK_STR_EQ(line, "PD MINI TX GPIO 47 RX GPIO 46   ONLINE 460800");
 
     /* Not set, or one of the two not set. */
     supply_screen_set_pins(-1, -1);
@@ -705,11 +707,11 @@ TEST_CASE(the_header_names_the_pd_minis_uart_pins)
     st.online = false;
     supply_screen_push(&st);
     supply_screen_header_text(line, sizeof(line));
-    CHECK_STR_EQ(line, "PD MINI TX GP12 RX GP13   NOT ANSWERING");
+    CHECK_STR_EQ(line, "PD MINI TX GPIO 12 RX GPIO 13   NOT ANSWERING");
     ui_text_set_language(UI_LANG_DE);
     supply_screen_header_text(line, sizeof(line));
-    CHECK_STR_EQ(line, "PD MINI TX GP12 RX GP13   ANTWORTET NICHT");
-    CHECK(strlen(line) <= 43u);
+    CHECK_STR_EQ(line, "PD MINI TX GPIO 12 RX GPIO 13   ANTWORTET NICHT");
+    CHECK(strlen(line) <= 47u);
     supply_screen_set_pins(-1, -1);
     supply_screen_header_text(line, sizeof(line));
     CHECK_STR_EQ(line, "PD MINI OHNE PINS   ANTWORTET NICHT");

@@ -1,8 +1,8 @@
 /**
  * @file
  * @brief The TARGET row of a workbench's output card: what the screen drives now,
- * read as `protocol pins` ("SERVO PWM GP2 GP4", "PROG PORT GP13"), and the
- * control that picks it.
+ * read as `protocol pins` ("SERVO PWM GPIO 2 GPIO 4", "PROG PORT 1 GPIO
+ * 13"), and the control that picks it.
  *
  * The row is a label on the left and a value box on the right, the shape
  * of a settings row: a tap on the box asks the screen to open its choice
@@ -127,7 +127,7 @@ void ui_target_row_render(const ui_target_row_t *t, gfx_canvas_t *c,
                           bool locked);
 
 /**
- * @brief `protocol pins` into @p out: "SERVO PWM GP2 GP4", with as many
+ * @brief `protocol pins` into @p out: "SERVO PWM GPIO 2 GPIO 4", with as many
  *        pins as fit after the protocol and a space, then "+N"
  *        (ui_pinlist()).
  *

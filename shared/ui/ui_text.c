@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "gfx.h"
+#include "ui_pinlist.h"
 
 /** @brief The screens' strings in English, by TX_ ID. */
 static const char *const k_en[TX_COUNT] = {
@@ -469,5 +470,5 @@ const char *ui_unit_gap(const char *unit)
 
 int ui_unit_is_prefix(const char *unit)
 {
-    return unit != NULL && strcmp(unit, "GPIO") == 0;
+    return unit != NULL && strcmp(unit, UI_PIN_WORD) == 0;
 }

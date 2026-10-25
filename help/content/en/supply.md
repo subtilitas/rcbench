@@ -29,7 +29,7 @@ With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supp
 
 ![The PD mini enabled, no IOmcu reading it: NOT ANSWERING](view:supply-offline)
 
-With the PD mini enabled, the header names the module and the IOmcu pins that carry it, for example `PD MINI TX GP12 RX GP13`, from the PD mini TX and PD mini RX settings. With either pin not set, or both on one GPIO, it reads `PD MINI NO PINS`. The panel reads the IOmcu's SUPPLY page every 100ms.
+With the PD mini enabled, the header names the module and the IOmcu pins that carry it, for example `PD MINI TX GPIO 12 RX GPIO 13`, from the PD mini TX and PD mini RX settings. With either pin not set, or both on one GPIO, it reads `PD MINI NO PINS`. The panel reads the IOmcu's SUPPLY page every 100ms.
 
 | Header | Meaning |
 |---|---|

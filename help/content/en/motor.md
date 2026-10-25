@@ -36,7 +36,7 @@ PROGRAM lists the ESC programmers. Its one row, `ESCs by throttle stick` in the 
 
 ESC STICK opens full width, over the left column and the right column. In place of the tabs the strip row shows the output strip, one line:
 
-`TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE`
+`TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY 7.60V  1.00A   SAFE`
 
 - TARGET: the protocol and the pins the run drives, in the warning colour while no pin is bound or the binding is not read.
 - SUPPLY: the PD mini's output as it reads, `SUPPLY ON` without readings, `SUPPLY OFF`, or `SUPPLY --` while the supply does not answer.
@@ -55,13 +55,13 @@ No press reaches ARM or a tab while ESC STICK is open. Opening it on a bench tha
 
 ## TARGET
 
-The TARGET row at the top of the CONTROL card names what the throttle drives: the protocol, then the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot protocol on [Outputs](outputs.md). The value box holds 25 characters; pins that do not fit are counted, `DSHOT300 GP0 GP1 GP2 +5`.
+The TARGET row at the top of the CONTROL card names what the throttle drives: the protocol, then the pins, `DSHOT300 GPIO 0 GPIO 1`. They are the pins bound as MOTOR PWM or as a DShot protocol on [Outputs](outputs.md). The value box holds 25 characters; pins that do not fit are counted, `DSHOT300 GPIO 0 GPIO 1 +6`.
 
 | TARGET reads | Condition |
 |---|---|
-| `DSHOT300 GP0 GP1` | the protocol and the pins the throttle drives, in pin order |
-| `MIXED GP0 GP4` | the throttle pins run on two or more protocols, or one of them on a rate no protocol of OUTPUTS has |
-| `GP0 GP1` | every throttle pin runs on a pulse rate no protocol of OUTPUTS has |
+| `DSHOT300 GPIO 0 GPIO 1` | the protocol and the pins the throttle drives, in pin order |
+| `MIXED GPIO 0 GPIO 4` | the throttle pins run on two or more protocols, or one of them on a rate no protocol of OUTPUTS has |
+| `GPIO 0 GPIO 1` | every throttle pin runs on a pulse rate no protocol of OUTPUTS has |
 | `NO MOTOR PIN` | the binding is read and no pin is bound as a motor; warning colour |
 | `PINS NOT READ` | the link is down, the pages did not read, or the board has no pin map; warning colour |
 

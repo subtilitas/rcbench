@@ -158,9 +158,10 @@ int ui_unit_is_symbol(const char *unit);
 const char *ui_unit_gap(const char *unit);
 
 /**
- * @brief Whether @p unit is written before its number: "GPIO", so that
- *        a pin reads "GPIO 4" and not as a count of four GPIOs.  Every
- *        other unit follows its number.
+ * @brief Whether @p unit is written before its number: the pin word
+ *        UI_PIN_WORD, "GPIO", so that a pin reads "GPIO 4" (ui_pin_name())
+ *        and not as a count of four GPIOs.  Every other unit follows its
+ *        number.
  * @param unit  the unit, or NULL
  * @return 1 for a pin word, else 0
  */

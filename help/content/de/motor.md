@@ -36,7 +36,7 @@ PROGRAMMIEREN listet die ESC-Programmierer. Seine eine Zeile, `ESCs per Gasknüp
 
 ESC STICK öffnet über die volle Breite, über der linken und der rechten Spalte. Anstelle der Reiter zeigt die Zeile der Leiste den Ausgangsstreifen, eine Zeile:
 
-`ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60V  1.00A   SAFE`
+`ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL 7.60V  1.00A   SAFE`
 
 - ZIEL: das Protokoll und die Pins, die der Lauf treibt, in der Warnfarbe, solange kein Pin gebunden oder die Bindung nicht gelesen ist.
 - NETZTEIL: der Ausgang des PD mini, wie er liest, `NETZTEIL EIN` ohne Messwerte, `NETZTEIL AUS` oder `NETZTEIL --`, solange das Netzteil nicht antwortet.
@@ -55,13 +55,13 @@ Solange ESC STICK offen ist, erreicht kein Druck ARM oder einen Reiter. Das Öff
 
 ## ZIEL
 
-Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das Protokoll, dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Das Wertefeld fasst 25 Zeichen; Pins, die nicht passen, werden gezählt, `DSHOT300 GP0 GP1 GP2 +5`.
+Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das Protokoll, dann die Pins, `DSHOT300 GPIO 0 GPIO 1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Das Wertefeld fasst 25 Zeichen; Pins, die nicht passen, werden gezählt, `DSHOT300 GPIO 0 GPIO 1 +6`.
 
 | ZIEL lautet | Bedingung |
 |---|---|
-| `DSHOT300 GP0 GP1` | das Protokoll und die Pins, die der Throttle treibt, in Pin-Reihenfolge |
-| `GEMISCHT GP0 GP4` | die Throttle-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
-| `GP0 GP1` | jeder Throttle-Pin läuft mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
+| `DSHOT300 GPIO 0 GPIO 1` | das Protokoll und die Pins, die der Throttle treibt, in Pin-Reihenfolge |
+| `GEMISCHT GPIO 0 GPIO 4` | die Throttle-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
+| `GPIO 0 GPIO 1` | jeder Throttle-Pin läuft mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
 | `KEIN MOTOR-PIN` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden; Warnfarbe |
 | `PINS NICHT GELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte; Warnfarbe |
 

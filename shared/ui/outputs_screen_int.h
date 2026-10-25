@@ -21,13 +21,14 @@
  *
  * OU_FONT_LABEL (10 x 20) for every label, count, reason and the PIN
  * button; OU_FONT_FINE (8 x 16) for the line under a pin's name in its
- * cell, a data line; OU_FONT_HEAD (20 x 36) for a pin's GP name and the
- * last write.  The protocol list's face and rows pick their own face
- * (ui_choice_font()).
+ * cell, a data line; OU_FONT_PIN (16 x 28) for a pin's name ("GPIO 28",
+ * 112px); OU_FONT_HEAD (20 x 36) for the last write.  The protocol list's
+ * face and rows pick their own face (ui_choice_font()).
  */
 #define OU_FONT_LABEL (&gfx_font_10x20)
 #define OU_FONT_FINE  (&gfx_font_8x16)   /**< 8 x 16: a cell's sub-line. */
-#define OU_FONT_HEAD  (&gfx_font_20x36)  /**< 20 x 36: GP names, result. */
+#define OU_FONT_PIN   (&gfx_font_16x28)  /**< 16 x 28: a cell's pin name. */
+#define OU_FONT_HEAD  (&gfx_font_20x36)  /**< 20 x 36: the result. */
 #define OU_CELL       10 /**< OU_FONT_LABEL's cell width, px. */
 #define OU_LINE       22 /**< The pitch of a two-line reason, px. */
 

@@ -702,8 +702,8 @@ UI_TEXT(OUT_PROG_PORT_N, 14,
     "PROG PORT %u",
     "PROG-PORT %u")
 UI_TEXT(OUT_PORT_PIN, 0,
-    "PIN GP%u",
-    "PIN GP%u")
+    "PIN GPIO %u",
+    "PIN GPIO %u")
 UI_TEXT(OUT_PORT_NO_PIN, 27,
     "NO PIN KNOWN",
     "KEIN PIN BEKANNT")
@@ -711,8 +711,8 @@ UI_TEXT(OUT_PORT_PIN_SET, 30,
     "SET A PIN",
     "PIN WÄHLEN")
 UI_TEXT(OUT_PORT_PIN_REFUSED, 30,
-    "PIN GP%u REFUSED",
-    "PIN GP%u ABGELEHNT")
+    "PIN GPIO %u REFUSED",
+    "PIN GPIO %u ABGELEHNT")
 UI_TEXT(OUT_PORT_FUNCTION, 0,
     "FUNCTION",
     "FUNKTION")
@@ -774,26 +774,26 @@ UI_TEXT(OUT_PORT_LOCKED, 60,
 UI_TEXT(OUT_PORT_PWM_NEEDS, 60,
     "PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET",
     "PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS")
-UI_TEXT(OUT_SLICE_OF, 14,
-    "SLICE OF GP%u",
-    "SLICE VON GP%u")
-UI_TEXT(OUT_COMPARE_OF, 14,
-    "PWM CH OF GP%u",
-    "KANAL VON GP%u")
+UI_TEXT(OUT_SLICE_OF, 18,
+    "SLICE OF GPIO %u",
+    "SLICE VON GPIO %u")
+UI_TEXT(OUT_COMPARE_OF, 18,
+    "PWM CH OF GPIO %u",
+    "KANAL VON GPIO %u")
 UI_TEXT(OUT_SLICE_WHY, 60,
-    "GP%u: SHARES PWM SLICE WITH PROG PORT GP%u",
-    "GP%u: TEILT PWM-SLICE MIT PROG-PORT GP%u")
+    "GPIO %u: SHARES PWM SLICE WITH PROG PORT GPIO %u",
+    "GPIO %u: TEILT PWM-SLICE MIT PROG-PORT GPIO %u")
 UI_TEXT(OUT_COMPARE_WHY, 60,
-    "GP%u: SAME PWM CHANNEL AS GP%u",
-    "GP%u: GLEICHER PWM-KANAL WIE GP%u")
+    "GPIO %u: SAME PWM CHANNEL AS GPIO %u",
+    "GPIO %u: GLEICHER PWM-KANAL WIE GPIO %u")
 /* PICK A PIN with a PROG PORT picked: the count line names its function,
  * and a pin refused beside a PWM output says why. */
 UI_TEXT(PK_PORT_FN, 0,
     "FUNCTION: %s",
     "FUNKTION: %s")
 UI_TEXT(PK_PORT_SLICE_WHY, 52,
-    "GP%u: SHARES PWM SLICE WITH OUTPUT GP%u",
-    "GP%u: TEILT PWM-SLICE MIT OUTPUT GP%u")
+    "GPIO %u: SHARES PWM SLICE WITH OUTPUT GPIO %u",
+    "GPIO %u: TEILT PWM-SLICE MIT OUTPUT GPIO %u")
 UI_TEXT(OUT_LAST_WRITE, 0,
     "LAST WRITE",
     "LETZTER SCHREIBVORGANG")
@@ -1511,9 +1511,9 @@ UI_TEXT(SUP_LINE_PORT, 0,
 UI_TEXT(SUP_MODEL, 0,
     "SIMULATED SUPPLY",
     "SIMULIERTES NETZTEIL")
-UI_TEXT(SUP_PD_PINS, 25,
-    "PD MINI TX GP%d RX GP%d",
-    "PD MINI TX GP%d RX GP%d")
+UI_TEXT(SUP_PD_PINS, 29,
+    "PD MINI TX GPIO %d RX GPIO %d",
+    "PD MINI TX GPIO %d RX GPIO %d")
 UI_TEXT(SUP_PD_NO_PINS, 25,
     "PD MINI NO PINS",
     "PD MINI OHNE PINS")
@@ -3203,14 +3203,14 @@ UI_TEXT(SV_TARGET_PORT, 23,
     "PROG-PORT")
 /* A programming port as the tester's target, numbered: 1 to 4. */
 UI_TEXT(SV_TARGET_PN_PIN, 23,
-    "PROG PORT %u GP%u",
-    "PROG-PORT %u GP%u")
+    "PROG PORT %u GPIO %u",
+    "PROG-PORT %u GPIO %u")
 UI_TEXT(SV_TARGET_PN, 23,
     "PROG PORT %u",
     "PROG-PORT %u")
 UI_TEXT(SV_TARGET_PN_PIN_OFF, 23,
-    "PORT %u GP%u PWM OFF",
-    "PORT %u GP%u PWM AUS")
+    "PORT %u GPIO %u PWM OFF",
+    "PORT %u GPIO %u PWM AUS")
 UI_TEXT(SV_TARGET_PN_OFF, 23,
     "PROG PORT %u PWM OFF",
     "PROG-PORT %u PWM AUS")
@@ -3236,8 +3236,8 @@ UI_TEXT(SV_IN_FORCE_OUT, 0,
     "Active: OUTPUTS run at %uHz.",
     "Aktiv: AUSGÄNGE laufen mit %uHz.")
 UI_TEXT(SV_IN_FORCE_PORT_PIN, 58,
-    "Active: PROG PORT GP%u runs at %uHz.",
-    "Aktiv: PROG-PORT GP%u läuft mit %uHz.")
+    "Active: PROG PORT GPIO %u runs at %uHz.",
+    "Aktiv: PROG-PORT GPIO %u läuft mit %uHz.")
 UI_TEXT(SV_IN_FORCE_PORT, 58,
     "Active: %uHz on PROG PORT. No pin is assigned to it.",
     "Aktiv: %uHz am PROG-PORT. Ihm ist kein Pin zugeordnet.")
@@ -3674,8 +3674,8 @@ UI_TEXT(ALERT_SENSE_SAME_ADDR, 94,
     "INA228 and INA3221 both use 0x%02X. Check SETUP > INTERFACES.",
     "INA228 und INA3221 nutzen beide 0x%02X. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_PINS, 94,
-    "Sensor pins GP%d/GP%d rejected. Check SETUP > INTERFACES.",
-    "Sensor-Pins GP%d/GP%d abgelehnt. SETUP > INTERFACES prüfen.")
+    "Sensor pins GPIO %d/GPIO %d rejected. Check SETUP > INTERFACES.",
+    "Sensor-Pins GPIO %d/GPIO %d abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
     "INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.",
     "INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.")
@@ -3740,14 +3740,14 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu has no TONE page. Phase tap not read.",
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
-    "Phase tap on GP%u, %u to %uHz rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff an GP%u, %u bis %uHz abgelehnt. SETUP > INTERFACES prüfen.")
+    "Phase tap on GPIO %u, %u to %uHz rejected. Check SETUP > INTERFACES.",
+    "Phasenabgriff an GPIO %u, %u bis %uHz abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
     "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.",
     "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.")
 UI_TEXT(ALERT_TONE_BUSY, 94,
-    "Phase tap pin GP%u is in use. Capture not running.",
-    "Pin GP%u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")
+    "Phase tap pin GPIO %u is in use. Capture not running.",
+    "Pin GPIO %u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")
 UI_TEXT(ALERT_TONE_OVERRUN, 94,
     "Phase tap capture overflow. Beeps are incomplete.",
     "Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.")
@@ -4203,8 +4203,8 @@ UI_TEXT(KP_M_JOURNAL_2, 116,
     "Do not use the servo. Connect it to port %u and tap READ ALL.",
     "Benutze das Servo nicht. An Port %u anschließen und ALLES AUSLESEN tippen.")
 UI_TEXT(KP_M_JOURNAL_2_PIN, 116,
-    "Do not use the servo. Connect it to GP%u and tap READ ALL.",
-    "Benutze das Servo nicht. An GP%u anschließen und ALLES AUSLESEN tippen.")
+    "Do not use the servo. Connect it to GPIO %u and tap READ ALL.",
+    "Benutze das Servo nicht. An GPIO %u anschließen und ALLES AUSLESEN tippen.")
 UI_TEXT(KP_M_JOURNAL_OTHER, 116,
     "The interrupted write affected a different servo.",
     "Der unterbrochene Schreibvorgang betraf ein anderes Servo.")
@@ -4212,8 +4212,8 @@ UI_TEXT(KP_M_JOURNAL_OTHER_2, 116,
     "It was connected to port %u. Discard the record under RESTORE.",
     "Es war an Port %u angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.")
 UI_TEXT(KP_M_JOURNAL_OTHER_2_PIN, 116,
-    "It was connected to GP%u. Discard the record under RESTORE.",
-    "Es war an GP%u angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.")
+    "It was connected to GPIO %u. Discard the record under RESTORE.",
+    "Es war an GPIO %u angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.")
 UI_TEXT(KP_FILES, 15,
     "FILES",
     "DATEIEN")
@@ -4395,8 +4395,8 @@ UI_TEXT(KP_M_JOURNAL_ASK, 116,
     "Is this the servo whose write was interrupted on port %u?",
     "Ist dies das Servo, dessen Schreibvorgang an Port %u unterbrochen wurde?")
 UI_TEXT(KP_M_JOURNAL_ASK_PIN, 116,
-    "Is this the servo whose write was interrupted on GP%u?",
-    "Ist dies das Servo, dessen Schreibvorgang an GP%u unterbrochen wurde?")
+    "Is this the servo whose write was interrupted on GPIO %u?",
+    "Ist dies das Servo, dessen Schreibvorgang an GPIO %u unterbrochen wurde?")
 UI_TEXT(KP_M_JOURNAL_SAME, 116,
     "It has the old values. If this is the same servo, discard the record under RESTORE.",
     "Es enthält die alten Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.")
@@ -5442,8 +5442,8 @@ UI_SETTING_LABEL(SET_TONE_PIN,
     "Tap pin",
     "Abgriff-Pin")
 UI_SETTING_HELP(SET_TONE_PIN,
-    "IOmcu GPIO; GP22 is pad 29",
-    "IOmcu-GPIO; GP22 ist Pad 29")
+    "IOmcu GPIO; GPIO 22 is pad 29",
+    "IOmcu-GPIO; GPIO 22 ist Pad 29")
 UI_SETTING_LABEL(SET_TONE_F_MIN,
     "Tap lowest tone",
     "Tiefster Ton")

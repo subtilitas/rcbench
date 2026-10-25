@@ -17,6 +17,7 @@
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "ui_layout.h"
+#include "ui_pinlist.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -393,7 +394,9 @@ bool prog_reg_detail(const prog_reg_row_t *rows, size_t n, size_t i,
     } else if (pin == PROG_REG_NO_PIN) {
         snprintf(out, size, "%s", ui_tr(r->transport));
     } else {
-        snprintf(out, size, "%s GP%u", ui_tr(r->transport), (unsigned)pin);
+        char name[UI_PIN_NAME_SIZE];
+        (void)ui_pin_name(name, sizeof(name), pin);
+        snprintf(out, size, "%s %s", ui_tr(r->transport), name);
     }
     return false;
 }

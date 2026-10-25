@@ -88,7 +88,7 @@ TEST_CASE(the_program_row_names_the_port_and_its_use)
     ui_text_set_language(UI_LANG_EN);
     prog_registry_set_ports(2u, 0u);
     CHECK(!prog_reg_detail(rows, n, at, caps, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG PORT 3 GP14");
+    CHECK_STR_EQ(out, "PROG PORT 3 GPIO 14");
     /* A console Hitec session on port 2. */
     prog_registry_set_ports(2u, 0x4u);
     CHECK_EQ(prog_reg_state(rows, n, at, caps), PROG_ROW_PORT_BUSY);

@@ -149,11 +149,15 @@ typedef enum {
 } picker_pin_t;
 
 /**
- * The state of catalogue entry @p index, as the screen draws it.  @p holder,
- * when not NULL, gets what holds the pin: the protocol's name, PROG PORT, or
- * the pin a PWM pin clashes with (outputs_clash_label(): "SLICE OF GP13",
- * "PWM CH OF GP0") for PICKER_PIN_HELD, the reserving function for
- * PICKER_PIN_RESERVED, and an empty string otherwise.
+ * @brief The state of catalogue entry @p index, as the screen draws it.
+ * @param index   the pin's catalogue entry
+ * @param holder  NULL, or takes what holds the pin: the protocol's name,
+ *                PROG PORT, or the pin a PWM pin clashes with
+ *                (outputs_clash_label(): "SLICE OF GPIO 13", "PWM CH OF
+ *                GPIO 0") for PICKER_PIN_HELD, the reserving function for
+ *                PICKER_PIN_RESERVED, and an empty string otherwise
+ * @param cap     bytes at @p holder
+ * @return the pin's state
  */
 picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap);
 

@@ -114,8 +114,8 @@ static void pose_three_protocols(void)
     "GP14 free 'PAD 19'\n"                                                    \
     "GP15 free 'PAD 20'\n"                                                    \
     "GP16 free 'PAD 21'\n"                                                    \
-    "GP17 held 'PWM CH OF GP1'\n"                                  \
-    "GP18 held 'PWM CH OF GP2'\n"                                  \
+    "GP17 held 'PWM CH OF GPIO 1'\n"                                  \
+    "GP18 held 'PWM CH OF GPIO 2'\n"                                  \
     "GP19 free 'PAD 25'\n"                                                    \
     "GP20 free 'PAD 26'\n"                                                    \
     "GP21 free 'PAD 27'\n"                                                    \

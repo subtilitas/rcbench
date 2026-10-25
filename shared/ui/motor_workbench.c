@@ -10,7 +10,7 @@
  * the bench to SAFE whichever task is shown (motor_screen.c's leave()).
  *
  * The TARGET row reads what the throttle drives as `protocol pins`
- * ("DSHOT300 GP0 GP1") and is the control that changes it: a tap opens
+ * ("DSHOT300 GPIO 0 GPIO 1") and is the control that changes it: a tap opens
  * SETUP's OUTPUTS screen, where the motor's pins are bound, and the home tag
  * there comes back to this screen on the task it left.  The row is locked
  * while the bench is not SAFE (an ARM held, asked or in force, or a DISARM
@@ -221,7 +221,7 @@ static void item_text(unsigned i, uint64_t pins, uint8_t ports, char *buf,
 {
     for (unsigned g = 0; g < UI_PINLIST_PINS; ++g) {
         if ((pins & ((uint64_t)1u << g)) != 0u && i-- == 0u) {
-            snprintf(buf, cap, "GP%u", g);
+            (void)ui_pin_name(buf, cap, g);
             return;
         }
     }
@@ -247,7 +247,7 @@ static unsigned bits(uint64_t m)
  * The protocol, the slot pins and the DShot programming ports in @p ports,
  * in @p cells: the pins first, then each port as PORT n, and what does not
  * fit as "+N".  A single port with no pin beside it is named in full,
- * PROG PORT n GPx, where that fits.
+ * PROG PORT n GPIO x, where that fits, else PORT n GPIO x.
  */
 static void target_with_ports(char *out, size_t size, const char *name,
                               uint64_t pins, uint8_t ports, unsigned cells)
@@ -263,11 +263,22 @@ static void target_with_ports(char *out, size_t size, const char *name,
         while ((ports & (1u << k)) == 0u) {
             ++k;
         }
+        const unsigned pin = (unsigned)port_view_get()->pin[k];
         char full[32];
-        snprintf(full, sizeof(full), TR(SV_TARGET_PN_PIN), k + 1u,
-                 (unsigned)port_view_get()->pin[k]);
+        snprintf(full, sizeof(full), TR(SV_TARGET_PN_PIN), k + 1u, pin);
         if (put_item(out, size, &n, full, cells, 0u)) {
             return;
+        }
+        /* PORT n and its pin, where the full name does not fit: the
+         * CONTROL card's 25 cells hold "DSHOT300 PORT 2 GPIO 14". */
+        char pname[UI_PIN_NAME_SIZE];
+        if (ui_pin_name(pname, sizeof(pname), pin) > 0u) {
+            char port[16];
+            snprintf(port, sizeof(port), TR(OUT_TESTER_PORT), k + 1u);
+            snprintf(full, sizeof(full), "%s %s", port, pname);
+            if (put_item(out, size, &n, full, cells, 0u)) {
+                return;
+            }
         }
     }
     for (unsigned i = 0; i < count; ++i) {

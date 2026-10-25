@@ -66,7 +66,7 @@ kürzeres Halten startet nichts.
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
 Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
-und liest: `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
+und liest: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
 geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
 Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
 Ausgangskarte bleibt ebenfalls sichtbar.
@@ -382,7 +382,7 @@ Ergebnis:        BESTANDEN
 Prüfling:        SERVO
 Firmware:        rcbench 0.23.0
 Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
-Ausgang:         PROG-PORT 1 GP13, 50Hz
+Ausgang:         PROG-PORT 1 GPIO 13, 50Hz
 Pulsbereich:     Mitte 1500us, 1000-2000us
 Gesucht:         von 1500us bis 1000us und 2000us
 Strom:           INA3221 0x40 CH1, Fenster zu 50ms, Shunt 100.0mΩ

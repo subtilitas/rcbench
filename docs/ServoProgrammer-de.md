@@ -106,8 +106,8 @@ und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
 
 Beide werden mit den SERVO-Einstellungen gehalten, SERVO-TESTER als
 OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Die Zeile ZIEL nennt das
-aktive Ziel mit Protokoll und Pins: `PROG-PORT 1 GP13` in der Warnfarbe
-oder `SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. Ein Port mit
+aktive Ziel mit Protokoll und Pins: `PROG-PORT 1 GPIO 13` in der Warnfarbe
+oder `SERVO PWM GPIO 4` für die als SERVO PWM gebundenen Pins. Ein Port mit
 FUNKTION KEINE ist kein Ziel: sein Eintrag sperrt **PORT n** und sagt
 `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM`. Ein gespeicherter Wert
 1, der PROG-PORT eines Panels mit einem Port, gilt als PORT 1. **SERVO-TESTER**
@@ -965,7 +965,7 @@ Sitzung nach dem Ende des Laufs gehört dem Bediener: ihr erstes Schreiben
 sichert eine eigene Backup-Datei, wie das erste Schreiben jeder Sitzung. Der
 Lauf hält dieses Lesen im Speicher des Panels bis zum ersten Schreiben des nächsten Laufs oder
 einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
-und das Feld des Laufs ihn: `PROG-PORT 1 GP13`.
+und das Feld des Laufs ihn: `PROG-PORT 1 GPIO 13`.
 
 Ein Lauf, der in einer Sitzung abgebrochen wird, lässt den Port im
 Programmiermodus mit den zuletzt geschriebenen Werten. VERLASSEN gibt ihn
@@ -1004,15 +1004,15 @@ Einschalten des Prüfstands.
 ![Ein unterbrochenes Schreiben](img/de/servo-kst-doubt.png)
 
 `Schreiben wurde unterbrochen. Die Einstellungen sind vielleicht unvollständig.` bleibt stehen,
-bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. An GP13 anschließen und ALLES AUSLESEN tippen.` Ein Vermerk ohne Pin nennt
+bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. An GPIO 13 anschließen und ALLES AUSLESEN tippen.` Ein Vermerk ohne Pin nennt
 stattdessen den Port: `Benutze das Servo nicht. An Port 1 anschließen und ALLES AUSLESEN tippen.` Jedes Bedienelement außer
 **VERBINDEN**, **ALLES AUSLESEN**, **ZURÜCKSPIELEN**, **VERLASSEN** und, wo
 das Zurückspielen der Sitzung ihn braucht, dem Schreibschalter ist aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 
 | Das Servo hält | Meldung | Danach |
 | --- | --- | --- |
-| das Abbild vor dem Schreiben | `Ist dies das Servo, dessen Schreibvorgang an GP13 unterbrochen wurde?` `Es enthält die alten Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
-| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo, dessen Schreibvorgang an GP13 unterbrochen wurde?` `Es enthält die neuen Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| das Abbild vor dem Schreiben | `Ist dies das Servo, dessen Schreibvorgang an GPIO 13 unterbrochen wurde?` `Es enthält die alten Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo, dessen Schreibvorgang an GPIO 13 unterbrochen wurde?` `Es enthält die neuen Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
 | etwas anderes | `Das Servo enthält alte und neue Werte gemischt.` `Benutze dieses Servo nicht. Stelle das Backup mit ZURÜCKSPIELEN wieder her.` | **ZURÜCKSPIELEN** bietet das Backup der Sitzung an, solange die Sitzung lebt, und `Werte vor dem unterbrochenen Schreibvorgang.` |
 
 ![Das Servo hält eine Mischung](img/de/servo-kst-journal.png)
@@ -1032,7 +1032,7 @@ nicht, behält **VERLASSEN** den Vermerk für das Servo des Schreibens.
 Der Vermerk gehört zu einem Servo. Ein Servo, das an einem anderen Port
 gelesen wird, ist nicht dieses Servo, und ebenso wenig eines mit einem
 Register, das weder den Wert des Abbilds vor dem Schreiben noch den Wert
-hält, den das Schreiben hinterlassen sollte: `Der unterbrochene Schreibvorgang betraf ein anderes Servo.` `Es war an GP13 angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.` Bei einem Vermerk ohne Pin nennt die Zeile den Port: `Es war an
+hält, den das Schreiben hinterlassen sollte: `Der unterbrochene Schreibvorgang betraf ein anderes Servo.` `Es war an GPIO 13 angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.` Bei einem Vermerk ohne Pin nennt die Zeile den Port: `Es war an
 Port 1.` Solange das steht, wird nichts zurückgespielt, geändert oder
 geschrieben, und **ZURÜCKSPIELEN** enthält nur den Eintrag zum Verwerfen.
 **VERLASSEN** und ein **VERBINDEN** des Servos des Schreibens bringen den

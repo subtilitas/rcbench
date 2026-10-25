@@ -43,7 +43,7 @@ The right card, from the top:
 | meter line and plot | voltage, current and power of the rail, plotted over the last 17.8s |
 | SET | the supply's voltage and current limit, and its output switch |
 | SPEED | the rate the bench may move the output, 100% passes the command straight through |
-| TARGET | what the tester drives, `protocol pins`: `SERVO PWM GP2`, `PROG PORT 1 GP13`, or a warning; a tap opens Outputs, where it is picked ([the TARGET row](servo-settings.md#the-target-row)) |
+| TARGET | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens Outputs, where it is picked ([the TARGET row](servo-settings.md#the-target-row)) |
 
 ## ARMED
 
@@ -141,7 +141,7 @@ The limit run finds where the installed servo binds at each end of its travel. I
 4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing.
 5. TEST stays shown. The box on LIVE's left card shows the phase, the side and the pulse, and the output it drives.
 
-The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GP13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1`. The TARGET row stays in sight as well.
+The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. The TARGET row stays in sight as well.
 
 The run reads only the INA3221 channel that watches the tester's target. With the PD mini or the model as the servo rail's meter, START LIMIT RUN stays grey and the line says why:
 

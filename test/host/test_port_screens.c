@@ -620,11 +620,11 @@ TEST_CASE(a_servo_pwm_port_is_refused_the_pwm_rules_and_a_none_port_not)
     CHECK_EQ(pin_of(4u, holder, sizeof(holder)), PICKER_PIN_HELD);
     CHECK_STR_EQ(holder, "SERVO PWM");
     CHECK_EQ(pin_of(5u, holder, sizeof(holder)), PICKER_PIN_HELD);
-    CHECK_STR_EQ(holder, "SLICE OF GP4");
+    CHECK_STR_EQ(holder, "SLICE OF GPIO 4");
     pk_tap_pin(5u);
     CHECK_EQ(g_ask.n, 0);
     CHECK(picker_screen_reason(buf, sizeof(buf)));
-    CHECK_STR_EQ(buf, "GP5: SHARES PWM SLICE WITH OUTPUT GP4");
+    CHECK_STR_EQ(buf, "GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4");
     /* GP28 shares a compare register with GP12: free while no SERVO PWM
      * port holds GP12, held once port 1 does. */
     CHECK_EQ(pin_of(28u, NULL, 0), PICKER_PIN_FREE);
@@ -632,7 +632,7 @@ TEST_CASE(a_servo_pwm_port_is_refused_the_pwm_rules_and_a_none_port_not)
     v.pin[0] = 12u;
     port_view_set(&v);
     CHECK_EQ(pin_of(28u, holder, sizeof(holder)), PICKER_PIN_HELD);
-    CHECK_STR_EQ(holder, "PWM CH OF GP12");
+    CHECK_STR_EQ(holder, "PWM CH OF GPIO 12");
     render_both();
     /* Port 4, NONE: both are free. */
     pk_port(3u);
@@ -711,7 +711,7 @@ TEST_CASE(the_port_rules_hold_at_their_edges)
     port_view_set(&v);
     CHECK(picker_port_reason(&b, 2u, (int)outbind_index_of(BOARD, 28u), buf,
                              sizeof(buf)));
-    CHECK_STR_EQ(buf, "GP28: SAME PWM CHANNEL AS GP12");
+    CHECK_STR_EQ(buf, "GPIO 28: SAME PWM CHANNEL AS GPIO 12");
     picker_port_count(2u, NULL, 0);
     /* A port not known counts "?". */
     view_unknown();
@@ -755,7 +755,7 @@ TEST_CASE(a_none_ports_pin_holds_no_pwm_slice_for_the_outputs)
     port_view_set(&v);
     CHECK_EQ(outputs_screen_cell(gp15, label, sizeof(label)),
              OUTPUTS_CELL_HELD);
-    CHECK_STR_EQ(label, "SLICE OF GP14");
+    CHECK_STR_EQ(label, "SLICE OF GPIO 14");
     CHECK_EQ(pin_of(15u, NULL, 0), PICKER_PIN_HELD);
     /* And a function not known counts as SERVO PWM. */
     v.func[1] = PORT_VIEW_FN_UNKNOWN;
@@ -788,7 +788,7 @@ TEST_CASE(another_ports_refused_pin_is_not_held)
     v.refused = 0u;
     port_view_set(&v);
     CHECK_EQ(pin_of(28u, holder, sizeof(holder)), PICKER_PIN_HELD);
-    CHECK_STR_EQ(holder, "PWM CH OF GP12");
+    CHECK_STR_EQ(holder, "PWM CH OF GPIO 12");
 }
 
 int main(void)

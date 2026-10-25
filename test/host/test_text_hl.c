@@ -156,7 +156,8 @@ TEST_CASE(a_heading_is_upper_case_before_its_parenthesis)
         /* A German letter before a hexadecimal one takes two literals. */
         /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
         "\xC3\x9C" "bersicht", "GR\xC3\x96\xC3\x9F" "E", "4.80 V 6.00 V",
-        "OK", "  NOT MEASURED", "registers 32", "Ab", "PROG PORT GP13, 333 Hz",
+        "OK", "  NOT MEASURED", "registers 32", "Ab",
+        "PROG PORT 1 GPIO 13, 333 Hz",
     };
     for (size_t k = 0u; k < sizeof(k_no) / sizeof(k_no[0]); ++k) {
         n = hl_line(k_no[k], 5u, TEXT_HL_KIND_TEXT);

@@ -107,7 +107,7 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* Whether @p s ends in @p tail: "GP1" at the end, not inside "GP17". */
+/* Whether @p s ends in @p tail: "GPIO 1" at the end, not inside "GPIO 17". */
 static bool ends_with(const char *s, const char *tail);
 
 /*
@@ -129,9 +129,9 @@ TEST_CASE(the_picker_holds_every_programming_ports_pin)
     CHECK_EQ(picker_screen_pin(idx(26u), who, sizeof(who)), PICKER_PIN_HELD);
     CHECK_STR_EQ(who, TR(OUT_PROG_PORT));
     CHECK_EQ(picker_screen_pin(idx(27u), who, sizeof(who)), PICKER_PIN_HELD);
-    CHECK(ends_with(who, "GP26"));
+    CHECK(ends_with(who, "GPIO 26"));
     CHECK_EQ(picker_screen_pin(idx(28u), who, sizeof(who)), PICKER_PIN_HELD);
-    CHECK(ends_with(who, "GP13"));
+    CHECK(ends_with(who, "GPIO 13"));
     CHECK_EQ(picker_screen_prog_listed(), 13u);
     CHECK(picker_screen_in_use(0u, &line));
     CHECK_EQ(line.kind, PICKER_USE_NAME);
@@ -148,7 +148,7 @@ TEST_CASE(the_picker_holds_every_programming_ports_pin)
     CHECK(picker_screen_button_rect(idx(27u), &r));
     tap_rect(r);
     CHECK_EQ(s_applied, 0);
-    CHECK(ends_with(reason(), "GP26"));
+    CHECK(ends_with(reason(), "GPIO 26"));
 
     /* One port reported: GP26 and its slice are free again. */
     picker_screen_set_prog_ports(1u, pins);
@@ -192,13 +192,13 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
         picker_screen_set_prog_pin(13u);
         CHECK_EQ(picker_screen_pin(idx(28u), who, sizeof(who)),
                  PICKER_PIN_HELD);
-        CHECK(ends_with(who, "GP13"));
+        CHECK(ends_with(who, "GPIO 13"));
         CHECK_STR_EQ(reason(), "");
         CHECK(picker_screen_button_rect(idx(28u), &r));
         tap_rect(r);
         CHECK_EQ(s_applied, 0);
-        CHECK(strncmp(reason(), "GP28", 4) == 0);
-        CHECK(ends_with(reason(), "GP13"));
+        CHECK(strncmp(reason(), "GPIO 28:", 8) == 0);
+        CHECK(ends_with(reason(), "GPIO 13"));
         CHECK_EQ(outbind_chosen_total(picker_screen_binding()), 0);
         pick("MOTOR PWM");
         CHECK_EQ(picker_screen_pin(idx(28u), NULL, 0), PICKER_PIN_HELD);
@@ -212,13 +212,13 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
         bind_more("SERVO PWM", gp0, 1u, "SERVO PWM");
         CHECK_EQ(picker_screen_pin(idx(16u), who, sizeof(who)),
                  PICKER_PIN_HELD);
-        CHECK(ends_with(who, "GP0"));
+        CHECK(ends_with(who, "GPIO 0"));
         CHECK_EQ(picker_screen_pin(idx(17u), NULL, 0), PICKER_PIN_FREE);
         CHECK(picker_screen_button_rect(idx(16u), &r));
         tap_rect(r);
         CHECK_EQ(s_applied, 0);
-        CHECK(strncmp(reason(), "GP16", 4) == 0);
-        CHECK(ends_with(reason(), "GP0"));
+        CHECK(strncmp(reason(), "GPIO 16:", 8) == 0);
+        CHECK(ends_with(reason(), "GPIO 0"));
         /* A tick that lands ends the answer. */
         CHECK(picker_screen_button_rect(idx(17u), &r));
         tap_rect(r);
@@ -228,7 +228,7 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
          * which names another pin, or none, on another board. */
         CHECK(picker_screen_button_rect(idx(16u), &r));
         tap_rect(r);
-        CHECK(strncmp(reason(), "GP16", 4) == 0);
+        CHECK(strncmp(reason(), "GPIO 16:", 8) == 0);
         {
             outbind_t b = *picker_screen_binding();
             outbind_t other = b;
@@ -297,7 +297,7 @@ TEST_CASE(every_button_is_clear_of_everything_else)
             if (r.x < 0 || r.y < 0 || r.x + r.w > SCREEN_W
                 || r.y + r.h > PK_FOOT || r.w < UI_TAP_MIN
                 || r.h < UI_TAP_MIN) {
-                T_FAIL("pass %d: GP%u's button %d,%d %dx%d", pass, gp, r.x,
+                T_FAIL("pass %d: GPIO %u's button %d,%d %dx%d", pass, gp, r.x,
                        r.y, r.w, r.h);
             }
             int px = 0, py = 0;
@@ -305,11 +305,11 @@ TEST_CASE(every_button_is_clear_of_everything_else)
             const int mid = r.x + r.w / 2;
             if ((mid - px > 1 || px - mid > 1) && r.x > 2
                 && r.x + r.w < SCREEN_W - 2) {
-                T_FAIL("pass %d: GP%u's button is off its pad", pass, gp);
+                T_FAIL("pass %d: GPIO %u's button is off its pad", pass, gp);
             }
             for (uint8_t o = (uint8_t)(i + 1u); o < bd->count; ++o) {
                 if (has[o] && overlap(r, btn[o])) {
-                    T_FAIL("pass %d: GP%u and GP%u overlap", pass, gp,
+                    T_FAIL("pass %d: GPIO %u and GPIO %u overlap", pass, gp,
                            bd->pins[o].gpio);
                 }
                 /* Beside each other in a tier: 8px apart or more. */
@@ -318,24 +318,24 @@ TEST_CASE(every_button_is_clear_of_everything_else)
                     const int apart = (q.x >= r.x) ? q.x - (r.x + r.w)
                                                    : r.x - (q.x + q.w);
                     if (apart < 8) {
-                        T_FAIL("pass %d: GP%u and GP%u are %d px apart",
+                        T_FAIL("pass %d: GPIO %u and GPIO %u are %d px apart",
                                pass, gp, bd->pins[o].gpio, apart);
                     }
                 }
             }
             for (uint8_t m = 0; m < pads; ++m) {
                 if (mk_has[m] && overlap(r, mk[m])) {
-                    T_FAIL("pass %d: GP%u covers pad %u's marker", pass, gp,
+                    T_FAIL("pass %d: GPIO %u covers pad %u's marker", pass, gp,
                            outbind_pads(BOARD)[m].pad);
                 }
             }
             for (int a = 0; a < 3; ++a) {
                 if (overlap(r, areas[a])) {
-                    T_FAIL("pass %d: GP%u covers text area %d", pass, gp, a);
+                    T_FAIL("pass %d: GPIO %u covers text area %d", pass, gp, a);
                 }
             }
             if (overlap(r, picker_screen_list_face())) {
-                T_FAIL("pass %d: GP%u covers the protocol list", pass, gp);
+                T_FAIL("pass %d: GPIO %u covers the protocol list", pass, gp);
             }
         }
         /* And each centre binds its own pin, every one in turn. */
@@ -346,7 +346,7 @@ TEST_CASE(every_button_is_clear_of_everything_else)
             if (s_applied != was + 1
                 || outbind_group_of(&s_last, i) != proto_named("SERVO PWM")
                 || outbind_chosen(&s_last) != 1u) {
-                T_FAIL("pass %d: GP%u's centre bound something else", pass,
+                T_FAIL("pass %d: GPIO %u's centre bound something else", pass,
                        bd->pins[i].gpio);
             }
             tap_rect(btn[i]);                     /* and gives it back */
@@ -389,7 +389,7 @@ TEST_CASE(a_full_bench_takes_no_ninth_pin_and_says_why)
                 : (g == proto_named("SERVO PWM")) ? PICKER_PIN_TICKED
                 : (g != 0u || partner) ? PICKER_PIN_HELD : PICKER_PIN_REFUSED;
             if (st != want_st) {
-                T_FAIL("GP%u is %d, want %d", bd->pins[i].gpio, (int)st,
+                T_FAIL("GPIO %u is %d, want %d", bd->pins[i].gpio, (int)st,
                        (int)want_st);
             }
         }
@@ -434,7 +434,7 @@ TEST_CASE(ppm_greys_the_board_and_the_reason_says_why)
     for (uint8_t i = 0; i < bd->count; ++i) {
         const picker_pin_t st = picker_screen_pin(i, NULL, 0);
         if (st == PICKER_PIN_FREE || st == PICKER_PIN_TICKED) {
-            T_FAIL("GP%u is offered under PPM", bd->pins[i].gpio);
+            T_FAIL("GPIO %u is offered under PPM", bd->pins[i].gpio);
         }
         grey += (st == PICKER_PIN_REFUSED) ? 1u : 0u;
     }
@@ -660,7 +660,7 @@ TEST_CASE(a_tap_on_every_key_on_off_writes_nothing)
     for (uint8_t i = 0; i < bd->count; ++i) {
         if (outbind_group_of(picker_screen_binding(), i)
             != outbind_group_of(&before, i)) {
-            T_FAIL("a tap on OFF moved GP%u", bd->pins[i].gpio);
+            T_FAIL("a tap on OFF moved GPIO %u", bd->pins[i].gpio);
         }
     }
     CHECK_EQ(picker_screen_binding()->proto, 0);

@@ -54,22 +54,22 @@ Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses 
 |---|---|---|
 | abgehakt, `PAD 6` | im gewählten Protokoll gebunden; die auf der Platine gedruckte Pad-Nummer | gibt ihn frei |
 | ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
-| rot, durchgestrichen | reserviert: GP3 trägt den Sicherheits-Heartbeat, GP8 bis GP12 den CAN-Controller (Controller Area Network) | tut nichts |
-| `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GP13 | tut nichts |
+| rot, durchgestrichen | reserviert: GPIO 3 trägt den Sicherheits-Heartbeat, GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area Network) | tut nichts |
+| `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | tut nichts |
 | rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > INTERFACES](setup-interfaces.md) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
-| ausgegraut, `SLICE VON GP13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GP28 und GP13 sind Slice 6 | tut nichts; `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` unter der Zahl |
-| ausgegraut, `KANAL VON GP0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22) | tut nichts; `GP16: GLEICHER PWM-KANAL WIE GP0` unter der Zahl |
+| ausgegraut, `SLICE VON GPIO 13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GPIO 28 und GPIO 13 sind Slice 6 | tut nichts; `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` unter der Zahl |
+| ausgegraut, `KANAL VON GPIO 0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22) | tut nichts; `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` unter der Zahl |
 | frei, `PAD 7` | nicht gebunden | bindet ihn |
 
 ![PPM mit bereits gebundenen Servo-Pins](view:outputs-full)
 
 Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
 
-![GP13 vom Programmierport gehalten](view:outputs-prog)
+![GPIO 13 vom Programmierport gehalten](view:outputs-prog)
 
 ![Sensorbus, PD mini und Phasenabgriff auf ihren Pins](view:outputs-iface)
 
-Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
+Eine gespeicherte Bindung, die GPIO 13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
 
 ## Der Eintrag PROG-PORT
 
@@ -79,13 +79,13 @@ Die offene Protokollliste zeigt einen Eintrag PROG-PORT je Programmierport, den 
 
 | Zeile | Zeigt und tut |
 |---|---|
-| PIN | `PIN GP13`, `PIN WÄHLEN`, `PIN GP14 ABGELEHNT` oder `KEIN PIN BEKANNT`; ein Tipp öffnet [PICK A PIN](picker.md) auf dem Port, wo ein Tipp auf einen Pin ihn setzt |
+| PIN | `PIN GPIO 13`, `PIN WÄHLEN`, `PIN GPIO 14 ABGELEHNT` oder `KEIN PIN BEKANNT`; ein Tipp öffnet [PICK A PIN](picker.md) auf dem Port, wo ein Tipp auf einen Pin ihn setzt |
 | FUNKTION | was der Pin trägt, solange keine Programmiersitzung ihn hält; ein Tipp öffnet die Liste. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin; DSHOT150, DSHOT300 und DSHOT600 (IOmcu ab 0.22.0) senden DShot mit dem Gas von MOTOR & ESC, ein Frame alle 1ms, solange für das Gas ARMED, auf jedem freien Pin |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS oder PORT n: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt |
 | PORT-PWM | EIN oder AUS: der Puls des Ports, der das Ziel des Testers ist |
 
-Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung der Ausgänge: sie gehören zur Platine. Port 1 beginnt als SERVO PWM auf GP13, die Ports 2 bis 4 als KEINE ohne Pin. Ein Tipp auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das Panel schreibt sie bei einem Prüfstand in Ruhe, und die gelbe Zeile sagt, wie sie stehen.
+Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung der Ausgänge: sie gehören zur Platine. Port 1 beginnt als SERVO PWM auf GPIO 13, die Ports 2 bis 4 als KEINE ohne Pin. Ein Tipp auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das Panel schreibt sie bei einem Prüfstand in Ruhe, und die gelbe Zeile sagt, wie sie stehen.
 
 ![PROG-PORT 2, die Bitte wartet](view:outputs-port2)
 

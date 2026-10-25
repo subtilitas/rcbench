@@ -330,7 +330,7 @@ TEST_CASE(the_target_row_draws_the_warning_and_the_lock)
     const gfx_color_t warn = ui_theme_color(UI_C_WARN);
 
     canvas();
-    ui_target_row_render(&t, &cv, "TARGET", "SERVO PWM GP2", false, false);
+    ui_target_row_render(&t, &cv, "TARGET", "SERVO PWM GPIO 2", false, false);
     CHECK_EQ(ink(label, warn), 0u);
     CHECK_EQ(ink(v, warn), 0u);
     CHECK(ink(v, ui_theme_color(UI_C_TEXT)) > 20u);
@@ -342,7 +342,7 @@ TEST_CASE(the_target_row_draws_the_warning_and_the_lock)
     CHECK(ink(v, warn) > 20u);
 
     canvas();
-    ui_target_row_render(&t, &cv, "TARGET", "SERVO PWM GP2", false, true);
+    ui_target_row_render(&t, &cv, "TARGET", "SERVO PWM GPIO 2", false, true);
     CHECK(ink(v, UI_EDGE) > 100u);
     CHECK(ink(v, ui_theme_color(UI_C_TEXT_DIM)) > 20u);
     CHECK_EQ(ink(v, ui_theme_color(UI_C_TEXT)), 0u);
@@ -372,21 +372,23 @@ TEST_CASE(the_target_text_fits_its_cells_and_its_buffer)
         size_t      size;
         const char *want;
     } k[] = {
-        { "SERVO PWM", (1u << 2) | (1u << 4), 23u, 32u, "SERVO PWM GP2 GP4" },
-        { "PROG PORT", 1u << 13, 23u, 32u, "PROG PORT GP13" },
+        { "SERVO PWM", (1u << 2) | (1u << 4), 23u, 32u,
+          "SERVO PWM GPIO 2 GPIO 4" },
+        { "PROG PORT", 1u << 13, 23u, 32u, "PROG PORT GPIO 13" },
         { "SERVO PWM", 0u, 23u, 32u, "SERVO PWM" },
         { "SERVO PWM", 1u << 2, 9u, 32u, "SERVO PWM" },     /* no room */
         { "SERVO PWM", 1u << 2, 10u, 32u, "SERVO PWM" },    /* a space only */
-        { "SERVO PWM", 1u << 2, 13u, 32u, "SERVO PWM GP2" },/* exact */
-        { "SERVO PWM", (1u << 2) | (1u << 4), 16u, 32u, "SERVO PWM GP2 +1" },
+        { "SERVO PWM", 1u << 2, 16u, 32u, "SERVO PWM GPIO 2" },/* exact */
+        { "SERVO PWM", 1u << 2, 15u, 32u, "SERVO PWM +1" },
+        { "SERVO PWM", (1u << 2) | (1u << 4), 19u, 32u, "SERVO PWM GPIO 2 +1" },
         { "SERVO PWM", (1u << 2) | (1u << 4), 12u, 32u, "SERVO PWM +2" },
         { "SERVO PWM", 1u << 2, 5u, 32u, "SERVO" },          /* cut */
         { "SERVO PWM", 1u << 2, 23u, 8u, "SERVO P" },        /* the buffer */
-        { "SERVO PWM", 1u << 2, 23u, 14u, "SERVO PWM GP2" }, /* exact fit */
-        { "SERVO PWM", 1u << 2, 23u, 13u, "SERVO PWM +1" },
+        { "SERVO PWM", 1u << 2, 23u, 17u, "SERVO PWM GPIO 2" }, /* exact fit */
+        { "SERVO PWM", 1u << 2, 23u, 16u, "SERVO PWM +1" },
         { "SERVO PWM", 1u << 2, 23u, 1u, "" },
-        { NULL, 1u << 2, 23u, 32u, "GP2" },
-        { "", (1u << 2) | (1u << 3), 23u, 32u, "GP2 GP3" },
+        { NULL, 1u << 2, 23u, 32u, "GPIO 2" },
+        { "", (1u << 2) | (1u << 3), 23u, 32u, "GPIO 2 GPIO 3" },
         { NULL, 0u, 23u, 32u, "" },
         { "SERVO PWM", 1u << 2, 0u, 32u, "" },
     };

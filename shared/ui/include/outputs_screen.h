@@ -216,23 +216,42 @@ bool outputs_screen_reason(char *buf, size_t cap);
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 
 /**
- * The line under a pin's GPIO name for a pin the IOmcu refuses the
- * PWM generator (outbind_pwm_clash_ports() with the @p count programming
- * port pins @p ports): "SLICE OF GP13" beside a programming port's pin,
- * "PWM CH OF GP0" beside a pin bound as PWM.  An empty string and false
- * for any other pin.  The pin picker names the holder with the same line.
+ * @brief The line under a pin's name for a pin the IOmcu refuses the PWM
+ *        generator (outbind_pwm_clash_ports() with the @p count programming
+ *        port pins @p ports): "SLICE OF GPIO 13" beside a programming
+ *        port's pin, "PWM CH OF GPIO 0" beside a pin bound as PWM.
+ *
+ * The pin picker names the holder with the same line.
+ *
+ * @param b      the binding
+ * @param index  the pin's catalogue entry
+ * @param ports  the programming ports' pins
+ * @param count  entries at @p ports
+ * @param buf    takes the line; an empty string for any other pin
+ * @param cap    bytes at @p buf
+ * @return true when the pin clashes
  */
 bool outputs_clash_label(const outbind_t *b, uint8_t index,
                          const uint8_t *ports, uint8_t count, char *buf,
                          size_t cap);
 
 /**
- * The line under the protocol for such a pin, catalogue entry @p index:
- * "GP28: PWM SLICE OF PROG PORT GP13", "GP16: SAME PWM CHANNEL AS GP0".  An
- * empty string and false when that pin is not refused, or @p index is no
- * entry (-1).  Both screens pass the pin whose tap was refused last, and
- * show it after outputs_reason_of(): a protocol that can take no pin at all
- * says that first.  The cell names the holder before any tap.
+ * @brief The line under the protocol for such a pin, catalogue entry
+ *        @p index: "GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13",
+ *        "GPIO 16: SAME PWM CHANNEL AS GPIO 0".
+ *
+ * Both screens pass the pin whose tap was refused last, and show it after
+ * outputs_reason_of(): a protocol that can take no pin at all says that
+ * first.  The cell names the holder before any tap.
+ *
+ * @param b      the binding
+ * @param index  the pin's catalogue entry, or -1 for none
+ * @param ports  the programming ports' pins
+ * @param count  entries at @p ports
+ * @param buf    takes the line; an empty string when the pin is not
+ *               refused or @p index is no entry
+ * @param cap    bytes at @p buf
+ * @return true when the line names a refusal
  */
 bool outputs_clash_reason(const outbind_t *b, int index,
                           const uint8_t *ports, uint8_t count, char *buf,
