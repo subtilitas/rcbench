@@ -846,7 +846,8 @@ static hitec_set_t set_d_pos(hitec_image_t *d, const hitec_param_info_t *p,
 
 /**
  * @brief Edit the D series direction: 0x5E and the three positions
- *        mirrored, the ends swapped.
+ *        mirrored, the ends swapped.  From a 0x5E that is neither 0 nor 1
+ *        the servo's direction is not known: 0x5E alone.
  *
  */
 static hitec_set_t set_d_dir(hitec_image_t *d, int32_t v)
@@ -855,6 +856,10 @@ static hitec_set_t set_d_dir(hitec_image_t *d, int32_t v)
     uint16_t left;
     uint16_t right;
 
+    if (hitec_image_reg(d, 0x5E) > 1u) {
+        put_reg(d, 0x5E, (unsigned)v);
+        return HITEC_SET_OK;
+    }
     if (!hitec_d_mirror(hitec_image_reg(d, 0xC2), &mid)
         || !hitec_d_mirror(hitec_image_reg(d, 0xB0), &left)
         || !hitec_d_mirror(hitec_image_reg(d, 0xB2), &right)) {
@@ -1030,6 +1035,8 @@ static const d_item_t k_d_ops[][6] = {
     { { 0x9C, D_TRIG, 0 }, { 0x9A, D_CONST, 3 }, { 0x98, D_CONST, 200 } },
     { { 0x72, D_CONST, 0x4E54 }, { 0x6C, D_TRIG, 0 }, { 0x44, D_TRIG, 0 } },
 };
+/** @brief The direction's setting in k_d_ops. */
+#define D_OP_DIRECTION 1u
 /** @brief Settings in k_d_ops. */
 #define D_OP_COUNT (sizeof(k_d_ops) / sizeof(k_d_ops[0]))
 /** @brief Items of one setting. */
@@ -1137,6 +1144,7 @@ static hitec_plan_result_t plan_d(const hitec_image_t *from,
                                   const hitec_image_t *to, hitec_plan_t *out)
 {
     uint8_t written[HITEC_MEM_SIZE / 8u] = { 0 };
+    const bool raw_dir = hitec_image_reg(from, 0x5E) > 1u;
     bool unknown = false;
 
     for (size_t i = 0; i < D_OP_COUNT; ++i) {
@@ -1159,6 +1167,9 @@ static hitec_plan_result_t plan_d(const hitec_image_t *from,
             const unsigned bit = 1u << (it->addr / 2u % 8u);
             uint8_t *w = &written[it->addr / 16u];
 
+            if (raw_dir && i == D_OP_DIRECTION && it->how != D_TRIG) {
+                continue;   /* no mirror from a direction not known */
+            }
             if ((*w & bit) == 0u) {
                 *w = (uint8_t)(*w | bit);
                 push(out, HITEC_STEP_D_WRITE, it->addr,

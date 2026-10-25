@@ -502,13 +502,24 @@ TEST_CASE(a_value_fitting_no_encoding_is_raw_and_an_edit_sets_a_table_value)
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 7),
              HITEC_SET_ERR_RANGE);
     CHECK(!hitec_param_ok(HITEC_LAYOUT_D, HITEC_P_D_OVERLOAD, 25));
-    /* A raw direction: the edit mirrors as from the other direction. */
+    /* A raw direction: the present direction is not known, so the edit
+     * writes 0x5E alone and mirrors nothing, also beside a position the
+     * mirror would leave. */
     d485(&img);
     hitec_image_put_reg(&img, 0x5E, 2);
+    hitec_image_put_reg(&img, 0xB2, 0);
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION,
                              HITEC_CW), HITEC_SET_OK);
     CHECK_EQ(hitec_image_reg(&img, 0x5E), 0);
+    CHECK_EQ(hitec_image_reg(&img, 0xB2), 0);
+    CHECK_EQ(hitec_image_reg(&img, 0xC2), 8192);
+    CHECK_EQ(hitec_image_reg(&img, 0xB0), 13003);
+    /* From the decoded CW the mirror holds again. */
+    hitec_image_put_reg(&img, 0xB2, 3351);
+    CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION,
+                             HITEC_CCW), HITEC_SET_OK);
     CHECK_EQ(hitec_image_reg(&img, 0xB2), 16384 - 13003);
+    CHECK_EQ(hitec_image_reg(&img, 0xB0), 16384 - 3351);
     /* The smart sensor: neither the on nor the off pattern. */
     d485(&img);
     hitec_image_put_reg(&img, 0x6C, 2500);

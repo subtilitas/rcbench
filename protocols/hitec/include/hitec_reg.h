@@ -494,7 +494,9 @@ typedef enum {
  * Side effects, as the vendor programmers write them:
  *
  *   D direction     0xC2, 0xB2, 0xB0 mirrored (hitec_d_mirror()), 0xB2 from
- *                   0xB0 and 0xB0 from 0xB2
+ *                   0xB0 and 0xB0 from 0xB2; from a 0x5E that is neither 0
+ *                   nor 1 the present direction is not known, and 0x5E is
+ *                   written alone
  *   D smart sensor  on: 0x6C = 0x44 = 0; off: 0x6C = 0x8A, 0x44 = 0x8C
  *   C centre        0x13 = 0x14 = 0x10
  *   C direction     0x13 and 0x14 swapped, 0x19 and 0x1A from 0x49 and 0x4A
@@ -624,7 +626,8 @@ bool hitec_writable(uint8_t series, uint8_t addr);
  * 0x1B changes, one balance write ends the plan.
  *
  * D series, by setting, each with the registers the HFP-30 writes for it:
- * ID 0x32; direction 0xC2, 0xB2, 0xB0, 0x4C, 0x5E; neutral 0xC2; left end
+ * ID 0x32; direction 0xC2, 0xB2, 0xB0, 0x4C, 0x5E, and 0x5E alone when
+ * @p from holds a 0x5E that is neither 0 nor 1; neutral 0xC2; left end
  * 0xB2; right end 0xB0; dead band 0x4E; speed 0x54; fail-safe 0x4C; soft
  * start 0x60; overload protection 0x9C, 0x9A = 3, 0x98 = 200; smart sensor
  * 0x72 = 0x4E54, 0x6C, 0x44.  A register already written with the same

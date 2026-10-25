@@ -192,7 +192,7 @@ D series, encodings of the HFP-30:
 | model | 0x00 | number | read only | READ |
 | position | 0x0C | 0 to 16383, 8192 the centre | read only | READ |
 | ID | 0x32 | 0 to 255 | 0 to 255 | RCBENCH |
-| direction | 0x5E | 0 CW, 1 CCW | mirrors 0xC2, 0xB2, 0xB0 | CAPTURED |
+| direction | 0x5E | 0 CW, 1 CCW | mirrors 0xC2, 0xB2, 0xB0; from a raw 0x5E, 0x5E alone | CAPTURED |
 | neutral, left end, right end | 0xC2, 0xB2, 0xB0 | position | 1 to 16383, left < neutral < right | CAPTURED |
 | dead band | 0x4E | steps 1 to 5: 1, 4, 8, 12, 16 | 1 to 5 | CAPTURED (1 and 16; 4, 8, 12 third-party) |
 | speed | 0x54 | 10% to 100% in 10% steps: 2 to 20; the factory 4095 shows 100% | 10% to 100% | CAPTURED |
@@ -253,7 +253,9 @@ the name.
   with a bad checksum and no such setting gets one balance write. A
   restore of every cell is 35 cell writes and 19 balance writes.
 - D series: per setting the registers the HFP-30 writes for it: direction
-  0xC2, 0xB2, 0xB0, 0x4C (unchanged), 0x5E; overload protection 0x9C,
+  0xC2, 0xB2, 0xB0, 0x4C (unchanged), 0x5E, and 0x5E alone from a read
+  0x5E that is neither 0 nor 1: the servo's present direction is not
+  known, so the positions are not mirrored; overload protection 0x9C,
   0x9A = 3, 0x98 = 200; smart sensor 0x72 = 0x4E54, 0x6C, 0x44; every
   other setting its own register. A register goes out once. A plan with a
   write ends with the save and the reboot. `hitec_d_factory_plan()` is

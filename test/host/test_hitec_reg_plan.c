@@ -485,6 +485,21 @@ TEST_CASE(a_raw_value_is_replaced_by_a_table_value)
     check_step(&p.step[1], HITEC_STEP_C_SUM, 0x1C, 0xC5);
     check_step(&p.step[2], HITEC_STEP_C_CELL, 0x20, 0x0A);
     check_step(&p.step[3], HITEC_STEP_C_CELL, 0x21, 0xFF);
+    /* D series: a direction of 0x5E = 2 to CCW writes 0x5E alone, then
+     * the save; a neutral edit in the same draft still writes 0xC2. */
+    d485(&from);
+    hitec_image_put_reg(&from, 0x5E, 2);
+    p = plan_edit(&from, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION, HITEC_CCW);
+    CHECK_EQ(p.n, 3);
+    check_step(&p.step[0], HITEC_STEP_D_WRITE, 0x5E, 1);
+    check_save(&p);
+    to = from;
+    hitec_param_set(&to, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION, HITEC_CCW);
+    hitec_param_set(&to, HITEC_LAYOUT_D, HITEC_P_D_NEUTRAL, 9000);
+    CHECK_EQ(hitec_plan(&from, &to, &p), HITEC_PLAN_OK);
+    CHECK_EQ(p.n, 4);
+    check_step(&p.step[0], HITEC_STEP_D_WRITE, 0x5E, 1);
+    check_step(&p.step[1], HITEC_STEP_D_WRITE, 0xC2, 9000);
     /* D series: speed 7 to 30%. */
     d485(&from);
     hitec_image_put_reg(&from, 0x54, 7);
