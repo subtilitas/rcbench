@@ -530,12 +530,12 @@ static int tab_pos(log_viewer_tab_t tab)
 
 /* ---------------------------------------------------------------- screen -- */
 
-/*
- * The panel could not hand over every touch event, so this screen's record
- * of the glass is stale.  Every view here acts on the release -- a button
- * refreshes the card, opens a file or changes an import setting, a row
- * selects or opens -- so a press left standing would let a later contact's
- * release do any of those without a press of its own.
+/**
+ * @brief The panel could not hand over every touch event, so this screen's record
+ *        of the glass is stale.  Every view here acts on the release -- a button
+ *        refreshes the card, opens a file or changes an import setting, a row
+ *        selects or opens -- so a press left standing would let a later contact's
+ *        release do any of those without a press of its own.
  *
  * The DELETE question's press goes with them, and that one matters most: the
  * contact it is bound to may be among the events lost, and the controller

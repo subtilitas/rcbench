@@ -119,8 +119,10 @@ const char *lv_delim_text(char delimiter)
     }
 }
 
-/* The open file again: from the mount its page was read from, or not at
- * all, so a list read since from another card lends it no file. */
+/**
+ * @brief The open file again: from the mount its page was read from, or not at
+ *        all, so a list read since from another card lends it no file.
+ */
 static bool open_name(log_source_t *src)
 {
     return s.open_mounts == s.mounts && s.mounts == lv_mounts_now()

@@ -26,6 +26,10 @@
  * names the state, which no header included after it may meet. */
 #include "kst_panel_int.h"
 
+/**
+ * @brief Opens the warning page of kind @p kind with its title and the label
+ *        of its hold button.
+ */
 static void warn_open(int kind, bool danger, const char *title,
                       const char *apply)
 {
@@ -37,6 +41,10 @@ static void warn_open(int kind, bool danger, const char *title,
     snprintf(k.warn.apply, sizeof(k.warn.apply), "%s", apply);
 }
 
+/**
+ * @brief Takes the next line of the warning page at @p level and returns its
+ *        buffer.
+ */
 static char *warn_line(kst_prog_level_t level)
 {
     const int i = k.warn.count < WARN_LINES ? k.warn.count++ : WARN_LINES - 1;
@@ -45,13 +53,16 @@ static char *warn_line(kst_prog_level_t level)
     return k.warn.lines[i];
 }
 
+/** @brief Adds the line @p s to the warning page at @p level. */
 static void warn_text(kst_prog_level_t level, const char *s)
 {
     snprintf(warn_line(level), KST_PANEL_LINE, "%s", s);
 }
 
-/* A write of @p to moves the horn or turns it round: it changes the
- * direction, the centre, an end point or an angle. */
+/**
+ * @brief A write of @p to moves the horn or turns it round: it changes the
+ *        direction, the centre, an end point or an angle.
+ */
 static bool moves_horn(const kst_image_t *to)
 {
     static const uint8_t k_moves[] = {
@@ -70,13 +81,16 @@ static bool moves_horn(const kst_image_t *to)
     return false;
 }
 
-/* The two lines of the first write of a session, and of every write that
- * @p moves the horn. */
+/**
+ * @brief The two lines of the first write of a session, and of every write that
+ *        @p moves the horn.
+ */
 static bool horn_due(bool moves)
 {
     return moves || kst_prog_first_write(&k.prog);
 }
 
+/** @brief Adds the horn warning, when one is due. */
 static void warn_horn(bool moves)
 {
     if (horn_due(moves)) {
@@ -85,8 +99,10 @@ static void warn_horn(bool moves)
     }
 }
 
-/* One value a write changes: the servo's, the new one, the unit once.  In
- * the warning colour where the field is at fault for a soft limit. */
+/**
+ * @brief One value a write changes: the servo's, the new one, the unit once.  In
+ *        the warning colour where the field is at fault for a soft limit.
+ */
 static void value_line(kst_field_id_t id, const kst_image_t *to,
                        kst_field_set_t soft)
 {
@@ -120,9 +136,11 @@ int kpn_warn_rows(void)
     return n;
 }
 
-/* Line @p i of @p n, of @p rows rows, is shown with @p used rows taken by
- * the lines before it, on at most @p room lines and @p room_rows rows: a
- * line that is not the last leaves a row for the count of the rest. */
+/**
+ * @brief Line @p i of @p n, of @p rows rows, is shown with @p used rows taken by
+ *        the lines before it, on at most @p room lines and @p room_rows rows: a
+ *        line that is not the last leaves a row for the count of the rest.
+ */
 static bool warn_room(int i, int n, int rows, int used, int room,
                       int room_rows)
 {
@@ -131,9 +149,11 @@ static bool warn_room(int i, int n, int rows, int used, int room,
     return i + 1 + after <= room && used + rows + after <= room_rows;
 }
 
-/* The values in which @p to differs from the servo, in the order of the
- * tabs, on at most @p room lines and @p room_rows rows.  More than fit
- * leave the last line to their count. */
+/**
+ * @brief The values in which @p to differs from the servo, in the order of the
+ *        tabs, on at most @p room lines and @p room_rows rows.  More than fit
+ *        leave the last line to their count.
+ */
 static void warn_values(const kst_image_t *to, int room, int room_rows)
 {
     const kst_field_set_t soft = kst_prog_soft_fields(&k.prog, to);
@@ -160,8 +180,10 @@ static void warn_values(const kst_image_t *to, int room, int room_rows)
     }
 }
 
-/* The warnings of @p rules, one line each, on at most @p room lines and
- * @p room_rows rows.  More than fit leave the last line to their count. */
+/**
+ * @brief The warnings of @p rules, one line each, on at most @p room lines and
+ *        @p room_rows rows.  More than fit leave the last line to their count.
+ */
 static void warn_rules(kst_rules_t rules, int room, int room_rows)
 {
     int16_t lines[KST_RULE_COUNT];
@@ -220,14 +242,18 @@ void kpn_warn_enable(void)
     warn_text(KST_PROG_INFO, TR(KP_ENABLE_5));
 }
 
-/* A write that saves the servo to a file first, and no card to take one:
- * it goes without, and its page says so. */
+/**
+ * @brief A write that saves the servo to a file first, and no card to take one:
+ *        it goes without, and its page says so.
+ */
 static bool no_card(void)
 {
     return kst_prog_save_none(&k.prog);
 }
 
-/* What a write with no card leaves out, on the page whose hold sends it. */
+/**
+ * @brief What a write with no card leaves out, on the page whose hold sends it.
+ */
 static bool warn_no_file(void)
 {
     if (!no_card()) {
@@ -240,7 +266,7 @@ static bool warn_no_file(void)
     return true;
 }
 
-/* The rows of what warn_card() says. */
+/** @brief The rows of what warn_card() says. */
 static int card_rows(void)
 {
     if (no_card()) {
@@ -256,6 +282,10 @@ static int card_rows(void)
                                    : kpn_card_tr(UI_CARD_AT_KP_WRITE));
 }
 
+/**
+ * @brief Adds the line that says where the write's backup goes, or that the
+ *        card is missing.
+ */
 static void warn_card(void)
 {
     if (warn_no_file()) {
@@ -270,8 +300,10 @@ static void warn_card(void)
     }
 }
 
-/* The fields in which @p a differs from the servo, register 01's copy of
- * Max. Duty left out. */
+/**
+ * @brief The fields in which @p a differs from the servo, register 01's copy of
+ *        Max. Duty left out.
+ */
 static unsigned differing(const kst_image_t *a)
 {
     unsigned n = 0;
@@ -287,6 +319,7 @@ static unsigned differing(const kst_image_t *a)
     return n;
 }
 
+/** @brief Returns the text id of a file's kind, -1 for any other. */
 static int kind_text(kst_prog_file_kind_t kind)
 {
     return kind == KST_PROG_FILE_EDITED    ? TX_KP_FILE_EDITED
