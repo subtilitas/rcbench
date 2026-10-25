@@ -11,8 +11,9 @@
  * before it.
  *
  * Built with -D RCBENCH_TRIAL_CRASH=ON, a trial start aborts at the moment
- * it would be kept, for a check on the bench that a start which fails late
- * goes back.  A start that is no trial runs as any other.
+ * it would be kept, before the check and before any line that says it was
+ * kept, for a check on the bench that a start which fails late goes back.
+ * A start that is no trial runs as any other.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -79,11 +80,14 @@ static void report(fw_boot_t r, const char *other)
 /**
  * @brief Run the start check and report it.
  * @param ui_up Whether the display and touch came up.
+ * @return What the check found: FW_BOOT_UPDATED for a trial start it kept.
  */
-static void check(bool ui_up)
+static fw_boot_t check(bool ui_up)
 {
     char other[FW_TEXT_MAX];
-    report(fw_ota_boot_check(ui_up, other, sizeof(other)), other);
+    const fw_boot_t r = fw_ota_boot_check(ui_up, other, sizeof(other));
+    report(r, other);
+    return r;
 }
 
 void panel_trial_begin(bool ui_up)
@@ -94,7 +98,7 @@ void panel_trial_begin(bool ui_up)
         /* No touch on a trial start: no STOP, back to the build before,
          * and this does not return.  No trial: nothing to keep. */
         fw_trial_settle(&s_trial);
-        check(ui_up);
+        (void)check(ui_up);
         return;
     }
     ESP_LOGI(TAG, "%s on trial: kept once every task runs and a frame is "
@@ -156,24 +160,34 @@ void panel_trial_frame(bool flushed, bool quiet)
     fw_trial_mark(&s_trial, steps);
 
     const uint32_t missing = fw_trial_missing(&s_trial);
-    const fw_trial_verdict_t v = fw_trial_poll(&s_trial, now_ms(), quiet);
-    if (v == FW_TRIAL_KEEP) {
+    const uint32_t at = now_ms();
+    const fw_trial_verdict_t v = fw_trial_poll(&s_trial, at, quiet);
+    if (v != FW_TRIAL_KEEP && v != FW_TRIAL_KEEP_BOUND) {
+        return;
+    }
+#ifdef RCBENCH_TRIAL_CRASH
+    ESP_LOGE(TAG, "RCBENCH_TRIAL_CRASH: abort at the moment this build "
+                  "would be kept");
+    abort();
+#endif
+    /* Each line follows the check, so it says what the check did. */
+    const fw_boot_t r = check(true);
+    if (r == FW_BOOT_UNCONFIRMED) {
+        ESP_LOGW(TAG, "%s not kept: otadata not written; the next start "
+                      "goes back to the build before",
+                 RCBENCH_VERSION_STRING);
+    } else if (r != FW_BOOT_UPDATED) {
+        return;                 /* no trial start: nothing was kept */
+    } else if (v == FW_TRIAL_KEEP) {
         ESP_LOGI(TAG, "%s kept: every task runs and a frame is on the "
                       "display, %ums after the start",
-                 RCBENCH_VERSION_STRING, (unsigned)now_ms());
-    } else if (v == FW_TRIAL_KEEP_BOUND) {
+                 RCBENCH_VERSION_STRING, (unsigned)at);
+    } else {
         char names[64];
         name_missing(missing, names, sizeof(names));
         ESP_LOGW(TAG, "%s kept at the %us bound with the screen loop "
                       "running; not seen: %s",
                  RCBENCH_VERSION_STRING,
                  (unsigned)(FW_TRIAL_BOUND_MS / 1000u), names);
-    } else {
-        return;
     }
-#ifdef RCBENCH_TRIAL_CRASH
-    ESP_LOGE(TAG, "RCBENCH_TRIAL_CRASH: abort before this build is kept");
-    abort();
-#endif
-    check(true);
 }

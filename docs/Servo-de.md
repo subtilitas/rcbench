@@ -1044,9 +1044,11 @@ der [englischen Seite](Servo.md#files); auf Deutsch lauten seine Stufen:
 ```
 Ergebnis:        BESTANDEN
 ...
-Soll V Ist V   V min  Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.
- 4.80    4.80  4.80   0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
- 6.00    6.00  5.99   0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
+ERGEBNISSE JE STUFE (Ströme in mA, Zeiten in ms)
+ Soll   Ist     V                             Halten Halten
+    V     V   min   Ruhe  Schw. Beweg. Spitze  unten   oben Stell. Längste  Anz. Spät Unerk.
+ 4.80  4.80  4.80      4     20     37     65      1      1    861     989    41    0      0
+ 6.00  6.00  5.99      1     20     40     77      1      1    892     978    41    0      0
 ```
 
 Dieselbe Wiedergabe eines 1102HB, das 0,015 bis 0,029A hält und in
@@ -1055,8 +1057,12 @@ gezählten Bewegungen keine Bewegung im Strom erkannt`: seine Bewegungen zum
 oberen Ende verlassen die 0,028A des unteren Endes und überschreiten sie
 nie um 0,020A. Auf 0.13.0 lautete dasselbe Servo NICHT BESTANDEN, alle 34
 gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
-<Grund>`, eine abgeschnittene Stufe ist mit `(verkürzt)` markiert, eine nie
-erreichte mit `nicht gelaufen`. `Kann zerstören` nennt das rote Schild, wenn
+<Grund>`. Unter einer abgeschnittenen Stufe steht eine Zeile `(verkürzt)`,
+unter einer Stufe, deren gezählte Bewegungen alle unerkannt blieben, eine
+Zeile `NICHT MESSBAR`, bei beidem beides in einer Zeile. Eine nie erreichte
+Stufe zeigt `nicht gelaufen`. Die Zeilen der Stufentabelle sind höchstens
+92 Zeichen breit, so breit wie eine Zeile der Log-Ansicht: Ströme in ganzen
+mA nehmen je 6 Zeichen, die Spaltenköpfe zwei Zeilen. `Kann zerstören` nennt das rote Schild, wenn
 ein Heli-Typ oder eine Frame Rate über 60Hz gilt.
 
 Ein Lauf am INA3221 hat diese Zeilen anstelle derer des PD mini, hier vom

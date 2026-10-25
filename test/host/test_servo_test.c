@@ -223,8 +223,8 @@ TEST_CASE(the_brownout_walk_stops_where_the_servo_stops)
     CHECK(servo_test_brownout(&g.t, &moved, &stopped));
     CHECK_NEAR(moved, 4.2f, 0.001f);
     CHECK(stopped);
-    CHECK(strstr(g.report, "Moved at 4.20V; no movement seen at 4.00V.")
-          != NULL);
+    CHECK(strstr(g.report, "Movement seen at 4.20V; no movement seen at "
+                           "4.00V.") != NULL);
     /* 5.0 down to 4.0 in 0.2V steps. */
     CHECK_EQ(g.t.step_count, 6u);
     CHECK(g.set_v_max <= 5.0f + 0.001f);
@@ -438,7 +438,9 @@ TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
     CHECK_EQ(g.t.steps[0].timeouts, 0u);
     CHECK(strstr(g.report, "Result:         NOT MEASURABLE - 2 of 2 counted "
                            "moves showed no movement in the current") != NULL);
-    CHECK(strstr(g.report, "    2    0      2 NOT MEASURABLE\n") != NULL);
+    /* The step's line, then the note under it. */
+    CHECK(strstr(g.report, "    2    0      2\n 4.80  NOT MEASURABLE\n")
+          != NULL);
     CHECK(strstr(g.report, "Moves arrived    0 late: PASS") != NULL);
     CHECK(strstr(g.report, "Moves seen       2 unseen: NOT MEASURABLE")
           != NULL);

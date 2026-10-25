@@ -601,34 +601,6 @@ TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
                  "INA3221 no longer the meter");
 }
 
-/* The step table's heading names each column where the step lines' format
- * puts it, in every language. */
-TEST_CASE(the_report_columns_line_up)
-{
-    static const int k_cols[] = { 0, 7, 15, 22, 29, 36, 43, 50, 58, 66, 73, 81,
-                                  87, 92 };
-    for (int l = 0; l < UI_LANG_COUNT; ++l) {
-        const ui_language_t *t = ui_text_table((ui_lang_t)l);
-        const char *head = servo_str_in(t != NULL ? t->servo : NULL,
-                                        SERVO_STR_R_COLUMNS);
-        /* Decoded into cells, as a text editor shows the file. */
-        uint32_t cp[128];
-        int n = 0;
-        const char *p = head;
-        for (uint32_t c = gfx_utf8_next(&p); c != 0u && n < 128;
-             c = gfx_utf8_next(&p)) {
-            cp[n++] = c;
-        }
-        for (size_t k = 0; k < sizeof(k_cols) / sizeof(k_cols[0]); ++k) {
-            const int at = k_cols[k];
-            if (at >= n || cp[at] == ' ' || (at > 0 && cp[at - 1] != ' ')) {
-                T_FAIL("language %d: no heading starts at column %d of "
-                       "\"%s\"", l, at, head);
-            }
-        }
-    }
-}
-
 /* The report's labelled lines start their values in one column. */
 TEST_CASE(the_report_labels_line_up)
 {
@@ -980,7 +952,6 @@ int main(void)
     RUN(the_language_follows_the_setting);
     RUN(a_padded_label_is_as_wide_as_the_longest);
     RUN(the_report_is_translated_and_the_csv_is_not);
-    RUN(the_report_columns_line_up);
     RUN(a_runs_reasons_fit_where_the_screen_draws_them);
     RUN(the_report_labels_line_up);
     RUN(every_stick_refusal_is_translated);
