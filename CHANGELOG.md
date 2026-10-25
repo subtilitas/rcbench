@@ -6,6 +6,20 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The register models of servos by Hitec, in `protocols/hitec/hitec_reg.c`:
+  the classic EEPROM cells (HS-5xxx, HS-7xxx) and the D series registers
+  as one 256-byte image, a parameter table of 34 parameters with the
+  registers or cells, encoding, edit limits, layouts and source of each,
+  the HFP-30's encodings for the D series and the HPP-21 Plus's for
+  classic servos, a stored value that fits no encoding shown raw and not
+  edited, model identification from register 0x00 or the name cells, and
+  write plans: the classic balance in 0x1C after every setting of cells
+  up to 0x1B, the D series registers per setting, then save and reboot.
+  Nothing calls it yet
+  ([Register model](protocols/hitec/README.md#register-model)).
+
 ### Changed
 
 - The panel names a pin `GPIO 13` on every screen, alert and report, as

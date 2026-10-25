@@ -7,6 +7,7 @@
  */
 #include "hitec_pio.h"
 #include "hitec_pre.h"
+#include "hitec_reg.h"
 #include "hitec_wire.h"
 
 /* A reference to every module's entry point: with C++ linkage on a
@@ -20,6 +21,9 @@ int hitec_headers_link(void)
     hitec_capture_t cap = hitec_capture_t();
     hitec_pre_timing_t t;
     hitec_pre_run_t run;
+    hitec_image_t img;
+    hitec_value_t v;
+    hitec_plan_t plan;
 
     hitec_c_frame(HITEC_C_FIRST, 0x00, 0x00, frame);
     hitec_d_read_xfer(0x00, 0x0C, &x);
@@ -29,6 +33,10 @@ int hitec_headers_link(void)
         (void)hitec_pre_begin(&run, &t, &x);
         hitec_pre_capture(&run, &t, 0, &cap);
     }
+    hitec_image_init(&img, HITEC_D);
+    (void)hitec_image_put_reg(&img, HITEC_D_REG_MODEL, 34485u);
+    (void)hitec_param_get(&img, HITEC_LAYOUT_D, HITEC_P_D_MODEL, &v);
+    (void)hitec_plan(&img, &img, &plan);
     return frame[3];
 }
 

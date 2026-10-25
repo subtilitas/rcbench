@@ -1,17 +1,18 @@
 # hitec
 
-The signal-wire programming protocols of Hitec servos, wire layer only. The
-core holds the frames of both wire families, the transactions a driver
-runs, the reply decoders and the arithmetic of the PIO (programmable
-input/output) pin driver. The pin driver puts the wire on one RP2350 pin.
-There is no session and no register model. In this repository the IOmcu's
+The signal-wire programming protocols of Hitec servos. The core holds the
+frames of both wire families, the transactions a driver runs, the reply
+decoders, the arithmetic of the PIO (programmable input/output) pin driver
+and the register models: the parameters, their encodings and the writes a
+change takes ([Register model](#register-model)). The pin driver puts the
+wire on one RP2350 pin. There is no session. In this repository the IOmcu's
 HITEC link page (`shared/outputs/hitec_port.c`,
 [The programming port for Hitec servos](../../docs/LinkHitec.md)) runs its
 transactions on a programming port.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, 3 headers under `include/` | C11 standard headers |
+| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, `hitec_reg.c`, 4 headers under `include/` | C11 standard headers |
 | RP2350 pin driver | `rp2350/hitec_line.pio`, `rp2350/hitec_line.c`, `rp2350/hitec_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
@@ -24,7 +25,7 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
 - Plain C11. Every header has `extern "C"` guards and compiles by itself as
   C11 and as C++17 (`tools/check_protocols.py`).
   `test/host/hitec_headers.cpp` calls both parts, the precharge receiver
-  included, from C++11 and links
+  and the register model included, from C++11 and links
   against the C library.
 - Includes `<stdint.h>`, `<stdbool.h>`, `<stddef.h>` and `<string.h>` and
   no other file outside this folder.
@@ -34,7 +35,9 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
   (`hitec_capture_t`) 140 bytes, a clock 16 bytes and a run 20 bytes, with
   arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`) and with gcc on
   x86-64. A line (`hitec_line_t`) is 4,100 bytes with arm-none-eabi-gcc
-  14.2, 3,712 of them the precharge sampler's sample buffer.
+  14.2, 3,712 of them the precharge sampler's sample buffer. An image
+  (`hitec_image_t`) is 291 bytes and a plan (`hitec_plan_t`) 338 bytes on
+  both; `hitec_param_set()` holds one image on its stack.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
 ## Wire
@@ -140,6 +143,144 @@ The D decoder checks the first 7 bytes and no byte after them: the byte
 which reads as a byte with a bad stop bit. It reports the ID byte and does
 not check it: it reads 0x00 in every answer on the bench, and 0xFF and
 0xFE are reported from a servo with ID 0.
+
+## Register model
+
+`hitec_reg.h` holds both register models as data: the image of a servo, the
+parameter table, the encodings, model identification and the write plans.
+It runs no transaction; a session reads into an image, edits a copy of it
+(the draft) and sends the writes of a plan.
+
+| | Classic: HS-5xxx, HS-7xxx | D series |
+|---|---|---|
+| Memory | 256 EEPROM cells of 8 bits; a 2-cell value high byte first | 16-bit registers at even addresses 0x00 to 0xFE, low byte first |
+| Checksum | cells 0x00 to 0x1C sum to 0 modulo 256; 0x1C is the balance | none in memory |
+| Full read | 100 cells: 0x00 to 0x23, the factory block 0x30 to 0x53, the name 0x60 to 0x6F, the date 0x70 to 0x73, the serial 0x80 to 0x87 (`hitec_c_read_ranges()`) | 21 registers (`hitec_d_read_list()`) |
+| A write takes effect | at once; the servo answers `+ +` | in RAM; save `0x70 = 0xFFFF`, then reboot `0x46 = 1` |
+
+### Models
+
+`hitec_identify()` reads register 0x00 (D series) or the name cells 0x60
+to 0x6F up to the first 0x00 (classic). A model not in the table takes its
+series' layout.
+
+| Model | Identified by | Layout | Source |
+|---|---|---|---|
+| D485HW | 0x00 = 34485 | D | read and written through the IOmcu; every HFP-30 setting captured |
+| D645MW | 0x00 = 34645 | D | third-party observation only |
+| other D series | any other number | D | documentation only |
+| HS-5645MG | `HS5645MG` | HS-5xxx | every HPP-21 Plus setting captured |
+| HS-7955TG | `HS7955` | HS-7xxx | every HPP-21 Plus setting captured |
+| HS-5955TG | `HS5955TG` | HS-5xxx | all 256 cells read through the IOmcu; no write recorded |
+| other `HS5...`, other `HS7...` | the name's first 3 characters | HS-5xxx, HS-7xxx | documentation only |
+| any other name | | HS-5xxx | documentation only |
+
+### Parameters
+
+Every row of the table names its registers or cells, its encoding, its
+limits, its layouts and its source (`hitec_src_t`): RCBENCH, written
+through the IOmcu and read back; CAPTURED, a vendor programmer's writes
+captured on the wire; READ, read from a servo with no write recorded; DOC,
+documentation only. A mark refers to the measured servo of the layout: the
+D485HW, the HS-5645MG, the HS-7955TG. Every model is written; the mark is
+for the interface to show.
+
+D series, encodings of the HFP-30:
+
+| Parameter | Register | Encoding | Edit | Source |
+|---|---|---|---|---|
+| model | 0x00 | number | read only | READ |
+| position | 0x0C | 0 to 16383, 8192 the centre | read only | READ |
+| ID | 0x32 | 0 to 255 | 0 to 255 | RCBENCH |
+| direction | 0x5E | 0 CW, 1 CCW | mirrors 0xC2, 0xB2, 0xB0 | CAPTURED |
+| neutral, left end, right end | 0xC2, 0xB2, 0xB0 | position | 1 to 16383, left < neutral < right | CAPTURED |
+| dead band | 0x4E | steps 1 to 5: 1, 4, 8, 12, 16 | 1 to 5 | CAPTURED (1 and 16; 4, 8, 12 third-party) |
+| speed | 0x54 | 10% to 100% in 10% steps: 2 to 20; the factory 4095 shows 100% | 10% to 100% | CAPTURED |
+| fail-safe | 0x4C | 0 limp, 1 off, 2 to 5000 a position in us | limp, off, 900 to 2100us | CAPTURED |
+| soft start | 0x60 | 20% 1, 40% 3, 60% 6, 80% 8, 100% 100 | the 5 steps | CAPTURED |
+| overload protection | 0x9C | off 100, 10% to 50% as 10 to 50 | off, 10% to 50% | CAPTURED |
+| smart sensor | 0x6C, 0x44 | on 0 and 0; off the values of 0x8A and 0x8C | on, off | RCBENCH |
+| sensitivity | 0x64 | number | read only | READ |
+| 0x04, 0x22, 0x8A, 0x8C, 0xD4, 0xD6 | | number, meaning not known | read only | READ |
+
+Classic, encodings of the HPP-21 Plus:
+
+| Parameter | Cells | Encoding | Edit | Source |
+|---|---|---|---|---|
+| version | the reply to 0x67 | number | read only | READ |
+| date | 0x70 to 0x73 | day, month, year high byte first | read only | READ |
+| serial | 0x80 to 0x86 | 7 ASCII digits | read only | READ |
+| checksum | 0x00 to 0x1C | OK, BAD | read only | CAPTURED |
+| dead band | 0x02 | steps 1 to 5: 01, 04, 08, 0C, 10 | 1 to 5 | CAPTURED |
+| speed | 0x06 | 10% to 100%: 01, 07, 0E, 15, 1C, 23, 2A, 31, 38, 40 | 10% to 100% | CAPTURED |
+| centre | 0x07, 0x08 | 0.25us: HS-5xxx stored + 2052, HS-7xxx stored + 2048 | 3600 to 8400 (900 to 2100us); sets 0x13 = 0x14 = 0x10 | CAPTURED |
+| left end, right end | 0x13, 0x14 | number, unit not known; CW: right 0x13, left 0x14; CCW: left 0x13, right 0x14 | 0 to 255 | CAPTURED |
+| direction | 0x1B bit 0 | 1 CW | swaps 0x13 and 0x14, 0x19 and 0x1A from 0x49 and 0x4A | CAPTURED |
+| fail-safe | 0x1B bit 1 | on, off | on, off | CAPTURED |
+| fail-safe position, HS-5xxx | 0x19, 0x1A | 0.25us: stored + 4 | 3600 to 8400; sets 0x1B bit 1 | CAPTURED |
+| fail-safe position, HS-7xxx | 0x19, 0x1A | number, mapping not known | read only | READ |
+| overload protection | HS-5xxx 0x20 with 0x21 = FF; HS-7xxx 0x21 with 0x20 = 00 | off 64, 10% to 50% as 0A to 32 | off, 10% to 50% | CAPTURED |
+| resolution, HS-7xxx | 0x22 | 00 Normal; 01 and the factory 0B High | read only | CAPTURED |
+
+A stored value that fits no encoding decodes as `HITEC_GET_RAW` with the
+raw value, and `hitec_param_set()` refuses to edit it
+(`HITEC_SET_ERR_RAW`). Every decode returns the stored value beside the
+decoded one. On the bench reads this holds for the HS-5645MG's dead band
+(02) and overload protection (0x20 = FF) and for the HS-5955TG's: neither
+can be edited until a restore or a factory reset writes a value of the
+table.
+
+`hitec_param_clamp()` gives the nearest value an edit takes, a tie going
+up; `hitec_param_ok()` tests one. An edit of a value equal to the decoded
+one changes nothing, so a D series speed of 4095 stays 4095 when 100% is
+entered.
+
+### Write plans
+
+`hitec_plan(from, to)` compares the writable addresses (`hitec_writable()`)
+of the read image and the draft and lists the writes in order. A
+difference anywhere else is not written: the position, the factory block,
+the name.
+
+- Classic: the HPP-21 Plus's settings, in its order: 0x00 to 0x06, the
+  pairs 0x07/08 to 0x11/12, 0x13, 0x14, the pairs 0x15/16 to 0x19/1A,
+  0x1B, 0x1D, the pairs 0x1E/1F and 0x20/21, 0x22, 0x23. A setting with a
+  changed cell writes all its cells. After a setting of cells up to 0x1B
+  the balance goes to 0x1C (`HITEC_STEP_C_SUM`); cells above 0x1C get none,
+  as the HS-7955TG's overload protection in 0x20/0x21 shows. A read image
+  with a bad checksum and no such setting gets one balance write. A
+  restore of every cell is 35 cell writes and 19 balance writes.
+- D series: per setting the registers the HFP-30 writes for it: direction
+  0xC2, 0xB2, 0xB0, 0x4C (unchanged), 0x5E; overload protection 0x9C,
+  0x9A = 3, 0x98 = 200; smart sensor 0x72 = 0x4E54, 0x6C, 0x44; every
+  other setting its own register. A register goes out once. A plan with a
+  write ends with the save and the reboot. `hitec_d_factory_plan()` is
+  0x6E = 0x0F0F, save, reboot.
+- `hitec_c_factory()` copies the factory block into 0x00 to 0x23 of a
+  draft; the plan then writes the cells that differ, where the HPP-21 Plus
+  writes all 24 settings.
+
+| Wait after a write | Value | Source |
+|---|---|---|
+| D series register write | 20ms | the HFP-30's spacing |
+| D series save to reboot | 100ms | the HFP-30's |
+| D series reboot | 1000ms | third-party observation; the HFP-30 reads again 834.6ms after it |
+| Classic write | 0ms | not measured; the HPP-21 Plus spaces two settings 121 to 128ms, with a read of 0x00 to 0x23 between them |
+
+Not measured:
+
+- No plan of this module has run against a servo. The classic writes and
+  the D series writes but ID and smart sensor are the vendor programmers'.
+- The HFP-30 writes a neutral or an end point after its adjust loop, with
+  0x54 and 0x56 beside it; a plan writes the register alone.
+- Whether a D series speed of 20 and the factory 4095 behave the same.
+- The classic centre's offset rests on one capture per layout; the end
+  point unit; the HS-7xxx fail-safe position mapping; what a resolution
+  change writes to the centre.
+- The fail-safe edit range of 900 to 2100us is Hitec's PWM range; the D
+  series manual allows 2 to 5000us.
+- ID 0 reaches every servo on the line: two D series servos on one port
+  both take a plan.
 
 ## Driver interface
 
@@ -491,6 +632,8 @@ Not measured:
 - On a chip: that a byte pushed just before the restart of a transaction
   past its time reaches the capture. The pin driver is not in the host
   build.
+- The register model's open items, listed under
+  [Write plans](#write-plans).
 
 ## Trademarks
 
@@ -505,6 +648,15 @@ notice is in the repository's
 
 ## Tests
 
+`test/host/test_hitec_reg.c` (14 cases) and
+`test/host/test_hitec_reg_plan.c` (8 cases) run the register models on the
+bench reads of the D485HW, the HS-5645MG, the HS-7955TG and the HS-5955TG
+(`test/host/hitec_reg_fix.h`). The first: every encoding at both ends of
+its range and one step past, the clamp, the raw fallback, every refusal of
+an edit, the checksum across its wrap modulo 256 and the identification of
+every model. The second: the edits' side effects, the balance after every
+classic setting, and the plan of every setting of both series against the
+vendor programmers' captured writes.
 `test/host/test_hitec_pre.c` (18 cases) runs the precharge receiver's
 core: the counts at 150MHz and at every clock from 48 to 250MHz, the
 sampler's program stepped instruction by instruction, a 7-byte answer at

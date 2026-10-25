@@ -3,7 +3,7 @@
 # input/output) pin driver.  The sources include the C standard headers and
 # each other, nothing else, so the folder builds in any project.  A pin
 # driver implements hitec_driver_t; rp2350/ holds the one for the RP2350.
-set(SRCS hitec_wire.c hitec_pio.c hitec_pre.c)
+set(SRCS hitec_wire.c hitec_pio.c hitec_pre.c hitec_reg.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
