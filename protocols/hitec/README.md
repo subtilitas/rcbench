@@ -41,7 +41,7 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
   (`hitec_image_t`) is 291 bytes and a plan (`hitec_plan_t`) 338 bytes on
   both; `hitec_param_set()` holds one image on its stack. A session
   (`hitec_session_t`) is 1,060 bytes, a step (`hitec_ses_step_t`) 36 bytes
-  on both; `hitec_session.c` is 2,768 bytes of code with
+  on both; `hitec_session.c` is 2,752 bytes of code with
   arm-none-eabi-gcc 14.2 at `-Os`.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
@@ -380,12 +380,13 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
 - The image holds what the servo confirmed: what was read, and each
   classic write answered `+ +`. A D series write has no answer and does
   not change the image; the read-back puts the register's value there.
-- A write that ends with an error after one of its steps ran marks as not
-  known (`hitec_image_forget()`) every address the servo may have changed
-  and the read-back has not read: D series, every register of the full
-  read and of the plan, since a save, a reboot or a factory reset may
-  change any of them; classic, the cell whose last try got no `+ +` and
-  the balance 0x1C. The next plan from that image is refused
+- A write that ends with an error once a plan step was handed out and its
+  result fed (ran, cut or lost: the bytes may have reached the servo)
+  marks as not known (`hitec_image_forget()`) every address the servo may
+  have changed and the read-back has not read: D series, every register
+  of the full read and of the plan, since a save, a reboot or a factory
+  reset may change any of them; classic, the cell whose last try got no
+  `+ +`, a cut or lost try included, and the balance 0x1C. The next plan from that image is refused
   (`HITEC_PLAN_ERR_UNKNOWN`): a read comes before the next write.
   `step_index` counts the plan's writes that went out,
   `fail_addr` names the address that failed, `last_rx` the last code, for
@@ -786,7 +787,7 @@ notice is in the repository's
 ## Tests
 
 `test/host/test_hitec_session.c` (14 cases) and
-`test/host/test_hitec_session_write.c` (12 cases) run the session against
+`test/host/test_hitec_session_write.c` (13 cases) run the session against
 a servo model that answers each step with a capture and decodes it with
 the decoder the step names, as the HITEC page does
 (`test/host/hitec_session_rig.h`). The first: the classic entry with the
@@ -801,7 +802,8 @@ pairs, a write the servo does not take, a plan the caller built, leave,
 the gaps across the wrap of a microsecond and a millisecond clock, the
 longest plan wait, 65535ms, the 1000ms after a D series leave, and what
 a failed write forgets: a D series read-back that fails, an abort after
-the first D series write, a classic cell with no `+ +` on its last try.
+the first D series write, a classic cell with no `+ +` on its last try,
+a first write cut or lost on either series.
 `test/host/test_hitec_reg.c` (14 cases) and
 `test/host/test_hitec_reg_plan.c` (9 cases) run the register models on the
 bench reads of the D485HW, the HS-5645MG, the HS-7955TG and the HS-5955TG

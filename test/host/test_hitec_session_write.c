@@ -16,7 +16,9 @@
  *    every refusal of one;
  *  - leave: the classic supply cycle and the D series reboot;
  *  - the classic 2ms gap across both clock wraps;
- *  - the longest wait a plan step can ask, 65535ms, reported whole.
+ *  - the longest wait a plan step can ask, 65535ms, reported whole;
+ *  - what a failed write forgets: a read-back that fails, an abort, a
+ *    write with no `+ +`, a first write cut or lost.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -469,6 +471,60 @@ TEST_CASE(a_classic_write_with_no_ack_on_its_last_try_forgets_its_cell)
     CHECK_EQ(r->s.plan_result, HITEC_PLAN_ERR_UNKNOWN);
 }
 
+/* Hand out the next transaction of the running operation, past its gap. */
+static hitec_ses_step_t out_step(rig_t *r)
+{
+    hitec_ses_step_t st;
+
+    while (hitec_session_next(&r->s, r->now, &st) == HITEC_SES_STEP_WAIT) {
+        r->now += st.wait_ms * tick_ms(r);
+    }
+    return st;
+}
+
+TEST_CASE(a_first_write_that_was_cut_or_lost_forgets_too)
+{
+    static const uint8_t runs[] = { HITEC_SES_CUT, HITEC_SES_FAILED };
+    static const uint8_t block[] = { SC_READ_BLOCK, SC_END };
+    rig_t *r = &g;
+    hitec_ses_step_t st;
+
+    /* D series: the first write cut by a stop, or its link lost. */
+    for (unsigned k = 0; k < 2u; ++k) {
+        d_read_with_draft(r);
+        CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+        st = out_step(r);
+        CHECK_EQ(st.xfer.tx[2], 0x54);
+        CHECK_EQ(give(&r->s, r->now, runs[k], 0, 0),
+                 k == 0u ? HITEC_SES_ERR_CUT : HITEC_SES_ERR_LINK);
+        CHECK_EQ(r->s.step_index, 0);
+        check_d_forgotten(&r->s);
+        CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_ERR_PLAN);
+        CHECK_EQ(r->s.plan_result, HITEC_PLAN_ERR_UNKNOWN);
+        CHECK_EQ(rig_run(r, (const uint8_t[]){ SC_READ_ALL, SC_END }),
+                 HITEC_SES_OK);
+        CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+    }
+    /* Classic: the first cell cut. */
+    rig_init(r, HITEC_CLASSIC, HITEC_SES_CLOCK_MS, 0);
+    CHECK_EQ(rig_run(r, (const uint8_t[]){ SC_ENTER, SC_READ_BLOCK, SC_END }),
+             HITEC_SES_OK);
+    r->target = r->s.image;
+    CHECK_EQ(hitec_param_set(&r->target, HITEC_LAYOUT_HS5, HITEC_P_C_SPEED, 50),
+             HITEC_SET_OK);
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+    st = out_step(r);
+    CHECK_EQ(st.xfer.tx[1], 0x06);
+    CHECK_EQ(give(&r->s, r->now, HITEC_SES_CUT, 0, 0), HITEC_SES_ERR_CUT);
+    CHECK(!hitec_image_known(&r->s.image, 0x06));
+    CHECK(!hitec_image_known(&r->s.image, 0x1C));
+    CHECK(hitec_image_known(&r->s.image, 0x02));
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_ERR_PLAN);
+    CHECK_EQ(r->s.plan_result, HITEC_PLAN_ERR_UNKNOWN);
+    CHECK_EQ(rig_run(r, block), HITEC_SES_OK);
+    CHECK_EQ(hitec_session_write(&r->s, &r->target), HITEC_SES_BUSY);
+}
+
 int main(void)
 {
     RUN(a_d_write_plan_writes_saves_waits_reboots_waits_and_reads_back);
@@ -483,5 +539,6 @@ int main(void)
     RUN(a_d_write_whose_read_back_fails_forgets_the_full_read);
     RUN(an_abort_after_the_first_d_write_forgets_the_full_read);
     RUN(a_classic_write_with_no_ack_on_its_last_try_forgets_its_cell);
+    RUN(a_first_write_that_was_cut_or_lost_forgets_too);
     return test_summary("hitec_session_write");
 }

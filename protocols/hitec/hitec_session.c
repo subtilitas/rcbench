@@ -234,7 +234,8 @@ static void forget_unsure(hitec_session_t *s)
 /**
  * @brief End the operation with @p res; an abort asked for ends it with
  *        HITEC_SES_ERR_ABORTED.  A write that ends with an error after a
- *        step ran forgets what the servo may have changed.
+ *        step was handed out and its result fed forgets what the servo
+ *        may have changed.
  *
  * @param s    Session.
  * @param res  Result.
@@ -878,7 +879,8 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
     /* Every result starts the series gap first, an abort's included; a
      * step with a longer wait sets that below. */
     gap_from(s, now, series_gap(s));
-    if (s->phase == PH_WRITE && r->run == HITEC_SES_RAN) {
+    if (s->phase == PH_WRITE) {
+        /* Ran, cut or lost: the bytes may have reached the servo. */
         s->sent = 1;
         s->unsure = 1;  /* until write_took() has its `+ +` */
     }

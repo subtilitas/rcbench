@@ -208,9 +208,10 @@ typedef struct {
     uint8_t  addr;         /**< the address of the step */
     uint8_t  power;        /**< D series entry: cycle the supply */
     uint8_t  compare;      /**< 1: the write compares with target */
-    uint8_t  sent;         /**< 1: a step of the plan ran */
-    uint8_t  unsure;       /**< 1: the plan step at step_index ran and
-                                no `+ +` confirmed it */
+    uint8_t  sent;         /**< 1: a plan step was handed out and its
+                                result fed, whatever it was */
+    uint8_t  unsure;       /**< 1: the plan step at step_index was fed a
+                                result and no `+ +` confirmed it */
 } hitec_session_t;
 
 /* --- operations ----------------------------------------------------------- */
@@ -307,15 +308,17 @@ hitec_ses_t hitec_session_read_set(hitec_session_t *s, const uint8_t *addrs,
  * answered `+ +` goes into it.  A D series write has no answer and does
  * not change it; the read-back puts the register there.
  *
- * A write that ends with anything but HITEC_SES_OK after one of its steps
- * ran marks as not known (hitec_image_forget()) every address the servo
+ * A write that ends with anything but HITEC_SES_OK once a plan step was
+ * handed out and its result fed (RAN, CUT or FAILED: a cut or lost step
+ * may have reached the servo) marks as not known (hitec_image_forget()) every address the servo
  * may have changed and this write's read-back has not read: D series,
  * every register of the full read and every register of the plan, since a
  * save, a reboot or a factory reset may change registers the plan does
- * not name; classic, the cell of a write whose last try got no `+ +` and
- * the balance 0x1C.  hitec_plan() then refuses with
+ * not name; classic, the cell of a write whose last try got no `+ +`
+ * (a cut or lost try included) and the balance 0x1C.  hitec_plan() then refuses with
  * HITEC_PLAN_ERR_UNKNOWN (HITEC_SES_ERR_PLAN): the caller reads the servo
- * before it writes again.  A write refused before any step ran, and one
+ * before it writes again.  A write refused or aborted before a step's
+ * result was fed, and one
  * whose read-back ended with HITEC_SES_ERR_VERIFY, forget nothing.
  *
  * @param s       Session.
