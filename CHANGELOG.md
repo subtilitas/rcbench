@@ -38,6 +38,19 @@ history is in git.
   abort at every step, and gaps of 2ms (classic) and 20ms (D series) on a
   32-bit microsecond or millisecond clock. Nothing calls it yet
   ([Session](protocols/hitec/README.md#session)).
+- The panel's link half for servos by Hitec, in
+  `shared/bench/hitec_link.c`: one session step (SEND, LISTEN, LEVEL or
+  POWER) turned into frames of the HITEC page (0x34) and the page's answer
+  into the step's result, and OPEN, CLEAR and CLOSE, the last for any port
+  the page holds. The staged registers in 5 frames, the command with `SEQ`,
+  check and key, 3 tries of a command whose answer is lost, the page's
+  `SEQ` deciding whether a command sent without an answer was taken, a
+  read of registers 0 to 15 every 5ms while a request runs, ABORT, the
+  25,000ms limit, at most 4 exchanges a pass, and a readout of the held
+  port, its flags and pin and whether this module opened it. The servo
+  model of the page suites moves to `test/host/hitec_sim.h` and gains the
+  classic entry. Nothing calls the module yet
+  ([The panel's link half](docs/LinkHitec.md#the-panels-link-half)).
 
 ### Changed
 

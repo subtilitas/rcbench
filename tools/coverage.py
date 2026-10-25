@@ -220,6 +220,7 @@ TRACKED = [
     "shared/outputs/page_console.c",
     "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",
+    "shared/bench/hitec_link.c",
     "shared/bench/kst_prog.c",
     "shared/bench/kst_prog_card.c",
     "shared/bench/kst_prog_file.c",

@@ -21,7 +21,10 @@ HS-7xxx, 19.200bit/s) oder D-Serie (115.200bit/s). Die Page hält keine
 Hitec-Session. Der Schreiber stellt eine Transaktion bereit, die Page fährt
 sie, und der Mitschnitt und seine Dekodierung bleiben bis zur nächsten auf
 der Page. Welche Bytes ein Servo nimmt und in welcher Reihenfolge, ist Sache
-des Schreibers. Eine Session auf dem Panel ist nicht gebaut.
+des Schreibers. Der Session-Kern
+([`hitec_session.h`](../protocols/hitec/README.md#session)) und die
+Link-Hälfte des Panels ([Die Link-Hälfte des Panels](#die-link-hälfte-des-panels))
+sind gebaut; auf dem Panel ruft sie noch nichts auf.
 `shared/outputs/hitec_port.c` hält die Regeln.
 
 Ein Port ist frei, von dieser Page gehalten oder von der KST-Page gehalten
@@ -372,3 +375,78 @@ bereit; die fünfte sendet sie mit dem Schlüssel. 0x8135 und 0xE56A sind die
 Prüfsummen der beiden bereitgestellten Blöcke. `hitec open 0 c` und
 `hitec c 0 0x61 0x12 0` der Konsole tun dasselbe und rechnen `SEQ` und die
 Prüfsummen selbst.
+
+## Die Link-Hälfte des Panels
+
+`shared/bench/hitec_link.c` macht aus einem Schritt einer Session Frames
+dieser Page und aus der Antwort der Page wieder das Ergebnis des Schritts
+(`hitec_ses_result_t`). Es nimmt eine Anfrage zur Zeit: OPEN, einen Schritt
+(SEND, LISTEN oder LEVEL, oder POWER mit den Sollwerten des Aufrufers),
+CLEAR, oder CLOSE eines beliebigen Ports, den die Page hält, auch eines
+Ports, den ein anderer Schreiber geöffnet hat. Jeden Austausch macht der
+Aufrufer; ein Durchlauf macht höchstens 4.
+
+Eine Anfrage geht in dieser Reihenfolge hinaus:
+
+1. OPEN und ein Schritt: die Register 4 bis 22 in 5 Frames zu 4, 4, 4, 4
+   und 3 Registern. `VIEW` (22) ist immer 2.
+2. Das Kommando, Register 0 bis 3: `SEQ` eins über dem der Page, die
+   Prüfsumme der Register 4 bis 21 und der Schlüssel bei jedem SEND und bei
+   einem LISTEN oder POWER, das antwortet. Ein Kommando ohne Antwort geht
+   unverändert noch einmal, 3 Versuche; die Page nimmt es einmal.
+3. Register 0 bis 15: das Kommando hat die Operation gestartet, oder das
+   hohe Byte von `RESULT` sagt, warum nicht. Danach alle 5ms, bis der Port
+   aus STOPPING, BUSY und POWER_OFF heraus ist. Das letzte Lesen enthält
+   den Mitschnitt.
+4. Register 16 bis 31, einmal, solange `VIEW` 2 liest.
+
+| Die Page | Das Ergebnis des Schritts |
+| --- | --- |
+| `RESULT` 2, DONE | RAN, mit dem niedrigen Byte von `DEC` und `VALUE` |
+| `RESULT` 6, CUT | CUT |
+| eine Abweisung, ein abgewiesener Frame, `SUPPLY`, `START`, keine Antwort, ein Neustart | FAILED |
+
+| Fall | Austausche | Durchläufe zu 5ms |
+| --- | ---: | ---: |
+| ein classic-Lesen | 9 | 3 |
+| ein Lesen der D-Serie | 10 | 4 |
+| ein volles Lesen der D-Serie, 21 Register, 20ms Abstand | - | 840ms insgesamt |
+
+Die Zahlen stammen aus dem Host-Modell (`test_hitec_link`,
+`test_hitec_link_run`); auf dem Prüfstand sind sie nicht gemessen.
+
+Wenn der Link nicht antwortet:
+
+- 3 Austausche hintereinander ohne Antwort geben die Anfrage auf.
+- Ein Kommando, dessen 3 Versuche ohne Antwort bleiben, geht nicht noch
+  einmal. Das nächste Lesen der Register 0 bis 15 entscheidet: eine Page
+  auf der `SEQ` des Kommandos hat es genommen, eine Page auf der `SEQ`
+  davor nicht. Eine Page auf `SEQ` 0 mit Operation NONE und ohne Abweisung
+  ist neu gestartet, auch wenn die `SEQ` des Kommandos 0 ist, die nach
+  65535.
+- Eine andere `SEQ`, oder `OP` zurück auf NONE, ist ein IOmcu, der neu
+  gestartet ist, oder das Kommando eines anderen Schreibers. Eine Anfrage
+  unterwegs endet dort, FAILED.
+- Eine Anfrage, die 25.000ms, nachdem ihr Kommando genommen wurde, noch
+  läuft, bricht das Panel ab. Die Page beendet jede Transaktion innerhalb
+  von 10.000ms und ein POWER innerhalb von 23.000ms; die Grenze ist für
+  eine Page, die das nicht tut.
+
+ABORT verwirft eine Anfrage, deren Kommando noch nicht hinaus ist. Ein
+Kommando, das ohne Antwort hinausging, geht nicht noch einmal; die `SEQ`
+entscheidet wie oben. Das Kommando ABORT geht, sobald die Page bekannt ist;
+eines, das mit BAD_VALUE abgewiesen wird, geht nach einem Lesen noch einmal,
+mit der `SEQ` der Page.
+
+Zwischen den Anfragen werden die Register 0 bis 15 alle 100ms gelesen,
+solange die Page einen Port hält, und alle 500ms, solange sie keinen hält.
+Einem IOmcu unter 4.23 wird nichts gesendet. Die Kopie für den Bildschirm
+nennt den Zustand, den Port, die Flags (`STOPPED`, ein antwortendes PD
+mini, `PRECHARGE`), den Pin und die Leitung, und ob dieses Modul den
+gehaltenen Port geöffnet hat, seit der Link kam. Ein Port, der über einen
+Link-Verlust, einen Neustart des Panels oder nach dem Kommando eines
+anderen Schreibers gehalten ist, ist nicht der des Moduls. CLOSE gibt ihn
+frei, aus jedem Zustand. CLEAR wird mit `UNSAFE` abgewiesen, solange der
+IOmcu dem Heartbeat nicht traut. Das Halten von SUPPLY ab 4.29 ist Bit 11
+der FLAGS von SUPPLY, das das SUPPLY-Modul des Panels liest
+(`shared/bench/supply_link.c`).

@@ -20,8 +20,10 @@ HS-7xxx, 19,200bit/s) or D series (115,200bit/s). The page holds no Hitec
 session. The writer stages one transaction, the page runs it, and the
 capture and its decoding stay on the page until the next one. Which bytes a
 servo takes, and in which order, is the writer's business. The session core
-is built ([`hitec_session.h`](../protocols/hitec/README.md#session)); the
-panel does not run it yet. `shared/outputs/hitec_port.c` holds the rules.
+([`hitec_session.h`](../protocols/hitec/README.md#session)) and the panel's
+link half ([The panel's link half](#the-panels-link-half)) are built;
+nothing on the panel calls them yet. `shared/outputs/hitec_port.c` holds
+the rules.
 
 A port is free, held by this page or held by the KST page
 ([The programming port for KST and Chaservo servos](LinkKST.md)), never two
@@ -356,3 +358,70 @@ between two, a window of 1500us for 2 bytes and the decoder; the fifth
 sends it with the key. 0x8135 and 0xE56A are the checks of the two staged
 blocks. The console's `hitec open 0 c` and `hitec c 0 0x61 0x12 0` do the
 same and compute `SEQ` and the checks.
+
+## The panel's link half
+
+`shared/bench/hitec_link.c` turns one step of a session into frames of this
+page, and the page's answer back into the step's result
+(`hitec_ses_result_t`). It takes one request at a time: OPEN, a step (SEND,
+LISTEN or LEVEL, or POWER at the caller's set points), CLEAR, or CLOSE of
+any port the page holds, a port another writer opened included. The caller
+makes each exchange; one pass makes 4 at most.
+
+A request goes out in this order:
+
+1. OPEN and a step: registers 4 to 22 in 5 frames of 4, 4, 4, 4 and 3
+   registers. `VIEW` (22) is always 2.
+2. The command, registers 0 to 3: `SEQ` one above the page's, the check of
+   registers 4 to 21, and the key with every SEND and with a LISTEN or POWER
+   that answers. A command without an answer goes again unchanged, 3 tries;
+   the page takes it once.
+3. Registers 0 to 15: the command started the operation, or `RESULT`'s
+   high byte says why not. Then every 5ms until the port is out of
+   STOPPING, BUSY and POWER_OFF. The last read holds the capture.
+4. Registers 16 to 31, once, while `VIEW` reads 2.
+
+| The page | The step's result |
+| --- | --- |
+| `RESULT` 2, `DONE` | RAN, with `DEC`'s low byte and `VALUE` |
+| `RESULT` 6, `CUT` | CUT |
+| a refusal, a refused frame, `SUPPLY`, `START`, no answer, a restart | FAILED |
+
+| Case | Exchanges | Passes of 5ms |
+| --- | ---: | ---: |
+| a classic read | 9 | 3 |
+| a D series read | 10 | 4 |
+| a full D series read, 21 registers, 20ms apart | - | 840ms in all |
+
+The figures come from the host model (`test_hitec_link`,
+`test_hitec_link_run`); on the bench they are not measured.
+
+When the link does not answer:
+
+- 3 exchanges in a row without an answer give the request up.
+- A command whose 3 tries go unanswered is not sent again. The next read of
+  registers 0 to 15 decides: a page at the command's `SEQ` took it, a page
+  at the `SEQ` before it did not. A page at `SEQ` 0 with operation NONE
+  and no refusal started again, also when the command's `SEQ` is 0, the one
+  after 65535.
+- Another `SEQ`, or `OP` back at NONE, is an IOmcu that started again or
+  another writer's command. A request on its way ends there, FAILED.
+- A request still running 25,000ms after its command was taken is aborted
+  from the panel. The page ends every transaction within 10,000ms and a
+  POWER within 23,000ms, so this limit is for a page that does not.
+
+ABORT drops a request whose command has not gone. A command sent without an
+answer is not sent again; the `SEQ` decides as above. The ABORT command
+goes as soon as the page is known; one refused with BAD_VALUE goes again
+after a read, with the page's `SEQ`.
+
+Between requests registers 0 to 15 are read every 100ms while the page
+holds a port and every 500ms while it holds none. An IOmcu below 4.23 is
+sent nothing. The screen's copy names the state, the port, the flags
+(`STOPPED`, a PD mini answering, `PRECHARGE`), the pin and the line, and
+whether this module opened the held port since the link came up. A port
+held over a link loss, over a restart of the panel or after another
+writer's command is not the module's. CLOSE releases it, from any state.
+CLEAR is refused with `UNSAFE` while the IOmcu does not trust the
+heartbeat. The SUPPLY hold of 4.29 is SUPPLY's FLAGS bit 11, which the
+panel's SUPPLY module reads (`shared/bench/supply_link.c`).
