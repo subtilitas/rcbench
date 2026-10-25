@@ -6543,18 +6543,26 @@ UI_SERVO_TEXT(SERVO_STR_R_OFF,
     "OFF",
     "AUS")
 UI_SERVO_TEXT(SERVO_STR_R_PER_STEP,
-    "RESULTS PER STEP (currents in A, times "
+    "RESULTS PER STEP (currents in mA, times "
     "in ms)",
-    "ERGEBNISSE JE STUFE (Ströme in A, "
+    "ERGEBNISSE JE STUFE (Ströme in mA, "
     "Zeiten in ms)")
-/* Over the columns of the step lines' format in step_lines(). */
-/* Over the columns of the step lines: 0, 7, 15, 22, 29, 36, 43, 50, 58,
- * 66, 73, 81, 87 and 92, as the English. */
+/* The two heading lines of the steps table (step_row() in servo_report.c):
+ * each word ends where its column ends, at cells 4, 10, 16, 23, 30, 37,
+ * 44, 51, 58, 65, 73, 79, 84 and 91, the second line 92 cells long.
+ * test_servo_report_width holds every language to it. */
 UI_SERVO_TEXT(SERVO_STR_R_COLUMNS,
-    "Set V  Meas V  V min  Idle   Thresh "
-    "Moving Peak   Hold lo Hold hi Travel "
-    "Longest Moves Late Unseen",
-    "Soll V Ist V   V min  Ruhe   Schw.  Beweg. Spitze Halt mn Halt mx Stell. Längste Anz.  Spät Unerk.")
+    "  Set  Meas     V                     "
+    "          Hold   Hold",
+    " Soll   Ist     V                     "
+    "        Halten Halten")
+UI_SERVO_TEXT(SERVO_STR_R_COLUMNS_2,
+    "    V     V   min   Idle Thresh Moving "
+    "  Peak    low   high Travel Longest Moves "
+    "Late Unseen",
+    "    V     V   min   Ruhe  Schw. Beweg. "
+    "Spitze  unten   oben Stell. Längste  Anz. "
+    "Spät Unerk.")
 UI_SERVO_TEXT(SERVO_STR_R_STEP_NOT_RUN,
     "%5.2f  not run",
     "%5.2f  nicht gelaufen")
@@ -6599,25 +6607,27 @@ UI_SERVO_TEXT(SERVO_STR_R_BO_NOT_REACHED,
     "Not reached.",
     "Nicht erreicht.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_STOPPED,
-    "Moved at %.2fV; no movement seen at "
-    "%.2fV.",
-    "Bewegung bei %.2fV; keine Bewegung "
-    "erkannt bei %.2fV.")
+    "Movement seen at %.2fV; no movement seen "
+    "at %.2fV.",
+    "Bewegung erkannt bei %.2fV; keine "
+    "Bewegung erkannt bei %.2fV.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_ALL,
-    "Moved at every step down to %.2fV; "
-    "lower not tested.",
-    "Bewegung bei jeder Stufe bis %.2fV; "
-    "tiefer nicht getestet.")
+    "Movement seen at every step down to "
+    "%.2fV; lower not tested.",
+    "Bewegung erkannt bei jeder Stufe bis "
+    "%.2fV; tiefer nicht getestet.")
 UI_SERVO_TEXT(SERVO_STR_R_BO_NONE,
     "No movement seen at %.2fV, the first "
     "step: not measurable.",
     "Keine Bewegung erkannt bei %.2fV, der "
     "ersten Stufe: nicht messbar.")
+/* What "movement seen" in the line above means, with the threshold of the
+ * last voltage the walk ran. */
 UI_SERVO_TEXT(SERVO_STR_R_BO_RULE,
-    "No movement: no reading of a move more "
+    "Movement seen: a reading of a move more "
     "than Thresh, %.3fA at %.2fV, from the "
     "level before it.",
-    "Keine Bewegung: kein Messwert einer "
+    "Bewegung erkannt: ein Messwert einer "
     "Bewegung mehr als Schw., %.3fA bei "
     "%.2fV, vom Niveau davor entfernt.")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_HEAD,
@@ -6716,8 +6726,8 @@ UI_SERVO_TEXT(SERVO_STR_R_ENC_HEAD,
 UI_SERVO_TEXT(SERVO_STR_R_ENC_COLUMNS,
     "Set V  End lo   Err lo   End hi   Err hi   "
     "Travel Longest Moves Unmoved Late",
-    "Soll V  Ende u   Abw. u   Ende o   Abw. o   "
-    "Stell. Längste Anz.  Unbew. Spät")
+    "Soll V Ende u   Abw. u   Ende o   Abw. o   "
+    "Stell. Längste Anz.  Unbew.  Spät")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_CMD,
     "Commanded: %+.1fdeg at the low end, %+.1f"
     "deg at the high end.",

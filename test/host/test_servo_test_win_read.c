@@ -101,7 +101,7 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
     CHECK(strstr(r, "Clipped:") == NULL);
     CHECK(strstr(r, "Const. current: 0 supply readings, longest stretch 0"
                     "ms\n") != NULL);
-    CHECK(strstr(r, " 4.80    4.79  4.59   0.020  0.020  0.400  0.450  ")
+    CHECK(strstr(r, " 4.80  4.79  4.59     20     20    400    450 ")
           != NULL);
     CHECK(strstr(r, "Position: nothing measures the horn; every result is "
                     "the current of the INA3221 channel named above.\n")

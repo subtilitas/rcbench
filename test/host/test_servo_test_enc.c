@@ -123,7 +123,7 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
     CHECK(strstr(g.report, "Position: the AS5600 measures the horn;") != NULL);
     CHECK(strstr(g.report, "Position: nothing measures the horn") == NULL);
     /* Side by side: the current's table is there too. */
-    CHECK(strstr(g.report, "RESULTS PER STEP (currents in A, times in ms)") != NULL);
+    CHECK(strstr(g.report, "RESULTS PER STEP (currents in mA, times in ms)") != NULL);
 
     /* The CSV has two more columns before the meter's six, and the settle
      * on the row after it. */

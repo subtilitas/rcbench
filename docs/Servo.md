@@ -998,18 +998,19 @@ Timing:         settle 500ms, idle 1000ms, dwell 200ms (hold measured 600ms)
 Length:         60s a step
 Limits:         idle OFF, holding OFF, travel 800ms, stall 2.00A
 
-RESULTS PER STEP (currents in A, times in ms)
-Set V  Meas V  V min  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
- 4.80    4.80  4.80   0.004  0.020  0.037  0.065  0.001   0.001   861    989        41    0      0
- 6.00    6.00  5.99   0.001  0.020  0.040  0.077  0.001   0.001   892    978        41    0      0
+RESULTS PER STEP (currents in mA, times in ms)
+  Set  Meas     V                               Hold   Hold
+    V     V   min   Idle Thresh Moving   Peak    low   high Travel Longest Moves Late Unseen
+ 4.80  4.80  4.80      4     20     37     65      1      1    861     989    41    0      0
+ 6.00  6.00  5.99      1     20     40     77      1      1    892     978    41    0      0
 Thresh: movement is a reading max(0.020A, 3 x idle noise) from the level before the command.
 Arrival: after a reading Thresh above the end's holding level, the first back within 0.05A of it.
 Late: moves seen moving that did not arrive within 3300ms.
 Unseen: moves with no movement seen; not timed, not counted late.
 
 BROWN-OUT
-Moved at every step down to 3.00V; lower not tested.
-No movement: no reading of a move more than Thresh, 0.023A at 3.00V, from the level before it.
+Movement seen at every step down to 3.00V; lower not tested.
+Movement seen: a reading of a move more than Thresh, 0.023A at 3.00V, from the level before it.
 
 AGAINST THE PASS/FAIL LIMITS
 Idle current     highest 0.004A, limit OFF: not checked
@@ -1035,9 +1036,10 @@ holds 0.015 to 0.029A and peaks at 0.039 to 0.044A, reads:
 ```
 Result:         NOT MEASURABLE - 25 of 46 counted moves showed no movement in the current
 ...
-Set V  Meas V  V min  Idle   Thresh Moving Peak   Hold lo Hold hi Travel Longest Moves Late Unseen
- 4.80    4.80  4.79   0.015  0.020  0.025  0.037  0.028   0.015   687    772        22    0     13
- 6.00    5.99  5.99   0.003  0.020  0.027  0.042  0.029   0.017   636    688        24    0     12
+  Set  Meas     V                               Hold   Hold
+    V     V   min   Idle Thresh Moving   Peak    low   high Travel Longest Moves Late Unseen
+ 4.80  4.80  4.79     15     20     25     37     28     15    687     772    22    0     13
+ 6.00  5.99  5.99      3     20     27     42     29     17    636     688    24    0     12
 ...
 No movement seen at 5.00V, the first step: not measurable.
 ```
@@ -1066,8 +1068,12 @@ Current between two 1ms samples of that channel: a window holds their mean, high
 ```
 
 An aborted run reads `Result:
-ABORTED - <reason>`, and a step it cut short is marked `(cut short)`; one it
-never reached reads `not run`. `Can destroy` names the red tag when a heli
+ABORTED - <reason>`. A step it cut short has a line under its own that
+reads `(cut short)`; a step whose every counted move went unseen has one
+that reads `NOT MEASURABLE`, both on one line for a step that is both. A
+step it never reached reads `not run`. The step table's lines are at most
+92 characters, the width of a row in the log viewer: currents in whole mA
+take 6 characters each, and the headings take two lines. `Can destroy` names the red tag when a heli
 type or a frame rate above 60Hz is in force. Every word of the report is
 an entry of `shared/text/include/ui_text.def`, with its English and its
 German, and the report is written in the interface language showing when

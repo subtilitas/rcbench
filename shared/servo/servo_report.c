@@ -15,6 +15,7 @@
 
 #include "servo_test.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -87,17 +88,38 @@ static const char *verdict_word(const cursor_t *c, bool checked,
     return over ? S(FAIL) : S(PASS);
 }
 
+/** @brief The largest magnitude a step table cell prints, A: "-99999" mA is
+ *         its widest text, 6 cells.  No meter reads near it: the INA3221
+ *         reads to 32.760A on its smallest shunt. */
+#define CELL_MAX_A 99.999f
+
 /**
- * @brief A mean in amperes, or "--" for none.
+ * @brief A current in whole mA, or "--" for none.
  *
- * @param b Out: the mean, 3 decimals, or "--".
+ * @param b Out: the current in whole mA, at most 6 cells, or "--".
+ * @param n Size of b, bytes.
+ * @param a Current, A; one not a number or beyond CELL_MAX_A gives "--".
+ */
+static void ma_text(char *b, size_t n, float a)
+{
+    if (a >= -CELL_MAX_A && a <= CELL_MAX_A) {
+        snprintf(b, n, "%ld", lroundf(a * 1000.0f));
+    } else {
+        snprintf(b, n, "--");
+    }
+}
+
+/**
+ * @brief A mean in whole mA, or "--" for none.
+ *
+ * @param b Out: the mean in whole mA, or "--".
  * @param n Size of b, bytes.
  * @param m Mean to print; no reading gives "--".
  */
 static void amps(char *b, size_t n, const servo_test_mean_t *m)
 {
     if (m->n > 0u) {
-        snprintf(b, n, "%.3f", (double)(m->sum / (float)m->n));
+        ma_text(b, n, m->sum / (float)m->n);
     } else {
         snprintf(b, n, "--");
     }
@@ -411,8 +433,74 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
 }
 
 /**
- * @brief The steps table: one line per characterisation step, then the
- *        column notes and the threshold, arrival and late rules.
+ * @brief Whether none of a step's counted moves showed movement: the step is
+ *        not measurable.
+ *
+ * @param s Step.
+ * @return true when the step counted moves and every one went unseen.
+ */
+static bool step_unseen(const servo_test_step_t *s)
+{
+    return s->moves > 0u && s->no_rise == s->moves;
+}
+
+/**
+ * @brief One step's line of the steps table, 92 cells at most: the columns
+ *        end where the two heading lines end their words.
+ *
+ * Voltages take 5 cells, currents 6 (whole mA, "-99999" the widest, see
+ * ma_text()), the travel times 6 and 7 and the counts 5, 4 and 6, one space
+ * between columns.  A count is at most SERVO_TEST_MOVES_MAX.
+ *
+ * @param c Cursor; buf receives the line.
+ * @param s A step that began.
+ */
+static void step_row(const cursor_t *c, const servo_test_step_t *s)
+{
+    char vm[16], vlow[16], idle[16], thr[16], move[16], lo[16], hi[16];
+    if (s->v.n > 0u) {
+        snprintf(vm, sizeof(vm), "%.2f", (double)(s->v.sum / (float)s->v.n));
+        snprintf(vlow, sizeof(vlow), "%.2f", (double)s->v_min);
+    } else {
+        snprintf(vm, sizeof(vm), "--");
+        snprintf(vlow, sizeof(vlow), "--");
+    }
+    amps(idle, sizeof(idle), &s->idle);
+    if (s->move_a > 0.0f) {
+        ma_text(thr, sizeof(thr), s->move_a);
+    } else {
+        snprintf(thr, sizeof(thr), "--");
+    }
+    amps(move, sizeof(move), &s->move);
+    amps(lo, sizeof(lo), &s->hold[0]);
+    amps(hi, sizeof(hi), &s->hold[1]);
+    char peak[16];
+    if (s->move.n > 0u) {
+        ma_text(peak, sizeof(peak), s->move_peak_a);
+    } else {
+        snprintf(peak, sizeof(peak), "--");
+    }
+    char mean_ms[12], max_ms[12];
+    if (s->travels > 0u) {
+        snprintf(mean_ms, sizeof(mean_ms), "%lu",
+                 (unsigned long)(s->travel_sum_ms / s->travels));
+        snprintf(max_ms, sizeof(max_ms), "%lu",
+                 (unsigned long)s->travel_max_ms);
+    } else {
+        snprintf(mean_ms, sizeof(mean_ms), "--");
+        snprintf(max_ms, sizeof(max_ms), "--");
+    }
+    snprintf(c->buf, c->n,
+             "%5.2f %5s %5s %6s %6s %6s %6s %6s %6s %6s %7s %5u %4u %6u",
+             (double)s->set_v, vm, vlow, idle, thr, move, peak, lo, hi,
+             mean_ms, max_ms, (unsigned)s->moves, (unsigned)s->timeouts,
+             (unsigned)s->no_rise);
+}
+
+/**
+ * @brief The steps table: two heading lines, one line per characterisation
+ *        step and, under a step cut short or not measurable, a line that says
+ *        so; then the column notes and the threshold, arrival and late rules.
  *
  * @param t Run state.
  * @param c Cursor.
@@ -434,6 +522,10 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, "%s", S(R_COLUMNS));
         return true;
     }
+    if (here(c)) {
+        snprintf(b, n, "%s", S(R_COLUMNS_2));
+        return true;
+    }
     bool any = false;
     for (unsigned k = 0; k < t->step_count; ++k) {
         const servo_test_step_t *s = &t->steps[k];
@@ -441,57 +533,22 @@ static bool step_lines(const servo_test_t *t, cursor_t *c)
             continue;
         }
         any = true;
-        if (!here(c)) {
-            continue;
-        }
-        if (!s->begun) {
-            snprintf(b, n, S(R_STEP_NOT_RUN), (double)s->set_v);
+        if (here(c)) {
+            if (s->begun) {
+                step_row(c, s);
+            } else {
+                snprintf(b, n, S(R_STEP_NOT_RUN), (double)s->set_v);
+            }
             return true;
         }
-        char vm[16], vlow[16], idle[16], thr[16], move[16], lo[16], hi[16];
-        if (s->v.n > 0u) {
-            snprintf(vm, sizeof(vm), "%.2f", (double)(s->v.sum / (float)s->v.n));
-            snprintf(vlow, sizeof(vlow), "%.2f", (double)s->v_min);
-        } else {
-            snprintf(vm, sizeof(vm), "--");
-            snprintf(vlow, sizeof(vlow), "--");
-        }
-        amps(idle, sizeof(idle), &s->idle);
-        if (s->move_a > 0.0f) {
-            snprintf(thr, sizeof(thr), "%.3f", (double)s->move_a);
-        } else {
-            snprintf(thr, sizeof(thr), "--");
-        }
-        amps(move, sizeof(move), &s->move);
-        amps(lo, sizeof(lo), &s->hold[0]);
-        amps(hi, sizeof(hi), &s->hold[1]);
-        char peak[16];
-        if (s->move.n > 0u) {
-            snprintf(peak, sizeof(peak), "%.3f", (double)s->move_peak_a);
-        } else {
-            snprintf(peak, sizeof(peak), "--");
-        }
-        char mean_ms[12], max_ms[12];
-        if (s->travels > 0u) {
-            snprintf(mean_ms, sizeof(mean_ms), "%lu",
-                     (unsigned long)(s->travel_sum_ms / s->travels));
-            snprintf(max_ms, sizeof(max_ms), "%lu",
-                     (unsigned long)s->travel_max_ms);
-        } else {
-            snprintf(mean_ms, sizeof(mean_ms), "--");
-            snprintf(max_ms, sizeof(max_ms), "--");
-        }
         /* A step none of whose moves showed movement is not measurable. */
-        const bool none = s->moves > 0u && s->no_rise == s->moves;
-        snprintf(b, n,
-                 "%5.2f  %6s  %-6s %-6s %-6s %-6s %-6s %-7s %-7s %-6s %-7s %5u "
-                 "%4u %6u%s%s%s",
-                 (double)s->set_v, vm, vlow, idle, thr, move, peak, lo, hi,
-                 mean_ms,
-                 max_ms, (unsigned)s->moves, (unsigned)s->timeouts,
-                 (unsigned)s->no_rise, s->done ? "" : S(R_CUT_SHORT),
-                 none ? " " : "", none ? S(NOT_MEASURABLE) : "");
-        return true;
+        const bool none = step_unseen(s);
+        if (s->begun && (!s->done || none) && here(c)) {
+            snprintf(b, n, "%5.2f %s%s%s", (double)s->set_v,
+                     s->done ? "" : S(R_CUT_SHORT), none ? " " : "",
+                     none ? S(NOT_MEASURABLE) : "");
+            return true;
+        }
     }
     if (!any && here(c)) {
         snprintf(b, n, "%s", S(R_NO_STEP));
