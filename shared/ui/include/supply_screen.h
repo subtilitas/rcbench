@@ -111,16 +111,23 @@ bool supply_screen_model(void);
 void supply_screen_set_baud(uint32_t baud);
 
 /**
- * The PD mini's UART pins, IOmcu GPIO numbers, named in the header
- * ("PD MINI TX GP12 RX GP13").  A negative pin is not set; with either pin
- * not set, or both on one GPIO, the header says "PD MINI NO PINS": the
- * page holds no pins then.  Not shown for the model.
+ * @brief The PD mini's UART pins, IOmcu GPIO numbers, named in the header
+ *        ("PD MINI TX GPIO 12 RX GPIO 13").
+ *
+ * With either pin not set, or both on one GPIO, the header says "PD MINI
+ * NO PINS": the page holds no pins then.  Not shown for the model.
+ *
+ * @param tx  the TX pin; negative is not set
+ * @param rx  the RX pin; negative is not set
  */
 void supply_screen_set_pins(int tx, int rx);
 
 /**
- * The left text of the header strip: the supply and its pins, the answer
- * and the rate ("PD MINI TX GP12 RX GP13   ONLINE 38400").
+ * @brief The left text of the header strip: the supply and its pins, the
+ *        answer and the rate ("PD MINI TX GPIO 12 RX GPIO 13   ONLINE
+ *        38400"), 47 characters at most.
+ * @param out   takes the text
+ * @param size  bytes at @p out
  */
 void supply_screen_header_text(char *out, size_t size);
 

@@ -125,9 +125,9 @@ The TARGET row of the output card names what the tester drives now as `protocol 
 
 | Row | Meaning |
 |---|---|
-| `SERVO PWM GP4`, `SERVO PWM GP2 GP4` | the GPIOs (general-purpose inputs/outputs) bound as SERVO PWM; more than fit read `+2` |
-| `PROG PORT 1 GP13` | programming port 1 and its pin, in the warning colour |
-| `PORT 1 GP13 PWM OFF` | the port is the target and renders no pulse |
+| `SERVO PWM GPIO 4`, `SERVO PWM GPIO 2 GPIO 4` | the GPIOs (general-purpose inputs/outputs) bound as SERVO PWM; more than fit read `+2` |
+| `PROG PORT 1 GPIO 13` | programming port 1 and its pin, in the warning colour |
+| `PORT 1 GPIO 13 PWM OFF` | the port is the target and renders no pulse |
 | `NO SERVO PWM PIN` | no pin is bound as SERVO PWM |
 | `PINS NOT READ` | no binding has been read |
 | `UNKNOWN` | the IOmcu's programming-port page is not read |

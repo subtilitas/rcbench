@@ -312,7 +312,7 @@ float servo_screen_power_sample(int series, int back);
  * TARGET setting @p setting (SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT, the
  * target the panel asks for).  The first line names the target the
  * IOmcu holds, not the setting: "In force: OUTPUTS run at 50Hz.",
- * "In force: PROG PORT GP13 runs at 560Hz.", the port without a known pin,
+ * "In force: PROG PORT GPIO 13 runs at 560Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
  * says "The TARGET chosen is not active." while the setting and the
@@ -381,24 +381,33 @@ void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
 /**
- * The TARGET row's value in the current language, into @p out of @p size
- * bytes, for the drive @p target / @p gpio / @p pwm (as
- * servo_screen_set_drive()) and the SERVO PWM pins @p pins / @p known (as
- * servo_screen_set_pins()): `protocol pins`.  Returns whether the line
- * takes the warning colour: a port target, no SERVO PWM pin, no binding
- * read, the target not known, or no link.  The outputs read
- * "SERVO PWM GP2 GP4", the protocol name the same in every language: as
- * many pins as the 23 cells hold after it, then a count
- * ("SERVO PWM GP2 +2").  A port target reads "PROG PORT GPn", or
- * "PROG PORT" without a known pin, each with " PWM OFF" after it while the
- * port renders no pulse: 22 characters at most, of the 23 cells the row's
- * value holds.
+ * @brief The TARGET row's value in the current language: `protocol pins`.
+ *
+ * The outputs read "SERVO PWM GPIO 2 GPIO 4", the protocol name the same in
+ * every language: as many pins as the 25 cells hold after it, then a count
+ * ("SERVO PWM GPIO 2 +2").  A port target reads "PROG PORT 1 GPIO 13", or
+ * "PROG PORT 1" without a known pin; while the port renders no pulse
+ * "PORT 1 GPIO 13 PWM OFF" or "PROG PORT 1 PWM OFF": 22 characters at most,
+ * of the 25 cells the row's value holds.
  *
  * The row is the control that picks the target: a tap opens SETUP >
  * OUTPUTS on what the row shows -- the PROG PORT entry while the IOmcu
  * drives the port, SERVO PWM while it drives the outputs, the overview
- * while the target is not known -- where SERVO TESTER sets it.  It takes no press
- * while servo_screen_target_locked().
+ * while the target is not known -- where SERVO TESTER sets it.  It takes no
+ * press while servo_screen_target_locked().
+ *
+ * @param out     takes the text
+ * @param size    bytes at @p out
+ * @param target  the drive's target, as servo_screen_set_drive(): 0 the
+ *                outputs, 1 to 4 a port, or SERVO_SCREEN_TARGET_UNKNOWN or
+ *                SERVO_SCREEN_TARGET_NO_LINK
+ * @param gpio    the port's pin, or SERVO_SCREEN_NO_PIN
+ * @param pwm     whether the port renders its pulse
+ * @param pins    the SERVO PWM pins, bit n for GPIO n, as
+ *                servo_screen_set_pins()
+ * @param known   whether the binding is read
+ * @return whether the line takes the warning colour: a port target, no
+ *         SERVO PWM pin, no binding read, the target not known, or no link
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known);

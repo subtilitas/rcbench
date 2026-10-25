@@ -25,7 +25,7 @@ TEST_CASE(the_report_holds_the_run)
     CHECK(strstr(g.report, "RCBENCH SERVO LIMIT REPORT\n") == g.report);
     CHECK(strstr(g.report, "PASS") != NULL);
     CHECK(strstr(g.report, "aileron left") != NULL);
-    CHECK(strstr(g.report, "PROG PORT GP13") != NULL);
+    CHECK(strstr(g.report, "PROG PORT 1 GPIO 13") != NULL);
     CHECK(strstr(g.report, "INA3221") != NULL);
     CHECK(strstr(g.report, "1.8") != NULL);
     CHECK(strstr(g.report, "3.0A") != NULL);

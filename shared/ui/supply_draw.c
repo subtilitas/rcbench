@@ -126,11 +126,12 @@ void supply_screen_header_text(char *out, size_t size)
 }
 
 /**
- * @brief The row right of the strip: where the numbers come from, and at
- *        its right end the range the set points may take.  The longest,
- *        `PD MINI TX GP12 RX GP13   ANTWORTET NICHT` and
- *        `3.3-21.0V  0.50-5.00A`, are 41 and 23 cells of the 68 the row
- *        holds.
+ * @brief The row right of the strip: where the numbers come from, in the
+ *        label face, and at its right end the range the set points may
+ *        take, in the fine face.  The longest,
+ *        `PD MINI TX GPIO 12 RX GPIO 13   ANTWORTET NICHT`, is 47 cells of
+ *        the label face (470px) and `10.0-21.0V  0.50-5.00A` 22 of the
+ *        fine face (176px): 646px of the 680px the row holds.
  * @param c the canvas
  */
 static void draw_header(gfx_canvas_t *c)
@@ -147,9 +148,11 @@ static void draw_header(gfx_canvas_t *c)
     snprintf(range, sizeof(range), "%.1f-%.1fV  %.2f-%.2fA",
              (double)s.eff.v_min, (double)s.eff.v_max,
              (double)s.eff.i_min, (double)s.eff.i_max);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, INFO_Y, (int16_t)(x1 - x0),
-                                 LINE_H },
-                range, SU_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
+    const int fh = gfx_text_height(SU_FONT_FINE, 1);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0,
+                                 (int16_t)(INFO_Y + (LINE_H - fh) / 2),
+                                 (int16_t)(x1 - x0), (int16_t)fh },
+                range, SU_FONT_FINE, ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_RIGHT);
 }
 

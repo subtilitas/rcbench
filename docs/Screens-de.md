@@ -368,23 +368,24 @@ Das Home-Tag steigt eine Ebene nach der anderen:
 
 Die Karte STEUERUNG beginnt mit der Zeile ZIEL: der Beschriftung, 88px, und
 einem Wertefeld von 25 Zeichen, das nennt, was das Gas treibt, das Protokoll
-und dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die als MOTOR PWM
+und dann die Pins, `DSHOT300 GPIO 0 GPIO 1`. Es sind die Pins, die als MOTOR PWM
 oder als DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
 SETUP > OUTPUTS, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
-Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GP0 bis GP7 als
-DSHOT300 gebunden, steht dort `DSHOT300 GP0 GP1 GP2 +5`.
+Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GPIO 0 bis GPIO 7 als
+DSHOT300 gebunden, steht dort `DSHOT300 GPIO 0 GPIO 1 +6`.
 
 Ein Programmierport, dessen
 FUNKTION DSHOT150, DSHOT300 oder DSHOT600 ist und dessen Pin der IOmcu hält,
 folgt den Pins als `PORT n` und zählt mit ihnen. Ein Port allein wird
-vollständig genannt, wo das passt, `DSHOT300 PROG-PORT 2 GP14` (25 Zeichen),
-und als `DSHOT300 PORT 2` in einem kürzeren Feld.
+vollständig genannt, wo das passt, `DSHOT300 PROG-PORT 2 GPIO 14` (28 Zeichen),
+als `DSHOT300 PORT 2 GPIO 14` (23 Zeichen) in den 25 der Karte STEUERUNG und
+als `DSHOT300 PORT 2` in einem kürzeren Feld.
 
 | ZIEL lautet | Bedingung |
 | --- | --- |
-| `DSHOT300 GP0 GP1` | ein Protokoll treibt jeden Gas-Pin |
-| `GEMISCHT GP0 GP4` | die Gas-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Rate, die kein Protokoll von OUTPUTS hat |
-| `GP0 GP1` | jeder Gas-Pin läuft mit einer Rate, die kein Protokoll von OUTPUTS hat |
+| `DSHOT300 GPIO 0 GPIO 1` | ein Protokoll treibt jeden Gas-Pin |
+| `GEMISCHT GPIO 0 GPIO 4` | die Gas-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Rate, die kein Protokoll von OUTPUTS hat |
+| `GPIO 0 GPIO 1` | jeder Gas-Pin läuft mit einer Rate, die kein Protokoll von OUTPUTS hat |
 | `KEIN MOTOR-PIN` | die Bindung ist gelesen und weder ein Pin noch ein Programmierport ist als Motor gebunden; Warnfarbe |
 | `PINS NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung; Warnfarbe |
 
@@ -392,9 +393,9 @@ Mit DShot-Programmierports:
 
 | ZIEL lautet | Bedingung |
 | --- | --- |
-| `DSHOT300 PROG-PORT 2 GP14` | ein DSHOT300-Programmierport an GP14 treibt das Gas, und kein Pin ist als Motor gebunden |
-| `DSHOT300 GP0 PORT 2` | GP0 als DSHOT300 gebunden und ein DSHOT300-Port |
-| `GEMISCHT GP0 PORT 2` | die Pins und die Ports laufen mit verschiedenen Raten, oder die Pins mit einer Rate, die kein Protokoll des Katalogs hat |
+| `DSHOT300 PORT 2 GPIO 14` | ein DSHOT300-Programmierport an GPIO 14 treibt das Gas, und kein Pin ist als Motor gebunden |
+| `DSHOT300 GPIO 0 PORT 2` | GPIO 0 als DSHOT300 gebunden und ein DSHOT300-Port |
+| `GEMISCHT GPIO 0 PORT 2` | die Pins und die Ports laufen mit verschiedenen Raten, oder die Pins mit einer Rate, die kein Protokoll des Katalogs hat |
 
 ![ZIEL nennt PROG-PORT 2 als DSHOT300](img/de/motor-port.png)
 
@@ -842,7 +843,7 @@ Ausgangsstreifen, eine Zeile in der Schrift 10 x 20 ab x 12, y 4:
 ![ESC STICK unter dem Ausgangsstreifen](img/de/motor-stick.png)
 
 ```
-ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60V  1.00A   SAFE
+ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL 7.60V  1.00A   SAFE
 ```
 
 | Teil | Zeigt |
@@ -1535,8 +1536,8 @@ das Verfahren, die Schutzmechanismen und den Bericht. Es ist ein Halten von
 Servoschiene. Darüber nennt die Zusammenfassung der Karte die Betriebsart,
 `NUR SUCHE` oder `SUCHEN + PROGRAMMIEREN`, und SERVOPULSE, solange der Lauf
 den Port liest. Darunter nennt eine Zeile den Ausgang, den er treibt, und
-das Messgerät, `AUSGANG PROG-PORT 1 GP13, STROM INA3221 0x41 CH2` oder
-`AUSGANG SERVO PWM GP2, STROM INA3221 0x40 CH1` (`STROM INA3221`, solange
+das Messgerät, `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder
+`AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1` (`STROM INA3221`, solange
 kein Kanal das Ziel überwacht), die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
 Bericht. Diese vier Zeilen stehen in der Schrift 10 x 20, 20px
@@ -1564,7 +1565,7 @@ ausgeschaltetem Ausgang.
 
 PROGRAMMIEREN in der Leiste zeigt die Liste der Programmierer im
 Seitenbereich, eine Zeile je Programmierer: links der Name, rechts, was die
-Zeile ansteuert, mit dem Pin, `PROG-PORT 1 GP13`, dann `>`. Die Zeile für
+Zeile ansteuert, mit dem Pin, `PROG-PORT 1 GPIO 13`, dann `>`. Die Zeile für
 KST und Chaservo liegt auf dem Port, den SERVO-TESTER nennt, PORT 1, PORT 2,
 PORT 3 oder PORT 4, und lautet `PROG-PORT` mit ihrem Pin, solange
 SERVO-TESTER auf OUTPUTS steht. Eine Zeile ist mit `PORT BELEGT` ausgegraut,
@@ -1608,7 +1609,7 @@ von MOTOR & ESC ist dieselbe Liste.
 Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport,
 den der Tester treibt, aus PWM (Pulsweitenmodulation) und liest und
 schreibt die Einstellungen des Servos über dessen Signalleitung. PROG-PORT 1
-ist im Auslieferzustand GP13 an Pad 17. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
+ist im Auslieferzustand GPIO 13 an Pad 17. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
 einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
@@ -1752,12 +1753,12 @@ also auch, während einer davon die linke Spalte bedeckt.
 
 SERVO-TESTER hält OUTPUTS, PORT 1, PORT 2, PORT 3 oder PORT 4. Mit
 OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
-Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
+Bindung als SERVO PWM gebunden sind: `SERVO PWM GPIO 4`, `SERVO PWM GPIO 2 GPIO 4`;
 so viele Pins, wie in die 25 Zeichen des Werts passen, dann `+N`: 8 Pins ab
-GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
+GPIO 40 lauten `SERVO PWM GPIO 40 +7`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
 (`PINS NICHT AUSGELESEN`). Mit einem Programmierport lautet sie `PROG-PORT
-1 GP13` in der Warnfarbe, die Nummer des Ports und der GPIO, den der IOmcu
+1 GPIO 13` in der Warnfarbe, die Nummer des Ports und der GPIO, den der IOmcu
 für ihn meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
 bei einer Bank in ARMED halten diese ihren Ruhepuls, die Mitte zwischen
 ihren Endpunkten. Ein Port als Ziel ohne nutzbaren Pin (keiner, beim Start
@@ -1767,7 +1768,7 @@ Standardausgänge als Ziel, und der Tester sendet ihnen keinen Befehl außer
 einer Freigabe, und SWEEP ist ausgegraut, bis der Port einen SERVO-PWM-Pin
 hat oder SERVO-TESTER auf OUTPUTS steht. Mit
 PORT-PWM aus gibt der Port keinen Puls aus, und die Zeile lautet `PORT 1
-GP13 PWM AUS`, 19 Zeichen mit einem zweistelligen Pin, oder `PROG-PORT 1
+GPIO 13 PWM AUS`, 22 Zeichen mit einem zweistelligen Pin, oder `PROG-PORT 1
 PWM AUS`. Zwei
 Zustände nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der
 Tester einen Befehl: `KEINE VERBINDUNG`, solange kein IOmcu antwortet, und
@@ -1841,7 +1842,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330Hz.` oder `Aktiv: PROG-PORT GPIO 13 läuft mit 330Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50Hz seiner Bindung |
@@ -1892,7 +1893,7 @@ IOmcu steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100ms. Ist der PD mini
 in SETUP unter INTERFACES eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des IOmcu, an denen
-es hängt: `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und
+es hängt: `PD MINI TX GPIO 12 RX GPIO 13`, aus den Einstellungen PD mini TX und
 PD mini RX. Ist einer der beiden Pins nicht gesetzt oder liegen beide auf
 einem GPIO, steht `PD MINI OHNE PINS` in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trägt
@@ -1910,8 +1911,9 @@ sie war.
 | OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
 
 Die Kopfzeile ist die Zeile rechts neben der Leiste: das Modul und seine
-Pins, ONLINE oder ANTWORTET NICHT und am rechten Ende der Bereich, den die
-Sollwerte annehmen können, zum Beispiel `3.3-8.4V  0.50-5.00A`. Sie bleibt
+Pins, ONLINE oder ANTWORTET NICHT in 10 x 20 und am rechten Ende der Bereich,
+den die Sollwerte annehmen können, in 8 x 16, zum Beispiel
+`3.3-8.4V  0.50-5.00A`. Sie bleibt
 auf beiden Aufgaben und unter der Tastatur und der Frage sichtbar. Die
 Leiste rechts, 380px, ist auf beiden Aufgaben dieselbe: vier Messwertkarten
 von 64px, SPANN., STROM, LEIST. und MODUS, und die Karte STEUERUNG mit mAh
@@ -2196,7 +2198,7 @@ Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
 Baud -- steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
 und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
-des Bereichs nichts: mit RX auf GP47 bleibt TX auf GP46. Das Tastenfeld
+des Bereichs nichts: mit RX auf GPIO 47 bleibt TX auf GPIO 46. Das Tastenfeld
 lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen
 GPIO hält der andere PD-mini-Pin`. Eine gespeicherte
 Einstellung mit beiden auf einem GPIO wird so geladen: das Panel schreibt die
@@ -2206,8 +2208,8 @@ Schalter PD mini schaltet das Modul ab. Der
 IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden,
 vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist, und
 das Band sagt `PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.`: RX auf
-GP17 wird abgewiesen, solange Sensor-SDA GP16 ist, denn Sensor-SCL ist dann
-GP17. Der Alert verlässt das Band, sobald eine Lesung die Page mit der
+GPIO 17 wird abgewiesen, solange Sensor-SDA GPIO 16 ist, denn Sensor-SCL ist dann
+GPIO 17. Der Alert verlässt das Band, sobald eine Lesung die Page mit der
 verlangten Verdrahtung zeigt: sofort, wenn der Pin auf den zurückgestellt
 wird, den die Page noch hält. Hat das Modul einmal geantwortet, wartet eine
 Änderung auf eine danach gesendete Zustandslesung des Moduls, höchstens etwa
@@ -3713,9 +3715,9 @@ Zeilen des INA228 und die Pins des Busses stehen oben unter INTERFACES:
 SDA und SCL sind das Paar eines I2C-Blocks: die GPIO-Nummer von SDA ist
 modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Sensor-SDA nimmt nur
 die Pins eines solchen Paars, die das RP2350-CAN herausführt und nicht
-reserviert: GP2 fehlt, weil GP3 der Heartbeat ist, GP8 bis GP12 gehören dem
-CAN-Controller, und GP22, GP24 und GP28 fehlen, weil das Modul GP23, GP25 und
-GP29 nicht herausführt. Die Regel ist die, nach der die SENSE-Page des
+reserviert: GPIO 2 fehlt, weil GPIO 3 der Heartbeat ist, GPIO 8 bis GPIO 12 gehören dem
+CAN-Controller, und GPIO 22, GPIO 24 und GPIO 28 fehlen, weil das Modul GPIO 23, GPIO 25 und
+GPIO 29 nicht herausführt. Die Regel ist die, nach der die SENSE-Page des
 IOmcu ein Schreiben beurteilt (`link_sn_pins_pair()`,
 `settings_sense_sda_valid()`). Ein Pin, den ein Ausgang, der PD mini oder der
 Phasenabgriff hält, wird trotzdem angeboten, und der IOmcu lehnt ihn
@@ -3792,7 +3794,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.` | ein Monitor ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
 | `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
 | `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
-| `Sensor-Pins GP16/GP17 abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
+| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
 | `INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
 | `INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
 | `INA3221 0x41 hat alle Kanäle aus. SETUP > SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
@@ -4048,7 +4050,7 @@ Pins des Busses:
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | Phasenabgriff | EIN, AUS | AUS | die Aufnahme läuft auf dem IOmcu |
-| Abgriff-Pin | 0, 1, 2, 4 bis 7, 13 bis 22 | 22 | GPIO des IOmcu; GP22 ist Pad 29. Das Tastenfeld und die Tasten bieten die Pins, die das RP2350-CAN herausführt und nicht belegt, ohne die ADC-Pins (ADC: Analog-Digital-Wandler) GP26 bis GP29: GP3 ist der Heartbeat, GP8 bis GP12 gehören dem CAN-Controller, und das Modul führt GP23 bis GP25 und GP29 nicht heraus. Vom IOmcu abgelehnt: ein Pin, der an einen Ausgang gebunden ist; ein Pin, den die SENSE- oder SUPPLY-Page hält |
+| Abgriff-Pin | 0, 1, 2, 4 bis 7, 13 bis 22 | 22 | GPIO des IOmcu; GPIO 22 ist Pad 29. Das Tastenfeld und die Tasten bieten die Pins, die das RP2350-CAN herausführt und nicht belegt, ohne die ADC-Pins (ADC: Analog-Digital-Wandler) GPIO 26 bis GPIO 29: GPIO 3 ist der Heartbeat, GPIO 8 bis GPIO 12 gehören dem CAN-Controller, und das Modul führt GPIO 23 bis GPIO 25 und GPIO 29 nicht heraus. Vom IOmcu abgelehnt: ein Pin, der an einen Ausgang gebunden ist; ein Pin, den die SENSE- oder SUPPLY-Page hält |
 | Tiefster Ton | 50 bis 2000Hz, Schritte von 10Hz | 400 | ein tieferer Ton ist kein Piepton |
 | Höchster Ton | 100 bis 6900Hz, Schritte von 50Hz | 6500 | über dem tiefsten Ton |
 | Tonsprung | 0 bis 50%, Schritte von 1% | 8 | ein Tonhöhensprung dieser Größe beginnt einen neuen Piepton ohne Stille dazwischen; 0 trennt nur an Stille |
@@ -4089,9 +4091,9 @@ wie bei den Strommonitoren:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.` | der Abgriff ist eingeschaltet und der IOmcu spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GP22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
+| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
 | `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
-| `Pin GP22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
+| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 Die drei Alerts über die Einstellung -- erster Frame abgelehnt, zweiter
@@ -4110,7 +4112,7 @@ des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 
 Die letzte Zeile von INTERFACES, unter PROG-PORT, sagt, wie der IOmcu die
 Antwort eines Hitec-Servos der D-Serie an seinem Programmierport empfängt,
-GP13 als Voreinstellung ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)):
+GPIO 13 als Voreinstellung ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)):
 
 | Einstellung | Werte | Voreinstellung | |
 | --- | --- | --- | --- |
@@ -4847,7 +4849,7 @@ Protokoll-Liste (300 x 64px), darunter Anzahl und Grund in 10 x 20 und am
 Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
 liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64px
 (25,1 x 9,6mm), quer 8px und längs 6px auseinander, ab x 324. Eine Zelle
-hält ein Ankreuzfeld von 24px, den GP-Namen in 20 x 36 und darunter, was
+hält ein Ankreuzfeld von 24px, den Pin-Namen in 16 x 28 (`GPIO 28`, 112px) und darunter, was
 den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
 Rasterzeile endet bei Körper-y 492, 4px über dem Alarmband. Die offene
 Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48px
@@ -4912,16 +4914,16 @@ an sieben vorbeizuschieben, um das achte zu erreichen, ist keine Auswahl.
 
 ![Die Protokollliste](img/de/outputs-protocol.png)
 
-Reservierte Pins werden gezeigt und lassen sich nicht anhaken. GP3 trägt die
-Safety-Heartbeat-Leitung und GP8 bis GP12 den CAN-Controller (Controller Area
+Reservierte Pins werden gezeigt und lassen sich nicht anhaken. GPIO 3 trägt die
+Safety-Heartbeat-Leitung und GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area
 Network); jeder sagt das unter seinem Namen. Sie zu verstecken hieße, dass
-jemand GP10 sucht und eine Lücke findet. [DShot und die
+jemand GPIO 10 sucht und eine Lücke findet. [DShot und die
 Output-Treiber](DShot-de.md#welcher-pin) hat die ganze Übersicht.
 
-Der Pin des Programmierports des IOmcu, im Auslieferzustand GP13,
+Der Pin des Programmierports des IOmcu, im Auslieferzustand GPIO 13,
 wird als `PROG-PORT` gezeigt und lässt sich ebenfalls nicht anhaken:
 
-![GP13 gehört dem Programmierport](img/de/outputs-prog.png)
+![GPIO 13 gehört dem Programmierport](img/de/outputs-prog.png)
 
 Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
@@ -4933,9 +4935,9 @@ nicht anhaken:
 
 | Unter dem Namen | Pins | Solange |
 |---|---|---|
-| `SENSORBUS` | Sensor-SDA und das Sensor-SCL danach, ab Werk GP16 und GP17 | INA228 oder AS5600 EIN ist oder ein INA3221 unter SENSORS bestückt ist |
+| `SENSORBUS` | Sensor-SDA und das Sensor-SCL danach, ab Werk GPIO 16 und GPIO 17 | INA228 oder AS5600 EIN ist oder ein INA3221 unter SENSORS bestückt ist |
 | `PD MINI` | PD mini TX und PD mini RX | PD mini EIN ist, beide Pins gesetzt, auf zwei Pins |
-| `PHASENABGRIFF` | Abgriff-Pin, ab Werk GP22 | Phasenabgriff EIN ist |
+| `PHASENABGRIFF` | Abgriff-Pin, ab Werk GPIO 22 | Phasenabgriff EIN ist |
 
 Das sind die Pins, die der IOmcu für diese Teile von den Ausgängen
 zurückhält. Solange der IOmcu antwortet, zeigen die Zellen eines Teils
@@ -4943,7 +4945,7 @@ die Pins, die seine Page nach ihrem letzten Lesen oder bestätigten
 Schreiben hält. Eine Verlegung auf Pins, die der IOmcu ablehnt, lässt die alten
 Pins belegt und die verlangten frei. Ein Teil, das der IOmcu abgelehnt
 hat, hält nichts: ein Abgriff auf einem ADC-Pin (Analog-Digital-Wandler)
-von GP26 bis GP29, ein Abgriff, dessen Pin der IOmcu als abgelehnt
+von GPIO 26 bis GPIO 29, ein Abgriff, dessen Pin der IOmcu als abgelehnt
 meldet, ein Sensorbus, von dem die Page kein Teil einschaltet, jedes Teil
 an einem IOmcu ohne seine Page. Antwortet kein IOmcu, oder vor dem ersten
 Lesen einer Page, folgen die Zellen den Einstellungen: Sensor-SDA auf -1
@@ -4972,7 +4974,7 @@ Zeilen:
 
 | Zeile | Was sie zeigt und tut |
 | --- | --- |
-| PIN | eine Taste: `PIN GP13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GP14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
+| PIN | eine Taste: `PIN GPIO 13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GPIO 14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
 | FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
@@ -4987,7 +4989,7 @@ eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
 | KEINE | ein Eingang mit seinem Pull-down; kein Puls | jeder freie Pin der Stiftleiste |
 | DSHOT150, DSHOT300, DSHOT600 | einfaches DShot mit 150, 300 oder 600kbit/s, ein Frame alle 1ms, solange die Bank für das Gas ARMED ist; sonst kein Frame. MOTOR & ESC treibt ihn ([ZIEL](#ziel-nennt-das-protokoll-und-die-pins)) | jeder freie Pin der Stiftleiste, den ein PIO-Block erreicht; keine Slice-Regel |
 
-Port 1 beginnt als SERVO PWM auf GP13, die Ports 2 bis 4 als KEINE ohne
+Port 1 beginnt als SERVO PWM auf GPIO 13, die Ports 2 bis 4 als KEINE ohne
 Pin. Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash mit der
 Bindung der Ausgänge, sie gehören also zur Platine, nicht zum Panel. Ein
 Tippen auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das
@@ -5032,8 +5034,8 @@ Pin, mit dem er kollidiert.
 
 | Zelle | Zeile nach einem Tippen darauf | Regel |
 | --- | --- | --- |
-| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin eines SERVO-PWM-Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GP13 und GP28 sind Slice 6. Der Pin eines Ports mit KEINE oder DShot steht unter keiner Slice-Regel |
-| `KANAL VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
+| `SLICE VON GPIO 13` | `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` | der Pin teilt sich einen Slice mit dem Pin eines SERVO-PWM-Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GPIO 13 und GPIO 28 sind Slice 6. Der Pin eines Ports mit KEINE oder DShot steht unter keiner Slice-Regel |
+| `KANAL VON GPIO 0` | `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22 |
 
 Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
 zum nächsten Haken, der greift, zum nächsten Besuch des Bildschirms oder zu
@@ -5043,7 +5045,7 @@ angeboten.
 
 Einschränkung: Die Slice-Regel braucht den Pin des Programmierports, den das
 Panel vom IOmcu liest. Bis diese Lesung da ist, bis zu 500ms nach dem
-Aufbau der Verbindung oder einem Wechsel des Port-Pins, wird GP28 angeboten,
+Aufbau der Verbindung oder einem Wechsel des Port-Pins, wird GPIO 28 angeboten,
 und ein Tippen darauf endet in `LETZTER SCHREIBVORGANG: ABGELEHNT`. Andere
 Prüfungen des IOmcu, etwa die Bildrate der SERVO-Seite auf einem Pin
 neben MOTOR PWM, lehnen auf diesem Bildschirm ebenfalls ohne Grund ab.
@@ -5095,9 +5097,9 @@ eine Auswahl, rückgängig gemacht bei diesem Protokoll — anders als ein
 reservierter Pin, der rot und durchgestrichen ist, weil er die Verkabelung ist
 und keine Auswahl.
 
-Vier Servokabel und ein ESC, mit DSHOT300 als bearbeitetem Protokoll. GP5 ist
-angehakt; GP0, GP1, GP2 und GP4 sagen SERVO PWM und lassen sich hier nicht
-anhaken; GP3 und GP8 bis GP12 sind rot, weil der IOmcu sie reserviert:
+Vier Servokabel und ein ESC, mit DSHOT300 als bearbeitetem Protokoll. GPIO 5 ist
+angehakt; GPIO 0, GPIO 1, GPIO 2 und GPIO 4 sagen SERVO PWM und lassen sich hier nicht
+anhaken; GPIO 3 und GPIO 8 bis GPIO 12 sind rot, weil der IOmcu sie reserviert:
 
 ![Outputs mit Pins, die ein anderes Protokoll hält](img/de/outputs-held.png)
 
@@ -5135,13 +5137,13 @@ und `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` gehalten schreibt eine Bindun
 ohne Pin. Dieses Halten ist der Weg aus diesen Pages
 ([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
 
-GP0 als DSHOT600 BIDIR gebunden, GP1 als MOTOR PWM, GP2 und GP13 als SERVO
-PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GP13, der
+GPIO 0 als DSHOT600 BIDIR gebunden, GPIO 1 als MOTOR PWM, GPIO 2 und GPIO 13 als SERVO
+PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GPIO 13, der
 Programmierport hat also keinen Pin:
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
 
-Mit SERVO PWM gewählt sind auf demselben Prüfstand GP2 und GP13 angehakt und
+Mit SERVO PWM gewählt sind auf demselben Prüfstand GPIO 2 und GPIO 13 angehakt und
 zeigen `PAD 4` und `PAD 17`: ein im gewählten Protokoll angehakter Pin zeigt
 seine Pad-Nummer, denn das Protokoll ist das in der Liste genannte.
 
@@ -5205,7 +5207,7 @@ groß. Zwei Tasten einer Reihe stehen zwei Pads auseinander, 8px frei
 voneinander, und die untere Reihe endet bei Körper-y 490, über dem
 Alarmband. Fläche der Protokoll-Liste (280 x 56px), Anzahl und Grund
 stehen oben links; die Tabelle PINS darunter, 171px breit, Zeilen von
-36px mit dem GP-Namen in 20 x 36; BELEGT rechts, 168px breit. Beide
+36px mit dem Pin-Namen in 16 x 28; BELEGT rechts, 168px breit. Beide
 Tabellen stehen 8px frei von der äußersten Taste, die eine 600px breite
 Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
 Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
@@ -5232,7 +5234,7 @@ Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 | Elfenbein (Reihe näher an der Platine) oder Ebenholz (Reihe dahinter) | frei | bindet ihn an das gewählte Protokoll |
 | Akzentfarbe | im gewählten Protokoll gebunden | gibt ihn zurück |
 | grau | ein anderes Protokoll hält ihn, der Programmierport hat ihn, das gewählte Protokoll kann keinen Pin mehr nehmen, oder die Bindung ist nicht bestätigt | ändert nichts |
-| keine, rotes Kreuz auf dem Pad | vom IOmcu reserviert: GP3 Heartbeat, GP8 bis GP12 CAN | — |
+| keine, rotes Kreuz auf dem Pad | vom IOmcu reserviert: GPIO 3 Heartbeat, GPIO 8 bis GPIO 12 CAN | — |
 
 Benachbarte Tasten unterscheiden sich in Höhe und Farbe, wie die Tasten einer
 Klaviatur. Ein reservierter Pin hat keine Taste, denn eine Taste unter einem
@@ -5278,7 +5280,7 @@ was die OUTPUTS-Page trägt. Mit OFF gewählt fehlt die Tabelle PINS, denn OFF
 hält keinen Pin; die Slot-Zählung und BELEGT bleiben, und BELEGT führt dann
 jeden gebundenen Pin.
 
-Der Pin des Programmierports des IOmcu, ab Werk GP13 (Pad 17), ist grau
+Der Pin des Programmierports des IOmcu, ab Werk GPIO 13 (Pad 17), ist grau
 gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert
 nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal.
 Jeder Port, den der IOmcu meldet, höchstens 4, hält seinen Pin so, jeder
@@ -5298,7 +5300,7 @@ gewählten Port setzen die Tasten den Pin dieses Ports:
 | der Pin des Ports, hervorgehoben | erbittet keinen Pin |
 | eine freie Taste | erbittet diesen Pin |
 | grau, unter dem Namen eines anderen Ports (`PROG-PORT 2`), eines Protokolls oder einer Schnittstelle | ändert nichts |
-| grau, `SLICE VON GP4` oder `KANAL VON GP12`, auf einem SERVO-PWM-Port | ändert nichts; die Zeile sagt `GP5: TEILT PWM-SLICE MIT OUTPUT GP4` oder `GP28: GLEICHER PWM-KANAL WIE GP12` |
+| grau, `SLICE VON GPIO 4` oder `KANAL VON GPIO 12`, auf einem SERVO-PWM-Port | ändert nichts; die Zeile sagt `GPIO 5: TEILT PWM-SLICE MIT OUTPUT GPIO 4` oder `GPIO 28: GLEICHER PWM-KANAL WIE GPIO 12` |
 
 Die Zählzeile nennt die Funktion des Ports, `FUNKTION: SERVO PWM`, und PINS
 hält den einen Pin des Ports mit seinem Pad. Ein Port mit KEINE nimmt
@@ -5310,13 +5312,13 @@ GELESEN`.
 ![PROG-PORT 3 gewählt](img/de/picker-port.png)
 
 Unter SERVO PWM und MOTOR PWM ist auch eine Taste grau, die der IOmcu
-auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GP28, solange
-der Port GP13 hält, und der Partner eines als PWM gebundenen Pins, GP16
-neben GP0. Ein Tippen darauf ändert nichts und setzt die Zeile des
-Outputs-Bildschirms unter die Zählung: `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13`,
-`GP16: GLEICHER PWM-KANAL WIE GP0`.
+auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GPIO 28, solange
+der Port GPIO 13 hält, und der Partner eines als PWM gebundenen Pins, GPIO 16
+neben GPIO 0. Ein Tippen darauf ändert nichts und setzt die Zeile des
+Outputs-Bildschirms unter die Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
+`GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0`.
 
-![GP13 beim Programmierport](img/de/picker-prog.png)
+![GPIO 13 beim Programmierport](img/de/picker-prog.png)
 
 Ein Pin, den SETUP > INTERFACES hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn

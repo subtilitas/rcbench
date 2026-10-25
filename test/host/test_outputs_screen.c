@@ -31,7 +31,7 @@
 
 #include "outputs_screen_rig.h"
 
-/* Whether @p s ends in @p tail: "GP1" at the end, not inside "GP17". */
+/* Whether @p s ends in @p tail: "GPIO 1" at the end, not inside "GPIO 17". */
 static bool ends_with(const char *s, const char *tail)
 {
     const size_t n = strlen(s), t = strlen(tail);
@@ -607,7 +607,7 @@ TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
 
             CHECK_EQ(outputs_screen_cell(idx(28), l, sizeof(l)),
                      OUTPUTS_CELL_HELD);
-            CHECK(ends_with(l, "GP13"));
+            CHECK(ends_with(l, "GPIO 13"));
             /* Slice 7 is not the port's. */
             CHECK_EQ(outputs_screen_cell(idx(14), NULL, 0),
                      OUTPUTS_CELL_FREE);
@@ -616,8 +616,8 @@ TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
             tap_pin(28);
             CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
             CHECK_EQ(s_applied, was);
-            CHECK(strncmp(reason(), "GP28", 4) == 0);
-            CHECK(ends_with(reason(), "GP13"));
+            CHECK(strncmp(reason(), "GPIO 28:", 8) == 0);
+            CHECK(ends_with(reason(), "GPIO 13"));
             /* Another pick ends the answer. */
             choose_named(pwm[k]);
             CHECK_STR_EQ(reason(), "");
@@ -625,7 +625,7 @@ TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
             /* So does a change of board: the line keeps a catalogue index,
              * which names another pin, or none, on another board. */
             tap_pin(28);
-            CHECK(strncmp(reason(), "GP28", 4) == 0);
+            CHECK(strncmp(reason(), "GPIO 28:", 8) == 0);
             outbind_t b = *outputs_screen_binding();
             outbind_t other = b;
             other.board = (uint16_t)(b.board + 1u);
@@ -677,10 +677,10 @@ TEST_CASE(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered)
 
         CHECK_EQ(outputs_screen_cell(idx(16), l, sizeof(l)),
                  OUTPUTS_CELL_HELD);
-        CHECK(ends_with(l, "GP0"));
+        CHECK(ends_with(l, "GPIO 0"));
         CHECK_EQ(outputs_screen_cell(idx(17), l, sizeof(l)),
                  OUTPUTS_CELL_HELD);
-        CHECK(ends_with(l, "GP1"));
+        CHECK(ends_with(l, "GPIO 1"));
         /* The other channel of the slice is a register of its own. */
         CHECK_EQ(outputs_screen_cell(idx(18), NULL, 0), OUTPUTS_CELL_FREE);
 
@@ -689,12 +689,12 @@ TEST_CASE(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered)
         tap_pin(17);
         CHECK_EQ(outbind_chosen(outputs_screen_binding()), 2);
         CHECK_EQ(s_applied, was);
-        CHECK(strncmp(reason(), "GP17", 4) == 0);
-        CHECK(ends_with(reason(), "GP1"));
+        CHECK(strncmp(reason(), "GPIO 17:", 8) == 0);
+        CHECK(ends_with(reason(), "GPIO 1"));
         tap_pin(16);
         CHECK_EQ(s_applied, was);
-        CHECK(strncmp(reason(), "GP16", 4) == 0);
-        CHECK(ends_with(reason(), "GP0"));
+        CHECK(strncmp(reason(), "GPIO 16:", 8) == 0);
+        CHECK(ends_with(reason(), "GPIO 0"));
         /* A tick that lands ends it. */
         tap_pin(4);
         CHECK_EQ(s_applied, was + 1);

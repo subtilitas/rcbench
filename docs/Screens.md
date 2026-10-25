@@ -345,21 +345,22 @@ The home tag climbs one level at a time:
 
 The CONTROL card opens with the TARGET row: the label, 88px, and a value box
 of 25 characters that names what the throttle drives, the protocol and then
-the pins, `DSHOT300 GP0 GP1`. They are the pins bound as MOTOR PWM or as a
+the pins, `DSHOT300 GPIO 0 GPIO 1`. They are the pins bound as MOTOR PWM or as a
 DShot protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
 role reads. The pins are in pin order; those that do not fit are counted.
-With GP0 to GP7 bound as DSHOT300 it reads `DSHOT300 GP0 GP1 GP2 +5`.
+With GPIO 0 to GPIO 7 bound as DSHOT300 it reads `DSHOT300 GPIO 0 GPIO 1 +6`.
 
 A programming port whose FUNCTION is DSHOT150, DSHOT300 or DSHOT600 and whose
 pin the IOmcu holds follows the pins as `PORT n`, and counts with them. A
-port alone is named in full where it fits, `DSHOT300 PROG PORT 2 GP14` (25
-characters), and as `DSHOT300 PORT 2` in a shorter field.
+port alone is named in full where it fits, `DSHOT300 PROG PORT 2 GPIO 14` (28
+characters), as `DSHOT300 PORT 2 GPIO 14` (23 characters) in the CONTROL
+card's 25, and as `DSHOT300 PORT 2` in a shorter field.
 
 | TARGET reads | Condition |
 | --- | --- |
-| `DSHOT300 GP0 GP1` | one protocol drives every throttle pin |
-| `MIXED GP0 GP4` | the throttle pins run on two or more protocols, or one of them on a rate no OUTPUTS protocol has |
-| `GP0 GP1` | every throttle pin runs on a rate no OUTPUTS protocol has |
+| `DSHOT300 GPIO 0 GPIO 1` | one protocol drives every throttle pin |
+| `MIXED GPIO 0 GPIO 4` | the throttle pins run on two or more protocols, or one of them on a rate no OUTPUTS protocol has |
+| `GPIO 0 GPIO 1` | every throttle pin runs on a rate no OUTPUTS protocol has |
 | `NO MOTOR PIN` | the binding is read and neither a pin nor a programming port is bound as a motor; warning colour |
 | `PINS NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board; warning colour |
 
@@ -367,9 +368,9 @@ With DShot programming ports:
 
 | TARGET reads | Condition |
 | --- | --- |
-| `DSHOT300 PROG PORT 2 GP14` | a DSHOT300 programming port on GP14 drives the throttle and no pin is bound as a motor |
-| `DSHOT300 GP0 PORT 2` | GP0 bound as DSHOT300 and a DSHOT300 port |
-| `MIXED GP0 PORT 2` | the pins and the ports run at different rates, or the pins at a rate no catalogue protocol has |
+| `DSHOT300 PORT 2 GPIO 14` | a DSHOT300 programming port on GPIO 14 drives the throttle and no pin is bound as a motor |
+| `DSHOT300 GPIO 0 PORT 2` | GPIO 0 bound as DSHOT300 and a DSHOT300 port |
+| `MIXED GPIO 0 PORT 2` | the pins and the ports run at different rates, or the pins at a rate no catalogue protocol has |
 
 ![TARGET names PROG PORT 2 as DSHOT300](img/motor-port.png)
 
@@ -771,7 +772,7 @@ strip in their place, one line in the 10 x 20 face from x 12, y 4:
 ![ESC STICK under the output strip](img/motor-stick.png)
 
 ```
-TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   SAFE
+TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY 7.60V  1.00A   SAFE
 ```
 
 | Part | Shows |
@@ -1395,8 +1396,8 @@ gives the method, the protections and the report. It is a 2s hold while
 the bench is ARMED and the INA3221 is the servo rail's meter. Over it the
 card's summary names the mode, `SEARCH ONLY` or `SEARCH + PROGRAM`, and
 SERVO PULSES while the run reads the port. Under it a line names the
-output it drives and the meter, `OUTPUT PROG PORT 1 GP13, CURRENT
-INA3221 0x41 CH2` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 0x40 CH1`
+output it drives and the meter, `OUTPUT PROG PORT 1 GPIO 13, CURRENT
+INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`
 (`CURRENT INA3221` while no channel watches the target), the next line says why
 it cannot start or what it does now, then the last result and its report.
 These four lines are in the 10 x 20 face, 20px apart, the first 2px under
@@ -1421,7 +1422,7 @@ automatic test's reasons end it with the output off.
 
 PROGRAM in the strip shows the list of programmers in the page area, one
 row each: the name on the left, and on the right what the row drives with
-its pin, `PROG PORT 1 GP13`, then `>`. The KST and Chaservo row is on the
+its pin, `PROG PORT 1 GPIO 13`, then `>`. The KST and Chaservo row is on the
 port SERVO TESTER names, PORT 1, PORT 2, PORT 3 or PORT 4, and reads `PROG
 PORT` with its pin while SERVO TESTER is OUTPUTS. A row is dimmed with
 `PORT IN USE` while another session holds its port: another row's, or a
@@ -1459,7 +1460,7 @@ fit without the bar, 6 under it. MOTOR & ESC's list is the same list.
 
 The KST and Chaservo programmer takes the programming port the tester
 drives out of PWM (pulse-width modulation) and reads and writes the
-servo's settings on its signal wire. PROG PORT 1 is GP13 on pad 17 by
+servo's settings on its signal wire. PROG PORT 1 is GPIO 13 on pad 17 by
 default. It connects only with SERVO TESTER on SETUP > OUTPUTS set to a
 port, PORT 1, PORT 2, PORT 3 or PORT 4; with OUTPUTS it shows `Use the programming port to
 program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP >
@@ -1597,12 +1598,12 @@ left column.
 
 SERVO TESTER holds OUTPUTS, PORT 1, PORT 2, PORT 3 or PORT 4. With
 OUTPUTS the row names the GPIOs bound as SERVO PWM in the binding the
-tester drives: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`; as many pins as fit
-the 25 characters of the value, then `+N`: 8 pins from GP40 read
-`SERVO PWM GP40 GP41 +6`. The row is in the warning colour, label and
+tester drives: `SERVO PWM GPIO 4`, `SERVO PWM GPIO 2 GPIO 4`; as many pins as fit
+the 25 characters of the value, then `+N`: 8 pins from GPIO 40 read
+`SERVO PWM GPIO 40 +7`. The row is in the warning colour, label and
 value, with no such pin (`NO SERVO PWM PIN`) and before a binding has been
 read (`PINS NOT READ`). With a programming port the row reads `PROG PORT 1
-GP13` in the warning colour, the port's number and the GPIO the IOmcu
+GPIO 13` in the warning colour, the port's number and the GPIO the IOmcu
 reports for it. The tester's commands then do not reach the SERVO PWM
 outputs; while the bank is ARMED they hold their rest pulse, the centre
 between their endpoints. A port target without a usable pin (none, refused
@@ -1611,7 +1612,7 @@ PORT 1`, also in the warning colour. The IOmcu then keeps the standard
 outputs as its target, and the tester sends them no command but a
 release, and SWEEP is greyed, until the port has a SERVO PWM pin or
 SERVO TESTER is OUTPUTS. With PORT PWM
-off the port renders no pulse, and the row reads `PORT 1 GP13 PWM OFF`, 19
+off the port renders no pulse, and the row reads `PORT 1 GPIO 13 PWM OFF`, 22
 characters with a two-digit pin, or `PROG PORT 1 PWM OFF`. Two states name
 no target, both in the warning colour, and the tester sends no command in
 either: `NO LINK` while no IOmcu answers, and `UNKNOWN` while the
@@ -1680,7 +1681,7 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT GP13 runs at 330Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT GPIO 13 runs at 330Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50Hz |
@@ -1728,7 +1729,7 @@ receiver-transmitter). The IOmcu drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100ms. With
 the PD mini enabled on SETUP under INTERFACES, the header names the module
-and the IOmcu's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
+and the IOmcu's UART pins that carry it, `PD MINI TX GPIO 12 RX GPIO 13`,
 from the PD mini TX and PD mini RX settings. With either pin not set, or
 both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
@@ -1744,8 +1745,8 @@ is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 | SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
 
 The header is the row right of the strip: the module and its pins, ONLINE
-or NOT ANSWERING, and at the right end the range the set points may take,
-for example `3.3-8.4V  0.50-5.00A`. It stays in sight on both tasks and
+or NOT ANSWERING, in 10 x 20, and at the right end the range the set points
+may take, in 8 x 16, for example `3.3-8.4V  0.50-5.00A`. It stays in sight on both tasks and
 under the keypad and the question. The rail on the right, 380px, is the
 same on both tasks: four reading cards of 64px, VOLT, CURR, PWR and MODE,
 and the CONTROL card with the run's mAh and Wh on its title line, RESET
@@ -1999,15 +2000,15 @@ The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
 on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. Their `-` and `+` keys step over the
 GPIO the other row holds, and at the end of the range do nothing: with RX on
-GP47, TX stops at GP46. The keypad refuses the other row's GPIO and shows
+GPIO 47, TX stops at GPIO 46. The keypad refuses the other row's GPIO and shows
 `The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both on one GPIO loads as
 stored: the panel writes the page disabled, the PD mini stays off, and both
 rows say `TX and RX on one pin. The PD mini stays off.` until one is
 stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is
 reserved, bound to an output, held by the sensor bus or the phase tap, or
 the other pin, and the band says `PD mini pins rejected. Check SETUP >
-INTERFACES.`: RX on GP17 is refused while Sensor SDA is GP16, as Sensor SCL
-is then GP17. The alert leaves the band once a read shows the page holding
+INTERFACES.`: RX on GPIO 17 is refused while Sensor SDA is GPIO 16, as Sensor SCL
+is then GPIO 17. The alert leaves the band once a read shows the page holding
 the wiring asked: at once when the pin is stepped back to the one the page
 still holds. Once the module has
 answered, a change waits for a state read of the module sent after it, at
@@ -3367,9 +3368,9 @@ are at the top of INTERFACES:
 
 SDA and SCL are one I2C block's pair: SDA's GPIO number mod 4 is 0 or 2, and
 SCL is the GPIO after it. Sensor SDA takes only the pins of such a pair that
-the RP2350-CAN brings out and does not reserve: GP2 is left out because GP3
-is the heartbeat, GP8 to GP12 are the CAN controller's, and GP22, GP24 and
-GP28 because the module does not bring out GP23, GP25 and GP29. The rule is
+the RP2350-CAN brings out and does not reserve: GPIO 2 is left out because GPIO 3
+is the heartbeat, GPIO 8 to GPIO 12 are the CAN controller's, and GPIO 22, GPIO 24 and
+GPIO 28 because the module does not bring out GPIO 23, GPIO 25 and GPIO 29. The rule is
 the one the IOmcu's SENSE page judges a write by
 (`link_sn_pins_pair()`, `settings_sense_sda_valid()`). A pin an output, the
 PD mini or the phase tap holds is offered all the same, and the IOmcu
@@ -3438,7 +3439,7 @@ both said. In order:
 | `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
 | `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
 | `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | the INA228 on the address of a fitted INA3221; neither is read |
-| `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
+| `Sensor pins GPIO 16/GPIO 17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
 | `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
 | `INA3221 settings rejected. Check SETUP > SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
 | `INA3221 0x41 has every channel off. Check SETUP > SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
@@ -3674,7 +3675,7 @@ the bus's pins:
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
-| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | IOmcu GPIO; GP22 is pad 29. The keypad and the keys offer the pins the RP2350-CAN brings out and does not reserve, less the ADC (analog-to-digital converter) pins GP26 to GP29: GP3 is the heartbeat, GP8 to GP12 are the CAN controller's, and the module does not bring out GP23 to GP25 and GP29. Refused by the IOmcu: a pin bound to an output; a pin the SENSE or SUPPLY page holds |
+| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | IOmcu GPIO; GPIO 22 is pad 29. The keypad and the keys offer the pins the RP2350-CAN brings out and does not reserve, less the ADC (analog-to-digital converter) pins GPIO 26 to GPIO 29: GPIO 3 is the heartbeat, GPIO 8 to GPIO 12 are the CAN controller's, and the module does not bring out GPIO 23 to GPIO 25 and GPIO 29. Refused by the IOmcu: a pin bound to an output; a pin the SENSE or SUPPLY page holds |
 | Tap lowest tone | 50 to 2000Hz, 10Hz steps | 400 | a tone below it is not a beep |
 | Tap highest tone | 100 to 6900Hz, 50Hz steps | 6500 | above the lowest tone |
 | Tap pitch split | 0 to 50%, 1% steps | 8 | a pitch change this large starts a new beep with no silence between; 0 splits on silence only |
@@ -3721,9 +3722,9 @@ current monitors:
 | Message | When |
 | --- | --- |
 | `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `Phase tap on GP22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
 | `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
-| `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 The three alerts about the set-up -- the first frame rejected, the second
@@ -3740,7 +3741,7 @@ at least one period of the lowest tone, 2.5ms at 400Hz
 ### INTERFACES: the programming port
 
 The last row of INTERFACES, under PROG PORT, says how the IOmcu receives
-the answer of a Hitec D series servo on its programming port, GP13 by
+the answer of a Hitec D series servo on its programming port, GPIO 13 by
 default ([Receive mode](LinkHitec.md#receive-mode)):
 
 | Setting | Values | Default | |
@@ -4421,7 +4422,7 @@ face (300 x 64px), the count and the reason under it in 10 x 20, and
 LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
 grid of 4 columns of 7 cells, 167 x 64px each (25.1 x 9.6mm), 8px apart
 across and 6px apart down, from x 324. A cell holds a 24px tick box, the
-GP name in 20 x 36 and, under them, what holds the pin or its pad in
+pin name in 16 x 28 (`GPIO 28`, 112px) and, under them, what holds the pin or its pad in
 8 x 16, 18 characters at most. The grid's last row ends at body y 492,
 4px above the alert band. The open protocol list holds the 8 protocols in
 a column of 48px rows (7.2mm) from the face's top and the PROG PORT
@@ -4480,16 +4481,16 @@ and stepping past seven to reach the eighth is not choosing:
 
 ![The protocol list](img/outputs-protocol.png)
 
-Reserved pins are shown and cannot be ticked. GP3 carries the safety heartbeat
-and GP8 to GP12 are the CAN (Controller Area Network) controller, and each
-says so under its name. Hiding them would leave an operator hunting for GP10
+Reserved pins are shown and cannot be ticked. GPIO 3 carries the safety heartbeat
+and GPIO 8 to GPIO 12 are the CAN (Controller Area Network) controller, and each
+says so under its name. Hiding them would leave an operator hunting for GPIO 10
 and finding a gap. [DShot and the output drivers](DShot.md#which-pin) has the
 whole map.
 
-The pin of the IOmcu's programming port, GP13 by default, is shown as
+The pin of the IOmcu's programming port, GPIO 13 by default, is shown as
 `PROG PORT` and cannot be ticked either:
 
-![GP13 held by the programming port](img/outputs-prog.png)
+![GPIO 13 held by the programming port](img/outputs-prog.png)
 
 A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
@@ -4500,16 +4501,16 @@ through, with what holds it under its name, and cannot be ticked:
 
 | Under the name | Pins | While |
 |---|---|---|
-| `SENSOR BUS` | Sensor SDA and the Sensor SCL after it, GP16 and GP17 by default | INA228 or AS5600 is ON, or an INA3221 is fitted on SENSORS |
+| `SENSOR BUS` | Sensor SDA and the Sensor SCL after it, GPIO 16 and GPIO 17 by default | INA228 or AS5600 is ON, or an INA3221 is fitted on SENSORS |
 | `PD MINI` | PD mini TX and PD mini RX | PD mini is ON with both pins set, on two pins |
-| `PHASE TAP` | Tap pin, GP22 by default | Phase tap is ON |
+| `PHASE TAP` | Tap pin, GPIO 22 by default | Phase tap is ON |
 
 These are the pins the IOmcu reserves from the outputs for those parts.
 While the IOmcu answers, each part's cells show the pins its page holds
 by that page's last read or acknowledged write. A move onto pins the
 IOmcu refuses leaves the old pins taken and the asked pins free. A part
 the IOmcu refused holds nothing: a tap on an ADC (analogue-to-digital
-converter) pin from GP26 to GP29, a tap whose pin the IOmcu reports
+converter) pin from GPIO 26 to GPIO 29, a tap whose pin the IOmcu reports
 refused, a sensor bus no part of which the page enables, any part on an
 IOmcu without its page. With no IOmcu answering, or before the first read
 of a page, the cells follow the settings: Sensor SDA at -1 holds nothing,
@@ -4536,7 +4537,7 @@ output of its own kind, no slot and no protocol
 
 | Row | What it shows and does |
 | --- | --- |
-| PIN | a button: `PIN GP13`, `SET A PIN` for a port without one, `PIN GP14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. A tap opens [PICK A PIN](#pick-a-pin) on this port |
+| PIN | a button: `PIN GPIO 13`, `SET A PIN` for a port without one, `PIN GPIO 14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. A tap opens [PICK A PIN](#pick-a-pin) on this port |
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
@@ -4551,7 +4552,7 @@ own pin lit; no pin takes a tick there.
 | NONE | an input with its pull-down; no pulse | any free header pin |
 | DSHOT150, DSHOT300, DSHOT600 | plain DShot at 150, 300 or 600kbit/s, a frame every 1ms while the bank is ARMED for the throttle; no frame otherwise. MOTOR & ESC drives it ([TARGET](#target-names-the-protocol-and-the-pins)) | any free header pin a PIO block reaches; no slice rule |
 
-Port 1 starts as SERVO PWM on GP13, ports 2 to 4 as NONE with no pin. The
+Port 1 starts as SERVO PWM on GPIO 13, ports 2 to 4 as NONE with no pin. The
 IOmcu keeps each port's pin and function in its flash with the outputs'
 binding, so they belong to the board, not to the panel. A FUNCTION tap and
 a pin tapped in PICK A PIN are asks: the panel writes them on a bench at
@@ -4593,8 +4594,8 @@ grey, no tick, and the pin it clashes with named under its name.
 
 | Cell | Line after a tap on it | Rule |
 | --- | --- | --- |
-| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with a SERVO PWM programming port's pin while the port holds it, checked against every port the IOmcu reports; GP13 and GP28 are slice 6. A NONE or DShot port's pin is under no slice rule |
-| `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
+| `SLICE OF GPIO 13` | `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13` | the pin shares a slice with a SERVO PWM programming port's pin while the port holds it, checked against every port the IOmcu reports; GPIO 13 and GPIO 28 are slice 6. A NONE or DShot port's pin is under no slice rule |
+| `PWM CH OF GPIO 0` | `GPIO 16: SAME PWM CHANNEL AS GPIO 0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GPIO 0 and GPIO 16, GPIO 1 and GPIO 17, GPIO 2 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22 |
 
 The line stands under the protocol, in amber, until the next pick, the next
 tick that lands, the next visit to the screen or a change of board. A line
@@ -4604,7 +4605,7 @@ offered both pins.
 
 Limitation: the slice rule needs the programming port's pin, which the panel
 reads from the IOmcu. Until that reading arrives, up to 500ms after
-the link comes up or the port's pin changes, GP28 is offered, and a tap on
+the link comes up or the port's pin changes, GPIO 28 is offered, and a tap on
 it ends in `LAST WRITE: REFUSED`. Other IOmcu checks, such as the
 SERVO page's frame rate on a pin shared with MOTOR PWM, also refuse with no
 reason on this screen.
@@ -4653,9 +4654,9 @@ it where a free pin shows its pad number. That is a choice, undone by going to
 that protocol and unticking it there — unlike a reserved pin, which is drawn
 red and struck through because it is the wiring rather than a choice.
 
-Four servo leads and an ESC, with DSHOT300 the protocol being edited. GP5 is
-ticked; GP0, GP1, GP2 and GP4 say SERVO PWM and cannot be ticked here; GP3 and
-GP8 to GP12 are red because the IOmcu reserves them:
+Four servo leads and an ESC, with DSHOT300 the protocol being edited. GPIO 5 is
+ticked; GPIO 0, GPIO 1, GPIO 2 and GPIO 4 say SERVO PWM and cannot be ticked here; GPIO 3 and
+GPIO 8 to GPIO 12 are red because the IOmcu reserves them:
 
 ![Outputs with pins held by another protocol](img/outputs-held.png)
 
@@ -4690,13 +4691,13 @@ binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
 hold is the way out of those pages
 ([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
 
-GP0 bound as DSHOT600 BIDIR, GP1 as MOTOR PWM, GP2 and GP13 as SERVO PWM,
-with OFF selected. A slot holds GP13 on this bench, so the programming port
+GPIO 0 bound as DSHOT600 BIDIR, GPIO 1 as MOTOR PWM, GPIO 2 and GPIO 13 as SERVO PWM,
+with OFF selected. A slot holds GPIO 13 on this bench, so the programming port
 has no pin:
 
 ![OFF shows the protocol of every bound pin](img/outputs-off.png)
 
-With SERVO PWM picked on the same bench, GP2 and GP13 are ticked and show
+With SERVO PWM picked on the same bench, GPIO 2 and GPIO 13 are ticked and show
 `PAD 4` and `PAD 17`: a pin ticked in the selected protocol shows its pad
 number, because the protocol is the one named in the list.
 
@@ -4755,8 +4756,8 @@ straight trace to its own pad. The board is drawn 600px wide and at most
 582 x 240px. Two keys in one row stand two pads apart, 8px clear of each
 other, and the lower row ends at body y 490, above the alert band. The
 protocol list's face (280 x 56px), the count and the reason are top left;
-the PINS table is under them, 171px wide, rows of 36px with the GP name
-in 20 x 36; IN USE is on the right, 168px wide. Both tables stand 8px
+the PINS table is under them, 171px wide, rows of 36px with the pin name
+in 16 x 28; IN USE is on the right, 168px wide. Both tables stand 8px
 clear of the outermost key a 600px board can have, a pad on its very edge
 included. The protocol list opens as on Outputs: the protocols in a column
 of 48px rows, the PROG PORT entries in a second column beside it.
@@ -4781,7 +4782,7 @@ A key's colour says what a tap on it does:
 | ivory (row nearer the board) or ebony (row beyond it) | free | binds it to the selected protocol |
 | accent | bound in the selected protocol | gives it back |
 | grey | another protocol holds it, the programming port has it, the selected protocol can take no more pins, or the binding is not confirmed | changes nothing |
-| none, red cross on the pad | reserved by the IOmcu: GP3 heartbeat, GP8 to GP12 CAN | — |
+| none, red cross on the pad | reserved by the IOmcu: GPIO 3 heartbeat, GPIO 8 to GPIO 12 CAN | — |
 
 Neighbouring keys differ in height and in colour, like the keys of a
 keyboard. A reserved pin has no key because a key under a pin that cannot be
@@ -4823,7 +4824,7 @@ run of channels, because that is what the OUTPUTS page carries. With OFF
 selected the PINS table is not drawn, because OFF holds no pin; the slot
 count and IN USE stay, and IN USE then lists every bound pin.
 
-The pin of the IOmcu's programming port, GP13 (pad 17) by default, is
+The pin of the IOmcu's programming port, GPIO 13 (pad 17) by default, is
 drawn grey while no protocol holds it, a tap on it changes nothing, and IN
 USE lists it first under `PROG PORT`, without a channel. Every port the
 IOmcu reports, at most 4, holds its pin so, each listed once under the
@@ -4840,7 +4841,7 @@ its port. With a port picked the keys set that port's pin:
 | the port's pin, accented | asks for no pin |
 | a free key | asks for that pin |
 | grey, under another port's name (`PROG PORT 2`), a protocol's or an interface's | changes nothing |
-| grey, `SLICE OF GP4` or `PWM CH OF GP12`, on a SERVO PWM port | changes nothing; the line says `GP5: SHARES PWM SLICE WITH OUTPUT GP4` or `GP28: SAME PWM CHANNEL AS GP12` |
+| grey, `SLICE OF GPIO 4` or `PWM CH OF GPIO 12`, on a SERVO PWM port | changes nothing; the line says `GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4` or `GPIO 28: SAME PWM CHANNEL AS GPIO 12` |
 
 The count line names the port's function, `FUNCTION: SERVO PWM`, and PINS
 holds the port's one pin with its pad. A NONE port takes any free key. An
@@ -4851,12 +4852,12 @@ reads `PORTS NOT READ YET`.
 ![PROG PORT 3 picked](img/picker-port.png)
 
 Under SERVO PWM and MOTOR PWM a key the IOmcu refuses on a PWM slice
-is grey too, as on the Outputs screen: GP28 while the port holds GP13, and
-the partner of a pin bound as PWM, GP16 beside GP0. A tap on it changes
+is grey too, as on the Outputs screen: GPIO 28 while the port holds GPIO 13, and
+the partner of a pin bound as PWM, GPIO 16 beside GPIO 0. A tap on it changes
 nothing and puts the Outputs screen's line under the count:
-`GP28: SHARES PWM SLICE WITH PROG PORT GP13`, `GP16: SAME PWM CHANNEL AS GP0`.
+`GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13`, `GPIO 16: SAME PWM CHANNEL AS GPIO 0`.
 
-![GP13 held by the programming port](img/picker-prog.png)
+![GPIO 13 held by the programming port](img/picker-prog.png)
 
 A pin SETUP > INTERFACES holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming

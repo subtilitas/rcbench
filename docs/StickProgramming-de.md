@@ -66,7 +66,7 @@ MOTOR & ESC, dann PROGRAMMIEREN, dann die Zeile `ESCs per Gasknüppel`:
 
 ESC STICK öffnet über die volle Breite, unter dem Ausgangsstreifen, der die
 Pins nennt, die der Lauf treibt, das Netzteil und den Prüfstand:
-`ZIEL DSHOT300 GP0   NETZTEIL --   SAFE`.
+`ZIEL DSHOT300 GPIO 0   NETZTEIL --   SAFE`.
 
 Die Liste hat zwei Ebenen.
 

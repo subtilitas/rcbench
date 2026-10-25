@@ -412,30 +412,31 @@ static void draw_once(void)
 TEST_CASE(the_target_row_names_the_protocol_and_the_pins)
 {
     char line[96];
+    /* In the card's 25 cells (motor_target_cells()). */
     for (int l = 0; l < 2; ++l) {
         ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
         /* A protocol's name is the catalogue's, the same in both. */
         CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300,
-                                     (1u << 0) | (1u << 1), true, 18u));
-        CHECK_STR_EQ(line, "DSHOT300 GP0 GP1");
+                                     (1u << 0) | (1u << 1), true, 25u));
+        CHECK_STR_EQ(line, "DSHOT300 GPIO 0 GPIO 1");
         CHECK(!motor_throttle_target(line, sizeof(line), PROTO_MOTOR_PWM,
-                                     1u << 2, true, 18u));
-        CHECK_STR_EQ(line, "MOTOR PWM GP2");
+                                     1u << 2, true, 25u));
+        CHECK_STR_EQ(line, "MOTOR PWM GPIO 2");
         /* No protocol known, or an index past the catalogue: the pins. */
-        CHECK(!motor_throttle_target(line, sizeof(line), 0u, 3u, true, 18u));
-        CHECK_STR_EQ(line, "GP0 GP1");
-        CHECK(!motor_throttle_target(line, sizeof(line), 8u, 3u, true, 18u));
-        CHECK_STR_EQ(line, "GP0 GP1");
+        CHECK(!motor_throttle_target(line, sizeof(line), 0u, 3u, true, 25u));
+        CHECK_STR_EQ(line, "GPIO 0 GPIO 1");
+        CHECK(!motor_throttle_target(line, sizeof(line), 8u, 3u, true, 25u));
+        CHECK_STR_EQ(line, "GPIO 0 GPIO 1");
     }
     /* Several protocols: MIXED, in the language shown. */
     ui_text_set_language(UI_LANG_EN);
     CHECK(!motor_throttle_target(line, sizeof(line), MOTOR_PROTO_MIXED,
-                                 (1u << 0) | (1u << 2), true, 18u));
-    CHECK_STR_EQ(line, "MIXED GP0 GP2");
+                                 (1u << 0) | (1u << 2), true, 25u));
+    CHECK_STR_EQ(line, "MIXED GPIO 0 GPIO 2");
     ui_text_set_language(UI_LANG_DE);
     CHECK(!motor_throttle_target(line, sizeof(line), MOTOR_PROTO_MIXED,
-                                 (1u << 0) | (1u << 2), true, 18u));
-    CHECK_STR_EQ(line, "GEMISCHT GP0 GP2");
+                                 (1u << 0) | (1u << 2), true, 25u));
+    CHECK_STR_EQ(line, "GEMISCHT GPIO 0 GPIO 2");
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -446,33 +447,33 @@ TEST_CASE(many_throttle_pins_end_in_a_count_within_the_box)
     char line[96];
     CHECK_EQ(motor_target_cells(), 25u);
     ui_text_set_language(UI_LANG_EN);
-    /* The card's own 25 cells: three pins and the count of the rest. */
+    /* The card's own 25 cells: two pins and the count of the rest. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
                                  true, motor_target_cells()));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 GP1 GP2 +5");
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 GPIO 1 +6");
     CHECK(strlen(line) <= motor_target_cells());
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
                                  true, 18u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 +7");
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 +7");
     CHECK(strlen(line) <= 18u);
-    /* Exactly fitting: "DSHOT300 GP0 GP1 " is 17, and GP2 does not fit. */
+    /* Exactly fitting: "DSHOT300 GPIO 0 GPIO 1" is 22. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, true,
-                                 16u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 GP1");
+                                 22u));
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 GPIO 1");
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, true,
-                                 15u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 +1");
+                                 21u));
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 +1");
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 3u, true,
-                                 14u));
+                                 17u));
     CHECK_STR_EQ(line, "DSHOT300 +2");
     /* The longest name leaves room for the count alone. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600_BIDIR, 3u,
                                  true, 18u));
     CHECK_STR_EQ(line, "DSHOT600 BIDIR +2");
-    /* GP47 is the highest pin the boards have. */
+    /* GPIO 47 is the highest pin the boards have. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_MOTOR_PWM,
                                  (uint64_t)1u << 47, true, 18u));
-    CHECK_STR_EQ(line, "MOTOR PWM GP47");
+    CHECK_STR_EQ(line, "MOTOR PWM GPIO 47");
     /* A buffer too short cuts the line and ends it. */
     char tiny[6];
     (void)motor_throttle_target(tiny, sizeof(tiny), PROTO_DSHOT300, 3u, true,

@@ -327,10 +327,10 @@ TEST_CASE(a_row_the_iomcu_lacks_is_dimmed_with_its_reason)
     CHECK_STR_EQ(out, "PROG PORT 1");
     fa.pin = 13u;
     CHECK(!prog_reg_detail(r, 1, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG PORT 1 GP13");
+    CHECK_STR_EQ(out, "PROG PORT 1 GPIO 13");
     ui_text_set_language(UI_LANG_DE);
     CHECK(!prog_reg_detail(r, 1, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG-PORT 1 GP13");
+    CHECK_STR_EQ(out, "PROG-PORT 1 GPIO 13");
     ui_text_set_language(UI_LANG_EN);
 
     /* Two bits missing: the lower is named. */
@@ -438,13 +438,13 @@ TEST_CASE(a_row_on_the_testers_port_follows_the_tester)
     CHECK_STR_EQ(out, "PROG PORT");
     fa.pin = 13u;
     CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG PORT GP13");
+    CHECK_STR_EQ(out, "PROG PORT GPIO 13");
     /* PORT 2: its number and pin. */
     prog_registry_set_ports(1u, 0u);
     CHECK_EQ(prog_reg_port(&r[0]), 1u);
     fa.pin = 14u;
     CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
-    CHECK_STR_EQ(out, "PROG PORT 2 GP14");
+    CHECK_STR_EQ(out, "PROG PORT 2 GPIO 14");
     fa.pin = PROG_REG_NO_PIN;
     CHECK(!prog_reg_detail(r, 2, 0, caps, out, sizeof(out)));
     CHECK_STR_EQ(out, "PROG PORT 2");

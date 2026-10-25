@@ -878,35 +878,46 @@ TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
     view_ports(none, none, 0u);
     CHECK_EQ(motor_dshot_ports(), 0u);
     CHECK(motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
-    /* A port alone: in full where it fits, PORT n where it does not. */
+    /* A port alone: in full where it fits, PORT n and its pin where that
+     * fits, PORT n where neither does. */
     view_ports(d300, none, 0u);
     CHECK_EQ(motor_dshot_ports(), 2u);
-    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 26u));
-    CHECK_STR_EQ(line, "DSHOT300 PROG PORT 2 GP14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 29u));
+    CHECK_STR_EQ(line, "DSHOT300 PROG PORT 2 GPIO 14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 28u));
+    CHECK_STR_EQ(line, "DSHOT300 PROG PORT 2 GPIO 14");
+    /* Shorter: PORT n and its pin, as in the CONTROL card's 25 cells. */
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 27u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2 GPIO 14");
     CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 25u));
-    CHECK_STR_EQ(line, "DSHOT300 PROG PORT 2 GP14");
-    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 24u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2 GPIO 14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 23u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2 GPIO 14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 22u));
     CHECK_STR_EQ(line, "DSHOT300 PORT 2");
     CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
     CHECK_STR_EQ(line, "DSHOT300 PORT 2");
     /* Slots of the same rate first, then the port. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
                                  true, 18u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 +1");
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 +1");
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
                                  true, 26u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 PORT 2");
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 PORT 2");
     /* In the CONTROL card's 25 cells both are named. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 1u,
                                  true, 25u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 PORT 2");
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 PORT 2");
     /* Another rate: MIXED. */
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600, 1u,
+                                 true, 25u));
+    CHECK_STR_EQ(line, "MIXED GPIO 0 PORT 2");
+    CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT600, 1u,
                                  true, 18u));
-    CHECK_STR_EQ(line, "MIXED GP0 PORT 2");
+    CHECK_STR_EQ(line, "MIXED GPIO 0 +1");
     /* Slot pins at a rate no protocol has, beside a port: MIXED too. */
-    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 1u, true, 18u));
-    CHECK_STR_EQ(line, "MIXED GP0 PORT 2");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 1u, true, 25u));
+    CHECK_STR_EQ(line, "MIXED GPIO 0 PORT 2");
     view_ports(d300, d600, 0u);
     CHECK_EQ(motor_dshot_ports(), 6u);
     CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
@@ -917,14 +928,16 @@ TEST_CASE(the_target_names_the_dshot_ports_the_throttle_drives)
     CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 18u));
     CHECK_STR_EQ(line, "GEMISCHT PORT 2 +1");
     view_ports(d300, none, 0u);
-    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 26u));
-    CHECK_STR_EQ(line, "DSHOT300 PROG-PORT 2 GP14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 28u));
+    CHECK_STR_EQ(line, "DSHOT300 PROG-PORT 2 GPIO 14");
+    CHECK(!motor_throttle_target(line, sizeof(line), 0u, 0u, true, 25u));
+    CHECK_STR_EQ(line, "DSHOT300 PORT 2 GPIO 14");
     ui_text_set_language(UI_LANG_EN);
     /* Eight slot pins and two ports in 18 cells: the count holds both. */
     view_ports(d300, d300, 0u);
     CHECK(!motor_throttle_target(line, sizeof(line), PROTO_DSHOT300, 0xFFu,
                                  true, 18u));
-    CHECK_STR_EQ(line, "DSHOT300 GP0 +9");
+    CHECK_STR_EQ(line, "DSHOT300 GPIO 0 +9");
     /* A refused port drives nothing and is not named. */
     view_ports(d300, d600, 0x4u);
     CHECK_EQ(motor_dshot_ports(), 2u);

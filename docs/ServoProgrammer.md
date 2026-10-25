@@ -96,8 +96,8 @@ every way out of the screen does.
 
 Both are kept with the SERVO settings, SERVO TESTER as OUTPUTS, PORT 1,
 PORT 2, PORT 3 or PORT 4. The TARGET row names the active
-target with its protocol and pins: `PROG PORT 1 GP13` in the warning
-colour, or `SERVO PWM GP4` for the pins bound as SERVO PWM. A port whose
+target with its protocol and pins: `PROG PORT 1 GPIO 13` in the warning
+colour, or `SERVO PWM GPIO 4` for the pins bound as SERVO PWM. A port whose
 FUNCTION is NONE is no target: its entry locks **PORT n** and says
 `THE SERVO TESTER NEEDS FUNCTION SERVO PWM`. A stored value 1, the
 PROG PORT of a single-port panel, reads as PORT 1.
@@ -878,7 +878,7 @@ operator's: its first write saves its own backup file, as every session's
 first write does. The run holds that read in the panel's memory
 until the next run's first write or a start of the panel, and RESTORE offers it as
 `Settings before the limit run.`. While the run holds the port, the screen's
-TARGET row and the run's box name it: `PROG PORT 1 GP13`.
+TARGET row and the run's box name it: `PROG PORT 1 GPIO 13`.
 
 A run aborted inside a session leaves the port in programming mode with
 the values last written. LEAVE gives it back to PWM; CONNECT and READ ALL
@@ -912,7 +912,7 @@ across a power cycle of the bench.
 ![An interrupted write](img/servo-kst-doubt.png)
 
 `Writing was interrupted. The settings may be incomplete.` stays until the
-servo is read, with the pin of the write below it: `Do not use the servo. Connect it to GP13 and tap READ ALL.` A record that holds no pin names the
+servo is read, with the pin of the write below it: `Do not use the servo. Connect it to GPIO 13 and tap READ ALL.` A record that holds no pin names the
 port instead: `Do not use the servo. Connect it to port 1 and tap READ ALL.` Every control but **CONNECT**, **READ
 ALL**, **RESTORE**, **LEAVE** and, where the session's restore needs it,
 the write switch is off. The read compares the servo with the
@@ -920,8 +920,8 @@ record:
 
 | The servo holds | Message | Then |
 | --- | --- | --- |
-| the image before the write | `Is this the servo whose write was interrupted on GP13?` `It has the old values. If this is the same servo, discard the record under RESTORE.` | the record stays until it is discarded |
-| the image the write was to leave | `Is this the servo whose write was interrupted on GP13?` `It has the new values. If this is the same servo, discard the record under RESTORE.` | the record stays until it is discarded |
+| the image before the write | `Is this the servo whose write was interrupted on GPIO 13?` `It has the old values. If this is the same servo, discard the record under RESTORE.` | the record stays until it is discarded |
+| the image the write was to leave | `Is this the servo whose write was interrupted on GPIO 13?` `It has the new values. If this is the same servo, discard the record under RESTORE.` | the record stays until it is discarded |
 | anything else | `The servo contains both old and new settings.` `Do not use this servo. Recover the backup with RESTORE.` | **RESTORE** offers the session's backup while the session lives, and `Settings before the interrupted write.` |
 
 ![The servo holds a mix](img/servo-kst-journal.png)
@@ -940,7 +940,7 @@ servo of the write.
 
 The record belongs to one servo. A servo read on another port is not that
 servo, and neither is one with a register that holds neither the value of
-the image before the write nor the value the write was to leave: `The interrupted write affected a different servo.` `It was connected to GP13. Discard the record under RESTORE.` For a record that holds no pin the line names the
+the image before the write nor the value the write was to leave: `The interrupted write affected a different servo.` `It was connected to GPIO 13. Discard the record under RESTORE.` For a record that holds no pin the line names the
 port: `It was connected to port 1. Discard the record under RESTORE.` Nothing is restored, edited or written while that
 stands, and **RESTORE** holds the discard entry only. **LEAVE** and a
 **CONNECT** of the write's servo bring the comparison above. One register

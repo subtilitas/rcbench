@@ -45,13 +45,13 @@
  * channel, a pad number, a name in IN USE and a pin there in the 20px
  * rows; PK_FONT_FINE (8 x 16) for a rail's voltage, BY OTHERS and the
  * 16px rows of IN USE; PK_FONT_PIN (16 x 28) for a ground's G and a pin
- * in IN USE's 28px rows; PK_FONT_HEAD (20 x 36) for PINS, IN USE, a GP
- * name under PINS and a key's GPIO number.
+ * in IN USE's 28px rows and a pin name under PINS; PK_FONT_HEAD (20 x
+ * 36) for PINS, IN USE and a key's GPIO number.
  */
 #define PK_FONT_LABEL (&gfx_font_10x20)
 #define PK_FONT_FINE  (&gfx_font_8x16)    /**< 8 x 16: rails, 16px rows. */
 #define PK_FONT_PIN   (&gfx_font_16x28)   /**< 16 x 28: IN USE's pins. */
-#define PK_FONT_HEAD  (&gfx_font_20x36)   /**< 20 x 36: heads, GP names. */
+#define PK_FONT_HEAD  (&gfx_font_20x36)   /**< 20 x 36: heads, key numbers. */
 #define PK_CELL       10 /**< PK_FONT_LABEL's cell width, px. */
 
 /**
@@ -139,8 +139,8 @@ _Static_assert(HEAD_Y + (int)OUTBIND_PROTOS * POP_ROW + 8 + 4 <= FOOT,
 
 /**
  * @brief The PINS table, left of the board: 171px, "CH7" in the label
- *        face, "GP28" in the head face from 40px in, and the pad number
- *        right-aligned.
+ *        face (30px), "GPIO 28" in PK_FONT_PIN from PINS_NAME_X in (112px,
+ *        to 146px), and the pad number right-aligned (20px, from 151px).
  *
  * It starts under the reason's second line; its 8 rows of 36px, the
  * most a protocol holds, end at body y 484.  A row is read, not tapped.
@@ -151,11 +151,14 @@ _Static_assert(HEAD_Y + (int)OUTBIND_PROTOS * POP_ROW + 8 + 4 <= FOOT,
 #define PINS_X      8         /**< The table's left edge. */
 #define PINS_Y      (HEAD_Y + HEAD_H + 10) /**< Its heading's top. */
 #define PINS_W      171       /**< Its width, px. */
+#define PINS_NAME_X 34        /**< A pin name's left edge in it, px. */
 #define PINS_TOP    (PINS_Y + 48)   /**< The first row's top. */
 #define ROW_H       36        /**< A row, px. */
 
 _Static_assert(PINS_TOP + (int)LINK_OUT_SLOTS * ROW_H <= FOOT,
                "the PINS table holds 8 pins above the alert band");
+_Static_assert(PINS_NAME_X + 7 * 16 + 4 <= PINS_W - 2 * PK_CELL,
+               "a pin name (GPIO 28) ends 4px left of a two-digit pad");
 _Static_assert(PINS_X + PINS_W + 8 <= (SCREEN_W - BOARD_W) / 2 - BTNW / 2,
                "the PINS table ends 8px left of any key");
 

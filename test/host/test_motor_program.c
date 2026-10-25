@@ -312,21 +312,21 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
 
     supply(false, false, 0u, 0.0f, 0.0f);
     strip(line, sizeof(line), false, &warn);
-    CHECK_STR_EQ(line, "TARGET DSHOT300 GP0 GP1   SUPPLY --   SAFE");
+    CHECK_STR_EQ(line, "TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY --   SAFE");
     CHECK(!warn);
 
     supply(true, false, 0u, 0.0f, 0.0f);
     strip(line, sizeof(line), false, NULL);
-    CHECK_STR_EQ(line, "TARGET DSHOT300 GP0 GP1   SUPPLY OFF   SAFE");
+    CHECK_STR_EQ(line, "TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY OFF   SAFE");
 
     supply(true, true, SUPPLY_OK_VOLTAGE, 7.6f, 0.0f);
     strip(line, sizeof(line), false, NULL);
-    CHECK_STR_EQ(line, "TARGET DSHOT300 GP0 GP1   SUPPLY ON   SAFE");
+    CHECK_STR_EQ(line, "TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY ON   SAFE");
 
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, 1.0f);
     strip(line, sizeof(line), true, NULL);
     CHECK_STR_EQ(line,
-                 "TARGET DSHOT300 GP0 GP1   SUPPLY 7.60V  1.00A   ARMED");
+                 "TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY 7.60V  1.00A   ARMED");
 
     /* A reading below zero is no reading. */
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, -0.1f);
@@ -345,13 +345,13 @@ TEST_CASE(the_strip_reads_the_target_the_supply_and_the_bench)
     supply(true, true, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT, 7.6f, 1.0f);
     strip(line, sizeof(line), false, NULL);
     CHECK_STR_EQ(line,
-                 "ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60V  1.00A   SAFE");
+                 "ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL 7.60V  1.00A   SAFE");
     supply(true, false, 0u, 0.0f, 0.0f);
     strip(line, sizeof(line), true, NULL);
-    CHECK_STR_EQ(line, "ZIEL DSHOT300 GP0 GP1   NETZTEIL AUS   ARMED");
+    CHECK_STR_EQ(line, "ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL AUS   ARMED");
     supply(false, false, 0u, 0.0f, 0.0f);
     strip(line, sizeof(line), false, NULL);
-    CHECK_STR_EQ(line, "ZIEL DSHOT300 GP0 GP1   NETZTEIL --   SAFE");
+    CHECK_STR_EQ(line, "ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL --   SAFE");
     ui_text_set_language(UI_LANG_EN);
 
     /* No buffer, or none of it: nothing written, nothing read past. */

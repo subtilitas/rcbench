@@ -200,7 +200,7 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         /* The line names the output and the channel it reads. */
         char meter_line[96];
         snprintf(meter_line, sizeof(meter_line), TR(SV_LIM_LINE),
-                 "SERVO PWM GP2", "INA3221 0x40 CH1");
+                 "SERVO PWM GPIO 2", "INA3221 0x40 CH1");
         CHECK(lim_line_reads(0, meter_line, UI_C_TEXT_DIM));
         tap(START_X, START_Y);
         CHECK(!servo_screen_limit_running());
@@ -419,7 +419,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
      * so when
      * the bench is switched to SAFE and another output is bound before
      * CLOSE: the ends belong to the run, not to the target now. */
-    CHECK(lim_box_reads(2, "SERVO PWM GP2", UI_C_TEXT_DIM));
+    CHECK(lim_box_reads(2, "SERVO PWM GPIO 2", UI_C_TEXT_DIM));
     /* And under the output the report's name: until the logger answers,
      * WRITING; with its number, LIMITnnn.TXT -- the limit run's prefix,
      * whatever the arm covers -- and never SERVOnnn.TXT or BENCHnnn.TXT. */
@@ -436,7 +436,7 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     servo_screen_set_armed(false);
     servo_screen_set_pins(PIN(5), true);
     bench_frames(100u);
-    CHECK(lim_box_reads(2, "SERVO PWM GP2", UI_C_TEXT_DIM));
+    CHECK(lim_box_reads(2, "SERVO PWM GPIO 2", UI_C_TEXT_DIM));
     servo_screen_set_pins(PIN(2), true);
     servo_screen_set_armed(true);
     bench_frames(100u);

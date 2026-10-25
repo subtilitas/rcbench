@@ -232,7 +232,7 @@ typedef struct {
     char     dut[24];
     char     type[20];
     uint16_t frame_hz;
-    char     output[28];  /**< what it drives: "PROG PORT GP13", "GP2"  */
+    char     output[28];  /**< what it drives: "PROG PORT 1 GPIO 13" */
     uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1mOhm            */
     char     meter[20];   /**< its channel: "INA3221 0x41 CH2"; "" names
                                it "INA3221"                             */

@@ -175,7 +175,7 @@ The page refuses SDA and SCL that are not one block's pair whatever ENABLE
 holds; an IOmcu of 0.15.0 or older takes them with ENABLE 0 and refuses
 the part enabled afterwards. The wire format and the protocol minor are the
 same. A panel of 0.15.0 or older, whose two pin settings are independent,
-sees the refusal at the edit in place of at the enable: its alert `Sensor pins GP15/GP17 rejected. Check SETUP > INTERFACES.`, once per edit and per
+sees the refusal at the edit in place of at the enable: its alert `Sensor pins GPIO 15/GPIO 17 rejected. Check SETUP > INTERFACES.`, once per edit and per
 link-up, and the page keeps the pins it had. Its pins at −1 are written as
 ENABLE 0 with 0 for the pin and are taken as before. A set-up in the
 IOmcu's flash whose pins are not a pair is refused whole at boot, and

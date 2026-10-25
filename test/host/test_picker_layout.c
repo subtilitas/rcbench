@@ -19,6 +19,7 @@
  * - keys_clear_the_tables_on_a_board_with_no_end_margin
  * - the_list_holds_four_ports_in_a_second_column
  * - the_built_in_boards_keys_clear_the_head
+ * - the_tables_name_a_pin_gpio_and_its_number
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,6 +27,8 @@
 #include "picker_screen_rig.h"
 
 #include "outputs_screen.h"
+#include "text_mask.h"
+#include "ui_pinlist.h"
 
 /** @brief The eighth row of the PINS table: from body y 448, 36px. */
 #define PINS_ROW8_Y 448
@@ -313,6 +316,40 @@ TEST_CASE(the_built_in_boards_keys_clear_the_head)
     }
 }
 
+/*
+ * The PINS table and IN USE name a pin as every screen does,
+ * ui_pin_name()'s "GPIO 0" to "GPIO 7" under PINS beside their pad
+ * numbers and the programming port's "GPIO 13" under IN USE, in the 16 x 28
+ * face, in English and in German.
+ */
+TEST_CASE(the_tables_name_a_pin_gpio_and_its_number)
+{
+    static const uint8_t k_mine[] = { 0u, 1u, 2u, 4u, 5u, 6u, 7u };
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        fresh();
+        servo_on(7u);
+        picker_screen_set_prog_pin(13u);
+        render();
+        const gfx_rect_t pins = picker_screen_area(PICKER_AREA_PINS);
+        for (size_t k = 0; k < sizeof(k_mine); ++k) {
+            char want[UI_PIN_NAME_SIZE];
+            CHECK(ui_pin_name(want, sizeof(want), k_mine[k]) > 0u);
+            if (!text_mask_found(s_px, SCREEN_W, SCREEN_H, pins,
+                                 &gfx_font_16x28, want)) {
+                T_FAIL("language %d: no \"%s\" under PINS", l, want);
+            }
+        }
+        const gfx_rect_t use = picker_screen_area(PICKER_AREA_IN_USE);
+        CHECK(text_mask_found(s_px, SCREEN_W, SCREEN_H, use, &gfx_font_16x28,
+                              "GPIO 13"));
+        CHECK(!text_mask_found(s_px, SCREEN_W, SCREEN_H, use,
+                               &gfx_font_16x28, "GP13"));
+        picker_screen_set_prog_pin(PICKER_NO_PIN);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(every_key_is_the_same_finger_sized_key);
@@ -321,5 +358,6 @@ int main(void)
     RUN(keys_clear_the_tables_on_a_board_with_no_end_margin);
     RUN(the_list_holds_four_ports_in_a_second_column);
     RUN(the_built_in_boards_keys_clear_the_head);
+    RUN(the_tables_name_a_pin_gpio_and_its_number);
     return test_summary("picker_layout");
 }

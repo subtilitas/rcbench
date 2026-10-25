@@ -159,7 +159,8 @@ size_t ui_target_text(char *out, size_t size, const char *protocol,
     if (room > size - 1u - n - sep) {
         room = size - 1u - n - sep;
     }
-    char list[UI_PINLIST_PINS * 5u];
+    /* Every pin named, "GPIO 63" and the space before it each. */
+    char list[UI_PINLIST_PINS * UI_PIN_NAME_SIZE];
     const size_t k = ui_pinlist(list, sizeof(list), pins, (unsigned)room);
     if (k == 0u || n + sep + k > size - 1u) {
         return n;

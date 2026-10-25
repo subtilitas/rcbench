@@ -3254,7 +3254,6 @@ shared/ui/include/motor_screen.h: warning: parameters of member motor_screen_set
 shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_box are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_heading are not documented
 shared/ui/include/motor_screen.h: warning: parameters of member motor_settings_rows are not documented
-shared/ui/include/motor_screen.h: warning: parameters of member motor_throttle_target are not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_dshot_ports is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_endpoints_alert is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_output_strip is not documented
@@ -3269,13 +3268,10 @@ shared/ui/include/motor_screen.h: warning: return type of member motor_settings_
 shared/ui/include/motor_screen.h: warning: return type of member motor_settings_heading is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_settings_rows is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_target_cells is not documented
-shared/ui/include/motor_screen.h: warning: return type of member motor_throttle_target is not documented
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen(void) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.h is not documented.
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_clash_label are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_clash_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_at are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_name are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_pins are not documented
@@ -3293,8 +3289,6 @@ shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_pin are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_ports are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_reading are not documented
-shared/ui/include/outputs_screen.h: warning: return type of member outputs_clash_label is not documented
-shared/ui/include/outputs_screen.h: warning: return type of member outputs_clash_reason is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_at is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_name is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_pins is not documented
@@ -3326,7 +3320,6 @@ shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_f
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_in_use are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_marker_rect are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_open_on_port are not documented
-shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_pin are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_reason are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_row are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_set_binding are not documented
@@ -3341,7 +3334,6 @@ shared/ui/include/picker_screen.h: warning: return type of member picker_screen_
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_in_use is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_list_face is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_marker_rect is not documented
-shared/ui/include/picker_screen.h: warning: return type of member picker_screen_pin is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_port_shown is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_prog_listed is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_reason is not documented
@@ -3414,7 +3406,6 @@ shared/ui/include/prog_registry.h: warning: Member transport (variable) of struc
 shared/ui/include/prog_registry.h: warning: parameters of member prog_list_build are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_reg_cap_name are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_reg_check are not documented
-shared/ui/include/prog_registry.h: warning: parameters of member prog_reg_detail are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_reg_full_width are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_reg_missing are not documented
 shared/ui/include/prog_registry.h: warning: parameters of member prog_reg_port are not documented
@@ -3431,7 +3422,6 @@ shared/ui/include/prog_registry.h: warning: parameters of member prog_view_shown
 shared/ui/include/prog_registry.h: warning: parameters of member prog_view_top are not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_reg_cap_name is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_reg_check is not documented
-shared/ui/include/prog_registry.h: warning: return type of member prog_reg_detail is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_reg_full_width is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_reg_missing is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_reg_port is not documented
@@ -3493,7 +3483,6 @@ shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_tak
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_files are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_logger_busy are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_peek are not documented
-shared/ui/include/servo_screen.h: warning: parameters of member servo_target_line are not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_commanded is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_commanded_text is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_curve_ms is not documented
@@ -3513,7 +3502,6 @@ shared/ui/include/servo_screen.h: warning: return type of member servo_screen_ta
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_test_peek is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_tester_target_locked is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_testing is not documented
-shared/ui/include/servo_screen.h: warning: return type of member servo_target_line is not documented
 shared/ui/include/settings_screen.h: warning: Member settings_screen(void) (function) of file settings_screen.h is not documented.
 shared/ui/include/settings_screen.h: warning: Member settings_screen_invalidate(void) (function) of file settings_screen.h is not documented.
 shared/ui/include/settings_screen.h: warning: parameters of member settings_hub_slot are not documented
@@ -3542,7 +3530,6 @@ shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_a
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_entered are not documented
-shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_header_text are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_left are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_poll_cmd are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_push are not documented
@@ -3552,7 +3539,6 @@ shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_s
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_model are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_on_coming are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_output are not documented
-shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_pins are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_set_port_held are not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_caps is not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_limits is not documented
@@ -4636,7 +4622,6 @@ shared/ui/ui_band.c: warning: Member text (variable) of struct [struct].k_bits i
 shared/ui/ui_keypad.c: warning: Member digits_after_point(const ui_keypad_t *k) (function) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member k_labels[UI_KEY_COUNT] (variable) of file ui_keypad.c is not documented.
 shared/ui/ui_keypad.c: warning: Member ui_keypad_close(ui_keypad_t *k) (function) of file ui_keypad.c is not documented.
-shared/ui/ui_pinlist.c: file has no @file block
 shared/ui/ui_plot.c: warning: Member HEADROOM (macro definition) of file ui_plot.c is not documented.
 shared/ui/ui_plot.c: warning: Member RAIL_PITCH (macro definition) of file ui_plot.c is not documented.
 shared/ui/ui_plot.c: warning: Member RAIL_W (macro definition) of file ui_plot.c is not documented.

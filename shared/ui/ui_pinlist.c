@@ -1,11 +1,27 @@
-/*
- * A set of GPIO pins as text: see ui_pinlist.h.
+/**
+ * @file
+ * @brief A pin's name and a set of pins as text: see ui_pinlist.h.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "ui_pinlist.h"
 
 #include <stdio.h>
+#include <string.h>
+
+size_t ui_pin_name(char *out, size_t size, unsigned gpio)
+{
+    if (out == NULL || size == 0u) {
+        return 0u;
+    }
+    out[0] = '\0';
+    if (gpio >= UI_PINLIST_PINS) {
+        return 0u;
+    }
+    const int n = snprintf(out, size, UI_PIN_WORD " %u", gpio);
+    const size_t len = (n > 0) ? (size_t)n : 0u;
+    return (len < size) ? len : size - 1u;
+}
 
 unsigned ui_pinlist_count(uint64_t mask)
 {
@@ -16,6 +32,11 @@ unsigned ui_pinlist_count(uint64_t mask)
     return n;
 }
 
+/**
+ * @brief The decimal digits of @p v.
+ * @param v  the number
+ * @return its digits, 1 for 0
+ */
 static unsigned digits(unsigned v)
 {
     unsigned d = 1u;
@@ -26,10 +47,17 @@ static unsigned digits(unsigned v)
     return d;
 }
 
-/* Characters "GPn" takes, with the space that precedes it unless first. */
+/**
+ * @brief The characters pin @p gpio's name takes in the list ("GPIO 13",
+ *        ui_pin_name()), with the space before it unless it is the first.
+ * @param gpio   the pin
+ * @param index  its place in the list, 0 for the first
+ * @return the characters
+ */
 static unsigned pin_width(unsigned gpio, unsigned index)
 {
-    return 2u + digits(gpio) + (index != 0u ? 1u : 0u);
+    return (unsigned)strlen(UI_PIN_WORD) + 1u + digits(gpio)
+           + (index != 0u ? 1u : 0u);
 }
 
 size_t ui_pinlist(char *out, size_t size, uint64_t mask, unsigned cells)
@@ -73,8 +101,11 @@ size_t ui_pinlist(char *out, size_t size, uint64_t mask, unsigned cells)
         if (((mask >> g) & 1u) == 0u) {
             continue;
         }
-        len += (size_t)snprintf(out + len, size - len, "%sGP%u",
-                                shown != 0u ? " " : "", g);
+        if (shown != 0u && len + 1u < size) {
+            out[len++] = ' ';
+            out[len] = '\0';
+        }
+        len += ui_pin_name(out + len, size - len, g);
         ++shown;
     }
     if (best < n) {

@@ -275,7 +275,7 @@ static const tgt_state_t k_tgt[] = {
     /* The port's pulse off: the longest values, with a two-digit pin. */
     { 1, 1, PIN(2),                              true,  63u,   false, true  },
     { 1, 1, PIN(2),                              true,  0xFFu, false, true  },
-    /* Not known and no link, with GP2 bound: the tester sends nothing. */
+    /* Not known and no link, with GPIO 2 bound: the tester sends nothing. */
     { 1, T_UNKNOWN, PIN(2),                      true,  0xFFu, false, true  },
     { 1, T_NO_LINK, PIN(2),                      true,  0xFFu, false, true  },
 };
@@ -286,9 +286,9 @@ static const tgt_state_t k_tgt[] = {
 
 #define TGT_PORT   9        /* k_tgt: the port, its pin not known */
 
-#define TGT_PORT_PIN 10     /* k_tgt: the port on GP13, its pulse on */
+#define TGT_PORT_PIN 10     /* k_tgt: the port on GPIO 13, its pulse on */
 
-#define TGT_PORT_OFF 11     /* k_tgt: the port on GP63, its pulse off */
+#define TGT_PORT_OFF 11     /* k_tgt: the port on GPIO 63, its pulse off */
 
 #define TGT_UNKNOWN 13      /* k_tgt: the target not known */
 
@@ -297,18 +297,18 @@ static const tgt_state_t k_tgt[] = {
 /* The exact text of each k_tgt state's value, in English and in German,
  * written out here and not taken from servo_target_line(). */
 static const char *const k_tgt_txt[2][TGT_N] = {
-    { "SERVO PWM GP2", "SERVO PWM GP4", "SERVO PWM GP2 GP4",
-      "SERVO PWM GP2 GP4 GP5", "SERVO PWM GP12 GP13 +2",
-      "SERVO PWM GP2 GP4 GP5 +3", "SERVO PWM GP40 GP41 +6",
+    { "SERVO PWM GPIO 2", "SERVO PWM GPIO 4", "SERVO PWM GPIO 2 GPIO 4",
+      "SERVO PWM GPIO 2 +2", "SERVO PWM GPIO 12 +3",
+      "SERVO PWM GPIO 2 +5", "SERVO PWM GPIO 40 +7",
       "NO SERVO PWM PIN",
-      "PINS NOT READ", "PROG PORT 1", "PROG PORT 1 GP13",
-      "PORT 1 GP63 PWM OFF", "PROG PORT 1 PWM OFF", "UNKNOWN", "NO LINK" },
-    { "SERVO PWM GP2", "SERVO PWM GP4", "SERVO PWM GP2 GP4",
-      "SERVO PWM GP2 GP4 GP5", "SERVO PWM GP12 GP13 +2",
-      "SERVO PWM GP2 GP4 GP5 +3", "SERVO PWM GP40 GP41 +6",
+      "PINS NOT READ", "PROG PORT 1", "PROG PORT 1 GPIO 13",
+      "PORT 1 GPIO 63 PWM OFF", "PROG PORT 1 PWM OFF", "UNKNOWN", "NO LINK" },
+    { "SERVO PWM GPIO 2", "SERVO PWM GPIO 4", "SERVO PWM GPIO 2 GPIO 4",
+      "SERVO PWM GPIO 2 +2", "SERVO PWM GPIO 12 +3",
+      "SERVO PWM GPIO 2 +5", "SERVO PWM GPIO 40 +7",
       "KEIN SERVO-PWM-PIN",
-      "PINS NICHT AUSGELESEN", "PROG-PORT 1", "PROG-PORT 1 GP13",
-      "PORT 1 GP63 PWM AUS", "PROG-PORT 1 PWM AUS", "UNBEKANNT",
+      "PINS NICHT AUSGELESEN", "PROG-PORT 1", "PROG-PORT 1 GPIO 13",
+      "PORT 1 GPIO 63 PWM AUS", "PROG-PORT 1 PWM AUS", "UNBEKANNT",
       "KEINE VERBINDUNG" },
 };
 
@@ -347,8 +347,8 @@ static int warn_pixels(const gfx_color_t *bx)
  * with its pin, and the warning colour for the port, for no pin, for a
  * binding not read, for a target not known and for no link.  Every state
  * reads differently, and no value runs out of its box: the longest are the
- * protocol with three one-digit pins and a count, 24 of the 25 cells, and
- * the port on a two-digit pin with its pulse off, 19. */
+ * protocol with two one-digit pins, 23 of the 25 cells, and the port on a
+ * two-digit pin with its pulse off, 22. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
@@ -390,7 +390,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
         }
     }
 
-    /* Rebinding GP2 to GP4 changes the row, without a tap; and back. */
+    /* Rebinding GPIO 2 to GPIO 4 changes the row, without a tap; and back. */
     fresh();
     servo_screen_set_pins(PIN(2), true);
     scr->render(&cv, 0);
@@ -407,7 +407,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 
     /* The row follows the drive, not the setting.  PROG PORT chosen while
      * the drive still uses the outputs shows the pins the outputs carry, as
-     * GP2 does; with no such pin it is the warning, as no pin does. */
+     * GPIO 2 does; with no such pin it is the warning, as no pin does. */
     static gfx_color_t d[TGT_W * TGT_H];
     fresh();
     settings_set(SET_SERVO_TARGET, 1.0f);
@@ -439,7 +439,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     CHECK_EQ(memcmp(d, box[TGT_PORT_OFF], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
     /* The port driven with no pin known (none, refused, or a port the page
-     * does not have): still the port, not the GP2 the outputs carry. */
+     * does not have): still the port, not the GPIO 2 the outputs carry. */
     servo_screen_set_drive(1u, SERVO_SCREEN_NO_PIN, true);
     scr->render(&cv, 0);
     target_box(d);
@@ -457,7 +457,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     target_box(d);
     CHECK(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t))
           != 0);
-    /* The link lost with the binding still held: no link, not the GP2 the
+    /* The link lost with the binding still held: no link, not the GPIO 2 the
      * outputs carry; then the page not known after the link comes back;
      * then the outputs once it is read. */
     servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, 13u, true);
@@ -492,7 +492,7 @@ TEST_CASE(the_target_row_stays_in_sight_under_the_settings_and_a_keypad)
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
     target_box(want);
-    target_reference(got, "TARGET", "SERVO PWM GP4", false);
+    target_reference(got, "TARGET", "SERVO PWM GPIO 4", false);
     CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
 
     open_settings();
@@ -504,7 +504,7 @@ TEST_CASE(the_target_row_stays_in_sight_under_the_settings_and_a_keypad)
     scr->render(&cv, 0);
     target_box(got);
     static gfx_color_t port[TGT_W * TGT_H];
-    target_reference(port, "TARGET", "PROG PORT 1 GP13", true);
+    target_reference(port, "TARGET", "PROG PORT 1 GPIO 13", true);
     scr->render(&cv, 0);
     target_box(got);
     CHECK_EQ(memcmp(port, got, sizeof(port)), 0);
@@ -538,52 +538,53 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
 TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "SERVO PWM GP2",
-               false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
+               "SERVO PWM GPIO 2", false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4), true,
+               "SERVO PWM GPIO 2 GPIO 4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
-               "SERVO PWM GP2 GP4 GP5", false);
+               "SERVO PWM GPIO 2 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(12) | PIN(13) | PIN(14) | PIN(15), true,
-               "SERVO PWM GP12 GP13 +2", false);
+               "SERVO PWM GPIO 12 +3", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
-               "SERVO PWM GP2 GP4 GP5 +2", false);
+               "SERVO PWM GPIO 2 +4", false);
     /* The list ends exactly at the 25 cells, the protocol's 10 and 15 of
      * pins: no count. */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(10) | PIN(11), true,
+               "SERVO PWM GPIO 10 GPIO 11", false);
+    /* One pin more overflows it: 1 pin and " +2". */
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(1) | PIN(2) | PIN(3) | PIN(4), true,
-               "SERVO PWM GP1 GP2 GP3 GP4", false);
-    /* One pin more overflows it: 3 pins and " +2". */
+               PIN(10) | PIN(11) | PIN(12), true,
+               "SERVO PWM GPIO 10 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(1) | PIN(2) | PIN(3) | PIN(4) | PIN(5), true,
-               "SERVO PWM GP1 GP2 GP3 +2", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14), true,
-               "SERVO PWM GP10 GP11 +3", false);
+               "SERVO PWM GPIO 1 +4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "SERVO PWM GP40 GP41 +6", false);
+               "SERVO PWM GPIO 40 +7", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
-               "SERVO PWM GP0 GP1 GP2 +61", false);
+               "SERVO PWM GPIO 0 +63", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true,
-               "SERVO PWM GP63", false);
+               "SERVO PWM GPIO 63", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "NO SERVO PWM PIN", true);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), false,
                "PINS NOT READ", true);
     /* With the outputs as target a port pin names nothing. */
-    check_line(0u, 13u, false, PIN(2), true, "SERVO PWM GP2", false);
+    check_line(0u, 13u, false, PIN(2), true, "SERVO PWM GPIO 2", false);
     /* A port target is the port, its pin known or not, pins bound or not. */
-    check_line(1u, 13u, true, PIN(2), true, "PROG PORT 1 GP13", true);
+    check_line(1u, 13u, true, PIN(2), true, "PROG PORT 1 GPIO 13", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG PORT 1",
                true);
     check_line(2u, SERVO_SCREEN_NO_PIN, true, 0u, false, "PROG PORT 2", true);
-    check_line(4u, 47u, true, 0u, false, "PROG PORT 4 GP47", true);
+    check_line(4u, 47u, true, 0u, false, "PROG PORT 4 GPIO 47", true);
     /* The pulse off: the port is still the target, and renders nothing.
-     * Port 4 on GP63 is the longest, 19 of the 25 cells the value
+     * Port 4 on GPIO 63 is the longest, 22 of the 25 cells the value
      * holds. */
-    check_line(1u, 13u, false, PIN(2), true, "PORT 1 GP13 PWM OFF", true);
-    check_line(1u, 63u, false, PIN(2), true, "PORT 1 GP63 PWM OFF", true);
-    check_line(4u, 63u, false, PIN(2), true, "PORT 4 GP63 PWM OFF", true);
+    check_line(1u, 13u, false, PIN(2), true, "PORT 1 GPIO 13 PWM OFF", true);
+    check_line(1u, 63u, false, PIN(2), true, "PORT 1 GPIO 63 PWM OFF", true);
+    check_line(4u, 63u, false, PIN(2), true, "PORT 4 GPIO 63 PWM OFF", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
                "PROG PORT 1 PWM OFF", true);
     /* Not known and no link name no pin and no port, pins bound or not;
@@ -599,15 +600,15 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     ui_text_set_language(UI_LANG_DE);
     /* The protocol is a name: the same in German. */
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
-               "SERVO PWM GP2 GP4 GP5", false);
+               "SERVO PWM GPIO 2 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "SERVO PWM GP40 GP41 +6", false);
+               "SERVO PWM GPIO 40 +7", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "KEIN SERVO-PWM-PIN", true);
-    check_line(1u, 13u, true, PIN(2), true, "PROG-PORT 1 GP13", true);
+    check_line(1u, 13u, true, PIN(2), true, "PROG-PORT 1 GPIO 13", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG-PORT 1",
                true);
-    check_line(1u, 63u, false, PIN(2), true, "PORT 1 GP63 PWM AUS", true);
+    check_line(1u, 63u, false, PIN(2), true, "PORT 1 GPIO 63 PWM AUS", true);
     check_line(3u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
                "PROG-PORT 3 PWM AUS", true);
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false,

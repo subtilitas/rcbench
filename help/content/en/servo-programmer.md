@@ -10,7 +10,7 @@ The servo programmer reads the 32 registers of a KST or Chaservo servo over its 
 
 ![PROGRAM's list](view:servo-program)
 
-The row names what it drives: the port SERVO TESTER names and its pin, `PROG PORT 1 GP13`. It is dimmed and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM, which includes no IOmcu answering: the row then reads `IOMCU HAS NO SERVO PWM`.
+The row names what it drives: the port SERVO TESTER names and its pin, `PROG PORT 1 GPIO 13`. It is dimmed and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM, which includes no IOmcu answering: the row then reads `IOMCU HAS NO SERVO PWM`.
 
 ![The row dimmed](view:servo-program-nocap)
 
@@ -27,7 +27,7 @@ The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo
 ![The programmer with the tester holding the port](view:servo-kst)
 
 - An IOmcu of 0.17.0 or later (protocol 4.15, LEAVE included).
-- The servo on one of the IOmcu's programming ports, PROG PORT 1 to 4, with FUNCTION SERVO PWM and a pin: port 1 is GP13, pad 17, unless another pin is stored for it; ports 2 to 4 have the pin set on their PROG PORT entry of Outputs.
+- The servo on one of the IOmcu's programming ports, PROG PORT 1 to 4, with FUNCTION SERVO PWM and a pin: port 1 is GPIO 13, pad 17, unless another pin is stored for it; ports 2 to 4 have the pin set on their PROG PORT entry of Outputs.
 - SERVO TESTER on that entry set to that port, PORT 1, PORT 2, PORT 3 or PORT 4; a tap on the TARGET row opens it ([the TARGET row](servo-settings.md#the-target-row)).
 - The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
 

@@ -41,6 +41,7 @@
 #include "tone_link.h"
 #include "ui_icons.h"
 #include "ui_keypad.h"
+#include "ui_pinlist.h"
 #include "ui_setting_keypad.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -276,14 +277,15 @@ static void leave_value(setting_id_t id, float value, char *out, size_t n)
         return;
     }
     const bool off = d != NULL && d->off_below > 0.0f && value == 0.0f;
-    /* GPIO leads its number ("GPIO 4", never a count of four GPIOs);
-     * every other unit of the schema joins its number (6S, 6.00V, 250uΩ). */
-    char v[32];
-    (void)ui_setting_value_of(id, value, v, sizeof(v));
+    /* A pin is named as every screen names it ("GPIO 4", never a count of
+     * four GPIOs); every other unit of the schema joins its number (6S,
+     * 6.00V, 250uΩ). */
     if (!off && ui_unit_is_prefix(unit)) {
-        snprintf(out, n, "%s %s", unit, v);
+        (void)ui_pin_name(out, n, (unsigned)value);
         return;
     }
+    char v[32];
+    (void)ui_setting_value_of(id, value, v, sizeof(v));
     snprintf(out, n, "%s%s", v, off ? "" : unit);
 }
 

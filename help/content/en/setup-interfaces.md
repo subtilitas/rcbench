@@ -73,7 +73,7 @@ The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
-| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | the IOmcu GPIO; GP22 is pad 29. The pins the RP2350-CAN brings out and does not reserve, less the ADC pins GP26 to GP29 |
+| Tap pin | 0, 1, 2, 4 to 7, 13 to 22 | 22 | the IOmcu GPIO; GPIO 22 is pad 29. The pins the RP2350-CAN brings out and does not reserve, less the ADC pins GPIO 26 to GPIO 29 |
 | Tap lowest tone | 50 to 2000Hz, 10Hz steps | 400 | a lower tone is not a beep |
 | Tap highest tone | 100 to 6900Hz, 50Hz steps | 6500 | above the lowest tone |
 | Tap pitch split | 0 to 50% | 8 | a pitch change this large starts a new beep; 0 splits on silence only |
@@ -101,7 +101,7 @@ These three are stored. No screen or IOmcu reads them in this release.
 | PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
 | PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
 
-The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GP18, TX steps from GP19 to GP17. At either end of the range the key then does nothing: with RX on GP47, TX stops at GP46. The keypad refuses the other row's GPIO and shows `The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GP17 is refused while Sensor SCL is GP17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
+The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GPIO 18, TX steps from GPIO 19 to GPIO 17. At either end of the range the key then does nothing: with RX on GPIO 47, TX stops at GPIO 46. The keypad refuses the other row's GPIO and shows `The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the SUPPLY header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GPIO 17 is refused while Sensor SCL is GPIO 17. The message leaves the band once the pin is set back to one the IOmcu takes. A change to the pins, the baud rate or the enable switch switches the supply output off.
 
 ![RX's GPIO 9 refused for PD mini TX](view:setup-pdmini-why)
 

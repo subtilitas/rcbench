@@ -19,7 +19,7 @@ A pad is under 40px across, smaller than a fingertip. So each pin has a key, 50 
 | ivory or ebony | free | binds it to the selected protocol |
 | accent colour | bound in the selected protocol | gives it back |
 | grey | held by another protocol or the programming port, the protocol is full, or the binding is not confirmed | changes nothing |
-| no key, red cross on the pad | reserved: GP3 heartbeat, GP8 to GP12 CAN (Controller Area Network) | none |
+| no key, red cross on the pad | reserved: GPIO 3 heartbeat, GPIO 8 to GPIO 12 CAN (Controller Area Network) | none |
 
 A tap on a key writes the binding at once, with the same results as a tick on Outputs.
 
@@ -49,8 +49,8 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
 | `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed; every key is grey |
-| `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | a tap on GP28 under SERVO PWM or MOTOR PWM while the programming port holds GP13: one PWM slice; the key is grey |
-| `GP16: SAME PWM CHANNEL AS GP0` | a tap on GP16 under SERVO PWM or MOTOR PWM with GP0 bound as PWM: one PWM compare register; the key is grey |
+| `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13` | a tap on GPIO 28 under SERVO PWM or MOTOR PWM while the programming port holds GPIO 13: one PWM slice; the key is grey |
+| `GPIO 16: SAME PWM CHANNEL AS GPIO 0` | a tap on GPIO 16 under SERVO PWM or MOTOR PWM with GPIO 0 bound as PWM: one PWM compare register; the key is grey |
 
 ![Eight of eight slots in use](view:picker-full)
 
@@ -58,15 +58,15 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 
 PINS, down the left, lists the selected protocol's pins in channel order with the pad number printed on the board. IN USE, down the right, lists the pins other protocols hold, each group under its protocol's name. With OFF selected PINS is not shown, because OFF holds no pin, and IN USE lists every bound pin.
 
-![GP13 held by the programming port](view:picker-prog)
+![GPIO 13 held by the programming port](view:picker-prog)
 
-The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
+The programming port's pin, GPIO 13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
 
 ## A programming port's pin
 
 ![PROG PORT 3 picked](view:picker-port)
 
-The protocol list ends in the PROG PORT entries, as on [Outputs](outputs.md), whose PIN button opens this screen on its port. With a port picked a tap sets that port's pin: a free key asks the IOmcu for that pin, the port's own accented key asks for none. Another port's pin, a protocol's and an interface's stay grey. A SERVO PWM port is refused a pin on the PWM slice of a bound PWM output, `GP5: SHARES PWM SLICE WITH OUTPUT GP4`, and one on the compare register of another SERVO PWM port, `GP28: SAME PWM CHANNEL AS GP12`. A NONE port takes any free key. The count line names the port's function, `FUNCTION: SERVO PWM`. The ask waits for a bench at rest; the amber line says how it stands, as on Outputs. Before the IOmcu's ports are read every key is grey under `PORTS NOT READ YET`.
+The protocol list ends in the PROG PORT entries, as on [Outputs](outputs.md), whose PIN button opens this screen on its port. With a port picked a tap sets that port's pin: a free key asks the IOmcu for that pin, the port's own accented key asks for none. Another port's pin, a protocol's and an interface's stay grey. A SERVO PWM port is refused a pin on the PWM slice of a bound PWM output, `GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4`, and one on the compare register of another SERVO PWM port, `GPIO 28: SAME PWM CHANNEL AS GPIO 12`. A NONE port takes any free key. The count line names the port's function, `FUNCTION: SERVO PWM`. The ask waits for a bench at rest; the amber line says how it stands, as on Outputs. Before the IOmcu's ports are read every key is grey under `PORTS NOT READ YET`.
 
 ![The interfaces' pins held and named under IN USE](view:picker-iface)
 

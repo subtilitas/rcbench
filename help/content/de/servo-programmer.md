@@ -10,7 +10,7 @@ Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos ü
 
 ![Die Liste von PROGRAMMIEREN](view:servo-program)
 
-Die Zeile nennt, was sie ansteuert: den Port, den SERVO-TESTER nennt, und seinen Pin, `PROG-PORT 1 GP13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
+Die Zeile nennt, was sie ansteuert: den Port, den SERVO-TESTER nennt, und seinen Pin, `PROG-PORT 1 GPIO 13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
 
 ![Die Zeile gedimmt](view:servo-program-nocap)
 
@@ -27,7 +27,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 ![Der Programmierer, während der Tester den Port hält](view:servo-kst)
 
 - Einen IOmcu mit 0.17.0 oder neuer (Protokoll 4.15, VERLASSEN eingeschlossen).
-- Das Servo an einem Programmierport des IOmcu, PROG-PORT 1 bis 4, mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist; die Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT von Ausgänge gesetzt ist.
+- Das Servo an einem Programmierport des IOmcu, PROG-PORT 1 bis 4, mit FUNKTION SERVO PWM und einem Pin: Port 1 ist GPIO 13, Pad 17, solange kein anderer Pin dafür gespeichert ist; die Ports 2 bis 4 haben den Pin, der auf ihrem Eintrag PROG-PORT von Ausgänge gesetzt ist.
 - SERVO-TESTER auf diesem Eintrag auf diesen Port, PORT 1, PORT 2, PORT 3 oder PORT 4; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
 - Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
 
