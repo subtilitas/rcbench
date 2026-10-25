@@ -41,7 +41,6 @@ typedef enum {
 
 /** @brief The screens' strings, TX_<ID> for each UI_TEXT() of ui_text.def. */
 typedef enum {
-/** @brief One TX_ identifier per UI_TEXT() entry of ui_text.def. */
 #define UI_TEXT(id, cells, en, de) TX_##id,
 #include "ui_text.def"
     TX_COUNT

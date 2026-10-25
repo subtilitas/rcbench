@@ -1,5 +1,6 @@
-/*
- * The panel's application image. See fw_image.h.
+/**
+ * @file fw_image.c
+ * @brief The panel's application image. See fw_image.h.
  *
  * SPDX-License-Identifier: MIT
  */

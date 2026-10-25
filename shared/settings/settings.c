@@ -431,7 +431,6 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
 
 /** @brief The categories' names in English, from ui_text.def. */
 static const char *const k_cat_names[SET_CAT_COUNT] = {
-/** @brief One category name, from ui_text.def. */
 #define UI_SETTING_CATEGORY(id, en, de) [id] = (en),
 #include "ui_text.def"
 };

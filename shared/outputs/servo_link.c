@@ -437,11 +437,11 @@ static uint16_t    s_servo_minor;       /**< the far end's protocol minor */
  * horn from that moment rather than from its tap. */
 static uint16_t    s_servo_curve[4];
 static uint32_t    s_servo_curve_ms;   /* when the far end last took it */
-static atomic_uint s_sweep_start_ms;    /**< servo_sweep_from_t */
-static atomic_uint s_sweep_start_from;  /**< when it froze, for FROZEN */
-static atomic_uint s_sweep_frozen_ms;   /**< whether a new start is to be handed to the screen */
-static atomic_bool s_sweep_start_new;   /**< the command the start acknowledges */
-static atomic_uint s_sweep_start_seq;    /* the command it acknowledges */
+static atomic_uint s_sweep_start_ms;    /**< when the far end's sweep started, ms */
+static atomic_uint s_sweep_start_from;  /**< servo_sweep_from_t */
+static atomic_uint s_sweep_frozen_ms;   /**< when it froze, for FROZEN */
+static atomic_bool s_sweep_start_new;   /**< whether a new start is to be handed to the screen */
+static atomic_uint s_sweep_start_seq;   /**< the command the start acknowledges */
 /** @brief The far end's phase as acknowledgements time it, and the HOLD that
  * paused a running sweep: which pause, and the phase it kept. */
 static servo_phase_t s_far_phase;

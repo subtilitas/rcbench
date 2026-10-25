@@ -76,7 +76,7 @@ extern "C" {
 #define CARD_USER_LOGS   "USER/LOGS"
 
 /**
- * @brief ESC profile overrides, <id>.json.
+ * @brief ESC profile overrides, \<id\>.json.
  */
 #define CARD_ESC_CONF    "BENCH/ESC/CONF"
 

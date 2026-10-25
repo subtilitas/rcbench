@@ -1,6 +1,7 @@
-/*
- * The panel's application image, read from memory: what it is, whether it is
- * whole, and whether it is one this panel should run.
+/**
+ * @file fw_image.h
+ * @brief The panel's application image, read from memory: what it is, whether it is
+ *        whole, and whether it is one this panel should run.
  *
  * An ESP-IDF (Espressif Internet-of-Things Development Framework) app image
  * starts with a 24-byte image header (first byte 0xE9, the chip ID at offset

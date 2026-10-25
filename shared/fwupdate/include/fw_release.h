@@ -112,13 +112,13 @@ extern "C" {
 #define FW_REL_LINE_CAPPED 0
 #endif
 
-/** "v65535.65535.65535": the longest tag. */
+/** @brief The longest tag, "v65535.65535.65535", in bytes. */
 #define FW_REL_TAG_MAX     18u
-/** "65535.65535.65535" and its terminator. */
+/** @brief The longest version text, "65535.65535.65535", with its terminator. */
 #define FW_REL_VER_TEXT    18u
-/** "rcbench-panel-p4-v65535.65535.65535.bin" and its terminator. */
+/** @brief The longest asset name, "rcbench-panel-p4-v65535.65535.65535.bin", with its terminator. */
 #define FW_REL_NAME_MAX    40u
-/** A redirect's Location, in bytes; a longer one is refused. */
+/** @brief A redirect's Location, in bytes; a longer one is refused. */
 #define FW_REL_URL_MAX     2048u
 /** Redirects followed in one fetch at most. */
 #define FW_REL_HOPS_MAX    3u

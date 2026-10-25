@@ -691,7 +691,7 @@ static void hitec_command(page_console_t *c, link_hitec_op_t op,
 }
 
 /**
- * @brief dec=none | c:<cmd> | d:<addr> | l:<byte>
+ * @brief dec=none | c:\<cmd\> | d:\<addr\> | l:\<byte\>
  *
  * @param v   The text after dec=.
  * @param out Receives the packed decoder word.

@@ -104,6 +104,11 @@ void kst_panel_leave(void);
 /** Touch events were lost: the press and its hold are dropped. */
 void kst_panel_cancel(void);
 
+/**
+ * @brief Advances the overlay by one frame: the warning's hold and the key
+ *        repeats.
+ * @param dt_s the time since the last frame, s
+ */
 void kst_panel_tick(float dt_s);
 
 /** True while a press that began in the overlay is on the glass. */
