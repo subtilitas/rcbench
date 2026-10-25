@@ -16,6 +16,17 @@ history is in git.
   spec per module (`tools/gen_all.py`, `--check` in CI); geometry comes from
   maker drawings, maker 3D models and photos, each spec naming its source
   and accuracy. MIT, as the rest of the tree.
+- The register models of servos by Hitec, in `protocols/hitec/hitec_reg.c`:
+  the classic EEPROM cells (HS-5xxx, HS-7xxx) and the D series registers
+  as one 256-byte image, a parameter table of 34 parameters with the
+  registers or cells, encoding, edit limits, layouts and source of each,
+  the HFP-30's encodings for the D series and the HPP-21 Plus's for
+  classic servos, a stored value that fits no encoding shown raw and
+  replaced only by a value of the table on an edit, model identification from register 0x00 or the name cells, and
+  write plans: the classic balance in 0x1C after every setting of cells
+  up to 0x1B, the D series registers per setting, then save and reboot.
+  Nothing calls it yet
+  ([Register model](protocols/hitec/README.md#register-model)).
 
 ### Changed
 
