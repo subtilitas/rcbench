@@ -178,7 +178,7 @@ static uint32_t utf8_len(const unsigned char *s, uint32_t avail)
 /**
  * @brief A string, with every escape checked here, in the one pass that sees
  *        every string -- including those in fields the panel never reads.
- *        \u0000 is refused (it would end a C string early), and so is half a
+ * \\u0000 is refused (it would end a C string early), and so is half a
  *        surrogate pair: json.loads() keeps a lone half, which no UTF-8 can
  *        carry.
  *

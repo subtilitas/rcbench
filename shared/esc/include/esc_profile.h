@@ -132,7 +132,7 @@ typedef struct {
 typedef struct {
     const char *name;
     uint8_t     number;         /**< as the ESC sounds it                   */
-    bool        is_default;
+    bool        is_default;             /**< whether this value is the ESC's factory default */
     /**
      * @brief The stick position the manual programs this value from, where it
      *        differs by value; ESC_THR_NONE: the profile's entry position.
@@ -157,8 +157,8 @@ typedef struct {
     const char        *name;
     const char        *key;     /**< shared across brands: "brake", ...     */
     uint8_t            number;  /**< as the ESC sounds it                   */
-    uint8_t            value_count;
-    const esc_value_t *values;
+    uint8_t            value_count;     /**< number of values in values */
+    const esc_value_t *values;          /**< the item's values, value_count of them */
     /**
      * @brief Model names this item exists on; 0 entries: every model.
      */
@@ -232,17 +232,17 @@ typedef struct {
 /** @brief One ESC programming profile: its family, menu and steps. */
 typedef struct {
     const char        *id;      /**< the file name without .json            */
-    const char        *brand;
-    const char        *family;
-    esc_scheme_t       scheme;
-    esc_encoding_t     encoding;
-    esc_announce_t     announce;
-    esc_auto_t         automatable;
+    const char        *brand;           /**< the brand, as the file names it */
+    const char        *family;          /**< the product family the profile covers */
+    esc_scheme_t       scheme;          /**< how the menu as a whole is driven */
+    esc_encoding_t     encoding;        /**< how one number is sounded */
+    esc_announce_t     announce;        /**< what the ESC announces before a selection */
+    esc_auto_t         automatable;     /**< who can run the sequence */
     const char        *automatable_note;   /**< "" when full             */
-    esc_throttle_t     entry_throttle;
+    esc_throttle_t     entry_throttle;  /**< throttle position that enters the programming mode */
     bool               entry_after_power;  /**< else before power is on  */
     uint32_t           entry_hold_ms;      /**< 0: not known             */
-    esc_throttle_t     select_throttle;
+    esc_throttle_t     select_throttle;  /**< throttle position that selects an item */
     uint32_t           select_within_ms;   /**< 0: not known             */
     /**
      * @brief In a two-stage menu, the move that stores the value sounded, after
@@ -251,7 +251,7 @@ typedef struct {
      */
     esc_throttle_t     value_select_throttle;
     uint32_t           value_select_within_ms; /**< 0: not known         */
-    esc_throttle_t     skip_throttle;
+    esc_throttle_t     skip_throttle;   /**< throttle position that skips an item */
     /**
      * @brief Where the stick rests while the menu sounds; ESC_THR_NONE where
      *        the entry left it.
@@ -268,14 +268,14 @@ typedef struct {
     uint32_t           group_gap_ms;       /**< 0: not known             */
     int16_t            repeat;             /**< -1 not known, 0 until a
                                                 choice is made           */
-    bool               one_change_per_entry;
+    bool               one_change_per_entry;  /**< whether one change ends a programming entry */
     bool               verified;           /**< a bench run confirmed it */
-    uint8_t            step_count;
+    uint8_t            step_count;      /**< number of operator actions in steps */
     const char *const *steps;              /**< operator actions, in order */
-    uint16_t           model_count;
-    const esc_model_t *models;
-    uint8_t            item_count;
-    const esc_item_t  *items;
+    uint16_t           model_count;     /**< number of models in models */
+    const esc_model_t *models;          /**< the models, model_count of them */
+    uint8_t            item_count;      /**< number of items in items */
+    const esc_item_t  *items;           /**< the items of the menu, item_count of them */
     /**
      * @brief The operator's steps at the ESC, in the order they are due; 0
      *        entries on every profile that is not assisted.
