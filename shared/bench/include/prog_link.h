@@ -116,7 +116,7 @@ typedef struct {
     bool     known;                /**< regs holds a read of it            */
     bool     read_once;            /**< read_ms is a time                  */
     uint32_t read_ms;                   /**< when the page was last read, ms */
-    uint16_t regs[LINK_PG_REGS];
+    uint16_t regs[LINK_PG_REGS];        /**< the page's registers as last read */
     uint8_t  want_target;          /**< 0, or 1 + n for port n             */
     bool     want_pwm;                  /**< whether the wanted target is a PWM port */
     bool     held;                 /**< the programmer has a port          */

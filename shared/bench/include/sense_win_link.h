@@ -60,11 +60,11 @@ typedef struct {
     uint8_t  want;            /**< bit 0 SENSE_WIN_A, bit 1 SENSE_WIN_B     */
     uint8_t  pending;         /**< the page being read, 0 or 1; 0xFF none   */
     uint32_t read_ms[2];      /**< when each page was last asked for        */
-    bool     asked[2];
+    bool     asked[2];                  /**< per page, whether the read is asked */
     bool     have[2];         /**< regs holds a read under want             */
     bool     have_prev[2];    /**< prev holds the read of the window before */
-    uint16_t regs[2][LINK_SX_COUNT];
-    uint16_t prev[2][LINK_SX_COUNT];
+    uint16_t regs[2][LINK_SX_COUNT];    /**< per page, the registers of the read */
+    uint16_t prev[2][LINK_SX_COUNT];    /**< per page, the registers of the window before */
 } sense_win_link_t;
 
 /**

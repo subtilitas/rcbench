@@ -45,7 +45,7 @@ extern "C" {
 typedef struct {
     uint8_t n;                               /**< groups                 */
     uint8_t ch[LOG_COLS_MAX];                /**< each group's channel   */
-    char    name[LOG_COLS_MAX][LOG_COL_NAME_MAX];
+    char    name[LOG_COLS_MAX][LOG_COL_NAME_MAX];  /**< each group's column name */
 } log_cols_t;
 
 /**

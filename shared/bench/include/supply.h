@@ -266,7 +266,7 @@ typedef struct {
     float         t;          /**< time since the output came on, s      */
     float         set_v;      /**< voltage set point, V                  */
     float         set_i;      /**< current limit set point, A            */
-    bool          output;
+    bool          output;               /**< whether the output is on */
 } supply_sim_t;
 
 /**

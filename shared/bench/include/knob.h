@@ -145,7 +145,11 @@ uint16_t knob_clockwise(uint16_t angle);
 typedef struct {
     bool     attached;    /**< knob_attach() took the address */
     uint8_t  addr;        /**< the address every poll goes to */
-    bool     have_ref;
+    bool     have_ref;                  /**< whether ref holds a first reading */
+    /**
+     * @brief The first reading, the reference the knob's travel is counted
+     *        from
+     */
     uint16_t ref;
 } knob_t;
 

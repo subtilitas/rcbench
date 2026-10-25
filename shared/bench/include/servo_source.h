@@ -116,9 +116,9 @@ typedef struct {
     uint8_t  resets;        /**< the INA3221's reset count, as last read  */
     uint16_t setups;        /**< sense_link_meter_t.setups, likewise      */
     bool     old_told;      /**< the older IOmcu is said            */
-    uint32_t events;
-    bool     event_given;
-    uint32_t event_ms;
+    uint32_t events;                    /**< events pending, SERVO_SOURCE_EV_* bits */
+    bool     event_given;               /**< whether an event was handed out */
+    uint32_t event_ms;                  /**< when it was handed out, ms */
 } servo_source_t;
 
 /**
