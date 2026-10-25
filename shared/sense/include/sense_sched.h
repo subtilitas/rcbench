@@ -268,7 +268,7 @@ typedef struct {
     uint64_t  (*now_us)(void *ctx);  /**< the IOmcu's µs timer     */
     void      (*recover)(void *ctx); /**< 9 clocks, a STOP, the block
                                           re-initialised; NULL: none     */
-    void       *ctx;
+    void       *ctx;                    /**< the caller's context, passed to each function */
 } sense_sched_io_t;
 
 /** @brief The INA3221s: which are fitted, each channel's shunt, and FAST. */
@@ -312,8 +312,11 @@ typedef struct {
     uint16_t n_v;         /**< voltage samples                            */
     bool     clip_hi;     /**< a current sample at the top of the range   */
     bool     clip_lo;     /**< one at the bottom                          */
-    int32_t  i_mean_ua, i_min_ua, i_max_ua;   /**< 0 with n_i 0           */
-    int32_t  v_mean_uv, v_min_uv;             /**< 0 with n_v 0           */
+    int32_t  i_mean_ua;   /**< mean current, µA; 0 with n_i 0             */
+    int32_t  i_min_ua;    /**< lowest current, µA; 0 with n_i 0           */
+    int32_t  i_max_ua;    /**< highest current, µA; 0 with n_i 0          */
+    int32_t  v_mean_uv;   /**< mean voltage, µV; 0 with n_v 0             */
+    int32_t  v_min_uv;    /**< lowest voltage, µV; 0 with n_v 0           */
 } sense_window_t;
 
 /** @brief A window being filled. */
@@ -321,8 +324,11 @@ typedef struct {
     int64_t  i_sum, v_sum;
     uint16_t n_i, n_v;
     uint16_t n_hi, n_lo;  /**< current samples at the top, at the bottom  */
-    bool     clip_hi, clip_lo;
-    int32_t  i_min, i_max, v_min;
+    bool     clip_hi;     /**< a current sample at the top of the range   */
+    bool     clip_lo;     /**< one at the bottom                          */
+    int32_t  i_min;       /**< lowest current, µA                         */
+    int32_t  i_max;       /**< highest current, µA                        */
+    int32_t  v_min;       /**< lowest voltage, µV                         */
 } sense_acc_t;
 
 /** @brief One FAST window as the ring keeps it. */
@@ -333,9 +339,11 @@ typedef struct {
     uint16_t n_v;         /**< voltage samples                            */
     bool     clip_hi;     /**< a current sample at the top of the range   */
     bool     clip_lo;     /**< one at the bottom                          */
-    int32_t  i_mean_ua, i_min_ua, i_max_ua;   /**< a clipped sample at the
-                               end of the range it read; 0 with n_i 0     */
-    int32_t  v_mean_uv, v_min_uv;             /**< 0 with n_v 0           */
+    int32_t  i_mean_ua;   /**< mean current, µA; 0 with n_i 0             */
+    int32_t  i_min_ua;    /**< lowest current, µA; a clipped sample at the end of the range it read; 0 with n_i 0 */
+    int32_t  i_max_ua;    /**< highest current, µA; clipped likewise; 0 with n_i 0 */
+    int32_t  v_mean_uv;   /**< mean voltage, µV; 0 with n_v 0             */
+    int32_t  v_min_uv;    /**< lowest voltage, µV; 0 with n_v 0           */
 } sense_ring_win_t;
 
 /** @brief The run since sense_sched_arm(), from the INA228. */
@@ -344,8 +352,8 @@ typedef struct {
     bool     have_i;      /**< i_max_ua holds a sample                    */
     bool     have_p;      /**< p_max_uw holds a sample                    */
     bool     i_clipped;   /**< a clipped current: the peaks lack it       */
-    int32_t  v_min_uv;
-    int32_t  i_max_ua;
+    int32_t  v_min_uv;                  /**< lowest voltage since arming, µV */
+    int32_t  i_max_ua;                  /**< highest current since arming, µA */
     int64_t  p_max_uw;    /**< a current times the voltage read before it */
     bool     clear_owed;  /**< the accumulators are to be cleared         */
     bool     totals_ok;   /**< energy and charge are this run's           */
@@ -396,7 +404,7 @@ typedef struct {
 typedef struct {
     sense_cap_state_t state;
     uint16_t seq;         /**< captures ended, modulo 65536               */
-    sense_cap_arm_t arm;
+    sense_cap_arm_t arm;                /**< how the capture was armed */
     uint32_t edge_t;      /**< the edge, 0.1ms                            */
     uint32_t arm_t;       /**< the arm, 0.1ms                             */
     bool     rise_owed;   /**< the level before the command is FAST's,
@@ -423,9 +431,9 @@ typedef struct {
     uint8_t  status;       /**< STATUS as last read                         */
     uint16_t raw;          /**< RAW ANGLE, 0 to 4095                        */
     uint16_t samples;      /**< angle reads taken, modulo 65536             */
-    bool     have_mag;
-    uint8_t  agc;
-    uint16_t magnitude;
+    bool     have_mag;                  /**< whether magnitude holds a reading */
+    uint8_t  agc;                       /**< automatic gain control, as last read */
+    uint16_t magnitude;                 /**< magnet magnitude, as last read */
     uint32_t slots;        /**< encoder slots taken                         */
     uint16_t anchor;       /**< the count the still time is held to         */
     uint64_t anchor_ms;    /**< when it was set                             */

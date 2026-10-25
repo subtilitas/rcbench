@@ -81,7 +81,8 @@ extern "C" {
  */
 typedef struct {
     uint16_t cfg_gen;            /**< the bus's pins and the parts          */
-    uint8_t  sda, scl;           /**< GPIO numbers, one I2C block's pair    */
+    uint8_t  sda;                /**< GPIO number of the data line          */
+    uint8_t  scl;                /**< GPIO number of the clock line         */
     sense_sched_cfg_t parts;     /**< neither enabled: the bus is closed    */
     uint16_t run_gen;            /**< moves on each edge into driving       */
     uint16_t cap_gen;            /**< moves on each arm and each disarm     */
@@ -103,26 +104,30 @@ typedef struct {
     uint64_t held;               /**< the pins the bus holds, a pin mask   */
     uint16_t errors;             /**< transactions failed, modulo 65536    */
     uint16_t present;            /**< bit n: 0x40 + n answered             */
-    sense_state_t i228;
+    sense_state_t i228;                 /**< the INA228's state */
     sense_state_t i3221[SENSE_I3221_PARTS];  /**< UNSET when not fitted */
-    uint16_t i228_maker, i228_device;     /**< the last identity read    */
-    uint16_t i3221_maker[SENSE_I3221_PARTS], i3221_die[SENSE_I3221_PARTS];
+    uint16_t i228_maker;         /**< the INA228's last maker ID read       */
+    uint16_t i228_device;        /**< the INA228's last device ID read      */
+    uint16_t i3221_maker[SENSE_I3221_PARTS]; /**< each INA3221's last maker ID read */
+    uint16_t i3221_die[SENSE_I3221_PARTS];   /**< each INA3221's last die ID read   */
     uint8_t  fast;               /**< the FAST channel in force, or
                                       SENSE_FAST_NONE                    */
-    bool     have_temp, have_diag;
+    bool     have_temp;          /**< temp_mdegc holds a reading            */
+    bool     have_diag;          /**< diag holds a reading                  */
     int32_t  temp_mdegc;         /**< the INA228's die                      */
     uint16_t diag;               /**< its DIAG_ALRT as last read            */
     bool     have_win;           /**< a window has closed                   */
-    sense_window_t win[SENSE_SRC_COUNT];
+    sense_window_t win[SENSE_SRC_COUNT];  /**< the newest window of each source */
     /**
      * @brief FAST's last windows, newest first: entry k is the window numbered
      * k before the number of win[].
      */
     sense_ring_win_t ring[SENSE_WIN_RING];
     uint8_t  i228_resets;        /**< found reset under this set-up, mod 256 */
+    /** @brief Per INA3221: found reset under this set-up, modulo 256 */
     uint8_t  i3221_resets[SENSE_I3221_PARTS];
-    sense_run_t run;
-    sense_cap_state_t cap_state;
+    sense_run_t run;                    /**< the run since arming */
+    sense_cap_state_t cap_state;        /**< state of the capture of a FAST move */
     uint16_t cap_seq;            /**< captures ended, modulo 65536          */
     uint32_t cap_move_t;         /**< 0.1ms                                 */
     uint32_t cap_arrive_t;       /**< 0.1ms                                 */
@@ -169,22 +174,25 @@ typedef struct {
 typedef struct {
     sense_svc_io_t io;
     bool     started;            /**< a command has been taken             */
-    uint16_t cfg_gen, run_gen, cap_gen;
-    bool     open;
-    uint8_t  sda, scl;
+    uint16_t cfg_gen;            /**< generation of the bus's configuration taken */
+    uint16_t run_gen;            /**< generation of the run command taken */
+    uint16_t cap_gen;            /**< generation of the capture command taken */
+    bool     open;                      /**< the bus runs on its pins */
+    uint8_t  sda;                /**< GPIO number of the data line          */
+    uint8_t  scl;                /**< GPIO number of the clock line         */
     bool     edge_given;         /**< cap_gen's edge went to the schedule  */
     bool     refused;            /**< cap_gen's arm was refused            */
     uint16_t refusals;           /**< refused arms, modulo 65536           */
     uint16_t seq_base;           /**< captures ended under earlier set-ups */
-    bool     scan_due;
+    bool     scan_due;                  /**< whether a scan for missing parts is due */
     uint64_t scan_at_us;         /**< the next scan while a part is missing */
-    uint16_t present;
+    uint16_t present;                   /**< bit n: 0x40 + n answered */
     bool     lim_have;           /**< lim_win is a window judged            */
     uint16_t lim_win;            /**< the number of the last one judged    */
-    uint16_t over_n[SENSE_CHANNELS];
+    uint16_t over_n[SENSE_CHANNELS];    /**< per channel, the windows judged over the limit */
     uint32_t setups;             /**< schedules set up, modulo 2^32: each
                                       one's sched.gen                     */
-    sense_sched_t sched;
+    sense_sched_t sched;                /**< the schedule */
 } sense_svc_t;
 
 /**
