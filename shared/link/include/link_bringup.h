@@ -111,6 +111,31 @@ typedef enum {
 link_diag_t link_bringup_diagnose(const link_bringup_t *b);
 
 /**
+ * @brief The counts of one report window: what happened between two
+ * snapshots, for link_bringup_diagnose() to judge the recent link rather than
+ * the whole session.
+ *
+ * Each counter of @p out is now - prev.  A counter that is lower in @p now
+ * than in @p prev counts from 0 again -- an IOmcu that restarted, or a
+ * 16-bit status register that wrapped -- and its window count is the value
+ * in @p now.  A restarted counter that has passed its previous figure by the
+ * time of @p now is not told from one that kept counting, and its window
+ * count is short by the previous figure.
+ *
+ * Flags, identity and the round-trip figures are taken from @p now:
+ * have_status, have_refused, have_identity, proto_major, proto_minor,
+ * rt_samples, rt_min_us, rt_max_us and rt_mean_us.
+ *
+ * @param now The counters at this report.
+ * @param prev The counters at the previous report; NULL for the first
+ *        report, which makes the window everything since the counters
+ *        started (the same as an all-zero @p prev).
+ * @param out Receives the window; may be the same object as @p now.
+ */
+void link_bringup_window(const link_bringup_t *now,
+                         const link_bringup_t *prev, link_bringup_t *out);
+
+/**
  * @brief One line naming the fault.
  *
  * @param d The fault.

@@ -2,8 +2,8 @@
 
 Footprints and symbols for the modules the bench is built from, for a carrier
 PCB (printed circuit board) that takes them. KiCad 10 format: footprint
-version 20260206, symbol library version 20251024. KiCad 9 and older refuse
-both files.
+version 20260206, symbol library version 20251024. KiCad 10.0.7 or newer
+loads both files. KiCad 9 and older refuse both files.
 
 | Path | Content |
 | --- | --- |
@@ -73,6 +73,9 @@ four different sizes.
   non-plated in the footprint and must not be joined to anything.
 - Pin 1 of the JST-GH connectors on the MATEK board follows the board print;
   which lead JST calls pin 1 is not checked.
+- KiCad 10.0.3 shows the symbol library empty, without an error message;
+  10.0.7 loads it. Versions between are not tested. Whether 10.0.3 loads the
+  footprint library is not tested.
 
 ## Licence
 

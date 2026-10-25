@@ -148,6 +148,42 @@ link_diag_t link_bringup_diagnose(const link_bringup_t *b)
     return LINK_DIAG_OK;
 }
 
+/**
+ * @brief One counter's count since the previous snapshot.
+ *
+ * @param now The counter at this snapshot.
+ * @param prev The counter at the previous snapshot.
+ * @return now - prev, or now when the counter went backwards (it counts
+ *         from 0 again).
+ */
+static uint32_t since(uint32_t now, uint32_t prev)
+{
+    return (now >= prev) ? now - prev : now;
+}
+
+void link_bringup_window(const link_bringup_t *now,
+                         const link_bringup_t *prev, link_bringup_t *out)
+{
+    if (now == NULL || out == NULL) {
+        return;
+    }
+    link_bringup_t w = *now;   /* flags, identity, round trip */
+    if (prev != NULL) {
+        w.polls          = since(now->polls, prev->polls);
+        w.replies        = since(now->replies, prev->replies);
+        w.timeouts       = since(now->timeouts, prev->timeouts);
+        w.mismatches     = since(now->mismatches, prev->mismatches);
+        w.nacks          = since(now->nacks, prev->nacks);
+        w.rx_crc_errors  = since(now->rx_crc_errors, prev->rx_crc_errors);
+        w.rx_resyncs     = since(now->rx_resyncs, prev->rx_resyncs);
+        w.dev_frames     = since(now->dev_frames, prev->dev_frames);
+        w.dev_crc_errors = since(now->dev_crc_errors, prev->dev_crc_errors);
+        w.dev_resyncs    = since(now->dev_resyncs, prev->dev_resyncs);
+        w.dev_refused    = since(now->dev_refused, prev->dev_refused);
+    }
+    *out = w;
+}
+
 const char *link_diag_text(link_diag_t d)
 {
     switch (d) {

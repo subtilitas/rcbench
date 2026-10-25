@@ -181,6 +181,177 @@ TEST_CASE(an_occasional_drop_is_intermittent_and_not_a_fault)
     CHECK_EQ(link_bringup_diagnose(&b), LINK_DIAG_INTERMITTENT);
 }
 
+/* ---------------------------------------------------------- report window */
+
+/*
+ * The panel reports every 60s while the link is up.  A burst of late answers
+ * at an IOmcu drop is the verdict of the window that holds it; the next
+ * window, clean, is healthy again.
+ */
+TEST_CASE(a_clean_window_after_a_burst_of_late_answers_is_healthy)
+{
+    link_bringup_t first = healthy();
+    first.mismatches = 7;            /* the drop's late answers */
+    link_bringup_t w;
+    link_bringup_window(&first, NULL, &w);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_STALE);
+
+    /* 60s later at 20Hz: 1200 more polls, every one answered, none late. */
+    link_bringup_t second = first;
+    second.polls      += 1200u;
+    second.replies    += 1200u;
+    second.dev_frames += 1200u;
+    link_bringup_window(&second, &first, &w);
+    CHECK_EQ(w.polls, 1200u);
+    CHECK_EQ(w.mismatches, 0u);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_OK);
+    /* The totals still hold the burst. */
+    CHECK_EQ(link_bringup_diagnose(&second), LINK_DIAG_STALE);
+}
+
+TEST_CASE(a_burst_inside_the_window_is_stale)
+{
+    const link_bringup_t prev = healthy();
+    link_bringup_t now = prev;
+    now.polls      += 1200u;
+    now.replies    += 1190u;
+    now.timeouts   += 10u;
+    now.mismatches += 3u;
+    now.dev_frames += 1200u;
+    link_bringup_t w;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.mismatches, 3u);
+    CHECK_EQ(w.timeouts, 10u);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_STALE);
+}
+
+/*
+ * An IOmcu that restarted counts from 0 again.  Its counters below the
+ * previous report's are the window's counts, not a wrap to 4 billion.
+ */
+TEST_CASE(an_iomcu_that_restarted_counts_from_its_new_values)
+{
+    link_bringup_t prev = healthy();
+    prev.polls          = 5000u;
+    prev.replies        = 5000u;
+    prev.dev_frames     = 5000u;
+    prev.dev_crc_errors = 9u;
+    prev.dev_resyncs    = 4u;
+    prev.have_refused   = true;
+    prev.dev_refused    = 2u;
+
+    link_bringup_t now = prev;
+    now.polls          = 6200u;
+    now.replies        = 6200u;
+    now.dev_frames     = 1180u;   /* restarted inside the window */
+    now.dev_crc_errors = 1u;
+    now.dev_resyncs    = 0u;
+    now.dev_refused    = 0u;
+    link_bringup_t w;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.polls, 1200u);
+    CHECK_EQ(w.dev_frames, 1180u);
+    CHECK_EQ(w.dev_crc_errors, 1u);
+    CHECK_EQ(w.dev_resyncs, 0u);
+    CHECK_EQ(w.dev_refused, 0u);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_CORRUPT);
+
+    /* The panel's own counters are treated the same way. */
+    now.polls = 10u;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.polls, 10u);
+}
+
+/* The first report has no previous one: its window is the whole run, the
+ * same as a previous report of all zeros. */
+TEST_CASE(the_first_window_is_everything_so_far)
+{
+    link_bringup_t now = healthy();
+    now.mismatches = 2u;
+    now.timeouts   = 1u;
+    link_bringup_t zero;
+    memset(&zero, 0, sizeof(zero));
+    link_bringup_t a;
+    link_bringup_t b;
+    link_bringup_window(&now, NULL, &a);
+    link_bringup_window(&now, &zero, &b);
+    const link_bringup_t *const got[] = { &a, &b };
+    for (size_t i = 0; i < 2u; ++i) {
+        CHECK_EQ(got[i]->polls, now.polls);
+        CHECK_EQ(got[i]->replies, now.replies);
+        CHECK_EQ(got[i]->timeouts, 1u);
+        CHECK_EQ(got[i]->mismatches, 2u);
+        CHECK_EQ(got[i]->dev_frames, now.dev_frames);
+        CHECK_EQ(link_bringup_diagnose(got[i]), LINK_DIAG_STALE);
+    }
+}
+
+/* Identity, the status flags and the round trip are this report's, not a
+ * difference. */
+TEST_CASE(the_window_keeps_identity_flags_and_round_trip_of_now)
+{
+    link_bringup_t prev;
+    memset(&prev, 0, sizeof(prev));
+    prev.polls = 100u;
+    link_bringup_add_rtt(&prev, 500u);
+
+    link_bringup_t now = healthy();
+    now.polls       = 300u;
+    now.replies     = 300u;
+    now.have_refused = true;
+    now.proto_major = (uint16_t)(LINK_PROTOCOL_MAJOR + 1u);
+    link_bringup_add_rtt(&now, 600u);
+    link_bringup_add_rtt(&now, 800u);
+
+    link_bringup_t w;
+    link_bringup_window(&now, &prev, &w);
+    CHECK(w.have_status);
+    CHECK(w.have_refused);
+    CHECK(w.have_identity);
+    CHECK_EQ(w.proto_major, now.proto_major);
+    CHECK_EQ(w.proto_minor, now.proto_minor);
+    CHECK_EQ(w.rt_samples, 2u);
+    CHECK_EQ(w.rt_min_us, 600u);
+    CHECK_EQ(w.rt_max_us, 800u);
+    CHECK_EQ(w.rt_mean_us, now.rt_mean_us);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_PROTOCOL_MISMATCH);
+
+    /* The output may be the snapshot itself. */
+    link_bringup_window(&now, &prev, &now);
+    CHECK_EQ(now.polls, 200u);
+}
+
+/*
+ * The 4-poll floor applies to the window.  A link that is down is probed
+ * about once a second, so a 5s window holds 4 or 5 polls: silent at 4,
+ * no verdict at 3.
+ */
+TEST_CASE(a_window_of_under_four_polls_draws_no_conclusion)
+{
+    link_bringup_t prev = healthy();
+    link_bringup_t now  = prev;
+    now.polls    += 3u;
+    now.timeouts += 3u;
+    link_bringup_t w;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(w.replies, 0u);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_OK);
+
+    now.polls    += 1u;
+    now.timeouts += 1u;
+    link_bringup_window(&now, &prev, &w);
+    CHECK_EQ(link_bringup_diagnose(&w), LINK_DIAG_SILENT);
+}
+
+TEST_CASE(a_window_without_a_snapshot_is_refused)
+{
+    link_bringup_t out = healthy();
+    link_bringup_window(NULL, NULL, &out);
+    CHECK_EQ(out.polls, 100u);
+    const link_bringup_t now = healthy();
+    link_bringup_window(&now, NULL, NULL);
+}
+
 /* -------------------------------------------------------- round-trip stats */
 
 TEST_CASE(the_round_trip_keeps_its_extremes_and_its_mean)
@@ -487,6 +658,13 @@ int main(void)
     RUN(corruption_is_seen_from_whichever_end_sees_it);
     RUN(late_answers_are_reported_as_late_rather_than_as_loss);
     RUN(an_occasional_drop_is_intermittent_and_not_a_fault);
+    RUN(a_clean_window_after_a_burst_of_late_answers_is_healthy);
+    RUN(a_burst_inside_the_window_is_stale);
+    RUN(an_iomcu_that_restarted_counts_from_its_new_values);
+    RUN(the_first_window_is_everything_so_far);
+    RUN(the_window_keeps_identity_flags_and_round_trip_of_now);
+    RUN(a_window_of_under_four_polls_draws_no_conclusion);
+    RUN(a_window_without_a_snapshot_is_refused);
     RUN(the_round_trip_keeps_its_extremes_and_its_mean);
     RUN(the_first_sample_is_the_min_the_max_and_the_mean);
     RUN(the_mean_survives_a_session_longer_than_a_sum_would);

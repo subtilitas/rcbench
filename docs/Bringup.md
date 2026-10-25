@@ -130,11 +130,23 @@ until it answers, then polls the bench page at 20Hz and the status page every
 500ms. Every 5s while the link is down, and once a minute while it is up, the
 panel prints a diagnosis:
 
-    I (…) rcbench: LINK works, and not every time
-    W (…) rcbench:   check: marginal timing, or a poll period tighter than the round trip
-    I (…) rcbench:   panel  polls 1200 replies 1187 timeouts 13 stale 0 nack 0 crc 0 resync 0
-    I (…) rcbench:   iomcu  frames 1187 crc 0 resync 0 refused 0
+    I (…) rcbench: LINK answers arrive too late
+    W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
+    I (…) rcbench:   last 60s  polls 1200 replies 1197 timeouts 3 stale 3 nack 0  iomcu frames 1200 crc 0 resync 0 refused 0
+    I (…) rcbench:   panel  polls 36000 replies 35990 timeouts 10 stale 7 nack 0 crc 0 resync 0
+    I (…) rcbench:   iomcu  frames 36000 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
+
+The diagnosis and the `last` line cover the window since the previous
+report: 60s while the link is up, 5s while it is down, and at the first
+report the time since start-up. The `panel` and `iomcu` lines are totals
+since start-up. One burst of late answers at an IOmcu drop is the
+diagnosis of the report that covers it; the next report of a healthy link
+says `link healthy`. A window of fewer than 4 polls says `link healthy`; a
+link that is down is probed about once a second, so its 5s window holds 4
+or 5 polls. An IOmcu counter below its figure at the previous report counts
+from 0 again (the IOmcu restarted, or a 16-bit status register wrapped), and
+the window takes its new value.
 
 | Diagnosis | Meaning |
 | --- | --- |

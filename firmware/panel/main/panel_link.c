@@ -492,10 +492,6 @@ static void exchange_unanswered(void)
 }
 
 /*
- * One block naming the most fundamental fault rather than the loudest.
- * Printed every 5s while the link is down and every 60s while it is up.
- */
-/*
  * The same report, on its way to the card.
  *
  * A tester can send a file; a tester cannot send a console this board does
@@ -565,8 +561,33 @@ void link_lost_report(busfault_report_t *r)
                           &r->bus_off);
 }
 
+/**
+ * @brief One block naming the most fundamental fault rather than the
+ *        loudest.  Printed every 5s while the link is down and every 60s
+ *        while it is up.
+ *
+ * The verdict judges the window since the previous report, not the
+ * session: one burst of late answers at an IOmcu drop is the verdict of
+ * the report that covers it, and a link that is healthy again reads as
+ * healthy at the next one.  The first report's window is everything since
+ * start-up.  A window of under 4 polls says "link healthy"
+ * (link_bringup_diagnose()).  A link that is down gets one identity probe
+ * about every 1000ms (poll_far_end()'s gate; an unanswered probe waits
+ * LINK_HOST_TIMEOUT_MS, 1000ms, of it), so a 5s window holds 4 or 5 polls
+ * and a silent link reads as silent.
+ *
+ * The panel and iomcu lines keep the totals since start-up; the window's
+ * counts have a line of their own.
+ */
 void link_report(void)
 {
+    /* The previous report's totals and when they were taken; all zero
+     * before the first report, which makes its window the whole run. */
+    static link_bringup_t s_prev;
+    static uint32_t       s_prev_ms;
+    /* Static rather than on the stack: this runs on the control task. */
+    static link_bringup_t s_win;
+
     s_bring.polls         = s_host.polls;
     s_bring.replies       = s_host.replies;
     s_bring.timeouts      = s_host.timeouts;
@@ -584,10 +605,34 @@ void link_report(void)
     s_bring.rx_crc_errors = 0;
     s_bring.rx_resyncs    = 0;
 
-    const link_diag_t d = link_bringup_diagnose(&s_bring);
+    const uint32_t at_ms = now_ms();
+    link_bringup_window(&s_bring, &s_prev, &s_win);
+    const uint32_t win_s = (uint32_t)(at_ms - s_prev_ms) / 1000u;
+    s_prev    = s_bring;
+    s_prev_ms = at_ms;
+
+    const link_diag_t d = link_bringup_diagnose(&s_win);
     ESP_LOGI(TAG, "LINK %s", link_diag_text(d));
     if (d != LINK_DIAG_OK) {
         ESP_LOGW(TAG, "  check: %s", link_diag_hint(d));
+    }
+    if (s_win.have_status) {
+        ESP_LOGI(TAG, "  last %lus  polls %lu replies %lu timeouts %lu "
+                      "stale %lu nack %lu  iomcu frames %lu crc %lu "
+                      "resync %lu refused %lu",
+                 (unsigned long)win_s, (unsigned long)s_win.polls,
+                 (unsigned long)s_win.replies, (unsigned long)s_win.timeouts,
+                 (unsigned long)s_win.mismatches, (unsigned long)s_win.nacks,
+                 (unsigned long)s_win.dev_frames,
+                 (unsigned long)s_win.dev_crc_errors,
+                 (unsigned long)s_win.dev_resyncs,
+                 (unsigned long)s_win.dev_refused);
+    } else {
+        ESP_LOGI(TAG, "  last %lus  polls %lu replies %lu timeouts %lu "
+                      "stale %lu nack %lu",
+                 (unsigned long)win_s, (unsigned long)s_win.polls,
+                 (unsigned long)s_win.replies, (unsigned long)s_win.timeouts,
+                 (unsigned long)s_win.mismatches, (unsigned long)s_win.nacks);
     }
     ESP_LOGI(TAG, "  panel  polls %lu replies %lu timeouts %lu stale %lu "
                   "nack %lu crc %lu resync %lu",
