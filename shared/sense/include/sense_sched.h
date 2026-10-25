@@ -312,11 +312,11 @@ typedef struct {
     uint16_t n_v;         /**< voltage samples                            */
     bool     clip_hi;     /**< a current sample at the top of the range   */
     bool     clip_lo;     /**< one at the bottom                          */
-    int32_t  i_mean_ua;   /**< mean current, µA; 0 with n_i 0             */
-    int32_t  i_min_ua;    /**< lowest current, µA; 0 with n_i 0           */
-    int32_t  i_max_ua;    /**< highest current, µA; 0 with n_i 0          */
-    int32_t  v_mean_uv;   /**< mean voltage, µV; 0 with n_v 0             */
-    int32_t  v_min_uv;    /**< lowest voltage, µV; 0 with n_v 0           */
+    int32_t i_mean_ua,                      /**< mean current, µA; 0 with n_i 0             */
+            i_min_ua,                       /**< lowest current, µA; 0 with n_i 0           */
+            i_max_ua;                       /**< highest current, µA; 0 with n_i 0          */
+    int32_t v_mean_uv,                      /**< mean voltage, µV; 0 with n_v 0             */
+            v_min_uv;                       /**< lowest voltage, µV; 0 with n_v 0           */
 } sense_window_t;
 
 /** @brief A window being filled. */
@@ -324,11 +324,11 @@ typedef struct {
     int64_t  i_sum, v_sum;
     uint16_t n_i, n_v;
     uint16_t n_hi, n_lo;  /**< current samples at the top, at the bottom  */
-    bool     clip_hi;     /**< a current sample at the top of the range   */
-    bool     clip_lo;     /**< one at the bottom                          */
-    int32_t  i_min;       /**< lowest current, µA                         */
-    int32_t  i_max;       /**< highest current, µA                        */
-    int32_t  v_min;       /**< lowest voltage, µV                         */
+    bool clip_hi,                           /**< a current sample at the top of the range   */
+         clip_lo;                           /**< one at the bottom                          */
+    int32_t i_min,                          /**< lowest current, µA                         */
+            i_max,                          /**< highest current, µA                        */
+            v_min;                          /**< lowest voltage, µV                         */
 } sense_acc_t;
 
 /** @brief One FAST window as the ring keeps it. */
@@ -339,11 +339,11 @@ typedef struct {
     uint16_t n_v;         /**< voltage samples                            */
     bool     clip_hi;     /**< a current sample at the top of the range   */
     bool     clip_lo;     /**< one at the bottom                          */
-    int32_t  i_mean_ua;   /**< mean current, µA; 0 with n_i 0             */
-    int32_t  i_min_ua;    /**< lowest current, µA; a clipped sample at the end of the range it read; 0 with n_i 0 */
-    int32_t  i_max_ua;    /**< highest current, µA; clipped likewise; 0 with n_i 0 */
-    int32_t  v_mean_uv;   /**< mean voltage, µV; 0 with n_v 0             */
-    int32_t  v_min_uv;    /**< lowest voltage, µV; 0 with n_v 0           */
+    int32_t i_mean_ua,                      /**< mean current, µA; 0 with n_i 0             */
+            i_min_ua,                       /**< lowest current, µA; a clipped sample at the end of the range it read; 0 with n_i 0 */
+            i_max_ua;                       /**< highest current, µA; clipped likewise; 0 with n_i 0 */
+    int32_t v_mean_uv,                      /**< mean voltage, µV; 0 with n_v 0             */
+            v_min_uv;                       /**< lowest voltage, µV; 0 with n_v 0           */
 } sense_ring_win_t;
 
 /** @brief The run since sense_sched_arm(), from the INA228. */

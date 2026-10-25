@@ -43,10 +43,10 @@ typedef struct {
     uint8_t  kind;     /**< a link_draw_shape_kind_t                        */
     uint8_t  param;    /**< RRECT corner radius, LINE width, else 0         */
     uint16_t colour;   /**< RGB565                                          */
-    uint16_t a;        /**< first parameter of the shape               */
-    uint16_t b;        /**< second parameter                           */
-    uint16_t c;        /**< third parameter                            */
-    uint16_t d;        /**< fourth parameter                           */
+    uint16_t a,                             /**< first parameter of the shape               */
+             b,                             /**< second parameter                           */
+             c,                             /**< third parameter                            */
+             d;                             /**< fourth parameter                           */
 } link_draw_shape_t;
 
 /** @brief A drawing that passed link_drawing_parse(). */

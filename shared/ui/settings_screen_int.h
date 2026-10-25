@@ -297,8 +297,8 @@ typedef struct {
     int      hit_kind;                  /**< what the press hit, HIT_* */
     int      hit_index;                 /**< tile index, or row index */
     bool     dragging;                  /**< whether the press became a scroll */
-    int      press_x;       /**< x where the press began, px */
-    int      press_y;       /**< y where the press began, px */
+    int press_x,                            /**< x where the press began, px */
+        press_y;                            /**< y where the press began, px */
     int      last_y;                    /**< y of the last move, px */
 
     float    held_for;                  /**< seconds a key has been held within the slop */

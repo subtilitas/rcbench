@@ -220,8 +220,8 @@ typedef struct {
 typedef struct {
     bool     write;            /**< a write of regs; otherwise a read     */
     uint8_t  page;             /**< link_page_id_t                        */
-    uint8_t  off;              /**< first register of the page             */
-    uint8_t  n;                /**< registers                              */
+    uint8_t off,                            /**< first register of the page             */
+            n;                              /**< registers                              */
     uint16_t regs[4];          /**< a write's registers                   */
 } kst_link_xfer_t;
 

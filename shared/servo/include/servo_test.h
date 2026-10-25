@@ -383,8 +383,8 @@ typedef struct {
     /**
      * @brief The pass/fail limits; 0 is not checked, and STALL AT always is.
      */
-    float    idle_max_a;    /**< the idle current's pass limit, A       */
-    float    hold_max_a;    /**< the holding current's pass limit, A    */
+    float idle_max_a,                       /**< the idle current's pass limit, A       */
+          hold_max_a;                       /**< the holding current's pass limit, A    */
     uint16_t travel_max_ms;             /**< the travel time's pass limit, ms */
     /** @brief The stall current's limit, A; the stall check always runs */
     float    stall_a;

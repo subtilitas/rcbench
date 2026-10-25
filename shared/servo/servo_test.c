@@ -811,8 +811,8 @@ servo_test_start_t servo_test_start(servo_test_t *t,
 typedef struct {
     float    i;         /**< A, signed: the reading, a window's mean        */
     float    i_peak;    /**< the sample of the largest magnitude in it      */
-    float    v;         /**< V: the reading                                 */
-    float    v_min;     /**< V: the lowest in it                            */
+    float v,                                /**< V: the reading                                 */
+          v_min;                            /**< V: the lowest in it                            */
     uint32_t at;        /**< when the panel had it                          */
     uint32_t from;      /**< when it began: at, less the meter's span       */
 } sample_t;

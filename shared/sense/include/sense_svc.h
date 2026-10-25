@@ -81,8 +81,8 @@ extern "C" {
  */
 typedef struct {
     uint16_t cfg_gen;            /**< the bus's pins and the parts          */
-    uint8_t  sda;                /**< GPIO number of the data line          */
-    uint8_t  scl;                /**< GPIO number of the clock line         */
+    uint8_t sda,                            /**< GPIO number of the data line          */
+            scl;                            /**< GPIO number of the clock line         */
     sense_sched_cfg_t parts;     /**< neither enabled: the bus is closed    */
     uint16_t run_gen;            /**< moves on each edge into driving       */
     uint16_t cap_gen;            /**< moves on each arm and each disarm     */
@@ -106,14 +106,14 @@ typedef struct {
     uint16_t present;            /**< bit n: 0x40 + n answered             */
     sense_state_t i228;                 /**< the INA228's state */
     sense_state_t i3221[SENSE_I3221_PARTS];  /**< UNSET when not fitted */
-    uint16_t i228_maker;         /**< the INA228's last maker ID read       */
-    uint16_t i228_device;        /**< the INA228's last device ID read      */
-    uint16_t i3221_maker[SENSE_I3221_PARTS]; /**< each INA3221's last maker ID read */
-    uint16_t i3221_die[SENSE_I3221_PARTS];   /**< each INA3221's last die ID read   */
+    uint16_t i228_maker,                    /**< the INA228's last maker ID read       */
+             i228_device;                   /**< the INA228's last device ID read      */
+    uint16_t i3221_maker[SENSE_I3221_PARTS],/**< each INA3221's last maker ID read */
+             i3221_die[SENSE_I3221_PARTS];  /**< each INA3221's last die ID read   */
     uint8_t  fast;               /**< the FAST channel in force, or
                                       SENSE_FAST_NONE                    */
-    bool     have_temp;          /**< temp_mdegc holds a reading            */
-    bool     have_diag;          /**< diag holds a reading                  */
+    bool have_temp,                         /**< temp_mdegc holds a reading            */
+         have_diag;                         /**< diag holds a reading                  */
     int32_t  temp_mdegc;         /**< the INA228's die                      */
     uint16_t diag;               /**< its DIAG_ALRT as last read            */
     bool     have_win;           /**< a window has closed                   */
@@ -174,12 +174,12 @@ typedef struct {
 typedef struct {
     sense_svc_io_t io;
     bool     started;            /**< a command has been taken             */
-    uint16_t cfg_gen;            /**< generation of the bus's configuration taken */
-    uint16_t run_gen;            /**< generation of the run command taken */
-    uint16_t cap_gen;            /**< generation of the capture command taken */
+    uint16_t cfg_gen,                       /**< generation of the bus's configuration taken */
+             run_gen,                       /**< generation of the run command taken */
+             cap_gen;                       /**< generation of the capture command taken */
     bool     open;                      /**< the bus runs on its pins */
-    uint8_t  sda;                /**< GPIO number of the data line          */
-    uint8_t  scl;                /**< GPIO number of the clock line         */
+    uint8_t sda,                            /**< GPIO number of the data line          */
+            scl;                            /**< GPIO number of the clock line         */
     bool     edge_given;         /**< cap_gen's edge went to the schedule  */
     bool     refused;            /**< cap_gen's arm was refused            */
     uint16_t refusals;           /**< refused arms, modulo 65536           */

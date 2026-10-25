@@ -280,8 +280,8 @@ typedef struct {
     uint32_t gen;         /**< the schedule's set-up number at the last
                                call: another one is a new schedule       */
     uint16_t n_v;         /**< CH1 voltages in it at the last call         */
-    uint16_t n_hi;        /**< CH1 samples clipped at the top end          */
-    uint16_t n_lo;        /**< CH1 samples clipped at the bottom end       */
+    uint16_t n_hi,                          /**< CH1 samples clipped at the top end          */
+             n_lo;                          /**< CH1 samples clipped at the bottom end       */
     int64_t  v_sum;       /**< and their sum, µV                           */
     uint32_t lost;        /**< records dropped since the last one kept     */
     uint32_t dropped;     /**< every count of lost, modulo 2^32: what
@@ -289,14 +289,14 @@ typedef struct {
     uint32_t lost_after;  /**< samples dropped while a set-up record is
                                owed: added to lost and dropped once the
                                record is written, so they count after it  */
-    uint32_t cfg;         /**< the sample set-up word as last seen         */
-    uint32_t shunt;       /**< the shunt as last seen, µΩ                  */
+    uint32_t cfg,                           /**< the sample set-up word as last seen         */
+             shunt;                         /**< the shunt as last seen, µΩ                  */
     bool     cfg_owed;    /**< its record is still to be written           */
     bool     shunt_owed;                /**< the shunt's record is still to be written */
-    uint32_t cfg_t;       /**< the tick an owed set-up word was seen in    */
-    uint32_t shunt_t;     /**< the tick an owed shunt was seen in          */
-    bool     cfg_newer;   /**< a set-up record was kept since then         */
-    bool     shunt_newer; /**< a shunt record was kept since then          */
+    uint32_t cfg_t,                         /**< the tick an owed set-up word was seen in    */
+             shunt_t;                       /**< the tick an owed shunt was seen in          */
+    bool cfg_newer,                         /**< a set-up record was kept since then         */
+         shunt_newer;                       /**< a shunt record was kept since then          */
     uint32_t kept_t;      /**< the time of the last record kept            */
 } sense_trace_src_t;
 
@@ -305,8 +305,8 @@ typedef struct {
     uint8_t  kind;        /**< sense_trace_trig_t                          */
     uint32_t t;                         /**< time of the trigger, 0.1ms */
     uint64_t at_us;       /**< a trigger's time as it was given            */
-    uint16_t ch;          /**< a cmd trigger's channel                     */
-    uint16_t us;          /**< a cmd trigger's pulse, µs                   */
+    uint16_t ch,                            /**< a cmd trigger's channel                     */
+             us;                            /**< a cmd trigger's pulse, µs                   */
     uint32_t cmd_t;       /**< a $D line's: its command's $C time          */
 } sense_trace_mark_t;
 
@@ -339,16 +339,16 @@ typedef struct {
     sense_trace_stage_t stage;
     uint16_t id;          /**< traces started, modulo 65536                */
     uint8_t  trig;        /**< what started this one                       */
-    uint32_t t0;          /**< start of the trace, 0.1ms                   */
-    uint32_t ms0;         /**< start of the trace, ms                      */
-    uint32_t len_ms;      /**< length of the trace, ms                     */
+    uint32_t t0,                            /**< start of the trace, 0.1ms                   */
+             ms0,                           /**< start of the trace, ms                      */
+             len_ms;                        /**< length of the trace, ms                     */
     uint32_t end_t;       /**< the trace ends at a sample at or past it    */
     uint32_t last_t;      /**< the last sample line's time                 */
     bool     stopped;     /**< the console moved the end                   */
     bool     stalled;     /**< a line was written without core 1 seen past
                                its time                                    */
-    uint32_t cfg;         /**< the sample set-up word at the ring's tail   */
-    uint32_t shunt;       /**< the shunt at the ring's tail, µΩ            */
+    uint32_t cfg,                           /**< the sample set-up word at the ring's tail   */
+             shunt;                         /**< the shunt at the ring's tail, µΩ            */
     bool     lost_shown;  /**< the $L line of the record at the tail is
                                written                                     */
     uint32_t drops_seen;  /**< the counts of dropped records that the
@@ -356,16 +356,16 @@ typedef struct {
                                modulo 2^32                                 */
     uint32_t ahead;       /**< of the count the next record to be read
                                carries, what a $L line has said already    */
-    uint32_t n_s;         /**< sample lines written                        */
-    uint32_t n_v;         /**< voltage lines written                       */
-    uint32_t n_m;         /**< trigger lines written                       */
-    uint32_t n_lost;      /**< records lost                                */
-    uint32_t n_mlost;     /**< triggers lost                               */
+    uint32_t n_s,                           /**< sample lines written                        */
+             n_v,                           /**< voltage lines written                       */
+             n_m,                           /**< trigger lines written                       */
+             n_lost,                        /**< records lost                                */
+             n_mlost;                       /**< triggers lost                               */
     uint32_t mlost_t[2];  /**< the first and the last time of the n_mlost
                                triggers that found the queue full          */
     sense_trace_mark_t q[SENSE_TRACE_MARKS];  /**< triggers waiting to be written */
-    uint8_t  q_n;         /**< triggers in q                               */
-    uint8_t  q_head;      /**< index of the oldest trigger in q            */
+    uint8_t q_n,                            /**< triggers in q                               */
+            q_head;                         /**< index of the oldest trigger in q            */
     /* Triggers at or past the end of a trace still being written, and
      * behind a slewed command among them its last change or its end. */
     sense_trace_mark_t wait[SENSE_TRACE_MARKS];

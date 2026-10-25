@@ -84,8 +84,8 @@ typedef struct {
                                  reading that is not valid             */
     bool     no_magnet;     /**< not valid because the part answers and
                                  detects no magnet (STATUS MD clear)   */
-    bool     weak;          /**< valid, with the field too weak (ML): the angle's noise is not specified */
-    bool     strong;        /**< valid, with the field too strong (MH): likewise */
+    bool weak,                              /**< valid, with the field too weak (ML): the angle's noise is not specified */
+         strong;                            /**< valid, with the field too strong (MH): likewise */
 } servo_test_enc_t;
 
 /**
@@ -110,8 +110,8 @@ float servo_test_enc_wrap(float deg);
 /** @brief What the run wants done, from servo_test_step(). */
 typedef struct {
     bool     set;           /**< the set points to set_v and set_i      */
-    float    set_v;         /**< the voltage to set, V                  */
-    float    set_i;         /**< the current limit to set, A            */
+    float set_v,                            /**< the voltage to set, V                  */
+          set_i;                            /**< the current limit to set, A            */
     bool     on;            /**< the output on, after the set points    */
     bool     off;           /**< the output off                         */
     bool     command;       /**< the servo to cmd_us, at once (no slew) */

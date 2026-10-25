@@ -108,8 +108,8 @@ enum { PS_V = 0, PS_A, PS_W, PS_COUNT };
  *        with.
  */
 typedef struct {
-    bool    v_ok;     /**< whether a voltage arrived                      */
-    bool    i_ok;     /**< whether a current arrived                      */
+    bool v_ok,                              /**< whether a voltage arrived                      */
+         i_ok;                              /**< whether a current arrived                      */
     float   v;        /**< V                                              */
     float   i;        /**< A, signed                                      */
     float   p;        /**< W                                              */

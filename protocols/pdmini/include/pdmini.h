@@ -270,8 +270,8 @@ typedef struct {
     bool     online;      /**< it answered WHO_AM_I and has since        */
     bool     output;      /**< READ_OUTPUT_STATE says the output is on   */
     uint8_t  mode;        /**< PDMINI_MODE_*                             */
-    uint16_t v_mv;        /**< voltage at the terminals, READ_OUTPUT_DISPLAY, mV */
-    uint16_t i_ma;        /**< current at the terminals, READ_OUTPUT_DISPLAY, mA */
+    uint16_t v_mv,                          /**< voltage at the terminals, READ_OUTPUT_DISPLAY, mV */
+             i_ma;                          /**< current at the terminals, READ_OUTPUT_DISPLAY, mA */
     uint16_t set_mv;      /**< the active slot's set points, read back   */
     uint16_t set_ma;                    /**< the active slot's current limit, mA */
     uint8_t  in_state;    /**< READ_INPUT_STATE: 5 PD, 4 QC, 6 DC, ...   */

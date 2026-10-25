@@ -445,8 +445,8 @@ typedef struct {
     bool tap_have;                      /**< whether a contact holds a press on a button or row */
     bool tap_moved;                     /**< whether it has moved further than the slop */
     uint8_t tap_id;                     /**< touch id of that contact */
-    int16_t tap_x0;      /**< x where it came down, px */
-    int16_t tap_y0;      /**< y where it came down, px */
+    int16_t tap_x0,                         /**< x where it came down, px */
+            tap_y0;                         /**< y where it came down, px */
 
     bool valid[MAX_FBS];                /**< per frame buffer: whether its content is current */
 } lv_state_t;

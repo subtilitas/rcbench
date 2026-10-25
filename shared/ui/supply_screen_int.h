@@ -309,8 +309,8 @@ typedef struct {
      * while a drag is under way or a change waits for its confirmation;
      * see sup_propose().
      */
-    float           cv;             /**< voltage set point given to the supply, V */
-    float           ci;             /**< current limit given to the supply, A */
+    float cv,                               /**< voltage set point given to the supply, V */
+          ci;                               /**< current limit given to the supply, A */
     /* An ON this screen has asked for and not yet seen applied: the output
      * is treated as live from the moment it is asked; see
      * sup_confirm_needed(). */
@@ -344,14 +344,14 @@ typedef struct {
      * than an ON hold, whatever the output does before it lifts. */
     /** @brief Whether OUTPUT's press began on a live output (an OFF tap) */
     bool            press_on;
-    float           pend_v;         /**< voltage change waiting for its question, V */
-    float           pend_i;         /**< current change waiting for its question, A */
-    gfx_rect_t      apply_btn;      /**< APPLY of the question            */
-    gfx_rect_t      discard_btn;    /**< CANCEL of the question           */
+    float pend_v,                           /**< voltage change waiting for its question, V */
+          pend_i;                           /**< current change waiting for its question, A */
+    gfx_rect_t apply_btn,                   /**< APPLY of the question            */
+               discard_btn;                 /**< CANCEL of the question           */
     bool            model;              /**< whether the panel runs against its model supply */
     uint32_t        baud;               /**< PD mini UART rate, baud; 0 when not shown */
-    int             tx1;            /**< PD mini UART transmit pin, GPIO + 1; 0 for none */
-    int             rx1;            /**< PD mini UART receive pin, GPIO + 1; 0 for none */
+    int tx1,                                /**< PD mini UART transmit pin, GPIO + 1; 0 for none */
+        rx1;                                /**< PD mini UART receive pin, GPIO + 1; 0 for none */
     /* The output as this screen believes it: what the supply reported, and
      * an OFF this screen has asked for and not yet seen answered. */
     bool            on;                 /**< the output as this screen believes it */
@@ -377,10 +377,10 @@ typedef struct {
     gfx_rect_t      out_rect;           /**< OUTPUT ON / OFF */
     gfx_rect_t      reset_rect;         /**< RESET PEAKS */
     gfx_rect_t      modreset_btn;       /**< RESET PD MINI, on SETTINGS */
-    gfx_rect_t      v_down;         /**< voltage fine step down           */
-    gfx_rect_t      v_up;           /**< voltage fine step up             */
-    gfx_rect_t      i_down;         /**< current fine step down           */
-    gfx_rect_t      i_up;           /**< current fine step up             */
+    gfx_rect_t v_down,                      /**< voltage fine step down           */
+               v_up,                        /**< voltage fine step up             */
+               i_down,                      /**< current fine step down           */
+               i_up;                        /**< current fine step up             */
     ui_keypad_t     kp;                 /**< the keypad */
     int             kp_target;          /**< what the keypad types, KP_* */
     /** @brief Setting the keypad types when kp_target is KP_SETTING */

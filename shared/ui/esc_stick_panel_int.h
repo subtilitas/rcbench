@@ -129,9 +129,9 @@ extern const setting_id_t sp_settings_list[SP_SETTINGS];
  */
 typedef struct {
     const char *name;                   /**< maker's name, as the registry holds it */
-    uint16_t models;   /**< models the maker has in the registry            */
-    uint16_t found;    /**< models the search pattern finds                 */
-    uint16_t runs;     /**< found models that run on this bench             */
+    uint16_t models,                        /**< models the maker has in the registry            */
+             found,                         /**< models the search pattern finds                 */
+             runs;                          /**< found models that run on this bench             */
     bool        manual;                 /**< whether any found model has manual steps */
 } sp_maker_t;
 
@@ -140,8 +140,8 @@ typedef struct {
  *        registry and its own index in that profile.
  */
 typedef struct {
-    uint16_t prof;     /**< index of the profile in the registry            */
-    uint16_t model;    /**< index of the model in that profile              */
+    uint16_t prof,                          /**< index of the profile in the registry            */
+             model;                         /**< index of the model in that profile              */
 } sp_row_t;
 
 /**
@@ -161,10 +161,10 @@ typedef struct {
      */
     sp_row_t   rows_m[SP_MODELS];
     const char *maker;                  /**< name of the maker open on level 1 */
-    int        count;       /**< entries the level shows                  */
-    int        runnable;    /**< of those, entries that run               */
-    int        scroll;      /**< first entry shown                        */
-    int        bscroll;     /**< makers' scroll kept while a maker is open */
+    int count,                              /**< entries the level shows                  */
+        runnable,                           /**< of those, entries that run               */
+        scroll,                             /**< first entry shown                        */
+        bscroll;                            /**< makers' scroll kept while a maker is open */
     int        model;                   /**< the page's model, -1 for none */
 
     /* The profile picked, and what is to change: per item, -1 to keep it,
@@ -174,20 +174,20 @@ typedef struct {
      * @brief Per item: -1 keeps the item, else the index of the value to store
      */
     int  pick[256];
-    int  iscroll;           /**< first item shown on the profile page     */
-    int  picked;            /**< item picked, -1 for none                 */
+    int iscroll,                            /**< first item shown on the profile page     */
+        picked;                             /**< item picked, -1 for none                 */
     char note[SP_NOTE];                 /**< why RUN cannot start, SP_NOTE bytes; "" when it can */
     bool could;                         /**< whether RUN could start as last drawn */
 
     /* The warning, and its hold. */
-    bool      warn;         /**< whether the RUN warning shows            */
-    bool      warn_down;    /**< whether the warning's hold button is down */
+    bool warn,                              /**< whether the RUN warning shows            */
+         warn_down;                         /**< whether the warning's hold button is down */
     uint8_t   warn_id;                  /**< id of the warning's hold */
     ui_hold_t hold;                     /**< hold counter of the warning's button */
 
     bool timing;                        /**< whether the TIMING page shows */
-    int  tscroll;           /**< first TIMING row shown                   */
-    int  tpicked;           /**< TIMING row picked, -1 for none           */
+    int tscroll,                            /**< first TIMING row shown                   */
+        tpicked;                            /**< TIMING row picked, -1 for none           */
     /* TIMING's keypad, the row of sp_settings_list it types, and its
      * revision as the page last followed it. */
     ui_keypad_t kp;             /**< TIMING's keypad                    */
@@ -205,11 +205,11 @@ typedef struct {
     uint32_t    builds;                 /**< times the list has been built */
 
     /* The bench, as the application last said. */
-    uint32_t now_ms;        /**< bench time of the last tick, ms          */
-    uint32_t stops;         /**< STOP count the application last gave     */
-    uint32_t pressed;       /**< presses taken since the last tick        */
-    bool     armed;         /**< whether the bench is ARMED               */
-    bool     link_up;       /**< whether the IOmcu link is up             */
+    uint32_t now_ms,                        /**< bench time of the last tick, ms          */
+             stops,                         /**< STOP count the application last gave     */
+             pressed;                       /**< presses taken since the last tick        */
+    bool armed,                             /**< whether the bench is ARMED               */
+         link_up;                           /**< whether the IOmcu link is up             */
     /* The output binding, as the application last said: whether one is
      * read, and the channels it binds as a throttle (one bit each). */
     bool     bind_read;                 /**< whether the output binding is read */
@@ -222,8 +222,8 @@ typedef struct {
     char         find_was[SP_FIND_MAX + 1];
     ui_textkey_t tk;                    /**< the search keyboard */
     uint32_t     tk_rev;                /**< keyboard revision last drawn */
-    gfx_rect_t find_box;    /**< search field                             */
-    gfx_rect_t find_clr;    /**< X button in the search field             */
+    gfx_rect_t find_box,                    /**< search field                             */
+               find_clr;                    /**< X button in the search field             */
 
     /* The stack light's green, as the last tick had it. */
     esc_stick_light_t light;            /**< the stack light's state machine */
@@ -236,8 +236,8 @@ typedef struct {
      */
     motor_cmd_t q[SP_QUEUE];
     int         qn;                     /**< commands queued */
-    bool        sent_arm;     /**< whether the run's ARM went out           */
-    bool        sent_supply;  /**< whether the run's supply command went out */
+    bool sent_arm,                          /**< whether the run's ARM went out           */
+         sent_supply;                       /**< whether the run's supply command went out */
     float       sent_pct;               /**< last supply percentage sent */
 
     /* The manual steps' pop-up and the profile it shows: the page's, or a
@@ -254,25 +254,25 @@ typedef struct {
 
     /* The supply as its newest reading had it, run or no run: whether its
      * output is live, and since when it has read off. */
-    bool                 sup_have;      /**< whether a supply reading exists */
-    bool                 sup_live;      /**< whether the output is live      */
-    bool                 sup_off_known; /**< whether the output has read off */
-    bool                 sup_gate;      /**< whether the supply gates a step */
+    bool sup_have,                          /**< whether a supply reading exists */
+         sup_live,                          /**< whether the output is live      */
+         sup_off_known,                     /**< whether the output has read off */
+         sup_gate;                          /**< whether the supply gates a step */
     /** @brief What a result last showed of the supply's off state */
     bool                 sup_off_drawn;
-    uint32_t             sup_at;        /**< bench time of the newest reading, ms */
-    uint32_t             sup_off_since; /**< bench time the output began reading off, ms */
+    uint32_t sup_at,                        /**< bench time of the newest reading, ms */
+             sup_off_since;                 /**< bench time the output began reading off, ms */
     /** @brief Per profile, one bit: its manual steps were shown */
     uint8_t              hand_seen[SP_MAX / 8];
 
-    gfx_rect_t rows[SP_ROWS];     /**< list rows                          */
-    gfx_rect_t list_up;           /**< page-up key                        */
-    gfx_rect_t list_dn;           /**< page-down key                      */
-    gfx_rect_t hold_btn;          /**< HOLD TO RUN                        */
-    gfx_rect_t cancel_btn;        /**< CANCEL                             */
-    gfx_rect_t hand_btn;          /**< MANUAL INTERVENTION REQUIRED       */
-    gfx_rect_t steps_btn;         /**< manual steps                       */
-    gfx_rect_t timing_btn;        /**< TIMING                             */
+    gfx_rect_t rows[SP_ROWS],               /**< list rows                          */
+               list_up,                     /**< page-up key                        */
+               list_dn;                     /**< page-down key                      */
+    gfx_rect_t hold_btn,                    /**< HOLD TO RUN                        */
+               cancel_btn,                  /**< CANCEL                             */
+               hand_btn,                    /**< MANUAL INTERVENTION REQUIRED       */
+               steps_btn,                   /**< manual steps                       */
+               timing_btn;                  /**< TIMING                             */
     /** @brief MANUAL INTERVENTION REQUIRED on a run's result: in the
      *         foot row, left of OK; hand_btn is its place on the
      *         profile's page. */

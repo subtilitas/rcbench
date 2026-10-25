@@ -90,12 +90,12 @@ enum {
  *        what it is called.
  */
 typedef struct {
-    uint8_t page;           /**< page the row is on, PG_*                */
-    uint8_t row;            /**< row on the page, from 0                 */
-    uint8_t col;            /**< column in the row: 0 left, 1 right      */
-    uint8_t wide;           /**< 1 for a row that takes both columns     */
-    uint8_t kind;           /**< K_*: how the control behaves            */
-    uint8_t what;           /**< kst_field_id_t of the field, or A_* for an action */
+    uint8_t page,                           /**< page the row is on, PG_*                */
+            row,                            /**< row on the page, from 0                 */
+            col,                            /**< column in the row: 0 left, 1 right      */
+            wide,                           /**< 1 for a row that takes both columns     */
+            kind,                           /**< K_*: how the control behaves            */
+            what;                           /**< kst_field_id_t of the field, or A_* for an action */
     int16_t label;                      /**< ui_text_id_t of the label, or -1 to use name */
     const char *name;                   /**< the field's name, as the vendor's tool has it */
 } row_t;
@@ -220,8 +220,8 @@ typedef struct {
     struct {
         uint8_t  op;                    /**< RUN_OP_* */
         bool     kept;                  /**< whether the operator's supply values are kept */
-        uint16_t keep_mv;       /**< kept supply voltage, mV                  */
-        uint16_t keep_ma;       /**< kept supply current limit, mA            */
+        uint16_t keep_mv,                   /**< kept supply voltage, mV                  */
+                 keep_ma;                   /**< kept supply current limit, mA            */
         kst_field_id_t want_id[2];      /**< the write's two fields */
         uint16_t want[2];               /**< and their raw values */
         unsigned writes;                /**< writes of the run that ended well */

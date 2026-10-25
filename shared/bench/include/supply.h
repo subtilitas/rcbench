@@ -30,12 +30,12 @@ extern "C" {
  * A driver reports its own.
  */
 typedef struct {
-    float v_min;                  /**< lowest output voltage, V        */
-    float v_max;                  /**< highest output voltage, V       */
-    float v_step;                 /**< output voltage step, V          */
-    float i_min;                  /**< lowest current limit, A         */
-    float i_max;                  /**< highest current limit, A        */
-    float i_step;                 /**< current limit step, A           */
+    float v_min,                            /**< lowest output voltage, V        */
+          v_max,                            /**< highest output voltage, V       */
+          v_step;                           /**< output voltage step, V          */
+    float i_min,                            /**< lowest current limit, A         */
+          i_max,                            /**< highest current limit, A        */
+          i_step;                           /**< current limit step, A           */
 } supply_caps_t;
 
 /**
@@ -264,8 +264,8 @@ void supply_count_totals(supply_state_t *s, float dt_s);
 typedef struct {
     supply_caps_t caps;
     float         t;          /**< time since the output came on, s      */
-    float         set_v;      /**< voltage set point, V                  */
-    float         set_i;      /**< current limit set point, A            */
+    float set_v,                            /**< voltage set point, V                  */
+          set_i;                            /**< current limit set point, A            */
     bool          output;               /**< whether the output is on */
 } supply_sim_t;
 

@@ -352,8 +352,8 @@ typedef struct {
     uint16_t limit_us;      /**< the endpoint; the end of the travel if free */
     uint16_t bind_us;       /**< the first bound position                  */
     uint16_t free_us;       /**< the last free position                    */
-    float    baseline_a;    /**< the current before the knee, A            */
-    float    knee_a;        /**< the current at the knee, A                */
+    float baseline_a,                       /**< the current before the knee, A            */
+          knee_a;                           /**< the current at the knee, A                */
     bool     enc;           /**< enc_deg is the angle at the last free one */
     /** @brief The angle at the last free position, from ENC CENTRE */
     float    enc_deg;
