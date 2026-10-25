@@ -50,6 +50,24 @@ TEST_CASE(the_image_stores_what_was_read_and_nothing_else)
     CHECK(hitec_image_put_version(&img, 0x26));
     CHECK_EQ(img.version, 0x26);
     CHECK_EQ(img.has_version, 1);
+
+    /* Forgotten: not known, the value kept, the neighbours untouched. */
+    CHECK(hitec_image_put_cell(&img, 0xFE, 0x11));
+    CHECK(hitec_image_forget(&img, 0xFF));
+    CHECK(!hitec_image_known(&img, 0xFF));
+    CHECK(hitec_image_known(&img, 0xFE));
+    CHECK_EQ(hitec_image_cell(&img, 0xFF), 0x5A);
+    CHECK(!hitec_image_forget(NULL, 0x00));
+    hitec_image_init(&img, HITEC_D);
+    CHECK(hitec_image_put_reg(&img, 0x54, 4095));
+    CHECK(hitec_image_put_reg(&img, 0x56, 1));
+    CHECK(!hitec_image_forget(&img, 0x55));
+    CHECK(hitec_image_known(&img, 0x55));
+    CHECK(hitec_image_forget(&img, 0x54));
+    CHECK(!hitec_image_known(&img, 0x54));
+    CHECK(!hitec_image_known(&img, 0x55));
+    CHECK(hitec_image_known(&img, 0x56));
+    CHECK_EQ(hitec_image_reg(&img, 0x54), 4095);
 }
 
 TEST_CASE(a_full_read_takes_21_registers_or_100_cells)

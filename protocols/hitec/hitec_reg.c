@@ -279,6 +279,30 @@ bool hitec_image_put_version(hitec_image_t *img, uint8_t version)
     return true;
 }
 
+/**
+ * @brief Clear the known bit of byte @p addr.
+ *
+ * @param img   Image.
+ * @param addr  Byte.
+ */
+static void unmark(hitec_image_t *img, unsigned addr)
+{
+    img->known[addr / 8u] =
+        (uint8_t)(img->known[addr / 8u] & ~(1u << (addr % 8u)));
+}
+
+bool hitec_image_forget(hitec_image_t *img, uint8_t addr)
+{
+    if (img == NULL || (img->series == HITEC_D && (addr & 1u) != 0u)) {
+        return false;
+    }
+    unmark(img, addr);
+    if (img->series == HITEC_D) {
+        unmark(img, addr + 1u);
+    }
+    return true;
+}
+
 bool hitec_image_known(const hitec_image_t *img, uint8_t addr)
 {
     return img != NULL && ((img->known[addr / 8u] >> (addr % 8u)) & 1u) != 0u;

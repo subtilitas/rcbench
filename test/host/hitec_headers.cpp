@@ -8,6 +8,7 @@
 #include "hitec_pio.h"
 #include "hitec_pre.h"
 #include "hitec_reg.h"
+#include "hitec_session.h"
 #include "hitec_wire.h"
 
 /* A reference to every module's entry point: with C++ linkage on a
@@ -24,6 +25,8 @@ int hitec_headers_link(void)
     hitec_image_t img;
     hitec_value_t v;
     hitec_plan_t plan;
+    static hitec_session_t ses;
+    hitec_ses_step_t st;
 
     hitec_c_frame(HITEC_C_FIRST, 0x00, 0x00, frame);
     hitec_d_read_xfer(0x00, 0x0C, &x);
@@ -35,8 +38,14 @@ int hitec_headers_link(void)
     }
     hitec_image_init(&img, HITEC_D);
     (void)hitec_image_put_reg(&img, HITEC_D_REG_MODEL, 34485u);
+    (void)hitec_image_forget(&img, 0x54);
     (void)hitec_param_get(&img, HITEC_LAYOUT_D, HITEC_P_D_MODEL, &v);
     (void)hitec_plan(&img, &img, &plan);
+    if (hitec_session_init(&ses, HITEC_D, HITEC_SES_CLOCK_MS)
+        && hitec_session_enter(&ses, false, 0) == HITEC_SES_BUSY) {
+        (void)hitec_session_next(&ses, 0, &st);
+        (void)hitec_session_abort(&ses);
+    }
     return frame[3];
 }
 

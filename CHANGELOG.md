@@ -27,6 +27,17 @@ history is in git.
   up to 0x1B, the D series registers per setting, then save and reboot.
   Nothing calls it yet
   ([Register model](protocols/hitec/README.md#register-model)).
+- The session for servos by Hitec, in `protocols/hitec/hitec_session.c`:
+  a state machine that hands out steps (a transaction, a supply cycle with
+  a listen, a wait) and takes their results. The classic entry cycles the
+  supply, answers the servo's `+` and sends `67 00 00 99`; the D series
+  entry waits 1000ms after the supply comes on and reads the model. Reads
+  of the full set or of any set of addresses with 3 tries each, write
+  plans with the classic balance after each setting and the D series
+  save, 100ms, reboot and 1000ms, a read-back against the draft, leave,
+  abort at every step, and gaps of 2ms (classic) and 20ms (D series) on a
+  32-bit microsecond or millisecond clock. Nothing calls it yet
+  ([Session](protocols/hitec/README.md#session)).
 
 ### Changed
 

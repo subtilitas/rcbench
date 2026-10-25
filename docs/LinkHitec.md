@@ -19,8 +19,9 @@ one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
 HS-7xxx, 19,200bit/s) or D series (115,200bit/s). The page holds no Hitec
 session. The writer stages one transaction, the page runs it, and the
 capture and its decoding stay on the page until the next one. Which bytes a
-servo takes, and in which order, is the writer's business. A session on the
-panel is not built. `shared/outputs/hitec_port.c` holds the rules.
+servo takes, and in which order, is the writer's business. The session core
+is built ([`hitec_session.h`](../protocols/hitec/README.md#session)); the
+panel does not run it yet. `shared/outputs/hitec_port.c` holds the rules.
 
 A port is free, held by this page or held by the KST page
 ([The programming port for KST and Chaservo servos](LinkKST.md)), never two
