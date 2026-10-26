@@ -226,7 +226,8 @@ static void put_value(buf_t *b, kst_field_id_t id, const kst_field_t *f,
     }
 }
 
-size_t kst_file_format(const kst_image_t *img, char *out, size_t out_size)
+size_t kst_file_format(const kst_image_t *img, kst_type_t type, char *out,
+                       size_t out_size)
 {
     buf_t b;
     uint32_t crc = CRC_START;
@@ -241,9 +242,11 @@ size_t kst_file_format(const kst_image_t *img, char *out, size_t out_size)
     put_str(&b, HEADER);
     put_uint(&b, KST_FILE_FORMAT);
     put_char(&b, '\n');
-    put_str(&b, TYPE_LINE);
-    put_str(&b, kst_type_name(kst_type(img)));
-    put_char(&b, '\n');
+    if (type == KST_TYPE_V6 || type == KST_TYPE_V8) {
+        put_str(&b, TYPE_LINE);
+        put_str(&b, kst_type_name(type));
+        put_char(&b, '\n');
+    }
     for (unsigned i = 0; i < (unsigned)KST_F_COUNT; ++i) {
         const kst_field_id_t id = (kst_field_id_t)i;
         const kst_field_t *f = kst_field(id);
@@ -472,13 +475,19 @@ static bool has_checksum_line(const char *text, size_t len)
     return false;
 }
 
-/** @brief Line 1: the header and a version this code reads. */
-static kst_file_err_t read_head(cur_t *c)
+/**
+ * @brief Line 1: the header and a version this code reads.
+ *
+ * @param c       The reading position, at the text's start.
+ * @param version Receives the format version, 1 to KST_FILE_FORMAT.
+ * @return KST_FILE_OK, or the reason line 1 is refused.
+ */
+static kst_file_err_t read_head(cur_t *c, uint32_t *version)
 {
     const size_t have = c->len < STR_LEN(HEADER) ? c->len : STR_LEN(HEADER);
     line_t l;
     size_t i = STR_LEN(HEADER);
-    uint32_t version = 0;
+    uint32_t read = 0;
 
     if (memcmp(c->text, HEADER, have) != 0) {
         c->line = 1;
@@ -488,12 +497,13 @@ static kst_file_err_t read_head(cur_t *c)
         c->line = 1;
         return KST_FILE_ERR_TRUNCATED;
     }
-    if (!number(l.s, l.n, &i, &version) || i != l.n || version == 0u) {
+    if (!number(l.s, l.n, &i, &read) || i != l.n || read == 0u) {
         return KST_FILE_ERR_VERSION;
     }
-    if (version > KST_FILE_FORMAT) {
+    if (read > KST_FILE_FORMAT) {
         return KST_FILE_ERR_NEWER;
     }
+    *version = read;
     return KST_FILE_OK;
 }
 
@@ -649,20 +659,30 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
         if (!crc_line(&l, &crc)) {
             return KST_FILE_ERR_MALFORMED;
         }
+        if (state == S_TYPE) {
+            /* Line 2: the type line, which format 2 may leave out.  A line
+             * whose first 4 letters read "type" is one, and is held to the
+             * written form; no field's name starts so. */
+            state = S_FIELDS;
+            if (l.n >= 4u && loose_eq(l.s, 4u, "type")) {
+                if (l.n != STR_LEN(TYPE_LINE) + 2u
+                    || memcmp(l.s, TYPE_LINE "V", STR_LEN(TYPE_LINE) + 1u)
+                           != 0) {
+                    return KST_FILE_ERR_MALFORMED;
+                }
+                stated = type_value(l.s + STR_LEN(TYPE_LINE), 2);
+                if (stated == KST_TYPE_NONE) {
+                    return KST_FILE_ERR_MALFORMED;
+                }
+                continue;
+            }
+            if (f->version < 2u) {
+                return KST_FILE_ERR_MALFORMED;
+            }
+        }
         switch (state) {
         case S_HEAD:
             state = S_TYPE;
-            break;
-        case S_TYPE:
-            if (l.n != STR_LEN(TYPE_LINE) + 2u ||
-                memcmp(l.s, TYPE_LINE "V", STR_LEN(TYPE_LINE) + 1u) != 0) {
-                return KST_FILE_ERR_MALFORMED;
-            }
-            stated = type_value(l.s + STR_LEN(TYPE_LINE), 2);
-            if (stated == KST_TYPE_NONE) {
-                return KST_FILE_ERR_MALFORMED;
-            }
-            state = S_FIELDS;
             break;
         case S_FIELDS:
             if (is_checksum_line(l.s, l.n)) {
@@ -689,12 +709,15 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
             break;
         }
     }
-    if (stated != kst_type(&f->image)) {
+    /* Format 1 wrote the type 20k_sel gives, so its line has to say what
+     * the register block says; the type is no statement of the operator's
+     * and is not kept. */
+    if (f->version < 2u && stated != kst_type(&f->image)) {
         c->line = 2;
         return KST_FILE_ERR_TYPE;
     }
     f->kind = KST_FILE_VERIFIED;
-    f->type = stated;
+    f->type = f->version < 2u ? KST_TYPE_NONE : stated;
     return KST_FILE_OK;
 }
 
@@ -980,16 +1003,20 @@ static kst_file_err_t read_edited(cur_t *c, kst_file_t *f)
     if (e.has_block) {
         const kst_type_t block = kst_type(&f->image);
 
-        if (e.type_line != 0u && e.stated != block) {
+        /* Format 1: the block states the type 20k_sel gives, and a type
+         * line has to agree with it.  Format 2: 20k_sel is a register like
+         * any other, and the type line alone states the type. */
+        if (f->version < 2u && e.type_line != 0u && e.stated != block) {
             c->line = e.type_line;
             return KST_FILE_ERR_TYPE;
         }
-        e.stated = block;
         take_block_values(&e, f);
     }
-    f->type = e.stated;
-    f->kind = e.stated == KST_TYPE_NONE ? KST_FILE_EDITED_UNTYPED
-                                        : KST_FILE_EDITED_TYPED;
+    /* Format 1 states no type of the operator's: what it names is the type
+     * 20k_sel gives, and a load does not hold a servo to it. */
+    f->type = f->version < 2u ? KST_TYPE_NONE : e.stated;
+    f->kind = f->type == KST_TYPE_NONE ? KST_FILE_EDITED_UNTYPED
+                                       : KST_FILE_EDITED_TYPED;
     return KST_FILE_OK;
 }
 
@@ -1015,7 +1042,7 @@ kst_file_err_t kst_file_parse(const char *text, size_t len, kst_file_t *out,
     }
     memset(&f, 0, sizeof(f));
     f.type = KST_TYPE_NONE;
-    err = read_head(&c);
+    err = read_head(&c, &f.version);
     if (err == KST_FILE_OK) {
         err = has_checksum_line(c.text, c.len) ? read_verified(&c, &f)
                                                : read_edited(&c, &f);
@@ -1116,6 +1143,7 @@ static kst_field_id_t blame(const kst_file_t *file, const kst_image_t *servo,
 kst_file_verdict_t kst_file_load(const kst_file_t *file,
                                  const kst_image_t *servo,
                                  const kst_image_t *backup,
+                                 kst_type_t servo_type,
                                  kst_file_load_t *out)
 {
     kst_rules_t hard;
@@ -1136,7 +1164,7 @@ kst_file_verdict_t kst_file_load(const kst_file_t *file,
         }
     }
     out->file_type = file->type;
-    out->servo_type = kst_type(servo);
+    out->servo_type = servo_type;
     out->hard_field = KST_F_COUNT;
     out->target = *servo;
     if (file->type != KST_TYPE_NONE && file->type != out->servo_type) {

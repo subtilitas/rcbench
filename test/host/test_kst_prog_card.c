@@ -380,6 +380,11 @@ TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
     CHECK_EQ(kst_prog_load_skipped(&g_p), 0);
+    /* The type stays the operator's whatever 20k_sel reads: set to the
+     * other one. */
+    CHECK_EQ(kst_prog_type(&g_p), t_servo);
+    CHECK_EQ(kst_prog_type_guess(&g_p), t_other);
+    CHECK_EQ(kst_prog_type_set(&g_p, t_other), KST_PROG_MSG_NONE);
     (void)fake_card_put(&g_fc, "FIRST", &sv);
     load("FIRST");
     CHECK_EQ(msg(), KST_PROG_MSG_LOAD_TYPE);

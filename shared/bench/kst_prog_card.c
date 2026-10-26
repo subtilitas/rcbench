@@ -1,9 +1,12 @@
 /**
  * @file
  * @brief The programmer's files on the card: the save, the list and the load of
- *        kst_prog.h as the state sends them and takes their answers back.
+ *        kst_prog.h as the state sends them and takes their answers back, and
+ *        the servo type they state and are held to.
  *
- * See kst_prog.h and kst_card.h.
+ * Beside them two parts of kst_prog.h that hold no session: the START gate
+ * the model and the link's task share, and the servo a limit run holds for
+ * RESTORE.  See kst_prog.h and kst_card.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -118,6 +121,11 @@ kst_prog_msg_id_t kst_prog_load(kst_prog_t *p, const char *name)
 
         m = servo != KST_PROG_MSG_NONE ? servo : m;
     }
+    if (m == KST_PROG_MSG_NONE && p->type == 0u) {
+        /* A file that states a type is held to the operator's, never to
+         * the guess 20k_sel gives. */
+        m = KST_PROG_MSG_NEED_TYPE;
+    }
     if (m == KST_PROG_MSG_NONE
         && (name == NULL || name[0] == '\0'
             || strlen(name) >= KST_PROG_NAME_MAX)) {
@@ -161,6 +169,39 @@ unsigned kst_prog_file_type(const kst_prog_t *p, unsigned i)
     return i < p->files_n ? p->file_types[i] : 0u;
 }
 
+unsigned kst_prog_type(const kst_prog_t *p)
+{
+    return p->type;
+}
+
+unsigned kst_prog_type_guess(const kst_prog_t *p)
+{
+    if (!p->have_servo) {
+        return 0u;
+    }
+    return kst_type(&p->servo) == KST_TYPE_V6 ? 6u : 8u;
+}
+
+kst_prog_msg_id_t kst_prog_type_set(kst_prog_t *p, unsigned type)
+{
+    kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
+
+    if (type != 6u && type != 8u) {
+        m = (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_ARG);
+    } else if (!p->have_servo) {
+        m = KST_PROG_MSG_NEED_READ;
+    } else if (p->card_op != KST_PROG_CARD_IDLE) {
+        /* A save or a load on its way carries the type it was asked
+         * with. */
+        m = (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        return kst_prog_say(p, m, 0);
+    }
+    p->type = (uint8_t)type;
+    return KST_PROG_MSG_NONE;
+}
+
 kst_field_set_t kst_prog_load_skipped(const kst_prog_t *p)
 {
     return p->load_skipped;
@@ -201,6 +242,7 @@ bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
     out->preset = p->card_auto;
     out->first = p->card_op == KST_PROG_CARD_LIST ? p->card_first : 0u;
     memcpy(out->name, p->card_name, sizeof(out->name));
+    out->type = p->type;
     out->image = *kst_prog_file_image(p);
     p->late_img = out->image;
     return true;
@@ -455,4 +497,105 @@ void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done)
         load_done(p, done);
         break;
     }
+}
+
+/* ------------------------------------------------------- the START gate */
+
+void kst_prog_gate_init(kst_prog_gate_t *g)
+{
+    atomic_store(&g->pass, 0u);
+}
+
+void kst_prog_gate_offer(kst_prog_gate_t *g, uint32_t id)
+{
+    atomic_store(&g->pass, id);
+}
+
+/**
+ * @brief The pass of @p id, taken by whoever asks first.
+ *
+ * @param g  The gate.
+ * @param id The START id.
+ * @return true when the pass was taken.
+ */
+static bool gate_take(kst_prog_gate_t *g, uint32_t id)
+{
+    uint32_t want = id;
+
+    return id != 0u
+        && atomic_compare_exchange_strong(&g->pass, &want, 0u);
+}
+
+bool kst_prog_gate_claim(kst_prog_gate_t *g, uint32_t id)
+{
+    return gate_take(g, id);
+}
+
+bool kst_prog_gate_revoke(kst_prog_gate_t *g, uint32_t id)
+{
+    return gate_take(g, id);
+}
+
+/* --------------------------------------------------------- the limit run */
+
+/* The fields a limit run writes: the two angles, and PULSE LOWER and
+ * PULSE UPPER where SERVO PULSES sets them. */
+#define RUN_FIELDS (KST_FIELD_BIT(KST_F_LEFT_ANGLE) \
+                    | KST_FIELD_BIT(KST_F_RIGHT_ANGLE) \
+                    | KST_FIELD_BIT(KST_F_PULSE_LOWER) \
+                    | KST_FIELD_BIT(KST_F_PULSE_UPPER))
+
+bool kst_prog_run_matches(const kst_prog_t *p)
+{
+    return p->run_hold && p->have_servo
+        && (kst_prog_differ(&p->run_img, &p->servo) & ~RUN_FIELDS) == 0u;
+}
+
+bool kst_prog_run_hold(kst_prog_t *p)
+{
+    if (!p->have_servo) {
+        return false;
+    }
+    p->run_hold = true;
+    p->run_own = true;
+    p->run_written = false;
+    p->run_img = p->servo;
+    p->run_backup[0] = '\0';
+    return true;
+}
+
+void kst_prog_run_written(kst_prog_t *p)
+{
+    if (p->run_hold && !p->run_written) {
+        p->run_written = true;
+        if (p->backed_up) {
+            memcpy(p->run_backup, p->backup, KST_PROG_NAME_MAX);
+            p->run_backup[KST_PROG_NAME_MAX - 1u] = '\0';
+        } else {
+            p->run_backup[0] = '\0';
+        }
+    }
+}
+
+void kst_prog_run_close(kst_prog_t *p)
+{
+    p->run_own = false;
+}
+
+void kst_prog_run_drop(kst_prog_t *p)
+{
+    p->run_hold = false;
+    p->run_own = false;
+    p->run_written = false;
+    p->run_backup[0] = '\0';
+}
+
+const kst_image_t *kst_prog_run_image(const kst_prog_t *p)
+{
+    return p->run_hold ? &p->run_img : NULL;
+}
+
+const char *kst_prog_run_backup(const kst_prog_t *p)
+{
+    return p->run_hold ? p->run_backup : "";
 }

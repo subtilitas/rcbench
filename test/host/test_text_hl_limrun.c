@@ -74,7 +74,7 @@ TEST_CASE(the_kst_file_the_programmer_writes_is_classed)
 {
     static char text[KST_FILE_MAX + 1u];
     const kst_image_t img = sim_bench_image();
-    const size_t len = kst_file_format(&img, text, KST_FILE_MAX);
+    const size_t len = kst_file_format(&img, kst_type(&img), text, KST_FILE_MAX);
     CHECK(len > 0u);
     text[len] = '\0';
     char line[KST_FILE_LINE_MAX + 2u];

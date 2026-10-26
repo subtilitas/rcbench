@@ -189,9 +189,11 @@ extern "C" {
 /** @brief The servo's supply stays off this long, counted from the read that
  *        shows it off.
  *
- * The owner's value; what a KST servo needs is not
- *  measured. */
-#define KST_PORT_RAIL_OFF_MS 2000u
+ * The owner's value, 1s, the upper end of his estimate of 0.5s to 1s.  A
+ * Chaservo left programming mode and took a written value after 4s and
+ * more without power (bench, 2026-10-16); shorter times are not
+ * measured. */
+#define KST_PORT_RAIL_OFF_MS 1000u
 /** @brief And the servo has this long to start, counted from the read that
  *        shows
  *  the supply on.  The owner's value; not measured. */

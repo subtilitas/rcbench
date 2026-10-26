@@ -42,6 +42,13 @@ static bool g_no_pin;          /* the generator has no pin for the port */
 static bool g_sup_on;
 static bool g_set_read;      /* the panel reads an output that is on */
 static uint16_t g_set_mv;    /* and what it is set to                */
+static uint16_t g_set_ma;    /* and its current limit, 0 not known   */
+/* The servo's supply is the PD mini's: the servo powers up and down with
+ * the output (sim_power()). */
+static bool g_on_rail;
+static unsigned g_sup_offs, g_sup_ons;   /* switches of the output    */
+static uint32_t g_off_ms, g_on_ms;       /* g_ms at the last of each   */
+static uint32_t g_off_us, g_on_us;       /* the servo's clock then     */
 static uint16_t g_sup_mv, g_sup_ma;
 static uint8_t g_target;       /* LINK_PG_TARGET as the control task reads */
 static int  g_pin_value = -1;  /* the pin the binding gives CH, or -1: PIN */
@@ -120,6 +127,15 @@ static inline bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
     if (!g_rail || g_rail_deaf) {
         return false;
     }
+    if (on && !g_sup_on) {
+        g_sup_ons++;
+        g_on_ms = g_ms;
+        g_on_us = g_sim.now_us;
+    } else if (!on && g_sup_on) {
+        g_sup_offs++;
+        g_off_ms = g_ms;
+        g_off_us = g_sim.now_us;
+    }
     g_sup_on = on;
     if (on) {
         g_sup_mv = mv;
@@ -179,6 +195,16 @@ static inline void fresh_at(uint32_t t0)
     g_sup_on = false;
     g_sup_mv = 0;
     g_sup_ma = 0;
+    g_set_read = false;
+    g_set_mv = 0;
+    g_set_ma = 0;
+    g_on_rail = false;
+    g_sup_offs = 0;
+    g_sup_ons = 0;
+    g_off_ms = 0;
+    g_on_ms = 0;
+    g_off_us = 0;
+    g_on_us = 0;
     g_target = 1u + CH;
     g_pin_unknown = false;
     port_fresh();
@@ -273,6 +299,13 @@ static inline void publish(void)
     }
     f.supply_read = g_set_read;
     f.set_mv = g_set_mv;
+    f.set_ma = g_set_ma;
+    if (g_on_rail) {
+        /* The panel reads the PD mini that feeds the servo. */
+        f.supply_read = g_rail && g_sup_on;
+        f.set_mv = f.supply_read ? g_sup_mv : 0u;
+        f.set_ma = f.supply_read ? g_sup_ma : 0u;
+    }
     kst_prog_feed(&g_p, &f);
 }
 
@@ -289,6 +322,9 @@ static inline void frame(void)
 
     for (unsigned i = 0; i < 10u; ++i) {
         kst_port_step(&g_port, g_safe, g_stop, g_ms);
+        if (g_on_rail) {
+            sim_power(&g_sim, g_rail && g_sup_on);
+        }
         g_sim.now_us += 100u;
     }
     g_ms++;
@@ -397,7 +433,8 @@ static inline void link_up(void)
     settle();
 }
 
-/* Up, connected and read. */
+/* Up, connected and read, with the servo type the operator sets: the one
+ * 20k_sel suggests. */
 static inline void up(void)
 {
     fresh_at(0u);
@@ -407,6 +444,8 @@ static inline void up(void)
     settle();
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    CHECK_EQ(kst_prog_type_set(&g_p, kst_prog_type_guess(&g_p)),
+             KST_PROG_MSG_NONE);
 }
 
 /* The same with the switch on. */

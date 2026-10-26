@@ -1,9 +1,9 @@
 /**
  * @file
  * @brief The programmer's private seam between kst_prog.c, kst_prog_card.c and
- *        kst_prog_file.c: the wait and file-write kinds the state holds, and
- *        the helpers of kst_prog.c that the card part and the journal file part
- *        call.
+ *        kst_prog_file.c: the wait, supply cycle and file-write kinds the
+ *        state holds, and the helpers of kst_prog.c that the card part and the
+ *        journal file part call.
  *
  * Nothing outside shared/bench includes this header; the programmer's
  * interface is kst_prog.h.
@@ -24,6 +24,13 @@ enum {
     W_FILE,      /* the journal's file, before the request goes   */
     W_ANSWER,    /* the control task's answer to the command      */
     W_OUTCOME,   /* the operation's outcome                       */
+};
+
+/* The supply cycle the model asked of the port (kst_prog_t.cycle). */
+enum {
+    CYCLE_NONE = 0,
+    CYCLE_CONNECT,   /* a REBOOT that ends off, and an ENTER after it   */
+    CYCLE_LEAVE,     /* a REBOOT in place of LEAVE, after a write       */
 };
 
 /* What a write of the file is for. */

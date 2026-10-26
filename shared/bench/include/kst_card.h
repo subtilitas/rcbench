@@ -36,10 +36,12 @@ extern "C" {
 #define KST_CARD_LIST_MAX 64u
 
 /**
- * @brief The servo type of an image as a number the screen prints behind a "V":
- *        6 or 8.
+ * @brief The servo type 20k_sel of an image suggests, as a number the screen
+ *        prints behind a "V": 6 or 8.
  *
- * 0 for NULL.
+ * A guess from a drive setting (kst_reg.h, kst_type_t), never the type a
+ * file states or a load is held to: those are the operator's
+ * (kst_prog_card_req_t.type).  0 for NULL.
  *
  * @param img The image to read.
  * @return 6 or 8; 0 for NULL.
@@ -53,8 +55,8 @@ unsigned kst_card_type(const kst_image_t *img);
  * Every request gets an answer.
  *
  * KST_PROG_CARD_SAVE writes the text of req->image to a new file: named by
- * kst_store_preset() for a preset save, else req->name.  No file is
- * replaced.
+ * kst_store_preset() for a preset save, else req->name.  The file states
+ * req->type, the operator's, and no type for 0.  No file is replaced.
  *
  * KST_PROG_CARD_LIST gives the base names of up to KST_PROG_FILES_MAX
  * files from req->first on in the order of kst_store_list(), the latest
@@ -63,8 +65,10 @@ unsigned kst_card_type(const kst_image_t *img);
  * directory, 65535 for that many or more.
  *
  * KST_PROG_CARD_LOAD reads the file of req->name and holds it against
- * req->image with kst_file_load(): done->image is the servo's image with
- * the editable fields of the file.
+ * req->image and the operator's type req->type with kst_file_load():
+ * done->image is the servo's image with the editable fields of the file.
+ * A file that states a type loads only into a servo whose req->type is
+ * that type.
  *
  * @param io   The store the request is carried out on.
  * @param req  The request.

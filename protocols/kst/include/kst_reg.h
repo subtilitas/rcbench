@@ -257,14 +257,16 @@ bool kst_field_raw_from_display(kst_field_id_t id, int32_t display,
 /* --- servo type ----------------------------------------------------------- */
 
 /**
- * @brief The servo type of an image.
+ * @brief The servo type: the series, V6.0 or V8.0.
  *
- * A servo answers no model number.  The type is one bit: 20k_sel, register 04
- * bit 6.  The manufacturer states the factory default of that bit as set for
- * the V6.0 series (20kHz drive) and clear for the V8.0 series (333Hz drive).
- * The mapping rests on that statement.  It is read on 1 servo, whose bit is
- * set; no V8.0 servo is measured.  A servo whose 20k_sel was changed by another
- * tool reads as the other type.
+ * A servo answers no model number, and no register holds its series.  The
+ * manufacturer states the factory default of 20k_sel, register 04 bit 6, as
+ * set for the V6.0 series (20kHz drive) and clear for the V8.0 series
+ * (333Hz drive).  The bit is a drive setting, not the series: on the bench
+ * V8 wing servos read with it set and a V8 servo that is no wing servo with
+ * it clear; the models were not recorded.  kst_type() gives the type the
+ * bit suggests, a guess; the type a caller acts on is the one the operator
+ * states.
  */
 typedef enum {
     KST_TYPE_V8 = 0,   /**< 20k_sel clear */
@@ -273,10 +275,12 @@ typedef enum {
 } kst_type_t;
 
 /**
- * @brief The type of @p img; KST_TYPE_NONE for NULL.
+ * @brief The type 20k_sel of @p img suggests; KST_TYPE_NONE for NULL.
+ *
+ * A guess from the drive setting (kst_type_t), not the servo's series.
  *
  * @param img  Image to read.
- * @return The servo type; KST_TYPE_NONE for NULL.
+ * @return The type the bit suggests; KST_TYPE_NONE for NULL.
  */
 kst_type_t kst_type(const kst_image_t *img);
 

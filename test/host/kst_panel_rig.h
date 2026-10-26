@@ -219,6 +219,8 @@ static inline void connected(void)
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_have_servo(M));
+    /* The servo type as the operator sets it: the one 20k_sel suggests. */
+    CHECK_EQ(kst_prog_type_set(M, kst_prog_type_guess(M)), KST_PROG_MSG_NONE);
 }
 
 /* ENABLE WRITE TO SERVO through its page. */

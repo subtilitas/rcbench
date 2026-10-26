@@ -21,11 +21,15 @@
 static fake_card_t g_c;
 static kst_prog_card_done_t g_d;
 static uint32_t g_id;
+/* The servo type the operator set, as a request carries it; -1: the type
+ * 20k_sel of the request's image suggests, as an operator who sets that. */
+static int g_type;
 
 static char g_text[4][KST_FILE_MAX + 64u];
 
 static void fresh(void)
 {
+    g_type = -1;
     fake_card_init(&g_c);
     memset(&g_d, 0xA5, sizeof(g_d));
     memset(g_text, 0, sizeof(g_text));
@@ -69,6 +73,7 @@ static unsigned run(uint8_t op, const char *name, bool preset, unsigned first,
     q.preset = preset;
     q.first = (uint16_t)first;
     q.image = img != NULL ? *img : sim_bench_image();
+    q.type = g_type >= 0 ? (uint8_t)g_type : (uint8_t)kst_card_type(&q.image);
     if (name != NULL) {
         snprintf(q.name, sizeof(q.name), "%s", name);
     }
@@ -557,6 +562,65 @@ TEST_CASE(a_file_of_the_other_type_is_refused_with_both_types)
     CHECK_EQ(g_d.type + g_d.servo_type, 14);
 }
 
+TEST_CASE(a_save_states_the_operator_s_type_and_a_load_is_held_to_it)
+{
+    const kst_image_t sv = sim_bench_image();   /* 20k_sel set */
+    const kst_image_t ot = other_type();        /* 20k_sel clear */
+    kst_file_t f;
+    char text[KST_FILE_MAX];
+    size_t len = 0;
+
+    fresh();
+    /* A V8 servo whose 20k_sel is set, as the bench found V8 wing
+     * servos: the file states V8. */
+    g_type = 8;
+    CHECK_EQ(save("WING", &sv), KST_PROG_CARD_OK);
+    CHECK_EQ(kst_store_load(&g_c.io, "WING.TXT", text, sizeof(text), &len),
+             KST_STORE_OK);
+    CHECK_EQ(kst_file_parse(text, len, &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.type, KST_TYPE_V8);
+    CHECK_EQ(kst_type(&f.image), KST_TYPE_V6);
+    CHECK_EQ(list(0), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.count, 1);
+    CHECK_EQ(g_d.types[0], 8);
+    /* Loaded into that servo at V8; refused at V6, both types named. */
+    CHECK_EQ(load("WING"), KST_PROG_CARD_OK);
+    g_type = 6;
+    CHECK_EQ(load("WING"), KST_PROG_CARD_TYPE);
+    CHECK_EQ(g_d.type, 8);
+    CHECK_EQ(g_d.servo_type, 6);
+    /* No type set: a file that states one is refused, and servo_type
+     * says none. */
+    g_type = 0;
+    CHECK_EQ(load("WING"), KST_PROG_CARD_TYPE);
+    CHECK_EQ(g_d.servo_type, 0);
+    /* A save with no type set writes no type line; that file loads at
+     * either type, and lists with none. */
+    CHECK_EQ(save("NONE", &ot), KST_PROG_CARD_OK);
+    CHECK_EQ(kst_store_load(&g_c.io, "NONE.TXT", text, sizeof(text), &len),
+             KST_STORE_OK);
+    text[len < sizeof(text) ? len : sizeof(text) - 1u] = '\0';
+    CHECK(strstr(text, "Type") == NULL);
+    g_type = 6;
+    CHECK_EQ(run(KST_PROG_CARD_LOAD, "NONE", false, 0, &ot), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.kind, KST_PROG_FILE_VERIFIED);
+    g_type = 8;
+    CHECK_EQ(run(KST_PROG_CARD_LOAD, "NONE", false, 0, &sv), KST_PROG_CARD_OK);
+    CHECK_EQ(list(0), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.types[0], 0);
+    /* A file of format 1, as firmware 0.23.0 wrote it: its type line is
+     * the one 20k_sel gave, and it states none. */
+    snprintf(g_text[3], sizeof(g_text[3]),
+             "KST servo configuration, format 1\nType: V6\n%s = 40\n",
+             kst_field(KST_F_DUTY)->name);
+    (void)fake_card_put_text(&g_c, "OLD", g_text[3]);
+    g_type = 8;
+    CHECK_EQ(load("OLD"), KST_PROG_CARD_OK);
+    CHECK_EQ(g_d.kind, KST_PROG_FILE_UNTYPED);
+    CHECK_EQ(g_d.type, 0);
+    CHECK_EQ(g_d.image.r[KST_REG_DUTY], raw_of(KST_F_DUTY, 40));
+}
+
 TEST_CASE(a_value_past_a_hard_limit_refuses_the_file_with_its_line_or_rule)
 {
     const kst_image_t sv = sim_bench_image();
@@ -634,9 +698,11 @@ TEST_CASE(a_text_that_is_no_whole_servo_file_says_why_and_where)
     CHECK_EQ(load("DAMAGED"), KST_PROG_CARD_CHECKSUM);
     /* A later format. */
     text = edited(3, &sv, true);
-    at = strstr(text, "format 1");
+    at = strstr(text, "format 2");
     CHECK(at != NULL);
-    at[7] = '2';
+    if (at != NULL) {
+        at[7] = '3';
+    }
     (void)fake_card_put_text(&g_c, "NEWER", text);
     CHECK_EQ(load("NEWER"), KST_PROG_CARD_NEWER);
     /* Nothing of such a file is in the answer. */
@@ -683,6 +749,7 @@ int main(void)
     RUN(a_file_as_written_loads_its_editable_fields_only);
     RUN(an_edited_file_loads_by_its_lines_with_or_without_a_type);
     RUN(a_file_of_the_other_type_is_refused_with_both_types);
+    RUN(a_save_states_the_operator_s_type_and_a_load_is_held_to_it);
     RUN(a_value_past_a_hard_limit_refuses_the_file_with_its_line_or_rule);
     RUN(a_text_that_is_no_whole_servo_file_says_why_and_where);
     RUN(a_file_that_is_gone_too_large_or_does_not_read_is_no_load);
