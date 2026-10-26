@@ -269,13 +269,12 @@ static int place_of(const fm_tree_t *t, const fm_entry_t *e)
     return r;
 }
 
-/** @brief What of a pane RESCAN's answer keeps: its top row on screen and
- *         its selected entry, copied before the answer replaces the page. */
+/** @brief What of a pane RESCAN's answer keeps: its top row on screen,
+ *         copied before the answer replaces the page.  The selection is
+ *         kept by fm_tree_page(), by name. */
 typedef struct {
     bool have;           /**< the pane held rows                        */
     fm_entry_t top;      /**< the entry of the top row on screen        */
-    bool have_sel;       /**< an entry was selected                     */
-    fm_entry_t sel;      /**< the selected entry                        */
 } place_t;
 
 /**
@@ -293,11 +292,6 @@ static void place_note(int i, place_t *p)
     const int top = (s.scroll[i] < t->held) ? s.scroll[i] : t->held - 1;
     p->have = true;
     p->top = t->page[(top > 0) ? top : 0];
-    const fm_entry_t *sel = fm_tree_selected(t);
-    if (sel != NULL) {
-        p->have_sel = true;
-        p->sel = *sel;
-    }
 }
 
 /**
@@ -306,30 +300,18 @@ static void place_note(int i, place_t *p)
  *        selection stays on its entry (fm_tree_page() keeps it by name).
  *
  * A top row gone from the card leaves the entry now at its place on top.
- * A selected entry gone from the card hands the selection to the entry
- * now at its place, the next in the order; to the last row when it was
- * the folder's last entry; to none when the page is empty, or when every
- * row ranks ahead of it and a next page stands, where it may still be.
- * The scroll is held to the rows after (fs_clamp_scroll()).
+ * A selected entry gone from the card, or moved off the page, leaves
+ * nothing selected, as after a DELETE: MOVE and RENAME act on the
+ * selection without a question, so no other entry takes it.  The scroll
+ * is held to the rows after (fs_clamp_scroll()).
  *
  * @param i  the pane
  * @param p  the place before the answer (place_note())
  */
 static void place_keep(int i, const place_t *p)
 {
-    fm_tree_t *t = &s.pane[i];
-    if (!p->have) {
-        return;
-    }
-    s.scroll[i] = place_of(t, &p->top);
-    if (!p->have_sel || t->selected >= 0 || t->held == 0) {
-        return;
-    }
-    const int r = place_of(t, &p->sel);
-    if (r < t->held) {
-        (void)fm_tree_select(t, r);
-    } else if (!fm_tree_has_next(t)) {
-        (void)fm_tree_select(t, t->held - 1);
+    if (p->have) {
+        s.scroll[i] = place_of(&s.pane[i], &p->top);
     }
 }
 

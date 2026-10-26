@@ -516,7 +516,14 @@ void kst_prog_card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
 void kst_prog_write_go(kst_prog_t *p)
 {
     const bool had_record = p->journal;
+    const kst_prog_msg_id_t m = kst_prog_held_gate(p);
 
+    if (m != KST_PROG_MSG_NONE) {
+        /* After the servo's file: the gate as it is now.  No record of
+         * this write is made, and nothing is sent. */
+        kst_prog_not_started(p, m, 0);
+        return;
+    }
     if (p->have_servo) {
         /* The servo read is the journal's, or there is none: a write to
          * another servo than the journal's is not taken (journal_other). */
@@ -598,17 +605,46 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
 }
 
 /**
- * @brief Whether an operation may start now; the message when not.
+ * @brief The state the link and the port report, an operation of this
+ *        model awaited or queued left out.
  *
  * @param p The programmer state.
- * @return KST_PROG_MSG_NONE when it may, else the message why not.
+ * @return The state.
  */
-static kst_prog_msg_id_t idle(const kst_prog_t *p)
+static kst_prog_state_t port_state(const kst_prog_t *p)
 {
-    if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
-        return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    if (!p->fed || p->f.rd.phase == KST_LINK_DOWN) {
+        return KST_PROG_DOWN;
     }
-    switch (kst_prog_state(p)) {
+    if (p->f.rd.phase == KST_LINK_NO_PAGE) {
+        return KST_PROG_NO_PAGE;
+    }
+    if (!p->f.rd.known || p->f.rd.phase == KST_LINK_SYNC) {
+        return KST_PROG_SYNC;
+    }
+    switch (p->f.rd.port) {
+    case LINK_KST_PWM:
+        return KST_PROG_PWM;
+    case LINK_KST_STOPPING:
+    case LINK_KST_LOW:
+        return KST_PROG_ENTERING;
+    case LINK_KST_PROGRAMMING:
+        return (p->f.rd.flags & LINK_KS_F_BUSY) != 0u ? KST_PROG_WORKING
+                                                      : KST_PROG_PROGRAMMING;
+    default:
+        return KST_PROG_LEAVING;
+    }
+}
+
+/**
+ * @brief Whether an operation may start in a state; the message when not.
+ *
+ * @param st The state.
+ * @return KST_PROG_MSG_NONE in PROGRAMMING, else the message why not.
+ */
+static kst_prog_msg_id_t state_gate(kst_prog_state_t st)
+{
+    switch (st) {
     case KST_PROG_DOWN:
         return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_DOWN);
     case KST_PROG_NO_PAGE:
@@ -621,6 +657,20 @@ static kst_prog_msg_id_t idle(const kst_prog_t *p)
     default:
         return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
     }
+}
+
+/**
+ * @brief Whether an operation may start now; the message when not.
+ *
+ * @param p The programmer state.
+ * @return KST_PROG_MSG_NONE when it may, else the message why not.
+ */
+static kst_prog_msg_id_t idle(const kst_prog_t *p)
+{
+    if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
+        return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    }
+    return state_gate(kst_prog_state(p));
 }
 
 /**
@@ -650,6 +700,28 @@ static kst_prog_msg_id_t idle_safe(const kst_prog_t *p)
     }
     if (m == KST_PROG_MSG_NONE && bench_armed(p)) {
         return KST_PROG_MSG_NEED_DISARM;
+    }
+    return m;
+}
+
+/* The gate of the held write again, at the answer of the servo's file or
+ * the journal's: the card took its time, and the port, the bench, STOP
+ * or the switch may have changed meanwhile. */
+kst_prog_msg_id_t kst_prog_held_gate(const kst_prog_t *p)
+{
+    kst_prog_msg_id_t m = state_gate(port_state(p));
+
+    if (m == KST_PROG_MSG_NONE && p->f.rd.port_no != p->held.port) {
+        m = KST_PROG_MSG_NEED_PORT;
+    }
+    if (m == KST_PROG_MSG_NONE && p->f.stopped) {
+        m = KST_PROG_MSG_STOPPED;
+    }
+    if (m == KST_PROG_MSG_NONE && bench_armed(p)) {
+        m = KST_PROG_MSG_NEED_DISARM;
+    }
+    if (m == KST_PROG_MSG_NONE && !p->write_enabled) {
+        m = KST_PROG_MSG_NEED_ENABLE;
     }
     return m;
 }
@@ -1525,35 +1597,17 @@ bool kst_prog_take(kst_prog_t *p, kst_prog_cmd_t *out)
 
 kst_prog_state_t kst_prog_state(const kst_prog_t *p)
 {
-    if (!p->fed || p->f.rd.phase == KST_LINK_DOWN) {
-        return KST_PROG_DOWN;
+    const kst_prog_state_t st = port_state(p);
+
+    if (st == KST_PROG_DOWN || st == KST_PROG_NO_PAGE || st == KST_PROG_SYNC
+        || (p->wait == W_NONE && !p->cmd_ready)) {
+        return st;
     }
-    if (p->f.rd.phase == KST_LINK_NO_PAGE) {
-        return KST_PROG_NO_PAGE;
-    }
-    if (!p->f.rd.known || p->f.rd.phase == KST_LINK_SYNC) {
-        return KST_PROG_SYNC;
-    }
-    if (p->wait != W_NONE || p->cmd_ready) {
-        if (p->op == LINK_KST_OP_ENTER) {
-            return KST_PROG_ENTERING;
-        }
-        return p->op == LINK_KST_OP_LEAVE
-                   || p->op == LINK_KST_OP_POWER_CYCLED
-                   ? KST_PROG_LEAVING : KST_PROG_WORKING;
-    }
-    switch (p->f.rd.port) {
-    case LINK_KST_PWM:
-        return KST_PROG_PWM;
-    case LINK_KST_STOPPING:
-    case LINK_KST_LOW:
+    if (p->op == LINK_KST_OP_ENTER) {
         return KST_PROG_ENTERING;
-    case LINK_KST_PROGRAMMING:
-        return (p->f.rd.flags & LINK_KS_F_BUSY) != 0u ? KST_PROG_WORKING
-                                                      : KST_PROG_PROGRAMMING;
-    default:
-        return KST_PROG_LEAVING;
     }
+    return p->op == LINK_KST_OP_LEAVE || p->op == LINK_KST_OP_POWER_CYCLED
+               ? KST_PROG_LEAVING : KST_PROG_WORKING;
 }
 
 bool kst_prog_writing(const kst_prog_t *p)

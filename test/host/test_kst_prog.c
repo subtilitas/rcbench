@@ -1124,6 +1124,223 @@ TEST_CASE(a_card_that_takes_no_journal_stops_the_write)
     kst_prog_file_done(&g_p, true);   /* nothing on its way: ignored */
 }
 
+/* A write of the duty to 200 held at its journal: the servo's file is on
+ * the card, the journal's text is taken and its answer held back.  Returns
+ * the count of STARTs before the write. */
+static unsigned write_at_its_journal(void)
+{
+    up_enabled();
+    g_card = true;
+    frame();
+    memset(g_file, 0, sizeof(g_file));
+    const unsigned starts = g_starts;
+
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    g_card_silent = true;
+    for (unsigned i = 0; i < 2000u && strstr(g_file, "journal=") == NULL;
+         ++i) {
+        frame();
+    }
+    CHECK(strstr(g_file, "journal=") != NULL);
+    CHECK(kst_prog_journal(&g_p));
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_WORKING);
+    CHECK_EQ(g_starts, starts);
+    return starts;
+}
+
+/* The journal's answer after a refusal at the gate: nothing went, the
+ * record is off the card, the values stay pending, and @p m is said. */
+static void journal_refused(unsigned starts, unsigned m)
+{
+    g_card_silent = false;
+    kst_prog_file_done(&g_p, true);
+    CHECK_EQ(msg(), m);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(!kst_prog_journal(&g_p));
+    settle();
+    CHECK_EQ(msg(), m);
+    CHECK_EQ(g_starts, starts);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(g_p.wrote, 0);
+    CHECK_EQ(g_p.held_wrote, 0);
+    CHECK(strstr(g_file, "journal") == NULL);
+    CHECK_EQ(kst_prog_changes(&g_p), 1);
+    CHECK(kst_prog_first_write(&g_p));
+    /* A late second answer starts nothing either. */
+    kst_prog_file_done(&g_p, true);
+    frames(5);
+    CHECK_EQ(g_starts, starts);
+}
+
+TEST_CASE(a_switch_turned_off_at_the_journal_stops_the_write)
+{
+    const unsigned starts = write_at_its_journal();
+
+    /* Off at any time, the wait included; on is refused while it waits. */
+    CHECK_EQ(kst_prog_enable(&g_p, false), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_enable(&g_p, true),
+             KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    CHECK(!kst_prog_write_enabled(&g_p));
+    journal_refused(starts, KST_PROG_MSG_NEED_ENABLE);
+    /* Switched on again, the same values go. */
+    CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(g_starts > starts);
+    CHECK_EQ(g_sim.reg[KST_REG_DUTY], 200);
+}
+
+TEST_CASE(arm_at_the_journal_stops_the_write)
+{
+    /* The feed's ARMED: the IOmcu's. */
+    unsigned starts = write_at_its_journal();
+
+    g_armed = true;
+    frame();
+    journal_refused(starts, KST_PROG_MSG_NEED_DISARM);
+
+    /* The screen's ARMED. */
+    starts = write_at_its_journal();
+    kst_prog_bench_armed(&g_p, true);
+    journal_refused(starts, KST_PROG_MSG_NEED_DISARM);
+    kst_prog_bench_armed(&g_p, false);
+
+    /* ARMED and SAFE again before the answer: the gate as it is at the
+     * answer lets the write go. */
+    starts = write_at_its_journal();
+    g_armed = true;
+    frame();
+    g_armed = false;
+    frame();
+    g_card_silent = false;
+    kst_prog_file_done(&g_p, true);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK(g_starts > starts);
+    CHECK_EQ(g_sim.reg[KST_REG_DUTY], 200);
+}
+
+TEST_CASE(a_switch_turned_off_at_the_servos_file_stops_the_write)
+{
+    up_enabled();
+    g_card = true;
+    frame();
+    memset(g_file, 0, sizeof(g_file));
+    const unsigned starts = g_starts;
+    const unsigned saves = g_fc.saves;
+
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_enable(&g_p, false), KST_PROG_MSG_NONE);
+    settle();
+    /* The servo's file is saved; its answer finds the switch off, and no
+     * record of the write is made. */
+    CHECK_EQ(g_fc.saves, saves + 1u);
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_EQ(g_starts, starts);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK(!kst_prog_journal(&g_p));
+    CHECK(strstr(g_file, "journal") == NULL);
+    CHECK_EQ(kst_prog_changes(&g_p), 1);
+    CHECK(kst_prog_first_write(&g_p));
+}
+
+/* What changes, fed by hand, between the journal's text and its answer. */
+enum {
+    AT_NOTHING = 0,
+    AT_SWITCH_OFF,
+    AT_PORT_PWM,
+    AT_PORT_OTHER,
+    AT_PORT_BUSY,
+    AT_PAGE_SYNC,
+    AT_FEED_ARMED,
+    AT_SCREEN_ARMED,
+    AT_STOP,
+    AT_COUNT,
+};
+
+TEST_CASE(the_gate_at_the_journals_answer_is_the_gate_as_it_is_then)
+{
+    static const unsigned said[AT_COUNT] = {
+        [AT_NOTHING] = KST_PROG_MSG_NONE,
+        [AT_SWITCH_OFF] = KST_PROG_MSG_NEED_ENABLE,
+        [AT_PORT_PWM] = KST_PROG_MSG_NEED_PORT,
+        [AT_PORT_OTHER] = KST_PROG_MSG_NEED_PORT,
+        [AT_PORT_BUSY] = KST_PROG_MSG_START + KST_LINK_START_BUSY,
+        [AT_PAGE_SYNC] = KST_PROG_MSG_START + KST_LINK_START_BUSY,
+        [AT_FEED_ARMED] = KST_PROG_MSG_NEED_DISARM,
+        [AT_SCREEN_ARMED] = KST_PROG_MSG_NEED_DISARM,
+        [AT_STOP] = KST_PROG_MSG_STOPPED,
+    };
+    char text[KST_PROG_FILE_MAX];
+    kst_prog_cmd_t cmd;
+
+    for (unsigned at = AT_NOTHING; at < AT_COUNT; ++at) {
+        by_hand();
+        g_f.card = true;
+        pass(1);
+        while (kst_prog_file_take(&g_p, text, sizeof(text)) != 0u) {
+            kst_prog_file_done(&g_p, true);
+        }
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+        CHECK(strstr(text, "journal=") != NULL);
+        CHECK(!kst_prog_take(&g_p, &cmd));
+        switch (at) {
+        case AT_SWITCH_OFF:
+            (void)kst_prog_enable(&g_p, false);
+            break;
+        case AT_PORT_PWM:
+            g_f.rd.port = LINK_KST_PWM;
+            break;
+        case AT_PORT_OTHER:
+            g_f.rd.port_no = CH + 1u;
+            break;
+        case AT_PORT_BUSY:
+            g_f.rd.flags |= LINK_KS_F_BUSY;
+            break;
+        case AT_PAGE_SYNC:
+            g_f.rd.phase = KST_LINK_SYNC;
+            break;
+        case AT_FEED_ARMED:
+            g_f.armed = true;
+            break;
+        case AT_SCREEN_ARMED:
+            kst_prog_bench_armed(&g_p, true);
+            break;
+        case AT_STOP:
+            g_f.stopped = true;
+            break;
+        default:
+            break;
+        }
+        pass(1);
+        kst_prog_file_done(&g_p, true);
+        if (at == AT_NOTHING) {
+            /* The write goes, the switch it was held with on. */
+            CHECK(kst_prog_take(&g_p, &cmd));
+            CHECK_EQ(cmd.kind, KST_PROG_CMD_START);
+            CHECK_EQ(cmd.req.op, LINK_KST_OP_WRITE);
+            CHECK(cmd.req.write_enabled);
+            CHECK(kst_prog_journal(&g_p));
+            continue;
+        }
+        /* No START, the record cleared and written so, the reason said. */
+        CHECK(!kst_prog_take(&g_p, &cmd));
+        CHECK_EQ(msg(), said[at]);
+        CHECK(!kst_prog_journal(&g_p));
+        CHECK_EQ(g_p.held_wrote, 0);
+        CHECK(!kst_prog_writing(&g_p));
+        CHECK(kst_prog_file_take(&g_p, text, sizeof(text)) != 0u);
+        CHECK(strstr(text, "journal") == NULL);
+        kst_prog_bench_armed(&g_p, false);
+    }
+}
+
 /* A write of two fields cut by a lost link after its first register;
  * with @p duty the cut leaves registers 01 and 02 apart. */
 static void cut_write_of(bool duty)
@@ -5326,6 +5543,10 @@ int main(void)
     RUN(the_port_is_held_by_the_session_or_by_the_readout);
     RUN(the_journal_reaches_the_card_before_the_write_is_sent);
     RUN(a_card_that_takes_no_journal_stops_the_write);
+    RUN(a_switch_turned_off_at_the_journal_stops_the_write);
+    RUN(arm_at_the_journal_stops_the_write);
+    RUN(a_switch_turned_off_at_the_servos_file_stops_the_write);
+    RUN(the_gate_at_the_journals_answer_is_the_gate_as_it_is_then);
     RUN(a_link_lost_in_a_write_leaves_the_servo_in_doubt);
     RUN(a_later_session_cannot_write_to_a_servo_cut_between_01_and_02);
     RUN(a_panel_that_starts_on_a_locked_session_fetches_its_backup);

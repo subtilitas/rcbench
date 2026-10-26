@@ -8,6 +8,7 @@
  * - a_write_needs_changes_the_switch_and_a_hold
  * - with_a_card_the_values_before_the_write_go_to_it_first
  * - a_card_that_takes_no_file_stops_the_write
+ * - the_switch_turned_off_while_the_journal_is_written_stops_the_write
  * - a_write_the_servo_does_not_take_names_the_register
  * - the_working_line_says_planning_while_the_port_plans
  * - the_working_line_counts_the_frames
@@ -151,6 +152,43 @@ TEST_CASE(a_card_that_takes_no_file_stops_the_write)
     CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
     CHECK_STR_EQ(said(), TR(KP_M_STORE_FAILED));
     CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK_EQ(kst_prog_changes(M), 3);
+}
+
+TEST_CASE(the_switch_turned_off_while_the_journal_is_written_stops_the_write)
+{
+    fresh();
+    g_rig.card = true;
+    connected();
+    enable();
+    edits();
+    const unsigned starts = g_rig.starts;
+
+    tap(val(PG_SERVO, 4, 0));
+    g_rig.card_silent = true;
+    hold(2.1f);
+    for (unsigned i = 0; i < 2000u && strstr(g_rig.file, "journal=") == NULL;
+         ++i) {
+        rig_frame();
+    }
+    CHECK(strstr(g_rig.file, "journal=") != NULL);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_WORKING);
+    /* The switch takes a tap while the journal is written, and goes off
+     * with no page. */
+    CHECK(kst_panel_row_live(PG_SERVO, 3, 0));
+    tap(val(PG_SERVO, 3, 0));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK(!kst_prog_write_enabled(M));
+    /* The card's answer then sends nothing. */
+    g_rig.card_silent = false;
+    kst_panel_file_done(true);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
+    CHECK_STR_EQ(said(), TR(KP_M_NEED_ENABLE));
+    CHECK_EQ(g_rig.starts, starts);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK(!kst_prog_journal(M));
+    CHECK(strstr(g_rig.file, "journal") == NULL);
     CHECK_EQ(kst_prog_changes(M), 3);
 }
 
@@ -653,6 +691,7 @@ int main(void)
     RUN(a_write_needs_changes_the_switch_and_a_hold);
     RUN(with_a_card_the_values_before_the_write_go_to_it_first);
     RUN(a_card_that_takes_no_file_stops_the_write);
+    RUN(the_switch_turned_off_while_the_journal_is_written_stops_the_write);
     RUN(a_write_the_servo_does_not_take_names_the_register);
     RUN(the_working_line_says_planning_while_the_port_plans);
     RUN(the_working_line_counts_the_frames);

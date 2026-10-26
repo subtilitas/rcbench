@@ -141,6 +141,16 @@ void kst_prog_card_ask(kst_prog_t *p, kst_prog_card_op_t op,
  */
 void kst_prog_write_go(kst_prog_t *p);
 /**
+ * @brief The start gate of the held write as it is now, the wait for its
+ *        own files left out: the port in PROGRAMMING and idle, the port the
+ *        write was held for, no STOP, the bench not ARMED and the switch
+ *        on.
+ *
+ * @param p The programmer state.
+ * @return KST_PROG_MSG_NONE when the write may go, else the message why not.
+ */
+kst_prog_msg_id_t kst_prog_held_gate(const kst_prog_t *p);
+/**
  * @brief Classifies the held journal record against the servo read.
  *
  * @param p The programmer state.

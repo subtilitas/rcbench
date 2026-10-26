@@ -1586,6 +1586,13 @@ size_t kst_prog_file_take(kst_prog_t *p, char *out, size_t n);
 /**
  * @brief How the write of the text kst_prog_file_take() gave went.
  *
+ * The answer to a write's journal releases that write when the card
+ * completed the file and the write's start gate holds as it is now: the
+ * port in PROGRAMMING on the write's port, no STOP, the bench not ARMED and
+ * ENABLE WRITE TO SERVO on.  Otherwise the write ends as one that did not
+ * start: nothing goes to the servo, its record is cleared, and the message
+ * names the gate that refused it, or KST_PROG_MSG_STORE_FAILED.
+ *
  * @param p  The programmer state.
  * @param ok true when the card completed the file.
  */

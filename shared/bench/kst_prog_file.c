@@ -150,10 +150,15 @@ void kst_prog_file_done(kst_prog_t *p, bool ok)
     p->file_retry = !ok;
     p->file_retry_ms = p->f.now_ms;
     if (p->wait == W_FILE && what == FILE_JOURNAL) {
-        if (ok) {
+        /* The gate again, as it is now: a refusal ends the write as one
+         * that did not start, its record cleared, with nothing sent. */
+        const kst_prog_msg_id_t m = ok ? kst_prog_held_gate(p)
+                                       : KST_PROG_MSG_STORE_FAILED;
+
+        if (m == KST_PROG_MSG_NONE) {
             kst_prog_send(p, &p->held);
         } else {
-            kst_prog_not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
+            kst_prog_not_started(p, m, 0);
         }
     }
 }
