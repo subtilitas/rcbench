@@ -7,7 +7,8 @@
  * The servo: a classic EEPROM of 256 cells answering 0x61 and 0x62, and,
  * with c_entry, the classic entry (the `+` after the power-up, the next
  * `+` HITEC_SIM_NEXT_US after it, and the version to 0x67); a D series
- * register file of 256 registers answering reads.  A LISTEN hears the boot
+ * register file of 256 registers answering reads and taking writes, the
+ * save and the reboot counted.  A LISTEN hears the boot
  * byte after an ON, the next `+` of a classic entry, or listen_n bytes.
  *
  * For hitec_port_rig.h (the page suites) and test_hitec_link*.c.
@@ -25,6 +26,7 @@
 #include "greatest.h"
 
 #include "hitec_port.h"
+#include "hitec_reg.h"
 #include "hitec_wire.h"
 #include "pdmini.h"
 #include "tick_wrap.h"
@@ -79,6 +81,14 @@ static struct {
     /* A D series register whose answer carries a wrong sum, plus 1; 0
      * none. */
     uint16_t d_bad_sum_plus1;
+    /* D series writes taken, saves and reboots; with d_drop the servo
+     * takes no write. */
+    unsigned d_writes, d_saves, d_reboots;
+    bool     d_drop;
+    /* Classic writes: with c_mute the servo neither takes nor answers
+     * them; c_writes counts the ones taken. */
+    unsigned c_writes;
+    bool     c_mute;
 } g_drv;
 
 static struct {
@@ -172,7 +182,11 @@ static inline void servo_answers(const hitec_xfer_t *x)
             r[0] = g_drv.version;
             r[1] = HITEC_C_ACK;
         } else if (x->tx[0] == HITEC_C_WRITE_EEPROM) {
+            if (g_drv.c_mute) {
+                return;
+            }
             g_drv.eeprom[x->tx[1]] = x->tx[2];
+            g_drv.c_writes++;
             r[0] = HITEC_C_ACK;
             r[1] = HITEC_C_ACK;
         } else {
@@ -192,6 +206,19 @@ static inline void servo_answers(const hitec_xfer_t *x)
             a[6] ^= 0xFFu;
         }
         reply_bytes(a, 8u, 6000000u);
+    } else if (x->family == HITEC_D && x->n_tx == HITEC_D_WRITE_LEN
+               && x->tx[0] == HITEC_D_HEADER_REQUEST
+               && x->tx[3] == HITEC_D_DATA_LEN
+               && hitec_d_sum(&x->tx[1], 5u) == x->tx[6]) {
+        /* A write has no answer. */
+        if (x->tx[2] == HITEC_D_REG_SAVE) {
+            g_drv.d_saves++;
+        } else if (x->tx[2] == HITEC_D_REG_REBOOT) {
+            g_drv.d_reboots++;
+        } else if (!g_drv.d_drop) {
+            g_drv.dreg[x->tx[2]] = (uint16_t)(x->tx[4] | (x->tx[5] << 8));
+            g_drv.d_writes++;
+        }
     }
 }
 

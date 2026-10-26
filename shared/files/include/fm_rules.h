@@ -16,9 +16,9 @@
  *           BENCH/HITEC, BENCH/HITEC/CONF, USER, USER/LOGS), the two log
  *           folders SETUP > SD CARD names and every folder above them: no
  *           RENAME, MOVE or DELETE.  What they hold is the person's.
- *   LOCKED  the servo programmer's journal, BENCH/KST/CONF/KST.TXT and
- *           KST.NEW: INFO only.  A hand edit can send a wrong image to a
- *           servo.
+ *   LOCKED  the servo programmers' records, BENCH/KST/CONF/KST.TXT and
+ *           KST.NEW, BENCH/HITEC/CONF/HITEC.TXT and HITEC.NEW: INFO only.
+ *           A hand edit can send a wrong image to a servo.
  *   FAULT   the fault log, BENCH/RCBENCH.LOG, .OLD and .TMP: OPEN and
  *           INFO; COPY and DELETE while the link to the IOmcu is up, since
  *           the fault log is written while it is down; no EDIT, RENAME or

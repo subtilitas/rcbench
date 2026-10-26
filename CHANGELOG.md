@@ -50,7 +50,7 @@ history is in git.
   model of the page suites moves to `test/host/hitec_sim.h` and gains the
   classic entry
   ([The panel's link half](docs/LinkHitec.md#the-panels-link-half)).
-- The read-only programmer for servos by Hitec on SERVO > PROGRAM, row
+- The programmer for servos by Hitec on SERVO > PROGRAM, row
   `Hitec servos`: a SERIES row (D SERIES or CLASSIC, kept in the settings
   as SET_HITEC_SERIES), CONNECT with the entry of either series and a read
   of the full set (21 D series registers or 100 classic cells), the model
@@ -65,8 +65,20 @@ history is in git.
   limits. While a programmer holds a port, KST or Hitec, ARM, the supply's
   set points and ON, MOTOR & ESC's TARGET row and ESC STICK's run are
   locked, and a press on a locked supply control says why in the alert
-  band. Nothing is written to the servo
-  ([Servo programmer for Hitec servos](docs/HitecProgrammer.md)).
+  band ([Servo programmer for Hitec servos](docs/HitecProgrammer.md)).
+- Writing to servos by Hitec on SERVO > PROGRAM: every writable value of
+  both series edited in a draft on the panel (a list of up to 6 entries or
+  the keypad, with the range and step of `hitec_reg.c`), CHECK THIS CHANGE
+  by a 2s hold for 7 soft rules, ENABLE WRITE TO SERVO by a 2s hold (off at
+  every screen entry, CONNECT, LEAVE, STOP, link loss and unverified
+  write), WRITE n VALUES by a 2s hold with the changed values listed, and
+  the write with its read-back. The values before a write are recorded
+  first, on the card in `BENCH/HITEC/CONF/HITEC.TXT` or in RAM without a
+  card; the next full read compares the servo with the record, and
+  RESTORE writes the values back or discards the record. REPAIR CHECKSUM
+  under MORE writes the classic balance in cell 0x1C alone. The file
+  manager shows `HITEC.TXT` and `HITEC.NEW` as LOCKED
+  ([Writing](docs/HitecProgrammer.md#writing)).
 
 ### Changed
 
@@ -121,6 +133,12 @@ history is in git.
 
 ### Fixed
 
+- A press on the disabled ARM on SERVO or MOTOR & ESC while a programmer
+  holds a port shows `Cannot switch to ARMED: a port is in use by the servo
+  programmer.` in the alert band.
+- The Hitec programmer with STOP latched offers no CLEAR: the foot line
+  says `Stopped. The pin is released. LEAVE, then switch to ARMED once to
+  clear the STOP.`, as the state line does.
 - The Hitec line's answer to the first byte of a LISTEN is 10 bit times:
   start bit, 8 data bits, stop bit. The receiver waits for the next start
   bit from the end of the answer's stop bit, so a byte the servo starts

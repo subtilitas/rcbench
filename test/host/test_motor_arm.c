@@ -780,8 +780,12 @@ TEST_CASE(arm_takes_no_press_while_the_servo_programmer_holds_a_port)
     CHECK(kst_panel_holds_port());
     frames(2);
     CHECK(arm_face() != free_face);          /* drawn disabled */
+    ui_router_set_alert(NULL);
     CHECK(!arm());
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    /* The press says why in the alert band (station, #612). */
+    CHECK(ui_router_alert() != NULL);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_PROG));
     /* RESET PEAKS is no arm and works. */
     feed_tap(FEED_LONE, RESET_X, RESET_Y);
     CHECK_EQ(took().kind, MOTOR_CMD_RESET_PEAKS);

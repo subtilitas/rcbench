@@ -37,7 +37,37 @@
  *     open: one the bench console opened, or one held over a panel restart
  *     or a link loss.  The supply stays as it is.
  *
- * Nothing is written to the servo: no write switch, no journal, no backup.
+ * Writing (hitec_prog_write.c):
+ *
+ *   - The values are edited in a draft (hitec_prog_edit()) through the
+ *     parameter table of hitec_reg.h: a value no step of its encoding gives
+ *     is refused, a value that breaks a soft rule (hitec_prog_rule_t) waits
+ *     for a confirmation.  A rule confirmed for a value is asked again for
+ *     a value further from the servo's, or on its other side.  A write, a
+ *     read and DISCARD EDITS end every confirmation.
+ *   - The switch ENABLE WRITE TO SERVO is off at every CONNECT and LEAVE,
+ *     when the link goes, at a stop, after a write that did not end
+ *     verified, and when a read finds other values than the ones held.
+ *     The caller switches it off at every entry of the screen.
+ *   - WRITE n VALUES runs hitec_session_write(): D series writes 20ms
+ *     apart, the save, 100ms, the reboot, 1000ms, the read-back; classic
+ *     per cell the value, then the balance 0x1C, then the read-back of
+ *     cells 0x00 to 0x23.  It is refused on an ARMED bench, with STOP
+ *     latched, on a STOPPED port, with no servo read, with the switch off
+ *     and while a record of an earlier write stands.
+ *   - REPAIR writes the classic balance 0x1C alone when the cells 0x00 to
+ *     0x1C of the servo read do not sum to 0.
+ *   - The record (hitec_card.h): before the first step of a write the
+ *     servo's values, the target and the port are recorded, with a card
+ *     in its file as well, and the write waits for the card.  A write that
+ *     ends verified clears it.  A record that stands is compared with the
+ *     next full read (hitec_prog_rec_t); RESTORE writes the values before
+ *     the write back, and FORGET discards the record.
+ *   - A write that fails once a step went out leaves what the servo holds
+ *     unknown: READ ALL comes before the next write.
+ *
+ * Every model is written: the D series with the HFP-30's registers, the
+ * classic servos with the HPP-21 Plus's cells (hitec_reg.h).
  *
  * The programming voltage is the SERVO programmer's setting; the page takes
  * LINK_HITEC_SUPPLY_MIN_MV to LINK_HITEC_SUPPLY_MAX_MV for a POWER, so a
@@ -55,8 +85,10 @@
 
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
+#include "hitec_card.h"
 #include "hitec_link.h"
 #include "hitec_reg.h"
 #include "hitec_session.h"
@@ -88,6 +120,8 @@ extern "C" {
 /** @brief A request without an outcome this long after its command was
  *         taken is aborted, ms: HITEC_LINK_RUN_MAX_MS and 5000ms. */
 #define HITEC_PROG_RUN_MS (HITEC_LINK_RUN_MAX_MS + 5000u)
+/** @brief A write waits this long for the card to take its record, ms. */
+#define HITEC_PROG_CARD_MS 3000u
 
 /** @brief Where the programmer is. */
 typedef enum {
@@ -104,6 +138,8 @@ typedef enum {
     HITEC_PROG_CLEARING,   /**< CLEAR is on its way                       */
     HITEC_PROG_LEAVING,    /**< the leave runs, then CLOSE                */
     HITEC_PROG_RELEASING,  /**< CLOSE of another's port is on its way     */
+    HITEC_PROG_RECORDING,  /**< a write waits for the card's record       */
+    HITEC_PROG_WRITING,    /**< a write runs, with its read-back          */
 } hitec_prog_state_t;
 
 /** @brief What the screen says. */
@@ -155,6 +191,36 @@ typedef enum {
     HITEC_PROG_MSG_SUPPLY,        /**< POWER: the supply did not switch    */
     HITEC_PROG_MSG_UNKNOWN,       /**< a code the tables do not hold; arg
                                        the code                            */
+    HITEC_PROG_MSG_WRITTEN,       /**< a write verified; arg the values    */
+    HITEC_PROG_MSG_REPAIRED,      /**< the classic balance written          */
+    HITEC_PROG_MSG_RESTORED,      /**< the record's values written back     */
+    HITEC_PROG_MSG_WRITE_OFF,     /**< the write switch is off             */
+    HITEC_PROG_MSG_NOT_READ,      /**< no servo read                       */
+    HITEC_PROG_MSG_MUST_READ,     /**< a write failed: READ ALL first      */
+    HITEC_PROG_MSG_NO_CHANGES,    /**< the draft is the servo's            */
+    HITEC_PROG_MSG_EDITS_PENDING, /**< edits not written stand             */
+    HITEC_PROG_MSG_EDIT_REFUSED,  /**< an edit refused; arg hitec_set_t    */
+    HITEC_PROG_MSG_RECORD_FAILED, /**< the card took no record; nothing
+                                       was written                         */
+    HITEC_PROG_MSG_WRITE_CUT,     /**< a write ended after a step went out;
+                                       arg the address (a balance: the cell
+                                       it balances), reg the
+                                       hitec_step_kind_t of the step out or
+                                       HITEC_PROG_CUT_CHECK                */
+    HITEC_PROG_MSG_VERIFY_FAIL,   /**< the read-back differs; arg the
+                                       addresses that differ               */
+    HITEC_PROG_MSG_RECORD,        /**< a record stands, not compared yet;
+                                       arg its pin, reg its port           */
+    HITEC_PROG_MSG_REC_SAME,      /**< the servo holds the values before
+                                       the recorded write; as RECORD       */
+    HITEC_PROG_MSG_REC_DONE,      /**< it holds the write's values         */
+    HITEC_PROG_MSG_REC_MIX,       /**< it holds both                       */
+    HITEC_PROG_MSG_REC_OTHER,     /**< it is another servo; as RECORD      */
+    HITEC_PROG_MSG_RECORD_HELD,   /**< a write refused: a record stands    */
+    HITEC_PROG_MSG_FORGOTTEN,     /**< the record discarded                */
+    HITEC_PROG_MSG_RECORD_BAD,    /**< the card's record does not read; arg
+                                       hitec_card_result_t                 */
+    HITEC_PROG_MSG_SUM_OK,        /**< REPAIR refused: the sum is right    */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -267,7 +333,57 @@ typedef struct {
     uint16_t out_ma;          /**< the current it gives, mA               */
     bool     supply_held;     /**< the SUPPLY page says a programming port
                                    holds it (LINK_SP_PORT)                */
+    bool     card;            /**< a card is mounted: a write's record
+                                   goes to it                             */
 } hitec_prog_feed_t;
+
+/** @brief The soft rules of an edit: bit n of a rule set is rule n. */
+typedef enum {
+    HITEC_RULE_SPEED = 0,  /**< SPEED below 30%                        */
+    HITEC_RULE_DEAD_BAND,  /**< DEAD BAND below the servo's            */
+    HITEC_RULE_OVERLOAD,   /**< OVERLOAD PROTECTION switched off       */
+    HITEC_RULE_END,        /**< an end point differs from the servo's  */
+    HITEC_RULE_CENTRE,     /**< NEUTRAL or CENTRE differs from it      */
+    HITEC_RULE_DIRECTION,  /**< DIRECTION reversed                     */
+    HITEC_RULE_FS_FAR,     /**< a failsafe position more than 300us
+                                from 1500us                            */
+    HITEC_RULE_COUNT
+} hitec_prog_rule_t;
+
+/** @brief The bit of rule @p r in a rule set. */
+#define HITEC_RULE_BIT(r) ((uint16_t)(1u << (r)))
+
+/** @brief HITEC_PROG_MSG_WRITE_CUT's kind of a cut in the read-back. */
+#define HITEC_PROG_CUT_CHECK 0xFFu
+
+/** @brief The speed below which SPEED asks, %. */
+#define HITEC_PROG_SLOW_PCT 30
+/** @brief How far from 1500us a failsafe position asks, us. */
+#define HITEC_PROG_FS_FAR_US 300
+
+/** @brief What an edit came to. */
+typedef enum {
+    HITEC_PROG_EDIT_OK = 0,   /**< the draft holds it                    */
+    HITEC_PROG_EDIT_CHECK,    /**< it waits for CHECK THIS CHANGE        */
+    HITEC_PROG_EDIT_REFUSED,  /**< refused; the message says why         */
+} hitec_prog_edit_t;
+
+/** @brief What the servo read holds of a record. */
+typedef enum {
+    HITEC_PROG_REC_NONE = 0,  /**< no record, or not compared            */
+    HITEC_PROG_REC_SAME,      /**< the values before the write           */
+    HITEC_PROG_REC_DONE,      /**< the values the write was to leave     */
+    HITEC_PROG_REC_MIX,       /**< some of each                          */
+    HITEC_PROG_REC_OTHER,     /**< another servo: another series, port,
+                                   model, or a value that is neither     */
+} hitec_prog_rec_t;
+
+/** @brief What a write is. */
+typedef enum {
+    HITEC_PROG_WR_EDITS = 0,  /**< WRITE n VALUES                        */
+    HITEC_PROG_WR_REPAIR,     /**< REPAIR: the classic balance           */
+    HITEC_PROG_WR_RESTORE,    /**< the record's values back              */
+} hitec_prog_wr_t;
 
 /** @brief The programmer's state. */
 typedef struct {
@@ -307,6 +423,31 @@ typedef struct {
     bool     have_last;       /**< last holds one                         */
     hitec_prog_gate_t *gate;  /**< hitec_prog_gate_set()                  */
     hitec_prog_msg_t msg;     /**< the last message                       */
+
+    /* --- the write side, hitec_prog_write.c --------------------------- */
+    hitec_image_t draft;      /**< the servo read with the edits          */
+    hitec_image_t wr_target;  /**< what the running write is to leave     */
+    bool     write_on;        /**< ENABLE WRITE TO SERVO                  */
+    bool     must_read;       /**< a write failed: READ ALL comes first   */
+    bool     wrote;           /**< a write of this CONNECT went out       */
+    uint8_t  wr_kind;         /**< hitec_prog_wr_t of the running write   */
+    uint8_t  wr_values;       /**< the values it changes                  */
+    uint64_t soft_has;        /**< bit id: soft_val[id] is confirmed      */
+    int32_t  soft_val[HITEC_P_COUNT]; /**< the values confirmed           */
+    bool     pend;            /**< an edit waits for a confirmation       */
+    uint8_t  pend_id;         /**< its hitec_param_t                      */
+    int32_t  pend_value;      /**< its value                              */
+    uint16_t pend_rules;      /**< the rules it breaks                    */
+    bool     rec;             /**< a record of a write stands             */
+    bool     rec_open;        /**< and no servo was compared with it      */
+    uint8_t  rec_verdict;     /**< hitec_prog_rec_t of the last compare   */
+    hitec_card_record_t rec_r; /**< the record                            */
+    bool     file_wanted;     /**< the record's text is due on the card   */
+    bool     file_busy;       /**< and out                                */
+    /** @brief The text out holds the record of the write that waits for
+     *         it: a text taken before that write began is not its record. */
+    bool     file_rec;
+    uint32_t file_ms;         /**< when a write began to wait for it      */
 } hitec_prog_t;
 
 /**
@@ -613,6 +754,283 @@ bool hitec_prog_progress(const hitec_prog_t *p, unsigned *done,
  * @return hitec_rx_t, 0 while no try failed.
  */
 unsigned hitec_prog_retry_code(const hitec_prog_t *p);
+
+/* --- the write side (hitec_prog_write.c) ---------------------------------- */
+
+/**
+ * @brief The draft: the servo read with the edits; NULL with no servo read.
+ *
+ * @param p The programmer.
+ * @return The draft.
+ */
+const hitec_image_t *hitec_prog_draft(const hitec_prog_t *p);
+
+/**
+ * @brief Whether an edit is taken now: the port held and idle, the servo in
+ *        programming mode and read, the port not stopped.
+ *
+ * @param p The programmer.
+ * @return true when it is.
+ */
+bool hitec_prog_can_edit(const hitec_prog_t *p);
+
+/**
+ * @brief Whether parameter @p id of the servo's layout takes an edit.
+ *
+ * @param p  The programmer.
+ * @param id hitec_param_t.
+ * @return true for a writable parameter of the layout.
+ */
+bool hitec_prog_editable(const hitec_prog_t *p, uint8_t id);
+
+/**
+ * @brief Edit the draft: @p value in the unit of parameter @p id.
+ *
+ * A value equal to the draft's changes nothing.  A value hitec_param_set()
+ * refuses is refused (HITEC_PROG_MSG_EDIT_REFUSED, arg its hitec_set_t).  A
+ * value that breaks a soft rule not confirmed for it waits:
+ * hitec_prog_pending() names it, hitec_prog_confirm() takes it,
+ * hitec_prog_cancel() drops it.
+ *
+ * @param p     The programmer.
+ * @param id    hitec_param_t.
+ * @param value The value.
+ * @return What the edit came to.
+ */
+hitec_prog_edit_t hitec_prog_edit(hitec_prog_t *p, uint8_t id,
+                                  int32_t value);
+
+/**
+ * @brief The edit that waits for a confirmation.
+ *
+ * @param p     The programmer.
+ * @param id    Receives its hitec_param_t; may be NULL.
+ * @param value Receives its value; may be NULL.
+ * @return Its rule set; 0 with none waiting.
+ */
+uint16_t hitec_prog_pending(const hitec_prog_t *p, uint8_t *id,
+                            int32_t *value);
+
+/**
+ * @brief Take the edit that waits: its rules are confirmed for its value.
+ *
+ * @param p The programmer.
+ * @return What the edit came to; HITEC_PROG_EDIT_REFUSED with none waiting.
+ */
+hitec_prog_edit_t hitec_prog_confirm(hitec_prog_t *p);
+
+/**
+ * @brief Drop the edit that waits; the draft stays as it was.
+ *
+ * @param p The programmer.
+ */
+void hitec_prog_cancel(hitec_prog_t *p);
+
+/**
+ * @brief The soft rules @p value of parameter @p id breaks against the
+ *        servo read.
+ *
+ * @param p     The programmer.
+ * @param id    hitec_param_t.
+ * @param value The value.
+ * @return The rule set; 0 with no servo read.
+ */
+uint16_t hitec_prog_rules(const hitec_prog_t *p, uint8_t id, int32_t value);
+
+/**
+ * @brief Whether parameter @p id differs in @p img from the servo read: in
+ *        its decoded value or in its stored value.
+ *
+ * @param p   The programmer.
+ * @param img The image; the draft for NULL.
+ * @param id  hitec_param_t.
+ * @return true when it differs.
+ */
+bool hitec_prog_differs(const hitec_prog_t *p, const hitec_image_t *img,
+                        uint8_t id);
+
+/**
+ * @brief The writable parameters in which the draft differs from the
+ *        servo read.
+ *
+ * @param p The programmer.
+ * @return The count; 0 with no servo read.
+ */
+unsigned hitec_prog_changes(const hitec_prog_t *p);
+
+/**
+ * @brief DISCARD EDITS: the draft is the servo read again, and every
+ *        confirmation ends.
+ *
+ * @param p The programmer.
+ */
+void hitec_prog_discard(hitec_prog_t *p);
+
+/**
+ * @brief ENABLE WRITE TO SERVO.
+ *
+ * Off is always taken.  On needs the state hitec_prog_can_edit() needs, a
+ * SAFE bench and no STOP latched.
+ *
+ * @param p  The programmer.
+ * @param on The switch.
+ * @return HITEC_PROG_MSG_NONE when taken, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_write_enable(hitec_prog_t *p, bool on);
+
+/**
+ * @brief Whether ENABLE WRITE TO SERVO is on.
+ *
+ * @param p The programmer.
+ * @return true when on.
+ */
+bool hitec_prog_write_on(const hitec_prog_t *p);
+
+/**
+ * @brief Why a write of @p kind is not taken now, the switch included.
+ *
+ * @param p    The programmer.
+ * @param kind hitec_prog_wr_t.
+ * @return HITEC_PROG_MSG_NONE when it is taken, else the reason.
+ */
+hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,
+                                          uint8_t kind);
+
+/**
+ * @brief WRITE n VALUES: the draft to the servo, then its read-back.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_write(hitec_prog_t *p);
+
+/**
+ * @brief Whether the classic servo read has cells 0x00 to 0x1C that do not
+ *        sum to 0.
+ *
+ * @param p The programmer.
+ * @return true when REPAIR has something to write.
+ */
+bool hitec_prog_sum_bad(const hitec_prog_t *p);
+
+/**
+ * @brief REPAIR: the classic balance 0x1C alone, then the read-back.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_repair(hitec_prog_t *p);
+
+/**
+ * @brief Whether the first write of this CONNECT has gone out.
+ *
+ * @param p The programmer.
+ * @return true after it.
+ */
+bool hitec_prog_first_done(const hitec_prog_t *p);
+
+/**
+ * @brief The progress of the running write.
+ *
+ * @param p     The programmer.
+ * @param done  Receives the plan's steps done.
+ * @param total Receives its steps.
+ * @param kind  Receives the hitec_step_kind_t of the step out; 0xFF in the
+ *              read-back.
+ * @return true while a write runs.
+ */
+bool hitec_prog_write_progress(const hitec_prog_t *p, unsigned *done,
+                               unsigned *total, uint8_t *kind);
+
+/**
+ * @brief Whether a record of a write stands.
+ *
+ * @param p The programmer.
+ * @return true when one does.
+ */
+bool hitec_prog_record(const hitec_prog_t *p);
+
+/**
+ * @brief What the last servo read holds of the record.
+ *
+ * @param p The programmer.
+ * @return hitec_prog_rec_t; HITEC_PROG_REC_NONE while not compared.
+ */
+hitec_prog_rec_t hitec_prog_record_verdict(const hitec_prog_t *p);
+
+/**
+ * @brief RESTORE: the values before the recorded write back to the servo,
+ *        as a write; the record stays until it ends verified.
+ *
+ * Taken once the servo read is compared and is not another servo.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_restore(hitec_prog_t *p);
+
+/**
+ * @brief The image RESTORE writes: the servo read with the record's values
+ *        before the write.
+ *
+ * @param p   The programmer.
+ * @param out Receives it.
+ * @return false with no record or no servo read.
+ */
+bool hitec_prog_restore_image(const hitec_prog_t *p, hitec_image_t *out);
+
+/**
+ * @brief FORGET: discard the record without a write.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when taken; BUSY while a write runs.
+ */
+hitec_prog_msg_id_t hitec_prog_forget(hitec_prog_t *p);
+
+/**
+ * @brief Whether the record's text is to go to the card.
+ *
+ * @param p The programmer.
+ * @return true while one is due and none is out.
+ */
+bool hitec_prog_file_due(const hitec_prog_t *p);
+
+/**
+ * @brief The record's text for the card: fill @p out and return its
+ *        length; 0 while none is due, no card is mounted or @p n is under
+ *        HITEC_CARD_TEXT_MAX.
+ *
+ * @param p   The programmer.
+ * @param out Receives the text.
+ * @param n   Bytes at @p out.
+ * @return The length.
+ */
+size_t hitec_prog_file_take(hitec_prog_t *p, char *out, size_t n);
+
+/**
+ * @brief How the card took the text hitec_prog_file_take() gave.
+ *
+ * Only the answer to the text that holds the record of the write waiting
+ * in HITEC_PROG_RECORDING releases that write, or ends it when the card
+ * refused the text.  The answer to a text taken before that write began,
+ * the record of an aborted or timed-out write or the text that clears a
+ * record, only frees the card for the next text.
+ *
+ * @param p  The programmer.
+ * @param ok true when the card holds it whole.
+ */
+void hitec_prog_file_done(hitec_prog_t *p, bool ok);
+
+/**
+ * @brief The record's text as the card held it at the start.
+ *
+ * @param p    The programmer.
+ * @param text The text.
+ * @param len  Its length in bytes.
+ * @return false, with HITEC_PROG_MSG_RECORD_BAD, for a text that does not
+ *         parse.
+ */
+bool hitec_prog_file_load(hitec_prog_t *p, const char *text, size_t len);
 
 #ifdef __cplusplus
 }

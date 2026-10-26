@@ -18,7 +18,11 @@
  * latch, as panel_arm.c does, and is refused while a programmer holds a
  * port (hitec_prog_port_taken()).
  *
- * For test_hitec_prog.c, test_hitec_prog_safe.c and test_hitec_panel*.c.
+ * The card: g_card mounted takes the record's text (hitec_card.h) in the
+ * frame that offers it, unless g_card_fails refuses it or g_card_slow
+ * keeps it from answering; a panel that starts again reads it back.
+ *
+ * For test_hitec_prog*.c and test_hitec_panel*.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -62,6 +66,14 @@ static unsigned g_frame_ms = 16u;       /* the render loop's frame       */
 static unsigned g_arm_refused;          /* switches to ARMED refused     */
 
 static hitec_prog_feed_t g_f;
+
+/* The card. */
+static bool     g_card;                 /* mounted                       */
+static bool     g_card_fails;           /* takes no text                 */
+static bool     g_card_slow;            /* takes nothing, answers never  */
+static char     g_card_text[HITEC_CARD_TEXT_MAX];
+static size_t   g_card_len;             /* the text it holds; 0 none     */
+static unsigned g_card_writes;          /* texts it took                 */
 
 /* ------------------------------------------------------------- the model */
 
@@ -165,6 +177,28 @@ static inline void publish(hitec_prog_feed_t *f)
     /* From 4.29 a held port holds the SUPPLY page too (LINK_SP_PORT). */
     f->supply_held = g_hw.has_supply
                      && hitec_port_state(&g_port) != LINK_HITEC_FREE;
+    f->card = g_card;
+}
+
+/* The render loop's card half: the record's text to the card. */
+static inline void card_frame(void)
+{
+    char text[HITEC_CARD_TEXT_MAX];
+    size_t len;
+
+    if (g_card_slow) {
+        return;
+    }
+    len = hitec_prog_file_take(model(), text, sizeof(text));
+    if (len == 0u) {
+        return;
+    }
+    if (!g_card_fails) {
+        memcpy(g_card_text, text, len);
+        g_card_len = len;
+        g_card_writes++;
+    }
+    hitec_prog_file_done(model(), !g_card_fails);
 }
 
 /* The control task's pass. */
@@ -186,6 +220,7 @@ static inline void frame(void)
     while (g_q_n < RIG_Q_LEN && model_take(&c)) {
         g_q[g_q_n++] = c;
     }
+    card_frame();
 }
 
 /* 1ms: a pass of the IOmcu, every 5ms the control task's, every
@@ -292,6 +327,11 @@ static inline void rig_from(uint32_t t0, supply_kind_t supply, bool panel)
     g_rx_mark = (uint8_t)HITEC_RX_LINK_HELD;
     g_frame_ms = 16u;
     g_arm_refused = 0;
+    g_card = false;
+    g_card_fails = false;
+    g_card_slow = false;
+    g_card_len = 0;
+    g_card_writes = 0;
     memset(&g_f, 0, sizeof(g_f));
     g_link = true;
     hitec_link_came_up(&g_l, LINK_PROTOCOL_MINOR);
@@ -379,6 +419,10 @@ static inline void panel_restart(void)
     g_ans_id = 0;
     g_outs = 0;
     g_stopped = false;
+    /* The record as the card holds it, read at the start. */
+    if (g_card && g_card_len != 0u) {
+        (void)hitec_prog_file_load(model(), g_card_text, g_card_len);
+    }
     hitec_link_came_up(&g_l, LINK_PROTOCOL_MINOR);
 }
 

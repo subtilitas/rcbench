@@ -37,6 +37,11 @@ const hpn_row_t hpn_rows[] = {
     { HITEC_PANEL_SERVO, 2, 0, 0, K_ACT, A_MORE, S_ANY, TX_KP_MORE, NULL },
     { HITEC_PANEL_SERVO, 2, 1, 0, K_ACT, A_CLEAR, S_ANY, TX_HP_STOP_ROW,
       NULL },
+    { HITEC_PANEL_SERVO, 3, 0, 1, K_ACT, A_ENABLE, S_ANY, TX_KP_ENABLE, NULL },
+    { HITEC_PANEL_SERVO, 4, 0, 0, K_ACT, A_RESTORE, S_ANY, TX_KP_RESTORE,
+      NULL },
+    /* WRITE n VALUES says what it writes: no label beside it. */
+    { HITEC_PANEL_SERVO, 4, 1, 0, K_ACT, A_WRITE, S_ANY, -1, "" },
 
     { HITEC_PANEL_MOTION, 0, 0, 1, K_SHOW, HITEC_P_D_SPEED, S_D,
       TX_HP_SPEED, NULL },
@@ -189,7 +194,9 @@ gfx_rect_t hpn_row_rect(const hpn_row_t *r)
 gfx_rect_t hpn_value_rect(const hpn_row_t *r)
 {
     const gfx_rect_t rr = hpn_row_rect(r);
-    const int w = r->wide != 0u && r->kind == K_SHOW ? HP_WIDE_W : HP_VAL_W;
+    const int w = r->kind == K_ACT && r->what == A_WRITE ? HP_WRITE_W
+                : r->wide != 0u && r->kind == K_SHOW     ? HP_WIDE_W
+                                                         : HP_VAL_W;
 
     return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w), rr.y, (int16_t)w,
                          rr.h };
@@ -414,6 +421,8 @@ static void options_fresh(void)
 void hitec_panel_screen_entry(void)
 {
     options_fresh();
+    /* Writing is switched off at every entry of the screen. */
+    (void)hitec_prog_write_enable(&hp.prog, false);
     ++hp.rev;
 }
 
@@ -478,7 +487,10 @@ static uint32_t signature(void)
         p->series, hitec_prog_mv(p), hitec_prog_ma(p),
         hitec_prog_mv_capped(p), hitec_prog_in_mode(p),
         hitec_prog_progress(p, &done, &total) ? done : 0u,
-        hitec_prog_retry_code(p),
+        hitec_prog_retry_code(p), hitec_prog_write_on(p),
+        hitec_prog_changes(p), hitec_prog_record(p),
+        (uint32_t)hitec_prog_record_verdict(p), p->ses.step_index,
+        p->must_read, p->f.card, p->ses.done,
     };
     uint32_t sig = 2166136261u;
 
@@ -523,6 +535,25 @@ bool hitec_panel_take(hitec_prog_cmd_t *out)
 void hitec_panel_bench_armed(bool armed)
 {
     hitec_prog_bench_armed(&hp.prog, armed);
+}
+
+size_t hitec_panel_file_take(char *out, size_t n)
+{
+    return hitec_prog_file_take(&hp.prog, out, n);
+}
+
+void hitec_panel_file_done(bool ok)
+{
+    hitec_prog_file_done(&hp.prog, ok);
+    hpn_moved();
+}
+
+bool hitec_panel_file_load(const char *text, size_t len)
+{
+    const bool ok = hitec_prog_file_load(&hp.prog, text, len);
+
+    hpn_moved();
+    return ok;
 }
 
 /* The session SERVO > PROGRAM opens from its row (prog_registry.h). */

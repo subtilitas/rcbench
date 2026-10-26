@@ -1470,8 +1470,10 @@ program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP >
 OUTPUTS.`, and CONNECT is locked. While it holds the port it stays open: CLOSE and the
 home tag open LEAVE PROGRAMMING, and while the port moves into or out of
 programming they do nothing. Leaving SERVO leaves the port as it is; back
-on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled and
-takes no press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
+on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled; a
+press on it arms nothing and shows `Cannot switch to ARMED: a port is in
+use by the servo programmer.` in the alert band, on SERVO and on MOTOR &
+ESC alike. CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
 tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
 `PORT  5.0V  1000mA`. The set points and OUTPUT ON of
@@ -1511,7 +1513,10 @@ The Hitec programmer opens from the row `Hitec servos` with the same
 geometry: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) and CLOSE, rows
 of 48px at a 56px pitch, values of 150px and a value tab's wide values of
 260px, notes in the 10 x 20 face to 4px above the alert band, and hold
-pages with a 300 x 56px hold button and CANCEL 180 x 56px. It reads only.
+pages with a 300 x 56px hold button and CANCEL 180 x 56px. It reads the
+servo and writes the edited values back: a tap on a writable value opens a
+list of up to 6 entries or the keypad, ENABLE WRITE TO SERVO on SERVO is
+the write switch, and WRITE n VALUES, 220px wide, opens the write page.
 The SERIES row sets D SERIES or CLASSIC before CONNECT; the PORT row names
 the port, its GPIO, the series, the receive mode and the supply CONNECT
 sets. While it holds the port, ARM, the SET row's set points and OUTPUT ON,
@@ -1525,6 +1530,7 @@ servos](HitecProgrammer.md) holds the rows, the flow and the messages.
 ![The Hitec programmer, the tester holding the port](img/servo-hitec.png)
 ![A D485HW read](img/servo-hitec-read.png)
 ![A port another session holds](img/servo-hitec-other.png)
+![The write page](img/servo-hitec-write.png)
 
 ### Settings
 
@@ -2536,7 +2542,7 @@ right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 | State | Meaning |
 |---|---|
 | FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME, MOVE or DELETE |
-| LOCKED | the servo programmer's record, `BENCH/KST/CONF/KST.TXT`, and its `KST.NEW` while it is written. INFO only |
+| LOCKED | the servo programmers' records, `BENCH/KST/CONF/KST.TXT` and `BENCH/HITEC/CONF/HITEC.TXT`, and their `KST.NEW` and `HITEC.NEW` while they are written. INFO only |
 | WRITING | a file the logger has open. INFO only |
 
 The fault log takes COPY and DELETE only while the IOmcu link is up: with

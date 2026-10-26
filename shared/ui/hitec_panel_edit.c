@@ -1,9 +1,9 @@
 /**
  * @file hitec_panel_edit.c
  * @brief The actions and editors of the Hitec programmer's overlay: the
- *        SERVO tab's buttons, the SERIES and MORE lists, the keypad of the
- *        programming voltage and current, the hold pages of LEAVE and
- *        RELEASE PORT, and the options kept in the settings.
+ *        SERVO tab's buttons, the lists (SERIES, MORE, RESTORE, a value's
+ *        choices), the keypad of the supply and of a value, and the options
+ *        kept in the settings.  The hold pages are hitec_panel_page.c's.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this overlay works with.  The state and the seam are
@@ -16,6 +16,7 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "hitec_reg.h"
 #include "pdmini.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -30,6 +31,10 @@
 
 void hpn_close_editors(void)
 {
+    if (hp.page.open && hp.page.kind == W_SOFT) {
+        /* CHECK THIS CHANGE closed without its hold: the edit is dropped. */
+        hitec_prog_cancel(&hp.prog);
+    }
     ui_keypad_close(&hp.kp);
     hp.kp_what = KP_NONE;
     hp.ch.open = false;
@@ -48,6 +53,7 @@ static void choice_open(int kind, const char *title)
     hp.ch.open = true;
     hp.ch.kind = kind;
     hp.ch.count = 0;
+    hp.ch.current = INT_MIN;
     snprintf(hp.ch.title, sizeof(hp.ch.title), "%s", title);
 }
 
@@ -63,72 +69,6 @@ static void choice_add(const char *label, int value)
                  label);
         hp.ch.values[hp.ch.count++] = value;
     }
-}
-
-/**
- * @brief Opens a hold page of @p kind.
- * @param kind  W_*
- * @param title its title
- * @param apply the hold button's label
- */
-static void page_open(int kind, const char *title, const char *apply)
-{
-    hpn_close_editors();
-    hp.page.open = true;
-    hp.page.kind = kind;
-    hp.page.count = 0;
-    snprintf(hp.page.title, sizeof(hp.page.title), "%s", title);
-    snprintf(hp.page.apply, sizeof(hp.page.apply), "%s", apply);
-}
-
-/**
- * @brief Adds a line to the open page.
- * @param s the line
- */
-static void page_add(const char *s)
-{
-    if (hp.page.count < HP_PAGE_LINES) {
-        snprintf(hp.page.lines[hp.page.count++], sizeof(hp.page.lines[0]), "%s",
-                 s);
-    }
-}
-
-void hpn_page_leave(void)
-{
-    page_open(W_LEAVE, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE));
-    if (hitec_prog_series(&hp.prog) == (uint8_t)HITEC_CLASSIC) {
-        page_add(TR(HP_LEAVE_C));
-    } else {
-        page_add(TR(KP_LEAVE_1));
-        page_add(TR(HP_LEAVE_D));
-    }
-    page_add(TR(KP_LEAVE_2));
-}
-
-void hpn_page_release(void)
-{
-    char line[HITEC_PANEL_LINE];
-
-    page_open(W_RELEASE, TR(HP_RELEASE), TR(HP_HOLD_RELEASE));
-    snprintf(line, sizeof(line), TR(HP_RELEASE_1),
-             (unsigned)hitec_prog_port(&hp.prog) + 1u);
-    page_add(line);
-    page_add(TR(HP_RELEASE_2));
-    page_add(TR(KP_LEAVE_2));
-    page_add(TR(HP_RELEASE_3));
-}
-
-void hpn_page_apply(void)
-{
-    const int kind = hp.page.kind;
-
-    hpn_close_editors();
-    if (kind == W_LEAVE) {
-        (void)hitec_prog_leave(&hp.prog);
-    } else {
-        (void)hitec_prog_release(&hp.prog);
-    }
-    hpn_moved();
 }
 
 /* ---------------------------------------------------------------- options */
@@ -159,7 +99,168 @@ void hpn_options_load(void)
                                              : (uint8_t)HITEC_D);
 }
 
+/* ------------------------------------------------------------ value edits */
+
+hitec_prog_edit_t hpn_edit_take(int32_t value)
+{
+    const hitec_prog_edit_t r = hitec_prog_edit(&hp.prog, hp.ed_id, value);
+
+    if (r == HITEC_PROG_EDIT_CHECK) {
+        hpn_page_soft();
+    }
+    return r;
+}
+
+/**
+ * @brief Opens the keypad for the value being edited.
+ * @param title    its title
+ * @param unit     the unit
+ * @param value    the value as it is
+ * @param min      the range's lower end
+ * @param max      its upper end
+ * @param decimals digits after the point
+ */
+static void value_keypad(const char *title, const char *unit, float value,
+                         float min, float max, int decimals)
+{
+    ui_keypad_open(&hp.kp, hp.area, title, unit, value, min, max, decimals);
+    hp.kp_what = KP_VALUE;
+}
+
+/**
+ * @brief The list of every value of a parameter with few of them.
+ * @param title its title
+ * @param info  the parameter's row
+ * @param now   the draft's value; INT32_MIN not known
+ */
+static void value_list(const char *title, const hitec_param_info_t *info,
+                       int32_t now)
+{
+    char label[HITEC_PANEL_LINE];
+
+    choice_open(C_VALUE, title);
+    hp.ch.current = now != INT32_MIN ? (int)now : INT_MIN;
+    for (int32_t v = info->min; v <= info->max; v += info->step) {
+        hpn_fmt_param(hp.ed_id, v, label, sizeof(label));
+        choice_add(label, (int)v);
+    }
+}
+
+/**
+ * @brief The editor of row @p r: a list of a few values, the D series
+ *        FAILSAFE's list, or the keypad.
+ * @param r    the row
+ * @param info its parameter
+ * @param now  the draft's value; INT32_MIN where it fits no encoding
+ */
+static void editor_for(const hpn_row_t *r, const hitec_param_info_t *info,
+                       int32_t now)
+{
+    const char *title = hpn_label(r);
+
+    hp.ed_id = r->what;
+    switch (info->unit) {
+    case HITEC_UNIT_CHOICE:
+    case HITEC_UNIT_STEP:
+    case HITEC_UNIT_OVERLOAD:
+    case HITEC_UNIT_PERCENT:
+        if ((info->max - info->min) / info->step + 1 <= HP_CHOICE_MAX) {
+            value_list(title, info, now);
+        } else {
+            value_keypad(title, "%",
+                         now != INT32_MIN ? (float)now : (float)info->max,
+                         (float)info->min, (float)info->max, 0);
+        }
+        break;
+    case HITEC_UNIT_FS_US:
+        choice_open(C_VALUE, title);
+        hp.ch.current = now == HITEC_FS_OFF || now == HITEC_FS_LIMP
+                            ? (int)now
+                        : now != INT32_MIN ? HP_FS_POSITION
+                                           : INT_MIN;
+        choice_add(TR(OFF), HITEC_FS_OFF);
+        choice_add(TR(HP_FS_LIMP), HITEC_FS_LIMP);
+        choice_add(TR(HP_POSITION), HP_FS_POSITION);
+        break;
+    case HITEC_UNIT_QUARTER_US:
+        value_keypad(title, "us",
+                     now != INT32_MIN ? (float)now / 4.0f : 1500.0f,
+                     (float)info->min / 4.0f, (float)info->max / 4.0f, 2);
+        break;
+    default:
+        value_keypad(title, "",
+                     now != INT32_MIN ? (float)now : (float)info->min,
+                     (float)info->min, (float)info->max, 0);
+        break;
+    }
+}
+
+void hpn_edit_open(const hpn_row_t *r)
+{
+    const uint8_t layout = hitec_prog_layout(&hp.prog);
+    const hitec_param_info_t *info = hitec_param(layout, r->what);
+    const hitec_image_t *draft = hitec_prog_draft(&hp.prog);
+    hitec_value_t cur;
+
+    /* A row is live only for a writable value of a servo read. */
+    if (info != NULL && draft != NULL && info->step != 0u) {
+        editor_for(r, info,
+                   hitec_param_get(draft, layout, r->what, &cur)
+                           == HITEC_GET_OK
+                       ? cur.value : INT32_MIN);
+    }
+}
+
+/**
+ * @brief The D series FAILSAFE's POSITION on the keypad.
+ */
+static void fs_position_keypad(void)
+{
+    const uint8_t layout = hitec_prog_layout(&hp.prog);
+    const hitec_param_info_t *info = hitec_param(layout, hp.ed_id);
+    const hitec_image_t *draft = hitec_prog_draft(&hp.prog);
+    hitec_value_t cur;
+
+    /* FAILSAFE's list opened on a servo read. */
+    if (info != NULL && draft != NULL) {
+        float now = 1500.0f;
+
+        if (hitec_param_get(draft, layout, hp.ed_id, &cur) == HITEC_GET_OK
+            && cur.value >= info->min) {
+            now = (float)cur.value;
+        }
+        value_keypad(TR(HP_POSITION), "us", now, (float)info->min,
+                     (float)info->max, 0);
+    }
+}
+
 /* ---------------------------------------------------------------- actions */
+
+/**
+ * @brief MORE's entries while the port is held: DISCARD EDITS with an edit
+ *        standing, REPAIR CHECKSUM with a classic sum that is wrong.
+ * @param add true to add them to the open list
+ * @return the entries
+ */
+static int more_held(bool add)
+{
+    const hitec_prog_t *p = &hp.prog;
+    int n = 0;
+
+    if (hitec_prog_changes(p) != 0u) {
+        if (add) {
+            choice_add(TR(KP_DISCARD), MORE_DISCARD);
+        }
+        ++n;
+    }
+    if (hitec_prog_sum_bad(p)) {
+        if (add) {
+            choice_add(TR(HP_MORE_REPAIR), MORE_REPAIR);
+        }
+        ++n;
+    }
+    return n;
+}
 
 bool hpn_row_live(const hpn_row_t *r)
 {
@@ -167,51 +268,133 @@ bool hpn_row_live(const hpn_row_t *r)
     const hitec_prog_state_t st = hitec_prog_state(p);
 
     if (r->kind != K_ACT) {
-        return false;
+        return hitec_prog_can_edit(p) && hitec_prog_editable(p, r->what);
     }
     switch (r->what) {
     case A_PORT:
         return st == HITEC_PROG_PWM || st == HITEC_PROG_HELD
                || st == HITEC_PROG_OTHER || st == HITEC_PROG_OPENING
-               || st == HITEC_PROG_ENTERING || st == HITEC_PROG_READING;
+               || st == HITEC_PROG_ENTERING || st == HITEC_PROG_READING
+               || st == HITEC_PROG_RECORDING || st == HITEC_PROG_WRITING;
     case A_SERIES:
-    case A_MORE:
         return st == HITEC_PROG_PWM;
+    case A_MORE:
+        return st == HITEC_PROG_PWM
+               || (st == HITEC_PROG_HELD && p->have_servo
+                   && more_held(false) > 0);
     case A_READ:
         return st == HITEC_PROG_HELD && hitec_prog_in_mode(p)
                && !hitec_prog_stopped(p);
+    case A_ENABLE:
+        /* Off is always taken; on wants an editable, SAFE port. */
+        return hitec_prog_write_on(p)
+               || (hitec_prog_can_edit(p) && !p->f.stopped);
+    case A_RESTORE:
+        return st == HITEC_PROG_HELD && hitec_prog_record(p);
+    case A_WRITE:
+        return st == HITEC_PROG_HELD && hitec_prog_changes(p) != 0u;
     default:
         /* Not with a STOP latched here: the IOmcu would refuse it. */
         return st == HITEC_PROG_HELD && hitec_prog_stopped(p) && !p->f.stopped;
     }
 }
 
+/**
+ * @brief A write of @p kind asked for: the switch's page while it is off,
+ *        the write's own page where the write is taken, else the write's
+ *        refusal, said.
+ * @param kind hitec_prog_wr_t
+ */
+static void ask_write(uint8_t kind)
+{
+    hitec_prog_t *p = &hp.prog;
+    const hitec_prog_msg_id_t m = hitec_prog_write_gate(p, kind);
+    const bool go = m == HITEC_PROG_MSG_NONE;
+
+    if (m == HITEC_PROG_MSG_WRITE_OFF) {
+        hpn_page_enable();
+    } else if (kind == (uint8_t)HITEC_PROG_WR_EDITS) {
+        if (go) {
+            hpn_page_write();
+        } else {
+            (void)hitec_prog_write(p);
+        }
+    } else if (kind == (uint8_t)HITEC_PROG_WR_REPAIR) {
+        if (go) {
+            hpn_page_repair();
+        } else {
+            (void)hitec_prog_repair(p);
+        }
+    } else if (go) {
+        hpn_page_restore();
+    } else {
+        (void)hitec_prog_restore(p);
+    }
+}
+
+/**
+ * @brief The action of the PORT row.
+ * @param p the programmer
+ */
+static void port_act(hitec_prog_t *p)
+{
+    const hitec_prog_state_t st = hitec_prog_state(p);
+
+    if (st == HITEC_PROG_PWM) {
+        /* Against the SUPPLY screen's limits as they are now. */
+        const supply_caps_t caps = supply_screen_caps();
+
+        hitec_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
+                               (uint16_t)lroundf(caps.i_max * 1000.0f));
+        (void)hitec_prog_connect(p);
+    } else if (st == HITEC_PROG_HELD) {
+        hpn_page_leave();
+    } else if (st == HITEC_PROG_OTHER) {
+        hpn_page_release();
+    } else {
+        hitec_prog_abort(p);
+    }
+}
+
+/**
+ * @brief MORE opened: the supply's entries in PWM, the session's while
+ *        held.
+ * @param p the programmer
+ */
+static void more_open(const hitec_prog_t *p)
+{
+    char label[HITEC_PANEL_LINE];
+
+    choice_open(C_MORE, TR(KP_MORE));
+    if (hitec_prog_state(p) == HITEC_PROG_HELD) {
+        (void)more_held(true);
+        return;
+    }
+    snprintf(label, sizeof(label), TR(KP_SUPPLY_V), hitec_prog_mv(p) / 1000u,
+             hitec_prog_mv(p) % 1000u / 100u);
+    choice_add(label, MORE_VOLTAGE);
+    snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
+             (unsigned)hitec_prog_ma(p));
+    choice_add(label, MORE_CURRENT);
+}
+
 void hpn_act(const hpn_row_t *r)
 {
     hitec_prog_t *p = &hp.prog;
-    const hitec_prog_state_t st = hitec_prog_state(p);
     char label[HITEC_PANEL_LINE];
 
+    if (r->kind != K_ACT) {
+        hpn_edit_open(r);
+        hpn_moved();
+        return;
+    }
     switch (r->what) {
     case A_PORT:
-        if (st == HITEC_PROG_PWM) {
-            /* Against the SUPPLY screen's limits as they are now. */
-            const supply_caps_t caps = supply_screen_caps();
-
-            hitec_prog_supply_caps(p,
-                                   (uint16_t)lroundf(caps.v_max * 1000.0f),
-                                   (uint16_t)lroundf(caps.i_max * 1000.0f));
-            (void)hitec_prog_connect(p);
-        } else if (st == HITEC_PROG_HELD) {
-            hpn_page_leave();
-        } else if (st == HITEC_PROG_OTHER) {
-            hpn_page_release();
-        } else {
-            hitec_prog_abort(p);
-        }
+        port_act(p);
         break;
     case A_SERIES:
         choice_open(C_SERIES, TR(HP_SERIES));
+        hp.ch.current = (int)hitec_prog_series(p);
         choice_add(TR(HP_SERIES_D), (int)HITEC_D);
         snprintf(label, sizeof(label), "%s  %s", TR(HP_SERIES_C),
                  TR(HP_SERIES_C_HELP));
@@ -220,18 +403,30 @@ void hpn_act(const hpn_row_t *r)
     case A_READ:
         (void)hitec_prog_read(p);
         break;
-    case A_MORE: {
-        const unsigned mv = hitec_prog_mv(p);
+    case A_MORE:
+        more_open(p);
+        break;
+    case A_ENABLE:
+        if (hitec_prog_write_on(p)) {
+            (void)hitec_prog_write_enable(p, false);
+        } else {
+            hpn_page_enable();
+        }
+        break;
+    case A_RESTORE: {
+        const hitec_prog_msg_id_t m =
+            hitec_prog_write_gate(p, (uint8_t)HITEC_PROG_WR_RESTORE);
 
-        choice_open(C_MORE, TR(KP_MORE));
-        snprintf(label, sizeof(label), TR(KP_SUPPLY_V), mv / 1000u,
-                 mv % 1000u / 100u);
-        choice_add(label, MORE_VOLTAGE);
-        snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
-                 (unsigned)hitec_prog_ma(p));
-        choice_add(label, MORE_CURRENT);
+        choice_open(C_RESTORE, TR(KP_RESTORE));
+        if (m != HITEC_PROG_MSG_REC_OTHER && m != HITEC_PROG_MSG_MUST_READ) {
+            choice_add(TR(KP_FROM_JOURNAL), RS_RESTORE);
+        }
+        choice_add(TR(KP_FORGET), RS_FORGET);
         break;
     }
+    case A_WRITE:
+        ask_write((uint8_t)HITEC_PROG_WR_EDITS);
+        break;
     default:
         (void)hitec_prog_clear(p);
         break;
@@ -239,16 +434,24 @@ void hpn_act(const hpn_row_t *r)
     hpn_moved();
 }
 
-void hpn_choice_done(int value)
+/**
+ * @brief An entry of MORE or RESTORE.
+ * @param p     the programmer
+ * @param kind  C_MORE or C_RESTORE
+ * @param value the entry's value
+ */
+static void list_done(hitec_prog_t *p, int kind, int value)
 {
-    hitec_prog_t *p = &hp.prog;
-    const int kind = hp.ch.kind;
-
-    hp.ch.open = false;
-    if (kind == C_SERIES) {
-        if (hitec_prog_series_set(p, (uint8_t)value)) {
-            options_keep();
+    if (kind == C_RESTORE) {
+        if (value == RS_RESTORE) {
+            ask_write((uint8_t)HITEC_PROG_WR_RESTORE);
+        } else {
+            (void)hitec_prog_forget(p);
         }
+    } else if (value == MORE_DISCARD) {
+        hitec_prog_discard(p);
+    } else if (value == MORE_REPAIR) {
+        ask_write((uint8_t)HITEC_PROG_WR_REPAIR);
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
                        (float)hitec_prog_mv(p) / 1000.0f,
@@ -261,13 +464,66 @@ void hpn_choice_done(int value)
                        (float)PDMINI_I_MAX_MA, 0);
         hp.kp_what = KP_CURRENT;
     }
+}
+
+void hpn_choice_done(int value)
+{
+    hitec_prog_t *p = &hp.prog;
+    const int kind = hp.ch.kind;
+
+    hp.ch.open = false;
+    if (kind == C_SERIES) {
+        if (hitec_prog_series_set(p, (uint8_t)value)) {
+            options_keep();
+        }
+    } else if (kind == C_VALUE) {
+        if (value == HP_FS_POSITION) {
+            fs_position_keypad();
+        } else {
+            (void)hpn_edit_take((int32_t)value);
+        }
+    } else {
+        list_done(p, kind, value);
+    }
+    hpn_moved();
     ++hp.rev;
+}
+
+/**
+ * @brief The keypad's value of a parameter: the edit, or the reason it is
+ *        refused with the keypad open again.
+ * @param v the value typed
+ */
+static void value_done(float v)
+{
+    const hitec_param_info_t *info =
+        hitec_param(hitec_prog_layout(&hp.prog), hp.ed_id);
+    const bool quarter =
+        info != NULL && info->unit == (uint8_t)HITEC_UNIT_QUARTER_US;
+    const long value = quarter ? lroundf(v * 4.0f) : lroundf(v);
+
+    if (hpn_edit_take((int32_t)value) == HITEC_PROG_EDIT_REFUSED) {
+        char lines[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
+
+        const int n =
+            hitec_panel_message_lines(hitec_prog_message(&hp.prog), lines);
+
+        /* A refusal always says why; NULL keeps the keypad's own line. */
+        ui_keypad_refuse_why(&hp.kp, n > 0 ? lines[0] : NULL);
+        return;
+    }
+    hp.kp_what = KP_NONE;
 }
 
 void hpn_keypad_done(float v)
 {
     hitec_prog_t *p = &hp.prog;
 
+    if (hp.kp_what == KP_VALUE) {
+        value_done(v);
+        hpn_moved();
+        return;
+    }
     if (hp.kp_what == KP_VOLTAGE) {
         const long mv = lroundf(v * 10.0f) * 100L;
 

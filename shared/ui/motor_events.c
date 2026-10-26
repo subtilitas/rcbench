@@ -225,6 +225,8 @@ void mo_event(const touch_event_t *evt)
                  * with no motor pin drives nothing, and says so. */
                 if (mo_no_motor_pin()) {
                     ui_router_set_alert(TR(ALERT_ARM_NO_PIN));
+                } else {
+                    ui_router_set_alert(TR(ALERT_ARM_PROG));
                 }
                 return;
             }

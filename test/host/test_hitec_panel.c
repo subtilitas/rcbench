@@ -167,10 +167,14 @@ TEST_CASE(connect_reads_the_d485hw_and_the_tabs_show_its_values)
             }
         }
     }
-    /* No row of a value tab takes a tap: read only. */
-    for (int row = 0; row < 6; ++row) {
-        CHECK(!hitec_panel_row_live(HITEC_PANEL_TRAVEL, row, 0));
+    /* Every row of TRAVEL is writable and takes a tap: an edit of the
+     * draft. */
+    for (int row = 0; row < 4; ++row) {
+        CHECK(hitec_panel_row_live(HITEC_PANEL_TRAVEL, row, 0));
     }
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_TRAVEL, 4, 0));
+    /* INFO's model is read only. */
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_INFO, 0, 0));
 }
 
 TEST_CASE(before_a_read_the_value_tabs_say_so)
@@ -370,8 +374,9 @@ static void check_layout(void)
                     continue;
                 }
                 c[n++] = v;
-                if (!(page == HITEC_PANEL_SERVO && row == 0)) {
-                    CHECK(row_x(col) + gfx_text_cells(label) * 10 + 8 <= v.x);
+                if (!(page == HITEC_PANEL_SERVO && row == 0)
+                    && row_x(col) + gfx_text_cells(label) * 10 + 8 > v.x) {
+                    T_FAIL("label %s at %d %d %d", label, page, row, col);
                 }
                 CHECK(gfx_text_cells(value) * 10 + 8 <= v.w);
             }

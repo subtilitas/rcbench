@@ -35,6 +35,7 @@
 #include "outputs.h"
 #include "panel.h"
 #include "prog_link.h"
+#include "storage.h"
 #include "supply_link.h"
 
 /** @brief The HITEC page's module (4.23).  Control task only. */
@@ -220,4 +221,6 @@ __attribute__((noinline)) void hitec_publish(hitec_prog_feed_t *f)
         f->out_ma = ma <= 0.0f ? 0u : ma >= 65535.0f ? 65535u : (uint16_t)ma;
     }
     f->supply_held = s_supply_is_real && supply_link_port_held(&s_supply_link);
+    /* A card mounted: a write's record goes to it (hitec_record.c). */
+    f->card = storage_mounted();
 }

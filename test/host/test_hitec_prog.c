@@ -386,6 +386,294 @@ TEST_CASE(a_session_runs_across_the_clocks_wrap)
     until(HITEC_PROG_PWM);
 }
 
+/* ------------------------------------------------------- the write switch */
+
+TEST_CASE(the_write_switch_goes_off_at_connect_link_loss_stop_and_leave)
+{
+    rig();
+    servo_d485();
+    /* Not on without a port held and a servo read. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true),
+             HITEC_PROG_MSG_NOT_IN_MODE);
+    connected();
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK(hitec_prog_write_on(model()));
+    /* Off is always taken. */
+    CHECK_EQ(hitec_prog_write_enable(model(), false), HITEC_PROG_MSG_NONE);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    /* A READ ALL that finds the same servo keeps it; one that finds other
+     * values switches it off. */
+    CHECK_EQ(hitec_prog_read(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_HELD);
+    CHECK(hitec_prog_write_on(model()));
+    g_drv.dreg[0x54] = 10u;
+    CHECK_EQ(hitec_prog_read(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_HELD);
+    CHECK(!hitec_prog_write_on(model()));
+    /* LEAVE. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
+    CHECK(!hitec_prog_write_on(model()));
+    until(HITEC_PROG_PWM);
+    /* CONNECT. */
+    connected();
+    CHECK(!hitec_prog_write_on(model()));
+    /* A switch to SAFE at the bench alone stops the port. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    disarm();
+    prun(100u);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_STOPPED);
+    CHECK_EQ(hitec_prog_clear(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_HELD);
+    /* Asked to arm. */
+    hitec_prog_bench_armed(model(), true);
+    CHECK_EQ(hitec_prog_write_enable(model(), true),
+             HITEC_PROG_MSG_NEED_DISARM);
+    hitec_prog_bench_armed(model(), false);
+    /* The link lost. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    link_silent();
+    prun(50u);
+    CHECK(!hitec_prog_write_on(model()));
+    link_back();
+    until(HITEC_PROG_OTHER);
+    CHECK_EQ(hitec_prog_write_enable(model(), true),
+             HITEC_PROG_MSG_HELD_OTHER);
+}
+
+TEST_CASE(a_stop_pressed_switches_the_write_switch_off)
+{
+    rig();
+    servo_d485();
+    connected();
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    press_stop();
+    prun(50u);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_prog_write_enable(model(), true),
+             HITEC_PROG_MSG_STOP_LATCHED);
+}
+
+/* ------------------------------------------------------------- soft rules */
+
+TEST_CASE(a_soft_rule_confirmed_holds_for_its_value_and_asks_one_past)
+{
+    uint8_t id = 0;
+    int32_t v = 0;
+
+    rig();
+    servo_d485();
+    connected();
+    /* LEFT END 3351: 3300 asks. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3300),
+             HITEC_PROG_EDIT_CHECK);
+    CHECK_EQ(hitec_prog_pending(model(), &id, &v),
+             HITEC_RULE_BIT(HITEC_RULE_END));
+    CHECK_EQ(id, HITEC_P_D_LEFT_END);
+    CHECK_EQ(v, 3300);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    /* Cancelled: the draft as it was. */
+    hitec_prog_cancel(model());
+    CHECK_EQ(hitec_prog_pending(model(), NULL, NULL), 0u);
+    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3300),
+             HITEC_PROG_EDIT_CHECK);
+    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0xB2), 3300u);
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+    /* The value confirmed, and one nearer the servo's: no question. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3301),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3300),
+             HITEC_PROG_EDIT_OK);
+    /* One past it asks, and so does the other side. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3299),
+             HITEC_PROG_EDIT_CHECK);
+    hitec_prog_cancel(model());
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3352),
+             HITEC_PROG_EDIT_CHECK);
+    hitec_prog_cancel(model());
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0xB2), 3300u);
+    /* Back to the servo's own value asks nothing. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3351),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    /* DISCARD EDITS ends the confirmation. */
+    hitec_prog_discard(model());
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3300),
+             HITEC_PROG_EDIT_CHECK);
+    hitec_prog_cancel(model());
+    /* And so does a read. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_RIGHT_END, 13000),
+             HITEC_PROG_EDIT_CHECK);
+    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_read(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_HELD);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_RIGHT_END, 13000),
+             HITEC_PROG_EDIT_CHECK);
+}
+
+TEST_CASE(each_soft_rule_asks_at_its_bound_and_not_inside_it)
+{
+    rig();
+    servo_d485();
+    connected();
+    /* SPEED: 30% is the bound; 20% asks. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_SPEED, 30), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_SPEED, 20),
+             HITEC_RULE_BIT(HITEC_RULE_SPEED));
+    /* DEAD BAND below the servo's step 1: none is below. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_DEAD_BAND, 1), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_DEAD_BAND, 2), 0u);
+    /* OVERLOAD: the servo's is off already. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_OVERLOAD, 0), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_OVERLOAD, 30), 0u);
+    /* NEUTRAL, DIRECTION. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_NEUTRAL, 8192), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_NEUTRAL, 8193),
+             HITEC_RULE_BIT(HITEC_RULE_CENTRE));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_DIRECTION, HITEC_CCW),
+             HITEC_RULE_BIT(HITEC_RULE_DIRECTION));
+    /* FAILSAFE: 300us from 1500us is the bound. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_FAILSAFE, 1800), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_FAILSAFE, 1200), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_FAILSAFE, 1801),
+             HITEC_RULE_BIT(HITEC_RULE_FS_FAR));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_FAILSAFE, 1199),
+             HITEC_RULE_BIT(HITEC_RULE_FS_FAR));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_FAILSAFE, HITEC_FS_LIMP),
+             0u);
+    /* A parameter with no rule. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_D_ID, 7), 0u);
+    /* A speed confirmed at 20% asks again at 10%. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 20),
+             HITEC_PROG_EDIT_CHECK);
+    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 10),
+             HITEC_PROG_EDIT_CHECK);
+    hitec_prog_cancel(model());
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 30),
+             HITEC_PROG_EDIT_OK);
+}
+
+TEST_CASE(the_classic_soft_rules_ask_at_their_bounds)
+{
+    rig();
+    servo_hs5645();
+    CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
+    connected();
+    /* FAILSAFE POSITION in 0.25us: 1800us is the bound. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_FS_POSITION, 7200), 0u);
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_FS_POSITION, 7201),
+             HITEC_RULE_BIT(HITEC_RULE_FS_FAR));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_FS_POSITION, 4799),
+             HITEC_RULE_BIT(HITEC_RULE_FS_FAR));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_SPEED, 20),
+             HITEC_RULE_BIT(HITEC_RULE_SPEED));
+    /* The dead band and the overload are stored raw on this servo: every
+     * change asks. */
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_DEAD_BAND, 5),
+             HITEC_RULE_BIT(HITEC_RULE_DEAD_BAND));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_OVERLOAD, 0),
+             HITEC_RULE_BIT(HITEC_RULE_OVERLOAD));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_LEFT_END, 0),
+             HITEC_RULE_BIT(HITEC_RULE_END));
+    CHECK_EQ(hitec_prog_rules(model(), HITEC_P_C_CENTRE, 6000),
+             HITEC_RULE_BIT(HITEC_RULE_CENTRE));
+}
+
+/* ------------------------------------------------------------------ edits */
+
+TEST_CASE(a_raw_value_is_replaced_by_a_table_value_and_comes_back_by_discard)
+{
+    hitec_value_t v;
+
+    rig();
+    servo_d485();
+    /* A speed that fits no encoding, a direction neither CW nor CCW. */
+    g_drv.dreg[0x54] = 7u;
+    g_drv.dreg[0x5E] = 5u;
+    connected();
+    CHECK_EQ(hitec_param_get(hitec_prog_draft(model()), HITEC_LAYOUT_D,
+                             HITEC_P_D_SPEED, &v), HITEC_GET_RAW);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x54), 10u);
+    CHECK(hitec_prog_differs(model(), NULL, HITEC_P_D_SPEED));
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+    /* No edit sets the raw value again; DISCARD EDITS does. */
+    hitec_prog_discard(model());
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x54), 7u);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    /* A direction edit from a raw one writes 0x5E alone. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_DIRECTION, HITEC_CCW),
+             HITEC_PROG_EDIT_CHECK);
+    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x5E), 1u);
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0xC2), 8192u);
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0xB2), 3351u);
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+}
+
+TEST_CASE(an_edit_is_refused_read_only_outside_its_steps_and_out_of_order)
+{
+    rig();
+    servo_d485();
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_NOT_IN_MODE);
+    connected();
+    CHECK(hitec_prog_can_edit(model()));
+    CHECK(!hitec_prog_editable(model(), HITEC_P_D_MODEL));
+    CHECK(hitec_prog_editable(model(), HITEC_P_D_SPEED));
+    CHECK(!hitec_prog_editable(model(), HITEC_P_C_SPEED));
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_MODEL, 1),
+             HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_EDIT_REFUSED);
+    CHECK_EQ(hitec_prog_message(model())->arg, HITEC_SET_ERR_RO);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 35),
+             HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(hitec_prog_message(model())->arg, HITEC_SET_ERR_RANGE);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 110),
+             HITEC_PROG_EDIT_REFUSED);
+    /* LEFT END above NEUTRAL. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 9000),
+             HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(hitec_prog_message(model())->arg, HITEC_SET_ERR_ORDER);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    /* A value equal to the draft's changes nothing. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 100),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    /* Not on a stopped port. */
+    disarm();
+    prun(100u);
+    CHECK(!hitec_prog_can_edit(model()));
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_STOPPED);
+}
+
+TEST_CASE(a_model_the_register_model_does_not_name_is_written_too)
+{
+    rig();
+    servo_d485();
+    g_drv.dreg[0x00] = 12345u;
+    connected();
+    CHECK_EQ(hitec_prog_model(model())->model, HITEC_MODEL_D_OTHER);
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_HELD);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_drv.dreg[0x54], 10u);
+}
+
 int main(void)
 {
     RUN(a_d_series_connect_enters_reads_all_and_names_the_d485hw);
@@ -401,5 +689,13 @@ int main(void)
     RUN(a_command_not_taken_in_2s_is_given_up_and_never_carried_out);
     RUN(a_model_that_starts_again_numbers_past_the_last_answer);
     RUN(a_session_runs_across_the_clocks_wrap);
+    RUN(the_write_switch_goes_off_at_connect_link_loss_stop_and_leave);
+    RUN(a_stop_pressed_switches_the_write_switch_off);
+    RUN(a_soft_rule_confirmed_holds_for_its_value_and_asks_one_past);
+    RUN(each_soft_rule_asks_at_its_bound_and_not_inside_it);
+    RUN(the_classic_soft_rules_ask_at_their_bounds);
+    RUN(a_raw_value_is_replaced_by_a_table_value_and_comes_back_by_discard);
+    RUN(an_edit_is_refused_read_only_outside_its_steps_and_out_of_order);
+    RUN(a_model_the_register_model_does_not_name_is_written_too);
     return test_summary("hitec_prog");
 }

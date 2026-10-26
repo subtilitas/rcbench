@@ -4,16 +4,17 @@
  *
  * hitec_panel.c holds the state, the rows, the geometry and the caller's
  * side; hitec_panel_text.c the texts of the messages and the values;
- * hitec_panel_edit.c the actions, the lists, the keypad and the hold pages;
- * hitec_panel_touch.c the presses; hitec_panel_draw.c the notes and the
- * pages drawn.  The functions one calls of another are prefixed hpn_.
- * Nothing outside these five files includes this header; the interface is
- * hitec_panel.h.
+ * hitec_panel_edit.c the actions, the lists and the keypad;
+ * hitec_panel_page.c the hold pages; hitec_panel_touch.c the presses;
+ * hitec_panel_draw.c the notes and the pages drawn.  The functions one
+ * calls of another are prefixed hpn_.  Nothing outside these six files
+ * includes this header; the interface is hitec_panel.h.
  *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -45,6 +46,9 @@
 #define HP_ROW_H   UI_TAP_MIN   /**< a row's height, 48px               */
 #define HP_VAL_W   150          /**< a button or value, 15 cells        */
 #define HP_WIDE_W  260          /**< a wide row's, 26 cells             */
+/** @brief WRITE n VALUES, a row with no label: 22 cells, "20 WERTE
+ *         SCHREIBEN" and room. */
+#define HP_WRITE_W 220
 /** @brief The face of labels, buttons, values, notes and pages' lines:
  *         the type scale's LABEL face, 10 x 20. */
 #define HP_FONT    (&gfx_font_10x20)
@@ -58,15 +62,20 @@
  *         12px. */
 #define HP_PAGE_TOP 64
 /** @brief The lines a hold page holds. */
-#define HP_PAGE_LINES 6
-/** @brief The entries a list holds. */
-#define HP_CHOICE_MAX 4
+#define HP_PAGE_LINES 12
+/** @brief The changed values a write page lists, the count of the rest
+ *         after them. */
+#define HP_PAGE_VALUES 6
+/** @brief The entries a list holds: OVERLOAD PROTECTION's OFF and 10% to
+ *         50%. */
+#define HP_CHOICE_MAX 6
 
 /** @brief What a row is. */
 enum { K_ACT = 0, K_SHOW };
 
 /** @brief The actions of the SERVO tab's rows. */
-enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR };
+enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_ENABLE, A_RESTORE,
+       A_WRITE };
 
 /** @brief The series a row is for. */
 enum { S_D = 1, S_C = 2, S_ANY = 3 };
@@ -85,7 +94,7 @@ typedef struct {
 } hpn_row_t;
 
 /** @brief The rows' count. */
-#define HP_ROW_COUNT 40
+#define HP_ROW_COUNT 43
 /** @brief The rows, in hitec_panel.c. */
 extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
@@ -98,13 +107,19 @@ enum {
 };
 
 /** @brief What a list was opened for. */
-enum { C_SERIES = 0, C_MORE };
-/** @brief The entries of MORE. */
-enum { MORE_VOLTAGE = 0, MORE_CURRENT };
+enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE };
+/** @brief The entries of MORE: the supply's in PWM, the session's while
+ *         held. */
+enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR };
+/** @brief The entries of RESTORE. */
+enum { RS_RESTORE = 0, RS_FORGET };
+/** @brief A D series FAILSAFE list's POSITION: its keypad follows. */
+#define HP_FS_POSITION (-1)
 /** @brief The hold pages. */
-enum { W_LEAVE = 0, W_RELEASE };
+enum { W_LEAVE = 0, W_RELEASE, W_ENABLE, W_WRITE, W_SOFT, W_REPAIR,
+       W_RESTORE };
 /** @brief What the keypad edits. */
-enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT };
+enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT, KP_VALUE };
 
 /** @brief The overlay's state. */
 typedef struct {
@@ -113,8 +128,10 @@ typedef struct {
     bool         open;          /**< the overlay is shown                 */
     bool         loaded;        /**< the options were read                */
     ui_tabs_t    tabs;          /**< the five tabs                        */
-    ui_keypad_t  kp;            /**< the keypad of the supply             */
+    ui_keypad_t  kp;            /**< the keypad of the supply or a value  */
     int          kp_what;       /**< KP_*                                 */
+    uint8_t      ed_id;         /**< the hitec_param_t a value editor is
+                                     for                                  */
 
     struct {
         bool open;              /**< the list shows                       */
@@ -123,6 +140,8 @@ typedef struct {
         char title[64];         /**< its title                            */
         char labels[HP_CHOICE_MAX][HITEC_PANEL_LINE]; /**< the entries    */
         int  values[HP_CHOICE_MAX]; /**< their values                     */
+        int  current;           /**< the value drawn as chosen; INT_MIN
+                                     none                                 */
     } ch;                       /**< the list                             */
 
     struct {
@@ -131,9 +150,11 @@ typedef struct {
         bool      down;         /**< its hold button is down              */
         ui_hold_t hold;         /**< the hold                             */
         int       count;        /**< lines used                           */
+        bool      danger;       /**< the edge in the danger colour        */
         char      title[64];    /**< the title                            */
         char      apply[64];    /**< the hold button's label              */
         char      lines[HP_PAGE_LINES][HITEC_PANEL_LINE]; /**< the lines */
+        uint8_t   level[HP_PAGE_LINES]; /**< each line's hitec_prog_level_t */
     } page;                     /**< the hold page                        */
 
     bool     have;              /**< a press is on the glass              */
@@ -257,6 +278,44 @@ bool hpn_port_unbound(void);
  * @param n   bytes at @p out
  */
 void hpn_state_line(char *out, size_t n);
+/**
+ * @brief A value of parameter @p id in its unit, without the stored value:
+ *        "30%", "CW", "1500.00us".
+ * @param id    hitec_param_t
+ * @param value the decoded value
+ * @param out   the text
+ * @param n     bytes at @p out
+ */
+void hpn_fmt_param(uint8_t id, int32_t value, char *out, size_t n);
+/**
+ * @brief The words of a CHOICE value of @p id: "CW", "ON".
+ * @param id    hitec_param_t
+ * @param value the value
+ * @return the text
+ */
+const char *hpn_choice_text(uint8_t id, int32_t value);
+/**
+ * @brief The label of parameter @p id's row in the series in use.
+ * @param id hitec_param_t
+ * @return the label; "" for none
+ */
+const char *hpn_param_label(uint8_t id);
+/**
+ * @brief "LABEL: was -> now" of parameter @p id, the servo's value and
+ *        @p img's.
+ * @param id  hitec_param_t
+ * @param img the image the write leaves
+ * @param out the text
+ * @param n   bytes at @p out
+ */
+void hpn_change_line(uint8_t id, const hitec_image_t *img, char *out,
+                     size_t n);
+/**
+ * @brief Whether row @p r shows a value the draft changes.
+ * @param r the row
+ * @return true when edited
+ */
+bool hpn_row_edited(const hpn_row_t *r);
 
 /* hitec_panel_edit.c */
 
@@ -287,6 +346,42 @@ bool hpn_row_live(const hpn_row_t *r);
 void hpn_page_leave(void);
 /** @brief The page of RELEASE PORT. */
 void hpn_page_release(void);
+/** @brief The page of ENABLE WRITE TO SERVO. */
+void hpn_page_enable(void);
+/** @brief The page of WRITE n VALUES. */
+void hpn_page_write(void);
+/** @brief CHECK THIS CHANGE for the edit that waits. */
+void hpn_page_soft(void);
+/** @brief The page of REPAIR CHECKSUM. */
+void hpn_page_repair(void);
+/** @brief The page of RESTORE from the record. */
+void hpn_page_restore(void);
+/**
+ * @brief Adds a line to the open page at @p level.
+ * @param level hitec_prog_level_t
+ * @param s     the line
+ */
+void hpn_page_add(unsigned level, const char *s);
+/**
+ * @brief Opens a hold page of @p kind.
+ * @param kind   W_*
+ * @param danger the edge in the danger colour
+ * @param title  its title
+ * @param apply  the hold button's label
+ */
+void hpn_page_open(int kind, bool danger, const char *title,
+                   const char *apply);
+/**
+ * @brief The editor of a value row: its list or its keypad.
+ * @param r the row
+ */
+void hpn_edit_open(const hpn_row_t *r);
+/**
+ * @brief An edit's value to the model; CHECK THIS CHANGE where it waits.
+ * @param value the value in the parameter's unit
+ * @return what the edit came to
+ */
+hitec_prog_edit_t hpn_edit_take(int32_t value);
 /** @brief A page's hold completed: what it asked for. */
 void hpn_page_apply(void);
 /** @brief The programmer's options from the settings. */

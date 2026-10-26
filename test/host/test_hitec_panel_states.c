@@ -614,11 +614,8 @@ TEST_CASE(a_note_that_does_not_fit_above_the_message_is_not_drawn)
         unsafe |= strcmp(hitec_panel_note(n), TR(HP_UNSAFE)) == 0;
         ++n;
     }
-    /* The message stays; READ ONLY, the last note, gives way. */
+    /* The message stays; a note that does not fit above it gives way. */
     CHECK(unsafe);
-    for (int i = 0; i < n; ++i) {
-        CHECK(strcmp(hitec_panel_note(i), TR(HP_READ_ONLY)) != 0);
-    }
     d = hitec_panel_notes_drawn();
     CHECK(d.y + d.h <= shorter.y + shorter.h);
 }

@@ -59,12 +59,13 @@ before a write is relied on.
   is ARMED for any role, asked to arm or has a finger on **ARM** is refused with
   `Tap DISARM first. The port cannot be taken over while ARMED.` While the port
   is held, from **CONNECT** until it reports PWM, no screen switches the bench to ARMED:
-  **ARM** on SERVO and on MOTOR & ESC is drawn disabled and takes no press,
-  and a run of the ESC stick programmer does not start and says
+  **ARM** on SERVO and on MOTOR & ESC is drawn disabled; a press on it arms
+  nothing and shows the alert
+  `Cannot switch to ARMED: a port is in use by the servo programmer.`. A
+  run of the ESC stick programmer does not start and says
   `Servo programmer is using a port. Tap LEAVE on SERVO first.` An arm that
-  reaches the bench another way is refused with the alert
-  `Cannot switch to ARMED: a port is in use by the servo programmer.`. **DISARM** and **STOP**
-  work in every state. While the bench is ARMED the read, the verify, the write,
+  reaches the bench another way is refused with the same alert. **DISARM**
+  and **STOP** work in every state. While the bench is ARMED the read, the verify, the write,
   the restore and the pairing release are refused with the same line as
   **CONNECT**; **LEAVE** is taken.
 - With a PD mini answering, the port sets the servo's supply at **CONNECT**
