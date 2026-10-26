@@ -388,6 +388,11 @@ ASSERTED = {
         ),
     },
     "hitec": {
+        "shared/bench/hitec_link.c": (
+            "(int)HITEC_DEC_LISTEN == (int)LINK_HITEC_DEC_LISTEN "
+            "&& (int)HITEC_DEC_D == (int)LINK_HITEC_DEC_D "
+            "&& (int)HITEC_DEC_C == (int)LINK_HITEC_DEC_C",
+        ),
         "shared/outputs/hitec_port.c": (
             "LINK_HT_BYTES + HITEC_RX_MAX / 2 == LINK_HT_DATA",
             "HITEC_RX_MAX == 16 && HITEC_TX_MAX == 8",
