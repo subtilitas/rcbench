@@ -91,7 +91,14 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_CARD_DENIED]     = { TX_KP_FILE_DENIED, -1 },
     [KST_PROG_MSG_SUPPLY_CAPS]     = { TX_KP_M_SUPPLY_CAPS,
                                        TX_KP_M_SUPPLY_CAPS_2 },
+    [KST_PROG_MSG_NEED_TYPE]       = { TX_KP_M_NEED_TYPE, -1 },
+    [KST_PROG_MSG_CYCLE_CUT]       = { TX_KP_M_CYCLE_CUT, -1 },
+    [KST_PROG_MSG_LEFT_CYCLED]     = { TX_KP_M_LEFT, TX_KP_M_LEFT_CYCLED },
+    [KST_PROG_MSG_LEFT_NOTE]       = { TX_KP_M_LEFT, TX_KP_M_LEFT_NOTE },
 };
+/* KP_M_ACT_AT_LEAVE and KP_M_LEFT_CYCLED name the off time. */
+_Static_assert(KST_PORT_RAIL_OFF_MS == 1000u,
+               "the texts of the supply cycle name 1s");
 /** @brief The number of rows in k_fixed. */
 #define FIXED_COUNT ((unsigned)(sizeof(k_fixed) / sizeof(k_fixed[0])))
 
@@ -244,6 +251,19 @@ static bool do_not_use(unsigned id)
     return id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_TORN
         || id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_UNINTENDED
         || id == KST_PROG_MSG_SES + (unsigned)KST_SES_ERR_VERIFY;
+}
+
+/**
+ * @brief Whether message @p id ends a write to the servo: a write, a
+ *        restore, a pairing release, or a check after one.
+ *
+ * @param id the message id
+ * @return true for those messages
+ */
+static bool wrote(unsigned id)
+{
+    return id == KST_PROG_MSG_WRITTEN || id == KST_PROG_MSG_RESTORED
+        || id == KST_PROG_MSG_RELEASED || id == KST_PROG_MSG_VERIFIED;
 }
 
 /* The lines that count: 1 has its own text. */
@@ -472,6 +492,14 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         } else if (second < 0) {
             snprintf(out[n++], KST_PANEL_LINE, "%s", TR(KP_EDIT_NOTE_2));
         }
+    }
+    if (wrote(id) && kst_prog_cycle_owed(&k.prog)
+        && n < KST_PANEL_MSG_LINES) {
+        /* A written value acts after the servo's next power-up: LEAVE
+         * makes it with a PD mini, the operator without one. */
+        snprintf(out[n++], KST_PANEL_LINE, "%s",
+                 kst_prog_leave_cycles(&k.prog) ? TR(KP_M_ACT_AT_LEAVE)
+                                                : TR(KP_M_LEFT_NOTE));
     }
     if (id >= KST_PROG_MSG_SES && m->reg != 0xFFu && n < KST_PANEL_MSG_LINES) {
         if (arg == 1u) {

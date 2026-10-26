@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "kst_card.h"
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
@@ -38,11 +37,15 @@
 const row_t kpn_rows[] = {
     { PG_SERVO, 0, 0, 1, K_ACT, A_PORT, -1, "PORT" },
     { PG_SERVO, 1, 0, 0, K_ACT, A_READ, -1, "SERVO" },
-    { PG_SERVO, 1, 1, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
-    { PG_SERVO, 2, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
+    /* The operator's type beside the servo it is of, as the Hitec
+     * programmer's SERIES. */
+    { PG_SERVO, 1, 1, 0, K_ACT, A_TYPE, TX_KP_TYPE, NULL },
+    { PG_SERVO, 2, 0, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
     { PG_SERVO, 2, 1, 0, K_ACT, A_MORE, TX_KP_MORE, NULL },
     { PG_SERVO, 3, 0, 1, K_ACT, A_ENABLE, TX_KP_ENABLE, NULL },
-    { PG_SERVO, 4, 0, 1, K_ACT, A_WRITE, TX_KP_CHANGES, NULL },
+    { PG_SERVO, 4, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
+    /* WRITE n VALUES says what it writes: no label beside it. */
+    { PG_SERVO, 4, 1, 0, K_ACT, A_WRITE, -1, "" },
 
     { PG_TUNE, 0, 0, 1, K_STEP, KST_F_DEAD_BAND, -1, "DEAD BAND" },
     { PG_TUNE, 1, 0, 0, K_FIELD, KST_F_DUTY, -1, "MAX. DUTY" },
@@ -63,7 +66,8 @@ const row_t kpn_rows[] = {
     { PG_FAILSAFE, 1, 0, 0, K_FIELD, KST_F_UNCONT_POS, -1, "POSITION" },
     { PG_FAILSAFE, 1, 1, 0, K_FIELD, KST_F_UNCONT_TIME, TX_KP_FS_AFTER, NULL },
 
-    { PG_LOCKED, 0, 0, 0, K_LOCKED, KST_F_20K_SEL, TX_KP_TYPE, NULL },
+    /* A drive setting, not the series: the type is SERVO's TYPE row. */
+    { PG_LOCKED, 0, 0, 0, K_LOCKED, KST_F_20K_SEL, -1, "20K SEL" },
     { PG_LOCKED, 0, 1, 0, K_LOCKED, KST_F_LOCK, -1, "LOCK" },
     { PG_LOCKED, 1, 0, 0, K_LOCKED, KST_F_GYRO, -1, "MODE" },
     { PG_LOCKED, 1, 1, 0, K_LOCKED, KST_F_PROT1_EN, -1, "PROT1 EN" },
@@ -140,21 +144,9 @@ bool kpn_programming(void)
     return kst_prog_state(&k.prog) == KST_PROG_PROGRAMMING;
 }
 
-unsigned kpn_servo_type(void)
-{
-    return kst_prog_have_servo(&k.prog)
-               ? kst_card_type(kst_prog_servo(&k.prog)) : 0u;
-}
-
+/* A row's label: its text, or for PORT what CONNECT asks of the supply. */
 const char *kpn_row_label(const row_t *r)
 {
-    if (r->kind == K_ACT && r->what == A_READ && kpn_servo_type() != 0u) {
-        /* Static: the caller draws the label after this returns. */
-        static char typed[24];
-
-        snprintf(typed, sizeof(typed), TR(KP_SERVO_V), kpn_servo_type());
-        return typed;
-    }
     if (r->kind == K_ACT && r->what == A_PORT && kpn_on_port()
         && kpn_flag(LINK_KS_F_RAIL)) {
         /* What CONNECT asks of the supply, and what it holds after. */
@@ -367,7 +359,9 @@ gfx_rect_t kpn_row_rect(const row_t *r)
 static gfx_rect_t control_rect(const row_t *r)
 {
     const gfx_rect_t rr = kpn_row_rect(r);
-    const int w = r->wide != 0u ? WIDE_W : VAL_W;
+    const int w = r->kind == K_ACT && r->what == A_WRITE ? WRITE_W
+                : r->wide != 0u                          ? WIDE_W
+                                                         : VAL_W;
 
     return (gfx_rect_t){ (int16_t)(rr.x + rr.w - w), rr.y, (int16_t)w, rr.h };
 }

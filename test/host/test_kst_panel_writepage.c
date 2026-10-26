@@ -65,7 +65,7 @@ TEST_CASE(the_write_page_lists_each_value_from_the_servos_to_the_new)
         CHECK_EQ(kst_panel_editor(), 0);
         edit(KST_F_SOFT_START, (uint16_t)(1u - servo(KST_F_SOFT_START)));
         tap(kst_panel_tab_rect(PG_SERVO));
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 4, 1));
         CHECK_EQ(kst_panel_editor(), 3);
         /* The values first, in the order of the tabs: the servo's, the
          * new one, the unit once, a point in both languages. */
@@ -107,7 +107,7 @@ TEST_CASE(a_write_of_more_values_than_lines_counts_the_rest)
     edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
     CHECK_EQ(kst_prog_changes(M), 10);
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     /* With a card: 6 values, the count of the other 4, and the 5 lines of
      * a first write. */
@@ -127,7 +127,7 @@ TEST_CASE(a_write_of_more_values_than_lines_counts_the_rest)
      * that say what a write with no file leaves out. */
     g_rig.card = false;
     settle();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK_EQ(warn_lines(), 12);
     snprintf(more, sizeof(more), TR(KP_VALUES_MORE), 5u);
@@ -196,7 +196,7 @@ TEST_CASE(a_later_write_that_moves_the_horn_asks_for_a_free_horn_again)
     connected();
     enable();
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK(warns(TR(KP_HORN_FREE)));
     hold(2.1f);
     settle();
@@ -211,7 +211,7 @@ TEST_CASE(a_later_write_that_moves_the_horn_asks_for_a_free_horn_again)
         edit(id, k_moves[i].by == 0
                      ? (uint16_t)(1u - servo(id))
                      : (uint16_t)((int)servo(id) + k_moves[i].by));
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 4, 1));
         CHECK_EQ(kst_panel_editor(), 3);
         CHECK(warns(TR(KP_HORN_FREE)));
         CHECK(warns(TR(KP_BENCH_FIRST)));
@@ -221,7 +221,7 @@ TEST_CASE(a_later_write_that_moves_the_horn_asks_for_a_free_horn_again)
     }
     /* A value that moves nothing does not. */
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(!warns(TR(KP_HORN_FREE)));
     tap(kst_panel_cancel_rect());
@@ -243,7 +243,7 @@ TEST_CASE(a_write_that_runs_says_writing_and_not_interrupted)
         connected();
         enable();
         edits();
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 4, 1));
         hold(2.1f);
         CHECK_EQ(kst_panel_editor(), 0);
         for (unsigned i = 0; i < 30000u; ++i) {
@@ -265,7 +265,7 @@ TEST_CASE(a_write_that_runs_says_writing_and_not_interrupted)
             /* The record of this write is held, and is not what stands. */
             CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_WRITING));
             CHECK(kst_panel_standing_line(1) == NULL);
-            CHECK(!kst_panel_row_live(PG_SERVO, 2, 0));
+            CHECK(!kst_panel_row_live(PG_SERVO, 4, 0));
             if (kst_prog_state(M) != KST_PROG_WORKING
                 || kst_prog_planning(M)) {
                 continue;
@@ -303,7 +303,7 @@ TEST_CASE(the_writing_line_has_a_singular_and_a_form_without_a_count)
         connected();
         enable();
         edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 4, 1));
         hold(2.1f);
         for (unsigned i = 0; i < 30000u && !one; ++i) {
             rig_frame();

@@ -68,8 +68,10 @@
  *     LINK_KST_REF_LEAVE_MS for a wait above the range: a servo whose
  *     registers are in doubt leaves through a READ_ALL, a RESTORE or a
  *     supply cycle.  The port does not know whether the servo left
- *     programming mode.  The wait a KST servo needs, and whether a written
- *     value acts before the next power-up, are not measured.
+ *     programming mode.  A Chaservo acts on a written value only from its
+ *     next power-up (bench, 2026-10-16): the panel ends a session with a
+ *     write through REBOOT where a PD mini answers.  The wait a KST servo
+ *     needs is not measured.
  *   - In LEAVING an ABORT returns the port to PROGRAMMING with
  *     KST_SES_ERR_ABORTED and the session as it was.  A stop does the
  *     same and sets LINK_KS_F_MUST_READ, and a supply found off or asked
@@ -95,10 +97,11 @@
  * way.  The operation ABORT ends a cycle off as well: in RAIL_OFF nothing
  * is switched on afterwards, in RAIL_WAIT the supply is switched off.
  *
- * KST_PORT_RAIL_OFF_MS and KST_PORT_RAIL_WAIT_MS are the owner's values.
- * The time a KST servo needs without power to leave programming mode, the
- * time it needs to start, and the supply voltage it accepts in programming
- * mode are not measured.
+ * KST_PORT_RAIL_OFF_MS, 1s, and KST_PORT_RAIL_WAIT_MS, 1s, are the owner's
+ * values.  A Chaservo left programming mode after 4s and more without
+ * power and entered it from a power-up 1s before the sync; the shortest
+ * time without power, the time a servo needs to start, and the supply
+ * voltage it accepts in programming mode are not measured.
  *
  * While the port is out of PWM the caller keeps the pulse off the pin:
  * kst_port_quiet_mask() names the programming port that renders none and

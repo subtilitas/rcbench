@@ -62,7 +62,7 @@ servo, line and supply model.
 | STOPPING | 1 | the PWM generator, rendering no pulse: a pulse in progress completes | unchanged | after 50ms |
 | LOW | 2 | the wire driver, driven low | set for programming, see below | after 100ms and when the supply reads as asked |
 | PROGRAMMING | 3 | the wire driver: low, a frame, or an input for a reply window | on, held by the port | on POWER_CYCLED, REBOOT or LEAVE, and when the supply goes off; before the first frame also on ABORT, a stop or a failed entry |
-| RAIL_OFF | 4 | the wire driver, or the PWM generator rendering no pulse after a REBOOT in PWM | off | 2000ms after the supply reads off |
+| RAIL_OFF | 4 | the wire driver, or the PWM generator rendering no pulse after a REBOOT in PWM | off | 1000ms after the supply reads off |
 | RAIL_WAIT | 5 | as RAIL_OFF | on, at the set points it had | 1000ms after the supply reads on, to PWM |
 | LEAVING | 6 | the wire driver, driven low | as it is: not switched, no set point written | after the wait of write register 28, to PWM (since 4.15) |
 
@@ -105,14 +105,17 @@ that does not read as asked within 3000ms ends ENTER with result 32: the
 port is in PWM, and an output switched on by this ENTER is off again.
 
 POWER_CYCLED and REBOOT in PROGRAMMING, with the PD mini asked on, cycle
-the supply: off, RAIL_OFF for 2000ms from the read that shows it off, on at
+the supply: off, RAIL_OFF for 1000ms from the read that shows it off, on at
 the set points it had, RAIL_WAIT for 1000ms from the read that shows it on,
 then PWM with bit 4 clear. REBOOT is also taken in PWM, for a servo that is
-to restart: the same cycle, with no pulse on the port during it. 2000ms and
-1000ms are the owner's values. The time a KST servo needs without power to
-leave programming mode, the time it needs to start, and the supply voltage
-it accepts in programming mode are not measured. Neither is the time the PD
-mini takes to switch.
+to restart: the same cycle, with no pulse on the port during it. Both
+times, 1000ms each, are the owner's values. A Chaservo left programming
+mode after 4000ms and more without power, and entered it from a power-up
+1000ms before the sync (bench, 2026-10-16). The shortest time without power,
+the time a servo needs to start, and the supply voltage it accepts in
+programming mode are not measured. Neither is the time the PD mini takes to
+switch. The panel uses REBOOT for CONNECT with the PD mini's output on and
+for LEAVE after a write ([ServoProgrammer.md](ServoProgrammer.md#the-power-cycle)).
 
 With no PD mini answering the port touches no supply. The session runs, bit
 10 reads 0, POWER_CYCLED is the operator's word that the servo was without
@@ -150,7 +153,7 @@ Where the supply ends when something fails:
 | The PD mini stops answering or does not read as asked within 3000ms in LOW | asked off if this ENTER switched it on, else left on, at the lower voltage if this ENTER lowered it | PWM, result 32 |
 | The staged voltage is out of range | untouched | ENTER refused with SUPPLY_RANGE |
 | The session's voltage is under 4800mV | untouched | ENTER refused with SUPPLY_LOW |
-| The supply reads off or is asked off in PROGRAMMING (the panel, a lost heartbeat, the PD mini's own protection) | kept off for 2000ms, not switched on again | the operation ends, a frame on the wire is finished; PWM with bit 4 clear, result 19 |
+| The supply reads off or is asked off in PROGRAMMING (the panel, a lost heartbeat, the PD mini's own protection) | kept off for 1000ms, not switched on again | the operation ends, a frame on the wire is finished; PWM with bit 4 clear, result 19 |
 | The supply does not read off within 3000ms of a cycle's start | asked off | from PROGRAMMING: PROGRAMMING again with bits 4 and 5 kept, result 32. From PWM: PWM, result 32 |
 | The heartbeat is lost or the link is silent in RAIL_OFF | stays off | PWM with bit 4 clear, result 19 |
 | The supply does not read on within 3000ms in RAIL_WAIT | asked off | PWM, result 32 |
@@ -209,7 +212,7 @@ the state as they were.
 | ABORT | as it is | PROGRAMMING with result 19, the session as LEAVE found it, bit 5 not set |
 | A switch to SAFE | as it is | PROGRAMMING with result 19 and bit 5 set |
 | The heartbeat lost or the link silent, no PD mini answering | untouched | PROGRAMMING with result 19 and bit 5 set |
-| The supply reads off or is asked off (the panel's STOP, a lost heartbeat, the PD mini's own protection) | kept off for 2000ms, not switched on again | RAIL_OFF, then PWM with bits 4 and 5 clear and result 19 |
+| The supply reads off or is asked off (the panel's STOP, a lost heartbeat, the PD mini's own protection) | kept off for 1000ms, not switched on again | RAIL_OFF, then PWM with bits 4 and 5 clear and result 19 |
 | The PD mini stops answering | untouched | the wait goes on |
 | Any other command | as it is | refused with BUSY |
 
@@ -360,10 +363,10 @@ a bank in ARMED, SUPPLY's output written 0, and the command ABORT from
 | --- | --- | --- | --- |
 | PWM | the pulse stops, as on every output. The supply stays as it is | the pulse stops and the supply is off | the pulse stops. SUPPLY switches the PD mini off |
 | STOPPING, LOW | the port returns to PWM with result 19. A supply this ENTER switched on is switched off; one found on stays on | the same, and the supply is off | the same, and SUPPLY switches the PD mini off |
-| PROGRAMMING | the running operation ends with result 19: a frame on the wire is finished, which takes at most 12ms, and no other starts. The pin is driven low or an input afterwards. After a first frame bit 5 is set and the port stays PROGRAMMING; before it the port returns to PWM. The supply stays on | the operation ends the same way. The supply is off: the port keeps it off for 2000ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING with bit 5 set | as the panel's STOP |
-| RAIL_OFF | nothing: the cycle goes on | the supply stays off; after the 2000ms the port is in PWM with result 19 | as the panel's STOP |
+| PROGRAMMING | the running operation ends with result 19: a frame on the wire is finished, which takes at most 12ms, and no other starts. The pin is driven low or an input afterwards. After a first frame bit 5 is set and the port stays PROGRAMMING; before it the port returns to PWM. The supply stays on | the operation ends the same way. The supply is off: the port keeps it off for 1000ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING with bit 5 set | as the panel's STOP |
+| RAIL_OFF | nothing: the cycle goes on | the supply stays off; after the 1000ms the port is in PWM with result 19 | as the panel's STOP |
 | RAIL_WAIT | nothing: the cycle goes on | the supply is switched off; the port is in PWM with result 19 | as the panel's STOP |
-| LEAVING | the wait ends with result 19 and the port is in PROGRAMMING with bit 5 set. The supply stays on | the wait ends the same way. The supply is off: the port keeps it off for 2000ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING | as the panel's STOP |
+| LEAVING | the wait ends with result 19 and the port is in PROGRAMMING with bit 5 set. The supply stays on | the wait ends the same way. The supply is off: the port keeps it off for 1000ms and returns to PWM with bits 4 and 5 clear and result 19. With no PD mini answering the port stays PROGRAMMING | as the panel's STOP |
 
 While bit 5 is set the port takes ENTER, READ_ALL, ABORT, POWER_CYCLED and
 REBOOT only, until a READ_ALL has succeeded. ABORT alone has the effect of
@@ -377,7 +380,7 @@ result 19. No frame was sent and no register written, and the session is
 not locked. Bit 5 is set as after a cut frame, because the session sent
 frames before it planned. The supply stays on after a switch to SAFE or an ABORT
 alone. After the panel's STOP, a lost heartbeat or a silent link it is off,
-and with a PD mini answering the port keeps it off for 2000ms and returns
+and with a PD mini answering the port keeps it off for 1000ms and returns
 to PWM with bits 4 and 5 clear. POWER_CYCLED and REBOOT end the planning
 and then run. Every other command is refused with BUSY and the planning
 goes on. A PD mini that stops answering does not end it. A switch to SAFE is seen as an edge: the port stops once and takes commands
@@ -388,7 +391,7 @@ UNSAFE.
 
 A link lost during RAIL_OFF leaves the supply off and the port in PWM: with
 no panel on the link nobody could switch the supply off again, and a servo
-that had no power for 2000ms has left programming mode if 2000ms is
+that had no power for 1000ms has left programming mode if 1000ms is
 enough, which is not measured. The panel switches the supply on again on
 SUPPLY.
 

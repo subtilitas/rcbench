@@ -64,13 +64,13 @@ TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
     fresh();
     connected();
     /* No changes: the button takes no tap. */
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
     edits();
     /* The switch is off: the tap opens the switch's page, not the
      * write's, and the switch stays off short of its hold. */
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_ENABLE_1)));
     CHECK(!warns(TR(KP_WRITE_2)));
@@ -83,14 +83,14 @@ TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK(!kst_prog_write_enabled(M));
     /* Held, it is the switch that goes on: nothing is written. */
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     CHECK(kst_prog_write_enabled(M));
     CHECK_EQ(kst_panel_editor(), 0);
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
     CHECK_EQ(kst_prog_changes(M), 3);
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     /* The first write of a session asks for a free horn. */
     CHECK(warns(TR(KP_HORN_FREE)));
@@ -115,7 +115,7 @@ TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
     if (!kst_prog_write_enabled(M)) {
         enable();
     }
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(!warns(TR(KP_HORN_FREE)));
     CHECK(warns(TR(KP_WRITE_1)));
@@ -130,7 +130,7 @@ TEST_CASE(with_a_card_the_values_before_the_write_go_to_it_first)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK(warns(TR(KP_WRITE_BACKUP)));
     hold(2.1f);
     settle();
@@ -146,7 +146,7 @@ TEST_CASE(a_card_that_takes_no_file_stops_the_write)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
@@ -164,7 +164,7 @@ TEST_CASE(the_switch_turned_off_while_the_journal_is_written_stops_the_write)
     edits();
     const unsigned starts = g_rig.starts;
 
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     g_rig.card_silent = true;
     hold(2.1f);
     for (unsigned i = 0; i < 2000u && strstr(g_rig.file, "journal=") == NULL;
@@ -202,7 +202,7 @@ TEST_CASE(a_write_the_servo_does_not_take_names_the_register)
     enable();
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
     sim_add_fault(&g_rig.sim, SIM_WRITE, 0x03, 0, 100, SIM_F_WRITE_IGNORE, 0);
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_WRITE_FAILED);
@@ -331,7 +331,7 @@ TEST_CASE(stop_aborts_a_write_and_the_servo_must_be_read)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
         rig_frame();
@@ -342,7 +342,7 @@ TEST_CASE(stop_aborts_a_write_and_the_servo_must_be_read)
     CHECK(kst_prog_in_doubt(M) || kst_prog_state(M) != KST_PROG_PROGRAMMING);
     CHECK(said()[0] != '\0');
     /* While STOP is latched a write is not offered. */
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 0);
     rig_stop(false);
     settle();
@@ -380,10 +380,10 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     tap(kst_panel_tab_rect(PG_SERVO));
     /* FILES takes no tap, and the tab says what stands.  The switch does:
      * the restore that mends the servo needs it. */
-    CHECK(!kst_panel_row_live(PG_SERVO, 1, 1));
+    CHECK(!kst_panel_row_live(PG_SERVO, 2, 0));
     CHECK(kst_panel_row_live(PG_SERVO, 3, 0));
     CHECK(kst_panel_row_live(PG_SERVO, 1, 0));
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_M_JOURNAL));
     rig_frames(5);
@@ -403,7 +403,7 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     CHECK(memcmp(now.r, before.r, sizeof(now.r)) != 0);
 
     /* RESTORE needs the switch, and says so. */
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     at = choice(TR(KP_FROM_SESSION));
     CHECK(at >= 0);
@@ -412,7 +412,7 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
     enable();
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_FROM_SESSION)));
@@ -436,11 +436,11 @@ TEST_CASE(the_record_of_an_interrupted_write_is_discarded_only_by_its_entry)
     tap(val(PG_SERVO, 1, 0));
     settle();
     CHECK(M->journal);
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_cancel_rect());
     CHECK(M->journal);
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     at = choice(TR(KP_FORGET));
     CHECK(at >= 0);
     tap(kst_panel_choice_rect(at));
@@ -473,7 +473,7 @@ TEST_CASE(a_restore_from_the_record_that_is_cancelled_leaves_no_value_pending)
     CHECK_EQ(kst_prog_changes(M), 0);
     sent = (int)g_rig.sim.n_writes;
 
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     at = choice(TR(KP_FROM_JOURNAL));
     CHECK(at >= 0);
     tap(kst_panel_choice_rect(at));
@@ -517,7 +517,7 @@ TEST_CASE(an_open_page_goes_when_the_link_goes)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     rig_link_lost();
     CHECK_EQ(kst_panel_editor(), 0);

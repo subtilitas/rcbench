@@ -434,7 +434,8 @@ void kpn_warn_release(void)
     (void)warn_no_file();
 }
 
-/* The way back to PWM, the same with and without a PD mini. */
+/* The way back to PWM: through a supply cycle after a write with a PD mini,
+ * with a note of the cycle the values wait for without one. */
 void kpn_warn_leave(void)
 {
     warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE));
@@ -445,7 +446,15 @@ void kpn_warn_leave(void)
     if (kst_prog_changes(&k.prog) != 0u) {
         warn_text(KST_PROG_WARN, TR(KP_LEAVE_CHANGES));
     }
-    warn_text(KST_PROG_INFO, TR(KP_LEAVE_1));
+    if (kst_prog_leave_cycles(&k.prog)) {
+        /* The written values act after this power-up. */
+        warn_text(KST_PROG_INFO, TR(KP_LEAVE_CYCLE));
+    } else {
+        warn_text(KST_PROG_INFO, TR(KP_LEAVE_1));
+        if (kst_prog_cycle_owed(&k.prog)) {
+            warn_text(KST_PROG_WARN, TR(KP_M_LEFT_NOTE));
+        }
+    }
     warn_text(KST_PROG_WARN, TR(KP_LEAVE_2));
 }
 

@@ -941,6 +941,10 @@ static inline void test_ended(void)
 /* Why the programming is not offered, why a run cannot start now, or
  * NULL; the run ended now. */
 const char *lim_prog_why(void);
+/* Why a run on the programming port writes nothing to the servo, neither
+ * SEARCH+PROG nor SERVO PULSES, or NULL: without a PD mini the run cannot
+ * switch the servo off and on, and a written value acts only after that. */
+const char *lim_write_why(void);
 const char *lim_blocked(void);
 void lim_end_now(servo_test_abort_t why);
 /* START LIMIT RUN's hold completed; the run every frame; the ended run's
@@ -1160,7 +1164,19 @@ static inline bool row_hidden(const ov_row_t *r)
 /* SEARCH+PROG chosen and offered. */
 static inline bool lim_programs(void)
 {
-    return s.lim_prog && lim_prog_why() == NULL;
+    return s.lim_prog && lim_prog_why() == NULL && lim_write_why() == NULL;
+}
+
+/* SERVO PULSES at 1000-2000 chosen and offered. */
+static inline bool lim_sets_pulses(void)
+{
+    return lim_reads() && s.lim_pulses && lim_write_why() == NULL;
+}
+
+/* Why SEARCH+PROG is not offered, or NULL. */
+static inline const char *lim_mode_why(void)
+{
+    return lim_prog_why() != NULL ? lim_prog_why() : lim_write_why();
 }
 
 /* Whether the voltage set point in force is past a standard servo's

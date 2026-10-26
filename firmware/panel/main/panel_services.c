@@ -623,8 +623,10 @@ __attribute__((noinline)) void kst_commands(void)
             continue;
         }
         if (cmd.kind == KST_PROG_CMD_START) {
-            /* No port is taken on an armed bench: nothing is sent. */
-            s_kst_answer    = (cmd.req.op == LINK_KST_OP_ENTER
+            /* No port is taken on an armed bench: nothing is sent.  A
+             * REBOOT is the CONNECT that switches the supply off first. */
+            s_kst_answer    = ((cmd.req.op == LINK_KST_OP_ENTER
+                                || cmd.req.op == LINK_KST_OP_REBOOT)
                                && outputs_armed(&s_out))
                                   ? KST_LINK_START_BUSY
                                   : kst_link_start(&s_kst_link, &cmd.req);
@@ -763,11 +765,15 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->out_mv      = 0u;
     f->out_ma      = 0u;
     f->set_mv      = 0u;
+    f->set_ma      = 0u;
     if (f->supply_read) {
         const float set = s_supply.set_v * 1000.0f + 0.5f;
+        const float lim = s_supply.set_i * 1000.0f + 0.5f;
 
         f->set_mv = set <= 0.0f ? 0u
                   : set >= 65535.0f ? 65535u : (uint16_t)set;
+        f->set_ma = lim <= 0.0f ? 0u
+                  : lim >= 65535.0f ? 65535u : (uint16_t)lim;
         const float mv = s_supply.v * 1000.0f + 0.5f;
         const float ma = s_supply.i * 1000.0f + 0.5f;
         f->out_mv = mv <= 0.0f ? 0u : mv >= 65535.0f ? 65535u : (uint16_t)mv;

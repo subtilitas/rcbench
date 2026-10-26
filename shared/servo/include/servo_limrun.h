@@ -250,7 +250,9 @@ typedef struct {
     uint16_t lo_raw;      /**< the smallest value the hard rules take    */
     uint16_t hi_raw;                    /**< the largest value the hard rules take */
     bool     reversion;   /**< REVERSION on                               */
-    unsigned type;        /**< the servo's type number, 0 not known       */
+    unsigned type;        /**< a setting the servo states, which every
+                               session of a run reads the same: 20k_sel
+                               for a KST or Chaservo servo                */
     /** @brief NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us. */
     uint16_t pulse_dus[3];
     /** @brief The file the values before the run are backed up in; "" for the

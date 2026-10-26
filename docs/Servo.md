@@ -101,6 +101,16 @@ card's state line names the condition.
 | `PROGRAMMING: SUPPLY SET BELOW 4.8V` | a PD mini answers and its set point is under 4.8V |
 | `PROGRAMMING: SERVO RAIL BELOW 4.8V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8V or not read |
 
+Without a PD mini the run cannot switch the servo off and on, and a KST or
+Chaservo servo acts on a written value only after that
+([the power cycle](ServoProgrammer.md#the-power-cycle)). SEARCH + PROGRAM
+and SERVO PULSES at 1000-2000 are then not offered, and the card reads
+`PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON` while either is
+chosen. The run reads the servo and searches only. With a PD mini every
+CONNECT of the run switches its output off for 1s and on, and the LEAVE
+after a write does the same, so the check after the write searches the
+servo with the new values in effect.
+
 #### The read first
 
 Every run on PROG PORT, SEARCH ONLY as well, starts with a read session.
@@ -363,7 +373,7 @@ Low end:        bound at 1200us, endpoint 1235us; free 0.120A, bound 0.627A
 High end:       bound at 1820us, endpoint 1785us; free 0.120A, bound 0.322A
 
 PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)
-Servo:          type 6, REVERSION OFF
+Servo:          20k_sel 1, REVERSION OFF
 Servo pulses:   NEUTRAL 1500.2us, PULSE LOWER 900.0us, PULSE UPPER 2100.0us
 Pulse write:    PULSE LOWER 900.0 -> 1000.0us, PULSE UPPER 2100.0 -> 2000.0us
 LEFT ANGLE:     150 before, 87 after; limits the low end

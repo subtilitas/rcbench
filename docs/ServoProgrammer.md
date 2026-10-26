@@ -71,9 +71,16 @@ before a write is relied on.
 - With a PD mini answering, the port sets the servo's supply at **CONNECT**
   ([the supply](#the-supply)). Without one the supply is not the bench's to
   set, and the programmer takes it as it is.
-- The programmer assumes that a servo needs no power cycle: neither to take
-  a written value into effect nor to follow PWM after programming. Neither
-  is measured ([limitations](#limitations)).
+- A servo enters programming mode from a power-up only, and acts on a
+  written value from its next power-up. A Chaservo on the bench
+  (2026-10-16) ignored the entry sequence with its supply on, and followed
+  no PWM after a write until its supply was off for 4s and on again. With
+  a PD mini answering, the programmer switches the supply off for 1s and
+  on at **CONNECT** with the output on and at **LEAVE** after a write;
+  without one the operator does ([the power cycle](#the-power-cycle)).
+- The operator sets the servo type, V6 or V8, on the **TYPE** row
+  ([the servo type](#the-servo-type)). The panel's suggestion from
+  20k_sel is a guess and is marked as one.
 - Whether a given hardware carries the servo's reply back to the pin is not
   known to the IOmcu. A servo on a port that does not ends **CONNECT**
   with `No servo responds. Check the plug, supply and port.`
@@ -145,9 +152,12 @@ With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer sho
 
 | State | Line on the SERVO tab | The port carries |
 | --- | --- | --- |
-| PWM, a PD mini answers | `Tester is using port 1. CONNECT sets 5.0V and 1000mA.` | the tester's pulses |
-| PWM, no PD mini | `Tester is using port 1. No PD mini: supply stays unchanged.` | the tester's pulses |
+| PWM, a PD mini answers, its output off | `Tester is using port 1. CONNECT sets 5.0V and 1000mA.` | the tester's pulses |
+| PWM, a PD mini answers, its output on | the same, and `CONNECT switches the output off for 1s and on: the servo starts into programming.` | the tester's pulses |
+| PWM, no PD mini | `Tester is using port 1. No PD mini: supply stays unchanged.` and, in the warning colour, `Switch the servo's supply off and on, tap CONNECT 1s later. The sync follows 250ms after the tap.` | the tester's pulses |
 | Connecting | `Connecting on port 1. PWM is off.` | no pulse for 50ms, then low for 100ms, then the entry sequence |
+| The supply off, at **CONNECT** with the output on or at **LEAVE** after a write | `Port 1: supply off for 1s. PWM is off.` | no pulse; the line low |
+| The supply on again | `Port 1: supply on, the servo starts for 1s. PWM is off.` | the line low for 1000ms, then the entry sequence, or PWM after **LEAVE** |
 | Programming | `Port 1 is in programming mode. PWM is off.` | frames only |
 | Programming, the supply read | `Port 1 in programming mode. PWM off. 5.00V, 37mA.` | frames only |
 | Working | `Operation in progress: 12 frames.` | frames of the running operation |
@@ -190,6 +200,65 @@ the overlay is open again on PROGRAM at the next entry.
 | `The IOmcu has not yet accepted the link. Try again.` | the IOmcu does not trust the heartbeat, or the link was silent |
 
 ![A port without a pin](img/servo-kst-nopin.png)
+
+### The power cycle
+
+A KST or Chaservo servo enters programming mode only when the entry
+sequence's sync arrives after a power-up, and it acts on a written value
+only from its next power-up. One Chaservo, read as V6, showed both on the
+bench (2026-10-16):
+
+| Start | Result |
+| --- | --- |
+| The servo idling with the PD mini's output on at 5.00V | **CONNECT** took the port; **READ ALL** read nothing: `Servo not in programming mode.` |
+| The output off, **CONNECT** switching it on | the servo entered programming mode; all 32 registers read |
+| LEFT ANGLE and RIGHT ANGLE written and verified, **LEAVE** | the servo followed no PWM: the horn stayed within 0.6deg for 1000us and 2000us pulses |
+| The output off for 4s or more, then on | the servo followed PWM with the written values: about 52deg of travel; the travel before the write was not measured |
+| The old values written back, the output off and on | about 149deg of travel |
+
+The panel therefore cycles the supply where it can:
+
+| Step | A PD mini answers, its output on | A PD mini answers, its output off | No PD mini |
+| --- | --- | --- | --- |
+| **CONNECT** | the output off for 1000ms, on at the lower of the two voltages and the lower of the two current limits, the line low for 1000ms, then the entry sequence | the output on, the line low for 1000ms, then the entry sequence | the entry sequence 250ms after the tap: 50ms without a pulse, 100ms low, 100ms of the entry's low line. The operator powers the servo up just before |
+| **LEAVE** after a write, a restore or a pairing release | the output off for 1000ms, on, the line low for 1000ms, then PWM | -- | the port returns to PWM; the values act after the operator switches the servo's supply off and on |
+| **LEAVE** with nothing written | the port returns to PWM after **WAIT BEFORE PWM**; the supply stays as it is | the same | the same |
+| A write | no cycle: the read-back runs in programming mode | the same | the same |
+
+Without a PD mini the line under the state names the step:
+`Switch the servo's supply off and on, tap CONNECT 1s later. The sync follows 250ms after the tap.` The port makes one entry attempt and does
+not repeat it. The sync goes 250ms after the tap, so a tap 1s after the
+power-up puts it 1250ms after the power-up, next to the 1000ms the port
+leaves a servo it switched on itself. How long after a power-up a servo
+still takes the sync is not measured: the bench's Chaservo took it 1000ms
+after, a KST servo on the vendor's card about 3s after.
+
+After a write the message carries a second line: with a PD mini
+`The values act after LEAVE: it switches the supply off for 1s and on.`,
+without one `The written values act after the servo's supply is switched off and on.` LEAVE PROGRAMMING names the same, and the message after
+it says what happened: `The port is back in tester mode.` and
+`Supply switched off for 1s and on: the written values act.`, or, without
+a PD mini, the note again.
+
+![CONNECT with the output on](img/servo-kst-supply-on.png)
+![The 1s off](img/servo-kst-cycling.png)
+![A write with a PD mini](img/servo-kst-written-supply.png)
+![LEAVE after a write with a PD mini](img/servo-kst-leave-cycle.png)
+![Back in PWM after the cycle](img/servo-kst-left-cycled.png)
+![LEAVE after a write without a PD mini](img/servo-kst-leave-note.png)
+![Back in PWM without a PD mini](img/servo-kst-left-note.png)
+
+**ABORT**, **STOP**, an arm or a change of **SERVO TESTER** in the 1000ms
+off ends **CONNECT** there: no entry follows, and the output stays off.
+**ABORT** says `The supply cycle was stopped. The PD mini output stays off.`;
+**STOP** says its own line. A link lost in the 1000ms off sends nothing
+after it, and the output stays off. **ABORT** or **STOP** in the cycle of
+**LEAVE** ends the session with the output off.
+
+![A cycle stopped by ABORT](img/servo-kst-cycle-cut.png)
+
+1000ms off is the owner's value, the upper end of his estimate of 500ms
+to 1000ms; 4s and more is the only time measured.
 
 ### The signal level
 
@@ -290,12 +359,13 @@ without a PD mini by an IOmcu of link version 4.15 or later.
 | Row | Button | Does |
 | --- | --- | --- |
 | PORT | **CONNECT**, **ABORT**, **LEAVE** | takes the port, ends the running operation, [gives the port back](#leaving) |
-| SERVO, then SERVO V6 or SERVO V8 | **READ ALL** | reads the 32 registers, each until 3 of at most 5 reads agree; the row then names [the servo type](#the-servo-type) |
+| SERVO | **READ ALL** | reads the 32 registers, each until 3 of at most 5 reads agree |
+| TYPE | `--`, `V6?`, `V8?`, **V6**, **V8** | [the servo type](#the-servo-type) the operator sets; `V6?` is the guess from 20k_sel |
 | FILES | **CHOOSE** | [saves the servo's values to the card and loads a file](#servo-files) |
-| RESTORE | **CHOOSE** | [writes a backup back](#restore) |
 | MORE | **CHOOSE** | in PWM [what CONNECT sets](#the-supply); in programming mode [VERIFY, DISCARD EDITS, RELEASE PAIRING](#more) |
 | ENABLE WRITE TO SERVO | **OFF**, **ON** | [the write switch](#the-write-switch) |
-| CHANGES | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values](#writing) |
+| RESTORE | **CHOOSE** | [writes a backup back](#restore) |
+| (no label) | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values](#writing) |
 
 In PWM with a PD mini answering the PORT row reads `PORT  5.0V  1000mA`:
 the voltage and the current limit that **CONNECT** sets. A row whose button
@@ -303,7 +373,8 @@ is drawn off takes no tap: **FILES** outside programming mode and while the
 servo is in doubt, **RESTORE** while an operation runs, the write switch
 where [it is refused](#the-write-switch).
 
-Below the rows stand the port's state, the servo type, the name of the
+Below the rows stand the port's state, the servo type or what the state
+needs, the name of the
 session's backup file and the last message. A message in the warning colour is a refusal or a result
 that needs a second look; one in the danger colour says the servo's content
 is in doubt.
@@ -437,7 +508,7 @@ servo's, it is the value last read. The warnings of
 
 | Row | Field |
 | --- | --- |
-| TYPE | 20k_sel, shown as [the servo type](#the-servo-type), V6 or V8 |
+| 20K SEL | 20k_sel, ON or OFF: a drive setting, not [the servo type](#the-servo-type) |
 | LOCK | Lock |
 | MODE | Servo or Gyro Servo |
 | PROT1 EN, PROT1 CANCLE, PROT1 TIME, PROT1 PWM, POT ERR, POT SAMPLES, PWM ERR | the protection block the vendor tool hides; `PROT1 CANCLE` is the vendor's spelling |
@@ -553,10 +624,11 @@ The bench takes no ARM while the port is held; the check holds against an
 ARMED state the IOmcu reports all the same. A card that does not answer
 ends the write: after 5s for the servo's file, after 3s for the record.
 
-A value written and read back is taken as in effect. The programmer asks
-for no power cycle after a write, and its verify is the read-back of the
-same session. Whether a servo acts on a written value before its next
-power-up is not measured.
+A value written and read back is stored in the servo; it acts from the
+servo's next power-up ([the power cycle](#the-power-cycle)). A write does
+not cycle the supply: its verify is the read-back of the same session, in
+programming mode. **LEAVE** after the write cycles the supply with a PD
+mini, and the message after the write says so.
 
 Only registers whose value changes are written. Register 00 is never
 written; register 1D is written by **RELEASE PAIRING** only.
@@ -633,13 +705,40 @@ each page and waits at most 5s for it.
 
 ### The servo type
 
-A servo and a file are V6 or V8. The 20k_sel field decides: 1 is V6, a
-20kHz drive; 0 is V8, a 333Hz drive. No other register enters the type.
-Once a servo is read, the **SERVO** row reads `SERVO V6` or `SERVO V8` and
-the line below the rows says `Servo type V6: 20kHz drive.` The type is
-never edited and never written.
+A servo and a file are V6 or V8. No register holds the series: the
+manufacturer states 20k_sel, register 04 bit 6, as set for V6 (20kHz
+drive) and clear for V8 (333Hz drive) at the factory, and the bit is a
+drive setting. On the bench V8 wing servos read with 20k_sel set and a V8
+servo that is no wing servo with it clear; the models were not recorded.
+The operator therefore sets the type:
 
+- Once a servo is read, **TYPE** shows the type 20k_sel suggests with a
+  question mark, `V6?` or `V8?`, and the line under the state reads
+  `Type not set. 20k_sel suggests V6: check the servo's label, set TYPE.`
+  in the warning colour.
+- A tap on **TYPE** opens `SERVO TYPE, AS ON THE SERVO'S LABEL` with **V6**
+  and **V8**. The choice shows without the mark, and the line reads
+  `Servo type V6, set on TYPE.`
+- The type is the session's: **LEAVE**, a lost session and a restart of the
+  IOmcu clear it. A second **READ ALL** keeps it. It is never written to
+  the servo; 20k_sel stays as read, on the LOCKED tab as **20K SEL**.
+- A save writes the type set into the file's type line; with no type set
+  the file has no type line.
+- A load compares the file's type line with the type set. A tap on a file
+  with no type set opens `SERVO TYPE BEFORE THE LOAD` first; the choice
+  sets the type and the load follows, **CANCEL** loads nothing.
+
+![The TYPE list](img/servo-kst-type.png)
+![A type set](img/servo-kst-type-set.png)
+![The type asked before a load](img/servo-kst-type-first.png)
 ![A V8 servo and a V6 file](img/servo-kst-file-v6.png)
+
+A file of format 1, written by firmware 0.23.0 and older, names the type
+20k_sel gave. That line is no statement of the operator's: the list shows
+no type for the file, and it loads into a servo of either type set. Its
+type line still has to agree with its own 20k_sel, or the file is refused
+as before. An edited format-1 file loads as an edited file without a type
+line.
 
 ### Saving
 
@@ -755,7 +854,8 @@ write page and its 2s hold.
 | Edited, with a type line and no checksum line | the same, and `Edited file: 27 of 27 values, checked as manual entries.` |
 | Edited, without a type line | the same, and `Edited file, no servo type: 27 of 27 values, checked as manual entries.` |
 | Holds the servo's editable values | `KST001 matches the servo settings. Nothing to write.` |
-| Of the other servo type | `File is V8, servo is V6. Not loaded.` |
+| Of another type than the one set on **TYPE** | `File is V8, TYPE is V6. Not loaded.` |
+| Tapped with no type set | the list `SERVO TYPE BEFORE THE LOAD`; the load follows the choice. The model's own refusal reads `Set the servo TYPE first: V6 or V8, as the servo's label states.` |
 | Checksum line present and wrong | `File damaged: checksum mismatch. Not loaded.` `Without the checksum line, it is treated as an edited file.` |
 | Not a servo file | `Not a servo settings file. Not loaded.` |
 | A line that does not read | `Cannot read line 12. File not loaded.` |
@@ -792,16 +892,16 @@ values into the draft. **CANCEL** leaves the draft as it was.
 A load writes the editable fields only. These stay as the servo holds
 them, whatever the file says:
 
-- the servo type, 20k_sel,
+- 20k_sel,
 - Lock,
 - the mode, Servo or Gyro Servo,
 - the protection block of the LOCKED tab,
 - the pairing value, register 1D,
 - register 00 and every bit that belongs to no named field.
 
-A file that differs there is loaded, and the difference is counted: `2 locked values differ. They will not be written.`, or `1 locked value differs. It will not be written.` The LOCKED tab marks each such value with `!`. A file without a type line that holds the other type's
-20k_sel is loaded the same way, since nothing but the type line denies a
-load.
+A file that differs there is loaded, and the difference is counted: `2 locked values differ. They will not be written.`, or `1 locked value differs. It will not be written.` The LOCKED tab marks each such value with `!`. A file whose
+20k_sel differs from the servo's is loaded the same way: the type line, held
+to the type set on **TYPE**, is the one check of the type.
 
 ![Locked values that differ](img/servo-kst-file-locked.png)
 
@@ -906,6 +1006,17 @@ until the next run's first write or a start of the panel, and RESTORE offers it 
 `Settings before the limit run.`. While the run holds the port, the screen's
 TARGET row and the run's box name it: `PROG PORT 1 GPIO 13`.
 
+Every session of the run is a session of the programmer, and the
+[power cycle](#the-power-cycle) holds for it: with the PD mini's output on,
+each **CONNECT** switches it off for 1s and on, and the **LEAVE** after the
+write does the same, so the check after the write searches the servo as it
+acts on the new values. Without a PD mini the run cannot switch the servo
+off and on: SEARCH + PROGRAM and SERVO PULSES at 1000-2000 are not offered,
+the LIMIT RUN card says
+`PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`, and the run
+reads the servo and searches only. The report names 20k_sel as read, not a
+type.
+
 A run aborted inside a session leaves the port in programming mode with
 the values last written. LEAVE gives it back to PWM; CONNECT and READ ALL
 offer the restore. A run that fails inside a session gives the port back
@@ -993,11 +1104,14 @@ programmer reads the servo and writes nothing to it.
 ## Leaving
 
 **LEAVE**, or **CLOSE** in programming mode, asks to end the session and
-to return the port to servo PWM. The programmer does this without a supply
-cycle: the servo stays powered, a PD mini's output stays on at its voltage
-and current limit, and the tester's signal follows on the same port.
-Whether a servo that received a frame follows PWM before its supply was
-off is not measured.
+to return the port to servo PWM. After a write, a restore or a pairing
+release, with a PD mini answering, the way back runs through
+[the power cycle](#the-power-cycle): the output off for 1000ms, on, the
+line low for 1000ms, then PWM. In every other case the programmer leaves
+without a supply cycle: the servo stays powered, a PD mini's output stays
+on at its voltage and current limit, and the tester's signal follows on the
+same port. Whether a servo that received frames and no write follows PWM
+before its supply was off is not measured.
 
 Leaving the SERVO screen is no LEAVE: the session and the port stay. A PD
 mini output SERVO switched on -- by OUTPUT ON, by a test or by
@@ -1010,7 +1124,11 @@ after the leave. The output goes off when the port lets go -- a
 switches the supply off -- unless SERVO is shown again first. After
 **LEAVE** on SERVO the output stays on until SERVO is left.
 
-LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.` The
+LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.`
+After a write with a PD mini the first line is
+`The PD mini output goes off for 1s and on, then the port returns to servo PWM.`, and **HOLD 2s TO LEAVE** sends the port's REBOOT operation
+in place of LEAVE. After a write without one the page adds
+`The written values act after the servo's supply is switched off and on.` The
 page warns before changed values are lost and before a session ends that
 could still restore a servo in doubt. **HOLD 2s TO LEAVE** sends the
 port's LEAVE operation of link version 4.15. No frame goes to the servo and
@@ -1023,6 +1141,7 @@ generator.
 The page is the same with a PD mini answering.
 
 ![LEAVE with a PD mini](img/servo-kst-leave-supply.png)
+![LEAVE with nothing written](img/servo-kst-leave-plain.png)
 
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
@@ -1033,7 +1152,9 @@ read.
 
 ### The wait before PWM
 
-**WAIT BEFORE PWM** is 0 to 10 000ms, 100ms by default. The keypad takes
+**WAIT BEFORE PWM** is 0 to 10 000ms, 100ms by default. A **LEAVE** that
+runs through the power cycle does not apply it: the port holds the line
+low for 1000ms after the supply reads on, whatever the setting. The keypad takes
 no value above 10 000ms, and no leave is sent with one. A wait of 0ms
 ends at the IOmcu's next pass. The time left of a running wait is not
 shown. The wait a servo needs is not measured.
@@ -1042,7 +1163,7 @@ shown. The wait a servo needs is not measured.
 | --- | --- |
 | **ABORT** | the port stays in programming mode with the session as it was; `Leaving was interrupted before the waiting time ended.`; **LEAVE** is taken again at once |
 | **STOP** or a switch to SAFE of the bench, no PD mini answering | the same line; the port stays in programming mode and asks for **READ ALL** |
-| The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 2000ms, then the port is in PWM |
+| The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 1000ms, then the port is in PWM |
 | The link goes | as [a loss of the link](#stops-and-losses) |
 
 ### A port that is not left
@@ -1073,14 +1194,14 @@ Link versions 4.13 and 4.14 have no LEAVE. The panel sends none to them.
 | yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires IOmcu firmware 0.17.0 or later.` and `STOP ends the session and switches the supply off.` |
 
 With a PD mini on such an IOmcu, **STOP** or the supply's output
-switched off ends the session: the supply stays off for 2000ms and the
+switched off ends the session: the supply stays off for 1000ms and the
 port is in PWM again.
 
 ## Stops and losses
 
 | Event | Effect |
 | --- | --- |
-| **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 2000ms after it reads off |
+| **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 1000ms after it reads off |
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
 | The IOmcu starts again | its session and backup are gone; `IOmcu restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
@@ -1124,11 +1245,23 @@ line. [The link page](LinkKST.md) lists the codes.
   point where the control task drops a withdrawn command, the hand-over
   of the port's state to the page and the tester, and the card's file
   calls.
-- Whether a servo follows PWM while it is in programming mode is not
-  measured. The programmer leaves programming without a supply cycle and
-  drives the port with PWM afterwards.
-- Whether a written value acts before the servo's next power-up is not
-  measured. The programmer treats a value that reads back as in effect.
+- Whether a servo follows PWM after a session without a write, before its
+  supply was off, is not measured. The programmer leaves such a session
+  without a supply cycle.
+- **VERIFY** after a write reads the registers in programming mode, before
+  the power-up the values act from. It does not show what the servo acts
+  on; a **CONNECT** after **LEAVE** reads that.
+- A **LEAVE** through the power cycle holds the line low for 1000ms after
+  the supply reads on and does not apply **WAIT BEFORE PWM**.
+- 1000ms off is the owner's value. The shortest time without power that
+  ends programming mode or makes a written value act is not measured; 4s
+  and more worked on one Chaservo. Whether KST servos need the cycle as
+  the Chaservo does is not measured.
+- Without a PD mini the operator powers the servo up 1s before the sync
+  goes. The longest time after a power-up a servo still takes the sync is
+  not measured.
+- The type set on **TYPE** is the operator's word. The panel cannot check
+  it: no register holds the series.
 - With a PD mini answering and an IOmcu older than link version 4.15,
   the port is not left from the programmer: **STOP** or the supply's output
   switched off ends the session, with the supply off.
@@ -1153,8 +1286,8 @@ line. [The link page](LinkKST.md) lists the codes.
   then the only copy of the servo as found and ends with **LEAVE**, an
   IOmcu restart or a power loss of the bench.
 - A session's first write with a mounted card needs free space on it.
-- A servo file carries the servo type, V6 or V8, and no other identity.
-  A file of one V8 servo loads into any V8 servo.
+- A servo file carries the servo type the operator set, V6 or V8, and no
+  other identity. A file of one V8 servo loads into any servo set as V8.
 - A servo file restores the editable fields only:
   [what it does not restore](#what-a-file-does-not-restore).
 - The list shows 5 files a page, sorted by name, and has no search. Files
@@ -1195,25 +1328,30 @@ line. [The link page](LinkKST.md) lists the codes.
 
 ## Measurements still open
 
-None of these is done.
+Items 2, 4, 7 and 14 hold what one bench session on a Chaservo showed
+(2026-10-16); the rest is not done.
 
 1. The line's electricals on the port's path: levels of bench and servo,
    which side holds the line low at idle, the pull-down, the servo's output
    impedance, and the time both sides drive.
-2. The motor's state in programming mode, and whether a written value acts
-   at once.
+2. The motor's state in programming mode. A written value does not act
+   at once: a Chaservo acted on LEFT ANGLE and RIGHT ANGLE only after its
+   supply was off and on again. Other registers are not measured.
 3. What the servo does with a PWM pulse in programming mode, and with a
    frame outside it.
-4. Persistence: whether a written value survives a power cycle, and
-   whether a commit step exists.
+4. Persistence: a written value survived one power cycle on a Chaservo.
+   More than one cycle and a commit step are not measured.
 5. Write reliability: 1000 writes with read-back, the count that do not
    take, the count of registers that change unasked, the spread of the
    reply delay.
 6. The read error rate on a 1m lead with other servos moving on
    neighbouring outputs: 100,000 reads.
-7. The timing of entry and of exit: how long without power ends
-   programming mode, whether a servo follows PWM after programming without
-   a power cycle, and the wait it needs before the first pulse.
+7. The timing of entry and of exit. A Chaservo entered programming mode
+   only from a power-up, with the sync 1000ms after it, and followed no PWM
+   after a write until its supply was off for 4s or more. Open: the
+   shortest time without power, the longest time after a power-up a servo
+   takes the sync, whether a servo follows PWM after a session without a
+   write, the wait it needs before the first pulse, and KST servos.
 8. The function of each editable setting on a servo that may be lost:
    position, travel time, stall current, standing current and oscillation
    against the value.
@@ -1226,8 +1364,10 @@ None of these is done.
     enforces the ranges it labels.
 12. A servo written here is read by the vendor tool with its card.
 13. The model of the servo the layout was taken from.
-14. Whether 20k_sel separates the servo generations as the type rule
-    assumes: 1 servo is recorded, and no V8 servo has been read.
+14. 20k_sel does not separate the generations: V8 servos were connected,
+    the wing servos read with 20k_sel set, as V6 would, and a servo that is
+    no wing servo with it clear. The models were not recorded. The operator
+    sets the type.
 15. A save, a list and a load on a card: the time each takes against the
     5s limit, and a card removed during a save.
 
@@ -1258,6 +1398,22 @@ fails, and the timeouts across the 2^32ms wrap of the clock. `test_kst_panel_fil
 servo files against a card model: every name result, every kind of file,
 both servo types and their mismatch in both directions, every refusal,
 the 5s limit, a first write with a card that is full or failing.
+`test_kst_prog_cycle` runs the power cycle against the IOmcu's port, a
+PD mini model whose output powers the servo model, and a servo that enters
+programming mode from a power-up only and acts on a written value from the
+next one: **CONNECT** with the output on (off, still off and no sync at
+999ms, on at 1000ms, the sync 1000ms after the power-up), with the output
+off and without a PD mini; **ABORT**, **STOP**, an arm, a target change and
+a link loss in the off time; the cycle across the 2^32ms wrap of the
+clock; **LEAVE** after a write with and without a PD mini, without a
+write, with **ABORT**, **STOP** and a link loss in its cycle, on an IOmcu
+without LEAVE and for a session the panel did not see begin.
+`test_kst_panel_type` runs the TYPE row, the type asked before a load, a
+cancelled list, a save of the type set, the lines after a write and on
+LEAVE's page with and without a PD mini. `test_kst_panel_limrun` runs the
+limit run with the servo behind the PD mini's output, and without a PD
+mini, where it writes nothing. `test_kst_file` runs format 1 and format 2
+files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
 removed under the write page. A command the control task takes after

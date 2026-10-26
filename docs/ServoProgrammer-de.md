@@ -78,10 +78,18 @@ bevor man sich auf ein Schreiben verlässt.
   **VERBINDEN** ([die Versorgung](#die-versorgung)). Ohne einen stellt der
   Prüfstand die Versorgung nicht, und der Programmierer nimmt sie, wie sie
   ist.
-- Der Programmierer nimmt an, dass ein Servo kein Aus- und Einschalten
-  braucht: weder, damit ein geschriebener Wert wirkt, noch, um nach dem
-  Programmieren PWM zu folgen. Keines von beidem ist gemessen
-  ([Einschränkungen](#einschränkungen)).
+- Ein Servo tritt nur aus einem Einschalten in den Programmiermodus ein
+  und handelt nach einem geschriebenen Wert erst ab seinem nächsten
+  Einschalten. Ein Chaservo am Prüfstand (2026-10-16) überging die
+  Einstiegssequenz bei eingeschalteter Versorgung und folgte nach einem
+  Schreiben keinem PWM, bis seine Versorgung 4s aus und wieder an war. Mit
+  einem antwortenden PD mini schaltet der Programmierer die Versorgung bei
+  **VERBINDEN** mit eingeschaltetem Ausgang und bei **VERLASSEN** nach
+  einem Schreiben 1s aus und wieder ein; ohne ihn tut es der Bediener
+  ([der Versorgungszyklus](#der-versorgungszyklus)).
+- Der Bediener setzt den Servotyp, V6 oder V8, in der Zeile **TYPE**
+  ([der Servotyp](#der-servotyp)). Der Vorschlag des Panels aus 20k_sel ist
+  eine Vermutung und als solche markiert.
 - Ob eine gegebene Hardware die Antwort des Servos zum Pin zurückführt,
   weiß der IOmcu nicht. Ein Servo an einem Port, der es nicht tut,
   beendet **VERBINDEN** mit
@@ -162,9 +170,12 @@ PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
 | Zustand | Zeile auf dem Reiter SERVO | Der Port führt |
 | --- | --- | --- |
-| PWM, ein PD mini antwortet | `Tester nutzt Port 1. VERBINDEN stellt 5.0V und 1000mA ein.` | die Pulse des Testers |
-| PWM, kein PD mini | `Tester nutzt Port 1. Kein PD mini: Versorgung bleibt unverändert.` | die Pulse des Testers |
+| PWM, ein PD mini antwortet, sein Ausgang aus | `Tester nutzt Port 1. VERBINDEN stellt 5.0V und 1000mA ein.` | die Pulse des Testers |
+| PWM, ein PD mini antwortet, sein Ausgang ein | dasselbe und `VERBINDEN schaltet den Ausgang 1s aus und wieder ein: das Servo startet in den Programmiermodus.` | die Pulse des Testers |
+| PWM, kein PD mini | `Tester nutzt Port 1. Kein PD mini: Versorgung bleibt unverändert.` und in der Warnfarbe `Servoversorgung aus- und einschalten, 1s später VERBINDEN tippen. Der Sync folgt 250ms danach.` | die Pulse des Testers |
 | Verbinden | `Verbindung an Port 1 wird aufgebaut. PWM ist aus.` | 50ms keinen Puls, dann 100ms Low, dann die Einstiegssequenz |
+| Die Versorgung aus, bei **VERBINDEN** mit eingeschaltetem Ausgang oder bei **VERLASSEN** nach einem Schreiben | `Port 1: Versorgung 1s aus. PWM ist aus.` | keinen Puls; die Leitung auf Low |
+| Die Versorgung wieder an | `Port 1: Versorgung an, das Servo startet 1s lang. PWM ist aus.` | die Leitung 1000ms auf Low, dann die Einstiegssequenz, oder PWM nach **VERLASSEN** |
 | Programmieren | `Port 1 ist im Programmiermodus. PWM ist aus.` | nur Frames |
 | Programmieren, die Versorgung gelesen | `Port 1 im Programmiermodus. PWM aus. 5.00V, 37mA.` | nur Frames |
 | Arbeiten | `Vorgang läuft: 12 Frames.` | die Frames des laufenden Vorgangs |
@@ -210,6 +221,69 @@ PROGRAMMIEREN wieder offen.
 | `IOmcu hat die Verbindung noch nicht freigegeben. Erneut versuchen.` | der IOmcu vertraut dem Heartbeat nicht, oder der Link war still |
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
+
+### Der Versorgungszyklus
+
+Ein KST- oder Chaservo-Servo tritt nur in den Programmiermodus ein, wenn
+der Sync der Einstiegssequenz nach einem Einschalten kommt, und es handelt
+nach einem geschriebenen Wert erst ab seinem nächsten Einschalten. Ein
+Chaservo, als V6 gelesen, zeigte beides am Prüfstand (2026-10-16):
+
+| Ausgangslage | Ergebnis |
+| --- | --- |
+| Das Servo im Leerlauf, der Ausgang des PD mini an mit 5,00V | **VERBINDEN** nahm den Port; **ALLES AUSLESEN** las nichts: `Servo nicht im Programmiermodus.` |
+| Der Ausgang aus, **VERBINDEN** schaltet ihn ein | das Servo trat in den Programmiermodus ein; alle 32 Register gelesen |
+| LEFT ANGLE und RIGHT ANGLE geschrieben und geprüft, **VERLASSEN** | das Servo folgte keinem PWM: das Ruderhorn blieb bei Pulsen von 1000us und 2000us innerhalb von 0,6deg |
+| Der Ausgang 4s oder länger aus, dann an | das Servo folgte PWM mit den geschriebenen Werten: etwa 52deg Weg; der Weg vor dem Schreiben ist nicht gemessen |
+| Die alten Werte zurückgeschrieben, der Ausgang aus und an | etwa 149deg Weg |
+
+Das Panel schaltet die Versorgung deshalb aus und ein, wo es kann:
+
+| Schritt | Ein PD mini antwortet, sein Ausgang an | Ein PD mini antwortet, sein Ausgang aus | Kein PD mini |
+| --- | --- | --- | --- |
+| **VERBINDEN** | der Ausgang 1000ms aus, an mit der niedrigeren der zwei Spannungen und der niedrigeren der zwei Stromgrenzen, die Leitung 1000ms auf Low, dann die Einstiegssequenz | der Ausgang an, die Leitung 1000ms auf Low, dann die Einstiegssequenz | die Einstiegssequenz 250ms nach dem Tippen: 50ms ohne Puls, 100ms Low, 100ms der Low-Leitung des Einstiegs. Der Bediener schaltet das Servo kurz davor ein |
+| **VERLASSEN** nach einem Schreiben, Zurückspielen oder Lösen des Pairings | der Ausgang 1000ms aus, an, die Leitung 1000ms auf Low, dann PWM | -- | der Port kehrt zu PWM zurück; die Werte wirken, nachdem der Bediener die Servoversorgung aus- und wieder eingeschaltet hat |
+| **VERLASSEN** ohne Geschriebenes | der Port kehrt nach **WARTEZEIT VOR PWM** zu PWM zurück; die Versorgung bleibt, wie sie ist | dasselbe | dasselbe |
+| Ein Schreiben | kein Zyklus: das Rücklesen läuft im Programmiermodus | dasselbe | dasselbe |
+
+Ohne PD mini nennt die Zeile unter dem Zustand den Schritt:
+`Servoversorgung aus- und einschalten, 1s später VERBINDEN tippen. Der Sync folgt 250ms danach.` Der Port macht einen Versuch des Einstiegs und
+wiederholt ihn nicht. Der Sync geht 250ms nach dem Tippen, ein Tippen 1s
+nach dem Einschalten legt ihn also 1250ms nach das Einschalten, nahe an die
+1000ms, die der Port einem selbst eingeschalteten Servo lässt. Wie lange
+nach einem Einschalten ein Servo den Sync noch annimmt, ist nicht gemessen:
+das Chaservo des Prüfstands nahm ihn 1000ms danach, ein KST-Servo an der
+Karte des Herstellers etwa 3s danach.
+
+Nach einem Schreiben trägt die Meldung eine zweite Zeile: mit PD mini
+`Die Werte wirken nach VERLASSEN: es schaltet die Versorgung 1s aus und wieder ein.`,
+ohne ihn `Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.`
+PROGRAMMIERMODUS VERLASSEN nennt dasselbe, und die Meldung danach sagt,
+was geschah: `Der Port ist wieder im Testermodus.` und
+`Versorgung 1s aus und wieder ein: die geschriebenen Werte wirken.`, oder
+ohne PD mini noch einmal den Hinweis.
+
+![VERBINDEN mit eingeschaltetem Ausgang](img/de/servo-kst-supply-on.png)
+![Die 1s aus](img/de/servo-kst-cycling.png)
+![Ein Schreiben mit PD mini](img/de/servo-kst-written-supply.png)
+![VERLASSEN nach einem Schreiben mit PD mini](img/de/servo-kst-leave-cycle.png)
+![Zurück in PWM nach dem Zyklus](img/de/servo-kst-left-cycled.png)
+![VERLASSEN nach einem Schreiben ohne PD mini](img/de/servo-kst-leave-note.png)
+![Zurück in PWM ohne PD mini](img/de/servo-kst-left-note.png)
+
+**ABBRECHEN**, **STOP**, ein ARM oder ein Wechsel von **SERVO-TESTER** in
+den 1000ms aus beendet **VERBINDEN** dort: kein Einstieg folgt, und der
+Ausgang bleibt aus. **ABBRECHEN** sagt
+`Der Versorgungszyklus wurde abgebrochen. Der Ausgang des PD mini bleibt aus.`;
+**STOP** sagt seine eigene Zeile. Ein Link, der in den 1000ms aus
+verloren geht, sendet danach nichts, und der Ausgang bleibt aus.
+**ABBRECHEN** oder **STOP** im Zyklus von **VERLASSEN** beendet die Sitzung
+mit ausgeschaltetem Ausgang.
+
+![Ein Zyklus, durch ABBRECHEN beendet](img/de/servo-kst-cycle-cut.png)
+
+1000ms aus ist der Wert des Eigentümers, das obere Ende seiner Schätzung
+von 500ms bis 1000ms; 4s und mehr ist die einzige gemessene Zeit.
 
 ### Der Signalpegel
 
@@ -320,12 +394,13 @@ beim [Verlassen](#verlassen) an, mit und ohne PD mini.
 | Zeile | Taste | Wirkung |
 | --- | --- | --- |
 | PORT | **VERBINDEN**, **ABBRECHEN**, **VERLASSEN** | nimmt den Port, beendet den laufenden Vorgang, [gibt den Port zurück](#verlassen) |
-| SERVO, dann SERVO V6 oder SERVO V8 | **ALLES AUSLESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen; die Zeile nennt danach [den Servotyp](#der-servotyp) |
+| SERVO | **ALLES AUSLESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
+| TYPE | `--`, `V6?`, `V8?`, **V6**, **V8** | [der Servotyp](#der-servotyp), den der Bediener setzt; `V6?` ist die Vermutung aus 20k_sel |
 | DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
-| ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
 | WEITERES | **WÄHLEN** | in PWM [was VERBINDEN stellt](#die-versorgung); im Programmiermodus [PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN](#weiteres) |
 | SCHREIBEN INS SERVO FREIGEBEN | **AUS**, **EIN** | [der Schreibschalter](#der-schreibschalter) |
-| ÄNDERUNGEN | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte](#schreiben) |
+| ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
+| (keine Beschriftung) | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte](#schreiben) |
 
 In PWM mit einem antwortenden PD mini lautet die Zeile PORT
 `PORT  5.0V  1000mA`: die Spannung und die Stromgrenze, die **VERBINDEN**
@@ -337,7 +412,8 @@ ist, **ZURÜCKSPIELEN**, solange ein Vorgang läuft, der Schreibschalter, wo
 Die Zahlen auf dem Bildschirm haben in beiden Sprachen einen Dezimalpunkt:
 `5.0V`. Diese Seite schreibt Zahlen im Text mit Komma.
 
-Unter den Zeilen stehen der Zustand des Ports, der Servotyp, der Name der
+Unter den Zeilen stehen der Zustand des Ports, der Servotyp oder was der
+Zustand verlangt, der Name der
 Backup-Datei der Sitzung und die letzte Meldung. Eine Meldung in der
 Warnfarbe ist eine Ablehnung oder ein Ergebnis, das einen zweiten Blick
 braucht; eine in der Gefahrenfarbe sagt, dass der Inhalt des Servos unklar
@@ -479,7 +555,7 @@ dem Servo, wie es zuletzt gelesen wurde.
 
 | Zeile | Feld |
 | --- | --- |
-| TYP | 20k_sel, gezeigt als [der Servotyp](#der-servotyp), V6 oder V8 |
+| 20K SEL | 20k_sel, EIN oder AUS: eine Einstellung der Ansteuerung, nicht [der Servotyp](#der-servotyp) |
 | LOCK | Lock |
 | MODE | Servo oder Gyro Servo |
 | PROT1 EN, PROT1 CANCLE, PROT1 TIME, PROT1 PWM, POT ERR, POT SAMPLES, PWM ERR | der Schutzblock, den das Hersteller-Tool verbirgt; `PROT1 CANCLE` ist die Schreibweise des Herstellers |
@@ -603,11 +679,12 @@ solange der Port belegt ist; die Prüfung hält trotzdem gegen ein ARMED, das
 der IOmcu meldet. Eine Karte, die nicht antwortet, beendet das Schreiben:
 nach 5s bei der Datei des Servos, nach 3s beim Vermerk.
 
-Ein geschriebener und zurückgelesener Wert gilt als wirksam. Der
-Programmierer verlangt nach einem Schreiben kein Aus- und Einschalten, und
-sein Prüfen ist das Rücklesen derselben Sitzung. Ob ein Servo vor
-seinem nächsten Einschalten nach einem geschriebenen Wert handelt, ist
-nicht gemessen.
+Ein geschriebener und zurückgelesener Wert steht im Servo; er wirkt ab
+dem nächsten Einschalten des Servos
+([der Versorgungszyklus](#der-versorgungszyklus)). Ein Schreiben schaltet
+die Versorgung nicht: sein Prüfen ist das Rücklesen derselben Sitzung, im
+Programmiermodus. **VERLASSEN** nach dem Schreiben schaltet die Versorgung
+mit PD mini aus und ein, und die Meldung nach dem Schreiben sagt es.
 
 Nur Register, deren Wert sich ändert, werden geschrieben. Register 00 wird
 nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
@@ -689,14 +766,43 @@ darauf.
 
 ### Der Servotyp
 
-Ein Servo und eine Datei sind V6 oder V8. Das Feld 20k_sel entscheidet:
-1 ist V6, Ansteuerung mit 20kHz; 0 ist V8, Ansteuerung mit 333Hz. Kein
-anderes Register geht in den Typ ein. Sobald ein Servo gelesen ist, heißt
-die Zeile **SERVO** `SERVO V6` oder `SERVO V8`, und die Zeile unter den
-Tasten sagt `Servotyp V6: Ansteuerung mit 20kHz.` Der Typ wird nie
-geändert und nie geschrieben.
+Ein Servo und eine Datei sind V6 oder V8. Kein Register hält die Serie:
+der Hersteller gibt 20k_sel, Register 04 Bit 6, ab Werk als gesetzt für V6
+(Ansteuerung mit 20kHz) und gelöscht für V8 (Ansteuerung mit 333Hz) an,
+und das Bit ist eine Einstellung der Ansteuerung. Am Prüfstand lasen
+V8-Flächenservos mit gesetztem 20k_sel und ein V8-Servo, das kein
+Flächenservo ist, mit gelöschtem; die Modelle wurden nicht aufgezeichnet.
+Deshalb setzt der Bediener den Typ:
 
+- Sobald ein Servo gelesen ist, zeigt **TYPE** den Typ, den 20k_sel nahelegt,
+  mit Fragezeichen, `V6?` oder `V8?`, und die Zeile unter dem Zustand lautet
+  in der Warnfarbe
+  `Typ nicht gesetzt. 20k_sel spricht für V6: Etikett prüfen, TYPE setzen.`
+- Ein Tippen auf **TYPE** öffnet `SERVO-TYPE LAUT ETIKETT DES SERVOS` mit
+  **V6** und **V8**. Die Wahl steht ohne Zeichen da, und die Zeile lautet
+  `Servotyp V6, unter TYPE gesetzt.`
+- Der Typ gehört der Sitzung: **VERLASSEN**, eine verlorene Sitzung und ein
+  Neustart des IOmcu löschen ihn. Ein zweites **ALLES AUSLESEN** behält
+  ihn. Er wird nie ins Servo geschrieben; 20k_sel bleibt wie gelesen, auf
+  dem Reiter GESPERRT als **20K SEL**.
+- Ein Speichern schreibt den gesetzten Typ in die Typzeile der Datei; ohne
+  gesetzten Typ hat die Datei keine Typzeile.
+- Ein Laden vergleicht die Typzeile der Datei mit dem gesetzten Typ. Ein
+  Tippen auf eine Datei ohne gesetzten Typ öffnet zuerst
+  `SERVO-TYPE VOR DEM LADEN`; die Wahl setzt den Typ, und das Laden folgt,
+  **ABBRECHEN** lädt nichts.
+
+![Die Liste TYPE](img/de/servo-kst-type.png)
+![Ein gesetzter Typ](img/de/servo-kst-type-set.png)
+![Der Typ vor einem Laden](img/de/servo-kst-type-first.png)
 ![Ein V8-Servo und eine V6-Datei](img/de/servo-kst-file-v6.png)
+
+Eine Datei im Format 1, geschrieben von Firmware 0.23.0 und älter, nennt
+den Typ, den 20k_sel ergab. Diese Zeile ist keine Angabe des Bedieners:
+die Liste zeigt für die Datei keinen Typ, und sie lädt in ein Servo
+jedes gesetzten Typs. Ihre Typzeile muss weiter zu ihrem eigenen 20k_sel
+passen, sonst wird die Datei wie bisher abgelehnt. Eine bearbeitete Datei
+im Format 1 lädt als bearbeitete Datei ohne Typzeile.
 
 ### Speichern
 
@@ -821,7 +927,8 @@ Servo vor dem Schreibschalter, der Schreibseite und deren 2s Halten.
 | Bearbeitet, mit Typzeile und ohne Prüfsummenzeile | dasselbe und `Bearbeitete Datei: 27 von 27 Werten, wie manuelle Eingaben geprüft.` |
 | Bearbeitet, ohne Typzeile | dasselbe und `Bearbeitete Datei ohne Servotyp: 27 von 27 Werten, wie manuelle Eingaben geprüft.` |
 | Enthält die änderbaren Werte des Servos | `KST001 stimmt mit den Servowerten überein. Nichts zu schreiben.` |
-| Vom anderen Servotyp | `Datei ist V8, Servo ist V6. Nicht geladen.` |
+| Von einem anderen Typ als dem unter **TYPE** gesetzten | `Datei ist V8, TYPE ist V6. Nicht geladen.` |
+| Angetippt ohne gesetzten Typ | die Liste `SERVO-TYPE VOR DEM LADEN`; das Laden folgt der Wahl. Die eigene Ablehnung des Modells lautet `Erst den Servo-TYPE setzen: V6 oder V8, wie auf dem Etikett des Servos.` |
 | Prüfsummenzeile vorhanden und falsch | `Datei beschädigt: Prüfsumme stimmt nicht. Nicht geladen.` `Ohne Prüfsummenzeile wird sie als bearbeitete Datei geladen.` |
 | Keine Servodatei | `Keine Servodatei. Nicht geladen.` |
 | Eine Zeile, die sich nicht lesen lässt | `Zeile 12 ist nicht lesbar. Datei nicht geladen.` |
@@ -861,7 +968,7 @@ Entwurf, wie er war.
 Ein Laden schreibt nur die änderbaren Felder. Diese bleiben, wie das Servo
 sie hält, was immer die Datei sagt:
 
-- der Servotyp, 20k_sel,
+- 20k_sel,
 - Lock,
 - der Modus, Servo oder Gyro Servo,
 - der Schutzblock des Reiters GESPERRT,
@@ -871,9 +978,10 @@ sie hält, was immer die Datei sagt:
 Eine Datei, die dort abweicht, wird geladen, und die Abweichung wird
 gezählt: `2 gesperrte Werte weichen ab. Sie werden nicht geschrieben.` oder
 `1 gesperrter Wert weicht ab. Er wird nicht geschrieben.` Der Reiter GESPERRT
-markiert jeden solchen Wert mit `!`. Eine Datei ohne Typzeile, die das
-20k_sel des anderen Typs enthält, wird genauso geladen, denn nur die
-Typzeile lehnt ein Laden ab.
+markiert jeden solchen Wert mit `!`. Eine Datei, deren
+20k_sel von dem des Servos abweicht, wird genauso geladen: die Typzeile,
+gegen den unter **TYPE** gesetzten Typ gehalten, ist die einzige Prüfung
+des Typs.
 
 ![Gesperrte Werte, die abweichen](img/de/servo-kst-file-locked.png)
 
@@ -995,6 +1103,17 @@ Lauf hält dieses Lesen im Speicher des Panels bis zum ersten Schreiben des näc
 einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
 und das Feld des Laufs ihn: `PROG-PORT 1 GPIO 13`.
 
+Jede Sitzung des Laufs ist eine Sitzung des Programmierers, und
+[der Versorgungszyklus](#der-versorgungszyklus) gilt für sie: mit
+eingeschaltetem Ausgang des PD mini schaltet jedes **VERBINDEN** ihn 1s aus
+und wieder ein, und das **VERLASSEN** nach dem Schreiben ebenso, sodass
+die Prüfung nach dem Schreiben das Servo mit den neuen Werten sucht. Ohne
+PD mini kann der Lauf das Servo nicht aus- und einschalten: SUCHEN +
+PROGRAMMIEREN und SERVOPULSE auf 1000-2000 werden nicht angeboten, die
+Karte ENDLAGENLAUF sagt
+`PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, und der Lauf liest
+das Servo und sucht nur. Der Bericht nennt 20k_sel wie gelesen, keinen Typ.
+
 Ein Lauf, der in einer Sitzung abgebrochen wird, lässt den Port im
 Programmiermodus mit den zuletzt geschriebenen Werten. VERLASSEN gibt ihn
 an PWM zurück; VERBINDEN und ALLES AUSLESEN bieten das Zurückspielen an. Ein
@@ -1090,12 +1209,16 @@ liest der Programmierer das Servo und schreibt nichts darauf.
 ## Verlassen
 
 **VERLASSEN**, oder **SCHLIESSEN** im Programmiermodus, verlangt, die
-Sitzung zu beenden und den Port an Servo-PWM zurückzugeben. Der
-Programmierer tut das ohne Aus- und Einschalten der Versorgung: das Servo
+Sitzung zu beenden und den Port an Servo-PWM zurückzugeben. Nach einem
+Schreiben, einem Zurückspielen oder einem Lösen des Pairings läuft der Weg
+zurück mit antwortendem PD mini durch
+[den Versorgungszyklus](#der-versorgungszyklus): der Ausgang 1000ms aus,
+an, die Leitung 1000ms auf Low, dann PWM. In jedem anderen Fall verlässt
+der Programmierer ohne Aus- und Einschalten der Versorgung: das Servo
 bleibt versorgt, der Ausgang eines PD mini bleibt mit seiner Spannung und
 Stromgrenze an, und das Signal des Testers folgt auf demselben Port. Ob ein
-Servo, das einen Frame erhalten hat, PWM folgt, bevor seine Versorgung
-aus war, ist nicht gemessen.
+Servo, das Frames und kein Schreiben erhalten hat, PWM folgt, bevor seine
+Versorgung aus war, ist nicht gemessen.
 
 Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port
 bleiben. Ein Ausgang des PD mini, den SERVO eingeschaltet hat -- mit
@@ -1112,7 +1235,13 @@ ausschaltet --, außer SERVO wird vorher wieder gezeigt. Nach
 
 PROGRAMMIERMODUS VERLASSEN öffnet mit
 `Der Port wechselt zurück zu Servo-PWM. Die Versorgung bleibt unverändert.` und
-`Das Servo erhält wieder das Testsignal und kann sich bewegen.` Die Seite
+`Das Servo erhält wieder das Testsignal und kann sich bewegen.`
+Nach einem Schreiben mit PD mini lautet die erste Zeile
+`Der Ausgang des PD mini geht 1s aus und wieder ein, dann wechselt der Port zu Servo-PWM.`,
+und **2s HALTEN ZUM VERLASSEN** sendet den Vorgang REBOOT des Ports statt
+LEAVE. Nach einem Schreiben ohne PD mini fügt die Seite
+`Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.`
+hinzu. Die Seite
 warnt, bevor geänderte Werte verloren gehen und bevor eine Sitzung endet,
 die ein unklares Servo noch zurückspielen könnte. **2s HALTEN ZUM VERLASSEN**
 für 2s sendet den Vorgang LEAVE des Ports aus der Link-Version 4.15. Kein
@@ -1125,6 +1254,7 @@ gibt den Pin dann an den PWM-Generator.
 Die Seite ist dieselbe, wenn ein PD mini antwortet.
 
 ![VERLASSEN mit einem PD mini](img/de/servo-kst-leave-supply.png)
+![VERLASSEN ohne Geschriebenes](img/de/servo-kst-leave-plain.png)
 
 Die Zustandszeile zeigt
 `Programmiermodus wird verlassen. PWM ist noch aus.`, und die
@@ -1136,7 +1266,10 @@ mit **SERVO-TESTER** auf diesem Port und **PORT-PWM** ein. Das nächste
 
 ### Das Warten vor PWM
 
-**WARTEZEIT VOR PWM** ist 0 bis 10 000ms, ab Werk 100ms. Der Ziffernblock
+**WARTEZEIT VOR PWM** ist 0 bis 10 000ms, ab Werk 100ms. Ein
+**VERLASSEN** durch den Versorgungszyklus wendet sie nicht an: der Port
+hält die Leitung 1000ms auf Low, nachdem die Versorgung an liest, wie
+auch immer die Einstellung ist. Der Ziffernblock
 nimmt keinen Wert über 10 000ms an, und mit einem solchen wird kein
 Verlassen gesendet. Ein Warten von 0ms endet beim nächsten Durchlauf des
 IOmcu. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
@@ -1146,7 +1279,7 @@ Das Warten, das ein Servo braucht, ist nicht gemessen.
 | --- | --- |
 | **ABBRECHEN** | der Port bleibt im Programmiermodus, die Sitzung wie zuvor; `Verlassen wurde vor dem Ende der Wartezeit unterbrochen.`; **VERLASSEN** wird sofort wieder angenommen |
 | **STOP** oder ein Wechsel des Prüfstands auf SAFE, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES AUSLESEN** |
-| Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 2000ms aus, dann ist der Port in PWM |
+| Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 1000ms aus, dann ist der Port in PWM |
 | Der Link fällt aus | wie [ein Ausfall des Links](#stopps-und-ausfälle) |
 
 ### Ein Port, der nicht verlassen wird
@@ -1179,13 +1312,13 @@ keines.
 
 Mit einem PD mini an einem solchen IOmcu beendet **STOP** oder der
 ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
-2000ms aus, und der Port ist wieder in PWM.
+1000ms aus, und der Port ist wieder in PWM.
 
 ## Stopps und Ausfälle
 
 | Ereignis | Wirkung |
 | --- | --- |
-| **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 2000ms, nachdem er aus liest, wieder in PWM |
+| **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 1000ms, nachdem er aus liest, wieder in PWM |
 | **ABBRECHEN** | dasselbe, ohne den gehaltenen Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. VERBINDEN, dann ALLES AUSLESEN tippen.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
@@ -1239,12 +1372,24 @@ Codes.
   Control-Task, die Stelle, an der die Control-Task ein zurückgezogenes
   Kommando verwirft, die Übergabe des Portzustands an die Seite und den
   Tester, und die Dateiaufrufe der Karte.
-- Ob ein Servo PWM folgt, während es im Programmiermodus ist, ist nicht
-  gemessen. Der Programmierer verlässt das Programmieren ohne Aus- und
-  Einschalten der Versorgung und treibt den Port danach mit PWM.
-- Ob ein geschriebener Wert vor dem nächsten Einschalten des Servos wirkt,
-  ist nicht gemessen. Der Programmierer behandelt einen Wert, der sich
-  zurücklesen lässt, als wirksam.
+- Ob ein Servo nach einer Sitzung ohne Schreiben PWM folgt, bevor seine
+  Versorgung aus war, ist nicht gemessen. Der Programmierer verlässt eine
+  solche Sitzung ohne Versorgungszyklus.
+- **PRÜFEN** nach einem Schreiben liest die Register im Programmiermodus,
+  vor dem Einschalten, ab dem die Werte wirken. Es zeigt nicht, wonach das
+  Servo handelt; ein **VERBINDEN** nach **VERLASSEN** liest das.
+- Ein **VERLASSEN** durch den Versorgungszyklus hält die Leitung 1000ms auf
+  Low, nachdem die Versorgung an liest, und wendet **WARTEZEIT VOR PWM**
+  nicht an.
+- 1000ms aus ist der Wert des Eigentümers. Die kürzeste Zeit ohne
+  Spannung, die den Programmiermodus beendet oder einen geschriebenen Wert
+  wirken lässt, ist nicht gemessen; 4s und mehr wirkten an einem Chaservo.
+  Ob KST-Servos den Zyklus brauchen wie das Chaservo, ist nicht gemessen.
+- Ohne PD mini schaltet der Bediener das Servo 1s vor dem Sync ein. Die
+  längste Zeit nach einem Einschalten, in der ein Servo den Sync noch
+  annimmt, ist nicht gemessen.
+- Der unter **TYPE** gesetzte Typ ist die Angabe des Bedieners. Das Panel
+  kann ihn nicht prüfen: kein Register hält die Serie.
 - Antwortet ein PD mini an einem IOmcu vor Link-Version 4.15, wird
   der Port nicht aus dem Programmierer verlassen: **STOP** oder der
   ausgeschaltete Ausgang der Versorgung beendet die Sitzung, mit
@@ -1275,8 +1420,9 @@ Codes.
   Stromausfall des Prüfstands.
 - Das erste Schreiben einer Sitzung mit eingehängter Karte braucht freien
   Platz auf ihr.
-- Eine Servodatei trägt den Servotyp, V6 oder V8, und keine weitere
-  Identität. Die Datei eines V8-Servos lädt in jedes V8-Servo.
+- Eine Servodatei trägt den Servotyp, den der Bediener gesetzt hat, V6
+  oder V8, und keine weitere Identität. Die Datei eines V8-Servos lädt in
+  jedes als V8 gesetzte Servo.
 - Eine Servodatei spielt nur die änderbaren Felder zurück:
   [was sie nicht zurückspielt](#was-eine-datei-nicht-zurückspielt).
 - Die Liste zeigt 5 Dateien je Seite, nach Namen sortiert, und hat keine
@@ -1319,26 +1465,33 @@ Codes.
 
 ## Offene Messungen
 
-Keine davon ist erfolgt.
+Die Punkte 2, 4, 7 und 14 halten fest, was eine Sitzung am Prüfstand mit
+einem Chaservo zeigte (2026-10-16); der Rest ist nicht erfolgt.
 
 1. Die Elektrik der Leitung auf dem Pfad des Ports: Pegel von Prüfstand und
    Servo, welche Seite die Leitung in Ruhe auf Low hält, der Pull-down, die
    Ausgangsimpedanz des Servos und die Zeit, in der beide Seiten treiben.
-2. Der Zustand des Motors im Programmiermodus und ob ein geschriebener Wert
-   sofort wirkt.
+2. Der Zustand des Motors im Programmiermodus. Ein geschriebener Wert
+   wirkt nicht sofort: ein Chaservo handelte nach LEFT ANGLE und RIGHT
+   ANGLE erst, nachdem seine Versorgung aus und wieder an war. Andere
+   Register sind nicht gemessen.
 3. Was das Servo im Programmiermodus mit einem PWM-Puls tut und außerhalb
    davon mit einem Frame.
-4. Persistenz: ob ein geschriebener Wert ein Aus- und Einschalten
-   übersteht und ob es einen Commit-Schritt gibt.
+4. Persistenz: ein geschriebener Wert überstand an einem Chaservo ein Aus-
+   und Einschalten. Mehr als ein Zyklus und ein Commit-Schritt sind nicht
+   gemessen.
 5. Zuverlässigkeit des Schreibens: 1000 Schreibvorgänge mit Rücklesen, die
    Zahl der nicht übernommenen, die Zahl der ungefragt geänderten Register,
    die Streuung der Antwortverzögerung.
 6. Die Lesefehlerrate an 1m Leitung, während andere Servos an
    benachbarten Ausgängen laufen: 100.000 Lesungen.
-7. Das Timing von Einstieg und Ausstieg: wie lange stromlos den
-   Programmiermodus beendet, ob ein Servo nach dem Programmieren ohne Aus-
-   und Einschalten PWM folgt, und das Warten, das es vor dem ersten Puls
-   braucht.
+7. Das Timing von Einstieg und Ausstieg. Ein Chaservo trat nur aus einem
+   Einschalten in den Programmiermodus ein, mit dem Sync 1000ms danach, und
+   folgte nach einem Schreiben keinem PWM, bis seine Versorgung 4s oder
+   länger aus war. Offen: die kürzeste Zeit ohne Spannung, die längste Zeit
+   nach einem Einschalten, in der ein Servo den Sync annimmt, ob ein Servo
+   nach einer Sitzung ohne Schreiben PWM folgt, das Warten, das es vor dem
+   ersten Puls braucht, und KST-Servos.
 8. Die Funktion jeder änderbaren Einstellung an einem Servo, das verloren
    gehen darf: Position, Stellzeit, Blockierstrom, Ruhestrom und Schwingen
    über dem Wert.
@@ -1352,8 +1505,10 @@ Keine davon ist erfolgt.
 12. Ein hier geschriebenes Servo wird vom Hersteller-Tool mit dessen Karte
     gelesen.
 13. Der Typ des Servos, von dem das Layout stammt.
-14. Ob 20k_sel die Servogenerationen so trennt, wie die Typregel annimmt:
-    1 Servo ist aufgezeichnet, und kein V8-Servo ist gelesen worden.
+14. 20k_sel trennt die Generationen nicht: V8-Servos waren angeschlossen,
+    die Flächenservos lasen mit gesetztem 20k_sel, wie V6, und ein Servo,
+    das kein Flächenservo ist, mit gelöschtem. Die Modelle wurden nicht
+    aufgezeichnet. Der Bediener setzt den Typ.
 15. Ein Speichern, ein Auflisten und ein Laden auf einer Karte: die Dauer
     jedes Vorgangs gegen die Grenze von 5s und eine Karte, die während
     eines Speicherns entfernt wird.
@@ -1390,6 +1545,24 @@ Servodateien gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von D
 beide Servotypen und ihre Abweichung in beiden Richtungen, jede
 Ablehnung, die Grenze von 5s, ein erstes Schreiben mit einer Karte, die
 voll ist oder versagt.
+`test_kst_prog_cycle` fährt den Versorgungszyklus gegen den Port des
+IOmcu, ein PD-mini-Modell, dessen Ausgang das Servomodell versorgt, und
+ein Servo, das nur aus einem Einschalten in den Programmiermodus eintritt
+und nach einem geschriebenen Wert ab dem nächsten handelt: **VERBINDEN**
+mit eingeschaltetem Ausgang (aus, bei 999ms noch aus und kein Sync, an bei
+1000ms, der Sync 1000ms nach dem Einschalten), mit ausgeschaltetem Ausgang
+und ohne PD mini; **ABBRECHEN**, **STOP**, ein ARM, ein Wechsel des Ziels
+und ein Link-Ausfall in der Zeit aus; den Zyklus über den Überlauf der Uhr
+bei 2^32ms; **VERLASSEN** nach einem Schreiben mit und ohne PD mini, ohne
+Schreiben, mit **ABBRECHEN**, **STOP** und einem Link-Ausfall im Zyklus,
+an einem IOmcu ohne LEAVE und für eine Sitzung, deren Beginn das Panel
+nicht sah. `test_kst_panel_type` fährt die Zeile TYPE, den Typ vor einem
+Laden, eine abgebrochene Liste, ein Speichern des gesetzten Typs, die
+Zeilen nach einem Schreiben und auf der Seite von VERLASSEN mit und ohne
+PD mini. `test_kst_panel_limrun` fährt den Endlagenlauf mit dem Servo
+hinter dem Ausgang des PD mini und ohne PD mini, wo er nichts schreibt.
+`test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,
+eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
 Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der

@@ -3330,6 +3330,9 @@ UI_TEXT(SV_LIM_PROG_LOW, 58,
 UI_TEXT(SV_LIM_PROG_PD_OFF, 58,
     "PROGRAMMING: PD MINI OUTPUT OFF",
     "PROGRAMMIEREN: PD-MINI-AUSGANG AUS")
+UI_TEXT(SV_LIM_PROG_NO_PD, 58,
+    "PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON",
+    "PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN")
 UI_TEXT(SV_LIM_PROG_RAIL, 58,
     "PROGRAMMING: SERVO RAIL BELOW 4.8V",
     "PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V")
@@ -3812,9 +3815,6 @@ UI_TEXT(KP_MORE, 15,
 UI_TEXT(KP_ENABLE, 32,
     "ENABLE WRITE TO SERVO",
     "SCHREIBEN INS SERVO FREIGEBEN")
-UI_TEXT(KP_CHANGES, 32,
-    "CHANGES",
-    "ÄNDERUNGEN")
 UI_TEXT(KP_SPEED_LIMIT, 15,
     "SPEED LIMIT",
     "TEMPOGRENZE")
@@ -4031,6 +4031,12 @@ UI_TEXT(KP_STATE_PWM, 116,
 UI_TEXT(KP_STATE_PWM_AS_IS, 116,
     "Tester is using port %u. No PD mini: supply stays unchanged.",
     "Tester nutzt Port %u. Kein PD mini: Versorgung bleibt unverändert.")
+UI_TEXT(KP_STATE_RAIL_OFF, 116,
+    "Port %u: supply off for 1s. PWM is off.",
+    "Port %u: Versorgung 1s aus. PWM ist aus.")
+UI_TEXT(KP_STATE_RAIL_WAIT, 116,
+    "Port %u: supply on, the servo starts for 1s. PWM is off.",
+    "Port %u: Versorgung an, das Servo startet 1s lang. PWM ist aus.")
 UI_TEXT(KP_STATE_ENTERING, 116,
     "Connecting on port %u. PWM is off.",
     "Verbindung an Port %u wird aufgebaut. PWM ist aus.")
@@ -4189,16 +4195,43 @@ UI_TEXT(KP_WAIT, 11,
     "WARTEN")
 UI_TEXT(KP_TYPE, 15,
     "TYPE",
-    "TYP")
-UI_TEXT(KP_SERVO_V, 15,
-    "SERVO V%u",
-    "SERVO V%u")
-UI_TEXT(KP_TYPE_V6, 116,
-    "Servo type V6: 20kHz drive.",
-    "Servotyp V6: Ansteuerung mit 20kHz.")
-UI_TEXT(KP_TYPE_V8, 116,
-    "Servo type V8: 333Hz drive.",
-    "Servotyp V8: Ansteuerung mit 333Hz.")
+    "TYPE")
+UI_TEXT(KP_TYPE_TITLE, 40,
+    "SERVO TYPE, AS ON THE SERVO'S LABEL",
+    "SERVO-TYPE LAUT ETIKETT DES SERVOS")
+UI_TEXT(KP_TYPE_FIRST, 40,
+    "SERVO TYPE BEFORE THE LOAD",
+    "SERVO-TYPE VOR DEM LADEN")
+UI_TEXT(KP_TYPE_SET, 116,
+    "Servo type V%u, set on TYPE.",
+    "Servotyp V%u, unter TYPE gesetzt.")
+UI_TEXT(KP_TYPE_GUESS, 116,
+    "Type not set. 20k_sel suggests V%u: check the servo's label, set TYPE.",
+    "Typ nicht gesetzt. 20k_sel spricht für V%u: Etikett prüfen, TYPE setzen.")
+UI_TEXT(KP_CONNECT_CYCLE, 116,
+    "CONNECT switches the output off for 1s and on: the servo starts into programming.",
+    "VERBINDEN schaltet den Ausgang 1s aus und wieder ein: das Servo startet in den Programmiermodus.")
+UI_TEXT(KP_NOPD_ENTRY, 116,
+    "Switch the servo's supply off and on, tap CONNECT 1s later. The sync follows 250ms after the tap.",
+    "Servoversorgung aus- und einschalten, 1s später VERBINDEN tippen. Der Sync folgt 250ms danach.")
+UI_TEXT(KP_M_NEED_TYPE, 116,
+    "Set the servo TYPE first: V6 or V8, as the servo's label states.",
+    "Erst den Servo-TYPE setzen: V6 oder V8, wie auf dem Etikett des Servos.")
+UI_TEXT(KP_M_CYCLE_CUT, 116,
+    "The supply cycle was stopped. The PD mini output stays off.",
+    "Der Versorgungszyklus wurde abgebrochen. Der Ausgang des PD mini bleibt aus.")
+UI_TEXT(KP_M_LEFT_CYCLED, 116,
+    "Supply switched off for 1s and on: the written values act.",
+    "Versorgung 1s aus und wieder ein: die geschriebenen Werte wirken.")
+UI_TEXT(KP_M_LEFT_NOTE, 116,
+    "The written values act after the servo's supply is switched off and on.",
+    "Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.")
+UI_TEXT(KP_M_ACT_AT_LEAVE, 116,
+    "The values act after LEAVE: it switches the supply off for 1s and on.",
+    "Die Werte wirken nach VERLASSEN: es schaltet die Versorgung 1s aus und wieder ein.")
+UI_TEXT(KP_LEAVE_CYCLE, 116,
+    "The PD mini output goes off for 1s and on, then the port returns to servo PWM.",
+    "Der Ausgang des PD mini geht 1s aus und wieder ein, dann wechselt der Port zu Servo-PWM.")
 UI_TEXT(KP_BACKUP_FILE, 116,
     "Backup file of this session: %s.",
     "Backup-Datei dieser Sitzung: %s.")
@@ -4335,8 +4368,8 @@ UI_TEXT(KP_M_LOAD_NEWER, 116,
     "This file needs a newer bench version. Not loaded.",
     "Diese Datei braucht eine neuere Prüfstand-Version. Nicht geladen.")
 UI_TEXT(KP_M_LOAD_TYPE, 116,
-    "File is V%u, servo is V%u. Not loaded.",
-    "Datei ist V%u, Servo ist V%u. Nicht geladen.")
+    "File is V%u, TYPE is V%u. Not loaded.",
+    "Datei ist V%u, TYPE ist V%u. Nicht geladen.")
 UI_TEXT(KP_M_LOAD_VALUE, 116,
     "Line %u: %s is outside its allowed range. Not loaded.",
     "Zeile %u: %s liegt außerhalb des erlaubten Bereichs. Nicht geladen.")
@@ -4530,8 +4563,8 @@ UI_TEXT(KP_S_NO_SERVO, 116,
     "No servo responds. Check the plug, supply and port.",
     "Kein Servo antwortet. Stecker, Versorgung und Port prüfen.")
 UI_TEXT(KP_S_NOT_IN_MODE, 116,
-    "Servo not in programming mode. Tap CONNECT.",
-    "Servo nicht im Programmiermodus. VERBINDEN tippen.")
+    "Servo not in programming mode. Tap LEAVE, then CONNECT.",
+    "Servo nicht im Programmiermodus. VERLASSEN, dann VERBINDEN tippen.")
 UI_TEXT(KP_S_READ, 116,
     "Could not read the servo. Check the plug, then tap READ ALL.",
     "Servo konnte nicht ausgelesen werden. Stecker prüfen, dann ALLES AUSLESEN tippen.")
@@ -7537,8 +7570,8 @@ UI_SERVO_TEXT(SERVO_STR_L_R_PROG_NO_SERVO,
     "No servo read: nothing written.",
     "Kein Servo gelesen: nichts geschrieben.")
 UI_SERVO_TEXT(SERVO_STR_L_R_SERVO,
-    "Servo:          type %u, REVERSION %s",
-    "Servo:           Typ %u, REVERSION %s")
+    "Servo:          20k_sel %u, REVERSION %s",
+    "Servo:           20k_sel %u, REVERSION %s")
 UI_SERVO_TEXT(SERVO_STR_L_R_PULSES,
     "Servo pulses:   NEUTRAL %.1fus, PULSE "
     "LOWER %.1fus, PULSE UPPER %.1fus",

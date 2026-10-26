@@ -289,7 +289,7 @@ static inline void cut_write(void)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
         rig_frame();
@@ -319,7 +319,7 @@ static inline void tkey(int key)
 static inline void files(void)
 {
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     settle();
 }
 

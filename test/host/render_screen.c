@@ -787,10 +787,17 @@ static void kpick(const char *name)
     }
 }
 
+/* TYPE set to @p type, V6 or V8, through its list. */
+static void ktype(unsigned type)
+{
+    ktap(kst_panel_value_rect(0, 1, 1));            /* TYPE */
+    kpick(type == 6u ? "V6" : "V8");
+}
+
 /* FILES, and the list the card gives. */
 static void kfiles(void)
 {
-    ktap(kst_panel_value_rect(0, 1, 1));
+    ktap(kst_panel_value_rect(0, 2, 0));
     ksettle();
 }
 
@@ -844,7 +851,7 @@ static bool kst_file_view(const char *v)
     if (strcmp(v, "-card-none") == 0) {
         g_rig.card = false;
         rig_frame();
-        ktap(kst_panel_value_rect(0, 1, 1));
+        ktap(kst_panel_value_rect(0, 2, 0));
         return true;
     }
     if (strcmp(v, "-files-none") == 0) {
@@ -877,6 +884,7 @@ static bool kst_file_view(const char *v)
         memcpy(g_rig.sim.reg, sv.r, sizeof(sv.r));
         ktap(kst_panel_value_rect(0, 1, 0));
         ksettle();
+        ktype(kst_prog_type_guess(kst_panel_model()));
         kfiles();
         kpick("KST001");
         ksettle();
@@ -1013,10 +1021,22 @@ static void kst_view(const char *view)
                      || strcmp(v, "-wait") == 0
                      || strcmp(v, "-supplied") == 0
                      || strcmp(v, "-leave-supply") == 0;
+    /* The PD mini's output on before CONNECT: the views of the cycle. */
+    const bool on = strcmp(v, "-supply-on") == 0
+                 || strcmp(v, "-cycling") == 0
+                 || strcmp(v, "-cycle-cut") == 0
+                 || strcmp(v, "-written-supply") == 0
+                 || strcmp(v, "-leave-cycle") == 0
+                 || strcmp(v, "-left-cycled") == 0;
 
     rig_fresh();
     g_rig.card = true;
-    g_rig.rail = supply;
+    g_rig.rail = supply || on;
+    if (on) {
+        g_rig.sup_on = true;
+        g_rig.sup_mv = 5000u;
+        g_rig.sup_ma = 1000u;
+    }
     g_rig.load_ma = 37u;
     g_rig.no_pin = strcmp(v, "-nopin") == 0;
     if (strcmp(v, "-target") == 0) {
@@ -1049,7 +1069,7 @@ static void kst_view(const char *view)
     tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0)); /* KST row */
     ui_router_tick(0.02f);
     if (v[0] == '\0' || nopage || strcmp(v, "-target") == 0
-        || strcmp(v, "-supply") == 0) {
+        || strcmp(v, "-supply") == 0 || strcmp(v, "-supply-on") == 0) {
         return;
     }
     if (strcmp(v, "-options") == 0 || strcmp(v, "-voltage") == 0
@@ -1087,8 +1107,39 @@ static void kst_view(const char *view)
         ui_router_tick(0.02f);
         return;
     }
+    if (strcmp(v, "-cycling") == 0 || strcmp(v, "-cycle-cut") == 0) {
+        /* In the 1s the output is off. */
+        rig_frames(400);
+        ui_router_tick(0.02f);
+        if (strcmp(v, "-cycle-cut") == 0) {
+            ktap(kst_panel_value_rect(0, 0, 0));    /* ABORT */
+            ksettle();
+        }
+        return;
+    }
     ksettle();
     if (strcmp(v, "-read") == 0 || strcmp(v, "-readonly") == 0) {
+        return;
+    }
+    if (strcmp(v, "-type") == 0) {
+        ktap(kst_panel_value_rect(0, 1, 1));        /* TYPE */
+        return;
+    }
+    if (strcmp(v, "-type-first") == 0) {
+        /* A file tapped with the type not set. */
+        const kst_image_t img = *kst_prog_servo(kst_panel_model());
+
+        (void)fake_card_put(&g_rig.fc, "KST001", &img);
+        kfiles();
+        kpick("KST001");
+        return;
+    }
+    /* The operator sets the type: V8, where the views of TYPE show the
+     * other type than 20k_sel suggests; elsewhere the one suggested. */
+    ktype(strcmp(v, "-type-set") == 0
+              ? (kst_prog_type_guess(kst_panel_model()) == 6u ? 8u : 6u)
+              : kst_prog_type_guess(kst_panel_model()));
+    if (strcmp(v, "-type-set") == 0) {
         return;
     }
     if (strcmp(v, "-swapped") == 0) {
@@ -1112,6 +1163,11 @@ static void kst_view(const char *view)
     }
     if (strcmp(v, "-leave") == 0) {
         kedits();
+        ktap(kst_panel_value_rect(0, 0, 0));
+        return;
+    }
+    if (strcmp(v, "-leave-plain") == 0) {
+        /* No write in the session: the supply stays as it is. */
         ktap(kst_panel_value_rect(0, 0, 0));
         return;
     }
@@ -1172,10 +1228,10 @@ static void kst_view(const char *view)
         kenable();
         kedit(KST_F_DUTY, (uint16_t)(kst_field_get(&first, KST_F_DUTY) - 2u));
         kedit(KST_F_BOOST, (uint16_t)(kst_field_get(&first, KST_F_BOOST) - 4u));
-        ktap(kst_panel_value_rect(0, 4, 0));
+        ktap(kst_panel_value_rect(0, 4, 1));
         khold();
         ksettle();
-        ktap(kst_panel_value_rect(0, 2, 0));        /* RESTORE */
+        ktap(kst_panel_value_rect(0, 4, 0));        /* RESTORE */
         kpick(ui_tr(TX_KP_FROM_SESSION));
         return;
     }
@@ -1191,7 +1247,7 @@ static void kst_view(const char *view)
         ui_router_tick(0.02f);
         return;
     }
-    ktap(kst_panel_value_rect(0, 4, 0));            /* WRITE n VALUES */
+    ktap(kst_panel_value_rect(0, 4, 1));            /* WRITE n VALUES */
     if (strcmp(v, "-write") == 0 || strcmp(v, "-write-nocard") == 0) {
         return;
     }
@@ -1206,6 +1262,15 @@ static void kst_view(const char *view)
     }
     if (!cut) {
         ksettle();                                  /* -written */
+        if (strcmp(v, "-leave-cycle") == 0 || strcmp(v, "-leave-note") == 0
+            || strcmp(v, "-left-cycled") == 0
+            || strcmp(v, "-left-note") == 0) {
+            ktap(kst_panel_value_rect(0, 0, 0));    /* LEAVE */
+            if (strncmp(v, "-left", 5) == 0) {
+                khold();
+                ksettle();
+            }
+        }
         return;
     }
     /* The link goes after the write's first register. */
@@ -1236,7 +1301,7 @@ static void kst_view(const char *view)
         return;
     }
     kenable();
-    ktap(kst_panel_value_rect(0, 2, 0));            /* RESTORE */
+    ktap(kst_panel_value_rect(0, 4, 0));            /* RESTORE */
     if (strcmp(v, "-restore") == 0) {
         ktap(kst_panel_choice_rect(0));
     }
@@ -1624,7 +1689,7 @@ static void limrun_view(const char *view)
         ktap(kst_panel_value_rect(0, 1, 0));        /* READ ALL */
         ksettle();
         kenable();
-        ktap(kst_panel_value_rect(0, 2, 0));        /* RESTORE */
+        ktap(kst_panel_value_rect(0, 4, 0));        /* RESTORE */
         ui_router_tick(0.02f);
         return;
     }

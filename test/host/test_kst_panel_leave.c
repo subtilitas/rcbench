@@ -441,8 +441,8 @@ TEST_CASE(a_count_of_1_is_said_in_the_singular)
         enable();
         edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
         show();
-        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 4, 0), TR(KP_WRITE_ONE));
-        tap(val(PG_SERVO, 4, 0));
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 4, 1), TR(KP_WRITE_ONE));
+        tap(val(PG_SERVO, 4, 1));
         CHECK_EQ(kst_panel_editor(), 3);
         hold(2.1f);
         settle();
@@ -453,7 +453,7 @@ TEST_CASE(a_count_of_1_is_said_in_the_singular)
         edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
         show();
         snprintf(want, sizeof(want), TR(KP_WRITE_N), 2u);
-        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 4, 0), want);
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 4, 1), want);
     }
 }
 

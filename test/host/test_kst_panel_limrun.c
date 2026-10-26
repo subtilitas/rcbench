@@ -6,6 +6,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <math.h>
+
 #include "kst_panel_rig.h"
 #include "settings_sensors.h"
 /* kst_prog_say(): the test plants a message the programmer said earlier. */
@@ -116,8 +118,9 @@ static void lr_ms(uint32_t ms)
 
         rig_frame();
         amps = servo_sim_step(&lr.sv,
-                              sim_horn_cmd(g_rig.sim.reg, lr.cmd, 4.0f,
-                                           false),
+                              sim_horn_cmd(g_rig.on_rail ? g_rig.sim.acting
+                                                         : g_rig.sim.reg,
+                                           lr.cmd, 4.0f, false),
                               g_rig.ms);
         lr.sum += amps;
         lr.n++;
@@ -156,9 +159,30 @@ static void lr_ms(uint32_t ms)
     }
 }
 
+/* One reading of a PD mini that answers, its output on or off. */
+static void lr_pd_reading(bool on)
+{
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.output = on;
+    st.set_v = supply_screen_set_v();
+    st.set_i = supply_screen_set_i();
+    st.v = on ? st.set_v : 0.0f;
+    st.samples = 1u;
+    st.taken_ms = g_rig.ms;
+    st.stamped = true;
+    servo_screen_supply(&st);
+}
+
 /* The SERVO screen on the rig, armed, the INA3221 the rail's meter, the
- * port in PWM with the servo on it, REVERSION as @p reversion. */
-static void lr_fresh(bool reversion)
+ * port in PWM with the servo on it, REVERSION as @p reversion; the servo
+ * powered by a PD mini whose output is on where @p pd, and then as the
+ * bench measured a Chaservo: it enters programming mode from a power-up
+ * only, and acts on a written value from the next one (kst_sim.h).
+ * Without @p pd the rail is fed from elsewhere. */
+static void lr_setup(bool reversion, bool pd)
 {
     servo_sim_cfg_t sc;
     kst_image_t img;
@@ -177,9 +201,43 @@ static void lr_fresh(bool reversion)
     settings_set(SET_INA_FIT(0), 1.0f);
     servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
     servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    if (pd) {
+        g_rig.rail = true;
+        g_rig.on_rail = true;
+        g_rig.sup_on = true;
+        g_rig.sup_mv = (uint16_t)lroundf(supply_screen_set_v() * 1000.0f);
+        g_rig.sup_ma = (uint16_t)lroundf(supply_screen_set_i() * 1000.0f);
+        g_rig.sim.needs_power_up = true;
+    }
     link_up();
     lr.win_end = g_rig.ms + 50u;
+    if (pd) {
+        lr_pd_reading(true);
+    }
     lr_ms(400u);
+}
+
+/* The rig with the PD mini on behind the servo. */
+static void lr_fresh(bool reversion)
+{
+    lr_setup(reversion, true);
+}
+
+/* The rig with the servo rail fed from elsewhere: no PD mini answers.  The
+ * servo's PULSE LOWER and UPPER are 1000.0 and 2000.0us, inside the
+ * bench's MIN and MAX: a run that may not set them searches. */
+static void lr_fresh_ext(bool reversion)
+{
+    kst_image_t img;
+    uint16_t raw = 0;
+
+    lr_setup(reversion, false);
+    img = rig_servo();
+    CHECK(kst_field_raw_from_display(KST_F_PULSE_LOWER, 10000, &raw));
+    (void)kst_field_set(&img, KST_F_PULSE_LOWER, raw);
+    CHECK(kst_field_raw_from_display(KST_F_PULSE_UPPER, 20000, &raw));
+    (void)kst_field_set(&img, KST_F_PULSE_UPPER, raw);
+    memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
 }
 
 /* TEST, and START LIMIT RUN on its card held for 2.3s. */
@@ -275,6 +333,13 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         CHECK(lr.armed);
         CHECK_EQ(g_rig.fc.saves, 1u);
         CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        /* Each session entered from a power-up, the read's and the
+         * write's, and the LEAVE after the write made a third: the servo
+         * acts on what was written, which the check searched. */
+        CHECK(g_rig.sim.power_ups >= 3u);
+        CHECK(memcmp(g_rig.sim.acting, g_rig.sim.reg,
+                     sizeof(g_rig.sim.reg)) == 0);
+        CHECK(g_rig.sup_on);
         /* SAFE, PROGRAM, CONNECT: RESTORE offers the servo as the run found
          * it, and puts it back. */
         lr.armed = false;
@@ -288,7 +353,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         if (!kst_prog_write_enabled(M)) {
             enable();
         }
-        tap(val(PG_SERVO, 2, 0));
+        tap(val(PG_SERVO, 4, 0));
         tap(kst_panel_choice_rect(choice(TR(KP_FROM_RUN))));
         CHECK_EQ(kst_panel_editor(), 3);
         for (int k = 0; k < 4 && kst_panel_editor() == 3; ++k) {
@@ -356,14 +421,11 @@ TEST_CASE(a_limit_run_on_a_servo_that_does_not_answer_names_the_missing_kst_serv
 {
     for (int pd = 0; pd < 2; ++pd) {
         for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
-            lr_fresh(false);
+            lr_setup(false, pd != 0);
             ui_text_set_language((ui_lang_t)lang);
+            /* No servo on the port: none powers up with the output. */
+            g_rig.on_rail = false;
             g_rig.sim.powered = false;
-            if (pd != 0) {
-                g_rig.rail = true;
-                lr_pd_reading(true);
-                lr_ms(200u);
-            }
             lr_hold_start();
             CHECK(servo_screen_limit_running());
             lr_run_out();
@@ -496,7 +558,7 @@ TEST_CASE(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave)
  * port before anything is driven, 4800mV starts one. */
 TEST_CASE(a_run_on_the_programming_port_needs_4_8_v_on_the_rail)
 {
-    lr_fresh(false);
+    lr_fresh_ext(false);
     lr.rail_mv = KST_PORT_SUPPLY_MIN_MV - 1u;
     lr_ms(200u);
     lr_start();
@@ -505,13 +567,14 @@ TEST_CASE(a_run_on_the_programming_port_needs_4_8_v_on_the_rail)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_EQ(lr.cmd, 1500u);
 
-    lr_fresh(false);
+    lr_fresh_ext(false);
     lr.rail_mv = KST_PORT_SUPPLY_MIN_MV;
     lr_ms(200u);
     lr_start();
     CHECK(servo_screen_limit_running());
     lr_run_out();
-    CHECK(strstr(lr.report, "Result:         PASS") != NULL);
+    /* No PD mini: the run searches only. */
+    CHECK(strstr(lr.report, "Result:         FOUND") != NULL);
 }
 
 /* A PD mini that answers with its output off, the rail fed from
@@ -551,37 +614,22 @@ TEST_CASE(a_run_on_the_programming_port_needs_the_pd_mini_on)
     }
 }
 
-/* One reading of a PD mini that answers, its output on or off. */
-static void lr_pd_reading(bool on)
-{
-    supply_state_t st;
-    memset(&st, 0, sizeof(st));
-    st.online = true;
-    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-    st.output = on;
-    st.set_v = supply_screen_set_v();
-    st.set_i = supply_screen_set_i();
-    st.v = on ? st.set_v : 0.0f;
-    st.samples = 1u;
-    st.taken_ms = g_rig.ms;
-    st.stamped = true;
-    servo_screen_supply(&st);
-}
-
 /* A PD mini that is not the supply the run started with, or whose output
- * went off, heard inside the read session with no reading after it: the
- * next CONNECT is not sent, as it would switch that PD mini on or set it
- * beside the rail's feed.  No supply is asked after the read session, and
- * the run ends as a reading outside a session ends it: a PD mini heard
- * first after the start, its output on or off, as a changed supply; the
- * run's own PD mini, its output gone off, as `supply output went off`. */
+ * went off, heard inside the read session: no supply is asked after the
+ * read session, and the run ends as a reading outside a session ends it.
+ * A PD mini heard first after the start, its output on or off, as a
+ * changed supply: that run started without one and searches only, so no
+ * CONNECT follows the read.  The run's own PD mini, its output gone off
+ * and no reading after it: the next CONNECT is not sent, as it would
+ * switch that PD mini on beside the rail's feed, and the run ends as
+ * `supply output went off`. */
 TEST_CASE(a_pd_mini_heard_first_in_a_session_gets_no_connect)
 {
     for (int k = 0; k < 3; ++k) {
         const bool started_with_pd = k == 2;
         const bool on_in_session   = k == 1;
 
-        lr_fresh(false);
+        lr_fresh_ext(false);
         if (started_with_pd) {
             g_rig.rail = true;
             lr_pd_reading(true);
@@ -601,6 +649,11 @@ TEST_CASE(a_pd_mini_heard_first_in_a_session_gets_no_connect)
         }
         const unsigned sets = g_rig.sup_sets;
         CHECK(servo_screen_limit_running());
+        if (!started_with_pd) {
+            /* The PD mini goes on answering after the session. */
+            lr_ms(100u);
+            lr_pd_reading(on_in_session);
+        }
         lr_run_out();
         CHECK(!servo_screen_limit_running());
         CHECK_EQ(g_rig.sup_sets, sets);
@@ -614,6 +667,39 @@ TEST_CASE(a_pd_mini_heard_first_in_a_session_gets_no_connect)
         }
         g_rig.rail = false;
     }
+}
+
+/* No PD mini behind the servo: the run cannot switch it off and on, and a
+ * written value would act only after that.  SEARCH+PROG and SERVO PULSES
+ * are not offered and say why; the run reads and searches, writes nothing
+ * and saves no backup. */
+TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        const kst_image_t was = (lr_fresh_ext(false), rig_servo());
+
+        ui_text_set_language((ui_lang_t)lang);
+        lr_run_list();
+        screen_tap(LR_MODE_X, LR_MODE_Y);
+        screen_tap(LR_MODE_X, LR_PULSE_Y);
+        CHECK(scr->back());
+        lr_hold_start();
+        CHECK(servo_screen_limit_running());
+        lr_run_out();
+        CHECK(!servo_screen_limit_running());
+        CHECK(strstr(lr.report, lang == UI_LANG_EN
+                                    ? "search only, nothing written"
+                                    : "nur Suche, nichts ins Servo") != NULL);
+        CHECK(strstr(lr.report, lang == UI_LANG_EN
+                                    ? "Result:         FOUND"
+                                    : "Ergebnis:        GEFUNDEN") != NULL);
+        CHECK_EQ(g_rig.sim.n_writes, 0u);
+        CHECK_EQ(g_rig.fc.saves, 0u);
+        CHECK(memcmp(was.r, g_rig.sim.reg, sizeof(was.r)) == 0);
+        CHECK_STR_EQ(TR(SV_LIM_PROG_NO_PD),
+                     ui_tr_in((ui_lang_t)lang, TX_SV_LIM_PROG_NO_PD));
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
@@ -777,7 +863,7 @@ TEST_CASE(a_session_after_a_limit_run_saves_its_own_backup)
     CHECK(kst_prog_save_first(M));
     enable();
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_WRITE_BACKUP)));
     hold(2.1f);
@@ -874,6 +960,7 @@ int main(void)
     RUN(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave);
     RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
     RUN(a_run_on_the_programming_port_needs_the_pd_mini_on);
+    RUN(without_a_pd_mini_a_limit_run_writes_nothing);
     RUN(a_pd_mini_heard_first_in_a_session_gets_no_connect);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);

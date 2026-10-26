@@ -82,6 +82,34 @@ history is in git.
 
 ### Changed
 
+- The KST and Chaservo programmer cycles the servo's supply: with a PD
+  mini's output on, CONNECT switches it off for 1s, on, and sends the sync
+  1s later; LEAVE after a write, a restore or a pairing release switches
+  it off for 1s and on before PWM. Without a PD mini the line under the
+  state asks for the supply off and on and CONNECT 1s later, the sync
+  250ms after the tap, and a write and LEAVE say that the values act after
+  the supply is switched off and on. A Chaservo entered programming mode
+  from a power-up only and acted on a written value from the next one
+  ([The power cycle](docs/ServoProgrammer.md#the-power-cycle)).
+- The KST and Chaservo programmer's SERVO tab has a TYPE row: the operator
+  sets V6 or V8; the type 20k_sel suggests shows as `V6?` until then. A
+  save writes the type set, a load is held to it, and a file tapped with
+  no type set asks for it first. The LOCKED tab shows 20k_sel as 20K SEL,
+  ON or OFF. The tab's rows are SERVO and TYPE, FILES and MORE, ENABLE
+  WRITE TO SERVO, RESTORE and WRITE n VALUES
+  ([The servo type](docs/ServoProgrammer.md#the-servo-type)).
+- Servo files are format 2: the type line states the operator's type and
+  may be absent; 20k_sel is a register like any other. Format-1 files
+  load, as files that state no type
+  ([Servo type](protocols/kst/README.md#servo-type)).
+- `KST_PORT_RAIL_OFF_MS` is 1000ms, from 2000ms: a supply cycle of the
+  programming port keeps the supply off for 1s.
+- A limit run on the programming port without a PD mini writes nothing:
+  SEARCH + PROGRAM and SERVO PULSES at 1000-2000 are not offered and the
+  card says `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`. The
+  report's servo line names 20k_sel in place of a type.
+- `Servo not in programming mode. Tap LEAVE, then CONNECT.`: the advice
+  names the control the state shows.
 - FILES' footer runs as LOGS' does: RESCAN at the left, 140 x 52px, then
   COPY, MOVE, RENAME, DELETE, NEW and INFO, and OPEN at the right margin,
   118 x 52px each, 6px apart. One enum (`fs_foot_t`) orders the buttons

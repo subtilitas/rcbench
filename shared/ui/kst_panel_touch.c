@@ -264,7 +264,9 @@ static void rest(const touch_event_t *evt)
         break;
     case P_CHOICE_CANCEL:
         if (gfx_rect_contains(kst_panel_choice_cancel_rect(), x, y)) {
+            /* A load that waited for the type is not made. */
             k.ch.open = false;
+            k.type_file[0] = '\0';
         }
         break;
     case P_NOTES:

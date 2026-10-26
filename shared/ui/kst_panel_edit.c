@@ -39,6 +39,7 @@ void kpn_close_editors(void)
     ui_textkey_close(&k.tk);
     k.name_wait = false;
     k.files_wait = false;
+    k.type_file[0] = '\0';
     k.ch.open = false;
     k.warn.open = false;
     k.warn.down = false;
@@ -132,6 +133,34 @@ static void files_open(void)
     if (total > n) {
         choice_add(TR(KP_FILES_NEXT), FILES_NEXT);
     }
+}
+
+/**
+ * @brief Opens the list of the servo types, V6 and V8, under @p title.
+ *
+ * @param title the list's title
+ */
+static void type_open(const char *title)
+{
+    choice_open(C_TYPE, title);
+    choice_add("V6", 6);
+    choice_add("V8", 8);
+}
+
+/**
+ * @brief The load of file @p name, after the servo type where it is not set:
+ *        the TYPE list opens and the load follows the choice.
+ *
+ * @param name the file's name
+ */
+static void load_typed(const char *name)
+{
+    if (kst_prog_type(&k.prog) == 0u && kst_prog_have_servo(&k.prog)) {
+        snprintf(k.type_file, sizeof(k.type_file), "%s", name);
+        type_open(TR(KP_TYPE_FIRST));
+        return;
+    }
+    (void)kst_prog_load(&k.prog, name);
 }
 
 /** @brief Ask for the list from file @p first on. */
@@ -412,6 +441,10 @@ void kpn_act(const row_t *r)
             choice_add(TR(KP_RELEASE_TITLE), MORE_RELEASE);
         }
         break;
+    case A_TYPE:
+        k.type_file[0] = '\0';
+        type_open(TR(KP_TYPE_TITLE));
+        break;
     case A_ENABLE:
         if (kst_prog_write_enabled(p)) {
             (void)kst_prog_enable(p, false);
@@ -476,7 +509,16 @@ void kpn_choice_done(int value)
             /* Behind the last file the list starts again. */
             files_ask(next < total ? next : 0u);
         } else {
-            (void)kst_prog_load(p, kst_prog_file_name(p, (unsigned)value));
+            load_typed(kst_prog_file_name(p, (unsigned)value));
+        }
+    } else if (kind == C_TYPE) {
+        char name[sizeof(k.type_file)];
+
+        snprintf(name, sizeof(name), "%s", k.type_file);
+        k.type_file[0] = '\0';
+        if (kst_prog_type_set(p, (unsigned)value) == KST_PROG_MSG_NONE
+            && name[0] != '\0') {
+            (void)kst_prog_load(p, name);
         }
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&k.kp, k.area, TR(KP_PROG_VOLTAGE), "V",
@@ -542,6 +584,9 @@ bool kpn_row_live(const row_t *r)
     case A_MORE:
         return (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p))
             || (st == KST_PROG_PWM && kpn_on_port());
+    case A_TYPE:
+        /* The type of a servo read; never written to it. */
+        return st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p);
     case A_ENABLE:
         /* Off at any time; on where the model takes it. */
         return kst_prog_write_enabled(p)

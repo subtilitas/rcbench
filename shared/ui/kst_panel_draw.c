@@ -17,6 +17,7 @@
 
 #include "kst_port.h"
 #include "kst_reg.h"
+#include "kst_session.h"
 #include "link_pages.h"
 #include "ui_card_text.h"
 #include "ui_tabs.h"
@@ -182,8 +183,20 @@ static void state_line(char *out, size_t n)
 {
     const kst_prog_t *p = &k.prog;
     const unsigned ch = (unsigned)kst_prog_port(p) + 1u;
+    const kst_prog_state_t st = kst_prog_state(p);
 
-    switch (kst_prog_state(p)) {
+    if ((st == KST_PROG_ENTERING || st == KST_PROG_LEAVING)
+        && p->f.rd.known && (p->f.rd.port == LINK_KST_RAIL_OFF
+                             || p->f.rd.port == LINK_KST_RAIL_WAIT)) {
+        /* The supply cycle of CONNECT or of LEAVE after a write. */
+        if (p->f.rd.port == LINK_KST_RAIL_OFF) {
+            snprintf(out, n, TR(KP_STATE_RAIL_OFF), ch);
+        } else {
+            snprintf(out, n, TR(KP_STATE_RAIL_WAIT), ch);
+        }
+        return;
+    }
+    switch (st) {
     case KST_PROG_DOWN:
         snprintf(out, n, "%s", TR(KP_ST_DOWN));
         break;
@@ -242,30 +255,67 @@ static void state_line(char *out, size_t n)
     }
 }
 
-/**
- * @brief The line under the state: what the state needs, or the servo's type.
- */
-static const char *state_second(bool *type)
-{
-    const kst_prog_t *p = &k.prog;
+/* The texts below name the port's times: the output off for 1s, and the
+ * sync 250ms after CONNECT where the port switches nothing (STOP, LOW and
+ * the entry's low line, kst_port.h and kst_session.h). */
+_Static_assert(KST_PORT_RAIL_OFF_MS == 1000u,
+               "KP_CONNECT_CYCLE and KP_LEAVE_CYCLE name 1s");
+_Static_assert(KST_PORT_STOP_MS + KST_PORT_LOW_MS + KST_ENTRY_LOW_US / 1000u
+                   == 250u,
+               "KP_NOPD_ENTRY names 250ms");
+_Static_assert(KST_PORT_RAIL_WAIT_MS == 1000u, "KP_NOPD_ENTRY names 1s");
 
-    *type = false;
-    if (kst_prog_state(p) == KST_PROG_NO_PAGE) {
+/** @brief The colour of a line under the state: faint, the accent or amber. */
+typedef enum { SECOND_FAINT = 0, SECOND_TYPE, SECOND_WARN } second_t;
+
+/**
+ * @brief The line under the state: what the state needs, what CONNECT does
+ *        to the supply, or the servo's type.
+ *
+ * The type the operator set is the accent's; the one 20k_sel suggests is a
+ * guess and amber until the operator sets it.
+ *
+ * @param level receives the line's colour
+ * @return the line, NULL for none; static for the formatted ones
+ */
+static const char *state_second(second_t *level)
+{
+    static char line[KST_PANEL_LINE];
+    const kst_prog_t *p = &k.prog;
+    const kst_prog_state_t st = kst_prog_state(p);
+
+    *level = SECOND_FAINT;
+    if (st == KST_PROG_NO_PAGE) {
         return TR(KP_NO_PAGE_2);
     }
-    if (kst_prog_state(p) == KST_PROG_PWM && !kpn_on_port()) {
+    if (st == KST_PROG_PWM && !kpn_on_port()) {
         return TR(KP_NEED_TARGET_2);
     }
-    if (kpn_servo_type() != 0u) {
-        *type = true;
-        return kpn_servo_type() == 6u ? TR(KP_TYPE_V6) : TR(KP_TYPE_V8);
+    if (st == KST_PROG_PWM && !kpn_flag(LINK_KS_F_RAIL)) {
+        /* The servo enters from a power-up the operator makes. */
+        *level = SECOND_WARN;
+        return TR(KP_NOPD_ENTRY);
+    }
+    if (st == KST_PROG_PWM && kst_prog_connect_cycles(p)) {
+        return TR(KP_CONNECT_CYCLE);
+    }
+    if (kst_prog_type(p) != 0u) {
+        *level = SECOND_TYPE;
+        snprintf(line, sizeof(line), TR(KP_TYPE_SET), kst_prog_type(p));
+        return line;
+    }
+    if (kst_prog_type_guess(p) != 0u) {
+        *level = SECOND_WARN;
+        snprintf(line, sizeof(line), TR(KP_TYPE_GUESS),
+                 kst_prog_type_guess(p));
+        return line;
     }
     return NULL;
 }
 
 const char *kst_panel_status_line(int i)
 {
-    bool type;
+    second_t level;
 
     if (i == 0) {
         static char buf[KST_PANEL_LINE];
@@ -273,7 +323,7 @@ const char *kst_panel_status_line(int i)
         state_line(buf, sizeof(buf));
         return buf;
     }
-    return i == 1 ? state_second(&type) : NULL;
+    return i == 1 ? state_second(&level) : NULL;
 }
 
 /** @brief What stands until it is dealt with, over the last message. */
@@ -300,17 +350,21 @@ static int page_notes(note_t *n)
     static char buf[3][KST_PANEL_LINE];
     const kst_prog_t *p = &k.prog;
     const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
-    bool type;
+    second_t level;
+    const char *second;
     int i = 0;
 
     switch (k.tabs.selected) {
     case PG_SERVO:
         state_line(buf[0], sizeof(buf[0]));
         i = note(n, i, 0, buf[0], ui_theme_color(UI_C_TEXT));
-        if (state_second(&type) != NULL) {
-            /* The type is the SERVO row's label too. */
-            i = note(n, i, 1, state_second(&type),
-                     type ? ui_theme_color(UI_C_ACCENT) : faint);
+        second = state_second(&level);
+        if (second != NULL) {
+            /* The type is the TYPE row's value too. */
+            i = note(n, i, 1, second,
+                     level == SECOND_TYPE   ? ui_theme_color(UI_C_ACCENT)
+                     : level == SECOND_WARN ? ui_theme_color(UI_C_WARN)
+                                            : faint);
         }
         i = notes_standing(n, i);
         if (kst_prog_backed_up(p)) {
@@ -729,6 +783,16 @@ static void act_value(const row_t *r, char *out, size_t n)
     case A_ENABLE:
         snprintf(out, n, "%s", kst_prog_write_enabled(p) ? TR(ON) : TR(OFF));
         break;
+    case A_TYPE:
+        /* The operator's type; the one 20k_sel suggests with its mark. */
+        if (kst_prog_type(p) != 0u) {
+            snprintf(out, n, "V%u", kst_prog_type(p));
+        } else if (kst_prog_type_guess(p) != 0u) {
+            snprintf(out, n, "V%u?", kst_prog_type_guess(p));
+        } else {
+            snprintf(out, n, "--");
+        }
+        break;
     default:
         kpn_write_n(out, n, kst_prog_changes(p));
         break;
@@ -787,12 +851,8 @@ static void draw_row(gfx_canvas_t *c, int i)
 
         const bool skipped = kpn_in_set(kst_prog_load_skipped(p), id);
 
-        if (id == KST_F_20K_SEL) {
-            snprintf(num, sizeof(num), "V%u", kpn_servo_type());
-        } else {
-            kpn_fmt_field(id, kst_field_get(kst_prog_draft(p), id), num,
+        kpn_fmt_field(id, kst_field_get(kst_prog_draft(p), id), num,
                       sizeof(num));
-        }
         /* A value that differs from the servo's: marked twice, by the fill
          * and by the star.  One the loaded file has otherwise and that is
          * never written: by the fill and the mark of the note below. */

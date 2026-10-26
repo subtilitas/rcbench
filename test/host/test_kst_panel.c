@@ -113,7 +113,9 @@ TEST_CASE(programming_is_locked_until_the_port_is_the_testers_target)
         settle();
         snprintf(want, sizeof(want), TR(KP_STATE_PWM_AS_IS), RIG_PORT + 1u);
         CHECK_STR_EQ(status(0), want);
-        CHECK_STR_EQ(status(1), "");
+        /* No PD mini: the servo powers up into the entry by the
+         * operator's hand. */
+        CHECK_STR_EQ(status(1), TR(KP_NOPD_ENTRY));
         tap(val(PG_SERVO, 0, 0));
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
@@ -431,7 +433,7 @@ TEST_CASE(a_confirmed_voltage_above_6_v_is_not_kept)
 TEST_CASE(the_fetched_backup_redraws_restore)
 {
     static gfx_color_t before[W * H];
-    const gfx_rect_t r = val(PG_SERVO, 2, 0);
+    const gfx_rect_t r = val(PG_SERVO, 4, 0);
     uint32_t rev = 0;
     bool waited = false;
     bool differs = false;
@@ -517,7 +519,7 @@ static void restore_locked(void)
     kst_image_t now = rig_servo();
 
     CHECK(memcmp(now.r, sv.r, sizeof(now.r)) != 0);
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
     CHECK_EQ(kst_panel_editor(), 3);
@@ -543,7 +545,7 @@ TEST_CASE(a_locked_session_found_at_the_start_is_enabled_and_restored)
     restart_locked();
     writes = g_rig.sim.n_writes;
     /* RESTORE with the switch off says what it needs. */
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
@@ -561,7 +563,7 @@ TEST_CASE(a_locked_session_found_at_the_start_is_enabled_and_restored)
     CHECK_EQ(kst_prog_write_check(M), KST_PROG_MSG_NEED_READ);
     CHECK_EQ(kst_prog_release_check(M), KST_PROG_MSG_NEED_READ);
     CHECK_EQ(kst_prog_load(M, "KST001"), KST_PROG_MSG_NEED_READ);
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 0);
     tap(val(PG_SERVO, 2, 1));           /* MORE needs a servo read */
     CHECK_EQ(kst_panel_editor(), 0);
