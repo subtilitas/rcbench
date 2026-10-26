@@ -642,7 +642,7 @@ TEST_CASE(a_read_answered_without_registers_counts_as_no_answer)
     for (unsigned k = 0; k < 2u; ++k) {
         CHECK(hitec_link_next(&g_l, g_ms, &x));
         CHECK(!x.write);
-        CHECK_EQ(x.off, LINK_HT_DATA);
+        CHECK_EQ(x.n, LINK_HT_COUNT);
         hitec_link_done(&g_l, HITEC_LINK_ACK, NULL);
         reads++;
     }
@@ -863,6 +863,87 @@ TEST_CASE(abort_while_the_command_is_on_its_way_sends_it_no_more)
     CHECK(out.taken);
 }
 
+/* An abort while a staged window is out: the next request waits for its
+ * answer, which changes nothing of it. */
+TEST_CASE(an_abort_with_a_window_out_holds_the_next_request_for_its_answer)
+{
+    const hitec_ses_step_t st = c_read_step(0x12u);
+    const hitec_ses_step_t st2 = c_read_step(0x13u);
+    hitec_link_outcome_t out;
+    hitec_link_xfer_t x;
+
+    opened(HITEC_CLASSIC);
+    CHECK_EQ(hitec_link_step(&g_l, CH, &st, MV, MA, ++g_id),
+             HITEC_LINK_START_OK);
+    CHECK(hitec_link_next(&g_l, g_ms, &x));
+    CHECK(x.write && x.off == LINK_HT_W_LINE);
+    hitec_link_abort(&g_l);
+    CHECK(hitec_link_outcome(&g_l, &out));
+    CHECK_EQ(out.kind, HITEC_LINK_OUT_DROPPED);
+    CHECK_EQ(hitec_link_step(&g_l, CH, &st2, MV, MA, ++g_id),
+             HITEC_LINK_START_BUSY);
+    CHECK_EQ(hitec_link_open(&g_l, CH, HITEC_CLASSIC, 0u, ++g_id),
+             HITEC_LINK_START_BUSY);
+    hitec_link_done(&g_l, xchg(NULL, &x, NULL), NULL);
+    out = run_step(&st2);
+    CHECK_EQ(out.kind, HITEC_LINK_OUT_DONE);
+    CHECK_EQ(out.ses.run, HITEC_SES_RAN);
+    CHECK_EQ(out.ses.value, g_drv.eeprom[0x13]);
+}
+
+/* Run until the request's run is the next read. */
+static void until_fetching(const hitec_ses_step_t *st)
+{
+    CHECK_EQ(hitec_link_step(&g_l, CH, st, MV, MA, ++g_id),
+             HITEC_LINK_START_OK);
+    for (unsigned k = 0; k < 200u
+                         && hitec_link_phase(&g_l) != HITEC_LINK_FETCHING;
+         ++k) {
+        tick_as(true, false);
+        one_exchange();
+    }
+    CHECK_EQ(hitec_link_phase(&g_l), HITEC_LINK_FETCHING);
+}
+
+/* VIEW written without a command between the last poll and the run's
+ * read, or another writer's command there: no run, the line kept. */
+TEST_CASE(a_run_read_with_another_view_or_seq_carries_no_run)
+{
+    const hitec_ses_step_t st = c_read_step(0x12u);
+    const uint16_t times = LINK_HITEC_VIEW_TIMES_LO;
+    hitec_link_readout_t r0;
+    hitec_link_outcome_t out;
+
+    opened(HITEC_CLASSIC);
+    r0 = readout();
+    CHECK(r0.have_line);
+    until_fetching(&st);
+    CHECK_EQ(hitec_port_write(&g_port, LINK_HT_W_VIEW, 1u, &times, g_ms), 0u);
+    one_exchange();
+    CHECK(hitec_link_outcome(&g_l, &out));
+    CHECK_EQ(out.kind, HITEC_LINK_OUT_DONE);
+    CHECK_EQ(out.ses.run, HITEC_SES_RAN);
+    CHECK_EQ(out.ses.value, g_drv.eeprom[0x12]);
+    CHECK(out.have_cap);
+    CHECK(!out.have_run);
+    CHECK_EQ(out.delay_ns, 0u);
+    CHECK(readout().have_line);
+    CHECK_EQ(readout().pin, PIN);
+    CHECK_EQ(readout().bit_ns, r0.bit_ns);
+    CHECK_EQ(readout().line, r0.line);
+    /* VIEW back at 2 from the next request's staging: the run again. */
+    out = run_step(&st);
+    CHECK(out.have_run);
+    CHECK_EQ(g_port.view, LINK_HITEC_VIEW_RUN);
+    /* Another writer's command before the read. */
+    until_fetching(&st);
+    CHECK_EQ(other_cmd(LINK_HITEC_OP_CLEAR, CH, 0u), 0u);
+    one_exchange();
+    CHECK(hitec_link_outcome(&g_l, &out));
+    CHECK_EQ(out.ses.run, HITEC_SES_RAN);
+    CHECK(!out.have_run);
+}
+
 TEST_CASE(abort_between_two_tries_of_a_command_sends_it_no_more)
 {
     const hitec_ses_step_t st = c_read_step(0x12u);
@@ -1029,6 +1110,8 @@ int main(void)
     RUN(abort_in_the_off_time_of_a_power_leaves_the_supply_off);
     RUN(abort_before_the_command_drops_the_request);
     RUN(abort_while_the_command_is_on_its_way_sends_it_no_more);
+    RUN(an_abort_with_a_window_out_holds_the_next_request_for_its_answer);
+    RUN(a_run_read_with_another_view_or_seq_carries_no_run);
     RUN(abort_between_two_tries_of_a_command_sends_it_no_more);
     RUN(an_abort_refused_for_another_reason_is_not_sent_again);
     RUN(a_try_refused_after_one_without_an_answer_is_decided_by_the_seq);

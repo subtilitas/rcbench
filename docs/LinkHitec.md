@@ -379,7 +379,11 @@ A request goes out in this order:
 3. Registers 0 to 15: the command started the operation, or `RESULT`'s
    high byte says why not. Then every 5ms until the port is out of
    STOPPING, BUSY and POWER_OFF. The last read holds the capture.
-4. Registers 16 to 31, once, while `VIEW` reads 2.
+4. Registers 0 to 31, once. Registers 16 to 31 count as the run when the
+   same read shows `VIEW` 2 and the `SEQ`, `OP` and `CAP` of step 3's
+   last read: `VIEW` is written without a command, so another writer can
+   change it unseen by `SEQ`. Otherwise the outcome has no run, and the
+   pin and line read before stay.
 
 | The page | The step's result |
 | --- | --- |
@@ -400,10 +404,15 @@ When the link does not answer:
 
 - 3 exchanges in a row without an answer give the request up.
 - A command whose 3 tries go unanswered is not sent again. The next read of
-  registers 0 to 15 decides: a page at the command's `SEQ` took it, a page
-  at the `SEQ` before it did not. A page at `SEQ` 0 with operation NONE
-  and no refusal started again, also when the command's `SEQ` is 0, the one
-  after 65535.
+  registers 0 to 15 decides: a page at the command's `SEQ` in a state the
+  command leaves took it, a page at the `SEQ` before it did not. The state
+  that fits: a refusal; for CLOSE the port free or another port held; for
+  CLEAR the port held with `STOPPED` clear; for the others the operation
+  in `OP` on the request's port, with `OP`'s count, the state or the
+  result changed against the read before. The command's `SEQ` in a state
+  that does not fit is another writer's command at that `SEQ`. A page at
+  `SEQ` 0 with operation NONE and no refusal started again, also when the
+  command's `SEQ` is 0, the one after 65535.
 - Another `SEQ`, or `OP` back at NONE, is an IOmcu that started again or
   another writer's command. A request on its way ends there, FAILED.
 - A request still running 25,000ms after its command was taken is aborted
@@ -413,7 +422,9 @@ When the link does not answer:
 ABORT drops a request whose command has not gone. A command sent without an
 answer is not sent again; the `SEQ` decides as above. The ABORT command
 goes as soon as the page is known; one refused with BAD_VALUE goes again
-after a read, with the page's `SEQ`.
+after a read, with the page's `SEQ`. A request dropped while one of its
+exchanges is out holds the next request off until that exchange's answer
+is in.
 
 Between requests registers 0 to 15 are read every 100ms while the page
 holds a port and every 500ms while it holds none. An IOmcu below 4.23 is

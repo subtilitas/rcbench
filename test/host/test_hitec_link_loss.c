@@ -2,7 +2,8 @@
  * The panel's half of the HITEC page (shared/bench/hitec_link.c) when the
  * link fails under it: the link lost at 5 points of a request, the port
  * held over a silence and released by CLOSE, a port another writer opened
- * or commanded, an IOmcu that starts again (idle, under a request, under
+ * or commanded, another writer's command at the SEQ a lost try left free
+ * (a step, CLOSE and CLEAR), an IOmcu that starts again (idle, under a request, under
  * a request and a command at SEQ 0), a command at SEQ 0 refused with its
  * answers lost, SEQ across 65535, the 25,000ms limit and the
  * poll periods, both across the wrap of the millisecond clock.  The rig is
@@ -160,6 +161,63 @@ TEST_CASE(a_restarted_iomcu_ends_the_request_and_frees_the_port)
     CHECK_EQ(hitec_link_phase(&g_l), HITEC_LINK_READY);
 }
 
+/* A try lost, another writer's command at the SEQ it left free, the next
+ * try refused: the SEQ matches, the page's state does not.  After an OPEN
+ * and after a read of the same kind. */
+TEST_CASE(another_writers_command_at_the_seq_of_a_lost_try_is_not_this_one)
+{
+    const hitec_ses_step_t st = c_read_step(0x12u);
+
+    for (unsigned k = 0; k < 2u; ++k) {
+        hitec_link_outcome_t out;
+        unsigned sends;
+
+        opened(HITEC_CLASSIC);
+        if (k == 1u) {
+            CHECK_EQ(run_step(&st).ses.run, HITEC_SES_RAN);
+        }
+        sends = g_op_cmds[LINK_HITEC_OP_SEND];
+        g_other_cmd = 1u;
+        g_lose_cmd = 1u;
+        out = run_step(&st);
+        CHECK_EQ(g_op_cmds[LINK_HITEC_OP_SEND] - sends, 2u);
+        CHECK_EQ(out.kind, HITEC_LINK_OUT_RESTARTED);
+        CHECK(!out.taken);
+        CHECK_EQ(out.ses.run, HITEC_SES_FAILED);
+        CHECK_EQ(g_drv.starts, k);
+        CHECK_EQ(run_step(&st).ses.run, HITEC_SES_RAN);
+    }
+}
+
+/* The same for CLOSE, the port still held, and for CLEAR, the port still
+ * stopped after another writer's ABORT. */
+TEST_CASE(another_writers_command_is_no_close_or_clear_of_this_one)
+{
+    hitec_link_outcome_t out;
+
+    opened(HITEC_CLASSIC);
+    g_other_cmd = 1u;
+    g_lose_cmd = 1u;
+    out = run_bare(LINK_HITEC_OP_CLOSE, CH);
+    CHECK_EQ(g_op_cmds[LINK_HITEC_OP_CLOSE], 2u);
+    CHECK_EQ(out.kind, HITEC_LINK_OUT_RESTARTED);
+    CHECK_EQ(hitec_port_state(&g_port), LINK_HITEC_OPEN);
+    CHECK_EQ(run_bare(LINK_HITEC_OP_CLOSE, CH).kind, HITEC_LINK_OUT_DONE);
+    CHECK_EQ(hitec_port_state(&g_port), LINK_HITEC_FREE);
+
+    opened(HITEC_CLASSIC);
+    stop_pulse();
+    g_other_op = LINK_HITEC_OP_ABORT;
+    g_other_cmd = 1u;
+    g_lose_cmd = 1u;
+    out = run_bare(LINK_HITEC_OP_CLEAR, CH);
+    CHECK_EQ(g_op_cmds[LINK_HITEC_OP_CLEAR], 2u);
+    CHECK_EQ(out.kind, HITEC_LINK_OUT_RESTARTED);
+    CHECK(g_port.stopped != 0u);
+    CHECK_EQ(run_bare(LINK_HITEC_OP_CLEAR, CH).kind, HITEC_LINK_OUT_DONE);
+    CHECK(g_port.stopped == 0u);
+}
+
 /* SEQ from 65533: OPEN at 65534, steps at 65535, 0 and 1. */
 TEST_CASE(the_seq_wraps_under_the_module)
 {
@@ -274,7 +332,7 @@ static void a_step_running_25s_is_aborted_at(uint32_t t0)
         hitec_link_xfer_t x;
 
         if (hitec_link_next(&g_l, taken + HITEC_LINK_RUN_MAX_MS - 1u, &x)) {
-            uint16_t regs[16] = { 0 };
+            uint16_t regs[LINK_HT_COUNT] = { 0 };
             const int r = xchg(NULL, &x, x.write ? NULL : regs);
 
             hitec_link_done(&g_l, r, x.write ? NULL : regs);
@@ -336,6 +394,8 @@ int main(void)
     RUN(after_a_silence_the_held_port_is_released_by_close);
     RUN(a_port_another_writer_opened_is_not_ours_and_closes);
     RUN(a_restarted_iomcu_ends_the_request_and_frees_the_port);
+    RUN(another_writers_command_at_the_seq_of_a_lost_try_is_not_this_one);
+    RUN(another_writers_command_is_no_close_or_clear_of_this_one);
     RUN(the_seq_wraps_under_the_module);
     RUN(a_restart_under_a_command_at_seq_0_is_no_taken_command);
     RUN(a_command_at_seq_0_refused_with_its_answers_lost_ends_refused);

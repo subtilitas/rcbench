@@ -398,7 +398,12 @@ Eine Anfrage geht in dieser Reihenfolge hinaus:
    hohe Byte von `RESULT` sagt, warum nicht. Danach alle 5ms, bis der Port
    aus STOPPING, BUSY und POWER_OFF heraus ist. Das letzte Lesen enthält
    den Mitschnitt.
-4. Register 16 bis 31, einmal, solange `VIEW` 2 liest.
+4. Register 0 bis 31, einmal. Die Register 16 bis 31 gelten als der Lauf,
+   wenn dasselbe Lesen `VIEW` 2 und `SEQ`, `OP` und `CAP` des letzten
+   Lesens aus Schritt 3 zeigt: `VIEW` wird ohne Kommando geschrieben, ein
+   anderer Schreiber kann es also ändern, ohne dass `SEQ` es zeigt. Sonst
+   trägt das Ergebnis keinen Lauf, und Pin und Leitung von vorher
+   bleiben.
 
 | Die Page | Das Ergebnis des Schritts |
 | --- | --- |
@@ -420,8 +425,14 @@ Wenn der Link nicht antwortet:
 - 3 Austausche hintereinander ohne Antwort geben die Anfrage auf.
 - Ein Kommando, dessen 3 Versuche ohne Antwort bleiben, geht nicht noch
   einmal. Das nächste Lesen der Register 0 bis 15 entscheidet: eine Page
-  auf der `SEQ` des Kommandos hat es genommen, eine Page auf der `SEQ`
-  davor nicht. Eine Page auf `SEQ` 0 mit Operation NONE und ohne Abweisung
+  auf der `SEQ` des Kommandos in einem Zustand, den das Kommando
+  hinterlässt, hat es genommen, eine Page auf der `SEQ` davor nicht. Der
+  passende Zustand: eine Abweisung; bei CLOSE der Port frei oder ein
+  anderer Port gehalten; bei CLEAR der Port gehalten mit `STOPPED`
+  gelöscht; bei den übrigen die Operation in `OP` auf dem Port der
+  Anfrage, mit geändertem Zähler in `OP`, Zustand oder Ergebnis gegenüber
+  dem Lesen davor. Die `SEQ` des Kommandos in einem Zustand, der nicht
+  passt, ist das Kommando eines anderen Schreibers auf dieser `SEQ`. Eine Page auf `SEQ` 0 mit Operation NONE und ohne Abweisung
   ist neu gestartet, auch wenn die `SEQ` des Kommandos 0 ist, die nach
   65535.
 - Eine andere `SEQ`, oder `OP` zurück auf NONE, ist ein IOmcu, der neu
@@ -436,7 +447,9 @@ ABORT verwirft eine Anfrage, deren Kommando noch nicht hinaus ist. Ein
 Kommando, das ohne Antwort hinausging, geht nicht noch einmal; die `SEQ`
 entscheidet wie oben. Das Kommando ABORT geht, sobald die Page bekannt ist;
 eines, das mit BAD_VALUE abgewiesen wird, geht nach einem Lesen noch einmal,
-mit der `SEQ` der Page.
+mit der `SEQ` der Page. Eine Anfrage, die verworfen wird, während einer
+ihrer Austausche unterwegs ist, hält die nächste Anfrage zurück, bis die
+Antwort dieses Austauschs da ist.
 
 Zwischen den Anfragen werden die Register 0 bis 15 alle 100ms gelesen,
 solange die Page einen Port hält, und alle 500ms, solange sie keinen hält.

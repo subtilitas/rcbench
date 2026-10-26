@@ -18,7 +18,7 @@ enum {
     X_STATUS,   /* read 0 to 15 */
     X_STAGE,    /* write a window of 4 to 22 */
     X_CMD,      /* write 0 to 3 */
-    X_RUN,      /* read 16 to 31 */
+    X_RUN,      /* read 0 to 31: the capture again and VIEW 2 */
 };
 
 /** @brief The staged registers and VIEW go out in 5 windows: 4 whole ones
@@ -30,8 +30,9 @@ enum {
 #define SG(l, reg) ((l)->staged[(unsigned)(reg) - (unsigned)LINK_HT_W_LINE])
 /** @brief Registers 0 to 15: the status and the capture. */
 #define STATUS_N ((unsigned)LINK_HT_DATA)
-/** @brief Registers 16 to 31: VIEW 2. */
-#define RUN_N ((unsigned)LINK_HT_COUNT - (unsigned)LINK_HT_DATA)
+/** @brief Registers 0 to 31: the read of the run, with VIEW and the
+ *         capture in the same read. */
+#define RUN_N ((unsigned)LINK_HT_COUNT)
 /** @brief LINK_HT_STATE's flag bits. */
 #define FLAG_MASK 0x0FF8u
 
@@ -39,7 +40,8 @@ _Static_assert(LINK_HT_W_LINE + HITEC_LINK_STAGED - 1u == LINK_HT_W_VIEW,
                "the view closes the staged registers");
 _Static_assert((STAGE_WINDOWS - 1u) * STAGE_W + 3u == HITEC_LINK_STAGED,
                "stage windows");
-_Static_assert(STATUS_N == 16u && RUN_N == 16u, "the page's halves");
+_Static_assert(STATUS_N == 16u && RUN_N == 32u && RUN_N <= LINK_MAX_REGS,
+               "the page's halves");
 _Static_assert((int)HITEC_DEC_LISTEN == (int)LINK_HITEC_DEC_LISTEN
                && (int)HITEC_DEC_D == (int)LINK_HITEC_DEC_D
                && (int)HITEC_DEC_C == (int)LINK_HITEC_DEC_C,
@@ -248,7 +250,9 @@ static hitec_link_start_t ready(const hitec_link_t *l)
     if (l->page == 0u) {
         return HITEC_LINK_START_NO_PAGE;
     }
-    if (l->phase != (uint8_t)HITEC_LINK_READY) {
+    /* An exchange still out belongs to the request before: its answer
+     * comes first. */
+    if (l->phase != (uint8_t)HITEC_LINK_READY || l->pending != X_NONE) {
         return HITEC_LINK_START_BUSY;
     }
     return HITEC_LINK_START_OK;
@@ -588,7 +592,7 @@ static bool next_request(hitec_link_t *l, hitec_link_xfer_t *x)
         return ask_cmd(l, x);
     }
     if (l->phase == (uint8_t)HITEC_LINK_FETCHING) {
-        return ask(l, x, X_RUN, false, LINK_HT_DATA, RUN_N, NULL);
+        return ask(l, x, X_RUN, false, LINK_HT_STATE, RUN_N, NULL);
     }
     /* HITEC_LINK_RUNNING */
     return due(l, HITEC_LINK_POLL_MS) && ask_status(l, x);
@@ -639,6 +643,49 @@ bool hitec_link_next(hitec_link_t *l, uint32_t now_ms, hitec_link_xfer_t *x)
 }
 
 /**
+ * @brief Whether the page @p regs is in a state the request's command leaves,
+ *        against the status read before it (l->status).
+ *
+ * The SEQ alone does not name the writer: another writer's command at the
+ * same SEQ, ahead of a try of this one, leaves it too.  A refusal fits: the
+ * outcome is REFUSED and claims no run.  CLOSE leaves the port free or
+ * another port held; CLEAR leaves the port held with STOPPED clear.  An
+ * operation that starts names itself in LINK_HT_OP on the request's port
+ * and changes the page: the operation, the transaction count, the state or
+ * the result differ from the read before.  A transaction the driver
+ * refused that repeats the operation and result before it does not fit;
+ * the request ends FAILED either way.
+ *
+ * @param l    The module.
+ * @param regs Registers 0 to 15 as read.
+ * @return true when the state fits the request's command.
+ */
+static bool page_fits_cmd(const hitec_link_t *l, const uint16_t *regs)
+{
+    const uint16_t *was = l->status;
+    const uint8_t st = LINK_HT_STATE_OF(regs[LINK_HT_STATE]);
+    const bool here = st != (uint8_t)LINK_HITEC_FREE
+                      && LINK_HT_PORT_OF(regs[LINK_HT_STATE]) == l->port;
+
+    if ((regs[LINK_HT_RESULT] >> 8) != 0u) {
+        return true;
+    }
+    if (l->op == (uint8_t)LINK_HITEC_OP_CLOSE) {
+        return !here;
+    }
+    if (l->op == (uint8_t)LINK_HITEC_OP_CLEAR) {
+        return here && (regs[LINK_HT_STATE] & LINK_HT_F_STOPPED) == 0u;
+    }
+    if (LINK_HT_OP_OF(regs[LINK_HT_OP]) != l->op
+        || LINK_HT_PORT_OF(regs[LINK_HT_STATE]) != l->port) {
+        return false;
+    }
+    return regs[LINK_HT_OP] != was[LINK_HT_OP]
+           || st != LINK_HT_STATE_OF(was[LINK_HT_STATE])
+           || (regs[LINK_HT_RESULT] & 0xFFu) != (was[LINK_HT_RESULT] & 0xFFu);
+}
+
+/**
  * @brief Whether the page @p regs took the command that was not sent again.
  *
  * A command taken leaves its SEQ.  A page that started again reads SEQ 0,
@@ -648,14 +695,16 @@ bool hitec_link_next(hitec_link_t *l, uint32_t now_ms, hitec_link_xfer_t *x)
  *
  * @param l    The module.
  * @param regs Registers 0 to 15 as read.
- * @return true when the page shows the command's SEQ and is no fresh page.
+ * @return true when the page shows the command's SEQ, is no fresh page
+ *         and is in a state the command leaves (page_fits_cmd()).
  */
 static bool page_took_cmd(const hitec_link_t *l, const uint16_t *regs)
 {
     return regs[LINK_HT_SEQ] == l->cmd[LINK_HT_W_SEQ]
            && (regs[LINK_HT_SEQ] != 0u || (regs[LINK_HT_RESULT] >> 8) != 0u
                || LINK_HT_OP_OF(regs[LINK_HT_OP])
-                      != (uint8_t)LINK_HITEC_OP_NONE);
+                      != (uint8_t)LINK_HITEC_OP_NONE)
+           && page_fits_cmd(l, regs);
 }
 
 /**
@@ -886,6 +935,39 @@ static void on_silence(hitec_link_t *l, uint8_t kind)
     }
 }
 
+/**
+ * @brief Takes the read of registers 0 to 31 that ends a request.
+ *
+ * VIEW is written without a command, so another writer can change it
+ * without a new SEQ.  Registers 16 to 31 are the run's when the same read
+ * shows VIEW at LINK_HITEC_VIEW_RUN and the SEQ, the operation with its
+ * count and the capture of the read that ended the request; otherwise the
+ * outcome carries no run and the line read before stays.  The step's
+ * result is that of the read that ended the request either way.
+ *
+ * @param l    The module.
+ * @param regs Registers 0 to 31 as read.
+ */
+static void on_run(hitec_link_t *l, const uint16_t *regs)
+{
+    const uint16_t *run = &regs[LINK_HT_DATA];
+    const bool same =
+        regs[LINK_HT_VIEW] == (uint16_t)LINK_HITEC_VIEW_RUN
+        && regs[LINK_HT_SEQ] == l->end[LINK_HT_SEQ]
+        && regs[LINK_HT_OP] == l->end[LINK_HT_OP]
+        && regs[LINK_HT_CAP] == l->end[LINK_HT_CAP];
+
+    /* Only a lost link ends a request in FETCHING, and it drops the
+     * exchange that is out: this read is the request's. */
+    if (same) {
+        l->line[0] = run_reg(run, LINK_HT_I_BIT_NS);
+        l->line[1] = run_reg(run, LINK_HT_I_LINE);
+        l->line[2] = run_reg(run, LINK_HT_I_PIN);
+        l->have_line = 1;
+    }
+    finish(l, HITEC_LINK_OUT_DONE, 0u, same ? run : NULL);
+}
+
 void hitec_link_done(hitec_link_t *l, int result, const uint16_t *regs)
 {
     uint8_t kind;
@@ -916,7 +998,11 @@ void hitec_link_done(hitec_link_t *l, int result, const uint16_t *regs)
         on_status(l, regs);
         break;
     case X_STAGE:
-        l->stage_at++;
+        /* The answer of a window of a request dropped while it was out
+         * changes nothing. */
+        if (l->active != 0u) {
+            l->stage_at++;
+        }
         break;
     case X_CMD:
         l->seq = l->cmd[LINK_HT_W_SEQ];
@@ -933,11 +1019,7 @@ void hitec_link_done(hitec_link_t *l, int result, const uint16_t *regs)
         break;
     case X_RUN:
     default:
-        l->line[0] = run_reg(regs, LINK_HT_I_BIT_NS);
-        l->line[1] = run_reg(regs, LINK_HT_I_LINE);
-        l->line[2] = run_reg(regs, LINK_HT_I_PIN);
-        l->have_line = 1;
-        finish(l, HITEC_LINK_OUT_DONE, 0u, regs);
+        on_run(l, regs);
         break;
     }
 }
@@ -952,7 +1034,7 @@ unsigned hitec_link_service(hitec_link_t *l, uint32_t now_ms,
     }
     while (made < HITEC_LINK_PASS_MAX) {
         hitec_link_xfer_t x;
-        uint16_t regs[RUN_N];
+        uint16_t regs[LINK_HT_COUNT];
         int r;
 
         if (!hitec_link_next(l, now_ms, &x)) {

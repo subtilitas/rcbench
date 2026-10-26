@@ -43,7 +43,7 @@ static unsigned g_lose_any;        /* exchanges lost, whatever they are */
 static unsigned g_lose_status;     /* reads of registers 0 to 15 lost */
 static unsigned g_nack_status;     /* reads of 0 to 15 refused BAD_RANGE */
 static uint8_t  g_nack_stage;      /* the answer to a staged window, or 0 */
-static uint8_t  g_nack_run;        /* the answer to a read of 16 to 31 */
+static uint8_t  g_nack_run;        /* the answer to a read of 0 to 31 */
 static bool     g_strip_key;       /* the key taken out of a command */
 static bool     g_fake_busy;       /* reads of STATE say BUSY */
 static bool     g_fake_cap;        /* reads of CAP say 17 bytes */
@@ -51,8 +51,9 @@ static unsigned g_nack_cmd_n;      /* command frames refused with */
 static uint8_t  g_nack_cmd;        /* this NACK before the page */
 static unsigned g_poke_staged;     /* another writer changes register 5
                                       before the next command */
-static unsigned g_other_cmd;       /* another writer sends CLEAR before
-                                      the next command */
+static unsigned g_other_cmd;       /* another writer sends g_other_op
+                                      before the next command */
+static link_hitec_op_t g_other_op = LINK_HITEC_OP_CLEAR;
 static bool     g_abort_in_flight; /* hitec_link_abort() while the next
                                       command frame is on its way */
 
@@ -101,10 +102,10 @@ static inline int xchg(void *ctx, const hitec_link_xfer_t *x,
     (void)ctx;
     g_sent++;
     CHECK_EQ(x->page, LINK_PAGE_HITEC);
-    CHECK(x->n >= 1u && x->n <= 16u);
+    CHECK(x->n >= 1u && x->n <= LINK_HT_COUNT);
     CHECK(!x->write || x->n <= 4u);
     CHECK(x->write == (regs == NULL));
-    if (x->n == 0u || x->n > 16u || (!x->write && regs == NULL)) {
+    if (x->n == 0u || x->n > LINK_HT_COUNT || (!x->write && regs == NULL)) {
         return HITEC_LINK_NO_ANSWER;
     }
     if (cmd) {
@@ -124,7 +125,7 @@ static inline int xchg(void *ctx, const hitec_link_xfer_t *x,
         }
         if (g_other_cmd > 0u) {
             g_other_cmd--;
-            CHECK_EQ(other_cmd(LINK_HITEC_OP_CLEAR, CH, 0u), 0u);
+            CHECK_EQ(other_cmd(g_other_op, CH, 0u), 0u);
         }
         if (g_lose_cmd > 0u) {
             g_lose_cmd--;
@@ -139,7 +140,7 @@ static inline int xchg(void *ctx, const hitec_link_xfer_t *x,
         g_lose_any--;
         return HITEC_LINK_NO_ANSWER;
     }
-    if (!x->write && x->off == LINK_HT_STATE) {
+    if (!x->write && x->off == LINK_HT_STATE && x->n == LINK_HT_DATA) {
         if (g_lose_status > 0u) {
             g_lose_status--;
             return HITEC_LINK_NO_ANSWER;
@@ -152,7 +153,7 @@ static inline int xchg(void *ctx, const hitec_link_xfer_t *x,
     if (x->write && !cmd && g_nack_stage != 0u) {
         return g_nack_stage;
     }
-    if (!x->write && x->off == LINK_HT_DATA && g_nack_run != 0u) {
+    if (!x->write && x->n == LINK_HT_COUNT && g_nack_run != 0u) {
         return g_nack_run;
     }
     memset(&req, 0, sizeof(req));
@@ -283,6 +284,7 @@ static inline void bench_at(uint32_t t0, supply_kind_t supply,
     g_nack_cmd = 0;
     g_poke_staged = 0;
     g_other_cmd = 0;
+    g_other_op = LINK_HITEC_OP_CLEAR;
     g_abort_in_flight = false;
 }
 
@@ -404,7 +406,8 @@ static inline hitec_ses_step_t plus_listen(uint32_t window_us)
 }
 
 /* A request started, run until the module's phase is @p p. */
-static inline void start_until(const hitec_ses_step_t *st, hitec_link_phase_t p)
+static inline void start_until(const hitec_ses_step_t *st,
+                               hitec_link_phase_t p)
 {
     CHECK_EQ(hitec_link_step(&g_l, CH, st, MV, MA, ++g_id),
              HITEC_LINK_START_OK);
@@ -415,7 +418,7 @@ static inline void start_until(const hitec_ses_step_t *st, hitec_link_phase_t p)
 static inline void one_exchange(void)
 {
     hitec_link_xfer_t x;
-    uint16_t regs[16] = { 0 };
+    uint16_t regs[LINK_HT_COUNT] = { 0 };
     int r;
 
     if (!hitec_link_next(&g_l, g_ms, &x)) {

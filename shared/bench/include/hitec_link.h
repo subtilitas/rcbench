@@ -28,15 +28,19 @@
  *      byte on the wire, LINK_HITEC_WRITE_KEY.  A command without an
  *      answer is sent again as it was, up to HITEC_LINK_RETRIES times; the
  *      page takes it once.  After the last try registers 0 to 15 are read:
- *      the page's SEQ tells whether it took the command;
+ *      the page's SEQ, and a state the command leaves, tell whether it
+ *      took the command.  A SEQ whose state does not fit is another
+ *      writer's command: HITEC_LINK_OUT_RESTARTED;
  *   3. registers 0 to 15 are read: the command started the operation or
  *      the page says why not (LINK_HT_RESULT's high byte);
  *   4. registers 0 to 15 are read every HITEC_LINK_POLL_MS until the page
  *      is out of STOPPING, BUSY and POWER_OFF.  The last read holds the
  *      capture: STATE, RESULT, CAP, DEC, VALUE and the 16 bytes;
- *   5. registers 16 to 31 are read once, while VIEW reads
- *      LINK_HITEC_VIEW_RUN: the decoder's delay, the times, the line and
- *      the pin.
+ *   5. registers 0 to 31 are read once: registers 16 to 31 are the run's
+ *      (the decoder's delay, the times, the line and the pin) when the
+ *      same read shows VIEW at LINK_HITEC_VIEW_RUN and the SEQ, the
+ *      operation and the capture of step 4; otherwise the outcome has no
+ *      run.
  *
  * hitec_link_outcome() then hands out how it went, once.
  *
@@ -110,7 +114,7 @@ typedef enum {
     HITEC_LINK_READY,      /**< a request is taken */
     HITEC_LINK_SENDING,    /**< the staged registers and the command go out */
     HITEC_LINK_RUNNING,    /**< the page runs the request */
-    HITEC_LINK_FETCHING,   /**< registers 16 to 31 are read */
+    HITEC_LINK_FETCHING,   /**< registers 0 to 31 are read */
 } hitec_link_phase_t;
 
 /** @brief What a request answers. */
@@ -118,7 +122,8 @@ typedef enum {
     HITEC_LINK_START_OK = 0,
     HITEC_LINK_START_DOWN,     /**< no IOmcu answers */
     HITEC_LINK_START_NO_PAGE,  /**< the IOmcu has no HITEC page */
-    HITEC_LINK_START_BUSY,     /**< the phase is not HITEC_LINK_READY */
+    HITEC_LINK_START_BUSY,     /**< the phase is not HITEC_LINK_READY, or
+                                    an exchange is still out */
     HITEC_LINK_START_ARG,      /**< no such port, family, drive or step */
 } hitec_link_start_t;
 
@@ -165,7 +170,8 @@ typedef struct {
                                      answer's ID */
     uint8_t  n;                 /**< bytes held, 0 to HITEC_RX_MAX */
     uint8_t  bytes[HITEC_RX_MAX]; /**< the bytes, in the order they came */
-    bool     have_run;          /**< registers 16 to 31 were read */
+    bool     have_run;          /**< registers 16 to 31 were read with
+                                     VIEW 2, for this capture */
     uint32_t delay_ns;          /**< the decoder's delay, ns */
     uint32_t t_us;              /**< from the start to the capture, us */
     uint32_t window_us;         /**< the window the capture asked, us */
@@ -206,7 +212,7 @@ typedef struct {
     bool     write;          /**< a write of regs; otherwise a read */
     uint8_t  page;           /**< LINK_PAGE_HITEC */
     uint8_t  off;            /**< first register of the page */
-    uint8_t  n;              /**< registers, 1 to 16; a write 1 to 4 */
+    uint8_t  n;              /**< registers, 1 to 32; a write 1 to 4 */
     uint16_t regs[4];        /**< a write's registers */
 } hitec_link_xfer_t;
 
@@ -216,7 +222,7 @@ typedef struct {
  *
  * @param ctx   The caller's context.
  * @param x     The exchange to make.
- * @param regs  Receives a read's registers, 16 at most; NULL for a write.
+ * @param regs  Receives a read's registers, 32 at most; NULL for a write.
  * @return HITEC_LINK_ACK, a NACK's reason (LINK_NACK_*), or
  *         HITEC_LINK_NO_ANSWER.
  */
