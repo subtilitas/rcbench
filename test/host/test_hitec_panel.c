@@ -52,12 +52,22 @@ TEST_CASE(the_series_row_and_more_take_no_tap_while_the_port_is_held)
 {
     open_en();
     servo_d485();
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(HP_SERIES));
     tap_connect();
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
+    /* The PORT row names the series; FILES takes SERIES' place. */
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(KP_FILES));
+    CHECK(strstr(hitec_panel_port_line(0), TR(HP_SERIES_D)) != NULL);
     CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
-    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
+    /* LEAVE gives SERIES back. */
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    show();
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0), TR(HP_SERIES));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
 }
 
 /**

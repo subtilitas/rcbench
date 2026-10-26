@@ -4,9 +4,11 @@
 
 Die Programmierung liest die Einstellungen eines Hitec-Servos über seine
 Signalleitung, zeigt sie decodiert und so, wie sie gespeichert sind, und
-schreibt geänderte Werte zurück. Vor jedem Schreiben vermerkt sie die Werte
-des Servos, auf der Karte, wo eine eingelegt ist; eine Backup-Datei legt sie
-nicht an. Sie öffnet sich aus ihrer Zeile `Hitec-Servos` unter
+schreibt geänderte Werte zurück. Vor dem ersten Schreiben einer Sitzung
+speichert sie das Servo, wie sie es vorfand, in einer Backup-Datei auf der
+Karte, und vor jedem Schreiben vermerkt sie die Werte des Servos. Sie
+speichert die Einstellungen eines Servos in einer Datei, lädt eine Datei in
+die Änderungen und schreibt das Backup der Sitzung zurück. Sie öffnet sich aus ihrer Zeile `Hitec-Servos` unter
 **PROGRAMMIEREN** der [Seite SERVO](Screens-de.md#servo), eine Ebene tiefer,
 und deckt die linke Spalte samt den Reitern der Leiste ab. **SCHLIESSEN**
 oder die Home-Tag führt zur Liste von PROGRAMMIEREN zurück, solange die
@@ -73,12 +75,13 @@ läuft, beschreibt
 | Zeile | Was sie tut |
 | --- | --- |
 | PORT | Zwei Zeilen: der Port und sein GPIO mit der Serie, `PROG-PORT 1 GPIO 13  D-SERIE`, dann die Empfangsart und die Versorgung, die VERBINDEN einstellt, `RX PRECHARGE  5.0V 1000mA` (`VERSORGUNG UNVERÄNDERT` für ein Servo der D-Serie ohne PD mini). Die Taste lautet VERBINDEN, ABBRECHEN, solange der Port in den Programmiermodus geht oder ein Lesen läuft, WARTEN, VERLASSEN, solange der Port gehalten ist, und PORT FREIGEBEN, solange eine andere Sitzung ihn hält |
-| SERIE | D-SERIE oder KLASSISCH, vor VERBINDEN gewählt; bei den Einstellungen von SERVO gehalten (SET_HITEC_SERIES). Nicht angenommen, solange der Port gehalten ist |
+| SERIE | D-SERIE oder KLASSISCH, vor VERBINDEN gewählt; bei den Einstellungen von SERVO gehalten (SET_HITEC_SERIES). Solange der Port gehalten ist, nennt die Zeile PORT die Serie, und DATEIEN steht an dieser Stelle |
+| DATEIEN | Solange der Port gehalten ist: die Servodateien auf der Karte, Speichern und Laden ([Servodateien](#servodateien)) |
 | SERVO | Das gelesene Modell, `D485HW` oder `HS-5645MG`; ALLES AUSLESEN liest die Werte der Serie erneut |
-| WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, und PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme |
+| WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
 | NACH STOP | CLEAR nach einem Schalten auf SAFE am Prüfstand: der IOmcu löscht das Flag STOPPED des Ports, und das Lesen geht weiter, oder der Einstieg von vorn, wo die Versorgung ausging |
 | SCHREIBEN INS SERVO FREIGEBEN | Der Schreibschalter, AUS oder EIN ([Der Schreibschalter](#der-schreibschalter)) |
-| ZURÜCKSPIELEN | Solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
+| ZURÜCKSPIELEN | Das Backup der Sitzung zurück ins Servo, solange es vom Servo abweicht ([Zurückspielen des Backups der Sitzung](#zurückspielen-des-backups-der-sitzung)); solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
 | n WERTE SCHREIBEN | Der Entwurf ins Servo ([Schreiben](#schreiben)); `1 WERT SCHREIBEN` für einen, aus ohne |
 
 Unter den Zeilen sagt die Zustandszeile, was der Port gerade tut, und die
@@ -235,9 +238,9 @@ Vergleichen: jede Änderung daran fragt.
 **SCHREIBEN INS SERVO FREIGEBEN** steht zu Beginn auf AUS. Ein Tipp auf
 **AUS** öffnet eine Seite, die die Risiken nennt; **2s HALTEN ZUM
 FREIGEBEN** schaltet ihn ein. Ein Tipp auf **EIN** schaltet ihn sofort aus.
-Ein Tipp auf **n WERTE SCHREIBEN**, ZURÜCKSPIELEN oder PRÜFSUMME
-REPARIEREN bei ausgeschaltetem Schalter öffnet dieselbe Seite: ihr Halten
-schaltet den Schalter ein und schreibt nichts.
+Ein Tipp auf **n WERTE SCHREIBEN**, ZURÜCKSPIELEN, PRÜFSUMME REPARIEREN
+oder WERKSEINSTELLUNG bei ausgeschaltetem Schalter öffnet dieselbe Seite:
+ihr Halten schaltet den Schalter ein und schreibt nichts.
 
 Der Schalter geht aus:
 
@@ -262,11 +265,14 @@ abweicht. Ein Tipp öffnet die Schreibseite: die geänderten Werte,
 die Zahl der übrigen; `Halte das Ruderhorn frei. Löse das Gestänge.` und
 `Teste das Servo am Prüfstand, bevor du es ins Modell einbaust.` beim
 ersten Schreiben nach VERBINDEN und bei jedem Schreiben, das DREHRICHTUNG,
-NEUTRAL, MITTE oder einen Endpunkt ändert; was die Serie tut; und wo die
-Werte vor dem Schreiben vermerkt werden. **2s HALTEN ZUM SCHREIBEN**
-startet es.
+NEUTRAL, MITTE oder einen Endpunkt ändert; was die Serie tut; die
+Backup-Datei oder die Zeilen ohne Backup-Datei ([Das Backup vor dem ersten
+Schreiben](#das-backup-vor-dem-ersten-schreiben)); und wo die Werte vor dem
+Schreiben vermerkt werden. **2s HALTEN ZUM SCHREIBEN** startet es.
 
-1. Der Vermerk: die Werte des Servos, die Werte, die das Schreiben
+1. Die Backup-Datei, vor dem ersten Schreiben der Sitzung mit eingelegter
+   Karte. Das Schreiben wartet bis zu 5000ms auf die Karte.
+2. Der Vermerk: die Werte des Servos, die Werte, die das Schreiben
    hinterlassen soll, die Serie, der Port und sein GPIO. Mit eingelegter
    Karte geht er zuerst nach `BENCH/HITEC/CONF/HITEC.TXT`, und das
    Schreiben wartet darauf: eine Karte, die ihn nicht innerhalb von 3000ms
@@ -277,14 +283,14 @@ startet es.
    Text, der einen Vermerk löscht, gibt nichts frei: das Schreiben geht
    los, sobald die Karte seinen eigenen Vermerk angenommen hat, und die
    3000ms zählen ab dem Start des Schreibens.
-2. Der Plan von `hitec_plan()`: nur die Einstellungen, die sich ändern.
+3. Der Plan von `hitec_plan()`: nur die Einstellungen, die sich ändern.
    D-Serie: die Register der Einstellung, wie das HFP-30 sie schreibt, im
    Abstand von 20ms, dann das Speichern, 100ms, der Neustart und 1000ms.
    Klassisch: jede Zelle einer geänderten Einstellung, dann der Ausgleich
    in Zelle 0x1C, jede mit `+ +` beantwortet, mit 3 Versuchen.
-3. Das Zurücklesen: der Satz von 21 Registern der D-Serie oder die
+4. Das Zurücklesen: der Satz von 21 Registern der D-Serie oder die
    klassischen Zellen 0x00 bis 0x23, gegen den Entwurf gehalten.
-4. `2 Werte geschrieben und geprüft.` oder `1 Wert geschrieben und
+5. `2 Werte geschrieben und geprüft.` oder `1 Wert geschrieben und
    geprüft.` beendet es und löscht den Vermerk. Der Schalter bleibt ein.
 
 Im Host-Modell (`test_hitec_prog_write`) dauert ein Schreiben eines Werts
@@ -293,8 +299,9 @@ Frame und 2,5s bei 33ms. Am Prüfstand sind diese Zeiten nicht gemessen.
 
 Das Schreiben wird abgelehnt bei ARMED oder einem angeforderten Schalten
 auf ARMED, mit gesetztem STOP, an einem gestoppten Port, ohne gelesenes
-Servo, mit ausgeschaltetem Schalter, ohne Änderung und solange ein Vermerk
-eines früheren Schreibens besteht. Port, Prüfstand, STOP, Einstieg und
+Servo, mit ausgeschaltetem Schalter, ohne Änderung, solange ein Vermerk
+eines früheren Schreibens besteht und solange eine Anfrage an die Karte
+(DATEIEN, Speichern oder Laden) auf ihre Antwort wartet. Port, Prüfstand, STOP, Einstieg und
 Schalter werden erneut geprüft, wenn die Karte den Vermerk angenommen hat:
 ein inzwischen ausgeschalteter Schalter, ein STOP oder ein Finger auf ARM
 beendet das Schreiben, bevor ein Schritt hinausgeht, mit der Meldung der
@@ -354,6 +361,245 @@ Die Dateiverwaltung zeigt `HITEC.TXT` und `HITEC.NEW` nur mit INFO: eine
 
 ![Nach einem ungeprüften Schreiben](img/de/servo-hitec-verify.png)
 ![ZURÜCKSPIELEN](img/de/servo-hitec-restore.png)
+
+## Servodateien
+
+Eine Servodatei ist eine Textdatei im Ordner `BENCH/HITEC/CONF` der
+SD-Karte des Panels, `<Name>.TXT`, neben dem Vermerk `HITEC.TXT`. Das Panel
+legt beim ersten Speichern jede fehlende Ebene des Ordners an: `BENCH`,
+`BENCH/HITEC`, dann `BENCH/HITEC/CONF`. Eine Datei hält den Satz, den ALLES
+AUSLESEN liest: 21 Register eines Servos der D-Serie, 100 Zellen eines
+klassischen Servos und seine Version.
+
+```
+RCBENCH HITEC 1
+series=D
+model=D485HW
+image=86B500271FC1000000000000000100010FFF000000010FFF000009C410FE006432CB0D17200000000000
+check=4A84
+```
+
+| Zeile | Inhalt |
+| --- | --- |
+| 1 | `RCBENCH HITEC 1`, das Format; der Vermerk hat dieselbe erste Zeile und `port=` als dritte |
+| `series=` | `D` oder `C` |
+| `model=` | der Name des Modells, `D485HW` oder `HS-5645MG`; `D series 34999` für eine Modellnummer der D-Serie, die das Registermodell nicht nennt; die Namenszellen wie gelesen für einen anderen klassischen Namen; `?` für keinen. 1 bis 20 druckbare Zeichen |
+| `image=` | D-Serie: die Register in der Reihenfolge, in der ALLES AUSLESEN sie liest, je 4 Hexadezimalziffern, 84 Ziffern. Klassisch: die Zellen 0x00 bis 0x23, 0x30 bis 0x53, 0x60 bis 0x6F, 0x70 bis 0x73 und 0x80 bis 0x87, je 2 Ziffern, 200 Ziffern |
+| `version=` | nur klassisch, 2 Ziffern, wo das Lesen eine fand |
+| `check=` | die CRC-16 (zyklische Redundanzprüfung) aller Bytes vor dieser Zeile, 4 Ziffern |
+
+Zeilen enden nur mit LF (Zeilenvorschub), die Ziffern sind Großbuchstaben.
+Eine Datei eines D485HW hat 140 Bytes, eine eines HS-5645MG 270 Bytes; das
+Panel liest höchstens 320 Bytes. Eine Datei, deren Prüfsumme nicht stimmt
+oder deren Zeilen nicht diese in dieser Reihenfolge sind, wird ganz
+abgelehnt: eine von Hand bearbeitete Datei wird nicht geladen.
+
+**DATEIEN** öffnet die Liste. Sie nimmt einen Tipp an, wenn der Port
+gehalten, das Servo im Programmiermodus und gelesen ist, kein Lesen nach
+einem Schreiben aussteht, der Port nicht gestoppt, der Prüfstand SAFE und
+kein STOP gesetzt ist; sonst sagt der Tipp, warum nicht. Speichern und
+Laden gehen auch mit ausgeschaltetem Schreibschalter: eine Datei ändert den
+Entwurf im Panel, nie das Servo.
+
+Der erste Eintrag speichert. Darunter stehen die Dateien nach Namen
+sortiert, 5 je Seite, jede mit dem Modell, das ihre Datei nennt. Die
+Dateien mit einem vorgeschlagenen Namen, `HITEC` und 3 Ziffern, stehen
+zusammen an der Stelle von `HITEC000`, die höchste Nummer zuerst. Bei mehr
+als 5 Dateien zählt sie der Titel, `DATEIEN 1 BIS 5 VON 7`, und `Weitere
+Dateien anzeigen.` blättert weiter, nach der letzten zurück zur ersten
+Seite. Das Panel fragt die Karte nach jeder Seite und wartet höchstens
+5000ms darauf: sonst `Die Karte lässt sich nicht lesen.`
+
+![Die Dateien auf der Karte](img/de/servo-hitec-files.png)
+![Die zweite Seite von 7 Dateien](img/de/servo-hitec-files-next.png)
+![Eine Karte ohne Servodateien](img/de/servo-hitec-files-none.png)
+
+### Speichern
+
+`Werte dieses Servos in einer neuen Datei speichern.` öffnet die Tastatur
+mit dem nächsten freien vorgeschlagenen Namen, `HITEC001` bis `HITEC999`.
+Die Tastatur nimmt bis zu 16 Zeichen: A bis Z, 0 bis 9, `-`, `_` und den
+Punkt. **OK** speichert das Servo, wie es zuletzt gelesen wurde; eine
+Änderung im Entwurf steht nicht in der Datei. Die Kartenseite prüft den
+Namen und ersetzt nie eine Datei. Namen werden ohne Groß- und
+Kleinschreibung verglichen. Eine Datei mit längerem Namen, bis 32 Zeichen,
+wird gelistet und geladen.
+
+![Der Name einer neuen Datei](img/de/servo-hitec-name.png)
+![Ein vergebener Name](img/de/servo-hitec-name-exists.png)
+
+| Ergebnis | Angezeigt |
+| --- | --- |
+| Gespeichert | `Servowerte auf der Karte gespeichert: WING-L.` |
+| Ein Punkt am Anfang oder Ende, oder ein reservierter Name: `HITEC`, `CON`, `PRN`, `AUX`, `NUL`, `COM1` bis `COM9`, `LPT1` bis `LPT9`, allein oder vor einem Punkt | die Tastatur öffnet sich wieder unter `UNGÜLTIGER NAME`; `Ungültiger Name: reserviert oder mit einem Punkt am Anfang oder Ende.` |
+| Eine Datei hat den Namen | die Tastatur öffnet sich wieder unter `NAME VERGEBEN. ANDEREN WÄHLEN.`; `Dieser Dateiname ist bereits vergeben. Keine Datei wurde ersetzt.` |
+| Keine Karte | `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
+| Karte voll, oder `HITEC001` bis `HITEC999` beim Backup vor einem Schreiben alle vergeben | `Karte voll. Nichts gespeichert oder ins Servo geschrieben.` |
+| Die Karte ist schreibgeschützt, oder `BENCH`, `BENCH/HITEC` oder `BENCH/HITEC/CONF` ist auf der Karte eine Datei und kein Ordner | `Speichern nicht möglich: Karte schreibgeschützt oder BENCH/HITEC/CONF kein Ordner.` |
+| Die Karte scheitert am Schreiben der Datei oder antwortet nicht innerhalb von 5000ms | `Schreibfehler auf der Karte. Keine Werte ins Servo geschrieben.` |
+
+Ein Speichern, das die Karte nach den 5000ms abschließt, ist die Datei, die
+sie angelegt hat; die Zeile bleibt, wie sie war.
+
+### Das Backup vor dem ersten Schreiben
+
+Das Backup der Sitzung ist das erste vollständige Lesen nach VERBINDEN,
+gehalten im Arbeitsspeicher des Panels. Ein späteres Lesen desselben
+Servos lässt es, wie es ist. Ein Lesen, das ein anderes Servo findet, macht
+dieses Lesen zum Backup: bei der D-Serie eine andere Modellnummer, bei
+einem klassischen Servo ein anderer Name, ein anderes Datum, eine andere
+Seriennummer oder Version. VERLASSEN, das nächste VERBINDEN, eine verlorene
+Verbindung und ein Neustart des Panels beenden es.
+
+Das erste Schreiben einer Sitzung, das einen Schritt sendet, n WERTE
+SCHREIBEN, PRÜFSUMME REPARIEREN, ein ZURÜCKSPIELEN oder WERKSEINSTELLUNG,
+speichert zuerst das Backup ohne Nachfrage in eine neue Datei unter dem
+nächsten vorgeschlagenen Namen. Die Schreibseite sagt `Die bisherigen
+Servowerte werden vor dem Schreiben in einer neuen Kartendatei gesichert.`
+und die Zustandszeile `Backup-Datei wird auf der Karte gespeichert.`,
+solange die Karte arbeitet. Das Servo erhält nichts, bevor die Karte die
+Datei hält. Eine Karte, die voll oder schreibgeschützt ist, die am
+Schreiben scheitert, die zwischen Anfrage und Datei den Steckplatz verlässt
+oder die nicht innerhalb von 5000ms antwortet, beendet das Schreiben mit
+den Zeilen der Tabelle oben, und nichts wird ins Servo geschrieben.
+ABBRECHEN und STOP, während die Karte arbeitet, beenden das Schreiben
+ebenso. Eine Datei, die die Karte nach den 5000ms anlegt, hält das Backup
+trotzdem; das Schreiben geht nicht von selbst weiter. Der Reiter SERVO
+nennt dann die Datei: `Backup-Datei dieser Sitzung: HITEC003.` Ein
+Speichern von Hand vor dem ersten Schreiben zählt als diese Datei, solange
+das Servo noch die Werte des Backups hält. Ein Speichern von Hand nach
+einem Schreiben hält die geschriebenen Werte und lässt die Zeile, wie sie
+ist.
+
+![Die Schreibseite mit der Backup-Datei](img/de/servo-hitec-backup-write.png)
+![Die Backup-Datei unterwegs](img/de/servo-hitec-backup-saving.png)
+![Die Backup-Datei genannt](img/de/servo-hitec-backup-file.png)
+
+#### Ohne Karte
+
+Ohne eingehängte Karte ist das Schreiben nicht gesperrt. Die Schreibseite
+trägt drei weitere Zeilen:
+
+```
+Keine Karte. Es wird keine Backup-Datei gespeichert.
+Das Backup dieser Sitzung liegt nur im Speicher des Prüfstands.
+Es geht beim Sitzungsende oder bei Stromausfall am Prüfstand verloren.
+```
+
+Nach dem Schreiben zeigt der Reiter SERVO `Keine Karte, keine
+Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` Eine
+später in der Sitzung eingelegte Karte erhält das Backup mit dem nächsten
+Schreiben: die Datei hält das Servo, wie die Sitzung es vorfand, nicht wie
+es gerade steht. Eine Karte, die den Steckplatz verlässt, nachdem die
+Backup-Datei gespeichert ist, lässt spätere Schreibvorgänge zu; die
+Schreibseite sagt dann `Keine Karte. Die bisherigen Werte bleiben nur im
+Arbeitsspeicher.` Eine Karte im Steckplatz, die sich nicht einhängen
+lässt, zählt als keine Karte, und die Zeilen nennen an Stelle von `Keine
+Karte`, was das Panel fand, wie bei der KST-Programmierung ([Ohne
+Karte](ServoProgrammer-de.md#ohne-karte)).
+
+![Die Schreibseite ohne Karte](img/de/servo-hitec-write.png)
+![Das Backup nur im Arbeitsspeicher](img/de/servo-hitec-nofile.png)
+
+### Laden
+
+Ein Tipp auf eine Datei lädt sie. Die Zellen oder Register jedes
+änderbaren Werts werden zum Entwurf, so wie sie gespeichert sind: ein
+Wert, der zu keiner Kodierung passt, kommt roh zurück. Ein klassischer
+Entwurf erhält seinen Ausgleich in Zelle 0x1C berechnet. Die geänderten
+Werte sind mit `*` markiert, **n WERTE SCHREIBEN** zählt sie, und nichts
+erreicht das Servo vor dem Schreibschalter, der Schreibseite und ihrem
+Halten von 2s.
+
+![Eine geladene Datei](img/de/servo-hitec-file-loaded.png)
+
+| Datei | Angezeigt |
+| --- | --- |
+| Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
+| Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.` |
+| Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
+| Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
+| Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
+| Von einem anderen Modell desselben Layouts, oder jenseits einer weichen Regel | DIESE DATEI PRÜFEN, unten; `Bestätige die Warnungen, bevor du diese Datei lädst.` |
+| Eine falsche Prüfsumme | `Datei beschädigt: Prüfsumme stimmt nicht. Nicht geladen.` `Eine von Hand bearbeitete Datei wird nicht geladen.` |
+| Endet vor ihrer Prüfzeile | `Datei beschädigt: Sie endet vor ihrer Prüfzeile. Nicht geladen.` und dieselbe zweite Zeile |
+| Eine Zeile, die nicht die fällige ist | `Zeile 5 ist nicht lesbar. Datei nicht geladen.` und dieselbe zweite Zeile |
+| Keine Servodatei, oder größer als 320 Bytes | `Keine Servodatei. Nicht geladen.` |
+| Die Karte lässt sich nicht lesen oder antwortet nicht innerhalb von 5000ms | `Die Karte lässt sich nicht lesen.` |
+
+![Eine Datei der anderen Serie](img/de/servo-hitec-file-series.png)
+![Eine beschädigte Datei](img/de/servo-hitec-file-damaged.png)
+
+DIESE DATEI PRÜFEN öffnet sich, bevor etwas zum Entwurf wird, wenn die
+Datei ein anderes Modell nennt, `Dateimodell D series 34999, Servomodell
+D485HW.` und `Werte eines anderen Modells passen vielleicht nicht zu
+diesem Servo.`, oder wenn ein Wert, den sie lädt, eine weiche Regel
+überschreitet, die der eigene Wert des Servos einhält. Die Seite nennt die
+Datei und die abweichenden Werte und dieselben Warnzeilen wie eine Änderung
+jenseits dieser Regeln ([Ein Wert, der einen zweiten
+Blick braucht](#ein-wert-der-einen-zweiten-blick-braucht)). **2s HALTEN
+ZUM LADEN** übernimmt die Werte in den Entwurf, jede Regel für ihren Wert
+bestätigt. **ABBRECHEN** und ZURÜCK lassen den Entwurf, wie er war.
+
+![Ein Wert jenseits einer weichen Regel](img/de/servo-hitec-file-check.png)
+![Eine Datei eines anderen Modells](img/de/servo-hitec-file-model.png)
+
+#### Was eine Datei nicht lädt
+
+Ein Laden schreibt nur die änderbaren Werte. Diese bleiben, wie das Servo
+sie hält: bei der D-Serie die Register 0x00 (das Modell), 0x04, 0x22, 0x64
+(EMPFINDLICHKEIT), 0xD4 und 0xD6; bei einem klassischen Servo die Zellen
+ohne änderbaren Wert in 0x00 bis 0x23, die Werkszellen 0x30 bis 0x53, der
+Name, das Datum, die Seriennummer und die Version. Die Position der
+D-Serie, Register 0x0C, und der klassische Ausgleich, Zelle 0x1C, werden
+nicht gezählt. ZURÜCKSPIELEN des Backups der Sitzung schreibt die Zellen
+und Register, die ein Laden lässt.
+
+## Zurückspielen des Backups der Sitzung
+
+**ZURÜCKSPIELEN** bietet `Backup der zuerst in dieser Sitzung ausgelesenen
+Werte.` an, solange das Backup in einer Adresse, die ein Schreiben sendet,
+vom Servo abweicht: jedes Register der D-Serie und jede klassische Zelle
+0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen. Ein Tipp
+öffnet ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
+Prüfung der Grenzwerte zurückgespielt.`, die Zahl der klassischen Zellen
+ohne änderbaren Wert, die es zurückschreibt, `Gespeicherte Werte außerhalb
+der Einstellungen, mit zurückgespielt: 1.`, und die Zeilen der
+Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
+zuerst die Backup-Datei, wenn keine es hält, der Vermerk, die Schritte und
+das Zurücklesen. Es endet mit `Backup zurückgespielt und geprüft.` Es
+braucht den Schalter und keine offene Änderung. Besteht ein Vermerk eines
+unterbrochenen Schreibens, behält es diesen und braucht zuerst dessen
+Vergleich durch ALLES AUSLESEN, wie ZURÜCKSPIELEN des Vermerks.
+
+![Die Liste ZURÜCKSPIELEN](img/de/servo-hitec-restore-backup.png)
+![ZURÜCKSPIELEN des Backups der Sitzung](img/de/servo-hitec-restore-page.png)
+
+## WERKSEINSTELLUNG
+
+Nur klassische Servos. Ein klassisches Servo hält seine Werkswerte in den
+Zellen 0x30 bis 0x53, im selben Aufbau wie seine Einstellungen in den
+Zellen 0x00 bis 0x23. Das Zurücksetzen des HPP-21 Plus kopiert sie
+darüber, am Prüfstand am 18.10.2026 für das HS-5645MG und das HS-7955TG
+mitgeschnitten. WERKSEINSTELLUNG unter WEITERES plant dieselbe Kopie aus
+den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
+Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
+Werkswerte zurück.`, `Quelle sind die eigenen Werkszellen 0x30-0x53 des
+Servos.`, den Werten, die sich ändern, der Zeile zum Ruderhorn und den
+Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
+den Schalter, keine offene Änderung und keinen Vermerk; ein Servo, dessen
+Zellen die Werkswerte schon halten, erhält `Kein Wert weicht vom Servo
+ab.`
+
+Ein Servo der D-Serie hat keine WERKSEINSTELLUNG: sein Rücksetzbefehl
+(Register 0x6E = 0x0F0F, wie das HFP-30 ihn sendet) hinterlässt Werte, die
+vor dem Senden nicht bekannt sind; die Schreibseite kann sie nicht nennen,
+und das Zurücklesen hat nichts, wogegen es sie hält.
+
+![WEITERES eines klassischen Servos](img/de/servo-hitec-classic-more-factory.png)
+![WERKSEINSTELLUNG](img/de/servo-hitec-classic-factory.png)
+![WERKSEINSTELLUNG geschrieben](img/de/servo-hitec-classic-factory-done.png)
 
 ## PRÜFSUMME REPARIEREN
 
@@ -451,9 +697,18 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
   lässt, ist nicht gemessen. Geschriebene, nicht gespeicherte Werte gehen
   beim nächsten Ausschalten des Servos verloren, und der Einstieg der
   D-Serie bei VERBINDEN schaltet die Versorgung aus und ein.
-- Die Regeln von ÄNDERUNG PRÜFEN vergleichen mit dem letzten vollständigen Lesen, nicht
-  mit dem ersten Lesen der Sitzung, und eine Backup-Datei entsteht nicht:
-  der Vermerk eines Schreibens hält die Werte davor.
+- Die Regeln von ÄNDERUNG PRÜFEN vergleichen mit dem letzten vollständigen
+  Lesen, nicht mit dem Backup der Sitzung.
+- Das Backup der Sitzung liegt im Arbeitsspeicher des Panels: VERLASSEN,
+  VERBINDEN, eine verlorene Verbindung und ein Neustart des Panels beenden
+  es. Nach einer verlorenen Verbindung ist das Backup der neuen Sitzung das
+  Servo, wie sie es dann vorfindet, mit den Werten des unterbrochenen
+  Schreibens; der Vermerk des Schreibens und die Backup-Datei der alten
+  Sitzung halten die Werte davor.
+- Zwei Servos der D-Serie desselben Modells werden nicht unterschieden: ein
+  zweites D485HW am Port behält das Backup des ersten.
+- Eine außerhalb des Panels geschriebene oder bearbeitete Servodatei wird
+  nicht geladen.
 - Der Vermerk wird nur beim Start des Panels von der Karte gelesen. Eine
   später eingelegte Karte wird nicht nach einem gelesen, und ein Vermerk
   ohne eingelegte Karte bleibt im Arbeitsspeicher und ist nach einem
@@ -462,7 +717,10 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
   dieses Schreiben als unterbrochen.
 - NEUTRAL, ENDE LINKS und ENDE RECHTS werden als Zahlen auf dem Tastenfeld
   geändert; das Servo fährt beim Ändern nicht dorthin, und das Tastenfeld
-  hat keine Tasten `-`/`+`. WERKSEINSTELLUNG wird nicht angeboten.
+  hat keine Tasten `-`/`+`.
+- WERKSEINSTELLUNG wird für die D-Serie nicht angeboten; bei einem
+  klassischen Servo ist sie die Kopie der Zellen 0x30 bis 0x53 durch das
+  HPP-21 Plus, nur im Host-Modell getestet.
 - Die Prüfstandsschritte S6 bis S8 und S10 bis S11 (Schreiben an ein
   D485HW und ein klassisches Servo, eine während eines Schreibens
   getrennte Verbindung) sind nicht gelaufen.

@@ -72,14 +72,7 @@ bool hitec_prog_differs(const hitec_prog_t *p, const hitec_image_t *img,
                                            : a.raw != b.raw);
 }
 
-/**
- * @brief The parameters in which @p img differs from the servo read.
- *
- * @param p   The programmer.
- * @param img The image.
- * @return The count.
- */
-static unsigned differing(const hitec_prog_t *p, const hitec_image_t *img)
+unsigned hpw_differing(const hitec_prog_t *p, const hitec_image_t *img)
 {
     unsigned n = 0;
 
@@ -93,7 +86,7 @@ static unsigned differing(const hitec_prog_t *p, const hitec_image_t *img)
 
 unsigned hitec_prog_changes(const hitec_prog_t *p)
 {
-    return p->have_servo ? differing(p, &p->draft) : 0u;
+    return p->have_servo ? hpw_differing(p, &p->draft) : 0u;
 }
 
 bool hitec_prog_sum_bad(const hitec_prog_t *p)
@@ -358,12 +351,7 @@ void hitec_prog_cancel(hitec_prog_t *p)
     p->pend = false;
 }
 
-/**
- * @brief Every confirmation ends, and the edit that waits.
- *
- * @param p The programmer.
- */
-static void unconfirm(hitec_prog_t *p)
+void hpw_unconfirm(hitec_prog_t *p)
 {
     p->soft_has = 0u;
     p->pend = false;
@@ -374,7 +362,7 @@ void hitec_prog_discard(hitec_prog_t *p)
     if (p->have_servo) {
         p->draft = p->servo;
     }
-    unconfirm(p);
+    hpw_unconfirm(p);
 }
 
 /* ---------------------------------------------------------------- switch */
@@ -408,6 +396,20 @@ bool hitec_prog_write_on(const hitec_prog_t *p)
 
 /* ---------------------------------------------------------------- writes */
 
+/**
+ * @brief Whether FACTORY DEFAULT changes the servo: a classic servo whose
+ *        factory image differs from it in a parameter.
+ *
+ * @param p The programmer.
+ * @return true when it does.
+ */
+static bool factory_differs(const hitec_prog_t *p)
+{
+    hitec_image_t img;
+
+    return hitec_prog_factory_image(p, &img) && hpw_differing(p, &img) != 0u;
+}
+
 hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,
                                           uint8_t kind)
 {
@@ -425,7 +427,15 @@ hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,
     if (p->must_read) {
         return HITEC_PROG_MSG_MUST_READ;
     }
-    if (kind == (uint8_t)HITEC_PROG_WR_RESTORE) {
+    if (hitec_prog_card_busy(p)) {
+        /* A file of the card is on its way: the backup file waits for
+         * the card as well. */
+        return HITEC_PROG_MSG_BUSY;
+    }
+    /* RESTORE of the record keeps it; so does RESTORE of the session's
+     * backup where one stands.  Every other write needs none. */
+    if (kind == (uint8_t)HITEC_PROG_WR_RESTORE
+        || (kind == (uint8_t)HITEC_PROG_WR_BACKUP && p->rec)) {
         if (!p->rec || p->rec_open
             || p->rec_verdict == (uint8_t)HITEC_PROG_REC_NONE) {
             return HITEC_PROG_MSG_MUST_READ;
@@ -445,6 +455,10 @@ hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,
     }
     if (kind == (uint8_t)HITEC_PROG_WR_REPAIR && !hitec_prog_sum_bad(p)) {
         return HITEC_PROG_MSG_SUM_OK;
+    }
+    if ((kind == (uint8_t)HITEC_PROG_WR_BACKUP && !hitec_prog_backup_differs(p))
+        || (kind == (uint8_t)HITEC_PROG_WR_FACTORY && !factory_differs(p))) {
+        return HITEC_PROG_MSG_NO_CHANGES;
     }
     return p->write_on ? HITEC_PROG_MSG_NONE : HITEC_PROG_MSG_WRITE_OFF;
 }
@@ -487,7 +501,7 @@ static void not_sent(hitec_prog_t *p, hitec_ses_t r)
     p->st = ST_IDLE;
     p->op = OP_NONE;
     p->write_on = false;
-    if (p->wr_kind != (uint8_t)HITEC_PROG_WR_RESTORE) {
+    if (p->wr_own_rec) {
         rec_clear(p);
     }
     if (r == HITEC_SES_ERR_PLAN) {
@@ -521,7 +535,7 @@ static void go(hitec_prog_t *p)
         /* Nothing went to the servo: the record of this write goes, as
          * KST's journal of a write that did not start; a RESTORE keeps the
          * record it restores from. */
-        if (p->wr_kind != (uint8_t)HITEC_PROG_WR_RESTORE) {
+        if (p->wr_own_rec) {
             rec_clear(p);
         }
         (void)say(p, m, 0u);
@@ -545,16 +559,8 @@ static void go(hitec_prog_t *p)
     not_sent(p, r);
 }
 
-/**
- * @brief Start a write of @p kind to @p target.
- *
- * @param p      The programmer.
- * @param kind   hitec_prog_wr_t.
- * @param target What the servo is to hold.
- * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
- */
-static hitec_prog_msg_id_t start(hitec_prog_t *p, uint8_t kind,
-                                 const hitec_image_t *target)
+hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
+                              const hitec_image_t *target)
 {
     const hitec_prog_msg_id_t m = hitec_prog_write_gate(p, kind);
 
@@ -568,10 +574,27 @@ static hitec_prog_msg_id_t start(hitec_prog_t *p, uint8_t kind,
     }
     p->wr_kind = kind;
     p->wr_target = *target;
-    p->wr_values = (uint8_t)differing(p, target);
-    unconfirm(p);
-    if (kind != (uint8_t)HITEC_PROG_WR_RESTORE && p->ses.plan.n != 0u) {
+    p->wr_values = (uint8_t)hpw_differing(p, target);
+    p->wr_own_rec = false;
+    hpw_unconfirm(p);
+    if (p->ses.plan.n != 0u && hpf_backup(p)) {
+        /* The session's backup goes to its file first. */
+        return HITEC_PROG_MSG_NONE;
+    }
+    hpw_after_backup(p);
+    return HITEC_PROG_MSG_NONE;
+}
+
+void hpw_after_backup(hitec_prog_t *p)
+{
+    const uint8_t kind = p->wr_kind;
+
+    p->st = ST_IDLE;
+    if (kind != (uint8_t)HITEC_PROG_WR_RESTORE
+        && !(kind == (uint8_t)HITEC_PROG_WR_BACKUP && p->rec)
+        && p->ses.plan.n != 0u) {
         /* A restore keeps the record it restores from. */
+        p->wr_own_rec = true;
         p->rec = true;
         p->rec_open = false;
         p->rec_verdict = (uint8_t)HITEC_PROG_REC_NONE;
@@ -579,7 +602,7 @@ static hitec_prog_msg_id_t start(hitec_prog_t *p, uint8_t kind,
         p->rec_r.port = p->port;
         p->rec_r.pin = hitec_prog_pin(p);
         p->rec_r.before = p->ses.image;
-        p->rec_r.target = *target;
+        p->rec_r.target = p->wr_target;
         file_due(p);
         if (p->f.card) {
             p->st = ST_RECORD;
@@ -587,16 +610,15 @@ static hitec_prog_msg_id_t start(hitec_prog_t *p, uint8_t kind,
             /* A text the card has not answered yet is of before this
              * write: its answer releases nothing. */
             p->file_rec = false;
-            return HITEC_PROG_MSG_NONE;
+            return;
         }
     }
     go(p);
-    return HITEC_PROG_MSG_NONE;
 }
 
 hitec_prog_msg_id_t hitec_prog_write(hitec_prog_t *p)
 {
-    return start(p, (uint8_t)HITEC_PROG_WR_EDITS, &p->draft);
+    return hpw_start(p, (uint8_t)HITEC_PROG_WR_EDITS, &p->draft);
 }
 
 hitec_prog_msg_id_t hitec_prog_repair(hitec_prog_t *p)
@@ -604,7 +626,7 @@ hitec_prog_msg_id_t hitec_prog_repair(hitec_prog_t *p)
     hitec_image_t img = p->servo;
 
     (void)hitec_c_rebalance(&img);
-    return start(p, (uint8_t)HITEC_PROG_WR_REPAIR, &img);
+    return hpw_start(p, (uint8_t)HITEC_PROG_WR_REPAIR, &img);
 }
 
 /**
@@ -674,7 +696,7 @@ hitec_prog_msg_id_t hitec_prog_restore(hitec_prog_t *p)
                                                : HITEC_PROG_MSG_REC_OTHER,
                    0u);
     }
-    return start(p, (uint8_t)HITEC_PROG_WR_RESTORE, &img);
+    return hpw_start(p, (uint8_t)HITEC_PROG_WR_RESTORE, &img);
 }
 
 /**
@@ -711,6 +733,10 @@ void hpw_write_done(hitec_prog_t *p, hitec_ses_t r)
                          ? HITEC_PROG_MSG_REPAIRED
                      : kind == (uint8_t)HITEC_PROG_WR_RESTORE
                          ? HITEC_PROG_MSG_RESTORED
+                     : kind == (uint8_t)HITEC_PROG_WR_BACKUP
+                         ? HITEC_PROG_MSG_BACKUP_RESTORED
+                     : kind == (uint8_t)HITEC_PROG_WR_FACTORY
+                         ? HITEC_PROG_MSG_FACTORY_DONE
                          : HITEC_PROG_MSG_WRITTEN,
                   p->wr_values);
         return;
@@ -828,7 +854,8 @@ static void rec_compare(hitec_prog_t *p)
 
 hitec_prog_msg_id_t hitec_prog_forget(hitec_prog_t *p)
 {
-    if (p->st == ST_RECORD || (p->st == ST_SES && p->op == OP_WRITE)) {
+    if (p->st == ST_RECORD || p->st == ST_BACKUP
+        || (p->st == ST_SES && p->op == OP_WRITE)) {
         return say(p, HITEC_PROG_MSG_BUSY, 0u);
     }
     if (!p->rec) {
@@ -913,7 +940,7 @@ void hpw_connect(hitec_prog_t *p)
     p->write_on = false;
     p->must_read = false;
     p->wrote = false;
-    unconfirm(p);
+    hpw_unconfirm(p);
 }
 
 void hpw_off(hitec_prog_t *p)
@@ -937,7 +964,7 @@ void hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was)
     }
     p->draft = p->servo;
     p->must_read = false;
-    unconfirm(p);
+    hpw_unconfirm(p);
     if (p->rec) {
         rec_compare(p);
     }

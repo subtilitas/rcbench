@@ -6,9 +6,11 @@
  * side; hitec_panel_text.c the texts of the messages and the values;
  * hitec_panel_edit.c the actions, the lists and the keypad;
  * hitec_panel_page.c the hold pages; hitec_panel_touch.c the presses;
- * hitec_panel_draw.c the notes and the pages drawn.  The functions one
- * calls of another are prefixed hpn_.  Nothing outside these six files
- * includes this header; the interface is hitec_panel.h.
+ * hitec_panel_draw.c the notes and the pages drawn; hitec_panel_file.c the
+ * FILES list, the name keyboard, the pages of a file, a backup and FACTORY
+ * DEFAULT and their texts.  The functions one calls of another are prefixed
+ * hpn_.  Nothing outside these seven files includes this header; the
+ * interface is hitec_panel.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +29,7 @@
 #include "ui_layout.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
+#include "ui_textkey.h"
 #include "ui_widgets.h"
 
 /* ------------------------------------------------------------------ geometry */
@@ -66,16 +69,18 @@
 /** @brief The changed values a write page lists, the count of the rest
  *         after them. */
 #define HP_PAGE_VALUES 6
-/** @brief The entries a list holds: OVERLOAD PROTECTION's OFF and 10% to
- *         50%. */
-#define HP_CHOICE_MAX 6
+/** @brief The entries a list holds: FILES' save, 5 files and the next
+ *         page. */
+#define HP_CHOICE_MAX 7
+/** @brief The characters the name keyboard takes, KST's. */
+#define HP_NAME_TYPED 16
 
 /** @brief What a row is. */
 enum { K_ACT = 0, K_SHOW };
 
 /** @brief The actions of the SERVO tab's rows. */
 enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_ENABLE, A_RESTORE,
-       A_WRITE };
+       A_WRITE, A_FILES };
 
 /** @brief The series a row is for. */
 enum { S_D = 1, S_C = 2, S_ANY = 3 };
@@ -94,7 +99,7 @@ typedef struct {
 } hpn_row_t;
 
 /** @brief The rows' count. */
-#define HP_ROW_COUNT 43
+#define HP_ROW_COUNT 44
 /** @brief The rows, in hitec_panel.c. */
 extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
@@ -103,21 +108,24 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL
+    P_APPLY, P_CANCEL, P_TEXTKEY
 };
 
 /** @brief What a list was opened for. */
-enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE };
+enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES };
 /** @brief The entries of MORE: the supply's in PWM, the session's while
  *         held. */
-enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR };
+enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR,
+       MORE_FACTORY };
 /** @brief The entries of RESTORE. */
-enum { RS_RESTORE = 0, RS_FORGET };
+enum { RS_RESTORE = 0, RS_FORGET, RS_BACKUP };
+/** @brief FILES' entries besides the files, numbered from 0. */
+enum { FL_SAVE = -2, FL_NEXT = -3 };
 /** @brief A D series FAILSAFE list's POSITION: its keypad follows. */
 #define HP_FS_POSITION (-1)
 /** @brief The hold pages. */
 enum { W_LEAVE = 0, W_RELEASE, W_ENABLE, W_WRITE, W_SOFT, W_REPAIR,
-       W_RESTORE };
+       W_RESTORE, W_LOAD, W_FACTORY, W_BACKUP };
 /** @brief What the keypad edits. */
 enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT, KP_VALUE };
 
@@ -156,6 +164,14 @@ typedef struct {
         char      lines[HP_PAGE_LINES][HITEC_PANEL_LINE]; /**< the lines */
         uint8_t   level[HP_PAGE_LINES]; /**< each line's hitec_prog_level_t */
     } page;                     /**< the hold page                        */
+
+    ui_textkey_t tk;            /**< the keyboard of a new file's name    */
+    char     name[HITEC_CARD_NAME_MAX]; /**< the name typed               */
+    bool     name_wait;         /**< a save by name waits for the card    */
+    bool     files_wait;        /**< FILES waits for the card's list      */
+    uint32_t files_seq;         /**< the list count FILES waits past      */
+    bool     card_look;         /**< a tap asks the panel to look at the
+                                     card slot                            */
 
     bool     have;              /**< a press is on the glass              */
     uint8_t  id;                /**< its touch id                         */
@@ -319,8 +335,22 @@ bool hpn_row_edited(const hpn_row_t *r);
 
 /* hitec_panel_edit.c */
 
-/** @brief Every editor shut: the keypad, the list and the page. */
+/** @brief Every editor shut: the keypad, the keyboard, the list and the
+ *         page. */
 void hpn_close_editors(void);
+/**
+ * @brief Opens the list of @p kind with its title; hpn_choice_add() fills
+ *        it.
+ * @param kind  C_*
+ * @param title the title
+ */
+void hpn_choice_open(int kind, const char *title);
+/**
+ * @brief Adds an entry to the open list while it has room.
+ * @param label the entry's label
+ * @param value its value
+ */
+void hpn_choice_add(const char *label, int value);
 /**
  * @brief The action of a SERVO row.
  * @param r the row
@@ -386,6 +416,62 @@ hitec_prog_edit_t hpn_edit_take(int32_t value);
 void hpn_page_apply(void);
 /** @brief The programmer's options from the settings. */
 void hpn_options_load(void);
+
+/* hitec_panel_file.c */
+
+/** @brief FILES tapped: the card asked for its first page. */
+void hpn_files_ask(void);
+/**
+ * @brief An entry of FILES: the save, the next page or a file.
+ * @param value FL_SAVE, FL_NEXT or the file's place in the list
+ */
+void hpn_files_choice(int value);
+/**
+ * @brief The name typed: the save, or the keyboard again.
+ * @param name the name
+ */
+void hpn_name_done(const char *name);
+/** @brief The card's answer came: the list, the name again, a file's
+ *         page. */
+void hpn_file_answer(void);
+/** @brief CHECK THIS FILE for the load that waits. */
+void hpn_page_load(void);
+/** @brief The page of FACTORY DEFAULT. */
+void hpn_page_factory(void);
+/** @brief The page of RESTORE of the session's backup. */
+void hpn_page_backup(void);
+/** @brief A write page's lines on the backup file: the file to come, or
+ *         none without a card. */
+void hpn_page_saves(void);
+/**
+ * @brief The lines of a message of the files and backups.
+ * @param m   the message
+ * @param out the lines
+ * @return the lines used; 0 for a message of another kind
+ */
+int hpn_file_lines(const hitec_prog_msg_t *m,
+                   char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE]);
+/**
+ * @brief The SERVO tab's note on the session's backup: its file, or that
+ *        it is in RAM only.
+ * @return the note; NULL for none
+ */
+const char *hpn_backup_note(void);
+
+/* hitec_panel_page.c, for hitec_panel_file.c */
+
+/**
+ * @brief The values @p to changes on at most @p room lines of the open
+ *        page.
+ * @param to   the image the write leaves
+ * @param room the lines
+ */
+void hpn_page_values(const hitec_image_t *to, int room);
+/**
+ * @brief The warning of each rule of @p rules on the open page.
+ * @param rules the rule set
+ */
+void hpn_page_rules(uint16_t rules);
 
 /* hitec_panel_touch.c */
 

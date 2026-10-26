@@ -277,6 +277,7 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
                  : st == HITEC_PROG_OPENING || st == HITEC_PROG_ENTERING
                        || st == HITEC_PROG_READING
                        || st == HITEC_PROG_RECORDING
+                       || st == HITEC_PROG_BACKUP
                        || st == HITEC_PROG_WRITING ? TR(KP_ABORT)
                  : st == HITEC_PROG_CLEARING || st == HITEC_PROG_LEAVING
                        || st == HITEC_PROG_RELEASING ? TR(KP_WAIT)
@@ -290,6 +291,7 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
         break;
     case A_MORE:
     case A_RESTORE:
+    case A_FILES:
         snprintf(out, n, "%s", TR(KP_CHOOSE));
         break;
     case A_ENABLE:
@@ -551,6 +553,9 @@ void hpn_state_line(char *out, size_t n)
     case HITEC_PROG_RECORDING:
         snprintf(out, n, "%s", TR(HP_ST_RECORD));
         break;
+    case HITEC_PROG_BACKUP:
+        snprintf(out, n, "%s", TR(HP_ST_BACKUP));
+        break;
     case HITEC_PROG_WRITING:
         writing_line(out, n);
         break;
@@ -621,8 +626,27 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_FORGOTTEN]     = { TX_KP_M_FORGOTTEN, -1 },
     [HITEC_PROG_MSG_RECORD_BAD]    = { TX_HP_RECORD_BAD, -1 },
     [HITEC_PROG_MSG_SUM_OK]        = { TX_HP_SUM_OK, -1 },
+    [HITEC_PROG_MSG_SAVED]         = { -1, -1 },
+    [HITEC_PROG_MSG_CARD_NONE]     = { -1, -1 },
+    [HITEC_PROG_MSG_CARD_FULL]     = { TX_KP_M_CARD_FULL, -1 },
+    [HITEC_PROG_MSG_CARD_WRITE]    = { TX_KP_M_CARD_WRITE, -1 },
+    [HITEC_PROG_MSG_CARD_READ]     = { TX_KP_M_CARD_READ, -1 },
+    [HITEC_PROG_MSG_CARD_DENIED]   = { TX_HP_FILE_DENIED, -1 },
+    [HITEC_PROG_MSG_NO_FILES]      = { TX_KP_M_NO_FILES, -1 },
+    [HITEC_PROG_MSG_NAME_BAD]      = { TX_KP_M_NAME_BAD, -1 },
+    [HITEC_PROG_MSG_NAME_EXISTS]   = { TX_KP_M_NAME_EXISTS, -1 },
+    [HITEC_PROG_MSG_LOAD_BAD]      = { TX_KP_M_LOAD_BAD, -1 },
+    [HITEC_PROG_MSG_LOAD_DAMAGED]  = { -1, -1 },
+    [HITEC_PROG_MSG_LOAD_LINE]     = { -1, -1 },
+    [HITEC_PROG_MSG_LOAD_SERIES]   = { -1, -1 },
+    [HITEC_PROG_MSG_LOAD_LAYOUT]   = { -1, -1 },
+    [HITEC_PROG_MSG_LOAD_SAME]     = { -1, -1 },
+    [HITEC_PROG_MSG_LOAD_CHECK]    = { TX_KP_M_LOAD_SOFT, -1 },
+    [HITEC_PROG_MSG_LOADED]        = { -1, -1 },
+    [HITEC_PROG_MSG_BACKUP_RESTORED] = { TX_KP_M_RESTORED, -1 },
+    [HITEC_PROG_MSG_FACTORY_DONE]  = { TX_HP_FACTORY_DONE, -1 },
 };
-_Static_assert(HITEC_PROG_MSG_SUM_OK + 1 == HITEC_PROG_MSG_COUNT,
+_Static_assert(HITEC_PROG_MSG_FACTORY_DONE + 1 == HITEC_PROG_MSG_COUNT,
                "k_lines has a row for every message");
 
 /**
@@ -765,8 +789,11 @@ static int write_lines(const hitec_prog_msg_t *m,
 static int formatted(const hitec_prog_msg_t *m,
                      char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE])
 {
-    const int w = write_lines(m, out);
+    int w = write_lines(m, out);
 
+    if (w == 0) {
+        w = hpn_file_lines(m, out);
+    }
     if (w > 0) {
         return w;
     }

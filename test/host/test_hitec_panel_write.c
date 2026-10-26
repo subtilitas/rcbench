@@ -166,13 +166,16 @@ TEST_CASE(write_opens_the_switch_page_then_the_write_page_and_writes)
     CHECK_EQ(g_drv.d_writes, 0u);
     CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 0), TR(ON));
     /* The write page: the value, the horn on the first write, the save,
-     * where the record goes. */
+     * no card: no backup file, the backup and the record in RAM. */
     tap(val(HITEC_PANEL_SERVO, 4, 1));
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_WRITE_ONE));
     CHECK(page_has("SOFT START: 20% -> 60%"));
     CHECK(page_has(TR(KP_HORN_FREE)));
     CHECK(page_has(TR(HP_WRITE_D)));
-    CHECK(page_has(TR(KP_WRITE_NO_CARD)));
+    CHECK(page_has(TR(KP_NO_FILE_1)));
+    CHECK(page_has(TR(KP_NO_FILE_2)));
+    CHECK(page_has(TR(KP_NO_FILE_3)));
+    CHECK(!page_has(TR(KP_WRITE_NO_CARD)));
     /* CANCEL writes nothing. */
     tap(hitec_panel_cancel_rect());
     CHECK_EQ(hitec_panel_editor(), 0);
@@ -437,8 +440,7 @@ TEST_CASE(the_overlay_hands_the_record_to_the_card_and_says_each_phase)
     open_en();
     servo_d485();
     tap_connect();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;   /* the rig's card half takes nothing */
     edit_on(HITEC_P_D_SOFT_START, 60);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));

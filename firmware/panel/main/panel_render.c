@@ -141,6 +141,29 @@ void hitec_ui_service(void)
         }
     }
 
+    /* The card in the slot now, once for a tap that looks
+     * (hitec_panel_card_look()): a card put in, or found in place of one
+     * taken out or swapped, is mounted here. */
+    if (hitec_panel_card_look()) {
+        (void)storage_check();
+    }
+
+    /* The servo files: the log task has the card.  No card call is made
+     * here. */
+    static bool card_out;
+    if (card_out
+        && atomic_load(&s_hitec_card_answered)
+               == atomic_load(&s_hitec_card_sent)) {
+        card_out = false;
+        hitec_panel_card_done(&s_hitec_card_done);
+    }
+    if (!card_out && hitec_panel_card_take(&s_hitec_card_req)) {
+        /* Before the count, which hands the request and this over. */
+        s_hitec_card_mount = storage_mount_count();
+        atomic_fetch_add(&s_hitec_card_sent, 1u);
+        card_out = true;
+    }
+
     /* The record of a write: the log task has the card.  No card call is
      * made here. */
     if (file_out) {

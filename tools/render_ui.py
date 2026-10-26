@@ -57,6 +57,9 @@ SOURCES = [
     "test/host/render_hitec.c",
     "shared/bench/hitec_link.c",
     "shared/outputs/hitec_port.c",
+    # The Hitec files' views run their requests on a folder in memory.
+    "shared/bench/hitec_card_run.c",
+    "shared/logfile/servo_store.c",
     # FILES' views run its requests on a card in memory, behind the host
     # card task.
     "test/host/render_files.c",
@@ -200,6 +203,48 @@ SCREENS = {
                                 "dark"),
     "servo-hitec-classic-repair": ("servo-hitec-classic-repair.png",
                                    "servo", "dark"),
+    # The Hitec servo files on a card in memory: FILES' pages and an empty
+    # card, the keyboard of a new name and a name in use, a file loaded,
+    # CHECK THIS FILE for a soft rule and for another model, a file of the
+    # other series and a damaged one; the backup file on the write page,
+    # while it is saved and named after the write, the backup in RAM with
+    # no card; RESTORE's list and page of the session's backup; FACTORY
+    # DEFAULT of the HS-5645MG in MORE, its page and its outcome.
+    "servo-hitec-files": ("servo-hitec-files.png", "servo", "dark"),
+    "servo-hitec-files-next": ("servo-hitec-files-next.png", "servo",
+                               "dark"),
+    "servo-hitec-files-none": ("servo-hitec-files-none.png", "servo",
+                               "dark"),
+    "servo-hitec-name": ("servo-hitec-name.png", "servo", "dark"),
+    "servo-hitec-name-exists": ("servo-hitec-name-exists.png", "servo",
+                                "dark"),
+    "servo-hitec-file-loaded": ("servo-hitec-file-loaded.png", "servo",
+                                "dark"),
+    "servo-hitec-file-check": ("servo-hitec-file-check.png", "servo",
+                               "dark"),
+    "servo-hitec-file-model": ("servo-hitec-file-model.png", "servo",
+                               "dark"),
+    "servo-hitec-file-series": ("servo-hitec-file-series.png", "servo",
+                                "dark"),
+    "servo-hitec-file-damaged": ("servo-hitec-file-damaged.png", "servo",
+                                 "dark"),
+    "servo-hitec-backup-write": ("servo-hitec-backup-write.png", "servo",
+                                 "dark"),
+    "servo-hitec-backup-saving": ("servo-hitec-backup-saving.png", "servo",
+                                  "dark"),
+    "servo-hitec-backup-file": ("servo-hitec-backup-file.png", "servo",
+                                "dark"),
+    "servo-hitec-nofile": ("servo-hitec-nofile.png", "servo", "dark"),
+    "servo-hitec-restore-backup": ("servo-hitec-restore-backup.png",
+                                   "servo", "dark"),
+    "servo-hitec-restore-page": ("servo-hitec-restore-page.png", "servo",
+                                 "dark"),
+    "servo-hitec-classic-more-factory": (
+        "servo-hitec-classic-more-factory.png", "servo", "dark"),
+    "servo-hitec-classic-factory": ("servo-hitec-classic-factory.png",
+                                    "servo", "dark"),
+    "servo-hitec-classic-factory-done": (
+        "servo-hitec-classic-factory-done.png", "servo", "dark"),
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
     # The tester drives the standard outputs: PROGRAM is locked.

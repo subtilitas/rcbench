@@ -1,14 +1,16 @@
 /**
  * @file
- * @brief The seam between hitec_prog.c, the session's driving, and
- *        hitec_prog_write.c, the edits, writes and the record.
+ * @brief The seam between hitec_prog.c, the session's driving,
+ *        hitec_prog_write.c, the edits, writes and the record, and
+ *        hitec_prog_file.c, the servo files and the session's backup.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this module works with.
  *
- * The functions one file calls of the other are prefixed hpg_ (in
- * hitec_prog.c) and hpw_ (in hitec_prog_write.c).  Nothing outside the two
- * files includes this header; the interface is hitec_prog.h.
+ * The functions one file calls of another are prefixed hpg_ (in
+ * hitec_prog.c), hpw_ (in hitec_prog_write.c) and hpf_ (in
+ * hitec_prog_file.c).  Nothing outside the three files includes this
+ * header; the interface is hitec_prog.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +29,7 @@ enum {
     ST_CLEARING,    /**< CLEAR                                    */
     ST_RELEASING,   /**< CLOSE of another session's port          */
     ST_RECORD,      /**< a write waits for the card's record      */
+    ST_BACKUP,      /**< a write waits for the card's backup file */
 };
 
 /** @brief The session operations. */
@@ -121,3 +124,84 @@ void hpw_tick(hitec_prog_t *p);
  * @return true when one waited.
  */
 bool hpw_abort(hitec_prog_t *p);
+
+/**
+ * @brief Start a write of @p kind to @p target: the gate, the plan, the
+ *        backup file, the record, the steps.
+ *
+ * @param p      The programmer.
+ * @param kind   hitec_prog_wr_t.
+ * @param target What the servo is to hold.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
+                              const hitec_image_t *target);
+
+/**
+ * @brief The write whose backup file is saved, or needs none, goes on: its
+ *        record, then its steps.
+ *
+ * @param p The programmer.
+ */
+void hpw_after_backup(hitec_prog_t *p);
+
+/**
+ * @brief The parameters in which @p img differs from the servo read.
+ *
+ * @param p   The programmer.
+ * @param img The image.
+ * @return The count.
+ */
+unsigned hpw_differing(const hitec_prog_t *p, const hitec_image_t *img);
+
+/**
+ * @brief Every confirmation of a soft rule ends, and the edit that waits.
+ *
+ * @param p The programmer.
+ */
+void hpw_unconfirm(hitec_prog_t *p);
+
+/* --- hitec_prog_file.c ---------------------------------------------------- */
+
+/**
+ * @brief A session starts or ends: its backup, its backup file's name and
+ *        the load that waits go.  A request of the card out stays out.
+ *
+ * @param p The programmer.
+ */
+void hpf_session(hitec_prog_t *p);
+
+/**
+ * @brief A full read ended well: the first of the session, or the first of
+ *        another servo, is the session's backup.
+ *
+ * @param p The programmer.
+ */
+void hpf_read_done(hitec_prog_t *p);
+
+/**
+ * @brief A write with steps is about to go: its backup file first, where
+ *        one is due and a card is mounted.
+ *
+ * @param p The programmer.
+ * @return true when the save went out and the write waits in ST_BACKUP;
+ *         false when the write goes on now.
+ */
+bool hpf_backup(hitec_prog_t *p);
+
+/**
+ * @brief Every feed: a request of the card without an answer within
+ *        HITEC_PROG_FILES_MS is given up.
+ *
+ * @param p The programmer.
+ */
+void hpf_tick(hitec_prog_t *p);
+
+/**
+ * @brief ABORT of a write that waits for its backup file: nothing was
+ *        written.
+ *
+ * @param p The programmer.
+ * @return true when one waited.
+ */
+bool hpf_abort(hitec_prog_t *p);

@@ -66,6 +66,35 @@
  *   - A write that fails once a step went out leaves what the servo holds
  *     unknown: READ ALL comes before the next write.
  *
+ * Files and backups (hitec_prog_file.c):
+ *
+ *   - The session's backup: the first full read after CONNECT, kept in RAM
+ *     until LEAVE, the next CONNECT or a lost session.  A read whose model,
+ *     name, date or serial differs from it is another servo: that read
+ *     becomes the session's backup.
+ *   - The backup file: before the first write of a session that sends a
+ *     step (WRITE n VALUES, REPAIR, a RESTORE, FACTORY DEFAULT) the session's
+ *     backup is saved to a new file, HITEC001 to HITEC999 (hitec_card.h),
+ *     and the write waits for the card's answer; a card that refuses it ends
+ *     the write with nothing sent.  With no card the write goes and the
+ *     backup stays in RAM only.  A save by hand before the first write,
+ *     while the servo read equals the backup, counts as that file.
+ *   - FILES lists the servo files of the card, 5 a page (hitec_prog_files()),
+ *     saves the servo read under a name (hitec_prog_save()) and loads a file
+ *     into the draft (hitec_prog_load()): the cells or registers of the
+ *     editable parameters, raw, the classic balance computed.  A file of the
+ *     other series or layout is refused; a file of another model, or one
+ *     whose values break a soft rule, waits for hitec_prog_load_confirm().
+ *     The values a file holds outside the editable parameters are counted
+ *     and not loaded.  Nothing reaches the servo before WRITE n VALUES.
+ *   - RESTORE of the session's backup writes every address a plan writes
+ *     (hitec_writable()) back from the backup, raw values included, as a
+ *     write with its read-back.
+ *   - FACTORY DEFAULT, classic servos only: cells 0x00 to 0x23 from the
+ *     servo's own factory cells 0x30 to 0x53 (hitec_c_factory()), as a write.
+ *     The D series reset (0x6E = 0x0F0F) is not offered: the values it
+ *     leaves are not known before it.
+ *
  * Every model is written: the D series with the HFP-30's registers, the
  * classic servos with the HPP-21 Plus's cells (hitec_reg.h).
  *
@@ -122,6 +151,9 @@ extern "C" {
 #define HITEC_PROG_RUN_MS (HITEC_LINK_RUN_MAX_MS + 5000u)
 /** @brief A write waits this long for the card to take its record, ms. */
 #define HITEC_PROG_CARD_MS 3000u
+/** @brief A file request, the backup file's included, waits this long for
+ *         the card's answer, ms. */
+#define HITEC_PROG_FILES_MS 5000u
 
 /** @brief Where the programmer is. */
 typedef enum {
@@ -140,6 +172,7 @@ typedef enum {
     HITEC_PROG_RELEASING,  /**< CLOSE of another's port is on its way     */
     HITEC_PROG_RECORDING,  /**< a write waits for the card's record       */
     HITEC_PROG_WRITING,    /**< a write runs, with its read-back          */
+    HITEC_PROG_BACKUP,     /**< a write waits for the card's backup file  */
 } hitec_prog_state_t;
 
 /** @brief What the screen says. */
@@ -221,6 +254,36 @@ typedef enum {
     HITEC_PROG_MSG_RECORD_BAD,    /**< the card's record does not read; arg
                                        hitec_card_result_t                 */
     HITEC_PROG_MSG_SUM_OK,        /**< REPAIR refused: the sum is right    */
+    HITEC_PROG_MSG_SAVED,         /**< a file saved: hitec_prog_card_name() */
+    HITEC_PROG_MSG_CARD_NONE,     /**< no card: nothing saved or written;
+                                       arg the feed's card_state_t         */
+    HITEC_PROG_MSG_CARD_FULL,     /**< no space, or no proposed name left  */
+    HITEC_PROG_MSG_CARD_WRITE,    /**< the file was not written whole, or
+                                       the card did not answer in time     */
+    HITEC_PROG_MSG_CARD_READ,     /**< the card was not read               */
+    HITEC_PROG_MSG_CARD_DENIED,   /**< the card takes no file              */
+    HITEC_PROG_MSG_NO_FILES,      /**< the card holds no servo file        */
+    HITEC_PROG_MSG_NAME_BAD,      /**< the name is not one a file may have */
+    HITEC_PROG_MSG_NAME_EXISTS,   /**< a file has the name                 */
+    HITEC_PROG_MSG_LOAD_BAD,      /**< the file is no servo file           */
+    HITEC_PROG_MSG_LOAD_DAMAGED,  /**< it is cut short or its check fails;
+                                       arg hitec_card_result_t             */
+    HITEC_PROG_MSG_LOAD_LINE,     /**< a line of it does not read; arg the
+                                       line                                */
+    HITEC_PROG_MSG_LOAD_SERIES,   /**< it is of the other series; arg its
+                                       hitec_family_t                      */
+    HITEC_PROG_MSG_LOAD_LAYOUT,   /**< it is of another layout; arg its
+                                       hitec_layout_t, reg the servo's     */
+    HITEC_PROG_MSG_LOAD_SAME,     /**< it changes no editable value; arg
+                                       the values not loaded               */
+    HITEC_PROG_MSG_LOAD_CHECK,    /**< it waits for CHECK THIS FILE        */
+    HITEC_PROG_MSG_LOADED,        /**< the draft holds it; arg the values
+                                       that differ, reg the values not
+                                       loaded                              */
+    HITEC_PROG_MSG_BACKUP_RESTORED, /**< the session's backup written back
+                                       and verified                        */
+    HITEC_PROG_MSG_FACTORY_DONE,  /**< the factory values written and
+                                       verified                            */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -334,7 +397,9 @@ typedef struct {
     bool     supply_held;     /**< the SUPPLY page says a programming port
                                    holds it (LINK_SP_PORT)                */
     bool     card;            /**< a card is mounted: a write's record
-                                   goes to it                             */
+                                   and its backup file go to it           */
+    uint8_t  card_state;      /**< card_state_t of the panel's slot: what
+                                   the screen says without a card         */
 } hitec_prog_feed_t;
 
 /** @brief The soft rules of an edit: bit n of a rule set is rule n. */
@@ -383,6 +448,8 @@ typedef enum {
     HITEC_PROG_WR_EDITS = 0,  /**< WRITE n VALUES                        */
     HITEC_PROG_WR_REPAIR,     /**< REPAIR: the classic balance           */
     HITEC_PROG_WR_RESTORE,    /**< the record's values back              */
+    HITEC_PROG_WR_BACKUP,     /**< the session's backup back             */
+    HITEC_PROG_WR_FACTORY,    /**< classic: the factory cells            */
 } hitec_prog_wr_t;
 
 /** @brief The programmer's state. */
@@ -432,6 +499,7 @@ typedef struct {
     bool     wrote;           /**< a write of this CONNECT went out       */
     uint8_t  wr_kind;         /**< hitec_prog_wr_t of the running write   */
     uint8_t  wr_values;       /**< the values it changes                  */
+    bool     wr_own_rec;      /**< it made the record that stands         */
     uint64_t soft_has;        /**< bit id: soft_val[id] is confirmed      */
     int32_t  soft_val[HITEC_P_COUNT]; /**< the values confirmed           */
     bool     pend;            /**< an edit waits for a confirmation       */
@@ -448,6 +516,34 @@ typedef struct {
      *         it: a text taken before that write began is not its record. */
     bool     file_rec;
     uint32_t file_ms;         /**< when a write began to wait for it      */
+
+    /* --- files and backups, hitec_prog_file.c ------------------------- */
+    bool     have_bk;         /**< the session's backup is held           */
+    bool     bk_saved;        /**< and a file on the card holds it        */
+    bool     bk_no_file;      /**< a write went with no card for it       */
+    hitec_image_t bk;         /**< the session's backup                   */
+    char     bk_name[HITEC_CARD_NAME_MAX]; /**< the file of bk_saved     */
+    uint8_t  card_op;         /**< hitec_card_op_t awaited; IDLE none     */
+    bool     card_ready;      /**< and not taken yet                      */
+    bool     card_auto;       /**< the request is the backup file's       */
+    uint16_t card_first;      /**< LIST: the first file asked for         */
+    uint32_t card_id;         /**< the last request's id                  */
+    uint32_t card_ms;         /**< when it was asked                      */
+    char     card_name[HITEC_CARD_NAME_MAX]; /**< the file saved or loaded */
+    uint8_t  files_n;         /**< files in the last list                 */
+    uint16_t files_total;     /**< files the card holds                   */
+    uint16_t files_first;     /**< the first file of the last list        */
+    uint32_t files_seq;       /**< counts the lists that arrived          */
+    char     files[HITEC_CARD_FILES][HITEC_CARD_NAME_MAX]; /**< names     */
+    char     models[HITEC_CARD_FILES][HITEC_CARD_MODEL_MAX + 1u]; /**< their
+                                   model lines                            */
+    char     preset[HITEC_CARD_NAME_MAX]; /**< the next proposed name     */
+    bool     load_pend;       /**< a load waits for CHECK THIS FILE       */
+    bool     load_other;      /**< its file is of another model           */
+    uint16_t load_rules;      /**< the soft rules it breaks               */
+    uint8_t  load_skipped;    /**< values of the file not loaded          */
+    hitec_image_t load_img;   /**< the draft it leaves                    */
+    char     load_model[HITEC_CARD_MODEL_MAX + 1u]; /**< its model line   */
 } hitec_prog_t;
 
 /**
@@ -1031,6 +1127,238 @@ void hitec_prog_file_done(hitec_prog_t *p, bool ok);
  *         parse.
  */
 bool hitec_prog_file_load(hitec_prog_t *p, const char *text, size_t len);
+
+/* --- files and backups (hitec_prog_file.c) ------------------------------- */
+
+/**
+ * @brief Why FILES, a save or a load is not taken now.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when taken: the port held and idle, the
+ *         bench SAFE with no STOP latched and the port not stopped, the
+ *         servo in programming mode and read, no read owed, no request of
+ *         the card out, a card mounted.
+ */
+hitec_prog_msg_id_t hitec_prog_files_gate(const hitec_prog_t *p);
+
+/**
+ * @brief FILES: ask the card for the files from @p first on.  The list
+ *        arrives as hitec_prog_files_seq() counts up.
+ *
+ * @param p     The programmer.
+ * @param first The first file, from 0.
+ * @return HITEC_PROG_MSG_NONE when asked, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_files(hitec_prog_t *p, unsigned first);
+
+/**
+ * @brief Save the servo read to a new file @p name.
+ *
+ * @param p    The programmer.
+ * @param name The base name, 1 to 32 characters.
+ * @return HITEC_PROG_MSG_NONE when asked, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_save(hitec_prog_t *p, const char *name);
+
+/**
+ * @brief Load the file @p name into the draft.
+ *
+ * The gate of hitec_prog_files_gate(), taken again when the card answers
+ * and at hitec_prog_load_confirm().
+ *
+ * @param p    The programmer.
+ * @param name The base name.
+ * @return HITEC_PROG_MSG_NONE when asked, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_load(hitec_prog_t *p, const char *name);
+
+/**
+ * @brief The load that waits: its rules and whether its file is of another
+ *        model.
+ *
+ * @param p     The programmer.
+ * @param other Receives true for another model; may be NULL.
+ * @return Its rule set; 0 with none waiting or none broken.
+ */
+uint16_t hitec_prog_load_pending(const hitec_prog_t *p, bool *other);
+
+/**
+ * @brief Whether a load waits for CHECK THIS FILE.
+ *
+ * @param p The programmer.
+ * @return true while one waits.
+ */
+bool hitec_prog_load_waits(const hitec_prog_t *p);
+
+/**
+ * @brief The image the load that waits leaves in the draft.
+ *
+ * @param p The programmer.
+ * @return The image; NULL with none waiting.
+ */
+const hitec_image_t *hitec_prog_load_image(const hitec_prog_t *p);
+
+/**
+ * @brief Take the load that waits: the draft holds it, its rules are
+ *        confirmed for its values.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when taken, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_load_confirm(hitec_prog_t *p);
+
+/**
+ * @brief Drop the load that waits; the draft stays as it was.
+ *
+ * @param p The programmer.
+ */
+void hitec_prog_load_cancel(hitec_prog_t *p);
+
+/**
+ * @brief Whether a request of the card is out.
+ *
+ * @param p The programmer.
+ * @return true while one waits for its answer.
+ */
+bool hitec_prog_card_busy(const hitec_prog_t *p);
+
+/**
+ * @brief The next request for the card's side.
+ *
+ * @param p   The programmer.
+ * @param out Receives it.
+ * @return true when one was taken.
+ */
+bool hitec_prog_card_take(hitec_prog_t *p, hitec_card_req_t *out);
+
+/**
+ * @brief The card's side's answer to a request taken.  An answer to a
+ *        request given up (HITEC_PROG_FILES_MS) is taken only where it
+ *        saved the backup file.
+ *
+ * @param p The programmer.
+ * @param d The answer.
+ */
+void hitec_prog_card_done(hitec_prog_t *p, const hitec_card_done_t *d);
+
+/**
+ * @brief Counts the lists that arrived.
+ *
+ * @param p The programmer.
+ * @return The count.
+ */
+uint32_t hitec_prog_files_seq(const hitec_prog_t *p);
+
+/**
+ * @brief The files of the last list.
+ *
+ * @param p     The programmer.
+ * @param total Receives the files the card holds; may be NULL.
+ * @param first Receives the first file's place, from 0; may be NULL.
+ * @return The files in it.
+ */
+unsigned hitec_prog_file_count(const hitec_prog_t *p, unsigned *total,
+                               unsigned *first);
+
+/**
+ * @brief File @p i of the last list.
+ *
+ * @param p     The programmer.
+ * @param i     From 0.
+ * @param model Receives its model line, "" for a file that does not parse;
+ *              may be NULL.
+ * @return Its base name; "" past the last.
+ */
+const char *hitec_prog_file_name(const hitec_prog_t *p, unsigned i,
+                                 const char **model);
+
+/**
+ * @brief The next proposed name of the last list.
+ *
+ * @param p The programmer.
+ * @return The name; "" for none.
+ */
+const char *hitec_prog_preset_name(const hitec_prog_t *p);
+
+/**
+ * @brief The file last saved or loaded.
+ *
+ * @param p The programmer.
+ * @return The base name.
+ */
+const char *hitec_prog_card_name(const hitec_prog_t *p);
+
+/**
+ * @brief The session's backup file.
+ *
+ * @param p The programmer.
+ * @return Its base name; "" while no file holds the backup.
+ */
+const char *hitec_prog_backup_name(const hitec_prog_t *p);
+
+/**
+ * @brief Whether a write of this session went with no card, so the
+ *        backup is in RAM only.
+ *
+ * @param p The programmer.
+ * @return true after such a write while no file holds the backup.
+ */
+bool hitec_prog_backup_ram_only(const hitec_prog_t *p);
+
+/**
+ * @brief Whether the next write saves the backup file first: a card is
+ *        mounted and no file holds the backup.
+ *
+ * @param p The programmer.
+ * @return true when it does.
+ */
+bool hitec_prog_backup_due(const hitec_prog_t *p);
+
+/**
+ * @brief The image RESTORE of the session's backup writes: the servo read
+ *        with every writable address of the backup.
+ *
+ * @param p   The programmer.
+ * @param out Receives it.
+ * @return false with no backup or no servo read.
+ */
+bool hitec_prog_backup_image(const hitec_prog_t *p, hitec_image_t *out);
+
+/**
+ * @brief Whether the session's backup differs from the servo read in an
+ *        address a write sends: RESTORE offers it.
+ *
+ * @param p The programmer.
+ * @return true when it does.
+ */
+bool hitec_prog_backup_differs(const hitec_prog_t *p);
+
+/**
+ * @brief RESTORE of the session's backup, as a write.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_restore_backup(hitec_prog_t *p);
+
+/**
+ * @brief The image FACTORY DEFAULT writes: the classic servo read with
+ *        cells 0x00 to 0x23 from its factory cells.
+ *
+ * @param p   The programmer.
+ * @param out Receives it.
+ * @return false for a D series servo, no servo read or a factory cell not
+ *         known.
+ */
+bool hitec_prog_factory_image(const hitec_prog_t *p, hitec_image_t *out);
+
+/**
+ * @brief FACTORY DEFAULT, classic servos only, as a write.
+ *
+ * @param p The programmer.
+ * @return HITEC_PROG_MSG_NONE when it starts, else the message said.
+ */
+hitec_prog_msg_id_t hitec_prog_factory(hitec_prog_t *p);
 
 #ifdef __cplusplus
 }

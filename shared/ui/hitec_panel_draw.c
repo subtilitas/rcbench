@@ -18,6 +18,7 @@
 #include "hitec_reg.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
+#include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
@@ -149,6 +150,9 @@ static void servo_notes(plan_t *p)
         note(p, TR(HP_V_CAPPED), ui_theme_color(UI_C_WARN));
     }
     record_notes(p);
+    note(p, hpn_backup_note(), hitec_prog_backup_ram_only(pr)
+                                   ? ui_theme_color(UI_C_WARN)
+                                   : faint);
 }
 
 /**
@@ -458,6 +462,10 @@ void hitec_panel_render(gfx_canvas_t *c)
 
     if (hp.kp.open) {
         ui_keypad_render(&hp.kp, c);
+        return;
+    }
+    if (hp.tk.open) {
+        ui_textkey_render(&hp.tk, c);
         return;
     }
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));

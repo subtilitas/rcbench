@@ -20,7 +20,11 @@
  *
  * The card: g_card mounted takes the record's text (hitec_card.h) in the
  * frame that offers it, unless g_card_fails refuses it or g_card_slow
- * keeps it from answering; a panel that starts again reads it back.
+ * keeps it from answering; a panel that starts again reads it back.  The
+ * servo files (hitec_card_run.h) live in g_files, the folder
+ * BENCH/HITEC/CONF in memory behind servo_store_io_t: a request is carried
+ * out in the frame that offers it, unless g_files_slow keeps it unanswered
+ * until files_answer().
  *
  * For test_hitec_prog*.c and test_hitec_panel*.c.
  *
@@ -30,8 +34,12 @@
 
 #include "hitec_link_rig.h"
 
+#include <ctype.h>
+
+#include "hitec_card_run.h"
 #include "hitec_panel.h"
 #include "hitec_prog.h"
+#include "servo_store.h"
 #include "hitec_reg.h"
 #include "hitec_reg_fix.h"
 #include "hitec_rx_link.h"
@@ -75,6 +83,25 @@ static char     g_card_text[HITEC_CARD_TEXT_MAX];
 static size_t   g_card_len;             /* the text it holds; 0 none     */
 static unsigned g_card_writes;          /* texts it took                 */
 
+/* The servo files. */
+#define RIG_FILES 1010u
+typedef struct {
+    char   name[48];                    /* with its extension            */
+    char   text[HITEC_CARD_FILE_MAX + 16u];
+    size_t len;
+    bool   dir;
+} rig_file_t;
+static rig_file_t g_files[RIG_FILES];
+static unsigned   g_files_n;
+static bool       g_files_slow;         /* taken, not answered           */
+static uint8_t    g_files_create;       /* servo_store_io_result_t       */
+static bool       g_files_walk_fails;
+static bool       g_files_read_fails;
+static unsigned   g_files_saves, g_files_lists, g_files_loads;
+static bool       g_creq_out;           /* a request waits for its answer */
+static hitec_card_req_t  g_creq;
+static hitec_card_done_t g_cdone;
+
 /* ------------------------------------------------------------- the model */
 
 static inline hitec_prog_t *model(void)
@@ -94,6 +121,167 @@ static inline void model_feed(const hitec_prog_feed_t *f)
 static inline bool model_take(hitec_prog_cmd_t *c)
 {
     return g_panel ? hitec_panel_take(c) : hitec_prog_take(&g_p, c);
+}
+
+
+/* ---------------------------------------------------------- the files */
+
+static inline bool files_same(const char *a, const char *b)
+{
+    while (*a != '\0' && *b != '\0') {
+        if (toupper((unsigned char)*a) != toupper((unsigned char)*b)) {
+            return false;
+        }
+        a++;
+        b++;
+    }
+    return *a == *b;
+}
+
+static inline rig_file_t *files_find(const char *name)
+{
+    for (unsigned i = 0; i < g_files_n; ++i) {
+        if (!g_files[i].dir && files_same(g_files[i].name, name)) {
+            return &g_files[i];
+        }
+    }
+    return NULL;
+}
+
+static inline bool files_mounted(void *ctx)
+{
+    (void)ctx;
+    return g_card;
+}
+
+static inline bool files_walk(void *ctx, servo_store_visit_fn visit,
+                              void *visit_ctx)
+{
+    (void)ctx;
+    for (unsigned i = 0; i < g_files_n; ++i) {
+        visit(g_files[i].name, g_files[i].dir, visit_ctx);
+    }
+    return !g_files_walk_fails;
+}
+
+static inline int32_t files_size(void *ctx, const char *name)
+{
+    const rig_file_t *rf = files_find(name);
+
+    (void)ctx;
+    return rf != NULL ? (int32_t)rf->len : -1;
+}
+
+static inline int32_t files_read(void *ctx, const char *name, char *buf,
+                                 size_t cap)
+{
+    const rig_file_t *rf = files_find(name);
+    size_t n;
+
+    (void)ctx;
+    if (rf == NULL || g_files_read_fails) {
+        return -1;
+    }
+    n = rf->len < cap ? rf->len : cap;
+    memcpy(buf, rf->text, n);
+    return (int32_t)n;
+}
+
+static inline servo_store_io_result_t files_create(void *ctx,
+                                                   const char *name,
+                                                   const char *data,
+                                                   size_t len)
+{
+    rig_file_t *rf;
+
+    (void)ctx;
+    if (files_find(name) != NULL) {
+        return SERVO_STORE_IO_EXISTS;
+    }
+    if (g_files_create != (uint8_t)SERVO_STORE_IO_OK) {
+        return (servo_store_io_result_t)g_files_create;
+    }
+    if (g_files_n == RIG_FILES || len > sizeof(rf->text)) {
+        return SERVO_STORE_IO_FULL;
+    }
+    rf = &g_files[g_files_n++];
+    memset(rf, 0, sizeof(*rf));
+    snprintf(rf->name, sizeof(rf->name), "%s", name);
+    memcpy(rf->text, data, len);
+    rf->len = len;
+    return SERVO_STORE_IO_OK;
+}
+
+static const servo_store_io_t g_files_io = {
+    .ctx = NULL,
+    .stem = HITEC_CARD_STEM,
+    .mounted = files_mounted,
+    .walk = files_walk,
+    .size = files_size,
+    .read = files_read,
+    .create = files_create,
+};
+
+/* A file of @p text under @p name, the extension included. */
+static inline void files_put(const char *name, const char *text, size_t len)
+{
+    rig_file_t *rf = &g_files[g_files_n++];
+
+    memset(rf, 0, sizeof(*rf));
+    snprintf(rf->name, sizeof(rf->name), "%s", name);
+    memcpy(rf->text, text, len);
+    rf->len = len;
+}
+
+/* A servo file of @p img under @p name, the extension included. */
+static inline void files_put_image(const char *name, const hitec_image_t *img)
+{
+    char text[HITEC_CARD_FILE_MAX];
+    const size_t len = hitec_card_file_text(img, text, sizeof(text));
+
+    files_put(name, text, len);
+}
+
+/* The image of the file @p name; false for none that parses. */
+static inline bool files_image(const char *name, hitec_image_t *out)
+{
+    const rig_file_t *rf = files_find(name);
+
+    return rf != NULL && hitec_card_file_parse(rf->text, rf->len, out, NULL,
+                                              NULL) == HITEC_CARD_OK;
+}
+
+static inline void files_reset(void)
+{
+    g_files_n = 0;
+    g_files_slow = false;
+    g_files_create = (uint8_t)SERVO_STORE_IO_OK;
+    g_files_walk_fails = false;
+    g_files_read_fails = false;
+    g_files_saves = g_files_lists = g_files_loads = 0;
+    g_creq_out = false;
+}
+
+/* The request out answered: carried out on g_files now. */
+static inline void files_answer(void)
+{
+    if (!g_creq_out) {
+        return;
+    }
+    g_creq_out = false;
+    hitec_card_run(&g_files_io, &g_creq, &g_cdone);
+    if (g_creq.op == HITEC_CARD_SAVE) {
+        g_files_saves++;
+    } else if (g_creq.op == HITEC_CARD_LIST) {
+        g_files_lists++;
+    } else {
+        g_files_loads++;
+    }
+    if (g_panel) {
+        hitec_panel_card_done(&g_cdone);
+    } else {
+        hitec_prog_card_done(&g_p, &g_cdone);
+    }
 }
 
 /* ------------------------------------------------- the control task's half */
@@ -178,13 +366,24 @@ static inline void publish(hitec_prog_feed_t *f)
     f->supply_held = g_hw.has_supply
                      && hitec_port_state(&g_port) != LINK_HITEC_FREE;
     f->card = g_card;
+    f->card_state = g_card ? 1u : 0u;
 }
 
-/* The render loop's card half: the record's text to the card. */
+/* The render loop's card half: a request of the files, then the record's
+ * text to the card. */
 static inline void card_frame(void)
 {
     char text[HITEC_CARD_TEXT_MAX];
     size_t len;
+
+    if (!g_creq_out
+        && (g_panel ? hitec_panel_card_take(&g_creq)
+                    : hitec_prog_card_take(&g_p, &g_creq))) {
+        g_creq_out = true;
+    }
+    if (!g_files_slow) {
+        files_answer();
+    }
 
     if (g_card_slow) {
         return;
@@ -332,6 +531,7 @@ static inline void rig_from(uint32_t t0, supply_kind_t supply, bool panel)
     g_card_slow = false;
     g_card_len = 0;
     g_card_writes = 0;
+    files_reset();
     memset(&g_f, 0, sizeof(g_f));
     g_link = true;
     hitec_link_came_up(&g_l, LINK_PROTOCOL_MINOR);
@@ -419,6 +619,7 @@ static inline void panel_restart(void)
     g_ans_id = 0;
     g_outs = 0;
     g_stopped = false;
+    g_creq_out = false;   /* a request of the old panel is gone */
     /* The record as the card holds it, read at the start. */
     if (g_card && g_card_len != 0u) {
         (void)hitec_prog_file_load(model(), g_card_text, g_card_len);
@@ -438,6 +639,19 @@ static inline void settled(void)
         pms();
     }
     CHECK_EQ(pstate(), HITEC_PROG_HELD);
+}
+
+/* A card goes in under a held session: the record goes to it, and a save
+ * by hand, PRE, is the session's backup file, so a write goes to the
+ * record at once. */
+static inline void card_in(void)
+{
+    g_card = true;
+    prun(20u);
+    CHECK_EQ(hitec_prog_save(model(), "PRE"), HITEC_PROG_MSG_NONE);
+    prun(40u);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_SAVED);
+    CHECK_STR_EQ(hitec_prog_backup_name(model()), "PRE");
 }
 
 /* CONNECT and the whole entry and read. */

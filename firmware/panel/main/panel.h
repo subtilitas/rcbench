@@ -388,6 +388,25 @@ void hitec_record_write(void);
  */
 void hitec_record_load(void);
 
+/* The Hitec programmer's servo file request (hitec_files.c): taken from
+ * the model by the render loop, run on the card by the logger. */
+/** @brief The request. */
+extern hitec_card_req_t  s_hitec_card_req;
+/** @brief The mount it was taken under (storage_mount_count()): it is run
+ *         on that volume or finds no card. */
+extern unsigned          s_hitec_card_mount;
+/** @brief The answer. */
+extern hitec_card_done_t s_hitec_card_done;
+/** @brief Requests the render loop handed over. */
+extern atomic_uint       s_hitec_card_sent;
+/** @brief Requests the logger answered. */
+extern atomic_uint       s_hitec_card_answered;
+/**
+ * @brief Run the request handed over on the logger task.  Nothing when
+ *        none waits.
+ */
+void hitec_card_serve(void);
+
 /* A servo file request: taken from the model by the render loop, run on
  * the card by the logger. */
 extern kst_prog_card_req_t  s_kst_card_req;

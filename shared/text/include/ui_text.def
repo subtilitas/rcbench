@@ -5141,6 +5141,54 @@ UI_TEXT(HP_REPAIR_1, 116,
 UI_TEXT(HP_SOFT_OVERLOAD, 116,
     "Without overload protection a stalled servo heats up.",
     "Ohne Überlastschutz erhitzt sich ein blockiertes Servo.")
+UI_TEXT(HP_ST_BACKUP, 116,
+    "Saving the backup file on the card.",
+    "Backup-Datei wird auf der Karte gespeichert.")
+UI_TEXT(HP_FILE_DENIED, 116,
+    "Cannot save: card write-protected, or BENCH/HITEC/CONF is not a folder.",
+    "Speichern nicht möglich: Karte schreibgeschützt oder BENCH/HITEC/CONF kein Ordner.")
+UI_TEXT(HP_LOAD_END, 116,
+    "File damaged: it ends before its check line. Not loaded.",
+    "Datei beschädigt: Sie endet vor ihrer Prüfzeile. Nicht geladen.")
+UI_TEXT(HP_LOAD_HAND, 116,
+    "A file edited by hand does not load.",
+    "Eine von Hand bearbeitete Datei wird nicht geladen.")
+UI_TEXT(HP_LOAD_SERIES, 116,
+    "File is %s, servo is %s. Not loaded.",
+    "Datei ist %s, Servo ist %s. Nicht geladen.")
+UI_TEXT(HP_LOAD_LAYOUT, 116,
+    "File is for %s servos, this servo is %s. Not loaded.",
+    "Datei ist für %s-Servos, dieses Servo ist %s. Nicht geladen.")
+UI_TEXT(HP_LOAD_SKIPPED, 116,
+    "%u stored values outside the settings differ. They are not loaded.",
+    "%u gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.")
+UI_TEXT(HP_LOAD_SKIPPED_ONE, 116,
+    "1 stored value outside the settings differs. It is not loaded.",
+    "1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.")
+UI_TEXT(HP_LOAD_MODEL, 116,
+    "File model %s, servo model %s.",
+    "Dateimodell %s, Servomodell %s.")
+UI_TEXT(HP_LOAD_MODEL_2, 116,
+    "Values of another model may not suit this servo.",
+    "Werte eines anderen Modells passen vielleicht nicht zu diesem Servo.")
+UI_TEXT(HP_RESTORE_RAW, 116,
+    "Stored values outside the settings restored too: %u.",
+    "Gespeicherte Werte außerhalb der Einstellungen, mit zurückgespielt: %u.")
+UI_TEXT(HP_FACTORY, 27,
+    "FACTORY DEFAULT",
+    "WERKSEINSTELLUNG")
+UI_TEXT(HP_MORE_FACTORY, 58,
+    "FACTORY DEFAULT: cells 0x00-0x23 from the factory cells.",
+    "WERKSEINSTELLUNG: Zellen 0x00-0x23 aus den Werkszellen.")
+UI_TEXT(HP_FACTORY_1, 116,
+    "All settings go back to the factory values.",
+    "Alle Einstellungen gehen auf Werkswerte zurück.")
+UI_TEXT(HP_FACTORY_2, 116,
+    "The source is the servo's own factory cells 0x30-0x53.",
+    "Quelle sind die eigenen Werkszellen 0x30-0x53 des Servos.")
+UI_TEXT(HP_FACTORY_DONE, 116,
+    "Factory values written and verified.",
+    "Werkswerte geschrieben und geprüft.")
 /* --------------------- end of the Hitec programmer */
 
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */

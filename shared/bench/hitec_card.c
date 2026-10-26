@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief The text of the Hitec programmer's record of a write, and its
- *        parse.  See hitec_card.h.
+ * @brief The texts of the Hitec programmer's record of a write and of a
+ *        servo file, and their parse.  See hitec_card.h.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this module works with.
@@ -276,5 +276,247 @@ hitec_card_result_t hitec_card_parse(const char *text, size_t len,
         return HITEC_CARD_ERR_FIELD;
     }
     *out = got;
+    return HITEC_CARD_OK;
+}
+
+/* ----------------------------------------------------------- servo files */
+
+unsigned hitec_card_file_addrs(uint8_t series,
+                               uint8_t out[HITEC_CARD_FILE_ADDRS])
+{
+    unsigned n = 0;
+
+    if (series == (uint8_t)HITEC_D) {
+        size_t len = 0;
+        const uint8_t *list = hitec_d_read_list(&len);
+
+        memcpy(out, list, len);
+        return (unsigned)len;
+    }
+    {
+        size_t runs = 0;
+        const hitec_range_t *r = hitec_c_read_ranges(&runs);
+
+        for (size_t i = 0; i < runs; ++i) {
+            for (unsigned c = 0; c < r[i].count
+                                 && n < HITEC_CARD_FILE_ADDRS; ++c) {
+                out[n++] = (uint8_t)(r[i].first + c);
+            }
+        }
+    }
+    return n;
+}
+
+void hitec_card_model_text(const hitec_image_t *img,
+                           char out[HITEC_CARD_MODEL_MAX + 1u])
+{
+    hitec_model_t m;
+    const char *name;
+
+    out[0] = '\0';
+    if (!hitec_identify(img, &m)) {
+        memcpy(out, "?", 2u);
+        return;
+    }
+    name = hitec_model_name(m.model);
+    if (name[0] != '\0') {
+        const size_t n = strlen(name);
+
+        memcpy(out, name, n < HITEC_CARD_MODEL_MAX ? n + 1u
+                                                   : HITEC_CARD_MODEL_MAX);
+        out[HITEC_CARD_MODEL_MAX] = '\0';
+        return;
+    }
+    if (m.layout == (uint8_t)HITEC_LAYOUT_D) {
+        char *at = put(out, "D series ");
+        char digits[6];
+        unsigned v = m.number;
+        unsigned k = 0;
+
+        do {
+            digits[k++] = (char)('0' + v % 10u);
+            v /= 10u;
+        } while (v != 0u);
+        while (k > 0u) {
+            *at++ = digits[--k];
+        }
+        *at = '\0';
+        return;
+    }
+    if (m.name[0] == '\0') {
+        memcpy(out, "?", 2u);
+        return;
+    }
+    /* At most 16 name cells, printable ASCII: they fit. */
+    memcpy(out, m.name, strlen(m.name) + 1u);
+}
+
+size_t hitec_card_file_text(const hitec_image_t *img, char *out, size_t n)
+{
+    uint8_t addrs[HITEC_CARD_FILE_ADDRS];
+    char model[HITEC_CARD_MODEL_MAX + 1u];
+    unsigned count;
+    char *at = out;
+    bool d;
+
+    if (img == NULL || out == NULL || n < HITEC_CARD_FILE_MAX
+        || img->series > (uint8_t)HITEC_D) {
+        return 0;
+    }
+    d = img->series == (uint8_t)HITEC_D;
+    count = hitec_card_file_addrs(img->series, addrs);
+    hitec_card_model_text(img, model);
+    at = put(at, k_head);
+    at = put(at, d ? "series=D\nmodel=" : "series=C\nmodel=");
+    at = put(at, model);
+    at = put(at, "\nimage=");
+    for (unsigned i = 0; i < count; ++i) {
+        at = d ? put_hex(at, hitec_image_reg(img, addrs[i]), 4u)
+               : put_hex(at, hitec_image_cell(img, addrs[i]), 2u);
+    }
+    *at++ = '\n';
+    if (!d && img->has_version != 0u) {
+        at = put(at, "version=");
+        at = put_hex(at, img->version, 2u);
+        *at++ = '\n';
+    }
+    {
+        const uint16_t crc = link_crc(LINK_CRC_INIT, out, (size_t)(at - out));
+
+        at = put(at, "check=");
+        at = put_hex(at, crc, 4u);
+        *at++ = '\n';
+    }
+    *at = '\0';
+    return (size_t)(at - out);
+}
+
+/**
+ * @brief Take the model line: "model=", 1 to HITEC_CARD_MODEL_MAX
+ *        printable characters, the newline.
+ *
+ * @param r     The reader.
+ * @param model Receives the value, terminated; may be NULL.
+ * @return false when the line is not there.
+ */
+static bool take_model(reader_t *r, char *model)
+{
+    const char *s = r->s + r->at;
+    size_t k = 0;
+
+    if (r->end - r->at < 8u || memcmp(s, "model=", 6u) != 0) {
+        return false;
+    }
+    s += 6;
+    while (r->at + 6u + k < r->end && s[k] != '\n') {
+        if ((unsigned char)s[k] < 0x20u || (unsigned char)s[k] > 0x7Eu
+            || k == HITEC_CARD_MODEL_MAX) {
+            return false;
+        }
+        ++k;
+    }
+    if (k == 0u || r->at + 6u + k >= r->end) {
+        return false;
+    }
+    if (model != NULL) {
+        memcpy(model, s, k);
+        model[k] = '\0';
+    }
+    r->at += 6u + k + 1u;
+    return true;
+}
+
+hitec_card_result_t hitec_card_file_parse(const char *text, size_t len,
+                                          hitec_image_t *out,
+                                          char *model, unsigned *line)
+{
+    const size_t head = sizeof(k_head) - 1u;
+    uint8_t addrs[HITEC_CARD_FILE_ADDRS];
+    char name[HITEC_CARD_MODEL_MAX + 1u];
+    hitec_image_t got;
+    unsigned count;
+    unsigned w;
+    reader_t r;
+    const char *d;
+    uint8_t series;
+    long v = 0;
+
+    if (line != NULL) {
+        *line = 0;
+    }
+    if (text == NULL || len < head || memcmp(text, k_head, head) != 0) {
+        return HITEC_CARD_ERR_HEADER;
+    }
+    if (len < head + CHECK_LEN || text[len - 1u] != '\n'
+        || memcmp(text + len - CHECK_LEN, "check=", 6u) != 0) {
+        return HITEC_CARD_ERR_TRUNCATED;
+    }
+    v = take_hex(text + len - 5u, 4u);
+    if (v < 0
+        || (uint16_t)v != link_crc(LINK_CRC_INIT, text, len - CHECK_LEN)) {
+        return HITEC_CARD_ERR_CHECK;
+    }
+    r.s = text;
+    r.at = head;
+    r.end = len - CHECK_LEN;
+    if (line != NULL) {
+        *line = 2u;
+    }
+    if (r.end - r.at < 9u || memcmp(text + r.at, "series=", 7u) != 0
+        || (text[r.at + 7u] != 'C' && text[r.at + 7u] != 'D')
+        || text[r.at + 8u] != '\n') {
+        return HITEC_CARD_ERR_FIELD;
+    }
+    series = text[r.at + 7u] == 'D' ? (uint8_t)HITEC_D
+                                    : (uint8_t)HITEC_CLASSIC;
+    r.at += 9u;
+    if (line != NULL) {
+        *line = 3u;
+    }
+    if (!take_model(&r, name)) {
+        return HITEC_CARD_ERR_FIELD;
+    }
+    if (line != NULL) {
+        *line = 4u;
+    }
+    count = hitec_card_file_addrs(series, addrs);
+    w = series == (uint8_t)HITEC_D ? 4u : 2u;
+    d = take_line(&r, "image=", count * w, NULL);
+    if (d == NULL) {
+        return HITEC_CARD_ERR_FIELD;
+    }
+    hitec_image_init(&got, series);
+    for (unsigned i = 0; i < count; ++i) {
+        const long x = take_hex(d + (size_t)i * w, w);
+
+        if (series == (uint8_t)HITEC_D) {
+            (void)hitec_image_put_reg(&got, addrs[i], (uint16_t)x);
+        } else {
+            (void)hitec_image_put_cell(&got, addrs[i], (uint8_t)x);
+        }
+    }
+    if (series == (uint8_t)HITEC_CLASSIC && r.at < r.end) {
+        if (line != NULL) {
+            *line = 5u;
+        }
+        if (take_line(&r, "version=", 2u, &v) == NULL) {
+            return HITEC_CARD_ERR_FIELD;
+        }
+        (void)hitec_image_put_version(&got, (uint8_t)v);
+    }
+    if (r.at != r.end) {
+        /* A line after the last one due: the check line is not next. */
+        if (line != NULL) {
+            *line = series == (uint8_t)HITEC_CLASSIC ? 6u : 5u;
+        }
+        return HITEC_CARD_ERR_FIELD;
+    }
+    if (line != NULL) {
+        *line = 0;
+    }
+    *out = got;
+    if (model != NULL) {
+        memcpy(model, name, strlen(name) + 1u);
+    }
     return HITEC_CARD_OK;
 }

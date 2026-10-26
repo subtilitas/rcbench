@@ -32,7 +32,10 @@
 /** @brief The rows of every tab and both series; hitec_panel_int.h. */
 const hpn_row_t hpn_rows[] = {
     { HITEC_PANEL_SERVO, 0, 0, 1, K_ACT, A_PORT, S_ANY, -1, "PORT" },
+    /* SERIES is chosen before CONNECT; while this panel holds the port
+     * the PORT row names the series and FILES takes its place. */
     { HITEC_PANEL_SERVO, 1, 0, 0, K_ACT, A_SERIES, S_ANY, TX_HP_SERIES, NULL },
+    { HITEC_PANEL_SERVO, 1, 0, 0, K_ACT, A_FILES, S_ANY, TX_KP_FILES, NULL },
     { HITEC_PANEL_SERVO, 1, 1, 0, K_ACT, A_READ, S_ANY, -1, "SERVO" },
     { HITEC_PANEL_SERVO, 2, 0, 0, K_ACT, A_MORE, S_ANY, TX_KP_MORE, NULL },
     { HITEC_PANEL_SERVO, 2, 1, 0, K_ACT, A_CLEAR, S_ANY, TX_HP_STOP_ROW,
@@ -134,6 +137,9 @@ bool hpn_row_shown(const hpn_row_t *r)
 
     if ((r->series & mask) == 0u) {
         return false;
+    }
+    if (r->kind == K_ACT && (r->what == A_SERIES || r->what == A_FILES)) {
+        return (r->what == A_FILES) == hp.prog.owned;
     }
     if (r->kind == K_SHOW && r->what < (uint8_t)HITEC_P_COUNT) {
         return hitec_param(hitec_prog_layout(&hp.prog), r->what) != NULL;
@@ -365,7 +371,13 @@ const char *hitec_panel_port_line(int i)
 
 int hitec_panel_editor(void)
 {
-    return hp.kp.open ? 1 : hp.ch.open ? 2 : hp.page.open ? 3 : 0;
+    return hp.kp.open ? 1 : hp.tk.open ? 4 : hp.ch.open ? 2
+         : hp.page.open ? 3 : 0;
+}
+
+ui_textkey_t *hitec_panel_textkey(void)
+{
+    return &hp.tk;
 }
 
 int hitec_panel_page(void)
@@ -376,6 +388,11 @@ int hitec_panel_page(void)
 const char *hitec_panel_choice_label(int i)
 {
     return hp.ch.open && i >= 0 && i < hp.ch.count ? hp.ch.labels[i] : NULL;
+}
+
+const char *hitec_panel_choice_title(void)
+{
+    return hp.ch.open ? hp.ch.title : NULL;
 }
 
 const char *hitec_panel_page_line(int i)
@@ -402,6 +419,7 @@ void hitec_panel_init(gfx_rect_t area)
     hp.area = area;
     ui_tabs_init_text(&hp.tabs, k_tabs, HITEC_PANEL_PAGES, hpn_tabs_rect());
     hp.kp.pressed = -1;
+    hp.tk.pressed = -1;
 }
 
 /**
@@ -463,7 +481,7 @@ bool hitec_panel_safe_at(int x, int y)
 
 uint32_t hitec_panel_revision(void)
 {
-    return hp.rev + hp.kp.revision;
+    return hp.rev + hp.kp.revision + hp.tk.revision;
 }
 
 uint32_t hitec_panel_hold_revision(void)
@@ -490,7 +508,9 @@ static uint32_t signature(void)
         hitec_prog_retry_code(p), hitec_prog_write_on(p),
         hitec_prog_changes(p), hitec_prog_record(p),
         (uint32_t)hitec_prog_record_verdict(p), p->ses.step_index,
-        p->must_read, p->f.card, p->ses.done,
+        p->must_read, p->f.card, p->ses.done, p->f.card_state, p->bk_saved,
+        p->bk_no_file, p->have_bk, p->files_seq, hitec_prog_card_busy(p),
+        p->load_pend,
     };
     uint32_t sig = 2166136261u;
 
@@ -546,6 +566,26 @@ void hitec_panel_file_done(bool ok)
 {
     hitec_prog_file_done(&hp.prog, ok);
     hpn_moved();
+}
+
+bool hitec_panel_card_take(hitec_card_req_t *out)
+{
+    return hitec_prog_card_take(&hp.prog, out);
+}
+
+void hitec_panel_card_done(const hitec_card_done_t *d)
+{
+    hitec_prog_card_done(&hp.prog, d);
+    hpn_file_answer();
+    hpn_moved();
+}
+
+bool hitec_panel_card_look(void)
+{
+    const bool look = hp.card_look;
+
+    hp.card_look = false;
+    return look;
 }
 
 bool hitec_panel_file_load(const char *text, size_t len)

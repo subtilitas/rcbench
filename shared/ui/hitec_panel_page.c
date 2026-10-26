@@ -3,7 +3,7 @@
  * @brief The hold pages of the Hitec programmer's overlay: LEAVE, RELEASE
  *        PORT, ENABLE WRITE TO SERVO, WRITE n VALUES, CHECK THIS CHANGE,
  *        REPAIR CHECKSUM and RESTORE, what each says before it acts, and
- *        what its hold does.
+ *        what its hold does, also for the pages of hitec_panel_file.c.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this overlay works with.  The state and the seam are
@@ -102,14 +102,7 @@ static bool moves_horn(const hitec_image_t *to)
     return false;
 }
 
-/**
- * @brief The values @p to changes, in the order of the tabs, on at most
- *        @p room lines: more than fit leave the last line to their count.
- *        A value that breaks a soft rule is in the warning colour.
- * @param to   the image the write leaves
- * @param room the lines
- */
-static void page_values(const hitec_image_t *to, int room)
+void hpn_page_values(const hitec_image_t *to, int room)
 {
     uint8_t ids[HP_ROW_COUNT];
     int n = 0;
@@ -143,11 +136,42 @@ static void page_values(const hitec_image_t *to, int room)
     }
 }
 
-/** @brief Where the values before a write are recorded: the card or RAM. */
+/**
+ * @brief The lines hpn_page_saves() adds.
+ * @return 1 for the backup file to come, 3 for none without a card, 0
+ *         where the backup is saved already
+ */
+static int saves_lines(void)
+{
+    const hitec_prog_t *p = &hp.prog;
+
+    return hitec_prog_backup_due(p)                       ? 1
+         : p->have_bk && !p->bk_saved && !p->f.card       ? 3
+                                                          : 0;
+}
+
+/** @brief Where the values before a write are recorded: the card or RAM.
+ *         The lines of no backup file without a card say RAM already. */
 static void page_record(void)
 {
-    hpn_page_add(HITEC_PROG_INFO, hp.prog.f.card ? TR(HP_WRITE_RECORD)
-                                                 : TR(KP_WRITE_NO_CARD));
+    if (saves_lines() != 3) {
+        hpn_page_add(HITEC_PROG_INFO, hp.prog.f.card ? TR(HP_WRITE_RECORD)
+                                                     : TR(KP_WRITE_NO_CARD));
+    }
+}
+
+/**
+ * @brief The values a write page has room for besides its @p fixed lines:
+ *        HP_PAGE_VALUES at most, two lines fewer with the three lines of no
+ *        backup file, two of which wrap in German.
+ * @param fixed the page's other lines
+ * @return the lines
+ */
+static int values_room(int fixed)
+{
+    const int room = HP_PAGE_LINES - fixed - (saves_lines() == 3 ? 2 : 0);
+
+    return room < HP_PAGE_VALUES ? room : HP_PAGE_VALUES;
 }
 
 void hpn_page_write(void)
@@ -157,7 +181,8 @@ void hpn_page_write(void)
     const unsigned c = hitec_prog_changes(p);
     const bool horn = to != NULL && (!hitec_prog_first_done(p)
                                      || moves_horn(to));
-    const int fixed = (horn ? 2 : 0) + 3;
+    const int fixed = (horn ? 2 : 0) + 2
+                      + (saves_lines() == 3 ? 3 : saves_lines() + 1);
     char title[64];
 
     if (c == 1u) {
@@ -168,9 +193,7 @@ void hpn_page_write(void)
     hpn_page_open(W_WRITE, true, title, TR(KP_HOLD_WRITE));
     /* The write gate has passed: a servo is read, so a draft stands. */
     if (to != NULL) {
-        page_values(to, HP_PAGE_LINES - fixed < HP_PAGE_VALUES
-                            ? HP_PAGE_LINES - fixed
-                            : HP_PAGE_VALUES);
+        hpn_page_values(to, values_room(fixed));
     }
     if (horn) {
         hpn_page_add(HITEC_PROG_DANGER, TR(KP_HORN_FREE));
@@ -179,6 +202,7 @@ void hpn_page_write(void)
     hpn_page_add(HITEC_PROG_INFO, classic() ? TR(HP_WRITE_C)
                                             : TR(HP_WRITE_D));
     hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
+    hpn_page_saves();
     page_record();
 }
 
@@ -199,6 +223,15 @@ static const ui_text_id_t k_rule[HITEC_RULE_COUNT] = {
     TX_KP_W_END_MOVED, TX_KP_W_NEUTRAL_MOVED, TX_KP_W_REVERSION_CHANGED,
     TX_KP_W_UNCONT_POS_FAR,
 };
+
+void hpn_page_rules(uint16_t rules)
+{
+    for (unsigned r = 0; r < (unsigned)HITEC_RULE_COUNT; ++r) {
+        if ((rules & HITEC_RULE_BIT(r)) != 0u) {
+            hpn_page_add(HITEC_PROG_WARN, ui_tr(k_rule[r]));
+        }
+    }
+}
 
 void hpn_page_soft(void)
 {
@@ -221,11 +254,7 @@ void hpn_page_soft(void)
         hpn_change_line(id, &trial, line, sizeof(line));
         hpn_page_add(HITEC_PROG_INFO, line);
     }
-    for (unsigned r = 0; r < (unsigned)HITEC_RULE_COUNT; ++r) {
-        if ((rules & HITEC_RULE_BIT(r)) != 0u) {
-            hpn_page_add(HITEC_PROG_WARN, ui_tr(k_rule[r]));
-        }
-    }
+    hpn_page_rules(rules);
 }
 
 void hpn_page_repair(void)
@@ -243,6 +272,7 @@ void hpn_page_repair(void)
         hpn_page_add(HITEC_PROG_INFO, line);
     }
     hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
+    hpn_page_saves();
     page_record();
 }
 
@@ -254,9 +284,10 @@ void hpn_page_restore(void)
     hpn_page_add(HITEC_PROG_INFO, TR(KP_FROM_JOURNAL));
     /* The write gate has passed: a record of this servo stands. */
     if (hitec_prog_restore_image(&hp.prog, &to)) {
-        page_values(&to, HP_PAGE_VALUES);
+        hpn_page_values(&to, HP_PAGE_VALUES);
     }
     hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
+    hpn_page_saves();
 }
 
 void hpn_page_apply(void)
@@ -286,6 +317,15 @@ void hpn_page_apply(void)
         break;
     case W_REPAIR:
         (void)hitec_prog_repair(p);
+        break;
+    case W_LOAD:
+        (void)hitec_prog_load_confirm(p);
+        break;
+    case W_FACTORY:
+        (void)hitec_prog_factory(p);
+        break;
+    case W_BACKUP:
+        (void)hitec_prog_restore_backup(p);
         break;
     default:
         (void)hitec_prog_restore(p);

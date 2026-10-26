@@ -23,11 +23,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "hitec_card.h"
 #include "servo_screen.h"
 #include "supply_screen.h"
 #include "servo_spots.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
+#include "ui_textkey.h"
 
 /**
  * @brief A tap at (@p x, @p y), panel pixels.
@@ -275,6 +277,216 @@ static bool write_view(const char *v)
 }
 
 /**
+ * @brief The card's answer: 4 frames, then drawn.
+ */
+static void hsettle(void)
+{
+    prun(64u);
+    ui_router_tick(0.02f);
+}
+
+/**
+ * @brief A D485HW file under @p name, the extension included, with SOFT
+ *        START 60% and SPEED 50%.
+ * @param name the file's name
+ */
+static void hfile(const char *name)
+{
+    hitec_image_t img;
+
+    d485(&img);
+    (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SOFT_START, 60);
+    (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 50);
+    files_put_image(name, &img);
+}
+
+/**
+ * @brief FILES tapped, and the card's list.
+ */
+static void hfiles(void)
+{
+    htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 0));
+    hsettle();
+}
+
+/**
+ * @brief The file @p name of the open list tapped, and the card's answer.
+ * @param name the file's base name
+ */
+static void hload(const char *name)
+{
+    hfiles();
+    for (int i = 0; hitec_panel_choice_label(i) != NULL; ++i) {
+        const char *l = hitec_panel_choice_label(i);
+
+        if (strncmp(l, name, strlen(name)) == 0 && l[strlen(name)] == ' ') {
+            htap(hitec_panel_choice_rect(i));
+            hsettle();
+            return;
+        }
+    }
+    fprintf(stderr, "render_hitec: no file %s\n", name);
+    exit(1);
+}
+
+/**
+ * @brief The keyboard's keys for @p s, after CLR, then OK.
+ * @param s the name: A to Z, 0 to 9, "-", "_" and "."
+ */
+static void htype(const char *s)
+{
+    static const char chars[] = "1234567890QWERTYUIOPASDFGHJKL-ZXCVBNM_.";
+    const ui_textkey_t *k = hitec_panel_textkey();
+
+    htap(ui_textkey_key_rect(k, UI_TK_CLR));
+    for (; *s != '\0'; ++s) {
+        htap(ui_textkey_key_rect(k, (int)(strchr(chars, *s) - chars)));
+    }
+    htap(ui_textkey_key_rect(k, UI_TK_OK));
+}
+
+/**
+ * @brief The edits of the write views, the switch on, and the write page.
+ */
+static void hwrite_page(void)
+{
+    hedits();
+    (void)hitec_prog_write_enable(hitec_panel_model(), true);
+    htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 1));
+}
+
+/**
+ * @brief The views of the servo files, from a servo read, a card in.
+ * @param v the view's name past "servo-hitec"
+ * @return false for a view of another kind
+ */
+static bool files_view(const char *v)
+{
+    hitec_image_t img;
+
+    if (strcmp(v, "-files") == 0 || strcmp(v, "-files-next") == 0) {
+        static const char *const k_names[] = {
+            "ELEV.TXT", "HITEC001.TXT", "HITEC002.TXT", "RUDDER.TXT",
+            "WING-L.TXT", "WING-R.TXT",
+        };
+
+        for (size_t i = 0; i < sizeof(k_names) / sizeof(k_names[0]); ++i) {
+            hfile(k_names[i]);
+        }
+        hs5645(&img);
+        files_put_image("THROTTLE.TXT", &img);
+        hfiles();
+        if (strcmp(v, "-files-next") == 0) {
+            hpick(TR(KP_FILES_NEXT));
+            hsettle();
+        }
+        return true;
+    }
+    if (strcmp(v, "-files-none") == 0) {
+        hfiles();
+        return true;
+    }
+    if (strcmp(v, "-name") == 0 || strcmp(v, "-name-exists") == 0) {
+        hfile("WING.TXT");
+        hfiles();
+        hpick(TR(KP_FILE_SAVE));
+        if (strcmp(v, "-name-exists") == 0) {
+            htype("WING");
+            hsettle();
+        }
+        return true;
+    }
+    if (strcmp(v, "-file-loaded") == 0) {
+        d485(&img);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SOFT_START, 60);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 50);
+        (void)hitec_image_put_reg(&img, 0x64, 7u);
+        files_put_image("WING-L.TXT", &img);
+        hload("WING-L");
+        return true;
+    }
+    if (strcmp(v, "-file-check") == 0 || strcmp(v, "-file-model") == 0) {
+        d485(&img);
+        if (strcmp(v, "-file-model") == 0) {
+            (void)hitec_image_put_reg(&img, HITEC_D_REG_MODEL, 34999u);
+            (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 50);
+        } else {
+            (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_LEFT_END,
+                                  3300);
+        }
+        files_put_image("WING-L.TXT", &img);
+        hload("WING-L");
+        return true;
+    }
+    if (strcmp(v, "-file-series") == 0) {
+        hs5645(&img);
+        files_put_image("THROTTLE.TXT", &img);
+        hload("THROTTLE");
+        return true;
+    }
+    if (strcmp(v, "-file-damaged") == 0) {
+        char text[HITEC_CARD_FILE_MAX];
+        size_t len;
+
+        d485(&img);
+        len = hitec_card_file_text(&img, text, sizeof(text));
+        text[50] = text[50] == '0' ? '1' : '0';
+        files_put("WING-L.TXT", text, len);
+        hload("WING-L");
+        return true;
+    }
+    if (strcmp(v, "-backup-write") == 0 || strcmp(v, "-backup-saving") == 0) {
+        hwrite_page();
+        if (strcmp(v, "-backup-saving") == 0) {
+            g_files_slow = true;
+            hhold();
+            hwait(HITEC_PROG_BACKUP);
+        }
+        return true;
+    }
+    if (strcmp(v, "-backup-file") == 0 || strcmp(v, "-restore-backup") == 0
+        || strcmp(v, "-restore-page") == 0) {
+        hwrite_page();
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        if (strcmp(v, "-backup-file") != 0) {
+            htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 0));
+        }
+        if (strcmp(v, "-restore-page") == 0) {
+            hpick(TR(KP_FROM_SESSION));
+        }
+        return true;
+    }
+    if (strcmp(v, "-nofile") == 0) {
+        g_card = false;
+        prun(20u);
+        hwrite_page();
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        return true;
+    }
+    if (strcmp(v, "-classic-more-factory") == 0
+        || strcmp(v, "-classic-factory") == 0
+        || strcmp(v, "-classic-factory-done") == 0) {
+        if (strcmp(v, "-classic-more-factory") != 0) {
+            (void)hitec_prog_write_enable(hitec_panel_model(), true);
+        }
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        if (strcmp(v, "-classic-more-factory") != 0) {
+            hpick(TR(HP_MORE_FACTORY));
+        }
+        if (strcmp(v, "-classic-factory-done") == 0) {
+            hhold();
+            hwait(HITEC_PROG_HELD);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
  * @brief Whether @p v is one of the views of the classic HS-5645MG.
  * @param v the view's name past "servo-hitec"
  * @return true for one
@@ -362,6 +574,12 @@ void render_hitec_view(const char *view)
         return;
     }
     if (write_view(v)) {
+        return;
+    }
+    /* The files' views: a card in. */
+    g_card = true;
+    prun(20u);
+    if (files_view(v)) {
         return;
     }
     if (strcmp(v, "-stopped") == 0) {
