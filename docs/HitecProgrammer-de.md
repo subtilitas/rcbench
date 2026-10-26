@@ -133,7 +133,7 @@ Warnfarbe. Keine Zeile nimmt einen Tipp an.
 
 | Reiter | D-Serie | Klassisch |
 | --- | --- | --- |
-| BEWEGUNG | TEMPO, DEAD BAND, SOFT START | TEMPO, DEAD BAND, AUFLÖSUNG |
+| BEWEGUNG | SPEED, DEAD BAND, SOFT START | SPEED, DEAD BAND, AUFLÖSUNG |
 | WEG | NEUTRAL, ENDE LINKS, ENDE RECHTS in Servo-Zählern mit Grad (220° über 16383 Zähler, 8192 die Mitte), DREHRICHTUNG | MITTE in Mikrosekunden, ENDE LINKS, ENDE RECHTS als Rohwerte (Einheit unbekannt), DREHRICHTUNG |
 | SCHUTZ | FAILSAFE (AUS, KRAFTLOS oder eine Position in Mikrosekunden), ÜBERLASTSCHUTZ, SMART SENSOR, EMPFINDLICHKEIT (roh) | FAILSAFE, FAILSAFE-POSITION, ÜBERLASTSCHUTZ |
 | INFO | MODELL, ID, POSITION und die Register 0x04, 0x22, 0x8A, 0x8C, 0xD4 und 0xD6 roh | MODELL, VERSION, DATUM, SERIENNR., PRÜFSUMME |
