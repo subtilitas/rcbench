@@ -64,11 +64,12 @@ bevor man sich auf ein Schreiben verlässt.
   irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
   den Prüfstand auf ARMED: **ARM** auf SERVO und auf MOTOR & ESC ist
-  gesperrt gezeichnet und nimmt keinen Druck an, und ein Lauf des
-  ESC-Stick-Programmierers startet nicht und meldet
+  gesperrt gezeichnet; ein Druck darauf schaltet nichts und zeigt den
+  Hinweis `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.` Ein
+  Lauf des ESC-Stick-Programmierers startet nicht und meldet
   `Servoprogrammierung belegt einen Port. Zuerst auf SERVO auf VERLASSEN tippen.` Ein ARM, das den
-  Prüfstand auf anderem Weg erreicht, wird mit dem Hinweis
-  `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.` abgelehnt. **DISARM**
+  Prüfstand auf anderem Weg erreicht, wird mit demselben Hinweis
+  abgelehnt. **DISARM**
   und **STOP** wirken in jedem Zustand. In ARMED werden das Lesen, das
   Prüfen, das Schreiben, das Zurückspielen und das Lösen der Kopplung mit
   derselben Zeile wie **VERBINDEN** abgelehnt; **VERLASSEN** wird

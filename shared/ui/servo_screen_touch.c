@@ -449,7 +449,11 @@ void svs_event_body(const touch_event_t *evt)
                 return;
             }
             if (svs_arm_locked()) {
-                /* Programming and an armed bench are exclusive. */
+                /* Programming and an armed bench are exclusive: the
+                 * press arms nothing and says why in the alert band. */
+                if (prog_holds()) {
+                    ui_router_set_alert(TR(ALERT_ARM_PROG));
+                }
                 return;
             }
             if (s.arm_down) {

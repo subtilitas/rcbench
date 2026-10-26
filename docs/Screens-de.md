@@ -1618,8 +1618,10 @@ einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum 
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
-auf SERVO ist der Programmierer auf PROGRAMMIEREN wieder offen. ARM ist gesperrt gezeichnet
-und nimmt keinen Druck, ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
+auf SERVO ist der Programmierer auf PROGRAMMIEREN wieder offen. ARM ist gesperrt gezeichnet;
+ein Druck darauf schaltet nichts und zeigt `ARMED gesperrt: Die
+Servoprogrammierung belegt einen Port.` im Alert-Band, auf SERVO wie auf
+MOTOR & ESC. ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
 SOLL-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
 mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
 Spannung und die Stromgrenze, die VERBINDEN stellt, `PORT  5.0V  1000mA`.
@@ -1663,7 +1665,11 @@ denselben Maßen: fünf Reiter (SERVO, BEWEGUNG, WEG, SCHUTZ, INFO) und
 SCHLIESSEN, Zeilen von 48px im Abstand von 56px, Werte von 150px und die
 breiten Werte eines Wertereiters von 260px, Hinweise in der Schrift 10 x 20
 bis 4px über dem Alert-Band, und Halteseiten mit einer Haltetaste von
-300 x 56px und ABBRECHEN von 180 x 56px. Sie liest nur. Die Zeile SERIE
+300 x 56px und ABBRECHEN von 180 x 56px. Sie liest das Servo und schreibt
+die geänderten Werte zurück: ein Tipp auf einen schreibbaren Wert öffnet
+eine Liste mit bis zu 6 Einträgen oder das Tastenfeld, SCHREIBEN INS SERVO
+FREIGEBEN auf SERVO ist der Schreibschalter, und n WERTE SCHREIBEN, 220px
+breit, öffnet die Schreibseite. Die Zeile SERIE
 stellt vor VERBINDEN D-SERIE oder KLASSISCH ein; die Zeile PORT nennt den
 Port, seinen GPIO, die Serie, die Empfangsart und die Versorgung, die
 VERBINDEN einstellt. Solange sie den Port hält, sind ARM, die Sollwerte und
@@ -1678,6 +1684,7 @@ enthält die Zeilen, den Ablauf und die Meldungen.
 ![Die Hitec-Programmierung, der Tester hält den Port](img/de/servo-hitec.png)
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
 ![Ein Port, den eine andere Sitzung hält](img/de/servo-hitec-other.png)
+![Die Schreibseite](img/de/servo-hitec-write.png)
 
 ### Einstellungen
 
@@ -2800,7 +2807,7 @@ und unter dem Namen die Art und ein Zustandswort:
 | Zustand | Bedeutung |
 |---|---|
 | FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN |
-| GESPERRT | der Vermerk der Servoprogrammierung, `BENCH/KST/CONF/KST.TXT`, und sein `KST.NEW`, solange er geschrieben wird. Nur INFO |
+| GESPERRT | die Vermerke der Servoprogrammierungen, `BENCH/KST/CONF/KST.TXT` und `BENCH/HITEC/CONF/HITEC.TXT`, und ihre `KST.NEW` und `HITEC.NEW`, solange sie geschrieben werden. Nur INFO |
 | WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat. Nur INFO |
 
 Das Fehlerprotokoll nimmt KOPIEREN und LÖSCHEN nur bei bestehender

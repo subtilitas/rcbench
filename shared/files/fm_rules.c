@@ -18,6 +18,11 @@
 #define JOURNAL_TXT KST_STORE_RECORD ".TXT"
 /** @brief The journal's name while it is written, KST.NEW. */
 #define JOURNAL_NEW KST_STORE_RECORD FM_NEW_SUFFIX
+/** @brief The Hitec programmer's record, HITEC.TXT (HITEC_CARD_RECORD of
+ *         hitec_card.h, which this layer does not include). */
+#define HITEC_TXT "HITEC.TXT"
+/** @brief The Hitec record's name while it is written, HITEC.NEW. */
+#define HITEC_NEW "HITEC" FM_NEW_SUFFIX
 
 /**
  * @brief The bench's deepest folders: each of them and every folder above
@@ -215,6 +220,10 @@ fm_place_t fm_place_of(const fm_bench_t *bench, const char *dir,
     }
     if (fm_same_path(dir, CARD_KST_CONF)
         && (same_folded(name, JOURNAL_TXT) || same_folded(name, JOURNAL_NEW))) {
+        return FM_PLACE_LOCKED;
+    }
+    if (fm_same_path(dir, CARD_HITEC_CONF)
+        && (same_folded(name, HITEC_TXT) || same_folded(name, HITEC_NEW))) {
         return FM_PLACE_LOCKED;
     }
     for (size_t i = 0u; i < sizeof(k_fault) / sizeof(k_fault[0]); ++i) {

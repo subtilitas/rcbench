@@ -13,20 +13,8 @@
 
 #include <string.h>
 
+#include "hitec_prog_int.h"
 #include "hitec_rx_link.h"
-
-/** @brief The request phases: what the model waits on the link for. */
-enum {
-    ST_IDLE = 0,    /**< nothing of this model runs               */
-    ST_OPENING,     /**< OPEN                                     */
-    ST_SES,         /**< a session operation, step by step        */
-    ST_CLOSING,     /**< CLOSE after a leave                      */
-    ST_CLEARING,    /**< CLEAR                                    */
-    ST_RELEASING,   /**< CLOSE of another session's port          */
-};
-
-/** @brief The session operations. */
-enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE };
 
 /** @brief What a command waits for. */
 enum {
@@ -81,6 +69,10 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_CLEARED:
     case HITEC_PROG_MSG_LEFT:
     case HITEC_PROG_MSG_RELEASED:
+    case HITEC_PROG_MSG_WRITTEN:
+    case HITEC_PROG_MSG_REPAIRED:
+    case HITEC_PROG_MSG_RESTORED:
+    case HITEC_PROG_MSG_FORGOTTEN:
         return HITEC_PROG_INFO;
     case HITEC_PROG_MSG_NO_C:
     case HITEC_PROG_MSG_NO_D:
@@ -92,23 +84,21 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_NO_ANSWER:
     case HITEC_PROG_MSG_RESTARTED:
     case HITEC_PROG_MSG_SUPPLY:
+    case HITEC_PROG_MSG_RECORD_FAILED:
+    case HITEC_PROG_MSG_WRITE_CUT:
+    case HITEC_PROG_MSG_VERIFY_FAIL:
+    case HITEC_PROG_MSG_RECORD:
+    case HITEC_PROG_MSG_REC_MIX:
+    case HITEC_PROG_MSG_REC_OTHER:
+    case HITEC_PROG_MSG_RECORD_BAD:
         return HITEC_PROG_DANGER;
     default:
         return HITEC_PROG_WARN;
     }
 }
 
-/**
- * @brief Say message @p id.
- *
- * @param p   The programmer.
- * @param id  hitec_prog_msg_id_t.
- * @param arg Its argument.
- * @param reg Its second argument.
- * @return @p id.
- */
-static hitec_prog_msg_id_t say2(hitec_prog_t *p, hitec_prog_msg_id_t id,
-                                unsigned arg, unsigned reg)
+hitec_prog_msg_id_t hpg_say2(hitec_prog_t *p, hitec_prog_msg_id_t id,
+                             unsigned arg, unsigned reg)
 {
     p->msg.id = (uint8_t)id;
     p->msg.level = (uint8_t)hitec_prog_level(id);
@@ -129,7 +119,7 @@ static hitec_prog_msg_id_t say2(hitec_prog_t *p, hitec_prog_msg_id_t id,
 static hitec_prog_msg_id_t say(hitec_prog_t *p, hitec_prog_msg_id_t id,
                                unsigned arg)
 {
-    return say2(p, id, arg, 0u);
+    return hpg_say2(p, id, arg, 0u);
 }
 
 /**
@@ -361,7 +351,13 @@ static void read_all(hitec_prog_t *p)
 static void read_done(hitec_prog_t *p)
 {
     const hitec_image_t *img = &p->ses.image;
+    const bool had = p->have_servo;
 
+    if (had) {
+        /* What the read before found, for the write side: the draft holds
+         * it unedited only where no edit stands. */
+        p->wr_target = p->servo;
+    }
     p->servo = *img;
     p->have_servo = true;
     /* A full read holds the D series model register and the classic name
@@ -369,21 +365,16 @@ static void read_done(hitec_prog_t *p)
      * guess. */
     (void)hitec_identify(img, &p->model);
     if (p->ses.series == (uint8_t)HITEC_D) {
-        (void)say2(p, HITEC_PROG_MSG_READ, p->model.number,
+        (void)hpg_say2(p, HITEC_PROG_MSG_READ, p->model.number,
                    hitec_image_reg(img, 0x32u));
     } else {
-        (void)say2(p, HITEC_PROG_MSG_READ, 0u,
+        (void)hpg_say2(p, HITEC_PROG_MSG_READ, 0u,
                    img->has_version != 0u ? img->version : 0u);
     }
+    hpw_read_done(p, had, had ? &p->wr_target : NULL);
 }
 
-/**
- * @brief The message of a session operation that did not end well.
- *
- * @param p The programmer.
- * @param r Its result.
- */
-static void ses_say(hitec_prog_t *p, hitec_ses_t r)
+void hpg_ses_say(hitec_prog_t *p, hitec_ses_t r)
 {
     switch (r) {
     case HITEC_SES_ERR_NO_SERVO:
@@ -434,14 +425,17 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
             read_all(p);
             return;
         }
-        ses_say(p, r);
+        hpg_ses_say(p, r);
         break;
     case OP_READ:
         if (r == HITEC_SES_OK) {
             read_done(p);
         } else {
-            ses_say(p, r);
+            hpg_ses_say(p, r);
         }
+        break;
+    case OP_WRITE:
+        hpw_write_done(p, r);
         break;
     default: /* OP_LEAVE */
         /* Back to PWM whatever the leave came to: a STOPPED port refuses
@@ -648,6 +642,7 @@ static void follow(hitec_prog_t *p)
         return;
     }
     if (rd->phase == HITEC_LINK_DOWN || rd->phase == HITEC_LINK_NO_PAGE) {
+        hpw_off(p);
         session_gone(p);
         p->lost = rd->phase == HITEC_LINK_DOWN;
         return;
@@ -655,6 +650,7 @@ static void follow(hitec_prog_t *p)
     if (!rd->known || (rd->held && rd->ours)) {
         return;
     }
+    hpw_off(p);
     session_gone(p);
     if (rd->held) {
         (void)say(p, HITEC_PROG_MSG_HELD_OTHER, rd->port_no);
@@ -663,12 +659,7 @@ static void follow(hitec_prog_t *p)
     }
 }
 
-/**
- * @brief The session's next step goes out, or its operation's end is taken.
- *
- * @param p The programmer.
- */
-static void pump(hitec_prog_t *p)
+void hpg_pump(hitec_prog_t *p)
 {
     /* An entry that ends well starts the read: its first step goes in the
      * same frame. */
@@ -716,8 +707,9 @@ void hitec_prog_feed(hitec_prog_t *p, const hitec_prog_feed_t *f)
     }
     take_answers(p);
     take_timeouts(p);
+    hpw_tick(p);
     follow(p);
-    pump(p);
+    hpg_pump(p);
 }
 
 /* ---------------------------------------------------------------- state */
@@ -738,7 +730,10 @@ hitec_prog_state_t hitec_prog_state(const hitec_prog_t *p)
     case ST_SES:
         return p->op == OP_ENTER  ? HITEC_PROG_ENTERING
              : p->op == OP_LEAVE  ? HITEC_PROG_LEAVING
+             : p->op == OP_WRITE  ? HITEC_PROG_WRITING
                                   : HITEC_PROG_READING;
+    case ST_RECORD:
+        return HITEC_PROG_RECORDING;
     case ST_CLOSING:
         return HITEC_PROG_LEAVING;
     case ST_CLEARING:
@@ -831,15 +826,7 @@ static bool bench_armed(const hitec_prog_t *p)
     return p->armed || (p->fed && p->f.armed);
 }
 
-/**
- * @brief Whether an operation of the held port may start now.
- *
- * @param p    The programmer.
- * @param safe true for one that sends frames: not with STOP latched, not
- *             armed, not on a STOPPED port.
- * @return HITEC_PROG_MSG_NONE when it may, else why not.
- */
-static hitec_prog_msg_id_t held_idle(const hitec_prog_t *p, bool safe)
+hitec_prog_msg_id_t hpg_held_idle(const hitec_prog_t *p, bool safe)
 {
     switch (hitec_prog_state(p)) {
     case HITEC_PROG_DOWN:
@@ -931,6 +918,7 @@ hitec_prog_msg_id_t hitec_prog_connect(hitec_prog_t *p)
     }
     p->port = (uint8_t)(p->f.target - 1u);
     p->lost = false;
+    hpw_connect(p);
     p->have_servo = false;
     p->have_last = false;
     p->reenter = false;
@@ -950,7 +938,7 @@ hitec_prog_msg_id_t hitec_prog_connect(hitec_prog_t *p)
 
 hitec_prog_msg_id_t hitec_prog_read(hitec_prog_t *p)
 {
-    hitec_prog_msg_id_t m = held_idle(p, true);
+    hitec_prog_msg_id_t m = hpg_held_idle(p, true);
 
     if (m == HITEC_PROG_MSG_NONE && !p->ses.in_mode) {
         m = HITEC_PROG_MSG_NOT_IN_MODE;
@@ -965,23 +953,24 @@ hitec_prog_msg_id_t hitec_prog_read(hitec_prog_t *p)
 
 hitec_prog_msg_id_t hitec_prog_leave(hitec_prog_t *p)
 {
-    const hitec_prog_msg_id_t m = held_idle(p, false);
+    const hitec_prog_msg_id_t m = hpg_held_idle(p, false);
 
     if (m != HITEC_PROG_MSG_NONE) {
         return say(p, m, m == HITEC_PROG_MSG_HELD_OTHER ? p->f.rd.port_no
                                                         : 0u);
     }
     /* Held and idle: the session is idle and takes the leave. */
+    hpw_off(p);
     (void)hitec_session_leave(&p->ses);
     p->st = ST_SES;
     p->op = OP_LEAVE;
-    pump(p);
+    hpg_pump(p);
     return HITEC_PROG_MSG_NONE;
 }
 
 hitec_prog_msg_id_t hitec_prog_clear(hitec_prog_t *p)
 {
-    const hitec_prog_msg_id_t m = held_idle(p, false);
+    const hitec_prog_msg_id_t m = hpg_held_idle(p, false);
     const bool supply_on = p->f.supply_read;
 
     if (m != HITEC_PROG_MSG_NONE) {
@@ -1008,6 +997,9 @@ hitec_prog_msg_id_t hitec_prog_clear(hitec_prog_t *p)
 
 void hitec_prog_abort(hitec_prog_t *p)
 {
+    if (hpw_abort(p)) {
+        return;
+    }
     if (p->cmd_ready) {
         /* Not handed out: nothing of it ran. */
         p->cmd_ready = false;
@@ -1023,7 +1015,7 @@ void hitec_prog_abort(hitec_prog_t *p)
         if (hitec_session_abort(&p->ses)) {
             p->abort_ready = true;
         }
-        pump(p);
+        hpg_pump(p);
         return;
     }
     if (p->wait != W_NONE) {

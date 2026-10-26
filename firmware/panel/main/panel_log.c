@@ -948,6 +948,7 @@ void log_task(void *arg)
          * waits. */
         kst_record_write();
         kst_card_serve();
+        hitec_record_write();
         /* One pass done: a step a new build's trial waits for. */
         atomic_store(&s_trial_logger_ran, true);
     }

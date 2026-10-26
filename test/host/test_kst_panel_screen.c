@@ -775,8 +775,12 @@ TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
         settle();
         CHECK(g_rig.starts > 0);
         CHECK(kst_panel_holds_port());
-        /* And ARM takes no hold while it is held. */
+        /* And ARM takes no hold while it is held; the press says why in
+         * the alert band (station, #612). */
+        ui_router_set_alert(NULL);
         ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+        CHECK(ui_router_alert() != NULL);
+        CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_PROG));
         ticks(2.5f);
         ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
         scr->render(&cv, 0);

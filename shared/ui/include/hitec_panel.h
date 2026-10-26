@@ -14,9 +14,13 @@
  *
  * Five tabs.  SERVO: the port and the pin it drives, the series, the read,
  * the programming voltage and current, CLEAR after a stop.  MOTION, TRAVEL,
- * PROTECT and INFO: the servo's values as read, the rows of the series in
- * use; a decoded value shows its stored value beside it, and a stored value
- * that fits no encoding shows raw.  Nothing is written to the servo.
+ * PROTECT and INFO: the servo's values, the rows of the series in use; a
+ * decoded value shows its stored value beside it, and a stored value that
+ * fits no encoding shows raw.  A writable value takes a tap: its list or
+ * the keypad edits the draft, and an edit is marked `*`.  The SERVO tab's
+ * ENABLE WRITE TO SERVO, WRITE n VALUES and RESTORE and MORE's REPAIR
+ * CHECKSUM write to the servo, each from a page held UI_HOLD_S
+ * (hitec_prog.h).
  *
  * The overlay stays open while the port is held, by this panel or by
  * another session: PWM and programming are exclusive states of the pin,
@@ -30,6 +34,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gfx.h"
@@ -63,7 +68,7 @@ typedef enum {
  */
 void hitec_panel_init(gfx_rect_t area);
 /** @brief The SERVO screen was entered: the options are read from the
- *         settings. */
+ *         settings, and ENABLE WRITE TO SERVO goes off. */
 void hitec_panel_screen_entry(void);
 /** @brief Opens the overlay. */
 void hitec_panel_open(void);
@@ -157,11 +162,31 @@ bool hitec_panel_take(hitec_prog_cmd_t *out);
  */
 void hitec_panel_gate(hitec_prog_gate_t *g);
 /**
- * @brief The bench is armed or asked to arm: CONNECT and READ ALL are
- *        refused.
+ * @brief The bench is armed or asked to arm: CONNECT, READ ALL and every
+ *        write are refused.
  * @param armed true while it is
  */
 void hitec_panel_bench_armed(bool armed);
+/**
+ * @brief The record's text for the card (hitec_prog_file_take()).
+ * @param out receives the text
+ * @param n   bytes at @p out
+ * @return its length; 0 for none
+ */
+size_t hitec_panel_file_take(char *out, size_t n);
+/**
+ * @brief How the card took it (hitec_prog_file_done()).
+ * @param ok true when the card holds it whole
+ */
+void hitec_panel_file_done(bool ok);
+/**
+ * @brief The record's text as the card held it at the start
+ *        (hitec_prog_file_load()).
+ * @param text the text
+ * @param len  its length in bytes
+ * @return false for a text that does not parse
+ */
+bool hitec_panel_file_load(const char *text, size_t len);
 
 /* --- for the tests and the renderer ------------------------------------ */
 

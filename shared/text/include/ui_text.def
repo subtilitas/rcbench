@@ -4976,9 +4976,6 @@ UI_TEXT(HP_LAYOUT_GUESS, 116,
 UI_TEXT(HP_SUM_BAD, 116,
     "Checksum of cells 0x00-0x1C is wrong. The servo may not follow PWM.",
     "Prüfsumme der Zellen 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.")
-UI_TEXT(HP_READ_ONLY, 116,
-    "Read only: this programmer writes nothing to the servo.",
-    "Nur Lesen: Diese Programmierung schreibt nichts ins Servo.")
 UI_TEXT(HP_NOT_READ, 116,
     "Not read yet. CONNECT reads every value.",
     "Noch nicht ausgelesen. VERBINDEN liest alle Werte.")
@@ -5015,6 +5012,135 @@ UI_TEXT(HP_RELEASE_2, 116,
 UI_TEXT(HP_RELEASE_3, 116,
     "Afterwards ARM clears a latched failsafe.",
     "Danach hebt ARM einen ausgelösten Failsafe auf.")
+UI_TEXT(HP_REPAIR, 27,
+    "REPAIR CHECKSUM",
+    "PRÜFSUMME REPARIEREN")
+UI_TEXT(HP_HOLD_REPAIR, 30,
+    "HOLD 2s TO REPAIR",
+    "2s HALTEN ZUM REPARIEREN")
+UI_TEXT(HP_MORE_REPAIR, 58,
+    "REPAIR CHECKSUM: write the balance in cell 0x1C.",
+    "PRÜFSUMME REPARIEREN: Ausgleich in Zelle 0x1C schreiben.")
+UI_TEXT(HP_EDIT_NOTE, 116,
+    "Tap a value to edit it. * marks a change; WRITE n VALUES on SERVO sends it.",
+    "Wert antippen zum Ändern. * markiert eine Änderung; n WERTE SCHREIBEN auf SERVO sendet sie.")
+UI_TEXT(HP_SUM_HINT, 116,
+    "MORE > REPAIR CHECKSUM writes cell 0x1C.",
+    "WEITERES > PRÜFSUMME REPARIEREN schreibt Zelle 0x1C.")
+UI_TEXT(HP_ST_RECORD, 116,
+    "Recording the values before the write on the card.",
+    "Werte vor dem Schreiben werden auf der Karte vermerkt.")
+UI_TEXT(HP_ST_WRITE, 116,
+    "Writing %u of %u. Do not disconnect.",
+    "Schreibe %u von %u. Nicht trennen.")
+UI_TEXT(HP_ST_SAVE, 116,
+    "Saving in the servo. It restarts.",
+    "Speichern im Servo. Es startet neu.")
+UI_TEXT(HP_ST_CHECK, 116,
+    "Checking the values: reading %u of %u.",
+    "Werte werden geprüft: Lese %u von %u.")
+UI_TEXT(HP_REPAIRED, 116,
+    "Checksum written. Cells 0x00-0x1C sum to 0.",
+    "Prüfsumme geschrieben. Die Zellen 0x00-0x1C ergeben 0.")
+UI_TEXT(HP_RESTORED, 116,
+    "Values before the interrupted write restored and verified.",
+    "Werte vor dem unterbrochenen Schreibvorgang zurückgespielt und geprüft.")
+UI_TEXT(HP_WRITE_OFF, 116,
+    "Writing is off. Switch ENABLE WRITE TO SERVO on first.",
+    "Schreiben ist gesperrt. Zuerst SCHREIBEN INS SERVO FREIGEBEN einschalten.")
+UI_TEXT(HP_M_NOT_READ, 116,
+    "No servo read. Tap READ ALL.",
+    "Kein Servo ausgelesen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_MUST_READ, 116,
+    "A write did not end verified. Tap READ ALL before the next write.",
+    "Ein Schreibvorgang endete ungeprüft. Vor dem nächsten ALLES AUSLESEN antippen.")
+UI_TEXT(HP_NO_CHANGES, 116,
+    "No value differs from the servo's.",
+    "Kein Wert weicht vom Servo ab.")
+UI_TEXT(HP_EDITS_PENDING, 116,
+    "Edited values are not written. Write them, or discard them under MORE, first.",
+    "Geänderte Werte sind nicht geschrieben. Zuerst schreiben oder unter WEITERES verwerfen.")
+UI_TEXT(HP_E_RANGE, 116,
+    "Not a value this setting takes.",
+    "Diesen Wert nimmt die Einstellung nicht an.")
+UI_TEXT(HP_E_RO, 116,
+    "This value is read only.",
+    "Dieser Wert ist nur lesbar.")
+UI_TEXT(HP_E_RAW, 116,
+    "A value this edit needs fits no encoding. Nothing changed.",
+    "Ein benötigter Wert passt zu keiner Codierung. Nichts geändert.")
+UI_TEXT(HP_E_UNKNOWN, 116,
+    "A value this edit needs was not read. Tap READ ALL.",
+    "Ein benötigter Wert wurde nicht gelesen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_E_MIRROR, 116,
+    "DIRECTION mirrors the positions; one would leave 1 to 16383.",
+    "DREHRICHTUNG spiegelt die Positionen; eine verließe 1 bis 16383.")
+UI_TEXT(HP_E_ORDER, 116,
+    "LEFT END, NEUTRAL and RIGHT END must ascend.",
+    "ENDE LINKS, NEUTRAL und ENDE RECHTS müssen aufsteigen.")
+UI_TEXT(HP_CUT_REG, 116,
+    "Writing was interrupted at register 0x%02X. Tap READ ALL.",
+    "Schreiben bei Register 0x%02X unterbrochen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_CUT_SAVE, 116,
+    "Writing was interrupted before the servo saved. Tap READ ALL.",
+    "Schreiben vor dem Speichern im Servo unterbrochen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_CUT_REBOOT, 116,
+    "Writing was interrupted after the save, before the restart. Tap READ ALL.",
+    "Schreiben nach dem Speichern, vor dem Neustart unterbrochen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_CUT_CHECK, 116,
+    "Every value went out; their check was interrupted. Tap READ ALL.",
+    "Alle Werte gesendet; ihre Prüfung wurde unterbrochen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_CUT_CELL, 116,
+    "Writing was interrupted at cell 0x%02X. Tap READ ALL.",
+    "Schreiben bei Zelle 0x%02X unterbrochen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_CUT_SUM, 116,
+    "Cell 0x%02X is written, its checksum in cell 0x1C is not. Tap READ ALL.",
+    "Zelle 0x%02X ist geschrieben, ihre Prüfsumme in Zelle 0x1C nicht. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_CUT_SUM_2, 116,
+    "The checksum may be wrong: the servo may not follow PWM.",
+    "Die Prüfsumme ist evtl. falsch: Das Servo folgt PWM evtl. nicht.")
+UI_TEXT(HP_VERIFY_FAIL, 116,
+    "Servo settings do not match after the write. Tap READ ALL.",
+    "Servowerte stimmen nach dem Schreiben nicht. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_REC_MIX_2, 116,
+    "Do not use this servo. RESTORE writes the values before the write back.",
+    "Benutze dieses Servo nicht. ZURÜCKSPIELEN schreibt die Werte vor dem Schreibvorgang zurück.")
+UI_TEXT(HP_RECORD_HELD, 116,
+    "A record of an interrupted write stands. Restore or discard it under RESTORE.",
+    "Ein Vermerk zu einem unterbrochenen Schreibvorgang besteht. Unter ZURÜCKSPIELEN zurückspielen oder verwerfen.")
+UI_TEXT(HP_RECORD_BAD, 116,
+    "Cannot read HITEC.TXT on the card. The file will not be used.",
+    "HITEC.TXT auf der Karte ist nicht lesbar. Die Datei wird nicht verwendet.")
+UI_TEXT(HP_SUM_OK, 116,
+    "Cells 0x00-0x1C sum to 0: nothing to repair.",
+    "Die Zellen 0x00-0x1C ergeben 0: nichts zu reparieren.")
+UI_TEXT(HP_ENABLE_D, 116,
+    "The encodings come from 1 D series servo, a D485HW.",
+    "Die Codierungen stammen von 1 Servo der D-Serie, einem D485HW.")
+UI_TEXT(HP_ENABLE_C, 116,
+    "The encodings come from 2 classic servos, an HS-5645MG and an HS-7955TG.",
+    "Die Codierungen stammen von 2 klassischen Servos, einem HS-5645MG und einem HS-7955TG.")
+UI_TEXT(HP_ENABLE_2, 116,
+    "Wrong end points can drive the servo into its stops.",
+    "Falsche Endpunkte können das Servo gegen seine Anschläge fahren.")
+UI_TEXT(HP_ENABLE_3C, 116,
+    "An interrupted write leaves a wrong checksum: the servo then ignores PWM.",
+    "Ein unterbrochener Schreibvorgang hinterlässt eine falsche Prüfsumme: Das Servo ignoriert dann PWM.")
+UI_TEXT(HP_WRITE_D, 116,
+    "The servo saves and restarts. It ignores signals for 1s.",
+    "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")
+UI_TEXT(HP_WRITE_C, 116,
+    "Each cell is followed by a write of the checksum cell 0x1C.",
+    "Auf jede Zelle folgt ein Schreiben der Prüfsummenzelle 0x1C.")
+UI_TEXT(HP_WRITE_RECORD, 116,
+    "The values before the write are recorded on the card in HITEC.TXT.",
+    "Die Werte vor dem Schreiben werden auf der Karte in HITEC.TXT vermerkt.")
+UI_TEXT(HP_REPAIR_1, 116,
+    "Writes cell 0x1C: 0x%02X -> 0x%02X. Cells 0x00-0x1C then sum to 0.",
+    "Schreibt Zelle 0x1C: 0x%02X -> 0x%02X. Die Zellen 0x00-0x1C ergeben dann 0.")
+UI_TEXT(HP_SOFT_OVERLOAD, 116,
+    "Without overload protection a stalled servo heats up.",
+    "Ohne Überlastschutz erhitzt sich ein blockiertes Servo.")
 /* --------------------- end of the Hitec programmer */
 
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */

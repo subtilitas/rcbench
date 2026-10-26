@@ -127,6 +127,7 @@ void kst_ui_service(void)
 void hitec_ui_service(void)
 {
     static hitec_prog_feed_t feed;
+    static bool file_out;
     hitec_prog_cmd_t cmd;
 
     snap_lock();
@@ -138,6 +139,26 @@ void hitec_ui_service(void)
         if (xQueueSend(s_hitec_q, &cmd, 0) != pdTRUE) {
             ESP_LOGW(TAG, "Hitec programmer: a command was lost");
         }
+    }
+
+    /* The record of a write: the log task has the card.  No card call is
+     * made here. */
+    if (file_out) {
+        if (atomic_load(&s_hitec_file_done)
+            != atomic_load(&s_hitec_file_sent)) {
+            return;
+        }
+        file_out = false;
+        hitec_panel_file_done(atomic_load(&s_hitec_file_ok));
+    }
+    const size_t len = hitec_panel_file_take(s_hitec_file,
+                                             sizeof(s_hitec_file));
+    if (len != 0u) {
+        s_hitec_file_len = len;
+        /* Written to the card mounted now, or to none. */
+        s_hitec_file_mount = storage_mount_count();
+        atomic_fetch_add(&s_hitec_file_sent, 1u);
+        file_out = true;
     }
 }
 
