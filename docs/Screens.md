@@ -2121,8 +2121,14 @@ The file list takes the body in three parts. The header row, body y 4 to
 card's name, and PREV and NEXT (140 x 48px) while the folder holds more
 than one page. The list under it is 1008px wide and shows 7 rows of 44px
 at a pitch of 48px: each row takes a tap anywhere in its 48px. A row
-shows the file's name and, right-aligned, its size; the file's date, kind
-and length are not shown. The footer, body y 440 to 492, holds RESCAN
+shows the file's name, its date and, right-aligned, its size, in the
+10 x 20 face. The name takes up to 60 characters; a longer one shows its
+first 58 and `..`. The date is the modification time the card holds, as
+[Files](#files) INFO shows it: in the zone of SETUP > PANEL's Time zone,
+`2026-10-26 09:41`, in a column of 160px. A file stamped in 1980, an unset
+clock's ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)),
+or with no stamp leaves the column empty. The size stands in a box of
+100px at the row's end. The file's kind and length are not shown. The footer, body y 440 to 492, holds RESCAN
 (140 x 52px), WI-FI and FILES (100 x 52px) at the left and DELETE and
 OPEN (140 x 52px) at the right, and ends 4px above the alert band. A
 message about a file stands between FILES and DELETE on up to two lines of

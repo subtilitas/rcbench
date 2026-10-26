@@ -42,6 +42,12 @@ typedef struct {
     char name[STORAGE_NAME_MAX];
     uint64_t size;
     bool is_dir;
+    /** @brief FAT's date stamp in bits 31..16 and its time stamp in bits
+     *         15..0, as the directory read returns them (FatFs FILINFO
+     *         fdate, ftime): no lookup and no mktime() per entry.
+     *         storage_stamp_mtime() reads it.  4 bytes in the padding
+     *         after is_dir: the entry stays 80 bytes. */
+    uint32_t stamp;
 } storage_entry_t;
 
 /** What storage_stat() reads of one name. */
@@ -173,12 +179,12 @@ typedef void (*storage_tick_fn)(void);
 #define STORAGE_WALK_REMOUNTED (-3)
 
 /**
- * Walk a directory, handing every matching entry to @p visit, with its size
- * (0 for a directory).
+ * @brief Walk a directory, handing every matching entry to @p visit, with
+ *        its size (0 for a directory) and its FAT stamp.
  *
- * One pass over the directory's entries and nothing else: the size comes
- * with the entry, so a caller that keeps a few does not look each of them up
- * again from the directory's start.
+ * One pass over the directory's entries and nothing else: the size and the
+ * stamp come with the entry, so a caller that keeps a few does not look
+ * each of them up again from the directory's start.
  *
  * The whole directory is read, and nothing here decides what is worth
  * keeping: a caller with room for fewer entries than the card holds chooses
@@ -258,6 +264,19 @@ int storage_walk_counted(const char *dir, const char *suffixes,
  *         does not read.
  */
 esp_err_t storage_stat(const char *path, storage_stat_t *out);
+
+/**
+ * @brief A storage_entry_t stamp as the time storage_stat() gives the same
+ *        file: FAT's local date and time through mktime(), in the zone in
+ *        force (TZ).
+ *
+ * A stamp of 1980, which FatFs writes for a clock that was not set, comes
+ * back below WALL_STAMP_FLOOR_S (wall_clock.h), as a stamp of 0 does.
+ *
+ * @param stamp  the entry's stamp
+ * @return seconds since 1970-01-01 00:00:00 UTC
+ */
+int64_t storage_stamp_mtime(uint32_t stamp);
 
 /** @brief A folder open for storage_dir_read(). */
 typedef struct storage_dir storage_dir_t;

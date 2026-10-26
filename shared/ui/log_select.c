@@ -69,6 +69,7 @@ void log_select_page_begin(log_select_page_t *sel, log_viewer_file_t *set,
     const log_viewer_page_t *p = (page != NULL) ? page : &first;
     snprintf(sel->key.name, sizeof(sel->key.name), "%s", p->key);
     sel->key.size = 0u;
+    sel->key.mtime = -1;
     sel->key.is_dir = false;
     fm_page_dir_t dir = FM_PAGE_FROM;
     if (p->dir == LOG_PAGE_AFTER) {

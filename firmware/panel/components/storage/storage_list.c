@@ -195,6 +195,7 @@ static int walk_held(const char *dir, const char *suffixes,
         memcpy(cur.name, e->fname, len + 1u);
         cur.is_dir = is_dir;
         cur.size = is_dir ? 0u : (uint64_t)e->fsize;
+        cur.stamp = ((uint32_t)e->fdate << 16) | (uint32_t)e->ftime;
         ++matched;
         if (visit != NULL) {
             visit(&cur, ctx);
@@ -260,6 +261,11 @@ static int64_t fat_mtime(WORD fdate, WORD ftime)
         .tm_isdst = -1,
     };
     return (int64_t)mktime(&tm);
+}
+
+int64_t storage_stamp_mtime(uint32_t stamp)
+{
+    return fat_mtime((WORD)(stamp >> 16), (WORD)(stamp & 0xffffu));
 }
 
 /**
