@@ -14,6 +14,7 @@
 
 #include "esc_profile.h"
 #include "esc_stick_panel.h"
+#include "hitec_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "ui_layout.h"
@@ -22,11 +23,14 @@
 #include "ui_widgets.h"
 
 /*
- * The rows.  Two live rows:
- *   - SERVO: the programmer for KST and Chaservo servos on the IOmcu's
- *     programming port 0 (GP13 on a board that has stored no other pin).
- *     Its port is a channel of the servo PWM bank (prog_port.h), so it
- *     needs LINK_CAP_SERVO_PWM.
+ * The rows.  Three live rows:
+ *   - SERVO: the programmer for KST and Chaservo servos on the port the
+ *     SERVO screen's tester drives (GPIO 13 for port 1 on a board that has
+ *     stored no other pin).  Its port is a channel of the servo PWM bank
+ *     (prog_port.h), so it needs LINK_CAP_SERVO_PWM.
+ *   - SERVO: the programmer for servos by Hitec on the same port, with the
+ *     same need.  The two are exclusive on it: while one holds the port the
+ *     other is PORT IN USE.
  *   - MOTOR & ESC: ESC STICK, an ESC programmed through its throttle-stick
  *     menu over the throttle output and the supply.  It holds no
  *     programming port.  It needs no capability to open: its profiles read
@@ -42,6 +46,9 @@ static const prog_reg_row_t k_rows[] = {
     { PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST, TX_PL_GRP_PROG_PORT,
       TX_SV_TARGET_PORT, PROG_REG_TESTER_PORT, LINK_CAP_SERVO_PWM,
       &kst_panel_pages, false },
+    { PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_HITEC, TX_PL_GRP_PROG_PORT,
+      TX_SV_TARGET_PORT, PROG_REG_TESTER_PORT, LINK_CAP_SERVO_PWM,
+      &hitec_panel_pages, false },
     { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_STICK, TX_PL_GRP_STICK,
       TX_MO_SET_THROTTLE, PROG_REG_NO_PORT, 0u, &esc_stick_pages, true },
 };
@@ -70,6 +77,11 @@ uint8_t prog_reg_port(const prog_reg_row_t *r)
         return s_tester_port;
     }
     return (r->port < PROG_REG_PORTS) ? r->port : (uint8_t)PROG_REG_NO_PORT;
+}
+
+bool prog_reg_servo_holds(void)
+{
+    return kst_panel_holds_port() || hitec_panel_holds_port();
 }
 
 const prog_reg_row_t *prog_registry(size_t *count)

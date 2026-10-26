@@ -32,6 +32,8 @@
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
 #include "files_screen.h"
+#include "hitec_link.h"
+#include "hitec_prog.h"
 #include "hitec_rx_link.h"
 #include "kst_link.h"
 #include "kst_prog.h"
@@ -113,6 +115,7 @@ extern uint16_t       s_far_minor;
 extern uint16_t       s_board;
 
 extern QueueHandle_t s_kst_q;     /**< app_main -> control task */
+extern QueueHandle_t s_hitec_q;   /**< app_main -> control task */
 extern QueueHandle_t s_sample_q;  /**< control task -> app_main */
 extern QueueHandle_t s_enc_q;     /**< control task -> app_main */
 
@@ -188,6 +191,9 @@ typedef struct {
     uint32_t      servo_win_lost;
     /* What the servo programmer's model is fed; see kst_publish(). */
     kst_prog_feed_t kst;
+    /** @brief What the Hitec programmer's model is fed; see
+     *         hitec_publish(). */
+    hitec_prog_feed_t hitec;
     /* The IOmcu's update; see cu_service(). */
     cu_snap_t     cu;
 } panel_snap_t;
@@ -658,8 +664,10 @@ void prog_ports_to_screens(void);
  * (prog_link_hitec_held()), for the PROGRAM list's PORT IN USE. */
 #define DRIVE_HELD_SHIFT 20u
 extern atomic_uint    s_drive;
-/* Whether the servo programmer has a port, or an operation under way. */
-extern bool            s_kst_taken;
+/** @brief Whether a servo programmer, KST or Hitec, has a port or an
+ *         operation under way: the bench takes no arm and no supply
+ *         change then.  Control task only; kst_port_look(). */
+extern bool            s_prog_taken;
 extern kst_prog_gate_t s_kst_gate;
 /* The SENSE and TONE set-ups that are not held at the far end. */
 extern atomic_uint s_sense_unheld;
@@ -721,6 +729,26 @@ void kst_link_service(void);
 void prog_link_service(void);
 void hitec_rx_service(void);
 void kst_publish(kst_prog_feed_t *f);
+
+/* ------------------------------------------------------------ panel_hitec.c */
+
+/** @brief The HITEC page's module (4.23); control task only. */
+extern hitec_link_t      s_hitec_link;
+/** @brief The gate the Hitec programmer's commands are claimed at; the one
+ *         part both tasks touch. */
+extern hitec_prog_gate_t s_hitec_gate;
+/** @brief The Hitec programmer's commands, at most 4 a pass; control task. */
+void hitec_commands(void);
+/** @brief One pass of the HITEC page's module; control task, every pass.
+ *  @param link_up whether the IOmcu answers */
+void hitec_pass(bool link_up);
+/** @brief Whether the HITEC page holds a port or a request runs.
+ *  @return true while it does */
+bool hitec_taken(void);
+/** @brief What the Hitec programmer's model is fed; under the snapshot's
+ *         lock.
+ *  @param f receives the feed */
+void hitec_publish(hitec_prog_feed_t *f);
 
 /* Where the tester's commands go, into s_drive for the SERVO screen: from
  * each pass of prog_link_service() and from the link-lost edge. */
@@ -977,6 +1005,8 @@ void drain_commands(bool link_up, bench_state_t *bench);
 /* ---------------------------------------------------------- panel_render.c */
 
 void kst_ui_service(void);
+/** @brief The Hitec programmer's model, once a frame on app_main. */
+void hitec_ui_service(void);
 extern unsigned s_tq_lost;
 bool supply_live_or_coming(void);
 void publish_supply_levels(void);

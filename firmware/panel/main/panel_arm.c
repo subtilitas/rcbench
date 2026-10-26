@@ -18,6 +18,7 @@
 #include "bench_state.h"
 #include "bind_link.h"
 #include "heartbeat.h"
+#include "hitec_link.h"
 #include "kst_link.h"
 #include "link_host.h"
 #include "link_pages.h"
@@ -110,6 +111,7 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     servo_source_init(&s_servo_source);
     tone_link_init(&s_tone_link);
     kst_link_init(&s_kst_link);
+    hitec_link_init(&s_hitec_link);
     prog_link_init(&s_prog_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
@@ -327,7 +329,7 @@ void service_arming(bool link_up)
          * the bank stay here.
          */
         arming_hs_facts_t facts = { .link_up    = link_up,
-                                    .port_taken = s_kst_taken };
+                                    .port_taken = s_prog_taken };
         if (arming_handshake_step(&s_arm, ARMING_HS_HANDED, &facts, now_ms())
             == ARMING_HS_PROG) {
             control_alert(TR(ALERT_ARM_PROG));
@@ -670,7 +672,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
                            && pc.motor.kind == MOTOR_CMD_ARM)
                           || (pc.kind == PANEL_CMD_SERVO
                               && pc.servo.kind == SERVO_CMD_ARM);
-        if (arms && s_kst_taken) {
+        if (arms && s_prog_taken) {
             /* Programming a servo and an armed bench are exclusive,
              * whichever screen asks. */
             control_alert(TR(ALERT_ARM_PROG));

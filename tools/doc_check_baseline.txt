@@ -718,7 +718,6 @@ firmware/panel/main/panel.h: warning: Member s_kst_file_ok (variable) of file pa
 firmware/panel/main/panel.h: warning: Member s_kst_file_sent (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_kst_gate (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_kst_link (variable) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member s_kst_taken (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_lets_go (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_link_is_up (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_link_lost_ms (variable) of file panel.h is not documented.
@@ -1120,7 +1119,6 @@ firmware/panel/main/panel_services.c: warning: Member s_kst_link (variable) of f
 firmware/panel/main/panel_services.c: warning: Member s_kst_outcome (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_kst_outcomes (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_kst_stops (variable) of file panel_services.c is not documented.
-firmware/panel/main/panel_services.c: warning: Member s_kst_taken (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_prog_link (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_prog_pin (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_prog_ports (variable) of file panel_services.c is not documented.
@@ -3337,23 +3335,7 @@ shared/ui/include/port_mail.h: file has no @file block
 shared/ui/include/port_mail.h: warning: Compound port_mail_t is not documented.
 shared/ui/include/port_view.h: file has no @file block
 shared/ui/include/port_view.h: warning: Compound port_view_t is not documented.
-shared/ui/include/prog_models.h: file has no @file block
-shared/ui/include/prog_models.h: warning: Compound prog_model_t is not documented.
-shared/ui/include/prog_models.h: warning: Compound prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member count (variable) of struct prog_model_t is not documented.
-shared/ui/include/prog_models.h: warning: Member count (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member decimals (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member device (variable) of struct prog_model_t is not documented.
-shared/ui/include/prog_models.h: warning: Member hi (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member initial (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member kind (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member lo (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: Member params (variable) of struct prog_model_t is not documented.
-shared/ui/include/prog_models.h: warning: Member transport (variable) of struct prog_model_t is not documented.
-shared/ui/include/prog_models.h: warning: Member unit (variable) of struct prog_param_t is not documented.
-shared/ui/include/prog_models.h: warning: parameters of member prog_model_name are not documented
 shared/ui/include/prog_models.h: warning: parameters of member prog_models are not documented
-shared/ui/include/prog_models.h: warning: return type of member prog_model_name is not documented
 shared/ui/include/prog_models.h: warning: return type of member prog_models is not documented
 shared/ui/include/prog_registry.h: warning: Compound prog_list_t is not documented.
 shared/ui/include/prog_registry.h: warning: Compound prog_reg_row_t is not documented.
@@ -4093,13 +4075,9 @@ shared/ui/port_view.c: file has no @file block
 shared/ui/prog_models.c: warning: Member MODEL_COUNT (macro definition) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_am32[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_blheli[] (variable) of file prog_models.c is not documented.
-shared/ui/prog_models.c: warning: Member k_demag[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_dir[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_escape32[] (variable) of file prog_models.c is not documented.
-shared/ui/prog_models.c: warning: Member k_hitec[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_models[] (variable) of file prog_models.c is not documented.
-shared/ui/prog_models.c: warning: Member k_mtype[] (variable) of file prog_models.c is not documented.
-shared/ui/prog_models.c: warning: Member k_res[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_timing[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_models.c: warning: Member k_vesc[] (variable) of file prog_models.c is not documented.
 shared/ui/prog_registry.c: warning: Member entry_h(const prog_list_t *l, int k) (function) of file prog_registry.c is not documented.

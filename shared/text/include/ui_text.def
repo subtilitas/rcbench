@@ -107,6 +107,9 @@ UI_TEXT(WB_LIVE, 0,
 UI_TEXT(PL_KST, 0,
     "KST and Chaservo servos",
     "KST- und Chaservo-Servos")
+UI_TEXT(PL_HITEC, 0,
+    "Hitec servos",
+    "Hitec-Servos")
 UI_TEXT(PL_GRP_PROG_PORT, 40,
     "PROG PORT SERVOS",
     "SERVOS AM PROG-PORT")
@@ -1505,6 +1508,9 @@ UI_TEXT(SUP_LINE_CC, 36,
 UI_TEXT(SUP_LINE_CV, 0,
     "At the set voltage.",
     "Sollspannung erreicht.")
+UI_TEXT(SUP_HELD_REFUSED, 94,
+    "Servo programming holds the supply: set points and ON are locked.",
+    "Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.")
 UI_TEXT(SUP_LINE_PORT, 0,
     "Servo programmer.",
     "Servoprogrammierung.")
@@ -2159,12 +2165,6 @@ UI_TEXT(PG_GROUP_PROTECTION, 10,
 UI_TEXT(PG_GROUP_SOUND, 10,
     "SOUND",
     "TON")
-UI_TEXT(PG_GROUP_TRAVEL, 10,
-    "TRAVEL",
-    "WEG")
-UI_TEXT(PG_GROUP_RESPONSE, 10,
-    "RESPONSE",
-    "VERHALTEN")
 UI_TEXT(PG_GROUP_REPORTING, 10,
     "REPORTING",
     "MELDUNG")
@@ -2213,30 +2213,6 @@ UI_TEXT(PG_HELP_CURRENT, 192,
 UI_TEXT(PG_HELP_REGEN, 192,
     "Feeds braking energy back into the battery instead of the motor.",
     "Leitet Bremsenergie zurück in den Akku statt in den Motor.")
-UI_TEXT(PG_HELP_CENTRE, 192,
-    "Sets neutral in microseconds relative to 1500.",
-    "Legt die Neutralstellung in Mikrosekunden um 1500 fest.")
-UI_TEXT(PG_HELP_ENDPOINT, 192,
-    "Limits travel in each direction from the centre.",
-    "Begrenzt den Weg von der Mitte aus in beide Richtungen.")
-UI_TEXT(PG_HELP_HORN, 192,
-    "Sets which way the servo horn moves as the pulse gets longer.",
-    "Legt fest, in welche Richtung sich das Ruderhorn bei längeren Pulsen bewegt.")
-UI_TEXT(PG_HELP_SPEED, 192,
-    "Slows the servo horn for scale models and gentle linkage movement.",
-    "Bewegt das Ruderhorn langsamer, für Scale-Modelle und sanfte Anlenkungen.")
-UI_TEXT(PG_HELP_DEADBAND, 192,
-    "Sets how much position error is allowed before correcting. A wider dead band runs cooler.",
-    "Legt fest, ab welcher Abweichung das Servo nachregelt. Ein breiteres Totband verringert die Erwärmung.")
-UI_TEXT(PG_HELP_RESOLUTION, 192,
-    "Sets how finely the commanded position is resolved.",
-    "Legt fest, wie fein die vorgegebene Position aufgelöst wird.")
-UI_TEXT(PG_HELP_OVERLOAD, 192,
-    "The servo reduces power if it stays blocked for too long. This helps prevent overheating.",
-    "Das Servo senkt die Leistung, wenn es zu lange blockiert. Das hilft, Überhitzung zu vermeiden.")
-UI_TEXT(PG_HELP_FAILSAFE, 192,
-    "Moves to a set position when the signal stops, instead of releasing the servo.",
-    "Fährt bei Signalverlust auf eine feste Position, statt das Servo kraftlos zu schalten.")
 UI_TEXT(PG_TRANSPORT_ONEWIRE, 60,
     "one-wire bootloader, 19200 baud",
     "Eindraht-Bootloader, 19200 Baud")
@@ -2246,12 +2222,6 @@ UI_TEXT(PG_TRANSPORT_CLI, 60,
 UI_TEXT(PG_TRANSPORT_PACKETS, 60,
     "framed data packets, 115200 baud",
     "Datenpakete mit Rahmen, 115200 Baud")
-UI_TEXT(PG_TRANSPORT_HITEC, 60,
-    "D-series servo protocol",
-    "Servoprotokoll der D-Serie")
-UI_TEXT(PG_NAME_HITEC, 42,
-    "Hitec servo",
-    "Hitec-Servo")
 UI_TEXT(PG_DEVICE_BLHELI, 80,
     "BLHeli_S 16.7  on  EFM8BB21",
     "BLHeli_S 16.7  auf  EFM8BB21")
@@ -2264,9 +2234,6 @@ UI_TEXT(PG_DEVICE_ESCAPE32, 80,
 UI_TEXT(PG_DEVICE_VESC, 80,
     "VESC 6.05  on  STM32F405",
     "VESC 6.05  auf  STM32F405")
-UI_TEXT(PG_DEVICE_HITEC, 80,
-    "Hitec servo, D-series",
-    "Hitec-Servo, D-Serie")
 UI_TEXT(PG_RANGE_OF, 0,
     "%d-%d of %d",
     "%d-%d von %d")
@@ -4756,6 +4723,300 @@ UI_TEXT(KP_W_HIGH_DUTY_TRAVEL, 116,
     "Hohes Duty und mehr Weg: Blockieren kann das Servo zerstören.")
 /* --------------------- end of the servo programmer */
 
+/* ---------------- the programmer for Hitec servos on SERVO (hitec_panel.h).
+ * The KST programmer's texts it shares are KP_.  The D series rows'
+ * names DEAD BAND, SOFT START and NEUTRAL are the vendor tool's, the same
+ * in every language, as the KST rows' are. */
+UI_TEXT(HP_TAB_MOTION, 9,
+    "MOTION",
+    "BEWEGUNG")
+UI_TEXT(HP_TAB_TRAVEL, 9,
+    "TRAVEL",
+    "WEG")
+UI_TEXT(HP_TAB_PROTECT, 9,
+    "PROTECT",
+    "SCHUTZ")
+UI_TEXT(HP_TAB_INFO, 9,
+    "INFO",
+    "INFO")
+UI_TEXT(HP_SERIES, 14,
+    "SERIES",
+    "SERIE")
+UI_TEXT(HP_SERIES_D, 14,
+    "D SERIES",
+    "D-SERIE")
+UI_TEXT(HP_SERIES_C, 14,
+    "CLASSIC",
+    "KLASSISCH")
+UI_TEXT(HP_SERIES_C_HELP, 40,
+    "HS-5xxx and HS-7xxx servos.",
+    "Servos HS-5xxx und HS-7xxx.")
+UI_TEXT(HP_STOP_ROW, 14,
+    "AFTER STOP",
+    "NACH STOP")
+UI_TEXT(HP_CLEAR, 11,
+    "CLEAR",
+    "CLEAR")
+UI_TEXT(HP_RELEASE, 14,
+    "RELEASE PORT",
+    "PORT FREIGEBEN")
+UI_TEXT(HP_HOLD_RELEASE, 30,
+    "HOLD 2s TO RELEASE",
+    "2s HALTEN ZUM FREIGEBEN")
+UI_TEXT(HP_HELD, 20,
+    "HELD ELSEWHERE",
+    "ANDERWEITIG BELEGT")
+UI_TEXT(HP_OTHER_LINE, 44,
+    "Another Hitec session holds it.",
+    "Eine andere Hitec-Sitzung belegt ihn.")
+UI_TEXT(HP_SUPPLY_AS_IS, 26,
+    "SUPPLY AS IT IS",
+    "VERSORGUNG UNVERÄNDERT")
+UI_TEXT(HP_PORT_NONE, 44,
+    "NO PROG PORT SET",
+    "KEIN PROG-PORT GESETZT")
+UI_TEXT(HP_SPEED, 32,
+    "SPEED",
+    "SPEED")
+UI_TEXT(HP_DEADBAND, 32,
+    "DEAD BAND",
+    "DEAD BAND")
+UI_TEXT(HP_SOFTSTART, 32,
+    "SOFT START",
+    "SOFT START")
+UI_TEXT(HP_RESOLUTION, 32,
+    "RESOLUTION",
+    "AUFLÖSUNG")
+UI_TEXT(HP_NEUTRAL, 32,
+    "NEUTRAL",
+    "NEUTRAL")
+UI_TEXT(HP_END_L, 32,
+    "LEFT END",
+    "ENDE LINKS")
+UI_TEXT(HP_END_R, 32,
+    "RIGHT END",
+    "ENDE RECHTS")
+UI_TEXT(HP_DIRECTION, 32,
+    "DIRECTION",
+    "DREHRICHTUNG")
+UI_TEXT(HP_CENTRE, 32,
+    "CENTRE",
+    "MITTE")
+UI_TEXT(HP_FAILSAFE, 32,
+    "FAILSAFE",
+    "FAILSAFE")
+UI_TEXT(HP_FS_POS, 32,
+    "FAILSAFE POSITION",
+    "FAILSAFE-POSITION")
+UI_TEXT(HP_OVERLOAD, 32,
+    "OVERLOAD PROTECTION",
+    "ÜBERLASTSCHUTZ")
+UI_TEXT(HP_SENS, 32,
+    "SENSITIVITY",
+    "EMPFINDLICHKEIT")
+UI_TEXT(HP_VERSION, 32,
+    "VERSION",
+    "VERSION")
+UI_TEXT(HP_DATE, 32,
+    "DATE",
+    "DATUM")
+UI_TEXT(HP_SERIAL, 32,
+    "SERIAL",
+    "SERIENNR.")
+UI_TEXT(HP_CHECKSUM, 32,
+    "CHECKSUM",
+    "PRÜFSUMME")
+UI_TEXT(HP_MODEL, 14,
+    "MODEL",
+    "MODELL")
+UI_TEXT(HP_POSITION, 14,
+    "POSITION",
+    "POSITION")
+UI_TEXT(HP_FS_LIMP, 20,
+    "LIMP",
+    "KRAFTLOS")
+UI_TEXT(HP_RES_HIGH, 20,
+    "HIGH",
+    "HOCH")
+UI_TEXT(HP_RES_NORMAL, 20,
+    "NORMAL",
+    "NORMAL")
+UI_TEXT(HP_SUM_BAD_V, 20,
+    "WRONG",
+    "FALSCH")
+UI_TEXT(HP_ST_ENTRY_C, 116,
+    "Power-up of the servo. Waiting for its answer.",
+    "Servo wird eingeschaltet. Warte auf seine Antwort.")
+UI_TEXT(HP_ST_ENTRY_D, 116,
+    "Servo starting. Frames in 1s.",
+    "Servo startet. Daten in 1s.")
+UI_TEXT(HP_ST_MODEL, 116,
+    "Waiting 1s for the servo on its own supply.",
+    "Warte 1s auf das Servo an seiner eigenen Versorgung.")
+UI_TEXT(HP_ST_READ, 116,
+    "Reading %u of %u.",
+    "Lese %u von %u.")
+UI_TEXT(HP_ST_CLEARING, 116,
+    "Clearing the stop on the IOmcu.",
+    "Stopp wird im IOmcu aufgehoben.")
+UI_TEXT(HP_ST_LEAVE_D, 116,
+    "Restarting the servo. PWM follows.",
+    "Servo startet neu. Danach PWM.")
+UI_TEXT(HP_ST_LEAVE_C, 116,
+    "Power cycle of the servo. PWM follows.",
+    "Servo wird aus- und eingeschaltet. Danach PWM.")
+UI_TEXT(HP_ST_RELEASING, 116,
+    "Releasing the port. The tester takes it back.",
+    "Port wird freigegeben. Der Tester übernimmt ihn wieder.")
+UI_TEXT(HP_ST_STOPPED, 116,
+    "Stopped. The pin is released. Tap CLEAR to go on, or LEAVE.",
+    "Gestoppt. Der Pin ist freigegeben. CLEAR zum Fortsetzen oder VERLASSEN.")
+UI_TEXT(HP_ST_STOP_LATCHED, 116,
+    "Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.",
+    "Gestoppt. Der Pin ist freigegeben. VERLASSEN, dann einmal auf ARMED schalten, um den STOP aufzuheben.")
+UI_TEXT(HP_ST_NOT_IN_MODE, 116,
+    "Port %u is held. The servo is not in programming mode: LEAVE and CONNECT again.",
+    "Port %u ist belegt. Das Servo ist nicht im Programmiermodus: VERLASSEN und neu VERBINDEN.")
+UI_TEXT(HP_NO_PAGE, 116,
+    "Unavailable: the IOmcu has no Hitec port.",
+    "Nicht verfügbar: Der IOmcu hat keinen Hitec-Port.")
+UI_TEXT(HP_NO_PAGE_2, 116,
+    "Update the IOmcu to version 0.21.1 or later.",
+    "IOmcu auf Version 0.21.1 oder neuer aktualisieren.")
+UI_TEXT(HP_RX_PENDING, 116,
+    "Receive mode not set on the IOmcu yet. Try again.",
+    "Empfangsart im IOmcu noch nicht gesetzt. Erneut versuchen.")
+UI_TEXT(HP_HELD_KST, 116,
+    "The KST programmer holds this port.",
+    "Die KST-Programmierung belegt diesen Port.")
+UI_TEXT(HP_HELD_OTHER, 116,
+    "Port held by another Hitec session.",
+    "Port von einer anderen Hitec-Sitzung belegt.")
+UI_TEXT(HP_RELEASE_HINT, 116,
+    "RELEASE PORT (hold 2s) gives it back to the tester. The supply stays as it is.",
+    "PORT FREIGEBEN (2s halten) gibt ihn an den Tester zurück. Die Versorgung bleibt unverändert.")
+UI_TEXT(HP_V_CAPPED, 116,
+    "Hitec programming runs at 6.0V or less.",
+    "Hitec-Programmierung läuft mit höchstens 6.0V.")
+UI_TEXT(HP_STOP_LATCHED, 116,
+    "A STOP is latched. It clears with the next switch to ARMED.",
+    "Ein STOP ist gesetzt. Er wird beim nächsten Schalten auf ARMED aufgehoben.")
+UI_TEXT(HP_STOP_LATCHED_2, 116,
+    "ARM is refused while a port is held: LEAVE first.",
+    "ARM ist gesperrt, solange ein Port belegt ist: zuerst VERLASSEN.")
+UI_TEXT(HP_NOT_IN_MODE, 116,
+    "The servo is not in programming mode. LEAVE and CONNECT again.",
+    "Das Servo ist nicht im Programmiermodus. VERLASSEN und neu VERBINDEN.")
+UI_TEXT(HP_NO_C, 116,
+    "No classic servo answered after power-up. Check plug and series.",
+    "Kein klassisches Servo hat nach dem Einschalten geantwortet. Stecker und Serie prüfen.")
+UI_TEXT(HP_NO_D, 116,
+    "No D series servo answers. Check plug, receive mode and series.",
+    "Kein Servo der D-Serie antwortet. Stecker, Empfangsart und Serie prüfen.")
+UI_TEXT(HP_NEED_PD_C, 116,
+    "Classic servos need a PD mini: the bench cycles the supply.",
+    "Klassische Servos brauchen ein PD mini: Der Prüfstand schaltet die Versorgung.")
+UI_TEXT(HP_ENTRY_BAD, 116,
+    "The servo's answer to the entry was wrong. Check the series.",
+    "Die Antwort des Servos auf den Einstieg war falsch. Serie prüfen.")
+UI_TEXT(HP_BAD_ANSWER, 116,
+    "Bad answer from the servo (code %u). Reading again.",
+    "Fehlerhafte Antwort vom Servo (Code %u). Lese erneut.")
+UI_TEXT(HP_READ_FAIL, 116,
+    "Read failed at address 0x%02X. Tap READ ALL.",
+    "Lesen bei Adresse 0x%02X fehlgeschlagen. ALLES AUSLESEN antippen.")
+UI_TEXT(HP_READ_D, 116,
+    "D series servo, model %u, ID %u.",
+    "Servo der D-Serie, Modell %u, ID %u.")
+UI_TEXT(HP_READ_C, 116,
+    "Classic servo %s, version 0x%02X.",
+    "Klassisches Servo %s, Version 0x%02X.")
+UI_TEXT(HP_ABORTED, 116,
+    "The operation was aborted.",
+    "Der Vorgang wurde abgebrochen.")
+UI_TEXT(HP_CLEARED, 116,
+    "Stop cleared on the IOmcu.",
+    "Stopp im IOmcu aufgehoben.")
+UI_TEXT(HP_UNSAFE, 116,
+    "The IOmcu refused: its failsafe is latched.",
+    "Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst.")
+UI_TEXT(HP_UNSAFE_2, 116,
+    "Switch to ARMED once to clear it. A held port needs LEAVE or RELEASE PORT first.",
+    "Einmal auf ARMED schalten, um ihn aufzuheben. Ein belegter Port braucht zuerst VERLASSEN oder PORT FREIGEBEN.")
+UI_TEXT(HP_SESSION_ENDED, 116,
+    "The IOmcu ended the session. The port is back in tester mode.",
+    "Der IOmcu hat die Sitzung beendet. Der Port ist wieder im Testermodus.")
+UI_TEXT(HP_TIMEOUT, 116,
+    "No answer from the IOmcu in time. The operation ended.",
+    "Keine rechtzeitige Antwort vom IOmcu. Der Vorgang ist beendet.")
+UI_TEXT(HP_NO_ANSWER, 116,
+    "The IOmcu reports no result for the request.",
+    "Der IOmcu meldet kein Ergebnis für die Anfrage.")
+UI_TEXT(HP_RESTARTED, 116,
+    "The IOmcu restarted during the request.",
+    "Der IOmcu wurde während der Anfrage neu gestartet.")
+UI_TEXT(HP_NO_LINE, 116,
+    "The IOmcu cannot drive the line of this port.",
+    "Der IOmcu kann die Leitung dieses Ports nicht ansteuern.")
+UI_TEXT(HP_SUPPLY, 116,
+    "The supply did not follow the POWER request. Check the PD mini.",
+    "Die Versorgung folgte der POWER-Anfrage nicht. PD mini prüfen.")
+UI_TEXT(HP_REFUSED, 116,
+    "The IOmcu refused the request (code %u).",
+    "Der IOmcu hat die Anfrage abgelehnt (Code %u).")
+UI_TEXT(HP_RELEASED, 116,
+    "Port %u released. The tester has it again.",
+    "Port %u freigegeben. Der Tester hat ihn wieder.")
+UI_TEXT(HP_RELEASED_2, 116,
+    "The supply stays as it is. ARM now clears a latched failsafe.",
+    "Die Versorgung bleibt unverändert. ARM hebt einen ausgelösten Failsafe jetzt auf.")
+UI_TEXT(HP_LAYOUT_GUESS, 116,
+    "Model not known. The fields are read as on the %s.",
+    "Modell unbekannt. Die Felder werden wie beim %s gelesen.")
+UI_TEXT(HP_SUM_BAD, 116,
+    "Checksum of cells 0x00-0x1C is wrong. The servo may not follow PWM.",
+    "Prüfsumme der Zellen 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.")
+UI_TEXT(HP_READ_ONLY, 116,
+    "Read only: this programmer writes nothing to the servo.",
+    "Nur Lesen: Diese Programmierung schreibt nichts ins Servo.")
+UI_TEXT(HP_NOT_READ, 116,
+    "Not read yet. CONNECT reads every value.",
+    "Noch nicht ausgelesen. VERBINDEN liest alle Werte.")
+UI_TEXT(HP_RAW_BESIDE, 116,
+    "Stored value in brackets. RAW: a value that fits no known encoding.",
+    "Gespeicherter Wert in Klammern. RAW: ein Wert, der zu keiner bekannten Codierung passt.")
+UI_TEXT(HP_POS_NOTE, 116,
+    "Positions in servo counts. 8192 is the centre.",
+    "Positionen in Servo-Zählern. 8192 ist die Mitte.")
+UI_TEXT(HP_DEG_NOTE, 116,
+    "Degrees for a standard D servo, 220° over 16383 counts.",
+    "Grad für ein Standard-D-Servo, 220° über 16383 Zähler.")
+UI_TEXT(HP_DIR_NOTE, 116,
+    "DIRECTION mirrors NEUTRAL and both ends.",
+    "DREHRICHTUNG spiegelt NEUTRAL und beide Enden.")
+UI_TEXT(HP_END_UNIT, 116,
+    "LEFT END, RIGHT END: raw servo values. The unit is unknown.",
+    "ENDE LINKS, ENDE RECHTS: Rohwerte des Servos. Die Einheit ist unbekannt.")
+UI_TEXT(HP_RAW_NOTE, 116,
+    "Registers of unknown meaning, shown raw.",
+    "Register unbekannter Bedeutung, roh angezeigt.")
+UI_TEXT(HP_LEAVE_C, 116,
+    "The bench switches the supply off for 500ms and on again. The port returns to servo PWM.",
+    "Der Prüfstand schaltet die Versorgung 500ms aus und wieder ein. Der Port wechselt zurück zu Servo-PWM.")
+UI_TEXT(HP_LEAVE_D, 116,
+    "The servo restarts and ignores signals for 1s.",
+    "Das Servo startet neu und ignoriert Signale 1s lang.")
+UI_TEXT(HP_RELEASE_1, 116,
+    "Port %u returns to the tester. The other session ends.",
+    "Port %u geht an den Tester zurück. Die andere Sitzung endet.")
+UI_TEXT(HP_RELEASE_2, 116,
+    "The supply stays as it is.",
+    "Die Versorgung bleibt unverändert.")
+UI_TEXT(HP_RELEASE_3, 116,
+    "Afterwards ARM clears a latched failsafe.",
+    "Danach hebt ARM einen ausgelösten Failsafe auf.")
+/* --------------------- end of the Hitec programmer */
+
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */
 UI_TEXT(WF_AP, 0,
     "ACCESS POINT",
@@ -5958,6 +6219,12 @@ UI_SETTING_LABEL(SET_SERVO_PORT_PWM,
 UI_SETTING_HELP(SET_SERVO_PORT_PWM,
     "The programming port's pulse while it is the target",
     "Der Puls des Programmier-Ports als Ziel")
+UI_SETTING_LABEL(SET_HITEC_SERIES,
+    "Hitec series",
+    "Hitec-Serie")
+UI_SETTING_HELP(SET_HITEC_SERIES,
+    "The series the Hitec programmer connects to",
+    "Die Serie, mit der sich die Hitec-Programmierung verbindet")
 /* --- stick programming ---------------------------------------------- */
 UI_SETTING_LABEL(SET_STICK_V,
     "Voltage",
@@ -6181,6 +6448,13 @@ UI_OPTION("PORT 2", "PORT 2")
 UI_OPTION("PORT 3", "PORT 3")
 UI_OPTION("PORT 4", "PORT 4")
 UI_OPTIONS_END(servo_target)
+
+/* The series of the programmer for servos by Hitec, in hitec_family_t's
+ * order. */
+UI_OPTIONS(hitec_series)
+UI_OPTION("CLASSIC", "KLASSISCH")
+UI_OPTION("D SERIES", "D-SERIE")
+UI_OPTIONS_END(hitec_series)
 
 UI_OPTIONS(upd_channel)
 UI_OPTION("STABLE", NULL)

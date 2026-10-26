@@ -187,6 +187,14 @@ void supply_screen_put(float v, float i);
  */
 void supply_screen_set_port_held(bool held);
 /**
+ * @brief The Hitec programmer's word on the same hold: the supply is held
+ *        while either programmer says so.  supply_screen_set_port_held() is
+ *        the KST programmer's.
+ * @param held whether the Hitec programmer, or the SUPPLY page's own
+ *        LINK_SP_PORT, says a programming port holds the supply
+ */
+void supply_screen_set_hitec_held(bool held);
+/**
  * @brief Whether a programming port holds the supply
  *        (supply_screen_set_port_held()).
  * @return True while it holds it.

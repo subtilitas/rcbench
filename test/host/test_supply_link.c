@@ -364,11 +364,14 @@ TEST_CASE(a_programming_ports_command_is_adopted_and_not_fought)
     pump(true);
     CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
     CHECK(!supply_link_adopted(&sl, &on, &mv, &ma));
+    CHECK(!supply_link_port_held(&sl));
+    CHECK(!supply_link_port_held(NULL));
     /* The port takes the supply and lowers it for an entry. */
     supply_page_hold(&pg, true);
     CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
     const unsigned before = writes;
     pump(true);
+    CHECK(supply_link_port_held(&sl));
     CHECK_EQ(writes, before);
     CHECK_EQ(supply_link_events(&sl), 0u);
     CHECK_EQ(reg(LINK_SP_SET_MV), 5000u);
@@ -395,6 +398,7 @@ TEST_CASE(a_programming_ports_command_is_adopted_and_not_fought)
     CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
     CHECK(on);
     CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK(!supply_link_port_held(&sl));
     /* Not held any more: an ON the far end lets go is lost as ever. */
     far_step_and_read(false);
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_LOST);

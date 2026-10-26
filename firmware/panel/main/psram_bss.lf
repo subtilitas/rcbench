@@ -69,6 +69,8 @@ entries:
     esc_stick_draw_run (rcbench_extram_bss)
     kst_panel (rcbench_extram_bss)
     kst_panel_draw (rcbench_extram_bss)
+    hitec_panel (rcbench_extram_bss)
+    hitec_panel_draw (rcbench_extram_bss)
     analyser_screen (rcbench_extram_bss)
     wifi_screen (rcbench_extram_bss)
     files_screen (rcbench_extram_bss)

@@ -695,6 +695,50 @@ TEST_CASE(new_caps_pull_the_set_points_into_range)
     CHECK(!supply_screen_poll_cmd(NULL));     /* caps are not a command */
 }
 
+/*
+ * The KST programmer's hold and the Hitec programmer's lock the supply
+ * together: it stays held while either holds a port.  A press the hold
+ * refuses, OUTPUT ON or a set point, says why in the alert band; OFF is
+ * taken.
+ */
+TEST_CASE(either_programmers_hold_locks_the_supply_and_a_refused_press_says_why)
+{
+    fresh();
+    CHECK(!supply_screen_port_held());
+    supply_screen_set_port_held(true);
+    supply_screen_set_hitec_held(true);
+    CHECK(supply_screen_port_held());
+    supply_screen_set_port_held(false);
+    CHECK(supply_screen_port_held());
+    supply_screen_set_hitec_held(false);
+    CHECK(!supply_screen_port_held());
+    supply_screen_set_hitec_held(true);
+    CHECK(supply_screen_port_held());
+
+    ui_router_set_alert(NULL);
+    tap(OUT_X, OUT_Y);
+    CHECK(!supply_screen_output_on());
+    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), TR(SUP_HELD_REFUSED)) == 0);
+    ui_router_set_alert(NULL);
+    tap(V_UP_X, V_ROW_Y);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), TR(SUP_HELD_REFUSED)) == 0);
+    ui_router_set_alert(NULL);
+    tap(CARD_X, CARD_V_Y);
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), TR(SUP_HELD_REFUSED)) == 0);
+    CHECK(!supply_screen_keypad()->open);
+    /* A press on the plot is no refused control: no alert. */
+    ui_router_set_alert(NULL);
+    tap(OFF_X, OFF_Y);
+    CHECK(ui_router_alert() == NULL || ui_router_alert()[0] == '\0');
+    supply_screen_set_hitec_held(false);
+    ui_router_set_alert(NULL);
+}
+
 int main(void)
 {
     RUN(the_output_comes_on_with_a_hold_and_only_once);
@@ -724,6 +768,7 @@ int main(void)
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);
     RUN(a_tap_on_a_track_sets_a_value_the_supply_takes);
     RUN(new_caps_pull_the_set_points_into_range);
+    RUN(either_programmers_hold_locks_the_supply_and_a_refused_press_says_why);
     free(fb);
     free(fb2);
     return test_summary("supply_screen");

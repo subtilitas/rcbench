@@ -24,7 +24,8 @@ der Page. Welche Bytes ein Servo nimmt und in welcher Reihenfolge, ist Sache
 des Schreibers. Der Session-Kern
 ([`hitec_session.h`](../protocols/hitec/README.md#session)) und die
 Link-Hälfte des Panels ([Die Link-Hälfte des Panels](#die-link-hälfte-des-panels))
-sind gebaut; auf dem Panel ruft sie noch nichts auf.
+führen die Programmierung auf der Seite SERVO aus, die ein Servo liest und
+nichts hineinschreibt ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)).
 `shared/outputs/hitec_port.c` hält die Regeln.
 
 Ein Port ist frei, von dieser Page gehalten oder von der KST-Page gehalten

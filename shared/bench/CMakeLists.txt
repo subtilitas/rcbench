@@ -26,6 +26,7 @@ set(SRCS
     endpoints_link.c
     hitec_rx_link.c
     hitec_link.c
+    hitec_prog.c
     kst_link.c
     kst_prog.c
     kst_prog_card.c

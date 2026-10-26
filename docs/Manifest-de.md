@@ -29,7 +29,7 @@ Die ursprüngliche Anforderungsliste:
 | ESC-Programmierer (ESCs mit AM32- und BLHeli_S-Firmware gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) |
 | Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am IOmcu, auf einer gemeinsamen Zeitbasis abgetastet |
 | Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll |
-| Servoprogrammierung | Servos von KST und Chaservo: ein Programmierer auf dem SERVO-Bildschirm mit Backup, Limitprüfung und Schreibschalter, über den Programmierport des IOmcu ([Servo-Programmierer](ServoProgrammer-de.md)). Servos von Hitec: das Drahtprotokoll und der Programmierport sind gebaut, eine Sitzung am Panel nicht ([Der Programmierport für Servos von Hitec](LinkHitec-de.md)) |
+| Servoprogrammierung | Servos von KST und Chaservo: ein Programmierer auf dem SERVO-Bildschirm mit Backup, Limitprüfung und Schreibschalter, über den Programmierport des IOmcu ([Servo-Programmierer](ServoProgrammer-de.md)). Servos von Hitec, klassisch HS-5xxx und HS-7xxx und die D-Serie: eine Programmierung auf dem SERVO-Bildschirm, die die Einstellungen liest und keine schreibt ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md), [Der Programmierport für Servos von Hitec](LinkHitec-de.md)) |
 | Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert |
 
 Der Stand jeder Anforderung steht in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

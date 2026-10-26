@@ -1,0 +1,486 @@
+/*
+ * The Hitec programmer's overlay (shared/ui/hitec_panel*.c) on the whole
+ * loopback of hitec_prog_rig.h: the SERIES row before CONNECT and kept in
+ * the settings, a change of series dropping the other series' read; CONNECT, the rows a read fills; the PORT row naming the
+ * port and its GPIO in every state; CLOSE while the port is held opening
+ * LEAVE, and a hold of 2s leaving; a port another session holds offering
+ * RELEASE PORT; a classic servo with no PD mini refused with its reason;
+ * the supply's lock while a port is held; every control a tap target above
+ * the alert band, every label and value inside its field and every note
+ * above the band, in English and German, for both series.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#include "hitec_panel_rig.h"
+
+/* --------------------------------------------------------------- series */
+
+TEST_CASE(the_series_is_chosen_before_connect_and_kept_in_the_settings)
+{
+    open_en();
+    CHECK_EQ(hitec_prog_series(model()), HITEC_D);
+    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 0),
+                    TR(HP_SERIES)),
+             0);
+    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 1, 0),
+                    TR(HP_SERIES_D)),
+             0);
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_EQ(strcmp(hitec_panel_choice_label(0), TR(HP_SERIES_D)), 0);
+    CHECK(strstr(hitec_panel_choice_label(1), TR(HP_SERIES_C)) != NULL);
+    CHECK(strstr(hitec_panel_choice_label(1), "HS-5xxx") != NULL);
+    CHECK(hitec_panel_choice_label(2) == NULL);
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
+    CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_CLASSIC);
+    /* A fresh start reads it back. */
+    hitec_panel_init(AREA);
+    hitec_panel_open();
+    CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
+    /* CANCEL keeps it. */
+    rig_at(SUPPLY_ON, true);
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_cancel_rect());
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
+}
+
+TEST_CASE(the_series_row_and_more_take_no_tap_while_the_port_is_held)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
+}
+
+/**
+ * @brief Checks the value tabs as they stand before a read: each says NOT
+ *        READ and shows its first row with "--".
+ */
+static void tabs_not_read(void)
+{
+    for (int page = HITEC_PANEL_MOTION; page <= HITEC_PANEL_PROTECT; ++page) {
+        bool said_not_read = false;
+        const char *v;
+
+        tap(hitec_panel_tab_rect(page));
+        for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+            said_not_read |= strcmp(hitec_panel_note(i), TR(HP_NOT_READ)) == 0;
+        }
+        CHECK(said_not_read);
+        v = hitec_panel_value(page, 0, 0);
+        CHECK(hitec_panel_label(page, 0, 0) != NULL);
+        CHECK(v != NULL && strcmp(v, "--") == 0);
+    }
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+}
+
+TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
+{
+    open_en();
+    /* D series read, LEAVE, then CLASSIC: nothing of the D485HW is left. */
+    servo_d485();
+    tap_connect();
+    CHECK(hitec_prog_model(model()) != NULL);
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    show();
+    CHECK(hitec_prog_servo(model()) != NULL);    /* kept on its own series */
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
+    CHECK(hitec_prog_servo(model()) == NULL);
+    CHECK(hitec_prog_model(model()) == NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_HS5);
+    show();
+    CHECK(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1) == NULL
+          || strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), "D485HW")
+                 != 0);
+    tabs_not_read();
+    /* Classic read, LEAVE, then D SERIES: nothing of the HS-5645MG. */
+    servo_hs5645();
+    tap_connect();
+    CHECK(hitec_prog_model(model()) != NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_HS5);
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    show();
+    /* The same series again keeps the read. */
+    CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
+    CHECK(hitec_prog_servo(model()) != NULL);
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(0));
+    CHECK_EQ(hitec_prog_series(model()), HITEC_D);
+    CHECK(hitec_prog_servo(model()) == NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_D);
+    show();
+    tabs_not_read();
+    /* A change refused while the port is held keeps the read. */
+    servo_d485();
+    tap_connect();
+    CHECK(!hitec_prog_series_set(model(), HITEC_CLASSIC));
+    CHECK_EQ(hitec_prog_series(model()), HITEC_D);
+    CHECK(hitec_prog_servo(model()) != NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_D);
+}
+
+/* ------------------------------------------------------- connect and read */
+
+TEST_CASE(connect_reads_the_d485hw_and_the_tabs_show_its_values)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_READ);
+    CHECK(strstr(said(), "34485") != NULL);
+    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), "D485HW"),
+             0);
+    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
+                    TR(KP_LEAVE)),
+             0);
+    /* TRAVEL: NEUTRAL in counts with degrees, at the D485HW's 8192. */
+    tap(hitec_panel_tab_rect(HITEC_PANEL_TRAVEL));
+    CHECK_EQ(hitec_panel_page(), HITEC_PANEL_TRAVEL);
+    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_TRAVEL, 0, 0),
+                    TR(HP_NEUTRAL)),
+             0);
+    CHECK(strstr(hitec_panel_value(HITEC_PANEL_TRAVEL, 0, 0), "8192") != NULL);
+    CHECK(strstr(hitec_panel_value(HITEC_PANEL_TRAVEL, 0, 0), "+0.0") != NULL);
+    /* Every value tab: no row reads "--" after a full read. */
+    for (int page = HITEC_PANEL_MOTION; page <= HITEC_PANEL_INFO; ++page) {
+        for (int row = 0; row < 6; ++row) {
+            for (int col = 0; col < 2; ++col) {
+                const char *v = hitec_panel_value(page, row, col);
+
+                if (v != NULL) {
+                    CHECK(strcmp(v, "--") != 0);
+                }
+            }
+        }
+    }
+    /* No row of a value tab takes a tap: read only. */
+    for (int row = 0; row < 6; ++row) {
+        CHECK(!hitec_panel_row_live(HITEC_PANEL_TRAVEL, row, 0));
+    }
+}
+
+TEST_CASE(before_a_read_the_value_tabs_say_so)
+{
+    bool said_not_read = false;
+
+    open_en();
+    tap(hitec_panel_tab_rect(HITEC_PANEL_MOTION));
+    for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+        said_not_read |= strcmp(hitec_panel_note(i), TR(HP_NOT_READ)) == 0;
+    }
+    CHECK(said_not_read);
+    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_MOTION, 0, 0), "--"), 0);
+}
+
+TEST_CASE(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason)
+{
+    open_at(SUPPLY_NONE, UI_LANG_EN);
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK_EQ(msg(), HITEC_PROG_MSG_NEED_PD_C);
+    CHECK_EQ(strcmp(said(), TR(HP_NEED_PD_C)), 0);
+    CHECK_EQ(pstate(), HITEC_PROG_PWM);
+    prun(100u);
+    CHECK_EQ(g_cmds, 0u);
+}
+
+/* ------------------------------------------------------------- PORT row */
+
+TEST_CASE(the_port_row_names_the_port_and_its_gpio_in_every_state)
+{
+    open_en();
+    servo_d485();
+    /* The tester has it. */
+    CHECK(strstr(hitec_panel_port_line(0), "PROG PORT 1 GPIO 13") != NULL);
+    CHECK(strstr(hitec_panel_port_line(0), TR(HP_SERIES_D)) != NULL);
+    CHECK(strstr(hitec_panel_port_line(1), "5.0V 1000mA") != NULL);
+    CHECK_EQ(hitec_panel_pin(), PIN);
+    /* Held. */
+    tap_connect();
+    CHECK(strstr(hitec_panel_port_line(0), "PROG PORT 1 GPIO 13") != NULL);
+    CHECK_EQ(hitec_panel_pin(), PIN);
+    /* Held by another session after a panel restart. */
+    hitec_panel_init(AREA);
+    hitec_panel_open();
+    panel_restart();
+    until(HITEC_PROG_OTHER);
+    show();
+    CHECK(strstr(hitec_panel_port_line(0), "PROG PORT 1 GPIO 13") != NULL);
+    CHECK(strstr(hitec_panel_port_line(0), TR(HP_HELD)) != NULL);
+    CHECK_EQ(strcmp(hitec_panel_port_line(1), TR(HP_OTHER_LINE)), 0);
+    CHECK_EQ(hitec_panel_pin(), PIN);
+    /* No programming port: the tester on the standard outputs. */
+    open_en();
+    g_target = 0u;
+    prun(50u);
+    show();
+    CHECK_EQ(strcmp(hitec_panel_port_line(0), TR(HP_PORT_NONE)), 0);
+    CHECK(hitec_panel_port_line(2) == NULL);
+}
+
+/* ---------------------------------------------------- LEAVE and RELEASE */
+
+TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    tap(hitec_panel_close_rect());
+    CHECK(hitec_panel_is_open());
+    CHECK_EQ(hitec_panel_editor(), 3);
+    CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(KP_LEAVE_TITLE)), 0);
+    CHECK_EQ(strcmp(hitec_panel_page_line(2), TR(HP_LEAVE_D)), 0);
+    /* 1.5s is not enough. */
+    hold(1.5f);
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+    CHECK_EQ(hitec_panel_editor(), 3);
+    hold(2.1f);
+    CHECK(pstate() == HITEC_PROG_LEAVING || pstate() == HITEC_PROG_PWM);
+    until(HITEC_PROG_PWM);
+    show();
+    CHECK_EQ(strcmp(said(), TR(KP_M_LEFT)), 0);
+    CHECK(!hitec_panel_holds_port());
+    /* Now CLOSE closes. */
+    tap(hitec_panel_close_rect());
+    CHECK(!hitec_panel_is_open());
+}
+
+TEST_CASE(a_classic_leave_page_says_the_supply_cycles)
+{
+    open_en();
+    servo_hs5645();
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    tap_connect();
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK_EQ(hitec_panel_editor(), 3);
+    CHECK_EQ(strcmp(hitec_panel_page_line(1), TR(HP_LEAVE_C)), 0);
+    tap(hitec_panel_cancel_rect());
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+}
+
+TEST_CASE(a_port_another_session_holds_offers_release_port)
+{
+    char want[HITEC_PANEL_LINE];
+
+    open_en();
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    show();
+    CHECK(hitec_panel_holds_port());
+    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
+                    TR(HP_RELEASE)),
+             0);
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 0, 0));
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK_EQ(hitec_panel_editor(), 3);
+    CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(HP_RELEASE)), 0);
+    snprintf(want, sizeof(want), TR(HP_RELEASE_1), 1u);
+    CHECK_EQ(strcmp(hitec_panel_page_line(1), want), 0);
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    show();
+    snprintf(want, sizeof(want), TR(HP_RELEASED), 1u);
+    CHECK_EQ(strcmp(said(), want), 0);
+    CHECK(!hitec_panel_holds_port());
+}
+
+/* ----------------------------------------------------------- the supply */
+
+TEST_CASE(the_supply_is_locked_while_a_port_is_held)
+{
+    open_en();
+    servo_d485();
+    CHECK(!supply_screen_port_held());
+    tap_connect();
+    CHECK(supply_screen_port_held());
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    /* Another session's port locks it too. */
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    CHECK(supply_screen_port_held());
+}
+
+/* ----------------------------------------------------------- the layout */
+
+static bool overlap(gfx_rect_t a, gfx_rect_t b)
+{
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h
+           && b.y < a.y + a.h;
+}
+
+static void target(gfx_rect_t r)
+{
+    CHECK(r.w >= UI_TAP_MIN);
+    CHECK(r.h >= UI_TAP_MIN);
+    CHECK(r.x >= AREA.x);
+    CHECK(r.y >= AREA.y);
+    CHECK(r.x + r.w <= AREA.x + AREA.w);
+    CHECK(r.y + r.h <= FOOT);
+}
+
+/* The left edge of the row a value of column @p col sits in. */
+static int row_x(int col)
+{
+    return col == 0 ? AREA.x + 10 : AREA.x + 20 + (AREA.w - 30) / 2;
+}
+
+/* Every tab's controls tap targets with no overlap, every label left of
+ * its control, every value inside it, the PORT lines left of the PORT
+ * button, the notes above the band. */
+static void check_layout(void)
+{
+    for (int page = HITEC_PANEL_SERVO; page <= HITEC_PANEL_INFO; ++page) {
+        gfx_rect_t c[24];
+        int n = 0;
+
+        tap(hitec_panel_tab_rect(page));
+        CHECK_EQ(hitec_panel_page(), page);
+        for (int t = 0; t < HITEC_PANEL_PAGES; ++t) {
+            c[n++] = hitec_panel_tab_rect(t);
+        }
+        c[n++] = hitec_panel_close_rect();
+        for (int row = 0; row < 6; ++row) {
+            for (int col = 0; col < 2; ++col) {
+                const gfx_rect_t v = val(page, row, col);
+                const char *label = hitec_panel_label(page, row, col);
+                const char *value = hitec_panel_value(page, row, col);
+
+                if (v.w == 0) {
+                    continue;
+                }
+                c[n++] = v;
+                if (!(page == HITEC_PANEL_SERVO && row == 0)) {
+                    CHECK(row_x(col) + gfx_text_cells(label) * 10 + 8 <= v.x);
+                }
+                CHECK(gfx_text_cells(value) * 10 + 8 <= v.w);
+            }
+        }
+        for (int i = 0; i < n; ++i) {
+            target(c[i]);
+            for (int j = i + 1; j < n; ++j) {
+                CHECK(!overlap(c[i], c[j]));
+            }
+        }
+        if (page == HITEC_PANEL_SERVO) {
+            for (int i = 0; i < 2; ++i) {
+                CHECK(row_x(0) + gfx_text_cells(hitec_panel_port_line(i)) * 10
+                          + 8
+                      <= val(page, 0, 0).x);
+            }
+        }
+        {
+            const gfx_rect_t d = hitec_panel_notes_drawn();
+
+            if (d.h > 0) {
+                CHECK(d.y + d.h <= BAND_TOP - 4);
+            }
+        }
+    }
+}
+
+TEST_CASE(every_control_label_value_and_note_fits_in_both_languages)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        /* The tester has the port, D series. */
+        open_at(SUPPLY_ON, langs[k]);
+        check_layout();
+        /* The D485HW read. */
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        servo_d485();
+        tap_connect();
+        check_layout();
+        /* Stopped, with the latch: the longest state line. */
+        press_stop();
+        until(HITEC_PROG_HELD);
+        prun(50u);
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        check_layout();
+        /* The HS-5645MG read. */
+        open_at(SUPPLY_ON, langs[k]);
+        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(hitec_panel_choice_rect(1));
+        servo_hs5645();
+        tap_connect();
+        check_layout();
+        /* Another session's port. */
+        open_at(SUPPLY_ON, langs[k]);
+        (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+        until(HITEC_PROG_OTHER);
+        check_layout();
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        CHECK_EQ(hitec_panel_editor(), 3);
+        target(hitec_panel_apply_rect());
+        target(hitec_panel_cancel_rect());
+        CHECK(!overlap(hitec_panel_apply_rect(), hitec_panel_cancel_rect()));
+        show();
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(every_message_fits_its_line_in_both_languages)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+
+    open_en();
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        ui_text_set_language(langs[k]);
+        for (unsigned id = 1; id < HITEC_PROG_MSG_COUNT; ++id) {
+            char t[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
+            const hitec_prog_msg_t m = { .id = (uint8_t)id, .arg = 65535u,
+                                         .reg = 65535u };
+            const int n = hitec_panel_message_lines(&m, t);
+
+            CHECK(n >= 1 && n <= HITEC_PANEL_MSG_LINES);
+            for (int i = 0; i < n; ++i) {
+                /* Not cut: the line ends before its buffer does, and two
+                 * rows of the notes hold it. */
+                CHECK(strlen(t[i]) + 1u < sizeof(t[i]));
+                CHECK(hitec_panel_text_rows(t[i]) <= 2);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+int main(void)
+{
+    RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
+    RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
+    RUN(a_change_of_series_drops_what_the_other_series_read);
+    RUN(connect_reads_the_d485hw_and_the_tabs_show_its_values);
+    RUN(before_a_read_the_value_tabs_say_so);
+    RUN(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason);
+    RUN(the_port_row_names_the_port_and_its_gpio_in_every_state);
+    RUN(close_while_held_opens_leave_and_a_2s_hold_leaves);
+    RUN(a_classic_leave_page_says_the_supply_cycles);
+    RUN(a_port_another_session_holds_offers_release_port);
+    RUN(the_supply_is_locked_while_a_port_is_held);
+    RUN(every_control_label_value_and_note_fits_in_both_languages);
+    RUN(every_message_fits_its_line_in_both_languages);
+    free(fb);
+    return test_summary("hitec_panel");
+}

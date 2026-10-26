@@ -50,6 +50,11 @@ set(SRCS
     kst_panel_touch.c
     kst_panel_run.c
     kst_panel_draw.c
+    hitec_panel.c
+    hitec_panel_text.c
+    hitec_panel_edit.c
+    hitec_panel_touch.c
+    hitec_panel_draw.c
     analyser_screen.c
     balance_screen.c
     battery_screen.c

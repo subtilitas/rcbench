@@ -29,7 +29,7 @@ The original requirement list, in German:
 | ESC programmer (ESCs with AM32 and BLHeli_S firmware required) | One-wire half-duplex bootloader protocol at 19,200 baud on a PIO (programmable input/output) state machine |
 | Balancing with accelerometer and index sensor | Both sensors on the IOmcu, sampled on one timebase |
 | Servo tester with S.BUS and other protocols | Hardware PWM (pulse-width modulation) outputs; one PIO program per serial protocol |
-| Servo programming | KST and Chaservo servos: a programmer on the SERVO screen with backup, limit checks and a write switch, over the IOmcu's programming port ([Servo programmer](ServoProgrammer.md)). Hitec servos: the wire protocol and the programming port are built, and a panel session is not ([The programming port for Hitec servos](LinkHitec.md)) |
+| Servo programming | KST and Chaservo servos: a programmer on the SERVO screen with backup, limit checks and a write switch, over the IOmcu's programming port ([Servo programmer](ServoProgrammer.md)). Hitec servos, classic HS-5xxx and HS-7xxx and the D series: a programmer on the SERVO screen that reads the settings and writes none ([Servo programmer for Hitec servos](HitecProgrammer.md), [The programming port for Hitec servos](LinkHitec.md)) |
 | Log viewer for several formats | `shared/logfile`: a CSV (comma-separated values) reader that accepts decimal comma or point, a units row and ragged rows |
 
 The state of each requirement is in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

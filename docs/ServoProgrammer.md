@@ -11,7 +11,11 @@ column, the strip's tabs with it. **CLOSE** or the home tag returns to
 PROGRAM's list. Opening it ends a running automatic test as
 `stopped by the operator`. The row is dimmed with `IOMCU HAS NO SERVO PWM`
 and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM,
-which includes no IOmcu answering.
+which includes no IOmcu answering. Servos by Hitec have a programmer of
+their own on the same list and port
+([Servo programmer for Hitec servos](HitecProgrammer.md)); while it holds
+the port, this row is dimmed with `PORT IN USE`, and ARM and the supply
+stay locked as under this one.
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench
 is independent: it is not affiliated with, endorsed by or sponsored by them.

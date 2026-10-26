@@ -172,6 +172,7 @@ typedef enum {
     SET_SERVO_PROG_WAIT,
     SET_SERVO_TARGET,
     SET_SERVO_PORT_PWM,
+    SET_HITEC_SERIES,
     /* --- stick programming ---------------------------------------------- */
     SET_STICK_V,
     SET_STICK_I,

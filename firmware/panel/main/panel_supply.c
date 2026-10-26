@@ -191,7 +191,7 @@ void supply_follow_set(void)
     /* A programming port holds the supply: the set points are the port's,
      * and neither the screen's nor a limit that moved is written over
      * them.  The IOmcu refuses it too (supply_page.h). */
-    if (s_kst_taken) {
+    if (s_prog_taken) {
         return;
     }
     /* A programming port's command the screen has not taken yet: what the
@@ -253,7 +253,7 @@ void apply_supply_cmd(const panel_cmd_t *pc)
         /* The pump first, so a STOP or a loss still in the driver's queue
          * is counted before the ON is judged against them. */
         control_pump();
-        if (!s_kst_taken
+        if (!s_prog_taken
             && pc->stops == arming_stop_count(&s_arm)
             && pc->supply_offs == atomic_load(&s_supply_offs)
             && pc->pdmini_edits == atomic_load(&s_pdmini_edits)

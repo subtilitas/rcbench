@@ -524,3 +524,8 @@ bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx)
     }
     return known;
 }
+
+bool supply_link_port_held(const supply_link_t *s)
+{
+    return s != NULL && s->port_held;
+}

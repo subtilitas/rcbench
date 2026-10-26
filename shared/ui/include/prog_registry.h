@@ -36,9 +36,10 @@
  * A new maker adds one row to k_rows in prog_registry.c and one page_set
  * (a session laid out for the host's left column, as kst_panel_pages is,
  * or for the full body, as esc_stick_pages is).
- * A new maker never adds a home tile, a SETUP tile or a tab.  The Hitec
- * programmer lands here as SERVO's second PROGRAM row.  A modelled
- * protocol with no transport on the IOmcu gets no row.
+ * A new maker never adds a home tile, a SETUP tile or a tab.  SERVO's
+ * second PROGRAM row is the programmer for servos by Hitec
+ * (hitec_panel.h).  A modelled protocol with no transport on the IOmcu
+ * gets no row.
  *
  * The list rules: a list of more than PROG_LIST_SEARCH_OVER rows offers
  * SEARCH (the existing keyboard, "*" for any text); a list showing more
@@ -197,6 +198,15 @@ void prog_registry_set_ports(uint8_t tester_port, uint8_t held);
 /** Row @p r's port as it stands: its own, the tester's for
  *  PROG_REG_TESTER_PORT, or PROG_REG_NO_PORT. */
 uint8_t prog_reg_port(const prog_reg_row_t *r);
+
+/**
+ * @brief Whether a servo programmer holds a port: the KST programmer's
+ *        session, or the Hitec programmer's, whose word counts a port the
+ *        HITEC page names held by another session too.  ARM, the motor's
+ *        TARGET row and a run that arms the bench wait for neither.
+ * @return true while either holds one
+ */
+bool prog_reg_servo_holds(void);
 
 /* ------------------------------------------------------------ the checks */
 
