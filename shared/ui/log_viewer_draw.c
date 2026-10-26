@@ -10,7 +10,9 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
+#include "files_screen.h"
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "ui_screen.h"
@@ -18,6 +20,7 @@
 #include "ui_tabs.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
+#include "wall_clock.h"
 
 #include "log_viewer_int.h"
 
@@ -33,6 +36,37 @@ void log_viewer_size_text(char *out, size_t n, uint64_t bytes)
         snprintf(out, n, "%ukB", (unsigned)(bytes / 1024u));
     } else {
         snprintf(out, n, "%uB", (unsigned)bytes);
+    }
+}
+
+void log_viewer_row_text(const log_viewer_file_t *f, log_viewer_row_t *out)
+{
+    if (out == NULL) {
+        return;
+    }
+    memset(out, 0, sizeof(*out));
+    if (f == NULL) {
+        return;
+    }
+    /* Cut as FILES cuts a name: whole when it fits, else its first cells
+     * and "..", never inside a character. */
+    if (gfx_text_cells(f->name) <= LOG_VIEWER_NAME_CELLS) {
+        snprintf(out->name, sizeof(out->name), "%s", f->name);
+    } else {
+        const size_t keep = gfx_text_prefix(f->name,
+                                            LOG_VIEWER_NAME_CELLS - 2);
+        snprintf(out->name, sizeof(out->name), "%.*s..", (int)keep, f->name);
+    }
+    /* No stamp, or one FatFs made from an unset clock (any time in 1980,
+     * wall_clock.h): no date, as the panel claims no date it lacks.  Else
+     * the stamp in the zone SETUP holds, as FILES INFO writes it. */
+    if (wall_stamp_known(f->mtime)) {
+        files_time_text(out->date, sizeof(out->date), wall_local_s(f->mtime));
+    }
+    if (f->is_dir) {
+        snprintf(out->size, sizeof(out->size), "%s", TR(LOG_DIR));
+    } else {
+        log_viewer_size_text(out->size, sizeof(out->size), f->size);
     }
 }
 
@@ -191,16 +225,22 @@ static void render_browse(gfx_canvas_t *c)
             if (on) {
                 gfx_fill_rect(c, row.x, row.y, 4, row.h, UI_ACCENT);
             }
-            gfx_text(c, row.x + 16, row.y + (row.h - 20) / 2, s.files[i].name,
+            /* The name, the date in a column of its own and the size
+             * right-aligned at the row's end (log_viewer_row_text()). */
+            log_viewer_row_t t;
+            log_viewer_row_text(&s.files[i], &t);
+            gfx_text(c, row.x + BR_NAME_IN, row.y + (row.h - 20) / 2, t.name,
                      LV_FONT_LABEL, on ? UI_TEXT : UI_TEXT_DIM, 1);
-
-            char size[16];
-            log_viewer_size_text(size, sizeof(size), s.files[i].size);
-            gfx_rect_t sz = gfx_rect_make(row.x + row.w - 16 - BR_SIZE_W, row.y,
-                                          BR_SIZE_W, row.h);
-            gfx_text_in(c, sz, s.files[i].is_dir ? TR(LOG_DIR) : size,
-                        LV_FONT_LABEL,
-                        UI_TEXT_FAINT, 1, GFX_ALIGN_RIGHT);
+            if (t.date[0] != '\0') {
+                gfx_text_in(c, gfx_rect_make(row.x + BR_DATE_IN, row.y,
+                                             BR_DATE_W, row.h),
+                            t.date, LV_FONT_LABEL, UI_TEXT_FAINT, 1,
+                            GFX_ALIGN_LEFT);
+            }
+            gfx_text_in(c, gfx_rect_make(row.x + BR_SIZE_IN, row.y,
+                                         BR_SIZE_W, row.h),
+                        t.size, LV_FONT_LABEL, UI_TEXT_FAINT, 1,
+                        GFX_ALIGN_RIGHT);
             y += BR_ROW_H;
         }
     }

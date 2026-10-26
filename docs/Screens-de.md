@@ -2340,8 +2340,15 @@ Die Dateiliste teilt den Körper in drei Teile. Die Kopfzeile, Körper-y 4 bis
 der Karte und, solange der Ordner mehr als eine Seite hält, VORIGE und
 NÄCHSTE (140 x 48px). Die Liste darunter ist 1008px breit und zeigt 7
 Zeilen von 44px im Abstand von 48px: Jede Zeile nimmt einen Tipp auf ihren
-ganzen 48px an. Eine Zeile zeigt den Namen der Datei und rechtsbündig ihre
-Größe; Datum, Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
+ganzen 48px an. Eine Zeile zeigt den Namen der Datei, ihr Datum und
+rechtsbündig ihre Größe, in der Schrift 10 x 20. Der Name nimmt bis zu 60
+Zeichen; ein längerer zeigt seine ersten 58 und `..`. Das Datum ist die
+Änderungszeit, die die Karte führt, wie INFO in [Files](#files) sie zeigt:
+in der Zone von SETUP > PANEL, `Zeitzone`, `2026-10-26 09:41`, in einer
+Spalte von 160px. Eine Datei mit einem Zeitstempel in 1980, dem einer nicht
+gestellten Uhr ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)), oder
+ohne Zeitstempel lässt die Spalte leer. Die Größe steht in einem Feld von
+100px am Ende der Zeile. Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
 Körper-y 440 bis 492, trägt links AKTUALISIEREN (140 x 52px), WLAN und
 DATEIEN (100 x 52px), rechts LÖSCHEN und ÖFFNEN (140 x 52px), und endet
 4px über dem Alarmband. Eine Meldung zu einer Datei steht zwischen DATEIEN

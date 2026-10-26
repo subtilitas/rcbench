@@ -14,6 +14,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -159,6 +160,50 @@ TEST_CASE(a_walk_hands_on_sizes_past_4_gib_whole)
     CHECK(v.got[2].size == 0x200000000ull);
     /* A folder the volume does not have. */
     CHECK_EQ(storage_walk("NONE", NULL, see, &v, NULL), STORAGE_WALK_NO_DIR);
+}
+
+/*
+ * Each entry of a walk carries FAT's stamp as the directory read returned
+ * it, and storage_stamp_mtime() reads it as storage_stat() and
+ * storage_dir_read() read the same file's: the LOGS list and FILES INFO
+ * show one time.  A stamp of 1980, which FatFs writes for a clock not set,
+ * and a stamp of 0 read below 1981-01-01 12:00 UTC (WALL_STAMP_FLOOR_S,
+ * 347198400) in every zone from UTC-12 to UTC+14.
+ */
+TEST_CASE(a_walk_hands_on_each_entrys_stamp)
+{
+    card_in(FS_EXFAT, 64ull * 1000u * 1000u * 1000u);
+    seen_t v = { 0 };
+    CHECK_EQ(storage_walk("BIG", NULL, see, &v, NULL), (int)VOL_N);
+    for (unsigned i = 0u; i < v.n; ++i) {
+        CHECK_EQ(v.got[i].stamp,
+                 ((uint32_t)VOL_FDATE << 16) | (uint32_t)VOL_FTIME);
+        CHECK(storage_stamp_mtime(v.got[i].stamp) == vol_mtime());
+    }
+    storage_stat_t st;
+    CHECK_EQ(storage_stat(STORAGE_MOUNT_POINT "/BIG/EDGE1.CSV", &st), ESP_OK);
+    CHECK(storage_stamp_mtime(v.got[0].stamp) == st.mtime);
+    /* 1980-01-01 00:00 and 1980-12-31 23:58 (year 0 in bits 15..9 of
+     * the date), and no stamp at all. */
+    static const uint32_t k_unset[] = {
+        (uint32_t)((1u << 5) | 1u) << 16,
+        ((uint32_t)((12u << 5) | 31u) << 16) | ((23u << 11) | (58u << 5)),
+        0u,
+    };
+    static const char *const k_zones[] = { "UTC0", "<-12>12", "<+14>-14" };
+    for (size_t z = 0u; z < sizeof(k_zones) / sizeof(k_zones[0]); ++z) {
+        (void)setenv("TZ", k_zones[z], 1);
+        tzset();
+        for (size_t i = 0u; i < sizeof(k_unset) / sizeof(k_unset[0]); ++i) {
+            CHECK(storage_stamp_mtime(k_unset[i]) < 347198400LL);
+        }
+    }
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
+    /* 2026-10-26 09:41:00 in UTC. */
+    const uint32_t now = ((uint32_t)((46u << 9) | (10u << 5) | 26u) << 16)
+                         | ((9u << 11) | (41u << 5));
+    CHECK(storage_stamp_mtime(now) == 1793007660LL);
 }
 
 TEST_CASE(a_counted_walk_counts_the_names_it_leaves_out)
@@ -591,6 +636,7 @@ int main(void)
     RUN(an_exfat_card_mounts_and_its_line_names_the_format);
     RUN(every_fat_format_is_named_and_an_unread_one_says_so);
     RUN(a_walk_hands_on_sizes_past_4_gib_whole);
+    RUN(a_walk_hands_on_each_entrys_stamp);
     RUN(a_counted_walk_counts_the_names_it_leaves_out);
     RUN(a_stat_reads_sizes_past_4_gib_whole);
     RUN(a_folder_read_an_entry_at_a_time_has_each_size_and_time);

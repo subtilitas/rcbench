@@ -317,34 +317,39 @@ static void make_servo_csv(void)
 typedef struct {
     const char *name;
     uint32_t size;
+    int64_t mtime;      /* seconds since 1970, read in UTC as the shots' */
 } log_fake_t;
+
+/* 1980-01-01 00:00, the stamp FatFs writes for a clock that was not set:
+ * the row shows no date. */
+#define FAKE_1980 315532800
 
 /* The card's folders, as LOGS' tabs list them: BENCH/LOGS, USER/LOGS and
  * the root, where firmware 0.21.0 and older wrote every run. */
 static const log_fake_t k_bench[] = {
-    { "MOTOR014.CSV", 41210 },
-    { "SERVO013.CSV", 18422 },
-    { "SUPPL012.CSV", 9210 },
-    { "MOTOR011.CSV", 39100 },
+    { "MOTOR014.CSV", 41210, 1793007660 },    /* 2026-10-26 09:41 */
+    { "SERVO013.CSV", 18422, 1792951620 },    /* 2026-10-25 18:07 */
+    { "SUPPL012.CSV", 9210, 1792950720 },     /* 2026-10-25 17:52 */
+    { "MOTOR011.CSV", 39100, FAKE_1980 },
 };
 static const log_fake_t k_user[] = {
-    { "LIMIT006.TXT", 1873 },
-    { "ATEST005.CSV", 15104 },
-    { "ATEST005.TXT", 2210 },
-    { "ATEST004.CSV", 14980 },
-    { "ATEST004.TXT", 2187 },
+    { "LIMIT006.TXT", 1873, 1792858800 },     /* 2026-10-24 16:20 */
+    { "ATEST005.CSV", 15104, 1792699380 },    /* 2026-10-22 20:03 */
+    { "ATEST005.TXT", 2210, 1792699380 },
+    { "ATEST004.CSV", 14980, 1792698480 },    /* 2026-10-22 19:48 */
+    { "ATEST004.TXT", 2187, 1792698480 },
 };
 /* The root of a card of firmware 0.21.0: a servo test's SERVO042.CSV with
  * its report and a limit run's SERVO043.TXT alone, each a row of the list. */
 static const log_fake_t k_card[] = {
-    { "SERVO043.TXT", 1702 },
-    { "SERVO042.CSV", 16310 },
-    { "SERVO042.TXT", 2054 },
-    { "BENCH041.CSV", 18422 },
-    { "ESC040.CSV", 9210 },
-    { "SWEEP_1200KV.CSV", 15104 },
-    { "SWEEP_920KV.CSV", 4096 },
-    { "NOTES.TXT", 512 },
+    { "SERVO043.TXT", 1702, 1792247400 },     /* 2026-10-17 14:30 */
+    { "SERVO042.CSV", 16310, 1792246320 },    /* 2026-10-17 14:12 */
+    { "SERVO042.TXT", 2054, 1792246320 },
+    { "BENCH041.CSV", 18422, 1792245300 },    /* 2026-10-17 13:55 */
+    { "ESC040.CSV", 9210, FAKE_1980 },
+    { "SWEEP_1200KV.CSV", 15104, 1791799200 }, /* 2026-10-12 10:00 */
+    { "SWEEP_920KV.CSV", 4096, 1791746700 },  /* 2026-10-11 19:25 */
+    { "NOTES.TXT", 512, 0 },                  /* no stamp */
 };
 
 /* logs-report: LIMIT006.TXT as a limit run writes it, in English. */
@@ -392,6 +397,7 @@ static int offer_folder(log_select_page_t *sel, const log_fake_t *set,
         }
         snprintf(f.name, sizeof(f.name), "%s", set[i].name);
         f.size = set[i].size;
+        f.mtime = set[i].mtime;
         log_select_page_offer(sel, &f);
         ++n;
     }
@@ -431,10 +437,13 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
                            (log_prefix_t)(r % (int)LOG_PREFIX_COUNT), r,
                            false);
             f.size = 9000u + (uint32_t)r * 37u;
+            /* A run every 10 minutes, the last at 2026-10-26 09:41. */
+            f.mtime = 1793007660 - (int64_t)(PAGES_RUNS - r) * 600;
             log_select_page_offer(&sel, &f);
         }
         snprintf(f.name, sizeof(f.name), "%s", "SWEEP_920KV.CSV");
         f.size = 4096;
+        f.mtime = 1790755200;                   /* 2026-09-30 08:00 */
         log_select_page_offer(&sel, &f);
         ++n;
     } else {
