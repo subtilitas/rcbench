@@ -13,6 +13,10 @@ führt zurück zur Liste von PROGRAMMIEREN. Das Öffnen beendet einen laufenden
 automatischen Test als `vom Bediener gestoppt`. Die Zeile ist mit
 `IOMCU OHNE SERVO PWM` gedimmt und öffnet nichts, solange der IOmcu, die
 RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet.
+Servos von Hitec haben eine eigene Programmierung auf derselben Liste und
+demselben Port ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md));
+solange sie den Port hält, ist diese Zeile mit `PORT BELEGT` gedimmt, und
+ARM und das Netzteil bleiben gesperrt wie unter diesem Programmierer.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench
 ist unabhängig: es ist mit ihnen nicht verbunden und wird von ihnen weder

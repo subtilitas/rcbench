@@ -44,8 +44,8 @@ STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
           "-Wno-sign-conversion"]
 
 # The screens (ui_sources.py), the renderer, and what only its views
-# drive: the KST programmer's link module, the IOmcu's port and the wire
-# under it.
+# drive: the KST and the Hitec programmers' link modules, the IOmcu's
+# ports and the wire under them.
 SOURCES = [
     "test/host/render_screen.c",
     *ui_sources.SOURCES,
@@ -54,6 +54,9 @@ SOURCES = [
     "shared/link/link_dev.c",
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
+    "test/host/render_hitec.c",
+    "shared/bench/hitec_link.c",
+    "shared/outputs/hitec_port.c",
     # FILES' views run its requests on a card in memory, behind the host
     # card task.
     "test/host/render_files.c",
@@ -152,6 +155,35 @@ SCREENS = {
     "servo-program": ("servo-program.png", "servo", "dark"),
     "servo-program-nocap": ("servo-program-nocap.png", "servo", "sim"),
     "servo-program-busy": ("servo-program-busy.png", "servo", "dark"),
+    # The programmer for Hitec servos over the left card, against the
+    # simulated D485HW and HS-5645MG on PROG PORT 1: the SERIES list and
+    # MORE before CONNECT, a read under way, each tab of both series, a
+    # STOP, LEAVE, a classic servo with no PD mini, and a port another
+    # session holds with RELEASE PORT and its outcome.
+    "servo-hitec": ("servo-hitec.png", "servo", "dark"),
+    "servo-hitec-series": ("servo-hitec-series.png", "servo", "dark"),
+    "servo-hitec-more": ("servo-hitec-more.png", "servo", "dark"),
+    "servo-hitec-reading": ("servo-hitec-reading.png", "servo", "dark"),
+    "servo-hitec-read": ("servo-hitec-read.png", "servo", "dark"),
+    "servo-hitec-motion": ("servo-hitec-motion.png", "servo", "dark"),
+    "servo-hitec-travel": ("servo-hitec-travel.png", "servo", "dark"),
+    "servo-hitec-protect": ("servo-hitec-protect.png", "servo", "dark"),
+    "servo-hitec-info": ("servo-hitec-info.png", "servo", "dark"),
+    "servo-hitec-stopped": ("servo-hitec-stopped.png", "servo", "dark"),
+    "servo-hitec-leave": ("servo-hitec-leave.png", "servo", "dark"),
+    "servo-hitec-classic": ("servo-hitec-classic.png", "servo", "dark"),
+    "servo-hitec-classic-travel": ("servo-hitec-classic-travel.png", "servo",
+                                   "dark"),
+    "servo-hitec-classic-protect": ("servo-hitec-classic-protect.png", "servo",
+                                    "dark"),
+    "servo-hitec-classic-info": ("servo-hitec-classic-info.png", "servo",
+                                 "dark"),
+    "servo-hitec-classic-leave": ("servo-hitec-classic-leave.png", "servo",
+                                  "dark"),
+    "servo-hitec-nopd": ("servo-hitec-nopd.png", "servo", "dark"),
+    "servo-hitec-other": ("servo-hitec-other.png", "servo", "dark"),
+    "servo-hitec-release": ("servo-hitec-release.png", "servo", "dark"),
+    "servo-hitec-released": ("servo-hitec-released.png", "servo", "dark"),
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
     # The tester drives the standard outputs: PROGRAM is locked.

@@ -15,6 +15,7 @@
 
 #include "servo_limrun.h"
 #include "supply_screen.h"
+#include "ui_screen.h"
 #include "ui_slider.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
@@ -331,6 +332,7 @@ void svs_event_body(const touch_event_t *evt)
             /* A programming port holds the supply: off is taken, on is
              * not. */
             if (!supply_screen_output_on() && supply_screen_port_held()) {
+                ui_router_set_alert(TR(SUP_HELD_REFUSED));
                 return;
             }
             /* Off, with a set point past a standard servo's rating: the HV
@@ -357,8 +359,10 @@ void svs_event_body(const touch_event_t *evt)
         }
         for (int k = 0; k < 2; ++k) {
             if (gfx_rect_contains(sup_val_rect(k), px, py)) {
-                /* No set point moves under a programming port. */
+                /* No set point moves under a programming port, and the
+                 * band says why. */
                 if (supply_screen_port_held()) {
+                    ui_router_set_alert(TR(SUP_HELD_REFUSED));
                     return;
                 }
                 /* The run owns the set points while it runs. */

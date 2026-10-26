@@ -21,9 +21,10 @@ session. The writer stages one transaction, the page runs it, and the
 capture and its decoding stay on the page until the next one. Which bytes a
 servo takes, and in which order, is the writer's business. The session core
 ([`hitec_session.h`](../protocols/hitec/README.md#session)) and the panel's
-link half ([The panel's link half](#the-panels-link-half)) are built;
-nothing on the panel calls them yet. `shared/outputs/hitec_port.c` holds
-the rules.
+link half ([The panel's link half](#the-panels-link-half)) run the
+programmer on the SERVO screen, which reads a servo and writes nothing to
+it ([Servo programmer for Hitec servos](HitecProgrammer.md)).
+`shared/outputs/hitec_port.c` holds the rules.
 
 A port is free, held by this page or held by the KST page
 ([The programming port for KST and Chaservo servos](LinkKST.md)), never two

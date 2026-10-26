@@ -83,11 +83,17 @@ static uint32_t           s_kst_outcomes;
 static kst_link_outcome_t s_kst_outcome;
 static uint32_t           s_kst_stops;    /* stops an abort was sent for */
 
-/* Whether the servo programmer has a port, or an operation under way: the
- * bench takes no arm then (kst_prog.h).  Control task only.  Read once a
- * pass by kst_port_look(), before the arms of the pass are served: no
- * command of the programmer is taken between the two. */
-bool s_kst_taken;
+/**
+ * @brief Whether a servo programmer, KST or Hitec, has a port or an
+ *        operation under way: the bench takes no arm then (kst_prog.h,
+ *        hitec_prog.h), and the supply's set points are the port's.
+ *
+ * Control task only.  Read once a pass by kst_port_look(), before the arms
+ * of the pass are served: no command of a programmer is taken between the
+ * two.  A HITEC port another writer holds counts: the bench console's, or
+ * one held over a panel restart, until RELEASE PORT closes it.
+ */
+bool s_prog_taken;
 
 /* What app_main and the control task share of a START in the queue: the
  * model offers its pass, kst_commands() claims it, and a START the model
@@ -98,7 +104,7 @@ __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    s_kst_taken = kst_prog_port_taken(&rd);
+    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken();
 }
 
 /* The PROG page is not written and the tester commands no port while the
@@ -108,7 +114,7 @@ static __attribute__((noinline)) void prog_hold_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd));
+    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd) || hitec_taken());
 }
 
 /* The part names as the alerts print them. */

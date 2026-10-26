@@ -14,6 +14,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "hitec_panel.h"
 #include "knob.h"
 #include "knob_task.h"
 #include "kst_panel.h"
@@ -111,6 +112,32 @@ void kst_ui_service(void)
         s_kst_file_mount = loaded_mount;
         atomic_fetch_add(&s_kst_file_sent, 1u);
         file_out = true;
+    }
+}
+
+/**
+ * @brief The Hitec programmer's model, once a frame on app_main: it reads
+ *        what the control task published (hitec_publish()), and its
+ *        commands go to the control task's queue.
+ *
+ * A command the queue does not take stays with the model; one the model
+ * hands over and the queue then refuses is lost, and the model says so
+ * when its answer does not come (HITEC_PROG_MSG_TIMEOUT).
+ */
+void hitec_ui_service(void)
+{
+    static hitec_prog_feed_t feed;
+    hitec_prog_cmd_t cmd;
+
+    snap_lock();
+    feed = s_snap.hitec;
+    snap_unlock();
+    hitec_panel_feed(&feed);
+
+    while (uxQueueSpacesAvailable(s_hitec_q) > 0u && hitec_panel_take(&cmd)) {
+        if (xQueueSend(s_hitec_q, &cmd, 0) != pdTRUE) {
+            ESP_LOGW(TAG, "Hitec programmer: a command was lost");
+        }
     }
 }
 

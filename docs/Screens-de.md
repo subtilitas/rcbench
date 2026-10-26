@@ -863,8 +863,7 @@ aus, den der Lauf eingeschaltet hat, schaltet den Prüfstand auf SAFE und
 schließt ESC STICK. Zurück auf MOTOR & ESC zeigt PROGRAMMIEREN seine Liste.
 
 Die Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und
-VESC-Firmware und für Hitec-Servos der D-Serie sind ein Modell in der
-Firmware (`shared/ui/prog_models.c`). Kein Transport trägt ihre Protokolle,
+VESC-Firmware sind ein Modell in der Firmware (`shared/ui/prog_models.c`). Kein Transport trägt ihre Protokolle,
 und keine Liste von PROGRAMMIEREN hat eine Zeile für sie. Der Prüfstand
 erkennt ESCs mit BLHeli_32-Firmware, steuert sie an und sendet die DShot
 Special Commands, kann ihre Parameter aber nicht lesen:
@@ -1571,8 +1570,13 @@ PORT 3 oder PORT 4, und lautet `PROG-PORT` mit ihrem Pin, solange
 SERVO-TESTER auf OUTPUTS steht. Eine Zeile ist mit `PORT BELEGT` ausgegraut,
 solange eine andere Sitzung ihren Port hält: die einer anderen Zeile oder
 eine HITEC-Sitzung, die die Bench-Konsole geöffnet hat; das Panel liest
-dazu alle 500ms STATE der HITEC-Seite. Die Liste hat
-eine Zeile, `KST- und Chaservo-Servos`. Ein Tippen auf eine aktive Zeile
+dazu alle 500ms STATE der HITEC-Seite. Die Hitec-Zeile wird von einer
+HITEC-Sitzung nicht ausgegraut: sobald ihre Programmierung die Seite gelesen
+hat, öffnet ein Port, den die Seite für eine andere Sitzung hält, diese
+Programmierung mit PORT FREIGEBEN
+([Ein Port, den eine andere Sitzung hält](HitecProgrammer-de.md#ein-port-den-eine-andere-sitzung-hält)).
+Die Liste hat zwei Zeilen, `KST- und Chaservo-Servos` und `Hitec-Servos`.
+Ein Tippen auf eine aktive Zeile
 öffnet ihren Programmierer über der linken Spalte samt den Reitern der
 Leiste, eine Ebene tiefer, und beendet einen laufenden automatischen Test.
 SCHLIESSEN im Programmierer oder das Home-Tag steigt zurück zur Liste; das
@@ -1595,9 +1599,9 @@ mehr als 9 Zeilen erhält ein Feld SUCHE, das die Buchstabentastatur öffnet,
 `*` für beliebigen Text; eine Liste, die mehr als 8 Zeilen zeigt, zeichnet
 sie unter den Überschriften ihrer Gruppen; eine Liste, die höher ist als
 der Seitenbereich, blättert mit `^` und `v`. Eine Liste fasst höchstens 48
-Zeilen. Mit einer Zeile ist nichts davon gezeichnet. Modellierte Protokolle
-ohne Transport auf dem IOmcu, die Hitec-Servos der D-Serie darunter, haben
-keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
+Zeilen. Mit zwei Zeilen ist nichts davon gezeichnet. Modellierte
+Protokolle ohne Transport auf dem IOmcu haben keine Zeile
+([Programmieren](#programmieren) auf MOTOR & ESC).
 
 Eine Zeile ist 48px hoch mit 8px darunter, eine Überschrift 28px mit
 4px darunter, beide in der Schrift 10 x 20. Die Leiste über einer
@@ -1651,6 +1655,29 @@ Paar.
 
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt ihn.
+
+#### Hitec-Programmierung
+
+Die Hitec-Programmierung öffnet sich aus der Zeile `Hitec-Servos` mit
+denselben Maßen: fünf Reiter (SERVO, BEWEGUNG, WEG, SCHUTZ, INFO) und
+SCHLIESSEN, Zeilen von 48px im Abstand von 56px, Werte von 150px und die
+breiten Werte eines Wertereiters von 260px, Hinweise in der Schrift 10 x 20
+bis 4px über dem Alert-Band, und Halteseiten mit einer Haltetaste von
+300 x 56px und ABBRECHEN von 180 x 56px. Sie liest nur. Die Zeile SERIE
+stellt vor VERBINDEN D-SERIE oder KLASSISCH ein; die Zeile PORT nennt den
+Port, seinen GPIO, die Serie, die Empfangsart und die Versorgung, die
+VERBINDEN einstellt. Solange sie den Port hält, sind ARM, die Sollwerte und
+AUSGANG EIN der Zeile SOLL und die der Seite SUPPLY gesperrt wie unter der
+KST-Programmierung, und ein Druck auf ein gesperrtes Element des Netzteils
+sagt `Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.`
+Ein Port, den die HITEC-Page für eine andere Sitzung hält, öffnet sie mit
+PORT FREIGEBEN, 2s Halten, das den Port mit unveränderter Versorgung an PWM
+zurückgibt. [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)
+enthält die Zeilen, den Ablauf und die Meldungen.
+
+![Die Hitec-Programmierung, der Tester hält den Port](img/de/servo-hitec.png)
+![Ein D485HW gelesen](img/de/servo-hitec-read.png)
+![Ein Port, den eine andere Sitzung hält](img/de/servo-hitec-other.png)
 
 ### Einstellungen
 
@@ -4123,8 +4150,9 @@ unlesbarer gespeicherter Wert ist PULL-UP. Das Panel schreibt sie bei jedem
 Link-Aufbau und nach jeder Änderung auf die HITEC-Page, ARMED oder nicht;
 der IOmcu nimmt sie beim nächsten OPEN einer Leitung der D-Serie.
 classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen sie.
-Das Panel sendet selbst keine Hitec-Transaktion: die Einstellung erreicht
-die Leitungen, die die Prüfstandskonsole öffnet
+Die Einstellung erreicht die Leitungen, die die Hitec-Programmierung auf
+SERVO öffnet ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)),
+und die, die die Prüfstandskonsole öffnet
 ([Die Prüfstandskonsole](BenchConsole-de.md)).
 
 Unmarkiert folgt die Hilfezeile dem Wert: `PULL-UP braucht 2.2kΩ an der

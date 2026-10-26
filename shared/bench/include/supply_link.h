@@ -399,6 +399,20 @@ bool supply_link_wiring_moved(supply_link_follow_t *f, unsigned edits,
  */
 bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx);
 
+/**
+ * @brief Whether the last read of the page had LINK_SP_PORT set: a
+ *        programming port holds the supply, and the page takes an OFF of
+ *        the panel's and no other change of OUTPUT, SET_MV or SET_MA.
+ *
+ * The KST page holds it for its whole session; from protocol 4.29 the
+ * HITEC page holds it from its OPEN to its CLOSE.  False before the first
+ * read since the link came up.
+ *
+ * @param s The link state.
+ * @return true while held.
+ */
+bool supply_link_port_held(const supply_link_t *s);
+
 #ifdef __cplusplus
 }
 #endif

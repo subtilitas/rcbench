@@ -467,6 +467,9 @@ static void link_came_up(const link_msg_t *reply)
     tone_link_alerts();
     /* And the servo programmer's page (4.12). */
     kst_link_came_up(&s_kst_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And the Hitec programmer's (4.23): its port, held or not, is read
+     * before a request goes. */
+    hitec_link_came_up(&s_hitec_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     prog_drive_publish();
@@ -669,6 +672,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* An operation under way ends unanswered; the programmer
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
+            hitec_link_lost(&s_hitec_link);
             /* And no port is the target or names a pin, and the SERVO
              * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
@@ -931,6 +935,7 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
                              &s_snap.servo_source_dropped_at);
     s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
     kst_publish(&s_snap.kst);
+    hitec_publish(&s_snap.hitec);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to

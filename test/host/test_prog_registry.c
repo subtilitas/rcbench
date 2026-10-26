@@ -11,6 +11,7 @@
 #include "greatest.h"
 
 #include "esc_stick_panel.h"
+#include "hitec_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "prog_registry.h"
@@ -112,9 +113,9 @@ static prog_reg_row_t row_of(ui_text_id_t name, ui_text_id_t group,
 /* ------------------------------------------------------ the table */
 
 /* The table as it ships: sound in every language, every row's name and
- * page set present.  SERVO's PROGRAM list is one live row, the KST and
- * Chaservo programmer on the tester's programming port, over the left
- * column.  MOTOR
+ * page set present.  SERVO's PROGRAM list is two live rows on the
+ * tester's programming port, over the left column: the KST and Chaservo
+ * programmer, then the one for servos by Hitec.  MOTOR
  * & ESC's is one row too, ESC STICK under STICK MENU, full width, holding
  * no port and needing no capability.  The modelled protocols without a
  * transport (prog_models.h) are no row. */
@@ -142,8 +143,8 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
 
     prog_list_t l;
     prog_list_build(&l, rows, n, PROG_DEV_SERVO, UI_WB_PROGRAM, NULL);
-    CHECK_EQ(l.total, 1u);
-    CHECK_EQ(l.count, 1u);
+    CHECK_EQ(l.total, 2u);
+    CHECK_EQ(l.count, 2u);
     CHECK(!l.search);
     CHECK(!l.headings);
     const prog_reg_row_t *kst = &rows[l.e[0].row];
@@ -154,9 +155,15 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
     CHECK_EQ(kst->needs_capability, (uint16_t)LINK_CAP_SERVO_PWM);
     CHECK(kst->page_set == &kst_panel_pages);
     CHECK(!kst->full_width);
-    for (size_t i = 0; i < n; ++i) {
-        CHECK(strstr(ui_tr(rows[i].name), "Hitec") == NULL);
-    }
+    const prog_reg_row_t *hitec = &rows[l.e[1].row];
+    CHECK_EQ(hitec->name, TX_PL_HITEC);
+    CHECK_STR_EQ(ui_tr(hitec->name), "Hitec servos");
+    CHECK_EQ(hitec->group, TX_PL_GRP_PROG_PORT);
+    CHECK_EQ(hitec->transport, TX_SV_TARGET_PORT);
+    CHECK_EQ(hitec->port, PROG_REG_TESTER_PORT);
+    CHECK_EQ(hitec->needs_capability, (uint16_t)LINK_CAP_SERVO_PWM);
+    CHECK(hitec->page_set == &hitec_panel_pages);
+    CHECK(!hitec->full_width);
     /* MOTOR & ESC's list: ESC STICK alone. */
     prog_list_build(&l, rows, n, PROG_DEV_MOTOR, UI_WB_PROGRAM, NULL);
     CHECK_EQ(l.total, 1u);
@@ -260,14 +267,16 @@ TEST_CASE(a_list_over_its_maximum_fails_the_check)
  * A device's sessions: each page set its rows open, once, in the table's
  * order, and none of the other device's; a row that opens a set full
  * width makes the set full width.  The shipped table: SERVO opens the KST
- * session, MOTOR & ESC ESC STICK, full width.
+ * session and the Hitec one, MOTOR & ESC ESC STICK, full width.
  */
 TEST_CASE(a_devices_sessions_are_each_listed_once)
 {
     ui_text_set_language(UI_LANG_EN);
     const prog_page_set_t *set[PROG_LIST_MAX];
-    CHECK_EQ(prog_reg_sets(PROG_DEV_SERVO, set), 1);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_SERVO, set), 2);
     CHECK(set[0] == &kst_panel_pages);
+    CHECK(set[1] == &hitec_panel_pages);
+    CHECK(!prog_reg_full_width(&hitec_panel_pages));
     CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 1);
     CHECK(set[0] == &esc_stick_pages);
     CHECK(prog_reg_full_width(&esc_stick_pages));

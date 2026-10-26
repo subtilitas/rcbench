@@ -1,6 +1,6 @@
 /*
- * The modelled ESC (electronic speed controller) and servo protocols
- * (prog_models.h): the five parameter tables no PROGRAM list shows, held
+ * The modelled ESC (electronic speed controller) protocols
+ * (prog_models.h): the four parameter tables no PROGRAM list shows, held
  * sound as data -- every value a programmer could draw is in its range, on
  * its step, and named in every language.
  *
@@ -14,39 +14,32 @@
 #include "prog_registry.h"
 #include "ui_text.h"
 
-/* Five protocols, four ESC firmwares and the Hitec servos, each under the
- * class and with the parameter count the tables carry. */
-TEST_CASE(the_five_modelled_protocols_are_there)
+/* Four protocols, the ESC firmwares, each under the class and with the
+ * parameter count the tables carry.  Servos by Hitec have a programmer of
+ * their own (hitec_panel.h) and no table. */
+TEST_CASE(the_four_modelled_protocols_are_there)
 {
     size_t n = 0;
     const prog_model_t *m = prog_models(&n);
-    if (m == NULL || n != 5u) {
-        T_FAIL("expected 5 protocols, got %zu", n);
+    if (m == NULL || n != 4u) {
+        T_FAIL("expected 4 protocols, got %zu", n);
         return;
     }
     static const struct { const char *name; int klass; int count; } k[] = {
         { "BLHeli_S", PROG_MODEL_ESC, 8 },  { "AM32", PROG_MODEL_ESC, 7 },
         { "ESCape32", PROG_MODEL_ESC, 6 },  { "VESC", PROG_MODEL_ESC, 5 },
-        { NULL, PROG_MODEL_SERVO, 8 },
     };
     for (size_t i = 0; i < n; ++i) {
-        if (k[i].name == NULL) {
-            CHECK(m[i].name == NULL);
-        } else {
-            CHECK_STR_EQ(m[i].name, k[i].name);
-        }
+        CHECK_STR_EQ(m[i].name, k[i].name);
         CHECK_EQ(m[i].klass, k[i].klass);
         CHECK_EQ(m[i].count, k[i].count);
         CHECK(m[i].count <= PROG_MODEL_PARAMS_MAX);
     }
     CHECK(prog_models(NULL) == m);
-    /* The servo protocol is named for whose servos it is, in each
-     * language; a firmware by its own name in both. */
+    /* A firmware by its own name in every language. */
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         CHECK_STR_EQ(prog_model_name(&m[0]), "BLHeli_S");
-        CHECK_STR_EQ(prog_model_name(&m[4]), ui_tr(TX_PG_NAME_HITEC));
-        CHECK(prog_model_name(&m[4])[0] != '\0');
     }
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(prog_model_name(NULL), "");
@@ -105,7 +98,7 @@ TEST_CASE(every_parameter_is_in_range_and_named)
 }
 
 /* No transport carries them, so no list offers them: neither PROGRAM list
- * has a row named for one of the five protocols. */
+ * has a row named for one of the four protocols. */
 TEST_CASE(no_program_list_shows_a_modelled_protocol)
 {
     size_t n = 0, row_n = 0;
@@ -118,7 +111,6 @@ TEST_CASE(no_program_list_shows_a_modelled_protocol)
             for (size_t i = 0; i < n; ++i) {
                 CHECK(strstr(name, prog_model_name(&m[i])) == NULL);
             }
-            CHECK(strstr(name, "Hitec") == NULL);
             CHECK(strstr(name, "BLHeli") == NULL);
         }
     }
@@ -127,7 +119,7 @@ TEST_CASE(no_program_list_shows_a_modelled_protocol)
 
 int main(void)
 {
-    RUN(the_five_modelled_protocols_are_there);
+    RUN(the_four_modelled_protocols_are_there);
     RUN(every_parameter_is_in_range_and_named);
     RUN(no_program_list_shows_a_modelled_protocol);
     return test_summary("prog_models");

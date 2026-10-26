@@ -15,6 +15,7 @@
 #include "supply_screen.h"
 #include "ui_hero.h"
 #include "ui_keypad.h"
+#include "ui_screen.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -139,6 +140,15 @@ static void take(const touch_event_t *evt, int code)
 }
 
 /**
+ * @brief A press on a control a programming port's hold locks: the alert
+ *        band says why it takes none.
+ */
+static void held_refused(void)
+{
+    ui_router_set_alert(TR(SUP_HELD_REFUSED));
+}
+
+/**
  * @brief A contact coming down: the control under it takes the press,
  *        the output and the peaks first, whatever covers the left column.
  * @param evt the DOWN event
@@ -151,6 +161,7 @@ static void down(const touch_event_t *evt)
     if (gfx_rect_contains(s.out_rect, x, y)) {
         /* Off is always taken; on is not while a port holds the supply. */
         if (!s.on && s.port_held) {
+            held_refused();
             return;
         }
         take(evt, P_OUTPUT);
@@ -185,12 +196,16 @@ static void down(const touch_event_t *evt)
     if (gfx_rect_contains(sup_card_rect(0), x, y)) {
         if (!s.port_held) {
             take(evt, P_CARD_V);
+        } else {
+            held_refused();
         }
         return;
     }
     if (gfx_rect_contains(sup_card_rect(1), x, y)) {
         if (!s.port_held) {
             take(evt, P_CARD_I);
+        } else {
+            held_refused();
         }
         return;
     }
@@ -224,7 +239,18 @@ static void down(const touch_event_t *evt)
         return;
     }
     if (s.port_held) {
-        return;                         /* no set point moves */
+        /* No set point moves, and the band says why. */
+        if (gfx_rect_contains(s.v_slider.track, x, y)
+            || gfx_rect_contains(s.i_slider.track, x, y)
+            || gfx_rect_contains(s.v_down, x, y)
+            || gfx_rect_contains(s.v_up, x, y)
+            || gfx_rect_contains(s.i_down, x, y)
+            || gfx_rect_contains(s.i_up, x, y)
+            || gfx_rect_contains(sup_set_value_rect(0), x, y)
+            || gfx_rect_contains(sup_set_value_rect(1), x, y)) {
+            held_refused();
+        }
+        return;
     }
     if (gfx_rect_contains(s.v_slider.track, x, y)
         || gfx_rect_contains(s.i_slider.track, x, y)) {

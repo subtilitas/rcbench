@@ -324,6 +324,10 @@ typedef struct {
      *        supply
      */
     bool            port_held;
+    /** @brief The KST programmer's word on the hold */
+    bool            held_kst;
+    /** @brief The Hitec programmer's word on the hold */
+    bool            held_hitec;
     /* The screen whose ON the output is, while it is on or an ON is on
      * its way; and an OFF owed for leaving it while a programming port
      * held the supply, sent when the port lets go.  See

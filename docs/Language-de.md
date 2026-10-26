@@ -83,7 +83,8 @@ passen.
   oder Chaservo-Servos gibt, als Zeilen des Servo-Programmierers: DEAD BAND,
   MAX. DUTY, BOOST, STRETCH, SOFT START, NEUTRAL, PULSE LOWER, PULSE UPPER,
   LEFT ANGLE, RIGHT ANGLE, REVERSION und die Zeilen seines Tabs GESPERRT;
-  dazu PORT, BACKUP und Pairing.
+  dazu PORT, BACKUP und Pairing. Die Zeilen derselben Art der
+  Hitec-Programmierung: DEAD BAND, SOFT START, NEUTRAL und SMART SENSOR.
 
 ## Glossar
 
@@ -157,6 +158,8 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | refresh (eine Liste), rescan | aktualisieren |
 | restore (ein Backup auf ein Servo) | zurückspielen |
 | enable (das Schreiben auf ein Servo) | freigeben |
+| release (einen gehaltenen Programmierport) | freigeben (PORT FREIGEBEN) |
+| series (von Servos), classic | Serie, klassisch |
 | record (eines unterbrochenen Schreibens) | Vermerk |
 | store (ein Backup), stored | speichern, gespeichert |
 | verify (ein Servo gegen das Gelesene) | prüfen |
@@ -319,7 +322,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 324 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 344 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -370,8 +373,8 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.210
-Einträge mit ID und 76 Optionen, 10 davon mit leerem Englisch.
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.297
+Einträge mit ID und 78 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
    ergänzen und den Parameter in jedem Makro, das eine Spalte liest: 7

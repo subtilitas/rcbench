@@ -46,7 +46,7 @@
 #include <string.h>
 
 #include "esc_profile.h"
-#include "kst_panel.h"
+#include "prog_registry.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_text.h"
@@ -288,7 +288,7 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
     }
     /* A run arms the bench, and programming a servo and an armed bench
      * are exclusive. */
-    if (kst_panel_holds_port()) {
+    if (prog_reg_servo_holds()) {
         snprintf(st->note, sizeof(st->note), "%s", TR(SP_KST_HELD));
         return false;
     }

@@ -60,6 +60,7 @@
 #include "bind_link.h"
 #include "kst_link.h"
 #include "prog_link.h"
+#include "hitec_panel.h"
 #include "kst_panel.h"
 #include "kst_card.h"
 #include "kst_files.h"
@@ -269,6 +270,9 @@ QueueHandle_t            s_cmd_q;     /**< app_main -> control task */
  * s_cmd_q drops its oldest entry when it is full. */
 #define KST_Q_LEN 4
 QueueHandle_t     s_kst_q;     /**< app_main -> control task */
+/** @brief The Hitec programmer's commands (hitec_prog_cmd_t) the queue
+ *         holds, as KST_Q_LEN. */
+#define HITEC_Q_LEN 4
 /*
  * One entry per bench sample, not a count of them.  A counter would lose the
  * samples a stalled renderer did not come back for, and the plot's time axis
@@ -864,6 +868,9 @@ void app_main(void)
     s_kst_q     = xQueueCreate(KST_Q_LEN, sizeof(kst_prog_cmd_t));
     kst_prog_gate_init(&s_kst_gate);
     kst_panel_gate(&s_kst_gate);
+    s_hitec_q   = xQueueCreate(HITEC_Q_LEN, sizeof(hitec_prog_cmd_t));
+    hitec_prog_gate_init(&s_hitec_gate);
+    hitec_panel_gate(&s_hitec_gate);
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_item_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
@@ -880,6 +887,7 @@ void app_main(void)
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL && s_kst_q != NULL
+                     && s_hitec_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
                      && s_enc_q != NULL && s_win_q != NULL
                      && s_log_q != NULL && s_test_q != NULL

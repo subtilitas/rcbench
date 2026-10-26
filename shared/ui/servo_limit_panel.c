@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "prog_registry.h"
 #include "kst_port.h"
 #include "log_name.h"
 #include "rcbench_version.h"
@@ -131,7 +132,7 @@ const char *lim_prog_why(void)
         return TR(SV_LIM_PROG_PORT);
     }
     if (!servo_limrun_running(&s.lim)
-        && (kst_panel_holds_port() || !kst_panel_run_ready())) {
+        && (prog_reg_servo_holds() || !kst_panel_run_ready())) {
         return TR(SV_LIM_PROG_BUSY);
     }
     /* A PD mini that answers with its output off, on a rail fed from

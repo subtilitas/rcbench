@@ -791,8 +791,7 @@ bench to SAFE and closes ESC STICK. Back on MOTOR & ESC, PROGRAM shows its
 list.
 
 The parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware
-and for Hitec D-series servos are a model in the firmware
-(`shared/ui/prog_models.c`). No transport carries their protocols, and no
+are a model in the firmware (`shared/ui/prog_models.c`). No transport carries their protocols, and no
 PROGRAM list has a row for them. The bench identifies and drives ESCs with
 BLHeli_32 firmware and sends the DShot special commands, but cannot read
 their parameters: [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
@@ -1427,8 +1426,12 @@ port SERVO TESTER names, PORT 1, PORT 2, PORT 3 or PORT 4, and reads `PROG
 PORT` with its pin while SERVO TESTER is OUTPUTS. A row is dimmed with
 `PORT IN USE` while another session holds its port: another row's, or a
 HITEC session the bench console opened, which the panel reads from the
-HITEC page's STATE every 500ms. The list has one row, `KST and
-Chaservo servos` (German `KST- und Chaservo-Servos`). A tap on a live row
+HITEC page's STATE every 500ms. The Hitec row is not dimmed by a HITEC
+session: once its programmer has read the page, a port the page holds for
+another session opens that programmer with RELEASE PORT
+([A port another session holds](HitecProgrammer.md#a-port-another-session-holds)).
+The list has two rows, `KST and Chaservo servos` (German `KST- und
+Chaservo-Servos`) and `Hitec servos` (German `Hitec-Servos`). A tap on a live row
 opens its programmer over the left column, the strip's tabs with it, one
 level down, and ends a running automatic test. CLOSE in the programmer, or
 the home tag, climbs back to the list; the next home tag goes home. Over a
@@ -1448,9 +1451,9 @@ A new servo maker is one row there and its programmer, never a tile or a
 tab. A list of more than 9 rows gets a SEARCH box that opens the keyboard,
 `*` for any text; a list showing more than 8 rows draws them under their
 group headings; a list taller than the page area pages with `^` and `v`. A
-list holds 48 rows at most. With one row none of these is drawn. Modelled
-protocols without a transport on the IOmcu, the Hitec D-series servos among
-them, have no row ([PROGRAM](#program) on MOTOR & ESC).
+list holds 48 rows at most. With two rows none of these is drawn. Modelled
+protocols without a transport on the IOmcu have no row
+([PROGRAM](#program) on MOTOR & ESC).
 
 A row is 48px tall with 8px under it, a heading 28px with 4px under
 it, both in the 10 x 20 face. The bar over a paged list is 48px tall:
@@ -1501,6 +1504,27 @@ In German the tallest pair (4 rows) and the tallest message (5 rows) need
 
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.
+
+#### Hitec programmer
+
+The Hitec programmer opens from the row `Hitec servos` with the same
+geometry: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) and CLOSE, rows
+of 48px at a 56px pitch, values of 150px and a value tab's wide values of
+260px, notes in the 10 x 20 face to 4px above the alert band, and hold
+pages with a 300 x 56px hold button and CANCEL 180 x 56px. It reads only.
+The SERIES row sets D SERIES or CLASSIC before CONNECT; the PORT row names
+the port, its GPIO, the series, the receive mode and the supply CONNECT
+sets. While it holds the port, ARM, the SET row's set points and OUTPUT ON,
+and the SUPPLY screen's are locked as under the KST programmer, and a press
+on a locked supply control says `Servo programming holds the supply: set
+points and ON are locked.` A port the HITEC page holds for another session
+opens it with RELEASE PORT, a hold of 2s that gives the port back to PWM
+with the supply as it is. [Servo programmer for Hitec
+servos](HitecProgrammer.md) holds the rows, the flow and the messages.
+
+![The Hitec programmer, the tester holding the port](img/servo-hitec.png)
+![A D485HW read](img/servo-hitec-read.png)
+![A port another session holds](img/servo-hitec-other.png)
 
 ### Settings
 
@@ -3752,8 +3776,9 @@ It is kept in NVS like the other rows; a missing or unreadable stored value
 is PULL-UP. The panel writes it to the HITEC page at every link-up and
 after every change, armed or not; the IOmcu takes it at its next OPEN of a
 D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
-it. The panel sends no Hitec transaction itself: the setting reaches the
-lines the bench console opens ([The bench console](BenchConsole.md)).
+it. The setting reaches the lines the Hitec programmer on SERVO opens
+([Servo programmer for Hitec servos](HitecProgrammer.md)) and those the
+bench console opens ([The bench console](BenchConsole.md)).
 
 Unmarked, the help line follows the value: `PULL-UP needs 2.2kΩ on the
 signal wire` at PULL-UP, `PRECHARGE: no pull-up on the signal wire` at

@@ -35,6 +35,7 @@
 #include "wifi_spots.h"
 #include "coproc_update_screen.h"
 #include "render_files.h"
+#include "render_hitec.h"
 #include "sense_link.h"
 #include "settings.h"
 #include "sense_limit_link.h"
@@ -940,10 +941,13 @@ static bool kst_file_view(const char *v)
 }
 
 /*
- * SERVO > PROGRAM's list: the registry's KST row on the tester's PROG PORT
- * 1, live with the pin the feed carries (servo-program), dimmed PORT IN
- * USE while the HITEC page holds port 1 (servo-program-busy), or with no
- * IOmcu answering, dimmed with its reason (servo-program-nocap).
+ * SERVO > PROGRAM's list: the registry's KST and Hitec rows on the
+ * tester's PROG PORT 1, live with the pin the feed carries
+ * (servo-program); dimmed PORT IN USE while the programming ports' page
+ * says the HITEC page holds port 1 and the Hitec programmer has not read
+ * that page yet (servo-program-busy; once it has, its overlay opens with
+ * RELEASE PORT, servo-hitec-other); with no IOmcu answering, dimmed with
+ * their reason (servo-program-nocap).
  */
 static void program_view(const char *view)
 {
@@ -970,6 +974,7 @@ static void program_view(const char *view)
         || strcmp(view, "servo-program-busy") == 0
         || strcmp(view, "servo-program-many") == 0) {
         (void)rig_link_up(LINK_PROTOCOL_MINOR);
+        render_hitec_feed(false);
     }
     ui_router_goto(SCREEN_SERVO);
     if (strcmp(view, "servo-program-nocap") != 0) {
@@ -3512,6 +3517,8 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             limrun_view(view);
         } else if (strncmp(view, "servo-program", 13) == 0) {
             program_view(view);
+        } else if (strncmp(view, "servo-hitec", 11) == 0) {
+            render_hitec_view(view);
         } else if (strncmp(view, "servo-kst", 9) == 0) {
             /* A view with -p2 is its view with the notes turned to their
              * second page: a tap on them. */

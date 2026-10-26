@@ -90,6 +90,17 @@ SOURCES = [
     "protocols/kst/kst_reg.c",
     "protocols/kst/kst_limits.c",
     "protocols/kst/kst_plan.c",
+    # The programmer for Hitec servos SERVO opens, its model, and the core
+    # its session and register model come from.
+    "shared/ui/hitec_panel.c",
+    "shared/ui/hitec_panel_text.c",
+    "shared/ui/hitec_panel_edit.c",
+    "shared/ui/hitec_panel_touch.c",
+    "shared/ui/hitec_panel_draw.c",
+    "shared/bench/hitec_prog.c",
+    "protocols/hitec/hitec_reg.c",
+    "protocols/hitec/hitec_session.c",
+    "protocols/hitec/hitec_wire.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
@@ -208,6 +219,7 @@ INCLUDES = [
     "protocols/sbus/include",
     "protocols/pdmini/include",
     "protocols/kst/include",
+    "protocols/hitec/include",
     "protocols/dshot/include",
 ]
 

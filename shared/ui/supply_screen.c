@@ -594,7 +594,12 @@ const ui_keypad_t *supply_screen_keypad(void) { return &s.kp; }
 
 bool supply_screen_typed_asks(void) { return sup_confirm_needed(FROM_KEYPAD); }
 
-void supply_screen_set_port_held(bool held)
+/**
+ * @brief The supply's lock as the two programmers' words make it: held while
+ *        either holds a port.
+ * @param held whether a programming port holds the supply
+ */
+static void port_held_apply(bool held)
 {
     if (s.port_held == held) {
         return;
@@ -643,6 +648,18 @@ void supply_screen_set_port_held(bool held)
     ++s.out_rev;
     ++s.ctrl_rev;
     supply_invalidate();
+}
+
+void supply_screen_set_port_held(bool held)
+{
+    s.held_kst = held;
+    port_held_apply(s.held_kst || s.held_hitec);
+}
+
+void supply_screen_set_hitec_held(bool held)
+{
+    s.held_hitec = held;
+    port_held_apply(s.held_kst || s.held_hitec);
 }
 
 bool supply_screen_port_held(void) { return s.port_held; }

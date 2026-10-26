@@ -30,7 +30,7 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_value_gate.h"
-#include "kst_panel.h"
+#include "prog_registry.h"
 #include "outputs_screen.h"
 #include "port_view.h"
 #include "ui_text.h"
@@ -287,7 +287,7 @@ bool mo_no_motor_pin(void)
  */
 bool mo_arm_locked(void)
 {
-    return (kst_panel_holds_port() || mo_no_motor_pin()) && !s.gate.armed;
+    return (prog_reg_servo_holds() || mo_no_motor_pin()) && !s.gate.armed;
 }
 
 void motor_screen_cancel_arm(void)
@@ -444,7 +444,7 @@ bool mo_endpoints_free(void)
  * the throttle drives changes only on a bench at rest. */
 bool mo_target_locked(void)
 {
-    return !mo_bench_safe() || s.pressed == 1 || kst_panel_holds_port();
+    return !mo_bench_safe() || s.pressed == 1 || prog_reg_servo_holds();
 }
 
 bool motor_screen_target_locked(void) { return mo_target_locked(); }

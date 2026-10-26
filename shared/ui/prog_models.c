@@ -5,14 +5,12 @@
  *
  * BLHeli_S and AM32 speak a one-wire bootloader at 19,200 baud; ESCape32
  * answers a text CLI (command-line interface); VESC uses framed packets at
- * 115,200 baud; a Hitec D-series servo has its own protocol.  No transport
- * on the IOmcu (the RP2350 board) carries any of them, so no PROGRAM list
- * shows them (owner decision, 2026-10-18): a protocol gets a registry row
- * (prog_registry.h) once a transport reaches the device.  The tables stay
- * as the parameter model such a row starts from.
- *
- * The Hitec table has no cited protocol source: its parameters are
- * placeholders.
+ * 115,200 baud.  No transport on the IOmcu (the RP2350 board) carries any
+ * of them, so no PROGRAM list shows them (owner decision, 2026-10-18): a
+ * protocol gets a registry row (prog_registry.h) once a transport reaches
+ * the device.  The tables stay as the parameter model such a row starts
+ * from.  Servos by Hitec have a programmer of their own
+ * (hitec_panel.h) and no table here.
  *
  * A definition says what kind of setting it is (a switch, a choice, a
  * bounded number); a programmer draws one widget per kind.  The names and
@@ -41,9 +39,10 @@ static const char *const k_timing[] = { "LOW", "MEDIUM LOW", "MEDIUM",
                                         "MEDIUM HIGH", "HIGH" };
 /** @brief The PWM frequencies an ESC offers. */
 static const char *const k_pwm[]    = { "24kHz", "48kHz", "96kHz" };
+/** @brief The demagnetisation compensation settings. */
 static const char *const k_demag[]  = { "OFF", "LOW", "HIGH" };
+/** @brief VESC's motor types. */
 static const char *const k_mtype[]  = { "BLDC", "FOC" };
-static const char *const k_res[]    = { "STANDARD", "HIGH" };
 
 static const prog_param_t k_blheli[] = {
   { TX_PG_GROUP_MOTOR, "Motor direction", PROG_PARAM_ENUM,
@@ -135,33 +134,6 @@ static const prog_param_t k_vesc[] = {
     NULL, 0, 0,0,0,0, NULL, 1 },
 };
 
-static const prog_param_t k_hitec[] = {
-  { TX_PG_GROUP_TRAVEL, "Centre", PROG_PARAM_NUMBER,
-    TX_PG_HELP_CENTRE,
-    NULL, 0, -50, 50, 5, 0, "us", 0 },
-  { TX_COUNT, "Endpoint travel", PROG_PARAM_NUMBER,
-    TX_PG_HELP_ENDPOINT,
-    NULL, 0, 50, 150, 10, 0, "%", 100 },
-  { TX_COUNT, "Direction", PROG_PARAM_ENUM,
-    TX_PG_HELP_HORN,
-    k_dir, 2, 0,0,0,0, NULL, 0 },
-  { TX_PG_GROUP_RESPONSE, "Speed", PROG_PARAM_NUMBER,
-    TX_PG_HELP_SPEED,
-    NULL, 0, 20, 100, 10, 0, "%", 100 },
-  { TX_COUNT, "Dead band", PROG_PARAM_NUMBER,
-    TX_PG_HELP_DEADBAND,
-    NULL, 0, 1, 10, 1, 0, "us", 2 },
-  { TX_COUNT, "Resolution", PROG_PARAM_ENUM,
-    TX_PG_HELP_RESOLUTION,
-    k_res, 2, 0,0,0,0, NULL, 0 },
-  { TX_PG_GROUP_PROTECTION, "Overload protect", PROG_PARAM_BOOL,
-    TX_PG_HELP_OVERLOAD,
-    NULL, 0, 0,0,0,0, NULL, 1 },
-  { TX_COUNT, "Fail-safe", PROG_PARAM_BOOL,
-    TX_PG_HELP_FAILSAFE,
-    NULL, 0, 0,0,0,0, NULL, 1 },
-};
-
 static const prog_model_t k_models[] = {
     { "BLHeli_S", TX_PG_TRANSPORT_ONEWIRE, TX_PG_DEVICE_BLHELI,
       k_blheli,   8, PROG_MODEL_ESC },
@@ -171,11 +143,6 @@ static const prog_model_t k_models[] = {
       k_escape32, 6, PROG_MODEL_ESC },
     { "VESC",     TX_PG_TRANSPORT_PACKETS, TX_PG_DEVICE_VESC,
       k_vesc,     5, PROG_MODEL_ESC },
-    /* A maker's servos and no firmware name: named in the panel's
-     * language, by prog_model_name().  The device text names the maker
-     * and the series, no model. */
-    { NULL,       TX_PG_TRANSPORT_HITEC,   TX_PG_DEVICE_HITEC,
-      k_hitec,    8, PROG_MODEL_SERVO },
 };
 #define MODEL_COUNT (sizeof(k_models) / sizeof(k_models[0]))
 
@@ -192,5 +159,5 @@ const char *prog_model_name(const prog_model_t *m)
     if (m == NULL) {
         return "";
     }
-    return (m->name != NULL) ? m->name : TR(PG_NAME_HITEC);
+    return (m->name != NULL) ? m->name : "";
 }

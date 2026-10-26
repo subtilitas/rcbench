@@ -26,6 +26,7 @@ Network) at 1Mbit/s.
 | Balance a propeller or a ducted fan | [Balancing](Balance.md) |
 | Measure a servo's installed limit, or synchronise two servos | [Servo procedures](Servo.md) |
 | Read, back up and change the settings of a KST or Chaservo servo | [Servo programmer for KST and Chaservo servos](ServoProgrammer.md) |
+| Read the settings of a Hitec servo | [Servo programmer for Hitec servos](HitecProgrammer.md) |
 | Program an ESC through its throttle-stick menu | [Stick programming](StickProgramming.md) |
 | Connect a receiver and inspect its output | [Receiver buses](Receivers.md) |
 | Stop mechanisms and the external circuit they require | [Safety](Safety.md) |

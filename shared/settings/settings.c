@@ -346,6 +346,14 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "srv_port_pwm", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
+     * The series the programmer for servos by Hitec enters at its next
+     * CONNECT, in hitec_family_t's order: classic (HS-5xxx, HS-7xxx) or D
+     * series.  Set on its SERVO tab.
+     */
+    [SET_HITEC_SERIES] = {
+        "hitec_series", "",
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(hitec_series) },
+    /*
      * Stick programming's.  The supply it powers the ESC (electronic speed
      * controller) from, and how it hears the beeps.  No ESC has been
      * recorded, so every time below is a default standing in for a

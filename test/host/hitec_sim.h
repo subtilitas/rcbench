@@ -76,6 +76,9 @@ static struct {
     bool     next_pending;
     uint32_t next_at_us;    /* the driver's clock of the next `+` */
     uint8_t  version;
+    /* A D series register whose answer carries a wrong sum, plus 1; 0
+     * none. */
+    uint16_t d_bad_sum_plus1;
 } g_drv;
 
 static struct {
@@ -185,6 +188,9 @@ static inline void servo_answers(const hitec_xfer_t *x)
             (uint8_t)(v & 0xFFu), (uint8_t)(v >> 8), 0u, 0u };
 
         a[6] = hitec_d_sum(&a[1], 5u);
+        if (g_drv.d_bad_sum_plus1 == (uint16_t)(x->tx[2] + 1u)) {
+            a[6] ^= 0xFFu;
+        }
         reply_bytes(a, 8u, 6000000u);
     }
 }

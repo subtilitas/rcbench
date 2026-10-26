@@ -24,8 +24,7 @@ history is in git.
   classic servos, a stored value that fits no encoding shown raw and
   replaced only by a value of the table on an edit, model identification from register 0x00 or the name cells, and
   write plans: the classic balance in 0x1C after every setting of cells
-  up to 0x1B, the D series registers per setting, then save and reboot.
-  Nothing calls it yet
+  up to 0x1B, the D series registers per setting, then save and reboot
   ([Register model](protocols/hitec/README.md#register-model)).
 - The session for servos by Hitec, in `protocols/hitec/hitec_session.c`:
   a state machine that hands out steps (a transaction, a supply cycle with
@@ -36,7 +35,7 @@ history is in git.
   plans with the classic balance after each setting and the D series
   save, 100ms, reboot and 1000ms, a read-back against the draft, leave,
   abort at every step, and gaps of 2ms (classic) and 20ms (D series) on a
-  32-bit microsecond or millisecond clock. Nothing calls it yet
+  32-bit microsecond or millisecond clock
   ([Session](protocols/hitec/README.md#session)).
 - The panel's link half for servos by Hitec, in
   `shared/bench/hitec_link.c`: one session step (SEND, LISTEN, LEVEL or
@@ -49,8 +48,25 @@ history is in git.
   25,000ms limit, at most 4 exchanges a pass, and a readout of the held
   port, its flags and pin and whether this module opened it. The servo
   model of the page suites moves to `test/host/hitec_sim.h` and gains the
-  classic entry. Nothing calls the module yet
+  classic entry
   ([The panel's link half](docs/LinkHitec.md#the-panels-link-half)).
+- The read-only programmer for servos by Hitec on SERVO > PROGRAM, row
+  `Hitec servos`: a SERIES row (D SERIES or CLASSIC, kept in the settings
+  as SET_HITEC_SERIES), CONNECT with the entry of either series and a read
+  of the full set (21 D series registers or 100 classic cells), the model
+  identified, MOTION, TRAVEL, PROTECT and INFO with every value decoded and
+  its stored value beside it, READ ALL, LEAVE by a 2s hold, CLEAR after a
+  switch to SAFE at the bench, and RELEASE PORT by a 2s hold for a port the
+  HITEC page holds for another session, after which the switch to ARMED
+  clears the IOmcu's latched failsafe. CONNECT is refused, with nothing
+  sent, on an ARMED bench, with STOP latched, with the tester on the
+  standard outputs, with no pin, before the IOmcu holds the D series
+  receive mode, for a classic servo without a PD mini and above the SUPPLY
+  limits. While a programmer holds a port, KST or Hitec, ARM, the supply's
+  set points and ON, MOTOR & ESC's TARGET row and ESC STICK's run are
+  locked, and a press on a locked supply control says why in the alert
+  band. Nothing is written to the servo
+  ([Servo programmer for Hitec servos](docs/HitecProgrammer.md)).
 
 ### Changed
 
@@ -77,6 +93,12 @@ history is in git.
   while a POWER runs only; the panel reads bit 11 from either and writes
   nothing differently
   ([The supply while a port is held](docs/LinkHitec.md#the-supply-while-a-port-is-held)).
+
+### Removed
+
+- The modelled parameter table for Hitec D-series servos in
+  `shared/ui/prog_models.c` and its texts: the Hitec programmer shows the
+  register model of `protocols/hitec/hitec_reg.c`.
 
 ### Fixed
 

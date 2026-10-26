@@ -81,6 +81,8 @@ manual beside the bench.
   rows of the servo programmer: DEAD BAND, MAX. DUTY, BOOST, STRETCH, SOFT
   START, NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE, RIGHT ANGLE,
   REVERSION and the rows of its LOCKED tab; and PORT, BACKUP and Pairing.
+  The Hitec programmer's rows of the same kind: DEAD BAND, SOFT START,
+  NEUTRAL and SMART SENSOR.
 
 ## Glossary
 
@@ -154,6 +156,8 @@ One German word per English concept, on every screen and in the report.
 | refresh (a list), rescan | aktualisieren |
 | restore (a backup to a servo) | zurückspielen |
 | enable (the write to a servo) | freigeben |
+| release (a held programming port) | freigeben (PORT FREIGEBEN) |
+| series (of servos), classic | Serie, klassisch |
 | record (of an interrupted write) | Vermerk |
 | store (a backup), stored | speichern, gespeichert |
 | verify (a servo against what was read) | prüfen |
@@ -305,7 +309,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 324 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 344 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -350,8 +354,8 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 2,210 entries
-with an ID and 76 options, 10 of them with an empty English.
+A language is one more column in every entry of the table: 2,297 entries
+with an ID and 78 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
    the parameter to every macro that reads a column: 7 empty defaults at the

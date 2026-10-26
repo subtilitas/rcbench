@@ -17,7 +17,7 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_value_gate.h"
-#include "kst_panel.h"
+#include "prog_registry.h"
 #include "outputs_screen.h"
 #include "port_view.h"
 #include "ui_widgets.h"
@@ -289,9 +289,9 @@ void mo_event(const touch_event_t *evt)
  */
 void mo_tick(float dt_s)
 {
-    if (kst_panel_holds_port() != s.kst_held
+    if (prog_reg_servo_holds() != s.kst_held
         || mo_no_motor_pin() != s.no_pin) {
-        s.kst_held = kst_panel_holds_port();
+        s.kst_held = prog_reg_servo_holds();
         s.no_pin   = mo_no_motor_pin();
         ++s.arm_rev;
         ++s.ctrl_rev;
