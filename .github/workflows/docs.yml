@@ -34,7 +34,7 @@ permissions:
 jobs:
   publish:
     name: Publish docs to the wiki
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # ci_gate.py waits up to 5400s (90min) for CI; 100min leaves 10min
     # for the checkout, the clone and the push.
     timeout-minutes: 100
