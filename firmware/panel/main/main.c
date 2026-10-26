@@ -858,6 +858,7 @@ void app_main(void)
     /* The servo programmer's record of a write that a restart cut
      * short. */
     kst_record_load(false);
+    hitec_record_load();
     /* The card was tried, with its reads at the start, and the settings
      * are handed on: two of the steps a new build's trial waits for
      * (panel_trial.h). */

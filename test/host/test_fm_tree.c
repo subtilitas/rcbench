@@ -20,6 +20,7 @@
 #include "fm_fake.h"
 #include "fm_select.h"
 #include "fm_tree.h"
+#include "hitec_card.h"
 
 /* ------------------------------------------------------------ the rigs */
 
@@ -366,6 +367,15 @@ TEST_CASE(the_journal_is_locked_and_the_fault_log_is_its_own)
     CHECK_EQ(fm_place_of(NULL, CARD_KST_CONF, "KST1.TXT", false),
              FM_PLACE_FREE);
     CHECK_EQ(fm_place_of(NULL, CARD_USER_LOGS, "KST.TXT", false),
+             FM_PLACE_FREE);
+    /* The Hitec programmer's record, by HITEC_CARD_RECORD's name. */
+    CHECK_EQ(fm_place_of(NULL, CARD_HITEC_CONF, HITEC_CARD_RECORD ".TXT",
+                         false), FM_PLACE_LOCKED);
+    CHECK_EQ(fm_place_of(NULL, "bench/hitec/conf", "hitec.new", false),
+             FM_PLACE_LOCKED);
+    CHECK_EQ(fm_place_of(NULL, CARD_HITEC_CONF, "HITEC1.TXT", false),
+             FM_PLACE_FREE);
+    CHECK_EQ(fm_place_of(NULL, CARD_KST_CONF, "HITEC.TXT", false),
              FM_PLACE_FREE);
     CHECK_EQ(fm_place_of(NULL, CARD_BENCH, "RCBENCH.LOG", false),
              FM_PLACE_FAULT);

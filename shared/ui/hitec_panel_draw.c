@@ -80,6 +80,36 @@ static void note(plan_t *p, const char *s, gfx_color_t color)
 }
 
 /**
+ * @brief What stands of a write: a record of one interrupted, and a READ
+ *        ALL owed before the next.
+ * @param p the plan
+ */
+static void record_notes(plan_t *p)
+{
+    const hitec_prog_t *pr = &hp.prog;
+    const gfx_color_t danger = ui_theme_color(UI_C_DANGER);
+
+    if (hitec_prog_record(pr)) {
+        switch (hitec_prog_record_verdict(pr)) {
+        case HITEC_PROG_REC_NONE:
+            note(p, TR(KP_M_JOURNAL), danger);
+            break;
+        case HITEC_PROG_REC_OTHER:
+            note(p, TR(KP_M_JOURNAL_OTHER), danger);
+            break;
+        case HITEC_PROG_REC_MIX:
+            note(p, TR(KP_M_INCONSISTENT), danger);
+            break;
+        default:
+            note(p, TR(HP_RECORD_HELD), ui_theme_color(UI_C_WARN));
+            break;
+        }
+    } else if (pr->must_read && hitec_prog_state(pr) == HITEC_PROG_HELD) {
+        note(p, TR(HP_MUST_READ), ui_theme_color(UI_C_WARN));
+    }
+}
+
+/**
  * @brief The SERVO tab's notes: the state, what it needs, what stands.
  * @param p the plan
  */
@@ -100,13 +130,10 @@ static void servo_notes(plan_t *p)
     } else if (st == HITEC_PROG_OTHER) {
         note(p, TR(HP_RELEASE_HINT), faint);
     }
-    if (m != NULL && pr->series == (uint8_t)HITEC_CLASSIC) {
-        hitec_value_t v;
-
-        if (hitec_param_get(hitec_prog_servo(pr), m->layout,
-                            HITEC_P_C_CHECKSUM, &v) == HITEC_GET_OK
-            && v.value == HITEC_SUM_BAD) {
-            note(p, TR(HP_SUM_BAD), ui_theme_color(UI_C_DANGER));
+    if (hitec_prog_sum_bad(pr)) {
+        note(p, TR(HP_SUM_BAD), ui_theme_color(UI_C_DANGER));
+        if (st == HITEC_PROG_HELD) {
+            note(p, TR(HP_SUM_HINT), faint);
         }
     }
     if (m != NULL && hitec_model_name(m->model)[0] == '\0') {
@@ -121,7 +148,7 @@ static void servo_notes(plan_t *p)
         && (st == HITEC_PROG_PWM || pr->owned)) {
         note(p, TR(HP_V_CAPPED), ui_theme_color(UI_C_WARN));
     }
-    note(p, TR(HP_READ_ONLY), faint);
+    record_notes(p);
 }
 
 /**
@@ -135,6 +162,8 @@ static void value_notes(plan_t *p)
 
     if (hitec_prog_servo(&hp.prog) == NULL) {
         note(p, TR(HP_NOT_READ), faint);
+    } else if (hitec_prog_can_edit(&hp.prog)) {
+        note(p, TR(HP_EDIT_NOTE), faint);
     }
     switch (hp.tabs.selected) {
     case HITEC_PANEL_MOTION:
@@ -187,6 +216,7 @@ static int rows_foot(void)
 static void plan(plan_t *p)
 {
     int msg_rows = 0;
+    int n;
     int y;
 
     memset(p, 0, sizeof(*p));
@@ -195,10 +225,18 @@ static void plan(plan_t *p)
     } else {
         value_notes(p);
     }
-    p->lines = hitec_panel_message_lines(hitec_prog_message(&hp.prog), s_msg);
-    /* A message that says what the state line says is said once. */
-    if (p->lines > 0 && p->count > 0 && strcmp(s_msg[0], p->n[0].s) == 0) {
-        p->lines = 0;
+    n = hitec_panel_message_lines(hitec_prog_message(&hp.prog), s_msg);
+    /* A message line that says what a note says is said once; the
+     * message's other lines stay, in their order. */
+    for (int i = 0; i < n; ++i) {
+        bool said = false;
+
+        for (int j = 0; j < p->count; ++j) {
+            said = said || strcmp(s_msg[i], p->n[j].s) == 0;
+        }
+        if (!said) {
+            memmove(s_msg[p->lines++], s_msg[i], sizeof(s_msg[0]));
+        }
     }
     for (int i = 0; i < p->lines; ++i) {
         msg_rows += hitec_panel_text_rows(s_msg[i]);
@@ -324,14 +362,20 @@ static void draw_row(gfx_canvas_t *c, int i)
     if (r->kind == K_ACT) {
         gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
 
-        if (r->what == A_CLEAR && live) {
+        if ((r->what == A_CLEAR && live)
+            || (r->what == A_ENABLE && hitec_prog_write_on(&hp.prog))) {
             fill = ui_theme_color(UI_C_WARN);
+        } else if (r->what == A_WRITE && live) {
+            fill = ui_theme_color(UI_C_ACCENT);
         }
         button(c, vr, v, fill, pressed, live);
         return;
     }
+    /* A value the draft changes: the accent fill beside its `*`. */
     gfx_fill_round_rect(c, vr.x, vr.y, vr.w, vr.h, UI_R_CTL,
-                        ui_theme_color(UI_C_PANEL_SUNK));
+                        hpn_row_edited(r) ? ui_theme_color(UI_C_ACCENT)
+                        : pressed         ? ui_theme_color(UI_C_PANEL)
+                                          : ui_theme_color(UI_C_PANEL_SUNK));
     gfx_text_in(c, vr, v, HP_FONT,
                 warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_CENTER);
@@ -367,9 +411,7 @@ static void draw_choice(gfx_canvas_t *c)
     gfx_text(c, hp.area.x + 10, hp.area.y + 14, hp.ch.title, HP_FONT,
              ui_theme_color(UI_C_TEXT), 1);
     for (int i = 0; i < hp.ch.count; ++i) {
-        const bool current = hp.ch.kind == C_SERIES
-                             && hp.ch.values[i]
-                                    == (int)hitec_prog_series(&hp.prog);
+        const bool current = hp.ch.values[i] == hp.ch.current;
 
         button(c, hitec_panel_choice_rect(i), hp.ch.labels[i],
                current ? ui_theme_color(UI_C_ACCENT)
@@ -388,7 +430,8 @@ static void draw_choice(gfx_canvas_t *c)
 static void draw_hold(gfx_canvas_t *c)
 {
     const gfx_rect_t a = hp.area;
-    const gfx_color_t edge = ui_theme_color(UI_C_WARN);
+    const gfx_color_t edge = ui_theme_color(hp.page.danger ? UI_C_DANGER
+                                                           : UI_C_WARN);
     int y = a.y + HP_PAGE_TOP;
 
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, edge);
@@ -397,7 +440,7 @@ static void draw_hold(gfx_canvas_t *c)
     gfx_text(c, a.x + 12, a.y + 16, hp.page.title, HP_TITLE_FONT, edge, 1);
     for (int i = 0; i < hp.page.count; ++i) {
         y = hpn_text_rows(c, a.x + 12, y, hp.page.lines[i],
-                          ui_theme_color(UI_C_TEXT))
+                          level_color(hp.page.level[i]))
             + 8;
     }
     button(c, hitec_panel_apply_rect(), hp.page.apply,

@@ -63,13 +63,7 @@ const char *hpn_label(const hpn_row_t *r)
 
 /* ------------------------------------------------------------------ values */
 
-/**
- * @brief The words of a CHOICE value of @p id.
- * @param id    hitec_param_t
- * @param value the decoded value
- * @return the text
- */
-static const char *choice_text(uint8_t id, int32_t value)
+const char *hpn_choice_text(uint8_t id, int32_t value)
 {
     switch (id) {
     case HITEC_P_D_DIRECTION:
@@ -86,20 +80,21 @@ static const char *choice_text(uint8_t id, int32_t value)
 
 /**
  * @brief A decoded value in its unit, with the stored value beside it where
- *        the two differ.
- * @param id   hitec_param_t
- * @param unit hitec_unit_t
- * @param v    the value
- * @param out  the text
- * @param n    bytes at @p out
+ *        the two differ and @p with_raw asks for it.
+ * @param id       hitec_param_t
+ * @param unit     hitec_unit_t
+ * @param v        the value
+ * @param with_raw the stored value in brackets
+ * @param out      the text
+ * @param n        bytes at @p out
  */
 static void fmt_value(uint8_t id, uint8_t unit, const hitec_value_t *v,
-                      char *out, size_t n)
+                      bool with_raw, char *out, size_t n)
 {
     const long val = (long)v->value;
     const unsigned long raw = (unsigned long)v->raw;
     char shown[40];
-    bool beside = true;
+    bool beside = with_raw;
 
     switch (unit) {
     case HITEC_UNIT_COUNTS: {
@@ -107,9 +102,14 @@ static void fmt_value(uint8_t id, uint8_t unit, const hitec_value_t *v,
         const long d = (val - 8192L) * 2200L;
         const long tenths = (d >= 0 ? d + 8191L : d - 8191L) / 16383L;
 
-        snprintf(shown, sizeof(shown), "%ld  %c%ld.%ld" DEG, val,
-                 tenths < 0 ? '-' : '+', (tenths < 0 ? -tenths : tenths) / 10,
-                 (tenths < 0 ? -tenths : tenths) % 10);
+        if (with_raw) {
+            snprintf(shown, sizeof(shown), "%ld  %c%ld.%ld" DEG, val,
+                     tenths < 0 ? '-' : '+',
+                     (tenths < 0 ? -tenths : tenths) / 10,
+                     (tenths < 0 ? -tenths : tenths) % 10);
+        } else {
+            snprintf(shown, sizeof(shown), "%ld", val);
+        }
         beside = false;
         break;
     }
@@ -120,7 +120,7 @@ static void fmt_value(uint8_t id, uint8_t unit, const hitec_value_t *v,
         snprintf(shown, sizeof(shown), "%ld", val);
         break;
     case HITEC_UNIT_CHOICE:
-        snprintf(shown, sizeof(shown), "%s", choice_text(id, v->value));
+        snprintf(shown, sizeof(shown), "%s", hpn_choice_text(id, v->value));
         break;
     case HITEC_UNIT_FS_US:
         if (val == HITEC_FS_LIMP) {
@@ -174,6 +174,70 @@ static void fmt_value(uint8_t id, uint8_t unit, const hitec_value_t *v,
     }
 }
 
+void hpn_fmt_param(uint8_t id, int32_t value, char *out, size_t n)
+{
+    const hitec_param_info_t *info =
+        hitec_param(hitec_prog_layout(&hp.prog), id);
+    hitec_value_t v;
+
+    v.value = value;
+    v.raw = (uint32_t)value;
+    fmt_value(id, info != NULL ? info->unit : (uint8_t)HITEC_UNIT_RAW, &v,
+              false, out, n);
+}
+
+const char *hpn_param_label(uint8_t id)
+{
+    const char *label = "";
+
+    for (int i = 0; i < HP_ROW_COUNT && label[0] == '\0'; ++i) {
+        const hpn_row_t *r = &hpn_rows[i];
+
+        if (r->kind == K_SHOW && r->what == id && hpn_row_shown(r)) {
+            label = hpn_label(r);
+        }
+    }
+    return label;
+}
+
+/**
+ * @brief Parameter @p id of @p img as a line's value: decoded, or RAW.
+ * @param id  hitec_param_t
+ * @param img the image
+ * @param out the text
+ * @param n   bytes at @p out
+ */
+static void image_value(uint8_t id, const hitec_image_t *img, char *out,
+                        size_t n)
+{
+    hitec_value_t v = { 0 };
+
+    /* Both images come from a full read: a value is decoded or RAW. */
+    if (hitec_param_get(img, hitec_prog_layout(&hp.prog), id, &v)
+        == HITEC_GET_OK) {
+        hpn_fmt_param(id, v.value, out, n);
+    } else {
+        snprintf(out, n, "RAW %lu", (unsigned long)v.raw);
+    }
+}
+
+void hpn_change_line(uint8_t id, const hitec_image_t *img, char *out,
+                     size_t n)
+{
+    char was[40];
+    char now[40];
+
+    image_value(id, hitec_prog_servo(&hp.prog), was, sizeof(was));
+    image_value(id, img, now, sizeof(now));
+    snprintf(out, n, "%s: %s -> %s", hpn_param_label(id), was, now);
+}
+
+bool hpn_row_edited(const hpn_row_t *r)
+{
+    return r->kind == K_SHOW && r->what < (uint8_t)HITEC_P_COUNT
+           && hitec_prog_differs(&hp.prog, NULL, r->what);
+}
+
 /**
  * @brief The classic model's name: Hitec's, the name cells as read, or
  *        "--".
@@ -211,7 +275,9 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
                  st == HITEC_PROG_OTHER ? TR(HP_RELEASE)
                  : st == HITEC_PROG_HELD ? TR(KP_LEAVE)
                  : st == HITEC_PROG_OPENING || st == HITEC_PROG_ENTERING
-                       || st == HITEC_PROG_READING ? TR(KP_ABORT)
+                       || st == HITEC_PROG_READING
+                       || st == HITEC_PROG_RECORDING
+                       || st == HITEC_PROG_WRITING ? TR(KP_ABORT)
                  : st == HITEC_PROG_CLEARING || st == HITEC_PROG_LEAVING
                        || st == HITEC_PROG_RELEASING ? TR(KP_WAIT)
                                                      : TR(KP_CONNECT));
@@ -223,8 +289,22 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
         snprintf(out, n, "%s", TR(KP_READ_ALL));
         break;
     case A_MORE:
+    case A_RESTORE:
         snprintf(out, n, "%s", TR(KP_CHOOSE));
         break;
+    case A_ENABLE:
+        snprintf(out, n, "%s", hitec_prog_write_on(p) ? TR(ON) : TR(OFF));
+        break;
+    case A_WRITE: {
+        const unsigned c = hitec_prog_changes(p);
+
+        if (c == 1u) {
+            snprintf(out, n, "%s", TR(KP_WRITE_ONE));
+        } else {
+            snprintf(out, n, TR(KP_WRITE_N), c);
+        }
+        break;
+    }
     default:
         snprintf(out, n, "%s", TR(HP_CLEAR));
         break;
@@ -233,7 +313,9 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
 
 void hpn_value_text(const hpn_row_t *r, char *out, size_t n, bool *warn)
 {
-    const hitec_image_t *img = hitec_prog_servo(&hp.prog);
+    /* The draft: the servo read with the edits. */
+    const hitec_image_t *img = hitec_prog_draft(&hp.prog);
+    const char *mark = hpn_row_edited(r) ? "*" : "";
     const uint8_t layout = hitec_prog_layout(&hp.prog);
     const hitec_param_info_t *info;
     hitec_value_t v;
@@ -255,9 +337,12 @@ void hpn_value_text(const hpn_row_t *r, char *out, size_t n, bool *warn)
     if (got == HITEC_GET_RAW) {
         /* Fits no encoding: the stored value, as it is. */
         *warn = true;
-        snprintf(out, n, "RAW %lu", (unsigned long)v.raw);
+        snprintf(out, n, "%sRAW %lu", mark, (unsigned long)v.raw);
     } else if (got == HITEC_GET_OK) {
-        fmt_value(r->what, info->unit, &v, out, n);
+        char shown[HITEC_PANEL_LINE];
+
+        fmt_value(r->what, info->unit, &v, true, shown, sizeof(shown));
+        snprintf(out, n, "%s%s", mark, shown);
     } else {
         /* Not read, or a parameter the layout lacks. */
         snprintf(out, n, "--");
@@ -387,6 +472,31 @@ static void held_line(char *out, size_t n)
     }
 }
 
+/**
+ * @brief The state line while a write runs: the step, the save, the check.
+ * @param out the text
+ * @param n   bytes at @p out
+ */
+static void writing_line(char *out, size_t n)
+{
+    const hitec_prog_t *p = &hp.prog;
+    unsigned done = 0;
+    unsigned total = 0;
+    uint8_t kind = 0;
+
+    (void)hitec_prog_write_progress(p, &done, &total, &kind);
+    if (kind == (uint8_t)HITEC_STEP_D_SAVE
+        || kind == (uint8_t)HITEC_STEP_D_REBOOT) {
+        snprintf(out, n, "%s", TR(HP_ST_SAVE));
+    } else if (kind == 0xFFu) {
+        snprintf(out, n, TR(HP_ST_CHECK),
+                 p->ses.done < p->ses.total ? p->ses.done + 1u : p->ses.done,
+                 (unsigned)p->ses.total);
+    } else {
+        snprintf(out, n, TR(HP_ST_WRITE), done + 1u, total);
+    }
+}
+
 void hpn_state_line(char *out, size_t n)
 {
     const hitec_prog_t *p = &hp.prog;
@@ -438,6 +548,12 @@ void hpn_state_line(char *out, size_t n)
         snprintf(out, n, "%s", classic ? TR(HP_ST_LEAVE_C)
                                        : TR(HP_ST_LEAVE_D));
         break;
+    case HITEC_PROG_RECORDING:
+        snprintf(out, n, "%s", TR(HP_ST_RECORD));
+        break;
+    case HITEC_PROG_WRITING:
+        writing_line(out, n);
+        break;
     default:
         snprintf(out, n, "%s", TR(HP_ST_RELEASING));
         break;
@@ -484,7 +600,161 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_NO_LINE]       = { TX_HP_NO_LINE, -1 },
     [HITEC_PROG_MSG_SUPPLY]        = { TX_HP_SUPPLY, -1 },
     [HITEC_PROG_MSG_UNKNOWN]       = { -1, -1 },
+    [HITEC_PROG_MSG_WRITTEN]       = { -1, -1 },
+    [HITEC_PROG_MSG_REPAIRED]      = { TX_HP_REPAIRED, -1 },
+    [HITEC_PROG_MSG_RESTORED]      = { TX_HP_RESTORED, -1 },
+    [HITEC_PROG_MSG_WRITE_OFF]     = { TX_HP_WRITE_OFF, -1 },
+    [HITEC_PROG_MSG_NOT_READ]      = { TX_HP_M_NOT_READ, -1 },
+    [HITEC_PROG_MSG_MUST_READ]     = { TX_HP_MUST_READ, -1 },
+    [HITEC_PROG_MSG_NO_CHANGES]    = { TX_HP_NO_CHANGES, -1 },
+    [HITEC_PROG_MSG_EDITS_PENDING] = { TX_HP_EDITS_PENDING, -1 },
+    [HITEC_PROG_MSG_EDIT_REFUSED]  = { -1, -1 },
+    [HITEC_PROG_MSG_RECORD_FAILED] = { TX_KP_M_STORE_FAILED, -1 },
+    [HITEC_PROG_MSG_WRITE_CUT]     = { -1, -1 },
+    [HITEC_PROG_MSG_VERIFY_FAIL]   = { TX_HP_VERIFY_FAIL, -1 },
+    [HITEC_PROG_MSG_RECORD]        = { -1, -1 },
+    [HITEC_PROG_MSG_REC_SAME]      = { -1, -1 },
+    [HITEC_PROG_MSG_REC_DONE]      = { -1, -1 },
+    [HITEC_PROG_MSG_REC_MIX]       = { TX_KP_M_INCONSISTENT, TX_HP_REC_MIX_2 },
+    [HITEC_PROG_MSG_REC_OTHER]     = { -1, -1 },
+    [HITEC_PROG_MSG_RECORD_HELD]   = { TX_HP_RECORD_HELD, -1 },
+    [HITEC_PROG_MSG_FORGOTTEN]     = { TX_KP_M_FORGOTTEN, -1 },
+    [HITEC_PROG_MSG_RECORD_BAD]    = { TX_HP_RECORD_BAD, -1 },
+    [HITEC_PROG_MSG_SUM_OK]        = { TX_HP_SUM_OK, -1 },
 };
+_Static_assert(HITEC_PROG_MSG_SUM_OK + 1 == HITEC_PROG_MSG_COUNT,
+               "k_lines has a row for every message");
+
+/**
+ * @brief Whether a record message names the record's pin: it names its
+ *        port where the pin is not known.
+ * @param m the message: arg the pin, reg the port
+ * @return true for the pin
+ */
+static bool rec_by_pin(const hitec_prog_msg_t *m)
+{
+    return m->arg <= HITEC_PROG_PIN_LAST;
+}
+
+/**
+ * @brief The number a record line names: the pin, or the port counted
+ *        from 1.
+ * @param m the message
+ * @return the number
+ */
+static unsigned rec_num(const hitec_prog_msg_t *m)
+{
+    return rec_by_pin(m) ? (unsigned)m->arg : (unsigned)m->reg + 1u;
+}
+
+/**
+ * @brief The line of a write cut at step kind @p kind.
+ * @param out  the line
+ * @param kind hitec_step_kind_t, or HITEC_PROG_CUT_CHECK for the read-back
+ * @param addr the register or cell
+ */
+static void cut_line(char *out, unsigned kind, unsigned addr)
+{
+    switch (kind) {
+    case HITEC_STEP_C_CELL:
+        snprintf(out, HITEC_PANEL_LINE, TR(HP_CUT_CELL), addr);
+        break;
+    case HITEC_STEP_C_SUM:
+        snprintf(out, HITEC_PANEL_LINE, TR(HP_CUT_SUM), addr);
+        break;
+    case HITEC_STEP_D_WRITE:
+        snprintf(out, HITEC_PANEL_LINE, TR(HP_CUT_REG), addr);
+        break;
+    case HITEC_STEP_D_SAVE:
+        snprintf(out, HITEC_PANEL_LINE, "%s", TR(HP_CUT_SAVE));
+        break;
+    case HITEC_STEP_D_REBOOT:
+        snprintf(out, HITEC_PANEL_LINE, "%s", TR(HP_CUT_REBOOT));
+        break;
+    default:
+        snprintf(out, HITEC_PANEL_LINE, "%s", TR(HP_CUT_CHECK));
+        break;
+    }
+}
+
+/**
+ * @brief The lines of a write's message: what it wrote, where it was cut,
+ *        what an edit refused.
+ * @param m   the message
+ * @param out the lines
+ * @return the lines used; 0 for a message of another kind
+ */
+static int write_lines(const hitec_prog_msg_t *m,
+                       char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE])
+{
+    static const int16_t k_edit[] = {
+        [HITEC_SET_ERR_RO] = TX_HP_E_RO,
+        [HITEC_SET_ERR_RANGE] = TX_HP_E_RANGE,
+        [HITEC_SET_ERR_RAW] = TX_HP_E_RAW,
+        [HITEC_SET_ERR_UNKNOWN] = TX_HP_E_UNKNOWN,
+        [HITEC_SET_ERR_MIRROR] = TX_HP_E_MIRROR,
+        [HITEC_SET_ERR_ORDER] = TX_HP_E_ORDER,
+    };
+
+    switch (m->id) {
+    case HITEC_PROG_MSG_WRITTEN:
+        if (m->arg == 1u) {
+            snprintf(out[0], HITEC_PANEL_LINE, "%s", TR(KP_M_WRITTEN_ONE));
+        } else {
+            snprintf(out[0], HITEC_PANEL_LINE, TR(KP_M_WRITTEN),
+                     (unsigned)m->arg);
+        }
+        return 1;
+    case HITEC_PROG_MSG_EDIT_REFUSED:
+        snprintf(out[0], HITEC_PANEL_LINE, "%s",
+                 m->arg < sizeof(k_edit) / sizeof(k_edit[0])
+                         && k_edit[m->arg] > 0
+                     ? ui_tr((ui_text_id_t)k_edit[m->arg])
+                     : TR(KP_M_OUTSIDE));
+        return 1;
+    case HITEC_PROG_MSG_WRITE_CUT:
+        cut_line(out[0], m->reg, (unsigned)(m->arg & 0xFFu));
+        if (m->reg == HITEC_STEP_C_CELL || m->reg == HITEC_STEP_C_SUM) {
+            snprintf(out[1], HITEC_PANEL_LINE, "%s", TR(HP_CUT_SUM_2));
+            return 2;
+        }
+        return 1;
+    case HITEC_PROG_MSG_RECORD:
+        snprintf(out[0], HITEC_PANEL_LINE, "%s", TR(KP_M_JOURNAL));
+        if (rec_by_pin(m)) {
+            snprintf(out[1], HITEC_PANEL_LINE, TR(KP_M_JOURNAL_2_PIN),
+                     rec_num(m));
+        } else {
+            snprintf(out[1], HITEC_PANEL_LINE, TR(KP_M_JOURNAL_2), rec_num(m));
+        }
+        return 2;
+    case HITEC_PROG_MSG_REC_SAME:
+    case HITEC_PROG_MSG_REC_DONE:
+        if (rec_by_pin(m)) {
+            snprintf(out[0], HITEC_PANEL_LINE, TR(KP_M_JOURNAL_ASK_PIN),
+                     rec_num(m));
+        } else {
+            snprintf(out[0], HITEC_PANEL_LINE, TR(KP_M_JOURNAL_ASK),
+                     rec_num(m));
+        }
+        snprintf(out[1], HITEC_PANEL_LINE, "%s",
+                 m->id == HITEC_PROG_MSG_REC_SAME ? TR(KP_M_JOURNAL_SAME)
+                                                  : TR(KP_M_JOURNAL_DONE));
+        return 2;
+    case HITEC_PROG_MSG_REC_OTHER:
+        snprintf(out[0], HITEC_PANEL_LINE, "%s", TR(KP_M_JOURNAL_OTHER));
+        if (rec_by_pin(m)) {
+            snprintf(out[1], HITEC_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2_PIN),
+                     rec_num(m));
+        } else {
+            snprintf(out[1], HITEC_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2),
+                     rec_num(m));
+        }
+        return 2;
+    default:
+        return 0;
+    }
+}
 
 /**
  * @brief The lines of a message whose text takes its arguments.
@@ -495,6 +765,11 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
 static int formatted(const hitec_prog_msg_t *m,
                      char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE])
 {
+    const int w = write_lines(m, out);
+
+    if (w > 0) {
+        return w;
+    }
     switch (m->id) {
     case HITEC_PROG_MSG_READ:
         if (hitec_prog_series(&hp.prog) == (uint8_t)HITEC_D) {
@@ -539,6 +814,12 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
     if (m == NULL || m->id == HITEC_PROG_MSG_NONE
         || m->id >= HITEC_PROG_MSG_COUNT) {
         return 0;
+    }
+    if (m->id == HITEC_PROG_MSG_STOPPED && hp.prog.f.stopped) {
+        /* With the STOP latched at this end CLEAR is refused: the latched
+         * path is the one said (station, #612). */
+        snprintf(out[0], HITEC_PANEL_LINE, "%s", TR(HP_ST_STOP_LATCHED));
+        return 1;
     }
     if (k_lines[m->id][0] < 0) {
         return formatted(m, out);

@@ -53,6 +53,7 @@ set(SRCS
     hitec_panel.c
     hitec_panel_text.c
     hitec_panel_edit.c
+    hitec_panel_page.c
     hitec_panel_touch.c
     hitec_panel_draw.c
     analyser_screen.c

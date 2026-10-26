@@ -134,6 +134,147 @@ static void hconnect(void)
 }
 
 /**
+ * @brief The row of @p page whose label is @p label, tapped.
+ * @param page  the tab
+ * @param label the row's label
+ */
+static void hrow(int page, const char *label)
+{
+    htap(hitec_panel_tab_rect(page));
+    for (int row = 0; row < 6; ++row) {
+        const char *l = hitec_panel_label(page, row, 0);
+
+        if (l != NULL && strcmp(l, label) == 0) {
+            htap(hitec_panel_value_rect(page, row, 0));
+            return;
+        }
+    }
+    fprintf(stderr, "render_hitec: no row %s\n", label);
+    exit(1);
+}
+
+/**
+ * @brief The list's entry @p label tapped.
+ * @param label the entry
+ */
+static void hpick(const char *label)
+{
+    for (int i = 0; hitec_panel_choice_label(i) != NULL; ++i) {
+        if (strcmp(hitec_panel_choice_label(i), label) == 0) {
+            htap(hitec_panel_choice_rect(i));
+            return;
+        }
+    }
+    fprintf(stderr, "render_hitec: no entry %s\n", label);
+    exit(1);
+}
+
+/**
+ * @brief The edit of each write view: D series SOFT START 60% and SPEED
+ *        50%, classic SPEED 50%.
+ */
+static void hedits(void)
+{
+    hitec_prog_t *p = hitec_panel_model();
+
+    if (hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC) {
+        (void)hitec_prog_edit(p, HITEC_P_C_SPEED, 50);
+    } else {
+        (void)hitec_prog_edit(p, HITEC_P_D_SOFT_START, 60);
+        (void)hitec_prog_edit(p, HITEC_P_D_SPEED, 50);
+    }
+}
+
+/**
+ * @brief The views of the write side, from a servo read.
+ * @param v the view's name past "servo-hitec"
+ * @return false for a view of another kind
+ */
+static bool write_view(const char *v)
+{
+    hitec_prog_t *p = hitec_panel_model();
+    const gfx_rect_t write = hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 1);
+
+    if (strcmp(v, "-list") == 0 || strcmp(v, "-edit") == 0) {
+        hrow(HITEC_PANEL_MOTION, TR(HP_SOFTSTART));
+        if (strcmp(v, "-edit") == 0) {
+            hpick("60%");
+        }
+        return true;
+    }
+    if (strcmp(v, "-keypad") == 0 || strcmp(v, "-soft") == 0) {
+        hrow(HITEC_PANEL_MOTION, TR(HP_SPEED));
+        if (strcmp(v, "-soft") == 0) {
+            /* 20% typed: CHECK THIS CHANGE. */
+            htap(ui_keypad_key_rect(hitec_panel_keypad(), UI_KEY_2));
+            htap(ui_keypad_key_rect(hitec_panel_keypad(), UI_KEY_0));
+            htap(ui_keypad_key_rect(hitec_panel_keypad(), UI_KEY_OK));
+        }
+        return true;
+    }
+    if (strcmp(v, "-enable") == 0) {
+        hedits();
+        htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        htap(write);
+        return true;
+    }
+    if (strcmp(v, "-write") == 0 || strcmp(v, "-classic-write") == 0
+        || strcmp(v, "-writing") == 0 || strcmp(v, "-written") == 0
+        || strcmp(v, "-verify") == 0) {
+        hedits();
+        (void)hitec_prog_write_enable(p, true);
+        htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        htap(write);
+        if (strcmp(v, "-write") == 0 || strcmp(v, "-classic-write") == 0) {
+            return true;
+        }
+        if (strcmp(v, "-writing") == 0) {
+            const gfx_rect_t r = hitec_panel_apply_rect();
+            touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                .point = { .id = 1,
+                                           .x = (int16_t)(r.x + r.w / 2),
+                                           .y = (int16_t)(UI_BAND_H + r.y
+                                                          + r.h / 2),
+                                           .strength = 40 } };
+
+            ui_router_event(&e);
+            for (int i = 0; i < 105; ++i) {
+                ui_router_tick(0.02f);
+                prun(1u);
+            }
+            e.type = TOUCH_EVENT_UP;
+            ui_router_event(&e);
+            hwait(HITEC_PROG_WRITING);
+            prun(40u);
+            ui_router_tick(0.02f);
+            return true;
+        }
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        return true;
+    }
+    if (strcmp(v, "-restore") == 0) {
+        hedits();
+        (void)hitec_prog_write_enable(p, true);
+        htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        htap(write);
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
+        hwait(HITEC_PROG_HELD);
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 0));
+        return true;
+    }
+    if (strcmp(v, "-classic-repair") == 0) {
+        (void)hitec_prog_write_enable(p, true);
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        hpick(TR(HP_MORE_REPAIR));
+        return true;
+    }
+    return false;
+}
+
+/**
  * @brief Whether @p v is one of the views of the classic HS-5645MG.
  * @param v the view's name past "servo-hitec"
  * @return true for one
@@ -195,6 +336,14 @@ void render_hitec_view(const char *view)
     if (c_view) {
         hseries(1);
     }
+    if (strcmp(v, "-classic-sum") == 0 || strcmp(v, "-classic-repair") == 0) {
+        /* A balance one off: the sum is wrong. */
+        g_drv.eeprom[HITEC_C_SUM_LAST] ^= 0x01u;
+    }
+    if (strcmp(v, "-verify") == 0 || strcmp(v, "-restore") == 0) {
+        /* A servo that takes no write. */
+        g_drv.d_drop = true;
+    }
     if (strcmp(v, "-nopd") == 0) {
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0));
         prun(50u);
@@ -208,7 +357,11 @@ void render_hitec_view(const char *view)
         return;
     }
     hconnect();
-    if (strcmp(v, "-read") == 0 || strcmp(v, "-classic") == 0) {
+    if (strcmp(v, "-read") == 0 || strcmp(v, "-classic") == 0
+        || strcmp(v, "-classic-sum") == 0) {
+        return;
+    }
+    if (write_view(v)) {
         return;
     }
     if (strcmp(v, "-stopped") == 0) {

@@ -2,9 +2,10 @@
 
 <sub>**English** · [Deutsch](HitecProgrammer-de.md)</sub>
 
-The programmer reads the settings of a Hitec servo over its signal wire and
-shows them, decoded and as stored. It reads only: it writes nothing to the
-servo, keeps no journal and makes no backup. It opens from its row
+The programmer reads the settings of a Hitec servo over its signal wire,
+shows them, decoded and as stored, and writes edited values back. Before
+every write it records the servo's values, on the card where one is
+mounted; it makes no backup file. It opens from its row
 `Hitec servos` on **PROGRAM** of the [SERVO screen](Screens.md#servo), one
 level down, and covers the left column, the strip's tabs with it. **CLOSE**
 or the home tag returns to PROGRAM's list while the programmer holds no
@@ -18,12 +19,12 @@ servos the programmer works with.
 [Legal notice and disclaimer](../README.md#legal-notice-and-disclaimer) holds
 the project's notice.
 
-Two series are read:
+Two series are read and written:
 
-| Series | Servos | Wire | Read |
-| --- | --- | --- | --- |
-| D SERIES | D485HW and the other D series servos | 115,200bit/s, inverted | 21 registers |
-| CLASSIC | HS-5xxx and HS-7xxx | 19,200bit/s | 100 cells: 0x00 to 0x23, 0x30 to 0x53, the name 0x60 to 0x6F, the date 0x70 to 0x73, the serial 0x80 to 0x87, and the version |
+| Series | Servos | Wire | Read | Written |
+| --- | --- | --- | --- | --- |
+| D SERIES | D485HW and the other D series servos | 115,200bit/s, inverted | 21 registers | the registers of each changed setting 20ms apart, the save (0x70 = 0xFFFF), 100ms, the restart (0x46 = 1), 1000ms, then the 21 registers read back |
+| CLASSIC | HS-5xxx and HS-7xxx | 19,200bit/s | 100 cells: 0x00 to 0x23, 0x30 to 0x53, the name 0x60 to 0x6F, the date 0x70 to 0x73, the serial 0x80 to 0x87, and the version | each changed cell, then the balance in cell 0x1C, each answered `+ +`, 2ms apart; then cells 0x00 to 0x23 read back |
 
 The register model and its encodings come from 1 D485HW (2026-10-20) and
 from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
@@ -67,8 +68,11 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | PORT | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with no PD mini). The button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
 | SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES). Not taken while the port is held |
 | SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |
-| MORE | The programming voltage and current limit, each on the keypad, while the tester holds the port |
+| MORE | The programming voltage and current limit, each on the keypad, while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, and REPAIR CHECKSUM with a classic checksum that is wrong |
 | AFTER STOP | CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
+| ENABLE WRITE TO SERVO | The write switch, OFF or ON ([The write switch](#the-write-switch)) |
+| RESTORE | While a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
+| WRITE n VALUES | The draft to the servo ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
 
 Under the rows the state line says what the port does now, and the last
 message stands at the foot of the notes. Every control is 48px tall or more
@@ -105,8 +109,10 @@ not measured.
 
 While the port is held:
 
-- ARM is drawn disabled and refused: `Cannot switch to ARMED: a port is in
-  use by the servo programmer.` DISARM and STOP work.
+- ARM is drawn disabled. A press on it arms nothing and shows
+  `Cannot switch to ARMED: a port is in use by the servo programmer.` in
+  the alert band, on SERVO and on MOTOR & ESC alike. STOP works. DISARM has
+  nothing to end: the bench cannot be ARMED while the port is held.
 - The set points and OUTPUT ON of the SET row and of the SUPPLY screen take
   no press; a press on them says `Servo programming holds the supply: set
   points and ON are locked.` OUTPUT OFF works. From protocol 4.29 the IOmcu
@@ -117,10 +123,12 @@ While the port is held:
 
 ## The value tabs
 
-MOTION, TRAVEL, PROTECT and INFO show what the last full read found, in the
-series' rows. A value that fits its encoding shows decoded with the stored
-value in brackets beside it, `CW (0)`; one that fits no known encoding
-shows as `RAW 1234` in the warning colour. No row takes a tap.
+MOTION, TRAVEL, PROTECT and INFO show the draft: what the last full read
+found, with the edits not written yet. A value that fits its encoding shows
+decoded with the stored value in brackets beside it, `CW (0)`; one that
+fits no known encoding shows as `RAW 1234` in the warning colour. A
+writable value takes a tap while the port is held and not stopped
+([Editing](#editing)).
 
 | Tab | D series | Classic |
 | --- | --- | --- |
@@ -141,6 +149,196 @@ may not follow PWM.`
 ![TRAVEL of an HS-5645MG](img/servo-hitec-classic-travel.png)
 ![PROTECT of an HS-5645MG](img/servo-hitec-classic-protect.png)
 ![INFO of an HS-5645MG](img/servo-hitec-classic-info.png)
+
+## Editing
+
+A value is edited in the draft on the panel. Nothing reaches the servo
+before [WRITE n VALUES](#writing). A value that differs from the servo's is
+marked twice: by `*` before it and by the accent fill.
+
+| Parameter | Editor | Values |
+| --- | --- | --- |
+| D series SPEED | keypad | 10% to 100% in steps of 10% |
+| D series DEAD BAND, classic DEAD BAND | list | steps 1 to 5 |
+| D series SOFT START | list | 20%, 40%, 60%, 80%, 100% |
+| D series NEUTRAL, LEFT END, RIGHT END | keypad | 1 to 16383 counts; LEFT END below NEUTRAL below RIGHT END |
+| D series DIRECTION, classic DIRECTION | list | CW, CCW |
+| D series FAILSAFE | list, then the keypad for POSITION | OFF, LIMP, or a position of 900us to 2100us |
+| D series OVERLOAD PROTECTION, classic OVERLOAD PROTECTION | list | OFF, 10% to 50% in steps of 10% |
+| D series SMART SENSOR, classic FAILSAFE | list | ON, OFF |
+| D series ID | keypad | 0 to 255 |
+| classic SPEED | keypad | 10% to 100% in steps of 10% |
+| classic CENTRE | keypad | 900.00us to 2100.00us in steps of 0.25us |
+| classic LEFT END, RIGHT END | keypad | 0 to 255, raw |
+| classic FAILSAFE POSITION (HS-5xxx) | keypad | 900.00us to 2100.00us in steps of 0.25us |
+
+The ranges and steps are those of `protocols/hitec/hitec_reg.c`. The
+keypad shows the range; a value no step gives, or one that breaks the order
+of the D series positions, is refused on the keypad with the reason:
+`Not a value this setting takes.` or `LEFT END, NEUTRAL and RIGHT END must
+ascend.` An edit writes the side effects the vendor programmer writes: a D
+series DIRECTION mirrors NEUTRAL and both ends, a classic CENTRE sets both
+end points to 0x10, a classic DIRECTION swaps them and takes the failsafe
+position from the factory cells 0x49 and 0x4A, and every classic edit
+balances cell 0x1C in the draft. A D series DIRECTION stored as neither 0
+nor 1 is changed alone, without the mirror. A value stored raw is replaced
+by the value of the table an edit sets; DISCARD EDITS under MORE brings the
+raw value back to the draft.
+
+### A value that needs a second look
+
+A value that breaks a soft rule opens CHECK THIS CHANGE with the field's
+line, `SPEED: 100% -> 20%`, the servo's value first, and one line per rule.
+**HOLD 2s TO APPLY** takes it; **CANCEL** or the home tag leaves the draft as
+it was.
+
+| Rule | Warning |
+| --- | --- |
+| SPEED below 30% | `A slow servo can cause loss of control of the model.` |
+| DEAD BAND below the servo's | `A narrow dead band can cause back-and-forth movement and heat.` |
+| OVERLOAD PROTECTION switched off | `Without overload protection a stalled servo heats up.` |
+| an end point other than the servo's | `End point changed. The servo travel per stick movement changes too.` |
+| NEUTRAL or CENTRE other than the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
+| DIRECTION reversed | `Direction reversed. Check all control surfaces before flight.` |
+| a failsafe position more than 300us from 1500us | `Failsafe position is far from the centre.` |
+
+A rule confirmed for a value holds for that value and for values nearer the
+servo's on the same side. A value further from the servo's, or on its other
+side, asks again: LEFT END 3351 confirmed at 3300 takes 3301 and asks at
+3299 and at 3352. "The servo's" is the value of the last full read. A
+write, a read and DISCARD EDITS end every confirmation. A stored value that
+fits no encoding is no value to compare with: every change of it asks.
+
+![SOFT START's list](img/servo-hitec-list.png)
+![An edited value](img/servo-hitec-edit.png)
+![SPEED on the keypad](img/servo-hitec-keypad.png)
+![CHECK THIS CHANGE](img/servo-hitec-soft.png)
+
+## The write switch
+
+**ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
+that names the risks; **HOLD 2s TO ENABLE** switches it on. A tap on **ON**
+switches it off at once. A tap on **WRITE n VALUES**, RESTORE or REPAIR
+CHECKSUM with the switch off opens the same page: its hold switches the
+switch on and writes nothing.
+
+The switch goes off:
+
+- at every entry of the SERVO screen,
+- at every CONNECT and every LEAVE,
+- when the link to the IOmcu goes,
+- at a STOP and at a switch to SAFE at the bench,
+- when a write does not end verified,
+- when a read finds other values than the ones held.
+
+It goes on only with the port held, the servo in programming mode and read,
+the port not stopped, the bench SAFE and no STOP latched.
+
+![ENABLE WRITE TO SERVO](img/servo-hitec-enable.png)
+
+## Writing
+
+**WRITE n VALUES** counts the values in which the draft differs from the
+servo. A tap opens the write page: the changed values, `SOFT START: 20% ->
+60%`, in the order of the tabs, 6 at most and the count of the rest;
+`Keep the servo horn clear. Disconnect the linkage.` and `Test the servo on
+the bench before fitting it to a model.` on the first write after CONNECT
+and on every write that changes DIRECTION, NEUTRAL, CENTRE or an end point;
+what the series does; and where the values before the write are recorded.
+**HOLD 2s TO WRITE** starts it.
+
+1. The record: the servo's values, the values the write is to leave, the
+   series, the port and its GPIO. With a card mounted it goes to
+   `BENCH/HITEC/CONF/HITEC.TXT` first, and the write waits for it: a card
+   that does not take it within 3000ms ends the write with
+   `Could not save the file to the card. Nothing was written to the servo.`
+   Without a card the record is kept in RAM. A text still out on the card
+   from before the write, the record of an aborted write or the text that
+   clears a record, releases nothing: the write goes once the card has
+   taken its own record, and the 3000ms count from the start of the write.
+2. The plan of `hitec_plan()`: only the settings that change. D series: the
+   setting's registers as the HFP-30 writes them, 20ms apart, then the save,
+   100ms, the restart and 1000ms. Classic: each cell of a changed setting,
+   then the balance in cell 0x1C, each answered `+ +` within 3 tries.
+3. The read-back: the D series set of 21 registers, or classic cells 0x00
+   to 0x23, held against the draft.
+4. `2 values written and verified.`, or `1 value written and verified.`,
+   ends it and clears the record. The switch stays on.
+
+In the host model (`test_hitec_prog_write`) a D series write of one value
+takes 2.5s and a classic one 1.2s at a frame of 16ms and 2.5s at one of
+33ms. On the bench these times are not measured.
+
+The write is refused on an ARMED bench or one asked to arm, with a STOP
+latched, on a stopped port, with no servo read, with the switch off, with
+no change, and while a record of an earlier write stands. The port, the
+bench, the STOP, the entry and the switch are checked again when the card
+has taken the record: a switch turned off, a STOP or a finger on ARM in the
+meantime ends the write before a step goes out, with the refusal's message,
+and clears its record, on the card too. The switch does not go on again
+while the write waits for the card.
+
+![The write page](img/servo-hitec-write.png)
+![A write under way](img/servo-hitec-writing.png)
+![A write done](img/servo-hitec-written.png)
+![The classic write page](img/servo-hitec-classic-write.png)
+
+| Message | The servo |
+| --- | --- |
+| `Servo settings do not match after the write. Tap READ ALL.` | holds values the read-back found other than the draft's; the record stands |
+| `Writing was interrupted at register 0x54. Tap READ ALL.` | took the D series registers before it; nothing is saved |
+| `Writing was interrupted before the servo saved. Tap READ ALL.` | took the registers, unsaved |
+| `Writing was interrupted after the save, before the restart. Tap READ ALL.` | saved them; the restart is owed |
+| `Every value went out; their check was interrupted. Tap READ ALL.` | took all of them; the read-back did not end |
+| `Writing was interrupted at cell 0x06. Tap READ ALL.` and `The checksum may be wrong: the servo may not follow PWM.` | may hold the new cell without its balance |
+| `Cell 0x06 is written, its checksum in cell 0x1C is not. Tap READ ALL.` and the same second line | holds the new cell and the old balance: the checksum is wrong |
+| `A write did not end verified. Tap READ ALL before the next write.` | a write once a step went out leaves what the servo holds unknown; READ ALL comes before the next write |
+
+A write that ends any way but verified switches the switch off.
+
+## The record of a write
+
+The record stands from the start of a write until the write ends verified,
+the write ends before a step reached the servo, a RESTORE ends verified, or
+it is discarded. With a card it is read again
+at the panel's next start: a panel that restarts during a write keeps it.
+Then the message band says `Writing was interrupted. The settings may be
+incomplete.` and `Do not use the servo. Connect it to GPIO 13 and tap READ
+ALL.`, and the SERVO tab keeps the first line until a servo is read. The next full read compares the servo with the
+record, address by address over the addresses a write changes:
+
+| The servo holds | Message | RESTORE offers |
+| --- | --- | --- |
+| the values before the write | `Is this the servo whose write was interrupted on GPIO 13?` `It has the old values. If this is the same servo, discard the record under RESTORE.` | the restore, which then sends nothing and clears the record, and the discard |
+| the values the write was to leave | the same first line and `It has the new values. If this is the same servo, discard the record under RESTORE.` | the restore and the discard |
+| some of each | `The servo contains both old and new settings.` `Do not use this servo. RESTORE writes the values before the write back.` | the restore and the discard |
+| another series, port or D series model, or a value that is neither | `The interrupted write affected a different servo.` `It was connected to GPIO 13. Discard the record under RESTORE.` | the discard only |
+
+The classic balance 0x1C is not compared: a write cut between a cell and its
+balance leaves a third value there. RESTORE writes the values before the
+write back as a write of its own, with the switch, the hold page `RESTORE`
+and its read-back; the record stays until that ends verified. `Discard the
+record of the interrupted write.` removes it without a write. While a
+record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `A record of
+an interrupted write stands. Restore or discard it under RESTORE.` The file
+manager shows `HITEC.TXT` and `HITEC.NEW` with INFO only: a hand edit could
+send wrong values to a servo.
+
+![After a write that did not verify](img/servo-hitec-verify.png)
+![RESTORE](img/servo-hitec-restore.png)
+
+## REPAIR CHECKSUM
+
+A classic servo whose cells 0x00 to 0x1C do not sum to 0 modulo 256 shows
+CHECKSUM `WRONG`, and the SERVO tab says `MORE > REPAIR CHECKSUM writes cell
+0x1C.` REPAIR CHECKSUM under MORE opens a page that names the cell's value
+and the balance, `Writes cell 0x1C: 0x5F -> 0x5E.`; its hold writes the
+balance alone, with its record and the read-back of cells 0x00 to 0x23.
+It needs the switch, no edit standing (WRITE n VALUES writes the balance
+with the edits) and no record.
+
+![A classic checksum that is wrong](img/servo-hitec-classic-sum.png)
+![REPAIR CHECKSUM](img/servo-hitec-classic-repair.png)
 
 ## LEAVE
 
@@ -163,7 +361,7 @@ and the CLOSE is always taken.
 
 | Event | The port | What the operator does |
 | --- | --- | --- |
-| STOP, pressed or the bench's own | The IOmcu cuts the transaction after the frame on the wire, keeps the port with the pin released and sets STOPPED. The panel latches the stop and withholds the heartbeat | `Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.` CLEAR and READ ALL are refused with the STOP latched: the IOmcu would refuse the CLEAR as UNSAFE. LEAVE, then ARM and DISARM, then CONNECT |
+| STOP, pressed or the bench's own | The IOmcu cuts the transaction after the frame on the wire, keeps the port with the pin released and sets STOPPED. The panel latches the stop and withholds the heartbeat | `Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.`, and no line offers CLEAR. CLEAR and READ ALL are refused with the STOP latched: the IOmcu would refuse the CLEAR as UNSAFE. LEAVE, then ARM and DISARM, then CONNECT |
 | A switch to SAFE at the bench alone | STOPPED, no latch | `Stopped. The pin is released. Tap CLEAR to go on, or LEAVE.` CLEAR goes on with the read |
 | ABORT | The operation ends; the port stays held | READ ALL again, or LEAVE |
 | The link goes silent | The IOmcu's failsafe latches and the port stays held; the panel's module no longer counts it as its own | Once the link is back the overlay says `Port held by another Hitec session.` and offers RELEASE PORT |
@@ -207,7 +405,31 @@ as after any stop: ARM is refused only while the port is held.
 
 ## Current limitations
 
-- Nothing is written: the programmer reads only.
+- Classic writes through the IOmcu are run on one servo, an HS-7955TG
+  (station, 2026-10-25): cell 0x02 and the balance 0x1C, kept over a power
+  cycle. Every other cell, the cells 0x1D to 0x23, which a write sends
+  without a balance, and the data memory command 0x64 are not tested;
+  the programmer sends no 0x64. A write to a servo with a wrong checksum
+  and REPAIR CHECKSUM are not tested on a servo.
+- D series writes are measured on 1 servo, a D485HW, by the HFP-30's
+  captured writes; writes from rcbench to a D series servo are tested in
+  the host model only. Whether a save cut by a power loss leaves the
+  servo's flash whole is not measured. Values written and not saved are
+  lost at the servo's next power-off, and the D series entry of a CONNECT
+  switches the supply off and on.
+- The soft rules compare with the last full read, not with the first read
+  of the session, and no backup file is made: the record of a write holds
+  the values before it.
+- The record is read from the card at the panel's start only. A card put
+  in later is not read for one, and a record made with no card mounted is
+  kept in RAM and is gone after a panel restart. A card that refuses the
+  text that clears a record keeps the record: the next panel start reports
+  that write as interrupted.
+- NEUTRAL, LEFT END and RIGHT END are edited as numbers on the keypad; the
+  servo does not move to them while they are edited, and the keypad has no
+  `-`/`+` keys. FACTORY DEFAULT is not offered.
+- Station steps S6 to S8 and S10 to S11 (writes to a D485HW and a classic
+  servo, a link cut during a write) are not run.
 - The D series POWER of the entry with an off time of 0ms switches the PD
   mini's output off and on again: the servo restarts at every CONNECT.
 - A classic read takes 2 render frames a cell; at 33ms a frame 100 cells

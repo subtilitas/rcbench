@@ -362,6 +362,32 @@ extern atomic_bool s_kst_file_ok;
 void kst_record_write(void);
 void kst_record_load(bool late);
 
+/* The Hitec programmer's record, HITEC.TXT (hitec_record.c): filled by
+ * the render loop, written by the logger, read at the start. */
+/** @brief The record's text, as hitec_card_text() writes it. */
+extern char        s_hitec_file[HITEC_CARD_TEXT_MAX];
+/** @brief The bytes of s_hitec_file to write; 0 removes the record. */
+extern size_t      s_hitec_file_len;
+/** @brief The mount the text is written to (storage_mount_count()). */
+extern unsigned    s_hitec_file_mount;
+/** @brief Texts the render loop handed over; one ahead of
+ *         s_hitec_file_done while one waits. */
+extern atomic_uint s_hitec_file_sent;
+/** @brief Texts the logger has written or given up on. */
+extern atomic_uint s_hitec_file_done;
+/** @brief Whether the card took the last text whole. */
+extern atomic_bool s_hitec_file_ok;
+/**
+ * @brief Write the text the render loop handed over, on the logger task:
+ *        HITEC.NEW, then its name HITEC.TXT.  Nothing when none waits.
+ */
+void hitec_record_write(void);
+/**
+ * @brief Read the record from the card into the Hitec programmer, once,
+ *        at the start before the tasks run.
+ */
+void hitec_record_load(void);
+
 /* A servo file request: taken from the model by the render loop, run on
  * the card by the logger. */
 extern kst_prog_card_req_t  s_kst_card_req;
