@@ -508,10 +508,19 @@ static void go(hitec_prog_t *p)
     hitec_ses_t r;
 
     p->st = ST_IDLE;
-    /* The port, the bench and the stop as they are now: the card took its
-     * time. */
+    /* The gate again, as it is now: the card took its time, and the port,
+     * the bench, the stop, the entry or the switch may have changed. */
     m = hpg_held_idle(p, true);
+    if (m == HITEC_PROG_MSG_NONE && !hitec_prog_in_mode(p)) {
+        m = HITEC_PROG_MSG_NOT_IN_MODE;
+    }
+    if (m == HITEC_PROG_MSG_NONE && !p->write_on) {
+        m = HITEC_PROG_MSG_WRITE_OFF;
+    }
     if (m != HITEC_PROG_MSG_NONE) {
+        /* Nothing went to the servo: the record of this write goes, as
+         * KST's journal of a write that did not start; a RESTORE keeps the
+         * record it restores from. */
         if (p->wr_kind != (uint8_t)HITEC_PROG_WR_RESTORE) {
             rec_clear(p);
         }

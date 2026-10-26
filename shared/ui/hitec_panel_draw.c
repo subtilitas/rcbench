@@ -216,6 +216,7 @@ static int rows_foot(void)
 static void plan(plan_t *p)
 {
     int msg_rows = 0;
+    int n;
     int y;
 
     memset(p, 0, sizeof(*p));
@@ -224,11 +225,17 @@ static void plan(plan_t *p)
     } else {
         value_notes(p);
     }
-    p->lines = hitec_panel_message_lines(hitec_prog_message(&hp.prog), s_msg);
-    /* A message that says what a note says is said once. */
-    for (int i = 0; p->lines > 0 && i < p->count; ++i) {
-        if (strcmp(s_msg[0], p->n[i].s) == 0) {
-            p->lines = 0;
+    n = hitec_panel_message_lines(hitec_prog_message(&hp.prog), s_msg);
+    /* A message line that says what a note says is said once; the
+     * message's other lines stay, in their order. */
+    for (int i = 0; i < n; ++i) {
+        bool said = false;
+
+        for (int j = 0; j < p->count; ++j) {
+            said = said || strcmp(s_msg[i], p->n[j].s) == 0;
+        }
+        if (!said) {
+            memmove(s_msg[p->lines++], s_msg[i], sizeof(s_msg[0]));
         }
     }
     for (int i = 0; i < p->lines; ++i) {

@@ -93,6 +93,26 @@ static bool note_has(const char *s)
     return false;
 }
 
+/* How many notes and message lines of the tab shown are @p s. */
+static int lines_saying(const char *s)
+{
+    int n = 0;
+
+    for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+        n += strcmp(hitec_panel_note(i), s) == 0;
+    }
+    return n;
+}
+
+/* Line @p id with the rig's GPIO in it. */
+static const char *with_pin(ui_text_id_t id)
+{
+    static char t[HITEC_PANEL_LINE];
+
+    snprintf(t, sizeof(t), ui_tr(id), (unsigned)PIN);
+    return t;
+}
+
 /* SOFT START of a D485HW to 60% by its list. */
 static void soft_start_60(void)
 {
@@ -468,6 +488,10 @@ TEST_CASE(the_notes_name_a_read_owed_another_servo_and_a_mix)
     g_drv.dreg[0x4E] = 4u;
     read_all();
     CHECK(note_has(TR(KP_M_JOURNAL_OTHER)));
+    /* Review round 2 on #613: the note says the message's first line;
+     * the message's GPIO line stays. */
+    CHECK_EQ(lines_saying(TR(KP_M_JOURNAL_OTHER)), 1);
+    CHECK(note_has(with_pin(TX_KP_M_JOURNAL_OTHER_2_PIN)));
     CHECK_EQ(hitec_prog_forget(model()), HITEC_PROG_MSG_FORGOTTEN);
     g_drv.dreg[0x4E] = dead_band;
     read_all();
@@ -479,6 +503,8 @@ TEST_CASE(the_notes_name_a_read_owed_another_servo_and_a_mix)
     g_drv.dreg[0x54] = 10u;
     read_all();
     CHECK(note_has(TR(KP_M_INCONSISTENT)));
+    CHECK_EQ(lines_saying(TR(KP_M_INCONSISTENT)), 1);
+    CHECK(note_has(TR(HP_REC_MIX_2)));
     /* With an edit standing: WRITE waits for the record, RESTORE for the
      * edit. */
     CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
@@ -680,6 +706,33 @@ TEST_CASE(every_write_message_names_its_step_and_its_servo)
     }
 }
 
+TEST_CASE(a_record_loaded_at_the_start_keeps_its_gpio_line)
+{
+    hitec_card_record_t r;
+    uint8_t addrs[HITEC_C_BLOCK_LEN];
+    char text[HITEC_CARD_TEXT_MAX];
+    size_t len;
+
+    open_en();
+    CHECK_EQ(hitec_card_addrs(HITEC_D, addrs), 21u);
+    memset(&r, 0, sizeof(r));
+    r.series = HITEC_D;
+    r.port = CH;
+    r.pin = PIN;
+    hitec_image_init(&r.before, HITEC_D);
+    hitec_image_init(&r.target, HITEC_D);
+    for (unsigned i = 0; i < 21u; ++i) {
+        (void)hitec_image_put_reg(&r.before, addrs[i], 1u);
+        (void)hitec_image_put_reg(&r.target, addrs[i], 2u);
+    }
+    len = hitec_card_text(&r, text, sizeof(text));
+    CHECK(hitec_panel_file_load(text, len));
+    show();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_RECORD);
+    CHECK_EQ(lines_saying(TR(KP_M_JOURNAL)), 1);
+    CHECK(note_has(with_pin(TX_KP_M_JOURNAL_2_PIN)));
+}
+
 int main(void)
 {
     RUN(a_value_edited_by_its_list_is_marked_and_counted);
@@ -698,6 +751,7 @@ int main(void)
     RUN(each_keypad_opens_on_its_value_or_its_range);
     RUN(a_value_row_under_the_finger_is_drawn_pressed);
     RUN(every_write_message_names_its_step_and_its_servo);
+    RUN(a_record_loaded_at_the_start_keeps_its_gpio_line);
     free(fb);
     return test_summary("hitec_panel_write");
 }

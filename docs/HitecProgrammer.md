@@ -271,7 +271,12 @@ takes 2.5s and a classic one 1.2s at a frame of 16ms and 2.5s at one of
 
 The write is refused on an ARMED bench or one asked to arm, with a STOP
 latched, on a stopped port, with no servo read, with the switch off, with
-no change, and while a record of an earlier write stands.
+no change, and while a record of an earlier write stands. The port, the
+bench, the STOP, the entry and the switch are checked again when the card
+has taken the record: a switch turned off, a STOP or a finger on ARM in the
+meantime ends the write before a step goes out, with the refusal's message,
+and clears its record, on the card too. The switch does not go on again
+while the write waits for the card.
 
 ![The write page](img/servo-hitec-write.png)
 ![A write under way](img/servo-hitec-writing.png)

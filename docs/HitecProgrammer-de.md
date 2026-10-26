@@ -294,7 +294,12 @@ Frame und 2,5s bei 33ms. Am Prüfstand sind diese Zeiten nicht gemessen.
 Das Schreiben wird abgelehnt bei ARMED oder einem angeforderten Schalten
 auf ARMED, mit gesetztem STOP, an einem gestoppten Port, ohne gelesenes
 Servo, mit ausgeschaltetem Schalter, ohne Änderung und solange ein Vermerk
-eines früheren Schreibens besteht.
+eines früheren Schreibens besteht. Port, Prüfstand, STOP, Einstieg und
+Schalter werden erneut geprüft, wenn die Karte den Vermerk angenommen hat:
+ein inzwischen ausgeschalteter Schalter, ein STOP oder ein Finger auf ARM
+beendet das Schreiben, bevor ein Schritt hinausgeht, mit der Meldung der
+Ablehnung, und löscht seinen Vermerk, auch auf der Karte. Solange das
+Schreiben auf die Karte wartet, geht der Schalter nicht wieder ein.
 
 ![Die Schreibseite](img/de/servo-hitec-write.png)
 ![Ein laufendes Schreiben](img/de/servo-hitec-writing.png)

@@ -25,7 +25,9 @@
  *    the record loaded;
  *  - the card's answer to a text of before the write that waits (an
  *    aborted write's record, a record's clear, a refusal, no answer within
- *    3000ms) releases and ends nothing.
+ *    3000ms) releases and ends nothing;
+ *  - the gate taken again at the card's answer: the switch off, a STOP or
+ *    ARM pressed while the record goes to the card writes nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -750,8 +752,7 @@ TEST_CASE(a_write_the_session_refuses_after_the_card_sends_nothing)
     g_card_slow = false;
     frame();
     CHECK_EQ(pstate(), HITEC_PROG_HELD);
-    CHECK_EQ(msg(), HITEC_PROG_MSG_UNKNOWN);
-    CHECK_EQ(hitec_prog_message(model())->arg, HITEC_SES_ERR_NOT_IN_MODE);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_NOT_IN_MODE);
     CHECK(!hitec_prog_record(model()));
     CHECK_EQ(g_drv.dreg[0x54], 10u);
 }
@@ -948,6 +949,83 @@ TEST_CASE(an_older_text_never_answered_ends_the_write_at_3000ms)
     CHECK_EQ(g_drv.d_writes, 0u);
 }
 
+/* Review round 2 on #613: the card's answer started the write with the
+ * switch off.  The gate is taken again when the card has the record. */
+
+/* A D485HW read with the switch on and a card that answers by hand; a
+ * write of SPEED 50% waits for its record, which the card has taken. */
+static void write_waits_for_the_card(void)
+{
+    hitec_card_record_t r;
+
+    d_ready();
+    g_card = true;
+    prun(20u);
+    g_card_slow = true;
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    CHECK(card_take(&r) > 0u);
+}
+
+/* The write ended at the card's answer with @p m: no servo exchange, the
+ * record cleared, on the card too. */
+static void ended_unsent(unsigned m)
+{
+    hitec_card_record_t r;
+
+    hitec_prog_file_done(model(), true);
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+    CHECK_EQ(msg(), m);
+    prun(100u);
+    CHECK_EQ(g_drv.d_writes, 0u);
+    CHECK_EQ(g_drv.d_saves, 0u);
+    CHECK_EQ(g_drv.d_reboots, 0u);
+    CHECK(!hitec_prog_record(model()));
+    CHECK_EQ(card_take(&r), (size_t)27u);   /* the text with no record */
+    hitec_prog_file_done(model(), true);
+}
+
+TEST_CASE(the_switch_off_while_the_card_takes_the_record_writes_nothing)
+{
+    write_waits_for_the_card();
+    CHECK_EQ(hitec_prog_write_enable(model(), false), HITEC_PROG_MSG_NONE);
+    ended_unsent(HITEC_PROG_MSG_WRITE_OFF);
+    /* The edit stands for the next try. */
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+}
+
+TEST_CASE(a_stop_while_the_card_takes_the_record_writes_nothing)
+{
+    write_waits_for_the_card();
+    press_stop();
+    prun(100u);
+    CHECK(!hitec_prog_write_on(model()));
+    ended_unsent(HITEC_PROG_MSG_STOP_LATCHED);
+}
+
+TEST_CASE(arm_pressed_while_the_card_takes_the_record_writes_nothing)
+{
+    write_waits_for_the_card();
+    hitec_prog_bench_armed(model(), true);   /* the finger on ARM */
+    ended_unsent(HITEC_PROG_MSG_NEED_DISARM);
+    hitec_prog_bench_armed(model(), false);
+}
+
+TEST_CASE(the_switch_stays_off_until_the_answer_ends_the_write)
+{
+    write_waits_for_the_card();
+    CHECK_EQ(hitec_prog_write_enable(model(), false), HITEC_PROG_MSG_NONE);
+    /* On again while the write waits: refused as busy, as KST refuses
+     * its switch while a write waits for the card. */
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_BUSY);
+    CHECK(!hitec_prog_write_on(model()));
+    hitec_prog_file_done(model(), true);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITE_OFF);
+    CHECK_EQ(g_drv.d_writes, 0u);
+}
+
 int main(void)
 {
     RUN(a_d_write_writes_saves_reboots_reads_back_and_clears_the_record);
@@ -985,5 +1063,9 @@ int main(void)
     RUN(a_refusal_of_an_older_text_ends_no_later_write);
     RUN(the_answer_to_a_record_clear_releases_no_later_write);
     RUN(an_older_text_never_answered_ends_the_write_at_3000ms);
+    RUN(the_switch_off_while_the_card_takes_the_record_writes_nothing);
+    RUN(a_stop_while_the_card_takes_the_record_writes_nothing);
+    RUN(arm_pressed_while_the_card_takes_the_record_writes_nothing);
+    RUN(the_switch_stays_off_until_the_answer_ends_the_write);
     return test_summary("hitec_prog_write");
 }
