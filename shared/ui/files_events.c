@@ -203,8 +203,11 @@ static void panes_up(const touch_event_t *e)
     const int hit = s.press;
     s.press = FS_HIT_NONE;
     if (hit >= 0 && hit < FOOT_N) {
-        if (tap_on(e, FS_FOOT(hit))) {
-            fs_foot((fs_foot_t)hit);  /* a button's number is its place */
+        /* A button's number is its place in the footer. */
+        for (fs_foot_t b = FS_RESCAN; b <= FS_OPEN; ++b) {
+            if (hit == (int)b && tap_on(e, FS_FOOT(hit))) {
+                fs_foot(b);
+            }
         }
     } else if (hit == FS_HIT_UP || hit == FS_HIT_UP + 1) {
         const int i = hit - FS_HIT_UP;
