@@ -4,7 +4,12 @@
  * the page, each outcome kind and result, each answer of the link's task
  * that is not OK, a request without an outcome past HITEC_PROG_RUN_MS, an
  * ABORT before the command is taken, the command ids across 2^32 and the
- * operations refused in each state.  On the loopback of hitec_prog_rig.h:
+ * operations refused in each state; a step its decoder refuses, an ABORT
+ * of a step not handed out and of an OPEN on its way, a RELEASE the page
+ * refuses, a link back after a loss, READ ALL on a stopped port and a
+ * CLEAR given up; a command unanswered for 2s with no gate and with its
+ * pass claimed, the last port and pin and one past them, an ABORT with
+ * nothing out.  On the loopback of hitec_prog_rig.h:
  * the session's failures (no D series servo, no classic servo, a wrong
  * entry, a read with a wrong sum on every try), an OPEN cut by a stop, a CLEAR refused UNSAFE and
  * a CLEAR that enters again after the supply went off, the port closed or
@@ -315,6 +320,239 @@ TEST_CASE(operations_are_refused_in_states_that_do_not_take_them)
     CHECK(hitec_prog_model(&m) == NULL);
 }
 
+/* The page holds port 1 for this model. */
+static void page_holds(bool stopped)
+{
+    f.rd.held = true;
+    f.rd.ours = true;
+    f.rd.port_no = 0u;
+    f.rd.stopped = stopped;
+    if (stopped) {
+        f.rd.flags |= LINK_HT_F_STOPPED;
+    }
+}
+
+/* CONNECT, its OPEN run: held, the entry's first step not handed out. */
+static void entering(void)
+{
+    const hitec_prog_cmd_t c = opening();
+    hitec_link_outcome_t o;
+
+    memset(&o, 0, sizeof(o));
+    o.kind = HITEC_LINK_OUT_DONE;
+    o.result = LINK_HITEC_RESULT_DONE;
+    page_holds(false);
+    outcome_of(&c, o);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_ENTERING);
+}
+
+/* CONNECT, its OPEN cut by a stop at the bench: held and stopped. */
+static void held_stopped(void)
+{
+    const hitec_prog_cmd_t c = opening();
+    hitec_link_outcome_t o;
+
+    memset(&o, 0, sizeof(o));
+    o.kind = HITEC_LINK_OUT_DONE;
+    o.result = LINK_HITEC_RESULT_CUT;
+    page_holds(true);
+    outcome_of(&c, o);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_HELD);
+}
+
+/* The next step the session hands out, the clock run on until it does. */
+static hitec_prog_cmd_t next_step(void)
+{
+    hitec_prog_cmd_t c;
+
+    memset(&c, 0, sizeof(c));
+    for (unsigned i = 0; i < 400u && !hitec_prog_take(&m, &c); ++i) {
+        f.now_ms += 10u;
+        hitec_prog_feed(&m, &f);
+    }
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_STEP);
+    return c;
+}
+
+TEST_CASE(a_step_the_decoder_refuses_ends_the_entry_unknown)
+{
+    hitec_prog_cmd_t s;
+    hitec_link_outcome_t o;
+
+    entering();
+    /* The POWER step runs. */
+    s = next_step();
+    answer(&s, HITEC_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = HITEC_LINK_OUT_DONE;
+    o.result = LINK_HITEC_RESULT_DONE;
+    o.ses.run = (uint8_t)HITEC_SES_RAN;
+    outcome_of(&s, o);
+    /* The model register's read: its decoder refuses the step. */
+    s = next_step();
+    answer(&s, HITEC_LINK_START_OK);
+    o.ses.rx = (uint8_t)HITEC_RX_ERR_ARG;
+    outcome_of(&s, o);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_UNKNOWN);
+    CHECK_EQ(hitec_prog_message(&m)->arg, (unsigned)HITEC_SES_ERR_STEP);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_HELD);
+    CHECK(!hitec_prog_in_mode(&m));
+}
+
+TEST_CASE(an_abort_ends_a_step_not_handed_out_and_an_open_on_its_way)
+{
+    hitec_prog_cmd_t c;
+
+    /* The entry's first step is ready, not taken: nothing of it ran. */
+    entering();
+    hitec_prog_abort(&m);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_ABORTED);
+    f.now_ms += 10u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_HELD);
+    CHECK(!hitec_prog_in_mode(&m));
+    CHECK(!hitec_prog_take(&m, &c));
+    /* OPEN taken and answered, its outcome awaited: ABORT goes out. */
+    (void)opening();
+    hitec_prog_abort(&m);
+    c = taken();
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_ABORT);
+}
+
+TEST_CASE(a_release_the_page_refuses_says_why_and_keeps_the_port_held)
+{
+    hitec_prog_cmd_t c;
+    hitec_link_outcome_t o;
+
+    hand();
+    f.rd.held = true;
+    f.rd.ours = false;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_OTHER);
+    CHECK_EQ(hitec_prog_release(&m), HITEC_PROG_MSG_NONE);
+    c = taken();
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_CLOSE);
+    answer(&c, HITEC_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = HITEC_LINK_OUT_NACK;
+    o.nack = 3u;
+    outcome_of(&c, o);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_NACK);
+    CHECK_EQ(hitec_prog_message(&m)->arg, 3u);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_OTHER);
+}
+
+TEST_CASE(a_link_back_after_a_loss_says_the_session_ended)
+{
+    held_stopped();
+    f.rd.phase = HITEC_LINK_DOWN;
+    f.now_ms += 10u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_DOWN);
+    CHECK(!hitec_prog_holds_port(&m));
+    /* Back, and the IOmcu gave the port back to the tester. */
+    f.rd.phase = HITEC_LINK_READY;
+    f.rd.held = false;
+    f.rd.ours = false;
+    f.now_ms += 10u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_SESSION_ENDED);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_PWM);
+}
+
+TEST_CASE(read_all_on_a_stopped_port_is_refused_and_clear_given_up_stays)
+{
+    hitec_prog_cmd_t c;
+
+    held_stopped();
+    CHECK_EQ(hitec_prog_read(&m), HITEC_PROG_MSG_STOPPED);
+    /* CLEAR out, its outcome never comes: given up, its ABORT pending, the
+     * port still held and stopped. */
+    CHECK_EQ(hitec_prog_clear(&m), HITEC_PROG_MSG_NONE);
+    c = taken();
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_CLEAR);
+    answer(&c, HITEC_LINK_START_OK);
+    f.now_ms += HITEC_PROG_RUN_MS;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_TIMEOUT);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_HELD);
+    c = taken();
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_ABORT);
+    CHECK_EQ(hitec_prog_read(&m), HITEC_PROG_MSG_STOPPED);
+}
+
+TEST_CASE(a_command_unanswered_past_its_limit_is_given_up_or_kept)
+{
+    hitec_prog_gate_t gate;
+    hitec_prog_cmd_t c;
+    hitec_link_outcome_t o;
+
+    /* No gate: an OPEN taken and not answered in 2s may have run, so an
+     * ABORT follows it. */
+    hand();
+    CHECK_EQ(hitec_prog_connect(&m), HITEC_PROG_MSG_NONE);
+    c = taken();
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_OPEN);
+    f.now_ms += HITEC_PROG_START_MS - 1u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_OPENING);
+    f.now_ms += 1u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_TIMEOUT);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_PWM);
+    c = taken();
+    CHECK_EQ(c.kind, HITEC_PROG_CMD_ABORT);
+    /* A pass the link's task claimed: the command runs, and its answer and
+     * outcome are taken after the 2s. */
+    hand();
+    hitec_prog_gate_init(&gate);
+    hitec_prog_gate_set(&m, &gate);
+    CHECK_EQ(hitec_prog_connect(&m), HITEC_PROG_MSG_NONE);
+    c = taken();
+    CHECK(hitec_prog_gate_claim(&gate, c.id));
+    f.now_ms += HITEC_PROG_START_MS + 100u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_OPENING);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_NONE);
+    answer(&c, HITEC_LINK_START_OK);
+    memset(&o, 0, sizeof(o));
+    o.kind = HITEC_LINK_OUT_DONE;
+    o.result = LINK_HITEC_RESULT_DONE;
+    page_holds(false);
+    outcome_of(&c, o);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_ENTERING);
+}
+
+TEST_CASE(connect_takes_the_last_port_and_pin_and_refuses_one_past)
+{
+    hitec_prog_cmd_t c;
+
+    hand();
+    f.target = (uint8_t)(LINK_PG_PORTS_MAX + 1u);
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_connect(&m), HITEC_PROG_MSG_NEED_TARGET);
+    f.target = 1u;
+    f.port_pin[0] = (uint8_t)(HITEC_PROG_PIN_LAST + 1u);
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_connect(&m), HITEC_PROG_MSG_NO_PIN);
+    CHECK(!hitec_prog_take(&m, &c));
+    f.port_pin[0] = (uint8_t)HITEC_PROG_PIN_LAST;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_connect(&m), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_pin(&m), HITEC_PROG_PIN_LAST);
+}
+
+TEST_CASE(an_abort_with_nothing_out_does_nothing)
+{
+    hitec_prog_cmd_t c;
+
+    hand();
+    hitec_prog_abort(&m);
+    CHECK(!hitec_prog_take(&m, &c));
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_PWM);
+}
+
 /* ---------------------------------------------------- on the loopback */
 
 TEST_CASE(a_d_series_line_with_no_servo_says_so)
@@ -427,6 +665,14 @@ int main(void)
     RUN(an_abort_before_the_command_is_taken_sends_nothing);
     RUN(command_ids_run_on_across_2_to_the_32);
     RUN(operations_are_refused_in_states_that_do_not_take_them);
+    RUN(a_step_the_decoder_refuses_ends_the_entry_unknown);
+    RUN(an_abort_ends_a_step_not_handed_out_and_an_open_on_its_way);
+    RUN(a_release_the_page_refuses_says_why_and_keeps_the_port_held);
+    RUN(a_link_back_after_a_loss_says_the_session_ended);
+    RUN(read_all_on_a_stopped_port_is_refused_and_clear_given_up_stays);
+    RUN(a_command_unanswered_past_its_limit_is_given_up_or_kept);
+    RUN(connect_takes_the_last_port_and_pin_and_refuses_one_past);
+    RUN(an_abort_with_nothing_out_does_nothing);
     RUN(a_d_series_line_with_no_servo_says_so);
     RUN(a_classic_servo_that_does_not_answer_or_answers_wrong_says_so);
     RUN(a_read_that_fails_on_every_try_names_the_address);

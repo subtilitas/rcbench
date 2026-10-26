@@ -230,7 +230,7 @@ const char *hitec_panel_note(int i);
 /**
  * @brief The rows the notes and the message of the tab shown take, from
  *        the first note's top to the last line's foot.
- * @return the rectangle; empty for none
+ * @return the rectangle; 0 high when nothing is drawn
  */
 gfx_rect_t hitec_panel_notes_drawn(void);
 /**

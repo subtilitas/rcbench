@@ -362,7 +362,9 @@ hitec_prog_state_t hitec_prog_state(const hitec_prog_t *p);
 void hitec_prog_bench_armed(hitec_prog_t *p, bool armed);
 
 /**
- * @brief The series of the next CONNECT; taken in PWM only.
+ * @brief The series of the next CONNECT; taken in PWM only.  A change of
+ *        series drops what the last read found: hitec_prog_servo() and
+ *        hitec_prog_model() return NULL until the next read.
  *
  * @param p      The programmer.
  * @param series hitec_family_t.

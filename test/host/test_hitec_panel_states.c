@@ -7,7 +7,10 @@
  * an editor, without a port and over another session's port; a hold that
  * the finger leaves; values that show raw, a fail-safe position, LIMP and
  * an overload limit; a classic resolution and a classic servo whose name
- * no model has.  The overlay's bench is hitec_panel_rig.h.
+ * no model has; a D series servo whose number no model has, a classic
+ * checksum that does not balance, a voltage above 6.0V, a message the state
+ * line says, the registry's hooks, a D series leave and a note that does
+ * not fit above the message.  The overlay's bench is hitec_panel_rig.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -449,6 +452,177 @@ TEST_CASE(a_classic_resolution_and_an_unknown_name_show_as_read)
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_INFO, 0, 0), "XQ1234"), 0);
 }
 
+TEST_CASE(a_d_series_servo_no_model_has_is_named_by_its_number)
+{
+    bool guess = false;
+    char want[HITEC_PANEL_LINE];
+
+    open_en();
+    servo_d485();
+    g_drv.dreg[2u * HITEC_D_REG_MODEL] = 12345u;
+    tap_connect();
+    CHECK_EQ(hitec_prog_model(model())->number, 12345u);
+    CHECK_EQ(strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1),
+                    "SERVO 12345"),
+             0);
+    snprintf(want, sizeof(want), TR(HP_LAYOUT_GUESS), "D485HW");
+    for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+        guess |= strcmp(hitec_panel_note(i), want) == 0;
+    }
+    CHECK(guess);
+}
+
+TEST_CASE(a_classic_checksum_that_does_not_balance_is_said)
+{
+    bool sum_bad = false;
+
+    open_en();
+    servo_hs5645();
+    g_drv.eeprom[HITEC_C_SUM_LAST] ^= 0x01u;
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    tap_connect();
+    for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+        sum_bad |= strcmp(hitec_panel_note(i), TR(HP_SUM_BAD)) == 0;
+    }
+    CHECK(sum_bad);
+}
+
+TEST_CASE(a_voltage_above_6v_is_said_capped_and_a_classic_name_waits)
+{
+    bool capped = false;
+
+    open_en();
+    settings_set(SET_SERVO_PROG_V, 7.4f);
+    hitec_panel_init(AREA);
+    hitec_panel_open();
+    prun(20u);
+    show();
+    CHECK(hitec_prog_mv_capped(model()));
+    for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+        capped |= strcmp(hitec_panel_note(i), TR(HP_V_CAPPED)) == 0;
+    }
+    CHECK(capped);
+    /* The classic name row before a read. */
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    tap(hitec_panel_tab_rect(HITEC_PANEL_INFO));
+    CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_INFO, 0, 0), "--"), 0);
+}
+
+TEST_CASE(a_message_the_state_line_says_is_said_once)
+{
+    int times = 0;
+
+    open_en();
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    CHECK_EQ(hitec_prog_connect(model()), HITEC_PROG_MSG_HELD_OTHER);
+    show();
+    for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+        times += strcmp(hitec_panel_note(i), TR(HP_HELD_OTHER)) == 0;
+    }
+    CHECK_EQ(times, 1);
+}
+
+TEST_CASE(the_registry_hooks_count_what_a_render_shows)
+{
+    uint32_t rev;
+    uint32_t hold_rev;
+
+    open_en();
+    servo_d485();
+    /* Never a safe spot: programming and an armed bench are exclusive. */
+    CHECK(!hitec_panel_safe_at(cx(AREA), cy(AREA)));
+    /* No event, or the overlay closed: nothing changes. */
+    rev = hitec_panel_revision();
+    hitec_panel_event(NULL);
+    CHECK_EQ(hitec_panel_revision(), rev);
+    hitec_panel_leave();
+    rev = hitec_panel_revision();
+    ev(cx(AREA), cy(AREA), TOUCH_EVENT_DOWN);
+    CHECK_EQ(hitec_panel_revision(), rev);
+    hitec_panel_open();
+    /* A press that moves on its button still acts where it lifts. */
+    rev = hitec_panel_revision();
+    ev(cx(val(HITEC_PANEL_SERVO, 1, 0)), cy(val(HITEC_PANEL_SERVO, 1, 0)),
+       TOUCH_EVENT_DOWN);
+    ev(cx(val(HITEC_PANEL_SERVO, 1, 0)) + 2,
+       cy(val(HITEC_PANEL_SERVO, 1, 0)), TOUCH_EVENT_MOVE);
+    CHECK_EQ(hitec_panel_editor(), 0);
+    ev(cx(val(HITEC_PANEL_SERVO, 1, 0)) + 2,
+       cy(val(HITEC_PANEL_SERVO, 1, 0)), TOUCH_EVENT_UP);
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK(hitec_panel_revision() != rev);
+    tap(hitec_panel_choice_cancel_rect());
+    /* A hold counts on its own revision. */
+    tap_connect();
+    tap(hitec_panel_close_rect());
+    CHECK(hitec_panel_page_line(-1) == NULL);
+    CHECK(hitec_panel_page_line(99) == NULL);
+    hold_rev = hitec_panel_hold_revision();
+    hold(0.5f);
+    CHECK(hitec_panel_hold_revision() != hold_rev);
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+}
+
+TEST_CASE(the_state_line_names_a_d_series_leave)
+{
+    gfx_rect_t r;
+
+    open_en();
+    servo_d485();
+    tap_connect();
+    tap(hitec_panel_close_rect());
+    r = hitec_panel_apply_rect();
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 150 && pstate() == HITEC_PROG_HELD; ++i) {
+        hitec_panel_tick(0.02f);
+        if (pstate() == HITEC_PROG_HELD) {
+            prun(20u);
+        }
+    }
+    ev(cx(r), cy(r), TOUCH_EVENT_UP);
+    show();
+    CHECK_EQ(pstate(), HITEC_PROG_LEAVING);
+    CHECK_EQ(strcmp(line(), TR(HP_ST_LEAVE_D)), 0);
+    until(HITEC_PROG_PWM);
+}
+
+TEST_CASE(a_note_that_does_not_fit_above_the_message_is_not_drawn)
+{
+    /* An area 200px short of the overlay's: the notes meet the message. */
+    const gfx_rect_t shorter = { AREA.x, AREA.y, AREA.w,
+                                 (int16_t)(AREA.h - 200) };
+    int n = 0;
+    bool unsafe = false;
+    gfx_rect_t d;
+
+    open_en();
+    hitec_panel_init(shorter);
+    hitec_panel_open();
+    rig_at(SUPPLY_ON, true);
+    servo_d485();
+    tap_connect();
+    disarm();
+    prun(200u);
+    g_safe = false;
+    (void)hitec_prog_clear(model());
+    until(HITEC_PROG_HELD);
+    show();
+    while (hitec_panel_note(n) != NULL) {
+        unsafe |= strcmp(hitec_panel_note(n), TR(HP_UNSAFE)) == 0;
+        ++n;
+    }
+    /* The message stays; READ ONLY, the last note, gives way. */
+    CHECK(unsafe);
+    for (int i = 0; i < n; ++i) {
+        CHECK(strcmp(hitec_panel_note(i), TR(HP_READ_ONLY)) != 0);
+    }
+    d = hitec_panel_notes_drawn();
+    CHECK(d.y + d.h <= shorter.y + shorter.h);
+}
+
 int main(void)
 {
     RUN(the_state_line_follows_the_link);
@@ -462,6 +636,13 @@ int main(void)
     RUN(a_hold_the_finger_leaves_does_nothing);
     RUN(fail_safe_overload_and_a_raw_value_show_as_read);
     RUN(a_classic_resolution_and_an_unknown_name_show_as_read);
+    RUN(a_d_series_servo_no_model_has_is_named_by_its_number);
+    RUN(a_classic_checksum_that_does_not_balance_is_said);
+    RUN(a_voltage_above_6v_is_said_capped_and_a_classic_name_waits);
+    RUN(a_message_the_state_line_says_is_said_once);
+    RUN(the_registry_hooks_count_what_a_render_shows);
+    RUN(the_state_line_names_a_d_series_leave);
+    RUN(a_note_that_does_not_fit_above_the_message_is_not_drawn);
     free(fb);
     return test_summary("hitec_panel_states");
 }

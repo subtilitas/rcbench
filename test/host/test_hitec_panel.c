@@ -1,7 +1,7 @@
 /*
  * The Hitec programmer's overlay (shared/ui/hitec_panel*.c) on the whole
  * loopback of hitec_prog_rig.h: the SERIES row before CONNECT and kept in
- * the settings; CONNECT, the rows a read fills; the PORT row naming the
+ * the settings, a change of series dropping the other series' read; CONNECT, the rows a read fills; the PORT row naming the
  * port and its GPIO in every state; CLOSE while the port is held opening
  * LEAVE, and a hold of 2s leaving; a port another session holds offering
  * RELEASE PORT; a classic servo with no PD mini refused with its reason;
@@ -58,6 +58,79 @@ TEST_CASE(the_series_row_and_more_take_no_tap_while_the_port_is_held)
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 1, 1));   /* READ ALL */
+}
+
+/**
+ * @brief Checks the value tabs as they stand before a read: each says NOT
+ *        READ and shows its first row with "--".
+ */
+static void tabs_not_read(void)
+{
+    for (int page = HITEC_PANEL_MOTION; page <= HITEC_PANEL_PROTECT; ++page) {
+        bool said_not_read = false;
+        const char *v;
+
+        tap(hitec_panel_tab_rect(page));
+        for (int i = 0; hitec_panel_note(i) != NULL; ++i) {
+            said_not_read |= strcmp(hitec_panel_note(i), TR(HP_NOT_READ)) == 0;
+        }
+        CHECK(said_not_read);
+        v = hitec_panel_value(page, 0, 0);
+        CHECK(hitec_panel_label(page, 0, 0) != NULL);
+        CHECK(v != NULL && strcmp(v, "--") == 0);
+    }
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+}
+
+TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
+{
+    open_en();
+    /* D series read, LEAVE, then CLASSIC: nothing of the D485HW is left. */
+    servo_d485();
+    tap_connect();
+    CHECK(hitec_prog_model(model()) != NULL);
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    show();
+    CHECK(hitec_prog_servo(model()) != NULL);    /* kept on its own series */
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(hitec_prog_series(model()), HITEC_CLASSIC);
+    CHECK(hitec_prog_servo(model()) == NULL);
+    CHECK(hitec_prog_model(model()) == NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_HS5);
+    show();
+    CHECK(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1) == NULL
+          || strcmp(hitec_panel_label(HITEC_PANEL_SERVO, 1, 1), "D485HW")
+                 != 0);
+    tabs_not_read();
+    /* Classic read, LEAVE, then D SERIES: nothing of the HS-5645MG. */
+    servo_hs5645();
+    tap_connect();
+    CHECK(hitec_prog_model(model()) != NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_HS5);
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    show();
+    /* The same series again keeps the read. */
+    CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
+    CHECK(hitec_prog_servo(model()) != NULL);
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(0));
+    CHECK_EQ(hitec_prog_series(model()), HITEC_D);
+    CHECK(hitec_prog_servo(model()) == NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_D);
+    show();
+    tabs_not_read();
+    /* A change refused while the port is held keeps the read. */
+    servo_d485();
+    tap_connect();
+    CHECK(!hitec_prog_series_set(model(), HITEC_CLASSIC));
+    CHECK_EQ(hitec_prog_series(model()), HITEC_D);
+    CHECK(hitec_prog_servo(model()) != NULL);
+    CHECK_EQ(hitec_prog_layout(model()), HITEC_LAYOUT_D);
 }
 
 /* ------------------------------------------------------- connect and read */
@@ -397,6 +470,7 @@ int main(void)
 {
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
+    RUN(a_change_of_series_drops_what_the_other_series_read);
     RUN(connect_reads_the_d485hw_and_the_tabs_show_its_values);
     RUN(before_a_read_the_value_tabs_say_so);
     RUN(a_classic_connect_without_a_pd_mini_is_refused_with_its_reason);

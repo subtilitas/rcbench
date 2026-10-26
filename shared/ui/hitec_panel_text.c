@@ -237,6 +237,7 @@ void hpn_value_text(const hpn_row_t *r, char *out, size_t n, bool *warn)
     const uint8_t layout = hitec_prog_layout(&hp.prog);
     const hitec_param_info_t *info;
     hitec_value_t v;
+    hitec_get_t got;
 
     *warn = false;
     if (r->kind == K_ACT) {
@@ -248,22 +249,18 @@ void hpn_value_text(const hpn_row_t *r, char *out, size_t n, bool *warn)
         return;
     }
     info = hitec_param(layout, r->what);
-    if (img == NULL || info == NULL) {
-        snprintf(out, n, "--");
-        return;
-    }
-    switch (hitec_param_get(img, layout, r->what, &v)) {
-    case HITEC_GET_OK:
-        fmt_value(r->what, info->unit, &v, out, n);
-        break;
-    case HITEC_GET_RAW:
+    got = img != NULL && info != NULL
+              ? hitec_param_get(img, layout, r->what, &v)
+              : HITEC_GET_UNKNOWN;
+    if (got == HITEC_GET_RAW) {
         /* Fits no encoding: the stored value, as it is. */
         *warn = true;
         snprintf(out, n, "RAW %lu", (unsigned long)v.raw);
-        break;
-    default:
+    } else if (got == HITEC_GET_OK) {
+        fmt_value(r->what, info->unit, &v, out, n);
+    } else {
+        /* Not read, or a parameter the layout lacks. */
         snprintf(out, n, "--");
-        break;
     }
 }
 

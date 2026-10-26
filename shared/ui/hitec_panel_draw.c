@@ -256,10 +256,9 @@ const char *hitec_panel_note(int i)
 
 gfx_rect_t hitec_panel_notes_drawn(void)
 {
+    /* Every tab has a note or a message: a value tab with no note is a
+     * classic INFO tab after a read, and a read leaves its message. */
     plan(&s_plan);
-    if (s_plan.count == 0 && s_plan.lines == 0) {
-        return (gfx_rect_t){ 0, 0, 0, 0 };
-    }
     return (gfx_rect_t){ hp.area.x, (int16_t)s_plan.top, hp.area.w,
                          (int16_t)(s_plan.foot - s_plan.top) };
 }

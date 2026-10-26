@@ -206,8 +206,6 @@ static void outcome_say(hitec_prog_t *p, const hitec_link_outcome_t *o)
         case LINK_HITEC_RESULT_NO_LINE:
             (void)say(p, HITEC_PROG_MSG_NO_LINE, 0u);
             break;
-        case LINK_HITEC_RESULT_DONE:
-            break;
         default:
             (void)say(p, HITEC_PROG_MSG_UNKNOWN, o->result);
             break;
@@ -260,7 +258,9 @@ static void session_gone(hitec_prog_t *p)
 }
 
 /**
- * @brief Put a command on its way to the link's task.
+ * @brief Put a command on its way to the link's task.  Every caller has
+ *        moved off ST_IDLE first, and every end of a command's wait goes
+ *        back to it: a model in ST_IDLE has no command out.
  *
  * @param p   The programmer.
  * @param cmd The command; its id is given here.
@@ -331,14 +331,12 @@ static void enter(hitec_prog_t *p)
     const bool classic = p->ses.series == (uint8_t)HITEC_CLASSIC;
     const bool power = !classic && hitec_prog_rail(p);
 
-    if (hitec_session_enter(&p->ses, power,
-                            classic ? (uint16_t)HITEC_SES_OFF_MS : 0u)
-        == HITEC_SES_BUSY) {
-        p->st = ST_SES;
-        p->op = OP_ENTER;
-    } else {
-        (void)say(p, HITEC_PROG_MSG_BUSY, 0u);
-    }
+    /* Its callers hand an idle session, and HITEC_SES_OFF_MS is within
+     * HITEC_SES_OFF_MS_MAX: the session takes the entry. */
+    (void)hitec_session_enter(&p->ses, power,
+                              classic ? (uint16_t)HITEC_SES_OFF_MS : 0u);
+    p->st = ST_SES;
+    p->op = OP_ENTER;
 }
 
 /**
@@ -348,16 +346,11 @@ static void enter(hitec_prog_t *p)
  */
 static void read_all(hitec_prog_t *p)
 {
-    const hitec_ses_t r = hitec_session_read_all(&p->ses);
-
-    if (r == HITEC_SES_BUSY) {
-        p->st = ST_SES;
-        p->op = OP_READ;
-    } else {
-        (void)say(p, r == HITEC_SES_ERR_NOT_IN_MODE
-                         ? HITEC_PROG_MSG_NOT_IN_MODE : HITEC_PROG_MSG_BUSY,
-                  0u);
-    }
+    /* Its callers hand an idle session in programming mode: the session
+     * takes the read. */
+    (void)hitec_session_read_all(&p->ses);
+    p->st = ST_SES;
+    p->op = OP_READ;
 }
 
 /**
@@ -371,12 +364,10 @@ static void read_done(hitec_prog_t *p)
 
     p->servo = *img;
     p->have_servo = true;
-    if (!hitec_identify(img, &p->model)) {
-        memset(&p->model, 0, sizeof(p->model));
-        p->model.layout = p->ses.series == (uint8_t)HITEC_D
-                              ? (uint8_t)HITEC_LAYOUT_D
-                              : (uint8_t)HITEC_LAYOUT_HS5;
-    }
+    /* A full read holds the D series model register and the classic name
+     * cells: hitec_identify() names a model, a known one or its layout's
+     * guess. */
+    (void)hitec_identify(img, &p->model);
     if (p->ses.series == (uint8_t)HITEC_D) {
         (void)say2(p, HITEC_PROG_MSG_READ, p->model.number,
                    hitec_image_reg(img, 0x32u));
@@ -404,9 +395,6 @@ static void ses_say(hitec_prog_t *p, hitec_ses_t r)
         break;
     case HITEC_SES_ERR_READ:
         (void)say(p, HITEC_PROG_MSG_READ_FAIL, p->ses.fail_addr);
-        break;
-    case HITEC_SES_ERR_NOT_IN_MODE:
-        (void)say(p, HITEC_PROG_MSG_NOT_IN_MODE, 0u);
         break;
     case HITEC_SES_ERR_CUT:
         (void)say(p, stop_seen(p) ? HITEC_PROG_MSG_STOPPED
@@ -455,13 +443,11 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
             ses_say(p, r);
         }
         break;
-    case OP_LEAVE:
+    default: /* OP_LEAVE */
         /* Back to PWM whatever the leave came to: a STOPPED port refuses
          * the leave's frame and takes the CLOSE. */
         p->st = ST_CLOSING;
         send_bare(p, HITEC_PROG_CMD_CLOSE, p->port);
-        break;
-    default:
         break;
     }
 }
@@ -558,7 +544,7 @@ static void on_outcome(hitec_prog_t *p, const hitec_link_outcome_t *o)
         }
         p->st = ST_IDLE;
         break;
-    case ST_CLEARING:
+    default: /* ST_CLEARING: an outcome is awaited off ST_IDLE only */
         p->st = ST_IDLE;
         if (!done) {
             outcome_say(p, o);
@@ -569,8 +555,6 @@ static void on_outcome(hitec_prog_t *p, const hitec_link_outcome_t *o)
             (void)say(p, HITEC_PROG_MSG_CLEARED, 0u);
             read_all(p);
         }
-        break;
-    default:
         break;
     }
 }
@@ -788,6 +772,10 @@ bool hitec_prog_series_set(hitec_prog_t *p, uint8_t series)
             && s != HITEC_PROG_OTHER)) {
         return false;
     }
+    if (series != p->series) {
+        /* What was read belongs to the other series' layout. */
+        p->have_servo = false;
+    }
     p->series = series;
     (void)hitec_session_init(&p->ses, series, HITEC_SES_CLOCK_MS);
     return true;
@@ -863,11 +851,9 @@ static hitec_prog_msg_id_t held_idle(const hitec_prog_t *p, bool safe)
     case HITEC_PROG_PWM:
         return HITEC_PROG_MSG_NOT_IN_MODE;
     case HITEC_PROG_HELD:
+        /* Held and idle: no command of this model is out. */
         break;
     default:
-        return HITEC_PROG_MSG_BUSY;
-    }
-    if (p->wait != W_NONE || p->cmd_ready) {
         return HITEC_PROG_MSG_BUSY;
     }
     if (safe && p->f.stopped) {
@@ -902,11 +888,9 @@ static hitec_prog_msg_id_t from_pwm(const hitec_prog_t *p)
     case HITEC_PROG_OTHER:
         return HITEC_PROG_MSG_HELD_OTHER;
     case HITEC_PROG_PWM:
+        /* Idle: no command of this model is out. */
         break;
     default:
-        return HITEC_PROG_MSG_BUSY;
-    }
-    if (p->wait != W_NONE || p->cmd_ready) {
         return HITEC_PROG_MSG_BUSY;
     }
     if (p->f.stopped) {
@@ -976,8 +960,7 @@ hitec_prog_msg_id_t hitec_prog_read(hitec_prog_t *p)
                                                         : 0u);
     }
     read_all(p);
-    return p->st == ST_SES ? HITEC_PROG_MSG_NONE
-                           : (hitec_prog_msg_id_t)p->msg.id;
+    return HITEC_PROG_MSG_NONE;
 }
 
 hitec_prog_msg_id_t hitec_prog_leave(hitec_prog_t *p)
@@ -988,14 +971,11 @@ hitec_prog_msg_id_t hitec_prog_leave(hitec_prog_t *p)
         return say(p, m, m == HITEC_PROG_MSG_HELD_OTHER ? p->f.rd.port_no
                                                         : 0u);
     }
-    if (hitec_session_leave(&p->ses) == HITEC_SES_BUSY) {
-        p->st = ST_SES;
-        p->op = OP_LEAVE;
-        pump(p);
-    } else {
-        p->st = ST_CLOSING;
-        send_bare(p, HITEC_PROG_CMD_CLOSE, p->port);
-    }
+    /* Held and idle: the session is idle and takes the leave. */
+    (void)hitec_session_leave(&p->ses);
+    p->st = ST_SES;
+    p->op = OP_LEAVE;
+    pump(p);
     return HITEC_PROG_MSG_NONE;
 }
 
