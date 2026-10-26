@@ -444,6 +444,9 @@ typedef struct {
     hitec_card_record_t rec_r; /**< the record                            */
     bool     file_wanted;     /**< the record's text is due on the card   */
     bool     file_busy;       /**< and out                                */
+    /** @brief The text out holds the record of the write that waits for
+     *         it: a text taken before that write began is not its record. */
+    bool     file_rec;
     uint32_t file_ms;         /**< when a write began to wait for it      */
 } hitec_prog_t;
 
@@ -1006,6 +1009,12 @@ size_t hitec_prog_file_take(hitec_prog_t *p, char *out, size_t n);
 
 /**
  * @brief How the card took the text hitec_prog_file_take() gave.
+ *
+ * Only the answer to the text that holds the record of the write waiting
+ * in HITEC_PROG_RECORDING releases that write, or ends it when the card
+ * refused the text.  The answer to a text taken before that write began,
+ * the record of an aborted or timed-out write or the text that clears a
+ * record, only frees the card for the next text.
  *
  * @param p  The programmer.
  * @param ok true when the card holds it whole.

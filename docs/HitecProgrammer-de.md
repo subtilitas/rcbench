@@ -272,7 +272,11 @@ startet es.
    Schreiben wartet darauf: eine Karte, die ihn nicht innerhalb von 3000ms
    annimmt, beendet das Schreiben mit `Datei nicht auf Karte gespeichert.
    Keine Werte ins Servo geschrieben.` Ohne Karte bleibt der Vermerk im
-   Arbeitsspeicher.
+   Arbeitsspeicher. Ein Text, der von vor dem Schreiben noch auf der Karte
+   unterwegs ist, der Vermerk eines abgebrochenen Schreibens oder der
+   Text, der einen Vermerk löscht, gibt nichts frei: das Schreiben geht
+   los, sobald die Karte seinen eigenen Vermerk angenommen hat, und die
+   3000ms zählen ab dem Start des Schreibens.
 2. Der Plan von `hitec_plan()`: nur die Einstellungen, die sich ändern.
    D-Serie: die Register der Einstellung, wie das HFP-30 sie schreibt, im
    Abstand von 20ms, dann das Speichern, 100ms, der Neustart und 1000ms.
@@ -448,7 +452,9 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
 - Der Vermerk wird nur beim Start des Panels von der Karte gelesen. Eine
   später eingelegte Karte wird nicht nach einem gelesen, und ein Vermerk
   ohne eingelegte Karte bleibt im Arbeitsspeicher und ist nach einem
-  Neustart des Panels weg.
+  Neustart des Panels weg. Eine Karte, die den Text ablehnt, der einen
+  Vermerk löscht, behält den Vermerk: der nächste Start des Panels meldet
+  dieses Schreiben als unterbrochen.
 - NEUTRAL, ENDE LINKS und ENDE RECHTS werden als Zahlen auf dem Tastenfeld
   geändert; das Servo fährt beim Ändern nicht dorthin, und das Tastenfeld
   hat keine Tasten `-`/`+`. WERKSEINSTELLUNG wird nicht angeboten.

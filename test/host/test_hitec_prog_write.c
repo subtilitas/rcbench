@@ -22,7 +22,10 @@
  *  - the edge paths: no servo or no entry, a raw value's confirmation, a
  *    confirmation after a stop, an arm request or a refused plan while the
  *    card takes the record, an empty RESTORE, ABORT before the first step,
- *    the record loaded.
+ *    the record loaded;
+ *  - the card's answer to a text of before the write that waits (an
+ *    aborted write's record, a record's clear, a refusal, no answer within
+ *    3000ms) releases and ends nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -806,6 +809,145 @@ TEST_CASE(the_record_loaded_from_the_card)
     CHECK_EQ(msg(), HITEC_PROG_MSG_REC_SAME);
 }
 
+/* The card by hand: the text the model hands over, kept in @p r. */
+static size_t card_take(hitec_card_record_t *r)
+{
+    char text[HITEC_CARD_TEXT_MAX];
+    const size_t len = hitec_prog_file_take(model(), text, sizeof(text));
+
+    if (len != 0u) {
+        CHECK(hitec_card_parse(text, len, r) <= HITEC_CARD_NONE);
+    }
+    return len;
+}
+
+/* Review round 1 on #613: the answer to the record of an aborted write
+ * released the next write before the card held that write's record. */
+TEST_CASE(the_answer_to_an_aborted_writes_record_releases_no_later_write)
+{
+    hitec_card_record_t r;
+
+    d_ready();
+    g_card = true;
+    prun(20u);
+    g_card_slow = true;   /* the rig's card half takes nothing */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK(card_take(&r) > 0u);
+    CHECK_EQ(hitec_image_reg(&r.target, 0x60), 1u);
+    hitec_prog_abort(model());
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+    /* Another target, another write: it waits for its own record. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    CHECK(!hitec_prog_file_due(model()));   /* the card is busy */
+    hitec_prog_file_done(model(), true);    /* the first record's answer */
+    prun(50u);
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    CHECK_EQ(g_drv.d_writes, 0u);
+    /* The new record goes next, with both edits. */
+    CHECK(card_take(&r) > 0u);
+    CHECK_EQ(hitec_image_reg(&r.target, 0x60), 6u);
+    CHECK_EQ(hitec_image_reg(&r.target, 0x54), 10u);
+    hitec_prog_file_done(model(), true);
+    CHECK_EQ(pstate(), HITEC_PROG_WRITING);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_drv.dreg[0x60], 6u);
+}
+
+TEST_CASE(a_refusal_of_an_older_text_ends_no_later_write)
+{
+    hitec_card_record_t r;
+
+    d_ready();
+    g_card = true;
+    prun(20u);
+    g_card_slow = true;
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK(card_take(&r) > 0u);
+    hitec_prog_abort(model());
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    hitec_prog_file_done(model(), false);
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    CHECK(hitec_prog_record(model()));
+    /* Its own record refused: the write ends, nothing sent. */
+    CHECK(card_take(&r) > 0u);
+    hitec_prog_file_done(model(), false);
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_RECORD_FAILED);
+    CHECK_EQ(g_drv.d_writes, 0u);
+}
+
+TEST_CASE(the_answer_to_a_record_clear_releases_no_later_write)
+{
+    hitec_card_record_t r;
+
+    d_ready();
+    g_card = true;
+    prun(20u);
+    g_card_slow = true;
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK(card_take(&r) > 0u);
+    hitec_prog_file_done(model(), true);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
+    /* The text that clears the record goes out; the next write starts
+     * before the card answers it. */
+    CHECK_EQ(card_take(&r), (size_t)27u);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    hitec_prog_file_done(model(), true);
+    prun(50u);
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    CHECK_EQ(g_drv.d_writes, 1u);
+    CHECK(card_take(&r) > 0u);
+    CHECK_EQ(hitec_image_reg(&r.target, 0x60), 6u);
+    hitec_prog_file_done(model(), true);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_drv.d_writes, 2u);
+}
+
+TEST_CASE(an_older_text_never_answered_ends_the_write_at_3000ms)
+{
+    hitec_card_record_t r;
+    uint32_t t0;
+
+    d_ready();
+    g_card = true;
+    prun(20u);
+    g_card_slow = true;
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK(card_take(&r) > 0u);
+    hitec_prog_abort(model());
+    t0 = g_ms;
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    while (g_ms - t0 < HITEC_PROG_CARD_MS - g_frame_ms) {
+        pms();
+    }
+    CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_RECORD_FAILED);
+    CHECK_EQ(g_drv.d_writes, 0u);
+    /* The late answer to the old text starts nothing. */
+    hitec_prog_file_done(model(), true);
+    prun(50u);
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+    CHECK_EQ(g_drv.d_writes, 0u);
+}
+
 int main(void)
 {
     RUN(a_d_write_writes_saves_reboots_reads_back_and_clears_the_record);
@@ -839,5 +981,9 @@ int main(void)
     RUN(a_write_the_session_refuses_after_the_card_sends_nothing);
     RUN(abort_before_the_first_step_sends_nothing_and_drops_the_record);
     RUN(the_record_loaded_from_the_card);
+    RUN(the_answer_to_an_aborted_writes_record_releases_no_later_write);
+    RUN(a_refusal_of_an_older_text_ends_no_later_write);
+    RUN(the_answer_to_a_record_clear_releases_no_later_write);
+    RUN(an_older_text_never_answered_ends_the_write_at_3000ms);
     return test_summary("hitec_prog_write");
 }

@@ -252,7 +252,10 @@ what the series does; and where the values before the write are recorded.
    `BENCH/HITEC/CONF/HITEC.TXT` first, and the write waits for it: a card
    that does not take it within 3000ms ends the write with
    `Could not save the file to the card. Nothing was written to the servo.`
-   Without a card the record is kept in RAM.
+   Without a card the record is kept in RAM. A text still out on the card
+   from before the write, the record of an aborted write or the text that
+   clears a record, releases nothing: the write goes once the card has
+   taken its own record, and the 3000ms count from the start of the write.
 2. The plan of `hitec_plan()`: only the settings that change. D series: the
    setting's registers as the HFP-30 writes them, 20ms apart, then the save,
    100ms, the restart and 1000ms. Classic: each cell of a changed setting,
@@ -414,7 +417,9 @@ as after any stop: ARM is refused only while the port is held.
   the values before it.
 - The record is read from the card at the panel's start only. A card put
   in later is not read for one, and a record made with no card mounted is
-  kept in RAM and is gone after a panel restart.
+  kept in RAM and is gone after a panel restart. A card that refuses the
+  text that clears a record keeps the record: the next panel start reports
+  that write as interrupted.
 - NEUTRAL, LEFT END and RIGHT END are edited as numbers on the keypad; the
   servo does not move to them while they are edited, and the keypad has no
   `-`/`+` keys. FACTORY DEFAULT is not offered.

@@ -575,6 +575,9 @@ static hitec_prog_msg_id_t start(hitec_prog_t *p, uint8_t kind,
         if (p->f.card) {
             p->st = ST_RECORD;
             p->file_ms = p->f.now_ms;
+            /* A text the card has not answered yet is of before this
+             * write: its answer releases nothing. */
+            p->file_rec = false;
             return HITEC_PROG_MSG_NONE;
         }
     }
@@ -842,17 +845,23 @@ size_t hitec_prog_file_take(hitec_prog_t *p, char *out, size_t n)
     if (len != 0u) {
         p->file_wanted = false;
         p->file_busy = true;
+        p->file_rec = p->st == ST_RECORD;
     }
     return len;
 }
 
 void hitec_prog_file_done(hitec_prog_t *p, bool ok)
 {
+    const bool mine = p->file_rec;
+
     if (!p->file_busy) {
         return;
     }
     p->file_busy = false;
-    if (p->st != ST_RECORD) {
+    p->file_rec = false;
+    if (p->st != ST_RECORD || !mine) {
+        /* No write waits, or the answer is to a text of before the write
+         * that waits: that write's text is due still and goes next. */
         return;
     }
     if (ok) {
