@@ -787,7 +787,10 @@ static void kpick(const char *name)
     }
 }
 
-/* TYPE set to @p type, V6 or V8, through its list. */
+/**
+ * @brief TYPE set to @p type through its list.
+ * @param type 6 for V6, 8 for V8
+ */
 static void ktype(unsigned type)
 {
     ktap(kst_panel_value_rect(0, 1, 1));            /* TYPE */
@@ -1470,11 +1473,14 @@ static void servo_run_view(bool to_the_end, bool ina)
  *             named
  *   -restore  STOP in the session after the first write, then READ ALL
  *             and RESTORE's list: the servo as the run found it
+ *   -nopd     -ready, and then no PD mini answers: SEARCH+PROG and SERVO
+ *             PULSES chosen and not offered
  */
 static struct {
     servo_sim_t sv;
     uint16_t cmd;
     bool armed, prog, out;
+    bool nopd;                  /* the supply's readings say no PD mini */
     uint16_t win_no;
     uint32_t win_end;
     float sum;
@@ -1528,7 +1534,7 @@ static void limrun_ms(uint32_t ms)
              * screen's run reads the INA3221 alone. */
             supply_state_t st;
             memset(&st, 0, sizeof(st));
-            st.online   = true;
+            st.online   = !s_lr.nopd;
             st.ok       = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
             st.output   = s_lr.out;
             st.set_v    = supply_screen_set_v();
@@ -1538,6 +1544,9 @@ static void limrun_ms(uint32_t ms)
             st.taken_ms = g_rig.ms;
             st.stamped  = true;
             supply_screen_push(&st);
+            if (s_lr.nopd) {
+                servo_screen_supply(&st);
+            }
         }
         if (s_lr.prog) {
             servo_screen_set_drive(
@@ -1623,6 +1632,12 @@ static void limrun_view(const char *view)
         tap(home.x + home.w / 2, home.y + home.h / 2);
     }
     limrun_ms(100u);
+    if (strcmp(v, "-nopd") == 0) {
+        /* The PD mini no longer answers: its readings say so. */
+        s_lr.nopd = true;
+        limrun_ms(300u);
+        return;
+    }
     if (strcmp(v, "-ready") == 0) {
         return;
     }

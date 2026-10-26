@@ -601,10 +601,11 @@ void tone_link_service(void)
     atomic_store(&s_tone_unheld, (unsigned)tone_link_unheld(&s_tone_link));
 }
 
-/*
- * The programmer's commands, every pass and whatever the link does: a
+/**
+ * @brief The programmer's commands, every pass and whatever the link does: a
  * command with no link is answered KST_LINK_START_DOWN, and the model says
- * so.
+ * so.  An ENTER or a REBOOT on an armed bench is answered BUSY and not
+ * sent.
  *
  * And STOP.  Every stop this end latches, pressed or the bench's own, ends
  * an operation: kst_link_abort() drops a command not sent yet, sends no
@@ -729,8 +730,12 @@ __attribute__((noinline)) void prog_link_service(void)
     servo_link_surfaces_publish();
 }
 
-/* What the programmer's model is fed, as it stands.  Under the snapshot's
- * lock. */
+/**
+ * @brief What the programmer's model is fed, as it stands: the PD mini's
+ *        output, its set voltage and its current limit where it is the
+ *        supply, answers and is on.  Under the snapshot's lock.
+ * @param f the feed
+ */
 __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
 {
     kst_link_outcome_t o;

@@ -141,6 +141,8 @@ SCREENS = {
     # session, and SERVO PULSES at KEEP refused: the servo's 900-2100us
     # outside the bench's 1000-2000us.
     "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
+    # The same card with no PD mini answering: nothing is written.
+    "servo-limrun-nopd":    ("servo-limrun-nopd.png",    "servo", "dark"),
     "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
     "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
     "servo-limrun-found":   ("servo-limrun-found.png",   "servo", "dark"),

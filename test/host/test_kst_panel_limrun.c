@@ -176,12 +176,18 @@ static void lr_pd_reading(bool on)
     servo_screen_supply(&st);
 }
 
-/* The SERVO screen on the rig, armed, the INA3221 the rail's meter, the
- * port in PWM with the servo on it, REVERSION as @p reversion; the servo
- * powered by a PD mini whose output is on where @p pd, and then as the
- * bench measured a Chaservo: it enters programming mode from a power-up
- * only, and acts on a written value from the next one (kst_sim.h).
- * Without @p pd the rail is fed from elsewhere. */
+/**
+ * @brief The SERVO screen on the rig, armed, the INA3221 the rail's meter,
+ *        the port in PWM with the servo on it.
+ *
+ * The servo is powered by a PD mini whose output is on where @p pd, and
+ * then behaves as the bench measured a Chaservo: it enters programming mode
+ * from a power-up only, and acts on a written value from the next one
+ * (kst_sim.h).  Without @p pd the rail is fed from elsewhere.
+ *
+ * @param reversion REVERSION as the servo holds it
+ * @param pd a PD mini answers with its output on behind the servo
+ */
 static void lr_setup(bool reversion, bool pd)
 {
     servo_sim_cfg_t sc;
@@ -217,15 +223,22 @@ static void lr_setup(bool reversion, bool pd)
     lr_ms(400u);
 }
 
-/* The rig with the PD mini on behind the servo. */
+/**
+ * @brief The rig with the PD mini on behind the servo.
+ * @param reversion REVERSION as the servo holds it
+ */
 static void lr_fresh(bool reversion)
 {
     lr_setup(reversion, true);
 }
 
-/* The rig with the servo rail fed from elsewhere: no PD mini answers.  The
- * servo's PULSE LOWER and UPPER are 1000.0 and 2000.0us, inside the
- * bench's MIN and MAX: a run that may not set them searches. */
+/**
+ * @brief The rig with the servo rail fed from elsewhere: no PD mini
+ *        answers.  The servo's PULSE LOWER and UPPER are 1000.0 and
+ *        2000.0us, inside the bench's MIN and MAX: a run that may not set
+ *        them searches.
+ * @param reversion REVERSION as the servo holds it
+ */
 static void lr_fresh_ext(bool reversion)
 {
     kst_image_t img;
@@ -408,8 +421,6 @@ TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
     }
     CHECK_EQ(lr.cmd, 1500u);
 }
-
-static void lr_pd_reading(bool on);
 
 /* SEARCH ONLY on a servo that nothing answers on the programming port, a
  * Hitec servo for one: the first CONNECT finds no servo, and the run ends

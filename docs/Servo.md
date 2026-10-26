@@ -106,7 +106,11 @@ Chaservo servo acts on a written value only after that
 ([the power cycle](ServoProgrammer.md#the-power-cycle)). SEARCH + PROGRAM
 and SERVO PULSES at 1000-2000 are then not offered, and the card reads
 `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON` while either is
-chosen. The run reads the servo and searches only. With a PD mini every
+chosen. The run reads the servo and searches only.
+
+![No PD mini: the run writes nothing](img/servo-limrun-nopd.png)
+
+With a PD mini every
 CONNECT of the run switches its output off for 1s and on, and the LEAVE
 after a write does the same, so the check after the write searches the
 servo with the new values in effect.

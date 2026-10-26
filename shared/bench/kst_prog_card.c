@@ -538,8 +538,8 @@ bool kst_prog_gate_revoke(kst_prog_gate_t *g, uint32_t id)
 
 /* --------------------------------------------------------- the limit run */
 
-/* The fields a limit run writes: the two angles, and PULSE LOWER and
- * PULSE UPPER where SERVO PULSES sets them. */
+/** @brief The fields a limit run writes: the two angles, and PULSE LOWER
+ *         and PULSE UPPER where SERVO PULSES sets them. */
 #define RUN_FIELDS (KST_FIELD_BIT(KST_F_LEFT_ANGLE) \
                     | KST_FIELD_BIT(KST_F_RIGHT_ANGLE) \
                     | KST_FIELD_BIT(KST_F_PULSE_LOWER) \

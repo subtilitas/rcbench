@@ -178,7 +178,12 @@ static int message_shown(char text[KST_PANEL_MSG_LINES][KST_PANEL_LINE])
     return n;
 }
 
-/** @brief Writes the programmer's state, with the port, into @p out. */
+/**
+ * @brief Writes the programmer's state, with the port, into @p out: in a
+ *        supply cycle the port's step of it.
+ * @param out the line
+ * @param n the size of @p out, bytes
+ */
 static void state_line(char *out, size_t n)
 {
     const kst_prog_t *p = &k.prog;
@@ -344,6 +349,8 @@ static int notes_standing(note_t *n, int i)
 /**
  * @brief The notes of the page shown, in their order down the page.  Their text
  *        is static: the caller draws it after this returns.
+ * @param n the notes, NOTES_MAX of them
+ * @return the notes written
  */
 static int page_notes(note_t *n)
 {
@@ -753,7 +760,10 @@ gfx_rect_t kst_panel_notes_drawn(void)
 
 /**
  * @brief Writes the value of an action row, from the programmer's state, into
- *        @p out.
+ *        @p out: for TYPE the operator's type, or the guess with its mark.
+ * @param r the row
+ * @param out the value
+ * @param n the size of @p out, bytes
  */
 static void act_value(const row_t *r, char *out, size_t n)
 {
@@ -814,6 +824,8 @@ const char *kst_panel_button(int page, int row, int col)
 /**
  * @brief Draws row @p i of the page shown: its label and its control,
  *        highlighted while pressed.
+ * @param c the canvas
+ * @param i the row's index in kpn_rows
  */
 static void draw_row(gfx_canvas_t *c, int i)
 {

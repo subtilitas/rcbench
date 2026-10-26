@@ -355,7 +355,13 @@ gfx_rect_t kpn_row_rect(const row_t *r)
                          ROW_H };
 }
 
-/* A row's controls: the value, and for a stepped row its keys beside it. */
+/**
+ * @brief A row's controls: the value, and for a stepped row its keys beside
+ *        it.  WRITE n VALUES is WRITE_W wide, a wide row's WIDE_W, any other
+ *        VAL_W.
+ * @param r the row
+ * @return the rectangle, body pixels
+ */
 static gfx_rect_t control_rect(const row_t *r)
 {
     const gfx_rect_t rr = kpn_row_rect(r);

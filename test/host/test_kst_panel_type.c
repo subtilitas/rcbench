@@ -32,7 +32,11 @@ static void read_untyped(void)
     CHECK_EQ(kst_prog_type(M), 0u);
 }
 
-/** @brief The entry of the open list that names file @p name. */
+/**
+ * @brief The entry of the open list that names file @p name.
+ * @param name the file's name
+ * @return the entry, -1 for none
+ */
 static int file_entry(const char *name)
 {
     for (int i = 0; kst_panel_choice_label(i) != NULL; ++i) {
@@ -43,7 +47,10 @@ static int file_entry(const char *name)
     return -1;
 }
 
-/** @brief FILES and a tap on file @p name; nothing settled after it. */
+/**
+ * @brief FILES and a tap on file @p name; nothing settled after it.
+ * @param name the file's name
+ */
 static void tap_file(const char *name)
 {
     files();
@@ -52,8 +59,11 @@ static void tap_file(const char *name)
     tap(kst_panel_choice_rect(file_entry(name)));
 }
 
-/** @brief A file of the bench servo with boost one step lower, of the type
- *         20k_sel suggests. */
+/**
+ * @brief A file of the bench servo with boost one step lower, of the type
+ *        20k_sel suggests.
+ * @param name the file's name
+ */
 static void put_wider(const char *name)
 {
     kst_image_t img = rig_servo();
@@ -194,7 +204,11 @@ TEST_CASE(the_type_row_takes_no_tap_while_a_card_operation_runs)
     CHECK_EQ(kst_prog_type(M), 0u);
 }
 
-/** @brief The line of the message shown that reads @p s. */
+/**
+ * @brief Whether a line of the message shown reads @p s.
+ * @param s the line
+ * @return true when one does
+ */
 static bool message_has(const char *s)
 {
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];

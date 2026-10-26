@@ -157,12 +157,18 @@ const char *lim_prog_why(void)
     return NULL;
 }
 
-/* Why the run writes nothing to the servo, or NULL.  A KST or Chaservo
- * servo takes a written value only from its next power-up
- * (docs/ServoProgrammer.md, "The power cycle"): with a PD mini every
- * session's CONNECT and the LEAVE after a write switch it off and on; on
- * a rail fed from elsewhere nothing does, and the check after the write
- * would search the servo as it was. */
+/**
+ * @brief Why the run writes nothing to the servo.
+ *
+ * A KST or Chaservo servo takes a written value only from its next
+ * power-up (docs/ServoProgrammer.md, "The power cycle"): with a PD mini
+ * every session's CONNECT and the LEAVE after a write switch it off and
+ * on; on a rail fed from elsewhere nothing does, and the check after the
+ * write would search the servo as it was.  Asked before a start only.
+ *
+ * @return SV_LIM_PROG_NO_PD's line on the programming port without a PD
+ *         mini, else NULL
+ */
 const char *lim_write_why(void)
 {
     if (lim_reads() && !servo_limrun_running(&s.lim) && !lim_pd_answers()) {
@@ -171,6 +177,11 @@ const char *lim_write_why(void)
     return NULL;
 }
 
+/**
+ * @brief The configuration a run started now takes: SEARCH+PROG and SERVO
+ *        PULSES only where they are offered.
+ * @param c receives it
+ */
 static void lim_cfg(servo_limrun_cfg_t *c)
 {
     memset(c, 0, sizeof(*c));

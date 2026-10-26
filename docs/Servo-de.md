@@ -115,7 +115,11 @@ KST- oder Chaservo-Servo übernimmt einen geschriebenen Wert erst danach
 SUCHEN + PROGRAMMIEREN und **SERVOPULSE** auf 1000-2000 werden dann nicht
 angeboten, und die Karte zeigt
 `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, solange eines davon
-gewählt ist. Der Lauf liest das Servo und sucht nur. Mit PD mini schaltet
+gewählt ist. Der Lauf liest das Servo und sucht nur.
+
+![Kein PD mini: der Lauf schreibt nichts](img/de/servo-limrun-nopd.png)
+
+Mit PD mini schaltet
 jedes VERBINDEN des Laufs dessen Ausgang 1s aus und wieder ein, und das
 VERLASSEN nach einem Schreiben ebenso; die Prüfung nach dem Schreiben sucht
 das Servo also mit den neuen Werten.

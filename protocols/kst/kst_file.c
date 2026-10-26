@@ -616,7 +616,12 @@ static bool crc_line(const line_t *l, uint32_t *crc)
  *
  * Behind the checksum line only blank lines pass.  The checksum line is
  * the one line taken without its line end: its 17 characters show it
- * whole.
+ * whole.  A format-1 file's type line has to state the type its 20k_sel
+ * gives, and the file states no type; a format-2 file may have none.
+ *
+ * @param c The reading position, behind the header.
+ * @param f The file read so far: its version set; receives the rest.
+ * @return KST_FILE_OK, or the reason the text is refused.
  */
 static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
 {
@@ -939,7 +944,12 @@ static void take_block_values(const edit_t *e, kst_file_t *f)
  *
  * The last line is then taken when it shows its own end, and the text is
  * refused as truncated when it does not or when the line is not read: a text
- * cut inside a line never gives a shortened number.
+ * cut inside a line never gives a shortened number.  In format 2 the type
+ * line alone states the type; a format-1 file states none.
+ *
+ * @param c The reading position, behind the header.
+ * @param f The file read so far: its version set; receives the rest.
+ * @return KST_FILE_OK, or the reason the text is refused.
  */
 static kst_file_err_t read_edited(cur_t *c, kst_file_t *f)
 {

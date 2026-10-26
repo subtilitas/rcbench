@@ -11,8 +11,13 @@
  */
 #include "kst_prog_fix.h"
 
-/* The servo on the PD mini's output, on at @p mv and @p ma for a while:
- * the sync after its power-up is long past. */
+/**
+ * @brief The servo on the PD mini's output, on at @p mv and @p ma for a
+ *        while: the sync after its power-up is long past.
+ * @param t0 the clock at the start, ms
+ * @param mv the output's voltage, mV
+ * @param ma the output's current limit, mA
+ */
 static void on_pd_at(uint32_t t0, uint16_t mv, uint16_t ma)
 {
     fresh_at(t0);
@@ -28,12 +33,17 @@ static void on_pd_at(uint32_t t0, uint16_t mv, uint16_t ma)
     CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
 }
 
+/** @brief on_pd_at() from 0ms at 5000mV and 1000mA. */
 static void on_pd(void)
 {
     on_pd_at(0u, 5000u, 1000u);
 }
 
-/* Frames until the PD mini's output has gone off @p n times; 10s bound. */
+/**
+ * @brief Frames until the PD mini's output has gone off @p n times; 10s
+ *        bound.
+ * @param n the count of switches off
+ */
 static void until_offs(unsigned n)
 {
     for (unsigned i = 0; i < 10000u && g_sup_offs < n; ++i) {
@@ -42,7 +52,7 @@ static void until_offs(unsigned n)
     CHECK_EQ(g_sup_offs, n);
 }
 
-/* CONNECT with the output on, through the cycle to the servo read. */
+/** @brief CONNECT with the output on, through the cycle to the servo read. */
 static void connect_cycled(void)
 {
     CHECK(kst_prog_connect_cycles(&g_p));
@@ -55,7 +65,10 @@ static void connect_cycled(void)
              KST_PROG_MSG_NONE);
 }
 
-/* LEFT ANGLE to @p raw, written and read back. */
+/**
+ * @brief LEFT ANGLE to @p raw, written and read back.
+ * @param raw the raw value
+ */
 static void write_left(uint16_t raw)
 {
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
@@ -66,7 +79,10 @@ static void write_left(uint16_t raw)
     CHECK_EQ(kst_field_get(kst_prog_servo(&g_p), KST_F_LEFT_ANGLE), raw);
 }
 
-/* What the servo acts on in LEFT ANGLE. */
+/**
+ * @brief What the servo acts on in LEFT ANGLE.
+ * @return the raw value
+ */
 static uint16_t acting_left(void)
 {
     kst_image_t img;

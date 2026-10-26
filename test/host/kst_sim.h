@@ -353,9 +353,13 @@ static inline void sim_store(sim_t *sim, unsigned reg, unsigned value)
     sim->reg[reg & KST_REG_MAX] = (uint8_t)value;
 }
 
-/* The servo's supply switched on or off.  Off ends programming mode; on
- * makes the next sync the first after a power-up and the registers the
- * values the servo acts on. */
+/**
+ * @brief The servo's supply switched on or off.  Off ends programming mode;
+ *        on makes the next sync the first after a power-up and the
+ *        registers the values the servo acts on.
+ * @param sim the servo
+ * @param on true for on
+ */
 static inline void sim_power(sim_t *sim, bool on)
 {
     if (on == sim->powered) {
