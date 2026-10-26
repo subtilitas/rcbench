@@ -2821,22 +2821,24 @@ Das Fehlerprotokoll nimmt KOPIEREN und LÖSCHEN nur bei bestehender
 Verbindung zur IOmcu an: Ohne Verbindung schreibt das Panel alle 5s
 hinein.
 
-Die Fußzeile, Körper-y 440 bis 492, trägt ÖFFNEN, KOPIEREN, VERSCHIEBEN,
-UMBENENNEN, LÖSCHEN, NEU und INFO, 118 x 52px, und AKTUALISIEREN,
-140 x 52px, 6px auseinander; sie endet 4px über dem Alarmband. Eine
-Taste, die abgelehnt würde, ist gedimmt; ein Tipp darauf nennt den Grund in
-der Meldungszeile, zwei Zeilen in der Schrift 12 x 24 über der Fußzeile.
+Die Fußzeile, Körper-y 440 bis 492, trägt links AKTUALISIEREN,
+140 x 52px, wie auf [Logs](#logs), dann KOPIEREN, VERSCHIEBEN,
+UMBENENNEN, LÖSCHEN, NEU, INFO und ÖFFNEN, 118 x 52px, ÖFFNEN am rechten
+Rand; die Tasten stehen 6px auseinander, und die Fußzeile endet 4px über
+dem Alarmband. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
+darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
+12 x 24 über der Fußzeile.
 
 | Taste | Was sie tut |
 |---|---|
-| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs) im Tab dieses Ordners, ein Bericht als Text: die Namen, die LOGS listet (`log_select_lists()`), darunter jede Datei, die die Liste als BERICHT kennzeichnet; eine Datei, die LOGS nicht öffnet, eine über 2GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; eine Datei, die seit dem Listen nicht mehr auf der Karte ist, meldet `LIMIT013.TXT ist nicht auf der Karte. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| AKTUALISIEREN | sieht in den Steckplatz und liest jede Spalte an der Seite neu, die sie zeigt; siehe [AKTUALISIEREN](#aktualisieren) |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
 | LÖSCHEN | fragt zuerst. Die CSV-Datei eines Laufs nimmt ihren Bericht mit; ein Ordner wird nur gelöscht, wenn er leer ist |
 | NEU | ORDNER oder TEXTDATEI, dann die Tastatur für den Namen; eine Textdatei wird leer angelegt |
 | INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags |
-| AKTUALISIEREN | sieht in den Steckplatz und liest beide Spalten ab ihrer ersten Seite |
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs) im Tab dieses Ordners, ein Bericht als Text: die Namen, die LOGS listet (`log_select_lists()`), darunter jede Datei, die die Liste als BERICHT kennzeichnet; eine Datei, die LOGS nicht öffnet, eine über 2GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; eine Datei, die seit dem Listen nicht mehr auf der Karte ist, meldet `LIMIT013.TXT ist nicht auf der Karte. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
 
 Ein vorhandener Name wird nie überschrieben: KOPIEREN, VERSCHIEBEN,
 UMBENENNEN und NEU lehnen ihn ab mit `NOTES.TXT gibt es dort schon.` Eine
@@ -2849,6 +2851,40 @@ Log-Ordner kopiert oder umbenannt wurde. KOPIEREN und VERSCHIEBEN
 in den Ordner, in dem der Eintrag liegt, oder eines Ordners in sich selbst
 werden abgelehnt:
 `Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.`
+
+### AKTUALISIEREN
+
+AKTUALISIEREN sieht in den Steckplatz und liest dann den Ordner jeder
+Spalte neu, eine Spalte nach der anderen, an der Seite, die die Spalte
+zeigt: ab dem ersten Eintrag dieser Seite, so wie VORIGE und NÄCHSTE ihre
+Seiten benennen. Jede Spalte behält ihre Stelle:
+
+- der Eintrag in der obersten Zeile der Spalte bleibt oben; ist er nicht
+  mehr auf der Karte, steht der Eintrag oben, der jetzt an seiner Stelle
+  in der Reihenfolge steht;
+- der gewählte Eintrag bleibt gewählt. Ist er nicht mehr auf der Karte,
+  wird der Eintrag an seiner Stelle gewählt, der nächste in der
+  Reihenfolge; die letzte Zeile, wenn er der letzte Eintrag des Ordners
+  war; keiner, wenn die Seite leer ist oder seine Stelle auf der nächsten
+  Seite liegt;
+- fehlt der erste Eintrag der Seite auf der Karte, benennt er trotzdem
+  seine Stelle, und die Seite beginnt beim nächsten Eintrag. Eine Seite,
+  auf der ab dieser Stelle nichts mehr steht, ist die letzte Seite des
+  Ordners;
+- eine Seite mit weniger Zeilen als zuvor zeigt ihre letzten 6 Zeilen,
+  ohne leere Zeile darunter;
+- ein Ordner, der am Computer von der Karte gelöscht wurde, zeigt
+  `Dieser Ordner ist nicht auf der Karte.` ohne Zeilen, und die Taste mit
+  dem Pfad führt aus ihm heraus;
+- ohne Karte zeigen beide Spalten
+  `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`; eine
+  danach eingesetzte Karte ist eine neue Karte, und beide Spalten beginnen
+  wieder im Stammverzeichnis und im Ordner User-Logs.
+
+Neue Einträge stehen an ihrer Stelle in der Reihenfolge. AKTUALISIEREN
+während einer Liste, einer INFO oder eines Auftrags wartet, bis diese
+Anfrage beantwortet ist: Die Karten-Task nimmt eine Anfrage nach der
+anderen.
 
 ### Die Schreibsperre
 

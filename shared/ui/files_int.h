@@ -107,33 +107,45 @@
 
 /**
  * @brief The footer, body y 440 to 492, ending 4px above the router's
- *        alert band (y 496): OPEN, COPY, MOVE, RENAME, DELETE, NEW and INFO
- *        118px wide, RESCAN 140px for its German AKTUALISIEREN, 6px
- *        apart, 52px tall.
+ *        alert band (y 496), in LOGS' order: RESCAN at the left, 140px for
+ *        its German AKTUALISIEREN, then COPY, MOVE, RENAME, DELETE, NEW,
+ *        INFO and OPEN at the right, 118px wide, 6px apart, 52px tall.
+ *
+ * fs_foot_t is the one place that orders them: a button's number is its
+ * place, so the drawing (FS_FOOT()) and the hit test take the same one.
  */
-#define FOOT_H      52
-#define FOOT_Y      (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)  /**< y 440. */
-#define FOOT_W      118         /**< A button's width but RESCAN's. */
-#define FOOT_W_LAST 140         /**< RESCAN's width. */
-#define FOOT_GAP    6           /**< Between two buttons. */
-#define FOOT_PAD    6           /**< Room kept at each side of a label. */
-#define FOOT_N      8           /**< The buttons. */
-/** @brief Footer button @p i: 0 OPEN to 7 RESCAN (fs_foot_t). */
-#define FS_FOOT(i)  gfx_rect_make(FS_L + (i) * (FOOT_W + FOOT_GAP), FOOT_Y, \
-                                  ((i) == FOOT_N - 1) ? FOOT_W_LAST : FOOT_W, \
-                                  FOOT_H)
+#define FOOT_H       52
+#define FOOT_Y       (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)  /**< y 440. */
+#define FOOT_W       118        /**< A button's width but RESCAN's. */
+#define FOOT_W_FIRST 140        /**< RESCAN's width, the first button. */
+#define FOOT_GAP     6          /**< Between two buttons. */
+#define FOOT_PAD     6          /**< Room kept at each side of a label. */
+#define FOOT_N       8          /**< The buttons. */
+/** @brief Footer button @p i's left edge: x 8 for the first, then 146px
+ *         on and 124px a button after it. */
+#define FS_FOOT_X(i) (FS_L + (((i) == 0) ? 0 \
+                              : FOOT_W_FIRST + FOOT_GAP \
+                                    + ((i) - 1) * (FOOT_W + FOOT_GAP)))
+/** @brief Footer button @p i: 0 RESCAN to 7 OPEN (fs_foot_t). */
+#define FS_FOOT(i)   gfx_rect_make(FS_FOOT_X(i), FOOT_Y, \
+                                   ((i) == 0) ? FOOT_W_FIRST : FOOT_W, \
+                                   FOOT_H)
 
-/** @brief The footer's buttons, left to right. */
+/** @brief The footer's buttons, left to right: each one's number is its
+ *         place in the footer. */
 typedef enum {
-    FS_OPEN = 0,
+    FS_RESCAN = 0,
     FS_COPY,
     FS_MOVE,
     FS_RENAME,
     FS_DELETE,
     FS_NEW,
     FS_INFO,
-    FS_RESCAN
+    FS_OPEN
 } fs_foot_t;
+
+_Static_assert(FS_RESCAN == 0, "RESCAN is the first, wide button");
+_Static_assert(FS_OPEN == FOOT_N - 1, "OPEN is the last button");
 
 /* ---------------------------------------------------------------- boxes */
 
@@ -173,8 +185,8 @@ typedef enum {
 #define FS_NEW_W      300                             /**< Its width. */
 #define FS_NEW_ROW_H  UI_CHOICE_ROW_H                 /**< A row, 56px. */
 #define FS_NEW_H      (2 * FS_NEW_ROW_H + 8)          /**< Its height. */
-/** @brief Its left edge: NEW's right edge less its width. */
-#define FS_NEW_X      (FS_L + 6 * (FOOT_W + FOOT_GAP) - FOOT_GAP - FS_NEW_W)
+/** @brief Its left edge, x 468: NEW's right edge less its width. */
+#define FS_NEW_X      (FS_FOOT_X(FS_NEW) + FOOT_W - FS_NEW_W)
 #define FS_NEW_Y      (FOOT_Y - 8 - FS_NEW_H)        /**< Its top. */
 /** @brief The list. */
 #define FS_NEW_LIST   gfx_rect_make(FS_NEW_X, FS_NEW_Y, FS_NEW_W, FS_NEW_H)
@@ -223,8 +235,7 @@ typedef enum {
 _Static_assert(FOOT_Y + FOOT_H + 4 <= SCREEN_H - UI_ALERT_H,
                "the footer ends 4px above the alert band");
 _Static_assert(FOOT_H >= UI_TAP_MIN, "the footer's buttons are a finger tall");
-_Static_assert(FS_L + (FOOT_N - 1) * (FOOT_W + FOOT_GAP) + FOOT_W_LAST
-                   == FS_R,
+_Static_assert(FS_FOOT_X(FOOT_N - 1) + FOOT_W == FS_R,
                "the footer's buttons end at the right margin");
 _Static_assert(FS_ROW_H >= UI_TAP_MIN, "a row is a finger tall");
 _Static_assert(FS_HDR_H >= UI_TAP_MIN && FS_PG_W >= UI_TAP_MIN,
@@ -278,11 +289,15 @@ typedef struct {
     bool need[2];             /**< a page of the pane is to be read      */
     fm_go_t need_go[2];       /**< which page                            */
     bool need_look;           /**< the next one looks at the slot first  */
+    /** @brief The pane's wish waiting is RESCAN's: its answer keeps the
+     *         pane's place (place_keep() in files_screen.c). */
+    bool keep_place[2];
 
     /* The request under way, the card's task's until it is answered. */
     fm_req_t req;             /**< the request                           */
     bool busy;                /**< handed over and not answered yet      */
     int req_pane;             /**< PAGE, ENTER, UP: its pane; -1 else    */
+    bool req_keep;            /**< a PAGE of RESCAN's: keep the place    */
     float busy_s;             /**< how long it has been under way, s     */
     uint64_t prog_done;       /**< a job's bytes done, as last drawn     */
     uint64_t prog_total;      /**< and to do                             */

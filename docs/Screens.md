@@ -2548,22 +2548,23 @@ right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 The fault log takes COPY and DELETE only while the IOmcu link is up: with
 the link down the panel writes to it every 5s.
 
-The footer, body y 440 to 492, holds OPEN, COPY, MOVE, RENAME, DELETE, NEW
-and INFO, 118 x 52px, and RESCAN, 140 x 52px, 6px apart; it ends 4px
-above the alert band. A button that would be refused is drawn dimmed; a tap
-on it says why in the message line, two lines of the 12 x 24 face over the
-footer.
+The footer, body y 440 to 492, holds RESCAN, 140 x 52px, at the left, as
+on [Logs](#logs), then COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN,
+118 x 52px, OPEN at the right margin; the buttons stand 6px apart, and the
+footer ends 4px above the alert band. A button that would be refused is
+drawn dimmed; a tap on it says why in the message line, two lines of the
+12 x 24 face over the footer.
 
 | Button | What it does |
 |---|---|
-| OPEN | enters a folder; a CSV file or a report in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs) on that folder's tab, a report as text: the names LOGS lists (`log_select_lists()`), every file the list labels REPORT among them; a file LOGS does not open, one over 2GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` A file the logger still writes is not opened, OPEN is grey and says `ATEST012.TXT is being written.`; a file gone from the card since FILES listed it says `LIMIT013.TXT is not on the card. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| RESCAN | looks at the slot and reads each pane again at the page it shows; see [RESCAN](#rescan) |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
 | DELETE | asks first. A run's CSV takes its report along; a folder is deleted only when empty |
 | NEW | FOLDER or TEXT FILE, then the keyboard for its name; a text file is made empty |
 | INFO | the entry's name, folder, kind, size or entries, time and rule |
-| RESCAN | looks at the slot and reads both panes from their first pages |
+| OPEN | enters a folder; a CSV file or a report in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs) on that folder's tab, a report as text: the names LOGS lists (`log_select_lists()`), every file the list labels REPORT among them; a file LOGS does not open, one over 2GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` A file the logger still writes is not opened, OPEN is grey and says `ATEST012.TXT is being written.`; a file gone from the card since FILES listed it says `LIMIT013.TXT is not on the card. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
 
 An existing name is never overwritten: COPY, MOVE, RENAME and NEW refuse
 it with `NOTES.TXT exists there already.` A copy is written under the
@@ -2573,6 +2574,33 @@ logger walks its folders again before its next file, so the next run
 takes a number above a log copied or renamed into a log folder. COPY and MOVE into the
 folder the entry is in, or a folder into itself, are refused:
 `Both panes show this folder, or the target is inside it.`
+
+### RESCAN
+
+RESCAN looks at the slot, then reads each pane's folder again, one pane
+after the other, at the page the pane shows: from that page's first entry,
+as PREV and NEXT name their pages. Each pane keeps its place:
+
+- the entry on the pane's top row stays on top; when it has gone from the
+  card, the entry now at its place in the order is on top;
+- the selected entry stays selected. When it has gone from the card, the
+  entry now at its place is selected, the next one in the order; the last
+  row when it was the folder's last entry; none when the page is empty or
+  when its place is on the next page;
+- the page's first entry gone from the card still names its place, and the
+  page starts at the next entry. A page with nothing left from that place
+  on is the folder's last page;
+- a page that holds fewer rows than before shows its last 6 rows, with no
+  empty row under them;
+- a folder removed from the card on a computer shows
+  `This folder is not on the card.` with no rows, and UP leads out of it;
+- with no card both panes read `No card. Insert one and tap RESCAN.`; a
+  card put in after that is a new card, and both panes start again in the
+  root and the User log folder.
+
+New entries are listed in their place in the order. RESCAN during a
+listing, INFO or a job waits until that request is answered: the card task
+takes one request at a time.
 
 ### The write gate
 
