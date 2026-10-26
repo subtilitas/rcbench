@@ -70,6 +70,15 @@ history is in git.
 
 ### Changed
 
+- LOGS' file list shows each file's date between its name and its size:
+  the modification time the card holds, as FILES INFO shows it, in the
+  zone of SETUP > PANEL's Time zone, `2026-10-26 09:41`, in a column of
+  160px. A file stamped in 1980, an unset clock's, or with no stamp leaves
+  the column empty. The card's directory read carries the FAT (File
+  Allocation Table) stamp of each entry (`storage_entry_t.stamp`), so the
+  list takes no extra lookup per file. The size box is 100px, and a name
+  of more than 60 characters shows its first 58 and `..`
+  ([Logs](docs/Screens.md#logs)).
 - The panel names a pin `GPIO 13` on every screen, alert and report, as
   SETUP's pin rows do, in place of `GP13`: OUTPUTS' grid and clash lines
   (`SLICE OF GPIO 13`, `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13`),

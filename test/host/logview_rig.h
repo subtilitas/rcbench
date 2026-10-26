@@ -213,6 +213,7 @@ static inline int fake_list(log_viewer_file_t *out, int max_entries,
         if (k_card[i].text == g_long && g_long[0] == '\0') {
             continue;
         }
+        memset(&out[n], 0, sizeof(out[n]));
         snprintf(out[n].name, sizeof(out[n].name), "%s", k_card[i].name);
         out[n].size = ((int)i == g_big_index)
                           ? g_big_size

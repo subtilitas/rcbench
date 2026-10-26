@@ -352,6 +352,9 @@ static void card_take(const storage_entry_t *entry, void *ctx)
     f.name[sizeof(f.name) - 1u] = '\0';
     f.size   = entry->size;
     f.is_dir = entry->is_dir;
+    /* The stamp the directory read returned, as FILES INFO's stat() reads
+     * it: one mktime() per listed file, no lookup. */
+    f.mtime  = storage_stamp_mtime(entry->stamp);
     log_select_page_offer(&pick->sel, &f);
 }
 

@@ -112,8 +112,8 @@
  *
  * A row is drawn BR_ROW_H - 4 (44) px tall; the pitch, 48px, is what a
  * finger hits, UI_TAP_MIN.  The list is 372px tall: seven rows under the
- * heading take 366px of it.  A row shows the file's name and, right-
- * aligned, its size.
+ * heading take 366px of it.  A row shows the file's name, its date and,
+ * right-aligned, its size.
  */
 #define BR_LIST_Y 60
 /** @brief The list's panel. */
@@ -137,8 +137,19 @@
                                 BR_BAR_W, BR_ROWS * BR_ROW_H - 4)
 #define BR_ROW_X  (LV_L + 8)                          /**< A row's left. */
 #define BR_ROW_W  (LV_R - 8 - BR_BAR_W - 8 - BR_ROW_X) /**< Its width. */
-/** @brief The size's box at a row's right end: LOG_DIR's 15 cells. */
-#define BR_SIZE_W 160
+/**
+ * @brief A row's three columns of the 10 x 20 face, as offsets from the
+ *        row's left: the name from 16px, the date in a box of 16 cells
+ *        ("2026-10-26 09:41"), and the size right-aligned in a box of 10
+ *        cells (LOG_DIR's) ending 16px short of the row's end.  16px stand
+ *        between the columns, so the name takes 604px, LOG_VIEWER_NAME_CELLS
+ *        (60) cells.
+ */
+#define BR_SIZE_W  100
+#define BR_DATE_W  160                                    /**< 16 cells. */
+#define BR_NAME_IN 16                                     /**< name's left */
+#define BR_SIZE_IN (BR_ROW_W - 16 - BR_SIZE_W)            /**< size's left */
+#define BR_DATE_IN (BR_SIZE_IN - 16 - BR_DATE_W)          /**< date's left */
 
 /**
  * @brief The footer's buttons, 52px tall, in the order browse_event()
@@ -292,8 +303,13 @@ _Static_assert(BR_MSG_X + 28 * 12 + 8 <= LV_R - 2 * BR_PG_W - 8,
                "a footer message's 28 cells stand between FILES and DELETE");
 _Static_assert(BR_SMALL_W >= 7 * 10 + 2 * 8,
                "WI-FI and FILES hold DATEIEN's 7 cells of 10 x 20");
-_Static_assert(BR_SIZE_W >= 15 * 10 + 8,
-               "a row's size box holds LOG_DIR's 15 cells");
+_Static_assert(BR_SIZE_W >= 10 * 10,
+               "a row's size box holds LOG_DIR's 10 cells");
+_Static_assert(BR_DATE_W >= 16 * 10, "a row's date box holds 16 cells");
+_Static_assert(BR_NAME_IN + LOG_VIEWER_NAME_CELLS * 10 + 16 <= BR_DATE_IN,
+               "a row's name ends 16px before its date");
+_Static_assert(LOG_VIEWER_NAME_CELLS < LOG_VIEWER_NAME_MAX,
+               "a name of LOG_VIEWER_NAME_CELLS fits its array");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32px or more on a full page");
 _Static_assert(TX_ROWS * TX_ROW_H <= BR_ROWS * BR_ROW_H - 4,

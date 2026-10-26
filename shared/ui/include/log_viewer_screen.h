@@ -59,8 +59,37 @@ extern "C" {
 typedef struct {
     char name[LOG_VIEWER_NAME_MAX];
     uint64_t size;      /* bytes; 64-bit, as exFAT's */
+    /** @brief The time FAT stamped, in seconds since 1970 as mktime()
+     *         reads FAT's local date and time (the panel:
+     *         storage_stamp_mtime()), as FILES INFO's; 0 or -1 for none.
+     *         The row shows it when wall_stamp_known() takes it. */
+    int64_t mtime;
     bool is_dir;
 } log_viewer_file_t;
+
+/** @brief The cells a row's name takes: a longer name, of up to
+ *         LOG_VIEWER_NAME_MAX - 1 (63) bytes, shows its first 58 and "..". */
+#define LOG_VIEWER_NAME_CELLS 60
+
+/** @brief The texts of one row of the file list, as the list draws them. */
+typedef struct {
+    /** @brief The name, cut to LOG_VIEWER_NAME_CELLS cells. */
+    char name[LOG_VIEWER_NAME_MAX + 2];
+    /** @brief "2026-10-26 09:41" in the zone in force, or "" for a stamp
+     *  wall_stamp_known() refuses. */
+    char date[20];
+    /** @brief The size (log_viewer_size_text()), or LOG_DIR for a folder. */
+    char size[24];
+} log_viewer_row_t;
+
+/**
+ * @brief The texts of the list's row for @p f: its name, cut as FILES cuts
+ *        a name; its time as FILES INFO writes it (files_time_text() of
+ *        wall_local_s()), and nothing for none or a 1980 stamp; its size.
+ * @param f    the entry
+ * @param out  takes the texts; all three "" for a NULL @p f
+ */
+void log_viewer_row_text(const log_viewer_file_t *f, log_viewer_row_t *out);
 
 /**
  * Which page of the volume list() writes.
