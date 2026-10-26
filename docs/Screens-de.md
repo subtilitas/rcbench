@@ -2862,11 +2862,11 @@ Seiten benennen. Jede Spalte behält ihre Stelle:
 - der Eintrag in der obersten Zeile der Spalte bleibt oben; ist er nicht
   mehr auf der Karte, steht der Eintrag oben, der jetzt an seiner Stelle
   in der Reihenfolge steht;
-- der gewählte Eintrag bleibt gewählt. Ist er nicht mehr auf der Karte,
-  wird der Eintrag an seiner Stelle gewählt, der nächste in der
-  Reihenfolge; die letzte Zeile, wenn er der letzte Eintrag des Ordners
-  war; keiner, wenn die Seite leer ist oder seine Stelle auf der nächsten
-  Seite liegt;
+- der gewählte Eintrag bleibt gewählt, solange er auf der gelesenen Seite
+  steht. Ist er nicht mehr auf der Karte oder steht er jetzt auf einer
+  anderen Seite, ist nichts gewählt, wie nach LÖSCHEN: VERSCHIEBEN und
+  UMBENENNEN wirken ohne Rückfrage auf den gewählten Eintrag, daher
+  übernimmt kein anderer Eintrag die Wahl. Ein Tipp wählt neu;
 - fehlt der erste Eintrag der Seite auf der Karte, benennt er trotzdem
   seine Stelle, und die Seite beginnt beim nächsten Eintrag. Eine Seite,
   auf der ab dieser Stelle nichts mehr steht, ist die letzte Seite des

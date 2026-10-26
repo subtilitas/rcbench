@@ -89,8 +89,9 @@ history is in git.
 - FILES' RESCAN reads each pane again at the page it shows, from the
   page's first entry, and keeps the pane's place: the top row's entry
   stays on top, the selection stays on its entry, and a selected entry gone
-  from the card hands the selection to the entry now at its place in the
-  order. A page that holds fewer rows shows its last 6
+  from the card, or moved to another page, leaves nothing selected, as
+  after a DELETE, since MOVE and RENAME act on the selection without a
+  question. A page that holds fewer rows shows its last 6
   ([RESCAN](docs/Screens.md#rescan)).
 - LOGS' file list shows each file's date between its name and its size:
   the modification time the card holds, as FILES INFO shows it, in the
@@ -150,6 +151,14 @@ history is in git.
   is stopped and the receive channel takes the words still in the FIFO
   (first in, first out) before the bytes are counted and the machine
   restarts.
+- The KST programmer checks the write's gate again when the card has taken
+  the servo's file and when it has taken the write's record, before a
+  frame goes to the servo: the port in programming mode on the write's
+  port with no operation running, no STOP, the bench not ARMED and ENABLE
+  WRITE TO SERVO on. A switch turned off while the card writes, or a port
+  that reads PWM by then, ends the write with nothing sent, clears its
+  record on the card and keeps the pending values, with the refusal's line
+  (`kst_prog_held_gate()`, [Writing](docs/ServoProgrammer.md#writing)).
 
 ## 0.23.0 - 2026-10-25
 

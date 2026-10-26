@@ -532,6 +532,27 @@ starting is not that first write: the lines stay for the next one.
 5. `3 values written and verified.`, or `1 value written and verified.`,
    ends it and clears the record.
 
+The write's gate is checked again when the card has taken the servo's file
+and again when it has taken the record, before a frame goes to the servo:
+the port in programming mode on the write's port with no operation
+running, no STOP, the bench not ARMED and the switch on. A tap on **ON**
+while the card writes switches the switch off; **OFF** takes no tap until
+the write ends. A refusal ends the write with nothing sent, clears its
+record, on the card too, and keeps the pending values. The line names the
+refusal:
+
+| At the card's answer | Line |
+| --- | --- |
+| the switch is off | `ENABLE WRITE TO SERVO is off.` |
+| the port reads PWM, or another port is held | `No servo connected. Tap CONNECT.` |
+| the port reports an operation running, or its status is not read yet | `Another operation is running.` |
+| the bench is ARMED | `Tap DISARM first. The port cannot be taken over while ARMED.` |
+
+A **STOP** ends the write at once, as in [Stops and losses](#stops-and-losses).
+The bench takes no ARM while the port is held; the check holds against an
+ARMED state the IOmcu reports all the same. A card that does not answer
+ends the write: after 5s for the servo's file, after 3s for the record.
+
 A value written and read back is taken as in effect. The programmer asks
 for no power cycle after a write, and its verify is the read-back of the
 same session. Whether a servo acts on a written value before its next
@@ -1244,5 +1265,9 @@ its 2s have passed reaches no wire, for every kind of operation; a
 refusal at each later exchange of each kind of operation asks for
 **READ ALL**; every result code of the session has a class, and a code
 without one fails the test; a restore that the card keeps from starting
-at each file step leaves the pending values; a record from a card mounted
-before and after the read, of the same and of another servo.
+at each file step leaves the pending values; the gate at the answer of the
+servo's file and of the record, with the switch turned off, the port in
+PWM, another port held, the port running an operation, a status not read,
+ARMED from the IOmcu and from the screen, STOP, and nothing changed; an
+ARMED that ends before the answer lets the write go; a record from a card
+mounted before and after the read, of the same and of another servo.

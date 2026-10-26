@@ -580,6 +580,29 @@ erste Schreiben: die Zeilen bleiben für das nächste.
 5. `3 Werte geschrieben und geprüft.` oder `1 Wert geschrieben und geprüft.`
    beendet es und löscht den Vermerk.
 
+Die Sperre des Schreibens wird erneut geprüft, wenn die Karte die Datei des
+Servos angenommen hat, und noch einmal, wenn sie den Vermerk angenommen
+hat, bevor ein Frame zum Servo geht: der Port im Programmiermodus auf dem
+Port des Schreibens ohne laufenden Vorgang, kein STOP, der Prüfstand nicht
+ARMED und der Schalter ein. Ein Tipp auf **EIN**, während die Karte
+schreibt, schaltet den Schalter aus; **AUS** nimmt bis zum Ende des
+Schreibens keinen Tipp an. Eine Ablehnung beendet das Schreiben, ohne
+etwas zu senden, löscht seinen Vermerk, auch auf der Karte, und lässt die
+geänderten Werte stehen. Die Zeile nennt die Ablehnung:
+
+| Bei der Antwort der Karte | Zeile |
+| --- | --- |
+| der Schalter ist aus | `SCHREIBEN INS SERVO FREIGEBEN ist aus.` |
+| der Port meldet PWM, oder ein anderer Port ist belegt | `Kein Servo verbunden. Tippe auf VERBINDEN.` |
+| der Port meldet einen laufenden Vorgang, oder sein Status ist noch nicht gelesen | `Ein anderer Vorgang läuft.` |
+| der Prüfstand ist ARMED | `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` |
+
+Ein **STOP** beendet das Schreiben sofort, wie unter
+[Stopps und Ausfälle](#stopps-und-ausfälle). Der Prüfstand nimmt kein ARM an,
+solange der Port belegt ist; die Prüfung hält trotzdem gegen ein ARMED, das
+der IOmcu meldet. Eine Karte, die nicht antwortet, beendet das Schreiben:
+nach 5s bei der Datei des Servos, nach 3s beim Vermerk.
+
 Ein geschriebener und zurückgelesener Wert gilt als wirksam. Der
 Programmierer verlangt nach einem Schreiben kein Aus- und Einschalten, und
 sein Prüfen ist das Rücklesen derselben Sitzung. Ob ein Servo vor
@@ -1376,5 +1399,10 @@ Vorgang; eine Ablehnung bei jedem späteren Austausch jeder Art von Vorgang
 verlangt **ALLES AUSLESEN**; jeder Ergebniscode der Sitzung hat eine Klasse,
 und ein Code ohne Klasse lässt den Test fehlschlagen; ein Zurückspielen,
 das die Karte bei jedem Dateischritt nicht starten lässt, lässt die offenen
-Werte stehen; ein Vermerk von einer Karte, die vor und nach dem Lesen
-eingebunden wird, desselben und eines anderen Servos.
+Werte stehen; die Sperre bei der Antwort auf die Datei des Servos und auf
+den Vermerk, mit ausgeschaltetem Schalter, dem Port in PWM, einem anderen
+belegten Port, einem laufenden Vorgang am Port, einem noch nicht gelesenen
+Status, ARMED vom IOmcu und vom Bildschirm, STOP und ohne Änderung; ein
+ARMED, das vor der Antwort endet, lässt das Schreiben gehen; ein Vermerk
+von einer Karte, die vor und nach dem Lesen eingebunden wird, desselben
+und eines anderen Servos.

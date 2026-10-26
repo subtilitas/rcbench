@@ -2583,10 +2583,10 @@ as PREV and NEXT name their pages. Each pane keeps its place:
 
 - the entry on the pane's top row stays on top; when it has gone from the
   card, the entry now at its place in the order is on top;
-- the selected entry stays selected. When it has gone from the card, the
-  entry now at its place is selected, the next one in the order; the last
-  row when it was the folder's last entry; none when the page is empty or
-  when its place is on the next page;
+- the selected entry stays selected while it is on the page read. When it
+  has gone from the card, or now stands on another page, nothing is
+  selected, as after a DELETE: MOVE and RENAME act on the selection without
+  a question, so no other entry takes it. A tap selects again;
 - the page's first entry gone from the card still names its place, and the
   page starts at the next entry. A page with nothing left from that place
   on is the folder's last page;
