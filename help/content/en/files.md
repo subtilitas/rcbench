@@ -36,14 +36,14 @@ A button that would be refused is dimmed. A tap on it says why on the line over 
 
 | Button | What it does |
 |---|---|
-| OPEN | enters a folder. A CSV file or a report in ROOT, USER or BENCH opens on [LOGS](logs.md), a report as text. A file the bench is still writing stays here, `ATEST012.TXT is being written.`, and any other file reads `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| RESCAN | looks at the card slot and reads each pane again at the page it shows. The top row and the selected entry stay; when the selected entry has gone from the card, the entry now at its place is selected |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
 | DELETE | asks first. A run's CSV file takes its report along. A folder is deleted only when it is empty |
 | NEW | FOLDER or TEXT FILE, then the keyboard for the name |
 | INFO | name, folder, kind, size or entries, time and rule |
-| RESCAN | looks at the card slot and reads both panes again |
+| OPEN | enters a folder. A CSV file or a report in ROOT, USER or BENCH opens on [LOGS](logs.md), a report as text. A file the bench is still writing stays here, `ATEST012.TXT is being written.`, and any other file reads `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
 
 An existing name is never overwritten: `NOTES.TXT exists there already.` A copy is written as `NAME.NEW` and renamed when it is complete.
 

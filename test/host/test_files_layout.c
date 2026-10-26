@@ -14,6 +14,7 @@
  * - the_name_keyboard_takes_a_name_by_the_cards_rules
  * - files_returns_to_the_screen_that_opened_it
  * - every_view_draws_in_both_languages_and_both_themes
+ * - the_footer_runs_rescan_to_open_as_logs_does
  *
  * SPDX-License-Identifier: MIT
  */
@@ -343,6 +344,49 @@ TEST_CASE(every_view_draws_in_both_languages_and_both_themes)
     ui_text_set_language(UI_LANG_EN);
 }
 
+TEST_CASE(the_footer_runs_rescan_to_open_as_logs_does)
+{
+    fresh();
+    /* RESCAN at the left, 140px; OPEN at the right margin, as on LOGS. */
+    const gfx_rect_t first = FS_FOOT(FS_RESCAN);
+    const gfx_rect_t last = FS_FOOT(FS_OPEN);
+    CHECK_EQ(first.x, 8);
+    CHECK_EQ(first.w, 140);
+    CHECK_EQ(last.x + last.w, 1016);
+    CHECK_EQ(last.w, 118);
+    static const int order[FOOT_N] = {
+        FS_RESCAN, FS_COPY, FS_MOVE, FS_RENAME, FS_DELETE, FS_NEW, FS_INFO,
+        FS_OPEN,
+    };
+    for (int k = 0; k < FOOT_N; ++k) {
+        const gfx_rect_t r = FS_FOOT(order[k]);
+        CHECK_EQ(r.y, 440);
+        CHECK_EQ(r.h, 52);
+        if (k > 0) {
+            const gfx_rect_t l = FS_FOOT(order[k - 1]);
+            CHECK_EQ(l.x + l.w + 6, r.x);
+        }
+        /* The spot the suites tap is in the button drawn there, and a
+         * press on it is that button's. */
+        CHECK(gfx_rect_contains(r, FS_SPOT_FOOT_CX(order[k]),
+                                FS_SPOT_FOOT_CY));
+        send(TOUCH_EVENT_DOWN, FS_SPOT_FOOT_CX(order[k]), FS_SPOT_FOOT_CY);
+        CHECK_EQ(fs_s.press, order[k]);
+        screen()->cancel();
+    }
+    /* NEW's choice ends at NEW's right edge. */
+    CHECK_EQ(FS_NEW_LIST.x + FS_NEW_LIST.w,
+             FS_FOOT(FS_NEW).x + FS_FOOT(FS_NEW).w);
+    /* A tap on the far left reads both panes; one on the far right with a
+     * folder selected enters it. */
+    const unsigned subs = g_h.submits;
+    tap(12, FS_SPOT_FOOT_CY);
+    CHECK_EQ(g_h.submits, subs + 2u);
+    CHECK(pick(0, "BENCH"));
+    tap(1012, FS_SPOT_FOOT_CY);
+    CHECK_STR_EQ(files_screen_pane(0)->dir, "BENCH");
+}
+
 int main(void)
 {
     RUN(nothing_that_acts_lies_under_the_alert_band);
@@ -352,6 +396,7 @@ int main(void)
     RUN(the_name_keyboard_takes_a_name_by_the_cards_rules);
     RUN(files_returns_to_the_screen_that_opened_it);
     RUN(every_view_draws_in_both_languages_and_both_themes);
+    RUN(the_footer_runs_rescan_to_open_as_logs_does);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_layout");

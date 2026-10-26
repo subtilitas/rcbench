@@ -3,7 +3,8 @@
  * @brief FILES' panes over a card in memory: where they start, their order
  *        and counts, the taps that select, switch and open, UP, PREV and
  *        NEXT, the scroll by drag and by the bar, the card gone, swapped or
- *        never there, a task that does not start, and a listing under way.
+ *        never there, a task that does not start, a listing under way, and
+ *        RESCAN, which keeps each pane's page, top row and selection.
  *
  * Cases:
  * - the_panes_start_in_the_root_and_user_log_folder
@@ -24,6 +25,16 @@
  * - the_files_the_logger_writes_are_marked
  * - the_user_log_folder_in_force_is_the_right_panes_start
  * - the_message_line_follows_the_language
+ * - rescan_keeps_each_panes_page_top_row_and_selection
+ * - rescan_keeps_a_later_page_from_its_first_entry
+ * - rescan_hands_a_selection_gone_to_the_entry_at_its_place
+ * - rescan_selects_none_when_the_place_is_on_the_next_page
+ * - rescan_keeps_the_top_rows_entry_on_top
+ * - rescan_holds_the_scroll_to_fewer_rows
+ * - rescan_of_a_folder_gone_shows_no_rows
+ * - rescan_with_the_card_out_says_no_card
+ * - rescan_waits_behind_a_request_under_way
+ * - rescan_during_a_page_turn_turns_the_page_first
  *
  * SPDX-License-Identifier: MIT
  */
@@ -467,6 +478,373 @@ TEST_CASE(the_message_line_follows_the_language)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/**
+ * @brief Remove @p path from the card, as a computer does behind the
+ *        panel's back: a file, or an empty folder.
+ */
+static void gone(const char *path)
+{
+    const fm_io_t io = fk_io(&g_h.card);
+    const fk_node_t *n = fk_get(&g_h.card, path);
+    CHECK(n != NULL);
+    if (n == NULL) {
+        return;
+    }
+    const fm_err_t err = n->dir ? io.rmdir(io.ctx, path)
+                                : io.unlink(io.ctx, path);
+    CHECK(err == FM_OK);
+}
+
+/** @brief Pane @p i's list dragged up by @p rows rows, 4 at a drag. */
+static void scroll_down(int i, int rows)
+{
+    while (rows > 0) {
+        const int k = (rows > 4) ? 4 : rows;
+        const int y0 = FS_SPOT_ROW_CY(5);
+        const int y1 = y0 - k * 48 - 10;
+        send(TOUCH_EVENT_DOWN, FS_SPOT_ROW_CX(i), y0);
+        send(TOUCH_EVENT_MOVE, FS_SPOT_ROW_CX(i), y1);
+        send(TOUCH_EVENT_UP, FS_SPOT_ROW_CX(i), y1);
+        rows -= k;
+    }
+}
+
+/** @brief The name on row @p r on screen of pane @p i. */
+static const char *on_screen(int i, int r)
+{
+    const fm_tree_t *t = files_screen_pane(i);
+    const int at = files_screen_scroll(i) + r;
+    return (at >= 0 && at < t->held) ? t->page[at].name : "";
+}
+
+/** @brief The selected entry's name of pane @p i, "" for none. */
+static const char *chosen(int i)
+{
+    const fm_tree_t *t = files_screen_pane(i);
+    return (t->selected >= 0 && t->selected < t->held)
+               ? t->page[t->selected].name : "";
+}
+
+/**
+ * @brief The card of a beta bench: SERVO001 to SERVO030 in BENCH/LOGS,
+ *        ATEST001 to ATEST012 in USER/LOGS; the left pane in BENCH/LOGS
+ *        with SERVO018.CSV on top and SERVO020.CSV selected, the right
+ *        one with ATEST004.CSV on top and ATEST006.CSV selected.
+ */
+static void two_scrolled_panes(void)
+{
+    fresh_bare();
+    card_default();
+    char path[64];
+    for (int k = 2; k <= 30; ++k) {
+        snprintf(path, sizeof(path), "BENCH/LOGS/SERVO%03d.CSV", k);
+        fk_file(&g_h.card, path, NULL, 4096u);
+    }
+    gone("USER/LOGS/ATEST005.CSV");
+    gone("USER/LOGS/ATEST005.TXT");
+    gone("USER/LOGS/LIMIT006.TXT");
+    for (int k = 1; k <= 12; ++k) {
+        snprintf(path, sizeof(path), "USER/LOGS/ATEST%03d.CSV", k);
+        fk_file(&g_h.card, path, NULL, 15104u);
+    }
+    screen()->enter();
+    settle();
+    CHECK(open_dir(0, "BENCH"));
+    CHECK(open_dir(0, "LOGS"));
+    scroll_down(0, 17);
+    scroll_down(1, 3);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
+    tap_row(1, 2);
+    tap_row(0, 2);
+    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
+    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_EQ(files_screen_active(), 0);
+    draw();
+}
+
+TEST_CASE(rescan_keeps_each_panes_page_top_row_and_selection)
+{
+    two_scrolled_panes();
+    const unsigned subs = g_h.submits;
+    const unsigned looks = g_h.looks;
+    tap_foot(FS_SPOT_RESCAN);
+    /* One read of each pane, the slot looked at first. */
+    CHECK_EQ(g_h.submits, subs + 2u);
+    CHECK_EQ(g_h.looks, looks + 1u);
+    CHECK_STR_EQ(files_screen_pane(0)->dir, "BENCH/LOGS");
+    CHECK_STR_EQ(files_screen_pane(1)->dir, "USER/LOGS");
+    CHECK_EQ(files_screen_scroll(0), 17);
+    CHECK_EQ(files_screen_scroll(1), 3);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
+    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
+    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_EQ(files_screen_active(), 0);
+    /* A file new on the card is listed in its place in the order. */
+    fk_file(&g_h.card, "BENCH/LOGS/SERVO031.CSV", NULL, 4096u);
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK(row_of(0, "SERVO031.CSV") >= 0);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
+    /* And a second RESCAN in a row changes nothing more. */
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+}
+
+TEST_CASE(rescan_keeps_a_later_page_from_its_first_entry)
+{
+    fresh_bare();
+    card_default();
+    char path[64];
+    for (int k = 0; k < 120; ++k) {
+        snprintf(path, sizeof(path), "BIG/F%03d.TXT", k);
+        fk_file(&g_h.card, path, NULL, 100u);
+    }
+    screen()->enter();
+    settle();
+    CHECK(open_dir(0, "BIG"));
+    tap(FS_SPOT_NEXT_CX(0), FS_SPOT_HEAD_CY);
+    const fm_tree_t *t = files_screen_pane(0);
+    CHECK_EQ(t->ahead, 48);
+    scroll_down(0, 5);
+    tap_row(0, 1);
+    CHECK_STR_EQ(chosen(0), "F054.TXT");
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_EQ(t->ahead, 48);
+    CHECK_STR_EQ(t->page[0].name, "F048.TXT");
+    CHECK_STR_EQ(on_screen(0, 0), "F053.TXT");
+    CHECK_STR_EQ(chosen(0), "F054.TXT");
+    /* The page's first entry gone: its key still names its place, and
+     * the page starts at the next entry. */
+    gone("BIG/F048.TXT");
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_EQ(t->total, 119);
+    CHECK_EQ(t->ahead, 48);
+    CHECK_STR_EQ(t->page[0].name, "F049.TXT");
+    CHECK_STR_EQ(on_screen(0, 0), "F053.TXT");
+    CHECK_STR_EQ(chosen(0), "F054.TXT");
+    /* Every entry from the page's first on gone: the last page. */
+    for (int k = 49; k < 120; ++k) {
+        snprintf(path, sizeof(path), "BIG/F%03d.TXT", k);
+        gone(path);
+    }
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_EQ(t->total, 48);
+    CHECK_EQ(t->ahead, 0);
+    CHECK_EQ(t->held, 48);
+    CHECK_EQ(files_screen_scroll(0), 48 - FS_SPOT_ROWS);
+    CHECK_STR_EQ(chosen(0), "F047.TXT");
+    draw();
+}
+
+TEST_CASE(rescan_hands_a_selection_gone_to_the_entry_at_its_place)
+{
+    two_scrolled_panes();
+    /* The selected file gone: the next in the order is selected, on the
+     * row it stood on. */
+    const int row = files_screen_pane(0)->selected;
+    gone("BENCH/LOGS/SERVO020.CSV");
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_STR_EQ(chosen(0), "SERVO021.CSV");
+    CHECK_EQ(files_screen_pane(0)->selected, row);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    /* The folder's last entry gone: the one now last. */
+    scroll_down(1, 3);
+    tap_row(1, 5);
+    CHECK_STR_EQ(chosen(1), "ATEST012.CSV");
+    gone("USER/LOGS/ATEST012.CSV");
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_STR_EQ(chosen(1), "ATEST011.CSV");
+    /* An emptied folder: no rows, and none selected. */
+    for (int k = 1; k <= 11; ++k) {
+        char path[64];
+        snprintf(path, sizeof(path), "USER/LOGS/ATEST%03d.CSV", k);
+        gone(path);
+    }
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_EQ(files_screen_pane(1)->held, 0);
+    CHECK_EQ(files_screen_pane(1)->selected, -1);
+    CHECK_EQ(files_screen_scroll(1), 0);
+    /* Nothing selected: DELETE asks for a selection. */
+    tap_foot(FS_SPOT_DELETE);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
+    CHECK_STR_EQ(files_screen_message(), TR(FM_SELECT_FIRST));
+}
+
+TEST_CASE(rescan_selects_none_when_the_place_is_on_the_next_page)
+{
+    fresh_bare();
+    card_default();
+    char path[64];
+    for (int k = 0; k < 120; ++k) {
+        snprintf(path, sizeof(path), "BIG/F%03d.TXT", k);
+        fk_file(&g_h.card, path, NULL, 100u);
+    }
+    screen()->enter();
+    settle();
+    CHECK(open_dir(0, "BIG"));
+    scroll_down(0, 42);
+    tap_row(0, 5);
+    CHECK_STR_EQ(chosen(0), "F047.TXT");
+    /* F047 gone and an entry new ahead of it: the page fills up to F046,
+     * the place of F047 is on the next page, and nothing is selected. */
+    gone("BIG/F047.TXT");
+    fk_file(&g_h.card, "BIG/F010A.TXT", NULL, 100u);
+    tap_foot(FS_SPOT_RESCAN);
+    const fm_tree_t *t = files_screen_pane(0);
+    CHECK_EQ(t->held, 48);
+    CHECK_STR_EQ(t->page[47].name, "F046.TXT");
+    CHECK_EQ(t->selected, -1);
+    CHECK_EQ(files_screen_scroll(0), 48 - FS_SPOT_ROWS);
+}
+
+TEST_CASE(rescan_keeps_the_top_rows_entry_on_top)
+{
+    two_scrolled_panes();
+    /* Two entries above the top row gone: the top row's entry stays on
+     * top, two rows nearer the page's start. */
+    gone("BENCH/LOGS/SERVO002.CSV");
+    gone("BENCH/LOGS/SERVO003.CSV");
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK_EQ(files_screen_scroll(0), 15);
+    /* The top row's own entry gone: the entry now at its place. */
+    gone("BENCH/LOGS/SERVO018.CSV");
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_STR_EQ(on_screen(0, 0), "SERVO019.CSV");
+    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
+}
+
+TEST_CASE(rescan_holds_the_scroll_to_fewer_rows)
+{
+    two_scrolled_panes();
+    /* SERVO018 to SERVO030 gone: 18 rows are left, and the list shows
+     * its last 6 with no empty row under them. */
+    char path[64];
+    for (int k = 18; k <= 30; ++k) {
+        snprintf(path, sizeof(path), "BENCH/LOGS/SERVO%03d.CSV", k);
+        gone(path);
+    }
+    tap_foot(FS_SPOT_RESCAN);
+    const fm_tree_t *t = files_screen_pane(0);
+    CHECK_EQ(t->held, 17);
+    CHECK_EQ(files_screen_scroll(0), 17 - FS_SPOT_ROWS);
+    CHECK_STR_EQ(on_screen(0, FS_SPOT_ROWS - 1), "SERVO017.CSV");
+    CHECK_STR_EQ(chosen(0), "SERVO017.CSV");
+    draw();
+}
+
+TEST_CASE(rescan_of_a_folder_gone_shows_no_rows)
+{
+    two_scrolled_panes();
+    for (int k = 1; k <= 30; ++k) {
+        char path[64];
+        snprintf(path, sizeof(path), "BENCH/LOGS/SERVO%03d.CSV", k);
+        gone(path);
+    }
+    gone("BENCH/LOGS");
+    tap_foot(FS_SPOT_RESCAN);
+    const fm_tree_t *t = files_screen_pane(0);
+    /* The pane stays in the folder and says it is not there, as UP and
+     * every read of a folder gone do. */
+    CHECK_STR_EQ(t->dir, "BENCH/LOGS");
+    CHECK_EQ(t->held, 0);
+    CHECK_EQ(t->total, 0);
+    CHECK_EQ(t->selected, -1);
+    CHECK_EQ(files_screen_scroll(0), 0);
+    /* Nothing selected: DELETE asks for a selection. */
+    tap_foot(FS_SPOT_DELETE);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
+    CHECK_STR_EQ(files_screen_message(), TR(FM_SELECT_FIRST));
+    draw();
+    /* The other pane keeps its place. */
+    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
+    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    /* UP leads out of it. */
+    tap(FS_SPOT_UP_CX(0), FS_SPOT_HEAD_CY);
+    CHECK_STR_EQ(files_screen_pane(0)->dir, "BENCH");
+    CHECK_EQ(row_of(0, "LOGS"), -1);
+}
+
+TEST_CASE(rescan_with_the_card_out_says_no_card)
+{
+    two_scrolled_panes();
+    fk_pull(&g_h.card);
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_EQ(files_screen_pane(0)->total, -1);
+    CHECK_EQ(files_screen_pane(1)->total, -1);
+    CHECK_EQ(files_screen_pane(0)->held, 0);
+    CHECK_EQ(files_screen_scroll(0), 0);
+    CHECK_EQ(files_screen_scroll(1), 0);
+    draw();
+    /* The card back: another mount, so both panes start again. */
+    fk_insert(&g_h.card);
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_STR_EQ(files_screen_pane(0)->dir, "");
+    CHECK_STR_EQ(files_screen_pane(1)->dir, "USER/LOGS");
+    CHECK_EQ(files_screen_pane(1)->total, 12);
+}
+
+TEST_CASE(rescan_waits_behind_a_request_under_way)
+{
+    two_scrolled_panes();
+    g_h.defer = true;
+    tap(FS_SPOT_UP_CX(0), FS_SPOT_HEAD_CY);
+    CHECK(files_screen_busy());
+    const unsigned subs = g_h.submits;
+    /* RESCAN under way of UP sends nothing yet. */
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK_EQ(g_h.submits, subs);
+    CHECK_EQ(files_screen_scroll(1), 3);
+    /* UP answered, then RESCAN's reads one at a time, left first. */
+    CHECK(fh_run(&g_h));
+    settle();
+    CHECK_EQ(g_h.submits, subs + 1u);
+    CHECK(fh_run(&g_h));
+    settle();
+    CHECK_EQ(g_h.submits, subs + 2u);
+    CHECK(fh_run(&g_h));
+    settle();
+    CHECK(!fh_run(&g_h));
+    CHECK(!files_screen_busy());
+    CHECK_STR_EQ(files_screen_pane(0)->dir, "BENCH");
+    CHECK_STR_EQ(chosen(0), "LOGS");
+    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
+    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+}
+
+TEST_CASE(rescan_during_a_page_turn_turns_the_page_first)
+{
+    fresh_bare();
+    card_default();
+    char path[64];
+    for (int k = 0; k < 120; ++k) {
+        snprintf(path, sizeof(path), "BIG/F%03d.TXT", k);
+        fk_file(&g_h.card, path, NULL, 100u);
+    }
+    screen()->enter();
+    settle();
+    CHECK(open_dir(0, "BIG"));
+    tap_row(0, 2);
+    CHECK_STR_EQ(chosen(0), "F002.TXT");
+    g_h.defer = true;
+    tap(FS_SPOT_NEXT_CX(0), FS_SPOT_HEAD_CY);
+    CHECK(files_screen_busy());
+    tap_foot(FS_SPOT_RESCAN);
+    while (fh_run(&g_h)) {
+        settle();
+    }
+    /* NEXT is answered as NEXT, its page with nothing selected; RESCAN
+     * then reads that page and keeps it so. */
+    const fm_tree_t *t = files_screen_pane(0);
+    CHECK_EQ(t->ahead, 48);
+    CHECK_STR_EQ(t->page[0].name, "F048.TXT");
+    CHECK_EQ(t->selected, -1);
+    CHECK_EQ(files_screen_scroll(0), 0);
+}
+
 int main(void)
 {
     RUN(the_panes_start_in_the_root_and_user_log_folder);
@@ -487,6 +865,16 @@ int main(void)
     RUN(the_files_the_logger_writes_are_marked);
     RUN(the_user_log_folder_in_force_is_the_right_panes_start);
     RUN(the_message_line_follows_the_language);
+    RUN(rescan_keeps_each_panes_page_top_row_and_selection);
+    RUN(rescan_keeps_a_later_page_from_its_first_entry);
+    RUN(rescan_hands_a_selection_gone_to_the_entry_at_its_place);
+    RUN(rescan_selects_none_when_the_place_is_on_the_next_page);
+    RUN(rescan_keeps_the_top_rows_entry_on_top);
+    RUN(rescan_holds_the_scroll_to_fewer_rows);
+    RUN(rescan_of_a_folder_gone_shows_no_rows);
+    RUN(rescan_with_the_card_out_says_no_card);
+    RUN(rescan_waits_behind_a_request_under_way);
+    RUN(rescan_during_a_page_turn_turns_the_page_first);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_screen");

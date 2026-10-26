@@ -329,9 +329,12 @@ static void draw_message(gfx_canvas_t *c)
  */
 static void draw_footer(gfx_canvas_t *c)
 {
+    /* By the button, so the order is fs_foot_t's alone. */
     static const ui_text_id_t labels[FOOT_N] = {
-        TX_LOG_OPEN, TX_FM_COPY, TX_FM_MOVE, TX_FM_RENAME, TX_LOG_DELETE,
-        TX_FM_NEW, TX_FM_INFO, TX_LOG_RESCAN,
+        [FS_RESCAN] = TX_LOG_RESCAN, [FS_COPY] = TX_FM_COPY,
+        [FS_MOVE] = TX_FM_MOVE,      [FS_RENAME] = TX_FM_RENAME,
+        [FS_DELETE] = TX_LOG_DELETE, [FS_NEW] = TX_FM_NEW,
+        [FS_INFO] = TX_FM_INFO,      [FS_OPEN] = TX_LOG_OPEN,
     };
     for (int b = 0; b < FOOT_N; ++b) {
         const gfx_color_t fill = (b == FS_OPEN)     ? UI_ACCENT

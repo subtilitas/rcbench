@@ -209,6 +209,9 @@ static void want(int i, need_t need, fm_go_t go)
     s_need[i] = need;
     s.need[i] = (need != NEED_NONE);
     s.need_go[i] = go;
+    if (need != NEED_NONE) {
+        s.keep_place[i] = false;    /* RESCAN sets it after its wish */
+    }
 }
 
 /**
@@ -251,6 +254,86 @@ static void select_name(int i, const char *name)
 }
 
 /**
+ * @brief The row of pane @p t where entry @p e stands in the pane's order:
+ *        @p e's own row, or the first row that ranks behind it.
+ * @param t  the pane
+ * @param e  the entry
+ * @return the row; t->held when every row ranks ahead of @p e
+ */
+static int place_of(const fm_tree_t *t, const fm_entry_t *e)
+{
+    int r = 0;
+    while (r < t->held && fm_tree_rank(&t->page[r], e) < 0) {
+        ++r;
+    }
+    return r;
+}
+
+/** @brief What of a pane RESCAN's answer keeps: its top row on screen and
+ *         its selected entry, copied before the answer replaces the page. */
+typedef struct {
+    bool have;           /**< the pane held rows                        */
+    fm_entry_t top;      /**< the entry of the top row on screen        */
+    bool have_sel;       /**< an entry was selected                     */
+    fm_entry_t sel;      /**< the selected entry                        */
+} place_t;
+
+/**
+ * @brief Pane @p i's place, as RESCAN keeps it.
+ * @param i  the pane
+ * @param p  takes the place
+ */
+static void place_note(int i, place_t *p)
+{
+    const fm_tree_t *t = &s.pane[i];
+    memset(p, 0, sizeof(*p));
+    if (!s.read[i] || t->held <= 0) {
+        return;
+    }
+    const int top = (s.scroll[i] < t->held) ? s.scroll[i] : t->held - 1;
+    p->have = true;
+    p->top = t->page[(top > 0) ? top : 0];
+    const fm_entry_t *sel = fm_tree_selected(t);
+    if (sel != NULL) {
+        p->have_sel = true;
+        p->sel = *sel;
+    }
+}
+
+/**
+ * @brief RESCAN's answer for pane @p i keeps the pane's place: the entry
+ *        that was the top row on screen stays the top row, and the
+ *        selection stays on its entry (fm_tree_page() keeps it by name).
+ *
+ * A top row gone from the card leaves the entry now at its place on top.
+ * A selected entry gone from the card hands the selection to the entry
+ * now at its place, the next in the order; to the last row when it was
+ * the folder's last entry; to none when the page is empty, or when every
+ * row ranks ahead of it and a next page stands, where it may still be.
+ * The scroll is held to the rows after (fs_clamp_scroll()).
+ *
+ * @param i  the pane
+ * @param p  the place before the answer (place_note())
+ */
+static void place_keep(int i, const place_t *p)
+{
+    fm_tree_t *t = &s.pane[i];
+    if (!p->have) {
+        return;
+    }
+    s.scroll[i] = place_of(t, &p->top);
+    if (!p->have_sel || t->selected >= 0 || t->held == 0) {
+        return;
+    }
+    const int r = place_of(t, &p->sel);
+    if (r < t->held) {
+        (void)fm_tree_select(t, r);
+    } else if (!fm_tree_has_next(t)) {
+        (void)fm_tree_select(t, t->held - 1);
+    }
+}
+
+/**
  * @brief The answer of a pane's request: the pane as the card's task read
  *        it.  A pane read from another card than the other's sends both
  *        back to their start folders.
@@ -263,6 +346,11 @@ static void take_pane(void)
     }
     const bool moved = (s.req.kind == FM_REQ_ENTER || s.req.kind == FM_REQ_UP);
     const fm_err_t err = s.req.err;
+    const bool keep = s.req_keep && s.req.kind == FM_REQ_PAGE;
+    place_t place = { .have = false };
+    if (keep) {
+        place_note(i, &place);
+    }
     s.pane[i] = s.req.tree;
     s.read[i] = true;
     s.pane_err[i] = err;
@@ -271,6 +359,8 @@ static void take_pane(void)
         if (s.pane[i].selected >= 0) {
             select_name(i, s.pane[i].page[s.pane[i].selected].name);
         }
+    } else if (keep) {
+        place_keep(i, &place);
     }
     if (s.req.kind == FM_REQ_ENTER && err != FM_OK && err != FM_ERR_NO_CARD
         && err != FM_ERR_CARD_GONE) {
@@ -390,6 +480,10 @@ static void send_next(void)
         }
         s.req.look = s.need_look;
         s.req_pane = i;
+        /* The request carries RESCAN's wish: a PAGE out before RESCAN, a
+         * NEXT, is answered as it was asked. */
+        s.req_keep = s.keep_place[i];
+        s.keep_place[i] = false;
         want(i, NEED_NONE, FM_GO_FIRST);
         if (!submit()) {
             /* No task: no pane is read, and none waits. */
@@ -639,11 +733,14 @@ void fs_foot(fs_foot_t b)
     const fm_entry_t *e = fs_selected();
     const char *name = (e != NULL) ? e->name : "";
     if (b == FS_RESCAN) {
+        /* Each pane's page again from its first entry, its place kept;
+         * behind a request under way, as every listing waits. */
         fs_quiet();
         s.need_look = true;
-        want(0, NEED_PAGE, FM_GO_FIRST);
-        want(1, NEED_PAGE, FM_GO_FIRST);
-        s.scroll[0] = s.scroll[1] = 0;
+        for (int i = 0; i < 2; ++i) {
+            want(i, NEED_PAGE, FM_GO_SAME);
+            s.keep_place[i] = true;
+        }
         pump();
         files_screen_invalidate();
         return;

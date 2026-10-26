@@ -70,6 +70,16 @@ history is in git.
 
 ### Changed
 
+- FILES' footer runs as LOGS' does: RESCAN at the left, 140 x 52px, then
+  COPY, MOVE, RENAME, DELETE, NEW and INFO, and OPEN at the right margin,
+  118 x 52px each, 6px apart. One enum (`fs_foot_t`) orders the buttons
+  for the drawing and the touch test alike.
+- FILES' RESCAN reads each pane again at the page it shows, from the
+  page's first entry, and keeps the pane's place: the top row's entry
+  stays on top, the selection stays on its entry, and a selected entry gone
+  from the card hands the selection to the entry now at its place in the
+  order. A page that holds fewer rows shows its last 6
+  ([RESCAN](docs/Screens.md#rescan)).
 - LOGS' file list shows each file's date between its name and its size:
   the modification time the card holds, as FILES INFO shows it, in the
   zone of SETUP > PANEL's Time zone, `2026-10-26 09:41`, in a column of

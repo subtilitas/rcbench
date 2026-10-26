@@ -13,12 +13,13 @@
  *     48px, 420px wide from 8px in; the scroll bar 56px wide, 8px
  *     in from the pane's right, from y 90, 284px tall;
  *   - the message line y 388 to 436;
- *   - the footer y 440 to 492: OPEN, COPY, MOVE, RENAME, DELETE, NEW, INFO
- *     118px wide from x 8 at a pitch of 124px, RESCAN 140px at x 876;
+ *   - the footer y 440 to 492: RESCAN 140px at x 8, then COPY, MOVE,
+ *     RENAME, DELETE, NEW, INFO and OPEN 118px wide from x 154 at a pitch
+ *     of 124px, OPEN at x 898;
  *   - the DELETE question's CANCEL x 186 and DELETE x 538, the progress
  *     box's CANCEL x 362, 300 x 56px from y 304; INFO's CLOSE x 362,
  *     300 x 56px from y 364;
- *   - NEW's choice from x 446, y 312: FOLDER and TEXT FILE, 56px rows.
+ *   - NEW's choice from x 468, y 312: FOLDER and TEXT FILE, 56px rows.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,8 +46,8 @@
 #define FS_SPOT_BAR_CX(i)  (FS_SPOT_PANE_X(i) + 464)
 #define FS_SPOT_BAR_TOP    90
 #define FS_SPOT_BAR_H      284
-/** @brief The middle of footer button @p b: 0 OPEN to 7 RESCAN. */
-#define FS_SPOT_FOOT_CX(b) (((b) < 7) ? 8 + (b) * 124 + 59 : 946)
+/** @brief The middle of footer button @p b: 0 RESCAN to 7 OPEN. */
+#define FS_SPOT_FOOT_CX(b) (((b) == 0) ? 78 : 154 + ((b) - 1) * 124 + 59)
 #define FS_SPOT_FOOT_CY    466
 #define FS_SPOT_FOOT_Y     440                     /**< The footer's top. */
 #define FS_SPOT_FOOT_BOT   492                     /**< Its foot. */
@@ -58,13 +59,13 @@
 #define FS_SPOT_CLOSE_CX   512
 #define FS_SPOT_CLOSE_CY   392
 /** @brief NEW's rows: FOLDER, TEXT FILE. */
-#define FS_SPOT_NEW_CX     596
+#define FS_SPOT_NEW_CX     618
 #define FS_SPOT_NEW_CY(i)  (312 + 4 + (i) * 56 + 28)
 /** @brief The message line's top. */
 #define FS_SPOT_MSG_Y      388
 
 /** @brief The footer's buttons, as fs_foot_t numbers them. */
 enum {
-    FS_SPOT_OPEN = 0, FS_SPOT_COPY, FS_SPOT_MOVE, FS_SPOT_RENAME,
-    FS_SPOT_DELETE, FS_SPOT_NEW, FS_SPOT_INFO, FS_SPOT_RESCAN
+    FS_SPOT_RESCAN = 0, FS_SPOT_COPY, FS_SPOT_MOVE, FS_SPOT_RENAME,
+    FS_SPOT_DELETE, FS_SPOT_NEW, FS_SPOT_INFO, FS_SPOT_OPEN
 };
