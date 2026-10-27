@@ -66,6 +66,7 @@ python3 tools/check_protocols.py --check   # every module under protocols/ stand
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/check_units.py --check  # a number and its unit without a space
+python3 tools/check_prose.py --check  # the writing rules, exceptions in check_prose_allow.txt
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
