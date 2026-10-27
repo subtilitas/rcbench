@@ -55,6 +55,21 @@ WEITERES stellt, solange der Tester den Port hat, was VERBINDEN anwendet:
 
 Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Netzteils dem Port: Die Zeile SOLL und der Bildschirm SUPPLY nehmen keine Änderung und kein EIN an. AUSGANG AUS und STOP wirken. Ohne PD mini werden Spannung und Stromgrenze gespeichert und nicht angewendet.
 
+## Der Versorgungszyklus
+
+Ein KST- oder Chaservo-Servo tritt nur aus einem Einschalten in den Programmiermodus ein und handelt nach einem geschriebenen Wert erst ab seinem nächsten Einschalten: ein Chaservo am Prüfstand überging VERBINDEN bei eingeschalteter Versorgung und folgte nach einem Schreiben keinem PWM, bis seine Versorgung aus und wieder an war.
+
+| Schritt | Ein PD mini mit eingeschaltetem Ausgang | Kein PD mini |
+|---|---|---|
+| VERBINDEN | der Ausgang 1s aus, an, die Leitung 1s auf low, dann der Einstieg | der Einstieg 250ms nach dem Tippen: Servoversorgung aus- und einschalten, 1s später VERBINDEN tippen |
+| VERLASSEN nach einem Schreiben | der Ausgang 1s aus, an, die Leitung 1s auf low, dann PWM | PWM; die Werte wirken nach Aus- und Einschalten der Servoversorgung |
+| VERLASSEN ohne Geschriebenes | PWM nach WARTEZEIT VOR PWM, die Versorgung, wie sie ist | dasselbe |
+
+Mit ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und steigt wie bisher ein. ABBRECHEN oder STOP in der 1s aus lässt den Ausgang aus: `Der Versorgungszyklus wurde abgebrochen. Der Ausgang des PD mini bleibt aus.`
+
+![VERBINDEN mit eingeschaltetem Ausgang](view:servo-kst-supply-on)
+![Die 1s aus](view:servo-kst-cycling)
+
 ![Ein laufender Vorgang](view:servo-kst-working)
 
 ## Der Reiter SERVO
@@ -64,14 +79,18 @@ Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Ne
 | Zeile | Taste | Wirkung |
 |---|---|---|
 | PORT | VERBINDEN, ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
-| SERVO V6, SERVO V8 | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
+| SERVO | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
+| TYPE | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |
-| ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
 | WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN |
 | SCHREIBEN INS SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
-| ÄNDERUNGEN | n WERTE SCHREIBEN | schreibt die geänderten Werte |
+| ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
+| (keine Beschriftung) | n WERTE SCHREIBEN | schreibt die geänderten Werte |
 
-V6 ist eine Ansteuerung mit 20kHz, V8 eine mit 333Hz. Der Typ wird nie bearbeitet und nie geschrieben.
+Kein Register hält die Serie: V8-Flächenservos lesen mit gesetztem 20k_sel, wie V6. Nach einem Lesen zeigt TYPE den Typ, den 20k_sel nahelegt, mit Fragezeichen, `V6?`, und die Zeile unter dem Zustand bittet, das Etikett des Servos zu prüfen. Ein Tippen auf TYPE setzt V6 oder V8. Der Typ gehört der Sitzung, geht in eine gespeicherte Datei und hält ein Laden: eine Datei eines anderen Typs wird nicht geladen, und eine Datei, die ohne gesetzten Typ angetippt wird, fragt zuerst nach dem Typ. Der Typ wird nie ins Servo geschrieben.
+
+![Die Liste TYPE](view:servo-kst-type)
+![Ein gesetzter Typ](view:servo-kst-type-set)
 
 ![Ein Servo unbekannter Belegung: nur lesen](view:servo-kst-readonly)
 
@@ -91,7 +110,7 @@ Ein Wert wird in einem Entwurf auf dem Panel bearbeitet. Vor dem Schreiben errei
 | ABSTIMMEN | DEAD BAND, MAX. DUTY (10 bis 98%), BOOST (bis 3000us), STRETCH (x1 bis x32), SOFT START, TEMPOGRENZE, TEMPO |
 | PULS | NEUTRAL (1360 bis 1640us), PULSE LOWER (ab 500us), PULSE UPPER (bis 2500us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
 | FAILSAFE | BEWEGEN BEI SIGNALVERLUST, POSITION (500 bis 2500us), NACH (0,4 bis 13,0s) |
-| GESPERRT | der Servotyp, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet |
+| GESPERRT | 20K SEL, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet |
 
 ![Der Reiter PULS](view:servo-kst-pulse)
 ![Der Reiter FAILSAFE](view:servo-kst-failsafe)
@@ -127,7 +146,9 @@ n WERTE SCHREIBEN öffnet die Seite zum Schreiben mit den Änderungen, `DEAD BAN
 ![Ein laufendes Schreiben: nicht abziehen](view:servo-kst-writing)
 ![Ein fertiges Schreiben](view:servo-kst-written)
 
-Ein Wert, der geschrieben und zurückgelesen ist, gilt als wirksam. Ob ein Servo ihn vor seinem nächsten Einschalten anwendet, ist nicht gemessen.
+Ein Wert, der geschrieben und zurückgelesen ist, steht im Servo und wirkt ab seinem nächsten Einschalten. Mit PD mini sagt die Meldung `Die Werte wirken nach VERLASSEN: es schaltet die Versorgung 1s aus und wieder ein.`; ohne ihn `Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.`
+
+![Ein Schreiben mit PD mini](view:servo-kst-written-supply)
 
 ## Dateien
 
@@ -138,7 +159,9 @@ DATEIEN listet die Servodateien im Ordner `BENCH/KST/CONF` der Karte, 5 je Seite
 ![Der Name einer neuen Datei](view:servo-kst-name)
 ![Eine geladene Datei](view:servo-kst-file-loaded)
 
-Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nichts das Servo. Eine Datei des anderen Servotyps, eine beschädigte Datei oder ein Wert außerhalb seiner harten Grenze wird nicht geladen, und die Zeile sagt warum.
+Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nichts das Servo. Eine Datei eines anderen Typs als des unter TYPE gesetzten, eine beschädigte Datei oder ein Wert außerhalb seiner harten Grenze wird nicht geladen, und die Zeile sagt warum. Ohne gesetzten Typ öffnet der Tipp zuerst `SERVO-TYPE VOR DEM LADEN`.
+
+![Der Typ vor einem Laden](view:servo-kst-type-first)
 
 ## ZURÜCKSPIELEN und WEITERES
 
@@ -164,8 +187,9 @@ Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu st
 ## Verlassen
 
 ![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
+![VERLASSEN nach einem Schreiben mit PD mini](view:servo-kst-leave-cycle)
 
-VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. 2s HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
+VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, und das Servo kann fahren. Nach einem Schreiben mit PD mini sagt die Seite, dass der Ausgang zuerst 1s aus und wieder an geht; ohne PD mini sagt sie, dass die Werte nach Aus- und Einschalten der Versorgung wirken. Ohne Geschriebenes bleibt die Versorgung, wie sie ist. 2s HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
 
 ## Verwandte Seiten
 

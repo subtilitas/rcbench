@@ -53,6 +53,9 @@
 #define VAL_W    150          /**< a value, 15 cells of KP_FONT */
 #define WIDE_W   260          /**< a wide row's value, keys included */
 #define STEP_W   56           /**< a stepped row's minus and plus keys */
+/** @brief WRITE n VALUES, a row with no label: 22 cells, "20 WERTE
+ *         SCHREIBEN" and room, as the Hitec programmer's. */
+#define WRITE_W  220
 
 /**
  * @brief The faces: KP_FONT, the type scale's LABEL face (10 x 20), for
@@ -82,7 +85,7 @@ enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
 
 enum {
     A_PORT = 0, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
-    A_WRITE
+    A_WRITE, A_TYPE
 };
 
 /**
@@ -101,7 +104,7 @@ typedef struct {
 } row_t;
 
 /** @brief The rows of the five pages, in kst_panel.c, and their count. */
-#define ROW_COUNT 33
+#define ROW_COUNT 34
 /** @brief The overlay's rows, ROW_COUNT of them. */
 extern const row_t kpn_rows[ROW_COUNT];
 
@@ -115,7 +118,7 @@ enum {
     P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES
 };
 
-enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES };
+enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE };
 #define FILES_SAVE (-1)                 /**< list entry value: the entry that saves a new file */
 /**
  * @brief List entry value: the entry that pages on to the files behind these
@@ -178,6 +181,9 @@ typedef struct {
     bool       name_wait;               /**< whether the save of that name is on its way */
     bool       files_wait;              /**< whether the files list was asked for */
     uint32_t   files_seq;               /**< files sequence number of the list asked for */
+    /** @brief The file a load waits with for the servo type: the TYPE list
+     *         is open for it, and the load follows the choice */
+    char       type_file[KST_PROG_NAME_MAX];
 
     struct {
         bool open;                      /**< whether the list shows */
@@ -280,13 +286,7 @@ bool kpn_flag(uint16_t f);
  * @return true when the port is in programming
  */
 bool kpn_programming(void);
-/**
- * @brief The servo's type as the card names it; 0 without a servo.
- * @return the type, 0 for none
- */
-unsigned kpn_servo_type(void);
-/** @brief A row's label: its text, or for PORT and SERVO what they hold
- *         now.
+/** @brief A row's label: its text, or for PORT what it holds now.
  * @param r the row
  * @return the label
  */
@@ -477,7 +477,8 @@ void kpn_warn_restore(const kst_prog_restore_t *plan);
 void kpn_warn_check(const kst_prog_restore_t *plan);
 /** @brief The page of RELEASE. */
 void kpn_warn_release(void);
-/** @brief The page of the way back to PWM, with and without a PD mini. */
+/** @brief The page of the way back to PWM: the supply cycle after a write
+ *         with a PD mini, the note of the one the values wait for without. */
 void kpn_warn_leave(void);
 /** @brief The page of a programming voltage @p mv, mV, above what a
  *         standard servo is rated for.
@@ -521,7 +522,8 @@ void kpn_keypad_done(float v);
  */
 void kpn_step(const row_t *r, bool up);
 /**
- * @brief Whether a LEAVE's wait runs: an abort keeps the session.
+ * @brief Whether a LEAVE's wait or its supply cycle runs: an abort keeps
+ *        the session after a wait, and the output off after a cycle.
  * @param p the session
  * @return true when the wait runs
  */

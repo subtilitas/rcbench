@@ -204,7 +204,7 @@ static void fullest_write_page(void)
     edit(KST_F_RIGHT_ANGLE, (uint16_t)(servo(KST_F_RIGHT_ANGLE) - 1u));
     edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
 }
 
@@ -288,7 +288,7 @@ TEST_CASE(no_note_or_message_lies_under_the_alert_band)
             }
             for (unsigned id = 1u; id < 256u; ++id) {
                 for (size_t a = 0; a < sizeof(args) / sizeof(args[0]); ++a) {
-                    const gfx_rect_t last = val(PG_SERVO, 4, 0);
+                    const gfx_rect_t last = val(PG_SERVO, 4, 1);
                     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
                     gfx_rect_t drawn;
                     bool repeat;

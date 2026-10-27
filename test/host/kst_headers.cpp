@@ -29,7 +29,7 @@ int kst_headers_link(void)
     (void)kst_plan_release_pairing(&img, &plan);
     (void)kst_session_init(&ses, nullptr);
     (void)kst_pio_clock(150000000u, &clock);
-    (void)kst_file_format(&img, nullptr, 0);
+    (void)kst_file_format(&img, KST_TYPE_V8, nullptr, 0);
     return static_cast<int>(frame.n_half);
 }
 

@@ -42,6 +42,17 @@ unsigned kst_card_type(const kst_image_t *img)
 }
 
 /**
+ * @brief The type the screen numbers 6 or 8 as kst_file.h names it.
+ *
+ * @param no 6, 8, or any other value for none.
+ * @return KST_TYPE_V6, KST_TYPE_V8, or KST_TYPE_NONE.
+ */
+static kst_type_t type_of_no(unsigned no)
+{
+    return no == 6u ? KST_TYPE_V6 : no == 8u ? KST_TYPE_V8 : KST_TYPE_NONE;
+}
+
+/**
  * @brief A result of the store as kst_prog.h names it.
  *
  * @param r    The store result.
@@ -106,8 +117,8 @@ static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
         r = kst_store_preset(io, base, sizeof(base));
     }
     if (r == KST_STORE_OK) {
-        const size_t len = kst_file_format(&req->image, s_text,
-                                           sizeof(s_text));
+        const size_t len = kst_file_format(&req->image, type_of_no(req->type),
+                                           s_text, sizeof(s_text));
         r = len != 0u ? kst_store_save(io, base, s_text, len, NULL)
                       : KST_STORE_WRITE_ERROR;
     }
@@ -236,7 +247,8 @@ static void load(const kst_store_io_t *io, const kst_prog_card_req_t *req,
                : s_file.kind == KST_FILE_EDITED_TYPED ? KST_PROG_FILE_EDITED
                                                       : KST_PROG_FILE_UNTYPED;
     done->type = type_no(s_file.type);
-    switch (kst_file_load(&s_file, &req->image, &req->image, &s_load)) {
+    switch (kst_file_load(&s_file, &req->image, &req->image,
+                          type_of_no(req->type), &s_load)) {
     case KST_FILE_LOAD_OK:
         done->image = s_load.target;
         done->skipped = s_load.skipped;

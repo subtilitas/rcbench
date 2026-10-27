@@ -400,13 +400,14 @@ static void edit_row(int i)
         break;
     case R_LIM_MODE:
         /* For a run started after it, and only where it is offered. */
-        if (!servo_limrun_running(&s.lim) && lim_prog_why() == NULL) {
+        if (!servo_limrun_running(&s.lim) && lim_mode_why() == NULL) {
             s.lim_prog = !s.lim_prog;
         }
         break;
     case R_LIM_PULSES:
         /* For a run started after it, on the programming port only. */
-        if (!servo_limrun_running(&s.lim) && lim_reads()) {
+        if (!servo_limrun_running(&s.lim) && lim_reads()
+            && lim_write_why() == NULL) {
             s.lim_pulses = !s.lim_pulses;
         }
         break;

@@ -316,7 +316,7 @@ TEST_CASE(no_setting_that_reaches_the_port_changes_while_it_is_held)
         /* A write. */
         enable();
         edits();
-        tap(val(PG_SERVO, 2, 0));
+        tap(val(PG_SERVO, 4, 0));
         show();
         for (unsigned i = 0; i < 40u && kst_panel_editor() != 0; ++i) {
             hold(2.1f);
@@ -837,7 +837,7 @@ TEST_CASE(an_unknown_coordinate_is_no_row)
 {
     fresh();
     connected();
-    CHECK(kst_panel_label(PG_SERVO, 1, 1) != NULL);
+    CHECK(kst_panel_label(PG_SERVO, 2, 0) != NULL);
     CHECK(kst_panel_label(PG_SERVO, 1, 9) == NULL);
     CHECK(kst_panel_label(PG_SERVO, 99, 0) == NULL);
     CHECK(kst_panel_label(-1, 0, 0) == NULL);
@@ -847,7 +847,7 @@ TEST_CASE(an_unknown_coordinate_is_no_row)
     CHECK_EQ(kst_panel_value_rect(PG_SERVO, 99, 0).h, 0);
     CHECK_EQ(kst_panel_step_rect(PG_SERVO, 99, true).w, 0);
     /* A real row still has a size. */
-    CHECK(kst_panel_value_rect(PG_SERVO, 1, 1).w > 0);
+    CHECK(kst_panel_value_rect(PG_SERVO, 2, 0).w > 0);
 }
 
 /* A label asked for under the wrong row name fails instead of matching. */
@@ -855,7 +855,7 @@ TEST_CASE(a_label_under_the_wrong_row_name_fails)
 {
     fresh();
     connected();
-    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 1), TR(KP_FILES));
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 2, 0), TR(KP_FILES));
     CHECK(kst_panel_label(PG_SERVO, 2, 1) == NULL
           || strcmp(kst_panel_label(PG_SERVO, 2, 1), TR(KP_FILES)) != 0);
 }
@@ -878,7 +878,7 @@ TEST_CASE(a_tap_asks_for_a_look_once)
     CHECK(kst_panel_card_look());
     CHECK(!kst_panel_card_look());
     /* FILES with no card says so and asks for the look. */
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
     CHECK(kst_panel_card_look());
     CHECK(!kst_panel_card_look());

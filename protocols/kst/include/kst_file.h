@@ -14,11 +14,11 @@
  * work on buffers the caller holds.  There is no file access, no heap and
  * no stdio here.
  *
- * The text kst_file_format() writes, format version 1:
+ * The text kst_file_format() writes, format version 2:
  *
- *   line 1         "KST servo configuration, format 1"
- *   line 2         "Type: V6" or "Type: V8", the servo type as kst_type()
- *                  gives it for the registers
+ *   line 1         "KST servo configuration, format 2"
+ *   line 2         "Type: V6" or "Type: V8", the servo type the caller
+ *                  states; no line where it states none
  *   27 lines       one per named field of the field table, in table order:
  *                  "<name> = <value>", the value as kst_field_display()
  *                  gives it with its unit; a field no load writes carries
@@ -42,9 +42,18 @@
  * A text is read as one of 3 kinds (kst_file_kind_t).  A line whose first
  * word is "checksum" decides between them.
  *
+ * The servo type is the caller's statement, not a reading of the
+ * registers: 20k_sel, the bit kst_type() reads, is a drive setting, and
+ * V8 servos with it set are known (kst_reg.h).  A text of format 1 names
+ * the type kst_type() gave for its registers; it is read and its type is
+ * not kept: kst_file_parse() gives KST_TYPE_NONE for it, and an edited
+ * one is KST_FILE_EDITED_UNTYPED.
+ *
  * With a checksum line the file is VERIFIED or refused.  The 4 register
- * lines are the image.  The type line has to state the type of that image.
- * The field lines are not interpreted: the checksum covers them.  The file
+ * lines are the image.  In format 2 the type line may be left out and
+ * states the type on its own; in format 1 it is there and has to state the
+ * type kst_type() gives for that image.  The field lines are not
+ * interpreted: the checksum covers them.  The file
  * has LF on every line or CR LF (carriage return, 0x0D, then LF) on every
  * line; because the checksum counts a line end as one LF, a transfer that
  * converts every line end keeps the file valid.  Both kinds in one file, a
@@ -69,11 +78,11 @@
  *     field does not encode are refused with the line number.
  *   - A field without a line keeps the servo's value.
  *   - The type line ("Type: V6", also "type = v6") and the register block
- *     ("registers 32" and its 4 lines) may each stay or go.  The block
- *     states the servo type.  A file with a block or a type line is
- *     KST_FILE_EDITED_TYPED; a type line that contradicts the block refuses
- *     the file.  A file with neither states no type
- *     (KST_FILE_EDITED_UNTYPED).
+ *     ("registers 32" and its 4 lines) may each stay or go.  In format 2
+ *     a file with a type line is KST_FILE_EDITED_TYPED and one without is
+ *     KST_FILE_EDITED_UNTYPED; the block states no type.  In format 1 a
+ *     type line that contradicts the type kst_type() gives for the block
+ *     refuses the file, and the file is KST_FILE_EDITED_UNTYPED.
  *   - The value of an editable field becomes a raw value through
  *     kst_field_raw_from_display(), with its rounding, as an entry on a
  *     keypad does.  A value that reads as the servo already shows it
@@ -118,7 +127,7 @@ extern "C" {
  * @brief The format version kst_file_format() writes and kst_file_parse()
  *        reads.
  */
-#define KST_FILE_FORMAT 1u
+#define KST_FILE_FORMAT 2u
 
 /**
  * @brief Characters kst_file_format() puts in a line at most, the line end not
@@ -174,27 +183,31 @@ typedef enum {
     KST_FILE_ERR_VALUE = 14,     /**< edited: not a number in the field's
                                       unit, or a value the field does not
                                       encode; a type that is not V6 or V8 */
-    KST_FILE_ERR_TYPE = 15,      /**< the type line contradicts the
-                                      register block */
+    KST_FILE_ERR_TYPE = 15,      /**< format 1: the type line
+                                      contradicts the type kst_type()
+                                      gives for the register block */
 } kst_file_err_t;
 
 /** @brief What a text is. */
 typedef enum {
     KST_FILE_VERIFIED = 0,       /**< the checksum fits: the registers are
                                       what kst_file_format() wrote */
-    KST_FILE_EDITED_TYPED = 1,   /**< no checksum; a register block or a
-                                      type line states the servo type */
-    KST_FILE_EDITED_UNTYPED = 2, /**< no checksum, no register block and no
-                                      type line: the file states no servo
+    KST_FILE_EDITED_TYPED = 1,   /**< no checksum; format 2 with a type
+                                      line: the file states the servo
+                                      type */
+    KST_FILE_EDITED_UNTYPED = 2, /**< no checksum, and no type line or
+                                      format 1: the file states no servo
                                       type */
 } kst_file_kind_t;
 
 /** @brief A text as read. */
 typedef struct {
     kst_file_kind_t kind;
+    /** @brief The format version of line 1, 1 to KST_FILE_FORMAT. */
+    uint32_t version;
     /**
-     * @brief The servo type the file states; KST_TYPE_NONE for
-     *        KST_FILE_EDITED_UNTYPED.
+     * @brief The servo type the file states: its type line in format 2;
+     *        KST_TYPE_NONE without one and for every text of format 1.
      */
     kst_type_t type;
     /** @brief The register block; all 0 for a file without one. */
@@ -228,14 +241,19 @@ typedef struct {
  * @p out_size the text does not fit; KST_FILE_MAX always fits.
  *
  * Every image is written, also one that breaks the layout fingerprint or a
- * limit: the file states what a servo holds.
+ * limit: the file states what a servo holds.  @p type is the servo type the
+ * caller states, the operator's: KST_TYPE_V6 or KST_TYPE_V8 writes the type
+ * line, any other value writes none.  kst_type() of @p img is no such
+ * statement.
  *
  * @param img       Image to write.
+ * @param type      Servo type the file states, or KST_TYPE_NONE for none.
  * @param out       Buffer that receives the text.
  * @param out_size  Size of out, in bytes.
  * @return Bytes written; 0 for a NULL argument or a buffer that is too small.
  */
-size_t kst_file_format(const kst_image_t *img, char *out, size_t out_size);
+size_t kst_file_format(const kst_image_t *img, kst_type_t type, char *out,
+                       size_t out_size);
 
 /**
  * @brief Read @p len bytes of @p text.
@@ -278,7 +296,8 @@ typedef struct {
     kst_file_verdict_t verdict;
     kst_file_kind_t kind;       /**< the file's kind, for the display */
     kst_type_t file_type;       /**< the type the file states */
-    kst_type_t servo_type;      /**< the type of the servo's image */
+    kst_type_t servo_type;      /**< the servo's type as the caller
+                                     states it */
     uint8_t named;              /**< fields the file gives a value for:
                                      @c fields for a verified file, the
                                      lines read for an edited one */
@@ -317,9 +336,11 @@ typedef struct {
  * limits compare with, as the caller passes it to kst_limits_edit() for an
  * edit made by hand; a caller without a separate backup passes @p servo.
  *
- * 1. Type.  A file that states a type loads into a servo of that type
- *    (kst_type()) and into no other.  A file that states no type passes:
- *    its values apply as input made by hand.
+ * 1. Type.  A file that states a type loads into a servo whose type the
+ *    caller states as the same, @p servo_type, and into no other: a
+ *    @p servo_type of KST_TYPE_NONE takes no file that states one.  A file
+ *    that states no type passes: its values apply as input made by hand.
+ *    kst_type() of @p servo is not consulted.
  * 2. Values.  Only fields of access class KST_ACCESS_EDITABLE are taken:
  *    all of them from a verified file's registers, the named ones from an
  *    edited file's lines.  A field of another class is never taken from a
@@ -339,13 +360,16 @@ typedef struct {
  *
  * @param file    The file as read.
  * @param servo   The servo image as read last.
- * @param backup  The image the limits compare with.
- * @param out     Receives the load result.
+ * @param backup      The image the limits compare with.
+ * @param servo_type  The servo's type as the caller states it, or
+ *                    KST_TYPE_NONE while it states none.
+ * @param out         Receives the load result.
  * @return The verdict.
  */
 kst_file_verdict_t kst_file_load(const kst_file_t *file,
                                  const kst_image_t *servo,
                                  const kst_image_t *backup,
+                                 kst_type_t servo_type,
                                  kst_file_load_t *out);
 
 #ifdef __cplusplus

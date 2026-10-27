@@ -386,6 +386,10 @@ ASSERTED = {
             "KST_REG_COUNT == 2u * LINK_KS_IMAGE_REGS",
             "LINK_KST_RESULT_SUPPLY > KST_SES_ERR_NO_PLAN",
         ),
+        "shared/ui/kst_panel_draw.c": (
+            "KST_PORT_STOP_MS + KST_PORT_LOW_MS + KST_ENTRY_LOW_US / 1000u "
+            "== 250u",
+        ),
     },
     "hitec": {
         "shared/bench/hitec_link.c": (

@@ -55,6 +55,21 @@ MORE, while the tester has the port, sets what CONNECT applies:
 
 While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied.
 
+## The power cycle
+
+A KST or Chaservo servo enters programming mode only from a power-up, and acts on a written value only from its next power-up: a Chaservo on the bench ignored CONNECT with its supply on, and followed no PWM after a write until its supply was off and on again.
+
+| Step | A PD mini with its output on | No PD mini |
+|---|---|---|
+| CONNECT | the output off for 1s, on, the line low for 1s, then the entry | the entry 250ms after the tap: switch the servo's supply off and on, tap CONNECT 1s later |
+| LEAVE after a write | the output off for 1s, on, the line low for 1s, then PWM | PWM; the values act after the servo's supply is switched off and on |
+| LEAVE with nothing written | PWM after WAIT BEFORE PWM, the supply as it is | the same |
+
+With the output off CONNECT switches it on and enters as before. ABORT or STOP in the 1s off leaves the output off: `The supply cycle was stopped. The PD mini output stays off.`
+
+![CONNECT with the output on](view:servo-kst-supply-on)
+![The 1s off](view:servo-kst-cycling)
+
 ![An operation running](view:servo-kst-working)
 
 ## The SERVO tab
@@ -64,14 +79,18 @@ While the port is out of PWM, the supply's set points belong to the port: the SE
 | Row | Button | Does |
 |---|---|---|
 | PORT | CONNECT, ABORT, LEAVE | takes the port, ends the running operation, gives the port back |
-| SERVO V6, SERVO V8 | READ ALL | reads the 32 registers, each until 3 of at most 5 reads agree |
+| SERVO | READ ALL | reads the 32 registers, each until 3 of at most 5 reads agree |
+| TYPE | V6?, V8?, V6, V8 | the servo type, V6 or V8, as the operator sets it |
 | FILES | CHOOSE | saves the servo's values to the card, loads a file |
-| RESTORE | CHOOSE | writes a backup back |
 | MORE | CHOOSE | in programming: VERIFY, DISCARD EDITS, RELEASE PAIRING |
 | ENABLE WRITE TO SERVO | OFF, ON | the write switch |
-| CHANGES | WRITE n VALUES | writes the changed values |
+| RESTORE | CHOOSE | writes a backup back |
+| (no label) | WRITE n VALUES | writes the changed values |
 
-V6 is a 20kHz drive, V8 a 333Hz drive. The type is never edited and never written.
+No register holds the series: V8 wing servos read with 20k_sel set, as V6 would. After a read TYPE shows the type 20k_sel suggests with a question mark, `V6?`, and the line under the state asks to check the servo's label. A tap on TYPE sets V6 or V8. The type is the session's, goes into a saved file and holds a load: a file of another type is not loaded, and a file tapped with no type set asks for the type first. The type is never written to the servo.
+
+![The TYPE list](view:servo-kst-type)
+![A type set](view:servo-kst-type-set)
 
 ![A servo of unknown layout: read only](view:servo-kst-readonly)
 
@@ -91,7 +110,7 @@ A value is edited in a draft on the panel. Nothing reaches the servo before WRIT
 | TUNE | DEAD BAND, MAX. DUTY (10 to 98%), BOOST (up to 3000us), STRETCH (x1 to x32), SOFT START, SPEED LIMIT, SPEED |
 | PULSE | NEUTRAL (1360 to 1640us), PULSE LOWER (from 500us), PULSE UPPER (up to 2500us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
 | FAILSAFE | MOVE ON SIGNAL LOSS, POSITION (500 to 2500us), AFTER (0.4 to 13.0s) |
-| LOCKED | the servo type, LOCK, MODE and the protection block; shown, never edited |
+| LOCKED | 20K SEL, LOCK, MODE and the protection block; shown, never edited |
 
 ![The PULSE tab](view:servo-kst-pulse)
 ![The FAILSAFE tab](view:servo-kst-failsafe)
@@ -127,7 +146,9 @@ WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6us`.
 ![A write running: do not unplug](view:servo-kst-writing)
 ![A write done](view:servo-kst-written)
 
-A value written and read back counts as in effect. Whether a servo acts on it before its next power-up is not measured.
+A value written and read back is in the servo and acts from its next power-up. With a PD mini the message says `The values act after LEAVE: it switches the supply off for 1s and on.`; without one `The written values act after the servo's supply is switched off and on.`
+
+![A write with a PD mini](view:servo-kst-written-supply)
 
 ## Files
 
@@ -138,7 +159,9 @@ FILES lists the servo files in the card's folder `BENCH/KST/CONF`, 5 a page, eac
 ![The name of a new file](view:servo-kst-name)
 ![A file loaded](view:servo-kst-file-loaded)
 
-A tap on a file loads it into the draft. Nothing reaches the servo before the write. A file of the other servo type, a damaged file or a value outside its hard limit is not loaded, and the line says why.
+A tap on a file loads it into the draft. Nothing reaches the servo before the write. A file of another type than the one set on TYPE, a damaged file or a value outside its hard limit is not loaded, and the line says why. With no type set the tap opens `SERVO TYPE BEFORE THE LOAD` first.
+
+![The type asked before a load](view:servo-kst-type-first)
 
 ## Restore and MORE
 
@@ -164,8 +187,9 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 ## Leaving
 
 ![LEAVE PROGRAMMING](view:servo-kst-leave)
+![LEAVE after a write with a PD mini](view:servo-kst-leave-cycle)
 
-LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD 2s TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
+LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM and the servo may move. After a write with a PD mini the page says the output goes off for 1s and on first; without a PD mini it says the values act after the supply is switched off and on. With nothing written the supply stays as it is. HOLD 2s TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
 
 ## Related pages
 

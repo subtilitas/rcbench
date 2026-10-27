@@ -2,7 +2,9 @@
  * A card for the servo programmer's tests: the directory in memory behind
  * the 5 functions of kst_store_io_t, and kst_card_run() on it.
  *
- * A file is kept as what a test states of it: an image, a kind and a type.
+ * A file is kept as what a test states of it: an image, a kind and a type,
+ * the type its text states: fake_card_put() gives it the type 20k_sel of
+ * the image suggests, as a test of a servo of that type wants.
  * Its text is made by kst_file_format() when the store reads it, and a text
  * the store writes is read back by kst_file_parse(), so every answer passes
  * the code the panel runs.  A file may also be a text given as it is.
@@ -130,8 +132,11 @@ static inline size_t fake_card_text(const fake_file_t *f, char *out,
                                     size_t cap)
 {
     char full[KST_FILE_MAX];
+    /* A checked file keeps every line, its type line where it states a
+     * type; an edited one keeps its type line where it is typed. */
     const bool typed = f->type != 0u && f->kind < KST_PROG_FILE_UNTYPED;
-    const uint8_t kind = typed ? f->kind : (uint8_t)KST_PROG_FILE_UNTYPED;
+    const uint8_t kind = f->kind == KST_PROG_FILE_VERIFIED || typed
+                             ? f->kind : (uint8_t)KST_PROG_FILE_UNTYPED;
     size_t len, n = 0, at = 0;
 
     if (f->text != NULL) {
@@ -139,7 +144,10 @@ static inline size_t fake_card_text(const fake_file_t *f, char *out,
         memcpy(out, f->text, len < cap ? len : cap);
         return len;
     }
-    len = kst_file_format(&f->img, full, sizeof(full));
+    len = kst_file_format(&f->img,
+                          f->type == 6u   ? KST_TYPE_V6
+                          : f->type == 8u ? KST_TYPE_V8 : KST_TYPE_NONE,
+                          full, sizeof(full));
     while (at < len) {
         size_t line_end = at;
 
@@ -253,7 +261,8 @@ static inline kst_store_io_result_t fake_card_create(void *ctx,
     memcpy(f->name, name, base - strlen(KST_STORE_EXT));
     f->img = file.image;
     f->kind = KST_PROG_FILE_VERIFIED;
-    f->type = (uint8_t)kst_card_type(&file.image);
+    f->type = file.type == KST_TYPE_V6   ? 6u
+            : file.type == KST_TYPE_V8 ? 8u : 0u;
     return KST_STORE_IO_OK;
 }
 

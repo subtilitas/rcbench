@@ -10,6 +10,12 @@
  * what a master must never do: a frame sooner than 3ms after the last
  * window, a write to register 0x00, an address above 0x1F.
  *
+ * With needs_power_up set the servo behaves as the bench measured a
+ * Chaservo (2026-10-16): it enters programming mode only on the first sync
+ * after a power-up (sim_power()), and a written register acts, in acting[],
+ * only from the next power-up on.  Without it every sync is taken and
+ * acting[] is not kept.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -228,6 +234,12 @@ typedef struct {
     uint8_t reg[KST_REG_COUNT];
     bool powered;
     bool in_mode;
+    bool needs_power_up;     /* only the first sync after a power-up enters */
+    bool fresh;              /* powered up, and no sync since */
+    unsigned power_ups;
+    uint32_t power_up_us;    /* clock at the last power-up */
+    uint32_t sync_taken_us;  /* clock at the sync that entered, last */
+    uint8_t acting[KST_REG_COUNT];  /* what the servo acts on */
     /* the wire */
     uint32_t now_us;
     bool busy;
@@ -259,6 +271,7 @@ static inline void sim_init(sim_t *sim)
 
     memset(sim, 0, sizeof(*sim));
     memcpy(sim->reg, img.r, sizeof(sim->reg));
+    memcpy(sim->acting, img.r, sizeof(sim->acting));
     sim->powered = true;
     sim->min_gap_us = 0xFFFFFFFFu;
     sim->min_gap_after_silence_us = 0xFFFFFFFFu;
@@ -340,6 +353,28 @@ static inline void sim_store(sim_t *sim, unsigned reg, unsigned value)
     sim->reg[reg & KST_REG_MAX] = (uint8_t)value;
 }
 
+/**
+ * @brief The servo's supply switched on or off.  Off ends programming mode;
+ *        on makes the next sync the first after a power-up and the
+ *        registers the values the servo acts on.
+ * @param sim the servo
+ * @param on true for on
+ */
+static inline void sim_power(sim_t *sim, bool on)
+{
+    if (on == sim->powered) {
+        return;
+    }
+    sim->powered = on;
+    sim->in_mode = false;
+    sim->fresh = on;
+    if (on) {
+        sim->power_ups++;
+        sim->power_up_us = sim->now_us;
+        memcpy(sim->acting, sim->reg, sizeof(sim->acting));
+    }
+}
+
 static inline bool sim_start(void *ctx, const kst_frame_t *frame,
                              uint32_t window_ns)
 {
@@ -409,9 +444,13 @@ static inline bool sim_start(void *ctx, const kst_frame_t *frame,
     /* The servo. */
     if (sim->powered && action != SIM_F_DEAF) {
         if (kind == SIM_SYNC) {
+            const bool takes = !sim->needs_power_up || sim->fresh;
+
             sim->n_syncs++;
-            if (!sim->in_mode) {
+            sim->fresh = false;
+            if (!sim->in_mode && takes) {
                 sim->in_mode = true;
+                sim->sync_taken_us = sim->now_us;
                 reply = true;
                 flags = 2;
             }

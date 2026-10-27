@@ -94,6 +94,7 @@ static kst_prog_level_t level_of(unsigned id)
     case KST_PROG_MSG_RESTORED:
     case KST_PROG_MSG_RELEASED:
     case KST_PROG_MSG_LEFT:
+    case KST_PROG_MSG_LEFT_CYCLED:
     case KST_PROG_MSG_SAVED:
     case KST_PROG_MSG_LOADED:
     case KST_PROG_MSG_LOADED_EDITED:
@@ -196,6 +197,18 @@ static bool flag(const kst_prog_t *p, uint16_t f)
 }
 
 /**
+ * @brief Whether the servo's supply is the bench's to switch: a PD mini
+ *        answers the port and the panel reads its output on.
+ *
+ * @param p The programmer state.
+ * @return true when a PD mini answers with its output on.
+ */
+static bool pd_on(const kst_prog_t *p)
+{
+    return flag(p, LINK_KS_F_RAIL) && p->f.supply_read;
+}
+
+/**
  * @brief The session no longer stands: the port is in PWM, the link went, or
  *        the IOmcu started again.
  *
@@ -221,6 +234,7 @@ static void session_gone(kst_prog_t *p)
     p->keep = false;
     p->conf_set = 0;
     p->plan_n = 0;
+    p->type = 0;
 }
 
 /* -------------------------------------------------------------- the fields */
@@ -980,10 +994,17 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_VERIFY:
         (void)kst_prog_say(p, KST_PROG_MSG_VERIFIED, 0);
         break;
-    case LINK_KST_OP_LEAVE:
+    case LINK_KST_OP_LEAVE: {
+        /* Without a PD mini the bench switches no supply: a write acts
+         * after the operator's. */
+        const bool owed = (p->written || !p->wrote_known)
+                          && !flag(p, LINK_KS_F_RAIL);
+
         session_gone(p);
-        (void)kst_prog_say(p, KST_PROG_MSG_LEFT, 0);
+        (void)kst_prog_say(p, owed ? KST_PROG_MSG_LEFT_NOTE
+                                   : KST_PROG_MSG_LEFT, 0);
         break;
+    }
     case LINK_KST_OP_POWER_CYCLED:
         /* The exit where LEAVE is not taken: no wait was applied. */
         session_gone(p);
@@ -1125,6 +1146,89 @@ static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
     return nothing;
 }
 
+static kst_prog_msg_id_t from_pwm(const kst_prog_t *p, uint8_t port);
+
+/**
+ * @brief The ENTER after a CONNECT's supply cycle, as kst_prog_connect()
+ *        sends it: refused, and nothing sent, where a STOP, the operator's
+ *        ABORT, an ARM or a target change came while the output was off.
+ *
+ * @param p   The programmer state.
+ * @param off The REBOOT ended with the output off: the ENTER switches it on
+ *            at the values the session runs at.
+ */
+static void cycle_enter(kst_prog_t *p, bool off)
+{
+    kst_prog_msg_id_t m = p->cycle_cut ? KST_PROG_MSG_CYCLE_CUT
+                                       : from_pwm(p, p->port);
+    kst_link_request_t r;
+
+    if (m != KST_PROG_MSG_NONE) {
+        p->chain_read = false;
+        (void)kst_prog_say(p, m, 0);
+        return;
+    }
+    r = request(p, LINK_KST_OP_ENTER);
+    if (off) {
+        r.supply_mv = p->cycle_mv;
+        r.supply_ma = p->cycle_ma;
+    }
+    kst_prog_send(p, &r);
+}
+
+/**
+ * @brief The end of a supply cycle the model asked of the port: a REBOOT.
+ *
+ * A CONNECT's cycle that ended with the output off, or that the port
+ * refused because the output was off already, goes on with the ENTER.  A
+ * LEAVE's cycle ends the session; one the port refused because the output
+ * was off goes on as LEAVE.  Every other end is the operation's own.
+ *
+ * @param p The programmer state.
+ * @param o The outcome of the REBOOT.
+ * @return true when the end is taken here.
+ */
+static bool cycle_end(kst_prog_t *p, const kst_link_outcome_t *o)
+{
+    const uint8_t cycle = p->cycle;
+    const bool done = o->kind == KST_LINK_OUT_DONE;
+    const bool cut = done && o->result == KST_SES_ERR_ABORTED;
+    const bool no_supply = o->kind == KST_LINK_OUT_REFUSED
+                           && o->refusal == LINK_KST_REF_NO_SUPPLY;
+
+    p->cycle = CYCLE_NONE;
+    if (o->op != LINK_KST_OP_REBOOT || cycle == CYCLE_NONE) {
+        return false;
+    }
+    if (cycle == CYCLE_CONNECT) {
+        if (!(cut || (done && o->result == KST_SES_OK) || no_supply)) {
+            p->chain_read = false;
+            return false;
+        }
+        if (p->f.stopped) {
+            p->chain_read = false;
+            (void)kst_prog_say(p, KST_PROG_MSG_STOPPED, 0);
+        } else {
+            cycle_enter(p, cut);
+        }
+        return true;
+    }
+    if (no_supply) {
+        const kst_link_request_t r = request(p, LINK_KST_OP_LEAVE);
+
+        kst_prog_send(p, &r);
+        return true;
+    }
+    if (!done || (!cut && o->result != KST_SES_OK)) {
+        return false;
+    }
+    session_gone(p);
+    (void)kst_prog_say(p, !cut ? KST_PROG_MSG_LEFT_CYCLED
+                       : p->f.stopped ? KST_PROG_MSG_STOPPED
+                                      : KST_PROG_MSG_CYCLE_CUT, 0);
+    return true;
+}
+
 /**
  * @brief Takes the outcome of an operation.
  *
@@ -1138,6 +1242,9 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
 
     p->wait = W_NONE;
     p->cmd_ready = false;
+    if (cycle_end(p, o)) {
+        return;
+    }
     if (is_write(op)
         && !(o->kind == KST_LINK_OUT_DONE && o->result == KST_SES_OK)) {
         if (write_failed(p, o)) {
@@ -1268,6 +1375,7 @@ void kst_prog_not_started(kst_prog_t *p, unsigned id, unsigned arg)
     p->wait = W_NONE;
     p->cmd_ready = false;
     p->chain_read = false;
+    p->cycle = CYCLE_NONE;
     keep_back(p);
     (void)kst_prog_say(p, id, arg);
 }
@@ -1372,41 +1480,6 @@ void kst_prog_gate_set(kst_prog_t *p, kst_prog_gate_t *g)
     p->gate = g;
 }
 
-void kst_prog_gate_init(kst_prog_gate_t *g)
-{
-    atomic_store(&g->pass, 0u);
-}
-
-void kst_prog_gate_offer(kst_prog_gate_t *g, uint32_t id)
-{
-    atomic_store(&g->pass, id);
-}
-
-/**
- * @brief The pass of @p id, taken by whoever asks first.
- *
- * @param g  The gate.
- * @param id The START id.
- * @return true when the pass was taken.
- */
-static bool gate_take(kst_prog_gate_t *g, uint32_t id)
-{
-    uint32_t want = id;
-
-    return id != 0u
-        && atomic_compare_exchange_strong(&g->pass, &want, 0u);
-}
-
-bool kst_prog_gate_claim(kst_prog_gate_t *g, uint32_t id)
-{
-    return gate_take(g, id);
-}
-
-bool kst_prog_gate_revoke(kst_prog_gate_t *g, uint32_t id)
-{
-    return gate_take(g, id);
-}
-
 void kst_prog_screen_entry(kst_prog_t *p)
 {
     p->write_enabled = false;
@@ -1487,6 +1560,16 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         }
     }
 
+    if (p->wait == W_OUTCOME && p->cycle == CYCLE_CONNECT && !p->cycle_off
+        && !p->cmd_ready && up && f->rd.known
+        && f->rd.port == LINK_KST_RAIL_OFF) {
+        /* The REBOOT has the output off.  An ABORT in RAIL_OFF keeps it
+         * off after the off time, and the ENTER powers the servo up. */
+        p->cycle_off = true;
+        p->cmd.kind = KST_PROG_CMD_ABORT;
+        p->cmd.id = 0;
+        p->cmd_ready = true;
+    }
     if (p->wait == W_OUTCOME && up && f->rd.known
         && (f->rd.flags & LINK_KS_F_BUSY) != 0u) {
         /* The port says the operation runs or plans: the wait for its
@@ -1603,10 +1686,11 @@ kst_prog_state_t kst_prog_state(const kst_prog_t *p)
         || (p->wait == W_NONE && !p->cmd_ready)) {
         return st;
     }
-    if (p->op == LINK_KST_OP_ENTER) {
+    if (p->op == LINK_KST_OP_ENTER || p->cycle == CYCLE_CONNECT) {
         return KST_PROG_ENTERING;
     }
     return p->op == LINK_KST_OP_LEAVE || p->op == LINK_KST_OP_POWER_CYCLED
+                   || p->cycle == CYCLE_LEAVE
                ? KST_PROG_LEAVING : KST_PROG_WORKING;
 }
 
@@ -1740,19 +1824,6 @@ const kst_image_t *kst_prog_file_image(const kst_prog_t *p)
 {
     return p->card_auto && maybe_written(p) && p->f.have_backup
          ? &p->f.backup : &p->servo;
-}
-
-/* The fields a limit run writes: the two angles, and PULSE LOWER and
- * PULSE UPPER where SERVO PULSES sets them. */
-#define RUN_FIELDS (KST_FIELD_BIT(KST_F_LEFT_ANGLE) \
-                    | KST_FIELD_BIT(KST_F_RIGHT_ANGLE) \
-                    | KST_FIELD_BIT(KST_F_PULSE_LOWER) \
-                    | KST_FIELD_BIT(KST_F_PULSE_UPPER))
-
-bool kst_prog_run_matches(const kst_prog_t *p)
-{
-    return p->run_hold && p->have_servo
-        && (kst_prog_differ(&p->run_img, &p->servo) & ~RUN_FIELDS) == 0u;
 }
 
 bool kst_prog_save_first(const kst_prog_t *p)
@@ -2016,11 +2087,33 @@ kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
         return kst_prog_say(p, m, 0);
     }
     session_gone(p);
+    /* The session begins under this model: every write of it is seen. */
+    p->wrote_known = true;
     p->port = port;
     p->chain_read = true;
-    r = request(p, LINK_KST_OP_ENTER);
+    p->cycle_cut = false;
+    p->cycle_off = false;
+    if (pd_on(p)) {
+        /* A servo enters programming mode from a power-up only: the
+         * output goes off first, and the ENTER switches it on at the
+         * lower of the two voltages and current limits. */
+        p->cycle = CYCLE_CONNECT;
+        p->cycle_mv = p->f.set_mv != 0u && p->f.set_mv < p->supply_mv
+                          ? p->f.set_mv : p->supply_mv;
+        p->cycle_ma = p->f.set_ma != 0u && p->f.set_ma < p->supply_ma
+                          ? p->f.set_ma : p->supply_ma;
+        r = request(p, LINK_KST_OP_REBOOT);
+    } else {
+        p->cycle = CYCLE_NONE;
+        r = request(p, LINK_KST_OP_ENTER);
+    }
     kst_prog_send(p, &r);
     return KST_PROG_MSG_NONE;
+}
+
+bool kst_prog_connect_cycles(const kst_prog_t *p)
+{
+    return pd_on(p);
 }
 
 void kst_prog_bench_armed(kst_prog_t *p, bool armed)
@@ -2638,55 +2731,6 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     return KST_PROG_MSG_NONE;
 }
 
-bool kst_prog_run_hold(kst_prog_t *p)
-{
-    if (!p->have_servo) {
-        return false;
-    }
-    p->run_hold = true;
-    p->run_own = true;
-    p->run_written = false;
-    p->run_img = p->servo;
-    p->run_backup[0] = '\0';
-    return true;
-}
-
-void kst_prog_run_written(kst_prog_t *p)
-{
-    if (p->run_hold && !p->run_written) {
-        p->run_written = true;
-        if (p->backed_up) {
-            memcpy(p->run_backup, p->backup, KST_PROG_NAME_MAX);
-            p->run_backup[KST_PROG_NAME_MAX - 1u] = '\0';
-        } else {
-            p->run_backup[0] = '\0';
-        }
-    }
-}
-
-void kst_prog_run_close(kst_prog_t *p)
-{
-    p->run_own = false;
-}
-
-void kst_prog_run_drop(kst_prog_t *p)
-{
-    p->run_hold = false;
-    p->run_own = false;
-    p->run_written = false;
-    p->run_backup[0] = '\0';
-}
-
-const kst_image_t *kst_prog_run_image(const kst_prog_t *p)
-{
-    return p->run_hold ? &p->run_img : NULL;
-}
-
-const char *kst_prog_run_backup(const kst_prog_t *p)
-{
-    return p->run_hold ? p->run_backup : "";
-}
-
 void kst_prog_forget(kst_prog_t *p)
 {
     if (p->wait != W_NONE || p->cmd_ready) {
@@ -2698,9 +2742,24 @@ void kst_prog_forget(kst_prog_t *p)
     }
 }
 
+bool kst_prog_cycle_owed(const kst_prog_t *p)
+{
+    return kst_prog_state(p) == KST_PROG_PROGRAMMING
+        && (p->written || !p->wrote_known);
+}
+
+bool kst_prog_leave_cycles(const kst_prog_t *p)
+{
+    return kst_prog_cycle_owed(p) && pd_on(p)
+        && !flag(p, LINK_KS_F_MUST_READ) && !flag(p, LINK_KS_F_LOCKED);
+}
+
 /*
- * The end of a session.  The servo is taken to need no power cycle: the
- * port goes back to PWM with the supply as it is.
+ * The end of a session.  A written value acts after the servo's next
+ * power-up (docs/ServoProgrammer.md, "The power cycle"):
+ * with a PD mini answering and a write owed its power cycle, REBOOT (link
+ * 4.13) switches the supply off for KST_PORT_RAIL_OFF_MS and on again,
+ * holds the line low for KST_PORT_RAIL_WAIT_MS and gives the pin to PWM.
  *
  * LEAVE (link 4.15) sends no frame and switches nothing: the port holds the
  * line low for pwm_wait_ms and then gives the pin back to the PWM generator.
@@ -2725,8 +2784,11 @@ kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p)
     }
     p->leave_doubt = (fl & (LINK_KS_F_MUST_READ | LINK_KS_F_LOCKED)) != 0u
                   && (fl & LINK_KS_F_RAIL) == 0u;
-    r = request(p, p->leave_doubt ? LINK_KST_OP_POWER_CYCLED
-                                  : LINK_KST_OP_LEAVE);
+    p->cycle = kst_prog_leave_cycles(p) ? CYCLE_LEAVE : CYCLE_NONE;
+    p->cycle_cut = false;
+    r = request(p, p->cycle == CYCLE_LEAVE ? LINK_KST_OP_REBOOT
+                   : p->leave_doubt        ? LINK_KST_OP_POWER_CYCLED
+                                           : LINK_KST_OP_LEAVE);
     kst_prog_send(p, &r);
     return KST_PROG_MSG_NONE;
 }
@@ -2747,6 +2809,9 @@ uint16_t kst_prog_wait_ms(const kst_prog_t *p)
 
 void kst_prog_abort(kst_prog_t *p)
 {
+    if (p->cycle != CYCLE_NONE) {
+        p->cycle_cut = true;
+    }
     if (waits_unsent(p) || (p->wait == W_ANSWER && taken_back(p))) {
         kst_prog_not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED, 0);
     } else if (p->wait != W_NONE

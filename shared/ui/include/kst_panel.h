@@ -253,7 +253,7 @@ bool kst_panel_run_no_servo(void);
  * @param lo out: the value both angles take by the hard rules, at least
  * @param hi out: and at most
  * @param reversion out: REVERSION
- * @param type out: its type number
+ * @param type out: its 20k_sel, 0 or 1, as read
  * @param pulse_dus out: NEUTRAL, PULSE LOWER and PULSE UPPER in 0.1us, 0
  *        for one not shown
  * @return false with none read, or one that is not editable (no KST or

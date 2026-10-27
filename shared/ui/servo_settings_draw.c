@@ -60,10 +60,10 @@ static bool row_unused(const ov_row_t *r)
         return !settings_get_bool(SET_ENC_EN);
     }
     if (r->kind == R_LIM_MODE) {
-        return servo_limrun_running(&s.lim) || lim_prog_why() != NULL;
+        return servo_limrun_running(&s.lim) || lim_mode_why() != NULL;
     }
     if (r->kind == R_LIM_PULSES) {
-        return servo_limrun_running(&s.lim);
+        return servo_limrun_running(&s.lim) || lim_write_why() != NULL;
     }
     if (r->kind != R_SETTING) {
         return false;

@@ -380,6 +380,11 @@ TEST_CASE(a_file_of_the_other_servo_type_is_not_loaded)
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_BACKUP_OTHER);
     CHECK_EQ(kst_prog_load_skipped(&g_p), 0);
+    /* The type stays the operator's whatever 20k_sel reads: set to the
+     * other one. */
+    CHECK_EQ(kst_prog_type(&g_p), t_servo);
+    CHECK_EQ(kst_prog_type_guess(&g_p), t_other);
+    CHECK_EQ(kst_prog_type_set(&g_p, t_other), KST_PROG_MSG_NONE);
     (void)fake_card_put(&g_fc, "FIRST", &sv);
     load("FIRST");
     CHECK_EQ(msg(), KST_PROG_MSG_LOAD_TYPE);
@@ -1318,6 +1323,106 @@ TEST_CASE(a_file_confirmed_is_the_value_confirmed)
     kst_prog_soft_cancel(&g_p);
 }
 
+/* The servo type is the operator's: 20k_sel suggests one and sets none, a
+ * value other than 6 and 8, a servo not read and a card operation on its
+ * way refuse a type, a load waits for one, a save states it, a load is
+ * held to it, a second read keeps it and the end of the session clears
+ * it.  Nothing reaches the servo. */
+TEST_CASE(the_type_is_the_operators_and_holds_saves_and_loads)
+{
+    const kst_image_t sv = sim_bench_image();
+    const kst_image_t ot = other_type();
+    const unsigned guess = kst_field_get(&sv, KST_F_20K_SEL) != 0u ? 6u : 8u;
+    const unsigned other = guess == 6u ? 8u : 6u;
+    const fake_file_t *f;
+
+    fresh_at(0u);
+    g_card = true;
+    link_up();
+    /* No servo: no guess, no type. */
+    CHECK_EQ(kst_prog_type_guess(&g_p), 0u);
+    CHECK_EQ(kst_prog_type(&g_p), 0u);
+    CHECK_EQ(kst_prog_type_set(&g_p, 6u), KST_PROG_MSG_NEED_READ);
+    CHECK_EQ(kst_prog_type(&g_p), 0u);
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    /* Read: the guess, and no type set by it. */
+    CHECK_EQ(kst_prog_type_guess(&g_p), guess);
+    CHECK_EQ(kst_prog_type(&g_p), 0u);
+    /* Every value but 6 and 8 at both sides of each is refused. */
+    for (unsigned t = 0; t <= 10u; ++t) {
+        if (t == 6u || t == 8u) {
+            continue;
+        }
+        CHECK_EQ(kst_prog_type_set(&g_p, t),
+                 KST_PROG_MSG_START + KST_LINK_START_ARG);
+        CHECK_EQ(kst_prog_type(&g_p), 0u);
+    }
+    CHECK_EQ(kst_prog_type_set(&g_p, 0xFFFFFFFFu),
+             KST_PROG_MSG_START + KST_LINK_START_ARG);
+    /* A load waits for the type: no request goes to the card. */
+    (void)fake_card_put(&g_fc, "G", &sv);
+    (void)fake_card_put(&g_fc, "O", &ot);
+    CHECK_EQ(kst_prog_load(&g_p, "G"), KST_PROG_MSG_NEED_TYPE);
+    CHECK(!kst_prog_card_busy(&g_p));
+    frames(3);
+    CHECK_EQ(g_fc.loads, 0u);
+    /* The other type than the guess: set, the draft and the servo as
+     * they were. */
+    edit(KST_F_BOOST, (uint16_t)(kst_field_get(&sv, KST_F_BOOST) - 1u));
+    CHECK_EQ(kst_prog_type_set(&g_p, other), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_type(&g_p), other);
+    CHECK_EQ(draft(KST_F_BOOST), kst_field_get(&sv, KST_F_BOOST) - 1u);
+    CHECK_EQ(kst_field_get(kst_prog_servo(&g_p), KST_F_20K_SEL),
+             kst_field_get(&sv, KST_F_20K_SEL));
+    CHECK_EQ(g_sim.n_writes, 0u);
+    kst_prog_discard(&g_p);
+    /* A save states it. */
+    save("S");
+    CHECK_EQ(msg(), KST_PROG_MSG_SAVED);
+    f = fake_card_find(&g_fc, "S");
+    CHECK(f != NULL);
+    if (f != NULL) {
+        CHECK_EQ(f->type, other);
+        CHECK_EQ(kst_field_get(&f->img, KST_F_20K_SEL),
+                 kst_field_get(&sv, KST_F_20K_SEL));
+    }
+    /* A load is held to it: the guess's file is refused, the file of the
+     * type set loads. */
+    load("G");
+    CHECK_EQ(msg(), KST_PROG_MSG_LOAD_TYPE);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, guess | (other << 8));
+    load("O");
+    CHECK(msg() != KST_PROG_MSG_LOAD_TYPE);
+    kst_prog_discard(&g_p);
+    /* No change while a card operation is on its way. */
+    CHECK_EQ(kst_prog_load(&g_p, "S"), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_type_set(&g_p, guess), BUSY);
+    CHECK_EQ(kst_prog_type(&g_p), other);
+    frames(3);
+    CHECK(!kst_prog_card_busy(&g_p));
+    CHECK_EQ(kst_prog_type_set(&g_p, guess), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_type(&g_p), guess);
+    /* A second read keeps it. */
+    CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_type(&g_p), guess);
+    /* The end of the session clears it. */
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK_EQ(kst_prog_type(&g_p), 0u);
+    CHECK_EQ(kst_prog_type_guess(&g_p), 0u);
+    /* As does a link loss under a session. */
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_type_set(&g_p, guess), KST_PROG_MSG_NONE);
+    kst_link_lost(&g_k);
+    frames(5);
+    CHECK_EQ(kst_prog_type(&g_p), 0u);
+}
+
 int main(void)
 {
     RUN(a_write_the_backup_file_stopped_leaves_no_field_written);
@@ -1351,5 +1456,6 @@ int main(void)
     RUN(no_backup_is_taken_while_an_operation_runs);
     RUN(a_save_that_ends_late_is_the_file_it_made);
     RUN(a_file_confirmed_is_the_value_confirmed);
+    RUN(the_type_is_the_operators_and_holds_saves_and_loads);
     return test_summary("kst_prog_card");
 }

@@ -13,7 +13,6 @@
 
 #include <math.h>
 
-#include "kst_card.h"
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "supply_screen.h"
@@ -246,7 +245,8 @@ bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
     angle[0] = kst_field_get(img, KST_F_LEFT_ANGLE);
     angle[1] = kst_field_get(img, KST_F_RIGHT_ANGLE);
     *reversion = kst_field_get(img, KST_F_REVERSION) != 0u;
-    *type = kst_card_type(img);
+    /* 20k_sel as read: a drive setting, not the series (kst_reg.h). */
+    *type = kst_field_get(img, KST_F_20K_SEL);
     if (!kst_prog_editable(p)
         || !kst_prog_range(p, KST_F_LEFT_ANGLE, lo, hi)
         || !kst_prog_range(p, KST_F_RIGHT_ANGLE, &lo2, &hi2)) {

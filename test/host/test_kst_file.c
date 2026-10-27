@@ -17,7 +17,8 @@
 #include "kst_reg.h"
 #include "kst_sim.h"
 
-#define HEAD "KST servo configuration, format 1\n"
+#define HEAD "KST servo configuration, format 2\n"
+#define HEAD1 "KST servo configuration, format 1\n"
 #define BIT(id) KST_FIELD_BIT(id)
 #define RULE(r) KST_RULE_BIT(r)
 
@@ -61,7 +62,7 @@ static kst_file_err_t parse(const char *text, size_t len, kst_file_t *out,
 /* The text of @p img in g_text, terminated. */
 static size_t written(const kst_image_t *img)
 {
-    const size_t n = kst_file_format(img, g_text, KST_FILE_MAX);
+    const size_t n = kst_file_format(img, kst_type(img), g_text, KST_FILE_MAX);
 
     g_text[n] = '\0';
     return n;
@@ -148,7 +149,7 @@ static kst_file_verdict_t load(const char *body, kst_file_load_t *out)
     if (edited(body, &f, NULL) != KST_FILE_OK) {
         return KST_FILE_LOAD_ARG;
     }
-    return kst_file_load(&f, &servo, &servo, out);
+    return kst_file_load(&f, &servo, &servo, kst_type(&servo), out);
 }
 
 static bool same_image(const kst_image_t *a, const kst_image_t *b)
@@ -172,7 +173,7 @@ TEST_CASE(the_bench_image_is_written_as_the_documented_file)
 
     CHECK_EQ(written(&img), 808);
     CHECK_STR_EQ(g_text,
-        "KST servo configuration, format 1\n"
+        "KST servo configuration, format 2\n"
         "Type: V6\n"
         "Max. Duty = 96 %\n"
         "Boost = 300.0 us\n"
@@ -206,7 +207,7 @@ TEST_CASE(the_bench_image_is_written_as_the_documented_file)
         "08: 41 A4 0D 80 53 07 14 00\n"
         "10: 96 96 00 01 01 00 00 00\n"
         "18: 00 00 00 0A 00 10 00 00\n"
-        "checksum FE83C002\n");
+        "checksum 77F4E82D\n");
 }
 
 TEST_CASE(the_checksum_is_crc_32_over_the_lines_before_it)
@@ -243,20 +244,20 @@ TEST_CASE(the_formatter_writes_nothing_past_its_buffer_and_refuses_a_short_one)
     const kst_image_t img = sim_bench_image();
     const size_t full = written(&img);
 
-    CHECK_EQ(kst_file_format(NULL, g_text, KST_FILE_MAX), 0);
-    CHECK_EQ(kst_file_format(&img, NULL, KST_FILE_MAX), 0);
+    CHECK_EQ(kst_file_format(NULL, KST_TYPE_V6, g_text, KST_FILE_MAX), 0);
+    CHECK_EQ(kst_file_format(&img, KST_TYPE_V6, NULL, KST_FILE_MAX), 0);
     for (size_t size = 0; size < full; ++size) {
         char *exact = malloc(size + 1u);
         REQUIRE_ALLOC(exact);
 
-        CHECK_EQ(kst_file_format(&img, exact, size), 0);
+        CHECK_EQ(kst_file_format(&img, KST_TYPE_V6, exact, size), 0);
         free(exact);
     }
     {
         char *exact = malloc(full > 0u ? full : 1u);
         REQUIRE_ALLOC(exact);
 
-        CHECK_EQ(kst_file_format(&img, exact, full), full);
+        CHECK_EQ(kst_file_format(&img, KST_TYPE_V6, exact, full), full);
         free(exact);
     }
 }
@@ -515,7 +516,7 @@ TEST_CASE(a_cut_bench_file_states_how_many_of_its_27_values_it_holds)
             continue;
         }
         memset(&r, 0xA5, sizeof(r));
-        CHECK_EQ(kst_file_load(&f, &img, &img, &r), KST_FILE_LOAD_OK);
+        CHECK_EQ(kst_file_load(&f, &img, &img, kst_type(&img), &r), KST_FILE_LOAD_OK);
         CHECK_EQ(r.fields, 27);
         if (lines == 35u) {
             CHECK_EQ(r.kind, KST_FILE_VERIFIED);
@@ -548,7 +549,7 @@ TEST_CASE(a_file_of_a_few_lines_states_the_values_it_names)
     CHECK(kst_field_set(&other, KST_F_20K_SEL, 0));
     written(&other);
     CHECK_EQ(parse(g_text, strlen(g_text), &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r),
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r),
              KST_FILE_LOAD_TYPE_MISMATCH);
     CHECK_EQ(r.named, 27);
     CHECK_EQ(r.fields, 27);
@@ -581,7 +582,7 @@ TEST_CASE(a_changed_byte_never_reads_as_a_checked_file)
             as_edited++;
             CHECK_EQ(v, '#');
             CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
-            CHECK_EQ(kst_file_load(&f, &img, &img, &r), KST_FILE_LOAD_OK);
+            CHECK_EQ(kst_file_load(&f, &img, &img, kst_type(&img), &r), KST_FILE_LOAD_OK);
             CHECK(r.editable == 0u);
             CHECK(r.skipped == 0u);
         }
@@ -777,13 +778,17 @@ TEST_CASE(a_version_that_is_no_number_and_a_newer_one_are_told_apart)
     CHECK_EQ(V("KST servo configuration, format 1 \n"), KST_FILE_ERR_VERSION);
     CHECK_EQ(V("KST servo configuration, format 0\n"), KST_FILE_ERR_VERSION);
     CHECK_EQ(V("KST servo configuration, format -1\n"), KST_FILE_ERR_VERSION);
-    CHECK_EQ(V("KST servo configuration, format 2\n"), KST_FILE_ERR_NEWER);
+    CHECK_EQ(V("KST servo configuration, format 3\n"), KST_FILE_ERR_NEWER);
     CHECK_EQ(line, 1);
     CHECK_EQ(V("KST servo configuration, format 99999999999999999999\n"),
              KST_FILE_ERR_NEWER);
     CHECK_EQ(V("KST servo configuration, format 1\n"), KST_FILE_OK);
+    CHECK_EQ(f.version, 1u);
     CHECK_EQ(V("KST servo configuration, format 1\r\n"), KST_FILE_OK);
     CHECK_EQ(V("KST servo configuration, format 01\n"), KST_FILE_OK);
+    CHECK_EQ(V("KST servo configuration, format 2\n"), KST_FILE_OK);
+    CHECK_EQ(f.version, 2u);
+    CHECK_EQ(V("KST servo configuration, format 02\r\n"), KST_FILE_OK);
 #undef V
 }
 
@@ -825,8 +830,14 @@ TEST_CASE(a_checked_file_is_held_to_the_written_form_line_by_line)
              KST_FILE_ERR_MALFORMED);
     CHECK_EQ(parse_sealed(bench_body("Type: V6", "Type: V6 "), &line),
              KST_FILE_ERR_MALFORMED);
-    CHECK_EQ(parse_sealed(bench_body("Type: V6\n", ""), &line),
+    CHECK_EQ(parse_sealed(bench_body("Type: V6", "TYPE V6"), &line),
              KST_FILE_ERR_MALFORMED);
+    CHECK_EQ(line, 2);
+    /* Format 2 leaves the line out where the type is not stated; format 1
+     * has it. */
+    CHECK_EQ(parse_sealed(bench_body("Type: V6\n", ""), &line), KST_FILE_OK);
+    CHECK_EQ(parse_sealed(bench_body("format 2\nType: V6\n", "format 1\n"),
+                          &line), KST_FILE_ERR_MALFORMED);
     CHECK_EQ(line, 2);
 
     /* A field line is not interpreted, but it is ASCII and short. */
@@ -891,17 +902,94 @@ TEST_CASE(a_register_line_of_a_checked_file_is_held_to_the_written_form)
 #undef ROW
 }
 
-TEST_CASE(a_checked_file_whose_type_line_contradicts_its_registers_is_refused)
+/* @p body with @p from replaced by @p to once, in place. */
+static char *swap_once(char *body, const char *from, const char *to)
 {
+    static char out[KST_FILE_MAX];
+    const char *at = strstr(body, from);
+
+    if (at == NULL) {
+        return body;
+    }
+    memcpy(out, body, (size_t)(at - body));
+    strcpy(out + (at - body), to);
+    strcat(out, at + strlen(from));
+    strcpy(body, out);
+    return body;
+}
+
+TEST_CASE(a_format_1_checked_file_whose_type_line_contradicts_its_registers_is_refused)
+{
+    static char body[KST_FILE_MAX];
+    kst_file_t f;
     unsigned line = 0;
 
-    CHECK_EQ(parse_sealed(bench_body("Type: V6", "Type: V8"), &line),
-             KST_FILE_ERR_TYPE);
-    CHECK_EQ(line, 2);
-    /* 20k_sel cleared in register 04 under "Type: V6". */
-    CHECK_EQ(parse_sealed(bench_body("00: 00 F5 F5 14 48", "00: 00 F5 F5 14 08"),
+    CHECK_EQ(parse_sealed(bench_body("format 2\nType: V6", "format 1\nType: V8"),
                           &line), KST_FILE_ERR_TYPE);
     CHECK_EQ(line, 2);
+    /* 20k_sel cleared in register 04 under "Type: V6". */
+    strcpy(body, bench_body("format 2", "format 1"));
+    CHECK_EQ(parse_sealed(swap_once(body, "00: 00 F5 F5 14 48",
+                                    "00: 00 F5 F5 14 08"), &line),
+             KST_FILE_ERR_TYPE);
+    CHECK_EQ(line, 2);
+    /* As written then, it reads, and its type is no statement: none. */
+    CHECK_EQ(parse(g_text, sealed(bench_body("format 2", "format 1")), &f,
+                   &line), KST_FILE_OK);
+    CHECK_EQ(f.version, 1u);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
+}
+
+TEST_CASE(a_format_2_checked_file_states_its_type_whatever_its_registers_hold)
+{
+    static char body[KST_FILE_MAX];
+    kst_file_t f;
+    unsigned line = 0;
+
+    /* A V8 servo with 20k_sel set, as the bench found V8 wing servos. */
+    CHECK_EQ(parse(g_text, sealed(bench_body("Type: V6", "Type: V8")), &f,
+                   &line), KST_FILE_OK);
+    CHECK_EQ(f.version, 2u);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    CHECK_EQ(f.type, KST_TYPE_V8);
+    CHECK_EQ(kst_type(&f.image), KST_TYPE_V6);
+    /* And V6 over 20k_sel clear. */
+    strcpy(body, bench_body("Type: V6", "Type: V6"));
+    CHECK_EQ(parse(g_text, sealed(swap_once(body, "00: 00 F5 F5 14 48",
+                                            "00: 00 F5 F5 14 08")),
+                   &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.type, KST_TYPE_V6);
+    CHECK_EQ(kst_type(&f.image), KST_TYPE_V8);
+    /* No type line: none stated. */
+    CHECK_EQ(parse(g_text, sealed(bench_body("Type: V6\n", "")), &f, &line),
+             KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
+}
+
+TEST_CASE(the_formatter_writes_the_type_the_caller_states_and_none_for_none)
+{
+    kst_image_t img = sim_bench_image();
+    kst_file_t f;
+
+    /* 20k_sel set, the caller says V8. */
+    CHECK(kst_file_format(&img, KST_TYPE_V8, g_text, KST_FILE_MAX) > 0u);
+    CHECK(strstr(g_text, "format 2\nType: V8\n") != NULL);
+    CHECK_EQ(kst_file_parse(g_text, strlen(g_text), &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.type, KST_TYPE_V8);
+    memset(g_text, 0, sizeof(g_text));
+    CHECK_EQ(kst_file_format(&img, KST_TYPE_NONE, g_text, KST_FILE_MAX), 799u);
+    CHECK(strstr(g_text, "Type") == NULL);
+    CHECK(strstr(g_text, "format 2\nMax. Duty = 96 %\n") != NULL);
+    CHECK_EQ(kst_file_parse(g_text, strlen(g_text), &f, NULL), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_VERIFIED);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
+    CHECK(same_image(&f.image, &img));
+    /* A value that is neither type writes none. */
+    memset(g_text, 0, sizeof(g_text));
+    CHECK_EQ(kst_file_format(&img, (kst_type_t)7, g_text, KST_FILE_MAX), 799u);
+    CHECK(strstr(g_text, "Type") == NULL);
 }
 
 /* --- a file a person wrote ---------------------------------------------------- */
@@ -982,7 +1070,7 @@ TEST_CASE(a_written_file_without_its_checksum_line_changes_nothing_in_its_servo)
         CHECK_EQ(f.type, kst_type(&img));
         CHECK(same_image(&f.image, &img));
         CHECK_EQ(bits(f.named), 27);
-        (void)kst_file_load(&f, &img, &img, &r);
+        (void)kst_file_load(&f, &img, &img, kst_type(&img), &r);
         CHECK(r.editable == 0u);
         CHECK(r.skipped == 0u);
         CHECK(same_image(&r.target, &img));
@@ -1160,7 +1248,7 @@ TEST_CASE(a_last_line_that_shows_its_end_is_taken_without_a_line_end)
                     "08: 41 A4 0D 80 53 07 14 00\n"
                     "10: 96 96 00 01 01 00 00 00\n"
                     "18: 00 00 00 0A 00 10 00 00", &f, &line), KST_FILE_OK);
-    CHECK_EQ(f.type, KST_TYPE_V6);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
     /* CR LF on the lines before it. */
     CHECK_EQ(edited("Boost = 300\r\nNeutral = 1500 us", &f, &line),
              KST_FILE_OK);
@@ -1216,7 +1304,7 @@ TEST_CASE(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone)
             CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
             CHECK_EQ(f.value[KST_F_DUTY], (int32_t)raw);
             CHECK((f.as_raw & BIT(KST_F_DUTY)) != 0u);
-            if (kst_file_load(&f, &servo, &servo, &r) == KST_FILE_LOAD_OK) {
+            if (kst_file_load(&f, &servo, &servo, kst_type(&servo), &r) == KST_FILE_LOAD_OK) {
                 CHECK(r.editable == BIT(KST_F_DUTY));
                 CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY), raw);
                 CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY_COPY), raw);
@@ -1225,7 +1313,7 @@ TEST_CASE(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone)
             }
             /* Into the servo it was read from it is no change.  A duty
              * below the hard limit is refused for the servo's own value. */
-            (void)kst_file_load(&f, &img, &img, &r);
+            (void)kst_file_load(&f, &img, &img, kst_type(&img), &r);
             CHECK(r.editable == 0u);
             CHECK(same_image(&r.target, &img));
         }
@@ -1254,7 +1342,7 @@ TEST_CASE(a_changed_line_wins_over_the_register_block)
     CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
     CHECK_EQ(f.value[KST_F_DUTY], 242);
     CHECK((f.as_raw & BIT(KST_F_DUTY)) == 0u);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == BIT(KST_F_DUTY));
     CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY), 242);
     /* "raw" on the line is the line's. */
@@ -1269,7 +1357,7 @@ TEST_CASE(a_changed_line_wins_over_the_register_block)
     memcpy(at, "#", 1);
     CHECK_EQ(parse(g_text, n, &f, NULL), KST_FILE_OK);
     CHECK((f.named & BIT(KST_F_DUTY)) == 0u);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == 0u);
     /* Without the block the line converts: 96% is raw 245. */
     CHECK_EQ(edited("Type: V6\nMax. Duty = 96 %\n", &f, NULL), KST_FILE_OK);
@@ -1277,7 +1365,18 @@ TEST_CASE(a_changed_line_wins_over_the_register_block)
     CHECK((f.as_raw & BIT(KST_F_DUTY)) == 0u);
 }
 
-TEST_CASE(the_type_of_an_edited_file_comes_from_its_block_or_its_type_line)
+/* A file without a checksum in format 1: HEAD1 and @p body. */
+static kst_file_err_t edited1(const char *body, kst_file_t *out,
+                              unsigned *line)
+{
+    static char text[KST_FILE_MAX + 1];
+
+    strcpy(text, HEAD1);
+    strcat(text, body);
+    return parse(text, strlen(text), out, line);
+}
+
+TEST_CASE(the_type_of_an_edited_file_comes_from_its_type_line_alone)
 {
     const kst_image_t bench = sim_bench_image();
     kst_file_t f;
@@ -1297,10 +1396,11 @@ TEST_CASE(the_type_of_an_edited_file_comes_from_its_block_or_its_type_line)
     CHECK_EQ(edited("TYPE:V 8\n", &f, &line), KST_FILE_OK);
     CHECK_EQ(f.type, KST_TYPE_V8);
 
-    /* The block alone, as written and as a person retyped it. */
+    /* The block alone, as written and as a person retyped it: 20k_sel is a
+     * register, and the block states no type. */
     CHECK_EQ(edited(BLOCK_V6, &f, &line), KST_FILE_OK);
-    CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
-    CHECK_EQ(f.type, KST_TYPE_V6);
+    CHECK_EQ(f.kind, KST_FILE_EDITED_UNTYPED);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
     CHECK(same_image(&f.image, &bench));
     CHECK(f.named == 0u);
     CHECK_EQ(edited("Registers   32   # all of them\n"
@@ -1312,19 +1412,35 @@ TEST_CASE(the_type_of_an_edited_file_comes_from_its_block_or_its_type_line)
                     "  18: 00 00 00 0A 00 10 00 00  \n"
                     "Boost = 300\n", &f, &line), KST_FILE_OK);
     CHECK(same_image(&f.image, &bench));
-    CHECK_EQ(f.type, KST_TYPE_V6);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
     CHECK(f.named == BIT(KST_F_BOOST));
 
-    /* Both, agreeing, in either order. */
+    /* Both, in either order: the line states the type, whatever 20k_sel
+     * in the block holds. */
     CHECK_EQ(edited("Type: V6\n" BLOCK_V6, &f, &line), KST_FILE_OK);
     CHECK_EQ(f.type, KST_TYPE_V6);
     CHECK_EQ(edited(BLOCK_V6 "Type: V6\n", &f, &line), KST_FILE_OK);
+    CHECK_EQ(edited("# x\nType: V8\n" BLOCK_V6, &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
+    CHECK_EQ(f.type, KST_TYPE_V8);
+    CHECK_EQ(edited(BLOCK_V6 "Type: V8\n", &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.type, KST_TYPE_V8);
 
-    /* Both, contradicting: refused at the type line. */
-    CHECK_EQ(edited("# x\nType: V8\n" BLOCK_V6, &f, &line), KST_FILE_ERR_TYPE);
+    /* Format 1: the type it names is the one 20k_sel gave, so a line that
+     * contradicts the block is refused at the line, and the file states
+     * no type. */
+    CHECK_EQ(edited1("# x\nType: V8\n" BLOCK_V6, &f, &line), KST_FILE_ERR_TYPE);
     CHECK_EQ(line, 3);
-    CHECK_EQ(edited(BLOCK_V6 "Type: V8\n", &f, &line), KST_FILE_ERR_TYPE);
+    CHECK_EQ(edited1(BLOCK_V6 "Type: V8\n", &f, &line), KST_FILE_ERR_TYPE);
     CHECK_EQ(line, 7);
+    CHECK_EQ(edited1("Type: V6\n" BLOCK_V6 "Boost = 300\n", &f, &line),
+             KST_FILE_OK);
+    CHECK_EQ(f.version, 1u);
+    CHECK_EQ(f.kind, KST_FILE_EDITED_UNTYPED);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
+    CHECK(f.named == BIT(KST_F_BOOST));
+    CHECK_EQ(edited1("Type: V8\nBoost = 300\n", &f, &line), KST_FILE_OK);
+    CHECK_EQ(f.type, KST_TYPE_NONE);
 }
 
 TEST_CASE(a_register_block_that_is_cut_doubled_or_miscounted_is_refused)
@@ -1366,7 +1482,7 @@ TEST_CASE(a_file_of_another_type_is_denied_whatever_its_kind)
 
     /* Checked. */
     CHECK_EQ(parse(g_text, written(&v8), &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &v6, &v6, &r), KST_FILE_LOAD_TYPE_MISMATCH);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, kst_type(&v6), &r), KST_FILE_LOAD_TYPE_MISMATCH);
     CHECK_EQ(r.verdict, KST_FILE_LOAD_TYPE_MISMATCH);
     CHECK_EQ(r.kind, KST_FILE_VERIFIED);
     CHECK_EQ(r.file_type, KST_TYPE_V8);
@@ -1375,30 +1491,63 @@ TEST_CASE(a_file_of_another_type_is_denied_whatever_its_kind)
     CHECK(r.skipped == 0u);
     CHECK(r.rules == 0u);
     CHECK(same_image(&r.target, &v6));
-    CHECK_EQ(kst_file_load(&f, &v8, &v8, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &v8, &v8, kst_type(&v8), &r), KST_FILE_LOAD_OK);
     CHECK_EQ(r.servo_type, KST_TYPE_V8);
 
-    /* Edited, type from the block. */
+    /* Edited with a register block and no type line: no type, into
+     * either. */
     CHECK_EQ(edited(BLOCK_V6 "Boost = 500\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &v8, &v8, &r), KST_FILE_LOAD_TYPE_MISMATCH);
-    CHECK_EQ(r.kind, KST_FILE_EDITED_TYPED);
-    CHECK(same_image(&r.target, &v8));
-    CHECK_EQ(kst_file_load(&f, &v6, &v6, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &v8, &v8, KST_TYPE_V8, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(r.kind, KST_FILE_EDITED_UNTYPED);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_V6, &r), KST_FILE_LOAD_OK);
 
     /* Edited, type from the line. */
     CHECK_EQ(edited("Type: V8\nBoost = 500\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &v6, &v6, &r), KST_FILE_LOAD_TYPE_MISMATCH);
-    CHECK_EQ(kst_file_load(&f, &v8, &v8, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, kst_type(&v6), &r), KST_FILE_LOAD_TYPE_MISMATCH);
+    CHECK_EQ(kst_file_load(&f, &v8, &v8, kst_type(&v8), &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == BIT(KST_F_BOOST));
 
     /* Edited, no type: the values apply to either servo. */
     CHECK_EQ(edited("Boost = 500\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &v6, &v6, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, kst_type(&v6), &r), KST_FILE_LOAD_OK);
     CHECK_EQ(r.kind, KST_FILE_EDITED_UNTYPED);
     CHECK_EQ(r.file_type, KST_TYPE_NONE);
     CHECK_EQ(r.servo_type, KST_TYPE_V6);
-    CHECK_EQ(kst_file_load(&f, &v8, &v8, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &v8, &v8, kst_type(&v8), &r), KST_FILE_LOAD_OK);
     CHECK_EQ(kst_field_get(&r.target, KST_F_BOOST), 36);
+}
+
+TEST_CASE(a_load_holds_the_file_to_the_type_the_caller_states_not_to_20k_sel)
+{
+    const kst_image_t v6 = sim_bench_image();   /* 20k_sel set */
+    kst_file_t f;
+    kst_file_load_t r;
+
+    /* A V8 file into a servo whose 20k_sel is set, stated V8: taken. */
+    CHECK_EQ(edited("Type: V8\nBoost = 500\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_V8, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(r.servo_type, KST_TYPE_V8);
+    CHECK(r.editable == BIT(KST_F_BOOST));
+    /* Stated V6: refused, whatever the registers say. */
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_V6, &r),
+             KST_FILE_LOAD_TYPE_MISMATCH);
+    CHECK_EQ(r.file_type, KST_TYPE_V8);
+    CHECK_EQ(r.servo_type, KST_TYPE_V6);
+    /* Not stated: no file that states a type is taken, at either type. */
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_NONE, &r),
+             KST_FILE_LOAD_TYPE_MISMATCH);
+    CHECK_EQ(r.servo_type, KST_TYPE_NONE);
+    CHECK(same_image(&r.target, &v6));
+    CHECK_EQ(edited("Type: V6\nBoost = 500\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_NONE, &r),
+             KST_FILE_LOAD_TYPE_MISMATCH);
+    /* One that states none is. */
+    CHECK_EQ(edited("Boost = 500\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_NONE, &r), KST_FILE_LOAD_OK);
+    /* A file of format 1 states none: it loads at either type. */
+    CHECK_EQ(edited1("Type: V8\nBoost = 500\n", &f, NULL), KST_FILE_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_V6, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &v6, &v6, KST_TYPE_V8, &r), KST_FILE_LOAD_OK);
 }
 
 TEST_CASE(a_load_without_an_argument_is_refused_and_writes_nothing)
@@ -1409,10 +1558,10 @@ TEST_CASE(a_load_without_an_argument_is_refused_and_writes_nothing)
 
     CHECK_EQ(edited("Boost = 500\n", &f, NULL), KST_FILE_OK);
     memset(&r, 0x5A, sizeof(r));
-    CHECK_EQ(kst_file_load(NULL, &servo, &servo, &r), KST_FILE_LOAD_ARG);
-    CHECK_EQ(kst_file_load(&f, NULL, &servo, &r), KST_FILE_LOAD_ARG);
-    CHECK_EQ(kst_file_load(&f, &servo, NULL, &r), KST_FILE_LOAD_ARG);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, NULL), KST_FILE_LOAD_ARG);
+    CHECK_EQ(kst_file_load(NULL, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_ARG);
+    CHECK_EQ(kst_file_load(&f, NULL, &servo, KST_TYPE_V6, &r), KST_FILE_LOAD_ARG);
+    CHECK_EQ(kst_file_load(&f, &servo, NULL, kst_type(&servo), &r), KST_FILE_LOAD_ARG);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), NULL), KST_FILE_LOAD_ARG);
     CHECK_EQ((unsigned char)((const char *)&r)[0], 0x5A);
 }
 
@@ -1438,7 +1587,7 @@ TEST_CASE(a_checked_file_loads_its_editable_fields_and_reports_the_others)
     CHECK(kst_field_set(&other, KST_F_R06, 0x55));
 
     CHECK_EQ(parse(g_text, written(&other), &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == (BIT(KST_F_DUTY) | BIT(KST_F_NEUTRAL) |
                          BIT(KST_F_REVERSION)));
     CHECK(r.skipped == (BIT(KST_F_PROT1_EN) | BIT(KST_F_PROT1_TIME) |
@@ -1474,7 +1623,7 @@ TEST_CASE(a_file_equal_to_the_servo_changes_and_asks_nothing)
     kst_file_load_t r;
 
     CHECK_EQ(parse(g_text, written(&servo), &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == 0u);
     CHECK(r.skipped == 0u);
     CHECK(r.rules == 0u);
@@ -1543,21 +1692,21 @@ TEST_CASE(a_locked_value_is_compared_as_displayed_and_not_as_raw)
 
     CHECK(kst_field_set(&servo, KST_F_PROT_POT_ERR, 7));
     CHECK_EQ(edited("prot_pot_err = 7 of 12\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.skipped == BIT(KST_F_PROT_POT_ERR));
     CHECK(r.editable == 0u);
     CHECK(same_image(&r.target, &servo));
 
     CHECK_EQ(edited("prot_pot_err = 3 of 12\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.skipped == 0u);
 
     CHECK_EQ(edited("prot_pot_err = raw 7\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.skipped == 0u);
 
     CHECK_EQ(edited("prot_pot_err = raw 3\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.skipped == BIT(KST_F_PROT_POT_ERR));
 }
 
@@ -1570,10 +1719,10 @@ TEST_CASE(a_locked_field_whose_servo_value_has_no_display_counts_as_differing)
     kst_file_load_t r;
 
     CHECK_EQ(edited("Stretch = x2\n", &f, NULL), KST_FILE_OK);
-    (void)kst_file_load(&f, &servo, &servo, &r);
+    (void)kst_file_load(&f, &servo, &servo, kst_type(&servo), &r);
     CHECK(r.editable == BIT(KST_F_STRETCH));
     CHECK_EQ(edited("Stretch = raw 6\n", &f, NULL), KST_FILE_OK);
-    (void)kst_file_load(&f, &servo, &servo, &r);
+    (void)kst_file_load(&f, &servo, &servo, kst_type(&servo), &r);
     CHECK(r.editable == 0u);
 }
 
@@ -1593,11 +1742,11 @@ TEST_CASE(a_number_the_servo_already_shows_changes_nothing)
 
         CHECK_EQ(edited("Max. Duty = 96\n", &f, NULL), KST_FILE_OK);
         CHECK_EQ(f.value[KST_F_DUTY], 245);
-        CHECK_EQ(kst_file_load(&f, &at_244, &at_244, &r), KST_FILE_LOAD_OK);
+        CHECK_EQ(kst_file_load(&f, &at_244, &at_244, kst_type(&at_244), &r), KST_FILE_LOAD_OK);
         CHECK(r.editable == 0u);
         CHECK(same_image(&r.target, &at_244));
         CHECK_EQ(edited("Max. Duty = raw 245\n", &f, NULL), KST_FILE_OK);
-        CHECK_EQ(kst_file_load(&f, &at_244, &at_244, &r), KST_FILE_LOAD_OK);
+        CHECK_EQ(kst_file_load(&f, &at_244, &at_244, kst_type(&at_244), &r), KST_FILE_LOAD_OK);
         CHECK(r.editable == BIT(KST_F_DUTY));
         CHECK_EQ(kst_field_get(&r.target, KST_F_DUTY_COPY), 245);
     }
@@ -1618,7 +1767,7 @@ TEST_CASE(a_value_outside_16_bits_in_a_file_built_by_hand_is_not_applied)
     f.value[KST_F_BOOST] = -1;
     f.value[KST_F_LEFT_ANGLE] = 0x10000;
     f.value[KST_F_SPD] = 0xFFFF;     /* in 16 bits, above the field's 12 */
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK(r.editable == 0u);
     CHECK(same_image(&r.target, &servo));
 }
@@ -1835,7 +1984,7 @@ TEST_CASE(a_checked_file_beyond_a_hard_limit_is_refused_whole)
 
     CHECK(kst_field_edit(&other, KST_F_REVERSION, 1));
     CHECK_EQ(parse(g_text, written(&other), &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_HARD_LIMIT);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_HARD_LIMIT);
     CHECK((r.rules & RULE(KST_H_BOOST_HIGH)) != 0u);
     CHECK_EQ(r.hard_field, KST_F_BOOST);
     CHECK_EQ(r.hard_line, 0);
@@ -1849,7 +1998,7 @@ TEST_CASE(a_servo_that_breaks_a_hard_rule_itself_has_no_line_at_fault)
     kst_file_load_t r;
 
     CHECK_EQ(edited("Reversion = 1\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_HARD_LIMIT);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_HARD_LIMIT);
     CHECK((r.rules & RULE(KST_H_LEFT_ZERO)) != 0u);
     CHECK_EQ(r.hard_field, KST_F_COUNT);
     CHECK_EQ(r.hard_line, 0);
@@ -1866,9 +2015,9 @@ TEST_CASE(the_limits_compare_with_the_backup_the_caller_passes)
     /* 500us is above the servo's 300us and at the backup's 550us less
      * one step: raised against the servo, not against the backup. */
     CHECK_EQ(edited("Boost = 537.5 us\n", &f, NULL), KST_FILE_OK);
-    CHECK_EQ(kst_file_load(&f, &servo, &servo, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &servo, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK((r.rules & RULE(KST_S_BOOST_RAISED)) != 0u);
-    CHECK_EQ(kst_file_load(&f, &servo, &backup, &r), KST_FILE_LOAD_OK);
+    CHECK_EQ(kst_file_load(&f, &servo, &backup, kst_type(&servo), &r), KST_FILE_LOAD_OK);
     CHECK((r.rules & RULE(KST_S_BOOST_RAISED)) == 0u);
     CHECK_EQ(kst_field_get(&r.target, KST_F_BOOST), 39);
 }
@@ -1883,7 +2032,7 @@ static void parse_and_load(const char *text, size_t n)
     unsigned line = 0;
 
     if (parse(text, n, &f, &line) == KST_FILE_OK) {
-        (void)kst_file_load(&f, &servo, &servo, &r);
+        (void)kst_file_load(&f, &servo, &servo, kst_type(&servo), &r);
         /* A loaded target never breaks a hard rule and never changes a
          * bit outside the editable fields and the duty copy. */
         if (r.verdict == KST_FILE_LOAD_OK) {
@@ -1981,7 +2130,9 @@ int main(void)
     RUN(a_checked_file_is_held_to_the_written_form_line_by_line);
     RUN(a_register_count_other_than_32_is_refused);
     RUN(a_register_line_of_a_checked_file_is_held_to_the_written_form);
-    RUN(a_checked_file_whose_type_line_contradicts_its_registers_is_refused);
+    RUN(a_format_1_checked_file_whose_type_line_contradicts_its_registers_is_refused);
+    RUN(a_format_2_checked_file_states_its_type_whatever_its_registers_hold);
+    RUN(the_formatter_writes_the_type_the_caller_states_and_none_for_none);
     RUN(a_file_of_a_few_lines_gives_the_fields_it_names);
     RUN(names_values_units_comments_and_blank_lines_are_read_leniently);
     RUN(a_written_file_without_its_checksum_line_changes_nothing_in_its_servo);
@@ -1993,9 +2144,10 @@ int main(void)
     RUN(a_person_s_file_with_cr_lf_reads_as_the_one_with_lf);
     RUN(every_raw_max_duty_loads_as_written_once_the_checksum_line_is_gone);
     RUN(a_changed_line_wins_over_the_register_block);
-    RUN(the_type_of_an_edited_file_comes_from_its_block_or_its_type_line);
+    RUN(the_type_of_an_edited_file_comes_from_its_type_line_alone);
     RUN(a_register_block_that_is_cut_doubled_or_miscounted_is_refused);
     RUN(a_file_of_another_type_is_denied_whatever_its_kind);
+    RUN(a_load_holds_the_file_to_the_type_the_caller_states_not_to_20k_sel);
     RUN(a_load_without_an_argument_is_refused_and_writes_nothing);
     RUN(a_checked_file_loads_its_editable_fields_and_reports_the_others);
     RUN(a_file_equal_to_the_servo_changes_and_asks_nothing);

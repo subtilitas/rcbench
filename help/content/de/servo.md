@@ -182,7 +182,9 @@ SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0us und PU
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM und 4,8V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung, auch NUR SUCHE, und sie braucht ein KST- oder Chaservo-Servo: bei einem anderen Servo endet der Lauf mit `kein KST- oder Chaservo-Servo`. Ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
+SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM, einen PD mini mit eingeschaltetem Ausgang und einen Sollwert von 4,8V oder mehr. Das Servo übernimmt einen geschriebenen Wert erst, nachdem seine Versorgung aus- und wieder eingeschaltet wurde, was der Lauf über den PD mini tut. Ohne ihn werden SUCHEN + PROGRAMMIEREN und SERVOPULSE auf 1000-2000 nicht angeboten, die Karte zeigt `PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, und der Lauf sucht nur, mit der Servoschiene im letzten Fenster des INA3221 bei 4,8V oder mehr. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung, auch NUR SUCHE, und sie braucht ein KST- oder Chaservo-Servo: bei einem anderen Servo endet der Lauf mit `kein KST- oder Chaservo-Servo`. Ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
+
+![Kein PD mini: der Lauf schreibt nichts](view:servo-limrun-nopd)
 
 ![Der Endlagenlauf beim Programmieren](view:servo-limrun)
 

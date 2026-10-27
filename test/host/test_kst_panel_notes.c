@@ -102,7 +102,7 @@ static bool on_page(const char *s)
  * band. */
 static void standing_shown(void)
 {
-    const gfx_rect_t last = val(PG_SERVO, 4, 0);
+    const gfx_rect_t last = val(PG_SERVO, 4, 1);
     const gfx_rect_t drawn = kst_panel_notes_drawn();
 
     CHECK(kst_panel_standing_line(0) != NULL);
@@ -155,7 +155,7 @@ TEST_CASE(every_message_fits_whole_under_the_servo_tab)
 
     fresh();
     for (int lang = 0; lang < 2; ++lang) {
-        const gfx_rect_t last = val(PG_SERVO, 4, 0);
+        const gfx_rect_t last = val(PG_SERVO, 4, 1);
         const int fit = (NOTES_FOOT - (last.y + last.h + 4)) / 20;
         int held = 0;
         int text = 0;
@@ -214,7 +214,7 @@ static void message_whole(void)
 {
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
     const gfx_rect_t drawn = kst_panel_notes_drawn();
-    const gfx_rect_t last = val(PG_SERVO, 4, 0);
+    const gfx_rect_t last = val(PG_SERVO, 4, 1);
 
     CHECK_EQ(kst_panel_shown_message_lines(),
              kst_panel_message_lines(kst_prog_message(M), t));

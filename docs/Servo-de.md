@@ -109,6 +109,21 @@ Zustandszeile der Karte nennt die Bedingung.
 | `PROGRAMMIEREN: VERSORGUNG AUF UNTER 4.8V EINGESTELLT` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8V |
 | `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8V oder ist nicht gelesen |
 
+Ohne PD mini kann der Lauf das Servo nicht aus- und einschalten, und ein
+KST- oder Chaservo-Servo übernimmt einen geschriebenen Wert erst danach
+([der Versorgungszyklus](ServoProgrammer-de.md#der-versorgungszyklus)).
+SUCHEN + PROGRAMMIEREN und **SERVOPULSE** auf 1000-2000 werden dann nicht
+angeboten, und die Karte zeigt
+`PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, solange eines davon
+gewählt ist. Der Lauf liest das Servo und sucht nur.
+
+![Kein PD mini: der Lauf schreibt nichts](img/de/servo-limrun-nopd.png)
+
+Mit PD mini schaltet
+jedes VERBINDEN des Laufs dessen Ausgang 1s aus und wieder ein, und das
+VERLASSEN nach einem Schreiben ebenso; die Prüfung nach dem Schreiben sucht
+das Servo also mit den neuen Werten.
+
 #### Zuerst lesen
 
 Jeder Lauf auf PROG-PORT, auch NUR SUCHE, beginnt mit einer Lesesitzung.
@@ -396,7 +411,7 @@ Unteres Ende:    blockiert bei 1200us, Endpunkt 1235us; frei 0.120A, blockiert 0
 Oberes Ende:     blockiert bei 1820us, Endpunkt 1785us; frei 0.120A, blockiert 0.322A
 
 PROGRAMMIEREN (LEFT ANGLE und RIGHT ANGLE, Einheit unbekannt)
-Servo:           Typ 6, REVERSION AUS
+Servo:           20k_sel 1, REVERSION AUS
 Servopulse:      NEUTRAL 1500.2us, PULSE LOWER 900.0us, PULSE UPPER 2100.0us
 Pulse schreiben: PULSE LOWER 900.0 -> 1000.0us, PULSE UPPER 2100.0 -> 2000.0us
 LEFT ANGLE:      150 vorher, 87 nachher; begrenzt das untere Ende
