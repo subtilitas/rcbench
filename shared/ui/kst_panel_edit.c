@@ -373,8 +373,10 @@ void kpn_step(const row_t *r, bool up)
 /* A LEAVE whose wait runs: an abort keeps the session. */
 bool kpn_leave_waits(const kst_prog_t *p)
 {
+    /* A LEAVE after a write goes as the supply cycle, REBOOT. */
     return kst_prog_state(p) == KST_PROG_LEAVING
-        && kst_prog_op(p) == LINK_KST_OP_LEAVE;
+        && (kst_prog_op(p) == LINK_KST_OP_LEAVE
+            || kst_prog_op(p) == LINK_KST_OP_REBOOT);
 }
 
 void kpn_act(const row_t *r)

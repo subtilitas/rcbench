@@ -522,7 +522,8 @@ void kpn_keypad_done(float v);
  */
 void kpn_step(const row_t *r, bool up);
 /**
- * @brief Whether a LEAVE's wait runs: an abort keeps the session.
+ * @brief Whether a LEAVE's wait or its supply cycle runs: an abort keeps
+ *        the session after a wait, and the output off after a cycle.
  * @param p the session
  * @return true when the wait runs
  */

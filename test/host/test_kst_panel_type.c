@@ -12,6 +12,7 @@
  * - a_save_states_the_type_the_operator_set
  * - the_type_row_takes_no_tap_while_a_card_operation_runs
  * - with_the_pd_mini_on_connect_says_it_cycles_and_leave_cycles_after_a_write
+ * - abort_in_the_leave_cycle_is_the_port_button_and_keeps_the_output_off
  * - without_a_pd_mini_a_write_and_leave_note_the_power_cycle
  * - a_leave_without_a_write_cycles_nothing
  * - the_new_messages_have_their_lines
@@ -270,6 +271,35 @@ TEST_CASE(with_the_pd_mini_on_connect_says_it_cycles_and_leave_cycles_after_a_wr
     CHECK(g_rig.sup_on);
 }
 
+TEST_CASE(abort_in_the_leave_cycle_is_the_port_button_and_keeps_the_output_off)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        g_rig.sup_on = true;
+        g_rig.sup_mv = 5000u;
+        g_rig.sup_ma = 1000u;
+        link_up();
+        connected();
+        write_edits();
+        tap(val(PG_SERVO, 0, 0));
+        hold(2.1f);
+        rig_frames(200);
+        show();
+        /* The cycle runs: the output is off and PORT aborts. */
+        CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
+        CHECK_EQ(kst_prog_op(M), LINK_KST_OP_REBOOT);
+        CHECK(!g_rig.sup_on);
+        CHECK_STR_EQ(kst_panel_button(PG_SERVO, 0, 0), TR(KP_ABORT));
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_CYCLE_CUT);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        CHECK(!g_rig.sup_on);
+    }
+}
+
 TEST_CASE(without_a_pd_mini_a_write_and_leave_note_the_power_cycle)
 {
     fresh();
@@ -351,6 +381,7 @@ int main(void)
     RUN(a_save_states_the_type_the_operator_set);
     RUN(the_type_row_takes_no_tap_while_a_card_operation_runs);
     RUN(with_the_pd_mini_on_connect_says_it_cycles_and_leave_cycles_after_a_write);
+    RUN(abort_in_the_leave_cycle_is_the_port_button_and_keeps_the_output_off);
     RUN(without_a_pd_mini_a_write_and_leave_note_the_power_cycle);
     RUN(a_leave_without_a_write_cycles_nothing);
     RUN(the_new_messages_have_their_lines);
