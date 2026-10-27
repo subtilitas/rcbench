@@ -97,6 +97,13 @@ history is in git.
   series has none. `shared/logfile/servo_store.c` holds the folder's
   names, proposals, saves, lists and loads for a stem
   ([Servo files](docs/HitecProgrammer.md#servo-files)).
+- `tools/check_prose.py`: holds the Markdown documents to the writing rules.
+  Rules: " -- " as a dash, the marketing words, "we"/"our"/"us" and
+  "wir"/"unser", history words, exclamation marks, emoji, the stale names
+  ESP32-S3, SIMULATION, coprocessor and "usable release". `--check` exits 1
+  on a hit, `--long` lists sentences over 40 words, `--report FILE` writes
+  the hits grouped by file. Exceptions are in `tools/check_prose_allow.txt`.
+  Not in CI yet. Units stay with `tools/check_units.py`.
 
 ### Changed
 

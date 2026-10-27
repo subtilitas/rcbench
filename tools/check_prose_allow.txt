@@ -1,0 +1,62 @@
+# The deliberate exceptions of tools/check_prose.py: a reason in comment
+# lines, then one `path: rule: text` line per exception, where text is a
+# part of the line that holds the hit, or `re:pattern`.  A blank line ends a
+# reason.  Only a use the rule is not meant for goes here; every other hit
+# is fixed in the page.
+#
+# SPDX-License-Identifier: MIT
+
+# The writing rules list the words they forbid.
+CONTRIBUTING.md: narrator-en: "we", no "previously" or "now"
+CONTRIBUTING.md: history-en: "we", no "previously" or "now"
+CONTRIBUTING.md: marketing: No marketing words (powerful
+CONTRIBUTING.md: marketing: easy). No exclamation marks, no emoji.
+
+# "just-in-time compiler" is a term, not an intensifier.
+STATUS.md: marketing: JIT (just-in-time compiler)
+
+# "just" as "a moment ago" or "narrowly", with a time or a margin in the
+# sentence, is not an intensifier.
+docs/Link.md: marketing: wiring just written is not yet in flash
+docs/LinkHitec.md: marketing: The frame just
+docs/LinkKST.md: marketing: supply wiring just written
+docs/Screens.md: marketing: the one just read
+docs/Screens.md: marketing: the run just recorded
+docs/Screens.md: marketing: that has just completed
+docs/Screens.md: marketing: A tick made just before the read failed
+docs/Screens.md: marketing: not the one just filled
+docs/Servo.md: marketing: to just under 180
+docs/ServoProgrammer.md: marketing: powers the servo up just before
+protocols/hitec/README.md: marketing: a byte pushed just before the restart
+
+# The ESP32-C6 on the panel runs Espressif's esp_hosted "co-processor"
+# firmware, named so by its maker.  It is not the IOmcu.
+docs/Building.md: stale-coprocessor: esp_hosted co-processor firmware
+docs/Building.md: stale-coprocessor: than its co-processor runs
+docs/Building.md: stale-coprocessor: When the co-processor reports a chip
+
+# The FreeRTOS stack check counts the coprocessor (floating-point) context
+# that a task saves on its stack.  It is not the IOmcu.
+docs/Performance.md: stale-coprocessor: for the coprocessor save area
+docs/Performance.md: stale-coprocessor: the coprocessor
+docs/Performance-de.md: stale-coprocessor: der Koprozessoren am oberen Ende
+docs/Performance-de.md: stale-coprocessor: Kontexte der Koprozessoren
+
+# The watermark drawn across a simulated bench reads SIMULATION
+# (shared/ui/ui_watermark.c).  The mark on a tile and the pill read
+# SIMULATED (SIMULIERT).
+docs/Link.md: stale-simulation: the panel draws SIMULATION across the screen
+docs/Link-de.md: stale-simulation: das Panel zeichnet SIMULATION
+docs/Performance.md: stale-simulation: with the SIMULATION watermark
+docs/Performance.md: stale-simulation: SIMULATION is drawn on every frame
+docs/Performance-de.md: stale-simulation: mit dem SIMULATION-Watermark
+docs/Performance-de.md: stale-simulation: SIMULATION wird auf
+docs/Screens.md: stale-simulation: SIMULATION is drawn across the screen
+docs/Screens.md: stale-simulation: under the SIMULATION watermark
+docs/Screens-de.md: stale-simulation: steht SIMULATION quer
+docs/Screens-de.md: stale-simulation: unter dem SIMULATION-Watermark
+hardware/docs/IOBoard.md: stale-simulation: the panel draws SIMULATION
+help/content/en/motor.md: stale-simulation: the SIMULATION watermark
+help/content/en/motor.md: stale-simulation: SIMULATION is drawn across the screen
+help/content/de/motor.md: stale-simulation: das Wasserzeichen SIMULATION
+help/content/de/motor.md: stale-simulation: SIMULATION steht quer
