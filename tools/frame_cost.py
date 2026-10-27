@@ -178,7 +178,9 @@ def build(tmp: pathlib.Path) -> pathlib.Path:
         The executable.
     """
     exe = tmp / "bench_frame"
-    cmd = ["cc", "-O2", "-g", "-o", str(exe)]
+    # No fused multiply-add, as in render_ui.py: the fills of an arc or a
+    # rotated string do not depend on the compiler's default target.
+    cmd = ["cc", "-O2", "-g", "-ffp-contract=off", "-o", str(exe)]
     cmd += [str(REPO / s) for s in SOURCES]
     for inc in INCLUDES:
         cmd += ["-I", str(REPO / inc)]

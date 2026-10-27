@@ -182,12 +182,15 @@ history is in git.
 
 - CI runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`) in every workflow. The
   host suite is five parallel jobs, joined by the required job `Host suite,
-  coverage and the checks that hold prose to the tree`; the longest of them
-  ends well inside its limit where the single job took 15 to 29min of 30min.
-  `test_settings_sensors` formats its keys into a 32-byte buffer (gcc 15
-  `-Werror=format-truncation`), `test_picker_screen` initialises its button
-  coordinates (clang-tidy 21 `clang-analyzer-core.UndefinedBinaryOperatorResult`),
-  and the IOmcu stack figures are those of arm-none-eabi-gcc 14.2.1.
+  coverage and the checks that hold prose to the tree`. `test_settings_sensors`
+  formats its keys into a 32-byte buffer (gcc 15 `-Werror=format-truncation`),
+  `test_picker_screen` initialises its button coordinates (clang-tidy 21
+  `clang-analyzer-core.UndefinedBinaryOperatorResult`), the IOmcu stack figures
+  are those of arm-none-eabi-gcc 14.2.1, `tools/render_ui.py` and
+  `tools/frame_cost.py` compile with `-ffp-contract=off` so that a compiler
+  targeting x86-64-v3 draws the committed images, and the coverage table is the
+  one of gcc 15.2's gcov. `tools/coverage.py --from-json` writes the table from
+  the `coverage` artifact of a CI run.
 - A press on the disabled ARM on SERVO or MOTOR & ESC while a programmer
   holds a port shows `Cannot switch to ARMED: a port is in use by the servo
   programmer.` in the alert band.

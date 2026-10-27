@@ -230,19 +230,6 @@ jobs:
       - name: Every string fits where it is drawn
         run: python3 tools/render_ui.py --fit
 
-      - name: DEBUG render
-        if: always()
-        run: |
-          python3 tools/render_ui.py --dir /tmp/render26 >/dev/null
-          gcc --version | head -1; ldd --version | head -1
-          dpkg -l | grep -E "libc6 |fonts-dejavu" | cut -c1-100
-      - name: DEBUG upload
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: render26
-          path: /tmp/render26
-
   host-frames:
     name: Frame cost of every screen
     runs-on: ubuntu-26.04

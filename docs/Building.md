@@ -627,6 +627,18 @@ fails unless all five succeed; it is the name the branch ruleset requires.
 The compilers of that image are gcc 15.2 for the host build and
 arm-none-eabi-gcc 14.2.1 for the IOmcu.
 
+Three results depend on the compiler release and are those of that image.
+`tools/render_ui.py` and `tools/frame_cost.py` compile with
+`-ffp-contract=off`, because that gcc targets x86-64-v3, fuses a multiply and
+an add into one rounding, and moves single pixels of the arcs and plot lines.
+The coverage table in `STATUS.md` and the figure in the READMEs are gcov's
+line counts for gcc 15.2; another gcc counts some lines differently, so
+`tools/coverage.py --check` fails on a machine with another release. Write
+the table from the `coverage` artifact of a CI run with
+`python3 tools/coverage.py --from-json coverage.json`. The IOmcu stack
+figures of `docs/Performance.md` are those of arm-none-eabi-gcc 14.2.1,
+which ARM GNU 14.2.Rel1 also gives.
+
 clang-tidy does not run over `firmware/`: it compiles each file and needs
 the ESP-IDF and pico-sdk headers, which the analysis job does not have.
 cppcheck's style class does not run over `firmware/` either. The host tests

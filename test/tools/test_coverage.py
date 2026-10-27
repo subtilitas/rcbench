@@ -158,3 +158,53 @@ def test_both_readmes_carry_the_markers():
     for path in cov.READMES.values():
         text = path.read_text(encoding="utf-8")
         assert cov.START in text and cov.END in text
+
+
+def test_numbers_that_cover_exactly_the_tracked_files_match(monkeypatch):
+    monkeypatch.setattr(cov, "TRACKED", list(RESULTS))
+    assert cov.tracked_mismatch(RESULTS) == []
+
+
+def test_a_tracked_file_without_numbers_is_named(monkeypatch):
+    monkeypatch.setattr(cov, "TRACKED", list(RESULTS) + ["shared/c/c.c"])
+    assert cov.tracked_mismatch(RESULTS) == [
+        "shared/c/c.c is in TRACKED and not in the numbers"]
+
+
+def test_numbers_for_an_untracked_file_are_named(monkeypatch):
+    monkeypatch.setattr(cov, "TRACKED", list(RESULTS)[:1])
+    assert cov.tracked_mismatch(RESULTS) == [
+        f"{list(RESULTS)[1]} is in the numbers and not in TRACKED"]
+
+
+def test_from_json_renders_the_blocks_without_measuring(tmp_path, monkeypatch):
+    import json
+    import sys
+    monkeypatch.setattr(cov, "TRACKED", list(RESULTS))
+    numbers = tmp_path / "coverage.json"
+    numbers.write_text(json.dumps({"files": RESULTS, "total_percent": 97.01}))
+    status = tmp_path / "STATUS.md"
+    status.write_text(f"{cov.START}\nold\n{cov.END}\n")
+    readmes = {}
+    for lang in cov.READMES:
+        path = tmp_path / f"README-{lang}.md"
+        path.write_text(f"{cov.START}\nold\n{cov.END}\n")
+        readmes[lang] = path
+
+    def no_build():
+        raise AssertionError("--from-json builds nothing")
+
+    monkeypatch.setattr(cov, "REPO", tmp_path)
+    monkeypatch.setattr(cov, "STATUS", status)
+    monkeypatch.setattr(cov, "READMES", readmes)
+    monkeypatch.setattr(cov, "build_and_run", no_build)
+    monkeypatch.setattr(cov, "measure", no_build)
+    monkeypatch.setattr(sys, "argv", ["coverage.py", "--from-json",
+                                      str(numbers)])
+    assert cov.main() == 0
+    assert "| **total** | **3345** | **3245** | **97.0%** |" in \
+        status.read_text()
+    assert cov.main() == 0
+    monkeypatch.setattr(sys, "argv", ["coverage.py", "--check",
+                                      "--from-json", str(numbers)])
+    assert cov.main() == 0

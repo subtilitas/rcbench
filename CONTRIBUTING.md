@@ -111,6 +111,10 @@ ctest, the sanitizer run, the coverage check, the checks that hold prose and
 generated files to the tree, and the frame-cost ceilings. The job named
 `Host suite, coverage and the checks that hold prose to the tree` ends last
 and fails when any of them does not succeed; the branch ruleset requires it.
+The coverage table and the README figures are gcov's counts for the gcc of
+that runner. A machine with another gcc writes a different table; write the
+committed one from the `coverage` artifact of a CI run:
+`python3 tools/coverage.py --from-json coverage.json`.
 
 A change fails if:
 
