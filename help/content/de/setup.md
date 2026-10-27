@@ -132,7 +132,7 @@ Das Panel hat keinen RTC-Chip (Real-Time Clock). Seine Uhr startet bei jedem Ein
 
 - Der Knopf bewegt einen Wert um den Drehweg, nie dorthin, wohin er zeigt. Bei 270deg bewegt eine Vierteldrehung den Throttle um 33,3 Punkte.
 - Er schaltet nie auf ARMED. Solange der Prüfstand SAFE ist, bewegt eine Drehung nichts und wird nicht gemerkt.
-- Der erste Messwert nach dem Einschalten, oder nachdem der Sensor nicht mehr antwortete, setzt einen Bezug und bewegt nichts.
+- Der erste Messwert nach dem Einschalten, oder nachdem der Sensor aufgehört hatte zu antworten, setzt einen Bezug und bewegt nichts.
 - Ein Finger auf dem Throttle-Balken oder dem SERVO-Zifferblatt hat den Wert, solange er aufliegt.
 - Der Sensor wird alle 10ms gelesen. Ein Sprung über 90deg zwischen zwei Messwerten wird verworfen.
 

@@ -88,8 +88,8 @@ file that would take its maker past 512 models, so a maker lists at most 512
 models.
 
 The line under the rows says no profile is verified, and the count at its
-right counts the level: `1-9 of 20 makers, 6 can run` -- the makers with a
-model that runs -- or `1-9 of 82, 40 can run` for a maker's models.
+right counts the level: `1-9 of 20 makers, 6 can run` (the makers with a
+model that runs) or `1-9 of 82, 40 can run` for a maker's models.
 
 ![The makers](img/motor-stick.png)
 
@@ -142,18 +142,18 @@ letter outside ASCII (American Standard Code for Information Interchange).
 A profile's page lists its menu items. Each starts at KEEP, which leaves the
 item as it is; the steppers move through the item's values and stop at
 either end. Items keyed `reset` or `exit` are actions, not settings: the ESC
-acts on the select move and sounds no values, so their rows show ACTION, NOT A SETTING and offer nothing. An item with a single value -- the only setting there
+acts on the select move and sounds no values, so their rows show ACTION, NOT A SETTING and offer nothing. An item with a single value (the only setting there
 is, or a rule written as a value, such as `hobbywing-flyfun-hv-9item`'s
-cell count, "N beeps = N cells" -- has nothing to choose; its row shows
+cell count, "N beeps = N cells") has nothing to choose; its row shows
 NO OPTIONS. The line under the list names the selected item's values and the
 default. RUN is offered once a value is picked and the run can start; when it
 cannot, the line beside RUN says why.
 
 The page lists only the items on the model it was opened for: an item with
 `applies_to` shows on the models it names, and not on the others. Two
-items may share a number and values on different models -- Jeti's Cutoff
+items may share a number and values on different models (Jeti's Cutoff
 mode on six small 3P models and Switching frequency on the rest, both
-item 3 -- and the ESC sounds only the one it has, so a change to the other
+item 3) and the ESC sounds only the one it has, so a change to the other
 would store this one. RUN refuses a change to an item not on the model as
 the last check (`3 Cutoff mode is not available on this model.`). A page with no model
 picked, which only a card profile without models opens, lists the items
@@ -179,9 +179,9 @@ output off with the current down (`ESC_STICK_OFF_MA`,
   changes in the order the ESC sounds them, so all changes of a run share
   one power-up. A run whose changes need different positions is refused
   with `changes require different power-up positions`, and one whose changes
-  need different entry times -- what the run waits: the value's
+  need different entry times (what the run waits: the value's
   `entry_hold_ms` or the entry's, and no less than the longest
-  `at_power_up` hold -- with `changes require different entry times`; neither is reordered. No profile of record has
+  `at_power_up` hold) with `changes require different entry times`; neither is reordered. No profile of record has
   such a mix.
 - Where the profile names no rest position the stick rests at the power-up
   position, and the select move has to differ from it.
@@ -219,7 +219,7 @@ With the phase tap enabled on SETUP under INTERFACES the page adds a
 read-only readout of the tap under the current line: its state, the pitch of
 its last 8ms window, the counts of beeps lost and beeps not read, and the
 last four beeps with their number, length in ms and pitch in Hz ([the tap's rows and states](Screens.md#interfaces-the-phase-tap)). The
-run counts its beeps from the supply current as before; it does not use the
+run counts its beeps from the supply current; it does not use the
 tap's beeps.
 
 ![A run with the phase tap running](img/motor-stick-tone.png)
@@ -279,8 +279,8 @@ does not read off.
 
 ![The warning with a step before power-up](img/motor-stick-hand-warning.png)
 
-Steps that do not all fit the warning whole -- each wrapped to two lines,
-above HOLD 2s TO RUN -- are not shown cut: the warning counts them and offers
+Steps that do not all fit the warning whole (each wrapped to two lines,
+above HOLD 2s TO RUN) are not shown cut: the warning counts them and offers
 ALL STEPS beside HOLD 2s TO RUN. HOLD 2s TO RUN counts only once ALL STEPS has
 been opened over this warning and closed with OK, so the hold attests to
 every step; a new warning asks for them again.
@@ -311,7 +311,7 @@ watch the ESC and tap DONE once the confirmation has ended; DONE switches
 the supply off, and the run ends or cycles as any other. The prompt says
 the ESC is powered and not to touch it. No DONE within 60s ends the run
 with NOT CONFIRMED. That end, and every other from the selection of the
-value on -- while the ESC stores (STORING) or while the step is asked --
+value on (while the ESC stores, STORING, or while the step is asked)
 switches the supply off under the store or the confirmation, and the
 result says the mode may not be stored and marks the change UNCERTAIN, not
 COMPLETED: the count of selections made leaves it out, and where it is past
@@ -324,7 +324,7 @@ supply before that confirmation has ended takes the programming as broken
 off and locks itself: 8 LED flashes on a KONTROL-X
 (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.11), 9 on a KOBY, JIVE Pro or
 KOLIBRI, 10 on a KOSMIK. Their step marks it (`"locks": true`), and there
-the prompt and the result say the ESC may be locked and to check it -- for
+the prompt and the result say the ESC may be locked and to check it, for
 every step before the power-off of such a profile, until all are
 confirmed, not only for the step that marks it. Of
 the five, KONTROL-X runs; the others show the step on their list of
@@ -350,7 +350,7 @@ from the moment it asks for that step, with the stick where the power-up
 put it:
 
 - The step is taken as done by the first group the order rule finds in
-  order with the one before it -- the menu running -- or by DONE,
+  order with the one before it (the menu running) or by DONE,
   whichever comes first. The ESC's three-tone answer is a group of 3 and
   not in order with mode 1, so it does not count.
 - The quiet-first and order rules hold from the prompt: no group counts
@@ -360,8 +360,8 @@ put it:
   ESC is silent by design. No step done within 60s ends the run with NOT
   CONFIRMED.
 - The stick does not move while the step is asked. A profile whose menu
-  rests at another position than the power-up -- `scheme.listen` away from
-  the entry, or a value powered up away from `scheme.listen` -- would need
+  rests at another position than the power-up (`scheme.listen` away from
+  the entry, or a value powered up away from `scheme.listen`) would need
   a move under the operator's hand at a powered ESC, and waiting for DONE
   first would drop the groups the action starts. The generator and the
   card reader refuse such a file (`manual[0].starts_menu: the menu rests
@@ -649,7 +649,7 @@ A profile corrected on the SD card is listed with its correction.
 | NO READINGS | the reading count unmoved for 1000ms | lit |
 | READING RATE | 3 late readings in a row | lit |
 | POWER NOT CONFIRMED | the output not reported on within 3000ms | lit |
-| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000ms of the run asking it off -- at the start, before a power-up or at the end -- or a reading with the output on or the current up while a step at an unpowered ESC is asked | lit |
+| SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000ms of the run asking it off (at the start, before a power-up or at the end) or a reading with the output on or the current up while a step at an unpowered ESC is asked | lit |
 | TOUCH SIGNAL LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet ARMED | lit |
 | NO BEEPS | no beep for SILENCE | lit |
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |
@@ -782,9 +782,9 @@ engine's stores no value other than the one asked for.
   does not decode; STORE (2000ms by default) stands in for them, not
   measured. The optional separate motor-off position of the glider modes is
   not made.
-- A switch on the ESC in the power-up sequence -- SeaKing V3 with a switch,
+- A switch on the ESC in the power-up sequence (SeaKing V3 with a switch,
   Trackstar 60A V2, the BEC switch of the Hacker X and Master series, the
-  Jeti Spin's receiver switch -- is left on and the supply stands in for it.
+  Jeti Spin's receiver switch) is left on and the supply stands in for it.
   The manuals switch it after the battery is connected; whether the supply's
   power-up enters the menu as the switch would is not measured.
 - Whether, with a motor on the ESC in place of the resistor load, a motor starts during the menu, and how its windings shape the beeps in

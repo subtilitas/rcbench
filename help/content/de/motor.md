@@ -94,7 +94,7 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 | SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
 | GRAFIK, TABELLE | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 
-Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0%.
+Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der aufhört zu antworten, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0%.
 
 Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
 
@@ -108,7 +108,7 @@ Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben
 
 ## Die Abfragerate und die Temperaturen
 
-Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und daneben die Abfragerate und die Fehlerzahl des Links. Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, fügt die Zeile darunter ihre Zahl an. Die drei Temperaturen stehen auf jeder Aufgabe in der Zeile über der rechten Spalte: ESC und MOT von der Prüfstandsseite des IOmcu, MCU vom Chip des ESP32-S3 im Panel.
+Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und daneben die Abfragerate und die Fehlerzahl des Links. Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, fügt die Zeile darunter ihre Zahl an. Die drei Temperaturen stehen auf jeder Aufgabe in der Zeile über der rechten Spalte: ESC und MOT von der Prüfstandsseite des IOmcu, MCU vom Chip des ESP32-P4 im Panel.
 
 ![37 abgelehnte Link-Frames in der Zeile](view:motor-refused)
 

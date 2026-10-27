@@ -242,7 +242,7 @@ Das Panel schaltet die Versorgung deshalb aus und ein, wo es kann:
 | Schritt | Ein PD mini antwortet, sein Ausgang an | Ein PD mini antwortet, sein Ausgang aus | Kein PD mini |
 | --- | --- | --- | --- |
 | **VERBINDEN** | der Ausgang 1000ms aus, an mit der niedrigeren der zwei Spannungen und der niedrigeren der zwei Stromgrenzen, die Leitung 1000ms auf Low, dann die Einstiegssequenz | der Ausgang an, die Leitung 1000ms auf Low, dann die Einstiegssequenz | die Einstiegssequenz 250ms nach dem Tippen: 50ms ohne Puls, 100ms Low, 100ms der Low-Leitung des Einstiegs. Der Bediener schaltet das Servo kurz davor ein |
-| **VERLASSEN** nach einem Schreiben, Zurückspielen oder Lösen des Pairings | der Ausgang 1000ms aus, an, die Leitung 1000ms auf Low, dann PWM | -- | der Port kehrt zu PWM zurück; die Werte wirken, nachdem der Bediener die Servoversorgung aus- und wieder eingeschaltet hat |
+| **VERLASSEN** nach einem Schreiben, Zurückspielen oder Lösen des Pairings | der Ausgang 1000ms aus, an, die Leitung 1000ms auf Low, dann PWM | kommt nicht vor: **VERBINDEN** schaltet den Ausgang ein | der Port kehrt zu PWM zurück; die Werte wirken, nachdem der Bediener die Servoversorgung aus- und wieder eingeschaltet hat |
 | **VERLASSEN** ohne Geschriebenes | der Port kehrt nach **WARTEZEIT VOR PWM** zu PWM zurück; die Versorgung bleibt, wie sie ist | dasselbe | dasselbe |
 | Ein Schreiben | kein Zyklus: das Rücklesen läuft im Programmiermodus | dasselbe | dasselbe |
 
@@ -801,7 +801,7 @@ Eine Datei im Format 1, geschrieben von Firmware 0.23.0 und älter, nennt
 den Typ, den 20k_sel ergab. Diese Zeile ist keine Angabe des Bedieners:
 die Liste zeigt für die Datei keinen Typ, und sie lädt in ein Servo
 jedes gesetzten Typs. Ihre Typzeile muss weiter zu ihrem eigenen 20k_sel
-passen, sonst wird die Datei wie bisher abgelehnt. Eine bearbeitete Datei
+passen, sonst wird die Datei abgelehnt. Eine bearbeitete Datei
 im Format 1 lädt als bearbeitete Datei ohne Typzeile.
 
 ### Speichern
@@ -1221,16 +1221,16 @@ Servo, das Frames und kein Schreiben erhalten hat, PWM folgt, bevor seine
 Versorgung aus war, ist nicht gemessen.
 
 Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port
-bleiben. Ein Ausgang des PD mini, den SERVO eingeschaltet hat -- mit
-AUSGANG EIN, mit einem Test oder mit **VERBINDEN** --, gehört dem
+bleiben. Ein Ausgang des PD mini, den SERVO eingeschaltet hat (mit
+AUSGANG EIN, mit einem Test oder mit **VERBINDEN**), gehört dem
 Bildschirm SERVO, und solange der Port ihn hält, bleibt der Ausgang nach
 dem Verlassen von SERVO an: ein OFF würde die Sitzung beenden und ein
 Schreiben auf der Leitung abschneiden. Ein ON, das SERVO verlangt hat und
 das auf dem Weg ist, wenn der Port das Netzteil übernimmt, zählt als
 eingeschaltet, auch wenn es erst nach dem Verlassen als an gemeldet wird.
-Der Ausgang geht aus, wenn der Port loslässt -- ein **VERBINDEN**, das nach
+Der Ausgang geht aus, wenn der Port loslässt (ein **VERBINDEN**, das nach
 dem Verlassen von SERVO ohne Sitzung endet, ein STOP, der das Netzteil
-ausschaltet --, außer SERVO wird vorher wieder gezeigt. Nach
+ausschaltet), außer SERVO wird vorher wieder gezeigt. Nach
 **VERLASSEN** auf SERVO bleibt der Ausgang an, bis SERVO verlassen wird.
 
 PROGRAMMIERMODUS VERLASSEN öffnet mit
@@ -1294,7 +1294,7 @@ Servo hält, das ein Schreiben unklar hinterlassen hat.
 | eines von beiden | nein | `Der Port ist wieder im Testermodus.` und `Sitzungszustand war unklar. PWM startet ohne Wartezeit.` | keiner nötig: der Port ist in PWM |
 
 Ohne PD mini schaltet **STOP** keine Versorgung und lässt den Port im
-Programmiermodus, und ein Servo, das nicht mehr antwortet, nimmt kein Lesen
+Programmiermodus, und ein Servo, das nicht antwortet, nimmt kein Lesen
 an. Das Panel sendet dann den Vorgang POWER_CYCLED des Ports statt LEAVE.
 Ohne PD mini ändert er nur den Zustand des Ports: kein Frame, kein Warten,
 und die Versorgung des Servos ist die, die es speist. Der Datensatz eines
@@ -1327,7 +1327,7 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 | Der IOmcu lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
 | 3 Austausche mit dem IOmcu in Folge bleiben unbeantwortet | `Keine Antwort vom IOmcu. ALLES AUSLESEN tippen.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
 | 30s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant, oder 120s ab seinem Start, wie lange der Port ihn auch als laufend meldet | der Vorgang wird abgebrochen; `Kein Ergebnis vom IOmcu. ALLES AUSLESEN tippen.`; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
-| Das Ergebnis eines Vorgangs kommt, auf den der Programmierer nicht mehr wartet | es beendet keinen anderen Vorgang: ein Ergebnis zählt für die Anfrage, deren Nummer es trägt. **ABBRECHEN** erreicht einen Vorgang, den der Port noch als laufend meldet |
+| Das Ergebnis eines Vorgangs kommt, auf den der Programmierer aufgehört hat zu warten | es beendet keinen anderen Vorgang: ein Ergebnis zählt für die Anfrage, deren Nummer es trägt. **ABBRECHEN** erreicht einen Vorgang, den der Port noch als laufend meldet |
 | Der IOmcu meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `IOmcu meldet Code 255. Dieses Panel kennt ihn nicht.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene

@@ -101,8 +101,7 @@ die ihren Hersteller über 512 Modelle brächte, also führt ein Hersteller
 höchstens 512 Modelle.
 
 Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die
-Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` --
-die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 40
+Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` (die Hersteller mit einem laufenden Modell) oder `1-9 von 82, 40
 ausführbar` für die Modelle eines Herstellers.
 
 ![Die Hersteller](img/de/motor-stick.png)
@@ -161,10 +160,10 @@ Die Seite eines Profils listet seine Menüpunkte. Jeder steht anfangs auf
 BEHALTEN und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
 Punkts und halten an beiden Enden an. Punkte mit dem Schlüssel `reset` oder
 `exit` sind Aktionen, keine Einstellungen: der ESC handelt auf die
-Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen AKTION, KEINE EINSTELLUNG und bieten nichts an. Ein Punkt mit einem einzigen Wert -- die
+Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen AKTION, KEINE EINSTELLUNG und bieten nichts an. Ein Punkt mit einem einzigen Wert (die
 einzige Einstellung, die es gibt, oder eine Regel, die als Wert geschrieben
 ist, wie die Zellenzahl von `hobbywing-flyfun-hv-9item`, "N Pieptöne = N
-Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt KEINE AUSWAHL. Die Zeile unter der Liste nennt die
+Zellen") bietet nichts zur Wahl; seine Zeile zeigt KEINE AUSWAHL. Die Zeile unter der Liste nennt die
 Werte des gewählten Punkts und den Standardwert. START erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
 neben START, warum.
@@ -172,8 +171,8 @@ neben START, warum.
 Die Seite listet nur die Punkte des Modells, für das sie geöffnet wurde:
 ein Punkt mit `applies_to` steht bei den Modellen, die er nennt, und bei
 den anderen nicht. Zwei Punkte können sich an verschiedenen Modellen
-Nummer und Werte teilen -- Jetis Cutoff mode an sechs kleinen 3P-Modellen
-und Switching frequency an den übrigen, beide Punkt 3 --, und der ESC gibt
+Nummer und Werte teilen (Jetis Cutoff mode an sechs kleinen 3P-Modellen
+und Switching frequency an den übrigen, beide Punkt 3), und der ESC gibt
 nur den aus, den er hat; eine Änderung am anderen würde diesen speichern.
 START lehnt als letzte Prüfung eine Änderung an einem Punkt ab, den das
 Modell nicht hat (`3 Cutoff mode ist bei diesem Modell nicht verfügbar.`). Eine
@@ -203,9 +202,9 @@ Einstieg.
   alle Änderungen eines Laufs teilen sich deshalb ein Einschalten. Ein Lauf,
   dessen Änderungen verschiedene Stellungen brauchen, wird abgelehnt, mit
   `Änderungen brauchen unterschiedliche Einschaltstellungen`, und einer, dessen
-  Änderungen verschiedene Einstiegszeiten brauchen -- was der Lauf wartet:
+  Änderungen verschiedene Einstiegszeiten brauchen (was der Lauf wartet:
   das `entry_hold_ms` des Werts oder das des Einstiegs, und nicht kürzer
-  als das längste Halten `at_power_up` --, mit
+  als das längste Halten `at_power_up`), mit
   `Änderungen brauchen unterschiedliche Einstiegszeiten`; keiner wird
   umsortiert. Kein Profil im Satz hat eine solche Mischung.
 - Wo das Profil keine Ruhestellung nennt, ruht der Knüppel in der
@@ -251,7 +250,7 @@ Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
 die Tonhöhe seines letzten 8-ms-Fensters, die Zähler der verlorenen
 Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz
 ([die Zeilen und Zustände des Abgriffs](Screens-de.md#interfaces-der-phasenabgriff)).
-Der Lauf zählt seine Pieptöne wie bisher aus dem Netzteilstrom; die Pieptöne
+Der Lauf zählt seine Pieptöne aus dem Netzteilstrom; die Pieptöne
 des Abgriffs benutzt er nicht.
 
 ![Ein Lauf mit laufendem Phasenabgriff](img/de/motor-stick-tone.png)
@@ -306,7 +305,7 @@ zählt, nur solange das Netzteil aus meldet: ein Messwert, nicht älter als
 1000ms (`ESC_STICK_STALE_MS`), in dem das Netzteil selbst seinen Ausgang
 aus meldet, mit dem Strom 200ms lang bei höchstens 20mA. Bis dahin sagt
 sie, das Netzteil auszuschalten, und ein laufendes Halten endet, sobald das
-Netzteil nicht mehr aus meldet. Der Lauf fordert dann selbst das
+Netzteil aufhört, aus zu melden. Der Lauf fordert dann selbst das
 Ausschalten an, schaltet nichts ein und fragt nach keinem Schritt an einem
 stromlosen ESC, bis seine eigenen Messwerte dasselbe sagen; das Ergebnis
 und die Schritte nach einem Lauf sagen, den ESC nicht zu berühren, solange
@@ -314,8 +313,8 @@ das Netzteil nicht aus meldet.
 
 ![Die Warnung mit einem Schritt vor dem Einschalten](img/de/motor-stick-hand-warning.png)
 
-Schritte, die nicht alle ganz auf die Warnung passen -- jeder auf zwei
-Zeilen umbrochen, über 2s HALTEN ZUM STARTEN --, erscheinen nicht
+Schritte, die nicht alle ganz auf die Warnung passen (jeder auf zwei
+Zeilen umbrochen, über 2s HALTEN ZUM STARTEN), erscheinen nicht
 abgeschnitten: die Warnung zählt sie und bietet ALLE HANDGRIFFE neben
 2s HALTEN ZUM STARTEN an. 2s HALTEN ZUM STARTEN zählt erst, wenn ALLE HANDGRIFFE
 über dieser Warnung geöffnet und mit OK geschlossen wurde; das Halten
@@ -366,7 +365,7 @@ Programmierung als abgebrochen und sperrt sich: 8-fach Blinken an einem
 KONTROL-X (Kontronik_Kontrol-X_Kolibri-X.pdf S. 4, S. 11), 9-fach an KOBY,
 JIVE Pro oder KOLIBRI, 10-fach an KOSMIK. Ihr Schritt kennzeichnet das
 (`"locks": true`), und dort sagen Abfrage und Ergebnis, dass der ESC
-gesperrt sein kann und geprüft werden muss -- bei jedem Schritt vor dem
+gesperrt sein kann und geprüft werden muss, bei jedem Schritt vor dem
 Ausschalten eines solchen Profils, bis alle bestätigt sind, nicht nur
 bei dem, der es kennzeichnet. Von den fünf läuft
 KONTROL-X; die anderen zeigen den Schritt in ihrer Liste der Handgriffe.
@@ -394,7 +393,7 @@ der Lauf die Pieptöne ab dem Moment, in dem er nach diesem Schritt fragt,
 mit dem Knüppel dort, wo das Einschalten ihn ließ:
 
 - Der Schritt gilt als erledigt mit der ersten Gruppe, die die
-  Reihenfolgeregel in Folge mit der davor findet -- das Menü läuft --,
+  Reihenfolgeregel in Folge mit der davor findet (das Menü läuft),
   oder mit ERLEDIGT, was zuerst kommt. Der Dreiklang des ESC ist eine
   Gruppe von 3 und nicht in Folge mit Modus 1, er zählt also nicht.
 - Die Regeln der ruhigen Leitung und der Reihenfolge gelten ab der Frage:
@@ -406,8 +405,8 @@ mit dem Knüppel dort, wo das Einschalten ihn ließ:
   innerhalb von 60s beendet den Lauf mit NICHT BESTÄTIGT.
 - Der Knüppel bewegt sich nicht, solange nach dem Schritt gefragt wird. Ein
   Profil, dessen Menü in einer anderen Stellung als der Einschaltstellung
-  ruht -- `scheme.listen` abseits des Einstiegs, oder ein Wert, der
-  abseits von `scheme.listen` eingeschaltet wird --, bräuchte eine Bewegung
+  ruht (`scheme.listen` abseits des Einstiegs, oder ein Wert, der
+  abseits von `scheme.listen` eingeschaltet wird), bräuchte eine Bewegung
   unter der Hand des Bedieners an einem versorgten ESC, und erst auf
   ERLEDIGT zu warten, verlöre die Gruppen, die die Handlung startet.
   Generator und Kartenleser lehnen eine solche Datei ab
@@ -719,12 +718,12 @@ Liste.
 | SAFE | der Prüfstand wurde auf SAFE geschaltet | an |
 | VERBINDUNG VERLOREN | der IOmcu antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
-| NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr | an |
+| NETZTEIL ANTWORTET NICHT | das Netzteil hört auf zu antworten | an |
 | KEINE MESSWERTE | der Messwertzähler 1000ms unverändert | an |
 | MESSRATE | 3 späte Messwerte hintereinander | an |
 | WEITERHIN SAFE | nicht ARMED innerhalb von 3000ms | an |
 | EINSCHALTEN NICHT BESTÄTIGT | der Ausgang nicht innerhalb von 3000ms als an gemeldet | an |
-| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000ms nach der Anforderung des Laufs aus, mit dem Strom unten -- beim Start, vor einem Einschalten oder am Ende --, oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
+| NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000ms nach der Anforderung des Laufs aus, mit dem Strom unten (beim Start, vor einem Einschalten oder am Ende), oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
 | TOUCH-SIGNAL VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht ARMED war | an |
 | KEINE PIEPTÖNE | STILLE lang kein Piepton | an |
 | STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
@@ -869,9 +868,9 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Antworttönen des ESC, die der Lauf nicht dekodiert; SPEICHERN (vorgegeben
   2000ms) steht für sie, nicht gemessen. Die wahlfreie eigene
   Motor-Aus-Stellung der Segelflugmodi wird nicht angefahren.
-- Ein Schalter am ESC in der Einschaltfolge -- SeaKing V3 mit Schalter,
+- Ein Schalter am ESC in der Einschaltfolge (SeaKing V3 mit Schalter,
   Trackstar 60A V2, der BEC-Schalter der Hacker-X- und Master-Reihe, der
-  Empfängerschalter des Jeti Spin -- bleibt eingeschaltet, und das Netzteil
+  Empfängerschalter des Jeti Spin) bleibt eingeschaltet, und das Netzteil
   steht für ihn. Die Handbücher schalten ihn nach dem Anstecken des Akkus;
   ob das Einschalten des Netzteils das Menü betritt wie der Schalter, ist
   nicht gemessen.
