@@ -142,7 +142,11 @@ writable value takes a tap while the port is held and not stopped
 
 A classic image whose cells 0x00 to 0x1C do not sum to 0 modulo 256 shows
 CHECKSUM `WRONG` and the note `Checksum of stored values 0x00-0x1C is wrong. The
-servo may not follow PWM.`
+servo may ignore PWM and draw current up to the supply limit.`
+An HS-7955TG with a wrong checksum drew 0.88 to 0.89A under ARM and SWEEP,
+at the PD mini's 1.00A limit, the supply falling to 4.0 to 4.2V; with a
+correct checksum it draws 0.12 to 0.28A (one servo, measured once).
+MORE > REPAIR CHECKSUM writes the balance in 0x1C.
 
 ![TRAVEL of a D485HW](img/servo-hitec-travel.png)
 ![MOTION of a D485HW](img/servo-hitec-motion.png)
@@ -298,7 +302,7 @@ while the write waits for the card.
 | `Writing was interrupted before the servo saved. Tap READ ALL.` | took the registers, unsaved |
 | `Writing was interrupted after the save, before the restart. Tap READ ALL.` | saved them; the restart is owed |
 | `Every value went out; their check was interrupted. Tap READ ALL.` | took all of them; the read-back did not end |
-| `Writing was interrupted at cell 0x06. Tap READ ALL.` and `The checksum may be wrong: the servo may not follow PWM.` | may hold the new cell without its balance |
+| `Writing was interrupted at stored value 0x06. Tap READ ALL.` and `The checksum may be wrong: the servo may ignore PWM and draw current up to the supply limit.` | may hold the new cell without its balance |
 | `Cell 0x06 is written, its checksum in cell 0x1C is not. Tap READ ALL.` and the same second line | holds the new cell and the old balance: the checksum is wrong |
 | `A write did not end verified. Tap READ ALL before the next write.` | a write once a step went out leaves what the servo holds unknown; READ ALL comes before the next write |
 
@@ -327,8 +331,8 @@ balance leaves a third value there. RESTORE writes the values before the
 write back as a write of its own, with the switch, the hold page `RESTORE`
 and its read-back; the record stays until that ends verified. `Discard the
 record of the interrupted write.` removes it without a write. While a
-record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `A record of
-an interrupted write stands. Restore or discard it under RESTORE.` The file
+record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `Writes and REPAIR
+CHECKSUM wait for the record of an interrupted write: restore or discard it under RESTORE.` The file
 manager shows `HITEC.TXT` and `HITEC.NEW` with INFO only: a hand edit could
 send wrong values to a servo.
 

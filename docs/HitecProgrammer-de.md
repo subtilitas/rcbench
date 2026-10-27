@@ -152,7 +152,12 @@ Wert nimmt einen Tipp an, solange der Port gehalten und nicht gestoppt ist
 
 Ein klassisches Abbild, dessen Zellen 0x00 bis 0x1C modulo 256 nicht 0
 ergeben, zeigt PRÜFSUMME `FALSCH` und den Hinweis `Prüfsumme der gespeicherten
-Werte 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.`
+Werte 0x00-0x1C falsch. Servo folgt PWM evtl. nicht, zieht evtl. Strom bis
+zur Grenze.` Ein HS-7955TG mit falscher Prüfsumme
+zog unter ARM und SWEEP 0,88 bis 0,89A, an der Grenze des PD mini von
+1,00A, die Spannung fiel auf 4,0 bis 4,2V; mit richtiger Prüfsumme zieht es
+0,12 bis 0,28A (ein Servo, einmal gemessen). WEITERES > PRÜFSUMME
+REPARIEREN schreibt den Ausgleich in 0x1C.
 
 ![WEG eines D485HW](img/de/servo-hitec-travel.png)
 ![BEWEGUNG eines D485HW](img/de/servo-hitec-motion.png)
@@ -320,7 +325,7 @@ Schreiben auf die Karte wartet, geht der Schalter nicht wieder ein.
 | `Schreiben vor dem Speichern im Servo unterbrochen. ALLES AUSLESEN antippen.` | hat die Register angenommen, ungespeichert |
 | `Schreiben nach dem Speichern, vor dem Neustart unterbrochen. ALLES AUSLESEN antippen.` | hat sie gespeichert; der Neustart steht aus |
 | `Alle Werte gesendet; ihre Prüfung wurde unterbrochen. ALLES AUSLESEN antippen.` | hat alle angenommen; das Zurücklesen endete nicht |
-| `Schreiben bei Zelle 0x06 unterbrochen. ALLES AUSLESEN antippen.` und `Die Prüfsumme ist evtl. falsch: Das Servo folgt PWM evtl. nicht.` | hält vielleicht die neue Zelle ohne ihren Ausgleich |
+| `Schreiben bei gespeichertem Wert 0x06 unterbrochen. ALLES AUSLESEN antippen.` und `Die Prüfsumme ist evtl. falsch: Servo folgt PWM evtl. nicht, zieht evtl. Strom bis zur Grenze der Versorgung.` | hält vielleicht die neue Zelle ohne ihren Ausgleich |
 | `Zelle 0x06 ist geschrieben, ihre Prüfsumme in Zelle 0x1C nicht. ALLES AUSLESEN antippen.` und dieselbe zweite Zeile | hält die neue Zelle und den alten Ausgleich: die Prüfsumme ist falsch |
 | `Ein Schreibvorgang endete ungeprüft. Vor dem nächsten ALLES AUSLESEN antippen.` | ein Schreiben, bei dem ein Schritt hinausging, lässt offen, was das Servo hält; ALLES AUSLESEN kommt vor dem nächsten Schreiben |
 
@@ -354,8 +359,8 @@ eigenes Schreiben zurück, mit dem Schalter, der Halteseite `ZURÜCKSPIELEN`
 und ihrem Zurücklesen; der Vermerk bleibt, bis das geprüft endet.
 `Vermerk zum unterbrochenen Schreibvorgang verwerfen.` entfernt ihn ohne
 Schreiben. Solange ein Vermerk besteht, werden n WERTE SCHREIBEN und
-PRÜFSUMME REPARIEREN abgelehnt: `Ein Vermerk zu einem unterbrochenen
-Schreibvorgang besteht. Unter ZURÜCKSPIELEN zurückspielen oder verwerfen.`
+PRÜFSUMME REPARIEREN abgelehnt: `Schreiben und PRÜFSUMME REPARIEREN warten
+auf den Vermerk: unter ZURÜCKSPIELEN zurückspielen oder verwerfen.`
 Die Dateiverwaltung zeigt `HITEC.TXT` und `HITEC.NEW` nur mit INFO: eine
 Änderung von Hand könnte falsche Werte an ein Servo senden.
 
