@@ -125,7 +125,7 @@ enum { FL_SAVE = -2, FL_NEXT = -3 };
 #define HP_FS_POSITION (-1)
 /** @brief The hold pages. */
 enum { W_LEAVE = 0, W_RELEASE, W_ENABLE, W_WRITE, W_SOFT, W_REPAIR,
-       W_RESTORE, W_LOAD, W_FACTORY, W_BACKUP };
+       W_RESTORE, W_LOAD, W_FACTORY, W_BACKUP, W_LOAD_MORE };
 /** @brief What the keypad edits. */
 enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT, KP_VALUE };
 
@@ -163,6 +163,11 @@ typedef struct {
         char      apply[64];    /**< the hold button's label              */
         char      lines[HP_PAGE_LINES][HITEC_PANEL_LINE]; /**< the lines */
         uint8_t   level[HP_PAGE_LINES]; /**< each line's hitec_prog_level_t */
+        int       vfirst;       /**< the first line of the changed values */
+        int       vcount;       /**< their lines, "and n more" included    */
+        int       vtotal;       /**< the changed values in all             */
+        int       next;         /**< W_LOAD_MORE: the first line of the
+                                     next part                            */
     } page;                     /**< the hold page                        */
 
     ui_textkey_t tk;            /**< the keyboard of a new file's name    */
@@ -392,6 +397,24 @@ void hpn_page_restore(void);
  * @param s     the line
  */
 void hpn_page_add(unsigned level, const char *s);
+
+/**
+ * @brief Fit the open page above its buttons: the lines of the changed
+ *        values give way, the last of them counting the rest
+ *        (KP_VALUES_MORE), until every other line ends HP_FOOT_GAP above
+ *        the hold button.
+ * @return true when the page fits
+ */
+bool hpn_page_fit(void);
+
+/**
+ * @brief Keep the lines of the open page from @p from on that fit above
+ *        its buttons, 1 at least; with @p from above 0 the page's first
+ *        line stays in front of them.
+ * @param from the first line kept after the first
+ * @return the line after the last one kept; the page's count when all are
+ */
+int hpn_page_part(int from);
 /**
  * @brief Opens a hold page of @p kind.
  * @param kind   W_*
@@ -436,6 +459,13 @@ void hpn_name_done(const char *name);
 void hpn_file_answer(void);
 /** @brief CHECK THIS FILE for the load that waits. */
 void hpn_page_load(void);
+/**
+ * @brief CHECK THIS FILE from its line @p from on: a part of the page that
+ *        does not fit above the hold, the next part behind HOLD 2s TO
+ *        CONTINUE (W_LOAD_MORE).
+ * @param from the first line shown
+ */
+void hpn_page_load_at(int from);
 /** @brief The page of FACTORY DEFAULT. */
 void hpn_page_factory(void);
 /** @brief The page of RESTORE of the session's backup. */

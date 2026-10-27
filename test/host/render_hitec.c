@@ -420,6 +420,35 @@ static bool files_view(const char *v)
         hload("WING-L");
         return true;
     }
+    if (strcmp(v, "-file-warnings") == 0
+        || strcmp(v, "-file-warnings-next") == 0) {
+        /* Another model past all 7 rules, from a servo with a dead band
+         * of 3 and overload protection at 30% (render_hitec_view()). */
+        hitec_image_t sv;
+
+        d485(&sv);
+        (void)hitec_param_set(&sv, HITEC_LAYOUT_D, HITEC_P_D_DEAD_BAND, 3);
+        (void)hitec_param_set(&sv, HITEC_LAYOUT_D, HITEC_P_D_OVERLOAD, 30);
+        img = sv;
+        (void)hitec_image_put_reg(&img, HITEC_D_REG_MODEL, 34999u);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 10);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_DEAD_BAND, 1);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_OVERLOAD, 0);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_LEFT_END, 3000);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_RIGHT_END,
+                              13300);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_NEUTRAL, 7000);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_DIRECTION,
+                              HITEC_CCW);
+        (void)hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_FAILSAFE,
+                              2000);
+        files_put_image("WING-L.TXT", &img);
+        hload("WING-L");
+        if (strcmp(v, "-file-warnings-next") == 0) {
+            hhold();
+        }
+        return true;
+    }
     if (strcmp(v, "-file-series") == 0) {
         hs5645(&img);
         files_put_image("THROTTLE.TXT", &img);
@@ -469,7 +498,8 @@ static bool files_view(const char *v)
     }
     if (strcmp(v, "-classic-more-factory") == 0
         || strcmp(v, "-classic-factory") == 0
-        || strcmp(v, "-classic-factory-done") == 0) {
+        || strcmp(v, "-classic-factory-done") == 0
+        || strcmp(v, "-classic-factory-cell") == 0) {
         if (strcmp(v, "-classic-more-factory") != 0) {
             (void)hitec_prog_write_enable(hitec_panel_model(), true);
         }
@@ -506,6 +536,16 @@ void render_hitec_view(const char *view)
         servo_hs5645();
     } else {
         servo_d485();
+    }
+    if (strncmp(v, "-file-warnings", 14) == 0) {
+        hitec_image_t sv;
+
+        d485(&sv);
+        (void)hitec_param_set(&sv, HITEC_LAYOUT_D, HITEC_P_D_DEAD_BAND, 3);
+        (void)hitec_param_set(&sv, HITEC_LAYOUT_D, HITEC_P_D_OVERLOAD, 30);
+        for (unsigned i = 0; i < 128u; ++i) {
+            g_drv.dreg[2u * i] = hitec_image_reg(&sv, (uint8_t)(2u * i));
+        }
     }
     ui_router_goto(SCREEN_SERVO);
     /* The tester on PROG PORT 1 at GP13, as the control task reports it. */
@@ -547,6 +587,13 @@ void render_hitec_view(const char *view)
     }
     if (c_view) {
         hseries(1);
+    }
+    if (strcmp(v, "-classic-factory-cell") == 0) {
+        /* The factory block equal to the settings but for cell 0x1D. */
+        for (unsigned c = 0; c < 0x24u; ++c) {
+            g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
+        }
+        g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
     }
     if (strcmp(v, "-classic-sum") == 0 || strcmp(v, "-classic-repair") == 0) {
         /* A balance one off: the sum is wrong. */

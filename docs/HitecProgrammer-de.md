@@ -449,7 +449,11 @@ Servos lässt es, wie es ist. Ein Lesen, das ein anderes Servo findet, macht
 dieses Lesen zum Backup: bei der D-Serie eine andere Modellnummer, bei
 einem klassischen Servo ein anderer Name, ein anderes Datum, eine andere
 Seriennummer oder Version. VERLASSEN, das nächste VERBINDEN, eine verlorene
-Verbindung und ein Neustart des Panels beenden es.
+Verbindung und ein Neustart des Panels beenden es. Eine Datei, die die
+Karte für ein Backup anlegt, oder ein Speichern von Hand zählt nur für das
+Backup, das bei der Anfrage bestand: eine späte Antwort nach VERLASSEN und
+VERBINDEN oder nach dem Lesen eines anderen Servos speichert nichts für das
+neue.
 
 Das erste Schreiben einer Sitzung, das einen Schritt sendet, n WERTE
 SCHREIBEN, PRÜFSUMME REPARIEREN, ein ZURÜCKSPIELEN oder WERKSEINSTELLUNG,
@@ -516,7 +520,7 @@ Halten von 2s.
 | Datei | Angezeigt |
 | --- | --- |
 | Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
-| Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.` |
+| Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.`; der Entwurf wird zu den Werten des Servos, und eine Änderung von vor dem Laden fällt samt ihren Bestätigungen weg |
 | Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
 | Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
 | Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
@@ -537,12 +541,21 @@ diesem Servo.`, oder wenn ein Wert, den sie lädt, eine weiche Regel
 überschreitet, die der eigene Wert des Servos einhält. Die Seite nennt die
 Datei und die abweichenden Werte und dieselben Warnzeilen wie eine Änderung
 jenseits dieser Regeln ([Ein Wert, der einen zweiten
-Blick braucht](#ein-wert-der-einen-zweiten-blick-braucht)). **2s HALTEN
-ZUM LADEN** übernimmt die Werte in den Entwurf, jede Regel für ihren Wert
-bestätigt. **ABBRECHEN** und ZURÜCK lassen den Entwurf, wie er war.
+Blick braucht](#ein-wert-der-einen-zweiten-blick-braucht)). Die Werte
+weichen den Warnungen: die letzte Zeile, die passt, zählt den Rest, `und 3
+weitere`, und keine Wertzeile bleibt, wo die Warnungen den Platz brauchen.
+Warnungen, die dann noch nicht über die Haltetaste passen, kommen in einen
+nächsten Teil der Seite unter der Zeile der Datei, hinter **2s HALTEN ZUM
+FORTFAHREN**; eine Datei eines anderen Modells jenseits aller 7 Regeln
+braucht auf Englisch 1 Teil und auf Deutsch 2. **2s HALTEN ZUM LADEN** im
+letzten Teil übernimmt die Werte in den Entwurf, jede Regel für ihren Wert
+bestätigt. **ABBRECHEN** und ZURÜCK lassen in jedem Teil den Entwurf, wie
+er war.
 
 ![Ein Wert jenseits einer weichen Regel](img/de/servo-hitec-file-check.png)
 ![Eine Datei eines anderen Modells](img/de/servo-hitec-file-model.png)
+![Ein anderes Modell jenseits aller Regeln, der erste Teil](img/de/servo-hitec-file-warnings.png)
+![Der zweite Teil](img/de/servo-hitec-file-warnings-next.png)
 
 #### Was eine Datei nicht lädt
 
@@ -585,12 +598,15 @@ mitgeschnitten. WERKSEINSTELLUNG unter WEITERES plant dieselbe Kopie aus
 den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
 Werkswerte zurück.`, `Quelle sind die eigenen Werkszellen 0x30-0x53 des
-Servos.`, den Werten, die sich ändern, der Zeile zum Ruderhorn und den
-Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
+Einstellung, die sie schreibt, `Zellen außerhalb der Einstellungen, mit
+geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
-den Schalter, keine offene Änderung und keinen Vermerk; ein Servo, dessen
-Zellen die Werkswerte schon halten, erhält `Kein Wert weicht vom Servo
-ab.`
+den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
+angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,
+von ihrer Werkszelle abweicht, auch eine, die keine Einstellung nennt; ein
+Servo, dessen Zellen die Werkswerte schon halten, erhält `Kein Wert weicht
+vom Servo ab.`
 
 Ein Servo der D-Serie hat keine WERKSEINSTELLUNG: sein Rücksetzbefehl
 (Register 0x6E = 0x0F0F, wie das HFP-30 ihn sendet) hinterlässt Werte, die
@@ -600,6 +616,7 @@ und das Zurücklesen hat nichts, wogegen es sie hält.
 ![WEITERES eines klassischen Servos](img/de/servo-hitec-classic-more-factory.png)
 ![WERKSEINSTELLUNG](img/de/servo-hitec-classic-factory.png)
 ![WERKSEINSTELLUNG geschrieben](img/de/servo-hitec-classic-factory-done.png)
+![WERKSEINSTELLUNG einer Zelle ohne Einstellung](img/de/servo-hitec-classic-factory-cell.png)
 
 ## PRÜFSUMME REPARIEREN
 

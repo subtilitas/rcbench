@@ -390,6 +390,11 @@ const char *hitec_panel_choice_label(int i)
     return hp.ch.open && i >= 0 && i < hp.ch.count ? hp.ch.labels[i] : NULL;
 }
 
+const char *hitec_panel_apply_label(void)
+{
+    return hp.page.open ? hp.page.apply : NULL;
+}
+
 const char *hitec_panel_choice_title(void)
 {
     return hp.ch.open ? hp.ch.title : NULL;

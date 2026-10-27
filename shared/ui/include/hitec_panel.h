@@ -345,6 +345,11 @@ gfx_rect_t hitec_panel_cancel_rect(void);
  */
 const char *hitec_panel_page_line(int i);
 /**
+ * @brief The open hold page's button label.
+ * @return the label; NULL with no page open
+ */
+const char *hitec_panel_apply_label(void);
+/**
  * @brief The keypad.
  * @return the overlay's keypad
  */

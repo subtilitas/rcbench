@@ -553,6 +553,38 @@ TEST_CASE(restore_after_factory_default_counts_the_cells_of_no_setting)
     CHECK_EQ(g_drv.eeprom[0x00], fix_hs5645()[0x00]);
 }
 
+TEST_CASE(factory_default_counts_the_cells_of_no_setting_it_writes)
+{
+    char want[HITEC_PANEL_LINE];
+
+    open_en();
+    servo_hs5645();
+    /* The factory block equals the settings but for cell 0x1D. */
+    for (unsigned c = 0; c < 0x24u; ++c) {
+        g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
+    }
+    g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    tap_connect();
+    g_card = true;
+    prun(20u);
+    card_in();
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    pick(TR(HP_MORE_FACTORY));
+    CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_FACTORY));
+    snprintf(want, sizeof(want), TR(HP_FACTORY_RAW), 1u);
+    CHECK(page_has(want));
+    CHECK(page_fits());
+    hold(2.1f);
+    until(HITEC_PROG_HELD);
+    show();
+    CHECK_STR_EQ(said(), TR(HP_FACTORY_DONE));
+    CHECK_EQ(g_drv.eeprom[0x1D], g_drv.eeprom[0x4D]);
+}
+
 TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
 {
     d_open(UI_LANG_EN);
@@ -650,6 +682,7 @@ TEST_CASE(every_file_message_has_its_lines_in_both_languages)
         { HITEC_PROG_MSG_LOADED, 1, 1 },
         { HITEC_PROG_MSG_BACKUP_RESTORED, 0, 0 },
         { HITEC_PROG_MSG_FACTORY_DONE, 0, 0 },
+        { HITEC_PROG_MSG_LOAD_SAME, 0, 0 },
     };
 
     for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
@@ -744,6 +777,109 @@ TEST_CASE(every_new_page_fits_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The warning of each soft rule, as hitec_panel_page.c's k_rule. */
+static const ui_text_id_t k_rule_text[HITEC_RULE_COUNT] = {
+    TX_KP_W_SPD_SLOW, TX_KP_W_DEAD_BAND_NARROWED, TX_HP_SOFT_OVERLOAD,
+    TX_KP_W_END_MOVED, TX_KP_W_NEUTRAL_MOVED, TX_KP_W_REVERSION_CHANGED,
+    TX_KP_W_UNCONT_POS_FAR,
+};
+
+TEST_CASE(every_warning_of_check_this_file_stands_above_its_hold)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        static const struct {
+            uint8_t id;
+            int32_t v;
+        } k_set[] = {
+            { HITEC_P_D_SPEED, 10 },
+            { HITEC_P_D_DEAD_BAND, 1 },
+            { HITEC_P_D_OVERLOAD, HITEC_OVERLOAD_OFF },
+            { HITEC_P_D_LEFT_END, 3000 },
+            { HITEC_P_D_RIGHT_END, 13300 },
+            { HITEC_P_D_NEUTRAL, 7000 },
+            { HITEC_P_D_DIRECTION, HITEC_CCW },
+            { HITEC_P_D_FAILSAFE, 2000 },
+            { HITEC_P_D_SOFT_START, 60 },
+            { HITEC_P_D_ID, 3 },
+        };
+        hitec_image_t img;
+        bool other = false;
+        uint16_t rules;
+        uint16_t seen = 0;
+        bool seen_model = false;
+        int parts = 0;
+
+        /* A servo with a dead band of 3 and overload protection at 30%,
+         * and a file of another model that changes every value it can,
+         * past all 7 rules, under the longest file name. */
+        open_at(SUPPLY_ON, langs[k]);
+        d485(&img);
+        CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_DEAD_BAND,
+                                 3), HITEC_SET_OK);
+        CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_OVERLOAD,
+                                 30), HITEC_SET_OK);
+        for (unsigned i = 0; i < 128u; ++i) {
+            g_drv.dreg[2u * i] = hitec_image_reg(&img, (uint8_t)(2u * i));
+        }
+        tap_connect();
+        g_card = true;
+        prun(20u);
+        show();
+        CHECK(hitec_image_put_reg(&img, HITEC_D_REG_MODEL, 34999u));
+        for (size_t i = 0; i < sizeof(k_set) / sizeof(k_set[0]); ++i) {
+            CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, k_set[i].id,
+                                     k_set[i].v), HITEC_SET_OK);
+        }
+        files_put_image("ABCDEFGHIJKLMNOP.TXT", &img);
+        files();
+        tap(hitec_panel_choice_rect(file_choice("ABCDEFGHIJKLMNOP")));
+        settle();
+        CHECK_EQ(hitec_panel_editor(), 3);
+        rules = hitec_prog_load_pending(model(), &other);
+        CHECK(other);
+        CHECK_EQ(rules, (1u << HITEC_RULE_COUNT) - 1u);
+        /* Each part above its hold; HOLD 2s TO CONTINUE to the next, the
+         * load waiting until the last part's HOLD 2s TO LOAD. */
+        for (int part = 0; part < 4; ++part) {
+            CHECK_EQ(hitec_panel_editor(), 3);
+            CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_FILE_TITLE));
+            CHECK(page_fits());
+            if (page_has(TR(HP_LOAD_MODEL_2))) {
+                seen_model = true;
+            }
+            for (unsigned r = 0; r < (unsigned)HITEC_RULE_COUNT; ++r) {
+                if (page_has(ui_tr(k_rule_text[r]))) {
+                    seen |= HITEC_RULE_BIT(r);
+                }
+            }
+            if (strcmp(hitec_panel_apply_label(), TR(KP_HOLD_NEXT)) != 0) {
+                break;
+            }
+            ++parts;
+            hold(2.1f);
+            CHECK(hitec_prog_load_waits(model()));
+            CHECK_EQ(hitec_prog_changes(model()), 0u);
+        }
+        CHECK(parts >= (langs[k] == UI_LANG_DE ? 1 : 0));
+        CHECK_STR_EQ(hitec_panel_apply_label(), TR(KP_HOLD_LOAD));
+        CHECK_EQ(seen, rules);
+        CHECK(seen_model);
+        if (k == 0u) {
+            hold(2.1f);
+            CHECK_EQ(hitec_panel_editor(), 0);
+            CHECK(hitec_prog_changes(model()) > 0u);
+        } else {
+            /* CANCEL on the last part drops the load. */
+            tap(hitec_panel_cancel_rect());
+            CHECK(!hitec_prog_load_waits(model()));
+            CHECK_EQ(hitec_prog_changes(model()), 0u);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(files_lists_the_card_in_pages_of_5_under_the_entry_that_saves);
@@ -758,10 +894,12 @@ int main(void)
     RUN(a_card_taken_out_after_the_backup_file_leaves_the_record_in_ram);
     RUN(restore_and_factory_default_with_an_edit_standing_say_why);
     RUN(restore_after_factory_default_counts_the_cells_of_no_setting);
+    RUN(factory_default_counts_the_cells_of_no_setting_it_writes);
     RUN(restore_writes_the_session_backup_back_from_its_page);
     RUN(factory_default_comes_from_more_for_a_classic_servo);
     RUN(every_file_message_has_its_lines_in_both_languages);
     RUN(every_new_page_fits_in_both_languages);
+    RUN(every_warning_of_check_this_file_stands_above_its_hold);
     free(fb);
     return test_summary("hitec_panel_file");
 }

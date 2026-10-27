@@ -1010,7 +1010,98 @@ TEST_CASE(after_a_lost_link_the_backup_file_brings_the_old_values_back)
     CHECK_EQ(g_drv.dreg[0x54], 10u);
 }
 
+TEST_CASE(a_file_with_the_servos_values_replaces_an_edit_in_the_draft)
+{
+    hitec_image_t img;
+
+    d_ready();
+    d485(&img);
+    files_put_image("SAME.TXT", &img);
+    /* An edit, and a value past a soft rule confirmed. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3300),
+             HITEC_PROG_EDIT_CHECK);
+    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_changes(model()), 2u);
+    load("SAME");
+    CHECK_EQ(msg(), HITEC_PROG_MSG_LOAD_SAME);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x54), 4095u);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NO_CHANGES);
+    CHECK_EQ(g_drv.d_writes, 0u);
+    /* The confirmation went with the edit. */
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_LEFT_END, 3300),
+             HITEC_PROG_EDIT_CHECK);
+}
+
+TEST_CASE(a_late_backup_file_saves_nothing_for_the_next_session)
+{
+    d_ready();
+    g_files_slow = true;
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    prun(HITEC_PROG_FILES_MS + 100u);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_CARD_WRITE);
+    /* LEAVE and CONNECT before the card answers. */
+    CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_PWM);
+    connected();
+    CHECK(hitec_prog_backup_due(model()));
+    files_answer();
+    prun(100u);
+    CHECK_STR_EQ(hitec_prog_backup_name(model()), "");
+    CHECK(hitec_prog_backup_due(model()));
+    /* The next write saves the new session's backup. */
+    g_files_slow = false;
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
+    CHECK_STR_EQ(hitec_prog_backup_name(model()), "HITEC002");
+    /* A save by hand still waiting across LEAVE and CONNECT is no
+     * backup file of the new session. */
+    d_ready();
+    g_files_slow = true;
+    CHECK_EQ(hitec_prog_save(model(), "OLD"), HITEC_PROG_MSG_NONE);
+    prun(20u);
+    CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_PWM);
+    connected();
+    CHECK(hitec_prog_card_busy(model()));
+    files_answer();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_SAVED);
+    CHECK_STR_EQ(hitec_prog_backup_name(model()), "");
+    CHECK(hitec_prog_backup_due(model()));
+}
+
 /* ---------------------------------------------------------- factory */
+
+TEST_CASE(factory_default_writes_a_cell_no_parameter_names)
+{
+    rig();
+    servo_hs5645();
+    /* The factory block equals the settings but for cell 0x1D. */
+    for (unsigned c = 0; c < 0x24u; ++c) {
+        g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
+    }
+    g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
+    CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
+    connected();
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    card_in();
+    CHECK_EQ(hitec_prog_write_gate(model(), HITEC_PROG_WR_FACTORY),
+             HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_factory(model()), HITEC_PROG_MSG_NONE);
+    written();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_FACTORY_DONE);
+    CHECK_EQ(g_drv.eeprom[0x1D], g_drv.eeprom[0x4D]);
+    CHECK_EQ(hitec_prog_factory(model()), HITEC_PROG_MSG_NO_CHANGES);
+}
 
 TEST_CASE(factory_default_writes_the_classic_factory_cells)
 {
@@ -1081,7 +1172,10 @@ int main(void)
     RUN(a_load_answered_after_the_servo_went_changes_nothing);
     RUN(restore_of_the_backup_writes_every_value_back_raw_included);
     RUN(after_a_lost_link_the_backup_file_brings_the_old_values_back);
+    RUN(a_file_with_the_servos_values_replaces_an_edit_in_the_draft);
+    RUN(a_late_backup_file_saves_nothing_for_the_next_session);
     RUN(factory_default_writes_the_classic_factory_cells);
+    RUN(factory_default_writes_a_cell_no_parameter_names);
     RUN(no_factory_default_for_the_d_series);
     return test_summary("hitec_prog_file");
 }

@@ -36,7 +36,8 @@ void hpn_close_editors(void)
         /* CHECK THIS CHANGE closed without its hold: the edit is dropped. */
         hitec_prog_cancel(&hp.prog);
     }
-    if (hp.page.open && hp.page.kind == W_LOAD) {
+    if (hp.page.open
+        && (hp.page.kind == W_LOAD || hp.page.kind == W_LOAD_MORE)) {
         /* CHECK THIS FILE closed without its hold: the file is dropped. */
         hitec_prog_load_cancel(&hp.prog);
     }

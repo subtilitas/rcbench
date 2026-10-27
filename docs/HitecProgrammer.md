@@ -416,6 +416,9 @@ panel's RAM. A later read of the same servo leaves it as it is. A read
 that finds another servo makes that read the backup: for the D series
 another model number, for a classic servo another name, date, serial or
 version. LEAVE, the next CONNECT, a lost link and a panel restart end it.
+A file the card makes for a backup, or a save by hand, counts only for the
+backup that stood when it was asked for: a late answer after LEAVE and
+CONNECT, or after another servo's read, saves nothing for the new one.
 
 The first write of a session that sends a step, WRITE n VALUES, REPAIR
 CHECKSUM, a RESTORE or FACTORY DEFAULT, saves the backup to a new file
@@ -475,7 +478,7 @@ servo before the write switch, the write page and its 2s hold.
 | File | Shown |
 | --- | --- |
 | Loaded | `WING-L loaded. 2 values differ from the servo settings.`, or `WING-L loaded. 1 value differs from the servo settings.` |
-| Holds the servo's editable values | `WING-L matches the servo settings. Nothing to write.` |
+| Holds the servo's editable values | `WING-L matches the servo settings. Nothing to write.`; the draft becomes the servo's values, and an edit made before the load is dropped with its confirmations |
 | Values outside the editable ones differ | a second line: `2 stored values outside the settings differ. They are not loaded.`, or `1 stored value outside the settings differs. It is not loaded.` |
 | Of the other series | `File is CLASSIC, servo is D SERIES. Not loaded.` |
 | Of the other classic layout | `File is for HS-7xxx servos, this servo is HS-5xxx. Not loaded.` |
@@ -495,12 +498,19 @@ names another model, `File model D series 34999, servo model D485HW.` and
 loads passes a soft rule that the servo's own value keeps. The page names
 the file and the values that differ, and the warning lines an edit past
 those rules shows ([A value that needs a second
-look](#a-value-that-needs-a-second-look)). **HOLD 2s TO LOAD** takes the
-values into the draft, each rule confirmed for its value. **CANCEL** and
-BACK leave the draft as it was.
+look](#a-value-that-needs-a-second-look)). The values give way to the
+warnings: the last line that fits counts the rest, `and 3 more`, and no
+value line is left where the warnings need the room. Warnings that still do
+not fit above the hold button go to a next part of the page under the
+file's line, behind **HOLD 2s TO CONTINUE**; a file of another model past
+all 7 rules takes 1 part in English and 2 in German. **HOLD 2s TO LOAD** on
+the last part takes the values into the draft, each rule confirmed for its
+value. **CANCEL** and BACK on any part leave the draft as it was.
 
 ![A value past a soft rule](img/servo-hitec-file-check.png)
 ![A file of another model](img/servo-hitec-file-model.png)
+![Another model past every rule, the first part](img/servo-hitec-file-warnings.png)
+![The hold of the first part](img/servo-hitec-file-warnings-next.png)
 
 #### What a file does not load
 
@@ -539,11 +549,14 @@ HPP-21 Plus's reset copies them over, captured on the station on
 plans the same copy from the servo's own factory cells as read, with the
 balance computed, and opens a page with `All settings go back to the
 factory values.`, `The source is the servo's own factory cells 0x30-0x53.`,
-the values that change, the horn line and the backup file's lines. **HOLD
+the values that change, the count of cells no setting names that it
+writes, `Cells outside the settings written too: 1.`, the horn line and the
+backup file's lines. **HOLD
 2s TO WRITE** writes it as a write and ends with `Factory values written
-and verified.` It needs the switch, no edit standing and no record; a
-servo whose cells already hold the factory values gets `No value differs
-from the servo's.`
+and verified.` It needs the switch, no edit standing and no record. It is
+offered while any cell of 0x00 to 0x23 that a write sends differs from its
+factory cell, one no setting names included; a servo whose cells already
+hold the factory values gets `No value differs from the servo's.`
 
 A D series servo has no FACTORY DEFAULT: its reset command (register 0x6E
 = 0x0F0F, as the HFP-30 sends it) leaves values that are not known before
@@ -553,6 +566,7 @@ nothing to hold them against.
 ![MORE of a classic servo](img/servo-hitec-classic-more-factory.png)
 ![FACTORY DEFAULT](img/servo-hitec-classic-factory.png)
 ![FACTORY DEFAULT written](img/servo-hitec-classic-factory-done.png)
+![FACTORY DEFAULT of a cell no setting names](img/servo-hitec-classic-factory-cell.png)
 
 ## REPAIR CHECKSUM
 

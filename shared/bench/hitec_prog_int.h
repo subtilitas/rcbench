@@ -180,6 +180,16 @@ void hpf_session(hitec_prog_t *p);
 void hpf_read_done(hitec_prog_t *p);
 
 /**
+ * @brief Whether @p img differs from the servo read in an address a plan
+ *        writes (hitec_writable()), named by a parameter or not.
+ *
+ * @param p   The programmer.
+ * @param img An image of the servo's series.
+ * @return true when it does.
+ */
+bool hpf_writable_differs(const hitec_prog_t *p, const hitec_image_t *img);
+
+/**
  * @brief A write with steps is about to go: its backup file first, where
  *        one is due and a card is mounted.
  *

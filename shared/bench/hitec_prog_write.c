@@ -398,7 +398,7 @@ bool hitec_prog_write_on(const hitec_prog_t *p)
 
 /**
  * @brief Whether FACTORY DEFAULT changes the servo: a classic servo whose
- *        factory image differs from it in a parameter.
+ *        factory image differs from it in a cell a write sends.
  *
  * @param p The programmer.
  * @return true when it does.
@@ -407,7 +407,9 @@ static bool factory_differs(const hitec_prog_t *p)
 {
     hitec_image_t img;
 
-    return hitec_prog_factory_image(p, &img) && hpw_differing(p, &img) != 0u;
+    /* Every cell the reset copies counts, a cell no parameter names
+     * included. */
+    return hitec_prog_factory_image(p, &img) && hpf_writable_differs(p, &img);
 }
 
 hitec_prog_msg_id_t hitec_prog_write_gate(const hitec_prog_t *p,

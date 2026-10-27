@@ -176,6 +176,11 @@ static unsigned changes_of(const hitec_image_t *to)
 
 void hpn_page_load(void)
 {
+    hpn_page_load_at(0);
+}
+
+void hpn_page_load_at(int from)
+{
     const hitec_prog_t *p = &hp.prog;
     /* Opened while a load waits: its image, against the servo read. */
     const hitec_image_t *to = &p->load_img;
@@ -214,31 +219,29 @@ void hpn_page_load(void)
                             ? HP_PAGE_LINES - fixed
                             : HP_PAGE_VALUES);
     hpn_page_rules(rules);
-}
+    /* The values give way to the warnings; warnings that still do not fit
+     * go to a next part, behind HOLD 2s TO CONTINUE: every warning stands
+     * above a hold before the one that loads. */
+    if (!hpn_page_fit() || from > 0) {
+        const int all = hp.page.count;
+        const int end = hpn_page_part(from);
 
-void hpn_page_factory(void)
-{
-    hitec_image_t to;
-
-    hpn_page_open(W_FACTORY, true, TR(HP_FACTORY), TR(KP_HOLD_WRITE));
-    hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_1));
-    hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_2));
-    /* The write gate has passed: a classic servo is read. */
-    if (hitec_prog_factory_image(&hp.prog, &to)) {
-        hpn_page_values(&to, 4);
+        if (end < all) {
+            hp.page.kind = W_LOAD_MORE;
+            hp.page.next = end;
+            snprintf(hp.page.apply, sizeof(hp.page.apply), "%s",
+                     TR(KP_HOLD_NEXT));
+        }
     }
-    hpn_page_add(HITEC_PROG_DANGER, TR(KP_HORN_FREE));
-    hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
-    hpn_page_saves();
 }
 
 /**
- * @brief The addresses outside the parameters RESTORE of the backup
- *        changes: classic cells of no parameter.
+ * @brief The addresses outside the parameters a RESTORE of the backup or
+ *        FACTORY DEFAULT changes: classic cells of no parameter.
  * @param to the image the restore leaves
  * @return the count
  */
-static unsigned raw_restored(const hitec_image_t *to)
+static unsigned raw_cells(const hitec_image_t *to)
 {
     const hitec_image_t *s = hitec_prog_servo(&hp.prog);
     const uint8_t layout = hitec_prog_layout(&hp.prog);
@@ -275,6 +278,31 @@ static unsigned raw_restored(const hitec_image_t *to)
     return n;
 }
 
+void hpn_page_factory(void)
+{
+    hitec_image_t to;
+
+    hpn_page_open(W_FACTORY, true, TR(HP_FACTORY), TR(KP_HOLD_WRITE));
+    hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_1));
+    hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_2));
+    /* The write gate has passed: a classic servo is read. */
+    if (hitec_prog_factory_image(&hp.prog, &to)) {
+        const unsigned raw = raw_cells(&to);
+
+        hpn_page_values(&to, 4);
+        if (raw != 0u) {
+            char line[HITEC_PANEL_LINE];
+
+            snprintf(line, sizeof(line), TR(HP_FACTORY_RAW), raw);
+            hpn_page_add(HITEC_PROG_INFO, line);
+        }
+    }
+    hpn_page_add(HITEC_PROG_DANGER, TR(KP_HORN_FREE));
+    hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
+    hpn_page_saves();
+    (void)hpn_page_fit();
+}
+
 void hpn_page_backup(void)
 {
     hitec_image_t to;
@@ -284,7 +312,7 @@ void hpn_page_backup(void)
     hpn_page_add(HITEC_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
     /* The write gate has passed: the backup differs from the servo. */
     if (hitec_prog_backup_image(&hp.prog, &to)) {
-        const unsigned raw = raw_restored(&to);
+        const unsigned raw = raw_cells(&to);
 
         hpn_page_values(&to, HP_PAGE_VALUES - 1);
         if (raw != 0u) {
@@ -296,6 +324,7 @@ void hpn_page_backup(void)
     }
     hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
     hpn_page_saves();
+    (void)hpn_page_fit();
 }
 
 void hpn_page_saves(void)

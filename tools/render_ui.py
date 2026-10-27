@@ -226,6 +226,15 @@ SCREENS = {
                                "dark"),
     "servo-hitec-file-series": ("servo-hitec-file-series.png", "servo",
                                 "dark"),
+    # CHECK THIS FILE past all 7 soft rules and of another model: the
+    # first part above HOLD 2s TO CONTINUE, then the rest above HOLD 2s TO
+    # LOAD; FACTORY DEFAULT with a cell no setting names.
+    "servo-hitec-file-warnings": ("servo-hitec-file-warnings.png", "servo",
+                                  "dark"),
+    "servo-hitec-file-warnings-next": (
+        "servo-hitec-file-warnings-next.png", "servo", "dark"),
+    "servo-hitec-classic-factory-cell": (
+        "servo-hitec-classic-factory-cell.png", "servo", "dark"),
     "servo-hitec-file-damaged": ("servo-hitec-file-damaged.png", "servo",
                                  "dark"),
     "servo-hitec-backup-write": ("servo-hitec-backup-write.png", "servo",

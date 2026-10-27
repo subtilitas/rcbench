@@ -53,6 +53,8 @@ static void name_copy(char *to, const char *from)
 
 void hpf_session(hitec_prog_t *p)
 {
+    /* A save answered later is of the session that asked for it. */
+    p->bk_gen++;
     p->have_bk = false;
     p->bk_saved = false;
     p->bk_no_file = false;
@@ -128,6 +130,7 @@ void hpf_read_done(hitec_prog_t *p)
     /* The first read of the session, or another servo on the port: its
      * own backup, saved before its first write. */
     p->have_bk = true;
+    p->bk_gen++;
     p->bk = p->servo;
     p->bk_saved = false;
     p->bk_no_file = false;
@@ -169,26 +172,28 @@ bool hitec_prog_backup_image(const hitec_prog_t *p, hitec_image_t *out)
     return true;
 }
 
-bool hitec_prog_backup_differs(const hitec_prog_t *p)
+bool hpf_writable_differs(const hitec_prog_t *p, const hitec_image_t *img)
 {
-    hitec_image_t img;
-
-    if (!hitec_prog_backup_image(p, &img)) {
-        return false;
-    }
     for (unsigned a = 0; a < HITEC_MEM_SIZE; ++a) {
         const uint8_t at = (uint8_t)a;
 
-        if (hitec_writable(img.series, at)
-            && (img.series == (uint8_t)HITEC_D
-                    ? hitec_image_reg(&img, at)
+        if (hitec_writable(img->series, at)
+            && (img->series == (uint8_t)HITEC_D
+                    ? hitec_image_reg(img, at)
                           != hitec_image_reg(&p->servo, at)
-                    : hitec_image_cell(&img, at)
+                    : hitec_image_cell(img, at)
                           != hitec_image_cell(&p->servo, at))) {
             return true;
         }
     }
     return false;
+}
+
+bool hitec_prog_backup_differs(const hitec_prog_t *p)
+{
+    hitec_image_t img;
+
+    return hitec_prog_backup_image(p, &img) && hpf_writable_differs(p, &img);
 }
 
 hitec_prog_msg_id_t hitec_prog_restore_backup(hitec_prog_t *p)
@@ -262,6 +267,7 @@ static void card_ask(hitec_prog_t *p, uint8_t op, const char *name,
     p->card_op = op;
     p->card_ready = true;
     p->card_auto = autosave;
+    p->card_gen = p->bk_gen;
     p->card_ms = p->f.now_ms;
     name_copy(p->card_name, name != NULL ? name : "");
 }
@@ -471,9 +477,12 @@ static void save_done(hitec_prog_t *p, const hitec_card_done_t *d,
                       bool waiting)
 {
     const bool ok = d->result == (uint8_t)HITEC_CARD_DONE_OK;
+    /* The file holds the backup it was asked for, not one that replaced
+     * it since: another session's or another servo's. */
+    const bool same_bk = p->have_bk && p->card_gen == p->bk_gen;
     hitec_image_t now;
 
-    if (ok && p->card_auto && p->have_bk) {
+    if (ok && p->card_auto && same_bk) {
         /* A backup file made after the write gave up on it holds the
          * backup all the same. */
         p->bk_saved = true;
@@ -500,7 +509,7 @@ static void save_done(hitec_prog_t *p, const hitec_card_done_t *d,
     name_copy(p->card_name, d->name);
     /* A save by hand before the first write, of the servo as the session
      * found it, is the backup file. */
-    if (p->have_bk && !p->bk_saved && !p->wrote && p->have_servo
+    if (same_bk && !p->bk_saved && !p->wrote && p->have_servo
         && hitec_prog_backup_image(p, &now)
         && memcmp(now.mem, p->servo.mem, sizeof(now.mem)) == 0) {
         p->bk_saved = true;
@@ -727,6 +736,10 @@ static void load_done(hitec_prog_t *p, const hitec_card_done_t *d)
     memcpy(p->load_model, d->model, sizeof(p->load_model));
     p->load_model[HITEC_CARD_MODEL_MAX] = '\0';
     if (hpw_differing(p, &p->load_img) == 0u) {
+        /* The file holds the servo's values: the draft becomes them, and
+         * an edit standing before the load goes with its confirmations. */
+        p->draft = p->load_img;
+        hpw_unconfirm(p);
         (void)say(p, HITEC_PROG_MSG_LOAD_SAME, p->load_skipped, 0u);
         return;
     }
