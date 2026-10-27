@@ -845,7 +845,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
 
   // A named text that the line does not hold.
   const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 802, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.0/);
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.1/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
@@ -871,7 +871,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
     doc.splice(500, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:502 does not hold "\| SDA \| GP16 \(pad 21\) \|"/);
+  reports(found, 'wire.26', /FirstRun\.md:502 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
   reports(found, 'wire.27', /FirstRun\.md:503 does not hold/);
   reports(found, 'check.ina3221-pullups', /FirstRun\.md:504 does not hold/);
 });

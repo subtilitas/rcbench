@@ -1,6 +1,6 @@
 # rcbench bench configurator
 
-A static page for release 0.23.0 of rcbench. The visitor ticks what the bench
+A static page for release 0.23.1 of rcbench. The visitor ticks what the bench
 does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
 The functions stand in groups by the bench hardware they need. A part of the
 result beyond the base setup has a remove control.

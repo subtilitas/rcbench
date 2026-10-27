@@ -303,7 +303,7 @@ while the write waits for the card.
 | `Writing was interrupted after the save, before the restart. Tap READ ALL.` | saved them; the restart is owed |
 | `Every value went out; their check was interrupted. Tap READ ALL.` | took all of them; the read-back did not end |
 | `Writing was interrupted at stored value 0x06. Tap READ ALL.` and `The checksum may be wrong: the servo may ignore PWM and draw current up to the supply limit.` | may hold the new cell without its balance |
-| `Cell 0x06 is written, its checksum in cell 0x1C is not. Tap READ ALL.` and the same second line | holds the new cell and the old balance: the checksum is wrong |
+| `Stored value 0x06 is written, its checksum in 0x1C is not. Tap READ ALL.` and the same second line | holds the new cell and the old balance: the checksum is wrong |
 | `A write did not end verified. Tap READ ALL before the next write.` | a write once a step went out leaves what the servo holds unknown; READ ALL comes before the next write |
 
 A write that ends any way but verified switches the switch off.
@@ -620,7 +620,7 @@ nothing to hold them against.
 A classic servo whose cells 0x00 to 0x1C do not sum to 0 modulo 256 shows
 CHECKSUM `WRONG`, and the SERVO tab says `MORE > REPAIR CHECKSUM writes stored
 value 0x1C.` REPAIR CHECKSUM under MORE opens a page that names the cell's value
-and the balance, `Writes cell 0x1C: 0x5F -> 0x5E.`; its hold writes the
+and the balance, `Writes stored value 0x1C: 0x5F -> 0x5E. Stored values 0x00-0x1C then sum to 0.`; its hold writes the
 balance alone, with its record and the read-back of cells 0x00 to 0x23.
 It needs the switch, no edit standing (WRITE n VALUES writes the balance
 with the edits) and no record.
