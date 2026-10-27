@@ -523,7 +523,9 @@ typedef struct {
     bool     bk_no_file;      /**< a write went with no card for it       */
     uint32_t bk_gen;          /**< counts the backups: one per session and
                                    per servo that replaces it             */
-    uint32_t card_gen;        /**< bk_gen when the request out was asked */
+    uint32_t card_gen;        /**< bk_gen when the request out was asked;
+                                   a save or a load answered under
+                                   another bk_gen is of another session */
     hitec_image_t bk;         /**< the session's backup                   */
     char     bk_name[HITEC_CARD_NAME_MAX]; /**< the file of bk_saved     */
     uint8_t  card_op;         /**< hitec_card_op_t awaited; IDLE none     */

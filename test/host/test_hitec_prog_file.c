@@ -21,7 +21,7 @@
  *    a hand-edited file (a wrong check, a cut text, an extra line), a file
  *    of no servo; the gates (not in programming mode, a read running, no
  *    read, a write that needs a read, a STOP, ARMED refused while held, a
- *    servo gone before the answer);
+ *    servo gone before the answer, an answer after LEAVE and CONNECT);
  *  - RESTORE of the session's backup, raw values included, after a write
  *    and after a lost link; another servo on the port;
  *  - FACTORY DEFAULT of a classic servo; none for the D series.
@@ -1079,6 +1079,31 @@ TEST_CASE(a_late_backup_file_saves_nothing_for_the_next_session)
     CHECK(hitec_prog_backup_due(model()));
 }
 
+TEST_CASE(a_late_load_changes_nothing_in_the_next_session)
+{
+    d_ready();
+    d_file("F.TXT", HITEC_P_D_SPEED, 50);
+    g_files_slow = true;
+    CHECK_EQ(hitec_prog_load(model(), "F"), HITEC_PROG_MSG_NONE);
+    prun(20u);
+    /* LEAVE and CONNECT before the card answers. */
+    CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_PWM);
+    connected();
+    CHECK(hitec_prog_card_busy(model()));
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    files_answer();
+    prun(100u);
+    CHECK(!hitec_prog_card_busy(model()));
+    CHECK(!hitec_prog_load_waits(model()));
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    CHECK(msg() != HITEC_PROG_MSG_LOADED);
+    /* The same file asked for in this session loads. */
+    g_files_slow = false;
+    load("F");
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+}
+
 /* ---------------------------------------------------------- factory */
 
 TEST_CASE(factory_default_writes_a_cell_no_parameter_names)
@@ -1174,6 +1199,7 @@ int main(void)
     RUN(after_a_lost_link_the_backup_file_brings_the_old_values_back);
     RUN(a_file_with_the_servos_values_replaces_an_edit_in_the_draft);
     RUN(a_late_backup_file_saves_nothing_for_the_next_session);
+    RUN(a_late_load_changes_nothing_in_the_next_session);
     RUN(factory_default_writes_the_classic_factory_cells);
     RUN(factory_default_writes_a_cell_no_parameter_names);
     RUN(no_factory_default_for_the_d_series);

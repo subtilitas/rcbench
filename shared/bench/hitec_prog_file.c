@@ -772,7 +772,9 @@ void hitec_prog_card_done(hitec_prog_t *p, const hitec_card_done_t *d)
         }
         break;
     case HITEC_CARD_LOAD:
-        if (waiting) {
+        /* A file asked for by an earlier session, or against another
+         * servo, is no load of this one. */
+        if (waiting && p->card_gen == p->bk_gen) {
             load_done(p, d);
         }
         break;
