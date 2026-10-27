@@ -4223,6 +4223,9 @@ UI_TEXT(KP_M_CYCLE_CUT, 116,
 UI_TEXT(KP_M_LEFT_CYCLED, 116,
     "Supply switched off for 1s and on: the written values act.",
     "Versorgung 1s aus und wieder ein: die geschriebenen Werte wirken.")
+UI_TEXT(KP_M_CYCLED_NO_WAIT, 116,
+    "This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.",
+    "Diese IOmcu-Firmware wendet nach dem Zyklus keine WARTEZEIT VOR PWM an.")
 UI_TEXT(KP_M_LEFT_NOTE, 116,
     "The written values act after the servo's supply is switched off and on.",
     "Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.")
