@@ -12,6 +12,26 @@ CONTRIBUTING.md: history-en: "we", no "previously" or "now"
 CONTRIBUTING.md: marketing: No marketing words (powerful
 CONTRIBUTING.md: marketing: easy). No exclamation marks, no emoji.
 
+# The ESP32-S3 panel is the panel of the releases up to 0.22.1, and these
+# lines name it as such; the current panel is the ESP32-P4.
+README.md: stale-esp32s3: 0.22 it is the 7-inch ESP32-S3 display board
+README.md: stale-esp32s3: (ESP32-S3-Touch-LCD-7, 800 x 480 pixels).
+README.md: stale-esp32s3: 0.22 is the last release line for the ESP32-S3 panel
+README.md: stale-esp32s3: release is 0.22.1. An ESP32-S3 panel is offered
+README.md: stale-esp32s3: Releases up to 0.22.1 run on the ESP32-S3 panel
+README-de.md: stale-esp32s3: ist es das 7-Zoll-ESP32-S3-Displayboard
+README-de.md: stale-esp32s3: (ESP32-S3-Touch-LCD-7, 800 x 480 Pixel).
+README-de.md: stale-esp32s3: 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel
+README-de.md: stale-esp32s3: Release ist 0.22.1. Einem ESP32-S3-Panel
+README-de.md: stale-esp32s3: Releases bis 0.22.1 laufen auf dem ESP32-S3-Panel
+STATUS.md: stale-esp32s3: ESP32-S3 panel's last release line is 0.22
+docs/Building.md: stale-esp32s3: 0.22 is the last release line for the ESP32-S3 panel
+docs/Building.md: stale-esp32s3: belongs to the ESP32-S3 panel's
+docs/Building-de.md: stale-esp32s3: 0.22 ist die letzte Release-Linie für das ESP32-S3-Panel
+docs/Building-de.md: stale-esp32s3: Linie des ESP32-S3-Panels
+docs/FirstRun.md: stale-esp32s3: ESP32-S3 panel and not on this board
+docs/FirstRun-de.md: stale-esp32s3: dem ESP32-S3-Panel und nicht auf diesem Board
+
 # "just-in-time compiler" is a term, not an intensifier.
 STATUS.md: marketing: JIT (just-in-time compiler)
 

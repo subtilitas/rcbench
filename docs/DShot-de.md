@@ -303,7 +303,7 @@ einer geratenen Polzahl abgeleitete Drehzahl ist eine plausible Zahl ohne
 Kennzeichnung, dass sie falsch ist, und das ist schlimmer als ein leeres Feld.
 
 Das gilt nur für null. Jede gerade Zahl zwischen 2 und 42 wird angenommen und
-setzt das Gültig-Bit der Drehzahl -- eine ungerade wird abgelehnt, denn ein
+setzt das Gültig-Bit der Drehzahl. Eine ungerade wird abgelehnt, denn ein
 Tippfehler, der bis zum anderen Ende käme, würde eine plausible falsche
 Drehzahl auf den Bildschirm bringen. Ein IOmcu mit einer veralteten Zahl
 meldet
@@ -366,7 +366,7 @@ Command: sie verwirft ein Command mit gelöschtem Telemetry-Bit und setzt dabei
 ihren Wiederholungszähler zurück, sodass zehn Frames ohne das Bit nie die
 sechs Wiederholungen erreichen, die ihr Command-Handler zählt. Die
 AM32-Firmware hat diese Sperre nicht und nimmt beide Frames an. An einem bidirektionalen Pin lautet
-der Frame mit dem Bit `0x01B5` und ohne es `0x01A4` -- andere Nutzdaten und
+der Frame mit dem Bit `0x01B5` und ohne es `0x01A4`: andere Nutzdaten und
 ein anderes Prüfsummen-Nibble. `test_dshot_frame` hält dieses Wort fest. Die
 zweite Bedeutung des Bits ist eine Anforderung auf der separaten seriellen
 Telemetry-Leitung, die auf diesem Prüfstand niemand liest.
@@ -377,7 +377,7 @@ Exponent mit Mantisse, und nur ein ESC mit eingeschalteter Extended Telemetry
 garantiert die Normalisierung, die sie trennt. Der Decoder nimmt den Modus
 deshalb als Argument entgegen, statt ihn zu erschließen. Ein ESC, der Command
 13 ignoriert **und** nicht normalisiert, bekommt deshalb einzelne
-Drehzahl-Frames als Temperatur oder Spannung gelesen -- ungemessen, und der
+Drehzahl-Frames als Temperatur oder Spannung gelesen. Das ist ungemessen, und der
 Grund, die ersten Anzeigen an einem neuen ESC zu prüfen.
 
 Temperatur, Spannung und Strom erreichen die Zahlen des Prüfstands von hier

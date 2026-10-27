@@ -146,7 +146,7 @@ A change fails if:
 - a C file the pull request adds has a Doxygen warning, a line it changes
   carries one, a C file it changes has no `@file` block, the tree has a
   warning that `tools/doc_check_baseline.txt` does not list, or the
-  baseline lists one that no longer occurs ([Comments](#comments));
+  baseline lists one that the tree does not produce ([Comments](#comments));
 - a source file has no SPDX (Software Package Data Exchange) line, a wiki page
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`

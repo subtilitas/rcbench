@@ -712,7 +712,7 @@ file names no stage, so the checks follow the stages as one list.
   only pages that hold every term.
 - PDF export: the drawing is scaled by 0.526 to the text width. Its text is 5.8 pt to 6.8 pt. The wire table
   after it repeats every wire at 8 pt.
-- PDF export: the page before a drawing that needs a full page ends where the drawing no longer fits.
+- PDF export: the page before a drawing that needs a full page ends where the drawing does not fit.
 - PDF export: download tested in headless Chromium only. Safari on iOS and Chrome on Android: not tested.
   The status line keeps a link to the file for a browser that blocks the automatic download.
 - PDF export: a character outside the 282 of the font files stops the export with the error message.

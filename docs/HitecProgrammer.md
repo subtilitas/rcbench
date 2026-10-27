@@ -77,7 +77,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | RESTORE | The session's backup back to the servo, while it differs from the servo ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
 | WRITE n VALUES | The draft to the servo ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
 
-Under the rows the state line says what the port does now, and the last
+Under the rows the state line says what the port does, and the last
 message stands at the foot of the notes. Every control is 48px tall or more
 and ends 4px above the alert band; the geometry is the KST programmer's
 ([Screens](Screens.md#programmer)).
@@ -652,7 +652,7 @@ and the CLOSE is always taken.
 | STOP, pressed or the bench's own | The IOmcu cuts the transaction after the frame on the wire, keeps the port with the pin released and sets STOPPED. The panel latches the stop and withholds the heartbeat | `Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.`, and no line offers CLEAR. CLEAR and READ ALL are refused with the STOP latched: the IOmcu would refuse the CLEAR as UNSAFE. LEAVE, then ARM and DISARM, then CONNECT |
 | A switch to SAFE at the bench alone | STOPPED, no latch | `Stopped. The pin is released. Tap CLEAR to go on, or LEAVE.` CLEAR goes on with the read |
 | ABORT | The operation ends; the port stays held | READ ALL again, or LEAVE |
-| The link goes silent | The IOmcu's failsafe latches and the port stays held; the panel's module no longer counts it as its own | Once the link is back the overlay says `Port held by another Hitec session.` and offers RELEASE PORT |
+| The link goes silent | The IOmcu's failsafe latches and the port stays held; the panel's module does not count it as its own | Once the link is back the overlay says `Port held by another Hitec session.` and offers RELEASE PORT |
 | The panel starts again | As a lost link | As a lost link |
 
 ![STOP latched](img/servo-hitec-stopped.png)
