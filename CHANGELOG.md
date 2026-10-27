@@ -180,6 +180,13 @@ history is in git.
 
 ### Fixed
 
+- A turn of the panel's knob while a chip's help bubble is open closes the
+  bubble and moves nothing, as a tap does (`ui_router_take_knob()`); before,
+  the turn moved the throttle on MOTOR & ESC or the target on SERVO behind
+  the bubble.
+- The Hitec write switch's page says that an interrupted write leaves a
+  wrong checksum and that the servo may ignore PWM and draw current up to
+  the supply limit (`HP_ENABLE_3C`).
 - A press on the disabled ARM on SERVO or MOTOR & ESC while a programmer
   holds a port shows `Cannot switch to ARMED: a port is in use by the servo
   programmer.` in the alert band.
