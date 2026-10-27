@@ -5220,8 +5220,8 @@ UI_TEXT(HP_FACTORY_2, 116,
     "The source is the servo's own factory cells 0x30-0x53.",
     "Quelle sind die eigenen Werkszellen 0x30-0x53 des Servos.")
 UI_TEXT(HP_FACTORY_RAW, 116,
-    "Cells outside the settings written too: %u.",
-    "Zellen außerhalb der Einstellungen, mit geschrieben: %u.")
+    "Stored values outside the settings written too: %u.",
+    "Gespeicherte Werte außerhalb der Einstellungen, mit geschrieben: %u.")
 UI_TEXT(HP_FACTORY_DONE, 116,
     "Factory values written and verified.",
     "Werkswerte geschrieben und geprüft.")

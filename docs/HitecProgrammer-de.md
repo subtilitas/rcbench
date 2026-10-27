@@ -599,8 +599,8 @@ den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
 Werkswerte zurück.`, `Quelle sind die eigenen Werkszellen 0x30-0x53 des
 Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
-Einstellung, die sie schreibt, `Zellen außerhalb der Einstellungen, mit
-geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Einstellung, die sie schreibt, `Gespeicherte Werte außerhalb der Einstellungen,
+mit geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
 den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
 angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,

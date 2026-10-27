@@ -550,7 +550,7 @@ plans the same copy from the servo's own factory cells as read, with the
 balance computed, and opens a page with `All settings go back to the
 factory values.`, `The source is the servo's own factory cells 0x30-0x53.`,
 the values that change, the count of cells no setting names that it
-writes, `Cells outside the settings written too: 1.`, the horn line and the
+writes, `Stored values outside the settings written too: 1.`, the horn line and the
 backup file's lines. **HOLD
 2s TO WRITE** writes it as a write and ends with `Factory values written
 and verified.` It needs the switch, no edit standing and no record. It is
