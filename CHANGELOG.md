@@ -4,6 +4,22 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Fixed
+
+- CI runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`) in every workflow. The
+  host suite is five parallel jobs, joined by the required job `Host suite,
+  coverage and the checks that hold prose to the tree`. `test_settings_sensors`
+  formats its keys into a 32-byte buffer (gcc 15 `-Werror=format-truncation`),
+  `test_picker_screen` initialises its button coordinates (clang-tidy 21
+  `clang-analyzer-core.UndefinedBinaryOperatorResult`), the IOmcu stack figures
+  are those of arm-none-eabi-gcc 14.2.1, `tools/render_ui.py` and
+  `tools/frame_cost.py` compile with `-ffp-contract=off` so that a compiler
+  targeting x86-64-v3 draws the committed images, and the coverage table is the
+  one of gcc 15.2's gcov. `tools/coverage.py --from-json` writes the table from
+  the `coverage` artifact of a CI run.
+
 ## 0.23.1 - 2026-10-27
 
 0.23.1 is a testing release: its minor number, 23, is odd, and GitHub
@@ -266,17 +282,6 @@ loads it over USB (Universal Serial Bus) as
 
 ### Fixed
 
-- CI runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`) in every workflow. The
-  host suite is five parallel jobs, joined by the required job `Host suite,
-  coverage and the checks that hold prose to the tree`. `test_settings_sensors`
-  formats its keys into a 32-byte buffer (gcc 15 `-Werror=format-truncation`),
-  `test_picker_screen` initialises its button coordinates (clang-tidy 21
-  `clang-analyzer-core.UndefinedBinaryOperatorResult`), the IOmcu stack figures
-  are those of arm-none-eabi-gcc 14.2.1, `tools/render_ui.py` and
-  `tools/frame_cost.py` compile with `-ffp-contract=off` so that a compiler
-  targeting x86-64-v3 draws the committed images, and the coverage table is the
-  one of gcc 15.2's gcov. `tools/coverage.py --from-json` writes the table from
-  the `coverage` artifact of a CI run.
 - A press on the disabled ARM on SERVO or MOTOR & ESC while a programmer
   holds a port shows `Cannot switch to ARMED: a port is in use by the servo
   programmer.` in the alert band.
