@@ -317,6 +317,12 @@ typedef struct {
     fm_info_t info;           /**< the answer                            */
     fm_err_t info_err;        /**< FM_OK, or why the card did not answer */
 
+    /* The text viewer's file, read by a LOAD job of the card's task. */
+    bool tv_need;             /**< its read waits to be handed over      */
+    bool tv_live;             /**< the read under way is the viewer's    */
+    bool tv_from_logs;        /**< LOGS opened it: the home tag returns  */
+    unsigned tv_mount;        /**< the mount it was listed from          */
+
     /* The keyboard for a name, and what it is typed for. */
     ui_textkey_t tk;          /**< the keyboard                          */
     fs_name_for_t name_for;   /**< NEW > FOLDER, NEW > TEXT FILE, RENAME */
@@ -358,6 +364,17 @@ extern fs_state_t fs_s;
 #define s fs_s   /**< The state by its short name. */
 
 /* --- files_screen.c ----------------------------------------------------- */
+
+/**
+ * @brief Hand s.req to the card's task, the log folders in force with it.
+ * @return true when it is under way; false with one under way already, or
+ *         without a task
+ */
+bool fs_submit(void);
+
+/** @brief Take the answer that is in, then send what waits: the viewer's
+ *         read first, then the panes' listings. */
+void fs_pump(void);
 
 /**
  * @brief The selected entry of the active pane.
@@ -482,6 +499,29 @@ int fs_bar_scroll_at(int i, int top);
  * @param i  the pane
  */
 void fs_clamp_scroll(int i);
+
+/* --- files_text.c ------------------------------------------------------- */
+
+/**
+ * @brief Hand the viewer's read to the card's task when it waits and
+ *        nothing is under way.
+ * @return true when it went out
+ */
+bool fs_text_send(void);
+
+/** @brief The answer of the viewer's read: the viewer takes the bytes, or
+ *         says why not.  A read the viewer was closed under is dropped. */
+void fs_text_take(void);
+
+/**
+ * @brief The viewer's read that waits cannot go out: the viewer says why.
+ * @param err  why
+ */
+void fs_text_fail(fm_err_t err);
+
+/** @brief Close the viewer: a read under way is asked to stop and its
+ *         answer dropped, one waiting is dropped; the panes show. */
+void fs_text_close(void);
 
 /* --- files_draw.c ------------------------------------------------------- */
 

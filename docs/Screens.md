@@ -2125,8 +2125,7 @@ Browse the card, open a file, check what the import detected, then plot:
 ![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
 
 The home tag climbs one level, as BACK does: the plot to the import view,
-the import view and a report's text to the file list, the file list to the
-menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
+the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
 RESCAN, opens [Wi-Fi](#wi-fi), and FILES beside it opens [Files](#files).
 
 The file list takes the body in three parts. The header row, body y 4 to
@@ -2239,28 +2238,18 @@ labels a report by: `ATESTnnn.TXT` beside `ATESTnnn.CSV` or without it,
 `LIMITnnn.TXT`, which a LIMIT RUN writes with no CSV, and in the root
 `SERVOnnn.TXT`, of firmware 0.21.0 and older. A run and its report are two
 rows, the CSV first: OPEN on the CSV reads it into the import, OPEN on the
-report shows its text. Other `.TXT` files are not listed. Runs are listed
+report opens it in the [text viewer](#the-text-viewer). Other `.TXT` files are not listed. Runs are listed
 newest first by number, across all names in the folder, a report by its own
 number: `LIMIT044.TXT`, then `MOTOR043.CSV`, then `SERVO042.CSV`, then
 `SERVO042.TXT`, then `SUPPL041.CSV`.
 
-![A LIMIT RUN's report opened as text](img/logs-report.png)
+![A LIMIT RUN's report opened from LOGS in the text viewer](img/logs-report.png)
 
-OPEN on a report shows it as text in place of the import
-view: the file's name heads the panel, and its lines follow, 15 rows of up
-to 92 characters in the 10 x 20 face on screen, 22px apart. BACK is
-140 x 52px at the footer's left. A line longer than a row breaks at its last
-space inside the row, and a word longer than a row is cut at the row's end.
-A line ends at a line feed (LF), at a carriage return (CR) and at a CR LF
-pair, which is one end; a tab reads as a space. A drag on the rows or on the
-scroll bar scrolls them. A frame reads the 15 rows it draws and at most 15
-rows before them, wherever the text is scrolled to. BACK and the home tag
-return to the list and free the text; leaving LOGS frees it too, and LOGS
-opens on the list again. The view holds the first 32KiB of a file; a longer
-file shows those and a last row `Only the first 32kB are shown.` A file of
-0 bytes shows one row, `The file is empty.` A report that cannot be opened
-stays on the list, and the footer says why: `Cannot open LIMIT044.TXT.` or
-`Not enough memory.`
+OPEN on a report opens it in the [text viewer](#the-text-viewer) on
+FILES, read-only. The band's title reads FILES; the home tag returns to
+LOGS, with the report chosen on the list again. A report over 1MiB stays
+on the list, and the footer says
+`Over 1MB: too large to open. Download it over Wi-Fi.`
 
 ![The ROOT tab with the runs of an older firmware](img/logs-root.png)
 
@@ -2500,7 +2489,8 @@ holds.
 ## Files
 
 FILES shows the SD (Secure Digital) card in two panes and copies, moves,
-renames and deletes its files, and makes folders and empty text files. It
+renames and deletes its files, makes folders and empty text files, and
+shows a file as text in its [text viewer](#the-text-viewer). It
 opens from FILES in the bottom row of [Logs](#logs) and from the FILES tile
 of [Setup](#setup). The home tag closes a box or the keyboard
 first, then leads back to the screen that opened FILES. FILES drives no
@@ -2571,7 +2561,7 @@ drawn dimmed; a tap on it says why in the message line, two lines of the
 | DELETE | asks first. A run's CSV takes its report along; a folder is deleted only when empty |
 | NEW | FOLDER or TEXT FILE, then the keyboard for its name; a text file is made empty |
 | INFO | the entry's name, folder, kind, size or entries, time and rule |
-| OPEN | enters a folder; a CSV file or a report in one of LOGS' three folders (ROOT, USER, BENCH) opens on [Logs](#logs) on that folder's tab, a report as text: the names LOGS lists (`log_select_lists()`), every file the list labels REPORT among them; a file LOGS does not open, one over 2GiB less 1 byte, shows LOGS' list with the reason; a card swapped since FILES listed the file opens nothing and says `The card was taken out or swapped. Tap RESCAN.` A file the logger still writes is not opened, OPEN is grey and says `ATEST012.TXT is being written.`; a file gone from the card since FILES listed it says `LIMIT013.TXT is not on the card. Tap RESCAN.` Any other file: `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| OPEN | enters a folder; a CSV file in one of LOGS' three folders (ROOT, USER, BENCH) that LOGS lists opens on [Logs](#logs) on that folder's tab, in the import; a CSV file over 2GiB less 1 byte shows LOGS' list with the reason, and a card swapped since FILES listed it opens nothing and says `The card was taken out or swapped. Tap RESCAN.` Every other file, a report among them, opens in the [text viewer](#the-text-viewer). A file over 1MiB is not opened: OPEN is grey and says `Over 1MB: too large to open. Download it over Wi-Fi.` A file the logger still writes is not opened, OPEN is grey and says `ATEST012.TXT is being written.`; the servo programmers' records take INFO only |
 
 An existing name is never overwritten: COPY, MOVE, RENAME and NEW refuse
 it with `NOTES.TXT exists there already.` A copy is written under the
@@ -2581,6 +2571,78 @@ logger walks its folders again before its next file, so the next run
 takes a number above a log copied or renamed into a log folder. COPY and MOVE into the
 folder the entry is in, or a folder into itself, are refused:
 `Both panes show this folder, or the target is inside it.`
+
+### The text viewer
+
+![A servo test's report in the text viewer](img/files-view.png)
+
+The text viewer shows a file of the card as text, read-only. OPEN on a
+file in FILES opens it, and OPEN on a report in [Logs](#logs). The home
+tag closes it: onto the panes when FILES opened it, back to LOGS when LOGS
+did. Leaving FILES closes it too. It opens a file of up to 1MiB
+(1,048,576 bytes) and up to 65,536 line ends; the card task reads it
+whole, in chunks of 16KiB, while the screen shows `Reading the card.`
+
+The header row, body y 4 to 52, shows the file's folder and name (the
+front cut to `..` past 44 cells), its size, READ-ONLY, and at the right
+`LINE 23 OF 57`: the line on the top row and the file's lines. A line end
+at the file's end starts no line of its own.
+
+The text stands in a panel of 1008 x 372px from body y 60: 18 rows of 92
+cells of the 10 x 20 face, 20px apart. SMALL, at the footer's left,
+switches to the 8 x 16 face: 22 rows of 115 cells, 16px apart, for a
+report's step table; it then reads NORMAL. The choice holds for every file
+until the panel restarts.
+
+![The same report in SMALL, on its second screen](img/files-view-small.png)
+
+A line wider than a row continues on the next row, marked `..` at the
+row's left. A tab reaches the next multiple of 8 cells; at a row's end it
+ends there. A byte that starts no UTF-8 sequence, a control character and
+a NUL byte after the first 4KiB draw as `?`, one cell each; a character
+the faces hold no glyph for draws as `?` too. A leading UTF-8 byte order
+mark is not drawn. A line ends at LF, at CR LF and at a lone CR; a file
+with more than one kind shows `MIXED LINE ENDS` in the footer.
+
+A drag on the text moves it one row per 20px (16px with SMALL), from where
+it stood at the press; a press that moves 8px or less is no drag. A drag
+on the 56px scroll bar puts the thumb under the finger, the bar's travel
+spread over the file's lines; a tap on the bar beside the thumb moves the
+thumb there. PAGE UP and PAGE DOWN, 140 x 52px at the footer's right, move
+a screen of rows, 18 or 22; each is grey at the text's first or last
+screen, and both are grey when the whole text shows.
+
+The colours follow the bench's words, by the file's name: a `.TXT` file
+by the rules of a report, a `.JSON` file as JSON, a `.CSV` file as CSV,
+any other file as plain text.
+
+| Class | In a `.TXT` file | Colour |
+|---|---|---|
+| heading | line 1, and a line in capitals such as `SETTINGS IN FORCE` | accent |
+| label | `Result:` or `Neutral =` from the line's start, within 24 cells | dim |
+| OK | the report's PASS, in every language | OK green |
+| FAIL | the report's FAIL, in every language | danger red |
+| WARN | ABORTED, NOT MEASURABLE, not measured, not checked, not run, cut short, `--`, `[not loaded]` | warning |
+| number with a unit | `6.00V`, `0.210A`, `400ms`, `333Hz` | the unit's colour: V and mV voltage, A and mA current, W power, rpm and Hz speed, others teal |
+| comment | `#` to the line's end | faint |
+| registers | `00: 1A 2B ...`, `checksum 9F3A77C1`, `journal=...` | dim |
+
+The words are the report writers' own texts, in English and in German, so
+a report written in German reads in its colours on a panel set to English.
+
+![A servo file of the KST programmer](img/files-view-kst.png)
+![An ESC profile](img/files-view-json.png)
+
+A file the viewer does not show leaves the reason in the panel:
+`Not a text file: a NUL byte in its first 4kB.`,
+`Too many lines: 65536 at most.`, a file over 1MiB since it was listed,
+and the card's own answers, such as
+`The card was taken out or swapped. Tap RESCAN.` An empty file shows
+`The file is empty.`
+
+The viewer holds the file in one buffer of 1MiB and its line index of
+256KiB, both in PSRAM (pseudo-static random-access memory). The time a
+read of 1MiB takes on the panel's card is not measured.
 
 ### RESCAN
 

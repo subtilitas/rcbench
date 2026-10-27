@@ -1,17 +1,19 @@
 /**
  * @file test_files_open.c
- * @brief OPEN on FILES' reports: every file the list labels a report opens
- *        in LOGS, on its folder's tab, as text; LOGS' own list holds the
- *        same reports; a file OPEN refuses says why, truly.
+ * @brief OPEN on FILES' reports: every file the list labels a report, and
+ *        every other text file, opens in the text viewer; a CSV file of
+ *        LOGS' folders opens in LOGS on its folder's tab; LOGS' own list
+ *        holds the same reports and opens them in the same viewer; a file
+ *        OPEN refuses says why, truly.
  *
  * LOGS reads the same card in memory as FILES, through a lister that walks
  * a folder of it by the panel's rule (card_take() in panel_card.c): the
  * names log_select_lists() takes, less a file the logger has open.
  *
  * Cases:
- * - every_report_the_list_labels_opens_in_logs_on_its_tab
+ * - every_report_the_list_labels_opens_in_the_viewer
  * - logs_own_list_holds_and_opens_the_same_reports
- * - a_text_file_that_is_no_report_stays_in_files
+ * - a_text_file_that_is_no_report_opens_in_the_viewer
  * - a_report_being_written_or_gone_says_so
  *
  * SPDX-License-Identifier: MIT
@@ -23,9 +25,9 @@
 #include "log_name.h"
 #include "log_select.h"
 #include "log_take.h"
-#include "log_text.h"
 #include "log_viewer_screen.h"
 #include "logview_spots.h"
+#include "text_view.h"
 
 /* ----------------------------------------------- LOGS over the card --- */
 
@@ -161,13 +163,52 @@ static fm_kind_t kind_of(int i, const char *name)
     return (r >= 0) ? files_screen_pane(i)->page[r].kind : FM_KIND_OTHER;
 }
 
+/** @brief The viewer's first row on screen, "" without one. */
+static const char *view_row0(void)
+{
+    static char row[160];
+    if (!text_view_row_text(0, row, sizeof(row))) {
+        row[0] = '\0';
+    }
+    return row;
+}
+
 /**
- * @brief OPEN on @p name of pane @p i: LOGS, on @p tab, with the file open
- *        in @p view; and back to FILES.
+ * @brief OPEN on @p name of pane @p i: the text viewer on FILES, the file
+ *        read from pane @p i's folder, its first row the report's title;
+ *        the home tag back to the panes.
  * @return true when all of it held
  */
-static bool opens(int i, const char *name, log_viewer_tab_t tab,
-                  log_viewer_view_t view)
+static bool views(int i, const char *name)
+{
+    if (!pick(i, name)) {
+        T_FAIL("%s is not on pane %d", name, i);
+        return false;
+    }
+    tap_foot(FS_SPOT_OPEN);
+    const bool ok = ui_router_current() == SCREEN_FILES
+                    && files_screen_view() == FILES_VIEW_TEXT
+                    && text_view_state() == TEXT_VIEW_SHOWN
+                    && strcmp(text_view_name(), name) == 0
+                    && strcmp(text_view_dir(), files_screen_pane(i)->dir) == 0;
+    if (!ok) {
+        T_FAIL("OPEN on %s: screen %d view %d viewer %d %s, FILES says "
+               "\"%s\"", name, (int)ui_router_current(),
+               (int)files_screen_view(), (int)text_view_state(),
+               text_view_name(), files_screen_message());
+    }
+    CHECK(screen()->back());
+    CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
+    CHECK_EQ(text_view_state(), TEXT_VIEW_CLOSED);
+    return ok;
+}
+
+/**
+ * @brief OPEN on @p name of pane @p i: LOGS, on @p tab, with the CSV in
+ *        the import; and back to FILES.
+ * @return true when all of it held
+ */
+static bool opens_in_logs(int i, const char *name, log_viewer_tab_t tab)
 {
     if (!pick(i, name)) {
         T_FAIL("%s is not on pane %d", name, i);
@@ -175,7 +216,7 @@ static bool opens(int i, const char *name, log_viewer_tab_t tab,
     }
     tap_foot(FS_SPOT_OPEN);
     const bool ok = ui_router_current() == SCREEN_LOGS
-                    && log_viewer_view() == view
+                    && log_viewer_view() == LOG_VIEW_IMPORT
                     && strcmp(log_viewer_open_name(), name) == 0
                     && log_viewer_tab() == tab;
     if (!ok) {
@@ -189,21 +230,9 @@ static bool opens(int i, const char *name, log_viewer_tab_t tab,
     return ok;
 }
 
-/** @brief The text view's first row, "" without one. */
-static const char *text_row0(void)
-{
-    static char row[128];
-    row[0] = '\0';
-    const log_text_t *t = log_viewer_text();
-    if (t != NULL) {
-        (void)log_text_row((log_text_t *)t, 0, row, sizeof(row));
-    }
-    return row;
-}
-
 /**
- * @brief Every report of one folder of pane @p i labelled a report, and
- *        opened in LOGS on @p tab as text; the run's CSV in the import.
+ * @brief Every report of one folder of pane @p i labelled a report and
+ *        opened in the viewer; the run's CSV in LOGS' import on @p tab.
  */
 static void folder_opens(int i, log_viewer_tab_t tab)
 {
@@ -211,21 +240,20 @@ static void folder_opens(int i, log_viewer_tab_t tab)
                                            "LIMIT013.TXT" };
     for (size_t k = 0; k < sizeof(reports) / sizeof(reports[0]); ++k) {
         CHECK_EQ(kind_of(i, reports[k]), FM_KIND_REPORT);
-        CHECK(opens(i, reports[k], tab, LOG_VIEW_TEXT));
+        CHECK(views(i, reports[k]));
     }
-    CHECK(opens(i, "ATEST011.CSV", tab, LOG_VIEW_IMPORT));
+    CHECK(opens_in_logs(i, "ATEST011.CSV", tab));
 }
 
-TEST_CASE(every_report_the_list_labels_opens_in_logs_on_its_tab)
+TEST_CASE(every_report_the_list_labels_opens_in_the_viewer)
 {
     fresh_reports();
     /* USER/LOGS in pane 1: the tester's folder. */
     folder_opens(1, LOG_TAB_USER);
     CHECK(pick(1, "ATEST011.TXT"));
     tap_foot(FS_SPOT_OPEN);
-    CHECK_STR_EQ(text_row0(), "RCBENCH SERVO TEST REPORT");
-    ui_router_goto(SCREEN_FILES);
-    settle();
+    CHECK_STR_EQ(view_row0(), "RCBENCH SERVO TEST REPORT");
+    CHECK(screen()->back());
     /* The card's root in pane 0. */
     folder_opens(0, LOG_TAB_ROOT);
     /* BENCH/LOGS. */
@@ -248,6 +276,11 @@ static void lv_tap(int x, int y)
     lv->event(&e);
 }
 
+/*
+ * LOGS lists the same reports, and OPEN on one shows it in the viewer on
+ * FILES, read through FILES' card task from LOGS' folder; the home tag
+ * returns to LOGS, and LOGS is where it was.
+ */
 TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
 {
     fresh_reports();
@@ -265,11 +298,32 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
     for (int r = 0; r < n; ++r) {
         lv_tap(LV_ROW_CX, LV_ROW_CY(r));        /* select */
         lv_tap(LV_OPEN_CX, LV_FOOT_CY);         /* OPEN */
-        const bool text = log_report_number(want[r]) >= 0;
-        CHECK_EQ(log_viewer_view(), text ? LOG_VIEW_TEXT : LOG_VIEW_IMPORT);
         CHECK_STR_EQ(log_viewer_open_name(), want[r]);
-        log_viewer_screen()->back();
+        if (log_report_number(want[r]) < 0) {
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+            log_viewer_screen()->back();
+            CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+            continue;
+        }
+        settle();
+        CHECK_EQ(ui_router_current(), SCREEN_FILES);
+        CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+        CHECK_EQ(text_view_state(), TEXT_VIEW_SHOWN);
+        CHECK_STR_EQ(text_view_dir(), CARD_USER_LOGS);
+        CHECK_STR_EQ(text_view_name(), want[r]);
+        CHECK_STR_EQ(view_row0(), "RCBENCH SERVO TEST REPORT");
+        /* The panes stay unread: the viewer's read alone went out. */
+        CHECK(!files_screen_busy());
+        CHECK(!screen()->back());
+        CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_LOGS);
+        ui_router_goto(SCREEN_LOGS);
         CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+        CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
+        /* LOGS chose the report again: OPEN opens it, not the newest. */
+        lv_tap(LV_OPEN_CX, LV_FOOT_CY);
+        settle();
+        CHECK_STR_EQ(text_view_name(), want[r]);
+        ui_router_goto(SCREEN_LOGS);
     }
     /* Row n is past the list: nothing else is there. */
     lv_tap(LV_ROW_CX, LV_ROW_CY(n));
@@ -278,7 +332,7 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
     log_viewer_set_io(NULL);
 }
 
-TEST_CASE(a_text_file_that_is_no_report_stays_in_files)
+TEST_CASE(a_text_file_that_is_no_report_opens_in_the_viewer)
 {
     fresh_reports();
     /* A note, and ATEST000.TXT: 000 is no run's number. */
@@ -286,19 +340,17 @@ TEST_CASE(a_text_file_that_is_no_report_stays_in_files)
     for (size_t k = 0; k < sizeof(notes) / sizeof(notes[0]); ++k) {
         CHECK_EQ(kind_of(1, notes[k]), FM_KIND_TEXT);
         CHECK(pick(1, notes[k]));
-        CHECK(!fs_foot_live(FS_OPEN, NULL));
+        CHECK(fs_foot_live(FS_OPEN, NULL));
         tap_foot(FS_SPOT_OPEN);
-        CHECK_EQ(ui_router_current(), SCREEN_FILES);
-        CHECK_STR_EQ(files_screen_message(), TR(FM_OPEN_WHERE));
+        CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+        CHECK_STR_EQ(view_row0(), "a note");
+        CHECK(screen()->back());
     }
-    /* A report outside LOGS' three folders is labelled one and not
-     * opened: LOGS has no tab for USER. */
+    /* A report outside LOGS' three folders: LOGS has no tab for USER,
+     * the viewer reads it all the same. */
     CHECK(open_dir(0, "USER"));
     CHECK_EQ(kind_of(0, "ATEST014.TXT"), FM_KIND_REPORT);
-    CHECK(pick(0, "ATEST014.TXT"));
-    tap_foot(FS_SPOT_OPEN);
-    CHECK_EQ(ui_router_current(), SCREEN_FILES);
-    CHECK_STR_EQ(files_screen_message(), TR(FM_OPEN_WHERE));
+    CHECK(views(0, "ATEST014.TXT"));
     log_viewer_set_io(NULL);
 }
 
@@ -322,16 +374,16 @@ TEST_CASE(a_report_being_written_or_gone_says_so)
     CHECK(!fs_foot_live(FS_OPEN, &why));
     CHECK_EQ(why, FM_ERR_BUSY);
     tap_foot(FS_SPOT_OPEN);
-    CHECK_EQ(ui_router_current(), SCREEN_FILES);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     CHECK_STR_EQ(files_screen_message(), msg(TX_FM_E_BUSY, "ATEST012.TXT"));
     /* The same number in the root is another folder's file: it opens. */
-    CHECK(opens(0, "ATEST012.TXT", LOG_TAB_ROOT, LOG_VIEW_TEXT));
+    CHECK(views(0, "ATEST012.TXT"));
     /* Done: it opens in USER/LOGS too. */
     g_h.marks.test = 0u;
     g_h.marks.txt = 0u;
-    CHECK(opens(1, "ATEST012.TXT", LOG_TAB_USER, LOG_VIEW_TEXT));
-    /* Gone from the card since FILES listed it (deleted elsewhere): not
-     * on LOGS' list, and FILES says it is not on the card. */
+    CHECK(views(1, "ATEST012.TXT"));
+    /* Gone from the card since FILES listed it (deleted elsewhere): the
+     * viewer says it is not on the card. */
     CHECK(pick(1, "LIMIT013.TXT"));
     for (int i = 0; i < g_h.card.count; ++i) {
         if (strcmp(g_h.card.n[i].path, "USER/LOGS/LIMIT013.TXT") == 0) {
@@ -339,17 +391,19 @@ TEST_CASE(a_report_being_written_or_gone_says_so)
         }
     }
     tap_foot(FS_SPOT_OPEN);
-    CHECK_EQ(ui_router_current(), SCREEN_FILES);
-    CHECK_STR_EQ(files_screen_message(),
-                 msg(TX_FM_E_NOT_FOUND, "LIMIT013.TXT"));
+    CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+    CHECK_EQ(text_view_state(), TEXT_VIEW_FAILED);
+    CHECK_EQ(text_view_why(NULL), FM_ERR_NOT_FOUND);
+    draw();
+    CHECK(screen()->back());
     log_viewer_set_io(NULL);
 }
 
 int main(void)
 {
-    RUN(every_report_the_list_labels_opens_in_logs_on_its_tab);
+    RUN(every_report_the_list_labels_opens_in_the_viewer);
     RUN(logs_own_list_holds_and_opens_the_same_reports);
-    RUN(a_text_file_that_is_no_report_stays_in_files);
+    RUN(a_text_file_that_is_no_report_opens_in_the_viewer);
     RUN(a_report_being_written_or_gone_says_so);
     fh_free(&g_h);
     free(s_fb);

@@ -3,15 +3,14 @@
  * @brief LOGS at the 1024 x 600 sizes: the file list shows seven rows on a
  *        48px pitch, each row a finger tall from its top pixel to its
  *        bottom one; the scroll bar reaches the last row of a card of 20
- *        runs; a report's TEXT view shows 15 rows and a BACK a finger
- *        tall; no text or control of any view reaches the alert band, in
+ *        runs; no text or control of any view reaches the alert band, in
  *        English or German, with the longest warnings and messages showing.
+ *        A report opens in the text viewer, test_files_view.c's.
  *
  * Cases:
  * - a_card_of_20_runs_shows_seven_rows_a_finger_tall
  * - the_list_draws_seven_rows_and_the_gaps_between_them
  * - an_empty_folder_and_a_full_page_keep_to_the_list
- * - a_report_shows_fifteen_rows_and_back_is_a_finger_tall
  * - nothing_is_drawn_under_the_alert_band
  *
  * SPDX-License-Identifier: MIT
@@ -97,98 +96,6 @@ TEST_CASE(an_empty_folder_and_a_full_page_keep_to_the_list)
     g_empty_card = false;
 }
 
-/* ------------------------------------------------- a report, TEXT view -- */
-
-/** @brief The report the one-file card holds: 40 numbered lines. */
-static char g_report[1024];
-static log_mem_ctx_t g_report_ctx;
-
-/** @brief List hook of a card holding LIMIT001.TXT alone.
- *  @return the one entry */
-static int report_list(log_viewer_file_t *out, int max_entries,
-                       log_viewer_page_t *page, void *ctx)
-{
-    (void)ctx;
-    if (max_entries < 1) {
-        return 0;
-    }
-    memset(&out[0], 0, sizeof(out[0]));
-    snprintf(out[0].name, sizeof(out[0].name), "%s", "LIMIT001.TXT");
-    out[0].size = strlen(g_report);
-    if (page != NULL) {
-        page->ahead = 0;
-        page->held = 1;
-    }
-    return 1;
-}
-
-/** @brief Open hook: the report from memory.
- *  @return true */
-static bool report_open(const char *name, log_source_t *src, void *ctx)
-{
-    (void)ctx;
-    (void)name;
-    log_source_memory(src, &g_report_ctx, g_report, strlen(g_report));
-    return true;
-}
-
-static const log_viewer_io_t k_report_io = {
-    .list = report_list,
-    .open = report_open,
-};
-
-/** @brief The TEXT view of the 40-line report, on its first row. */
-static void at_text(void)
-{
-    fresh();
-    size_t at = 0u;
-    g_report[0] = '\0';
-    for (int i = 1; i <= 40; ++i) {
-        at += (size_t)snprintf(g_report + at, sizeof(g_report) - at,
-                               "line %d of the report\n", i);
-    }
-    log_viewer_set_io(&k_report_io);
-    log_viewer_refresh();
-    tap(OPEN_X, FOOT_CY);
-}
-
-/*
- * The report's rows: 15 at a pitch of 22px in the list's panel, the 15th
- * drawn and nothing under it.  BACK takes a tap on its top and on its
- * bottom pixel row, 52px apart, and on neither does the text scroll.
- */
-TEST_CASE(a_report_shows_fifteen_rows_and_back_is_a_finger_tall)
-{
-    at_text();
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    draw();
-    const int last = LV_TX_TOP + (LV_TX_ROWS - 1) * LV_TX_PITCH;
-    int ink_last = 0;
-    int ink_under = 0;
-    for (int x = LV_TX_ROW_X; x < LV_TX_ROW_X + LV_TX_COLS * 10; ++x) {
-        for (int y = 0; y < LV_TX_PITCH; ++y) {
-            ink_last += gfx_pixel_get(&s_c, x, last + y) == UI_TEXT;
-            ink_under += gfx_pixel_get(&s_c, x, last + LV_TX_PITCH + y)
-                         == UI_TEXT;
-        }
-    }
-    CHECK(ink_last > 0);
-    CHECK_EQ(ink_under, 0);
-    /* The last screen: 40 - 15. */
-    tap(LV_BAR_CX, LV_BAR_TOP + LV_BAR_H - 2);
-    CHECK_EQ(log_viewer_text_first(), 40 - LV_TX_ROWS);
-
-    tap(LV_TX_BACK_CX, LV_FOOT_Y);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    at_text();
-    tap(LV_TX_BACK_CX, LV_FOOT_Y + 52 - 1);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    /* Just under BACK is the alert band's margin: no BACK there. */
-    at_text();
-    tap(LV_TX_BACK_CX, LV_FOOT_Y + 52 + 1);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-}
-
 /** @brief The views the floor check draws, each from a fresh screen. */
 static void at_list(void)
 {
@@ -253,7 +160,6 @@ TEST_CASE(nothing_is_drawn_under_the_alert_band)
         { "list", at_list },       { "message", at_message },
         { "no card", at_nocard },  { "question", at_question },
         { "warnings", at_warnings }, { "plot", at_plot },
-        { "text", at_text },
     };
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
@@ -286,7 +192,6 @@ int main(void)
     RUN(a_card_of_20_runs_shows_seven_rows_a_finger_tall);
     RUN(the_list_draws_seven_rows_and_the_gaps_between_them);
     RUN(an_empty_folder_and_a_full_page_keep_to_the_list);
-    RUN(a_report_shows_fifteen_rows_and_back_is_a_finger_tall);
     RUN(nothing_is_drawn_under_the_alert_band);
     return test_summary("logview_layout");
 }

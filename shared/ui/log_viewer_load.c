@@ -3,8 +3,8 @@
  * @brief The log viewer's loading: a file the browse view opens is analysed
  *        (its delimiter, decimal convention and time column, see
  *        shared/logfile), its chosen columns are read, and lv_compute_spans()
- *        turns them into the plot's scaled traces; a report is read whole
- *        into the TEXT view.  log_viewer_screen.c holds
+ *        turns them into the plot's scaled traces; a report goes to the
+ *        text viewer.  log_viewer_screen.c holds
  *        the state, the card's listing and paging and the screen's interface
  *        (log_viewer_screen.h); log_viewer_int.h is what the screen's four
  *        files share.
@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "files_screen.h"
 #include "log_fields.h"
 #include "log_name.h"
 #include "log_viewer_screen.h"
@@ -378,43 +379,29 @@ void lv_load_data(void)
 }
 
 /**
- * @brief Read the report s.name names into the TEXT view and show it.
- *
- * The file is read once, whole, up to LOG_TEXT_MAX bytes; a file the I/O
- * does not open, or one that fails to read, stays on the list with the
- * reason in the footer.
+ * @brief Open the report s.name names in the text viewer FILES hosts, from
+ *        the folder of s.open_tab and the mount its page was read from;
+ *        the home tag there returns to LOGS.  A report over
+ *        TEXT_BUF_FILE_MAX stays on the list with the reason.
+ * @param size  the report's bytes as listed
  */
-static void open_text(void)
+static void open_text(uint64_t size)
 {
-    log_text_free(&s.text);
-    s.text_scroll = 0;
-    if (s.io.open == NULL) {
-        lv_say(TX_LOG_NO_SOURCE, NULL);
-        return;
-    }
-    log_source_t src;
-    lv_point(s.open_tab);
-    if (!open_name(&src)) {
-        lv_say(TX_LOG_CANNOT_OPEN, s.name);
-        return;
-    }
-    const log_err_t err = log_text_load(&s.text, &src, TX_COLS);
-    if (s.io.close != NULL) {
-        s.io.close(s.io.ctx);
-    }
-    if (err != LOG_OK) {
-        lv_say_err(err);
+    if (files_screen_open_text(log_viewer_tab_dir(s.open_tab), s.name,
+                               s.open_mounts, size, true) != FM_OK) {
+        lv_say(TX_ED_TOO_LARGE, NULL);
         return;
     }
     lv_quiet();
-    s.view = VIEW_TEXT;
+    s.to_viewer = true;
+    ui_router_goto(SCREEN_FILES);
 }
 
 /*
  * OPEN on the selected row: a CSV file to the import view, a report
- * (log_report_number()) to the TEXT view (open_text()).  A folder and a file over
- * LOG_VIEWER_OPEN_MAX are not opened; the footer says why.  What the
- * import, the plot and the text held was another file's and is dropped.
+ * (log_report_number()) to the text viewer (open_text()).  A folder and a
+ * file over LOG_VIEWER_OPEN_MAX are not opened; the footer says why.  What
+ * the import and the plot held was another file's and is dropped.
  */
 void lv_open_selected(void)
 {
@@ -437,15 +424,15 @@ void lv_open_selected(void)
     snprintf(s.name, sizeof(s.name), "%s", s.files[s.sel].name);
     s.open_tab = s.tab;
     s.open_mounts = s.mounts;
-    /* A report, its run's CSV beside it or not (log_select.h): its text,
-     * and no import.  What the import and the plot held was another file's. */
+    /* A report, its run's CSV beside it or not (log_select.h): its text
+     * in the viewer, and no import.  What the import and the plot held
+     * was another file's. */
     if (log_report_number(s.name) >= 0) {
         s.have_analysis = false;
         lv_drop_data();
-        open_text();
+        open_text(s.files[s.sel].size);
         return;
     }
-    log_text_free(&s.text);
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
     lv_run_analysis();

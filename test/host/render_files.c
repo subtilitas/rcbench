@@ -7,7 +7,10 @@
  * The card: BENCH with its fault log, a hidden file beside it and its
  * LOGS, ESC and KST folders, USER/LOGS with a test's CSV and report and a
  * limit run's report, and in the root a note, a CSV, a JSON file, a
- * picture and a hidden file.
+ * picture and a hidden file.  The text viewer's views and logs-report put
+ * text in the files they open: the report as servo_report.c writes it in
+ * the language rendered, a limit run's report, a servo file as
+ * kst_file_format() writes it, and an ESC profile.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,8 +24,12 @@
 #include "files_screen.h"
 #include "files_spots.h"
 #include "fm_ops.h"
+#include "kst_file.h"
+#include "kst_sim.h"
+#include "servo_test.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_textkey.h"
 
 /** @brief The card task the views run on. */
@@ -116,8 +123,161 @@ static void type(const char *text)
     }
 }
 
-/** @brief The card every view starts from. */
-static void card(void)
+/* LIMIT006.TXT as a limit run writes it, in English. */
+static const char k_limit_report[] =
+    "RCBENCH SERVO LIMIT REPORT\n"
+    "Result:         PASS\n"
+    "Device:         KST X20-830\n"
+    "Firmware:       rcbench 0.22.0\n"
+    "Mode:           search only, nothing written to the servo\n"
+    "Output:         S1, 333Hz\n"
+    "Pulse range:    centre 1500us, 900-2100us\n"
+    "Searched:       from 1500us out to 900us and 2100us\n"
+    "Current:        INA3221, 50ms windows, shunt 100.0m\xCE\xA9\n"
+    "Search rule:    10us steps, settle 120ms, mean of 80ms; bound above "
+    "2.0 x free and +0.15A\n"
+    "Protections:    a sample at 4.0A, above 2.5A for 300ms, no window "
+    "for 500ms, 60s a search\n"
+    "Duration:       38.4s\n"
+    "\n"
+    "ENDS (the search before programming)\n"
+    "Low end:        bound at 960us, endpoint 970us; free 0.112A, bound "
+    "0.391A\n"
+    "High end:       free to 2100us; free 0.108A\n"
+    "AS5600:         not fitted, no angles\n"
+    "\n"
+    "PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)\n"
+    "Not run: search only.\n"
+    "\n"
+    "Bench: the ends found are not applied to PULSE MIN and PULSE MAX.\n";
+
+/* YGE-135.JSON: the head of an ESC profile. */
+static const char k_profile[] =
+    "{\n"
+    "  \"id\": \"yge-135\",\n"
+    "  \"brand\": \"YGE\",\n"
+    "  \"family\": \"135 LVT\",\n"
+    "  \"models\": [\n"
+    "    {\n"
+    "      \"name\": \"YGE 135 LVT\",\n"
+    "      \"cells_min\": 3,\n"
+    "      \"cells_max\": 6,\n"
+    "      \"v_min_mv\": 9000,\n"
+    "      \"v_max_mv\": 26000,\n"
+    "      \"current_a\": 135,\n"
+    "      \"bec\": \"switching\",\n"
+    "      \"firmware_note\": null,\n"
+    "      \"telemetry\": true\n"
+    "    }\n"
+    "  ]\n"
+    "}\n";
+
+/**
+ * @brief A mean of @p n readings of @p a each.
+ * @param a  the reading
+ * @param n  how many
+ * @return the mean
+ */
+static servo_test_mean_t mean_of(float a, uint32_t n)
+{
+    const servo_test_mean_t m = { a * (float)n, n };
+    return m;
+}
+
+/**
+ * @brief ATEST005.TXT as servo_report.c writes it in the language
+ *        rendered: an MG90S on the PD mini at 4.8V, 6.0V and 7.4V, 12
+ *        moves a step, its idle current over the limit at 7.4V.
+ * @param out  takes the report
+ * @param n    bytes at @p out
+ * @return its bytes
+ */
+static size_t servo_report(char *out, size_t n)
+{
+    static servo_test_t r;
+    servo_test_init(&r);
+    const ui_language_t *lt = ui_text_table(ui_text_language());
+    servo_test_cfg_t *g = &r.cfg;
+    g->text = (lt != NULL) ? lt->servo : NULL;
+    static const float volts[3] = { 4.8f, 6.0f, 7.4f };
+    static const float idle[3] = { 0.012f, 0.018f, 0.121f };
+    g->step_count = 3u;
+    g->i_limit = 2.0f;
+    g->centre_us = 1500u;
+    g->end_lo_us = 1000u;
+    g->end_hi_us = 2000u;
+    g->settle_ms = 300u;
+    g->dwell_ms = 500u;
+    g->by_moves = true;
+    g->moves = 12u;
+    g->idle_max_a = 0.10f;
+    g->hold_max_a = 0.50f;
+    g->travel_max_ms = 400u;
+    g->stall_a = 1.20f;
+    g->report = true;
+    snprintf(g->dut, sizeof(g->dut), "%s", "MG90S");
+    snprintf(g->type, sizeof(g->type), "%s", "STANDARD PWM");
+    g->min_us = 1000u;
+    g->max_us = 2000u;
+    g->frame_hz = 50u;
+    g->travel_deg = 45u;
+    g->range_pct = 100u;
+    servo_test_meter_pdmini(&g->meter);
+    snprintf(g->firmware, sizeof(g->firmware), "%s", "0.23.0");
+    r.step_count = 3u;
+    for (unsigned k = 0u; k < 3u; ++k) {
+        g->steps_v[k] = volts[k];
+        servo_test_step_t *s = &r.steps[k];
+        s->set_v = volts[k];
+        s->begun = true;
+        s->done = true;
+        s->v = mean_of(volts[k] - 0.02f, 40u);
+        s->v_min = volts[k] - 0.09f;
+        s->idle = mean_of(idle[k], 20u);
+        s->move_a = 0.040f + 0.005f * (float)k;
+        s->move = mean_of(0.210f + 0.030f * (float)k, 60u);
+        s->move_peak_a = 0.480f + 0.060f * (float)k;
+        s->peak_a = s->move_peak_a;
+        s->hold[0] = mean_of(0.015f, 20u);
+        s->hold[1] = mean_of(0.030f, 20u);
+        s->travels = 12u;
+        s->moves = 12u;
+        s->travel_max_ms = 220u - 30u * k;
+        s->travel_sum_ms = 12u * (180u - 25u * k);
+        s->moved = true;
+    }
+    r.start_ms = 0u;
+    r.end_ms = 61200u;
+    r.rows = 612u;
+    r.readings = 586u;          /* one every 104ms, the PD mini's rate */
+    r.module_samples = 590u;
+    r.first_ms = 100u;
+    r.last_ms = 61000u;
+    size_t used = 0u;
+    char line[SERVO_TEST_LINE_MAX];
+    for (unsigned k = 0u; servo_report_line(&r, k, line, sizeof(line));
+         ++k) {
+        const int w = snprintf(out + used, n - used, "%s\n", line);
+        if (w < 0 || (size_t)w >= n - used) {
+            break;
+        }
+        used += (size_t)w;
+    }
+    return used;
+}
+
+/** @brief Put @p text at @p path on the card. */
+static void put(const char *path, const char *text, size_t len)
+{
+    fk_file(&s_fh.card, path, (const uint8_t *)text, len);
+}
+
+/**
+ * @brief The card every view starts from.
+ * @param texts  the viewer's files hold text: the report, the limit
+ *               run's report, the servo file and the profile
+ */
+static void card(bool texts)
 {
     fk_card_t *c = &s_fh.card;
     fk_dir(c, "BENCH/LOGS");
@@ -128,12 +288,25 @@ static void card(void)
     fk_file(c, "BENCH/LOGS/MOTOR002.CSV", NULL, 1310720u);
     fk_file(c, "BENCH/RCBENCH.LOG", NULL, 812u);
     fk_file(c, "BENCH/._RCBENCH.LOG", NULL, 4096u);
-    fk_file(c, "BENCH/ESC/CONF/YGE-135.JSON", NULL, 2140u);
     fk_file(c, "BENCH/KST/CONF/KST.TXT", NULL, 1200u);
-    fk_file(c, "BENCH/KST/CONF/MG90S.TXT", NULL, 1873u);
     fk_file(c, "USER/LOGS/ATEST005.CSV", NULL, 15104u);
-    fk_file(c, "USER/LOGS/ATEST005.TXT", NULL, 2210u);
-    fk_file(c, "USER/LOGS/LIMIT006.TXT", NULL, 1873u);
+    if (texts) {
+        static char report[8192];
+        put("USER/LOGS/ATEST005.TXT", report,
+            servo_report(report, sizeof(report)));
+        put("USER/LOGS/LIMIT006.TXT", k_limit_report,
+            sizeof(k_limit_report) - 1u);
+        static char kst[KST_FILE_MAX];
+        const kst_image_t img = sim_bench_image();
+        put("BENCH/KST/CONF/MG90S.TXT", kst,
+            kst_file_format(&img, KST_TYPE_V6, kst, sizeof(kst)));
+        put("BENCH/ESC/CONF/YGE-135.JSON", k_profile, sizeof(k_profile) - 1u);
+    } else {
+        fk_file(c, "BENCH/ESC/CONF/YGE-135.JSON", NULL, 2140u);
+        fk_file(c, "BENCH/KST/CONF/MG90S.TXT", NULL, 1873u);
+        fk_file(c, "USER/LOGS/ATEST005.TXT", NULL, 2210u);
+        fk_file(c, "USER/LOGS/LIMIT006.TXT", NULL, 1873u);
+    }
     fk_file(c, "NOTES.TXT", NULL, 512u);
     fk_file(c, "THRUST.CSV", NULL, 7340032u);
     fk_file(c, "WIRING.JPG", NULL, 3355443u);
@@ -154,7 +327,7 @@ void render_files_prepare(const char *view)
     fh_init(&s_fh);
     const bool nocard = is(view, "files-nocard");
     if (!nocard) {
-        card();
+        card(strncmp(view, "files-view", 10) == 0 || is(view, "logs-report"));
     } else {
         fk_pull(&s_fh.card);
         s_fh.state = CARD_STATE_NONE;
@@ -182,6 +355,17 @@ void render_files_prepare(const char *view)
     if (is(view, "files-logging")) {
         s_fh.marks.test = 5u;       /* USER/LOGS/ATEST005.CSV is open */
     }
+    if (is(view, "files-view-binary")) {
+        put("DATA.TXT", "rcbench\0\1\2", 10u);
+    } else if (is(view, "files-view-mixed")) {
+        static const char mixed[] =
+            "Notes from the bench, written on two computers.\r\n"
+            "This line ends with CR LF.\r\n"
+            "This one ends with LF alone.\n";
+        put("MIXED.TXT", mixed, sizeof(mixed) - 1u);
+    } else if (is(view, "files-view-empty")) {
+        put("EMPTY.TXT", "", 0u);
+    }
     s_fh.defer = is(view, "files-reading");
     const files_io_t io = fh_files_io(&s_fh);
     files_screen_set_io(&io);
@@ -192,9 +376,48 @@ bool render_files_armed(const char *view)
     return is(view, "files-armed");
 }
 
+void render_files_settle(void)
+{
+    settle();
+}
+
+/**
+ * @brief Tap FILES into a view of the text viewer.
+ * @param view  the view's name, "files-view..."
+ */
+static void pose_viewer(const char *view)
+{
+    if (is(view, "files-view-kst") || is(view, "files-view-json")) {
+        enter_dir(0, "BENCH");
+        enter_dir(0, is(view, "files-view-kst") ? "KST" : "ESC");
+        enter_dir(0, "CONF");
+        pick(0, is(view, "files-view-kst") ? "MG90S.TXT" : "YGE-135.JSON");
+    } else if (is(view, "files-view-binary")) {
+        pick(0, "DATA.TXT");
+    } else if (is(view, "files-view-mixed")) {
+        pick(0, "MIXED.TXT");
+    } else if (is(view, "files-view-empty")) {
+        pick(0, "EMPTY.TXT");
+    } else if (is(view, "files-view-toolarge")) {
+        pick(0, "WIRING.JPG");      /* 3.2MB, no file LOGS opens */
+    } else {
+        pick(1, "ATEST005.TXT");
+    }
+    s_fh.defer = is(view, "files-view-reading");
+    foot(FS_SPOT_OPEN);
+    if (is(view, "files-view-small")) {
+        ftap(FS_SPOT_TV_SMALL_CX, FS_SPOT_TV_FOOT_CY);
+        ftap(FS_SPOT_TV_PGDN_CX, FS_SPOT_TV_FOOT_CY);
+    }
+}
+
 void render_files_pose(const char *view)
 {
     settle();
+    if (strncmp(view, "files-view", 10) == 0) {
+        pose_viewer(view);
+        return;
+    }
     if (is(view, "files-reading") || is(view, "files-nocard")
         || is(view, "files-nofolder")) {
         return;                       /* as the screen opens */

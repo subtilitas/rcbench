@@ -6,7 +6,7 @@ order: 53
 
 # Files
 
-FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, and makes folders and empty text files. It opens from FILES at the bottom of [LOGS](logs.md) and from the FILES tile on [SETUP](setup.md). The home tag closes a box or the keyboard first, then leads back to the screen that opened FILES. FILES drives no output.
+FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, makes folders and empty text files, and shows a file as text. It opens from FILES at the bottom of [LOGS](logs.md) and from the FILES tile on [SETUP](setup.md). The home tag closes a box or the keyboard first, then leads back to the screen that opened FILES. FILES drives no output.
 
 ## The two panes
 
@@ -43,7 +43,7 @@ A button that would be refused is dimmed. A tap on it says why on the line over 
 | DELETE | asks first. A run's CSV file takes its report along. A folder is deleted only when it is empty |
 | NEW | FOLDER or TEXT FILE, then the keyboard for the name |
 | INFO | name, folder, kind, size or entries, time and rule |
-| OPEN | enters a folder. A CSV file or a report in ROOT, USER or BENCH opens on [LOGS](logs.md), a report as text. A file the bench is still writing stays here, `ATEST012.TXT is being written.`, and any other file reads `LOGS opens .csv files and reports in ROOT, USER and BENCH.` |
+| OPEN | enters a folder. A CSV file in ROOT, USER or BENCH opens on [LOGS](logs.md). Every other file, a report among them, opens in the [text viewer](#the-text-viewer). A file over 1MiB stays here, `Over 1MB: too large to open. Download it over Wi-Fi.`, and so does a file the bench is still writing, `ATEST012.TXT is being written.` |
 
 An existing name is never overwritten: `NOTES.TXT exists there already.` A copy is written as `NAME.NEW` and renamed when it is complete.
 
@@ -51,6 +51,23 @@ An existing name is never overwritten: `NOTES.TXT exists there already.` A copy 
 ![The keyboard for a new text file](view:files-name)
 
 The keyboard takes up to 59 bytes; Ä Ö Ü ä ö ü ß take 2 each. OK refuses an empty name, one of `" * / : < > ? \ |`, a space or a full stop at either end, and device names such as `CON` or `COM1`, and says why beside the title.
+
+## The text viewer
+
+![A servo test's report in the text viewer](view:files-view)
+
+The viewer shows a file as text, read-only. The home tag closes it: back to the panes, or back to [LOGS](logs.md) when LOGS opened it. It opens a file of up to 1MiB and up to 65,536 lines; `Reading the card.` shows while the card is read.
+
+- The header shows the file's folder and name, its size, READ-ONLY and `LINE 23 OF 57`: the line on the top row and the file's lines.
+- 18 rows of 92 characters show at once. SMALL switches to a smaller face, 22 rows of 115 characters, for a report's step table; NORMAL switches back. The choice holds until the panel restarts.
+- A line wider than a row continues on the next row, marked `..` at the left.
+- A drag on the text or on the scroll bar scrolls it. PAGE UP and PAGE DOWN move a screen; each is grey at the text's first or last screen.
+- The bench's words take colours: headings, labels such as `Result:`, PASS green, FAIL red, `not measured` and the other words of what did not run in the warning colour, a number with its unit in the unit's colour, `#` comments faint. German reports read the same way. A `.JSON` file is coloured as JSON.
+- A file with LF and CR LF line ends shows `MIXED LINE ENDS`.
+- A file with a NUL byte in its first 4kB reads `Not a text file: a NUL byte in its first 4kB.` An empty file reads `The file is empty.`
+
+![The same report in SMALL](view:files-view-small)
+![A servo file of the KST programmer](view:files-view-kst)
 
 ## ARMED and logging
 

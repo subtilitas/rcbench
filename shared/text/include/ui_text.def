@@ -1864,15 +1864,6 @@ UI_TEXT(LOG_AT_ROW, 50,
 UI_TEXT(LOG_UNREADABLE_CELLS, 50,
     "%d CELLS UNREADABLE",
     "%d ZELLEN UNLESBAR")
-/* The TEXT view's last row, under a report longer than LOG_TEXT_MAX: its
- * size in kB.  A row of the view is 92 cells. */
-UI_TEXT(LOG_TEXT_CUT, 92,
-    "Only the first %ukB are shown.",
-    "Nur die ersten %ukB werden gezeigt.")
-/* The TEXT view's one row for a report of 0 bytes. */
-UI_TEXT(LOG_TEXT_EMPTY, 92,
-    "The file is empty.",
-    "Die Datei ist leer.")
 
 /* --------------------------------------------------------------- FILES */
 /* The footer's buttons, 118px: a label that leaves under 6px at each side
@@ -2049,10 +2040,6 @@ UI_TEXT(FM_E_STOP_LOGGING, 84,
 UI_TEXT(FM_SELECT_FIRST, 84,
     "Select an entry first.",
     "Wähle zuerst einen Eintrag.")
-/* OPEN on a file LOGS does not show. */
-UI_TEXT(FM_OPEN_WHERE, 84,
-    "LOGS opens .csv files and reports in ROOT, USER and BENCH.",
-    "LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.")
 /* The DELETE question of a folder, and of a run with its report.  The
  * title and the file's sentence are LOGS' (LOG_DELETE_TITLE,
  * LOG_DELETE_WHAT, LOG_DELETE_FINAL). */
@@ -2149,6 +2136,53 @@ UI_TEXT(FM_TK_FILE, 0,
 UI_TEXT(FM_TK_RENAME, 0,
     "NEW NAME",
     "NEUER NAME")
+
+/* ----------------------------------------------------- the text viewer */
+/* The footer's buttons, 140px: a label that leaves under 6px at each side
+ * in the 10 x 20 face (12 cells at most) is drawn in the 8 x 16 face.
+ * SMALL switches the text to the 8 x 16 face, NORMAL back. */
+UI_TEXT(ED_SMALL, 0,
+    "SMALL",
+    "KLEIN")
+UI_TEXT(ED_NORMAL, 0,
+    "NORMAL",
+    "NORMAL")
+UI_TEXT(ED_PAGE_UP, 0,
+    "PAGE UP",
+    "SEITE HOCH")
+UI_TEXT(ED_PAGE_DOWN, 0,
+    "PAGE DOWN",
+    "SEITE RUNTER")
+/* The header: the pill, and the top line on screen of the file's lines. */
+UI_TEXT(ED_READ_ONLY, 0,
+    "READ-ONLY",
+    "NUR LESEN")
+UI_TEXT(ED_LINE_OF, 0,
+    "LINE %u OF %u",
+    "ZEILE %u VON %u")
+/* In the footer, in the warning colour: the file ends its lines with LF
+ * and with CR LF, or with a lone CR. */
+UI_TEXT(ED_MIXED_ENDS, 0,
+    "MIXED LINE ENDS",
+    "GEMISCHTE ZEILENENDEN")
+/* In place of the text, in the 12 x 24 face, 76 cells a line. */
+UI_TEXT(ED_READING, 0,
+    "Reading the card.",
+    "Lese die Karte.")
+UI_TEXT(ED_EMPTY, 0,
+    "The file is empty.",
+    "Die Datei ist leer.")
+UI_TEXT(ED_NOT_TEXT, 0,
+    "Not a text file: a NUL byte in its first 4kB.",
+    "Keine Textdatei: ein NUL-Byte in den ersten 4kB.")
+UI_TEXT(ED_TOO_MANY_LINES, 76,
+    "Too many lines: %u at most.",
+    "Zu viele Zeilen: höchstens %u.")
+/* A file over 1MiB: in place of the text, and on the message lines of
+ * FILES and LOGS, two lines of 28 cells on LOGS. */
+UI_TEXT(ED_TOO_LARGE, 56,
+    "Over 1MB: too large to open. Download it over Wi-Fi.",
+    "Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport

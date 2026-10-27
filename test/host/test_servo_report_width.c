@@ -1,6 +1,6 @@
 /*
- * The servo test report's tables against the log viewer's row: 92 cells of
- * the 10 x 20 face (TX_COLS in shared/ui/log_viewer_int.h).
+ * The servo test report's tables against the text viewer's row: 92 cells
+ * of the 10 x 20 face (TEXT_VIEW_CELLS_NORMAL in shared/ui/text_view.h).
  *
  * The failures under test: a step table line wider than the row, which the
  * viewer breaks so that the last column lands on a row of its own; a
@@ -27,7 +27,8 @@
 #include "servo_test.h"
 #include "ui_text.h"
 
-/** @brief Cells of a log viewer row: LV_TX_COLS in logview_spots.h. */
+/** @brief Cells of a row of the text viewer in its 10 x 20 face:
+ *         TEXT_VIEW_CELLS_NORMAL in text_view.h. */
 #define VIEW_COLS 92
 
 /** @brief The last cell of each step table column, as step_row() writes

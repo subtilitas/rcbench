@@ -72,7 +72,6 @@ set(SRCS
     log_viewer_draw.c
     log_viewer_events.c
     log_select.c
-    log_text.c
     settings_screen.c
     settings_draw.c
     settings_rows.c
@@ -98,6 +97,9 @@ set(SRCS
     files_screen.c
     files_draw.c
     files_events.c
+    files_text.c
+    text_view.c
+    text_view_draw.c
 )
 
 if(ESP_PLATFORM)

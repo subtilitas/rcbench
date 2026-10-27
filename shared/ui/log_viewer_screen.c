@@ -25,9 +25,8 @@
  * header row: ROOT, USER and BENCH, in that order (log_viewer_tab_t holds
  * the ids; the tabs' order on screen is lv_tab_at).
  *
- * A report, ATESTnnn.TXT or LIMITnnn.TXT, opens in a fourth view as text:
- * the browse list's panel, scroll bar and BACK, with the file's rows in
- * place of the files (log_text.h).
+ * A report, ATESTnnn.TXT or LIMITnnn.TXT, opens in the text viewer FILES
+ * hosts (files_screen_open_text()), and the home tag returns from there.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -81,16 +80,6 @@ const log_analysis_t *log_viewer_analysis(void)
 const log_data_t *log_viewer_data(void)
 {
     return s.have_data ? &s.data : NULL;
-}
-
-const log_text_t *log_viewer_text(void)
-{
-    return (s.text.buf != NULL) ? &s.text : NULL;
-}
-
-int log_viewer_text_first(void)
-{
-    return (s.text.buf != NULL) ? s.text_scroll : 0;
 }
 
 void log_viewer_window(int *first, int *count)
@@ -495,18 +484,6 @@ int lv_bar_scroll_at(int top)
     return lv_bar_scroll_of(s.n_files, BR_ROWS, top);
 }
 
-int lv_text_total(void)
-{
-    return s.text.rows + (s.text.cut ? 1 : 0);
-}
-
-void lv_close_text(void)
-{
-    log_text_free(&s.text);
-    s.text_scroll = 0;
-    s.view = VIEW_BROWSE;
-}
-
 /* The tabs as the header row shows them, left to right: the id of each. */
 const log_viewer_tab_t lv_tab_at[LOG_TAB_COUNT] = {
     LOG_TAB_ROOT, LOG_TAB_USER, LOG_TAB_BENCH,
@@ -604,13 +581,12 @@ log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
  * @brief The screen as a start leaves it: the BENCH tab, nothing open,
  *        nothing selected.
  *
- * The I/O stays; the data, the analysis and a report's text are freed.
+ * The I/O stays; the data and the analysis are freed.
  */
 static void reset(void)
 {
     log_viewer_io_t io = s.io;
     lv_drop_data();
-    log_text_free(&s.text);
     memset(&s, 0, sizeof(s));
     s.io = io;
     ui_tabs_init_text(&s.tabs, k_tab_text, LOG_TAB_COUNT, BR_TABS);
@@ -622,6 +598,42 @@ static void reset(void)
     s.press_btn = -1;
     s.delim_index = -1;
     s.conv = LOG_CONV_AUTO;
+}
+
+/**
+ * @brief Choose @p name on the page read, scrolled into sight.
+ * @param name  the file's name
+ * @return false when the page does not hold it
+ */
+static bool choose(const char *name)
+{
+    for (int i = 0; i < s.n_files; ++i) {
+        if (strcmp(s.files[i].name, name) == 0) {
+            s.sel = i;
+            s.scroll = (i < BR_ROWS) ? 0 : i - BR_ROWS + 1;
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Choose @p name on the list's first page, else on the page that
+ *        starts at it.  A name the list no longer holds leaves the first
+ *        page with its own choice.
+ * @param name  the file's name
+ */
+static void select_name(const char *name)
+{
+    char key[LOG_VIEWER_NAME_MAX];
+    snprintf(key, sizeof(key), "%s", name);
+    if (key[0] == '\0' || choose(key)) {
+        return;
+    }
+    lv_read_page(LOG_PAGE_FROM, key);
+    if (!choose(key)) {
+        log_viewer_refresh();
+    }
 }
 
 static void enter(void)
@@ -642,11 +654,13 @@ static void enter(void)
      * operator comes here for.  Otherwise the tab stays as it was left,
      * BENCH after a start.
      */
+    bool written = false;
     if (s.io.written != NULL) {
         log_viewer_tab_t tab = s.tab;
         const unsigned n = s.io.written(&tab, s.io.ctx);
         if (n != s.written_seen) {
             s.written_seen = n;
+            written = true;
             if ((unsigned)tab < (unsigned)LOG_TAB_COUNT) {
                 s.tab = tab;
                 s.tabs.selected = tab_pos(tab);
@@ -660,18 +674,25 @@ static void enter(void)
      * The first page, as the empty card says to expect, with the newest run
      * at its top and chosen.  A view of a file stays where it was left; the
      * list behind it is the new one.  One walk of the card per way in, the
-     * cost of one page.
+     * cost of one page.  Back from the text viewer with no file created
+     * since, the report it showed is chosen again, on the page that holds
+     * it.
      */
+    const bool from_viewer = s.to_viewer && !written && s.tab == s.open_tab;
+    s.to_viewer = false;
     log_viewer_refresh();
+    if (from_viewer) {
+        select_name(s.name);
+    }
     log_viewer_invalidate();
 }
 
 /**
  * @brief The home tag: one level up, as each view's BACK.
  *
- * The plot to the import, the import and a report's text to the file list;
- * the text is freed (lv_close_text()).  Over the DELETE question it is
- * CANCEL: the file stays.  On the file list it leaves the screen.  A press
+ * The plot to the import, the import to the file list.  Over the DELETE
+ * question it is CANCEL: the file stays.  On the file list it leaves the
+ * screen.  A press
  * held, a drag, a pan and a pinch end with the view they were made on.
  *
  * @return True when it climbed inside the screen, false to leave it.
@@ -687,10 +708,6 @@ static bool back(void)
         s.view = VIEW_IMPORT;
         return true;
     }
-    if (s.view == VIEW_TEXT) {
-        lv_close_text();
-        return true;
-    }
     if (s.view == VIEW_IMPORT) {
         s.view = VIEW_BROWSE;
         return true;
@@ -698,22 +715,11 @@ static bool back(void)
     return false;
 }
 
-/**
- * @brief Leaving LOGS: a report's text is freed, and LOGS opens on the list
- *        next time.  The import and the plot stay as they were left.
- */
-static void leave(void)
-{
-    if (s.view == VIEW_TEXT) {
-        lv_close_text();
-    }
-}
-
 static const ui_screen_t s_screen = {
     .title = "LOGS",
     .reset = reset,
     .enter = enter,
-    .leave = leave,
+    .leave = NULL,
     .tick = NULL,
     .event = lv_event,
     .cancel = cancel,

@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "files_screen.h"
+#include "text_view.h"
 #include "ui_textkey.h"
 
 #include "files_int.h"
@@ -100,6 +101,7 @@ void fs_cancel_press(void)
     s.press = FS_HIT_NONE;
     s.dragged = false;
     ui_textkey_cancel_press(&s.tk);
+    text_view_cancel_press();
     files_screen_invalidate();
 }
 
@@ -393,6 +395,11 @@ void fs_event(const touch_event_t *e)
     }
     case FILES_VIEW_NEW:
         new_event(e);
+        break;
+    case FILES_VIEW_TEXT:
+        if (text_view_event(e) == TEXT_VIEW_CHANGED) {
+            files_screen_invalidate();
+        }
         break;
     case FILES_VIEW_PANES:
     default:

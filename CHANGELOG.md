@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- FILES' text viewer (`shared/ui/text_view.c`): OPEN on any file but a
+  CSV file of LOGS' folders shows it read-only, up to 1MiB and 65,536 line
+  ends, read through `cardjob`. 18 rows of 92 cells, or with SMALL 22 rows
+  of 115 cells; a line wider than a row wraps with a `..` mark; PAGE UP,
+  PAGE DOWN, a drag and the scroll bar scroll it. The bench's words take
+  colours by `text_hl`: headings, labels, PASS and FAIL in every language,
+  the words of what was not measured, a number by its unit, comments,
+  register lines, and JSON and CSV by the file's name. A file with a NUL
+  byte in its first 4KiB, over 65,536 line ends or over 1MiB is refused
+  with the reason
+  ([The text viewer](docs/Screens.md#the-text-viewer)).
 - `hardware/kicad/`: a KiCad 10 library of the 12 modules the bench is built
   from, for a carrier PCB: RP2350-CAN, INA3221, two INA228 boards (MATEK
   I2C-INA-BM, XT90 board "BIFRC V1.1"), AS5600, WeAct PD Power Mini, the
@@ -100,6 +111,10 @@ history is in git.
 
 ### Changed
 
+- LOGS' OPEN on a report opens it in FILES' text viewer instead of LOGS'
+  own text view, which held 32KiB of a file; the home tag returns to LOGS
+  with the report chosen again. LOGS' text view and `log_text.c` are
+  removed.
 - The KST and Chaservo programmer cycles the servo's supply: with a PD
   mini's output on, CONNECT switches it off for 1s, on, and sends the sync
   1s later; LEAVE after a write, a restore or a pairing release switches
