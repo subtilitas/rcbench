@@ -15,7 +15,7 @@ idf_component_register(
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
              fwupdate webaccess fw_ota wifi_access clock
-             esp_driver_gpio esp_driver_uart esp_timer
+             esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
 if(RCBENCH_PERF_LOG)
