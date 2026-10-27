@@ -30,10 +30,13 @@ env:
   DOXYGEN_SHA256: >-
     14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
+# Every job runs on Ubuntu 24.04, named, not ubuntu-latest: the figures and
+# images the checks compare (warnings, stack depths, screenshots) are those
+# of its compilers and libraries.  Ubuntu 26.04 fails them.
 jobs:
   host-tests:
     name: Host suite, coverage and the checks that hold prose to the tree
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -264,7 +267,7 @@ jobs:
 
   analysis:
     name: Lint and static analysis
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -325,7 +328,7 @@ jobs:
   # file on every run: 4min to 9min (minutes) on the runners measured.
   cppcheck:
     name: cppcheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       # cppcheck is built from the official source archive of this tag;
@@ -457,7 +460,7 @@ jobs:
 
   tools:
     name: Tool tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
@@ -501,7 +504,7 @@ jobs:
   # ruff's D rules in the analysis job.
   doc-comments:
     name: Doxygen comments
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -540,7 +543,7 @@ jobs:
   mutation:
     name: Mutation check of the changed lines (advisory)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -567,7 +570,7 @@ jobs:
     # The build carries the IOmcu image of this commit, as the release
     # does.
     needs: [iomcu]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -723,7 +726,7 @@ jobs:
     # strategy, matrix, vars and inputs are), so the pin is spelled out here
     # and lives in env.PICO_SDK_TAG below.
     name: IOmcu (pico-sdk 2.3.0)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -845,7 +848,7 @@ jobs:
     # A test-bench tool (testbench/touch-injector), built so it keeps
     # building.  Its UF2 is not uploaded and no release carries it.
     name: Touch injector (pico-sdk 2.3.0)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
