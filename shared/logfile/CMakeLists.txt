@@ -24,6 +24,7 @@ set(SRCS
     card_tree.c
     fault_log.c
     kst_store.c
+    servo_store.c
 )
 
 if(ESP_PLATFORM)

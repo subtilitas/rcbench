@@ -1522,15 +1522,22 @@ the port, its GPIO, the series, the receive mode and the supply CONNECT
 sets. While it holds the port, ARM, the SET row's set points and OUTPUT ON,
 and the SUPPLY screen's are locked as under the KST programmer, and a press
 on a locked supply control says `Servo programming holds the supply: set
-points and ON are locked.` A port the HITEC page holds for another session
-opens it with RELEASE PORT, a hold of 2s that gives the port back to PWM
-with the supply as it is. [Servo programmer for Hitec
-servos](HitecProgrammer.md) holds the rows, the flow and the messages.
+points and ON are locked.` While the port is held FILES takes the SERIES
+row's place: the servo files in `BENCH/HITEC/CONF`, 5 a page under the
+entry that saves, the text keyboard of a new name and CHECK THIS FILE for a
+file of another model or past a soft rule. RESTORE writes the session's
+backup back, and MORE holds FACTORY DEFAULT for a classic servo. A port the
+HITEC page holds for another session opens it with RELEASE PORT, a hold of
+2s that gives the port back to PWM with the supply as it is. [Servo
+programmer for Hitec servos](HitecProgrammer.md) holds the rows, the flow
+and the messages.
 
 ![The Hitec programmer, the tester holding the port](img/servo-hitec.png)
 ![A D485HW read](img/servo-hitec-read.png)
 ![A port another session holds](img/servo-hitec-other.png)
 ![The write page](img/servo-hitec-write.png)
+![The Hitec files on the card](img/servo-hitec-files.png)
+![RESTORE of the session's backup](img/servo-hitec-restore-page.png)
 
 ### Settings
 

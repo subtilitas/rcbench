@@ -1676,6 +1676,12 @@ VERBINDEN einstellt. Solange sie den Port hält, sind ARM, die Sollwerte und
 AUSGANG EIN der Zeile SOLL und die der Seite SUPPLY gesperrt wie unter der
 KST-Programmierung, und ein Druck auf ein gesperrtes Element des Netzteils
 sagt `Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.`
+Solange der Port gehalten ist, steht DATEIEN an der Stelle der Zeile SERIE:
+die Servodateien in `BENCH/HITEC/CONF`, 5 je Seite unter dem Eintrag, der
+speichert, die Texttastatur für einen neuen Namen und DIESE DATEI PRÜFEN für
+eine Datei eines anderen Modells oder jenseits einer weichen Regel.
+ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, und WEITERES enthält
+WERKSEINSTELLUNG für ein klassisches Servo.
 Ein Port, den die HITEC-Page für eine andere Sitzung hält, öffnet sie mit
 PORT FREIGEBEN, 2s Halten, das den Port mit unveränderter Versorgung an PWM
 zurückgibt. [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)
@@ -1685,6 +1691,8 @@ enthält die Zeilen, den Ablauf und die Meldungen.
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
 ![Ein Port, den eine andere Sitzung hält](img/de/servo-hitec-other.png)
 ![Die Schreibseite](img/de/servo-hitec-write.png)
+![Die Hitec-Dateien auf der Karte](img/de/servo-hitec-files.png)
+![ZURÜCKSPIELEN des Backups der Sitzung](img/de/servo-hitec-restore-page.png)
 
 ### Einstellungen
 

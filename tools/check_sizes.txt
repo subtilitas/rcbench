@@ -63,6 +63,7 @@ test/host/test_kst_port.c | none | F14: every measured cut leaves a half over 1,
 test/host/test_kst_session.c | none | F14: the plan cut leaves 1,723 and 1,262
 test/host/test_kst_link.c | none | F14: the plan cut leaves 1,433
 test/host/test_kst_file.c | none | F14: one source, kst_file.c
+test/host/test_hitec_prog_file.c | none | one source, hitec_prog_file.c
 test/host/test_kst_plan.c | none | F14: one source, kst_plan.c
 test/host/test_kst_reg.c | none | F14: one source, kst_reg.c
 test/host/test_pdmini.c | none | F14: the driver's first 1,110 lines stay in any cut

@@ -14,6 +14,7 @@
 
 #include "supply_screen.h"
 #include "ui_tabs.h"
+#include "ui_textkey.h"
 #include "ui_widgets.h"
 
 /* Last: its layout macros and hp, the state, which no header included
@@ -62,6 +63,11 @@ static void down(const touch_event_t *evt)
     if (hp.kp.open) {
         take(evt, P_KEYPAD, -1);
         (void)ui_keypad_event(&hp.kp, evt, NULL);
+        return;
+    }
+    if (hp.tk.open) {
+        take(evt, P_TEXTKEY, -1);
+        (void)ui_textkey_event(&hp.tk, evt, NULL, 0);
         return;
     }
     if (hp.ch.open) {
@@ -145,6 +151,19 @@ static void rest(const touch_event_t *evt)
             hpn_keypad_done(v);
         } else if (r == UI_KEYPAD_CANCEL) {
             hp.kp_what = KP_NONE;
+        }
+        return;
+    }
+    if (was == P_TEXTKEY) {
+        char name[UI_TEXTKEY_MAX + 1];
+        const ui_textkey_result_t r = ui_textkey_event(&hp.tk, evt, name,
+                                                       sizeof(name));
+
+        if (up) {
+            let_go();
+        }
+        if (r == UI_TEXTKEY_OK) {
+            hpn_name_done(name);
         }
         return;
     }
@@ -241,6 +260,7 @@ void hitec_panel_event(const touch_event_t *evt)
 void hitec_panel_cancel(void)
 {
     ui_keypad_cancel_press(&hp.kp);
+    ui_textkey_cancel_press(&hp.tk);
     ui_tabs_cancel(&hp.tabs);
     ui_hold_reset(&hp.page.hold);
     hp.page.down = false;

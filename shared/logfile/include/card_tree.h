@@ -10,7 +10,8 @@
  *                              (AUTO LOG FOLDER, the default)
  *     ESC/CONF/                ESC (electronic speed controller) profiles
  *     KST/CONF/                KST and Chaservo servo files
- *     HITEC/CONF/              Hitec servo files
+ *     HITEC/CONF/              Hitec servo files and the record of a
+ *                              write, HITEC.TXT
  *     RCBENCH.LOG              the fault log, at most 1MiB
  *     RCBENCH.OLD              the fault log before the last 1MiB
  *   /USER/
@@ -29,8 +30,7 @@
  *
  * The panel reads and writes these places only.  Folders of firmware 0.21
  * and older, /ESC and /KST, and its /RCBENCH.LOG are neither read nor
- * moved: their files are moved on a computer.  CARD_HITEC_CONF is reserved
- * for the Hitec programmer's files; nothing reads it yet.
+ * moved: their files are moved on a computer.
  *
  * A folder is made the first time something is written there, one level at
  * a time (card_make_dirs()).
@@ -86,7 +86,7 @@ extern "C" {
 #define CARD_KST_CONF    "BENCH/KST/CONF"
 
 /**
- * @brief The Hitec programmer's files.
+ * @brief Hitec servo files, their backups and the write record.
  */
 #define CARD_HITEC_CONF  "BENCH/HITEC/CONF"
 

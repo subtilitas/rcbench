@@ -28,6 +28,7 @@ set(SRCS
     hitec_link.c
     hitec_prog.c
     hitec_prog_write.c
+    hitec_prog_file.c
     hitec_card.c
     kst_link.c
     kst_prog.c
@@ -38,12 +39,13 @@ set(SRCS
     panel_i2c.c
 )
 
-# kst_card.c stands between the programmer and the card layer in
-# shared/logfile.  It is built where that layer is: on the panel and on the
+# kst_card.c and hitec_card_run.c stand between the programmers and the
+# card layer in shared/logfile.  It is built where that layer is: on the panel and on the
 # host, which adds shared/logfile before this directory.  The IOmcu has
 # no card and builds this directory without it.
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} kst_card.c INCLUDE_DIRS include
+    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c
+                           INCLUDE_DIRS include
                            REQUIRES link kst hitec dshot logfile)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
@@ -51,7 +53,7 @@ else()
     target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst
                           rcbench_hitec rcbench_dshot m)
     if(TARGET rcbench_logfile)
-        target_sources(rcbench_bench PRIVATE kst_card.c)
+        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile)
     endif()
 endif()

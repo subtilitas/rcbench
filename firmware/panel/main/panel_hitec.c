@@ -221,6 +221,8 @@ __attribute__((noinline)) void hitec_publish(hitec_prog_feed_t *f)
         f->out_ma = ma <= 0.0f ? 0u : ma >= 65535.0f ? 65535u : (uint16_t)ma;
     }
     f->supply_held = s_supply_is_real && supply_link_port_held(&s_supply_link);
-    /* A card mounted: a write's record goes to it (hitec_record.c). */
+    /* A card mounted: a write's record and its backup file go to it
+     * (hitec_record.c, hitec_files.c); what the slot holds otherwise. */
     f->card = storage_mounted();
+    f->card_state = (uint8_t)storage_card_state();
 }

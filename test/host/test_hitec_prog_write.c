@@ -112,8 +112,7 @@ TEST_CASE(a_d_write_writes_saves_reboots_reads_back_and_clears_the_record)
     hitec_card_record_t r;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_changes(model()), 1u);
@@ -367,8 +366,7 @@ TEST_CASE(a_classic_write_without_its_answer_names_the_cell)
 TEST_CASE(the_record_stands_across_a_panel_restart)
 {
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
@@ -394,8 +392,7 @@ TEST_CASE(the_record_stands_across_a_panel_restart)
 TEST_CASE(a_card_that_refuses_the_record_keeps_the_write_from_going)
 {
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_fails = true;
     prun(20u);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
@@ -415,8 +412,7 @@ TEST_CASE(a_card_that_does_not_answer_in_3000ms_ends_the_write)
     uint32_t t0;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     prun(20u);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
@@ -437,8 +433,7 @@ TEST_CASE(a_card_that_does_not_answer_in_3000ms_ends_the_write)
 TEST_CASE(abort_while_the_write_waits_for_the_card_writes_nothing)
 {
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     prun(20u);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
@@ -661,8 +656,7 @@ TEST_CASE(restore_without_a_compared_record_asks_for_read_all)
 TEST_CASE(an_arm_request_while_the_card_takes_the_record_writes_nothing)
 {
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
@@ -720,8 +714,7 @@ TEST_CASE(a_write_the_session_cannot_plan_sends_nothing)
 TEST_CASE(a_write_the_session_refuses_after_the_card_sends_nothing)
 {
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     /* A first write, so the session's count of steps sent is 1. */
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
@@ -829,8 +822,7 @@ TEST_CASE(the_answer_to_an_aborted_writes_record_releases_no_later_write)
     hitec_card_record_t r;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;   /* the rig's card half takes nothing */
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
@@ -865,8 +857,7 @@ TEST_CASE(a_refusal_of_an_older_text_ends_no_later_write)
     hitec_card_record_t r;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
@@ -890,8 +881,7 @@ TEST_CASE(the_answer_to_a_record_clear_releases_no_later_write)
     hitec_card_record_t r;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
@@ -925,8 +915,7 @@ TEST_CASE(an_older_text_never_answered_ends_the_write_at_3000ms)
     uint32_t t0;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
@@ -959,8 +948,7 @@ static void write_waits_for_the_card(void)
     hitec_card_record_t r;
 
     d_ready();
-    g_card = true;
-    prun(20u);
+    card_in();
     g_card_slow = true;
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);

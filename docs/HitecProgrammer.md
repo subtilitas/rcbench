@@ -4,8 +4,10 @@
 
 The programmer reads the settings of a Hitec servo over its signal wire,
 shows them, decoded and as stored, and writes edited values back. Before
-every write it records the servo's values, on the card where one is
-mounted; it makes no backup file. It opens from its row
+the first write of a session it saves the servo as found to a backup file
+on the card, and before every write it records the servo's values. It
+saves a servo's settings to a file, loads a file into the edits and writes
+the session's backup back. It opens from its row
 `Hitec servos` on **PROGRAM** of the [SERVO screen](Screens.md#servo), one
 level down, and covers the left column, the strip's tabs with it. **CLOSE**
 or the home tag returns to PROGRAM's list while the programmer holds no
@@ -66,12 +68,13 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | Row | What it does |
 | --- | --- |
 | PORT | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with no PD mini). The button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
-| SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES). Not taken while the port is held |
+| SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES). While the port is held the PORT row names the series and FILES takes this place |
+| FILES | While the port is held: the servo files on the card, a save and a load ([Servo files](#servo-files)) |
 | SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |
-| MORE | The programming voltage and current limit, each on the keypad, while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, and REPAIR CHECKSUM with a classic checksum that is wrong |
+| MORE | The programming voltage and current limit, each on the keypad, while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |
 | AFTER STOP | CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
 | ENABLE WRITE TO SERVO | The write switch, OFF or ON ([The write switch](#the-write-switch)) |
-| RESTORE | While a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
+| RESTORE | The session's backup back to the servo, while it differs from the servo ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
 | WRITE n VALUES | The draft to the servo ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
 
 Under the rows the state line says what the port does now, and the last
@@ -218,9 +221,9 @@ fits no encoding is no value to compare with: every change of it asks.
 
 **ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
 that names the risks; **HOLD 2s TO ENABLE** switches it on. A tap on **ON**
-switches it off at once. A tap on **WRITE n VALUES**, RESTORE or REPAIR
-CHECKSUM with the switch off opens the same page: its hold switches the
-switch on and writes nothing.
+switches it off at once. A tap on **WRITE n VALUES**, RESTORE, REPAIR
+CHECKSUM or FACTORY DEFAULT with the switch off opens the same page: its
+hold switches the switch on and writes nothing.
 
 The switch goes off:
 
@@ -244,10 +247,14 @@ servo. A tap opens the write page: the changed values, `SOFT START: 20% ->
 `Keep the servo horn clear. Disconnect the linkage.` and `Test the servo on
 the bench before fitting it to a model.` on the first write after CONNECT
 and on every write that changes DIRECTION, NEUTRAL, CENTRE or an end point;
-what the series does; and where the values before the write are recorded.
+what the series does; the backup file or the lines of no backup file
+([The backup before the first write](#the-backup-before-the-first-write));
+and where the values before the write are recorded.
 **HOLD 2s TO WRITE** starts it.
 
-1. The record: the servo's values, the values the write is to leave, the
+1. The backup file, before the first write of the session with a card
+   mounted. The write waits up to 5000ms for the card.
+2. The record: the servo's values, the values the write is to leave, the
    series, the port and its GPIO. With a card mounted it goes to
    `BENCH/HITEC/CONF/HITEC.TXT` first, and the write waits for it: a card
    that does not take it within 3000ms ends the write with
@@ -256,13 +263,13 @@ what the series does; and where the values before the write are recorded.
    from before the write, the record of an aborted write or the text that
    clears a record, releases nothing: the write goes once the card has
    taken its own record, and the 3000ms count from the start of the write.
-2. The plan of `hitec_plan()`: only the settings that change. D series: the
+3. The plan of `hitec_plan()`: only the settings that change. D series: the
    setting's registers as the HFP-30 writes them, 20ms apart, then the save,
    100ms, the restart and 1000ms. Classic: each cell of a changed setting,
    then the balance in cell 0x1C, each answered `+ +` within 3 tries.
-3. The read-back: the D series set of 21 registers, or classic cells 0x00
+4. The read-back: the D series set of 21 registers, or classic cells 0x00
    to 0x23, held against the draft.
-4. `2 values written and verified.`, or `1 value written and verified.`,
+5. `2 values written and verified.`, or `1 value written and verified.`,
    ends it and clears the record. The switch stays on.
 
 In the host model (`test_hitec_prog_write`) a D series write of one value
@@ -271,7 +278,8 @@ takes 2.5s and a classic one 1.2s at a frame of 16ms and 2.5s at one of
 
 The write is refused on an ARMED bench or one asked to arm, with a STOP
 latched, on a stopped port, with no servo read, with the switch off, with
-no change, and while a record of an earlier write stands. The port, the
+no change, while a record of an earlier write stands, and while a request
+of the card (FILES, a save or a load) waits for its answer. The port, the
 bench, the STOP, the entry and the switch are checked again when the card
 has taken the record: a switch turned off, a STOP or a finger on ARM in the
 meantime ends the write before a step goes out, with the refusal's message,
@@ -326,6 +334,239 @@ send wrong values to a servo.
 
 ![After a write that did not verify](img/servo-hitec-verify.png)
 ![RESTORE](img/servo-hitec-restore.png)
+
+## Servo files
+
+A servo file is a text file in the folder `BENCH/HITEC/CONF` of the
+panel's SD card, `<name>.TXT`, beside the record `HITEC.TXT`. The panel
+creates each missing level of the folder with the first save: `BENCH`,
+`BENCH/HITEC`, then `BENCH/HITEC/CONF`. A file holds the set READ ALL
+reads: 21 registers of a D series servo, 100 cells of a classic servo and
+its version.
+
+```
+RCBENCH HITEC 1
+series=D
+model=D485HW
+image=86B500271FC1000000000000000100010FFF000000010FFF000009C410FE006432CB0D17200000000000
+check=4A84
+```
+
+| Line | Content |
+| --- | --- |
+| 1 | `RCBENCH HITEC 1`, the format; the record has the same first line and `port=` as its third |
+| `series=` | `D` or `C` |
+| `model=` | the model's name, `D485HW` or `HS-5645MG`; `D series 34999` for a D series model number the register model does not name; the classic name cells as read for another classic name; `?` for none. 1 to 20 printable characters |
+| `image=` | D series: the registers in the order READ ALL reads them, 4 hexadecimal digits each, 84 digits. Classic: cells 0x00 to 0x23, 0x30 to 0x53, 0x60 to 0x6F, 0x70 to 0x73 and 0x80 to 0x87, 2 digits each, 200 digits |
+| `version=` | classic only, 2 digits, where the read found one |
+| `check=` | the CRC-16 (cyclic redundancy check) of every byte before this line, 4 digits |
+
+Lines end in LF (line feed) alone, the digits are upper case. A D485HW file
+is 140 bytes, an HS-5645MG file 270 bytes; the panel reads 320 bytes at
+most. A file whose check does not match, or whose lines are not these in
+this order, is refused whole: a file edited by hand does not load.
+
+**FILES** opens the list. It takes a tap with the port held, the servo in
+programming mode and read, no read owed after a write, the port not
+stopped, the bench SAFE and no STOP latched; otherwise the tap says why.
+Saving and loading work with the write switch off: a file changes the
+draft on the panel, never the servo.
+
+The first entry saves. Below it stand the files sorted by name, 5 a page,
+each with the model its file names. The files with a proposed name,
+`HITEC` and 3 digits, stand together at the place of `HITEC000`, the
+highest number first. With more than 5 files the title counts them,
+`FILES 1 TO 5 OF 7`, and `Show more files.` turns the page, back to the
+first after the last. The panel asks the card for each page and waits at
+most 5000ms for it: `Cannot read the card.` otherwise.
+
+![The files on the card](img/servo-hitec-files.png)
+![The second page of 7 files](img/servo-hitec-files-next.png)
+![A card without servo files](img/servo-hitec-files-none.png)
+
+### Saving
+
+`Save this servo's settings in a new file.` opens the keyboard with the next
+free proposed name, `HITEC001` to `HITEC999`. The keyboard takes up to 16
+characters: A to Z, 0 to 9, `-`, `_` and the full stop. **OK** saves the
+servo as last read; an edit in the draft is not in the file. The card's
+side checks the name and never replaces a file. Names compare without
+case. A file with a longer name, up to 32 characters, is listed and loaded.
+
+![The name of a new file](img/servo-hitec-name.png)
+![A name in use](img/servo-hitec-name-exists.png)
+
+| Result | Shown |
+| --- | --- |
+| Saved | `Servo settings saved to the card: WING-L.` |
+| A full stop at the start or the end, or a reserved name: `HITEC`, `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9`, alone or in front of a full stop | the keyboard opens again under `INVALID NAME`; `Invalid name: reserved name, or a dot at the start or end.` |
+| A file has the name | the keyboard opens again under `NAME IN USE. CHOOSE ANOTHER.`; `This file name is already in use. No file was replaced.` |
+| No card | `No card. Nothing saved or written to the servo.` |
+| Card full, or `HITEC001` to `HITEC999` all taken at the backup before a write | `Card full. Nothing saved or written to the servo.` |
+| The card is write protected, or `BENCH`, `BENCH/HITEC` or `BENCH/HITEC/CONF` on the card is a file and no folder | `Cannot save: card write-protected, or BENCH/HITEC/CONF is not a folder.` |
+| The card fails the write of the file, or does not answer within 5000ms | `Card write error. Nothing was written to the servo.` |
+
+A save the card ends after the 5000ms is the file it made; the line stays
+as it was.
+
+### The backup before the first write
+
+The session's backup is the first full read after CONNECT, kept in the
+panel's RAM. A later read of the same servo leaves it as it is. A read
+that finds another servo makes that read the backup: for the D series
+another model number, for a classic servo another name, date, serial or
+version. LEAVE, the next CONNECT, a lost link and a panel restart end it.
+A file the card makes for a backup, or a save by hand, counts only for the
+backup that stood when it was asked for: a late answer after LEAVE and
+CONNECT, or after another servo's read, saves nothing for the new one.
+
+The first write of a session that sends a step, WRITE n VALUES, REPAIR
+CHECKSUM, a RESTORE or FACTORY DEFAULT, saves the backup to a new file
+under the next proposed name first, without asking. The write page says
+`The current servo settings are saved to a new card file before writing.`
+and the state line `Saving the backup file on the card.` while the card
+works. The servo receives nothing before the card holds the file. A card
+that is full, that is write protected, that fails the write, that leaves
+the slot between the request and the file, or that does not answer within
+5000ms ends the write with the lines of the table above, and nothing is
+written to the servo. ABORT and STOP while the card works end the write
+the same way. A file the card makes after the 5000ms holds the backup all
+the same; the write does not go on its own. The SERVO tab then names the
+file: `Backup file of this session: HITEC003.` A save by hand before the
+first write counts as that file while the servo still holds the backup's
+values. A save by hand after a write holds the written values and leaves
+the line as it is.
+
+![The write page with the backup file](img/servo-hitec-backup-write.png)
+![The backup file on its way](img/servo-hitec-backup-saving.png)
+![The backup file named](img/servo-hitec-backup-file.png)
+
+#### Without a card
+
+With no card mounted the write is not blocked. The write page carries
+three more lines:
+
+```
+No card. No backup file will be saved.
+This session's backup is kept only in the bench's memory.
+It is lost when the session ends or the bench loses power.
+```
+
+After the write the SERVO tab shows `No card, no backup file. Restore is
+available only within this session.` A card put in later in the session
+gets the backup with the next write: the file holds the servo as the
+session found it, not as it stands. A card that leaves the slot after the
+backup file is saved lets later writes go; the write page then says `No
+card. The previous settings are kept in RAM only.` A card in the slot that
+does not mount counts as no card, and the lines name what the panel found
+in place of `No card`, as on the KST programmer
+([Without a card](ServoProgrammer.md#without-a-card)).
+
+![The write page without a card](img/servo-hitec-write.png)
+![The backup in RAM only](img/servo-hitec-nofile.png)
+
+### Loading
+
+A tap on a file loads it. The cells or registers of every editable value
+become the draft, as stored: a value that fits no encoding comes back raw.
+A classic draft gets its balance in cell 0x1C computed. The changed values
+are marked `*`, **WRITE n VALUES** counts them, and nothing reaches the
+servo before the write switch, the write page and its 2s hold.
+
+![A file loaded](img/servo-hitec-file-loaded.png)
+
+| File | Shown |
+| --- | --- |
+| Loaded | `WING-L loaded. 2 values differ from the servo settings.`, or `WING-L loaded. 1 value differs from the servo settings.` |
+| Holds the servo's editable values | `WING-L matches the servo settings. Nothing to write.`; the draft becomes the servo's values, and an edit made before the load is dropped with its confirmations |
+| Values outside the editable ones differ | a second line: `2 stored values outside the settings differ. They are not loaded.`, or `1 stored value outside the settings differs. It is not loaded.` |
+| Of the other series | `File is CLASSIC, servo is D SERIES. Not loaded.` |
+| Of the other classic layout | `File is for HS-7xxx servos, this servo is HS-5xxx. Not loaded.` |
+| Of another model of the same layout, or past a soft rule | CHECK THIS FILE, below; `Confirm the warnings before loading this file.` |
+| A wrong check | `File damaged: checksum mismatch. Not loaded.` `A file edited by hand does not load.` |
+| Ends before its check line | `File damaged: it ends before its check line. Not loaded.` and the same second line |
+| A line that is not the one due | `Cannot read line 5. File not loaded.` and the same second line |
+| Not a servo file, or larger than 320 bytes | `Not a servo settings file. Not loaded.` |
+| The card does not read, or does not answer within 5000ms | `Cannot read the card.` |
+
+![A file of the other series](img/servo-hitec-file-series.png)
+![A damaged file](img/servo-hitec-file-damaged.png)
+
+CHECK THIS FILE opens before anything becomes the draft when the file
+names another model, `File model D series 34999, servo model D485HW.` and
+`Values of another model may not suit this servo.`, or when a value it
+loads passes a soft rule that the servo's own value keeps. The page names
+the file and the values that differ, and the warning lines an edit past
+those rules shows ([A value that needs a second
+look](#a-value-that-needs-a-second-look)). The values give way to the
+warnings: the last line that fits counts the rest, `and 3 more`, and no
+value line is left where the warnings need the room. Warnings that still do
+not fit above the hold button go to a next part of the page under the
+file's line, behind **HOLD 2s TO CONTINUE**; a file of another model past
+all 7 rules takes 1 part in English and 2 in German. **HOLD 2s TO LOAD** on
+the last part takes the values into the draft, each rule confirmed for its
+value. **CANCEL** and BACK on any part leave the draft as it was.
+
+![A value past a soft rule](img/servo-hitec-file-check.png)
+![A file of another model](img/servo-hitec-file-model.png)
+![Another model past every rule, the first part](img/servo-hitec-file-warnings.png)
+![The hold of the first part](img/servo-hitec-file-warnings-next.png)
+
+#### What a file does not load
+
+A load writes the editable values only. These stay as the servo holds
+them: D series register 0x00 (the model), 0x04, 0x22, 0x64 (SENSITIVITY),
+0xD4 and 0xD6; classic cells of no editable value in 0x00 to 0x23, the
+factory cells 0x30 to 0x53, the name, the date, the serial and the version.
+The D series position, register 0x0C, and the classic balance, cell 0x1C,
+are not counted. RESTORE of the session's backup writes the cells and
+registers a load leaves.
+
+## Restore of the session's backup
+
+**RESTORE** offers `Backup of the first settings read in this session.`
+while the backup differs from the servo in an address a write sends:
+every D series register and classic cell 0x00 to 0x23 that a plan writes,
+raw values included. A tap opens RESTORE: the values that change, `This
+backup will be restored without checking the limits.`, the count of
+classic cells of no editable value it writes back, `Stored values outside
+the settings restored too: 1.`, and the backup file's lines. **HOLD 2s TO
+RESTORE** writes it as a write: the backup file first if none holds it,
+the record, the steps and the read-back. It ends with `Backup restored and
+verified.` It needs the switch and no edit standing. With a record of an
+interrupted write standing it keeps that record and needs the record's
+comparison by READ ALL first, as RESTORE of the record does.
+
+![RESTORE's list](img/servo-hitec-restore-backup.png)
+![RESTORE of the session's backup](img/servo-hitec-restore-page.png)
+
+## FACTORY DEFAULT
+
+Classic servos only. A classic servo keeps its factory values in cells
+0x30 to 0x53, the same layout as its settings in cells 0x00 to 0x23. The
+HPP-21 Plus's reset copies them over, captured on the station on
+2026-10-18 for the HS-5645MG and the HS-7955TG. FACTORY DEFAULT under MORE
+plans the same copy from the servo's own factory cells as read, with the
+balance computed, and opens a page with `All settings go back to the
+factory values.`, `The source is the servo's own factory cells 0x30-0x53.`,
+the values that change, the count of cells no setting names that it
+writes, `Stored values outside the settings written too: 1.`, the horn line and the
+backup file's lines. **HOLD
+2s TO WRITE** writes it as a write and ends with `Factory values written
+and verified.` It needs the switch, no edit standing and no record. It is
+offered while any cell of 0x00 to 0x23 that a write sends differs from its
+factory cell, one no setting names included; a servo whose cells already
+hold the factory values gets `No value differs from the servo's.`
+
+A D series servo has no FACTORY DEFAULT: its reset command (register 0x6E
+= 0x0F0F, as the HFP-30 sends it) leaves values that are not known before
+it is sent, so the write page cannot name them and the read-back has
+nothing to hold them against.
+
+![MORE of a classic servo](img/servo-hitec-classic-more-factory.png)
+![FACTORY DEFAULT](img/servo-hitec-classic-factory.png)
+![FACTORY DEFAULT written](img/servo-hitec-classic-factory-done.png)
+![FACTORY DEFAULT of a cell no setting names](img/servo-hitec-classic-factory-cell.png)
 
 ## REPAIR CHECKSUM
 
@@ -417,9 +658,16 @@ as after any stop: ARM is refused only while the port is held.
   servo's flash whole is not measured. Values written and not saved are
   lost at the servo's next power-off, and the D series entry of a CONNECT
   switches the supply off and on.
-- The soft rules compare with the last full read, not with the first read
-  of the session, and no backup file is made: the record of a write holds
-  the values before it.
+- The soft rules compare with the last full read, not with the session's
+  backup.
+- The session's backup lives in the panel's RAM: LEAVE, CONNECT, a lost
+  link and a panel restart end it. After a lost link the new session's
+  backup is the servo as found then, with the values of the cut write; the
+  record of the write and the old session's backup file hold the values
+  before it.
+- Two D series servos of one model are not told apart: a second D485HW on
+  the port keeps the first one's backup.
+- A servo file written or edited outside the panel does not load.
 - The record is read from the card at the panel's start only. A card put
   in later is not read for one, and a record made with no card mounted is
   kept in RAM and is gone after a panel restart. A card that refuses the
@@ -427,7 +675,10 @@ as after any stop: ARM is refused only while the port is held.
   that write as interrupted.
 - NEUTRAL, LEFT END and RIGHT END are edited as numbers on the keypad; the
   servo does not move to them while they are edited, and the keypad has no
-  `-`/`+` keys. FACTORY DEFAULT is not offered.
+  `-`/`+` keys.
+- FACTORY DEFAULT is not offered for the D series; for a classic servo it
+  is the HPP-21 Plus's copy of cells 0x30 to 0x53, tested in the host
+  model only.
 - Station steps S6 to S8 and S10 to S11 (writes to a D485HW and a classic
   servo, a link cut during a write) are not run.
 - The D series POWER of the entry with an off time of 0ms switches the PD

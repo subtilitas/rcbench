@@ -79,6 +79,24 @@ history is in git.
   under MORE writes the classic balance in cell 0x1C alone. The file
   manager shows `HITEC.TXT` and `HITEC.NEW` as LOCKED
   ([Writing](docs/HitecProgrammer.md#writing)).
+- Servo files, backups, RESTORE and FACTORY DEFAULT for servos by Hitec
+  on SERVO > PROGRAM. FILES, in the SERIES row's place while the port is
+  held, lists the servo files in `BENCH/HITEC/CONF` 5 a page with each
+  file's model, saves the servo as read under a proposed name (`HITEC001`
+  to `HITEC999`) or one typed on the text keyboard, and loads a file's
+  editable values, raw values included, into the draft; a file of the
+  other series or layout, a damaged or hand-edited file is refused, and
+  one of another model or past a soft rule opens CHECK THIS FILE. The file
+  text is `RCBENCH HITEC 1` with series, model, the read set and a CRC-16
+  (cyclic redundancy check). The first write of a session saves the
+  servo as found to a backup file first and sends nothing when the card
+  refuses it or does not answer in 5000ms; without a card the backup stays
+  in RAM. RESTORE writes the session's backup back, every writable address
+  included. MORE > FACTORY DEFAULT writes a classic servo's cells 0x00 to
+  0x23 from its factory cells 0x30 to 0x53, as the HPP-21 Plus does; the D
+  series has none. `shared/logfile/servo_store.c` holds the folder's
+  names, proposals, saves, lists and loads for a stem
+  ([Servo files](docs/HitecProgrammer.md#servo-files)).
 
 ### Changed
 

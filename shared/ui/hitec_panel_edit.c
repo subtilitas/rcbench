@@ -3,7 +3,8 @@
  * @brief The actions and editors of the Hitec programmer's overlay: the
  *        SERVO tab's buttons, the lists (SERIES, MORE, RESTORE, a value's
  *        choices), the keypad of the supply and of a value, and the options
- *        kept in the settings.  The hold pages are hitec_panel_page.c's.
+ *        kept in the settings.  The hold pages are hitec_panel_page.c's,
+ *        FILES and its keyboard hitec_panel_file.c's.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this overlay works with.  The state and the seam are
@@ -35,7 +36,13 @@ void hpn_close_editors(void)
         /* CHECK THIS CHANGE closed without its hold: the edit is dropped. */
         hitec_prog_cancel(&hp.prog);
     }
+    if (hp.page.open
+        && (hp.page.kind == W_LOAD || hp.page.kind == W_LOAD_MORE)) {
+        /* CHECK THIS FILE closed without its hold: the file is dropped. */
+        hitec_prog_load_cancel(&hp.prog);
+    }
     ui_keypad_close(&hp.kp);
+    ui_textkey_close(&hp.tk);
     hp.kp_what = KP_NONE;
     hp.ch.open = false;
     hp.page.open = false;
@@ -44,11 +51,11 @@ void hpn_close_editors(void)
 }
 
 /**
- * @brief Opens the list of @p kind with its title; choice_add() fills it.
+ * @brief Opens the list of @p kind with its title; hpn_choice_add() fills it.
  * @param kind  C_*
  * @param title the title
  */
-static void choice_open(int kind, const char *title)
+void hpn_choice_open(int kind, const char *title)
 {
     hp.ch.open = true;
     hp.ch.kind = kind;
@@ -62,7 +69,7 @@ static void choice_open(int kind, const char *title)
  * @param label the entry's label
  * @param value its value
  */
-static void choice_add(const char *label, int value)
+void hpn_choice_add(const char *label, int value)
 {
     if (hp.ch.count < HP_CHOICE_MAX) {
         snprintf(hp.ch.labels[hp.ch.count], sizeof(hp.ch.labels[0]), "%s",
@@ -138,11 +145,11 @@ static void value_list(const char *title, const hitec_param_info_t *info,
 {
     char label[HITEC_PANEL_LINE];
 
-    choice_open(C_VALUE, title);
+    hpn_choice_open(C_VALUE, title);
     hp.ch.current = now != INT32_MIN ? (int)now : INT_MIN;
     for (int32_t v = info->min; v <= info->max; v += info->step) {
         hpn_fmt_param(hp.ed_id, v, label, sizeof(label));
-        choice_add(label, (int)v);
+        hpn_choice_add(label, (int)v);
     }
 }
 
@@ -173,14 +180,14 @@ static void editor_for(const hpn_row_t *r, const hitec_param_info_t *info,
         }
         break;
     case HITEC_UNIT_FS_US:
-        choice_open(C_VALUE, title);
+        hpn_choice_open(C_VALUE, title);
         hp.ch.current = now == HITEC_FS_OFF || now == HITEC_FS_LIMP
                             ? (int)now
                         : now != INT32_MIN ? HP_FS_POSITION
                                            : INT_MIN;
-        choice_add(TR(OFF), HITEC_FS_OFF);
-        choice_add(TR(HP_FS_LIMP), HITEC_FS_LIMP);
-        choice_add(TR(HP_POSITION), HP_FS_POSITION);
+        hpn_choice_add(TR(OFF), HITEC_FS_OFF);
+        hpn_choice_add(TR(HP_FS_LIMP), HITEC_FS_LIMP);
+        hpn_choice_add(TR(HP_POSITION), HP_FS_POSITION);
         break;
     case HITEC_UNIT_QUARTER_US:
         value_keypad(title, "us",
@@ -238,24 +245,32 @@ static void fs_position_keypad(void)
 
 /**
  * @brief MORE's entries while the port is held: DISCARD EDITS with an edit
- *        standing, REPAIR CHECKSUM with a classic sum that is wrong.
+ *        standing, REPAIR CHECKSUM with a classic sum that is wrong,
+ *        FACTORY DEFAULT for a classic servo read.
  * @param add true to add them to the open list
  * @return the entries
  */
 static int more_held(bool add)
 {
     const hitec_prog_t *p = &hp.prog;
+    hitec_image_t factory;
     int n = 0;
 
     if (hitec_prog_changes(p) != 0u) {
         if (add) {
-            choice_add(TR(KP_DISCARD), MORE_DISCARD);
+            hpn_choice_add(TR(KP_DISCARD), MORE_DISCARD);
         }
         ++n;
     }
     if (hitec_prog_sum_bad(p)) {
         if (add) {
-            choice_add(TR(HP_MORE_REPAIR), MORE_REPAIR);
+            hpn_choice_add(TR(HP_MORE_REPAIR), MORE_REPAIR);
+        }
+        ++n;
+    }
+    if (hitec_prog_factory_image(p, &factory)) {
+        if (add) {
+            hpn_choice_add(TR(HP_MORE_FACTORY), MORE_FACTORY);
         }
         ++n;
     }
@@ -275,7 +290,8 @@ bool hpn_row_live(const hpn_row_t *r)
         return st == HITEC_PROG_PWM || st == HITEC_PROG_HELD
                || st == HITEC_PROG_OTHER || st == HITEC_PROG_OPENING
                || st == HITEC_PROG_ENTERING || st == HITEC_PROG_READING
-               || st == HITEC_PROG_RECORDING || st == HITEC_PROG_WRITING;
+               || st == HITEC_PROG_RECORDING || st == HITEC_PROG_WRITING
+               || st == HITEC_PROG_BACKUP;
     case A_SERIES:
         return st == HITEC_PROG_PWM;
     case A_MORE:
@@ -290,7 +306,14 @@ bool hpn_row_live(const hpn_row_t *r)
         return hitec_prog_write_on(p)
                || (hitec_prog_can_edit(p) && !p->f.stopped);
     case A_RESTORE:
-        return st == HITEC_PROG_HELD && hitec_prog_record(p);
+        return st == HITEC_PROG_HELD
+               && (hitec_prog_record(p) || hitec_prog_backup_differs(p));
+    case A_FILES: {
+        /* Without a card the tap says so. */
+        const hitec_prog_msg_id_t m = hitec_prog_files_gate(p);
+
+        return m == HITEC_PROG_MSG_NONE || m == HITEC_PROG_MSG_CARD_NONE;
+    }
     case A_WRITE:
         return st == HITEC_PROG_HELD && hitec_prog_changes(p) != 0u;
     default:
@@ -324,6 +347,18 @@ static void ask_write(uint8_t kind)
             hpn_page_repair();
         } else {
             (void)hitec_prog_repair(p);
+        }
+    } else if (kind == (uint8_t)HITEC_PROG_WR_FACTORY) {
+        if (go) {
+            hpn_page_factory();
+        } else {
+            (void)hitec_prog_factory(p);
+        }
+    } else if (kind == (uint8_t)HITEC_PROG_WR_BACKUP) {
+        if (go) {
+            hpn_page_backup();
+        } else {
+            (void)hitec_prog_restore_backup(p);
         }
     } else if (go) {
         hpn_page_restore();
@@ -365,17 +400,17 @@ static void more_open(const hitec_prog_t *p)
 {
     char label[HITEC_PANEL_LINE];
 
-    choice_open(C_MORE, TR(KP_MORE));
+    hpn_choice_open(C_MORE, TR(KP_MORE));
     if (hitec_prog_state(p) == HITEC_PROG_HELD) {
         (void)more_held(true);
         return;
     }
     snprintf(label, sizeof(label), TR(KP_SUPPLY_V), hitec_prog_mv(p) / 1000u,
              hitec_prog_mv(p) % 1000u / 100u);
-    choice_add(label, MORE_VOLTAGE);
+    hpn_choice_add(label, MORE_VOLTAGE);
     snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
              (unsigned)hitec_prog_ma(p));
-    choice_add(label, MORE_CURRENT);
+    hpn_choice_add(label, MORE_CURRENT);
 }
 
 void hpn_act(const hpn_row_t *r)
@@ -388,17 +423,21 @@ void hpn_act(const hpn_row_t *r)
         hpn_moved();
         return;
     }
+    /* The taps that look at the card slot, as KST's do. */
+    hp.card_look = hp.card_look || r->what == A_PORT || r->what == A_FILES
+                   || r->what == A_RESTORE || r->what == A_MORE
+                   || r->what == A_ENABLE || r->what == A_WRITE;
     switch (r->what) {
     case A_PORT:
         port_act(p);
         break;
     case A_SERIES:
-        choice_open(C_SERIES, TR(HP_SERIES));
+        hpn_choice_open(C_SERIES, TR(HP_SERIES));
         hp.ch.current = (int)hitec_prog_series(p);
-        choice_add(TR(HP_SERIES_D), (int)HITEC_D);
+        hpn_choice_add(TR(HP_SERIES_D), (int)HITEC_D);
         snprintf(label, sizeof(label), "%s  %s", TR(HP_SERIES_C),
                  TR(HP_SERIES_C_HELP));
-        choice_add(label, (int)HITEC_CLASSIC);
+        hpn_choice_add(label, (int)HITEC_CLASSIC);
         break;
     case A_READ:
         (void)hitec_prog_read(p);
@@ -417,13 +456,22 @@ void hpn_act(const hpn_row_t *r)
         const hitec_prog_msg_id_t m =
             hitec_prog_write_gate(p, (uint8_t)HITEC_PROG_WR_RESTORE);
 
-        choice_open(C_RESTORE, TR(KP_RESTORE));
-        if (m != HITEC_PROG_MSG_REC_OTHER && m != HITEC_PROG_MSG_MUST_READ) {
-            choice_add(TR(KP_FROM_JOURNAL), RS_RESTORE);
+        hpn_choice_open(C_RESTORE, TR(KP_RESTORE));
+        if (hitec_prog_backup_differs(p)) {
+            hpn_choice_add(TR(KP_FROM_SESSION), RS_BACKUP);
         }
-        choice_add(TR(KP_FORGET), RS_FORGET);
+        if (hitec_prog_record(p)) {
+            if (m != HITEC_PROG_MSG_REC_OTHER
+                && m != HITEC_PROG_MSG_MUST_READ) {
+                hpn_choice_add(TR(KP_FROM_JOURNAL), RS_RESTORE);
+            }
+            hpn_choice_add(TR(KP_FORGET), RS_FORGET);
+        }
         break;
     }
+    case A_FILES:
+        hpn_files_ask();
+        break;
     case A_WRITE:
         ask_write((uint8_t)HITEC_PROG_WR_EDITS);
         break;
@@ -445,6 +493,8 @@ static void list_done(hitec_prog_t *p, int kind, int value)
     if (kind == C_RESTORE) {
         if (value == RS_RESTORE) {
             ask_write((uint8_t)HITEC_PROG_WR_RESTORE);
+        } else if (value == RS_BACKUP) {
+            ask_write((uint8_t)HITEC_PROG_WR_BACKUP);
         } else {
             (void)hitec_prog_forget(p);
         }
@@ -452,6 +502,8 @@ static void list_done(hitec_prog_t *p, int kind, int value)
         hitec_prog_discard(p);
     } else if (value == MORE_REPAIR) {
         ask_write((uint8_t)HITEC_PROG_WR_REPAIR);
+    } else if (value == MORE_FACTORY) {
+        ask_write((uint8_t)HITEC_PROG_WR_FACTORY);
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
                        (float)hitec_prog_mv(p) / 1000.0f,
@@ -476,6 +528,8 @@ void hpn_choice_done(int value)
         if (hitec_prog_series_set(p, (uint8_t)value)) {
             options_keep();
         }
+    } else if (kind == C_FILES) {
+        hpn_files_choice(value);
     } else if (kind == C_VALUE) {
         if (value == HP_FS_POSITION) {
             fs_position_keypad();

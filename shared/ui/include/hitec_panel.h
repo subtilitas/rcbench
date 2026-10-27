@@ -19,8 +19,10 @@
  * fits no encoding shows raw.  A writable value takes a tap: its list or
  * the keypad edits the draft, and an edit is marked `*`.  The SERVO tab's
  * ENABLE WRITE TO SERVO, WRITE n VALUES and RESTORE and MORE's REPAIR
- * CHECKSUM write to the servo, each from a page held UI_HOLD_S
- * (hitec_prog.h).
+ * CHECKSUM and FACTORY DEFAULT write to the servo, each from a page held
+ * UI_HOLD_S (hitec_prog.h).  FILES lists the servo files of the card, saves
+ * the servo under a name typed on the keyboard and loads a file into the
+ * draft.
  *
  * The overlay stays open while the port is held, by this panel or by
  * another session: PWM and programming are exclusive states of the pin,
@@ -42,6 +44,7 @@
 #include "prog_registry.h"
 #include "touch_types.h"
 #include "ui_keypad.h"
+#include "ui_textkey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -180,6 +183,25 @@ size_t hitec_panel_file_take(char *out, size_t n);
  */
 void hitec_panel_file_done(bool ok);
 /**
+ * @brief The next request of the servo files for the card's side
+ *        (hitec_prog_card_take()).
+ * @param out receives it
+ * @return true when one was taken
+ */
+bool hitec_panel_card_take(hitec_card_req_t *out);
+/**
+ * @brief The card's side's answer (hitec_prog_card_done()).
+ * @param d the answer
+ */
+void hitec_panel_card_done(const hitec_card_done_t *d);
+/**
+ * @brief Whether a tap asked the panel to look at the card slot since the
+ *        last call: CONNECT, FILES, RESTORE, MORE, ENABLE WRITE TO SERVO
+ *        and the write row.  The ask is cleared.
+ * @return true once per ask
+ */
+bool hitec_panel_card_look(void);
+/**
  * @brief The record's text as the card held it at the start
  *        (hitec_prog_file_load()).
  * @param text the text
@@ -276,7 +298,7 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
 int hitec_panel_text_rows(const char *s);
 /**
  * @brief What is open over the page.
- * @return 0 none, 1 keypad, 2 choice list, 3 a hold page
+ * @return 0 none, 1 keypad, 2 choice list, 3 a hold page, 4 the keyboard
  */
 int hitec_panel_editor(void);
 /**
@@ -296,6 +318,11 @@ gfx_rect_t hitec_panel_choice_rect(int i);
  * @return its label; NULL past the last or with no list open
  */
 const char *hitec_panel_choice_label(int i);
+/**
+ * @brief The open list's title.
+ * @return the title; NULL with no list open
+ */
+const char *hitec_panel_choice_title(void);
 /**
  * @brief A list's CANCEL, 150 x 48px at the foot's right.
  * @return its rectangle
@@ -318,10 +345,20 @@ gfx_rect_t hitec_panel_cancel_rect(void);
  */
 const char *hitec_panel_page_line(int i);
 /**
+ * @brief The open hold page's button label.
+ * @return the label; NULL with no page open
+ */
+const char *hitec_panel_apply_label(void);
+/**
  * @brief The keypad.
  * @return the overlay's keypad
  */
 ui_keypad_t *hitec_panel_keypad(void);
+/**
+ * @brief The keyboard of a new file's name.
+ * @return the overlay's keyboard
+ */
+ui_textkey_t *hitec_panel_textkey(void);
 
 #ifdef __cplusplus
 }

@@ -73,6 +73,12 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_REPAIRED:
     case HITEC_PROG_MSG_RESTORED:
     case HITEC_PROG_MSG_FORGOTTEN:
+    case HITEC_PROG_MSG_SAVED:
+    case HITEC_PROG_MSG_NO_FILES:
+    case HITEC_PROG_MSG_LOAD_SAME:
+    case HITEC_PROG_MSG_LOADED:
+    case HITEC_PROG_MSG_BACKUP_RESTORED:
+    case HITEC_PROG_MSG_FACTORY_DONE:
         return HITEC_PROG_INFO;
     case HITEC_PROG_MSG_NO_C:
     case HITEC_PROG_MSG_NO_D:
@@ -244,6 +250,7 @@ static void session_gone(hitec_prog_t *p)
 {
     p->owned = false;
     p->op = OP_NONE;
+    hpf_session(p);
     (void)hitec_session_init(&p->ses, p->series, HITEC_SES_CLOCK_MS);
 }
 
@@ -372,6 +379,7 @@ static void read_done(hitec_prog_t *p)
                    img->has_version != 0u ? img->version : 0u);
     }
     hpw_read_done(p, had, had ? &p->wr_target : NULL);
+    hpf_read_done(p);
 }
 
 void hpg_ses_say(hitec_prog_t *p, hitec_ses_t r)
@@ -708,6 +716,7 @@ void hitec_prog_feed(hitec_prog_t *p, const hitec_prog_feed_t *f)
     take_answers(p);
     take_timeouts(p);
     hpw_tick(p);
+    hpf_tick(p);
     follow(p);
     hpg_pump(p);
 }
@@ -734,6 +743,8 @@ hitec_prog_state_t hitec_prog_state(const hitec_prog_t *p)
                                   : HITEC_PROG_READING;
     case ST_RECORD:
         return HITEC_PROG_RECORDING;
+    case ST_BACKUP:
+        return HITEC_PROG_BACKUP;
     case ST_CLOSING:
         return HITEC_PROG_LEAVING;
     case ST_CLEARING:
@@ -919,6 +930,7 @@ hitec_prog_msg_id_t hitec_prog_connect(hitec_prog_t *p)
     p->port = (uint8_t)(p->f.target - 1u);
     p->lost = false;
     hpw_connect(p);
+    hpf_session(p);
     p->have_servo = false;
     p->have_last = false;
     p->reenter = false;
@@ -997,7 +1009,7 @@ hitec_prog_msg_id_t hitec_prog_clear(hitec_prog_t *p)
 
 void hitec_prog_abort(hitec_prog_t *p)
 {
-    if (hpw_abort(p)) {
+    if (hpw_abort(p) || hpf_abort(p)) {
         return;
     }
     if (p->cmd_ready) {
