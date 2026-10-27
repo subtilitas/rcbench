@@ -85,7 +85,7 @@ static void save(const servo_store_io_t *io, const hitec_card_req_t *req,
 {
     char base[HITEC_CARD_NAME_MAX];
     servo_store_t r = SERVO_STORE_OK;
-    const size_t len = hitec_card_file_text(&req->image, s_text,
+    const size_t len = hitec_card_file_text(&req->image, req->backup, s_text,
                                             sizeof(s_text));
 
     if (len == 0u) {
@@ -124,7 +124,7 @@ static void model_of(const servo_store_io_t *io, const char *name,
     out[0] = '\0';
     if (servo_store_load(io, name, s_text, sizeof(s_text), &len)
             != SERVO_STORE_OK
-        || hitec_card_file_parse(s_text, len, &img, out, NULL)
+        || hitec_card_file_parse(s_text, len, &img, out, NULL, NULL)
                != HITEC_CARD_OK) {
         out[0] = '\0';
     }
@@ -188,7 +188,9 @@ static void list(const servo_store_io_t *io, const hitec_card_req_t *req,
 }
 
 /**
- * @brief The load: the file read and parsed.
+ * @brief The load: the file read and parsed.  It is a backup when its
+ *        backup line says so, or, with no backup line, when its name is a
+ *        proposed one: a backup file saved before the line was written.
  *
  * @param io   The store.
  * @param req  The request.
@@ -200,6 +202,7 @@ static void load(const servo_store_io_t *io, const hitec_card_req_t *req,
     char file[SERVO_STORE_NAME_MAX];
     char base[HITEC_CARD_NAME_MAX];
     unsigned line = 0;
+    uint8_t kind = (uint8_t)HITEC_CARD_KIND_UNMARKED;
     size_t len = 0;
     servo_store_t r;
 
@@ -220,11 +223,15 @@ static void load(const servo_store_io_t *io, const hitec_card_req_t *req,
         return;
     }
     done->parse = (uint8_t)hitec_card_file_parse(s_text, len, &done->image,
-                                                 done->model, &line);
+                                                 done->model, &line, &kind);
     done->line = (uint16_t)line;
     if (done->parse != (uint8_t)HITEC_CARD_OK) {
         done->result = HITEC_CARD_DONE_BAD;
+        return;
     }
+    done->backup = kind == (uint8_t)HITEC_CARD_KIND_BACKUP
+                   || (kind == (uint8_t)HITEC_CARD_KIND_UNMARKED
+                       && servo_store_number(io->stem, file) != 0);
 }
 
 void hitec_card_run(const servo_store_io_t *io, const hitec_card_req_t *req,

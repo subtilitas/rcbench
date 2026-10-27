@@ -353,7 +353,8 @@ RCBENCH HITEC 1
 series=D
 model=D485HW
 image=86B500271FC1000000000000000100010FFF000000010FFF000009C410FE006432CB0D17200000000000
-check=4A84
+backup=0
+check=1E29
 ```
 
 | Line | Content |
@@ -363,12 +364,15 @@ check=4A84
 | `model=` | the model's name, `D485HW` or `HS-5645MG`; `D series 34999` for a D series model number the register model does not name; the classic name cells as read for another classic name; `?` for none. 1 to 20 printable characters |
 | `image=` | D series: the registers in the order READ ALL reads them, 4 hexadecimal digits each, 84 digits. Classic: cells 0x00 to 0x23, 0x30 to 0x53, 0x60 to 0x6F, 0x70 to 0x73 and 0x80 to 0x87, 2 digits each, 200 digits |
 | `version=` | classic only, 2 digits, where the read found one |
+| `backup=` | `1` for a backup file ([The backup before the first write](#the-backup-before-the-first-write)), `0` for every other save |
 | `check=` | the CRC-16 (cyclic redundancy check) of every byte before this line, 4 digits |
 
 Lines end in LF (line feed) alone, the digits are upper case. A D485HW file
-is 140 bytes, an HS-5645MG file 270 bytes; the panel reads 320 bytes at
+is 149 bytes, an HS-5645MG file 279 bytes; the panel reads 320 bytes at
 most. A file whose check does not match, or whose lines are not these in
-this order, is refused whole: a file edited by hand does not load.
+this order, is refused whole: a file edited by hand does not load. A file
+without the `backup=` line loads; it counts as a backup file when its name
+is a proposed name, `HITEC001` to `HITEC999`.
 
 **FILES** opens the list. It takes a tap with the port held, the servo in
 programming mode and read, no read owed after a write, the port not
@@ -439,7 +443,10 @@ the same; the write does not go on its own. The SERVO tab then names the
 file: `Backup file of this session: HITEC003.` A save by hand before the
 first write counts as that file while the servo still holds the backup's
 values. A save by hand after a write holds the written values and leaves
-the line as it is.
+the line as it is. The backup file and every save by hand of the servo as
+the session found it, before the first write, carry `backup=1`; every other
+save carries `backup=0`. A backup file brings back more than a setting
+([Loading a backup file](#loading-a-backup-file)).
 
 ![The write page with the backup file](img/servo-hitec-backup-write.png)
 ![The backup file on its way](img/servo-hitec-backup-saving.png)
@@ -484,6 +491,7 @@ servo before the write switch, the write page and its 2s hold.
 | Loaded | `WING-L loaded. 2 values differ from the servo settings.`, or `WING-L loaded. 1 value differs from the servo settings.` |
 | Holds the servo's editable values | `WING-L matches the servo settings. Nothing to write.`; the draft becomes the servo's values, and an edit made before the load is dropped with its confirmations |
 | Values outside the editable ones differ | a second line: `2 stored values outside the settings differ. They are not loaded.`, or `1 stored value outside the settings differs. It is not loaded.` |
+| A backup file of the servo read whose values outside the editable ones differ | CHECK THIS FILE with `Stored values outside the settings loaded too: 1.`; after the hold the same line under the loaded line ([Loading a backup file](#loading-a-backup-file)) |
 | Of the other series | `File is CLASSIC, servo is D SERIES. Not loaded.` |
 | Of the other classic layout | `File is for HS-7xxx servos, this servo is HS-5xxx. Not loaded.` |
 | Of another model of the same layout, or past a soft rule | CHECK THIS FILE, below; `Confirm the warnings before loading this file.` |
@@ -524,7 +532,42 @@ them: D series register 0x00 (the model), 0x04, 0x22, 0x64 (SENSITIVITY),
 factory cells 0x30 to 0x53, the name, the date, the serial and the version.
 The D series position, register 0x0C, and the classic balance, cell 0x1C,
 are not counted. RESTORE of the session's backup writes the cells and
-registers a load leaves.
+registers a load leaves, and so does a backup file of the servo read.
+
+#### Loading a backup file
+
+A backup file is a file with `backup=1`, or a file without a `backup=`
+line under a proposed name, `HITEC001` to `HITEC999`. A backup file of the
+servo read loads every address a write sends, as RESTORE of the session's
+backup does: classic cells 0x00 to 0x23 without the balance 0x1C, and the
+12 D series registers 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C,
+0xB0, 0xB2 and 0xC2. The file is of the servo read when the series and the
+layout match and:
+
+| Series | Compared with the servo read |
+| --- | --- |
+| D series | the model number, register 0x00 |
+| Classic | the name cells 0x60 to 0x6F, the date cells 0x70 to 0x73, the serial cells 0x80 to 0x87 and the version |
+
+A backup file of another servo, and every file with `backup=0`, loads as
+any other file. Each of the 12 D series registers is an editable value, so
+a D series backup file loads what any file loads.
+
+FACTORY DEFAULT of an HS-7955TG changes cell 0x22, RESOLUTION, which no
+edit reaches. After LEAVE the session's backup is gone; the backup file
+saved before FACTORY DEFAULT, `HITEC001`, brings 0x22 back with the 4
+values of cells 0x08, 0x13, 0x14 and 0x1B.
+
+When a classic cell outside the editable values differs, CHECK THIS FILE
+opens first with `Stored values outside the settings loaded too: 1.`.
+**HOLD 2s TO LOAD** takes the cells into the draft, and the message shows
+the same line under `HITEC001 loaded. 5 values differ from the servo
+settings.` A cell that no value line names counts as a value of **WRITE n
+VALUES**; the write page shows `Stored values outside the settings written
+too: 1.`, and the write sends the cell. RESTORE, REPAIR CHECKSUM and
+FACTORY DEFAULT wait for it as for an edit; DISCARD EDITS drops it.
+
+![A backup file with a cell no setting names](img/servo-hitec-classic-file-backup.png)
 
 ## Restore of the session's backup
 

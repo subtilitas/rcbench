@@ -84,9 +84,56 @@ unsigned hpw_differing(const hitec_prog_t *p, const hitec_image_t *img)
     return n;
 }
 
+unsigned hitec_prog_raw_cells(const hitec_prog_t *p, const hitec_image_t *img)
+{
+    const uint8_t layout = hitec_prog_layout(p);
+    const bool d = img->series == (uint8_t)HITEC_D;
+    uint8_t named[HITEC_MEM_SIZE / 8u];
+    unsigned n = 0;
+
+    if (!p->have_servo || img->series != p->servo.series) {
+        return 0;
+    }
+    memset(named, 0, sizeof(named));
+    for (unsigned id = 0; id < (unsigned)HITEC_P_COUNT; ++id) {
+        const hitec_param_info_t *info = hitec_param(layout, (uint8_t)id);
+
+        if (info == NULL || info->id == (uint8_t)HITEC_P_C_CHECKSUM
+            || !hitec_prog_differs(p, img, (uint8_t)id)) {
+            continue;
+        }
+        for (unsigned i = 0; i < info->size; ++i) {
+            const unsigned a = (info->addr + i) & 0xFFu;
+
+            named[a / 8u] |= (uint8_t)(1u << (a % 8u));
+        }
+        if (info->addr2 != HITEC_ADDR_NONE) {
+            named[info->addr2 / 8u] |= (uint8_t)(1u << (info->addr2 % 8u));
+        }
+    }
+    for (unsigned a = 0; a < HITEC_MEM_SIZE; ++a) {
+        if (hitec_writable(img->series, (uint8_t)a)
+            && (named[a / 8u] & (1u << (a % 8u))) == 0u
+            && (d ? hitec_image_reg(img, (uint8_t)a)
+                        != hitec_image_reg(&p->servo, (uint8_t)a)
+                  : hitec_image_cell(img, (uint8_t)a)
+                        != hitec_image_cell(&p->servo, (uint8_t)a))) {
+            ++n;
+        }
+    }
+    return n;
+}
+
+unsigned hitec_prog_changes_in(const hitec_prog_t *p,
+                               const hitec_image_t *img)
+{
+    return p->have_servo ? hpw_differing(p, img) + hitec_prog_raw_cells(p, img)
+                         : 0u;
+}
+
 unsigned hitec_prog_changes(const hitec_prog_t *p)
 {
-    return p->have_servo ? hpw_differing(p, &p->draft) : 0u;
+    return hitec_prog_changes_in(p, &p->draft);
 }
 
 bool hitec_prog_sum_bad(const hitec_prog_t *p)
@@ -576,7 +623,7 @@ hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
     }
     p->wr_kind = kind;
     p->wr_target = *target;
-    p->wr_values = (uint8_t)hpw_differing(p, target);
+    p->wr_values = (uint8_t)hitec_prog_changes_in(p, target);
     p->wr_own_rec = false;
     hpw_unconfirm(p);
     if (p->ses.plan.n != 0u && hpf_backup(p)) {

@@ -78,7 +78,8 @@
  *     and the write waits for the card's answer; a card that refuses it ends
  *     the write with nothing sent.  With no card the write goes and the
  *     backup stays in RAM only.  A save by hand before the first write,
- *     while the servo read equals the backup, counts as that file.
+ *     while the servo read equals the backup, counts as that file.  Both
+ *     files carry the line backup=1 (hitec_card.h).
  *   - FILES lists the servo files of the card, 5 a page (hitec_prog_files()),
  *     saves the servo read under a name (hitec_prog_save()) and loads a file
  *     into the draft (hitec_prog_load()): the cells or registers of the
@@ -86,7 +87,12 @@
  *     other series or layout is refused; a file of another model, or one
  *     whose values break a soft rule, waits for hitec_prog_load_confirm().
  *     The values a file holds outside the editable parameters are counted
- *     and not loaded.  Nothing reaches the servo before WRITE n VALUES.
+ *     and not loaded.  A backup file (hitec_card_done_t.backup) of this
+ *     very servo, the same model number for the D series, the same name,
+ *     date, serial and version for a classic servo, loads every address a
+ *     plan writes (hitec_writable()) as well, and waits for
+ *     hitec_prog_load_confirm() when one of them outside the editable
+ *     parameters differs.  Nothing reaches the servo before WRITE n VALUES.
  *   - RESTORE of the session's backup writes every address a plan writes
  *     (hitec_writable()) back from the backup, raw values included, as a
  *     write with its read-back.
@@ -284,6 +290,10 @@ typedef enum {
                                        and verified                        */
     HITEC_PROG_MSG_FACTORY_DONE,  /**< the factory values written and
                                        verified                            */
+    HITEC_PROG_MSG_LOADED_RAW,    /**< the draft holds a backup file with
+                                       stored values outside the editable
+                                       parameters; arg the values that
+                                       differ, reg those stored values     */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -547,6 +557,9 @@ typedef struct {
     bool     load_other;      /**< its file is of another model           */
     uint16_t load_rules;      /**< the soft rules it breaks               */
     uint8_t  load_skipped;    /**< values of the file not loaded          */
+    uint8_t  load_raw;        /**< addresses of a backup file loaded that
+                                   no editable parameter holds and that
+                                   differ from the servo read             */
     hitec_image_t load_img;   /**< the draft it leaves                    */
     char     load_model[HITEC_CARD_MODEL_MAX + 1u]; /**< its model line   */
 } hitec_prog_t;
@@ -951,8 +964,33 @@ bool hitec_prog_differs(const hitec_prog_t *p, const hitec_image_t *img,
                         uint8_t id);
 
 /**
- * @brief The writable parameters in which the draft differs from the
- *        servo read.
+ * @brief The addresses a plan writes (hitec_writable()) in which @p img
+ *        differs from the servo read and whose change no parameter that
+ *        differs (hitec_prog_differs()) names: a cell of no parameter, or a
+ *        stored value that decodes as the servo's does.  The classic
+ *        checksum, which spans 0x00 to 0x1C, names none.
+ *
+ * @param p   The programmer.
+ * @param img An image of the servo's series.
+ * @return The count; 0 with no servo read.
+ */
+unsigned hitec_prog_raw_cells(const hitec_prog_t *p, const hitec_image_t *img);
+
+/**
+ * @brief The values in which @p img differs from the servo read: the
+ *        parameters (hitec_prog_differs()) and the addresses of
+ *        hitec_prog_raw_cells().
+ *
+ * @param p   The programmer.
+ * @param img The image.
+ * @return The count; 0 with no servo read.
+ */
+unsigned hitec_prog_changes_in(const hitec_prog_t *p,
+                               const hitec_image_t *img);
+
+/**
+ * @brief The values in which the draft differs from the servo read, as
+ *        hitec_prog_changes_in() counts them.
  *
  * @param p The programmer.
  * @return The count; 0 with no servo read.

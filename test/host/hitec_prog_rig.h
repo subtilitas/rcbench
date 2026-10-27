@@ -237,7 +237,7 @@ static inline void files_put(const char *name, const char *text, size_t len)
 static inline void files_put_image(const char *name, const hitec_image_t *img)
 {
     char text[HITEC_CARD_FILE_MAX];
-    const size_t len = hitec_card_file_text(img, text, sizeof(text));
+    const size_t len = hitec_card_file_text(img, false, text, sizeof(text));
 
     files_put(name, text, len);
 }
@@ -248,7 +248,7 @@ static inline bool files_image(const char *name, hitec_image_t *out)
     const rig_file_t *rf = files_find(name);
 
     return rf != NULL && hitec_card_file_parse(rf->text, rf->len, out, NULL,
-                                              NULL) == HITEC_CARD_OK;
+                                              NULL, NULL) == HITEC_CARD_OK;
 }
 
 static inline void files_reset(void)

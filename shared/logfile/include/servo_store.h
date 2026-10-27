@@ -182,6 +182,15 @@ bool servo_store_file_name(const char *stem, const char *base, char *out,
                            size_t out_size);
 
 /**
+ * @brief The number of a proposed name: "<stem>nnn.TXT", in any case.
+ *
+ * @param stem  The programmer's stem.
+ * @param file  The file name, with the extension.
+ * @return The number, 1 to 999; 0 for any other name.
+ */
+int servo_store_number(const char *stem, const char *file);
+
+/**
  * @brief Propose a base name: the stem and 3 digits, one above the highest
  *        number the directory holds.
  *

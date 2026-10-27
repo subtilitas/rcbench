@@ -47,7 +47,15 @@
  *                                    cells of 2 digits, D series 21
  *                                    registers of 4 digits
  *   version=XX                       classic, where the version was read
+ *   backup=X                         1: a session's backup, the servo as
+ *                                    the session found it before its first
+ *                                    write; 0: a save by hand of anything
+ *                                    else
  *   check=XXXX                       link_crc() of the bytes before
+ *
+ * Every file written carries the backup line.  A file without it is
+ * parsed all the same (HITEC_CARD_KIND_UNMARKED); hitec_card_run.h counts
+ * it a backup when its base name is a proposed one, HITEC001 to HITEC999.
  *
  * Every line ends with LF (line feed, 0x0A) alone.  A text with any other
  * line, a lower-case digit, a CR (carriage return) or a byte after the
@@ -141,7 +149,7 @@ hitec_card_result_t hitec_card_parse(const char *text, size_t len,
 /* --- servo files ----------------------------------------------------------- */
 
 /** @brief A servo file's text with its terminator: a classic file with the
- *         longest model line takes 281 bytes. */
+ *         longest model line takes 290 bytes. */
 #define HITEC_CARD_FILE_MAX 320u
 /** @brief The characters of a model line's value at most. */
 #define HITEC_CARD_MODEL_MAX 20u
@@ -176,17 +184,27 @@ unsigned hitec_card_file_addrs(uint8_t series,
 void hitec_card_model_text(const hitec_image_t *img,
                            char out[HITEC_CARD_MODEL_MAX + 1u]);
 
+/** @brief What a servo file says it holds: its backup line. */
+typedef enum {
+    HITEC_CARD_KIND_UNMARKED = 0, /**< no backup line                     */
+    HITEC_CARD_KIND_SAVE,         /**< backup=0: a save by hand           */
+    HITEC_CARD_KIND_BACKUP,       /**< backup=1: a session's backup       */
+} hitec_card_kind_t;
+
 /**
  * @brief The servo file text of @p img.
  *
- * @param img The image, of a full read; a byte not known is written as its
- *            value all the same.
- * @param out Receives the text, terminated.
+ * @param img    The image, of a full read; a byte not known is written as
+ *               its value all the same.
+ * @param backup true for a session's backup: the line backup=1, else
+ *               backup=0.
+ * @param out    Receives the text, terminated.
  * @param n   Bytes at @p out, HITEC_CARD_FILE_MAX or more.
  * @return The length without the terminator; 0 when @p n is too small or
  *         @p img is of neither series.
  */
-size_t hitec_card_file_text(const hitec_image_t *img, char *out, size_t n);
+size_t hitec_card_file_text(const hitec_image_t *img, bool backup, char *out,
+                            size_t n);
 
 /**
  * @brief Parse a servo file text.
@@ -199,6 +217,8 @@ size_t hitec_card_file_text(const hitec_image_t *img, char *out, size_t n);
  *              NULL.
  * @param line  Receives the line, from 1, that HITEC_CARD_ERR_FIELD names;
  *              0 otherwise; may be NULL.
+ * @param kind  Receives the hitec_card_kind_t of the backup line on
+ *              HITEC_CARD_OK; may be NULL.
  * @return HITEC_CARD_OK, or the first fault: HITEC_CARD_ERR_HEADER for a
  *         text that is no servo file, HITEC_CARD_ERR_TRUNCATED,
  *         HITEC_CARD_ERR_CHECK, HITEC_CARD_ERR_FIELD.  A record's text is
@@ -206,7 +226,8 @@ size_t hitec_card_file_text(const hitec_image_t *img, char *out, size_t n);
  */
 hitec_card_result_t hitec_card_file_parse(const char *text, size_t len,
                                           hitec_image_t *out,
-                                          char *model, unsigned *line);
+                                          char *model, unsigned *line,
+                                          uint8_t *kind);
 
 /** @brief What the card's side is asked for. */
 typedef enum {
@@ -235,6 +256,7 @@ typedef enum {
 typedef struct {
     uint8_t  op;        /**< hitec_card_op_t                               */
     bool     preset;    /**< SAVE: the card's side names the file          */
+    bool     backup;    /**< SAVE: the image is a session's backup         */
     uint16_t first;     /**< LIST: the first file wanted, from 0           */
     uint32_t id;        /**< comes back in the answer                      */
     char     name[HITEC_CARD_NAME_MAX]; /**< SAVE, LOAD: the base name     */
@@ -246,6 +268,9 @@ typedef struct {
     uint8_t  op;        /**< the request's hitec_card_op_t                 */
     uint8_t  result;    /**< hitec_card_done_result_t                      */
     uint8_t  parse;     /**< LOAD: hitec_card_result_t                     */
+    /** @brief LOAD: the file is a backup: backup=1, or no backup line and
+     *         a proposed name (servo_store_number()). */
+    bool     backup;
     uint8_t  count;     /**< LIST: the files in names                      */
     uint16_t line;      /**< LOAD, HITEC_CARD_ERR_FIELD: the line          */
     uint16_t total;     /**< LIST: the servo files on the card, 65535 for

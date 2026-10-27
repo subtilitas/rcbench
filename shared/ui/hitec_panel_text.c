@@ -645,8 +645,9 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_LOADED]        = { -1, -1 },
     [HITEC_PROG_MSG_BACKUP_RESTORED] = { TX_KP_M_RESTORED, -1 },
     [HITEC_PROG_MSG_FACTORY_DONE]  = { TX_HP_FACTORY_DONE, -1 },
+    [HITEC_PROG_MSG_LOADED_RAW]    = { -1, -1 },
 };
-_Static_assert(HITEC_PROG_MSG_FACTORY_DONE + 1 == HITEC_PROG_MSG_COUNT,
+_Static_assert(HITEC_PROG_MSG_LOADED_RAW + 1 == HITEC_PROG_MSG_COUNT,
                "k_lines has a row for every message");
 
 /**

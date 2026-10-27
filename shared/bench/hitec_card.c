@@ -351,7 +351,8 @@ void hitec_card_model_text(const hitec_image_t *img,
     memcpy(out, m.name, strlen(m.name) + 1u);
 }
 
-size_t hitec_card_file_text(const hitec_image_t *img, char *out, size_t n)
+size_t hitec_card_file_text(const hitec_image_t *img, bool backup, char *out,
+                            size_t n)
 {
     uint8_t addrs[HITEC_CARD_FILE_ADDRS];
     char model[HITEC_CARD_MODEL_MAX + 1u];
@@ -380,6 +381,7 @@ size_t hitec_card_file_text(const hitec_image_t *img, char *out, size_t n)
         at = put_hex(at, img->version, 2u);
         *at++ = '\n';
     }
+    at = put(at, backup ? "backup=1\n" : "backup=0\n");
     {
         const uint16_t crc = link_crc(LINK_CRC_INIT, out, (size_t)(at - out));
 
@@ -428,7 +430,8 @@ static bool take_model(reader_t *r, char *model)
 
 hitec_card_result_t hitec_card_file_parse(const char *text, size_t len,
                                           hitec_image_t *out,
-                                          char *model, unsigned *line)
+                                          char *model, unsigned *line,
+                                          uint8_t *kind)
 {
     const size_t head = sizeof(k_head) - 1u;
     uint8_t addrs[HITEC_CARD_FILE_ADDRS];
@@ -439,6 +442,8 @@ hitec_card_result_t hitec_card_file_parse(const char *text, size_t len,
     reader_t r;
     const char *d;
     uint8_t series;
+    uint8_t got_kind = (uint8_t)HITEC_CARD_KIND_UNMARKED;
+    unsigned at_line = 5u;
     long v = 0;
 
     if (line != NULL) {
@@ -495,19 +500,33 @@ hitec_card_result_t hitec_card_file_parse(const char *text, size_t len,
             (void)hitec_image_put_cell(&got, addrs[i], (uint8_t)x);
         }
     }
-    if (series == (uint8_t)HITEC_CLASSIC && r.at < r.end) {
+    if (series == (uint8_t)HITEC_CLASSIC && r.at < r.end
+        && r.end - r.at >= 8u && memcmp(text + r.at, "version=", 8u) == 0) {
         if (line != NULL) {
-            *line = 5u;
+            *line = at_line;
         }
         if (take_line(&r, "version=", 2u, &v) == NULL) {
             return HITEC_CARD_ERR_FIELD;
         }
         (void)hitec_image_put_version(&got, (uint8_t)v);
+        ++at_line;
+    }
+    if (r.at < r.end && r.end - r.at >= 7u
+        && memcmp(text + r.at, "backup=", 7u) == 0) {
+        if (line != NULL) {
+            *line = at_line;
+        }
+        if (take_line(&r, "backup=", 1u, &v) == NULL || v > 1) {
+            return HITEC_CARD_ERR_FIELD;
+        }
+        got_kind = v == 1 ? (uint8_t)HITEC_CARD_KIND_BACKUP
+                          : (uint8_t)HITEC_CARD_KIND_SAVE;
+        ++at_line;
     }
     if (r.at != r.end) {
         /* A line after the last one due: the check line is not next. */
         if (line != NULL) {
-            *line = series == (uint8_t)HITEC_CLASSIC ? 6u : 5u;
+            *line = at_line;
         }
         return HITEC_CARD_ERR_FIELD;
     }
@@ -517,6 +536,9 @@ hitec_card_result_t hitec_card_file_parse(const char *text, size_t len,
     *out = got;
     if (model != NULL) {
         memcpy(model, name, strlen(name) + 1u);
+    }
+    if (kind != NULL) {
+        *kind = got_kind;
     }
     return HITEC_CARD_OK;
 }

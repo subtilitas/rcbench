@@ -5,7 +5,9 @@
  * a new file's name with the next proposed name and the names the card
  * refuses, a load into the draft, CHECK THIS FILE for a soft rule and for
  * another model, RESTORE of the session's backup with the count of cells
- * of no setting it writes back, FACTORY DEFAULT from MORE, both refused
+ * of no setting it writes back, FACTORY DEFAULT from MORE, a backup file
+ * that brings a cell of no setting back, the load page and the write page
+ * counting it, both refused
  * with an edit standing, the backup file's lines on the write page and on the SERVO tab,
  * the state line while the backup file is saved, a list the card does not
  * give in 5000ms, FILES without a card, and every new page and message in
@@ -585,6 +587,70 @@ TEST_CASE(factory_default_counts_the_cells_of_no_setting_it_writes)
     CHECK_EQ(g_drv.eeprom[0x1D], g_drv.eeprom[0x4D]);
 }
 
+TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        char t[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE];
+        char want[HITEC_PANEL_LINE];
+
+        open_at(SUPPLY_ON, langs[k]);
+        servo_hs5645();
+        /* The factory block equals the settings but for cell 0x1D. */
+        for (unsigned c = 0; c < 0x24u; ++c) {
+            g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
+        }
+        g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
+        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(hitec_panel_choice_rect(1));
+        tap_connect();
+        g_card = true;
+        prun(20u);
+        /* PRE, saved by hand before the first write: a backup file. */
+        card_in();
+        CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        tap(val(HITEC_PANEL_SERVO, 2, 0));
+        pick(TR(HP_MORE_FACTORY));
+        hold(2.1f);
+        until(HITEC_PROG_HELD);
+        show();
+        CHECK_EQ(g_drv.eeprom[0x1D], g_drv.eeprom[0x4D]);
+        /* The load of PRE: CHECK THIS FILE names the cell. */
+        files();
+        tap(hitec_panel_choice_rect(file_choice("PRE")));
+        settle();
+        CHECK_EQ(hitec_panel_editor(), 3);
+        snprintf(want, sizeof(want), TR(KP_FILE_DIFF_ONE), "PRE");
+        CHECK(page_has(want));
+        snprintf(want, sizeof(want), TR(HP_LOAD_RAW), 1u);
+        CHECK(page_has(want));
+        CHECK(page_fits());
+        hold(2.1f);
+        CHECK_EQ(hitec_panel_editor(), 0);
+        CHECK_EQ(hitec_panel_message_lines(hitec_prog_message(model()), t),
+                 2);
+        CHECK_STR_EQ(t[1], want);
+        snprintf(want, sizeof(want), TR(KP_M_LOADED_ONE), "PRE");
+        CHECK_STR_EQ(t[0], want);
+        /* The write page names it too, and WRITE 1 VALUE sends it. */
+        CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 1));
+        CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1),
+                     TR(KP_WRITE_ONE));
+        tap(val(HITEC_PANEL_SERVO, 4, 1));
+        CHECK_EQ(hitec_panel_editor(), 3);
+        snprintf(want, sizeof(want), TR(HP_FACTORY_RAW), 1u);
+        CHECK(page_has(want));
+        CHECK(page_fits());
+        hold(2.1f);
+        until(HITEC_PROG_HELD);
+        show();
+        CHECK_EQ(g_drv.eeprom[0x1D], fix_hs5645()[0x1D]);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
 {
     d_open(UI_LANG_EN);
@@ -680,6 +746,8 @@ TEST_CASE(every_file_message_has_its_lines_in_both_languages)
         { HITEC_PROG_MSG_LOAD_CHECK, 0, 0 },
         { HITEC_PROG_MSG_LOADED, 12, 99 },
         { HITEC_PROG_MSG_LOADED, 1, 1 },
+        { HITEC_PROG_MSG_LOADED_RAW, 12, 99 },
+        { HITEC_PROG_MSG_LOADED_RAW, 1, 1 },
         { HITEC_PROG_MSG_BACKUP_RESTORED, 0, 0 },
         { HITEC_PROG_MSG_FACTORY_DONE, 0, 0 },
         { HITEC_PROG_MSG_LOAD_SAME, 0, 0 },
@@ -895,6 +963,7 @@ int main(void)
     RUN(restore_and_factory_default_with_an_edit_standing_say_why);
     RUN(restore_after_factory_default_counts_the_cells_of_no_setting);
     RUN(factory_default_counts_the_cells_of_no_setting_it_writes);
+    RUN(a_backup_file_names_the_stored_values_it_brings_back);
     RUN(restore_writes_the_session_backup_back_from_its_page);
     RUN(factory_default_comes_from_more_for_a_classic_servo);
     RUN(every_file_message_has_its_lines_in_both_languages);

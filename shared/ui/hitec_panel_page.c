@@ -255,9 +255,11 @@ void hpn_page_write(void)
     const hitec_prog_t *p = &hp.prog;
     const hitec_image_t *to = hitec_prog_draft(p);
     const unsigned c = hitec_prog_changes(p);
+    /* Stored values no listed setting shows: a backup file's. */
+    const unsigned raw = to != NULL ? hitec_prog_raw_cells(p, to) : 0u;
     const bool horn = to != NULL && (!hitec_prog_first_done(p)
                                      || moves_horn(to));
-    const int fixed = (horn ? 2 : 0) + 2
+    const int fixed = (horn ? 2 : 0) + 2 + (raw != 0u ? 1 : 0)
                       + (saves_lines() == 3 ? 3 : saves_lines() + 1);
     char title[64];
 
@@ -270,6 +272,12 @@ void hpn_page_write(void)
     /* The write gate has passed: a servo is read, so a draft stands. */
     if (to != NULL) {
         hpn_page_values(to, values_room(fixed));
+    }
+    if (raw != 0u) {
+        char line[HITEC_PANEL_LINE];
+
+        snprintf(line, sizeof(line), TR(HP_FACTORY_RAW), raw);
+        hpn_page_add(HITEC_PROG_INFO, line);
     }
     if (horn) {
         hpn_page_add(HITEC_PROG_DANGER, TR(KP_HORN_FREE));

@@ -196,6 +196,22 @@ bool hitec_prog_backup_differs(const hitec_prog_t *p)
     return hitec_prog_backup_image(p, &img) && hpf_writable_differs(p, &img);
 }
 
+/**
+ * @brief Whether the servo read is the session's backup still: no write
+ *        went in the session, and every address a plan writes holds the
+ *        backup's value.  A save of it is a backup file.
+ *
+ * @param p The programmer.
+ * @return true when it is.
+ */
+static bool holds_backup(const hitec_prog_t *p)
+{
+    hitec_image_t now;
+
+    return !p->wrote && p->have_servo && hitec_prog_backup_image(p, &now)
+           && memcmp(now.mem, p->servo.mem, sizeof(now.mem)) == 0;
+}
+
 hitec_prog_msg_id_t hitec_prog_restore_backup(hitec_prog_t *p)
 {
     hitec_image_t img;
@@ -382,6 +398,11 @@ bool hitec_prog_card_take(hitec_prog_t *p, hitec_card_req_t *out)
     out->op = p->card_op;
     out->id = p->card_id;
     out->preset = p->card_auto;
+    /* A save by hand of the servo as the session found it is a backup
+     * file as well. */
+    out->backup = p->card_auto
+                  || (p->card_op == (uint8_t)HITEC_CARD_SAVE
+                      && p->card_gen == p->bk_gen && holds_backup(p));
     out->first = p->card_op == (uint8_t)HITEC_CARD_LIST ? p->card_first : 0u;
     memcpy(out->name, p->card_name, sizeof(out->name));
     /* The backup file holds the session's backup; a save by hand the
@@ -480,7 +501,6 @@ static void save_done(hitec_prog_t *p, const hitec_card_done_t *d,
     /* The file holds the backup it was asked for, not one that replaced
      * it since: another session's or another servo's. */
     const bool same_bk = p->have_bk && p->card_gen == p->bk_gen;
-    hitec_image_t now;
 
     if (ok && p->card_auto && same_bk) {
         /* A backup file made after the write gave up on it holds the
@@ -509,9 +529,7 @@ static void save_done(hitec_prog_t *p, const hitec_card_done_t *d,
     name_copy(p->card_name, d->name);
     /* A save by hand before the first write, of the servo as the session
      * found it, is the backup file. */
-    if (same_bk && !p->bk_saved && !p->wrote && p->have_servo
-        && hitec_prog_backup_image(p, &now)
-        && memcmp(now.mem, p->servo.mem, sizeof(now.mem)) == 0) {
+    if (same_bk && !p->bk_saved && holds_backup(p)) {
         p->bk_saved = true;
         name_copy(p->bk_name, d->name);
     }
@@ -588,6 +606,45 @@ static void copy_param(hitec_image_t *to, const hitec_image_t *from,
             set[a / 8u] |= (uint8_t)(1u << (a % 8u));
         }
     }
+}
+
+/**
+ * @brief Copy every address a plan writes that @p set does not hold yet
+ *        from a backup file into @p to, and mark it in @p set.
+ *
+ * @param p    The programmer.
+ * @param to   The image written into.
+ * @param from The backup file's image, of the servo read.
+ * @param set  Bit a of byte a / 8: address a is copied.
+ * @return The addresses copied that differ from the servo read.
+ */
+static unsigned raw_from(const hitec_prog_t *p, hitec_image_t *to,
+                         const hitec_image_t *from,
+                         uint8_t set[HITEC_MEM_SIZE / 8u])
+{
+    const bool d = to->series == (uint8_t)HITEC_D;
+    unsigned count = 0;
+
+    for (unsigned a = 0; a < HITEC_MEM_SIZE; ++a) {
+        const uint8_t at = (uint8_t)a;
+        const uint8_t bit = (uint8_t)(1u << (a % 8u));
+
+        if (!hitec_writable(to->series, at) || (set[a / 8u] & bit) != 0u
+            || !hitec_image_known(from, at)) {
+            continue;
+        }
+        if (d) {
+            count += hitec_image_reg(from, at)
+                             != hitec_image_reg(&p->servo, at) ? 1u : 0u;
+            (void)hitec_image_put_reg(to, at, hitec_image_reg(from, at));
+        } else {
+            count += hitec_image_cell(from, at)
+                             != hitec_image_cell(&p->servo, at) ? 1u : 0u;
+            (void)hitec_image_put_cell(to, at, hitec_image_cell(from, at));
+        }
+        set[a / 8u] |= bit;
+    }
+    return count;
 }
 
 /**
@@ -678,13 +735,20 @@ static void load_take(hitec_prog_t *p)
             p->soft_val[id] = v.value;
         }
     }
-    (void)say(p, HITEC_PROG_MSG_LOADED, hpw_differing(p, &p->draft),
+    if (p->load_raw != 0u) {
+        (void)say(p, HITEC_PROG_MSG_LOADED_RAW,
+                  hitec_prog_changes_in(p, &p->draft), p->load_raw);
+        return;
+    }
+    (void)say(p, HITEC_PROG_MSG_LOADED, hitec_prog_changes_in(p, &p->draft),
               p->load_skipped);
 }
 
 /**
  * @brief The answer to a load: refused, the same as the servo, waiting for
- *        CHECK THIS FILE, or the draft.
+ *        CHECK THIS FILE, or the draft.  A backup file of the servo read
+ *        loads every address a plan writes; it waits for CHECK THIS FILE
+ *        when one outside the editable parameters differs.
  *
  * @param p The programmer.
  * @param d The answer.
@@ -696,6 +760,7 @@ static void load_done(hitec_prog_t *p, const hitec_card_done_t *d)
     hitec_prog_msg_id_t m;
     hitec_model_t file;
     unsigned skipped;
+    unsigned raw = 0;
 
     if (d->result != (uint8_t)HITEC_CARD_DONE_OK) {
         card_say(p, d);
@@ -728,6 +793,12 @@ static void load_done(hitec_prog_t *p, const hitec_card_done_t *d)
             copy_param(&p->load_img, &d->image, info, set);
         }
     }
+    /* Only a backup of this very servo brings back what no setting edits:
+     * a backup of another servo loads as any other file. */
+    if (d->backup && same_servo(&d->image, &p->servo)) {
+        raw = raw_from(p, &p->load_img, &d->image, set);
+    }
+    p->load_raw = (uint8_t)(raw < 255u ? raw : 255u);
     if (p->load_img.series == (uint8_t)HITEC_CLASSIC) {
         (void)hitec_c_rebalance(&p->load_img);
     }
@@ -735,7 +806,7 @@ static void load_done(hitec_prog_t *p, const hitec_card_done_t *d)
     p->load_skipped = (uint8_t)(skipped < 255u ? skipped : 255u);
     memcpy(p->load_model, d->model, sizeof(p->load_model));
     p->load_model[HITEC_CARD_MODEL_MAX] = '\0';
-    if (hpw_differing(p, &p->load_img) == 0u) {
+    if (hitec_prog_changes_in(p, &p->load_img) == 0u && raw == 0u) {
         /* The file holds the servo's values: the draft becomes them, and
          * an edit standing before the load goes with its confirmations. */
         p->draft = p->load_img;
@@ -745,7 +816,7 @@ static void load_done(hitec_prog_t *p, const hitec_card_done_t *d)
     }
     p->load_rules = load_rules(p, &p->load_img, layout);
     p->load_other = !same_model(&d->image, &p->servo);
-    if (p->load_rules != 0u || p->load_other) {
+    if (p->load_rules != 0u || p->load_other || raw != 0u) {
         p->load_pend = true;
         (void)say(p, HITEC_PROG_MSG_LOAD_CHECK, 0u, 0u);
         return;

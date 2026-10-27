@@ -460,7 +460,7 @@ static bool files_view(const char *v)
         size_t len;
 
         d485(&img);
-        len = hitec_card_file_text(&img, text, sizeof(text));
+        len = hitec_card_file_text(&img, false, text, sizeof(text));
         text[50] = text[50] == '0' ? '1' : '0';
         files_put("WING-L.TXT", text, len);
         hload("WING-L");
@@ -494,6 +494,17 @@ static bool files_view(const char *v)
         hwrite_page();
         hhold();
         hwait(HITEC_PROG_HELD);
+        return true;
+    }
+    if (strcmp(v, "-classic-file-backup") == 0) {
+        /* FACTORY DEFAULT changes cell 0x1D; the backup file HITEC001 of
+         * the servo as found brings it back. */
+        (void)hitec_prog_write_enable(hitec_panel_model(), true);
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        hpick(TR(HP_MORE_FACTORY));
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        hload("HITEC001");
         return true;
     }
     if (strcmp(v, "-classic-more-factory") == 0
@@ -588,7 +599,8 @@ void render_hitec_view(const char *view)
     if (c_view) {
         hseries(1);
     }
-    if (strcmp(v, "-classic-factory-cell") == 0) {
+    if (strcmp(v, "-classic-factory-cell") == 0
+        || strcmp(v, "-classic-file-backup") == 0) {
         /* The factory block equal to the settings but for cell 0x1D. */
         for (unsigned c = 0; c < 0x24u; ++c) {
             g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];

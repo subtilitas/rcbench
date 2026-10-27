@@ -381,7 +381,8 @@ RCBENCH HITEC 1
 series=D
 model=D485HW
 image=86B500271FC1000000000000000100010FFF000000010FFF000009C410FE006432CB0D17200000000000
-check=4A84
+backup=0
+check=1E29
 ```
 
 | Zeile | Inhalt |
@@ -391,13 +392,16 @@ check=4A84
 | `model=` | der Name des Modells, `D485HW` oder `HS-5645MG`; `D series 34999` für eine Modellnummer der D-Serie, die das Registermodell nicht nennt; die Namenszellen wie gelesen für einen anderen klassischen Namen; `?` für keinen. 1 bis 20 druckbare Zeichen |
 | `image=` | D-Serie: die Register in der Reihenfolge, in der ALLES AUSLESEN sie liest, je 4 Hexadezimalziffern, 84 Ziffern. Klassisch: die Zellen 0x00 bis 0x23, 0x30 bis 0x53, 0x60 bis 0x6F, 0x70 bis 0x73 und 0x80 bis 0x87, je 2 Ziffern, 200 Ziffern |
 | `version=` | nur klassisch, 2 Ziffern, wo das Lesen eine fand |
+| `backup=` | `1` für eine Backup-Datei ([Das Backup vor dem ersten Schreiben](#das-backup-vor-dem-ersten-schreiben)), `0` für jedes andere Speichern |
 | `check=` | die CRC-16 (zyklische Redundanzprüfung) aller Bytes vor dieser Zeile, 4 Ziffern |
 
 Zeilen enden nur mit LF (Zeilenvorschub), die Ziffern sind Großbuchstaben.
-Eine Datei eines D485HW hat 140 Bytes, eine eines HS-5645MG 270 Bytes; das
+Eine Datei eines D485HW hat 149 Bytes, eine eines HS-5645MG 279 Bytes; das
 Panel liest höchstens 320 Bytes. Eine Datei, deren Prüfsumme nicht stimmt
 oder deren Zeilen nicht diese in dieser Reihenfolge sind, wird ganz
-abgelehnt: eine von Hand bearbeitete Datei wird nicht geladen.
+abgelehnt: eine von Hand bearbeitete Datei wird nicht geladen. Eine Datei
+ohne die Zeile `backup=` wird geladen; sie zählt als Backup-Datei, wenn ihr
+Name ein vorgeschlagener Name ist, `HITEC001` bis `HITEC999`.
 
 **DATEIEN** öffnet die Liste. Sie nimmt einen Tipp an, wenn der Port
 gehalten, das Servo im Programmiermodus und gelesen ist, kein Lesen nach
@@ -478,7 +482,10 @@ nennt dann die Datei: `Backup-Datei dieser Sitzung: HITEC003.` Ein
 Speichern von Hand vor dem ersten Schreiben zählt als diese Datei, solange
 das Servo noch die Werte des Backups hält. Ein Speichern von Hand nach
 einem Schreiben hält die geschriebenen Werte und lässt die Zeile, wie sie
-ist.
+ist. Die Backup-Datei und jedes Speichern von Hand des Servos, wie die
+Sitzung es vorfand, vor dem ersten Schreiben tragen `backup=1`; jedes andere
+Speichern trägt `backup=0`. Eine Backup-Datei bringt mehr zurück als eine
+Einstellung ([Laden einer Backup-Datei](#laden-einer-backup-datei)).
 
 ![Die Schreibseite mit der Backup-Datei](img/de/servo-hitec-backup-write.png)
 ![Die Backup-Datei unterwegs](img/de/servo-hitec-backup-saving.png)
@@ -527,6 +534,7 @@ Halten von 2s.
 | Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
 | Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.`; der Entwurf wird zu den Werten des Servos, und eine Änderung von vor dem Laden fällt samt ihren Bestätigungen weg |
 | Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
+| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der Einstellungen, mit geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
 | Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
 | Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
 | Von einem anderen Modell desselben Layouts, oder jenseits einer weichen Regel | DIESE DATEI PRÜFEN, unten; `Bestätige die Warnungen, bevor du diese Datei lädst.` |
@@ -571,7 +579,46 @@ ohne änderbaren Wert in 0x00 bis 0x23, die Werkszellen 0x30 bis 0x53, der
 Name, das Datum, die Seriennummer und die Version. Die Position der
 D-Serie, Register 0x0C, und der klassische Ausgleich, Zelle 0x1C, werden
 nicht gezählt. ZURÜCKSPIELEN des Backups der Sitzung schreibt die Zellen
-und Register, die ein Laden lässt.
+und Register, die ein Laden lässt, und ebenso eine Backup-Datei des
+gelesenen Servos.
+
+#### Laden einer Backup-Datei
+
+Eine Backup-Datei ist eine Datei mit `backup=1` oder eine Datei ohne Zeile
+`backup=` unter einem vorgeschlagenen Namen, `HITEC001` bis `HITEC999`.
+Eine Backup-Datei des gelesenen Servos lädt jede Adresse, die ein
+Schreiben sendet, wie ZURÜCKSPIELEN des Backups der Sitzung: die
+klassischen Zellen 0x00 bis 0x23 ohne den Ausgleich 0x1C und die 12
+Register der D-Serie 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C,
+0xB0, 0xB2 und 0xC2. Die Datei ist vom gelesenen Servo, wenn Serie und
+Layout passen und:
+
+| Serie | Verglichen mit dem gelesenen Servo |
+| --- | --- |
+| D-Serie | die Modellnummer, Register 0x00 |
+| Klassisch | die Namenszellen 0x60 bis 0x6F, die Datumszellen 0x70 bis 0x73, die Seriennummernzellen 0x80 bis 0x87 und die Version |
+
+Eine Backup-Datei eines anderen Servos und jede Datei mit `backup=0` lädt
+wie jede andere Datei. Jedes der 12 Register der D-Serie ist ein änderbarer
+Wert; eine Backup-Datei der D-Serie lädt also, was jede Datei lädt.
+
+WERKSEINSTELLUNG eines HS-7955TG ändert Zelle 0x22, AUFLÖSUNG, die keine
+Änderung erreicht. Nach VERLASSEN ist das Backup der Sitzung weg; die vor
+WERKSEINSTELLUNG gespeicherte Backup-Datei `HITEC001` bringt 0x22 mit den 4
+Werten der Zellen 0x08, 0x13, 0x14 und 0x1B zurück.
+
+Weicht eine klassische Zelle außerhalb der änderbaren Werte ab, öffnet
+sich zuerst DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der
+Einstellungen, mit geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
+Zellen in den Entwurf, und die Meldung zeigt dieselbe Zeile unter
+`HITEC001 geladen. 5 Werte weichen von den Servowerten ab.` Eine Zelle, die
+keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**; die
+Schreibseite zeigt `Gespeicherte Werte außerhalb der Einstellungen, mit
+geschrieben: 1.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
+PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
+Änderung; ÄNDERUNGEN VERWERFEN verwirft sie.
+
+![Eine Backup-Datei mit einer Zelle ohne Einstellung](img/de/servo-hitec-classic-file-backup.png)
 
 ## Zurückspielen des Backups der Sitzung
 

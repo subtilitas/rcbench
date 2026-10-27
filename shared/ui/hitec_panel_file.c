@@ -159,21 +159,6 @@ static const char *layout_name(unsigned layout)
                                                   : "HS-5xxx";
 }
 
-/**
- * @brief The count of the values @p to changes of the servo read.
- * @param to the image
- * @return the count
- */
-static unsigned changes_of(const hitec_image_t *to)
-{
-    unsigned n = 0;
-
-    for (unsigned id = 0; id < (unsigned)HITEC_P_COUNT; ++id) {
-        n += hitec_prog_differs(&hp.prog, to, (uint8_t)id) ? 1u : 0u;
-    }
-    return n;
-}
-
 void hpn_page_load(void)
 {
     hpn_page_load_at(0);
@@ -191,7 +176,7 @@ void hpn_page_load_at(int from)
 
     hpn_page_open(W_LOAD, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD));
     {
-        const unsigned c = changes_of(to);
+        const unsigned c = hitec_prog_changes_in(p, to);
 
         if (c == 1u) {
             snprintf(line, sizeof(line), TR(KP_FILE_DIFF_ONE),
@@ -211,6 +196,12 @@ void hpn_page_load_at(int from)
         hpn_page_add(HITEC_PROG_WARN, line);
         hpn_page_add(HITEC_PROG_WARN, TR(HP_LOAD_MODEL_2));
         fixed += 2;
+    }
+    if (p->load_raw != 0u) {
+        /* A backup file of this servo: what no setting edits comes back. */
+        snprintf(line, sizeof(line), TR(HP_LOAD_RAW), (unsigned)p->load_raw);
+        hpn_page_add(HITEC_PROG_INFO, line);
+        fixed += 1;
     }
     for (unsigned r = 0; r < (unsigned)HITEC_RULE_COUNT; ++r) {
         fixed += (rules & HITEC_RULE_BIT(r)) != 0u ? 1 : 0;
@@ -235,49 +226,6 @@ void hpn_page_load_at(int from)
     }
 }
 
-/**
- * @brief The addresses outside the parameters a RESTORE of the backup or
- *        FACTORY DEFAULT changes: classic cells of no parameter.
- * @param to the image the restore leaves
- * @return the count
- */
-static unsigned raw_cells(const hitec_image_t *to)
-{
-    const hitec_image_t *s = hitec_prog_servo(&hp.prog);
-    const uint8_t layout = hitec_prog_layout(&hp.prog);
-    uint8_t mark[HITEC_MEM_SIZE / 8u];
-    unsigned n = 0;
-
-    if (s == NULL || to->series != (uint8_t)HITEC_CLASSIC) {
-        return 0;
-    }
-    memset(mark, 0, sizeof(mark));
-    for (unsigned id = 0; id < (unsigned)HITEC_P_COUNT; ++id) {
-        const hitec_param_info_t *info = hitec_param(layout, (uint8_t)id);
-
-        if (info == NULL || info->id == (uint8_t)HITEC_P_C_CHECKSUM) {
-            continue;
-        }
-        for (unsigned i = 0; i < info->size; ++i) {
-            const unsigned a = info->addr + i;
-
-            mark[(a & 0xFFu) / 8u] |= (uint8_t)(1u << (a % 8u));
-        }
-        if (info->addr2 != HITEC_ADDR_NONE) {
-            mark[info->addr2 / 8u] |= (uint8_t)(1u << (info->addr2 % 8u));
-        }
-    }
-    for (unsigned a = 0; a < HITEC_MEM_SIZE; ++a) {
-        if (a != HITEC_C_SUM_LAST && hitec_writable(to->series, (uint8_t)a)
-            && (mark[a / 8u] & (1u << (a % 8u))) == 0u
-            && hitec_image_cell(to, (uint8_t)a)
-                   != hitec_image_cell(s, (uint8_t)a)) {
-            ++n;
-        }
-    }
-    return n;
-}
-
 void hpn_page_factory(void)
 {
     hitec_image_t to;
@@ -287,7 +235,7 @@ void hpn_page_factory(void)
     hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_2));
     /* The write gate has passed: a classic servo is read. */
     if (hitec_prog_factory_image(&hp.prog, &to)) {
-        const unsigned raw = raw_cells(&to);
+        const unsigned raw = hitec_prog_raw_cells(&hp.prog, &to);
 
         hpn_page_values(&to, 4);
         if (raw != 0u) {
@@ -312,7 +260,7 @@ void hpn_page_backup(void)
     hpn_page_add(HITEC_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
     /* The write gate has passed: the backup differs from the servo. */
     if (hitec_prog_backup_image(&hp.prog, &to)) {
-        const unsigned raw = raw_cells(&to);
+        const unsigned raw = hitec_prog_raw_cells(&hp.prog, &to);
 
         hpn_page_values(&to, HP_PAGE_VALUES - 1);
         if (raw != 0u) {
@@ -429,11 +377,17 @@ int hpn_file_lines(const hitec_prog_msg_t *m,
         snprintf(out[0], HITEC_PANEL_LINE, TR(KP_M_LOAD_SAME), name);
         return 1 + skipped_line(out[1], m->arg);
     case HITEC_PROG_MSG_LOADED:
+    case HITEC_PROG_MSG_LOADED_RAW:
         if (m->arg == 1u) {
             snprintf(out[0], HITEC_PANEL_LINE, TR(KP_M_LOADED_ONE), name);
         } else {
             snprintf(out[0], HITEC_PANEL_LINE, TR(KP_M_LOADED), name,
                      (unsigned)m->arg);
+        }
+        if (m->id == HITEC_PROG_MSG_LOADED_RAW) {
+            snprintf(out[1], HITEC_PANEL_LINE, TR(HP_LOAD_RAW),
+                     (unsigned)m->reg);
+            return 2;
         }
         return 1 + skipped_line(out[1], m->reg);
     default:

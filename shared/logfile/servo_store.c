@@ -281,6 +281,11 @@ static void mark_number(const char *name, bool is_dir, void *visit_ctx)
     m->taken[number / 8] |= (uint8_t)(1u << (number % 8));
 }
 
+int servo_store_number(const char *stem, const char *file)
+{
+    return file != NULL ? preset_number(stem, file) : 0;
+}
+
 servo_store_t servo_store_preset(const servo_store_io_t *io, char *base,
                                  size_t base_size)
 {
