@@ -1,6 +1,6 @@
 /*
  * A card for the servo programmer's tests: the directory in memory behind
- * the 5 functions of kst_store_io_t, and kst_card_run() on it.
+ * the 5 functions of servo_store_io_t, and kst_card_run() on it.
  *
  * A file is kept as what a test states of it: an image, a kind and a type,
  * the type its text states: fake_card_put() gives it the type 20k_sel of
@@ -23,7 +23,7 @@
 #include "kst_card.h"
 #include "kst_file.h"
 #include "kst_prog.h"
-#include "kst_store.h"
+#include "servo_store.h"
 
 #define FAKE_CARD_FILES 210u
 
@@ -59,7 +59,7 @@ typedef struct {
     unsigned saves, lists, loads;
     unsigned n;
     fake_file_t file[FAKE_CARD_FILES];
-    kst_store_io_t io;
+    servo_store_io_t io;
 } fake_card_t;
 
 static inline bool fake_card_same(const char *a, const char *b)
@@ -80,7 +80,7 @@ static inline void fake_card_entry(const fake_file_t *f, char *out, size_t n)
     if (f->as != NULL) {
         snprintf(out, n, "%s", f->as);
     } else {
-        snprintf(out, n, "%s%s", f->name, KST_STORE_EXT);
+        snprintf(out, n, "%s%s", f->name, SERVO_STORE_EXT);
     }
 }
 
@@ -175,7 +175,7 @@ static inline bool fake_card_mounted(void *ctx)
     return !fake_card_gone((fake_card_t *)ctx);
 }
 
-static inline bool fake_card_walk(void *ctx, kst_store_visit_fn visit,
+static inline bool fake_card_walk(void *ctx, servo_store_visit_fn visit,
                                   void *vctx)
 {
     fake_card_t *c = (fake_card_t *)ctx;
@@ -226,7 +226,7 @@ static inline int32_t fake_card_read(void *ctx, const char *name, char *buf,
     return (int32_t)(len < cap ? len : cap);
 }
 
-static inline kst_store_io_result_t fake_card_create(void *ctx,
+static inline servo_store_io_result_t fake_card_create(void *ctx,
                                                      const char *name,
                                                      const char *data,
                                                      size_t len)
@@ -237,39 +237,40 @@ static inline kst_store_io_result_t fake_card_create(void *ctx,
     size_t base = strlen(name);
 
     if (fake_card_gone(c) || c->write_fails) {
-        return KST_STORE_IO_ERROR;
+        return SERVO_STORE_IO_ERROR;
     }
     if (c->denied) {
-        return KST_STORE_IO_DENIED;
+        return SERVO_STORE_IO_DENIED;
     }
     if (fake_card_entry_find(c, name) != NULL) {
-        return KST_STORE_IO_EXISTS;
+        return SERVO_STORE_IO_EXISTS;
     }
     if (c->full || c->n >= FAKE_CARD_FILES) {
-        return KST_STORE_IO_FULL;
+        return SERVO_STORE_IO_FULL;
     }
     /* What is written reads back as a whole servo file, or the card's side
      * wrote none. */
     if (kst_file_parse(data, len, &file, NULL) != KST_FILE_OK
         || file.kind != KST_FILE_VERIFIED
-        || base <= strlen(KST_STORE_EXT)
-        || base - strlen(KST_STORE_EXT) >= KST_PROG_NAME_MAX) {
-        return KST_STORE_IO_ERROR;
+        || base <= strlen(SERVO_STORE_EXT)
+        || base - strlen(SERVO_STORE_EXT) >= KST_PROG_NAME_MAX) {
+        return SERVO_STORE_IO_ERROR;
     }
     f = &c->file[c->n++];
     memset(f, 0, sizeof(*f));
-    memcpy(f->name, name, base - strlen(KST_STORE_EXT));
+    memcpy(f->name, name, base - strlen(SERVO_STORE_EXT));
     f->img = file.image;
     f->kind = KST_PROG_FILE_VERIFIED;
     f->type = file.type == KST_TYPE_V6   ? 6u
             : file.type == KST_TYPE_V8 ? 8u : 0u;
-    return KST_STORE_IO_OK;
+    return SERVO_STORE_IO_OK;
 }
 
 static inline void fake_card_init(fake_card_t *c)
 {
     memset(c, 0, sizeof(*c));
     c->io.ctx = c;
+    c->io.stem = KST_CARD_STEM;
     c->io.mounted = fake_card_mounted;
     c->io.walk = fake_card_walk;
     c->io.size = fake_card_size;

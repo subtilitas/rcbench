@@ -13,9 +13,9 @@
 #include "kst_file.h"
 #include "kst_limits.h"
 
-_Static_assert(KST_PROG_NAME_MAX == KST_STORE_BASE_MAX + 1,
+_Static_assert(KST_PROG_NAME_MAX == SERVO_STORE_BASE_MAX + 1,
                "a name of kst_prog.h holds a base name of the store");
-_Static_assert(KST_STORE_PRESET_MAX <= KST_PROG_NAME_MAX,
+_Static_assert(SERVO_STORE_PRESET_MAX <= KST_PROG_NAME_MAX,
                "a preset name fits a name of kst_prog.h");
 
 /* One request at a time: the text of a file, what it reads as, what it
@@ -23,7 +23,8 @@ _Static_assert(KST_STORE_PRESET_MAX <= KST_PROG_NAME_MAX,
 static char s_text[KST_FILE_MAX];
 static kst_file_t s_file;
 static kst_file_load_t s_load;
-static kst_store_entry_t s_list[KST_CARD_LIST_MAX];
+/** @brief The directory listing of a list request. */
+static servo_store_entry_t s_list[KST_CARD_LIST_MAX];
 
 /**
  * @brief The servo type as the number the screen prints.
@@ -59,23 +60,23 @@ static kst_type_t type_of_no(unsigned no)
  * @param save true for a save, false for a list or a load.
  * @return The card result, as kst_prog_card_result_t.
  */
-static uint8_t store_result(kst_store_t r, bool save)
+static uint8_t store_result(servo_store_t r, bool save)
 {
     switch (r) {
-    case KST_STORE_OK:
+    case SERVO_STORE_OK:
         return KST_PROG_CARD_OK;
-    case KST_STORE_NO_CARD:
+    case SERVO_STORE_NO_CARD:
         return KST_PROG_CARD_NO_CARD;
-    case KST_STORE_NO_NUMBER:
-    case KST_STORE_CARD_FULL:
+    case SERVO_STORE_NO_NUMBER:
+    case SERVO_STORE_CARD_FULL:
         return KST_PROG_CARD_FULL;
-    case KST_STORE_BAD_NAME:
+    case SERVO_STORE_BAD_NAME:
         return KST_PROG_CARD_NAME;
-    case KST_STORE_EXISTS:
+    case SERVO_STORE_EXISTS:
         return KST_PROG_CARD_EXISTS;
-    case KST_STORE_TOO_LARGE:
+    case SERVO_STORE_TOO_LARGE:
         return KST_PROG_CARD_BAD;       /* larger than any servo file */
-    case KST_STORE_DENIED:
+    case SERVO_STORE_DENIED:
         return KST_PROG_CARD_DENIED;
     default:
         return save ? KST_PROG_CARD_WRITE_ERR : KST_PROG_CARD_READ_ERR;
@@ -91,7 +92,7 @@ static uint8_t store_result(kst_store_t r, bool save)
 static void base_of(const char *file, char *out)
 {
     const size_t len = strlen(file);
-    const size_t ext = strlen(KST_STORE_EXT);
+    const size_t ext = strlen(SERVO_STORE_EXT);
     const size_t n = len > ext ? len - ext : 0u;
 
     memcpy(out, file, n < KST_PROG_NAME_MAX ? n : KST_PROG_NAME_MAX - 1u);
@@ -105,25 +106,25 @@ static void base_of(const char *file, char *out)
  * @param req  The request.
  * @param done Receives the answer.
  */
-static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
+static void save(const servo_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {
     char base[KST_PROG_NAME_MAX];
-    kst_store_t r = KST_STORE_OK;
+    servo_store_t r = SERVO_STORE_OK;
 
     memcpy(base, req->name, sizeof(base));
     base[sizeof(base) - 1u] = '\0';
     if (req->preset) {
-        r = kst_store_preset(io, base, sizeof(base));
+        r = servo_store_preset(io, base, sizeof(base));
     }
-    if (r == KST_STORE_OK) {
+    if (r == SERVO_STORE_OK) {
         const size_t len = kst_file_format(&req->image, type_of_no(req->type),
                                            s_text, sizeof(s_text));
-        r = len != 0u ? kst_store_save(io, base, s_text, len, NULL)
-                      : KST_STORE_WRITE_ERROR;
+        r = len != 0u ? servo_store_save(io, base, s_text, len, NULL)
+                      : SERVO_STORE_WRITE_ERROR;
     }
     done->result = store_result(r, true);
-    if (r == KST_STORE_OK) {
+    if (r == SERVO_STORE_OK) {
         memcpy(done->name, base, sizeof(done->name));
     }
 }
@@ -137,11 +138,12 @@ static void save(const kst_store_io_t *io, const kst_prog_card_req_t *req,
  * @return The type number, or 0 for none or for a file that is not a servo
  *         file.
  */
-static uint8_t type_of(const kst_store_io_t *io, const char *name)
+static uint8_t type_of(const servo_store_io_t *io, const char *name)
 {
     size_t len = 0;
 
-    if (kst_store_load(io, name, s_text, sizeof(s_text), &len) != KST_STORE_OK
+    if (servo_store_load(io, name, s_text, sizeof(s_text), &len)
+            != SERVO_STORE_OK
         || kst_file_parse(s_text, len, &s_file, NULL) != KST_FILE_OK) {
         return 0u;
     }
@@ -155,30 +157,31 @@ static uint8_t type_of(const kst_store_io_t *io, const char *name)
  * @param req  The request.
  * @param done Receives the answer.
  */
-static void list(const kst_store_io_t *io, const kst_prog_card_req_t *req,
+static void list(const servo_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {
-    char behind[KST_STORE_NAME_MAX];
+    char behind[SERVO_STORE_NAME_MAX];
     size_t first = req->first;
     size_t count = 0;
     size_t total = 0;
-    kst_store_t r = kst_store_list(io, s_list, KST_CARD_LIST_MAX, &count,
-                                   &total, NULL);
+    servo_store_t r = servo_store_list_after(io, NULL, s_list,
+                                             KST_CARD_LIST_MAX, &count,
+                                             &total, NULL);
 
     /* A full buffer that does not hold the whole page: the directory has
      * more files.  Go on behind the last file in front of the page, or
      * behind the buffer's last one. */
-    while (r == KST_STORE_OK && count == KST_CARD_LIST_MAX &&
+    while (r == SERVO_STORE_OK && count == KST_CARD_LIST_MAX &&
            first + KST_PROG_FILES_MAX > count) {
         const size_t skip = first < count ? first : count;
 
         memcpy(behind, s_list[skip - 1u].name, sizeof(behind));
         first -= skip;
-        r = kst_store_list_after(io, behind, s_list, KST_CARD_LIST_MAX,
-                                 &count, NULL, NULL);
+        r = servo_store_list_after(io, behind, s_list, KST_CARD_LIST_MAX,
+                                   &count, NULL, NULL);
     }
     done->result = store_result(r, false);
-    if (r != KST_STORE_OK) {
+    if (r != SERVO_STORE_OK) {
         return;
     }
     done->total = total < 0xFFFFu ? (uint16_t)total : 0xFFFFu;
@@ -188,8 +191,8 @@ static void list(const kst_store_io_t *io, const kst_prog_card_req_t *req,
         done->types[done->count] = type_of(io, s_list[i].name);
         done->count++;
     }
-    if (kst_store_preset(io, done->name, sizeof(done->name))
-        != KST_STORE_OK) {
+    if (servo_store_preset(io, done->name, sizeof(done->name))
+        != SERVO_STORE_OK) {
         done->name[0] = '\0';
     }
 }
@@ -217,22 +220,22 @@ static unsigned lowest(kst_rules_t set)
  * @param req  The request.
  * @param done Receives the answer.
  */
-static void load(const kst_store_io_t *io, const kst_prog_card_req_t *req,
+static void load(const servo_store_io_t *io, const kst_prog_card_req_t *req,
                  kst_prog_card_done_t *done)
 {
-    char name[KST_STORE_NAME_MAX];
+    char name[SERVO_STORE_NAME_MAX];
     size_t len = 0;
     unsigned line = 0;
-    kst_store_t r = KST_STORE_BAD_NAME;
+    servo_store_t r = SERVO_STORE_BAD_NAME;
     kst_file_err_t e;
 
-    if (kst_store_file_name(req->name, name, sizeof(name))) {
-        r = kst_store_load(io, name, s_text, sizeof(s_text), &len);
+    if (servo_store_file_name(io->stem, req->name, name, sizeof(name))) {
+        r = servo_store_load(io, name, s_text, sizeof(s_text), &len);
     }
-    if (r != KST_STORE_OK) {
+    if (r != SERVO_STORE_OK) {
         /* No file of that name any more reads as a card that does not. */
-        done->result = r == KST_STORE_BAD_NAME ? KST_PROG_CARD_READ_ERR
-                                               : store_result(r, false);
+        done->result = r == SERVO_STORE_BAD_NAME ? KST_PROG_CARD_READ_ERR
+                                                 : store_result(r, false);
         return;
     }
     e = kst_file_parse(s_text, len, &s_file, &line);
@@ -275,7 +278,7 @@ static void load(const kst_store_io_t *io, const kst_prog_card_req_t *req,
     }
 }
 
-void kst_card_run(const kst_store_io_t *io, const kst_prog_card_req_t *req,
+void kst_card_run(const servo_store_io_t *io, const kst_prog_card_req_t *req,
                   kst_prog_card_done_t *done)
 {
     memset(done, 0, sizeof(*done));
