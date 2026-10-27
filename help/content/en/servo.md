@@ -213,7 +213,7 @@ Near the pulse limit, where the overset would move the stop less than 20us, the 
 Each of these ends the run as ABORTED, with the output off and the servo released:
 
 - STOP RUN, STOP, a switch to SAFE, a lost link, leaving the screen, a change to the servo's settings;
-- the INA3221 no longer the meter, or no INA3221 window for 200ms (`no INA3221 window for 0.2s`);
+- the INA3221 ceasing to be the meter, or no INA3221 window for 200ms (`no INA3221 window for 0.2s`);
 - during a search, a window without the rail voltage (`no rail voltage in a window`), or with its mean under 3.0V, the first window included (`supply or rail voltage changed`);
 - a sample at 3.0A or more, a sample at the end of the INA3221's range, or window means above 1.0A for 400ms;
 - a search longer than 40s, a bench that does not switch in 3s, or a programmer step longer than 150s;

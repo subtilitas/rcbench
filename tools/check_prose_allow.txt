@@ -80,3 +80,19 @@ help/content/en/motor.md: stale-simulation: the SIMULATION watermark
 help/content/en/motor.md: stale-simulation: SIMULATION is drawn across the screen
 help/content/de/motor.md: stale-simulation: das Wasserzeichen SIMULATION
 help/content/de/motor.md: stale-simulation: SIMULATION steht quer
+
+# The 0.22 release line is the last one for the ESP32-S3 panel.  The update
+# screen, its card text and the pages that quote it name that older panel
+# and its release line (shared/fwupdate, FW_REL_LINE_MAJOR/MINOR).
+docs/Screens.md: stale-esp32s3: release for the ESP32-S3 panel; the ESP32-P4 panel
+docs/Screens.md: stale-esp32s3: 0.22 is the last release for the ESP32-S3 panel.
+docs/Screens.md: stale-esp32s3: The ESP32-S3 panel's line, 0.22
+docs/Screens-de.md: stale-esp32s3: 0.22 ist das letzte Release für das ESP32-S3-Panel;
+docs/Screens-de.md: stale-esp32s3: 0.22 ist das letzte Release für das ESP32-S3-Panel.
+docs/Screens-de.md: stale-esp32s3: Die Linie des ESP32-S3-Panels, 0.22
+help/content/en/updates.md: stale-esp32s3: 0.22 is the last release for the ESP32-S3 panel;
+help/content/en/updates.md: stale-esp32s3: 0.22 is the last release for the ESP32-S3 panel.
+help/content/en/updates.md: stale-esp32s3: The ESP32-S3 panel's line, 0.22
+help/content/de/updates.md: stale-esp32s3: 0.22 ist das letzte Release für das ESP32-S3-Panel;
+help/content/de/updates.md: stale-esp32s3: 0.22 ist das letzte Release für das ESP32-S3-Panel.
+help/content/de/updates.md: stale-esp32s3: Die Linie des ESP32-S3-Panels, 0.22

@@ -221,7 +221,7 @@ The panel therefore cycles the supply where it can:
 | Step | A PD mini answers, its output on | A PD mini answers, its output off | No PD mini |
 | --- | --- | --- | --- |
 | **CONNECT** | the output off for 1000ms, on at the lower of the two voltages and the lower of the two current limits, the line low for 1000ms, then the entry sequence | the output on, the line low for 1000ms, then the entry sequence | the entry sequence 250ms after the tap: 50ms without a pulse, 100ms low, 100ms of the entry's low line. The operator powers the servo up just before |
-| **LEAVE** after a write, a restore or a pairing release | the output off for 1000ms, on, the line low for 1000ms, then PWM | -- | the port returns to PWM; the values act after the operator switches the servo's supply off and on |
+| **LEAVE** after a write, a restore or a pairing release | the output off for 1000ms, on, the line low for 1000ms, then PWM | does not occur: **CONNECT** switches the output on | the port returns to PWM; the values act after the operator switches the servo's supply off and on |
 | **LEAVE** with nothing written | the port returns to PWM after **WAIT BEFORE PWM**; the supply stays as it is | the same | the same |
 | A write | no cycle: the read-back runs in programming mode | the same | the same |
 
@@ -736,8 +736,7 @@ The operator therefore sets the type:
 A file of format 1, written by firmware 0.23.0 and older, names the type
 20k_sel gave. That line is no statement of the operator's: the list shows
 no type for the file, and it loads into a servo of either type set. Its
-type line still has to agree with its own 20k_sel, or the file is refused
-as before. An edited format-1 file loads as an edited file without a type
+type line still has to agree with its own 20k_sel, or the file is refused. An edited format-1 file loads as an edited file without a type
 line.
 
 ### Saving
@@ -1114,14 +1113,14 @@ same port. Whether a servo that received frames and no write follows PWM
 before its supply was off is not measured.
 
 Leaving the SERVO screen is no LEAVE: the session and the port stay. A PD
-mini output SERVO switched on -- by OUTPUT ON, by a test or by
-**CONNECT** -- is the SERVO screen's, and while the port holds it the
+mini output SERVO switched on (by OUTPUT ON, by a test or by
+**CONNECT**) is the SERVO screen's, and while the port holds it the
 output stays on after SERVO is left: an OFF would end the session and cut
 a write on the wire. An ON SERVO asked for that is on its way when the port
 takes the supply counts as switched on, also when it is reported on only
-after the leave. The output goes off when the port lets go -- a
+after the leave. The output goes off when the port lets go (a
 **CONNECT** that ends without a session after SERVO was left, a STOP that
-switches the supply off -- unless SERVO is shown again first. After
+switches the supply off) unless SERVO is shown again first. After
 **LEAVE** on SERVO the output stays on until SERVO is left.
 
 LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.`
@@ -1178,7 +1177,7 @@ write left in doubt.
 | either | no | `The port is back in tester mode.` and `The session state was uncertain. PWM starts without a delay.` | none needed: the port is in PWM |
 
 Without a PD mini **STOP** switches no supply and leaves the port in
-programming mode, and a servo that no longer answers takes no read. The
+programming mode, and a servo that does not answer takes no read. The
 panel then sends the port's POWER_CYCLED operation in place of LEAVE.
 Without a PD mini it changes the port's state only: no frame, no wait, and
 the servo's supply is whatever feeds it. The record of an interrupted write
@@ -1210,7 +1209,7 @@ port is in PWM again.
 | The IOmcu refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the IOmcu in a row stay unanswered | `No response from the IOmcu. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | No result of an operation for 30s, counted from the last time the port reported the operation running or planning, or for 120s from its start however long the port reports it running | the operation is aborted; `No result from the IOmcu. Tap READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
-| The result of an operation the programmer no longer waits for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
+| The result of an operation the programmer has stopped waiting for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
 | The IOmcu reports a result, a refusal or an outcome this panel has no line for | `The IOmcu reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
 
 Every refusal of the port and every result of the session has its own

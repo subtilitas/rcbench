@@ -122,7 +122,7 @@ Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 
 
 ![Ein Testlauf](view:servo-run)
 
-TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt die Stufe. LIVE zeigt Stufe und Phase in einem Kasten links vom Zifferblatt, unter `ZUERST ARM`, das Messgerät neben TEST BEENDEN: `PD mini`, der Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200ms lang (4 Fenster zu 50ms) kein Fenster mit Strom und Spannung kommt: `0.2s kein INA3221-Fenster`.
+TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt die Stufe. LIVE zeigt Stufe und Phase in einem Kasten links vom Zifferblatt, unter `ZUERST ARM`, das Messgerät neben TEST BEENDEN: `PD mini`, der Kanal, `INA 0x41 CH2`, oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 aufhört, das Messgerät zu sein, oder 200ms lang (4 Fenster zu 50ms) kein Fenster mit Strom und Spannung kommt: `0.2s kein INA3221-Fenster`.
 
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
@@ -213,7 +213,7 @@ Nahe der Pulsgrenze, wo der Vorhalt den Anschlag um weniger als 20us verschöbe,
 Jeder dieser Gründe beendet den Lauf als ABGEBROCHEN, mit abgeschaltetem Ausgang und freigegebenem Servo:
 
 - LAUF BEENDEN, STOP, ein Schalten auf SAFE, ein verlorener Link, das Verlassen des Bildschirms, eine Änderung an den Servo-Optionen;
-- der INA3221 nicht mehr das Messgerät, oder 200ms kein INA3221-Fenster (`0.2s kein INA3221-Fenster`);
+- der INA3221, der aufhört, das Messgerät zu sein, oder 200ms kein INA3221-Fenster (`0.2s kein INA3221-Fenster`);
 - während einer Suche ein Fenster ohne Schienenspannung (`kein Spannungswert im Fenster`) oder mit einem Mittel unter 3,0V, das erste Fenster eingeschlossen (`Netzteil oder Spannung geändert`);
 - ein Messwert ab 3,0A, ein Messwert am Ende des Bereichs des INA3221 oder Fenstermittel über 1,0A für 400ms;
 - eine Suche länger als 40s, ein Prüfstand, der nicht in 3s schaltet, oder ein Schritt des Programmierers länger als 150s;

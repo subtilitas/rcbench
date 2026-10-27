@@ -33,7 +33,7 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC, hier eingestellt, und bis 
 - Ist der INA228 eingeschaltet und antwortet er, verliert die Kachel MOTOR & ESC ihre Marke SIMULIERT, und [MOTOR & ESC](motor.md#tabelle) zeigt seine Spannung und seinen Strom.
 - Misst ein Kanal eines INA3221 unter [Sensoren](setup-sensors.md) das Ziel des Servotesters, liest [SERVO](servo.md#das-messgerät-der-servoschiene) den Strom der Servoschiene von ihm.
 - Ein Messwert am oberen Ende des Bereichs wird als übersteuert gezeigt, nie als Wert: 163,8mV über dem Shunt des INA3221.
-- Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand nicht auf SAFE: Auf die Messwerte der Monitore löst nichts aus.
+- Ein Monitor, der aufhört zu antworten, schaltet den Prüfstand nicht auf SAFE: Auf die Messwerte der Monitore löst nichts aus.
 
 ![GPIO 5 für Sensor-SDA abgelehnt](view:setup-sda-why)
 
@@ -41,7 +41,7 @@ Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in der Z
 
 ![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](view:setup-sda-keypad)
 
-Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung -- Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert -- verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
+Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung (Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert) verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
 
 ## Eine Zeile, die der IOmcu nicht hält
 
