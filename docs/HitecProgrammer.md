@@ -141,8 +141,8 @@ writable value takes a tap while the port is held and not stopped
 | INFO | MODEL, ID, POSITION, and registers 0x04, 0x22, 0x8A, 0x8C, 0xD4 and 0xD6 raw | MODEL, VERSION, DATE, SERIAL, CHECKSUM |
 
 A classic image whose cells 0x00 to 0x1C do not sum to 0 modulo 256 shows
-CHECKSUM `WRONG` and the note `Checksum of cells 0x00-0x1C is wrong. The servo
-may not follow PWM.`
+CHECKSUM `WRONG` and the note `Checksum of stored values 0x00-0x1C is wrong. The
+servo may not follow PWM.`
 
 ![TRAVEL of a D485HW](img/servo-hitec-travel.png)
 ![MOTION of a D485HW](img/servo-hitec-motion.png)
@@ -548,7 +548,7 @@ HPP-21 Plus's reset copies them over, captured on the station on
 2026-10-18 for the HS-5645MG and the HS-7955TG. FACTORY DEFAULT under MORE
 plans the same copy from the servo's own factory cells as read, with the
 balance computed, and opens a page with `All settings go back to the
-factory values.`, `The source is the servo's own factory cells 0x30-0x53.`,
+factory values.`, `The source is the servo's own stored factory values 0x30-0x53.`,
 the values that change, the count of cells no setting names that it
 writes, `Stored values outside the settings written too: 1.`, the horn line and the
 backup file's lines. **HOLD
@@ -571,8 +571,8 @@ nothing to hold them against.
 ## REPAIR CHECKSUM
 
 A classic servo whose cells 0x00 to 0x1C do not sum to 0 modulo 256 shows
-CHECKSUM `WRONG`, and the SERVO tab says `MORE > REPAIR CHECKSUM writes cell
-0x1C.` REPAIR CHECKSUM under MORE opens a page that names the cell's value
+CHECKSUM `WRONG`, and the SERVO tab says `MORE > REPAIR CHECKSUM writes stored
+value 0x1C.` REPAIR CHECKSUM under MORE opens a page that names the cell's value
 and the balance, `Writes cell 0x1C: 0x5F -> 0x5E.`; its hold writes the
 balance alone, with its record and the read-back of cells 0x00 to 0x23.
 It needs the switch, no edit standing (WRITE n VALUES writes the balance

@@ -5007,8 +5007,8 @@ UI_TEXT(HP_LAYOUT_GUESS, 116,
     "Model not known. The fields are read as on the %s.",
     "Modell unbekannt. Die Felder werden wie beim %s gelesen.")
 UI_TEXT(HP_SUM_BAD, 116,
-    "Checksum of cells 0x00-0x1C is wrong. The servo may not follow PWM.",
-    "Prüfsumme der Zellen 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.")
+    "Checksum of stored values 0x00-0x1C is wrong. The servo may not follow PWM.",
+    "Prüfsumme der gespeicherten Werte 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.")
 UI_TEXT(HP_NOT_READ, 116,
     "Not read yet. CONNECT reads every value.",
     "Noch nicht ausgelesen. VERBINDEN liest alle Werte.")
@@ -5052,14 +5052,14 @@ UI_TEXT(HP_HOLD_REPAIR, 30,
     "HOLD 2s TO REPAIR",
     "2s HALTEN ZUM REPARIEREN")
 UI_TEXT(HP_MORE_REPAIR, 58,
-    "REPAIR CHECKSUM: write the balance in cell 0x1C.",
-    "PRÜFSUMME REPARIEREN: Ausgleich in Zelle 0x1C schreiben.")
+    "REPAIR CHECKSUM: write the balance in stored value 0x1C.",
+    "PRÜFSUMME REPARIEREN: Ausgleich in Wert 0x1C schreiben.")
 UI_TEXT(HP_EDIT_NOTE, 116,
     "Tap a value to edit it. * marks a change; WRITE n VALUES on SERVO sends it.",
     "Wert antippen zum Ändern. * markiert eine Änderung; n WERTE SCHREIBEN auf SERVO sendet sie.")
 UI_TEXT(HP_SUM_HINT, 116,
-    "MORE > REPAIR CHECKSUM writes cell 0x1C.",
-    "WEITERES > PRÜFSUMME REPARIEREN schreibt Zelle 0x1C.")
+    "MORE > REPAIR CHECKSUM writes stored value 0x1C.",
+    "WEITERES > PRÜFSUMME REPARIEREN schreibt den gespeicherten Wert 0x1C.")
 UI_TEXT(HP_ST_RECORD, 116,
     "Recording the values before the write on the card.",
     "Werte vor dem Schreiben werden auf der Karte vermerkt.")
@@ -5073,8 +5073,8 @@ UI_TEXT(HP_ST_CHECK, 116,
     "Checking the values: reading %u of %u.",
     "Werte werden geprüft: Lese %u von %u.")
 UI_TEXT(HP_REPAIRED, 116,
-    "Checksum written. Cells 0x00-0x1C sum to 0.",
-    "Prüfsumme geschrieben. Die Zellen 0x00-0x1C ergeben 0.")
+    "Checksum written. Stored values 0x00-0x1C sum to 0.",
+    "Prüfsumme geschrieben. Die gespeicherten Werte 0x00-0x1C ergeben 0.")
 UI_TEXT(HP_RESTORED, 116,
     "Values before the interrupted write restored and verified.",
     "Werte vor dem unterbrochenen Schreibvorgang zurückgespielt und geprüft.")
@@ -5124,11 +5124,11 @@ UI_TEXT(HP_CUT_CHECK, 116,
     "Every value went out; their check was interrupted. Tap READ ALL.",
     "Alle Werte gesendet; ihre Prüfung wurde unterbrochen. ALLES AUSLESEN antippen.")
 UI_TEXT(HP_CUT_CELL, 116,
-    "Writing was interrupted at cell 0x%02X. Tap READ ALL.",
-    "Schreiben bei Zelle 0x%02X unterbrochen. ALLES AUSLESEN antippen.")
+    "Writing was interrupted at stored value 0x%02X. Tap READ ALL.",
+    "Schreiben bei gespeichertem Wert 0x%02X unterbrochen. ALLES AUSLESEN antippen.")
 UI_TEXT(HP_CUT_SUM, 116,
-    "Cell 0x%02X is written, its checksum in cell 0x1C is not. Tap READ ALL.",
-    "Zelle 0x%02X ist geschrieben, ihre Prüfsumme in Zelle 0x1C nicht. ALLES AUSLESEN antippen.")
+    "Stored value 0x%02X is written, its checksum in 0x1C is not. Tap READ ALL.",
+    "Gespeicherter Wert 0x%02X ist geschrieben, seine Prüfsumme in 0x1C nicht. ALLES AUSLESEN antippen.")
 UI_TEXT(HP_CUT_SUM_2, 116,
     "The checksum may be wrong: the servo may not follow PWM.",
     "Die Prüfsumme ist evtl. falsch: Das Servo folgt PWM evtl. nicht.")
@@ -5145,8 +5145,8 @@ UI_TEXT(HP_RECORD_BAD, 116,
     "Cannot read HITEC.TXT on the card. The file will not be used.",
     "HITEC.TXT auf der Karte ist nicht lesbar. Die Datei wird nicht verwendet.")
 UI_TEXT(HP_SUM_OK, 116,
-    "Cells 0x00-0x1C sum to 0: nothing to repair.",
-    "Die Zellen 0x00-0x1C ergeben 0: nichts zu reparieren.")
+    "Stored values 0x00-0x1C sum to 0: nothing to repair.",
+    "Die gespeicherten Werte 0x00-0x1C ergeben 0: nichts zu reparieren.")
 UI_TEXT(HP_ENABLE_D, 116,
     "The encodings come from 1 D series servo, a D485HW.",
     "Die Codierungen stammen von 1 Servo der D-Serie, einem D485HW.")
@@ -5163,14 +5163,14 @@ UI_TEXT(HP_WRITE_D, 116,
     "The servo saves and restarts. It ignores signals for 1s.",
     "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")
 UI_TEXT(HP_WRITE_C, 116,
-    "Each cell is followed by a write of the checksum cell 0x1C.",
-    "Auf jede Zelle folgt ein Schreiben der Prüfsummenzelle 0x1C.")
+    "Each stored value is followed by a write of the checksum in 0x1C.",
+    "Auf jeden gespeicherten Wert folgt ein Schreiben der Prüfsumme in 0x1C.")
 UI_TEXT(HP_WRITE_RECORD, 116,
     "The values before the write are recorded on the card in HITEC.TXT.",
     "Die Werte vor dem Schreiben werden auf der Karte in HITEC.TXT vermerkt.")
 UI_TEXT(HP_REPAIR_1, 116,
-    "Writes cell 0x1C: 0x%02X -> 0x%02X. Cells 0x00-0x1C then sum to 0.",
-    "Schreibt Zelle 0x1C: 0x%02X -> 0x%02X. Die Zellen 0x00-0x1C ergeben dann 0.")
+    "Writes stored value 0x1C: 0x%02X -> 0x%02X. Stored values 0x00-0x1C then sum to 0.",
+    "Schreibt gespeicherten Wert 0x1C: 0x%02X -> 0x%02X. Die gespeicherten Werte 0x00-0x1C ergeben dann 0.")
 UI_TEXT(HP_SOFT_OVERLOAD, 116,
     "Without overload protection a stalled servo heats up.",
     "Ohne Überlastschutz erhitzt sich ein blockiertes Servo.")
@@ -5211,14 +5211,14 @@ UI_TEXT(HP_FACTORY, 27,
     "FACTORY DEFAULT",
     "WERKSEINSTELLUNG")
 UI_TEXT(HP_MORE_FACTORY, 58,
-    "FACTORY DEFAULT: cells 0x00-0x23 from the factory cells.",
-    "WERKSEINSTELLUNG: Zellen 0x00-0x23 aus den Werkszellen.")
+    "FACTORY DEFAULT: stored values 0x00-0x23 from 0x30-0x53.",
+    "WERKSEINSTELLUNG: Werte 0x00-0x23 aus 0x30-0x53.")
 UI_TEXT(HP_FACTORY_1, 116,
     "All settings go back to the factory values.",
     "Alle Einstellungen gehen auf Werkswerte zurück.")
 UI_TEXT(HP_FACTORY_2, 116,
-    "The source is the servo's own factory cells 0x30-0x53.",
-    "Quelle sind die eigenen Werkszellen 0x30-0x53 des Servos.")
+    "The source is the servo's own stored factory values 0x30-0x53.",
+    "Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53 des Servos.")
 UI_TEXT(HP_FACTORY_RAW, 116,
     "Stored values outside the settings written too: %u.",
     "Gespeicherte Werte außerhalb der Einstellungen, mit geschrieben: %u.")

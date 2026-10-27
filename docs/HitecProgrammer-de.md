@@ -151,8 +151,8 @@ Wert nimmt einen Tipp an, solange der Port gehalten und nicht gestoppt ist
 | INFO | MODELL, ID, POSITION und die Register 0x04, 0x22, 0x8A, 0x8C, 0xD4 und 0xD6 roh | MODELL, VERSION, DATUM, SERIENNR., PRÜFSUMME |
 
 Ein klassisches Abbild, dessen Zellen 0x00 bis 0x1C modulo 256 nicht 0
-ergeben, zeigt PRÜFSUMME `FALSCH` und den Hinweis `Prüfsumme der Zellen
-0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.`
+ergeben, zeigt PRÜFSUMME `FALSCH` und den Hinweis `Prüfsumme der gespeicherten
+Werte 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.`
 
 ![WEG eines D485HW](img/de/servo-hitec-travel.png)
 ![BEWEGUNG eines D485HW](img/de/servo-hitec-motion.png)
@@ -597,8 +597,8 @@ darüber, am Prüfstand am 18.10.2026 für das HS-5645MG und das HS-7955TG
 mitgeschnitten. WERKSEINSTELLUNG unter WEITERES plant dieselbe Kopie aus
 den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
-Werkswerte zurück.`, `Quelle sind die eigenen Werkszellen 0x30-0x53 des
-Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
+Werkswerte zurück.`, `Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53
+des Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
 Einstellung, die sie schreibt, `Gespeicherte Werte außerhalb der Einstellungen,
 mit geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
@@ -622,7 +622,7 @@ und das Zurücklesen hat nichts, wogegen es sie hält.
 
 Ein klassisches Servo, dessen Zellen 0x00 bis 0x1C modulo 256 nicht 0
 ergeben, zeigt PRÜFSUMME `FALSCH`, und der Reiter SERVO sagt
-`WEITERES > PRÜFSUMME REPARIEREN schreibt Zelle 0x1C.` PRÜFSUMME
+`WEITERES > PRÜFSUMME REPARIEREN schreibt den gespeicherten Wert 0x1C.` PRÜFSUMME
 REPARIEREN unter WEITERES öffnet eine Seite, die den Wert der Zelle und den
 Ausgleich nennt, `Schreibt Zelle 0x1C: 0x5F -> 0x5E.`; ihr Halten schreibt
 den Ausgleich allein, mit seinem Vermerk und dem Zurücklesen der Zellen
