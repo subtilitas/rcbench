@@ -652,9 +652,9 @@ TEST_CASE(every_write_message_names_its_step_and_its_servo)
         int lines;
     } k_case[] = {
         { HITEC_PROG_MSG_WRITE_CUT, HITEC_STEP_C_CELL, 0x06,
-          "Writing was interrupted at cell 0x06. Tap READ ALL.", 2 },
+          "Writing was interrupted at stored value 0x06. Tap READ ALL.", 2 },
         { HITEC_PROG_MSG_WRITE_CUT, HITEC_STEP_C_SUM, 0x06,
-          "Cell 0x06 is written, its checksum in cell 0x1C is not. "
+          "Stored value 0x06 is written, its checksum in 0x1C is not. "
           "Tap READ ALL.", 2 },
         { HITEC_PROG_MSG_WRITE_CUT, HITEC_STEP_D_WRITE, 0x54,
           "Writing was interrupted at register 0x54. Tap READ ALL.", 1 },
