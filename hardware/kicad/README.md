@@ -9,19 +9,24 @@ loads both files. KiCad 9 and older refuse both files.
 | --- | --- |
 | `rcbench_modules.pretty/` | 12 footprints, one `.kicad_mod` each |
 | `rcbench_modules.kicad_sym` | 12 symbols; each Footprint field names `rcbench_modules:<footprint>` |
+| `rcbench_modules.3dshapes/` | 12 STEP (AP214) models, one per footprint; each footprint names `${RCBENCH_MODULES_3D}/<footprint>.step` |
 | `modules/*.py` | one spec per module: geometry, pads, drawings, symbol, and in its docstring the source, scale, accuracy and unknowns |
 | `tools/kicad_gen.py` | writes footprints and symbols from a spec |
+| `tools/step_gen.py` | writes a STEP model from a spec's `MODEL` |
+| `tools/step_check.py` | reads every STEP model with OpenCASCADE and checks it; `--png DIR` draws each |
 | `tools/gen_all.py` | writes the library from all specs; `--check` fails on drift |
 | `tools/render.py` | PNG preview of a spec, or the footprint drawn over a photo |
 | `tools/kicad_render.py` | loads the library with kicad-cli and renders every footprint and symbol to PNG |
 
-The `.kicad_mod` and `.kicad_sym` files are generated. Edit the spec, then
+The `.kicad_mod`, `.kicad_sym` and `.step` files are generated. Edit the spec, then
 run the generator:
 
 ```sh
 python3 hardware/kicad/tools/gen_all.py          # write
 python3 hardware/kicad/tools/gen_all.py --check  # CI: exit 1 on drift
 KICAD_CLI=kicad-cli python3 hardware/kicad/tools/kicad_render.py /tmp/renders
+pip install cadquery-ocp==8.0.1.1.0                 # for step_check.py only
+python3 hardware/kicad/tools/step_check.py       # CI: exit 1 on a bad model
 ```
 
 ## Use in KiCad
@@ -30,6 +35,9 @@ KICAD_CLI=kicad-cli python3 hardware/kicad/tools/kicad_render.py /tmp/renders
    with the nickname `rcbench_modules`.
 2. Preferences > Manage Footprint Libraries: add `rcbench_modules.pretty`
    with the nickname `rcbench_modules`.
+3. Preferences > Configure Paths: add `RCBENCH_MODULES_3D` with the full
+   path of `hardware/kicad/rcbench_modules.3dshapes`. Without it the 3D
+   viewer shows the footprints without models.
 
 Footprint origin is pad 1. Every footprint draws the board outline and its
 main parts in top view on F.SilkS and F.Fab; the courtyard is the outline of
@@ -61,6 +69,30 @@ The accuracy figures are estimates from the measuring, not checked against
 boards with a caliper. Check a module against its footprint before ordering
 a PCB; the ADXL345 board rests on a single photo, and listings of it give
 four different sizes.
+
+## 3D models
+
+Each spec's `MODEL` gives the board thickness, colour and mount, and one
+box, cylinder or prism per part with its height. The generator writes
+one solid per part with planar faces only; circles are polygons of 16 to
+32 sides. Each drilled pad is a hole through the module board. The model
+frame is the footprint's: origin at pad 1, z = 0 on the carrier's top
+side, so the footprint places it with no offset, scale or rotation.
+
+| Mount | Modules | Position |
+| --- | --- | --- |
+| header | RP2350-CAN, INA3221, INA219, ADS1115, ADXL345, AS5600, mini buck | on 2.54mm male headers: 2.5mm plastic on the carrier, pins 6.0mm below the plastic and 3.0mm above it, module underside 2.5mm above the carrier |
+| flat | MATEK INA228, XT90 INA228, PD Power Mini, PD trigger, T-plug | wired; the module's underside rests on the carrier |
+
+Outlines and positions are the footprint's. Heights are not measured on
+any board: they are part class figures (USB-C receptacle 3.2mm, QFN
+0.9mm, SOIC-8 1.75mm, 0805 0.6mm), except the MATEK JST-GH bodies (4.35mm,
+maker 3D model) and the XT90 plugs (about 10mm, owner photo). Each spec
+lists the figures it uses. Boards are 1.6mm thick, which no source states.
+Board colours follow the photos where a spec names one, otherwise green.
+Parts a spec does not draw are not in its model: bottom-side parts, the
+RP2350-CAN castellations, the XT90 board's milled slots and the AS5600
+magnet.
 
 ## Limitations
 

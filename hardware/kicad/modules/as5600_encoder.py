@@ -156,3 +156,18 @@ SYMBOL = {
         ("input", "SCL", "5", 12.7, 0, 180),
     ],
 }
+
+# 3D model. Heights are part class figures, not measured: SOIC-8 1.5mm
+# body, chip parts 0.6mm. Board white (photo). The magnet is not part of
+# the model.
+MODEL = {
+    "mount": "header",
+    "color": "white",
+    "pins": [str(n) for n in range(1, 8)],
+    "holes": [(x, y, HOLE_D) for x, y in HOLES],
+    "bodies": [("box", CHIP[0] - 2.45, CHIP[1] - 1.95, CHIP[0] + 2.45,
+                CHIP[1] + 1.95, 1.5, "chip")]
+    + [("box", x0 + 0.4, y0 + 0.4, x1 - 0.4, y1 - 0.4, 0.6,
+        "black" if s.startswith("R") else "ceramic")
+       for x0, y0, x1, y1, s in PASSIVES],
+}

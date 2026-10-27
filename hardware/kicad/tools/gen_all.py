@@ -2,7 +2,9 @@
 """Write the rcbench KiCad library from the module specs.
 
 The specs are hardware/kicad/modules/*.py; the output is
-hardware/kicad/rcbench_modules.pretty/ and rcbench_modules.kicad_sym.
+hardware/kicad/rcbench_modules.pretty/, rcbench_modules.kicad_sym and, for
+each spec with a MODEL, a STEP model in rcbench_modules.3dshapes/. Each
+footprint names its model as ${RCBENCH_MODULES_3D}/<name>.step.
 
 Usage:
     python3 hardware/kicad/tools/gen_all.py           write the files
@@ -21,10 +23,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 KICAD = HERE.parent
 LIB = "rcbench_modules"
+MODEL_VAR = "RCBENCH_MODULES_3D"
 NS = uuid.UUID("6f1d3c52-2a4e-4b8e-9a63-0c3d7e2b51a4")
 
 sys.path.insert(0, str(HERE))
 import kicad_gen  # noqa: E402
+import step_gen  # noqa: E402
 
 
 def load_specs():
@@ -61,12 +65,18 @@ def outputs():
     """Build every output file in memory.
 
     Returns:
-        A dict of path to file text: one per footprint and the symbol library.
+        A dict of path to file text: one per footprint, one per model and the
+        symbol library.
     """
     out = {}
     symbols = []
     for mod in load_specs():
         fp = mod.FOOTPRINT
+        model = getattr(mod, "MODEL", None)
+        if model:
+            out[KICAD / f"{LIB}.3dshapes" / f"{fp['name']}.step"] = \
+                step_gen.step(fp, model)
+            fp = dict(fp, model=f"${{{MODEL_VAR}}}/{fp['name']}.step")
         out[KICAD / f"{LIB}.pretty" / f"{fp['name']}.kicad_mod"] = \
             kicad_gen.footprint(fp, uid_for(fp["name"]))
         symbols.append(mod.SYMBOL)

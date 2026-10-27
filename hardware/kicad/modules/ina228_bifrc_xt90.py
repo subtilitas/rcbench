@@ -195,3 +195,31 @@ SYMBOL = {
         ("passive", "5", "5", 22.86, -17.78, 180),
     ],
 }
+
+# 3D model. The XT90 plugs stand about 10mm above the board (photo,
+# above); drawn 10.0mm. The shunt (1.0mm), the chip (1.1mm) and the board
+# thickness (1.6mm) are not measured. Header: 2.5mm plastic on the board,
+# 4 pins 6.0mm above it (pad 5 has no pin). Board colour not stated; drawn
+# green. The milled slots are not modelled. The board is wired, so it
+# rests on the carrier.
+MODEL = {
+    "mount": "flat",
+    "bodies": [
+        ("box", -6.15, 13.61, 15.07, 35.17, 10.0, "yellow"),
+        ("box", 15.07, 14.39, 23.45, 34.48, 10.0, "yellow"),
+        ("box", 56.28, 14.23, 61.30, 34.59, 10.0, "yellow"),
+        ("box", 61.30, 13.61, 69.84, 35.06, 10.0, "yellow"),
+        ("box", 69.84, 14.47, 80.86, 33.15, 10.0, "yellow"),
+        ("box", SHUNT[0], SHUNT[1], 37.2, SHUNT[3], 1.0, "metal"),
+        ("box", 37.2, SHUNT[1], 42.5, SHUNT[3], 1.0, "black"),
+        ("box", 42.5, SHUNT[1], SHUNT[2], SHUNT[3], 1.0, "metal"),
+        ("box", 38.98, 42.0, 42.0, 45.8, 1.1, "chip"),
+        ("box", 54.83, 42.81, 67.55, 45.32, 2.5, "plastic"),
+        ("box",) + BATN_BAR + (0.05, "gold"),
+        ("box",) + ESCN_BAR + (0.05, "gold"),
+        ("cyl", 61.01, 4.17, 0.9, 0.05, "gold"),
+        ("cyl", 61.01, 6.74, 0.9, 0.05, "gold"),
+    ]
+    + [("box", x - 0.32, HDR_Y - 0.32, x + 0.32, HDR_Y + 0.32, 10.1,
+        "gold", -1.6) for x in HDR_X[:4]],
+}

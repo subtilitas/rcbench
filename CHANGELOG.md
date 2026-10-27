@@ -4,6 +4,18 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Added
+
+- `hardware/kicad/rcbench_modules.3dshapes/`: a STEP model of each of the 12
+  modules, generated from a `MODEL` block in its spec by
+  `hardware/kicad/tools/step_gen.py`. Each footprint names its model as
+  `${RCBENCH_MODULES_3D}/<footprint>.step`. Outlines and positions are the
+  footprint's; part heights are part class figures, not measured.
+  `gen_all.py --check` covers the models, and
+  `hardware/kicad/tools/step_check.py` reads each one with OpenCASCADE in CI.
+
 ## 0.23.1 - 2026-10-27
 
 0.23.1 is a testing release: its minor number, 23, is odd, and GitHub

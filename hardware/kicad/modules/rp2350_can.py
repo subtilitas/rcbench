@@ -198,3 +198,30 @@ SYMBOL = {
     ],
     "pins": _PINS,
 }
+
+# 3D model. Heights are part class figures, not measured: USB-C receptacle
+# 3.2mm, buttons 1.0mm plus a 0.5mm cap, QFN 0.9mm, SOIC-8 1.75mm,
+# crystals 0.8mm, slide switch 1.5mm, CAN terminal 7.0mm (not stated by
+# the maker). Board colour not stated; drawn green. The castellations are
+# not modelled.
+MODEL = {
+    "mount": "header",
+    "pins": [str(n) for n in range(1, 41)],
+    "bodies": [
+        ("box",) + USB + (3.2, "metal"),
+        ("box",) + BOOT + (1.0, "metal"),
+        ("cyl", (BOOT[0] + BOOT[2]) / 2, (BOOT[1] + BOOT[3]) / 2, 1.0, 0.5,
+         "black", 1.0),
+        ("box",) + RESET + (1.0, "metal"),
+        ("cyl", (RESET[0] + RESET[2]) / 2, (RESET[1] + RESET[3]) / 2, 1.0,
+         0.5, "black", 1.0),
+        ("box",) + MCU + (0.9, "chip"),
+        ("box",) + XTAL1 + (0.8, "metal"),
+        ("box",) + XTAL2 + (0.8, "metal"),
+        ("box",) + CANC + (0.9, "chip"),
+        ("box",) + XCVR + (1.75, "chip"),
+        ("box",) + SWITCH + (1.5, "black"),
+        ("box", 10.3, 41.0, 11.3, 42.0, 0.8, "white", 1.5),
+        ("box",) + TERM + (7.0, "termgreen"),
+    ],
+}

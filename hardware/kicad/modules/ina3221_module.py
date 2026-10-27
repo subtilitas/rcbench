@@ -148,3 +148,18 @@ SYMBOL = {
         ("output", "TC", "8", 10.16, 5.08, 180),
     ],
 }
+
+# 3D model. Heights are part class figures, not measured: INA3221 (QFN-16)
+# 0.9mm, 2512 shunts 0.6mm, LEDs 0.6mm. Board colour not stated; drawn
+# green. The large and channel holes take wires, not header pins.
+MODEL = {
+    "mount": "header",
+    "pins": [str(n) for n in range(1, 9)],
+    "holes": [(x, y, 3.2) for x, y in MOUNT],
+    "bodies": [("box", 14.4, 9.4, 18.4, 13.4, 0.9, "chip")]
+    + [b for c in (10.75, 19.25, 27.57) for b in (
+        ("box", c - 2.55, 19.05, c + 2.55, 22.2, 0.6, "black"),
+        ("box", c - 3.15, 19.05, c - 2.55, 22.2, 0.6, "metal"),
+        ("box", c + 2.55, 19.05, c + 3.15, 22.2, 0.6, "metal"))]
+    + [("box", 27.5, y - 0.4, 29.1, y + 0.4, 0.6, "white") for y in LED_Y],
+}

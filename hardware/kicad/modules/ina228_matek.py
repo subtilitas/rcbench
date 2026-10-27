@@ -146,3 +146,21 @@ SYMBOL = {
         ("power_in", "5V", "8", 15.24, -7.62, 180),
     ],
 }
+
+# 3D model. The JST-GH bodies are 4.35mm tall (maker 3D model). The shunt
+# height (1.0mm) and the board thickness (1.6mm) are not measured; the
+# maker's 6mm overall height bounds them. Board colour not stated; drawn
+# green. The board is wired, so it rests on the carrier.
+MODEL = {
+    "mount": "flat",
+    "bodies": [
+        ("box", 6.0, 0.6, 11.0, 8.4, 1.0, "metal"),
+        ("box", 11.0, 0.6, 16.0, 8.4, 1.0, "black"),
+        ("box", 16.0, 0.6, 21.0, 8.4, 1.0, "metal"),
+        ("box",) + CHIP + (1.1, "chip"),
+        ("box", 0.6, JST_Y0 + 0.3, 4.65, JST_Y1 - 0.3, 4.35, "beige"),
+        ("box", 22.35, JST_Y0 + 0.3, 26.4, JST_Y1 - 0.3, 4.35, "beige"),
+        ("box",) + ESC_PAD + (0.05, "gold"),
+        ("box",) + BAT_PAD + (0.05, "gold"),
+    ],
+}
