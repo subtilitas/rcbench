@@ -4,7 +4,24 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.23.1 - 2026-10-27
+
+0.23.1 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.0 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.29 (0.23.0: 4.28). A panel of
+0.23.1 beside an IOmcu of 0.23.0 reads the supply hold from either and
+writes nothing differently; that IOmcu holds SUPPLY only while a POWER
+runs (see Changed).
+
+A bench on 0.23.0 gets 0.23.1 over Wi-Fi: SETUP > UPDATES, RELEASES:
+TESTING, CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES:
+STABLE the check reads `releases/latest`, which names 0.22.1, and offers
+nothing. At link-up the panel offers the IOmcu's update over CAN
+(Controller Area Network) when the IOmcu runs another build. A new bench
+loads it over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, with
+`rcbench-panel-p4-v0.23.1.zip` and `rcbench-iomcu-install.uf2`.
 
 ### Added
 
@@ -15,7 +32,9 @@ history is in git.
   mini buck DC-DC with EN. Footprints and symbols are generated from one
   spec per module (`tools/gen_all.py`, `--check` in CI); geometry comes from
   maker drawings, maker 3D models and photos, each spec naming its source
-  and accuracy. MIT, as the rest of the tree.
+  and accuracy. MIT, as the rest of the tree. KiCad 10.0.7 or newer opens
+  it; 10.0.3 shows the symbol library empty without an error message, and
+  the versions between are not tested.
 - The register models of servos by Hitec, in `protocols/hitec/hitec_reg.c`:
   the classic EEPROM cells (HS-5xxx, HS-7xxx) and the D series registers
   as one 256-byte image, a parameter table of 34 parameters with the
@@ -87,16 +106,31 @@ history is in git.
   editable values, raw values included, into the draft; a file of the
   other series or layout, a damaged or hand-edited file is refused, and
   one of another model or past a soft rule opens CHECK THIS FILE. The file
-  text is `RCBENCH HITEC 1` with series, model, the read set and a CRC-16
-  (cyclic redundancy check). The first write of a session saves the
-  servo as found to a backup file first and sends nothing when the card
-  refuses it or does not answer in 5000ms; without a card the backup stays
-  in RAM. RESTORE writes the session's backup back, every writable address
+  text is `RCBENCH HITEC 1` with series, model, the read set, a `backup=`
+  line and a CRC-16 (cyclic redundancy check). The first write of a
+  session saves the servo as found to a backup file first and sends
+  nothing when the card refuses it or does not answer in 5000ms; without
+  a card the backup stays in RAM. RESTORE writes the session's backup back, every writable address
   included. MORE > FACTORY DEFAULT writes a classic servo's cells 0x00 to
   0x23 from its factory cells 0x30 to 0x53, as the HPP-21 Plus does; the D
   series has none. `shared/logfile/servo_store.c` holds the folder's
   names, proposals, saves, lists and loads for a stem
   ([Servo files](docs/HitecProgrammer.md#servo-files)).
+- A backup file of the Hitec servo read loads every address a write sends,
+  the cells outside the settings included: cell 0x22, RESOLUTION, which a
+  FACTORY DEFAULT changes and no edit reaches, comes back from the backup
+  file saved before it, after LEAVE and a power cycle. `backup=1` marks the
+  automatic backup file and a save of the servo as the session found it,
+  before the first write; every other save carries `backup=0`. A file
+  without the line counts as a backup when its name is `HITEC001` to
+  `HITEC999`. The file is of the servo read when series and layout match
+  and, for a classic servo, the name cells 0x60 to 0x6F, the date cells
+  0x70 to 0x73, the serial cells 0x80 to 0x87 and the version; for the D
+  series, the model in register 0x00. CHECK THIS FILE names the count,
+  `Stored values outside the settings loaded too: 1.`, and WRITE n VALUES
+  counts those cells. A D series file is 149 bytes, the longest classic
+  file 290 bytes, of at most 320
+  ([Loading a backup file](docs/HitecProgrammer.md#loading-a-backup-file)).
 
 ### Changed
 
@@ -171,6 +205,58 @@ history is in git.
   while a POWER runs only; the panel reads bit 11 from either and writes
   nothing differently
   ([The supply while a port is held](docs/LinkHitec.md#the-supply-while-a-port-is-held)).
+- The Hitec programmer's classic texts name a servo's memory addresses
+  stored values (`gespeicherte Werte`), as the RESTORE page does, in place
+  of cells: `Checksum of stored values 0x00-0x1C is wrong.`, `Writes stored
+  value 0x1C: 0x5F -> 0x5E. Stored values 0x00-0x1C then sum to 0.`, the
+  interrupted-write lines and FACTORY DEFAULT's lines. A wrong checksum
+  says that the servo may ignore PWM (pulse-width modulation) and draw
+  current up to the supply limit: one HS-7955TG with a wrong checksum drew
+  0.88 to 0.89A under ARM and SWEEP at the PD mini's 1.00A limit, the
+  supply falling to 4.0 to 4.2V, and 0.12 to 0.28A with a correct one
+  (measured once). REPAIR CHECKSUM tapped while the record of an
+  interrupted write stands says `Writes and REPAIR CHECKSUM wait for the
+  record of an interrupted write: restore or discard it under RESTORE.`
+  ([REPAIR CHECKSUM](docs/HitecProgrammer.md#repair-checksum)).
+- The SERVO test report's step table fits the log viewer's row of 92
+  characters: currents in whole mA, 6 characters at most, `--` for a
+  current that is not a number or beyond 99.999A; the heading in two lines
+  with each word right-aligned to its column; `(cut short)` and
+  `NOT MEASURABLE` on a line under the step. The heading reads
+  `RESULTS PER STEP (currents in mA, times in ms)`. The German encoder
+  heading starts each word at the English column
+  ([Files](docs/Servo.md#files)).
+- The BROWN-OUT result names what is measured: `Movement seen at every
+  step down to 4.80V; lower not tested.`, `Movement seen at 5.00V; no
+  movement seen at 4.80V.`, and the rule line defines `Movement seen` as a
+  reading of a move more than Thresh from the level before it.
+- The console's link report diagnoses the counts since the previous
+  report, in place of the totals since start-up. It runs every 60s while
+  the link is up and every 5s while it is down. A burst of late answers no
+  longer keeps it at `LINK answers arrive too late` for the rest of the
+  run: a healthy window reads `link healthy` at the next report. A new
+  line, `last 60s  polls ... replies ... timeouts ...`, gives the window's
+  counts; the other lines give the totals. A window of under 4 polls says
+  `link healthy`. An IOmcu that restarts and counts past its previous
+  figure before the next report gives a window count short by that figure
+  ([Link report](docs/Bringup.md#link-report)).
+- The docs, the READMEs, `STATUS.md`, the test bench notes and the
+  configurator (pad names, the IOmcu wiring drawing in English and German,
+  the setup list, the help texts and the PDF export) name the IOmcu's pins
+  `GPIO 13`, as the panel does. The Osoyoo breakout drawing keeps the
+  board's print, `GP2`, and a text that names its strip gives it once:
+  `GPIO 2 (print GP2)`. The configurator's 81 repository anchors quote the
+  docs at `v0.23.1`.
+- CI runs every job of `ci.yml`, `docs.yml`, `mutation.yml`, `pages.yml`
+  and `release.yml` on `ubuntu-24.04` in place of `ubuntu-latest`, which
+  resolves to Ubuntu 26.04 since 2026-10-26. On 26.04 four checks fail on
+  code this release does not change: a gcc `-Werror=format-truncation` in
+  a host test, a clang-tidy finding in another, the IOmcu stack figures and
+  the web help's screenshots.
+- The ESP32-P4 panel's code carries Doxygen comments (`@brief`, `@param`,
+  `@return`, `/**< */` on members); the X-macro tables over `ui_text.def`
+  sit in `@cond X_MACRO`. The baseline of `tools/doc_check.py` loses 1,521
+  entries. No executable token changes.
 
 ### Removed
 
@@ -216,6 +302,11 @@ history is in git.
   that reads PWM by then, ends the write with nothing sent, clears its
   record on the card and keeps the pending values, with the refusal's line
   (`kst_prog_held_gate()`, [Writing](docs/ServoProgrammer.md#writing)).
+- A new build's first start logs `kept: ...` or `kept at the 30s bound
+  ...` only after the start check has kept it (`FW_BOOT_UPDATED`). A check
+  that does not keep it logs `not kept: otadata not written; the next
+  start goes back to the build before`. A `RCBENCH_TRIAL_CRASH` build
+  aborts before the check and before any `kept` line.
 
 ## 0.23.0 - 2026-10-25
 
