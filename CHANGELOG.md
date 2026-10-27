@@ -8,6 +8,20 @@ history is in git.
 
 ### Added
 
+- `protocols/i2c_txq`: a transaction queue for one I2C bus master and its
+  driver on the RP2350's I2C blocks. A transaction (up to 5 bytes written,
+  6 read, STOP included) goes to the 16-entry FIFO whole and the block's
+  interrupt reports its end; nothing waits with interrupts off. Hard
+  transactions go before soft ones, then the earliest deadline; a soft one
+  past its deadline is dropped. The queue ends a transaction after 1000us,
+  checks the lines before a start (10us settle, 50us pull-up probe), tells
+  an address NACK from a data NACK, aborts after the byte under way, and
+  runs the 9-clock bus clear one half clock per poll with a trial after it.
+  Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_wire`).
+  The IOmcu links it and calls nothing of it yet: the sensor bus runs on
+  `sense_i2c.c` as before.
+- `tools/check_protocols.py` takes an `rp2350/` folder without a `.pio`
+  file when the module's README says "no PIO program".
 - `hardware/kicad/`: a KiCad 10 library of the 12 modules the bench is built
   from, for a carrier PCB: RP2350-CAN, INA3221, two INA228 boards (MATEK
   I2C-INA-BM, XT90 board "BIFRC V1.1"), AS5600, WeAct PD Power Mini, the

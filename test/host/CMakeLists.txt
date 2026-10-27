@@ -66,6 +66,7 @@ add_subdirectory("${PROTOCOLS}/pdmini"   pdmini)
 add_subdirectory("${PROTOCOLS}/phase_tap" phase_tap)
 add_subdirectory("${PROTOCOLS}/kst"      kst)
 add_subdirectory("${PROTOCOLS}/hitec"    hitec)
+add_subdirectory("${PROTOCOLS}/i2c_txq"  i2c_txq)
 add_subdirectory("${SHARED}/esc"      esc)
 add_subdirectory("${SHARED}/sense"    sense)
 add_subdirectory("${SHARED}/fwupdate" fwupdate)
@@ -105,6 +106,7 @@ set(UNDER_TEST
     rcbench_sense
     rcbench_kst
     rcbench_hitec
+    rcbench_i2c_txq
     rcbench_fwupdate
     rcbench_webaccess
     rcbench_clock
@@ -129,7 +131,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx gfx_faces gfx_subpixel gfx_clip gfx_damage gfx_turn gfx_sprite layout touch_map overlays nav nav_tiles nav_alert nav_mark nav_contact nav_drag nav_stop nav_bubble widgets workbench prog_registry keypad keypad_sign keypad_rows_setup keypad_rows_stick keypad_rows_motor keypad_rows_supply keypad_rows_servo keypad_rows_kst pinlist bench supply supply_screen supply_screen_tasks supply_screen_home supply_screen_draw supply_layout pdmini motor motor_draw motor_throttle motor_arm motor_workbench motor_program motor_layout value_state logview logview_report log_text logview_plot logview_rank logview_pages logview_tabs logview_delete logview_touch logview_layout logview_row log_name log_take card_tree fm_tree fm_ops fm_recheck fault_log logwriter servo_runlog servo_runlog_cols servo_log_figures log_cadence perf_watch log_cols settings settings_screen settings_gesture settings_pins_hub settings_leave settings_folders settings_sensors settings_keypad settings_rows setting_keypad_eq log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outputs_hw_ports outstore heartbeat arming safety_gate flash_gate reset_cause touch_loss frame_watch servo_arm safe_press servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_report_width servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_map_link sense_win_link sense_limit_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen outputs_screen_draw outputs_screen_off outputs_screen_port outputs_layout picker_screen picker_screen_hold picker_screen_table picker_layout picker_cat port_screens board_drawing busfault_screen text servo servo_knob servo_drag servo_repaint frame_work servo_dial_sweep servo_letgo servo_curve servo_supply servo_run servo_target servo_rail servo_meter servo_settings servo_trim_keypad servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel esc_stick_panel_phases esc_stick_panel_list esc_stick_panel_steps esc_stick_panel_makers esc_stick_panel_hold esc_stick_panel_touch esc_stick_panel_home esc_stick_panel_keypad esc_stick_layout balance battery instruments_layout esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_parts sense_map sense_limit sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link hitec_rx_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port prog_port_fn kst_file kst_store kst_card prog_link prog_link_ask port_mail kst_prog kst_prog_card kst_prog_cycle kst_panel kst_panel_leave kst_panel_edit kst_panel_write kst_panel_texts kst_panel_writepage kst_panel_screen kst_panel_notes kst_panel_files kst_panel_nocard kst_panel_limrun kst_panel_ports kst_panel_layout kst_panel_type hitec_wire hitec_pio hitec_pre hitec_reg hitec_reg_plan hitec_session hitec_session_write hitec_port hitec_port_stop hitec_port_hold hitec_port_rx hitec_link hitec_link_loss hitec_link_run hitec_prog hitec_prog_safe hitec_prog_codes hitec_prog_write hitec_prog_file hitec_prog_backup hitec_card hitec_card_run servo_store hitec_panel hitec_panel_states hitec_panel_write hitec_panel_file page_console wifi_screen wifi_layout fw_image fw_install fw_trial fw_upload fw_release fw_release_scan wa_session wa_scan wa_fetch wa_fetch_channel wa_fetch_task upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_page_de wa_mdns wa_guard link_sha256 link_update coproc_update_screen upd_coproc upd_layout touch_merge touch_merge_multi inj_line_id inj_emu inj_multi servo_limrun servo_limrun_abort servo_limrun_report sense_i2c storage storage_swap text_buf text_hl text_hl_limrun fm_name fm_req files_screen files_ops files_open files_layout wall_clock)
+foreach(suite gfx gfx_faces gfx_subpixel gfx_clip gfx_damage gfx_turn gfx_sprite layout touch_map overlays nav nav_tiles nav_alert nav_mark nav_contact nav_drag nav_stop nav_bubble widgets workbench prog_registry keypad keypad_sign keypad_rows_setup keypad_rows_stick keypad_rows_motor keypad_rows_supply keypad_rows_servo keypad_rows_kst pinlist bench supply supply_screen supply_screen_tasks supply_screen_home supply_screen_draw supply_layout pdmini motor motor_draw motor_throttle motor_arm motor_workbench motor_program motor_layout value_state logview logview_report log_text logview_plot logview_rank logview_pages logview_tabs logview_delete logview_touch logview_layout logview_row log_name log_take card_tree fm_tree fm_ops fm_recheck fault_log logwriter servo_runlog servo_runlog_cols servo_log_figures log_cadence perf_watch log_cols settings settings_screen settings_gesture settings_pins_hub settings_leave settings_folders settings_sensors settings_keypad settings_rows setting_keypad_eq log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outputs_hw_ports outstore heartbeat arming safety_gate flash_gate reset_cause touch_loss frame_watch servo_arm safe_press servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_report_width servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_map_link sense_win_link sense_limit_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen outputs_screen_draw outputs_screen_off outputs_screen_port outputs_layout picker_screen picker_screen_hold picker_screen_table picker_layout picker_cat port_screens board_drawing busfault_screen text servo servo_knob servo_drag servo_repaint frame_work servo_dial_sweep servo_letgo servo_curve servo_supply servo_run servo_target servo_rail servo_meter servo_settings servo_trim_keypad servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel esc_stick_panel_phases esc_stick_panel_list esc_stick_panel_steps esc_stick_panel_makers esc_stick_panel_hold esc_stick_panel_touch esc_stick_panel_home esc_stick_panel_keypad esc_stick_layout balance battery instruments_layout esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_parts sense_map sense_limit sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link hitec_rx_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port prog_port_fn kst_file kst_store kst_card prog_link prog_link_ask port_mail kst_prog kst_prog_card kst_prog_cycle kst_panel kst_panel_leave kst_panel_edit kst_panel_write kst_panel_texts kst_panel_writepage kst_panel_screen kst_panel_notes kst_panel_files kst_panel_nocard kst_panel_limrun kst_panel_ports kst_panel_layout kst_panel_type hitec_wire hitec_pio hitec_pre hitec_reg hitec_reg_plan hitec_session hitec_session_write hitec_port hitec_port_stop hitec_port_hold hitec_port_rx hitec_link hitec_link_loss hitec_link_run hitec_prog hitec_prog_safe hitec_prog_codes hitec_prog_write hitec_prog_file hitec_prog_backup hitec_card hitec_card_run servo_store hitec_panel hitec_panel_states hitec_panel_write hitec_panel_file page_console wifi_screen wifi_layout fw_image fw_install fw_trial fw_upload fw_release fw_release_scan wa_session wa_scan wa_fetch wa_fetch_channel wa_fetch_task upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_page_de wa_mdns wa_guard link_sha256 link_update coproc_update_screen upd_coproc upd_layout touch_merge touch_merge_multi inj_line_id inj_emu inj_multi servo_limrun servo_limrun_abort servo_limrun_report sense_i2c storage storage_swap text_buf text_hl text_hl_limrun i2c_txq i2c_txq_wire fm_name fm_req files_screen files_ops files_open files_layout wall_clock)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -155,6 +157,11 @@ set(BOARD_DRAWING
 foreach(suite board_drawing picker_screen picker_screen_hold picker_screen_table
               picker_layout picker_cat port_screens)
     target_sources(test_${suite} PRIVATE "${BOARD_DRAWING}")
+endforeach()
+# The I2C queue's suites run it over a modelled bus (i2c_txq_model.c).
+foreach(suite i2c_txq i2c_txq_wire)
+    target_sources(test_${suite} PRIVATE
+                   "${CMAKE_CURRENT_SOURCE_DIR}/i2c_txq_model.c")
 endforeach()
 # The file manager's suites run its core over a card in memory.
 foreach(suite fm_tree fm_ops fm_recheck fm_req)
@@ -295,11 +302,18 @@ if(CMAKE_CXX_COMPILER)
     set_target_properties(hitec_headers_cxx PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
     add_test(NAME hitec_headers_cxx COMMAND hitec_headers_cxx)
+    # The header of protocols/i2c_txq, the same way.
+    add_executable(i2c_txq_headers_cxx i2c_txq_headers.cpp)
+    target_link_libraries(i2c_txq_headers_cxx PRIVATE rcbench_i2c_txq)
+    target_compile_options(i2c_txq_headers_cxx PRIVATE -Wall -Wextra -Werror)
+    set_target_properties(i2c_txq_headers_cxx PROPERTIES
+        CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+    add_test(NAME i2c_txq_headers_cxx COMMAND i2c_txq_headers_cxx)
 elseif(DEFINED ENV{CI})
     message(FATAL_ERROR
-        "No C++ compiler and CI is set: the KST and Hitec headers cannot be checked")
+        "No C++ compiler and CI is set: the KST, Hitec and I2C queue headers cannot be checked")
 else()
-    message(STATUS "No C++ compiler: the KST and Hitec headers are not checked as C++")
+    message(STATUS "No C++ compiler: the KST, Hitec and I2C queue headers are not checked as C++")
 endif()
 
 # tools/sense_trace.py, the host side of the IOmcu's SENSE_TRACE
