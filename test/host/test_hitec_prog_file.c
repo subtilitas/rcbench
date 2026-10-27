@@ -688,7 +688,7 @@ TEST_CASE(a_hand_edited_file_is_refused_whole)
     d485(&img);
     CHECK_EQ(hitec_param_set(&img, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 50),
              HITEC_SET_OK);
-    len = hitec_card_file_text(&img, text, sizeof(text));
+    len = hitec_card_file_text(&img, false, text, sizeof(text));
     /* A changed digit. */
     text[50] = text[50] == '0' ? '1' : '0';
     files_put("DIGIT.TXT", text, len);
@@ -696,7 +696,7 @@ TEST_CASE(a_hand_edited_file_is_refused_whole)
     CHECK_EQ(msg(), HITEC_PROG_MSG_LOAD_DAMAGED);
     CHECK_EQ(msg_arg(), HITEC_CARD_ERR_CHECK);
     /* Cut before the check line. */
-    CHECK(hitec_card_file_text(&img, text, sizeof(text)) > 0u);
+    CHECK(hitec_card_file_text(&img, false, text, sizeof(text)) > 0u);
     chk = strstr(text, "check=");
     if (chk == NULL) {
         T_FAIL("no check line");
@@ -706,14 +706,15 @@ TEST_CASE(a_hand_edited_file_is_refused_whole)
     load("CUT");
     CHECK_EQ(msg(), HITEC_PROG_MSG_LOAD_DAMAGED);
     CHECK_EQ(msg_arg(), HITEC_CARD_ERR_TRUNCATED);
-    /* An extra line, the check made over it: line 5 is not due. */
+    /* An extra line, the check made over it: line 6, after the backup
+     * line, is not due. */
     memcpy(body, text, (size_t)(chk - text));
     memcpy(body + (chk - text), "note=1\n", 8u);
     len = with_check(body, text);
     files_put("EXTRA.TXT", text, len);
     load("EXTRA");
     CHECK_EQ(msg(), HITEC_PROG_MSG_LOAD_LINE);
-    CHECK_EQ(msg_arg(), 5u);
+    CHECK_EQ(msg_arg(), 6u);
     /* No servo file at all. */
     files_put("NOTE.TXT", "a note\n", 7u);
     load("NOTE");

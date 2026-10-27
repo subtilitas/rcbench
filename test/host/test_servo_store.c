@@ -308,6 +308,24 @@ TEST_CASE(a_number_counts_in_any_case_and_on_a_directory)
     CHECK_STR_EQ(preset(&result), "HITEC021");
 }
 
+TEST_CASE(the_number_of_a_proposed_name_is_read_back)
+{
+    CHECK_EQ(servo_store_number(STEM, "HITEC001.TXT"), 1);
+    CHECK_EQ(servo_store_number(STEM, "hitec999.txt"), 999);
+    CHECK_EQ(servo_store_number(STEM, "Hitec042.TxT"), 42);
+    /* Not 3 digits, another stem, no extension, no number, no stem. */
+    CHECK_EQ(servo_store_number(STEM, "HITEC000.TXT"), 0);
+    CHECK_EQ(servo_store_number(STEM, "HITEC01.TXT"), 0);
+    CHECK_EQ(servo_store_number(STEM, "HITEC0011.TXT"), 0);
+    CHECK_EQ(servo_store_number(STEM, "HITEC00A.TXT"), 0);
+    CHECK_EQ(servo_store_number(STEM, "KST001.TXT"), 0);
+    CHECK_EQ(servo_store_number(STEM, "HITEC001"), 0);
+    CHECK_EQ(servo_store_number(STEM, "WING.TXT"), 0);
+    CHECK_EQ(servo_store_number(STEM, NULL), 0);
+    CHECK_EQ(servo_store_number(NULL, "HITEC001.TXT"), 0);
+    CHECK_EQ(servo_store_number("KST", "KST001.TXT"), 1);
+}
+
 TEST_CASE(with_hitec999_taken_the_lowest_free_number_is_proposed)
 {
     servo_store_t result;
@@ -886,6 +904,7 @@ int main(void)
     RUN(the_proposal_is_one_above_the_highest_number_and_fills_no_gap);
     RUN(a_name_a_person_chose_counts_for_nothing_in_the_numbering);
     RUN(a_number_counts_in_any_case_and_on_a_directory);
+    RUN(the_number_of_a_proposed_name_is_read_back);
     RUN(with_hitec999_taken_the_lowest_free_number_is_proposed);
     RUN(with_every_number_taken_no_name_is_proposed);
     RUN(a_proposal_needs_a_card_a_readable_directory_and_room_for_the_name);

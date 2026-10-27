@@ -77,6 +77,7 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_NO_FILES:
     case HITEC_PROG_MSG_LOAD_SAME:
     case HITEC_PROG_MSG_LOADED:
+    case HITEC_PROG_MSG_LOADED_RAW:
     case HITEC_PROG_MSG_BACKUP_RESTORED:
     case HITEC_PROG_MSG_FACTORY_DONE:
         return HITEC_PROG_INFO;

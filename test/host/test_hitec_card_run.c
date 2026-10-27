@@ -5,7 +5,8 @@
  * proposed names taken, a list
  * of 1 page and of pages behind the first 64 files with each file's model,
  * a load, a file larger than any servo file, a file that does not parse
- * and one the folder does not hold.
+ * and one the folder does not hold; the backup line written and read, and
+ * a file without it counted a backup by its proposed name.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,6 +18,7 @@
 
 #include "hitec_card_run.h"
 #include "hitec_reg_fix.h"
+#include "link_crc.h"
 #include "servo_store.h"
 
 /* --- a card in memory ------------------------------------------------------ */
@@ -133,11 +135,14 @@ static void reset(void)
 static void put_image(const char *name, const hitec_image_t *img)
 {
     char text[HITEC_CARD_FILE_MAX];
-    const size_t len = hitec_card_file_text(img, text, sizeof(text));
+    const size_t len = hitec_card_file_text(img, false, text, sizeof(text));
 
     CHECK(len > 0u);
     put(name, text, len);
 }
+
+/* A save asked for as a session's backup. */
+static bool s_backup;
 
 static hitec_card_done_t run(uint8_t op, bool preset, const char *name,
                              unsigned first, const hitec_image_t *img)
@@ -148,6 +153,7 @@ static hitec_card_done_t run(uint8_t op, bool preset, const char *name,
     memset(&req, 0, sizeof(req));
     req.op = op;
     req.preset = preset;
+    req.backup = s_backup;
     req.first = (uint16_t)first;
     req.id = 77u;
     if (name != NULL) {
@@ -178,7 +184,7 @@ TEST_CASE(a_save_named_by_the_card_takes_the_next_number)
     CHECK_EQ(g.n, 1u);
     CHECK_STR_EQ(g.f[0].name, "HITEC001.TXT");
     CHECK_EQ(hitec_card_file_parse(g.f[0].text, g.f[0].len, &got, NULL,
-                                   NULL), HITEC_CARD_OK);
+                                   NULL, NULL), HITEC_CARD_OK);
     CHECK_EQ(hitec_image_reg(&got, 0x54u), hitec_image_reg(&img, 0x54u));
     d = run(HITEC_CARD_SAVE, true, NULL, 0u, &img);
     CHECK_STR_EQ(d.name, "HITEC002");
@@ -384,6 +390,89 @@ TEST_CASE(a_load_gives_the_image_and_its_model)
     CHECK_EQ(r.image.version, 0x16u);
 }
 
+/* The file text of @p img without its backup line, as a bench wrote it
+ * before the line, under @p name. */
+static void put_unmarked(const char *name, const hitec_image_t *img)
+{
+    static const char k_hex[] = "0123456789ABCDEF";
+    char text[HITEC_CARD_FILE_MAX + 16u];
+    const char *line;
+    size_t len;
+    uint16_t crc;
+
+    CHECK(hitec_card_file_text(img, false, text, sizeof(text)) > 0u);
+    line = strstr(text, "backup=0\n");
+    if (line == NULL) {
+        T_FAIL("no backup line");
+        return;
+    }
+    len = (size_t)(line - text);
+    crc = link_crc(LINK_CRC_INIT, text, len);
+    memcpy(text + len, "check=", 6u);
+    for (unsigned i = 0; i < 4u; ++i) {
+        text[len + 6u + i] = k_hex[(crc >> (12u - 4u * i)) & 0xFu];
+    }
+    text[len + 10u] = '\n';
+    put(name, text, len + 11u);
+}
+
+TEST_CASE(a_backup_file_says_so_or_has_a_proposed_name)
+{
+    hitec_image_t img;
+    hitec_card_done_t r;
+
+    reset();
+    hs7955(&img);
+    /* The session's backup, named by the card: backup=1. */
+    s_backup = true;
+    r = run(HITEC_CARD_SAVE, true, NULL, 0u, &img);
+    CHECK_STR_EQ(r.name, "HITEC001");
+    CHECK(strstr(g.f[0].text, "\nbackup=1\ncheck=") != NULL);
+    /* A save by hand of the servo as the session found it keeps its own
+     * name and is a backup all the same. */
+    r = run(HITEC_CARD_SAVE, false, "BEFORE", 0u, &img);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    s_backup = false;
+    /* Any other save, even under a proposed name: backup=0. */
+    r = run(HITEC_CARD_SAVE, false, "WING-L", 0u, &img);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    r = run(HITEC_CARD_SAVE, false, "HITEC005", 0u, &img);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    r = run(HITEC_CARD_LOAD, false, "HITEC001", 0u, NULL);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    CHECK(r.backup);
+    r = run(HITEC_CARD_LOAD, false, "BEFORE", 0u, NULL);
+    CHECK(r.backup);
+    r = run(HITEC_CARD_LOAD, false, "WING-L", 0u, NULL);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    CHECK(!r.backup);
+    r = run(HITEC_CARD_LOAD, false, "HITEC005", 0u, NULL);
+    CHECK(!r.backup);
+    /* No backup line: a backup by a proposed name, in any case. */
+    put_unmarked("HITEC007.TXT", &img);
+    put_unmarked("hitec008.txt", &img);
+    put_unmarked("OLD.TXT", &img);
+    put_unmarked("HITEC07.TXT", &img);
+    put_unmarked("HITEC0071.TXT", &img);
+    r = run(HITEC_CARD_LOAD, false, "HITEC007", 0u, NULL);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    CHECK(r.backup);
+    r = run(HITEC_CARD_LOAD, false, "hitec008", 0u, NULL);
+    CHECK(r.backup);
+    r = run(HITEC_CARD_LOAD, false, "OLD", 0u, NULL);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_OK);
+    CHECK(!r.backup);
+    r = run(HITEC_CARD_LOAD, false, "HITEC07", 0u, NULL);
+    CHECK(!r.backup);
+    r = run(HITEC_CARD_LOAD, false, "HITEC0071", 0u, NULL);
+    CHECK(!r.backup);
+    /* A file that does not parse is no backup. */
+    put("HITEC009.TXT", "a note\n", 7u);
+    r = run(HITEC_CARD_LOAD, false, "HITEC009", 0u, NULL);
+    CHECK_EQ(r.result, HITEC_CARD_DONE_BAD);
+    CHECK(!r.backup);
+}
+
 TEST_CASE(a_load_that_finds_no_servo_file_says_why)
 {
     static char big[HITEC_CARD_FILE_MAX + 10u];
@@ -406,7 +495,7 @@ TEST_CASE(a_load_that_finds_no_servo_file_says_why)
     CHECK_EQ(r.parse, HITEC_CARD_ERR_HEADER);
     /* A changed digit: the check fails. */
     d485(&img);
-    len = hitec_card_file_text(&img, text, sizeof(text));
+    len = hitec_card_file_text(&img, false, text, sizeof(text));
     text[50] = text[50] == '0' ? '1' : '0';
     put("EDITED.TXT", text, len);
     r = run(HITEC_CARD_LOAD, false, "EDITED", 0u, NULL);
@@ -452,5 +541,6 @@ int main(void)
     RUN(a_page_behind_64_files_is_reached_and_none_straddles_a_walk);
     RUN(a_load_gives_the_image_and_its_model);
     RUN(a_load_that_finds_no_servo_file_says_why);
+    RUN(a_backup_file_says_so_or_has_a_proposed_name);
     return test_summary("hitec_card_run");
 }

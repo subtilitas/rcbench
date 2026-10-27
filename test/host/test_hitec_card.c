@@ -232,16 +232,16 @@ TEST_CASE(a_d_servo_file_survives_its_text)
     size_t len;
 
     d485(&img);
-    len = hitec_card_file_text(&img, text, sizeof(text));
-    /* 21 registers of 4 digits: 140 bytes. */
+    len = hitec_card_file_text(&img, false, text, sizeof(text));
+    /* 21 registers of 4 digits and the backup line: 149 bytes. */
     CHECK_EQ(n, 21u);
-    CHECK_EQ(len, 140u);
+    CHECK_EQ(len, 149u);
     CHECK_EQ(strlen(text), len);
     CHECK_EQ(memcmp(text, "RCBENCH HITEC 1\nseries=D\nmodel=D485HW\nimage=",
                     44u), 0);
     CHECK(strstr(text, "version=") == NULL);
     memset(&got, 0x5A, sizeof(got));
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, &line),
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, &line, NULL),
              HITEC_CARD_OK);
     CHECK_EQ(line, 0u);
     CHECK_STR_EQ(model, "D485HW");
@@ -254,7 +254,7 @@ TEST_CASE(a_d_servo_file_survives_its_text)
     /* Only those: a register outside the read is not known. */
     CHECK(!hitec_image_known(&got, 0x70u));
     /* NULL for the model and the line is taken. */
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL),
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, NULL),
              HITEC_CARD_OK);
 }
 
@@ -268,17 +268,18 @@ TEST_CASE(a_classic_servo_file_survives_its_text_with_its_version)
     size_t len;
 
     hs5645(&img);
-    len = hitec_card_file_text(&img, text, sizeof(text));
-    /* 100 cells of 2 digits and the version line: 270 bytes. */
+    len = hitec_card_file_text(&img, false, text, sizeof(text));
+    /* 100 cells of 2 digits, the version and the backup line: 279
+     * bytes. */
     CHECK_EQ(n, 100u);
     CHECK_EQ(addrs[0], 0x00u);
     CHECK_EQ(addrs[0x23], 0x23u);
     CHECK_EQ(addrs[0x24], 0x30u);
     CHECK_EQ(addrs[99], 0x87u);
-    CHECK_EQ(len, 270u);
+    CHECK_EQ(len, 279u);
     CHECK(strstr(text, "model=HS-5645MG\n") != NULL);
-    CHECK(strstr(text, "\nversion=16\ncheck=") != NULL);
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL),
+    CHECK(strstr(text, "\nversion=16\nbackup=0\ncheck=") != NULL);
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL, NULL),
              HITEC_CARD_OK);
     CHECK_STR_EQ(model, "HS-5645MG");
     CHECK_EQ(got.series, HITEC_CLASSIC);
@@ -291,9 +292,9 @@ TEST_CASE(a_classic_servo_file_survives_its_text_with_its_version)
     CHECK(!hitec_image_known(&got, 0x24u));
     /* A classic image with no version read has no version line. */
     img.has_version = 0u;
-    len = hitec_card_file_text(&img, text, sizeof(text));
-    CHECK_EQ(len, 259u);
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL),
+    len = hitec_card_file_text(&img, false, text, sizeof(text));
+    CHECK_EQ(len, 268u);
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, NULL),
              HITEC_CARD_OK);
     CHECK_EQ(got.has_version, 0u);
 }
@@ -349,10 +350,10 @@ TEST_CASE(a_servo_file_at_its_maximum_length_parses)
         (void)hitec_image_put_cell(&img, (uint8_t)(HITEC_C_NAME + c),
                                    (uint8_t)('A' + c));
     }
-    len = hitec_card_file_text(&img, text, HITEC_CARD_FILE_MAX);
-    CHECK_EQ(len, 277u);
+    len = hitec_card_file_text(&img, false, text, HITEC_CARD_FILE_MAX);
+    CHECK_EQ(len, 286u);
     CHECK(len < HITEC_CARD_FILE_MAX);
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL),
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL, NULL),
              HITEC_CARD_OK);
     CHECK_STR_EQ(model, "ABCDEFGHIJKLMNOP");
     /* The longest the parse takes: a model line of 20 characters. */
@@ -362,9 +363,9 @@ TEST_CASE(a_servo_file_at_its_maximum_length_parses)
              "12345678901234567890", (int)(strstr(image, "check=") - image),
              image);
     len = with_check(body, text);
-    CHECK_EQ(len, 281u);
+    CHECK_EQ(len, 290u);
     CHECK(len < HITEC_CARD_FILE_MAX);
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL),
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL, NULL),
              HITEC_CARD_OK);
     CHECK_STR_EQ(model, "12345678901234567890");
     /* One more is a line not read. */
@@ -373,7 +374,7 @@ TEST_CASE(a_servo_file_at_its_maximum_length_parses)
              "123456789012345678901", (int)(strstr(image, "check=") - image),
              image);
     len = with_check(body, text);
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL),
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, model, NULL, NULL),
              HITEC_CARD_ERR_FIELD);
 }
 
@@ -383,7 +384,7 @@ static size_t d_file(char *text)
     hitec_image_t img;
 
     d485(&img);
-    return hitec_card_file_text(&img, text, HITEC_CARD_FILE_MAX);
+    return hitec_card_file_text(&img, false, text, HITEC_CARD_FILE_MAX);
 }
 
 TEST_CASE(a_hand_edited_servo_file_is_refused_whole)
@@ -396,31 +397,31 @@ TEST_CASE(a_hand_edited_servo_file_is_refused_whole)
 
     /* A digit of the image changed: the check fails. */
     text[60] = text[60] == '0' ? '1' : '0';
-    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, &line),
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, &line, NULL),
              HITEC_CARD_ERR_CHECK);
     CHECK_EQ(line, 0u);
     /* Cut anywhere. */
     len = d_file(text);
     for (size_t cut = 16u; cut < len; ++cut) {
-        CHECK(hitec_card_file_parse(text, cut, &got, NULL, NULL)
+        CHECK(hitec_card_file_parse(text, cut, &got, NULL, NULL, NULL)
               != HITEC_CARD_OK);
     }
-    CHECK_EQ(hitec_card_file_parse(text, len - 1u, &got, NULL, NULL),
+    CHECK_EQ(hitec_card_file_parse(text, len - 1u, &got, NULL, NULL, NULL),
              HITEC_CARD_ERR_TRUNCATED);
     /* A byte after the check line. */
     text[len] = ' ';
-    CHECK_EQ(hitec_card_file_parse(text, len + 1u, &got, NULL, NULL),
+    CHECK_EQ(hitec_card_file_parse(text, len + 1u, &got, NULL, NULL, NULL),
              HITEC_CARD_ERR_TRUNCATED);
     /* No servo file. */
     CHECK_EQ(hitec_card_file_parse("KST servo configuration, format 1\n",
-                                   34u, &got, NULL, NULL),
+                                   34u, &got, NULL, NULL, NULL),
              HITEC_CARD_ERR_HEADER);
-    CHECK_EQ(hitec_card_file_parse(NULL, 10u, &got, NULL, NULL),
+    CHECK_EQ(hitec_card_file_parse(NULL, 10u, &got, NULL, NULL, NULL),
              HITEC_CARD_ERR_HEADER);
     /* Line ends of CR LF: the check line does not end the text. */
     snprintf(body, sizeof(body), "RCBENCH HITEC 1\r\nseries=D\r\n");
     len = with_check(body, text);
-    CHECK(hitec_card_file_parse(text, len, &got, NULL, NULL)
+    CHECK(hitec_card_file_parse(text, len, &got, NULL, NULL, NULL)
           != HITEC_CARD_OK);
     /* Lines not the ones due, each with a check that holds. */
     {
@@ -439,6 +440,14 @@ TEST_CASE(a_hand_edited_servo_file_is_refused_whole)
             { "series=C\nmodel=HS-5645MG\nimage=%s\nnote=1\n", 5u },
             { "series=C\nmodel=HS-5645MG\nimage=%s\nversion=16\nx=1\n",
               6u },
+            { "series=D\nmodel=D485HW\nimage=%s\nbackup=2\n", 5u },
+            { "series=D\nmodel=D485HW\nimage=%s\nbackup=\n", 5u },
+            { "series=D\nmodel=D485HW\nimage=%s\nbackup=1\nbackup=1\n",
+              6u },
+            { "series=C\nmodel=HS-5645MG\nimage=%s\nbackup=1\nversion=16\n",
+              6u },
+            { "series=C\nmodel=HS-5645MG\nimage=%s\nversion=16\nbackup=0\n"
+              "x=1\n", 7u },
             { "series=D\nmodel=D485HW\nimage=%s\n", 4u },
         };
         static const char k_d[] =
@@ -462,7 +471,8 @@ TEST_CASE(a_hand_edited_servo_file_is_refused_whole)
             snprintf(body, sizeof(body), "RCBENCH HITEC 1\n%s", lines);
             len = with_check(body, text);
             line = 0;
-            CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, &line),
+            CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, &line,
+                                           NULL),
                      HITEC_CARD_ERR_FIELD);
             CHECK_EQ(line, k_bad[i].line);
         }
@@ -470,7 +480,7 @@ TEST_CASE(a_hand_edited_servo_file_is_refused_whole)
         snprintf(body, sizeof(body),
                  "RCBENCH HITEC 1\nseries=D\nmodel=D485HW\nimage=%s\n", k_d);
         len = with_check(body, text);
-        CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL),
+        CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, NULL),
                  HITEC_CARD_OK);
     }
     /* A record's text is no servo file, and a servo file no record. */
@@ -479,12 +489,60 @@ TEST_CASE(a_hand_edited_servo_file_is_refused_whole)
 
         d_record(&r);
         len = hitec_card_text(&r, text, sizeof(text));
-        CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, &line),
+        CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, &line, NULL),
                  HITEC_CARD_ERR_FIELD);
         CHECK_EQ(line, 3u);
         len = d_file(text);
         CHECK_EQ(hitec_card_parse(text, len, &r), HITEC_CARD_ERR_FIELD);
     }
+}
+
+TEST_CASE(the_backup_line_says_what_a_servo_file_holds)
+{
+    char text[HITEC_CARD_FILE_MAX + 32u];
+    char body[HITEC_CARD_FILE_MAX + 32u];
+    hitec_image_t img, got;
+    uint8_t kind = 0xFFu;
+    const char *line;
+    size_t len;
+
+    /* A session's backup: backup=1. */
+    hs7955(&img);
+    len = hitec_card_file_text(&img, true, text, sizeof(text));
+    CHECK(strstr(text, "\nversion=26\nbackup=1\ncheck=") != NULL);
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, &kind),
+             HITEC_CARD_OK);
+    CHECK_EQ(kind, HITEC_CARD_KIND_BACKUP);
+    /* A save by hand: backup=0. */
+    len = hitec_card_file_text(&img, false, text, sizeof(text));
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, &kind),
+             HITEC_CARD_OK);
+    CHECK_EQ(kind, HITEC_CARD_KIND_SAVE);
+    /* A file of before the line: parsed, unmarked. */
+    line = strstr(text, "backup=");
+    if (line == NULL) {
+        T_FAIL("no backup line");
+        return;
+    }
+    snprintf(body, sizeof(body), "%.*s", (int)(line - text), text);
+    len = with_check(body, text);
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, &kind),
+             HITEC_CARD_OK);
+    CHECK_EQ(kind, HITEC_CARD_KIND_UNMARKED);
+    CHECK_EQ(got.version, 0x26u);
+    /* The D series: the line follows the image. */
+    d485(&img);
+    len = hitec_card_file_text(&img, true, text, sizeof(text));
+    CHECK(strstr(text, "\nbackup=1\ncheck=") != NULL);
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, &kind),
+             HITEC_CARD_OK);
+    CHECK_EQ(kind, HITEC_CARD_KIND_BACKUP);
+    /* A refused text leaves the kind as it was. */
+    kind = 0xFFu;
+    text[60] = text[60] == '0' ? '1' : '0';
+    CHECK_EQ(hitec_card_file_parse(text, len, &got, NULL, NULL, &kind),
+             HITEC_CARD_ERR_CHECK);
+    CHECK_EQ(kind, 0xFFu);
 }
 
 TEST_CASE(a_servo_file_text_needs_its_buffer_and_a_known_series)
@@ -493,11 +551,12 @@ TEST_CASE(a_servo_file_text_needs_its_buffer_and_a_known_series)
     char text[HITEC_CARD_FILE_MAX];
 
     d485(&img);
-    CHECK_EQ(hitec_card_file_text(&img, text, HITEC_CARD_FILE_MAX - 1u), 0u);
-    CHECK_EQ(hitec_card_file_text(&img, NULL, sizeof(text)), 0u);
-    CHECK_EQ(hitec_card_file_text(NULL, text, sizeof(text)), 0u);
+    CHECK_EQ(hitec_card_file_text(&img, false, text,
+                                  HITEC_CARD_FILE_MAX - 1u), 0u);
+    CHECK_EQ(hitec_card_file_text(&img, false, NULL, sizeof(text)), 0u);
+    CHECK_EQ(hitec_card_file_text(NULL, false, text, sizeof(text)), 0u);
     img.series = 2u;
-    CHECK_EQ(hitec_card_file_text(&img, text, sizeof(text)), 0u);
+    CHECK_EQ(hitec_card_file_text(&img, false, text, sizeof(text)), 0u);
 }
 
 int main(void)
@@ -513,6 +572,7 @@ int main(void)
     RUN(the_model_line_names_each_kind_of_model);
     RUN(a_servo_file_at_its_maximum_length_parses);
     RUN(a_hand_edited_servo_file_is_refused_whole);
+    RUN(the_backup_line_says_what_a_servo_file_holds);
     RUN(a_servo_file_text_needs_its_buffer_and_a_known_series);
     return test_summary("hitec_card");
 }
