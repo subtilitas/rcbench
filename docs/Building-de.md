@@ -650,6 +650,17 @@ Funkteil.
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, das des Panels mit `-D RCBENCH_PERF_LOG=OFF` und einer Prüfung, dass es keine Frame-Zeile enthält, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
 | `pages.yml` | Pull Request und Push auf `main`, der `configurator/`, `help/`, `docs/img/`, den Hilfe-Generator, das `Doxyfile` oder `tools/install_doxygen.sh` berührt; ein Push auf `main` auch, wenn er die C-Quellen berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; der Bau der Webhilfe mit `tools/help_site.py`; die C-API-Referenz, gebaut von Doxygen 1.18.0; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages, mit der Webhilfe unter `help/` und der API-Referenz unter `api/`. Ein Lauf, der nur die C-Quellen, das `Doxyfile` oder `tools/install_doxygen.sh` ändert, baut die Seite des Configurators ohne ihre Prüfungen und startet keinen Browser-Test |
 
+Jeder Job läuft auf Ubuntu 26.04 (`runs-on: ubuntu-26.04`), nicht auf
+`ubuntu-latest`. Die Host-Suite besteht aus fünf parallelen Jobs: `Host suite,
+build and ctest`, `Host suite under sanitizers`, `Host suite coverage`,
+`Checks that hold prose and generated files to the tree` und `Frame cost of
+every screen`. Jeder installiert seine Pakete über die Composite Action
+`.github/actions/host-deps`. Der Job `Host suite, coverage and the checks that
+hold prose to the tree` braucht die fünf, läuft auch, wenn einer von ihnen
+fehlschlägt, und schlägt fehl, solange nicht alle fünf erfolgreich sind; es
+ist der Name, den das Branch-Ruleset verlangt. Die Compiler dieses Images
+sind gcc 15.2 für den Host-Build und arm-none-eabi-gcc 14.2.1 für die IOmcu.
+
 clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
 die Header von ESP-IDF und pico-sdk, die der Analyse-Job nicht hat. Die
 Klasse style von cppcheck läuft ebenfalls nicht über `firmware/`. Die

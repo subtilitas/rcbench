@@ -538,17 +538,17 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 484 | 528 | 1 828 |
-| Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
+| Kern 0 | `main` | 4 096 | 1 476 | 528 | 1 836 |
+| Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
-Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
-CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
+Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
+(Paket `gcc-arm-none-eabi` 15:14.2.rel1 von Ubuntu 26.04, derselbe Compiler
+wie ARM GNU 14.2.Rel1). CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
 Zeile von Kern 0 oder die Zahl der Aufrufe über ein Register weiter unten
 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
-gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
-Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
-Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 508 Bytes ergibt.
+gehalten: ihre Kette ändert sich mit dem Compiler (arm-none-eabi-gcc 13.2.1
+ergibt 640 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des
+Runners. Die unten genannten Frames stammen aus demselben Build.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
 im pico-sdk scheitert: `main` (264 Bytes), `can_service` (344),
@@ -588,8 +588,8 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 161 solche Aufrufe sind von `main` aus erreichbar, im Image,
-  das CI baut (arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 ergibt 165);
+  Links liest: 168 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  das CI baut (arm-none-eabi-gcc 14.2.1);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug

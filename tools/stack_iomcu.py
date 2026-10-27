@@ -567,7 +567,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
 # The IOmcu's table in each language and the name of core 0's row.
 # Core 0's row is held: stack, deepest chain, one interrupt, spare.  Core
 # 1's is not: its chain moves with the compiler, 640 bytes with
-# arm-none-eabi-gcc 13.2.1 and 644 with 14.2.
+# arm-none-eabi-gcc 13.2.1 and 644 with 14.2.1.
 IOMCU_PERFORMANCE = (
     (ROOT / "docs" / "Performance.md",
      "| Core | Entry | Stack (bytes) | Deepest chain (bytes) | "
@@ -597,7 +597,7 @@ IOMCU_PROSE = (
      r"deepest chain and (\d[\d,]*) for one interrupt on the (\d[\d,]*)"
      r"-byte stack, (\d[\d,]*) bytes above the 256-byte margin\. The "
      r"figures are those of the image CI builds with arm-none-eabi-gcc "
-     r"13\.2\.1, and `stack_check\.py --iomcu --check-doc` holds them\. "
+     r"14\.2\.1, and `stack_check\.py --iomcu --check-doc` holds them\. "
      r"The depth is a lower bound: (\d[\d,]*) calls through a register "
      r"are not followed\.",
      ("depth", "interrupt", "stack", "spare", "calls")),

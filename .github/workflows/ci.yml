@@ -30,35 +30,23 @@ env:
   DOXYGEN_SHA256: >-
     14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
-# Every job runs on Ubuntu 24.04, named, not ubuntu-latest: the figures and
+# Every job runs on Ubuntu 26.04, named, not ubuntu-latest: the figures and
 # images the checks compare (warnings, stack depths, screenshots) are those
-# of its compilers and libraries.  Ubuntu 26.04 fails them.
+# of its compilers and libraries.
+#
+# The host suite is five jobs that run in parallel, and the job named
+# "Host suite, coverage and the checks that hold prose to the tree" joins
+# them.  The branch ruleset requires that name, so it exists on every run
+# and fails when any of the five does not succeed.
 jobs:
-  host-tests:
-    name: Host suite, coverage and the checks that hold prose to the tree
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+  host-build:
+    name: Host suite, build and ctest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install build dependencies
-        run: |
-          # The runner image carries package lists this build never installs
-          # from, and apt-get update fails the whole step when any one of them
-          # serves a stale index (for example "Hash Sum mismatch" on
-          # dl.google.com/linux/chrome-stable).  A toolchain install does not
-          # depend on a browser's mirror, so those lists are removed first.
-          #
-          # Matched by glob rather than by name: the image writes these as
-          # .list or as deb822 .sources depending on its version, and a name
-          # that misses leaves the failure exactly as it was.  -v so the log
-          # says what went, since a silent no-op here looks identical to a fix.
-          sudo rm -fv /etc/apt/sources.list.d/*google* \
-                      /etc/apt/sources.list.d/*microsoft* || true
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build gcc fonts-dejavu-core valgrind
-          python3 -m pip install pillow==12.3.0
+      - uses: ./.github/actions/host-deps
 
       # test/host/check_wa_page.py hands the script of the browser page to
       # node and is skipped, not failed, when node is missing.  The runner
@@ -72,10 +60,19 @@ jobs:
           cmake --build test/host/build -j"$(nproc)"
           ctest --test-dir test/host/build --output-on-failure
 
+  host-sanitizers:
+    name: Host suite under sanitizers
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
+
       # The same suite under AddressSanitizer and UBSan
-      # (UndefinedBehaviorSanitizer), for the runtime faults the -Werror build
-      # above cannot see: a parser reading off the end of a frame, a signed
-      # shift overflowing, an unaligned access.  The parsers for CSV
+      # (UndefinedBehaviorSanitizer), for the runtime faults the -Werror
+      # build of host-build cannot see: a parser reading off the end of a
+      # frame, a signed shift overflowing, an unaligned access.  The parsers for CSV
       # (comma-separated values), CAN (Controller Area Network), OpenYGE and
       # S.BUS are fed malformed input by design.  A separate build directory
       # because the flags differ.
@@ -92,6 +89,15 @@ jobs:
             -DENABLE_SANITIZERS=ON
           cmake --build test/host/build-san -j"$(nproc)"
           ctest --test-dir test/host/build-san --output-on-failure
+
+  host-coverage:
+    name: Host suite coverage
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
 
       # Fails when the table in STATUS.md or the figure in README.md and
       # README-de.md does not match the measurement, rather than committing a
@@ -123,6 +129,22 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: true
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage
+          path: coverage.json
+          if-no-files-found: warn
+
+  host-checks:
+    name: Checks that hold prose and generated files to the tree
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
 
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
@@ -196,6 +218,40 @@ jobs:
           python3 tools/wiki_links.py /tmp/wikicheck
           python3 tools/wiki_links.py --verify /tmp/wikicheck
 
+      # The screens are rendered by the code the panel runs, so a golden image
+      # checks what they look like; the unit tests cover what they decide.
+      - name: The committed screenshots match the current render
+        run: python3 tools/render_ui.py --check
+
+      # A string longer than its field is cut or runs into its neighbour;
+      # this draws every view in both languages and measures.  The English
+      # overflows the layout has are listed by name in the tool and printed;
+      # any other fails, in either language.
+      - name: Every string fits where it is drawn
+        run: python3 tools/render_ui.py --fit
+
+      - name: DEBUG render
+        if: always()
+        run: |
+          python3 tools/render_ui.py --dir /tmp/render26 >/dev/null
+          gcc --version | head -1; ldd --version | head -1
+          dpkg -l | grep -E "libc6 |fonts-dejavu" | cut -c1-100
+      - name: DEBUG upload
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: render26
+          path: /tmp/render26
+
+  host-frames:
+    name: Frame cost of every screen
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
+
       # The regression guard is cache-line traffic per frame under the
       # ESP32-P4's two caches, not wall-clock on a runner that shares nothing
       # with the board; test_frame_work holds the pixel visits beside it.
@@ -246,28 +302,27 @@ jobs:
       - name: The frame-cost tables in the docs are current
         run: python3 tools/frame_cost.py --check-doc
 
-      # The screens are rendered by the code the panel runs, so a golden image
-      # checks what they look like; the unit tests cover what they decide.
-      - name: The committed screenshots match the current render
-        run: python3 tools/render_ui.py --check
-
-      # A string longer than its field is cut or runs into its neighbour;
-      # this draws every view in both languages and measures.  The English
-      # overflows the layout has are listed by name in the tool and printed;
-      # any other fails, in either language.
-      - name: Every string fits where it is drawn
-        run: python3 tools/render_ui.py --fit
-
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: coverage
-          path: coverage.json
-          if-no-files-found: warn
+  host-tests:
+    name: Host suite, coverage and the checks that hold prose to the tree
+    needs: [host-build, host-sanitizers, host-coverage, host-checks, host-frames]
+    # Also when a job above failed or was cancelled: a skipped required check
+    # counts as passed, so this job runs and fails in its place.
+    if: ${{ always() }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Every host job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "a host job ended as $r"; exit 1; }
+          done
 
   analysis:
     name: Lint and static analysis
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -328,7 +383,7 @@ jobs:
   # file on every run: 4min to 9min (minutes) on the runners measured.
   cppcheck:
     name: cppcheck
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       # cppcheck is built from the official source archive of this tag;
@@ -460,7 +515,7 @@ jobs:
 
   tools:
     name: Tool tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
@@ -504,7 +559,7 @@ jobs:
   # ruff's D rules in the analysis job.
   doc-comments:
     name: Doxygen comments
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -543,7 +598,7 @@ jobs:
   mutation:
     name: Mutation check of the changed lines (advisory)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -570,7 +625,7 @@ jobs:
     # The build carries the IOmcu image of this commit, as the release
     # does.
     needs: [iomcu]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -726,7 +781,7 @@ jobs:
     # strategy, matrix, vars and inputs are), so the pin is spelled out here
     # and lives in env.PICO_SDK_TAG below.
     name: IOmcu (pico-sdk 2.3.0)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -848,7 +903,7 @@ jobs:
     # A test-bench tool (testbench/touch-injector), built so it keeps
     # building.  Its UF2 is not uploaded and no release carries it.
     name: Touch injector (pico-sdk 2.3.0)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6

@@ -73,7 +73,7 @@ TEST_CASE(every_row_names_its_part_and_has_its_own_key)
     fresh_model();
     for (int a = 0; a < SET_INA_PARTS; ++a) {
         CHECK_EQ(settings_sensors_part(SET_INA_FIT(a)), a);
-        char want[16];
+        char want[32];
         snprintf(want, sizeof(want), "ina_fit_%d", a);
         CHECK_STR_EQ(settings_def(SET_INA_FIT(a))->key, want);
         for (int ch = 0; ch < 3; ++ch) {

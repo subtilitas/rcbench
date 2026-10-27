@@ -499,15 +499,17 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,484 | 528 | 1,828 |
-| core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
+| core 0 | `main` | 4,096 | 1,476 | 528 | 1,836 |
+| core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
-13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row,
-or the count of calls through a register below, differs from that build. Core 1's row is not held: its chain moves with the
-compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
-runner's packaged one. The frames named below are those of a build with
-ARM GNU 14.2, which gives 1,508 bytes for core 0.
+14.2.1 (the package `gcc-arm-none-eabi` 15:14.2.rel1 of Ubuntu 26.04, the
+same compiler as ARM GNU 14.2.Rel1). CI runs the tool with `--check-doc`,
+which fails when core 0's row, or the count of calls through a register
+below, differs from that build. Core 1's row is not held: its chain moves
+with the compiler (arm-none-eabi-gcc 13.2.1 gives 640 bytes), and CI builds
+the image with the runner's packaged one. The frames named below are those
+of the same build.
 
 Core 0's deepest chain is a request that binds an output and fails in the
 pico-sdk: `main` (264 bytes), `can_service` (344), `link_dev_dispatch`,
@@ -545,9 +547,9 @@ in it is not measured. The heartbeat gap that switches every output off is
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 161 such calls
+  handler, which the tool reads out of the link's page table: 168 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
-  13.2.1; ARM GNU 14.2 gives 165);
+  14.2.1);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
   `strstr()` calls it for a needle of 255 characters or more, and the two
   needles in the firmware are 3 and 5 characters. The tool fails on a
