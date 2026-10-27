@@ -4,6 +4,17 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Changed
+
+- The KST and Chaservo programmer's files on the card use the store of the
+  Hitec programmer, `shared/logfile/servo_store.c`, with the stem `KST`; the
+  duplicate `kst_store.c` is removed. File names, the folder `BENCH/KST/CONF`,
+  the proposed names `KST001` to `KST999`, the reserved name `KST` and every
+  refusal stay as they were; `test_kst_store` is replaced by a KST case in
+  `test_servo_store`.
+
 ## 0.23.1 - 2026-10-27
 
 0.23.1 is a testing release: its minor number, 23, is odd, and GitHub
@@ -134,12 +145,6 @@ loads it over USB (Universal Serial Bus) as
 
 ### Changed
 
-- The KST and Chaservo programmer's files on the card use the store of the
-  Hitec programmer, `shared/logfile/servo_store.c`, with the stem `KST`; the
-  duplicate `kst_store.c` is removed. File names, the folder `BENCH/KST/CONF`,
-  the proposed names `KST001` to `KST999`, the reserved name `KST` and every
-  refusal stay as they were; `test_kst_store` is replaced by a KST case in
-  `test_servo_store`.
 - The KST and Chaservo programmer cycles the servo's supply: with a PD
   mini's output on, CONNECT switches it off for 1s, on, and sends the sync
   1s later; LEAVE after a write, a restore or a pairing release switches
