@@ -67,7 +67,7 @@ Versorgungsmodell.
 | STOPPING | 1 | der PWM-Generator, ohne Puls: ein laufender Puls endet | unverändert | nach 50ms |
 | LOW | 2 | der Leitungstreiber, auf Low getrieben | für das Programmieren gesetzt, siehe unten | nach 100ms und wenn die Versorgung wie angefordert liest |
 | PROGRAMMING | 3 | der Leitungstreiber: Low, ein Frame oder Eingang für ein Antwortfenster | an, vom Port gehalten | mit POWER_CYCLED, REBOOT oder LEAVE, und wenn die Versorgung ausgeht; vor dem ersten Frame auch mit ABORT, einem Stopp oder einem fehlgeschlagenen Einstieg |
-| RAIL_OFF | 4 | der Leitungstreiber, oder nach einem REBOOT in PWM der PWM-Generator ohne Puls | aus | 2000ms nachdem die Versorgung aus liest |
+| RAIL_OFF | 4 | der Leitungstreiber, oder nach einem REBOOT in PWM der PWM-Generator ohne Puls | aus | 1000ms nachdem die Versorgung aus liest |
 | RAIL_WAIT | 5 | wie RAIL_OFF | an, mit den Sollwerten, die sie hatte | 1000ms nachdem die Versorgung an liest, nach PWM |
 | LEAVING | 6 | der Leitungstreiber, auf Low getrieben | wie sie ist: nicht geschaltet, kein Sollwert geschrieben | nach der Wartezeit aus Schreibregister 28, nach PWM (seit 4.15) |
 
@@ -116,16 +116,20 @@ angefordert liest, beendet ENTER mit Ergebnis 32: der Port steht in PWM, und
 ein Ausgang, den dieses ENTER eingeschaltet hat, ist wieder aus.
 
 POWER_CYCLED und REBOOT in PROGRAMMING, bei an angefordertem PD mini,
-schalten die Versorgung aus und ein: aus, RAIL_OFF für 2000ms ab der
+schalten die Versorgung aus und ein: aus, RAIL_OFF für 1000ms ab der
 Lesung, die sie aus zeigt, an mit den Sollwerten, die sie hatte, RAIL_WAIT
 für 1000ms ab der Lesung, die sie an zeigt, dann PWM mit gelöschtem Bit 4.
 REBOOT wird auch in PWM angenommen, für ein Servo, das neu starten soll:
-derselbe Ablauf, ohne Puls am Port währenddessen. 2000ms und 1000ms sind
-die Werte des Eigentümers. Die Zeit, die ein KST-Servo ohne Spannung
-braucht, um den Programmiermodus zu verlassen, die Zeit, die es zum Starten
-braucht, und die Versorgungsspannung, die es im Programmiermodus annimmt,
-sind nicht gemessen. Ebenso wenig die Zeit, die der PD mini zum Schalten
-braucht.
+derselbe Ablauf, ohne Puls am Port währenddessen. Beide Zeiten, je
+1000ms, sind die Werte des Eigentümers. Ein Chaservo verließ den
+Programmiermodus nach 4000ms und mehr ohne Spannung und trat aus einem
+Einschalten 1000ms vor dem Sync in ihn ein (Prüfstand, 2026-10-16). Die
+kürzeste Zeit ohne Spannung, die Zeit, die ein Servo zum Starten braucht,
+und die Versorgungsspannung, die es im Programmiermodus annimmt, sind nicht
+gemessen. Ebenso wenig die Zeit, die der PD mini zum Schalten braucht. Das
+Panel nutzt REBOOT für VERBINDEN bei eingeschaltetem Ausgang des PD mini und
+für VERLASSEN nach einem Schreiben
+([ServoProgrammer-de.md](ServoProgrammer-de.md#der-versorgungszyklus)).
 
 Antwortet kein PD mini, fasst der Port keine Versorgung an. Die Session
 läuft, Bit 10 liest 0, POWER_CYCLED ist das Wort des Bedieners, dass das
@@ -166,7 +170,7 @@ Wo die Versorgung endet, wenn etwas ausfällt:
 | Der PD mini antwortet nicht mehr oder liest in LOW nicht innerhalb von 3000ms wie angefordert | aus angefordert, wenn dieses ENTER sie eingeschaltet hat, sonst an gelassen, auf der niedrigeren Spannung, wenn dieses ENTER sie gesenkt hat | PWM, Ergebnis 32 |
 | Die bereitgestellte Spannung ist außerhalb des Bereichs | unberührt | ENTER mit SUPPLY_RANGE abgewiesen |
 | Die Spannung der Session liegt unter 4800mV | unberührt | ENTER mit SUPPLY_LOW abgewiesen |
-| Die Versorgung liest aus oder ist aus angefordert in PROGRAMMING (das Panel, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 2000ms aus gehalten, nicht wieder eingeschaltet | die Operation endet, ein Frame auf der Leitung wird beendet; PWM mit gelöschtem Bit 4, Ergebnis 19 |
+| Die Versorgung liest aus oder ist aus angefordert in PROGRAMMING (das Panel, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 1000ms aus gehalten, nicht wieder eingeschaltet | die Operation endet, ein Frame auf der Leitung wird beendet; PWM mit gelöschtem Bit 4, Ergebnis 19 |
 | Die Versorgung liest nicht innerhalb von 3000ms nach Beginn eines Aus-Ein-Ablaufs aus | aus angefordert | aus PROGRAMMING: wieder PROGRAMMING, Bits 4 und 5 bleiben, Ergebnis 32. Aus PWM: PWM, Ergebnis 32 |
 | Der Heartbeat ist verloren oder der Link still in RAIL_OFF | bleibt aus | PWM mit gelöschtem Bit 4, Ergebnis 19 |
 | Die Versorgung liest in RAIL_WAIT nicht innerhalb von 3000ms an | aus angefordert | PWM, Ergebnis 32 |
@@ -230,7 +234,7 @@ Versorgung, der Pin und der Zustand wie zuvor.
 | ABORT | wie sie ist | PROGRAMMING mit Ergebnis 19, die Session, wie LEAVE sie vorfand, Bit 5 nicht gesetzt |
 | Ein Schalten auf SAFE | wie sie ist | PROGRAMMING mit Ergebnis 19 und gesetztem Bit 5 |
 | Der Heartbeat verloren oder der Link schweigt, kein PD mini antwortet | unberührt | PROGRAMMING mit Ergebnis 19 und gesetztem Bit 5 |
-| Die Versorgung liest aus oder ist aus angefordert (das STOP des Panels, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 2000ms aus gehalten, nicht wieder eingeschaltet | RAIL_OFF, dann PWM mit gelöschten Bits 4 und 5 und Ergebnis 19 |
+| Die Versorgung liest aus oder ist aus angefordert (das STOP des Panels, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 1000ms aus gehalten, nicht wieder eingeschaltet | RAIL_OFF, dann PWM mit gelöschten Bits 4 und 5 und Ergebnis 19 |
 | Der PD mini antwortet nicht mehr | unberührt | die Wartezeit läuft weiter |
 | Jedes andere Kommando | wie sie ist | abgewiesen mit BUSY |
 
@@ -392,10 +396,10 @@ Kommando ABORT aus `kst_link_abort()`.
 | --- | --- | --- | --- |
 | PWM | der Puls endet, wie an jedem Ausgang. Die Versorgung bleibt, wie sie ist | der Puls endet, und die Versorgung ist aus | der Puls endet. SUPPLY schaltet den PD mini aus |
 | STOPPING, LOW | der Port kehrt mit Ergebnis 19 nach PWM zurück. Eine Versorgung, die dieses ENTER eingeschaltet hat, wird ausgeschaltet; eine an vorgefundene bleibt an | dasselbe, und die Versorgung ist aus | dasselbe, und SUPPLY schaltet den PD mini aus |
-| PROGRAMMING | die laufende Operation endet mit Ergebnis 19: ein Frame auf der Leitung wird beendet, was höchstens 12ms dauert, und kein weiterer beginnt. Der Pin ist danach auf Low getrieben oder Eingang. Nach einem ersten Frame wird Bit 5 gesetzt, und der Port bleibt PROGRAMMING; davor kehrt der Port nach PWM zurück. Die Versorgung bleibt an | die Operation endet ebenso. Die Versorgung ist aus: der Port hält sie 2000ms aus und kehrt mit gelöschten Bits 4 und 5 und Ergebnis 19 nach PWM zurück. Antwortet kein PD mini, bleibt der Port PROGRAMMING mit gesetztem Bit 5 | wie das STOP des Panels |
-| RAIL_OFF | nichts: der Ablauf geht weiter | die Versorgung bleibt aus; nach den 2000ms steht der Port mit Ergebnis 19 in PWM | wie das STOP des Panels |
+| PROGRAMMING | die laufende Operation endet mit Ergebnis 19: ein Frame auf der Leitung wird beendet, was höchstens 12ms dauert, und kein weiterer beginnt. Der Pin ist danach auf Low getrieben oder Eingang. Nach einem ersten Frame wird Bit 5 gesetzt, und der Port bleibt PROGRAMMING; davor kehrt der Port nach PWM zurück. Die Versorgung bleibt an | die Operation endet ebenso. Die Versorgung ist aus: der Port hält sie 1000ms aus und kehrt mit gelöschten Bits 4 und 5 und Ergebnis 19 nach PWM zurück. Antwortet kein PD mini, bleibt der Port PROGRAMMING mit gesetztem Bit 5 | wie das STOP des Panels |
+| RAIL_OFF | nichts: der Ablauf geht weiter | die Versorgung bleibt aus; nach den 1000ms steht der Port mit Ergebnis 19 in PWM | wie das STOP des Panels |
 | RAIL_WAIT | nichts: der Ablauf geht weiter | die Versorgung wird ausgeschaltet; der Port steht mit Ergebnis 19 in PWM | wie das STOP des Panels |
-| LEAVING | die Wartezeit endet mit Ergebnis 19, und der Port steht in PROGRAMMING mit gesetztem Bit 5. Die Versorgung bleibt an | die Wartezeit endet genauso. Die Versorgung ist aus: der Port hält sie 2000ms aus und kehrt mit gelöschten Bits 4 und 5 und Ergebnis 19 nach PWM zurück. Antwortet kein PD mini, bleibt der Port in PROGRAMMING | wie das STOP des Panels |
+| LEAVING | die Wartezeit endet mit Ergebnis 19, und der Port steht in PROGRAMMING mit gesetztem Bit 5. Die Versorgung bleibt an | die Wartezeit endet genauso. Die Versorgung ist aus: der Port hält sie 1000ms aus und kehrt mit gelöschten Bits 4 und 5 und Ergebnis 19 nach PWM zurück. Antwortet kein PD mini, bleibt der Port in PROGRAMMING | wie das STOP des Panels |
 
 Solange Bit 5 gesetzt ist, nimmt der Port nur ENTER, READ_ALL, ABORT,
 POWER_CYCLED und REBOOT, bis ein READ_ALL gelungen ist. ABORT allein hat in
@@ -411,7 +415,7 @@ Bit 5 ist gesetzt wie nach einem abgeschnittenen Frame, weil die Session
 Frames gesendet hat, bevor sie plante. Die Versorgung bleibt nach einem
 Schalten auf SAFE oder einem ABORT allein an. Nach dem STOP des Panels, einem
 verlorenen Heartbeat oder einem stillen Link ist sie aus, und wenn ein PD
-mini antwortet, hält der Port sie 2000ms aus und kehrt mit gelöschten Bits
+mini antwortet, hält der Port sie 1000ms aus und kehrt mit gelöschten Bits
 4 und 5 nach PWM zurück. POWER_CYCLED und REBOOT beenden das Planen und
 laufen dann. Jedes andere Kommando wird mit BUSY abgewiesen, und das Planen
 geht weiter. Ein PD mini, der nicht mehr antwortet, beendet es nicht.
@@ -425,8 +429,8 @@ Operation außer ABORT und POWER_CYCLED wird mit UNSAFE abgewiesen.
 
 Ein Link, der in RAIL_OFF verloren geht, lässt die Versorgung aus und den
 Port in PWM: ohne Panel am Link könnte niemand die Versorgung wieder
-ausschalten, und ein Servo, das 2000ms ohne Spannung war, hat den
-Programmiermodus verlassen, wenn 2000ms genügen, was nicht gemessen ist.
+ausschalten, und ein Servo, das 1000ms ohne Spannung war, hat den
+Programmiermodus verlassen, wenn 1000ms genügen, was nicht gemessen ist.
 Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 
 | Panel | IOmcu | Servo-Programmier-Page (`KST`, 0x32) |

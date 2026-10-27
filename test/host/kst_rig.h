@@ -39,6 +39,8 @@ typedef struct {
      * once. */
     bool rail;                 /* a PD mini answers */
     bool rail_deaf;            /* it takes no request */
+    bool on_rail;              /* the servo is powered by the PD mini's
+                                  output (sim_power()) */
     bool no_pin;               /* the generator has no pin for the port */
     uint8_t ports;             /* the build's ports; 0 is 1 */
     uint8_t pin_of[4];         /* ports past RIG_PORT: their pins, 0 none */
@@ -239,6 +241,7 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->out_mv = f->supply_read ? g_rig.sup_mv : 0u;
     f->out_ma = f->supply_read ? g_rig.load_ma : 0u;
     f->set_mv = f->supply_read ? g_rig.sup_mv : 0u;
+    f->set_ma = f->supply_read ? g_rig.sup_ma : 0u;
 }
 
 /* 1ms: the IOmcu, one exchange, the control task and the card. */
@@ -252,6 +255,9 @@ static inline void rig_frame(void)
     char text[KST_PROG_FILE_MAX];
     size_t len;
 
+    if (g_rig.on_rail) {
+        sim_power(&g_rig.sim, g_rig.rail && g_rig.sup_on);
+    }
     for (unsigned i = 0; i < 10u; ++i) {
         kst_port_step(&g_rig.port, g_rig.safe, g_rig.stop, g_rig.ms);
         g_rig.sim.now_us += 100u;

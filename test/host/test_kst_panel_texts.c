@@ -197,7 +197,7 @@ TEST_CASE(every_state_is_drawn_in_both_languages)
         show();
         rig_stop(false);
         rig_frames(5);
-        tap(val(PG_SERVO, 2, 0));
+        tap(val(PG_SERVO, 4, 0));
         show();
         tap(kst_panel_choice_cancel_rect());
     }
@@ -219,7 +219,7 @@ TEST_CASE(a_message_goes_when_what_it_says_no_longer_holds)
     CHECK_STR_EQ(said(), "");
     /* "written and verified" does not stand beside a new edit. */
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     settle();
     CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));

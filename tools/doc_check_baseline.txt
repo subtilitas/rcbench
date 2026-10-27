@@ -624,10 +624,8 @@ firmware/panel/main/panel.h: warning: Member knob_apply(const knob_turn_t *turn,
 firmware/panel/main/panel.h: warning: Member knob_take(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member kst_card_serve(void) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member kst_commands(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst_link_service(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst_port_look(void) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member kst_publish(kst_prog_feed_t *f) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst_record_load(bool late) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst_record_write(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member kst_ui_service(void) (function) of file panel.h is not documented.
@@ -1101,10 +1099,8 @@ firmware/panel/main/panel_services.c: warning: Member alert_drop(uint32_t *setup
 firmware/panel/main/panel_services.c: warning: Member enc_queue(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member hitec_rx_service(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member k_sense_part[2] (variable) of file panel_services.c is not documented.
-firmware/panel/main/panel_services.c: warning: Member kst_commands(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member kst_link_service(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member kst_port_look(void) (function) of file panel_services.c is not documented.
-firmware/panel/main/panel_services.c: warning: Member kst_publish(kst_prog_feed_t *f) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member prog_hold_look(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member prog_link_service(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member prog_page_read(void) (function) of file panel_services.c is not documented.
@@ -1735,7 +1731,6 @@ shared/bench/kst_card.c: warning: Member s_text[KST_FILE_MAX] (variable) of file
 shared/bench/kst_link.c: warning: Member RES(reg) (macro definition) of file kst_link.c is not documented.
 shared/bench/kst_link.c: warning: Member RESULTS_N (macro definition) of file kst_link.c is not documented.
 shared/bench/kst_link.c: warning: Member STAGE_WINDOWS (macro definition) of file kst_link.c is not documented.
-shared/bench/kst_prog.c: warning: Member RUN_FIELDS (macro definition) of file kst_prog.c is not documented.
 shared/bench/kst_prog.c: warning: Member source(const kst_prog_t *p, kst_prog_from_t from) (function) of file kst_prog.c is not documented.
 shared/bench/kst_prog_file.c: warning: Member journal (variable) of struct loaded_t is not documented.
 shared/bench/kst_prog_file.c: warning: Member journal_img (variable) of struct loaded_t is not documented.
@@ -3816,7 +3811,6 @@ shared/ui/include/wifi_screen.h: warning: return type of member wifi_screen_jobs
 shared/ui/include/wifi_screen.h: warning: return type of member wifi_screen_take is not documented
 shared/ui/include/wifi_screen.h: warning: return type of member wifi_screen_view is not documented
 shared/ui/kst_panel.c: warning: Member card_state(void) (function) of file kst_panel.c is not documented.
-shared/ui/kst_panel.c: warning: Member control_rect(const row_t *r) (function) of file kst_panel.c is not documented.
 shared/ui/kst_panel.c: warning: Member k_pages[PG_COUNT] (variable) of file kst_panel.c is not documented.
 shared/ui/kst_panel.c: warning: Member kst_panel_choice_label(int i) (function) of file kst_panel.c is not documented.
 shared/ui/kst_panel.c: warning: Member kst_panel_keypad(void) (function) of file kst_panel.c is not documented.
@@ -4120,7 +4114,6 @@ shared/ui/sensors_rows.c: warning: Member sensors_rows_state_color(int a) (funct
 shared/ui/servo_limit_panel.c: warning: Member lim_apply(const servo_limrun_do_t *d) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_begin(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_blocked(void) (function) of file servo_limit_panel.c is not documented.
-shared/ui/servo_limit_panel.c: warning: Member lim_cfg(servo_limrun_cfg_t *c) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_end_now(servo_test_abort_t why) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_end_text(char *b, size_t n, const servo_limrun_side_t *e) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_ended(void) (function) of file servo_limit_panel.c is not documented.

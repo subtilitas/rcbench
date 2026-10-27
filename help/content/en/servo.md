@@ -182,7 +182,9 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0us and PULSE UPPER 2000.0us i
 
 ### Programming LEFT ANGLE and RIGHT ANGLE
 
-SEARCH + PROGRAM needs a KST or Chaservo servo on the programming port: TARGET on PROG PORT, the port in PWM, and 4.8V or more. With a PD mini, its output must be on and its set point counts; without one, the servo rail in the INA3221's last window counts. On the bench's outputs LIMIT RUN reads SEARCH ONLY and the settings' note says why. On PROG PORT every run starts with a read session, SEARCH ONLY included, and it needs a KST or Chaservo servo: with another servo the run ends with `no KST or Chaservo servo read`. A port not in PWM, a PD mini output that is off, or a supply under 4.8V keeps the button grey for SEARCH ONLY as well, and the card's state line names the condition.
+SEARCH + PROGRAM needs a KST or Chaservo servo on the programming port: TARGET on PROG PORT, the port in PWM, a PD mini with its output on, and a set point of 4.8V or more. The servo takes a written value only after its supply is switched off and on, which the run does through the PD mini. Without one SEARCH + PROGRAM and SERVO PULSES at 1000-2000 are not offered, the card says `PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`, and the run searches only, with the servo rail in the INA3221's last window at 4.8V or more. On the bench's outputs LIMIT RUN reads SEARCH ONLY and the settings' note says why. On PROG PORT every run starts with a read session, SEARCH ONLY included, and it needs a KST or Chaservo servo: with another servo the run ends with `no KST or Chaservo servo read`. A port not in PWM, a PD mini output that is off, or a supply under 4.8V keeps the button grey for SEARCH ONLY as well, and the card's state line names the condition.
+
+![No PD mini: the run writes nothing](view:servo-limrun-nopd)
 
 ![The limit run, programming](view:servo-limrun)
 

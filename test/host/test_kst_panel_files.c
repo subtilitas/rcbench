@@ -94,7 +94,7 @@ TEST_CASE(files_lists_the_card_under_the_entry_that_saves)
 
     fresh();
     connected();
-    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 1), TR(KP_FILES));
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 2, 0), TR(KP_FILES));
     /* An empty card: the entry that saves, and the message. */
     files();
     CHECK_EQ(kst_panel_editor(), 2);
@@ -177,14 +177,14 @@ TEST_CASE(the_list_waits_for_the_card_and_opens_once)
     fresh();
     connected();
     g_rig.fc.silent = true;
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     rig_frames(5);
     tick(0.02f);
     show();
     CHECK(kst_prog_card_busy(M));
     CHECK_EQ(kst_panel_editor(), 0);
     /* A second tap asks for no second list. */
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     rig_frames(5);
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(g_rig.fc.lists, 1);
@@ -198,7 +198,7 @@ TEST_CASE(the_list_waits_for_the_card_and_opens_once)
     CHECK_EQ(kst_panel_editor(), 0);
     /* A list asked for as the link goes opens nothing. */
     g_rig.fc.silent = false;
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     kst_link_lost(&g_rig.link);
     settle();
     CHECK_EQ(kst_panel_editor(), 0);
@@ -338,7 +338,7 @@ TEST_CASE(every_failure_of_the_card_has_its_line)
         /* No card in the slot. */
         g_rig.card = false;
         rig_frame();
-        tap(val(PG_SERVO, 1, 1));
+        tap(val(PG_SERVO, 2, 0));
         CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
         CHECK_STR_EQ(said(), TR(KP_M_CARD_NONE));
         CHECK_EQ(kst_panel_editor(), 0);
@@ -369,14 +369,14 @@ TEST_CASE(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them)
     CHECK_EQ(g_rig.sim.n_writes, 0);
     /* The values are written as edits are: the switch, the page, the
      * hold. */
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_ENABLE_1)));
     tap(kst_panel_cancel_rect());
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
     enable();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_HORN_FREE)));
     hold(2.1f);
@@ -471,8 +471,8 @@ static void type_mismatch(bool servo_other, ui_lang_t lang)
     CHECK_EQ(t_file + t_servo, 14);
     if (lang == UI_LANG_EN) {
         CHECK_STR_EQ(said(), t_file == 6u
-                                 ? "File is V6, servo is V8. Not loaded."
-                                 : "File is V8, servo is V6. Not loaded.");
+                                 ? "File is V6, TYPE is V8. Not loaded."
+                                 : "File is V8, TYPE is V6. Not loaded.");
     } else {
         CHECK(strstr(said(), t_file == 6u ? "V6" : "V8") != NULL);
         CHECK(strstr(said(), t_servo == 6u ? "V6" : "V8") != NULL);
@@ -494,11 +494,11 @@ TEST_CASE(a_file_of_the_other_servo_type_is_denied_naming_both)
     type_mismatch(true, UI_LANG_DE);
 }
 
-TEST_CASE(the_servo_type_is_shown_once_the_servo_is_read)
+TEST_CASE(the_type_row_shows_the_guess_until_the_operator_sets_it)
 {
     const kst_image_t sv = sim_bench_image();
     const kst_image_t ot = other_type();
-    char want[24];
+    char want[KST_PANEL_LINE];
 
     for (int lang = UI_LANG_EN; lang <= UI_LANG_DE; ++lang) {
         for (int other = 0; other < 2; ++other) {
@@ -510,18 +510,42 @@ TEST_CASE(the_servo_type_is_shown_once_the_servo_is_read)
                 memcpy(g_rig.sim.reg, ot.r, sizeof(ot.r));
             }
             link_up();
-            /* Nothing read: no type. */
+            /* Nothing read: no type, and TYPE takes no tap. */
             CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), "SERVO");
+            CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 1), TR(KP_TYPE));
+            CHECK_STR_EQ(kst_panel_button(PG_SERVO, 1, 1), "--");
+            CHECK(!kst_panel_row_live(PG_SERVO, 1, 1));
             tap(val(PG_SERVO, 0, 0));
             settle();
-            snprintf(want, sizeof(want), TR(KP_SERVO_V), type);
-            CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), want);
-            CHECK(strstr(want, type == 6u ? "V6" : "V8") != NULL);
-            /* The 20k field is the type, and takes no tap. */
+            /* Read: the guess, marked, on the row and in amber below. */
+            CHECK_STR_EQ(kst_panel_label(PG_SERVO, 1, 0), "SERVO");
+            snprintf(want, sizeof(want), "V%u?", type);
+            CHECK_STR_EQ(kst_panel_button(PG_SERVO, 1, 1), want);
+            CHECK(strstr(kst_panel_status_line(1), "20k_sel") != NULL);
+            /* The 20k field is a drive setting: its name, and no tap. */
             tap(kst_panel_tab_rect(PG_LOCKED));
-            CHECK_STR_EQ(kst_panel_label(PG_LOCKED, 0, 0), TR(KP_TYPE));
+            CHECK_STR_EQ(kst_panel_label(PG_LOCKED, 0, 0), "20K SEL");
             tap(val(PG_LOCKED, 0, 0));
             CHECK_EQ(kst_panel_editor(), 0);
+            show();
+            /* The operator's choice: the other type than the guess. */
+            tap(kst_panel_tab_rect(PG_SERVO));
+            tap(val(PG_SERVO, 1, 1));
+            CHECK_EQ(kst_panel_editor(), 2);
+            CHECK_STR_EQ(kst_panel_choice_title(), TR(KP_TYPE_TITLE));
+            CHECK_STR_EQ(kst_panel_choice_label(0), "V6");
+            CHECK_STR_EQ(kst_panel_choice_label(1), "V8");
+            tap(kst_panel_choice_rect(type == 6u ? 1 : 0));
+            CHECK_EQ(kst_panel_editor(), 0);
+            snprintf(want, sizeof(want), "V%u", type == 6u ? 8u : 6u);
+            CHECK_STR_EQ(kst_panel_button(PG_SERVO, 1, 1), want);
+            snprintf(want, sizeof(want), TR(KP_TYPE_SET),
+                     type == 6u ? 8u : 6u);
+            CHECK_STR_EQ(kst_panel_status_line(1), want);
+            /* Nothing went to the servo: 20k_sel stays as read. */
+            CHECK_EQ(kst_field_get(kst_prog_servo(M),
+                                   KST_F_20K_SEL),
+                     type == 6u ? 1u : 0u);
             show();
         }
     }
@@ -634,7 +658,7 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
     /* Pending, not written: the write still needs its switch. */
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK(warns(TR(KP_ENABLE_1)));
     tap(kst_panel_cancel_rect());
     CHECK(!kst_prog_write_enabled(M));
@@ -784,7 +808,7 @@ TEST_CASE(a_load_waits_for_a_servo_that_is_read)
     fresh();
     link_up();
     (void)fake_card_put(&g_rig.fc, "F", &sv);
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     rig_frames(5);
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(g_rig.fc.lists, 0);
@@ -813,7 +837,7 @@ TEST_CASE(the_first_write_saves_the_servo_to_a_file_without_asking)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_WRITE_BACKUP)));
     hold(2.1f);
@@ -832,7 +856,7 @@ TEST_CASE(the_first_write_saves_the_servo_to_a_file_without_asking)
     if (!kst_prog_write_enabled(M)) {
         enable();
     }
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(!warns(TR(KP_WRITE_BACKUP)));
     CHECK(warns(TR(KP_WRITE_CARD)));
@@ -867,7 +891,7 @@ TEST_CASE(a_first_write_whose_file_fails_is_not_sent)
         if (!kst_prog_write_enabled(M)) {
             enable();
         }
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 4, 1));
         CHECK_EQ(kst_panel_editor(), 3);
         hold(2.1f);
         settle();
@@ -883,7 +907,7 @@ TEST_CASE(a_first_write_whose_file_fails_is_not_sent)
     if (!kst_prog_write_enabled(M)) {
         enable();
     }
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     hold(2.1f);
     settle();
@@ -902,7 +926,7 @@ int main(void)
     RUN(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them);
     RUN(an_edited_file_is_named_as_one_and_its_locked_values_are_counted);
     RUN(a_file_of_the_other_servo_type_is_denied_naming_both);
-    RUN(the_servo_type_is_shown_once_the_servo_is_read);
+    RUN(the_type_row_shows_the_guess_until_the_operator_sets_it);
     RUN(a_file_that_does_not_read_says_why);
     RUN(a_file_past_a_soft_limit_waits_for_a_2_s_hold);
     RUN(a_file_with_more_warnings_than_lines_counts_the_rest);

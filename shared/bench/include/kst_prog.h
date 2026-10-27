@@ -266,6 +266,16 @@ enum {
     KST_PROG_MSG_CARD_DENIED,     /**< the card takes no file: it is write
                                        protected, or a file has the name of
                                        the directory                        */
+    KST_PROG_MSG_NEED_TYPE,       /**< a load waits for the servo type the
+                                       operator sets (kst_prog_type_set())  */
+    KST_PROG_MSG_CYCLE_CUT,       /**< a supply cycle of CONNECT or LEAVE
+                                       was stopped: the supply stays off    */
+    KST_PROG_MSG_LEFT_CYCLED,     /**< the port is back in PWM after a
+                                       supply cycle: the written values act */
+    KST_PROG_MSG_LEFT_NOTE,       /**< the port is back in PWM, no PD mini
+                                       answering, after a write: the values
+                                       act after the servo's supply is
+                                       switched off and on                  */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -368,6 +378,9 @@ typedef struct {
     bool preset;         /**< KST_PROG_CARD_SAVE: the card's side names it */
     uint32_t id;         /**< goes back in the answer                      */
     char name[KST_PROG_NAME_MAX];  /**< the file to save or to load        */
+    uint8_t type;        /**< the servo type the operator set, 6 or 8; 0
+                              not set.  A save states it in the file, a
+                              load holds the file to it                    */
     uint16_t first;      /**< KST_PROG_CARD_LIST: the first file wanted,
                               counted from 0                               */
     kst_image_t image;   /**< the servo's image: what a save writes, what
@@ -387,7 +400,8 @@ typedef struct {
     uint8_t kind;        /**< kst_prog_file_kind_t                         */
     uint8_t type;        /**< the file's servo type, a number the card's
                               side gives and the screen names; 0 none      */
-    uint8_t servo_type;  /**< KST_PROG_CARD_TYPE: the servo's              */
+    uint8_t servo_type;  /**< KST_PROG_CARD_TYPE: the servo's, as the
+                              operator set it                              */
     kst_field_set_t skipped;  /**< fields that differ from the file and
                               are never written                            */
     uint8_t named;       /**< fields the file gives a value for            */
@@ -513,6 +527,8 @@ typedef struct {
     uint16_t out_mv;           /**< its output, mV                        */
     uint16_t out_ma;           /**< and the current it gives, mA          */
     uint16_t set_mv;           /**< and the voltage it is set to, mV      */
+    uint16_t set_ma;           /**< and the current limit it is set to,
+                                    mA; 0 not known                       */
     bool stopped;              /**< STOP is latched: no heartbeat */
     bool armed;                /**< the panel's outputs are armed */
     bool card;                 /**< a card takes the file */
@@ -588,6 +604,21 @@ typedef struct {
     bool leave_doubt;         /**< the exit runs without LEAVE: the
                                    port asks for a read or holds a
                                    servo in doubt, no PD mini answers */
+    uint8_t cycle;            /**< the supply cycle under way, KST_PROG_
+                                   CYCLE_*: a CONNECT's before its
+                                   ENTER, or a LEAVE's after a write  */
+    bool cycle_cut;           /**< the operator's ABORT came during
+                                   it: no ENTER follows               */
+    bool cycle_off;           /**< the CONNECT's REBOOT was asked to
+                                   end with the supply off            */
+    uint16_t cycle_mv;        /**< what the ENTER after a CONNECT's
+                                   cycle asks: the lower of the
+                                   programming voltage and the one the
+                                   output was set to, mV              */
+    uint16_t cycle_ma;        /**< and the lower current limit, mA    */
+    uint8_t type;             /**< the servo type the operator set, 6
+                                   or 8; 0 while not set.  Held until
+                                   the session ends                   */
     uint32_t wait_ms;                   /**< when the wait for the port began, ms */
     uint32_t run_ms;          /**< when the wait for the outcome began */
     uint32_t fetch_ms;                  /**< when the backup was last fetched, ms */
@@ -1092,11 +1123,33 @@ void kst_prog_discard(kst_prog_t *p);
  * KST_PROG_MSG_NEED_TARGET while the feed's target
  *  is not that port, KST_PROG_MSG_NEED_DISARM on an armed bench.
  *
+ * A servo enters programming mode only from a power-up.  With a PD mini
+ * answering and its output on (kst_prog_connect_cycles()) the port's
+ * REBOOT switches the output off and keeps it off for KST_PORT_RAIL_OFF_MS
+ * from the read that shows it off; an ABORT sent while the port reads
+ * RAIL_OFF keeps it off after that, and the ENTER that follows switches it
+ * on at the lower of the programming voltage and the voltage it was set
+ * to, and the lower of the two current limits, and sends the sync
+ * KST_PORT_RAIL_WAIT_MS after it reads on.  With the output off the ENTER
+ * powers the servo up as it is.  Without a PD mini the servo's supply is
+ * not the bench's, and the ENTER goes as it is: the operator powers the
+ * servo up before CONNECT.  A STOP, the operator's ABORT, an ARM or a
+ * target change while the output is off sends no ENTER, and the output
+ * stays off.
+ *
  * @param p    The programmer state.
  * @param port The programming port, from 0.
  * @return The message for the connect attempt.
  */
 kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port);
+/**
+ * @brief Whether CONNECT switches the supply off and on first: a PD mini
+ *        answers and the panel reads its output on.
+ *
+ * @param p The programmer state.
+ * @return true when CONNECT cycles the supply before the ENTER.
+ */
+bool kst_prog_connect_cycles(const kst_prog_t *p);
 /**
  * @brief The bench is armed or asked to arm.
  *
@@ -1380,17 +1433,40 @@ const char *kst_prog_run_backup(const kst_prog_t *p);
 bool kst_prog_run_matches(const kst_prog_t *p);
 
 /**
- * @brief End the session: the port goes back to PWM and the supply stays as it
- *        is.
+ * @brief End the session: the port goes back to PWM.
  *
- * The one place a session is ended by the operator.  While a PD mini
- *  answers the port has no command for it and the answer is
- *  KST_PROG_MSG_LEAVE_SUPPLY.
+ * The one place a session is ended by the operator.  Where
+ * kst_prog_leave_cycles() holds, the port's REBOOT switches the supply off
+ * for KST_PORT_RAIL_OFF_MS and on again, holds the line low for
+ * KST_PORT_RAIL_WAIT_MS and gives the pin to PWM: a written value acts
+ * after the servo's next power-up.  Otherwise LEAVE leaves the supply as it
+ * is.  An IOmcu below link 4.15 has no LEAVE: with a PD mini answering
+ * and no cycle owed the answer is KST_PROG_MSG_LEAVE_SUPPLY.
  *
  * @param p The programmer state.
  * @return The message id.
  */
 kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p);
+/**
+ * @brief Whether a LEAVE now switches the supply off and on before PWM.
+ *
+ * True in programming mode with a PD mini answering, its output read on,
+ * the port asking for no read and not locked, and a write owed its power
+ * cycle (kst_prog_cycle_owed()).
+ *
+ * @param p The programmer state.
+ * @return true when kst_prog_leave() cycles the supply.
+ */
+bool kst_prog_leave_cycles(const kst_prog_t *p);
+/**
+ * @brief Whether a write of this session waits for the servo's next power-up
+ *        to act: a write, restore or pairing release was sent, or the session
+ *        began before this model saw it and its writes are not known.
+ *
+ * @param p The programmer state.
+ * @return true in programming mode with such a write.
+ */
+bool kst_prog_cycle_owed(const kst_prog_t *p);
 /**
  * @brief The wait between the end of a session and the first PWM pulse, up to
  *        KST_PROG_WAIT_MAX_MS.
@@ -1453,10 +1529,12 @@ unsigned kst_prog_files_first(const kst_prog_t *p);
 /**
  * @brief Load the file with @p name into the draft.
  *
- * Taken with a servo read that passes the fingerprint and is not in doubt.  A
- * file of another servo type, a file with a value that is not taken, a file
- * that breaks a hard rule and a file that is not whole change nothing.  A file
- * that breaks soft rules waits for kst_prog_soft_confirm().
+ * Taken with a servo read that passes the fingerprint and is not in doubt,
+ * and with the servo type set (kst_prog_type_set()):
+ * KST_PROG_MSG_NEED_TYPE before it.  A file that states another type than
+ * the one set, a file with a value that is not taken, a file that breaks a
+ * hard rule and a file that is not whole change nothing.  A file that breaks
+ * soft rules waits for kst_prog_soft_confirm().
  *
  * @param p    The programmer state.
  * @param name The file name.
@@ -1493,6 +1571,42 @@ const char *kst_prog_file_name(const kst_prog_t *p, unsigned i);
  * @return The type, or 0 beyond the list.
  */
 unsigned kst_prog_file_type(const kst_prog_t *p, unsigned i);
+/**
+ * @brief The servo type the operator set for this session: 6 for V6, 8 for
+ *        V8, 0 while none is set.
+ *
+ * A save states it in the file, and a load is held to it.  The session's
+ * end clears it.
+ *
+ * @param p The programmer state.
+ * @return 6, 8, or 0.
+ */
+unsigned kst_prog_type(const kst_prog_t *p);
+/**
+ * @brief The type 20k_sel of the servo read suggests, 6 or 8; 0 without a
+ *        servo read.
+ *
+ * A guess from a drive setting (kst_reg.h): shown as one until the operator
+ * sets the type, and never written to a file or used to hold a load.
+ *
+ * @param p The programmer state.
+ * @return 6, 8, or 0.
+ */
+unsigned kst_prog_type_guess(const kst_prog_t *p);
+/**
+ * @brief Set the servo type: @p type 6 for V6 or 8 for V8.
+ *
+ * Nothing is written to the servo: 20k_sel stays as read.  Taken with a
+ * servo read and no card operation on its way; KST_PROG_MSG_NEED_READ
+ * without a servo, KST_PROG_MSG_START + KST_LINK_START_BUSY while a save,
+ * a list or a load runs, KST_PROG_MSG_START + KST_LINK_START_ARG for
+ * another value.  The draft stays as it is.
+ *
+ * @param p    The programmer state.
+ * @param type 6 or 8.
+ * @return KST_PROG_MSG_NONE when set, else the message.
+ */
+kst_prog_msg_id_t kst_prog_type_set(kst_prog_t *p, unsigned type);
 /**
  * @brief The entries of the last list and, when @p total is not NULL, the servo
  *        files on the card.

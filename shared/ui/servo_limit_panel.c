@@ -157,6 +157,31 @@ const char *lim_prog_why(void)
     return NULL;
 }
 
+/**
+ * @brief Why the run writes nothing to the servo.
+ *
+ * A KST or Chaservo servo takes a written value only from its next
+ * power-up (docs/ServoProgrammer.md, "The power cycle"): with a PD mini
+ * every session's CONNECT and the LEAVE after a write switch it off and
+ * on; on a rail fed from elsewhere nothing does, and the check after the
+ * write would search the servo as it was.  Asked before a start only.
+ *
+ * @return SV_LIM_PROG_NO_PD's line on the programming port without a PD
+ *         mini, else NULL
+ */
+const char *lim_write_why(void)
+{
+    if (lim_reads() && !servo_limrun_running(&s.lim) && !lim_pd_answers()) {
+        return TR(SV_LIM_PROG_NO_PD);
+    }
+    return NULL;
+}
+
+/**
+ * @brief The configuration a run started now takes: SEARCH+PROG and SERVO
+ *        PULSES only where they are offered.
+ * @param c receives it
+ */
 static void lim_cfg(servo_limrun_cfg_t *c)
 {
     memset(c, 0, sizeof(*c));
@@ -165,7 +190,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     c->max_us    = s.max_us;
     c->read       = lim_reads();
     c->program    = c->read && lim_programs();
-    c->set_pulses = c->read && s.lim_pulses;
+    c->set_pulses = c->read && lim_sets_pulses();
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     c->frame_hz = s.frame_hz;
@@ -645,18 +670,18 @@ void draw_lim_start(gfx_canvas_t *c)
  */
 void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
 {
-    const char *why = lim_prog_why();
+    const char *why = lim_mode_why();
     const bool running = servo_limrun_running(&s.lim);
     const bool prog = running ? s.lim.cfg.program : lim_programs();
     if (why != NULL && !running) {
         /* Why SEARCH+PROG is not offered: the run searches only. */
         gfx_text(c, x, y, why, SV_FONT_LABEL,
-                 s.lim_prog ? ui_theme_color(UI_C_WARN)
-                            : ui_theme_color(UI_C_TEXT_DIM), 1);
+                 s.lim_prog || (s.lim_pulses && lim_write_why() != NULL)
+                     ? ui_theme_color(UI_C_WARN)
+                     : ui_theme_color(UI_C_TEXT_DIM), 1);
         return;
     }
-    const bool pulses = running ? s.lim.cfg.set_pulses
-                                : (lim_reads() && s.lim_pulses);
+    const bool pulses = running ? s.lim.cfg.set_pulses : lim_sets_pulses();
     gfx_text(c, x, y,
              prog     ? TR(SV_LIM_PROG_NOTE)
              : pulses ? TR(SV_LIM_PULSES_NOTE)
@@ -688,8 +713,7 @@ void draw_lim_lines(gfx_canvas_t *c)
     const int x = k.x + 10;
     const bool running = servo_limrun_running(&s.lim);
     const bool prog = running ? s.lim.cfg.program : lim_programs();
-    const bool pulses = running ? s.lim.cfg.set_pulses
-                                : (lim_reads() && s.lim_pulses);
+    const bool pulses = running ? s.lim.cfg.set_pulses : lim_sets_pulses();
     char line[96];
     const char *mode = prog ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH);
     if (running ? s.lim.cfg.read : lim_reads()) {
@@ -733,9 +757,14 @@ void draw_lim_lines(gfx_canvas_t *c)
         gfx_text(c, x, y + 2 * LIM_LINE_P, line, SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
     }
-    /* SEARCH+PROG chosen and not offered: why, in the warning colour. */
-    if (!running && s.lim_prog && lim_prog_why() != NULL) {
-        gfx_text(c, x, y + 3 * LIM_LINE_P, lim_prog_why(), SV_FONT_LABEL,
+    /* SEARCH+PROG or SERVO PULSES chosen and not offered: why, in the
+     * warning colour. */
+    if (!running && s.lim_prog && lim_mode_why() != NULL) {
+        gfx_text(c, x, y + 3 * LIM_LINE_P, lim_mode_why(), SV_FONT_LABEL,
+                 ui_theme_color(UI_C_WARN), 1);
+    } else if (!running && lim_reads() && s.lim_pulses
+               && lim_write_why() != NULL) {
+        gfx_text(c, x, y + 3 * LIM_LINE_P, lim_write_why(), SV_FONT_LABEL,
                  ui_theme_color(UI_C_WARN), 1);
     }
 }

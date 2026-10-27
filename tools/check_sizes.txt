@@ -83,4 +83,4 @@ test/host/test_outbind.c | none | row 18 moves the board suite out with out_boar
 test/host/test_servo_settings.c | none | row 9: the settings overlay's 48 cases
 test/host/test_servo_test_panel.c | none | row 9: the servo test panel's cases
 test/host/test_kst_prog.c | none | row 12: 122 cases stay; the card cases moved out
-test/host/test_kst_prog_card.c | none | row 12: the card's 31 cases
+test/host/test_kst_prog_card.c | none | row 12: the card's 32 cases

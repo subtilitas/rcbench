@@ -141,6 +141,8 @@ SCREENS = {
     # session, and SERVO PULSES at KEEP refused: the servo's 900-2100us
     # outside the bench's 1000-2000us.
     "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
+    # The same card with no PD mini answering: nothing is written.
+    "servo-limrun-nopd":    ("servo-limrun-nopd.png",    "servo", "dark"),
     "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
     "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
     "servo-limrun-found":   ("servo-limrun-found.png",   "servo", "dark"),
@@ -267,6 +269,25 @@ SCREENS = {
                                 "dark"),
     "servo-kst-other": ("servo-kst-other.png", "servo", "dark"),
     "servo-kst-swapped": ("servo-kst-swapped.png", "servo", "dark"),
+    # The servo type: the TYPE list, a type set against 20k_sel, and a
+    # load that asks for the type first.
+    "servo-kst-type": ("servo-kst-type.png", "servo", "dark"),
+    "servo-kst-type-set": ("servo-kst-type-set.png", "servo", "dark"),
+    "servo-kst-type-first": ("servo-kst-type-first.png", "servo", "dark"),
+    # The supply cycle with the PD mini's output on: before CONNECT, in
+    # the 1s off, cut there, after a write, LEAVE's page and after it.
+    "servo-kst-supply-on": ("servo-kst-supply-on.png", "servo", "dark"),
+    "servo-kst-cycling": ("servo-kst-cycling.png", "servo", "dark"),
+    "servo-kst-cycle-cut": ("servo-kst-cycle-cut.png", "servo", "dark"),
+    "servo-kst-written-supply": ("servo-kst-written-supply.png", "servo",
+                                 "dark"),
+    "servo-kst-leave-cycle": ("servo-kst-leave-cycle.png", "servo", "dark"),
+    "servo-kst-left-cycled": ("servo-kst-left-cycled.png", "servo", "dark"),
+    # Without a PD mini: LEAVE's page after a write, and after it; LEAVE
+    # with no write.
+    "servo-kst-leave-note": ("servo-kst-leave-note.png", "servo", "dark"),
+    "servo-kst-left-note": ("servo-kst-left-note.png", "servo", "dark"),
+    "servo-kst-leave-plain": ("servo-kst-leave-plain.png", "servo", "dark"),
     "servo-paused":   ("servo-paused.png",   "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     # Nothing decoded: what a bench shows, where no firmware feeds it.

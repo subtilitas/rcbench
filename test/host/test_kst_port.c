@@ -2895,13 +2895,14 @@ TEST_CASE(a_heartbeat_lost_in_the_off_time_leaves_the_supply_off)
     CHECK_EQ(cmd(LINK_KST_OP_POWER_CYCLED, CH, 0, 0), 0);
     tick();
     CHECK_EQ(state(), LINK_KST_RAIL_OFF);
-    run_ms(500);
+    run_ms(KST_PORT_RAIL_OFF_MS / 4u);
     /* Lost and back within the off time: the cycle goes on. */
-    run_ms_as(300, false, false);
+    run_ms_as(KST_PORT_RAIL_OFF_MS / 4u, false, false);
     CHECK_EQ(state(), LINK_KST_RAIL_OFF);
-    run_ms(1000);
+    run_ms(KST_PORT_RAIL_OFF_MS / 4u);
+    CHECK_EQ(state(), LINK_KST_RAIL_OFF);
     /* Lost when the off time ends. */
-    run_ms_as(400, false, false);
+    run_ms_as(KST_PORT_RAIL_OFF_MS / 2u, false, false);
     CHECK_EQ(state(), LINK_KST_PWM);
     CHECK_EQ(op(), LINK_KST_OP_POWER_CYCLED);
     CHECK_EQ(result(), KST_SES_ERR_ABORTED);

@@ -29,7 +29,7 @@ TEST_CASE(a_first_write_with_no_card_is_sent_after_its_page_says_so)
         edits();
         /* A value past a soft limit, held for at the edit. */
         edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) + 2u));
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 4, 1));
         /* The page opens; nothing is refused. */
         CHECK_EQ(kst_panel_editor(), 3);
         CHECK(msg() != KST_PROG_MSG_CARD_NONE);
@@ -80,7 +80,7 @@ TEST_CASE(a_card_put_in_between_two_writes_takes_the_file_at_the_second)
     card_out();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK(warns_no_file());
     hold(2.1f);
     settle();
@@ -92,7 +92,7 @@ TEST_CASE(a_card_put_in_between_two_writes_takes_the_file_at_the_second)
     if (!kst_prog_write_enabled(M)) {
         enable();
     }
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(!warns_no_file());
     CHECK(!warns(TR(KP_NO_FILE_1)));
@@ -115,7 +115,7 @@ TEST_CASE(a_card_pulled_under_the_write_page_brings_the_page_back)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_WRITE_BACKUP)));
     CHECK(!warns(TR(KP_NO_FILE_1)));
@@ -136,7 +136,7 @@ TEST_CASE(a_card_pulled_under_the_write_page_brings_the_page_back)
     CHECK_EQ(g_rig.sim.n_writes, 0);
     CHECK_EQ(kst_prog_changes(M), 3);
     /* The page's own hold does. */
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK(warns_no_file());
     hold(2.1f);
     settle();
@@ -151,7 +151,7 @@ TEST_CASE(a_card_pulled_after_the_backup_file_leaves_the_next_write_alone)
     connected();
     enable();
     edits();
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
@@ -162,7 +162,7 @@ TEST_CASE(a_card_pulled_after_the_backup_file_leaves_the_next_write_alone)
     if (!kst_prog_write_enabled(M)) {
         enable();
     }
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     CHECK_EQ(kst_panel_editor(), 3);
     /* The file is saved: only the record of the write stays in memory. */
     CHECK(!warns(TR(KP_NO_FILE_1)));
@@ -187,14 +187,14 @@ TEST_CASE(a_restore_with_no_card_shows_its_warnings_and_the_missing_file)
     /* Max. Duty lowered: the session's backup raises it past a soft
      * limit. */
     edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 4, 1));
     hold(2.1f);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     if (!kst_prog_write_enabled(M)) {
         enable();
     }
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
     /* The soft limit's page first, as with a card. */
     CHECK_EQ(kst_panel_editor(), 3);
@@ -254,7 +254,7 @@ TEST_CASE(a_restore_and_a_release_whose_card_is_pulled_come_back_too)
         enable();
     }
     card_in();
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_FROM_SESSION)));
@@ -382,7 +382,7 @@ TEST_CASE(a_servo_that_is_not_the_one_of_the_interrupted_write_is_named)
     CHECK_EQ(kst_panel_editor(), 0);
     tap(kst_panel_tab_rect(PG_SERVO));
     /* RESTORE holds the one entry that discards the record. */
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     CHECK_EQ(choices(), 1);
     CHECK(choice(TR(KP_FORGET)) == 0);
@@ -441,7 +441,7 @@ TEST_CASE(a_servo_that_fits_the_record_is_asked_about)
         CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_SAME);
         tap(kst_panel_tab_rect(PG_SERVO));
         /* RESTORE holds the one entry that discards the record. */
-        tap(val(PG_SERVO, 2, 0));
+        tap(val(PG_SERVO, 4, 0));
         CHECK_EQ(kst_panel_editor(), 2);
         CHECK_EQ(choices(), 1);
         CHECK(choice(TR(KP_FORGET)) == 0);
@@ -527,7 +527,7 @@ TEST_CASE(a_late_card_does_not_replace_a_record_that_was_read_back)
     come_back();
     tap(val(PG_SERVO, 1, 0));
     settle();
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     at = choice(TR(KP_FORGET));
     CHECK(at >= 0);
     tap(kst_panel_choice_rect(at));
@@ -556,7 +556,7 @@ TEST_CASE(a_late_card_does_not_replace_a_record_that_was_read_back)
     CHECK(memcmp(&before, &M->journal_img, sizeof(before)) == 0);
     CHECK(memcmp(&target, &M->journal_target, sizeof(target)) == 0);
     /* RESTORE still offers the values before the write. */
-    tap(val(PG_SERVO, 2, 0));
+    tap(val(PG_SERVO, 4, 0));
     CHECK(choice(TR(KP_FROM_JOURNAL)) >= 0);
     tap(kst_panel_choice_cancel_rect());
 
@@ -589,7 +589,7 @@ TEST_CASE(the_backup_of_the_session_is_not_offered_for_another_servo)
         CHECK(!kst_prog_write_enabled(M));
         show();
         enable();
-        tap(val(PG_SERVO, 2, 0));           /* RESTORE */
+        tap(val(PG_SERVO, 4, 0));           /* RESTORE */
         for (int i = 0; i < choices(); ++i) {
             CHECK(strcmp(kst_panel_choice_label(i), TR(KP_FROM_SESSION))
                   != 0);
@@ -684,7 +684,7 @@ TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)
             card_out();
             enable();
             edits();
-            tap(val(PG_SERVO, 4, 0));
+            tap(val(PG_SERVO, 4, 1));
             CHECK_EQ(kst_panel_editor(), 3);
             CHECK(warns(ui_tr(k_case[c].no_file)));
             CHECK(!warns(TR(KP_NO_FILE_1)));
@@ -708,7 +708,7 @@ TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)
             connected();
             enable();
             edits();
-            tap(val(PG_SERVO, 4, 0));
+            tap(val(PG_SERVO, 4, 1));
             hold(2.1f);
             settle();
             CHECK_EQ(g_rig.fc.saves, 1);
@@ -718,7 +718,7 @@ TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)
             if (!kst_prog_write_enabled(M)) {
                 enable();
             }
-            tap(val(PG_SERVO, 4, 0));
+            tap(val(PG_SERVO, 4, 1));
             CHECK_EQ(kst_panel_editor(), 3);
             CHECK(warns(ui_tr(k_case[c].write)));
             CHECK(!warns(TR(KP_WRITE_NO_CARD)));
@@ -729,7 +729,7 @@ TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)
             connected();
             g_rig.card_state = (uint8_t)k_case[c].state;
             card_out();
-            tap(val(PG_SERVO, 1, 1));
+            tap(val(PG_SERVO, 2, 0));
             CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
             CHECK_STR_EQ(said(), ui_tr(k_case[c].files));
             ui_text_set_language(UI_LANG_EN);
@@ -739,7 +739,7 @@ TEST_CASE(a_card_that_does_not_mount_is_named_where_no_card_is_said)
     fresh();
     connected();
     card_out();
-    tap(val(PG_SERVO, 1, 1));
+    tap(val(PG_SERVO, 2, 0));
     CHECK_EQ(msg(), KST_PROG_MSG_CARD_NONE);
     CHECK_STR_EQ(said(), TR(KP_M_CARD_NONE));
 }

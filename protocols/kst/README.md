@@ -277,7 +277,7 @@ below has 808. `kst_file_parse()` refuses a text above 3432 bytes
 gcc on x86-64.
 
 ```text
-KST servo configuration, format 1
+KST servo configuration, format 2
 Type: V6
 Max. Duty = 96 %
 Boost = 300.0 us
@@ -311,13 +311,13 @@ registers 32
 08: 41 A4 0D 80 53 07 14 00
 10: 96 96 00 01 01 00 00 00
 18: 00 00 00 0A 00 10 00 00
-checksum FE83C002
+checksum 77F4E82D
 ```
 
 | Lines | Content |
 | --- | --- |
-| 1 | `KST servo configuration, format 1`: the format version |
-| 2 | `Type: V6` or `Type: V8`: the servo type of the registers |
+| 1 | `KST servo configuration, format 2`: the format version |
+| 2 | `Type: V6` or `Type: V8`: the servo type the caller states. A file written with `KST_TYPE_NONE` has no type line: 34 lines, 799 bytes for the one above, and every later line moves up one |
 | 3 to 29 | one line per named field, in the order of the field table: name, ` = `, the displayed value and its unit. A field no load writes carries ` [not loaded]`. A raw value without a displayed one is written as `raw 6, no displayed value` |
 | 30 | `registers 32` |
 | 31 to 34 | 8 registers each: the address of the first one, then 2 upper-case hexadecimal digits per register |
@@ -331,12 +331,20 @@ before the checksum line, with each line end counted as one LF.
 
 ### Servo type
 
-`kst_type()` gives the type of an image: V6 with `20k_sel` (register 0x04
-bit 6) set, V8 with it clear. No other register enters. The mapping rests
-on the factory defaults the manufacturer states, 20kHz drive for V6.0 and
-333Hz drive for V8.0. It is read on 1 servo, whose bit is set; no V8.0
-servo has been read. `20k_sel` is a locked field: no file and no edit
-changes it.
+No register holds the series. The manufacturer states the factory default
+of `20k_sel` (register 0x04 bit 6) as set for V6.0, a 20kHz drive, and
+clear for V8.0, a 333Hz drive. The bit is a drive setting: on a bench V8
+wing servos read with it set and a V8 servo that is no wing servo with it
+clear; the models were not recorded. `kst_type()` gives the type the bit
+suggests, a guess. The type a file states is the one its writer passes to
+`kst_file_format()`: in this repository the operator's. `20k_sel` is a
+locked field: no file and no edit changes it.
+
+Format 1 wrote the type `kst_type()` gave. A format-1 file is read as
+before, its type line held to its own `20k_sel` (`KST_FILE_ERR_TYPE`), and
+states no type: `kst_file_t.type` is `KST_TYPE_NONE`. In format 2 the type
+line alone states the type, and `20k_sel` in the block is a register like
+any other. `kst_file_t.version` holds the format read.
 
 ### The 3 kinds of file
 
@@ -344,9 +352,9 @@ A line whose first word is `checksum` decides how a text is read.
 
 | Kind | Condition | What is taken |
 | --- | --- | --- |
-| `KST_FILE_VERIFIED` | a checksum line, and its value fits | the 4 register lines. The field lines are not interpreted. The type line has to state the type of the registers |
-| `KST_FILE_EDITED_TYPED` | no checksum line; a type line or a register block | the field lines, as input a person made |
-| `KST_FILE_EDITED_UNTYPED` | no checksum line, no type line, no register block | the field lines; the file states no servo type |
+| `KST_FILE_VERIFIED` | a checksum line, and its value fits | the 4 register lines. The field lines are not interpreted. Format 2: a type line, where there is one, states the type. Format 1: the type line has to state the type of the registers, and the file states none |
+| `KST_FILE_EDITED_TYPED` | no checksum line; format 2 with a type line | the field lines, as input a person made |
+| `KST_FILE_EDITED_UNTYPED` | no checksum line; no type line, or format 1 | the field lines; the file states no servo type |
 
 A file with a checksum line whose value does not fit is refused as damaged
 (`KST_FILE_ERR_CHECKSUM`). A verified file has LF on every line or CR LF
@@ -363,7 +371,7 @@ A person changes a file by removing the checksum line, or writes one from
 nothing:
 
 ```text
-KST servo configuration, format 1
+KST servo configuration, format 2
 # left aileron
 Type: V6
 Neutral = 1520 us
@@ -382,9 +390,10 @@ Reversion = 1
 - A field without a line keeps the servo's value.
 - A name the field table does not have, a name given twice and a value the
   field does not encode refuse the file with the line number.
-- The type line and the register block may each stay or go. The block
-  states the type. A type line that contradicts the block refuses the
-  file.
+- The type line and the register block may each stay or go. In format 2
+  the type line alone states the type. In format 1 a type line that
+  contradicts the block's `20k_sel` refuses the file, and the file states
+  no type.
 - Where the block shows as the line of an editable field reads, the block
   gives the field's raw value. Several raw values of Max. Duty show as one
   percentage: raw 244 and raw 245 both show 96%, and 96% converts to raw
@@ -408,9 +417,11 @@ verified file has `named` equal to `fields`.
 `kst_file_load()` holds a parsed file against the image read from the
 connected servo and gives the image to write.
 
-1. Type. A file that states a type loads into a servo of that type and
-   into no other (`KST_FILE_LOAD_TYPE_MISMATCH`). A file that states no
-   type passes this step.
+1. Type. The caller passes the servo's type as the operator set it. A
+   file that states a type loads into a servo of that type and into no
+   other (`KST_FILE_LOAD_TYPE_MISMATCH`); with `KST_TYPE_NONE` passed, a
+   file that states a type does not load. A file that states no type
+   passes this step.
 2. Values. Only editable fields are taken: all of them from a verified
    file's registers, the named ones from an edited file's lines. An edited
    value becomes a raw value through `kst_field_raw_from_display()`, as a
@@ -442,7 +453,7 @@ made by hand.
 | 2 | `KST_FILE_ERR_OVERSIZED` | more than 3432 bytes |
 | 3 | `KST_FILE_ERR_NOT_KST` | line 1 is not the header |
 | 4 | `KST_FILE_ERR_VERSION` | the version is not a number from 1 up |
-| 5 | `KST_FILE_ERR_NEWER` | a version above 1 |
+| 5 | `KST_FILE_ERR_NEWER` | a version above 2 |
 | 6 | `KST_FILE_ERR_TRUNCATED` | the text ends inside the header, inside a number or a name, or inside the register block; a verified file ends inside a line other than a whole checksum line |
 | 7 | `KST_FILE_ERR_LINE_END` | checksum line present: LF and CR LF in one file |
 | 8 | `KST_FILE_ERR_MALFORMED` | a line is not what the format has at that place |
@@ -452,7 +463,7 @@ made by hand.
 | 12 | `KST_FILE_ERR_NAME` | edited file: no field has that name |
 | 13 | `KST_FILE_ERR_DUPLICATE` | edited file: the field, the type or the register block is given twice |
 | 14 | `KST_FILE_ERR_VALUE` | edited file: not a number in the field's unit, a value the field does not encode, or a type other than V6 and V8 |
-| 15 | `KST_FILE_ERR_TYPE` | the type line contradicts the registers |
+| 15 | `KST_FILE_ERR_TYPE` | format 1: the type line contradicts the registers' `20k_sel` |
 
 A damaged verified file may be refused with code 8 before its checksum is
 compared. A one-byte change never leaves a written file verified. 2
@@ -499,9 +510,8 @@ Not measured:
 - The encoding of `prot1_time` and `prot1_pwm` on write: there is no
   conversion from a displayed value for them.
 - Supply voltage limits during programming.
-- The servo type of a V8.0 servo. `kst_type()` takes `20k_sel` for the
-  type on the manufacturer's stated defaults; the 1 servo read has the
-  bit set.
+- The series of a servo: no register holds it, and `kst_type()` is a
+  guess from `20k_sel`.
 
 No frame of this code has been sent to a servo, and the pin driver has not
 run on a chip. The tests run against the servo and line model in
@@ -513,8 +523,9 @@ port path the servo is connected through:
 1. The line's electricals: the levels and edges of a frame and of a reply at
    the connector, the pull-down, and the time the pad and the servo both
    drive.
-2. The motor's state in programming mode, and whether a written value acts
-   at once or after a power cycle.
+2. The motor's state in programming mode. A Chaservo acted on a written
+   LEFT ANGLE and RIGHT ANGLE only after a power cycle; other registers
+   and KST servos are not measured.
 3. What the servo does with a PWM (pulse-width modulation) pulse in
    programming mode and with a frame outside it.
 4. Persistence: whether a written value survives a power cycle, and whether

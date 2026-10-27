@@ -601,10 +601,11 @@ void tone_link_service(void)
     atomic_store(&s_tone_unheld, (unsigned)tone_link_unheld(&s_tone_link));
 }
 
-/*
- * The programmer's commands, every pass and whatever the link does: a
+/**
+ * @brief The programmer's commands, every pass and whatever the link does: a
  * command with no link is answered KST_LINK_START_DOWN, and the model says
- * so.
+ * so.  An ENTER or a REBOOT on an armed bench is answered BUSY and not
+ * sent.
  *
  * And STOP.  Every stop this end latches, pressed or the bench's own, ends
  * an operation: kst_link_abort() drops a command not sent yet, sends no
@@ -623,8 +624,10 @@ __attribute__((noinline)) void kst_commands(void)
             continue;
         }
         if (cmd.kind == KST_PROG_CMD_START) {
-            /* No port is taken on an armed bench: nothing is sent. */
-            s_kst_answer    = (cmd.req.op == LINK_KST_OP_ENTER
+            /* No port is taken on an armed bench: nothing is sent.  A
+             * REBOOT is the CONNECT that switches the supply off first. */
+            s_kst_answer    = ((cmd.req.op == LINK_KST_OP_ENTER
+                                || cmd.req.op == LINK_KST_OP_REBOOT)
                                && outputs_armed(&s_out))
                                   ? KST_LINK_START_BUSY
                                   : kst_link_start(&s_kst_link, &cmd.req);
@@ -727,8 +730,12 @@ __attribute__((noinline)) void prog_link_service(void)
     servo_link_surfaces_publish();
 }
 
-/* What the programmer's model is fed, as it stands.  Under the snapshot's
- * lock. */
+/**
+ * @brief What the programmer's model is fed, as it stands: the PD mini's
+ *        output, its set voltage and its current limit where it is the
+ *        supply, answers and is on.  Under the snapshot's lock.
+ * @param f the feed
+ */
 __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
 {
     kst_link_outcome_t o;
@@ -763,11 +770,15 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->out_mv      = 0u;
     f->out_ma      = 0u;
     f->set_mv      = 0u;
+    f->set_ma      = 0u;
     if (f->supply_read) {
         const float set = s_supply.set_v * 1000.0f + 0.5f;
+        const float lim = s_supply.set_i * 1000.0f + 0.5f;
 
         f->set_mv = set <= 0.0f ? 0u
                   : set >= 65535.0f ? 65535u : (uint16_t)set;
+        f->set_ma = lim <= 0.0f ? 0u
+                  : lim >= 65535.0f ? 65535u : (uint16_t)lim;
         const float mv = s_supply.v * 1000.0f + 0.5f;
         const float ma = s_supply.i * 1000.0f + 0.5f;
         f->out_mv = mv <= 0.0f ? 0u : mv >= 65535.0f ? 65535u : (uint16_t)mv;
