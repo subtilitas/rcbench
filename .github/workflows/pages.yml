@@ -94,7 +94,7 @@ env:
 jobs:
   changes:
     name: Full run or API only
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     # actions: read for the list of earlier runs of this workflow.
     permissions:
@@ -132,7 +132,7 @@ jobs:
     name: Configurator core
     needs: changes
     if: needs.changes.outputs.full == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
@@ -192,7 +192,7 @@ jobs:
   build:
     name: Configurator page
     needs: changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
@@ -265,7 +265,7 @@ jobs:
     name: Configurator smoke test
     needs: [changes, build]
     if: needs.changes.outputs.full == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     defaults:
       run:
@@ -321,7 +321,7 @@ jobs:
     name: Configurator matrix test (${{ matrix.shard }}/4)
     needs: [changes, build]
     if: needs.changes.outputs.full == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     strategy:
       fail-fast: false
@@ -367,7 +367,7 @@ jobs:
 
   help:
     name: Web help
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -395,7 +395,7 @@ jobs:
 
   api:
     name: API reference
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -442,7 +442,7 @@ jobs:
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     needs: [changes, core, build, smoke, matrix, help, api]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       pages: write
