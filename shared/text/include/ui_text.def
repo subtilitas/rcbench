@@ -5007,8 +5007,8 @@ UI_TEXT(HP_LAYOUT_GUESS, 116,
     "Model not known. The fields are read as on the %s.",
     "Modell unbekannt. Die Felder werden wie beim %s gelesen.")
 UI_TEXT(HP_SUM_BAD, 116,
-    "Checksum of stored values 0x00-0x1C is wrong. The servo may not follow PWM.",
-    "Prüfsumme der gespeicherten Werte 0x00-0x1C falsch. Das Servo folgt PWM evtl. nicht.")
+    "Checksum of stored values 0x00-0x1C is wrong. The servo may ignore PWM and draw current up to the supply limit.",
+    "Prüfsumme der gespeicherten Werte 0x00-0x1C falsch. Servo folgt PWM evtl. nicht, zieht evtl. Strom bis zur Grenze.")
 UI_TEXT(HP_NOT_READ, 116,
     "Not read yet. CONNECT reads every value.",
     "Noch nicht ausgelesen. VERBINDEN liest alle Werte.")
@@ -5130,8 +5130,8 @@ UI_TEXT(HP_CUT_SUM, 116,
     "Stored value 0x%02X is written, its checksum in 0x1C is not. Tap READ ALL.",
     "Gespeicherter Wert 0x%02X ist geschrieben, seine Prüfsumme in 0x1C nicht. ALLES AUSLESEN antippen.")
 UI_TEXT(HP_CUT_SUM_2, 116,
-    "The checksum may be wrong: the servo may not follow PWM.",
-    "Die Prüfsumme ist evtl. falsch: Das Servo folgt PWM evtl. nicht.")
+    "The checksum may be wrong: the servo may ignore PWM and draw current up to the supply limit.",
+    "Die Prüfsumme ist evtl. falsch: Servo folgt PWM evtl. nicht, zieht evtl. Strom bis zur Grenze der Versorgung.")
 UI_TEXT(HP_VERIFY_FAIL, 116,
     "Servo settings do not match after the write. Tap READ ALL.",
     "Servowerte stimmen nach dem Schreiben nicht. ALLES AUSLESEN antippen.")
@@ -5139,8 +5139,8 @@ UI_TEXT(HP_REC_MIX_2, 116,
     "Do not use this servo. RESTORE writes the values before the write back.",
     "Benutze dieses Servo nicht. ZURÜCKSPIELEN schreibt die Werte vor dem Schreibvorgang zurück.")
 UI_TEXT(HP_RECORD_HELD, 116,
-    "A record of an interrupted write stands. Restore or discard it under RESTORE.",
-    "Ein Vermerk zu einem unterbrochenen Schreibvorgang besteht. Unter ZURÜCKSPIELEN zurückspielen oder verwerfen.")
+    "Writes and REPAIR CHECKSUM wait for the record of an interrupted write: restore or discard it under RESTORE.",
+    "Schreiben und PRÜFSUMME REPARIEREN warten auf den Vermerk: unter ZURÜCKSPIELEN zurückspielen oder verwerfen.")
 UI_TEXT(HP_RECORD_BAD, 116,
     "Cannot read HITEC.TXT on the card. The file will not be used.",
     "HITEC.TXT auf der Karte ist nicht lesbar. Die Datei wird nicht verwendet.")
