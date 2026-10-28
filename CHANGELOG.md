@@ -9,8 +9,8 @@ history is in git.
 ### Added
 
 - `hardware/mechanical/`: STEP models of the M16 emergency stop button, its
-  nut and its anti-rotation ring as separate files, and an assembly of the
-  three for a 1.4mm panel, generated from `estop_m16.py` by
+  nut and its square anti-rotation shim as separate files, and an assembly
+  of the three for a 1.6mm panel, generated from `estop_m16.py` by
   `gen_models.py` (`--check` in CI). Dimensions from the seller's drawing;
   the parts it does not dimension are estimated and listed in the spec.
   `step_gen.py` writes turned solids, `step_check.py` checks these models
