@@ -284,18 +284,24 @@ FAULT_CALLS = {
     "fault_level": ("panel_card_make_dir",),
 }
 
-# kst_store_io_t (kst_store.c), the servo files of kst_files.c.  A callback
-# written `file:name` is the static function of that name in that source
-# file: panel_files.c has an io_mounted, an io_walk and an io_read of its
-# own.
-KST_CALLS = {
-    "kst_store_preset": ("kst_files.c:io_mounted", "kst_files.c:io_walk"),
-    "kst_store_save": ("kst_files.c:io_mounted", "kst_files.c:io_walk",
-                       "kst_files.c:io_create"),
-    "kst_store_list_after": ("kst_files.c:io_mounted",
-                             "kst_files.c:io_walk"),
-    "kst_store_load": ("kst_files.c:io_mounted", "kst_files.c:io_size",
-                       "kst_files.c:io_read"),
+# servo_store_io_t (servo_store.c), the servo files of kst_files.c and of
+# hitec_files.c.  A callback written `file:name` is the static function of
+# that name in that source file: panel_files.c has an io_mounted, an io_walk
+# and an io_read of its own, and so have both servo file sources.
+SERVO_STORE_CALLS = {
+    "servo_store_preset": ("kst_files.c:io_mounted", "kst_files.c:io_walk",
+                           "hitec_files.c:io_mounted",
+                           "hitec_files.c:io_walk"),
+    "servo_store_save": ("kst_files.c:io_mounted", "kst_files.c:io_walk",
+                         "kst_files.c:io_create", "hitec_files.c:io_mounted",
+                         "hitec_files.c:io_walk", "hitec_files.c:io_create"),
+    "servo_store_list_after": ("kst_files.c:io_mounted",
+                               "kst_files.c:io_walk",
+                               "hitec_files.c:io_mounted",
+                               "hitec_files.c:io_walk"),
+    "servo_store_load": ("kst_files.c:io_mounted", "kst_files.c:io_size",
+                         "kst_files.c:io_read", "hitec_files.c:io_mounted",
+                         "hitec_files.c:io_size", "hitec_files.c:io_read"),
 }
 
 # The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
@@ -709,7 +715,8 @@ def main() -> int:
                                 CARD_CALLS),
                                ("FAULT_CALLS", "shared/logfile",
                                 FAULT_CALLS),
-                               ("KST_CALLS", "shared/logfile", KST_CALLS)):
+                               ("SERVO_STORE_CALLS", "shared/logfile",
+                                SERVO_STORE_CALLS)):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:

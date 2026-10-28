@@ -222,7 +222,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 329 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 328 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_pdmini`,
@@ -237,7 +237,7 @@ The host suite is 329 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_frame_watch`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_report_width`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`, `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_outputs_screen_draw`, `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_layout`, `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_logview_report`, `test_log_text`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_mdns`, `test_wa_guard`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_fm_name` and `test_wall_clock`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_logview_report`, `test_log_text`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_mdns`, `test_wa_guard`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_fm_name` and `test_wall_clock`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -287,12 +287,12 @@ stops it after 120s. `tools/mutate.py --files shared/safety/heartbeat.c
 --max-mutants 0` makes 36 mutants and the suite fails on each. A case that is
 defined and not run fails the build (`-Werror=unused-function`).
 `tools/check_docs.py` holds this list to `test/host/CMakeLists.txt`.
-Of the 27 `test_kst_*` binaries, 25 run against the servo and line model in
+Of the 26 `test_kst_*` binaries, 25 run against the servo and line model in
 `test/host/kst_sim.h`; no servo is connected. 5 run the core of
 `protocols/kst/`; `test_kst_file` is the one for the configuration file
-and reads 40000 random texts from 1 fixed seed. `test_kst_store` runs
-the card layer for those files, `shared/logfile/kst_store.c`, against a
-directory held in memory. `test_kst_pio` runs the pin driver's arithmetic and its
+and reads 40000 random texts from 1 fixed seed. `test_servo_store` runs
+the card layer for those files, `shared/logfile/servo_store.c` with the
+stem `KST`, against a directory held in memory. `test_kst_pio` runs the pin driver's arithmetic and its
 PIO (programmable input/output) program, word by word, in a model of the
 state machine; the IOmcu build fails when the assembled program
 differs from the words the test runs. `test_kst_port` runs the
@@ -446,7 +446,7 @@ page and pages behind the first 64 files, a load, a file larger than any
 servo file, a damaged file, one not on the card, and a backup file by its
 backup line or, without the line, by a proposed name. `test_servo_store` runs
 the store of servo files under a stem: names, proposals, saves, lists and
-loads, as `test_kst_store` does for KST. `test_hitec_prog_file` runs the
+loads, under the stem `HITEC` and, in one case, `KST`. `test_hitec_prog_file` runs the
 files and backups on the loopback: the backup file before the first write
 and once a session, a card that is full, write protected, failing, gone or
 silent for 5000ms (no write goes), ABORT and STOP while it waits, the wait
@@ -531,7 +531,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 350 | 342 | 97.7% |
+| `shared/ui/ui_widgets.c` | 350 | 343 | 98.0% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 283 | 269 | 95.0% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
@@ -554,7 +554,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
 | `shared/ui/supply_screen.c` | 454 | 448 | 98.7% |
 | `shared/ui/supply_events.c` | 324 | 322 | 99.4% |
-| `shared/ui/supply_draw.c` | 397 | 388 | 97.7% |
+| `shared/ui/supply_draw.c` | 395 | 386 | 97.7% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 117 | 114 | 97.4% |
 | `shared/ui/ui_textkey.c` | 356 | 345 | 96.9% |
@@ -563,25 +563,25 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_screen_sweep.c` | 471 | 468 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 382 | 378 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 289 | 275 | 95.2% |
-| `shared/ui/servo_screen_draw.c` | 530 | 517 | 97.5% |
+| `shared/ui/servo_screen_draw.c` | 529 | 516 | 97.5% |
 | `shared/ui/servo_settings_panel.c` | 511 | 496 | 97.1% |
-| `shared/ui/servo_settings_draw.c` | 349 | 342 | 98.0% |
+| `shared/ui/servo_settings_draw.c` | 340 | 333 | 97.9% |
 | `shared/ui/servo_test_panel.c` | 433 | 421 | 97.2% |
 | `shared/ui/servo_limit_panel.c` | 417 | 375 | 89.9% |
-| `shared/ui/servo_workbench.c` | 338 | 336 | 99.4% |
+| `shared/ui/servo_workbench.c` | 337 | 335 | 99.4% |
 | `shared/ui/kst_panel.c` | 335 | 331 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
-| `shared/ui/kst_panel_warn.c` | 276 | 273 | 98.9% |
+| `shared/ui/kst_panel_warn.c` | 275 | 272 | 98.9% |
 | `shared/ui/kst_panel_edit.c` | 354 | 347 | 98.0% |
 | `shared/ui/kst_panel_touch.c` | 217 | 214 | 98.6% |
 | `shared/ui/kst_panel_run.c` | 155 | 145 | 93.5% |
-| `shared/ui/kst_panel_draw.c` | 532 | 525 | 98.7% |
+| `shared/ui/kst_panel_draw.c` | 531 | 525 | 98.9% |
 | `shared/ui/hitec_panel.c` | 238 | 238 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 442 | 442 | 100.0% |
 | `shared/ui/hitec_panel_edit.c` | 324 | 324 | 100.0% |
-| `shared/ui/hitec_panel_page.c` | 230 | 230 | 100.0% |
+| `shared/ui/hitec_panel_page.c` | 229 | 229 | 100.0% |
 | `shared/ui/hitec_panel_touch.c` | 171 | 171 | 100.0% |
-| `shared/ui/hitec_panel_draw.c` | 239 | 239 | 100.0% |
+| `shared/ui/hitec_panel_draw.c` | 238 | 238 | 100.0% |
 | `shared/ui/hitec_panel_file.c` | 208 | 208 | 100.0% |
 | `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
 | `shared/ui/balance_screen.c` | 381 | 381 | 100.0% |
@@ -589,9 +589,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/prog_models.c` | 8 | 8 | 100.0% |
 | `shared/ui/esc_stick_pages.c` | 111 | 104 | 93.7% |
 | `shared/ui/esc_stick_panel.c` | 489 | 473 | 96.7% |
-| `shared/ui/esc_stick_list.c` | 246 | 231 | 93.9% |
+| `shared/ui/esc_stick_list.c` | 246 | 233 | 94.7% |
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
-| `shared/ui/esc_stick_draw.c` | 467 | 451 | 96.6% |
+| `shared/ui/esc_stick_draw.c` | 466 | 450 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
 | `shared/ui/log_viewer_screen.c` | 321 | 312 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 246 | 223 | 90.7% |
@@ -599,11 +599,11 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_viewer_events.c` | 492 | 478 | 97.2% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
 | `shared/ui/log_text.c` | 138 | 136 | 98.5% |
-| `shared/ui/files_screen.c` | 647 | 621 | 96.0% |
-| `shared/ui/files_draw.c` | 336 | 325 | 96.7% |
+| `shared/ui/files_screen.c` | 647 | 622 | 96.1% |
+| `shared/ui/files_draw.c` | 335 | 325 | 97.0% |
 | `shared/ui/files_events.c` | 209 | 208 | 99.5% |
 | `shared/ui/settings_screen.c` | 496 | 490 | 98.8% |
-| `shared/ui/settings_draw.c` | 226 | 220 | 97.3% |
+| `shared/ui/settings_draw.c` | 226 | 221 | 97.8% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
 | `shared/ui/sensors_rows.c` | 128 | 128 | 100.0% |
 | `shared/ui/outputs_screen.c` | 497 | 493 | 99.2% |
@@ -611,7 +611,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/outputs_port_entry.c` | 296 | 292 | 98.7% |
 | `shared/ui/port_view.c` | 81 | 81 | 100.0% |
 | `shared/ui/port_mail.c` | 101 | 101 | 100.0% |
-| `shared/ui/picker_screen.c` | 319 | 317 | 99.4% |
+| `shared/ui/picker_screen.c` | 318 | 316 | 99.4% |
 | `shared/ui/picker_geometry.c` | 138 | 134 | 97.1% |
 | `shared/ui/picker_draw.c` | 312 | 295 | 94.5% |
 | `shared/ui/picker_cat.c` | 80 | 79 | 98.8% |
@@ -619,7 +619,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_port.c` | 121 | 121 | 100.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 320 | 319 | 99.7% |
-| `shared/ui/wifi_screen.c` | 499 | 491 | 98.4% |
+| `shared/ui/wifi_screen.c` | 498 | 491 | 98.6% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 271 | 270 | 99.6% |
 | `shared/ui/upd_screen.c` | 611 | 588 | 96.2% |
@@ -627,14 +627,14 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
-| `shared/logfile/log_csv.c` | 469 | 445 | 94.9% |
+| `shared/logfile/log_csv.c` | 468 | 444 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 72 | 71 | 98.6% |
 | `shared/logfile/log_name.c` | 120 | 120 | 100.0% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
 | `shared/logfile/card_tree.c` | 76 | 76 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
-| `shared/files/text_buf.c` | 445 | 444 | 99.8% |
+| `shared/files/text_buf.c` | 444 | 443 | 99.8% |
 | `shared/files/text_hl.c` | 337 | 335 | 99.4% |
 | `shared/files/fm_name.c` | 116 | 116 | 100.0% |
 | `shared/files/fm_select.c` | 76 | 76 | 100.0% |
@@ -656,7 +656,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_test.c` | 783 | 769 | 98.2% |
 | `shared/servo/servo_str.c` | 43 | 43 | 100.0% |
 | `shared/servo/servo_report.c` | 526 | 526 | 100.0% |
-| `shared/servo/servo_limrun.c` | 627 | 601 | 95.8% |
+| `shared/servo/servo_limrun.c` | 626 | 600 | 95.8% |
 | `shared/servo/servo_limrun_report.c` | 267 | 263 | 98.5% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
@@ -664,7 +664,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/esc/esc_json.c` | 601 | 559 | 93.0% |
 | `shared/esc/esc_json_lex.c` | 292 | 285 | 97.6% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 551 | 539 | 97.8% |
+| `shared/esc/esc_stick.c` | 552 | 540 | 97.8% |
 | `shared/esc/esc_stick_rules.c` | 284 | 263 | 92.6% |
 | `shared/esc/esc_det.c` | 132 | 130 | 98.5% |
 | `shared/esc/esc_stick_read.c` | 72 | 69 | 95.8% |
@@ -677,20 +677,19 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/ppm/ppm.c` | 42 | 42 | 100.0% |
 | `protocols/kst/kst_wire.c` | 142 | 142 | 100.0% |
 | `protocols/kst/kst_reg.c` | 180 | 180 | 100.0% |
-| `protocols/kst/kst_limits.c` | 140 | 140 | 100.0% |
+| `protocols/kst/kst_limits.c` | 127 | 127 | 100.0% |
 | `protocols/kst/kst_plan.c` | 396 | 396 | 100.0% |
 | `protocols/kst/kst_session.c` | 584 | 583 | 99.8% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `protocols/kst/kst_file.c` | 593 | 593 | 100.0% |
 | `protocols/hitec/hitec_wire.c` | 247 | 247 | 100.0% |
 | `protocols/hitec/hitec_pio.c` | 159 | 159 | 100.0% |
-| `protocols/hitec/hitec_pre.c` | 215 | 207 | 96.3% |
+| `protocols/hitec/hitec_pre.c` | 216 | 208 | 96.3% |
 | `protocols/hitec/hitec_reg.c` | 497 | 497 | 100.0% |
 | `protocols/hitec/hitec_session.c` | 456 | 456 | 100.0% |
-| `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/logfile/servo_store.c` | 235 | 235 | 100.0% |
 | `shared/outputs/kst_port.c` | 622 | 621 | 99.8% |
-| `shared/outputs/hitec_port.c` | 491 | 490 | 99.8% |
+| `shared/outputs/hitec_port.c` | 490 | 489 | 99.8% |
 | `shared/outputs/page_console.c` | 567 | 537 | 94.7% |
 | `shared/outputs/prog_port.c` | 405 | 405 | 100.0% |
 | `shared/bench/kst_link.c` | 433 | 431 | 99.5% |
@@ -698,9 +697,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/hitec_prog.c` | 640 | 640 | 100.0% |
 | `shared/bench/hitec_prog_write.c` | 520 | 519 | 99.8% |
 | `shared/bench/hitec_prog_file.c` | 444 | 441 | 99.3% |
-| `shared/bench/hitec_card.c` | 278 | 277 | 99.6% |
+| `shared/bench/hitec_card.c` | 279 | 278 | 99.6% |
 | `shared/bench/hitec_card_run.c` | 113 | 113 | 100.0% |
-| `shared/bench/kst_prog.c` | 1370 | 1347 | 98.3% |
+| `shared/bench/kst_prog.c` | 1369 | 1347 | 98.4% |
 | `shared/bench/kst_prog_card.c` | 315 | 300 | 95.2% |
 | `shared/bench/kst_prog_file.c` | 150 | 146 | 97.3% |
 | `shared/bench/kst_card.c` | 137 | 133 | 97.1% |
@@ -745,9 +744,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini.c` | 292 | 288 | 98.6% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 254 | 252 | 99.2% |
-| `shared/bench/supply_link.c` | 315 | 305 | 96.8% |
+| `shared/bench/supply_link.c` | 313 | 303 | 96.8% |
 | `shared/bench/sense_link.c` | 601 | 579 | 96.3% |
-| `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
+| `shared/bench/sense_link_view.c` | 269 | 265 | 98.5% |
 | `shared/bench/sense_map_link.c` | 316 | 305 | 96.5% |
 | `shared/bench/sense_win_link.c` | 123 | 123 | 100.0% |
 | `shared/bench/sense_limit_link.c` | 191 | 191 | 100.0% |
@@ -757,7 +756,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 300 | 287 | 95.7% |
+| `shared/bench/log_writer.c` | 299 | 286 | 95.7% |
 | `shared/bench/log_cols.c` | 47 | 47 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
@@ -791,7 +790,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
 | `shared/webaccess/wa_guard.c` | 68 | 68 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **63325** | **62101** | **98.1%** |
+| **total** | **63078** | **61863** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

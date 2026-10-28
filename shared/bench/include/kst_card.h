@@ -4,10 +4,11 @@
  *        load of kst_prog.h carried out on the card.
  *
  * kst_prog.h asks in images and base names.  This file answers with the
- * text of kst_file.h, the names and the directory of kst_store.h and the
- * servo type of kst_reg.h; it states none of the three itself.  The card is
- * reached through the 5 functions of kst_store_io_t, so the same code runs
- * on a host without a card.
+ * text of kst_file.h, the names of servo_store.h under the stem
+ * KST_CARD_STEM and the servo type of kst_reg.h; it states none of the three
+ * itself.  The files stand in the folder CARD_KST_CONF of card_tree.h,
+ * BENCH/KST/CONF.  The card is reached through the 5 functions of
+ * servo_store_io_t, so the same code runs on a host without a card.
  *
  * kst_card_run() blocks as long as the card does and works in static
  * buffers: one caller at a time, on a task that may wait for the card,
@@ -19,11 +20,18 @@
 
 #include "kst_prog.h"
 #include "kst_reg.h"
-#include "kst_store.h"
+#include "servo_store.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief The stem of the proposed names, KST001 to KST999, and the base name
+ *        of the journal's record, KST.TXT (servo_store.h): the stem of
+ *        servo_store_io_t.stem for the KST files.
+ */
+#define KST_CARD_STEM "KST"
 
 /**
  * @brief File names a list holds at a time.
@@ -55,11 +63,11 @@ unsigned kst_card_type(const kst_image_t *img);
  * Every request gets an answer.
  *
  * KST_PROG_CARD_SAVE writes the text of req->image to a new file: named by
- * kst_store_preset() for a preset save, else req->name.  The file states
+ * servo_store_preset() for a preset save, else req->name.  The file states
  * req->type, the operator's, and no type for 0.  No file is replaced.
  *
  * KST_PROG_CARD_LIST gives the base names of up to KST_PROG_FILES_MAX
- * files from req->first on in the order of kst_store_list(), the latest
+ * files from req->first on in the order of servo_store_list_after(), the latest
  * proposed name first among the proposed ones, each with the servo type its text states, and the
  * next preset name.  done->total is the number of servo files in the
  * directory, 65535 for that many or more.
@@ -74,7 +82,7 @@ unsigned kst_card_type(const kst_image_t *img);
  * @param req  The request.
  * @param done Receives the answer.
  */
-void kst_card_run(const kst_store_io_t *io, const kst_prog_card_req_t *req,
+void kst_card_run(const servo_store_io_t *io, const kst_prog_card_req_t *req,
                   kst_prog_card_done_t *done);
 
 #ifdef __cplusplus
