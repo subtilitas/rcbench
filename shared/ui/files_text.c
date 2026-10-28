@@ -84,13 +84,13 @@ static bool save_send(void)
                                      text_view_dir(), text_view_name(), len,
                                      text_view_fill, NULL);
     if (err != FM_OK) {
-        text_view_saved(err, false, false);
+        (void)text_view_saved(err, false, false);
         return false;
     }
     s.req.kind = FM_REQ_JOB;
     s.req_pane = -1;
     if (!fs_submit()) {
-        text_view_saved(FM_ERR_IO, false, false);
+        (void)text_view_saved(FM_ERR_IO, false, false);
         return false;
     }
     s.tv_saving = true;
@@ -147,7 +147,7 @@ void fs_text_fail(fm_err_t err)
     }
     if (s.tv_save) {
         s.tv_save = false;
-        text_view_saved(err, false, false);
+        (void)text_view_saved(err, false, false);
     }
 }
 
@@ -158,7 +158,10 @@ void fs_text_saved(void)
     }
     s.tv_saving = false;
     const fm_job_t *j = &s.req.job;
-    text_view_saved(s.req.err, j->state == FM_JOB_STOPPED, j->note_restart);
+    if (text_view_saved(s.req.err, j->state == FM_JOB_STOPPED,
+                        j->note_restart) == TEXT_VIEW_LEAVE) {
+        fs_text_result(TEXT_VIEW_LEAVE);    /* the open the question held */
+    }
 }
 
 void fs_text_result(text_view_result_t r)

@@ -398,8 +398,10 @@ static void question_event(const touch_event_t *e)
     if (hit == TV_HIT_STAY && gfx_rect_contains(TV_Q_STAY, x, y)) {
         tv.ask = TEXT_VIEW_ASK_NONE;
         ++tv.rev;
-    } else if (hit == TV_HIT_DISCARD
+    } else if (hit == TV_HIT_DISCARD && !tv.saving
                && gfx_rect_contains(TV_Q_DISCARD, x, y)) {
+        /* Shut while a save reads the text; text_view_saved() answers
+         * the question when the save ends. */
         answer_discard();
     }
 }
@@ -444,6 +446,10 @@ text_view_result_t tv_edit_button(int hit)
             tv_say_err(tv.save_err);
             return TEXT_VIEW_NONE;
         }
+        /* The text holds still from here, also while the host's save waits
+         * for a request under way to end. */
+        tv.saving = true;
+        tv_say(TX_ED_SAVING);
         return TEXT_VIEW_SAVE;
     case TV_HIT_EDIT:                         /* REVERT */
         if (!tv.saving && text_buf_dirty(&tv_tb)) {
@@ -517,6 +523,9 @@ static bool kst_cut(void)
 size_t text_view_save_len(void)
 {
     s_kst_cut = text_buf_dirty(&tv_tb) && kst_cut();
+    /* The card's task reads the text while this task draws it: no line
+     * read may move the gap from here on. */
+    text_buf_settle(&tv_tb);
     tv.saving = true;
     tv_say(TX_ED_SAVING);
     return text_buf_size(&tv_tb);
@@ -531,15 +540,27 @@ size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap)
     return text_buf_read(&tv_tb, (size_t)at, dst, cap);
 }
 
-void text_view_saved(fm_err_t err, bool stopped, bool restart)
+text_view_result_t text_view_saved(fm_err_t err, bool stopped,
+                                   bool restart)
 {
     tv.saving = false;
+    text_view_result_t out = TEXT_VIEW_NONE;
     if (err == FM_OK) {
         text_buf_saved(&tv_tb);
         keep_original();
         tv_say(s_kst_cut ? TX_ED_SAVED_KST
                : restart ? TX_ED_SAVED_ESC
                          : TX_ED_SAVED);
+        /* A question asked while it saved has no changes left to lose:
+         * what it held goes on. */
+        const text_view_ask_t ask = tv.ask;
+        tv.ask = TEXT_VIEW_ASK_NONE;
+        if (ask == TEXT_VIEW_ASK_OPEN) {
+            edit_leave();
+            out = TEXT_VIEW_LEAVE;
+        } else if (ask == TEXT_VIEW_ASK_BACK) {
+            edit_leave();
+        }
     } else if (stopped && err == FM_ERR_ARMED) {
         tv_say(TX_FM_E_STOP_ARMED);
     } else if (stopped && err == FM_ERR_LOGGING) {
@@ -550,6 +571,8 @@ void text_view_saved(fm_err_t err, bool stopped, bool restart)
         tv_say_err(err);
     }
     s_kst_cut = false;
+    ++tv.rev;
+    return out;
 }
 
 const char *text_view_note(char *out, size_t n)

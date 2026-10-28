@@ -2688,8 +2688,11 @@ keyboard again.
 
 SAVE writes the text as `<name>.NEW` in the file's folder, in chunks of
 16KiB on the card task, deletes `<name>` and gives the new file its name;
-the note then says `<name> saved.` The text does not change while it is
-saved: a key types nothing, and REVERT and the home tag wait. SAVE is
+the note then says `<name> saved.` From the tap on SAVE until the save
+ends the text does not change: a key types nothing, REVERT and the home
+tag wait, and the question of an open over the text shows DISCARD grey.
+A save that writes the text closes that question and opens the other
+file; a save that fails leaves the question with DISCARD live. SAVE is
 grey while the text is as on the card, and a tap on it then says
 `No changes to save.` SAVE is shut while the bench is ARMED, while a run
 is being logged and while the logger writes the file: the note says

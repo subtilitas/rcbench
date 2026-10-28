@@ -272,7 +272,8 @@ through a lister that walks the card by the panel's rule.
 `test_files_edit` and `test_files_save` type on the editor's keyboard
 through the same taps: the cursor, the line ends, the text at 1MiB and at
 65,536 line ends, the question on the home tag, LOGS' opener, another open,
-STOP and a route away, a save stopped by ARMED and by a run that opens, a
+STOP and a route away, an open and a key while a save runs or waits,
+the key a cancelled gesture held, a save stopped by ARMED and by a run that opens, a
 card pulled at a chunk and at the rename, and a KST file read back by the
 servo programmer's parser. `test_textkey_editor` holds the keyboard's
 editor mode. The test's card

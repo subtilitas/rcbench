@@ -425,6 +425,16 @@ bool text_buf_bom(const text_buf_t *tb);
 bool text_buf_dirty(const text_buf_t *tb);
 
 /**
+ * @brief Move the gap behind the text, so every line is one run of bytes:
+ *        text_buf_line() then moves no byte until the next edit.  Another
+ *        task may read the text with text_buf_read() while this one draws
+ *        it, as long as neither edits it.
+ *
+ * @param tb The buffer.
+ */
+void text_buf_settle(text_buf_t *tb);
+
+/**
  * @brief Note that the text as it is now is on the card.
  *
  * @param tb The buffer.

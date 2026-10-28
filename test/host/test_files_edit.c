@@ -17,6 +17,7 @@
  * - stop_and_a_route_away_keep_the_text
  * - the_journal_and_the_fault_log_take_no_edit
  * - an_empty_file_takes_text
+ * - a_key_held_when_the_gestures_are_cancelled_types_nothing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -431,6 +432,36 @@ TEST_CASE(an_empty_file_takes_text)
     CHECK(card_holds("USER/LOGS/EMPTY.TXT", "hi", 2u));
 }
 
+/** @brief One event of contact @p id on the middle of editor key @p key. */
+static void key_event(int type, int id, int key)
+{
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open_editor(&k, gfx_rect_make(FS_SPOT_TV_KB_X, FS_SPOT_TV_KB_Y,
+                                             FS_SPOT_TV_KB_W,
+                                             FS_SPOT_TV_KB_H));
+    const gfx_rect_t r = ui_textkey_key_rect(&k, key);
+    send_id(type, id, r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/*
+ * The touch stream breaks while a key is held: the router cancels the
+ * gestures.  A new contact then types, and the old contact's release types
+ * nothing.
+ */
+TEST_CASE(a_key_held_when_the_gestures_are_cancelled_types_nothing)
+{
+    open_text("VIEW.TXT", k_report);
+    edit();
+    key_event(TOUCH_EVENT_DOWN, 1, 10);         /* q, held */
+    ui_router_cancel_gestures();
+    key_event(TOUCH_EVENT_DOWN, 2, 11);         /* w */
+    key_event(TOUCH_EVENT_UP, 2, 11);
+    key_event(TOUCH_EVENT_UP, 1, 10);           /* q's release */
+    CHECK_STR_EQ(row_at(0), "wRCBENCH SERVO TEST REPORT");
+    CHECK_EQ(text_view_cursor(NULL), 1u);
+}
+
 int main(void)
 {
     RUN(edit_opens_the_keyboard_and_a_key_types_at_the_cursor);
@@ -444,6 +475,7 @@ int main(void)
     RUN(stop_and_a_route_away_keep_the_text);
     RUN(the_journal_and_the_fault_log_take_no_edit);
     RUN(an_empty_file_takes_text);
+    RUN(a_key_held_when_the_gestures_are_cancelled_types_nothing);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_edit");

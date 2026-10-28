@@ -874,6 +874,36 @@ TEST_CASE(a_load_in_place_and_its_abort)
 }
 
 /* Every call takes NULL without a crash. */
+/*
+ * After text_buf_settle() the gap is behind the text: reading every line,
+ * as a draw does, moves no byte, and the serialised text is unchanged.  An
+ * edit after it works as before.
+ */
+TEST_CASE(a_settled_text_moves_no_byte_on_a_line_read)
+{
+    CHECK_EQ(load("ab\ncd\nef\n", 9u), TEXT_BUF_OK);
+    text_buf_set_cursor(&g_tb, 4u);
+    CHECK_EQ(text_buf_insert(&g_tb, 'X'), TEXT_BUF_OK);    /* gap in line 1 */
+    CHECK(g_tb.gap_at < g_tb.len);
+    text_buf_settle(&g_tb);
+    CHECK_EQ(g_tb.gap_at, g_tb.len);
+    uint8_t before[16];
+    const size_t n = text_buf_read(&g_tb, 0u, before, sizeof(before));
+    CHECK_EQ(n, 10u);
+    for (size_t l = 0u; l < text_buf_lines(&g_tb); ++l) {
+        size_t len = 0u;
+        (void)text_buf_line(&g_tb, l, &len);
+        CHECK_EQ(g_tb.gap_at, g_tb.len);
+    }
+    uint8_t after[16];
+    CHECK_EQ(text_buf_read(&g_tb, 0u, after, sizeof(after)), n);
+    CHECK(memcmp(before, after, n) == 0);
+    CHECK_EQ(text_buf_insert(&g_tb, 'Y'), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_read(&g_tb, 0u, after, sizeof(after)), 11u);
+    CHECK(memcmp(after, "ab\ncXYd\nef\n", 11u) == 0);
+    text_buf_settle(NULL);
+}
+
 TEST_CASE(null_arguments_are_refused)
 {
     uint8_t m[4];
@@ -957,6 +987,7 @@ int main(void)
     RUN(dirty_and_the_revision);
     RUN(serialise_equals_load);
     RUN(a_load_in_place_and_its_abort);
+    RUN(a_settled_text_moves_no_byte_on_a_line_read);
     RUN(null_arguments_are_refused);
     free(g_mem);
     free(g_ends);

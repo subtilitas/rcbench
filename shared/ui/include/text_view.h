@@ -57,8 +57,11 @@
  * SAVE hands the text to the host (TEXT_VIEW_SAVE), which writes it
  * through "<name>.NEW" (fm_job_save()) and answers text_view_saved().  It
  * is locked while the host's rules refuse a save: the bench ARMED, a run
- * being logged, the file being written; the note says why.  The text does
- * not change while it is saved.  A KST file (first line "KST servo
+ * being logged, the file being written; the note says why.  From SAVE's
+ * tap until the answer the text does not change on any path: no key types,
+ * REVERT is shut, DISCARD on a question is shut, and the gap of the text
+ * buffer stays behind the text (text_buf_settle()) so a draw moves no byte
+ * the card's task reads.  A KST file (first line "KST servo
  * configuration, format ...") that holds a checksum line loses that line
  * on a SAVE of a changed text, so the servo programmer reads it as EDITED
  * (kst_file.h); the note says so.  An ESC profile the panel reads at its
@@ -373,17 +376,23 @@ size_t text_view_save_len(void);
 size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap);
 
 /**
- * @brief The save is answered.
+ * @brief The save is answered.  A question that showed while it ran (its
+ *        DISCARD shut meanwhile) closes after a save that wrote the text:
+ *        the host's held open goes on, the home tag's leaves the editor.
+ *        After a failed save it stays, DISCARD live again.
  * @param err      FM_OK when the file is on the card; else why not, the
  *                 text still dirty
  * @param stopped  the gate stopped it part way (FM_JOB_STOPPED)
  * @param restart  the file is read at the panel's next start
+ * @return TEXT_VIEW_LEAVE when the host's held open goes on, else
+ *         TEXT_VIEW_NONE
  */
-void text_view_saved(fm_err_t err, bool stopped, bool restart);
+text_view_result_t text_view_saved(fm_err_t err, bool stopped, bool restart);
 
 /**
- * @brief Whether a save runs: the text does not change.
- * @return true from text_view_save_len() to text_view_saved()
+ * @brief Whether a save runs or waits to: the text does not change.
+ * @return true from SAVE's tap, or text_view_save_len(), to
+ *         text_view_saved()
  */
 bool text_view_saving(void);
 

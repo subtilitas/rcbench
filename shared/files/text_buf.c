@@ -923,6 +923,13 @@ bool text_buf_dirty(const text_buf_t *tb)
     return tb != NULL && tb->dirty;
 }
 
+void text_buf_settle(text_buf_t *tb)
+{
+    if (tb != NULL) {
+        move_gap(tb, tb->len);
+    }
+}
+
 void text_buf_saved(text_buf_t *tb)
 {
     if (tb != NULL) {

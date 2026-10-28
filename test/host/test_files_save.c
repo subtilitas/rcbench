@@ -15,6 +15,9 @@
  * - a_kst_file_edited_loses_its_checksum_and_loads_as_edited
  * - an_esc_profile_says_it_is_read_at_the_next_start
  * - a_new_left_by_a_cut_save_refuses_the_next_one
+ * - an_open_asked_during_a_save_waits_for_it
+ * - a_save_that_fails_under_the_question_leaves_discard_live
+ * - the_text_holds_still_while_the_save_waits_its_turn
  *
  * SPDX-License-Identifier: MIT
  */
@@ -353,6 +356,115 @@ TEST_CASE(a_new_left_by_a_cut_save_refuses_the_next_one)
     CHECK(card_holds("USER/LOGS/VIEW.TXT", k_report, strlen(k_report)));
 }
 
+/** @brief LONG.TXT edited by one "Q" in front, SAVE tapped with the card
+ *         task holding requests, and NOTE.TXT opened over it. */
+static const char *save_held_then_open(void)
+{
+    const char *text = lines_of(40000u);
+    open_text("LONG.TXT", text);
+    put_n("USER/LOGS/NOTE.TXT", "note\n", 5u);
+    edit();
+    ed_type("Q");
+    ed_key(UI_TK_DONE);
+    g_h.defer = true;
+    save();
+    CHECK(text_view_saving());
+    CHECK_EQ(files_screen_open_text(CARD_USER_LOGS, "NOTE.TXT",
+                                    g_h.card.mount, 5u, false),
+             FM_OK);
+    settle();
+    CHECK_EQ(text_view_ask(), TEXT_VIEW_ASK_OPEN);
+    /* DISCARD is shut while the card task reads the text. */
+    tap(FS_SPOT_TV_DISCARD_CX, FS_SPOT_TV_Q_CY);
+    CHECK_EQ(text_view_ask(), TEXT_VIEW_ASK_OPEN);
+    CHECK_STR_EQ(text_view_name(), "LONG.TXT");
+    CHECK_STR_EQ(row_at(0), "Q00000000000000000000000000000000000000");
+    return text;
+}
+
+/*
+ * Another file opened over a text being saved: the question shows, its
+ * DISCARD does nothing while the save reads the text, and the save writes
+ * the text as SAVE was tapped on.  Saved, the text has no changes left to
+ * lose: the question closes and the other file opens.
+ */
+TEST_CASE(an_open_asked_during_a_save_waits_for_it)
+{
+    const char *text = save_held_then_open();
+    static char edited[40002];
+    snprintf(edited, sizeof(edited), "Q%s", text);
+    CHECK(fh_run(&g_h));
+    g_h.defer = false;
+    settle();
+    CHECK(card_holds("USER/LOGS/LONG.TXT", edited, 40001u));
+    CHECK_EQ(text_view_ask(), TEXT_VIEW_ASK_NONE);
+    CHECK_STR_EQ(text_view_name(), "NOTE.TXT");
+    CHECK_EQ(text_view_state(), TEXT_VIEW_SHOWN);
+    CHECK_STR_EQ(row_at(0), "note");
+}
+
+/*
+ * The save under the question fails (the card full at its second chunk):
+ * the question stays, the text unsaved, and DISCARD acts again.
+ */
+TEST_CASE(a_save_that_fails_under_the_question_leaves_discard_live)
+{
+    const char *text = save_held_then_open();
+    fk_fail(&g_h.card, FK_WRITE, 2, FM_ERR_FULL);
+    CHECK(fh_run(&g_h));
+    g_h.defer = false;
+    settle();
+    CHECK(!text_view_saving());
+    CHECK_EQ(text_view_ask(), TEXT_VIEW_ASK_OPEN);
+    CHECK(text_view_dirty());
+    CHECK(card_holds("USER/LOGS/LONG.TXT", text, 40000u));
+    CHECK(fk_get(&g_h.card, "USER/LOGS/LONG.TXT.NEW") == NULL);
+    tap(FS_SPOT_TV_DISCARD_CX, FS_SPOT_TV_Q_CY);
+    settle();
+    CHECK_STR_EQ(text_view_name(), "NOTE.TXT");
+    CHECK_STR_EQ(row_at(0), "note");
+}
+
+/*
+ * SAVE tapped while a listing runs on the card task: the save waits for
+ * its turn, and from the tap on no key types and REVERT does not ask.
+ */
+TEST_CASE(the_text_holds_still_while_the_save_waits_its_turn)
+{
+    open_text("VIEW.TXT", k_report);
+    edit();
+    ed_type("a");
+    ed_key(UI_TK_DONE);
+    g_h.defer = true;
+    save();
+    CHECK(fh_run(&g_h));                /* the save */
+    settle();                           /* its answer; the panes' reads */
+    CHECK(files_screen_busy());
+    CHECK(!text_view_saving());
+    foot(FS_SPOT_TV_KEYS_CX);
+    ed_type("b");
+    ed_key(UI_TK_DONE);
+    save();                             /* waits for the listing */
+    CHECK(text_view_saving());
+    CHECK_STR_EQ(note(), ui_tr(TX_ED_SAVING));
+    foot(FS_SPOT_TV_KEYS_CX);
+    ed_type("c");
+    ed_key(UI_TK_DEL);
+    ed_key(UI_TK_DONE);
+    CHECK_STR_EQ(row_at(0), "abRCBENCH SERVO TEST REPORT");
+    foot(FS_SPOT_TV_REVERT_CX);
+    CHECK_EQ(text_view_ask(), TEXT_VIEW_ASK_NONE);
+    for (int i = 0; i < 4 && fh_run(&g_h); ++i) {
+        settle();
+    }
+    g_h.defer = false;
+    settle();
+    CHECK(!text_view_saving());
+    CHECK(!text_view_dirty());
+    CHECK(card_holds("USER/LOGS/VIEW.TXT", with_front("ab", k_report),
+                     strlen(k_report) + 2u));
+}
+
 int main(void)
 {
     RUN(save_writes_the_text_through_new_and_keeps_the_name);
@@ -364,6 +476,9 @@ int main(void)
     RUN(a_kst_file_edited_loses_its_checksum_and_loads_as_edited);
     RUN(an_esc_profile_says_it_is_read_at_the_next_start);
     RUN(a_new_left_by_a_cut_save_refuses_the_next_one);
+    RUN(an_open_asked_during_a_save_waits_for_it);
+    RUN(a_save_that_fails_under_the_question_leaves_discard_live);
+    RUN(the_text_holds_still_while_the_save_waits_its_turn);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_save");

@@ -2980,9 +2980,12 @@ rechts und dazwischen eine Notiz von 3 Zeilen der Schrift 8 x 16. TASTATUR
 
 SPEICHERN schreibt den Text als `<Name>.NEW` in den Ordner der Datei, in
 Stücken von 16KiB auf der Kartenaufgabe, löscht `<Name>` und gibt der
-neuen Datei ihren Namen; die Notiz sagt dann `<Name> gespeichert.` Der
-Text ändert sich nicht, solange er gespeichert wird: eine Taste tippt
-nichts, VERWERFEN und das Home-Tag warten. SPEICHERN ist grau, solange der
+neuen Datei ihren Namen; die Notiz sagt dann `<Name> gespeichert.` Vom
+Tipp auf SPEICHERN bis zum Ende des Speicherns ändert sich der Text nicht:
+eine Taste tippt nichts, VERWERFEN und das Home-Tag warten, und die Frage
+eines Öffnens über dem Text zeigt VERWERFEN grau. Ein Speichern, das den
+Text schreibt, schließt diese Frage und öffnet die andere Datei; ein
+fehlgeschlagenes lässt die Frage mit wirksamem VERWERFEN stehen. SPEICHERN ist grau, solange der
 Text der auf der Karte ist, und ein Tipp darauf sagt dann
 `Keine Änderungen zu speichern.` SPEICHERN ist gesperrt, solange der
 Prüfstand ARMED ist, ein Lauf aufgezeichnet wird oder der Logger die Datei

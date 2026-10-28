@@ -462,7 +462,7 @@ static void draw_question(gfx_canvas_t *c)
     ui_button_font(c, TV_Q_STAY, TR(SET_STAY), UI_PANEL_HI,
                    tv.press == TV_HIT_STAY, true, TV_FONT_LABEL);
     ui_button_font(c, TV_Q_DISCARD, TR(SET_DISCARD), UI_WARN,
-                   tv.press == TV_HIT_DISCARD, true, TV_FONT_LABEL);
+                   tv.press == TV_HIT_DISCARD, !tv.saving, TV_FONT_LABEL);
 }
 
 void text_view_render(gfx_canvas_t *c)

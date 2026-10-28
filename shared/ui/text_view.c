@@ -561,6 +561,8 @@ void text_view_cancel_press(void)
     tv.tap_have = false;
     tv.tap_moved = false;
     tv.press = TV_HIT_NONE;
+    ui_textkey_cancel_press(&tv.kb);    /* a key held: its release types
+                                           nothing, and a new contact acts */
 }
 
 /**
