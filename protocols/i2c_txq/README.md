@@ -212,8 +212,8 @@ a poll every 1ms the clear takes 24ms, at a poll every 5us or faster
 
 The first transaction picked after the clear carries `I2C_TXQ_F_TRIAL`.
 The trial is spent by any end but `I2C_TXQ_ABORTED`; after an abort the
-next transaction is the trial. What a trial's result means for the bus --
-stuck, working -- is the caller's decision.
+next transaction is the trial. What a trial's result means for the bus, stuck or
+working, is the caller's decision.
 
 ## Interface
 

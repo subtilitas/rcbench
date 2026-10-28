@@ -143,7 +143,8 @@ static void fh_cancel(void *ctx)
 }
 
 /**
- * @brief The io's bench(), as the screen reads it each frame.
+ * @brief The io's bench(), as the screen reads it each frame: the marks
+ *        copied, as the panel copies them, held until the next read.
  * @param out  takes it
  * @param ctx  the task
  */
@@ -154,7 +155,8 @@ static void fh_screen_bench(fm_bench_t *out, void *ctx)
     out->link_up = h->link_up;
     h->marks.run_dir = h->run_dir;
     h->marks.test_dir = h->test_dir;
-    out->marks = &h->marks;
+    h->seen = h->marks;
+    out->marks = &h->seen;
 }
 
 /**

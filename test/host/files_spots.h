@@ -19,7 +19,11 @@
  *   - the DELETE question's CANCEL x 186 and DELETE x 538, the progress
  *     box's CANCEL x 362, 300 x 56px from y 304; INFO's CLOSE x 362,
  *     300 x 56px from y 364;
- *   - NEW's choice from x 468, y 312: FOLDER and TEXT FILE, 56px rows.
+ *   - NEW's choice from x 468, y 312: FOLDER and TEXT FILE, 56px rows;
+ *   - the text viewer: its rows from x 32, y 66, 20px apart (16px with
+ *     SMALL); its scroll bar 56px wide at x 956, from y 64, 364px tall;
+ *     SMALL 140 x 52px at x 8, PAGE UP at x 730 and PAGE DOWN at x 876,
+ *     from y 440.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -69,3 +73,19 @@ enum {
     FS_SPOT_RESCAN = 0, FS_SPOT_COPY, FS_SPOT_MOVE, FS_SPOT_RENAME,
     FS_SPOT_DELETE, FS_SPOT_NEW, FS_SPOT_INFO, FS_SPOT_OPEN
 };
+
+/** @brief The text viewer: its first row's top and left, the row pitches
+ *         of its two faces, and its cells' widths. */
+#define FS_SPOT_TV_TEXT_X  32
+#define FS_SPOT_TV_TEXT_Y  66
+#define FS_SPOT_TV_PITCH   20
+#define FS_SPOT_TV_PITCH_SMALL 16
+/** @brief Its scroll bar: the middle column, the track's top and height. */
+#define FS_SPOT_TV_BAR_CX  984
+#define FS_SPOT_TV_BAR_TOP 64
+#define FS_SPOT_TV_BAR_H   364
+/** @brief The middles of SMALL, PAGE UP and PAGE DOWN, and the footer's. */
+#define FS_SPOT_TV_SMALL_CX 78
+#define FS_SPOT_TV_PGUP_CX  800
+#define FS_SPOT_TV_PGDN_CX  946
+#define FS_SPOT_TV_FOOT_CY  466

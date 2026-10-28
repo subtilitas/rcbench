@@ -17,9 +17,9 @@ IOmcu; one that has not is not.
 
 Nothing is written here yet, and most of it does not wait on the bench.
 
-- **The round trip** against this tree's own frame builder can be written now.
+- **The round trip** against this tree's own frame builder can be written.
   It proves the decoder transcribes correctly.
-- **Published vectors** can be written now too, and they are what proves the
+- **Published vectors** can be written too, and they are what proves the
   convention: a throttle value and the frame it must produce, taken from the
   protocol's documentation rather than from an implementation. This is the
   check that catches a bit order or a checksum this project has read the same

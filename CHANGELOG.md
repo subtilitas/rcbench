@@ -8,6 +8,24 @@ history is in git.
 
 ### Added
 
+- FILES' text viewer (`shared/ui/text_view.c`): OPEN on any file but a
+  CSV file of LOGS' folders shows it read-only, up to 1MiB and 65,536 line
+  ends, read through `cardjob`. 18 rows of 92 cells, or with SMALL 22 rows
+  of 115 cells; a line wider than a row wraps with a `..` mark; PAGE UP,
+  PAGE DOWN, a drag and the scroll bar scroll it. The bench's words take
+  colours by `text_hl`: headings, labels, PASS and FAIL in every language,
+  the words of what was not measured, a number by its unit, comments,
+  register lines, and JSON and CSV by the file's name. A file with a NUL
+  byte in its first 4KiB, over 65,536 line ends or over 1MiB is refused
+  with the reason
+  ([The text viewer](docs/Screens.md#the-text-viewer)).
+- `tools/check_prose.py`: holds the Markdown documents to the writing rules.
+  Rules: " -- " as a dash, the marketing words, "we"/"our"/"us" and
+  "wir"/"unser", history words, exclamation marks, emoji, the stale names
+  ESP32-S3, SIMULATION, coprocessor and "usable release". `--check` exits 1
+  on a hit, `--long` lists sentences over 40 words, `--report FILE` writes
+  the hits grouped by file. Exceptions are in `tools/check_prose_allow.txt`.
+  CI runs `--check` in the Host suite job. Units stay with `tools/check_units.py`.
 - `protocols/i2c_txq`: a transaction queue for one I2C bus master and its
   driver on the RP2350's I2C blocks. A transaction (up to 5 bytes written,
   6 read, STOP included) goes to the 16-entry FIFO whole and the block's
@@ -94,6 +112,11 @@ history is in git.
   the proposed names `KST001` to `KST999`, the reserved name `KST` and every
   refusal stay as they were; `test_kst_store` is replaced by a KST case in
   `test_servo_store`.
+
+- LOGS' OPEN on a report opens it in FILES' text viewer instead of LOGS'
+  own text view, which held 32KiB of a file; the home tag returns to LOGS
+  with the report chosen again. LOGS' text view and `log_text.c` are
+  removed.
 
 ### Fixed
 

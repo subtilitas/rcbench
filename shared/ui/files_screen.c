@@ -26,6 +26,7 @@
 #include "log_name.h"
 #include "log_select.h"
 #include "log_viewer_screen.h"
+#include "text_view.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
@@ -48,11 +49,7 @@ static need_t s_need[2];
 
 /* ------------------------------------------------------------ the bench */
 
-/**
- * @brief The bench as the gate and the rules see it now: the io's, ARMED
- *        also when the band says so, and the log folders in force.
- */
-static void read_bench(void)
+void fs_read_bench(void)
 {
     snprintf(s.user_dir, sizeof(s.user_dir), "%s",
              log_viewer_tab_dir(LOG_TAB_USER));
@@ -162,11 +159,18 @@ void fs_err_text(fm_err_t err, const char *name, char *out, size_t n)
     case FM_ERR_LOGGING:    snprintf(out, n, "%s", TR(FM_GATE_LOGGING)); break;
     case FM_ERR_CANCELLED:  snprintf(out, n, "%s", TR(FM_E_CANCELLED)); break;
     case FM_ERR_ARG:        snprintf(out, n, TR(FM_E_ARG), nm); break;
+    case FM_ERR_TOO_BIG:    snprintf(out, n, "%s", TR(ED_TOO_LARGE)); break;
     case FM_ERR_IO:
-    case FM_ERR_TOO_BIG:
     case FM_OK:
     case FM_ERR_COUNT:
     default:                snprintf(out, n, "%s", TR(FM_E_IO)); break;
+    }
+}
+
+void files_err_text(fm_err_t err, const char *name, char *out, size_t n)
+{
+    if (out != NULL && n > 0u) {
+        fs_err_text(err, name, out, n);
     }
 }
 
@@ -176,7 +180,7 @@ void fs_err_text(fm_err_t err, const char *name, char *out, size_t n)
  * @brief Hand s.req to the card's task, the log folders in force with it.
  * @return true when it is under way
  */
-static bool submit(void)
+bool fs_submit(void)
 {
     if (!io_ok() || s.busy) {
         return false;
@@ -429,7 +433,11 @@ static void take_answer(void)
         s.info_err = s.req.err;
         break;
     case FM_REQ_JOB:
-        take_job();
+        if (s.req.job.kind == FM_JOB_LOAD) {
+            fs_text_take();
+        } else {
+            take_job();
+        }
         break;
     case FM_REQ_NONE:
     default:
@@ -443,6 +451,9 @@ static void take_answer(void)
  */
 static void send_next(void)
 {
+    if (fs_text_send()) {
+        return;                     /* the viewer's read goes first */
+    }
     for (int i = 0; i < 2 && !s.busy; ++i) {
         if (s_need[i] == NEED_NONE) {
             continue;
@@ -467,7 +478,7 @@ static void send_next(void)
         s.req_keep = s.keep_place[i];
         s.keep_place[i] = false;
         want(i, NEED_NONE, FM_GO_FIRST);
-        if (!submit()) {
+        if (!fs_submit()) {
             /* No task: no pane is read, and none waits. */
             want(0, NEED_NONE, FM_GO_FIRST);
             want(1, NEED_NONE, FM_GO_FIRST);
@@ -482,10 +493,12 @@ static void send_next(void)
 /**
  * @brief Take the answer that is in, then send what waits.
  */
-static void pump(void)
+void fs_pump(void)
 {
     if (!io_ok()) {
-        /* No card's task: both panes say there is no card. */
+        /* No card's task: both panes say there is no card, and so does a
+         * file the viewer waits for. */
+        fs_text_fail(FM_ERR_NO_CARD);
         for (int i = 0; i < 2; ++i) {
             if (!s.read[i]) {
                 s.read[i] = true;
@@ -594,10 +607,10 @@ static bool logs_tab_of(const char *dir, log_viewer_tab_t *tab)
 }
 
 /**
- * @brief Whether LOGS shows entry @p e of folder @p dir: a .csv file, or a
- *        report, in the folder of one of its tabs.  The names are the ones
- *        LOGS' list holds (log_select_lists()); a report is the name the
- *        list here labels one (fm_kind_of(), log_report_number()).
+ * @brief Whether OPEN hands entry @p e of folder @p dir to LOGS: a .csv
+ *        file LOGS' list holds (log_select_lists()) in the folder of one of
+ *        its tabs.  A report LOGS lists too (log_report_number()) opens in
+ *        the text viewer, as LOGS' own OPEN on it does.
  * @param dir  the entry's folder
  * @param e    the entry
  * @return true when OPEN hands it to LOGS
@@ -605,7 +618,8 @@ static bool logs_tab_of(const char *dir, log_viewer_tab_t *tab)
 static bool logs_shows(const char *dir, const fm_entry_t *e)
 {
     log_viewer_tab_t tab;
-    return !e->is_dir && logs_tab_of(dir, &tab) && log_select_lists(e->name);
+    return !e->is_dir && logs_tab_of(dir, &tab) && log_select_lists(e->name)
+           && log_report_number(e->name) < 0;
 }
 
 /* --------------------------------------------------------------- footer */
@@ -619,11 +633,16 @@ bool fs_foot_live(fs_foot_t b, fm_err_t *why)
     const bool card = s.read[s.active] && here->total >= 0;
     switch (b) {
     case FS_OPEN:
-        if (e == NULL || (!e->is_dir && !logs_shows(here->dir, e))) {
+        if (e == NULL) {
             err = FM_ERR_ARG;
-        } else if (!e->is_dir && fm_busy(&s.bench, here->dir, e->name)) {
-            /* The logger's open file: LOGS leaves it off its list. */
-            err = FM_ERR_BUSY;
+        } else if (!e->is_dir) {
+            /* The logger's open file and the programmer's record are not
+             * opened; a file for the viewer has to fit its buffer. */
+            err = fm_allowed(&s.bench, FM_OP_OPEN, here->dir, e->name, false);
+            if (err == FM_OK && !logs_shows(here->dir, e)
+                && !text_view_fits(e->size)) {
+                err = FM_ERR_TOO_BIG;
+            }
         }
         break;
     case FS_COPY:
@@ -679,7 +698,7 @@ static void start_job(fm_err_t err, const char *name)
     s.req.kind = FM_REQ_JOB;
     s.req_pane = -1;
     fs_quiet();
-    if (submit()) {
+    if (fs_submit()) {
         s.view = FILES_VIEW_JOB;
     }
 }
@@ -710,7 +729,7 @@ static void open_in_logs(const fm_entry_t *e)
 
 void fs_foot(fs_foot_t b)
 {
-    read_bench();
+    fs_read_bench();
     fm_err_t why = FM_OK;
     const fm_entry_t *e = fs_selected();
     const char *name = (e != NULL) ? e->name : "";
@@ -723,7 +742,7 @@ void fs_foot(fs_foot_t b)
             want(i, NEED_PAGE, FM_GO_SAME);
             s.keep_place[i] = true;
         }
-        pump();
+        fs_pump();
         files_screen_invalidate();
         return;
     }
@@ -733,8 +752,6 @@ void fs_foot(fs_foot_t b)
     if (!fs_foot_live(b, &why)) {
         if (e == NULL && why == FM_ERR_ARG) {
             fs_say(false, TX_FM_SELECT_FIRST, NULL, NULL);
-        } else if (b == FS_OPEN && why == FM_ERR_ARG) {
-            fs_say(false, TX_FM_OPEN_WHERE, NULL, NULL);
         } else {
             fs_say_err(why, name);
         }
@@ -750,9 +767,12 @@ void fs_foot(fs_foot_t b)
         if (e->is_dir) {
             fs_quiet();
             want(s.active, NEED_ENTER, FM_GO_FIRST);
-            pump();
-        } else {
+            fs_pump();
+        } else if (logs_shows(here->dir, e)) {
             open_in_logs(e);
+        } else {
+            (void)files_screen_open_text(here->dir, name, here->mount,
+                                         e->size, false);
         }
         break;
     case FS_COPY:
@@ -793,7 +813,7 @@ void fs_foot(fs_foot_t b)
         s.req.is_dir = e->is_dir;
         s.req.mount = here->mount;
         s.req_pane = -1;
-        if (submit()) {
+        if (fs_submit()) {
             s.view = FILES_VIEW_INFO;
         }
         break;
@@ -817,7 +837,7 @@ void fs_turn(int i, fm_go_t go, bool up)
     }
     s.active = i;
     fs_quiet();
-    pump();
+    fs_pump();
     files_screen_invalidate();
 }
 
@@ -838,7 +858,7 @@ void fs_row_tap(int i, int row)
 
 void fs_delete_doomed(void)
 {
-    read_bench();
+    fs_read_bench();
     s.view = FILES_VIEW_PANES;
     const int i = s.doomed_pane;
     if (s.busy || i < 0 || i > 1) {
@@ -861,7 +881,7 @@ void fs_new_name(bool folder)
 
 void fs_name_typed(const char *name)
 {
-    read_bench();
+    fs_read_bench();
     s.view = FILES_VIEW_PANES;
     if (s.busy) {
         return;
@@ -1017,6 +1037,7 @@ static void reset(void)
     want(1, NEED_NONE, FM_GO_FIRST);
     fm_tree_init(&s.pane[0], CARD_ROOT);
     fm_tree_init(&s.pane[1], CARD_USER_LOGS);
+    text_view_reset();
 }
 
 /**
@@ -1026,15 +1047,19 @@ static void reset(void)
 static void enter(void)
 {
     fs_cancel_press();
-    read_bench();
-    if (!s.read[0] && !s.read[1] && !s.busy && s.mount == 0u) {
+    fs_read_bench();
+    if (s.view == FILES_VIEW_TEXT) {
+        /* LOGS opened a report: the viewer's read alone, the panes stay
+         * unread until they show. */
+    } else if (!s.read[0] && !s.read[1] && !s.busy && s.mount == 0u) {
         start_panes();
+        s.need_look = true;
     } else {
         want(0, NEED_PAGE, FM_GO_SAME);
         want(1, NEED_PAGE, FM_GO_SAME);
+        s.need_look = true;
     }
-    s.need_look = true;
-    pump();
+    fs_pump();
     files_screen_invalidate();
 }
 
@@ -1046,6 +1071,7 @@ static void leave(void)
 {
     fs_cancel_press();
     ui_textkey_close(&s.tk);
+    fs_text_close();
     if (s.view != FILES_VIEW_JOB || !s.busy) {
         s.view = FILES_VIEW_PANES;
     }
@@ -1059,7 +1085,7 @@ static void leave(void)
 static void tick(float dt_s)
 {
     const bool gate = fm_gate(FM_OP_COPY, &s.bench) != FM_OK;
-    read_bench();
+    fs_read_bench();
     if ((fm_gate(FM_OP_COPY, &s.bench) != FM_OK) != gate) {
         files_screen_invalidate();
     }
@@ -1082,7 +1108,7 @@ static void tick(float dt_s)
         }
     }
     const bool was = s.busy;
-    pump();
+    fs_pump();
     if (was != s.busy) {
         files_screen_invalidate();
     }
@@ -1112,6 +1138,13 @@ static bool back(void)
         } else {
             s.view = FILES_VIEW_PANES;
         }
+        break;
+    case FILES_VIEW_TEXT:
+        if (s.tv_from_logs) {
+            fs_text_close();
+            return false;           /* back to LOGS, which opened it */
+        }
+        fs_text_close();
         break;
     case FILES_VIEW_PANES:
     default:

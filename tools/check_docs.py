@@ -650,7 +650,8 @@ def compile_table(text: str) -> dict[str, tuple[bool, bool, bool]]:
     out = {}
     for mods, panel, iomcu, host in TABLE_ROW_RE.findall(text):
         for mod in re.findall(r"`(\w+)`", mods):
-            out[mod] = ("✔" in panel, "✔" in iomcu, "✔" in host)
+            out[mod] = tuple(cell.strip() in ("yes", "ja")
+                             for cell in (panel, iomcu, host))
     return out
 
 

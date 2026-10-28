@@ -17,7 +17,7 @@ der darüber bestanden hat.
 DShot spricht, ein Labornetzteil mit Strombegrenzung und das USB-Kabel für
 jede Platine.
 
-**Noch keinen Motor an den ESC.** Schritt 5 treibt überhaupt keinen Pin -- er
+**Noch keinen Motor an den ESC.** Schritt 5 treibt überhaupt keinen Pin. Er
 ist die Verriegelung, und kein Ausgang ist dort das bestandene Ergebnis.
 Schritt 6 ist der erste Pin an einem Messgerät, und dort schaut man zuerst auf
 das Oszilloskop und nicht auf einen Propeller.
@@ -329,7 +329,7 @@ zu welcher führt, ist nicht verfolgt:
 |---|---|
 | Panel-Seite | **GPIO28**, IO28 des 12-poligen Headers P3 des 7-Zoll-ESP32-P4-Boards (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
 | IOmcu-Seite | **GPIO 3** |
-| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der IOmcu gesund ist: Er schaltet nach 150ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der IOmcu nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der IOmcu gesund ist: Er schaltet nach 150ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der IOmcu nicht handeln kann: dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der IOmcu jedes Schalten auf ARMED, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
@@ -657,8 +657,8 @@ gedruckt wird: Core 1 wird für jedes im RAM geparkt.
 
 ### 8.8 Noch nicht erreichbar
 
-Die Messung der Bewegung auf SERVO_SENSE -- der PWM-Frame auf 1µs
-gestempelt und die Stellzeiten -- schaltet der Servotest des Panels scharf,
+Die Messung der Bewegung auf SERVO_SENSE (der PWM-Frame auf 1µs
+gestempelt und die Stellzeiten) schaltet der Servotest des Panels scharf,
 der sie noch nicht nutzt. Eine Stellzeit gegen ein Oszilloskop am PWM-Pin
 und am Shunt wartet darauf.
 

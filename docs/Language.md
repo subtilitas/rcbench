@@ -309,7 +309,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 393 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 402 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -326,7 +326,7 @@ An English overflow that is accepted for a time goes into `KNOWN_OVERFLOWS`
 in the tool, with its view, its string and its measurement; the list is
 empty. A listed one is printed as `known` and does not fail; a German finding that equals one word for word is
 the same string in the same place and does not fail either. An entry the
-check no longer finds fails until it is taken off the list. The check also
+check does not find fails until it is taken off the list. The check also
 fails on a string with no declared width that no view draws.
 
 ```bash
@@ -354,7 +354,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 2,369 entries
+A language is one more column in every entry of the table: 2,378 entries
 with an ID and 78 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

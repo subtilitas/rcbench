@@ -322,7 +322,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 393 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 402 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -341,7 +341,7 @@ Ein englischer Überlauf, der für eine Zeit hingenommen wird, kommt in
 Messwert; die Liste ist leer. Ein gelisteter wird als `known` ausgegeben und
 schlägt nicht fehl; ein deutscher Befund, der einem
 davon Wort für Wort gleicht, ist derselbe Text an derselben Stelle und
-schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht mehr findet,
+schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht findet,
 schlägt fehl, bis er aus der Liste genommen ist. Die Prüfung schlägt auch bei
 einem Text ohne angegebene Breite fehl, den keine Ansicht zeichnet.
 
@@ -373,7 +373,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.369
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.378
 Einträge mit ID und 78 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

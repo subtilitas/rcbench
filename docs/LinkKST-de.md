@@ -169,7 +169,7 @@ Wo die Versorgung endet, wenn etwas ausfällt:
 | Ereignis | Die Versorgung | Der Port |
 | --- | --- | --- |
 | Der PD mini antwortet bei ENTER nicht | unberührt | die Session läuft wie an einem Prüfstand ohne einen |
-| Der PD mini antwortet nicht mehr oder liest in LOW nicht innerhalb von 3000ms wie angefordert | aus angefordert, wenn dieses ENTER sie eingeschaltet hat, sonst an gelassen, auf der niedrigeren Spannung, wenn dieses ENTER sie gesenkt hat | PWM, Ergebnis 32 |
+| Der PD mini hört auf zu antworten oder liest in LOW nicht innerhalb von 3000ms wie angefordert | aus angefordert, wenn dieses ENTER sie eingeschaltet hat, sonst an gelassen, auf der niedrigeren Spannung, wenn dieses ENTER sie gesenkt hat | PWM, Ergebnis 32 |
 | Die bereitgestellte Spannung ist außerhalb des Bereichs | unberührt | ENTER mit SUPPLY_RANGE abgewiesen |
 | Die Spannung der Session liegt unter 4800mV | unberührt | ENTER mit SUPPLY_LOW abgewiesen |
 | Die Versorgung liest aus oder ist aus angefordert in PROGRAMMING (das Panel, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 1000ms aus gehalten, nicht wieder eingeschaltet | die Operation endet, ein Frame auf der Leitung wird beendet; PWM mit gelöschtem Bit 4, Ergebnis 19 |
@@ -237,7 +237,7 @@ Versorgung, der Pin und der Zustand wie zuvor.
 | Ein Schalten auf SAFE | wie sie ist | PROGRAMMING mit Ergebnis 19 und gesetztem Bit 5 |
 | Der Heartbeat verloren oder der Link schweigt, kein PD mini antwortet | unberührt | PROGRAMMING mit Ergebnis 19 und gesetztem Bit 5 |
 | Die Versorgung liest aus oder ist aus angefordert (das STOP des Panels, ein verlorener Heartbeat, der eigene Schutz des PD mini) | 1000ms aus gehalten, nicht wieder eingeschaltet | RAIL_OFF, dann PWM mit gelöschten Bits 4 und 5 und Ergebnis 19 |
-| Der PD mini antwortet nicht mehr | unberührt | die Wartezeit läuft weiter |
+| Der PD mini hört auf zu antworten | unberührt | die Wartezeit läuft weiter |
 | Jedes andere Kommando | wie sie ist | abgewiesen mit BUSY |
 
 Ein Stopp in dem Durchlauf, in dem die Wartezeit endet, kommt zuerst: der
@@ -274,7 +274,7 @@ PWM** in Register 28, und nur an einen IOmcu mit 4.30 oder neuer. Steht
 | Ein Schalten auf SAFE | wie sie ist | PWM mit Ergebnis 19: der Pin ist freigegeben |
 | Der Heartbeat verloren oder der Link schweigt | ausgeschaltet | PWM mit Ergebnis 19 |
 | Die Versorgung liest aus oder ist aus angefordert (das STOP des Panels, der eigene Schutz des PD mini) | aus | PWM mit Ergebnis 19, ohne weitere 1000ms aus |
-| Der PD mini antwortet nicht mehr | unberührt | die Wartezeit läuft weiter |
+| Der PD mini hört auf zu antworten | unberührt | die Wartezeit läuft weiter |
 | Jedes andere Kommando | wie sie ist | abgewiesen mit BUSY; ein Schreiben auf Register 28 gilt für die nächste Wartezeit |
 
 Das STOP des Panels ist ein Schalten auf SAFE, der Ausgang von SUPPLY auf 0
@@ -465,7 +465,7 @@ verlorenen Heartbeat oder einem stillen Link ist sie aus, und wenn ein PD
 mini antwortet, hält der Port sie 1000ms aus und kehrt mit gelöschten Bits
 4 und 5 nach PWM zurück. POWER_CYCLED und REBOOT beenden das Planen und
 laufen dann. Jedes andere Kommando wird mit BUSY abgewiesen, und das Planen
-geht weiter. Ein PD mini, der nicht mehr antwortet, beendet es nicht.
+geht weiter. Ein PD mini, der aufhört zu antworten, beendet es nicht.
 
 Ein
 Schalten auf SAFE wird als Flanke gesehen: der Port stoppt einmal und nimmt wieder
