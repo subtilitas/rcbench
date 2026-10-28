@@ -28,6 +28,8 @@ enum {
 void hitec_prog_gate_init(hitec_prog_gate_t *g)
 {
     atomic_store(&g->pass, 0u);
+    atomic_store(&g->writing, 0u);
+    atomic_store(&g->faults, 0u);
 }
 
 void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id)
@@ -57,6 +59,44 @@ bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id)
 bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id)
 {
     return gate_take(g, id);
+}
+
+bool hitec_prog_gate_writing(const hitec_prog_gate_t *g)
+{
+    return g != NULL && atomic_load(&g->writing) != 0u;
+}
+
+uint32_t hitec_prog_gate_faults(const hitec_prog_gate_t *g)
+{
+    return g != NULL ? atomic_load(&g->faults) : 0u;
+}
+
+bool hitec_prog_ses_fault(unsigned r)
+{
+    switch (r) {
+    case HITEC_SES_ERR_NO_SERVO:
+    case HITEC_SES_ERR_ENTRY:
+    case HITEC_SES_ERR_READ:
+    case HITEC_SES_ERR_WRITE:
+    case HITEC_SES_ERR_VERIFY:
+    case HITEC_SES_ERR_STEP:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
+ * @brief Whether a write runs, into the gate (hitec_prog_gate_writing()).
+ *
+ * @param p The programmer.
+ */
+static void gate_writing(const hitec_prog_t *p)
+{
+    if (p->gate != NULL) {
+        atomic_store(&p->gate->writing,
+                     p->st == ST_SES && p->op == OP_WRITE ? 1u : 0u);
+    }
 }
 
 /* -------------------------------------------------------------- messages */
@@ -295,6 +335,7 @@ static void send_bare(hitec_prog_t *p, uint8_t kind, uint8_t port)
 
 bool hitec_prog_take(hitec_prog_t *p, hitec_prog_cmd_t *out)
 {
+    gate_writing(p);
     if (p->abort_ready) {
         p->abort_ready = false;
         memset(out, 0, sizeof(*out));
@@ -426,6 +467,9 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
 {
     const uint8_t op = p->op;
 
+    if (hitec_prog_ses_fault((unsigned)r) && p->gate != NULL) {
+        atomic_fetch_add(&p->gate->faults, 1u);
+    }
     p->st = ST_IDLE;
     p->op = OP_NONE;
     switch (op) {
@@ -720,6 +764,7 @@ void hitec_prog_feed(hitec_prog_t *p, const hitec_prog_feed_t *f)
     hpf_tick(p);
     follow(p);
     hpg_pump(p);
+    gate_writing(p);
 }
 
 /* ---------------------------------------------------------------- state */

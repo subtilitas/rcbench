@@ -9,20 +9,30 @@
  * limit; a card write that failed during a run.  The operator's own OFF,
  * DISARM and edits are no error.
  *
+ * A programming session that ends an operation in a fault of the servo or
+ * the wire is an error as well: a KST operation that ends with
+ * kst_link_outcome_fault(), a Hitec one with hitec_prog_ses_fault().
+ *
  * What an error asks:
  *
  *     the bench ARMED, or a switch to ARMED waiting   DISARM: the bench SAFE
  *     the supply's output on or asked on               the output off
- *     a programming port holds the supply              the output left to
- *                                                      the port's session
+ *     a programming port holds the supply              the port's cut
+ *                                                      (port_cut_t)
  *
  * A SAFE bench is not disarmed again: a disarm withholds the heartbeat while
  * it stands, and on a SAFE bench that would end a programming port's
- * session, its write journal included, for no output it drives.  A port
- * that holds the supply keeps it: its session switches the supply itself,
- * and a cut in the middle of a write to the servo's memory is the harm the
- * rule exists to avoid.  The IOmcu switches the supply off on its own when
- * the heartbeat or the link goes (safety_gate.h), whoever holds it.
+ * session, its write journal included, for no output it drives.
+ *
+ * The port's cut switches the supply off outside a write to the servo's
+ * memory: at once when none runs, when the write ends otherwise, and
+ * ERROR_PORT_CUT_MS after the error at the latest.  A cut in the middle of
+ * a write is the harm the wait avoids.  The cut stands until the port lets
+ * go of the supply with the output off: a port that switches the supply on
+ * again in that time (a KST power cycle's ON, a Hitec POWER) is switched
+ * off again, and the panel sends the HITEC page no step once the cut has
+ * acted (port_cut_blocks()).  The IOmcu switches the supply off on its own
+ * when the heartbeat or the link goes (safety_gate.h), whoever holds it.
  *
  * A counter of errors raised on another task (error_stop_take()) is read
  * here as an edge: one act per change, whatever the difference, so a
@@ -43,10 +53,36 @@
 extern "C" {
 #endif
 
+/**
+ * @brief The longest the port's cut waits for a write to the servo's memory
+ *        to end, counted from the error, in ms.
+ *
+ * The longest writes the code allows, without a fault:
+ *
+ *   - KST, on the wire: the read of 32 registers in 3 passes before and
+ *     after, KST_PLAN_MAX_STEPS (33) writes with 2 read-backs each; 258
+ *     read frames of 5.9ms and 33 write frames of 12.4ms with their reply
+ *     windows and gaps, 1.93s, and KST_LINK_POLL_MS (50ms) for the panel
+ *     to see the end (test_kst_link_cut).  The planning before them sends
+ *     nothing and is not waited for.
+ *   - Hitec, at 32ms a step across the link at the panel's 5ms pass and a
+ *     16ms render frame on the host loopback (test_hitec_prog_cut): a
+ *     classic write of HITEC_PLAN_MAX (56) steps and its read-back of 36
+ *     cells, 2.9s; a D series write of every register of the full read
+ *     with its save, its 1000ms reboot wait and its read-back, 3.5s.
+ *
+ * test_kst_link_cut and test_hitec_prog_cut hold each under
+ * ERROR_PORT_CUT_MS / 2.  A write with retries, a slower render frame or a
+ * slower link takes longer and is cut at the bound.  None is measured on
+ * hardware.
+ */
+#define ERROR_PORT_CUT_MS 10000u
+
 /** @brief What an error asks of the bench. */
 typedef struct {
     bool disarm;      /**< the bench to SAFE                        */
     bool supply_off;  /**< the supply's output off                  */
+    bool port_cut;    /**< the port's cut (port_cut_ask())          */
 } error_stop_t;
 
 /**
@@ -56,7 +92,7 @@ typedef struct {
  * @param supply_on  The supply's output is on, or an ON is asked.
  * @param port_holds A programming port holds the supply.
  * @return disarm when @p live; supply_off when @p supply_on and not
- *         @p port_holds.
+ *         @p port_holds; port_cut when @p port_holds.
  */
 error_stop_t error_stop(bool live, bool supply_on, bool port_holds);
 
@@ -87,6 +123,53 @@ void error_watch_init(error_watch_t *w, uint32_t count);
  */
 error_stop_t error_stop_take(error_watch_t *w, uint32_t count, bool live,
                              bool supply_on, bool port_holds);
+
+/** @brief The cut a programming port's supply owes after an error. */
+typedef struct {
+    bool     armed;   /**< an error asked it and it stands          */
+    bool     acted;   /**< it has switched the supply off once      */
+    uint32_t t0;      /**< when the first error asked it, ms        */
+} port_cut_t;
+
+/**
+ * @brief An error while a port holds the supply: the cut stands from now,
+ *        or from the error that asked it first while it stands.
+ *
+ * @param c      Cut state; nothing is done for NULL.
+ * @param now_ms The clock, ms.
+ */
+void port_cut_ask(port_cut_t *c, uint32_t now_ms);
+
+/**
+ * @brief One look at a standing cut, every pass of the task that switches
+ *        the supply.
+ *
+ * The cut ends, with nothing to do, once @p holds and @p supply_on are both
+ * false.  Otherwise it switches the supply off whenever @p supply_on and no
+ * write runs, and while one runs from ERROR_PORT_CUT_MS after port_cut_ask()
+ * on, measured across the clock's wrap at 2^32ms.  Once it has switched the
+ * supply off, no write is waited for again.
+ *
+ * @param c         Cut state.
+ * @param holds     A programming port holds the supply.
+ * @param writing   A write to the servo's memory runs.
+ * @param supply_on The supply's output is on, or an ON is asked.
+ * @param now_ms    The clock, ms.
+ * @return true when the supply is to be switched off now; false for a NULL
+ *         @p c, a cut that does not stand and while the write is waited for.
+ */
+bool port_cut_step(port_cut_t *c, bool holds, bool writing, bool supply_on,
+                   uint32_t now_ms);
+
+/**
+ * @brief Whether the panel sends the HITEC page no step: the cut stands and
+ *        has acted.
+ *
+ * @param c Cut state.
+ * @return true from the first switch-off of a cut until it ends; false for
+ *         NULL.
+ */
+bool port_cut_blocks(const port_cut_t *c);
 
 #ifdef __cplusplus
 }

@@ -178,6 +178,10 @@ static bool bench_live(void)
     return arming_link_needed(&s_arm, outputs_armed(&s_out));
 }
 
+/** @brief The cut a programming port's supply owes after an error
+ *         (error_stop.h).  Control task only. */
+static port_cut_t s_port_cut;
+
 /**
  * @brief What error_stop() asks, done from here.
  *
@@ -185,9 +189,11 @@ static bool bench_live(void)
  * runs inside an exchange's wait as well.  The request withholds the
  * heartbeat while it stands, so the IOmcu fails safe within
  * HEARTBEAT_MAX_GAP_MS (150ms) whatever this task waits for, and
- * service_arming() lets go of the rest when the loop is free.
+ * service_arming() lets go of the rest when the loop is free.  The port's
+ * cut is asked here and acted on by port_cut_follow(), in the same pump.
  *
- * @param e The act: DISARM asked, the supply's output switched off.
+ * @param e The act: DISARM asked, the supply's output switched off, the
+ *          port's cut asked.
  */
 static void error_act(error_stop_t e)
 {
@@ -196,6 +202,9 @@ static void error_act(error_stop_t e)
     }
     if (e.supply_off) {
         supply_switch(false);
+    }
+    if (e.port_cut) {
+        port_cut_ask(&s_port_cut, now_ms());
     }
 }
 
@@ -212,6 +221,27 @@ void card_faults_follow(void)
 {
     error_act(error_stop_take(&s_card_watch, atomic_load(&s_card_faults),
                               bench_live(), s_supply_on, s_prog_taken));
+}
+
+/** @brief The programmers' session faults (prog_faults()), each taken as an
+ *         error once; control task only. */
+static error_watch_t s_prog_watch;
+
+void port_cut_follow(void)
+{
+    error_act(error_stop_take(&s_prog_watch, prog_faults(), bench_live(),
+                              s_supply_on, s_prog_taken));
+    /* The supply's OFF is taken while a port holds it; the port ends its
+     * session when it finds the supply asked off (kst_port.h). */
+    if (port_cut_step(&s_port_cut, s_prog_taken, prog_writing(), s_supply_on,
+                      now_ms())) {
+        supply_switch(false);
+    }
+}
+
+bool port_cut_blocking(void)
+{
+    return port_cut_blocks(&s_port_cut);
 }
 
 /* The operator's limits as the render side last stored them. */
@@ -526,6 +556,7 @@ void supply_pump(void)
     supply_follow_stops();
     supply_watch_service();
     card_faults_follow();
+    port_cut_follow();
     supply_service();
 
     const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);

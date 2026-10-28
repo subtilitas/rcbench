@@ -16,10 +16,20 @@ history is in git.
   not take an output or a set point, or an ON is undone for lost touch
   events; an INA3221 channel passes its limit
   (until now an alert only); a card write fails during a run. The supply's
-  output goes off with each, unless a programming port holds it. The
+  output goes off with each. The
   automatic servo test and the limit run switch the bench to SAFE when an
   error ends them: the supply or the meter failing, STALL AT, constant
   current, the 3.0A ceiling, 1.0A for 400ms.
+- A programming port that holds the PD mini's output loses it on an error
+  the panel finds, outside a write to the servo's memory
+  ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply)):
+  at once when no write runs, when the write ends otherwise, and 10000ms
+  after the error at the latest. An ON the port makes afterwards is
+  switched off again; the Hitec port sends no step after the cut until
+  LEAVE. A KST or Hitec operation that ends in a fault of the servo or the
+  wire (no servo, a failed read, a write that failed, a read-back or
+  verify that differs) is an error and ends the session with its supply;
+  until now the servo stayed powered until LEAVE.
 - The IOmcu switches a PD mini left on off before the rest of its
   start-up: right after the wiring is restored and before the sensor bus,
   the store's erases, core 1 and the CAN controller. WHO_AM_I goes again as

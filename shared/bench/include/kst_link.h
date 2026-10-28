@@ -449,6 +449,38 @@ kst_link_phase_t kst_link_phase(const kst_link_t *k);
 bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
 
 /**
+ * @brief Whether a write to the servo's memory runs: a WRITE, a RESTORE or a
+ *        RELEASE from kst_link_start() until the page last read says it has
+ *        ended, except while the page says it plans (KST_LINK_PLANNING): no
+ *        frame goes out then.
+ *
+ * What the error rule waits for before it switches the port's supply off
+ * (error_stop.h).  A power cycle (REBOOT, POWER_CYCLED) and a LEAVE write
+ * nothing and are not waited for.
+ *
+ * @param k The link state.
+ * @return true while such a write runs; false for NULL.
+ */
+bool kst_link_writing(const kst_link_t *k);
+
+/**
+ * @brief Whether an outcome is a fault of the servo or the wire, which the
+ *        panel takes as an error (error_stop.h).
+ *
+ * A fault: KST_LINK_OUT_DONE with KST_SES_ERR_NO_SERVO, _READ, _CHANGED,
+ * _WRITE_FAILED, _ROLLED_BACK, _TORN, _UNINTENDED, _VERIFY, _DRIVER or
+ * LINK_KST_RESULT_SUPPLY.  Not one: success, a refusal or a plan that sent
+ * nothing (_BUSY, _ARG, _NOT_IN_MODE, _NO_BACKUP, _FINGERPRINT, _LOCKED,
+ * _BAD_PLAN, _UNCONFIRMED, _NO_PLAN, LINK_KST_RESULT_NO_PATH and
+ * _TOO_COMPLEX), an ABORT (_ABORTED: the operator's, or a stop's, which
+ * cuts the session itself), and every other outcome kind.
+ *
+ * @param o The outcome.
+ * @return true for a fault; false for NULL.
+ */
+bool kst_link_outcome_fault(const kst_link_outcome_t *o);
+
+/**
  * @brief The screen's copy of the page.
  *
  * @param k The link state.

@@ -794,6 +794,41 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out)
     return true;
 }
 
+bool kst_link_writing(const kst_link_t *k)
+{
+    if (k == NULL || !k->active) {
+        return false;
+    }
+    const kst_link_phase_t ph = phase_shown(k);
+
+    return (k->op == (uint8_t)LINK_KST_OP_WRITE
+            || k->op == (uint8_t)LINK_KST_OP_RESTORE
+            || k->op == (uint8_t)LINK_KST_OP_RELEASE)
+           && ph != KST_LINK_PLANNING && ph != KST_LINK_FETCHING;
+}
+
+bool kst_link_outcome_fault(const kst_link_outcome_t *o)
+{
+    if (o == NULL || o->kind != KST_LINK_OUT_DONE) {
+        return false;
+    }
+    switch (o->result) {
+    case KST_SES_ERR_NO_SERVO:
+    case KST_SES_ERR_READ:
+    case KST_SES_ERR_CHANGED:
+    case KST_SES_ERR_WRITE_FAILED:
+    case KST_SES_ERR_ROLLED_BACK:
+    case KST_SES_ERR_TORN:
+    case KST_SES_ERR_UNINTENDED:
+    case KST_SES_ERR_VERIFY:
+    case KST_SES_ERR_DRIVER:
+    case LINK_KST_RESULT_SUPPLY:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void kst_link_readout(const kst_link_t *k, kst_link_readout_t *r)
 {
     if (r == NULL) {

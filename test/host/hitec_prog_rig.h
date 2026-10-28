@@ -75,6 +75,12 @@ static unsigned g_arm_refused;          /* switches to ARMED refused     */
 
 static hitec_prog_feed_t g_f;
 
+/* The panel's error cut (panel_supply.c): g_pump runs first in each control
+ * pass when a suite sets it, and with g_cut_blocks set a STEP is answered
+ * BUSY and not sent (panel_hitec.c). */
+static void (*g_pump)(void);
+static bool g_cut_blocks;
+
 /* The card. */
 static bool     g_card;                 /* mounted                       */
 static bool     g_card_fails;           /* takes no text                 */
@@ -297,7 +303,9 @@ static inline void carry_out(const hitec_prog_cmd_t *c)
                                       c->id);
         break;
     case HITEC_PROG_CMD_STEP:
-        a = hitec_link_step(&g_l, c->port, &c->step, c->mv, c->ma, c->id);
+        a = g_cut_blocks ? HITEC_LINK_START_BUSY
+                         : hitec_link_step(&g_l, c->port, &c->step, c->mv,
+                                           c->ma, c->id);
         break;
     case HITEC_PROG_CMD_CLEAR:
         a = hitec_link_clear(&g_l, c->port, c->id);
@@ -403,6 +411,9 @@ static inline void card_frame(void)
 /* The control task's pass. */
 static inline void control_pass(void)
 {
+    if (g_pump != NULL) {
+        g_pump();
+    }
     commands();
     if (g_link) {
         pass();
@@ -526,6 +537,8 @@ static inline void rig_from(uint32_t t0, supply_kind_t supply, bool panel)
     g_rx_mark = (uint8_t)HITEC_RX_LINK_HELD;
     g_frame_ms = 16u;
     g_arm_refused = 0;
+    g_pump = NULL;
+    g_cut_blocks = false;
     g_card = false;
     g_card_fails = false;
     g_card_slow = false;

@@ -652,6 +652,7 @@ and the CLOSE is always taken.
 | STOP, pressed or the bench's own | The IOmcu cuts the transaction after the frame on the wire, keeps the port with the pin released and sets STOPPED. The panel latches the stop and withholds the heartbeat | `Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.`, and no line offers CLEAR. CLEAR and READ ALL are refused with the STOP latched: the IOmcu would refuse the CLEAR as UNSAFE. LEAVE, then ARM and DISARM, then CONNECT |
 | A switch to SAFE at the bench alone | STOPPED, no latch | `Stopped. The pin is released. Tap CLEAR to go on, or LEAVE.` CLEAR goes on with the read |
 | ABORT | The operation ends; the port stays held | READ ALL again, or LEAVE |
+| An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a wrong entry answer, a failed read, a classic write without its answer, a read-back that differs | A write under way ends with its read-back first, 10000ms at most; then the PD mini's output goes off and the port stays held without it. Every step after that is answered `Another operation is running.` and sends nothing ([A programming port's supply](Safety.md#a-programming-ports-supply)) | LEAVE, then CONNECT |
 | The link goes silent | The IOmcu's failsafe latches and the port stays held; the panel's module does not count it as its own | Once the link is back the overlay says `Port held by another Hitec session.` and offers RELEASE PORT |
 | The panel starts again | As a lost link | As a lost link |
 

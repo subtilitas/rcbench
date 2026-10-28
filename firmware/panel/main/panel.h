@@ -714,6 +714,17 @@ extern atomic_uint    s_drive;
  *         change then.  Control task only; kst_port_look(). */
 extern bool            s_prog_taken;
 extern kst_prog_gate_t s_kst_gate;
+/** @brief Whether a programmer writes to a servo's memory: a KST write the
+ *         link module runs (kst_link_writing()) or a Hitec write the model
+ *         runs (hitec_prog_gate_writing()).  Control task only.
+ *  @return true while one runs */
+bool prog_writing(void);
+/** @brief The programmers' session faults: the KST outcomes
+ *         kst_link_outcome_fault() names, counted as kst_publish() takes
+ *         them, and the Hitec model's (hitec_prog_gate_faults()).  Control
+ *         task only.
+ *  @return the sum, modulo 2^32 */
+uint32_t prog_faults(void);
 /* The SENSE and TONE set-ups that are not held at the far end. */
 extern atomic_uint s_sense_unheld;
 extern atomic_uint s_tone_unheld;
@@ -1023,13 +1034,21 @@ static inline void supply_service(void)
 void apply_supply_cmd(const panel_cmd_t *pc);
 /**
  * @brief An error of the bench (error_stop.h): the bench to SAFE when it is
- *        ARMED or a switch to ARMED waits, and the supply's output off unless
- *        a programming port holds it.  Control task, in the pump as well.
+ *        ARMED or a switch to ARMED waits, the supply's output off when no
+ *        programming port holds it, and the port's cut when one does.
+ *        Control task, in the pump as well.
  */
 void bench_error_stop(void);
 /** @brief The card faults the logger counted, each an error once
  *         (bench_error_stop()); from the pump. */
 void card_faults_follow(void);
+/** @brief The programmers' session faults, each an error once, and the
+ *         port's cut (port_cut_step()); from the pump. */
+void port_cut_follow(void);
+/** @brief Whether the HITEC page is sent no step: the port's cut stands and
+ *         has switched the supply off (port_cut_blocks()).  Control task.
+ *  @return true while it does */
+bool port_cut_blocking(void);
 /** @brief Card writes that failed during a run, counted by the logger at
  *         each failure's edge (panel_log.c); read by the control task. */
 extern atomic_uint s_card_faults;

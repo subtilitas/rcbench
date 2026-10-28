@@ -63,7 +63,9 @@ static uint32_t             s_hitec_stops;
  * @brief Carry out one command.
  *
  * No port is taken on an armed bench: an OPEN is answered BUSY and nothing
- * is sent.
+ * is sent.  No step goes out once an error's cut has switched the port's
+ * supply off (port_cut_blocking()): a STEP is answered BUSY until the port
+ * lets go of the supply, and LEAVE ends in its CLOSE.
  *
  * @param c The command.
  */
@@ -79,8 +81,10 @@ static void hitec_command(const hitec_prog_cmd_t *c)
                                   c->drive, c->id);
         break;
     case HITEC_PROG_CMD_STEP:
-        a = hitec_link_step(&s_hitec_link, c->port, &c->step, c->mv, c->ma,
-                            c->id);
+        a = port_cut_blocking()
+                ? HITEC_LINK_START_BUSY
+                : hitec_link_step(&s_hitec_link, c->port, &c->step, c->mv,
+                                  c->ma, c->id);
         break;
     case HITEC_PROG_CMD_CLEAR:
         a = hitec_link_clear(&s_hitec_link, c->port, c->id);
