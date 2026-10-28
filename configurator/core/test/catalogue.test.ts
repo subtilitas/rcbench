@@ -845,7 +845,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
 
   // A named text that the line does not hold.
   const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 802, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.1/);
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.2/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
