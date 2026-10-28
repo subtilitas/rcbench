@@ -572,6 +572,7 @@ static void on_status(kst_link_t *k, const uint16_t *regs)
     k->known = true;
     k->was_held = LINK_KS_STATE_OF(regs[LINK_KS_STATE])
                   != (uint8_t)LINK_KST_PWM;
+    k->held_last = k->was_held;
     if (k->phase == (uint8_t)KST_LINK_SYNC) {
         k->phase = (uint8_t)KST_LINK_READY;
     }
@@ -807,9 +808,10 @@ bool kst_link_writing(const kst_link_t *k, uint32_t now_ms)
         return op_writes((link_kst_op_t)k->op) && k->phase != (uint8_t)KST_LINK_FETCHING;
     }
     if (!k->known) {
-        /* Status reads that ran out of tries end this module's operation,
-         * not the port's: one held at the last read may still write. */
-        return k->was_held;
+        /* Status reads that ran out of tries, or a lost link, end this
+         * module's operation, not the port's: one held at the last read
+         * may still write. */
+        return k->held_last;
     }
     if (LINK_KS_STATE_OF(k->status[LINK_KS_STATE])
         == (uint8_t)LINK_KST_PWM) {

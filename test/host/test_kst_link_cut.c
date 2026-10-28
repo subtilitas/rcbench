@@ -355,10 +355,10 @@ TEST_CASE(a_write_that_plans_is_waited_for)
     CHECK(!kst_link_writing(&k, 1000u));
     k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PROGRAMMING;
     k.known = false;
-    k.was_held = false;
+    k.held_last = false;
     CHECK(!kst_link_writing(&k, 1000u));
     /* Not known now, held at the last read: it may write. */
-    k.was_held = true;
+    k.held_last = true;
     CHECK(kst_link_writing(&k, 1000u));
 }
 
@@ -463,8 +463,14 @@ TEST_CASE(a_write_whose_status_reads_run_out_of_tries_is_waited_for)
     CHECK_EQ(g_rig.port.busy, 0u);
     CHECK(g_cut_ms - g_write_end_ms <= 1u);
     CHECK(rig_servo().r[0x05] == r.image.r[0x05]);
-    /* A link that went down runs none: the IOmcu cuts the session. */
+    /* Still held: a link that goes down leaves it as it was last read,
+     * and one that comes back is read again before it says otherwise. */
+    CHECK(taken());
     kst_link_lost(&g_rig.link);
+    CHECK(kst_link_writing(&g_rig.link, g_rig.ms));
+    kst_link_came_up(&g_rig.link, LINK_PROTOCOL_MINOR);
+    CHECK(kst_link_writing(&g_rig.link, g_rig.ms));
+    passes(2u * KST_LINK_POLL_MS);
     CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
 }
 

@@ -182,7 +182,7 @@ bool hitec_foreign(void)
     hitec_link_readout_t rd;
 
     hitec_link_readout(&s_hitec_link, &rd);
-    return hitec_prog_foreign(&rd);
+    return hitec_prog_may_write(&rd);
 }
 
 bool hitec_taken(void)

@@ -143,14 +143,16 @@ a write to the servo's memory (`port_cut_t` in `error_stop.h`):
   counts while the page reads it BUSY, and a status read older than 100ms
   (`KST_LINK_FRESH_MS`) counts as a write: a write's first frame comes
   560ms after its command at the soonest. A port held at the last status
-  read whose reads then ran out of tries counts as writing until a read
-  answers again.
+  read counts as writing while its status is not known, after reads that
+  ran out of tries or a lost link, until a read answers again.
 - A Hitec write runs from its first step to the end of its read-back
   (`hitec_prog_gate_writing()`). Its record and backup file on the card
   come before the first step and are not waited for. A HITEC port another
   writer holds, the bench console or a session held over a lost link, runs
-  transactions the panel does not know (`hitec_prog_foreign()`): its supply
-  goes off at 10000ms.
+  transactions the panel does not know (`hitec_prog_may_write()`): its supply
+  goes off at 10000ms. So does the supply of a port held at the last status
+  read while its status is not known, until a read answers again, and of a
+  port whose page runs a transaction, until it ends.
 
 The longest writes the code allows end well inside 10000ms: a KST write of
 33 steps is 1.93s on the wire after at most 1.93s of planning; a classic Hitec write of 56 steps with its

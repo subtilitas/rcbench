@@ -825,6 +825,10 @@ static void on_status(hitec_link_t *l, const uint16_t *regs)
     memcpy(l->status, regs, sizeof(l->status));
     l->seq = regs[LINK_HT_SEQ];
     l->known = 1;
+    l->held_last = LINK_HT_STATE_OF(regs[LINK_HT_STATE])
+                           != (uint8_t)LINK_HITEC_FREE
+                       ? 1u
+                       : 0u;
     port_look(l, regs);
     if (l->phase == (uint8_t)HITEC_LINK_SYNC) {
         l->phase = (uint8_t)HITEC_LINK_READY;
@@ -1081,6 +1085,7 @@ void hitec_link_readout(const hitec_link_t *l, hitec_link_readout_t *r)
     r->phase = (hitec_link_phase_t)l->phase;
     r->minor = l->minor;
     r->hold_supply = l->up != 0u && l->minor >= LINK_MINOR_HITEC_HOLD;
+    r->held_last = l->held_last != 0u;
     if (l->known != 0u) {
         const uint16_t st = l->status[LINK_HT_STATE];
 

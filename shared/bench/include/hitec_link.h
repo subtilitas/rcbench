@@ -196,6 +196,8 @@ typedef struct {
                                   the link came up; false for a port
                                   another writer holds, and for one held
                                   over a link loss or a panel restart */
+    bool     held_last;      /**< the last status read showed a port held,
+                                  whether or not the status is known now */
     uint16_t seq;            /**< the page's SEQ */
     link_hitec_op_t op;      /**< the last operation the page started */
     uint16_t count;          /**< transactions since the port was taken,
@@ -248,6 +250,9 @@ typedef struct {
     uint16_t seq;            /**< the page's SEQ */
     uint16_t status[LINK_HT_DATA]; /**< registers 0 to 15 as last read */
     uint8_t  ours;           /**< this module opened the held port */
+    uint8_t  held_last;      /**< the last status read showed a port held;
+                                  kept while the status is not known, over
+                                  a lost link included */
     uint8_t  have_line;      /**< line[] was read since the OPEN */
     uint16_t line[3];        /**< LINK_HT_I_BIT_NS, _LINE, _PIN */
 

@@ -803,7 +803,7 @@ void hitec_pass(bool link_up);
  *  @return true while it does */
 bool hitec_taken(void);
 /** @brief Whether the HITEC page holds a port another writer opened
- *         (hitec_prog_foreign()); control task.
+ *         (hitec_prog_may_write()); control task.
  *  @return true while it does */
 bool hitec_foreign(void);
 /** @brief What the Hitec programmer's model is fed; under the snapshot's

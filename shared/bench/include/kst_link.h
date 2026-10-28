@@ -264,6 +264,8 @@ typedef struct {
     uint8_t  tries;            /**< exchanges unanswered in a row         */
     bool     was_held;         /**< the status last read had the port out
                                     of PWM                                */
+    bool     held_last;        /**< the same, kept over a lost link: for
+                                    kst_link_writing()                    */
 
     uint16_t status[LINK_KS_W_CMD_FRAME];
     bool     polled;           /**< status_ms is meaningful               */
@@ -475,8 +477,8 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
  * while that read is older than KST_LINK_FRESH_MS.  Status reads that ran
  * out of tries leave the status not known: a port held at the last read
  * may still write, its own operation's included, which the module gave up
- * without the IOmcu's word.  A port in PWM, never read, or on a link that
- * went down, runs none: the IOmcu cuts its session itself then.
+ * without the IOmcu's word; so may one held at the last read before the
+ * link went down.  A port in PWM, or never read, runs none.
  *
  * What the error rule waits for before it switches the port's supply off
  * (error_stop.h).  A power cycle (REBOOT, POWER_CYCLED) and a LEAVE write

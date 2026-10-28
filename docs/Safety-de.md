@@ -157,16 +157,20 @@ aus (`port_cut_t` in `error_stop.h`):
   ihn BUSY liest, und ein Lesen des Status, das älter als 100ms ist
   (`KST_LINK_FRESH_MS`), zählt als Schreiben: der erste Frame eines
   Schreibens kommt frühestens 560ms nach seinem Kommando. Ein Port, der beim
-  letzten Lesen des Status gehalten war und dessen Lesungen danach ihre
-  Versuche aufgebraucht haben, zählt als schreibend, bis ein Lesen wieder
-  antwortet.
+  letzten Lesen des Status gehalten war, zählt als schreibend, solange sein
+  Status nicht bekannt ist, nach Lesungen, die ihre Versuche aufgebraucht
+  haben, oder einer verlorenen Verbindung, bis ein Lesen wieder antwortet.
 - Ein Hitec-Schreiben läuft vom ersten Schritt bis zum Ende seines
   Zurücklesens (`hitec_prog_gate_writing()`). Sein Vermerk und seine
   Backup-Datei auf der Karte kommen vor dem ersten Schritt, auf sie wird
   nicht gewartet. Ein HITEC-Port, den ein anderer Schreiber hält, die
   Prüfstandskonsole oder eine über eine verlorene Verbindung gehaltene Sitzung,
   führt Transaktionen aus, die das Panel nicht kennt
-  (`hitec_prog_foreign()`): seine Versorgung geht nach 10000ms aus.
+  (`hitec_prog_may_write()`): seine Versorgung geht nach 10000ms aus.
+  Ebenso die Versorgung eines Ports, der beim letzten Lesen des Status
+  gehalten war, solange sein Status nicht bekannt ist, bis ein Lesen wieder
+  antwortet, und die eines Ports, dessen Page eine Transaktion ausführt,
+  bis sie endet.
 
 Die längsten Schreibvorgänge, die der Code zulässt, enden deutlich
 innerhalb von 10000ms: ein KST-Schreiben mit 33 Schritten dauert 1,93s auf

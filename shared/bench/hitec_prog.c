@@ -86,9 +86,19 @@ bool hitec_prog_ses_fault(unsigned r)
     }
 }
 
-bool hitec_prog_foreign(const hitec_link_readout_t *rd)
+bool hitec_prog_may_write(const hitec_link_readout_t *rd)
 {
-    return rd != NULL && rd->known && rd->held && !rd->ours;
+    if (rd == NULL) {
+        return false;
+    }
+    /* Status reads that ran out of tries, or a lost link, end the module's
+     * view, not the port's session: one held at the last read may write. */
+    if (!rd->known) {
+        return rd->held_last;
+    }
+    /* Another writer's port; or a transaction the page runs, which the
+     * module may have given up without the page's word. */
+    return rd->held && (!rd->ours || rd->state == LINK_HITEC_BUSY);
 }
 
 /**

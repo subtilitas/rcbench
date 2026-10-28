@@ -19,8 +19,10 @@
  *    and the write that follows sends nothing;
  *  - a classic write the servo does not answer is a session fault
  *    (hitec_prog_ses_fault()) and an error: off at once; an ABORT is none;
- *  - a port another writer holds (hitec_prog_foreign()): its transactions
- *    are not known, so the supply goes off at ERROR_PORT_CUT_MS;
+ *  - a port another writer holds (hitec_prog_may_write()): its transactions
+ *    are not known, so the supply goes off at ERROR_PORT_CUT_MS; the same
+ *    for a held port whose status reads ran out of tries, until a read
+ *    answers again, and for a page that runs a transaction;
  *  - which session results are faults;
  *  - the longest write the code allows: a classic one of HITEC_PLAN_MAX
  *    steps and its read-back of 36 cells, a D series one of every register
@@ -49,7 +51,7 @@ static void cut_pump(void)
 {
     const bool held = hitec_prog_port_taken(&g_f.rd);
     const bool writing = hitec_prog_gate_writing(&g_gate)
-                         || hitec_prog_foreign(&g_f.rd);
+                         || hitec_prog_may_write(&g_f.rd);
     const error_stop_t e =
         error_stop_take(&g_watch, hitec_prog_gate_faults(&g_gate), false,
                         g_hw.v.asked_on, held);
@@ -317,7 +319,7 @@ TEST_CASE(a_port_another_writer_holds_is_cut_at_the_bound)
     crun(200u);
     link_back();
     until(HITEC_PROG_OTHER);
-    CHECK(hitec_prog_foreign(&g_f.rd));
+    CHECK(hitec_prog_may_write(&g_f.rd));
     (void)hw_supply_set(NULL, true, 5000u, 1000u);
     crun(2u * HITEC_LINK_POLL_MS);
     CHECK(g_hw.v.asked_on);
@@ -332,7 +334,71 @@ TEST_CASE(a_port_another_writer_holds_is_cut_at_the_bound)
     CHECK(!g_hw.v.asked_on);
     CHECK(g_cut_ms - asked >= ERROR_PORT_CUT_MS);
     CHECK(g_cut_ms - asked <= ERROR_PORT_CUT_MS + HITEC_LINK_POLL_MS);
-    CHECK(!hitec_prog_foreign(NULL));
+    /* Its status reads running out of tries leave it a port that may
+     * write. */
+    g_lose_status = 1000u;
+    for (unsigned i = 0; i < 20000u && g_f.rd.known; ++i) {
+        cms();
+    }
+    CHECK(!g_f.rd.known);
+    CHECK(hitec_prog_may_write(&g_f.rd));
+    g_lose_status = 0u;
+}
+
+TEST_CASE(a_port_whose_status_reads_run_out_of_tries_is_waited_for)
+{
+    d_ready();
+    CHECK(!hitec_prog_may_write(&g_f.rd));
+    /* Every status read lost until the module gives the status up; the
+     * page's port stays held. */
+    g_lose_status = 1000u;
+    for (unsigned i = 0; i < 20000u && g_f.rd.known; ++i) {
+        cms();
+    }
+    CHECK(!g_f.rd.known);
+    CHECK(g_f.rd.held_last);
+    CHECK(hitec_prog_may_write(&g_f.rd));
+    port_cut_ask(&g_cut, g_ms);
+    crun(300u);
+    CHECK_EQ(g_offs, 0u);
+    CHECK(g_hw.v.asked_on);
+    /* Read again: held, ours, no transaction: off. */
+    g_lose_status = 0u;
+    for (unsigned i = 0; i < 20000u && g_offs == 0u; ++i) {
+        cms();
+    }
+    CHECK_EQ(g_offs, 1u);
+    CHECK(g_f.rd.known);
+    CHECK(g_cut_ms - g_write_end_ms < ERROR_PORT_CUT_MS);
+}
+
+TEST_CASE(which_ports_may_write)
+{
+    hitec_link_readout_t rd;
+
+    memset(&rd, 0, sizeof(rd));
+    rd.known = true;
+    rd.held = true;
+    rd.ours = true;
+    rd.state = LINK_HITEC_OPEN;
+    CHECK(!hitec_prog_may_write(&rd));
+    /* A transaction runs: maybe one the module gave up. */
+    rd.state = LINK_HITEC_BUSY;
+    CHECK(hitec_prog_may_write(&rd));
+    /* Another writer's port. */
+    rd.state = LINK_HITEC_OPEN;
+    rd.ours = false;
+    CHECK(hitec_prog_may_write(&rd));
+    rd.held = false;
+    rd.state = LINK_HITEC_FREE;
+    CHECK(!hitec_prog_may_write(&rd));
+    /* Not known: held at the last read or not. */
+    rd.known = false;
+    rd.held_last = true;
+    CHECK(hitec_prog_may_write(&rd));
+    rd.held_last = false;
+    CHECK(!hitec_prog_may_write(&rd));
+    CHECK(!hitec_prog_may_write(NULL));
 }
 
 TEST_CASE(which_session_results_are_faults)
@@ -415,6 +481,8 @@ int main(void)
     RUN(an_error_while_the_record_waits_for_the_card_writes_nothing);
     RUN(a_classic_write_the_servo_does_not_answer_is_an_error);
     RUN(a_port_another_writer_holds_is_cut_at_the_bound);
+    RUN(a_port_whose_status_reads_run_out_of_tries_is_waited_for);
+    RUN(which_ports_may_write);
     RUN(which_session_results_are_faults);
     RUN(the_longest_writes_end_within_half_the_bound);
     return test_summary("hitec_prog_cut");
