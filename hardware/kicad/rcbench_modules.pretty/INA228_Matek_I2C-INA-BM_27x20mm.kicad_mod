@@ -948,4 +948,15 @@
 		(uuid "26590976-c98c-5f33-9dbc-7ba41c295949")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/INA228_Matek_I2C-INA-BM_27x20mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

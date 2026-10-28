@@ -25,6 +25,11 @@ branch `research/round1-results`. Round 2 is planned in
 [Research](docs/Research.md#round-2); its returns go under
 `hardware/research/round2/` on `research/round2-results`.
 
+The [KiCad library](kicad/README.md) holds a footprint, a symbol and a STEP
+3D model for each of the 12 modules the bench is built from. Its positions
+come from maker drawings and photos, not from a caliper, and its part
+heights are part class figures, not measured.
+
 ## Decided
 
 | | Part | Reason |

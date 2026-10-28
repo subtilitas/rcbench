@@ -18,7 +18,8 @@ Footprint items (``silk`` and ``fab`` lists)::
     ("poly", [(x, y), ...])             closed polygon outline
 
 ``outline`` (optional) replaces the board rectangle by a closed polygon in
-the board frame; ``value_at`` (optional) places the Value text.
+the board frame; ``value_at`` (optional) places the Value text; ``model``
+(optional) is the path of the footprint's 3D model.
 
 Pads::
 
@@ -192,8 +193,13 @@ def footprint(fp, uid=_u):
                   0.1, uid)
     for pd in fp["pads"]:
         s += _pad(fr, pd, uid)
-    s += "\t(embedded_fonts no)\n)\n"
-    return s
+    s += "\t(embedded_fonts no)\n"
+    if fp.get("model"):
+        s += (f"\t(model {_q(fp['model'])}\n"
+              "\t\t(offset\n\t\t\t(xyz 0 0 0)\n\t\t)\n"
+              "\t\t(scale\n\t\t\t(xyz 1 1 1)\n\t\t)\n"
+              "\t\t(rotate\n\t\t\t(xyz 0 0 0)\n\t\t)\n\t)\n")
+    return s + ")\n"
 
 
 def _eff(size, ind):
