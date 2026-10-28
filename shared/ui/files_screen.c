@@ -49,11 +49,7 @@ static need_t s_need[2];
 
 /* ------------------------------------------------------------ the bench */
 
-/**
- * @brief The bench as the gate and the rules see it now: the io's, ARMED
- *        also when the band says so, and the log folders in force.
- */
-static void read_bench(void)
+void fs_read_bench(void)
 {
     snprintf(s.user_dir, sizeof(s.user_dir), "%s",
              log_viewer_tab_dir(LOG_TAB_USER));
@@ -733,7 +729,7 @@ static void open_in_logs(const fm_entry_t *e)
 
 void fs_foot(fs_foot_t b)
 {
-    read_bench();
+    fs_read_bench();
     fm_err_t why = FM_OK;
     const fm_entry_t *e = fs_selected();
     const char *name = (e != NULL) ? e->name : "";
@@ -862,7 +858,7 @@ void fs_row_tap(int i, int row)
 
 void fs_delete_doomed(void)
 {
-    read_bench();
+    fs_read_bench();
     s.view = FILES_VIEW_PANES;
     const int i = s.doomed_pane;
     if (s.busy || i < 0 || i > 1) {
@@ -885,7 +881,7 @@ void fs_new_name(bool folder)
 
 void fs_name_typed(const char *name)
 {
-    read_bench();
+    fs_read_bench();
     s.view = FILES_VIEW_PANES;
     if (s.busy) {
         return;
@@ -1051,7 +1047,7 @@ static void reset(void)
 static void enter(void)
 {
     fs_cancel_press();
-    read_bench();
+    fs_read_bench();
     if (s.view == FILES_VIEW_TEXT) {
         /* LOGS opened a report: the viewer's read alone, the panes stay
          * unread until they show. */
@@ -1089,7 +1085,7 @@ static void leave(void)
 static void tick(float dt_s)
 {
     const bool gate = fm_gate(FM_OP_COPY, &s.bench) != FM_OK;
-    read_bench();
+    fs_read_bench();
     if ((fm_gate(FM_OP_COPY, &s.bench) != FM_OK) != gate) {
         files_screen_invalidate();
     }

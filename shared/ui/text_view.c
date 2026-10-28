@@ -358,48 +358,77 @@ bool text_view_at_end(void)
 
 /* ------------------------------------------------------------ the bar */
 
+/**
+ * @brief A top position as a line count: the line, and the share of its
+ *        rows above the top.  The bar maps this, so a line wrapped over
+ *        more rows than a screen scrolls along it too.
+ * @param line  the line
+ * @param row   the row in it
+ * @return line + row / rows of the line
+ */
+static double pos_of(size_t line, size_t row)
+{
+    return (double)line + (double)row / (double)rows_of(line);
+}
+
 void tv_bar_thumb(int *y, int *h)
 {
     const gfx_rect_t t = TV_BAR;
     size_t mr;
-    const size_t span = tv_max_top(&mr);
-    const int rows = text_view_rows();
-    if (span == 0u) {
+    const size_t ml = tv_max_top(&mr);
+    const long rows = text_view_rows();
+    if (ml == 0u && mr == 0u) {
         *y = t.y;
         *h = t.h;
         return;
     }
-    int th = (int)((long)t.h * rows / ((long)rows + (long)span));
+    /* Lines and rows past the first screen, as the travel's length. */
+    int th = (int)((long)t.h * rows / (rows + (long)ml + (long)mr));
     if (th < TV_BAR_MIN) {
         th = TV_BAR_MIN;
     }
     const int travel = t.h - th;
-    const size_t at = (tv.top_line < span) ? tv.top_line : span;
-    *y = t.y + (int)((double)travel * (double)at / (double)span + 0.5);
+    const double end = pos_of(ml, mr);
+    double at = pos_of(tv.top_line, tv.top_row);
+    at = (at < end) ? at : end;
+    *y = t.y + (int)((double)travel * at / end + 0.5);
     *h = th;
 }
 
 /**
- * @brief Put the thumb's top nearest @p top: the line its place along the
- *        travel gives on top, from its first row.
+ * @brief Put the thumb's top nearest @p top: the position its place along
+ *        the travel gives, to the row; the travel's ends are the first and
+ *        the last screen, as PAGE UP and PAGE DOWN reach them.
  * @param top  the thumb's top the finger asks for
  */
 static void bar_to(int top)
 {
     const gfx_rect_t t = TV_BAR;
     size_t mr;
-    const size_t span = tv_max_top(&mr);
+    const size_t ml = tv_max_top(&mr);
     int ty;
     int th;
     tv_bar_thumb(&ty, &th);
     const int travel = t.h - th;
-    if (span == 0u || travel <= 0) {
+    if ((ml == 0u && mr == 0u) || travel <= 0) {
         return;
     }
     int rel = top - t.y;
     rel = (rel < 0) ? 0 : (rel > travel) ? travel : rel;
-    tv.top_line = (size_t)((double)span * rel / travel + 0.5);
-    tv.top_row = 0u;
+    if (rel == travel) {
+        tv.top_line = ml;
+        tv.top_row = mr;
+        return;
+    }
+    const double at = pos_of(ml, mr) * rel / travel;
+    size_t line = (size_t)at;
+    size_t row = (size_t)((at - (double)line) * (double)rows_of(line) + 0.5);
+    if (row >= rows_of(line)) {
+        ++line;                     /* rounded up into the next line */
+        row = 0u;
+    }
+    tv.top_line = line;
+    tv.top_row = row;
     clamp_top();
 }
 

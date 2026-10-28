@@ -53,6 +53,9 @@ bool fs_text_send(void)
     size_t cap = 0u;
     uint8_t *area = text_view_load_area(&cap);
     memset(&s.req, 0, sizeof(s.req));
+    /* LOGS opens a report with FILES off screen: the bench FILES last
+     * read can still hold a run that has ended since. */
+    fs_read_bench();
     const fm_err_t err = fm_job_load(&s.req.job, &s.bench, s.tv_mount,
                                      text_view_dir(), text_view_name(), area,
                                      cap);

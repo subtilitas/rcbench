@@ -2890,8 +2890,11 @@ Ziehen auf dem Text bewegt ihn eine Zeile je 20px (16px mit KLEIN), von
 der Stelle aus, an der er beim Aufsetzen stand; ein Druck, der sich 8px
 oder weniger bewegt, ist kein Ziehen. Ziehen am 56px breiten Rollbalken
 legt den Schieber unter den Finger, der Weg des Balkens über die Zeilen
-der Datei verteilt; ein Tipp auf den Balken neben dem Schieber setzt den
-Schieber dorthin. SEITE HOCH und SEITE RUNTER, 140 x 52px rechts in der
+der Datei und die Bildschirmzeilen jeder umbrochenen Zeile verteilt; die
+Enden des Wegs sind der erste und der letzte Bildschirm, wie SEITE HOCH
+und SEITE RUNTER sie erreichen, auch wenn der letzte Bildschirm in einer
+umbrochenen Zeile beginnt. Ein Tipp auf den Balken neben dem Schieber
+setzt den Schieber dorthin. SEITE HOCH und SEITE RUNTER, 140 x 52px rechts in der
 Fußzeile, bewegen einen Bildschirm voll Zeilen, 18 oder 22; jeder ist am
 ersten oder letzten Bildschirm grau, beide, wenn der ganze Text zu sehen
 ist.

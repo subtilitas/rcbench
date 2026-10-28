@@ -15,6 +15,7 @@
  * - the_page_keys_stop_at_the_first_and_last_screen
  * - a_long_line_wraps_onto_rows_with_the_mark
  * - a_drag_scrolls_a_row_a_pitch_and_the_bar_jumps
+ * - the_bar_reaches_the_ends_inside_a_wrapped_line
  * - a_press_that_slides_off_or_a_second_finger_does_nothing
  * - the_size_limit_holds_at_1mib_and_refuses_one_byte_more
  * - a_nul_in_the_first_4kib_and_too_many_lines_are_refused
@@ -397,6 +398,106 @@ TEST_CASE(a_drag_scrolls_a_row_a_pitch_and_the_bar_jumps)
     CHECK_EQ(top(NULL), 0u);
 }
 
+/**
+ * @brief @p n letters with no space, a line wrapped at every row's last
+ *        cell, at @p out.
+ * @return the byte after them
+ */
+static char *letters(char *out, size_t n)
+{
+    for (size_t i = 0; i < n; ++i) {
+        out[i] = (char)('a' + (int)(i % 26u));
+    }
+    return out + n;
+}
+
+/**
+ * @brief The last screen as PAGE DOWN reaches it, and back to the first.
+ * @param row  takes its row
+ * @return its line
+ */
+static size_t page_end(size_t *row)
+{
+    for (int i = 0; i < 40 && !text_view_at_end(); ++i) {
+        page_down();
+    }
+    const size_t line = top(row);
+    for (int i = 0; i < 40 && !text_view_at_start(); ++i) {
+        page_up();
+    }
+    return line;
+}
+
+/** @brief The thumb, taken 10px under its top at @p from, let go at @p to. */
+static void thumb_drag(int from, int to)
+{
+    drag(FS_SPOT_TV_BAR_CX, from + 10, to + 10);
+}
+
+/*
+ * The bar spans rows inside a wrapped line: a single line of 100 rows, and
+ * a text whose last screen starts inside a wrapped line, scroll to the same
+ * ends by the thumb as by PAGE DOWN and PAGE UP.
+ */
+TEST_CASE(the_bar_reaches_the_ends_inside_a_wrapped_line)
+{
+    static char text[16384];
+    const int foot = FS_SPOT_TV_BAR_TOP + FS_SPOT_TV_BAR_H;
+    /* One line of 9,200 letters: 100 rows at 92 cells. */
+    *letters(text, 9200u) = '\0';
+    view_text(text);
+    CHECK_EQ(text_view_lines(), 1u);
+    size_t er = 0u;
+    CHECK_EQ(page_end(&er), 0u);
+    CHECK_EQ(er, 82u);
+    size_t r = 99u;
+    thumb_drag(FS_SPOT_TV_BAR_TOP, foot + 200);
+    CHECK_EQ(top(&r), 0u);
+    CHECK_EQ(r, 82u);
+    CHECK(text_view_at_end());
+    /* Half the travel is half the rows: the thumb is 65px of 364px. */
+    thumb_drag(foot - 65, FS_SPOT_TV_BAR_TOP + (FS_SPOT_TV_BAR_H - 65) / 2);
+    CHECK_EQ(top(&r), 0u);
+    CHECK(r >= 39u && r <= 43u);
+    thumb_drag(FS_SPOT_TV_BAR_TOP + (FS_SPOT_TV_BAR_H - 65) / 2,
+               FS_SPOT_TV_BAR_TOP - 200);
+    CHECK_EQ(top(&r), 0u);
+    CHECK_EQ(r, 0u);
+    CHECK(text_view_at_start());
+
+    /* 40 short lines, a line of 25 rows, 5 short lines: the last screen
+     * starts on row 12 of the long line, line 40. */
+    char *at = text;
+    at += snprintf(at, 512u, "%s", numbered(40));
+    at = letters(at, 25u * 92u);
+    *at++ = '\n';
+    for (int i = 0; i < 5; ++i) {
+        at += snprintf(at, 16u, "end %d\n", i);
+    }
+    *at = '\0';
+    view_text(text);
+    CHECK_EQ(text_view_lines(), 46u);
+    const size_t el = page_end(&er);
+    CHECK_EQ(el, 40u);
+    CHECK_EQ(er, 12u);
+    thumb_drag(FS_SPOT_TV_BAR_TOP, foot + 200);
+    CHECK_EQ(top(&r), el);
+    CHECK_EQ(r, er);
+    CHECK(text_view_at_end());
+    /* The middle of the travel: the line half way to line 40, row 12. */
+    tap(FS_SPOT_TV_BAR_CX, FS_SPOT_TV_BAR_TOP + FS_SPOT_TV_BAR_H / 2);
+    CHECK(top(NULL) >= 18u && top(NULL) <= 22u);
+    CHECK(!text_view_at_start() && !text_view_at_end());
+    tap(FS_SPOT_TV_BAR_CX, FS_SPOT_TV_BAR_TOP + 2);
+    CHECK_EQ(top(&r), 0u);
+    CHECK_EQ(r, 0u);
+    /* PAGE DOWN from the bar's end does nothing more. */
+    thumb_drag(FS_SPOT_TV_BAR_TOP, foot + 200);
+    page_down();
+    CHECK_EQ(top(&r), el);
+    CHECK_EQ(r, er);
+}
+
 TEST_CASE(a_press_that_slides_off_or_a_second_finger_does_nothing)
 {
     view_text(numbered(100));
@@ -706,6 +807,7 @@ int main(void)
     RUN(the_page_keys_stop_at_the_first_and_last_screen);
     RUN(a_long_line_wraps_onto_rows_with_the_mark);
     RUN(a_drag_scrolls_a_row_a_pitch_and_the_bar_jumps);
+    RUN(the_bar_reaches_the_ends_inside_a_wrapped_line);
     RUN(a_press_that_slides_off_or_a_second_finger_does_nothing);
     RUN(the_size_limit_holds_at_1mib_and_refuses_one_byte_more);
     RUN(a_nul_in_the_first_4kib_and_too_many_lines_are_refused);

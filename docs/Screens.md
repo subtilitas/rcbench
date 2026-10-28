@@ -2607,8 +2607,10 @@ with more than one kind shows `MIXED LINE ENDS` in the footer.
 A drag on the text moves it one row per 20px (16px with SMALL), from where
 it stood at the press; a press that moves 8px or less is no drag. A drag
 on the 56px scroll bar puts the thumb under the finger, the bar's travel
-spread over the file's lines; a tap on the bar beside the thumb moves the
-thumb there. PAGE UP and PAGE DOWN, 140 x 52px at the footer's right, move
+spread over the file's lines and the rows of each wrapped line; the
+travel's ends are the first and the last screen, as PAGE UP and PAGE DOWN
+reach them, also when the last screen starts inside a wrapped line. A tap
+on the bar beside the thumb moves the thumb there. PAGE UP and PAGE DOWN, 140 x 52px at the footer's right, move
 a screen of rows, 18 or 22; each is grey at the text's first or last
 screen, and both are grey when the whole text shows.
 

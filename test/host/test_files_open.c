@@ -15,6 +15,7 @@
  * - logs_own_list_holds_and_opens_the_same_reports
  * - a_text_file_that_is_no_report_opens_in_the_viewer
  * - a_report_being_written_or_gone_says_so
+ * - a_report_finished_off_screen_opens_from_logs
  *
  * SPDX-License-Identifier: MIT
  */
@@ -354,6 +355,38 @@ TEST_CASE(a_text_file_that_is_no_report_opens_in_the_viewer)
     log_viewer_set_io(NULL);
 }
 
+/*
+ * FILES read the bench while a LIMIT RUN wrote its report, the run ended
+ * while FILES was off screen, and LOGS opens the report: the viewer reads
+ * it, with the bench read again, not the one FILES held.
+ */
+TEST_CASE(a_report_finished_off_screen_opens_from_logs)
+{
+    fresh_reports();
+    g_h.marks.test = 13u;
+    g_h.marks.txt = 13u;
+    settle();                           /* FILES holds LIMIT013 as open */
+    CHECK(pick(1, "LIMIT013.TXT"));
+    fm_err_t why = FM_OK;
+    CHECK(!fs_foot_live(FS_OPEN, &why));
+    CHECK_EQ(why, FM_ERR_BUSY);
+    g_h.marks.test = 0u;                /* the run ends, FILES off screen */
+    g_h.marks.txt = 0u;
+    ui_router_goto(SCREEN_LOGS);
+    log_viewer_set_tab(LOG_TAB_USER);
+    /* The newest, LIMIT013.TXT, is chosen on the way in. */
+    lv_tap(LV_OPEN_CX, LV_FOOT_CY);
+    CHECK_STR_EQ(log_viewer_open_name(), "LIMIT013.TXT");
+    settle();
+    CHECK_EQ(ui_router_current(), SCREEN_FILES);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+    CHECK_EQ(text_view_state(), TEXT_VIEW_SHOWN);
+    CHECK_STR_EQ(text_view_name(), "LIMIT013.TXT");
+    CHECK_STR_EQ(view_row0(), "RCBENCH SERVO TEST REPORT");
+    CHECK(!screen()->back());
+    log_viewer_set_io(NULL);
+}
+
 /** @brief The message the table writes for @p id and @p name. */
 static const char *msg(ui_text_id_t id, const char *name)
 {
@@ -405,6 +438,7 @@ int main(void)
     RUN(logs_own_list_holds_and_opens_the_same_reports);
     RUN(a_text_file_that_is_no_report_opens_in_the_viewer);
     RUN(a_report_being_written_or_gone_says_so);
+    RUN(a_report_finished_off_screen_opens_from_logs);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_open");

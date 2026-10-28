@@ -377,6 +377,14 @@ bool fs_submit(void);
 void fs_pump(void);
 
 /**
+ * @brief Read the bench into s.bench as the gate and the rules see it now:
+ *        the io's, ARMED also when the band says so, and the log folders
+ *        in force.  The io's marks are a snapshot, so a check made while
+ *        FILES was off screen reads again first.
+ */
+void fs_read_bench(void);
+
+/**
  * @brief The selected entry of the active pane.
  * @return the entry, or NULL for none
  */
@@ -504,7 +512,7 @@ void fs_clamp_scroll(int i);
 
 /**
  * @brief Hand the viewer's read to the card's task when it waits and
- *        nothing is under way.
+ *        nothing is under way, checked against the bench read again.
  * @return true when it went out
  */
 bool fs_text_send(void);
