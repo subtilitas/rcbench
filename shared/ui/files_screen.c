@@ -435,6 +435,10 @@ static void take_answer(void)
     case FM_REQ_JOB:
         if (s.req.job.kind == FM_JOB_LOAD) {
             fs_text_take();
+        } else if (s.req.job.kind == FM_JOB_SAVE) {
+            fs_text_saved();
+            want(0, NEED_PAGE, FM_GO_SAME);   /* the file's size changed */
+            want(1, NEED_PAGE, FM_GO_SAME);
         } else {
             take_job();
         }
@@ -1065,13 +1069,16 @@ static void enter(void)
 
 /**
  * @brief On the way out: the keyboard and the boxes close; a job under way
- *        goes on, and its box shows again on the way back in.
+ *        goes on, and its box shows again on the way back in, as does an
+ *        editor with text no SAVE wrote.
  */
 static void leave(void)
 {
     fs_cancel_press();
     ui_textkey_close(&s.tk);
-    fs_text_close();
+    if (fs_text_stays()) {
+        return;
+    }
     if (s.view != FILES_VIEW_JOB || !s.busy) {
         s.view = FILES_VIEW_PANES;
     }
@@ -1089,6 +1096,7 @@ static void tick(float dt_s)
     if ((fm_gate(FM_OP_COPY, &s.bench) != FM_OK) != gate) {
         files_screen_invalidate();
     }
+    fs_text_rules();
     if (s.busy) {
         const float before = s.busy_s;
         s.busy_s += (dt_s > 0.0f) ? dt_s : 0.0f;
@@ -1140,6 +1148,9 @@ static bool back(void)
         }
         break;
     case FILES_VIEW_TEXT:
+        if (fs_text_back()) {
+            break;                  /* a level of the editor */
+        }
         if (s.tv_from_logs) {
             fs_text_close();
             return false;           /* back to LOGS, which opened it */

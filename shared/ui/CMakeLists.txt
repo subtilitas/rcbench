@@ -100,6 +100,7 @@ set(SRCS
     files_text.c
     text_view.c
     text_view_draw.c
+    text_view_keys.c
 )
 
 if(ESP_PLATFORM)

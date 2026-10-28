@@ -24,6 +24,7 @@
 #include "fm_rules.h"
 #include "fm_tree.h"
 #include "gfx.h"
+#include "text_view.h"
 #include "touch_types.h"
 #include "ui_layout.h"
 #include "ui_text.h"
@@ -322,6 +323,15 @@ typedef struct {
     bool tv_live;             /**< the read under way is the viewer's    */
     bool tv_from_logs;        /**< LOGS opened it: the home tag returns  */
     unsigned tv_mount;        /**< the mount it was listed from          */
+    bool tv_save;             /**< the editor's save waits to go out     */
+    bool tv_saving;           /**< the job under way is that save        */
+    /* An open held by the editor's question (files_screen_open_text()). */
+    bool tv_pend;             /**< one is held                           */
+    bool tv_pend_logs;        /**< LOGS asked for it                     */
+    unsigned tv_pend_mount;   /**< its mount                             */
+    uint64_t tv_pend_size;    /**< its bytes                             */
+    char tv_pend_dir[FM_PATH_SIZE];  /**< its folder                     */
+    char tv_pend_name[FM_NAME_BUF];  /**< its name                       */
 
     /* The keyboard for a name, and what it is typed for. */
     ui_textkey_t tk;          /**< the keyboard                          */
@@ -530,6 +540,35 @@ void fs_text_fail(fm_err_t err);
 /** @brief Close the viewer: a read under way is asked to stop and its
  *         answer dropped, one waiting is dropped; the panes show. */
 void fs_text_close(void);
+
+/** @brief The answer of the editor's save: the editor takes it. */
+void fs_text_saved(void);
+
+/**
+ * @brief What the viewer's event asks of FILES: a draw, the editor's
+ *        save, or the open its question held.
+ * @param r  text_view_event()'s answer
+ */
+void fs_text_result(text_view_result_t r);
+
+/**
+ * @brief The viewer's and the editor's rules for the file shown, from the
+ *        bench as FILES read it last: EDIT and SAVE (fm_allowed()).
+ */
+void fs_text_rules(void);
+
+/**
+ * @brief The home tag over the viewer.
+ * @return true when the editor took it as a level of its own
+ */
+bool fs_text_back(void);
+
+/**
+ * @brief FILES is left: the viewer closes, unless the editor holds text no
+ *        SAVE wrote or a save runs; that editor stays for the way back in.
+ * @return true when the editor stays
+ */
+bool fs_text_stays(void);
 
 /* --- files_draw.c ------------------------------------------------------- */
 

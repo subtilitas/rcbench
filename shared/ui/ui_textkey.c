@@ -65,6 +65,25 @@ static const int k_search_span[] = { 3, 2, 3, 2 };
  *         SHOW: where each starts, two columns each, SHOW second from the
  *         left. */
 static const int k_secret_col[] = { 0, 4, 6, 8, 2 };
+/** @brief The editor's bottom row, in key order SPACE, ENTER, "<-", "->",
+ *         DONE: the column each starts at, and its span. */
+static const int k_editor_col[] = { 2, 0, 6, 7, 8 };
+/** @brief How many columns each of them spans. */
+static const int k_editor_span[] = { 4, 2, 1, 1, 2 };
+
+/**
+ * @brief Where key @p key is in the editor's bottom row tables.
+ * @param key The key.
+ * @return 0 for SPACE, 1 to 4 for ENTER to DONE, -1 for any other.
+ */
+static int editor_slot(int key)
+{
+    if (key == UI_TK_SPACE) {
+        return 0;
+    }
+    return (key >= UI_TK_ENTER && key <= UI_TK_DONE) ? key - UI_TK_ENTER + 1
+                                                    : -1;
+}
 
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
                      const char *text, int max_len)
@@ -149,6 +168,15 @@ void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
     k->len = (int)keep;
 }
 
+void ui_textkey_open_editor(ui_textkey_t *k, gfx_rect_t area)
+{
+    if (k == NULL) {
+        return;
+    }
+    ui_textkey_open_wifi(k, area, "", NULL, false);
+    k->editor = true;
+}
+
 void ui_textkey_close(ui_textkey_t *k)
 {
     if (k == NULL) {
@@ -193,6 +221,15 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
     if (k != NULL && k->folder && key == UI_TK_DOT) {
         return "/";
     }
+    if (k != NULL && k->editor) {
+        switch (key) {
+        case UI_TK_ENTER: return "ENTER";
+        case UI_TK_LEFT:  return "<-";
+        case UI_TK_RIGHT: return "->";
+        case UI_TK_DONE:  return TR(ED_DONE);
+        default:          break;
+        }
+    }
     if (k != NULL && k->wifi) {
         if (key == UI_TK_SHOW) {
             return k->secret ? (k->show ? TR(TK_HIDE) : TR(TK_SHOW)) : "";
@@ -233,12 +270,17 @@ static char wifi_char(const ui_textkey_t *k, int key)
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
 {
     const bool secret = k != NULL && k->wifi && k->secret;
-    if (k == NULL || key < 0 || key > (secret ? UI_TK_SHOW : UI_TK_KEYS - 1)) {
+    const bool editor = k != NULL && k->editor;
+    const int last = editor ? UI_TK_DONE : secret ? UI_TK_SHOW : UI_TK_KEYS - 1;
+    if (k == NULL || key < 0 || key > last
+        || (editor && key >= UI_TEXTKEY_CHARS && editor_slot(key) < 0)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     const int left   = k->area.x + TK_PAD;
     const int right  = k->area.x + k->area.w - TK_PAD;
-    const int top    = k->area.y + TK_HDR + TK_ENTRY_H + 2 * TK_GAP;
+    /* The editor's keys fill the area: the text is the caller's. */
+    const int top    = editor ? k->area.y + TK_PAD
+                              : k->area.y + TK_HDR + TK_ENTRY_H + 2 * TK_GAP;
     /* The area's foot, or UI_KEYS_FOOT where the area reaches under the
      * alert band. */
     const int foot   = k->area.y + k->area.h - TK_PAD;
@@ -250,6 +292,12 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
         row  = key / TK_COLS;
         col  = key % TK_COLS;
         span = 1;
+    } else if (editor) {
+        const int slot = editor_slot(key);
+        const int e = (slot > 0) ? slot : 0;   /* checked above: 0 to 4 */
+        row  = TK_ROWS - 1;
+        col  = k_editor_col[e];
+        span = k_editor_span[e];
     } else if (secret) {
         row  = TK_ROWS - 1;
         col  = k_secret_col[key - UI_TEXTKEY_CHARS];
@@ -284,6 +332,44 @@ static void add(ui_textkey_t *k, char ch)
 }
 
 /**
+ * @brief Key @p key of the editor's keyboard pressed and released.
+ * @param k   The keyboard.
+ * @param key The key.
+ * @return The key's answer; UI_TEXTKEY_NONE for a layer key or a blank.
+ */
+static ui_textkey_result_t editor_press(ui_textkey_t *k, int key)
+{
+    switch (key) {
+    case UI_TK_DEL:   return UI_TEXTKEY_BACKSPACE;
+    case UI_TK_ENTER: return UI_TEXTKEY_ENTER;
+    case UI_TK_LEFT:  return UI_TEXTKEY_LEFT;
+    case UI_TK_RIGHT: return UI_TEXTKEY_RIGHT;
+    case UI_TK_DONE:
+        ui_textkey_close(k);
+        return UI_TEXTKEY_DONE;
+    case UI_TK_SPACE:
+        k->typed = ' ';
+        return UI_TEXTKEY_TYPED;
+    default:
+        break;
+    }
+    if (key == UI_TK_LAYER) {
+        k->layer = (k->layer == UI_TK_MARKS) ? UI_TK_LOWER : UI_TK_MARKS;
+        return UI_TEXTKEY_NONE;
+    }
+    if (key == UI_TK_SHIFT && k->layer != UI_TK_MARKS) {
+        k->layer = (k->layer == UI_TK_UPPER) ? UI_TK_LOWER : UI_TK_UPPER;
+        return UI_TEXTKEY_NONE;
+    }
+    const char ch = wifi_char(k, key);
+    if (ch == '\0') {
+        return UI_TEXTKEY_NONE;
+    }
+    k->typed = ch;
+    return UI_TEXTKEY_TYPED;
+}
+
+/**
  * @brief Key @p key pressed and released.
  * @param k   The keyboard.
  * @param key The key.
@@ -297,6 +383,9 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
 {
     k->refused = false;
     ++k->revision;
+    if (k->editor) {
+        return editor_press(k, key);
+    }
     if (key == UI_TK_DEL) {
         /* A file name's last character, also one of two bytes. */
         while (k->file && k->len > 1
@@ -418,7 +507,7 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
             return UI_TEXTKEY_NONE;     /* one press at a time */
         }
         k->pressed = -1;
-        for (int key = 0; key <= UI_TK_SHOW; ++key) {
+        for (int key = 0; key < UI_TK_ALL; ++key) {
             if (gfx_rect_contains(ui_textkey_key_rect(k, key), x, y)) {
                 k->pressed  = key;
                 k->press_id = evt->point.id;
@@ -551,7 +640,7 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
     }
     for (int f = char_face(k); f < TK_FACES - 1; ++f) {
         bool fit = true;
-        for (int key = 0; key <= UI_TK_SHOW && fit; ++key) {
+        for (int key = 0; key < UI_TK_ALL && fit; ++key) {
             const gfx_rect_t r = ui_textkey_key_rect(k, key);
             if (r.w == 0 || !is_word(k, key)) {
                 continue;
@@ -574,6 +663,9 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
     return &gfx_font_8x16;
 }
 
+static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c);
+static void draw_keys(const ui_textkey_t *k, gfx_canvas_t *c);
+
 void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
 {
     if (k == NULL || c == NULL || !k->open) {
@@ -582,6 +674,20 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     const gfx_rect_t a = k->area;
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
+    if (!k->editor) {
+        draw_field(k, c);
+    }
+    draw_keys(k, c);
+}
+
+/**
+ * @brief The title, its line and the text field above the keys.
+ * @param k The keyboard.
+ * @param c Canvas.
+ */
+static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c)
+{
+    const gfx_rect_t a = k->area;
 
     const gfx_rect_t hdr = { (int16_t)(a.x + TK_PAD), (int16_t)(a.y + 6),
                              (int16_t)(a.w - 2 * TK_PAD), 22 };
@@ -641,12 +747,20 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(box.x + 10), box.y,
                                  (int16_t)(box.w - 20), box.h },
                 shown, ef, ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_LEFT);
+}
 
+/**
+ * @brief The keys, each in its face, the one under the press pressed.
+ * @param k The keyboard.
+ * @param c Canvas.
+ */
+static void draw_keys(const ui_textkey_t *k, gfx_canvas_t *c)
+{
     /* Characters in the largest face their key holds; the words in the
      * largest face, no larger, they all fit. */
     const gfx_font_t *cf = ui_textkey_char_font(k);
     const gfx_font_t *wf = ui_textkey_word_font(k);
-    for (int key = 0; key <= UI_TK_SHOW; ++key) {
+    for (int key = 0; key < UI_TK_ALL; ++key) {
         const gfx_rect_t r = ui_textkey_key_rect(k, key);
         if (r.w == 0) {
             continue;
@@ -655,7 +769,7 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
         if (k->wifi && key < UI_TK_DEL && label[0] == '\0') {
             continue;                /* a blank of the marks layer */
         }
-        const gfx_color_t fill = (key == UI_TK_OK)
+        const gfx_color_t fill = (key == UI_TK_OK || key == UI_TK_DONE)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
         ui_button_font(c, r, label, fill, k->pressed == key, true,

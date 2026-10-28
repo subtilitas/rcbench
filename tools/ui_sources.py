@@ -143,6 +143,7 @@ SOURCES = [
     # shows a file with.
     "shared/ui/text_view.c",
     "shared/ui/text_view_draw.c",
+    "shared/ui/text_view_keys.c",
     "shared/files/text_buf.c",
     "shared/files/text_hl.c",
     "shared/files/fm_name.c",

@@ -419,6 +419,12 @@ SCREENS = {
     "files-view-small": ("files-view-small.png", "files", "dark"),
     "files-view-kst": ("files-view-kst.png", "files", "dark"),
     "files-view-json": ("files-view-json.png", "files", "dark"),
+    # The text editor: a line typed into a report with the keyboard open;
+    # a KST file saved with a comment, its checksum line gone; the
+    # question the home tag asks over unsaved text.
+    "files-edit": ("files-edit.png", "files", "dark"),
+    "files-edit-kst": ("files-edit-kst.png", "files", "dark"),
+    "files-edit-unsaved": ("files-edit-unsaved.png", "files", "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
@@ -753,6 +759,20 @@ FIT_ONLY = {
     "files-view-mixed": (None, "files", "dark"),
     "files-view-empty": (None, "files", "dark"),
     "files-view-toolarge": (None, "files", "dark"),
+    # The editor's other states: REVERT's question and the one over an
+    # open, saving, saved, an ESC profile saved, SAVE on no change, SAVE
+    # shut while ARMED, the card pulled, and a key refused at 1MiB and at
+    # 65,536 line ends.
+    "files-edit-revert": (None, "files", "dark"),
+    "files-edit-open": (None, "files", "dark"),
+    "files-edit-saving": (None, "files", "dark"),
+    "files-edit-saved": (None, "files", "dark"),
+    "files-edit-esc": (None, "files", "dark"),
+    "files-edit-nochange": (None, "files", "dark"),
+    "files-edit-armed": (None, "files", "dark"),
+    "files-edit-card": (None, "files", "dark"),
+    "files-edit-full": (None, "files", "dark"),
+    "files-edit-lines": (None, "files", "dark"),
 }
 
 # Every cat pose but the first, on PICK A PIN posed as "picker" is:
@@ -761,12 +781,15 @@ FIT_ONLY = {
 FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
                  for i in range(1, len(gen_cats.POSES))})
 
-# Views that open a drop-down, a chip's help bubble or the alert band over
-# the screen: the list, the bubble or the band covers the labels under it by
-# design, so a fill drawn over a string is not a finding there.
+# Views that open a drop-down, a chip's help bubble, the alert band or the
+# text editor's question over the screen: the list, the bubble, the band or
+# the box covers the labels under it by design, so a fill drawn over a
+# string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
                  "overview-alert",
-                 "setup-folder"} | {
+                 "setup-folder",
+                 "files-edit-unsaved", "files-edit-revert",
+                 "files-edit-open"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has for a time: (view, string, finding), word

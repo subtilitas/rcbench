@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- FILES' text editor: EDIT in the text viewer opens a keyboard of three
+  layers under 4 rows of the text (`shared/ui/text_view_keys.c`, the
+  keyboard's editor mode in `ui_textkey.c`). ENTER types the file's own
+  line end; a tap or `<-` and `->` move the cursor; the text holds 1MiB
+  and 65,536 line ends. SAVE writes `<name>.NEW`, deletes the file and
+  renames the new one, on the card task, shut while the bench is ARMED or a
+  run is logged; a changed KST file loses its checksum line, so the servo
+  programmer reads it as edited; an ESC profile's save says it is read at
+  the next start. REVERT and the home tag over unsaved text ask UNSAVED
+  CHANGES with STAY and DISCARD; an open from LOGS or FILES over unsaved
+  text asks first too. Leaving FILES by another route keeps the editor
+  and its text ([The text editor](docs/Screens.md#the-text-editor)).
+
 - FILES' text viewer (`shared/ui/text_view.c`): OPEN on any file but a
   CSV file of LOGS' folders shows it read-only, up to 1MiB and 65,536 line
   ends, read through `cardjob`. 18 rows of 92 cells, or with SMALL 22 rows

@@ -2184,6 +2184,68 @@ UI_TEXT(ED_TOO_LARGE, 56,
     "Over 1MB: too large to open. Download it over Wi-Fi.",
     "Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.")
 
+/* ----------------------------------------------------- the text editor */
+/* The viewer's EDIT, and the editor's footer, 140px buttons as the
+ * viewer's: SAVE is SETUP's SET_SAVE. */
+UI_TEXT(ED_EDIT, 0,
+    "EDIT",
+    "BEARBEITEN")
+UI_TEXT(ED_REVERT, 0,
+    "REVERT",
+    "VERWERFEN")
+UI_TEXT(ED_KEYBOARD, 0,
+    "KEYBOARD",
+    "TASTATUR")
+/* The keyboard's key that closes it; ENTER, "<-" and "->" stay as they
+ * are in every language. */
+UI_TEXT(ED_DONE, 0,
+    "DONE",
+    "FERTIG")
+/* The header's pill in the editor: the text as on the card, or changed. */
+UI_TEXT(ED_EDITING, 0,
+    "EDITING",
+    "BEARBEITUNG")
+UI_TEXT(ED_MODIFIED, 0,
+    "MODIFIED",
+    "GEÄNDERT")
+/* The editor's note: 3 rows of the 8 x 16 face between KEYBOARD and PAGE
+ * UP, 33 cells each; with the keyboard open, the header's right end. */
+UI_TEXT(ED_SAVING, 0,
+    "Saving to the card.",
+    "Speichere auf die Karte.")
+UI_TEXT(ED_SAVED, 0,
+    "%s saved.",
+    "%s gespeichert.")
+UI_TEXT(ED_SAVED_KST, 0,
+    "Saved without the checksum line: the servo programmer reads it as edited.",
+    "Ohne Prüfsummenzeile gespeichert: der Servo-Programmierer liest sie als bearbeitet.")
+UI_TEXT(ED_SAVED_ESC, 0,
+    "Saved. The panel reads it at its next start.",
+    "Gespeichert. Das Panel liest die Datei beim nächsten Start.")
+UI_TEXT(ED_NOT_SAVED_CARD, 0,
+    "Not saved: the card was taken out or swapped.",
+    "Nicht gespeichert: Die Karte wurde entnommen oder getauscht.")
+UI_TEXT(ED_NO_CHANGES, 0,
+    "No changes to save.",
+    "Keine Änderungen zu speichern.")
+UI_TEXT(ED_FULL, 0,
+    "Text full: 1MB at most.",
+    "Text voll: höchstens 1MB.")
+UI_TEXT(ED_LINES_FULL, 0,
+    "Text full: %u lines at most.",
+    "Text voll: höchstens %u Zeilen.")
+/* The question, under SETUP's UNSAVED CHANGES title, with SETUP's STAY and
+ * DISCARD; 2 rows of 54 cells of the 12 x 24 face. */
+UI_TEXT(ED_Q_LEAVE, 0,
+    "Leave %s without saving? The changes are lost.",
+    "%s ohne Speichern verlassen? Die Änderungen gehen verloren.")
+UI_TEXT(ED_Q_REVERT, 0,
+    "Discard the changes to %s? The text goes back to the file on the card.",
+    "Änderungen an %s verwerfen? Der Text wird wieder die Datei auf der Karte.")
+UI_TEXT(ED_Q_OPEN, 0,
+    "Discard the changes to %s to open another file?",
+    "Änderungen an %s verwerfen, um eine andere Datei zu öffnen?")
+
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport
  * on the IOmcu carries these protocols. */

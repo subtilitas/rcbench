@@ -43,6 +43,17 @@
  * stop at an end, a device name.  DEL takes the last character, also one
  * of two bytes.
  *
+ * Opened for the text editor (ui_textkey_open_editor()) it types into a
+ * text the caller holds, one key per event: it keeps no text, draws no
+ * title and no field, and its five rows of keys fill its area.  The
+ * character rows are the Wi-Fi keyboard's three layers; DEL is a
+ * backspace.  The bottom row is ENTER (2 columns), SPACE (4), "<-" and "->"
+ * (1 each) and DONE (2); CLR is not there, since it would clear the file.
+ * Each key's release answers what it was (ui_textkey_result_t):
+ * UI_TEXTKEY_TYPED with the character in @c typed, UI_TEXTKEY_BACKSPACE,
+ * UI_TEXTKEY_ENTER, UI_TEXTKEY_LEFT, UI_TEXTKEY_RIGHT, and UI_TEXTKEY_DONE,
+ * which closes the keyboard.  A layer key answers UI_TEXTKEY_NONE.
+ *
  * The screen routes events to it while it is open and draws it last, as it
  * does the keypad.
  *
@@ -84,6 +95,16 @@ enum {
 /** @brief SHOW, the password keyboard's sixth bottom key; zero size
  *         otherwise. */
 #define UI_TK_SHOW UI_TK_KEYS
+/** @brief The editor's bottom row after SHOW: ENTER, "<-", "->" and DONE;
+ *         zero size outside the editor, where CLR, CANCEL, OK and SHOW
+ *         are zero size in turn.  SPACE is UI_TK_SPACE in both. */
+enum {
+    UI_TK_ENTER = UI_TK_SHOW + 1,    /**< ENTER: a line end              */
+    UI_TK_LEFT,                      /**< "<-": the cursor one left      */
+    UI_TK_RIGHT,                     /**< "->": the cursor one right     */
+    UI_TK_DONE,                      /**< DONE: closes the keyboard      */
+    UI_TK_ALL                        /**< the count of every key         */
+};
 /** @brief The Wi-Fi keyboard's capitals key, left of Z. */
 #define UI_TK_SHIFT 30
 /** @brief The Wi-Fi keyboard's marks key, left of DEL. */
@@ -100,6 +121,12 @@ typedef enum {
     UI_TEXTKEY_NONE = 0,   /**< still open, or the event was not its   */
     UI_TEXTKEY_OK,         /**< closed with a name                     */
     UI_TEXTKEY_CANCELLED,  /**< closed, the name as it was             */
+    UI_TEXTKEY_TYPED,      /**< editor: a character, in @c typed       */
+    UI_TEXTKEY_BACKSPACE,  /**< editor: DEL                            */
+    UI_TEXTKEY_ENTER,      /**< editor: ENTER                          */
+    UI_TEXTKEY_LEFT,       /**< editor: "<-"                           */
+    UI_TEXTKEY_RIGHT,      /**< editor: "->"                           */
+    UI_TEXTKEY_DONE,       /**< editor: DONE, the keyboard closed      */
 } ui_textkey_result_t;
 
 /** @brief The Wi-Fi keyboard's layers. */
@@ -128,6 +155,9 @@ typedef struct {
     bool       secret;      /**< a password: masked, 8 at least       */
     bool       show;        /**< the password shown                   */
     ui_textkey_layer_t layer; /**< the Wi-Fi layer shown              */
+    bool       editor;      /**< the text editor's keys: see the top  */
+    char       typed;       /**< editor: the character of the last
+                                 UI_TEXTKEY_TYPED                     */
     int        pressed;     /**< the key under the press, or -1       */
     uint8_t    press_id;    /**< the touch id of that press           */
     uint32_t   revision;    /**< bumped on every change a render shows */
@@ -194,6 +224,15 @@ void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
                           const char *title, const char *text);
 
 /**
+ * @brief Open for the text editor; see the top of this file.  Lower case
+ *        first.
+ * @param k     The keyboard; NULL does nothing.
+ * @param area  Where it draws: its keys fill it, 8px in, and end at
+ *              UI_KEYS_FOOT where it reaches further.
+ */
+void ui_textkey_open_editor(ui_textkey_t *k, gfx_rect_t area);
+
+/**
  * @brief Close, dropping a press under way.
  * @param k The keyboard; NULL does nothing.
  */
@@ -218,7 +257,8 @@ void ui_textkey_cancel_press(ui_textkey_t *k);
  *            it.
  * @param n   The bytes at @p out: CARD_DIR_MAX or more for a folder.
  * @return UI_TEXTKEY_OK or UI_TEXTKEY_CANCELLED when it closed,
- *         UI_TEXTKEY_NONE otherwise and for a NULL or closed keyboard.
+ *         UI_TEXTKEY_NONE otherwise and for a NULL or closed keyboard; in
+ *         the editor, the key's answer (see the top of this file).
  */
 ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
                                      char *out, size_t n);
@@ -228,8 +268,10 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
  *        area, or at UI_KEYS_FOOT (4px above the alert band, body
  *        coordinates) where the area reaches further.
  * @param k   The keyboard.
- * @param key The key: 0 to UI_TK_OK, or UI_TK_SHOW on a password.
- * @return Its rectangle; zero size for one out of range.
+ * @param key The key: 0 to UI_TK_OK, UI_TK_SHOW on a password, the
+ *            characters, UI_TK_SPACE and UI_TK_ENTER to UI_TK_DONE in the
+ *            editor.
+ * @return Its rectangle; zero size for one out of range or not shown.
  */
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key);
 
@@ -245,8 +287,9 @@ const char *ui_textkey_label(int key);
  * @param k   The keyboard.
  * @param key The key.
  * @return "*" for UI_TK_MARK in a search, "/" for UI_TK_DOT for a folder,
- *         the layer's character on a Wi-Fi keyboard, "" for a blank key,
- *         else ui_textkey_label().
+ *         the layer's character on a Wi-Fi keyboard and in the editor, ""
+ *         for a blank key, the editor's ENTER, "<-", "->" and DONE, else
+ *         ui_textkey_label().
  */
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
