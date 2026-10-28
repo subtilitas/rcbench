@@ -861,4 +861,15 @@
 		(uuid "f264030e-ea71-5d5b-bad9-283d65cf2216")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/AS5600_Encoder_22.5x22.5mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

@@ -1756,4 +1756,15 @@
 		(uuid "b69d2bd2-b375-5810-bb42-87d72f92e1fc")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/RP2350-CAN.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )
