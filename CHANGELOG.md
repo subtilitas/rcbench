@@ -4,7 +4,28 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.23.2 - 2026-10-28
+
+0.23.2 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.1 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.30 (0.23.1: 4.29). A panel of
+0.23.2 beside an IOmcu of 0.23.1 asks for the wait on a LEAVE after a
+write with a PD mini and WAIT BEFORE PWM above 0; that IOmcu refuses it,
+and the panel sends the REBOOT without the wait and says `This IOmcu
+firmware applies no WAIT BEFORE PWM after the cycle.` The servo then gets
+PWM 1000ms after the supply reads on (see Changed). An IOmcu of 0.23.2
+beside a panel of 0.23.1 receives no REBOOT with the wait and runs the
+cycle as 0.23.1 does.
+
+A bench on 0.23.1 gets 0.23.2 over Wi-Fi: SETUP > UPDATES, RELEASES:
+TESTING, CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES:
+STABLE the check reads `releases/latest`, which names 0.22.1, and offers
+nothing. At link-up the panel offers the IOmcu's update over CAN
+(Controller Area Network) when the IOmcu runs another build. A new bench
+loads it over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, with
+`rcbench-panel-p4-v0.23.2.zip` and `rcbench-iomcu-install.uf2`.
 
 ### Added
 
@@ -21,7 +42,6 @@ history is in git.
   CHANGES with STAY and DISCARD; an open from LOGS or FILES over unsaved
   text asks first too. Leaving FILES by another route keeps the editor
   and its text ([The text editor](docs/Screens.md#the-text-editor)).
-
 - FILES' text viewer (`shared/ui/text_view.c`): OPEN on any file but a
   CSV file of LOGS' folders shows it read-only, up to 1MiB and 65,536 line
   ends, read through `cardjob`. 18 rows of 92 cells, or with SMALL 22 rows
@@ -95,7 +115,6 @@ history is in git.
   the proposed names `KST001` to `KST999`, the reserved name `KST` and every
   refusal stay as they were; `test_kst_store` is replaced by a KST case in
   `test_servo_store`.
-
 - LOGS' OPEN on a report opens it in FILES' text viewer instead of LOGS'
   own text view, which held 32KiB of a file; the home tag returns to LOGS
   with the report chosen again. LOGS' text view and `log_text.c` are

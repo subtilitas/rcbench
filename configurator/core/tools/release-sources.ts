@@ -4,7 +4,7 @@
 //   - the firmware header shared/link/include/rcbench_version.h, whose
 //     MAJOR, MINOR and PATCH define the firmware release;
 //   - the release numbers that the Markdown files of the configurator state
-//     in prose ("release 0.23.1", "the tag `v0.23.1`").
+//     in prose ("release 0.23.2", "the tag `v0.23.2`").
 //
 // The release pull request moves the header and package.json to the new
 // version together, before the tag exists; until the tag exists the data
