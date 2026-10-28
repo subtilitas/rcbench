@@ -221,7 +221,7 @@ The panel therefore cycles the supply where it can:
 | Step | A PD mini answers, its output on | A PD mini answers, its output off | No PD mini |
 | --- | --- | --- | --- |
 | **CONNECT** | the output off for 1000ms, on at the lower of the two voltages and the lower of the two current limits, the line low for 1000ms, then the entry sequence | the output on, the line low for 1000ms, then the entry sequence | the entry sequence 250ms after the tap: 50ms without a pulse, 100ms low, 100ms of the entry's low line. The operator powers the servo up just before |
-| **LEAVE** after a write, a restore or a pairing release | the output off for 1000ms, on, the line low for 1000ms, then PWM | -- | the port returns to PWM; the values act after the operator switches the servo's supply off and on |
+| **LEAVE** after a write, a restore or a pairing release | the output off for 1000ms, on, the line low for 1000ms and then for **WAIT BEFORE PWM**, then PWM | does not occur: **CONNECT** switches the output on | the port returns to PWM; the values act after the operator switches the servo's supply off and on |
 | **LEAVE** with nothing written | the port returns to PWM after **WAIT BEFORE PWM**; the supply stays as it is | the same | the same |
 | A write | no cycle: the read-back runs in programming mode | the same | the same |
 
@@ -350,7 +350,8 @@ the port set.
 
 Without a PD mini the voltage and the current limit are stored and not
 applied. **WAIT BEFORE PWM** is applied at [leaving](#leaving) with and
-without a PD mini by an IOmcu of link version 4.15 or later.
+without a PD mini by an IOmcu of link version 4.15 or later, and after the
+power cycle of a **LEAVE** by one of 4.30 or later.
 
 ## SERVO tab
 
@@ -736,8 +737,7 @@ The operator therefore sets the type:
 A file of format 1, written by firmware 0.23.0 and older, names the type
 20k_sel gave. That line is no statement of the operator's: the list shows
 no type for the file, and it loads into a servo of either type set. Its
-type line still has to agree with its own 20k_sel, or the file is refused
-as before. An edited format-1 file loads as an edited file without a type
+type line still has to agree with its own 20k_sel, or the file is refused. An edited format-1 file loads as an edited file without a type
 line.
 
 ### Saving
@@ -1107,21 +1107,21 @@ programmer reads the servo and writes nothing to it.
 to return the port to servo PWM. After a write, a restore or a pairing
 release, with a PD mini answering, the way back runs through
 [the power cycle](#the-power-cycle): the output off for 1000ms, on, the
-line low for 1000ms, then PWM. In every other case the programmer leaves
+line low for 1000ms and then for **WAIT BEFORE PWM**, then PWM. In every other case the programmer leaves
 without a supply cycle: the servo stays powered, a PD mini's output stays
 on at its voltage and current limit, and the tester's signal follows on the
 same port. Whether a servo that received frames and no write follows PWM
 before its supply was off is not measured.
 
 Leaving the SERVO screen is no LEAVE: the session and the port stay. A PD
-mini output SERVO switched on -- by OUTPUT ON, by a test or by
-**CONNECT** -- is the SERVO screen's, and while the port holds it the
+mini output SERVO switched on (by OUTPUT ON, by a test or by
+**CONNECT**) is the SERVO screen's, and while the port holds it the
 output stays on after SERVO is left: an OFF would end the session and cut
 a write on the wire. An ON SERVO asked for that is on its way when the port
 takes the supply counts as switched on, also when it is reported on only
-after the leave. The output goes off when the port lets go -- a
+after the leave. The output goes off when the port lets go (a
 **CONNECT** that ends without a session after SERVO was left, a STOP that
-switches the supply off -- unless SERVO is shown again first. After
+switches the supply off) unless SERVO is shown again first. After
 **LEAVE** on SERVO the output stays on until SERVO is left.
 
 LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.`
@@ -1153,8 +1153,9 @@ read.
 ### The wait before PWM
 
 **WAIT BEFORE PWM** is 0 to 10 000ms, 100ms by default. A **LEAVE** that
-runs through the power cycle does not apply it: the port holds the line
-low for 1000ms after the supply reads on, whatever the setting. The keypad takes
+runs through the power cycle applies it after the cycle: the port holds the
+line low for 1000ms after the supply reads on and then for **WAIT BEFORE
+PWM** (IOmcu of link version 4.30 or later). The keypad takes
 no value above 10 000ms, and no leave is sent with one. A wait of 0ms
 ends at the IOmcu's next pass. The time left of a running wait is not
 shown. The wait a servo needs is not measured.
@@ -1165,6 +1166,17 @@ shown. The wait a servo needs is not measured.
 | **STOP** or a switch to SAFE of the bench, no PD mini answering | the same line; the port stays in programming mode and asks for **READ ALL** |
 | The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 1000ms, then the port is in PWM |
 | The link goes | as [a loss of the link](#stops-and-losses) |
+
+During the wait after the power cycle the state line reads the same
+`Leaving programming mode. PWM is still off.` The cycle has run: the
+written values act from this power-up.
+
+| During the wait after the power cycle | Effect |
+| --- | --- |
+| **ABORT** | the port stays in programming mode with the line low and the output on; `Leaving was interrupted before the waiting time ended.` The servo is out of programming mode and the session holds no servo; **LEAVE** is taken again at once and leaves without a second cycle, after **WAIT BEFORE PWM** |
+| **STOP** | the port releases the pin and is in PWM; the output is off; the STOP line |
+| The supply's output reads off or is switched off | the port is in PWM at once; `The supply cycle was stopped. The PD mini output stays off.` |
+| The link goes | the port is in PWM, the output off |
 
 ### A port that is not left
 
@@ -1178,7 +1190,7 @@ write left in doubt.
 | either | no | `The port is back in tester mode.` and `The session state was uncertain. PWM starts without a delay.` | none needed: the port is in PWM |
 
 Without a PD mini **STOP** switches no supply and leaves the port in
-programming mode, and a servo that no longer answers takes no read. The
+programming mode, and a servo that does not answer takes no read. The
 panel then sends the port's POWER_CYCLED operation in place of LEAVE.
 Without a PD mini it changes the port's state only: no frame, no wait, and
 the servo's supply is whatever feeds it. The record of an interrupted write
@@ -1197,6 +1209,16 @@ With a PD mini on such an IOmcu, **STOP** or the supply's output
 switched off ends the session: the supply stays off for 1000ms and the
 port is in PWM again.
 
+### An IOmcu older than link version 4.30
+
+Link versions 4.15 to 4.29 have no wait after the power cycle. The panel
+sends such an IOmcu the cycle without it: the port is in PWM 1000ms after
+the supply reads on, whatever **WAIT BEFORE PWM** holds. With **WAIT
+BEFORE PWM** above 0 the message after it reads
+`Supply switched off for 1s and on: the written values act.` and
+`This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.` With
+0ms it is the message of a 4.30 IOmcu.
+
 ## Stops and losses
 
 | Event | Effect |
@@ -1210,7 +1232,7 @@ port is in PWM again.
 | The IOmcu refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the IOmcu in a row stay unanswered | `No response from the IOmcu. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | No result of an operation for 30s, counted from the last time the port reported the operation running or planning, or for 120s from its start however long the port reports it running | the operation is aborted; `No result from the IOmcu. Tap READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
-| The result of an operation the programmer no longer waits for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
+| The result of an operation the programmer has stopped waiting for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
 | The IOmcu reports a result, a refusal or an outcome this panel has no line for | `The IOmcu reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
 
 Every refusal of the port and every result of the session has its own
@@ -1251,8 +1273,9 @@ line. [The link page](LinkKST.md) lists the codes.
 - **VERIFY** after a write reads the registers in programming mode, before
   the power-up the values act from. It does not show what the servo acts
   on; a **CONNECT** after **LEAVE** reads that.
-- A **LEAVE** through the power cycle holds the line low for 1000ms after
-  the supply reads on and does not apply **WAIT BEFORE PWM**.
+- A **LEAVE** through the power cycle on an IOmcu older than link version
+  4.30 holds the line low for 1000ms after the supply reads on and does not
+  apply **WAIT BEFORE PWM**.
 - 1000ms off is the owner's value. The shortest time without power that
   ends programming mode or makes a written value act is not measured; 4s
   and more worked on one Chaservo. Whether KST servos need the cycle as
@@ -1268,7 +1291,8 @@ line. [The link page](LinkKST.md) lists the codes.
 - With a PD mini answering, a port that holds a servo in doubt is left by
   **RESTORE** and **LEAVE**, or by **STOP** with the supply off.
 - **WAIT BEFORE PWM** is not applied by an IOmcu older than link
-  version 4.15, and not on the leave of a port in doubt without a PD mini.
+  version 4.15, not after the power cycle by one older than 4.30, and not
+  on the leave of a port in doubt without a PD mini.
   The wait a servo needs is not measured. The time left of a running
   wait is not shown.
 - Without a PD mini the programming voltage and the current limit are not
@@ -1407,7 +1431,11 @@ off and without a PD mini; **ABORT**, **STOP**, an arm, a target change and
 a link loss in the off time; the cycle across the 2^32ms wrap of the
 clock; **LEAVE** after a write with and without a PD mini, without a
 write, with **ABORT**, **STOP** and a link loss in its cycle, on an IOmcu
-without LEAVE and for a session the panel did not see begin.
+without LEAVE and for a session the panel did not see begin; the wait
+after that cycle at 0, 1, 3000 and 10 000ms, with **ABORT**, **STOP**
+before and after an **ABORT**, a link loss and the output switched off in
+it, across the 2^32ms wrap, and on an IOmcu below link version 4.30 with
+and without a wait.
 `test_kst_panel_type` runs the TYPE row, the type asked before a load, a
 cancelled list, a save of the type set, the lines after a write and on
 LEAVE's page with and without a PD mini. `test_kst_panel_limrun` runs the

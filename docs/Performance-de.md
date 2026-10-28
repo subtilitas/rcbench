@@ -412,8 +412,8 @@ Handshakes ist nicht gemessen.
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
-`servo_store_preset()`, `io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die nicht
-mehr antwortet (`storage_read_end()`, `mount_locked()`), und das
+`servo_store_preset()`, `io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die aufgehört
+hat zu antworten (`storage_read_end()`, `mount_locked()`), und das
 `snprintf()` darunter. Das Werkzeug folgt jedem Aufruf, den das Einbinden
 machen kann, darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie
 erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
@@ -800,7 +800,7 @@ Linux, `iw`:
    `curl -s -o /dev/null --max-time 5 http://<panel>/card/RATE16M.BIN; curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
    Die zweite antwortet `200`; die Konsole protokolliert
    `file: receiver gone`.
-6. Ein Empfänger, der nicht mehr liest: eine Verbindung, die die Datei
+6. Ein Empfänger, der aufhört zu lesen: eine Verbindung, die die Datei
    anfragt und dann nichts liest,
    `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
    dann nach 35s

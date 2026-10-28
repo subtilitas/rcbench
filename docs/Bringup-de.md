@@ -34,7 +34,7 @@ beiden, welches Ende aufgehört hat:
 | Requests | Panel zeigt | Lesart |
 | --- | --- | --- |
 | steigend | `VERBINDUNG` | funktioniert |
-| unverändert | `KEINE VERBINDUNG` | es kommt nichts an — das Panel sendet nicht mehr, oder die Verkabelung ist offen |
+| unverändert | `KEINE VERBINDUNG` | es kommt nichts an — das Panel sendet nichts, oder die Verkabelung ist offen |
 | steigend | `KEINE VERBINDUNG` | die Anfragen kommen an, die Antworten nicht zurück |
 
 `CAN did not answer on SPI` heißt, dass der Controller nach dem Reset nicht
@@ -174,8 +174,8 @@ arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
 Eine Einstellung aus SETUP INTERFACES, die eine Page ablehnt, zählt je
 einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
 wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
-ein NACK für jeden Wert, den der IOmcu ablehnt -- Abgriff-Pause 2ms mit
-Tiefster Ton 400Hz, oder PD mini RX auf dem SCL des Sensorbusses --, und
+ein NACK für jeden Wert, den der IOmcu ablehnt (Abgriff-Pause 2ms mit
+Tiefster Ton 400Hz, oder PD mini RX auf dem SCL des Sensorbusses), und
 keines für die Werte, die er übernimmt. Ein Pin, der abgelehnt wurde, weil
 etwas anderes ihn hält, wird alle 5s erneut angeboten und zählt jedes Mal
 einmal. `timeouts`, `stale` und `crc` sind die Spalten, die einen Linkfehler

@@ -167,6 +167,13 @@ jobs:
       - name: Numbers carry their unit without a space
         run: python3 tools/check_units.py --check
 
+      # The documents follow the writing rules: no " -- " dashes, no
+      # marketing words, no narrator, no history words, no emoji, no stale
+      # names; the exceptions are in tools/check_prose_allow.txt with their
+      # reasons.
+      - name: The documents follow the writing rules
+        run: python3 tools/check_prose.py --check
+
       # The web help: every screen has a page in English and German, every
       # screenshot it shows exists in render_ui.py and in docs/img/, the two
       # languages of a page have the same headings and screenshots, every
@@ -495,6 +502,14 @@ jobs:
       # from its constant, an overflow that is not a known one.
       - name: pytest
         run: python3 -m pytest test/tools -q
+
+      # The STEP models of the KiCad library are text gen_all.py writes;
+      # OpenCASCADE reads each back and checks its solids, colours and
+      # bounding box against the spec.
+      - name: The KiCad STEP models load in OpenCASCADE
+        run: |
+          python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
+          python3 hardware/kicad/tools/step_check.py
 
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a

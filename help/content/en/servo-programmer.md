@@ -65,7 +65,7 @@ A KST or Chaservo servo enters programming mode only from a power-up, and acts o
 | LEAVE after a write | the output off for 1s, on, the line low for 1s, then PWM | PWM; the values act after the servo's supply is switched off and on |
 | LEAVE with nothing written | PWM after WAIT BEFORE PWM, the supply as it is | the same |
 
-With the output off CONNECT switches it on and enters as before. ABORT or STOP in the 1s off leaves the output off: `The supply cycle was stopped. The PD mini output stays off.`
+With the output off CONNECT switches it on and enters. ABORT or STOP in the 1s off leaves the output off: `The supply cycle was stopped. The PD mini output stays off.`
 
 ![CONNECT with the output on](view:servo-kst-supply-on)
 ![The 1s off](view:servo-kst-cycling)

@@ -6,7 +6,10 @@ without the rest of this repository (CONTRIBUTING.md, "Where code goes").
 This tool reads each module and fails when one of these does not hold:
 
 - the module has a README.md, a CMakeLists.txt, a header under include/
-  and a C file beside them;
+  and a C file beside them, and an rp2350/ folder holds a .pio file, a C
+  file and a header; a driver on a fixed-function block of the chip, such
+  as an I2C block, passes without the .pio file when the README says "no
+  PIO program" outside fenced code blocks and HTML comments;
 - a core file, which is every C file, header and PIO (programmable
   input/output) program outside the module's rp2350/ folder, includes only
   C standard headers and headers of its own core;
@@ -352,6 +355,7 @@ FENCE_RE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})")
 # A backtick fence takes no backtick in its info string (CommonMark).
 BACKTICK_FENCE_RE = re.compile(r"^[ ]{0,3}`{3,}[^`\n]*$")
 NO_DRIVER_RE = re.compile(r"\bno\s+pin\s+driver\b", re.I)
+NO_PIO_RE = re.compile(r"\bno\s+PIO\s+program\b", re.I)
 
 CMAKE_COMMENT_RE = re.compile(r"#[^\n]*")
 REQUIRES_RE = re.compile(r"\b(?:PRIV_)?REQUIRES\b")
@@ -740,8 +744,18 @@ def include_problems(module: pathlib.Path) -> list[str]:
     return problems
 
 
+def says_no_pio(module: pathlib.Path) -> bool:
+    """Whether the README of @p module says "no PIO program" outside fenced
+    code blocks and HTML comments: a pin driver on a fixed-function block of
+    the chip, such as an I2C block, has none."""
+    path = module / "README.md"
+    return path.is_file() and bool(
+        NO_PIO_RE.search(prose(path.read_text(encoding="utf-8"))))
+
+
 def layout_problems(module: pathlib.Path) -> list[str]:
-    """What @p module lacks of a module's parts."""
+    """What @p module lacks of a module's parts.  A driver folder without a
+    .pio file passes when the README says "no PIO program"."""
     name = module.relative_to(module.parent.parent).as_posix()
     problems = []
     for part in ("README.md", "CMakeLists.txt"):
@@ -754,6 +768,8 @@ def layout_problems(module: pathlib.Path) -> list[str]:
     if (module / DRIVER).is_dir():
         for suffix, what in ((".pio", "PIO program"), (".c", "C file"),
                              (".h", "header")):
+            if suffix == ".pio" and says_no_pio(module):
+                continue
             if not list((module / DRIVER).glob("*" + suffix)):
                 problems.append(f"{name}/{DRIVER}/ has no {what}")
     return problems

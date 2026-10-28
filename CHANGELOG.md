@@ -19,9 +19,62 @@ history is in git.
   byte in its first 4KiB, over 65,536 line ends or over 1MiB is refused
   with the reason
   ([The text viewer](docs/Screens.md#the-text-viewer)).
+- `tools/check_prose.py`: holds the Markdown documents to the writing rules.
+  Rules: " -- " as a dash, the marketing words, "we"/"our"/"us" and
+  "wir"/"unser", history words, exclamation marks, emoji, the stale names
+  ESP32-S3, SIMULATION, coprocessor and "usable release". `--check` exits 1
+  on a hit, `--long` lists sentences over 40 words, `--report FILE` writes
+  the hits grouped by file. Exceptions are in `tools/check_prose_allow.txt`.
+  CI runs `--check` in the Host suite job. Units stay with `tools/check_units.py`.
+- `protocols/i2c_txq`: a transaction queue for one I2C bus master and its
+  driver on the RP2350's I2C blocks. A transaction (up to 5 bytes written,
+  6 read, STOP included) goes to the 16-entry FIFO whole and the block's
+  interrupt reports its end; nothing waits with interrupts off. Hard
+  transactions go before soft ones, then the earliest deadline; a soft one
+  past its deadline is dropped. The queue ends a transaction after 1000us,
+  checks the lines before a start (10us settle, 50us pull-up probe), tells
+  an address NACK from a data NACK, aborts after the byte under way, and
+  runs the 9-clock bus clear one half clock per poll with a trial after it.
+  A poll from inside a done callback runs after the callback returns, up to
+  16 times per outer call, so queue calls never nest deeper than one. A held
+  queue starts nothing, also a transaction picked while a line settled: it
+  goes back to the queue in its place. The driver's close refuses submits
+  from its own callbacks (`I2C_TXQ_E_CLOSED`), so nothing stays queued on a
+  closed bus. A callback may shut the queue at any point that runs one; no
+  driver function is called after it, and a bus clear it would have
+  followed does not start.
+  Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_calls`,
+  `test_i2c_txq_wire`).
+  The IOmcu links it and calls nothing of it yet: the sensor bus runs on
+  `sense_i2c.c` as before.
+- `tools/check_protocols.py` takes an `rp2350/` folder without a `.pio`
+  file when the module's README says "no PIO program".
+- `hardware/kicad/rcbench_modules.3dshapes/`: a STEP model of each of the 12
+  modules, generated from a `MODEL` block in its spec by
+  `hardware/kicad/tools/step_gen.py`. Each footprint names its model as
+  `${RCBENCH_MODULES_3D}/<footprint>.step`. Outlines and positions are the
+  footprint's; part heights come from the maker 3D models of the WeAct and
+  MATEK boards, from part datasheets, or from part class figures.
+  `gen_all.py --check` covers the models, and
+  `hardware/kicad/tools/step_check.py` reads each one with OpenCASCADE in CI.
+  The AS5600 model carries right-angle headers whose pins leave
+  horizontally.
+- `hardware/kicad/tools/step_render.py`: renders every STEP model with
+  OpenCASCADE; the renders are in `hardware/kicad/renders/` and in the
+  library README.
 
 ### Changed
 
+- Link protocol 4.30: LEAVE after a write with a PD mini applies WAIT
+  BEFORE PWM after the supply cycle. The programmer's REBOOT carries bit 5
+  of the KST page's command and the wait in register 28; the port holds the
+  line low for 1000ms after the supply reads on and then for the wait, 0 to
+  10,000ms, before PWM. ABORT in that wait leaves the port in programming
+  mode with the output on, and the next LEAVE has no cycle; STOP, a lost
+  heartbeat or the output off releases the pin to PWM. An IOmcu of 4.15 to
+  4.29 refuses the bit; the panel sends it the REBOOT without the wait and
+  says `This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.`
+  ([The wait after a supply cycle](docs/LinkKST.md#the-wait-after-a-supply-cycle)).
 - The KST and Chaservo programmer's files on the card use the store of the
   Hitec programmer, `shared/logfile/servo_store.c`, with the stem `KST`; the
   duplicate `kst_store.c` is removed. File names, the folder `BENCH/KST/CONF`,
@@ -33,6 +86,16 @@ history is in git.
   own text view, which held 32KiB of a file; the home tag returns to LOGS
   with the report chosen again. LOGS' text view and `log_text.c` are
   removed.
+
+### Fixed
+
+- A turn of the panel's knob while a chip's help bubble is open closes the
+  bubble and moves nothing, as a tap does (`ui_router_take_knob()`); before,
+  the turn moved the throttle on MOTOR & ESC or the target on SERVO behind
+  the bubble.
+- The Hitec write switch's page says that an interrupted write leaves a
+  wrong checksum and that the servo may ignore PWM and draw current up to
+  the supply limit (`HP_ENABLE_3C`).
 
 ## 0.23.1 - 2026-10-27
 

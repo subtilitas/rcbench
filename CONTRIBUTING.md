@@ -66,6 +66,7 @@ python3 tools/check_protocols.py --check   # every module under protocols/ stand
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
 python3 tools/check_units.py --check  # a number and its unit without a space
+python3 tools/check_prose.py --check  # the writing rules, exceptions in check_prose_allow.txt
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
@@ -146,7 +147,7 @@ A change fails if:
 - a C file the pull request adds has a Doxygen warning, a line it changes
   carries one, a C file it changes has no `@file` block, the tree has a
   warning that `tools/doc_check_baseline.txt` does not list, or the
-  baseline lists one that no longer occurs ([Comments](#comments));
+  baseline lists one that the tree does not produce ([Comments](#comments));
 - a source file has no SPDX (Software Package Data Exchange) line, a wiki page
   has no German counterpart, or a link goes nowhere;
 - the suite list or the module tree in `STATUS.md` or `docs/Building.md`
@@ -230,7 +231,9 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
     host suite;
   - the pin driver in `protocols/<name>/rp2350/`: the `.pio` program and
     the C around it. It includes the module's core and pico-sdk headers
-    only. Its header includes no pico-sdk header;
+    only. Its header includes no pico-sdk header. A driver on a
+    fixed-function block of the chip, such as an I2C block, has no `.pio`
+    program, and its `README.md` says "no PIO program";
   - a `README.md`: what the module does, its constraints with numbers, its
     interface, and the CMake lines that add it to another project.
 
@@ -298,8 +301,10 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   spaces, tabs or CRs after it; that
   the `README.md` has a heading with "Interface", a heading with
   "Trademark" in it where it names a brand from the tool's `BRANDS` list,
-  and the words "no pin driver" where the module has no `rp2350/` folder;
-  the Interface heading and "no pin driver" count outside fenced code
+  and the words "no pin driver" where the module has no `rp2350/` folder,
+  and "no PIO program" where its `rp2350/` folder has no `.pio` file;
+  the Interface heading, "no pin driver" and "no PIO program" count
+  outside fenced code
   blocks and HTML comments only, while a brand is matched anywhere in the
   file, in any case, in paths, addresses, code blocks and comments
   included, also inside an identifier, file name or number such as

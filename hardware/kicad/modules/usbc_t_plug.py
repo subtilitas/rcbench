@@ -116,3 +116,27 @@ SYMBOL = {
         ("passive", "V", "4", -12.7, -7.62, 0),
     ],
 }
+
+# 3D model. Part class figures, not measured; no source for these boards
+# was found: receptacles 3.2mm; plug shell 2.4mm and overmould 3.6mm, both
+# centred in the receptacle's height; the plug board 1.0mm thick, centred
+# on the plug. The tap board is T-shaped. The pads are carrier wire points
+# under the plug board, so the model has no holes. The assembly is wired,
+# so the tap board rests on the carrier.
+MODEL = {
+    "mount": "flat",
+    "pad_holes": False,
+    "outline": [(0.0, 0.0), (BAR[0], 0.0), (BAR[0], BAR[1]),
+                (STEM[1], BAR[1]), (STEM[1], STEM[2]), (STEM[0], STEM[2]),
+                (STEM[0], BAR[1]), (0.0, BAR[1])],
+    "bodies": [
+        ("box",) + IN + (3.2, "metal"),
+        ("box",) + OUT + (3.2, "metal"),
+        ("box",) + DOWN + (3.2, "metal"),
+        ("box",) + PLUG + (2.4, "metal", 0.4),
+        ("box",) + MOULD + (3.6, "plastic", -0.2),
+        ("box",) + GREEN + (1.0, "green", 1.1),
+    ]
+    + [("box", x - 0.65, PAD_Y - 1.0, x + 0.65, PAD_Y + 1.0, 0.05, "gold",
+        2.1) for x in PAD_X],
+}

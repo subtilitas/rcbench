@@ -1039,4 +1039,15 @@
 		(uuid "b8a405b1-58ff-5440-90c4-e94eb9adb8dc")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/ADS1115_Module_28x17mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

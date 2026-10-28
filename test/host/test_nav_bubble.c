@@ -27,6 +27,7 @@
  * - opening_a_bubble_releases_the_screens_contacts
  * - a_screen_without_a_band_opens_no_bubble
  * - every_chip_reads_at_4_5_to_1_in_both_themes
+ * - a_knob_turn_closes_the_bubble_and_moves_nothing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -907,6 +908,24 @@ TEST_CASE(every_chip_reads_at_4_5_to_1_in_both_themes)
     CHECK(seen >= 2 * 6 * 4);
 }
 
+/* The knob's turn is taken by an open bubble as a DOWN is: the bubble
+ * closes, the turn reaches no screen, and the next turn does. */
+TEST_CASE(a_knob_turn_closes_the_bubble_and_moves_nothing)
+{
+    for (int chip = UI_BAND_CHIP_LINK; chip < UI_BAND_CHIP_COUNT; ++chip) {
+        open_on_overview(&k_all_chips, (ui_band_chip_t)chip);
+        CHECK_EQ(ui_router_help(), (ui_band_chip_t)chip);
+        CHECK(!ui_router_take_knob());
+        CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+        CHECK(ui_router_take_knob());
+        CHECK(ui_router_take_knob());
+    }
+    /* No bubble: every turn reaches the screen. */
+    fresh();
+    to_overview();
+    CHECK(ui_router_take_knob());
+}
+
 int main(void)
 {
     RUN(the_armed_chip_names_the_role);
@@ -932,5 +951,6 @@ int main(void)
     RUN(opening_a_bubble_releases_the_screens_contacts);
     RUN(a_screen_without_a_band_opens_no_bubble);
     RUN(every_chip_reads_at_4_5_to_1_in_both_themes);
+    RUN(a_knob_turn_closes_the_bubble_and_moves_nothing);
     return test_summary("nav_bubble");
 }

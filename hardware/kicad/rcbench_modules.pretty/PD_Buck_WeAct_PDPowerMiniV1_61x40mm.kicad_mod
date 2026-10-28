@@ -1216,4 +1216,15 @@
 		(uuid "93e31095-b6a3-5a94-bce7-b3aeffff0c49")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/PD_Buck_WeAct_PDPowerMiniV1_61x40mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

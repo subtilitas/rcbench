@@ -56,7 +56,7 @@ Die Grafik zeigt Spannung, Strom und Leistung über die letzten 30s, jeden Sollw
 | SPANNUNG | 3,3 bis 21V, Schritte von 20mV | 1 bis 20V, Schritte von 10mV | 0,1V |
 | STROMBEGRENZUNG | 0,5 bis 5A, Schritte von 50mA | 0,05 bis 3A, Schritte von 10mA | 0,1A |
 
-Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini gibt nicht mehr ab, als er bekommt: Seine Spannung ist auf 0,7V unter der Eingangsspannung begrenzt, die er meldet; ein Eingang von 5V erlaubt höchstens 4,3V. Die Obergrenzen in OPTIONEN engen beide Bereiche ein, und der gültige Bereich steht am rechten Ende der Kopfzeile.
+Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini gibt höchstens ab, was er bekommt: Seine Spannung ist auf 0,7V unter der Eingangsspannung begrenzt, die er meldet; ein Eingang von 5V erlaubt höchstens 4,3V. Die Obergrenzen in OPTIONEN engen beide Bereiche ein, und der gültige Bereich steht am rechten Ende der Kopfzeile.
 
 - Einen Schieberegler ziehen oder auf seine Spur tippen, um den Wert unter dem Finger zu setzen.
 - `-0.1` und `+0.1` ändern den Wert schrittweise.
@@ -78,7 +78,7 @@ AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG
 
 - STOP, auf jedem Bildschirm;
 - Verlassen von SUPPLY, für einen Ausgang, den SUPPLY eingeschaltet hat;
-- einem Netzteil, das nicht mehr antwortet oder 3000ms keinen Messwert sendet;
+- einem Netzteil, das aufhört zu antworten oder 3000ms keinen Messwert sendet;
 - einer Abschaltung;
 - einer Eingangsspannung des PD mini unter dem Sollwert plus 0,5V bei 2 Lesungen in Folge;
 - einem Modul, das seinen Ausgang selbst abschaltet;

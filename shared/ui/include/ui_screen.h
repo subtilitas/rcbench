@@ -300,6 +300,16 @@ ui_band_chip_t ui_router_help(void);
  *  is. */
 bool ui_router_help_rect(gfx_rect_t *out);
 
+/**
+ * @brief Whether a knob turn reaches the screen.
+ *
+ * An open help bubble takes the turn as it takes a DOWN: the bubble closes
+ * and the turn moves nothing.  The next turn reaches the screen.
+ *
+ * @return true when the screen may act on the turn.
+ */
+bool ui_router_take_knob(void);
+
 /** True while a STOP button is drawn; false on the splash, which has none. */
 bool ui_router_stop_live(void);
 const ui_bench_status_t *ui_router_status(void);

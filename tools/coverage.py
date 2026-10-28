@@ -223,6 +223,7 @@ TRACKED = [
     "protocols/hitec/hitec_pre.c",
     "protocols/hitec/hitec_reg.c",
     "protocols/hitec/hitec_session.c",
+    "protocols/i2c_txq/i2c_txq.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
     "shared/outputs/hitec_port.c",

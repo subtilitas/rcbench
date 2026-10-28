@@ -36,7 +36,7 @@ Eine Taste, die abgelehnt würde, ist gedimmt. Ein Tipp darauf nennt den Grund i
 
 | Taste | Was sie tut |
 |---|---|
-| AKTUALISIEREN | sieht in den Steckplatz und liest jede Spalte an der Seite neu, die sie zeigt. Die oberste Zeile und der gewählte Eintrag bleiben; ist der gewählte Eintrag nicht mehr auf der Karte, ist nichts gewählt, wie nach LÖSCHEN |
+| AKTUALISIEREN | sieht in den Steckplatz und liest jede Spalte an der Seite neu, die sie zeigt. Die oberste Zeile und der gewählte Eintrag bleiben; ist der gewählte Eintrag von der Karte verschwunden, ist nichts gewählt, wie nach LÖSCHEN |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
