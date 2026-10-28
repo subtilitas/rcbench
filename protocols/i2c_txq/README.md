@@ -43,7 +43,7 @@ programmable input/output).
 - Sizes with arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`): a
   queue (`i2c_txq_t`) is 224 bytes, a transaction (`i2c_txq_xfer_t`) 64
   bytes, a bus of the driver (`i2c_txq_block_t`) 248 bytes. With gcc on
-  x86-64: 328, 72 and 352 bytes. `i2c_txq.c` is 2,398 bytes of code at
+  x86-64: 328, 72 and 352 bytes. `i2c_txq.c` is 2,526 bytes of code at
   `-Os`; `i2c_txq_block.c` is 2,336 bytes at `-O3` in the IOmcu's Release build.
 - Times are microseconds on a 64-bit clock the caller passes in. Every
   comparison is made on the difference of two times, so the order holds
@@ -70,6 +70,12 @@ The queue fills `rd`, `state`, `result`, `flags`, `start_us` and
 `done_us`, and calls the done callback, if one is set, from the context
 that ended the transaction.
 
+The callback may submit again and poll, as `i2c_txq_block_submit()` does.
+A poll made while another queue call is under way does nothing; the call
+under way or the next poll takes up the new transaction. Queue calls never
+nest deeper than one: a callback that submits an expired transaction again
+on every call runs once per poll, not in a recursion.
+
 The bus time is 9 clocks a byte, address bytes included, plus 1 clock
 each for the START, the repeated START and the STOP
 (`i2c_txq_clocks()`, `i2c_txq_bus_us()`). Gaps the controller leaves
@@ -95,7 +101,10 @@ not-before time has come:
 
 A soft transaction whose deadline has passed is never started: the next
 poll ends it `I2C_TXQ_DROPPED`. A deadline equal to the present time
-still starts. A hard transaction is never dropped; one started after its
+still starts. The deadline is checked again when a line low at the pick
+rises in the settle time: a soft transaction past it then ends
+`I2C_TXQ_DROPPED` without reaching the wire, and a trial passes to the next
+one. A hard transaction is never dropped; one started after its
 deadline carries `I2C_TXQ_F_LATE_START`. A transaction on the wire is not
 cut for one that comes later: a hard one waits for the end of the one on
 the wire, at most 300us at 400kHz.

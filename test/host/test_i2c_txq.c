@@ -30,10 +30,19 @@ static i2c_txq_t q;
 static i2c_txq_xfer_t *done_log[64];
 static unsigned done_n;
 static bool resubmit;
+/* Submit again and poll, as a driver's submit does, this many times more. */
+static unsigned repoll_left;
+static uint64_t repoll_deadline;
+static unsigned cb_depth;
+static unsigned cb_max;
 
 static void on_done(void *user, i2c_txq_xfer_t *x)
 {
     (void)user;
+    cb_depth++;
+    if (cb_depth > cb_max) {
+        cb_max = cb_depth;
+    }
     if (done_n < 64u) {
         done_log[done_n] = x;
     }
@@ -41,6 +50,14 @@ static void on_done(void *user, i2c_txq_xfer_t *x)
     if (resubmit) {
         (void)i2c_txq_submit(&q, x);
     }
+    if (repoll_left > 0u) {
+        repoll_left--;
+        x->not_before_us = m.now;
+        x->deadline_us = repoll_deadline;
+        (void)i2c_txq_submit(&q, x);
+        i2c_txq_poll(&q, m.now);
+    }
+    cb_depth--;
 }
 
 /* An empty queue over a bus with parts at 0x40 to 0x4F, at time @p now. */
@@ -59,6 +76,9 @@ static void setup(uint64_t now)
     }
     done_n = 0;
     resubmit = false;
+    repoll_left = 0;
+    cb_depth = 0;
+    cb_max = 0;
 }
 
 /* A register read of 2 bytes. */
@@ -555,6 +575,101 @@ TEST_CASE(a_done_callback_submits_again_without_a_loop)
     CHECK_EQ(q.st.ok, 10u);
 }
 
+TEST_CASE(a_callback_that_submits_and_polls_1000_times_never_nests)
+{
+    i2c_txq_xfer_t x;
+
+    /* The poll path: dropped, submitted again with the deadline passed and
+     * polled from the callback, 1000 times.  Each outer poll ends one. */
+    setup(5000);
+    rd2(&x, 0x40, I2C_TXQ_SOFT, 5000, 4999);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    repoll_left = 1000;
+    repoll_deadline = 4999;
+    for (unsigned k = 0; k < 1001u; ++k) {
+        i2c_txq_poll(&q, 5000);
+    }
+    CHECK_EQ(cb_max, 1u);
+    CHECK_EQ(done_n, 1001u);
+    CHECK_EQ(q.st.dropped, 1001u);
+    CHECK_EQ(repoll_left, 0u);
+    CHECK_EQ(x.state, I2C_TXQ_ST_DONE);
+    CHECK_EQ(q.depth, 0u);
+
+    /* The interrupt path: the end of a transaction on the wire. */
+    setup(5000);
+    rd2(&x, 0x40, I2C_TXQ_SOFT, 5000, 9000);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    i2c_txq_poll(&q, 5000);
+    CHECK_EQ(x.state, I2C_TXQ_ST_RUNNING);
+    repoll_left = 1000;
+    repoll_deadline = 4999;
+    m.now = 5120;
+    model_report(&m, &q);
+    CHECK_EQ(x.result, I2C_TXQ_OK);
+    CHECK_EQ(cb_max, 1u);
+    CHECK_EQ(done_n, 1u);
+    for (unsigned k = 0; k < 1000u; ++k) {
+        i2c_txq_poll(&q, 5120);
+    }
+    CHECK_EQ(cb_max, 1u);
+    CHECK_EQ(done_n, 1001u);
+    CHECK_EQ(q.st.dropped, 1000u);
+    CHECK_EQ(m.starts, 1u);
+
+    /* A fresh one submitted from the callback of an end starts at the next
+     * poll, not inside the end. */
+    setup(5000);
+    rd2(&x, 0x40, I2C_TXQ_SOFT, 5000, 9000);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    i2c_txq_poll(&q, 5000);
+    repoll_left = 1;
+    repoll_deadline = 9000;
+    m.now = 5120;
+    model_report(&m, &q);
+    CHECK_EQ(x.state, I2C_TXQ_ST_QUEUED);
+    CHECK_EQ(m.starts, 1u);
+    i2c_txq_poll(&q, 5120);
+    CHECK_EQ(x.state, I2C_TXQ_ST_RUNNING);
+    CHECK_EQ(m.starts, 2u);
+}
+
+TEST_CASE(a_callback_poll_inside_a_clear_or_an_abort_starts_nothing)
+{
+    i2c_txq_xfer_t x;
+
+    /* The clear cuts the one on the wire; its callback submits again and
+     * polls: nothing starts until the clear is over. */
+    setup(5000);
+    rd2(&x, 0x40, I2C_TXQ_SOFT, 5000, 90000);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    i2c_txq_poll(&q, 5000);
+    repoll_left = 1;
+    repoll_deadline = 90000;
+    CHECK(i2c_txq_recover(&q, 5000));
+    CHECK(i2c_txq_clearing(&q));
+    CHECK_EQ(x.state, I2C_TXQ_ST_QUEUED);
+    CHECK_EQ(m.starts, 1u);
+    model_run_to(&m, &q, 5115);
+    CHECK(!i2c_txq_clearing(&q));
+    CHECK_EQ(x.state, I2C_TXQ_ST_RUNNING);
+    CHECK(x.flags & I2C_TXQ_F_TRIAL);
+    CHECK_EQ(m.starts, 2u);
+
+    /* An abort of a queued one: the callback's poll waits for the next. */
+    setup(5000);
+    rd2(&x, 0x40, I2C_TXQ_SOFT, 5000, 90000);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    repoll_left = 1;
+    repoll_deadline = 90000;
+    CHECK(i2c_txq_abort(&q, &x, 5000));
+    CHECK_EQ(x.state, I2C_TXQ_ST_QUEUED);
+    CHECK_EQ(m.starts, 0u);
+    i2c_txq_poll(&q, 5000);
+    CHECK_EQ(x.state, I2C_TXQ_ST_RUNNING);
+    CHECK_EQ(cb_max, 1u);
+}
+
 TEST_CASE(the_bus_time_follows_the_clock_count)
 {
     i2c_txq_xfer_t x;
@@ -654,6 +769,8 @@ int main(void)
     RUN(a_flush_ends_everything_aborted);
     RUN(a_held_queue_starts_nothing_and_still_drops);
     RUN(a_done_callback_submits_again_without_a_loop);
+    RUN(a_callback_that_submits_and_polls_1000_times_never_nests);
+    RUN(a_callback_poll_inside_a_clear_or_an_abort_starts_nothing);
     RUN(the_bus_time_follows_the_clock_count);
     RUN(the_abort_causes_map_to_one_result_each);
     RUN(the_readers_take_null);

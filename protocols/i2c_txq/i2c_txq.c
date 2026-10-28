@@ -223,7 +223,8 @@ static void end_run(i2c_txq_t *q, i2c_txq_res_t r, uint64_t now)
     if (q->phase == P_PROBE) {
         q->ops.pullups(q->ctx, false);
     }
-    if ((x->flags & I2C_TXQ_F_TRIAL) != 0u && r != I2C_TXQ_ABORTED) {
+    if ((x->flags & I2C_TXQ_F_TRIAL) != 0u && r != I2C_TXQ_ABORTED
+        && r != I2C_TXQ_DROPPED) {
         q->trial = false;
     }
     q->run = NULL;
@@ -231,11 +232,16 @@ static void end_run(i2c_txq_t *q, i2c_txq_res_t r, uint64_t now)
     finish(q, x, r, now);
 }
 
-bool i2c_txq_abort(i2c_txq_t *q, i2c_txq_xfer_t *x, uint64_t now)
+/**
+ * @brief i2c_txq_abort() inside the guard.
+ *
+ * @param q    The queue.
+ * @param x    The transaction.
+ * @param now  The present time, in us.
+ * @return False when @p x is neither queued nor running on @p q.
+ */
+static bool abort_in(i2c_txq_t *q, i2c_txq_xfer_t *x, uint64_t now)
 {
-    if (q == NULL || x == NULL) {
-        return false;
-    }
     for (size_t i = 0; i < q->n; ++i) {
         if (q->slot[i] == x) {
             unqueue(q, i);
@@ -273,11 +279,14 @@ static void cut_run(i2c_txq_t *q, uint64_t now)
     end_run(q, I2C_TXQ_ABORTED, now);
 }
 
-void i2c_txq_flush(i2c_txq_t *q, uint64_t now)
+/**
+ * @brief i2c_txq_flush() inside the guard.
+ *
+ * @param q    The queue.
+ * @param now  The present time, in us.
+ */
+static void flush_in(i2c_txq_t *q, uint64_t now)
 {
-    if (q == NULL) {
-        return;
-    }
     /* The callback may submit again: only what was queued before goes. */
     const uint32_t mark = q->seq;
 
@@ -298,12 +307,18 @@ void i2c_txq_flush(i2c_txq_t *q, uint64_t now)
     }
 }
 
-void i2c_txq_complete(i2c_txq_t *q, uint64_t now, uint32_t abrt,
-                      const uint8_t *rx, size_t n)
+/**
+ * @brief i2c_txq_complete() inside the guard.
+ *
+ * @param q     The queue.
+ * @param now   The time of the end, in us.
+ * @param abrt  The controller's abort causes.
+ * @param rx    The bytes read.
+ * @param n     Bytes in @p rx.
+ */
+static void complete_in(i2c_txq_t *q, uint64_t now, uint32_t abrt,
+                        const uint8_t *rx, size_t n)
 {
-    if (q == NULL) {
-        return;
-    }
     if (q->phase != P_WIRE) {
         q->st.spurious++;
         return;
@@ -365,8 +380,9 @@ static bool lines_high(const i2c_txq_t *q)
 }
 
 /**
- * @brief The line check of the picked transaction.  High lines send it.  A
- *        low line gets settle_us to rise, then the pad pull-ups for
+ * @brief The line check of the picked transaction.  High lines send it; a
+ *        soft one whose deadline passed in the settle ends
+ *        I2C_TXQ_DROPPED instead.  A low line gets settle_us to rise, then the pad pull-ups for
  *        probe_us: a line that rises on them is held by nothing and has no
  *        pull-up (I2C_TXQ_NO_PULLUP), one still low after them is held by a
  *        part (I2C_TXQ_BUS_LOW).  Nothing is sent after the probe.
@@ -387,7 +403,13 @@ static void check_lines(i2c_txq_t *q, uint64_t now)
         return;
     }
     if (high) {
-        to_wire(q, now);
+        /* Picked before its deadline, a soft one may pass it while a line
+         * settles: it is then dropped, as in the queue. */
+        if (q->run->cls == I2C_TXQ_SOFT && after(now, q->run->deadline_us)) {
+            end_run(q, I2C_TXQ_DROPPED, now);
+        } else {
+            to_wire(q, now);
+        }
     } else if (now - q->phase_at >= q->cfg.settle_us) {
         q->ops.pullups(q->ctx, true);
         q->phase = P_PROBE;
@@ -437,11 +459,14 @@ static void clear_step(i2c_txq_t *q, uint64_t now)
     }
 }
 
-bool i2c_txq_recover(i2c_txq_t *q, uint64_t now)
+/**
+ * @brief i2c_txq_recover() inside the guard.
+ *
+ * @param q    The queue.
+ * @param now  The present time, in us.
+ */
+static void recover_in(i2c_txq_t *q, uint64_t now)
 {
-    if (q == NULL || q->phase == P_CLEAR) {
-        return false;
-    }
     cut_run(q, now);
     q->phase = P_CLEAR;
     q->step = 0;
@@ -449,7 +474,6 @@ bool i2c_txq_recover(i2c_txq_t *q, uint64_t now)
     q->trial = false;
     q->phase_at = now;
     clear_step(q, now);
-    return true;
 }
 
 /**
@@ -500,11 +524,14 @@ static int pick(const i2c_txq_t *q, uint64_t now)
     return best;
 }
 
-void i2c_txq_poll(i2c_txq_t *q, uint64_t now)
+/**
+ * @brief i2c_txq_poll() inside the guard.
+ *
+ * @param q    The queue.
+ * @param now  The present time, in us.
+ */
+static void poll_in(i2c_txq_t *q, uint64_t now)
 {
-    if (q == NULL) {
-        return;
-    }
     if (q->phase == P_CLEAR) {
         clear_step(q, now);
     }
@@ -534,6 +561,67 @@ void i2c_txq_poll(i2c_txq_t *q, uint64_t now)
     q->phase = P_SETTLE;
     q->phase_at = now;
     check_lines(q, now);
+}
+
+/*
+ * The guard.  A done callback runs inside a queue call and may submit and
+ * poll again, as a driver's submit does.  A poll made while a queue call is
+ * under way does nothing: the call under way, or the next poll, takes the
+ * new transaction up.  So a callback that submits again each time it is
+ * called runs once per poll, and the calls never nest deeper than one.
+ */
+
+bool i2c_txq_abort(i2c_txq_t *q, i2c_txq_xfer_t *x, uint64_t now)
+{
+    if (q == NULL || x == NULL) {
+        return false;
+    }
+    q->depth++;
+    const bool ok = abort_in(q, x, now);
+    q->depth--;
+    return ok;
+}
+
+void i2c_txq_flush(i2c_txq_t *q, uint64_t now)
+{
+    if (q == NULL) {
+        return;
+    }
+    q->depth++;
+    flush_in(q, now);
+    q->depth--;
+}
+
+void i2c_txq_complete(i2c_txq_t *q, uint64_t now, uint32_t abrt,
+                      const uint8_t *rx, size_t n)
+{
+    if (q == NULL) {
+        return;
+    }
+    q->depth++;
+    complete_in(q, now, abrt, rx, n);
+    q->depth--;
+}
+
+bool i2c_txq_recover(i2c_txq_t *q, uint64_t now)
+{
+    if (q == NULL || q->phase == P_CLEAR) {
+        return false;
+    }
+    q->depth++;
+    recover_in(q, now);
+    q->depth--;
+    return true;
+}
+
+void i2c_txq_poll(i2c_txq_t *q, uint64_t now)
+{
+    if (q == NULL || q->depth != 0u) {
+        return;
+    }
+    q->depth++;
+    poll_in(q, now);
+    q->depth--;
 }
 
 void i2c_txq_hold(i2c_txq_t *q, bool on)

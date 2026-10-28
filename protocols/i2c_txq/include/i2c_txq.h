@@ -206,7 +206,8 @@ typedef struct {
  * @brief The done callback: @p x has its result.
  *
  * Called from the context that ended it -- the driver's interrupt, or the
- * caller's poll, submit or abort.  It may submit @p x again.
+ * caller's poll, submit or abort.  It may submit @p x again, and poll; the
+ * poll does nothing inside the callback (i2c_txq_poll()).
  */
 typedef void (*i2c_txq_done_fn)(void *user, i2c_txq_xfer_t *x);
 
@@ -257,6 +258,8 @@ typedef struct {
     bool             hold;     /**< nothing starts                         */
     bool             trial;    /**< the next one picked is the trial       */
     bool             scl_up;   /**< the clear has released SCL and waits   */
+    uint8_t          depth;    /**< queue calls under way: a poll at 1 or
+                                    more does nothing                      */
 } i2c_txq_t;
 
 /**
@@ -320,7 +323,10 @@ void i2c_txq_flush(i2c_txq_t *q, uint64_t now);
  *
  * Call it after every completion and at least as often as the shortest
  * wait the caller wants to resolve: a step that is due is taken at the
- * first poll at or after its time.
+ * first poll at or after its time.  A poll made while another queue call
+ * is under way -- from a done callback -- does nothing; the call under way
+ * or the next poll takes up what the callback submitted.  So a callback
+ * that submits again each time runs once per poll, never nested.
  *
  * @param q    The queue.
  * @param now  The present time, in us.

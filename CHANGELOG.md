@@ -17,6 +17,8 @@ history is in git.
   checks the lines before a start (10us settle, 50us pull-up probe), tells
   an address NACK from a data NACK, aborts after the byte under way, and
   runs the 9-clock bus clear one half clock per poll with a trial after it.
+  A poll from inside a done callback does nothing, so queue calls never nest
+  deeper than one.
   Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_wire`).
   The IOmcu links it and calls nothing of it yet: the sensor bus runs on
   `sense_i2c.c` as before.

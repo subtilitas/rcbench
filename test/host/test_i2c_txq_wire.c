@@ -267,6 +267,75 @@ TEST_CASE(a_line_that_rises_inside_the_settle_time_is_sent_on)
     CHECK_EQ(x.flags & I2C_TXQ_F_WIRE, 0u);
 }
 
+TEST_CASE(a_soft_one_whose_deadline_passes_in_the_settle_is_dropped)
+{
+    i2c_txq_xfer_t x;
+    /* SDA rises at 1005: the release.  A deadline before it drops, one at
+     * it or after it starts. */
+    static const struct {
+        uint64_t deadline;
+        uint8_t  result;
+        unsigned starts;
+    } row[] = {
+        {1002, I2C_TXQ_DROPPED, 0},
+        {1004, I2C_TXQ_DROPPED, 0},
+        {1005, I2C_TXQ_OK, 1},
+        {1006, I2C_TXQ_OK, 1},
+    };
+
+    for (size_t i = 0; i < sizeof(row) / sizeof(row[0]); ++i) {
+        setup(1000);
+        m.sda_hold_us = 1005;
+        rd(&x, 0x40, 2);
+        x.deadline_us = row[i].deadline;
+        go(&x);
+        CHECK_EQ(x.state, I2C_TXQ_ST_RUNNING);
+        model_run_to(&m, &q, 1005);
+        CHECK_EQ(m.starts, row[i].starts);
+        model_run_to(&m, &q, 1200);
+        CHECK_EQ(x.result, row[i].result);
+        CHECK_EQ(q.st.dropped, row[i].starts == 0u ? 1u : 0u);
+        if (row[i].starts == 0u) {
+            CHECK(x.done_us == 1005u);
+            CHECK_EQ(x.flags & I2C_TXQ_F_WIRE, 0u);
+            CHECK_EQ(m.pullup_ons, 0u);
+        }
+    }
+
+    /* A hard one in the same place runs late and says so. */
+    setup(1000);
+    m.sda_hold_us = 1005;
+    rd(&x, 0x40, 2);
+    x.cls = I2C_TXQ_HARD;
+    x.deadline_us = 1004;
+    go(&x);
+    model_run_to(&m, &q, 1005);
+    CHECK_EQ(m.starts, 1u);
+    CHECK(x.start_us == 1005u);
+    model_run_to(&m, &q, 1200);
+    CHECK_EQ(x.result, I2C_TXQ_OK);
+    CHECK(x.flags & I2C_TXQ_F_LATE_START);
+    CHECK_EQ(q.st.dropped, 0u);
+
+    /* A trial dropped in the settle passes the trial on. */
+    i2c_txq_xfer_t next;
+    setup(1000);
+    CHECK(i2c_txq_recover(&q, 1000));
+    model_run_to(&m, &q, 1115);
+    m.sda_hold_us = 1120;
+    rd(&x, 0x40, 2);
+    x.deadline_us = 1117;
+    go(&x);
+    CHECK(x.flags & I2C_TXQ_F_TRIAL);
+    model_run_to(&m, &q, 1120);
+    CHECK_EQ(x.result, I2C_TXQ_DROPPED);
+    rd(&next, 0x40, 2);
+    go(&next);
+    model_run_to(&m, &q, 1300);
+    CHECK_EQ(next.result, I2C_TXQ_OK);
+    CHECK(next.flags & I2C_TXQ_F_TRIAL);
+}
+
 TEST_CASE(lines_without_pull_ups_read_as_no_pull_up)
 {
     i2c_txq_xfer_t x, next;
@@ -637,6 +706,7 @@ int main(void)
     RUN(a_nack_on_the_address_is_told_from_one_on_data);
     RUN(a_lost_arbitration_and_a_short_read_are_their_own_results);
     RUN(a_line_that_rises_inside_the_settle_time_is_sent_on);
+    RUN(a_soft_one_whose_deadline_passes_in_the_settle_is_dropped);
     RUN(lines_without_pull_ups_read_as_no_pull_up);
     RUN(a_line_a_part_holds_is_bus_low_at_the_end_of_the_probe);
     RUN(an_abort_mid_transaction_ends_it_after_the_byte);
