@@ -8,6 +8,29 @@ history is in git.
 
 ### Added
 
+- `protocols/i2c_txq`: a transaction queue for one I2C bus master and its
+  driver on the RP2350's I2C blocks. A transaction (up to 5 bytes written,
+  6 read, STOP included) goes to the 16-entry FIFO whole and the block's
+  interrupt reports its end; nothing waits with interrupts off. Hard
+  transactions go before soft ones, then the earliest deadline; a soft one
+  past its deadline is dropped. The queue ends a transaction after 1000us,
+  checks the lines before a start (10us settle, 50us pull-up probe), tells
+  an address NACK from a data NACK, aborts after the byte under way, and
+  runs the 9-clock bus clear one half clock per poll with a trial after it.
+  A poll from inside a done callback runs after the callback returns, up to
+  16 times per outer call, so queue calls never nest deeper than one. A held
+  queue starts nothing, also a transaction picked while a line settled: it
+  goes back to the queue in its place. The driver's close refuses submits
+  from its own callbacks (`I2C_TXQ_E_CLOSED`), so nothing stays queued on a
+  closed bus. A callback may shut the queue at any point that runs one; no
+  driver function is called after it, and a bus clear it would have
+  followed does not start.
+  Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_calls`,
+  `test_i2c_txq_wire`).
+  The IOmcu links it and calls nothing of it yet: the sensor bus runs on
+  `sense_i2c.c` as before.
+- `tools/check_protocols.py` takes an `rp2350/` folder without a `.pio`
+  file when the module's README says "no PIO program".
 - `hardware/kicad/rcbench_modules.3dshapes/`: a STEP model of each of the 12
   modules, generated from a `MODEL` block in its spec by
   `hardware/kicad/tools/step_gen.py`. Each footprint names its model as
