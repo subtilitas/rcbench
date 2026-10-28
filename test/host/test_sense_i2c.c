@@ -44,6 +44,7 @@ static i2c_txq_block_t *g_bus;          /* the glue's, as opened */
 static i2c_txq_block_err_t g_open_rc;   /* what the next open answers */
 static unsigned g_opens, g_closes, g_polls;
 static unsigned g_open_sda, g_open_scl;
+static int g_again;                     /* resubmits left to again() */
 
 /* The model's clock to the timer's. */
 static void sync_clock(void)
@@ -137,10 +138,18 @@ const i2c_txq_t *i2c_txq_block_queue(const i2c_txq_block_t *b)
 
 /* ------------------------------------------------------------- rig */
 
-/* A bus with its pull-ups and a part at PART, open on SDA and SCL. */
+/* A bus with its pull-ups and a part at PART, open on SDA and SCL.  The
+ * case before has closed the bus (finish()).  A queue it left open may
+ * hold descriptors from that case's stack: they are dropped unread, with
+ * a failure, rather than ended by this close. */
 static void wired(void)
 {
+    if (g_bus != NULL && g_bus->open) {
+        T_FAIL("the case before left the bus open");
+        (void)i2c_txq_init(&g_bus->q, &model_ops, &m, NULL);
+    }
     sense_i2c_close();
+    g_again = 0;
     fake_us = T0;
     fake_park_us = 0u;
     model_init(&m, T0);
@@ -149,6 +158,20 @@ static void wired(void)
     g_open_rc = I2C_TXQ_BLOCK_OK;
     g_opens = g_closes = g_polls = 0u;
     CHECK(sense_i2c_open((uint8_t)SDA, (uint8_t)SCL));
+}
+
+/* Every case ends here: the bus closed and its queue shut and empty, so
+ * nothing the case put in it -- descriptors on the case's own stack among
+ * them -- outlives the case. */
+static void finish(void)
+{
+    sense_i2c_close();
+    if (g_bus != NULL) {
+        CHECK(!g_bus->open);
+        CHECK(i2c_txq_closed(&g_bus->q));
+        CHECK_EQ(i2c_txq_queued(&g_bus->q), 0u);
+        CHECK(i2c_txq_idle(&g_bus->q));
+    }
 }
 
 /* --------------------------------------------------------------- cases */
@@ -176,6 +199,7 @@ TEST_CASE(the_bus_opens_on_one_blocks_pair_and_nothing_else)
     CHECK(!sense_i2c_open((uint8_t)SDA, (uint8_t)SCL));
     CHECK_EQ(sense_i2c_ask(PART), SENSE_BAD_ARG);
     CHECK_EQ(m.starts, 0u);
+    finish();
 }
 
 TEST_CASE(a_closed_bus_sends_nothing)
@@ -197,6 +221,7 @@ TEST_CASE(a_closed_bus_sends_nothing)
     CHECK_EQ(m.gpio_ons, 0u);
     fake_us += 7u;
     CHECK_EQ(sense_i2c_done_us(NULL), fake_us);
+    finish();
 }
 
 TEST_CASE(a_read_and_a_write_go_out_whole_and_are_stamped_at_their_end)
@@ -223,6 +248,7 @@ TEST_CASE(a_read_and_a_write_go_out_whole_and_are_stamped_at_their_end)
     CHECK_EQ(sense_i2c_ask(PART), SENSE_OK);
     CHECK_EQ(sense_i2c_ask(0x41u), SENSE_NACK);
     CHECK_EQ(m.starts, 6u);
+    finish();
 }
 
 TEST_CASE(pins_nothing_is_wired_to_read_as_nothing_answering)
@@ -242,6 +268,7 @@ TEST_CASE(pins_nothing_is_wired_to_read_as_nothing_answering)
     CHECK(!m.pad_pu);                        /* the pulls off again */
     CHECK(!bus.stuck);
     CHECK(!sense_bus_recovery_due(&bus, 2000u));
+    finish();
 }
 
 TEST_CASE(a_line_a_part_holds_is_bus_low_60us_on)
@@ -256,6 +283,7 @@ TEST_CASE(a_line_a_part_holds_is_bus_low_60us_on)
     m.sda_hold = 0;
     m.scl_hold = true;
     CHECK_EQ(sense_i2c_ask(PART), SENSE_BUS_LOW);
+    finish();
 }
 
 TEST_CASE(scl_held_is_a_timeout_1000us_after_the_start_and_resets_the_block)
@@ -269,6 +297,7 @@ TEST_CASE(scl_held_is_a_timeout_1000us_after_the_start_and_resets_the_block)
     /* The block starts the next one from its reset. */
     m.stall = false;
     CHECK_EQ(sense_i2c_read(NULL, PART, 0x00, buf, 2), SENSE_OK);
+    finish();
 }
 
 TEST_CASE(the_bus_clear_is_waited_for)
@@ -281,6 +310,7 @@ TEST_CASE(the_bus_clear_is_waited_for)
     CHECK_EQ(m.scl_rises, 10u); /* 9 clocks and the STOP's */
     CHECK_EQ(fake_us - T0, (uint64_t)(23u * SENSE_I2C_CLEAR_HALF_US));
     CHECK_EQ(sense_i2c_ask(PART), SENSE_OK);
+    finish();
 }
 
 TEST_CASE(core_1s_poll_takes_an_end_the_interrupt_left)
@@ -306,10 +336,10 @@ TEST_CASE(core_1s_poll_takes_an_end_the_interrupt_left)
     /* Taken 280us late: the computed end. */
     CHECK_EQ(x.done_us, (uint64_t)T0 + 120u);
     CHECK((x.flags & I2C_TXQ_F_LATE_STAMP) != 0u);
+    finish();
 }
 
 /* A done callback that hands its transaction back once, not before 1ms. */
-static int g_again;
 static void again(void *user, i2c_txq_xfer_t *x)
 {
     (void)user;
@@ -355,6 +385,7 @@ TEST_CASE(core_1s_poll_starts_one_a_callback_queued_during_a_clear)
     CHECK_EQ(m.starts, starts + 1u);
     CHECK_EQ(x.state, I2C_TXQ_ST_RUNNING);
     CHECK_EQ(x.start_us, due);
+    finish();
 }
 
 TEST_CASE(a_flash_lock_out_mid_transaction_keeps_the_stamp_of_its_end)
@@ -370,11 +401,13 @@ TEST_CASE(a_flash_lock_out_mid_transaction_keeps_the_stamp_of_its_end)
     CHECK_EQ(sense_i2c_done_us(NULL), (uint64_t)T0 + 120u);
     CHECK_EQ(g_bus->q.st.late_stamps, 1u);
     /* Parked 100us past the end: the time it was taken. */
+    finish();
     wired();
     fake_park_us = 220u;
     CHECK_EQ(sense_i2c_read(NULL, PART, 0x00, buf, 2), SENSE_OK);
     CHECK_EQ(sense_i2c_done_us(NULL), (uint64_t)T0 + 220u);
     CHECK_EQ(g_bus->q.st.late_stamps, 0u);
+    finish();
 }
 
 int main(void)
