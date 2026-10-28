@@ -23,7 +23,6 @@ set(SRCS
     log_take.c
     card_tree.c
     fault_log.c
-    kst_store.c
     servo_store.c
 )
 

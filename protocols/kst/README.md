@@ -471,7 +471,7 @@ one-byte changes turn it into an edited file with the same values: `#` in
 place of the `c` of `checksum`, and `#` in place of the line end before it.
 
 Where the files are kept is the caller's choice. In this repository
-`shared/logfile/kst_store.c` names, saves, lists and loads them on the
+`shared/logfile/servo_store.c` with the stem `KST` names, saves, lists and loads them on the
 panel's card, in the folder `BENCH/KST/CONF`. It keeps the base name `KST`,
 in any case, free: `KST.TXT` in that folder is the caller's record of a
 write under way. That name is

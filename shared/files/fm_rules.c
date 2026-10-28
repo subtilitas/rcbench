@@ -11,13 +11,13 @@
 #include <string.h>
 
 #include "card_tree.h"
-#include "kst_store.h"
 #include "log_name.h"
 
-/** @brief The journal's name, KST.TXT, as the panel writes it. */
-#define JOURNAL_TXT KST_STORE_RECORD ".TXT"
+/** @brief The journal's name, KST.TXT (KST_CARD_STEM of kst_card.h, which
+ *         this layer does not include), as the panel writes it. */
+#define JOURNAL_TXT "KST.TXT"
 /** @brief The journal's name while it is written, KST.NEW. */
-#define JOURNAL_NEW KST_STORE_RECORD FM_NEW_SUFFIX
+#define JOURNAL_NEW "KST" FM_NEW_SUFFIX
 /** @brief The Hitec programmer's record, HITEC.TXT (HITEC_CARD_RECORD of
  *         hitec_card.h, which this layer does not include). */
 #define HITEC_TXT "HITEC.TXT"
