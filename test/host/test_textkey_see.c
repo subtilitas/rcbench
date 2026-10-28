@@ -202,8 +202,8 @@ TEST_CASE(only_the_editor_keyboard_shows_through)
 }
 
 /*
- * Over black and over white, a pixel of a key's fill and one of a gap
- * differ by the see-through's share of white: 25% and 50% of the green's
+ * Over black and over white, a pixel of a key's fill, one of a gap and
+ * one of a blank of the marks differ by the see-through's share of white: 25% and 50% of the green's
  * 63 steps within one of the blend's 32 steps (2 green steps).  Nothing
  * outside the area changes.
  */
@@ -233,6 +233,21 @@ TEST_CASE(the_keys_and_gaps_show_the_share_of_the_text_behind)
         const int got_gap = green(white[gap_px]) - green(black[gap_px]);
         CHECK(abs(got_key - want) <= 2);
         CHECK(abs(got_gap - want) <= 2);
+        /* A blank of the second page of marks, the key left of DEL on
+         * the middle row, shows through as a gap does. */
+        ui_textkey_t more = k;
+        more.layer = UI_TK_MORE;
+        const gfx_rect_t blank = ui_textkey_key_rect(&more, 29);
+        const size_t blank_px = (size_t)(blank.y + blank.h / 2) * CW
+                                + (size_t)(blank.x + blank.w / 2);
+        CHECK_STR_EQ(ui_textkey_key_label(&more, 29), "");
+        draw_over(&more, black, GFX_BLACK);
+        draw_over(&more, white, GFX_WHITE);
+        CHECK(abs(green(white[blank_px]) - green(black[blank_px]) - want)
+              <= 2);
+        CHECK_EQ(black[blank_px], black[gap_px]);
+        draw_over(&k, black, GFX_BLACK);
+        draw_over(&k, white, GFX_WHITE);
         /* The colour over black is the fill's share of the key's. */
         const gfx_color_t sunk = ui_theme_color(UI_C_PANEL_SUNK);
         CHECK(green(black[key_px]) <= green(sunk));

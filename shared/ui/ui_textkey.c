@@ -931,13 +931,15 @@ _Static_assert(UI_R_CTL == 8, "k_corner_in holds the corner of 8px");
 static void draw_glass(const ui_textkey_t *k, gfx_canvas_t *c)
 {
     const uint8_t a = (uint8_t)(255 - (k->see * 255 + 50) / 100);
-    /* The keys shown, by their left edge: a row of the area meets them
-     * left to right. */
+    /* The keys drawn, by their left edge: a row of the area meets them
+     * left to right.  A blank of a page of marks is not drawn, and the
+     * panel's colour is blended over it as over a gap. */
     gfx_rect_t keys[UI_TK_ALL] = { { 0, 0, 0, 0 } };
     int n = 0;
     for (int key = 0; key < UI_TK_ALL; ++key) {
         const gfx_rect_t r = ui_textkey_key_rect(k, key);
-        if (r.w == 0) {
+        if (r.w == 0
+            || (key < UI_TK_DEL && ui_textkey_key_label(k, key)[0] == '\0')) {
             continue;
         }
         int i = n++;
