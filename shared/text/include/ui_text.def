@@ -5157,8 +5157,8 @@ UI_TEXT(HP_ENABLE_2, 116,
     "Wrong end points can drive the servo into its stops.",
     "Falsche Endpunkte können das Servo gegen seine Anschläge fahren.")
 UI_TEXT(HP_ENABLE_3C, 116,
-    "An interrupted write leaves a wrong checksum: the servo then ignores PWM.",
-    "Ein unterbrochener Schreibvorgang hinterlässt eine falsche Prüfsumme: Das Servo ignoriert dann PWM.")
+    "An interrupted write leaves a wrong checksum: the servo may ignore PWM and draw current up to the supply limit.",
+    "Unterbrochenes Schreiben: Prüfsumme falsch, Servo folgt PWM evtl. nicht, zieht evtl. Strom bis zur Grenze.")
 UI_TEXT(HP_WRITE_D, 116,
     "The servo saves and restarts. It ignores signals for 1s.",
     "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")

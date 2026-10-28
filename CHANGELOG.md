@@ -15,6 +15,16 @@ history is in git.
   refusal stay as they were; `test_kst_store` is replaced by a KST case in
   `test_servo_store`.
 
+### Fixed
+
+- A turn of the panel's knob while a chip's help bubble is open closes the
+  bubble and moves nothing, as a tap does (`ui_router_take_knob()`); before,
+  the turn moved the throttle on MOTOR & ESC or the target on SERVO behind
+  the bubble.
+- The Hitec write switch's page says that an interrupted write leaves a
+  wrong checksum and that the servo may ignore PWM and draw current up to
+  the supply limit (`HP_ENABLE_3C`).
+
 ## 0.23.1 - 2026-10-27
 
 0.23.1 is a testing release: its minor number, 23, is odd, and GitHub
