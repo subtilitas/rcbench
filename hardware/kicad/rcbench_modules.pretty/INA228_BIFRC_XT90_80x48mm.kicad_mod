@@ -1311,4 +1311,15 @@
 		(uuid "79a37bcf-e29d-57b3-b002-121d856ad568")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/INA228_BIFRC_XT90_80x48mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

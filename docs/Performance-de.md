@@ -391,7 +391,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 648 | 1 520 |
 | `control` | `control_task` | 6 144 | 4 720 | 400 |
-| `runlog` | `log_task` | 6 656 | 4 080 | 1 552 |
+| `runlog` | `log_task` | 6 656 | 4 528 | 1 104 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 296 | 1 776 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 3 744 | 2 144 |
@@ -411,14 +411,14 @@ Stack ist der des Servers der Seite, der nie neben ihm läuft; die Tiefe des
 Handshakes ist nicht gemessen.
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
-Servodateien, die die Karte bedient (`kst_card_run()`, `kst_store_preset()`,
-`io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die aufgehört
+Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
+`servo_store_preset()`, `io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die aufgehört
 hat zu antworten (`storage_read_end()`, `mount_locked()`), und das
 `snprintf()` darunter. Das Werkzeug folgt jedem Aufruf, den das Einbinden
 machen kann, darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie
 erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
-ein (`storage_check()`). Die Kette braucht 4 080 Bytes; der Stack von 6 656
-Bytes lässt 1 552 über der Marge von 1 024 Bytes.
+ein (`storage_check()`). Die Kette braucht 4 528 Bytes; der Stack von 6 656
+Bytes lässt 1 104 über der Marge von 1 024 Bytes.
 
 Die tiefste Kette von `wifi_ctl` ist das Abschalten des Funks:
 `radio_down()`, die letzte Abfrage des NTP-Clients (Network Time Protocol,
@@ -453,7 +453,7 @@ oben ist deshalb eine Untergrenze:
   Kartenfunktionen, über die die Lauf-Logs, das Fehlerprotokoll und die
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `KST_CALLS`):
+  `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
   227
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;

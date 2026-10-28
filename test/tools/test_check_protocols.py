@@ -245,6 +245,41 @@ def test_a_driver_folder_without_its_parts_is_flagged(tmp_path):
         "protocols/wire/rp2350/ has no header"]
 
 
+def test_a_driver_without_a_pio_program_passes_when_the_readme_says_so(
+        tmp_path):
+    m = module(tmp_path)
+    (m / cp.DRIVER / "wire.pio").unlink()
+    pin = m / cp.DRIVER / "wire_pin.c"
+    pin.write_text(pin.read_text().replace('#include "wire.pio.h"\n', ""))
+    assert cp.layout_problems(m) == [
+        "protocols/wire/rp2350/ has no PIO program"]
+    readme = m / "README.md"
+    readme.write_text(readme.read_text()
+                      + "\nThe driver runs the I2C block: no PIO program.\n")
+    assert static(m) == []
+
+
+def test_no_pio_program_inside_a_fence_or_a_comment_does_not_count(tmp_path):
+    m = module(tmp_path)
+    (m / cp.DRIVER / "wire.pio").unlink()
+    readme = m / "README.md"
+    base = readme.read_text()
+    for hidden in ("\n```text\nno PIO program\n```\n",
+                   "\n<!-- no PIO program -->\n"):
+        readme.write_text(base + hidden)
+        assert cp.layout_problems(m) == [
+            "protocols/wire/rp2350/ has no PIO program"]
+
+
+def test_no_pio_program_excuses_only_the_pio_program(tmp_path):
+    m = module(tmp_path)
+    (m / cp.DRIVER / "wire.pio").unlink()
+    (m / cp.DRIVER / "wire_pin.h").unlink()
+    readme = m / "README.md"
+    readme.write_text(readme.read_text() + "\nNo PIO program.\n")
+    assert cp.layout_problems(m) == ["protocols/wire/rp2350/ has no header"]
+
+
 def test_a_requirement_on_another_component_is_flagged(tmp_path):
     m = module(tmp_path)
     (m / "CMakeLists.txt").write_text(

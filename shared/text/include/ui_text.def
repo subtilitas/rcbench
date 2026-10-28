@@ -4223,6 +4223,9 @@ UI_TEXT(KP_M_CYCLE_CUT, 116,
 UI_TEXT(KP_M_LEFT_CYCLED, 116,
     "Supply switched off for 1s and on: the written values act.",
     "Versorgung 1s aus und wieder ein: die geschriebenen Werte wirken.")
+UI_TEXT(KP_M_CYCLED_NO_WAIT, 116,
+    "This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.",
+    "Diese IOmcu-Firmware wendet nach dem Zyklus keine WARTEZEIT VOR PWM an.")
 UI_TEXT(KP_M_LEFT_NOTE, 116,
     "The written values act after the servo's supply is switched off and on.",
     "Die geschriebenen Werte wirken erst nach Aus- und Einschalten der Servoversorgung.")
@@ -5157,8 +5160,8 @@ UI_TEXT(HP_ENABLE_2, 116,
     "Wrong end points can drive the servo into its stops.",
     "Falsche Endpunkte können das Servo gegen seine Anschläge fahren.")
 UI_TEXT(HP_ENABLE_3C, 116,
-    "An interrupted write leaves a wrong checksum: the servo then ignores PWM.",
-    "Ein unterbrochener Schreibvorgang hinterlässt eine falsche Prüfsumme: Das Servo ignoriert dann PWM.")
+    "An interrupted write leaves a wrong checksum: the servo may ignore PWM and draw current up to the supply limit.",
+    "Unterbrochenes Schreiben: Prüfsumme falsch, Servo folgt PWM evtl. nicht, zieht evtl. Strom bis zur Grenze.")
 UI_TEXT(HP_WRITE_D, 116,
     "The servo saves and restarts. It ignores signals for 1s.",
     "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")

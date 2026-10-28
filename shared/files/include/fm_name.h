@@ -9,7 +9,7 @@
  * UTF-8), without any of  " * / : < > ? \ |  , with no full stop or space
  * at either end, and with no device name of a desktop computer (CON, PRN,
  * AUX, NUL, COM1 to COM9, LPT1 to LPT9, in any case, alone or in front of a
- * full stop).  These are kst_store_name_check()'s rules for any file, and
+ * full stop).  These are servo_store_name_check()'s rules for any file, and
  * the text faces draw every character they take.
  *
  * FM_NAME_MAX is 59 bytes: the card's walk lists names of at most

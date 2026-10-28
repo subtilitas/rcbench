@@ -68,7 +68,7 @@ Versorgungsmodell.
 | LOW | 2 | der Leitungstreiber, auf Low getrieben | für das Programmieren gesetzt, siehe unten | nach 100ms und wenn die Versorgung wie angefordert liest |
 | PROGRAMMING | 3 | der Leitungstreiber: Low, ein Frame oder Eingang für ein Antwortfenster | an, vom Port gehalten | mit POWER_CYCLED, REBOOT oder LEAVE, und wenn die Versorgung ausgeht; vor dem ersten Frame auch mit ABORT, einem Stopp oder einem fehlgeschlagenen Einstieg |
 | RAIL_OFF | 4 | der Leitungstreiber, oder nach einem REBOOT in PWM der PWM-Generator ohne Puls | aus | 1000ms nachdem die Versorgung aus liest |
-| RAIL_WAIT | 5 | wie RAIL_OFF | an, mit den Sollwerten, die sie hatte | 1000ms nachdem die Versorgung an liest, nach PWM |
+| RAIL_WAIT | 5 | wie RAIL_OFF | an, mit den Sollwerten, die sie hatte | 1000ms nachdem die Versorgung an liest, nach PWM; nach einem REBOOT mit `CMD`-Bit 5 und einer Wartezeit über 0 nach LEAVING (seit 4.30) |
 | LEAVING | 6 | der Leitungstreiber, auf Low getrieben | wie sie ist: nicht geschaltet, kein Sollwert geschrieben | nach der Wartezeit aus Schreibregister 28, nach PWM (seit 4.15) |
 
 Die Einstiegssequenz der Session hält die Leitung nach LOW weitere 100ms
@@ -119,6 +119,8 @@ POWER_CYCLED und REBOOT in PROGRAMMING, bei an angefordertem PD mini,
 schalten die Versorgung aus und ein: aus, RAIL_OFF für 1000ms ab der
 Lesung, die sie aus zeigt, an mit den Sollwerten, die sie hatte, RAIL_WAIT
 für 1000ms ab der Lesung, die sie an zeigt, dann PWM mit gelöschtem Bit 4.
+Ein REBOOT mit `CMD`-Bit 5 wartet vor PWM in LEAVING (seit 4.30,
+[die Wartezeit nach einem Versorgungszyklus](#die-wartezeit-nach-einem-versorgungszyklus)).
 REBOOT wird auch in PWM angenommen, für ein Servo, das neu starten soll:
 derselbe Ablauf, ohne Puls am Port währenddessen. Beide Zeiten, je
 1000ms, sind die Werte des Eigentümers. Ein Chaservo verließ den
@@ -241,6 +243,50 @@ Versorgung, der Pin und der Zustand wie zuvor.
 Ein Stopp in dem Durchlauf, in dem die Wartezeit endet, kommt zuerst: der
 Port steht in PROGRAMMING.
 
+## Die Wartezeit nach einem Versorgungszyklus
+
+Ein REBOOT aus PROGRAMMING mit gesetztem `CMD`-Bit 5 (seit 4.30) schaltet
+die Versorgung aus und ein und wartet danach in LEAVING, bevor PWM folgt.
+Die Wartezeit ist Schreibregister 28, wie es beim Kommando steht, 0 bis
+10 000ms, gezählt ab dem Ende von RAIL_WAIT. Der Leitungstreiber hält den
+Pin vom Kommando bis PWM auf Low: RAIL_OFF 1000ms, RAIL_WAIT 1000ms, dann
+die Wartezeit. Eine Wartezeit von 0 beendet den Zyklus am Ende von
+RAIL_WAIT in PWM, wie ein REBOOT ohne das Bit. Nach der Wartezeit steht der
+Port in PWM mit gelöschten Bits 4 und 5 und Ergebnis 0; Register 2 nennt
+die ganze Zeit REBOOT. Ein REBOOT ohne das Bit beachtet Register 28 nicht.
+
+Das Panel sendet das Bit mit dem REBOOT, der eine Session nach einem
+Schreiben bei antwortendem PD mini beendet, mit seiner **WARTEZEIT VOR
+PWM** in Register 28, und nur an einen IOmcu mit 4.30 oder neuer. Steht
+**WARTEZEIT VOR PWM** auf 0, sendet es den REBOOT ohne das Bit.
+
+| Der Port beim Kommando | REBOOT mit `CMD`-Bit 5 |
+| --- | --- |
+| PWM | abgewiesen mit NOT_PROGRAMMING |
+| PROGRAMMING, Register 28 über 10 000 | abgewiesen mit LEAVE_MS; nichts wird geschaltet |
+| PROGRAMMING, jeder andere Fall | wie REBOOT ohne das Bit: abgewiesen oder mit dem Zyklus angenommen |
+| `CMD`-Bit 5 an einer anderen Operation oder `CMD`-Bit 4 gesetzt | der Frame mit BAD_VALUE abgewiesen |
+
+| In der Wartezeit nach dem Zyklus | Die Versorgung | Der Port |
+| --- | --- | --- |
+| Die Wartezeit endet | wie sie ist: an mit den Sollwerten, die sie hatte | PWM mit gelöschten Bits 4 und 5, Ergebnis 0 |
+| ABORT | wie sie ist | PROGRAMMING mit Ergebnis 19, `STATE`-Bit 5 gelöscht, auch wenn ein Stopp es vor dem REBOOT gesetzt hatte; der Zyklus hat das Backup und den Programmiermodus des Servos beendet, das zuletzt gelesene Image bleibt. Ein LEAVE wird sofort angenommen |
+| Ein Schalten auf SAFE | wie sie ist | PWM mit Ergebnis 19: der Pin ist freigegeben |
+| Der Heartbeat verloren oder der Link schweigt | ausgeschaltet | PWM mit Ergebnis 19 |
+| Die Versorgung liest aus oder ist aus angefordert (das STOP des Panels, der eigene Schutz des PD mini) | aus | PWM mit Ergebnis 19, ohne weitere 1000ms aus |
+| Der PD mini hört auf zu antworten | unberührt | die Wartezeit läuft weiter |
+| Jedes andere Kommando | wie sie ist | abgewiesen mit BUSY; ein Schreiben auf Register 28 gilt für die nächste Wartezeit |
+
+Das STOP des Panels ist ein Schalten auf SAFE, der Ausgang von SUPPLY auf 0
+geschrieben und ein ABORT. In der Wartezeit gibt das davon, was der Port
+zuerst sieht, den Pin frei. Kommt ein ABORT zuerst, steht der Port in
+PROGRAMMING, und die ausgeschaltete Versorgung beendet das dann wie in
+PROGRAMMING: 1000ms aus, dann PWM. Ein ABORT in RAIL_OFF oder RAIL_WAIT
+beendet den Zyklus aus, wie ohne das Bit, und keine Wartezeit folgt.
+
+Wie lange ein Servo zwischen dem Einschalten und dem ersten Puls braucht,
+ist nicht gemessen.
+
 ## Register
 
 Ein Lesen gibt diese Register:
@@ -264,7 +310,7 @@ Ein Schreiben sieht andere Register:
 
 | Register | Name | Nimmt |
 | ---: | --- | --- |
-| 0 | `CMD` | Bits 0 bis 3 die Operation, Bit 6 gesetzt: das Kommando nennt einen Programmierport (seit 4.13), Bit 7 die Bestätigung eines ungeprüften Restore (nur RESTORE), Bits 8 bis 11 der Port; jedes andere Bit 0 |
+| 0 | `CMD` | Bits 0 bis 3 die Operation, Bit 5 die Wartezeit nach dem Zyklus (nur REBOOT, seit 4.30), Bit 6 gesetzt: das Kommando nennt einen Programmierport (seit 4.13), Bit 7 die Bestätigung eines ungeprüften Restore (nur RESTORE), Bits 8 bis 11 der Port; jedes andere Bit 0 |
 | 1 | `SEQ` | die `SEQ` der Page plus 1, modulo 65536 |
 | 2 | `KEY` | 0x57A5 für WRITE, RESTORE und RELEASE, sonst 0 |
 | 3 | `CRC` | die Prüfsumme über die Register 4 bis 24, für WRITE, RESTORE, RELEASE und VERIFY; für die anderen nicht angesehen |
@@ -274,7 +320,7 @@ Ein Schreiben sieht andere Register:
 | 25 | `VIEW` | 0: die Register 16 bis 31 des Lesens zeigen das zuletzt gelesene Image. 1: das Backup. Gilt ab dem Schreiben |
 | 26 | `SUPPLY_MV` | die Versorgungsspannung eines ENTER, mV (seit 4.13). Der Standard des Panels ist 5000 |
 | 27 | `SUPPLY_MA` | die Stromgrenze eines ENTER, das die Versorgung einschaltet, mA (seit 4.13) |
-| 28 | `LEAVE_MS` | die Wartezeit eines LEAVE mit der Leitung auf Low, 0 bis 10 000ms (seit 4.15). 100, bis es geschrieben wird |
+| 28 | `LEAVE_MS` | die Wartezeit eines LEAVE mit der Leitung auf Low, 0 bis 10 000ms (seit 4.15), und eines REBOOT mit `CMD`-Bit 5 nach seinem Zyklus (seit 4.30). 100, bis es geschrieben wird |
 
 Die Prüfsumme ist die CRC-16 (zyklische Redundanzprüfung) des Links,
 Startwert 0xFFFF, über das Low-Byte und dann das High-Byte jedes Registers
@@ -287,7 +333,7 @@ das Register 29 oder höher erreicht, wird mit READ_ONLY abgewiesen, ein
 Fenster, das die Register 0 bis 3 berührt und nicht genau sie ist, mit
 BAD_RANGE. Ein Kommando mit einem reservierten Bit, einer Operation
 außerhalb von 1 bis 10, der Bestätigung an einer anderen Operation als
-RESTORE, einem `KEY`, der weder 0 noch 0x57A5 ist, oder einer `SEQ`, die
+RESTORE, Bit 5 an einer anderen Operation als REBOOT (seit 4.30), einem `KEY`, der weder 0 noch 0x57A5 ist, oder einer `SEQ`, die
 nicht die der Page plus 1 ist, wird mit BAD_VALUE abgewiesen und ändert
 nichts. Der zuletzt angenommene Frame, noch einmal gesendet, wird quittiert
 und tut nichts; ein Kommando, dessen Antwort verloren ging, wird also
@@ -322,7 +368,7 @@ angenommenes Kommando wird quittiert; was aus ihm wurde, steht in
 | VERIFY | 6 | liest alle Register und vergleicht sie mit dem bereitgestellten Image |
 | ABORT | 7 | beendet die laufende Operation. In STOPPING und LOW kehrt der Port nach PWM zurück. In RAIL_OFF wird die Versorgung nicht wieder eingeschaltet, in RAIL_WAIT wird sie ausgeschaltet, und der Ablauf endet mit Ergebnis 19. In jedem Zustand angenommen; Register 2 nennt es nicht |
 | POWER_CYCLED | 8 | in PROGRAMMING: schaltet die Versorgung aus und ein und bringt den Port nach PWM. Antwortet kein PD mini oder ist er aus angefordert: das Wort des Bedieners, dass das Servo ohne Spannung war, sofort nach PWM |
-| REBOOT | 9 | schaltet die Versorgung aus und ein, in PROGRAMMING und in PWM (seit 4.13) |
+| REBOOT | 9 | schaltet die Versorgung aus und ein, in PROGRAMMING und in PWM (seit 4.13). Mit `CMD`-Bit 5, aus PROGRAMMING: die Wartezeit aus Register 28 nach dem Zyklus (seit 4.30) |
 | LEAVE | 10 | in PROGRAMMING ohne laufende Operation: hält die Leitung für die Wartezeit aus Register 28 auf Low und bringt den Port nach PWM zurück. Die Versorgung wird nicht geschaltet (seit 4.15) |
 
 Das Ergebnis im Low-Byte von `LINK_KS_RESULT` ist das `kst_ses_t` der Session: 0
@@ -347,7 +393,7 @@ Operation plant; es ist nie das Ergebnis einer beendeten Operation.
 | BUSY | 1 | eine Operation läuft oder der Port zwischen zwei Zuständen ist |
 | PORT | 2 | der Build keinen solchen Programmierport hat, dem Kommando Bit 6 fehlt oder der Port nicht der in PROGRAMMING ist |
 | UNSAFE | 5 | dem Heartbeat nicht vertraut wird oder der Link still ist |
-| NOT_PROGRAMMING | 6 | der Port in PWM steht |
+| NOT_PROGRAMMING | 6 | der Port in PWM steht; auch für einen REBOOT mit `CMD`-Bit 5 (seit 4.30) |
 | NO_ENABLE | 7 | WRITE, RESTORE oder RELEASE ohne den Key |
 | STAGED | 8 | die Register 4 bis 24 nicht die Prüfsumme haben, die das Kommando nennt |
 | START | 9 | das gelesene Image nicht das ist, von dem das Panel geplant hat |
@@ -360,7 +406,7 @@ Operation plant; es ist nie das Ergebnis einer beendeten Operation.
 | NO_PIN | 16 | der Port keinen Pin hält oder seine FUNC DShot ist (seit 4.28), bei einem ENTER und bei einem REBOOT in PWM (seit 4.13) |
 | SUPPLY_RANGE | 17 | die bereitgestellte Versorgungsspannung oder der Strom außerhalb dessen liegt, was ENTER nimmt (seit 4.13) |
 | NO_SUPPLY | 18 | ein REBOOT, bei dem kein PD mini antwortet oder der PD mini aus angefordert ist (seit 4.13) |
-| LEAVE_MS | 19 | ein LEAVE mit mehr als 10 000ms in Register 28 (seit 4.15) |
+| LEAVE_MS | 19 | ein LEAVE mit mehr als 10 000ms in Register 28 (seit 4.15), und ein REBOOT mit `CMD`-Bit 5 (seit 4.30) |
 | LOCKED | 20 | ein LEAVE, während nur RESTORE angenommen wird (seit 4.15) |
 | SUPPLY_LOW | 21 | ein ENTER, dessen Versorgungsspannung, die bereitgestellte oder die niedrigere eines Ausgangs, der an ist, unter 4800mV liegt (seit 4.15) |
 
@@ -400,6 +446,7 @@ Kommando ABORT aus `kst_link_abort()`.
 | RAIL_OFF | nichts: der Ablauf geht weiter | die Versorgung bleibt aus; nach den 1000ms steht der Port mit Ergebnis 19 in PWM | wie das STOP des Panels |
 | RAIL_WAIT | nichts: der Ablauf geht weiter | die Versorgung wird ausgeschaltet; der Port steht mit Ergebnis 19 in PWM | wie das STOP des Panels |
 | LEAVING | die Wartezeit endet mit Ergebnis 19, und der Port steht in PROGRAMMING mit gesetztem Bit 5. Die Versorgung bleibt an | die Wartezeit endet genauso. Die Versorgung ist aus: der Port hält sie 1000ms aus und kehrt mit gelöschten Bits 4 und 5 und Ergebnis 19 nach PWM zurück. Antwortet kein PD mini, bleibt der Port in PROGRAMMING | wie das STOP des Panels |
+| LEAVING nach dem Zyklus eines REBOOT (seit 4.30) | der Pin ist freigegeben: PWM mit Ergebnis 19. Die Versorgung bleibt an | PWM mit Ergebnis 19 und die Versorgung aus | PWM mit Ergebnis 19; der Port schaltet die Versorgung aus |
 
 Solange Bit 5 gesetzt ist, nimmt der Port nur ENTER, READ_ALL, ABORT,
 POWER_CYCLED und REBOOT, bis ein READ_ALL gelungen ist. ABORT allein hat in
@@ -435,7 +482,10 @@ Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 
 | Panel | IOmcu | Servo-Programmier-Page (`KST`, 0x32) |
 | --- | --- | --- |
-| 4.15 oder neuer | 4.15 oder neuer | bedient |
+| 4.30 oder neuer | 4.30 oder neuer | bedient |
+| 4.30 oder neuer | 4.15 bis 4.29 | bedient ohne die Wartezeit nach einem Zyklus. Ein solcher IOmcu weist `CMD`-Bit 5 mit BAD_VALUE ab: das Modul des Panels sendet für einen REBOOT weder das Bit noch Register 28 und beantwortet die Anfrage mit `KST_LINK_START_NO_OP`; das Panel sendet den REBOOT ohne das Bit, der Zyklus endet in PWM, und die Meldung sagt, dass **WARTEZEIT VOR PWM** nicht angewendet wurde |
+| 4.15 bis 4.29 | 4.30 oder neuer | bedient. Das Panel sendet kein `CMD`-Bit 5; jeder REBOOT endet am Ende von RAIL_WAIT in PWM |
+| 4.15 oder neuer | 4.15 oder neuer | bedient, ab 4.30 wie oben |
 | 4.15 oder neuer | 4.14 | bedient ohne LEAVE. Ein 4.14-IOmcu weist die Operation 10 mit BAD_VALUE und ein Schreiben auf Register 28 mit READ_ONLY ab: das Modul des Panels sendet keines von beiden und beantwortet die Anfrage mit `KST_LINK_START_NO_OP`. POWER_CYCLED und REBOOT sind die Wege hinaus |
 | 4.14 | 4.15 oder neuer | bedient. Das Panel sendet keine Operation 10 und kein Register 28, und der Port steht nie in LEAVING |
 | 4.14 oder neuer | 4.13 | bedient, ab 4.15 ohne LEAVE wie oben. Der IOmcu plant im Frame des Kommandos: das Modul des Panels meldet nie PLANNING, und ein Auftrag ohne Reihenfolge von Schreibzugriffen ist die Abweisung PLAN_NO_PATH |
@@ -446,8 +496,9 @@ Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 | 4.11 oder älter | 4.13 oder neuer | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
 
 `shared/bench/kst_link.c` ist die Hälfte des Panels. Eine Anfrage nennt den
-Port, für ENTER Spannung und Strom der Versorgung und für LEAVE die
-Wartezeit, die das Modul über 10 000ms abweist, bevor etwas gesendet wird.
+Port, für ENTER Spannung und Strom der Versorgung und für LEAVE und einen
+REBOOT mit dem Bit (`then_leave`) die Wartezeit, die das Modul über
+10 000ms abweist, bevor etwas gesendet wird.
 Es stellt die
 Register bereit, sendet das Kommando mit der nächsten `SEQ`, liest die
 Register 0 bis 3 alle 50ms, solange eine Operation läuft oder der Port
@@ -492,7 +543,15 @@ an ist, vom Einstieg eingeschaltet ist, schweigt und fehlt, während eines
 Frames und während der Port plant, mit gesetztem Bit 5 und gesetztem Bit 9,
 Wartezeiten von 0, 1, 100 und 10 000ms, die Abweisung bei 10 001ms, und
 ein ABORT, ein Schalten auf SAFE, einen verlorenen Heartbeat und eine
-abgeschaltete Versorgung in der Wartezeit. `test_kst_link` fährt das
+abgeschaltete Versorgung in der Wartezeit. `test_kst_cycle_wait` fährt
+die Wartezeit nach dem Zyklus eines REBOOT: Wartezeiten von 0, 1, 300 und
+10 000ms, die Abweisung bei 10 001ms, das Bit an jeder anderen Operation
+und aus PWM, Bit 4, einen REBOOT ohne das Bit nach einer geschriebenen
+Wartezeit, ABORT, ein Schalten auf SAFE, eine nicht sichere Bench, die
+ausgeschaltete Versorgung und einen schweigenden PD mini in der Wartezeit,
+ABORT in RAIL_OFF und RAIL_WAIT, jedes andere Kommando in der Wartezeit,
+die Wartezeit über den Überlauf bei 2^32ms und die Frames des Moduls für
+einen IOmcu mit 4.30 und mit 4.29. `test_kst_link` fährt das
 Modul des Panels durch den Dispatcher gegen den Port: ganze Sessions, ein
 Schreiben von PLANNING bis zum Ende, die Ergebnisse 33 und 34, einen
 Abbruch und einen Stopp während des Planens, ein LEAVE mit seiner

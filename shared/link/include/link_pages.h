@@ -136,6 +136,10 @@ typedef enum {
  * 4.29 the HITEC page holds SUPPLY (FLAGS bit 11, LINK_SP_PORT) from the
  * OPEN that takes a port to the CLOSE that gives it back; an older IOmcu
  * holds it only while a POWER runs, and the panel reads the bit either way.
+ * From 4.30 the KST page takes LINK_KS_W_CMD_LEAVE on a REBOOT from
+ * PROGRAMMING: the cycle ends in LEAVING for LINK_KS_W_LEAVE_MS before PWM.
+ * An older IOmcu refuses the bit with LINK_NACK_BAD_VALUE; the panel sets it
+ * from 4.30 only and sends an older IOmcu the REBOOT without the wait.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -148,8 +152,8 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 29, the HITEC page's SUPPLY hold. */
-#define LINK_PROTOCOL_MINOR 29u
+/** @brief The minor this build speaks: 30, the KST wait after a cycle. */
+#define LINK_PROTOCOL_MINOR 30u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -300,6 +304,16 @@ typedef enum {
  * only, and takes the panel's set points between two POWERs.
  */
 #define LINK_MINOR_HITEC_HOLD 29u
+
+/**
+ * @brief The first minor whose KST page takes LINK_KS_W_CMD_LEAVE: a REBOOT
+ * from PROGRAMMING that ends in LEAVING, the line low for LINK_KS_W_LEAVE_MS
+ * after the cycle's KST_PORT_RAIL_WAIT_MS, then PWM.
+ *
+ * An older minor refuses a command with the bit with LINK_NACK_BAD_VALUE; its
+ * REBOOT returns the port to PWM at the end of the cycle.
+ */
+#define LINK_MINOR_KST_CYCLE_WAIT 30u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1881,7 +1895,8 @@ enum {
 
 /** @brief What a write of the page takes. */
 enum {
-    LINK_KS_W_CMD = 0,   /**< bits 0-3 link_kst_op_t, bit 6
+    LINK_KS_W_CMD = 0,   /**< bits 0-3 link_kst_op_t, bit 5
+                              LINK_KS_W_CMD_LEAVE (4.30), bit 6
                               LINK_KS_W_CMD_PORT, bit 7 the confirmation
                               of an unchecked restore, bits 8-11 the
                               programming port; every other bit 0 */
@@ -1907,7 +1922,9 @@ enum {
                                    in mV.  Not covered by the CRC */
     LINK_KS_W_SUPPLY_MA = 27, /**< 4.13: and its current limit, in mA */
     LINK_KS_W_LEAVE_MS = 28,  /**< 4.15: how long a LEAVE keeps the line low
-                                   before the port is in PWM, in ms, 0 to
+                                   before the port is in PWM, and (4.30) a
+                                   REBOOT with LINK_KS_W_CMD_LEAVE after its
+                                   cycle, in ms, 0 to
                                    LINK_KST_LEAVE_MS_MAX;
                                    LINK_KST_LEAVE_MS_DEFAULT until written.
                                    Taken as written: a LEAVE with a value
@@ -1942,6 +1959,17 @@ enum {
  * which is no programming port, and is refused with LINK_KST_REF_PORT.
  */
 #define LINK_KS_W_CMD_PORT    0x0040u
+/**
+ * @brief Bit 5 of a REBOOT from PROGRAMMING (4.30): the cycle ends in LEAVING.
+ *
+ * After KST_PORT_RAIL_WAIT_MS with the supply read on, the line stays low and
+ * no frame goes out for LINK_KS_W_LEAVE_MS more, as read at the command; then
+ * the port is in PWM.  The bit on any other operation is refused with
+ * LINK_NACK_BAD_VALUE, a REBOOT with it in PWM with LINK_KST_REF_NOT_PROGRAMMING
+ * and one with LINK_KS_W_LEAVE_MS above LINK_KST_LEAVE_MS_MAX with
+ * LINK_KST_REF_LEAVE_MS.
+ */
+#define LINK_KS_W_CMD_LEAVE   0x0020u
 #define LINK_KS_W_CMD_OF(op, port) \
     ((uint16_t)((unsigned)(op) | LINK_KS_W_CMD_PORT \
                 | (((unsigned)(port) & 0xFu) << 8)))
@@ -2015,7 +2043,8 @@ typedef enum {
     LINK_KST_RAIL_WAIT = 5, /**< the supply is on again; the servo starts */
     LINK_KST_LEAVING = 6,  /**< 4.15: a LEAVE waits: the pin is the driver's
                                 and low, no frame goes out, the supply is
-                                untouched; PWM follows */
+                                untouched; PWM follows.  4.30: also a REBOOT
+                                with LINK_KS_W_CMD_LEAVE after its cycle */
 } link_kst_state_t;
 
 /**
@@ -2056,7 +2085,9 @@ typedef enum {
     LINK_KST_OP_POWER_CYCLED = 8, /**< the servo was without power, or the
                                        port is to switch the supply */
     LINK_KST_OP_REBOOT = 9,   /**< 4.13: switch the supply off and on, from
-                                   PROGRAMMING or from PWM */
+                                   PROGRAMMING or from PWM; with
+                                   LINK_KS_W_CMD_LEAVE (4.30) a wait in
+                                   LEAVING follows */
     LINK_KST_OP_LEAVE = 10,   /**< 4.15: from PROGRAMMING back to PWM after
                                    LINK_KS_W_LEAVE_MS with the line low; the
                                    supply is not switched and not read */
@@ -2100,8 +2131,10 @@ typedef enum {
     LINK_KST_REF_NO_SUPPLY = 18, /**< 4.13: a REBOOT with no PD mini
                                       answering, or from PWM with its
                                       output off */
-    LINK_KST_REF_LEAVE_MS = 19,  /**< 4.15: a LEAVE with LINK_KS_W_LEAVE_MS
-                                      above LINK_KST_LEAVE_MS_MAX */
+    LINK_KST_REF_LEAVE_MS = 19,  /**< 4.15: a LEAVE, and (4.30) a REBOOT
+                                      with LINK_KS_W_CMD_LEAVE, with
+                                      LINK_KS_W_LEAVE_MS above
+                                      LINK_KST_LEAVE_MS_MAX */
     LINK_KST_REF_LOCKED = 20,    /**< 4.15: a LEAVE while LINK_KS_F_LOCKED
                                       is set: a write left the servo in
                                       doubt */

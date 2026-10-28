@@ -14,7 +14,6 @@
 #include "greatest.h"
 
 #include "card_tree.h"
-#include "kst_store.h"
 
 /* ------------------------------------------------------------ the card */
 
@@ -167,8 +166,6 @@ TEST_CASE(the_bench_files_are_under_bench)
     CHECK_STR_EQ(CARD_HITEC_CONF, "BENCH/HITEC/CONF");
     CHECK_STR_EQ(CARD_FAULT_LOG, "BENCH/RCBENCH.LOG");
     CHECK_STR_EQ(CARD_FAULT_OLD, "BENCH/RCBENCH.OLD");
-    /* The servo files' store is that folder, not KST of 0.21. */
-    CHECK_STR_EQ(KST_STORE_DIR, CARD_KST_CONF);
     /* The write record's two paths fit the 64-byte buffers of
      * panel_card.c: "/sdcard/BENCH/KST/CONF/KST.NEW". */
     CHECK(strlen("/sdcard/" CARD_KST_CONF "/KST.NEW") < 64u);

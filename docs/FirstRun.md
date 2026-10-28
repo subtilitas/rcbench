@@ -127,7 +127,7 @@ USB.` until step 2 is done; the link runs meanwhile.
 
 An IOmcu on 0.19.0 or later carries the partition table from its USB load
 and takes the image the panel carries over CAN. The panel's link protocol
-is 4.29, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
+is 4.30, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
 4, is the same, so the two boards link before and after the update.
 
 1. Power both boards with the link wired. At link-up the panel compares

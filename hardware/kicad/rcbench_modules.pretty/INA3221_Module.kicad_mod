@@ -1114,4 +1114,15 @@
 		(uuid "c9cca944-a7cb-52bf-a618-df9084ff5a20")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/INA3221_Module.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

@@ -258,6 +258,7 @@ static void op_begin(kst_port_t *p, link_kst_op_t op)
     p->seen_step = 0;
     p->busy = 1;
     p->running = 0;
+    p->then_leave = 0;
 }
 
 /**
@@ -390,12 +391,37 @@ static void cut(kst_port_t *p)
 }
 
 /**
+ * @brief Whether the port waits in LEAVING after a REBOOT's cycle (4.30), not
+ *        after a LEAVE.
+ *
+ * @param p The port.
+ * @return true in the wait that follows a cycle.
+ */
+static bool cycle_wait(const kst_port_t *p)
+{
+    return p->state == (uint8_t)LINK_KST_LEAVING
+           && p->op == (uint8_t)LINK_KST_OP_REBOOT;
+}
+
+/**
  * @brief Apply a stop to the port, by its state.
  *
  * @param p The port.
  */
 static void on_stop(kst_port_t *p)
 {
+    if (cycle_wait(p)) {
+        /* The servo was without power and is in no mode: a stop releases
+         * the pin.  Without a heartbeat the wait ends as RAIL_WAIT does,
+         * with the supply off, in this pass's step of RAIL_WAIT. */
+        if (p->safe == 0u) {
+            p->state = (uint8_t)LINK_KST_RAIL_WAIT;
+        } else {
+            go_pwm(p);
+            op_end(p, KST_SES_ERR_ABORTED);
+        }
+        return;
+    }
     switch ((link_kst_state_t)p->state) {
     case LINK_KST_STOPPING:
     case LINK_KST_LOW:
@@ -490,10 +516,12 @@ static void rail_off(kst_port_t *p, const supply_port_view_t *v, bool again,
  *
  * @param p      The port.
  * @param port   Programming port index.
+ * @param leave  LINK_KS_W_CMD_LEAVE: the cycle ends in LEAVING (4.30).
  * @param now_ms Current time in milliseconds.
  * @return LINK_KST_REF_NONE when REBOOT starts; otherwise the refusal.
  */
-static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
+static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, bool leave,
+                                 uint32_t now_ms)
 {
     const link_kst_state_t state = (link_kst_state_t)p->state;
     supply_port_view_t v;
@@ -507,6 +535,13 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
     }
     if (state == LINK_KST_PROGRAMMING && port != p->port) {
         return LINK_KST_REF_PORT;
+    }
+    /* The wait after the cycle is a way out of programming. */
+    if (leave && state == LINK_KST_PWM) {
+        return LINK_KST_REF_NOT_PROGRAMMING;
+    }
+    if (leave && p->leave_ms > LINK_KST_LEAVE_MS_MAX) {
+        return LINK_KST_REF_LEAVE_MS;
     }
     /* From PWM the port has to be one with a servo on a pin: the supply is
      * not cycled for a port that has none. */
@@ -536,6 +571,8 @@ static link_kst_refusal_t reboot(kst_port_t *p, uint8_t port, uint32_t now_ms)
         p->running = was_running;
     }
     p->leaving = LEAVE_ASKED;
+    p->then_leave = leave ? 1u : 0u;
+    p->wait_ms = p->leave_ms;
     return LINK_KST_REF_NONE;
 }
 
@@ -655,7 +692,8 @@ static link_kst_refusal_t dispatch(kst_port_t *p, link_kst_op_t op,
             go_pwm(p);
             op_end(p, KST_SES_ERR_ABORTED);
         } else if (state == LINK_KST_LEAVING) {
-            /* Nothing was cut: the session is as the LEAVE found it. */
+            /* Nothing was cut: the session is as the LEAVE, or the cycle
+             * before the wait, left it. */
             p->state = (uint8_t)LINK_KST_PROGRAMMING;
             op_end(p, KST_SES_ERR_ABORTED);
         }
@@ -673,7 +711,8 @@ static link_kst_refusal_t dispatch(kst_port_t *p, link_kst_op_t op,
         return LINK_KST_REF_NO_ENABLE;
     }
     if (op == LINK_KST_OP_REBOOT) {
-        return reboot(p, port, now_ms);
+        return reboot(p, port, (in[LINK_KS_W_CMD] & LINK_KS_W_CMD_LEAVE) != 0u,
+                      now_ms);
     }
     if (op == LINK_KST_OP_POWER_CYCLED) {
         if (state == LINK_KST_PWM) {
@@ -765,10 +804,12 @@ static uint8_t command(kst_port_t *p, const uint16_t *in, uint32_t now_ms)
     const uint8_t op = (uint8_t)(cmd & 0xFu);
     const uint8_t port = (uint8_t)((cmd >> 8) & 0xFu);
 
-    if ((cmd & 0xF030u) != 0u || op == (uint8_t)LINK_KST_OP_NONE
+    if ((cmd & 0xF010u) != 0u || op == (uint8_t)LINK_KST_OP_NONE
         || op >= (uint8_t)LINK_KST_OP_COUNT
         || ((cmd & LINK_KS_W_CMD_CONFIRM) != 0u
             && op != (uint8_t)LINK_KST_OP_RESTORE)
+        || ((cmd & LINK_KS_W_CMD_LEAVE) != 0u
+            && op != (uint8_t)LINK_KST_OP_REBOOT)
         || (in[LINK_KS_W_KEY] != 0u
             && in[LINK_KS_W_KEY] != LINK_KST_WRITE_KEY)) {
         return LINK_NACK_BAD_VALUE;
@@ -1093,8 +1134,16 @@ static void step_programming(kst_port_t *p, uint32_t now_ms)
 static void step_leaving(kst_port_t *p, uint32_t now_ms)
 {
     supply_port_view_t v;
+    const bool off = supply_view(p, &v) && (!v.asked_on || v.off);
 
-    if (p->watch != 0u && supply_view(p, &v) && (!v.asked_on || v.off)) {
+    if (off && cycle_wait(p)) {
+        /* After a cycle the servo has no session to end: a supply that
+         * goes off ends the wait in PWM, as it ends RAIL_WAIT. */
+        go_pwm(p);
+        op_end(p, KST_SES_ERR_ABORTED);
+        return;
+    }
+    if (off && p->watch != 0u) {
         p->state = (uint8_t)LINK_KST_PROGRAMMING;
         step_programming(p, now_ms);
         return;
@@ -1197,7 +1246,20 @@ static void step_rail_wait(kst_port_t *p, uint32_t now_ms)
         }
         return;
     }
-    if ((uint32_t)(now_ms - p->t0_ms) >= KST_PORT_RAIL_WAIT_MS) {
+    if ((uint32_t)(now_ms - p->t0_ms) < KST_PORT_RAIL_WAIT_MS) {
+        return;
+    }
+    if (p->then_leave != 0u && p->wait_ms != 0u) {
+        /* The wait of a LEAVE, from here: the pin stays the driver's and
+         * low.  The supply it waits under is the one just read on.  The
+         * cycle ended the session a stop cut, as go_pwm() does for a
+         * cycle without the wait: no READ_ALL is owed after it. */
+        p->state = (uint8_t)LINK_KST_LEAVING;
+        p->must_read = 0;
+        p->sup = SUP_NONE;
+        p->watch = 1;
+        p->t0_ms = now_ms;
+    } else {
         go_pwm(p);
         op_end(p, KST_SES_OK);
     }

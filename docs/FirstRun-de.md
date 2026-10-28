@@ -136,7 +136,7 @@ solange.
 
 Ein IOmcu mit 0.19.0 oder neuer hat die Partitionstabelle von seinem
 USB-Laden und bekommt das Image, das das Panel trägt, über CAN. Das
-Link-Protokoll des Panels ist 4.29, und ein IOmcu mit 0.19.0 oder neuer
+Link-Protokoll des Panels ist 4.30, und ein IOmcu mit 0.19.0 oder neuer
 spricht 4.22 oder neuer: die Hauptversion, 4, ist gleich, also verbinden
 sich beide Platinen vor und nach dem Update.
 

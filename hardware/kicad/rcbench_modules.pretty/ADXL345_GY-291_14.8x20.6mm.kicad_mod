@@ -881,4 +881,15 @@
 		(uuid "61920125-41e1-5f85-82df-851787a7f9f6")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/ADXL345_GY-291_14.8x20.6mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

@@ -53,3 +53,11 @@ SYMBOL = {
         ("passive", "OUT-", "5", 12.7, -5.08, 180),
     ],
 }
+
+# 3D model. The inductor height (4.5mm) is a part class figure, not
+# measured; other parts are not drawn. No source for this board was found.
+MODEL = {
+    "mount": "header",
+    "pins": ["1", "2", "3", "4", "5"],
+    "bodies": [("box", 7.8, 0.4, 18.5, 10.4, 4.5, "chip")],
+}

@@ -597,4 +597,15 @@
 		(uuid "39164969-a75a-5334-a270-04281abd474b")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/USBC_T-plug_17x30mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

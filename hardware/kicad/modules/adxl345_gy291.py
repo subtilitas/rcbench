@@ -126,3 +126,23 @@ SYMBOL = {
         ("input", "SCL", "8", -10.16, -10.16, 0),
     ],
 }
+
+# 3D model. ADXL345 (LGA-14) 1.0mm (ADI package outline). Part class
+# figures, not measured: SOT-23-5 1.1mm, chip parts 0.5mm, tantalum
+# capacitor 1.6mm. Listings give the board 3mm overall height; whether that
+# includes the pins is not stated.
+MODEL = {
+    "mount": "header",
+    "pins": [str(n) for n in range(1, 9)],
+    "holes": [(x, y, HOLE_D) for x, y in HOLES],
+    "bodies": [("box",) + CHIP + (1.0, "chip"),
+               ("box", 7.0, 0.25, 8.6, 3.15, 1.1, "chip"),
+               ("box", 10.95, 7.4, 12.85, 11.4, 1.6, "yellow")]
+    + [("box", x0 + 0.25, y0 + 0.15, x1 - 0.25, y1 - 0.15, 0.5, "ceramic")
+       for x0, y0, x1, y1 in ((5.75, 3.6, 8.0, 4.9), (5.75, 5.4, 8.0, 6.6),
+                              (10.0, 5.6, 12.25, 6.9),
+                              (10.0, 13.1, 12.25, 14.25),
+                              (5.75, 13.5, 8.25, 14.4),
+                              (5.75, 15.1, 8.25, 16.0),
+                              (5.75, 16.5, 8.25, 17.5))],
+}

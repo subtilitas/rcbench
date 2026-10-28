@@ -1,6 +1,7 @@
 /*
  * Servo configuration files on the card for a programmer named by a stem
- * (shared/logfile/servo_store.c), with the Hitec programmer's stem HITEC:
+ * (shared/logfile/servo_store.c), with the Hitec programmer's stem HITEC
+ * and, in one case, the KST programmer's stem KST:
  * names, the proposed name, saving without replacing, the sorted list and
  * loading, over a directory held in memory.
  *
@@ -747,6 +748,104 @@ TEST_CASE(the_record_of_a_write_is_no_name_no_list_entry_and_no_servo_file)
     CHECK_EQ(g_card.count, 1);
 }
 
+/* --- the KST stem ------------------------------------------------------------ */
+
+/* The KST programmer's files (BENCH/KST/CONF) are this layer with the stem
+ * KST: names, numbers, the record KST.TXT and the order of a list. */
+TEST_CASE(the_kst_stem_gives_the_kst_names_numbers_record_and_order)
+{
+    static const char *const record[] = {"KST", "kst", "Kst", "kSt"};
+    static const char *const free_names[] = {"KST1", "KS", "KSTX", "KST.old",
+                                             "AKST", "KST 1", "KST001",
+                                             "HITEC"};
+    static const char *const order[] = {
+        "ABC.TXT", "HAND.TXT", "KS.TXT", "KST000.TXT", "KST999.TXT",
+        "kst120.txt", "KST100.TXT", "KST099.TXT", "KST002.TXT",
+        "KST0001.TXT", "KST003X.TXT", "KST05.TXT", "KST1000.TXT",
+        "KST12A.TXT", "KSTA.TXT", "KSU.TXT", "WING.TXT"};
+    enum { N = sizeof(order) / sizeof(order[0]) };
+    servo_store_io_t io = g_io;
+    servo_store_entry_t e[N + 1];
+    servo_store_name_t why = SERVO_STORE_NAME_OK;
+    char name[SERVO_STORE_NAME_MAX];
+    char buf[8];
+    size_t count = 0;
+    size_t total = 0;
+    size_t skipped = 0;
+    size_t len = 99;
+
+    io.stem = "KST";
+    for (size_t i = 0; i < sizeof(record) / sizeof(record[0]); ++i) {
+        CHECK_EQ(servo_store_name_check("KST", record[i]),
+                 SERVO_STORE_NAME_RESERVED);
+        CHECK(!servo_store_file_name("KST", record[i], name, sizeof(name)));
+    }
+    for (size_t i = 0; i < sizeof(free_names) / sizeof(free_names[0]); ++i) {
+        CHECK_EQ(servo_store_name_check("KST", free_names[i]),
+                 SERVO_STORE_NAME_OK);
+    }
+    CHECK(servo_store_file_name("KST", "Wing", name, sizeof(name)));
+    CHECK_STR_EQ(name, "Wing.TXT");
+    CHECK_EQ(servo_store_number("KST", "KST001.TXT"), 1);
+    CHECK_EQ(servo_store_number("KST", "kst999.txt"), 999);
+    CHECK_EQ(servo_store_number("KST", "Kst042.TxT"), 42);
+    CHECK_EQ(servo_store_number("KST", "KST000.TXT"), 0);
+    CHECK_EQ(servo_store_number("KST", "KST0011.TXT"), 0);
+    CHECK_EQ(servo_store_number("KST", "KST001"), 0);
+    CHECK_EQ(servo_store_number("KST", "HITEC001.TXT"), 0);
+
+    /* The proposal: KST001 on an empty directory, one above the highest
+     * number, the lowest free number with 999 taken. */
+    card_reset();
+    CHECK_EQ(servo_store_preset(&io, name, SERVO_STORE_PRESET_MAX),
+             SERVO_STORE_OK);
+    CHECK_STR_EQ(name, "KST001");
+    card_add("KST001.TXT", false, "x");
+    card_add("kst007.txt", false, "x");
+    card_add("Kst020.TxT", true, "");
+    card_add("HITEC900.TXT", false, "x");
+    CHECK_EQ(servo_store_preset(&io, name, SERVO_STORE_PRESET_MAX),
+             SERVO_STORE_OK);
+    CHECK_STR_EQ(name, "KST021");
+    card_add("KST999.TXT", false, "x");
+    CHECK_EQ(servo_store_preset(&io, name, SERVO_STORE_PRESET_MAX),
+             SERVO_STORE_OK);
+    CHECK_STR_EQ(name, "KST002");
+
+    /* The record is no name, no entry and no servo file. */
+    card_reset();
+    CHECK_EQ(servo_store_save(&io, "kst", "abc", 3, &why),
+             SERVO_STORE_BAD_NAME);
+    CHECK_EQ(why, SERVO_STORE_NAME_RESERVED);
+    CHECK_EQ(g_card.count, 0);
+    card_add("KST.TXT", false, "record");
+    card_add("Wing.TXT", false, "x");
+    CHECK_EQ(servo_store_list_after(&io, NULL, e, 4, &count, &total,
+                                    &skipped), SERVO_STORE_OK);
+    CHECK_EQ(count, 1);
+    CHECK_EQ(total, 1);
+    CHECK_EQ(skipped, 0);
+    CHECK_EQ(servo_store_load(&io, "KST.TXT", buf, sizeof(buf), &len),
+             SERVO_STORE_BAD_NAME);
+    CHECK_EQ(servo_store_preset(&io, name, sizeof(name)), SERVO_STORE_OK);
+    CHECK_STR_EQ(name, "KST001");
+
+    /* The proposed names stand in one run behind KST000, the highest
+     * first, whatever the order on the card. */
+    card_reset();
+    for (unsigned i = 0; i < N; ++i) {
+        card_add(order[i * 5u % N], false, "x");
+    }
+    CHECK_EQ(servo_store_list_after(&io, NULL, e, N + 1, &count, &total,
+                                    &skipped), SERVO_STORE_OK);
+    CHECK_EQ(count, N);
+    CHECK_EQ(total, N);
+    CHECK_EQ(skipped, 0);
+    for (unsigned i = 0; i < N; ++i) {
+        CHECK_STR_EQ(e[i].name, order[i]);
+    }
+}
+
 TEST_CASE(a_stem_is_one_to_five_capital_letters_or_nothing_is_done)
 {
     static const char *const bad[] = {"", "hitec", "HITECS", "HI1", "HI TE"};
@@ -920,6 +1019,7 @@ int main(void)
     RUN(a_list_goes_on_behind_a_name_and_reaches_every_file);
     RUN(a_file_whose_name_this_layer_would_not_write_is_counted_not_listed);
     RUN(the_record_of_a_write_is_no_name_no_list_entry_and_no_servo_file);
+    RUN(the_kst_stem_gives_the_kst_names_numbers_record_and_order);
     RUN(a_stem_is_one_to_five_capital_letters_or_nothing_is_done);
     RUN(a_list_needs_a_card_and_reports_a_directory_that_does_not_read);
     RUN(a_load_gives_the_bytes_of_the_file_and_no_terminator);

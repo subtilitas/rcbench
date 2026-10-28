@@ -1139,4 +1139,15 @@
 		(uuid "983b2e9c-9b94-5bef-8908-ba6c9ff13909")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/INA219_MCU-219_25.4x21.5mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )
