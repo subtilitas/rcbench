@@ -59,7 +59,6 @@ SOURCES = [
     "shared/outputs/hitec_port.c",
     # The Hitec files' views run their requests on a folder in memory.
     "shared/bench/hitec_card_run.c",
-    "shared/logfile/servo_store.c",
     # FILES' views run its requests on a card in memory, behind the host
     # card task.
     "test/host/render_files.c",

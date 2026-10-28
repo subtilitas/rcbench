@@ -1156,14 +1156,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GPIO 16 oder GPIO 17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 502, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 502, '| SDA | GPIO 16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 503, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 503, '| SCL | GPIO 17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1565,7 +1565,7 @@ const functions: Fn[] = [
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
     // The test reads the current of the PD mini (docs/Servo.md, line 442).
-    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 445, 'the current of the supply that feeds the servo: the PD mini'),
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 459, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
@@ -1585,7 +1585,7 @@ const functions: Fn[] = [
     // it; else the supply the variant "Servo power" names. SERVO TESTER on
     // SETUP > OUTPUTS is PORT 1, so the other servo functions drive the same pin.
     needs: [], drives: 'servo', forces: { servoPort: 'prog' },
-    src: repo(PROGRAMMER, 42, "The servo is on one of the IOmcu's programming ports, PROG PORT 1 to 4,"),
+    src: repo(PROGRAMMER, 46, "The servo is on one of the IOmcu's programming ports, PROG PORT 1 to 4,"),
   },
   {
     id: 'esc', group: 'esc',
@@ -1722,7 +1722,7 @@ const checks: Check[] = [
       'GPIO 2 for the servo is a proposal of this page. The example of the build guide is GPIO 0. GPIO 0 and GPIO 16 share a compare register, and GPIO 16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
       'GPIO 2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GPIO 0. GPIO 0 und GPIO 16 teilen sich ein Vergleichsregister, und GPIO 16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
     ),
-    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 133, 'Six of those pairs are both free on the header the IOmcu offers: GP0 and'),
+    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 133, 'Six of those pairs are both free on the header the IOmcu offers: GPIO 0 and'),
   },
   {
     id: 'pd-pins', kind: 'note',
@@ -1880,7 +1880,7 @@ const checks: Check[] = [
       'Servo programmer: the servo is on the programming port, GPIO 13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GPIO 13 leaves the port without a pin.',
       'Servo-Programmierer: Das Servo hängt am Programmierport, GPIO 13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GPIO 13 lässt den Port ohne Pin.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 85, "| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) |"),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 97, "| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) |"),
   },
   {
     id: 'prog-supply-pd', kind: 'note',
@@ -1889,7 +1889,7 @@ const checks: Check[] = [
       'Servo-Programmierer mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV-SERVO auf EIN, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 213, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
+    src: repo(PROGRAMMER, 287, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
@@ -1898,7 +1898,7 @@ const checks: Check[] = [
       'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
     ),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
-    src: repo(PROGRAMMER, 277, 'Without a PD mini the voltage and the current limit are stored and not'),
+    src: repo(PROGRAMMER, 351, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
@@ -1906,7 +1906,7 @@ const checks: Check[] = [
       "High level of the servo's reply on GPIO 13: not measured, at most 5 V and typically 3.3 V. GPIO 13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
       'Pegel der Antwort des Servos an GPIO 13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GPIO 13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 193, 'The level is not measured. GP13 is rated 5.5V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 267, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
@@ -2167,7 +2167,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 764, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 923, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | ESCs: screen built, no protocol on a wire'),
   },
 ];
 

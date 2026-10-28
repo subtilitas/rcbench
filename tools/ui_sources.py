@@ -83,7 +83,7 @@ SOURCES = [
     "shared/bench/kst_prog_file.c",
     "shared/bench/kst_card.c",
     "shared/bench/prog_link.c",
-    "shared/logfile/kst_store.c",
+    "shared/logfile/servo_store.c",
     "protocols/kst/kst_file.c",
     "shared/link/link_crc.c",
     "shared/link/link_drawing.c",
