@@ -166,7 +166,7 @@ SYMBOL = {
 
 
 # 3D model. Screw terminal 8.8mm tall: a KF350-3.5-2P (LCSC C474892,
-# "Height Above Board 8.8 mm"); the terminal on the board is not
+# height above board 8.8mm); the terminal on the board is not
 # identified. Part class figures, not measured: 2512 shunt 0.6mm,
 # SOT-23-8 1.1mm, chip parts 0.6mm. The terminal holes take the
 # terminal's pins, not header pins.
