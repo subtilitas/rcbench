@@ -305,6 +305,7 @@ TRACKED = [
     "shared/sense/sense_svc.c",
     "shared/sense/sense_trace_feed.c",
     "shared/sense/sense_trace.c",
+    "shared/sense/sense_txq.c",
     "protocols/phase_tap/tone.c",
     "protocols/phase_tap/edge_ring.c",
     "protocols/phase_tap/tone_svc.c",

@@ -411,6 +411,16 @@ ASSERTED = {
             "sizeof(k_rx) / sizeof(k_rx[0]) == (size_t)HITEC_RX_ERR_SUM + 1u",
         ),
     },
+    "i2c_txq": {
+        "firmware/iomcu/src/sense_i2c.c": (
+            "SENSE_I2C_HZ == I2C_TXQ_HZ",
+            "SENSE_I2C_TIMEOUT_US == I2C_TXQ_TIMEOUT_US",
+            "SENSE_I2C_IDLE_US == I2C_TXQ_SETTLE_US",
+            "SENSE_I2C_PROBE_US == I2C_TXQ_PROBE_US",
+            "SENSE_I2C_CLEAR_HALF_US == I2C_TXQ_CLEAR_HALF_US",
+            "SENSE_I2C_CLEAR_STRETCH_US == I2C_TXQ_CLEAR_STRETCH_US",
+        ),
+    },
     "ppm": {
         "firmware/iomcu/src/outputs_hw.c": (
             "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",

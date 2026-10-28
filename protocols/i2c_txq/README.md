@@ -10,9 +10,10 @@ RP2350's two I2C blocks: each transaction goes to the block's transmit
 FIFO (first in, first out) whole, STOP included, and the block's interrupt
 reports its end.
 
-In this repository nothing calls the module yet. The IOmcu's sensor bus
-runs on `firmware/iomcu/src/sense_i2c.c`; the IOmcu image links the module
-and holds none of its code.
+In this repository the IOmcu's sensor bus runs on it: core 1 hands each
+transaction of the sensor schedule to the queue on the block of the
+SENSE page's pins and waits for its end (`shared/sense/sense_txq.c`,
+`firmware/iomcu/src/sense_i2c.c`).
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -43,8 +44,9 @@ programmable input/output).
 - Sizes with arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`): a
   queue (`i2c_txq_t`) is 224 bytes, a transaction (`i2c_txq_xfer_t`) 64
   bytes, a bus of the driver (`i2c_txq_block_t`) 248 bytes. With gcc on
-  x86-64: 336, 72 and 360 bytes. `i2c_txq.c` is 2,826 bytes of code at
-  `-Os`; `i2c_txq_block.c` is 2,632 bytes at `-O3` in the IOmcu's Release build.
+  x86-64: 336, 72 and 360 bytes. `i2c_txq.c` is 2,958 bytes of code at
+  `-Os` and 5,506 bytes at `-O3` in the IOmcu's Release build;
+  `i2c_txq_block.c` is 2,632 bytes at `-O3` there.
 - Times are microseconds on a 64-bit clock the caller passes in. Every
   comparison is made on the difference of two times, so the order holds
   across the wrap of the clock while the times compared are less than
@@ -114,8 +116,12 @@ rises in the settle time: a soft transaction past it then ends
 `I2C_TXQ_DROPPED` without reaching the wire, and a trial passes to the next
 one. A hard transaction is never dropped; one started after its
 deadline carries `I2C_TXQ_F_LATE_START`. A transaction on the wire is not
-cut for one that comes later: a hard one waits for the end of the one on
-the wire, at most 300us at 400kHz.
+cut for one that comes later. A soft transaction does not start while its
+computed bus time plus 20us (`I2C_TXQ_GUARD_US`, chosen, not measured)
+would run past the not-before time of a hard transaction already queued:
+a hard one queued ahead of its release finds the bus free then. A hard one
+submitted while a soft one is on the wire waits for its end, at most 300us
+at 400kHz.
 
 A held queue (`i2c_txq_hold()`) starts nothing and still drops soft
 transactions past their deadline. A transaction picked while a line was
@@ -226,6 +232,7 @@ void          i2c_txq_complete(i2c_txq_t *q, uint64_t now, uint32_t abrt,
                                const uint8_t *rx, size_t n);
 bool          i2c_txq_recover(i2c_txq_t *q, uint64_t now);
 void          i2c_txq_hold(i2c_txq_t *q, bool on);
+bool          i2c_txq_lines_high(const i2c_txq_t *q);
 uint32_t      i2c_txq_bus_us(const i2c_txq_xfer_t *x, uint32_t hz);
 ```
 
@@ -311,7 +318,9 @@ i2c_txq_block_poll(&bus);
 
 The host suite runs the core over a modelled bus
 (`test/host/i2c_txq_model.c`) on a clock advanced 1us at a time
-(`test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`).
+(`test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`), and the
+IOmcu's sensor bus on it over the same model (`test_sense_txq`,
+`test_sense_txq_svc`, `test_sense_i2c`).
 
 Not measured: the driver has not run on a chip. The time the `IC_TAR`
 change takes, the gap the block leaves between a STOP and the next START,

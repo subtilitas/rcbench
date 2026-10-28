@@ -291,7 +291,7 @@ TEST_CASE(the_not_before_time_holds_back_until_it_comes)
 
     setup(1000);
     /* The earlier deadline is not ready yet: the other one goes. */
-    rd2(&early, 0x40, I2C_TXQ_HARD, 1001, 1100);
+    rd2(&early, 0x40, I2C_TXQ_SOFT, 1001, 1300);
     rd2(&later, 0x41, I2C_TXQ_SOFT, 0, 5000);
     CHECK_EQ(i2c_txq_submit(&q, &early), I2C_TXQ_E_OK);
     CHECK_EQ(i2c_txq_submit(&q, &later), I2C_TXQ_E_OK);
@@ -313,6 +313,99 @@ TEST_CASE(the_not_before_time_holds_back_until_it_comes)
     CHECK(early.start_us == 2000u);
 }
 
+TEST_CASE(a_soft_one_waits_when_it_would_run_into_a_hard_release)
+{
+    i2c_txq_xfer_t hard, soft, other;
+    /* The soft read is 120us; with the 20us guard it needs 140us before a
+     * hard release.  Released at now + 139: it waits; at now + 140: it
+     * goes, and ends on time. */
+    static const struct { uint64_t rel; bool starts; } row[] = {
+        {1139, false}, {1140, true}, {1141, true},
+    };
+
+    for (size_t i = 0; i < sizeof(row) / sizeof(row[0]); ++i) {
+        setup(1000);
+        rd2(&hard, 0x40, I2C_TXQ_HARD, row[i].rel, row[i].rel + 50u);
+        rd2(&soft, 0x41, I2C_TXQ_SOFT, 1000, 5000);
+        CHECK_EQ(i2c_txq_submit(&q, &hard), I2C_TXQ_E_OK);
+        CHECK_EQ(i2c_txq_submit(&q, &soft), I2C_TXQ_E_OK);
+        i2c_txq_poll(&q, 1000);
+        CHECK_EQ(soft.state == I2C_TXQ_ST_RUNNING, row[i].starts);
+        model_run_to(&m, &q, 2000);
+        CHECK_EQ(hard.result, I2C_TXQ_OK);
+        CHECK_EQ(soft.result, I2C_TXQ_OK);
+        if (row[i].starts) {
+            CHECK(soft.start_us == 1000u);
+            CHECK(hard.start_us == row[i].rel);
+        } else {
+            /* The hard one at its release, the soft one after it. */
+            CHECK(hard.start_us == row[i].rel);
+            CHECK(soft.start_us == hard.done_us);
+        }
+        CHECK_EQ(hard.flags & I2C_TXQ_F_LATE_START, 0u);
+    }
+
+    /* A shorter soft one fits where the longer one does not; the guard
+     * leaves it its place before the hard release. */
+    setup(1000);
+    rd2(&hard, 0x40, I2C_TXQ_HARD, 1100, 1150);
+    rd2(&soft, 0x41, I2C_TXQ_SOFT, 1000, 1500);      /* 120us: waits   */
+    memset(&other, 0, sizeof(other));
+    other.addr = 0x42;
+    other.rd_len = 1;                                /* 50us: fits     */
+    other.cls = I2C_TXQ_SOFT;
+    other.not_before_us = 1000;
+    other.deadline_us = 1600;
+    CHECK_EQ(i2c_txq_submit(&q, &hard), I2C_TXQ_E_OK);
+    CHECK_EQ(i2c_txq_submit(&q, &soft), I2C_TXQ_E_OK);
+    CHECK_EQ(i2c_txq_submit(&q, &other), I2C_TXQ_E_OK);
+    i2c_txq_poll(&q, 1000);
+    CHECK_EQ(other.state, I2C_TXQ_ST_RUNNING);
+    CHECK_EQ(soft.state, I2C_TXQ_ST_QUEUED);
+    model_run_to(&m, &q, 2000);
+    CHECK(hard.start_us == 1100u);
+    CHECK(done_log[0] == &other);
+    CHECK(done_log[1] == &hard);
+    CHECK(done_log[2] == &soft);
+
+    /* A soft one whose deadline passes while it waits is dropped. */
+    setup(1000);
+    rd2(&hard, 0x40, I2C_TXQ_HARD, 1100, 1150);
+    rd2(&soft, 0x41, I2C_TXQ_SOFT, 1000, 1150);
+    CHECK_EQ(i2c_txq_submit(&q, &hard), I2C_TXQ_E_OK);
+    CHECK_EQ(i2c_txq_submit(&q, &soft), I2C_TXQ_E_OK);
+    model_run_to(&m, &q, 1400);
+    CHECK_EQ(hard.result, I2C_TXQ_OK);
+    CHECK_EQ(soft.result, I2C_TXQ_DROPPED);
+
+    /* Across the 64-bit wrap, and with the guard at 0. */
+    i2c_txq_cfg_t c;
+    i2c_txq_cfg_default(&c);
+    c.guard_us = 0;
+    c.done = on_done;
+    model_init(&m, UINT64_MAX - 60u);
+    m.present[0x40] = m.present[0x41] = true;
+    CHECK(i2c_txq_init(&q, &model_ops, &m, &c));
+    rd2(&hard, 0x40, I2C_TXQ_HARD, 59, 100);          /* now + 120 */
+    rd2(&soft, 0x41, I2C_TXQ_SOFT, m.now, 900);
+    CHECK_EQ(i2c_txq_submit(&q, &hard), I2C_TXQ_E_OK);
+    CHECK_EQ(i2c_txq_submit(&q, &soft), I2C_TXQ_E_OK);
+    i2c_txq_poll(&q, m.now);
+    CHECK_EQ(soft.state, I2C_TXQ_ST_RUNNING);
+    /* One microsecond less and it waits. */
+    setup(UINT64_MAX - 60u);
+    rd2(&hard, 0x40, I2C_TXQ_HARD, 58, 100);          /* now + 119 */
+    rd2(&soft, 0x41, I2C_TXQ_SOFT, m.now, 900);
+    q.cfg.guard_us = 0;
+    CHECK_EQ(i2c_txq_submit(&q, &hard), I2C_TXQ_E_OK);
+    CHECK_EQ(i2c_txq_submit(&q, &soft), I2C_TXQ_E_OK);
+    i2c_txq_poll(&q, m.now);
+    CHECK_EQ(soft.state, I2C_TXQ_ST_QUEUED);
+    CHECK_EQ(q.cfg.guard_us, 0u);
+    i2c_txq_cfg_default(&c);
+    CHECK_EQ(c.guard_us, 20u);
+}
+
 TEST_CASE(the_order_and_the_deadlines_hold_across_the_64_bit_wrap)
 {
     const uint64_t now = UINT64_MAX - 5u;
@@ -324,7 +417,8 @@ TEST_CASE(the_order_and_the_deadlines_hold_across_the_64_bit_wrap)
     rd2(&past, 0x40, I2C_TXQ_SOFT, now, now - 1u);
     rd2(&after_wrap, 0x41, I2C_TXQ_SOFT, now, 3000);
     rd2(&before_wrap, 0x42, I2C_TXQ_SOFT, now, UINT64_MAX - 1u);
-    rd2(&not_yet, 0x43, I2C_TXQ_HARD, 2, 400);
+    /* Released at 200, after the first soft one's end with its guard. */
+    rd2(&not_yet, 0x43, I2C_TXQ_HARD, 200, 400);
     CHECK_EQ(i2c_txq_submit(&q, &past), I2C_TXQ_E_OK);
     CHECK_EQ(i2c_txq_submit(&q, &after_wrap), I2C_TXQ_E_OK);
     CHECK_EQ(i2c_txq_submit(&q, &before_wrap), I2C_TXQ_E_OK);
@@ -336,7 +430,7 @@ TEST_CASE(the_order_and_the_deadlines_hold_across_the_64_bit_wrap)
     CHECK_EQ(before_wrap.state, I2C_TXQ_ST_QUEUED);
     i2c_txq_hold(&q, false);
     i2c_txq_poll(&q, now);
-    /* The hard one waits for 2, after the wrap; the deadline before the
+    /* The hard one waits for 200, after the wrap; the deadline before the
      * wrap goes first. */
     CHECK_EQ(before_wrap.state, I2C_TXQ_ST_RUNNING);
     CHECK_EQ(not_yet.state, I2C_TXQ_ST_QUEUED);
@@ -344,7 +438,7 @@ TEST_CASE(the_order_and_the_deadlines_hold_across_the_64_bit_wrap)
     CHECK_EQ(before_wrap.result, I2C_TXQ_OK);
     CHECK_EQ(not_yet.result, I2C_TXQ_OK);
     CHECK_EQ(after_wrap.result, I2C_TXQ_OK);
-    CHECK(not_yet.start_us >= 2u && not_yet.start_us < 1000u);
+    CHECK(not_yet.start_us == 200u);
     CHECK(done_log[1] == &before_wrap);
     CHECK(done_log[2] == &not_yet);
     CHECK(done_log[3] == &after_wrap);
@@ -559,6 +653,7 @@ int main(void)
     RUN(a_hard_one_runs_late_and_says_so);
     RUN(hard_goes_first_then_the_earliest_deadline_then_submit_order);
     RUN(the_not_before_time_holds_back_until_it_comes);
+    RUN(a_soft_one_waits_when_it_would_run_into_a_hard_release);
     RUN(the_order_and_the_deadlines_hold_across_the_64_bit_wrap);
     RUN(equal_deadlines_keep_submit_order_across_the_count_wrap);
     RUN(an_abort_takes_back_a_queued_one);

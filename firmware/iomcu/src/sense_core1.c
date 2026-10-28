@@ -123,7 +123,8 @@ static void core1_main(void)
         .sched = { .i2c     = { sense_i2c_read, sense_i2c_write, NULL },
                    .now_us  = clock_us,
                    .recover = recover,
-                   .ctx     = NULL },
+                   .ctx     = NULL,
+                   .done_us = sense_i2c_done_us },
         .open  = bus_open,
         .close = bus_close,
         .ask   = bus_ask,
@@ -142,6 +143,10 @@ static void core1_main(void)
         const uint64_t now = time_us_64();
         next = (now - next >= SENSE_TICK_US) ? now + SENSE_TICK_US
                                              : next + SENSE_TICK_US;
+        /* The sensor bus's queue at a fixed interval, whatever the step
+         * sends: an end its interrupt has not taken, and a transaction
+         * that waits. */
+        sense_i2c_poll();
 
         uint32_t irq = spin_lock_blocking(s_lock);
         memcpy(&s_cmd, &s_order, sizeof(s_cmd));

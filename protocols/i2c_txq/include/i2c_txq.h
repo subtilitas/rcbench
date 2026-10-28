@@ -18,6 +18,9 @@
  * class the earliest deadline goes first, and on equal deadlines the one
  * submitted first.  A soft transaction whose deadline has passed is dropped
  * (I2C_TXQ_DROPPED), never sent late.  A hard one is sent late and flagged.
+ * A soft transaction waits while its computed end plus guard_us lies after
+ * the not-before time of a hard one already queued, so a hard one released
+ * at its time finds the bus free.
  *
  * Times are microseconds on a 64-bit clock the caller passes in.  Every
  * comparison is made on the difference of two times, so the order holds
@@ -82,6 +85,13 @@ extern "C" {
  *        transaction takes the computed end, in us.
  */
 #define I2C_TXQ_LATE_US 100u
+/**
+ * @brief A soft transaction does not start when its computed end plus this
+ *        lies after a queued hard one's not-before time, in us: room for
+ *        the controller's gaps, which the bus time does not count.  Chosen,
+ *        not measured.
+ */
+#define I2C_TXQ_GUARD_US 20u
 
 /**
  * @brief The bits of the DesignWare IC_TX_ABRT_SOURCE register the queue
@@ -228,6 +238,7 @@ typedef struct {
     uint32_t clear_half_us;    /**< I2C_TXQ_CLEAR_HALF_US                 */
     uint32_t clear_stretch_us; /**< I2C_TXQ_CLEAR_STRETCH_US              */
     uint32_t late_us;          /**< I2C_TXQ_LATE_US                       */
+    uint32_t guard_us;         /**< I2C_TXQ_GUARD_US                      */
     i2c_txq_done_fn done;      /**< NULL for none                         */
     void    *user;             /**< handed to done                        */
 } i2c_txq_cfg_t;
@@ -410,6 +421,14 @@ bool i2c_txq_recover(i2c_txq_t *q, uint64_t now);
  * @param on  True to hold, false to let go.
  */
 void i2c_txq_hold(i2c_txq_t *q, bool on);
+
+/**
+ * @brief Whether both lines read high now, by the driver's get().
+ *
+ * @param q  The queue.
+ * @return True when SDA and SCL read high; false for NULL.
+ */
+bool i2c_txq_lines_high(const i2c_txq_t *q);
 
 /**
  * @brief Whether a bus clear is under way.

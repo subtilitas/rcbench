@@ -33,7 +33,8 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/link"  link)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/bench" bench)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/outputs" outputs)
 # The current monitors: drivers, schedule and the service core 1 runs
-# (sense_svc.c), on the I2C block through src/sense_i2c.c.  The SENSE page
+# (sense_svc.c), on the I2C transaction queue (shared/sense/sense_txq.c)
+# and the I2C block through src/sense_i2c.c.  The SENSE page
 # validates an INA228 set-up with ina228_calibrate(), so the page and the
 # driver hold one rule.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/sense"  sense)
@@ -53,9 +54,8 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
-# The I2C transaction queue and its driver on the I2C blocks.  Linked and
-# not called yet: the sensor bus still runs on src/sense_i2c.c, and
-# --gc-sections drops the queue from the image.
+# The I2C transaction queue and its driver on the I2C blocks: the sensor
+# bus runs on them (src/sense_i2c.c).
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/i2c_txq" i2c_txq)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
