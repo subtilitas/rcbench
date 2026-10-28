@@ -67,7 +67,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.29. The
+IOmcu transmits only in answer to a request. Protocol version 4.30. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -145,7 +145,13 @@ those values with BAD_VALUE and the panel offers them from 4.28 only. From
 gives it back, as KST holds it out of PWM; an older IOmcu holds it while a
 POWER runs only. The panel reads SUPPLY's flag bit 11 either way and writes
 nothing differently
-([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)). The
+([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)). From
+4.30 KST takes bit 5 of a REBOOT's command from PROGRAMMING: after the
+supply cycle the port waits in LEAVING for the time in write register 28
+before PWM. An older IOmcu refuses the bit with BAD_VALUE; the panel sets
+it from 4.30 only and sends an older IOmcu the REBOOT without it, whose
+cycle ends in PWM
+([The wait after a supply cycle](LinkKST.md#the-wait-after-a-supply-cycle)). The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 

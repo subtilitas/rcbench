@@ -91,6 +91,54 @@ static uint16_t acting_left(void)
     return kst_field_get(&img, KST_F_LEFT_ANGLE);
 }
 
+/**
+ * @brief A session written and LEAVE tapped with WAIT BEFORE PWM at @p wait,
+ *        through the cycle until the port waits in LEAVING after it.
+ * @param t0   the clock at the start, ms
+ * @param wait WAIT BEFORE PWM, ms, not 0
+ */
+static void cycled_to_the_wait_at(uint32_t t0, uint16_t wait)
+{
+    on_pd_at(t0, 5000u, 1000u);
+    connect_cycled();
+    write_left(60u);
+    CHECK(kst_prog_wait_set(&g_p, wait));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_op(&g_p), LINK_KST_OP_REBOOT);
+    until_offs(2u);
+    for (unsigned i = 0; i < 10000u
+                         && kst_port_state(&g_port) != LINK_KST_LEAVING; ++i) {
+        frame();
+        /* The cycle runs as before the wait: no PWM, the pin held. */
+        CHECK(kst_port_state(&g_port) != LINK_KST_PWM);
+        CHECK(kst_port_pin_mask(&g_port) != 0u);
+    }
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_LEAVING);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_LEAVING);
+    CHECK_EQ(g_sup_ons, 2u);
+    CHECK((uint32_t)(g_port.t0_ms - g_on_ms) >= KST_PORT_RAIL_WAIT_MS);
+    /* The cycle has run: the written value acts from this power-up. */
+    CHECK_EQ(acting_left(), 60u);
+}
+
+/**
+ * @brief Frames until the port is in PWM; the pin held and no pulse until
+ *        then.
+ * @return the port's clock in the pass that put it in PWM, ms
+ */
+static uint32_t until_pwm(void)
+{
+    for (unsigned i = 0; i < 20000u && kst_port_state(&g_port) != LINK_KST_PWM;
+         ++i) {
+        frame();
+        CHECK(kst_port_state(&g_port) == LINK_KST_PWM
+              || (kst_port_quiet_mask(&g_port) != 0u
+                  && kst_port_pin_mask(&g_port) != 0u));
+    }
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    return g_ms - 1u;
+}
+
 /* --------------------------------------------------------------- CONNECT */
 
 TEST_CASE(connect_with_the_output_on_switches_it_off_1s_then_on_then_syncs)
@@ -501,7 +549,8 @@ TEST_CASE(an_iomcu_without_leave_cycles_the_output_after_a_write)
     write_left(85u);
     CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
     settle();
-    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED);
+    /* Below 4.30 the cycle ends in PWM: the wait is said not applied. */
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED_OLD);
     CHECK_EQ(acting_left(), 85u);
     CHECK(g_sup_on);
 }
@@ -543,6 +592,213 @@ TEST_CASE(a_port_in_doubt_with_a_pd_mini_is_not_left_by_a_cycle)
     CHECK(g_sup_on);
 }
 
+/* ------------------------------------------- the wait after LEAVE's cycle */
+
+TEST_CASE(leave_after_a_write_waits_before_pwm_after_its_cycle)
+{
+    const uint16_t waits[] = { 1u, 3000u, KST_PROG_WAIT_MAX_MS };
+
+    for (unsigned i = 0; i < sizeof(waits) / sizeof(waits[0]); ++i) {
+        uint32_t t0;
+
+        cycled_to_the_wait_at(0u, waits[i]);
+        t0 = g_port.t0_ms;
+        /* The wait the panel wrote, in register 28, on the REBOOT's bit. */
+        CHECK_EQ(g_port.leave_ms, waits[i]);
+        CHECK((g_port.last_cmd[LINK_KS_W_CMD] & LINK_KS_W_CMD_LEAVE) != 0u);
+        CHECK_EQ((uint32_t)(until_pwm() - t0), (uint32_t)waits[i]);
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+        CHECK(!kst_prog_have_servo(&g_p));
+        CHECK(g_sup_on);
+        CHECK_EQ(g_sup_offs, 2u);
+        CHECK_EQ(acting_left(), 60u);
+    }
+}
+
+TEST_CASE(a_wait_of_0_after_the_cycle_is_the_reboot_of_before)
+{
+    on_pd();
+    connect_cycled();
+    write_left(65u);
+    CHECK(kst_prog_wait_set(&g_p, 0u));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    until_offs(2u);
+    for (unsigned i = 0; i < 10000u && kst_port_state(&g_port) != LINK_KST_PWM;
+         ++i) {
+        frame();
+        CHECK(kst_port_state(&g_port) != LINK_KST_LEAVING);
+    }
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(g_port.last_cmd[LINK_KS_W_CMD] & LINK_KS_W_CMD_LEAVE, 0u);
+    CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED);
+    CHECK_EQ(acting_left(), 65u);
+}
+
+TEST_CASE(abort_in_the_wait_after_the_cycle_keeps_the_port_out_of_pwm)
+{
+    uint32_t t0;
+
+    cycled_to_the_wait_at(0u, 3000u);
+    frames(500);
+    kst_prog_abort(&g_p);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK(kst_port_pin_mask(&g_port) != 0u);
+    CHECK(kst_port_quiet_mask(&g_port) != 0u);
+    /* The cycle ran: the servo it forgot is gone here too, and the values
+     * act; the next LEAVE owes no cycle. */
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK(!kst_prog_cycle_owed(&g_p));
+    CHECK(!kst_prog_leave_cycles(&g_p));
+    CHECK(g_sup_on);
+    CHECK_EQ(g_sup_offs, 2u);
+    /* It stays there: no pulse while nobody asks. */
+    frames(4000);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    /* LEAVE again: a plain one, with its wait. */
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_op(&g_p), LINK_KST_OP_LEAVE);
+    for (unsigned i = 0; i < 1000u
+                         && kst_port_state(&g_port) != LINK_KST_LEAVING; ++i) {
+        frame();
+    }
+    t0 = g_port.t0_ms;
+    CHECK_EQ((uint32_t)(until_pwm() - t0), 3000u);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(g_sup_offs, 2u);
+    CHECK(g_sup_on);
+}
+
+TEST_CASE(stop_in_the_wait_after_the_cycle_releases_the_pin)
+{
+    cycled_to_the_wait_at(0u, 3000u);
+    frames(200);
+    g_stopped = true;
+    g_stop = true;
+    frame();
+    g_stop = false;
+    /* Released in the pass of the stop. */
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(kst_port_pin_mask(&g_port), 0u);
+    kst_link_abort(&g_k);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!kst_prog_have_servo(&g_p));
+    CHECK_EQ(acting_left(), 60u);
+}
+
+TEST_CASE(stop_after_an_abort_in_the_wait_stops_in_programming)
+{
+    /* The panel's ABORT lands before the stop: the port is in
+     * PROGRAMMING, and the stop is the one a session there gets. */
+    cycled_to_the_wait_at(0u, 3000u);
+    frames(200);
+    kst_prog_abort(&g_p);
+    settle();
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    g_stopped = true;
+    g_stop = true;
+    frame();
+    g_stop = false;
+    settle();
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PROGRAMMING);
+    CHECK(kst_port_pin_mask(&g_port) != 0u);
+}
+
+TEST_CASE(a_link_lost_in_the_wait_after_the_cycle_ends_it_off)
+{
+    cycled_to_the_wait_at(0u, 3000u);
+    frames(200);
+    g_safe = false;
+    kst_link_lost(&g_k);
+    frame();
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(kst_port_pin_mask(&g_port), 0u);
+    CHECK(!g_sup_on);
+    CHECK_EQ(g_sup_offs, 3u);
+    frames(4000);
+    CHECK(!g_sup_on);
+    g_safe = true;
+    link_up();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+}
+
+TEST_CASE(a_supply_switched_off_in_the_wait_after_the_cycle_ends_it_in_pwm)
+{
+    cycled_to_the_wait_at(0u, 3000u);
+    frames(200);
+    /* SUPPLY's OFF: the panel's, or the PD mini's own protection. */
+    g_sup_on = false;
+    frame();
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_PWM);
+    CHECK_EQ(kst_port_pin_mask(&g_port), 0u);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_CYCLE_CUT);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK(!g_sup_on);
+}
+
+TEST_CASE(the_wait_after_the_cycle_holds_across_the_clock_wrap)
+{
+    uint32_t t0;
+
+    cycled_to_the_wait_at(0xFFFFE000u, KST_PROG_WAIT_MAX_MS);
+    t0 = g_port.t0_ms;
+    /* The wait runs over the wrap. */
+    CHECK(t0 > 0xFFFFFFFFu - KST_PROG_WAIT_MAX_MS);
+    frames(KST_PROG_WAIT_MAX_MS - 2u);
+    CHECK_EQ(kst_port_state(&g_port), LINK_KST_LEAVING);
+    CHECK_EQ((uint32_t)(until_pwm() - t0), KST_PROG_WAIT_MAX_MS);
+    CHECK(g_ms < 0x10000u);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED);
+}
+
+TEST_CASE(an_iomcu_below_4_30_cycles_without_the_wait_and_says_so)
+{
+    for (int wait = 0; wait < 2; ++wait) {
+        unsigned starts;
+
+        on_pd();
+        kst_link_came_up(&g_k, LINK_MINOR_KST_CYCLE_WAIT - 1u);
+        settle();
+        connect_cycled();
+        write_left(55u);
+        CHECK(kst_prog_wait_set(&g_p, wait != 0 ? 3000u : 0u));
+        starts = g_starts;
+        CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+        until_offs(2u);
+        for (unsigned i = 0; i < 10000u
+                             && kst_port_state(&g_port) != LINK_KST_PWM; ++i) {
+            frame();
+            CHECK(kst_port_state(&g_port) != LINK_KST_LEAVING);
+        }
+        settle();
+        /* Nothing of the wait went: no bit, no register 28. */
+        CHECK_EQ(g_port.last_cmd[LINK_KS_W_CMD] & LINK_KS_W_CMD_LEAVE, 0u);
+        CHECK_EQ(g_port.leave_ms, LINK_KST_LEAVE_MS_DEFAULT);
+        CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+        CHECK_EQ(acting_left(), 55u);
+        if (wait != 0) {
+            /* The request the module refused, and the REBOOT without. */
+            CHECK_EQ(g_starts, starts + 2u);
+            CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED_OLD);
+            CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_WARN);
+        } else {
+            CHECK_EQ(g_starts, starts + 1u);
+            CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(connect_with_the_output_on_switches_it_off_1s_then_on_then_syncs);
@@ -564,5 +820,14 @@ int main(void)
     RUN(an_iomcu_without_leave_cycles_the_output_after_a_write);
     RUN(a_session_the_panel_did_not_see_begin_cycles_at_leave);
     RUN(a_port_in_doubt_with_a_pd_mini_is_not_left_by_a_cycle);
+    RUN(leave_after_a_write_waits_before_pwm_after_its_cycle);
+    RUN(a_wait_of_0_after_the_cycle_is_the_reboot_of_before);
+    RUN(abort_in_the_wait_after_the_cycle_keeps_the_port_out_of_pwm);
+    RUN(stop_in_the_wait_after_the_cycle_releases_the_pin);
+    RUN(stop_after_an_abort_in_the_wait_stops_in_programming);
+    RUN(a_link_lost_in_the_wait_after_the_cycle_ends_it_off);
+    RUN(a_supply_switched_off_in_the_wait_after_the_cycle_ends_it_in_pwm);
+    RUN(the_wait_after_the_cycle_holds_across_the_clock_wrap);
+    RUN(an_iomcu_below_4_30_cycles_without_the_wait_and_says_so);
     return test_summary("kst_prog_cycle");
 }

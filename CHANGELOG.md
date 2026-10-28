@@ -78,6 +78,16 @@ history is in git.
   Host-tested in `test_sense_txq`, `test_sense_txq_svc` (the service on
   the queue against the direct wire: every snapshot equal over 4000 ticks
   with faults) and `test_sense_i2c`.
+- Link protocol 4.30: LEAVE after a write with a PD mini applies WAIT
+  BEFORE PWM after the supply cycle. The programmer's REBOOT carries bit 5
+  of the KST page's command and the wait in register 28; the port holds the
+  line low for 1000ms after the supply reads on and then for the wait, 0 to
+  10,000ms, before PWM. ABORT in that wait leaves the port in programming
+  mode with the output on, and the next LEAVE has no cycle; STOP, a lost
+  heartbeat or the output off releases the pin to PWM. An IOmcu of 4.15 to
+  4.29 refuses the bit; the panel sends it the REBOOT without the wait and
+  says `This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.`
+  ([The wait after a supply cycle](docs/LinkKST.md#the-wait-after-a-supply-cycle)).
 - The KST and Chaservo programmer's files on the card use the store of the
   Hitec programmer, `shared/logfile/servo_store.c`, with the stem `KST`; the
   duplicate `kst_store.c` is removed. File names, the folder `BENCH/KST/CONF`,

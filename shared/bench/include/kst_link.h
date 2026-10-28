@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief The panel's half of the KST (0x32) link page, protocol 4.13 to 4.15:
+ * @brief The panel's half of the KST (0x32) link page, protocol 4.13 to 4.30:
  *        the programming ports for KST and Chaservo servos.
  *
  * The session with the servo runs at the IOmcu
@@ -15,7 +15,8 @@
  *
  *   1. for a write, a restore, a release and a verify the staged registers
  *      4 to 24 are written, 6 frames; for an ENTER the supply registers 26
- *      and 27, 1 frame; for a LEAVE the wait, register 28, 1 frame;
+ *      and 27, 1 frame; for a LEAVE and a REBOOT with then_leave the
+ *      wait, register 28, 1 frame;
  *   2. the command, registers 0 to 3, one frame, with SEQ one above the
  *      page's.  A command without an answer is sent again as it was; the
  *      page takes it once.  After kst_link_abort() it is not sent again:
@@ -43,6 +44,12 @@
  * LINK_KST_LEAVING and the phase is KST_LINK_RUNNING; the page has no
  * register for the time left.  To an IOmcu below 4.15 nothing of a
  * LEAVE is sent: kst_link_start() answers KST_LINK_START_NO_OP.
+ *
+ * A REBOOT with then_leave (LINK_MINOR_KST_CYCLE_WAIT, 4.30) carries the
+ * same wait, which the port applies after the cycle: the command has
+ * LINK_KS_W_CMD_LEAVE set.  Below 4.30 nothing of it is sent and
+ * kst_link_start() answers KST_LINK_START_NO_OP; the caller sends the
+ * REBOOT without it, whose cycle ends in PWM.
  *
  * A write to the servo is sent only with write_enabled set in the request:
  * the state of the switch ENABLE WRITE TO SERVO.  Without it the request
@@ -123,7 +130,8 @@ typedef enum {
     KST_LINK_START_NO_IMAGE,   /**< a write or a release with no image
                                     read to plan from                     */
     KST_LINK_START_NO_OP,      /**< the IOmcu's minor does not have
-                                    the operation: a LEAVE below 4.15     */
+                                    the operation: a LEAVE below 4.15,
+                                    a REBOOT with then_leave below 4.30   */
 } kst_link_start_t;
 
 /** @brief An operation as the screen asks for it. */
@@ -136,9 +144,13 @@ typedef struct {
     uint16_t supply_mv;        /**< ENTER: what the port asks of the PD
                                     mini, mV                              */
     uint16_t supply_ma;        /**< ENTER: and its current limit, mA      */
-    uint16_t leave_ms;         /**< LEAVE: the wait with the line low before
-                                    the port is in PWM, 0 to
-                                    LINK_KST_LEAVE_MS_MAX ms              */
+    uint16_t leave_ms;         /**< LEAVE, and REBOOT with then_leave: the
+                                    wait with the line low before the port
+                                    is in PWM, 0 to LINK_KST_LEAVE_MS_MAX
+                                    ms                                    */
+    bool     then_leave;       /**< REBOOT (4.30): the cycle ends in
+                                    LEAVING for leave_ms; any other
+                                    operation with it is KST_LINK_START_ARG */
     bool     write_enabled;    /**< ENABLE WRITE TO SERVO is on           */
     bool     confirm;          /**< RESTORE: the operator confirmed a
                                     restore whose result cannot be checked */
@@ -188,6 +200,8 @@ typedef struct {
     uint16_t frames;              /**< frames the operation sent, to 4095 */
     uint32_t diff_regs;           /**< bit n: register n differs          */
     uint32_t bad_regs;            /**< bit n: register n has no 3 equal reads */
+    link_kst_state_t state;       /**< KST_LINK_OUT_DONE: where the port was
+                                       as the operation ended             */
 } kst_link_outcome_t;
 
 /**
@@ -258,7 +272,8 @@ typedef struct {
     uint16_t staged[LINK_KS_W_STAGED];
     bool     supply_due;       /**< an ENTER's supply registers are owed  */
     uint16_t supply[2];        /**< SUPPLY_MV, SUPPLY_MA                  */
-    bool     leave_due;        /**< a LEAVE's wait register is owed       */
+    bool     leave_due;        /**< the wait register of a LEAVE or of a
+                                    REBOOT with then_leave is owed        */
     uint16_t leave_ms;         /**< LEAVE_MS                              */
     uint16_t cmd_proto[LINK_KS_W_CMD_FRAME];  /**< the command less its SEQ */
 
@@ -330,8 +345,9 @@ bool kst_link_has_page(const kst_link_t *k);
  * Taken in KST_LINK_READY only; any other answer
  * than KST_LINK_START_OK means nothing is sent.
  *
- * A LEAVE with leave_ms above LINK_KST_LEAVE_MS_MAX is
- * KST_LINK_START_ARG: the value is refused, not clamped.
+ * A LEAVE, or a REBOOT with then_leave, with leave_ms above
+ * LINK_KST_LEAVE_MS_MAX is KST_LINK_START_ARG: the value is refused, not
+ * clamped.  then_leave on any operation but REBOOT is KST_LINK_START_ARG.
  *
  * A WRITE and a RELEASE are planned at the IOmcu from the image it
  * read.  The request names the image the panel last fetched by its CRC

@@ -276,6 +276,9 @@ enum {
                                        answering, after a write: the values
                                        act after the servo's supply is
                                        switched off and on                  */
+    KST_PROG_MSG_LEFT_CYCLED_OLD, /**< as KST_PROG_MSG_LEFT_CYCLED, by an
+                                       IOmcu below link 4.30: the wait
+                                       before PWM was not applied           */
     KST_PROG_MSG_START = 0x40,
     KST_PROG_MSG_OUT   = 0x50,
     KST_PROG_MSG_REF   = 0x60,
@@ -611,6 +614,9 @@ typedef struct {
                                    it: no ENTER follows               */
     bool cycle_off;           /**< the CONNECT's REBOOT was asked to
                                    end with the supply off            */
+    bool cycle_old;           /**< the IOmcu is below link 4.30: the
+                                   LEAVE's REBOOT went without the
+                                   wait after its cycle               */
     uint16_t cycle_mv;        /**< what the ENTER after a CONNECT's
                                    cycle asks: the lower of the
                                    programming voltage and the one the

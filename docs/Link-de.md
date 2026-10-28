@@ -74,7 +74,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.29. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.30. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -158,6 +158,12 @@ CLOSE, das ihn zurückgibt, so wie KST sie außerhalb von PWM hält; ein
 älterer IOmcu hält sie nur, solange ein POWER läuft. Das Panel liest das
 Flag-Bit 11 von SUPPLY in beiden Fällen und schreibt nichts anders
 ([Die Versorgung, solange ein Port gehalten ist](LinkHitec-de.md#die-versorgung-solange-ein-port-gehalten-ist)).
+Ab 4.30 nimmt KST Bit 5 im Befehl eines REBOOT aus PROGRAMMING: nach dem
+Versorgungszyklus wartet der Port in LEAVING für die Zeit im
+Schreibregister 28, bevor PWM folgt. Ein älterer IOmcu weist das Bit mit
+BAD_VALUE ab; das Panel setzt es erst ab 4.30 und schickt einem älteren
+IOmcu den REBOOT ohne das Bit, dessen Zyklus in PWM endet
+([Die Wartezeit nach einem Versorgungszyklus](LinkKST-de.md#die-wartezeit-nach-einem-versorgungszyklus)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
