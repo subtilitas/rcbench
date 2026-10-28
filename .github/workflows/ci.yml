@@ -166,6 +166,11 @@ jobs:
       - name: The checked-in KiCad library matches its specs
         run: python3 hardware/kicad/tools/gen_all.py --check
 
+      # The STEP models of the mechanical parts are generated from the specs
+      # in hardware/mechanical and checked in.
+      - name: The checked-in mechanical models match their specs
+        run: python3 hardware/mechanical/gen_models.py --check
+
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.
       - name: The checked-in ESC profile tables match their JSON
@@ -371,7 +376,7 @@ jobs:
       # rules ask for a Google-style docstring; ruff.toml lists the files
       # excused some D codes, each with the codes on its line.
       - name: ruff
-        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/
+        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/ hardware/mechanical/
 
   # cppcheck runs in a job of its own beside clang-tidy, which checks every
   # file on every run: 4min to 9min (minutes) on the runners measured.
@@ -545,9 +550,10 @@ jobs:
       - name: pytest
         run: python3 -m pytest test/tools -q
 
-      # The STEP models of the KiCad library are text gen_all.py writes;
-      # OpenCASCADE reads each back and checks its solids, colours and
-      # bounding box against the spec.
+      # The STEP models of the KiCad library and of hardware/mechanical are
+      # text the generators write; OpenCASCADE reads each back and checks
+      # its solids and colours, and a module's bounding box, against the
+      # spec.
       - name: The KiCad STEP models load in OpenCASCADE
         run: |
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
