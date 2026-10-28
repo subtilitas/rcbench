@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "files_screen.h"
+#include "kst_file.h"
 #include "text_view.h"
 #include "ui_text.h"
 
@@ -26,8 +27,6 @@
 /** @brief The first line of a KST file, up to its format number
  *         (kst_file.h). */
 static const char k_kst_head[] = "KST servo configuration, format ";
-/** @brief The first word of a KST file's checksum line. */
-static const char k_kst_sum[] = "checksum";
 
 /** @brief DISCARD on the host's question: TEXT_VIEW_LEAVE is to be taken. */
 static bool s_leave;
@@ -204,6 +203,7 @@ bool text_view_edit(void)
     keep_original();
     tv.edit = true;
     tv.note = TV_NOTE_NONE;
+    s_kst_cut = false;
     /* The cursor starts on the top row when it is off the screen. */
     int cell = 0;
     if (tv_cursor_at(&cell) < 0) {
@@ -213,14 +213,42 @@ bool text_view_edit(void)
     return true;
 }
 
-/** @brief The text back as the file on the card; the editor stays on. */
-static void discard(void)
+/**
+ * @brief Say why the buffer refused a key or a REVERT.
+ * @param r  the buffer's answer
+ */
+static void refused(text_buf_err_t r)
 {
-    (void)text_buf_load(&tv_tb, tv_orig, tv.orig_len);
+    if (r == TEXT_BUF_TOO_MANY) {
+        tv_say(TX_ED_LINES_FULL);
+    } else if (r == TEXT_BUF_FULL || r == TEXT_BUF_TOO_LARGE) {
+        tv_say(TX_ED_FULL);
+    }
+}
+
+/**
+ * @brief The text back as the file on the card; the editor stays on.
+ *
+ * The file passed the NUL test when it was opened, so it is put back
+ * without it (text_buf_restore()).  Refused, the text stays as it is and
+ * the note says why, as for a key the buffer refuses.
+ *
+ * @return true when the text is the file's again
+ */
+static bool discard(void)
+{
+    const text_buf_err_t err = text_buf_restore(&tv_tb, tv_orig, tv.orig_len);
+    if (err != TEXT_BUF_OK) {
+        refused(err);
+        ++tv.rev;
+        return false;
+    }
     text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, tv.top_line));
     tv_clamp_top();
     tv.note = TV_NOTE_NONE;
+    s_kst_cut = false;              /* the checksum line is back */
     ++tv.rev;
+    return true;
 }
 
 /** @brief The editor off, the viewer on the same text. */
@@ -277,7 +305,9 @@ static void answer_discard(void)
 {
     const text_view_ask_t ask = tv.ask;
     tv.ask = TEXT_VIEW_ASK_NONE;
-    discard();
+    if (!discard()) {
+        return;                     /* the editor stays, with the text */
+    }
     if (ask == TEXT_VIEW_ASK_BACK) {
         edit_leave();
     } else if (ask == TEXT_VIEW_ASK_OPEN) {
@@ -296,19 +326,6 @@ text_view_result_t tv_edit_take(void)
 }
 
 /* ------------------------------------------------------------- the keys */
-
-/**
- * @brief Say why a key typed nothing.
- * @param r  the buffer's answer
- */
-static void refused(text_buf_err_t r)
-{
-    if (r == TEXT_BUF_TOO_MANY) {
-        tv_say(TX_ED_LINES_FULL);
-    } else if (r == TEXT_BUF_FULL) {
-        tv_say(TX_ED_FULL);
-    }
-}
 
 /**
  * @brief A key's answer into the text.
@@ -431,6 +448,9 @@ void tv_edit_tap(int x, int y)
     tap_cursor(x, y);
 }
 
+static bool kst_cut(void);
+static bool nul_ahead(void);
+
 text_view_result_t tv_edit_button(int hit)
 {
     switch (hit) {
@@ -444,6 +464,12 @@ text_view_result_t tv_edit_button(int hit)
         }
         if (tv.save_err != FM_OK) {
             tv_say_err(tv.save_err);
+            return TEXT_VIEW_NONE;
+        }
+        s_kst_cut = kst_cut() || s_kst_cut;   /* a refused SAVE cut it */
+        if (nul_ahead()) {
+            tv_say(TX_ED_NUL_AHEAD);
+            ++tv.rev;
             return TEXT_VIEW_NONE;
         }
         /* The text holds still from here, also while the host's save waits
@@ -467,8 +493,8 @@ text_view_result_t tv_edit_button(int hit)
 /* -------------------------------------------------------------- the save */
 
 /**
- * @brief Whether line @p line starts with the word "checksum", after
- *        spaces and tabs.
+ * @brief Whether line @p line is a checksum line, by the programmer's own
+ *        test (kst_file_checksum_line()).
  * @param line  the line
  * @return true for a checksum line
  */
@@ -476,17 +502,12 @@ static bool is_sum_line(size_t line)
 {
     size_t len = 0u;
     const char *b = text_buf_line(&tv_tb, line, &len);
-    size_t k = 0u;
-    while (b != NULL && k < len && (b[k] == ' ' || b[k] == '\t')) {
-        ++k;
-    }
-    const size_t w = sizeof(k_kst_sum) - 1u;
-    return b != NULL && len - k >= w && memcmp(b + k, k_kst_sum, w) == 0
-           && (len - k == w || b[k + w] == ' ' || b[k + w] == '\t');
+    return b != NULL && kst_file_checksum_line(b, len);
 }
 
 /**
- * @brief Take a KST file's checksum line out, with its line end.
+ * @brief Take every checksum line out of a KST file, each with its line
+ *        end: kst_file_parse() reads a file with one as VERIFIED.
  * @return true when the text is a KST file that held one
  */
 static bool kst_cut(void)
@@ -497,11 +518,14 @@ static bool kst_cut(void)
     if (head == NULL || len < hn || memcmp(head, k_kst_head, hn) != 0) {
         return false;
     }
-    const size_t lines = text_buf_lines(&tv_tb);
-    for (size_t i = 1u; i < lines; ++i) {
+    bool cut = false;
+    size_t i = 1u;
+    while (i < text_buf_lines(&tv_tb)) {
         if (!is_sum_line(i)) {
+            ++i;
             continue;
         }
+        const size_t lines = text_buf_lines(&tv_tb);
         const size_t from = text_buf_line_start(&tv_tb, i);
         const size_t to = (i + 1u < lines) ? text_buf_line_start(&tv_tb, i + 1u)
                                            : text_buf_len(&tv_tb);
@@ -514,15 +538,37 @@ static bool kst_cut(void)
         }
         cur = (cur >= to) ? cur - (to - from) : (cur > from) ? from : cur;
         text_buf_set_cursor(&tv_tb, cur);
+        cut = true;
+        if (!more) {
+            break;                  /* nothing more to take: never spins */
+        }
+    }
+    if (cut) {
         tv_clamp_top();
-        return true;
+    }
+    return cut;
+}
+
+/**
+ * @brief Whether the file as saved would hold a NUL in its first
+ *        TEXT_BUF_PROBE bytes: FILES would not open it again.
+ * @return true for such a text
+ */
+static bool nul_ahead(void)
+{
+    const size_t bom = text_buf_bom(&tv_tb) ? TEXT_BUF_BOM_LEN : 0u;
+    const size_t len = text_buf_len(&tv_tb);
+    const size_t n = (len < TEXT_BUF_PROBE - bom) ? len : TEXT_BUF_PROBE - bom;
+    for (size_t i = 0u; i < n; ++i) {
+        if (text_buf_byte(&tv_tb, i) == 0u) {
+            return true;
+        }
     }
     return false;
 }
 
 size_t text_view_save_len(void)
 {
-    s_kst_cut = text_buf_dirty(&tv_tb) && kst_cut();
     /* The card's task reads the text while this task draws it: no line
      * read may move the gap from here on. */
     text_buf_settle(&tv_tb);
@@ -551,6 +597,7 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
         tv_say(s_kst_cut ? TX_ED_SAVED_KST
                : restart ? TX_ED_SAVED_ESC
                          : TX_ED_SAVED);
+        s_kst_cut = false;          /* a failed save keeps it for the next */
         /* A question asked while it saved has no changes left to lose:
          * what it held goes on. */
         const text_view_ask_t ask = tv.ask;
@@ -570,7 +617,6 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
     } else {
         tv_say_err(err);
     }
-    s_kst_cut = false;
     ++tv.rev;
     return out;
 }

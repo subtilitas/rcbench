@@ -18,6 +18,8 @@
  * - an_open_asked_during_a_save_waits_for_it
  * - a_save_that_fails_under_the_question_leaves_discard_live
  * - the_text_holds_still_while_the_save_waits_its_turn
+ * - save_refuses_a_nul_in_the_first_4kb_and_revert_keeps_the_text
+ * - save_takes_out_every_line_the_programmer_reads_as_a_checksum
  *
  * SPDX-License-Identifier: MIT
  */
@@ -465,6 +467,120 @@ TEST_CASE(the_text_holds_still_while_the_save_waits_its_turn)
                      strlen(k_report) + 2u));
 }
 
+/*
+ * A file with a NUL at byte 4,096, one past the first 4kB the open tests.
+ * A deleted first byte brings the NUL into those 4kB: SAVE refuses, as
+ * FILES would not open the file again, the card keeps the file and REVERT
+ * puts all 4,100 bytes back.  A byte typed in front moves the NUL out
+ * again, and SAVE writes the file.
+ */
+TEST_CASE(save_refuses_a_nul_in_the_first_4kb_and_revert_keeps_the_text)
+{
+    static char text[4100];
+    for (size_t i = 0u; i < 4096u; ++i) {
+        text[i] = (i % 40u == 39u) ? '\n' : 'x';
+    }
+    memcpy(text + 4096, "\0yz\n", 4u);
+    NEED(text[4095] == 'x');
+    open_file(CARD_USER_LOGS, "NUL.TXT", text, sizeof(text));
+    NEED(text_view_state() == TEXT_VIEW_SHOWN);
+    edit();
+    ed_key(UI_TK_RIGHT);
+    ed_key(UI_TK_DEL);
+    ed_key(UI_TK_DONE);
+    NEED(text_view_dirty());
+    const long writes = g_h.card.calls[FK_WRITE];
+    save();
+    CHECK(!text_view_saving());
+    CHECK_STR_EQ(note(), ui_tr(TX_ED_NUL_AHEAD));
+    CHECK_EQ(g_h.card.calls[FK_WRITE], writes);
+    CHECK(card_holds("USER/LOGS/NUL.TXT", text, sizeof(text)));
+    CHECK(text_view_dirty());
+    foot(FS_SPOT_TV_REVERT_CX);
+    NEED(text_view_ask() == TEXT_VIEW_ASK_REVERT);
+    tap(FS_SPOT_TV_DISCARD_CX, FS_SPOT_TV_Q_CY);
+    CHECK(!text_view_dirty());
+    static char back[4100];
+    CHECK_EQ(text_view_fill(NULL, 0u, (uint8_t *)back, sizeof(back)),
+             sizeof(text));
+    CHECK_EQ(text_view_fill(NULL, sizeof(text), (uint8_t *)back, 1u), 0u);
+    CHECK(memcmp(back, text, sizeof(text)) == 0);
+    /* One byte in front: the NUL is at 4,096 again. */
+    foot(FS_SPOT_TV_KEYS_CX);
+    ed_key(UI_TK_RIGHT);
+    ed_key(UI_TK_DEL);
+    ed_type("a");
+    ed_key(UI_TK_DONE);
+    save();
+    settle();
+    CHECK(!text_view_dirty());
+    text[0] = 'a';
+    CHECK(card_holds("USER/LOGS/NUL.TXT", text, sizeof(text)));
+}
+
+/**
+ * @brief A KST file as kst_file_format() writes it, its checksum line
+ *        swapped for @p sum (and a line end), into @p out.
+ * @param sum  the line in its place, without a line end
+ * @param out  KST_FILE_MAX + 64 bytes
+ * @return the text's bytes
+ */
+static size_t kst_with_sum(const char *sum, char *out)
+{
+    const kst_image_t img = sim_bench_image();
+    const size_t len = kst_file_format(&img, KST_TYPE_V6, out, KST_FILE_MAX);
+    char *at = strstr(out, "checksum ");
+    if (len == 0u || at == NULL) {
+        return 0u;
+    }
+    const size_t n = strlen(sum);
+    memcpy(at, sum, n);
+    at[n] = '\n';
+    return (size_t)(at - out) + n + 1u;
+}
+
+/*
+ * The checksum line in the forms the programmer's reader takes for one
+ * (kst_file_checksum_line()): another case, '=' or ':' after the word,
+ * a tab, spaces in front, the word alone, and two such lines.  SAVE takes
+ * every one of them out, and the reader then loads the file as EDITED.
+ */
+TEST_CASE(save_takes_out_every_line_the_programmer_reads_as_a_checksum)
+{
+    static const char *const sums[] = {
+        "CHECKSUM 00000000",  "checksum=00000000",
+        "checksum:00000000",  "Checksum\t00000000",
+        "   checksum 0",      "checksum",
+        "checksum 0\nCheckSum: 1",
+    };
+    static char text[KST_FILE_MAX + 64];
+    const kst_image_t img = sim_bench_image();
+    for (size_t i = 0u; i < sizeof(sums) / sizeof(sums[0]); ++i) {
+        const size_t len = kst_with_sum(sums[i], text);
+        NEED(len > 0u);
+        open_file("BENCH/KST/CONF", "BENCH1.TXT", text, len);
+        edit();
+        ed_key(UI_TK_DONE);
+        foot(FS_SPOT_TV_KEYS_CX);
+        tap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + 5);
+        ed_type("\n# bench edit");
+        ed_key(UI_TK_DONE);
+        save();
+        CHECK(!text_view_dirty());
+        CHECK_STR_EQ(note(), ui_tr(TX_ED_SAVED_KST));
+        const fk_node_t *n = fk_get(&g_h.card, "BENCH/KST/CONF/BENCH1.TXT");
+        NEED(n != NULL);
+        kst_file_t f;
+        unsigned bad = 0u;
+        CHECK_EQ(kst_file_parse((const char *)n->data, n->size, &f, &bad),
+                 KST_FILE_OK);
+        CHECK_EQ(f.kind, KST_FILE_EDITED_TYPED);
+        kst_file_load_t ld;
+        CHECK_EQ(kst_file_load(&f, &img, &img, KST_TYPE_V6, &ld),
+                 KST_FILE_LOAD_OK);
+    }
+}
+
 int main(void)
 {
     RUN(save_writes_the_text_through_new_and_keeps_the_name);
@@ -479,6 +595,8 @@ int main(void)
     RUN(an_open_asked_during_a_save_waits_for_it);
     RUN(a_save_that_fails_under_the_question_leaves_discard_live);
     RUN(the_text_holds_still_while_the_save_waits_its_turn);
+    RUN(save_refuses_a_nul_in_the_first_4kb_and_revert_keeps_the_text);
+    RUN(save_takes_out_every_line_the_programmer_reads_as_a_checksum);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_save");

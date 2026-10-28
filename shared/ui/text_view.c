@@ -681,7 +681,7 @@ static text_view_result_t press_up(const touch_event_t *e)
         || hit_at(e->point.x, e->point.y) != hit) {
         return TEXT_VIEW_NONE;
     }
-    if (tv.edit && hit <= TV_HIT_KEYS) {
+    if (tv.edit && hit >= TV_HIT_SMALL && hit <= TV_HIT_KEYS) {
         return tv_edit_button(hit);
     }
     switch (hit) {

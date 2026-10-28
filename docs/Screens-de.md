@@ -3002,10 +3002,24 @@ dem Löschen und dem Umbenennen entnommen, hält die Karte den ganzen Text
 als `<Name>.NEW` und kein `<Name>`, und UMBENENNEN in FILES gibt ihr den
 Namen zurück.
 
+Eine Datei öffnet sich nur ohne NUL-Byte in den ersten 4kB. SPEICHERN
+hält den Text an dieselbe Prüfung: eine Änderung, die ein NUL-Byte von
+weiter hinten in die ersten 4kB bringt, wird nicht gespeichert, die Notiz
+sagt
+`Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`,
+und der Text bleibt wie getippt. VERWERFEN setzt eine solche Datei so
+zurück, wie sie geladen wurde, ohne zweite Prüfung. Eine Datei über
+1MiB oder 65.536 Zeilenenden des Editors lässt den Text, wie er ist, mit
+der Notiz einer Taste, die an dieser Grenze abgelehnt wird; eine Datei,
+die FILES geöffnet hat, liegt innerhalb beider.
+
 Eine KST-Datei, deren erste Zeile `KST servo configuration, format` und
 eine Zahl ist, hält eine Prüfsummenzeile, wenn der Servo-Programmierer
-sie geschrieben hat. SPEICHERN einer geänderten KST-Datei nimmt diese
-Zeile heraus, und die Notiz sagt `Ohne Prüfsummenzeile gespeichert: der
+sie geschrieben hat. SPEICHERN einer geänderten KST-Datei nimmt jede
+Zeile heraus, die der Leser des Programmierers als Prüfsummenzeile nimmt:
+ihr erstes Wort nach Leerzeichen und Tabs ist `checksum` in beliebiger
+Schreibung, gefolgt von einem Leerzeichen, einem Tab, `=`, `:` oder dem
+Zeilenende. Die Notiz sagt `Ohne Prüfsummenzeile gespeichert: der
 Servo-Programmierer liest sie als bearbeitet.` Der Programmierer liest sie
 dann als Datei, die ein Mensch bearbeitet hat: aus ihren Wertzeilen, ohne
 Prüfsumme ([Programmierer](#programmierer)). Eine unverändert gespeicherte

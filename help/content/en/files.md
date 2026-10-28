@@ -78,7 +78,8 @@ EDIT in the viewer opens the editor and its keyboard. The text changes in the pa
 - 4 rows of the text show over the keyboard. The keyboard has the Wi-Fi keyboard's three layers: ABC for capitals, #+= for marks. DEL takes the character before the cursor. ENTER starts a new line with the file's own line end. `<-` and `->` move the cursor; a tap on the text puts it there. DONE closes the keyboard, KEYBOARD opens it again.
 - The header shows MODIFIED once the text differs from the card, and the cursor's line.
 - SAVE writes the text as `<name>.NEW`, deletes the old file and gives the new one its name. SAVE is shut while the bench is ARMED or a run is logged; the text stays. A switch to ARMED during a save stops it, and the old file stays.
-- A KST file of the servo programmer loses its checksum line when it is saved changed: the programmer then reads it as a file a person edited.
+- A KST file of the servo programmer loses its checksum line when it is saved changed, in every form the programmer reads as one (`checksum`, `CHECKSUM=`, `Checksum:`): the programmer then reads it as a file a person edited.
+- SAVE refuses a text with a NUL byte in its first 4kB, as FILES would not open the file again: `Not saved: a NUL byte in the first 4kB. FILES would not open the file again.`
 - An ESC profile in `BENCH/ESC/CONF` is read at the panel's next start.
 - REVERT puts the text back to the file on the card. It asks first, as the home tag does while the text is unsaved: STAY keeps the text, DISCARD drops the changes.
 - The text holds up to 1MiB and 65,536 line ends. The keyboard types ASCII; there is no undo of single keys.

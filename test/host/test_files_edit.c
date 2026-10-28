@@ -18,6 +18,7 @@
  * - the_journal_and_the_fault_log_take_no_edit
  * - an_empty_file_takes_text
  * - a_key_held_when_the_gestures_are_cancelled_types_nothing
+ * - a_tap_on_no_button_leaves_the_keyboard_as_it_is
  *
  * SPDX-License-Identifier: MIT
  */
@@ -462,6 +463,31 @@ TEST_CASE(a_key_held_when_the_gestures_are_cancelled_types_nothing)
     CHECK_EQ(text_view_cursor(NULL), 1u);
 }
 
+/*
+ * A tap on no button, in the editor: the text panel's left margin, and the
+ * header.  It opens no keyboard, and with the keyboard open it leaves the
+ * layer as it was: SHIFT, a tap on nothing, then Q types a capital.
+ */
+TEST_CASE(a_tap_on_no_button_leaves_the_keyboard_as_it_is)
+{
+    open_text("VIEW.TXT", k_report);
+    edit();
+    ed_key(UI_TK_DONE);
+    NEED(!text_view_keyboard());
+    tap(3, 200);
+    CHECK(!text_view_keyboard());
+    tap(600, 28);
+    CHECK(!text_view_keyboard());
+    foot(FS_SPOT_TV_KEYS_CX);
+    NEED(text_view_keyboard());
+    ed_key(UI_TK_SHIFT);
+    tap(3, 100);
+    tap(600, 28);
+    CHECK(text_view_keyboard());
+    ed_key(10);                                 /* q, or Q on SHIFT */
+    CHECK_STR_EQ(row_at(0), "QRCBENCH SERVO TEST REPORT");
+}
+
 int main(void)
 {
     RUN(edit_opens_the_keyboard_and_a_key_types_at_the_cursor);
@@ -476,6 +502,7 @@ int main(void)
     RUN(the_journal_and_the_fault_log_take_no_edit);
     RUN(an_empty_file_takes_text);
     RUN(a_key_held_when_the_gestures_are_cancelled_types_nothing);
+    RUN(a_tap_on_no_button_leaves_the_keyboard_as_it_is);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("files_edit");

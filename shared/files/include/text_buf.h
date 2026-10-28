@@ -163,6 +163,24 @@ text_buf_err_t text_buf_load_done(text_buf_t *tb, size_t len);
 text_buf_err_t text_buf_load(text_buf_t *tb, const void *bytes, size_t len);
 
 /**
+ * @brief Put back a text this buffer held, as text_buf_read() gave it:
+ *        text_buf_load() without the NUL test, which a text holds to once,
+ *        when it is opened.
+ *
+ * A text an edit shortened can hold a NUL in its first TEXT_BUF_PROBE
+ * bytes that the file had further in; it comes back all the same.
+ * Refused, the buffer is as it was: the room and the line ends are
+ * counted before a byte is copied.
+ *
+ * @param tb    The buffer.
+ * @param bytes The text; NULL with @p len 0 is an empty text.
+ * @param len   Its bytes, the BOM counted.
+ * @return TEXT_BUF_OK; TEXT_BUF_TOO_LARGE over the buffer's bytes;
+ *         TEXT_BUF_TOO_MANY over the index; TEXT_BUF_ARG for NULL.
+ */
+text_buf_err_t text_buf_restore(text_buf_t *tb, const void *bytes, size_t len);
+
+/**
  * @brief Bytes text_buf_read() gives: the text and the BOM.
  *
  * @param tb The buffer.

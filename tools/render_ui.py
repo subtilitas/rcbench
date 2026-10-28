@@ -768,8 +768,8 @@ FIT_ONLY = {
     "files-view-toolarge": (None, "files", "dark"),
     # The editor's other states: REVERT's question and the one over an
     # open, saving, saved, an ESC profile saved, SAVE on no change, SAVE
-    # shut while ARMED, the card pulled, and a key refused at 1MiB and at
-    # 65,536 line ends.
+    # shut while ARMED, the card pulled, a key refused at 1MiB and at
+    # 65,536 line ends, and SAVE refused on a NUL in the first 4kB.
     "files-edit-revert": (None, "files", "dark"),
     "files-edit-open": (None, "files", "dark"),
     "files-edit-saving": (None, "files", "dark"),
@@ -780,6 +780,7 @@ FIT_ONLY = {
     "files-edit-card": (None, "files", "dark"),
     "files-edit-full": (None, "files", "dark"),
     "files-edit-lines": (None, "files", "dark"),
+    "files-edit-nul": (None, "files", "dark"),
 }
 
 # Every cat pose but the first, on PICK A PIN posed as "picker" is:

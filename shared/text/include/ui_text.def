@@ -2225,6 +2225,9 @@ UI_TEXT(ED_SAVED_ESC, 0,
 UI_TEXT(ED_NOT_SAVED_CARD, 0,
     "Not saved: the card was taken out or swapped.",
     "Nicht gespeichert: Die Karte wurde entnommen oder getauscht.")
+UI_TEXT(ED_NUL_AHEAD, 0,
+    "Not saved: a NUL byte in the first 4kB. FILES would not open the file again.",
+    "Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.")
 UI_TEXT(ED_NO_CHANGES, 0,
     "No changes to save.",
     "Keine Änderungen zu speichern.")

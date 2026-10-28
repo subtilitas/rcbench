@@ -366,20 +366,20 @@ uint8_t *text_buf_load_area(text_buf_t *tb)
     return tb->mem;
 }
 
-text_buf_err_t text_buf_load_done(text_buf_t *tb, size_t len)
+/**
+ * @brief Take the @p len bytes at the buffer's start as the text: the BOM,
+ *        the line ends and their kind, and the NUL test when @p probe.
+ *
+ * @param tb    The buffer, emptied, its revision moved on.
+ * @param len   Bytes of the file, text_buf_room() at most.
+ * @param probe Whether a NUL in the first TEXT_BUF_PROBE bytes refuses it.
+ * @return TEXT_BUF_OK; TEXT_BUF_NOT_TEXT; TEXT_BUF_TOO_MANY.
+ */
+static text_buf_err_t take(text_buf_t *tb, size_t len, bool probe)
 {
-    text_buf_err_t err = TEXT_BUF_OK;
-
-    if (tb == NULL) {
-        return TEXT_BUF_ARG;
-    }
-    empty(tb);
-    tb->revision++;
-    if (len > text_buf_room(tb)) {
-        return TEXT_BUF_TOO_LARGE;
-    }
-    if (memchr(tb->mem, 0, (len < TEXT_BUF_PROBE) ? len : TEXT_BUF_PROBE)
-        != NULL) {
+    if (probe && memchr(tb->mem, 0, (len < TEXT_BUF_PROBE) ? len
+                                                           : TEXT_BUF_PROBE)
+                     != NULL) {
         return TEXT_BUF_NOT_TEXT;
     }
     if (len >= TEXT_BUF_BOM_LEN &&
@@ -393,10 +393,23 @@ text_buf_err_t text_buf_load_done(text_buf_t *tb, size_t len)
     tb->gap_at = len;
     tb->gap_len = tb->cap - len;
     if (!index_all(tb)) {
-        err = TEXT_BUF_TOO_MANY;
         empty(tb);
+        return TEXT_BUF_TOO_MANY;
     }
-    return err;
+    return TEXT_BUF_OK;
+}
+
+text_buf_err_t text_buf_load_done(text_buf_t *tb, size_t len)
+{
+    if (tb == NULL) {
+        return TEXT_BUF_ARG;
+    }
+    empty(tb);
+    tb->revision++;
+    if (len > text_buf_room(tb)) {
+        return TEXT_BUF_TOO_LARGE;
+    }
+    return take(tb, len, true);
 }
 
 text_buf_err_t text_buf_load(text_buf_t *tb, const void *bytes, size_t len)
@@ -413,6 +426,45 @@ text_buf_err_t text_buf_load(text_buf_t *tb, const void *bytes, size_t len)
         memcpy(text_buf_load_area(tb), bytes, len);
     }
     return text_buf_load_done(tb, len);
+}
+
+/**
+ * @brief Line ends in @p len bytes, counted as index_all() counts them.
+ *
+ * @param b   The bytes.
+ * @param len Their count.
+ * @return The line ends.
+ */
+static size_t count_ends(const uint8_t *b, size_t len)
+{
+    size_t n = 0u;
+
+    for (size_t i = 0u; i < len; ++i) {
+        if (b[i] == '\n'
+            || (b[i] == '\r' && (i + 1u >= len || b[i + 1u] != '\n'))) {
+            n++;
+        }
+    }
+    return n;
+}
+
+text_buf_err_t text_buf_restore(text_buf_t *tb, const void *bytes, size_t len)
+{
+    if (tb == NULL || (bytes == NULL && len > 0u)) {
+        return TEXT_BUF_ARG;
+    }
+    if (len > text_buf_room(tb)) {
+        return TEXT_BUF_TOO_LARGE;
+    }
+    if (count_ends(bytes, len) > tb->ends_cap) {
+        return TEXT_BUF_TOO_MANY;
+    }
+    uint8_t *mem = text_buf_load_area(tb);
+    if (len > 0u) {
+        memcpy(mem, bytes, len);
+    }
+    tb->revision++;
+    return take(tb, len, false);
 }
 
 /* ------------------------------------------------------------ the reads */

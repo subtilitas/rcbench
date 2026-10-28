@@ -14,9 +14,10 @@ history is in git.
   line end; a tap or `<-` and `->` move the cursor; the text holds 1MiB
   and 65,536 line ends. SAVE writes `<name>.NEW`, deletes the file and
   renames the new one, on the card task, shut while the bench is ARMED or a
-  run is logged; a changed KST file loses its checksum line, so the servo
-  programmer reads it as edited; an ESC profile's save says it is read at
-  the next start. REVERT and the home tag over unsaved text ask UNSAVED
+  run is logged, and refused on a NUL byte in the first 4kB; a changed KST
+  file loses every line the servo programmer reads as a checksum line
+  (`kst_file_checksum_line()`), so the programmer reads it as edited; an
+  ESC profile's save says it is read at the next start. REVERT and the home tag over unsaved text ask UNSAVED
   CHANGES with STAY and DISCARD; an open from LOGS or FILES over unsaved
   text asks first too. Leaving FILES by another route keeps the editor
   and its text ([The text editor](docs/Screens.md#the-text-editor)).

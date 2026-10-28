@@ -2707,9 +2707,21 @@ taken out between the delete and the rename, the card holds the whole
 text as `<name>.NEW` and no `<name>`, and RENAME in FILES gives it its
 name back.
 
+A file opens only without a NUL byte in its first 4kB. SAVE holds the
+text to the same test: an edit that brings a NUL from further in into the
+first 4kB is not saved, the note says
+`Not saved: a NUL byte in the first 4kB. FILES would not open the file again.`,
+and the text stays as typed. REVERT puts back such a file as loaded,
+without a second test. A file over the editor's 1MiB or 65,536 line ends
+leaves the text as it is, with the note of a key refused at that limit;
+a file FILES opened is within both.
+
 A KST file, one whose first line is `KST servo configuration, format`
 and a number, holds a checksum line when the servo programmer wrote it.
-SAVE of a changed KST file takes that line out, and the note says
+SAVE of a changed KST file takes out every line the programmer's reader
+takes for a checksum line: its first word, after spaces and tabs, is
+`checksum` in any case, ended by a space, a tab, `=`, `:` or the line's
+end. The note says
 `Saved without the checksum line: the servo programmer reads it as
 edited.` The programmer then reads it as a file a person edited: from its
 value lines, with no checksum to match ([Programmer](#programmer)). A KST

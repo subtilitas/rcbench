@@ -506,6 +506,22 @@ static void pose_editor(const char *view)
         ed_foot(FS_SPOT_TV_SAVE_CX);
         return;
     }
+    if (is(view, "files-edit-nul")) {
+        /* A NUL at 4,096: the first byte deleted brings it into the 4kB
+         * an open tests, and SAVE refuses. */
+        static char nul[4100];
+        for (size_t i = 0; i < 4096u; ++i) {
+            nul[i] = (i % 40u == 39u) ? '\n' : 'x';
+        }
+        memcpy(nul + 4096, "\0yz\n", 4u);
+        put("USER/LOGS/NUL.TXT", nul, sizeof(nul));
+        edit_file("USER/LOGS", "NUL.TXT");
+        ed_key(UI_TK_RIGHT);
+        ed_key(UI_TK_DEL);
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
     if (is(view, "files-edit-full") || is(view, "files-edit-lines")) {
         static char big[1048576];
         const bool full = is(view, "files-edit-full");
