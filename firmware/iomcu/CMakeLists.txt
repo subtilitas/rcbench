@@ -53,6 +53,10 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
+# The I2C transaction queue and its driver on the I2C blocks.  Linked and
+# not called yet: the sensor bus still runs on src/sense_i2c.c, and
+# --gc-sections drops the queue from the image.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/i2c_txq" i2c_txq)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-iomcu
@@ -209,6 +213,8 @@ target_link_libraries(rcbench-iomcu
     rcbench_kst_rp2350
     rcbench_hitec
     rcbench_hitec_rp2350
+    rcbench_i2c_txq
+    rcbench_i2c_txq_rp2350
     rcbench_bench
     rcbench_safety
     rcbench_servo
