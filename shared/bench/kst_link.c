@@ -802,10 +802,13 @@ bool kst_link_writing(const kst_link_t *k, uint32_t now_ms)
     if (k == NULL) {
         return false;
     }
-    if (k->active) {
-        /* PLANNING is no proof that nothing goes out: the page last read
-         * may be older than the plan's end and its first frames. */
-        return op_writes((link_kst_op_t)k->op) && k->phase != (uint8_t)KST_LINK_FETCHING;
+    /* PLANNING is no proof that nothing goes out: the page last read may
+     * be older than the plan's end and its first frames.  A request of
+     * this module that writes nothing proves nothing either: another
+     * writer's may have started before it reached the page. */
+    if (k->active && op_writes((link_kst_op_t)k->op)
+        && k->phase != (uint8_t)KST_LINK_FETCHING) {
+        return true;
     }
     if (!k->known) {
         /* Status reads that ran out of tries, or a lost link, end this

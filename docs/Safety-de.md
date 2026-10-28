@@ -152,7 +152,7 @@ aus (`port_cut_t` in `error_stop.h`):
   bis die Page sein Ende liest (`kst_link_writing()`), sein Planen
   eingeschlossen: ein Lesen des Status, das Planen meldet, kann älter sein
   als sein erster Frame. Ein Versorgungszyklus und ein LEAVE schreiben
-  nichts. An einem gehaltenen Port, an dem kein Vorgang des Panels läuft,
+  nichts. An einem gehaltenen Port, an dem kein Schreiben des Panels läuft,
   zählt ein WRITE, RESTORE oder RELEASE der Prüfstandskonsole, solange die Page
   ihn BUSY liest, und ein Lesen des Status, das älter als 100ms ist
   (`KST_LINK_FRESH_MS`), zählt als Schreiben: der erste Frame eines

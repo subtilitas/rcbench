@@ -353,7 +353,26 @@ TEST_CASE(a_write_that_plans_is_waited_for)
     /* A port in PWM, or never read, runs none. */
     k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PWM;
     CHECK(!kst_link_writing(&k, 1000u));
+    /* A request of this module that writes nothing, on a held port:
+     * another writer's write, and a status too old to say, still count. */
+    k.status[LINK_KS_STATE] = (uint16_t)(LINK_KST_PROGRAMMING | LINK_KS_F_BUSY);
+    k.status[LINK_KS_OP] = (uint16_t)((unsigned)LINK_KST_OP_WRITE << 12);
+    k.status_at = true;
+    k.status_at_ms = 0u;
+    k.active = true;
+    k.op = (uint8_t)LINK_KST_OP_READ_ALL;
+    k.phase = (uint8_t)KST_LINK_SENDING;
+    CHECK(kst_link_writing(&k, 0u));
     k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PROGRAMMING;
+    CHECK(!kst_link_writing(&k, KST_LINK_FRESH_MS));
+    CHECK(kst_link_writing(&k, KST_LINK_FRESH_MS + 1u));
+    k.op = (uint8_t)LINK_KST_OP_VERIFY;
+    CHECK(kst_link_writing(&k, KST_LINK_FRESH_MS + 1u));
+    /* This module's own write that the page read as ended: as read. */
+    k.op = (uint8_t)LINK_KST_OP_WRITE;
+    k.phase = (uint8_t)KST_LINK_FETCHING;
+    CHECK(!kst_link_writing(&k, KST_LINK_FRESH_MS));
+    k.active = false;
     k.known = false;
     k.held_last = false;
     CHECK(!kst_link_writing(&k, 1000u));

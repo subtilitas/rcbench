@@ -471,8 +471,9 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
  * may have ended and its frames gone out since that read, while an exchange
  * of another page waits up to its 1000ms timeout.
  *
- * With none of its own running, a port out of PWM may run a write another
- * writer started, the bench console: one runs while the last status read
+ * Besides, and also while a request of its own that writes nothing runs, a
+ * port out of PWM may run a write another writer started, the bench
+ * console: one runs while the last status read
  * shows the port BUSY with a WRITE, a RESTORE or a RELEASE, and one may run
  * while that read is older than KST_LINK_FRESH_MS.  Status reads that ran
  * out of tries leave the status not known: a port held at the last read
