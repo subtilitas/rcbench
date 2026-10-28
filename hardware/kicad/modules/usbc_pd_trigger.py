@@ -87,10 +87,10 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured: USB-C receptacle
-# 3.2mm, DIP switch 2.0mm with 0.4mm sliders. Parts beyond the receptacle
-# and the switch are not drawn. Board colour not stated; drawn green. The
-# board is wired, so it rests on the carrier.
+# 3D model. Part class figures, not measured; no source for this board
+# was found: USB-C receptacle 3.2mm, DIP switch 2.0mm with 0.4mm sliders.
+# Parts beyond the receptacle and the switch are not drawn. The board is
+# wired, so it rests on the carrier.
 MODEL = {
     "mount": "flat",
     "bodies": [("box",) + USB + (3.2, "metal"),

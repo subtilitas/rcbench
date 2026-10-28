@@ -147,16 +147,17 @@ SYMBOL = {
     ],
 }
 
-# 3D model. The JST-GH bodies are 4.35mm tall (maker 3D model). The shunt
-# height (1.0mm) and the board thickness (1.6mm) are not measured; the
-# maker's 6mm overall height bounds them. Board colour not stated; drawn
-# green. The board is wired, so it rests on the carrier.
+# 3D model. From the maker's 3D model I2C-INA-BM.step: the JST-GH bodies
+# 4.35mm tall, the shunt 1.85mm. The maker's page gives 27 x 20 x 6mm; the
+# third figure is not labelled and the 3D model reaches 4.35mm. Board
+# thickness (1.6mm) and chip height (1.1mm, VSSOP-10 class figure) not
+# measured. The board is wired, so it rests on the carrier.
 MODEL = {
     "mount": "flat",
     "bodies": [
-        ("box", 6.0, 0.6, 11.0, 8.4, 1.0, "metal"),
-        ("box", 11.0, 0.6, 16.0, 8.4, 1.0, "black"),
-        ("box", 16.0, 0.6, 21.0, 8.4, 1.0, "metal"),
+        ("box", 6.0, 0.6, 11.0, 8.4, 1.85, "metal"),
+        ("box", 11.0, 0.6, 16.0, 8.4, 1.85, "black"),
+        ("box", 16.0, 0.6, 21.0, 8.4, 1.85, "metal"),
         ("box",) + CHIP + (1.1, "chip"),
         ("box", 0.6, JST_Y0 + 0.3, 4.65, JST_Y1 - 0.3, 4.35, "beige"),
         ("box", 22.35, JST_Y0 + 0.3, 26.4, JST_Y1 - 0.3, 4.35, "beige"),

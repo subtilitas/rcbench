@@ -149,9 +149,9 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured: INA3221 (QFN-16)
-# 0.9mm, 2512 shunts 0.6mm, LEDs 0.6mm. Board colour not stated; drawn
-# green. The large and channel holes take wires, not header pins.
+# 3D model. Part class figures, not measured: INA3221 (QFN-16) 0.9mm, 2512
+# shunts 0.6mm, LEDs 0.6mm. The large and channel holes take wires, not
+# header pins.
 MODEL = {
     "mount": "header",
     "pins": [str(n) for n in range(1, 9)],

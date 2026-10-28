@@ -165,17 +165,17 @@ SYMBOL = {
 }
 
 
-# 3D model. Heights are part class figures, not measured: screw terminal,
-# 3.5mm pitch, 8.5mm; 2512 shunt 0.6mm; SOT-23-8 1.1mm; chip parts 0.6mm.
-# Board blue (vendor photo). The terminal holes take the terminal's pins,
-# not header pins.
+# 3D model. Screw terminal 8.8mm tall: a KF350-3.5-2P (LCSC C474892,
+# "Height Above Board 8.8 mm"); the terminal on the board is not
+# identified. Part class figures, not measured: 2512 shunt 0.6mm,
+# SOT-23-8 1.1mm, chip parts 0.6mm. The terminal holes take the
+# terminal's pins, not header pins.
 MODEL = {
     "mount": "header",
-    "color": "blue",
     "pins": ["1", "2", "3", "4", "5", "6"],
     "holes": [(x, y, 2.3) for x, y in HOLES],
     "bodies": [
-        ("box", 9.15, 0.15, 16.22, 6.35, 8.5, "termblue"),
+        ("box", 9.15, 0.15, 16.22, 6.35, 8.8, "termblue"),
         ("box", 9.9, 6.55, 15.15, 9.6, 0.6, "black"),
         ("box", 8.83, 6.55, 9.9, 9.6, 0.6, "metal"),
         ("box", 15.15, 6.55, 16.22, 9.6, 0.6, "metal"),

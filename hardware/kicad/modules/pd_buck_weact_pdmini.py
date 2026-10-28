@@ -190,28 +190,32 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured (the maker gives
-# none): USB-C receptacle 3.2mm, display 2.0mm, inductor 5.0mm,
-# electrolytic capacitors 7.7mm, SMB diode 2.3mm, terminal header and plug
-# 8.0mm, right-angle 2 x 4 header 5.0mm with pins at 1.27mm and 3.81mm,
-# buttons 1.5mm plus a 0.5mm cap. Board colour not stated; drawn green.
-# The board is wired, so it rests on the carrier.
+# 3D model. Heights from the maker's 3D model
+# WeAct-PDPowerMiniV1-Buck_3D.step (WeActStudio GitHub, folder Hardware),
+# solid bounding boxes above the board's top side: USB-C receptacle
+# 3.25mm, buttons 2.5mm, display glass 1.5-3.5mm, inductor 3.8mm,
+# electrolytic capacitors 6.6mm across and 5.41mm tall, terminal 7.2mm,
+# 2 x 4 header 5.04mm, diode 2.2mm; board 1.69mm over copper. The plug's
+# height past the board edge is taken equal to the terminal's. The header
+# pins at 1.27mm and 3.81mm are not in the maker's model. The board is
+# wired, so it rests on the carrier.
 MODEL = {
     "mount": "flat",
     "bodies": [
-        ("box", -0.16, 8.13, 7.19, 17.07, 3.2, "metal"),
-        ("box", 13.6, 25.5, 41.8, 39.2, 2.0, "glass"),
-        ("box", 29.55, 5.24, 40.15, 16.8, 5.0, "chip"),
-        ("cyl", 48.08, 9.75, 3.15, 7.7, "metal"),
-        ("cyl", 48.08, 18.26, 3.15, 7.7, "metal"),
-        ("box", 53.4, 22.45, 58.0, 26.05, 2.3, "chip"),
-        ("box", 52.2, 6.0, 61.0, 22.07, 8.0, "termgreen"),
-        ("box", 61.0, 6.0, 69.5, 22.07, 8.0, "termgreen"),
-        ("box", 52.5, 27.1, 54.85, 37.2, 5.0, "plastic"),
+        ("box", -0.16, 8.13, 7.19, 17.07, 3.25, "metal"),
+        ("box", 13.6, 25.5, 41.8, 39.2, 1.5, "plastic"),
+        ("box", 13.6, 25.5, 41.8, 39.2, 2.0, "glass", 1.5),
+        ("box", 29.55, 5.24, 40.15, 16.8, 3.8, "chip"),
+        ("cyl", 48.08, 9.75, 3.3, 5.41, "metal"),
+        ("cyl", 48.08, 18.26, 3.3, 5.41, "metal"),
+        ("box", 53.4, 22.45, 58.0, 26.05, 2.2, "chip"),
+        ("box", 52.2, 6.0, 61.0, 22.07, 7.2, "termgreen"),
+        ("box", 61.0, 6.0, 69.5, 22.07, 7.2, "termgreen"),
+        ("box", 52.5, 27.1, 54.85, 37.2, 5.04, "plastic"),
     ]
     + [("box", 54.85, y - 0.32, 61.3, y + 0.32, 0.64, "gold", z)
        for y in HDR_Y for z in (0.95, 3.49)]
     + [b for _, y in BUTTONS for b in (
-        ("box", BTN_X - 2.13, y - 1.7, BTN_X + 2.13, y + 1.7, 1.5, "metal"),
-        ("cyl", BTN_X, y, 1.0, 0.5, "black", 1.5))],
+        ("box", BTN_X - 2.13, y - 1.7, BTN_X + 2.13, y + 1.7, 2.0, "metal"),
+        ("cyl", BTN_X, y, 1.0, 0.5, "black", 2.0))],
 }

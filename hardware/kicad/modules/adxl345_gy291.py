@@ -127,9 +127,10 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured: ADXL345 (LGA)
-# 1.0mm, SOT-23-5 1.1mm, chip parts 0.5mm, tantalum capacitor 1.6mm. Board
-# colour not stated; drawn green.
+# 3D model. ADXL345 (LGA-14) 1.0mm (ADI package outline). Part class
+# figures, not measured: SOT-23-5 1.1mm, chip parts 0.5mm, tantalum
+# capacitor 1.6mm. Listings give the board 3mm overall height; whether that
+# includes the pins is not stated.
 MODEL = {
     "mount": "header",
     "pins": [str(n) for n in range(1, 9)],

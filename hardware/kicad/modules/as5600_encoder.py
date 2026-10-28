@@ -157,12 +157,13 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured: SOIC-8 1.5mm
-# body, chip parts 0.6mm. Board white (photo). The magnet is not part of
-# the model.
+# 3D model. Both rows carry right-angle headers under the board (owner,
+# 2026-10-28); their pins leave horizontally over the nearest edge. Part
+# class figures, not measured: SOIC-8 body 1.5mm, chip parts 0.6mm. The
+# magnet (6 x 2.5mm diametric, 0.5-3mm air gap per the ams AS5600L
+# adapter-board manual) is not part of the model.
 MODEL = {
-    "mount": "header",
-    "color": "white",
+    "mount": "angled",
     "pins": [str(n) for n in range(1, 8)],
     "holes": [(x, y, HOLE_D) for x, y in HOLES],
     "bodies": [("box", CHIP[0] - 2.45, CHIP[1] - 1.95, CHIP[0] + 2.45,

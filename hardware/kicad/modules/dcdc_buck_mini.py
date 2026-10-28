@@ -55,8 +55,7 @@ SYMBOL = {
 }
 
 # 3D model. The inductor height (4.5mm) is a part class figure, not
-# measured; other parts are not drawn. Board colour not stated; drawn
-# green.
+# measured; other parts are not drawn. No source for this board was found.
 MODEL = {
     "mount": "header",
     "pins": ["1", "2", "3", "4", "5"],

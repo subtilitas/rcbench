@@ -12,9 +12,15 @@ history is in git.
   modules, generated from a `MODEL` block in its spec by
   `hardware/kicad/tools/step_gen.py`. Each footprint names its model as
   `${RCBENCH_MODULES_3D}/<footprint>.step`. Outlines and positions are the
-  footprint's; part heights are part class figures, not measured.
+  footprint's; part heights come from the maker 3D models of the WeAct and
+  MATEK boards, from part datasheets, or from part class figures.
   `gen_all.py --check` covers the models, and
   `hardware/kicad/tools/step_check.py` reads each one with OpenCASCADE in CI.
+  The AS5600 model carries right-angle headers whose pins leave
+  horizontally.
+- `hardware/kicad/tools/step_render.py`: renders every STEP model with
+  OpenCASCADE; the renders are in `hardware/kicad/renders/` and in the
+  library README.
 
 ## 0.23.1 - 2026-10-27
 

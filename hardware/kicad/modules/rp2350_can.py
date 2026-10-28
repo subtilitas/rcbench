@@ -199,11 +199,10 @@ SYMBOL = {
     "pins": _PINS,
 }
 
-# 3D model. Heights are part class figures, not measured: USB-C receptacle
-# 3.2mm, buttons 1.0mm plus a 0.5mm cap, QFN 0.9mm, SOIC-8 1.75mm,
-# crystals 0.8mm, slide switch 1.5mm, CAN terminal 7.0mm (not stated by
-# the maker). Board colour not stated; drawn green. The castellations are
-# not modelled.
+# 3D model. Part class figures, not measured; the Waveshare wiki and
+# schematic give no heights: USB-C receptacle 3.2mm, buttons 1.0mm plus a
+# 0.5mm cap, QFN 0.9mm, SOIC-8 1.75mm, crystals 0.8mm, slide switch
+# 1.5mm, CAN terminal 7.0mm. The castellations are not modelled.
 MODEL = {
     "mount": "header",
     "pins": [str(n) for n in range(1, 41)],

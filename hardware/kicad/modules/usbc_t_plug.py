@@ -117,15 +117,14 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured: receptacles
-# 3.2mm; plug shell 2.4mm and overmould 3.6mm, both centred in the
-# receptacle's height; the green board 1.0mm thick, centred on the plug.
-# The black board is T-shaped. The pads are carrier wire points under the
-# green board, so the model has no holes. The assembly is wired, so the
-# black board rests on the carrier.
+# 3D model. Part class figures, not measured; no source for these boards
+# was found: receptacles 3.2mm; plug shell 2.4mm and overmould 3.6mm, both
+# centred in the receptacle's height; the plug board 1.0mm thick, centred
+# on the plug. The tap board is T-shaped. The pads are carrier wire points
+# under the plug board, so the model has no holes. The assembly is wired,
+# so the tap board rests on the carrier.
 MODEL = {
     "mount": "flat",
-    "color": "black",
     "pad_holes": False,
     "outline": [(0.0, 0.0), (BAR[0], 0.0), (BAR[0], BAR[1]),
                 (STEM[1], BAR[1]), (STEM[1], STEM[2]), (STEM[0], STEM[2]),

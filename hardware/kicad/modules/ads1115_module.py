@@ -135,11 +135,10 @@ SYMBOL = {
     ],
 }
 
-# 3D model. Heights are part class figures, not measured: VSSOP-10 1.1mm,
-# 0805 parts 0.6mm. Board blue (photo).
+# 3D model. ADS1115 in VSSOP-10, 1.1mm maximum (TI datasheet, package
+# DGS). 0805 parts 0.6mm, a part class figure.
 MODEL = {
     "mount": "header",
-    "color": "blue",
     "pins": [str(n) for n in range(1, 11)],
     "holes": [(x, y, HOLE_D) for x, y in HOLES],
     "bodies": [("box", CHIP[0] - 1.5, CHIP[1] - 1.5, CHIP[0] + 1.5,

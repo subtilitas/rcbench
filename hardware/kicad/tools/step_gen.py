@@ -15,12 +15,16 @@ module board's top side::
     "mount": "header"     the module stands on 2.54mm male headers; their
                           2.5mm plastic sits on the carrier, the board's
                           underside 2.5mm above it
+             "angled"     right-angle 2.54mm headers under the board: the
+                          2.54mm plastic sits on the carrier and each pin
+                          leaves horizontally, out over the nearest board
+                          edge
              "flat"       the board's underside rests on the carrier
     "thickness": 1.6      board thickness
-    "color": "blue"       board colour, a key of COLORS
-    "pins": ["1", ...]    pad numbers that get a header pin ("header"
-                          mount): each drilled pad with a listed number
-                          and a drill of 1.1mm or less
+    "color": "green"      board colour, a key of COLORS (default green)
+    "pins": ["1", ...]    pad numbers that get a header pin ("header" and
+                          "angled" mounts): each drilled pad with a listed
+                          number and a drill of 1.1mm or less
     "holes": [(x, y, d)]  holes besides the drilled pads
     "pad_holes": False    (optional) the drilled pads are carrier pads
                           off the module board, not holes in it
@@ -50,9 +54,16 @@ HDR_PLASTIC = 2.5
 HDR_BELOW = 6.0
 HDR_ABOVE = 3.0
 HDR_PIN = 0.64
+# Right-angle header under the board: plastic height, the plastic's span
+# along the pin from the hole, the pin's length past the plastic, the pin
+# tip above the board's top side.
+RA_PLASTIC = 2.54
+RA_BODY = (1.0, 3.5)
+RA_OUT = 6.0
+RA_ABOVE = 1.4
 
 COLORS = {
-    "green": (0.08, 0.36, 0.16),
+    "green": (0.12, 0.52, 0.24),
     "blue": (0.05, 0.22, 0.55),
     "black": (0.06, 0.06, 0.07),
     "white": (0.92, 0.92, 0.90),
@@ -255,9 +266,9 @@ def solids(fp, model):
     ox, oy = fp["origin"]
     t = model.get("thickness", 1.6)
     mount = model["mount"]
-    if mount not in ("header", "flat"):
+    if mount not in ("header", "angled", "flat"):
         raise ValueError(f"unknown mount {mount}")
-    base = HDR_PLASTIC if mount == "header" else 0.0
+    base = {"header": HDR_PLASTIC, "angled": RA_PLASTIC, "flat": 0.0}[mount]
     top = base + t
 
     def tr(pts):
@@ -290,13 +301,19 @@ def solids(fp, model):
             raise ValueError(f"unknown body {kind}")
         z0 = top + (rest[0] if rest else 0.0)
         out.append((tr(pts), [], z0, z0 + h, COLORS[col]))
-    if mount == "header":
-        s, p = 2.54 / 2, HDR_PIN / 2
-        for pd in fp["pads"]:
-            if (pd["num"] not in model["pins"] or not pd.get("drill")
-                    or pd["drill"] > 1.1):
-                continue
-            x, y = pd["x"], pd["y"]
+    if mount == "flat":
+        return out
+    s, p = 2.54 / 2, HDR_PIN / 2
+    xs, ys = [x for x, _ in outline], [y for _, y in outline]
+    for pd in fp["pads"]:
+        if (pd["num"] not in model["pins"] or not pd.get("drill")
+                or pd["drill"] > 1.1):
+            continue
+        x, y = pd["x"], pd["y"]
+        if mount == "angled":
+            out += _angled_pin(tr, x, y, (min(xs), min(ys), max(xs),
+                                          max(ys)), top)
+        else:
             out.append((tr([(x - s, y - s), (x + s, y - s), (x + s, y + s),
                             (x - s, y + s)]), [], 0.0, HDR_PLASTIC,
                         COLORS["plastic"]))
@@ -304,6 +321,35 @@ def solids(fp, model):
                             (x - p, y + p)]), [], -HDR_BELOW,
                         HDR_PLASTIC + HDR_ABOVE, COLORS["gold"]))
     return out
+
+
+def _angled_pin(tr, x, y, box, top):
+    """Plastic, vertical leg and horizontal leg of one right-angle pin.
+
+    The pin leaves towards the edge of ``box`` nearest to (x, y).
+    """
+    x0, y0, x1, y1 = box
+    dist = {(-1, 0): x - x0, (1, 0): x1 - x, (0, -1): y - y0, (0, 1): y1 - y}
+    dx, dy = min(dist, key=dist.get)
+    s, p = 2.54 / 2, HDR_PIN / 2
+    zc = RA_PLASTIC / 2
+
+    def strip(a, b, half):
+        """Rectangle from a to b along the pin, 2 * half across it."""
+        if dx:
+            return [(x + dx * a, y - half), (x + dx * b, y - half),
+                    (x + dx * b, y + half), (x + dx * a, y + half)]
+        return [(x - half, y + dy * a), (x + half, y + dy * a),
+                (x + half, y + dy * b), (x - half, y + dy * b)]
+
+    return [
+        (tr(strip(*RA_BODY, s)), [], 0.0, RA_PLASTIC, COLORS["plastic"]),
+        (tr([(x - p, y - p), (x + p, y - p), (x + p, y + p),
+             (x - p, y + p)]), [], zc + p, top + RA_ABOVE,
+         COLORS["gold"]),
+        (tr(strip(-p, RA_BODY[1] + RA_OUT, p)), [], zc - p,
+         zc + p, COLORS["gold"]),
+    ]
 
 
 def step(fp, model):
