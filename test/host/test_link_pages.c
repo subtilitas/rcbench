@@ -986,6 +986,18 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
     CHECK_EQ(LINK_KST_LEAVE_MS_MAX, 10000u);
     CHECK_EQ(LINK_KST_LEAVE_MS_DEFAULT, 100u);
     CHECK(LINK_KST_LEAVE_MS_DEFAULT <= LINK_KST_LEAVE_MS_MAX);
+    /* 4.30 adds a bit of the command, one an older IOmcu refuses with
+     * BAD_VALUE (its reserved mask 0xF030), and no register, state or
+     * refusal: the wait after a REBOOT's cycle. */
+    CHECK_EQ(LINK_MINOR_KST_CYCLE_WAIT, 30u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_KST_CYCLE_WAIT);
+    CHECK_EQ(LINK_KS_W_CMD_LEAVE, 0x0020u);
+    CHECK_EQ(LINK_KS_W_CMD_LEAVE & 0xF030u, LINK_KS_W_CMD_LEAVE);
+    CHECK_EQ(LINK_KS_W_CMD_LEAVE
+                 & (LINK_KS_W_CMD_PORT | LINK_KS_W_CMD_CONFIRM | 0x0F0Fu),
+             0u);
+    CHECK_EQ(LINK_KS_W_CMD_OF(LINK_KST_OP_REBOOT, 2u) | LINK_KS_W_CMD_LEAVE,
+             0x0269u);
     /* The key a write carries is neither of the values a cleared or a
      * stuck register reads. */
     CHECK(LINK_KST_WRITE_KEY != 0u);
@@ -1688,7 +1700,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 29u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 30u);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 
