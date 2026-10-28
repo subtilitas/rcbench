@@ -43,8 +43,14 @@
  * report writers' text IDs in every language (text_view_words()).
  *
  * The editor.  EDIT switches the view to the editor and opens the
- * keyboard's editor mode (ui_textkey_open_editor()) under a text of 4 rows
- * (5 with SMALL); a cursor shows where a key types.  A tap on the text
+ * keyboard's editor mode (ui_textkey_open_editor()), 4 rows of keys with
+ * no digit row, under a text of 8 rows (10 with SMALL); a cursor shows
+ * where a key types.  SETUP > PANEL's Keyboard see-through (SET_KB_SEE)
+ * lets the text show through the keyboard: OFF, 25% or 50%.  While it is
+ * above OFF the panel is drawn to its full height under the keyboard and
+ * the rows below the 8 (10) show through the keys; the 8 (10) over the
+ * keyboard are still the rows the cursor is kept on, a tap reaches and a
+ * page moves.  A tap on the text
  * puts the cursor on the nearest cell; "<-" and "->" move it a unit.  DONE
  * closes the keyboard, and the footer then holds SAVE, REVERT, KEYBOARD,
  * PAGE UP and PAGE DOWN, with a note between.  A key that would take the
@@ -207,8 +213,10 @@ bool text_view_small(void);
 void text_view_set_small(bool small);
 
 /**
- * @brief Rows on screen in the face in use.
- * @return TEXT_VIEW_ROWS_NORMAL or TEXT_VIEW_ROWS_SMALL
+ * @brief Rows on screen in the face in use, over the keyboard while it is
+ *        open.
+ * @return TEXT_VIEW_ROWS_NORMAL or TEXT_VIEW_ROWS_SMALL; 8 or 10 while the
+ *         keyboard is open
  */
 int text_view_rows(void);
 

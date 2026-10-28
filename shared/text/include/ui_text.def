@@ -5935,6 +5935,12 @@ UI_SETTING_LABEL(SET_KNOB_SCALE,
 UI_SETTING_HELP(SET_KNOB_SCALE,
     "Degrees of knob per full slider span",
     "Knopfgrad je ganzem Reglerweg")
+UI_SETTING_LABEL(SET_KB_SEE,
+    "Keyboard see-through",
+    "Tastatur durchsichtig")
+UI_SETTING_HELP(SET_KB_SEE,
+    "Text editor: the text shows through the keys",
+    "Texteditor: der Text scheint durch die Tasten")
 /* --- interfaces ---------------------------------------------------- */
 UI_SETTING_LABEL(SET_INA228_EN,
     "INA228",
@@ -6695,6 +6701,14 @@ UI_OPTIONS(screen_rot)
 UI_OPTION("NORMAL", NULL)
 UI_OPTION("180°", NULL)
 UI_OPTIONS_END(screen_rot)
+
+/* The text editor's keyboard: the percent of the text behind that shows
+ * through (ui_textkey_see_pct()). */
+UI_OPTIONS(kb_see)
+UI_OPTION("OFF", "AUS")
+UI_OPTION("25%", NULL)
+UI_OPTION("50%", NULL)
+UI_OPTIONS_END(kb_see)
 
 UI_OPTIONS(language)
 UI_OPTION("ENGLISH", NULL)

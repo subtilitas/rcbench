@@ -268,7 +268,10 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   16 x 28, da `LEERZEICHEN` zwei Tasten von 192px hat. Die
   Namenstastaturen von SERVO, Tasten von 55 x 72px, zeigen ihre Wörter
   in 12 x 24, die Suchtastatur von ESC STICK, Tasten von 59 x 57px, in
-  16 x 28.
+  16 x 28. Die Tastatur des Texteditors hat keine Titelzeile, kein Feld
+  und keine Ziffernreihe: 4 Tastenreihen, Tasten von 93 x 56px, alle
+  Wörter in 20 x 36, `123` als weitere Worttaste
+  ([Der Texteditor](#der-texteditor)).
 - **Auswahlliste.** Ein Feld oder eine Zeile ab 56px Höhe zeigt den Text
   im Font 20 x 36, 12px eingerückt, mit einem 11px breiten Winkel 28px
   vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10px
@@ -2942,11 +2945,17 @@ nicht gemessen.
 
 BEARBEITEN im Textbetrachter schaltet ihn auf den Editor und öffnet die
 Tastatur. Der Editor ändert den Text im Speicher des Panels; SPEICHERN
-schreibt ihn auf die Karte. Das Panel zeigt dann 4 Zeilen des Texts (5 mit
-KLEIN) in einem Feld von 1008 x 92px ab Körper-y 60 und die Tastatur ab
-Körper-y 158 bis zum Alarmband: 5 Reihen zu 10 Tasten, je 93 x 59px, 6px
-auseinander. Die Zeichenreihen sind die drei Ebenen der Wi-Fi-Tastatur:
-Kleinbuchstaben, Großbuchstaben (ABC) und die 32 Zeichen (#+=). DEL nimmt
+schreibt ihn auf die Karte. Das Panel zeigt dann 8 Zeilen des Texts (10
+mit KLEIN) in einem Feld von 1008 x 170px ab Körper-y 60 und die Tastatur
+ab Körper-y 236 bis zum Alarmband: 4 Reihen zu 10 Tasten, je 93 x 56px,
+6px auseinander, ohne Ziffernreihe; die Buchstaben beginnen in der obersten
+Reihe. Vier Ebenen teilen sich die 3 Zeichenreihen: Kleinbuchstaben,
+Großbuchstaben (`ABC`) und zwei Seiten Zeichen. `123` links von DEL zeigt
+die erste Seite: die Ziffern 0 bis 9 in der obersten Reihe und die 17
+Zeichen `- / : ; ( ) = # " _ . , ? ! ' [ ]`. Auf dieser Seite zeigt `#+=`
+links von Z die zweite Seite mit den übrigen 15: `$ % & * + < > @ \ ^`
+und `` ` { | } ~ ``. `abc` führt von beiden Seiten zurück zu den
+Buchstaben. Eine Ziffer sind 2 Tipps: `123`, dann die Ziffer. DEL nimmt
 das Zeichen vor dem Cursor. Die unterste Reihe ist ENTER (2 Tasten breit),
 LEERZEICHEN (4), `<-` und `->` (je 1) und FERTIG (2). Eine Taste wirkt beim
 Loslassen des Kontakts, der sie gedrückt hat, über derselben Taste; ein
@@ -2975,6 +2984,20 @@ FERTIG oder das Home-Tag schließt die Tastatur; die Fußzeile hält dann
 SPEICHERN, VERWERFEN und TASTATUR links, SEITE HOCH und SEITE RUNTER
 rechts und dazwischen eine Notiz von 3 Zeilen der Schrift 8 x 16. TASTATUR
 öffnet die Tastatur wieder.
+
+SETUP → PANEL → Tastatur durchsichtig lässt den Text durch die Tastatur des
+Editors scheinen: AUS (die Vorgabe), 25% oder 50%. Über AUS reicht das Feld
+des Texts unter der Tastatur bis Körper-y 432, wie im Textbetrachter, und
+die Zeilen 9 bis 18 (11 bis 22 mit KLEIN) scheinen durch sie hindurch.
+Jedes Pixel einer Taste und der Lücken zwischen den Tasten ist dann zu 25%
+oder 50% der Text dahinter und zum Rest die Farbe der Taste oder des
+Felds; die Beschriftungen, die obere Haarlinie jeder Taste und der Rahmen
+der Tastatur bleiben deckend. Die 8 Zeilen über der Tastatur bleiben die,
+auf denen der Cursor gehalten wird, auf die ein Tipp ihn setzt und die
+SEITE HOCH und SEITE RUNTER bewegen. Die Einstellung wirkt nur auf die
+Tastatur des Editors: die Tastaturen für Namen, Ordner, Suche und Wi-Fi
+haben ihr eigenes Textfeld und bleiben deckend. Stufen über 50% gibt es
+nicht: die Ränder der Tasten verschwinden dann im Text dahinter.
 
 ![Eine KST-Datei mit einem Kommentar gespeichert: ihre Prüfsummenzeile ist weg](img/de/files-edit-kst.png)
 
@@ -3658,7 +3681,9 @@ zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
 bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
 Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
-[Logs](#logs) beschrieben.
+[Logs](#logs) beschrieben. Tastatur durchsichtig legt fest, wie viel des
+Texts durch die Tastatur des Texteditors scheint: AUS, 25% oder 50%,
+standardmäßig AUS; beschrieben unter [Der Texteditor](#der-texteditor).
 
 Acht Einstellungen werden gespeichert und angezeigt, und kein Teil der
 Firmware liest sie: Einheiten und Dimmen nach unter PANEL;

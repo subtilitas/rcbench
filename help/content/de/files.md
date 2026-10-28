@@ -75,7 +75,7 @@ Der Betrachter zeigt eine Datei als Text, nur lesend. Das Home-Tag schließt ihn
 
 BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text ändert sich im Speicher des Panels; SPEICHERN schreibt ihn auf die Karte.
 
-- Über der Tastatur stehen 4 Zeilen des Texts. Die Tastatur hat die drei Ebenen der Wi-Fi-Tastatur: ABC für Großbuchstaben, #+= für Zeichen. DEL nimmt das Zeichen vor dem Cursor. ENTER beginnt eine neue Zeile mit dem Zeilenende der Datei. `<-` und `->` bewegen den Cursor; ein Tipp auf den Text setzt ihn dorthin. FERTIG schließt die Tastatur, TASTATUR öffnet sie wieder.
+- Über der Tastatur stehen 8 Zeilen des Texts, 10 mit KLEIN. Die Tastatur hat keine Ziffernreihe: `ABC` gibt Großbuchstaben, `123` die Ziffern und die häufigen Zeichen, `#+=` auf dieser Seite die übrigen Zeichen; `abc` führt zurück. DEL nimmt das Zeichen vor dem Cursor. ENTER beginnt eine neue Zeile mit dem Zeilenende der Datei. `<-` und `->` bewegen den Cursor; ein Tipp auf den Text setzt ihn dorthin. FERTIG schließt die Tastatur, TASTATUR öffnet sie wieder.
 - Die Kopfzeile zeigt GEÄNDERT, sobald der Text von der Karte abweicht, und die Zeile des Cursors.
 - SPEICHERN schreibt den Text als `<Name>.NEW`, löscht die alte Datei und gibt der neuen ihren Namen. SPEICHERN ist gesperrt, solange der Prüfstand ARMED ist oder ein Lauf aufgezeichnet wird; der Text bleibt. Ein Wechsel auf ARMED während des Speicherns hält es an, und die alte Datei bleibt.
 - Eine KST-Datei des Servo-Programmierers verliert ihre Prüfsummenzeile, wenn sie geändert gespeichert wird, in jeder Form, die der Programmierer als eine liest (`checksum`, `CHECKSUM=`, `Checksum:`): der Programmierer liest sie dann als Datei, die ein Mensch bearbeitet hat.
@@ -83,6 +83,7 @@ BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text än
 - Ein ESC-Profil in `BENCH/ESC/CONF` liest das Panel beim nächsten Start.
 - VERWERFEN setzt den Text auf die Datei auf der Karte zurück. Es fragt zuerst, wie das Home-Tag bei ungespeichertem Text: BLEIBEN behält den Text, VERWERFEN lässt die Änderungen fallen.
 - Der Text hält bis zu 1MiB und 65.536 Zeilenenden. Die Tastatur tippt ASCII; einzelne Tasten lassen sich nicht rückgängig machen.
+- SETUP → PANEL → Tastatur durchsichtig auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen; der Cursor bleibt auf den 8 Zeilen darüber.
 
 ![Eine KST-Datei mit einem Kommentar gespeichert](view:files-edit-kst)
 ![Die Frage vor ungespeicherten Änderungen](view:files-edit-unsaved)

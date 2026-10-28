@@ -247,7 +247,10 @@ the faces and the spacing inside are theirs.
   word in 20 x 36; the German password's in 16 x 28, as `LEERZEICHEN`
   has two keys of 192px. SERVO's name keyboards, keys of 55 x 72px, draw
   their words in 12 x 24; the ESC STICK search keyboard, keys of
-  59 x 57px, in 16 x 28.
+  59 x 57px, in 16 x 28. The text editor's keyboard has no title row, no
+  field and no digit row: 4 rows of keys of 93 x 56px, every word in
+  20 x 36, `123` one more word key
+  ([The text editor](#the-text-editor)).
 - **Choice list.** A face or a row 56px tall or taller draws its text in
   the 20 x 36 face, 12px in, with an 11px chevron 28px from the face's
   right edge. A shorter one draws in 16 x 28, 10px in, with a 7px chevron
@@ -2654,11 +2657,17 @@ read of 1MiB takes on the panel's card is not measured.
 
 EDIT in the viewer switches it to the editor and opens the keyboard. The
 editor changes the text in the panel's memory; SAVE writes it to the
-card. The panel then holds 4 rows of the text (5 with SMALL) in a panel of
-1008 x 92px from body y 60, and the keyboard from body y 158 to the alert
-band: 5 rows of 10 keys, 93 x 59px each, 6px apart. The character rows
-are the Wi-Fi keyboard's three layers: lower case, capitals (ABC), and the
-32 marks (#+=). DEL takes the character before the cursor. The bottom row
+card. The panel then holds 8 rows of the text (10 with SMALL) in a panel
+of 1008 x 170px from body y 60, and the keyboard from body y 236 to the
+alert band: 4 rows of 10 keys, 93 x 56px each, 6px apart, with no digit
+row; the letters start at the top row. Four layers share the 3 character
+rows: lower case, capitals (`ABC`), and two pages of marks. `123`, left of
+DEL, shows the first page: the digits 0 to 9 on the top row and the 17
+marks `- / : ; ( ) = # " _ . , ? ! ' [ ]`. On that page `#+=`, left of Z,
+shows the second page with the other 15: `$ % & * + < > @ \ ^` and
+`` ` { | } ~ ``. `abc` goes back to the letters from either page. A digit
+is 2 taps: `123`, then the digit. DEL takes the character before the
+cursor. The bottom row
 is ENTER (2 keys wide), SPACE (4), `<-` and `->` (1 each) and DONE (2).
 A key acts on the release of the contact that pressed it, over the same
 key; a second contact is ignored while one is down. The keyboard types
@@ -2683,6 +2692,19 @@ DONE, or the home tag, closes the keyboard; the footer then holds SAVE,
 REVERT and KEYBOARD at the left, PAGE UP and PAGE DOWN at the right, and a
 note of 3 rows of the 8 x 16 face between them. KEYBOARD opens the
 keyboard again.
+
+SETUP → PANEL → Keyboard see-through lets the text show through the
+editor's keyboard: OFF (the default), 25% or 50%. Above OFF the panel of
+the text reaches to body y 432 under the keyboard, as in the viewer, and
+rows 9 to 18 (11 to 22 with SMALL) show through it. Each pixel of a key
+and of the gaps between keys is then 25% or 50% the text behind and the
+rest the key's or the panel's colour; the labels, each key's top hairline
+and the keyboard's outline stay opaque. The 8 rows over the keyboard are
+still the ones the cursor is kept on, a tap places it on and PAGE UP and
+PAGE DOWN move. The setting reaches only the editor's keyboard: the name,
+folder, search and Wi-Fi keyboards carry their own text field and draw
+opaque. Steps above 50% are not offered: the keys' edges then fade into
+the text behind them.
 
 ![A KST file saved with a comment: its checksum line is gone](img/files-edit-kst.png)
 
@@ -3307,7 +3329,9 @@ PANEL's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
-default and is described under [Logs](#logs).
+default and is described under [Logs](#logs). Keyboard see-through sets how
+much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
+OFF by default; described under [The text editor](#the-text-editor).
 
 Eight settings are stored and shown, and no part of the firmware reads them:
 Units and Dim after under PANEL; Cells, Capacity and

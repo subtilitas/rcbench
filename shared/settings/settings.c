@@ -107,6 +107,11 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_KNOB_SCALE] = {
         "knob_scale", "deg",
         SET_CAT_APP, SET_TYPE_INT, 90, 720, 10, 270, NULL, 0 },
+    /* How much of the text shows through the text editor's keyboard,
+     * ui_textkey_see_pct() of the option: OFF, 25%, 50%. */
+    [SET_KB_SEE] = {
+        "kb_see", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(kb_see) },
 
     /*
      * The current monitors, on the IOmcu's I2C (Inter-Integrated

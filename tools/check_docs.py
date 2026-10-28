@@ -304,8 +304,9 @@ OPTION_RE = re.compile(r'^UI_OPTION\("([^"]+)",', re.M)
 # numbers offered one by one: prose names the address it means.  The kept
 # INA3221 of 0.21 (old_addr, old_ch) is on no screen.  What a SENSORS
 # channel watches (watch) is the outputs' and ports' own names, which prose
-# names one at a time.
-NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch"}
+# names one at a time.  Keyboard see-through's OFF, 25% and 50% (kb_see)
+# are a word and two numbers prose uses for much else.
+NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch", "kb_see"}
 
 
 def option_lists() -> dict[str, list[str]]:

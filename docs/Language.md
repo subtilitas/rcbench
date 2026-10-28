@@ -309,7 +309,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 416 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 419 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -354,8 +354,8 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 2,396 entries
-with an ID and 78 options, 10 of them with an empty English.
+A language is one more column in every entry of the table: 2,398 entries
+with an ID and 81 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
    the parameter to every macro that reads a column: 7 empty defaults at the
