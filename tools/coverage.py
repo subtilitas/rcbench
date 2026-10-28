@@ -223,7 +223,6 @@ TRACKED = [
     "protocols/hitec/hitec_pre.c",
     "protocols/hitec/hitec_reg.c",
     "protocols/hitec/hitec_session.c",
-    "shared/logfile/kst_store.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
     "shared/outputs/hitec_port.c",

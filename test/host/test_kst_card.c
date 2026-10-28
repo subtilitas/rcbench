@@ -1,7 +1,7 @@
 /*
  * The card's side of the servo programmer's files (shared/bench/kst_card.c)
  * over a directory in memory: every answer a save, a list and a load give,
- * with the text of kst_file.h and the names of kst_store.h under it.
+ * with the text of kst_file.h and the names of servo_store.h under it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,7 +16,7 @@
 #include "kst_limits.h"
 #include "kst_reg.h"
 #include "kst_sim.h"
-#include "kst_store.h"
+#include "servo_store.h"
 
 static fake_card_t g_c;
 static kst_prog_card_done_t g_d;
@@ -575,8 +575,8 @@ TEST_CASE(a_save_states_the_operator_s_type_and_a_load_is_held_to_it)
      * servos: the file states V8. */
     g_type = 8;
     CHECK_EQ(save("WING", &sv), KST_PROG_CARD_OK);
-    CHECK_EQ(kst_store_load(&g_c.io, "WING.TXT", text, sizeof(text), &len),
-             KST_STORE_OK);
+    CHECK_EQ(servo_store_load(&g_c.io, "WING.TXT", text, sizeof(text), &len),
+             SERVO_STORE_OK);
     CHECK_EQ(kst_file_parse(text, len, &f, NULL), KST_FILE_OK);
     CHECK_EQ(f.type, KST_TYPE_V8);
     CHECK_EQ(kst_type(&f.image), KST_TYPE_V6);
@@ -597,8 +597,8 @@ TEST_CASE(a_save_states_the_operator_s_type_and_a_load_is_held_to_it)
     /* A save with no type set writes no type line; that file loads at
      * either type, and lists with none. */
     CHECK_EQ(save("NONE", &ot), KST_PROG_CARD_OK);
-    CHECK_EQ(kst_store_load(&g_c.io, "NONE.TXT", text, sizeof(text), &len),
-             KST_STORE_OK);
+    CHECK_EQ(servo_store_load(&g_c.io, "NONE.TXT", text, sizeof(text), &len),
+             SERVO_STORE_OK);
     text[len < sizeof(text) ? len : sizeof(text) - 1u] = '\0';
     CHECK(strstr(text, "Type") == NULL);
     g_type = 6;

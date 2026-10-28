@@ -22,6 +22,13 @@ history is in git.
 
 ### Changed
 
+- The KST and Chaservo programmer's files on the card use the store of the
+  Hitec programmer, `shared/logfile/servo_store.c`, with the stem `KST`; the
+  duplicate `kst_store.c` is removed. File names, the folder `BENCH/KST/CONF`,
+  the proposed names `KST001` to `KST999`, the reserved name `KST` and every
+  refusal stay as they were; `test_kst_store` is replaced by a KST case in
+  `test_servo_store`.
+
 - LOGS' OPEN on a report opens it in FILES' text viewer instead of LOGS'
   own text view, which held 32KiB of a file; the home tag returns to LOGS
   with the report chosen again. LOGS' text view and `log_text.c` are
