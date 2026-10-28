@@ -103,6 +103,12 @@ history is in git.
 
 ### Fixed
 
+- FILES' RESCAN and the way back into FILES list an entry new on the card
+  that ranks before the first row of a pane's first page, such as a log
+  the logger wrote as `ATEST001.CSV` into a folder of `SERVO` logs
+  (`fm_tree_page()` reads `FM_GO_SAME` on the first page from the
+  folder's first entry). Such an entry stayed off the page until the
+  bench restarted. A list scrolled to its top stays at the top.
 - A turn of the panel's knob while a chip's help bubble is open closes the
   bubble and moves nothing, as a tap does (`ui_router_take_knob()`); before,
   the turn moved the throttle on MOTOR & ESC or the target on SERVO behind

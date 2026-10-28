@@ -67,7 +67,9 @@ typedef enum {
     FM_GO_NEXT,       /**< the page after the one on show                */
     FM_GO_PREV,       /**< the page before the one on show               */
     FM_GO_LAST,       /**< the folder's last page                        */
-    FM_GO_SAME        /**< the page on show again, from its first entry  */
+    FM_GO_SAME        /**< the page on show again: the first page from
+                           the folder's first entry, a later page from its
+                           own first entry                               */
 } fm_go_t;
 
 /**

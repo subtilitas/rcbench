@@ -278,6 +278,7 @@ static int place_of(const fm_tree_t *t, const fm_entry_t *e)
  *         kept by fm_tree_page(), by name. */
 typedef struct {
     bool have;           /**< the pane held rows                        */
+    bool start;          /**< the list showed the folder's first entry  */
     fm_entry_t top;      /**< the entry of the top row on screen        */
 } place_t;
 
@@ -295,6 +296,7 @@ static void place_note(int i, place_t *p)
     }
     const int top = (s.scroll[i] < t->held) ? s.scroll[i] : t->held - 1;
     p->have = true;
+    p->start = (top <= 0 && t->ahead == 0);
     p->top = t->page[(top > 0) ? top : 0];
 }
 
@@ -303,8 +305,10 @@ static void place_note(int i, place_t *p)
  *        that was the top row on screen stays the top row, and the
  *        selection stays on its entry (fm_tree_page() keeps it by name).
  *
- * A top row gone from the card leaves the entry now at its place on top.
- * A selected entry gone from the card, or moved off the page, leaves
+ * A list that showed the folder's first entry on top shows the folder's
+ * first entry again, so an entry new on the card that ranks first is in
+ * sight.  A top row gone from the card leaves the entry now at its place
+ * on top.  A selected entry gone from the card, or moved off the page, leaves
  * nothing selected, as after a DELETE: MOVE and RENAME act on the
  * selection without a question, so no other entry takes it.  The scroll
  * is held to the rows after (fs_clamp_scroll()).
@@ -314,7 +318,7 @@ static void place_note(int i, place_t *p)
  */
 static void place_keep(int i, const place_t *p)
 {
-    if (p->have) {
+    if (p->have && !p->start) {
         s.scroll[i] = place_of(&s.pane[i], &p->top);
     }
 }
