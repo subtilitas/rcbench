@@ -201,6 +201,23 @@ Bitzeiten Bytes und 1 losgelassene Bitzeit.
 
 `<dec>` ist `none`, `c:<cmd>`, `d:<addr>` oder `l:<byte>`.
 
+`more` als letztes Wort von `send`, `listen`, `level`, `power`, `c` oder `d`
+setzt Bit 4 des Kommandos (MORE, Protokoll 4.31): weitere Schritte dieses
+Schreibens folgen. Es gehört auf jeden Schritt eines Schreibens in den
+Speicher des Servos außer dem letzten, zum Beispiel ein classic-Schreiben
+einer Zelle vor ihrer Ausgleichszelle oder ein Schreiben der D-Serie und
+sein Speichern vor dem Neustart. Solange es steht, `flags=MORE`, wartet ein
+OFF, das das Panel an SUPPLY schreibt, auf den letzten Schritt des
+Schreibens, höchstens 10.000ms nach dem OFF
+([Ein OFF während eines Schreibens](LinkHitec-de.md#ein-off-während-eines-schreibens)).
+Ein Schritt, der 10.000ms oder mehr nach dem OFF getippt wird, geht an ein
+Servo, dessen Versorgung aus ist.
+
+```text
+hitec c 0 0x62 0x10 0x55 more
+hitec c 0 0x62 0x1C 0xAA
+```
+
 Eine Option von `send`, `listen` oder `power`, die fehlt, ist 0: keine
 Lücke, kein Fenster, kein empfangenes Byte, kein Dekoder. `answer` ist die
 Ausnahme: fehlt es, wird nichts beantwortet; `answer=0` antwortet 0x00. Ein

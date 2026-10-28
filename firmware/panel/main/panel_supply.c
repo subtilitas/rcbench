@@ -179,13 +179,27 @@ static bool bench_live(void)
 }
 
 /**
+ * @brief Whether the IOmcu holds the panel's OFF for a programming port's
+ *        write (link 4.31, LINK_MINOR_PORT_CUT): an error then switches the
+ *        supply off whoever holds it (error_stop.h).
+ * @return true for an IOmcu that serves the SUPPLY page at 4.31 or later.
+ */
+static bool port_defers(void)
+{
+    return s_supply_page && s_far_minor >= LINK_MINOR_PORT_CUT;
+}
+
+/**
  * @brief What error_stop() asks, done from here.
  *
  * The disarm is a request, the way a screen's DISARM is one, because this
  * runs inside an exchange's wait as well.  The request withholds the
  * heartbeat while it stands, so the IOmcu fails safe within
  * HEARTBEAT_MAX_GAP_MS (150ms) whatever this task waits for, and
- * service_arming() lets go of the rest when the loop is free.
+ * service_arming() lets go of the rest when the loop is free.  To an
+ * IOmcu of 4.31 the OFF is written whatever this end reads of the output
+ * (supply_link_cut()): a port in a power cycle has it off and is about to
+ * switch it on, and the page refuses that ON after the panel's OFF.
  *
  * @param e The act: DISARM asked, the supply's output switched off.
  */
@@ -196,12 +210,16 @@ static void error_act(error_stop_t e)
     }
     if (e.supply_off) {
         supply_switch(false);
+        if (s_supply_is_real && port_defers()) {
+            supply_link_cut(&s_supply_link);
+        }
     }
 }
 
 void bench_error_stop(void)
 {
-    error_act(error_stop(bench_live(), s_supply_on, s_prog_taken));
+    error_act(error_stop(bench_live(), s_supply_on, s_prog_taken,
+                         port_defers()));
 }
 
 /** @brief The card faults the logger counted (s_card_faults), each taken
@@ -211,7 +229,18 @@ static error_watch_t s_card_watch;
 void card_faults_follow(void)
 {
     error_act(error_stop_take(&s_card_watch, atomic_load(&s_card_faults),
-                              bench_live(), s_supply_on, s_prog_taken));
+                              bench_live(), s_supply_on, s_prog_taken,
+                              port_defers()));
+}
+
+/** @brief The programmers' session faults (prog_faults()), each taken as an
+ *         error once; control task only. */
+static error_watch_t s_prog_watch;
+
+void prog_faults_follow(void)
+{
+    error_act(error_stop_take(&s_prog_watch, prog_faults(), bench_live(),
+                              s_supply_on, s_prog_taken, port_defers()));
 }
 
 /* The operator's limits as the render side last stored them. */
@@ -526,6 +555,7 @@ void supply_pump(void)
     supply_follow_stops();
     supply_watch_service();
     card_faults_follow();
+    prog_faults_follow();
     supply_service();
 
     const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);

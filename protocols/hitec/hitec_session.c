@@ -629,6 +629,12 @@ static void build(hitec_session_t *s)
         const hitec_step_t *w = &s->plan.step[s->step_index];
 
         s->addr = w->addr;
+        /* More of this write follows: another plan step, or another try of
+         * this one if its answer does not come.  The read-back is not a
+         * write. */
+        st->more = (uint8_t)((unsigned)s->step_index + 1u < s->plan.n
+                             || (classic
+                                 && (unsigned)s->tries + 1u < HITEC_SES_TRIES));
         if (classic) {
             hitec_c_xfer(HITEC_C_WRITE_EEPROM, w->addr, (uint8_t)w->value,
                          &st->xfer);

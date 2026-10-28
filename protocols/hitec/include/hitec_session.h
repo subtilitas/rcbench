@@ -121,6 +121,10 @@ typedef struct {
     uint16_t     off_ms;   /**< POWER: the supply off time, ms */
     uint16_t     wait_ms;  /**< WAIT: ms left, rounded up, at most 65535 */
     hitec_xfer_t xfer;     /**< XFER: the transaction; POWER: its LISTEN */
+    uint8_t      more;     /**< 1: a write step that more steps of the
+                                same write may follow: a plan step before
+                                the last, or a try of the last that has
+                                tries left; 0 for every other step */
 } hitec_ses_step_t;
 
 /** @brief How a step ended. */

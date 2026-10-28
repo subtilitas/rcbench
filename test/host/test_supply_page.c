@@ -704,7 +704,12 @@ TEST_CASE(a_held_supply_takes_off_from_the_panel_only)
     CHECK_EQ(command(1u, 5000u, 1000u, true), LINK_NACK_BAD_VALUE);
     CHECK_EQ(command(1u, 4000u, 1000u, true), LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
-    /* The port itself is not held by its own hold. */
+    /* The port itself is not held by its own hold; but after the panel's
+     * OFF it cannot switch the supply on again until it lets go (4.31). */
+    CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    supply_page_hold(&pg, false);
+    supply_page_hold(&pg, true);
     CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
     /* The bit survives a step with and without a driver. */
     pdmini_t drv;

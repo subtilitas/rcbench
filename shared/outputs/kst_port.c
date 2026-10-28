@@ -1344,6 +1344,13 @@ bool kst_port_frame_out(const kst_port_t *p)
     return p != NULL && p->running != 0u;
 }
 
+bool kst_port_writing(const kst_port_t *p)
+{
+    return p != NULL && p->state == (uint8_t)LINK_KST_PROGRAMMING
+           && p->running != 0u && p->session.planning == 0u
+           && writes_servo((link_kst_op_t)p->op);
+}
+
 void kst_port_bench_armed(kst_port_t *p, bool armed)
 {
     if (p != NULL) {

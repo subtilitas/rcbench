@@ -142,6 +142,19 @@ pass and ends the operation. An output the PD mini switches off by itself
 is not delayed. The time the PD mini's output takes to fall after the
 command is not measured.
 
+From 4.31 an OFF the panel writes while the port writes to the servo's
+memory waits for the write: a WRITE, a RESTORE or a RELEASE from the end
+of its planning to the end of its read-backs (`kst_port_writing()`). The
+port sees the supply on until the write ends, the write and its read-backs
+run whole, and the OFF reaches the PD mini in the pass after, 10,000ms
+after the OFF at the latest (`SUPPLY_PAGE_WRITE_WAIT_MS`). An OFF during
+the planning, or with no write running, is not held: nothing has gone to
+the servo, and the operation ends with result 19. The heartbeat lost is
+not held. From the panel's OFF until the port is in PWM again, SUPPLY
+refuses the port's own ON: a REBOOT whose cycle is in RAIL_OFF ends in PWM
+with result 32 (`SUPPLY`) and the supply off
+([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)).
+
 The IOmcu does not switch the bank to ARMED while a programming port is out of
 PWM: the ARM register is taken and the bank stays SAFE until the port
 is in PWM again. ENTER is refused with BUSY while the bank is ARMED (both
@@ -160,6 +173,8 @@ Where the supply ends when something fails:
 | The heartbeat is lost or the link is silent in RAIL_OFF | stays off | PWM with bit 4 clear, result 19 |
 | The supply does not read on within 3000ms in RAIL_WAIT | asked off | PWM, result 32 |
 | The supply is asked off in RAIL_WAIT (the panel, a lost heartbeat) | off | PWM, result 19 |
+| The panel asks the supply off in RAIL_OFF (4.31) | stays off: the cycle's ON is refused | PWM, result 32 |
+| The panel asks the supply off while a WRITE, RESTORE or RELEASE sends (4.31) | on until the write and its read-backs end, 10,000ms at most, then off | the operation ends as it would; then as for a supply asked off in PROGRAMMING |
 
 The supply ends off whenever no panel is there to switch it off: SUPPLY
 switches the PD mini off when the heartbeat stops, and the port switches

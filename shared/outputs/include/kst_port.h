@@ -408,6 +408,20 @@ uint8_t kst_port_quiet_mask(const kst_port_t *p);
  */
 bool kst_port_frame_out(const kst_port_t *p);
 
+/**
+ * @brief A write to the servo's memory runs: a WRITE, a RESTORE or a RELEASE
+ *        of the session in PROGRAMMING, from the end of its planning to the
+ *        end of its read-backs.
+ *
+ * Its planning sends nothing and does not count; a power cycle, a LEAVE and
+ * a read write nothing.  The SUPPLY page holds the panel's OFF back while it
+ * is true (supply_page_port_writes()).
+ *
+ * @param p The port, or NULL.
+ * @return true while such a write runs; false for a NULL p.
+ */
+bool kst_port_writing(const kst_port_t *p);
+
 /** @brief Whether the bank is armed.
  *
  * An ENTER is refused with LINK_KST_REF_BUSY while it is; the caller arms no

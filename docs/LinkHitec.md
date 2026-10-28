@@ -12,7 +12,10 @@ servos the page works with.
 The Hitec page (`HITEC`, 0x34) is new in 4.23; write register 23, the
 receive mode of a D series line, is new in 4.24. From 4.29 a held port
 holds the SUPPLY page from OPEN to CLOSE
-([The supply while a port is held](#the-supply-while-a-port-is-held)).
+([The supply while a port is held](#the-supply-while-a-port-is-held)). From
+4.31 a writer marks the steps of a write that more steps follow, and SUPPLY
+holds the panel's OFF back until the write ends
+([An OFF during a write](#an-off-during-a-write)).
 The page runs raw transactions of
 the Hitec servo wire of [`protocols/hitec`](../protocols/hitec/README.md) on
 one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
@@ -106,6 +109,37 @@ the same: SUPPLY does that itself, held or not ([SUPPLY](Link.md)).
 An IOmcu of 4.23 to 4.28 holds SUPPLY only from the OFF of a POWER to the
 end of its LISTEN, and takes the panel's set points between two POWERs.
 The panel reads bit 11 from either.
+
+### An OFF during a write
+
+From 4.31 a write to the servo's memory runs on this page while a
+transaction runs (BUSY), or while the last command taken started its step
+with bit 4 of `CMD` (`MORE`): more steps of this write follow. The writer
+sets the bit on every step of a write but the last: SEND, LISTEN, LEVEL or
+POWER. `STATE` bit 8 shows it standing. Every other command taken clears
+it, a refused one included, and so do a stop and CLOSE.
+
+An OFF the panel writes to SUPPLY while a write runs reads 0 at once and
+reaches the PD mini when the write ends: in the pass the last step's
+transaction ends, or 10,000ms after the OFF at the latest
+(`SUPPLY_PAGE_WRITE_WAIT_MS`). Until then the port sees its supply on and
+the steps go on. With no write running the OFF reaches the PD mini in the
+next pass. A lost heartbeat or a silent link is not held. From the panel's
+OFF to CLOSE, a POWER switches the supply off as ever and its ON is
+refused: `RESULT` 3 (`SUPPLY`), and the servo stays without power
+(`hitec_port_writing()`, `supply_page.h`).
+
+| Write | Steps with bit 4 | Last step |
+| --- | --- | --- |
+| classic | every cell and balance (0x1C) but the last; every try of a step but the third of the last | the third try of the last balance, or the try that took |
+| D series | the writes and the save | the reboot |
+
+A classic step whose answer comes on its first or second try carries the
+bit, so the bit stands after the last balance until the next command: the
+first read of the read-back, 2ms later, clears it. A write that ends in a
+fault after a step with the bit leaves it standing until the next command
+of this page or the 10,000ms bound. A 4.30 IOmcu refuses a command with
+bit 4 with BAD_VALUE; the panel sets it from 4.31 only.
 
 ## Receive mode
 
@@ -248,7 +282,7 @@ A read gives these registers:
 
 | Register | Name | Reads |
 | ---: | --- | --- |
-| 0 | `STATE` | bits 0 to 2 the state: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 a PD mini answers. Bit 5 the page holds a capture. Bit 6 the last transaction put a byte on the wire. Bit 7 `RX_MODE` is PRECHARGE (4.24). Bits 12 to 15 the port |
+| 0 | `STATE` | bits 0 to 2 the state: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 a PD mini answers. Bit 5 the page holds a capture. Bit 6 the last transaction put a byte on the wire. Bit 7 `RX_MODE` is PRECHARGE (4.24). Bit 8 `MORE`: the last command taken started its step with `CMD` bit 4 (4.31). Bits 12 to 15 the port |
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
 | 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the transactions started since OPEN, held at 4095 |
 | 3 | `RESULT` | low byte the result of that operation: 0 none, 1 running, 2 done, 3 `SUPPLY`, 4 `START`, 5 `NO_LINE`, 6 `CUT`. High byte why the last command taken started nothing, 0 when it started |
@@ -277,7 +311,7 @@ A write sees other registers:
 
 | Register | Name | Takes |
 | ---: | --- | --- |
-| 0 | `CMD` | bits 0 to 3 the operation: 1 OPEN, 2 CLOSE, 3 SEND, 4 LISTEN, 5 LEVEL, 6 ABORT, 7 POWER, 8 CLEAR. Bits 8 to 11 the port. Every other bit 0 |
+| 0 | `CMD` | bits 0 to 3 the operation: 1 OPEN, 2 CLOSE, 3 SEND, 4 LISTEN, 5 LEVEL, 6 ABORT, 7 POWER, 8 CLEAR. Bit 4 `MORE` on SEND, LISTEN, LEVEL and POWER: more steps of this write follow (4.31). Bits 8 to 11 the port. Every other bit 0 |
 | 1 | `SEQ` | the page's `SEQ` plus 1, modulo 65536 |
 | 2 | `KEY` | 0x48A5 for an operation that puts a byte on the wire, else 0 |
 | 3 | `CRC` | the check over registers 4 to 21, for every operation but ABORT, CLOSE and CLEAR |
@@ -307,8 +341,9 @@ is refused with READ_ONLY, a `VIEW` above 2 or an `RX_MODE` above 1 with
 BAD_VALUE, and the window changes nothing.
 
 A frame with a `SEQ` other than the page's plus 1, an operation 0 or above
-8, a bit set outside the operation and the port, or a `KEY` that is neither
-0 nor 0x48A5 is refused with BAD_VALUE and changes nothing. The frame just
+8, a bit set outside the operation, bit 4 and the port, bit 4 on OPEN,
+CLOSE, ABORT or CLEAR, or a `KEY` that is neither 0 nor 0x48A5 is refused
+with BAD_VALUE and changes nothing. The frame just
 taken, sent again, is acknowledged and does nothing. Every other frame is
 acknowledged; what became of it is in `RESULT`.
 
@@ -375,8 +410,10 @@ A request goes out in this order:
    registers. `VIEW` (22) is always 2.
 2. The command, registers 0 to 3: `SEQ` one above the page's, the check of
    registers 4 to 21, and the key with every SEND and with a LISTEN or POWER
-   that answers. A command without an answer goes again unchanged, 3 tries;
-   the page takes it once.
+   that answers. Bit 4 goes with a step the session marks `more`, to an
+   IOmcu of 4.31 or later only
+   ([An OFF during a write](#an-off-during-a-write)). A command without an
+   answer goes again unchanged, 3 tries; the page takes it once.
 3. Registers 0 to 15: the command started the operation, or `RESULT`'s
    high byte says why not. Then every 5ms until the port is out of
    STOPPING, BUSY and POWER_OFF. The last read holds the capture.

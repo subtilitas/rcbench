@@ -714,6 +714,12 @@ extern atomic_uint    s_drive;
  *         change then.  Control task only; kst_port_look(). */
 extern bool            s_prog_taken;
 extern kst_prog_gate_t s_kst_gate;
+/** @brief The programmers' session faults: the KST outcomes
+ *         kst_link_outcome_fault() names, counted as kst_publish() takes
+ *         them, and the Hitec model's (hitec_prog_gate_faults()).  Control
+ *         task only.
+ *  @return the sum, modulo 2^32 */
+uint32_t prog_faults(void);
 /* The SENSE and TONE set-ups that are not held at the far end. */
 extern atomic_uint s_sense_unheld;
 extern atomic_uint s_tone_unheld;
@@ -1023,13 +1029,17 @@ static inline void supply_service(void)
 void apply_supply_cmd(const panel_cmd_t *pc);
 /**
  * @brief An error of the bench (error_stop.h): the bench to SAFE when it is
- *        ARMED or a switch to ARMED waits, and the supply's output off unless
- *        a programming port holds it.  Control task, in the pump as well.
+ *        ARMED or a switch to ARMED waits, and the supply's output off; with
+ *        an IOmcu older than link 4.31, not when a programming port holds
+ *        it.  Control task, in the pump as well.
  */
 void bench_error_stop(void);
 /** @brief The card faults the logger counted, each an error once
  *         (bench_error_stop()); from the pump. */
 void card_faults_follow(void);
+/** @brief The programmers' session faults (prog_faults()), each an error
+ *         once; from the pump. */
+void prog_faults_follow(void);
 /** @brief Card writes that failed during a run, counted by the logger at
  *         each failure's edge (panel_log.c); read by the control task. */
 extern atomic_uint s_card_faults;

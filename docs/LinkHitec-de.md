@@ -14,6 +14,9 @@ Die Hitec-Page (`HITEC`, 0x34) ist neu in 4.23; das Schreibregister 23, der
 Empfangsmodus einer Leitung der D-Serie, ist neu in 4.24. Ab 4.29 hält ein
 gehaltener Port die SUPPLY-Page von OPEN bis CLOSE
 ([Die Versorgung, solange ein Port gehalten ist](#die-versorgung-solange-ein-port-gehalten-ist)).
+Ab 4.31 markiert ein Schreiber die Schritte eines Schreibens, denen weitere
+folgen, und SUPPLY hält das OFF des Panels zurück, bis das Schreiben endet
+([Ein OFF während eines Schreibens](#ein-off-während-eines-schreibens)).
 Die Page fährt rohe Transaktionen
 der Hitec-Servoleitung aus [`protocols/hitec`](../protocols/hitec/README.md)
 auf einem Port von [PROG](Link-de.md#die-programmierports): classic (HS-5xxx,
@@ -113,6 +116,40 @@ tut SUPPLY selbst, gehalten oder nicht ([SUPPLY](Link-de.md)).
 Ein IOmcu mit 4.23 bis 4.28 hält SUPPLY nur vom Ausschalten eines POWER bis
 zum Ende seines LISTEN und nimmt zwischen zwei POWER die Sollwerte des
 Panels. Das Panel liest Bit 11 von beiden.
+
+### Ein OFF während eines Schreibens
+
+Ab 4.31 läuft auf dieser Page ein Schreiben in den Speicher des Servos,
+solange eine Transaktion läuft (BUSY) oder solange das zuletzt angenommene
+Kommando seinen Schritt mit Bit 4 von `CMD` (MORE) gestartet hat: weitere
+Schritte dieses Schreibens folgen. Der Schreiber setzt das Bit auf jedem
+Schritt eines Schreibens außer dem letzten: SEND, LISTEN, LEVEL oder POWER.
+`STATE` Bit 8 zeigt, dass es steht. Jedes andere angenommene Kommando löscht
+es, auch ein abgewiesenes, ebenso ein Stopp und CLOSE.
+
+Ein OFF, das das Panel auf SUPPLY schreibt, während ein Schreiben läuft,
+liest sofort 0 und erreicht den PD mini, wenn das Schreiben endet: im
+Durchlauf, in dem die Transaktion des letzten Schritts endet, spätestens
+10.000ms nach dem OFF (`SUPPLY_PAGE_WRITE_WAIT_MS`). Bis dahin sieht der
+Port seine Versorgung eingeschaltet, und die Schritte laufen weiter. Läuft
+kein Schreiben, erreicht das OFF den PD mini im nächsten Durchlauf. Ein
+verlorener Heartbeat oder ein stiller Link wird nicht zurückgehalten. Vom
+OFF des Panels bis CLOSE schaltet ein POWER die Versorgung wie immer aus,
+und sein ON wird abgewiesen: RESULT 3 (SUPPLY), das Servo bleibt ohne
+Versorgung (`hitec_port_writing()`, `supply_page.h`).
+
+| Schreiben | Schritte mit Bit 4 | Letzter Schritt |
+| --- | --- | --- |
+| classic | jede Zelle und jede Ausgleichszelle (0x1C) außer der letzten; jeder Versuch eines Schritts außer dem dritten des letzten | der dritte Versuch der letzten Ausgleichszelle, oder der Versuch, der angenommen wurde |
+| D-Serie | die Schreibvorgänge und das Speichern | der Neustart |
+
+Ein classic-Schritt, dessen Antwort beim ersten oder zweiten Versuch kommt,
+trägt das Bit; es steht deshalb nach der letzten Ausgleichszelle bis zum
+nächsten Kommando: das erste Lesen des Zurücklesens, 2ms später, löscht es.
+Ein Schreiben, das nach einem Schritt mit dem Bit in einer Störung endet,
+lässt es stehen bis zum nächsten Kommando dieser Page oder bis zur Grenze
+von 10.000ms. Ein IOmcu mit 4.30 weist ein Kommando mit Bit 4 mit BAD_VALUE
+ab; das Panel setzt es erst ab 4.31.
 
 ## Empfangsmodus
 
@@ -262,7 +299,7 @@ Ein Lesen gibt diese Register:
 
 | Register | Name | Liest |
 | ---: | --- | --- |
-| 0 | `STATE` | Bits 0 bis 2 der Zustand: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 ein PD mini antwortet. Bit 5 die Page hält einen Mitschnitt. Bit 6 die letzte Transaktion hat ein Byte auf die Leitung gelegt. Bit 7 `RX_MODE` ist PRECHARGE (4.24). Bits 12 bis 15 der Port |
+| 0 | `STATE` | Bits 0 bis 2 der Zustand: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 ein PD mini antwortet. Bit 5 die Page hält einen Mitschnitt. Bit 6 die letzte Transaktion hat ein Byte auf die Leitung gelegt. Bit 7 `RX_MODE` ist PRECHARGE (4.24). Bit 8 MORE: das zuletzt angenommene Kommando hat seinen Schritt mit `CMD` Bit 4 gestartet (4.31). Bits 12 bis 15 der Port |
 | 1 | `SEQ` | die `SEQ` des letzten angenommenen Kommandos; 0 beim Start |
 | 2 | `OP` | Bits 12 bis 15 die letzte gestartete Operation, Bits 0 bis 11 die seit OPEN gestarteten Transaktionen, bei 4095 gehalten |
 | 3 | `RESULT` | niederwertiges Byte das Ergebnis dieser Operation: 0 keins, 1 läuft, 2 fertig, 3 `SUPPLY`, 4 `START`, 5 `NO_LINE`, 6 `CUT`. Höherwertiges Byte, warum das letzte angenommene Kommando nichts gestartet hat, 0 wenn es gestartet hat |
@@ -291,7 +328,7 @@ Ein Schreiben sieht andere Register:
 
 | Register | Name | Nimmt |
 | ---: | --- | --- |
-| 0 | `CMD` | Bits 0 bis 3 die Operation: 1 OPEN, 2 CLOSE, 3 SEND, 4 LISTEN, 5 LEVEL, 6 ABORT, 7 POWER, 8 CLEAR. Bits 8 bis 11 der Port. Jedes andere Bit 0 |
+| 0 | `CMD` | Bits 0 bis 3 die Operation: 1 OPEN, 2 CLOSE, 3 SEND, 4 LISTEN, 5 LEVEL, 6 ABORT, 7 POWER, 8 CLEAR. Bit 4 MORE bei SEND, LISTEN, LEVEL und POWER: weitere Schritte dieses Schreibens folgen (4.31). Bits 8 bis 11 der Port. Jedes andere Bit 0 |
 | 1 | `SEQ` | die `SEQ` der Page plus 1, modulo 65536 |
 | 2 | `KEY` | 0x48A5 für eine Operation, die ein Byte auf die Leitung legt, sonst 0 |
 | 3 | `CRC` | die Prüfsumme über Register 4 bis 21, für jede Operation außer ABORT, CLOSE und CLEAR |
@@ -321,9 +358,9 @@ oder höher erreicht, wird mit READ_ONLY abgewiesen, ein `VIEW` über 2 oder
 ein `RX_MODE` über 1 mit BAD_VALUE, und das Fenster ändert nichts.
 
 Ein Frame mit einer anderen `SEQ` als der der Page plus 1, einer Operation 0
-oder über 8, einem gesetzten Bit außerhalb von Operation und Port oder einem
-`KEY`, der weder 0 noch 0x48A5 ist, wird mit BAD_VALUE abgewiesen und ändert
-nichts. Der eben angenommene Frame, noch einmal gesendet, wird quittiert und
+oder über 8, einem gesetzten Bit außerhalb von Operation, Bit 4 und Port,
+Bit 4 bei OPEN, CLOSE, ABORT oder CLEAR, oder einem `KEY`, der weder 0
+noch 0x48A5 ist, wird mit BAD_VALUE abgewiesen und ändert nichts. Der eben angenommene Frame, noch einmal gesendet, wird quittiert und
 tut nichts. Jeder andere Frame wird quittiert; was aus ihm wurde, steht in
 `RESULT`.
 
@@ -393,8 +430,11 @@ Eine Anfrage geht in dieser Reihenfolge hinaus:
    und 3 Registern. `VIEW` (22) ist immer 2.
 2. Das Kommando, Register 0 bis 3: `SEQ` eins über dem der Page, die
    Prüfsumme der Register 4 bis 21 und der Schlüssel bei jedem SEND und bei
-   einem LISTEN oder POWER, das antwortet. Ein Kommando ohne Antwort geht
-   unverändert noch einmal, 3 Versuche; die Page nimmt es einmal.
+   einem LISTEN oder POWER, das antwortet. Bit 4 geht mit einem Schritt,
+   den die Session `more` markiert, nur an einen IOmcu ab 4.31
+   ([Ein OFF während eines Schreibens](#ein-off-während-eines-schreibens)).
+   Ein Kommando ohne Antwort geht unverändert noch einmal, 3 Versuche; die
+   Page nimmt es einmal.
 3. Register 0 bis 15: das Kommando hat die Operation gestartet, oder das
    hohe Byte von `RESULT` sagt, warum nicht. Danach alle 5ms, bis der Port
    aus STOPPING, BUSY und POWER_OFF heraus ist. Das letzte Lesen enthält

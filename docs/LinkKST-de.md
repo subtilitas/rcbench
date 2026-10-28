@@ -159,6 +159,21 @@ Operation. Ein Ausgang, den der PD mini selbst abschaltet, wird nicht
 verzögert. Die Zeit, die der Ausgang des PD mini nach dem Kommando zum
 Abfallen braucht, ist nicht gemessen.
 
+Ab 4.31 wartet ein OFF, das das Panel schreibt, während der Port in den
+Speicher des Servos schreibt, auf das Schreiben: ein WRITE, ein RESTORE
+oder ein RELEASE vom Ende seines Planens bis zum Ende seiner Rücklesungen
+(`kst_port_writing()`). Der Port sieht die Versorgung eingeschaltet, bis
+das Schreiben endet, das Schreiben und seine Rücklesungen laufen ganz, und
+das OFF erreicht den PD mini im Durchlauf danach, spätestens 10.000ms nach
+dem OFF (`SUPPLY_PAGE_WRITE_WAIT_MS`). Ein OFF während des Planens oder
+ohne laufendes Schreiben wird nicht zurückgehalten: nichts ist zum Servo
+gegangen, und die Operation endet mit Ergebnis 19. Ein verlorener
+Heartbeat wird nicht zurückgehalten. Vom OFF des Panels, bis der Port
+wieder in PWM steht, weist SUPPLY das eigene ON des Ports ab: ein REBOOT,
+dessen Zyklus in RAIL_OFF steht, endet in PWM mit Ergebnis 32 (SUPPLY)
+und ausgeschalteter Versorgung
+([Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+
 Der IOmcu schaltet keine Ausgangsbank auf ARMED, solange ein
 Programmierport nicht in PWM steht: das Register ARM wird angenommen, und
 die Bank bleibt SAFE, bis der Port wieder in PWM steht. ENTER wird mit
@@ -177,6 +192,8 @@ Wo die Versorgung endet, wenn etwas ausfällt:
 | Der Heartbeat ist verloren oder der Link still in RAIL_OFF | bleibt aus | PWM mit gelöschtem Bit 4, Ergebnis 19 |
 | Die Versorgung liest in RAIL_WAIT nicht innerhalb von 3000ms an | aus angefordert | PWM, Ergebnis 32 |
 | Die Versorgung ist in RAIL_WAIT aus angefordert (das Panel, ein verlorener Heartbeat) | aus | PWM, Ergebnis 19 |
+| Das Panel fordert die Versorgung in RAIL_OFF aus an (4.31) | bleibt aus: das ON des Zyklus wird abgewiesen | PWM, Ergebnis 32 |
+| Das Panel fordert die Versorgung aus an, während ein WRITE, RESTORE oder RELEASE sendet (4.31) | an, bis das Schreiben und seine Rücklesungen enden, höchstens 10.000ms, dann aus | die Operation endet, wie sie enden würde; danach wie bei einer in PROGRAMMING aus angeforderten Versorgung |
 
 Die Versorgung endet aus, wann immer kein Panel da ist, das sie ausschalten
 könnte: SUPPLY schaltet den PD mini aus, wenn der Heartbeat endet, und der

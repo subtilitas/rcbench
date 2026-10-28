@@ -28,6 +28,7 @@ enum {
 void hitec_prog_gate_init(hitec_prog_gate_t *g)
 {
     atomic_store(&g->pass, 0u);
+    atomic_store(&g->faults, 0u);
 }
 
 void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id)
@@ -57,6 +58,26 @@ bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id)
 bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id)
 {
     return gate_take(g, id);
+}
+
+uint32_t hitec_prog_gate_faults(const hitec_prog_gate_t *g)
+{
+    return g != NULL ? atomic_load(&g->faults) : 0u;
+}
+
+bool hitec_prog_ses_fault(unsigned r)
+{
+    switch (r) {
+    case HITEC_SES_ERR_NO_SERVO:
+    case HITEC_SES_ERR_ENTRY:
+    case HITEC_SES_ERR_READ:
+    case HITEC_SES_ERR_WRITE:
+    case HITEC_SES_ERR_VERIFY:
+    case HITEC_SES_ERR_STEP:
+        return true;
+    default:
+        return false;
+    }
 }
 
 /* -------------------------------------------------------------- messages */
@@ -426,6 +447,9 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
 {
     const uint8_t op = p->op;
 
+    if (hitec_prog_ses_fault((unsigned)r) && p->gate != NULL) {
+        atomic_fetch_add(&p->gate->faults, 1u);
+    }
     p->st = ST_IDLE;
     p->op = OP_NONE;
     switch (op) {

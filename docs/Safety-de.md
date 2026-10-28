@@ -112,20 +112,21 @@ IOmcu handelt selbst, wenn einer der beiden ausfällt.
 
 | Störung | Servo-PWM und DShot, an der Bank und an den Ports | KST- und Hitec-Sitzungen | Ausgang des PD mini | Wer handelt |
 | --- | --- | --- | --- | --- |
-| Link 200ms still, der IOmcu läuft | kein Puls ab demselben Durchlauf | abgebrochen, Leitung freigegeben | im selben Durchlauf aus angefordert | der IOmcu (`safety_gate_step()`); das Panel rastet in ARMED einen Stopp ein |
+| Link 200ms still, der IOmcu läuft | kein Puls ab demselben Durchlauf | abgebrochen, Leitung freigegeben | im selben Durchlauf aus angefordert, auch ein für ein Schreiben zurückgehaltenes OFF | der IOmcu (`safety_gate_step()`); das Panel rastet in ARMED einen Stopp ein |
 | Der IOmcu im Reset oder in BOOTSEL gehalten | Pins sind Eingänge | Pins sind Eingänge | bleibt, wie er war | niemand: [Grenzen der Hardware](#grenzen-der-hardware) |
 | Der IOmcu neu gestartet | SAFE mit Latch bis CLEAR und ARM | keine offen | gelesen und ausgeschaltet vor dem Rest des Starts | der IOmcu (`supply_boot_off()`) |
-| Heartbeat am IOmcu verloren | kein Puls binnen 150ms | abgebrochen | aus angefordert | der IOmcu |
+| Heartbeat am IOmcu verloren | kein Puls binnen 150ms | abgebrochen | aus angefordert, auch ein für ein Schreiben zurückgehaltenes OFF | der IOmcu |
 | Das Panel neu gestartet, hängend oder abgesteckt | kein Puls binnen 150ms | abgebrochen | aus angefordert | der IOmcu, über den Heartbeat |
 | Die Render-Schleife des Panels 1000ms still | kein Puls binnen weiterer 150ms | abgebrochen | aus | der Control-Task des Panels (`frame_watch.h`), dann der IOmcu |
 | STOP | kein Puls binnen 150ms | abgebrochen | aus | das Panel, dann der IOmcu |
 | Messgerät oder Netzteil eines Laufs fällt aus (`0.2s kein INA3221-Fenster` und die anderen Fehler in [Servo, Was einen Lauf beendet](Servo-de.md#was-einen-lauf-beendet)) | SAFE | keine offen: ein Lauf ist ARMED | aus | der SERVO-Bildschirm |
 | Eine Sitzung, die der Link oder der Heartbeat abbricht | wie in den Zeilen oben | Transaktion abgebrochen | aus, nach einem Frame auf der Leitung, höchstens 12ms | der IOmcu |
-| Ein Schreiben auf die Karte scheitert während eines Laufs | SAFE | bleibt | aus, außer ein Port hält es | das Panel (`card_faults_follow()`) |
-| Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | bleibt | aus | das Panel |
-| Ein INA3221-Kanal über seiner Grenze | SAFE | bleibt | aus, außer ein Port hält es | das Panel, beim Lesen von `OVER` alle 200ms |
+| Ein Schreiben auf die Karte scheitert während eines Laufs | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben ([unten](#die-versorgung-eines-programmierports)) | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel (`card_faults_follow()`), der IOmcu für das Schreiben |
+| Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, der IOmcu für das Schreiben |
+| Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms; der IOmcu für das Schreiben |
 | Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
-| Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | bleibt | aus, wo er sich schalten lässt | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
+| Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus, wo er sich schalten lässt: der Schutz des Moduls und ein absinkender Eingang sofort, auch während eines Schreibens; der Rest nach dem Schreiben eines Ports, höchstens 10000ms | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
+| Ein KST- oder Hitec-Vorgang endet in einer Störung des Servos oder der Leitung (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`) | schon SAFE: eine Sitzung läuft auf einem Prüfstand in SAFE | die Versorgung des Ports aus; der Vorgang ist zu Ende | aus | das Panel (`prog_faults_follow()`) |
 
 SAFE heißt: das Panel fordert DISARM an. Solange die Anforderung steht, hält
 es den Heartbeat zurück, sodass der IOmcu binnen 150ms sicher abschaltet,
@@ -136,15 +137,91 @@ Programmierports beenden, ohne dass dieser einen Ausgang treibt. Die Regel
 ist `error_stop()` in `shared/safety/error_stop.c`, getestet in
 `test_error_stop`.
 
+Die Zeilen oben gelten für einen IOmcu ab Link 4.31. Mit einem älteren
+IOmcu behält ein Programmierport, der das Netzteil hält, es bei einem
+Fehler, den das Panel findet: das Panel sendet kein OFF, weil dieser IOmcu
+ein Schreiben in den Speicher des Servos mittendrin abbrechen würde. Ein
+verlorener Heartbeat oder Link bricht es weiterhin ab, ebenso die eigenen
+Abschaltschwellen des Panels für das Netzteil.
+
+### Die Versorgung eines Programmierports
+
+Eine KST- oder Hitec-Sitzung hält den Ausgang des PD mini, solange sie einen
+Port hat. Bei einem Fehler schreibt das Panel das OFF der Versorgung an den
+IOmcu, gleich wer sie hält und ob es den Ausgang an liest oder nicht
+(`supply_link_cut()`). Der IOmcu entscheidet aus seinem eigenen Zustand, ob
+ein Schreiben in den Speicher des Servos läuft (`supply_page.h`):
+
+- Kein Schreiben läuft: das OFF erreicht den PD mini im nächsten Durchlauf
+  des IOmcu.
+- Ein Schreiben läuft: OUTPUT liest sofort 0; der PD mini und die Sicht des
+  Ports auf ihn bleiben an, bis das Schreiben endet, und das OFF erreicht
+  den PD mini im Durchlauf danach, spätestens 10000ms nach dem OFF
+  (`SUPPLY_PAGE_WRITE_WAIT_MS`). Der Port bricht sich nicht mitten im
+  Schreiben selbst ab.
+- Ein KST-Schreiben ist ein WRITE, ein RESTORE oder ein RELEASE der Sitzung,
+  vom Ende seines Planens bis zum Ende seiner Rücklesungen
+  (`kst_port_writing()`). Sein Planen sendet nichts und wird sofort
+  abgebrochen. Ein Versorgungszyklus, ein LEAVE und ein Lesen schreiben
+  nichts.
+- Ein Hitec-Schreiben läuft, solange eine Transaktion läuft oder solange
+  das letzte Kommando der HITEC-Page seinen Schritt mit MORE gestartet
+  hat (`CMD` Bit 4, `hitec_port_writing()`). Der Programmierer des Panels
+  markiert jeden Schritt eines Schreibens außer dem letzten
+  (`hitec_ses_step_t.more`): einen Planschritt vor dem letzten und einen
+  classic-Versuch, der wiederholt werden kann. Die Prüfstandskonsole
+  markiert einen Schritt mit `more`
+  ([Die Prüfstandskonsole](BenchConsole-de.md)).
+- Ein verlorener Heartbeat oder ein stiller Link wird nicht zurückgehalten:
+  sofort aus, nach einem Frame auf der Leitung, höchstens 12ms.
+
+Vom OFF des Panels, bis der Port die Versorgung loslässt, weist der IOmcu
+das eigene ON des Ports ab: ein KST-Versorgungszyklus in seiner Aus-Zeit
+endet in PWM mit Ergebnis 32 (SUPPLY) und ausgeschalteter Versorgung;
+ein Hitec-POWER schaltet sie aus, sein ON wird abgewiesen (RESULT 3), und
+der Port bleibt ohne Versorgung gehalten bis CLOSE. Ein KST-Port, der den
+Ausgang nach einem Schreiben aus findet, hält ihn 1000ms aus und kehrt nach
+PWM zurück.
+
+Die längsten Schreibvorgänge, die der Code zulässt, enden innerhalb von
+10000ms, berechnet und nicht gemessen: ein KST-Schreiben mit 33 Schritten
+dauert 1,93s auf der Leitung nach seinem Planen; ein classic-Hitec-Schreiben
+mit 56 Schritten und dem Zurücklesen von 36 Zellen 2,9s und ein Schreiben
+der D-Serie mit 21 Registern, Speichern, 1000ms Warten nach dem Neustart
+und Zurücklesen 3,5s, bei 32ms je Schritt auf der Host-Schleife des Panels.
+
+Eine Störung der Sitzung ist ein Vorgang, der an dem endet, was das Servo
+oder die Leitung getan hat. KST: kein Servo, ein Register ohne 3 gleiche
+Lesungen, ein Servo, das sich unter dem Plan geändert hat, ein Schreiben,
+das scheiterte, zurückgerollt wurde, zerrissen ist oder ein anderes
+Register änderte, eine Prüfung mit Abweichung, ein Fehler des Treibers,
+eine Versorgung, die nicht schaltete. Hitec: kein Servo, eine falsche
+Antwort beim Einstieg, ein gescheitertes Lesen, ein classic-Schreiben ohne
+Antwort, ein Zurücklesen mit Abweichung, ein Schritt, den der Decoder
+abwies. Keine Störung: eine Ablehnung, ein Plan, der nichts sendet, ABORT
+und ein Schritt, den ein Stopp oder eine verlorene Verbindung abbricht; die
+beenden die Sitzung selbst.
+
 Aktuelle Einschränkungen:
 
-- Ein Programmierport, der das Netzteil hält, behält es bei einem Fehler,
-  den das Panel findet: ein gescheitertes Schreiben auf die Karte, ein
-  INA3221-Kanal über seiner Grenze. Eine Sitzung mitten im Schreiben in den
-  Speicher des Servos ist der Fall, den die Regel nicht abbrechen darf. Ein
-  verlorener Heartbeat oder Link bricht sie weiterhin ab.
-- Eine Programmiersitzung, die mit Link und Heartbeat in einem Fehler
-  endet, hält das Servo an seinem Port bis LEAVE versorgt.
+- Ein Fehler während eines Schreibens hält das Servo versorgt, bis das
+  Schreiben endet, höchstens 10000ms. Ein Schreiben, das dann noch läuft,
+  mit Wiederholungen, über einen langsamen Link oder Schritt für Schritt an
+  der Prüfstandskonsole getippt, wird mittendrin getrennt.
+- Jedes OFF, das das Panel schreibt, wird für ein Schreiben genauso
+  zurückgehalten: das OFF des Bedieners auf SUPPLY und die eigenen
+  Abschaltschwellen des Panels (ÜBERSTROM, ÜBERSPANNUNG) ebenso wie das
+  eines Fehlers. Der eigene Schutz des PD mini und die Abschaltung des IOmcu
+  für einen absinkenden Eingang wirken sofort, auch während eines
+  Schreibens.
+- Ein Hitec-Schreiben, das nach einem Schritt mit MORE in einer Störung
+  endet, hält das OFF zurück bis zum nächsten Kommando der HITEC-Page oder
+  10000ms.
+- Eine Störung der Sitzung beendet die Sitzung mit der Versorgung. Nach
+  einem gescheiterten KST-Schreiben endet das eigene Backup der Sitzung
+  mit ihr; der Vermerk vor dem Schreiben bleibt, und das Lesen nach
+  VERBINDEN vergleicht das Servo damit
+  ([Ein unterbrochenes Schreiben](ServoProgrammer-de.md#ein-unterbrochenes-schreiben)).
 - Die Fehlerbits des IOmcu auf STATUS für Überstrom, Übertemperatur und
   Stall (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`,
   `LINK_FAULT_STALL`) sind definiert und werden von nichts gesetzt.

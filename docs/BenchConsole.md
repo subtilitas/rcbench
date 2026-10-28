@@ -190,6 +190,21 @@ bytes and 1 released bit time.
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
 
+`more` as the last word of `send`, `listen`, `level`, `power`, `c` or `d`
+sets bit 4 of the command (`MORE`, protocol 4.31): more steps of this write
+follow. Put it on every step of a write to the servo's memory but the last,
+for example a classic cell write before its balance, or a D series write
+and its save before the reboot. While it stands, `flags=MORE`, an OFF the
+panel writes to SUPPLY waits for the write's last step, 10,000ms after the
+OFF at most ([An OFF during a write](LinkHitec.md#an-off-during-a-write)).
+A step typed 10,000ms or more after the OFF goes to a servo whose supply
+is off.
+
+```text
+hitec c 0 0x62 0x10 0x55 more
+hitec c 0 0x62 0x1C 0xAA
+```
+
 An option of `send`, `listen` or `power` left out is 0: no gap, no
 window, no byte received, no decoder. `answer` is the exception: left out,
 nothing is answered; `answer=0` answers 0x00. A `lead=` left out still

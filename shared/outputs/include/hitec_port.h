@@ -69,7 +69,17 @@
  * every pass counts as a stop.
  *
  * Every SEND, and a LISTEN or a POWER that answers the first byte, needs
- * LINK_HITEC_WRITE_KEY in the command.  OPEN is refused while the bank is
+ * LINK_HITEC_WRITE_KEY in the command.
+ *
+ * Steps of a write (4.31).  A writer sets LINK_HT_W_CMD_MORE on every SEND,
+ * LISTEN, LEVEL or POWER of a write to the servo's memory but the last:
+ * more steps of this write follow.  The bit stands (LINK_HT_F_MORE) from
+ * the command that starts its step to the next command taken, which sets
+ * it again or clears it; a refused command, a stop and CLOSE clear it.
+ * While it stands or a transaction runs, hitec_port_writing() is true and
+ * the SUPPLY page holds the panel's OFF back from the module
+ * (supply_page.h).  The bit on OPEN, CLOSE, ABORT or CLEAR is
+ * LINK_NACK_BAD_VALUE.  OPEN is refused while the bank is
  * armed; the caller arms no output while hitec_port_quiet_mask() is not 0.
  *
  * Commands: registers 0 to 3 of a write, one frame.  SEQ is LINK_HT_SEQ
@@ -221,6 +231,8 @@ typedef struct {
     uint8_t  supply_on;     /**< the supply was asked on at the start */
     uint8_t  read_on;       /**< the output read on (not off) since the
                                  start; set at the start but for POWER */
+    uint8_t  more;          /**< the last command taken started a step
+                                 with LINK_HT_W_CMD_MORE (4.31) */
 } hitec_port_t;
 
 /** @brief Prepare a free port.
@@ -349,6 +361,20 @@ bool hitec_port_supply_hold(const hitec_port_t *p);
  *         that is not BUSY.
  */
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms);
+
+/**
+ * @brief A write to the servo's memory runs: a transaction runs (BUSY), or
+ *        the last command taken started a step with LINK_HT_W_CMD_MORE
+ *        (LINK_HT_F_MORE) on a port still held.
+ *
+ * The SUPPLY page holds the panel's OFF back while it is true
+ * (supply_page_port_writes()), SUPPLY_PAGE_WRITE_WAIT_MS at most.
+ *
+ * @param p The port, or NULL.
+ * @return true while a transaction runs or the bit stands; false for a
+ *         NULL p.
+ */
+bool hitec_port_writing(const hitec_port_t *p);
 
 #ifdef __cplusplus
 }

@@ -164,6 +164,8 @@ typedef struct {
     bool     port_held;      /* the last read had LINK_SP_PORT set      */
     bool     judge;          /* set points refused on an output that is
                                 on: the next read says by whom           */
+    bool     off_owed;       /**< an OFF asked by supply_link_cut(), not
+                                  yet answered */
     bool     adopted;        /* on, mv, ma were taken from the page and
                                 not yet handed out                      */
 } supply_link_t;
@@ -201,6 +203,20 @@ void supply_link_wire(supply_link_t *s, const supply_wiring_t *w);
  * @param ma The set point current, in mA.
  */
 void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma);
+
+/**
+ * @brief An OFF written to the page whatever this end thinks it holds: the
+ *        output asked off, and OUTPUT 0 written alone before anything else,
+ *        once, even with the page read off.
+ *
+ * For an error while a programming port holds the supply (error_stop.h): a
+ * port in a power cycle has the output off and is about to switch it on,
+ * and an IOmcu of link 4.31 refuses that ON after an OFF of the panel's.
+ * Written again while it goes unanswered; dropped with the link.
+ *
+ * @param s The link state; nothing is done for NULL.
+ */
+void supply_link_cut(supply_link_t *s);
 
 /**
  * @brief Restart the PD mini (protocol 4.4): written once the page's output is

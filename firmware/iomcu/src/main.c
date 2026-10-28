@@ -750,10 +750,13 @@ int main(void)
             sense_order();
         }
         /* The supply: its bytes in, a step of its driver, and the output off
-         * whenever the panel's heartbeat is not there to switch it off. */
+         * whenever the panel's heartbeat is not there to switch it off.  A
+         * port's write, as the ports' steps above left it, keeps the
+         * panel's OFF of a held supply back until it ends. */
         supply_pass(now,
                     kst_port_frame_out(&s_kst)
                         || hitec_port_frame_out(&s_hitec, now),
+                    kst_port_writing(&s_kst) || hitec_port_writing(&s_hitec),
                     safety_gate_supply_ok(&s_beat, &s_dev));
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank

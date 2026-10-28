@@ -880,10 +880,14 @@ uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
  * @param now        This pass's clock, ms.
  * @param frame_out  A programming port has a frame on the wire: an OFF
  *                   waits for its end, SUPPLY_PAGE_OFF_WAIT_MS at most.
+ * @param writing    A programming port writes to the servo's memory
+ *                   (kst_port_writing(), hitec_port_writing()): the panel's
+ *                   OFF of a held supply waits for the write's end,
+ *                   SUPPLY_PAGE_WRITE_WAIT_MS at most.
  * @param supply_ok  The heartbeat is trusted and the link is up
  *                   (safety_gate_supply_ok()); false asks the output off.
  */
-void supply_pass(uint32_t now, bool frame_out, bool supply_ok);
+void supply_pass(uint32_t now, bool frame_out, bool writing, bool supply_ok);
 /**
  * @brief The start-up's first act after the wiring is restored: the PD
  *        mini read and switched off before the rest of the start runs.

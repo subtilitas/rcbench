@@ -106,6 +106,7 @@ static void go_free(hitec_port_t *p)
     p->stopped = 0;
     p->cutting = 0;
     p->off_seen = 0;
+    p->more = 0;
     if (had_pin) {
         p->hw.give(p->hw.ctx);
     }
@@ -204,6 +205,8 @@ static void start(hitec_port_t *p, const hitec_xfer_t *x, uint8_t keyed)
  */
 static void on_stop(hitec_port_t *p)
 {
+    /* A stopped port runs no more steps of a write. */
+    p->more = 0;
     switch ((link_hitec_state_t)p->state) {
     case LINK_HITEC_STOPPING:
         go_free(p);
@@ -609,6 +612,21 @@ static link_hitec_refusal_t dispatch(hitec_port_t *p, link_hitec_op_t op,
 }
 
 /**
+ * @brief Whether an operation is a step of a writer's sequence, which may
+ *        carry LINK_HT_W_CMD_MORE: SEND, LISTEN, LEVEL or POWER.
+ *
+ * @param op The operation, bits 0-3 of the command.
+ * @return true for the four transactions.
+ */
+static bool is_step(uint8_t op)
+{
+    return op == (uint8_t)LINK_HITEC_OP_SEND
+           || op == (uint8_t)LINK_HITEC_OP_LISTEN
+           || op == (uint8_t)LINK_HITEC_OP_LEVEL
+           || op == (uint8_t)LINK_HITEC_OP_POWER;
+}
+
+/**
  * @brief Handle the command frame, registers 0 to 3.
  *
  * @param p      The port.
@@ -622,9 +640,12 @@ static uint8_t command(hitec_port_t *p, const uint16_t *in, uint32_t now_ms)
     const uint16_t cmd = in[LINK_HT_W_CMD];
     const uint8_t op = (uint8_t)(cmd & 0xFu);
     const uint8_t port = (uint8_t)((cmd >> 8) & 0xFu);
+    const bool more = (cmd & LINK_HT_W_CMD_MORE) != 0u;
 
-    if ((cmd & 0xF0F0u) != 0u || op == (uint8_t)LINK_HITEC_OP_NONE
+    if ((cmd & (uint16_t)(0xF0F0u & ~LINK_HT_W_CMD_MORE)) != 0u
+        || op == (uint8_t)LINK_HITEC_OP_NONE
         || op >= (uint8_t)LINK_HITEC_OP_COUNT
+        || (more && !is_step(op))
         || (in[LINK_HT_W_KEY] != 0u
             && in[LINK_HT_W_KEY] != LINK_HITEC_WRITE_KEY)) {
         return LINK_NACK_BAD_VALUE;
@@ -639,6 +660,9 @@ static uint8_t command(hitec_port_t *p, const uint16_t *in, uint32_t now_ms)
     p->seq = in[LINK_HT_W_SEQ];
     memcpy(p->last_cmd, in, sizeof(p->last_cmd));
     p->refusal = (uint8_t)dispatch(p, (link_hitec_op_t)op, port, in, now_ms);
+    /* The write's next step is to come only after a step that started
+     * with the bit: any other command ends that (LINK_HT_W_CMD_MORE). */
+    p->more = more && p->refusal == (uint8_t)LINK_HITEC_REF_NONE ? 1u : 0u;
     return 0u;
 }
 
@@ -711,6 +735,7 @@ static uint16_t state_reg(const hitec_port_t *p)
     r |= p->keyed != 0u ? LINK_HT_F_KEY : 0u;
     r |= p->rx_mode == (uint8_t)LINK_HITEC_RX_PRECHARGE ? LINK_HT_F_PRECHARGE
                                                         : 0u;
+    r |= p->more != 0u ? LINK_HT_F_MORE : 0u;
     return r;
 }
 
@@ -968,6 +993,13 @@ void hitec_port_other_mask(hitec_port_t *p, uint8_t mask)
 bool hitec_port_supply_hold(const hitec_port_t *p)
 {
     return p != NULL && p->state != (uint8_t)LINK_HITEC_FREE;
+}
+
+bool hitec_port_writing(const hitec_port_t *p)
+{
+    return p != NULL
+           && (p->state == (uint8_t)LINK_HITEC_BUSY
+               || (p->more != 0u && p->state != (uint8_t)LINK_HITEC_FREE));
 }
 
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms)

@@ -12,6 +12,10 @@
  *    their read-back of cells 0x00 to 0x23;
  *  - a classic write without its `+ +`: tried again, 3 tries;
  *  - a write the servo did not take, found by the read-back;
+ *  - which steps say more of the write follows (hitec_ses_step_t.more):
+ *    a plan step before the last, a classic try with tries left; never
+ *    the last D series step, the last try of the last classic step, an
+ *    entry, a read or a read-back;
  *  - a plan the caller built, with and without an image to compare, and
  *    every refusal of one;
  *  - leave: the classic supply cycle and the D series reboot;
@@ -61,6 +65,9 @@ TEST_CASE(a_d_write_plan_writes_saves_waits_reboots_waits_and_reads_back)
             CHECK_EQ(st.xfer.n_tx, 7);
             CHECK_EQ(st.xfer.window_us, 0u);
             CHECK_EQ(st.decoder, HITEC_DEC_NONE);
+            /* The save and the reboot follow the write, the reboot the
+             * save; nothing of the write follows the reboot. */
+            CHECK_EQ(st.more, i < 2u);
             CHECK_EQ(give_ok(&r->s, t, 0), HITEC_SES_BUSY);
             CHECK_EQ(r->s.step_index, i + 1u);
             check_gap(&r->s, t, want[i].gap * ms);
@@ -77,6 +84,9 @@ TEST_CASE(a_d_write_plan_writes_saves_waits_reboots_waits_and_reads_back)
         CHECK_EQ(r->n, 21);
         CHECK_EQ(r->log[0].at, t);
         CHECK_EQ(r->log[0].st.decoder, HITEC_DEC_D);
+        for (unsigned i = 0; i < r->n; ++i) {
+            CHECK_EQ(r->log[i].st.more, 0u);      /* the read-back */
+        }
         CHECK_EQ(hitec_image_reg(&r->s.image, 0x54), 6);
         CHECK(!hitec_image_known(&r->s.image, 0x70));
     }
@@ -115,6 +125,8 @@ TEST_CASE(a_classic_write_plan_writes_each_cell_then_its_balance)
         CHECK(hitec_c_frame_ok(x->tx));
         CHECK_EQ(r->log[i].st.decoder, HITEC_DEC_C);
         CHECK_EQ(r->log[i].st.dec_arg, 0x62);
+        /* A first try: another step follows, or its next try may. */
+        CHECK_EQ(r->log[i].st.more, 1u);
         if (i > 0u) {
             CHECK(r->log[i].at - r->log[i - 1u].at - r->cost > 2000u);
         }
@@ -122,6 +134,7 @@ TEST_CASE(a_classic_write_plan_writes_each_cell_then_its_balance)
     /* After each pair the cells balance. */
     CHECK_EQ(hitec_c_eeprom_sum(&r->s.image), 0);
     for (unsigned i = 4; i < r->n; ++i) {
+        CHECK_EQ(r->log[i].st.more, 0u);
         CHECK_EQ(r->log[i].st.xfer.tx[0], 0x61);
         CHECK_EQ(r->log[i].st.xfer.tx[1], i - 4u);
         ++cells;
@@ -151,6 +164,15 @@ TEST_CASE(a_classic_write_without_its_ack_is_tried_3_times)
     CHECK_EQ(r->log[39].st.xfer.tx[1], 0x06);
     CHECK_EQ(r->log[41].st.xfer.tx[1], 0x06);
     CHECK_EQ(r->log[44].st.xfer.tx[1], 0x1C);
+    /* The entry and the read say none; every try of the cell does, the
+     * balance's first two do, its last none. */
+    for (unsigned i = 0; i < 39u; ++i) {
+        CHECK_EQ(r->log[i].st.more, 0u);
+    }
+    for (unsigned i = 39; i < 44u; ++i) {
+        CHECK_EQ(r->log[i].st.more, 1u);
+    }
+    CHECK_EQ(r->log[44].st.more, 0u);
     /* The cell took with its `+ +`; the balance may have: not known. */
     CHECK(hitec_image_known(&r->s.image, 0x06));
     CHECK_EQ(hitec_image_cell(&r->s.image, 0x06), 0x1C);

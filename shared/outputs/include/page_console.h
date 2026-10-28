@@ -42,6 +42,13 @@
  *   hitec d <port> read <id> <addr>         a D series read and its answer
  *   hitec d <port> write <id> <addr> <value>
  *
+ * `more` as the last token of send, listen, level, power, c or d sets
+ * LINK_HT_W_CMD_MORE in that command: more steps of this write follow.
+ * The writer puts it on every step of a write to the servo's memory but
+ * the last; while it stands the SUPPLY page holds the panel's OFF back
+ * from the servo's supply, 10000ms after the OFF at most
+ * (SUPPLY_PAGE_WRITE_WAIT_MS).
+ *
  * <dec> is none, c:<cmd>, d:<addr> or l:<byte> (link_hitec_dec_t and its
  * argument).  The hitec commands stage the HITEC page's registers, name
  * their CRC (cyclic redundancy check) and the next SEQ, and put
@@ -101,6 +108,7 @@ typedef struct {
     uint32_t dropped;                   /**< bytes dropped from the output ring */
     uint16_t staged[LINK_HT_W_STAGED];  /**< the registers staged for the HITEC page */
     uint8_t  watch;      /**< a HITEC operation runs: report its end */
+    uint8_t  more;       /**< the line's step carries LINK_HT_W_CMD_MORE */
     /* Work space, here rather than on the caller's stack. */
     char       fmt[PAGE_CONSOLE_OUT_LINE];
     link_msg_t req;

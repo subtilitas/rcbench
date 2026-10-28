@@ -11,9 +11,13 @@
 
 #include <stddef.h>
 
-error_stop_t error_stop(bool live, bool supply_on, bool port_holds)
+error_stop_t error_stop(bool live, bool supply_on, bool port_holds,
+                        bool port_defers)
 {
-    const error_stop_t e = { live, supply_on && !port_holds };
+    const error_stop_t e = {
+        live,
+        port_defers || (supply_on && !port_holds),
+    };
     return e;
 }
 
@@ -25,12 +29,13 @@ void error_watch_init(error_watch_t *w, uint32_t count)
 }
 
 error_stop_t error_stop_take(error_watch_t *w, uint32_t count, bool live,
-                             bool supply_on, bool port_holds)
+                             bool supply_on, bool port_holds,
+                             bool port_defers)
 {
     const error_stop_t none = { false, false };
     if (w == NULL || count == w->seen) {
         return none;
     }
     w->seen = count;
-    return error_stop(live, supply_on, port_holds);
+    return error_stop(live, supply_on, port_holds, port_defers);
 }
