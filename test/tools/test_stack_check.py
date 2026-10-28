@@ -361,7 +361,7 @@ def io_table_holds(table, header, struct, source, panel):
     called = set(re.findall(r"\bio->(\w+)\(", src))
     assert called <= fields
     given = io_given(PANEL_MAIN / panel, struct)
-    assert set(given) - {"ctx"} == fields
+    assert set(given) - {"ctx", "stem"} == fields
     qualified = set().union(*(set(v) for v in table.values()))
     # A callback written `file:name` names the panel source it is in.
     assert all(q.split(":")[0] == panel for q in qualified if ":" in q)
@@ -384,18 +384,35 @@ def test_fault_calls_name_every_card_function_of_the_fault_log():
     assert rest == set()
 
 
-def test_kst_calls_name_every_card_function_of_the_servo_files():
-    rest = io_table_holds(sc.KST_CALLS, "kst_store.h", "kst_store_io_t",
-                          "kst_store.c", "kst_files.c")
+def servo_store_calls_of(panel):
+    """SERVO_STORE_CALLS cut to the callbacks of one panel source."""
+    cut = {caller: tuple(c for c in callbacks if c.startswith(panel + ":"))
+           for caller, callbacks in sc.SERVO_STORE_CALLS.items()}
+    assert all(cut.values())
+    return cut
+
+
+def test_servo_store_calls_name_every_card_function_of_the_kst_files():
+    rest = io_table_holds(servo_store_calls_of("kst_files.c"),
+                          "servo_store.h", "servo_store_io_t",
+                          "servo_store.c", "kst_files.c")
     assert rest == set()
 
 
-def test_kst_calls_are_qualified_where_another_file_has_the_name():
+def test_servo_store_calls_name_every_card_function_of_the_hitec_files():
+    rest = io_table_holds(servo_store_calls_of("hitec_files.c"),
+                          "servo_store.h", "servo_store_io_t",
+                          "servo_store.c", "hitec_files.c")
+    assert rest == set()
+
+
+def test_servo_store_calls_are_qualified_where_another_file_has_the_name():
     """panel_files.c defines static io_mounted, io_walk and io_read of its
     own; a bare name would be two functions in the ELF and fail the run."""
-    for caller, callbacks in sc.KST_CALLS.items():
+    for caller, callbacks in sc.SERVO_STORE_CALLS.items():
         for cb in callbacks:
-            assert cb.startswith("kst_files.c:"), (caller, cb)
+            assert cb.startswith(("kst_files.c:", "hitec_files.c:")), (
+                caller, cb)
     other = (PANEL_MAIN / "panel_files.c").read_text(encoding="utf-8")
     for name in ("io_mounted", "io_walk", "io_read"):
         assert re.search(r"\bstatic\b[^;{]*\b" + name + r"\(", other), name

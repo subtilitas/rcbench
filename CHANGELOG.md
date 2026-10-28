@@ -18,6 +18,22 @@ history is in git.
   4.29 refuses the bit; the panel sends it the REBOOT without the wait and
   says `This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.`
   ([The wait after a supply cycle](docs/LinkKST.md#the-wait-after-a-supply-cycle)).
+- The KST and Chaservo programmer's files on the card use the store of the
+  Hitec programmer, `shared/logfile/servo_store.c`, with the stem `KST`; the
+  duplicate `kst_store.c` is removed. File names, the folder `BENCH/KST/CONF`,
+  the proposed names `KST001` to `KST999`, the reserved name `KST` and every
+  refusal stay as they were; `test_kst_store` is replaced by a KST case in
+  `test_servo_store`.
+
+### Fixed
+
+- A turn of the panel's knob while a chip's help bubble is open closes the
+  bubble and moves nothing, as a tap does (`ui_router_take_knob()`); before,
+  the turn moved the throttle on MOTOR & ESC or the target on SERVO behind
+  the bubble.
+- The Hitec write switch's page says that an interrupted write leaves a
+  wrong checksum and that the servo may ignore PWM and draw current up to
+  the supply limit (`HP_ENABLE_3C`).
 
 ## 0.23.1 - 2026-10-27
 

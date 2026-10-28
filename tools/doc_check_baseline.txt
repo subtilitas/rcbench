@@ -450,26 +450,17 @@ firmware/panel/main/knob_task.c: warning: Member s_on (variable) of file knob_ta
 firmware/panel/main/knob_task.c: warning: Member s_steps (variable) of file knob_task.c is not documented.
 firmware/panel/main/knob_task.h: warning: parameters of member knob_task_set_enabled are not documented
 firmware/panel/main/knob_task.h: warning: return type of member knob_task_take is not documented
-firmware/panel/main/kst_files.c: warning: Compound walk_t is not documented.
-firmware/panel/main/kst_files.c: warning: Member PATH_MAX_LEN (macro definition) of file kst_files.c is not documented.
-firmware/panel/main/kst_files.c: warning: Member ctx (variable) of struct walk_t is not documented.
 firmware/panel/main/kst_files.c: warning: Member denied(int err) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member dir_path(char *out, size_t out_size) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member dir_state(void) (function) of file kst_files.c is not documented.
-firmware/panel/main/kst_files.c: warning: Member io_create(void *ctx, const char *name, const char *data, size_t len) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member io_mounted(void *ctx) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member io_read(void *ctx, const char *name, char *buf, size_t cap) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member io_size(void *ctx, const char *name) (function) of file kst_files.c is not documented.
-firmware/panel/main/kst_files.c: warning: Member io_walk(void *ctx, kst_store_visit_fn visit, void *visit_ctx) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member make_dir(void) (function) of file kst_files.c is not documented.
 firmware/panel/main/kst_files.c: warning: Member s_held (variable) of file kst_files.c is not documented.
-firmware/panel/main/kst_files.c: warning: Member visit (variable) of struct walk_t is not documented.
 firmware/panel/main/kst_files.c: warning: Member walk_entry(const storage_entry_t *entry, void *ctx) (function) of file kst_files.c is not documented.
-firmware/panel/main/kst_files.h: file has no @file block
-firmware/panel/main/kst_files.h: warning: parameters of member kst_files_io are not documented
 firmware/panel/main/kst_files.h: warning: parameters of member kst_files_path are not documented
 firmware/panel/main/kst_files.h: warning: return type of member kst_files_dir is not documented
-firmware/panel/main/kst_files.h: warning: return type of member kst_files_io is not documented
 firmware/panel/main/main.c: warning: Member CMD_Q_LEN (macro definition) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member KST_Q_LEN (macro definition) of file main.c is not documented.
 firmware/panel/main/main.c: warning: Member SAMPLE_Q_LEN (macro definition) of file main.c is not documented.
@@ -1725,7 +1716,6 @@ shared/bench/include/tone_link.h: warning: Member want[LINK_TN_CONFIG_COUNT] (va
 shared/bench/include/tone_link.h: warning: Member want_set (variable) of struct tone_link_t is not documented.
 shared/bench/knob.c: warning: Member knob_poll_regs[KNOB_POLL_READS] (variable) of file knob.c is not documented.
 shared/bench/kst_card.c: warning: Member s_file (variable) of file kst_card.c is not documented.
-shared/bench/kst_card.c: warning: Member s_list[KST_CARD_LIST_MAX] (variable) of file kst_card.c is not documented.
 shared/bench/kst_card.c: warning: Member s_load (variable) of file kst_card.c is not documented.
 shared/bench/kst_card.c: warning: Member s_text[KST_FILE_MAX] (variable) of file kst_card.c is not documented.
 shared/bench/kst_link.c: warning: Member RES(reg) (macro definition) of file kst_link.c is not documented.
@@ -2252,7 +2242,6 @@ shared/link/link_update_image.c: warning: Member ITEM_LAST (macro definition) of
 shared/link/link_update_image.c: warning: Member ITEM_SIZE_2BYTES (macro definition) of file link_update_image.c is not documented.
 shared/link/link_update_image.c: warning: Member MARKER_END (macro definition) of file link_update_image.c is not documented.
 shared/link/link_update_image.c: warning: Member MARKER_START (macro definition) of file link_update_image.c is not documented.
-shared/logfile/include/kst_store.h: warning: Member KST_STORE_LAST (macro definition) of file kst_store.h is not documented.
 shared/logfile/include/log_csv.h: warning: Member ctx (variable) of struct log_source_t is not documented.
 shared/logfile/include/log_csv.h: warning: Member seek(void *ctx, size_t offset) (variable) of struct log_source_t is not documented.
 shared/logfile/include/log_name.h: warning: Member LOG_RUN_LAST (macro definition) of file log_name.h is not documented.
