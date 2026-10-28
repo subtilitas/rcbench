@@ -183,10 +183,13 @@ bool out_store_is_off(void);
  * Every erase and program runs through flash_safe_execute(): interrupts
  * off on this core, and core 1 -- the sensor bus -- parked in RAM by the
  * multicore lock-out, because a core executing from flash while it is
- * written faults.  Core 1 answers the lock-out between two I2C
- * transactions, each held to 1ms (sense_i2c.h), so it stops within about
- * 1.2ms; 10ms is that with room.  The wait for it is spent before the
- * window opens and is not counted in it.
+ * written faults.  Core 1 runs the sensor bus with interrupts on and
+ * answers the lock-out at once, outside the I2C block's FIFO load (at
+ * most 13 register writes, i2c_txq_block.h) and the spin-lock copies of
+ * the sensor and tone hand-overs; a transaction under way ends on the wire while core 1 is
+ * parked (sense_i2c.h).  How fast it stops is not measured; 10ms is room.
+ * The wait for it is spent before the window opens and is not counted in
+ * it.
  */
 #define OUT_STORE_LOCKOUT_MS  10u
 

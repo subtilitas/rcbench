@@ -13,6 +13,22 @@
 
 #include "i2c_txq.h"
 
+/** @brief What a part answers a transaction with, for model_t.respond. */
+typedef enum {
+    MODEL_ANSWER = 0,    /**< acknowledged; the bytes read are filled     */
+    MODEL_NACK_ADDR,
+    MODEL_NACK_DATA,
+    MODEL_HANG,          /**< SCL held: the transaction never ends        */
+    MODEL_ARB_LOST,      /**< arbitration lost, SDA held arb_hold_us more */
+} model_answer_t;
+
+/**
+ * @brief The parts as a callback: @p rx receives x->rd_len bytes on
+ *        MODEL_ANSWER.
+ */
+typedef model_answer_t (*model_respond_fn)(void *ctx, const i2c_txq_xfer_t *x,
+                                           uint8_t *rx);
+
 /** @brief The bus, its parts and what the queue did to it. */
 typedef struct {
     uint64_t now;            /**< the clock, in us                          */
@@ -22,6 +38,10 @@ typedef struct {
     uint32_t extra_us;       /**< added to the bus time of each transaction */
     uint32_t abort_extra;    /**< extra abort causes reported with a NACK   */
     bool     short_read;     /**< one byte fewer read than asked            */
+    model_respond_fn respond; /**< when set, the parts: present[] and the
+                                   fault fields above are not read        */
+    void    *respond_ctx;
+    uint32_t arb_hold_us;    /**< MODEL_ARB_LOST: SDA held this long more  */
     /* the lines */
     bool     pullups;        /**< external pull-ups fitted                  */
     bool     pad_pu;         /**< the pads' pull-ups on                     */

@@ -82,7 +82,11 @@
  * Windows.  Fixed SENSE_WINDOW_MS windows on the IOmcu clock,
  * counted in 64 bits from the first tick, each with its number.  A read is
  * stamped when it is done and counts in the window that time falls in,
- * whatever ran before it in the tick.  For each source -- the 12 INA3221
+ * whatever ran before it in the tick.  The stamp of a read that went
+ * through is the io's done_us() when it has one -- on the IOmcu the end of
+ * the transaction as the I2C block's interrupt took it -- and now_us()
+ * when the read returned otherwise; a read that failed is stamped with
+ * now_us().  For each source -- the 12 INA3221
  * channels and the INA228 -- the mean, lowest and highest current and the
  * mean and lowest bus voltage.  A clipped current
  * sample carries no value: it adds nothing to the figures and sets the
@@ -269,6 +273,12 @@ typedef struct {
     void      (*recover)(void *ctx); /**< 9 clocks, a STOP, the block
                                           re-initialised; NULL: none     */
     void       *ctx;                    /**< the caller's context, passed to each function */
+    /**
+     * @brief When the last transaction the wire finished ended, on the
+     * now_us() clock: the stamp of a read that went through.  NULL: a read
+     * is stamped with now_us() when it returns.
+     */
+    uint64_t  (*done_us)(void *ctx);
 } sense_sched_io_t;
 
 /** @brief The INA3221s: which are fitted, each channel's shunt, and FAST. */

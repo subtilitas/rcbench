@@ -297,6 +297,24 @@ static irq_handler_t handler(unsigned block)
 }
 
 /**
+ * @brief I2C0's handler installed on this core.
+ *
+ * One call site for each handler, the handler a constant at each: an
+ * install whose handler is picked at run time is one tools/stack_check.py
+ * cannot follow, and the stack an interrupt costs would go unmeasured.
+ */
+static __attribute__((noinline)) void install0(void)
+{
+    irq_set_exclusive_handler(I2C0_IRQ, irq_block0);
+}
+
+/** @brief I2C1's handler installed on this core; see install0(). */
+static __attribute__((noinline)) void install1(void)
+{
+    irq_set_exclusive_handler(I2C1_IRQ, irq_block1);
+}
+
+/**
  * @brief The block's interrupt masked on this core: the queue is the
  *        caller's until unmask().
  *
@@ -367,7 +385,11 @@ i2c_txq_block_err_t i2c_txq_block_open(i2c_txq_block_t *b, unsigned sda,
     gpio_set_function(scl, GPIO_FUNC_I2C);
     s_bus[block] = b;
     b->open = true;
-    irq_set_exclusive_handler(irq, handler(block));
+    if (block == 0u) {
+        install0();
+    } else {
+        install1();
+    }
     unmask(b);
     return I2C_TXQ_BLOCK_OK;
 }

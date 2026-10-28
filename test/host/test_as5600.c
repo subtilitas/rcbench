@@ -299,7 +299,7 @@ static void rig(bool with_ina)
         i3221->volts[0] = 6.0;
     }
     const sense_sched_io_t io = { { fake_read, fake_write, &fb }, now_us,
-                                  NULL, NULL };
+                                  NULL, NULL, NULL };
     sense_sched_cfg_t cfg;
     memset(&cfg, 0, sizeof(cfg));
     cfg.as5600_en = true;
@@ -432,7 +432,7 @@ TEST_CASE(a_part_not_enabled_is_never_addressed)
     rig(false);
     sense_sched_t t;
     const sense_sched_io_t io = { { fake_read, fake_write, &fb }, now_us,
-                                  NULL, NULL };
+                                  NULL, NULL, NULL };
     const sense_sched_cfg_t off = { 0 };
     sense_sched_init(&t, &io, &off);
     for (unsigned k = 0; k < 200u; ++k) {

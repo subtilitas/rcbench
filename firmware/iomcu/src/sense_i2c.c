@@ -1,6 +1,7 @@
 /**
  * @file
- * @brief The sensor bus on the RP2350's I2C block.
+ * @brief The sensor bus on the RP2350's I2C block, through the I2C
+ *        transaction queue.
  *
  * See sense_i2c.h.
  *
@@ -9,86 +10,130 @@
 
 #include "sense_i2c.h"
 
-#include "hardware/gpio.h"
-#include "hardware/i2c.h"
-#include "hardware/sync.h"
 #include "pico/stdlib.h"
 
+#include "i2c_txq.h"
+#include "i2c_txq_block.h"
 #include "link_pages.h"
+#include "sense_txq.h"
 
-static i2c_inst_t *s_i2c;
-static uint8_t     s_sda;
-static uint8_t     s_scl;
-static bool        s_open;
+/* The sensor bus's timing is the queue's: each figure sense_i2c.h names is
+ * the one the queue runs on. */
+_Static_assert(SENSE_I2C_HZ == I2C_TXQ_HZ,
+               "the sensor bus clock is the queue's");
+_Static_assert(SENSE_I2C_TIMEOUT_US == I2C_TXQ_TIMEOUT_US,
+               "one transaction's limit is the queue's timeout");
+_Static_assert(SENSE_I2C_IDLE_US == I2C_TXQ_SETTLE_US,
+               "the lines' time to come back high is the queue's settle");
+_Static_assert(SENSE_I2C_PROBE_US == I2C_TXQ_PROBE_US,
+               "the pad pull-up probe is the queue's");
+_Static_assert(SENSE_I2C_CLEAR_HALF_US == I2C_TXQ_CLEAR_HALF_US,
+               "the bus clear's half clock is the queue's");
+_Static_assert(SENSE_I2C_CLEAR_STRETCH_US == I2C_TXQ_CLEAR_STRETCH_US,
+               "the bus clear's stretch limit is the queue's");
+_Static_assert(SENSE_TXQ_SETTLE_US == SENSE_I2C_IDLE_US,
+               "a lost arbitration gets the lines' idle time");
+
+static i2c_txq_block_t s_bus;   /**< the queue on the block of the pins */
+static sense_txq_t     s_wire;  /**< the wire the drivers call through   */
+static bool            s_init;  /**< s_bus set up by i2c_txq_block_init() */
+static bool            s_open;  /**< between a good open and the close    */
 
 /**
- * @brief The block reset and set up again: a transaction that failed leaves
- * it part way through one, and restart_on_next as that one left it.
+ * @brief sense_txq_io_t's submit: on the block, started on an idle bus.
+ *
+ * @param ctx  Unused.
+ * @param x    The transaction.
+ * @return What i2c_txq_block_submit() answers.
  */
-static void block_init(void)
+static i2c_txq_err_t io_submit(void *ctx, i2c_txq_xfer_t *x)
 {
-    i2c_init(s_i2c, SENSE_I2C_HZ);
+    (void)ctx;
+    return i2c_txq_block_submit(&s_bus, x);
 }
 
 /**
- * @brief Tells whether SDA and SCL both read high.
+ * @brief sense_txq_io_t's pump: the end the interrupt has not taken, then
+ *        a poll.
  *
- * @return True when both lines are high.
+ * @param ctx  Unused.
  */
-static bool lines_high(void)
+static void io_pump(void *ctx)
 {
-    return gpio_get(s_sda) && gpio_get(s_scl);
+    (void)ctx;
+    tight_loop_contents();
+    i2c_txq_block_poll(&s_bus);
 }
 
 /**
- * @brief Both lines high within @p us: the pull-ups have the bus.
+ * @brief sense_txq_io_t's abort.
  *
- * @param us  Time to wait, in microseconds.
- * @return True when both lines are high within @p us.
+ * @param ctx  Unused.
+ * @param x    The transaction.
+ * @return What i2c_txq_block_abort() answers.
  */
-static bool lines_rise(uint32_t us)
+static bool io_abort(void *ctx, i2c_txq_xfer_t *x)
 {
-    const uint64_t until = time_us_64() + us;
-    while (!lines_high()) {
-        if (time_us_64() >= until) {
-            return false;
-        }
-        tight_loop_contents();
-    }
-    return true;
+    (void)ctx;
+    return i2c_txq_block_abort(&s_bus, x);
+}
+
+/**
+ * @brief sense_txq_io_t's recover.
+ *
+ * @param ctx  Unused.
+ * @return What i2c_txq_block_recover() answers.
+ */
+static bool io_recover(void *ctx)
+{
+    (void)ctx;
+    return i2c_txq_block_recover(&s_bus);
+}
+
+/**
+ * @brief sense_txq_io_t's queue.
+ *
+ * @param ctx  Unused.
+ * @return The block's queue.
+ */
+static const i2c_txq_t *io_queue(void *ctx)
+{
+    (void)ctx;
+    return i2c_txq_block_queue(&s_bus);
+}
+
+/**
+ * @brief sense_txq_io_t's clock: the 64-bit microsecond timer.
+ *
+ * @param ctx  Unused.
+ * @return The present time, in us.
+ */
+static uint64_t io_now(void *ctx)
+{
+    (void)ctx;
+    return time_us_64();
 }
 
 bool sense_i2c_open(uint8_t sda, uint8_t scl)
 {
+    if (!s_init) {
+        i2c_txq_block_init(&s_bus);
+        s_init = true;
+    }
     sense_i2c_close();
     if (sda >= NUM_BANK0_GPIOS || scl >= NUM_BANK0_GPIOS
         || !link_sn_pins_pair(sda, scl)) {
         return false;
     }
-    s_i2c = I2C_INSTANCE((sda / 2u) % 2u);
-    s_sda = sda;
-    s_scl = scl;
-    /* The block set up before the pins reach it, so they never carry
-     * whatever a block left in reset would do. */
-    block_init();
-    gpio_disable_pulls(sda);
-    gpio_disable_pulls(scl);
-    gpio_set_function(sda, GPIO_FUNC_I2C);
-    gpio_set_function(scl, GPIO_FUNC_I2C);
+    if (i2c_txq_block_open(&s_bus, sda, scl, NULL) != I2C_TXQ_BLOCK_OK) {
+        return false;
+    }
+    const sense_txq_io_t io = {
+        io_submit, io_pump, io_abort, io_recover, io_queue, io_now, NULL,
+    };
+    sense_txq_init(&s_wire, &io);
     s_open = true;
     return true;
-}
-
-/**
- * @brief Returns a pin to a plain input with its pull-down, as at reset.
- *
- * @param pin  GPIO number.
- */
-static void release(uint8_t pin)
-{
-    gpio_set_function(pin, GPIO_FUNC_SIO);
-    gpio_set_dir(pin, GPIO_IN);
-    gpio_pull_down(pin);
 }
 
 void sense_i2c_close(void)
@@ -96,133 +141,28 @@ void sense_i2c_close(void)
     if (!s_open) {
         return;
     }
-    i2c_deinit(s_i2c);
-    release(s_sda);
-    release(s_scl);
+    i2c_txq_block_close(&s_bus);
     s_open = false;
-}
-
-/**
- * @brief Lines that stay low at idle, told apart: held by a part, or held by
- * nothing on a bus without pull-ups -- pins nothing is wired to.
- *
- * The pads' own pull-ups are switched on for at most SENSE_I2C_PROBE_US: a
- * line nothing holds rises on them, and one a part drives low does not. They
- * go off again either way.  SENSE_NACK for lines that rose: nothing answers
- * there, and no recovery is owed.  SENSE_BUS_LOW otherwise.
- *
- * @return SENSE_NACK when the lines rose, SENSE_BUS_LOW otherwise.
- */
-static sense_err_t idle_low(void)
-{
-    gpio_pull_up(s_sda);
-    gpio_pull_up(s_scl);
-    const bool rose = lines_rise(SENSE_I2C_PROBE_US);
-    gpio_disable_pulls(s_sda);
-    gpio_disable_pulls(s_scl);
-    return rose ? SENSE_NACK : SENSE_BUS_LOW;
-}
-
-/**
- * @brief Both lines high within SENSE_I2C_IDLE_US, as a transaction needs
- * them: SENSE_OK, or what idle_low() makes of them.
- *
- * @return SENSE_OK when both lines are high within SENSE_I2C_IDLE_US, or what
- *         idle_low() returns.
- */
-static sense_err_t lines_idle(void)
-{
-    return lines_rise(SENSE_I2C_IDLE_US) ? SENSE_OK : idle_low();
-}
-
-/**
- * @brief A pico-sdk result as the bus sees it: @p want bytes was success.
- *
- * The SDK reports a NACK of the address, an arbitration lost and any other
- * abort as one PICO_ERROR_GENERIC, so the lines tell them apart: back high
- * is a NACK on a working bus, held low is a part holding it, and low with
- * nothing holding them is a NACK on a bus without pull-ups.
- *
- * @param rc  The pico-sdk result: a byte count, or a negative error.
- * @param want  The byte count that is success.
- * @return SENSE_OK, SENSE_TIMEOUT, SENSE_NACK, or what lines_idle() returns.
- */
-static sense_err_t classify(int rc, size_t want)
-{
-    if (rc == (int)want) {
-        return SENSE_OK;
-    }
-    if (rc == PICO_ERROR_TIMEOUT) {
-        return SENSE_TIMEOUT;
-    }
-    if (rc >= 0) {
-        return SENSE_NACK;        /* a data byte not acknowledged */
-    }
-    const sense_err_t e = lines_idle();
-    return (e == SENSE_OK) ? SENSE_NACK : e;
-}
-
-/**
- * @brief The end of every transaction: a failed one leaves the block reset.
- *
- * @param e  The transaction's result.
- * @param irq  Interrupt state to restore.
- * @return The value of @p e.
- */
-static sense_err_t done(sense_err_t e, uint32_t irq)
-{
-    if (e != SENSE_OK) {
-        block_init();
-    }
-    restore_interrupts(irq);
-    return e;
 }
 
 sense_err_t sense_i2c_read(void *ctx, uint8_t addr, uint8_t reg,
                            uint8_t *buf, size_t n)
 {
     (void)ctx;
-    if (!s_open || n == 0u) {
+    if (!s_open) {
         return SENSE_BAD_ARG;
     }
-    const uint32_t irq = save_and_disable_interrupts();
-    const sense_err_t idle = lines_idle();
-    if (idle != SENSE_OK) {
-        return done(idle, irq);
-    }
-    const absolute_time_t until = make_timeout_time_us(SENSE_I2C_TIMEOUT_US);
-    /* The pointer without a STOP, then the bytes after a repeated START. */
-    sense_err_t e = classify(
-        i2c_write_blocking_until(s_i2c, addr, &reg, 1u, true, until), 1u);
-    if (e == SENSE_OK) {
-        e = classify(i2c_read_blocking_until(s_i2c, addr, buf, n, false, until),
-                     n);
-    }
-    return done(e, irq);
+    return sense_txq_read(&s_wire, addr, reg, buf, n);
 }
 
 sense_err_t sense_i2c_write(void *ctx, uint8_t addr, uint8_t reg,
                             const uint8_t *buf, size_t n)
 {
     (void)ctx;
-    uint8_t frame[1u + 4u];
-    if (!s_open || n == 0u || n > sizeof(frame) - 1u) {
+    if (!s_open) {
         return SENSE_BAD_ARG;
     }
-    frame[0] = reg;
-    for (size_t i = 0; i < n; ++i) {
-        frame[1u + i] = buf[i];
-    }
-    const uint32_t irq = save_and_disable_interrupts();
-    const sense_err_t idle = lines_idle();
-    if (idle != SENSE_OK) {
-        return done(idle, irq);
-    }
-    const absolute_time_t until = make_timeout_time_us(SENSE_I2C_TIMEOUT_US);
-    const sense_err_t e = classify(
-        i2c_write_blocking_until(s_i2c, addr, frame, n + 1u, false, until),
-        n + 1u);
-    return done(e, irq);
+    return sense_txq_write(&s_wire, addr, reg, buf, n);
 }
 
 sense_err_t sense_i2c_ask(uint8_t addr)
@@ -230,78 +170,25 @@ sense_err_t sense_i2c_ask(uint8_t addr)
     if (!s_open) {
         return SENSE_BAD_ARG;
     }
-    const uint32_t irq = save_and_disable_interrupts();
-    const sense_err_t idle = lines_idle();
-    if (idle != SENSE_OK) {
-        return done(idle, irq);
-    }
-    uint8_t b;
-    const absolute_time_t until = make_timeout_time_us(SENSE_I2C_TIMEOUT_US);
-    const sense_err_t e = classify(
-        i2c_read_blocking_until(s_i2c, addr, &b, 1u, false, until), 1u);
-    return done(e, irq);
-}
-
-/**
- * @brief Open drain by hand: low is the pin driven 0, high is the pin let go
- * to its pull-up.
- *
- * @param pin  GPIO number.
- * @param high  True to let the line go high, false to drive it low.
- */
-static void line(uint8_t pin, bool high)
-{
-    gpio_set_dir(pin, high ? GPIO_IN : GPIO_OUT);
-}
-
-/**
- * @brief SCL let go, and given SENSE_I2C_CLEAR_STRETCH_US to rise: a part
- * may hold it low a while.
- */
-static void scl_release(void)
-{
-    line(s_scl, true);
-    const uint64_t until = time_us_64() + SENSE_I2C_CLEAR_STRETCH_US;
-    while (!gpio_get(s_scl) && time_us_64() < until) {
-        tight_loop_contents();
-    }
-    busy_wait_us_32(SENSE_I2C_CLEAR_HALF_US);
+    return sense_txq_ask(&s_wire, addr);
 }
 
 void sense_i2c_recover(void)
 {
-    if (!s_open) {
-        return;
+    if (s_open) {
+        sense_txq_recover(&s_wire);
     }
-    const uint32_t irq = save_and_disable_interrupts();
-    i2c_deinit(s_i2c);
-    /* Both lines as GPIO driving 0 when they drive at all, let go to begin
-     * with. */
-    gpio_put(s_sda, false);
-    gpio_put(s_scl, false);
-    line(s_sda, true);
-    line(s_scl, true);
-    gpio_set_function(s_sda, GPIO_FUNC_SIO);
-    gpio_set_function(s_scl, GPIO_FUNC_SIO);
-    busy_wait_us_32(SENSE_I2C_CLEAR_HALF_US);
-    /* Nine clocks: a part part way through a byte finishes it and its
-     * acknowledge bit, and lets SDA go. */
-    for (unsigned k = 0; k < 9u; ++k) {
-        line(s_scl, false);
-        busy_wait_us_32(SENSE_I2C_CLEAR_HALF_US);
-        scl_release();
+}
+
+void sense_i2c_poll(void)
+{
+    if (s_open) {
+        i2c_txq_block_poll(&s_bus);
     }
-    /* A STOP: SDA low while SCL is low, SCL up, then SDA up. */
-    line(s_scl, false);
-    busy_wait_us_32(SENSE_I2C_CLEAR_HALF_US);
-    line(s_sda, false);
-    busy_wait_us_32(SENSE_I2C_CLEAR_HALF_US);
-    scl_release();
-    line(s_sda, true);
-    busy_wait_us_32(SENSE_I2C_CLEAR_HALF_US);
-    /* The block back on its pins. */
-    block_init();
-    gpio_set_function(s_sda, GPIO_FUNC_I2C);
-    gpio_set_function(s_scl, GPIO_FUNC_I2C);
-    restore_interrupts(irq);
+}
+
+uint64_t sense_i2c_done_us(void *ctx)
+{
+    (void)ctx;
+    return s_open ? sense_txq_done_us(&s_wire) : time_us_64();
 }

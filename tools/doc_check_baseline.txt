@@ -95,10 +95,6 @@ firmware/iomcu/src/sense_core1.c: warning: Member s_snap (variable) of file sens
 firmware/iomcu/src/sense_core1.c: warning: Member s_stack[1024] (variable) of file sense_core1.c is not documented.
 firmware/iomcu/src/sense_core1.c: warning: Member s_svc (variable) of file sense_core1.c is not documented.
 firmware/iomcu/src/sense_core1.c: warning: Member s_taken_seq (variable) of file sense_core1.c is not documented.
-firmware/iomcu/src/sense_i2c.c: warning: Member s_i2c (variable) of file sense_i2c.c is not documented.
-firmware/iomcu/src/sense_i2c.c: warning: Member s_open (variable) of file sense_i2c.c is not documented.
-firmware/iomcu/src/sense_i2c.c: warning: Member s_scl (variable) of file sense_i2c.c is not documented.
-firmware/iomcu/src/sense_i2c.c: warning: Member s_sda (variable) of file sense_i2c.c is not documented.
 firmware/iomcu/src/tone_core1.c: warning: Member cap_gen (variable) of struct q_entry_t is not documented.
 firmware/iomcu/src/tone_core1.c: warning: Member gen (variable) of struct q_entry_t is not documented.
 firmware/iomcu/src/tone_core1.c: warning: Member rec (variable) of struct q_entry_t is not documented.
