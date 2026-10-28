@@ -43,6 +43,12 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
           "-Wno-sign-conversion"]
 
+# No fused multiply-add: a compiler whose default target has FMA (Ubuntu
+# 26.04's gcc builds for x86-64-v3) rounds a * b + c once instead of twice,
+# which moves a pixel at the edge of an arc or a plot line.  The committed
+# images are those of separate multiply and add.
+FP_FLAGS = ["-ffp-contract=off"]
+
 # The screens (ui_sources.py), the renderer, and what only its views
 # drive: the KST and the Hitec programmers' link modules, the IOmcu's
 # ports and the wire under them.
@@ -595,7 +601,8 @@ def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     exe = tmp / ("render_trace" if trace else "render_screen")
     # With the touch injector's texts, as the host suite builds: the
     # band-inject view draws INJECT's bubble and --fit measures it.
-    cmd = ["cc", "-O2", "-g", *STRICT, "-DRCBENCH_TOUCH_INJECTOR=1",
+    cmd = ["cc", "-O2", "-g", *STRICT, *FP_FLAGS,
+           "-DRCBENCH_TOUCH_INJECTOR=1",
            "-o", str(exe)]
     if trace:
         cmd += ["-DGFX_TEXT_TRACE"]
