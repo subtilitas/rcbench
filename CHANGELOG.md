@@ -13,7 +13,8 @@ history is in git.
   ARMED bench, or one on its way to ARMED, when: the supply trips on CURRENT
   TRIP or VOLTAGE TRIP, stops answering, gives no reading, is switched off by
   the IOmcu or by the PD mini's own protection, sags, refuses an ON or does
-  not take an output or a set point; an INA3221 channel passes its limit
+  not take an output or a set point, or an ON is undone for lost touch
+  events; an INA3221 channel passes its limit
   (until now an alert only); a card write fails during a run. The supply's
   output goes off with each, unless a programming port holds it. The
   automatic servo test and the limit run switch the bench to SAFE when an

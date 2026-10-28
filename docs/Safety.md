@@ -116,7 +116,7 @@ either goes.
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | kept | off | the panel |
 | An INA3221 channel over its limit | SAFE | kept | off, unless a port holds it | the panel, at the 200ms read of `OVER` |
 | A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
-| The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take | SAFE | kept | off where it can be switched | the IOmcu's driver for the output, the panel for SAFE |
+| The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | kept | off where it can be switched | the IOmcu's driver for the output, the panel for SAFE |
 
 SAFE means the panel asks DISARM. The request withholds the heartbeat while
 it stands, so the IOmcu fails safe within 150ms even when the panel's
@@ -147,17 +147,22 @@ Firmware cannot cover a board that does not run:
   and the ports send no pulse, but a servo or ESC (electronic speed
   controller) input that floats can read a level. The PD mini has its UART
   on the IOmcu alone and keeps its output as it was until the IOmcu runs
-  again. Covered by the monostable below on the power path, and by a
-  pull-down on each signal line.
+  again. The monostable below does not cover it: the panel goes on
+  beating. A pull-down on each signal line covers the pulses; a second
+  monostable that the IOmcu's own main loop retriggers, gating the same
+  switches and a switch after the PD mini, would cover the rest. Neither is
+  specified.
 - The panel and the IOmcu both gone. Nothing switches the PD mini or the
   power path. Covered by the monostable.
 - The PD mini not answering on its UART. The IOmcu sends OFF blind only to
-  a module that has answered with a known OFF argument. Covered by a
-  switch on the PD mini's output that the monostable gates.
+  a module that has answered with a known OFF argument. The monostable
+  does not cover it while both boards run. A load switch after the PD
+  mini's output, open unless an IOmcu pin holds it closed, would; it is not
+  specified.
 
-The station's PD mini output stayed on through a 15s IOmcu outage in
-BOOTSEL; a power-on reset on that bench drops the IOmcu's USB for 14.5 to
-15s. How long a real reset leaves the PD mini on before the start-up's OFF
+On the bring-up bench the PD mini's output stayed on through a 15s outage
+of the IOmcu in BOOTSEL, and a power-on reset drops the IOmcu's USB for
+14.5 to 15s. How long a real reset leaves the PD mini on before the start-up's OFF
 is not measured.
 
 ## Required external circuit: the monostable

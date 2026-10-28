@@ -125,7 +125,7 @@ IOmcu handelt selbst, wenn einer der beiden ausfällt.
 | Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | bleibt | aus | das Panel |
 | Ein INA3221-Kanal über seiner Grenze | SAFE | bleibt | aus, außer ein Port hält es | das Panel, beim Lesen von `OVER` alle 200ms |
 | Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
-| Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird | SAFE | bleibt | aus, wo er sich schalten lässt | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
+| Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | bleibt | aus, wo er sich schalten lässt | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
 
 SAFE heißt: das Panel fordert DISARM an. Solange die Anforderung steht, hält
 es den Heartbeat zurück, sodass der IOmcu binnen 150ms sicher abschaltet,
@@ -159,17 +159,22 @@ Firmware kann ein Board, das nicht läuft, nicht abdecken:
   die Bank und die Ports senden also keinen Puls, aber ein offener Eingang
   eines Servos oder ESC (Electronic Speed Controller) kann einen Pegel
   lesen. Der PD mini hat seinen UART nur am IOmcu und behält seinen Ausgang,
-  bis der IOmcu wieder läuft. Abgedeckt durch das Monoflop unten im
-  Leistungspfad und durch einen Pull-down an jeder Signalleitung.
+  bis der IOmcu wieder läuft. Das Monoflop unten deckt das nicht ab: das
+  Panel sendet seinen Heartbeat weiter. Ein Pull-down an jeder
+  Signalleitung deckt die Pulse ab; ein zweites Monoflop, das die
+  Hauptschleife des IOmcu selbst nachtriggert und dieselben Schalter und
+  einen Schalter hinter dem PD mini steuert, deckte den Rest ab. Keines von
+  beiden ist spezifiziert.
 - Panel und IOmcu beide weg. Nichts schaltet den PD mini oder den
   Leistungspfad. Abgedeckt durch das Monoflop.
 - Der PD mini antwortet auf seinem UART nicht. Der IOmcu sendet ein blindes
   OFF nur an ein Modul, das geantwortet hat und dessen OFF-Argument bekannt
-  ist. Abgedeckt durch einen Schalter am Ausgang des PD mini, den das
-  Monoflop steuert.
+  ist. Das Monoflop deckt das nicht ab, solange beide Boards laufen. Ein
+  Lastschalter hinter dem Ausgang des PD mini, offen, solange ihn kein Pin
+  des IOmcu geschlossen hält, deckte es ab; er ist nicht spezifiziert.
 
-Der Ausgang des PD mini am Prüfplatz blieb während eines IOmcu-Ausfalls
-von 15s in BOOTSEL an; ein Power-on-Reset an diesem Prüfstand trennt das
+Am Bring-up-Prüfstand blieb der Ausgang des PD mini während eines
+Ausfalls des IOmcu von 15s in BOOTSEL an, und ein Power-on-Reset trennt das
 USB des IOmcu für 14,5 bis 15s. Wie lange ein echter Reset den PD mini vor
 dem OFF des Starts anlässt, ist nicht gemessen.
 
