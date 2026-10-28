@@ -34,6 +34,8 @@
  */
 #include "files_rig.h"
 
+#include "text_view.h"
+
 #include "log_csv.h"
 #include "log_viewer_screen.h"
 
@@ -405,9 +407,12 @@ TEST_CASE(info_shows_a_file_and_a_folder)
     tap_foot(FS_SPOT_INFO);
     CHECK_EQ(files_screen_view(), FILES_VIEW_INFO);
     draw();
-    /* With nothing selected INFO says so. */
+    /* The second tap on NOTES.TXT opens it in the viewer; the home tag
+     * returns to the panes, and from there leaves. */
     tap(FS_SPOT_CLOSE_CX, FS_SPOT_CLOSE_CY);
-    tap_row(0, 2);                /* the second tap: OPEN, refused */
+    tap_row(0, 2);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+    CHECK(home());
     CHECK(home() == false);
 }
 
@@ -540,21 +545,23 @@ TEST_CASE(open_hands_a_log_folders_csv_to_logs)
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     CHECK(strstr(log_viewer_message(), "ATEST006.CSV") != NULL);
-    /* A report LOGS' list does not hold, as one gone from the card since
-     * FILES read it (this list() holds two CSV files only), stays in FILES
-     * and says it is not on the card. */
+    /* A report LOGS' list does not hold (this list() holds two CSV files
+     * only) is no matter: a report opens in the text viewer, from the card
+     * FILES reads, and so does a text file of the root. */
     ui_router_goto(SCREEN_FILES);
     settle();
     CHECK(pick(1, "LIMIT006.TXT"));
     tap_foot(FS_SPOT_OPEN);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
-    CHECK_STR_EQ(files_screen_message(),
-                 msg(TX_FM_E_NOT_FOUND, "LIMIT006.TXT"));
-    /* A text file of the root is no file LOGS shows. */
+    CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+    CHECK_STR_EQ(text_view_name(), "LIMIT006.TXT");
+    CHECK(screen()->back());
     CHECK(pick(0, "NOTES.TXT"));
     tap_foot(FS_SPOT_OPEN);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
-    CHECK_STR_EQ(files_screen_message(), TR(FM_OPEN_WHERE));
+    CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
+    CHECK_STR_EQ(text_view_name(), "NOTES.TXT");
+    CHECK(screen()->back());
     CHECK_EQ(log_viewer_show(LOG_TAB_COUNT, "X", g_h.card.mount),
              LOG_SHOW_NOT_LISTED);
     CHECK_EQ(log_viewer_show(LOG_TAB_USER, "", g_h.card.mount),

@@ -33,6 +33,8 @@ typedef struct {
     bool armed;                /**< the bench is ARMED                    */
     bool link_up;              /**< the IOmcu link is up                  */
     log_marks_t marks;         /**< the logger's open files               */
+    log_marks_t seen;          /**< marks as bench() last copied them: the
+                                    screen's snapshot, as on the panel   */
     char run_dir[CARD_DIR_MAX];  /**< the open run's folder               */
     char test_dir[CARD_DIR_MAX]; /**< the open test's folder              */
     const char *volume;        /**< the card's name, NULL for none        */

@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und seine Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und zeigt einen Bericht als Text. Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht und vom Text eines Berichts zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und seine Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und öffnet einen Bericht im Textbetrachter von [Files](files.md#der-textbetrachter). Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner User-Logs, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Logs, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
@@ -41,7 +41,7 @@ LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und n
 | WLAN | öffnet [WLAN](wifi.md) |
 | DATEIEN | öffnet [Files](files.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
-| ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht als Text; grau, solange nichts gewählt ist |
+| ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
 
 ![Die vierte Seite einer vollen Karte](view:logs-pages)
 
@@ -103,16 +103,9 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ## Ein Bericht
 
-![Der Bericht eines ENDLAGENLAUFS als Text](view:logs-report)
+![Der Bericht eines ENDLAGENLAUFS im Textbetrachter](view:logs-report)
 
-ÖFFNEN auf einem Bericht zeigt seinen Text: Der Dateiname steht über dem Feld, 15 Zeilen zu bis zu 92 Zeichen stehen auf einmal darin.
-
-- Eine Zeile, die länger ist als eine Bildschirmzeile, bricht am letzten Leerzeichen um; ein längeres Wort wird am Zeilenende abgeschnitten.
-- Ziehen auf den Zeilen oder am Rollbalken rollt sie. ZURÜCK führt zur Liste und gibt den Text frei; das Verlassen von LOGS gibt ihn auch frei.
-- Eine Zeile endet an einem Zeilenvorschub, an einem Wagenrücklauf und an einem Paar aus beiden.
-- Eine Datei von 0 Bytes zeigt `Die Datei ist leer.`
-- Die Ansicht fasst die ersten 32KiB einer Datei. Eine längere endet mit `Nur die ersten 32kB werden gezeigt.`
-- Ein Bericht, der sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum, zum Beispiel `LIMIT044.TXT lässt sich nicht öffnen.`
+ÖFFNEN auf einem Bericht öffnet ihn im [Textbetrachter](files.md#der-textbetrachter), nur lesend. Das Band zeigt dann FILES. Das Home-Tag führt zurück zu LOGS, und der Bericht ist in der Liste wieder gewählt. Ein Bericht über 1MiB bleibt in der Liste, und die Fußzeile meldet `Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.`
 
 [WLAN](wifi.md) lädt jeden Bericht ebenfalls herunter.
 

@@ -21,7 +21,6 @@
 
 #include "card_state.h"
 #include "gfx.h"
-#include "log_text.h"
 #include "log_viewer_screen.h"
 #include "touch_types.h"
 #include "ui_screen.h"
@@ -180,21 +179,6 @@
  *         of the 12 x 24 face inside 24px margins. */
 #define BR_EMPTY  gfx_rect_make(104, 150, 816, 160)
 
-/**
- * @brief The TEXT view: a report's rows in the browse list's panel,
- *        TX_ROW_H px apart under its 30px heading, beside its scroll bar.
- *
- * A row is TX_COLS cells of the 10 x 20 face, 920px, from 8px into the
- * browse row's box to 8px short of the bar.  The thumb is BR_BAR_MIN px
- * at least: a report of 400 rows would make it 12.  BACK stands where the
- * plot's BACK does.
- */
-#define TX_ROW_H  22  /**< the pitch of a text row, px */
-#define TX_ROWS   15  /**< text rows on screen */
-#define TX_COLS   92  /**< cells a text row holds */
-#define TX_ROW_X  (BR_ROW_X + 8)  /**< a text row's left edge */
-/** @brief BACK under the text, 140 x 52px. */
-#define TX_BACK   gfx_rect_make(LV_L, FOOT_Y, 140, FOOT_H)
 #define BR_BAR_MIN 32  /**< the scroll bar thumb's least height, px */
 
 /**
@@ -312,10 +296,6 @@ _Static_assert(LOG_VIEWER_NAME_CELLS < LOG_VIEWER_NAME_MAX,
                "a name of LOG_VIEWER_NAME_CELLS fits its array");
 _Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
                "the scroll bar's thumb is 32px or more on a full page");
-_Static_assert(TX_ROWS * TX_ROW_H <= BR_ROWS * BR_ROW_H - 4,
-               "the text's rows fit beside the scroll bar");
-_Static_assert(TX_COLS * 10 <= BR_ROW_W - 8,
-               "a text row fits the browse row's box");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - IM_TOP,
                "the column list's rows fit its panel");
 _Static_assert(PV_POS_Y + PV_POS_H <= PV_TOP + PV_PANEL_H,
@@ -324,7 +304,7 @@ _Static_assert(CHIP_X + 4 * CHIP_W + 3 * CHIP_GAP <= LV_R,
                "the four chips stand in the screen's width");
 
 /** @brief The view on screen. */
-typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT, VIEW_TEXT } view_t;
+typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT } view_t;
 
 /** @brief The footer message's longest text, bytes with its NUL: a text
  *         of the table with a LOG_VIEWER_NAME_MAX name in it. */
@@ -368,6 +348,8 @@ typedef struct {
     char volume[LOG_VIEWER_NAME_MAX];   /**< the card's name when the page was read */
     unsigned mounts;                    /**< the I/O's mount number when the page was read */
     unsigned open_mounts;               /**< the mount number when the open file's page was read */
+    bool to_viewer;                     /**< the open report went to the text viewer: the list
+                                             selects it again on the way back */
 
     /* A finger on the scroll bar: the thumb follows it, held where it took
      * the thumb, grab px below the thumb's top. */
@@ -411,9 +393,6 @@ typedef struct {
     log_data_t data;                    /**< the plot's samples */
     bool have_data;                     /**< whether data is loaded */
     int cursor;                         /**< cursor sample index, -1 for none */
-
-    log_text_t text;      /**< the report the TEXT view shows */
-    int text_scroll;      /**< the TEXT view's first row on screen */
 
     /*
      * The samples the plot shows: [win0, win0 + win_n).  The whole file
@@ -571,22 +550,6 @@ void lv_bar_thumb_of(int total, int visible, int scroll, int *y, int *h);
  */
 int lv_bar_scroll_of(int total, int visible, int top);
 
-/**
- * @brief Rows the TEXT view scrolls through: the text's, and the line that
- *        says it was cut.
- *
- * @return The rows.
- */
-int lv_text_total(void);
-
-/**
- * @brief Leave the TEXT view for the list and free the report's text.
- *
- * The text is up to 32KiB of the file; the list does not need it, and OPEN
- * reads it again.
- */
-void lv_close_text(void);
-
 /* --- log_viewer_load.c -------------------------------------------------- */
 
 /**
@@ -604,8 +567,7 @@ void lv_say(ui_text_id_t id, const char *name);
 
 /**
  * @brief The footer message says the reader's verdict @p err, a failure.
- * @param err  the verdict of log_csv_analyse(), log_csv_build() or
- *             log_text_load()
+ * @param err  the verdict of log_csv_analyse() or log_csv_build()
  */
 void lv_say_err(log_err_t err);
 
@@ -641,8 +603,8 @@ void lv_compute_spans(void);
 void lv_load_data(void);
 /**
  * @brief Opens the selected row: a CSV file to the import view, a report to
- *        the TEXT view; a folder or an oversized file is refused with a
- *        message.
+ *        the text viewer FILES hosts (files_screen_open_text()); a folder
+ *        or an oversized file is refused with a message.
  */
 void lv_open_selected(void);
 

@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "files_screen.h"
+#include "text_view.h"
 #include "fm_name.h"
 #include "log_name.h"
 #include "ui_card_text.h"
@@ -598,15 +599,12 @@ static bool job_box_shows(void)
     return s.req.job.kind == FM_JOB_COPY || s.busy_s >= FS_JOB_BOX_S;
 }
 
-void fs_render(gfx_canvas_t *c, int buffer_index)
+/**
+ * @brief The panes and the footer, or a box over them, or the keyboard.
+ * @param c  the canvas
+ */
+static void draw_body(gfx_canvas_t *c)
 {
-    const int bi = (buffer_index >= 0 && buffer_index < MAX_FBS)
-                       ? buffer_index : 0;
-    const bool tk_moved = (s.view == FILES_VIEW_NAME
-                           && s.tk.revision != s.drawn_tk_rev);
-    if (s.valid[bi] && !tk_moved) {
-        return;
-    }
     gfx_fill_rect(c, 0, 0, SCREEN_W, SCREEN_H, UI_BG);
     if (s.view == FILES_VIEW_NAME) {
         ui_textkey_render(&s.tk, c);
@@ -625,6 +623,22 @@ void fs_render(gfx_canvas_t *c, int buffer_index)
         if (s.view == FILES_VIEW_NEW) {
             draw_new(c);
         }
+    }
+}
+
+void fs_render(gfx_canvas_t *c, int buffer_index)
+{
+    const int bi = (buffer_index >= 0 && buffer_index < MAX_FBS)
+                       ? buffer_index : 0;
+    const bool tk_moved = (s.view == FILES_VIEW_NAME
+                           && s.tk.revision != s.drawn_tk_rev);
+    if (s.valid[bi] && !tk_moved) {
+        return;
+    }
+    if (s.view == FILES_VIEW_TEXT) {
+        text_view_render(c);
+    } else {
+        draw_body(c);
     }
     s.valid[bi] = true;
     s.drawn_tk_rev = s.tk.revision;

@@ -738,50 +738,6 @@ static void render_plot(gfx_canvas_t *c)
     }
 }
 
-/* ---------------------------------------------------------------- text --- */
-
-/**
- * @brief Draw the TEXT view: the report's rows in the browse list's panel,
- *        its name as the panel's title, the scroll bar and BACK.
- *
- * The rows are in the 10 x 20 face, TX_COLS cells each.
- *
- * @param c  The canvas.
- */
-static void render_text(gfx_canvas_t *c)
-{
-    ui_panel(c, BR_LIST, s.name, UI_ACCENT);
-    render_bar_of(c, lv_text_total(), TX_ROWS, s.text_scroll);
-    char row[TX_COLS * 4 + 1];
-    int y = BR_LIST.y + 30;
-    if (s.text.rows == 0 && !s.text.cut) {
-        /* A file of 0 bytes: one row says so, so the panel is not taken
-         * for one that failed to draw. */
-        gfx_text_in(c, gfx_rect_make(TX_ROW_X, y, TX_COLS * 10, TX_ROW_H),
-                    TR(LOG_TEXT_EMPTY), LV_FONT_LABEL, UI_TEXT_DIM, 1,
-                    GFX_ALIGN_LEFT);
-    }
-    for (int r = 0; r < TX_ROWS; ++r) {
-        const int i = s.text_scroll + r;
-        const gfx_rect_t box = gfx_rect_make(TX_ROW_X, y, TX_COLS * 10,
-                                             TX_ROW_H);
-        if (log_text_row(&s.text, i, row, sizeof(row))) {
-            gfx_text_in(c, box, row, LV_FONT_LABEL, UI_TEXT, 1,
-                        GFX_ALIGN_LEFT);
-        } else if (s.text.cut && i == s.text.rows) {
-            snprintf(row, sizeof(row), TR(LOG_TEXT_CUT),
-                     (unsigned)(LOG_TEXT_MAX / 1024u));
-            gfx_text_in(c, box, row, LV_FONT_LABEL, UI_WARN, 1,
-                        GFX_ALIGN_LEFT);
-        } else {
-            break;
-        }
-        y += TX_ROW_H;
-    }
-    ui_button_font(c, TX_BACK, TR(LOG_BACK), UI_PANEL_HI, s.press_btn == 0,
-                   true, LV_FONT_LABEL);
-}
-
 void lv_render(gfx_canvas_t *c, int buffer_index)
 {
     bool stale = true;
@@ -800,9 +756,6 @@ void lv_render(gfx_canvas_t *c, int buffer_index)
         break;
     case VIEW_PLOT:
         render_plot(c);
-        break;
-    case VIEW_TEXT:
-        render_text(c);
         break;
     case VIEW_BROWSE:
     default:

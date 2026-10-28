@@ -2337,8 +2337,7 @@ plotten:
 ![Ein SERVO-Lauf, wie er öffnet: pulse, angle, current und voltage](img/de/logs-servo-plot.png)
 
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
-von der Importansicht und vom Text eines Berichts zur Dateiliste, von der
-Dateiliste zum Menü. Über der
+von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
 AKTUALISIEREN, öffnet [WLAN](#wlan), und DATEIEN daneben öffnet
 [Files](#files).
@@ -2466,31 +2465,20 @@ Regel, nach der FILES einen Bericht kennzeichnet: `ATESTnnn.TXT` neben
 CSV-Datei schreibt, und im Stammverzeichnis `SERVOnnn.TXT` von Firmware
 0.21.0 und älter. Ein Lauf und sein Bericht sind zwei Zeilen, die CSV-Datei
 zuerst: ÖFFNEN auf der CSV-Datei liest sie in den Import, ÖFFNEN auf dem
-Bericht zeigt seinen Text. Andere `.TXT`-Dateien stehen nicht in der Liste.
+Bericht öffnet ihn im [Textbetrachter](#der-textbetrachter). Andere `.TXT`-Dateien stehen nicht in der Liste.
 Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen im
 Ordner, ein Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
 `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SERVO042.TXT`, dann
 `SUPPL041.CSV`.
 
-![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
+![Der Bericht eines ENDLAGENLAUFS, aus LOGS im Textbetrachter geöffnet](img/de/logs-report.png)
 
-ÖFFNEN auf einem Bericht zeigt ihn als Text an Stelle der
-Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 15
-Zeilen zu bis zu 92 Zeichen in der Schrift 10 x 20 auf dem Bildschirm, 22px
-auseinander. ZURÜCK ist 140 x 52px groß, links in der Fußzeile. Eine Zeile, die länger ist
-als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
-Wort, das länger ist, wird am Zeilenende abgeschnitten. Eine Zeile endet an
-einem Zeilenvorschub (LF), an einem Wagenrücklauf (CR) und an einem Paar
-CR LF, das ein Ende ist; ein Tabulator wird zum Leerzeichen. Ziehen auf den
-Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 15 Zeilen, die es
-zeichnet, und höchstens 15 Zeilen davor, wohin der Text auch gerollt ist.
-ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
-Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
-Liste. Die Ansicht fasst die ersten 32KiB einer Datei; eine längere zeigt
-diese und als letzte Zeile `Nur die ersten 32kB werden gezeigt.` Eine
-Datei von 0 Bytes zeigt eine Zeile, `Die Datei ist leer.` Ein Bericht, der
-sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum:
-`LIMIT044.TXT lässt sich nicht öffnen.` oder `Nicht genug Speicher.`
+ÖFFNEN auf einem Bericht öffnet ihn im
+[Textbetrachter](#der-textbetrachter) auf FILES, nur lesend. Der Titel im
+Band lautet FILES; das Home-Tag führt zurück zu LOGS, und der Bericht ist
+in der Liste wieder gewählt. Ein Bericht über 1MiB bleibt in der Liste,
+und die Fußzeile meldet
+`Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.`
 
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
 
@@ -2771,7 +2759,8 @@ trägt.
 
 FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten und kopiert,
 verschiebt, benennt um und löscht ihre Dateien; er legt Ordner und leere
-Textdateien an. Er öffnet über DATEIEN in der unteren Reihe von
+Textdateien an und zeigt eine Datei als Text im
+[Textbetrachter](#der-textbetrachter). Er öffnet über DATEIEN in der unteren Reihe von
 [Logs](#logs) und über die Kachel FILES auf [Setup](#setup). Das Home-Tag
 schließt zuerst eine Box oder die Tastatur und führt dann zu dem
 Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
@@ -2846,7 +2835,7 @@ darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
 | LÖSCHEN | fragt zuerst. Die CSV-Datei eines Laufs nimmt ihren Bericht mit; ein Ordner wird nur gelöscht, wenn er leer ist |
 | NEU | ORDNER oder TEXTDATEI, dann die Tastatur für den Namen; eine Textdatei wird leer angelegt |
 | INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags |
-| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs) im Tab dieses Ordners, ein Bericht als Text: die Namen, die LOGS listet (`log_select_lists()`), darunter jede Datei, die die Liste als BERICHT kennzeichnet; eine Datei, die LOGS nicht öffnet, eine über 2GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; eine Datei, die seit dem Listen von der Karte verschwunden ist, meldet `LIMIT013.TXT ist nicht auf der Karte. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei in einem der drei Ordner von LOGS (STAMM, USER, BENCH), die LOGS listet, öffnet auf [Logs](#logs) im Tab dieses Ordners, im Import; eine CSV-Datei über 2GiB weniger 1 Byte zeigt die Liste von LOGS mit dem Grund, und nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Jede andere Datei, auch ein Bericht, öffnet im [Textbetrachter](#der-textbetrachter). Eine Datei über 1MiB öffnet sich nicht: ÖFFNEN ist grau und meldet `Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; die Vermerke der Servoprogrammierung nehmen nur INFO |
 
 Ein vorhandener Name wird nie überschrieben: KOPIEREN, VERSCHIEBEN,
 UMBENENNEN und NEU lehnen ihn ab mit `NOTES.TXT gibt es dort schon.` Eine
@@ -2859,6 +2848,90 @@ Log-Ordner kopiert oder umbenannt wurde. KOPIEREN und VERSCHIEBEN
 in den Ordner, in dem der Eintrag liegt, oder eines Ordners in sich selbst
 werden abgelehnt:
 `Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.`
+
+### Der Textbetrachter
+
+![Der Bericht eines Servotests im Textbetrachter](img/de/files-view.png)
+
+Der Textbetrachter zeigt eine Datei der Karte als Text, nur lesend.
+ÖFFNEN auf einer Datei in FILES öffnet ihn, ebenso ÖFFNEN auf einem
+Bericht in [Logs](#logs). Das Home-Tag schließt ihn: zu den Spalten, wenn
+FILES ihn geöffnet hat, zurück zu LOGS, wenn LOGS ihn geöffnet hat. Das
+Verlassen von FILES schließt ihn auch. Er öffnet eine Datei von bis zu
+1MiB (1.048.576 Bytes) und bis zu 65.536 Zeilenenden; die Kartenaufgabe
+liest sie ganz, in Stücken von 16KiB, während der Bildschirm
+`Lese die Karte.` zeigt.
+
+Die Kopfzeile, Körper-y 4 bis 52, zeigt Ordner und Namen der Datei (vorne
+auf `..` gekürzt ab 44 Zeichen), ihre Größe, NUR LESEN und rechts
+`ZEILE 23 VON 57`: die Zeile in der obersten Bildschirmzeile und die
+Zeilen der Datei. Ein Zeilenende am Ende der Datei beginnt keine eigene
+Zeile.
+
+Der Text steht in einem Feld von 1008 x 372px ab Körper-y 60: 18 Zeilen
+zu 92 Zeichen in der Schrift 10 x 20, 20px auseinander. KLEIN, links in
+der Fußzeile, schaltet auf die Schrift 8 x 16: 22 Zeilen zu 115 Zeichen,
+16px auseinander, für die Stufentabelle eines Berichts; der Knopf heißt
+dann NORMAL. Die Wahl gilt für jede Datei, bis das Panel neu startet.
+
+![Derselbe Bericht mit KLEIN, auf seinem zweiten Bildschirm](img/de/files-view-small.png)
+
+Eine Zeile, die breiter ist als eine Bildschirmzeile, setzt sich in der
+nächsten fort, links mit `..` markiert. Ein Tabulator reicht bis zum
+nächsten Vielfachen von 8 Zeichen; am Ende einer Bildschirmzeile endet er
+dort. Ein Byte, das keine UTF-8-Folge beginnt, ein Steuerzeichen und ein
+NUL-Byte nach den ersten 4KiB erscheinen als `?`, je ein Zeichen; ein
+Zeichen, für das die Schriften kein Glyph haben, ebenso. Eine UTF-8-Byte
+Order Mark am Anfang wird nicht gezeichnet. Eine Zeile endet an LF, an
+CR LF und an einem einzelnen CR; eine Datei mit mehr als einer Art zeigt
+`GEMISCHTE ZEILENENDEN` in der Fußzeile.
+
+Ziehen auf dem Text bewegt ihn eine Zeile je 20px (16px mit KLEIN), von
+der Stelle aus, an der er beim Aufsetzen stand; ein Druck, der sich 8px
+oder weniger bewegt, ist kein Ziehen. Ziehen am 56px breiten Rollbalken
+legt den Schieber unter den Finger, der Weg des Balkens über die Zeilen
+der Datei und die Bildschirmzeilen jeder umbrochenen Zeile verteilt; die
+Enden des Wegs sind der erste und der letzte Bildschirm, wie SEITE HOCH
+und SEITE RUNTER sie erreichen, auch wenn der letzte Bildschirm in einer
+umbrochenen Zeile beginnt. Ein Tipp auf den Balken neben dem Schieber
+setzt den Schieber dorthin. SEITE HOCH und SEITE RUNTER, 140 x 52px rechts in der
+Fußzeile, bewegen einen Bildschirm voll Zeilen, 18 oder 22; jeder ist am
+ersten oder letzten Bildschirm grau, beide, wenn der ganze Text zu sehen
+ist.
+
+Die Farben folgen den Wörtern des Prüfstands, nach dem Namen der Datei:
+eine `.TXT`-Datei nach den Regeln eines Berichts, eine `.JSON`-Datei als
+JSON, eine `.CSV`-Datei als CSV, jede andere Datei als einfacher Text.
+
+| Klasse | In einer `.TXT`-Datei | Farbe |
+|---|---|---|
+| Überschrift | Zeile 1 und eine Zeile in Großbuchstaben wie `AKTIVE EINSTELLUNGEN` | Akzent |
+| Bezeichnung | `Ergebnis:` oder `Neutral =` vom Zeilenanfang, innerhalb von 24 Zeichen | gedimmt |
+| OK | BESTANDEN des Berichts, in jeder Sprache | OK-Grün |
+| FEHLER | NICHT BESTANDEN des Berichts, in jeder Sprache | Gefahr-Rot |
+| WARNUNG | ABGEBROCHEN, NICHT MESSBAR, nicht gemessen, nicht geprüft, nicht gelaufen, verkürzt, `--`, `[not loaded]` | Warnfarbe |
+| Zahl mit Einheit | `6.00V`, `0.210A`, `400ms`, `333Hz` | Farbe der Einheit: V und mV Spannung, A und mA Strom, W Leistung, rpm und Hz Drehzahl, andere Türkis |
+| Kommentar | `#` bis zum Zeilenende | blass |
+| Register | `00: 1A 2B ...`, `checksum 9F3A77C1`, `journal=...` | gedimmt |
+
+Die Wörter sind die Texte der Berichtschreiber selbst, auf Englisch und
+auf Deutsch; ein auf Deutsch geschriebener Bericht erscheint auch auf
+einem englisch eingestellten Panel in seinen Farben.
+
+![Eine Servodatei des KST-Programmierers](img/de/files-view-kst.png)
+![Ein ESC-Profil](img/de/files-view-json.png)
+
+Eine Datei, die der Betrachter nicht zeigt, hinterlässt den Grund im
+Feld: `Keine Textdatei: ein NUL-Byte in den ersten 4kB.`,
+`Zu viele Zeilen: höchstens 65536.`, eine Datei, die seit dem Listen über
+1MiB gewachsen ist, und die Antworten der Karte selbst, etwa
+`Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.`
+Eine leere Datei zeigt `Die Datei ist leer.`
+
+Der Betrachter hält die Datei in einem Puffer von 1MiB und ihren
+Zeilenindex von 256KiB, beide im PSRAM (Pseudo-Static Random-Access
+Memory). Wie lange das Lesen von 1MiB von der Karte des Panels dauert, ist
+nicht gemessen.
 
 ### AKTUALISIEREN
 

@@ -6,7 +6,7 @@
  * (list, open, close), so the firmware points it at the SD card while the
  * host tests and the screenshot renderer point it at a string in memory.
  *
- * Four views, in the order they are used:
+ * Three views, in the order they are used:
  *
  *   BROWSE  the files of one folder of the card, and DELETE for the selected
  *           one behind a confirmation that names it.  Three tabs choose the
@@ -18,8 +18,10 @@
  *   IMPORT  what the CSV (comma-separated values) reader detected, and the
  *           controls to override it
  *   PLOT    the traces, on one time base with a scale each
- *   TEXT    a report, ATESTnnn.TXT or LIMITnnn.TXT, as text (log_text.h):
- *           OPEN on a report shows it in place of IMPORT
+ *
+ * OPEN on a report, ATESTnnn.TXT or LIMITnnn.TXT, opens it in the text
+ * viewer FILES hosts (files_screen_open_text(), text_view.h), read-only;
+ * the home tag returns from there to LOGS.
  *
  * The import view shows the detected delimiter and decimal convention before
  * anything is plotted: a decimal-comma file read as decimal-point turns
@@ -37,7 +39,6 @@
 
 #include "card_state.h"
 #include "log_csv.h"
-#include "log_text.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -198,8 +199,7 @@ typedef struct {
 typedef enum {
     LOG_VIEW_BROWSE = 0,
     LOG_VIEW_IMPORT,
-    LOG_VIEW_PLOT,
-    LOG_VIEW_TEXT       /**< a report's text */
+    LOG_VIEW_PLOT
 } log_viewer_view_t;
 
 void log_viewer_set_io(const log_viewer_io_t *io);
@@ -219,10 +219,11 @@ void log_viewer_set_tab(log_viewer_tab_t tab);
 /** @brief What log_viewer_show() found. */
 typedef enum {
     LOG_SHOW_OPEN = 0,     /**< the list holds the file: it is open in
-                                IMPORT or TEXT, or the list shows it
-                                selected with the reason OPEN refused it
-                                (a file over LOG_VIEWER_OPEN_MAX, a report
-                                that does not read)                      */
+                                IMPORT, a report in the text viewer, or
+                                the list shows it selected with the
+                                reason OPEN refused it (a file over
+                                LOG_VIEWER_OPEN_MAX, a report over
+                                TEXT_BUF_FILE_MAX)                       */
     LOG_SHOW_NOT_LISTED,   /**< a tab outside the three, or a name the list
                                 does not hold (a file other than a .csv or
                                 a report, one the logger has open, one
@@ -254,18 +255,6 @@ const log_analysis_t *log_viewer_analysis(void);
 
 /** The loaded traces, or NULL when nothing is plotted. */
 const log_data_t *log_viewer_data(void);
-
-/**
- * @brief The report the TEXT view shows.
- * @return its text and rows (log_text.h), or NULL with no report open
- */
-const log_text_t *log_viewer_text(void);
-
-/**
- * @brief The TEXT view's first row on screen.
- * @return the row, 0 at the top and with no report open
- */
-int log_viewer_text_first(void);
 
 /**
  * The samples the plot shows: the first in @p first and how many in

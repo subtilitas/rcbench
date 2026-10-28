@@ -352,34 +352,6 @@ static const log_fake_t k_card[] = {
     { "NOTES.TXT", 512, 0 },                  /* no stamp */
 };
 
-/* logs-report: LIMIT006.TXT as a limit run writes it, in English. */
-static const char k_limit_report[] =
-    "RCBENCH SERVO LIMIT REPORT\n"
-    "Result:         PASS\n"
-    "Device:         KST X20-830\n"
-    "Firmware:       rcbench 0.22.0\n"
-    "Mode:           search only, nothing written to the servo\n"
-    "Output:         S1, 333Hz\n"
-    "Pulse range:    centre 1500us, 900-2100us\n"
-    "Searched:       from 1500us out to 900us and 2100us\n"
-    "Current:        INA3221, 50ms windows, shunt 100.0m\xCE\xA9\n"
-    "Search rule:    10us steps, settle 120ms, mean of 80ms; bound above "
-    "2.0 x free and +0.15A\n"
-    "Protections:    a sample at 4.0A, above 2.5A for 300ms, no window "
-    "for 500ms, 60s a search\n"
-    "Duration:       38.4s\n"
-    "\n"
-    "ENDS (the search before programming)\n"
-    "Low end:        bound at 960us, endpoint 970us; free 0.112A, bound "
-    "0.391A\n"
-    "High end:       free to 2100us; free 0.108A\n"
-    "AS5600:         not fitted, no angles\n"
-    "\n"
-    "PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)\n"
-    "Not run: search only.\n"
-    "\n"
-    "Bench: the ends found are not applied to PULSE MIN and PULSE MAX.\n";
-static log_mem_ctx_t g_report_ctx;
 
 /*
  * Offer a folder's names to the page as the panel's lister does: the names
@@ -465,11 +437,6 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
 static bool fake_open(const char *name, log_source_t *src, void *ctx)
 {
     (void)ctx;
-    if (log_report_number(name) >= 0) {
-        log_source_memory(src, &g_report_ctx, k_limit_report,
-                          strlen(k_limit_report));
-        return true;
-    }
     /* A SERVO run of BENCH/LOGS reads as one; every other file as the
      * motor run. */
     if (strncmp(name, "SERVO", 5) == 0 && g_servo_len > 0u) {
@@ -529,6 +496,14 @@ static const log_viewer_io_t k_io_nofat = {
     .ctx = NULL,
 };
 
+/* The card's mount number: the one of the card FILES reads for the text
+ * viewer (render_files.c), so a report LOGS hands over is that card's. */
+static unsigned fake_mounts(void *ctx)
+{
+    (void)ctx;
+    return 1u;
+}
+
 static const log_viewer_io_t k_io = {
     .list = fake_list,
     .open = fake_open,
@@ -536,6 +511,7 @@ static const log_viewer_io_t k_io = {
     .volume = fake_volume,
     .remove = fake_remove,
     .folder = fake_folder,
+    .mounts = fake_mounts,
     .ctx = NULL,
 };
 
@@ -3962,9 +3938,12 @@ static void pose_shown_tools(ui_screen_id_t id, const char *view)
             tap(LV_TAB_CX(0), UI_BAND_H + LV_HEAD_CY);
         } else if (strcmp(view, "logs-report") == 0) {
             /* USER, the second tab: LIMIT006.TXT is the newest and chosen
-             * as the list opens, so a tap on it opens it. */
+             * as the list opens, so a tap on it opens it in the text
+             * viewer on FILES, which reads it from its card. */
+            render_files_prepare(view);
             tap(LV_TAB_CX(1), UI_BAND_H + LV_HEAD_CY);
             tap(LV_ROW_CX, UI_BAND_H + LV_ROW_CY(0));
+            render_files_settle();
         } else if (strcmp(view, "logs-servo-plot") == 0) {
             /* SERVO013.CSV, the second row of BENCH: a tap chooses it, a
              * second opens it. */

@@ -30,4 +30,8 @@ bool render_files_armed(const char *view);
  */
 void render_files_pose(const char *view);
 
+/** @brief Time passes until the card task has answered: for a view another
+ *         screen opens FILES in, logs-report. */
+void render_files_settle(void);
+
 #endif
