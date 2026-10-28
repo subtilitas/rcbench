@@ -68,7 +68,9 @@ history is in git.
   coverage and the checks that hold prose to the tree`. `test_settings_sensors`
   formats its keys into a 32-byte buffer (gcc 15 `-Werror=format-truncation`),
   `test_picker_screen` initialises its button coordinates (clang-tidy 21
-  `clang-analyzer-core.UndefinedBinaryOperatorResult`), the IOmcu stack figures
+  `clang-analyzer-core.UndefinedBinaryOperatorResult`), `unqueue()` of
+  `protocols/i2c_txq/` does not wrap the queue length below 0
+  (`clang-analyzer-security.ArrayBound`), the IOmcu stack figures
   are those of arm-none-eabi-gcc 14.2.1, `tools/render_ui.py` and
   `tools/frame_cost.py` compile with `-ffp-contract=off` so that a compiler
   targeting x86-64-v3 draws the committed images, and the coverage table is the
