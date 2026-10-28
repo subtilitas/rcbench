@@ -226,7 +226,7 @@ Die Protokollnotizen sagen nicht, welche Pulsseite jedes Register begrenzt,
 und nicht, wie REVERSION das ändert. Der Lauf findet es beim ersten
 Schreiben der ersten blockierten Seite: dieser Wert geht nur an LEFT ANGLE
 (an RIGHT ANGLE, wo LEFT ANGLE schon den kleinsten Wert hat), und die Seite
-wird gesucht. Das Ende hat sich bewegt, wenn es jetzt frei ist oder sein
+wird gesucht. Das Ende hat sich bewegt, wenn es frei ist oder sein
 Endpunkt 20µs weiter außen liegt. Ein Ende, das innerhalb von 20µs blieb,
 schickt LEFT ANGLE auf seinen Wert zurück und den aus dem v0 von RIGHT
 ANGLE neu berechneten Wert an RIGHT ANGLE; bewegt es sich dann, begrenzt
@@ -322,8 +322,8 @@ modelliertes Servo getestet; keines der beiden Firmware-Images ruft es auf.
 STOP, LAUF BEENDEN im Feld auf LIVE oder auf der Karte ENDLAGENLAUF, ein Umschalten auf
 SAFE durch den Bediener, Linkverlust, das Verlassen des Bildschirms, der
 Bediener, der das Servo nimmt, eine Änderung an den Einstellungen des
-Servos, verlorene Touch-Ereignisse, der INA3221 nicht mehr das Messgerät,
-und ein Netzteil, das nicht mehr antwortet, auslöst, ausschaltet oder
+Servos, verlorene Touch-Ereignisse, der INA3221, der aufhört, das Messgerät zu sein,
+und ein Netzteil, das aufhört zu antworten, auslöst, ausschaltet oder
 dessen Sollwerte sich ändern: die Gründe des automatischen Tests, in
 [Was einen Lauf beendet](#was-einen-lauf-beendet). SAFE und ARM des Laufs
 selbst beenden nichts. Jeder Grund beendet den Lauf als ABGEBROCHEN, mit
@@ -493,7 +493,7 @@ genügt.
 
 Was ein Servo in Ruhe, in Bewegung und beim Halten eines Endes zieht und wie
 lange es von Ende zu Ende braucht, bei den Versorgungsspannungen, für die es
-ausgelegt ist; und die Spannung, unter der es sich nicht mehr bewegt
+ausgelegt ist; und die Spannung, unter der es sich nicht bewegt
 (Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
 (siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
@@ -649,9 +649,9 @@ Ein Messwert zählt einmal. Beim PD mini ist der Zähler das Register SAMPLES
 der SUPPLY-Seite: die Zahl der beantworteten Ausgangsmessungen des Moduls,
 vom IOmcu gezählt. Ein Lesen der Seite, bei dem SAMPLES stehen
 geblieben ist, bringt keinen neuen Messwert, gleich welche Spannung und
-welchen Strom es trägt -- ein Display-Lesen auf dem IOmcu, das langsam
-war (bis 400ms, `PDMINI_REPLY_MS`) oder fehlschlug, lässt die letzten stehen
---, und ein Lauf ohne neuen Messwert über 1,5s endet. Ein Messwert trägt die
+welchen Strom es trägt (ein Display-Lesen auf dem IOmcu, das langsam
+war (bis 400ms, `PDMINI_REPLY_MS`) oder fehlschlug, lässt die letzten stehen),
+und ein Lauf ohne neuen Messwert über 1,5s endet. Ein Messwert trägt die
 Panelzeit des ersten Lesens der Seite, das seinen Zählerstand zeigte; das
 Modell zählt und stempelt seine eigenen Schritte. Der IOmcu liest den
 Ausgang des PD mini alle 100ms (`PDMINI_DISPLAY_MS`), das Panel die Seite
@@ -721,7 +721,7 @@ Bewegungsaufzeichnung des IOmcu, die eine Bewegung in 1ms ab dem
 PWM-Frame misst, verwendet der Lauf nicht.
 
 - **Bis zum Ende gehalten.** Ein Lauf am INA3221 endet ABGEBROCHEN, wenn der
-  INA3221 nicht mehr das Messgerät der Schiene ist, mit der Bedingung, die
+  INA3221 aufhört, das Messgerät der Schiene zu sein, mit der Bedingung, die
   ausfiel, als Grund (siehe
   [Was einen Lauf beendet](#was-einen-lauf-beendet)), und wenn ihn 200ms
   lang kein Fenster erreicht (`SERVO_TEST_WIN_STALE_MS`). Er läuft nie mit
@@ -888,9 +888,9 @@ sein Rauschen nur für 30 bis 90 mT. Der Bericht zählt diese Messwerte: `Feld:
 N Messwert(e) mit zu schwachem Magneten, M mit zu starkem. ...`. Keine der
 beiden Zeilen steht im Bericht, wenn ihre Zahlen 0 sind.
 
-Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe -- den
+Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe (den
 mittleren Endwinkel und seinen Fehler an jedem Ende, die mittlere und die
-längste Stellzeit, die gezählten, unbewegten und späten Bewegungen -- und die
+längste Stellzeit, die gezählten, unbewegten und späten Bewegungen) und die
 befohlenen Winkel mit den Regeln oben. Die Tabelle des Stroms und seine Spalte
 `Stell.` bleiben, die beiden Zeiten stehen also nebeneinander: am PD mini ist
 die aus dem Strom eine Obergrenze und hinkt dem Horn um etwa 0,3s nach, die aus dem Winkel
@@ -950,7 +950,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich bewegt |
 | `INA3221 antwortet nicht` | ein Lauf am INA3221: kein Lesen von SENSE in 200ms zeigt den Baustein online und erkannt an einem Bus, der nicht hängt |
 | `INA3221-Fenster ohne Strom` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200ms |
-| `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hält die Einstellung nicht mehr, oder SETUP hat den INA3221 aus |
+| `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hört auf, die Einstellung zu halten, oder SETUP hat den INA3221 aus |
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
 
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der

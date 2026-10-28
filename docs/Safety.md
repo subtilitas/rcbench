@@ -117,7 +117,7 @@ the gap:
 | | Direct wire and firmware | With the monostable |
 |---|---|---|
 | The panel stops beating, the IOmcu is healthy | switches to SAFE after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
-| The panel stops beating and the IOmcu cannot act -- wedged, or not servicing its monitor | nothing switches to SAFE; the bank goes on driving | the outputs are removed anyway |
+| The panel stops beating and the IOmcu cannot act (wedged, or not servicing its monitor) | nothing switches to SAFE; the bank goes on driving | the outputs are removed anyway |
 | The panel is healthy and the IOmcu misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
 
 The third row is not a case the monostable is for, and no hardware in this
@@ -234,8 +234,8 @@ exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the IOmcu has then
 switched the role it was asked for to ARMED, at rest: throttle 0 for MOTOR & ESC and
 its stick runs, surfaces centred for SERVO. The panel does not
 undo it. An exchange of the switch that nobody
-answers -- the STATUS read, the servo release, CLEAR or the frame that switches to ARMED
--- has waited the 1000ms exchange timeout or did not reach the wire: that is
+answers (the STATUS read, the servo release, CLEAR or the frame that switches to ARMED)
+has waited the 1000ms exchange timeout or did not reach the wire: that is
 the link going quiet under a switch to ARMED, and the panel latches a stop as above. A
 refusal is an answer and leaves the panel SAFE with no stop. With no
 IOmcu connected the panel switches its own bank to ARMED after the 100ms.
@@ -384,7 +384,7 @@ reads the state and shows the alert, is not in the coverage figure.
   because an event that survived the loss can have navigated away from the
   screen holding the press; each screen drops any gesture in progress. That
   asks for nothing, exactly as letting go early does, with the one exception
-  below. Both queues are numbered -- the driver's own event queue evicts its
+  below. Both queues are numbered: the driver's own event queue evicts its
   oldest for the same reason, and a gap the control task finds there travels
   to the render task as an item of its own, ahead of the events that followed
   it. The render task drains once more right before the frame's tick, so an
@@ -406,7 +406,7 @@ reads the state and shows the alert, is not in the coverage figure.
   press it was handed. A contact that comes down on the status band (the top
   48px) or on the alert band is the router's until it lifts, wherever it
   travels. The exception is a press on a control that stops what the bench
-  drives -- DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN --
+  drives (DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN),
   which the screen names to the router (`safe_at` in ui_screen.h): under the
   alert band or with a chip's help box open it is the screen's, and the band
   or the box closes. ARM is never named, so a press on ARM under either
@@ -427,8 +427,8 @@ reads the state and shows the alert, is not in the coverage figure.
   STOP and DISARM on MOTOR & ESC and on SERVO have acted on the press
   already, and their release does nothing. STOP and the home tag
   answer to a press that lands on them: a contact that slides onto STOP from
-  the body presses nothing. A press the router keeps from the screen -- on
-  the band, STOP, the home tag, a chip or the alert band -- releases the
+  the body presses nothing. A press the router keeps from the screen (on
+  the band, STOP, the home tag, a chip or the alert band) releases the
   contacts the screen owns in the same way, at their last point in the body,
   marked: a dial or slider drag under way ends at that press, and nothing
   it drove is commanded after it. The table holds 5 contacts, the number the GT911
@@ -466,8 +466,8 @@ reads the state and shows the alert, is not in the coverage figure.
   times the render task had dropped gestures and the number of the last
   event it had taken. The control task drains the driver's queue first, then
   drops the ARM when the render task has dropped gestures since, or has a
-  loss notice it had not yet taken. Once the ARM is applied, any loss -- the
-  render task dropping gestures, or a gap in the driver's stream -- undoes it
+  loss notice it had not yet taken. Once the ARM is applied, any loss (the
+  render task dropping gestures, or a gap in the driver's stream) undoes it
   until the render task acknowledges the ARMED bench, which a frame does
   only when it began ARMED and found the stream whole. The control task
   looks inside every link exchange's wait, not only once a pass, and stops

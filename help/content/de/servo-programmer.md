@@ -65,7 +65,7 @@ Ein KST- oder Chaservo-Servo tritt nur aus einem Einschalten in den Programmierm
 | VERLASSEN nach einem Schreiben | der Ausgang 1s aus, an, die Leitung 1s auf low, dann PWM | PWM; die Werte wirken nach Aus- und Einschalten der Servoversorgung |
 | VERLASSEN ohne Geschriebenes | PWM nach WARTEZEIT VOR PWM, die Versorgung, wie sie ist | dasselbe |
 
-Mit ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und steigt wie bisher ein. ABBRECHEN oder STOP in der 1s aus lässt den Ausgang aus: `Der Versorgungszyklus wurde abgebrochen. Der Ausgang des PD mini bleibt aus.`
+Mit ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und steigt ein. ABBRECHEN oder STOP in der 1s aus lässt den Ausgang aus: `Der Versorgungszyklus wurde abgebrochen. Der Ausgang des PD mini bleibt aus.`
 
 ![VERBINDEN mit eingeschaltetem Ausgang](view:servo-kst-supply-on)
 ![Die 1s aus](view:servo-kst-cycling)

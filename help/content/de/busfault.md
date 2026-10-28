@@ -38,7 +38,7 @@ Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4s weg ist. Die Übe
 
 | Überschrift | Bedeutung |
 |---|---|
-| `Panel vom Bus getrennt.` | zu viele Frames blieben unbestätigt; der Controller sendet nicht mehr |
+| `Panel vom Bus getrennt.` | zu viele Frames blieben unbestätigt; der Controller sendet nichts mehr |
 | `Panel verbindet sich neu.` | er zählt die Ruhezeit, die ein Neuverbinden braucht; 3s warten |
 | `CAN-Controller des Panels ist gestoppt.` | er steht und wurde nicht neu gestartet: ein Fehler in der Firmware des Panels |
 | `Verbindung antwortet nicht mehr.` | der Controller ist am Bus, und nichts antwortet |

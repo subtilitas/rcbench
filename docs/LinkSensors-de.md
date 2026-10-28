@@ -88,8 +88,8 @@ BAD_VALUE abgewiesen.
 
 Das Fähigkeitsbit 3 von IDENTITY (`SERVO_SENSE`, Strom je Ausgang) ist das
 INA3221-Bit von SENSE, solange die Map abgeleitet ist. Mit der Map in Kraft
-ist es gesetzt, solange ein Kanal, den die Map liest -- ein bestücktes
-Bauteil, ein Shunt ungleich 0 --, einen Ausgangskanal oder einen
+ist es gesetzt, solange ein Kanal, den die Map liest (ein bestücktes
+Bauteil, ein Shunt ungleich 0), einen Ausgangskanal oder einen
 Programmierport beobachtet. Es ändert sich nur mit einem angenommenen
 Schreiben an SENSE oder SENSE_MAP.
 

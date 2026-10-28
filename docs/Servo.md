@@ -209,7 +209,7 @@ The protocol notes do not say which pulse side each register limits, nor
 how REVERSION changes that. The run finds it on the first bound side's
 first write: that value goes to LEFT ANGLE alone (RIGHT ANGLE where LEFT
 ANGLE holds the smallest value already), and the side is searched. The end
-moved when it is free now or its endpoint lies 20µs further out. An end
+moved when it is free or its endpoint lies 20µs further out. An end
 within 20µs of where it was sends LEFT ANGLE back to its value and the
 value, worked out again from RIGHT ANGLE's v0, to RIGHT ANGLE; moved then,
 RIGHT ANGLE limits that side. An end that stays with both registers tried
@@ -296,7 +296,7 @@ a modelled servo; neither firmware image calls it.
 
 STOP, STOP RUN in LIVE's box or on the LIMIT RUN card, a switch to SAFE by the
 operator, link loss, leaving the screen, the operator taking the servo, a
-change to the servo's settings, lost touch events, the INA3221 no longer the
+change to the servo's settings, lost touch events, the INA3221 ceasing to be the
 meter, and a supply that stops answering, trips, switches off or has its set
 points changed: the reasons of the automatic test, in
 [What ends a run](#what-ends-a-run). The run's own SAFE and ARM end
@@ -454,7 +454,7 @@ symmetric about centre. One current sensor across the pair is sufficient.
 
 What a servo draws at rest, moving and holding an end, and how long it takes
 from end to end, at the supply voltages it is rated for; and the voltage
-below which it no longer moves (brown-out). Nothing on the bench measures the
+below which it stops moving (brown-out). Nothing on the bench measures the
 horn unless the output encoder is on (see below), so every result is read from
 the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
@@ -598,9 +598,9 @@ threshold.
 A reading counts once. For the PD mini the count is the SUPPLY page's
 SAMPLES register: the IOmcu's count of the module's output readings
 that answered. A page read whose SAMPLES has not moved brings no new reading,
-whatever voltage and current it carries -- a display read on the IOmcu
+whatever voltage and current it carries (a display read on the IOmcu
 that was slow (up to 400ms, `PDMINI_REPLY_MS`) or failed leaves the last
-ones standing -- and a run with no new reading for 1.5s ends. A reading is
+ones standing), and a run with no new reading for 1.5s ends. A reading is
 stamped with the panel's time of the first page read that showed its count;
 the model counts and stamps its own steps. The IOmcu reads the PD
 mini's output every 100ms (`PDMINI_DISPLAY_MS`) and the panel reads the page
@@ -824,9 +824,9 @@ specifies its noise for 30 to 90 mT only. The report counts those readings:
 `Field: N reading(s) with the magnet too weak, M too strong. ...`. Neither
 line is written when its counts are 0.
 
-The report adds a header line (`Encoder:`), a table per step -- the mean end
+The report adds a header line (`Encoder:`), a table per step (the mean end
 angle and its error at each end, the mean and longest travel time, the moves
-counted, unmoved and late -- and the commanded angles with the rules above.
+counted, unmoved and late) and the commanded angles with the rules above.
 The current's table and its `Travel` column stay, so the two times sit side
 by side: on the PD mini the current's is an upper bound that lags the horn by
 about 0.3s, and the angle's is not. The CSV gains two columns, `angle (deg)`
@@ -881,7 +881,7 @@ left as they are.
 | `INA3221 reset itself` | a run on the INA3221: the part's reset count moved |
 | `INA3221 not answering` | a run on the INA3221: no SENSE read in 200ms shows the part online and identified on a bus that is not stuck |
 | `INA3221 window without current` | a run on the INA3221: the newest window holds no current samples, or its number has stood for 200ms |
-| `INA3221 set-up not held` | a run on the INA3221: the IOmcu no longer holds the set-up, or SETUP has the INA3221 off |
+| `INA3221 set-up not held` | a run on the INA3221: the IOmcu stops holding the set-up, or SETUP has the INA3221 off |
 | `INA3221 no longer the meter` | a run on the INA3221: the meter changed and the panel did not name the condition |
 
 The six reasons of a run on the INA3221 are the conditions under which the

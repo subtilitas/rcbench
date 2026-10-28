@@ -15,7 +15,7 @@ This page is about the wire.
 More than one IOmcu will exist. The one the bring-up runs on is a
 Pico-form-factor module wired by hand; a later board carries its outputs on
 pins that are soldered rather than chosen. They do not have the same pins, and
-a pin index on one means a different pin -- or no pin -- on the other.
+a pin index on one means a different pin, or no pin, on the other.
 
 The IOmcu therefore says which board it is, in the hardware register of
 the [identity page](Link.md#page-map), and the panel offers that board's pins
@@ -32,9 +32,9 @@ printed beside each, and what holds the ones an output may not have. So an
 IOmcu newer than the panel is usable rather than blank.
 
 A board that also serves the [shape page](Link.md#page-map) says where its
-pads are -- the outline, the pitch, and which corner pad 1 sits at -- so the
+pads are (the outline, the pitch, and which corner pad 1 sits at), so the
 panel can draw it rather than only list it. Only a picture needs that: a board
-that does not answer is used from its catalogue and simply is not drawn. A
+that does not answer is used from its catalogue and is not drawn. A
 picture drawn from a guessed shape would point at the wrong pad with the same
 confidence as the right one, which on a screen whose job is "find this pad on
 the board in front of you" is the failure worth avoiding.
@@ -117,8 +117,8 @@ target it is that port's pin alone, and every slot keeps the rate its binding
 gives it (protocol 4.19, [the link](Link.md#the-targets-frame-rate)). It is refused with
 BAD_VALUE when it would move a surface away from the rate of the output beside
 it on its slice, and while it holds a rate a CHAN_CFG or OUTPUTS write that
-would do the same -- a surface turned throttle, a throttle bound beside a
-surface -- is refused too. It is not kept: a restart runs each slot at its own
+would do the same (a surface turned throttle, a throttle bound beside a
+surface) is refused too. It is not kept: a restart runs each slot at its own
 rate.
 
 GPIO numbers fold onto the 12 slices. GPIO 0 to GPIO 31 take slice (pin / 2) modulo
@@ -284,8 +284,8 @@ guessed pole count is a plausible number with nothing to mark it as wrong, which
 is worse than an empty field.
 
 That covers zero only. Any even count between 2 and 42 is accepted and sets the
-rpm valid bit -- an odd one is refused, because a typo that reached the far end
-would put a plausible wrong speed on the screen -- so an IOmcu holding an
+rpm valid bit. An odd one is refused, because a typo that reached the far end
+would put a plausible wrong speed on the screen. So an IOmcu holding an
 out-of-date count reports the actual speed times the motor's poles over the
 count it holds. Fitting a 12-pole motor to a bench still holding 14 reads
 14.3% low; leaving 12 in place for a 14-pole motor reads 16.7% high. The

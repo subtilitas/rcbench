@@ -167,6 +167,13 @@ jobs:
       - name: Numbers carry their unit without a space
         run: python3 tools/check_units.py --check
 
+      # The documents follow the writing rules: no " -- " dashes, no
+      # marketing words, no narrator, no history words, no emoji, no stale
+      # names; the exceptions are in tools/check_prose_allow.txt with their
+      # reasons.
+      - name: The documents follow the writing rules
+        run: python3 tools/check_prose.py --check
+
       # The web help: every screen has a page in English and German, every
       # screenshot it shows exists in render_ui.py and in docs/img/, the two
       # languages of a page have the same headings and screenshots, every

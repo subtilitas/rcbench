@@ -81,7 +81,7 @@ SERVO_WIN is `FAST`'s ring, and a capture's channel 1 on SERVO_SENSE is
 
 IDENTITY's capability bit 3 (`SERVO_SENSE`, current per output) is SENSE's
 INA3221 bit while the map is derived. With the map in force it is set while a
-channel the map reads -- a fitted part, a shunt not 0 -- watches an output
+channel the map reads (a fitted part, a shunt not 0) watches an output
 channel or a programming port. It changes only with a SENSE or SENSE_MAP
 write taken.
 

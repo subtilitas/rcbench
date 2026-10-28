@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `tools/check_prose.py`: holds the Markdown documents to the writing rules.
+  Rules: " -- " as a dash, the marketing words, "we"/"our"/"us" and
+  "wir"/"unser", history words, exclamation marks, emoji, the stale names
+  ESP32-S3, SIMULATION, coprocessor and "usable release". `--check` exits 1
+  on a hit, `--long` lists sentences over 40 words, `--report FILE` writes
+  the hits grouped by file. Exceptions are in `tools/check_prose_allow.txt`.
+  CI runs `--check` in the Host suite job. Units stay with `tools/check_units.py`.
 - `protocols/i2c_txq`: a transaction queue for one I2C bus master and its
   driver on the RP2350's I2C blocks. A transaction (up to 5 bytes written,
   6 read, STOP included) goes to the 16-entry FIFO whole and the block's

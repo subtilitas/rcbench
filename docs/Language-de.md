@@ -341,7 +341,7 @@ Ein englischer Überlauf, der für eine Zeit hingenommen wird, kommt in
 Messwert; die Liste ist leer. Ein gelisteter wird als `known` ausgegeben und
 schlägt nicht fehl; ein deutscher Befund, der einem
 davon Wort für Wort gleicht, ist derselbe Text an derselben Stelle und
-schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht mehr findet,
+schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht findet,
 schlägt fehl, bis er aus der Liste genommen ist. Die Prüfung schlägt auch bei
 einem Text ohne angegebene Breite fehl, den keine Ansicht zeichnet.
 

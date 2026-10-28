@@ -50,7 +50,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
 - The scroll bar at the right edge, 56px (about 8.4mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
 - Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
-- On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
+- On a page past the first, RESCAN reads from that page's first entry; when the card holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
 - A card put in, taken out or swapped while the panel runs is found by the next RESCAN, the next opening of LOGS, the next page or OPEN, and the next run's start, with no restart. A new card opens on its first page; an empty slot says `No card. Insert one and tap RESCAN.`.
 - Newest means the highest number in the name. A file's date is only as good as the panel's clock: it starts unset at each power-on, and until NTP sets it on the home network the panel dates files 1980 ([Setup](setup.md#panel)).
