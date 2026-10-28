@@ -62,15 +62,22 @@
 #define TV_TEXT_X  (TV_L + 24)         /**< The text's left, x 32. */
 #define TV_BAR_W   56                  /**< The bar's width: 8.4mm. */
 #define TV_BAR_MIN 32                  /**< Its thumb's least height. */
-/** @brief The panel's height over the keyboard: 4 rows of the 10 x 20
- *         face, 5 of the 8 x 16 face. */
-#define TV_KB_AREA_H 92
-/** @brief Rows over the keyboard, 10 x 20 face. */
-#define TV_KB_ROWS_NORMAL 4
+/** @brief The panel's height over the keyboard: 8 rows of the 10 x 20
+ *         face, 10 of the 8 x 16 face, over a keyboard of 4 rows of keys
+ *         (UI_TEXTKEY_EDITOR_ROWS) 56px tall. */
+#define TV_KB_AREA_H 170
+/** @brief Rows over the keyboard, 10 x 20 face: the panel less the 6px
+ *         above the first row and the 4px under the last. */
+#define TV_KB_ROWS_NORMAL ((TV_KB_AREA_H - 10) / TV_PITCH_NORMAL)
 /** @brief Rows over the keyboard, 8 x 16 face. */
-#define TV_KB_ROWS_SMALL 5
-/** @brief The keyboard's top, 6px under the panel: body y 158. */
+#define TV_KB_ROWS_SMALL ((TV_KB_AREA_H - 10) / TV_PITCH_SMALL)
+/** @brief The keyboard's top, 6px under the panel: body y 236. */
 #define TV_KB_Y    (TV_AREA_Y + TV_KB_AREA_H + 6)
+/** @brief The height of a key of the keyboard: its 4 rows, 6px apart,
+ *         from 8px under its top to 8px above its foot, 56px. */
+#define TV_KB_KEY_H ((UI_BODY_H - UI_ALERT_H - 8 - TV_KB_Y - 8 \
+                      - (UI_TEXTKEY_EDITOR_ROWS - 1) * 6) \
+                     / UI_TEXTKEY_EDITOR_ROWS)
 /** @brief The keyboard: from TV_KB_Y to the alert band's top; its keys end
  *         8px inside it. */
 #define TV_KB      gfx_rect_make(TV_L, TV_KB_Y, TV_W, \
@@ -161,8 +168,10 @@ _Static_assert(TV_TEXT_Y + TV_KB_ROWS_NORMAL * TV_PITCH_NORMAL
                && TV_TEXT_Y + TV_KB_ROWS_SMALL * TV_PITCH_SMALL
                    <= TV_AREA_Y + TV_KB_AREA_H - 4,
                "the rows over the keyboard end in their panel");
-_Static_assert(TV_KB_Y + 8 + 5 * UI_TAP_MIN + 4 * 6 <= UI_KEYS_FOOT,
-               "five rows of keys a finger high fit the keyboard");
+_Static_assert(TV_KB_KEY_H >= UI_TAP_MIN && TV_KB_KEY_H >= 36 + 2 * 4,
+               "a key is a finger high and holds the 20 x 36 face 4px in");
+_Static_assert(TV_KB_ROWS_NORMAL >= 7,
+               "7 rows of the 10 x 20 face or more over the keyboard");
 _Static_assert(TV_KB_AREA_H - 8 >= UI_TAP_MIN,
                "the bar over the keyboard is a finger high");
 _Static_assert(3 * (TV_FOOT_W + 6) + 4 + 32 * 8
@@ -269,10 +278,18 @@ size_t tv_max_top(size_t *row);
 void tv_bar_thumb(int *y, int *h);
 
 /**
- * @brief The text's panel: 372px high, 92px over the keyboard.
+ * @brief The text's panel: 372px high, 170px over the keyboard.
  * @return the panel
  */
 gfx_rect_t tv_area(void);
+
+/**
+ * @brief The rows drawn: text_view_rows(), and while the keyboard is open
+ *        and see-through, the rows of the whole panel, those under the
+ *        keyboard showing through it.
+ * @return the rows
+ */
+int tv_rows_drawn(void);
 
 /**
  * @brief The scroll bar's track in the panel.
@@ -355,8 +372,8 @@ text_view_result_t tv_edit_take(void);
 /* --- text_view_draw.c --------------------------------------------------- */
 
 /**
- * @brief Walk the rows on screen from the top row, cell by cell, as they
- *        are drawn.  For each run of cells of one class on one row,
+ * @brief Walk the rows drawn (tv_rows_drawn()) from the top row, cell by
+ *        cell, as they are drawn.  For each run of cells of one class on one row,
  *        @p run is called with the row on screen, the run's first cell,
  *        its bytes (NUL-terminated) and its class.  A row that a line
  *        continues is called once more with @p cell -1 and no bytes: the

@@ -6,7 +6,19 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- SETUP → PANEL → Keyboard see-through: OFF (default), 25% or 50% of the
+  text shows through the text editor's keyboard, the rows under it
+  included; labels stay opaque. Other keyboards stay opaque
+  ([Screens, The text editor](docs/Screens.md#the-text-editor)).
+
 ### Changed
+
+- The text editor's keyboard has no digit row: 4 rows of keys of
+  93 x 56px (5 rows of 93 x 59px before), and the text over it shows 8 rows
+  (4 before), 10 with SMALL (5 before). `123`, left of DEL, shows the
+  digits and 17 marks; `#+=` on that page shows the other 15 marks.
 
 - An error switches every output off and the bench to SAFE
   ([Safety, Errors](docs/Safety.md#errors)). The panel asks DISARM for an

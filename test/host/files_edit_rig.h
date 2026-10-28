@@ -80,45 +80,24 @@ static inline void ed_key(int key)
  */
 static inline void ed_type(const char *text)
 {
-    static const char *const layers[3] = {
-        "1234567890" "qwertyuiop" "asdfghjkl-" " zxcvbnm  ",
-        "1234567890" "QWERTYUIOP" "ASDFGHJKL-" " ZXCVBNM  ",
-        "!\"#$%&'()*" "+,-./:;<=>" "?@[\\]^_`{|" "}~        ",
-    };
-    int layer = 0;
+    ui_textkey_layer_t layer = UI_TK_LOWER;
+    ui_textkey_layer_t want = UI_TK_LOWER;
     for (const char *p = text; *p != '\0'; ++p) {
         if (*p == ' ' || *p == '\n') {
             ed_key(*p == ' ' ? UI_TK_SPACE : UI_TK_ENTER);
             continue;
         }
-        int want = -1;
-        int key = -1;
-        for (int l = 0; l < 3 && key < 0; ++l) {
-            const int on = (l + layer) % 3;
-            for (int i = 0; i < UI_TK_DEL; ++i) {
-                if (layers[on][i] == *p && !(on != 2 && i == UI_TK_SHIFT)) {
-                    want = on;
-                    key = i;
-                    break;
-                }
-            }
-        }
+        const int key = ui_textkey_editor_key(*p, &want);
         NEED(key >= 0);
-        while (layer != want) {
-            if (want == 2 || layer == 2) {
-                ed_key(UI_TK_LAYER);
-                layer = (layer == 2) ? 0 : 2;
-            } else {
-                ed_key(UI_TK_SHIFT);
-                layer = (layer == 1) ? 0 : 1;
-            }
+        for (int k = ui_textkey_editor_step(layer, want, &layer); k >= 0;
+             k = ui_textkey_editor_step(layer, want, &layer)) {
+            ed_key(k);
         }
         ed_key(key);
     }
-    if (layer == 2) {
-        ed_key(UI_TK_LAYER);
-    } else if (layer == 1) {
-        ed_key(UI_TK_SHIFT);
+    for (int k = ui_textkey_editor_step(layer, UI_TK_LOWER, &layer); k >= 0;
+         k = ui_textkey_editor_step(layer, UI_TK_LOWER, &layer)) {
+        ed_key(k);
     }
 }
 

@@ -14,7 +14,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `11 EINSTELLUNGEN` | die Liste von PANEL |
+| PANEL | `12 EINSTELLUNGEN` | die Liste von PANEL |
 | INTERFACES | `23 EINSTELLUNGEN` | die Liste von INTERFACES |
 | SD CARD | `4 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin |
 | SENSORS | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
@@ -115,6 +115,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 an einem eigenen Bus, IO30 und IO31 des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
+| Tastatur durchsichtig | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 

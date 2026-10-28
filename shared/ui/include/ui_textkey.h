@@ -45,10 +45,23 @@
  *
  * Opened for the text editor (ui_textkey_open_editor()) it types into a
  * text the caller holds, one key per event: it keeps no text, draws no
- * title and no field, and its five rows of keys fill its area.  The
- * character rows are the Wi-Fi keyboard's three layers; DEL is a
- * backspace.  The bottom row is ENTER (2 columns), SPACE (4), "<-" and "->"
- * (1 each) and DONE (2); CLR is not there, since it would clear the file.
+ * title and no field, and its UI_TEXTKEY_EDITOR_ROWS (4) rows of keys fill
+ * its area.  It has no digit row: the first row is the letters Q to P.
+ * Four layers share the 3 character rows: lower case, capitals, and two
+ * pages of marks.  The key left of Z switches lower case and capitals
+ * ("ABC", "abc"); the key left of DEL switches to the first page of marks
+ * and back ("123", "abc").  The first page holds the digits 0 to 9 on its
+ * top row and 17 marks; there the key left of Z switches to the second
+ * page ("#+=") and back ("123"), which holds the other 15 marks.  DEL is
+ * a backspace.  The bottom row is ENTER (2 columns), SPACE (4), "<-" and
+ * "->" (1 each) and DONE (2); CLR is not there, since it would clear the
+ * file.
+ *
+ * The editor's keyboard can let the text behind it show through
+ * (ui_textkey_set_see()): 0, 25 or 50% of each pixel of its keys and
+ * their gaps is the text's, the labels stay opaque.  Other keyboards draw
+ * opaque: they carry their own field, and nothing behind them is typed
+ * into.
  * Each key's release answers what it was (ui_textkey_result_t):
  * UI_TEXTKEY_TYPED with the character in @c typed, UI_TEXTKEY_BACKSPACE,
  * UI_TEXTKEY_ENTER, UI_TEXTKEY_LEFT, UI_TEXTKEY_RIGHT, and UI_TEXTKEY_DONE,
@@ -129,12 +142,28 @@ typedef enum {
     UI_TEXTKEY_DONE,       /**< editor: DONE, the keyboard closed      */
 } ui_textkey_result_t;
 
-/** @brief The Wi-Fi keyboard's layers. */
+/** @brief The Wi-Fi keyboard's layers, and the editor's. */
 typedef enum {
-    UI_TK_LOWER = 0,       /**< lower case and the digits              */
-    UI_TK_UPPER,           /**< capitals and the digits                */
-    UI_TK_MARKS,           /**< the 32 marks                           */
+    UI_TK_LOWER = 0,       /**< lower case, and the digits but in the
+                                editor                                 */
+    UI_TK_UPPER,           /**< capitals, and the digits but in the
+                                editor                                 */
+    UI_TK_MARKS,           /**< the 32 marks; in the editor the digits
+                                and 17 marks                           */
+    UI_TK_MORE,            /**< the editor's other 15 marks            */
+    UI_TK_LAYERS           /**< the count of the layers                */
 } ui_textkey_layer_t;
+
+/** @brief The editor's rows of keys: three of characters, no digit row,
+ *         and the bottom row. */
+#define UI_TEXTKEY_EDITOR_ROWS 4
+/** @brief The editor's see-through steps: 0, 25 and 50% of the text
+ *         behind shows through its keys. */
+#define UI_TEXTKEY_SEE_STEPS 3
+/** @brief The percent between two see-through steps. */
+#define UI_TEXTKEY_SEE_STEP 25
+/** @brief The most see-through, percent: the last step. */
+#define UI_TEXTKEY_SEE_MAX ((UI_TEXTKEY_SEE_STEPS - 1) * UI_TEXTKEY_SEE_STEP)
 
 /** @brief A keyboard: what it was opened for, what is typed, and the
  *         press it holds. */
@@ -156,6 +185,9 @@ typedef struct {
     bool       show;        /**< the password shown                   */
     ui_textkey_layer_t layer; /**< the Wi-Fi layer shown              */
     bool       editor;      /**< the text editor's keys: see the top  */
+    uint8_t    see;         /**< editor: percent of the text behind
+                                 that shows through, 0 to
+                                 UI_TEXTKEY_SEE_MAX                   */
     char       typed;       /**< editor: the character of the last
                                  UI_TEXTKEY_TYPED                     */
     int        pressed;     /**< the key under the press, or -1       */
@@ -233,6 +265,46 @@ void ui_textkey_open_file(ui_textkey_t *k, gfx_rect_t area,
 void ui_textkey_open_editor(ui_textkey_t *k, gfx_rect_t area);
 
 /**
+ * @brief The percent of the text behind that shows through the editor's
+ *        keyboard at see-through step @p step (SETUP > PANEL's Keyboard
+ *        see-through): 0 (OFF), 25 or 50.
+ * @param step The step, 0 to UI_TEXTKEY_SEE_STEPS - 1; one below is 0, one
+ *             above the last step.
+ * @return The percent, 0 to UI_TEXTKEY_SEE_MAX.
+ */
+int ui_textkey_see_pct(int step);
+
+/**
+ * @brief How much of the text behind the editor's keyboard shows through
+ *        its keys and gaps.  A keyboard opened for anything else stays
+ *        opaque.
+ * @param k   The keyboard; NULL does nothing.
+ * @param pct The percent; below 0 is 0, above UI_TEXTKEY_SEE_MAX is
+ *            UI_TEXTKEY_SEE_MAX.
+ */
+void ui_textkey_set_see(ui_textkey_t *k, int pct);
+
+/**
+ * @brief The editor's key that types @p ch, and the layer it is on.
+ * @param ch    A printable ASCII character but the space, 0x21 to 0x7E.
+ * @param layer Takes the layer; NULL is allowed.
+ * @return The key, 10 to UI_TK_DEL - 1; -1 for any other character.
+ */
+int ui_textkey_editor_key(char ch, ui_textkey_layer_t *layer);
+
+/**
+ * @brief The editor's key that leads from layer @p from towards layer
+ *        @p to: UI_TK_SHIFT within the letters and within the marks,
+ *        UI_TK_LAYER between the two.
+ * @param from The layer shown.
+ * @param to   The layer wanted.
+ * @param next Takes the layer the key shows; NULL is allowed.
+ * @return The key; -1 when @p from is @p to or either is out of range.
+ */
+int ui_textkey_editor_step(ui_textkey_layer_t from, ui_textkey_layer_t to,
+                           ui_textkey_layer_t *next);
+
+/**
  * @brief Close, dropping a press under way.
  * @param k The keyboard; NULL does nothing.
  */
@@ -269,8 +341,8 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
  *        coordinates) where the area reaches further.
  * @param k   The keyboard.
  * @param key The key: 0 to UI_TK_OK, UI_TK_SHOW on a password, the
- *            characters, UI_TK_SPACE and UI_TK_ENTER to UI_TK_DONE in the
- *            editor.
+ *            characters from 10, UI_TK_SPACE and UI_TK_ENTER to UI_TK_DONE
+ *            in the editor.
  * @return Its rectangle; zero size for one out of range or not shown.
  */
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key);
@@ -288,8 +360,8 @@ const char *ui_textkey_label(int key);
  * @param key The key.
  * @return "*" for UI_TK_MARK in a search, "/" for UI_TK_DOT for a folder,
  *         the layer's character on a Wi-Fi keyboard and in the editor, ""
- *         for a blank key, the editor's ENTER, "<-", "->" and DONE, else
- *         ui_textkey_label().
+ *         for a blank key and the editor's digit row, the editor's ENTER,
+ *         "<-", "->" and DONE, else ui_textkey_label().
  */
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
@@ -309,7 +381,7 @@ const gfx_font_t *ui_textkey_char_font(const ui_textkey_t *k);
  *        16 x 28, 12 x 24 and 10 x 20, never larger than
  *        ui_textkey_char_font(), in which every one of them fits its key
  *        with 4px each side, in every state it can show (SHOW and HIDE,
- *        ABC, abc and #+=), so the words of one keyboard share one face
+ *        ABC, abc, 123 and #+=), so the words of one keyboard share one face
  *        and a press does not change it; else 8 x 16.
  * @param k The keyboard, opened.
  * @return The face; 8 x 16 for NULL.
@@ -322,7 +394,9 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k);
  *        20 x 36 (16 x 28 in a field narrower than UI_TEXTKEY_MAX
  *        characters and the caret), the character keys in
  *        ui_textkey_char_font() and the word keys in
- *        ui_textkey_word_font().  Nothing while it is closed.
+ *        ui_textkey_word_font().  The editor's keyboard with a see-through
+ *        above 0 blends its fills over what the canvas holds, the labels
+ *        and the outline opaque.  Nothing while it is closed.
  * @param k The keyboard.
  * @param c Canvas.
  */

@@ -75,7 +75,7 @@ The viewer shows a file as text, read-only. The home tag closes it: back to the 
 
 EDIT in the viewer opens the editor and its keyboard. The text changes in the panel's memory; SAVE writes it to the card.
 
-- 4 rows of the text show over the keyboard. The keyboard has the Wi-Fi keyboard's three layers: ABC for capitals, #+= for marks. DEL takes the character before the cursor. ENTER starts a new line with the file's own line end. `<-` and `->` move the cursor; a tap on the text puts it there. DONE closes the keyboard, KEYBOARD opens it again.
+- 8 rows of the text show over the keyboard, 10 with SMALL. The keyboard has no digit row: `ABC` gives capitals, `123` gives the digits and the common marks, and `#+=` on that page the other marks; `abc` goes back. DEL takes the character before the cursor. ENTER starts a new line with the file's own line end. `<-` and `->` move the cursor; a tap on the text puts it there. DONE closes the keyboard, KEYBOARD opens it again.
 - The header shows MODIFIED once the text differs from the card, and the cursor's line.
 - SAVE writes the text as `<name>.NEW`, deletes the old file and gives the new one its name. SAVE is shut while the bench is ARMED or a run is logged; the text stays. A switch to ARMED during a save stops it, and the old file stays.
 - A KST file of the servo programmer loses its checksum line when it is saved changed, in every form the programmer reads as one (`checksum`, `CHECKSUM=`, `Checksum:`): the programmer then reads it as a file a person edited.
@@ -83,6 +83,7 @@ EDIT in the viewer opens the editor and its keyboard. The text changes in the pa
 - An ESC profile in `BENCH/ESC/CONF` is read at the panel's next start.
 - REVERT puts the text back to the file on the card. It asks first, as the home tag does while the text is unsaved: STAY keeps the text, DISCARD drops the changes.
 - The text holds up to 1MiB and 65,536 line ends. The keyboard types ASCII; there is no undo of single keys.
+- SETUP → PANEL → Keyboard see-through at 25% or 50% lets the rest of the text show through the keyboard; the cursor stays on the 8 rows over it.
 
 ![A KST file saved with a comment](view:files-edit-kst)
 ![The question over unsaved changes](view:files-edit-unsaved)
