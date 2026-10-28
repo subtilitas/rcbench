@@ -228,6 +228,34 @@ TEST_CASE(a_page_whose_files_went_shows_the_last_page)
     CHECK_EQ(g_tree.ahead, 0);
 }
 
+/*
+ * SAME on the first page reads from the folder's first entry: an entry new
+ * on the card that ranks before the first row comes onto the page.  On a
+ * later page SAME reads from the page's first entry, and such an entry
+ * counts among the ones ahead.
+ */
+TEST_CASE(same_on_the_first_page_takes_a_new_first_entry)
+{
+    fresh("D");
+    fill("D", 60);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F000.TXT");
+    fk_file(&g_card, "D/A.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_EQ(g_tree.total, 61);
+    CHECK_EQ(g_tree.ahead, 0);
+    CHECK_EQ(g_tree.held, 48);
+    CHECK_STR_EQ(g_tree.page[0].name, "A.TXT");
+    CHECK_STR_EQ(g_tree.page[47].name, "F322.TXT");
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_EQ(g_tree.ahead, 48);
+    CHECK_STR_EQ(g_tree.page[0].name, "F329.TXT");
+    fk_file(&g_card, "D/B.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_EQ(g_tree.ahead, 49);
+    CHECK_STR_EQ(g_tree.page[0].name, "F329.TXT");
+}
+
 /* --------------------------------------------------------- the order */
 
 TEST_CASE(folders_come_first_and_names_fold_their_case)
@@ -689,6 +717,7 @@ int main(void)
     RUN(entries_47_48_and_49_fill_one_page_and_spill_the_49th);
     RUN(entries_999_page_forward_and_back_to_every_edge);
     RUN(a_page_whose_files_went_shows_the_last_page);
+    RUN(same_on_the_first_page_takes_a_new_first_entry);
     RUN(folders_come_first_and_names_fold_their_case);
     RUN(names_of_63_characters_are_listed_and_of_64_counted);
     RUN(dot_entries_are_no_rows);

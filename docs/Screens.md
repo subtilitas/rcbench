@@ -2756,11 +2756,17 @@ typing rate the panel keeps up with is not measured.
 ### RESCAN
 
 RESCAN looks at the slot, then reads each pane's folder again, one pane
-after the other, at the page the pane shows: from that page's first entry,
-as PREV and NEXT name their pages. Each pane keeps its place:
+after the other, at the page the pane shows. The first page is read from
+the folder's first entry, so an entry new on the card that ranks before
+every row, such as an `ATEST001.CSV` beside `SERVO` logs, comes onto it.
+A later page is read from its own first entry, as PREV and NEXT name their
+pages; an entry new before it is on a page before it. The way back into
+FILES reads both panes the same way. Each pane keeps its place:
 
-- the entry on the pane's top row stays on top; when it has gone from the
-  card, the entry at its place in the order is on top;
+- a list that shows its folder's first entry on top shows the folder's
+  first entry on top again, the new one included;
+- otherwise the entry on the pane's top row stays on top; when it has gone
+  from the card, the entry at its place in the order is on top;
 - the selected entry stays selected while it is on the page read. When it
   has gone from the card, or stands on another page, nothing is
   selected, as after a DELETE: MOVE and RENAME act on the selection without

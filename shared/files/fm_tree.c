@@ -241,7 +241,10 @@ fm_err_t fm_tree_page(fm_tree_t *tree, const fm_io_t *io,
         side = FM_PAGE_BEFORE;
         break;
     case FM_GO_SAME:
-        if (rows) {
+        /* The first page stays the first: an entry new on the card that
+         * ranks before its first row comes onto it.  A later page keeps
+         * its first entry, and such an entry goes to the page before. */
+        if (rows && tree->ahead > 0) {
             key = tree->page[0];
             edge = &key;
         }

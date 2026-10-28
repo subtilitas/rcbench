@@ -3057,12 +3057,19 @@ nicht gemessen.
 
 AKTUALISIEREN sieht in den Steckplatz und liest dann den Ordner jeder
 Spalte neu, eine Spalte nach der anderen, an der Seite, die die Spalte
-zeigt: ab dem ersten Eintrag dieser Seite, so wie VORIGE und NÄCHSTE ihre
-Seiten benennen. Jede Spalte behält ihre Stelle:
+zeigt. Die erste Seite wird ab dem ersten Eintrag des Ordners gelesen, so
+kommt ein neuer Eintrag auf der Karte, der vor allen Zeilen steht, etwa
+ein `ATEST001.CSV` neben `SERVO`-Logs, auf sie. Eine spätere Seite wird ab
+ihrem eigenen ersten Eintrag gelesen, so wie VORIGE und NÄCHSTE ihre Seiten
+benennen; ein neuer Eintrag davor steht auf einer Seite davor. Der Weg
+zurück nach FILES liest beide Spalten ebenso. Jede Spalte behält ihre
+Stelle:
 
-- der Eintrag in der obersten Zeile der Spalte bleibt oben; ist er von der Karte
-  verschwunden, steht der Eintrag oben, der an seiner Stelle
-  in der Reihenfolge steht;
+- eine Liste, die oben den ersten Eintrag ihres Ordners zeigt, zeigt oben
+  wieder den ersten Eintrag des Ordners, den neuen eingeschlossen;
+- sonst bleibt der Eintrag in der obersten Zeile der Spalte oben; ist er
+  von der Karte verschwunden, steht der Eintrag oben, der an seiner
+  Stelle in der Reihenfolge steht;
 - der gewählte Eintrag bleibt gewählt, solange er auf der gelesenen Seite
   steht. Ist er von der Karte verschwunden oder steht er auf einer
   anderen Seite, ist nichts gewählt, wie nach LÖSCHEN: VERSCHIEBEN und
