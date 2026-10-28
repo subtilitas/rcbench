@@ -103,6 +103,13 @@ history is in git.
 
 ### Fixed
 
+- SERVO's TARGET comes back to the programming port within 500ms after the
+  IOmcu restarts or a programming session takes the target, with no
+  standard servo output bound as a surface. The release owed for a position
+  written to the port went to the standard outputs, found nothing to
+  centre and kept the debt, so the panel never wrote the port back as
+  `TARGET`: the row read NO SERVO PWM PIN and the servo test sent no pulse
+  (`write_servo()` in `shared/outputs/servo_link.c`, since 0.17.0).
 - FILES' RESCAN and the way back into FILES list an entry new on the card
   that ranks before the first row of a pane's first page, such as a log
   the logger wrote as `ATEST001.CSV` into a folder of `SERVO` logs

@@ -844,6 +844,25 @@ der Ausgänge. Eine Bitte wartet auf einen Prüfstand in Ruhe. Ein Port, der
 das `TARGET` ist, wird zuerst losgelassen (sein `PWM`-Bit aus, `TARGET`
 0), und das Ziel, das der Bildschirm will, wird zurückgeschrieben, nachdem
 die Page erneut gelesen ist.
+
+`PWM` und `TARGET` werden nicht gespeichert. Ein IOmcu, der neu startet,
+liest in beiden 0: die Standard-Servoausgänge sind das Ziel, und kein
+Port pulst. Das Panel schreibt das Ziel, das der SERVO-Bildschirm will,
+auf einem Prüfstand in Ruhe zurück, sein `PWM`-Bit danach, innerhalb von
+500ms, nachdem der Link wieder steht oder das Lesen die Änderung zeigt.
+Eine Position, die vor dem Neustart an den Port ging, wird nicht erneut
+gesendet: die Freigabe, die für sie offen ist, geht an die
+Standard-Servoausgänge, die der IOmcu dann nennt, und ohne gebundene
+Surface dort gilt sie ohne Schreiben als bezahlt. Ein Prüfstand, der
+ARMED war, stoppt mit dem Linkverlust (STOP); der Port gibt keinen Puls
+aus, bis der Bediener wieder auf ARMED schaltet, und das Schalten auf ARMED
+zentriert zuerst das geltende Ziel. `test_servo_link_restart` fährt einen Neustart in
+SAFE und in ARMED, während einer Bitte, einen, den das Panel nicht als
+Linkverlust sieht, zwei hintereinander, einen während eines laufenden
+automatischen Servotests, dessen Freigabe ohne Antwort bleibt, einen
+Linkverlust ohne Neustart und eine Programmiersitzung, die das Ziel
+genommen hat.
+
 | Panel | IOmcu | PROG (0x33) |
 | --- | --- | --- |
 | 4.13 | 4.13 | bedient |
