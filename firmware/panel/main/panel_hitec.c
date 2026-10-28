@@ -177,6 +177,14 @@ __attribute__((noinline)) void hitec_pass(bool link_up)
     }
 }
 
+bool hitec_foreign(void)
+{
+    hitec_link_readout_t rd;
+
+    hitec_link_readout(&s_hitec_link, &rd);
+    return hitec_prog_foreign(&rd);
+}
+
 bool hitec_taken(void)
 {
     hitec_link_readout_t rd;

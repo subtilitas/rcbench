@@ -138,10 +138,17 @@ a write to the servo's memory (`port_cut_t` in `error_stop.h`):
 - A KST write is a WRITE, RESTORE or RELEASE from its command until the
   page reads it ended (`kst_link_writing()`), its planning included: a
   status read that says it plans may be older than its first frame. A
-  power cycle and a LEAVE write nothing.
+  power cycle and a LEAVE write nothing. On a port held with no operation
+  of the panel's running, the bench console's WRITE, RESTORE or RELEASE
+  counts while the page reads it BUSY, and a status read older than 100ms
+  (`KST_LINK_FRESH_MS`) counts as a write: a write's first frame comes
+  560ms after its command at the soonest.
 - A Hitec write runs from its first step to the end of its read-back
   (`hitec_prog_gate_writing()`). Its record and backup file on the card
-  come before the first step and are not waited for.
+  come before the first step and are not waited for. A HITEC port another
+  writer holds, the bench console or a session held over a lost link, runs
+  transactions the panel does not know (`hitec_prog_foreign()`): its supply
+  goes off at 10000ms.
 
 The longest writes the code allows end well inside 10000ms: a KST write of
 33 steps is 1.93s on the wire after at most 1.93s of planning; a classic Hitec write of 56 steps with its
@@ -171,7 +178,8 @@ step cut by a stop or a lost link, which end the session themselves.
 Current limitations:
 
 - An error during a write keeps the servo powered until the write ends,
-  10000ms at most. A write still running then, with retries or on a slow
+  10000ms at most. A HITEC port the bench console holds keeps it 10000ms
+  after every error. A write still running then, with retries or on a slow
   link, is cut in the middle.
 - The supply's own trips (CURRENT TRIP, VOLTAGE TRIP) and the PD mini's
   protection switch the output off at once, a write under way included.

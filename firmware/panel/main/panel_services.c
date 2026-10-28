@@ -113,8 +113,8 @@ static uint32_t s_kst_faults;
 
 bool prog_writing(void)
 {
-    return kst_link_writing(&s_kst_link)
-           || hitec_prog_gate_writing(&s_hitec_gate);
+    return kst_link_writing(&s_kst_link, now_ms())
+           || hitec_prog_gate_writing(&s_hitec_gate) || hitec_foreign();
 }
 
 uint32_t prog_faults(void)
@@ -640,10 +640,16 @@ __attribute__((noinline)) void kst_commands(void)
         }
         if (cmd.kind == KST_PROG_CMD_START) {
             /* No port is taken on an armed bench: nothing is sent.  A
-             * REBOOT is the CONNECT that switches the supply off first. */
-            s_kst_answer    = ((cmd.req.op == LINK_KST_OP_ENTER
-                                || cmd.req.op == LINK_KST_OP_REBOOT)
-                               && outputs_armed(&s_out))
+             * REBOOT is the CONNECT that switches the supply off first.
+             * No write goes out once an error's cut has switched the
+             * port's supply off (port_cut_blocking()). */
+            const bool writes = cmd.req.op == LINK_KST_OP_WRITE
+                                || cmd.req.op == LINK_KST_OP_RESTORE
+                                || cmd.req.op == LINK_KST_OP_RELEASE;
+            s_kst_answer    = (((cmd.req.op == LINK_KST_OP_ENTER
+                                 || cmd.req.op == LINK_KST_OP_REBOOT)
+                                && outputs_armed(&s_out))
+                               || (writes && port_cut_blocking()))
                                   ? KST_LINK_START_BUSY
                                   : kst_link_start(&s_kst_link, &cmd.req);
             s_kst_answer_id = cmd.id;

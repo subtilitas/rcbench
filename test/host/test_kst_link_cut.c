@@ -9,7 +9,9 @@
  *  - kst_link_writing() for a WRITE, a RESTORE and a RELEASE, planning
  *    included: no write frame reaches the servo while it says no write
  *    runs, also when the module's status reads stop behind another page's
- *    exchange;
+ *    exchange; another writer's write on the held port, and a held port
+ *    whose last status read is older than KST_LINK_FRESH_MS, count as
+ *    one;
  *  - an error during each of the three: the write ends verified, then the
  *    supply goes off, in the pass after the module last saw it, within
  *    ERROR_PORT_CUT_MS; the port finds the supply asked off, keeps it off
@@ -58,13 +60,13 @@ static bool taken(void)
  * panel_supply.c runs it, the SUPPLY page taking its OFF. */
 static void pass(void)
 {
-    const bool before = kst_link_writing(&g_rig.link);
+    const bool before = kst_link_writing(&g_rig.link, g_rig.ms);
     const unsigned n = g_rig.sim.n_writes;
     bool writing;
     error_stop_t e;
 
     rig_frame();
-    writing = kst_link_writing(&g_rig.link);
+    writing = kst_link_writing(&g_rig.link, g_rig.ms);
     if (g_rig.sim.n_writes != n && !before && !writing) {
         g_unseen++;
     }
@@ -222,14 +224,14 @@ TEST_CASE(a_write_frame_goes_out_only_while_a_write_is_seen)
         up();
         r = of_kind(kind);
         writes = g_rig.sim.n_writes;
-        CHECK(!kst_link_writing(&g_rig.link));
+        CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
         CHECK_EQ(kst_link_start(&g_rig.link, &r), KST_LINK_START_OK);
-        CHECK(kst_link_writing(&g_rig.link));
+        CHECK(kst_link_writing(&g_rig.link, g_rig.ms));
         o = ended();
         CHECK_EQ(o.kind, KST_LINK_OUT_DONE);
         CHECK_EQ(o.result, KST_SES_OK);
         CHECK(g_rig.sim.n_writes > writes);
-        CHECK(!kst_link_writing(&g_rig.link));
+        CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
         CHECK_EQ(g_unseen, 0u);
         CHECK_EQ(g_offs, 0u);
     }
@@ -239,14 +241,14 @@ TEST_CASE(a_write_frame_goes_out_only_while_a_write_is_seen)
         kst_link_request_t r = req(LINK_KST_OP_READ_ALL);
 
         CHECK_EQ(kst_link_start(&g_rig.link, &r), KST_LINK_START_OK);
-        CHECK(!kst_link_writing(&g_rig.link));
+        CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
         (void)ended();
         r = req(LINK_KST_OP_REBOOT);
         CHECK_EQ(kst_link_start(&g_rig.link, &r), KST_LINK_START_OK);
-        CHECK(!kst_link_writing(&g_rig.link));
+        CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
         (void)ended();
     }
-    CHECK(!kst_link_writing(NULL));
+    CHECK(!kst_link_writing(NULL, 0u));
 }
 
 TEST_CASE(an_error_during_each_write_kind_cuts_after_it_ends)
@@ -301,28 +303,78 @@ TEST_CASE(a_write_that_plans_is_waited_for)
     k.status[LINK_KS_STATE] = (uint16_t)(LINK_KST_PROGRAMMING | LINK_KS_F_BUSY);
     k.status[LINK_KS_RESULT] = LINK_KST_RESULT_PLANNING;
     CHECK_EQ(kst_link_phase(&k), KST_LINK_PLANNING);
-    CHECK(kst_link_writing(&k));
+    CHECK(kst_link_writing(&k, 0u));
     k.status[LINK_KS_RESULT] = 1u;
-    CHECK(kst_link_writing(&k));
+    CHECK(kst_link_writing(&k, 0u));
     /* Sent, not yet read back as started: waited for. */
     k.phase = (uint8_t)KST_LINK_SENDING;
-    CHECK(kst_link_writing(&k));
+    CHECK(kst_link_writing(&k, 0u));
     /* Ended at the page: the results are read, no write runs. */
     k.phase = (uint8_t)KST_LINK_FETCHING;
-    CHECK(!kst_link_writing(&k));
+    CHECK(!kst_link_writing(&k, 0u));
     /* A RESTORE and a RELEASE the same; a VERIFY and a REBOOT never. */
     k.phase = (uint8_t)KST_LINK_RUNNING;
     k.op = (uint8_t)LINK_KST_OP_RESTORE;
-    CHECK(kst_link_writing(&k));
+    CHECK(kst_link_writing(&k, 0u));
     k.op = (uint8_t)LINK_KST_OP_RELEASE;
-    CHECK(kst_link_writing(&k));
+    CHECK(kst_link_writing(&k, 0u));
     k.op = (uint8_t)LINK_KST_OP_VERIFY;
-    CHECK(!kst_link_writing(&k));
+    CHECK(!kst_link_writing(&k, 0u));
     k.op = (uint8_t)LINK_KST_OP_REBOOT;
-    CHECK(!kst_link_writing(&k));
+    CHECK(!kst_link_writing(&k, 0u));
     k.op = (uint8_t)LINK_KST_OP_WRITE;
     k.active = false;
-    CHECK(!kst_link_writing(&k));
+    k.known = true;
+    k.status_at = true;
+    k.status_at_ms = 0u;
+    k.status[LINK_KS_RESULT] = 1u;
+    /* Another writer's operation on the held port, the bench console's:
+     * a WRITE, a RESTORE or a RELEASE the page reads BUSY runs. */
+    k.status[LINK_KS_OP] = (uint16_t)((unsigned)LINK_KST_OP_WRITE << 12);
+    CHECK(kst_link_writing(&k, 0u));
+    k.status[LINK_KS_OP] = (uint16_t)((unsigned)LINK_KST_OP_RESTORE << 12);
+    CHECK(kst_link_writing(&k, 0u));
+    k.status[LINK_KS_OP] = (uint16_t)((unsigned)LINK_KST_OP_RELEASE << 12);
+    CHECK(kst_link_writing(&k, 0u));
+    k.status[LINK_KS_OP] = (uint16_t)((unsigned)LINK_KST_OP_READ_ALL << 12);
+    CHECK(!kst_link_writing(&k, 0u));
+    k.status[LINK_KS_OP] = (uint16_t)((unsigned)LINK_KST_OP_WRITE << 12);
+    k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PROGRAMMING;
+    CHECK(!kst_link_writing(&k, KST_LINK_FRESH_MS));
+    /* A read older than KST_LINK_FRESH_MS cannot say: taken as a write,
+     * across the clock's wrap as well. */
+    CHECK(kst_link_writing(&k, KST_LINK_FRESH_MS + 1u));
+    k.status_at_ms = 0xFFFFFFF0u;
+    CHECK(!kst_link_writing(&k, 0xFFFFFFF0u + KST_LINK_FRESH_MS));
+    CHECK(kst_link_writing(&k, 0xFFFFFFF0u + KST_LINK_FRESH_MS + 1u));
+    k.status_at = false;
+    CHECK(kst_link_writing(&k, 0u));
+    /* A port in PWM, or never read, runs none. */
+    k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PWM;
+    CHECK(!kst_link_writing(&k, 1000u));
+    k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PROGRAMMING;
+    k.known = false;
+    CHECK(!kst_link_writing(&k, 1000u));
+}
+
+TEST_CASE(a_held_port_whose_status_goes_unread_is_waited_for)
+{
+    up();
+    passes(100u);
+    CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
+    /* No KST exchange for 500ms: another page's exchange holds the link.
+     * The bench console could have started a write in that time. */
+    g_rig.held = true;
+    passes(KST_LINK_FRESH_MS + 50u);
+    CHECK(kst_link_writing(&g_rig.link, g_rig.ms));
+    port_cut_ask(&g_cut, g_rig.ms);
+    passes(400u);
+    CHECK_EQ(g_offs, 0u);
+    /* Read again: idle, off. */
+    g_rig.held = false;
+    passes(2u * KST_LINK_POLL_MS);
+    CHECK_EQ(g_offs, 1u);
+    CHECK(!g_rig.sup_on);
 }
 
 TEST_CASE(a_write_unseen_behind_another_pages_exchange_is_waited_for)
@@ -360,7 +412,7 @@ TEST_CASE(a_write_unseen_behind_another_pages_exchange_is_waited_for)
     }
     CHECK(g_rig.sim.n_writes > writes);
     CHECK_EQ(kst_link_phase(&g_rig.link), KST_LINK_PLANNING);
-    CHECK(kst_link_writing(&g_rig.link));
+    CHECK(kst_link_writing(&g_rig.link, g_rig.ms));
     port_cut_ask(&g_cut, g_rig.ms);
     passes(5u);
     CHECK_EQ(g_offs, 0u);
@@ -489,6 +541,7 @@ int main(void)
     RUN(an_error_during_each_write_kind_cuts_after_it_ends);
     RUN(a_write_that_plans_is_waited_for);
     RUN(a_write_unseen_behind_another_pages_exchange_is_waited_for);
+    RUN(a_held_port_whose_status_goes_unread_is_waited_for);
     RUN(an_error_with_no_write_cuts_at_once_and_again_after_a_cycle);
     RUN(a_read_the_servo_does_not_answer_is_an_error);
     RUN(which_outcomes_are_faults);

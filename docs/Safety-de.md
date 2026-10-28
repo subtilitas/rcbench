@@ -152,11 +152,18 @@ aus (`port_cut_t` in `error_stop.h`):
   bis die Page sein Ende liest (`kst_link_writing()`), sein Planen
   eingeschlossen: ein Lesen des Status, das Planen meldet, kann älter sein
   als sein erster Frame. Ein Versorgungszyklus und ein LEAVE schreiben
-  nichts.
+  nichts. An einem gehaltenen Port, an dem kein Vorgang des Panels läuft,
+  zählt ein WRITE, RESTORE oder RELEASE der Prüfstandskonsole, solange die Page
+  ihn BUSY liest, und ein Lesen des Status, das älter als 100ms ist
+  (`KST_LINK_FRESH_MS`), zählt als Schreiben: der erste Frame eines
+  Schreibens kommt frühestens 560ms nach seinem Kommando.
 - Ein Hitec-Schreiben läuft vom ersten Schritt bis zum Ende seines
   Zurücklesens (`hitec_prog_gate_writing()`). Sein Vermerk und seine
   Backup-Datei auf der Karte kommen vor dem ersten Schritt, auf sie wird
-  nicht gewartet.
+  nicht gewartet. Ein HITEC-Port, den ein anderer Schreiber hält, die
+  Prüfstandskonsole oder eine über eine verlorene Verbindung gehaltene Sitzung,
+  führt Transaktionen aus, die das Panel nicht kennt
+  (`hitec_prog_foreign()`): seine Versorgung geht nach 10000ms aus.
 
 Die längsten Schreibvorgänge, die der Code zulässt, enden deutlich
 innerhalb von 10000ms: ein KST-Schreiben mit 33 Schritten dauert 1,93s auf
@@ -191,7 +198,8 @@ beenden die Sitzung selbst.
 Aktuelle Einschränkungen:
 
 - Ein Fehler während eines Schreibens hält das Servo versorgt, bis das
-  Schreiben endet, höchstens 10000ms. Ein Schreiben, das dann noch läuft,
+  Schreiben endet, höchstens 10000ms. Einen HITEC-Port, den die
+  Prüfstandskonsole hält, hält er nach jedem Fehler 10000ms versorgt. Ein Schreiben, das dann noch läuft,
   mit Wiederholungen oder über einen langsamen Link, wird mittendrin
   getrennt.
 - Die eigenen Abschaltschwellen des Netzteils (ÜBERSTROM, ÜBERSPANNUNG) und

@@ -94,6 +94,16 @@ extern "C" {
 #define KST_LINK_POLL_MS 50u
 /** @brief And this long after it while the port is in PWM. */
 #define KST_LINK_IDLE_MS 500u
+/**
+ * @brief A status read this young says what the port does now, for
+ *        kst_link_writing(): 2 polls.
+ *
+ * A write's first frame follows its planning and the read of 32 registers
+ * in 3 passes, 96 read frames of at least 5.85ms each (frame, reply window
+ * and gap), 560ms after its command at the soonest: a status read 100ms old
+ * that shows no write running leaves no write frame on the wire now.
+ */
+#define KST_LINK_FRESH_MS (2u * KST_LINK_POLL_MS)
 
 /**
  * @brief Exchanges without an answer, in a row, after which an operation is
@@ -259,6 +269,8 @@ typedef struct {
     bool     polled;           /**< status_ms is meaningful               */
     bool     poll_now;         /**< a status read is owed at once         */
     uint32_t status_ms;        /**< when status was last asked            */
+    bool     status_at;        /**< status_at_ms is meaningful            */
+    uint32_t status_at_ms;     /**< when the status held was asked        */
     uint16_t seq;              /**< the page's SEQ                        */
 
     /* The operation. */
@@ -449,22 +461,29 @@ kst_link_phase_t kst_link_phase(const kst_link_t *k);
 bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
 
 /**
- * @brief Whether a write to the servo's memory runs: a WRITE, a RESTORE or a
- *        RELEASE from kst_link_start() until the page last read says it has
- *        ended, its planning included.
+ * @brief Whether a write to the servo's memory runs, or may run.
  *
- * A page that last read KST_LINK_PLANNING proves nothing: the plan may have
- * ended and its frames gone out since that read, while an exchange of
- * another page waits up to its 1000ms timeout.
+ * The module's own operation: a WRITE, a RESTORE or a RELEASE from
+ * kst_link_start() until the page last read says it has ended, its planning
+ * included.  A page that last read KST_LINK_PLANNING proves nothing: the plan
+ * may have ended and its frames gone out since that read, while an exchange
+ * of another page waits up to its 1000ms timeout.
+ *
+ * With none of its own running, a port out of PWM may run a write another
+ * writer started, the bench console: one runs while the last status read
+ * shows the port BUSY with a WRITE, a RESTORE or a RELEASE, and one may run
+ * while that read is older than KST_LINK_FRESH_MS.  A port in PWM, or never
+ * read, runs none.
  *
  * What the error rule waits for before it switches the port's supply off
  * (error_stop.h).  A power cycle (REBOOT, POWER_CYCLED) and a LEAVE write
  * nothing and are not waited for.
  *
- * @param k The link state.
- * @return true while such a write runs; false for NULL.
+ * @param k      The link state.
+ * @param now_ms The time, in ms.
+ * @return true while such a write runs or may run; false for NULL.
  */
-bool kst_link_writing(const kst_link_t *k);
+bool kst_link_writing(const kst_link_t *k, uint32_t now_ms);
 
 /**
  * @brief Whether an outcome is a fault of the servo or the wire, which the

@@ -19,6 +19,8 @@
  *    and the write that follows sends nothing;
  *  - a classic write the servo does not answer is a session fault
  *    (hitec_prog_ses_fault()) and an error: off at once; an ABORT is none;
+ *  - a port another writer holds (hitec_prog_foreign()): its transactions
+ *    are not known, so the supply goes off at ERROR_PORT_CUT_MS;
  *  - which session results are faults;
  *  - the longest write the code allows: a classic one of HITEC_PLAN_MAX
  *    steps and its read-back of 36 cells, a D series one of every register
@@ -46,7 +48,8 @@ static uint32_t      g_write_end_ms;  /* the last pass that saw a write  */
 static void cut_pump(void)
 {
     const bool held = hitec_prog_port_taken(&g_f.rd);
-    const bool writing = hitec_prog_gate_writing(&g_gate);
+    const bool writing = hitec_prog_gate_writing(&g_gate)
+                         || hitec_prog_foreign(&g_f.rd);
     const error_stop_t e =
         error_stop_take(&g_watch, hitec_prog_gate_faults(&g_gate), false,
                         g_hw.v.asked_on, held);
@@ -303,6 +306,35 @@ TEST_CASE(a_classic_write_the_servo_does_not_answer_is_an_error)
     CHECK(g_hw.v.asked_on);
 }
 
+TEST_CASE(a_port_another_writer_holds_is_cut_at_the_bound)
+{
+    uint32_t asked;
+
+    d_ready();
+    /* The link goes and comes back: the port held over it is another
+     * writer's, whose transactions this panel does not know. */
+    link_silent();
+    crun(200u);
+    link_back();
+    until(HITEC_PROG_OTHER);
+    CHECK(hitec_prog_foreign(&g_f.rd));
+    (void)hw_supply_set(NULL, true, 5000u, 1000u);
+    crun(2u * HITEC_LINK_POLL_MS);
+    CHECK(g_hw.v.asked_on);
+    asked = g_ms;
+    port_cut_ask(&g_cut, asked);
+    while (g_ms - asked < ERROR_PORT_CUT_MS - HITEC_LINK_POLL_MS) {
+        cms();
+    }
+    CHECK_EQ(g_offs, 0u);
+    crun(2u * HITEC_LINK_POLL_MS);
+    CHECK_EQ(g_offs, 1u);
+    CHECK(!g_hw.v.asked_on);
+    CHECK(g_cut_ms - asked >= ERROR_PORT_CUT_MS);
+    CHECK(g_cut_ms - asked <= ERROR_PORT_CUT_MS + HITEC_LINK_POLL_MS);
+    CHECK(!hitec_prog_foreign(NULL));
+}
+
 TEST_CASE(which_session_results_are_faults)
 {
     static const unsigned k_fault[] = {
@@ -382,6 +414,7 @@ int main(void)
     RUN(an_error_with_no_write_cuts_at_once_and_sends_no_step);
     RUN(an_error_while_the_record_waits_for_the_card_writes_nothing);
     RUN(a_classic_write_the_servo_does_not_answer_is_an_error);
+    RUN(a_port_another_writer_holds_is_cut_at_the_bound);
     RUN(which_session_results_are_faults);
     RUN(the_longest_writes_end_within_half_the_bound);
     return test_summary("hitec_prog_cut");

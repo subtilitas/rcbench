@@ -714,10 +714,11 @@ extern atomic_uint    s_drive;
  *         change then.  Control task only; kst_port_look(). */
 extern bool            s_prog_taken;
 extern kst_prog_gate_t s_kst_gate;
-/** @brief Whether a programmer writes to a servo's memory: a KST write the
- *         link module runs (kst_link_writing()) or a Hitec write the model
- *         runs (hitec_prog_gate_writing()).  Control task only.
- *  @return true while one runs */
+/** @brief Whether a programmer writes, or may write, to a servo's memory: a
+ *         KST write on the port (kst_link_writing()), a Hitec write the
+ *         model runs (hitec_prog_gate_writing()), or a HITEC port another
+ *         writer holds (hitec_foreign()).  Control task only.
+ *  @return true while one runs or may run */
 bool prog_writing(void);
 /** @brief The programmers' session faults: the KST outcomes
  *         kst_link_outcome_fault() names, counted as kst_publish() takes
@@ -801,6 +802,10 @@ void hitec_pass(bool link_up);
 /** @brief Whether the HITEC page holds a port or a request runs.
  *  @return true while it does */
 bool hitec_taken(void);
+/** @brief Whether the HITEC page holds a port another writer opened
+ *         (hitec_prog_foreign()); control task.
+ *  @return true while it does */
+bool hitec_foreign(void);
 /** @brief What the Hitec programmer's model is fed; under the snapshot's
  *         lock.
  *  @param f receives the feed */

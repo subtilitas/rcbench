@@ -566,6 +566,8 @@ static void on_status(kst_link_t *k, const uint16_t *regs)
         }
     }
     memcpy(k->status, regs, sizeof(k->status));
+    k->status_at = true;
+    k->status_at_ms = k->status_ms;
     k->seq = regs[LINK_KS_SEQ];
     k->known = true;
     k->was_held = LINK_KS_STATE_OF(regs[LINK_KS_STATE])
@@ -794,17 +796,30 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out)
     return true;
 }
 
-bool kst_link_writing(const kst_link_t *k)
+bool kst_link_writing(const kst_link_t *k, uint32_t now_ms)
 {
-    if (k == NULL || !k->active) {
+    if (k == NULL) {
         return false;
     }
-    /* PLANNING is no proof that nothing goes out: the page last read may
-     * be older than the plan's end and its first frames. */
-    return (k->op == (uint8_t)LINK_KST_OP_WRITE
-            || k->op == (uint8_t)LINK_KST_OP_RESTORE
-            || k->op == (uint8_t)LINK_KST_OP_RELEASE)
-           && k->phase != (uint8_t)KST_LINK_FETCHING;
+    if (k->active) {
+        /* PLANNING is no proof that nothing goes out: the page last read
+         * may be older than the plan's end and its first frames. */
+        return op_writes((link_kst_op_t)k->op) && k->phase != (uint8_t)KST_LINK_FETCHING;
+    }
+    if (!k->known
+        || LINK_KS_STATE_OF(k->status[LINK_KS_STATE])
+               == (uint8_t)LINK_KST_PWM) {
+        return false;
+    }
+    /* Held, and nothing of this module's runs: another writer's operation
+     * may, and a read too old to say is taken as one that does. */
+    if (!k->status_at
+        || (uint32_t)(now_ms - k->status_at_ms) > KST_LINK_FRESH_MS) {
+        return true;
+    }
+    return (k->status[LINK_KS_STATE] & LINK_KS_F_BUSY) != 0u
+           && op_writes(
+               (link_kst_op_t)LINK_KS_OP_OF(k->status[LINK_KS_OP]));
 }
 
 bool kst_link_outcome_fault(const kst_link_outcome_t *o)

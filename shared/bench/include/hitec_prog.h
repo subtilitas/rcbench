@@ -420,6 +420,21 @@ uint32_t hitec_prog_gate_faults(const hitec_prog_gate_t *g);
  */
 bool hitec_prog_ses_fault(unsigned r);
 
+/**
+ * @brief Whether the HITEC page holds a port another writer opened: the
+ *        bench console, or a session held over a lost link or a panel
+ *        restart.
+ *
+ * Its transactions are not this panel's to know, so the error rule takes it
+ * as a write that may run and switches its supply off at
+ * ERROR_PORT_CUT_MS (error_stop.h).
+ *
+ * @param rd The link module's readout.
+ * @return true while the page is read as holding a port this module did
+ *         not open; false for NULL.
+ */
+bool hitec_prog_foreign(const hitec_link_readout_t *rd);
+
 /** @brief What the task that owns the link module publishes, every frame. */
 typedef struct {
     uint32_t now_ms;          /**< the link task's clock, ms              */

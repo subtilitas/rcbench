@@ -86,6 +86,11 @@ bool hitec_prog_ses_fault(unsigned r)
     }
 }
 
+bool hitec_prog_foreign(const hitec_link_readout_t *rd)
+{
+    return rd != NULL && rd->known && rd->held && !rd->ours;
+}
+
 /**
  * @brief Whether a write runs, into the gate (hitec_prog_gate_writing()).
  *
