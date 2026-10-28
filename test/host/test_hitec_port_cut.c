@@ -1,9 +1,10 @@
 /*
  * An error while the HITEC page holds a port (protocol 4.31): the panel's
  * OFF of the supply, which the SUPPLY page holds back from the PD mini
- * while the port writes to the servo's memory: while a transaction runs,
- * or while the last command taken started its step with
- * LINK_HT_W_CMD_MORE (hitec_port_writing(), supply_page_port_writes()).
+ * while the port writes to the servo's memory: while a step of a write
+ * runs (one that carries LINK_HT_W_CMD_MORE or follows one that did), or
+ * while the last command taken started its step with the bit
+ * (hitec_port_writing(), supply_page_port_writes()).
  *
  * The port is shared/outputs/hitec_port.c against the servo of
  * hitec_sim.h, whose memory takes a write only while the supply is on; the
@@ -17,7 +18,8 @@
  * reaches the module in the pass its transaction ends, the servo holding
  * every write; an OFF during the last step the same, also one taken right
  * behind the SEND that starts a step, no pass between; an OFF with no write
- * at once; a step whose bit stands and no step after it holds the OFF to
+ * at once, also while a step of no write runs (a read, a LISTEN of its
+ * own, a read after a whole write); a step whose bit stands and no step after it holds the OFF to
  * SUPPLY_PAGE_WRITE_WAIT_MS to the millisecond, across the wrap at
  * 2^32ms; the bit cleared by any other command, a refused one, a stop and
  * CLOSE, refused on OPEN, CLOSE, ABORT and CLEAR, and shown in
@@ -248,7 +250,7 @@ TEST_CASE(an_off_during_the_last_step_cuts_at_its_end)
 
 /* The OFF in the same batch of frames as the SEND that starts a step, no
  * pass between them: judged against the step the SEND started.  The first
- * step with the bit, then the last step without it. */
+ * step with the bit, then the last step, without it, after one with it. */
 TEST_CASE(an_off_right_behind_a_send_waits_for_its_step)
 {
     open_at(0u, HITEC_CLASSIC);
@@ -265,12 +267,69 @@ TEST_CASE(an_off_right_behind_a_send_waits_for_its_step)
     CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
 
     open_at(0u, HITEC_CLASSIC);
+    classic_cell(true);
+    step_ends(false);
     classic_balance();
     panel_off();
     CHECK(supply_page_off_held(&g_sp));
     step_ends(true);
     CHECK(!g_pd.want_output);
     CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
+}
+
+/* A SEND with no bit after a step with none: a read, not a write. */
+static void lone_read(void)
+{
+    stage_classic_read(0x10u);
+    CHECK_EQ(hcmd_raw(LINK_HT_W_CMD_OF(LINK_HITEC_OP_SEND, CH), KEY, stage()),
+             0u);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+}
+
+/* The OFF while a step of no write runs, at once: not held, the port's
+ * view off in the next pass and the module within the frame wait
+ * (SUPPLY_PAGE_OFF_WAIT_MS) of a frame on the wire. */
+static void off_now(void)
+{
+    CHECK_EQ(state(), LINK_HITEC_BUSY);
+    CHECK(!hitec_port_writing(&g_port));
+    panel_off();
+    CHECK(!supply_page_off_held(&g_sp));
+    pass();
+    CHECK(!g_hw.v.asked_on);
+    for (unsigned i = 0; i < SUPPLY_PAGE_OFF_WAIT_MS && g_pd.want_output;
+         ++i) {
+        pass();
+    }
+    CHECK(!g_pd.want_output);
+}
+
+/* A transaction that is no step of a write holds no OFF: a read, a
+ * LISTEN of its own with a 500ms window, a read right after a whole
+ * write. */
+TEST_CASE(an_off_during_a_step_of_no_write_is_at_once)
+{
+    open_at(0u, HITEC_CLASSIC);
+    lone_read();
+    off_now();
+
+    open_at(0u, HITEC_CLASSIC);
+    memset(g_st + 1, 0, sizeof(g_st) - sizeof(g_st[0]));
+    stage_listen(500000u, 1u, false, 0u, LINK_HITEC_DEC_NONE, 0u);
+    CHECK_EQ(hcmd_raw(LINK_HT_W_CMD_OF(LINK_HITEC_OP_LISTEN, CH), 0u,
+                      stage()),
+             0u);
+    CHECK_EQ(refusal(), LINK_HITEC_REF_NONE);
+    pass();
+    off_now();
+
+    open_at(0u, HITEC_CLASSIC);
+    classic_cell(true);
+    step_ends(false);
+    classic_balance();
+    step_ends(false);
+    lone_read();
+    off_now();
 }
 
 TEST_CASE(an_off_with_no_write_is_at_once)
@@ -440,6 +499,7 @@ int main(void)
     RUN(an_off_between_d_series_steps_waits_for_the_reboot);
     RUN(an_off_during_the_last_step_cuts_at_its_end);
     RUN(an_off_right_behind_a_send_waits_for_its_step);
+    RUN(an_off_during_a_step_of_no_write_is_at_once);
     RUN(an_off_with_no_write_is_at_once);
     RUN(a_bit_left_standing_holds_the_off_to_the_bound);
     RUN(the_bit_ends_with_any_other_command_a_refusal_a_stop_or_close);

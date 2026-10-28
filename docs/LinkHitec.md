@@ -112,12 +112,15 @@ The panel reads bit 11 from either.
 
 ### An OFF during a write
 
-From 4.31 a write to the servo's memory runs on this page while a
-transaction runs (BUSY), or while the last command taken started its step
+From 4.31 a write to the servo's memory runs on this page while a step of
+a write runs (BUSY), or while the last command taken started its step
 with bit 4 of `CMD` (`MORE`): more steps of this write follow. The writer
 sets the bit on every step of a write but the last: SEND, LISTEN, LEVEL or
-POWER. `STATE` bit 8 shows it standing. Every other command taken clears
-it, a refused one included, and so do a stop and CLOSE.
+POWER. A step of a write carries the bit or follows a step that did. A
+transaction that does neither is no write: a read, a LISTEN of its own, a
+write of one step. `STATE` bit 8 shows the bit standing. Every other
+command taken clears it, a refused one included, and so do a stop and
+CLOSE.
 
 An OFF the panel writes to SUPPLY while a write runs reads 0 at once and
 reaches the PD mini when the write ends: in the pass the last step's

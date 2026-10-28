@@ -46,9 +46,11 @@ history is in git.
   The panel writes the OFF on every error. The IOmcu's SUPPLY page holds an
   OFF of a supply a port holds back from the PD mini while the port writes,
   10000ms after the OFF at most: a KST WRITE, RESTORE or RELEASE from the
-  end of its planning to the end of its read-backs, a Hitec transaction,
-  and the gap after a Hitec step whose command carries the new HITEC bit 4
-  (`MORE`, more steps of this write follow). The panel's Hitec programmer
+  end of its planning to the end of its read-backs, a Hitec step of a
+  write, and the gap after a Hitec step whose command carries the new
+  HITEC bit 4 (`MORE`, more steps of this write follow). A step of a write
+  carries the bit or follows a step that did; an OFF during a read or any
+  other Hitec transaction is not held. The panel's Hitec programmer
   sets the bit on every step of a write but the last; the bench console
   sets it with `more`. After the panel's OFF the port's own ON is refused
   until the port lets go: a KST power cycle ends with result 32, a Hitec

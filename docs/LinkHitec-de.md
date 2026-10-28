@@ -120,11 +120,14 @@ Panels. Das Panel liest Bit 11 von beiden.
 ### Ein OFF während eines Schreibens
 
 Ab 4.31 läuft auf dieser Page ein Schreiben in den Speicher des Servos,
-solange eine Transaktion läuft (BUSY) oder solange das zuletzt angenommene
-Kommando seinen Schritt mit Bit 4 von `CMD` (MORE) gestartet hat: weitere
-Schritte dieses Schreibens folgen. Der Schreiber setzt das Bit auf jedem
-Schritt eines Schreibens außer dem letzten: SEND, LISTEN, LEVEL oder POWER.
-`STATE` Bit 8 zeigt, dass es steht. Jedes andere angenommene Kommando löscht
+solange ein Schritt eines Schreibens läuft (BUSY) oder solange das zuletzt
+angenommene Kommando seinen Schritt mit Bit 4 von `CMD` (MORE) gestartet
+hat: weitere Schritte dieses Schreibens folgen. Der Schreiber setzt das Bit
+auf jedem Schritt eines Schreibens außer dem letzten: SEND, LISTEN, LEVEL
+oder POWER. Ein Schritt eines Schreibens trägt das Bit oder folgt einem
+Schritt, der es trug. Eine Transaktion, die keins von beiden tut, ist kein
+Schreiben: ein Lesen, ein LISTEN für sich, ein Schreiben aus einem Schritt.
+`STATE` Bit 8 zeigt, dass das Bit steht. Jedes andere angenommene Kommando löscht
 es, auch ein abgewiesenes, ebenso ein Stopp und CLOSE.
 
 Ein OFF, das das Panel auf SUPPLY schreibt, während ein Schreiben läuft,

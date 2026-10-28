@@ -2471,8 +2471,10 @@ enum {
  *        of the write this transaction belongs to follow it.
  *
  * The writer sets it on every step of a write to the servo's memory but
- * the last.  While it stands (LINK_HT_F_MORE) or a transaction runs, the
- * SUPPLY page counts a write as running (LINK_MINOR_PORT_CUT).  Any other
+ * the last.  While it stands (LINK_HT_F_MORE) or a step of a write runs --
+ * one that carries the bit or follows one that did -- the SUPPLY page
+ * counts a write as running (LINK_MINOR_PORT_CUT); a read, a LISTEN of its
+ * own and a write of one step are none.  Any other
  * command, one refused included, and a stop clear it.  A 4.30 IOmcu
  * refuses a command with the bit with LINK_NACK_BAD_VALUE; on OPEN, CLOSE,
  * ABORT and CLEAR it is refused with LINK_NACK_BAD_VALUE as well.

@@ -407,7 +407,8 @@ page with the SUPPLY page and the servo model for an error during a write
 series write, its save and its reboot, and during the last step reaching
 the PD mini in the pass the write ends, the servo holding every write,
 also an OFF taken right behind the SEND that starts a step; an OFF with no
-write at once; a step whose `MORE` bit stands holding it to
+write at once, also during a read, a LISTEN of its own and a read after a
+whole write; a step whose `MORE` bit stands holding it to
 10000ms to the millisecond, across the wrap at 2^32ms; the bit cleared by
 another command, a refusal, a stop and CLOSE and refused on OPEN, CLOSE,
 ABORT and CLEAR; a POWER's ON refused after the OFF until CLOSE; the

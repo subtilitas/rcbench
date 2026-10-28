@@ -107,6 +107,7 @@ static void go_free(hitec_port_t *p)
     p->cutting = 0;
     p->off_seen = 0;
     p->more = 0;
+    p->wstep = 0;
     if (had_pin) {
         p->hw.give(p->hw.ctx);
     }
@@ -657,9 +658,18 @@ static uint8_t command(hitec_port_t *p, const uint16_t *in, uint32_t now_ms)
     if (in[LINK_HT_W_SEQ] != (uint16_t)(p->seq + 1u)) {
         return LINK_NACK_BAD_VALUE;
     }
+    const bool after_more = p->more != 0u;
+
     p->seq = in[LINK_HT_W_SEQ];
     memcpy(p->last_cmd, in, sizeof(p->last_cmd));
     p->refusal = (uint8_t)dispatch(p, (link_hitec_op_t)op, port, in, now_ms);
+    /* A step taken is a step of a write when it carries the bit or follows
+     * a step that did: the write's last step.  Any other step -- a read, a
+     * LISTEN of its own -- is not, and holds no OFF.  A refused command
+     * leaves the transaction that runs as it is. */
+    if (p->refusal == (uint8_t)LINK_HITEC_REF_NONE && is_step(op)) {
+        p->wstep = more || after_more ? 1u : 0u;
+    }
     /* The write's next step is to come only after a step that started
      * with the bit: any other command ends that (LINK_HT_W_CMD_MORE). */
     p->more = more && p->refusal == (uint8_t)LINK_HITEC_REF_NONE ? 1u : 0u;
@@ -998,7 +1008,7 @@ bool hitec_port_supply_hold(const hitec_port_t *p)
 bool hitec_port_writing(const hitec_port_t *p)
 {
     return p != NULL
-           && (p->state == (uint8_t)LINK_HITEC_BUSY
+           && ((p->state == (uint8_t)LINK_HITEC_BUSY && p->wstep != 0u)
                || (p->more != 0u && p->state != (uint8_t)LINK_HITEC_FREE));
 }
 
