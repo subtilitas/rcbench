@@ -397,9 +397,7 @@ void fs_event(const touch_event_t *e)
         new_event(e);
         break;
     case FILES_VIEW_TEXT:
-        if (text_view_event(e) == TEXT_VIEW_CHANGED) {
-            files_screen_invalidate();
-        }
+        fs_text_result(text_view_event(e));
         break;
     case FILES_VIEW_PANES:
     default:

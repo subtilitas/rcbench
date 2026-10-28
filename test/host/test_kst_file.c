@@ -2046,6 +2046,34 @@ static void parse_and_load(const char *text, size_t n)
     }
 }
 
+/*
+ * kst_file_checksum_line() is the test the reader makes, exported for the
+ * text editor: the first word "checksum" in any case, after spaces and
+ * tabs, ended by a space, a tab, '=', ':' or the line's end.
+ */
+TEST_CASE(a_checksum_line_is_named_as_the_reader_names_it)
+{
+    static const char *const yes[] = {
+        "checksum 1234ABCD", "CHECKSUM 1234ABCD", "ChEcKsUm 1234ABCD",
+        "checksum=1234ABCD", "checksum:1234ABCD", "checksum\t1234ABCD",
+        "  \tchecksum 1234ABCD", "checksum", "  checksum", "checksum =",
+    };
+    static const char *const no[] = {
+        "", "  ", "checksums 1234ABCD", "check sum 1234ABCD", "# checksum",
+        "checksum1234ABCD", "xchecksum", "checksu", "=checksum",
+    };
+    for (size_t i = 0u; i < sizeof(yes) / sizeof(yes[0]); ++i) {
+        CHECK(kst_file_checksum_line(yes[i], strlen(yes[i])));
+    }
+    for (size_t i = 0u; i < sizeof(no) / sizeof(no[0]); ++i) {
+        CHECK(!kst_file_checksum_line(no[i], strlen(no[i])));
+    }
+    CHECK(!kst_file_checksum_line(NULL, 0u));
+    /* The length bounds the line: "checksum" cut short is none. */
+    CHECK(!kst_file_checksum_line("checksum", 7u));
+    CHECK(kst_file_checksum_line("checksum 1", 8u));
+}
+
 TEST_CASE(forty_thousand_random_texts_are_read_without_a_fault)
 {
     static const char *const words[] = {
@@ -2164,6 +2192,7 @@ int main(void)
     RUN(a_checked_file_beyond_a_hard_limit_is_refused_whole);
     RUN(a_servo_that_breaks_a_hard_rule_itself_has_no_line_at_fault);
     RUN(the_limits_compare_with_the_backup_the_caller_passes);
+    RUN(a_checksum_line_is_named_as_the_reader_names_it);
     RUN(forty_thousand_random_texts_are_read_without_a_fault);
     return test_summary("kst_file");
 }

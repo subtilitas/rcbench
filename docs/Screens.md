@@ -2579,7 +2579,8 @@ folder the entry is in, or a folder into itself, are refused:
 The text viewer shows a file of the card as text, read-only. OPEN on a
 file in FILES opens it, and OPEN on a report in [Logs](#logs). The home
 tag closes it: onto the panes when FILES opened it, back to LOGS when LOGS
-did. Leaving FILES closes it too. It opens a file of up to 1MiB
+did. Leaving FILES closes it too, unless the [editor](#the-text-editor)
+holds unsaved text. It opens a file of up to 1MiB
 (1,048,576 bytes) and up to 65,536 line ends; the card task reads it
 whole, in chunks of 16KiB, while the screen shows `Reading the card.`
 
@@ -2589,7 +2590,8 @@ front cut to `..` past 44 cells), its size, READ-ONLY, and at the right
 at the file's end starts no line of its own.
 
 The text stands in a panel of 1008 x 372px from body y 60: 18 rows of 92
-cells of the 10 x 20 face, 20px apart. SMALL, at the footer's left,
+cells of the 10 x 20 face, 20px apart. EDIT, the footer's second button,
+opens the [editor](#the-text-editor). SMALL, at the footer's left,
 switches to the 8 x 16 face: 22 rows of 115 cells, 16px apart, for a
 report's step table; it then reads NORMAL. The choice holds for every file
 until the panel restarts.
@@ -2645,6 +2647,111 @@ and the card's own answers, such as
 The viewer holds the file in one buffer of 1MiB and its line index of
 256KiB, both in PSRAM (pseudo-static random-access memory). The time a
 read of 1MiB takes on the panel's card is not measured.
+
+### The text editor
+
+![A line typed into a report, the keyboard open](img/files-edit.png)
+
+EDIT in the viewer switches it to the editor and opens the keyboard. The
+editor changes the text in the panel's memory; SAVE writes it to the
+card. The panel then holds 4 rows of the text (5 with SMALL) in a panel of
+1008 x 92px from body y 60, and the keyboard from body y 158 to the alert
+band: 5 rows of 10 keys, 93 x 59px each, 6px apart. The character rows
+are the Wi-Fi keyboard's three layers: lower case, capitals (ABC), and the
+32 marks (#+=). DEL takes the character before the cursor. The bottom row
+is ENTER (2 keys wide), SPACE (4), `<-` and `->` (1 each) and DONE (2).
+A key acts on the release of the contact that pressed it, over the same
+key; a second contact is ignored while one is down. The keyboard types
+ASCII (0x20 to 0x7E); the letters Ä Ö Ü ä ö ü ß are drawn but not typed.
+
+The cursor is a bar 2px wide in the accent colour before the cell it
+types into. A tap on the text puts it on the nearest cell of the tapped
+row; past a line's end it stands at that end, under the last line at the
+text's end. `<-` and `->` move it one character, a line end of CR LF
+counting as one. After every key the text moves the least that keeps the
+cursor's row on the screen. The header shows EDITING while the text is as
+on the card, MODIFIED in the warning colour once it differs, and
+`LINE 3 OF 59` for the cursor's line.
+
+ENTER types the file's own line end: CR LF in a file whose first line
+ends with CR LF, LF otherwise and in an empty file. The editor holds the
+limits of the viewer: a key that would make the text larger than 1MiB
+types nothing and the header says `Text full: 1MB at most.`; ENTER at
+65,536 line ends types nothing and says `Text full: 65536 lines at most.`
+
+DONE, or the home tag, closes the keyboard; the footer then holds SAVE,
+REVERT and KEYBOARD at the left, PAGE UP and PAGE DOWN at the right, and a
+note of 3 rows of the 8 x 16 face between them. KEYBOARD opens the
+keyboard again.
+
+![A KST file saved with a comment: its checksum line is gone](img/files-edit-kst.png)
+
+SAVE writes the text as `<name>.NEW` in the file's folder, in chunks of
+16KiB on the card task, deletes `<name>` and gives the new file its name;
+the note then says `<name> saved.` From the tap on SAVE until the save
+ends the text does not change: a key types nothing, REVERT and the home
+tag wait, and the question of an open over the text shows DISCARD grey.
+A save that writes the text closes that question and opens the other
+file; a save that fails leaves the question with DISCARD live. SAVE is
+grey while the text is as on the card, and a tap on it then says
+`No changes to save.` SAVE is shut while the bench is ARMED, while a run
+is being logged and while the logger writes the file: the note says
+`Bench ARMED. The card is read-only.` or the reason in its own words, and
+the text stays as typed. A switch to ARMED or a run that starts during a
+save stops it before its next chunk; its `.NEW` is removed, the file on
+the card stays as it was, and the note says
+`Stopped: the bench switched to ARMED.` or
+`Stopped: a run is being logged.` A card taken out during a save leaves
+the text unsaved with `Not saved: the card was taken out or swapped.`;
+taken out between the delete and the rename, the card holds the whole
+text as `<name>.NEW` and no `<name>`, and RENAME in FILES gives it its
+name back.
+
+A file opens only without a NUL byte in its first 4kB. SAVE holds the
+text to the same test: an edit that brings a NUL from further in into the
+first 4kB is not saved, the note says
+`Not saved: a NUL byte in the first 4kB. FILES would not open the file again.`,
+and the text stays as typed. REVERT puts back such a file as loaded,
+without a second test. A file over the editor's 1MiB or 65,536 line ends
+leaves the text as it is, with the note of a key refused at that limit;
+a file FILES opened is within both.
+
+A KST file, one whose first line is `KST servo configuration, format`
+and a number, holds a checksum line when the servo programmer wrote it.
+SAVE of a changed KST file takes out every line the programmer's reader
+takes for a checksum line: its first word, after spaces and tabs, is
+`checksum` in any case, ended by a space, a tab, `=`, `:` or the line's
+end. The note says
+`Saved without the checksum line: the servo programmer reads it as
+edited.` The programmer then reads it as a file a person edited: from its
+value lines, with no checksum to match ([Programmer](#programmer)). A KST
+file saved unchanged
+keeps its checksum. A file in `BENCH/ESC/CONF` ending in `.json` is read
+when the panel starts; the note after its save says
+`Saved. The panel reads it at its next start.`
+
+![The question over unsaved changes](img/files-edit-unsaved.png)
+
+REVERT, and the home tag with the keyboard closed while the text is
+unsaved, ask first: UNSAVED CHANGES over STAY and DISCARD, 300 x 56px
+each. STAY, or the home tag over the question, keeps the text. DISCARD
+after REVERT puts the text back to the file as loaded or last saved, the
+editor still on; DISCARD after the home tag does the same and shows the
+viewer, and the next home tag leaves it as the viewer's does, to the
+panes or back to LOGS. With the text as on the card the home tag shows
+the viewer without a question. An OPEN from LOGS or from FILES while the
+text is unsaved shows the question too; DISCARD then opens the other
+file, STAY keeps the text and drops the open.
+
+STOP stops the bench and leaves the editor and its text as they are;
+SAVE is then shut while the bench is ARMED. A route that leaves FILES
+without the home tag keeps an editor with unsaved text, and FILES shows
+it again on the way back in. There is no undo of single keys: DISCARD
+puts back the whole file. The editor keeps the file as loaded in a second
+buffer of 1MiB in PSRAM for DISCARD. The servo programmer's journal
+`BENCH/KST/CONF/KST.TXT` does not open, and the fault log
+`BENCH/RCBENCH.LOG` opens with EDIT grey; a tap on it says why. The
+typing rate the panel keeps up with is not measured.
 
 ### RESCAN
 

@@ -874,6 +874,80 @@ TEST_CASE(a_load_in_place_and_its_abort)
 }
 
 /* Every call takes NULL without a crash. */
+/*
+ * After text_buf_settle() the gap is behind the text: reading every line,
+ * as a draw does, moves no byte, and the serialised text is unchanged.  An
+ * edit after it works as before.
+ */
+TEST_CASE(a_settled_text_moves_no_byte_on_a_line_read)
+{
+    CHECK_EQ(load("ab\ncd\nef\n", 9u), TEXT_BUF_OK);
+    text_buf_set_cursor(&g_tb, 4u);
+    CHECK_EQ(text_buf_insert(&g_tb, 'X'), TEXT_BUF_OK);    /* gap in line 1 */
+    CHECK(g_tb.gap_at < g_tb.len);
+    text_buf_settle(&g_tb);
+    CHECK_EQ(g_tb.gap_at, g_tb.len);
+    uint8_t before[16];
+    const size_t n = text_buf_read(&g_tb, 0u, before, sizeof(before));
+    CHECK_EQ(n, 10u);
+    for (size_t l = 0u; l < text_buf_lines(&g_tb); ++l) {
+        size_t len = 0u;
+        (void)text_buf_line(&g_tb, l, &len);
+        CHECK_EQ(g_tb.gap_at, g_tb.len);
+    }
+    uint8_t after[16];
+    CHECK_EQ(text_buf_read(&g_tb, 0u, after, sizeof(after)), n);
+    CHECK(memcmp(before, after, n) == 0);
+    CHECK_EQ(text_buf_insert(&g_tb, 'Y'), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_read(&g_tb, 0u, after, sizeof(after)), 11u);
+    CHECK(memcmp(after, "ab\ncXYd\nef\n", 11u) == 0);
+    text_buf_settle(NULL);
+}
+
+/*
+ * text_buf_restore() puts back a text the buffer held, without the NUL
+ * test of an opened file: an edit that shortened the text can bring a NUL
+ * into the first TEXT_BUF_PROBE bytes.  The BOM and the line ends are
+ * taken as text_buf_load() takes them.  A text over the room or the index
+ * is refused before a byte is copied: the buffer stays as it was.
+ */
+TEST_CASE(a_restore_takes_a_nul_back_and_a_refusal_keeps_the_text)
+{
+    static const char nul[] = "ab\0cd\nef";
+    CHECK_EQ(load(nul, 8u), TEXT_BUF_NOT_TEXT);
+    CHECK_EQ(loads("xy\n"), TEXT_BUF_OK);
+    const uint32_t rev = text_buf_revision(&g_tb);
+    CHECK_EQ(text_buf_restore(&g_tb, nul, 8u), TEXT_BUF_OK);
+    CHECK(same_file(nul, 8u));
+    CHECK_EQ(text_buf_lines(&g_tb), 2u);
+    CHECK(!text_buf_dirty(&g_tb));
+    CHECK(text_buf_revision(&g_tb) != rev);
+    CHECK_EQ(text_buf_restore(&g_tb, "\xEF\xBB\xBFq\r\n", 6u), TEXT_BUF_OK);
+    CHECK(text_buf_bom(&g_tb));
+    CHECK_EQ(text_buf_len(&g_tb), 3u);
+    CHECK_EQ(text_buf_eol(&g_tb), TEXT_EOL_CRLF);
+    CHECK_EQ(text_buf_restore(&g_tb, NULL, 0u), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_size(&g_tb), 0u);
+    /* 8 bytes and 2 line ends of room. */
+    fresh(8u, 2u);
+    CHECK_EQ(text_buf_load(&g_tb, "ab\n", 3u), TEXT_BUF_OK);
+    text_buf_set_cursor(&g_tb, 1u);
+    CHECK_EQ(text_buf_restore(&g_tb, "a\nb\rc\n", 6u), TEXT_BUF_TOO_MANY);
+    CHECK_EQ(text_buf_restore(&g_tb, "a\r\nb\r\nc", 7u), TEXT_BUF_OK);
+    CHECK_EQ(text_buf_lines(&g_tb), 3u);
+    CHECK_EQ(text_buf_load(&g_tb, "ab\n", 3u), TEXT_BUF_OK);
+    text_buf_set_cursor(&g_tb, 1u);
+    CHECK_EQ(text_buf_restore(&g_tb, "123456789", 9u), TEXT_BUF_TOO_LARGE);
+    CHECK(same("ab\n"));
+    CHECK_EQ(text_buf_cursor(&g_tb), 1u);
+    CHECK_EQ(text_buf_restore(&g_tb, "a\nb\rc\n", 6u), TEXT_BUF_TOO_MANY);
+    CHECK(same("ab\n"));
+    CHECK_EQ(text_buf_cursor(&g_tb), 1u);
+    CHECK_EQ(text_buf_restore(&g_tb, NULL, 1u), TEXT_BUF_ARG);
+    CHECK_EQ(text_buf_restore(NULL, "a", 1u), TEXT_BUF_ARG);
+    CHECK(same("ab\n"));
+}
+
 TEST_CASE(null_arguments_are_refused)
 {
     uint8_t m[4];
@@ -957,6 +1031,8 @@ int main(void)
     RUN(dirty_and_the_revision);
     RUN(serialise_equals_load);
     RUN(a_load_in_place_and_its_abort);
+    RUN(a_settled_text_moves_no_byte_on_a_line_read);
+    RUN(a_restore_takes_a_nul_back_and_a_refusal_keeps_the_text);
     RUN(null_arguments_are_refused);
     free(g_mem);
     free(g_ends);

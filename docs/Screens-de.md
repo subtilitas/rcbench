@@ -2857,7 +2857,9 @@ Der Textbetrachter zeigt eine Datei der Karte als Text, nur lesend.
 ÖFFNEN auf einer Datei in FILES öffnet ihn, ebenso ÖFFNEN auf einem
 Bericht in [Logs](#logs). Das Home-Tag schließt ihn: zu den Spalten, wenn
 FILES ihn geöffnet hat, zurück zu LOGS, wenn LOGS ihn geöffnet hat. Das
-Verlassen von FILES schließt ihn auch. Er öffnet eine Datei von bis zu
+Verlassen von FILES schließt ihn auch, außer der
+[Editor](#der-texteditor) hält ungespeicherten Text. Er öffnet eine Datei
+von bis zu
 1MiB (1.048.576 Bytes) und bis zu 65.536 Zeilenenden; die Kartenaufgabe
 liest sie ganz, in Stücken von 16KiB, während der Bildschirm
 `Lese die Karte.` zeigt.
@@ -2869,8 +2871,9 @@ Zeilen der Datei. Ein Zeilenende am Ende der Datei beginnt keine eigene
 Zeile.
 
 Der Text steht in einem Feld von 1008 x 372px ab Körper-y 60: 18 Zeilen
-zu 92 Zeichen in der Schrift 10 x 20, 20px auseinander. KLEIN, links in
-der Fußzeile, schaltet auf die Schrift 8 x 16: 22 Zeilen zu 115 Zeichen,
+zu 92 Zeichen in der Schrift 10 x 20, 20px auseinander. BEARBEITEN, der
+zweite Knopf der Fußzeile, öffnet den [Editor](#der-texteditor). KLEIN,
+links in der Fußzeile, schaltet auf die Schrift 8 x 16: 22 Zeilen zu 115 Zeichen,
 16px auseinander, für die Stufentabelle eines Berichts; der Knopf heißt
 dann NORMAL. Die Wahl gilt für jede Datei, bis das Panel neu startet.
 
@@ -2931,6 +2934,123 @@ Eine leere Datei zeigt `Die Datei ist leer.`
 Der Betrachter hält die Datei in einem Puffer von 1MiB und ihren
 Zeilenindex von 256KiB, beide im PSRAM (Pseudo-Static Random-Access
 Memory). Wie lange das Lesen von 1MiB von der Karte des Panels dauert, ist
+nicht gemessen.
+
+### Der Texteditor
+
+![Eine Zeile in einen Bericht getippt, die Tastatur offen](img/de/files-edit.png)
+
+BEARBEITEN im Textbetrachter schaltet ihn auf den Editor und öffnet die
+Tastatur. Der Editor ändert den Text im Speicher des Panels; SPEICHERN
+schreibt ihn auf die Karte. Das Panel zeigt dann 4 Zeilen des Texts (5 mit
+KLEIN) in einem Feld von 1008 x 92px ab Körper-y 60 und die Tastatur ab
+Körper-y 158 bis zum Alarmband: 5 Reihen zu 10 Tasten, je 93 x 59px, 6px
+auseinander. Die Zeichenreihen sind die drei Ebenen der Wi-Fi-Tastatur:
+Kleinbuchstaben, Großbuchstaben (ABC) und die 32 Zeichen (#+=). DEL nimmt
+das Zeichen vor dem Cursor. Die unterste Reihe ist ENTER (2 Tasten breit),
+LEERZEICHEN (4), `<-` und `->` (je 1) und FERTIG (2). Eine Taste wirkt beim
+Loslassen des Kontakts, der sie gedrückt hat, über derselben Taste; ein
+zweiter Kontakt zählt nicht, solange einer liegt. Die Tastatur tippt ASCII
+(0x20 bis 0x7E); die Buchstaben Ä Ö Ü ä ö ü ß werden gezeichnet, aber nicht
+getippt.
+
+Der Cursor ist ein Balken von 2px in der Akzentfarbe vor dem Zeichen, in
+das er tippt. Ein Tipp auf den Text setzt ihn auf das nächste Zeichen der
+getippten Bildschirmzeile; hinter dem Ende einer Zeile steht er an diesem
+Ende, unter der letzten Zeile am Ende des Texts. `<-` und `->` bewegen ihn
+um ein Zeichen, ein Zeilenende CR LF zählt als eines. Nach jeder Taste
+rückt der Text so wenig wie nötig, damit die Zeile des Cursors zu sehen
+bleibt. Die Kopfzeile zeigt BEARBEITUNG, solange der Text der auf der
+Karte ist, GEÄNDERT in der Warnfarbe, sobald er abweicht, und
+`ZEILE 3 VON 59` für die Zeile des Cursors.
+
+ENTER tippt das Zeilenende der Datei: CR LF in einer Datei, deren erste
+Zeile mit CR LF endet, sonst LF, auch in einer leeren Datei. Der Editor
+hält die Grenzen des Betrachters: eine Taste, die den Text über 1MiB
+brächte, tippt nichts, und die Kopfzeile sagt `Text voll: höchstens 1MB.`;
+ENTER bei 65.536 Zeilenenden tippt nichts und sagt
+`Text voll: höchstens 65536 Zeilen.`
+
+FERTIG oder das Home-Tag schließt die Tastatur; die Fußzeile hält dann
+SPEICHERN, VERWERFEN und TASTATUR links, SEITE HOCH und SEITE RUNTER
+rechts und dazwischen eine Notiz von 3 Zeilen der Schrift 8 x 16. TASTATUR
+öffnet die Tastatur wieder.
+
+![Eine KST-Datei mit einem Kommentar gespeichert: ihre Prüfsummenzeile ist weg](img/de/files-edit-kst.png)
+
+SPEICHERN schreibt den Text als `<Name>.NEW` in den Ordner der Datei, in
+Stücken von 16KiB auf der Kartenaufgabe, löscht `<Name>` und gibt der
+neuen Datei ihren Namen; die Notiz sagt dann `<Name> gespeichert.` Vom
+Tipp auf SPEICHERN bis zum Ende des Speicherns ändert sich der Text nicht:
+eine Taste tippt nichts, VERWERFEN und das Home-Tag warten, und die Frage
+eines Öffnens über dem Text zeigt VERWERFEN grau. Ein Speichern, das den
+Text schreibt, schließt diese Frage und öffnet die andere Datei; ein
+fehlgeschlagenes lässt die Frage mit wirksamem VERWERFEN stehen. SPEICHERN ist grau, solange der
+Text der auf der Karte ist, und ein Tipp darauf sagt dann
+`Keine Änderungen zu speichern.` SPEICHERN ist gesperrt, solange der
+Prüfstand ARMED ist, ein Lauf aufgezeichnet wird oder der Logger die Datei
+schreibt: die Notiz sagt `Prüfstand ARMED. Die Karte ist nur lesbar.` oder
+den Grund in eigenen Worten, und der Text bleibt wie getippt. Ein Wechsel
+auf ARMED oder ein Lauf, der während des Speicherns beginnt, hält es vor
+dem nächsten Stück an; seine `.NEW` wird entfernt, die Datei auf der Karte
+bleibt wie sie war, und die Notiz sagt
+`Gestoppt: Der Prüfstand ist ARMED.` oder
+`Gestoppt: Ein Lauf wird aufgezeichnet.` Eine Karte, die während des
+Speicherns entnommen wird, lässt den Text ungespeichert mit
+`Nicht gespeichert: Die Karte wurde entnommen oder getauscht.`; zwischen
+dem Löschen und dem Umbenennen entnommen, hält die Karte den ganzen Text
+als `<Name>.NEW` und kein `<Name>`, und UMBENENNEN in FILES gibt ihr den
+Namen zurück.
+
+Eine Datei öffnet sich nur ohne NUL-Byte in den ersten 4kB. SPEICHERN
+hält den Text an dieselbe Prüfung: eine Änderung, die ein NUL-Byte von
+weiter hinten in die ersten 4kB bringt, wird nicht gespeichert, die Notiz
+sagt
+`Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`,
+und der Text bleibt wie getippt. VERWERFEN setzt eine solche Datei so
+zurück, wie sie geladen wurde, ohne zweite Prüfung. Eine Datei über
+1MiB oder 65.536 Zeilenenden des Editors lässt den Text, wie er ist, mit
+der Notiz einer Taste, die an dieser Grenze abgelehnt wird; eine Datei,
+die FILES geöffnet hat, liegt innerhalb beider.
+
+Eine KST-Datei, deren erste Zeile `KST servo configuration, format` und
+eine Zahl ist, hält eine Prüfsummenzeile, wenn der Servo-Programmierer
+sie geschrieben hat. SPEICHERN einer geänderten KST-Datei nimmt jede
+Zeile heraus, die der Leser des Programmierers als Prüfsummenzeile nimmt:
+ihr erstes Wort nach Leerzeichen und Tabs ist `checksum` in beliebiger
+Schreibung, gefolgt von einem Leerzeichen, einem Tab, `=`, `:` oder dem
+Zeilenende. Die Notiz sagt `Ohne Prüfsummenzeile gespeichert: der
+Servo-Programmierer liest sie als bearbeitet.` Der Programmierer liest sie
+dann als Datei, die ein Mensch bearbeitet hat: aus ihren Wertzeilen, ohne
+Prüfsumme ([Programmierer](#programmierer)). Eine unverändert gespeicherte
+KST-Datei behält ihre Prüfsumme. Eine Datei in `BENCH/ESC/CONF`, die auf
+`.json` endet, liest das Panel beim Start; die Notiz nach ihrem Speichern
+sagt `Gespeichert. Das Panel liest die Datei beim nächsten Start.`
+
+![Die Frage vor ungespeicherten Änderungen](img/de/files-edit-unsaved.png)
+
+VERWERFEN und das Home-Tag bei geschlossener Tastatur fragen bei
+ungespeichertem Text zuerst: UNGESPEICHERTE ÄNDERUNGEN über BLEIBEN und
+VERWERFEN, je 300 x 56px. BLEIBEN oder das Home-Tag über der Frage
+behält den Text. VERWERFEN nach dem Knopf VERWERFEN setzt den Text auf die
+Datei zurück, wie sie geladen oder zuletzt gespeichert wurde, der Editor
+bleibt an; VERWERFEN nach dem Home-Tag tut dasselbe und zeigt den
+Betrachter, und das nächste Home-Tag verlässt ihn wie beim Betrachter, zu
+den Spalten oder zurück zu LOGS. Ist der Text der auf der Karte, zeigt das
+Home-Tag den Betrachter ohne Frage. Ein ÖFFNEN aus LOGS oder aus FILES bei
+ungespeichertem Text zeigt die Frage ebenso; VERWERFEN öffnet dann die
+andere Datei, BLEIBEN behält den Text und lässt das Öffnen fallen.
+
+STOP hält den Prüfstand an und lässt den Editor und seinen Text, wie sie
+sind; SPEICHERN ist dann gesperrt, solange der Prüfstand ARMED ist. Ein
+Weg, der FILES ohne das Home-Tag verlässt, behält einen Editor mit
+ungespeichertem Text, und FILES zeigt ihn beim Zurückkommen wieder. Einzelne
+Tasten lassen sich nicht rückgängig machen: VERWERFEN setzt die ganze
+Datei zurück. Der Editor hält die Datei, wie sie geladen wurde, für
+VERWERFEN in einem zweiten Puffer von 1MiB im PSRAM. Das Journal des
+Servo-Programmierers `BENCH/KST/CONF/KST.TXT` öffnet sich nicht, und das
+Fehlerprotokoll `BENCH/RCBENCH.LOG` öffnet sich mit grauem BEARBEITEN; ein
+Tipp darauf sagt warum. Welche Tippgeschwindigkeit das Panel mithält, ist
 nicht gemessen.
 
 ### AKTUALISIEREN

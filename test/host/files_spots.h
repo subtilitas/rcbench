@@ -89,3 +89,18 @@ enum {
 #define FS_SPOT_TV_PGUP_CX  800
 #define FS_SPOT_TV_PGDN_CX  946
 #define FS_SPOT_TV_FOOT_CY  466
+/** @brief The middles of EDIT in the viewer, and of SAVE, REVERT and
+ *         KEYBOARD in the editor. */
+#define FS_SPOT_TV_EDIT_CX   224
+#define FS_SPOT_TV_SAVE_CX   78
+#define FS_SPOT_TV_REVERT_CX 224
+#define FS_SPOT_TV_KEYS_CX   370
+/** @brief The editor's keyboard: its area under a panel of 4 rows. */
+#define FS_SPOT_TV_KB_X 8
+#define FS_SPOT_TV_KB_Y 158
+#define FS_SPOT_TV_KB_W 1008
+#define FS_SPOT_TV_KB_H 338
+/** @brief The question's STAY and DISCARD, their middles. */
+#define FS_SPOT_TV_Q_CY        332
+#define FS_SPOT_TV_STAY_CX     336
+#define FS_SPOT_TV_DISCARD_CX  688

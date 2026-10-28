@@ -143,6 +143,7 @@ TRACKED = [
     "shared/ui/files_text.c",
     "shared/ui/text_view.c",
     "shared/ui/text_view_draw.c",
+    "shared/ui/text_view_keys.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",

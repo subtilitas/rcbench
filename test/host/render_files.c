@@ -327,7 +327,9 @@ void render_files_prepare(const char *view)
     fh_init(&s_fh);
     const bool nocard = is(view, "files-nocard");
     if (!nocard) {
-        card(strncmp(view, "files-view", 10) == 0 || is(view, "logs-report"));
+        card(strncmp(view, "files-view", 10) == 0
+             || strncmp(view, "files-edit", 10) == 0
+             || is(view, "logs-report"));
     } else {
         fk_pull(&s_fh.card);
         s_fh.state = CARD_STATE_NONE;
@@ -350,7 +352,7 @@ void render_files_prepare(const char *view)
     if (is(view, "files-hidden")) {
         fk_file(&s_fh.card, "OLD/.DS_Store", NULL, 6148u);
     }
-    s_fh.armed = is(view, "files-armed");
+    s_fh.armed = render_files_armed(view);
     s_fh.volume = nocard ? NULL : "RCBENCH";
     if (is(view, "files-logging")) {
         s_fh.marks.test = 5u;       /* USER/LOGS/ATEST005.CSV is open */
@@ -373,7 +375,7 @@ void render_files_prepare(const char *view)
 
 bool render_files_armed(const char *view)
 {
-    return is(view, "files-armed");
+    return is(view, "files-armed") || is(view, "files-edit-armed");
 }
 
 void render_files_settle(void)
@@ -411,11 +413,168 @@ static void pose_viewer(const char *view)
     }
 }
 
+/** @brief A key of the editor's keyboard, on its area under 4 rows. */
+static void ed_key(int k)
+{
+    ui_textkey_t kb;
+    memset(&kb, 0, sizeof(kb));
+    ui_textkey_open_editor(&kb, gfx_rect_make(FS_SPOT_TV_KB_X,
+                                              FS_SPOT_TV_KB_Y,
+                                              FS_SPOT_TV_KB_W,
+                                              FS_SPOT_TV_KB_H));
+    const gfx_rect_t r = ui_textkey_key_rect(&kb, k);
+    ftap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/**
+ * @brief Type @p text on the editor's keyboard: small letters, capitals,
+ *        digits, spaces, line feeds and the marks , . # : and -.
+ * @param text  the characters
+ */
+static void ed_type(const char *text)
+{
+    static const char lower[] = "1234567890" "qwertyuiop" "asdfghjkl-"
+                                " zxcvbnm";
+    static const char marks[] = "!\"#$%&'()*" "+,-./:;<=>";
+    for (const char *p = text; *p != '\0'; ++p) {
+        if (*p == ' ' || *p == '\n') {
+            ed_key(*p == ' ' ? UI_TK_SPACE : UI_TK_ENTER);
+            continue;
+        }
+        const char low = (*p >= 'A' && *p <= 'Z') ? (char)(*p - 'A' + 'a')
+                                                   : *p;
+        const char *at = strchr(lower + 1, low);
+        const char *mk = strchr(marks, *p);
+        if (*p != '-' && mk != NULL) {
+            ed_key(UI_TK_LAYER);
+            ed_key((int)(mk - marks));
+            ed_key(UI_TK_LAYER);
+        } else if (at != NULL && low != *p) {
+            ed_key(UI_TK_SHIFT);
+            ed_key((int)(at - lower));
+            ed_key(UI_TK_SHIFT);
+        } else if (at != NULL) {
+            ed_key((int)(at - lower));
+        } else {
+            fprintf(stderr, "render_files: no key %c\n", *p);
+            exit(2);
+        }
+    }
+}
+
+/**
+ * @brief Open @p name of @p dir in the viewer as OPEN does, and EDIT.
+ * @param dir   the folder
+ * @param name  the file
+ */
+static void edit_file(const char *dir, const char *name)
+{
+    char path[160];
+    snprintf(path, sizeof(path), "%s/%s", dir, name);
+    const fk_node_t *n = fk_get(&s_fh.card, path);
+    (void)files_screen_open_text(dir, name, s_fh.card.mount,
+                                 (n != NULL) ? n->size : 0u, false);
+    settle();
+    ftap(FS_SPOT_TV_EDIT_CX, FS_SPOT_TV_FOOT_CY);
+}
+
+/** @brief A tap on the editor's footer button whose middle is @p cx. */
+static void ed_foot(int cx)
+{
+    ftap(cx, FS_SPOT_TV_FOOT_CY);
+}
+
+/**
+ * @brief Tap FILES into a view of the text editor.
+ * @param view  the view's name, "files-edit..."
+ */
+static void pose_editor(const char *view)
+{
+    const bool de = ui_text_language() == UI_LANG_DE;
+    if (is(view, "files-edit-kst")) {
+        edit_file("BENCH/KST/CONF", "MG90S.TXT");
+        ftap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + 5);
+        ed_type(de ? "\n# Ersatzservo, Ruder links" : "\n# spare servo, left aileron");
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
+    if (is(view, "files-edit-esc")) {
+        edit_file("BENCH/ESC/CONF", "YGE-135.JSON");
+        ed_type(" ");
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
+    if (is(view, "files-edit-nul")) {
+        /* A NUL at 4,096: the first byte deleted brings it into the 4kB
+         * an open tests, and SAVE refuses. */
+        static char nul[4100];
+        for (size_t i = 0; i < 4096u; ++i) {
+            nul[i] = (i % 40u == 39u) ? '\n' : 'x';
+        }
+        memcpy(nul + 4096, "\0yz\n", 4u);
+        put("USER/LOGS/NUL.TXT", nul, sizeof(nul));
+        edit_file("USER/LOGS", "NUL.TXT");
+        ed_key(UI_TK_RIGHT);
+        ed_key(UI_TK_DEL);
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
+    if (is(view, "files-edit-full") || is(view, "files-edit-lines")) {
+        static char big[1048576];
+        const bool full = is(view, "files-edit-full");
+        const size_t n = full ? sizeof(big) : 65536u;
+        for (size_t i = 0; i < n; ++i) {
+            big[i] = (!full || i % 64u == 63u) ? '\n' : 'a';
+        }
+        put("USER/LOGS/BIG.TXT", big, n);
+        edit_file("USER/LOGS", "BIG.TXT");
+        ed_type(full ? "q" : "\n");
+        return;
+    }
+    edit_file("USER/LOGS", "ATEST005.TXT");
+    /* After the result line: a line of the operator's own. */
+    ftap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + FS_SPOT_TV_PITCH + 5);
+    ed_type(de ? "\nNotiz: Horn vor dem Lauf neu montiert."
+               : "\nNote: horn refitted before the run.");
+    if (is(view, "files-edit")) {
+        return;                         /* the keyboard open */
+    }
+    ed_key(UI_TK_DONE);
+    if (is(view, "files-edit-unsaved")) {
+        (void)files_screen()->back();   /* the home tag: the question */
+    } else if (is(view, "files-edit-revert")) {
+        ed_foot(FS_SPOT_TV_REVERT_CX);
+    } else if (is(view, "files-edit-open")) {
+        (void)files_screen_open_text("", "NOTES.TXT", s_fh.card.mount, 512u,
+                                     false);
+    } else if (is(view, "files-edit-saving")) {
+        s_fh.defer = true;
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-card")) {
+        fk_fail(&s_fh.card, FK_WRITE, 1, FM_ERR_CARD_GONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-saved")) {
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-nochange")) {
+        ed_foot(FS_SPOT_TV_REVERT_CX);
+        ftap(FS_SPOT_TV_DISCARD_CX, FS_SPOT_TV_Q_CY);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    }
+    /* files-edit-armed: the text unsaved, SAVE shut by the gate. */
+}
+
 void render_files_pose(const char *view)
 {
     settle();
     if (strncmp(view, "files-view", 10) == 0) {
         pose_viewer(view);
+        return;
+    }
+    if (strncmp(view, "files-edit", 10) == 0) {
+        pose_editor(view);
         return;
     }
     if (is(view, "files-reading") || is(view, "files-nocard")

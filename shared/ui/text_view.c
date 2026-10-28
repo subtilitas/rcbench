@@ -2,7 +2,8 @@
  * @file text_view.c
  * @brief The text viewer: the state, the file's load, the scrolling, the
  *        verdict words and the touch events (text_view.h).
- *        text_view_draw.c draws it; text_view_int.h is what the two share.
+ *        text_view_draw.c draws it, text_view_keys.c is the editor;
+ *        text_view_int.h is what they share.
  *
  * The top of the screen is a line and a row of that line, so a scroll
  * walks only the lines it crosses: a file of 65,536 lines is never walked
@@ -37,6 +38,9 @@ text_buf_t tv_tb;
 static uint8_t s_mem[TEXT_BUF_FILE_MAX];
 /** @brief Its line index, 256KiB, in PSRAM on the panel. */
 static uint32_t s_ends[TEXT_BUF_ENDS_MAX];
+/** @brief The file as loaded or last saved, for DISCARD: 1MiB, in PSRAM
+ *         on the panel. */
+uint8_t tv_orig[TEXT_BUF_FILE_MAX];
 
 /* -------------------------------------------------------------- words */
 
@@ -105,6 +109,16 @@ const text_hl_words_t *text_view_words(void)
 
 /* ----------------------------------------------------------- the file */
 
+/** @brief The editor off: its keyboard, its question and its note gone. */
+static void edit_off(void)
+{
+    tv.edit = false;
+    tv.saving = false;
+    tv.ask = TEXT_VIEW_ASK_NONE;
+    tv.note = TV_NOTE_NONE;
+    ui_textkey_close(&tv.kb);
+}
+
 void text_view_reset(void)
 {
     memset(&tv, 0, sizeof(tv));
@@ -125,6 +139,7 @@ void text_view_begin(const char *dir, const char *name, uint64_t size)
     tv.size = size;
     tv.kind = text_hl_kind_of(tv.name);
     tv.state = TEXT_VIEW_LOADING;
+    edit_off();
     tv.err = FM_OK;
     tv.tb_err = TEXT_BUF_OK;
     tv.top_line = 0u;
@@ -169,6 +184,7 @@ void text_view_loaded(fm_err_t err, size_t len)
 void text_view_close(void)
 {
     text_view_cancel_press();
+    edit_off();
     tv.state = TEXT_VIEW_CLOSED;
     tv.dir[0] = '\0';
     tv.name[0] = '\0';
@@ -206,7 +222,36 @@ bool text_view_small(void)
 
 int text_view_rows(void)
 {
+    if (tv.kb.open) {
+        return tv.small ? TV_KB_ROWS_SMALL : TV_KB_ROWS_NORMAL;
+    }
     return tv.small ? TEXT_VIEW_ROWS_SMALL : TEXT_VIEW_ROWS_NORMAL;
+}
+
+gfx_rect_t tv_area(void)
+{
+    return gfx_rect_make(TV_L, TV_AREA_Y, TV_W,
+                         tv.kb.open ? TV_KB_AREA_H : TV_AREA_H);
+}
+
+gfx_rect_t tv_bar(void)
+{
+    const gfx_rect_t a = tv_area();
+    return gfx_rect_make(TV_R - 4 - TV_BAR_W, a.y + 4, TV_BAR_W, a.h - 8);
+}
+
+void tv_say(ui_text_id_t id)
+{
+    tv.note = TV_NOTE_TEXT;
+    tv.note_id = id;
+    ++tv.rev;
+}
+
+void tv_say_err(fm_err_t err)
+{
+    tv.note = TV_NOTE_ERR;
+    tv.note_err = err;
+    ++tv.rev;
 }
 
 unsigned text_view_cells(void)
@@ -226,23 +271,20 @@ const gfx_font_t *tv_face(void)
 
 size_t text_view_lines(void)
 {
-    if (tv.state != TEXT_VIEW_SHOWN || text_buf_len(&tv_tb) == 0u) {
+    if (tv.state != TEXT_VIEW_SHOWN
+        || (!tv.edit && text_buf_len(&tv_tb) == 0u)) {
         return 0u;
     }
     size_t n = text_buf_lines(&tv_tb);
-    /* A line end at the file's end starts no line of its own. */
-    if (n > 1u && text_buf_line_len(&tv_tb, n - 1u) == 0u) {
+    /* A line end at the file's end starts no line of its own, unless the
+     * editor's cursor is to stand on it. */
+    if (!tv.edit && n > 1u && text_buf_line_len(&tv_tb, n - 1u) == 0u) {
         --n;
     }
     return n;
 }
 
-/**
- * @brief Rows line @p line takes at the face's width.
- * @param line  the line
- * @return its rows, 1 at least
- */
-static size_t rows_of(size_t line)
+size_t tv_rows_of(size_t line)
 {
     const size_t r = text_buf_rows(&tv_tb, line, text_view_cells());
     return (r > 0u) ? r : 1u;
@@ -255,7 +297,7 @@ size_t tv_max_top(size_t *row)
     *row = 0u;
     while (l > 0u) {
         --l;
-        const size_t r = rows_of(l);
+        const size_t r = tv_rows_of(l);
         if (r >= need) {
             *row = r - need;
             return l;
@@ -278,9 +320,7 @@ static bool past(size_t line, size_t row, size_t ml, size_t mr)
     return line > ml || (line == ml && row > mr);
 }
 
-/** @brief The top held to the text: its row inside its line, and not past
- *         the last screen. */
-static void clamp_top(void)
+void tv_clamp_top(void)
 {
     size_t mr;
     const size_t ml = tv_max_top(&mr);
@@ -288,8 +328,8 @@ static void clamp_top(void)
         tv.top_line = ml;
         tv.top_row = mr;
     }
-    if (tv.top_row >= rows_of(tv.top_line)) {
-        tv.top_row = rows_of(tv.top_line) - 1u;
+    if (tv.top_row >= tv_rows_of(tv.top_line)) {
+        tv.top_row = tv_rows_of(tv.top_line) - 1u;
     }
 }
 
@@ -297,7 +337,7 @@ void text_view_set_small(bool small)
 {
     tv.small = small;
     tv.top_row = 0u;
-    clamp_top();
+    tv_clamp_top();
 }
 
 size_t text_view_top(size_t *row)
@@ -315,13 +355,13 @@ void text_view_scroll(long rows)
         return;
     }
     while (rows > 0) {
-        const size_t left = rows_of(tv.top_line) - 1u - tv.top_row;
+        const size_t left = tv_rows_of(tv.top_line) - 1u - tv.top_row;
         if ((size_t)rows <= left) {
             tv.top_row += (size_t)rows;
             break;
         }
         if (tv.top_line + 1u >= lines) {
-            tv.top_row = rows_of(tv.top_line) - 1u;
+            tv.top_row = tv_rows_of(tv.top_line) - 1u;
             break;
         }
         rows -= (long)left + 1;
@@ -339,9 +379,27 @@ void text_view_scroll(long rows)
         }
         rows += (long)tv.top_row + 1;
         --tv.top_line;
-        tv.top_row = rows_of(tv.top_line) - 1u;
+        tv.top_row = tv_rows_of(tv.top_line) - 1u;
     }
-    clamp_top();
+    tv_clamp_top();
+}
+
+size_t tv_line_at(int k, size_t *row)
+{
+    const size_t lines = text_view_lines();
+    size_t line = tv.top_line;
+    size_t r = tv.top_row;
+    while (k > 0 && line < lines) {
+        if (r + 1u < tv_rows_of(line)) {
+            ++r;
+        } else {
+            ++line;
+            r = 0u;
+        }
+        --k;
+    }
+    *row = r;
+    return line;
 }
 
 bool text_view_at_start(void)
@@ -368,12 +426,12 @@ bool text_view_at_end(void)
  */
 static double pos_of(size_t line, size_t row)
 {
-    return (double)line + (double)row / (double)rows_of(line);
+    return (double)line + (double)row / (double)tv_rows_of(line);
 }
 
 void tv_bar_thumb(int *y, int *h)
 {
-    const gfx_rect_t t = TV_BAR;
+    const gfx_rect_t t = tv_bar();
     size_t mr;
     const size_t ml = tv_max_top(&mr);
     const long rows = text_view_rows();
@@ -403,7 +461,7 @@ void tv_bar_thumb(int *y, int *h)
  */
 static void bar_to(int top)
 {
-    const gfx_rect_t t = TV_BAR;
+    const gfx_rect_t t = tv_bar();
     size_t mr;
     const size_t ml = tv_max_top(&mr);
     int ty;
@@ -422,14 +480,14 @@ static void bar_to(int top)
     }
     const double at = pos_of(ml, mr) * rel / travel;
     size_t line = (size_t)at;
-    size_t row = (size_t)((at - (double)line) * (double)rows_of(line) + 0.5);
-    if (row >= rows_of(line)) {
+    size_t row = (size_t)((at - (double)line) * (double)tv_rows_of(line) + 0.5);
+    if (row >= tv_rows_of(line)) {
         ++line;                     /* rounded up into the next line */
         row = 0u;
     }
     tv.top_line = line;
     tv.top_row = row;
-    clamp_top();
+    tv_clamp_top();
 }
 
 /* ------------------------------------------------------ rows on screen */
@@ -503,6 +561,8 @@ void text_view_cancel_press(void)
     tv.tap_have = false;
     tv.tap_moved = false;
     tv.press = TV_HIT_NONE;
+    ui_textkey_cancel_press(&tv.kb);    /* a key held: its release types
+                                           nothing, and a new contact acts */
 }
 
 /**
@@ -525,22 +585,33 @@ static bool far_from_press(const touch_event_t *e)
  */
 static int hit_at(int x, int y)
 {
-    if (gfx_rect_contains(TV_SMALL, x, y)) {
-        return TV_HIT_SMALL;
-    }
-    if (gfx_rect_contains(TV_PAGE_UP, x, y)) {
-        return TV_HIT_PAGE_UP;
-    }
-    if (gfx_rect_contains(TV_PAGE_DN, x, y)) {
-        return TV_HIT_PAGE_DN;
+    /* The keyboard covers the footer. */
+    if (!tv.kb.open) {
+        if (gfx_rect_contains(TV_SMALL, x, y)) {
+            return TV_HIT_SMALL;
+        }
+        if (gfx_rect_contains(TV_EDIT, x, y)) {
+            return TV_HIT_EDIT;
+        }
+        if (tv.edit && gfx_rect_contains(TV_KEYS, x, y)) {
+            return TV_HIT_KEYS;
+        }
+        if (gfx_rect_contains(TV_PAGE_UP, x, y)) {
+            return TV_HIT_PAGE_UP;
+        }
+        if (gfx_rect_contains(TV_PAGE_DN, x, y)) {
+            return TV_HIT_PAGE_DN;
+        }
     }
     if (tv.state != TEXT_VIEW_SHOWN) {
         return TV_HIT_NONE;
     }
-    if (gfx_rect_contains(TV_BAR, x, y)) {
+    if (gfx_rect_contains(tv_bar(), x, y)) {
         return TV_HIT_BAR;
     }
-    if (gfx_rect_contains(TV_TEXT_HIT, x, y)) {
+    const gfx_rect_t a = tv_area();
+    if (gfx_rect_contains(gfx_rect_make(a.x, a.y, a.w - 4 - TV_BAR_W, a.h),
+                          x, y)) {
         return TV_HIT_TEXT;
     }
     return TV_HIT_NONE;
@@ -599,19 +670,28 @@ static void press_move(const touch_event_t *e)
 /**
  * @brief The UP of the held contact: a button tapped acts.
  * @param e  the UP
+ * @return TEXT_VIEW_SAVE for SAVE, else TEXT_VIEW_NONE
  */
-static void press_up(const touch_event_t *e)
+static text_view_result_t press_up(const touch_event_t *e)
 {
     const int hit = tv.press;
     tv.tap_have = false;
     tv.press = TV_HIT_NONE;
     if (!touch_event_is_tap_up(e) || tv.tap_moved || far_from_press(e)
         || hit_at(e->point.x, e->point.y) != hit) {
-        return;
+        return TEXT_VIEW_NONE;
+    }
+    if (tv.edit && hit >= TV_HIT_SMALL && hit <= TV_HIT_KEYS) {
+        return tv_edit_button(hit);
     }
     switch (hit) {
     case TV_HIT_SMALL:
         text_view_set_small(!tv.small);
+        break;
+    case TV_HIT_EDIT:
+        if (!text_view_edit() && tv.state == TEXT_VIEW_SHOWN) {
+            tv_say_err(tv.edit_err);
+        }
         break;
     case TV_HIT_PAGE_UP:
         text_view_scroll(-(long)text_view_rows());
@@ -619,9 +699,15 @@ static void press_up(const touch_event_t *e)
     case TV_HIT_PAGE_DN:
         text_view_scroll((long)text_view_rows());
         break;
+    case TV_HIT_TEXT:
+        if (tv.edit) {
+            tv_edit_tap(e->point.x, e->point.y);
+        }
+        break;
     default:
         break;
     }
+    return TEXT_VIEW_NONE;
 }
 
 text_view_result_t text_view_event(const touch_event_t *e)
@@ -633,24 +719,36 @@ text_view_result_t text_view_event(const touch_event_t *e)
     const size_t row = tv.top_row;
     const int press = tv.press;
     const bool small = tv.small;
-    switch (e->type) {
-    case TOUCH_EVENT_DOWN:
-        press_down(e);
-        break;
-    case TOUCH_EVENT_MOVE:
-        if (tv.tap_have && e->point.id == tv.tap_id) {
-            press_move(e);
+    const uint32_t rev = tv.rev;
+    const uint32_t kb_rev = tv.kb.revision;
+    text_view_result_t out = TEXT_VIEW_NONE;
+    if (!tv_edit_event(e)) {
+        switch (e->type) {
+        case TOUCH_EVENT_DOWN:
+            press_down(e);
+            break;
+        case TOUCH_EVENT_MOVE:
+            if (tv.tap_have && e->point.id == tv.tap_id) {
+                press_move(e);
+            }
+            break;
+        case TOUCH_EVENT_UP:
+        default:
+            if (tv.tap_have && e->point.id == tv.tap_id) {
+                out = press_up(e);
+            }
+            break;
         }
-        break;
-    case TOUCH_EVENT_UP:
-    default:
-        if (tv.tap_have && e->point.id == tv.tap_id) {
-            press_up(e);
-        }
-        break;
+    }
+    if (out == TEXT_VIEW_NONE) {
+        out = tv_edit_take();
+    }
+    if (out != TEXT_VIEW_NONE) {
+        return out;
     }
     return (line != tv.top_line || row != tv.top_row || press != tv.press
-            || small != tv.small)
+            || small != tv.small || rev != tv.rev
+            || kb_rev != tv.kb.revision)
                ? TEXT_VIEW_CHANGED
                : TEXT_VIEW_NONE;
 }
