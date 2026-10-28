@@ -10,7 +10,8 @@
  *    included: no write frame reaches the servo while it says no write
  *    runs, also when the module's status reads stop behind another page's
  *    exchange; another writer's write on the held port, and a held port
- *    whose last status read is older than KST_LINK_FRESH_MS, count as
+ *    whose last status read is older than KST_LINK_FRESH_MS, or whose
+ *    status reads ran out of tries in the middle of a write, count as
  *    one;
  *  - an error during each of the three: the write ends verified, then the
  *    supply goes off, in the pass after the module last saw it, within
@@ -354,7 +355,11 @@ TEST_CASE(a_write_that_plans_is_waited_for)
     CHECK(!kst_link_writing(&k, 1000u));
     k.status[LINK_KS_STATE] = (uint16_t)LINK_KST_PROGRAMMING;
     k.known = false;
+    k.was_held = false;
     CHECK(!kst_link_writing(&k, 1000u));
+    /* Not known now, held at the last read: it may write. */
+    k.was_held = true;
+    CHECK(kst_link_writing(&k, 1000u));
 }
 
 TEST_CASE(a_held_port_whose_status_goes_unread_is_waited_for)
@@ -423,6 +428,44 @@ TEST_CASE(a_write_unseen_behind_another_pages_exchange_is_waited_for)
     passes(5u);
     CHECK_EQ(g_offs, 1u);
     CHECK(!g_rig.sup_on);
+}
+
+TEST_CASE(a_write_whose_status_reads_run_out_of_tries_is_waited_for)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t o;
+    unsigned writes;
+
+    /* The write's first frame out, then every KST exchange unanswered
+     * until the module gives the operation up; the IOmcu writes on. */
+    up();
+    r = edits();
+    writes = g_rig.sim.n_writes;
+    CHECK_EQ(kst_link_start(&g_rig.link, &r), KST_LINK_START_OK);
+    for (unsigned i = 0; i < 5000u && g_rig.sim.n_writes == writes; ++i) {
+        pass();
+    }
+    CHECK(g_rig.sim.n_writes > writes);
+    g_rig.cut = true;
+    o = ended();
+    CHECK_EQ(o.kind, KST_LINK_OUT_NO_ANSWER);
+    CHECK(g_rig.port.busy != 0u);
+    CHECK(kst_link_writing(&g_rig.link, g_rig.ms));
+    port_cut_ask(&g_cut, g_rig.ms);
+    passes(5u);
+    CHECK_EQ(g_offs, 0u);
+    /* Answered again: the page says the write runs, then that it ended. */
+    g_rig.cut = false;
+    for (unsigned i = 0; i < 5000u && g_offs == 0u; ++i) {
+        pass();
+    }
+    CHECK_EQ(g_offs, 1u);
+    CHECK_EQ(g_rig.port.busy, 0u);
+    CHECK(g_cut_ms - g_write_end_ms <= 1u);
+    CHECK(rig_servo().r[0x05] == r.image.r[0x05]);
+    /* A link that went down runs none: the IOmcu cuts the session. */
+    kst_link_lost(&g_rig.link);
+    CHECK(!kst_link_writing(&g_rig.link, g_rig.ms));
 }
 
 TEST_CASE(an_error_with_no_write_cuts_at_once_and_again_after_a_cycle)
@@ -542,6 +585,7 @@ int main(void)
     RUN(a_write_that_plans_is_waited_for);
     RUN(a_write_unseen_behind_another_pages_exchange_is_waited_for);
     RUN(a_held_port_whose_status_goes_unread_is_waited_for);
+    RUN(a_write_whose_status_reads_run_out_of_tries_is_waited_for);
     RUN(an_error_with_no_write_cuts_at_once_and_again_after_a_cycle);
     RUN(a_read_the_servo_does_not_answer_is_an_error);
     RUN(which_outcomes_are_faults);

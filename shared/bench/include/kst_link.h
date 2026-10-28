@@ -472,8 +472,11 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
  * With none of its own running, a port out of PWM may run a write another
  * writer started, the bench console: one runs while the last status read
  * shows the port BUSY with a WRITE, a RESTORE or a RELEASE, and one may run
- * while that read is older than KST_LINK_FRESH_MS.  A port in PWM, or never
- * read, runs none.
+ * while that read is older than KST_LINK_FRESH_MS.  Status reads that ran
+ * out of tries leave the status not known: a port held at the last read
+ * may still write, its own operation's included, which the module gave up
+ * without the IOmcu's word.  A port in PWM, never read, or on a link that
+ * went down, runs none: the IOmcu cuts its session itself then.
  *
  * What the error rule waits for before it switches the port's supply off
  * (error_stop.h).  A power cycle (REBOOT, POWER_CYCLED) and a LEAVE write

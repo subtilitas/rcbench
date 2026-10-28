@@ -806,9 +806,13 @@ bool kst_link_writing(const kst_link_t *k, uint32_t now_ms)
          * may be older than the plan's end and its first frames. */
         return op_writes((link_kst_op_t)k->op) && k->phase != (uint8_t)KST_LINK_FETCHING;
     }
-    if (!k->known
-        || LINK_KS_STATE_OF(k->status[LINK_KS_STATE])
-               == (uint8_t)LINK_KST_PWM) {
+    if (!k->known) {
+        /* Status reads that ran out of tries end this module's operation,
+         * not the port's: one held at the last read may still write. */
+        return k->was_held;
+    }
+    if (LINK_KS_STATE_OF(k->status[LINK_KS_STATE])
+        == (uint8_t)LINK_KST_PWM) {
         return false;
     }
     /* Held, and nothing of this module's runs: another writer's operation

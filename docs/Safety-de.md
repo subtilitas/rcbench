@@ -156,7 +156,10 @@ aus (`port_cut_t` in `error_stop.h`):
   zählt ein WRITE, RESTORE oder RELEASE der Prüfstandskonsole, solange die Page
   ihn BUSY liest, und ein Lesen des Status, das älter als 100ms ist
   (`KST_LINK_FRESH_MS`), zählt als Schreiben: der erste Frame eines
-  Schreibens kommt frühestens 560ms nach seinem Kommando.
+  Schreibens kommt frühestens 560ms nach seinem Kommando. Ein Port, der beim
+  letzten Lesen des Status gehalten war und dessen Lesungen danach ihre
+  Versuche aufgebraucht haben, zählt als schreibend, bis ein Lesen wieder
+  antwortet.
 - Ein Hitec-Schreiben läuft vom ersten Schritt bis zum Ende seines
   Zurücklesens (`hitec_prog_gate_writing()`). Sein Vermerk und seine
   Backup-Datei auf der Karte kommen vor dem ersten Schritt, auf sie wird

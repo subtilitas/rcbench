@@ -142,7 +142,9 @@ a write to the servo's memory (`port_cut_t` in `error_stop.h`):
   of the panel's running, the bench console's WRITE, RESTORE or RELEASE
   counts while the page reads it BUSY, and a status read older than 100ms
   (`KST_LINK_FRESH_MS`) counts as a write: a write's first frame comes
-  560ms after its command at the soonest.
+  560ms after its command at the soonest. A port held at the last status
+  read whose reads then ran out of tries counts as writing until a read
+  answers again.
 - A Hitec write runs from its first step to the end of its read-back
   (`hitec_prog_gate_writing()`). Its record and backup file on the card
   come before the first step and are not waited for. A HITEC port another
