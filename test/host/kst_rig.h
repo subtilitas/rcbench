@@ -65,6 +65,8 @@ typedef struct {
     bool deaf;                 /* no command is taken */
     kst_prog_gate_t gate;      /* what the two tasks share */
     bool cut;                  /* no exchange is made: the link is silent */
+    bool held;                 /* no exchange is made: another page's
+                                  exchange holds the link */
     unsigned starts, aborts, fetches;
 
     /* The card. */
@@ -263,7 +265,9 @@ static inline void rig_frame(void)
         g_rig.sim.now_us += 100u;
     }
     g_rig.ms++;
-    rig_exchange();
+    if (!g_rig.held) {
+        rig_exchange();
+    }
     if (!g_rig.deaf && kst_panel_take(&cmd)) {
         if (cmd.kind == KST_PROG_CMD_START
             && !kst_prog_gate_claim(&g_rig.gate, cmd.id)) {

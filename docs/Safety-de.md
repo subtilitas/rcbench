@@ -149,9 +149,10 @@ aus (`port_cut_t` in `error_stop.h`):
 - Ein Schreiben läuft: aus im Durchlauf nach seinem Ende, spätestens
   10000ms (`ERROR_PORT_CUT_MS`) nach dem Fehler.
 - Ein KST-Schreiben ist ein WRITE, RESTORE oder RELEASE von seinem Kommando,
-  bis die Page sein Ende liest (`kst_link_writing()`), außer solange die
-  Page meldet, dass es plant: dann geht kein Frame hinaus. Ein
-  Versorgungszyklus und ein LEAVE schreiben nichts.
+  bis die Page sein Ende liest (`kst_link_writing()`), sein Planen
+  eingeschlossen: ein Lesen des Status, das Planen meldet, kann älter sein
+  als sein erster Frame. Ein Versorgungszyklus und ein LEAVE schreiben
+  nichts.
 - Ein Hitec-Schreiben läuft vom ersten Schritt bis zum Ende seines
   Zurücklesens (`hitec_prog_gate_writing()`). Sein Vermerk und seine
   Backup-Datei auf der Karte kommen vor dem ersten Schritt, auf sie wird
@@ -159,7 +160,7 @@ aus (`port_cut_t` in `error_stop.h`):
 
 Die längsten Schreibvorgänge, die der Code zulässt, enden deutlich
 innerhalb von 10000ms: ein KST-Schreiben mit 33 Schritten dauert 1,93s auf
-der Leitung; ein klassisches Hitec-Schreiben mit 56 Schritten und dem
+der Leitung nach höchstens 1,93s Planen; ein klassisches Hitec-Schreiben mit 56 Schritten und dem
 Zurücklesen von 36 Zellen 2,9s und ein Schreiben der D-Serie mit 21
 Registern, Speichern, Neustart und Zurücklesen 3,5s, bei 32ms je Schritt
 auf der Host-Schleife. `test_kst_link_cut` und `test_hitec_prog_cut` halten

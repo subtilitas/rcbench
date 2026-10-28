@@ -799,12 +799,12 @@ bool kst_link_writing(const kst_link_t *k)
     if (k == NULL || !k->active) {
         return false;
     }
-    const kst_link_phase_t ph = phase_shown(k);
-
+    /* PLANNING is no proof that nothing goes out: the page last read may
+     * be older than the plan's end and its first frames. */
     return (k->op == (uint8_t)LINK_KST_OP_WRITE
             || k->op == (uint8_t)LINK_KST_OP_RESTORE
             || k->op == (uint8_t)LINK_KST_OP_RELEASE)
-           && ph != KST_LINK_PLANNING && ph != KST_LINK_FETCHING;
+           && k->phase != (uint8_t)KST_LINK_FETCHING;
 }
 
 bool kst_link_outcome_fault(const kst_link_outcome_t *o)

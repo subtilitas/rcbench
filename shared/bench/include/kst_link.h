@@ -451,8 +451,11 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
 /**
  * @brief Whether a write to the servo's memory runs: a WRITE, a RESTORE or a
  *        RELEASE from kst_link_start() until the page last read says it has
- *        ended, except while the page says it plans (KST_LINK_PLANNING): no
- *        frame goes out then.
+ *        ended, its planning included.
+ *
+ * A page that last read KST_LINK_PLANNING proves nothing: the plan may have
+ * ended and its frames gone out since that read, while an exchange of
+ * another page waits up to its 1000ms timeout.
  *
  * What the error rule waits for before it switches the port's supply off
  * (error_stop.h).  A power cycle (REBOOT, POWER_CYCLED) and a LEAVE write

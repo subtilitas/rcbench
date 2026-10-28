@@ -6,27 +6,30 @@
  * (port_cut_follow()): the KST outcomes kst_link_outcome_fault() names
  * counted, the cut asked and stepped, its OFF taken by the SUPPLY page.
  *
- *  - kst_link_writing() for a WRITE, a RESTORE and a RELEASE: no write
- *    frame reaches the servo while it says no write runs, and it says none
- *    while the page says the write plans;
+ *  - kst_link_writing() for a WRITE, a RESTORE and a RELEASE, planning
+ *    included: no write frame reaches the servo while it says no write
+ *    runs, also when the module's status reads stop behind another page's
+ *    exchange;
  *  - an error during each of the three: the write ends verified, then the
  *    supply goes off, in the pass after the module last saw it, within
  *    ERROR_PORT_CUT_MS; the port finds the supply asked off, keeps it off
  *    KST_PORT_RAIL_OFF_MS and returns to PWM, and the cut ends;
- *  - a write that plans is not waited for: no frame goes out then;
  *  - an error with no write: off in the same pass; a REBOOT's power cycle
  *    that switches the supply on again is switched off again;
  *  - a READ ALL the servo does not answer is a session fault and an
  *    error: off at once;
  *  - which outcomes are faults;
- *  - the longest write the code allows on the wire (protocols/kst): the
- *    read of 32 registers in 3 passes before and after, KST_PLAN_MAX_STEPS
- *    writes with 2 read-backs each, at the frame lengths, reply windows and
- *    gaps of kst_wire.h and kst_session.h, and the module's
- *    KST_LINK_POLL_MS to see its end, under ERROR_PORT_CUT_MS / 2.
+ *  - the longest write the code allows (protocols/kst): its planning, at
+ *    most 2,161 slices of 892us, the read of 32 registers in 3 passes
+ *    before and after, KST_PLAN_MAX_STEPS writes with 2 read-backs each,
+ *    at the frame lengths, reply windows and gaps of kst_wire.h and
+ *    kst_session.h, and the module's KST_LINK_POLL_MS to see its end,
+ *    under ERROR_PORT_CUT_MS / 2.
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
+
 #include "greatest.h"
 
 #include "error_stop.h"
@@ -42,7 +45,6 @@ static unsigned      g_offs;        /* switch-offs the cut made          */
 static uint32_t      g_cut_ms;      /* the first one's time              */
 static uint32_t      g_write_end_ms;  /* the last pass that saw a write  */
 static unsigned      g_unseen;      /* write frames no write was seen for */
-static unsigned      g_planning_writing;  /* passes that said both       */
 
 static bool taken(void)
 {
@@ -65,9 +67,6 @@ static void pass(void)
     writing = kst_link_writing(&g_rig.link);
     if (g_rig.sim.n_writes != n && !before && !writing) {
         g_unseen++;
-    }
-    if (writing && kst_link_phase(&g_rig.link) == KST_LINK_PLANNING) {
-        g_planning_writing++;
     }
     if (g_rig.outcomes != g_outs_seen) {
         g_outs_seen = g_rig.outcomes;
@@ -148,7 +147,6 @@ static void up(void)
     g_cut_ms = 0;
     g_write_end_ms = 0;
     g_unseen = 0;
-    g_planning_writing = 0;
     CHECK(rig_link_up(LINK_PROTOCOL_MINOR));
     r = req(LINK_KST_OP_ENTER);
     CHECK_EQ(run(&r).result, KST_SES_OK);
@@ -192,6 +190,26 @@ static kst_link_request_t of_kind(unsigned kind)
     return req(LINK_KST_OP_RELEASE);
 }
 
+/* Images whose write plans long enough for a status read to see it plan
+ * (test_kst_link: a_write_shows_as_planning_until_its_plan_is_there). */
+static const char k_long_a[] =
+    "00f5f514487704eff4b20fc710091400969600010b000000000000e301100000";
+static const char k_long_b[] =
+    "00f5f51448770465cb840d8e66041400969600010b000000000000e301100000";
+
+static kst_image_t image_of(const char *hex)
+{
+    kst_image_t img;
+
+    for (unsigned i = 0; i < KST_REG_COUNT; ++i) {
+        unsigned v = 0;
+
+        (void)sscanf(hex + 2u * i, "%2x", &v);
+        img.r[i] = (uint8_t)v;
+    }
+    return img;
+}
+
 /* ----------------------------------------------------------------- cases */
 
 TEST_CASE(a_write_frame_goes_out_only_while_a_write_is_seen)
@@ -213,7 +231,6 @@ TEST_CASE(a_write_frame_goes_out_only_while_a_write_is_seen)
         CHECK(g_rig.sim.n_writes > writes);
         CHECK(!kst_link_writing(&g_rig.link));
         CHECK_EQ(g_unseen, 0u);
-        CHECK_EQ(g_planning_writing, 0u);
         CHECK_EQ(g_offs, 0u);
     }
     /* Not a write: a READ ALL, a VERIFY, a REBOOT. */
@@ -269,13 +286,14 @@ TEST_CASE(an_error_during_each_write_kind_cuts_after_it_ends)
     }
 }
 
-TEST_CASE(a_write_that_plans_is_not_waited_for)
+TEST_CASE(a_write_that_plans_is_waited_for)
 {
     kst_link_t k;
 
-    /* The module as a WRITE leaves it while the page says it plans: no
-     * frame goes out then.  A short plan ends before a status read sees
-     * it, so the state is set here. */
+    /* The module as a WRITE leaves it while the page last read says it
+     * plans: the plan may have ended and its frames gone out since.  A
+     * short plan ends before a status read sees it, so the state is set
+     * here. */
     kst_link_init(&k);
     k.active = true;
     k.op = (uint8_t)LINK_KST_OP_WRITE;
@@ -283,8 +301,7 @@ TEST_CASE(a_write_that_plans_is_not_waited_for)
     k.status[LINK_KS_STATE] = (uint16_t)(LINK_KST_PROGRAMMING | LINK_KS_F_BUSY);
     k.status[LINK_KS_RESULT] = LINK_KST_RESULT_PLANNING;
     CHECK_EQ(kst_link_phase(&k), KST_LINK_PLANNING);
-    CHECK(!kst_link_writing(&k));
-    /* Planned: it runs. */
+    CHECK(kst_link_writing(&k));
     k.status[LINK_KS_RESULT] = 1u;
     CHECK(kst_link_writing(&k));
     /* Sent, not yet read back as started: waited for. */
@@ -306,6 +323,54 @@ TEST_CASE(a_write_that_plans_is_not_waited_for)
     k.op = (uint8_t)LINK_KST_OP_WRITE;
     k.active = false;
     CHECK(!kst_link_writing(&k));
+}
+
+TEST_CASE(a_write_unseen_behind_another_pages_exchange_is_waited_for)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t o;
+    unsigned writes;
+
+    /* The page read as planning, then no KST exchange for as long as the
+     * first write frame takes to go out: another page's exchange waits for
+     * its 1000ms timeout and the pump runs on.  The module still shows
+     * PLANNING. */
+    up();
+    {
+        const kst_image_t a = image_of(k_long_a);
+
+        memcpy(g_rig.sim.reg, a.r, sizeof(g_rig.sim.reg));
+    }
+    r = req(LINK_KST_OP_READ_ALL);
+    CHECK_EQ(run(&r).result, KST_SES_OK);
+    r = req(LINK_KST_OP_WRITE);
+    r.image = image_of(k_long_b);
+    r.unlock = ~(kst_field_set_t)0;
+    writes = g_rig.sim.n_writes;
+    CHECK_EQ(kst_link_start(&g_rig.link, &r), KST_LINK_START_OK);
+    for (unsigned i = 0; i < 5000u
+                         && kst_link_phase(&g_rig.link) != KST_LINK_PLANNING;
+         ++i) {
+        pass();
+    }
+    CHECK_EQ(kst_link_phase(&g_rig.link), KST_LINK_PLANNING);
+    g_rig.held = true;
+    for (unsigned i = 0; i < 5000u && g_rig.sim.n_writes == writes; ++i) {
+        pass();
+    }
+    CHECK(g_rig.sim.n_writes > writes);
+    CHECK_EQ(kst_link_phase(&g_rig.link), KST_LINK_PLANNING);
+    CHECK(kst_link_writing(&g_rig.link));
+    port_cut_ask(&g_cut, g_rig.ms);
+    passes(5u);
+    CHECK_EQ(g_offs, 0u);
+    CHECK(g_rig.sup_on);
+    g_rig.held = false;
+    o = ended();
+    CHECK_EQ(o.result, KST_SES_OK);
+    passes(5u);
+    CHECK_EQ(g_offs, 1u);
+    CHECK(!g_rig.sup_on);
 }
 
 TEST_CASE(an_error_with_no_write_cuts_at_once_and_again_after_a_cycle)
@@ -410,6 +475,11 @@ TEST_CASE(the_longest_write_on_the_wire_ends_within_half_the_bound)
     us = (2u * KST_READ_PASSES * KST_REG_COUNT + 2u * KST_PLAN_MAX_STEPS)
              * (read_ns / 1000u)
          + KST_PLAN_MAX_STEPS * (write_ns / 1000u);
+    /* And the planning before them: KST_PLAN_WORK_CAP in slices of at
+     * least KST_PLAN_SLICE_UNITS, one a pass of the IOmcu's loop, each at
+     * most 892us at 150MHz (docs/Performance.md, computed, not measured;
+     * the rest of a pass is not measured). */
+    us += (KST_PLAN_WORK_CAP / KST_PLAN_SLICE_UNITS + 1u) * 892u;
     CHECK(us / 1000u + KST_LINK_POLL_MS < ERROR_PORT_CUT_MS / 2u);
 }
 
@@ -417,7 +487,8 @@ int main(void)
 {
     RUN(a_write_frame_goes_out_only_while_a_write_is_seen);
     RUN(an_error_during_each_write_kind_cuts_after_it_ends);
-    RUN(a_write_that_plans_is_not_waited_for);
+    RUN(a_write_that_plans_is_waited_for);
+    RUN(a_write_unseen_behind_another_pages_exchange_is_waited_for);
     RUN(an_error_with_no_write_cuts_at_once_and_again_after_a_cycle);
     RUN(a_read_the_servo_does_not_answer_is_an_error);
     RUN(which_outcomes_are_faults);

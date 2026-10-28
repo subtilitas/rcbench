@@ -136,14 +136,15 @@ a write to the servo's memory (`port_cut_t` in `error_stop.h`):
 - A write runs: off in the pass after it ends, and 10000ms
   (`ERROR_PORT_CUT_MS`) after the error at the latest.
 - A KST write is a WRITE, RESTORE or RELEASE from its command until the
-  page reads it ended (`kst_link_writing()`), except while the page says it
-  plans: no frame goes out then. A power cycle and a LEAVE write nothing.
+  page reads it ended (`kst_link_writing()`), its planning included: a
+  status read that says it plans may be older than its first frame. A
+  power cycle and a LEAVE write nothing.
 - A Hitec write runs from its first step to the end of its read-back
   (`hitec_prog_gate_writing()`). Its record and backup file on the card
   come before the first step and are not waited for.
 
 The longest writes the code allows end well inside 10000ms: a KST write of
-33 steps is 1.93s on the wire; a classic Hitec write of 56 steps with its
+33 steps is 1.93s on the wire after at most 1.93s of planning; a classic Hitec write of 56 steps with its
 read-back of 36 cells is 2.9s and a D series write of 21 registers with its
 save, reboot and read-back 3.5s, at 32ms a step on the host loopback.
 `test_kst_link_cut` and `test_hitec_prog_cut` hold each under 5000ms. None

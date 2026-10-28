@@ -59,12 +59,13 @@ extern "C" {
  *
  * The longest writes the code allows, without a fault:
  *
- *   - KST, on the wire: the read of 32 registers in 3 passes before and
- *     after, KST_PLAN_MAX_STEPS (33) writes with 2 read-backs each; 258
- *     read frames of 5.9ms and 33 write frames of 12.4ms with their reply
- *     windows and gaps, 1.93s, and KST_LINK_POLL_MS (50ms) for the panel
- *     to see the end (test_kst_link_cut).  The planning before them sends
- *     nothing and is not waited for.
+ *   - KST: its planning, at most 2,161 slices of 892us at 150MHz
+ *     (docs/Performance.md, computed), 1.93s; the read of 32 registers in
+ *     3 passes before and after and KST_PLAN_MAX_STEPS (33) writes with 2
+ *     read-backs each, 258 read frames of 5.9ms and 33 write frames of
+ *     12.4ms with their reply windows and gaps, 1.93s; and
+ *     KST_LINK_POLL_MS (50ms) for the panel to see the end
+ *     (test_kst_link_cut).
  *   - Hitec, at 32ms a step across the link at the panel's 5ms pass and a
  *     16ms render frame on the host loopback (test_hitec_prog_cut): a
  *     classic write of HITEC_PLAN_MAX (56) steps and its read-back of 36
