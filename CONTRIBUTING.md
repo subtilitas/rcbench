@@ -240,7 +240,9 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
     host suite;
   - the pin driver in `protocols/<name>/rp2350/`: the `.pio` program and
     the C around it. It includes the module's core and pico-sdk headers
-    only. Its header includes no pico-sdk header;
+    only. Its header includes no pico-sdk header. A driver on a
+    fixed-function block of the chip, such as an I2C block, has no `.pio`
+    program, and its `README.md` says "no PIO program";
   - a `README.md`: what the module does, its constraints with numbers, its
     interface, and the CMake lines that add it to another project.
 
@@ -308,8 +310,10 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   spaces, tabs or CRs after it; that
   the `README.md` has a heading with "Interface", a heading with
   "Trademark" in it where it names a brand from the tool's `BRANDS` list,
-  and the words "no pin driver" where the module has no `rp2350/` folder;
-  the Interface heading and "no pin driver" count outside fenced code
+  and the words "no pin driver" where the module has no `rp2350/` folder,
+  and "no PIO program" where its `rp2350/` folder has no `.pio` file;
+  the Interface heading, "no pin driver" and "no PIO program" count
+  outside fenced code
   blocks and HTML comments only, while a brand is matched anywhere in the
   file, in any case, in paths, addresses, code blocks and comments
   included, also inside an identifier, file name or number such as
