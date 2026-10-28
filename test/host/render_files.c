@@ -27,6 +27,7 @@
 #include "kst_file.h"
 #include "kst_sim.h"
 #include "servo_test.h"
+#include "settings.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -413,7 +414,7 @@ static void pose_viewer(const char *view)
     }
 }
 
-/** @brief A key of the editor's keyboard, on its area under 4 rows. */
+/** @brief A key of the editor's keyboard, on its area under 8 rows. */
 static void ed_key(int k)
 {
     ui_textkey_t kb;
@@ -427,38 +428,34 @@ static void ed_key(int k)
 }
 
 /**
- * @brief Type @p text on the editor's keyboard: small letters, capitals,
- *        digits, spaces, line feeds and the marks , . # : and -.
+ * @brief Type @p text on the editor's keyboard: every printable ASCII
+ *        character, spaces and line feeds, the layers switched as needed
+ *        and left on the small letters.
  * @param text  the characters
  */
 static void ed_type(const char *text)
 {
-    static const char lower[] = "1234567890" "qwertyuiop" "asdfghjkl-"
-                                " zxcvbnm";
-    static const char marks[] = "!\"#$%&'()*" "+,-./:;<=>";
+    ui_textkey_layer_t layer = UI_TK_LOWER;
+    ui_textkey_layer_t want = UI_TK_LOWER;
     for (const char *p = text; *p != '\0'; ++p) {
         if (*p == ' ' || *p == '\n') {
             ed_key(*p == ' ' ? UI_TK_SPACE : UI_TK_ENTER);
             continue;
         }
-        const char low = (*p >= 'A' && *p <= 'Z') ? (char)(*p - 'A' + 'a')
-                                                   : *p;
-        const char *at = strchr(lower + 1, low);
-        const char *mk = strchr(marks, *p);
-        if (*p != '-' && mk != NULL) {
-            ed_key(UI_TK_LAYER);
-            ed_key((int)(mk - marks));
-            ed_key(UI_TK_LAYER);
-        } else if (at != NULL && low != *p) {
-            ed_key(UI_TK_SHIFT);
-            ed_key((int)(at - lower));
-            ed_key(UI_TK_SHIFT);
-        } else if (at != NULL) {
-            ed_key((int)(at - lower));
-        } else {
+        const int at = ui_textkey_editor_key(*p, &want);
+        if (at < 0) {
             fprintf(stderr, "render_files: no key %c\n", *p);
             exit(2);
         }
+        for (int k = ui_textkey_editor_step(layer, want, &layer); k >= 0;
+             k = ui_textkey_editor_step(layer, want, &layer)) {
+            ed_key(k);
+        }
+        ed_key(at);
+    }
+    for (int k = ui_textkey_editor_step(layer, UI_TK_LOWER, &layer); k >= 0;
+         k = ui_textkey_editor_step(layer, UI_TK_LOWER, &layer)) {
+        ed_key(k);
     }
 }
 
@@ -534,13 +531,23 @@ static void pose_editor(const char *view)
         ed_type(full ? "q" : "\n");
         return;
     }
+    /* files-edit-see25 and files-edit-see50: Keyboard see-through at
+     * 25% and 50%, the keyboard open. */
+    const bool see = strncmp(view, "files-edit-see", 14) == 0;
+    if (see) {
+        settings_set(SET_KB_SEE, is(view, "files-edit-see25") ? 1.0f : 2.0f);
+    }
     edit_file("USER/LOGS", "ATEST005.TXT");
     /* After the result line: a line of the operator's own. */
     ftap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + FS_SPOT_TV_PITCH + 5);
     ed_type(de ? "\nNotiz: Horn vor dem Lauf neu montiert."
                : "\nNote: horn refitted before the run.");
-    if (is(view, "files-edit")) {
+    if (is(view, "files-edit") || see) {
         return;                         /* the keyboard open */
+    }
+    if (is(view, "files-edit-marks")) {
+        ed_key(UI_TK_LAYER);            /* the digits and the first marks */
+        return;
     }
     ed_key(UI_TK_DONE);
     if (is(view, "files-edit-unsaved")) {

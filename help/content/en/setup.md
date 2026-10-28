@@ -14,7 +14,7 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| PANEL | `11 SETTINGS` | the list of PANEL |
+| PANEL | `12 SETTINGS` | the list of PANEL |
 | INTERFACES | `23 SETTINGS` | the list of INTERFACES |
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
 | SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
@@ -115,6 +115,7 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on a bus of its own, IO30 and IO31 of header P3 (I2C: Inter-Integrated Circuit), turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob scale | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
+| Keyboard see-through | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
 
 The backlight is on while the panel runs. No setting switches it.
 

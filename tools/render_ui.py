@@ -781,6 +781,11 @@ FIT_ONLY = {
     "files-edit-full": (None, "files", "dark"),
     "files-edit-lines": (None, "files", "dark"),
     "files-edit-nul": (None, "files", "dark"),
+    # The editor's keyboard on its first page of marks (123), and with
+    # Keyboard see-through at 25% and 50%.
+    "files-edit-marks": (None, "files", "dark"),
+    "files-edit-see25": (None, "files", "dark"),
+    "files-edit-see50": (None, "files", "dark"),
 }
 
 # Every cat pose but the first, on PICK A PIN posed as "picker" is:
@@ -789,15 +794,16 @@ FIT_ONLY = {
 FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
                  for i in range(1, len(gen_cats.POSES))})
 
-# Views that open a drop-down, a chip's help bubble, the alert band or the
-# text editor's question over the screen: the list, the bubble, the band or
-# the box covers the labels under it by design, so a fill drawn over a
-# string is not a finding there.
+# Views that open a drop-down, a chip's help bubble, the alert band, the
+# text editor's question or its see-through keyboard over the screen: the
+# list, the bubble, the band, the box or the keys cover the labels under it
+# by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
                  "overview-alert",
                  "setup-folder",
                  "files-edit-unsaved", "files-edit-revert",
-                 "files-edit-open"} | {
+                 "files-edit-open", "files-edit-see25",
+                 "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has for a time: (view, string, finding), word

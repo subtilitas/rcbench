@@ -12,6 +12,7 @@
 
 #include "card_tree.h"
 #include "fm_name.h"
+#include "ui_layout.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -19,7 +20,9 @@
 /*
  * A title row, the text, then five rows of keys, 6px apart.  Over the
  * 1008 x 484px the WI-FI screen gives it, a key is 93 x 71px
- * (14.0 x 10.7mm at 0.150mm a pixel).
+ * (14.0 x 10.7mm at 0.150mm a pixel).  The editor's keyboard has no title,
+ * no text and no digit row: four rows of keys, 93 x 56px over the
+ * 1008 x 260px the text editor gives it.
  */
 /** @brief The room around the title, the text and the keys: 8px. */
 #define TK_PAD     8
@@ -49,6 +52,23 @@ static const char k_wifi[3][UI_TEXTKEY_CHARS + 1] = {
     "1234567890" "QWERTYUIOP" "ASDFGHJKL-" " ZXCVBNM  ",
     "!\"#$%&'()*" "+,-./:;<=>" "?@[\\]^_`{|" "}~        ",
 };
+
+/** @brief The editor's layers, in ui_textkey_layer_t's order.  Its first
+ *         row of keys is the second here: keys 0 to 9 are not shown.  Key
+ *         UI_TK_LAYER, and UI_TK_SHIFT on every layer, switch layers and
+ *         type nothing.  The two pages of marks hold the 32 printable ASCII
+ *         characters that are neither a letter, a digit nor a space: the
+ *         first the digits and the 17 marks a setting, a comment or a
+ *         sentence uses most, the second the other 15 in code order. */
+static const char k_editor[UI_TK_LAYERS][UI_TEXTKEY_CHARS + 1] = {
+    "          " "qwertyuiop" "asdfghjkl-" " zxcvbnm  ",
+    "          " "QWERTYUIOP" "ASDFGHJKL-" " ZXCVBNM  ",
+    "          " "1234567890" "-/:;()=#\"_" " .,?!'[]  ",
+    "          " "$%&*+<>@\\^" "`{|}~     " "          ",
+};
+
+/** @brief The editor's first row of keys: the digit row is not shown. */
+#define TK_EDITOR_FIRST TK_COLS
 
 /** @brief The bottom row's texts: SPACE and CANCEL are translated. */
 static const ui_text_id_t k_bottom_tx[] = { TX_SPACE, TX_COUNT, TX_CANCEL,
@@ -177,6 +197,76 @@ void ui_textkey_open_editor(ui_textkey_t *k, gfx_rect_t area)
     k->editor = true;
 }
 
+int ui_textkey_see_pct(int step)
+{
+    const int last = UI_TEXTKEY_SEE_STEPS - 1;
+    return ((step < 0) ? 0 : (step > last) ? last : step) * UI_TEXTKEY_SEE_STEP;
+}
+
+void ui_textkey_set_see(ui_textkey_t *k, int pct)
+{
+    if (k != NULL) {
+        k->see = (uint8_t)((pct < 0) ? 0
+                           : (pct > UI_TEXTKEY_SEE_MAX) ? UI_TEXTKEY_SEE_MAX
+                                                         : pct);
+    }
+}
+
+int ui_textkey_editor_key(char ch, ui_textkey_layer_t *layer)
+{
+    if (ch <= ' ' || ch > '~') {
+        return -1;
+    }
+    for (int l = 0; l < (int)UI_TK_LAYERS; ++l) {
+        for (int key = TK_EDITOR_FIRST; key < UI_TK_DEL; ++key) {
+            if (key != UI_TK_SHIFT && key != UI_TK_LAYER
+                && k_editor[l][key] == ch) {
+                if (layer != NULL) {
+                    *layer = (ui_textkey_layer_t)l;
+                }
+                return key;
+            }
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief The editor's layer after key @p key on layer @p from.
+ * @param from The layer shown.
+ * @param key  The key.
+ * @return The layer UI_TK_SHIFT or UI_TK_LAYER switch to; @p from for any
+ *         other key.
+ */
+static ui_textkey_layer_t editor_layer_after(ui_textkey_layer_t from, int key)
+{
+    const bool marks = from == UI_TK_MARKS || from == UI_TK_MORE;
+    if (key == UI_TK_LAYER) {
+        return marks ? UI_TK_LOWER : UI_TK_MARKS;
+    }
+    if (key == UI_TK_SHIFT) {
+        return marks ? ((from == UI_TK_MARKS) ? UI_TK_MORE : UI_TK_MARKS)
+                     : ((from == UI_TK_LOWER) ? UI_TK_UPPER : UI_TK_LOWER);
+    }
+    return from;
+}
+
+int ui_textkey_editor_step(ui_textkey_layer_t from, ui_textkey_layer_t to,
+                           ui_textkey_layer_t *next)
+{
+    if (from == to || from < UI_TK_LOWER || from >= UI_TK_LAYERS
+        || to < UI_TK_LOWER || to >= UI_TK_LAYERS) {
+        return -1;
+    }
+    const bool from_marks = from >= UI_TK_MARKS;
+    const bool to_marks = to >= UI_TK_MARKS;
+    const int key = (from_marks == to_marks) ? UI_TK_SHIFT : UI_TK_LAYER;
+    if (next != NULL) {
+        *next = editor_layer_after(from, key);
+    }
+    return key;
+}
+
 void ui_textkey_close(ui_textkey_t *k)
 {
     if (k == NULL) {
@@ -213,6 +303,35 @@ const char *ui_textkey_label(int key)
     return (k_bottom[b] != NULL) ? k_bottom[b] : ui_tr(k_bottom_tx[b]);
 }
 
+/**
+ * @brief A key's label on the editor's keyboard.
+ * @param k   The keyboard, opened for the editor.
+ * @param key The key.
+ * @return The layer's character, "" for a blank and the digit row, the
+ *         layer keys' and the bottom row's words, "DEL".
+ */
+static const char *editor_label(const ui_textkey_t *k, int key)
+{
+    static const char *const shift[UI_TK_LAYERS] = { "ABC", "abc", "#+=",
+                                                     "123" };
+    switch (key) {
+    case UI_TK_ENTER: return "ENTER";
+    case UI_TK_LEFT:  return "<-";
+    case UI_TK_RIGHT: return "->";
+    case UI_TK_DONE:  return TR(ED_DONE);
+    case UI_TK_SHIFT: return shift[k->layer % UI_TK_LAYERS];
+    case UI_TK_LAYER: return (k->layer >= UI_TK_MARKS) ? "abc" : "123";
+    default:          break;
+    }
+    if (key >= TK_EDITOR_FIRST && key < UI_TK_DEL) {
+        static char one[2];
+        one[0] = k_editor[k->layer % UI_TK_LAYERS][key];
+        one[1] = '\0';
+        return (one[0] == ' ') ? "" : one;
+    }
+    return (key >= 0 && key < TK_EDITOR_FIRST) ? "" : ui_textkey_label(key);
+}
+
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
 {
     if (k != NULL && k->search && key == UI_TK_MARK) {
@@ -222,13 +341,7 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
         return "/";
     }
     if (k != NULL && k->editor) {
-        switch (key) {
-        case UI_TK_ENTER: return "ENTER";
-        case UI_TK_LEFT:  return "<-";
-        case UI_TK_RIGHT: return "->";
-        case UI_TK_DONE:  return TR(ED_DONE);
-        default:          break;
-        }
+        return editor_label(k, key);
     }
     if (k != NULL && k->wifi) {
         if (key == UI_TK_SHOW) {
@@ -273,7 +386,8 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
     const bool editor = k != NULL && k->editor;
     const int last = editor ? UI_TK_DONE : secret ? UI_TK_SHOW : UI_TK_KEYS - 1;
     if (k == NULL || key < 0 || key > last
-        || (editor && key >= UI_TEXTKEY_CHARS && editor_slot(key) < 0)) {
+        || (editor && key >= UI_TEXTKEY_CHARS && editor_slot(key) < 0)
+        || (editor && key < TK_EDITOR_FIRST)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     const int left   = k->area.x + TK_PAD;
@@ -285,17 +399,20 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
      * alert band. */
     const int foot   = k->area.y + k->area.h - TK_PAD;
     const int bottom = (foot < UI_KEYS_FOOT) ? foot : UI_KEYS_FOOT;
+    /* The editor's rows: no digit row, the letters' first row on top. */
+    const int rows = editor ? UI_TEXTKEY_EDITOR_ROWS : TK_ROWS;
+    const int skip = editor ? TK_ROWS - UI_TEXTKEY_EDITOR_ROWS : 0;
     const int kw = (right - left - (TK_COLS - 1) * TK_GAP) / TK_COLS;
-    const int kh = (bottom - top - (TK_ROWS - 1) * TK_GAP) / TK_ROWS;
+    const int kh = (bottom - top - (rows - 1) * TK_GAP) / rows;
     int row, col, span;
     if (key < UI_TEXTKEY_CHARS) {
-        row  = key / TK_COLS;
+        row  = key / TK_COLS - skip;
         col  = key % TK_COLS;
         span = 1;
     } else if (editor) {
         const int slot = editor_slot(key);
         const int e = (slot > 0) ? slot : 0;   /* checked above: 0 to 4 */
-        row  = TK_ROWS - 1;
+        row  = rows - 1;
         col  = k_editor_col[e];
         span = k_editor_span[e];
     } else if (secret) {
@@ -353,16 +470,13 @@ static ui_textkey_result_t editor_press(ui_textkey_t *k, int key)
     default:
         break;
     }
-    if (key == UI_TK_LAYER) {
-        k->layer = (k->layer == UI_TK_MARKS) ? UI_TK_LOWER : UI_TK_MARKS;
+    if (key == UI_TK_LAYER || key == UI_TK_SHIFT) {
+        k->layer = editor_layer_after(k->layer, key);
         return UI_TEXTKEY_NONE;
     }
-    if (key == UI_TK_SHIFT && k->layer != UI_TK_MARKS) {
-        k->layer = (k->layer == UI_TK_UPPER) ? UI_TK_LOWER : UI_TK_UPPER;
-        return UI_TEXTKEY_NONE;
-    }
-    const char ch = wifi_char(k, key);
-    if (ch == '\0') {
+    const char ch = (key >= TK_EDITOR_FIRST && key < UI_TK_DEL)
+                        ? k_editor[k->layer % UI_TK_LAYERS][key] : ' ';
+    if (ch == ' ') {
         return UI_TEXTKEY_NONE;
     }
     k->typed = ch;
@@ -587,8 +701,9 @@ static const gfx_font_t *entry_face(gfx_rect_t box)
 
 /**
  * @brief Whether key @p key of @p k is a word rather than one character:
- *        the bottom row, DEL, and the Wi-Fi layer keys (the capitals key
- *        types "}" on the marks layer, a character there).
+ *        the bottom row, DEL, and the layer keys (the Wi-Fi capitals key
+ *        types "}" on the marks layer, a character there; the editor's
+ *        switches the pages of marks).
  * @param k   The keyboard.
  * @param key The key.
  * @return True for a word key.
@@ -598,7 +713,7 @@ static bool is_word(const ui_textkey_t *k, int key)
     return key >= UI_TK_DEL
            || (k->wifi && (key == UI_TK_LAYER
                            || (key == UI_TK_SHIFT
-                               && k->layer != UI_TK_MARKS)));
+                               && (k->editor || k->layer != UI_TK_MARKS))));
 }
 
 /** @brief The key faces, largest first: 20 x 36, 16 x 28, 12 x 24,
@@ -618,7 +733,8 @@ static const gfx_font_t *const k_faces[] = {
  */
 static int char_face(const ui_textkey_t *k)
 {
-    const gfx_rect_t r = ui_textkey_key_rect(k, 0);
+    const gfx_rect_t r = ui_textkey_key_rect(k, k->editor ? TK_EDITOR_FIRST
+                                                          : 0);
     for (int f = 0; f < TK_FACES - 1; ++f) {
         if (k_faces[f]->width + 2 * TK_KEY_PAD <= r.w
             && k_faces[f]->height + 2 * TK_KEY_PAD <= r.h) {
@@ -665,10 +781,15 @@ const gfx_font_t *ui_textkey_word_font(const ui_textkey_t *k)
 
 static void draw_field(const ui_textkey_t *k, gfx_canvas_t *c);
 static void draw_keys(const ui_textkey_t *k, gfx_canvas_t *c);
+static void draw_glass(const ui_textkey_t *k, gfx_canvas_t *c);
 
 void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
 {
     if (k == NULL || c == NULL || !k->open) {
+        return;
+    }
+    if (k->editor && k->see > 0u) {
+        draw_glass(k, c);
         return;
     }
     const gfx_rect_t a = k->area;
@@ -774,5 +895,103 @@ static void draw_keys(const ui_textkey_t *k, gfx_canvas_t *c)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
         ui_button_font(c, r, label, fill, k->pressed == key, true,
                        is_word(k, key) ? wf : cf);
+    }
+}
+
+/** @brief How far a key's rounded corner (UI_R_CTL, 8px) takes its first
+ *         8 rows in from each side, as gfx_fill_round_rect() draws it. */
+static const uint8_t k_corner_in[UI_R_CTL] = { 6, 4, 3, 2, 1, 1, 0, 0 };
+
+/**
+ * @brief How far row @p y of key @p r is taken in at each side by the
+ *        rounded corners.
+ * @param r The key.
+ * @param y The row, inside the key.
+ * @return 0 to 6px.
+ */
+static int corner_in(gfx_rect_t r, int y)
+{
+    const int top = y - r.y;
+    const int foot = r.y + r.h - 1 - y;
+    const int edge = (top < foot) ? top : foot;
+    return (edge < UI_R_CTL) ? k_corner_in[edge] : 0;
+}
+
+_Static_assert(UI_R_CTL == 8, "k_corner_in holds the corner of 8px");
+
+/**
+ * @brief The editor's keyboard see-through: the panel's colour blended
+ *        over the gaps and each key's fill over the key, both at
+ *        (100 - see)% so see% of the text behind shows through; then the
+ *        outline, each key's hairline and its label opaque, as
+ *        ui_button_font() draws them.
+ * @param k The keyboard, opened for the editor with a see-through above 0.
+ * @param c Canvas.
+ */
+static void draw_glass(const ui_textkey_t *k, gfx_canvas_t *c)
+{
+    const uint8_t a = (uint8_t)(255 - (k->see * 255 + 50) / 100);
+    /* The keys shown, by their left edge: a row of the area meets them
+     * left to right. */
+    gfx_rect_t keys[UI_TK_ALL] = { { 0, 0, 0, 0 } };
+    int n = 0;
+    for (int key = 0; key < UI_TK_ALL; ++key) {
+        const gfx_rect_t r = ui_textkey_key_rect(k, key);
+        if (r.w == 0) {
+            continue;
+        }
+        int i = n++;
+        for (; i > 0 && keys[i - 1].x > r.x; --i) {
+            keys[i] = keys[i - 1];
+        }
+        keys[i] = r;
+    }
+    const gfx_rect_t ar = k->area;
+    const gfx_color_t back = ui_theme_color(UI_C_PANEL);
+    for (int y = ar.y; y < ar.y + ar.h; ++y) {
+        int x = ar.x;
+        for (int i = 0; i < n; ++i) {
+            const gfx_rect_t r = keys[i];
+            if (y < r.y || y >= r.y + r.h) {
+                continue;
+            }
+            const int in = corner_in(r, y);
+            gfx_fill_rect_blend(c, x, y, r.x + in - x, 1, back, a);
+            x = r.x + r.w - in;
+        }
+        gfx_fill_rect_blend(c, x, y, ar.x + ar.w - x, 1, back, a);
+    }
+    gfx_draw_rect(c, ar.x, ar.y, ar.w, ar.h, ui_theme_color(UI_C_ACCENT));
+    const gfx_font_t *cf = ui_textkey_char_font(k);
+    const gfx_font_t *wf = ui_textkey_word_font(k);
+    for (int key = 0; key < UI_TK_ALL; ++key) {
+        const gfx_rect_t r = ui_textkey_key_rect(k, key);
+        const char *label = ui_textkey_key_label(k, key);
+        if (r.w == 0 || (key < UI_TK_DEL && label[0] == '\0')) {
+            continue;                /* not shown, or a blank */
+        }
+        /* The accent on DONE, the sunk panel on the rest; lighter while
+         * pressed, the label's colour from the fill as it is. */
+        const gfx_color_t fill = (key == UI_TK_DONE)
+                                     ? ui_theme_color(UI_C_ACCENT)
+                                     : ui_theme_color(UI_C_PANEL_SUNK);
+        const gfx_color_t body = (k->pressed == key)
+                                     ? gfx_lerp(fill, GFX_WHITE, 110) : fill;
+        /* The rounded rows one by one, the slab between them whole. */
+        for (int j = 0; j < UI_R_CTL; ++j) {
+            const int in = k_corner_in[j];
+            gfx_fill_rect_blend(c, r.x + in, r.y + j, r.w - 2 * in, 1, body,
+                                a);
+            gfx_fill_rect_blend(c, r.x + in, r.y + r.h - 1 - j,
+                                r.w - 2 * in, 1, body, a);
+        }
+        gfx_fill_rect_blend(c, r.x, r.y + UI_R_CTL, r.w, r.h - 2 * UI_R_CTL,
+                            body, a);
+        gfx_hline(c, r.x + UI_R_CTL, r.y + 1, r.w - 2 * UI_R_CTL,
+                  gfx_lerp(body, GFX_WHITE, 38));
+        gfx_text_in(c, r, label, is_word(k, key) ? wf : cf,
+                    ui_is_light(fill) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
+                                      : ui_theme_color(UI_C_TEXT),
+                    1, GFX_ALIGN_CENTER);
     }
 }

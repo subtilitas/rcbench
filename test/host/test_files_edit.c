@@ -9,6 +9,7 @@
  * - edit_opens_the_keyboard_and_a_key_types_at_the_cursor
  * - the_cursor_moves_by_tap_and_arrows_and_backspace_takes_a_unit
  * - enter_inserts_the_files_line_end
+ * - the_keyboard_leaves_8_rows_and_the_rest_show_through_it
  * - a_text_of_1mib_types_nothing_more_and_one_byte_over_does_not_open
  * - the_line_limit_holds_at_65536_line_ends
  * - the_home_tag_climbs_the_editor_and_asks_before_unsaved_text_goes
@@ -45,7 +46,7 @@ TEST_CASE(edit_opens_the_keyboard_and_a_key_types_at_the_cursor)
     edit();
     CHECK(text_view_editing());
     CHECK(text_view_keyboard());
-    CHECK_EQ(text_view_rows(), 4);
+    CHECK_EQ(text_view_rows(), 8);
     CHECK(!text_view_dirty());
     CHECK_EQ(text_view_cursor(NULL), 0u);
     ed_type("Ab1 ");
@@ -126,7 +127,7 @@ TEST_CASE(the_cursor_moves_by_tap_and_arrows_and_backspace_takes_a_unit)
 /*
  * ENTER types the file's line end: CR LF in a CR LF file, LF in an LF file
  * and in an empty one.  The text moves to the cursor's row when it goes
- * below the 4 rows over the keyboard.
+ * below the 8 rows over the keyboard.
  */
 TEST_CASE(enter_inserts_the_files_line_end)
 {
@@ -139,15 +140,75 @@ TEST_CASE(enter_inserts_the_files_line_end)
     CHECK(card_holds("USER/LOGS/CRLF.TXT", "one\r\n\r\ntwo\r\n", 12u));
     open_text("LF.TXT", "a\n");
     edit();
-    ed_type("\n\n\n\n\nz");
-    CHECK_EQ(text_view_cursor(NULL), 6u);
-    /* The cursor's row is the last of the 4 rows. */
+    ed_type("\n\n\n\n\n\n\n\n\nz");
+    CHECK_EQ(text_view_cursor(NULL), 10u);
+    /* The cursor's row is the last of the 8 rows. */
     size_t r = 9u;
     CHECK_EQ(text_view_top(&r), 2u);
-    CHECK_STR_EQ(row_at(3), "za");
+    CHECK_STR_EQ(row_at(7), "za");
     ed_key(UI_TK_DONE);
     save();
-    CHECK(card_holds("USER/LOGS/LF.TXT", "\n\n\n\n\nza\n", 8u));
+    CHECK(card_holds("USER/LOGS/LF.TXT", "\n\n\n\n\n\n\n\n\nza\n",
+                     12u));
+}
+
+/*
+ * The keyboard leaves 8 rows of the 10 x 20 face over it, 10 of the
+ * 8 x 16 face, each ending above the first row of keys.  With Keyboard
+ * see-through above OFF the rows under the keyboard are drawn too, so the
+ * text shows through it; the cursor is still kept on the 8 rows over it.
+ */
+TEST_CASE(the_keyboard_leaves_8_rows_and_the_rest_show_through_it)
+{
+    char text[30 * 4 + 1];
+    for (int i = 0; i < 30; ++i) {
+        snprintf(text + 4 * i, 5, "L%02d\n", i);
+    }
+    open_text("ROWS.TXT", text);
+    edit();
+    CHECK_EQ(text_view_rows(), 8);
+    CHECK_STR_EQ(row_at(7), "L07");
+    CHECK_STR_EQ(row_at(8), "");
+    /* The 8th row's foot above the first key's top, 4px or more. */
+    ui_textkey_t k;
+    memset(&k, 0, sizeof(k));
+    ui_textkey_open_editor(&k, gfx_rect_make(FS_SPOT_TV_KB_X, FS_SPOT_TV_KB_Y,
+                                             FS_SPOT_TV_KB_W,
+                                             FS_SPOT_TV_KB_H));
+    const gfx_rect_t q = ui_textkey_key_rect(&k, 10);
+    CHECK(FS_SPOT_TV_TEXT_Y + 8 * FS_SPOT_TV_PITCH + 4 <= q.y);
+    CHECK(ui_textkey_char_font(&k) == &gfx_font_20x36);
+    text_view_set_small(true);
+    CHECK_EQ(text_view_rows(), 10);
+    CHECK(FS_SPOT_TV_TEXT_Y + 10 * FS_SPOT_TV_PITCH_SMALL + 4 <= q.y);
+    text_view_set_small(false);
+    /* 50%, set on SETUP and FILES drawn anew: the rows under the keyboard
+     * are drawn, to the panel's foot. */
+    settings_set(SET_KB_SEE, 2.0f);
+    files_screen_invalidate();
+    draw();
+    CHECK_EQ(text_view_rows(), 8);
+    CHECK_STR_EQ(row_at(8), "L08");
+    CHECK_STR_EQ(row_at(TEXT_VIEW_ROWS_NORMAL - 1), "L17");
+    CHECK_STR_EQ(row_at(TEXT_VIEW_ROWS_NORMAL), "");
+    /* The cursor kept on the 8 rows: on line 12, the top is line 5. */
+    for (int i = 0; i < 12; ++i) {
+        ed_key(UI_TK_RIGHT);
+        ed_key(UI_TK_RIGHT);
+        ed_key(UI_TK_RIGHT);
+        ed_key(UI_TK_RIGHT);
+    }
+    size_t line = 0u;
+    (void)text_view_cursor(&line);
+    CHECK_EQ(line, 12u);
+    size_t r = 9u;
+    CHECK_EQ(text_view_top(&r), 5u);
+    CHECK_STR_EQ(row_at(7), "L12");
+    /* OFF again: the rows over the keyboard only. */
+    settings_set(SET_KB_SEE, 0.0f);
+    files_screen_invalidate();
+    draw();
+    CHECK_STR_EQ(row_at(8), "");
 }
 
 /*
@@ -493,6 +554,7 @@ int main(void)
     RUN(edit_opens_the_keyboard_and_a_key_types_at_the_cursor);
     RUN(the_cursor_moves_by_tap_and_arrows_and_backspace_takes_a_unit);
     RUN(enter_inserts_the_files_line_end);
+    RUN(the_keyboard_leaves_8_rows_and_the_rest_show_through_it);
     RUN(a_text_of_1mib_types_nothing_more_and_one_byte_over_does_not_open);
     RUN(the_line_limit_holds_at_65536_line_ends);
     RUN(the_home_tag_climbs_the_editor_and_asks_before_unsaved_text_goes);

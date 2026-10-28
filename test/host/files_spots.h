@@ -95,11 +95,11 @@ enum {
 #define FS_SPOT_TV_SAVE_CX   78
 #define FS_SPOT_TV_REVERT_CX 224
 #define FS_SPOT_TV_KEYS_CX   370
-/** @brief The editor's keyboard: its area under a panel of 4 rows. */
+/** @brief The editor's keyboard: its area under a panel of 8 rows. */
 #define FS_SPOT_TV_KB_X 8
-#define FS_SPOT_TV_KB_Y 158
+#define FS_SPOT_TV_KB_Y 236
 #define FS_SPOT_TV_KB_W 1008
-#define FS_SPOT_TV_KB_H 338
+#define FS_SPOT_TV_KB_H 260
 /** @brief The question's STAY and DISCARD, their middles. */
 #define FS_SPOT_TV_Q_CY        332
 #define FS_SPOT_TV_STAY_CX     336

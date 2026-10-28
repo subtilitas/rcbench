@@ -20,6 +20,7 @@
 
 #include "files_screen.h"
 #include "fm_name.h"
+#include "settings.h"
 #include "text_view.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -198,7 +199,7 @@ int tv_walk(void (*run)(void *ctx, int row, int cell, const char *bytes,
     static row_walk_t w;
     w.run = run;
     w.ctx = ctx;
-    w.rows = text_view_rows();
+    w.rows = tv_rows_drawn();
     w.first = 0;
     w.skip = tv.top_row;
     const size_t lines = text_view_lines();
@@ -467,9 +468,14 @@ static void draw_question(gfx_canvas_t *c)
 
 void text_view_render(gfx_canvas_t *c)
 {
+    /* SETUP's see-through as it stands: the keyboard draws over the whole
+     * panel while it shows through, over the panel's top part else. */
+    ui_textkey_set_see(&tv.kb,
+                       ui_textkey_see_pct(settings_get_int(SET_KB_SEE)));
+    const bool see = tv.kb.open && tv.kb.see > 0u;
     gfx_fill_rect(c, 0, 0, UI_PANEL_W, UI_BODY_H, UI_BG);
     draw_header(c);
-    ui_panel(c, tv_area(), NULL, UI_EDGE);
+    ui_panel(c, see ? TV_AREA : tv_area(), NULL, UI_EDGE);
     char line[192];
     sentence(line, sizeof(line));
     if (line[0] != '\0') {

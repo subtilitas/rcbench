@@ -228,6 +228,14 @@ int text_view_rows(void)
     return tv.small ? TEXT_VIEW_ROWS_SMALL : TEXT_VIEW_ROWS_NORMAL;
 }
 
+int tv_rows_drawn(void)
+{
+    if (tv.kb.open && tv.kb.see > 0u) {
+        return tv.small ? TEXT_VIEW_ROWS_SMALL : TEXT_VIEW_ROWS_NORMAL;
+    }
+    return text_view_rows();
+}
+
 gfx_rect_t tv_area(void)
 {
     return gfx_rect_make(TV_L, TV_AREA_Y, TV_W,
