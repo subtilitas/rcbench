@@ -907,4 +907,15 @@
 		(uuid "91d64ee8-a57b-513e-b725-3b87feb876b9")
 	)
 	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/USBC_PD_Trigger_DIP3_30x20mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )

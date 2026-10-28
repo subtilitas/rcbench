@@ -538,6 +538,14 @@ jobs:
       - name: pytest
         run: python3 -m pytest test/tools -q
 
+      # The STEP models of the KiCad library are text gen_all.py writes;
+      # OpenCASCADE reads each back and checks its solids, colours and
+      # bounding box against the spec.
+      - name: The KiCad STEP models load in OpenCASCADE
+        run: |
+          python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
+          python3 hardware/kicad/tools/step_check.py
+
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a
   # baseline line that no longer occurs, and in a pull request on any

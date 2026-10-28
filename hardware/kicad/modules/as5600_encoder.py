@@ -156,3 +156,19 @@ SYMBOL = {
         ("input", "SCL", "5", 12.7, 0, 180),
     ],
 }
+
+# 3D model. Both rows carry right-angle headers under the board (owner,
+# 2026-10-28); their pins leave horizontally over the nearest edge. Part
+# class figures, not measured: SOIC-8 body 1.5mm, chip parts 0.6mm. The
+# magnet (6 x 2.5mm diametric, 0.5-3mm air gap per the ams AS5600L
+# adapter-board manual) is not part of the model.
+MODEL = {
+    "mount": "angled",
+    "pins": [str(n) for n in range(1, 8)],
+    "holes": [(x, y, HOLE_D) for x, y in HOLES],
+    "bodies": [("box", CHIP[0] - 2.45, CHIP[1] - 1.95, CHIP[0] + 2.45,
+                CHIP[1] + 1.95, 1.5, "chip")]
+    + [("box", x0 + 0.4, y0 + 0.4, x1 - 0.4, y1 - 0.4, 0.6,
+        "black" if s.startswith("R") else "ceramic")
+       for x0, y0, x1, y1, s in PASSIVES],
+}
