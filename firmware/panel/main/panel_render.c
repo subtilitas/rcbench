@@ -393,7 +393,7 @@ void knob_apply(const knob_turn_t *turn, bool frame_lost)
 {
     if (turn->steps == 0 || frame_lost
         || ui_router_navigations() != turn->navigations
-        || ui_router_current() != turn->route) {
+        || ui_router_current() != turn->route || !ui_router_take_knob()) {
         return;
     }
     const float span =

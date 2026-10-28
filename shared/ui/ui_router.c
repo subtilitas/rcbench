@@ -325,6 +325,15 @@ bool ui_router_help_rect(gfx_rect_t *out)
            && ui_band_help_rect(&s.status, s.help, out);
 }
 
+bool ui_router_take_knob(void)
+{
+    if (s.help != UI_BAND_CHIP_NONE) {
+        s.help = UI_BAND_CHIP_NONE;
+        return false;
+    }
+    return true;
+}
+
 const ui_bench_status_t *ui_router_status(void) { return &s.status; }
 
 bool ui_router_take_stop(void)
