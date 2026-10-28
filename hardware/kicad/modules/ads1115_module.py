@@ -134,3 +134,17 @@ SYMBOL = {
         ("input", "A3", "10", 12.7, -5.08, 180),
     ],
 }
+
+# 3D model. ADS1115 in VSSOP-10, 1.1mm maximum (TI datasheet, package
+# DGS). 0805 parts 0.6mm, a part class figure.
+MODEL = {
+    "mount": "header",
+    "pins": [str(n) for n in range(1, 11)],
+    "holes": [(x, y, HOLE_D) for x, y in HOLES],
+    "bodies": [("box", CHIP[0] - 1.5, CHIP[1] - 1.5, CHIP[0] + 1.5,
+                CHIP[1] + 1.5, 1.1, "chip")]
+    + [("box", x - 0.62, 5.55, x + 0.62, 7.55, 0.6,
+        "ceramic" if i < 2 else "black") for i, x in enumerate(PAD_X[:6])]
+    + [("box", 3.06, 9.38, 5.06, 10.62, 0.6, "ceramic"),
+       ("box", 21.06, 4.08, 23.06, 5.32, 0.6, "ceramic")],
+}

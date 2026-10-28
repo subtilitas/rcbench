@@ -163,3 +163,27 @@ SYMBOL = {
         ("passive", "Vin-", "7", 15.24, -7.62, 180),
     ],
 }
+
+
+# 3D model. Screw terminal 8.8mm tall: a KF350-3.5-2P (LCSC C474892,
+# height above board 8.8mm); the terminal on the board is not
+# identified. Part class figures, not measured: 2512 shunt 0.6mm,
+# SOT-23-8 1.1mm, chip parts 0.6mm. The terminal holes take the
+# terminal's pins, not header pins.
+MODEL = {
+    "mount": "header",
+    "pins": ["1", "2", "3", "4", "5", "6"],
+    "holes": [(x, y, 2.3) for x, y in HOLES],
+    "bodies": [
+        ("box", 9.15, 0.15, 16.22, 6.35, 8.8, "termblue"),
+        ("box", 9.9, 6.55, 15.15, 9.6, 0.6, "black"),
+        ("box", 8.83, 6.55, 9.9, 9.6, 0.6, "metal"),
+        ("box", 15.15, 6.55, 16.22, 9.6, 0.6, "metal"),
+        ("box", CHIP[0] - 1.45, CHIP[1] - 0.8, CHIP[0] + 1.45,
+         CHIP[1] + 0.8, 1.1, "chip"),
+    ]
+    + [("box", x0, 11.6, x1, 14.65, 0.6, "ceramic")
+       for x0, x1 in ((3.03, 5.28), (5.48, 7.48), (7.78, 9.78))]
+    + [("box", 20.85, y0 + 0.35, 23.4, y1 - 0.35, 0.6, "ceramic")
+       for y0, y1 in ((11.15, 13.3), (13.8, 15.85))],
+}
