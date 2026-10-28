@@ -134,8 +134,6 @@ bool svs_command(float deg);
 /** @brief A motion command still waiting is dropped as the bench stops
  *         driving; a release, an arm and a disarm stay. */
 void svs_drop_motion(void);
-/** @brief DISARM asked of an armed bench: the value leaves LIVE now. */
-void svs_ask_disarm(void);
 /** @brief The angle @p deg as a pulse, us, through the profile, the trim,
  *         REVERSE and the ends; svs_deg_to_us() rounds it.
  * @param deg the angle, degrees

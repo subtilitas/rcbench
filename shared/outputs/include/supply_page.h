@@ -267,6 +267,32 @@ uint8_t supply_page_rx(const supply_page_t *p);
 uint64_t supply_page_pins(const supply_page_t *p);
 
 /**
+ * @brief The longest the IOmcu's start-up waits for the PD mini to read off
+ *        before anything else starts, in ms.
+ *
+ * Seven rates under AUTO, each WHO_AM_I that nothing answers 415ms with
+ * pdmini_hurry(), are 2.9s; the module found at the last of them is read
+ * and switched off, and its OFF read back, about 0.35s later.  3500ms
+ * leaves 0.25s more.  A module that does not answer delays the link by this
+ * much at every start.
+ */
+#define SUPPLY_PAGE_BOOT_OFF_MS 3500u
+
+/**
+ * @brief Whether the start-up still waits for the PD mini: a module is wired,
+ *        its output may be on (pdmini_may_be_on()), and @p elapsed_ms is
+ *        under SUPPLY_PAGE_BOOT_OFF_MS.
+ *
+ * @param p          The page state.
+ * @param drv        The PD mini driver, or NULL while none is attached.
+ * @param elapsed_ms Milliseconds since the wait began.
+ * @return true while the start-up waits; false for a NULL @p p or @p drv,
+ *         a page not enabled, an output read off and the bound reached.
+ */
+bool supply_page_boot_owed(const supply_page_t *p, const pdmini_t *drv,
+                           uint32_t elapsed_ms);
+
+/**
  * @brief One pass: the output off without a heartbeat, what the driver is to
  *        do, and what it last said into the read-only registers.
  *

@@ -230,7 +230,11 @@ static void test_apply(const servo_test_do_t *d)
     if (d->off) {
         supply_screen_ask_off();
     }
-    if (d->release) {
+    if (d->disarm && value_live()) {
+        /* An error ended the run: the bench to SAFE, as DISARM does it.
+         * The disarm lets go of the output, so no release goes before it. */
+        svs_ask_disarm();
+    } else if (d->release) {
         /* The value goes to the rest only where the pin follows: a run a
          * disarm ended leaves it where the run last drove it. */
         release();

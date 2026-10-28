@@ -116,8 +116,10 @@ channels and the INA228 take 43.4%. At most one part is probed a tick.
 ## SENSE_LIMIT
 
 A current limit for each channel, and the channels whose window passed it.
-An alert only: a limit passed stops nothing, switches nothing to SAFE and
-drives nothing.
+The IOmcu flags a limit passed and acts on nothing itself. The panel reads
+the flag every 200ms and answers it as an error: the bench switches to SAFE
+and the supply output switches off, unless a programming port holds the
+supply ([Safety, Errors](Safety.md#errors)).
 
 | Register | Name | Meaning |
 | ---: | --- | --- |

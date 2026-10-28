@@ -872,6 +872,27 @@ bool supply_rewire(void);
  */
 uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
                     bool checked);
+/**
+ * @brief One pass of the supply: the SUPPLY page told of a programming
+ *        port's frame, a step of the page, a wiring change taken, the PD
+ *        mini's bytes in, a step of its driver, and AUTO's next rate.
+ *
+ * @param now        This pass's clock, ms.
+ * @param frame_out  A programming port has a frame on the wire: an OFF
+ *                   waits for its end, SUPPLY_PAGE_OFF_WAIT_MS at most.
+ * @param supply_ok  The heartbeat is trusted and the link is up
+ *                   (safety_gate_supply_ok()); false asks the output off.
+ */
+void supply_pass(uint32_t now, bool frame_out, bool supply_ok);
+/**
+ * @brief The start-up's first act after the wiring is restored: the PD
+ *        mini read and switched off before the rest of the start runs.
+ *
+ * Passes of supply_pass() with the output asked off and pdmini_hurry() on,
+ * until the module reads off or SUPPLY_PAGE_BOOT_OFF_MS have passed
+ * (supply_page_boot_owed()).  Nothing when no module is wired.
+ */
+void supply_boot_off(void);
 
 /* iomcu_tone.c */
 /**

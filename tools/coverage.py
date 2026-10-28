@@ -191,6 +191,7 @@ TRACKED = [
     "shared/safety/reset_cause.c",
     "shared/safety/touch_loss.c",
     "shared/safety/frame_watch.c",
+    "shared/safety/error_stop.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
     "shared/servo/servo_sweep.c",

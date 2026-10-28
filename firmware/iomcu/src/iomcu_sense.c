@@ -8,6 +8,8 @@
  */
 #include <string.h>
 
+#include "pico/time.h"
+
 #include "iomcu.h"
 
 #include "pd_uart.h"
@@ -55,6 +57,65 @@ bool supply_rewire(void)
     s_pd_rate = supply_page_rate(&s_supply, NULL);
     s_pd_open = true;
     return true;
+}
+
+void supply_pass(uint32_t now, bool frame_out, bool supply_ok)
+{
+    /* The page first, so a heartbeat lost this pass reaches the driver as
+     * an OFF before it steps and can send an ON already queued.  An OFF of
+     * this pass waits for the end of a frame the programming port has on
+     * the wire. */
+    supply_page_port_frame(&s_supply, frame_out, now);
+    supply_page_step(&s_supply, supply_ok, s_pd_open ? &s_pd : NULL);
+    /* A wiring change whose state read has just shown the module off:
+     * taken now, before the driver's next transaction, so the module has
+     * no time to come on between that read and the rewire. */
+    uint16_t wire_next[4];
+    if (supply_page_wire_ready(&s_supply, wire_next)) {
+        (void)supply_take(LINK_SP_ENABLE, 4u, wire_next, true);
+    }
+    if (s_pd_open) {
+        uint8_t b;
+        while (pd_uart_getc(&b)) {
+            pdmini_rx(&s_pd, b, now);
+        }
+        pdmini_step(&s_pd, now);
+        /* Under AUTO, the next rate after a WHO_AM_I nothing answered
+         * validly -- between transactions, with the pins at rest. */
+        const uint8_t rate = supply_page_rate(&s_supply, &s_pd);
+        if (rate != s_pd_rate
+            && (s_pd.phase == PD_IDLE || s_pd.phase == PD_GAP)) {
+            pd_uart_baud(supply_page_baud(rate));
+            s_pd_rate = rate;
+        }
+    }
+}
+
+void supply_boot_off(void)
+{
+    if (!s_pd_open) {
+        return;
+    }
+    /*
+     * A module left on before this start -- a reset, a watchdog, BOOTSEL
+     * and back -- has stayed on for as long as this end was gone: nothing
+     * else reaches its UART.  It is read and switched off here, before the
+     * sensor bus, the store's erases, core 1 and the CAN controller, so the
+     * only thing between the reset and the OFF is the reads the driver
+     * needs to know the module and its state.  The link comes up after it,
+     * SUPPLY_PAGE_BOOT_OFF_MS later at most.
+     */
+    pdmini_hurry(&s_pd, true);
+    const uint32_t t0 = (uint32_t)to_ms_since_boot(get_absolute_time());
+    for (;;) {
+        const uint32_t now = (uint32_t)to_ms_since_boot(get_absolute_time());
+        s_now_ms = now;
+        if (!supply_page_boot_owed(&s_supply, &s_pd, now - t0)) {
+            break;
+        }
+        supply_pass(now, false, false);
+    }
+    pdmini_hurry(&s_pd, false);
 }
 
 /*

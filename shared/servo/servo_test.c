@@ -425,7 +425,9 @@ static void enc_open(servo_test_t *t, uint8_t end, bool counted,
 }
 
 /**
- * @brief The run ends: the output off and the servo let go, whatever ended it.
+ * @brief The run ends: the output off and the servo let go, whatever ended it,
+ *        and the bench to SAFE when an error ended it
+ *        (servo_test_abort_error()).
  *
  * @param t      Run state.
  * @param why    Reason for the end of the run.
@@ -445,6 +447,7 @@ static void finish(servo_test_t *t, servo_test_abort_t why, uint32_t now_ms)
     t->phase  = SERVO_TEST_PH_NONE;
     t->pend.off     = true;
     t->pend.release = true;
+    t->pend.disarm  = servo_test_abort_error(why);
     t->pend.on      = false;
     t->pend.set     = false;
     t->pend.command = false;
