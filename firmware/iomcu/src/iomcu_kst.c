@@ -77,9 +77,11 @@ uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
 
     /* A command that takes the port out of PWM holds the SUPPLY page from
      * this frame on: a SUPPLY write queued behind it is judged held.  And
-     * the HITEC page refuses the port from this frame on. */
+     * the HITEC page refuses the port from this frame on.  Whether it
+     * writes is told with it: a STOP ends a write in this frame. */
     ports_exclusive();
     supply_page_hold(&s_supply, ports_hold_supply());
+    supply_page_port_writes(&s_supply, ports_writing());
     /* And its pulses end in this frame: a capture armed on the port behind
      * the command is judged against the port as it is. */
     outputs_hw_ports_drive(ports_pulsing());

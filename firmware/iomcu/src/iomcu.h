@@ -1055,6 +1055,22 @@ static inline bool ports_hold_supply(void)
 }
 
 /**
+ * @brief A wire page writes to a servo's memory now: the KST port's
+ * session sending a WRITE, RESTORE or RELEASE, or the HITEC port's step
+ * running or its MORE bit standing (protocol 4.31).
+ *
+ * Told to the SUPPLY page with ports_hold_supply() after a write of either
+ * page and once a pass, so a SUPPLY OFF in the same batch of frames as the
+ * command that starts a write is judged against that write.
+ *
+ * @return True while a write runs.
+ */
+static inline bool ports_writing(void)
+{
+    return kst_port_writing(&s_kst) || hitec_port_writing(&s_hitec);
+}
+
+/**
  * @brief The ports that render their pulse while the bank drives: bound,
  * switched on, and not out of PWM for a wire protocol or a supply cycle.
  *

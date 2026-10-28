@@ -402,7 +402,11 @@ void supply_page_port_frame(supply_page_t *p, bool frame_out,
 
 /**
  * @brief Whether a programming port writes to the servo's memory now, once a
- *        pass before supply_page_step() and after the ports' own steps.
+ *        pass before supply_page_step() and after the ports' own steps, and
+ *        after each command of a port's page.
+ *
+ * Told after a command too, so a SUPPLY OFF taken in the same batch of
+ * frames as the command that starts a write is judged against that write.
  *
  * An OFF the panel writes while a port holds the page and this says true is
  * held back from the module: OUTPUT reads 0, the driver and the port's view

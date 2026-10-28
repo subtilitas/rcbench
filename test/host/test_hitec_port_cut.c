@@ -15,7 +15,8 @@
  *
  * Under test: an OFF between two steps waits for the write's last step and
  * reaches the module in the pass its transaction ends, the servo holding
- * every write; an OFF during the last step the same; an OFF with no write
+ * every write; an OFF during the last step the same, also one taken right
+ * behind the SEND that starts a step, no pass between; an OFF with no write
  * at once; a step whose bit stands and no step after it holds the OFF to
  * SUPPLY_PAGE_WRITE_WAIT_MS to the millisecond, across the wrap at
  * 2^32ms; the bit cleared by any other command, a refused one, a stop and
@@ -81,12 +82,13 @@ static void passes(unsigned ms)
 }
 
 /* A command of the page as iomcu_hitec.c takes it: the SUPPLY page told of
- * the hold in the same frame. */
+ * the hold and of the write in the same frame. */
 static uint8_t hcmd_raw(uint16_t word, uint16_t key, uint16_t crc)
 {
     const uint8_t nack = cmd_raw(word, key, crc);
 
     supply_page_hold(&g_sp, hitec_port_supply_hold(&g_port));
+    supply_page_port_writes(&g_sp, hitec_port_writing(&g_port));
     return nack;
 }
 
@@ -242,6 +244,33 @@ TEST_CASE(an_off_during_the_last_step_cuts_at_its_end)
     step_ends(true);
     CHECK(!g_pd.want_output);
     CHECK_EQ(g_drv.c_writes, 2u);
+}
+
+/* The OFF in the same batch of frames as the SEND that starts a step, no
+ * pass between them: judged against the step the SEND started.  The first
+ * step with the bit, then the last step without it. */
+TEST_CASE(an_off_right_behind_a_send_waits_for_its_step)
+{
+    open_at(0u, HITEC_CLASSIC);
+    classic_cell(true);
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    step_ends(true);
+    passes(32u);
+    CHECK(g_pd.want_output);
+    classic_balance();
+    step_ends(true);
+    CHECK(!g_pd.want_output);
+    CHECK_EQ(g_drv.eeprom[0x10], 0x55u);
+    CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
+
+    open_at(0u, HITEC_CLASSIC);
+    classic_balance();
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    step_ends(true);
+    CHECK(!g_pd.want_output);
+    CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
 }
 
 TEST_CASE(an_off_with_no_write_is_at_once)
@@ -410,6 +439,7 @@ int main(void)
     RUN(an_off_between_classic_steps_waits_for_the_balance);
     RUN(an_off_between_d_series_steps_waits_for_the_reboot);
     RUN(an_off_during_the_last_step_cuts_at_its_end);
+    RUN(an_off_right_behind_a_send_waits_for_its_step);
     RUN(an_off_with_no_write_is_at_once);
     RUN(a_bit_left_standing_holds_the_off_to_the_bound);
     RUN(the_bit_ends_with_any_other_command_a_refusal_a_stop_or_close);
