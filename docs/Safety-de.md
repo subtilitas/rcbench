@@ -15,7 +15,7 @@ verifiziert.
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
-| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels läuft nicht mehr, während der Prüfstand ARMED ist oder der Ausgang des Netzteils an ist | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
+| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist oder der Ausgang des Netzteils an ist | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
 Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
 Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
@@ -127,7 +127,7 @@ Drei Fälle, und der mittlere ist die Lücke:
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
 | Das Panel hört auf zu schlagen, der IOmcu ist gesund | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel hört auf zu schlagen und der IOmcu kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
+| Das Panel hört auf zu schlagen und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
 | Das Panel ist gesund und der IOmcu verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
 
 Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
@@ -156,7 +156,7 @@ sobald sie ausbleibt.
 Der Heartbeat wird vom Control-Task erzeugt, der STOP besitzt und alle 5ms
 auf Kern 1 läuft, dem Kern, der nicht zeichnet. Er kommt nicht von einem
 Timer oder einer Peripherie und nicht aus der Schleife, die zeichnet: ein
-Panel, das nicht mehr zeichnet, lässt sich noch stoppen. Den Touch-Controller
+Panel, das aufgehört hat zu zeichnen, lässt sich noch stoppen. Den Touch-Controller
 liest eine eigene Task, Priorität 5 auf Kern 0, dem Kern, der zeichnet. Der
 Control-Task nimmt deren Ereignisse aus einer Queue und beurteilt den
 Controller nach der Zeit seit dessen letzter Antwort: 500ms ohne Antwort
@@ -174,7 +174,7 @@ was immer im Register ARM steht.
 | --- | --- |
 | Ein Start des IOmcu | Einschalten, ein Reset, der RUN-Pin, ein Neuflashen |
 | Stille auf dem Link | 200ms ohne Anfrage, zusammen mit dem Link-Failsafe |
-| Dem Heartbeat wird nicht mehr vertraut | ein Abstand unter 4ms oder über 150ms, oder 150ms ohne Flanke |
+| Dem Heartbeat wird nicht vertraut | ein Abstand unter 4ms oder über 150ms, oder 150ms ohne Flanke |
 | Ein abgewiesenes ARM | ein ARM, das mit NOT_ARMED beantwortet wurde; ein CLEAR mit anschließend abgewiesenem ARM lässt den Latch also gesetzt |
 
 Eines löscht ihn: das Schreiben von 0x5AFE in CLEAR auf der Control-Page.
@@ -191,7 +191,7 @@ IOmcu mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
 Panel als `IOmcu hat auf SAFE geschaltet. ARM erneut halten.` meldet.
 
 Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
-IOmcu nicht mehr, während der Prüfstand ARMED ist oder ein Schalten auf ARMED
+IOmcu nicht, während der Prüfstand ARMED ist oder ein Schalten auf ARMED
 auf die Leitung wartet, rastet am Panel bei diesem Poll ein Stopp ein: die
 eigene Bank wird auf SAFE geschaltet, das Gas geht auf null, eine gehaltene
 Servo-Position wird losgelassen, und der Heartbeat stoppt. Eine ausbleibende
@@ -247,14 +247,14 @@ oben aufgegeben, und nichts wird geschrieben. Ist sie nach einem quittierten
 CLEAR abgelaufen, wird kein Frame geschrieben, und am Panel rastet ein Stopp
 ein: das CLEAR hat den Latch des IOmcu gelöst, und kein Register
 setzt ihn wieder, also hält der Stopp den Heartbeat zurück, und der
-IOmcu setzt seinen Latch, sobald er der Leitung nicht mehr vertraut,
+IOmcu setzt seinen Latch, sobald er der Leitung nicht vertraut,
 innerhalb von 150ms. Die Grenze der Frist ist der Frame, der auf ARMED schaltet,
 selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
 bis zum Timeout von 1000ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
 IOmcu hat dann die angefragte Rolle auf ARMED geschaltet, in Ruhe: Gas 0
 für MOTOR & ESC und dessen Stick-Läufe, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
-unbeantwortet -- das Lesen von STATUS, das Freigeben des Servos, CLEAR oder
-der Frame, der auf ARMED schaltet --, hat er den Timeout von 1000ms abgewartet
+unbeantwortet (das Lesen von STATUS, das Freigeben des Servos, CLEAR oder
+der Frame, der auf ARMED schaltet), hat er den Timeout von 1000ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schalten auf ARMED
 ausfällt, und am Panel rastet ein Stopp ein wie oben. Eine Ablehnung ist
 eine Antwort und lässt das Panel SAFE und ohne Stopp. Ohne
@@ -325,7 +325,7 @@ dann ARM erneut halten.`. Mit diesem IOmcu schaltet der Prüfstand nicht auf
 ARMED. Das Panel bietet beim Link-up das IOmcu-Image an, das es mitbringt,
 nach seinem eigenen Halten von 2s; der IOmcu startet nach dem Update neu,
 und der folgende Link-up schuldet das Paar erneut. Ohne IOmcu schaltet die
-eigene Bank des Panels wie bisher auf ARMED.
+eigene Bank des Panels auf ARMED.
 
 Eine Änderung zur Zeit 0 wird beim ersten Poll ab 300ms beglichen: ein Poll
 bei 299ms lässt sie offen, ein Poll bei 300ms begleicht sie. Die Zeit wird
@@ -427,7 +427,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   das den Verlust überlebt hat, von der Seite mit dem Druck weg navigiert haben
   kann; jede Seite verwirft jede laufende Geste. Das kommandiert nichts,
   genau wie ein frühes Loslassen, mit der einen Ausnahme weiter unten. Beide
-  Queues sind nummeriert -- die Event-Queue des Treibers verwirft ihren
+  Queues sind nummeriert: die Event-Queue des Treibers verwirft ihren
   ältesten Eintrag aus demselben Grund, und eine Lücke, die der Control-Task
   dort findet, reist als eigener Eintrag zum Render-Task, vor den Events, die
   ihr folgten. Der Render-Task leert die Queue unmittelbar vor dem Tick des
@@ -445,7 +445,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Tasten, Zeilen und die LÖSCHEN-Rückfrage des Log-Viewers und die Tab-Zeilen
   von MOTOR & ESC, RECEIVER und BALANCE wirken stattdessen auf das Release,
   und ein gehaltener Druck besitzt eine Track-ID, die der Controller
-  wiederverwendet -- ein späterer Kontakt, der woanders begann, wird dann für
+  wiederverwendet; ein späterer Kontakt, der woanders begann, wird dann für
   das fehlende Release gehalten. Die LÖSCHEN-Rückfrage bleibt bei einem Abbruch
   offen und nimmt den nächsten frischen Druck an. HOME und STOP sind die eigene
   Geste des Routers, und er bricht sie selbst ab.
@@ -454,8 +454,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Kontakt, dessen Druck sie bekommen hat. Ein Kontakt, der auf dem Statusband
   (den oberen 48px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
   er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
-  Bedienelement, das anhält, was der Prüfstand treibt -- DISARM, AUSGANG AUS,
-  ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN --, das die Seite
+  Bedienelement, das anhält, was der Prüfstand treibt (DISARM, AUSGANG AUS,
+  ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN), das die Seite
   dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band oder bei
   offenem Hilfe-Kasten eines Chips gehört er der Seite, und Band oder Kasten
   schließen sich. ARM wird nie genannt, also startet ein Druck auf ARM unter
@@ -479,8 +479,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gewirkt, und ihr Release tut nichts.
   STOP und das Home-Tag reagieren auf einen Druck, der auf ihnen aufsetzt:
   Ein Kontakt, der vom Bildschirm auf STOP rutscht, drückt nichts. Ein Druck,
-  den der Router der Seite vorenthält -- auf dem Band, auf STOP, dem Home-Tag,
-  einem Chip oder dem Alert-Band --, lässt die Kontakte der Seite ebenso los,
+  den der Router der Seite vorenthält (auf dem Band, auf STOP, dem Home-Tag,
+  einem Chip oder dem Alert-Band), lässt die Kontakte der Seite ebenso los,
   an ihrer letzten Stelle im Bildschirm und markiert: Ein laufender Drag auf
   dem Zifferblatt oder einem Schieberegler endet bei diesem Druck, und nichts,
   was er getrieben hat, wird danach kommandiert. Die
@@ -529,8 +529,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   er genommen hatte. Der Control-Task leert zuerst die Queue des Treibers und
   verwirft dann ein Schalten auf ARMED, wenn der Render-Task seither Gesten
   verworfen hat oder einen Verlust-Eintrag noch nicht genommen hatte. Ist
-  das Schalten auf ARMED ausgeführt, macht jeder Verlust -- der Render-Task
-  verwirft Gesten, oder im Strom des Treibers fehlt eine Nummer -- es
+  das Schalten auf ARMED ausgeführt, macht jeder Verlust (der Render-Task
+  verwirft Gesten, oder im Strom des Treibers fehlt eine Nummer) es
   rückgängig, bis der Render-Task ARMED bestätigt; das tut
   ein Frame nur, wenn er in ARMED begann und den Strom vollständig fand. Der
   Control-Task sieht in jeder Wartezeit einer Link-Transaktion nach, nicht
@@ -606,8 +606,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Einschalten, eine Messung, die nicht eintrifft (ein NACK oder ein
   Timeout von 5ms), und ein
   Sprung über 90deg zwischen zwei Messungen setzen jeweils die Referenz neu
-  und bewegen nichts; ein Knopf, der nicht mehr antwortet, trägt also nichts
-  mehr bei, und kein letzter Wert bleibt als Kommando stehen. Ein Finger auf
+  und bewegen nichts; ein Knopf, der aufhört zu antworten, trägt also nichts
+  bei, und kein letzter Wert bleibt als Kommando stehen. Ein Finger auf
   Track oder Zifferblatt besitzt den Wert gegenüber dem Knopf für den ganzen
   Frame, in dem er das Bedienelement berührt hat, und auf SERVO besitzen ein
   Sweep, ein Testlauf und das Einstellungsfeld das Horn. Ein Frame, der
@@ -645,7 +645,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
 - Nach einem Link-Failsafe schaltet der IOmcu nicht wieder auf ARMED, wenn
   Verkehr zurückkehrt. Das Failsafe wird durch das Schreiben eines definierten
   Werts (0x5AFE) auf die Control-Page verlassen. Dasselbe gilt nach einem
-  Start des IOmcu und nach einem Heartbeat, dem nicht mehr vertraut
+  Start des IOmcu und nach einem Heartbeat, dem nicht vertraut
   wurde: siehe [Arm-Latch](#arm-latch).
 - Ein Link, der bei einem Prüfstand in ARMED ausfällt, ist am Panel ein Stopp. Er
   rastet ein wie STOP und wird vom nächsten Schalten auf ARMED gelöst.

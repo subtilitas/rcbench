@@ -18,8 +18,8 @@ used for any of them.
 | | |
 |---|---|
 | Jumper leads | female-to-female for headers, and a few female-to-pin for probe tips |
-| Signal relays | two per board -- one for BOOT, one for RESET -- with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
-| Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level** -- pull-down for an active-high driver, pull-up for active-low. GPIO 16 to GPIO 19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
+| Signal relays | two per board (one for BOOT, one for RESET) with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
+| Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level**: pull-down for an active-high driver, pull-up for active-low. GPIO 16 to GPIO 19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
 | Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
 | Two 120Ω terminators | one at each end of the CAN pair. Two in parallel are the 60Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3V island: a translator that senses the target's rail, not a divider chosen once |
@@ -54,7 +54,7 @@ power.
 
 **Deliberately biased is not the same as shorted.** The relay driver in
 section 4 holds its input down when nothing is driving it, so that pad reads
-its pull-down to ground rather than open -- tens of kilohms, and it is
+its pull-down to ground rather than open: tens of kilohms, and it is
 supposed to. So is any other input given a defined inactive level. What this
 check is looking for is single-digit ohms, which is a lead in the wrong hole;
 a resistance in the kilohms is a bias, and taking it out to make this check
@@ -70,20 +70,20 @@ part of the wiring rather than something assumed:
 | | |
 |---|---|
 | The Pi | its own supply |
-| The RP2350 | its own USB, from a charger or a powered hub -- **not from the Pi**, and **not from the Pi's 3.3V pin**. A cable to the Pi grounds the two a second time, through the USB shell, and the star lead in step 2 is then one of two return paths rather than the only one |
+| The RP2350 | its own USB, from a charger or a powered hub, **not from the Pi** and **not from the Pi's 3.3V pin**. A cable to the Pi grounds the two a second time, through the USB shell, and the star lead in step 2 is then one of two return paths rather than the only one |
 | The IOmcu | its own USB |
 | The panel | its own USB-C, on the socket it is flashed from |
 | Relay coils | their own supply, through the driver |
 | The servo and ESC rails | their own supplies, switched by the monostable's power path and never from a board's rail |
 
 Four separate USB supplies is the ordinary case, and the grounds meet only at
-the star point above -- **except while a target board is on a data cable to
+the star point above, **except while a target board is on a data cable to
 the Pi.** Step 4's loader check and section 9 need those cables, and each one
 ties that board's ground to the Pi's through the shell, in parallel with its
 star lead.
 
-That is tolerable because those two are functional checks -- does the board
-restart, does it enumerate -- and not measurements. **Do not take an analyser
+That is tolerable because those two are functional checks (does the board
+restart, does it enumerate) and not measurements. **Do not take an analyser
 or scope reading while a target is on a data cable to the Pi**, or use an
 isolated USB adapter for it. A second return path is not visible in a capture;
 it is visible as noise nobody can source.
@@ -115,16 +115,16 @@ pulled down, and the SWD specification puts a pull-up on SWDIO. OpenOCD's own
 `interface/raspberrypi5-gpiod.cfg` puts SWDIO on GPIO8 for the same reason.
 **This is not a fix for anything observed.** No target has been on either pin,
 so whether a pull-down on GPIO24 would have cost anything is unknown; the pin
-that matches the specification is simply the one to wire while nothing is
+that matches the specification is the one to wire while nothing is
 wired.
 
 Those pulls are power-on values and reading them back proves nothing once the
-check below has run -- OpenOCD leaves the lines it drove with no pull at all.
+check below has run: OpenOCD leaves the lines it drove with no pull at all.
 `README.md` under *Flashing without hands* has the readings and the condition;
-`host/selftest.sh` prints what is on the pins now beside the power-on value.
+`host/selftest.sh` prints what is on the pins beside the power-on value.
 
-Any two free header GPIOs work -- the lines are bit-banged through
-`linuxgpiod`, not a peripheral -- but the bench is reproducible only if every
+Any two free header GPIOs work (the lines are bit-banged through
+`linuxgpiod`, not a peripheral), but the bench is reproducible only if every
 assembler uses the same two, and `testbench/host/selftest.sh` reports
 whichever it is given.
 
@@ -140,8 +140,8 @@ claims that line and `linuxgpiod` cannot have it. SPI is off on the bench host
 
 The RP1 sits behind PCIe, and OpenOCD's `interface/raspberrypi5-gpiod.cfg`
 warns that under any other policy the first few pulses can be clocked as fast
-as 20MHz. Whether that costs a connection is unmeasured -- no target has been
-on these pins -- so this is a setting OpenOCD asks for and not a fault anyone
+as 20MHz. Whether that costs a connection is unmeasured (no target has been
+on these pins), so this is a setting OpenOCD asks for and not a fault anyone
 has seen. It does not survive a reboot. `host/selftest.sh` prints the policy it
 finds.
 
@@ -160,7 +160,7 @@ a file. `target/rp2350.cfg` comes last because it selects the transport, and
 the GPIO assignments have to be in place first.
 
 The chip number stays a placeholder because it moves with the kernel and the
-firmware -- it has been `gpiochip4` and it has been `gpiochip0` -- which is
+firmware (it has been `gpiochip4` and it has been `gpiochip0`), which is
 what `gpiodetect` is for. The two GPIO numbers do not move.
 
 It should find a target and exit without complaint. With nothing on the pins
@@ -175,9 +175,9 @@ found nothing answering on them; which of those it is, is what the rest of
 this step is for. Recheck the two leads against the table above before
 concluding anything about the board.
 
-There is no clock to come down to. `linuxgpiod` runs at a fixed rate --
+There is no clock to come down to. `linuxgpiod` runs at a fixed rate:
 OpenOCD prints `Note: The adapter "linuxgpiod" doesn't support configurable
-speed` -- so an `adapter speed` line changes nothing.
+speed`, so an `adapter speed` line changes nothing.
 
 That the rate is fixed does not make it suitable. It is not measured on this
 host, and the PCIe policy above can clock the first pulses far above it. If a
@@ -189,8 +189,8 @@ and a different adapter; neither is `adapter speed`. `README.md` under
 
 ## 3. The analyser
 
-Its ground lead to the star point. One probe on anything that is switching --
-the heartbeat is the easiest, once the boards run -- and the rest left off
+Its ground lead to the star point. One probe on anything that is switching
+(the heartbeat is the easiest, once the boards run) and the rest left off
 until the step that uses them.
 
 **Check, one: the instrument.**
@@ -202,7 +202,7 @@ capture: an analyser that enumerates but returns nothing has no bitstream, and
 that failure otherwise looks like a quiet bench.
 
 **Check, two: the lead.** The capture above passes with the probe off, the
-ground lead off, or both -- it asks the device for samples and reports that
+ground lead off, or both: it asks the device for samples and reports that
 samples arrived, and a floating input produces samples like any other. So
 drive something known and require the channel to follow it.
 
@@ -226,11 +226,11 @@ the level change.
 
 This is the libgpiod 2 spelling, checked against libgpiod 2.2.1 on the bench
 host. Version 1 wrote the same thing as `--mode=time --usec=` around a shell
-loop, and its options are not accepted here -- read `gpioset --help` on the Pi
+loop, and its options are not accepted here: read `gpioset --help` on the Pi
 before copying this.
 
 **The channel has to change.** A trace that sits at one level says the probe
-is not on the pin, or the ground lead is not on the star -- and either of
+is not on the pin, or the ground lead is not on the star, and either of
 those is a bench where every later capture reads quiet and every later step is
 diagnosed as the thing being measured. Repeat it for each probe as that probe
 is placed, rather than once for the first one.
@@ -240,7 +240,7 @@ is placed, rather than once for the first one.
 ## 4. Relays across BOOT and RESET
 
 One contact in parallel with each button, on both boards: four in all. The
-contact goes across the button, not to a supply -- a button is a dry contact
+contact goes across the button, not to a supply: a button is a dry contact
 to ground and the relay is only closing it.
 
 Coils from their own supply, through their driver, controlled by the RP2350.
@@ -265,7 +265,7 @@ the heartbeat junction with an edge every 20ms inside step 7 alone.
 **The panel's link is open before it drives; the monostable's stays closed.**
 The panel drives its end push-pull, so that node carries one driver at a time
 or it carries contention, and opening the panel's branch is what makes room.
-The monostable's branch is not in the way -- it only listens -- and it has to
+The monostable's branch is not in the way (it only listens) and it has to
 stay closed so the interlock is still being fed when the capture starts.
 Opening it early is what makes the window unmeasurable: step 7 takes it out
 while the capture runs, so the last trigger edge and the enable falling are in
@@ -283,7 +283,7 @@ not accept a download.
 
 **Check**, one at a time, with the boards powered:
 
-- **Pulse** RESET alone -- close it, then release it. The board restarts on
+- **Pulse** RESET alone: close it, then release it. The board restarts on
   the release, so a contact left closed holds it in reset and looks exactly
   like a relay that is not wired.
 - Close BOOT, pulse RESET, release RESET, release BOOT: the board comes up in
@@ -310,7 +310,7 @@ It answers at 0x14; the real controller stays at 0x5D.
 
 **Which two lines on the panel.** `BOARD_I2C_PIN_SDA` is GPIO7 and
 `BOARD_I2C_PIN_SCL` is GPIO8, on `I2C_NUM_0` at `BOARD_I2C_FREQ_HZ`
-(400,000Hz) -- `firmware/panel/components/board/include/board_pins.h`. The
+(400,000Hz); see `firmware/panel/components/board/include/board_pins.h`. The
 bus is brought out on the board's 4-pin I²C header
 (`docs/Building.md`, "The touch bus header"). The order of its pins is not
 known: find SDA and SCL with a meter against the board in hand before the
@@ -346,7 +346,7 @@ master is a fault, not a measurement.
 the loader, and section 1 rules out an analyser reading while a target is on a
 data cable to the Pi: the USB shell grounds the panel a second time, in
 parallel with its star lead, and the return path that creates is not visible
-in a capture -- it is visible as noise nobody can source.
+in a capture; it is visible as noise nobody can source.
 
 **But that socket is also where the panel's power comes from.** The supply
 table gives the panel its own USB-C, on the socket it is flashed from, which
@@ -365,8 +365,8 @@ the first clock edge rather than started and hoped over:
 
     testbench/host/capture.sh touch-boot D9,D10 4m 2m 1.65 D9=f
 
-Start it, then pulse RESET on the panel -- section 4 wired that contact, so it
-is one relay away. The trigger is what makes the order safe: sigrok waits at
+Start it, then pulse RESET on the panel (section 4 wired that contact, so it
+is one relay away). The trigger is what makes the order safe: sigrok waits at
 the first falling SCL and the 0.5s runs from there, so a reset five seconds
 late costs nothing. Without it the window has to be hit by hand, and a miss
 reads as a bus with nothing on it.
@@ -398,7 +398,7 @@ finds it at its next start (a panel looks at start-up only): pulse its
 RESET, and the status band's MODE chip reads `INJECT`. After an injector
 reset the panel needs no RESET if it found the injector at start-up: it
 detached the silent injector after 1000ms and
-re-attaches it within about 1s of `confirm`. Capture one again: the decode now
+re-attaches it within about 1s of `confirm`. Capture one again: the decode
 shows 0x14 polled after every read of 0x5D.
 
 ---
@@ -406,7 +406,7 @@ shows 0x14 polled after every read of 0x5D.
 ## 6. The link
 
 **The bus first, then the probes.** CANH to CANH and CANL to CANL between the
-two transceivers, with 120Ω at both ends -- `docs/Link.md` gives the
+two transceivers, with 120Ω at both ends; `docs/Link.md` gives the
 termination and the 1Mbit/s rate.
 
 **Twisted, short, and away from the motor leads.** The two wires are twisted
@@ -432,8 +432,8 @@ or open, and that is the commonest way this is built wrong.
 a TJA1051T/3 transceiver on header H11, and neither pin carries anything else
 (`board_pins.h`). `docs/Link.md` has the detail.
 
-Then four leads on the IOmcu's SPI to the XL2515 -- SCK on GPIO 10 pad 14, MOSI
-on GPIO 11 pad 15, MISO on GPIO 12 pad 16, CS on GPIO 9 pad 12 -- and one on RXCAN
+Then four leads on the IOmcu's SPI to the XL2515: SCK on GPIO 10 pad 14, MOSI
+on GPIO 11 pad 15, MISO on GPIO 12 pad 16, CS on GPIO 9 pad 12, and one on RXCAN
 between the controller and its transceiver.
 
 **RXCAN is a net here and not yet a point.** The four SPI leads name a pin and
@@ -492,7 +492,7 @@ sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 is on no board; no page in this tree gives a part, a timing network, a trigger
 polarity, or the two gates. So this guide cannot be followed to build it, and
 an assembler improvising one may well produce something that stays enabled
-after the edges stop -- which is the failure it exists to prevent.
+after the edges stop, which is the failure it exists to prevent.
 
 What it has to do, so that a circuit can be designed against it and checked:
 
@@ -504,7 +504,7 @@ What it has to do, so that a circuit can be designed against it and checked:
 | Gates | two, both downstream of the IOmcu's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
-| Two links, both removable | one in the panel's GPIO28 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GPIO 3. The differential test needs to split that node three ways, and the panel drives GPIO28 push-pull, so it cannot simply be joined |
+| Two links, both removable | one in the panel's GPIO28 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GPIO 3. The differential test needs to split that node three ways, and the panel drives GPIO28 push-pull, so it cannot be joined |
 
 Part numbers are deliberately absent: `hardware/README.md` says a part is not
 chosen until it is available at a vendor, and this belongs in `hardware/` as
@@ -512,9 +512,9 @@ its own page rather than being improvised inside a wiring guide.
 
 A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
-one thing the interlock exists for -- a panel that has crashed, wedged, reset
-or browned out taking the outputs down without asking firmware at either end
--- would be absent. The window is about 150ms, inside the IOmcu's
+one thing the interlock exists for (a panel that has crashed, wedged, reset
+or browned out taking the outputs down without asking firmware at either end)
+would be absent. The window is about 150ms, inside the IOmcu's
 200ms link failsafe.
 
 A servo or an ESC signal line that runs at 5V goes through the translator on
@@ -533,7 +533,7 @@ not be there on a healthy panel.
 **Check, two: the interlock, and only the interlock.** Stopping the edges is
 not a test on its own. `firmware/iomcu/src/main.c` polls the same line and
 calls `outputs_off()` when it has been quiet for HEARTBEAT_MAX_GAP_MS
-(150ms) -- the same threshold, by design, since both watch the same wire. So
+(150ms), the same threshold by design, since both watch the same wire. So
 an output that stops when the edges stop proves nothing: a bench with no
 monostable at all passes that.
 
@@ -550,8 +550,8 @@ servo and ESC power do not: a servo rail is 8.4V, the IO board's adjustable supp
 every analyser lead here is a direct connection with a series resistor, and
 `capture.sh`'s threshold argument sets a comparator level rather than
 attenuating anything. An LA2016 input is rated to 5V. So the analyser takes
-the **switch's control node** -- the gate or enable pin of whatever passes the
-rail -- which is logic and carries the timing.
+the **switch's control node** (the gate or enable pin of whatever passes the
+rail), which is logic and carries the timing.
 
 *A scope on the rail, on the same trigger.* The control node says the switch
 was told to open. It does not say the rail went down: a switch that is
@@ -582,14 +582,14 @@ that measurement mean something:
   voltage: that is the bottom of *guaranteed* operation, and a servo or an ESC
   below it may go on holding, twitching or producing torque rather than
   stopping. The honest threshold is the voltage at which **this** load is
-  measured to stop -- run it down on the bench and find it -- and until that
+  measured to stop (run it down on the bench and find it), and until that
   measurement exists, a conservative near-zero figure. Nothing between the two
   is a claim about the load.
 - *A load on it.* An unloaded rail with a bulk capacitor decays slowly and
   measures whatever the capacitor decides. Take it with the servo or the ESC
-  connected -- the bench's own load, in the state the interlock exists for.
+  connected, the bench's own load, in the state the interlock exists for.
 
-The switched supplies are separate -- on the IO board, each of the 3 servo rails, the adjustable supply and the ESC pack -- so each has its own
+The switched supplies are separate (on the IO board, each of the 3 servo rails, the adjustable supply and the ESC pack), so each has its own
 switch and each is its own claim. Measuring one proves nothing about another:
 a bypassed or failed-short switch on an unmeasured rail leaves that
 load powered through a check that passed. Repeat the whole
@@ -605,19 +605,19 @@ same failure on another one.
 The heartbeat is one node: the panel's GPIO28, the IOmcu's GPIO 3 and the
 monostable's trigger all meet on it. The panel drives its end **push-pull**
 (`firmware/panel/main/panel_control.c`), so a second driver on that node is contention
-rather than a test -- a corrupted reading at best and a damaged pin at worst.
+rather than a test: a corrupted reading at best and a damaged pin at worst.
 
 Split it before injecting anything, which is what the two links are for:
 
-1. **Open the panel's branch.** Nothing of the panel's is driving now, so the
+1. **Open the panel's branch.** Nothing of the panel's is driving, so the
    next step is not contention.
 2. **Have the RP2350 drive the junction from GPIO 22** with one edge every
-   20ms -- a 40ms cycle, not a 40ms edge spacing and not a 20ms cycle --
+   20ms (a 40ms cycle, not a 40ms edge spacing and not a 20ms cycle),
    so `heartbeat_poll()` on the IOmcu never expires. The monitor rejects only
    edges closer than 4ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10ms is
    accepted and a wrong rate here is injected rather than caught.
 
-The monostable's trigger branch stays **closed** for now, and that is the
+The monostable's trigger branch stays **closed** at this step, and that is the
 change that makes the test measurable. Both the firmware and the interlock are
 being fed at this point, which is the state the run has to start from: the
 enable asserted, the load side live, and edges on the trigger to measure a
@@ -625,7 +625,7 @@ window from. Opening that branch first instead leaves nothing in the trace but
 an enable that is already down, and an enable that fell in 120ms, one that
 took four seconds and one that was never asserted at all are the same picture.
 
-Firmware is being told the panel is alive, and so is the interlock -- until the
+Firmware is being told the panel is alive, and so is the interlock, until the
 capture is running and the branch comes out.
 
 **Bind first, then switch to ARMED.** Binding is done on SETTINGS/OUTPUTS, and both bench
@@ -636,13 +636,13 @@ undoes it on the way. In order:
 1. **SETTINGS/OUTPUTS**: bind the output the capture watches, which is GPIO 0 on
    D0 here.
 2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and press ARM there.
-3. **Command it away from rest** -- throttle above zero, or the horn off
+3. **Command it away from rest**: throttle above zero, or the horn off
    centre. ARMED is what makes the pin drive at all; a command away from rest
    is what makes the trace unambiguous, since a DShot zero-throttle frame and
    a 1500us centre pulse are both edges and neither is distinctive.
 
-Then capture **after the gate** -- the load-facing side of the gated output,
-and the monostable's output-enable -- on whichever channels the run is not
+Then capture **after the gate** (the load-facing side of the gated output,
+and the monostable's output-enable) on whichever channels the run is not
 otherwise using. The map in `testbench/README.md` gives channels 14 and 15 to
 SBUS and a spare, and neither is in this run, so the two interlock leads take
 them: **D14 the output-enable, D15 the load-facing side.**
@@ -658,7 +658,7 @@ before it. The window is measured from the last edge into the trigger, so
 that edge and the enable falling have to be in one trace, and the branch has
 to come out inside the first 3.8s for the 150ms after it to still be in the
 trace. 24MHz over the same 4m samples covers 167ms, which is 17ms more
-than the 150ms window and not less -- and 17ms is the whole budget for
+than the 150ms window and not less, and 17ms is the whole budget for
 reaching the link by hand and for the two or three 20ms heartbeat edges
 before the pull that make the last one readable as the last one. There is no
 trigger to align the trace on: the pull is a hand on a link, and a trigger on
@@ -693,7 +693,7 @@ dead lead, which is why it is captured alongside.
 
 **Probe D3 on the monostable's side of that link, not on the junction.** The
 channel map puts D3 at the node of the panel's GPIO28 and the IOmcu's GPIO 3, and GPIO 22 goes on driving that node
-throughout -- a probe there keeps edging after the link comes out and gives no
+throughout: a probe there keeps edging after the link comes out and gives no
 last edge at all. What has to go quiet is the monostable's own input, which is
 what the link disconnects. Move the lead, or put a second one there and
 capture it instead.
@@ -706,7 +706,7 @@ Four things have to be seen, and each answers a different question:
 
 | | Where | What it has to show |
 |---|---|---|
-| D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the switch to ARMED worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
+| D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the switch to ARMED worked, the binding took and the pin is wired. Flat here and the test proved nothing: a bench with no interlock at all would look identical |
 | D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GPIO 22 |
 | D14, the enable | the window capture | deasserted, within 150ms of that last edge |
 | D15, the load side | both captures | it stops in the window capture, and the 24MHz one is what says it is quiet rather than carrying something too narrow for 1MHz to see |
@@ -723,7 +723,7 @@ input to the gate, not the output of it.
 the junction and both links open, which is not a state to walk away from: the
 first power-up in section 9 cannot acquire a heartbeat with the panel's branch
 open, and closing that branch while GPIO 22 still drives is the push-pull
-contention this section opened by warning about -- the panel's GPIO28 against
+contention this section opened by warning about: the panel's GPIO28 against
 the RP2350's output, at whatever levels the two happen to be on.
 
 1. **Switch the bench to SAFE**, so nothing is driving an output while the interlock
@@ -755,7 +755,7 @@ Keep it as the session's calibration frame.
 In this order, and stop at the first step that does not do what it says:
 
 1. The Pi.
-2. The RP2350, and `selftest.sh` again now that everything is attached.
+2. The RP2350, and `selftest.sh` again with everything attached.
 3. The IOmcu.
 4. The panel.
 
@@ -765,9 +765,8 @@ IOmcu does not count the wait for the panel's first request as silence.
 
 **A `FAULT 01` here has two causes and they look identical.** Bit 0 is "the
 link was silent once", it latches, and nothing clears it until a switch to ARMED writes
-the CLEAR register -- so the link can be back and showing `LINK` while the bit
-is still displayed. It says something happened, not that something is wrong
-now.
+the CLEAR register, so the link can be back and showing `LINK` while the bit
+is still displayed. It says something happened, not that something is wrong.
 
 - An older **IOmcu** image, which counts the wait for the panel's first
   request as silence. Only that board can produce this one: the pre-request
@@ -782,7 +781,7 @@ now.
 
 Do not read it as a version problem without checking. Both boards' versions
 are in the splash, and the IOmcu's USB console counts what actually
-happened -- `requests served`, the receive-buffer overrun line, and `tx_err` /
+happened: `requests served`, the receive-buffer overrun line, and `tx_err` /
 `rx_err`. A `FAULT 01` with a healthy bus and a climbing overrun count is
 frames arriving with nobody to collect them, not an old image.
 
@@ -799,8 +798,8 @@ show:
    in place.
 4. **The relay board**, and where each contact meets each button pad, on both
    boards.
-5. **The monostable**, and both of the things it gates -- output enable and
-   the servo and ESC power path -- so the path can be checked against
+5. **The monostable**, and both of the things it gates (output enable and
+   the servo and ESC power path), so the path can be checked against
    `docs/Safety.md` rather than taken on trust.
 6. **The panel's touch connector**, close enough to read the silkscreen, with
    the tap and the injector's leads.

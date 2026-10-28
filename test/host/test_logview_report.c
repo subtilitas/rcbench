@@ -9,9 +9,9 @@
  * beside its run's CSV or without it, a text file that is no report listed,
  * the list's rule and FILES' report label apart, a report sorted after the
  * runs it is newer than, a page that loses or doubles an entry, a report
- * opened in the CSV import, a frame that reads the whole text to draw its
- * last rows, and a report's 32KiB kept after its view is left.  The rows
- * themselves are test_log_text.c's.
+ * opened in the CSV import, and a report not handed to the text viewer or
+ * handed over from the wrong folder.  The viewer itself is
+ * test_files_view.c's.
  *
  * The fake card offers each folder through log_select_lists(), as the
  * panel's lister does, in one walk.
@@ -24,13 +24,14 @@
 #include <stdlib.h>
 
 #include "card_tree.h"
+#include "files_screen.h"
 #include "fm_rules.h"
 #include "log_name.h"
 #include "log_select.h"
-#include "log_text.h"
 #include "log_viewer_screen.h"
 #include "logview_spots.h"
 #include "settings.h"
+#include "text_view.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -46,6 +47,7 @@ typedef struct {
     const char *dir;
     char        name[LOG_VIEWER_NAME_MAX];
     const char *text;
+    uint64_t    size;   /* the size listed; 0 lists the text's length */
     bool        gone;
 } fake_file_t;
 
@@ -82,6 +84,7 @@ static void add(const char *dir, const char *name, const char *text)
     f->dir = dir;
     snprintf(f->name, sizeof(f->name), "%s", name);
     f->text = text;
+    f->size = 0u;
     f->gone = false;
 }
 
@@ -107,7 +110,8 @@ static int walk(log_select_page_t *sel)
         log_viewer_file_t f;
         memset(&f, 0, sizeof(f));
         snprintf(f.name, sizeof(f.name), "%s", g_files[i].name);
-        f.size = strlen(g_files[i].text);
+        f.size = (g_files[i].size != 0u) ? g_files[i].size
+                                         : strlen(g_files[i].text);
         log_select_page_offer(sel, &f);
         ++n;
     }
@@ -235,24 +239,35 @@ static void draw(void)
     screen()->render(&s_c, 0);
 }
 
+/**
+ * @brief Whether OPEN handed @p name of folder @p dir to the text viewer:
+ *        FILES on top with the viewer, which names that file.
+ * @param name  the report
+ * @param dir   its folder
+ * @return true when it did
+ */
+static bool in_viewer(const char *name, const char *dir)
+{
+    const bool ok = ui_router_current() == SCREEN_FILES
+                    && files_screen_view() == FILES_VIEW_TEXT
+                    && strcmp(text_view_name(), name) == 0
+                    && strcmp(text_view_dir(), dir) == 0;
+    if (!ok) {
+        T_FAIL("OPEN on %s/%s: screen %d, FILES view %d, viewer %s/%s",
+               dir, name, (int)ui_router_current(), (int)files_screen_view(),
+               text_view_dir(), text_view_name());
+    }
+    return ok;
+}
+
 /* Geometry mirrored from the screen (logview_spots.h), in its own
  * coordinates. */
 #define BR_ROW_Y(i) LV_ROW_CY(i)
 #define FOOT_CY     LV_FOOT_CY
 #define OPEN_X      LV_OPEN_CX
 #define DELETE_X    LV_DELETE_CX
-#define TX_BACK_X   LV_TX_BACK_CX
 #define DQ_CY       LV_DQ_CY
 #define DQ_DELETE_X LV_DQ_DELETE_CX
-/* The text view: its rows' panel, LV_TX_PITCH px a row, LV_TX_ROWS rows;
- * the scroll bar. */
-#define TX_ROWS_SEEN LV_TX_ROWS
-#define TX_PITCH    LV_TX_PITCH
-#define TX_PANEL_X  LV_ROW_CX
-#define TX_PANEL_Y  200
-#define BAR_X       LV_BAR_CX
-#define BAR_TOP     LV_BAR_TOP
-#define BAR_H       LV_BAR_H
 
 /** @brief The names on the page in the order the list draws them, joined
  *  by spaces, into @p out.
@@ -382,10 +397,11 @@ TEST_CASE(a_limit_report_and_a_runs_report_are_listed_newest_first)
     log_viewer_browse_title(title, sizeof(title));
     CHECK_STR_EQ(title, "FILES");
     CHECK_EQ(g_walks, 1);
-    /* The newest number is chosen, and OPEN opens it as text. */
+    /* The newest number is chosen, and OPEN opens it in the viewer. */
     tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK(in_viewer("LIMIT005.TXT", CARD_USER_LOGS));
     CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
+    ui_router_goto(SCREEN_LOGS);
     draw();
 }
 
@@ -405,14 +421,16 @@ TEST_CASE(a_servo_report_of_an_older_card_is_listed_in_the_root)
                        "SWEEP_920KV.CSV");
     CHECK_EQ(g_walks, 1);
     tap(400, BR_ROW_Y(0));                  /* chosen already: opens */
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK(in_viewer("SERVO043.TXT", CARD_ROOT));
     CHECK_STR_EQ(log_viewer_open_name(), "SERVO043.TXT");
+    ui_router_goto(SCREEN_LOGS);
 }
 
 /*
  * The tester's folder: a servo automatic test's CSV with its report, and a
  * report whose CSV was deleted on a computer.  Both reports are rows, and
- * OPEN reads a run's CSV into the import and its report as text.
+ * OPEN reads a run's CSV into the import and hands its report to the
+ * viewer.
  */
 TEST_CASE(a_runs_report_is_a_row_with_its_csv_there_or_not)
 {
@@ -426,28 +444,28 @@ TEST_CASE(a_runs_report_is_a_row_with_its_csv_there_or_not)
     CHECK_STR_EQ(list, "ATEST002.TXT ATEST001.CSV ATEST001.TXT");
     CHECK_EQ(g_walks, 1);
     tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK(in_viewer("ATEST002.TXT", CARD_USER_LOGS));
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST002.TXT");
-    tap(TX_BACK_X, FOOT_CY);
+    ui_router_goto(SCREEN_LOGS);
     tap(400, BR_ROW_Y(1));                  /* the run's CSV */
     tap(OPEN_X, FOOT_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
     CHECK(log_viewer_analysis() != NULL);
-    CHECK(log_viewer_text() == NULL);
     screen()->back();
     tap(400, BR_ROW_Y(2));                  /* its report */
     tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK(in_viewer("ATEST001.TXT", CARD_USER_LOGS));
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST001.TXT");
-    CHECK(log_viewer_text() != NULL);
+    ui_router_goto(SCREEN_LOGS);
     /* The same OPEN as FILES hands over: each report by its name. */
-    screen()->back();
     CHECK_EQ(log_viewer_show(LOG_TAB_USER, "ATEST001.TXT", 0u),
              LOG_SHOW_OPEN);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
+    CHECK(in_viewer("ATEST001.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
     CHECK_EQ(log_viewer_show(LOG_TAB_USER, "ATEST002.TXT", 0u),
              LOG_SHOW_OPEN);
     CHECK_STR_EQ(log_viewer_open_name(), "ATEST002.TXT");
+    ui_router_goto(SCREEN_LOGS);
     CHECK_EQ(log_viewer_show(LOG_TAB_USER, "ATEST003.TXT", 0u),
              LOG_SHOW_NOT_LISTED);
 }
@@ -569,430 +587,131 @@ TEST_CASE(pages_of_a_full_folder_hold_every_listed_name_once_in_order)
     CHECK_EQ(g_walks, 1);
 }
 
-/* ------------------------------------------------------- the text view --- */
+/* ---------------------------------------------- the report in the viewer --- */
 
-/** @brief A text of @p lines numbered lines, "line 1" up, into a static
- *  buffer.
- *  @param lines  how many
- *  @return the text */
-static const char *numbered_lines(int lines)
+TEST_CASE(opening_a_report_hands_it_to_the_viewer_on_files)
 {
-    static char buf[8192];
-    size_t at = 0u;
-    buf[0] = '\0';
-    for (int i = 1; i <= lines && at + 16u < sizeof(buf); ++i) {
-        at += (size_t)snprintf(buf + at, sizeof(buf) - at, "line %d\n", i);
+    static const struct {
+        log_viewer_tab_t tab;
+        const char *dir;
+    } k_tabs[] = {
+        { LOG_TAB_USER, CARD_USER_LOGS },
+        { LOG_TAB_BENCH, CARD_AUTO_LOGS },
+        { LOG_TAB_ROOT, CARD_ROOT },
+    };
+    for (size_t k = 0; k < sizeof(k_tabs) / sizeof(k_tabs[0]); ++k) {
+        fresh();
+        add(k_tabs[k].dir, "LIMIT005.TXT", k_limit_text);
+        show(k_tabs[k].tab);
+        tap(OPEN_X, FOOT_CY);
+        CHECK(in_viewer("LIMIT005.TXT", k_tabs[k].dir));
+        /* LOGS stays on its list, the report its open file. */
+        CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+        CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
+        /* The home tag leaves the viewer for LOGS, which opened it. */
+        CHECK(!files_screen()->back());
+        CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_LOGS);
+        ui_router_goto(SCREEN_LOGS);
+        CHECK_EQ(text_view_state(), TEXT_VIEW_CLOSED);
+        CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     }
-    return buf;
+    draw();
 }
 
-TEST_CASE(opening_a_report_shows_its_rows_and_back_returns_to_the_list)
+/*
+ * The viewer's limit, 1MiB: a report of exactly that is handed over, one
+ * byte more stays on the list with the reason, in both languages.
+ */
+TEST_CASE(a_report_over_1mib_stays_on_the_list_with_the_reason)
 {
     fresh();
     add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
+    g_files[0].size = (uint64_t)TEXT_BUF_FILE_MAX + 1u;
     show(LOG_TAB_USER);
     tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    const log_text_t *t = log_viewer_text();
-    CHECK(t != NULL);
-    if (t == NULL) {
-        return;
-    }
-    CHECK_EQ(t->rows, 6);       /* the long line breaks once at 92 cells */
-    CHECK(!t->cut);
-    char row[128];
-    CHECK(log_text_row((log_text_t *)t, 0, row, sizeof(row)));
-    CHECK_STR_EQ(row, "RCBENCH SERVO LIMIT REPORT");
-    CHECK(log_text_row((log_text_t *)t, 3, row, sizeof(row)));
-    CHECK_STR_EQ(row, "");
-    CHECK(log_text_row((log_text_t *)t, 5, row, sizeof(row)));
-    CHECK_STR_EQ(row, "search");
-    draw();
-    /* A tap on a row does nothing; BACK returns to the list as it was. */
-    tap(TX_PANEL_X, TX_PANEL_Y);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    tap(TX_BACK_X, FOOT_CY);
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    CHECK(log_viewer_text() == NULL);           /* freed with the view */
-    CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
+    CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_ED_TOO_LARGE));
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(log_viewer_message(), ui_tr_in(UI_LANG_DE, TX_ED_TOO_LARGE));
     draw();
-    /* The home tag climbs the same step, and frees the text too. */
-    tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    CHECK(screen()->back());
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    CHECK(log_viewer_text() == NULL);
-    CHECK(!screen()->back());
-    /* Leaving LOGS frees it; LOGS comes back on the list. */
-    tap(OPEN_X, FOOT_CY);
-    CHECK(log_viewer_text() != NULL);
-    screen()->leave();
-    CHECK(log_viewer_text() == NULL);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    screen()->enter();
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    draw();
-    /* Leaving from the list or the import keeps what is open. */
-    screen()->leave();
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    /* A press that slides off BACK is not a tap on it. */
-    tap(OPEN_X, FOOT_CY);
-    send(TOUCH_EVENT_DOWN, TX_BACK_X, FOOT_CY);
-    send(TOUCH_EVENT_MOVE, TX_BACK_X + 200, FOOT_CY);
-    send(TOUCH_EVENT_UP, TX_BACK_X + 200, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-}
-
-TEST_CASE(a_long_report_scrolls_by_drag_and_by_its_bar_within_its_rows)
-{
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT001.TXT", numbered_lines(40));
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    CHECK_EQ(log_viewer_text_first(), 0);
-    /* Up by 5 rows of TX_PITCH px. */
-    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 300);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 300 - 5 * TX_PITCH);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, 300 - 5 * TX_PITCH);
-    CHECK_EQ(log_viewer_text_first(), 5);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    /* Past the end it stops at the last screen: 40 - 15. */
-    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 330);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 330 - 40 * TX_PITCH);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, 330 - 40 * TX_PITCH);
-    CHECK_EQ(log_viewer_text_first(), 40 - TX_ROWS_SEEN);
-    draw();
-    /* The bar: a tap at its top end is the first row, at its foot the
-     * last screen. */
-    tap(BAR_X, BAR_TOP + 2);
-    CHECK_EQ(log_viewer_text_first(), 0);
-    tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(log_viewer_text_first(), 40 - TX_ROWS_SEEN);
-    /* The thumb dragged half way. */
-    send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H - 10);
-    send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + BAR_H / 2);
-    send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + BAR_H / 2);
-    CHECK(log_viewer_text_first() > 0);
-    CHECK(log_viewer_text_first() < 40 - TX_ROWS_SEEN);
-    draw();
-    /* A report that fits does not scroll. */
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT001.TXT", numbered_lines(TX_ROWS_SEEN));
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 300);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 100);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, 100);
-    CHECK_EQ(log_viewer_text_first(), 0);
-    tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(log_viewer_text_first(), 0);
-}
-
-TEST_CASE(a_report_that_does_not_open_stays_on_the_list_with_the_reason)
-{
+    ui_text_set_language(UI_LANG_EN);
     fresh();
     add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
+    g_files[0].size = TEXT_BUF_FILE_MAX;
     show(LOG_TAB_USER);
-    g_open_refuses = true;
     tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    CHECK(log_viewer_text() == NULL);
-    char want[96];
-    snprintf(want, sizeof(want), ui_tr(TX_LOG_CANNOT_OPEN), "LIMIT005.TXT");
-    CHECK_STR_EQ(log_viewer_message(), want);
-    draw();
+    CHECK(in_viewer("LIMIT005.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
 }
 
-/** @brief Pixels of @p col in the TEXT view's first row.
- *  @param col  the colour
- *  @return how many */
-static int first_row_pixels(gfx_color_t col)
+/*
+ * Back from the viewer LOGS chooses the report again: on the first page
+ * when it is there, else on the page that starts at it; a report gone from
+ * the card meanwhile leaves the first page with its own choice.
+ */
+TEST_CASE(back_from_the_viewer_the_report_is_chosen_again)
 {
-    int n = 0;
-    for (int y = LV_TX_TOP; y < LV_TX_TOP + TX_PITCH; ++y) {
-        for (int x = LV_TX_ROW_X; x < LV_TX_ROW_X + LV_TX_COLS * 10; ++x) {
-            n += (s_fb[y * W + x] == col) ? 1 : 0;
+    fresh();
+    static char names[60][16];
+    for (int r = 1; r <= 60; ++r) {
+        log_name_build(names[r - 1], 16, LOG_PREFIX_LIMIT, r, true);
+        add(CARD_USER_LOGS, names[r - 1], k_limit_text);
+    }
+    show(LOG_TAB_USER);
+    /* Row 2 of the first page: LIMIT058.TXT. */
+    tap(400, BR_ROW_Y(2));
+    tap(OPEN_X, FOOT_CY);
+    CHECK(in_viewer("LIMIT058.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
+    tap(OPEN_X, FOOT_CY);
+    CHECK(in_viewer("LIMIT058.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
+    /* The second page's first row: LIMIT012.TXT, 48 below the top. */
+    tap(LV_NEXT_CX, LV_HEAD_CY);
+    tap(400, BR_ROW_Y(0));
+    tap(OPEN_X, FOOT_CY);
+    CHECK(in_viewer("LIMIT012.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
+    tap(OPEN_X, FOOT_CY);
+    CHECK(in_viewer("LIMIT012.TXT", CARD_USER_LOGS));
+    /* Gone while the viewer showed it: the first page, the newest. */
+    for (int i = 0; i < g_n; ++i) {
+        if (strcmp(g_files[i].name, "LIMIT012.TXT") == 0) {
+            g_files[i].gone = true;
         }
     }
-    return n;
+    ui_router_goto(SCREEN_LOGS);
+    char title[64];
+    log_viewer_browse_title(title, sizeof(title));
+    CHECK_STR_EQ(title, "FILES 1 TO 48 OF 59");
+    tap(OPEN_X, FOOT_CY);
+    CHECK(in_viewer("LIMIT060.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
 }
 
-/* An empty report opens on one row that says so, nothing to scroll; a
- * report with text draws its first row in the text colour instead. */
-TEST_CASE(an_empty_report_opens_on_one_row_that_says_so)
-{
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT001.TXT", "");
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_TEXT);
-    const log_text_t *t = log_viewer_text();
-    CHECK(t != NULL && t->rows == 0 && !t->cut);
-    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 300);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, 100);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, 100);
-    tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(log_viewer_text_first(), 0);
-    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
-        ui_text_set_language((ui_lang_t)lang);
-        CHECK(gfx_text_cells(ui_tr(TX_LOG_TEXT_EMPTY)) <= LV_TX_COLS);
-        draw();
-        CHECK(first_row_pixels(UI_TEXT_DIM) > 0);
-        CHECK_EQ(first_row_pixels(UI_TEXT), 0);
-    }
-    ui_text_set_language(UI_LANG_EN);
-    /* A report with text: its first row, and not the empty one. */
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT001.TXT", "x\n");
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    draw();
-    CHECK(first_row_pixels(UI_TEXT) > 0);
-    CHECK_EQ(first_row_pixels(UI_TEXT_DIM), 0);
-}
-
-TEST_CASE(deleting_a_report_removes_that_file_and_drops_its_text)
+TEST_CASE(deleting_a_report_removes_that_file)
 {
     fresh();
     add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
     add(CARD_USER_LOGS, "ATEST004.CSV", k_csv_text);
     show(LOG_TAB_USER);
     tap(OPEN_X, FOOT_CY);
-    CHECK(log_viewer_text() != NULL);
-    tap(TX_BACK_X, FOOT_CY);
+    CHECK(in_viewer("LIMIT005.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
     tap(DELETE_X, FOOT_CY);
     tap(DQ_DELETE_X, DQ_CY);
     CHECK_STR_EQ(g_removed, "LIMIT005.TXT");
-    CHECK(log_viewer_text() == NULL);
     CHECK_STR_EQ(log_viewer_open_name(), "");
     char list[128];
     rows(list, sizeof(list));
     CHECK_STR_EQ(list, "ATEST004.CSV");
-    /* Opening a CSV after a report drops the report's text. */
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
-    add(CARD_USER_LOGS, "ATEST004.CSV", k_csv_text);
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    tap(TX_BACK_X, FOOT_CY);
-    tap(400, BR_ROW_Y(1));
-    tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
-    CHECK(log_viewer_text() == NULL);
-    screen()->reset();
-    CHECK(log_viewer_text() == NULL);
-}
-
-/* --------------------------------------------- the cap, the cost, failures --- */
-
-/** @brief Load @p text into @p t at @p cols cells a row.
- *  @param t     the text
- *  @param text  the file
- *  @param cols  cells a row
- *  @return the load's result */
-static log_err_t load(log_text_t *t, const char *text, int cols)
-{
-    log_mem_ctx_t ctx;
-    log_source_t src;
-    log_source_memory(&src, &ctx, text, strlen(text));
-    return log_text_load(t, &src, cols);
-}
-
-static int g_alloc_refuse;
-static void *refusing_alloc(size_t n)
-{
-    if (g_alloc_refuse > 0 && --g_alloc_refuse == 0) {
-        return NULL;
-    }
-    return malloc(n);
-}
-
-static bool g_read_fails;
-static size_t failing_read(void *ctx, char *buf, size_t max)
-{
-    (void)ctx;
-    (void)max;
-    buf[0] = 'x';
-    return 1u;
-}
-static bool failing_error(void *ctx)
-{
-    (void)ctx;
-    return g_read_fails;
-}
-
-TEST_CASE(a_report_over_the_cap_is_cut_and_the_view_says_so)
-{
-    /* LOG_TEXT_MAX bytes and one more: the cap, cut, and a character the
-     * cap would split goes whole. */
-    static char big[LOG_TEXT_MAX + 64];
-    memset(big, 'a', sizeof(big) - 1u);
-    for (size_t i = 80u; i < sizeof(big) - 1u; i += 81u) {
-        big[i] = '\n';
-    }
-    big[sizeof(big) - 1u] = '\0';
-    log_text_t t;
-    memset(&t, 0, sizeof(t));
-    CHECK_EQ(load(&t, big, 86), LOG_OK);
-    CHECK(t.cut);
-    CHECK_EQ(t.len, (size_t)LOG_TEXT_MAX);
-    /* "ü" across the cap: dropped, not halved. */
-    memcpy(big + LOG_TEXT_MAX - 1u, "\xC3\xBC", 2u);
-    CHECK_EQ(load(&t, big, 86), LOG_OK);
-    CHECK_EQ(t.len, (size_t)LOG_TEXT_MAX - 1u);
-    /* Whole at the cap's edge: kept. */
-    memset(big, 'a', sizeof(big) - 1u);
-    memcpy(big + LOG_TEXT_MAX - 2u, "\xC3\xBC", 2u);
-    CHECK_EQ(load(&t, big, 86), LOG_OK);
-    CHECK_EQ(t.len, (size_t)LOG_TEXT_MAX);
-    /* Exactly the cap: whole, not cut. */
-    big[LOG_TEXT_MAX] = '\0';
-    CHECK_EQ(load(&t, big, 86), LOG_OK);
-    CHECK(!t.cut);
-    log_text_free(&t);
-
-    /* The view: the last row says the cut, in both languages within a
-     * row. */
-    memset(big, 'a', sizeof(big) - 1u);
-    for (size_t i = 80u; i < sizeof(big) - 1u; i += 81u) {
-        big[i] = '\n';
-    }
-    big[sizeof(big) - 1u] = '\0';
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT001.TXT", big);
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    const log_text_t *v = log_viewer_text();
-    CHECK(v != NULL && v->cut);
-    if (v == NULL) {
-        return;
-    }
-    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 330);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, -20000);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, -20000);
-    CHECK_EQ(log_viewer_text_first(), v->rows + 1 - TX_ROWS_SEEN);
-    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
-        ui_text_set_language((ui_lang_t)lang);
-        char line[128];
-        snprintf(line, sizeof(line), ui_tr(TX_LOG_TEXT_CUT),
-                 (unsigned)(LOG_TEXT_MAX / 1024u));
-        CHECK(gfx_text_cells(line) <= LV_TX_COLS);
-        draw();
-    }
-    ui_text_set_language(UI_LANG_EN);
 }
 
 /*
- * A frame draws 15 rows.  It reads those and at most LOG_TEXT_MARK - 1
- * rows before them, wherever the text is scrolled to: the bottom of a
- * 32KiB report costs what its top does, not the 32KiB above it.
- */
-/** @brief Bytes the TEXT view's row lookups read to draw one frame.
- *  @return the bytes, 0 with no report open */
-static size_t frame_reads(void)
-{
-    const log_text_t *t = log_viewer_text();
-    const size_t was = (t != NULL) ? t->walked : 0u;
-    draw();
-    t = log_viewer_text();
-    return (t != NULL) ? t->walked - was : 0u;
-}
-
-TEST_CASE(a_frame_reads_its_rows_and_not_the_text_above_them)
-{
-    static char big[LOG_TEXT_MAX + 64];
-    memset(big, 'a', sizeof(big) - 1u);
-    for (size_t i = 80u; i < sizeof(big) - 1u; i += 81u) {
-        big[i] = '\n';
-    }
-    big[sizeof(big) - 1u] = '\0';
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT001.TXT", big);
-    show(LOG_TAB_USER);
-    tap(OPEN_X, FOOT_CY);
-    const log_text_t *v = log_viewer_text();
-    CHECK(v != NULL);
-    if (v == NULL) {
-        return;
-    }
-    CHECK(v->rows > 400);
-    /* 81 bytes a row read, the line feed counted. */
-    const size_t most = (size_t)(LOG_TEXT_MARK - 1 + TX_ROWS_SEEN) * 82u;
-    const size_t top = frame_reads();
-    CHECK(top > 0u && top <= most);
-    /* The bottom, and every scroll position on the way back up. */
-    send(TOUCH_EVENT_DOWN, TX_PANEL_X, 330);
-    send(TOUCH_EVENT_MOVE, TX_PANEL_X, -20000);
-    send(TOUCH_EVENT_UP, TX_PANEL_X, -20000);
-    CHECK_EQ(log_viewer_text_first(), v->rows + 1 - TX_ROWS_SEEN);
-    CHECK(frame_reads() <= most);
-    for (int y = 100; y <= 116; ++y) {
-        send(TOUCH_EVENT_DOWN, TX_PANEL_X, 100);
-        send(TOUCH_EVENT_MOVE, TX_PANEL_X, y + TX_PITCH);
-        send(TOUCH_EVENT_UP, TX_PANEL_X, y + TX_PITCH);
-        CHECK(frame_reads() <= most);
-    }
-    /* Rows asked in any order are the rows of a walk from the top. */
-    log_text_t t;
-    memset(&t, 0, sizeof(t));
-    CHECK_EQ(load(&t, numbered_lines(100), 86), LOG_OK);
-    for (int i = 99; i >= 0; i -= 7) {
-        char row[32];
-        char want[32];
-        CHECK(log_text_row(&t, i, row, sizeof(row)));
-        snprintf(want, sizeof(want), "line %d", i + 1);
-        CHECK_STR_EQ(row, want);
-    }
-    log_text_free(&t);
-}
-
-TEST_CASE(a_load_that_fails_holds_nothing)
-{
-    log_text_t t;
-    memset(&t, 0, sizeof(t));
-    CHECK_EQ(load(&t, "abc", 0), LOG_ERR_ARG);
-    CHECK(t.buf == NULL);
-    CHECK_EQ(log_text_load(&t, NULL, 9), LOG_ERR_ARG);
-    CHECK_EQ(log_text_load(NULL, NULL, 9), LOG_ERR_ARG);
-    g_alloc_refuse = 1;
-    log_text_set_allocator(refusing_alloc, NULL);
-    CHECK_EQ(load(&t, "abc", 9), LOG_ERR_MEMORY);
-    CHECK(t.buf == NULL);
-    /* The text's buffer given and the marks' not: nothing held, the
-     * buffer given back (the sanitizer build sees a leak). */
-    g_alloc_refuse = 2;
-    CHECK_EQ(load(&t, "abc", 9), LOG_ERR_MEMORY);
-    CHECK(t.buf == NULL && t.marks == NULL);
-    g_alloc_refuse = 0;
-    log_text_set_allocator(NULL, NULL);
-    /* A read that fails after some bytes: nothing held. */
-    g_read_fails = true;
-    log_source_t src = { failing_read, NULL, failing_error, NULL, NULL, NULL };
-    /* failing_read never ends; the cap ends it, and the error is seen. */
-    CHECK_EQ(log_text_load(&t, &src, 9), LOG_ERR_READ);
-    CHECK(t.buf == NULL);
-    g_read_fails = false;
-    CHECK_EQ(log_text_load(&t, &src, 9), LOG_OK);
-    CHECK(t.cut);
-    log_text_free(&t);
-
-    /* In the view: the reason in the footer, and the list stays. */
-    fresh();
-    add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
-    show(LOG_TAB_USER);
-    g_alloc_refuse = 1;
-    log_text_set_allocator(refusing_alloc, NULL);
-    tap(OPEN_X, FOOT_CY);
-    log_text_set_allocator(NULL, NULL);
-    g_alloc_refuse = 0;
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
-    CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_LOG_ERR_MEMORY));
-}
-
-/*
- * An I/O without open: OPEN on a report or a CSV file stays on the list
- * and says there is no source, in the language showing.
+ * An I/O without open: OPEN on a CSV file stays on the list and says there
+ * is no source, in the language showing.  A report needs none of LOGS: the
+ * viewer reads it through FILES' card task.
  */
 TEST_CASE(an_io_without_open_says_so_in_the_language_showing)
 {
@@ -1001,10 +720,10 @@ TEST_CASE(an_io_without_open_says_so_in_the_language_showing)
     no_open = k_io;
     no_open.open = NULL;
     log_viewer_set_io(&no_open);
-    add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
+    add(CARD_USER_LOGS, "ATEST001.CSV", "t,v\n0,1\n1,2\n");
     show(LOG_TAB_USER);
     tap(OPEN_X, FOOT_CY);
-    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK(log_viewer_analysis() == NULL);
     CHECK_STR_EQ(log_viewer_message(),
                  ui_tr_in(UI_LANG_EN, TX_LOG_NO_SOURCE));
     ui_text_set_language(UI_LANG_DE);
@@ -1012,16 +731,13 @@ TEST_CASE(an_io_without_open_says_so_in_the_language_showing)
                  ui_tr_in(UI_LANG_DE, TX_LOG_NO_SOURCE));
     draw();
     ui_text_set_language(UI_LANG_EN);
-    /* A CSV file: the import opens on the reason. */
     fresh();
     log_viewer_set_io(&no_open);
-    add(CARD_USER_LOGS, "ATEST001.CSV", "t,v\n0,1\n1,2\n");
+    add(CARD_USER_LOGS, "LIMIT005.TXT", k_limit_text);
     show(LOG_TAB_USER);
     tap(OPEN_X, FOOT_CY);
-    CHECK(log_viewer_analysis() == NULL);
-    CHECK_STR_EQ(log_viewer_message(),
-                 ui_tr_in(UI_LANG_EN, TX_LOG_NO_SOURCE));
-    draw();
+    CHECK(in_viewer("LIMIT005.TXT", CARD_USER_LOGS));
+    ui_router_goto(SCREEN_LOGS);
     log_viewer_set_io(&k_io);
 }
 
@@ -1036,14 +752,10 @@ int main(void)
     RUN(a_card_of_reports_only_lists_them_newest_first);
     RUN(reports_sort_among_the_runs_by_their_number);
     RUN(pages_of_a_full_folder_hold_every_listed_name_once_in_order);
-    RUN(opening_a_report_shows_its_rows_and_back_returns_to_the_list);
-    RUN(a_long_report_scrolls_by_drag_and_by_its_bar_within_its_rows);
-    RUN(a_report_that_does_not_open_stays_on_the_list_with_the_reason);
-    RUN(an_empty_report_opens_on_one_row_that_says_so);
-    RUN(deleting_a_report_removes_that_file_and_drops_its_text);
-    RUN(a_report_over_the_cap_is_cut_and_the_view_says_so);
-    RUN(a_frame_reads_its_rows_and_not_the_text_above_them);
-    RUN(a_load_that_fails_holds_nothing);
+    RUN(opening_a_report_hands_it_to_the_viewer_on_files);
+    RUN(a_report_over_1mib_stays_on_the_list_with_the_reason);
+    RUN(back_from_the_viewer_the_report_is_chosen_again);
+    RUN(deleting_a_report_removes_that_file);
     RUN(an_io_without_open_says_so_in_the_language_showing);
     free(s_fb);
     return test_summary("logview_report");

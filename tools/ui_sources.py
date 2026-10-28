@@ -138,6 +138,13 @@ SOURCES = [
     "shared/ui/files_screen.c",
     "shared/ui/files_draw.c",
     "shared/ui/files_events.c",
+    "shared/ui/files_text.c",
+    # The text viewer FILES hosts, and the text and the highlighter it
+    # shows a file with.
+    "shared/ui/text_view.c",
+    "shared/ui/text_view_draw.c",
+    "shared/files/text_buf.c",
+    "shared/files/text_hl.c",
     "shared/files/fm_name.c",
     "shared/files/fm_select.c",
     "shared/files/fm_rules.c",
@@ -166,7 +173,6 @@ SOURCES = [
     "shared/ui/log_viewer_draw.c",
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_select.c",
-    "shared/ui/log_text.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",

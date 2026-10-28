@@ -108,7 +108,7 @@ The readouts, the TABLE pane, the totals and the temperature strip stay live at 
 
 ## The rate line and the temperatures
 
-On LIVE the telemetry card carries PLOT and TABLE under its title, and beside them the poll rate and the link's error count. While the IOmcu has refused link frames since its power-up, the line under them adds the count. The three temperatures are on the line over the right column on every task: ESC and MOT from the IOmcu's bench page, MCU from the panel's own ESP32-S3 die.
+On LIVE the telemetry card carries PLOT and TABLE under its title, and beside them the poll rate and the link's error count. While the IOmcu has refused link frames since its power-up, the line under them adds the count. The three temperatures are on the line over the right column on every task: ESC and MOT from the IOmcu's bench page, MCU from the panel's own ESP32-P4 die.
 
 ![37 refused link frames on the line](view:motor-refused)
 

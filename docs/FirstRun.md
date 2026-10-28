@@ -24,7 +24,7 @@ Work down the list. Each step assumes the one above it passed.
 bidirectional DShot, a bench supply with current limit, and the USB cable for
 each board.
 
-**Do not connect a motor to the ESC yet.** Step 5 drives no pin at all -- it
+**Do not connect a motor to the ESC yet.** Step 5 drives no pin at all. It
 is the interlock, and no output is the passing result. Step 6 is the first pin
 on an instrument, and the first thing to look at there is the scope, not a
 propeller.
@@ -313,7 +313,7 @@ is not traced:
 |---|---|
 | Panel end | **GPIO28**, IO28 of the 12-pin header P3 of the 7-inch ESP32-P4 board (`PANEL_HEARTBEAT_PIN` in `board_pins.h`). |
 | IOmcu end | **GPIO 3** |
-| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the IOmcu is healthy: it switches to SAFE after 150ms of silence. What is uncovered is a panel that stops beating while the IOmcu cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
+| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the IOmcu is healthy: it switches to SAFE after 150ms of silence. What is uncovered is a panel that stops beating while the IOmcu cannot act: nothing then removes the outputs, and that is what the monostable would do without any firmware |
 
 Without this wire the IOmcu refuses every switch to ARMED, and that is the interlock
 working, not a fault.
@@ -616,8 +616,8 @@ printed: core 1 is parked in RAM for each.
 
 ### 8.8 Not reachable yet
 
-The move capture on SERVO_SENSE -- the PWM frame stamped to 1µs and the
-travel times -- is armed by the panel's servo test, which does not use it
+The move capture on SERVO_SENSE (the PWM frame stamped to 1µs and the
+travel times) is armed by the panel's servo test, which does not use it
 yet. A travel time against a scope on the PWM pin and on the shunt waits
 for that.
 

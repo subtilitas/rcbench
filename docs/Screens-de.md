@@ -442,7 +442,7 @@ steht auf den Anzeigen und nicht im Plot, und auch nicht in der CSV-Datei, die
 an derselben Flanke schliesst.
 
 Das Schalten auf ARMED löscht den Plot, und ein eingerasteter Stopp wird durch
-Schalten auf ARMED gelöst -- die Kurve eines Laufs, den ein STOP beendet hat,
+Schalten auf ARMED gelöst: Die Kurve eines Laufs, den ein STOP beendet hat,
 überlebt es also nicht, den Prüfstand wieder benutzbar zu machen. Ein
 Schalten auf ARMED schreibt eine CSV-Datei, und LOGS stellt sie dar.
 
@@ -489,8 +489,8 @@ STOP auf einem Prüfstand in ARMED, bis der Prüfstand SAFE meldet,
 werden die Bedienelemente ebenfalls abgelehnt.
 
 Ein Schalten auf SAFE setzt das Gas auf 0%, gleich wie es geschieht: der Tap auf
-DISARM, STOP, eine verlorene Verbindung, ein Touch-Controller, der nicht
-mehr antwortet, oder das Verlassen des Bildschirms. Schieberegler, Anzeige
+DISARM, STOP, eine verlorene Verbindung, ein Touch-Controller, der aufhört
+zu antworten, oder das Verlassen des Bildschirms. Schieberegler, Anzeige
 und die Schritte `-1` und `+1` bleiben dann bis zum nächsten Schalten auf ARMED
 auf 0,0%; das erste `+1` nach einem Schalten auf ARMED fordert also 1,0% an,
 und die erste Knopfdrehung von 1% fordert 1,0% an. Auch ein Prüfstand, der
@@ -686,8 +686,8 @@ von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
 BENCH-Page, und leer, wenn der ESC keinen meldet oder das Panel den
 Prüfstand simuliert. Eine Größe, die nichts gemessen hat, ist eine leere
 Zelle. `window` und die neun Kanalspalten sind das 50-ms-Fenster des
-INA3221 -- je Kanal der mittlere und der höchste Strom und die niedrigste
-Busspannung -- in der ersten Zeile, nachdem das Panel es gelesen hat, und in
+INA3221 (je Kanal der mittlere und der höchste Strom und die niedrigste
+Busspannung) in der ersten Zeile, nachdem das Panel es gelesen hat, und in
 keiner anderen, sodass jedes Fenster einmal in der Datei steht, unter seiner
 Nummer; ein Kanal ohne Messwerte im Fenster ist leer, ebenso die
 Stromzellen oder die Spannungszelle von CH1 für ein Fenster, das von dieser
@@ -950,8 +950,8 @@ als Throttle gebunden ist, solange die Ausgangsbindung nicht gelesen ist
 und solange das Netzteil das Modell des Panels ist; ein solcher Grund
 schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
 
-Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
-und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
+Ein Profil, dessen ESC einen Menschen am ESC braucht (einen Jumper stecken
+und abziehen, einen Taster drücken), trägt in der Liste ein rotes Schild
 MANUELL und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
 Schritte und wann jeder fällig ist; ebenso das erste Öffnen des Profils. Die
 Warnung nennt die Schritte vor dem Einschalten, und der Lauf hält für jeden
@@ -1059,9 +1059,9 @@ zum unteren neben der Leiste, auf jeder Aufgabe dieselbe: der geltende
 Typ, die Zeile und der Plot der Servo-Schiene, die Zeile SOLL, TEMPO, die
 Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Jede Zeile, die man dort
 antippt, ist 48px hoch oder höher; ARM ist 60px hoch und endet 4px über
-dem Alert-Band, wie AUSGANG AUS. Ein Feld -- ein Tastenfeld, die
+dem Alert-Band, wie AUSGANG AUS. Ein Feld (ein Tastenfeld, die
 Buchstabentastatur, eine Liste, eine Warnung, die Frage oder ein
-Programmierer -- bedeckt die ganze linke Spalte samt den Reitern der
+Programmierer) bedeckt die ganze linke Spalte samt den Reitern der
 Leiste und wird beantwortet oder geschlossen, bevor die Aufgabe wechselt.
 
 Die Karte von LIVE trägt oben links den Winkel des Horns in den Ziffern
@@ -1069,8 +1069,8 @@ des Prüfstands, darunter `ZUERST ARM`, solange der Prüfstand in SAFE ist,
 das Zifferblatt (Radius 150px) mit dem Servo und an ihrem Fuß die drei
 Messwerte, je ein Drittel der Karte: SOLL-PULSBREITE in Mikrosekunden,
 GEMESSEN in Grad und STROM in Ampere, Name und Einheit über 44px hohen
-Ziffern. Ziffern, die breiter als ihre Spalte von 198px sind -- ein auf
-`-1000000.00` begrenzter Strom --, stehen in einer kleineren Schrift und
+Ziffern. Ziffern, die breiter als ihre Spalte von 198px sind (ein auf
+`-1000000.00` begrenzter Strom), stehen in einer kleineren Schrift und
 bleiben so in ihr. Die Messwerte stehen nur auf LIVE; auf den anderen
 Aufgaben trägt die Zeile über dem Plot den Strom.
 
@@ -1078,7 +1078,7 @@ Das Horn wird in Bruchteilen eines Pixels gezeichnet: Seine Spitze, 98px
 von der Welle, bewegt sich 1,7px pro Grad und steht bei jedem Schritt
 höchstens 0,1px neben ihrem Winkel. Ein Horn, das sich bewegt, malt die
 Kästen um sich neu, wie jeder Bildpuffer es zuletzt zeichnete und wie es
-jetzt steht, etwa 160px breit, und die Ziffern des Winkels, von
+steht, etwa 160px breit, und die Ziffern des Winkels, von
 SOLL-PULSBREITE und von GEMESSEN; die beiden Karten werden dafür nicht neu
 gemalt.
 
@@ -1209,8 +1209,8 @@ wird das spätere gesendet, und der gezeigte Wert ist dessen Wert. Eine
 Knopfdrehung in einem Frame, in dem FREIGEBEN wartet, wird verworfen.
 
 Die Ausgangskarte zeigt Typ, Bildwiederholrate und Pulsbereich, die
-gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
-nicht dafür gebaut ist -- und die Servo-Schiene, wie ihr Messgerät sie
+gelten (in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
+nicht dafür gebaut ist) und die Servo-Schiene, wie ihr Messgerät sie
 misst: Spannung, Strom und Leistung in der Zeile über dem Plot, über die
 letzten 17,8s geplottet (356px bei 20 Punkten je Sekunde). STROM auf LIVE
 zeigt den Strom noch einmal. Die Typzeile, 44px hoch, lautet
@@ -1273,7 +1273,7 @@ eine nicht gilt.
   und `--`, bis das Messgerät wechselt oder ein Fenster über den Link
   ankommt.
 - Der Plot wird geleert, wenn der INA3221 das Messgerät wird und wenn er es
-  nicht mehr ist: die Kurve gehört dem Messgerät, das die Zeile nennt. Jedes
+  zu sein aufhört: die Kurve gehört dem Messgerät, das die Zeile nennt. Jedes
   Fenster und jedes Sample des Netzteils trägt das Messgerät des Polls, der
   es genommen hat: ein Messwert von vor dem Wechsel zu seinem Messgerät ist
   kein Punkt der Kurve, und keiner von danach fehlt. Die Skala des Plots
@@ -1329,8 +1329,8 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   HV-SERVOS mit der Spannung, und der Ausgang geht erst an, nachdem 2s HALTEN ZUM
   ÜBERNEHMEN 2s gehalten wurde; das Halten des Schalters selbst und ein Tippen
   auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
-  Haltens über 6,0V steigt -- auf SUPPLY, oder nach einem Lauf
-  zurückgesetzt --, wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
+  Haltens über 6,0V steigt (auf SUPPLY, oder nach einem Lauf
+  zurückgesetzt), wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
   öffnet sich, und nichts geht an. Das Verlassen von SERVO schaltet einen
   Ausgang aus, den SERVO eingeschaltet hat: mit AUSGANG EIN, mit einem Test
   oder mit VERBINDEN des Servo-Programmierers. Solange der
@@ -1376,7 +1376,7 @@ laufen von dort weiter, und das Horn wird ab dieser Phase gezeichnet. Die
 Phase ist die der Kurve, als der IOmcu das HOLD quittiert hat, nicht
 die beim Tippen: dort läuft die Kurve während des Austauschs dazwischen
 weiter, und so läuft auch die Zeichnung weiter, mit dem TEMPO, das beim
-Tippen galt, höchstens 500ms lang -- so lange führt der IOmcu einen
+Tippen galt, höchstens 500ms lang, so lange führt der IOmcu einen
 Sweep, von dem er nichts mehr hört. Ohne Rückmeldung wird das Horn dann
 dorthin gesetzt, wo der Ausgang bei der Quittung war: die Kurve bis zu
 dieser Phase, verlangsamt wie in der Zeichnung. Ein dazwischen geändertes TEMPO erreicht den IOmcu erst mit dem
@@ -1392,8 +1392,8 @@ von der gehaltenen Stelle zur Kurve, bei 100% sofort, und ist meist schon
 dort. Eine während der Pause auf OPTIONEN > SWEEP geänderte Kurve startet
 stattdessen als neuer Sweep. Ein IOmcu älter als 4.6, oder einer, der
 das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
-ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
-Rechteck --, und das Alert-Band sagt es: `IOmcu-Firmware älter als 0.13.0. Sweep beginnt von vorn.` oder `IOmcu hat das Fortsetzen abgelehnt. Sweep beginnt von vorn.`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
+ihrem Anfang (in der Mitte bei Sinus und Dreieck, am ersten Ende beim
+Rechteck), und das Alert-Band sagt es: `IOmcu-Firmware älter als 0.13.0. Sweep beginnt von vorn.` oder `IOmcu hat das Fortsetzen abgelehnt. Sweep beginnt von vorn.`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
 unbeantwortet ist, denn der IOmcu kann dann halten oder noch laufen:
 `Pause wurde nicht bestätigt. Sweep beginnt von vorn.`. Ein Tippen auf
 PAUSIERT vor einem HOLD, den das Panel dann loslässt (siehe unten),
@@ -1454,7 +1454,7 @@ ab TEMPO 63%, beim Dreieck ab 40%.
 **TEST STARTEN startet den automatischen Test** von der Karte AUTOMATISCHER TEST auf TEST: das Servo
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
-Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
+Spannung gesucht, bei der es aufhört, sich zu bewegen. [Servoverfahren](Servo-de.md#automatischer-test)
 beschreibt das Verfahren und die Dateien. Die Karte, 600 x 200px, trägt
 den Namen des Laufs, eine Zusammenfassung (`4.8 6.0V BROWN-OUT, JE
 60s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 56px) mit den
@@ -1497,9 +1497,9 @@ und beim Netzteil: siehe [die Liste](Servo-de.md#was-einen-lauf-beendet).
 Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
 Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das
-Netzteil selbst den Ausgang aus meldet -- nicht die Anforderung des Panels,
+Netzteil selbst den Ausgang aus meldet (nicht die Anforderung des Panels,
 der das PD mini einen Link-Austausch und eine Modultransaktion später
-folgt --,
+folgt),
 kein ON unterwegs ist und AUSGANG EIN weder auf SERVO noch auf SUPPLY
 gehalten wird. Sollwerte, die nach
 dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
@@ -1775,7 +1775,7 @@ Die Zeile ZIEL der Ausgangskarte, zwischen TEMPO und ZENTRIEREN, nennt, was
 der Tester treibt, als `Protokoll Pins`, mittig in ihrem Wertfeld, und ist
 das Bedienelement, das es wählt, wie die Zeile ZIEL von MOTOR & ESC. Ein
 Tippen auf das Feld öffnet SETUP > OUTPUTS auf dem, was die Zeile zeigt,
-wohin der IOmcu die Befehle jetzt schickt, nicht auf der Einstellung ZIEL:
+wohin der IOmcu die Befehle schickt, nicht auf der Einstellung ZIEL:
 auf dem Eintrag PROG-PORT, solange er den Port treibt, auf SERVO PWM,
 solange er die Ausgänge treibt, und auf der Übersicht, solange das Ziel
 nicht bekannt ist oder kein IOmcu antwortet ([Outputs](#outputs)). Ein
@@ -1785,8 +1785,8 @@ Einstellung ZIEL, und PORT-PWM den Puls des Ports, beide im NVS
 (Non-Volatile Storage) gespeichert. Das Verlassen von SERVO schaltet den
 Prüfstand auf SAFE und beendet einen Sweep oder einen Test; das Home-Tag auf
 OUTPUTS führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile angetippt
-wurde. Die Zeile ist gesperrt -- umrandet, ihr Wert gedimmt, und sie
-nimmt keinen Druck --, solange der Prüfstand ARMED ist, während eines
+wurde. Die Zeile ist gesperrt (umrandet, ihr Wert gedimmt, und sie
+nimmt keinen Druck), solange der Prüfstand ARMED ist, während eines
 Sweeps (laufend oder pausiert), eines automatischen Tests oder eines
 Endlagenlaufs und solange der Servo-Programmierer den Port hält; das Ziel
 nennt sie trotzdem. Die Ausgangskarte bleibt unter den Seiten, ihren
@@ -1886,7 +1886,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 | --- | --- |
 | Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330Hz.` oder `Aktiv: PROG-PORT GPIO 13 läuft mit 330Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
-| ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
+| ABGELEHNT | ein Puls des Ziels (einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist) ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50Hz seiner Bindung |
 
 Ein Neustart des IOmcu und jede auf OUTPUTS geschriebene Bindung setzen
@@ -1989,7 +1989,7 @@ des Bildschirms.
 Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
 (Programmable Power Supply), 3,3 bis 21V bei bis zu 5A. Die des PD mini
 stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini
-ist ein Abwärtswandler und gibt nicht mehr ab, als er bekommt: seine
+ist ein Abwärtswandler und gibt höchstens ab, was er bekommt: seine
 Spannung ist zusätzlich auf 0,7V unter der Eingangsspannung begrenzt, die
 er meldet, bei 5V Eingangsspannung also höchstens 4,3V. Unter 1,7V Eingangsspannung bleibt der Mindestwert von 1V, den der Bildschirm als Grenze zeigt, und unter 1,5V bleibt der Ausgang aus; solange keine Eingangsspannung gelesen ist, gilt 20V. Ein Sollwert über der
 Eingangsspannung bringt das Modul in ERR, bis es stromlos war; welchen Abstand es
@@ -2015,8 +2015,8 @@ Schrittknöpfen oder von der Tastatur eine Frage, die die Änderung nennt.
 ÜBERNEHMEN gibt sie dem Netzteil; ABBRECHEN verwirft sie, und der Schieber geht
 zurück. Ein Ziehen fragt einmal, beim Loslassen, und bis dahin hält das
 Netzteil den alten Sollwert. Ein Ziehen, das endet, ohne dass sein Finger
-abhebt -- das Home-Tag mit einem zweiten Finger getippt oder ein Kontakt,
-den der Touch-Controller verliert --, fragt nichts, und der Schieber geht
+abhebt (das Home-Tag mit einem zweiten Finger getippt oder ein Kontakt,
+den der Touch-Controller verliert), fragt nichts, und der Schieber geht
 zurück. Bei ausgeschaltetem Ausgang wird nichts gefragt.
 STOP schließt die Frage unbeantwortet: ein ÜBERNEHMEN im selben Frame (etwa
 50ms) wie STOP übernimmt nichts. OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
@@ -2026,10 +2026,10 @@ ab.
 
 **AUSGANG EIN ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
 wie ARM. AUSGANG AUS ist ein Tippen. STOP schaltet den Ausgang auf jedem
-Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein Touch,
-der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren gingen, bevor
-ein ganzer Frame den Ausgang eingeschaltet sah, und ein IOmcu, der nicht
-ARMED bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine
+Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt: ein Touch,
+der aufhört zu antworten, ein ON, dessen Touch-Ereignisse verloren gingen, bevor
+ein ganzer Frame den Ausgang eingeschaltet sah, ein IOmcu, der nicht
+ARMED bleiben will, ein Netzteil, das aufhört zu antworten, und eine
 Abschaltung. Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das
 Verlassen des Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet
 hat: einen, der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC
@@ -2064,15 +2064,15 @@ wenn der Heartbeat des Panels ausbleibt. Ein eingeschalteter PD mini zeigt
 ANTWORTET NICHT, solange kein IOmcu antwortet, der Protokoll 4.3
 spricht, oder solange die Messwerte der Page älter als 1500ms sind; ein
 Ausgang, der an ist, wird dann abgeschaltet. Antwortet die Page, während der
-Messwertzähler des Moduls (SAMPLES) steht -- ein Lesen der Anzeige, das
-fehlschlägt, während die anderen Lesungen antworten --, bleibt ONLINE: nach
+Messwertzähler des Moduls (SAMPLES) steht (ein Lesen der Anzeige, das
+fehlschlägt, während die anderen Lesungen antworten), bleibt ONLINE: nach
 1500ms ohne neuen Messwert zeigen die Karten für Spannung, Strom und
 Leistung Striche, und keine Abschaltschwelle, kein Spitzenwert und keine
 Summe übernimmt einen Messwert; nach
 3000ms (`SUPPLY_LINK_BLIND_MS`) wird ein Ausgang, der an ist, abgeschaltet,
 und das Band sagt `Keine Messwerte vom Netzteil. Ausgang aus.`. Ein Sollwert, der sich
-schneller ändert, als das Modul ihn übernimmt -- der Slider gezogen mit
-REGLER UND SCHRITTE aus, etwa ein neuer Sollwert alle 50ms --, hält die
+schneller ändert, als das Modul ihn übernimmt (der Slider gezogen mit
+REGLER UND SCHRITTE aus, etwa ein neuer Sollwert alle 50ms), hält die
 Messwerte nicht auf: eine Lesung, die 400ms über ihre Fälligkeit hinaus
 ist (`PDMINI_POLL_LATE_MS`), geht vor das nächste Schreiben eines Sollwerts,
 eine nach der anderen mit einer anderen Transaktion dazwischen; das Lesen
@@ -2112,8 +2112,8 @@ also ab 263ms möglich. In Ruhe steht das Lesen der Anzeige bis zu 2,5s bei
 Karten können also ab etwa 260ms Striche zeigen. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der IOmcu ein ON abweist
 (kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
-ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstromschutz oder sein
-Knopf --, wird er ebenfalls abgeschaltet und erst mit einem neuen Halten
+ist neu gestartet). Schaltet das Modul den Ausgang selbst ab (sein Überstromschutz oder sein
+Knopf), wird er ebenfalls abgeschaltet und erst mit einem neuen Halten
 wieder eingeschaltet. Das Band sagt außerdem, wenn die Pins abgewiesen werden,
 wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
 werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
@@ -2198,8 +2198,8 @@ Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
 
 Ist der PD mini das Netzteil, bietet OPTIONEN außerdem PD MINI ZURÜCKSETZEN. Das
 schaltet den Ausgang ab und startet das Modul neu (sein Befehl
-SYSTEM_RESET), für ein Modul, das ERR zeigt -- ein Sollwert über seiner
-Eingangsspannung bringt es dorthin --, ohne es abzustecken. Etwa 1s später wird es
+SYSTEM_RESET), für ein Modul, das ERR zeigt (ein Sollwert über seiner
+Eingangsspannung bringt es dorthin), ohne es abzustecken. Etwa 1s später wird es
 wieder gefragt, wer es ist. Ob ein Neustart jedes ERR löst, ist nicht
 gemessen. Ein IOmcu älter als Protokoll 4.4 kann nicht neu starten:
 der Ausgang geht aus, und das Band sagt es.
@@ -2236,8 +2236,8 @@ Das Modell ist eine Last von 6Ω mit einem Stoß von 1,4A für 0,6s alle
 und 2,00A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
-Die Verdrahtung des PD mini -- PD mini, PD mini TX, PD mini RX und PD mini
-Baud -- steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
+Die Verdrahtung des PD mini (PD mini, PD mini TX, PD mini RX und PD mini
+Baud) steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
 und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
 des Bereichs nichts: mit RX auf GPIO 47 bleibt TX auf GPIO 46. Das Tastenfeld
@@ -2290,7 +2290,7 @@ Zeilen von 32px, und CH17 und CH18 als Leuchten von 44px Höhe, deren Punkt leuc
 und ROHDATEN sind Reiter von 150 x 48px. ROHDATEN zeigt die Bytes des
 letzten Frames, acht je Zeile, und die Zähler des Decoders in 8 x 16.
 
-Keine Firmware speist diesen Bildschirm bisher (siehe
+Noch keine Firmware speist diesen Bildschirm (siehe
 [Empfängerbusse](Receivers-de.md)); er zeigt KEIN SIGNAL.
 
 Der Zustandsblock zeigt einen von KEIN SIGNAL, FAILSAFE, FRAME LOST und LIVE, mit
@@ -2337,8 +2337,7 @@ plotten:
 ![Ein SERVO-Lauf, wie er öffnet: pulse, angle, current und voltage](img/de/logs-servo-plot.png)
 
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
-von der Importansicht und vom Text eines Berichts zur Dateiliste, von der
-Dateiliste zum Menü. Über der
+von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
 Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
 AKTUALISIEREN, öffnet [WLAN](#wlan), und DATEIEN daneben öffnet
 [Files](#files).
@@ -2426,7 +2425,7 @@ Datei: Ein schon offener Lauf oder Test endet in dem Ordner, in dem er
 begonnen hat. Der nächste wird nach dem nummeriert, was der neue Ordner
 enthält. Beide Arten dürfen denselben Ordner nennen; seine Nummern sind
 dann eine Reihe über alle fünf Namen. Die Dateien in einem vorher benutzten
-Ordner werden nicht gelistet: Die Tabs USER und BENCH listen die jetzt
+Ordner werden nicht gelistet: Die Tabs USER und BENCH listen die
 eingestellten Ordner. Die Dateien bleiben auf der Karte, und mit dem alten
 Ordner wieder eingestellt sind sie wieder gelistet.
 
@@ -2466,31 +2465,20 @@ Regel, nach der FILES einen Bericht kennzeichnet: `ATESTnnn.TXT` neben
 CSV-Datei schreibt, und im Stammverzeichnis `SERVOnnn.TXT` von Firmware
 0.21.0 und älter. Ein Lauf und sein Bericht sind zwei Zeilen, die CSV-Datei
 zuerst: ÖFFNEN auf der CSV-Datei liest sie in den Import, ÖFFNEN auf dem
-Bericht zeigt seinen Text. Andere `.TXT`-Dateien stehen nicht in der Liste.
+Bericht öffnet ihn im [Textbetrachter](#der-textbetrachter). Andere `.TXT`-Dateien stehen nicht in der Liste.
 Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen im
 Ordner, ein Bericht nach seiner eigenen Nummer: `LIMIT044.TXT`, dann
 `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SERVO042.TXT`, dann
 `SUPPL041.CSV`.
 
-![Der Bericht eines ENDLAGENLAUFS als Text](img/de/logs-report.png)
+![Der Bericht eines ENDLAGENLAUFS, aus LOGS im Textbetrachter geöffnet](img/de/logs-report.png)
 
-ÖFFNEN auf einem Bericht zeigt ihn als Text an Stelle der
-Importansicht: Der Dateiname steht über dem Feld, darunter seine Zeilen, 15
-Zeilen zu bis zu 92 Zeichen in der Schrift 10 x 20 auf dem Bildschirm, 22px
-auseinander. ZURÜCK ist 140 x 52px groß, links in der Fußzeile. Eine Zeile, die länger ist
-als eine Bildschirmzeile, bricht am letzten Leerzeichen darin um, und ein
-Wort, das länger ist, wird am Zeilenende abgeschnitten. Eine Zeile endet an
-einem Zeilenvorschub (LF), an einem Wagenrücklauf (CR) und an einem Paar
-CR LF, das ein Ende ist; ein Tabulator wird zum Leerzeichen. Ziehen auf den
-Zeilen oder am Rollbalken rollt sie. Ein Bild liest die 15 Zeilen, die es
-zeichnet, und höchstens 15 Zeilen davor, wohin der Text auch gerollt ist.
-ZURÜCK und das Home-Tag führen zur Liste und geben den Text frei; das
-Verlassen von LOGS gibt ihn auch frei, und LOGS öffnet wieder auf der
-Liste. Die Ansicht fasst die ersten 32KiB einer Datei; eine längere zeigt
-diese und als letzte Zeile `Nur die ersten 32kB werden gezeigt.` Eine
-Datei von 0 Bytes zeigt eine Zeile, `Die Datei ist leer.` Ein Bericht, der
-sich nicht öffnen lässt, bleibt in der Liste, und die Fußzeile sagt warum:
-`LIMIT044.TXT lässt sich nicht öffnen.` oder `Nicht genug Speicher.`
+ÖFFNEN auf einem Bericht öffnet ihn im
+[Textbetrachter](#der-textbetrachter) auf FILES, nur lesend. Der Titel im
+Band lautet FILES; das Home-Tag führt zurück zu LOGS, und der Bericht ist
+in der Liste wieder gewählt. Ein Bericht über 1MiB bleibt in der Liste,
+und die Fußzeile meldet
+`Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.`
 
 ![Der Tab STAMM mit den Läufen einer älteren Firmware](img/de/logs-root.png)
 
@@ -2605,7 +2593,7 @@ Zusammenziehen verkleinert, beide zusammen bewegt verschiebt den Ausschnitt.
 Der Ausschnitt bleibt, wo die Finger ihn lassen, und ein Balken unter der
 Grafik zeigt, welcher Teil des Laufs zu sehen ist. Der engste Ausschnitt sind
 8 Messpunkte, der weiteste der ganze Lauf. Ein Finger und die Knöpfe `<` und
-`>` bewegen den Cursor wie bisher; läuft der Cursor über den Rand eines
+`>` bewegen den Cursor wie zuvor; läuft der Cursor über den Rand eines
 vergrößerten Ausschnitts, wandert der Ausschnitt mit. ZURÜCK führt zur
 Importansicht.
 
@@ -2626,7 +2614,7 @@ und der Messpunkt unter dem Finger bleibt unter ihm. Eine Berührung, die
 innerhalb von 10px bleibt, wählt einen Wert wie bei ausgeschalteter
 Einstellung, und nach dem Verschieben bleibt der Cursor, wo er war. Ein
 Ausschnitt, der den ganzen Lauf zeigt, wird nicht verschoben: ein Finger
-bewegt den Cursor. Ein zweiter Finger auf der Grafik beginnt wie bisher das
+bewegt den Cursor. Ein zweiter Finger auf der Grafik beginnt wie zuvor das
 Zoomen.
 
 Eine Schaltfläche oder eine Zeile auf LOGS nimmt ein Tippen. Sie wirkt, wenn
@@ -2726,7 +2714,7 @@ Tipps des Servo-Programmierers, die
 [Servo-Programmierer](ServoProgrammer-de.md) nennt. Es sucht nicht in jedem
 Frame. Der Blick auf eine gemountete Karte ist ein Befehl SEND_STATUS
 (CMD13). Eine Karte, die darauf nicht antwortet, wurde entnommen oder
-getauscht: Das Panel gibt ihr Volume frei und mountet, was jetzt im
+getauscht: Das Panel gibt ihr Volume frei und mountet, was im
 Steckplatz steckt. Eine auf dieser Karte offene Datei, etwa der Lauf, der
 gerade geschrieben wird, oder ein WLAN-Download, wird zuerst geschlossen;
 bis die letzte geschlossen ist, gilt der Steckplatz als leer. Auf ein
@@ -2748,7 +2736,7 @@ Karte, die mountet, `I storage: no card (ESP_ERR_TIMEOUT)`,
 oder `W storage: mount failed: FatFs <n>` und `W storage: mount failed:
 <Name des ESP-IDF-Fehlers>`. Eine entnommene oder getauschte Karte ist
 `I storage: card gone (check: FatFs 3)`, ohne E-Zeile von ESP-IDF, und die
-nächste Zeile sagt, was jetzt im Steckplatz steckt. Eine Karte, die antwortet
+nächste Zeile sagt, was im Steckplatz steckt. Eine Karte, die antwortet
 und ein Lesen nicht schafft, ist `W storage: card answers and does not
 read (walk: FatFs 1)`. Eine während eines Laufs
 entnommene Karte findet der Schreibvorgang, der fehlschlägt, und ESP-IDF
@@ -2771,7 +2759,8 @@ trägt.
 
 FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten und kopiert,
 verschiebt, benennt um und löscht ihre Dateien; er legt Ordner und leere
-Textdateien an. Er öffnet über DATEIEN in der unteren Reihe von
+Textdateien an und zeigt eine Datei als Text im
+[Textbetrachter](#der-textbetrachter). Er öffnet über DATEIEN in der unteren Reihe von
 [Logs](#logs) und über die Kachel FILES auf [Setup](#setup). Das Home-Tag
 schließt zuerst eine Box oder die Tastatur und führt dann zu dem
 Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
@@ -2846,7 +2835,7 @@ darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
 | LÖSCHEN | fragt zuerst. Die CSV-Datei eines Laufs nimmt ihren Bericht mit; ein Ordner wird nur gelöscht, wenn er leer ist |
 | NEU | ORDNER oder TEXTDATEI, dann die Tastatur für den Namen; eine Textdatei wird leer angelegt |
 | INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags |
-| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei oder ein Bericht in einem der drei Ordner von LOGS (STAMM, USER, BENCH) öffnet auf [Logs](#logs) im Tab dieses Ordners, ein Bericht als Text: die Namen, die LOGS listet (`log_select_lists()`), darunter jede Datei, die die Liste als BERICHT kennzeichnet; eine Datei, die LOGS nicht öffnet, eine über 2GiB weniger 1 Byte, zeigt die Liste von LOGS mit dem Grund; nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; eine Datei, die seit dem Listen nicht mehr auf der Karte ist, meldet `LIMIT013.TXT ist nicht auf der Karte. Tippe auf AKTUALISIEREN.` Jede andere Datei: `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| ÖFFNEN | öffnet einen Ordner; eine CSV-Datei in einem der drei Ordner von LOGS (STAMM, USER, BENCH), die LOGS listet, öffnet auf [Logs](#logs) im Tab dieses Ordners, im Import; eine CSV-Datei über 2GiB weniger 1 Byte zeigt die Liste von LOGS mit dem Grund, und nach einem Kartentausch seit dem Listen öffnet sich nichts, und FILES meldet `Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.` Jede andere Datei, auch ein Bericht, öffnet im [Textbetrachter](#der-textbetrachter). Eine Datei über 1MiB öffnet sich nicht: ÖFFNEN ist grau und meldet `Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.` Eine Datei, die der Logger noch schreibt, öffnet sich nicht, ÖFFNEN ist grau und meldet `ATEST012.TXT wird gerade geschrieben.`; die Vermerke der Servoprogrammierung nehmen nur INFO |
 
 Ein vorhandener Name wird nie überschrieben: KOPIEREN, VERSCHIEBEN,
 UMBENENNEN und NEU lehnen ihn ab mit `NOTES.TXT gibt es dort schon.` Eine
@@ -2860,6 +2849,90 @@ in den Ordner, in dem der Eintrag liegt, oder eines Ordners in sich selbst
 werden abgelehnt:
 `Beide Seiten zeigen diesen Ordner, oder das Ziel liegt darin.`
 
+### Der Textbetrachter
+
+![Der Bericht eines Servotests im Textbetrachter](img/de/files-view.png)
+
+Der Textbetrachter zeigt eine Datei der Karte als Text, nur lesend.
+ÖFFNEN auf einer Datei in FILES öffnet ihn, ebenso ÖFFNEN auf einem
+Bericht in [Logs](#logs). Das Home-Tag schließt ihn: zu den Spalten, wenn
+FILES ihn geöffnet hat, zurück zu LOGS, wenn LOGS ihn geöffnet hat. Das
+Verlassen von FILES schließt ihn auch. Er öffnet eine Datei von bis zu
+1MiB (1.048.576 Bytes) und bis zu 65.536 Zeilenenden; die Kartenaufgabe
+liest sie ganz, in Stücken von 16KiB, während der Bildschirm
+`Lese die Karte.` zeigt.
+
+Die Kopfzeile, Körper-y 4 bis 52, zeigt Ordner und Namen der Datei (vorne
+auf `..` gekürzt ab 44 Zeichen), ihre Größe, NUR LESEN und rechts
+`ZEILE 23 VON 57`: die Zeile in der obersten Bildschirmzeile und die
+Zeilen der Datei. Ein Zeilenende am Ende der Datei beginnt keine eigene
+Zeile.
+
+Der Text steht in einem Feld von 1008 x 372px ab Körper-y 60: 18 Zeilen
+zu 92 Zeichen in der Schrift 10 x 20, 20px auseinander. KLEIN, links in
+der Fußzeile, schaltet auf die Schrift 8 x 16: 22 Zeilen zu 115 Zeichen,
+16px auseinander, für die Stufentabelle eines Berichts; der Knopf heißt
+dann NORMAL. Die Wahl gilt für jede Datei, bis das Panel neu startet.
+
+![Derselbe Bericht mit KLEIN, auf seinem zweiten Bildschirm](img/de/files-view-small.png)
+
+Eine Zeile, die breiter ist als eine Bildschirmzeile, setzt sich in der
+nächsten fort, links mit `..` markiert. Ein Tabulator reicht bis zum
+nächsten Vielfachen von 8 Zeichen; am Ende einer Bildschirmzeile endet er
+dort. Ein Byte, das keine UTF-8-Folge beginnt, ein Steuerzeichen und ein
+NUL-Byte nach den ersten 4KiB erscheinen als `?`, je ein Zeichen; ein
+Zeichen, für das die Schriften kein Glyph haben, ebenso. Eine UTF-8-Byte
+Order Mark am Anfang wird nicht gezeichnet. Eine Zeile endet an LF, an
+CR LF und an einem einzelnen CR; eine Datei mit mehr als einer Art zeigt
+`GEMISCHTE ZEILENENDEN` in der Fußzeile.
+
+Ziehen auf dem Text bewegt ihn eine Zeile je 20px (16px mit KLEIN), von
+der Stelle aus, an der er beim Aufsetzen stand; ein Druck, der sich 8px
+oder weniger bewegt, ist kein Ziehen. Ziehen am 56px breiten Rollbalken
+legt den Schieber unter den Finger, der Weg des Balkens über die Zeilen
+der Datei und die Bildschirmzeilen jeder umbrochenen Zeile verteilt; die
+Enden des Wegs sind der erste und der letzte Bildschirm, wie SEITE HOCH
+und SEITE RUNTER sie erreichen, auch wenn der letzte Bildschirm in einer
+umbrochenen Zeile beginnt. Ein Tipp auf den Balken neben dem Schieber
+setzt den Schieber dorthin. SEITE HOCH und SEITE RUNTER, 140 x 52px rechts in der
+Fußzeile, bewegen einen Bildschirm voll Zeilen, 18 oder 22; jeder ist am
+ersten oder letzten Bildschirm grau, beide, wenn der ganze Text zu sehen
+ist.
+
+Die Farben folgen den Wörtern des Prüfstands, nach dem Namen der Datei:
+eine `.TXT`-Datei nach den Regeln eines Berichts, eine `.JSON`-Datei als
+JSON, eine `.CSV`-Datei als CSV, jede andere Datei als einfacher Text.
+
+| Klasse | In einer `.TXT`-Datei | Farbe |
+|---|---|---|
+| Überschrift | Zeile 1 und eine Zeile in Großbuchstaben wie `AKTIVE EINSTELLUNGEN` | Akzent |
+| Bezeichnung | `Ergebnis:` oder `Neutral =` vom Zeilenanfang, innerhalb von 24 Zeichen | gedimmt |
+| OK | BESTANDEN des Berichts, in jeder Sprache | OK-Grün |
+| FEHLER | NICHT BESTANDEN des Berichts, in jeder Sprache | Gefahr-Rot |
+| WARNUNG | ABGEBROCHEN, NICHT MESSBAR, nicht gemessen, nicht geprüft, nicht gelaufen, verkürzt, `--`, `[not loaded]` | Warnfarbe |
+| Zahl mit Einheit | `6.00V`, `0.210A`, `400ms`, `333Hz` | Farbe der Einheit: V und mV Spannung, A und mA Strom, W Leistung, rpm und Hz Drehzahl, andere Türkis |
+| Kommentar | `#` bis zum Zeilenende | blass |
+| Register | `00: 1A 2B ...`, `checksum 9F3A77C1`, `journal=...` | gedimmt |
+
+Die Wörter sind die Texte der Berichtschreiber selbst, auf Englisch und
+auf Deutsch; ein auf Deutsch geschriebener Bericht erscheint auch auf
+einem englisch eingestellten Panel in seinen Farben.
+
+![Eine Servodatei des KST-Programmierers](img/de/files-view-kst.png)
+![Ein ESC-Profil](img/de/files-view-json.png)
+
+Eine Datei, die der Betrachter nicht zeigt, hinterlässt den Grund im
+Feld: `Keine Textdatei: ein NUL-Byte in den ersten 4kB.`,
+`Zu viele Zeilen: höchstens 65536.`, eine Datei, die seit dem Listen über
+1MiB gewachsen ist, und die Antworten der Karte selbst, etwa
+`Die Karte wurde entnommen oder getauscht. Tippe auf AKTUALISIEREN.`
+Eine leere Datei zeigt `Die Datei ist leer.`
+
+Der Betrachter hält die Datei in einem Puffer von 1MiB und ihren
+Zeilenindex von 256KiB, beide im PSRAM (Pseudo-Static Random-Access
+Memory). Wie lange das Lesen von 1MiB von der Karte des Panels dauert, ist
+nicht gemessen.
+
 ### AKTUALISIEREN
 
 AKTUALISIEREN sieht in den Steckplatz und liest dann den Ordner jeder
@@ -2867,11 +2940,11 @@ Spalte neu, eine Spalte nach der anderen, an der Seite, die die Spalte
 zeigt: ab dem ersten Eintrag dieser Seite, so wie VORIGE und NÄCHSTE ihre
 Seiten benennen. Jede Spalte behält ihre Stelle:
 
-- der Eintrag in der obersten Zeile der Spalte bleibt oben; ist er nicht
-  mehr auf der Karte, steht der Eintrag oben, der jetzt an seiner Stelle
+- der Eintrag in der obersten Zeile der Spalte bleibt oben; ist er von der Karte
+  verschwunden, steht der Eintrag oben, der an seiner Stelle
   in der Reihenfolge steht;
 - der gewählte Eintrag bleibt gewählt, solange er auf der gelesenen Seite
-  steht. Ist er nicht mehr auf der Karte oder steht er jetzt auf einer
+  steht. Ist er von der Karte verschwunden oder steht er auf einer
   anderen Seite, ist nichts gewählt, wie nach LÖSCHEN: VERSCHIEBEN und
   UMBENENNEN wirken ohne Rückfrage auf den gewählten Eintrag, daher
   übernimmt kein anderer Eintrag die Wahl. Ein Tipp wählt neu;
@@ -3484,7 +3557,7 @@ Auswahl springt vom letzten Wert auf den ersten.
 - **Halten.** Eine gehaltene Taste stellt zum ersten Mal 0,45s nach dem
   Aufsetzen, dann 8-mal pro Sekunde und ab 2,25s nach dem Aufsetzen 30-mal
   pro Sekunde. Nach 1,00s hat sie 5-mal gestellt, nach 3,00s 38-mal. Das
-  Abheben nach einem Halten stellt nicht mehr. Das Halten endet, wenn der
+  Abheben nach einem Halten stellt nichts weiter. Das Halten endet, wenn der
   Finger mehr als 8px vom Aufsetzpunkt entfernt oder außerhalb der Taste
   ist.
 - **Scrollen.** Ein senkrechter Drag von mehr als 8px, der irgendwo auf der
@@ -3883,7 +3956,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
 | `INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
 | `INA3221 0x41 hat alle Kanäle aus. SETUP > SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
-| `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält -- Pins ohne angeschlossenes Bauteil und ohne Pull-up --, ist das nicht: sie steigt innerhalb von 50µs am eigenen Pad-Pull-up des IOmcu (32 bis 86kΩ), und die Monitore gelten als nicht antwortend |
+| `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält (Pins ohne angeschlossenes Bauteil und ohne Pull-up), ist das nicht: sie steigt innerhalb von 50µs am eigenen Pad-Pull-up des IOmcu (32 bis 86kΩ), und die Monitore gelten als nicht antwortend |
 | `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des IOmcu dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
 | `INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
@@ -3896,20 +3969,20 @@ Eine abgelehnte Einstellung wird erst wieder geschrieben, wenn sie sich unter
 SETUP ändert. Pins, die das Paar eines I2C-Blocks sind und abgelehnt wurden,
 weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
 5s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
-SUPPLY freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
+SUPPLY freizugeben öffnet den Bus also. Ein Monitor, der aufhört zu antworten, schaltet den Prüfstand
 nicht auf SAFE: auf den Messwerten der Monitore löst nichts aus.
 
 Ein Alert über die Einstellung verlässt das Band, sobald seine Ursache
 vorbei ist, vor Ablauf seiner 30s: `SDA oder SCL der Sensoren nicht
 festgelegt.` und `INA228 und INA3221 nutzen beide 0x40.` mit der Änderung,
 die die Einstellung richtigstellt, und eine Ablehnung, sobald der IOmcu den
-Frame wie verlangt hält -- sofort, wenn der Wert auf den zurückgestellt
+Frame wie verlangt hält: sofort, wenn der Wert auf den zurückgestellt
 wird, den die Page noch hält, sonst wenn das Schreiben des neuen Werts
 übernommen ist, 500ms nach der letzten Änderung und bei einem Prüfstand in
 SAFE (`sense_link_event_stands()`). Ein Alert, der ersetzt wurde, bevor ein
 Frame ihn zeigte, und dessen Ursache bei seinem nächsten Zug vorbei ist,
-wird nicht gezeigt. Was eine Lesung gesagt hat -- antwortet nicht, andere
-Kennung, Bereichsgrenze, blockierter Bus --, bleibt seine 30s oder bis
+wird nicht gezeigt. Was eine Lesung gesagt hat (antwortet nicht, andere
+Kennung, Bereichsgrenze, blockierter Bus), bleibt seine 30s oder bis
 zum Antippen.
 
 #### Eine Zeile, die der IOmcu nicht hält
@@ -3982,7 +4055,7 @@ Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 | --- | --- |
 | `ONLINE` | der IOmcu liest den Baustein, der als INA3221 antwortet |
 | `SUCHT DEN BAUSTEIN` | die Einstellung ist angenommen, und der IOmcu hat den Baustein noch nicht gefunden: die ersten 2,5s |
-| `ANTWORTET NICHT` | an der Adresse des Bausteins antwortet 2,5s nach der angenommenen Einstellung nichts, oder der Baustein antwortet nicht mehr |
+| `ANTWORTET NICHT` | an der Adresse des Bausteins antwortet 2,5s nach der angenommenen Einstellung nichts, oder der Baustein hört auf zu antworten |
 | `ANDERE ID ANTWORTET` | an der Adresse antwortet etwas mit einer anderen Identität |
 | `NOCH NICHT GESCHRIEBEN` | eine Änderung wartet: 500ms nach der letzten Änderung, und nur bei einem Prüfstand in SAFE |
 | `NOCH NICHT GELESEN` | kein IOmcu antwortet, oder seine Page ist seit dem Link-Aufbau nicht gelesen |
@@ -4045,7 +4118,7 @@ zuerst, schreibt 500ms nach der letzten Änderung und nur bei einem
 Prüfstand in SAFE, und schreibt nichts, was die Page hält. Eine abgelehnte
 Zuordnung wird erst wieder geschrieben, wenn sie sich ändert. Solange ein
 Baustein bestückt ist, liest das Panel alle 500ms die IDs und Zustände der
-Bausteine. Ein Baustein, der nicht mehr antwortet oder als etwas anderes
+Bausteine. Ein Baustein, der aufhört zu antworten oder als etwas anderes
 antwortet, wird einmal auf dem Band gesagt, wie unter INTERFACES; den
 Baustein, über den SENSE berichtet (unten), sagen die Lesevorgänge von
 SENSE selbst.
@@ -4103,7 +4176,7 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.` | der Encoder ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
-| `AS5600 antwortet nicht unter 0x36.` | eingeschaltet, und 2,5s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
+| `AS5600 antwortet nicht unter 0x36.` | eingeschaltet, und 2,5s nach seiner Einstellung ohne Antwort, oder verstummt, nachdem er geantwortet hat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
 | `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt. Der Zählerstand ist kein Winkel: GEMESSEN zeigt `---`, SENSOR-MITTE setzt nichts, und ein Lauf protokolliert und beurteilt keinen Winkel |
 | `AS5600: Magnetfeld zu schwach. Magnet näher heranbringen.` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
 | `AS5600: Magnetfeld zu stark. Abstand zum Magneten vergrößern.` | STATUS MD und MH sind gesetzt. Der Winkel wird verwendet, wie bei ML |
@@ -4111,9 +4184,9 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 Eine Magnetmeldung wird einmal gesagt, solange die STATUS-Bits MD, ML und MH
 des Sensors bleiben, wie sie gesagt wurden, auch über die Konfigurationen
 hinweg, die eine Änderung einer anderen Zeile von INTERFACES schreibt. Sie
-wird noch einmal gesagt, wenn sich eines der Bits ändert -- ein schwacher
+wird noch einmal gesagt, wenn sich eines der Bits ändert (ein schwacher
 Magnet, der verschwindet, ein fehlender, der schwach zurückkommt, ein
-schwacher, der stark liest --, wenn das Feld dazwischen stimmte, wenn der
+schwacher, der stark liest), wenn das Feld dazwischen stimmte, wenn der
 Sensor als nicht antwortend gemeldet wurde, nachdem der Sensor ausgeschaltet
 war, und nach einem Link-Aufbau. Der
 Winkel hört auf, wenn MD erlischt, und kommt wieder, wenn es gesetzt ist. Der DIR-Pin
@@ -4181,8 +4254,8 @@ wie bei den Strommonitoren:
 | `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
-Die drei Alerts über die Einstellung -- erster Frame abgelehnt, zweiter
-Frame abgelehnt, Pin belegt -- verlassen das Band, sobald die Ursache vorbei
+Die drei Alerts über die Einstellung (erster Frame abgelehnt, zweiter
+Frame abgelehnt, Pin belegt) verlassen das Band, sobald die Ursache vorbei
 ist, vor Ablauf ihrer 30s (`tone_link_event_stands()`): ein abgelehnter
 Frame, sobald der IOmcu ihn wie verlangt hält, sofort, wenn der Wert auf den
 zurückgestellt wird, den die Page noch hält, sonst wenn das Schreiben des
@@ -4280,7 +4353,7 @@ geltenden Ordner unverändert, und die Zeile rechts vom Titel sagt, warum:
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
 Zeichen, `ABCDEFGH/12345678`. Ein gespeicherter Ordner, den das Panel nicht
-mehr nimmt, etwa einer, den eine andere Firmware geschrieben hat, wird nicht
+nimmt, etwa einer, den eine andere Firmware geschrieben hat, wird nicht
 beschrieben: Die Logs gehen in den vorgegebenen Ordner ihrer Art, und LOGS
 listet diesen Ordner.
 
@@ -4475,7 +4548,7 @@ liegt, von einem Stromausfall oder einem Löschen, das die Karte abgelehnt hat,
 wird zuerst gelöscht oder in `RCBENCH.OLD` umbenannt, wenn keine dort liegt.
 Scheitert ein Umbenennen oder dieses Löschen oder lässt sich eine Größe nicht
 lesen, wird die Zeile nicht geschrieben. Firmware 0.21.0 und älter schrieb `RCBENCH.LOG` ins
-Stammverzeichnis; diese Datei bleibt und wird nicht mehr beschrieben:
+Stammverzeichnis; diese Datei bleibt und wird nicht erneut beschrieben:
 
     t=182s link=down for 47s  bus=OFF tx_err=248 rx_err=0 bus_err=1976 rejoins=44/44  polls=5323 replies=5279 timeouts=44
 
@@ -5517,7 +5590,7 @@ ihre Pins und hält sie im Idle, bis jemand auf ARMED schaltet. Kanalbefehle wer
 wiederhergestellt — eine Konfiguration überlebt einen Power-Cycle, eine
 Gasstellung nicht.
 
-Das Speichern wartet, bis der Prüfstand nicht mehr treibt, und dann auf eine
+Das Speichern wartet, bis der Prüfstand aufhört zu treiben, und dann auf eine
 Lücke im Verkehr. Flash zu schreiben hält den IOmcu mit abgeschalteten
 Interrupts an, und solange antwortet er auf nichts: auf dem
 Inbetriebnahme-Modul wurde ein Speichervorgang, der in einem Fenster gelöscht

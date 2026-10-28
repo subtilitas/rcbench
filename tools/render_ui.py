@@ -401,7 +401,7 @@ SCREENS = {
     "logs-delete":("logs-delete.png","logs",       "dark"),
     # LOGS' ROOT tab: the runs of firmware 0.21.0 and older.
     "logs-root":  ("logs-root.png",  "logs",       "dark"),
-    # LOGS' USER tab: a LIMIT RUN's report opened as text.
+    # LOGS' USER tab: a LIMIT RUN's report opened in the text viewer.
     "logs-report": ("logs-report.png", "logs",     "dark"),
     # FILES: the card in two panes, ARMED and logging, each box, the
     # keyboard, no card, the second page of a big folder, the ESC and KST
@@ -418,6 +418,13 @@ SCREENS = {
     "files-nocard": ("files-nocard.png", "files", "dark"),
     "files-paged": ("files-paged.png", "files", "dark"),
     "files-conf": ("files-conf.png", "files", "dark"),
+    # The text viewer: a servo test's report as the language rendered
+    # writes it, the same in SMALL on its second screen, a servo file of
+    # the KST programmer and an ESC profile.
+    "files-view": ("files-view.png", "files", "dark"),
+    "files-view-small": ("files-view-small.png", "files", "dark"),
+    "files-view-kst": ("files-view-kst.png", "files", "dark"),
+    "files-view-json": ("files-view-json.png", "files", "dark"),
     # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
@@ -746,6 +753,13 @@ FIT_ONLY = {
     "files-made": (None, "files", "dark"),
     "files-rename": (None, "files", "dark"),
     "files-delete-folder": (None, "files", "dark"),
+    # The text viewer's other states: reading, a file with a NUL byte, mixed
+    # line ends, an empty file, and FILES' refusal of a file over 1MiB.
+    "files-view-reading": (None, "files", "dark"),
+    "files-view-binary": (None, "files", "dark"),
+    "files-view-mixed": (None, "files", "dark"),
+    "files-view-empty": (None, "files", "dark"),
+    "files-view-toolarge": (None, "files", "dark"),
 }
 
 # Every cat pose but the first, on PICK A PIN posed as "picker" is:

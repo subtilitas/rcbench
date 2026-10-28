@@ -102,14 +102,6 @@
 #define LV_EMPTY_X0   128           /**< The lines' left. */
 #define LV_EMPTY_X1   896           /**< Their right. */
 
-/** @brief The TEXT view's first row's top, under the list's heading. */
-#define LV_TX_TOP     (LV_LIST_Y + 30)
-#define LV_TX_ROW_X   24            /**< A text row's left edge. */
-#define LV_TX_PITCH   22            /**< One text row to the next. */
-#define LV_TX_ROWS    15            /**< The text rows on screen. */
-#define LV_TX_COLS    92            /**< Cells of 10 x 20 a text row holds. */
-#define LV_TX_BACK_CX 78            /**< BACK under the text. */
-
 #define LV_DQ_CY      332           /**< The DELETE question's buttons. */
 #define LV_DQ_CANCEL_CX 336         /**< CANCEL. */
 #define LV_DQ_DELETE_CX 688         /**< DELETE. */

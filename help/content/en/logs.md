@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder and its reports, shows what the import found in a CSV file, plots up to 4 of its columns, and shows a report as text. Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md), and FILES beside it opens [Files](files.md): copy, move, rename and delete on the card. The home tag climbs one level, as BACK does: the plot to the import view, the import view and a report's text to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder and its reports, shows what the import found in a CSV file, plots up to 4 of its columns, and opens a report in the text viewer of [Files](files.md#the-text-viewer). Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md), and FILES beside it opens [Files](files.md): copy, move, rename and delete on the card. The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
@@ -41,7 +41,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 | WI-FI | opens [Wi-Fi](wifi.md) |
 | FILES | opens [Files](files.md) |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
-| OPEN | opens the selected CSV file in the import view, a report as text; grey with nothing selected |
+| OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
 
 ![The fourth page of a full card](view:logs-pages)
 
@@ -50,7 +50,7 @@ LOGS opens on the tab of the file the panel wrote last, and on BENCH after a sta
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
 - The scroll bar at the right edge, 56px (about 8.4mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
 - Opening LOGS reads the card: the first page, its newest run selected. A run recorded while LOGS was closed is listed without RESCAN.
-- On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
+- On a page past the first, RESCAN reads from that page's first entry; when the card holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
 - A card put in, taken out or swapped while the panel runs is found by the next RESCAN, the next opening of LOGS, the next page or OPEN, and the next run's start, with no restart. A new card opens on its first page; an empty slot says `No card. Insert one and tap RESCAN.`.
 - Newest means the highest number in the name. A file's date is only as good as the panel's clock: it starts unset at each power-on, and until NTP sets it on the home network the panel dates files 1980 ([Setup](setup.md#panel)).
@@ -103,16 +103,9 @@ The first five leave no file. The last four leave a file that stops early.
 
 ## A report
 
-![A LIMIT RUN's report as text](view:logs-report)
+![A LIMIT RUN's report in the text viewer](view:logs-report)
 
-OPEN on a report shows its text: the file's name heads the panel, 15 rows of up to 92 characters show at once.
-
-- A line longer than a row breaks at its last space; a word longer than a row is cut at the row's end.
-- A drag on the rows or on the scroll bar scrolls them. BACK returns to the list and frees the text; leaving LOGS frees it too.
-- A line ends at a line feed, at a carriage return and at a pair of both.
-- A file of 0 bytes shows `The file is empty.`
-- The view holds the first 32KiB of a file. A longer file ends with `Only the first 32kB are shown.`
-- A report that cannot be opened stays on the list, and the footer says why, for example `Cannot open LIMIT044.TXT.`
+OPEN on a report opens it in the [text viewer](files.md#the-text-viewer), read-only. The band then reads FILES. The home tag returns to LOGS, with the report chosen on the list again. A report over 1MiB stays on the list, and the footer reads `Over 1MB: too large to open. Download it over Wi-Fi.`
 
 [Wi-Fi](wifi.md) downloads every report as well.
 

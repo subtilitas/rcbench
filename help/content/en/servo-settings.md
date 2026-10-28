@@ -119,7 +119,7 @@ AS5600, the output encoder, is switched on [Interfaces](setup-interfaces.md) alo
 
 ![The TARGET row with PROG PORT](view:servo-target)
 
-The TARGET row of the output card names what the tester drives now as `protocol pins`, and picks it, as on MOTOR & ESC: a tap opens [Outputs](outputs.md#the-prog-port-entry), on what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. There SERVO TESTER picks OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the IOmcu's programming port. Leaving SERVO switches the bench to SAFE and ends a sweep or a test; the home tag on OUTPUTS comes back to SERVO on the same task. The row stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
+The TARGET row of the output card names what the tester drives as `protocol pins`, and picks it, as on MOTOR & ESC: a tap opens [Outputs](outputs.md#the-prog-port-entry), on what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. There SERVO TESTER picks OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the IOmcu's programming port. Leaving SERVO switches the bench to SAFE and ends a sweep or a test; the home tag on OUTPUTS comes back to SERVO on the same task. The row stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
 
 ![The PROG PORT entry of OUTPUTS](view:outputs-port)
 

@@ -14,7 +14,7 @@ nobody has measured. This bench is what answers it.
 analyser scan, a 948-line capture, the PWM1 tables, the udev rules and the
 `pinctrl` pull readings are measured on the bench host. The hardware is being
 assembled, the channel map is a proposal to be checked against the wiring as built, and three of the
-pieces are described rather than written -- the panel's debug touch address,
+pieces are described rather than written: the panel's debug touch address,
 the decoders and the recipes. Each says so where it is described, and they are
 listed together under *What is not built yet*.
 
@@ -140,7 +140,7 @@ applied. This is the same trap as a decoder written from the specification the
 firmware was written from: agreement for the same wrong reason.
 
 Duty cycle at 100kHz, which is the half a self-agreeing clock cannot
-manufacture -- a ratio does not depend on the timebase being right:
+manufacture. A ratio does not depend on the timebase being right:
 
 | Commanded | Measured | High |
 | --- | --- | --- |
@@ -179,15 +179,15 @@ page documents come out of v3.6.6 with identical sizes and CRC-32 values.
 Installed to `/usr/share/sigrok-firmware`, which is in the default
 `XDG_DATA_DIRS`, so a libsigrok under `/opt/sigrok` finds them without
 `SIGROK_FIRMWARE_DIR` being set. `host/selftest.sh` reports the
-two gates separately -- it asks the library what drivers it carries, then asks the
-instrument for samples -- so a missing driver reads as a missing driver, a
+two gates separately: it asks the library what drivers it carries, then asks the
+instrument for samples, so a missing driver reads as a missing driver, a
 missing bitstream as a capture that returns nothing, and neither as an
 unplugged instrument.
 
 **The prefix is `/opt/sigrok`, not `/usr/local`.** Debian's `libsigrok4t64`
 carries the soname `libsigrok.so.4` and so does the git build. With both on
 the default search path the loader picks by path order, and neither end
-reports a mismatch -- a Pi with the Debian package installed would quietly run
+reports a mismatch: a Pi with the Debian package installed would quietly run
 0.5.2 and find no analyser. Under `/opt`, with a runpath to `/opt/sigrok/lib`
 linked into `sigrok-cli`, the two cannot meet, and the distribution's sigrok
 keeps working untouched.
@@ -218,7 +218,7 @@ The sequence takes about 82 seconds on the bench host: 10s for the packages,
 **The package list is not tested on a host that has never had sigrok on it.**
 The sequence above has been walked on the bench host, which already carried
 the runtime libraries and both udev rules, so what it proves is the compile,
-the configure flags, the driver being built in and the runpath -- the
+the configure flags, the driver being built in and the runpath: the
 configure summary prints `kingst-la2016................... yes` and the built
 library lists the driver. Whether a first-time follower meets a package this
 list omits is unknown, and finding out needs a machine that has never had
@@ -290,8 +290,8 @@ installed files rather than from the build tree: anything that strips or
 re-links between the two would otherwise record one object and run another.
 
 **The manifest belongs to one installation.** Two builds of the same commits
-with the same flags do not produce the same bytes -- build paths, timestamps
-and a different compiler all reach the binary -- so no two benches record the
+with the same flags do not produce the same bytes: build paths, timestamps
+and a different compiler all reach the binary, so no two benches record the
 same hashes. Measured: a second build of `0bc24877` and `f44dd91` on this host
 gave a `sigrok-cli` of `8be9ed02c5595b68...` against the `6c8febc235aec1de...`
 of another build of the same commits. That is why the manifest is written from
@@ -304,7 +304,7 @@ is the one failure it exists to catch. Build the manifest where the build is.
 can carry one, so a comparison against `sigrok-cli-version` passes on a stale
 manifest and then attributes a commit to a library that did not produce the
 captures. `host/selftest.sh` compares the sha256 of the binary on `PATH` and
-of the libsigrok that is actually loaded -- resolved with `ldd`, because the
+of the libsigrok that is actually loaded, resolved with `ldd` because the
 library the dynamic linker finds need not be the one beside the binary. The
 version lines are printed as labels and nothing turns on them.
 
@@ -320,7 +320,7 @@ Five readings come out of it:
 
 The fourth is why the distribution `sigrok-cli` is left installed rather than
 removed. A bench that only works once a package is gone is a bench that breaks
-on the next machine, so the two are made to coexist -- the prefix and the
+on the next machine, so the two are made to coexist: the prefix and the
 runpath keep them apart, and the `PATH` step decides which one a shell gets.
 The selftest names the step in the reading, so an operator who meets it
 between the two commands above sees a procedure that is not finished rather
@@ -454,7 +454,7 @@ On a Raspberry Pi 5 the general-purpose input/output pins sit behind the RP1
 controller, so OpenOCD's older native Broadcom driver does not work and the
 character device is the route. Which device the 40-pin header is depends on
 the kernel and the firmware, so it is read rather than assumed. On the bench
-host -- Raspberry Pi 5 Model B Rev 1.1, kernel 6.18.34, Debian 13 --
+host (Raspberry Pi 5 Model B Rev 1.1, kernel 6.18.34, Debian 13),
 `gpiodetect` reports the header as `gpiochip0 [pinctrl-rp1]`, 54 lines.
 
 The OpenOCD on the bench host ships no `interface/linuxgpiod.cfg`. The driver
@@ -480,9 +480,9 @@ driver and stops there:
     Error: Error connecting DP: cannot read IDR
 
 That is the whole of what has been confirmed: it is the reading an empty
-header gives. It is not a diagnosis. A target that is present but miswired --
-the two leads swapped, one of them off, the ground not on the star, the wrong
-chip number -- gives the same error, so it separates "OpenOCD reached the
+header gives. It is not a diagnosis. A target that is present but miswired
+(the two leads swapped, one of them off, the ground not on the star, the wrong
+chip number) gives the same error, so it separates "OpenOCD reached the
 pins" from "something answered" and nothing finer. A board on the pins has to
 replace it.
 
@@ -497,7 +497,7 @@ would work, since the lines are bit-banged rather than driven by a peripheral,
 but a bench is reproducible only if every assembler uses the same two.
 
 SWDIO is on GPIO8 for its default pull. **Power-on values, valid only on a
-line nothing has driven since boot** -- `pinctrl get 8,24,25` on the bench
+line nothing has driven since boot**, read with `pinctrl get 8,24,25` on the bench
 host:
 
      8: no    pu | -- // GPIO8 = none
@@ -524,11 +524,11 @@ that has been driven rather than as a contradiction of this table.
 **The choice is not a fix for an observed fault.** No target has been on
 either pin, so whether a pull-down on GPIO24 would have cost anything against
 the RP2350's own termination is unknown. Nothing is wired yet, which is the
-whole reason to spend a documentation change now rather than a rewiring later.
+whole reason to spend a documentation change here rather than a rewiring later.
 
 **GPIO8 is SPI0 CE0.** With SPI enabled on the header the `spidev` driver
 claims the line and `linuxgpiod` cannot have it. SPI is off on the bench host
--- no `/dev/spidev*`, no `dtparam=spi` in `/boot/firmware/config.txt` -- and
+(no `/dev/spidev*`, no `dtparam=spi` in `/boot/firmware/config.txt`) and
 stays off while SWD is on this pin. SWCLK on GPIO25 carries no such
 attachment.
 
@@ -553,7 +553,7 @@ SWD writes and 360kHz for reads; neither is measured on this host.
 
 A fixed rate is not the same as a suitable one, and nothing here has driven a
 target to find out. If a flash fails to verify, `adapter speed` is not the
-knob -- the PCIe policy below and a different adapter are the two things that
+knob: the PCIe policy below and a different adapter are the two things that
 can move the timing.
 
 Two host settings bear on it, both read on the bench host:
@@ -616,8 +616,8 @@ reads it every poll after the glass and merges the two
   goes silent ages the touch reading as a silent glass does, and an armed
   bench goes SAFE at most 700ms after its last answer: 200ms until touch
   reads as lost, then `ARMING_TOUCH_DEAD_MS` (500ms).
-- 1000ms after its last answer the injector is detached. Its age no longer
-  counts, the glass alone decides, and the heartbeat comes back. The bench
+- 1000ms after its last answer the injector is detached. Its age
+  does not count, the glass alone decides, and the heartbeat comes back. The bench
   stays SAFE until somebody arms it again.
 - A detached injector has its product ID read once every 1000ms. The first
   `9INJ` re-attaches it, with no contacts down and its age counted again
@@ -691,7 +691,7 @@ thing is what makes a measurement believable.
 ## Reset, and the boot buttons
 
 Relays across the buttons, one contact each, closed by the RP2350. A relay
-contact is what a button is -- a dry contact to ground -- so there is no line
+contact is what a button is (a dry contact to ground), so there is no line
 to drive, no level to match, and nothing that can hold a pin high. Coil
 unpowered is button not pressed, which is the state a board runs in, so a
 controller that has crashed or lost power leaves both boards alone.
@@ -704,7 +704,7 @@ What that makes possible:
   script turns that into a loop.
 - **Boot mode without hands.** BOOT closed, RESET pulsed, RESET released, BOOT
   released: that sequence is what puts each board in its loader. The panel
-  needs it -- it is flashed over a serial port with BOOT held, and without this
+  needs it: it is flashed over a serial port with BOOT held, and without this
   there is no unattended way to put firmware on the panel at all.
 - **Recovery.** A flash that leaves a board unable to run is undone by the same
   two contacts rather than by somebody driving to the bench.
@@ -712,7 +712,7 @@ What that makes possible:
 Two practical notes. Use signal relays with gold-plated contacts: a button
 line switches microamps, and contacts rated for power can grow an oxide film
 that a dry circuit will not break through. And run the coils from their own
-supply through a transistor with a flyback diode -- a coil collapsing into the
+supply through a transistor with a flyback diode: a coil collapsing into the
 rail that feeds the panel is a brown-out that reads like a firmware fault.
 
 The chain then has no dead end: the Pi resets the RP2350 over SWD, the RP2350
@@ -756,7 +756,7 @@ read back what went in. It needs no hardware and can be done before the bench
 exists.
 
 **That check is necessary and it is not sufficient.** The production path
-calls the same builder -- `protocols/dshot/rp2350/out_dshot.c` -- so decoder and
+calls the same builder (`protocols/dshot/rp2350/out_dshot.c`), so decoder and
 firmware can agree on a bit order or a checksum convention that is wrong in
 the same way, and the round trip would pass. It proves transcription, not
 convention.
@@ -806,7 +806,7 @@ firmware and the decoder agree, and no more than that.
 - **The analyser's bitstream is provided**, and it is not redistributed:
   it is Kingst material with no grant, so it is extracted from the vendor
   software onto the bench rather than shipped with the build.
-  `host/selftest.sh` still asks for it, because the failure is silent -- an
+  `host/selftest.sh` still asks for it, because the failure is silent: an
   analyser without it enumerates, accepts a capture and returns nothing, which
   reads as a quiet bench rather than a broken one. Having it settles the
   second of the two gates under *The parts*, never the first.

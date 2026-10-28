@@ -11,9 +11,11 @@
  * while the folder holds more than one page of FM_PAGE_MAX entries.
  *
  * The footer holds OPEN, COPY, MOVE, RENAME, DELETE, NEW, INFO and RESCAN.
- * OPEN enters a folder, and hands a .CSV file or a report in one of LOGS'
- * three folders to LOGS (log_viewer_show()): the names LOGS' list holds
- * (log_select_lists()), less a file the logger has open.  DELETE asks
+ * OPEN enters a folder, hands a .CSV file in one of LOGS' three folders to
+ * LOGS (log_viewer_show()), and opens any other file in the text viewer
+ * (text_view.h), read-only: a file of 1MiB at most that the logger does
+ * not write and that is not the servo programmer's record.  LOGS opens its
+ * reports in the same viewer (files_screen_open_text()).  DELETE asks
  * first.  NEW makes a folder or an empty text file, its name typed on the
  * file-name keyboard (ui_textkey_open_file()), as RENAME takes one.  INFO
  * shows an entry's name, folder, kind, size and time, and a folder's
@@ -125,7 +127,8 @@ typedef enum {
     FILES_VIEW_INFO,       /**< the INFO box                             */
     FILES_VIEW_NEW,        /**< NEW's choice: FOLDER or TEXT FILE        */
     FILES_VIEW_NAME,       /**< the keyboard for a new name              */
-    FILES_VIEW_JOB         /**< a job's progress box                     */
+    FILES_VIEW_JOB,        /**< a job's progress box                     */
+    FILES_VIEW_TEXT        /**< the text viewer (text_view.h)            */
 } files_view_t;
 
 /**
@@ -134,6 +137,34 @@ typedef enum {
  * @param io  the io, copied
  */
 void files_screen_set_io(const files_io_t *io);
+
+/**
+ * @brief Open file @p name of folder @p dir in the text viewer: the card's
+ *        task reads it as soon as no other request is under way, and the
+ *        viewer shows it.  Called by FILES' OPEN and by LOGS' OPEN on a
+ *        report, which then goes to FILES; opened from LOGS, the home tag
+ *        returns to LOGS, from FILES to the panes.
+ * @param dir        the file's folder, a path from the root
+ * @param name       its name
+ * @param mount      the mount it was listed from (fm_io.h hold())
+ * @param size       its bytes as listed
+ * @param from_logs  LOGS opened it
+ * @return FM_OK; FM_ERR_TOO_BIG over TEXT_BUF_FILE_MAX bytes, and the
+ *         viewer stays as it was
+ */
+fm_err_t files_screen_open_text(const char *dir, const char *name,
+                                unsigned mount, uint64_t size,
+                                bool from_logs);
+
+/**
+ * @brief The words of a refusal or a failure of the card, for @p name, as
+ *        FILES' message line writes them.
+ * @param err   the answer
+ * @param name  the entry's name, for the sentences that name it
+ * @param out   takes the sentence
+ * @param n     bytes at @p out
+ */
+void files_err_text(fm_err_t err, const char *name, char *out, size_t n);
 
 /**
  * @brief The view on top.

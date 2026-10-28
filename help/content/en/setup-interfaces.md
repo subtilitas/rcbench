@@ -41,7 +41,7 @@ A pin is written with the word first, `GPIO 1`, in the keypad's entry, on the ro
 
 ![The keypad of Sensor SDA, GPIO 1 typed](view:setup-sda-keypad)
 
-The band names what goes wrong, one message at a time, at most one every 5s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.`. A message about the set-up -- pins not set, one address, a value rejected -- leaves the band as soon as the setting is right again and the IOmcu holds it.
+The band names what goes wrong, one message at a time, at most one every 5s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.`. A message about the set-up (pins not set, one address, a value rejected) leaves the band as soon as the setting is right again and the IOmcu holds it.
 
 ## A row the IOmcu does not hold
 

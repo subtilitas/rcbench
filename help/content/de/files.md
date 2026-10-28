@@ -6,7 +6,7 @@ order: 53
 
 # Files
 
-FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten. Er kopiert, verschiebt, benennt um und löscht Dateien und legt Ordner und leere Textdateien an. Er öffnet über DATEIEN unten auf [LOGS](logs.md) und über die Kachel FILES auf [SETUP](setup.md). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt dann zu dem Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
+FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten. Er kopiert, verschiebt, benennt um und löscht Dateien, legt Ordner und leere Textdateien an und zeigt eine Datei als Text. Er öffnet über DATEIEN unten auf [LOGS](logs.md) und über die Kachel FILES auf [SETUP](setup.md). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt dann zu dem Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
 
 ## Die zwei Spalten
 
@@ -36,14 +36,14 @@ Eine Taste, die abgelehnt würde, ist gedimmt. Ein Tipp darauf nennt den Grund i
 
 | Taste | Was sie tut |
 |---|---|
-| AKTUALISIEREN | sieht in den Steckplatz und liest jede Spalte an der Seite neu, die sie zeigt. Die oberste Zeile und der gewählte Eintrag bleiben; ist der gewählte Eintrag nicht mehr auf der Karte, ist nichts gewählt, wie nach LÖSCHEN |
+| AKTUALISIEREN | sieht in den Steckplatz und liest jede Spalte an der Seite neu, die sie zeigt. Die oberste Zeile und der gewählte Eintrag bleiben; ist der gewählte Eintrag von der Karte verschwunden, ist nichts gewählt, wie nach LÖSCHEN |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
 | LÖSCHEN | fragt zuerst. Die CSV-Datei eines Laufs nimmt ihren Bericht mit. Ein Ordner wird nur gelöscht, wenn er leer ist |
 | NEU | ORDNER oder TEXTDATEI, dann die Tastatur für den Namen |
 | INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel |
-| ÖFFNEN | öffnet einen Ordner. Eine CSV-Datei oder ein Bericht in STAMM, USER oder BENCH öffnet auf [LOGS](logs.md), ein Bericht als Text. Eine Datei, die der Prüfstand noch schreibt, bleibt hier, `ATEST012.TXT wird gerade geschrieben.`, und jede andere Datei zeigt `LOGS öffnet .csv-Dateien und Berichte in STAMM, USER und BENCH.` |
+| ÖFFNEN | öffnet einen Ordner. Eine CSV-Datei in STAMM, USER oder BENCH öffnet auf [LOGS](logs.md). Jede andere Datei, auch ein Bericht, öffnet im [Textbetrachter](#der-textbetrachter). Eine Datei über 1MiB bleibt hier, `Über 1MB: zu groß. Lade die Datei über Wi-Fi herunter.`, ebenso eine Datei, die der Prüfstand noch schreibt, `ATEST012.TXT wird gerade geschrieben.` |
 
 Ein vorhandener Name wird nie überschrieben: `NOTES.TXT gibt es dort schon.` Eine Kopie wird als `NAME.NEW` geschrieben und umbenannt, wenn sie vollständig ist.
 
@@ -51,6 +51,23 @@ Ein vorhandener Name wird nie überschrieben: `NOTES.TXT gibt es dort schon.` Ei
 ![Die Tastatur für eine neue Textdatei](view:files-name)
 
 Die Tastatur fasst bis zu 59 Bytes; Ä Ö Ü ä ö ü ß zählen je 2. OK lehnt einen leeren Namen ab, eines von `" * / : < > ? \ |`, ein Leerzeichen oder einen Punkt an einem Ende und Gerätenamen wie `CON` oder `COM1`, und nennt den Grund neben dem Titel.
+
+## Der Textbetrachter
+
+![Der Bericht eines Servotests im Textbetrachter](view:files-view)
+
+Der Betrachter zeigt eine Datei als Text, nur lesend. Das Home-Tag schließt ihn: zurück zu den Spalten, oder zurück zu [LOGS](logs.md), wenn LOGS ihn geöffnet hat. Er öffnet eine Datei von bis zu 1MiB und bis zu 65.536 Zeilen; während die Karte gelesen wird, steht `Lese die Karte.` da.
+
+- Die Kopfzeile zeigt Ordner und Namen der Datei, ihre Größe, NUR LESEN und `ZEILE 23 VON 57`: die Zeile in der obersten Bildschirmzeile und die Zeilen der Datei.
+- 18 Zeilen zu 92 Zeichen stehen auf einmal da. KLEIN schaltet auf eine kleinere Schrift, 22 Zeilen zu 115 Zeichen, für die Stufentabelle eines Berichts; NORMAL schaltet zurück. Die Wahl gilt, bis das Panel neu startet.
+- Eine Zeile, die breiter ist als eine Bildschirmzeile, setzt sich in der nächsten fort, links mit `..` markiert.
+- Ziehen auf dem Text oder am Rollbalken rollt ihn. SEITE HOCH und SEITE RUNTER bewegen einen Bildschirm; jeder ist am ersten oder letzten Bildschirm grau.
+- Die Wörter des Prüfstands haben Farben: Überschriften, Bezeichnungen wie `Ergebnis:`, BESTANDEN grün, NICHT BESTANDEN rot, `nicht gemessen` und die anderen Wörter für das, was nicht gelaufen ist, in der Warnfarbe, eine Zahl mit Einheit in der Farbe der Einheit, `#`-Kommentare blass. Englische Berichte erscheinen genauso. Eine `.JSON`-Datei ist als JSON gefärbt.
+- Eine Datei mit Zeilenenden LF und CR LF zeigt `GEMISCHTE ZEILENENDEN`.
+- Eine Datei mit einem NUL-Byte in den ersten 4kB meldet `Keine Textdatei: ein NUL-Byte in den ersten 4kB.` Eine leere Datei meldet `Die Datei ist leer.`
+
+![Derselbe Bericht mit KLEIN](view:files-view-small)
+![Eine Servodatei des KST-Programmierers](view:files-view-kst)
 
 ## ARMED und Aufzeichnung
 
