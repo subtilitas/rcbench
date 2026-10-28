@@ -8,6 +8,9 @@ a contact sheet ``all.png`` of all of them.
 
 Usage:
     xvfb-run -a python3 hardware/kicad/tools/step_render.py DIR [--size W H]
+        [--step FILE ...]
+
+--step renders the given STEP files in place of the library.
 
 Needs OCP (pip install cadquery-ocp), Pillow for the contact sheet, and
 an OpenGL context: an X display, or xvfb-run with Mesa.
@@ -140,13 +143,17 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("out", type=Path)
     ap.add_argument("--size", type=int, nargs=2, default=(800, 600))
+    ap.add_argument("--step", type=Path, nargs="+",
+                    help="render these files in place of the library")
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     r = Renderer(*args.size)
     pngs = []
-    for spec in gen_all.load_specs():
-        name = spec.FOOTPRINT["name"]
-        path = HERE.parent / f"{gen_all.LIB}.3dshapes" / f"{name}.step"
+    paths = args.step or [
+        HERE.parent / f"{gen_all.LIB}.3dshapes"
+        / f"{spec.FOOTPRINT['name']}.step" for spec in gen_all.load_specs()]
+    for path in paths:
+        name = path.stem
         png = args.out / f"{name}.png"
         r.render(path, png)
         pngs.append(png)

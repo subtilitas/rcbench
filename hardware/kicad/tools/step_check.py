@@ -5,7 +5,8 @@ For each rcbench_modules.3dshapes/*.step: the file reads without error,
 holds as many solids as its spec builds, every solid passes the B-rep
 (boundary representation) check and is closed with a positive volume,
 every solid carries a colour, and the bounding box matches the spec's
-within 0.01mm.
+within 0.01mm. The models of hardware/mechanical/models/ are checked the
+same way, bar the bounding box.
 
 Usage:
     python3 hardware/kicad/tools/step_check.py [--png DIR]
@@ -40,6 +41,9 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import gen_all  # noqa: E402
 import step_gen  # noqa: E402
+
+sys.path.insert(0, str(HERE.parent.parent / "mechanical"))
+import gen_models  # noqa: E402
 
 
 def read(path):
@@ -124,6 +128,32 @@ def _shade(tri, rgb):
     return tuple(min(1.0, c * k) for c in rgb)
 
 
+def check_file(path, n_solids):
+    """Check one STEP file that is not a module of the library.
+
+    Args:
+        path: The file.
+        n_solids: The number of solids its spec builds.
+
+    Returns:
+        A list of error texts, empty when the model passes.
+    """
+    errs = []
+    _shape, found = read(path)
+    if len(found) != n_solids:
+        errs.append(f"{len(found)} solids, spec builds {n_solids}")
+    for i, (solid, col) in enumerate(found):
+        if not BRepCheck_Analyzer(solid).IsValid():
+            errs.append(f"solid {i}: B-rep check fails")
+        props = GProp_GProps()
+        BRepGProp.VolumeProperties_s(solid, props)
+        if props.Mass() <= 0:
+            errs.append(f"solid {i}: volume {props.Mass():.4f}")
+        if col is None:
+            errs.append(f"solid {i}: no colour")
+    return errs
+
+
 def png(spec, out):
     """Write a shaded view of one model.
 
@@ -204,6 +234,13 @@ def main(argv):
         if args.png:
             args.png.mkdir(parents=True, exist_ok=True)
             png(spec, args.png / f"{name}.png")
+    for path, (_text, items) in gen_models.outputs().items():
+        errs = check_file(path, len(items))
+        for e in errs:
+            print(f"FAIL {path.name}: {e}")
+        if not errs:
+            print(f"ok   {path.name}")
+        bad += bool(errs)
     return 1 if bad else 0
 
 
