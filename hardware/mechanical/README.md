@@ -37,14 +37,15 @@ M16 x 1 thread, hex nut, anti-rotation ring with a tab, 5 tabs 2.8 x 0.5mm
 
 Dimensions from the seller's drawing: head 24.9mm with a 19.6mm front face
 and 15.7mm long, bezel 2.7mm long, nut front face 29.3mm from the tab
-ends, 12mm of thread behind the nut, tabs 7mm long, base 12.8mm wide,
-M16 x 1, overall 50.1mm. The 20.4mm and 19.6mm figures of the side view
-are read as the bezel diameter and the nut across flats.
+ends, 12mm of thread behind the nut, tabs 7mm long, a square shim 12.8mm
+wide in front of the tabs, M16 x 1, overall 50.1mm. The 20.4mm and 19.6mm
+figures of the side view are read as the bezel diameter and the nut across
+flats.
 
 Estimated, not on the drawing: the head's front edge radius (2.65mm), the
-bezel chamfer, nut and ring thickness, ring bore and tab, switch body
-diameter (15.0mm) and the tab positions. The spec lists each. The thread
-is a plain 16.0mm cylinder; the tab holes and the head print are not
-modelled. The maker and part number are not known.
+shim thickness (0.5mm), the bezel chamfer, nut and ring thickness, ring
+bore and tab, switch body diameter (15.0mm) and the tab positions. The
+spec lists each. The thread is a plain 16.0mm cylinder; the tab holes and
+the head print are not modelled. The maker and part number are not known.
 
 ![E-stop models](renders/all.png)

@@ -16,14 +16,16 @@ mm, lengths from the tab ends:
 - 12: thread length visible from the nut's front face to the switch body
 - 7: tab length; tabs 2.8 x 0.5
 - M16 x 1 thread
-- rear view: blue base 12.8 wide, terminal block 13.8 tall
+- rear view: square shim 12.8 wide, terminal block 13.8 tall; the photo
+  shows the square as a thin blue shim in front of the tabs, not a block
 - side view: 20.4 and 19.6 across, read here as the bezel and the nut
   across flats
 
 Estimated, not on the drawing: the head's front edge radius (2.65mm,
 from the 24.9 and 19.6 diameters), the bezel's front chamfer (0.5mm),
-nut thickness (3.0mm), ring thickness (1.0mm), ring bore 16.2mm and outer
-diameter 20.4mm, the ring's tab (2.0mm wide, 1.4mm tall), the switch
+the shim's thickness (0.5mm), nut thickness (3.0mm), ring thickness
+(1.0mm), ring bore 16.2mm and outer diameter 20.4mm, the ring's tab
+(2.0mm wide, 1.4mm tall), the switch
 body diameter (15.0mm) and the tab positions (C NO NC in a row 4.2mm
 apart, + above and - below at 5.0mm). The thread is a plain 16.0mm
 cylinder. The tab holes and the head's print are not modelled.
@@ -53,7 +55,7 @@ NUT_T = 3.0
 RING_T, RING_BORE, RING_D = 1.0, 16.2, 20.4
 RING_TAB_W, RING_TAB_H = 2.0, 1.4
 BODY_D = 15.0
-BASE_LEN = 3.0
+SHIM_T = 0.5
 PANEL = BEZEL_BACK - NUT_FRONT - RING_T
 
 
@@ -95,7 +97,7 @@ def button(colors):
     bezel = [(rb, 0.0), (rb, z(HEAD_BACK) - BEZEL_CHAMFER),
              (rb - BEZEL_CHAMFER, z(HEAD_BACK))]
     body_top = z(NUT_FRONT - THREAD_BEHIND_NUT)
-    base_top = z(TAB_LEN + BASE_LEN)
+    base_top = z(TAB_LEN + SHIM_T)
     out = [
         ("revolve", head, 64, colors["red"]),
         ("revolve", bezel, 64, colors["metal"]),
