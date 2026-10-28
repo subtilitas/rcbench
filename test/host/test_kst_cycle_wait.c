@@ -397,6 +397,33 @@ TEST_CASE(abort_in_the_wait_returns_to_programming_with_the_supply_on)
     CHECK_EQ(g_hw.offs, 1u);
 }
 
+/* A stop owes a READ_ALL; the cycle of a REBOOT ends that debt, so an
+ * ABORT in its wait leaves a LEAVE that is taken. */
+TEST_CASE(the_cycle_clears_a_read_a_stop_owed_before_the_wait)
+{
+    up_at(0u);
+    tick_as(true, true);
+    run_ms(5);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK(flag(LINK_KS_F_MUST_READ));
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_MUST_READ);
+    leave_ms(WAIT_MS);
+    CHECK_EQ(reboot_leave(), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    until_state(LINK_KST_LEAVING);
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    CHECK_EQ(cmd(LINK_KST_OP_ABORT), 0);
+    CHECK_EQ(state(), LINK_KST_PROGRAMMING);
+    CHECK(!flag(LINK_KS_F_MUST_READ));
+    CHECK_EQ(cmd(LINK_KST_OP_LEAVE), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    settle();
+    CHECK_EQ(state(), LINK_KST_PWM);
+    CHECK_EQ(result(), KST_SES_OK);
+    CHECK_EQ(g_hw.offs, 1u);
+}
+
 TEST_CASE(the_supply_off_after_an_abort_in_the_wait_ends_as_a_session)
 {
     cycled(WAIT_MS);
@@ -611,6 +638,7 @@ int main(void)
     RUN(a_wait_above_10_000_ms_is_refused_and_nothing_switches);
     RUN(the_bit_is_refused_from_pwm_and_on_every_other_operation);
     RUN(abort_in_the_wait_returns_to_programming_with_the_supply_on);
+    RUN(the_cycle_clears_a_read_a_stop_owed_before_the_wait);
     RUN(the_supply_off_after_an_abort_in_the_wait_ends_as_a_session);
     RUN(a_stop_in_the_wait_releases_the_pin);
     RUN(an_unsafe_bench_in_the_wait_releases_the_pin_and_the_supply);

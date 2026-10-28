@@ -270,7 +270,7 @@ PWM** in Register 28, und nur an einen IOmcu mit 4.30 oder neuer. Steht
 | In der Wartezeit nach dem Zyklus | Die Versorgung | Der Port |
 | --- | --- | --- |
 | Die Wartezeit endet | wie sie ist: an mit den Sollwerten, die sie hatte | PWM mit gelöschten Bits 4 und 5, Ergebnis 0 |
-| ABORT | wie sie ist | PROGRAMMING mit Ergebnis 19, `STATE`-Bit 5 gelöscht; der Zyklus hat das Backup und den Programmiermodus des Servos beendet, das zuletzt gelesene Image bleibt. Ein LEAVE wird sofort angenommen |
+| ABORT | wie sie ist | PROGRAMMING mit Ergebnis 19, `STATE`-Bit 5 gelöscht, auch wenn ein Stopp es vor dem REBOOT gesetzt hatte; der Zyklus hat das Backup und den Programmiermodus des Servos beendet, das zuletzt gelesene Image bleibt. Ein LEAVE wird sofort angenommen |
 | Ein Schalten auf SAFE | wie sie ist | PWM mit Ergebnis 19: der Pin ist freigegeben |
 | Der Heartbeat verloren oder der Link schweigt | ausgeschaltet | PWM mit Ergebnis 19 |
 | Die Versorgung liest aus oder ist aus angefordert (das STOP des Panels, der eigene Schutz des PD mini) | aus | PWM mit Ergebnis 19, ohne weitere 1000ms aus |

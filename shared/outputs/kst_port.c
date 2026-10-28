@@ -1251,8 +1251,11 @@ static void step_rail_wait(kst_port_t *p, uint32_t now_ms)
     }
     if (p->then_leave != 0u && p->wait_ms != 0u) {
         /* The wait of a LEAVE, from here: the pin stays the driver's and
-         * low.  The supply it waits under is the one just read on. */
+         * low.  The supply it waits under is the one just read on.  The
+         * cycle ended the session a stop cut, as go_pwm() does for a
+         * cycle without the wait: no READ_ALL is owed after it. */
         p->state = (uint8_t)LINK_KST_LEAVING;
+        p->must_read = 0;
         p->sup = SUP_NONE;
         p->watch = 1;
         p->t0_ms = now_ms;

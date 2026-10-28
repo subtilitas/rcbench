@@ -248,7 +248,7 @@ sends the REBOOT without the bit.
 | In the wait after the cycle | The supply | The port |
 | --- | --- | --- |
 | The wait ends | as it is: on at the set points it had | PWM with bits 4 and 5 clear, result 0 |
-| ABORT | as it is | PROGRAMMING with result 19, `STATE` bit 5 clear; the cycle ended the backup and the servo's programming mode, the image last read stays. A LEAVE is taken at once |
+| ABORT | as it is | PROGRAMMING with result 19, `STATE` bit 5 clear, also when a stop set it before the REBOOT; the cycle ended the backup and the servo's programming mode, the image last read stays. A LEAVE is taken at once |
 | A switch to SAFE | as it is | PWM with result 19: the pin is released |
 | The heartbeat lost or the link silent | switched off | PWM with result 19 |
 | The supply reads off or is asked off (the panel's STOP, the PD mini's own protection) | off | PWM with result 19, without another 1000ms off |
