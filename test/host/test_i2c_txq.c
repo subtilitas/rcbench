@@ -163,6 +163,42 @@ TEST_CASE(a_submit_is_refused_at_every_limit)
     CHECK_EQ(i2c_txq_submit(&q, &z), I2C_TXQ_E_BUSY);
     CHECK_EQ(i2c_txq_queued(&q), 3u);
     CHECK_EQ(q.st.submitted, 3u);
+    /* Running too. */
+    i2c_txq_hold(&q, false);
+    i2c_txq_poll(&q, 1000);
+    CHECK_EQ(z.state, I2C_TXQ_ST_RUNNING);
+    CHECK_EQ(i2c_txq_submit(&q, &z), I2C_TXQ_E_BUSY);
+    CHECK_EQ(q.st.submitted, 3u);
+}
+
+TEST_CASE(a_submit_again_clears_what_the_last_end_left)
+{
+    i2c_txq_xfer_t x;
+
+    setup(1000);
+    m.extra_us = 200;           /* reported late: a stamp flag */
+    rd2(&x, 0x41, I2C_TXQ_HARD, 1000, 900);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    model_run_to(&m, &q, 1400);
+    CHECK_EQ(x.result, I2C_TXQ_OK);
+    CHECK(x.flags & I2C_TXQ_F_LATE_START);
+    CHECK(x.flags & I2C_TXQ_F_LATE_STAMP);
+    CHECK(x.start_us != 0u);
+    CHECK(x.done_us != 0u);
+    /* Ended with a NACK, then queued again: nothing of the end stays. */
+    m.present[0x41] = false;
+    m.extra_us = 0;
+    x.not_before_us = m.now;
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    model_run_to(&m, &q, m.now + 100u);
+    CHECK_EQ(x.result, I2C_TXQ_NACK_ADDR);
+    i2c_txq_hold(&q, true);
+    CHECK_EQ(i2c_txq_submit(&q, &x), I2C_TXQ_E_OK);
+    CHECK_EQ(x.state, I2C_TXQ_ST_QUEUED);
+    CHECK_EQ(x.result, I2C_TXQ_OK);
+    CHECK_EQ(x.flags, 0u);
+    CHECK(x.start_us == 0u);
+    CHECK(x.done_us == 0u);
 }
 
 TEST_CASE(the_queue_holds_16_and_refuses_the_17th)
@@ -605,6 +641,7 @@ int main(void)
 {
     RUN(the_set_up_refuses_a_missing_part);
     RUN(a_submit_is_refused_at_every_limit);
+    RUN(a_submit_again_clears_what_the_last_end_left);
     RUN(the_queue_holds_16_and_refuses_the_17th);
     RUN(a_soft_deadline_at_now_minus_1_drops_and_at_now_runs);
     RUN(a_queued_soft_one_drops_one_microsecond_after_its_deadline);

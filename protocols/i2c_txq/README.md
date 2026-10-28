@@ -43,7 +43,7 @@ programmable input/output).
 - Sizes with arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`): a
   queue (`i2c_txq_t`) is 224 bytes, a transaction (`i2c_txq_xfer_t`) 64
   bytes, a bus of the driver (`i2c_txq_block_t`) 248 bytes. With gcc on
-  x86-64: 328, 72 and 352 bytes. `i2c_txq.c` is 2,390 bytes of code at
+  x86-64: 328, 72 and 352 bytes. `i2c_txq.c` is 2,398 bytes of code at
   `-Os`; `i2c_txq_block.c` is 2,336 bytes at `-O3` in the IOmcu's Release build.
 - Times are microseconds on a 64-bit clock the caller passes in. Every
   comparison is made on the difference of two times, so the order holds

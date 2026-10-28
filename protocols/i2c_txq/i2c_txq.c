@@ -121,7 +121,6 @@ bool i2c_txq_init(i2c_txq_t *q, const i2c_txq_ops_t *ops, void *ctx,
     q->ops = *ops;
     q->ctx = ctx;
     q->cfg = c;
-    q->clear_result = I2C_TXQ_OK;
     return true;
 }
 
@@ -177,7 +176,6 @@ static void unqueue(i2c_txq_t *q, size_t i)
 {
     q->n--;
     q->slot[i] = q->slot[q->n];
-    q->slot[q->n] = NULL;
 }
 
 /**
