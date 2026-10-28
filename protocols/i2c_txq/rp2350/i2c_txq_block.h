@@ -35,7 +35,10 @@
  * Contexts.  Open, close, submit, abort, recover, hold and poll are called
  * from the core that opened the bus; they mask the block's interrupt on
  * that core while they work on the queue, and the done callback runs there
- * or in the interrupt.  Nothing waits with interrupts off.  The bus clear
+ * or in the interrupt.  A callback may submit, abort, recover, hold, poll
+ * and close; the masks nest, and the interrupt is unmasked by the
+ * outermost call only while the bus is open.  A callback must not open.
+ * Nothing waits with interrupts off.  The bus clear
  * is taken one half clock per poll: at a 1ms poll it takes 24 polls; at a
  * poll every 5us it takes about 120us.
  *
@@ -85,6 +88,7 @@ typedef struct {
     bool      open;     /**< between a good open and the close             */
     bool      stopped;  /**< STOP_DET seen in this transaction             */
     bool      busy;     /**< a transaction is on the block                 */
+    uint8_t   masked;   /**< mask() calls not yet unmasked                 */
 } i2c_txq_block_t;
 
 /**
@@ -116,11 +120,13 @@ i2c_txq_block_err_t i2c_txq_block_open(i2c_txq_block_t *b, unsigned sda,
                                        unsigned scl, const i2c_txq_cfg_t *cfg);
 
 /**
- * @brief End everything I2C_TXQ_ABORTED (i2c_txq_flush()), reset the block,
+ * @brief End everything I2C_TXQ_ABORTED (i2c_txq_shut()), reset the block,
  *        give back the interrupt and leave both pads inputs with the
  *        pull-down on.
  *
- * Safe on a closed bus.
+ * The bus counts as closed from the start of the call: a submit from a
+ * done callback of the flush is refused, so nothing stays queued.  Safe on
+ * a closed bus, and from a done callback.
  *
  * @param b  Bus object.
  */
@@ -132,7 +138,8 @@ void i2c_txq_block_close(i2c_txq_block_t *b);
  *
  * @param b  Bus object.
  * @param x  The transaction.
- * @return What i2c_txq_submit() answers; I2C_TXQ_E_ARG on a closed bus.
+ * @return What i2c_txq_submit() answers; I2C_TXQ_E_ARG for NULL,
+ *         I2C_TXQ_E_CLOSED on a closed or closing bus.
  */
 i2c_txq_err_t i2c_txq_block_submit(i2c_txq_block_t *b, i2c_txq_xfer_t *x);
 
@@ -154,7 +161,7 @@ bool i2c_txq_block_abort(i2c_txq_block_t *b, i2c_txq_xfer_t *x);
 bool i2c_txq_block_recover(i2c_txq_block_t *b);
 
 /**
- * @brief i2c_txq_hold().
+ * @brief i2c_txq_hold(); a release polls, so a transaction waiting starts.
  *
  * @param b   Bus object.
  * @param on  True to hold.

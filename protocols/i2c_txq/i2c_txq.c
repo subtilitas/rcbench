@@ -47,6 +47,8 @@ static const uint8_t k_clear[] = {
     C_END,
 };
 
+static void poll_in(i2c_txq_t *q, uint64_t now);
+
 /** @brief The names of i2c_txq_res_t, in its order. */
 static const char *const k_res_name[I2C_TXQ_RESULTS] = {
     "ok", "nack-addr", "nack-data", "arb-lost", "timeout", "bus-low",
@@ -147,6 +149,9 @@ i2c_txq_err_t i2c_txq_submit(i2c_txq_t *q, i2c_txq_xfer_t *x)
     }
     if (x->state == I2C_TXQ_ST_QUEUED || x->state == I2C_TXQ_ST_RUNNING) {
         return I2C_TXQ_E_BUSY;
+    }
+    if (q->closed) {
+        return I2C_TXQ_E_CLOSED;
     }
     if (q->n >= I2C_TXQ_DEPTH) {
         return I2C_TXQ_E_FULL;
@@ -380,6 +385,25 @@ static bool lines_high(const i2c_txq_t *q)
 }
 
 /**
+ * @brief The picked transaction, not yet on the wire, back to the queue
+ *        with its submit number.  The trial flag goes; the trial stays.
+ *        The slot array has room for it: I2C_TXQ_DEPTH queued and the one
+ *        picked.
+ *
+ * @param q  The queue.
+ */
+static void requeue(i2c_txq_t *q)
+{
+    i2c_txq_xfer_t *x = q->run;
+
+    x->state = I2C_TXQ_ST_QUEUED;
+    x->flags &= (uint8_t)~I2C_TXQ_F_TRIAL;
+    q->slot[q->n++] = x;
+    q->run = NULL;
+    q->phase = P_IDLE;
+}
+
+/**
  * @brief The line check of the picked transaction.  High lines send it; a
  *        soft one whose deadline passed in the settle ends
  *        I2C_TXQ_DROPPED instead.  A low line gets settle_us to rise, then the pad pull-ups for
@@ -403,6 +427,12 @@ static void check_lines(i2c_txq_t *q, uint64_t now)
         return;
     }
     if (high) {
+        /* Held while a line settled: back to the queue, in its old place
+         * (its submit number), for the order and the deadline rules. */
+        if (q->hold) {
+            requeue(q);
+            return;
+        }
         /* Picked before its deadline, a soft one may pass it while a line
          * settles: it is then dropped, as in the queue. */
         if (q->run->cls == I2C_TXQ_SOFT && after(now, q->run->deadline_us)) {
@@ -566,19 +596,53 @@ static void poll_in(i2c_txq_t *q, uint64_t now)
 /*
  * The guard.  A done callback runs inside a queue call and may submit and
  * poll again, as a driver's submit does.  A poll made while a queue call is
- * under way does nothing: the call under way, or the next poll, takes the
- * new transaction up.  So a callback that submits again each time it is
- * called runs once per poll, and the calls never nest deeper than one.
+ * under way does not run there: it is noted, and the outermost call runs it
+ * after its own work, up to I2C_TXQ_REPOLLS times while callbacks keep
+ * asking.  So the calls never nest deeper than one, a transaction a callback
+ * submits starts within the call that ran the callback, and a callback that
+ * submits an expired transaction on every call ends at most
+ * 1 + I2C_TXQ_REPOLLS of them per outer call.
  */
+
+/**
+ * @brief Enter a queue call.
+ *
+ * @param q  The queue.
+ */
+static void enter(i2c_txq_t *q)
+{
+    q->depth++;
+}
+
+/**
+ * @brief Leave a queue call: the outermost runs the polls callbacks asked
+ *        for.
+ *
+ * @param q    The queue.
+ * @param now  The present time, in us.
+ */
+static void leave(i2c_txq_t *q, uint64_t now)
+{
+    if (q->depth == 1u) {
+        for (unsigned k = 0; q->repoll && k < I2C_TXQ_REPOLLS; ++k) {
+            q->repoll = false;
+            if (!q->closed) {
+                poll_in(q, now);
+            }
+        }
+        q->repoll = false;
+    }
+    q->depth--;
+}
 
 bool i2c_txq_abort(i2c_txq_t *q, i2c_txq_xfer_t *x, uint64_t now)
 {
     if (q == NULL || x == NULL) {
         return false;
     }
-    q->depth++;
+    enter(q);
     const bool ok = abort_in(q, x, now);
-    q->depth--;
+    leave(q, now);
     return ok;
 }
 
@@ -587,9 +651,25 @@ void i2c_txq_flush(i2c_txq_t *q, uint64_t now)
     if (q == NULL) {
         return;
     }
-    q->depth++;
+    enter(q);
     flush_in(q, now);
-    q->depth--;
+    leave(q, now);
+}
+
+void i2c_txq_shut(i2c_txq_t *q, uint64_t now)
+{
+    if (q == NULL) {
+        return;
+    }
+    q->closed = true;
+    enter(q);
+    flush_in(q, now);
+    leave(q, now);
+}
+
+bool i2c_txq_closed(const i2c_txq_t *q)
+{
+    return q == NULL || q->closed;
 }
 
 void i2c_txq_complete(i2c_txq_t *q, uint64_t now, uint32_t abrt,
@@ -598,30 +678,34 @@ void i2c_txq_complete(i2c_txq_t *q, uint64_t now, uint32_t abrt,
     if (q == NULL) {
         return;
     }
-    q->depth++;
+    enter(q);
     complete_in(q, now, abrt, rx, n);
-    q->depth--;
+    leave(q, now);
 }
 
 bool i2c_txq_recover(i2c_txq_t *q, uint64_t now)
 {
-    if (q == NULL || q->phase == P_CLEAR) {
+    if (q == NULL || q->closed || q->phase == P_CLEAR) {
         return false;
     }
-    q->depth++;
+    enter(q);
     recover_in(q, now);
-    q->depth--;
+    leave(q, now);
     return true;
 }
 
 void i2c_txq_poll(i2c_txq_t *q, uint64_t now)
 {
-    if (q == NULL || q->depth != 0u) {
+    if (q == NULL || q->closed) {
         return;
     }
-    q->depth++;
+    if (q->depth != 0u) {
+        q->repoll = true;
+        return;
+    }
+    enter(q);
     poll_in(q, now);
-    q->depth--;
+    leave(q, now);
 }
 
 void i2c_txq_hold(i2c_txq_t *q, bool on)

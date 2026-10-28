@@ -17,8 +17,12 @@ history is in git.
   checks the lines before a start (10us settle, 50us pull-up probe), tells
   an address NACK from a data NACK, aborts after the byte under way, and
   runs the 9-clock bus clear one half clock per poll with a trial after it.
-  A poll from inside a done callback does nothing, so queue calls never nest
-  deeper than one.
+  A poll from inside a done callback runs after the callback returns, up to
+  16 times per outer call, so queue calls never nest deeper than one. A held
+  queue starts nothing, also a transaction picked while a line settled: it
+  goes back to the queue in its place. The driver's close refuses submits
+  from its own callbacks (`I2C_TXQ_E_CLOSED`), so nothing stays queued on a
+  closed bus.
   Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_wire`).
   The IOmcu links it and calls nothing of it yet: the sensor bus runs on
   `sense_i2c.c` as before.

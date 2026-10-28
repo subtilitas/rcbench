@@ -261,7 +261,10 @@ static void service(i2c_txq_block_t *b)
     const uint32_t abrt = b->abrt;
     b->abrt = 0;
     b->stopped = false;
-    /* More bytes than room is a short read to the queue: FAULT. */
+    /* More bytes than room is a short read to the queue: FAULT.  The queue
+     * starts the next one itself when a callback asked for a poll; the poll
+     * here starts it otherwise.  A callback that closed the bus leaves a
+     * shut queue, which the poll does not touch. */
     i2c_txq_complete(&b->q, now, abrt, rx, n <= sizeof(rx) ? n : 0u);
     i2c_txq_poll(&b->q, now);
 }
@@ -299,19 +302,26 @@ static irq_handler_t handler(unsigned block)
  *
  * @param b  Bus object.
  */
-static void mask(const i2c_txq_block_t *b)
+static void mask(i2c_txq_block_t *b)
 {
-    irq_set_enabled(b->irq, false);
+    if (b->masked++ == 0u) {
+        irq_set_enabled(b->irq, false);
+    }
 }
 
 /**
- * @brief The block's interrupt unmasked again.
+ * @brief The block's interrupt unmasked again by the outermost unmask(),
+ *        while the bus is open.  A call from a done callback inside
+ *        another driver call nests, and a bus closed inside it stays
+ *        masked.
  *
  * @param b  Bus object.
  */
-static void unmask(const i2c_txq_block_t *b)
+static void unmask(i2c_txq_block_t *b)
 {
-    irq_set_enabled(b->irq, true);
+    if (--b->masked == 0u && b->open) {
+        irq_set_enabled(b->irq, true);
+    }
 }
 
 void i2c_txq_block_init(i2c_txq_block_t *b)
@@ -343,6 +353,7 @@ i2c_txq_block_err_t i2c_txq_block_open(i2c_txq_block_t *b, unsigned sda,
         return I2C_TXQ_BLOCK_ERR_ARG;
     }
     *b = fresh;
+    b->masked = 1;            /* unmask() below enables the interrupt */
     b->hw = I2C_INSTANCE(block);
     b->irq = irq;
     b->sda = (uint8_t)sda;
@@ -379,20 +390,26 @@ void i2c_txq_block_close(i2c_txq_block_t *b)
         return;
     }
     mask(b);
-    i2c_txq_flush(&b->q, time_us_64());
+    /* Closed before the callbacks of the flush run: a submit from one is
+     * refused, by the driver and by the shut queue. */
+    b->open = false;
+    i2c_txq_shut(&b->q, time_us_64());
     irq_remove_handler(b->irq, handler(b->block));
     i2c_deinit(inst(b));
     release(b->sda);
     release(b->scl);
     s_bus[b->block] = NULL;
     b->busy = false;
-    b->open = false;
+    unmask(b);
 }
 
 i2c_txq_err_t i2c_txq_block_submit(i2c_txq_block_t *b, i2c_txq_xfer_t *x)
 {
-    if (b == NULL || !b->open) {
+    if (b == NULL) {
         return I2C_TXQ_E_ARG;
+    }
+    if (!b->open) {
+        return I2C_TXQ_E_CLOSED;
     }
     mask(b);
     const i2c_txq_err_t e = i2c_txq_submit(&b->q, x);
@@ -432,6 +449,9 @@ void i2c_txq_block_hold(i2c_txq_block_t *b, bool on)
     }
     mask(b);
     i2c_txq_hold(&b->q, on);
+    if (!on) {
+        i2c_txq_poll(&b->q, time_us_64());
+    }
     unmask(b);
 }
 

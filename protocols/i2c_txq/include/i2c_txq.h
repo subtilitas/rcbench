@@ -50,6 +50,11 @@ extern "C" {
 
 /** @brief Transactions a queue holds, the one on the wire not counted. */
 #define I2C_TXQ_DEPTH 16u
+/**
+ * @brief Polls the outermost queue call runs for done callbacks that polled
+ *        inside it.
+ */
+#define I2C_TXQ_REPOLLS 16u
 /** @brief Bytes a transaction writes at most: a register pointer and 4. */
 #define I2C_TXQ_WR_MAX 5u
 /** @brief Bytes a transaction reads at most. */
@@ -120,6 +125,7 @@ typedef enum {
                               address, an unknown class                    */
     I2C_TXQ_E_FULL,      /**< I2C_TXQ_DEPTH transactions queued             */
     I2C_TXQ_E_BUSY,      /**< this descriptor is queued or on the wire      */
+    I2C_TXQ_E_CLOSED,    /**< the queue is shut (i2c_txq_shut())             */
 } i2c_txq_err_t;
 
 /** @brief Where a descriptor is. */
@@ -207,7 +213,7 @@ typedef struct {
  *
  * Called from the context that ended it -- the driver's interrupt, or the
  * caller's poll, submit or abort.  It may submit @p x again, and poll; the
- * poll does nothing inside the callback (i2c_txq_poll()).
+ * poll runs after the callback returns (i2c_txq_poll()).
  */
 typedef void (*i2c_txq_done_fn)(void *user, i2c_txq_xfer_t *x);
 
@@ -246,7 +252,9 @@ typedef struct {
     void            *ctx;      /**< handed to the driver                   */
     i2c_txq_cfg_t    cfg;      /**< timings and the callback               */
     i2c_txq_stats_t  st;       /**< counters                               */
-    i2c_txq_xfer_t  *slot[I2C_TXQ_DEPTH]; /**< the queued ones, unordered  */
+    i2c_txq_xfer_t  *slot[I2C_TXQ_DEPTH + 1u]; /**< the queued ones,
+                                    unordered; one more than a submit fills,
+                                    for a picked one put back             */
     i2c_txq_xfer_t  *run;      /**< the picked one; NULL for none          */
     uint64_t         phase_at; /**< when the phase began, or the next clear
                                     step is due                           */
@@ -259,7 +267,9 @@ typedef struct {
     bool             trial;    /**< the next one picked is the trial       */
     bool             scl_up;   /**< the clear has released SCL and waits   */
     uint8_t          depth;    /**< queue calls under way: a poll at 1 or
-                                    more does nothing                      */
+                                    more is noted and run by the outermost */
+    bool             repoll;   /**< a callback polled inside a queue call  */
+    bool             closed;   /**< shut: submits and polls refused        */
 } i2c_txq_t;
 
 /**
@@ -276,6 +286,9 @@ void i2c_txq_cfg_default(i2c_txq_cfg_t *cfg);
  * @param ops  The driver; copied.  Every function must be set.
  * @param ctx  Handed to every driver function.
  * @param cfg  Copied; NULL for the defaults.
+ * Transactions still queued or running on @p q are not ended: shut or
+ * flush it first.
+ *
  * @return False, and @p q untouched, on a NULL @p q or @p ops, a missing
  *         driver function or a bus clock of 0.
  */
@@ -317,6 +330,25 @@ bool i2c_txq_abort(i2c_txq_t *q, i2c_txq_xfer_t *x, uint64_t now);
 void i2c_txq_flush(i2c_txq_t *q, uint64_t now);
 
 /**
+ * @brief Shut the queue: i2c_txq_flush(), with every submit refused from
+ *        before the first callback on, so nothing stays queued.  A shut
+ *        queue takes no submit (I2C_TXQ_E_CLOSED), poll or recovery until
+ *        the next i2c_txq_init().
+ *
+ * @param q    The queue.
+ * @param now  The present time, in us.
+ */
+void i2c_txq_shut(i2c_txq_t *q, uint64_t now);
+
+/**
+ * @brief Whether the queue is shut.
+ *
+ * @param q  The queue.
+ * @return True after i2c_txq_shut() and for NULL.
+ */
+bool i2c_txq_closed(const i2c_txq_t *q);
+
+/**
  * @brief The queue's step: timeouts, the line check, the bus clear, the
  *        drop of soft transactions past their deadline, and the start of
  *        the next one.
@@ -324,9 +356,12 @@ void i2c_txq_flush(i2c_txq_t *q, uint64_t now);
  * Call it after every completion and at least as often as the shortest
  * wait the caller wants to resolve: a step that is due is taken at the
  * first poll at or after its time.  A poll made while another queue call
- * is under way -- from a done callback -- does nothing; the call under way
- * or the next poll takes up what the callback submitted.  So a callback
- * that submits again each time runs once per poll, never nested.
+ * is under way -- from a done callback -- does not run there: the
+ * outermost call runs it after its own work, up to I2C_TXQ_REPOLLS times
+ * while callbacks keep polling.  So queue calls never nest deeper than one,
+ * and a callback that submits an expired transaction on every call ends at
+ * most 1 + I2C_TXQ_REPOLLS of them per outer call.  Nothing is done on a
+ * shut queue.
  *
  * @param q    The queue.
  * @param now  The present time, in us.
@@ -364,7 +399,10 @@ bool i2c_txq_recover(i2c_txq_t *q, uint64_t now);
 
 /**
  * @brief Hold the queue: nothing starts while held.  Soft transactions past
- *        their deadline are still dropped.
+ *        their deadline are still dropped.  A transaction picked while a
+ *        line was low and not yet on the wire goes back to the queue, with
+ *        its submit number, when the line rises; a line check under way
+ *        ends with its probe result as usual.
  *
  * @param q   The queue.
  * @param on  True to hold, false to let go.

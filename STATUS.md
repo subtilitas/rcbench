@@ -352,8 +352,9 @@ a clock advanced 1us at a time: the first every refusal of a submit, 16
 queued and the 17th refused, a soft deadline at now - 1, now and now + 1,
 a hard one late, the order by class, deadline and submit, the not-before
 time, the 64-bit clock and the submit count across their wrap, abort,
-flush, hold, a done callback that submits and polls 1000 times in a row
-at a nesting depth of 1, and the bus time arithmetic; the second the bytes and stamps
+flush, hold, a hold that comes while a line settles, a shut queue that
+refuses its own callbacks' submits, a done callback that submits and polls
+1000 times in a row at a nesting depth of 1, and the bus time arithmetic; the second the bytes and stamps
 of a read and of a report 100us and 101us late, a NACK on the address
 against one on a data byte, a line low before the start in the settle
 time, at its end, on the pad pull-ups and held to the end of the probe,

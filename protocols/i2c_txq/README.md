@@ -43,8 +43,8 @@ programmable input/output).
 - Sizes with arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`): a
   queue (`i2c_txq_t`) is 224 bytes, a transaction (`i2c_txq_xfer_t`) 64
   bytes, a bus of the driver (`i2c_txq_block_t`) 248 bytes. With gcc on
-  x86-64: 328, 72 and 352 bytes. `i2c_txq.c` is 2,526 bytes of code at
-  `-Os`; `i2c_txq_block.c` is 2,336 bytes at `-O3` in the IOmcu's Release build.
+  x86-64: 336, 72 and 360 bytes. `i2c_txq.c` is 2,814 bytes of code at
+  `-Os`; `i2c_txq_block.c` is 2,632 bytes at `-O3` in the IOmcu's Release build.
 - Times are microseconds on a 64-bit clock the caller passes in. Every
   comparison is made on the difference of two times, so the order holds
   across the wrap of the clock while the times compared are less than
@@ -71,10 +71,12 @@ The queue fills `rd`, `state`, `result`, `flags`, `start_us` and
 that ended the transaction.
 
 The callback may submit again and poll, as `i2c_txq_block_submit()` does.
-A poll made while another queue call is under way does nothing; the call
-under way or the next poll takes up the new transaction. Queue calls never
-nest deeper than one: a callback that submits an expired transaction again
-on every call runs once per poll, not in a recursion.
+A poll made while another queue call is under way does not run there. The
+outermost call runs it after its own work, up to 16 times
+(`I2C_TXQ_REPOLLS`) while callbacks keep polling. So queue calls never
+nest deeper than one, a transaction a callback submits starts within the
+call that ran the callback, and a callback that submits an expired
+transaction on every call ends at most 17 of them per outer call.
 
 The bus time is 9 clocks a byte, address bytes included, plus 1 clock
 each for the START, the repeated START and the STOP
@@ -110,7 +112,13 @@ cut for one that comes later: a hard one waits for the end of the one on
 the wire, at most 300us at 400kHz.
 
 A held queue (`i2c_txq_hold()`) starts nothing and still drops soft
-transactions past their deadline.
+transactions past their deadline. A transaction picked while a line was
+low, and still in the settle time when the hold comes, goes back to the
+queue when the line rises, with its submit number. After the release it
+is picked again by the order above, so a hard transaction submitted during
+the hold goes first, and its deadline is held to it as in the queue. The
+queue has room for it with 16 others queued. A line check in its probe
+ends with its probe result; a probe sends nothing.
 
 ## Results
 
@@ -206,6 +214,7 @@ bool          i2c_txq_init(i2c_txq_t *q, const i2c_txq_ops_t *ops, void *ctx,
 i2c_txq_err_t i2c_txq_submit(i2c_txq_t *q, i2c_txq_xfer_t *x);
 bool          i2c_txq_abort(i2c_txq_t *q, i2c_txq_xfer_t *x, uint64_t now);
 void          i2c_txq_flush(i2c_txq_t *q, uint64_t now);
+void          i2c_txq_shut(i2c_txq_t *q, uint64_t now);
 void          i2c_txq_poll(i2c_txq_t *q, uint64_t now);
 void          i2c_txq_complete(i2c_txq_t *q, uint64_t now, uint32_t abrt,
                                const uint8_t *rx, size_t n);
@@ -221,8 +230,14 @@ the end of each transaction with `i2c_txq_complete()`.
 
 `i2c_txq_submit()` refuses with `I2C_TXQ_E_ARG` (NULL, a length or address
 out of range, an unknown class), `I2C_TXQ_E_BUSY` (the descriptor is queued
-or running) or `I2C_TXQ_E_FULL` (16 queued). It starts nothing; the next
-poll does.
+or running), `I2C_TXQ_E_CLOSED` (the queue is shut) or `I2C_TXQ_E_FULL`
+(16 queued). It starts nothing; the next poll does.
+
+`i2c_txq_shut()` ends everything `I2C_TXQ_ABORTED` like `i2c_txq_flush()`,
+and refuses every submit from before its first callback on, so a callback
+that submits again leaves nothing queued. A shut queue takes no submit,
+poll or bus clear until `i2c_txq_init()`. `i2c_txq_init()` on a queue with
+transactions still in it does not end them: shut it first.
 
 Driver, `i2c_txq_block.h`:
 
@@ -246,7 +261,16 @@ void                i2c_txq_block_poll(i2c_txq_block_t *b);
   pull-ups, 3.54kOhm at most for 300ns of rise on 100pF at 400kHz (NXP
   UM10204). The close leaves both pads inputs with the pull-down on.
 - Every function is called from the core that opened the bus. Each masks
-  the block's interrupt on that core while it works on the queue. The FIFO
+  the block's interrupt on that core while it works on the queue. A done
+  callback may call every driver function but the open: the masks nest,
+  and only the outermost call unmasks, and only while the bus is open.
+- The close counts the bus closed from its start and shuts the queue
+  (`i2c_txq_shut()`): a submit from a callback of the close gets
+  `I2C_TXQ_E_CLOSED`, so no descriptor stays queued on a closed bus. A
+  close from a done callback, also in the interrupt, leaves the interrupt
+  masked and its handler removed. The open closes an open bus first, so
+  nothing queued or running on it survives the open.
+- A release of the hold polls, so a transaction waiting starts at once. The FIFO
   load runs with the core's interrupts off for at most 2 register writes
   of the address and 11 FIFO writes, and no wait: an interrupt between two
   entries would let the FIFO run empty without a STOP, and the block holds
