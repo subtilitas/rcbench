@@ -638,8 +638,9 @@ the table from the `coverage` artifact of a CI run with
 `python3 tools/coverage.py --from-json coverage.json`. The IOmcu stack
 figures of `docs/Performance.md` are those of arm-none-eabi-gcc 14.2.1,
 which ARM GNU 14.2.Rel1 also gives. The fills of the frame-cost table in the
-same file are cachegrind counts of a build on that image; a machine with
-another libc differs by up to 5% in single modes, and
+same file are cachegrind counts of a build on that image, run with a fixed
+environment (the length of the environment shifts the stack, and with it a
+count by up to 9%); a machine with another libc can differ, and
 `tools/frame_cost.py --check-doc` accepts 2% of a mode, 100 fills at least.
 
 clang-tidy does not run over `firmware/`: it compiles each file and needs

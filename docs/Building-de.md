@@ -673,8 +673,9 @@ Rechner mit anderem Release fehlschlägt. Die Tabelle wird aus dem Artefakt
 `python3 tools/coverage.py --from-json coverage.json`. Die Stack-Zahlen der
 IOmcu in `docs/Performance-de.md` sind die von arm-none-eabi-gcc 14.2.1, das
 auch ARM GNU 14.2.Rel1 liefert. Die Füllungen der Frame-Kosten-Tabelle in
-derselben Datei sind cachegrind-Zählungen eines Builds auf diesem Image; ein
-Rechner mit anderer libc weicht in einzelnen Modi um bis zu 5% ab, und
+derselben Datei sind cachegrind-Zählungen eines Builds auf diesem Image, mit
+fester Umgebung ausgeführt (die Länge der Umgebung verschiebt den Stack und
+damit eine Zählung um bis zu 9%); ein Rechner mit anderer libc kann abweichen, und
 `tools/frame_cost.py --check-doc` lässt 2% eines Modus zu, mindestens 100
 Füllungen.
 
