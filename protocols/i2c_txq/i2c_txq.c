@@ -498,6 +498,11 @@ static void clear_step(i2c_txq_t *q, uint64_t now)
 static void recover_in(i2c_txq_t *q, uint64_t now)
 {
     cut_run(q, now);
+    /* The cut one's callback may have shut the queue, or started a clear
+     * of its own: the pins are then not this clear's. */
+    if (q->closed || q->phase == P_CLEAR) {
+        return;
+    }
     q->phase = P_CLEAR;
     q->step = 0;
     q->scl_up = false;
@@ -565,6 +570,9 @@ static void poll_in(i2c_txq_t *q, uint64_t now)
     if (q->phase == P_CLEAR) {
         clear_step(q, now);
     }
+    /* A done callback of the steps below may shut the queue.  It then
+     * leaves it empty and idle, and submits are refused, so the rest of the
+     * poll finds nothing to pick and calls no driver function. */
     if (q->phase == P_WIRE
         && now - q->run->start_us >= q->cfg.timeout_us) {
         q->ops.reset(q->ctx);

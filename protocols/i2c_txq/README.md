@@ -43,7 +43,7 @@ programmable input/output).
 - Sizes with arm-none-eabi-gcc 14.2 (`-mcpu=cortex-m33 -mthumb -Os`): a
   queue (`i2c_txq_t`) is 224 bytes, a transaction (`i2c_txq_xfer_t`) 64
   bytes, a bus of the driver (`i2c_txq_block_t`) 248 bytes. With gcc on
-  x86-64: 336, 72 and 360 bytes. `i2c_txq.c` is 2,814 bytes of code at
+  x86-64: 336, 72 and 360 bytes. `i2c_txq.c` is 2,826 bytes of code at
   `-Os`; `i2c_txq_block.c` is 2,632 bytes at `-O3` in the IOmcu's Release build.
 - Times are microseconds on a 64-bit clock the caller passes in. Every
   comparison is made on the difference of two times, so the order holds
@@ -77,6 +77,12 @@ outermost call runs it after its own work, up to 16 times
 nest deeper than one, a transaction a callback submits starts within the
 call that ran the callback, and a callback that submits an expired
 transaction on every call ends at most 17 of them per outer call.
+
+The callback may also shut the queue (`i2c_txq_shut()`), or close the
+driver's bus. The queue then calls no driver function after the shut and
+is left idle: a bus clear whose cut transaction's callback shut the queue
+does not start. A bus clear that a callback starts while another clear
+begins runs once.
 
 The bus time is 9 clocks a byte, address bytes included, plus 1 clock
 each for the START, the repeated START and the STOP
@@ -305,7 +311,7 @@ i2c_txq_block_poll(&bus);
 
 The host suite runs the core over a modelled bus
 (`test/host/i2c_txq_model.c`) on a clock advanced 1us at a time
-(`test_i2c_txq`, `test_i2c_txq_wire`).
+(`test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`).
 
 Not measured: the driver has not run on a chip. The time the `IC_TAR`
 change takes, the gap the block leaves between a STOP and the next START,

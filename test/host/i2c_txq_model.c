@@ -31,16 +31,19 @@ bool model_level(const model_t *m, unsigned line)
     return m->pullups || m->pad_pu;
 }
 
-// cppcheck-suppress constParameterCallback
 static bool op_get(void *ctx, unsigned line)
 {
-    return model_level(ctx, line);
+    model_t *m = ctx;
+
+    m->ops++;
+    return model_level(m, line);
 }
 
 static void op_start(void *ctx, const i2c_txq_xfer_t *x)
 {
     model_t *m = ctx;
 
+    m->ops++;
     m->starts++;
     m->last = *x;
     m->pending = true;
@@ -72,6 +75,7 @@ static void op_abort(void *ctx)
 {
     model_t *m = ctx;
 
+    m->ops++;
     m->aborts++;
     if (m->pending && !m->hang
         && (int64_t)(m->end_at - (m->now + BYTE_US)) > 0) {
@@ -85,6 +89,7 @@ static void op_reset(void *ctx)
 {
     model_t *m = ctx;
 
+    m->ops++;
     m->resets++;
     m->pending = false;
 }
@@ -93,6 +98,7 @@ static void op_pullups(void *ctx, bool on)
 {
     model_t *m = ctx;
 
+    m->ops++;
     m->pad_pu = on;
     if (on) {
         m->pullup_ons++;
@@ -103,6 +109,7 @@ static void op_gpio(void *ctx, bool on)
 {
     model_t *m = ctx;
 
+    m->ops++;
     m->gpio = on;
     m->drive_sda = false;
     m->drive_scl = false;
@@ -118,6 +125,7 @@ static void op_line(void *ctx, unsigned line, bool high)
 {
     model_t *m = ctx;
 
+    m->ops++;
     if (line == I2C_TXQ_SCL) {
         const bool was_low = m->drive_scl;
         m->drive_scl = !high;

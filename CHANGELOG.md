@@ -22,8 +22,11 @@ history is in git.
   queue starts nothing, also a transaction picked while a line settled: it
   goes back to the queue in its place. The driver's close refuses submits
   from its own callbacks (`I2C_TXQ_E_CLOSED`), so nothing stays queued on a
-  closed bus.
-  Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_wire`).
+  closed bus. A callback may shut the queue at any point that runs one; no
+  driver function is called after it, and a bus clear it would have
+  followed does not start.
+  Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_calls`,
+  `test_i2c_txq_wire`).
   The IOmcu links it and calls nothing of it yet: the sensor bus runs on
   `sense_i2c.c` as before.
 - `tools/check_protocols.py` takes an `rp2350/` folder without a `.pio`

@@ -213,7 +213,9 @@ typedef struct {
  *
  * Called from the context that ended it -- the driver's interrupt, or the
  * caller's poll, submit or abort.  It may submit @p x again, and poll; the
- * poll runs after the callback returns (i2c_txq_poll()).
+ * poll runs after the callback returns (i2c_txq_poll()).  It may shut the
+ * queue: no driver function is called after that, and the queue is left
+ * idle.  It must not call i2c_txq_init().
  */
 typedef void (*i2c_txq_done_fn)(void *user, i2c_txq_xfer_t *x);
 

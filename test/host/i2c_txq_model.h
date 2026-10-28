@@ -43,6 +43,7 @@ typedef struct {
     uint8_t  rx_n;
     i2c_txq_xfer_t last;     /**< a copy of the last one started            */
     /* counts */
+    unsigned ops;            /**< driver calls of every kind                */
     unsigned starts;
     unsigned aborts;
     unsigned resets;
