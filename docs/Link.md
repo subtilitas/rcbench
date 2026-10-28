@@ -768,6 +768,22 @@ never from a stored setting: the ports are the board's, as the outputs'
 binding is. An ask waits for a bench at rest. A port that is the
 `TARGET` is let go first (its `PWM` bit off, `TARGET` 0), and the target
 the screen wants is written back after the page is read again.
+
+`PWM` and `TARGET` are not kept. An IOmcu that starts again reads 0 in
+both: the standard servo outputs are the target and no port pulses. The
+panel writes the target the SERVO screen wants back on a bench at rest,
+its pulse bit after it, within 500ms of the link coming up or of the read
+that shows the change. A position written to the port before the restart
+is not said again: the release owed for it goes to the standard servo
+outputs the IOmcu then names, and with no surface bound there it is paid
+with no write. A bench that was ARMED stops with the link (STOP); the
+port renders no pulse until the operator arms again, and the arm centres
+the target in force first. `test_servo_link_restart` runs a restart while
+SAFE and while ARMED, during an ask, one the panel does not see as a link
+loss, two in a row, one during a running servo auto test whose release
+goes unanswered, a link lost without a restart and a programming session
+that took the target.
+
 | Panel | IOmcu | PROG (0x33) |
 | --- | --- | --- |
 | 4.13 | 4.13 | served |

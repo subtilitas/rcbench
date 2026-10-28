@@ -656,6 +656,18 @@ static bool write_servo(const servo_cmd_t sv)
              * after a reconnect, would sweep it with no tap. */
             s_servo_held.kind = SERVO_CMD_NONE;
         }
+        /*
+         * A release settles what was written, as the release below does
+         * once it has centred its runs.  A bit kept here names a port that
+         * is no longer the target: an IOmcu that started again holds the
+         * standard outputs as TARGET and the port's CMD at rest.  No write
+         * can pay it, and servo_link_prog_service() would wait on it for
+         * ever before it puts the port back as the target.  The next ARM
+         * centres the target in force before it arms.
+         */
+        if (sv.kind == SERVO_CMD_RELEASE) {
+            s_servo_written = 0u;
+        }
         return true;
     }
     uint8_t first = 0u, count = 0u;
