@@ -179,8 +179,12 @@ i2c_txq_err_t i2c_txq_submit(i2c_txq_t *q, i2c_txq_xfer_t *x)
  */
 static void unqueue(i2c_txq_t *q, size_t i)
 {
-    q->n--;
-    q->slot[i] = q->slot[q->n];
+    /* Every caller holds a slot, so n is not 0; the test keeps n from
+     * wrapping to SIZE_MAX if one ever does not. */
+    if (q->n != 0u) {
+        q->n--;
+        q->slot[i] = q->slot[q->n];
+    }
 }
 
 /**

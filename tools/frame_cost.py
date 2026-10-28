@@ -178,7 +178,9 @@ def build(tmp: pathlib.Path) -> pathlib.Path:
         The executable.
     """
     exe = tmp / "bench_frame"
-    cmd = ["cc", "-O2", "-g", "-o", str(exe)]
+    # No fused multiply-add, as in render_ui.py: the fills of an arc or a
+    # rotated string do not depend on the compiler's default target.
+    cmd = ["cc", "-O2", "-g", "-ffp-contract=off", "-o", str(exe)]
     cmd += [str(REPO / s) for s in SOURCES]
     for inc in INCLUDES:
         cmd += ["-I", str(REPO / inc)]
@@ -202,11 +204,16 @@ def misses(exe: pathlib.Path, frames: int, mode: str, ll: str) -> int:
     # Invoked as ./bench_frame from its own directory rather than by absolute
     # path: argv[0] lands on the stack, so its length shifts what the first
     # cache lines hold, and a temporary directory name changes between runs.
+    # The environment lands on the stack too, and a CI runner's differs in
+    # length from run to run (its tokens and run numbers), which moved the
+    # count of single modes by up to 9%; the run gets one fixed variable.
     proc = subprocess.run(
-        ["valgrind", "--tool=cachegrind", "--cache-sim=yes",
-         f"--D1={D1}", f"--LL={ll}", "--cachegrind-out-file=/dev/null",
+        [shutil.which("valgrind") or "valgrind", "--tool=cachegrind",
+         "--cache-sim=yes", f"--D1={D1}", f"--LL={ll}",
+         "--cachegrind-out-file=/dev/null",
          "./" + exe.name, str(frames), mode],
         cwd=exe.parent, capture_output=True, text=True, check=True,
+        env={"LC_ALL": "C"},
     )
     m = MISS_RE.search(proc.stderr)
     if not m:

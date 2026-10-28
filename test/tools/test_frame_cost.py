@@ -188,3 +188,28 @@ def test_both_pages_carry_the_block_and_the_table_of_the_board():
         header, unmeasured = fc.BENCH_PAGES[doc.name]
         rows = fc.bench_rows(text, header, unmeasured)
         assert fc.bench_problems(doc.name, rows, fc.PROBE_CLEAR_US) == []
+
+
+def test_the_cachegrind_run_gets_one_fixed_environment(monkeypatch, tmp_path):
+    """The environment of the run is the same on every machine.
+
+    Its length shifts the stack, and with it the count of single modes.
+    """
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen["env"] = kw.get("env")
+        seen["cmd"] = cmd
+
+        class Done:
+            stderr = "LLd misses: 1,234 ( 1 rd + 2 wr)"
+        return Done()
+
+    monkeypatch.setenv("RUNNER_JUNK", "x" * 4000)
+    monkeypatch.setattr(fc.subprocess, "run", fake_run)
+    monkeypatch.setattr(fc, "MISS_RE",
+                        fc.re.compile(r"LLd misses:\s+([\d,]+)"))
+    exe = tmp_path / "bench_frame"
+    assert fc.misses(exe, 3, "held", "131072,8,64") == 1234
+    assert seen["env"] == {"LC_ALL": "C"}
+    assert seen["cmd"][-3:] == ["./bench_frame", "3", "held"]

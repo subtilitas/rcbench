@@ -651,6 +651,35 @@ Funkteil.
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, das des Panels mit `-D RCBENCH_PERF_LOG=OFF` und einer Prüfung, dass es keine Frame-Zeile enthält, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
 | `pages.yml` | Pull Request und Push auf `main`, der `configurator/`, `help/`, `docs/img/`, den Hilfe-Generator, das `Doxyfile` oder `tools/install_doxygen.sh` berührt; ein Push auf `main` auch, wenn er die C-Quellen berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; der Bau der Webhilfe mit `tools/help_site.py`; die C-API-Referenz, gebaut von Doxygen 1.18.0; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages, mit der Webhilfe unter `help/` und der API-Referenz unter `api/`. Ein Lauf, der nur die C-Quellen, das `Doxyfile` oder `tools/install_doxygen.sh` ändert, baut die Seite des Configurators ohne ihre Prüfungen und startet keinen Browser-Test |
 
+Jeder Job läuft auf Ubuntu 26.04 (`runs-on: ubuntu-26.04`), nicht auf
+`ubuntu-latest`. Die Host-Suite besteht aus fünf parallelen Jobs: `Host suite,
+build and ctest`, `Host suite under sanitizers`, `Host suite coverage`,
+`Checks that hold prose and generated files to the tree` und `Frame cost of
+every screen`. Jeder installiert seine Pakete über die Composite Action
+`.github/actions/host-deps`. Der Job `Host suite, coverage and the checks that
+hold prose to the tree` braucht die fünf, läuft auch, wenn einer von ihnen
+fehlschlägt, und schlägt fehl, solange nicht alle fünf erfolgreich sind; es
+ist der Name, den das Branch-Ruleset verlangt. Die Compiler dieses Images
+sind gcc 15.2 für den Host-Build und arm-none-eabi-gcc 14.2.1 für die IOmcu.
+
+Vier Ergebnisse hängen vom Image ab und sind die des Runners.
+`tools/render_ui.py` und `tools/frame_cost.py` kompilieren mit
+`-ffp-contract=off`, weil dieses gcc x86-64-v3 anpeilt, eine Multiplikation
+und eine Addition zu einer Rundung verschmilzt und einzelne Pixel der Bögen
+und Plot-Linien verschiebt. Die Coverage-Tabelle in `STATUS.md` und die Zahl
+in den READMEs sind die Zeilenzahlen von gcov für gcc 15.2; ein anderes gcc
+zählt einzelne Zeilen anders, so dass `tools/coverage.py --check` auf einem
+Rechner mit anderem Release fehlschlägt. Die Tabelle wird aus dem Artefakt
+`coverage` eines CI-Laufs geschrieben:
+`python3 tools/coverage.py --from-json coverage.json`. Die Stack-Zahlen der
+IOmcu in `docs/Performance-de.md` sind die von arm-none-eabi-gcc 14.2.1, das
+auch ARM GNU 14.2.Rel1 liefert. Die Füllungen der Frame-Kosten-Tabelle in
+derselben Datei sind cachegrind-Zählungen eines Builds auf diesem Image, mit
+fester Umgebung ausgeführt (die Länge der Umgebung verschiebt den Stack und
+damit eine Zählung um bis zu 9%); ein Rechner mit anderer libc kann abweichen, und
+`tools/frame_cost.py --check-doc` lässt 2% eines Modus zu, mindestens 100
+Füllungen.
+
 clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
 die Header von ESP-IDF und pico-sdk, die der Analyse-Job nicht hat. Die
 Klasse style von cppcheck läuft ebenfalls nicht über `firmware/`. Die

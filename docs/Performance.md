@@ -51,42 +51,42 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,340    1168 KiB
+frame                        9,347    1168 KiB
 frame-idle                       0       0 KiB
-held                         4,878     610 KiB
-sim                         13,013    1627 KiB
-throttle                    11,189    1399 KiB
-chrome                      51,593    6449 KiB
-overview                         0       0 KiB
-servo                        2,178     272 KiB
-servo-grip                     532      66 KiB
-servo-current                3,097     387 KiB
-supply                       9,563    1195 KiB
-supply-chrome               47,440    5930 KiB
+held                         4,828     604 KiB
+sim                         13,032    1629 KiB
+throttle                    11,197    1400 KiB
+chrome                      51,615    6452 KiB
+overview                         1       0 KiB
+servo                        2,135     267 KiB
+servo-grip                     525      66 KiB
+servo-current                3,113     389 KiB
+supply                       9,680    1210 KiB
+supply-chrome               47,587    5948 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,536     192 KiB
-balance-sim                  3,058     382 KiB
-settings-sim                 2,979     372 KiB
-battery-sim                  3,015     377 KiB
-analyser-chrome             61,000    7625 KiB
-logs-chrome                 26,203    3275 KiB
-settings-chrome             37,873    4734 KiB
-settings-list-chrome        36,955    4619 KiB
-battery-chrome              58,026    7253 KiB
-balance-chrome              63,372    7922 KiB
-motor-stick-chrome          41,852    5232 KiB
+motor-stick                  1,558     195 KiB
+balance-sim                  3,130     391 KiB
+settings-sim                 3,156     394 KiB
+battery-sim                  3,139     392 KiB
+analyser-chrome             61,019    7627 KiB
+logs-chrome                 26,202    3275 KiB
+settings-chrome             37,865    4733 KiB
+settings-list-chrome        36,949    4619 KiB
+battery-chrome              58,044    7256 KiB
+balance-chrome              63,385    7923 KiB
+motor-stick-chrome          41,851    5231 KiB
 picker                           0       0 KiB
-picker-chrome               41,276    5160 KiB
+picker-chrome               41,310    5164 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,129    2766 KiB
-wifi-keys                   36,882    4610 KiB
+wifi-chrome                 22,135    2767 KiB
+wifi-keys                   36,872    4609 KiB
 clear                       19,206    2401 KiB
-vlines                      10,202    1275 KiB
+vlines                      10,203    1275 KiB
 hlines                         180      22 KiB
 
 est. ms and est. fps: not measured
@@ -499,15 +499,17 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,484 | 528 | 1,828 |
-| core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
+| core 0 | `main` | 4,096 | 1,476 | 528 | 1,836 |
+| core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
-13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row,
-or the count of calls through a register below, differs from that build. Core 1's row is not held: its chain moves with the
-compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
-runner's packaged one. The frames named below are those of a build with
-ARM GNU 14.2, which gives 1,508 bytes for core 0.
+14.2.1 (the package `gcc-arm-none-eabi` 15:14.2.rel1 of Ubuntu 26.04, the
+same compiler as ARM GNU 14.2.Rel1). CI runs the tool with `--check-doc`,
+which fails when core 0's row, or the count of calls through a register
+below, differs from that build. Core 1's row is not held: its chain moves
+with the compiler (arm-none-eabi-gcc 13.2.1 gives 640 bytes), and CI builds
+the image with the runner's packaged one. The frames named below are those
+of the same build.
 
 Core 0's deepest chain is a request that binds an output and fails in the
 pico-sdk: `main` (264 bytes), `can_service` (344), `link_dev_dispatch`,
@@ -545,9 +547,9 @@ in it is not measured. The heartbeat gap that switches every output off is
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 161 such calls
+  handler, which the tool reads out of the link's page table: 168 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
-  13.2.1; ARM GNU 14.2 gives 165);
+  14.2.1);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
   `strstr()` calls it for a needle of 255 characters or more, and the two
   needles in the firmware are 3 and 5 characters. The tool fails on a

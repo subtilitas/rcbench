@@ -12,9 +12,14 @@ measures the same build in CI (continuous integration).
     python3 tools/coverage.py            # update the table and the figures
     python3 tools/coverage.py --check    # fail if any of them is out of date
     python3 tools/coverage.py --json coverage.json
+    python3 tools/coverage.py --from-json coverage.json
 
 ``--check`` is what CI runs: drift fails the build rather than being
-committed by a bot.
+committed by a bot.  gcov counts the lines of a file by the rules of its
+GCC release, so a table written by one release fails ``--check`` under
+another.  The table is the one of CI's runner: ``--from-json`` renders it
+from the ``coverage`` artifact of a CI run, which holds the raw numbers
+(``--json``), without building or measuring anything.
 
 Every C file under shared/ and protocols/ has to be in the measurement,
 except a module's rp2350/ folder: a pin driver is compiled by the
@@ -492,6 +497,23 @@ def measure() -> dict[str, dict[str, float]]:
     return results
 
 
+def tracked_mismatch(results: dict[str, dict[str, float]]) -> list[str]:
+    """Name the files the raw numbers and the TRACKED list disagree on.
+
+    Args:
+        results: The "files" object of a coverage JSON file.
+
+    Returns:
+        One message per file in one and not in the other; empty when the
+        numbers cover exactly TRACKED.
+    """
+    out = [f"{rel} is in TRACKED and not in the numbers"
+           for rel in TRACKED if rel not in results]
+    out += [f"{rel} is in the numbers and not in TRACKED"
+            for rel in results if rel not in TRACKED]
+    return out
+
+
 def render(results: dict[str, dict[str, float]]) -> tuple[str, float]:
     total_lines = sum(int(r["lines"]) for r in results.values())
     total_covered = sum(int(r["covered"]) for r in results.values())
@@ -565,19 +587,24 @@ def main() -> int:
                     help="also write the raw numbers here")
     ap.add_argument("--skip-build", action="store_true",
                     help="reuse an existing instrumented build")
+    ap.add_argument("--from-json", type=pathlib.Path,
+                    help="render the table from the raw numbers of --json "
+                         "(CI's coverage artifact) instead of measuring")
     args = ap.parse_args()
 
-    if not args.skip_build:
-        build_and_run()
-
-    notes, data = build_files(".gcno"), build_files(".gcda")
-    incomplete = completeness(
-        library_sources(), TRACKED, DATA_ONLY, set(notes), set(data),
-        {pathlib.Path(rel).name for rel in DATA_ONLY
-         if pathlib.Path(rel).name in notes
-         and holds_code(notes[pathlib.Path(rel).name])})
-
-    results = measure()
+    if args.from_json:
+        results = json.loads(args.from_json.read_text())["files"]
+        incomplete = tracked_mismatch(results)
+    else:
+        if not args.skip_build:
+            build_and_run()
+        notes, data = build_files(".gcno"), build_files(".gcda")
+        incomplete = completeness(
+            library_sources(), TRACKED, DATA_ONLY, set(notes), set(data),
+            {pathlib.Path(rel).name for rel in DATA_ONLY
+             if pathlib.Path(rel).name in notes
+             and holds_code(notes[pathlib.Path(rel).name])})
+        results = measure()
     body, total_pct = render(results)
 
     if args.json:
