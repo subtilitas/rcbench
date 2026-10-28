@@ -605,7 +605,7 @@ const log_viewer_io_t k_card_io = {
 
 /*
  * The programmer's record, KST.TXT in the folder BENCH/KST/CONF beside the
- * servo files (kst_store.h keeps the name free): a write under way with the
+ * servo files (servo_store.h keeps the name free): a write under way with the
  * servo's values before it (kst_prog.h).  The render loop fills
  * s_kst_file and counts s_kst_file_sent up; this task writes it, says in
  * s_kst_file_ok whether the card took it whole, and counts
