@@ -88,6 +88,83 @@ Current limitations:
   on. A single card read of 1000ms or more on LOGS then stops the bench and
   ends the port's session.
 
+## Errors
+
+The rule: an error switches every output off and the bench to SAFE. An
+error is a fault that ends what the bench drives. The operator's own OFF,
+DISARM and edits are not errors.
+
+The outputs are the bank's servo PWM slots and DShot throttle channels, the
+four programming ports (servo PWM, DShot, the KST line, the Hitec line), and
+the PD (Power Delivery) mini's output. The phase tap on the TONE page is an
+input and drives nothing. The panel has no wire to any output: it acts
+through the link and the heartbeat, and the IOmcu acts on its own when
+either goes.
+
+| Fault | Servo PWM and DShot, on the bank and the ports | KST and Hitec sessions | PD mini output | Who acts |
+| --- | --- | --- | --- | --- |
+| Link silent 200ms, the IOmcu running | no pulse from the same pass | cut, line released | asked off in the same pass | the IOmcu (`safety_gate_step()`); the panel latches a stop when ARMED |
+| The IOmcu held in reset or BOOTSEL | pins are inputs | pins are inputs | stays as it was | nobody: [Hardware limits](#hardware-limits) |
+| The IOmcu restarted | latched SAFE until CLEAR and ARM | none open | read and switched off before the rest of the start-up | the IOmcu (`supply_boot_off()`) |
+| Heartbeat lost at the IOmcu | no pulse within 150ms | cut | asked off | the IOmcu |
+| The panel restarted, wedged or unplugged | no pulse within 150ms | cut | asked off | the IOmcu, by the heartbeat |
+| The panel's render loop stopped 1000ms | no pulse within 150ms more | cut | off | the panel's control task (`frame_watch.h`), then the IOmcu |
+| STOP | no pulse within 150ms | cut | off | the panel, then the IOmcu |
+| A run's meter or supply fails (`no INA3221 window for 0.2s` and the other errors in [Servo, What ends a run](Servo.md#what-ends-a-run)) | SAFE | none open: a run is ARMED | off | the SERVO screen |
+| A session cut by the link or the heartbeat | as in the rows above | transaction cut | off, after a frame on the wire, 12ms at most | the IOmcu |
+| A card write fails during a run | SAFE | kept | off, unless a port holds it | the panel (`card_faults_follow()`) |
+| The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | kept | off | the panel |
+| An INA3221 channel over its limit | SAFE | kept | off, unless a port holds it | the panel, at the 200ms read of `OVER` |
+| A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
+| The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | kept | off where it can be switched | the IOmcu's driver for the output, the panel for SAFE |
+
+SAFE means the panel asks DISARM. The request withholds the heartbeat while
+it stands, so the IOmcu fails safe within 150ms even when the panel's
+control task waits in an exchange. A bench that is SAFE already is not
+disarmed again: on a SAFE bench the withheld heartbeat would end a
+programming port's session for no output it drives. The rule is
+`error_stop()` in `shared/safety/error_stop.c`, under `test_error_stop`.
+
+Current limitations:
+
+- A programming port that holds the supply keeps it through an error the
+  panel finds: a card write that fails, an INA3221 channel over its limit.
+  A session in the middle of a write to the servo's memory is the case the
+  rule must not cut. The heartbeat or the link going still cuts it.
+- A programmer session that ends in an error with the link and the
+  heartbeat up keeps the servo powered on its port until LEAVE.
+- The IOmcu's STATUS fault bits for overcurrent, over-temperature and stall
+  (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`, `LINK_FAULT_STALL`) are
+  defined and set by nothing.
+- The alerts name the error and do not say that the bench switched to SAFE;
+  the band shows SAFE.
+
+### Hardware limits
+
+Firmware cannot cover a board that does not run:
+
+- The IOmcu held in reset or in BOOTSEL. Its pins are inputs, so the bank
+  and the ports send no pulse, but a servo or ESC (electronic speed
+  controller) input that floats can read a level. The PD mini has its UART
+  on the IOmcu alone and keeps its output as it was until the IOmcu runs
+  again. The monostable below does not cover it: the panel goes on
+  beating. A pull-down on each signal line covers the pulses; a second
+  monostable that the IOmcu's own main loop retriggers, gating the same
+  switches and a switch after the PD mini, would cover the rest. Neither is
+  specified.
+- The panel and the IOmcu both gone. Nothing switches the PD mini or the
+  power path. Covered by the monostable.
+- The PD mini not answering on its UART. The IOmcu sends OFF blind only to
+  a module that has answered with a known OFF argument. The monostable
+  does not cover it while both boards run. A load switch after the PD
+  mini's output, open unless an IOmcu pin holds it closed, would; it is not
+  specified.
+
+On the bring-up bench the PD mini's output stayed on through a 15s outage
+of the IOmcu in BOOTSEL, and a power-on reset drops the IOmcu's USB for
+14.5 to 15s. How long a real reset leaves the PD mini on before the start-up's OFF
+is not measured.
+
 ## Required external circuit: the monostable
 
 The safety line is panel GPIO28 (general-purpose input/output pin 28), a free
@@ -207,6 +284,17 @@ In both the outputs stay off until an operator holds ARM. Host-tested in
 `test_safety_gate` for outages of 5, 30, 50, 60, 300, 1000 and 5000ms at 55
 reset phases each and three models of the wire. How long
 the IOmcu takes from reset to its first answered frame is not measured.
+
+The PD mini's output is switched off first. Right after the wiring is
+restored, and before the sensor bus, the store's erases, core 1 and the CAN
+controller, the IOmcu reads the module and writes OFF to an output that
+reads on (`supply_boot_off()`). WHO_AM_I goes again as soon as one fails
+(`pdmini_hurry()`), 415ms a try, so under AUTO all seven rates are tried in
+2.9s. The wait ends when the module reads off or after 3500ms
+(`SUPPLY_PAGE_BOOT_OFF_MS`); a module that does not answer delays the link
+by that much at every start. Host-tested in `test_supply_boot`: a module
+left on at a set rate is off within 100ms of the wait's start, and at
+each AUTO rate within 3500ms.
 
 ### The first switch to ARMED after a stop
 
@@ -571,8 +659,10 @@ reads the state and shows the alert, is not in the coverage figure.
   role or anything of a throttle channel. A surface's slew and pulse range are
   taken while ARMED: the SERVO screen writes them with every position. The panel
   writes a binding and the throttle's pulse range only while SAFE.
-- The IOmcu acts on overcurrent, over-temperature, stall timeout and a
-  lost link on its own authority and reports the fault at the next poll.
+- The IOmcu acts on a lost link, a lost heartbeat and the PD mini's
+  sagging input on its own authority and reports the fault at the next
+  poll. Its fault bits for overcurrent, over-temperature and stall are set
+  by nothing ([Errors](#errors)).
 - A switch to ARMED names the roles it drives ([Link, An arm for one
   role](Link.md#an-arm-for-one-role)). MOTOR & ESC's ARM and a stick
   run on its PROGRAM switch the throttle outputs to ARMED, ARM 0x0002. SERVO switches the surfaces and the

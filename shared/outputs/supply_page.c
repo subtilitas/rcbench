@@ -435,6 +435,13 @@ void supply_page_read(const supply_page_t *p, uint8_t off, uint8_t n,
     }
 }
 
+bool supply_page_boot_owed(const supply_page_t *p, const pdmini_t *drv,
+                           uint32_t elapsed_ms)
+{
+    return supply_page_enabled(p) && drv != NULL && pdmini_may_be_on(drv)
+           && elapsed_ms < SUPPLY_PAGE_BOOT_OFF_MS;
+}
+
 void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
 {
     if (p == NULL) {

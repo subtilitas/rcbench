@@ -4,6 +4,34 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Changed
+
+- An error switches every output off and the bench to SAFE
+  ([Safety, Errors](docs/Safety.md#errors)). The panel asks DISARM for an
+  ARMED bench, or one on its way to ARMED, when: the supply trips on CURRENT
+  TRIP or VOLTAGE TRIP, stops answering, gives no reading, is switched off by
+  the IOmcu or by the PD mini's own protection, sags, refuses an ON or does
+  not take an output or a set point, or an ON is undone for lost touch
+  events; an INA3221 channel passes its limit
+  (until now an alert only); a card write fails during a run. The supply's
+  output goes off with each, unless a programming port holds it. The
+  automatic servo test and the limit run switch the bench to SAFE when an
+  error ends them: the supply or the meter failing, STALL AT, constant
+  current, the 3.0A ceiling, 1.0A for 400ms.
+- The IOmcu switches a PD mini left on off before the rest of its
+  start-up: right after the wiring is restored and before the sensor bus,
+  the store's erases, core 1 and the CAN controller. WHO_AM_I goes again as
+  soon as one fails, so under AUTO all seven rates are tried in 2.9s. The
+  wait ends when the module reads off, or after 3500ms, which delays the
+  link by as much when a wired module does not answer.
+
+### Fixed
+
+- Safety: the claim that the IOmcu acts on overcurrent, over-temperature
+  and stall. Its fault bits for those are defined and set by nothing.
+
 ## 0.23.2 - 2026-10-28
 
 0.23.2 is a testing release: its minor number, 23, is odd, and GitHub

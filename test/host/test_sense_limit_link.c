@@ -271,6 +271,40 @@ TEST_CASE(each_channel_over_is_told_at_its_pace)
              SENSE_LIMIT_LINK_EV_NONE);
 }
 
+/* The trip the panel stops the bench for: every channel's bit at the read
+ * that brings it, not held back by the alert's gap or repeat time, each
+ * taken once; a link lost forgets bits read before it. */
+TEST_CASE(a_limit_passed_is_a_trip_at_the_read_that_brings_it)
+{
+    fresh(27u, 1000u);
+    uint16_t w[LINK_SL_KEPT] = { 0 };
+    w[1] = 500u;
+    w[7] = 500u;
+    sense_limit_link_want(&ll, w, now);
+    polls(20);
+    CHECK_EQ(sense_limit_link_take_trip(&ll), 0u);
+    over(7);
+    over(1);
+    polls(5);
+    CHECK_EQ(sense_limit_link_take_trip(&ll), (uint16_t)((1u << 1) | (1u << 7)));
+    CHECK_EQ(sense_limit_link_take_trip(&ll), 0u);         /* taken once */
+    /* Told once in the band; the trip comes at every read with a bit. */
+    unsigned ch = 99u;
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_OVER);
+    over(1);
+    polls(5);
+    CHECK_EQ(sense_limit_link_event(&ll, now, &ch, NULL),
+             SENSE_LIMIT_LINK_EV_NONE);                   /* the gap */
+    CHECK_EQ(sense_limit_link_take_trip(&ll), (uint16_t)(1u << 1));
+    /* Read, then the link lost before it was taken: forgotten. */
+    over(7);
+    polls(5);
+    sense_limit_link_lost(&ll);
+    CHECK_EQ(sense_limit_link_take_trip(&ll), 0u);
+    CHECK_EQ(sense_limit_link_take_trip(NULL), 0u);
+}
+
 /* A reply lost with its bits: the next read finds OVER_COUNT moved and
  * no bit, and says a limit was passed without saying where. */
 TEST_CASE(bits_lost_on_the_link_are_said_as_lost)
@@ -455,6 +489,7 @@ int main(void)
     RUN(limits_the_page_keeps_are_not_written_again);
     RUN(a_refused_write_is_said_once_until_the_next_edit);
     RUN(each_channel_over_is_told_at_its_pace);
+    RUN(a_limit_passed_is_a_trip_at_the_read_that_brings_it);
     RUN(bits_lost_on_the_link_are_said_as_lost);
     RUN(the_clocks_hold_across_the_wrap);
     RUN(a_reply_lost_with_the_link_is_said_at_the_link_up);

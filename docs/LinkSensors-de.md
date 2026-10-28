@@ -125,8 +125,11 @@ Bauteil wird je Tick abgefragt.
 ## SENSE_LIMIT
 
 Eine Stromgrenze für jeden Kanal, und die Kanäle, deren Fenster sie
-überschritten hat. Nur ein Alarm: eine überschrittene Grenze stoppt nichts,
-schaltet nichts auf SAFE und treibt nichts.
+überschritten hat. Der IOmcu markiert eine überschrittene Grenze und handelt
+selbst nicht. Das Panel liest die Markierung alle 200ms und behandelt sie als
+Fehler: der Prüfstand schaltet auf SAFE und der Ausgang des Netzteils aus,
+außer ein Programmierport hält das Netzteil
+([Sicherheit, Fehler](Safety-de.md#fehler)).
 
 | Register | Name | Bedeutung |
 | ---: | --- | --- |

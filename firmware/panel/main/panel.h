@@ -1021,6 +1021,18 @@ static inline void supply_service(void)
 }
 
 void apply_supply_cmd(const panel_cmd_t *pc);
+/**
+ * @brief An error of the bench (error_stop.h): the bench to SAFE when it is
+ *        ARMED or a switch to ARMED waits, and the supply's output off unless
+ *        a programming port holds it.  Control task, in the pump as well.
+ */
+void bench_error_stop(void);
+/** @brief The card faults the logger counted, each an error once
+ *         (bench_error_stop()); from the pump. */
+void card_faults_follow(void);
+/** @brief Card writes that failed during a run, counted by the logger at
+ *         each failure's edge (panel_log.c); read by the control task. */
+extern atomic_uint s_card_faults;
 /* The supply's service, from control_pump(). */
 void supply_pump(void);
 void supply_link_service(void);

@@ -22,7 +22,7 @@ Each fitted part has a heading, `INA3221 0x40` to `INA3221 0x43`, and three rows
 |---|---|---|---|
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE otherwise | what the channel's shunt is in: an output channel, a programming port or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0mΩ, 0.1mΩ steps | 100.0 | OFF: the channel is not read; 100mΩ reads to 1.64A |
-| 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | the band says when a 50ms window's highest current passes it; an alert only, nothing stops |
+| 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | the band says when a 50ms window's highest current passes it, and the bench switches to SAFE with the supply output off |
 
 - `+` on a shunt at OFF gives 5.0mΩ, `-` at 5.0mΩ gives OFF.
 - A tap on a shunt's value opens the keypad: 44.4mΩ from the 100.0 default is `4`, `4`, `.`, `4` and OK, where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused: the keypad stays open and shows `0 or 5.0 to 1000.0mΩ` in place of the range until the next key.

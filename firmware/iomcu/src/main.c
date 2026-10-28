@@ -35,7 +35,6 @@
 #include "rcbench_version.h"
 #include "out_stage.h"
 #include "outputs_pages.h"
-#include "pd_uart.h"
 #include "sense_limit.h"
 #include "sense_map.h"
 #include "tone_core1.h"
@@ -476,6 +475,9 @@ int main(void)
             (void)supply_rewire();
         }
     }
+    /* And switched off now, before the rest of the start (supply_boot_off()):
+     * a module this end left on has been on for as long as it was gone. */
+    supply_boot_off();
     /*
      * The sensor bus's set-up, through the page's own checks as well: after
      * the slots and the supply, so a pin either already holds is refused and
@@ -749,38 +751,10 @@ int main(void)
         }
         /* The supply: its bytes in, a step of its driver, and the output off
          * whenever the panel's heartbeat is not there to switch it off. */
-        /* The page first, so a heartbeat lost this pass reaches the driver
-         * as an OFF before it steps and can send an ON already queued. */
-        /* An OFF of this pass waits for the end of a frame the
-         * programming port has on the wire. */
-        supply_page_port_frame(&s_supply,
-                               kst_port_frame_out(&s_kst)
-                                   || hitec_port_frame_out(&s_hitec, now),
-                               now);
-        supply_page_step(&s_supply, safety_gate_supply_ok(&s_beat, &s_dev),
-                         s_pd_open ? &s_pd : NULL);
-        /* A wiring change whose state read has just shown the module off:
-         * taken now, before the driver's next transaction, so the module
-         * has no time to come on between that read and the rewire. */
-        uint16_t wire_next[4];
-        if (supply_page_wire_ready(&s_supply, wire_next)) {
-            (void)supply_take(LINK_SP_ENABLE, 4u, wire_next, true);
-        }
-        if (s_pd_open) {
-            uint8_t b;
-            while (pd_uart_getc(&b)) {
-                pdmini_rx(&s_pd, b, now);
-            }
-            pdmini_step(&s_pd, now);
-            /* Under AUTO, the next rate after a WHO_AM_I nothing answered
-             * validly -- between transactions, with the pins at rest. */
-            const uint8_t rate = supply_page_rate(&s_supply, &s_pd);
-            if (rate != s_pd_rate
-                && (s_pd.phase == PD_IDLE || s_pd.phase == PD_GAP)) {
-                pd_uart_baud(supply_page_baud(rate));
-                s_pd_rate = rate;
-            }
-        }
+        supply_pass(now,
+                    kst_port_frame_out(&s_kst)
+                        || hitec_port_frame_out(&s_hitec, now),
+                    safety_gate_supply_ok(&s_beat, &s_dev));
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */

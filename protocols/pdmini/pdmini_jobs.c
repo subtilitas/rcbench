@@ -172,7 +172,8 @@ static bool next_job(pdmini_t *d, uint32_t now)
             pdmini_start(d, now, req, 2u, true);
             return true;
         }
-        if ((uint32_t)(now - d->last_identify) >= PDMINI_IDENTIFY_MS) {
+        if (d->hurry
+            || (uint32_t)(now - d->last_identify) >= PDMINI_IDENTIFY_MS) {
             d->last_identify = now;
             pdmini_read1(d, now, PDMINI_WHO_AM_I);
             return true;

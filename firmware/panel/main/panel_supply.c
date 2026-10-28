@@ -15,6 +15,7 @@
 #include "freertos/queue.h"
 
 #include "arming.h"
+#include "error_stop.h"
 #include "esc_profile.h"
 #include "esc_sim.h"
 #include "link_host.h"
@@ -165,6 +166,52 @@ void supply_switch(bool on)
          * with the output off. */
         s_supply_step_ms = now_ms();
     }
+}
+
+/**
+ * @brief Whether the bench is live for an error: ARMED, or a switch to ARMED
+ *        waiting.
+ * @return true while an error asks DISARM (error_stop()).
+ */
+static bool bench_live(void)
+{
+    return arming_link_needed(&s_arm, outputs_armed(&s_out));
+}
+
+/**
+ * @brief What error_stop() asks, done from here.
+ *
+ * The disarm is a request, the way a screen's DISARM is one, because this
+ * runs inside an exchange's wait as well.  The request withholds the
+ * heartbeat while it stands, so the IOmcu fails safe within
+ * HEARTBEAT_MAX_GAP_MS (150ms) whatever this task waits for, and
+ * service_arming() lets go of the rest when the loop is free.
+ *
+ * @param e The act: DISARM asked, the supply's output switched off.
+ */
+static void error_act(error_stop_t e)
+{
+    if (e.disarm) {
+        atomic_store(&s_disarm_request, true);
+    }
+    if (e.supply_off) {
+        supply_switch(false);
+    }
+}
+
+void bench_error_stop(void)
+{
+    error_act(error_stop(bench_live(), s_supply_on, s_prog_taken));
+}
+
+/** @brief The card faults the logger counted (s_card_faults), each taken
+ *         as an error once; control task only. */
+static error_watch_t s_card_watch;
+
+void card_faults_follow(void)
+{
+    error_act(error_stop_take(&s_card_watch, atomic_load(&s_card_faults),
+                              bench_live(), s_supply_on, s_prog_taken));
 }
 
 /* The operator's limits as the render side last stored them. */
@@ -391,6 +438,7 @@ static void supply_step(float step_s)
      */
     if (!s_supply.online && s_supply_on) {
         supply_switch(false);
+        bench_error_stop();
         control_alert(TR(ALERT_SUPPLY_SILENT));
     } else if (s_supply_is_real && s_supply_on
                && supply_link_blind(&s_supply_link, now_ms())) {
@@ -398,6 +446,7 @@ static void supply_step(float step_s)
          * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
          * valid, which no trip acts on.  Off, as for a supply gone. */
         supply_switch(false);
+        bench_error_stop();
         control_alert(TR(ALERT_SUPPLY_NO_READING));
     }
     if (s_supply.output) {
@@ -418,6 +467,7 @@ static void supply_step(float step_s)
          * keeps it; the sample after the switch-off ends the run. */
         supply_queue_sample();
         supply_switch(false);
+        bench_error_stop();
         s_supply.trip = (uint8_t)trip;
         /* In integers: this can run inside an exchange's wait, deep on the
          * control task's stack, and a float conversion is the deepest thing
@@ -455,6 +505,7 @@ static void supply_watch_service(void)
     if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
                        atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
         supply_switch(false);
+        bench_error_stop();
         control_alert(TR(ALERT_TOUCH_SWITCH_ON));
     }
 }
@@ -474,6 +525,7 @@ void supply_pump(void)
      * that loss is about to switch off. */
     supply_follow_stops();
     supply_watch_service();
+    card_faults_follow();
     supply_service();
 
     const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);
@@ -571,6 +623,10 @@ static void supply_link_alerts(void)
     }
     if ((ev & SUPPLY_LINK_EV_SET_STUCK) != 0u) {
         control_alert(TR(ALERT_PDMINI_SET));
+    }
+    /* And every error of the supply: the output off and the bench SAFE. */
+    if (supply_link_ev_error(ev)) {
+        bench_error_stop();
     }
     /* A rate AUTO found is not a fault: it is in the SUPPLY screen's
      * header, not in the alert band, which stays until another alert

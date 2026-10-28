@@ -96,6 +96,88 @@ Bekannte Einschränkungen:
   länger braucht, stoppt dann den Prüfstand und beendet die Session des
   Ports.
 
+## Fehler
+
+Die Regel: ein Fehler schaltet jeden Ausgang aus und den Prüfstand auf SAFE.
+Ein Fehler ist eine Störung, die beendet, was der Prüfstand treibt. Das
+eigene AUS, DISARM und die Änderungen der bedienenden Person sind keine
+Fehler.
+
+Die Ausgänge sind die Servo-PWM-Slots und DShot-Throttle-Kanäle der Bank,
+die vier Programmierports (Servo-PWM, DShot, die KST-Leitung, die
+Hitec-Leitung) und der Ausgang des PD (Power Delivery) mini. Der Phase Tap
+auf der Page TONE ist ein Eingang und treibt nichts. Das Panel hat keinen
+Draht zu einem Ausgang: es handelt über den Link und den Heartbeat, und der
+IOmcu handelt selbst, wenn einer der beiden ausfällt.
+
+| Störung | Servo-PWM und DShot, an der Bank und an den Ports | KST- und Hitec-Sitzungen | Ausgang des PD mini | Wer handelt |
+| --- | --- | --- | --- | --- |
+| Link 200ms still, der IOmcu läuft | kein Puls ab demselben Durchlauf | abgebrochen, Leitung freigegeben | im selben Durchlauf aus angefordert | der IOmcu (`safety_gate_step()`); das Panel rastet in ARMED einen Stopp ein |
+| Der IOmcu im Reset oder in BOOTSEL gehalten | Pins sind Eingänge | Pins sind Eingänge | bleibt, wie er war | niemand: [Grenzen der Hardware](#grenzen-der-hardware) |
+| Der IOmcu neu gestartet | SAFE mit Latch bis CLEAR und ARM | keine offen | gelesen und ausgeschaltet vor dem Rest des Starts | der IOmcu (`supply_boot_off()`) |
+| Heartbeat am IOmcu verloren | kein Puls binnen 150ms | abgebrochen | aus angefordert | der IOmcu |
+| Das Panel neu gestartet, hängend oder abgesteckt | kein Puls binnen 150ms | abgebrochen | aus angefordert | der IOmcu, über den Heartbeat |
+| Die Render-Schleife des Panels 1000ms still | kein Puls binnen weiterer 150ms | abgebrochen | aus | der Control-Task des Panels (`frame_watch.h`), dann der IOmcu |
+| STOP | kein Puls binnen 150ms | abgebrochen | aus | das Panel, dann der IOmcu |
+| Messgerät oder Netzteil eines Laufs fällt aus (`0.2s kein INA3221-Fenster` und die anderen Fehler in [Servo, Was einen Lauf beendet](Servo-de.md#was-einen-lauf-beendet)) | SAFE | keine offen: ein Lauf ist ARMED | aus | der SERVO-Bildschirm |
+| Eine Sitzung, die der Link oder der Heartbeat abbricht | wie in den Zeilen oben | Transaktion abgebrochen | aus, nach einem Frame auf der Leitung, höchstens 12ms | der IOmcu |
+| Ein Schreiben auf die Karte scheitert während eines Laufs | SAFE | bleibt | aus, außer ein Port hält es | das Panel (`card_faults_follow()`) |
+| Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | bleibt | aus | das Panel |
+| Ein INA3221-Kanal über seiner Grenze | SAFE | bleibt | aus, außer ein Port hält es | das Panel, beim Lesen von `OVER` alle 200ms |
+| Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
+| Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | bleibt | aus, wo er sich schalten lässt | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
+
+SAFE heißt: das Panel fordert DISARM an. Solange die Anforderung steht, hält
+es den Heartbeat zurück, sodass der IOmcu binnen 150ms sicher abschaltet,
+auch wenn der Control-Task des Panels in einem Austausch wartet. Ein
+Prüfstand, der schon SAFE ist, wird nicht noch einmal auf SAFE geschaltet:
+in SAFE würde der zurückgehaltene Heartbeat die Sitzung eines
+Programmierports beenden, ohne dass dieser einen Ausgang treibt. Die Regel
+ist `error_stop()` in `shared/safety/error_stop.c`, getestet in
+`test_error_stop`.
+
+Aktuelle Einschränkungen:
+
+- Ein Programmierport, der das Netzteil hält, behält es bei einem Fehler,
+  den das Panel findet: ein gescheitertes Schreiben auf die Karte, ein
+  INA3221-Kanal über seiner Grenze. Eine Sitzung mitten im Schreiben in den
+  Speicher des Servos ist der Fall, den die Regel nicht abbrechen darf. Ein
+  verlorener Heartbeat oder Link bricht sie weiterhin ab.
+- Eine Programmiersitzung, die mit Link und Heartbeat in einem Fehler
+  endet, hält das Servo an seinem Port bis LEAVE versorgt.
+- Die Fehlerbits des IOmcu auf STATUS für Überstrom, Übertemperatur und
+  Stall (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`,
+  `LINK_FAULT_STALL`) sind definiert und werden von nichts gesetzt.
+- Die Meldungen nennen den Fehler und sagen nicht, dass der Prüfstand auf
+  SAFE geschaltet hat; die Leiste zeigt SAFE.
+
+### Grenzen der Hardware
+
+Firmware kann ein Board, das nicht läuft, nicht abdecken:
+
+- Der IOmcu im Reset oder in BOOTSEL gehalten. Seine Pins sind Eingänge,
+  die Bank und die Ports senden also keinen Puls, aber ein offener Eingang
+  eines Servos oder ESC (Electronic Speed Controller) kann einen Pegel
+  lesen. Der PD mini hat seinen UART nur am IOmcu und behält seinen Ausgang,
+  bis der IOmcu wieder läuft. Das Monoflop unten deckt das nicht ab: das
+  Panel sendet seinen Heartbeat weiter. Ein Pull-down an jeder
+  Signalleitung deckt die Pulse ab; ein zweites Monoflop, das die
+  Hauptschleife des IOmcu selbst nachtriggert und dieselben Schalter und
+  einen Schalter hinter dem PD mini steuert, deckte den Rest ab. Keines von
+  beiden ist spezifiziert.
+- Panel und IOmcu beide weg. Nichts schaltet den PD mini oder den
+  Leistungspfad. Abgedeckt durch das Monoflop.
+- Der PD mini antwortet auf seinem UART nicht. Der IOmcu sendet ein blindes
+  OFF nur an ein Modul, das geantwortet hat und dessen OFF-Argument bekannt
+  ist. Das Monoflop deckt das nicht ab, solange beide Boards laufen. Ein
+  Lastschalter hinter dem Ausgang des PD mini, offen, solange ihn kein Pin
+  des IOmcu geschlossen hält, deckte es ab; er ist nicht spezifiziert.
+
+Am Bring-up-Prüfstand blieb der Ausgang des PD mini während eines
+Ausfalls des IOmcu von 15s in BOOTSEL an, und ein Power-on-Reset trennt das
+USB des IOmcu für 14,5 bis 15s. Wie lange ein echter Reset den PD mini vor
+dem OFF des Starts anlässt, ist nicht gemessen.
+
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
 Die Sicherheitsleitung ist GPIO28 (General-Purpose Input/Output) des Panels,
@@ -225,6 +307,18 @@ In beiden bleiben die Ausgänge aus, bis eine Person ARM hält. Auf dem Host
 getestet in `test_safety_gate` für Ausfälle von 5, 30, 50, 60, 300, 1000 und
 5000ms bei je 55 Reset-Phasen und drei Modellen der Leitung. Wie lange der IOmcu vom Reset bis zu seinem ersten
 beantworteten Frame braucht, ist nicht gemessen.
+
+Der Ausgang des PD mini wird zuerst ausgeschaltet. Gleich nachdem die
+Verdrahtung wiederhergestellt ist, und vor dem Sensorbus, dem Löschen im
+Speicher, Core 1 und dem CAN-Controller, liest der IOmcu das Modul und
+schreibt OFF an einen Ausgang, der an gelesen wird (`supply_boot_off()`).
+WHO_AM_I geht erneut, sobald eines scheitert (`pdmini_hurry()`), 415ms je
+Versuch, sodass unter AUTO alle sieben Raten in 2,9s versucht sind. Das
+Warten endet, wenn das Modul aus gelesen wird, oder nach 3500ms
+(`SUPPLY_PAGE_BOOT_OFF_MS`); ein Modul, das nicht antwortet, verzögert den
+Link bei jedem Start um so viel. Auf dem Host getestet in
+`test_supply_boot`: ein bei fester Rate angelassenes Modul ist binnen 100ms
+nach Beginn des Wartens aus, und bei jeder AUTO-Rate binnen 3500ms.
 
 ### Das erste Schalten auf ARMED nach einem Stopp
 
@@ -655,8 +749,10 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Throttle-Kanal ändert. Slew und Pulsbereich einer Surface werden in ARMED
   angenommen: der SERVO-Bildschirm schreibt sie mit jeder Position. Das Panel
   schreibt eine Bindung und den Pulsbereich des Throttle nur in SAFE.
-- Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
-  IOmcu aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
+- Bei totem Link, verlorenem Heartbeat und absinkendem Eingang des PD mini
+  handelt der IOmcu aus eigener Befugnis und meldet den Fehler beim
+  nächsten Poll. Seine Fehlerbits für Überstrom, Übertemperatur und Stall
+  setzt nichts ([Fehler](#fehler)).
 - Ein ARM nennt die Rollen, die es treibt ([Link, Ein Arm für eine
   Rolle](Link-de.md#ein-arm-für-eine-rolle)). ARM auf MOTOR & ESC und ein
   Stick-Lauf auf dessen PROGRAMMIEREN schalten die Throttle-Ausgänge auf ARMED, ARM

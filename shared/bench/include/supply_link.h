@@ -343,6 +343,27 @@ bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
  */
 uint16_t supply_link_events(supply_link_t *s);
 
+/** @brief The events that are errors of the supply (error_stop.h): every one
+ *         but a refused wiring, which answers the operator's edit, and the
+ *         rate AUTO found. */
+#define SUPPLY_LINK_EV_ERRORS                                              \
+    (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST                    \
+     | SUPPLY_LINK_EV_STUCK | SUPPLY_LINK_EV_SET_STUCK                     \
+     | SUPPLY_LINK_EV_TRIPPED | SUPPLY_LINK_EV_SAGGED)
+
+/**
+ * @brief Whether @p ev holds an error of the supply: an ON refused or let go,
+ *        an output that would not switch, set points that would not take,
+ *        the module's own protection, a sagging input.
+ *
+ * The panel switches the output off and the bench to SAFE for one
+ * (error_stop.h).
+ *
+ * @param ev SUPPLY_LINK_EV_* bits, as supply_link_events() returned them.
+ * @return true when one of SUPPLY_LINK_EV_ERRORS is set.
+ */
+bool supply_link_ev_error(uint16_t ev);
+
 /**
  * @brief The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read
  *        with: the page's VIN_MV and SET_MV_RB on the read that first showed

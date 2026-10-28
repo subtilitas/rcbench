@@ -31,6 +31,7 @@ void sense_limit_link_lost(sense_limit_link_t *s)
     s->pending    = SENSE_LIMIT_LINK_OP_NONE;
     s->asked      = false;
     s->over       = 0u;
+    s->trip       = 0u;
     s->lost       = false;
     s->ev_refused = false;
     memset(s->held, 0, sizeof(s->held));
@@ -173,6 +174,7 @@ static void take_over(sense_limit_link_t *s, uint16_t over, uint16_t count)
         }
     }
     s->over = (uint16_t)(s->over | over);
+    s->trip = (uint16_t)(s->trip | over);
     if (s->have_count && count != s->count && count != 0u && over == 0u) {
         s->lost = true;
     }
@@ -227,6 +229,16 @@ void sense_limit_link_done(sense_limit_link_t *s, int result,
         take_over(s, regs[0], regs[1]);
         s->flushed = s->flushed || pre;
     }
+}
+
+uint16_t sense_limit_link_take_trip(sense_limit_link_t *s)
+{
+    if (s == NULL) {
+        return 0u;
+    }
+    const uint16_t t = s->trip;
+    s->trip = 0u;
+    return t;
 }
 
 sense_limit_link_ev_t sense_limit_link_event(sense_limit_link_t *s,

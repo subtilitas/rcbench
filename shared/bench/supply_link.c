@@ -489,6 +489,11 @@ uint16_t supply_link_events(supply_link_t *s)
     return e;
 }
 
+bool supply_link_ev_error(uint16_t ev)
+{
+    return (ev & (uint16_t)SUPPLY_LINK_EV_ERRORS) != 0u;
+}
+
 void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
                      uint16_t *set_mv)
 {

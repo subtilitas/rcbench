@@ -158,7 +158,9 @@ uint16_t servo_limrun_scaled(uint16_t v, int32_t d, int32_t span,
  *        programmer then holds the port for RESTORE, and a STOP or the supply
  *        switched off ends its session by itself.  Aborted while it waits for
  *        ARMED, it asks SAFE: the ARM it asked may not be taken yet, and a
- *        release does not replace one (servo_screen.c, post()).
+ *        release does not replace one (servo_screen.c, post()).  Aborted on an
+ *        error while it searches, probes or checks, it asks SAFE as well
+ *        (servo_limrun_why_error()).
  *
  * @param r      Run state.
  * @param v      Verdict to store.
@@ -181,7 +183,14 @@ static void finish(servo_limrun_t *r, servo_limrun_verdict_t v,
     r->pend.release = true;
     if (v == SERVO_LIMRUN_ABORTED) {
         r->pend.off = true;
-        r->pend.disarm = r->phase == SERVO_LIMRUN_PH_ARM;
+        /* And SAFE after an error on an ARMED bench: a search, a probe or
+         * the check.  In a session the bench is SAFE already. */
+        const bool searching = r->phase == SERVO_LIMRUN_PH_SEARCH
+                               || r->phase == SERVO_LIMRUN_PH_PROBE
+                               || r->phase == SERVO_LIMRUN_PH_CHECK;
+        r->pend.disarm = r->phase == SERVO_LIMRUN_PH_ARM
+                         || (searching
+                             && servo_limrun_why_error(why, r->test_why));
     } else if (in_session) {
         r->pend.leave = true;
     }

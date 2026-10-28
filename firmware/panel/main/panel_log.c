@@ -172,6 +172,13 @@ void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir)
  * the last one, for log_viewer_io_t.written. */
 atomic_uint s_card_written;
 atomic_int  s_card_written_tab = LOG_TAB_BENCH;
+/* Card writes that failed during a run: the run log's and the automatic
+ * test's CSV, each counted once at its failure's edge.  The control task
+ * answers each as an error (card_faults_follow()): the bench SAFE and the
+ * supply off.  A report written after its run, and the servo programmers'
+ * records, are not counted: no output runs for the one, and the other
+ * belongs to a session the supply must not be cut under. */
+atomic_uint s_card_faults;
 
 /* ------------------------------------------- the card, for log_take() */
 
@@ -708,6 +715,9 @@ static void test_write(const test_line_t *l)
          * a full one keeps it to the END, which says the files are
          * incomplete. */
         const bool first = !s_test_failed;
+        if (first && !s_test_txt) {
+            atomic_fetch_add(&s_card_faults, 1u);   /* the run's CSV */
+        }
         s_test_failed  = true;
         s_test_file_bad = true;
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
@@ -910,6 +920,9 @@ void log_task(void *arg)
         }
 
         if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
+            /* An error of the run: the control task switches the bench
+             * to SAFE and the supply off (card_faults_follow()). */
+            atomic_fetch_add(&s_card_faults, 1u);
             control_alert(TR(ALERT_CARD_ROWS_PAST));
             /* One look, at the failure's edge and not per row: a card
              * taken out is let go now, a full one is kept to the end. */

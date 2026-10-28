@@ -327,7 +327,11 @@ und ein Netzteil, das aufhört zu antworten, auslöst, ausschaltet oder
 dessen Sollwerte sich ändern: die Gründe des automatischen Tests, in
 [Was einen Lauf beendet](#was-einen-lauf-beendet). SAFE und ARM des Laufs
 selbst beenden nichts. Jeder Grund beendet den Lauf als ABGEBROCHEN, mit
-ausgeschaltetem Ausgang und freigegebenem Servo. Ein Lauf, der endet,
+ausgeschaltetem Ausgang und freigegebenem Servo. Ein Fehler während einer
+Suche, einer Probe oder der Prüfung schaltet den Prüfstand zudem auf SAFE:
+ein Wert an der Grenze von 3,0A, ein abgeschnittener Wert, 1,0A für 400ms,
+ein Fenster ohne Spannung der Schiene und die Fehler des automatischen Tests
+([Sicherheit, Fehler](Safety-de.md#fehler)). Ein Lauf, der endet,
 während er auf ARMED wartet, fordert zudem SAFE an: ein ARM, das er
 anforderte und das der Prüfstand noch nicht übernommen hat, schaltet den
 Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
@@ -911,9 +915,15 @@ Sensor keinen Magneten meldet.
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
-schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
-Prüfstand bleibt ARMED, außer das Ende war DISARM, STOP oder das
-Verlassen der Seite, die auf SAFE schalten. Ein Schritt, den der Lauf gepostet und
+schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Ein
+Fehler schaltet den Prüfstand statt der Freigabe auf SAFE: ein Netzteil, das
+nicht antwortet oder abgeschaltet hat, kein neuer Messwert, ein Ausgang, der
+nicht anging, ein nicht bestätigter Sollwert, eine Stufe über der Grenze,
+BLOCKIERT AB, Konstantstrom und jeder Grund des INA3221
+([Sicherheit, Fehler](Safety-de.md#fehler)). Auf SAFE schalten auch DISARM,
+STOP und das Verlassen der Seite. ARMED mit dem Servo in der Ruhelage bleibt
+der Prüfstand bei den Enden des Bedieners: ein Finger an den Bedienelementen,
+eine Änderung der Einstellungen, AUSGANG AUS und verlorene Touch-Ereignisse. Ein Schritt, den der Lauf gepostet und
 das Panel noch nicht gesendet hat, wenn der Prüfstand auf SAFE schaltet oder
 stoppt, wird nicht gesendet. Nach einem Lauf, den DISARM, STOP oder das
 Verlassen der Seite beendet hat, bleiben Horn und SOLL-PULSBREITE auf der

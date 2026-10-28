@@ -790,6 +790,9 @@ int wrap_text(gfx_canvas_t *c, int x, int y, int pitch, const char *text,
 float us_to_deg_f(float us);
 void post(servo_cmd_kind_t kind, uint16_t us);
 void release(void);
+/** @brief DISARM asked of an armed bench: the value leaves LIVE now.  Also
+ *         the automatic test's end on an error (servo_test_abort_error()). */
+void svs_ask_disarm(void);
 void stop_sweep(void);
 sweep_cfg_t sweep_cfg_now(void);
 

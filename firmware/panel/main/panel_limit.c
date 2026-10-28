@@ -6,8 +6,8 @@
  * Protocol 4.27, sense_limit_link.h: SETUP > SENSORS' LIMIT rows,
  * published by the settings observer on app_main and taken by the control
  * task, the page's service there, and the band alert when a channel's
- * window passed its limit.  An alert only: nothing here stops or
- * switches anything.
+ * window passed its limit.  A limit passed is an error of the bench as
+ * well: the bench SAFE and the supply off (bench_error_stop()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -96,8 +96,10 @@ static void limit_alerts(void)
 
 /*
  * SENSE_LIMIT, from the poll on every pass, armed or not: the page takes
- * a limit in any bank state, and a limit passed is an alert only.  Two
- * exchanges a call at most; an unanswered one ends the pass.
+ * a limit in any bank state.  A limit passed is an error: the bench SAFE
+ * and the supply off at the read that shows it, every channel at once, and
+ * the band's alert in its turn.  Two exchanges a call at most; an
+ * unanswered one ends the pass.
  */
 void sense_limit_service(void)
 {
@@ -129,6 +131,9 @@ void sense_limit_service(void)
         if (result == SENSE_LIMIT_LINK_NO_ANSWER) {
             break;
         }
+    }
+    if (sense_limit_link_take_trip(&s_sense_limit) != 0u) {
+        bench_error_stop();
     }
     limit_alerts();
     atomic_store(&s_sense_limits,
