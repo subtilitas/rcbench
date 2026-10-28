@@ -77,6 +77,21 @@
  *     same and sets LINK_KS_F_MUST_READ, and a supply found off or asked
  *     off ends as it does in PROGRAMMING: RAIL_OFF, then PWM.  Every
  *     other command is refused with LINK_KST_REF_BUSY.
+ *   - A REBOOT from PROGRAMMING with LINK_KS_W_CMD_LEAVE (4.30) runs the
+ *     cycle and then waits in LEAVING for LINK_KS_W_LEAVE_MS as read at
+ *     the command, counted from the end of RAIL_WAIT; a wait of 0 goes to
+ *     PWM at the end of RAIL_WAIT.  The pin stays the driver's and low
+ *     from the command to PWM.  In that wait an ABORT returns the port to
+ *     PROGRAMMING with KST_SES_ERR_ABORTED, the session as the cycle left
+ *     it (the backup ended, the image last read kept, LINK_KS_F_MUST_READ
+ *     clear), the supply on.  A stop
+ *     releases the pin: PWM with KST_SES_ERR_ABORTED, and with the
+ *     heartbeat not trusted the supply is switched off, as in RAIL_WAIT.
+ *     A supply found off or asked off ends the wait the same way, without
+ *     a second off time.  Every other command is refused with
+ *     LINK_KST_REF_BUSY.  The bit from PWM is refused with
+ *     LINK_KST_REF_NOT_PROGRAMMING, a wait above the range with
+ *     LINK_KST_REF_LEAVE_MS.
  *   - Leaving programming restores no earlier, higher voltage.
  *
  * A read that does not come within KST_PORT_SUPPLY_MS ends the cycle with
@@ -273,7 +288,8 @@ typedef struct {
     uint16_t back_mv;    /**< what RAIL_WAIT switches on at */
     uint16_t back_ma;                   /**< the current RAIL_WAIT switches on at, mA */
     uint16_t leave_ms;   /**< staged: how long the next LEAVE waits */
-    uint16_t wait_ms;    /**< how long the running LEAVE waits */
+    uint16_t wait_ms;    /**< how long the running LEAVE, or the REBOOT
+                              with then_leave after its cycle, waits */
     uint8_t  state;      /**< link_kst_state_t */
     uint8_t  port;                      /**< the programming port */
     uint8_t  pin;                       /**< the port's GPIO */
@@ -300,6 +316,7 @@ typedef struct {
                               read on */
     uint8_t  again;      /**< RAIL_OFF switches the supply on afterwards */
     uint8_t  from_pwm;   /**< the cycle started in PWM */
+    uint8_t  then_leave; /**< the running REBOOT ends in LEAVING (4.30) */
 } kst_port_t;
 
 /** @brief Prepare a port in LINK_KST_PWM.

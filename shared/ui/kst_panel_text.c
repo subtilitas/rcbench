@@ -95,7 +95,11 @@ static const int16_t k_fixed[][2] = {
     [KST_PROG_MSG_CYCLE_CUT]       = { TX_KP_M_CYCLE_CUT, -1 },
     [KST_PROG_MSG_LEFT_CYCLED]     = { TX_KP_M_LEFT, TX_KP_M_LEFT_CYCLED },
     [KST_PROG_MSG_LEFT_NOTE]       = { TX_KP_M_LEFT, TX_KP_M_LEFT_NOTE },
+    [KST_PROG_MSG_LEFT_CYCLED_OLD] = { TX_KP_M_LEFT_CYCLED,
+                                       TX_KP_M_CYCLED_NO_WAIT },
 };
+_Static_assert(KST_PROG_MSG_LEFT_CYCLED_OLD < KST_PROG_MSG_START,
+               "the fixed messages end below the start results");
 /* KP_M_ACT_AT_LEAVE and KP_M_LEFT_CYCLED name the off time. */
 _Static_assert(KST_PORT_RAIL_OFF_MS == 1000u,
                "the texts of the supply cycle name 1s");

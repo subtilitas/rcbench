@@ -121,6 +121,8 @@ static void finish(kst_link_t *k, kst_link_outcome_kind_t kind, uint8_t nack)
                            | ((uint32_t)r[RES(LINK_KS_DIFF_HI)] << 16);
             o->bad_regs = r[RES(LINK_KS_BAD_LO)]
                           | ((uint32_t)r[RES(LINK_KS_BAD_HI)] << 16);
+            o->state = (link_kst_state_t)LINK_KS_STATE_OF(
+                k->end_status[LINK_KS_STATE]);
         }
         k->outcome_new = true;
     }
@@ -203,6 +205,7 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
 {
     kst_link_start_t s;
     uint16_t cmd;
+    bool waits;
 
     if (k == NULL || r == NULL) {
         return KST_LINK_START_ARG;
@@ -211,14 +214,16 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
     if (s != KST_LINK_START_OK) {
         return s;
     }
+    waits = r->op == LINK_KST_OP_LEAVE || r->then_leave;
     if (r->op == LINK_KST_OP_NONE || r->op >= LINK_KST_OP_COUNT
         || r->op == LINK_KST_OP_ABORT || r->port >= LINK_PG_PORTS_MAX
         || (r->confirm && r->op != LINK_KST_OP_RESTORE)
-        || (r->op == LINK_KST_OP_LEAVE
-            && r->leave_ms > LINK_KST_LEAVE_MS_MAX)) {
+        || (r->then_leave && r->op != LINK_KST_OP_REBOOT)
+        || (waits && r->leave_ms > LINK_KST_LEAVE_MS_MAX)) {
         return KST_LINK_START_ARG;
     }
-    if (r->op == LINK_KST_OP_LEAVE && k->minor < LINK_MINOR_KST_LEAVE) {
+    if ((r->op == LINK_KST_OP_LEAVE && k->minor < LINK_MINOR_KST_LEAVE)
+        || (r->then_leave && k->minor < LINK_MINOR_KST_CYCLE_WAIT)) {
         return KST_LINK_START_NO_OP;
     }
     if (op_writes(r->op) && !r->write_enabled) {
@@ -248,12 +253,15 @@ kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r)
     k->supply_due = r->op == LINK_KST_OP_ENTER;
     k->supply[0] = r->supply_mv;
     k->supply[1] = r->supply_ma;
-    k->leave_due = r->op == LINK_KST_OP_LEAVE;
+    k->leave_due = waits;
     k->leave_ms = r->leave_ms;
 
     cmd = LINK_KS_W_CMD_OF(r->op, r->port);
     if (r->confirm) {
         cmd |= LINK_KS_W_CMD_CONFIRM;
+    }
+    if (r->then_leave) {
+        cmd |= LINK_KS_W_CMD_LEAVE;
     }
     k->cmd_proto[LINK_KS_W_CMD] = cmd;
     k->cmd_proto[LINK_KS_W_SEQ] = 0u;

@@ -242,7 +242,7 @@ Das Panel schaltet die Versorgung deshalb aus und ein, wo es kann:
 | Schritt | Ein PD mini antwortet, sein Ausgang an | Ein PD mini antwortet, sein Ausgang aus | Kein PD mini |
 | --- | --- | --- | --- |
 | **VERBINDEN** | der Ausgang 1000ms aus, an mit der niedrigeren der zwei Spannungen und der niedrigeren der zwei Stromgrenzen, die Leitung 1000ms auf Low, dann die Einstiegssequenz | der Ausgang an, die Leitung 1000ms auf Low, dann die Einstiegssequenz | die Einstiegssequenz 250ms nach dem Tippen: 50ms ohne Puls, 100ms Low, 100ms der Low-Leitung des Einstiegs. Der Bediener schaltet das Servo kurz davor ein |
-| **VERLASSEN** nach einem Schreiben, Zurückspielen oder Lösen des Pairings | der Ausgang 1000ms aus, an, die Leitung 1000ms auf Low, dann PWM | -- | der Port kehrt zu PWM zurück; die Werte wirken, nachdem der Bediener die Servoversorgung aus- und wieder eingeschaltet hat |
+| **VERLASSEN** nach einem Schreiben, Zurückspielen oder Lösen des Pairings | der Ausgang 1000ms aus, an, die Leitung 1000ms und dann für **WARTEZEIT VOR PWM** auf Low, dann PWM | -- | der Port kehrt zu PWM zurück; die Werte wirken, nachdem der Bediener die Servoversorgung aus- und wieder eingeschaltet hat |
 | **VERLASSEN** ohne Geschriebenes | der Port kehrt nach **WARTEZEIT VOR PWM** zu PWM zurück; die Versorgung bleibt, wie sie ist | dasselbe | dasselbe |
 | Ein Schreiben | kein Zyklus: das Rücklesen läuft im Programmiermodus | dasselbe | dasselbe |
 
@@ -385,7 +385,8 @@ folgen dem, was der Port gestellt hat.
 
 Ohne PD mini werden die Spannung und die Stromgrenze gespeichert und nicht
 angewendet. **WARTEZEIT VOR PWM** wendet ein IOmcu ab Link-Version 4.15
-beim [Verlassen](#verlassen) an, mit und ohne PD mini.
+beim [Verlassen](#verlassen) an, mit und ohne PD mini, und nach dem
+Versorgungszyklus eines **VERLASSEN** einer ab 4.30.
 
 ## Reiter SERVO
 
@@ -1213,7 +1214,8 @@ Sitzung zu beenden und den Port an Servo-PWM zurückzugeben. Nach einem
 Schreiben, einem Zurückspielen oder einem Lösen des Pairings läuft der Weg
 zurück mit antwortendem PD mini durch
 [den Versorgungszyklus](#der-versorgungszyklus): der Ausgang 1000ms aus,
-an, die Leitung 1000ms auf Low, dann PWM. In jedem anderen Fall verlässt
+an, die Leitung 1000ms und dann für **WARTEZEIT VOR PWM** auf Low, dann
+PWM. In jedem anderen Fall verlässt
 der Programmierer ohne Aus- und Einschalten der Versorgung: das Servo
 bleibt versorgt, der Ausgang eines PD mini bleibt mit seiner Spannung und
 Stromgrenze an, und das Signal des Testers folgt auf demselben Port. Ob ein
@@ -1267,9 +1269,9 @@ mit **SERVO-TESTER** auf diesem Port und **PORT-PWM** ein. Das nächste
 ### Das Warten vor PWM
 
 **WARTEZEIT VOR PWM** ist 0 bis 10 000ms, ab Werk 100ms. Ein
-**VERLASSEN** durch den Versorgungszyklus wendet sie nicht an: der Port
-hält die Leitung 1000ms auf Low, nachdem die Versorgung an liest, wie
-auch immer die Einstellung ist. Der Ziffernblock
+**VERLASSEN** durch den Versorgungszyklus wendet sie nach dem Zyklus an:
+der Port hält die Leitung 1000ms auf Low, nachdem die Versorgung an liest,
+und dann für **WARTEZEIT VOR PWM** (IOmcu ab Link-Version 4.30). Der Ziffernblock
 nimmt keinen Wert über 10 000ms an, und mit einem solchen wird kein
 Verlassen gesendet. Ein Warten von 0ms endet beim nächsten Durchlauf des
 IOmcu. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
@@ -1281,6 +1283,17 @@ Das Warten, das ein Servo braucht, ist nicht gemessen.
 | **STOP** oder ein Wechsel des Prüfstands auf SAFE, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES AUSLESEN** |
 | Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 1000ms aus, dann ist der Port in PWM |
 | Der Link fällt aus | wie [ein Ausfall des Links](#stopps-und-ausfälle) |
+
+Während des Wartens nach dem Versorgungszyklus lautet die Zustandszeile
+ebenso `Programmiermodus wird verlassen. PWM ist noch aus.` Der Zyklus ist
+gelaufen: die geschriebenen Werte wirken ab diesem Einschalten.
+
+| Während des Wartens nach dem Versorgungszyklus | Wirkung |
+| --- | --- |
+| **ABBRECHEN** | der Port bleibt im Programmiermodus, die Leitung auf Low und der Ausgang an; `Verlassen wurde vor dem Ende der Wartezeit unterbrochen.` Das Servo ist nicht mehr im Programmiermodus, und die Sitzung hält kein Servo; **VERLASSEN** wird sofort wieder angenommen und verlässt ohne zweiten Zyklus, nach **WARTEZEIT VOR PWM** |
+| **STOP** | der Port gibt den Pin frei und ist in PWM; der Ausgang ist aus; die Zeile von STOP |
+| Der Ausgang der Versorgung liest aus oder wird ausgeschaltet | der Port ist sofort in PWM; `Der Versorgungszyklus wurde abgebrochen. Der Ausgang des PD mini bleibt aus.` |
+| Der Link fällt aus | der Port ist in PWM, der Ausgang aus |
 
 ### Ein Port, der nicht verlassen wird
 
@@ -1313,6 +1326,17 @@ keines.
 Mit einem PD mini an einem solchen IOmcu beendet **STOP** oder der
 ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 1000ms aus, und der Port ist wieder in PWM.
+
+### Ein IOmcu vor Link-Version 4.30
+
+Die Link-Versionen 4.15 bis 4.29 haben kein Warten nach dem
+Versorgungszyklus. Das Panel sendet einem solchen IOmcu den Zyklus ohne
+es: der Port ist 1000ms, nachdem die Versorgung an liest, in PWM, was auch
+immer in **WARTEZEIT VOR PWM** steht. Steht **WARTEZEIT VOR PWM** über 0,
+lautet die Meldung danach
+`Versorgung 1s aus und wieder ein: die geschriebenen Werte wirken.` und
+`Diese IOmcu-Firmware wendet nach dem Zyklus keine WARTEZEIT VOR PWM an.`
+Bei 0ms ist es die Meldung eines IOmcu mit 4.30.
 
 ## Stopps und Ausfälle
 
@@ -1378,9 +1402,9 @@ Codes.
 - **PRÜFEN** nach einem Schreiben liest die Register im Programmiermodus,
   vor dem Einschalten, ab dem die Werte wirken. Es zeigt nicht, wonach das
   Servo handelt; ein **VERBINDEN** nach **VERLASSEN** liest das.
-- Ein **VERLASSEN** durch den Versorgungszyklus hält die Leitung 1000ms auf
-  Low, nachdem die Versorgung an liest, und wendet **WARTEZEIT VOR PWM**
-  nicht an.
+- Ein **VERLASSEN** durch den Versorgungszyklus an einem IOmcu vor
+  Link-Version 4.30 hält die Leitung 1000ms auf Low, nachdem die
+  Versorgung an liest, und wendet **WARTEZEIT VOR PWM** nicht an.
 - 1000ms aus ist der Wert des Eigentümers. Die kürzeste Zeit ohne
   Spannung, die den Programmiermodus beendet oder einen geschriebenen Wert
   wirken lässt, ist nicht gemessen; 4s und mehr wirkten an einem Chaservo.
@@ -1398,7 +1422,8 @@ Codes.
   **ZURÜCKSPIELEN** und **VERLASSEN** verlassen, oder durch **STOP** mit
   ausgeschalteter Versorgung.
 - **WARTEZEIT VOR PWM** wird von einem IOmcu vor Link-Version 4.15 nicht
-  angewendet, und nicht beim Verlassen eines unklaren Ports ohne PD mini.
+  angewendet, nach dem Versorgungszyklus nicht von einem vor 4.30, und
+  nicht beim Verlassen eines unklaren Ports ohne PD mini.
   Das Warten, das ein Servo braucht, ist nicht gemessen. Die Restzeit
   eines laufenden Wartens wird nicht angezeigt.
 - Ohne PD mini werden die Programmierspannung und die Stromgrenze nicht
@@ -1556,7 +1581,11 @@ und ein Link-Ausfall in der Zeit aus; den Zyklus über den Überlauf der Uhr
 bei 2^32ms; **VERLASSEN** nach einem Schreiben mit und ohne PD mini, ohne
 Schreiben, mit **ABBRECHEN**, **STOP** und einem Link-Ausfall im Zyklus,
 an einem IOmcu ohne LEAVE und für eine Sitzung, deren Beginn das Panel
-nicht sah. `test_kst_panel_type` fährt die Zeile TYPE, den Typ vor einem
+nicht sah; das Warten nach diesem Zyklus bei 0, 1, 3000 und 10 000ms, mit
+**ABBRECHEN**, **STOP** vor und nach einem **ABBRECHEN**, einem
+Link-Ausfall und dem ausgeschalteten Ausgang darin, über den Überlauf bei
+2^32ms und an einem IOmcu vor Link-Version 4.30 mit und ohne Warten.
+`test_kst_panel_type` fährt die Zeile TYPE, den Typ vor einem
 Laden, eine abgebrochene Liste, ein Speichern des gesetzten Typs, die
 Zeilen nach einem Schreiben und auf der Seite von VERLASSEN mit und ohne
 PD mini. `test_kst_panel_limrun` fährt den Endlagenlauf mit dem Servo

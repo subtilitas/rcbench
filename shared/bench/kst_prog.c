@@ -492,7 +492,10 @@ static kst_link_request_t request(const kst_prog_t *p, link_kst_op_t op)
         r.supply_mv = p->supply_mv;
         r.supply_ma = p->supply_ma;
     }
-    if (op == LINK_KST_OP_LEAVE) {
+    /* A LEAVE's REBOOT waits after its cycle, on an IOmcu of link 4.30. */
+    r.then_leave = op == LINK_KST_OP_REBOOT && p->cycle == CYCLE_LEAVE
+                   && !p->cycle_old && p->pwm_wait_ms != 0u;
+    if (op == LINK_KST_OP_LEAVE || r.then_leave) {
         r.leave_ms = p->pwm_wait_ms;
     }
     r.write_enabled = p->write_enabled;
@@ -1182,7 +1185,10 @@ static void cycle_enter(kst_prog_t *p, bool off)
  * A CONNECT's cycle that ended with the output off, or that the port
  * refused because the output was off already, goes on with the ENTER.  A
  * LEAVE's cycle ends the session; one the port refused because the output
- * was off goes on as LEAVE.  Every other end is the operation's own.
+ * was off goes on as LEAVE.  An ABORT in the wait after a LEAVE's cycle
+ * (link 4.30) leaves the port in PROGRAMMING, and the model forgets the
+ * servo the cycle took out of programming mode.  Every other end is the
+ * operation's own.
  *
  * @param p The programmer state.
  * @param o The outcome of the REBOOT.
@@ -1223,7 +1229,16 @@ static bool cycle_end(kst_prog_t *p, const kst_link_outcome_t *o)
         return false;
     }
     session_gone(p);
-    (void)kst_prog_say(p, !cut ? KST_PROG_MSG_LEFT_CYCLED
+    if (cut && o->state == LINK_KST_PROGRAMMING) {
+        /* The cycle ran and the values act: the next LEAVE has no cycle
+         * owed. */
+        p->wrote_known = true;
+        (void)kst_prog_say(p, p->f.stopped ? KST_PROG_MSG_STOPPED
+                                           : KST_PROG_MSG_LEAVE_CUT, 0);
+        return true;
+    }
+    (void)kst_prog_say(p, !cut ? (p->cycle_old ? KST_PROG_MSG_LEFT_CYCLED_OLD
+                                               : KST_PROG_MSG_LEFT_CYCLED)
                        : p->f.stopped ? KST_PROG_MSG_STOPPED
                                       : KST_PROG_MSG_CYCLE_CUT, 0);
     return true;
@@ -1520,6 +1535,14 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         } else if (f->answer == KST_LINK_START_NO_OP
                    && p->op == LINK_KST_OP_LEAVE) {
             leave_old(p);
+        } else if (f->answer == KST_LINK_START_NO_OP
+                   && p->cycle == CYCLE_LEAVE && !p->cycle_old) {
+            /* Below link 4.30: the REBOOT without the wait after it. */
+            kst_link_request_t r;
+
+            p->cycle_old = true;
+            r = request(p, LINK_KST_OP_REBOOT);
+            kst_prog_send(p, &r);
         } else {
             if (is_write(p->op)) {
                 /* The IOmcu refused it: no field was written. */
@@ -2759,7 +2782,8 @@ bool kst_prog_leave_cycles(const kst_prog_t *p)
  * power-up (docs/ServoProgrammer.md, "The power cycle"):
  * with a PD mini answering and a write owed its power cycle, REBOOT (link
  * 4.13) switches the supply off for KST_PORT_RAIL_OFF_MS and on again,
- * holds the line low for KST_PORT_RAIL_WAIT_MS and gives the pin to PWM.
+ * holds the line low for KST_PORT_RAIL_WAIT_MS, from link 4.30 for
+ * pwm_wait_ms more, and gives the pin to PWM.
  *
  * LEAVE (link 4.15) sends no frame and switches nothing: the port holds the
  * line low for pwm_wait_ms and then gives the pin back to the PWM generator.
@@ -2786,6 +2810,7 @@ kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p)
                   && (fl & LINK_KS_F_RAIL) == 0u;
     p->cycle = kst_prog_leave_cycles(p) ? CYCLE_LEAVE : CYCLE_NONE;
     p->cycle_cut = false;
+    p->cycle_old = false;
     r = request(p, p->cycle == CYCLE_LEAVE ? LINK_KST_OP_REBOOT
                    : p->leave_doubt        ? LINK_KST_OP_POWER_CYCLED
                                            : LINK_KST_OP_LEAVE);
