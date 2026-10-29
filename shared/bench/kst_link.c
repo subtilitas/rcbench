@@ -791,7 +791,15 @@ bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out)
     }
     *out = k->outcome;
     k->outcome_new = false;
+    if (kst_link_outcome_fault(out)) {
+        ++k->faults;
+    }
     return true;
+}
+
+uint32_t kst_link_faults(const kst_link_t *k)
+{
+    return k != NULL ? k->faults : 0u;
 }
 
 bool kst_link_outcome_fault(const kst_link_outcome_t *o)

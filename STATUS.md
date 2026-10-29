@@ -124,7 +124,7 @@ is taken in a gap ahead of the save that needs it.
 | CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test | built |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's calls in `panel_supply.c`, `panel_limit.c` and `panel_log.c` are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
+| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a supply a port holds left to the port by an older IOmcu, OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
 | IOmcu firmware | answers the identity, status, control, bench and three output pages; fails safe at 200ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry: speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
 | IOmcu firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the IOmcu restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7s watchdog returns to the old image. The IOmcu refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the IOmcu erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on a question that takes the 2s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
@@ -223,7 +223,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 348 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 349 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_pdmini`,
@@ -235,7 +235,7 @@ The host suite is 348 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`, `test_outputs_hw_ports`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_frame_watch`, `test_error_stop`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_error`, `test_servo_limrun_report`,
+`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_error`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_report_width`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_supply_hold`, `test_supply_boot`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`, `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_outputs_screen_draw`, `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_layout`, `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_rescan`, `test_textkey_editor`, `test_textkey_see`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_cycle_wait`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_mdns`, `test_wa_guard`, `test_wa_api`, `test_wa_api_file`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`, `test_fm_name` and `test_wall_clock`. The harness is
@@ -627,7 +627,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
-| `shared/ui/supply_screen.c` | 472 | 466 | 98.7% |
+| `shared/ui/supply_screen.c` | 454 | 448 | 98.7% |
 | `shared/ui/supply_events.c` | 324 | 322 | 99.4% |
 | `shared/ui/supply_draw.c` | 397 | 388 | 97.7% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
@@ -635,7 +635,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_textkey.c` | 521 | 507 | 97.3% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
-| `shared/ui/servo_screen_sweep.c` | 472 | 469 | 99.4% |
+| `shared/ui/servo_screen_sweep.c` | 471 | 468 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 382 | 378 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 289 | 275 | 95.2% |
 | `shared/ui/servo_screen_draw.c` | 530 | 517 | 97.5% |
@@ -728,6 +728,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/safety/touch_loss.c` | 52 | 52 | 100.0% |
 | `shared/safety/frame_watch.c` | 21 | 21 | 100.0% |
 | `shared/safety/error_stop.c` | 14 | 14 | 100.0% |
+| `shared/safety/error_sites.c` | 51 | 51 | 100.0% |
 | `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
 | `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
@@ -772,7 +773,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
 | `shared/outputs/page_console.c` | 577 | 552 | 95.7% |
 | `shared/outputs/prog_port.c` | 405 | 405 | 100.0% |
-| `shared/bench/kst_link.c` | 446 | 444 | 99.5% |
+| `shared/bench/kst_link.c` | 450 | 448 | 99.6% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
 | `shared/bench/hitec_prog.c` | 652 | 652 | 100.0% |
 | `shared/bench/hitec_prog_write.c` | 520 | 519 | 99.8% |
@@ -824,7 +825,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 255 | 253 | 99.2% |
-| `shared/bench/supply_link.c` | 331 | 321 | 97.0% |
+| `shared/bench/supply_link.c` | 325 | 315 | 96.9% |
 | `shared/bench/sense_link.c` | 601 | 579 | 96.3% |
 | `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
 | `shared/bench/sense_map_link.c` | 316 | 305 | 96.5% |
@@ -836,7 +837,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 300 | 287 | 95.7% |
+| `shared/bench/log_writer.c` | 300 | 288 | 96.0% |
 | `shared/bench/log_cols.c` | 47 | 47 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
@@ -871,7 +872,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_guard.c` | 68 | 68 | 100.0% |
 | `shared/webaccess/wa_api.c` | 381 | 373 | 97.9% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **65299** | **64030** | **98.1%** |
+| **total** | **65329** | **64061** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
