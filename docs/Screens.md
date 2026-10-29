@@ -5182,7 +5182,7 @@ in its flash.
 ### Pick a pin
 
 Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
-On the [rbmod carrier](Carrier.md) the tile is not shown.
+On the [rbmod carrier](Carrier.md) the tile opens [LAYOUT](#layout) instead.
 Over the open protocol list the home tag closes the list, choosing
 nothing, and the screen stays.
 The same binding the
@@ -5439,6 +5439,30 @@ Pages the screen cannot describe — one pin in two slots, a rate no entry
 offers, a pin that is not on the header — are shown as such and not as
 nothing configured: see [A binding that is not
 confirmed](#a-binding-that-is-not-confirmed).
+
+### Layout
+
+LAYOUT is behind the PICK A PIN tile on SETUP while the IOmcu reports a
+board with soldered pins, the [rbmod carrier](Carrier.md). The tile reads
+`CONNECTORS AND PINS` there. The home tag leads back to SETUP. The screen
+drives nothing and takes no tap.
+
+![LAYOUT on the carrier](img/layout-rbmod.png)
+
+| Column | Rows | Each row |
+| --- | --- | --- |
+| J1, `PROGRAMMING PORTS` | positions 1 to 4: PROGP04, PROGP01, PROGP02, PROGP03 | the position, the role, its GPIO and the net on its +, VCC_PROGPORT; on the right `PROGRAMMING` |
+| J2, `SERVO OUTPUTS` | positions 1 to 4: PWM03, PWM02, PWM01, PWM04 | the same, with VCC_SERVOPORT_B on positions 1 and 2 and VCC_SERVOPORT_A on 3 and 4; on the right the protocol bound on the output, `OFF` for none, `NOT READ` until the binding of this board is read |
+| `OTHER CONNECTORS` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NOT DRIVEN`), J6 PD MINI, J9 TAP, PROG 5V EN on no connector | the name, what it carries, its GPIO |
+
+The line under the columns reads
+`A REV 1 BOARD NEEDS TWO CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
+([Carrier: Rev 1 rework](Carrier.md#rev-1-rework)).
+
+A protocol bound or let go on OUTPUTS, and a change of board, repaint the
+screen. On a board whose pins are chosen it reads
+`THIS BOARD HAS NO SOLDERED PINS.` and
+`ITS PINS ARE CHOSEN ON OUTPUTS AND PICK A PIN.`.
 
 ## Balancing
 

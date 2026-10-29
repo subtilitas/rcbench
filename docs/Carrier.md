@@ -113,9 +113,14 @@ fixed:
   ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
 - SETUP > INTERFACES shows Sensor SDA and SCL, Tap pin and PD mini TX and
   RX at the carrier's pins, with no keys and no keypad.
-- The PICK A PIN tile is not on SETUP.
+- The PICK A PIN tile opens LAYOUT: J1 and J2 in their position order
+  with each position's role, GPIO, net on its + and the protocol bound
+  on it, and the other connectors
+  ([Screens: Layout](Screens.md#layout)).
 
-![SETUP on the carrier, without PICK A PIN](img/setup-rbmod.png)
+![SETUP on the carrier, LAYOUT in PICK A PIN's place](img/setup-rbmod.png)
+
+![LAYOUT](img/layout-rbmod.png)
 
 ## Rev 1 rework
 

@@ -1957,6 +1957,7 @@ static ui_screen_id_t id_of(const char *name)
         { "panel-update", SCREEN_UPDATE },
         { "updates",    SCREEN_UPDATES },
         { "upd-remind", SCREEN_UPD_REMIND },
+        { "layout",     SCREEN_LAYOUT },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -3146,8 +3147,9 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        pins held, before the screen is posed.  outputs-rbmod: SERVO PWM
  *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
- *        GP13.  setup-rbmod: the hub without PICK A PIN.
+ *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
  *        setup-rbmod-iface: INTERFACES with its pins soldered.
+ *        layout-rbmod: LAYOUT with the same binding.
  * @param id   The screen of the shot.
  * @param view The golden's name.
  * @return true when the view is one of these and OUTPUTS is posed.
@@ -3160,6 +3162,15 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
     const uint16_t brd = OUTBIND_BOARD_RBMOD;
     ui_board_set(brd);
     (void)ui_board_apply_pins(NULL);
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, brd);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    (void)outbind_toggle(&b, outbind_index_of(brd, 2u));
+    (void)outbind_toggle(&b, outbind_index_of(brd, 4u));
+    outbind_set_proto(&b, proto_named("DSHOT300"));
+    (void)outbind_toggle(&b, outbind_index_of(brd, 1u));
+    outputs_screen_set_binding(&b);
     if (id != SCREEN_OUTPUTS) {
         return false;
     }
@@ -3175,15 +3186,6 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
     }
     port_view_set(&v);
     outputs_screen_set_prog_ports(4u, pins);
-    outbind_t b;
-    outbind_init(&b);
-    outbind_set_board(&b, brd);
-    outbind_set_proto(&b, proto_named("SERVO PWM"));
-    (void)outbind_toggle(&b, outbind_index_of(brd, 2u));
-    (void)outbind_toggle(&b, outbind_index_of(brd, 4u));
-    outbind_set_proto(&b, proto_named("DSHOT300"));
-    (void)outbind_toggle(&b, outbind_index_of(brd, 1u));
-    outputs_screen_set_binding(&b);
     outputs_screen_set_result(OUTPUTS_OK);
     if (strcmp(view, "outputs-rbmod-port") == 0) {
         outputs_screen_open_on_port(0u);

@@ -7,8 +7,8 @@
  * board the IOmcu reports, once per change of board, and each one that
  * moves is announced; on the carrier the Sensor SDA row has no keys, opens
  * no keypad and says it is soldered; the PD mini's one-pin rule reads the
- * pins in force; PICK A PIN is no tile on the carrier and opens on the
- * module.
+ * pins in force; PICK A PIN's tile opens LAYOUT on the carrier and
+ * PICK A PIN on the module.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -177,21 +177,25 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
  * (settings_screen_int.h, test_settings_pins_hub). */
 #define PICKER_TILE 5
 
-TEST_CASE(pick_a_pin_is_no_tile_on_the_carrier)
+TEST_CASE(pick_a_pins_tile_opens_board_layout_on_the_carrier)
 {
     fresh_hub();
     ui_board_set(RBMOD);
     const int t = PICKER_TILE;
-    CHECK(!settings_hub_tile_shown(t));
-    CHECK(settings_hub_tile_shown(t - 1));     /* OUTPUTS stays */
-    CHECK(!settings_hub_tile_shown(-1));
-    CHECK(!settings_hub_tile_shown(settings_hub_tiles()));
-    tap(tile_x(t), tile_y(t));
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(settings_hub_tile_screen(t), SCREEN_LAYOUT);
+    CHECK_EQ(settings_hub_tile_screen(t - 1), SCREEN_OUTPUTS);
+    CHECK_EQ(settings_hub_tile_screen(0), SCREEN_SETUP);
+    CHECK_EQ(settings_hub_tile_screen(-1), SCREEN_COUNT);
+    CHECK_EQ(settings_hub_tile_screen(settings_hub_tiles()), SCREEN_COUNT);
+    CHECK(settings_screen_opens(SCREEN_LAYOUT));
     ui_router_render(&s_c, 0);
+    tap(tile_x(t), tile_y(t));
+    CHECK_EQ(ui_router_current(), SCREEN_LAYOUT);
+    CHECK_EQ(ui_router_parent(SCREEN_LAYOUT), SCREEN_SETUP);
+    ui_router_goto(SCREEN_SETUP);
 
     ui_board_set(MODULE);
-    CHECK(settings_hub_tile_shown(t));
+    CHECK_EQ(settings_hub_tile_screen(t), SCREEN_PICKER);
     tap(tile_x(t), tile_y(t));
     CHECK_EQ(ui_router_current(), SCREEN_PICKER);
 }
@@ -202,6 +206,6 @@ int main(void)
     RUN(the_interface_pins_follow_the_board_once_per_change);
     RUN(the_pd_minis_one_pin_rule_reads_the_pins_in_force);
     RUN(a_soldered_pin_row_has_no_keys_and_says_so);
-    RUN(pick_a_pin_is_no_tile_on_the_carrier);
+    RUN(pick_a_pins_tile_opens_board_layout_on_the_carrier);
     return test_summary("settings_carrier");
 }

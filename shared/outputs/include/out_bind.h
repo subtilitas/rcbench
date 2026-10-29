@@ -121,6 +121,37 @@ typedef struct {
  *         PROGP04). */
 #define OUTBIND_FIXED_PROGS 4u
 
+/** @brief The positions a connector of a board with soldered pins has, at
+ *         most. */
+#define OUTBIND_CONN_POSITIONS 4u
+
+/** @brief What a connector's positions carry. */
+typedef enum {
+    OUTBIND_CONN_PROG = 0, /**< programming ports: roles prog[]           */
+    OUTBIND_CONN_OUT,      /**< servo outputs: roles out[]                */
+} outbind_conn_kind_t;
+
+/**
+ * @brief One signal connector of a board with soldered pins, its positions
+ *        in the order the connector numbers them.
+ *
+ * Each position is signal, + and GND; @p rail names the net on its +.
+ */
+typedef struct {
+    const char *name;                         /**< "J1"                   */
+    uint8_t     kind;                         /**< outbind_conn_kind_t    */
+    uint8_t     count;                        /**< positions, at most 4   */
+    uint8_t     gpio[OUTBIND_CONN_POSITIONS]; /**< signal of position n+1 */
+    const char *rail[OUTBIND_CONN_POSITIONS]; /**< net on its +           */
+} outbind_conn_t;
+
+/** @brief One other connector or net of such a board, and its pins. */
+typedef struct {
+    const char *name;     /**< "J5", or "" for a net on no connector       */
+    const char *what;     /**< what it carries: "SENSOR I2C"               */
+    uint8_t     gpio[2];  /**< its pins, OUTBIND_NO_GPIO for none          */
+} outbind_other_t;
+
 /**
  * @brief The pin of every role on a board whose pins are soldered.
  *
@@ -141,6 +172,10 @@ typedef struct {
     uint8_t tap;          /**< the phase tap                                */
     uint8_t prog_5v_en;   /**< enable of the programming ports' 5V DC-DC    */
     uint8_t heartbeat;    /**< the safety heartbeat from the panel          */
+    const outbind_conn_t  *conns;      /**< the signal connectors          */
+    uint8_t                conn_count; /**< entries in `conns`             */
+    const outbind_other_t *others;     /**< the other connectors and nets  */
+    uint8_t                other_count;/**< entries in `others`            */
 } outbind_roles_t;
 
 /**

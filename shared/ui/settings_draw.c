@@ -67,10 +67,7 @@ static const ui_tile_look_t k_hub_look = {
 static void draw_hub(gfx_canvas_t *c)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
-        if (!settings_hub_tile_shown(i)) {
-            continue;
-        }
-        const hub_tile_t *t = &k_tiles[i];
+        const hub_tile_t *t = stg_hub_tile(i);
         const bool down = (s.hit_kind == HIT_TILE && s.hit_index == i);
         if (t->cat < 0) {
             ui_tile(c, stg_tile_rect(i), &k_hub_look, t->icon,

@@ -455,6 +455,7 @@ SCREENS = {
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
     # The rbmod carrier: no PICK A PIN tile, and soldered pin rows.
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
+    "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
     "setup-rbmod-iface": ("setup-rbmod-iface.png", "setup", "dark"),
     # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
@@ -709,6 +710,7 @@ FIT_ONLY = {
     "updates-cu-failed":   (None, "updates", "dark"),
     "updates-cu-usb":      (None, "updates", "dark"),
     "updates-cu-noboard":  (None, "updates", "dark"),
+    "layout-module":       (None, "layout", "dark"),
     "updates-cu-unsafe":   (None, "updates", "dark"),
     "updates-cu-radio":    (None, "updates", "dark"),
     "updates-cu-install":  (None, "updates", "dark"),

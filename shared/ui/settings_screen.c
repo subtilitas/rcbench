@@ -178,6 +178,11 @@ int settings_hub_tiles(void)
     return TILE_COUNT;
 }
 
+/** @brief LAYOUT's tile, in PICK A PIN's place on a board whose pins
+ *         are soldered: that board has no pin to pick. */
+static const hub_tile_t k_layout_tile =
+    HUB_SCREEN(SCREEN_LAYOUT, TX_SET_HUB_LAYOUT, ui_icon_board);
+
 bool settings_screen_opens(ui_screen_id_t id)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
@@ -185,7 +190,7 @@ bool settings_screen_opens(ui_screen_id_t id)
             return true;
         }
     }
-    return false;
+    return id == k_layout_tile.screen;
 }
 
 int settings_screen_category(void)
@@ -200,20 +205,28 @@ gfx_rect_t stg_tile_rect(int i)
     return r;
 }
 
-bool settings_hub_tile_shown(int i)
+const hub_tile_t *stg_hub_tile(int i)
+{
+    const hub_tile_t *t = &k_tiles[i];
+    if (t->cat < 0 && t->screen == SCREEN_PICKER && ui_board_roles() != NULL) {
+        return &k_layout_tile;
+    }
+    return t;
+}
+
+ui_screen_id_t settings_hub_tile_screen(int i)
 {
     if (i < 0 || i >= TILE_COUNT) {
-        return false;
+        return SCREEN_COUNT;
     }
-    /* A board that solders its pins has no pin to pick. */
-    return !(k_tiles[i].cat < 0 && k_tiles[i].screen == SCREEN_PICKER
-             && ui_board_roles() != NULL);
+    const hub_tile_t *t = stg_hub_tile(i);
+    return (t->cat < 0) ? t->screen : SCREEN_SETUP;
 }
 
 static int tile_at(int x, int y)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
-        if (settings_hub_tile_shown(i) && gfx_rect_contains(stg_tile_rect(i), x, y)) {
+        if (gfx_rect_contains(stg_tile_rect(i), x, y)) {
             return i;
         }
     }
@@ -691,7 +704,7 @@ static void tick(float dt_s)
 /* A tap on tile @p index: a category's list, or a screen of its own. */
 static void open_tile(int index)
 {
-    const hub_tile_t *t = &k_tiles[index];
+    const hub_tile_t *t = stg_hub_tile(index);
     if (t->cat < 0) {
         ui_router_goto(t->screen);
         return;
