@@ -742,6 +742,12 @@ void wifi_service(bool armed, uint32_t stops_now)
     if ((req & WIFI_REQ_CODE_OFF) != 0u) {
         wifi_access_set_code(false);
     }
+    if ((req & (WIFI_REQ_AP | WIFI_REQ_JOIN)) != 0u) {
+        /* The file API's rules keep the log folders in force; they change
+         * only on SETUP, never while WI-FI is open. */
+        wifi_access_set_log_dirs(log_viewer_tab_dir(LOG_TAB_USER),
+                                 log_viewer_tab_dir(LOG_TAB_BENCH));
+    }
     if ((req & WIFI_REQ_AP) != 0u) {
         (void)wifi_access_start(WA_MODE_AP, gate);
     }

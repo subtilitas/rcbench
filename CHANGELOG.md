@@ -35,6 +35,14 @@ history is in git.
   the image of the board it reports. A board it carries no image for gets
   no offer, and UPDATES reads
   `No IOmcu image for this board in this panel build.`.
+- The Wi-Fi page's server answers a file API for a script, reads only:
+  `GET /api/status`, `/api/list` (a page of up to 48 entries of a folder,
+  by the entry at its edge), `/api/info` (an entry's size and time; a
+  folder's entries) and `/api/file` (a text file up to 1MiB and 65,536 line
+  ends, byte for byte, with an ETag of its CRC-32 and its line ends). The
+  card calls are FILES' own (`fm_req.h`), with its rules and refusals; a
+  refusal is an HTTP status, a reason word and a text in EN or DE
+  ([Screens, The file API](docs/Screens.md#the-file-api)).
 
 ### Changed
 
