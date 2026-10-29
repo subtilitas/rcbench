@@ -197,7 +197,7 @@ the overlay is open again on PROGRAM at the next entry.
 | `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4V, the current limit outside 50 to 3000mA, or the voltage the session runs at less than 0.7V under the input voltage of the PD mini; the supply is not changed |
 | `Supply below 4.8V. Programming requires at least 4.8V.` | the programming voltage, or the voltage of an output that is on, is under 4.8V; the supply is not changed. With an output that is on and set under 4.8V the panel sends nothing to the IOmcu |
 | `The supply did not switch within 3000ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
-| `The IOmcu has not yet accepted the link. Try again.` | the IOmcu does not trust the heartbeat, or the link was silent |
+| `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.` | the IOmcu does not trust the heartbeat (the band shows FAULT 10), or the link was silent for 200ms and the failsafe latched (FAULT 01). Only the CLEAR an ARM writes lifts it; an IOmcu restart can leave FAULT 01 latched |
 
 ![A port without a pin](img/servo-kst-nopin.png)
 
@@ -313,6 +313,16 @@ right card show the same: the set points, the sliders, the steps and
 `Servo programmer.`. The limits of the SUPPLY screen's settings stay
 editable; a limit lowered under a set point reaches the set point when the
 port is back in PWM.
+
+The port's set points stay on the SUPPLY screen and the SET row after the
+port is back in PWM for as long as the output it left on stays on. The set
+points from before the session come back at the first read of the supply
+that shows no port holding it and the output off: at once where the session
+ends with the output off, at the next OFF after a LEAVE that leaves it on.
+A live output is never given them, nor one whose OUTPUT ON is being
+held or whose HV warning stands on SERVO. A set point changed after the port let
+go, by a tap, a lowered limit or a servo test, stands, and the earlier ones
+are dropped.
 
 An OFF that arrives while a frame is on the wire, from **OUTPUT OFF**,
 **STOP** or a lost heartbeat, reads off at once and reaches the PD mini

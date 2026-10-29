@@ -168,6 +168,9 @@ typedef struct {
                                   yet answered */
     bool     adopted;        /* on, mv, ma were taken from the page and
                                 not yet handed out                      */
+    bool     kept;           /**< the page's command left to the port
+                                  that holds it (supply_link_keep()),
+                                  until a read shows the port gone      */
 } supply_link_t;
 
 /**
@@ -217,6 +220,24 @@ void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma);
  * @param s The link state; nothing is done for NULL.
  */
 void supply_link_cut(supply_link_t *s);
+
+/**
+ * @brief An error that leaves the supply to the programming port that holds
+ *        it (error_sites_page_keeps()): this end asks what the page held at
+ *        the last read, so no OFF of the panel's is written over the
+ *        port's command, and an ON the settings' refused wiring would
+ *        refuse is not refused again while the port holds the page.
+ *
+ * Handed out as the port's command (supply_link_adopted()).  For an IOmcu
+ * older than link 4.31, which cuts a write to the servo's memory at the
+ * panel's OFF.
+ *
+ * @param s The link state; nothing is done for NULL.
+ * @return true when the last read showed a port holding the page and the
+ *         page's command was known, with no OFF owed by supply_link_cut();
+ *         false otherwise, and nothing changed.
+ */
+bool supply_link_keep(supply_link_t *s);
 
 /**
  * @brief Restart the PD mini (protocol 4.4): written once the page's output is
@@ -352,6 +373,19 @@ bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
                          uint16_t *ma);
 
 /**
+ * @brief Whether the last read shows the supply free of every programming
+ *        port and its output off: LINK_SP_PORT clear, OUTPUT 0, and the
+ *        module neither read on nor possibly on (LINK_SP_ON, LINK_SP_LIVE).
+ *
+ * The moment a port's set points can give way to the caller's own without
+ * reaching an output that is on (supply_screen_port_done()).
+ *
+ * @param s The link state.
+ * @return true when it does; false for NULL and before the first read.
+ */
+bool supply_link_port_free_off(const supply_link_t *s);
+
+/**
  * @brief The events since the last call, SUPPLY_LINK_EV_*, and cleared.
  *
  * @param s The link state.
@@ -379,6 +413,35 @@ uint16_t supply_link_events(supply_link_t *s);
  * @return true when one of SUPPLY_LINK_EV_ERRORS is set.
  */
 bool supply_link_ev_error(uint16_t ev);
+
+/** @brief What the operator is told of an ON that ended or never began. */
+typedef enum {
+    SUPPLY_LINK_SAY_NONE = 0,  /**< nothing of that kind happened         */
+    SUPPLY_LINK_SAY_TRIPPED,   /**< the module switched its output off    */
+    SUPPLY_LINK_SAY_LOST,      /**< the IOmcu let an ON go                */
+    SUPPLY_LINK_SAY_REFUSED,   /**< an ON refused                         */
+    /** @brief An ON refused while the IOmcu reports its failsafe:
+     *         LINK_FAULT_LINK_SILENT or LINK_FAULT_HEARTBEAT.  It takes no
+     *         ON until a CLEAR, which only an ARM writes. */
+    SUPPLY_LINK_SAY_FAILSAFE,
+} supply_link_say_t;
+
+/**
+ * @brief Which of the ON's endings @p ev holds, the module's own trip first,
+ *        then an ON let go, then an ON refused, named for the failsafe when
+ *        @p faults holds it.
+ *
+ * The IOmcu takes an ON only with the heartbeat trusted and the link out
+ * of failsafe (safety_gate_supply_ok()); the STATUS page reports those two
+ * as LINK_FAULT_HEARTBEAT and LINK_FAULT_LINK_SILENT.
+ *
+ * @param ev     SUPPLY_LINK_EV_* bits, as supply_link_events() returned
+ *               them.
+ * @param faults The STATUS page's fault bitmap at its last read.
+ * @return       SUPPLY_LINK_SAY_NONE when @p ev holds none of
+ *               SUPPLY_LINK_EV_TRIPPED, _ON_LOST and _ON_REFUSED.
+ */
+supply_link_say_t supply_link_on_ended(uint16_t ev, uint16_t faults);
 
 /**
  * @brief The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read

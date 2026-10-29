@@ -112,7 +112,7 @@ either goes.
 | STOP | no pulse within 150ms | cut | off | the panel, then the IOmcu |
 | A run's meter or supply fails (`no INA3221 window for 0.2s` and the other errors in [Servo, What ends a run](Servo.md#what-ends-a-run)) | SAFE | none open: a run is ARMED | off | the SERVO screen |
 | A session cut by the link or the heartbeat | as in the rows above | transaction cut | off, after a frame on the wire, 12ms at most | the IOmcu |
-| A card write fails during a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
+| A card write fails during a run, or the final commit or close of the run log or of the automatic test's CSV (comma-separated values) file after it, once a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
 | An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`; the IOmcu for the write |
 | A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
@@ -130,9 +130,31 @@ The control task applies it where it finds an error through
 
 The rows above are an IOmcu of link 4.31 or later. With an older IOmcu a
 programming port that holds the supply keeps it through an error the panel
-finds: the panel sends no OFF, since that IOmcu would cut a write to the
-servo's memory in the middle. The heartbeat or the link going still cuts
-it, and so do the panel's own supply trips.
+finds: the panel asks DISARM and sends no OFF, since that IOmcu would cut a
+write to the servo's memory in the middle (`error_sites_keeps()`). That
+covers every error above that the panel finds, among them a supply that
+stops answering or gives no reading, an ON taken across lost touch events,
+and an ON the SUPPLY page refuses while a port's ON is on it. Still off,
+whoever holds the supply:
+
+- the heartbeat or the link going: the IOmcu cuts it;
+- the panel's own supply trips, CURRENT TRIP and VOLTAGE TRIP: the panel
+  switches the output off first (`error_sites_cut()`);
+- the PD mini's own protection and a sagging input: the module or the
+  IOmcu has switched the output off already, and the panel follows
+  (`error_sites_page_keeps()`). An ON the page let go is followed off the
+  same way; the page lets an ON go only with no port holding it.
+
+A port holds the PD mini's output only. The panel's model has no port on
+it, and an error switches it off. A supply that stops answering or gives
+no reading with no port holding it is switched off, so that it does not
+come back on by itself when it answers again. With a port keeping it, the
+fault is acted on and named once while it stands, again when it turns
+into the other fault, and once more when the port lets go, which switches
+the output off. An ON the page refuses for a wiring the settings name and
+the page refused is the port's again while the port holds the page
+(`supply_link_keep()`); when the port lets go, the ON is refused and
+switched off.
 
 ### A programming port's supply
 
@@ -212,6 +234,11 @@ Current limitations:
   defined and set by nothing.
 - The alerts name the error and do not say that the bench switched to SAFE;
   the band shows SAFE.
+- With an IOmcu older than 4.31, a supply a port keeps through a supply
+  that stopped answering or gives no reading stays on until the port lets
+  go. The panel has no valid reading of it meanwhile, so CURRENT TRIP and
+  VOLTAGE TRIP do not act on it; the PD mini's own protection and the
+  IOmcu's cut for a sagging input do.
 
 ### Hardware limits
 
@@ -662,7 +689,8 @@ reads the state and shows the alert, is not in the coverage figure.
   under way ends at an ARM, a DISARM and a stop, and a finger resting on the
   control moves nothing until it lifts and presses again. A value the screen
   has posted and the application has not collected at a DISARM or a stop is
-  dropped.
+  dropped. The one exception is a Hitec servo inside its programming
+  session ([A Hitec servo moved while SAFE](#a-hitec-servo-moved-while-safe)).
 - Every switch to ARMED starts from the channel's rest, not from where the last run left
   the control.
   - MOTOR & ESC: the throttle slider, its `-1` and `+1` steps and the knob
@@ -780,6 +808,60 @@ reads the state and shows the alert, is not in the coverage figure.
   ramped, by decision: the bank ramps a throttle upward only, so a ramp on
   the wire would slow the rise and nothing else. [STATUS.md, Not
   planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
+
+### A Hitec servo moved while SAFE
+
+A Hitec servo may move while the bench is SAFE, inside a held programming
+session only. This is the one exception to the rule that an output value
+changes only while ARMED. The bench cannot switch to ARMED while the HITEC
+page holds a port ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)),
+and a Hitec servo takes its target over the programming wire, not as a
+pulse width.
+
+The rule:
+
+- A move needs an entered session (`hitec_session_move()`; refused with
+  `HITEC_SES_ERR_NOT_IN_MODE` otherwise). D series: a target of 0 to 6000
+  written to register 0x1E, then register 0x0C, the position, read back.
+  Classic: `66` with a target of 3600 to 8400 (900 to 2100us), then `65`.
+  A target outside the range is refused (`HITEC_SES_ERR_ARG`).
+- A move writes to the servo's RAM only: no EEPROM cell, no save
+  (0x70), no reboot. No step of a move carries `MORE`, so an OFF of the
+  supply during a move is not held for a write
+  ([A programming port's supply](#a-programming-ports-supply)). A value
+  reaches the servo's memory only through a write with its backup, record
+  and read-back.
+- The commanded position moves at most 150 counts (2.0deg) a pass and stays
+  inside the reach of the servo's stored end points: the positions of
+  targets 0 and 6000, 2606 to 13743 on a factory D485HW
+  (`hitec_live_d_command()`).
+- Each pass is judged (`hitec_live_judge()`). It binds when the position
+  read lies more than 150 counts from a command that stands still or moves
+  outward on 2 passes in a row, when the supply current stays at or above
+  80% of the session's current limit for 400ms (800mA of the default
+  1000mA), or when the AS5600 angle, while fitted, moved less than half of
+  a commanded change of 3deg or more. A bind moves the command back to the
+  last free position less 75 counts (1.0deg) toward the neutral.
+- The mapping takes a servo set to CW only (`hitec_live_d_ends()`).
+- Moves are switched on by a 2s hold, and only with a PD mini answering
+  with its output on: STOP switches the PD mini off, and with it the
+  servo. The PD mini's own current limit is the hard ceiling.
+
+Current limitations:
+
+- The panel has no control that switches moves on (MOVE SERVO on the
+  TRAVEL tab): nothing calls `hitec_session_move()`.
+- Every threshold of the judges is chosen, not measured with a horn
+  against a block. The stall current of a D485HW is not known.
+- Whether the servo follows the target line below 400 and above 5600 or
+  stops at its end points is not measured; the reach assumes the line
+  goes on.
+- Whether a D series servo holds its last target with no frames is not
+  measured. A switch to SAFE at the bench alone stops the port and leaves
+  the supply on ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)).
+- Whether a reboot discards a RAM write that was not saved is not
+  measured.
+- The mapping of a servo set to CCW is not measured.
 
 ## Heartbeat rather than enable level
 

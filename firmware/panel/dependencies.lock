@@ -70,10 +70,10 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.5.5
+    version: 6.1.0
 direct_dependencies:
 - espressif/esp_hosted
 - espressif/esp_wifi_remote
 manifest_hash: d6d55b6660e342f1ef7fbc2eb71baa93dfe836e43d94791b99d85deb75634da1
 target: esp32p4
-version: 2.0.0
+version: 3.0.0

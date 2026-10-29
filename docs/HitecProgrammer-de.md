@@ -101,8 +101,9 @@ KST-Programmierung ([Seiten](Screens-de.md#programmierer)).
    - D-Serie: POWER mit der Programmierspannung und einer Auszeit von 0ms,
      wo ein PD mini antwortet, dann 1000ms, bis das Servo gestartet ist.
      Ohne PD mini läuft das Servo an der Versorgung, wie sie ist.
-   - Klassisch: POWER mit 500ms ausgeschalteter Versorgung, dann ein, und
-     ein LISTEN auf das `+` des Servos; sein zweites `+` folgt 250ms bis
+   - Klassisch: POWER mit ausgeschalteter Versorgung, 500ms ab der Lesung,
+     die sie aus zeigt ([VERLASSEN](#verlassen) nennt die ganze Auszeit),
+     dann ein, und ein LISTEN auf das `+` des Servos; sein zweites `+` folgt 250ms bis
      267ms später; 0x67 liest dann die Version.
 3. ALLES AUSLESEN: die Werte der Serie, jede Adresse mit 3 Versuchen.
 4. Das Modell wird erkannt: D-Serie an Register 0x00 (34485 ist der
@@ -130,6 +131,8 @@ Solange der Port gehalten ist:
   Netzteil: Sollwerte und EIN gesperrt.` AUSGANG AUS wirkt. Ab Protokoll
   4.29 hält der IOmcu seine SUPPLY-Page zusätzlich von OPEN bis CLOSE
   ([Die Versorgung, solange ein Port gehalten ist](LinkHitec-de.md#die-versorgung-solange-ein-port-gehalten-ist)).
+  Die Sollwerte von vor VERBINDEN kommen nach dem Verlassen zurück, sobald
+  der Ausgang aus ist ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 - Die Zeile für KST- und Chaservo-Servos und die Zeile ZIEL von MOTOR & ESC
   nehmen keinen Druck an, und ESC STICK startet keinen Lauf.
 
@@ -565,7 +568,7 @@ Halten von 2s.
 | Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
 | Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.`; der Entwurf wird zu den Werten des Servos, und eine Änderung von vor dem Laden fällt samt ihren Bestätigungen weg |
 | Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
-| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der Einstellungen, mit geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
+| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Werte außerhalb der Einstellungen, auch geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
 | Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
 | Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
 | Von einem anderen Modell desselben Layouts, oder jenseits einer weichen Regel | DIESE DATEI PRÜFEN, unten; `Bestätige die Warnungen, bevor du diese Datei lädst.` |
@@ -639,12 +642,12 @@ WERKSEINSTELLUNG gespeicherte Backup-Datei `HITEC001` bringt 0x22 mit den 4
 Werten der Zellen 0x08, 0x13, 0x14 und 0x1B zurück.
 
 Weicht eine klassische Zelle außerhalb der änderbaren Werte ab, öffnet
-sich zuerst DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der
-Einstellungen, mit geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
+sich zuerst DIESE DATEI PRÜFEN mit `Werte außerhalb der
+Einstellungen, auch geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
 Zellen in den Entwurf, und die Meldung zeigt dieselbe Zeile unter
 `HITEC001 geladen. 5 Werte weichen von den Servowerten ab.` Eine Zelle, die
 keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**; die
-Schreibseite zeigt `Gespeicherte Werte außerhalb der Einstellungen, mit
+Schreibseite zeigt `Werte außerhalb der Einstellungen, auch
 geschrieben: 1.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
 PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
 Änderung; ÄNDERUNGEN VERWERFEN verwirft sie.
@@ -659,8 +662,8 @@ vom Servo abweicht: jedes Register der D-Serie und jede klassische Zelle
 0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen. Ein Tipp
 öffnet ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
 Prüfung der Grenzwerte zurückgespielt.`, die Zahl der klassischen Zellen
-ohne änderbaren Wert, die es zurückschreibt, `Gespeicherte Werte außerhalb
-der Einstellungen, mit zurückgespielt: 1.`, und die Zeilen der
+ohne änderbaren Wert, die es zurückschreibt, `Werte außerhalb
+der Einstellungen, auch zurückgespielt: 1.`, und die Zeilen der
 Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
 zuerst die Backup-Datei, wenn keine es hält, der Vermerk, die Schritte und
 das Zurücklesen. Es endet mit `Backup zurückgespielt und geprüft.` Es
@@ -682,8 +685,8 @@ den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
 Werkswerte zurück.`, `Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53
 des Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
-Einstellung, die sie schreibt, `Gespeicherte Werte außerhalb der Einstellungen,
-mit geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Einstellung, die sie schreibt, `Werte außerhalb der Einstellungen,
+auch geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
 den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
 angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,
@@ -723,7 +726,13 @@ verlässt ihn:
 
 - D-Serie: ein Neustart des Servos (Register 0x46 = 1), das danach 1s lang
   Signale ignoriert; die Versorgung bleibt unverändert.
-- Klassisch: die Versorgung 500ms aus und wieder ein.
+- Klassisch: die Versorgung aus und wieder ein. Die Auszeit von 500ms
+  zählt ab der Lesung des PD mini, die den Ausgang aus zeigt; der Treiber
+  sendet sie 250ms nach dem Ausschalten (`PDMINI_CONFIRM_MS`). Das
+  Einschalten folgt nach den Lesungen der Sollwerte und des aktiven Slots
+  durch den Treiber. Der Ausgang ist etwa 760ms aus: 762ms gemessen an
+  einem Modul, an der Schwelle von 1,4V eines Logikanalysators. Wie viel
+  davon die eigene Schaltzeit des Moduls ist, ist nicht gemessen.
 
 Dann CLOSE: der Port ist wieder in PWM, und die Meldung sagt
 `Der Port ist wieder im Testermodus.` VERLASSEN wird auch an einem

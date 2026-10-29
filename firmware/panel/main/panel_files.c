@@ -54,7 +54,11 @@
 #include "log_take.h"
 #include "panel.h"
 #include "storage.h"
+#include "text_view.h"
 #include "ui_screen.h"
+#include "ui_theme.h"
+#include "wa_app.h"
+#include "wifi_access.h"
 
 /** @brief The log tag of the panel's lines. */
 static const char *TAG = "rcbench";
@@ -537,6 +541,16 @@ void panel_files_web_bench(fm_bench_t *out, void *ctx)
 const fm_io_t *panel_files_card(void)
 {
     return &k_io;
+}
+
+void panel_files_web_hl(void)
+{
+    static wa_hl_t hl;
+    hl.words = text_view_words();
+    hl.spans = TEXT_VIEW_SPANS;
+    (void)text_view_class_rgb(UI_THEME_DARK, hl.dark, WA_HL_RGB);
+    (void)text_view_class_rgb(UI_THEME_LIGHT, hl.light, WA_HL_RGB);
+    wifi_access_set_hl(&hl);
 }
 
 /**

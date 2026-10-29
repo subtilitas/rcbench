@@ -2670,7 +2670,9 @@ erscheint im Band:
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Bei den ersten fünf gibt es keine Datei zu suchen. Bei den letzten vier gibt
-es eine, und sie hört zu früh auf.
+es eine, und sie hört zu früh auf. Ein gescheitertes Schreiben und ein
+gescheitertes Schließen eines Laufs sind ein Fehler: der Prüfstand geht auf
+SAFE und das Netzteil aus ([Sicherheit, Fehler](Safety-de.md#fehler)).
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
@@ -2825,7 +2827,9 @@ Die Fußzeile, Körper-y 440 bis 492, trägt links AKTUALISIEREN,
 140 x 52px, wie auf [Logs](#logs), dann KOPIEREN, VERSCHIEBEN,
 UMBENENNEN, LÖSCHEN, NEU, INFO und ÖFFNEN, 118 x 52px, ÖFFNEN am rechten
 Rand; die Tasten stehen 6px auseinander, und die Fußzeile endet 4px über
-dem Alarmband. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
+dem Alarmband. Jede Beschriftung steht in der Schrift 10 x 20 mit
+mindestens 4px Rand je Seite; AKTUALISIEREN ist 130px breit, VERSCHIEBEN
+110px. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
 darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
 12 x 24 über der Fußzeile.
 
@@ -3140,8 +3144,11 @@ meldet `Gestoppt: Der Prüfstand ist ARMED.` oder
 
 Die Rückfrage zu LÖSCHEN ist eine Box von 700 x 280px mit ABBRECHEN und
 LÖSCHEN von 300 x 56px. Sie nennt den Eintrag und seine Größe; bei der
-CSV-Datei eines Laufs mit einem Bericht derselben Nummer nennt sie den
-Bericht, der mitgelöscht wird.
+CSV-Datei eines Laufs nennt sie den Bericht derselben Nummer, der
+mitgelöscht wird, wenn die Seite des Bereichs diesen Bericht listet. Ein
+Bericht, der in einem Ordner mit mehr als 48 Einträgen auf der nächsten
+oder vorigen Seite stünde, wird ebenfalls genannt: Die Seite kann es nicht
+sagen, und LÖSCHEN nimmt den Bericht mit, wann immer die Karte ihn hat.
 
 ![Eine laufende Kopie](img/de/files-copy.png)
 
@@ -3400,7 +3407,9 @@ Aktuelle Einschränkungen:
   nicht gebaut.
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
-  Downloads. Die Ursache ist nicht gemessen.
+  Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
+  Dateiverwaltung hat 33.101 Bytes auf Englisch mit leerer Karte und keine
+  Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
 
@@ -3462,14 +3471,57 @@ läuft während jedes Flash-Löschens (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 `firmware/panel/sdkconfig.defaults`). Was die Anzeige während des Löschens
 zeigt, ist nicht gemessen.
 
-**Dateien auf der Karte.** Jede Datei, Ordner für Ordner, mit Namen, Größe
-in Bytes und Änderungszeit, wie die Karte sie hat, in der Zone von SETUP >
-PANEL, `Zeitzone`. Ein Zeitstempel in 1980, der einer ungestellten Uhr, lässt
-die Zeitzelle leer. Jeder Name lädt seine Datei herunter. Die Seite liest die Karte nur: Nichts darauf wird gelöscht,
-umbenannt oder geschrieben. Ein Name über 255 Zeichen, ein Pfad über
-384 Bytes und ein Ordner tiefer als 16 fehlen, und die Seite sagt, wie
-viele. Ohne Karte oder mit einer Karte, die nicht lesbar ist, sagt die Seite
-es, und der Upload geht trotzdem.
+**Dateien auf der Karte.** Die Karte in zwei Spalten, wie [FILES](#files)
+sie zeigt, gelesen über [die Datei-API](#die-datei-api). Die Seite liest die
+Karte nur: Nichts darauf wird gelöscht, umbenannt oder geschrieben. Jede
+Spalte ist ein Ordner, bis zu 48 Einträge je Seite, Ordner zuerst, dann
+Namen ohne Rücksicht auf Groß- und Kleinschreibung. Die linke Spalte öffnet
+im Stammverzeichnis der Karte, die rechte im Ordner User-Logs (vorgegeben
+`USER/LOGS`). Der Browser behält beide Orte für seinen Tab, solange dieselbe
+Karte im Slot steckt; eine andere Karte beginnt beide wieder dort.
+
+- Die oberste Zeile einer Spalte ist der Pfad ihres Ordners auf einer
+  Taste, die einen Ordner höher geht; das Stammverzeichnis zeigt den
+  Volumennamen der Karte oder `SD CARD`. VORIGE und NÄCHSTE stehen daneben,
+  solange der Ordner mehr als 48 Einträge hat.
+- Die Überschrift zählt die Einträge wie FILES, `6 EINTRÄGE` oder
+  `EINTRÄGE 49 BIS 96 VON 120`, und danach die nicht gelisteten.
+- Eine Zeile zeigt Namen, Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024
+  Bytes), das Wort der Art und das Zustandswort von FILES
+  (`WIRD GESCHRIEBEN`, `GESPERRT`, `FEST`).
+- Ein Klick oder ein Tipp wählt eine Zeile und macht ihre Spalte zur
+  aktiven, mit dem Akzentrahmen. Ein zweiter Tipp, ein Doppelklick oder
+  Enter ist ÖFFNEN.
+- AKTUALISIEREN, INFO, HERUNTERLADEN und ÖFFNEN, am Fuß des Fensters,
+  wirken auf den gewählten Eintrag der aktiven Spalte. Eine Taste, die abgelehnt würde, ist
+  gedimmt, und ein Tipp darauf sagt unter den Tasten, warum.
+
+| Taste | Was sie tut |
+|---|---|
+| AKTUALISIEREN | fragt den Zustand des Panels neu und liest dann jede Spalte auf der Seite neu, die sie zeigt, wie [AKTUALISIEREN](#aktualisieren) in FILES; eine seitdem getauschte Karte beginnt beide Spalten wieder im Stammverzeichnis und im Ordner User-Logs |
+| INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags wie der INFO-Kasten von FILES; die Zeit ist der Zeitstempel der Karte in der Zone von SETUP > PANEL, `Zeitzone`, `nicht bekannt` für einen Zeitstempel in 1980 |
+| HERUNTERLADEN | die gewählte Datei über `/card/<Pfad>`; auf einem Ordner gedimmt |
+| ÖFFNEN | geht in einen Ordner oder zeigt eine Datei im Betrachter über der Seite. Gedimmt auf einer Datei über 1.048.576 Bytes, einer Datei, die der Logger schreibt, und den Vermerken der Servoprogrammierung, die HERUNTERLADEN trotzdem sendet |
+
+Der Betrachter zeigt die Datei nur lesend über der Seite: Pfad, Größe,
+NUR LESEN, `ZEILE 23 VON 57` für die oberste Zeile, `GEMISCHTE ZEILENENDEN`
+für eine Datei mit mehr als einer Art und SCHLIESSEN (oder Escape). Seine
+Zeilen sind gefärbt, wie der [Textbetrachter](#der-textbetrachter) des
+Panels sie färbt, mit denselben Regeln, denselben Urteilswörtern auf
+Englisch und Deutsch und den Paletten des Panels: der hellen, oder der
+dunklen, wenn der Browser ein dunkles Schema verlangt. Eine Zeile wird
+nicht umbrochen; der Text rollt seitwärts. Ein Tab reicht bis zum nächsten
+Vielfachen von 8 Zellen. Ein Steuerzeichen und ein Byte, das keine
+UTF-8-Folge beginnt, erscheinen als `?`. Eine Datei, die die Datei-API
+ablehnt, zeigt den Text ihrer Ablehnung. Die Seite zeichnet die Zeilen auf
+dem Schirm und 200 Zeilen darüber und darunter.
+
+Die Seite sendet eine Anfrage nach der anderen. Eine Anfrage ohne Antwort
+nach 2s zeigt
+`Warte auf das Panel: Es beantwortet eine Anfrage nach der anderen.`; ein
+Download über `/card/` hält die nächste Anfrage bis zu seinem Ende auf. Ein
+Browser ohne JavaScript zeigt `Die Dateiliste braucht JavaScript.` und den
+ZIP-Link.
 
 **Alles als eine ZIP-Datei herunterladen** sendet die ganze Karte als eine
 ZIP-Datei. Die Seite nennt vor dem Klick die Zahl der Dateien, ihre Bytes
@@ -3522,8 +3574,8 @@ weiter.
 Der Server der Seite beantwortet auch vier Lesezugriffe für ein Skript:
 eine Seite eines Ordners, die Angaben zu einem Eintrag, eine Textdatei
 ganz und den Zustand des Panels (`shared/webaccess/wa_api.h`,
-`firmware/panel/components/wifi_access/wifi_files.c`). Die Seite selbst
-ruft sie nicht auf. Sie lesen die Karte nur, über dieselben Seiten,
+`firmware/panel/components/wifi_access/wifi_files.c`). Die Dateiverwaltung
+der Seite liest die Karte über sie. Sie lesen die Karte nur, über dieselben Seiten,
 Regeln und dasselbe Laden wie FILES: Nichts wird geschrieben, umbenannt
 oder gelöscht. Jede läuft durch die Prüfungen der Tabelle oben und braucht
 den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
@@ -3531,9 +3583,9 @@ den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
 
 | Anfrage | Antwort |
 | --- | --- |
-| `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes":"closed"` mit dem Grund (`READ_ONLY`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift), Mount-Nummer, Name, Größe und freie Bytes der Karte und die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei |
+| `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes":"closed"` mit dem Grund (`READ_ONLY`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner User-Logs, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
-| `GET /api/info?path=P&dir=D&mount=M` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge |
+| `GET /api/info?path=P&dir=D&mount=M` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge |
 | `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` und `X-Rcbench-Bom` (1 oder 0) |
 
 Ein Pfad gilt ab der Wurzel der Karte und ist prozentkodiert, mit `/` als
@@ -3657,10 +3709,35 @@ fehl (otadata nicht geschrieben), sagt das Band
 `Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
+Vor dem Neustart hält die Installation die geschriebene Version im NVS
+(Non-Volatile Storage): ein Eintrag von 40 Byte, Namespace `fw_ota`, Key
+`restart_note`, mit einem Magic Word und einem FNV-1a-Hash (Fowler-Noll-Vo).
+Ein Neustart, ein Panic und ein Stromausfall behalten ihn. Der nächste Start
+liest ihn; hat der Bootloader den geschriebenen Slot als ungültig markiert,
+ist dieser Start der Build davor, und das Band zeigt die Zeile `ist nicht gestartet`. Der
+Eintrag wird nach jedem Start gelöscht außer nach einem Versuchsstart, der
+zurückgeht, also erscheint die Zeile einmal. Ein Eintrag anderer Größe,
+anderen Magic Words oder Hashs gilt als keine Notiz. Der erste Start nach
+einer Installation aus 0.23.2 oder älter findet keinen Eintrag, wie ein
+Panel, das nie installiert hat: Diese Builds halten die Notiz im LP-RAM
+(Low-Power), und einen Versuchsstart dieses Builds, der zurückgeht, meldet
+der alte Build von dort. Die Konsole nennt die Prüfung jedes Starts in
+einer Zeile:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+Die Notiz ist die Version oder `none`, oder `unreadable` für einen Eintrag,
+der als keine Notiz gilt; der Slot ist der letzte ungültige des Bootloaders
+oder `none`; das Ergebnis ist `NORMAL`, `UPDATED`, `ROLLED_BACK`,
+`UNCONFIRMED` oder `GOING_BACK`, Letzteres vor dem Neustart eines
+Versuchsstarts, der zurückgeht.
+
 Aktuelle Einschränkungen:
 
-- Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
-  Panel geht trotzdem zum Build davor zurück.
+- Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
+  Konsole (`restart note not kept`), und ein Start ihres Builds, der
+  zurückgeht, zeigt keine Zeile im Band.
 - Ein Versuchsstart, der vor der Bildschirmschleife stehen bleibt, etwa in
   einem Einhängen der Karte, das nicht zurückkehrt, bleibt nicht und wird
   auch nicht zurückgesetzt: Der Task-Watchdog meldet und startet nicht neu
@@ -3954,7 +4031,7 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
 - Aktuelle Einschränkung: Ein erster DNS-Server, der nicht antwortet,
   verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, die der
   NTP-Anfrage wie die der Release-Prüfung. lwIP fragt einen Server bei 0s,
-  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v5.5.5 bietet keinen der
+  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v6.1 bietet keinen der
   beiden Werte in seiner Konfiguration an.
 - Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
   die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel

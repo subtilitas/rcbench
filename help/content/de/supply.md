@@ -84,7 +84,11 @@ AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG
 - einem Modul, das seinen Ausgang selbst abschaltet;
 - einer Änderung an Pins, Baudrate oder Einschalt-Einstellung des PD mini.
 
-Das Band nennt den Grund. Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Nach jedem Neustart ist der Ausgang aus, unabhängig von den Startwerten.
+Das Band nennt den Grund. Ein Loslassen vor 2s sendet nichts und zeigt nichts, wie bei ARM.
+
+Der IOmcu lehnt ein EIN ab, solange sein Failsafe ausgelöst ist: Das Band zeigt FEHLER 01 (der Link war 200ms still, was ein Neustart des IOmcu verursachen kann) oder FEHLER 10 (der Heartbeat hat aufgehört). Das Halten endet dann mit `Netzteil ließ sich nicht einschalten: IOmcu-Failsafe ausgelöst. ARM halten, dann DISARM.` Nur das CLEAR, das ein ARM schreibt, hebt den Failsafe auf: ARM auf SERVO oder MOTOR & ESC halten, DISARM, dann AUSGANG EIN erneut halten.
+
+Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Nach jedem Neustart ist der Ausgang aus, unabhängig von den Startwerten.
 
 ## OPTIONEN
 

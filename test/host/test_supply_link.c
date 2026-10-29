@@ -11,7 +11,8 @@
  * said; an output the far end switched off for a sagging input; an edit
  * followed between two writes keeping an ON off the old pins; a reading
  * count that stands for SUPPLY_LINK_BLIND_MS behind a page that answers
- * taken as readings stopped, across the tick wrap.
+ * taken as readings stopped, across the tick wrap; the supply free of a
+ * programming port and its output off only on a read that shows both.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -332,6 +333,48 @@ TEST_CASE(an_on_without_a_heartbeat_is_refused)
     CHECK_EQ(supply_link_events(&sl), 0u);
 }
 
+/* An ON refused while the far end reports its failsafe names the
+ * failsafe, the one cause only an ARM clears; any other refusal says
+ * refused.  The module's trip comes first, then an ON let go. */
+TEST_CASE(an_on_refused_in_the_far_ends_failsafe_names_it)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(false);
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(false);
+    const uint16_t ev = supply_link_events(&sl);
+    CHECK_EQ(ev, SUPPLY_LINK_EV_ON_REFUSED);
+    CHECK_EQ(supply_link_on_ended(ev, LINK_FAULT_HEARTBEAT),
+             SUPPLY_LINK_SAY_FAILSAFE);
+    CHECK_EQ(supply_link_on_ended(ev, LINK_FAULT_LINK_SILENT),
+             SUPPLY_LINK_SAY_FAILSAFE);
+    CHECK_EQ(supply_link_on_ended(ev, LINK_FAULT_LINK_SILENT
+                                          | LINK_FAULT_OVERCURRENT),
+             SUPPLY_LINK_SAY_FAILSAFE);
+    CHECK_EQ(supply_link_on_ended(ev, 0u), SUPPLY_LINK_SAY_REFUSED);
+    /* Every other fault bit is no failsafe. */
+    for (unsigned b = 0; b < 16u; ++b) {
+        const uint16_t f = (uint16_t)(1u << b);
+        if ((f & (LINK_FAULT_LINK_SILENT | LINK_FAULT_HEARTBEAT)) == 0u) {
+            CHECK_EQ(supply_link_on_ended(ev, f), SUPPLY_LINK_SAY_REFUSED);
+        }
+    }
+    CHECK_EQ(supply_link_on_ended(SUPPLY_LINK_EV_ON_REFUSED
+                                      | SUPPLY_LINK_EV_ON_LOST,
+                                  LINK_FAULT_HEARTBEAT),
+             SUPPLY_LINK_SAY_LOST);
+    CHECK_EQ(supply_link_on_ended(SUPPLY_LINK_EV_ON_LOST
+                                      | SUPPLY_LINK_EV_TRIPPED, 0u),
+             SUPPLY_LINK_SAY_TRIPPED);
+    CHECK_EQ(supply_link_on_ended(0xFFFFu & ~(unsigned)(
+                                      SUPPLY_LINK_EV_ON_REFUSED
+                                      | SUPPLY_LINK_EV_ON_LOST
+                                      | SUPPLY_LINK_EV_TRIPPED),
+                                  0xFFFFu),
+             SUPPLY_LINK_SAY_NONE);
+}
+
 /* An ON the far end let go -- its heartbeat stopped -- is lost, reported
  * once, and not switched back on. */
 TEST_CASE(an_on_the_far_end_let_go_is_lost)
@@ -408,6 +451,66 @@ TEST_CASE(a_programming_ports_command_is_adopted_and_not_fought)
     CHECK(!supply_link_adopted(&sl, NULL, &mv, &ma));
     CHECK(!supply_link_adopted(&sl, &on, NULL, &ma));
     CHECK(!supply_link_adopted(&sl, &on, &mv, NULL));
+}
+
+/* The supply is the port's until a read shows no port holding it and the
+ * output off, asked and read: a Hitec LEAVE leaves it on, and the panel's
+ * OFF that follows reads off only once the module does. */
+TEST_CASE(the_supply_is_free_and_off_only_with_no_port_and_the_output_off)
+{
+    CHECK(!supply_link_port_free_off(NULL));
+    fresh();
+    CHECK(!supply_link_port_free_off(&sl));             /* no read yet */
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    CHECK(supply_link_port_free_off(&sl));
+    supply_link_command(&sl, true, 7400u, 1500u);
+    drv.st.output = true;
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK(!supply_link_port_free_off(&sl));
+    /* The port takes it; its cycle's off time is still the port's. */
+    supply_page_hold(&pg, true);
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    pump(true);
+    CHECK(!supply_link_port_free_off(&sl));
+    CHECK(supply_page_port_set(&pg, false, 0u, 0u, true));
+    drv.st.output = false;
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK(!supply_link_port_free_off(&sl));
+    /* An error that leaves the supply to the port: kept, still not free. */
+    CHECK(supply_link_keep(&sl));
+    CHECK(sl.kept);
+    far_step_and_read(true);
+    CHECK(sl.kept);
+    CHECK(!supply_link_port_free_off(&sl));
+    /* On again and let go, as a classic LEAVE ends: on, not free, and the
+     * keep over with the port. */
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    supply_page_hold(&pg, false);
+    drv.st.output = true;
+    pump(true);
+    CHECK(!supply_link_port_held(&sl));
+    CHECK(!sl.kept);
+    CHECK(!supply_link_port_free_off(&sl));
+    /* The panel's OFF: asked off, the module still on. */
+    supply_link_command(&sl, false, 5000u, 1000u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    CHECK(!supply_link_port_free_off(&sl));
+    /* Read off, with an OFF still owed to the module: possibly on. */
+    drv.st.output = false;
+    drv.off_owed = true;
+    far_step_and_read(true);
+    CHECK(!supply_link_port_free_off(&sl));
+    drv.off_owed = false;
+    far_step_and_read(true);
+    CHECK(supply_link_port_free_off(&sl));
+    /* A port that takes it again, output off: not free. */
+    supply_page_hold(&pg, true);
+    far_step_and_read(true);
+    CHECK(!supply_link_port_free_off(&sl));
 }
 
 /* What the panel asks while the port holds the supply is written as ever:
@@ -1047,8 +1150,10 @@ int main(void)
     RUN(a_wiring_refused_on_its_read_stands_until_new_pins_are_held);
     RUN(an_unwired_supply_refuses_an_on);
     RUN(an_on_without_a_heartbeat_is_refused);
+    RUN(an_on_refused_in_the_far_ends_failsafe_names_it);
     RUN(an_on_the_far_end_let_go_is_lost);
     RUN(a_programming_ports_command_is_adopted_and_not_fought);
+    RUN(the_supply_is_free_and_off_only_with_no_port_and_the_output_off);
     RUN(a_command_under_a_programming_port_is_off_or_refused);
     RUN(set_points_refused_under_a_port_leave_the_output_on);
     RUN(a_restarted_far_end_is_written_again);

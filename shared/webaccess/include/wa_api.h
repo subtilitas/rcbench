@@ -132,6 +132,7 @@ typedef struct {
     uint64_t total;       /**< its bytes; 0 when not known                 */
     uint64_t free;        /**< its free bytes; 0 when not known            */
     fm_err_t gate;        /**< fm_gate() of a write now                    */
+    const char *user_logs; /**< USER LOG FOLDER; NULL or "" the default    */
 } wa_api_status_t;
 
 /**
@@ -210,7 +211,8 @@ const char *wa_api_text(wa_api_err_t e, bool de);
 void wa_api_error_json(wa_out_t *o, wa_api_err_t e, bool de);
 
 /**
- * @brief /api/status's body.
+ * @brief /api/status's body.  "user_logs" is the User log folder, where
+ *        FILES opens its right pane.
  * @param o   the output
  * @param st  the panel's state
  */
@@ -240,7 +242,10 @@ void wa_api_list_json(const wa_api_t *api, wa_out_t *o);
 wa_api_err_t wa_api_info(wa_api_t *api, const char *query);
 
 /**
- * @brief The facts wa_api_info() read, as JSON.
+ * @brief The facts wa_api_info() read, as JSON.  "t" is the stamp the card
+ *        holds, -1 for none; "time" is it as INFO shows it,
+ *        "YYYY-MM-DD HH:MM" in the zone in force (wall_local_s()), and ""
+ *        for a stamp that says no date (wall_stamp_known()).
  * @param api  the API, after wa_api_info() answered WA_API_OK
  * @param o    the output
  */

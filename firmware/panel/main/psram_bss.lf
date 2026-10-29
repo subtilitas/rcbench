@@ -100,7 +100,6 @@ entries:
 archive: libwebaccess.a
 entries:
     wa_zip (rcbench_extram_bss)
-    wa_page (rcbench_extram_bss)
 
 [mapping:rcbench_settings_psram]
 archive: libsettings.a

@@ -92,7 +92,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 
 | | Version | Hinweise |
 | --- | --- | --- |
-| ESP-IDF | v5.5.5 oder neuer auf der Linie v5.5 | der ESP32-P4 des Panels ist Chiprevision 3.2, die Espressifs Hinweis AR2026-004 mit v5.5.5 oder neuer paart; der Build setzt `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` und Mindestrevision 3.1. Weder v5.5.0 noch v5.5.1 lässt sich kompilieren: ihr TWAI-Treiber (Two-Wire Automotive Interface) sendet einen CAN-Frame mit DLC (Data Length Code) 0 als DLC 8, und der IOmcu lehnt jeden so gesendeten Link-Read ab. CI (Continuous Integration) baut v5.5.5 |
+| ESP-IDF | v6.1 | der ESP32-P4 des Panels ist Chiprevision 3.2, die Espressifs Hinweis AR2026-004 mit v5.5.5, v6.0.1 oder neuer paart; der Build setzt `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` und Mindestrevision 3.1. Der TWAI-Code (Two-Wire Automotive Interface) des Panels nutzt den Legacy-Treiber, den v6.1 mit einem `#warning` als veraltet kennzeichnet; `components/can_twai` kompiliert mit `-Wno-cpp`. Der Legacy-Treiber von v6.1 sendet einen CAN-Frame mit DLC (Data Length Code) 0 als DLC 0; v5.5.0 und v5.5.1 senden ihn als DLC 8, und der IOmcu lehnt jeden so gesendeten Link-Read ab. Der SD-Karten-Code (`storage.c`) folgt der Slot-Behandlung des SDMMC-Treibers von v6.1, und v5.5.5 wird nicht gebaut. CI (Continuous Integration) baut v6.1 |
 | pico-sdk | 2.0 oder neuer | RP2350-Unterstützung; CI baut 2.3.0 |
 | ARM GNU Toolchain | 14.2 | jede `arm-none-eabi`-Version für Cortex-M33 |
 
@@ -266,32 +266,32 @@ Was das Panel stattdessen tut
 ### Der langsame RTC-Takt
 
 Der RTC-Timer zählt den Quarz Y3 mit 32.768kHz an GPIO0 und GPIO1. Keine
-andere Funktion der Panel-Firmware nutzt diese beiden Pins. ESP-IDF v5.5.5
+andere Funktion der Panel-Firmware nutzt diese beiden Pins. ESP-IDF v6.1
 startet den Quarz und fällt auf den internen RC-Oszillator (136kHz
 nominal) zurück, wenn er nicht anschwingt:
 
 1. Der Bootloader schaltet den Quarz früh ein, damit er anschwingt,
    während die Anwendung lädt
-   (`components/bootloader_support/src/bootloader_clock_init.c`, Zeilen 91
-   bis 95). Auf dem ESP32-P4 tun die Bootstrap-Zyklen
+   (`components/bootloader_support/src/bootloader_clock_init.c`, Zeilen 75
+   bis 84). Auf dem ESP32-P4 tun die Bootstrap-Zyklen
    (`CONFIG_ESP_SYSTEM_RTC_EXT_XTAL_BOOTSTRAP_CYCLES`) nichts:
    `rtc_clk_32k_bootstrap()` schaltet nur den Quarz ein
-   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, Zeilen 45 bis 52).
+   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, Zeilen 44 bis 50).
 2. Der Start der Anwendung zählt 3000 Takte des Quarzes gegen den
    Hauptquarz mit 40MHz (`CONFIG_RTC_CLK_CAL_CYCLES=3000`), etwa 92ms.
    Eine Zählung, die in die Zeitgrenze läuft oder mehr als 0.05% von
    32.768kHz abweicht, gibt 0 zurück
-   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, Zeilen 175 bis
-   190).
+   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, Zeilen 177 bis
+   195).
 3. Eine Zählung mit 0 wird wiederholt, 4 Versuche insgesamt. Nach dem
    vierten schreibt ESP-IDF `clk: 32 kHz clock not found, switching to
    internal 150 kHz oscillator`, schaltet den Quarz ab und läuft auf dem
    RC (`components/esp_system/port/soc/esp32p4/clk.c`,
-   `select_rtc_slow_clk()`, Zeilen 164 und 184 bis 193). Das Panel startet
+   `select_rtc_slow_clk()`, Zeilen 127 und 143 bis 152). Das Panel startet
    auf dem RC. Die Meldung von ESP-IDF sagt 150kHz; der RC des ESP32-P4
    hat nominal 136kHz.
 4. `CONFIG_RTC_CLK_CAL_CYCLES` bleibt über 0: Bei 0 entfällt die Zählung,
-   und der Quarz wird ungeprüft gewählt (`clk.c`, Zeile 184).
+   und der Quarz wird ungeprüft gewählt (`clk.c`, Zeile 143).
 
 Bei jedem Start nennt die Konsole den langsamen Takt und seine kalibrierte
 Frequenz (`log_clock_at_start()`, `firmware/panel/main/panel_settings.c`):
@@ -317,7 +317,7 @@ der 4 Versuche besteht, ist nicht gemessen. Ein Flashen des ganzen Images
 über USB schreibt auch den Bootloader.
 
 Aktuelle Einschränkung: Ein Quarz, der nach dem Start stehen bleibt, wird
-nicht erkannt. ESP-IDF v5.5.5 bietet auf dem ESP32-P4 keinen
+nicht erkannt. ESP-IDF v6.1 bietet auf dem ESP32-P4 keinen
 XTAL32K-Watchdog. Die Systemzeit läuft vom Hauptquarz weiter (esp_timer),
 und der RTC-Timer steht; der nächste Software-Neustart stellt die Uhr um
 die Zeit zurück, die er stand.
@@ -600,24 +600,24 @@ vergessen ist.
 Die SD-Karte auf Slot 0 und der C6 auf Slot 1 teilen sich einen
 SDMMC-Controller:
 
-- ESP-IDFs SDMMC-Treiber hält die Einrichtung eines Slots nicht gegen eine
-  Übertragung auf dem anderen Slot zurück. Der Start eines Slots und der
-  Start einer Karte setzen den Taktteiler des Controllers, den beide Slots
-  teilen, und senden seine Takt-Update-Befehle außerhalb des
-  Anfrage-Mutex des Treibers (`sdmmc_host_set_card_clk()`, `sdmmc_host.c`
-  301-351). Wird die Karte eingebunden, während eine Wi-Fi-Sitzung Daten mit
-  dem C6 austauscht, kann die laufende Übertragung scheitern; esp_hosted
-  meldet dann eine ausgefallene Verbindung, und Wi-Fi bleibt bis zum
-  nächsten Neustart des Panels aus. Umgekehrt kann der Start von Slot 1
-  durch esp_hosted, beim ersten Wi-Fi-Start und bei jedem Reset des C6, den
-  es auslöst, ein laufendes Lesen oder Schreiben der Karte scheitern lassen.
-  Nicht gemessen.
-- ESP-IDFs Einbinden hält Slot 0 bei jedem Fehler nach dem Init des
-  Controllers an (`vfs_fat_sdmmc.c` 310-312) und hält den ganzen Controller
-  an, wenn danach kein Slot mehr gezählt ist (`sdmmc_host.c` 906-923).
-  `storage.c` startet Slot 0 vor dem Einbinden selbst und gibt ohne Anhalten
-  auf, wenn er nicht startet, sodass der Zähler unter der Verbindung zum C6
-  nie auf 0 fällt.
+- Der SDMMC-Treiber von ESP-IDF v6.1 nimmt für jeden Befehl den Mutex des
+  Controllers und setzt den Taktteiler des Slots, zu dem der Befehl
+  gehört, darin (`sd_host_slot_sdmmc_do_transaction()`,
+  `components/esp_driver_sdmmc/src/sd_trans_sdmmc.c`); das Anmelden eines
+  Slots setzt keinen Takt. Ein Einbinden auf Slot 0 und der Verkehr des C6
+  auf Slot 1 kommen Befehl für Befehl abwechselnd dran. Was ein
+  Taktwechsel zwischen zwei Befehlen eine Übertragung des anderen Slots
+  kostet, ist nicht gemessen.
+- ESP-IDFs Einbinden meldet Slot 0 selbst an dem Controller an, den
+  esp_hosted angelegt hat (`sdmmc_host_init()` gibt den vorhandenen
+  Controller zurück). Bei einem Fehler danach nimmt es Slot 0 wieder
+  heraus, und der Controller verschwindet nur, wenn kein Slot mehr
+  angemeldet ist (`components/fatfs/vfs/vfs_fat_sdmmc.c`,
+  `components/esp_driver_sdmmc/legacy/src/sdmmc_host.c`). Ein Slot 0, der
+  nicht gestartet ist, hat kein Handle, und sein Herausnehmen ändert
+  nichts. `storage.c` überlässt den Start von Slot 0 dem Einbinden: Ein
+  vorher gestarteter Slot 0 lässt den eigenen Start des Einbindens mit
+  `ESP_ERR_INVALID_STATE` scheitern.
 
 ### Kerne und Speicher
 
@@ -660,7 +660,7 @@ Funkteil.
 
 | Workflow | Auslöser | Jobs |
 | --- | --- | --- |
-| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.5.5 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors, die Frame-Zeilen der Konsole (`tools/check_perf_log.py`) und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF` und `RCBENCH_PERF_LOG=OFF`, der fehlschlägt, wenn er ein Injector-Symbol oder eine Frame-Zeile enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
+| `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; die Prüfung der Doxygen-Kommentare mit `tools/doc_check.py`, die bei einem Pull Request auch bei jeder Warnung in einer C-Datei fehlschlägt, die er hinzufügt, oder auf einer Zeile, die er ändert; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v6.1 für den ESP32-P4 mit der Prüfung des Images gegen seinen Update-Slot, der Prüfung, dass das Image das IOmcu-Image trägt und die Symbole des Touch-Injectors, die Frame-Zeilen der Konsole (`tools/check_perf_log.py`) und exFAT enthält, und einem zweiten Build mit `RCBENCH_TOUCH_INJECTOR=OFF` und `RCBENCH_PERF_LOG=OFF`, der fehlschlägt, wenn er ein Injector-Symbol oder eine Frame-Zeile enthält; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält, und ein dritter mit `-DIOMCU_CONSOLE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Symbol der Konsole enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, das des Panels mit `-D RCBENCH_PERF_LOG=OFF` und einer Prüfung, dass es keine Frame-Zeile enthält, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |

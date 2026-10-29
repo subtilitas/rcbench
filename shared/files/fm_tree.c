@@ -352,3 +352,34 @@ bool fm_tree_has_next(const fm_tree_t *tree)
 {
     return tree != NULL && tree->ahead + tree->held < tree->total;
 }
+
+fm_has_t fm_tree_has_file(const fm_tree_t *tree, const char *name)
+{
+    if (tree == NULL || name == NULL || name[0] == '\0' || tree->total < 0
+        || tree->held < 0 || tree->held > FM_PAGE_MAX
+        || strlen(name) >= FM_NAME_BUF) {
+        return FM_HAS_UNKNOWN;
+    }
+    for (int i = 0; i < tree->held; ++i) {
+        if (!tree->page[i].is_dir
+            && log_name_case_cmp(tree->page[i].name, name) == 0) {
+            return FM_HAS_YES;
+        }
+    }
+    if (tree->held == 0) {
+        /* No row, so no edge: an empty folder, or one whose page past the
+         * end has nothing on it. */
+        return (tree->total == 0) ? FM_HAS_NO : FM_HAS_UNKNOWN;
+    }
+    fm_entry_t probe;
+    memset(&probe, 0, sizeof(probe));
+    memcpy(probe.name, name, strlen(name) + 1u);
+    if (fm_tree_has_prev(tree) && fm_tree_rank(&probe, &tree->page[0]) < 0) {
+        return FM_HAS_UNKNOWN;
+    }
+    if (fm_tree_has_next(tree)
+        && fm_tree_rank(&probe, &tree->page[tree->held - 1]) > 0) {
+        return FM_HAS_UNKNOWN;
+    }
+    return FM_HAS_NO;
+}
