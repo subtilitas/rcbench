@@ -5,8 +5,9 @@ frames of both wire families, the transactions a driver runs, the reply
 decoders, the arithmetic of the PIO (programmable input/output) pin driver
 and the register models: the parameters, their encodings and the writes a
 change takes ([Register model](#register-model)), and the session: entry,
-reads, write plans and leave, handed out one step at a time to a caller
-that runs them ([Session](#session)). The pin driver puts the wire on one
+reads, write plans, moves and leave, handed out one step at a time to a
+caller that runs them ([Session](#session)), and the arithmetic and judges
+of a D series horn moved inside a session ([Live loop](#live-loop)). The pin driver puts the wire on one
 RP2350 pin. In this repository the IOmcu's HITEC link page
 (`shared/outputs/hitec_port.c`,
 [The programming port for Hitec servos](../../docs/LinkHitec.md)) runs the
@@ -14,7 +15,7 @@ transactions on a programming port.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, `hitec_reg.c`, `hitec_session.c`, 5 headers under `include/` | C11 standard headers |
+| Core | `hitec_wire.c`, `hitec_pio.c`, `hitec_pre.c`, `hitec_reg.c`, `hitec_session.c`, `hitec_live.c`, 6 headers under `include/` | C11 standard headers |
 | RP2350 pin driver | `rp2350/hitec_line.pio`, `rp2350/hitec_line.c`, `rp2350/hitec_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
@@ -40,9 +41,11 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
   14.2, 3,712 of them the precharge sampler's sample buffer. An image
   (`hitec_image_t`) is 291 bytes and a plan (`hitec_plan_t`) 338 bytes on
   both; `hitec_param_set()` holds one image on its stack. A session
-  (`hitec_session_t`) is 1,060 bytes, a step (`hitec_ses_step_t`) 36 bytes
-  on both; `hitec_session.c` is 2,752 bytes of code with
-  arm-none-eabi-gcc 14.2 at `-Os`.
+  (`hitec_session_t`) is 1,068 bytes, a step (`hitec_ses_step_t`) 40 bytes
+  on both; `hitec_session.c` is 3,108 bytes of code with
+  arm-none-eabi-gcc 14.2 at `-Os`. A judge (`hitec_live_judge_t`) is 20
+  bytes and a FIND STOP search (`hitec_live_find_t`) 36 bytes on both;
+  `hitec_live.c` is 1,216 bytes of code.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
 ## Wire
@@ -301,7 +304,7 @@ the next step, runs it and hands back its result. Nothing in this
 repository calls it yet; the panel is to run it over the HITEC link page.
 
 ```c
-static hitec_session_t s;               /* 1,060 bytes */
+static hitec_session_t s;               /* 1,068 bytes */
 hitec_ses_step_t st;
 hitec_ses_result_t r;
 
@@ -342,9 +345,10 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
 | `hitec_session_read_set()` | 1 to 256 cells | 1 to 128 even registers |
 | `hitec_session_write()` | the plan from the image to the draft: per cell `62 cell value sum`, answered `+ +`, and the balance 0x1C after each setting of cells up to 0x1B; then a read of cells 0x00 to 0x23 | the plan: the writes, the save, the reboot, each a frame with no answer; then a read of the 21 registers |
 | `hitec_session_run_plan()` | a plan the caller built, run the same way | the same, such as `hitec_d_factory_plan()` |
+| `hitec_session_move()` | `66 high low`, the target in 0.25us (3600 to 8400), answered `+ +`; then `65 00 00`, answered with the feedback potentiometer, high byte first | a write of 0x1E, the target (0 to 6000), with no answer; then a read of 0x0C, the position |
 | `hitec_session_leave()` | POWER: off for the entry's off time, on, a LISTEN of 1000us with no answer | the reboot, `0x46 = 1`, then 1000ms before the next frame |
 
-- One operation runs at a time. A read, a write and a plan need a
+- One operation runs at a time. A read, a write, a plan and a move need a
   successful entry; a leave clears `in_mode`. The off time is 0 to
   10,000ms. A classic entry always cycles the supply; refusing one without
   a supply the bench switches is the caller's.
@@ -392,6 +396,14 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
   `step_index` counts the plan's writes that went out,
   `fail_addr` names the address that failed, `last_rx` the last code, for
   a journal and the messages.
+- A move changes nothing in the image and forgets nothing: it writes no
+  EEPROM cell and no saved register. No step of a move is marked `more`,
+  so a supply cut during one cuts no write. `position` holds the read and
+  `has_position` says it is this move's; an abort with the read out keeps
+  the read. A classic move with no `+ +` on any try ends with
+  `HITEC_SES_ERR_WRITE`, a position read with none with
+  `HITEC_SES_ERR_READ`; `fail_addr` names the register (D series) or the
+  command byte (classic).
 
 Time is one free-running 32-bit clock the caller passes, in microseconds
 or milliseconds, chosen at `hitec_session_init()`. Gaps are unsigned
@@ -420,6 +432,51 @@ Not measured:
   2ms apart; the HPP-21 Plus spaces two settings 121 to 128ms, with a read
   of 0x00 to 0x23 between them.
 - Whether a classic servo answers a second try of the first command.
+
+## Live loop
+
+`hitec_live.h` holds what lies between a D series move's target (0x1E,
+0 to 6000) and the position it gives (0x0C, 0 to 16383): the arithmetic of
+a horn moved to the value being edited, inside a session, and the judges
+that stop it at a mechanical stop. It runs no transaction and reads no
+clock; the caller passes a 32-bit millisecond clock, and times are
+unsigned differences, so its wrap does not change one.
+
+| Part | Rule |
+| --- | --- |
+| Stored ends | 0xB2, 0xC2, 0xB0 of an image, ascending, at most 16383, with 0x5E = 0 (CW) (`hitec_live_d_ends()`) |
+| Target to position | below 3000: 0xC2 - (3000 - t) x (0xC2 - 0xB2) / 2600; from 3000: 0xC2 + (t - 3000) x (0xB0 - 0xC2) / 2600; rounded, clamped to 0 to 16383 (`hitec_live_d_pos()`) |
+| Position to target | the inverse, clamped to 0 to 6000 (`hitec_live_d_target()`) |
+| Reach | the positions of targets 0 and 6000: 2606 to 13743 on a factory D485HW (`hitec_live_d_reach()`) |
+| Pulse width | t = (us - 750) x 4 (`hitec_live_d_us_target()`); 1000us takes the horn 76.9% of the way to the left end (`hitec_live_d_share_pm()`) |
+| Command of a pass | the wanted position clamped to the reach, at most 150 counts (2.0deg) from the command before, and its target (`hitec_live_d_command()`) |
+| Free | the position read within 50 counts (0.7deg) of the command; it becomes the last free position |
+| Bound by lag | the position more than 150 counts from a command that stands still or moves outward, on 2 passes in a row |
+| Bound by current | readings at or above 80% of the session's current limit (800mA of 1000mA) for 400ms; a pass with no reading leaves the run |
+| Bound by AS5600 | the angle moved less than half of a commanded change of 3deg or more, counted to the pass before |
+| Move back | the last free position, 75 counts (1.0deg) toward 0xC2, not past it (`hitec_live_back()`) |
+| FIND STOP | from 0xC2 outward in steps of 37 counts (0.5deg), 2 passes a position; a bind gives the stop (the last free position) and the end point 75 counts inside it; 2 passes at the reach edge with no bind end it with no stop; 40s cap; abort (`hitec_live_find_*()`) |
+
+A position is 220deg over 0 to 16383, 74.5 counts a degree, on a
+standard servo (the D series manual). The stall time and the FIND
+STOP cap are the KST limit run's (`SERVO_LIMRUN_STALL_MS`,
+`SERVO_LIMRUN_SEARCH_MS`).
+
+Not measured:
+
+- Targets 400, 3000 and 5600 give 0xB2, 0xC2 and 0xB0 in the D series
+  manual; through the IOmcu targets 2700, 3300 and 3000 landed within 13
+  counts of the line on a D485HW. Whether the servo follows the line
+  below 400 and above 5600 or stops at the end points is not measured: the
+  reach assumes the line goes on.
+- t = (us - 750) x 4 rests on the D series manual's mapping and a
+  third-party observation; not measured with a pulse width
+  (`HITEC_LIVE_D_US_ZERO`, `HITEC_LIVE_D_T_PER_US`).
+- The mapping of a servo set to CCW; `hitec_live_d_ends()` takes CW only.
+- Every threshold of the judges: no horn has been run against a block
+  through this code. The stall current of a D485HW is not known.
+- A pass's period: about 110ms is an estimate from the host model's 57ms
+  a register read.
 
 ## Driver interface
 

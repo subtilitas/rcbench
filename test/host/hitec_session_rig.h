@@ -35,6 +35,8 @@ typedef struct {
     uint8_t ignore;       /* 1: the servo does not take a write of ign */
     uint8_t ign;
     uint32_t plus_ns;     /* the servo's `+` from the start of a listen */
+    uint16_t c_pos;       /* classic: the potentiometer 0x65 answers */
+    uint16_t c_moved;     /* classic: the last target 0x66 took */
     uint32_t now;
     uint32_t cost;        /* ticks a step takes */
     unsigned n;           /* steps run */
@@ -104,6 +106,11 @@ static inline void servo(rig_t *r, const hitec_ses_step_t *st, hitec_capture_t *
             c_reply(c, r->version, HITEC_C_ACK);
         } else if (x->tx[0] == HITEC_C_READ_EEPROM) {
             c_reply(c, r->mem[a], HITEC_C_ACK);
+        } else if (x->tx[0] == HITEC_C_READ_POSITION) {
+            c_reply(c, (uint8_t)(r->c_pos >> 8), (uint8_t)r->c_pos);
+        } else if (x->tx[0] == HITEC_C_MOVE) {
+            r->c_moved = (uint16_t)(a << 8 | x->tx[2]);
+            c_reply(c, HITEC_C_ACK, HITEC_C_ACK);
         } else {
             if (!(r->ignore != 0u && a == r->ign)) {
                 r->mem[a] = x->tx[2];
