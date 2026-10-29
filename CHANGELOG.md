@@ -103,6 +103,21 @@ history is in git.
 
 ### Fixed
 
+- Errors with an IOmcu older than link 4.31: a programming port that holds
+  the PD mini keeps it through every error the panel finds but the panel's
+  own trips, as [Safety, Errors](docs/Safety.md#errors) says. A supply that
+  stops answering or gives no reading, an ON taken across lost touch
+  events, and an ON the SUPPLY page refuses while a port's ON is on it ask
+  DISARM and write no OFF over the port's supply. A reading fault the port
+  keeps is acted on and named once while it stands, and the output goes
+  off when the port lets go. The PD mini's own protection and a sagging
+  input are followed off whoever holds the supply. An IOmcu of 4.31 or
+  later gets the OFF on every error as before. The panel's model is
+  switched off on every error, a programming port taken or not.
+- A failed final commit or close of the run log, or of the automatic
+  test's CSV, is a card error of the run: the bench to SAFE and the supply
+  off, once a run, and not when a write of the run failed before. The
+  report written after the automatic test is not counted.
 - `tools/frame_cost.py` gives the same fills on every run: cachegrind gets
   the ESP32-P4's L1 instruction cache (16KB, 4-way, 64-byte lines) instead
   of the runner CPU's, the bench draws from a stack at a fixed offset
