@@ -3093,7 +3093,7 @@ off (`shared/webaccess/wa_guard.h`):
 | Check | Refused with |
 | --- | --- |
 | The `Host` header names the panel: `rcbench-3F7A.local`, `rcbench-3F7A` or the address the browser connected to (`192.168.4.1` as an access point), in any letter case, with no port or port 80. An IPv6 address is refused. | 421 Misdirected Request |
-| A page, file or ZIP request carries no body. | 400 Bad Request |
+| A page, file, ZIP or file API request carries no body. | 400 Bad Request |
 | A code entry has at most 95 bytes of body. | 413 Content Too Large |
 | A code entry and an upload carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
 | An upload carries the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
@@ -3176,6 +3176,59 @@ second takes S / R seconds: at 700kB/s, a 50MB card takes about 71s. The page an
 during a download waits for its end. A card pulled during a download ends
 the download short, and so does a browser that takes nothing for 30s; the
 browser reports it as failed, and the panel runs on.
+
+### The file API
+
+The page's server also answers four reads for a script: a page of a
+folder, the facts of one entry, a text file whole, and the panel's state
+(`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`).
+The page itself does not call them. They read the card only, through
+the same pages, rules and file load as FILES: nothing is written, renamed
+or deleted. Each takes the guard of the table above and the access code
+as a download does; a request without a code gets 403 and `CODE`.
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, and the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
+| `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
+| `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` and `X-Rcbench-Bom` (1 or 0) |
+
+A path is relative to the card's root and percent-encoded with `/` as the
+separator: `%2F` is refused, `+` is a plus. It holds at most 120 bytes and
+16 folders, as on FILES. With `mount=M`, an INFO or a file read from
+another card than the one listed is refused with `CARD_GONE`.
+
+A refusal is an HTTP status and `{"error":"WORD","text":"..."}`, the text
+in the panel's language:
+
+| Word | Status | When |
+| --- | --- | --- |
+| `NAME` | 400 | a path the card or FILES does not take |
+| `REQUEST` | 400 | a parameter outside the ones above, or no path for INFO or a file |
+| `ARG` | 400 | a folder asked as a file |
+| `CODE` | 403 | no access code, or a wrong one, which counts toward the 16 |
+| `LOCKED` | 403 | the servo programmers' records, `KST.TXT` and `HITEC.TXT`: download them instead |
+| `NOT_FOUND` | 404 | no such entry, or one of another kind |
+| `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
+| `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |
+| `TOO_MANY_LINES` | 422 | more than 65,536 line ends |
+| `BUSY` | 423 | a file the logger writes |
+| `IO` | 500 | the card failed a read |
+| `NO_CARD`, `CARD_GONE`, `MEMORY`, `CANCELLED` | 503 | no card; the card taken out or swapped; no PSRAM for the request; the radio going off |
+
+The words of the writes FILES makes (`EXISTS`, `FULL`, `DENIED`, `FIXED`,
+`NOT_EMPTY`, `SAME`, `ARMED`, `LOGGING`) have their status and text too;
+no read gives them.
+
+The API's memory is PSRAM, taken at its first request and given back when
+the radio goes off: about 22kB for a request, and 1MiB for a file's bytes
+and 256KiB for its line index at the first file. Each list, INFO and file
+request logs its answer, its bytes, its time and the stack the server's
+task left unused, as `api: <request> <answer>, <n>B in <t>ms; httpd stack
+<n>B unused`.
+The server's stack is 8,192 bytes; a card read on it is not measured on a
+panel.
 
 ### Installing: PANEL UPDATE
 

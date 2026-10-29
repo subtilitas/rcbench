@@ -335,6 +335,7 @@ TRACKED = [
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
+    "shared/webaccess/wa_api.c",
     "shared/clock/wall_clock.c",
 ]
 
@@ -356,6 +357,8 @@ DATA_ONLY = {
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
+    # The rbmod carrier's pin catalogue and role table.
+    "shared/outputs/out_board_rbmod.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it

@@ -238,6 +238,9 @@ bool bring_up(void)
     /* FILES reaches the card through its own task, started at its first
      * request. */
     files_screen_set_io(&k_files_io);
+    /* The Wi-Fi page's file API reads the same card from its server's
+     * task. */
+    wifi_access_set_files(panel_files_card(), panel_files_web_bench);
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();

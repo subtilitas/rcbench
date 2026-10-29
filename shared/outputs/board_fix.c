@@ -37,7 +37,7 @@ bool board_fix_slots_ok(const outbind_roles_t *r, const uint16_t *slots)
         return false;
     }
     for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
-        const uint16_t *slot = &slots[s * LINK_OS_STRIDE];
+        const uint16_t *slot = &slots[(size_t)s * LINK_OS_STRIDE];
         if (slot[LINK_OS_DRIVER] == (uint16_t)LINK_DRIVER_NONE) {
             continue;
         }
@@ -119,7 +119,7 @@ void board_fix_store(const outbind_roles_t *r, out_store_t *cfg)
         return;
     }
     for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
-        uint16_t *slot = &cfg->slots[s * LINK_OS_STRIDE];
+        uint16_t *slot = &cfg->slots[(size_t)s * LINK_OS_STRIDE];
         if (slot[LINK_OS_DRIVER] != (uint16_t)LINK_DRIVER_NONE
             && board_fix_out_index(r, slot[LINK_OS_PIN]) < 0) {
             memset(slot, 0, sizeof(uint16_t) * LINK_OS_STRIDE);
@@ -131,7 +131,7 @@ void board_fix_store(const outbind_roles_t *r, out_store_t *cfg)
     cfg->sense[LINK_SN_SCL_PIN] = r->scl;
     cfg->tone[LINK_TN_PIN]      = r->tap;
     for (unsigned port = 0; port < OUTBIND_FIXED_PROGS; ++port) {
-        cfg->prog[port * PROG_PORT_KEPT] = r->prog[port];
+        cfg->prog[(size_t)port * PROG_PORT_KEPT] = r->prog[port];
     }
     cfg->prog_func = BOARD_FIX_PROG_FUNC_NONE;
 }
