@@ -1,5 +1,6 @@
-/*
- * The Wi-Fi page's text. See wa_text.h.
+/**
+ * @file
+ * @brief The Wi-Fi page's text. See wa_text.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -233,6 +234,30 @@ void wa_out_js(wa_out_t *o, const char *s)
             /* U+2028 and U+2029 end a line in a script of older engines. */
             wa_out_str(o, (uint8_t)s[2] == 0xA8u ? "\\u2028" : "\\u2029");
             s += 2;
+        } else {
+            wa_out_raw(o, s, 1u);
+        }
+    }
+}
+
+void wa_out_json(wa_out_t *o, const char *s)
+{
+    static const char k_hex[] = "0123456789abcdef";
+    if (s == NULL) {
+        return;
+    }
+    const bool utf8 = wa_utf8_units(s, strlen(s)) >= 0;
+    for (; *s != '\0'; ++s) {
+        const uint8_t b = (uint8_t)*s;
+        if (b == '\\' || b == '"') {
+            const char esc[2] = { '\\', *s };
+            wa_out_raw(o, esc, 2u);
+        } else if (b < 0x20u || b == 0x7Fu) {
+            const char esc[6] = { '\\', 'u', '0', '0', k_hex[b >> 4],
+                                  k_hex[b & 0x0Fu] };
+            wa_out_raw(o, esc, 6u);
+        } else if (b >= 0x80u && !utf8) {
+            wa_out_str(o, "\\ufffd");
         } else {
             wa_out_raw(o, s, 1u);
         }

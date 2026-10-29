@@ -327,6 +327,21 @@ extern atomic_bool   s_enc_held;
 /** @brief FILES' way to the card: its requests run on the task cardjob. */
 extern const files_io_t k_files_io;
 
+/**
+ * @brief The card as FILES' core sees it (fm_io.h), for the Wi-Fi page's
+ *        file API, which calls it from the page server's task.
+ * @return the card's table of functions
+ */
+const fm_io_t *panel_files_card(void);
+
+/**
+ * @brief The bench for the page server's task: ARMED, the IOmcu link and
+ *        the logger's open files now, into marks of that task's own.
+ * @param out  takes the bench
+ * @param ctx  unused
+ */
+void panel_files_web_bench(fm_bench_t *out, void *ctx);
+
 /* ------------------------------------------------------------ panel_card.c */
 
 /* Read once at start-up, from bring_up(). */
@@ -500,6 +515,14 @@ typedef struct {
 #define LOG_NOTE_MAX   208
 #define LOG_NOTE_Q_LEN 4
 
+/** @brief The console reports link_report() hands the logger to print,
+ *         10s of them at the 5s cadence: up to 7 lines of up to 167
+ *         characters each, 50ms and more on the UART (universal
+ *         asynchronous receiver-transmitter) console, which would
+ *         otherwise stall the task that beats the safety line.  A full
+ *         queue is printed where it is made: no line is dropped. */
+#define CONSOLE_Q_LEN 2
+
 /* One line of a servo test's files, render loop -> logger. */
 typedef struct {
     uint8_t kind;                        /* servo_test_out_t */
@@ -510,6 +533,12 @@ typedef struct {
 
 extern QueueHandle_t s_log_q;
 extern QueueHandle_t s_note_q;
+/** @brief control task -> logger: link_report_in_t, CONSOLE_Q_LEN deep. */
+extern QueueHandle_t s_console_q;
+/** @brief The logger prints every console report waiting (panel_log.c). */
+void console_reports_print(void);
+/** @brief Print one console report on the calling task (panel_link.c). */
+void console_report_print(const link_report_in_t *r);
 /** @brief The fault log's lock (log_fault_lock()). */
 extern SemaphoreHandle_t s_note_mx;
 extern QueueHandle_t s_test_q;
@@ -650,7 +679,8 @@ static inline bool control_clear_failsafe(link_msg_t *reply)
 }
 
 /* What the panel knows about a link that stopped; the link report, every
- * 5s while the link is down and every 60s while it is up. */
+ * 5s while the link is down and every 60s while it is up, handed to the
+ * logger to print (console_reports_print()). */
 void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
@@ -716,8 +746,8 @@ extern bool            s_prog_taken;
 extern kst_prog_gate_t s_kst_gate;
 /** @brief The programmers' session faults: the KST outcomes
  *         kst_link_outcome_fault() names, counted as kst_publish() takes
- *         them, and the Hitec model's (hitec_prog_gate_faults()).  Control
- *         task only.
+ *         them (kst_link_faults()), and the Hitec model's
+ *         (hitec_prog_gate_faults()).  Control task only.
  *  @return the sum, modulo 2^32 */
 uint32_t prog_faults(void);
 /* The SENSE and TONE set-ups that are not held at the far end. */
@@ -834,6 +864,9 @@ void advance_model_and_log(bool link_up, float emitted,
                            bool *new_sample);
 void publish_snapshot(const bench_state_t *bench, bool link_up,
                       bool new_sample);
+/* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
+ * Control task only. */
+uint16_t far_end_faults(void);
 
 /* ------------------------------------------------------- main.c, continued */
 
@@ -982,6 +1015,9 @@ extern atomic_uint    s_supply_adopt_mv;
 extern atomic_uint    s_supply_adopt_ma;
 extern atomic_uint    s_supply_adopt_gen;
 extern atomic_uint    s_supply_adopt_done;
+/** @brief The last read of the supply: no port holds it and its output is
+ *         off (supply_link_port_free_off()). */
+extern atomic_bool    s_supply_free_off;
 /* The ESC (electronic speed controller) model's profile and its runs. */
 extern atomic_uintptr_t s_escsim_profile;
 extern atomic_uint    s_escsim_runs;
@@ -1028,10 +1064,10 @@ static inline void supply_service(void)
 
 void apply_supply_cmd(const panel_cmd_t *pc);
 /**
- * @brief An error of the bench (error_stop.h): the bench to SAFE when it is
- *        ARMED or a switch to ARMED waits, and the supply's output off; with
- *        an IOmcu older than link 4.31, not when a programming port holds
- *        it.  Control task, in the pump as well.
+ * @brief An error of the bench (error_sites_stop()): the bench to SAFE
+ *        when it is ARMED or a switch to ARMED waits, and the supply's
+ *        output off; with an IOmcu older than link 4.31, not when a
+ *        programming port holds it.  Control task, in the pump as well.
  */
 void bench_error_stop(void);
 /** @brief The card faults the logger counted, each an error once

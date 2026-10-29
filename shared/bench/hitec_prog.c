@@ -381,6 +381,10 @@ static void read_done(hitec_prog_t *p)
 {
     const hitec_image_t *img = &p->ses.image;
     const bool had = p->have_servo;
+    /* A write of the session left unverified: its record, where one
+     * stands, links this read to the one before (hpf_read_done()). */
+    const bool owed = p->must_read;
+    bool changed;
 
     if (had) {
         /* What the read before found, for the write side: the draft holds
@@ -400,8 +404,8 @@ static void read_done(hitec_prog_t *p)
         (void)hpg_say2(p, HITEC_PROG_MSG_READ, 0u,
                    img->has_version != 0u ? img->version : 0u);
     }
-    hpw_read_done(p, had, had ? &p->wr_target : NULL);
-    hpf_read_done(p);
+    changed = hpw_read_done(p, had, &p->wr_target);
+    hpf_read_done(p, owed, changed);
 }
 
 void hpg_ses_say(hitec_prog_t *p, hitec_ses_t r)

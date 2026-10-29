@@ -136,7 +136,14 @@ Bus scheitert.
 Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
 IOmcu, bis er antwortet, dann die Bench-Page mit 20Hz und die
 Status-Page alle 500ms. Alle 5s, solange der Link ausgefallen ist, und einmal
-pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
+pro Minute, solange er läuft, gibt das Panel eine Diagnose aus. Die
+Control-Task, die den Heartbeat schlägt, nimmt die Zähler und übergibt sie der
+Logger-Task, die die Zeilen formatiert und ausgibt: Bis zu 7 Zeilen brauchen
+auf der Konsole 50ms und mehr, und die Grenze des Heartbeats ist 150ms. Eine
+Warteschlange fasst 2 Berichte; ist der Logger von der Karte aufgehalten und
+die Warteschlange voll, gibt die Control-Task den Bericht selbst aus, und keine
+Zeile geht verloren. Die Heartbeat-Lücke mit dem Bericht außerhalb der
+Control-Task ist nicht gemessen.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end

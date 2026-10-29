@@ -94,7 +94,8 @@ and ends 4px above the alert band; the geometry is the KST programmer's
    - D series: POWER at the programming voltage with an off time of 0ms
      where a PD mini answers, then 1000ms for the servo to start. Without a
      PD mini the servo runs on the supply as it is.
-   - Classic: POWER with the supply off for 500ms, then on, and a LISTEN
+   - Classic: POWER with the supply off, 500ms from the read that shows it
+     off ([LEAVE](#leave) has the whole off time), then on, and a LISTEN
      for the servo's `+`; the servo's second `+` follows 250ms to 267ms
      later; 0x67 then reads the version.
 3. READ ALL: the series' set, each address with 3 tries.
@@ -121,6 +122,8 @@ While the port is held:
   points and ON are locked.` OUTPUT OFF works. From protocol 4.29 the IOmcu
   holds its SUPPLY page from OPEN to CLOSE as well
   ([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)).
+  The set points from before CONNECT come back after LEAVE once the output
+  is off ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
 - The KST and Chaservo row and MOTOR & ESC's TARGET row take no press, and
   ESC STICK does not start a run.
 
@@ -421,12 +424,40 @@ as it was.
 
 The session's backup is the first full read after CONNECT, kept in the
 panel's RAM. A later read of the same servo leaves it as it is. A read
-that finds another servo makes that read the backup: for the D series
-another model number, for a classic servo another name, date, serial or
-version. LEAVE, the next CONNECT, a lost link and a panel restart end it.
+that finds another servo makes that read the backup. A classic servo is
+another servo by another name, date, serial or version. A D series servo
+is another servo by another model number, or when the read breaks the
+session's chain. The port is held, so only the session writes the servo,
+and a D series read is of the servo read before it when:
+
+- no write of the session is left unverified, and every register a write
+  sends holds the value the read before found; or
+- a write is left unverified (its check failed, or it was interrupted),
+  and the record of that write explains the values: the read finds the
+  values before the write, its new values, or some of each
+  ([The record of a write](#the-record-of-a-write)). With the record
+  discarded the values decide, against the values the failed check read
+  back.
+
+The chain compares with the read before, not with the backup: the
+session's own verified writes, the ID 0x32 included, keep it. A read of
+another servo says
+
+```
+Other values than the last read: taken as another servo.
+Its backup is this read.
+```
+
+The backup file line goes, RESTORE does not offer the first servo's
+backup, and the first write to the new servo saves a backup file of its
+own. Where a record stands, its line takes the place of these two. LEAVE,
+the next CONNECT, a lost link and a panel restart end the backup; the
+first read of the next session is its backup without these lines.
 A file the card makes for a backup, or a save by hand, counts only for the
 backup that stood when it was asked for: a late answer after LEAVE and
 CONNECT, or after another servo's read, saves nothing for the new one.
+
+![Another servo read in the session](img/servo-hitec-other-servo.png)
 
 The first write of a session that sends a step, WRITE n VALUES, REPAIR
 CHECKSUM, a RESTORE or FACTORY DEFAULT, saves the backup to a new file
@@ -635,7 +666,13 @@ hold of 2s on `HOLD 2s TO LEAVE` leaves:
 
 - D series: a reboot of the servo (register 0x46 = 1), which then ignores
   signals for 1s; the supply stays as it is.
-- Classic: the supply off for 500ms and on again.
+- Classic: the supply off and on again. The 500ms off time counts from
+  the PD mini's read that shows the output off, which the driver sends
+  250ms after the OFF (`PDMINI_CONFIRM_MS`). The ON goes after the
+  driver's reads of the set points and the active slot. The output is off
+  about 760ms: 762ms measured on one module, at the 1.4V threshold of a
+  logic analyser. How much of it is the module's own switching time is not
+  measured.
 
 Then CLOSE: the port is back in PWM and the message says
 `The port is back in tester mode.` LEAVE is taken on a stopped port, an
@@ -713,8 +750,11 @@ as after any stop: ARM is refused only while the port is held.
   backup is the servo as found then, with the values of the cut write; the
   record of the write and the old session's backup file hold the values
   before it.
-- Two D series servos of one model are not told apart: a second D485HW on
-  the port keeps the first one's backup.
+- Two D series servos of one model are told apart by their values only. A
+  second D485HW whose registers a write sends hold the values of the first
+  one's last read keeps the first one's backup, and RESTORE of the
+  session's backup writes the first one's values into it. Which register,
+  if any, differs between two units of one model is not measured.
 - A servo file written or edited outside the panel does not load.
 - The record is read from the card at the panel's start only. A card put
   in later is not read for one, and a record made with no card mounted is

@@ -2670,7 +2670,9 @@ erscheint im Band:
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Bei den ersten fünf gibt es keine Datei zu suchen. Bei den letzten vier gibt
-es eine, und sie hört zu früh auf.
+es eine, und sie hört zu früh auf. Ein gescheitertes Schreiben und ein
+gescheitertes Schließen eines Laufs sind ein Fehler: der Prüfstand geht auf
+SAFE und das Netzteil aus ([Sicherheit, Fehler](Safety-de.md#fehler)).
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
@@ -2825,7 +2827,9 @@ Die Fußzeile, Körper-y 440 bis 492, trägt links AKTUALISIEREN,
 140 x 52px, wie auf [Logs](#logs), dann KOPIEREN, VERSCHIEBEN,
 UMBENENNEN, LÖSCHEN, NEU, INFO und ÖFFNEN, 118 x 52px, ÖFFNEN am rechten
 Rand; die Tasten stehen 6px auseinander, und die Fußzeile endet 4px über
-dem Alarmband. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
+dem Alarmband. Jede Beschriftung steht in der Schrift 10 x 20 mit
+mindestens 4px Rand je Seite; AKTUALISIEREN ist 130px breit, VERSCHIEBEN
+110px. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
 darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
 12 x 24 über der Fußzeile.
 
@@ -3140,8 +3144,11 @@ meldet `Gestoppt: Der Prüfstand ist ARMED.` oder
 
 Die Rückfrage zu LÖSCHEN ist eine Box von 700 x 280px mit ABBRECHEN und
 LÖSCHEN von 300 x 56px. Sie nennt den Eintrag und seine Größe; bei der
-CSV-Datei eines Laufs mit einem Bericht derselben Nummer nennt sie den
-Bericht, der mitgelöscht wird.
+CSV-Datei eines Laufs nennt sie den Bericht derselben Nummer, der
+mitgelöscht wird, wenn die Seite des Bereichs diesen Bericht listet. Ein
+Bericht, der in einem Ordner mit mehr als 48 Einträgen auf der nächsten
+oder vorigen Seite stünde, wird ebenfalls genannt: Die Seite kann es nicht
+sagen, und LÖSCHEN nimmt den Bericht mit, wann immer die Karte ihn hat.
 
 ![Eine laufende Kopie](img/de/files-copy.png)
 
@@ -3423,7 +3430,7 @@ Jede Anfrage wird vor dem Zugangscode geprüft, mit Code ein und aus
 | Prüfung | Abgelehnt mit |
 | --- | --- |
 | Der `Host`-Header nennt das Panel: `rcbench-3F7A.local`, `rcbench-3F7A` oder die Adresse, mit der sich der Browser verbunden hat (`192.168.4.1` als Access Point), in beliebiger Groß- und Kleinschreibung, ohne Port oder mit Port 80. Eine IPv6-Adresse wird abgelehnt. | 421 Misdirected Request |
-| Eine Anfrage nach der Seite, einer Datei oder dem ZIP hat keinen Body. | 400 Bad Request |
+| Eine Anfrage nach der Seite, einer Datei, dem ZIP oder der Datei-API hat keinen Body. | 400 Bad Request |
 | Eine Code-Eingabe hat höchstens 95 Bytes Body. | 413 Content Too Large |
 | Code-Eingabe und Upload tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
 | Ein Upload trägt den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
@@ -3517,6 +3524,61 @@ beendet den Download zu kurz, ebenso ein Browser, der 30s lang nichts
 annimmt; der Browser meldet ihn als fehlgeschlagen, und das Panel läuft
 weiter.
 
+### Die Datei-API
+
+Der Server der Seite beantwortet auch vier Lesezugriffe für ein Skript:
+eine Seite eines Ordners, die Angaben zu einem Eintrag, eine Textdatei
+ganz und den Zustand des Panels (`shared/webaccess/wa_api.h`,
+`firmware/panel/components/wifi_access/wifi_files.c`). Die Seite selbst
+ruft sie nicht auf. Sie lesen die Karte nur, über dieselben Seiten,
+Regeln und dasselbe Laden wie FILES: Nichts wird geschrieben, umbenannt
+oder gelöscht. Jede läuft durch die Prüfungen der Tabelle oben und braucht
+den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
+`CODE`.
+
+| Anfrage | Antwort |
+| --- | --- |
+| `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes":"closed"` mit dem Grund (`READ_ONLY`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift), Mount-Nummer, Name, Größe und freie Bytes der Karte und die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
+| `GET /api/info?path=P&dir=D&mount=M` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge |
+| `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` und `X-Rcbench-Bom` (1 oder 0) |
+
+Ein Pfad gilt ab der Wurzel der Karte und ist prozentkodiert, mit `/` als
+Trenner: `%2F` wird abgelehnt, `+` ist ein Plus. Er hat höchstens 120 Bytes
+und 16 Ordner, wie auf FILES. Mit `mount=M` wird INFO oder eine Datei von
+einer anderen Karte als der gelisteten mit `CARD_GONE` abgelehnt.
+
+Eine Ablehnung ist ein HTTP-Status und `{"error":"WORT","text":"..."}`, der
+Text in der Sprache des Panels:
+
+| Wort | Status | Wann |
+| --- | --- | --- |
+| `NAME` | 400 | ein Pfad, den die Karte oder FILES nicht nimmt |
+| `REQUEST` | 400 | ein Parameter außer den obigen, oder kein Pfad für INFO oder eine Datei |
+| `ARG` | 400 | ein Ordner, als Datei angefragt |
+| `CODE` | 403 | kein Zugangscode oder ein falscher, der zu den 16 zählt |
+| `LOCKED` | 403 | die Vermerke der Servoprogrammierung, `KST.TXT` und `HITEC.TXT`: stattdessen herunterladen |
+| `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
+| `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
+| `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |
+| `TOO_MANY_LINES` | 422 | mehr als 65.536 Zeilenenden |
+| `BUSY` | 423 | eine Datei, die der Logger schreibt |
+| `IO` | 500 | die Karte hat einen Lesezugriff nicht ausgeführt |
+| `NO_CARD`, `CARD_GONE`, `MEMORY`, `CANCELLED` | 503 | keine Karte; Karte entnommen oder getauscht; kein PSRAM für die Anfrage; der Funk geht aus |
+
+Die Wörter der Schreibzugriffe von FILES (`EXISTS`, `FULL`, `DENIED`,
+`FIXED`, `NOT_EMPTY`, `SAME`, `ARMED`, `LOGGING`) haben ebenfalls Status
+und Text; kein Lesezugriff liefert sie.
+
+Der Speicher der API ist PSRAM, genommen bei ihrer ersten Anfrage und
+zurückgegeben, wenn der Funk ausgeht: etwa 22kB für eine Anfrage und bei
+der ersten Datei 1MiB für deren Bytes und 256KiB für ihren Zeilenindex.
+Jede Anfrage nach Liste, INFO und Datei schreibt ihre Antwort, ihre Bytes,
+ihre Zeit und den ungenutzten Stack des Server-Tasks ins Log, als
+`api: <request> <answer>, <n>B in <t>ms; httpd stack <n>B unused`. Der Stack des
+Servers hat 8.192 Bytes; ein Kartenzugriff darauf ist auf einem Panel
+nicht gemessen.
+
 ### Installieren: PANEL UPDATE
 
 Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit
@@ -3602,10 +3664,35 @@ fehl (otadata nicht geschrieben), sagt das Band
 `Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
+Vor dem Neustart hält die Installation die geschriebene Version im NVS
+(Non-Volatile Storage): ein Eintrag von 40 Byte, Namespace `fw_ota`, Key
+`restart_note`, mit einem Magic Word und einem FNV-1a-Hash (Fowler-Noll-Vo).
+Ein Neustart, ein Panic und ein Stromausfall behalten ihn. Der nächste Start
+liest ihn; hat der Bootloader den geschriebenen Slot als ungültig markiert,
+ist dieser Start der Build davor, und das Band zeigt die Zeile `ist nicht gestartet`. Der
+Eintrag wird nach jedem Start gelöscht außer nach einem Versuchsstart, der
+zurückgeht, also erscheint die Zeile einmal. Ein Eintrag anderer Größe,
+anderen Magic Words oder Hashs gilt als keine Notiz. Der erste Start nach
+einer Installation aus 0.23.2 oder älter findet keinen Eintrag, wie ein
+Panel, das nie installiert hat: Diese Builds halten die Notiz im LP-RAM
+(Low-Power), und einen Versuchsstart dieses Builds, der zurückgeht, meldet
+der alte Build von dort. Die Konsole nennt die Prüfung jedes Starts in
+einer Zeile:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+Die Notiz ist die Version oder `none`, oder `unreadable` für einen Eintrag,
+der als keine Notiz gilt; der Slot ist der letzte ungültige des Bootloaders
+oder `none`; das Ergebnis ist `NORMAL`, `UPDATED`, `ROLLED_BACK`,
+`UNCONFIRMED` oder `GOING_BACK`, Letzteres vor dem Neustart eines
+Versuchsstarts, der zurückgeht.
+
 Aktuelle Einschränkungen:
 
-- Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
-  Panel geht trotzdem zum Build davor zurück.
+- Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
+  Konsole (`restart note not kept`), und ein Start ihres Builds, der
+  zurückgeht, zeigt keine Zeile im Band.
 - Ein Versuchsstart, der vor der Bildschirmschleife stehen bleibt, etwa in
   einem Einhängen der Karte, das nicht zurückkehrt, bleibt nicht und wird
   auch nicht zurückgesetzt: Der Task-Watchdog meldet und startet nicht neu

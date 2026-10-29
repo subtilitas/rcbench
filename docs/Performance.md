@@ -18,9 +18,9 @@ those fills, which can be measured exactly on the host.
 A frame's time is its PSRAM traffic and its instructions, and which of the
 two bounds a frame on this board is not measured. The one screen with
 figures from both sides points at the instructions: SERVO > LIVE during a
-sweep is 2,171 fills in the table, 271KiB of traffic, and the console read
+sweep is 2,431 fills in the table, 304KiB of traffic, and the console read
 DRAW 13.8 to 16.5ms ([On the board](#on-the-board)); as traffic alone that
-is 16 to 20MB/s. The fills hold the traffic side; `test_frame_work` holds
+is 19 to 23MB/s. The fills hold the traffic side; `test_frame_work` holds
 the instruction side in pixel visits ([Rules](#rules)).
 
 With Screen rotation 180°, a screen draws into a logical buffer of the same
@@ -30,12 +30,16 @@ presents it. The model counts the drawing, not the copy. The copy's time is
 the console's TURN; it is part of WAIT and adds to every frame that changes.
 
 `tools/frame_cost.py` builds the real screens for the host and runs them under
-cachegrind with the ESP32-P4's two caches: the L1 as cachegrind's first level,
-the L2 as its last, sized from `firmware/panel/sdkconfig.defaults`. It reports
-the difference between rendering one frame and eleven, so process start-up and
-the first paint of each buffer cancel out. The model sends every data access
-through both caches, the stack's included, and models no instruction fetch:
-the host runs x86 code.
+cachegrind with the ESP32-P4's caches: the L1 data and instruction caches as
+cachegrind's first level, the L2 as its last, sized from
+`firmware/panel/sdkconfig.defaults`. It reports the difference between
+rendering one frame and eleven, so process start-up and the first paint of
+each buffer cancel out. The model sends every data access through the L1 data
+cache and the L2, the stack's included. Instruction fetches go through the L1
+instruction cache (16KB, 4-way, 64-byte lines), and its misses fill the L2
+beside the data. The code fetched is the host's x86 code, whose size and
+layout differ from the RISC-V code's; how far that moves the fills is not
+measured.
 
 What a fill costs in time is the effective bandwidth of the CPU's writes into
 PSRAM while the DPI reads. It is not measured, so the table gives fills and
@@ -51,43 +55,43 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,341    1168 KiB
+frame                        9,785    1223 KiB
 frame-idle                       0       0 KiB
-held                         4,914     614 KiB
-sim                         12,998    1625 KiB
-throttle                    11,164    1396 KiB
-chrome                      51,588    6448 KiB
-overview                         1       0 KiB
-servo                        2,170     271 KiB
-servo-grip                     532      66 KiB
-servo-current                3,127     391 KiB
-supply                       9,685    1211 KiB
-supply-chrome               47,592    5949 KiB
+held                         5,229     654 KiB
+sim                         13,470    1684 KiB
+throttle                    11,656    1457 KiB
+chrome                      51,503    6438 KiB
+overview                         0       0 KiB
+servo                        2,431     304 KiB
+servo-grip                     642      80 KiB
+servo-current                3,358     420 KiB
+supply                       9,814    1227 KiB
+supply-chrome               47,311    5914 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,550     194 KiB
-balance-sim                  3,078     385 KiB
-settings-sim                 3,023     378 KiB
-battery-sim                  3,054     382 KiB
-analyser-chrome             60,990    7624 KiB
-logs-chrome                 26,185    3273 KiB
-settings-chrome             37,805    4726 KiB
-settings-list-chrome        36,903    4613 KiB
-battery-chrome              58,001    7250 KiB
-balance-chrome              63,351    7919 KiB
-motor-stick-chrome          41,817    5227 KiB
+motor-stick                  1,560     195 KiB
+balance-sim                  3,112     389 KiB
+settings-sim                 3,112     389 KiB
+battery-sim                  3,114     389 KiB
+analyser-chrome             60,992    7624 KiB
+logs-chrome                 26,041    3255 KiB
+settings-chrome             37,547    4693 KiB
+settings-list-chrome        36,398    4550 KiB
+battery-chrome              58,171    7271 KiB
+balance-chrome              63,450    7931 KiB
+motor-stick-chrome          41,489    5186 KiB
 picker                           0       0 KiB
-picker-chrome               41,256    5157 KiB
+picker-chrome               41,639    5205 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,130    2766 KiB
-wifi-keys                   36,851    4606 KiB
+wifi-chrome                 22,154    2769 KiB
+wifi-keys                   37,134    4642 KiB
 clear                       19,206    2401 KiB
-vlines                      10,203    1275 KiB
-hlines                         180      22 KiB
+vlines                      10,204    1276 KiB
+hlines                         171      21 KiB
 
 est. ms and est. fps: not measured
 ```
@@ -115,22 +119,30 @@ est. ms and est. fps: not measured
 | `vlines` | seventeen full-height vertical lines |
 | `hlines` | the same pixel count as horizontal lines |
 
-Absolute counts shift by a few fills between machines, because argv and the
-environment share the cache with the framebuffer. `frame_cost.py --check-doc`
-therefore checks the table to a tolerance of 2%, and never less than 100
-fills. It fails, too, when the line that names the panel's rate and the
-bandwidth differs from the tool's profile.
+The count repeats exactly on every run of the same tree: the tool gives
+cachegrind the geometry of all three caches, so none is taken from the host's
+CPU, and the bench draws from a stack at a fixed offset within 64KB, so argv,
+the environment and the paths do not move it. `test_frame_cost.py` measures
+five modes twice and fails on one fill of difference. The compiler, the C
+library and valgrind still shape the count. The table holds the figures of the
+ubuntu-26.04 runner of CI (continuous integration), and a machine with other
+versions measures other figures. A change anywhere in the measured sources
+moves the addresses of code and data, and with them the count of modes it does
+not touch: a change of texts and Hitec code moved 24 of the 37 modes by up to
+22 fills. `frame_cost.py --check-doc` therefore checks the table to a
+tolerance of 2%, and never less than 100 fills. It fails, too, when the line
+that names the panel's rate and the bandwidth differs from the tool's profile.
 
 ## Rules
 
-**Draw row-major.** Seventeen full-height vertical lines cost 10,202 fills;
-the same pixel count as horizontal lines costs 180, because each line is
+**Draw row-major.** Seventeen full-height vertical lines cost 10,204 fills;
+the same pixel count as horizontal lines costs 171, because each line is
 resident from the previous pixel. The shell is laid out in horizontal bands, and a
 vertical rule is a deliberate expense.
 
 **Cache the chrome.** Repainting everything costs 22,000 to 64,000 fills,
 the `-chrome` modes, and a cached steady frame of the same screen none:
-60,990 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
+60,992 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
 painted; that is what the `buffer_index` argument of `render()` is for. The
 panel alternates between two buffers, so a screen that invalidates only the
 buffer being drawn leaves the other one a frame behind, which reads as flicker.
@@ -146,7 +158,7 @@ on 800 x 480px, 144,721 instructions per frame in place of 8,412,078. The
 count on 1024 x 600px is not measured.
 
 **A count of fills is not a count of cycles.** The table above measures
-cache-line fills, and the mark costs only 3,668 of them, `sim` against
+cache-line fills, and the mark costs only 3,685 of them, `sim` against
 `frame`: its time is arithmetic per pixel, not traffic, and the table cannot
 show it. Where a mode's measured frame time exceeds what its fills
 predict, count instructions before trusting the estimate.
@@ -203,18 +215,18 @@ position to SAFE plus six layers of the grip's box, a swept or dragged horn to
 
 ## Ceilings
 
-CI (continuous integration) holds each mode below to a ceiling of fills per
+CI holds each mode below to a ceiling of fills per
 frame. A ceiling sits 13 to 29% above the largest figure of its modes in the
-table above, and a mode under 600 fills is held at 1,000. A ceiling catches
+table above, and a mode under 700 fills is held at 1,000. A ceiling catches
 a change that makes the model draw more, not a frame that misses the panel:
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
-| `servo` | 2,700 | a growing arm and grip drawing |
+| `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
-| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,551 fills in the table above |
+| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,560 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the ten `-chrome` modes | 72,000 | a growing full repaint |
 | `wifi-keys` | 42,000 | a key of the Wi-Fi keyboard that repaints more than the screen |

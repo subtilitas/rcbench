@@ -8,7 +8,7 @@
  * servos this module works with (README.md, "Legal notice and disclaimer").
  *
  * The session runs one operation at a time: entry, a read, a write plan
- * with its read-back, leave.  It neither touches the wire nor reads a
+ * with its read-back, a move with its position read, leave.  It neither touches the wire nor reads a
  * clock.  The caller asks for the next step with hitec_session_next(),
  * runs it and hands its result to hitec_session_feed():
  *
@@ -84,6 +84,12 @@ extern "C" {
 #define HITEC_SES_OFF_MS_MAX 10000u
 /** @brief Bytes of an address set: one bit for each of 256 addresses. */
 #define HITEC_SES_SET_BYTES 32u
+/** @brief Lowest classic move target, 0.25us: 900us, the lowest centre
+ *         an edit takes. */
+#define HITEC_SES_C_MOVE_MIN 3600u
+/** @brief Highest classic move target, 0.25us: 2100us, the highest
+ *         centre an edit takes. */
+#define HITEC_SES_C_MOVE_MAX 8400u
 
 /* --- steps and results ---------------------------------------------------- */
 
@@ -156,9 +162,10 @@ typedef enum {
     HITEC_SES_ERR_NO_SERVO,     /**< no byte on the last try */
     HITEC_SES_ERR_ENTRY,        /**< the entry got bytes, not the ones it
                                      waits for */
-    HITEC_SES_ERR_READ,         /**< a read failed on every try */
-    HITEC_SES_ERR_WRITE,        /**< a classic write got no `+ +` on any
-                                     try */
+    HITEC_SES_ERR_READ,         /**< a read failed on every try, a
+                                     position read included */
+    HITEC_SES_ERR_WRITE,        /**< a classic write or move got no
+                                     `+ +` on any try */
     HITEC_SES_ERR_VERIFY,       /**< the read-back differs from the
                                      target; diff names the addresses */
     HITEC_SES_ERR_PLAN,         /**< no plan: plan_result tells why, or a
@@ -197,6 +204,11 @@ typedef struct {
     uint16_t done;         /**< addresses read by the running read */
     uint16_t total;        /**< addresses it reads */
     uint16_t off_ms;       /**< the supply off time of entry and leave */
+    uint16_t position;     /**< the position the last move read: D
+                                series 0x0C, 0 to 16383; classic the
+                                reply to 0x65, high byte first */
+    uint8_t  has_position; /**< 1: position is the last move's; 0 from
+                                the start of a move until its read */
 
     /* --- private ----------------------------------------------------------- */
     hitec_image_t target;  /**< the image a write's read-back must hold */
@@ -216,6 +228,8 @@ typedef struct {
                                 result fed, whatever it was */
     uint8_t  unsure;       /**< 1: the plan step at step_index was fed a
                                 result and no `+ +` confirmed it */
+    uint8_t  read_pos;     /**< 1: the move reads the position */
+    uint16_t move_to;      /**< the move's target */
 } hitec_session_t;
 
 /* --- operations ----------------------------------------------------------- */
@@ -364,6 +378,39 @@ hitec_ses_t hitec_session_run_plan(hitec_session_t *s,
  *         HITEC_SES_ERR_ARG.
  */
 hitec_ses_t hitec_session_leave(hitec_session_t *s);
+
+/**
+ * @brief Move the horn to @p target, then read where it stands.
+ *
+ * D series: a write of register 0x1E (HITEC_D_REG_TARGET) = @p target, a
+ * frame with no answer that goes once; HITEC_SES_D_GAP_MS; with
+ * @p read_pos a read of 0x0C (HITEC_D_REG_POSITION), HITEC_SES_TRIES
+ * tries.  The write lands in the servo's RAM; whether a save stores 0x1E
+ * is not known.  The reboot of a leave starts the servo with its stored
+ * values; that 0x1E reads 3000 after it is not measured.
+ *
+ * Classic: `66 high low` (HITEC_C_MOVE), answered `+ +`, HITEC_SES_TRIES
+ * tries; HITEC_SES_C_GAP_MS; with @p read_pos `65 00 00`
+ * (HITEC_C_READ_POSITION), answered with the feedback potentiometer, high
+ * byte first, HITEC_SES_TRIES tries.  The target is in 0.25us, as the
+ * classic centre.
+ *
+ * A move writes no EEPROM cell and no saved register, changes nothing in
+ * the image and marks no step `more`: a supply cut during a move cuts no
+ * write.  position and has_position hold the read; fail_addr names the
+ * register (D series) or the command byte (classic) of a step that failed
+ * on every try.
+ *
+ * @param s         Session.
+ * @param target    D series 0 to HITEC_D_TARGET_MAX; classic
+ *                  HITEC_SES_C_MOVE_MIN to HITEC_SES_C_MOVE_MAX.
+ * @param read_pos  true to read the position after the move.
+ * @return HITEC_SES_BUSY when the move starts; HITEC_SES_ERR_BUSY,
+ *         HITEC_SES_ERR_ARG (NULL, a target out of range),
+ *         HITEC_SES_ERR_NOT_IN_MODE.
+ */
+hitec_ses_t hitec_session_move(hitec_session_t *s, uint16_t target,
+                               bool read_pos);
 
 /**
  * @brief End the running operation with HITEC_SES_ERR_ABORTED.

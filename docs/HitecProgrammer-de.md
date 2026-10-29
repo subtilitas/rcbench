@@ -101,8 +101,9 @@ KST-Programmierung ([Seiten](Screens-de.md#programmierer)).
    - D-Serie: POWER mit der Programmierspannung und einer Auszeit von 0ms,
      wo ein PD mini antwortet, dann 1000ms, bis das Servo gestartet ist.
      Ohne PD mini läuft das Servo an der Versorgung, wie sie ist.
-   - Klassisch: POWER mit 500ms ausgeschalteter Versorgung, dann ein, und
-     ein LISTEN auf das `+` des Servos; sein zweites `+` folgt 250ms bis
+   - Klassisch: POWER mit ausgeschalteter Versorgung, 500ms ab der Lesung,
+     die sie aus zeigt ([VERLASSEN](#verlassen) nennt die ganze Auszeit),
+     dann ein, und ein LISTEN auf das `+` des Servos; sein zweites `+` folgt 250ms bis
      267ms später; 0x67 liest dann die Version.
 3. ALLES AUSLESEN: die Werte der Serie, jede Adresse mit 3 Versuchen.
 4. Das Modell wird erkannt: D-Serie an Register 0x00 (34485 ist der
@@ -130,6 +131,8 @@ Solange der Port gehalten ist:
   Netzteil: Sollwerte und EIN gesperrt.` AUSGANG AUS wirkt. Ab Protokoll
   4.29 hält der IOmcu seine SUPPLY-Page zusätzlich von OPEN bis CLOSE
   ([Die Versorgung, solange ein Port gehalten ist](LinkHitec-de.md#die-versorgung-solange-ein-port-gehalten-ist)).
+  Die Sollwerte von vor VERBINDEN kommen nach dem Verlassen zurück, sobald
+  der Ausgang aus ist ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 - Die Zeile für KST- und Chaservo-Servos und die Zeile ZIEL von MOTOR & ESC
   nehmen keinen Druck an, und ESC STICK startet keinen Lauf.
 
@@ -455,14 +458,45 @@ sie angelegt hat; die Zeile bleibt, wie sie war.
 Das Backup der Sitzung ist das erste vollständige Lesen nach VERBINDEN,
 gehalten im Arbeitsspeicher des Panels. Ein späteres Lesen desselben
 Servos lässt es, wie es ist. Ein Lesen, das ein anderes Servo findet, macht
-dieses Lesen zum Backup: bei der D-Serie eine andere Modellnummer, bei
-einem klassischen Servo ein anderer Name, ein anderes Datum, eine andere
-Seriennummer oder Version. VERLASSEN, das nächste VERBINDEN, eine verlorene
-Verbindung und ein Neustart des Panels beenden es. Eine Datei, die die
+dieses Lesen zum Backup. Ein klassisches Servo ist ein anderes Servo durch
+einen anderen Namen, ein anderes Datum, eine andere Seriennummer oder
+Version. Ein Servo der D-Serie ist ein anderes Servo durch eine andere
+Modellnummer oder wenn das Lesen die Kette der Sitzung bricht. Der Port ist
+gehalten, also schreibt nur die Sitzung das Servo, und ein Lesen der
+D-Serie ist vom Servo des Lesens davor, wenn:
+
+- kein Schreiben der Sitzung ungeprüft ist und jedes Register, das ein
+  Schreiben sendet, den Wert des Lesens davor hält; oder
+- ein Schreiben ungeprüft ist (seine Prüfung scheiterte, oder es wurde
+  unterbrochen) und der Vermerk dieses Schreibens die Werte erklärt: das
+  Lesen findet die Werte vor dem Schreiben, seine neuen Werte oder von
+  beiden etwas ([Der Vermerk eines
+  Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)). Ist der Vermerk
+  verworfen, entscheiden die Werte, gegen die Werte, die die gescheiterte
+  Prüfung zurückgelesen hat.
+
+Die Kette vergleicht mit dem Lesen davor, nicht mit dem Backup: die eigenen
+geprüften Schreibvorgänge der Sitzung, die ID 0x32 eingeschlossen,
+erhalten sie. Ein Lesen eines anderen Servos sagt
+
+```
+Andere Werte als beim letzten Auslesen: als anderes Servo genommen.
+Sein Backup sind die jetzt ausgelesenen Werte.
+```
+
+Die Zeile der Backup-Datei entfällt, ZURÜCKSPIELEN bietet das Backup des
+ersten Servos nicht an, und das erste Schreiben auf das neue Servo
+speichert eine eigene Backup-Datei. Besteht ein Vermerk, steht seine Zeile
+an der Stelle dieser beiden. VERLASSEN, das nächste VERBINDEN, eine
+verlorene Verbindung und ein Neustart des Panels beenden das Backup; das
+erste Lesen der nächsten Sitzung ist ihr Backup ohne diese Zeilen. Eine
+Datei, die die
 Karte für ein Backup anlegt, oder ein Speichern von Hand zählt nur für das
 Backup, das bei der Anfrage bestand: eine späte Antwort nach VERLASSEN und
 VERBINDEN oder nach dem Lesen eines anderen Servos speichert nichts für das
 neue.
+
+![Ein anderes Servo in der Sitzung gelesen](img/de/servo-hitec-other-servo.png)
 
 Das erste Schreiben einer Sitzung, das einen Schritt sendet, n WERTE
 SCHREIBEN, PRÜFSUMME REPARIEREN, ein ZURÜCKSPIELEN oder WERKSEINSTELLUNG,
@@ -534,7 +568,7 @@ Halten von 2s.
 | Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
 | Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.`; der Entwurf wird zu den Werten des Servos, und eine Änderung von vor dem Laden fällt samt ihren Bestätigungen weg |
 | Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
-| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der Einstellungen, mit geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
+| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Werte außerhalb der Einstellungen, auch geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
 | Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
 | Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
 | Von einem anderen Modell desselben Layouts, oder jenseits einer weichen Regel | DIESE DATEI PRÜFEN, unten; `Bestätige die Warnungen, bevor du diese Datei lädst.` |
@@ -608,12 +642,12 @@ WERKSEINSTELLUNG gespeicherte Backup-Datei `HITEC001` bringt 0x22 mit den 4
 Werten der Zellen 0x08, 0x13, 0x14 und 0x1B zurück.
 
 Weicht eine klassische Zelle außerhalb der änderbaren Werte ab, öffnet
-sich zuerst DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der
-Einstellungen, mit geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
+sich zuerst DIESE DATEI PRÜFEN mit `Werte außerhalb der
+Einstellungen, auch geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
 Zellen in den Entwurf, und die Meldung zeigt dieselbe Zeile unter
 `HITEC001 geladen. 5 Werte weichen von den Servowerten ab.` Eine Zelle, die
 keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**; die
-Schreibseite zeigt `Gespeicherte Werte außerhalb der Einstellungen, mit
+Schreibseite zeigt `Werte außerhalb der Einstellungen, auch
 geschrieben: 1.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
 PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
 Änderung; ÄNDERUNGEN VERWERFEN verwirft sie.
@@ -628,8 +662,8 @@ vom Servo abweicht: jedes Register der D-Serie und jede klassische Zelle
 0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen. Ein Tipp
 öffnet ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
 Prüfung der Grenzwerte zurückgespielt.`, die Zahl der klassischen Zellen
-ohne änderbaren Wert, die es zurückschreibt, `Gespeicherte Werte außerhalb
-der Einstellungen, mit zurückgespielt: 1.`, und die Zeilen der
+ohne änderbaren Wert, die es zurückschreibt, `Werte außerhalb
+der Einstellungen, auch zurückgespielt: 1.`, und die Zeilen der
 Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
 zuerst die Backup-Datei, wenn keine es hält, der Vermerk, die Schritte und
 das Zurücklesen. Es endet mit `Backup zurückgespielt und geprüft.` Es
@@ -651,8 +685,8 @@ den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
 Werkswerte zurück.`, `Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53
 des Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
-Einstellung, die sie schreibt, `Gespeicherte Werte außerhalb der Einstellungen,
-mit geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Einstellung, die sie schreibt, `Werte außerhalb der Einstellungen,
+auch geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
 den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
 angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,
@@ -692,7 +726,13 @@ verlässt ihn:
 
 - D-Serie: ein Neustart des Servos (Register 0x46 = 1), das danach 1s lang
   Signale ignoriert; die Versorgung bleibt unverändert.
-- Klassisch: die Versorgung 500ms aus und wieder ein.
+- Klassisch: die Versorgung aus und wieder ein. Die Auszeit von 500ms
+  zählt ab der Lesung des PD mini, die den Ausgang aus zeigt; der Treiber
+  sendet sie 250ms nach dem Ausschalten (`PDMINI_CONFIRM_MS`). Das
+  Einschalten folgt nach den Lesungen der Sollwerte und des aktiven Slots
+  durch den Treiber. Der Ausgang ist etwa 760ms aus: 762ms gemessen an
+  einem Modul, an der Schwelle von 1,4V eines Logikanalysators. Wie viel
+  davon die eigene Schaltzeit des Moduls ist, ist nicht gemessen.
 
 Dann CLOSE: der Port ist wieder in PWM, und die Meldung sagt
 `Der Port ist wieder im Testermodus.` VERLASSEN wird auch an einem
@@ -775,8 +815,12 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
   Servo, wie sie es dann vorfindet, mit den Werten des unterbrochenen
   Schreibens; der Vermerk des Schreibens und die Backup-Datei der alten
   Sitzung halten die Werte davor.
-- Zwei Servos der D-Serie desselben Modells werden nicht unterschieden: ein
-  zweites D485HW am Port behält das Backup des ersten.
+- Zwei Servos der D-Serie desselben Modells werden nur an ihren Werten
+  unterschieden. Ein zweites D485HW, dessen Register, die ein Schreiben
+  sendet, die Werte des letzten Lesens des ersten halten, behält das Backup
+  des ersten, und ZURÜCKSPIELEN des Backups der Sitzung schreibt die Werte
+  des ersten hinein. Welches Register, wenn überhaupt, sich zwischen zwei
+  Exemplaren eines Modells unterscheidet, ist nicht gemessen.
 - Eine außerhalb des Panels geschriebene oder bearbeitete Servodatei wird
   nicht geladen.
 - Der Vermerk wird nur beim Start des Panels von der Karte gelesen. Eine

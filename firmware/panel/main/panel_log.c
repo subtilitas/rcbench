@@ -22,6 +22,7 @@
 #include "freertos/queue.h"
 
 #include "card_tree.h"
+#include "error_sites.h"
 #include "fault_log.h"
 #include "log_name.h"
 #include "log_take.h"
@@ -73,6 +74,7 @@ static const char *TAG = "rcbench";
 
 QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
 QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
+QueueHandle_t s_console_q; /**< control task -> logger, a link report each */
 SemaphoreHandle_t s_note_mx;
 
 /*
@@ -173,7 +175,8 @@ void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir)
 atomic_uint s_card_written;
 atomic_int  s_card_written_tab = LOG_TAB_BENCH;
 /* Card writes that failed during a run: the run log's and the automatic
- * test's CSV, each counted once at its failure's edge.  The control task
+ * test's CSV, their final commit and close included, each counted once a
+ * run at its first failure.  The control task
  * answers each as an error (card_faults_follow()): the bench SAFE and the
  * supply off.  A report written after its run, and the servo programmers'
  * records, are not counted: no output runs for the one, and the other
@@ -476,7 +479,11 @@ static void log_close(void)
     if (storage_fclose(s_log_file) != 0) {
         ESP_LOGW(TAG, "the log did not close: %u rows are not in it",
                  uncommitted);
-        if (!failed) {
+        if (error_card_close_edge(true, failed, false)) {
+            /* The run's card fault, unless a row's write was it already:
+             * the control task answers it as an error
+             * (card_faults_follow()). */
+            atomic_fetch_add(&s_card_faults, 1u);
             control_alert(TR(ALERT_CARD_LAST_WRITE));
         }
     } else if (!failed) {
@@ -579,6 +586,11 @@ static void test_close(void)
     }
     bool bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0;
     bad = (storage_fclose(s_test_fp) != 0) || bad;
+    /* The CSV's final commit or close that failed is the run's card fault,
+     * unless a write of the run failed before; the report's is not. */
+    if (error_card_close_edge(bad, s_test_failed, s_test_txt)) {
+        atomic_fetch_add(&s_card_faults, 1u);
+    }
     /* This file's failure, not the run's: a CSV that failed does not make
      * a report written whole a bad one. */
     if (bad) {
@@ -715,7 +727,7 @@ static void test_write(const test_line_t *l)
          * a full one keeps it to the END, which says the files are
          * incomplete. */
         const bool first = !s_test_failed;
-        if (first && !s_test_txt) {
+        if (error_card_csv_edge(bad, s_test_failed, s_test_txt)) {
             atomic_fetch_add(&s_card_faults, 1u);   /* the run's CSV */
         }
         s_test_failed  = true;
@@ -850,6 +862,21 @@ static void log_note(const char *line)
 }
 
 /**
+ * @brief Print every console report waiting on s_console_q, oldest first.
+ *
+ * On the logger, below the control task: the console's 50ms and more for
+ * a report hold up the card here, not the safety line.  The report is
+ * kept in static storage, not on this task's stack.
+ */
+void console_reports_print(void)
+{
+    static link_report_in_t r;
+    while (s_console_q != NULL && xQueueReceive(s_console_q, &r, 0) == pdTRUE) {
+        console_report_print(&r);
+    }
+}
+
+/**
  * @brief Everything that touches the card.
  *
  * On the control task's core and below it in priority: the control task
@@ -919,7 +946,8 @@ void log_task(void *arg)
             (void)log_writer_commit(&s_log);
         }
 
-        if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
+        if (error_card_rows_edge(s_log_file != NULL, was_failed,
+                                 log_writer_failed(&s_log))) {
             /* An error of the run: the control task switches the bench
              * to SAFE and the supply off (card_faults_follow()). */
             atomic_fetch_add(&s_card_faults, 1u);
@@ -952,6 +980,8 @@ void log_task(void *arg)
             }
             atomic_store(&s_note_writing, false);
         }
+        /* The link reports the control task handed over, printed. */
+        console_reports_print();
         /* The servo test's lines, as many as wait. */
         test_line_t tl;
         while (xQueueReceive(s_test_q, &tl, 0) == pdTRUE) {

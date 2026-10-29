@@ -192,6 +192,7 @@ TRACKED = [
     "shared/safety/touch_loss.c",
     "shared/safety/frame_watch.c",
     "shared/safety/error_stop.c",
+    "shared/safety/error_sites.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
     "shared/servo/servo_sweep.c",
@@ -230,6 +231,7 @@ TRACKED = [
     "protocols/hitec/hitec_pre.c",
     "protocols/hitec/hitec_reg.c",
     "protocols/hitec/hitec_session.c",
+    "protocols/hitec/hitec_live.c",
     "protocols/i2c_txq/i2c_txq.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
@@ -333,6 +335,7 @@ TRACKED = [
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
+    "shared/webaccess/wa_api.c",
     "shared/clock/wall_clock.c",
 ]
 

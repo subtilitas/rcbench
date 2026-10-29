@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- `protocols/hitec`: `hitec_session_move()` moves a Hitec servo inside its
+  programming session: D series 0x1E = target (0 to 6000), then a read of
+  0x0C; classic `66` (3600 to 8400, 0.25us), then `65`. It writes RAM only
+  and changes nothing in the image. `hitec_live.c` holds the D series
+  target-to-position mapping through the stored end points, the reach, a
+  pass's command (150 counts at most, inside the reach), the judges of a
+  pass (lag, current, AS5600) and FIND STOP. No screen calls them yet
+  ([hitec, Live loop](protocols/hitec/README.md#live-loop);
+  [Safety, A Hitec servo moved while SAFE](docs/Safety.md#a-hitec-servo-moved-while-safe)).
 - `hardware/mechanical/`: STEP models of the M16 emergency stop button, its
   nut and its square anti-rotation shim as separate files, and an assembly
   of the three for a 1.6mm panel, generated from `estop_m16.py` by
@@ -19,6 +28,14 @@ history is in git.
   text shows through the text editor's keyboard, the rows under it
   included; labels stay opaque. Other keyboards stay opaque
   ([Screens, The text editor](docs/Screens.md#the-text-editor)).
+- The Wi-Fi page's server answers a file API for a script, reads only:
+  `GET /api/status`, `/api/list` (a page of up to 48 entries of a folder,
+  by the entry at its edge), `/api/info` (an entry's size and time; a
+  folder's entries) and `/api/file` (a text file up to 1MiB and 65,536 line
+  ends, byte for byte, with an ETag of its CRC-32 and its line ends). The
+  card calls are FILES' own (`fm_req.h`), with its rules and refusals; a
+  refusal is an HTTP status, a reason word and a text in EN or DE
+  ([Screens, The file API](docs/Screens.md#the-file-api)).
 
 ### Changed
 
@@ -81,11 +98,89 @@ history is in git.
   soon as one fails, so under AUTO all seven rates are tried in 2.9s. The
   wait ends when the module reads off, or after 3500ms, which delays the
   link by as much when a wired module does not answer.
+- The panel's error sites apply the rule through
+  `shared/safety/error_sites.c`, and the KST link module counts its session
+  faults (`kst_link_faults()`). Host-tested in `test_error_sites`: every
+  site against a SAFE, an ARMED and an arming bench, an IOmcu of link 4.31,
+  of 4.30 and without the SUPPLY page, with and without a port holding the
+  supply; OUTPUT OFF and STOP TEST leave the bench ARMED. What the bench
+  does is unchanged.
 
 ### Fixed
 
+- An install whose build does not start showed no rolled-back banner: the
+  build before started again without `Panel firmware … failed to start.`
+  on the band. The restart note moves from LP (low-power) RAM, whose
+  retention ESP-IDF does not test on the ESP32-P4 and whose address follows
+  the build's layout, to one NVS (non-volatile storage) entry, which a
+  power cut keeps too. Each start states its check in one console line,
+  `start check: note …, last invalid slot …, result …`
+  ([Screens, Installing](docs/Screens.md#installing-panel-update)).
+- Errors with an IOmcu older than link 4.31: a programming port that holds
+  the PD mini keeps it through every error the panel finds but the panel's
+  own trips, as [Safety, Errors](docs/Safety.md#errors) says. A supply that
+  stops answering or gives no reading, an ON taken across lost touch
+  events, and an ON the SUPPLY page refuses while a port's ON is on it ask
+  DISARM and write no OFF over the port's supply. A reading fault the port
+  keeps is acted on and named once while it stands, and the output goes
+  off when the port lets go. The PD mini's own protection and a sagging
+  input are followed off whoever holds the supply. An IOmcu of 4.31 or
+  later gets the OFF on every error as before. The panel's model is
+  switched off on every error, a programming port taken or not.
+- A failed final commit or close of the run log, or of the automatic
+  test's CSV, is a card error of the run: the bench to SAFE and the supply
+  off, once a run, and not when a write of the run failed before. The
+  report written after the automatic test is not counted.
+- `tools/frame_cost.py` gives the same fills on every run: cachegrind gets
+  the ESP32-P4's L1 instruction cache (16KB, 4-way, 64-byte lines) instead
+  of the runner CPU's, the bench draws from a stack at a fixed offset
+  within 64KB, and the 1-frame and 11-frame runs pass argvs of one length.
+  The table holds CI's figures under the new model.
 - Safety: the claim that the IOmcu acts on overcurrent, over-temperature
   and stall. Its fault bits for those are defined and set by nothing.
+- Hitec programmer: a D series servo swapped for another of the same
+  model inside a session kept the first servo's backup, so RESTORE of the
+  session's backup wrote the first servo's values into it and its first
+  write saved no backup file. A D series read is of the servo before it
+  only while every register a write sends holds the value of the read
+  before, or, after a write left unverified, while the record's verdict
+  explains the values. Otherwise the read is another servo's backup, with
+  `Other values than the last read: taken as another servo.` A servo with
+  the values of the last read is not told apart
+  ([Hitec programmer, The backup before the first write](docs/HitecProgrammer.md#the-backup-before-the-first-write)).
+- SUPPLY: an ON refused while the IOmcu reports its failsafe (FAULT 01,
+  the link silent for 200ms, or FAULT 10, the heartbeat) says
+  `Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then
+  DISARM.` instead of `Supply refused to switch on. Output off.`
+- KST and Hitec CONNECT refused for the failsafe name it and the way out:
+  `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to
+  clear it.` (KST, before `The IOmcu has not yet accepted the link. Try
+  again.`); the Hitec line says `Hold ARM, then DISARM, to clear it.`
+- Hitec: the German count of stored values outside the settings, loaded,
+  restored or written, fits one row of 60 characters at 255; the count no
+  longer stands alone on a second row.
+- FILES: AKTUALISIEREN and VERSCHIEBEN in the footer are drawn in the
+  10 x 20 face of the other buttons, with 4px either side (6px before).
+- FILES: the DELETE question names a run's report only when the pane's
+  page lists it, or when the report would stand on another page. German
+  `Ihr Bericht %s wird mitgelöscht.` (`Sein Bericht` before).
+- The panel's link report is printed by the logger task, not by the
+  control task that beats the heartbeat: once a minute the report stalled
+  that task for 46 to 56ms on the console. A queue of 2 reports carries the
+  counters; a full queue prints on the control task, so no line is lost.
+- The supply's set points after a KST or Hitec session: the port's (for
+  example 1.00A from a Hitec CONNECT) took the place of the operator's on
+  the SUPPLY screen and the SERVO screen's SET row for good. The operator's
+  come back at the first read of the supply that shows no port holding it
+  and the output off: at once when the session ends with the output off, at
+  the next OFF after a LEAVE that leaves it on. A set point changed after
+  the port let go stands ([Servo programmer, The
+  supply](docs/ServoProgrammer.md#the-supply)).
+- The Hitec classic LEAVE page and the Hitec docs gave the supply's off
+  time as 500ms. The 500ms count from the PD mini's read that shows the
+  output off, 250ms after the OFF; the output is off about 760ms, 762ms
+  measured on one module
+  ([Hitec programmer, LEAVE](docs/HitecProgrammer.md#leave)).
 
 ## 0.23.2 - 2026-10-28
 

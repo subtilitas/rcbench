@@ -96,6 +96,22 @@ typedef struct {
 void fm_tree_init(fm_tree_t *tree, const char *dir);
 
 /**
+ * @brief Start a pane in folder @p dir with entry @p key as its one row, for
+ *        a caller that keeps no pane between two pages: the Wi-Fi page's
+ *        file API, which names a page by the entry at its edge.
+ *
+ * fm_tree_page() then reads with FM_GO_NEXT the page after @p key, with
+ * FM_GO_PREV the page before it and with FM_GO_SAME the page from it on.
+ * @p key need not be on the card: it names a place in the pane's order.
+ *
+ * @param tree  the pane
+ * @param dir   the folder, as fm_tree_init() takes it
+ * @param key   the entry at the page's edge: its name and whether it is a
+ *              folder are read; NULL starts the pane as fm_tree_init()
+ */
+void fm_tree_at(fm_tree_t *tree, const char *dir, const fm_entry_t *key);
+
+/**
  * @brief Read a page of the pane's folder.
  *
  * The selection stays on its name when the name is on the new page, and
@@ -169,6 +185,33 @@ bool fm_tree_has_prev(const fm_tree_t *tree);
  * @return true when NEXT has somewhere to go
  */
 bool fm_tree_has_next(const fm_tree_t *tree);
+
+/**
+ * @brief What the page on show says of a file in the pane's folder.
+ */
+typedef enum {
+    FM_HAS_NO = 0,   /**< the page spans where it would stand: not there  */
+    FM_HAS_YES,      /**< a file of that name, case folded, is on the page */
+    FM_HAS_UNKNOWN   /**< it would stand on another page                  */
+} fm_has_t;
+
+/**
+ * @brief Whether the folder holds file @p name, as far as the page on show
+ *        tells.
+ *
+ * Names compare with case folded, as FAT finds them; a folder of that name
+ * is not the file.  A name that ranks before the page's first row with
+ * entries ahead of the page, or after its last row with entries after it,
+ * is FM_HAS_UNKNOWN: another page holds where it would stand.
+ *
+ * @param tree  the pane
+ * @param name  the file's name
+ * @return FM_HAS_YES, FM_HAS_NO or FM_HAS_UNKNOWN; FM_HAS_UNKNOWN for a
+ *         NULL, for an empty name, for a name of FM_NAME_BUF bytes or
+ *         more, for a pane with no card (total -1) and for a page whose
+ *         row count is outside 0 to FM_PAGE_MAX
+ */
+fm_has_t fm_tree_has_file(const fm_tree_t *tree, const char *name);
 
 /**
  * @brief The pane's order of two entries: folders first, then names with

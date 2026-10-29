@@ -41,9 +41,17 @@
  *
  * Any other mode name runs as `frame`; no error is raised for a typo.
  *
+ * The count depends on the addresses the frame touches, and the stack's
+ * depends on what the kernel and valgrind place above it: argv, the
+ * environment, the path of the executable and of the working directory.
+ * main() therefore moves the stack to one fixed phase within STACK_SPAN
+ * and copies the mode out of argv before anything is drawn, so the count
+ * is the same from any directory and with any environment.
+ *
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -83,15 +91,30 @@ static const ui_bench_status_t k_status = {
 };
 
 /*
- * argv is (frames, mode).  frame_cost.py measures the difference between a
- * 1-frame run and an 11-frame run, so process start-up, the first paint into
- * each buffer and the cachegrind harness cancel out.  The frame count is
- * therefore honoured exactly.
+ * A multiple of the way size of every cache frame_cost.py models: 32KiB
+ * for the L1 data cache (64KiB, 2 ways), 16KiB for the L2 (128KiB, 8 ways),
+ * 4KiB for the L1 instruction cache (16KiB, 4 ways).  Two stacks at the
+ * same offset within it map every line to the same set of each cache.
  */
-int main(int argc, char **argv)
+#define STACK_SPAN  (64u * 1024u)
+/* The offset within STACK_SPAN the frames are drawn at. */
+#define STACK_PHASE (32u * 1024u)
+/* The longest mode name; a longer one runs as `frame`. */
+#define MODE_MAX    32u
+
+/* The mode, copied out of argv: argv's strings sit above the stack, at an
+ * address that moves with the environment's length. */
+static char g_mode[MODE_MAX];
+
+/**
+ * @brief Draw @p frames frames of @p mode, the bench proper.
+ *
+ * @param frames Frames to draw.
+ * @param mode   The mode, one of the names in the header comment.
+ * @return 0.
+ */
+static __attribute__((noinline)) int bench(int frames, const char *mode)
 {
-    const int   frames = (argc > 1) ? atoi(argv[1]) : 1;
-    const char *mode   = (argc > 2) ? argv[2] : "frame";
 
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
@@ -392,4 +415,36 @@ int main(int argc, char **argv)
         ui_router_render(&c, i & 1);
     }
     return 0;
+}
+
+/**
+ * @brief Draw from a stack at a fixed phase within STACK_SPAN.
+ *
+ * argv is (frames, mode).  frame_cost.py measures the difference between a
+ * 1-frame run and an 11-frame run, so process start-up, the first paint into
+ * each buffer and the cachegrind harness cancel out.  The frame count is
+ * therefore honoured exactly, and frame_cost.py writes it in three digits,
+ * so both runs start from stacks laid out alike.  The gap the array leaves
+ * is never touched.
+ *
+ * @param argc The argument count.
+ * @param argv The program, the frame count and the mode.
+ * @return 0.
+ */
+int main(int argc, char **argv)
+{
+    const int frames = (argc > 1) ? atoi(argv[1]) : 1;
+    const char *arg = (argc > 2) ? argv[2] : "frame";
+    if (strlen(arg) < MODE_MAX) {
+        strcpy(g_mode, arg);
+    } else {
+        strcpy(g_mode, "frame");
+    }
+    char here;
+    const uintptr_t sp = (uintptr_t)&here;
+    /* The stack grows down: drop it by its distance above the phase. */
+    const size_t drop = (size_t)((sp - STACK_PHASE) & (STACK_SPAN - 1u));
+    char gap[drop + 1u];
+    __asm__ volatile("" : : "r"(gap) : "memory");
+    return bench(frames, g_mode);
 }
