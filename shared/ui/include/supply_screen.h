@@ -201,9 +201,29 @@ void supply_screen_set_hitec_held(bool held);
  */
 bool supply_screen_port_held(void);
 
-/** The set points a programming port gave the supply, onto the screen:
- *  supply_screen_put() for the one caller that reports and does not ask. */
+/**
+ * @brief The set points a programming port gave the supply, onto the screen:
+ *        supply_screen_put() for the one caller that reports and does not
+ *        ask.  The first one since the operator's own keeps those for
+ *        supply_screen_port_done().
+ * @param v the port's voltage set point, V
+ * @param i the port's current limit, A
+ */
 void supply_screen_adopt(float v, float i);
+
+/**
+ * @brief The operator's set points back once the port is done with the
+ *        supply: when @p free_off, no programming port holds the screen and
+ *        the screen has no output on or asked.  They come back only where
+ *        the set points are still the port's; a change since, by the
+ *        operator, a cap or another screen, stands.  Either way the
+ *        operator's are then forgotten.  A live output is never given them:
+ *        after a LEAVE that leaves the output on they wait for its OFF.
+ * @param free_off the last read of the supply showed no programming port
+ *        holding it and its output asked off and read off
+ *        (supply_link_port_free_off())
+ */
+void supply_screen_port_done(bool free_off);
 
 /**
  * @brief Whether the output is on as this screen believes it: what the

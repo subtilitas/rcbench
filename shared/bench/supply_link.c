@@ -491,6 +491,16 @@ bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
     return true;
 }
 
+bool supply_link_port_free_off(const supply_link_t *s)
+{
+    if (s == NULL || !s->read_any) {
+        return false;
+    }
+    const uint16_t f = s->regs[LINK_SP_FLAGS];
+    return (f & (LINK_SP_PORT | LINK_SP_ON | LINK_SP_LIVE)) == 0u
+           && s->regs[LINK_SP_OUTPUT] == 0u;
+}
+
 uint16_t supply_link_events(supply_link_t *s)
 {
     if (s == NULL) {

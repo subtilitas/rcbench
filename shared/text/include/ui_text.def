@@ -5133,8 +5133,8 @@ UI_TEXT(HP_RAW_NOTE, 116,
     "Registers of unknown meaning, shown raw.",
     "Register unbekannter Bedeutung, roh angezeigt.")
 UI_TEXT(HP_LEAVE_C, 116,
-    "The bench switches the supply off for 500ms and on again. The port returns to servo PWM.",
-    "Der Prüfstand schaltet die Versorgung 500ms aus und wieder ein. Der Port wechselt zurück zu Servo-PWM.")
+    "The bench switches the supply off for about 760ms and on again. The port returns to servo PWM.",
+    "Der Prüfstand schaltet die Versorgung etwa 760ms aus und wieder ein. Der Port wechselt zurück zu Servo-PWM.")
 UI_TEXT(HP_LEAVE_D, 116,
     "The servo restarts and ignores signals for 1s.",
     "Das Servo startet neu und ignoriert Signale 1s lang.")

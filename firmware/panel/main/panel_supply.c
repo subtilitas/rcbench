@@ -58,6 +58,13 @@ atomic_uint        s_supply_adopt_mv;
 atomic_uint        s_supply_adopt_ma;
 atomic_uint        s_supply_adopt_gen;
 atomic_uint        s_supply_adopt_done;
+/**
+ * @brief Whether the last read of the SUPPLY page showed no programming port
+ *        holding it and the output off (supply_link_port_free_off()): when
+ *        the screen gives the operator's set points back.  Stored before the
+ *        adopt count it is read with.
+ */
+atomic_bool        s_supply_free_off;
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
@@ -728,6 +735,8 @@ void supply_link_service(void)
             reply.regs[LINK_SP_BAUD_FOUND] = SUPPLY_LINK_BAUD_AUTO;
         }
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
+        atomic_store(&s_supply_free_off,
+                     read && supply_link_port_free_off(&s_supply_link));
         {
             /*
              * A programming port commanded the supply (4.13): this end's

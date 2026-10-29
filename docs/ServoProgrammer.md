@@ -314,6 +314,15 @@ right card show the same: the set points, the sliders, the steps and
 editable; a limit lowered under a set point reaches the set point when the
 port is back in PWM.
 
+The port's set points stay on the SUPPLY screen and the SET row after the
+port is back in PWM for as long as the output it left on stays on. The set
+points from before the session come back at the first read of the supply
+that shows no port holding it and the output off: at once where the session
+ends with the output off, at the next OFF after a LEAVE that leaves it on.
+A live output is never given them. A set point changed after the port let
+go, by a tap, a lowered limit or a servo test, stands, and the earlier ones
+are dropped.
+
 An OFF that arrives while a frame is on the wire, from **OUTPUT OFF**,
 **STOP** or a lost heartbeat, reads off at once and reaches the PD mini
 when the port has cut the frame, 12ms later at most. The PD mini's own
