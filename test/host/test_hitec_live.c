@@ -13,7 +13,8 @@
  *  - the current at the stall level for 399, 400 and 401ms, a reading
  *    below it, a pass with no reading, across the 32-bit ms wrap;
  *  - the AS5600 rule at half the change, below it, round the turn, with
- *    no angle;
+ *    no angle, at a commanded change of 299 and 300 hundredths of a
+ *    degree;
  *  - the move back after a bind on both sides and near the neutral;
  *  - FIND STOP to a block, to the reach edge, on the current, its abort,
  *    its 40s cap and the cap across the wrap.
@@ -447,6 +448,17 @@ TEST_CASE(the_as5600_rule_binds_below_half_of_a_3deg_change)
         CHECK_EQ(jd(&j, obs_enc(330u, 8642u, k[i].a1)),
                  k[i].v);
     }
+
+    /* 223 counts are 299 hundredths of a degree, not judged; 224 are 300,
+     * judged. */
+    hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
+    CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(110u, 8415u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(220u, 8415u, 2048u)), HITEC_LIVE_FREE);
+    hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
+    CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(110u, 8416u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(220u, 8416u, 2048u)), HITEC_LIVE_BOUND_ENC);
 
     /* A pass with no angle drops the reference. */
     hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
