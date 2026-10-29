@@ -76,10 +76,12 @@
  * more steps of this write follow.  The bit stands (LINK_HT_F_MORE) from
  * the command that starts its step to the next command taken, which sets
  * it again or clears it; a refused command, a stop and CLOSE clear it.
- * A step is a step of a write when it carries the bit or follows a step
- * that did; a step that does neither -- a read, a LISTEN of its own, a
- * write of one step -- is not.  While the bit stands or a step of a write
- * runs, hitec_port_writing() is true and
+ * A SEND whose frame writes to the servo is a write whether it carries
+ * the bit or not: a classic WRITE_EEPROM or WRITE_RAM, a D series write
+ * request, the save and the restart included, told from the frame's
+ * bytes.  A read, a LISTEN, a LEVEL and a POWER write nothing.  While the
+ * bit stands, a frame that writes runs, or HITEC_PORT_WRITE_TAIL_MS has
+ * not gone since one ended, hitec_port_writing() is true and
  * the SUPPLY page holds the panel's OFF back from the module
  * (supply_page.h).  The bit on OPEN, CLOSE, ABORT or CLEAR is
  * LINK_NACK_BAD_VALUE.  OPEN is refused while the bank is
@@ -136,6 +138,13 @@ extern "C" {
  *        longest one the driver takes, a 4s lead and a 4s window with 16
  *  bytes. */
 #define HITEC_PORT_BUSY_MS 10000u
+/** @brief A write counts as running this long after a frame that wrote
+ *  ends (hitec_port_writing()).  How long a servo needs its supply to
+ *  commit a write is not measured; 150ms is above the longest gap a vendor
+ *  programmer leaves after a writing frame before its next frame: 121 to
+ *  128ms on the HPP-21 Plus between two classic settings, 100ms on the
+ *  HFP-30 from the D series save to the restart. */
+#define HITEC_PORT_WRITE_TAIL_MS 150u
 /** @brief The PD mini has this long to read off after a POWER asked it off. */
 #define HITEC_PORT_SUPPLY_MS LINK_HITEC_SUPPLY_MS
 
@@ -236,9 +245,11 @@ typedef struct {
                                  start; set at the start but for POWER */
     uint8_t  more;          /**< the last command taken started a step
                                  with LINK_HT_W_CMD_MORE (4.31) */
-    uint8_t  wstep;         /**< the last step taken is a step of a
-                                 write: it carried LINK_HT_W_CMD_MORE or
-                                 followed a step that did (4.31) */
+    uint8_t  wframe;        /**< the running SEND's frame writes to the
+                                 servo (4.31) */
+    uint8_t  tail;          /**< a frame that wrote ended less than
+                                 HITEC_PORT_WRITE_TAIL_MS ago (4.31) */
+    uint32_t tail_t0;       /**< when that frame's transaction ended, ms */
 } hitec_port_t;
 
 /** @brief Prepare a free port.
@@ -369,17 +380,17 @@ bool hitec_port_supply_hold(const hitec_port_t *p);
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms);
 
 /**
- * @brief A write to the servo's memory runs: a step of a write runs (BUSY,
- *        the step carried LINK_HT_W_CMD_MORE or followed a step that did),
- *        or the last command taken started a step with LINK_HT_W_CMD_MORE
- *        (LINK_HT_F_MORE) on a port still held.
+ * @brief A write to the servo's memory runs: a SEND whose frame writes
+ *        runs (BUSY), HITEC_PORT_WRITE_TAIL_MS has not gone since one
+ *        ended, or the last command taken started a step with
+ *        LINK_HT_W_CMD_MORE (LINK_HT_F_MORE), on a port still held.
  *
  * The SUPPLY page holds the panel's OFF back while it is true
  * (supply_page_port_writes()), SUPPLY_PAGE_WRITE_WAIT_MS at most.
  *
  * @param p The port, or NULL.
- * @return true while a step of a write runs or the bit stands; false for
- *         a NULL p.
+ * @return true while a frame that writes runs or its tail lasts, or the
+ *         bit stands; false for a NULL p.
  */
 bool hitec_port_writing(const hitec_port_t *p);
 

@@ -112,19 +112,27 @@ The panel reads bit 11 from either.
 
 ### An OFF during a write
 
-From 4.31 a write to the servo's memory runs on this page while a step of
-a write runs (BUSY), or while the last command taken started its step
-with bit 4 of `CMD` (`MORE`): more steps of this write follow. The writer
-sets the bit on every step of a write but the last: SEND, LISTEN, LEVEL or
-POWER. A step of a write carries the bit or follows a step that did. A
-transaction that does neither is no write: a read, a LISTEN of its own, a
-write of one step. `STATE` bit 8 shows the bit standing. Every other
-command taken clears it, a refused one included, and so do a stop and
-CLOSE.
+From 4.31 a write to the servo's memory runs on this page while a SEND
+whose frame writes runs (BUSY) and for 150ms after it ends
+(`HITEC_PORT_WRITE_TAIL_MS`), or while the last command taken started its
+step with bit 4 of `CMD` (`MORE`): more steps of this write follow. A frame
+writes when it is a classic WRITE_EEPROM (0x62) or WRITE_RAM (0x64), or a
+D series write request (0x96, 7 bytes), the save and the restart
+included; the page tells it from the frame's bytes, with or without the
+bit. A read, a MOVE, a LISTEN, a LEVEL and a POWER write nothing. The
+writer sets the bit on every step of a write but the last: SEND, LISTEN,
+LEVEL or POWER. `STATE` bit 8 shows the bit standing. Every other command
+taken clears it, a refused one included, and so do a stop and CLOSE.
+
+How long a servo needs its supply after a frame that writes is not
+measured. The 150ms are above the longest gap a vendor programmer leaves
+after a writing frame before its next frame: 121 to 128ms on the HPP-21
+Plus between two classic settings, 100ms on the HFP-30 from the D series
+save to the restart.
 
 An OFF the panel writes to SUPPLY while a write runs reads 0 at once and
-reaches the PD mini when the write ends: in the pass the last step's
-transaction ends, or 10,000ms after the OFF at the latest
+reaches the PD mini when the write ends: 150ms after the last writing
+frame's transaction ends, or 10,000ms after the OFF at the latest
 (`SUPPLY_PAGE_WRITE_WAIT_MS`). Until then the port sees its supply on and
 the steps go on. With no write running the OFF reaches the PD mini in the
 next pass. A lost heartbeat or a silent link is not held. From the panel's

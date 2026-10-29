@@ -1,9 +1,9 @@
 /*
  * An error while the HITEC page holds a port (protocol 4.31): the panel's
  * OFF of the supply, which the SUPPLY page holds back from the PD mini
- * while the port writes to the servo's memory: while a step of a write
- * runs (one that carries LINK_HT_W_CMD_MORE or follows one that did), or
- * while the last command taken started its step with the bit
+ * while the port writes to the servo's memory: while a SEND whose frame
+ * writes runs and for HITEC_PORT_WRITE_TAIL_MS after it, or while the last
+ * command taken started its step with LINK_HT_W_CMD_MORE
  * (hitec_port_writing(), supply_page_port_writes()).
  *
  * The port is shared/outputs/hitec_port.c against the servo of
@@ -15,11 +15,14 @@
  * reboot, each but the last with the bit.  The rig is hitec_port_rig.h.
  *
  * Under test: an OFF between two steps waits for the write's last step and
- * reaches the module in the pass its transaction ends, the servo holding
- * every write; an OFF during the last step the same, also one taken right
- * behind the SEND that starts a step, no pass between; an OFF with no write
- * at once, also while a step of no write runs (a read, a LISTEN of its
- * own, a read after a whole write); a step whose bit stands and no step after it holds the OFF to
+ * reaches the module HITEC_PORT_WRITE_TAIL_MS after its transaction ends,
+ * to the millisecond, the servo holding every write; an OFF during the last
+ * step the same, also one taken right behind the SEND that starts a step,
+ * no pass between; a write of one step without the bit, classic and D
+ * series, with an OFF during it and right after it, the same; an OFF with
+ * no write at once, also while a transaction that writes nothing runs (a
+ * read, a LISTEN of its own, a read after a whole write and its tail); a
+ * step whose bit stands and no step after it holds the OFF to
  * SUPPLY_PAGE_WRITE_WAIT_MS to the millisecond, across the wrap at
  * 2^32ms; the bit cleared by any other command, a refused one, a stop and
  * CLOSE, refused on OPEN, CLOSE, ABORT and CLEAR, and shown in
@@ -160,6 +163,23 @@ static void step_ends(bool held)
     CHECK_EQ(result(), LINK_HITEC_RESULT_DONE);
 }
 
+/* From the pass a frame that wrote ended: a write runs and the module
+ * stays on for HITEC_PORT_WRITE_TAIL_MS to the millisecond, then off. */
+static void tail_ends(void)
+{
+    const uint32_t end = g_ms - 1u;
+
+    while ((uint32_t)(g_ms - end) < HITEC_PORT_WRITE_TAIL_MS) {
+        CHECK(hitec_port_writing(&g_port));
+        pass();
+        CHECK(g_pd.want_output);
+    }
+    pass();
+    CHECK(!hitec_port_writing(&g_port));
+    CHECK(!g_pd.want_output);
+    CHECK(!g_hw.v.asked_on);
+}
+
 /* The classic write of cell 0x10 and its balance, the first step with the
  * bit. */
 static void classic_cell(bool more)
@@ -195,9 +215,9 @@ TEST_CASE(an_off_between_classic_steps_waits_for_the_balance)
     CHECK(g_hw.v.asked_on);
     classic_balance();
     step_ends(true);
-    /* The balance ended in the last pass: the write is whole, then off. */
-    CHECK(!hitec_port_writing(&g_port));
-    CHECK(!g_pd.want_output);
+    /* The balance ended in the last pass: the write is whole, then off
+     * after its frame's tail. */
+    tail_ends();
     CHECK_EQ(g_drv.c_writes, 2u);
     CHECK_EQ(g_drv.eeprom[0x10], 0x55u);
     CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
@@ -227,7 +247,7 @@ TEST_CASE(an_off_between_d_series_steps_waits_for_the_reboot)
             CHECK(g_pd.want_output);
         }
     }
-    CHECK(!g_pd.want_output);
+    tail_ends();
     CHECK_EQ(g_drv.d_writes, 1u);
     CHECK_EQ(g_drv.dreg[0x30], 0x0123u);
     CHECK_EQ(g_drv.d_saves, 1u);
@@ -244,7 +264,7 @@ TEST_CASE(an_off_during_the_last_step_cuts_at_its_end)
     CHECK_EQ(state(), LINK_HITEC_BUSY);
     panel_off();
     step_ends(true);
-    CHECK(!g_pd.want_output);
+    tail_ends();
     CHECK_EQ(g_drv.c_writes, 2u);
 }
 
@@ -262,7 +282,7 @@ TEST_CASE(an_off_right_behind_a_send_waits_for_its_step)
     CHECK(g_pd.want_output);
     classic_balance();
     step_ends(true);
-    CHECK(!g_pd.want_output);
+    tail_ends();
     CHECK_EQ(g_drv.eeprom[0x10], 0x55u);
     CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
 
@@ -273,11 +293,53 @@ TEST_CASE(an_off_right_behind_a_send_waits_for_its_step)
     panel_off();
     CHECK(supply_page_off_held(&g_sp));
     step_ends(true);
-    CHECK(!g_pd.want_output);
+    tail_ends();
     CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
 }
 
-/* A SEND with no bit after a step with none: a read, not a write. */
+/* A write of one step, no bit on it: the frame says it writes.  An OFF
+ * during it and an OFF right after it, each held to the frame's tail; a
+ * classic cell and a D series register. */
+TEST_CASE(a_write_of_one_step_holds_the_off_to_its_tail)
+{
+    hitec_xfer_t x;
+
+    open_at(0u, HITEC_CLASSIC);
+    classic_balance();
+    CHECK(hitec_port_writing(&g_port));
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    step_ends(true);
+    tail_ends();
+    CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
+
+    open_at(0u, HITEC_CLASSIC);
+    classic_balance();
+    step_ends(false);
+    CHECK(hitec_port_writing(&g_port));
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    tail_ends();
+    CHECK_EQ(g_drv.eeprom[0x1C], 0xAAu);
+
+    open_at(0u, HITEC_D);
+    hitec_d_write_xfer(0u, 0x30u, 0x0123u, &x);
+    step(&x, LINK_HITEC_DEC_NONE, 0u, false);
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    step_ends(true);
+    tail_ends();
+    CHECK_EQ(g_drv.dreg[0x30], 0x0123u);
+
+    open_at(0u, HITEC_D);
+    step(&x, LINK_HITEC_DEC_NONE, 0u, false);
+    step_ends(false);
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    tail_ends();
+}
+
+/* A SEND of a classic read, no bit: no write. */
 static void lone_read(void)
 {
     stage_classic_read(0x10u);
@@ -304,9 +366,8 @@ static void off_now(void)
     CHECK(!g_pd.want_output);
 }
 
-/* A transaction that is no step of a write holds no OFF: a read, a
- * LISTEN of its own with a 500ms window, a read right after a whole
- * write. */
+/* A transaction that writes nothing holds no OFF: a read, a LISTEN of its
+ * own with a 500ms window, a read after a whole write and its tail. */
 TEST_CASE(an_off_during_a_step_of_no_write_is_at_once)
 {
     open_at(0u, HITEC_CLASSIC);
@@ -328,16 +389,19 @@ TEST_CASE(an_off_during_a_step_of_no_write_is_at_once)
     step_ends(false);
     classic_balance();
     step_ends(false);
+    passes(HITEC_PORT_WRITE_TAIL_MS);
     lone_read();
     off_now();
 }
 
 TEST_CASE(an_off_with_no_write_is_at_once)
 {
-    /* A step without the bit has ended: nothing runs, nothing stands. */
+    /* A write without the bit has ended and its tail gone: nothing runs,
+     * nothing stands. */
     open_at(0u, HITEC_CLASSIC);
     classic_balance();
     step_ends(false);
+    passes(HITEC_PORT_WRITE_TAIL_MS);
     CHECK(!hitec_port_writing(&g_port));
     panel_off();
     CHECK(!supply_page_off_held(&g_sp));
@@ -391,6 +455,7 @@ TEST_CASE(the_bit_ends_with_any_other_command_a_refusal_a_stop_or_close)
     step_ends(false);
     CHECK_EQ(hcmd_raw(LINK_HT_W_CMD_OF(LINK_HITEC_OP_ABORT, CH), 0u, 0u), 0u);
     CHECK(!flag(LINK_HT_F_MORE));
+    passes(HITEC_PORT_WRITE_TAIL_MS);
     CHECK(!hitec_port_writing(&g_port));
     /* A command the page refuses: a SEND without the key. */
     classic_cell(true);
@@ -424,6 +489,7 @@ TEST_CASE(the_bit_ends_with_any_other_command_a_refusal_a_stop_or_close)
     /* A stop. */
     pass_as(true, true);
     CHECK(!flag(LINK_HT_F_MORE));
+    passes(HITEC_PORT_WRITE_TAIL_MS);
     CHECK(!hitec_port_writing(&g_port));
     /* CLOSE. */
     CHECK_EQ(hcmd_raw(LINK_HT_W_CMD_OF(LINK_HITEC_OP_CLEAR, CH), 0u, 0u), 0u);
@@ -499,6 +565,7 @@ int main(void)
     RUN(an_off_between_d_series_steps_waits_for_the_reboot);
     RUN(an_off_during_the_last_step_cuts_at_its_end);
     RUN(an_off_right_behind_a_send_waits_for_its_step);
+    RUN(a_write_of_one_step_holds_the_off_to_its_tail);
     RUN(an_off_during_a_step_of_no_write_is_at_once);
     RUN(an_off_with_no_write_is_at_once);
     RUN(a_bit_left_standing_holds_the_off_to_the_bound);

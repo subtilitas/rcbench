@@ -150,12 +150,17 @@ decides whether a write to the servo's memory runs, from its own state
   end of its planning to the end of its read-backs (`kst_port_writing()`).
   Its planning sends nothing and is cut at once. A power cycle, a LEAVE and
   a read write nothing.
-- A Hitec write runs while a step of a write runs, or while the last
-  command of the HITEC page started its step with `MORE` (`CMD` bit 4,
-  `hitec_port_writing()`). A step of a write carries `MORE` or follows a
-  step that did; a read, a LISTEN of its own and a write of one step are
-  no write, and an OFF during them is not held. The panel's programmer marks every step of a
-  write but the last (`hitec_ses_step_t.more`): a plan step before the
+- A Hitec write runs while a SEND whose frame writes runs and for 150ms
+  after it (`HITEC_PORT_WRITE_TAIL_MS`), or while the last command of the
+  HITEC page started its step with `MORE` (`CMD` bit 4,
+  `hitec_port_writing()`). The IOmcu tells a writing frame from its bytes:
+  a classic WRITE_EEPROM or WRITE_RAM, a D series write request, the save
+  and the restart included, with or without `MORE`. A read and a LISTEN
+  write nothing, and an OFF during them is not held. How long a servo
+  needs its supply after a writing frame is not measured; the 150ms are
+  above the longest gap a vendor programmer leaves after one, 128ms
+  ([An OFF during a write](LinkHitec.md#an-off-during-a-write)). The
+  panel's programmer marks every step of a write but the last (`hitec_ses_step_t.more`): a plan step before the
   last, and a classic try that may be tried again. The bench console marks
   a step with `more` ([The bench console](BenchConsole.md)).
 - The heartbeat lost or the link silent is not held: off at once, after a

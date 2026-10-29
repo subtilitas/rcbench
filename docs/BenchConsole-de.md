@@ -211,8 +211,9 @@ OFF, das das Panel an SUPPLY schreibt, auf den letzten Schritt des
 Schreibens, höchstens 10.000ms nach dem OFF
 ([Ein OFF während eines Schreibens](LinkHitec-de.md#ein-off-während-eines-schreibens)).
 Ein Schritt, der 10.000ms oder mehr nach dem OFF getippt wird, geht an ein
-Servo, dessen Versorgung aus ist. Ein Schritt ohne `more` nach einem Schritt ohne
-`more` ist kein Schreiben: ein OFF währenddessen wird nicht zurückgehalten.
+Servo, dessen Versorgung aus ist. Ein SEND, dessen Frame schreibt, wird auch ohne
+`more` zurückgehalten, und 150ms danach; ein OFF während eines Lesens oder
+eines LISTEN wird nicht zurückgehalten.
 
 ```text
 hitec c 0 0x62 0x10 0x55 more

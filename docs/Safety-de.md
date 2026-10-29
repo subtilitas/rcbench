@@ -164,13 +164,19 @@ ein Schreiben in den Speicher des Servos läuft (`supply_page.h`):
   (`kst_port_writing()`). Sein Planen sendet nichts und wird sofort
   abgebrochen. Ein Versorgungszyklus, ein LEAVE und ein Lesen schreiben
   nichts.
-- Ein Hitec-Schreiben läuft, solange ein Schritt eines Schreibens läuft
-  oder solange das letzte Kommando der HITEC-Page seinen Schritt mit MORE
-  gestartet hat (`CMD` Bit 4, `hitec_port_writing()`). Ein Schritt eines
-  Schreibens trägt MORE oder folgt einem Schritt, der es trug; ein Lesen,
-  ein LISTEN für sich und ein Schreiben aus einem Schritt sind kein
-  Schreiben, ein OFF währenddessen wird nicht zurückgehalten. Der Programmierer des Panels
-  markiert jeden Schritt eines Schreibens außer dem letzten
+- Ein Hitec-Schreiben läuft, solange ein SEND läuft, dessen Frame
+  schreibt, und 150ms danach (`HITEC_PORT_WRITE_TAIL_MS`), oder solange das
+  letzte Kommando der HITEC-Page seinen Schritt mit MORE gestartet hat
+  (`CMD` Bit 4, `hitec_port_writing()`). Der IOmcu erkennt einen
+  schreibenden Frame an seinen Bytes: ein classic-WRITE_EEPROM oder
+  -WRITE_RAM, eine Schreibanfrage der D-Serie, Speichern und Neustart
+  eingeschlossen, mit oder ohne MORE. Ein Lesen und ein LISTEN schreiben
+  nichts, ein OFF währenddessen wird nicht zurückgehalten. Wie lange ein
+  Servo nach einem schreibenden Frame Versorgung braucht, ist nicht
+  gemessen; die 150ms liegen über der längsten Pause, die ein
+  Programmiergerät des Herstellers danach lässt, 128ms
+  ([Ein OFF während eines Schreibens](LinkHitec-de.md#ein-off-während-eines-schreibens)).
+  Der Programmierer des Panels markiert jeden Schritt eines Schreibens außer dem letzten
   (`hitec_ses_step_t.more`): einen Planschritt vor dem letzten und einen
   classic-Versuch, der wiederholt werden kann. Die Prüfstandskonsole
   markiert einen Schritt mit `more`

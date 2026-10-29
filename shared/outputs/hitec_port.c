@@ -107,7 +107,8 @@ static void go_free(hitec_port_t *p)
     p->cutting = 0;
     p->off_seen = 0;
     p->more = 0;
-    p->wstep = 0;
+    p->wframe = 0;
+    p->tail = 0;
     if (had_pin) {
         p->hw.give(p->hw.ctx);
     }
@@ -490,6 +491,34 @@ static link_hitec_refusal_t power(hitec_port_t *p, const hitec_xfer_t *x,
 }
 
 /**
+ * @brief Whether a SEND's frame writes to the servo: a classic WRITE_EEPROM
+ *        (0x62) or WRITE_RAM (0x64), or a D series write request (0x96,
+ *        HITEC_D_WRITE_LEN bytes, the save and the restart included).
+ *
+ * Told from the frame's bytes, so a writer marks nothing for it.  A read,
+ * a MOVE, a FIRST, a LISTEN, a LEVEL and a POWER write nothing.
+ *
+ * @param family The line's servo family (hitec_family_t).
+ * @param op     The operation.
+ * @param x      The transaction.
+ * @return true for a frame that writes.
+ */
+static bool writes_servo(uint8_t family, link_hitec_op_t op,
+                         const hitec_xfer_t *x)
+{
+    if (op != LINK_HITEC_OP_SEND) {
+        return false;
+    }
+    if (family == (uint8_t)HITEC_D) {
+        return x->n_tx == HITEC_D_WRITE_LEN
+               && x->tx[0] == HITEC_D_HEADER_REQUEST;
+    }
+    return x->n_tx == HITEC_C_FRAME_LEN
+           && (x->tx[0] == HITEC_C_WRITE_EEPROM
+               || x->tx[0] == HITEC_C_WRITE_RAM);
+}
+
+/**
  * @brief Whether a transaction puts a byte on the wire.
  *
  * @param op The operation.
@@ -564,6 +593,7 @@ static link_hitec_refusal_t transaction(hitec_port_t *p, link_hitec_op_t op,
     p->has_cap = 0;
     op_begin(p, op);
     p->t0_ms = now_ms;
+    p->wframe = writes_servo(p->family, op, &x) ? 1u : 0u;
     start(p, &x, puts_byte_out(op, &x) ? 1u : 0u);
     return LINK_HITEC_REF_NONE;
 }
@@ -658,18 +688,9 @@ static uint8_t command(hitec_port_t *p, const uint16_t *in, uint32_t now_ms)
     if (in[LINK_HT_W_SEQ] != (uint16_t)(p->seq + 1u)) {
         return LINK_NACK_BAD_VALUE;
     }
-    const bool after_more = p->more != 0u;
-
     p->seq = in[LINK_HT_W_SEQ];
     memcpy(p->last_cmd, in, sizeof(p->last_cmd));
     p->refusal = (uint8_t)dispatch(p, (link_hitec_op_t)op, port, in, now_ms);
-    /* A step taken is a step of a write when it carries the bit or follows
-     * a step that did: the write's last step.  Any other step -- a read, a
-     * LISTEN of its own -- is not, and holds no OFF.  A refused command
-     * leaves the transaction that runs as it is. */
-    if (p->refusal == (uint8_t)LINK_HITEC_REF_NONE && is_step(op)) {
-        p->wstep = more || after_more ? 1u : 0u;
-    }
     /* The write's next step is to come only after a step that started
      * with the bit: any other command ends that (LINK_HT_W_CMD_MORE). */
     p->more = more && p->refusal == (uint8_t)LINK_HITEC_REF_NONE ? 1u : 0u;
@@ -853,6 +874,13 @@ static void step_busy(hitec_port_t *p, uint32_t now_ms)
 
     if (p->hw.driver.poll(p->hw.driver.ctx, &p->cap)) {
         finish(p);
+        /* A frame that wrote: the servo keeps its supply for
+         * HITEC_PORT_WRITE_TAIL_MS after it (hitec_port_writing()). */
+        if (p->wframe != 0u) {
+            p->wframe = 0;
+            p->tail = 1;
+            p->tail_t0 = now_ms;
+        }
         return;
     }
     /* The sampler precharges the line every 1.1us: not into a servo
@@ -921,6 +949,10 @@ void hitec_port_step(hitec_port_t *p, bool safe, bool stop, uint32_t now_ms)
     p->safe = safe ? 1u : 0u;
     if (stop || !safe) {
         on_stop(p);
+    }
+    if (p->tail != 0u
+        && (uint32_t)(now_ms - p->tail_t0) >= HITEC_PORT_WRITE_TAIL_MS) {
+        p->tail = 0;
     }
     switch ((link_hitec_state_t)p->state) {
     case LINK_HITEC_STOPPING:
@@ -1008,8 +1040,9 @@ bool hitec_port_supply_hold(const hitec_port_t *p)
 bool hitec_port_writing(const hitec_port_t *p)
 {
     return p != NULL
-           && ((p->state == (uint8_t)LINK_HITEC_BUSY && p->wstep != 0u)
-               || (p->more != 0u && p->state != (uint8_t)LINK_HITEC_FREE));
+           && ((p->state == (uint8_t)LINK_HITEC_BUSY && p->wframe != 0u)
+               || ((p->more != 0u || p->tail != 0u)
+                   && p->state != (uint8_t)LINK_HITEC_FREE));
 }
 
 bool hitec_port_frame_out(const hitec_port_t *p, uint32_t now_ms)

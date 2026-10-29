@@ -198,8 +198,8 @@ and its save before the reboot. While it stands, `flags=MORE`, an OFF the
 panel writes to SUPPLY waits for the write's last step, 10,000ms after the
 OFF at most ([An OFF during a write](LinkHitec.md#an-off-during-a-write)).
 A step typed 10,000ms or more after the OFF goes to a servo whose supply
-is off. A step without `more` after a step without it is no write: an OFF
-during it is not held.
+is off. A SEND whose frame writes is held without `more` too, and for
+150ms after it; an OFF during a read or a LISTEN is not held.
 
 ```text
 hitec c 0 0x62 0x10 0x55 more

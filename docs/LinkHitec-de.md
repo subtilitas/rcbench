@@ -120,19 +120,29 @@ Panels. Das Panel liest Bit 11 von beiden.
 ### Ein OFF während eines Schreibens
 
 Ab 4.31 läuft auf dieser Page ein Schreiben in den Speicher des Servos,
-solange ein Schritt eines Schreibens läuft (BUSY) oder solange das zuletzt
+solange ein SEND läuft, dessen Frame schreibt (BUSY), und 150ms nach
+seinem Ende (`HITEC_PORT_WRITE_TAIL_MS`), oder solange das zuletzt
 angenommene Kommando seinen Schritt mit Bit 4 von `CMD` (MORE) gestartet
-hat: weitere Schritte dieses Schreibens folgen. Der Schreiber setzt das Bit
-auf jedem Schritt eines Schreibens außer dem letzten: SEND, LISTEN, LEVEL
-oder POWER. Ein Schritt eines Schreibens trägt das Bit oder folgt einem
-Schritt, der es trug. Eine Transaktion, die keins von beiden tut, ist kein
-Schreiben: ein Lesen, ein LISTEN für sich, ein Schreiben aus einem Schritt.
-`STATE` Bit 8 zeigt, dass das Bit steht. Jedes andere angenommene Kommando löscht
+hat: weitere Schritte dieses Schreibens folgen. Ein Frame schreibt, wenn
+er ein classic-WRITE_EEPROM (0x62) oder -WRITE_RAM (0x64) ist oder eine
+Schreibanfrage der D-Serie (0x96, 7 Bytes), Speichern und Neustart
+eingeschlossen; die Page erkennt es an den Bytes des Frames, mit oder ohne
+Bit. Ein Lesen, ein MOVE, ein LISTEN, ein LEVEL und ein POWER schreiben
+nichts. Der Schreiber setzt das Bit auf jedem Schritt eines Schreibens
+außer dem letzten: SEND, LISTEN, LEVEL oder POWER. `STATE` Bit 8 zeigt,
+dass das Bit steht. Jedes andere angenommene Kommando löscht
 es, auch ein abgewiesenes, ebenso ein Stopp und CLOSE.
 
+Wie lange ein Servo nach einem schreibenden Frame Versorgung braucht, ist
+nicht gemessen. Die 150ms liegen über der längsten Pause, die ein
+Programmiergerät des Herstellers nach einem schreibenden Frame vor seinem
+nächsten Frame lässt: 121 bis 128ms beim HPP-21 Plus zwischen zwei
+classic-Einstellungen, 100ms beim HFP-30 vom Speichern der D-Serie bis zum
+Neustart.
+
 Ein OFF, das das Panel auf SUPPLY schreibt, während ein Schreiben läuft,
-liest sofort 0 und erreicht den PD mini, wenn das Schreiben endet: im
-Durchlauf, in dem die Transaktion des letzten Schritts endet, spätestens
+liest sofort 0 und erreicht den PD mini, wenn das Schreiben endet: 150ms
+nach dem Ende der Transaktion des letzten schreibenden Frames, spätestens
 10.000ms nach dem OFF (`SUPPLY_PAGE_WRITE_WAIT_MS`). Bis dahin sieht der
 Port seine Versorgung eingeschaltet, und die Schritte laufen weiter. Läuft
 kein Schreiben, erreicht das OFF den PD mini im nächsten Durchlauf. Ein

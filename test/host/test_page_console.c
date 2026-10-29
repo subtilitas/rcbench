@@ -581,7 +581,8 @@ TEST_CASE(hitec_open_and_a_classic_command_report_the_reply)
 }
 
 /* `more` on a step: LINK_HT_W_CMD_MORE in its command, the page's latch
- * and a write running until a step without it; refused on the rest. */
+ * and a write running until a step without it and its frame's tail;
+ * refused on the rest. */
 TEST_CASE(a_step_marked_more_carries_the_bit)
 {
     static const char *const k_more[] = {
@@ -602,11 +603,14 @@ TEST_CASE(a_step_marked_more_carries_the_bit)
         CHECK(g_port.more != 0u);
         CHECK(hitec_port_writing(&g_port));
     }
-    /* The last step: none, and nothing runs once it has ended. */
+    /* The last step: none, and nothing runs once its frame's tail has
+     * gone. */
     CHECK(has(type("hitec c 0 0x62 0x1C 0xAA"), "started"));
     CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE, 0u);
     CHECK_EQ(g_port.more, 0u);
     (void)passes(3u);
+    CHECK(hitec_port_writing(&g_port));
+    (void)passes(HITEC_PORT_WRITE_TAIL_MS);
     CHECK(!hitec_port_writing(&g_port));
     /* The mark is the line's: the next line goes without it. */
     CHECK(has(type("hitec c 0 0x61 0x12 0"), "started"));
