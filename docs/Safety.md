@@ -15,7 +15,7 @@ hardware.
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
-| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED or the supply output is on | built; the decision is host-tested (`test_frame_watch`) |
+| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED, the supply output is on or the carrier's programming-port 5V is live | built; the decision is host-tested (`test_frame_watch`) |
 
 A pressed STOP stops the heartbeat, switches the panel's own output model to SAFE
 and writes ARM = 0 to the control page. While the link is up the panel
@@ -33,7 +33,10 @@ the render loop's, and the outputs keep their last command.
 
 The render loop moves a counter once per pass. The control task reads it in
 every 5ms pass and inside every link exchange's wait. While the bench is
-ARMED, or while the supply output is on, a counter that has not moved for
+ARMED, while the supply output is on, or, on the rbmod carrier, while the
+programming ports' 5V counts as live for the gates
+([The carrier's programming-port 5V](#the-carriers-programming-port-5v)),
+a counter that has not moved for
 1000ms (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`) is a stop
 of the bench's own, through the path STOP takes:
 

@@ -134,8 +134,9 @@ _Static_assert(FRAME_WATCH_MS == 1000u,
                "ALERT_SCREEN_STALLED says 1s: change both together");
 
 /**
- * @brief The render loop, watched while the bench is ARMED or the supply's
- *        output is on (frame_watch.h).
+ * @brief The render loop, watched while the bench is ARMED, the supply's
+ *        output is on, or the programming ports' own supply counts as live
+ *        (s_psup_live) (frame_watch.h).
  *
  * A render loop that has stopped leaves STOP working, through this task's
  * own hit test, and nothing else: DISARM, the throttle slider, the servo
@@ -154,7 +155,9 @@ _Static_assert(FRAME_WATCH_MS == 1000u,
 static void render_watch(void)
 {
     if (frame_watch_step(&s_frame_watch, atomic_load(&s_render_progress),
-                         outputs_armed(&s_out), atomic_load(&s_supply_live),
+                         outputs_armed(&s_out),
+                         atomic_load(&s_supply_live)
+                             || atomic_load(&s_psup_live),
                          now_ms())) {
         ESP_LOGW(TAG, "render loop still for %u ms: stopped",
                  (unsigned)frame_watch_still_ms(&s_frame_watch, now_ms()));

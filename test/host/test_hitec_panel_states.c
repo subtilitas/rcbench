@@ -276,6 +276,28 @@ TEST_CASE(the_carrier_shows_the_ports_5v_as_fixed)
     CHECK(strstr(hitec_panel_port_line(1), TR(HP_SUPPLY_5V_FIXED)) == NULL);
 }
 
+TEST_CASE(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits)
+{
+    /* The PD mini's limits at 3.3V or 0.5A bound the servo rails only: on
+     * the carrier CONNECT runs from the ports' own 5V. */
+    for (int which = 0; which < 2; ++which) {
+        open_en();
+        settings_set(SET_SUPPLY_V_MAX, which == 0 ? 3.3f : 21.0f);
+        settings_set(SET_SUPPLY_I_MAX, which == 0 ? 5.0f : 0.5f);
+        supply_screen_settings_loaded();
+        ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+        servo_d485();
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        CHECK(msg() != HITEC_PROG_MSG_SUPPLY_CAPS);
+        CHECK(pstate() != HITEC_PROG_PWM);
+        reach(HITEC_PROG_HELD);
+        ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+    }
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    settings_set(SET_SUPPLY_I_MAX, 5.0f);
+    supply_screen_settings_loaded();
+}
+
 TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
 {
     char want[HITEC_PANEL_LINE];
@@ -657,6 +679,7 @@ int main(void)
     RUN(a_port_without_a_pin_names_the_port_alone);
     RUN(more_sets_the_voltage_and_current_on_the_keypad);
     RUN(the_carrier_shows_the_ports_5v_as_fixed);
+    RUN(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits);
     RUN(the_home_tag_closes_an_editor_then_the_overlay);
     RUN(a_hold_the_finger_leaves_does_nothing);
     RUN(fail_safe_overload_and_a_raw_value_show_as_read);

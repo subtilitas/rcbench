@@ -15,7 +15,7 @@ verifiziert.
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
-| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist oder der Ausgang des Netzteils an ist | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
+| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist, der Ausgang des Netzteils an ist oder die 5V der Programmierports auf dem Carrier an sind | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
 Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
 Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
@@ -35,8 +35,11 @@ letztes Kommando.
 
 Die Render-Schleife zählt einen Zähler pro Durchlauf weiter. Der
 Control-Task liest ihn in jedem Durchlauf alle 5ms und in der Wartezeit
-jedes Link-Austauschs. Ist der Prüfstand ARMED oder der Ausgang des
-Netzteils an und hat sich der Zähler 1000ms lang nicht bewegt
+jedes Link-Austauschs. Ist der Prüfstand ARMED, der Ausgang des
+Netzteils an oder zählen auf dem rbmod-Carrier die 5V der
+Programmierports für die Sperren als an
+([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier))
+und hat sich der Zähler 1000ms lang nicht bewegt
 (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`), ist das ein
 Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
 

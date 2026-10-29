@@ -50,7 +50,8 @@ history is in git.
   current; they take no reading of the PD mini there, so neither its set
   point nor the SUPPLY screen's limits refuse a CONNECT, and the ports' 5V
   read on is power-cycled at CONNECT and after a write. A firmware install, an IOmcu update, a flash write
-  and the Wi-Fi wait for the ports' 5V as for the PD mini's output
+  and the Wi-Fi wait for the ports' 5V as for the PD mini's output, and
+  the render-loop watchdog watches while it is live
   ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
 - The panel follows the board the IOmcu reports. On the rbmod carrier
   OUTPUTS shows PWM01 to PWM04 as its four cells and refuses a surface and
