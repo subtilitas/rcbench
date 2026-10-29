@@ -20,6 +20,18 @@ bool error_port_defers(bool supply_page, uint16_t far_minor)
 }
 
 /**
+ * @brief Whether a programming port holds the supply for error_stop(): a
+ *        port holds the PD mini's output, and never the panel's model.
+ *
+ * @param b The bench.
+ * @return true when a port holds the supply and the PD mini is in use.
+ */
+static bool port_holds(const error_bench_t *b)
+{
+    return b->port_holds && b->supply_real;
+}
+
+/**
  * @brief error_stop()'s answer as the steps the control task takes: DISARM,
  *        the output off, and to an IOmcu of 4.31 with the PD mini in use
  *        the page's OFF whatever the panel reads of the output.
@@ -39,6 +51,12 @@ static error_act_t act_of(const error_bench_t *b, error_stop_t e)
     return a;
 }
 
+bool error_sites_keeps(const error_bench_t *b)
+{
+    return b != NULL && b->supply_on && port_holds(b)
+           && !error_port_defers(b->supply_page, b->far_minor);
+}
+
 error_act_t error_sites_stop(const error_bench_t *b)
 {
     const error_act_t none = { false, false, false, false };
@@ -46,7 +64,7 @@ error_act_t error_sites_stop(const error_bench_t *b)
     if (b == NULL) {
         return none;
     }
-    return act_of(b, error_stop(b->live, b->supply_on, b->port_holds,
+    return act_of(b, error_stop(b->live, b->supply_on, port_holds(b),
                                 error_port_defers(b->supply_page,
                                                   b->far_minor)));
 }
@@ -60,7 +78,7 @@ error_act_t error_sites_follow(error_watch_t *watch, uint32_t count,
         return none;
     }
     return act_of(b, error_stop_take(watch, count, b->live, b->supply_on,
-                                     b->port_holds,
+                                     port_holds(b),
                                      error_port_defers(b->supply_page,
                                                        b->far_minor)));
 }
@@ -81,14 +99,15 @@ error_act_t error_sites_cut(const error_bench_t *b)
 }
 
 error_reading_t error_sites_reading(const error_bench_t *b, bool online,
-                                    bool blind, error_act_t *act)
+                                    bool blind, error_reading_t *told,
+                                    error_act_t *act)
 {
     const error_act_t none = { false, false, false, false };
 
     if (act != NULL) {
         *act = none;
     }
-    if (b == NULL || act == NULL) {
+    if (b == NULL || told == NULL || act == NULL) {
         return ERROR_READING_NONE;
     }
     /* The model always answers, and a blind reading is the PD mini's. */
@@ -98,10 +117,28 @@ error_reading_t error_sites_reading(const error_bench_t *b, bool online,
     } else if (b->supply_real && b->supply_on && blind) {
         r = ERROR_READING_BLIND;
     }
-    if (r != ERROR_READING_NONE) {
-        *act = error_sites_cut(b);
+    /* A fault a port's supply keeps stands from pass to pass: acted on and
+     * named once, and again when the port lets go. */
+    if (r == ERROR_READING_NONE
+        || (r == *told && error_sites_keeps(b))) {
+        *told = r;
+        return ERROR_READING_NONE;
     }
+    *told = r;
+    *act = error_sites_stop(b);
     return r;
+}
+
+bool error_sites_page_keeps(const error_bench_t *b, bool far_off)
+{
+    if (b == NULL || far_off) {
+        return false;
+    }
+    /* Judged on the page's command, which the panel may not have taken
+     * yet: the output as the panel reads it is not asked. */
+    error_bench_t on = *b;
+    on.supply_on = true;
+    return error_sites_keeps(&on);
 }
 
 bool error_card_rows_edge(bool open, bool was_failed, bool failed)
@@ -112,4 +149,9 @@ bool error_card_rows_edge(bool open, bool was_failed, bool failed)
 bool error_card_csv_edge(bool bad, bool failed_before, bool txt)
 {
     return bad && !failed_before && !txt;
+}
+
+bool error_card_close_edge(bool bad, bool failed_before, bool report)
+{
+    return bad && !failed_before && !report;
 }
