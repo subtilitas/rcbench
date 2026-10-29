@@ -246,9 +246,15 @@ POWER needs a PD mini that answers ([SUPPLY](Link.md)). It:
 
 1. asks the supply off;
 2. waits until it reads off, 3000ms at most, else result 3 (`SUPPLY`);
-3. keeps it off for the staged 0 to 10,000ms;
+   the PD mini's driver reads the state 250ms after an OFF, so the wait
+   is 250ms or more;
+3. keeps it off for the staged 0 to 10,000ms from that read;
 4. asks it on at the staged voltage and current limit;
 5. starts the staged LISTEN in the same pass.
+
+The output is off for the staged time, the 250ms before the read, and the
+driver's reads before the ON: about 760ms for the classic 500ms, 762ms
+measured on one module. The module's own switching time is not measured.
 
 The voltage is 4800 to 6000mV until a session knows the servo model. The
 current limit is 50 to 3000mA. The voltage plus 700mV has to be under the

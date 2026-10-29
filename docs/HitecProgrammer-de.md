@@ -101,8 +101,9 @@ KST-Programmierung ([Seiten](Screens-de.md#programmierer)).
    - D-Serie: POWER mit der Programmierspannung und einer Auszeit von 0ms,
      wo ein PD mini antwortet, dann 1000ms, bis das Servo gestartet ist.
      Ohne PD mini läuft das Servo an der Versorgung, wie sie ist.
-   - Klassisch: POWER mit 500ms ausgeschalteter Versorgung, dann ein, und
-     ein LISTEN auf das `+` des Servos; sein zweites `+` folgt 250ms bis
+   - Klassisch: POWER mit ausgeschalteter Versorgung, 500ms ab der Lesung,
+     die sie aus zeigt ([VERLASSEN](#verlassen) nennt die ganze Auszeit),
+     dann ein, und ein LISTEN auf das `+` des Servos; sein zweites `+` folgt 250ms bis
      267ms später; 0x67 liest dann die Version.
 3. ALLES AUSLESEN: die Werte der Serie, jede Adresse mit 3 Versuchen.
 4. Das Modell wird erkannt: D-Serie an Register 0x00 (34485 ist der
@@ -130,6 +131,8 @@ Solange der Port gehalten ist:
   Netzteil: Sollwerte und EIN gesperrt.` AUSGANG AUS wirkt. Ab Protokoll
   4.29 hält der IOmcu seine SUPPLY-Page zusätzlich von OPEN bis CLOSE
   ([Die Versorgung, solange ein Port gehalten ist](LinkHitec-de.md#die-versorgung-solange-ein-port-gehalten-ist)).
+  Die Sollwerte von vor VERBINDEN kommen nach dem Verlassen zurück, sobald
+  der Ausgang aus ist ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 - Die Zeile für KST- und Chaservo-Servos und die Zeile ZIEL von MOTOR & ESC
   nehmen keinen Druck an, und ESC STICK startet keinen Lauf.
 
@@ -723,7 +726,13 @@ verlässt ihn:
 
 - D-Serie: ein Neustart des Servos (Register 0x46 = 1), das danach 1s lang
   Signale ignoriert; die Versorgung bleibt unverändert.
-- Klassisch: die Versorgung 500ms aus und wieder ein.
+- Klassisch: die Versorgung aus und wieder ein. Die Auszeit von 500ms
+  zählt ab der Lesung des PD mini, die den Ausgang aus zeigt; der Treiber
+  sendet sie 250ms nach dem Ausschalten (`PDMINI_CONFIRM_MS`). Das
+  Einschalten folgt nach den Lesungen der Sollwerte und des aktiven Slots
+  durch den Treiber. Der Ausgang ist etwa 760ms aus: 762ms gemessen an
+  einem Modul, an der Schwelle von 1,4V eines Logikanalysators. Wie viel
+  davon die eigene Schaltzeit des Moduls ist, ist nicht gemessen.
 
 Dann CLOSE: der Port ist wieder in PWM, und die Meldung sagt
 `Der Port ist wieder im Testermodus.` VERLASSEN wird auch an einem

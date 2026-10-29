@@ -328,6 +328,15 @@ typedef struct {
     bool            held_kst;
     /** @brief The Hitec programmer's word on the hold */
     bool            held_hitec;
+    /* The operator's set points while a programming port's stand in their
+     * place, and the port's as this screen took them; see
+     * supply_screen_port_done(). */
+    /** @brief Whether a port's set points stand in for the operator's */
+    bool            lent;
+    float own_v,                            /**< the operator's voltage set point, V */
+          own_i,                            /**< the operator's current limit, A */
+          lent_v,                           /**< the port's voltage as taken, V */
+          lent_i;                           /**< the port's current limit as taken, A */
     /* The screen whose ON the output is, while it is on or an ON is on
      * its way; and an OFF owed for leaving it while a programming port
      * held the supply, sent when the port lets go.  See
