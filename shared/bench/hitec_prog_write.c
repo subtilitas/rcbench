@@ -998,7 +998,7 @@ void hpw_off(hitec_prog_t *p)
     p->pend = false;
 }
 
-void hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was)
+bool hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was)
 {
     bool changed = !had;
 
@@ -1017,6 +1017,7 @@ void hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was)
     if (p->rec) {
         rec_compare(p);
     }
+    return changed;
 }
 
 void hpw_tick(hitec_prog_t *p)
