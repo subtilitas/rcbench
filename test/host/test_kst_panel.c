@@ -160,10 +160,14 @@ TEST_CASE(a_port_without_a_servo_says_so_and_gives_the_port_back)
     fresh();
     g_rig.sim.powered = false;
     link_up();
+    CHECK_EQ(kst_link_faults(&g_rig.link), 0u);
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_NO_SERVO);
     CHECK_STR_EQ(said(), TR(KP_S_NO_SERVO));
+    /* A session fault, counted once as the control task takes it: an
+     * error of the bench (error_sites_follow()). */
+    CHECK_EQ(kst_link_faults(&g_rig.link), 1u);
     CHECK(!kst_prog_have_servo(M));
     if (kst_prog_state(M) == KST_PROG_PROGRAMMING) {
         /* Nothing to edit, nothing to write; LEAVE is the way out. */
@@ -175,6 +179,7 @@ TEST_CASE(a_port_without_a_servo_says_so_and_gives_the_port_back)
         settle();
     }
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(kst_link_faults(&g_rig.link), 1u);
 }
 
 TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)

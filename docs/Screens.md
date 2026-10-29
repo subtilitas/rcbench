@@ -2411,7 +2411,9 @@ Nine messages say what a card did to a run. Each appears on the band:
 | `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
 The first five mean there is no file to look for. The last four mean there is
-one and it stops early.
+one and it stops early. A failed write and a failed close of a run are an
+error: the bench goes to SAFE and the supply off
+([Safety, Errors](Safety.md#errors)).
 
 A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
@@ -2551,7 +2553,9 @@ the link down the panel writes to it every 5s.
 The footer, body y 440 to 492, holds RESCAN, 140 x 52px, at the left, as
 on [Logs](#logs), then COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN,
 118 x 52px, OPEN at the right margin; the buttons stand 6px apart, and the
-footer ends 4px above the alert band. A button that would be refused is
+footer ends 4px above the alert band. Each label is in the 10 x 20 face
+with at least 4px either side; the German AKTUALISIEREN is 130px wide and
+VERSCHIEBEN 110px. A button that would be refused is
 drawn dimmed; a tap on it says why in the message line, two lines of the
 12 x 24 face over the footer.
 
@@ -2830,8 +2834,11 @@ stops before its next chunk of 16KiB and says
 ![The DELETE question](img/files-delete.png)
 
 The DELETE question is a box of 700 x 280px with CANCEL and DELETE of
-300 x 56px. It names the entry and its size; for a run's CSV with a report
-of the same number it names the report that goes with it.
+300 x 56px. It names the entry and its size; for a run's CSV it names the
+report of the same number that goes with it when the pane's page lists
+that report. A report that would stand on the next or the previous page
+of a folder of more than 48 entries is named too: the page cannot tell,
+and DELETE takes the report along whenever the card holds it.
 
 ![A copy under way](img/files-copy.png)
 
@@ -3072,7 +3079,9 @@ Current limitations:
   whenever the bench is SAFE is not built.
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
-  688-757kB/s. The cause is not measured.
+  688-757kB/s. The cause is not measured. The page with the file manager
+  is 33,101 bytes in English on an empty card and has no card listing;
+  its time is not measured.
 
 ### The access code
 
@@ -3130,14 +3139,52 @@ each flash erase (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 `firmware/panel/sdkconfig.defaults`). What the display shows during the
 erases is not measured.
 
-**Files on the card.** Every file, folder by folder, with its name, its size
-in bytes and its modification time as the card has it, in the zone of
-SETUP > PANEL's Time zone. A stamp in 1980, an unset clock's, leaves the
-time cell empty. Each name downloads
-that file. The page reads the card only: nothing on it is deleted, renamed or
-written. A name over 255 characters, a path over 384 bytes and a folder
-deeper than 16 are left out, and the page says how many. With no card, or a
-card that cannot be read, the page says so and the upload still works.
+**Files on the card.** The card in two panes, as [FILES](#files) shows
+it, read through [the file API](#the-file-api). The page reads the card
+only: nothing on it is deleted, renamed or written. Each pane is one folder,
+up to 48 entries a page, folders first, then names with case folded. The
+left pane opens on the card's root, the right one on the User log folder
+(`USER/LOGS` by default). The browser keeps both places for its tab while
+the same card is in the slot; another card starts both again there.
+
+- A pane's top row is its folder's path on a button that goes up one
+  folder; the root shows the card's volume label, or `SD CARD`. PREV and
+  NEXT stand beside it while the folder holds more than 48 entries.
+- The heading counts the entries as FILES does, `6 ENTRIES` or
+  `ENTRIES 49 TO 96 OF 120`, and the entries not listed after it.
+- A row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024
+  bytes), the kind word and the state word of FILES (`WRITING`, `LOCKED`,
+  `FIXED`).
+- A click or a tap selects a row and makes its pane the active one, drawn
+  with the accent border. A second tap, a double click or Enter is OPEN.
+- RESCAN, INFO, DOWNLOAD and OPEN, at the window's foot, act on the
+  active pane's selected entry. A button that would be refused is drawn dimmed, and a tap on it
+  says why under the buttons.
+
+| Button | What it does |
+|---|---|
+| RESCAN | asks the panel's state again, then reads each pane again at the page it shows, as FILES' [RESCAN](#rescan) does; a card swapped since starts both panes again in the root and the User log folder |
+| INFO | the entry's name, folder, kind, size or entries, time and rule, as FILES' INFO box; the time is the stamp the card holds in the zone of SETUP > PANEL's Time zone, `not known` for a stamp in 1980 |
+| DOWNLOAD | the selected file through `/card/<path>`; dimmed on a folder |
+| OPEN | enters a folder, or shows a file in the viewer over the page. Dimmed on a file over 1,048,576 bytes, on a file the logger writes and on the servo programmers' records, which DOWNLOAD still sends |
+
+The viewer shows the file read-only over the page: its path, its size,
+READ-ONLY, `LINE 23 OF 57` for the line at the top, `MIXED LINE ENDS` for
+a file with more than one kind, and CLOSE (or Escape). Its lines are
+coloured as the panel's [text viewer](#the-text-viewer) colours them, with
+the same rules, the same verdict words in English and German, and the
+panel's palettes: the light one, or the dark one when the browser asks for
+a dark scheme. A line is not wrapped; the text scrolls sideways. A tab
+reaches the next multiple of 8 cells. A control character and a byte that
+starts no UTF-8 sequence show as `?`. A file the file API refuses shows its
+refusal's text. The page draws the lines on screen and 200 lines above and
+below them.
+
+The page sends one request at a time. A request without an answer after 2s
+shows `Waiting for the panel: it answers one request at a time.`; a
+download through `/card/` holds the next request until it ends. A browser
+without JavaScript shows `The file list needs JavaScript.` and the ZIP
+link.
 
 **Download all as one ZIP file** sends the whole card as one ZIP file. The
 page gives the number of files, their bytes and the ZIP file's bytes before
@@ -3182,16 +3229,16 @@ browser reports it as failed, and the panel runs on.
 The page's server also answers four reads for a script: a page of a
 folder, the facts of one entry, a text file whole, and the panel's state
 (`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`).
-The page itself does not call them. They read the card only, through
+The page's file manager reads the card through them. They read the card only, through
 the same pages, rules and file load as FILES: nothing is written, renamed
 or deleted. Each takes the guard of the table above and the access code
 as a download does; a request without a code gets 403 and `CODE`.
 
 | Request | Answer |
 | --- | --- |
-| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, and the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file |
+| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
-| `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
+| `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
 | `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` and `X-Rcbench-Bom` (1 or 0) |
 
 A path is relative to the card's root and percent-encoded with `/` as the
@@ -3310,10 +3357,32 @@ same. When keeping a good start fails (otadata not written), the band says
 `Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
+Before the restart, the install keeps the version it wrote in NVS
+(non-volatile storage): one 40-byte entry, namespace `fw_ota`, key
+`restart_note`, with a magic word and an FNV-1a (Fowler-Noll-Vo) hash. A
+restart, a panic and a power cut keep it. The next start reads it; with the
+written slot marked invalid by the bootloader, that start is the build
+before, and the band says the `failed to start` line. The entry is erased after every
+start but a trial that goes back, so the line shows once. An entry of
+another size, magic or hash reads as no note. The first start after an
+install from 0.23.2 or older finds no entry, as a panel that never
+installed does: those builds keep the note in LP (low-power) RAM, and a
+trial of this build that goes back is reported by that build from there.
+The console states each start's check in one line:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+The note is the version or `none`, or `unreadable` for an entry that reads
+as none; the slot is the bootloader's last invalid one or `none`; the result
+is `NORMAL`, `UPDATED`, `ROLLED_BACK`, `UNCONFIRMED` or `GOING_BACK`, the
+last said before a trial that goes back restarts.
+
 Current limitations:
 
-- A power cut during the trial start loses that line; the panel still goes
-  back to the build before.
+- An install whose NVS write fails says so on the console
+  (`restart note not kept`), and a start of its build that goes back shows
+  no line on the band.
 - A trial start that stops before the screen loop runs, in a card mount
   that does not return for example, is not kept and not reset either: the
   task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is

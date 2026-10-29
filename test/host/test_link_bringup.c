@@ -8,6 +8,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdint.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -676,6 +677,159 @@ TEST_CASE(a_status_reply_that_is_not_the_page_is_not_taken)
     CHECK_EQ(faults, 0x0020u);
 }
 
+/* ------------------------------------------------------ console report */
+
+/**
+ * @brief Every line of report @p r, into @p out, and the warnings.
+ * @param r     the report
+ * @param out   receives the lines
+ * @param warn  receives each line's warning flag
+ * @return the lines
+ */
+static unsigned report_lines(const link_report_in_t *r,
+                             char out[LINK_REPORT_LINES + 1][LINK_REPORT_LINE],
+                             bool warn[LINK_REPORT_LINES + 1])
+{
+    unsigned n = 0u;
+    while (n <= LINK_REPORT_LINES
+           && link_report_line(r, n, out[n], LINK_REPORT_LINE, &warn[n])
+                  > 0u) {
+        ++n;
+    }
+    return n;
+}
+
+_Static_assert(sizeof(link_report_in_t) < 300u,
+               "a report crosses a queue in under 300 bytes");
+
+/* The lines the console printed, in its order and its words. */
+TEST_CASE(a_healthy_report_prints_the_lines_the_console_printed)
+{
+    link_report_in_t r;
+    memset(&r, 0, sizeof(r));
+    r.win = healthy();
+    r.total = healthy();
+    r.total.rt_samples = 3u;
+    r.total.rt_min_us = 400u;
+    r.total.rt_mean_us = 450u;
+    r.total.rt_max_us = 500u;
+    r.win_s = 60u;
+    r.bus.have = true;
+    r.bus.bus_errors = 2u;
+    char t[LINK_REPORT_LINES + 1][LINK_REPORT_LINE];
+    bool w[LINK_REPORT_LINES + 1];
+    CHECK_EQ(report_lines(&r, t, w), 6u);
+    CHECK_STR_EQ(t[0], "LINK link healthy");
+    CHECK_STR_EQ(t[1], "  last 60s  polls 100 replies 100 timeouts 0 "
+                       "stale 0 nack 0  iomcu frames 100 crc 0 resync 0 "
+                       "refused 0");
+    CHECK_STR_EQ(t[2], "  panel  polls 100 replies 100 timeouts 0 stale 0 "
+                       "nack 0 crc 0 resync 0");
+    CHECK_STR_EQ(t[3], "  iomcu  frames 100 crc 0 resync 0 refused 0");
+    CHECK_STR_EQ(t[4], "  round trip min 400 avg 450 max 500 us");
+    CHECK_STR_EQ(t[5], "  bus    tx errors 0 rx errors 0 bus errors 2");
+    for (unsigned i = 0; i < 6u; ++i) {
+        CHECK(!w[i]);
+    }
+    /* Past the last line: nothing, and no warning. */
+    bool warn = true;
+    char line[LINK_REPORT_LINE] = "x";
+    CHECK_EQ(link_report_line(&r, 6u, line, sizeof(line), &warn), 0u);
+    CHECK_STR_EQ(line, "");
+    CHECK(!warn);
+    CHECK_EQ(link_report_line(&r, 1000u, line, sizeof(line), NULL), 0u);
+}
+
+/* A silent link: the hint as a warning, the window without the IOmcu's
+ * counts, no round trip, and what never answered named. */
+TEST_CASE(a_silent_link_warns_and_names_what_never_answered)
+{
+    link_report_in_t r;
+    memset(&r, 0, sizeof(r));
+    r.win.polls = 5u;
+    r.win.timeouts = 5u;
+    r.total = r.win;
+    r.win_s = 5u;
+    char t[LINK_REPORT_LINES + 1][LINK_REPORT_LINE];
+    bool w[LINK_REPORT_LINES + 1];
+    CHECK_EQ(report_lines(&r, t, w), 6u);
+    CHECK_STR_EQ(t[0], "LINK no reply to any poll");
+    CHECK(!w[0]);
+    CHECK_STR_EQ(t[1], "  check: iomcu powered? CANH/CANL swapped? same bit "
+                       "rate? terminators?");
+    CHECK(w[1]);
+    CHECK_STR_EQ(t[2], "  last 5s  polls 5 replies 0 timeouts 5 stale 0 "
+                       "nack 0");
+    CHECK_STR_EQ(t[4], "  iomcu  never answered a status read");
+    CHECK_STR_EQ(t[5], "  bus    the controller is not running");
+    r.bus.have = true;
+    r.bus.off = true;
+    r.bus.tx_errors = 256u;
+    char line[LINK_REPORT_LINE];
+    CHECK(link_report_line(&r, 5u, line, sizeof(line), NULL) > 0u);
+    CHECK_STR_EQ(line, "  bus    tx errors 256 rx errors 0 bus errors 0 "
+                       "-- BUS OFF");
+}
+
+/* Every counter at 4,294,967,295 in every shape a report takes: no more
+ * than LINK_REPORT_LINES lines, none cut at LINK_REPORT_LINE bytes. */
+TEST_CASE(every_report_line_fits_at_the_largest_counters)
+{
+    unsigned most = 0u;
+    size_t longest = 0u;
+    for (unsigned shape = 0u; shape < 64u; ++shape) {
+        link_report_in_t r;
+        memset(&r, 0xFF, sizeof(r));
+        r.win.have_status = (shape & 1u) != 0u;
+        r.total.have_status = (shape & 2u) != 0u;
+        r.total.rt_samples = (shape & 4u) != 0u ? UINT32_MAX : 0u;
+        r.bus.have = (shape & 8u) != 0u;
+        r.bus.off = (shape & 16u) != 0u;
+        r.win.have_identity = false;
+        r.win.have_refused = r.win.have_status;
+        r.total.have_refused = r.total.have_status;
+        /* A fault (corrupt frames) or a healthy window. */
+        r.win.rx_crc_errors = (shape & 32u) != 0u ? 1u : 0u;
+        r.win.dev_crc_errors = r.win.rx_crc_errors;
+        r.win.mismatches = 0u;
+        char t[LINK_REPORT_LINES + 1][LINK_REPORT_LINE];
+        bool w[LINK_REPORT_LINES + 1];
+        const unsigned n = report_lines(&r, t, w);
+        CHECK(n >= 5u && n <= LINK_REPORT_LINES);
+        most = (n > most) ? n : most;
+        for (unsigned i = 0u; i < n; ++i) {
+            char big[512];
+            const size_t len = link_report_line(&r, i, big, sizeof(big),
+                                                NULL);
+            CHECK(len < LINK_REPORT_LINE);
+            CHECK_STR_EQ(t[i], big);
+            longest = (len > longest) ? len : longest;
+        }
+    }
+    CHECK_EQ(most, (unsigned)LINK_REPORT_LINES);
+    CHECK_EQ(longest, (size_t)167);
+}
+
+/* A short buffer takes the start of the line and the count says it was
+ * cut; no buffer counts only; no report is no line. */
+TEST_CASE(a_report_line_is_cut_to_its_buffer_and_counted)
+{
+    link_report_in_t r;
+    memset(&r, 0, sizeof(r));
+    r.win = healthy();
+    r.total = healthy();
+    char line[8];
+    CHECK_EQ(link_report_line(&r, 0u, line, sizeof(line), NULL),
+             strlen("LINK link healthy"));
+    CHECK_STR_EQ(line, "LINK li");
+    CHECK_EQ(link_report_line(&r, 0u, NULL, 0u, NULL),
+             strlen("LINK link healthy"));
+    bool warn = true;
+    CHECK_EQ(link_report_line(NULL, 0u, line, sizeof(line), &warn), 0u);
+    CHECK_STR_EQ(line, "");
+    CHECK(!warn);
+}
+
 int main(void)
 {
     RUN(a_working_link_is_reported_as_working);
@@ -705,5 +859,9 @@ int main(void)
     RUN(the_refusal_count_crosses_the_link_and_wraps);
     RUN(an_older_coprocessor_is_read_without_the_count);
     RUN(a_status_reply_that_is_not_the_page_is_not_taken);
+    RUN(a_healthy_report_prints_the_lines_the_console_printed);
+    RUN(a_silent_link_warns_and_names_what_never_answered);
+    RUN(every_report_line_fits_at_the_largest_counters);
+    RUN(a_report_line_is_cut_to_its_buffer_and_counted);
     return test_summary("link_bringup");
 }

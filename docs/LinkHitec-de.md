@@ -262,10 +262,16 @@ POWER braucht einen PD mini, der antwortet ([SUPPLY](Link-de.md)). Es:
 
 1. verlangt die Versorgung aus;
 2. wartet, bis sie aus gelesen wird, höchstens 3000ms, sonst Ergebnis 3
-   (`SUPPLY`);
-3. hält sie für die bereitgestellten 0 bis 10.000ms aus;
+   (`SUPPLY`); der Treiber des PD mini liest den Zustand 250ms nach einem
+   Ausschalten, das Warten dauert also 250ms oder mehr;
+3. hält sie für die bereitgestellten 0 bis 10.000ms ab dieser Lesung aus;
 4. verlangt sie an mit der bereitgestellten Spannung und Stromgrenze;
 5. startet im selben Durchlauf das bereitgestellte LISTEN.
+
+Der Ausgang ist für die bereitgestellte Zeit aus, dazu die 250ms vor der
+Lesung und die Lesungen des Treibers vor dem Einschalten: etwa 760ms bei
+den klassischen 500ms, 762ms gemessen an einem Modul. Die eigene Schaltzeit
+des Moduls ist nicht gemessen.
 
 Die Spannung ist 4800 bis 6000mV, bis eine Session das Servomodell kennt.
 Die Stromgrenze ist 50 bis 3000mA. Die Spannung plus 700mV muss unter dem

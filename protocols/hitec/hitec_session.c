@@ -11,7 +11,7 @@
 #include <string.h>
 
 /** @brief Operation the session runs. */
-enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_WRITE, OP_LEAVE };
+enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_WRITE, OP_LEAVE, OP_MOVE };
 
 /** @brief The step an operation is at. */
 enum {
@@ -22,6 +22,8 @@ enum {
     PH_READ,         /* one address of todo */
     PH_WRITE,        /* plan.step[step_index] */
     PH_LEAVE,        /* classic POWER, D series reboot */
+    PH_MOVE,         /* D series 0x1E write, classic 0x66 */
+    PH_POS,          /* D series 0x0C read, classic 0x65 */
 };
 
 /** @brief The first command's first byte, as the HPP-21 Plus sends it. */
@@ -529,6 +531,26 @@ hitec_ses_t hitec_session_run_plan(hitec_session_t *s,
     return start_plan(s, expect != NULL);
 }
 
+hitec_ses_t hitec_session_move(hitec_session_t *s, uint16_t target,
+                               bool read_pos)
+{
+    const hitec_ses_t r = may_start(s, true);
+
+    if (r != HITEC_SES_OK) {
+        return r;
+    }
+    if (s->series == HITEC_CLASSIC
+            ? target < HITEC_SES_C_MOVE_MIN || target > HITEC_SES_C_MOVE_MAX
+            : target > HITEC_D_TARGET_MAX) {
+        return HITEC_SES_ERR_ARG;
+    }
+    s->move_to = target;
+    s->read_pos = read_pos ? 1u : 0u;
+    s->has_position = 0;
+    begin(s, OP_MOVE, PH_MOVE);
+    return HITEC_SES_BUSY;
+}
+
 hitec_ses_t hitec_session_leave(hitec_session_t *s)
 {
     const hitec_ses_t r = may_start(s, false);
@@ -645,6 +667,31 @@ static void build(hitec_session_t *s)
         }
         break;
     }
+    case PH_MOVE:
+        if (classic) {
+            s->addr = HITEC_C_MOVE;
+            hitec_c_xfer(HITEC_C_MOVE, (uint8_t)(s->move_to >> 8),
+                         (uint8_t)s->move_to, &st->xfer);
+            st->decoder = HITEC_DEC_C;
+            st->dec_arg = HITEC_C_MOVE;
+        } else {
+            s->addr = HITEC_D_REG_TARGET;
+            hitec_d_write_xfer(0u, HITEC_D_REG_TARGET, s->move_to, &st->xfer);
+        }
+        break;
+    case PH_POS:
+        if (classic) {
+            s->addr = HITEC_C_READ_POSITION;
+            hitec_c_xfer(HITEC_C_READ_POSITION, 0u, 0u, &st->xfer);
+            st->decoder = HITEC_DEC_C;
+            st->dec_arg = HITEC_C_READ_POSITION;
+        } else {
+            s->addr = HITEC_D_REG_POSITION;
+            hitec_d_read_xfer(0u, HITEC_D_REG_POSITION, &st->xfer);
+            st->decoder = HITEC_DEC_D;
+            st->dec_arg = HITEC_D_REG_POSITION;
+        }
+        break;
     default: /* PH_LEAVE */
         if (classic) {
             power_step(s, st, HITEC_SES_POWER_WINDOW_US, false);
@@ -755,7 +802,7 @@ static hitec_ses_t fail(hitec_session_t *s, uint8_t rx)
         err = HITEC_SES_ERR_NO_SERVO;
     } else if (s->op == OP_ENTER) {
         err = HITEC_SES_ERR_ENTRY;
-    } else if (s->phase == PH_WRITE) {
+    } else if (s->phase == PH_WRITE || s->phase == PH_MOVE) {
         err = HITEC_SES_ERR_WRITE;
     } else {
         err = HITEC_SES_ERR_READ;
@@ -843,6 +890,31 @@ static hitec_ses_t write_took(hitec_session_t *s, uint32_t now)
 }
 
 /**
+ * @brief A step of a move took: the position read ends it; the move goes
+ *        on to it, or ends without one.  The gap is the one feed started.
+ *
+ * @param s      Session.
+ * @param value  The decoded value of the position read.
+ * @return HITEC_SES_BUSY, or the result the move ends with.
+ */
+static hitec_ses_t move_took(hitec_session_t *s, uint16_t value)
+{
+    if (s->phase == PH_POS) {
+        s->position = value;
+        s->has_position = 1;
+    }
+    if (s->abort != 0u) {
+        return finish(s, HITEC_SES_ERR_ABORTED);
+    }
+    if (s->phase == PH_POS || s->read_pos == 0u) {
+        return finish(s, HITEC_SES_OK);
+    }
+    s->phase = PH_POS;
+    s->tries = 0;
+    return HITEC_SES_BUSY;
+}
+
+/**
  * @brief A decoded transaction ended with @p rx.
  *
  * @param s      Session.
@@ -898,6 +970,9 @@ static hitec_ses_t decoded(hitec_session_t *s, uint32_t now, uint8_t rx,
         return finish(s, HITEC_SES_OK);
     case PH_READ:
         return read_took(s, value);
+    case PH_MOVE:
+    case PH_POS:
+        return move_took(s, value);
     default: /* PH_WRITE, classic */
         return write_took(s, now);
     }
@@ -927,7 +1002,8 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
     if (s->step.decoder != HITEC_DEC_NONE) {
         return decoded(s, now, r->rx, r->value);
     }
-    /* No decoder: the D series POWER, a D series write, the leave. */
+    /* No decoder: the D series POWER, a D series write or move, the
+     * leave. */
     switch (s->phase) {
     case PH_D_POWER:
         if (s->abort != 0u) {
@@ -939,6 +1015,8 @@ hitec_ses_t hitec_session_feed(hitec_session_t *s, uint32_t now,
         return HITEC_SES_BUSY;
     case PH_WRITE:
         return write_took(s, now);
+    case PH_MOVE:
+        return move_took(s, 0u);
     default: /* PH_LEAVE */
         return finish(s, HITEC_SES_OK);
     }

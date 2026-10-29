@@ -651,6 +651,34 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * The count of stored values of no setting closes its sentence: a sentence
+ * that wraps leaves the count alone on a row ("1."), cut off from what it
+ * counts.  Each one fits a row of the page and of the message band at the
+ * widest count a file holds, 255.
+ */
+TEST_CASE(a_count_of_stored_values_stays_on_its_sentences_row)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+    static const ui_text_id_t ids[] = {
+        TX_HP_LOAD_RAW, TX_HP_RESTORE_RAW, TX_HP_FACTORY_RAW,
+    };
+    static const unsigned counts[] = { 1u, 99u, 255u };
+
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        d_open(langs[k]);
+        for (size_t i = 0; i < sizeof(ids) / sizeof(ids[0]); ++i) {
+            for (size_t c = 0; c < sizeof(counts) / sizeof(counts[0]); ++c) {
+                char line[HITEC_PANEL_LINE];
+
+                snprintf(line, sizeof(line), ui_tr(ids[i]), counts[c]);
+                CHECK_EQ(hitec_panel_text_rows(line), 1);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
 {
     d_open(UI_LANG_EN);
@@ -964,6 +992,7 @@ int main(void)
     RUN(restore_after_factory_default_counts_the_cells_of_no_setting);
     RUN(factory_default_counts_the_cells_of_no_setting_it_writes);
     RUN(a_backup_file_names_the_stored_values_it_brings_back);
+    RUN(a_count_of_stored_values_stays_on_its_sentences_row);
     RUN(restore_writes_the_session_backup_back_from_its_page);
     RUN(factory_default_comes_from_more_for_a_classic_servo);
     RUN(every_file_message_has_its_lines_in_both_languages);
