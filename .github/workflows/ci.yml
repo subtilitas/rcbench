@@ -252,29 +252,29 @@ jobs:
       - uses: ./.github/actions/host-deps
 
       # The regression guard is cache-line traffic per frame under the
-      # ESP32-P4's two caches, not wall-clock on a runner that shares nothing
+      # ESP32-P4's caches, not wall-clock on a runner that shares nothing
       # with the board; test_frame_work holds the pixel visits beside it.
       # Each ceiling sits 13 to 29% above its modes in docs/Performance.md,
-      # or at 1,000 for a mode under 600 fills, and catches the model
+      # or at 1,000 for a mode under 700 fills, and catches the model
       # drawing more.  The bench frame (frame, sim, supply) has no ceiling:
       # a frame per 20Hz sample needs the effective PSRAM bandwidth, which
       # is not measured (PROBE_CLEAR_US).
       #
       # Every screen caches its chrome and its band, so a steady frame
       # draws nothing; 1,000 catches one that has started repainting.
-      # ESC STICK's steady frame is 1,551 and is held apart at 2,000.
+      # ESC STICK's steady frame is 1,560 and is held apart at 2,000.
       - name: Every screen still idles on a cached frame
         run: python3 tools/frame_cost.py overview analyser logs settings
              settings-list battery balance picker wifi --max-lines 1000
              && python3 tools/frame_cost.py motor-stick --max-lines 2000
 
-      # The servo card draws its arm and grip from coverage; 2,700 catches
+      # The servo card draws its arm and grip from coverage; 2,800 catches
       # that growing.  A breath repaints a clipped box and nothing else, and
       # 1,000 catches one that repaints more.  A changed current repaints
       # the CURRENT row's value, the line and the plot beside the grip, each
       # clipped; 4,000 catches a changed digit that repaints the card.
       - name: The servo card is drawn, and its grip is only breathed on
-        run: python3 tools/frame_cost.py servo --max-lines 2700
+        run: python3 tools/frame_cost.py servo --max-lines 2800
              && python3 tools/frame_cost.py servo-grip --max-lines 1000
              && python3 tools/frame_cost.py servo-current --max-lines 4000
 
@@ -297,7 +297,7 @@ jobs:
              --max-lines 72000
 
       # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
-      # screen, about 36,400 fills; 42,000 catches a key that repaints more.
+      # screen, about 37,100 fills; 42,000 catches a key that repaints more.
       - name: A key of the Wi-Fi keyboard costs one repaint
         run: python3 tools/frame_cost.py wifi-keys --max-lines 42000
 
@@ -525,6 +525,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+
+      # valgrind: test_frame_cost.py builds the bench and measures the
+      # servo card and the motor bench twice under cachegrind.
+      - uses: ./.github/actions/host-deps
 
       # The runner image carries git, cmake and a C compiler, which the
       # end-to-end cases of the mutation tool build a three-file project

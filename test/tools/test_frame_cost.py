@@ -1,13 +1,18 @@
-"""frame_cost.py without cachegrind.
+"""frame_cost.py: the profile, the docs and the measurement's repeatability.
 
-The ESP32-P4 profile, the block in the docs and the table of the board.
+The ESP32-P4 profile, the block in the docs and the table of the board run
+without cachegrind; the last cases build the bench and run it under
+cachegrind, and need cc and valgrind.
 
 SPDX-License-Identifier: MIT
 """
 
+import shutil
+
 import pytest
 
 import frame_cost as fc
+from conftest import skip_or_fail
 
 
 def test_the_l2_defaults_are_esp_idfs():
@@ -84,7 +89,11 @@ def test_a_block_that_matches_passes():
 
 
 def test_fills_within_the_tolerance_pass_and_past_it_fail():
-    """Fills within the tolerance pass and past it fail."""
+    """Fills within the tolerance pass and past it fail.
+
+    The tolerance absorbs a change of layout elsewhere in the sources, not a
+    run that differs: test_a_mode_measures_the_same_twice_* holds that.
+    """
     near = fc.table([("frame", 10150), ("overview", 990)], 64, 60.38, None)
     assert fc.block_problems("P.md", block(near), block(GOOD)) == []
     far = fc.table([("frame", 10300), ("overview", 900)], 64, 60.38, None)
@@ -212,4 +221,121 @@ def test_the_cachegrind_run_gets_one_fixed_environment(monkeypatch, tmp_path):
     exe = tmp_path / "bench_frame"
     assert fc.misses(exe, 3, "held", "131072,8,64") == 1234
     assert seen["env"] == {"LC_ALL": "C"}
-    assert seen["cmd"][-3:] == ["./bench_frame", "3", "held"]
+    assert seen["cmd"][-3:] == ["./bench_frame", "003", "held"]
+
+
+def test_the_1_frame_and_the_11_frame_run_have_one_argv_length(
+        monkeypatch, tmp_path):
+    """The start-up cancels only while both runs lay out the stack alike.
+
+    argv's strings sit above the stack, so a frame count of one digit and
+    one of two would start the two runs from stacks a byte apart.
+    """
+    cmds = []
+
+    def fake_run(cmd, **kw):
+        cmds.append(cmd)
+
+        class Done:
+            stderr = "LLd misses: 7 ( 1 rd + 6 wr)"
+        return Done()
+
+    monkeypatch.setattr(fc.subprocess, "run", fake_run)
+    for frames in (1, 11):
+        fc.misses(tmp_path / "bench_frame", frames, "frame", "131072,8,64")
+    assert cmds[0][-2] == "001" and cmds[1][-2] == "011"
+
+
+def test_every_cache_of_the_model_is_given_and_none_is_the_hosts(
+        monkeypatch, tmp_path):
+    """Every cache is given; none is taken from the host's CPU.
+
+    cachegrind takes a cache it is not given from the host's CPU.  The L1
+    instruction cache's misses fill the L2 beside the data's, so a
+    runner with another instruction cache measures other fills: --I1, --D1
+    and --LL are all on the command line, the ESP32-P4's geometry.
+    """
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen["cmd"] = cmd
+
+        class Done:
+            stderr = "LLd misses: 7 ( 1 rd + 6 wr)"
+        return Done()
+
+    monkeypatch.setattr(fc.subprocess, "run", fake_run)
+    fc.misses(tmp_path / "bench_frame", 1, "servo", "131072,8,64")
+    given = [a for a in seen["cmd"] if a.startswith(("--I1=", "--D1=",
+                                                      "--LL="))]
+    # 16KiB, 4-way and 64KiB, 2-way, 64-byte lines: esp32p4/rom/cache.h.
+    assert given == ["--I1=16384,4,64", "--D1=65536,2,64",
+                     "--LL=131072,8,64"]
+
+
+# The modes the repeatability cases measure: the servo card's three, the
+# motor bench's steady frame and a full repaint.
+REPEAT_MODES = ("servo", "servo-grip", "servo-current", "frame",
+                "logs-chrome")
+
+
+@pytest.fixture(scope="module")
+def built(tmp_path_factory):
+    """The bench built once, for the cases that run it under cachegrind."""
+    for tool in ("cc", "valgrind"):
+        if not shutil.which(tool):
+            skip_or_fail(f"{tool} is not on PATH")
+    return fc.build(tmp_path_factory.mktemp("bench"))
+
+
+def ten_frames(exe, mode):
+    """The fills of ten frames of @p mode.
+
+    The tool's figure before it is divided, so a difference of one fill
+    shows.
+    """
+    ll = "131072,8,64"
+    return fc.misses(exe, 11, mode, ll) - fc.misses(exe, 1, mode, ll)
+
+
+@pytest.mark.parametrize("mode", REPEAT_MODES)
+def test_a_mode_measures_the_same_twice_from_any_directory(built, tmp_path,
+                                                            mode):
+    """The same bench measured twice gives the same fills.
+
+    The second run starts from a directory whose path is 120 characters
+    longer, which moves where the kernel and valgrind put the stack: the
+    count holds only while the bench draws from a stack at a fixed phase.
+    """
+    deep = tmp_path / ("d" * 120)
+    deep.mkdir()
+    exe = deep / built.name
+    shutil.copy2(built, exe)
+    assert ten_frames(built, mode) == ten_frames(exe, mode)
+
+
+def test_a_full_repaint_measures_the_same_from_paths_of_any_length(
+        built, tmp_path_factory):
+    """The same bench run from sixteen path lengths in a row measures the same.
+
+    The start-up's misses move with the length of the executable's path, and
+    cancel only while the 1-frame and the 11-frame run lay out their stacks
+    alike.  With a frame count of one digit and one of two, lengths 99 and
+    111 moved ten frames by one and two fills on x86-64 with glibc 2.39.
+    The lengths are 96 to 111 where the temporary root is short enough, and
+    the sixteen after the root's own otherwise; sixteen in a row hold every
+    offset within the stack's 16-byte alignment.
+    """
+    root = tmp_path_factory.mktemp("p")
+    # The shortest path a padded directory gives: root, "/p/", the name.
+    shortest = len(str(root / "p" / built.name))
+    first = max(96, shortest)
+    counts = set()
+    for length in range(first, first + 16):
+        where = root / ("p" * (length - shortest + 1))
+        where.mkdir()
+        exe = where / built.name
+        assert len(str(exe)) == length
+        shutil.copy2(built, exe)
+        counts.add(ten_frames(exe, "logs-chrome"))
+    assert len(counts) == 1, counts
