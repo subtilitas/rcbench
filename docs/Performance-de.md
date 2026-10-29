@@ -65,7 +65,7 @@ sim                         13,470    1684 KiB
 throttle                    11,656    1457 KiB
 chrome                      51,503    6438 KiB
 overview                         0       0 KiB
-overview-guide                 388      48 KiB
+overview-guide                 370      46 KiB
 servo                        2,431     304 KiB
 servo-grip                     642      80 KiB
 servo-current                3,358     420 KiB
