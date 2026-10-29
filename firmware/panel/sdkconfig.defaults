@@ -44,7 +44,7 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 # package.  Both frame buffers (2 x 1,228,800 bytes) live in it, and the
 # DSI (Display Serial Interface) host's DMA (direct memory access) reads
 # about 74 MB/s out of it for the scan-out at 60 Hz.  200 MHz is ESP-IDF
-# v5.5.5's default for this chip; 80 MHz is the setting to compare it
+# v6.1's default for this chip; 80 MHz is the setting to compare it
 # against.  The bandwidth the CPU (central processing unit) gets beside
 # the scan-out is not measured.
 CONFIG_SPIRAM=y

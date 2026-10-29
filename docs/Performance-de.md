@@ -402,15 +402,15 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 680 | 1 488 |
-| `control` | `control_task` | 6 144 | 4 720 | 400 |
-| `runlog` | `log_task` | 6 656 | 4 528 | 1 104 |
-| `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
-| `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 296 | 1 776 |
-| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 3 744 | 2 144 |
-| `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 344 | 1 728 |
-| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 3 040 | 4 128 |
-| `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 3 504 | 2 128 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 144 | 3 008 |
+| `control` | `control_task` | 6 144 | 3 360 | 1 744 |
+| `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
+| `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
+| `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
+| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 624 | 3 248 |
+| `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
+| `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 048 | 3 568 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
 mit 8 192 Bytes, der TCP/IP-Stack (Transmission Control Protocol, Internet
@@ -426,20 +426,21 @@ Handshakes ist nicht gemessen.
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
 `servo_store_preset()`, `io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die aufgehört
-hat zu antworten (`storage_read_end()`, `mount_locked()`), und das
-`snprintf()` darunter. Das Werkzeug folgt jedem Aufruf, den das Einbinden
-machen kann, darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie
-erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
-ein (`storage_check()`). Die Kette braucht 4 528 Bytes; der Stack von 6 656
-Bytes lässt 1 104 über der Marge von 1 024 Bytes.
+hat zu antworten (`storage_read_end()`, `mount_locked()`), `f_mkfs()` unter dem Einbinden
+und den Zeitstempel, den es schreibt (`get_fattime()`, `localtime_r()`, die
+Zeitzonen-Auswertung `_tzset_unlocked()` von picolibc und das `sscanf()`
+darunter). Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann,
+darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
+ein (`storage_check()`). Die Kette braucht 3 824 Bytes; der Stack von 6 656
+Bytes lässt 1 792 über der Marge von 1 024 Bytes.
 
-Die tiefste Kette von `wifi_ctl` ist das Abschalten des Funks:
-`radio_down()`, die letzte Abfrage des NTP-Clients (Network Time Protocol,
-`wifi_ntp_poll()`) und die Zeitzeile, die er ausgibt (`wall_ntp_line()`,
-`wall_utc_text()`), deren `snprintf()` die Gleitkomma-Umwandlung von newlib
-erreicht. Sie lässt 2 144 Bytes über der Marge.
+Die tiefste Kette von `wifi_ctl` ist der Start des Netzwerk-Stacks in
+`worker()`: `esp_netif_init()` in `netif_add()` und `netif_set_addr()` von
+lwIP, der TCP-Code darunter bis `ip6_frag()` und `pbuf_alloc()`, und die
+Heap-Anforderung und der Log-Aufruf darunter. Sie lässt 3 248 Bytes über der
+Marge.
 
-Gemessen auf dem ESP32-P4-Build mit ESP-IDF v5.5.5 bei -O2. Von der Marge
+Gemessen auf dem ESP32-P4-Build mit ESP-IDF v6.1 bei -O2. Von der Marge
 gehen 560 Bytes außerhalb der Frames auf:
 
 - 128 für die Register, die ein Interrupt auf dem Stack der Task sichert,
@@ -467,7 +468,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  231
+  269
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -632,7 +633,7 @@ angezeigte Seite auf, und `mo_render()` von MOTOR & ESC ruft den Weg der
 Sitzung und den seines Körpers als zwei Funktionen auf, sodass die Seiten
 einer Sitzung nicht auf dem Frame des Körpers liegen. Eine Zeile, die zur
 Anzeige kopiert wird, wird ohne `snprintf()` kopiert, das die
-Gleitkommawandlung von newlib erreicht. Die Frame-Größen auf dem ESP32-P4
+Gleitkommawandlung von picolibc erreicht. Die Frame-Größen auf dem ESP32-P4
 sind nicht gemessen.
 
 ## Interner RAM
@@ -713,7 +714,8 @@ Zustand der Bildschirme und der Helfer für Karte, Seite, Einstellungen und
 Ausgänge. Das Fragment nennt jedes Objekt und die Regeln, die es erfüllt.
 `tools/psram_bss.py` liest die Linker-Map des Builds und lässt CI
 fehlschlagen, wenn ein genanntes Objekt .bss im internen RAM behält.
-Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
+Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5 mit 30 Objekten im
+Fragment, aus `idf.py size`; auf v6.1 nicht wiederholt:
 
 | Posten | Mit dem Fragment | Ohne es |
 | --- | ---: | ---: |
@@ -758,7 +760,7 @@ den ESP-IDF vorgibt, sind das 18 750 bis 56 250B/s. Ohne Power Save
 braucht das Funkteil mehr Strom, solange es läuft; wie viel mehr am Panel,
 ist nicht gemessen.
 
-Der Stückpuffer der Seite, 4 096 Bytes, liegt im PSRAM. ESP-IDF v5.5.5
+Der Stückpuffer der Seite, 4 096 Bytes, liegt im PSRAM. ESP-IDF v6.1
 liest ein Stück per DMA (Direct Memory Access) hinein, wenn der Puffer auf
 eine Cache-Line ausgerichtet ist, sonst über einen eigenen Puffer; welchen
 der beiden Wege der Puffer der Seite nimmt, ist nicht gemessen. Bei der
@@ -824,7 +826,7 @@ Linux, `iw`:
 ## Das Dateisystem der SD-Karte
 
 Das Panel liest FAT12, FAT16, FAT32 und exFAT (extended File Allocation
-Table) über FatFs, die Dateisystem-Bibliothek in ESP-IDF. ESP-IDF v5.5 baut
+Table) über FatFs, die Dateisystem-Bibliothek in ESP-IDF. ESP-IDF v6.1 baut
 FatFs ohne exFAT, und keine Kconfig-Option schaltet es ein. Der Panel-Build
 nimmt eine Kopie der Komponente `fatfs` von ESP-IDF mit `FF_FS_EXFAT` auf 1
 (`firmware/panel/fatfs_exfat.cmake`), und `storage_list.c` hält einen Build
@@ -832,8 +834,8 @@ an, dessen FatFs kein exFAT hat. Lange Dateinamen bleiben, wie
 `sdkconfig.defaults` sie setzt: an, 255 Zeichen, der Arbeitspuffer auf dem
 Heap.
 
-Was exFAT kostet, gelesen aus dem P4-Build mit ESP-IDF v5.5.5 gegen
-denselben Stand, gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne
+Was exFAT kostet, gelesen aus dem P4-Build mit ESP-IDF v5.5.5, auf v6.1
+nicht wiederholt, gegen denselben Stand, gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne
 diesen Halt, beide ohne `RCBENCH_IOMCU_BIN`:
 
 | Posten | Ohne exFAT | Mit exFAT | Wo |

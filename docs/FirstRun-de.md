@@ -77,7 +77,10 @@ liest ([unten](#die-sd-karte-von-0210-und-älter)).
 | `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der drei Dateien oben | die Prüfung in Schritt 1 |
 
 Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
-`esptool.py` für das Panel (`pip install esptool`; ESP-IDF bringt es mit).
+`esptool.py` für das Panel (`pip install esptool`; ESP-IDF v6.1 bringt
+esptool 5.6.0 mit). Die Datei `flash_args` schreibt ihre Optionen wie
+esptool 5 (`--flash-mode`); esptool 4.x, das ESP-IDF v5.5 mitbringt, lehnt
+diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
 `/dev/ttyACM0` unten heißt unter Windows `COMx`.
 
 1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei

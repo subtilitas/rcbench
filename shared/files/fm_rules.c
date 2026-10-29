@@ -40,7 +40,7 @@ static const char *const k_fault[] = {
 
 /**
  * @brief Byte @p i of @p s with case folded as FatFs compares long names:
- *        ff_wtoupper() (ffunicode.c, ESP-IDF v5.5.5) maps a to z onto A to
+ *        ff_wtoupper() (ffunicode.c, ESP-IDF v6.1) maps a to z onto A to
  *        Z, and its Latin-1 blocks U+00E0 to U+00F6 and U+00F8 to U+00FE
  *        (shift -32) map ä ö ü onto Ä Ö Ü.  ß (U+00DF) is in neither
  *        block and stays ß.  The UTF-8 forms of the three pairs differ in

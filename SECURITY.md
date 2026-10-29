@@ -92,7 +92,7 @@ Current limitations, the home network:
 
 - The panel's clock is set over SNTP (simple network time protocol) from
   `pool.ntp.org` once a join. lwIP's answer checks are off
-  (`SNTP_CHECK_RESPONSE` 0 in ESP-IDF v5.5.5): the source address and the
+  (`SNTP_CHECK_RESPONSE` 0 in ESP-IDF v6.1): the source address and the
   originate timestamp of an answer are not compared with the request. A
   device on the home network that answers first, or that answers the DNS
   lookup of the server's name, sets the clock to any time. The step is

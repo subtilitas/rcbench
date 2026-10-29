@@ -1,9 +1,9 @@
 # exFAT (extended File Allocation Table) on the panel's SD (Secure Digital)
 # card.  Included by CMakeLists.txt before project.cmake.
 #
-# ESP-IDF v5.4 and v5.5 build FatFs with FF_FS_EXFAT 0, set in
-# components/fatfs/src/ffconf.h line 282 by a plain #define.  No Kconfig
-# option (CONFIG_FATFS_...) reaches it in either release, and a -D on the
+# ESP-IDF v6.1 builds FatFs with FF_FS_EXFAT 0, set in
+# components/fatfs/src/ffconf.h line 294 by a plain #define.  No Kconfig
+# option (CONFIG_FATFS_...) reaches it, and a -D on the
 # compiler line cannot either: the header's #define comes after it.  A card
 # formatted exFAT, which every SDXC (SD eXtended Capacity, 64GB and up)
 # card is out of the box, then fails to mount with FatFs 13
