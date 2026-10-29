@@ -393,6 +393,35 @@ uint16_t supply_link_events(supply_link_t *s);
  */
 bool supply_link_ev_error(uint16_t ev);
 
+/** @brief What the operator is told of an ON that ended or never began. */
+typedef enum {
+    SUPPLY_LINK_SAY_NONE = 0,  /**< nothing of that kind happened         */
+    SUPPLY_LINK_SAY_TRIPPED,   /**< the module switched its output off    */
+    SUPPLY_LINK_SAY_LOST,      /**< the IOmcu let an ON go                */
+    SUPPLY_LINK_SAY_REFUSED,   /**< an ON refused                         */
+    /** @brief An ON refused while the IOmcu reports its failsafe:
+     *         LINK_FAULT_LINK_SILENT or LINK_FAULT_HEARTBEAT.  It takes no
+     *         ON until a CLEAR, which only an ARM writes. */
+    SUPPLY_LINK_SAY_FAILSAFE,
+} supply_link_say_t;
+
+/**
+ * @brief Which of the ON's endings @p ev holds, the module's own trip first,
+ *        then an ON let go, then an ON refused, named for the failsafe when
+ *        @p faults holds it.
+ *
+ * The IOmcu takes an ON only with the heartbeat trusted and the link out
+ * of failsafe (safety_gate_supply_ok()); the STATUS page reports those two
+ * as LINK_FAULT_HEARTBEAT and LINK_FAULT_LINK_SILENT.
+ *
+ * @param ev     SUPPLY_LINK_EV_* bits, as supply_link_events() returned
+ *               them.
+ * @param faults The STATUS page's fault bitmap at its last read.
+ * @return       SUPPLY_LINK_SAY_NONE when @p ev holds none of
+ *               SUPPLY_LINK_EV_TRIPPED, _ON_LOST and _ON_REFUSED.
+ */
+supply_link_say_t supply_link_on_ended(uint16_t ev, uint16_t faults);
+
 /**
  * @brief The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read
  *        with: the page's VIN_MV and SET_MV_RB on the read that first showed

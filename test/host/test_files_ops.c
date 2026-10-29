@@ -33,6 +33,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "files_rig.h"
+#include "files_int.h"
 
 #include "text_view.h"
 
@@ -276,6 +277,41 @@ TEST_CASE(delete_asks_and_takes_a_runs_report_along)
                                              "ATEST005.CSV"));
     CHECK_EQ(files_screen_pane(1)->held, 1);
     CHECK_EQ(files_screen_pane(1)->selected, -1);
+}
+
+/*
+ * The question names a run's report only where the card holds it: the
+ * pane's page shows it, or the page cannot tell (fm_tree_has_file()).  A
+ * run without one, and a file that is no run, name none.
+ */
+TEST_CASE(delete_names_a_runs_report_only_when_the_card_holds_it)
+{
+    fresh();
+    fk_file(&g_h.card, "USER/LOGS/ATEST009.CSV", NULL, 100u);
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK(pick(1, "ATEST005.CSV"));
+    tap_foot(FS_SPOT_DELETE);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_DELETE);
+    CHECK_STR_EQ(fs_s.doomed_report, "ATEST005.TXT");
+    draw();
+    tap(FS_SPOT_Q_CANCEL_CX, FS_SPOT_BOX_CY);
+    CHECK(pick(1, "ATEST009.CSV"));
+    tap_foot(FS_SPOT_DELETE);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_DELETE);
+    CHECK_STR_EQ(fs_s.doomed_report, "");
+    draw();
+    tap(FS_SPOT_Q_CANCEL_CX, FS_SPOT_BOX_CY);
+    CHECK(pick(0, "NOTES.TXT"));
+    tap_foot(FS_SPOT_DELETE);
+    CHECK_STR_EQ(fs_s.doomed_report, "");
+    tap(FS_SPOT_Q_DELETE_CX, FS_SPOT_BOX_CY);
+    /* And the run without a report deletes alone. */
+    CHECK(pick(1, "ATEST009.CSV"));
+    tap_foot(FS_SPOT_DELETE);
+    tap(FS_SPOT_Q_DELETE_CX, FS_SPOT_BOX_CY);
+    CHECK(fk_get(&g_h.card, "USER/LOGS/ATEST009.CSV") == NULL);
+    CHECK_STR_EQ(files_screen_message(), msg(TX_LOG_DELETED,
+                                             "ATEST009.CSV"));
 }
 
 TEST_CASE(cancel_and_the_home_tag_close_the_question)
@@ -679,6 +715,7 @@ int main(void)
     RUN(rename_takes_the_name_typed);
     RUN(a_name_the_card_refuses_keeps_the_keyboard_open);
     RUN(delete_asks_and_takes_a_runs_report_along);
+    RUN(delete_names_a_runs_report_only_when_the_card_holds_it);
     RUN(cancel_and_the_home_tag_close_the_question);
     RUN(a_folder_is_deleted_only_when_empty);
     RUN(new_makes_a_folder_and_an_empty_text_file);

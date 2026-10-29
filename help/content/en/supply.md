@@ -84,7 +84,11 @@ OUTPUT ON is a 2s hold, with the fade ARM uses. OUTPUT OFF is a tap. The output 
 - the module switching its output off itself;
 - a change to the PD mini's pins, baud rate or enable setting.
 
-The band names the reason. An output another screen switched on stays as it is when SUPPLY is left. The output is off after every restart, whatever the start values.
+The band names the reason. A release before 2s sends nothing and shows nothing, as on ARM.
+
+The IOmcu refuses an ON while its failsafe is latched: the band shows FAULT 01 (the link was silent for 200ms, which an IOmcu restart can cause) or FAULT 10 (the heartbeat stopped). The hold then ends with `Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.` Only the CLEAR an ARM writes lifts the failsafe: hold ARM on SERVO or MOTOR & ESC, DISARM, then hold OUTPUT ON again.
+
+An output another screen switched on stays as it is when SUPPLY is left. The output is off after every restart, whatever the start values.
 
 ## SETTINGS
 

@@ -538,6 +538,15 @@ static void link_came_up(const link_msg_t *reply)
     cu_link_up(reply);
 }
 
+/**
+ * @brief The IOmcu's STATUS fault bitmap at its last read.
+ * @return LINK_FAULT_* bits; 0 before the first read
+ */
+uint16_t far_end_faults(void)
+{
+    return s_dev_faults;
+}
+
 /*
  * The status page's counters, into the bring-up record.  A 4.21 or later
  * IOmcu is asked for its refusal count as well; an older one refuses

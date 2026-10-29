@@ -18,6 +18,7 @@
 #define RCBENCH_LINK_BRINGUP_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "link_msg.h"
@@ -200,6 +201,66 @@ bool link_bringup_take_status(link_bringup_t *b, const link_msg_t *st,
  * @param us The round trip, in microseconds.
  */
 void link_bringup_add_rtt(link_bringup_t *b, uint32_t us);
+
+/* ------------------------------------------------------ console report */
+
+/**
+ * @brief Bytes of one line of the console report, its NUL included: the
+ *        longest line, the window's with the IOmcu's counts, is 167
+ *        characters with every counter at 4,294,967,295.
+ */
+#define LINK_REPORT_LINE 176
+
+/** @brief The most lines one console report prints. */
+#define LINK_REPORT_LINES 7
+
+/**
+ * @brief The CAN controller's own counters, for the report's bus line.
+ */
+typedef struct {
+    bool     have;        /**< the controller runs and was read          */
+    bool     off;         /**< bus off: this end has stopped transmitting */
+    uint32_t tx_errors;   /**< transmit error counter                    */
+    uint32_t rx_errors;   /**< receive error counter                     */
+    uint32_t bus_errors;  /**< bus errors since the driver started       */
+} link_report_bus_t;
+
+/**
+ * @brief What one console report prints: the window since the previous
+ *        report, the totals since start-up and the controller.
+ *
+ * Numbers rather than text, so the task that keeps the counters hands a
+ * report on in under 300 bytes and the task that prints it formats it.
+ */
+typedef struct {
+    link_bringup_t    win;    /**< the window (link_bringup_window())    */
+    link_bringup_t    total;  /**< the counters since start-up           */
+    uint32_t          win_s;  /**< the window's length, s                */
+    link_report_bus_t bus;    /**< the controller's counters             */
+} link_report_in_t;
+
+/**
+ * @brief Line @p i of the console report of @p r, and whether it is a
+ *        warning.
+ *
+ * The lines, in order: the window's diagnosis (link_bringup_diagnose()
+ * of r->win), what to check when it is not LINK_DIAG_OK (a warning), the
+ * window's counts, the panel's totals, the IOmcu's totals, the round trip
+ * when r->total has samples, and the bus.  At most LINK_REPORT_LINES; no
+ * line is longer than LINK_REPORT_LINE - 1 characters.
+ *
+ * @param r     The report.
+ * @param i     The line, from 0.
+ * @param out   Receives the line, cut to @p size - 1 characters; "" past
+ *              the last line.  May be NULL with @p size 0.
+ * @param size  Bytes of @p out.
+ * @param warn  Receives true for a warning line; may be NULL.
+ * @return      The line's length as snprintf() counts it, which is @p size
+ *              or more for a line cut; 0 past the last line and for a NULL
+ *              @p r.
+ */
+size_t link_report_line(const link_report_in_t *r, unsigned i, char *out,
+                        size_t size, bool *warn);
 
 #ifdef __cplusplus
 }
