@@ -45,6 +45,7 @@
 #include "touch.h"
 #include "ui_band.h"
 #include "ui_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 /**
@@ -582,6 +583,13 @@ void panel_frame_loop(void)
         cu_render_service(armed || arm_wanted_now || supply_now
                               || supply_live_or_coming(),
                           link_up, &cu);
+
+        /* The interface pins of a board that solders them (the rbmod
+         * carrier) follow the board the IOmcu reports, and each one that
+         * moves is written as an edit by hand would be. */
+        if (ui_board_apply_pins(settings_changed)) {
+            settings_screen_invalidate();
+        }
 
         /*
          * A link that was up and has been gone for LINK_LOST_SCREEN_MS says

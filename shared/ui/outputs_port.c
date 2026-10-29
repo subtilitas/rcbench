@@ -1,6 +1,7 @@
-/*
- * The OUTPUTS screen's PROG PORT entries: the IOmcu's programming ports as
- * outputs.  See outputs_screen.h.
+/**
+ * @file
+ * @brief The OUTPUTS screen's PROG PORT entries: the IOmcu's programming
+ *        ports as outputs.  See outputs_screen.h.
  *
  * One entry a port the IOmcu reports; outputs_port_entry.c draws the one
  * shown.  This file holds what the entries and PICK A PIN share: the
@@ -9,7 +10,8 @@
  *
  * The lines that name a PWM pin the IOmcu refuses beside a port's pin or a
  * bound PWM pin (outputs_clash_label(), outputs_clash_reason()) are here
- * too, for OUTPUTS and PICK A PIN alike.
+ * too, for OUTPUTS and PICK A PIN alike, and the role names of a board
+ * that solders its pins (outputs_role_name()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -313,6 +315,31 @@ const uint8_t *outputs_port_pins(void)
     return outputs_pwm_pins(pins);
 }
 
+bool outputs_role_name(uint16_t board, uint8_t gpio, char *buf, size_t cap)
+{
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    const outbind_roles_t *r = outbind_roles(board);
+    if (r == NULL) {
+        return false;
+    }
+    for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) {
+        if (r->out[i] == gpio) {
+            snprintf(buf, cap, "PWM%02u", i + 1u);
+            return true;
+        }
+    }
+    for (unsigned i = 0; i < OUTBIND_FIXED_PROGS; ++i) {
+        if (r->prog[i] == gpio) {
+            snprintf(buf, cap, "PROGP%02u", i + 1u);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool outputs_clash_label(const outbind_t *b, uint8_t index,
                          const uint8_t *ports, uint8_t count, char *buf,
                          size_t cap)
@@ -329,6 +356,12 @@ bool outputs_clash_label(const outbind_t *b, uint8_t index,
     case OUTBIND_CLASH_COMPARE:
         snprintf(buf, cap, TR(OUT_COMPARE_OF), (unsigned)with);
         return true;
+    case OUTBIND_CLASH_OUT_SLICE: {
+        char role[8];
+        (void)outputs_role_name(b->board, with, role, sizeof(role));
+        snprintf(buf, cap, TR(OUT_SLICE_OF_OUT), role);
+        return true;
+    }
     case OUTBIND_CLASH_NONE:
     default:
         return false;
@@ -355,9 +388,19 @@ bool outputs_clash_reason(const outbind_t *b, int index,
     if (why == OUTBIND_CLASH_NONE) {
         return false;
     }
+    const uint8_t gpio = outbind_pins(b->board)[index].gpio;
+    if (why == OUTBIND_CLASH_OUT_SLICE) {
+        /* A soldered board: both outputs by their names and pins. */
+        char a[8], o[8];
+        (void)outputs_role_name(b->board, gpio, a, sizeof(a));
+        (void)outputs_role_name(b->board, with, o, sizeof(o));
+        snprintf(buf, cap, TR(OUT_OUT_SLICE_WHY), a, (unsigned)gpio, o,
+                 (unsigned)with);
+        return true;
+    }
     snprintf(buf, cap,
              (why == OUTBIND_CLASH_PROG_SLICE) ? TR(OUT_SLICE_WHY)
                                                : TR(OUT_COMPARE_WHY),
-             (unsigned)outbind_pins(b->board)[index].gpio, (unsigned)with);
+             (unsigned)gpio, (unsigned)with);
     return true;
 }

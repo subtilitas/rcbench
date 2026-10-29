@@ -104,6 +104,18 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 
 Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The tester's two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`.
 
+## On the rbmod carrier
+
+![PWM01 to PWM04, PWM03 refused for slice 2](view:outputs-rbmod)
+
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders every lead to its pin, so no pin is chosen here. The grid shows the four servo outputs, PWM01 to PWM04 on GPIO 2, 4, 5 and 1, each with its GPIO under the name. A tap gives the selected protocol to the output, as a tick does on a pin. Slot n is PWM0(n+1): PWM01 is channel 0. A protocol takes at most the 4 outputs, `SERVO PWM TAKES 4 PINS`.
+
+PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol (SERVO PWM) and a throttle protocol (MOTOR PWM) are not offered on the two together: the cell reads `SLICE OF PWM02` and a tap on it `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on its own state machine and is offered beside either.
+
+![PROG PORT 1 on the carrier](view:outputs-rbmod-port)
+
+The PROG PORT entries name each port's pin, `PROGP01 ON GPIO 13`, and the PIN row takes no tap. FUNCTION reads PROGRAMMING and takes no tap: a programming port carries the KST and Hitec programmers and no signal protocol. SERVO TESTER and PORT PWM are not shown. The line under the rows reads `KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04`.
+
 ## The overview: OFF
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)

@@ -3912,7 +3912,24 @@ shared/ui/motor_workbench.c: warning: Member target_with_ports(char *out, size_t
 shared/ui/motor_workbench.c: warning: Member trow (variable) of struct [struct].w is not documented.
 shared/ui/motor_workbench.c: warning: Member w (variable) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member wb (variable) of struct [struct].w is not documented.
-shared/ui/outputs_port.c: file has no @file block
+shared/ui/outputs_port.c: warning: Member g_held[OUTPUTS_IFACE_COUNT] (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_open_kind (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_open_value (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_port_count (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_port_pin[LINK_PG_PORTS_MAX] (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_prog_gpio (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member held_byte(int v) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT]) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_forget_open(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_holds(uint8_t gpio) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_open(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_pins(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_pwm_pins(const uint8_t *pins) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member pin_bit(int v) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member sense_part(setting_id_t en) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member sensors_on(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member touched(void) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_close(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_face(void) (function) of file outputs_port_entry.c is not documented.

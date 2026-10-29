@@ -113,6 +113,12 @@ The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other r
 
 The IOmcu takes the value at its next OPEN of a D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of 0.21.1 or 0.21.2 (protocol 4.23) receives with PULL-UP; with PRECHARGE set the row then reads `IOmcu older than 0.22.0: receives with PULL-UP.` An IOmcu older than 0.21.1 has no Hitec line; with PRECHARGE set the row reads `IOmcu older than 0.21.1: no Hitec line.`
 
+## On the rbmod carrier
+
+![Sensor SDA and SCL soldered](view:setup-rbmod-iface)
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the pins are soldered: Sensor SDA and SCL read GPIO 16 and GPIO 17, Tap pin GPIO 22, PD mini TX GPIO 7 and PD mini RX GPIO 6. These rows have no keys and open no keypad, and their help line reads `Soldered on this board. Not a setting here.`. The panel writes these pins to the IOmcu. The values stored for them stay as they are and are in force again on a module wired by hand.
+
 ## Related pages
 
 - [Setup](setup.md): keys, saving and the other categories.

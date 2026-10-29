@@ -103,6 +103,23 @@ Das erste Laden ist die Install-UF2 (USB Flashing Format) über USB, wie in
 [Erster Lauf](FirstRun-de.md#aus-den-release-assets). Danach bietet das
 Panel jedem IOmcu das Image des Boards an, das er meldet.
 
+## Am Panel
+
+Das Panel liest Board 2 vom IOmcu und zeigt die Pins des Carriers als
+fest:
+
+- SETUP > OUTPUTS zeigt PWM01 bis PWM04 als die vier Zellen des Rasters.
+  Ein Flächen- und ein Gasprotokoll auf PWM02 und PWM03 zusammen werden
+  mit Namen abgelehnt. Die Einträge PROG PORT nennen PROGP01 bis PROGP04
+  und ihren GPIO, bieten keinen Pin und keine Funktion an und zeigen
+  keinen Tester
+  ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
+- SETUP > INTERFACES zeigt Sensor SDA und SCL, Tap pin sowie PD mini TX
+  und RX auf den Pins des Carriers, ohne Tasten und ohne Keypad.
+- Die Kachel PICK A PIN ist nicht auf SETUP.
+
+![SETUP auf dem Carrier, ohne PICK A PIN](img/de/setup-rbmod.png)
+
 ## Nacharbeit Rev 1
 
 Jede Platine der Rev 1 braucht zwei Änderungen von Hand. Das Image des
