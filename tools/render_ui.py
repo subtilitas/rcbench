@@ -254,6 +254,9 @@ SCREENS = {
     "servo-hitec-backup-file": ("servo-hitec-backup-file.png", "servo",
                                 "dark"),
     "servo-hitec-nofile": ("servo-hitec-nofile.png", "servo", "dark"),
+    # Another D485HW read in the session: its own backup, no file line.
+    "servo-hitec-other-servo": ("servo-hitec-other-servo.png", "servo",
+                                "dark"),
     "servo-hitec-restore-backup": ("servo-hitec-restore-backup.png",
                                    "servo", "dark"),
     "servo-hitec-restore-page": ("servo-hitec-restore-page.png", "servo",
