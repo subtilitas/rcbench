@@ -67,7 +67,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.31. The
+IOmcu transmits only in answer to a request. Protocol version 4.32. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -160,7 +160,10 @@ port lets go; HITEC takes bit 4 of a step's command, more steps of this
 write follow. An older IOmcu switches the PD mini off at the OFF and
 refuses the bit with BAD_VALUE. The panel switches a supply a port holds
 off on an error from 4.31 only, and sets the bit from 4.31 only
-([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)). The
+([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)). From
+4.32 PROG_SUPPLY (0x39) switches the programming ports' own supply on a
+board that has one, the rbmod carrier's GPIO 21; an older IOmcu refuses
+the page with BAD_PAGE ([Carrier, Power](Carrier.md#power)). The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -938,6 +941,7 @@ per 5s offer.
 | 0x36 | SENSE_LIMIT | read, write | a current limit per channel of SENSE_MAP (since 4.27); the IOmcu flags a limit passed and the panel answers it as an error. Registers 0 to 11 each channel's limit in mA (0 none, 1 to 32767), kept in the IOmcu's flash; read only: 12 `OVER`, bit c a window of channel c above its limit since the last read of the register, which clears it; 13 `OVER_COUNT`, channel windows over, modulo 65536; 14 and 15 reserved. 16 registers. [The INA3221 map and windows](LinkSensors.md#sense_limit) has the rules |
 | 0x37 | SENSE_WIN_A | read | channels 0 to 5's last 50ms window (since 4.25): the window number, flags, and 5 registers a channel: mean and highest current (mA, signed), mean and lowest bus voltage (mV), flags. Every write is refused with READ_ONLY. Nothing is kept |
 | 0x38 | SENSE_WIN_B | read | channels 6 to 11's, as SENSE_WIN_A (since 4.25) |
+| 0x39 | PROG_SUPPLY | read, write | the programming ports' own supply on a board that switches one with a pin of the IOmcu: the rbmod carrier's GPIO 21, the enable of its 5V buck M7 (since 4.32). Register 0: output, 1 on, 0 off. An ON is refused with NOT_ARMED without a live heartbeat, and with BAD_VALUE on a board without the switch and while a programming port holds the supply. An OFF is always taken; while a port writes to the servo's memory it waits for the write's end, 10,000ms after the OFF at most, and the port's own ON is refused after it until the port lets go. The output goes off when the heartbeat stops or the link goes silent, and an OFF waits for the end of a frame a port has on the wire, 12ms at most. Registers 1 to 3, read only: flags (bit 0 the board has the switch, bit 1 the pin switches the supply on, bit 2 a programming port holds it, bit 3 the panel's OFF waits for a port's write), the switching GPIO (255 without), and the voltage in mV (5000 on the carrier, 0 without). Not kept: off at every start. On the carrier the KST and Hitec ports cycle this supply in place of the PD mini |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
 | 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |
 
