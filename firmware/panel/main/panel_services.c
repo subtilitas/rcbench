@@ -107,13 +107,10 @@ __attribute__((noinline)) void kst_port_look(void)
     s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken();
 }
 
-/** @brief The KST outcomes kst_link_outcome_fault() names, counted as
- *         kst_publish() takes them.  Control task only. */
-static uint32_t s_kst_faults;
-
 uint32_t prog_faults(void)
 {
-    return s_kst_faults + hitec_prog_gate_faults(&s_hitec_gate);
+    return kst_link_faults(&s_kst_link)
+           + hitec_prog_gate_faults(&s_hitec_gate);
 }
 
 /* The PROG page is not written and the tester commands no port while the
@@ -750,11 +747,9 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     kst_link_outcome_t o;
     if (kst_link_outcome(&s_kst_link, &o)) {
         s_kst_outcome = o;
+        /* A fault is counted by the module (kst_link_faults()): an error
+         * taken by prog_faults_follow() in the next pump. */
         ++s_kst_outcomes;
-        if (kst_link_outcome_fault(&o)) {
-            /* An error: taken by prog_faults_follow() in the next pump. */
-            ++s_kst_faults;
-        }
     }
     f->now_ms = now_ms();
     kst_link_readout(&s_kst_link, &f->rd);
