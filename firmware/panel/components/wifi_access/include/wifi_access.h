@@ -33,6 +33,8 @@
 
 #include "esp_err.h"
 #include "fw_image.h"
+#include "fm_io.h"
+#include "fm_rules.h"
 #include "fw_upload.h"
 #include "wa_fetch.h"
 #include "wa_session.h"
@@ -161,6 +163,25 @@ void wifi_access_fetch_get(wa_fetch_t *out);
 /** Whether a home network is kept, and its name into @p ssid of @p n
  *  bytes (empty for none). */
 bool wifi_access_home(char *ssid, size_t n);
+
+/**
+ * @brief The card the page's file API reads (wa_api.h, wifi_files.c) and
+ *        the bench its rules read, set once at start-up.  Before it, the
+ *        API answers NO_CARD.
+ * @param io     the card FILES uses; kept
+ * @param bench  fills the bench as it stands; called from the page
+ *               server's task; kept
+ */
+void wifi_access_set_files(const fm_io_t *io,
+                           void (*bench)(fm_bench_t *out, void *ctx));
+
+/**
+ * @brief The log folders SETUP > SD CARD names, which the file API's rules
+ *        keep (fm_rules.h), set before a session starts.  From any task.
+ * @param user_logs  USER LOG FOLDER; NULL or "" is CARD_USER_LOGS
+ * @param auto_logs  AUTO LOG FOLDER; NULL or "" is CARD_AUTO_LOGS
+ */
+void wifi_access_set_log_dirs(const char *user_logs, const char *auto_logs);
 
 #ifdef __cplusplus
 }
