@@ -346,6 +346,18 @@ Grenzen in den Einstellungen des SUPPLY-Bildschirms bleiben editierbar;
 eine Grenze, die unter einen Sollwert gesenkt wird, erreicht den Sollwert,
 wenn der Port wieder in PWM ist.
 
+Die Sollwerte des Ports bleiben auf dem SUPPLY-Bildschirm und in der Zeile
+SOLL, nachdem der Port wieder in PWM ist, solange der Ausgang eingeschaltet
+bleibt, den er eingeschaltet hinterlassen hat. Die Sollwerte von vor der
+Sitzung kommen mit der ersten Lesung der Versorgung zurück, die keinen Port
+mehr als Halter und den Ausgang aus zeigt: sofort, wo die Sitzung mit
+ausgeschaltetem Ausgang endet, beim nächsten Ausschalten nach einem
+Verlassen, das ihn eingeschaltet lässt. Ein eingeschalteter Ausgang bekommt
+sie nie, auch keiner, dessen AUSGANG EIN gerade gehalten wird oder
+dessen HV-Warnung auf SERVO steht. Ein Sollwert, der nach dem Freigeben des Ports geändert wurde, durch
+Tippen, eine gesenkte Grenze oder einen Servotest, bleibt, und die früheren
+werden verworfen.
+
 Ein Ausschalten, das eintrifft, während ein Frame auf der Leitung ist, von
 **AUSGANG AUS**, **STOP** oder einem verlorenen Heartbeat, liest sofort aus
 und erreicht den PD mini, wenn der Port den Frame abgebrochen hat,

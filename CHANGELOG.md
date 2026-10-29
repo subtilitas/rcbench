@@ -148,6 +148,19 @@ history is in git.
   control task that beats the heartbeat: once a minute the report stalled
   that task for 46 to 56ms on the console. A queue of 2 reports carries the
   counters; a full queue prints on the control task, so no line is lost.
+- The supply's set points after a KST or Hitec session: the port's (for
+  example 1.00A from a Hitec CONNECT) took the place of the operator's on
+  the SUPPLY screen and the SERVO screen's SET row for good. The operator's
+  come back at the first read of the supply that shows no port holding it
+  and the output off: at once when the session ends with the output off, at
+  the next OFF after a LEAVE that leaves it on. A set point changed after
+  the port let go stands ([Servo programmer, The
+  supply](docs/ServoProgrammer.md#the-supply)).
+- The Hitec classic LEAVE page and the Hitec docs gave the supply's off
+  time as 500ms. The 500ms count from the PD mini's read that shows the
+  output off, 250ms after the OFF; the output is off about 760ms, 762ms
+  measured on one module
+  ([Hitec programmer, LEAVE](docs/HitecProgrammer.md#leave)).
 
 ## 0.23.2 - 2026-10-28
 

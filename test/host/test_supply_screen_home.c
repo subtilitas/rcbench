@@ -19,6 +19,7 @@
  * - a_supply_held_by_a_port_takes_off_and_no_other_press
  * - a_port_that_takes_the_supply_ends_what_was_under_way
  * - caps_reach_the_set_points_when_the_port_lets_go
+ * - the_operators_set_points_come_back_when_the_port_is_done
  * - a_held_supply_is_drawn_dimmed_and_says_who_holds_it
  * - the_pd_minis_rate_is_shown_after_online
  *
@@ -551,6 +552,109 @@ TEST_CASE(caps_reach_the_set_points_when_the_port_lets_go)
     CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
 }
 
+/* A port's set points stand in for the operator's while it holds the
+ * supply and while the output it left on stays on; the operator's come
+ * back once the port is done and the output reads off and OUTPUT ON is not
+ * being held, unless something changed the set points since.  A change
+ * between two sessions is the operator's from then on. */
+TEST_CASE(the_operators_set_points_come_back_when_the_port_is_done)
+{
+    const supply_caps_t narrow = { 3.3f, 5.0f, 0.02f, 0.5f, 1.5f, 0.05f };
+
+    fresh();
+    supply_screen_port_done(true);                  /* nothing lent */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_adopt(4.8f, 1.0f);                /* the first keeps them */
+    supply_screen_port_done(true);                  /* held: the port's */
+    CHECK_NEAR(supply_screen_set_v(), 4.8f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    /* LEAVE leaves the output on: the port's stay on it. */
+    supply_screen_set_output(true);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);
+    supply_screen_port_done(false);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    /* Off on the screen, not yet read off on the page. */
+    supply_screen_set_output(false);
+    supply_screen_port_done(false);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    /* Given back once: what is set after it stays. */
+    tap(V_UP_X, V_ROW_Y);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+
+    /* An ON asked holds them back as an output on does. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    hold_on();
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+
+    /* A change after the port let go stands, and nothing is kept. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    tap(V_UP_X, V_ROW_Y);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.1f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);                  /* kept from here on */
+    CHECK_NEAR(supply_screen_set_v(), 5.1f, 1e-4f);
+
+    /* Changed while the output a session left on stays on, then a second
+     * session: the change is what comes back. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    supply_screen_set_port_held(false);
+    supply_screen_put(5.5f, 1.5f);
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(false);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.5f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+
+    /* OUTPUT ON being held: its ON lands at the set points it began on. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    CHECK(supply_screen_output_held());
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_screen_output_held());
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+
+    /* Caps lowered meanwhile: the operator's come back under them. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_caps(&narrow);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+}
+
 /* The held controls are drawn as taking no press, OUTPUT OFF is not, and
  * the MODE card names the holder. */
 TEST_CASE(a_held_supply_is_drawn_dimmed_and_says_who_holds_it)
@@ -621,6 +725,7 @@ int main(void)
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);
     RUN(a_port_that_takes_the_supply_ends_what_was_under_way);
     RUN(caps_reach_the_set_points_when_the_port_lets_go);
+    RUN(the_operators_set_points_come_back_when_the_port_is_done);
     RUN(a_held_supply_is_drawn_dimmed_and_says_who_holds_it);
     RUN(the_pd_minis_rate_is_shown_after_online);
     free(fb);
