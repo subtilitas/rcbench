@@ -272,6 +272,7 @@ TRACKED = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/board_fix.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
     "shared/outputs/supply_page.c",
@@ -358,6 +359,8 @@ DATA_ONLY = {
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
+    # The rbmod carrier's pin catalogue and role table.
+    "shared/outputs/out_board_rbmod.c",
     # The Wi-Fi page's file manager as C strings, by tools/gen_web_blob.py.
     "shared/webaccess/wa_web_blob.c",
 }

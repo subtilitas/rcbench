@@ -340,9 +340,10 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 # ersten Blick auf eine Platine
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
-# panel carrying the IOmcu image it offers over CAN; build the
-# IOmcu first
-idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
+# panel carrying the IOmcu images it offers over CAN, the module's and
+# the rbmod carrier's; build both IOmcu images first
+idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin \
+    -D RCBENCH_IOMCU_RBMOD_BIN=$PWD/firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin build
 
 # Panel ohne Touch-Injector: jeder Panel-Build, auch der eines Releases,
 # sucht beim Start einmal einen Touch-Injector an 0x14 neben dem Glas
@@ -366,6 +367,10 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 \
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
+
+# IOmcu for the rbmod carrier: files rcbench-iomcu-rbmod.*
+cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -DIOMCU_BOARD=rbmod
+cmake --build firmware/iomcu/build-rbmod
 
 # IOmcu, debug build that prints INA3221 CH1's 1ms samples
 cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
@@ -391,6 +396,16 @@ Panel mitbringt: die Build-Option `RCBENCH_IOMCU_BIN` des Panels nimmt seinen
 Pfad, und das Panel bietet es dann über CAN an
 ([Link](Link-de.md#firmware-update-über-den-link)). Ein Panel ohne die Option
 bietet kein IOmcu-Update an.
+
+`IOMCU_BOARD` wählt das Board, für das das Image gebaut wird: `rp2350_can`
+(Standard), das von Hand verdrahtete Modul, oder `rbmod`, der Carrier mit
+verlöteten Pins ([Link: Boards mit verlöteten
+Pins](Link-de.md#boards-mit-verlöteten-pins)). Die Dateien des Carriers
+heißen `rcbench-iomcu-rbmod-install.uf2`, `rcbench-iomcu-rbmod.uf2`,
+`rcbench-iomcu-rbmod-pt.uf2`, `rcbench-iomcu-rbmod.bin` und
+`rcbench-iomcu-rbmod.elf`. Die Panel-Option `RCBENCH_IOMCU_RBMOD_BIN` nimmt
+die `.bin` des Carriers. Das Panel bietet jedem IOmcu das Image des Boards
+an, das er meldet, und keines für ein Board, für das es kein Image trägt.
 
 `PICO_BOARD` steht standardmäßig auf `pimoroni_pico_plus2_rp2350`. Das für die
 Inbetriebnahme verwendete Modul ist ein Waveshare RP2350-CAN (RP2350A, 4MB

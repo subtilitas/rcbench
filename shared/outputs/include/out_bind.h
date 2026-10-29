@@ -62,6 +62,7 @@ extern "C" {
 typedef enum {
     OUTBIND_BOARD_UNKNOWN = 0,  /**< nothing answered, or unknown identity */
     OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
+    OUTBIND_BOARD_RBMOD = 2,        /**< the rbmod carrier: soldered pins   */
 } outbind_board_id_t;
 
 /** @brief The most pins any board in this build brings out. */
@@ -114,6 +115,34 @@ typedef struct {
     uint8_t decivolts;
 } outbind_pad_t;
 
+/** @brief The servo outputs a board with soldered pins has (PWM01 to PWM04). */
+#define OUTBIND_FIXED_OUTS 4u
+/** @brief The programming ports a board with soldered pins has (PROGP01 to
+ *         PROGP04). */
+#define OUTBIND_FIXED_PROGS 4u
+
+/**
+ * @brief The pin of every role on a board whose pins are soldered.
+ *
+ * A carrier wires each lead to one GPIO (general-purpose input/output), so
+ * the pin of a role is a fact of the board and not a setting.  The IOmcu
+ * starts each role on its pin and refuses any other
+ * (shared/outputs/board_fix.h); the panel names each pin by its role.
+ */
+typedef struct {
+    uint8_t out[OUTBIND_FIXED_OUTS];   /**< the servo outputs: OUTPUTS slot n */
+    uint8_t prog[OUTBIND_FIXED_PROGS]; /**< the programming ports, port n    */
+    uint8_t sda;          /**< the sensor bus: SDA                          */
+    uint8_t scl;          /**< and SCL                                      */
+    uint8_t sda2;         /**< the second I2C bus: SDA (not driven yet)     */
+    uint8_t scl2;         /**< and SCL                                      */
+    uint8_t pd_tx;        /**< the PD mini's UART: TX, to the module's DM   */
+    uint8_t pd_rx;        /**< and RX, from the module's DP                 */
+    uint8_t tap;          /**< the phase tap                                */
+    uint8_t prog_5v_en;   /**< enable of the programming ports' 5V DC-DC    */
+    uint8_t heartbeat;    /**< the safety heartbeat from the panel          */
+} outbind_roles_t;
+
 /**
  * @brief One board: its identity, catalogue, outline and pads.
  */
@@ -142,6 +171,9 @@ typedef struct {
      */
     const outbind_pad_t *pads;
     uint8_t              pad_count;   /**< entries in `pads`                  */
+    /** @brief The pin of each role on a board whose pins are soldered, or
+     *         NULL for a board whose pins are chosen. */
+    const outbind_roles_t *roles;
 } outbind_board_t;
 
 /**
@@ -158,6 +190,18 @@ typedef struct {
  *            has @p id.  OUTBIND_BOARD_UNKNOWN always returns NULL.
  */
 const outbind_board_t *outbind_board(uint16_t id);
+
+/**
+ * @brief The pin of each role on board @p id, or NULL for a board whose pins
+ *        are chosen and for one this build does not describe.
+ *
+ * A learned board is never one with roles: the catalogue page carries no
+ * roles.
+ *
+ * @param id  Identity the IOmcu reports, as for outbind_board().
+ * @return    The board's roles, or NULL.
+ */
+const outbind_roles_t *outbind_roles(uint16_t id);
 
 /* ------------------------------------------------ a board that describes itself */
 

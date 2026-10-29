@@ -123,6 +123,7 @@ The hold takes what the question takes: an IOmcu that runs another build, the be
 | `Checking the IOmcu's build.` | the SHA-256 comparison runs |
 | `Build check failed. It runs again at the next link-up.` | the comparison ended without an answer |
 | `No update over CAN. Install firmware once via USB.` | the IOmcu has no update pages or no partition table |
+| `No IOmcu image for this board in this panel build.` | the IOmcu reports a board this panel build carries no image for; no update is offered |
 | `IOmcu runs the build this panel carries.` | nothing to send |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on |
 | `Waiting for the panel's Wi-Fi to switch off.` | a check, a download or [Wi-Fi](wifi.md) has the radio on |

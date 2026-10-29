@@ -228,6 +228,7 @@ TEST_CASE(the_section_names_the_first_reason_in_its_order)
         { CU_CHECK_RUNNING,   CU_SEC_CHECKING },
         { CU_CHECK_FAILED,    CU_SEC_FAILED },
         { CU_CHECK_USB,       CU_SEC_USB },
+        { CU_CHECK_NO_BOARD,  CU_SEC_NO_BOARD },
         { CU_CHECK_SAME,      CU_SEC_SAME },
         { CU_CHECK_DIFFERENT, CU_SEC_UNSAFE },
         { CU_CHECK_UPDATING,  CU_SEC_BUSY },

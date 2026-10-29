@@ -11,6 +11,8 @@
 #include "pico/time.h"
 
 #include "iomcu.h"
+#include "board_fix.h"
+#include "iomcu_pins.h"
 
 #include "pd_uart.h"
 #include "sense_limit.h"
@@ -232,6 +234,11 @@ uint8_t supply_write(void *ctx, uint8_t off, uint8_t n,
                             const uint16_t *in)
 {
     (void)ctx;
+    /* On a board with soldered pins TX and RX are the carrier's. */
+    if (!board_fix_write_ok(outbind_roles(IOMCU_BOARD_ID), LINK_PAGE_SUPPLY,
+                            off, n, in)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* Judged against the pins core 1 still holds, as of its last tick. */
     sense_sync();
     return supply_take(off, n, in, false);
@@ -254,6 +261,11 @@ uint8_t sense_write(void *ctx, uint8_t off, uint8_t n,
                            const uint16_t *in)
 {
     (void)ctx;
+    /* On a board with soldered pins SDA and SCL are the carrier's. */
+    if (!board_fix_write_ok(outbind_roles(IOMCU_BOARD_ID), LINK_PAGE_SENSE,
+                            off, n, in)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* The pins core 1 still holds, as of its last tick. */
     sense_sync();
     uint16_t was[LINK_SN_CONFIG_COUNT];

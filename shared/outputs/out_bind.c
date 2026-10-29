@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "out_board_rbmod.h"
 #include "out_pwm_map.h"
 #include "outputs_pages.h"
 
@@ -104,14 +105,22 @@ static const outbind_pad_t k_pico_pads[] = {
 /**
  * @brief Every board this build knows.
  *
- * A second one appends a row here and a catalogue above it; nothing else in
- * this file is per-board.
+ * A new one appends a row here and a catalogue above it or in a file of its
+ * own (out_board_rbmod.c); nothing else in this file is per-board.  The
+ * carrier holds the same module, so it has the module's outline and pads.
  */
 static const outbind_board_t k_boards[] = {
     { OUTBIND_BOARD_PICO_HEADER, "RP2350-CAN", k_pico_pins, OUTBIND_PINS,
       false, &k_pico_shape, k_pico_pads,
-      (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])) },
+      (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])), NULL },
+    { OUTBIND_BOARD_RBMOD, "RBMOD", outbind_rbmod_pins,
+      OUTBIND_RBMOD_PIN_COUNT, true, &k_pico_shape, k_pico_pads,
+      (uint8_t)(sizeof(k_pico_pads) / sizeof(k_pico_pads[0])),
+      &outbind_rbmod_roles },
 };
+
+_Static_assert(OUTBIND_RBMOD_PIN_COUNT <= OUTBIND_PINS,
+               "the carrier's catalogue fits OUTBIND_PINS");
 
 /**
  * @brief One board learned over the link, for an IOmcu this build ships no
@@ -142,6 +151,12 @@ const outbind_board_t *outbind_board(uint16_t id)
         return &s_learned;
     }
     return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
+}
+
+const outbind_roles_t *outbind_roles(uint16_t id)
+{
+    const outbind_board_t *b = outbind_board(id);
+    return (b != NULL) ? b->roles : NULL;
 }
 
 /**
@@ -275,6 +290,7 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
      * would make a board that describes itself unusable rather than usable.
      */
     s_learned.fixed = false;
+    s_learned.roles = NULL;
     /*
      * A shape belongs to the board it came with.  Learning a board drops it,
      * so a new IOmcu is not drawn with the last one's outline while

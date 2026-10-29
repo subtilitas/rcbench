@@ -68,9 +68,10 @@ not read ([below](#the-sd-card-of-0210-and-older)).
 | Asset | Holds | For |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | the IOmcu's USB load: `rcbench-iomcu-install.uf2` |
+| `rcbench-iomcu-rbmod-vX.Y.Z.zip` | the same five files, named `rcbench-iomcu-rbmod-*` | the IOmcu on the rbmod carrier ([Link: Boards with soldered pins](Link.md#boards-with-soldered-pins)): `rcbench-iomcu-rbmod-install.uf2` |
 | `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | the panel's USB flash |
-| `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the IOmcu image it offers over CAN | an update over Wi-Fi; not for USB |
-| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the three files above | the check in step 1 |
+| `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the two IOmcu images it offers over CAN | an update over Wi-Fi; not for USB |
+| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the four files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
 `esptool.py` for the panel (`pip install esptool`; ESP-IDF v6.1 carries
@@ -80,8 +81,10 @@ spelling, so `@flash_args` needs esptool 5 or later.
 `/dev/ttyACM0` below is `COMx` on Windows.
 
 1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
-   of the three files.
-2. **IOmcu.** Unpack `rcbench-iomcu-vX.Y.Z.zip`. Hold BOOTSEL while
+   of the four files.
+2. **IOmcu.** Unpack `rcbench-iomcu-vX.Y.Z.zip`, or on the rbmod carrier
+   `rcbench-iomcu-rbmod-vX.Y.Z.zip` and its `rcbench-iomcu-rbmod-*` files in
+   place of the names below. Hold BOOTSEL while
    the IOmcu's USB socket is connected, so the module shows its drive
    `RP2350`. Copy `rcbench-iomcu-install.uf2` onto the drive, or:
 

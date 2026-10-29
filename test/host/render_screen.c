@@ -2269,6 +2269,7 @@ static void pose_upd(const char *view)
         { "updates-cu-checking", CU_SEC_CHECKING },
         { "updates-cu-failed",   CU_SEC_FAILED },
         { "updates-cu-usb",      CU_SEC_USB },
+        { "updates-cu-noboard",  CU_SEC_NO_BOARD },
         { "updates-cu-unsafe",   CU_SEC_UNSAFE },
         { "updates-cu-radio",    CU_SEC_RADIO },
         { "updates-cu-install",  CU_SEC_INSTALL },

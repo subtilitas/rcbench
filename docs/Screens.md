@@ -4701,6 +4701,7 @@ grey, and the line names the first reason that holds, in this order:
 | `Checking the IOmcu's build.` | The SHA-256 comparison runs. |
 | `Build check failed. It runs again at the next link-up.` | The comparison ended without an answer. |
 | `No update over CAN. Install firmware once via USB.` | The IOmcu has no update pages or no partition table. |
+| `No IOmcu image for this board in this panel build.` | The IOmcu reports a board (IDENTITY register 5) this panel build carries no image for. No update is offered: another board's image would put its pin map on this one. |
 | `IOmcu runs the build this panel carries.` | The digests are equal: there is nothing to send. |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on or switching on. |
 | `Waiting for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on, or it is still switching off. |

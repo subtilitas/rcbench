@@ -28,6 +28,22 @@ history is in git.
   text shows through the text editor's keyboard, the rows under it
   included; labels stay opaque. Other keyboards stay opaque
   ([Screens, The text editor](docs/Screens.md#the-text-editor)).
+- The rbmod carrier, a board that holds the RP2350-CAN module and solders
+  every lead to a fixed GPIO: an IOmcu image of its own,
+  `rcbench-iomcu-rbmod-vX.Y.Z.zip` in the release, built with
+  `-DIOMCU_BOARD=rbmod`. It reports board 2 on IDENTITY register 5. Each
+  role starts on its pin and the IOmcu refuses any other: PWM01 to PWM04 on
+  GPIO 2, 4, 5 and 1, PROGP01 to PROGP04 on GPIO 13, 14, 15 and 0 with
+  FUNC NONE, the sensor bus on GPIO 16 and GPIO 17, the PD mini on GPIO 7
+  and GPIO 6, the tap on GPIO 22
+  ([Link, Boards with soldered pins](docs/Link.md#boards-with-soldered-pins)).
+  GPIO 21, the enable of the programming ports' 5V, is driven low from the
+  start of `main()`. Current limitation: nothing switches it on yet, so the
+  programming ports have no supply from the carrier.
+- The panel carries the IOmcu images of both boards and offers each IOmcu
+  the image of the board it reports. A board it carries no image for gets
+  no offer, and UPDATES reads
+  `No IOmcu image for this board in this panel build.`.
 - The Wi-Fi page's server answers a file API for a script, reads only:
   `GET /api/status`, `/api/list` (a page of up to 48 entries of a folder,
   by the entry at its edge), `/api/info` (an entry's size and time; a

@@ -5170,6 +5170,7 @@ Reihenfolge:
 | `Build des IOmcu wird geprüft.` | Der SHA-256-Vergleich läuft. |
 | `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | Der Vergleich endete ohne Antwort. |
 | `Kein Update über CAN. Firmware einmal über USB installieren.` | Der IOmcu hat keine Update-Pages oder keine Partitionstabelle. |
+| `Kein IOmcu-Image für dieses Board in diesem Panel-Build.` | Der IOmcu meldet ein Board (IDENTITY-Register 5), für das dieser Panel-Build kein Image trägt. Kein Update wird angeboten: das Image eines anderen Boards brächte dessen Pinbelegung auf dieses. |
 | `Der IOmcu nutzt den Build dieses Panels.` | Die Digests sind gleich: es gibt nichts zu senden. |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an oder schaltet ein. |
 | `Wartet, bis das WLAN des Panels aus ist.` | Eine Suche, ein Download oder der Bildschirm WI-FI hat den Funk an, oder er schaltet noch ab. |

@@ -723,6 +723,8 @@ void upd_cu_text(const upd_cu_view_t *v, const char **line,
     case CU_SEC_CHECKING: *line = TR(UPD_CU_CHECKING); *col = UI_TEXT; break;
     case CU_SEC_FAILED:   *line = TR(UPD_CU_FAILED);    break;
     case CU_SEC_USB:      *line = TR(UPD_CU_USB);       break;
+    case CU_SEC_NO_BOARD: *line = TR(UPD_CU_NO_BOARD); *col = UI_TEXT_DIM;
+                          break;
     case CU_SEC_SAME:     *line = TR(UPD_CU_SAME); *col = UI_TEXT_DIM; break;
     case CU_SEC_UNSAFE:   *line = TR(UPD_CU_UNSAFE);    break;
     case CU_SEC_RADIO:    *line = TR(UPD_CU_RADIO);     break;

@@ -701,6 +701,7 @@ FIT_ONLY = {
     "updates-cu-checking": (None, "updates", "dark"),
     "updates-cu-failed":   (None, "updates", "dark"),
     "updates-cu-usb":      (None, "updates", "dark"),
+    "updates-cu-noboard":  (None, "updates", "dark"),
     "updates-cu-unsafe":   (None, "updates", "dark"),
     "updates-cu-radio":    (None, "updates", "dark"),
     "updates-cu-install":  (None, "updates", "dark"),
