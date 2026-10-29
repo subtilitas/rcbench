@@ -262,7 +262,7 @@ jobs:
       #
       # Every screen caches its chrome and its band, so a steady frame
       # draws nothing; 1,000 catches one that has started repainting.
-      # ESC STICK's steady frame is 1,568 and is held apart at 2,000.
+      # ESC STICK's steady frame is 1,560 and is held apart at 2,000.
       - name: Every screen still idles on a cached frame
         run: python3 tools/frame_cost.py overview analyser logs settings
              settings-list battery balance picker wifi --max-lines 1000

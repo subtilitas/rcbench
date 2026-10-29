@@ -19,7 +19,7 @@ diese Fills, und die lassen sich auf dem Host exakt messen.
 Die Zeit eines Frames ist sein PSRAM-Traffic und seine Instruktionen, und
 welches von beiden einen Frame auf diesem Board begrenzt, ist nicht gemessen.
 Der eine Bildschirm mit Zahlen von beiden Seiten deutet auf die
-Instruktionen: SERVO > LIVE während eines Sweeps hat 2 430 Fills in der
+Instruktionen: SERVO > LIVE während eines Sweeps hat 2 431 Fills in der
 Tabelle, 304KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
 Board](#auf-dem-board)); als reiner Traffic wären das 19 bis 23MB/s. Die
 Fills halten die Seite des Traffics; `test_frame_work` hält die Seite der
@@ -65,9 +65,9 @@ sim                         13,470    1684 KiB
 throttle                    11,656    1457 KiB
 chrome                      51,503    6438 KiB
 overview                         0       0 KiB
-servo                        2,430     304 KiB
+servo                        2,431     304 KiB
 servo-grip                     642      80 KiB
-servo-current                3,359     420 KiB
+servo-current                3,358     420 KiB
 supply                       9,814    1227 KiB
 supply-chrome               47,311    5914 KiB
 analyser                         0       0 KiB
@@ -76,22 +76,22 @@ settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,568     196 KiB
+motor-stick                  1,560     195 KiB
 balance-sim                  3,112     389 KiB
-settings-sim                 3,105     388 KiB
+settings-sim                 3,112     389 KiB
 battery-sim                  3,114     389 KiB
-analyser-chrome             60,993    7624 KiB
-logs-chrome                 26,043    3255 KiB
-settings-chrome             37,549    4694 KiB
-settings-list-chrome        36,458    4557 KiB
-battery-chrome              58,174    7272 KiB
-balance-chrome              63,453    7932 KiB
-motor-stick-chrome          41,488    5186 KiB
+analyser-chrome             60,992    7624 KiB
+logs-chrome                 26,041    3255 KiB
+settings-chrome             37,547    4693 KiB
+settings-list-chrome        36,398    4550 KiB
+battery-chrome              58,171    7271 KiB
+balance-chrome              63,450    7931 KiB
+motor-stick-chrome          41,489    5186 KiB
 picker                           0       0 KiB
-picker-chrome               41,631    5204 KiB
+picker-chrome               41,639    5205 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,151    2769 KiB
-wifi-keys                   37,137    4642 KiB
+wifi-chrome                 22,154    2769 KiB
+wifi-keys                   37,134    4642 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
 hlines                         171      21 KiB
@@ -148,7 +148,7 @@ bewusste Ausgabe.
 
 **Das Chrome cachen.** Alles neu zu zeichnen kostet 22 000 bis 64 000 Fills,
 die `-chrome`-Modi, ein gecachter ruhiger Frame desselben Bildschirms keinen:
-60 993 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
+60 992 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
 ruhigen Frame. Jeder Bildschirm führt je Framebuffer eine
 Bitmaske dessen, was er schon gezeichnet hat; dafür ist das Argument
 `buffer_index` von `render()` da. Das Panel wechselt zwischen zwei Buffern;
@@ -244,7 +244,7 @@ lässt, nicht einen Frame, der das Panel verpasst:
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
-| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 568 Fills in der Tabelle oben |
+| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 560 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die zehn `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
 | `wifi-keys` | 42 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |

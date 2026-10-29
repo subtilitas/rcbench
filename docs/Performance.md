@@ -18,7 +18,7 @@ those fills, which can be measured exactly on the host.
 A frame's time is its PSRAM traffic and its instructions, and which of the
 two bounds a frame on this board is not measured. The one screen with
 figures from both sides points at the instructions: SERVO > LIVE during a
-sweep is 2,430 fills in the table, 304KiB of traffic, and the console read
+sweep is 2,431 fills in the table, 304KiB of traffic, and the console read
 DRAW 13.8 to 16.5ms ([On the board](#on-the-board)); as traffic alone that
 is 19 to 23MB/s. The fills hold the traffic side; `test_frame_work` holds
 the instruction side in pixel visits ([Rules](#rules)).
@@ -62,9 +62,9 @@ sim                         13,470    1684 KiB
 throttle                    11,656    1457 KiB
 chrome                      51,503    6438 KiB
 overview                         0       0 KiB
-servo                        2,430     304 KiB
+servo                        2,431     304 KiB
 servo-grip                     642      80 KiB
-servo-current                3,359     420 KiB
+servo-current                3,358     420 KiB
 supply                       9,814    1227 KiB
 supply-chrome               47,311    5914 KiB
 analyser                         0       0 KiB
@@ -73,22 +73,22 @@ settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,568     196 KiB
+motor-stick                  1,560     195 KiB
 balance-sim                  3,112     389 KiB
-settings-sim                 3,105     388 KiB
+settings-sim                 3,112     389 KiB
 battery-sim                  3,114     389 KiB
-analyser-chrome             60,993    7624 KiB
-logs-chrome                 26,043    3255 KiB
-settings-chrome             37,549    4694 KiB
-settings-list-chrome        36,458    4557 KiB
-battery-chrome              58,174    7272 KiB
-balance-chrome              63,453    7932 KiB
-motor-stick-chrome          41,488    5186 KiB
+analyser-chrome             60,992    7624 KiB
+logs-chrome                 26,041    3255 KiB
+settings-chrome             37,547    4693 KiB
+settings-list-chrome        36,398    4550 KiB
+battery-chrome              58,171    7271 KiB
+balance-chrome              63,450    7931 KiB
+motor-stick-chrome          41,489    5186 KiB
 picker                           0       0 KiB
-picker-chrome               41,631    5204 KiB
+picker-chrome               41,639    5205 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,151    2769 KiB
-wifi-keys                   37,137    4642 KiB
+wifi-chrome                 22,154    2769 KiB
+wifi-keys                   37,134    4642 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
 hlines                         171      21 KiB
@@ -142,7 +142,7 @@ vertical rule is a deliberate expense.
 
 **Cache the chrome.** Repainting everything costs 22,000 to 64,000 fills,
 the `-chrome` modes, and a cached steady frame of the same screen none:
-60,993 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
+60,992 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
 painted; that is what the `buffer_index` argument of `render()` is for. The
 panel alternates between two buffers, so a screen that invalidates only the
 buffer being drawn leaves the other one a frame behind, which reads as flicker.
@@ -226,7 +226,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
-| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,568 fills in the table above |
+| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,560 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the ten `-chrome` modes | 72,000 | a growing full repaint |
 | `wifi-keys` | 42,000 | a key of the Wi-Fi keyboard that repaints more than the screen |
