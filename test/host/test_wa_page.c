@@ -194,9 +194,12 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
     /* Without the viewer's words: none, and the viewer's cap. */
     CHECK(strstr(g_elem, "\"ok\":[],\"fail\":[],\"warn\":[],\"cap\":128,"
                          "\"label\":24}") != NULL);
-    /* The style: the browser's scheme, a rule per class, no colours. */
-    CHECK(strstr(g_p.buf, ":root{color-scheme:light dark}.h-tx{color:"
-                          "var(--h-tx)}") != NULL);
+    /* The style: the page's tokens in the browser's scheme, a rule per
+     * class, no palette by class. */
+    CHECK(strstr(g_p.buf, ":root{color-scheme:light dark;--pg-bg:")
+          != NULL);
+    CHECK(strstr(g_p.buf, "a{color:var(--pg-ac);word-break:break-all}"
+                          ".h-tx{color:var(--h-tx)}") != NULL);
     CHECK(strstr(g_p.buf, ".h-ch{color:var(--h-ch)}") != NULL);
     CHECK(strstr(g_p.buf, "--h-tx:") == NULL);
     /* The upload is offered, with the slot as the size limit. */

@@ -279,17 +279,12 @@ const gfx_font_t *tv_face(void)
 
 size_t text_view_lines(void)
 {
-    if (tv.state != TEXT_VIEW_SHOWN
-        || (!tv.edit && text_buf_len(&tv_tb) == 0u)) {
+    if (tv.state != TEXT_VIEW_SHOWN) {
         return 0u;
     }
-    size_t n = text_buf_lines(&tv_tb);
     /* A line end at the file's end starts no line of its own, unless the
      * editor's cursor is to stand on it. */
-    if (!tv.edit && n > 1u && text_buf_line_len(&tv_tb, n - 1u) == 0u) {
-        --n;
-    }
-    return n;
+    return tv.edit ? text_buf_lines(&tv_tb) : text_buf_lines_viewed(&tv_tb);
 }
 
 size_t tv_rows_of(size_t line)

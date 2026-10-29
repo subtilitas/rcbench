@@ -3120,7 +3120,10 @@ a DNS (domain name system) name of its own, cannot send codes that count
 toward the 16, and cannot send an image. A browser sends a header of its
 own on a request to another site only after asking that site, and the
 panel answers no such question with a yes. A refused request is answered
-before its body is read, and the connection closes with the answer.
+before its body is read, and the connection closes with the answer. The
+file API answers the 421 and the 400 in JSON as its other refusals, with
+`HOST` and `BODY` ([the file API](#the-file-api)); the page, `/card/` and
+the ZIP file answer them with no body.
 
 ### The page
 
@@ -3182,7 +3185,11 @@ a file with more than one kind, and CLOSE (or Escape). Its lines are
 coloured as the panel's [text viewer](#the-text-viewer) colours them, with
 the same rules, the same verdict words in English and German, and the
 panel's palettes: the light one, or the dark one when the browser asks for
-a dark scheme. A line is not wrapped; the text scrolls sideways. A tab
+a dark scheme. A label (`Result:`, `name =`) is TEXT_DIM: #46586c in the
+light palette, #84acca in the dark one, as the panel draws it in each
+theme. The whole page follows the same scheme: its background, text,
+lines, panes, boxes and the viewer's header take the panel's theme
+colours, PANEL, TEXT, TEXT_DIM, EDGE and ACCENT, light or dark. A line is not wrapped; the text scrolls sideways. A tab
 reaches the next multiple of 8 cells. A control character and a byte that
 starts no UTF-8 sequence show as `?`. A file the file API refuses shows its
 refusal's text. The page draws the lines on screen and 200 lines above and
@@ -3247,7 +3254,7 @@ as a download does; a request without a code gets 403 and `CODE`.
 | `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
 | `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
-| `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` and `X-Rcbench-Bom` (1 or 0) |
+| `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
 
 A path is relative to the card's root and percent-encoded with `/` as the
 separator: `%2F` is refused, `+` is a plus. It holds at most 120 bytes and
@@ -3262,11 +3269,13 @@ in the panel's language:
 | `NAME` | 400 | a path the card or FILES does not take |
 | `REQUEST` | 400 | a parameter outside the ones above, or no path for INFO or a file |
 | `ARG` | 400 | a folder asked as a file |
+| `BODY` | 400 | a read that carries a body (the guard above) |
 | `CODE` | 403 | no access code, or a wrong one, which counts toward the 16 |
 | `LOCKED` | 403 | the servo programmers' records, `KST.TXT` and `HITEC.TXT`: download them instead |
 | `NOT_FOUND` | 404 | no such entry, or one of another kind |
 | `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
 | `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |
+| `HOST` | 421 | a `Host` that is not the panel (the guard above) |
 | `TOO_MANY_LINES` | 422 | more than 65,536 line ends |
 | `BUSY` | 423 | a file the logger writes |
 | `IO` | 500 | the card failed a read |

@@ -160,15 +160,15 @@ static void palette(wa_out_t *o, const uint32_t *rgb)
 
 void wa_app_style(wa_out_t *o, const wa_hl_t *hl)
 {
-    wa_out_str(o, ":root{color-scheme:light dark");
+    /* The page's own tokens and color-scheme are in its head (wa_page.c);
+     * these are the viewer's, the panel's palettes by class. */
     if (hl != NULL) {
-        wa_out_str(o, ";");
+        wa_out_str(o, ":root{");
         palette(o, hl->light);
         wa_out_str(o, "}@media (prefers-color-scheme:dark){:root{");
         palette(o, hl->dark);
-        wa_out_str(o, "}");
+        wa_out_str(o, "}}");
     }
-    wa_out_str(o, "}");
     for (size_t k = 0u; k < TEXT_HL_CLASSES; ++k) {
         wa_out_str(o, ".h-");
         wa_out_str(o, k_css[k]);

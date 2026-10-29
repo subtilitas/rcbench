@@ -117,7 +117,7 @@ TEST_CASE(a_file_is_sent_byte_for_byte_with_its_etag_and_head)
              "ETag: \"%08" PRIx32 "\"\r\n"
              "X-Rcbench-Eol: lf\r\n"
              "X-Rcbench-Bom: 0\r\n"
-             "X-Rcbench-Lines: 4\r\n"
+             "X-Rcbench-Lines: 3\r\n"
              "Cache-Control: no-store\r\n\r\n", crc);
     CHECK_STR_EQ(head(), want);
     /* A piece of 1 byte reads the same bytes. */
@@ -127,12 +127,12 @@ TEST_CASE(a_file_is_sent_byte_for_byte_with_its_etag_and_head)
     fk_file(&g_card, "CHECK.TXT", (const uint8_t *)"123456789", 9u);
     CHECK_EQ(wa_api_file(&g_api, "path=CHECK.TXT"), WA_API_OK);
     CHECK(has(head(), "ETag: \"cbf43926\"\r\n"));
-    /* An empty file: no bytes, one line. */
+    /* An empty file: no bytes, no line, as the viewer shows it. */
     fk_file(&g_card, "EMPTY.TXT", NULL, 0u);
     CHECK_EQ(wa_api_file(&g_api, "path=EMPTY.TXT"), WA_API_OK);
     CHECK_EQ(wa_api_file_size(&g_api), 0u);
     CHECK(has(head(), "Content-Length: 0\r\nETag: \"00000000\"\r\n"));
-    CHECK(has(head(), "X-Rcbench-Lines: 1\r\n"));
+    CHECK(has(head(), "X-Rcbench-Lines: 0\r\n"));
     /* The fault log is read like any text. */
     fk_file(&g_card, CARD_FAULT_LOG, (const uint8_t *)"E1\n", 3u);
     CHECK_EQ(wa_api_file(&g_api, "path=BENCH/RCBENCH.LOG"), WA_API_OK);
@@ -148,10 +148,17 @@ TEST_CASE(line_ends_and_a_bom_are_named_and_kept)
         const char *eol;
         const char *lines;
     } k_ends[] = {
-        { "a\r\nb\r\n", "crlf", "3" },
+        /* A line end at the file's end starts no line of its own, as
+         * FILES' viewer counts: LINE n OF 2 for both of the first two. */
+        { "a\nb\n", "lf", "2" },
+        { "a\nb", "lf", "2" },
+        { "a\r\nb\r\n", "crlf", "2" },
         { "a\rb", "cr", "2" },
+        { "a\rb\r", "cr", "2" },
         { "a\nb\r\nc", "mixed", "3" },
         { "no end", "lf", "1" },
+        { "\n", "lf", "1" },
+        { "\n\n", "lf", "2" },
     };
     char h[96];
     char name[16];
@@ -175,6 +182,7 @@ TEST_CASE(line_ends_and_a_bom_are_named_and_kept)
     CHECK(sends(k_bom, sizeof(k_bom)));
     CHECK(has(head(), "Content-Length: 6\r\n"));
     CHECK(has(head(), "X-Rcbench-Bom: 1\r\n"));
+    CHECK(has(head(), "X-Rcbench-Lines: 1\r\n"));
     CHECK_EQ(g_api.etag, wa_crc32(0u, k_bom, sizeof(k_bom)));
     /* A BOM read in pieces of 2 bytes comes back whole. */
     CHECK_EQ(read_back(2u), sizeof(k_bom));
@@ -213,7 +221,8 @@ TEST_CASE(line_ends_65536_are_sent_and_65537_refused)
     memset(g_bytes, '\n', TEXT_BUF_ENDS_MAX + 1u);
     fk_file(&g_card, "L.TXT", g_bytes, TEXT_BUF_ENDS_MAX);
     CHECK_EQ(wa_api_file(&g_api, "path=L.TXT"), WA_API_OK);
-    CHECK(has(head(), "X-Rcbench-Lines: 65537\r\n"));
+    /* 65,536 line ends and nothing after the last: 65,536 lines. */
+    CHECK(has(head(), "X-Rcbench-Lines: 65536\r\n"));
     CHECK(sends(g_bytes, TEXT_BUF_ENDS_MAX));
     fk_file(&g_card, "L2.TXT", g_bytes, TEXT_BUF_ENDS_MAX + 1u);
     CHECK_EQ(wa_api_file(&g_api, "path=L2.TXT"), WA_API_TOO_MANY_LINES);

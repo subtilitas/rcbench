@@ -3452,7 +3452,9 @@ zu den 16 zählen, und sendet kein Image. Ein Browser sendet einen eigenen
 Header an eine andere Seite erst, nachdem er diese Seite gefragt hat, und
 das Panel beantwortet keine solche Frage mit Ja. Eine abgelehnte Anfrage
 wird beantwortet, bevor ihr Body gelesen ist, und die Verbindung schließt
-mit der Antwort.
+mit der Antwort. Die Datei-API beantwortet die 421 und die 400 in JSON wie
+ihre anderen Ablehnungen, mit `HOST` und `BODY` ([die Datei-API](#die-datei-api));
+die Seite, `/card/` und die ZIP-Datei beantworten sie ohne Body.
 
 ### Die Seite
 
@@ -3518,7 +3520,12 @@ für eine Datei mit mehr als einer Art und SCHLIESSEN (oder Escape). Seine
 Zeilen sind gefärbt, wie der [Textbetrachter](#der-textbetrachter) des
 Panels sie färbt, mit denselben Regeln, denselben Urteilswörtern auf
 Englisch und Deutsch und den Paletten des Panels: der hellen, oder der
-dunklen, wenn der Browser ein dunkles Schema verlangt. Eine Zeile wird
+dunklen, wenn der Browser ein dunkles Schema verlangt. Ein Label
+(`Result:`, `name =`) ist TEXT_DIM: #46586c in der hellen Palette,
+#84acca in der dunklen, wie das Panel es in jedem Theme zeichnet. Die
+ganze Seite folgt demselben Schema: Hintergrund, Text, Linien, Spalten,
+Boxen und der Kopf des Betrachters nehmen die Theme-Farben des Panels,
+PANEL, TEXT, TEXT_DIM, EDGE und ACCENT, hell oder dunkel. Eine Zeile wird
 nicht umbrochen; der Text rollt seitwärts. Ein Tab reicht bis zum nächsten
 Vielfachen von 8 Zellen. Ein Steuerzeichen und ein Byte, das keine
 UTF-8-Folge beginnt, erscheinen als `?`. Eine Datei, die die Datei-API
@@ -3595,7 +3602,7 @@ den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
 | `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes":"closed"` mit dem Grund (`READ_ONLY`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner User-Logs, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
 | `GET /api/info?path=P&dir=D&mount=M` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge |
-| `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` und `X-Rcbench-Bom` (1 oder 0) |
+| `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` (die Zeilen, wie der Betrachter von FILES sie zählt: ein Zeilenende am Dateiende beginnt keine Zeile, also haben `a\nb\n` und `a\nb` 2 und eine leere Datei 0) und `X-Rcbench-Bom` (1 oder 0) |
 
 Ein Pfad gilt ab der Wurzel der Karte und ist prozentkodiert, mit `/` als
 Trenner: `%2F` wird abgelehnt, `+` ist ein Plus. Er hat höchstens 120 Bytes
@@ -3610,11 +3617,13 @@ Text in der Sprache des Panels:
 | `NAME` | 400 | ein Pfad, den die Karte oder FILES nicht nimmt |
 | `REQUEST` | 400 | ein Parameter außer den obigen, oder kein Pfad für INFO oder eine Datei |
 | `ARG` | 400 | ein Ordner, als Datei angefragt |
+| `BODY` | 400 | eine Leseanfrage mit Body (die Prüfung oben) |
 | `CODE` | 403 | kein Zugangscode oder ein falscher, der zu den 16 zählt |
 | `LOCKED` | 403 | die Vermerke der Servoprogrammierung, `KST.TXT` und `HITEC.TXT`: stattdessen herunterladen |
 | `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
 | `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
 | `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |
+| `HOST` | 421 | ein `Host`, der nicht das Panel ist (die Prüfung oben) |
 | `TOO_MANY_LINES` | 422 | mehr als 65.536 Zeilenenden |
 | `BUSY` | 423 | eine Datei, die der Logger schreibt |
 | `IO` | 500 | die Karte hat einen Lesezugriff nicht ausgeführt |
