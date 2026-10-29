@@ -341,6 +341,7 @@ bool fm_tree_has_next(const fm_tree_t *tree)
 fm_has_t fm_tree_has_file(const fm_tree_t *tree, const char *name)
 {
     if (tree == NULL || name == NULL || name[0] == '\0' || tree->total < 0
+        || tree->held < 0 || tree->held > FM_PAGE_MAX
         || strlen(name) >= FM_NAME_BUF) {
         return FM_HAS_UNKNOWN;
     }

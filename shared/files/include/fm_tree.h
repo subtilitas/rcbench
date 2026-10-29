@@ -192,7 +192,8 @@ typedef enum {
  * @param name  the file's name
  * @return FM_HAS_YES, FM_HAS_NO or FM_HAS_UNKNOWN; FM_HAS_UNKNOWN for a
  *         NULL, for an empty name, for a name of FM_NAME_BUF bytes or
- *         more and for a pane with no card (total -1)
+ *         more, for a pane with no card (total -1) and for a page whose
+ *         row count is outside 0 to FM_PAGE_MAX
  */
 fm_has_t fm_tree_has_file(const fm_tree_t *tree, const char *name);
 

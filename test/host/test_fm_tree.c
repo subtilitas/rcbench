@@ -695,6 +695,16 @@ TEST_CASE(a_page_tells_a_file_there_not_there_or_on_another_page)
     CHECK_EQ(fm_tree_has_file(&g_tree, ""), FM_HAS_UNKNOWN);
     CHECK_EQ(fm_tree_has_file(&g_tree, NULL), FM_HAS_UNKNOWN);
     CHECK_EQ(fm_tree_has_file(NULL, "F000.TXT"), FM_HAS_UNKNOWN);
+    /* A page whose row count is out of its bounds tells nothing. */
+    fresh("E");
+    fk_dir(&g_card, "E");
+    fk_file(&g_card, "E/A.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_YES);
+    g_tree.held = FM_PAGE_MAX + 1;
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_UNKNOWN);
+    g_tree.held = -1;
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_UNKNOWN);
 }
 
 /* --------------------------------------------------- the page keeping */
