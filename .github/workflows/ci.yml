@@ -279,7 +279,7 @@ jobs:
              && python3 tools/frame_cost.py servo-current --max-lines 4000
 
       # The screen guide caches its dock and draws its badges and corner
-      # brackets every frame, about 350 fills on the menu; 1,000 catches
+      # brackets every frame, about 340 fills on the menu; 1,000 catches
       # marks that draw more, such as a full outline (about 4,400).
       - name: The screen guide's marks stay cheap
         run: python3 tools/frame_cost.py overview-guide --max-lines 1000
