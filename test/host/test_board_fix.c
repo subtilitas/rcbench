@@ -13,7 +13,8 @@
  * their page; a kept record of the module put on the carrier's pins with
  * its enables and ranges kept; the programming ports restored on the
  * carrier with a servo output beside PROGP04 in the silicon; a board whose
- * pins are chosen untouched; the image chosen for each board, none for an
+ * pins are chosen untouched; the channel roles in the slots' order on
+ * the carrier; the image chosen for each board, none for an
  * unknown one or one whose image is not carried.
  *
  * SPDX-License-Identifier: MIT
@@ -491,6 +492,48 @@ TEST_CASE(a_protocol_goes_to_a_servo_output_and_nowhere_else)
     CHECK_EQ(b.pins[proto_named("SERVO PWM")] & ((uint32_t)1u << at(13u)), 0u);
 }
 
+/* A surface on PWM01 (GP2) and a throttle on PWM04 (GP1): the channel
+ * roles follow the slots, PWM01 first, not the GPIO order, so the motor's
+ * channel is a throttle and rests at its low end. */
+TEST_CASE(the_channel_roles_follow_the_slots_on_the_carrier)
+{
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, RBMOD);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, at(2u)));
+    outbind_set_proto(&b, proto_named("MOTOR PWM"));
+    CHECK(outbind_toggle(&b, at(1u)));
+    uint16_t regs[LINK_OS_COUNT];
+    CHECK_EQ(outbind_to_slots(&b, regs), 2u);
+    CHECK_EQ(regs[0u * LINK_OS_STRIDE + LINK_OS_PIN], 2u);
+    CHECK_EQ(regs[1u * LINK_OS_STRIDE + LINK_OS_PIN], 1u);
+    uint16_t cc[LINK_CC_COUNT];
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    CHECK_EQ(cc[0u * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_SURFACE);
+    CHECK_EQ(cc[1u * LINK_CC_STRIDE + LINK_CC_ROLE], LINK_CC_ROLE_THROTTLE);
+    /* Read back, each slot is the protocol of its own role. */
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_THROTTLE),
+             proto_named("MOTOR PWM"));
+    CHECK_EQ(outbind_role_proto(regs, cc, OUT_ROLE_SURFACE),
+             proto_named("SERVO PWM"));
+    /* PWM03 and PWM02 bound too: four slots, channels in cell order. */
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, at(4u)));
+    outbind_set_proto(&b, proto_named("DSHOT300"));
+    CHECK(outbind_toggle(&b, at(5u)));
+    CHECK_EQ(outbind_to_slots(&b, regs), 4u);
+    outbind_to_chan_cfg(&b, cc, 1000u, 2000u);
+    static const uint16_t k_role[4] = {
+        LINK_CC_ROLE_SURFACE, LINK_CC_ROLE_SURFACE, LINK_CC_ROLE_THROTTLE,
+        LINK_CC_ROLE_THROTTLE };
+    static const uint16_t k_pin[4] = { 2u, 4u, 5u, 1u };
+    for (unsigned n = 0; n < 4u; ++n) {
+        CHECK_EQ(regs[n * LINK_OS_STRIDE + LINK_OS_PIN], k_pin[n]);
+        CHECK_EQ(cc[n * LINK_CC_STRIDE + LINK_CC_ROLE], k_role[n]);
+    }
+}
+
 TEST_CASE(a_surface_and_a_throttle_do_not_share_slice_2)
 {
     outbind_t b;
@@ -543,6 +586,7 @@ int main(void)
     RUN(each_board_is_offered_its_own_image);
     RUN(the_grid_is_the_four_servo_outputs_in_their_order);
     RUN(a_protocol_goes_to_a_servo_output_and_nowhere_else);
+    RUN(the_channel_roles_follow_the_slots_on_the_carrier);
     RUN(a_surface_and_a_throttle_do_not_share_slice_2);
     return test_summary("board_fix");
 }
