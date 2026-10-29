@@ -534,7 +534,7 @@ Halten von 2s.
 | Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
 | Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.`; der Entwurf wird zu den Werten des Servos, und eine Änderung von vor dem Laden fällt samt ihren Bestätigungen weg |
 | Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
-| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der Einstellungen, mit geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
+| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Werte außerhalb der Einstellungen, auch geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
 | Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
 | Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
 | Von einem anderen Modell desselben Layouts, oder jenseits einer weichen Regel | DIESE DATEI PRÜFEN, unten; `Bestätige die Warnungen, bevor du diese Datei lädst.` |
@@ -608,12 +608,12 @@ WERKSEINSTELLUNG gespeicherte Backup-Datei `HITEC001` bringt 0x22 mit den 4
 Werten der Zellen 0x08, 0x13, 0x14 und 0x1B zurück.
 
 Weicht eine klassische Zelle außerhalb der änderbaren Werte ab, öffnet
-sich zuerst DIESE DATEI PRÜFEN mit `Gespeicherte Werte außerhalb der
-Einstellungen, mit geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
+sich zuerst DIESE DATEI PRÜFEN mit `Werte außerhalb der
+Einstellungen, auch geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
 Zellen in den Entwurf, und die Meldung zeigt dieselbe Zeile unter
 `HITEC001 geladen. 5 Werte weichen von den Servowerten ab.` Eine Zelle, die
 keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**; die
-Schreibseite zeigt `Gespeicherte Werte außerhalb der Einstellungen, mit
+Schreibseite zeigt `Werte außerhalb der Einstellungen, auch
 geschrieben: 1.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
 PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
 Änderung; ÄNDERUNGEN VERWERFEN verwirft sie.
@@ -628,8 +628,8 @@ vom Servo abweicht: jedes Register der D-Serie und jede klassische Zelle
 0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen. Ein Tipp
 öffnet ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
 Prüfung der Grenzwerte zurückgespielt.`, die Zahl der klassischen Zellen
-ohne änderbaren Wert, die es zurückschreibt, `Gespeicherte Werte außerhalb
-der Einstellungen, mit zurückgespielt: 1.`, und die Zeilen der
+ohne änderbaren Wert, die es zurückschreibt, `Werte außerhalb
+der Einstellungen, auch zurückgespielt: 1.`, und die Zeilen der
 Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
 zuerst die Backup-Datei, wenn keine es hält, der Vermerk, die Schritte und
 das Zurücklesen. Es endet mit `Backup zurückgespielt und geprüft.` Es
@@ -651,8 +651,8 @@ den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
 Werkswerte zurück.`, `Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53
 des Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
-Einstellung, die sie schreibt, `Gespeicherte Werte außerhalb der Einstellungen,
-mit geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Einstellung, die sie schreibt, `Werte außerhalb der Einstellungen,
+auch geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
 den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
 angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,

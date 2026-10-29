@@ -73,6 +73,7 @@ static const char *TAG = "rcbench";
 
 QueueHandle_t s_log_q;    /**< control task -> logger, one row each */
 QueueHandle_t s_note_q;   /**< control task -> logger, one line each */
+QueueHandle_t s_console_q; /**< control task -> logger, a link report each */
 SemaphoreHandle_t s_note_mx;
 
 /*
@@ -850,6 +851,21 @@ static void log_note(const char *line)
 }
 
 /**
+ * @brief Print every console report waiting on s_console_q, oldest first.
+ *
+ * On the logger, below the control task: the console's 50ms and more for
+ * a report hold up the card here, not the safety line.  The report is
+ * kept in static storage, not on this task's stack.
+ */
+void console_reports_print(void)
+{
+    static link_report_in_t r;
+    while (s_console_q != NULL && xQueueReceive(s_console_q, &r, 0) == pdTRUE) {
+        console_report_print(&r);
+    }
+}
+
+/**
  * @brief Everything that touches the card.
  *
  * On the control task's core and below it in priority: the control task
@@ -952,6 +968,8 @@ void log_task(void *arg)
             }
             atomic_store(&s_note_writing, false);
         }
+        /* The link reports the control task handed over, printed. */
+        console_reports_print();
         /* The servo test's lines, as many as wait. */
         test_line_t tl;
         while (xQueueReceive(s_test_q, &tl, 0) == pdTRUE) {

@@ -562,9 +562,28 @@ void link_lost_report(busfault_report_t *r)
 }
 
 /**
+ * @brief Print console report @p r, a line at a time, on the calling task:
+ *        the logger's, or the control task's when the queue is full.
+ * @param r  the report
+ */
+void console_report_print(const link_report_in_t *r)
+{
+    char line[LINK_REPORT_LINE];
+    bool warn = false;
+    for (unsigned i = 0u; link_report_line(r, i, line, sizeof(line), &warn)
+                          > 0u; ++i) {
+        if (warn) {
+            ESP_LOGW(TAG, "%s", line);
+        } else {
+            ESP_LOGI(TAG, "%s", line);
+        }
+    }
+}
+
+/**
  * @brief One block naming the most fundamental fault rather than the
- *        loudest.  Printed every 5s while the link is down and every 60s
- *        while it is up.
+ *        loudest.  Made every 5s while the link is down and every 60s
+ *        while it is up, and printed by the logger.
  *
  * The verdict judges the window since the previous report, not the
  * session: one burst of late answers at an IOmcu drop is the verdict of
@@ -577,7 +596,13 @@ void link_lost_report(busfault_report_t *r)
  * and a silent link reads as silent.
  *
  * The panel and iomcu lines keep the totals since start-up; the window's
- * counts have a line of their own.
+ * counts have a line of their own (link_report_line()).
+ *
+ * This runs on the control task, which beats the safety line.  Its
+ * numbers go to the logger through s_console_q, and the logger formats
+ * and prints them: up to 7 lines on the console take 50ms and more, and
+ * the heartbeat's limit is 150ms.  A queue that is full, the logger held
+ * by the card for 10s, prints here: a report is never dropped.
  */
 void link_report(void)
 {
@@ -586,7 +611,7 @@ void link_report(void)
     static link_bringup_t s_prev;
     static uint32_t       s_prev_ms;
     /* Static rather than on the stack: this runs on the control task. */
-    static link_bringup_t s_win;
+    static link_report_in_t s_rep;
 
     s_bring.polls         = s_host.polls;
     s_bring.replies       = s_host.replies;
@@ -606,80 +631,28 @@ void link_report(void)
     s_bring.rx_resyncs    = 0;
 
     const uint32_t at_ms = now_ms();
-    link_bringup_window(&s_bring, &s_prev, &s_win);
-    const uint32_t win_s = (uint32_t)(at_ms - s_prev_ms) / 1000u;
+    link_bringup_window(&s_bring, &s_prev, &s_rep.win);
+    s_rep.win_s = (uint32_t)(at_ms - s_prev_ms) / 1000u;
+    s_rep.total = s_bring;
     s_prev    = s_bring;
     s_prev_ms = at_ms;
-
-    const link_diag_t d = link_bringup_diagnose(&s_win);
-    ESP_LOGI(TAG, "LINK %s", link_diag_text(d));
-    if (d != LINK_DIAG_OK) {
-        ESP_LOGW(TAG, "  check: %s", link_diag_hint(d));
-    }
-    if (s_win.have_status) {
-        ESP_LOGI(TAG, "  last %lus  polls %lu replies %lu timeouts %lu "
-                      "stale %lu nack %lu  iomcu frames %lu crc %lu "
-                      "resync %lu refused %lu",
-                 (unsigned long)win_s, (unsigned long)s_win.polls,
-                 (unsigned long)s_win.replies, (unsigned long)s_win.timeouts,
-                 (unsigned long)s_win.mismatches, (unsigned long)s_win.nacks,
-                 (unsigned long)s_win.dev_frames,
-                 (unsigned long)s_win.dev_crc_errors,
-                 (unsigned long)s_win.dev_resyncs,
-                 (unsigned long)s_win.dev_refused);
-    } else {
-        ESP_LOGI(TAG, "  last %lus  polls %lu replies %lu timeouts %lu "
-                      "stale %lu nack %lu",
-                 (unsigned long)win_s, (unsigned long)s_win.polls,
-                 (unsigned long)s_win.replies, (unsigned long)s_win.timeouts,
-                 (unsigned long)s_win.mismatches, (unsigned long)s_win.nacks);
-    }
-    ESP_LOGI(TAG, "  panel  polls %lu replies %lu timeouts %lu stale %lu "
-                  "nack %lu crc %lu resync %lu",
-             (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
-             (unsigned long)s_bring.timeouts,
-             (unsigned long)s_bring.mismatches, (unsigned long)s_bring.nacks,
-             (unsigned long)s_bring.rx_crc_errors,
-             (unsigned long)s_bring.rx_resyncs);
-    if (s_bring.have_status) {
-        ESP_LOGI(TAG, "  iomcu  frames %lu crc %lu resync %lu refused %lu",
-                 (unsigned long)s_bring.dev_frames,
-                 (unsigned long)s_bring.dev_crc_errors,
-                 (unsigned long)s_bring.dev_resyncs,
-                 (unsigned long)s_bring.dev_refused);
-    } else {
-        ESP_LOGI(TAG, "  iomcu  never answered a status read");
-    }
-    if (s_bring.rt_samples > 0) {
-        /*
-         * The round trip as measured.  CAN arbitrates rather than taking
-         * turns, so there is no turnaround allowance to compare it against.
-         */
-        ESP_LOGI(TAG, "  round trip min %lu avg %lu max %lu us",
-                 (unsigned long)s_bring.rt_min_us,
-                 (unsigned long)s_bring.rt_mean_us,
-                 (unsigned long)s_bring.rt_max_us);
-    }
 
     /*
      * And the controller itself, which is a different question from whether
      * anything answered: a transmit error counter climbing towards 256 says
      * nobody is acknowledging, and bus off says the panel has already stopped
-     * transmitting.  The recovery runs on the poll gate; this line is how it
-     * is seen from a console.
+     * transmitting.  The recovery runs on the poll gate; the report's bus
+     * line is how it is seen from a console.
      */
     uint32_t tec = 0, rec = 0, bus = 0;
     bool off = false;
     char n1[12], n2[12], n3[12];
     const bool have_bus = can_twai_errors(&tec, &rec, &bus, &off);
-    if (have_bus) {
-        ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
-                 (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
-                 off ? " -- BUS OFF" : "");
-    } else {
-        /* Zeros here would read as a healthy bus.  A controller that never
-         * started is a different diagnosis from one with no errors. */
-        ESP_LOGI(TAG, "  bus    the controller is not running");
+    s_rep.bus = (link_report_bus_t){ .have = have_bus, .off = off,
+                                     .tx_errors = tec, .rx_errors = rec,
+                                     .bus_errors = bus };
+    if (s_console_q == NULL || xQueueSend(s_console_q, &s_rep, 0) != pdTRUE) {
+        console_report_print(&s_rep);
     }
 
     /*

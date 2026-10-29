@@ -197,7 +197,7 @@ the overlay is open again on PROGRAM at the next entry.
 | `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4V, the current limit outside 50 to 3000mA, or the voltage the session runs at less than 0.7V under the input voltage of the PD mini; the supply is not changed |
 | `Supply below 4.8V. Programming requires at least 4.8V.` | the programming voltage, or the voltage of an output that is on, is under 4.8V; the supply is not changed. With an output that is on and set under 4.8V the panel sends nothing to the IOmcu |
 | `The supply did not switch within 3000ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
-| `The IOmcu has not yet accepted the link. Try again.` | the IOmcu does not trust the heartbeat, or the link was silent |
+| `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.` | the IOmcu does not trust the heartbeat (the band shows FAULT 10), or the link was silent for 200ms and the failsafe latched (FAULT 01). Only the CLEAR an ARM writes lifts it; an IOmcu restart can leave FAULT 01 latched |
 
 ![A port without a pin](img/servo-kst-nopin.png)
 

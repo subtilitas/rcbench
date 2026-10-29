@@ -389,7 +389,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 648 | 1 520 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 680 | 1 488 |
 | `control` | `control_task` | 6 144 | 4 720 | 400 |
 | `runlog` | `log_task` | 6 656 | 4 528 | 1 104 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
