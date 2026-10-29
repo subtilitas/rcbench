@@ -584,7 +584,9 @@ interrupt and 256 bytes to the core's stack: core 0 reaches 1468 of
 deepest chain on the ESP32-P4, decoded from its RISC-V code, and 1024 bytes
 to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py`
 holds 27 modes to ceilings of L2 fills under the P4's caches; the bench
-frame has no ceiling while the PSRAM bandwidth is not measured. No tool
+frame has no ceiling while the PSRAM bandwidth is not measured, and
+`test_frame_cost.py` measures five modes twice, from paths of different
+lengths, and fails on one fill of difference. No tool
 holds the internal RAM; the panel prints it, and every stack's high-water
 mark, on its console.
 `check_docs.py` holds the protocol version,
