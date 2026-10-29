@@ -35,6 +35,7 @@
 #include "port_view.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "ui_board.h"
 #include "ui_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -216,6 +217,14 @@ void outputs_port_name(uint8_t port, char *buf, size_t cap)
 
 static int target(void) { return settings_get_int(SET_SERVO_TARGET); }
 
+/**
+ * @brief A board that solders its pins (the rbmod carrier): each port is on
+ *        its own pin and carries the programmers only, so PIN and FUNCTION
+ *        are shown and not offered, and the tester's rows are not drawn.
+ * @return true on a board with soldered roles
+ */
+static bool soldered(void) { return ui_board_roles() != NULL; }
+
 static bool known(void) { return port_view_has((uint8_t)p.port); }
 
 static bool held(void)
@@ -238,7 +247,7 @@ static bool fn_pwm(void)
  * or sweep runs, nor while the tester drives this port. */
 static bool fn_locked(void)
 {
-    return !known() || !port_view_get()->has_func || held()
+    return soldered() || !known() || !port_view_get()->has_func || held()
            || servo_screen_tester_target_locked()
            || target() == p.port + 1;
 }
@@ -285,6 +294,8 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
     }
     if (!known()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_NOT_READ));
+    } else if (soldered()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_SOLDERED));
     } else if (servo_screen_tester_target_locked()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_LOCKED));
     } else if (target() > 0
@@ -314,7 +325,8 @@ static uint32_t signature(void)
            | (servo_screen_tester_target_locked() ? 32u : 0u)
            | (servo_screen_port_pwm_locked() ? 64u : 0u)
            | (held() ? 128u : 0u)
-           | (fn_locked() ? 256u : 0u);
+           | (fn_locked() ? 256u : 0u)
+           | (soldered() ? 512u : 0u);
 }
 
 void outputs_port_tick(void)
@@ -382,6 +394,10 @@ static int seg_event(ui_tabs_t *t, const touch_event_t *evt, bool locked,
 static bool pin_event(const touch_event_t *evt)
 {
     const gfx_rect_t r = pin_rect();
+    if (soldered()) {
+        p.pin_down = false;
+        return false;            /* the pin is the board's: no picker */
+    }
     if (evt->type == TOUCH_EVENT_DOWN) {
         if (!gfx_rect_contains(r, evt->point.x, evt->point.y)) {
             return false;
@@ -480,6 +496,9 @@ bool outputs_port_event(const touch_event_t *evt)
     if (pin_event(evt)) {
         return true;
     }
+    if (soldered()) {
+        return false;            /* no tester rows on a soldered board */
+    }
     bool took;
     int i = seg_event(&p.tester, evt, tester_locked(), &took);
     if (took) {
@@ -514,6 +533,12 @@ static void pin_label(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_PORT_PIN_SET));
     } else if ((v->refused & (1u << port)) != 0u) {
         snprintf(buf, cap, TR(OUT_PORT_PIN_REFUSED), (unsigned)v->pin[port]);
+    } else if (soldered()) {
+        char role[8];
+        (void)outputs_role_name(ui_board(), (uint8_t)v->pin[port], role,
+                                sizeof(role));
+        snprintf(buf, cap, TR(OUT_PORT_PIN_ROLE), role,
+                 (unsigned)v->pin[port]);
     } else {
         snprintf(buf, cap, TR(OUT_PORT_PIN), (unsigned)v->pin[port]);
     }
@@ -538,13 +563,14 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     sync_tabs();
 
     pin_label(buf, sizeof(buf));
-    ui_button_font(c, pin_rect(), buf, UI_PANEL_HI, p.pin_down, true,
+    ui_button_font(c, pin_rect(), buf, UI_PANEL_HI, p.pin_down, !soldered(),
                    OU_FONT_LABEL);
 
     gfx_text(c, COL_X, FN_Y, TR(OUT_PORT_FUNCTION), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     const uint8_t fn = port_view_func((uint8_t)p.port);
-    const char *fn_name = known() ? port_view_fn_name(fn) : "?";
+    const char *fn_name = soldered() ? TR(OUT_PORT_FN_PROG)
+                          : known()  ? port_view_fn_name(fn) : "?";
     if (fn_locked()) {
         ui_choice_face_locked(c, fn_face(), fn_name);
     } else {
@@ -563,12 +589,14 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     gfx_text(c, COL_X, WATCH_Y + ((wf == OU_FONT_LABEL) ? 0 : 2), buf, wf,
              UI_TEXT_DIM, 1);
 
-    gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
-             UI_TEXT_FAINT, 1);
-    ui_tabs_render_locked(&p.tester, c, tester_locked());
-    gfx_text(c, COL_X, PWM_Y, TR(OUT_PORT_PWM), OU_FONT_LABEL,
-             UI_TEXT_FAINT, 1);
-    ui_tabs_render_locked(&p.pwm, c, pwm_locked());
+    if (!soldered()) {
+        gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
+                 UI_TEXT_FAINT, 1);
+        ui_tabs_render_locked(&p.tester, c, tester_locked());
+        gfx_text(c, COL_X, PWM_Y, TR(OUT_PORT_PWM), OU_FONT_LABEL,
+                 UI_TEXT_FAINT, 1);
+        ui_tabs_render_locked(&p.pwm, c, pwm_locked());
+    }
     if (outputs_screen_port_reason(buf, sizeof(buf))) {
         /* Three lines where it needs them: "GESPERRT: DER
          * SERVO-PROGRAMMIERER BELEGT DEN PORT" breaks into three of 30

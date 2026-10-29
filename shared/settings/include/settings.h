@@ -312,6 +312,36 @@ const setting_def_t *settings_def(setting_id_t id);
  *  settings_adjust() leave it, and SETUP draws its row without keys.
  *  Sensor SCL, which is the GPIO after Sensor SDA. */
 bool settings_derived(setting_id_t id);
+
+/**
+ * @brief Hold @p id at @p value: a pin a board solders, which no setting
+ *        moves.
+ *
+ * settings_get() then answers @p value; the stored value stays as it is,
+ * is saved as it is and comes back with settings_unfix().  SETUP draws the
+ * row without keys (settings_fixed()).
+ *
+ * @param id     The setting.
+ * @param value  The value it reads as.
+ * @return true when the value settings_get() answers changed.
+ */
+bool settings_fix(setting_id_t id, int value);
+
+/**
+ * @brief Let @p id read its own value again.
+ *
+ * @param id  The setting.
+ * @return true when the value settings_get() answers changed.
+ */
+bool settings_unfix(setting_id_t id);
+
+/**
+ * @brief Whether @p id is held by settings_fix().
+ *
+ * @param id  The setting.
+ * @return true while it is.
+ */
+bool settings_fixed(setting_id_t id);
 /**
  * @brief A category's name in English, from ui_text.def.
  * @param cat The category.

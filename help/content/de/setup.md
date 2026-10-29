@@ -19,7 +19,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 | SD CARD | `4 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin |
 | SENSORS | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
-| PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
+| PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine. Auf dem rbmod-Carrier nicht gezeigt, seine Pins sind verlötet |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 | FILES | `ORDNER UND DATEIEN` | [Files](files.md): die Ordner und Dateien der Karte in zwei Spalten, zum Kopieren, Verschieben, Umbenennen und Löschen |

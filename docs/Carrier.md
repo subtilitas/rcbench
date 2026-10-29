@@ -101,6 +101,22 @@ The first load is the install UF2 (USB Flashing Format) over USB, as in
 [First run](FirstRun.md#from-the-release-assets). After that the panel
 offers each IOmcu the image of the board it reports.
 
+## On the panel
+
+The panel reads board 2 from the IOmcu and shows the carrier's pins as
+fixed:
+
+- SETUP > OUTPUTS shows PWM01 to PWM04 as the four cells of the grid. A
+  surface and a throttle protocol on PWM02 and PWM03 together are refused
+  by name. The PROG PORT entries name PROGP01 to PROGP04 and their GPIO,
+  offer no pin and no function, and show no tester
+  ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
+- SETUP > INTERFACES shows Sensor SDA and SCL, Tap pin and PD mini TX and
+  RX at the carrier's pins, with no keys and no keypad.
+- The PICK A PIN tile is not on SETUP.
+
+![SETUP on the carrier, without PICK A PIN](img/setup-rbmod.png)
+
 ## Rev 1 rework
 
 Every rev 1 board needs two changes by hand. The carrier's image assumes

@@ -707,6 +707,19 @@ UI_TEXT(OUT_PROG_PORT_N, 14,
 UI_TEXT(OUT_PORT_PIN, 0,
     "PIN GPIO %u",
     "PIN GPIO %u")
+/* The PROG PORT entry on a board that solders its pins (the rbmod
+ * carrier): the PIN row names the port's pin by its role, FUNCTION reads
+ * PROGRAMMING and takes no press, and the line under them says where the
+ * signal protocols run. */
+UI_TEXT(OUT_PORT_PIN_ROLE, 0,
+    "%s ON GPIO %u",
+    "%s AUF GPIO %u")
+UI_TEXT(OUT_PORT_FN_PROG, 0,
+    "PROGRAMMING",
+    "PROGRAMMIEREN")
+UI_TEXT(OUT_PORT_SOLDERED, 60,
+    "KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04",
+    "NUR KST- UND HITEC-PROGRAMMER. SIGNALE: PWM01 BIS PWM04")
 UI_TEXT(OUT_PORT_NO_PIN, 27,
     "NO PIN KNOWN",
     "KEIN PIN BEKANNT")
@@ -789,6 +802,16 @@ UI_TEXT(OUT_SLICE_WHY, 60,
 UI_TEXT(OUT_COMPARE_WHY, 60,
     "GPIO %u: SAME PWM CHANNEL AS GPIO %u",
     "GPIO %u: GLEICHER PWM-KANAL WIE GPIO %u")
+/* A board that solders its pins (the rbmod carrier): a servo output whose
+ * PWM slice holds the other servo output bound as PWM of the other role,
+ * a surface beside a throttle, which may run at another frame rate.  The
+ * cell names the output it clashes with; the line both, with their GPIOs. */
+UI_TEXT(OUT_SLICE_OF_OUT, 18,
+    "SLICE OF %s",
+    "SLICE VON %s")
+UI_TEXT(OUT_OUT_SLICE_WHY, 60,
+    "%s GPIO %u: SAME PWM SLICE AS %s GPIO %u",
+    "%s GPIO %u: GLEICHER PWM-SLICE WIE %s GPIO %u")
 /* PICK A PIN with a PROG PORT picked: the count line names its function,
  * and a pin refused beside a PWM output says why. */
 UI_TEXT(PK_PORT_FN, 0,
@@ -1275,6 +1298,11 @@ UI_TEXT(SET_NOT_SAVED, 26,
 UI_TEXT(SET_SAVE, 0,
     "SAVE",
     "SPEICHERN")
+/* SETUP > INTERFACES: the help line of a pin row the board solders (the
+ * rbmod carrier); the row has no keys. */
+UI_TEXT(SET_PIN_SOLDERED, 0,
+    "Soldered on this board. Not a setting here.",
+    "Auf diesem Board verlötet. Hier keine Einstellung.")
 UI_TEXT(SET_UNHELD, 0,
     "Not accepted by the IOmcu.",
     "Vom IOmcu nicht übernommen.")
