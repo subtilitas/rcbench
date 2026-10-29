@@ -86,6 +86,13 @@ history is in git.
   soon as one fails, so under AUTO all seven rates are tried in 2.9s. The
   wait ends when the module reads off, or after 3500ms, which delays the
   link by as much when a wired module does not answer.
+- The panel's error sites apply the rule through
+  `shared/safety/error_sites.c`, and the KST link module counts its session
+  faults (`kst_link_faults()`). Host-tested in `test_error_sites`: every
+  site against a SAFE, an ARMED and an arming bench, an IOmcu of link 4.31,
+  of 4.30 and without the SUPPLY page, with and without a port holding the
+  supply; OUTPUT OFF and STOP TEST leave the bench ARMED. What the bench
+  does is unchanged.
 
 ### Fixed
 

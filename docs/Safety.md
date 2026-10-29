@@ -125,6 +125,8 @@ control task waits in an exchange. A bench that is SAFE already is not
 disarmed again: on a SAFE bench the withheld heartbeat would end a
 programming port's session for no output it drives. The rule is
 `error_stop()` in `shared/safety/error_stop.c`, under `test_error_stop`.
+The control task applies it where it finds an error through
+`shared/safety/error_sites.c`, under `test_error_sites`.
 
 The rows above are an IOmcu of link 4.31 or later. With an older IOmcu a
 programming port that holds the supply keeps it through an error the panel
