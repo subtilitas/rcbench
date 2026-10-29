@@ -2048,7 +2048,7 @@ UI_TEXT(FM_DELETE_FOLDER, 0,
     "Der leere Ordner wird von der Karte gelöscht.")
 UI_TEXT(FM_DELETE_REPORT, 52,
     "Its report %s goes with it.",
-    "Sein Bericht %s wird mitgelöscht.")
+    "Ihr Bericht %s wird mitgelöscht.")
 /* The progress box's title, the job's name after it. */
 UI_TEXT(FM_JOB_COPY, 0,
     "COPYING",
@@ -3706,6 +3706,9 @@ UI_TEXT(ALERT_SUPPLY_OFF_REMOTE, 94,
 UI_TEXT(ALERT_SUPPLY_REFUSED_ON, 94,
     "Supply refused to switch on. Output off.",
     "Netzteil ließ sich nicht einschalten. Ausgang aus.")
+UI_TEXT(ALERT_SUPPLY_REFUSED_FAILSAFE, 94,
+    "Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.",
+    "Netzteil ließ sich nicht einschalten: IOmcu-Failsafe ausgelöst. ARM halten, dann DISARM.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
     "PD mini pins rejected. Check SETUP > INTERFACES.",
     "PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.")
@@ -4629,8 +4632,8 @@ UI_TEXT(KP_R_NO_SUPPLY, 116,
     "Cannot switch the supply. PD mini is not responding or is off.",
     "Versorgung nicht schaltbar. PD mini antwortet nicht oder ist aus.")
 UI_TEXT(KP_R_UNSAFE, 116,
-    "The IOmcu has not yet accepted the link. Try again.",
-    "IOmcu hat die Verbindung noch nicht freigegeben. Erneut versuchen.")
+    "The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.",
+    "Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst. ARM halten, dann DISARM, um ihn aufzuheben.")
 UI_TEXT(KP_R_NOT_PROGRAMMING, 116,
     "Port not in programming mode. Tap CONNECT.",
     "Port nicht im Programmiermodus. VERBINDEN tippen.")
@@ -5076,8 +5079,8 @@ UI_TEXT(HP_UNSAFE, 116,
     "The IOmcu refused: its failsafe is latched.",
     "Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst.")
 UI_TEXT(HP_UNSAFE_2, 116,
-    "Switch to ARMED once to clear it. A held port needs LEAVE or RELEASE PORT first.",
-    "Einmal auf ARMED schalten, um ihn aufzuheben. Ein belegter Port braucht zuerst VERLASSEN oder PORT FREIGEBEN.")
+    "Hold ARM, then DISARM, to clear it. A held port needs LEAVE or RELEASE PORT first.",
+    "ARM halten, dann DISARM, um ihn aufzuheben. Ein belegter Port braucht zuerst VERLASSEN oder PORT FREIGEBEN.")
 UI_TEXT(HP_SESSION_ENDED, 116,
     "The IOmcu ended the session. The port is back in tester mode.",
     "Der IOmcu hat die Sitzung beendet. Der Port ist wieder im Testermodus.")
@@ -5308,10 +5311,10 @@ UI_TEXT(HP_LOAD_MODEL_2, 116,
     "Werte eines anderen Modells passen vielleicht nicht zu diesem Servo.")
 UI_TEXT(HP_RESTORE_RAW, 116,
     "Stored values outside the settings restored too: %u.",
-    "Gespeicherte Werte außerhalb der Einstellungen, mit zurückgespielt: %u.")
+    "Werte außerhalb der Einstellungen, auch zurückgespielt: %u.")
 UI_TEXT(HP_LOAD_RAW, 116,
     "Stored values outside the settings loaded too: %u.",
-    "Gespeicherte Werte außerhalb der Einstellungen, mit geladen: %u.")
+    "Werte außerhalb der Einstellungen, auch geladen: %u.")
 UI_TEXT(HP_FACTORY, 27,
     "FACTORY DEFAULT",
     "WERKSEINSTELLUNG")
@@ -5326,7 +5329,7 @@ UI_TEXT(HP_FACTORY_2, 116,
     "Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53 des Servos.")
 UI_TEXT(HP_FACTORY_RAW, 116,
     "Stored values outside the settings written too: %u.",
-    "Gespeicherte Werte außerhalb der Einstellungen, mit geschrieben: %u.")
+    "Werte außerhalb der Einstellungen, auch geschrieben: %u.")
 UI_TEXT(HP_FACTORY_DONE, 116,
     "Factory values written and verified.",
     "Werkswerte geschrieben und geprüft.")
