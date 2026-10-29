@@ -169,7 +169,7 @@ void art_keep_service(void)
     }
     const bool open = flash_gate_open(
         arming_link_needed(&s_arm, outputs_armed(&s_out)),
-        supply_live_or_coming());
+        supplies_live_or_coming());
     switch (art_keep_step(&s_keep, open)) {
     case ART_KEEP_WAITING:
         if (!s_keep_waited) {

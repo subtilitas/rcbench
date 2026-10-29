@@ -24,7 +24,7 @@ WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der
 
 ![Das Funkmodul darf nicht starten, nachdem es bei einem Schalten auf ARMED ausging](view:wifi-blocked)
 
-Das Funkmodul startet nur mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne offenen Log-Lauf. Sonst sind die Tasten, die es starten, grau, und die Karte sagt, was fehlt.
+Das Funkmodul startet nur mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne offenen Log-Lauf. Sonst sind die Tasten, die es starten, grau, und die Karte sagt, was fehlt. Auf dem rbmod-Carrier zählen die 5V der Programmierports, GPIO 21, ebenfalls als Netzteilausgang: solange ein Programmer einen Port hält und bis SUPPLY sie als `AUS` liest.
 
 Das Funkmodul geht von selbst aus, und die Karte nennt den Grund in einer Zeile:
 

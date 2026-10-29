@@ -247,8 +247,10 @@ Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
 Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
 4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
 Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus;
-das Panel bietet keine Taste dafür. Die Page folgt den Regeln der Page
-SUPPLY für einen Port:
+das Panel bietet keine Taste dafür. Die Programmer lesen auf dem Carrier
+nichts vom PD mini: sein Sollwert lehnt weder ein CONNECT unter 4.8V ab,
+noch setzt er die Spannung eines Power-Cycle. Die Page folgt den Regeln
+der Page SUPPLY für einen Port:
 
 - Ein Fehler schreibt das OFF der Page, wer immer sie hält und was immer
   das Panel von ihr liest (`error_sites.c`, `prog_supply_link_cut()`). Ein
@@ -262,6 +264,11 @@ SUPPLY für einen Port:
   der IOmcu GPIO 21 nicht treibt.
 - Ein ON vom Panel wird ohne lebenden Heartbeat mit NOT_ARMED und mit
   BAD_VALUE abgelehnt, solange ein Port die Versorgung hält.
+- Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
+  Flash des Panels und das WLAN des Panels warten, solange die 5V
+  an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort
+  nicht gelesen wurden oder ein Port eines Programmers sie hält, so wie sie
+  auf den Ausgang des PD mini warten (`prog_supply_link_live()`).
 
 SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
 `AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der

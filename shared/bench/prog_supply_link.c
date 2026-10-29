@@ -86,3 +86,17 @@ prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l)
     }
     return l->on ? PROG_SUPPLY_ON : PROG_SUPPLY_OFF;
 }
+
+bool prog_supply_link_owns(const prog_supply_link_t *l, bool board_has)
+{
+    return l != NULL && l->page && (l->fitted || board_has);
+}
+
+bool prog_supply_link_live(const prog_supply_link_t *l, bool board_has,
+                           bool port_taken)
+{
+    if (!prog_supply_link_owns(l, board_has)) {
+        return false;
+    }
+    return !l->answered || l->on || port_taken;
+}

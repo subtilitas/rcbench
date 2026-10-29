@@ -47,7 +47,10 @@ history is in git.
   silent link switches it off. SUPPLY shows `PROG PORTS 5V, GPIO 21: ON` or
   `OFF` under OUTPUT, and the programmers' MORE list reads
   `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` in place of the voltage and the
-  current ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
+  current; they take no reading of the PD mini there, so its set point
+  refuses no CONNECT. A firmware install, an IOmcu update, a flash write
+  and the Wi-Fi wait for the ports' 5V as for the PD mini's output
+  ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
 - The panel follows the board the IOmcu reports. On the rbmod carrier
   OUTPUTS shows PWM01 to PWM04 as its four cells and refuses a surface and
   a throttle protocol on PWM02 and PWM03 together, by name

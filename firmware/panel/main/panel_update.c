@@ -577,7 +577,7 @@ static bool run_open_now(void)
 /* Whether flash may be written now, and if not why: see fw_gate(). */
 static fw_gate_t fw_gate_now(bool armed)
 {
-    return fw_gate(armed, supply_live_or_coming(), run_open_now(),
+    return fw_gate(armed, supplies_live_or_coming(), run_open_now(),
                    s_artbusy || atomic_load(&s_keeping),
                    atomic_load(&s_cu_busy));
 }
@@ -706,7 +706,7 @@ void wifi_service(bool armed, uint32_t stops_now)
         seen_stops = stops_now;
         started = true;
     }
-    const bool supply = supply_live_or_coming();
+    const bool supply = supplies_live_or_coming();
     const bool run = run_open_now();
     const wa_off_t gate = wa_gate(armed, supply, run);
     const bool stop = (stops_now != seen_stops);
@@ -853,7 +853,7 @@ static wa_why_t why_of_fw_gate(fw_gate_t g)
 
 static wa_why_t upd_check_gate(bool armed)
 {
-    return wa_fetch_gate(armed, supply_live_or_coming(), run_open_now(),
+    return wa_fetch_gate(armed, supplies_live_or_coming(), run_open_now(),
                          atomic_load(&s_cu_busy),
                          atomic_load(&s_fw_installing));
 }

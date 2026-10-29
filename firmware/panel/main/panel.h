@@ -1098,6 +1098,15 @@ extern prog_supply_link_t s_psup_link;
  *         read every PROG_SUPPLY_LINK_READ_MS, its state published to
  *         SUPPLY; from poll_bench(), after supply_link_service(). */
 void prog_supply_service(void);
+/** @brief The ports' own supply is the programmers' supply
+ *         (prog_supply_link_owns()), as the control task last published. */
+extern atomic_bool s_psup_owns;
+/** @brief The ports' own supply counts as live for the install and flash
+ *         gates (prog_supply_link_live()), as last published. */
+extern atomic_bool s_psup_live;
+/** @brief Publish s_psup_owns and s_psup_live from s_psup_link, the board
+ *         and s_prog_taken; control task only. */
+void prog_supply_publish(void);
 
 /* ------------------------------------------------------------- panel_arm.c */
 
@@ -1128,6 +1137,11 @@ void kst_ui_service(void);
 void hitec_ui_service(void);
 extern unsigned s_tq_lost;
 bool supply_live_or_coming(void);
+/** @brief supply_live_or_coming(), or the programming ports' own supply
+ *         live (s_psup_live): what the install, update and flash gates
+ *         wait on.
+ *  @return true while either supply is on or coming */
+bool supplies_live_or_coming(void);
 void publish_supply_levels(void);
 void test_lines_service(void);
 typedef struct {

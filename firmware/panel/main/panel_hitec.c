@@ -209,8 +209,11 @@ __attribute__((noinline)) void hitec_publish(hitec_prog_feed_t *f)
         }
     }
     f->rx_mark = (uint8_t)hitec_rx_link_mark(&s_hitec_rx_link);
-    /* The PD mini's output while it is the supply, answers and is on. */
-    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
+    /* The PD mini's output while it is the supply, answers and is on.  On
+     * a board with the ports' own supply the PD mini feeds the servo rails
+     * only, and the ports' 5V has no reading: none. */
+    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output
+                     && !atomic_load(&s_psup_owns);
     f->out_mv = 0u;
     f->out_ma = 0u;
     if (f->supply_read) {

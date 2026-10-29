@@ -220,8 +220,10 @@ step cut by a stop or a lost link, which end the session themselves.
 On the [rbmod carrier](Carrier.md#power) the programming ports run from
 the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
 PD mini feeds the servo rails only. The KST and Hitec programmers switch
-the 5V on and off for a session; the panel offers no key for it. The page
-follows the SUPPLY page's rules for a port:
+the 5V on and off for a session; the panel offers no key for it. The
+programmers take no reading of the PD mini on the carrier: its set point
+neither refuses a CONNECT under 4.8V nor sets the voltage of a power
+cycle. The page follows the SUPPLY page's rules for a port:
 
 - An error writes the page's OFF, whoever holds it and whatever the panel
   reads of it (`error_sites.c`, `prog_supply_link_cut()`). A write to the
@@ -234,6 +236,11 @@ follows the SUPPLY page's rules for a port:
   IOmcu does not drive GPIO 21.
 - An ON from the panel is refused with NOT_ARMED without a live heartbeat
   and with BAD_VALUE while a port holds the supply.
+- A firmware install, an IOmcu update, a write to the panel's flash and
+  the panel's Wi-Fi wait while the 5V is on, not read since the
+  link came up or since an unanswered read, or held by a programmer's
+  port, as they wait for the PD mini's output
+  (`prog_supply_link_live()`).
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
 or `NOT READ` when the last read went unanswered. The core is

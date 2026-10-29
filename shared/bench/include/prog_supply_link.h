@@ -113,6 +113,31 @@ void prog_supply_link_read(prog_supply_link_t *l, const uint16_t *regs,
  */
 prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l);
 
+/**
+ * @brief Whether the ports' own supply is the programmers' supply: the
+ *        page served and the switch fitted, as read or, before the first
+ *        read, as the board says.  The PD mini is then not the ports'
+ *        supply, and the programmers' feed carries no reading of it.
+ * @param l         the state
+ * @param board_has the board the IOmcu reports switches the ports' supply
+ * @return false for NULL or without the page
+ */
+bool prog_supply_link_owns(const prog_supply_link_t *l, bool board_has);
+
+/**
+ * @brief Whether the ports' own supply counts as live for the gates that
+ *        wait for a bench with every supply off (a firmware install, a
+ *        flash write): owned, and on as last read, not read since the
+ *        start or since the last unanswered read, or a programmer holding
+ *        a port, which switches it on.
+ * @param l          the state
+ * @param board_has  as for prog_supply_link_owns()
+ * @param port_taken a programmer session holds a port
+ * @return false for NULL, without the page or on a board without the switch
+ */
+bool prog_supply_link_live(const prog_supply_link_t *l, bool board_has,
+                           bool port_taken);
+
 #ifdef __cplusplus
 }
 #endif

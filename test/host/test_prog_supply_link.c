@@ -7,7 +7,10 @@
  * or NACK, and one it does not answer keeps; the page is read at once and
  * then every PROG_SUPPLY_LINK_READ_MS to the millisecond, across the
  * clock's wrap; the state SUPPLY shows: none without the switch, ON and OFF
- * as read, NOT READ after an unanswered read of a fitted switch.
+ * as read, NOT READ after an unanswered read of a fitted switch; the
+ * ports' own supply as the programmers' supply, on the board's word before
+ * the first read; and as live for the install and flash gates while on, not
+ * read, or held by a programmer's port.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -115,11 +118,50 @@ TEST_CASE(supply_shows_the_state_as_read)
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_NONE);
 }
 
+TEST_CASE(the_board_or_a_read_makes_the_switch_the_ports_supply)
+{
+    prog_supply_link_init(&l, false);
+    CHECK(!prog_supply_link_owns(&l, true));     /* no page: the PD mini */
+    CHECK(!prog_supply_link_owns(NULL, true));
+    prog_supply_link_init(&l, true);
+    CHECK(!prog_supply_link_owns(&l, false));    /* a board without it */
+    CHECK(prog_supply_link_owns(&l, true));      /* the carrier, unread */
+    read_flags(LINK_PS_FITTED, 0u);
+    CHECK(prog_supply_link_owns(&l, false));     /* read fitted */
+    read_flags(0u, 0u);
+    CHECK(!prog_supply_link_owns(&l, false));    /* read without */
+}
+
+TEST_CASE(the_gates_count_it_live_until_read_off_and_free)
+{
+    prog_supply_link_init(&l, true);
+    /* Not read yet on the carrier: live. */
+    CHECK(prog_supply_link_live(&l, true, false));
+    /* Never on a board without the switch, whatever a port holds. */
+    CHECK(!prog_supply_link_live(&l, false, true));
+    CHECK(!prog_supply_link_live(NULL, true, true));
+    read_flags(LINK_PS_FITTED, 0u);
+    CHECK(!prog_supply_link_live(&l, true, false));   /* read off, free */
+    CHECK(prog_supply_link_live(&l, true, true));     /* a port holds it */
+    read_flags(LINK_PS_FITTED | LINK_PS_ON, 0u);
+    CHECK(prog_supply_link_live(&l, true, false));    /* read on */
+    read_flags(LINK_PS_FITTED, 0u);
+    prog_supply_link_read(&l, NULL, 0u);
+    CHECK(prog_supply_link_live(&l, true, false));    /* read unanswered */
+    read_flags(LINK_PS_FITTED, 0u);
+    CHECK(!prog_supply_link_live(&l, true, false));
+    /* The link lost: no page, nothing live here; the IOmcu cuts it. */
+    prog_supply_link_init(&l, false);
+    CHECK(!prog_supply_link_live(&l, true, true));
+}
+
 int main(void)
 {
     RUN(an_iomcu_without_the_page_gets_nothing);
     RUN(an_error_owes_one_off_until_the_iomcu_answers);
     RUN(the_page_is_read_at_once_then_every_200ms);
     RUN(supply_shows_the_state_as_read);
+    RUN(the_board_or_a_read_makes_the_switch_the_ports_supply);
+    RUN(the_gates_count_it_live_until_read_off_and_free);
     return test_summary("prog_supply_link");
 }

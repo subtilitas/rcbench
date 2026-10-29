@@ -440,6 +440,7 @@ static void link_came_up(const link_msg_t *reply)
     /* The programming ports' own supply (4.32): the IOmcu starts it off. */
     prog_supply_link_init(&s_psup_link, reply->regs[LINK_ID_PROTOCOL_MINOR]
                                             >= LINK_MINOR_PROG_SUPPLY);
+    prog_supply_publish();
     if (!s_supply_page && pdmini_wiring().en) {
         control_alert(TR(ALERT_NO_SUPPLY_PAGE));
     }
@@ -676,6 +677,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             supply_link_lost(&s_supply_link);
             /* The IOmcu switches the ports' own supply off on its own. */
             prog_supply_link_init(&s_psup_link, false);
+            prog_supply_publish();
             atomic_store(&s_supply_vin_mv, 0u);
             atomic_store(&s_supply_baud, 0u);
             /* And the monitors' pages: nothing on them is known until the

@@ -773,8 +773,11 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
             f->port_pin_known |= (uint8_t)(1u << port);
         }
     }
-    /* The PD mini's output while it is the supply, answers and is on. */
-    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
+    /* The PD mini's output while it is the supply, answers and is on.  On
+     * a board with the ports' own supply the PD mini feeds the servo rails
+     * only, and the ports' 5V has no reading: none. */
+    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output
+                     && !atomic_load(&s_psup_owns);
     f->out_mv      = 0u;
     f->out_ma      = 0u;
     f->set_mv      = 0u;

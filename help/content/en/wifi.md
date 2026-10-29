@@ -24,7 +24,7 @@ WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Se
 
 ![The radio may not start, after it went off on a switch to ARMED](view:wifi-blocked)
 
-The radio starts only with the bench SAFE, the supply output off and no log run open. Otherwise the buttons that start it are grey and the card says what is missing.
+The radio starts only with the bench SAFE, the supply output off and no log run open. Otherwise the buttons that start it are grey and the card says what is missing. On the rbmod carrier the programming ports' 5V, GPIO 21, counts as a supply output as well: while a programmer holds a port, and until SUPPLY reads it `OFF`.
 
 The radio goes off on its own, and the card names the reason in one line:
 

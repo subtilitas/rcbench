@@ -50,6 +50,8 @@
 supply_sim_t          s_supply_sim;
 supply_link_t         s_supply_link;
 prog_supply_link_t    s_psup_link;
+atomic_bool           s_psup_owns;
+atomic_bool           s_psup_live;
 /*
  * The supply command a programming port left on the SUPPLY page, for the
  * SUPPLY screen's set points: the values, and a count the control task
@@ -193,9 +195,8 @@ static error_bench_t error_bench(void)
         .far_minor   = s_far_minor,
         /* The page served and the switch fitted, as read or as the board
          * says before the first read. */
-        .prog_supply = s_psup_link.page
-                       && (s_psup_link.fitted
-                           || (outbind_roles(s_board) != NULL)),
+        .prog_supply = prog_supply_link_owns(&s_psup_link,
+                                             outbind_roles(s_board) != NULL),
     };
     return b;
 }
@@ -868,4 +869,13 @@ void prog_supply_service(void)
     }
     supply_screen_set_prog_5v((uint8_t)prog_supply_link_state(&s_psup_link),
                               s_psup_link.pin);
+    prog_supply_publish();
+}
+
+void prog_supply_publish(void)
+{
+    const bool board = outbind_roles(s_board) != NULL;
+    atomic_store(&s_psup_owns, prog_supply_link_owns(&s_psup_link, board));
+    atomic_store(&s_psup_live, prog_supply_link_live(&s_psup_link, board,
+                                                     s_prog_taken));
 }
