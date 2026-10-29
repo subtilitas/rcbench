@@ -3556,6 +3556,29 @@ Größe jedes Eintrags festzulegen, und kommt dann zweimal an jedem Eintrag
 vorbei: einmal für seine Daten, einmal am Ende für das Verzeichnis der
 ZIP-Datei.
 
+Jede Datei wird in Stücken von 16KiB gelesen (`WA_ZIP_READ_BYTES`), jedes
+an einem Versatz der Datei, der ein Vielfaches von 16KiB ist, in einen
+Puffer von 16KiB PSRAM, ausgerichtet auf die Cache-Zeile: ein Stück ist
+eine Übertragung der Karte direkt in den Puffer, wie weit die Header vor
+der Datei das Archiv auch verschieben. Der Puffer wird für den Download
+belegt und an seinem Ende freigegeben. FatFs findet eine Datei in ihrem
+Ordner, indem es den Ordner ab seinem ersten Eintrag liest, also kosten
+die Öffnungen eines Ordners mit n Dateien etwa n x n / 2 gelesene
+Einträge; die Zeit für einen Ordner mit 999 Dateien ist nicht gemessen.
+Das Panel schreibt das Ende jedes Downloads ins Log, bei einem Fehler mit
+der Ursache und dem Eintrag, an dem er war:
+
+```text
+I (…) wifi: zip: sent, <n> of <n> B in <t> ms
+W (…) wifi: zip: card read failed at USER/LOGS/LOG00030.BFL, <n> of <n> B in <t> ms
+```
+
+Die Ursachen sind die des Archivs, `card read failed` und `no card`, oder
+die des Sendens, `receiver gone`, `nothing taken for 30 s` und `radio going
+off`. Ein Lesen oder Öffnen, das die Karte ablehnt, schreibt davor
+`card: read of <n>B failed, errno <e>` oder `card: open of <path> failed,
+errno <e>`.
+
 - Eine Datei, die durch Anhängen wächst wie ein Log, wird gesendet, wie sie
   beim Start des Downloads war: ihre ersten Bytes bis zur Größe, die sie da
   hatte.

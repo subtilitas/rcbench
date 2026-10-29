@@ -27,6 +27,8 @@ docs/Performance.md: B read in <n> ms
 docs/Performance.md: nothing taken for 30 s
 docs/Performance-de.md: B read in <n> ms
 docs/Performance-de.md: nothing taken for 30 s
+docs/Screens.md: nothing taken for 30 s
+docs/Screens-de.md: nothing taken for 30 s
 docs/Screens.md: I storage: SK64G mounted, exFAT, 61002 MB
 docs/Screens-de.md: I storage: SK64G mounted, exFAT, 61002 MB
 test/host/test_storage.c: "SK64G mounted, 61002 MB"

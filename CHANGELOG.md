@@ -161,6 +161,14 @@ history is in git.
 
 ### Fixed
 
+- `card.zip` reads each file in pieces of 16KiB at offsets that are
+  multiples of 16KiB, into a buffer of PSRAM aligned for the card's DMA
+  (direct memory access): one card transfer a piece. The headers before a
+  file shifted every read of 4,096 bytes off the file's sectors: two
+  card transfers a read, one of a single sector, into a destination that
+  the SD driver copies through a buffer of its own when it is not on a
+  cache line. Each download logs its end, and for a failure the cause and
+  the entry it was at ([Screens, The page](docs/Screens.md#the-page)).
 - The Wi-Fi page follows the browser's dark scheme as a whole: the page,
   its panes, boxes and the viewer's header take the panel's dark theme
   colours, where only the viewer's text area did. Every colour of the page
