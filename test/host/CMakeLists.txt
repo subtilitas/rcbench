@@ -233,7 +233,7 @@ target_include_directories(test_fm_name PRIVATE
 # test_settings_pins_hub holds Sensor SDA's values to the page as the
 # firmware starts it.  settings_rig.h includes the header, so every
 # settings suite finds it.
-foreach(suite settings settings_screen settings_gesture settings_pins_hub settings_keypad
+foreach(suite settings settings_screen settings_gesture settings_pins_hub settings_carrier settings_keypad
               keypad_rows_setup
               settings_leave settings_folders settings_sensors settings_rows
               wall_clock)
