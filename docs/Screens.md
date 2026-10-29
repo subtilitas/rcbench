@@ -3317,10 +3317,32 @@ same. When keeping a good start fails (otadata not written), the band says
 `Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
+Before the restart, the install keeps the version it wrote in NVS
+(non-volatile storage): one 40-byte entry, namespace `fw_ota`, key
+`restart_note`, with a magic word and an FNV-1a (Fowler-Noll-Vo) hash. A
+restart, a panic and a power cut keep it. The next start reads it; with the
+written slot marked invalid by the bootloader, that start is the build
+before, and the band says the `failed to start` line. The entry is erased after every
+start but a trial that goes back, so the line shows once. An entry of
+another size, magic or hash reads as no note. The first start after an
+install from 0.23.2 or older finds no entry, as a panel that never
+installed does: those builds keep the note in LP (low-power) RAM, and a
+trial of this build that goes back is reported by that build from there.
+The console states each start's check in one line:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+The note is the version or `none`, or `unreadable` for an entry that reads
+as none; the slot is the bootloader's last invalid one or `none`; the result
+is `NORMAL`, `UPDATED`, `ROLLED_BACK`, `UNCONFIRMED` or `GOING_BACK`, the
+last said before a trial that goes back restarts.
+
 Current limitations:
 
-- A power cut during the trial start loses that line; the panel still goes
-  back to the build before.
+- An install whose NVS write fails says so on the console
+  (`restart note not kept`), and a start of its build that goes back shows
+  no line on the band.
 - A trial start that stops before the screen loop runs, in a card mount
   that does not return for example, is not kept and not reset either: the
   task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is

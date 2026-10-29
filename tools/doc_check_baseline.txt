@@ -150,13 +150,10 @@ firmware/panel/components/can_twai/include/can_twai.h: warning: return type of m
 firmware/panel/components/can_twai/include/can_twai.h: warning: return type of member can_twai_recv is not documented
 firmware/panel/components/can_twai/include/can_twai.h: warning: return type of member can_twai_send is not documented
 firmware/panel/components/display/display.c: warning: Member TAG (variable) of file display.c is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Member check (variable) of struct restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member h (variable) of struct ota_ctx_t is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Member magic (variable) of struct restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member next (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member open (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member part (variable) of struct ota_ctx_t is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Member version[FW_TEXT_MAX] (variable) of struct restart_note_t is not documented.
 firmware/panel/components/gt911/gt911.c: file has no @file block
 firmware/panel/components/gt911/gt911.c: warning: Compound gt911_dev_t is not documented.
 firmware/panel/components/gt911/gt911.c: warning: Member addr (variable) of struct gt911_dev_t is not documented.
@@ -1844,7 +1841,6 @@ shared/esc/include/esc_stick.h: warning: Member stuck_told (variable) of struct 
 shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_det_t is not documented.
 shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_stick_t is not documented.
 shared/esc/include/esc_stick.h: warning: Member valid (variable) of struct esc_det_t is not documented.
-shared/fwupdate/fw_boot.c: file has no @file block
 shared/fwupdate/fw_release.c: warning: Member fw_release_scan_init(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member fw_release_status(int status) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member hex(char ch) (function) of file fw_release.c is not documented.
@@ -1866,9 +1862,6 @@ shared/fwupdate/fw_release.c: warning: Member scan_tag(fw_rel_scan_t *s) (functi
 shared/fwupdate/fw_release.c: warning: Member scan_value(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member url_bytes(const char *s, size_t n) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_sha256.c: file has no @file block
-shared/fwupdate/include/fw_boot.h: file has no @file block
-shared/fwupdate/include/fw_boot.h: warning: Compound fw_boot_ops_t is not documented.
-shared/fwupdate/include/fw_boot.h: warning: Member ctx (variable) of struct fw_boot_ops_t is not documented.
 shared/fwupdate/include/fw_image.h: warning: Member bytes (variable) of struct fw_image_info_t is not documented.
 shared/fwupdate/include/fw_image.h: warning: Member elf_sha[FW_SHA256_BYTES] (variable) of struct fw_image_info_t is not documented.
 shared/fwupdate/include/fw_image.h: warning: Member major (variable) of struct fw_version_t is not documented.
