@@ -24,7 +24,7 @@ static prog_supply_link_t l;
 /* A read of a page with these flags, on GPIO 21. */
 static void read_flags(uint16_t flags, uint32_t now)
 {
-    uint16_t regs[LINK_PS_COUNT] = { 0u, flags, 21u, 5000u };
+    const uint16_t regs[LINK_PS_COUNT] = { 0u, flags, 21u, 5000u };
     prog_supply_link_read(&l, regs, now);
 }
 
