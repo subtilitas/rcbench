@@ -3201,6 +3201,26 @@ The download counts the entries, walks the card again to fix each one's
 size, and then passes each entry twice: once for its data, and once at the
 end for the ZIP file's directory.
 
+Each file is read in pieces of 16KiB (`WA_ZIP_READ_BYTES`), each at an
+offset of the file that is a multiple of 16KiB, into a buffer of 16KiB of
+PSRAM aligned to the cache line: a piece is one card transfer straight into
+the buffer, whatever the headers before the file shift the archive by. The
+buffer is taken for the download and given back at its end. FatFs finds a
+file in its folder by reading the folder from its first entry, so a folder
+of n files costs about n x n / 2 entries read for their opens; the time for
+a folder of 999 files is not measured. The panel logs each download's end,
+and for a failure its cause and the entry it was at:
+
+```text
+I (…) wifi: zip: sent, <n> of <n> B in <t> ms
+W (…) wifi: zip: card read failed at USER/LOGS/LOG00030.BFL, <n> of <n> B in <t> ms
+```
+
+The causes are the archive's, `card read failed` and `no card`, or the
+send's, `receiver gone`, `nothing taken for 30 s` and `radio going off`. A
+read or an open the card refuses logs `card: read of <n>B failed, errno <e>`
+or `card: open of <path> failed, errno <e>` before it.
+
 - A file that grows by appending, as a log does, is sent as it was when the
   download started: its first bytes, up to the size it had then.
 - A file rewritten in place is sent with its first bytes as they are when

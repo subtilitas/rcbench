@@ -20,6 +20,7 @@
 
 #include "wifi_access.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -329,6 +330,13 @@ static void card_closedir(void *ctx, void *dir)
     storage_dir_close(dir);
 }
 
+/**
+ * @brief wa_fs_t.open(): a file of the card, read-only, under a hold.  A
+ *        failure is logged with its errno.
+ * @param ctx   unused
+ * @param path  the path from the card's root
+ * @return the file, or NULL
+ */
 static void *card_open(void *ctx, const char *path)
 {
     (void)ctx;
@@ -338,16 +346,30 @@ static void *card_open(void *ctx, const char *path)
     }
     const int fd = open(full, O_RDONLY);
     if (fd < 0) {
+        ESP_LOGW(TAG, "card: open of %s failed, errno %d", path, errno);
         storage_release();
         return NULL;
     }
     return (void *)(intptr_t)(fd + 1);
 }
 
+/**
+ * @brief wa_fs_t.read(): the next bytes of a file.  A failure is logged
+ *        with its errno.
+ * @param ctx   unused
+ * @param file  the file
+ * @param dst   where they go
+ * @param len   how many at most
+ * @return the bytes read, 0 at the file's end, -1 on a failure
+ */
 static int32_t card_read(void *ctx, void *file, uint8_t *dst, uint32_t len)
 {
     (void)ctx;
     const ssize_t n = read((int)(intptr_t)file - 1, dst, len);
+    if (n < 0) {
+        ESP_LOGW(TAG, "card: read of %luB failed, errno %d",
+                 (unsigned long)len, errno);
+    }
     return (n < 0) ? -1 : (int32_t)n;
 }
 
@@ -794,8 +816,24 @@ static esp_err_t h_file(httpd_req_t *r)
 }
 
 /**
+ * @brief The ZIP's read buffer, WA_ZIP_READ_BYTES of PSRAM aligned as the
+ *        SDMMC (SD/MMC host) DMA wants a PSRAM buffer, so each read of a
+ *        file goes from the card into it in one transfer and no bounce
+ *        buffer of the driver's.
+ * @return the buffer, or NULL without the PSRAM
+ */
+static uint8_t *zip_read_buf(void)
+{
+    /* MALLOC_CAP_CACHE_ALIGNED: start and size on the PSRAM cache's line,
+     * as sd_host_check_buffer_alignment() asks of a DMA buffer. */
+    return heap_caps_malloc(WA_ZIP_READ_BYTES,
+                            MALLOC_CAP_SPIRAM | MALLOC_CAP_CACHE_ALIGNED);
+}
+
+/**
  * @brief GET /card.zip: the whole card as one ZIP archive, its length
- *        announced before the first byte.
+ *        announced before the first byte.  Logs its end: the bytes sent of
+ *        the length, the time, and for a failure the entry and the cause.
  * @param r the request
  * @return ESP_OK when the archive went out whole.  A failure part way sends
  *         the bytes wa_zip_next() made up to it, then resets the connection
@@ -816,15 +854,17 @@ static esp_err_t h_zip(httpd_req_t *r)
         return refused(r, "403 Forbidden");
     }
     wa_zip_t *z = heap_caps_malloc(sizeof(*z), MALLOC_CAP_SPIRAM);
+    uint8_t *rbuf = zip_read_buf();
     wa_zip_plan_t plan;
     wa_zip_slot_t *slot = NULL;
     esp_err_t res = ESP_FAIL;
     /* One volume from the plan's sizes to the last file: held across the
      * whole archive, as h_file() holds one file. */
     const bool held = storage_hold();
-    if (z == NULL || !held || wa_zip_plan(&k_card, &plan) != WA_ZIP_OK) {
-        res = refused(r, (z == NULL) ? "503 Service Unavailable"
-                                     : "404 Not Found");
+    if (z == NULL || rbuf == NULL || !held
+        || wa_zip_plan(&k_card, &plan) != WA_ZIP_OK) {
+        res = refused(r, (z == NULL || rbuf == NULL)
+                         ? "503 Service Unavailable" : "404 Not Found");
     } else {
         /* A slot an entry counted, and WA_ZIP_SPARE more for files added
          * before wa_zip_begin() walks the card again. */
@@ -840,23 +880,41 @@ static esp_err_t h_zip(httpd_req_t *r)
             res = refused(r, (be == WA_ZIP_NO_CARD) ? "404 Not Found"
                                                     : "503 Service Unavailable");
         } else {
+            wa_zip_set_read(z, rbuf, WA_ZIP_READ_BYTES);
             char zname[WA_NAME_MAX + 8u];
             snprintf(zname, sizeof(zname), "%s.zip", s.name);
-            bool ok = raw_head(r, z->plan.bytes, zname) == WA_SEND_DONE;
+            const uint32_t t0 = ms();
+            uint64_t sent = 0u;
+            wa_send_res_t sres = raw_head(r, z->plan.bytes, zname);
+            bool ok = sres == WA_SEND_DONE;
             while (ok) {
                 const int32_t got = wa_zip_next(z, b->io, sizeof(b->io));
-                if (got == 0) {
+                if (got <= 0) {
+                    ok = (got == 0);
                     break;
                 }
-                ok = (got > 0)
-                     && raw_send(r, b->io, (size_t)got) == WA_SEND_DONE;
+                sres = raw_send(r, b->io, (size_t)got);
+                ok = (sres == WA_SEND_DONE);
                 if (ok) {
+                    sent += (uint64_t)got;
                     lock();               /* a long download is traffic */
                     wa_request_begin(&s.w, ms());
                     wa_request_end(&s.w, ms());
                     unlock();
                 }
             }
+            /* The cause: the archive's own failure, with the entry the
+             * walk was at, or the send's. */
+            const bool zfail = (sres == WA_SEND_DONE && !ok);
+            ESP_LOG_LEVEL_LOCAL(ok ? ESP_LOG_INFO : ESP_LOG_WARN, TAG,
+                                "zip: %s%s%s, %llu of %llu B in %lu ms",
+                                zfail ? wa_zip_err_name(z->err)
+                                      : wa_send_res_name(sres),
+                                zfail ? " at " : "",
+                                zfail ? z->walk.path : "",
+                                (unsigned long long)sent,
+                                (unsigned long long)z->plan.bytes,
+                                (unsigned long)(ms() - t0));
             if (!ok) {
                 wa_zip_end_early(z);
             }
@@ -864,6 +922,7 @@ static esp_err_t h_zip(httpd_req_t *r)
         }
     }
     heap_caps_free(slot);
+    heap_caps_free(rbuf);
     heap_caps_free(z);
     if (held) {
         storage_release();

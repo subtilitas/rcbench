@@ -324,10 +324,8 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member b (variable
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member c (variable) of struct http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_close(void *ctx, void *file) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_closedir(void *ctx, void *dir) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_open(void *ctx, const char *path) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_opendir(void *ctx, const char *path) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_path(char *out, size_t cap, const char *rel) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_read(void *ctx, void *file, uint8_t *dst, uint32_t len) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_readdir(void *ctx, void *dir, wa_dirent_t *out) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member channel (variable) of struct [struct].s.job is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member chunked (variable) of struct http_ctx_t is not documented.
