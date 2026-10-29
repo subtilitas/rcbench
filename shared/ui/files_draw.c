@@ -16,7 +16,6 @@
 #include "files_screen.h"
 #include "text_view.h"
 #include "fm_name.h"
-#include "log_name.h"
 #include "ui_card_text.h"
 #include "ui_icons.h"
 #include "ui_text.h"
@@ -343,7 +342,7 @@ static void draw_footer(gfx_canvas_t *c)
                                                     : UI_PANEL_HI;
         const gfx_rect_t r = FS_FOOT(b);
         const char *text = ui_tr(labels[b]);
-        /* 6px each side of a label: a longer one takes the 8 x 16 face. */
+        /* 4px each side of a label: a longer one takes the 8 x 16 face. */
         ui_button_font(c, r, text, fill, s.press == b,
                        fs_foot_live((fs_foot_t)b, NULL),
                        ui_button_face(text, r.w, r.h, FOOT_PAD,
@@ -387,13 +386,9 @@ static void draw_question(gfx_canvas_t *c)
              s.doomed.is_dir ? TR(FM_DELETE_FOLDER) : TR(LOG_DELETE_WHAT),
              FS_FONT_BODY, UI_TEXT_DIM, 1);
     int y = box.y + 114;
-    char report[LOG_RUN_NAME_MAX] = "";
-    if (!s.doomed.is_dir) {
-        log_name_report_of(report, sizeof(report), s.doomed.name);
-    }
-    if (report[0] != '\0') {
+    if (s.doomed_report[0] != '\0') {
         char with[96];
-        snprintf(with, sizeof(with), TR(FM_DELETE_REPORT), report);
+        snprintf(with, sizeof(with), TR(FM_DELETE_REPORT), s.doomed_report);
         gfx_text(c, box.x + 24, y, with, FS_FONT_BODY, UI_TEXT_DIM, 1);
         y += 30;
     }

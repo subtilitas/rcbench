@@ -735,6 +735,30 @@ static void open_in_logs(const fm_entry_t *e)
     ui_router_goto(SCREEN_LOGS);
 }
 
+/**
+ * @brief The report the DELETE question names for entry @p e of pane
+ *        @p here, into s.doomed_report: a run log's report when the page
+ *        shows it, or when it would stand on another page and the page
+ *        cannot tell; "" for a report the page shows not there, and for
+ *        anything but a run log.  DELETE takes the report along whenever
+ *        the card holds it (fm_job_delete()), so a question that cannot
+ *        tell names it.
+ * @param here  the pane
+ * @param e     the entry
+ */
+static void doomed_report(const fm_tree_t *here, const fm_entry_t *e)
+{
+    s.doomed_report[0] = '\0';
+    if (e->is_dir) {
+        return;
+    }
+    char report[FM_NAME_BUF];
+    log_name_report_of(report, sizeof(report), e->name);
+    if (report[0] != '\0' && fm_tree_has_file(here, report) != FM_HAS_NO) {
+        snprintf(s.doomed_report, sizeof(s.doomed_report), "%s", report);
+    }
+}
+
 void fs_foot(fs_foot_t b)
 {
     fs_read_bench();
@@ -801,6 +825,7 @@ void fs_foot(fs_foot_t b)
     case FS_DELETE:
         s.doomed = *e;
         s.doomed_pane = s.active;
+        doomed_report(here, e);
         fs_quiet();
         s.view = FILES_VIEW_DELETE;
         break;

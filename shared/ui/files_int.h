@@ -120,7 +120,9 @@
 #define FOOT_W       118        /**< A button's width but RESCAN's. */
 #define FOOT_W_FIRST 140        /**< RESCAN's width, the first button. */
 #define FOOT_GAP     6          /**< Between two buttons. */
-#define FOOT_PAD     6          /**< Room kept at each side of a label. */
+/** @brief Room kept at each side of a label, px: the German AKTUALISIEREN
+ *         (130px) and VERSCHIEBEN (110px) keep the 10 x 20 face. */
+#define FOOT_PAD     4
 #define FOOT_N       8          /**< The buttons. */
 /** @brief Footer button @p i's left edge: x 8 for the first, then 146px
  *         on and 124px a button after it. */
@@ -311,6 +313,10 @@ typedef struct {
     /* The DELETE question: the entry it names, copied, and its pane. */
     fm_entry_t doomed;        /**< the entry                             */
     int doomed_pane;          /**< its pane                              */
+    /** @brief The run's report the question names: the one DELETE takes
+     *         along, when the pane's page shows it or cannot tell
+     *         (fm_tree_has_file()); "" for none. */
+    char doomed_report[FM_NAME_BUF];
 
     /* INFO: the entry, its folder, and what the card answered. */
     fm_entry_t info_entry;    /**< the entry                             */
