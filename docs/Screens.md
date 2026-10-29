@@ -2411,7 +2411,9 @@ Nine messages say what a card did to a run. Each appears on the band:
 | `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
 The first five mean there is no file to look for. The last four mean there is
-one and it stops early.
+one and it stops early. A failed write and a failed close of a run are an
+error: the bench goes to SAFE and the supply off
+([Safety, Errors](Safety.md#errors)).
 
 A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open

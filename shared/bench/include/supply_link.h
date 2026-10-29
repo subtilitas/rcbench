@@ -168,6 +168,9 @@ typedef struct {
                                   yet answered */
     bool     adopted;        /* on, mv, ma were taken from the page and
                                 not yet handed out                      */
+    bool     kept;           /**< the page's command left to the port
+                                  that holds it (supply_link_keep()),
+                                  until a read shows the port gone      */
 } supply_link_t;
 
 /**
@@ -217,6 +220,24 @@ void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma);
  * @param s The link state; nothing is done for NULL.
  */
 void supply_link_cut(supply_link_t *s);
+
+/**
+ * @brief An error that leaves the supply to the programming port that holds
+ *        it (error_sites_page_keeps()): this end asks what the page held at
+ *        the last read, so no OFF of the panel's is written over the
+ *        port's command, and an ON the settings' refused wiring would
+ *        refuse is not refused again while the port holds the page.
+ *
+ * Handed out as the port's command (supply_link_adopted()).  For an IOmcu
+ * older than link 4.31, which cuts a write to the servo's memory at the
+ * panel's OFF.
+ *
+ * @param s The link state; nothing is done for NULL.
+ * @return true when the last read showed a port holding the page and the
+ *         page's command was known, with no OFF owed by supply_link_cut();
+ *         false otherwise, and nothing changed.
+ */
+bool supply_link_keep(supply_link_t *s);
 
 /**
  * @brief Restart the PD mini (protocol 4.4): written once the page's output is
