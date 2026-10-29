@@ -76,8 +76,7 @@ history is in git.
   the ESP32-P4's L1 instruction cache (16KB, 4-way, 64-byte lines) instead
   of the runner CPU's, the bench draws from a stack at a fixed offset
   within 64KB, and the 1-frame and 11-frame runs pass argvs of one length.
-  `--check-doc` compares every mode's fills exactly instead of to 2% or
-  100 fills, and the table holds CI's figures under the new model.
+  The table holds CI's figures under the new model.
 - Safety: the claim that the IOmcu acts on overcurrent, over-temperature
   and stall. Its fault bits for those are defined and set by nothing.
 - Hitec programmer: a D series servo swapped for another of the same

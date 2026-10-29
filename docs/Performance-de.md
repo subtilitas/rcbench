@@ -19,9 +19,9 @@ diese Fills, und die lassen sich auf dem Host exakt messen.
 Die Zeit eines Frames ist sein PSRAM-Traffic und seine Instruktionen, und
 welches von beiden einen Frame auf diesem Board begrenzt, ist nicht gemessen.
 Der eine Bildschirm mit Zahlen von beiden Seiten deutet auf die
-Instruktionen: SERVO > LIVE während eines Sweeps hat 2 427 Fills in der
-Tabelle, 303KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
-Board](#auf-dem-board)); als reiner Traffic wären das 19 bis 22MB/s. Die
+Instruktionen: SERVO > LIVE während eines Sweeps hat 2 430 Fills in der
+Tabelle, 304KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
+Board](#auf-dem-board)); als reiner Traffic wären das 19 bis 23MB/s. Die
 Fills halten die Seite des Traffics; `test_frame_work` hält die Seite der
 Instruktionen in Pixelbesuchen ([Regeln](#regeln)).
 
@@ -58,40 +58,40 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,784    1223 KiB
+frame                        9,785    1223 KiB
 frame-idle                       0       0 KiB
-held                         5,238     655 KiB
-sim                         13,473    1684 KiB
-throttle                    11,651    1456 KiB
-chrome                      51,500    6438 KiB
+held                         5,229     654 KiB
+sim                         13,470    1684 KiB
+throttle                    11,656    1457 KiB
+chrome                      51,503    6438 KiB
 overview                         0       0 KiB
-servo                        2,427     303 KiB
-servo-grip                     635      79 KiB
-servo-current                3,341     418 KiB
-supply                       9,818    1227 KiB
-supply-chrome               47,333    5917 KiB
+servo                        2,430     304 KiB
+servo-grip                     642      80 KiB
+servo-current                3,359     420 KiB
+supply                       9,814    1227 KiB
+supply-chrome               47,311    5914 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,564     196 KiB
-balance-sim                  3,122     390 KiB
-settings-sim                 3,115     389 KiB
-battery-sim                  3,123     390 KiB
-analyser-chrome             61,000    7625 KiB
-logs-chrome                 26,042    3255 KiB
-settings-chrome             37,553    4694 KiB
-settings-list-chrome        36,479    4560 KiB
-battery-chrome              58,171    7271 KiB
-balance-chrome              63,451    7931 KiB
-motor-stick-chrome          41,501    5188 KiB
+motor-stick                  1,568     196 KiB
+balance-sim                  3,112     389 KiB
+settings-sim                 3,105     388 KiB
+battery-sim                  3,114     389 KiB
+analyser-chrome             60,993    7624 KiB
+logs-chrome                 26,043    3255 KiB
+settings-chrome             37,549    4694 KiB
+settings-list-chrome        36,458    4557 KiB
+battery-chrome              58,174    7272 KiB
+balance-chrome              63,453    7932 KiB
+motor-stick-chrome          41,488    5186 KiB
 picker                           0       0 KiB
-picker-chrome               41,653    5207 KiB
+picker-chrome               41,631    5204 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,148    2768 KiB
-wifi-keys                   37,132    4642 KiB
+wifi-chrome                 22,151    2769 KiB
+wifi-keys                   37,137    4642 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
 hlines                         171      21 KiB
@@ -122,17 +122,21 @@ est. ms and est. fps: not measured
 | `vlines` | siebzehn senkrechte Linien über die volle Höhe |
 | `hlines` | dieselbe Pixelzahl als waagerechte Linien |
 
-Die Zahl ist exakt und wiederholt sich bei jedem Lauf: Das Werkzeug gibt
-cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU des
-Hosts übernommen wird, und der Bench zeichnet von einem Stack mit fester Lage
-innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
-nicht verschieben. Compiler, C-Bibliothek und valgrind prägen die Zahl
-weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners der CI
-(Continuous Integration), und
-eine Maschine mit anderen Versionen misst andere Zahlen.
-`frame_cost.py --check-doc` prüft die Fills jedes Modus exakt und schlägt auch
-fehl, wenn die Zeile, die die Rate des Panels und die Bandbreite nennt, vom
-Profil des Werkzeugs abweicht.
+Die Zahl wiederholt sich bei jedem Lauf desselben Stands exakt: Das Werkzeug
+gibt cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU
+des Hosts übernommen wird, und der Bench zeichnet von einem Stack mit fester
+Lage innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
+nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
+bei einem Fill Unterschied fehl. Compiler, C-Bibliothek und valgrind prägen
+die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
+der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
+andere Zahlen. Eine Änderung irgendwo in den gemessenen Quellen verschiebt die
+Adressen von Code und Daten und damit die Zahl auch von Modi, die sie nicht
+berührt: Eine Änderung an Texten und am Hitec-Code verschob 24 der 37 Modi um
+bis zu 22 Fills. `frame_cost.py --check-doc` prüft die Tabelle deshalb mit
+einer Toleranz von 2%, mindestens 100 Fills. Es schlägt auch fehl, wenn die
+Zeile, die die Rate des Panels und die Bandbreite nennt, vom Profil des
+Werkzeugs abweicht.
 
 ## Regeln
 
@@ -144,7 +148,7 @@ bewusste Ausgabe.
 
 **Das Chrome cachen.** Alles neu zu zeichnen kostet 22 000 bis 64 000 Fills,
 die `-chrome`-Modi, ein gecachter ruhiger Frame desselben Bildschirms keinen:
-61 000 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
+60 993 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
 ruhigen Frame. Jeder Bildschirm führt je Framebuffer eine
 Bitmaske dessen, was er schon gezeichnet hat; dafür ist das Argument
 `buffer_index` von `render()` da. Das Panel wechselt zwischen zwei Buffern;
@@ -163,7 +167,7 @@ danach nur noch: bei 800 x 480px mit 144 721 Instruktionen je Frame statt
 8 412 078. Die Zahl bei 1024 x 600px ist nicht gemessen.
 
 **Eine Zahl von Fills ist keine Zahl von Zyklen.** Die Tabelle oben misst
-Cache-Line-Fills, und das Watermark kostet davon nur 3 689, `sim` gegen
+Cache-Line-Fills, und das Watermark kostet davon nur 3 685, `sim` gegen
 `frame`: seine Zeit ist Arithmetik je Pixel, kein Traffic, und die Tabelle
 kann sie nicht zeigen. Wo die gemessene Frame-Zeit eines Modus
 über dem liegt, was seine Fills vorhersagen, erst Instruktionen zählen, dann der
@@ -240,7 +244,7 @@ lässt, nicht einen Frame, der das Panel verpasst:
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
-| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 564 Fills in der Tabelle oben |
+| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 568 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die zehn `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
 | `wifi-keys` | 42 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |

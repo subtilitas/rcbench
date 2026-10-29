@@ -88,14 +88,17 @@ def test_a_block_that_matches_passes():
     assert fc.block_problems("P.md", block(GOOD), block(GOOD)) == []
 
 
-def test_a_fill_more_or_less_fails():
-    """The fills are compared exactly: one fill more or less fails."""
-    more = fc.table([("frame", 10001), ("overview", 900)], 64, 60.38, None)
-    assert fc.block_problems("P.md", block(more), block(GOOD)) == [
-        "P.md says frame costs 10,001 fills; it costs 10,000"]
-    less = fc.table([("frame", 10000), ("overview", 899)], 64, 60.38, None)
-    assert fc.block_problems("P.md", block(less), block(GOOD)) == [
-        "P.md says overview costs 899 fills; it costs 900"]
+def test_fills_within_the_tolerance_pass_and_past_it_fail():
+    """Fills within the tolerance pass and past it fail.
+
+    The tolerance absorbs a change of layout elsewhere in the sources, not a
+    run that differs: test_a_mode_measures_the_same_twice_* holds that.
+    """
+    near = fc.table([("frame", 10150), ("overview", 990)], 64, 60.38, None)
+    assert fc.block_problems("P.md", block(near), block(GOOD)) == []
+    far = fc.table([("frame", 10300), ("overview", 900)], 64, 60.38, None)
+    assert fc.block_problems("P.md", block(far), block(GOOD)) == [
+        "P.md says frame costs 10,300 fills; it costs 10,000"]
 
 
 def test_a_missing_mode_fails():

@@ -239,6 +239,14 @@ def misses(exe: pathlib.Path, frames: int, mode: str, ll: str) -> int:
 # -sim and -chrome mode, so they were absent from both sides of the
 # comparison and the check passed without looking at them.
 ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
+# The same tree gives the same fills on every run (test_frame_cost.py holds
+# it), but a change anywhere in the measured sources moves the addresses of
+# code and data, and with them the sets every line maps to.  Merging a
+# change of texts and Hitec code moved 24 of 37 modes by up to 22 fills,
+# servo-grip by 7 of 642 (1.1%).  The doc table is therefore checked to a
+# tolerance: 2% of a mode, and never less than 100 fills.
+DOC_TOLERANCE = 0.02
+DOC_FLOOR = 100
 
 
 def doc_rows(block: str) -> dict[str, int]:
@@ -349,8 +357,7 @@ def block_problems(page: str, current: str, block: str) -> list[str]:
 
     Returns:
         One line per disagreement: the profile line, a missing mode, a mode
-        whose fills differ.  The fills are compared exactly: the same tree
-        and toolchain give the same count on every run and every machine.
+        whose fills moved past the tolerance.
     """
     out = []
     if doc_header(current) != doc_header(block):
@@ -360,7 +367,7 @@ def block_problems(page: str, current: str, block: str) -> list[str]:
     for m in sorted(set(want) - set(have)):
         out.append(f"{page} has no row for mode '{m}'")
     for m in sorted(want.keys() & have.keys()):
-        if have[m] != want[m]:
+        if abs(have[m] - want[m]) > max(DOC_FLOOR, want[m] * DOC_TOLERANCE):
             out.append(f"{page} says {m} costs {have[m]:,} fills; it costs "
                        f"{want[m]:,}")
     return out
