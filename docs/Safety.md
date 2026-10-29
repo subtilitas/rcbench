@@ -112,7 +112,7 @@ either goes.
 | STOP | no pulse within 150ms | cut | off | the panel, then the IOmcu |
 | A run's meter or supply fails (`no INA3221 window for 0.2s` and the other errors in [Servo, What ends a run](Servo.md#what-ends-a-run)) | SAFE | none open: a run is ARMED | off | the SERVO screen |
 | A session cut by the link or the heartbeat | as in the rows above | transaction cut | off, after a frame on the wire, 12ms at most | the IOmcu |
-| A card write fails during a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
+| A card write fails during a run, or the final commit or close of the run log or of the automatic test's CSV (comma-separated values) file after it, once a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
 | An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`; the IOmcu for the write |
 | A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
@@ -130,9 +130,31 @@ The control task applies it where it finds an error through
 
 The rows above are an IOmcu of link 4.31 or later. With an older IOmcu a
 programming port that holds the supply keeps it through an error the panel
-finds: the panel sends no OFF, since that IOmcu would cut a write to the
-servo's memory in the middle. The heartbeat or the link going still cuts
-it, and so do the panel's own supply trips.
+finds: the panel asks DISARM and sends no OFF, since that IOmcu would cut a
+write to the servo's memory in the middle (`error_sites_keeps()`). That
+covers every error above that the panel finds, among them a supply that
+stops answering or gives no reading, an ON taken across lost touch events,
+and an ON the SUPPLY page refuses while a port's ON is on it. Still off,
+whoever holds the supply:
+
+- the heartbeat or the link going: the IOmcu cuts it;
+- the panel's own supply trips, CURRENT TRIP and VOLTAGE TRIP: the panel
+  switches the output off first (`error_sites_cut()`);
+- the PD mini's own protection and a sagging input: the module or the
+  IOmcu has switched the output off already, and the panel follows
+  (`error_sites_page_keeps()`). An ON the page let go is followed off the
+  same way; the page lets an ON go only with no port holding it.
+
+A port holds the PD mini's output only. The panel's model has no port on
+it, and an error switches it off. A supply that stops answering or gives
+no reading with no port holding it is switched off, so that it does not
+come back on by itself when it answers again. With a port keeping it, the
+fault is acted on and named once while it stands, again when it turns
+into the other fault, and once more when the port lets go, which switches
+the output off. An ON the page refuses for a wiring the settings name and
+the page refused is the port's again while the port holds the page
+(`supply_link_keep()`); when the port lets go, the ON is refused and
+switched off.
 
 ### A programming port's supply
 
@@ -212,6 +234,11 @@ Current limitations:
   defined and set by nothing.
 - The alerts name the error and do not say that the bench switched to SAFE;
   the band shows SAFE.
+- With an IOmcu older than 4.31, a supply a port keeps through a supply
+  that stopped answering or gives no reading stays on until the port lets
+  go. The panel has no valid reading of it meanwhile, so CURRENT TRIP and
+  VOLTAGE TRIP do not act on it; the PD mini's own protection and the
+  IOmcu's cut for a sagging input do.
 
 ### Hardware limits
 

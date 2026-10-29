@@ -121,7 +121,7 @@ IOmcu handelt selbst, wenn einer der beiden ausfällt.
 | STOP | kein Puls binnen 150ms | abgebrochen | aus | das Panel, dann der IOmcu |
 | Messgerät oder Netzteil eines Laufs fällt aus (`0.2s kein INA3221-Fenster` und die anderen Fehler in [Servo, Was einen Lauf beendet](Servo-de.md#was-einen-lauf-beendet)) | SAFE | keine offen: ein Lauf ist ARMED | aus | der SERVO-Bildschirm |
 | Eine Sitzung, die der Link oder der Heartbeat abbricht | wie in den Zeilen oben | Transaktion abgebrochen | aus, nach einem Frame auf der Leitung, höchstens 12ms | der IOmcu |
-| Ein Schreiben auf die Karte scheitert während eines Laufs | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben ([unten](#die-versorgung-eines-programmierports)) | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel (`card_faults_follow()`), der IOmcu für das Schreiben |
+| Ein Schreiben auf die Karte scheitert während eines Laufs, oder das letzte Festschreiben oder Schließen des Lauf-Logs oder der CSV-Datei (comma-separated values) des automatischen Tests danach, einmal je Lauf | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben ([unten](#die-versorgung-eines-programmierports)) | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel (`card_faults_follow()`), der IOmcu für das Schreiben |
 | Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, der IOmcu für das Schreiben |
 | Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms; der IOmcu für das Schreiben |
 | Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
@@ -141,10 +141,34 @@ findet, über `shared/safety/error_sites.c` an, getestet in
 
 Die Zeilen oben gelten für einen IOmcu ab Link 4.31. Mit einem älteren
 IOmcu behält ein Programmierport, der das Netzteil hält, es bei einem
-Fehler, den das Panel findet: das Panel sendet kein OFF, weil dieser IOmcu
-ein Schreiben in den Speicher des Servos mittendrin abbrechen würde. Ein
-verlorener Heartbeat oder Link bricht es weiterhin ab, ebenso die eigenen
-Abschaltschwellen des Panels für das Netzteil.
+Fehler, den das Panel findet: das Panel fordert DISARM an und sendet kein
+OFF, weil dieser IOmcu ein Schreiben in den Speicher des Servos mittendrin
+abbrechen würde (`error_sites_keeps()`). Das gilt für jeden Fehler oben,
+den das Panel findet, darunter ein Netzteil, das nicht antwortet oder
+keinen Messwert liefert, ein ON über verlorene Touch-Ereignisse hinweg und
+ein ON, das die Page SUPPLY abweist, während das ON eines Ports auf ihr
+steht. Weiterhin aus, gleich wer das Netzteil hält:
+
+- ein verlorener Heartbeat oder Link: der IOmcu schaltet ab;
+- die eigenen Abschaltschwellen des Panels für das Netzteil, ÜBERSTROM und
+  ÜBERSPANNUNG: das Panel schaltet den Ausgang zuerst aus
+  (`error_sites_cut()`);
+- der eigene Schutz des PD mini und ein absinkender Eingang: das Modul oder
+  der IOmcu hat den Ausgang schon ausgeschaltet, und das Panel folgt
+  (`error_sites_page_keeps()`). Einem ON, das die Page losgelassen hat,
+  folgt es ebenso; die Page lässt ein ON nur los, wenn kein Port sie hält.
+
+Ein Port hält nur den Ausgang des PD mini. Auf dem Modell des Panels liegt
+kein Port, und ein Fehler schaltet es aus. Ein Netzteil, das nicht
+antwortet oder keinen Messwert liefert und das kein Port hält, wird
+ausgeschaltet, damit es nicht von selbst wieder angeht, wenn es wieder
+antwortet. Behält ein Port es, wird die Störung einmal behandelt und
+genannt, solange sie besteht, wieder, wenn sie in die andere Störung
+übergeht, und noch einmal, wenn der Port loslässt, was den Ausgang
+ausschaltet. Ein ON, das die Page wegen einer Verdrahtung abweist, die die
+Einstellungen nennen und die die Page abgewiesen hat, gehört wieder dem
+Port, solange er die Page hält (`supply_link_keep()`); lässt der Port los,
+wird das ON abgewiesen und ausgeschaltet.
 
 ### Die Versorgung eines Programmierports
 
@@ -240,6 +264,12 @@ Aktuelle Einschränkungen:
   `LINK_FAULT_STALL`) sind definiert und werden von nichts gesetzt.
 - Die Meldungen nennen den Fehler und sagen nicht, dass der Prüfstand auf
   SAFE geschaltet hat; die Leiste zeigt SAFE.
+- Mit einem IOmcu älter als 4.31 bleibt ein Netzteil, das ein Port über
+  eine fehlende Antwort oder einen fehlenden Messwert hinweg behält, an,
+  bis der Port loslässt. Das Panel hat währenddessen keinen gültigen
+  Messwert, daher greifen ÜBERSTROM und ÜBERSPANNUNG nicht; der eigene
+  Schutz des PD mini und die Abschaltung des IOmcu für einen absinkenden
+  Eingang greifen.
 
 ### Grenzen der Hardware
 
