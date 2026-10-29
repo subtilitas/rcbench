@@ -8078,6 +8078,12 @@ UI_WEB_TEXT(P_API_CODE,
 UI_WEB_TEXT(P_API_REQUEST,
     "The panel does not understand the request.",
     "Das Panel versteht die Anfrage nicht.")
+UI_WEB_TEXT(P_API_BODY,
+    "A read carries no body.",
+    "Eine Leseanfrage hat keinen Inhalt.")
+UI_WEB_TEXT(P_API_HOST,
+    "Open the panel by its name or its address.",
+    "Das Panel über seinen Namen oder seine Adresse öffnen.")
 /* The file manager on the page (wa_app.c, app.js); its other words are
  * FILES' own UI_TEXT entries, so a button reads as on the panel. */
 UI_WEB_TEXT(P_FM_UP,

@@ -132,6 +132,33 @@ TEST_CASE(every_core_answer_has_a_reason_word_status_and_texts)
     CHECK_EQ(wa_api_http((wa_api_err_t)-1), 500u);
 }
 
+/* The guard's refusals of a read (wa_guard.h) are the API's own reasons,
+ * with the guard's status, so the file API answers them in JSON. */
+TEST_CASE(a_guard_refusal_is_a_reason_with_the_guards_status)
+{
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_OK), WA_API_OK);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BODY), WA_API_BODY);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_HOST), WA_API_HOST);
+    CHECK_STR_EQ(wa_api_status_line(WA_API_BODY),
+                 wa_guard_status(WA_GUARD_BODY));
+    CHECK_STR_EQ(wa_api_status_line(WA_API_HOST),
+                 wa_guard_status(WA_GUARD_HOST));
+    CHECK_STR_EQ(wa_api_status_line(WA_API_HOST), "421 Misdirected Request");
+    /* A write's refusals never reach a read: a request the API does not
+     * take. */
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG), WA_API_REQUEST);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_ORIGIN), WA_API_REQUEST);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_UPLOAD), WA_API_REQUEST);
+    CHECK_EQ(wa_api_of_guard((wa_guard_t)-1), WA_API_REQUEST);
+    json_begin();
+    wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_BODY), false);
+    CHECK_STR_EQ(json_end(), "{\"error\":\"BODY\",\"text\":"
+                             "\"A read carries no body.\"}");
+    json_begin();
+    wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_HOST), true);
+    CHECK(has(json_end(), "{\"error\":\"HOST\",\"text\":\"Das Panel"));
+}
+
 TEST_CASE(a_refusal_is_its_word_and_its_text_in_json)
 {
     json_begin();
@@ -515,6 +542,7 @@ int main(void)
     (void)setenv("TZ", "UTC0", 1);
     tzset();
     RUN(every_core_answer_has_a_reason_word_status_and_texts);
+    RUN(a_guard_refusal_is_a_reason_with_the_guards_status);
     RUN(a_refusal_is_its_word_and_its_text_in_json);
     RUN(the_status_says_the_card_and_why_writes_are_closed);
     RUN(the_root_lists_folders_first_with_kind_place_and_busy);
