@@ -5609,6 +5609,11 @@ UI_TEXT(UPD_CU_FAILED, 0,
 UI_TEXT(UPD_CU_USB, 0,
     "No update over CAN. Install firmware once via USB.",
     "Kein Update über CAN. Firmware einmal über USB installieren.")
+/* UPDATES' IOmcu section: the IOmcu reports a board (LINK_ID_HARDWARE)
+ * this panel build carries no IOmcu image for. */
+UI_TEXT(UPD_CU_NO_BOARD, 0,
+    "No IOmcu image for this board in this panel build.",
+    "Kein IOmcu-Image für dieses Board in diesem Panel-Build.")
 UI_TEXT(UPD_CU_SAME, 0,
     "IOmcu runs the build this panel carries.",
     "Der IOmcu nutzt den Build dieses Panels.")

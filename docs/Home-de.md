@@ -37,6 +37,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 
 | Seite | Inhalt |
 | --- | --- |
+| [Der rbmod-Carrier](Carrier-de.md) | Pins, Stecker, Versorgung und Nacharbeit Rev 1 der Trägerplatine |
 | [Der Link](Link-de.md) | CAN-Verkabelung, Verhalten bei Ausfall, das Page-Protokoll |
 | [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) | Das Drahtprotokoll des Programmierports für Servos von KST und Chaservo |
 | [Der Programmierport für Servos von Hitec](LinkHitec-de.md) | Das Drahtprotokoll des Programmierports für Servos von Hitec |

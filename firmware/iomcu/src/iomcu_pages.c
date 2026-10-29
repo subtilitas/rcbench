@@ -12,6 +12,8 @@
 #include <string.h>
 
 #include "iomcu.h"
+#include "board_fix.h"
+#include "iomcu_pins.h"
 
 #include "sense_limit.h"
 #include "sense_map.h"
@@ -350,6 +352,11 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
+    /* On a board with soldered pins each port keeps its pin and FUNC NONE. */
+    if (!board_fix_write_ok(outbind_roles(IOMCU_BOARD_ID), LINK_PAGE_PROG,
+                            off, n, in)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     sense_sync();
     const prog_port_t was = s_prog;
     uint16_t kept_was[PROG_PORT_KEPT_COUNT + 1u];
@@ -443,6 +450,11 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     /* The reservation as of core 1's last tick: a bus that moved gives its
      * old pins back once core 1 has let them go. */
     sense_sync();
+    /* On a board with soldered pins a driven slot sits on a servo output,
+     * armed or not. */
+    if (!board_fix_slots_ok(outbind_roles(IOMCU_BOARD_ID), next)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* No slot changes under an armed bank, and the binding in force,
      * written again, is taken without binding anything anew. */
     if (bank_armed(s)) {

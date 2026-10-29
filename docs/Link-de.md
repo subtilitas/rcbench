@@ -995,7 +995,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 
 | Page | Name | Zugriff | Register |
 | ---: | --- | --- | --- |
-| 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Hardware-Revision, Capabilities-Bitmap |
+| 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Board (1 das von Hand verdrahtete RP2350-CAN, 2 der rbmod-Carrier; [Boards mit verlöteten Pins](#boards-mit-verlöteten-pins)), Capabilities-Bitmap |
 | 0x01 | STATUS | lesen | 10 Register (seit 4.21; davor 8): Zustand (0 idle, 1 armed, 2 failsafe), Fault-Bitmap, Uptime in ms (zwei Register), angenommene Anfragen (zwei Register), Empfangsfehlerzähler des XL2515, Sendefehlerzähler des XL2515, seit dem Einschalten abgelehnte CAN-Frames (zwei Register, niederwertige Hälfte zuerst; [Abgelehnte Frames](#abgelehnte-frames)) |
 | 0x10 | CONTROL | lesen, schreiben | ARM (0 schaltet auf SAFE; 1 schaltet jeden Ausgang auf ARMED; ab 4.18 schaltet 0x0002 die Throttle-Kanäle, 0x0004 die Surfaces und die SERVO-PWM-Programmierports, 0x0006 beide auf ARMED; ein DShot-Programmierport ist ein Throttle (seit 4.28); jeder andere Wert wird mit BAD_VALUE abgewiesen, [Ein Arm für eine Rolle](#ein-arm-für-eine-rolle)), THROTTLE (0..10000, Hundertstel Prozent, und kommandiert jeden Kanal, den CHAN_CFG als Throttle führt, und seit 4.28 jeden DShot-Programmierport), MOTOR_POLES, CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen). Register 0 bis 2 sind der Frame, der auf ARMED schaltet |
 | 0x11 | LIMITS | | deklariert, nicht bedient |
@@ -1400,6 +1400,62 @@ jeder Transaktion eines Abrufs, eine behaltene Zeichnung unter derselben
 Board-ID mit anderem Hash und eine Platine, die der Build des Panels nicht
 kennt. `test/tools/test_gen_board_drawing.py` hält den Generator an dieselben
 Regeln.
+
+### Boards mit verlöteten Pins
+
+Register 5 von IDENTITY nennt das Board, für das ein IOmcu-Image gebaut ist.
+Das Image wird je Board gebaut (CMake `IOMCU_BOARD`), der Wert steht also
+fest im Image.
+
+| Wert | Board | Image | Pins |
+|---|---|---|---|
+| 1 | RP2350-CAN-Modul, von Hand verdrahtet | `rcbench-iomcu.*` | am Panel gewählt |
+| 2 | rbmod-Carrier: dasselbe Modul auf einer Trägerplatine | `rcbench-iomcu-rbmod.*` | verlötet; jede Rolle auf einem Pin |
+
+Die Pins und Stecker des rbmod-Carriers stehen in [Der rbmod-Carrier](Carrier-de.md)
+(`shared/outputs/out_board_rbmod.c`).
+
+Auf Board 2 hält der IOmcu jede Rolle auf ihrem Pin:
+
+- CATALOGUE listet die 26 Header-Pins des Moduls. Die Pins der Rollen sind
+  frei; jeder andere Pin ist reserviert und wird jeder Page verweigert.
+- OUTPUTS und BIND_OUT: ein Slot mit Treiber liegt auf PWM01 bis PWM04
+  (GPIO 2, 4, 5 oder 1). Eine Page mit einem Slot mit Treiber auf einem
+  anderen Pin wird mit BAD_VALUE abgelehnt. Ein Slot mit Treiber NONE wird
+  nicht geprüft.
+- PROG: der PIN jedes Ports ist sein eigener Pin (Port 0 GPIO 13, Port 1
+  GPIO 14, Port 2 GPIO 15, Port 3 GPIO 0), und FUNC ist NONE. Ein
+  Programmierport trägt die Leitungsprotokolle von KST und HITEC und kein
+  Signalprotokoll. Ein PIN-Schreiben eines anderen Pins, auch
+  `LINK_PG_PIN_NONE`, und ein FUNC-Schreiben jeder anderen Funktion werden
+  mit BAD_VALUE abgelehnt.
+- TX und RX von SUPPLY sind GPIO 7 und GPIO 6, SDA und SCL von SENSE GPIO 16
+  und GPIO 17, der Pin von TONE GPIO 22. Ein Schreiben eines anderen Pins
+  wird mit BAD_VALUE abgelehnt. Die übrigen Register der Pages folgen ihren
+  eigenen Regeln.
+- Beim Start beginnt jede Rolle auf ihrem Pin, was auch immer der Flash
+  behalten hat. Ein Datensatz, den das Image des Moduls geschrieben hat,
+  behält seine Enables, Bereiche, Raten und Endpunkte. Ein Slot mit Treiber
+  auf einem Pin, der kein Servoausgang ist, wird geleert, und jeder Port
+  beginnt als NONE.
+
+GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben und low
+gehalten. EN von M7 hat einen Pull-down, die Versorgung der
+Programmierports ist also aus, solange der IOmcu GPIO 21 nicht treibt: im
+Reset, im BOOTSEL und ohne Versorgung.
+
+Aktuelle Einschränkung: dieses Release schaltet GPIO 21 nie ein, die
+Programmierports eines Carriers haben also keine Versorgung vom Carrier.
+
+Ein Panel bietet jedem IOmcu das Image des Boards an, das er meldet. Das
+Release-Panel trägt beide Images; ein Board, für das es kein Image trägt,
+bekommt kein Angebot, und UPDATES zeigt `Kein IOmcu-Image für dieses Board
+in diesem Panel-Build.`.
+
+`test/host/test_board_fix.c` hält den Katalog des Carriers gegen seine
+Rollen, die Pins jeder Page am Pin der Rolle und an den Pins daneben, einen
+Datensatz des Moduls auf den Pins des Carriers und das je Board gewählte
+Image.
 
 ### Abgelehnte Frames
 

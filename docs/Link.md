@@ -907,7 +907,7 @@ per 5s offer.
 
 | Page | Name | Access | Registers |
 | ---: | --- | --- | --- |
-| 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, hardware revision, capabilities bitmap |
+| 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, board (1 the RP2350-CAN wired by hand, 2 the rbmod carrier; [Boards with soldered pins](#boards-with-soldered-pins)), capabilities bitmap |
 | 0x01 | STATUS | read | 10 registers (since 4.21; 8 before it): state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter, CAN frames refused since power-up (two registers, low half first; [Refused frames](#refused-frames)) |
 | 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the SERVO PWM programming ports, 0x0006 both; a DShot programming port is a throttle (since 4.28); any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle and every DShot programming port, since 4.28), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
 | 0x11 | LIMITS | | declared, not served |
@@ -1283,6 +1283,55 @@ either half, a link lost at every transaction of a fetch, a kept drawing
 under the same board ID with another hash, and a board the panel's build
 does not know. `test/tools/test_gen_board_drawing.py` holds the generator to
 the same rules.
+
+### Boards with soldered pins
+
+IDENTITY register 5 names the board an IOmcu image is built for. The image
+is built per board (CMake `IOMCU_BOARD`), so the value is fixed in the
+image.
+
+| Value | Board | Image | Pins |
+|---|---|---|---|
+| 1 | RP2350-CAN module wired by hand | `rcbench-iomcu.*` | chosen on the panel |
+| 2 | rbmod carrier: the same module on a carrier board | `rcbench-iomcu-rbmod.*` | soldered; each role on one pin |
+
+The rbmod carrier's pins and connectors are in [The rbmod carrier](Carrier.md)
+(`shared/outputs/out_board_rbmod.c`).
+
+On board 2 the IOmcu holds every role to its pin:
+
+- CATALOGUE lists the module's 26 header pins. The role pins are free; every
+  other pin is reserved and refused to every page.
+- OUTPUTS and BIND_OUT: a slot with a driver sits on PWM01 to PWM04
+  (GPIO 2, 4, 5 or 1). A page with a driven slot on any other pin is refused
+  with BAD_VALUE. A slot with driver NONE is not judged.
+- PROG: each port's PIN is its own pin (port 0 GPIO 13, port 1 GPIO 14,
+  port 2 GPIO 15, port 3 GPIO 0), and FUNC is NONE. A programming port
+  carries the KST and HITEC wire protocols and no signal protocol. A PIN
+  write of another pin, `LINK_PG_PIN_NONE` included, and a FUNC write of
+  any other function are refused with BAD_VALUE.
+- SUPPLY TX and RX are GPIO 7 and GPIO 6, SENSE SDA and SCL GPIO 16 and
+  GPIO 17, TONE's pin GPIO 22. A write of another pin is refused with
+  BAD_VALUE. The other registers of the pages take their own rules.
+- At boot each role starts on its pin, whatever the flash kept. A record a
+  module's image wrote keeps its enables, ranges, rates and endpoints. A
+  slot with a driver on a pin that is no servo output is cleared, and every
+  port starts as NONE.
+
+GPIO 21 is driven low from the first statement of `main()` and kept low.
+M7's EN has a pull-down, so the programming ports' supply is off while the
+IOmcu does not drive GPIO 21: in reset, in BOOTSEL and unpowered.
+
+Current limitation: this release never switches GPIO 21 on, so the
+programming ports of a carrier have no supply from the carrier.
+
+A panel offers each IOmcu the image of the board it reports. The release
+panel carries both images; a board it carries no image for gets no offer,
+and UPDATES reads `No IOmcu image for this board in this panel build.`.
+
+`test/host/test_board_fix.c` holds the carrier's catalogue against its
+roles, each page's pins at the role pin and the pins either side of it, a
+module's record put on the carrier's pins, and the image chosen per board.
 
 ### Refused frames
 

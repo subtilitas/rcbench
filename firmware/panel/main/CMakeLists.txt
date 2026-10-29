@@ -45,3 +45,18 @@ if(RCBENCH_IOMCU_BIN)
                            RENAME_TO rcbench_iomcu_bin)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_IOMCU_IMAGE=1)
 endif()
+# And the rbmod carrier's IOmcu image, offered to an IOmcu that reports the
+# carrier on its identity page (main/panel_update.c):
+#   idf.py -D RCBENCH_IOMCU_RBMOD_BIN=<path>/rcbench-iomcu-rbmod.bin build
+if(RCBENCH_IOMCU_RBMOD_BIN)
+    get_filename_component(rcbench_iomcu_rbmod_bin "${RCBENCH_IOMCU_RBMOD_BIN}"
+                           ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+    if(NOT EXISTS "${rcbench_iomcu_rbmod_bin}")
+        message(FATAL_ERROR
+                "RCBENCH_IOMCU_RBMOD_BIN: ${rcbench_iomcu_rbmod_bin} not found")
+    endif()
+    target_add_binary_data(${COMPONENT_LIB} "${rcbench_iomcu_rbmod_bin}" BINARY
+                           RENAME_TO rcbench_iomcu_rbmod_bin)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE
+                               RCBENCH_IOMCU_RBMOD_IMAGE=1)
+endif()

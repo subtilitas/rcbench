@@ -1168,12 +1168,8 @@ firmware/panel/main/panel_supply.c: warning: Member supply_real_follow(void) (fu
 firmware/panel/main/panel_supply.c: warning: Member supply_step(float step_s) (function) of file panel_supply.c is not documented.
 firmware/panel/main/panel_supply.c: warning: Member supply_switch(bool on) (function) of file panel_supply.c is not documented.
 firmware/panel/main/panel_supply.c: warning: Member supply_watch_service(void) (function) of file panel_supply.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member CU_IMG (macro definition) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member CU_LEN (macro definition) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member CU_SLICE_MS (macro definition) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member TAG (variable) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member _binary_rcbench_iomcu_bin_end[] (variable) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member _binary_rcbench_iomcu_bin_start[] (variable) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member cu_alert_failed(void) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member cu_carried(void) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member cu_checked(void) (function) of file panel_update.c is not documented.
@@ -1845,7 +1841,6 @@ shared/esc/include/esc_stick.h: warning: Member stuck_told (variable) of struct 
 shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_det_t is not documented.
 shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_stick_t is not documented.
 shared/esc/include/esc_stick.h: warning: Member valid (variable) of struct esc_det_t is not documented.
-shared/fwupdate/fw_install.c: file has no @file block
 shared/fwupdate/fw_release.c: warning: Member fw_release_scan_init(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member fw_release_status(int status) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member hex(char ch) (function) of file fw_release.c is not documented.
