@@ -519,9 +519,12 @@ TEST_CASE(a_keep_needs_a_held_page_and_no_cut)
     fresh();
     sl.port_held = true;
     CHECK(!supply_link_keep(&sl));                 /* no read */
+    fresh();
     supply_link_wire(&sl, &k_wired);
     supply_link_command(&sl, true, 5000u, 1000u);
     pump(true);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
     supply_page_hold(&pg, true);
     pump(true);
     CHECK(supply_link_port_held(&sl));
@@ -532,8 +535,27 @@ TEST_CASE(a_keep_needs_a_held_page_and_no_cut)
     CHECK(!supply_link_keep(&sl));                 /* a cut owed */
     CHECK(!sl.kept);
     sl.off_owed = false;
+    /* What this end held before goes: the page's command as last read,
+     * with nothing owed against it. */
+    sl.on = false;
+    sl.page_on = false;
+    sl.mv = 1234u;
+    sl.ma = 321u;
+    sl.page_mv = 0xFFFFu;
+    sl.page_ma = 0xFFFFu;
     CHECK(supply_link_keep(&sl));
     CHECK(sl.kept);
+    bool on = false;
+    uint16_t mv = 0u;
+    uint16_t ma = 0u;
+    CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+    CHECK(on);
+    CHECK_EQ(mv, 5000u);
+    CHECK_EQ(ma, 1000u);
+    const unsigned before = writes;
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
     /* Gone with the link. */
     supply_link_lost(&sl);
     CHECK(!sl.kept);
