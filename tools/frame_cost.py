@@ -21,6 +21,14 @@ Numbers are per frame, taken as the difference between an 11-frame and a
 1-frame run so one-off setup (the initial memset, first-touch of the buffer)
 cancels out.
 
+The count is exact and repeatable: every cache cachegrind models has its
+geometry given here, none is taken from the host's CPU, the bench draws
+from a stack at a fixed phase whatever the environment and the paths, and
+the 1-frame and the 11-frame run pass argvs of one length.  The
+compiler, the C library and valgrind still shape it, so the docs carry the
+figures of CI's runner (ubuntu-26.04), and a machine with other versions of
+them measures other figures.
+
 What a fill costs in time is the effective bandwidth of the CPU's writes into
 PSRAM with the scan-out running.  The panel measures it at start-up: the
 console line ``PSRAM probe: ... <n> us each`` gives the time of one clear of
@@ -80,6 +88,12 @@ MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
 # The L1 data cache: MAX_L1_DCACHE_SIZE, MAX_L1_DCACHE_WAY and
 # MIN_L1_DCACHE_LINE_SIZE in ESP-IDF's esp32p4/rom/cache.h.
 D1 = "65536,2,64"
+# The L1 instruction cache: MAX_L1_ICACHE_SIZE, MAX_L1_ICACHE_WAY and
+# MIN_L1_ICACHE_LINE_SIZE there.  Its misses fill the L2 beside the data's,
+# so it moves the count.  cachegrind takes a geometry it is not given from
+# the host's CPU, and the runners of one image run on more than one CPU
+# model: every cache the model has is given here.
+I1 = "16384,4,64"
 # The L2 cache's ways (MAX_L2_CACHE_WAY there); its size and line come from
 # sdkconfig.defaults, ESP-IDF's defaults where it sets none.
 L2_WAYS = 8
@@ -201,17 +215,17 @@ def misses(exe: pathlib.Path, frames: int, mode: str, ll: str) -> int:
     Returns:
         LLd misses of the run.
     """
-    # Invoked as ./bench_frame from its own directory rather than by absolute
-    # path: argv[0] lands on the stack, so its length shifts what the first
-    # cache lines hold, and a temporary directory name changes between runs.
-    # The environment lands on the stack too, and a CI runner's differs in
-    # length from run to run (its tokens and run numbers), which moved the
-    # count of single modes by up to 9%; the run gets one fixed variable.
+    # argv, the environment and the executable's path sit above the stack.
+    # bench_frame.c draws from a stack at a fixed phase, so their lengths do
+    # not move a frame's count.  The start-up's count still moves with them,
+    # and cancels only while the 1-frame and the 11-frame run start alike:
+    # the frame count is written in three digits, so both argvs have one
+    # length, and the run gets one fixed variable and a short argv[0].
     proc = subprocess.run(
         [shutil.which("valgrind") or "valgrind", "--tool=cachegrind",
-         "--cache-sim=yes", f"--D1={D1}", f"--LL={ll}",
+         "--cache-sim=yes", f"--I1={I1}", f"--D1={D1}", f"--LL={ll}",
          "--cachegrind-out-file=/dev/null",
-         "./" + exe.name, str(frames), mode],
+         "./" + exe.name, f"{frames:03d}", mode],
         cwd=exe.parent, capture_output=True, text=True, check=True,
         env={"LC_ALL": "C"},
     )
@@ -225,9 +239,12 @@ def misses(exe: pathlib.Path, frames: int, mode: str, ll: str) -> int:
 # -sim and -chrome mode, so they were absent from both sides of the
 # comparison and the check passed without looking at them.
 ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
-# Absolute fills depend on the machine (argv, environment and stack layout
-# land in the same cache), so the doc table is checked to a tolerance rather
-# than byte for byte: 2% of a mode, and never less than 100 fills.
+# The same tree gives the same fills on every run (test_frame_cost.py holds
+# it), but a change anywhere in the measured sources moves the addresses of
+# code and data, and with them the sets every line maps to.  Merging a
+# change of texts and Hitec code moved 24 of 37 modes by up to 22 fills,
+# servo-grip by 7 of 642 (1.1%).  The doc table is therefore checked to a
+# tolerance: 2% of a mode, and never less than 100 fills.
 DOC_TOLERANCE = 0.02
 DOC_FLOOR = 100
 
@@ -316,7 +333,10 @@ def splice_doc(doc: pathlib.Path, block: str, write: bool) -> int:
             return 0
         for p in problems:
             print(p, file=sys.stderr)
-        print("run tools/frame_cost.py --update-doc", file=sys.stderr)
+        print("the figures are CI's: take them from the log of the job "
+              "'Frame cost of every screen', or run tools/frame_cost.py "
+              "--update-doc with CI's compiler, C library and valgrind",
+              file=sys.stderr)
         return 1
     if current == block:
         print(f"{doc.name} frame-cost table is up to date")
