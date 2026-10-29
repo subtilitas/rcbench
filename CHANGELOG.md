@@ -96,6 +96,14 @@ history is in git.
 
 ### Fixed
 
+- An install whose build does not start showed no rolled-back banner: the
+  build before started again without `Panel firmware … failed to start.`
+  on the band. The restart note moves from LP (low-power) RAM, whose
+  retention ESP-IDF does not test on the ESP32-P4 and whose address follows
+  the build's layout, to one NVS (non-volatile storage) entry, which a
+  power cut keeps too. Each start states its check in one console line,
+  `start check: note …, last invalid slot …, result …`
+  ([Screens, Installing](docs/Screens.md#installing-panel-update)).
 - Errors with an IOmcu older than link 4.31: a programming port that holds
   the PD mini keeps it through every error the panel finds but the panel's
   own trips, as [Safety, Errors](docs/Safety.md#errors) says. A supply that
