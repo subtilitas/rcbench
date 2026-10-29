@@ -3668,10 +3668,7 @@ shared/ui/include/ui_theme.h: warning: Member UI_VOLT (macro definition) of file
 shared/ui/include/ui_theme.h: warning: Member UI_WARN (macro definition) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_color_id_t (enumeration) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_seg_hero(void) (function) of file ui_theme.h is not documented.
-shared/ui/include/ui_theme.h: warning: Member ui_theme_brightness(void) (function) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_theme_color(ui_color_id_t id) (function) of file ui_theme.h is not documented.
-shared/ui/include/ui_theme.h: warning: Member ui_theme_contrast(void) (function) of file ui_theme.h is not documented.
-shared/ui/include/ui_theme.h: warning: Member ui_theme_get(void) (function) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_theme_id_t (enumeration) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: parameters of member ui_theme_set are not documented
 shared/ui/include/ui_value_gate.h: file has no @file block
@@ -4633,8 +4630,6 @@ shared/ui/ui_text.c: warning: Member ui_setting_category(setting_cat_t cat) (fun
 shared/ui/ui_text.c: warning: Member ui_setting_help(setting_id_t id) (function) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member ui_setting_label(setting_id_t id) (function) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member ui_text_language(void) (function) of file ui_text.c is not documented.
-shared/ui/ui_theme.c: file has no @file block
-shared/ui/ui_theme.c: warning: Compound ui_rgb_t is not documented.
 shared/ui/ui_theme.c: warning: Member b (variable) of struct ui_rgb_t is not documented.
 shared/ui/ui_theme.c: warning: Member brightness (variable) of struct [struct].s is not documented.
 shared/ui/ui_theme.c: warning: Member built (variable) of struct [struct].s is not documented.
@@ -4809,7 +4804,6 @@ shared/webaccess/include/wa_page.h: warning: Member WA_URL_FILE (macro definitio
 shared/webaccess/include/wa_page.h: warning: Member WA_URL_UPDATE (macro definition) of file wa_page.h is not documented.
 shared/webaccess/include/wa_page.h: warning: Member WA_URL_ZIP (macro definition) of file wa_page.h is not documented.
 shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_code are not documented
-shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_main are not documented
 shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_upload_result are not documented
 shared/webaccess/include/wa_send.h: file has no @file block
 shared/webaccess/include/wa_send.h: warning: Compound wa_send_t is not documented.
@@ -4920,10 +4914,7 @@ shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_bytes(wa_fetch_t *f, ui
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_mdns.c: file has no @file block
-shared/webaccess/wa_page.c: warning: Member files(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_page.c: warning: Member firmware(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
-shared/webaccess/wa_page.c: warning: Member folder(wa_out_t *o, const wa_page_info_t *pi, const char *path) (function) of file wa_page.c is not documented.
-shared/webaccess/wa_page.c: warning: Member head(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_send.c: file has no @file block
 shared/webaccess/wa_text.c: warning: Member PUT(ch) (macro definition) of file wa_text.c is not documented.
 shared/webaccess/wa_text.c: warning: Member check_name(const char *s, size_t n) (function) of file wa_text.c is not documented.
