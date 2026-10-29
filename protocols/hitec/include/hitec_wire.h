@@ -109,7 +109,7 @@ uint32_t hitec_bits_ns(uint8_t family, uint32_t bits);
 #define HITEC_C_WRITE_EEPROM  0x62u   /**< address, value; reply `+ +` */
 #define HITEC_C_READ_RAM      0x63u   /**< address; reply value, `+` */
 #define HITEC_C_WRITE_RAM     0x64u   /**< address, value; reply `+ +` */
-#define HITEC_C_READ_POSITION 0x65u   /**< unused; reply high, low */
+#define HITEC_C_READ_POSITION 0x65u   /**< reply high, low */
 #define HITEC_C_MOVE          0x66u   /**< target high, low; reply `+ +` */
 #define HITEC_C_FIRST         0x67u   /**< the first command; reply value,
                                      *   `+` */
