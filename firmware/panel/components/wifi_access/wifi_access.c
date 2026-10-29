@@ -55,10 +55,10 @@
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
-#include "wa_zip.h"
 #include "wall_clock.h"
 #include "wifi_access_int.h"
 #include "wifi_files.h"
+#include "wifi_zip.h"
 
 static const char *TAG = "wifi";
 
@@ -470,6 +470,24 @@ wa_out_t *wifi_page_out(void) { return &b->out; }
 
 void wifi_page_info(wa_page_info_t *pi) { page_info(pi); }
 
+const wa_fs_t *wifi_page_card(void) { return &k_card; }
+
+uint8_t *wifi_page_io(size_t *cap)
+{
+    *cap = sizeof(b->io);
+    return b->io;
+}
+
+const char *wifi_page_name(void) { return s.name; }
+
+void wifi_page_traffic(void)
+{
+    lock();
+    wa_request_begin(&s.w, ms());
+    wa_request_end(&s.w, ms());
+    unlock();
+}
+
 static bool sink_chunk(void *ctx, const void *data, size_t n)
 {
     if (atomic_load(&s.abort)) {
@@ -726,16 +744,15 @@ static esp_err_t h_update(httpd_req_t *r)
     return answer_upload(r, e, &info, same, false);
 }
 
-/* Raw bytes, at most IO_CHUNK, of a response of known length (wifi_sock.h). */
-static wa_send_res_t raw_send(httpd_req_t *r, const void *data, size_t n)
+wa_send_res_t wifi_page_raw_send(httpd_req_t *r, const void *data, size_t n)
 {
     wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
     const wa_sink_t k = wifi_sock_sink(&c);
     return wa_sink_all(&k, data, (uint32_t)n);
 }
 
-static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
-                              const char *name)
+wa_send_res_t wifi_page_raw_head(httpd_req_t *r, uint64_t length,
+                                const char *name)
 {
     char *disp = b->disp;
     if (wa_disposition(disp, sizeof(b->disp), name) == 0u) {
@@ -749,7 +766,7 @@ static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
                            "Cache-Control: no-store\r\n\r\n",
                            (unsigned long long)length, disp);
     return (n > 0 && (size_t)n < sizeof(b->head))
-           ? raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
+           ? wifi_page_raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
 }
 
 static esp_err_t h_file(httpd_req_t *r)
@@ -795,7 +812,7 @@ static esp_err_t h_file(httpd_req_t *r)
         return refused(r, "404 Not Found");
     }
     const uint32_t t0 = ms();
-    wa_send_res_t res = raw_head(r, st.size, wa_basename(path));
+    wa_send_res_t res = wifi_page_raw_head(r, st.size, wa_basename(path));
     if (res == WA_SEND_DONE) {
         wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
         const wa_sink_t k = wifi_sock_sink(&c);
@@ -813,122 +830,6 @@ static esp_err_t h_file(httpd_req_t *r)
                         (unsigned long)(ms() - t0));
     return (res == WA_SEND_DONE) ? ESP_OK
                                  : wifi_sock_drop(httpd_req_to_sockfd(r));
-}
-
-/**
- * @brief The ZIP's read buffer, WA_ZIP_READ_BYTES of PSRAM aligned as the
- *        SDMMC (SD/MMC host) DMA wants a PSRAM buffer, so each read of a
- *        file goes from the card into it in one transfer and no bounce
- *        buffer of the driver's.
- * @return the buffer, or NULL without the PSRAM
- */
-static uint8_t *zip_read_buf(void)
-{
-    /* MALLOC_CAP_CACHE_ALIGNED: start and size on the PSRAM cache's line,
-     * as sd_host_check_buffer_alignment() asks of a DMA buffer. */
-    return heap_caps_malloc(WA_ZIP_READ_BYTES,
-                            MALLOC_CAP_SPIRAM | MALLOC_CAP_CACHE_ALIGNED);
-}
-
-/**
- * @brief GET /card.zip: the whole card as one ZIP archive, its length
- *        announced before the first byte.  Logs its end: the bytes sent of
- *        the length, the time, and for a failure the entry and the cause.
- * @param r the request
- * @return ESP_OK when the archive went out whole.  A failure part way sends
- *         the bytes wa_zip_next() made up to it, then resets the connection
- *         (ESP_FAIL): the browser has fewer bytes than announced and reports
- *         the download failed.
- */
-static esp_err_t h_zip(httpd_req_t *r)
-{
-    esp_err_t g = ESP_OK;
-    if (!req_guard(r, WA_REQ_READ, &g)) {
-        return g;
-    }
-    if (!req_begin()) {
-        return closed(r);
-    }
-    if (req_code(r) != WA_CODE_OK) {
-        req_end();
-        return refused(r, "403 Forbidden");
-    }
-    wa_zip_t *z = heap_caps_malloc(sizeof(*z), MALLOC_CAP_SPIRAM);
-    uint8_t *rbuf = zip_read_buf();
-    wa_zip_plan_t plan;
-    wa_zip_slot_t *slot = NULL;
-    esp_err_t res = ESP_FAIL;
-    /* One volume from the plan's sizes to the last file: held across the
-     * whole archive, as h_file() holds one file. */
-    const bool held = storage_hold();
-    if (z == NULL || rbuf == NULL || !held
-        || wa_zip_plan(&k_card, &plan) != WA_ZIP_OK) {
-        res = refused(r, (z == NULL || rbuf == NULL)
-                         ? "503 Service Unavailable" : "404 Not Found");
-    } else {
-        /* A slot an entry counted, and WA_ZIP_SPARE more for files added
-         * before wa_zip_begin() walks the card again. */
-        const uint64_t slots = plan.entries + WA_ZIP_SPARE;
-        slot = (slots <= SIZE_MAX / sizeof(*slot))
-               ? heap_caps_malloc((size_t)slots * sizeof(*slot),
-                                  MALLOC_CAP_SPIRAM)
-               : NULL;
-        const wa_zip_err_t be = (slot == NULL)
-                                ? WA_ZIP_MEMORY
-                                : wa_zip_begin(z, &k_card, slot, slots);
-        if (be != WA_ZIP_OK) {
-            res = refused(r, (be == WA_ZIP_NO_CARD) ? "404 Not Found"
-                                                    : "503 Service Unavailable");
-        } else {
-            wa_zip_set_read(z, rbuf, WA_ZIP_READ_BYTES);
-            char zname[WA_NAME_MAX + 8u];
-            snprintf(zname, sizeof(zname), "%s.zip", s.name);
-            const uint32_t t0 = ms();
-            uint64_t sent = 0u;
-            wa_send_res_t sres = raw_head(r, z->plan.bytes, zname);
-            bool ok = sres == WA_SEND_DONE;
-            while (ok) {
-                const int32_t got = wa_zip_next(z, b->io, sizeof(b->io));
-                if (got <= 0) {
-                    ok = (got == 0);
-                    break;
-                }
-                sres = raw_send(r, b->io, (size_t)got);
-                ok = (sres == WA_SEND_DONE);
-                if (ok) {
-                    sent += (uint64_t)got;
-                    lock();               /* a long download is traffic */
-                    wa_request_begin(&s.w, ms());
-                    wa_request_end(&s.w, ms());
-                    unlock();
-                }
-            }
-            /* The cause: the archive's own failure, with the entry the
-             * walk was at, or the send's. */
-            const bool zfail = (sres == WA_SEND_DONE && !ok);
-            ESP_LOG_LEVEL_LOCAL(ok ? ESP_LOG_INFO : ESP_LOG_WARN, TAG,
-                                "zip: %s%s%s, %llu of %llu B in %lu ms",
-                                zfail ? wa_zip_err_name(z->err)
-                                      : wa_send_res_name(sres),
-                                zfail ? " at " : "",
-                                zfail ? z->walk.path : "",
-                                (unsigned long long)sent,
-                                (unsigned long long)z->plan.bytes,
-                                (unsigned long)(ms() - t0));
-            if (!ok) {
-                wa_zip_end_early(z);
-            }
-            res = ok ? ESP_OK : wifi_sock_drop(httpd_req_to_sockfd(r));
-        }
-    }
-    heap_caps_free(slot);
-    heap_caps_free(rbuf);
-    heap_caps_free(z);
-    if (held) {
-        storage_release();
-    }
-    req_end();
-    return res;
 }
 
 static esp_err_t httpd_up(void)
@@ -952,7 +853,7 @@ static esp_err_t httpd_up(void)
         { .uri = "/",               .method = HTTP_GET,  .handler = h_root },
         { .uri = WA_URL_CODE,       .method = HTTP_POST, .handler = h_code },
         { .uri = WA_URL_UPDATE,     .method = HTTP_POST, .handler = h_update },
-        { .uri = WA_URL_ZIP,        .method = HTTP_GET,  .handler = h_zip },
+        { .uri = WA_URL_ZIP,        .method = HTTP_GET,  .handler = wifi_zip_get },
         { .uri = WA_URL_FILE "*",   .method = HTTP_GET,  .handler = h_file },
     };
     for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); ++i) {

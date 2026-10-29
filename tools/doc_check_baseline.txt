@@ -400,8 +400,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member pend (varia
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member poke(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member radio_up (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member rand32(void *ctx) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member raw_head(httpd_req_t *r, uint64_t length, const char *name) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member raw_send(httpd_req_t *r, const void *data, size_t n) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member refused(httpd_req_t *r, const char *status) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_begin(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_code(httpd_req_t *r) (function) of file wifi_access.c is not documented.

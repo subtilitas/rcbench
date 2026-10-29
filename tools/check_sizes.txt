@@ -33,7 +33,7 @@ test/host/test_link_pages.c | none | one register map
 
 # Modules left whole.
 shared/servo/servo_test.c | none | one state machine; 14 of its 24 statics cross every cut
-firmware/panel/components/wifi_access/wifi_access.c | 1771 +-100 | one state struct used 275 times; macros read by path; owner 2026-10-23: accepted as is, no split planned
+firmware/panel/components/wifi_access/wifi_access.c | 1643 +-100 | one state struct used 275 times; macros read by path; owner 2026-10-23: accepted as is, no split planned
 
 # Tools left whole.
 tools/check_docs.py | none | one tool

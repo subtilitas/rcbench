@@ -106,7 +106,7 @@ static void manifest_walk(fake_fs_t *fs, FILE *m, int node)
 static uint8_t g_buf[8192];
 
 /* The read buffer the archives below read through, as the panel's
- * h_zip() gives it (WA_ZIP_READ_BYTES); g_read 0 reads without one. */
+ * wifi_zip_get() gives it (WA_ZIP_READ_BYTES); g_read 0 reads without one. */
 static uint8_t g_rbuf[WA_ZIP_READ_BYTES];
 static uint32_t g_read = WA_ZIP_READ_BYTES;
 
