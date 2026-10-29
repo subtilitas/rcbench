@@ -11,7 +11,9 @@
  * writes, to SUPPLY_PAGE_WRITE_WAIT_MS after the OFF to the millisecond,
  * across the wrap of the clock at 2^32ms, and the port's ON refused until
  * it lets go; an OFF that finds a port's frame on the wire waits for the
- * frame's end, SUPPLY_PAGE_OFF_WAIT_MS at most; the port's view.
+ * frame's end, SUPPLY_PAGE_OFF_WAIT_MS at most; the port's view; a port
+ * gets the supply only after the panel's PANEL 1, which the heartbeat
+ * lost clears.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,10 +51,18 @@ static bool pass(bool beat, bool frame_out)
     return prog_supply_step(&pg, beat);
 }
 
+/* The panel writes PANEL = @p v. */
+static uint8_t declare(uint16_t v, bool beat)
+{
+    return prog_supply_write(&pg, LINK_PS_PANEL, 1u, &v, beat);
+}
+
+/* The page at its start, the panel's PANEL 1 written. */
 static void fresh(void)
 {
     prog_supply_init(&pg, PIN, PROG_SUPPLY_CARRIER_MV);
     g_ms = 1000u;
+    CHECK_EQ(declare(1u, true), 0u);
 }
 
 TEST_CASE(the_page_starts_off_with_its_pin_and_voltage)
@@ -120,6 +130,8 @@ TEST_CASE(the_panels_write_is_judged_at_its_limits)
     CHECK_EQ(prog_supply_write(&pg, LINK_PS_FLAGS, 1u, two, true),
              LINK_NACK_READ_ONLY);
     CHECK_EQ(prog_supply_write(&pg, LINK_PS_MV, 2u, two, true),
+             LINK_NACK_READ_ONLY);
+    CHECK_EQ(prog_supply_write(&pg, LINK_PS_PANEL, 2u, two, true),
              LINK_NACK_BAD_RANGE);
     CHECK_EQ(prog_supply_write(&pg, LINK_PS_OUTPUT, 1u, NULL, true),
              LINK_NACK_BAD_RANGE);
@@ -140,7 +152,9 @@ TEST_CASE(a_lost_heartbeat_or_link_switches_it_off_in_the_step)
     CHECK_EQ(reg(LINK_PS_OUTPUT), 0u);
     /* And stays off with the heartbeat back: nothing asks it on. */
     CHECK(!pass(true, false));
-    /* A port's ON the same: off at the next step without a heartbeat. */
+    /* A port's ON the same, after the panel's word again: off at the next
+     * step without a heartbeat. */
+    CHECK_EQ(declare(1u, true), 0u);
     CHECK(prog_supply_port_set(&pg, true, true));
     CHECK(pass(true, false));
     CHECK(!pass(false, false));
@@ -291,6 +305,41 @@ TEST_CASE(an_off_waits_for_a_ports_frame_to_end)
     CHECK(!pass(false, false));
 }
 
+TEST_CASE(a_port_gets_the_supply_only_after_the_panels_word)
+{
+    prog_supply_init(&pg, PIN, PROG_SUPPLY_CARRIER_MV);
+    g_ms = 1000u;
+    supply_port_view_t v;
+    /* A panel before 4.32 writes no PANEL: the port's ON is refused and the
+     * supply is offline to it; the panel's own OFF is taken. */
+    CHECK_EQ(reg(LINK_PS_PANEL), 0u);
+    CHECK(!prog_supply_port_set(&pg, true, true));
+    prog_supply_port_view(&pg, &v);
+    CHECK(!v.online);
+    CHECK(!pass(true, false));
+    CHECK_EQ(panel(0u, true), 0u);
+    /* Only 1, only with a live heartbeat. */
+    CHECK_EQ(declare(0u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(declare(2u, true), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(declare(1u, false), LINK_NACK_NOT_ARMED);
+    CHECK_EQ(reg(LINK_PS_PANEL), 0u);
+    CHECK_EQ(declare(1u, true), 0u);
+    CHECK_EQ(reg(LINK_PS_PANEL), 1u);
+    prog_supply_port_view(&pg, &v);
+    CHECK(v.online);
+    CHECK(prog_supply_port_set(&pg, true, true));
+    CHECK(pass(true, false));
+    /* The heartbeat lost: off, and the word gone with it. */
+    CHECK(!pass(false, false));
+    CHECK_EQ(reg(LINK_PS_PANEL), 0u);
+    CHECK(!prog_supply_port_set(&pg, true, true));
+    prog_supply_port_view(&pg, &v);
+    CHECK(!v.online);
+    CHECK_EQ(declare(1u, true), 0u);
+    CHECK(prog_supply_port_set(&pg, true, true));
+    CHECK(pass(true, false));
+}
+
 int main(void)
 {
     RUN(the_page_starts_off_with_its_pin_and_voltage);
@@ -300,5 +349,6 @@ int main(void)
     RUN(a_held_off_ends_at_the_writes_end_the_ports_off_or_a_lost_beat);
     RUN(the_write_bound_holds_across_the_clocks_wrap);
     RUN(an_off_waits_for_a_ports_frame_to_end);
+    RUN(a_port_gets_the_supply_only_after_the_panels_word);
     return test_summary("prog_supply");
 }

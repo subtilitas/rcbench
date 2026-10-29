@@ -631,13 +631,20 @@ enum {
  *             drives the supply on, bit 2 a programming port holds it,
  *             bit 3 the panel's OFF waits for a port's write.
  *     PIN     read only: the GPIO that switches it, LINK_PS_NO_PIN without.
- *     MV      read only: the voltage it gives, in mV, 0 without. */
+ *     MV      read only: the voltage it gives, in mV, 0 without.
+ *     PANEL   1 written alone: the panel knows the page.  Refused with
+ *             LINK_NACK_NOT_ARMED without a live heartbeat, LINK_NACK_BAD_VALUE
+ *             for any other value.  A programming port gets the supply only
+ *             while it reads 1; the heartbeat lost sets it 0.  A panel
+ *             before 4.32 never writes it, so its ports never get the
+ *             supply. */
 enum {
     LINK_PS_OUTPUT = 0,
-    LINK_PS_FLAGS  = 1,   /**< read only from here */
+    LINK_PS_FLAGS  = 1,   /**< read only from here to MV */
     LINK_PS_PIN    = 2,
     LINK_PS_MV     = 3,
-    LINK_PS_COUNT  = 4,
+    LINK_PS_PANEL  = 4,
+    LINK_PS_COUNT  = 5,
 };
 #define LINK_PS_FITTED 0x01u  /**< the board has the switch               */
 #define LINK_PS_ON     0x02u  /**< the pin drives the supply on           */

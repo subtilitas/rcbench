@@ -10,7 +10,10 @@
  * (error_sites.h), whatever it reads of the output; the IOmcu holds that
  * OFF for a port's write, SUPPLY_PAGE_WRITE_WAIT_MS at most.  An OFF that
  * gets no answer is written again at the next pass; one the IOmcu answers,
- * ACK or NACK, is done.
+ * ACK or NACK, is done.  The panel writes PANEL 1 whenever a read finds it
+ * 0 on a board with the switch: the IOmcu lets a programming port switch
+ * the supply on only after that write, and clears it when the heartbeat
+ * goes.
  *
  * Pure C, no ESP-IDF.  Control task only.
  *
@@ -52,6 +55,8 @@ typedef struct {
     bool     on;       /**< the last answered read: the pin drives on   */
     uint8_t  pin;      /**< the switching GPIO, as read                 */
     bool     owed;     /**< an OFF waits to be written                  */
+    bool     declared; /**< PANEL reads 1, or its write was answered
+                            since the last read                         */
     bool     read_once;/**< a read was made since the start            */
     uint32_t read_ms;  /**< when the last read was made                 */
 } prog_supply_link_t;
@@ -70,10 +75,11 @@ void prog_supply_link_init(prog_supply_link_t *l, bool page);
 void prog_supply_link_cut(prog_supply_link_t *l);
 
 /**
- * @brief The write owed, if any: OUTPUT 0.
+ * @brief The write owed, if any: OUTPUT 0 first, then PANEL 1 while a read
+ *        found PANEL 0 on a board with the switch.
  * @param l   the state
- * @param off receives the register, LINK_PS_OUTPUT
- * @param v   receives the value, 0
+ * @param off receives the register, LINK_PS_OUTPUT or LINK_PS_PANEL
+ * @param v   receives the value, 0 or 1
  * @return true when a write is owed
  */
 bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
@@ -81,7 +87,7 @@ bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
 
 /**
  * @brief How that write went: PROG_SUPPLY_LINK_ACK or a NACK reason ends
- *        it, PROG_SUPPLY_LINK_NO_ANSWER keeps it owed.
+ *        it until the next read, PROG_SUPPLY_LINK_NO_ANSWER keeps it owed.
  * @param l      the state
  * @param result the outcome
  */

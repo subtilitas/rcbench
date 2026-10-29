@@ -41,7 +41,8 @@ history is in git.
   start of `main()`.
 - Link 4.32, the PROG_SUPPLY page (0x39): the programming ports' own supply
   on a board that switches one, the rbmod carrier's GPIO 21 and its 5V buck
-  M7. The KST and Hitec programmers switch it for a session in place of the
+  M7. A port gets it only after the panel's write of register 4 (PANEL)
+  since the heartbeat last went, so a panel before 4.32 never powers it. The KST and Hitec programmers switch it for a session in place of the
   PD mini; the panel has no key for it. Every error writes its OFF, held
   for a write to the servo's memory 10000ms at most; a lost heartbeat or a
   silent link switches it off. SUPPLY shows `PROG PORTS 5V, GPIO 21: ON` or

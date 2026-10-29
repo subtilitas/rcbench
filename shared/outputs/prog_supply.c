@@ -35,6 +35,16 @@ uint8_t prog_supply_write(prog_supply_t *p, uint8_t off, uint8_t n,
     if (n == 0u) {
         return 0u;
     }
+    if (off == (uint8_t)LINK_PS_PANEL) {
+        if (in[0] != 1u) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        if (!beat_alive) {
+            return LINK_NACK_NOT_ARMED;
+        }
+        p->known = true;
+        return 0u;
+    }
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_PS_FLAGS) {
         return LINK_NACK_READ_ONLY;
     }
@@ -92,6 +102,9 @@ void prog_supply_read(const prog_supply_t *p, uint8_t off, uint8_t n,
             case LINK_PS_MV:
                 v = p->mv;
                 break;
+            case LINK_PS_PANEL:
+                v = p->known ? 1u : 0u;
+                break;
             default:
                 break;
             }
@@ -110,7 +123,7 @@ bool prog_supply_port_set(prog_supply_t *p, bool on, bool beat_alive)
         p->off_held = false;
         return true;
     }
-    if (!prog_supply_fitted(p) || p->sticky || !beat_alive) {
+    if (!prog_supply_fitted(p) || !p->known || p->sticky || !beat_alive) {
         return false;
     }
     p->output = true;
@@ -123,7 +136,7 @@ void prog_supply_port_view(const prog_supply_t *p, supply_port_view_t *out)
         return;
     }
     memset(out, 0, sizeof(*out));
-    if (!prog_supply_fitted(p)) {
+    if (!prog_supply_fitted(p) || !p->known) {
         return;
     }
     out->online   = true;
@@ -166,6 +179,7 @@ bool prog_supply_step(prog_supply_t *p, bool beat_alive)
     }
     if (!beat_alive) {
         p->output = false;
+        p->known  = false;
     }
     /* The panel's OFF held for a port's write: until the write ends, the
      * port lets go or the bound passes.  No hold without a heartbeat. */

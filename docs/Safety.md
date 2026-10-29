@@ -242,6 +242,10 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   IOmcu does not drive GPIO 21.
 - An ON from the panel is refused with NOT_ARMED without a live heartbeat
   and with BAD_VALUE while a port holds the supply.
+- A port switches it on only after the panel has written the page's
+  register 4 (PANEL) since the heartbeat last went. A panel before link
+  4.32, which knows neither this supply nor its gates, never writes it, so
+  its programmers never get the 5V.
 - A firmware install, an IOmcu update, a write to the panel's flash and
   the panel's Wi-Fi wait while the 5V is on, not read since the
   link came up or since an unanswered read, or held by a programmer's

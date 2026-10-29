@@ -13,7 +13,10 @@
  * refused until the port lets go.  A lost heartbeat or a silent link
  * switches it off at once, whoever holds it.  An OFF that finds a port's
  * frame on the wire waits for the frame's end, SUPPLY_PAGE_OFF_WAIT_MS at
- * most.  The supply gives a fixed voltage: a port's ON names none.
+ * most.  The supply gives a fixed voltage: a port's ON names none.  A
+ * port gets the supply only after the panel has written PANEL since the
+ * heartbeat last went: a panel before 4.32, which knows nothing of this
+ * supply, never lets a port switch it on.
  *
  * Pure C: prog_supply_step() says what the pin is to drive, and the IOmcu
  * drives it.
@@ -41,6 +44,8 @@ typedef struct {
     uint8_t  pin;        /**< the switching GPIO, LINK_PS_NO_PIN for none  */
     uint16_t mv;         /**< the voltage it gives, mV                     */
     bool     output;     /**< OUTPUT as asked                              */
+    bool     known;      /**< PANEL: the panel knows the page, written
+                              since the heartbeat last went               */
     bool     drive;      /**< what the pin drives after the last step      */
     bool     was_on;     /**< asked on at the last step                    */
     bool     held;       /**< a programming port holds the supply          */
@@ -77,9 +82,10 @@ bool prog_supply_fitted(const prog_supply_t *p);
  * @param in         the values
  * @param beat_alive whether the panel's heartbeat is live
  * @return 0 when taken; LINK_NACK_BAD_RANGE past the page or for NULL,
- *         LINK_NACK_READ_ONLY past OUTPUT, LINK_NACK_BAD_VALUE for a value
- *         over 1, an ON without the switch or under a port's hold,
- *         LINK_NACK_NOT_ARMED for an ON without a live heartbeat
+ *         LINK_NACK_READ_ONLY for FLAGS to MV, LINK_NACK_BAD_VALUE for an
+ *         OUTPUT over 1, an ON without the switch or under a port's hold,
+ *         a PANEL other than 1, LINK_NACK_NOT_ARMED for an ON or a PANEL
+ *         without a live heartbeat
  */
 uint8_t prog_supply_write(prog_supply_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, bool beat_alive);
@@ -98,8 +104,9 @@ void prog_supply_read(const prog_supply_t *p, uint8_t off, uint8_t n,
  * @brief A programming port's request, in place of the panel's OUTPUT.
  *
  * OFF is always taken and ends a held OFF.  ON is refused without the
- * switch, without a live heartbeat, and from the panel's OFF of a held
- * supply until the port lets go (prog_supply_hold()).
+ * switch, without a live heartbeat, before the panel has written PANEL,
+ * and from the panel's OFF of a held supply until the port lets go
+ * (prog_supply_hold()).
  *
  * @param p          the state
  * @param on         true for ON
@@ -110,8 +117,8 @@ bool prog_supply_port_set(prog_supply_t *p, bool on, bool beat_alive);
 
 /**
  * @brief The supply as a programming port sees it, in the SUPPLY page's
- *        shape: online with the switch, on as driven, set_mv the fixed
- *        voltage; no input read.
+ *        shape: online with the switch once the panel has written PANEL,
+ *        on as driven, set_mv the fixed voltage; no input read.
  * @param p   the state
  * @param out zeroed, then filled; nothing for NULL
  */
@@ -142,8 +149,8 @@ void prog_supply_port_frame(prog_supply_t *p, bool frame_out,
                             uint32_t now_ms);
 
 /**
- * @brief One pass: off without a heartbeat, the held OFF and the frame wait
- *        judged, and what the pin is to drive.
+ * @brief One pass: off and PANEL cleared without a heartbeat, the held OFF
+ *        and the frame wait judged, and what the pin is to drive.
  * @param p          the state
  * @param beat_alive whether the panel's heartbeat is live and the link
  *                   speaks

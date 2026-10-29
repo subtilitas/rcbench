@@ -271,6 +271,10 @@ der Page SUPPLY für einen Port:
   der IOmcu GPIO 21 nicht treibt.
 - Ein ON vom Panel wird ohne lebenden Heartbeat mit NOT_ARMED und mit
   BAD_VALUE abgelehnt, solange ein Port die Versorgung hält.
+- Ein Port schaltet sie nur ein, nachdem das Panel seit dem letzten
+  Verlust des Heartbeats das Register 4 der Page (PANEL) geschrieben hat.
+  Ein Panel vor Link 4.32, das weder diese Versorgung noch ihre Sperren
+  kennt, schreibt es nie, also bekommen seine Programmer die 5V nie.
 - Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
   Flash des Panels und das WLAN des Panels warten, solange die 5V
   an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort

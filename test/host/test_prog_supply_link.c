@@ -10,7 +10,8 @@
  * as read, NOT READ after an unanswered read of a fitted switch; the
  * ports' own supply as the programmers' supply, on the board's word before
  * the first read; and as live for the install and flash gates while on, not
- * read, or held by a programmer's port.
+ * read, or held by a programmer's port; PANEL 1 written after the OFF
+ * whenever a read finds it 0 on a board with the switch, once per read.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,11 +25,17 @@
 
 static prog_supply_link_t l;
 
-/* A read of a page with these flags, on GPIO 21. */
+/* A read of a page with these flags and PANEL @p panel, on GPIO 21. */
+static void read_page(uint16_t flags, uint16_t panel, uint32_t now)
+{
+    const uint16_t regs[LINK_PS_COUNT] = { 0u, flags, 21u, 5000u, panel };
+    prog_supply_link_read(&l, regs, now);
+}
+
+/* A read of a page with these flags, PANEL 1, on GPIO 21. */
 static void read_flags(uint16_t flags, uint32_t now)
 {
-    const uint16_t regs[LINK_PS_COUNT] = { 0u, flags, 21u, 5000u };
-    prog_supply_link_read(&l, regs, now);
+    read_page(flags, 1u, now);
 }
 
 TEST_CASE(an_iomcu_without_the_page_gets_nothing)
@@ -155,6 +162,45 @@ TEST_CASE(the_gates_count_it_live_until_read_off_and_free)
     CHECK(!prog_supply_link_live(&l, true, true));
 }
 
+TEST_CASE(the_panel_gives_its_word_when_a_read_finds_none)
+{
+    uint8_t off = 9u;
+    uint16_t v = 9u;
+    prog_supply_link_init(&l, true);
+    CHECK(!prog_supply_link_next(&l, &off, &v));    /* nothing read yet */
+    /* A board without the switch: no word. */
+    read_page(0u, 0u, 0u);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    /* The switch, PANEL 0: PANEL 1 is written. */
+    read_page(LINK_PS_FITTED, 0u, 0u);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_PANEL);
+    CHECK_EQ(v, 1u);
+    /* Unanswered: again; answered, ACK or NACK: not before the next read. */
+    prog_supply_link_written(&l, PROG_SUPPLY_LINK_NO_ANSWER);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    prog_supply_link_written(&l, (int)LINK_NACK_NOT_ARMED);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    read_page(LINK_PS_FITTED, 0u, 200u);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    read_page(LINK_PS_FITTED, 1u, 400u);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    /* An unanswered read keeps what was read. */
+    prog_supply_link_read(&l, NULL, 600u);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    /* The OFF an error owes goes first, then the word. */
+    read_page(LINK_PS_FITTED, 0u, 800u);
+    prog_supply_link_cut(&l);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 0u);
+    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_PANEL);
+    CHECK_EQ(v, 1u);
+}
+
 int main(void)
 {
     RUN(an_iomcu_without_the_page_gets_nothing);
@@ -163,5 +209,6 @@ int main(void)
     RUN(supply_shows_the_state_as_read);
     RUN(the_board_or_a_read_makes_the_switch_the_ports_supply);
     RUN(the_gates_count_it_live_until_read_off_and_free);
+    RUN(the_panel_gives_its_word_when_a_read_finds_none);
     return test_summary("prog_supply_link");
 }
