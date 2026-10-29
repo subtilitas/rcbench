@@ -4005,6 +4005,14 @@ der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
 ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
 Liste ist 28 Zeilen lang.
 
+Auf dem [rbmod-Carrier](Carrier-de.md) sind fünf Zeilen verlötete Pins:
+Sensor SDA 16, Sensor SCL 17, Tap pin 22, PD mini TX 7 und PD mini RX 6.
+Sie haben keine Tasten, öffnen kein Keypad und zeigen als Hilfezeile
+`Auf diesem Board verlötet. Hier keine Einstellung.`. Die gespeicherten
+Werte bleiben und gelten wieder auf einem von Hand verdrahteten Modul.
+
+![INTERFACES auf dem Carrier](img/de/setup-rbmod-iface.png)
+
 ![INTERFACES, die Strommonitore](img/de/setup-interfaces.png)
 
 Der IOmcu liest I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem
@@ -5419,6 +5427,37 @@ Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
+### Auf dem rbmod-Carrier
+
+Der [rbmod-Carrier](Carrier-de.md) verlötet jede Leitung auf ihren Pin,
+und am Panel wird kein Pin gewählt. Das Panel liest das Board aus
+IDENTITY-Register 5 am Link des IOmcu (Board 2).
+
+![OUTPUTS auf dem Carrier](img/de/outputs-rbmod.png)
+
+- Das Raster hat vier Zellen: PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1,
+  oben der Name, darunter der GPIO. Ein Tipp gibt dem Ausgang das gewählte
+  Protokoll. Slot n treibt PWM0(n+1); PWM01 ist Kanal 0.
+- Ein Protokoll belegt höchstens die 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
+- PWM02 und PWM03 sind PWM-Slice 2 und teilen eine Framerate. Ein
+  Flächenprotokoll und ein Gasprotokoll auf beiden zusammen werden
+  abgelehnt. Die Zelle zeigt `SLICE VON PWM02`, ein Tipp darauf
+  `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4`. DShot läuft auf
+  einer Zustandsmaschine des PIO (Programmable Input/Output) und wird
+  neben beiden angeboten.
+- Die Zeile unter dem Protokoll zählt gegen 4.
+
+![Ein Eintrag PROG PORT auf dem Carrier](img/de/outputs-rbmod-port.png)
+
+- Jeder Eintrag PROG PORT nennt seinen Pin, `PROGP01 AUF GPIO 13`. PIN
+  nimmt keinen Tipp und öffnet keine Pin-Auswahl.
+- FUNKTION zeigt `PROGRAMMIEREN` und nimmt keinen Tipp. Ein
+  Programmierport trägt die Programmer von KST und Hitec und kein
+  Signalprotokoll; FUNC bleibt NONE.
+- SERVO-TESTER und PORT-PWM werden nicht gezeichnet.
+- Die Zeile unter den Zeilen lautet
+  `NUR KST- UND HITEC-PROGRAMMER. SIGNALE: PWM01 BIS PWM04`.
+
 ### Die Übersicht: OFF
 
 Jeder Besuch von SETUP aus öffnet mit OFF gewählt; eine Zeile ZIEL öffnet
@@ -5500,6 +5539,7 @@ hinterlassen hat.
 ### Pin auswählen
 
 Hinter der Kachel PICK A PIN auf SETUP; das Home-Tag führt dorthin zurück.
+Auf dem [rbmod-Carrier](Carrier-de.md) ist die Kachel nicht gezeigt.
 Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
 wählen, und der Bildschirm bleibt.
 Dieselbe Bindung,

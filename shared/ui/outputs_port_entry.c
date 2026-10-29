@@ -217,9 +217,12 @@ void outputs_port_name(uint8_t port, char *buf, size_t cap)
 
 static int target(void) { return settings_get_int(SET_SERVO_TARGET); }
 
-/* A board that solders its pins (the rbmod carrier): each port is on its
- * own pin and carries the programmers only, so PIN and FUNCTION are shown
- * and not offered, and the tester's rows are not drawn. */
+/**
+ * @brief A board that solders its pins (the rbmod carrier): each port is on
+ *        its own pin and carries the programmers only, so PIN and FUNCTION
+ *        are shown and not offered, and the tester's rows are not drawn.
+ * @return true on a board with soldered roles
+ */
 static bool soldered(void) { return ui_board_roles() != NULL; }
 
 static bool known(void) { return port_view_has((uint8_t)p.port); }

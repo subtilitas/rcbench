@@ -31,6 +31,14 @@ history is in git.
   GPIO 21, the enable of the programming ports' 5V, is driven low from the
   start of `main()`. Current limitation: nothing switches it on yet, so the
   programming ports have no supply from the carrier.
+- The panel follows the board the IOmcu reports. On the rbmod carrier
+  OUTPUTS shows PWM01 to PWM04 as its four cells and refuses a surface and
+  a throttle protocol on PWM02 and PWM03 together, by name
+  (`PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`); the PROG PORT entries
+  name their pin and offer no pin, no function and no tester; INTERFACES
+  shows Sensor SDA and SCL, Tap pin and PD mini TX and RX at the carrier's
+  pins with no keys; PICK A PIN is not on SETUP
+  ([Screens, On the rbmod carrier](docs/Screens.md#on-the-rbmod-carrier)).
 - The panel carries the IOmcu images of both boards and offers each IOmcu
   the image of the board it reports. A board it carries no image for gets
   no offer, and UPDATES reads

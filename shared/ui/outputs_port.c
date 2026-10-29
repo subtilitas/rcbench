@@ -1,6 +1,7 @@
-/*
- * The OUTPUTS screen's PROG PORT entries: the IOmcu's programming ports as
- * outputs.  See outputs_screen.h.
+/**
+ * @file
+ * @brief The OUTPUTS screen's PROG PORT entries: the IOmcu's programming
+ *        ports as outputs.  See outputs_screen.h.
  *
  * One entry a port the IOmcu reports; outputs_port_entry.c draws the one
  * shown.  This file holds what the entries and PICK A PIN share: the
@@ -9,7 +10,8 @@
  *
  * The lines that name a PWM pin the IOmcu refuses beside a port's pin or a
  * bound PWM pin (outputs_clash_label(), outputs_clash_reason()) are here
- * too, for OUTPUTS and PICK A PIN alike.
+ * too, for OUTPUTS and PICK A PIN alike, and the role names of a board
+ * that solders its pins (outputs_role_name()).
  *
  * SPDX-License-Identifier: MIT
  */

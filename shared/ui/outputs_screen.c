@@ -393,8 +393,14 @@ static bool clear_offered(void)
     return s.read == BIND_READ_ODD && outputs_screen_port_shown() < 0;
 }
 
-/* The grid position of catalogue pin @p i: its index, or on a board that
- * solders its pins its servo output's place (outbind_cell_index()). */
+/**
+ * @brief The grid position of catalogue pin @p i: its index, or on a board
+ *        that solders its pins its servo output's place
+ *        (outbind_cell_index()).
+ * @param i catalogue index
+ * @return the grid position; @p i itself for a pin with no cell, which
+ *         no caller hands in (they walk the cells)
+ */
 static int cell_pos(int i)
 {
     const uint8_t n = outbind_cell_count(s.bind.board);
@@ -707,11 +713,14 @@ static gfx_color_t result_color(void)
     }
 }
 
-/* The binding can arrive from outside -- read off the wire, or restored --
- * so the index is never trusted to be one this build knows. */
-/* The pins protocol @p p can hold on @p b's board: its own cap and the
- * page's slots, and no more than the grid has cells (four on a board that
- * solders its pins). */
+/**
+ * @brief The pins protocol @p p can hold on @p b's board: its own cap and
+ *        the page's slots, and no more than the grid has cells (four on a
+ *        board that solders its pins).
+ * @param b the binding, for its board
+ * @param p the protocol
+ * @return the most pins @p p takes here
+ */
 static uint8_t pins_cap(const outbind_t *b, const outbind_proto_t *p)
 {
     uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
@@ -723,6 +732,8 @@ static uint8_t pins_cap(const outbind_t *b, const outbind_proto_t *p)
     return cap;
 }
 
+/* The binding can arrive from outside -- read off the wire, or restored --
+ * so the index is never trusted to be one this build knows. */
 static const outbind_proto_t *chosen_proto(void)
 {
     const uint8_t i = (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
