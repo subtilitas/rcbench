@@ -332,7 +332,10 @@ void svs_toggle_sweep(void)
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
-bool servo_screen_output_held(void) { return s.out_down && !s.out_press_on; }
+bool servo_screen_output_held(void)
+{
+    return (s.out_down && !s.out_press_on) || s.ask.open;
+}
 
 bool servo_screen_paused(void) { return s.paused; }
 

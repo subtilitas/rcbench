@@ -157,7 +157,10 @@ TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)
     CHECK(!supply_cmd(NULL));
     scr->render(&cv, 0);
     CHECK_EQ(fb[UI_MARGIN * W + UI_MARGIN], ui_theme_color(UI_C_DANGER));   /* the warning */
+    /* The HV warning before an ON counts as the hold does. */
+    CHECK(servo_screen_output_held());
     hold_apply(2.3f);
+    CHECK(!servo_screen_output_held());
     supply_cmd_t c;
     CHECK(supply_cmd(&c));
     CHECK(c.on);

@@ -320,7 +320,7 @@ points from before the session come back at the first read of the supply
 that shows no port holding it and the output off: at once where the session
 ends with the output off, at the next OFF after a LEAVE that leaves it on.
 A live output is never given them, nor one whose OUTPUT ON is being
-held. A set point changed after the port let
+held or whose HV warning stands on SERVO. A set point changed after the port let
 go, by a tap, a lowered limit or a servo test, stands, and the earlier ones
 are dropped.
 
