@@ -56,6 +56,8 @@
 #include "wa_walk.h"
 #include "wa_zip.h"
 #include "wall_clock.h"
+#include "wifi_access_int.h"
+#include "wifi_files.h"
 
 static const char *TAG = "wifi";
 
@@ -421,6 +423,29 @@ static void page_info(wa_page_info_t *pi)
     pi->slot = s.slot;
     pi->de = atomic_load(&s.de);
 }
+
+/* ------------------------------------------- lent to the file API */
+
+wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e)
+{
+    if (!req_guard(r, WA_REQ_READ, e)) {
+        return WIFI_PAGE_DONE;
+    }
+    if (!req_begin()) {
+        httpd_resp_set_status(r, "503 Service Unavailable");
+        *e = httpd_resp_sendstr(r, "");
+        return WIFI_PAGE_DONE;
+    }
+    return (req_code(r) == WA_CODE_OK) ? WIFI_PAGE_ANSWER : WIFI_PAGE_NO_CODE;
+}
+
+void wifi_page_end(void) { req_end(); }
+
+const atomic_bool *wifi_page_abort(void) { return &s.abort; }
+
+wa_out_t *wifi_page_out(void) { return &b->out; }
+
+void wifi_page_info(wa_page_info_t *pi) { page_info(pi); }
 
 static bool sink_chunk(void *ctx, const void *data, size_t n)
 {
@@ -855,7 +880,7 @@ static esp_err_t httpd_up(void)
     cfg.max_open_sockets = 4;
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
-    cfg.max_uri_handlers = 6;
+    cfg.max_uri_handlers = 6 + WIFI_FILES_URIS;
     cfg.recv_wait_timeout = HTTPD_WAIT_S;
     cfg.send_wait_timeout = HTTPD_WAIT_S;
     esp_err_t e = httpd_start(&s.httpd, &cfg);
@@ -873,6 +898,7 @@ static esp_err_t httpd_up(void)
     for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); ++i) {
         (void)httpd_register_uri_handler(s.httpd, &uris[i]);
     }
+    wifi_files_register(s.httpd);
     return ESP_OK;
 }
 
@@ -1584,6 +1610,8 @@ static void radio_down(void)
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
+    /* No request runs now: the file API's PSRAM goes. */
+    wifi_files_free();
     /* Before the interface goes: SNTP sends through it. */
     wifi_ntp_stop();
     if (s.radio_up) {

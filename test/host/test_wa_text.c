@@ -279,6 +279,35 @@ TEST_CASE(texts_are_escaped_for_a_javascript_string)
     CHECK_EQ(g_s.len, 0u);
 }
 
+TEST_CASE(texts_are_escaped_for_a_json_string)
+{
+    out_begin(-1);
+    wa_out_json(&g_o, "panel's \"q\" a\\b </x> &");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "panel's \\\"q\\\" a\\\\b </x> &");
+    /* Control characters as \u00HH: JSON knows no \x. */
+    out_begin(-1);
+    wa_out_json(&g_o, "a\nb\r\tc\x01\x1f\x7f");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "a\\u000ab\\u000d\\u0009c\\u0001\\u001f\\u007f");
+    /* UTF-8, U+2028 included, passes byte for byte. */
+    out_begin(-1);
+    wa_out_json(&g_o, "M\xc3\xbcller \xe2\x80\xa8 \xf0\x9f\x98\x80");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "M\xc3\xbcller \xe2\x80\xa8 \xf0\x9f\x98\x80");
+    /* A string that is not UTF-8: every byte from 0x80 up is U+FFFD, so a
+     * browser still parses the answer. */
+    out_begin(-1);
+    wa_out_json(&g_o, "a\xc3\xbc\xff" "b\x80");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "a\\ufffd\\ufffd\\ufffdb\\ufffd");
+    out_begin(-1);
+    wa_out_json(&g_o, "");
+    wa_out_json(&g_o, NULL);
+    CHECK(wa_out_flush(&g_o));
+    CHECK_EQ(g_s.len, 0u);
+}
+
 TEST_CASE(output_goes_in_pieces_and_stops_when_refused)
 {
     out_begin(-1);
@@ -442,6 +471,7 @@ int main(void)
     RUN(a_path_is_at_most_384_bytes);
     RUN(names_are_escaped_for_html_and_for_links);
     RUN(texts_are_escaped_for_a_javascript_string);
+    RUN(texts_are_escaped_for_a_json_string);
     RUN(output_goes_in_pieces_and_stops_when_refused);
     RUN(a_form_field_is_read_whole_or_not_at_all);
     RUN(a_cookie_is_read_by_its_whole_name);
