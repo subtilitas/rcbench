@@ -226,6 +226,18 @@ uint8_t text_buf_byte(const text_buf_t *tb, size_t pos);
 size_t text_buf_lines(const text_buf_t *tb);
 
 /**
+ * @brief Lines of the text as a viewer shows them: a line end at the
+ *        text's end starts no line of its own, and an empty text, a BOM
+ *        alone included, has none.  FILES' viewer (`LINE n OF m`) and the
+ *        file API's `X-Rcbench-Lines` both count so.
+ *
+ * @param tb The buffer.
+ * @return Lines: 2 for "a\nb\n" and for "a\nb", 1 for "\n", 0 for an
+ *         empty text and for NULL.
+ */
+size_t text_buf_lines_viewed(const text_buf_t *tb);
+
+/**
  * @brief Where line @p line starts.
  *
  * @param tb   The buffer.

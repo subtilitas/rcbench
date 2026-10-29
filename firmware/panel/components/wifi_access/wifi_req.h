@@ -37,6 +37,21 @@ const char *wifi_req_hdr(httpd_req_t *r, const char *key, char *out,
                          size_t cap);
 
 /**
+ * @brief wa_guard() over @p r, not answered: the Host, the body's size, a
+ *        write's Origin or Referer and the upload's header.  A refusal is
+ *        logged.  The caller answers it with the connection closed, as
+ *        wifi_req_guard() does; the file API answers in JSON (wifi_files.c).
+ *
+ * @param r     the request
+ * @param kind  what it is
+ * @param name  the panel's name, "rcbench-1A2B"
+ * @param bufs  the header buffers
+ * @return WA_GUARD_OK, or the first check that refuses it
+ */
+wa_guard_t wifi_req_check(httpd_req_t *r, wa_req_kind_t kind,
+                          const char *name, wifi_req_bufs_t *bufs);
+
+/**
  * @brief wa_guard() over @p r: the Host, the body's size, a write's Origin
  *        or Referer and the upload's header.
  *

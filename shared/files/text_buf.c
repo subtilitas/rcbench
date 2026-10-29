@@ -528,6 +528,15 @@ size_t text_buf_lines(const text_buf_t *tb)
     return (tb == NULL) ? 0u : tb->n_ends + 1u;
 }
 
+size_t text_buf_lines_viewed(const text_buf_t *tb)
+{
+    if (tb == NULL || tb->len == 0u) {
+        return 0u;
+    }
+    const size_t n = text_buf_lines(tb);
+    return (n > 1u && text_buf_line_len(tb, n - 1u) == 0u) ? n - 1u : n;
+}
+
 size_t text_buf_line_start(const text_buf_t *tb, size_t line)
 {
     if (tb == NULL) {

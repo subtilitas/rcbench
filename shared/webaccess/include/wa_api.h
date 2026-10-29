@@ -54,6 +54,7 @@
 #include "fm_io.h"
 #include "fm_req.h"
 #include "text_buf.h"
+#include "wa_guard.h"
 #include "wa_text.h"
 
 #ifdef __cplusplus
@@ -101,6 +102,8 @@ typedef enum {
     WA_API_MEMORY,         /**< 503: no PSRAM for the request            */
     WA_API_CODE,           /**< 403: no access code, or a wrong one      */
     WA_API_REQUEST,        /**< 400: a parameter the API does not take   */
+    WA_API_BODY,           /**< 400: a read that carries a body (guard)  */
+    WA_API_HOST,           /**< 421: a Host that is not the panel (guard) */
     WA_API_COUNT
 } wa_api_err_t;
 
@@ -172,6 +175,17 @@ void wa_api_set_logs(wa_api_t *api, const char *user_logs,
  *         WA_API_IO for a value outside fm_err_t
  */
 wa_api_err_t wa_api_of(fm_err_t e);
+
+/**
+ * @brief The API's reason for a refusal of the request guard (wa_guard.h),
+ *        so a read of the API refused there is answered in JSON as its
+ *        other refusals are.
+ * @param g  the guard's answer
+ * @return WA_API_OK for WA_GUARD_OK, WA_API_BODY and WA_API_HOST for the
+ *         two a read can meet, WA_API_REQUEST for the others, which only
+ *         a write meets
+ */
+wa_api_err_t wa_api_of_guard(wa_guard_t g);
 
 /**
  * @brief The reason word of @p e: "NOT_FOUND" and the like.

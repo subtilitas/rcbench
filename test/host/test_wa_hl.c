@@ -138,9 +138,11 @@ static void check_palette(const char *block, ui_theme_id_t theme)
 TEST_CASE(the_colours_are_the_viewers_in_both_palettes)
 {
     const char *html = page_with_hl(false);
-    const char *light = strstr(html, ":root{color-scheme:light dark;");
-    const char *dark = strstr(html, "@media (prefers-color-scheme:dark)"
-                                    "{:root{");
+    const char *light = strstr(html, ":root{--h-");
+    const char *dark = (light != NULL)
+                       ? strstr(light, "@media (prefers-color-scheme:dark)"
+                                       "{:root{--h-")
+                       : NULL;
     CHECK(light != NULL && dark != NULL && light < dark);
     if (light == NULL || dark == NULL) {
         return;
@@ -164,6 +166,152 @@ TEST_CASE(the_colours_are_the_viewers_in_both_palettes)
     CHECK_EQ(ui_theme_rgb24(UI_THEME_DARK, UI_C_COUNT), 0u);
     CHECK_EQ(text_view_class_rgb(UI_THEME_DARK, g_hl.dark, 3u), 3u);
     CHECK_EQ(text_view_class_rgb(UI_THEME_DARK, NULL, WA_HL_RGB), 0u);
+}
+
+/* Each class's rule names its own variable, and the data element lists
+ * the classes in the order of text_hl_class_t, by which app.js picks a
+ * span's rule: a class mapped to another's colour fails here. */
+TEST_CASE(every_class_is_drawn_in_its_own_colour)
+{
+    const char *html = page_with_hl(false);
+    char want[64];
+    for (size_t k = 0u; k < TEXT_HL_CLASSES; ++k) {
+        snprintf(want, sizeof(want), ".h-%s{color:var(--h-%s)}", k_css[k],
+                 k_css[k]);
+        if (strstr(html, want) == NULL) {
+            T_FAIL("no \"%s\"", want);
+        }
+    }
+    char cls[256] = "{\"cls\":[";
+    for (size_t k = 0u; k < TEXT_HL_CLASSES; ++k) {
+        snprintf(cls + strlen(cls), sizeof(cls) - strlen(cls), "%s\"%s\"",
+                 (k == 0u) ? "" : ",", k_css[k]);
+    }
+    strcat(cls, "]");
+    CHECK(strstr(html, cls) != NULL);
+    /* The label class, which the panel draws in TEXT_DIM: #84acca in the
+     * dark palette, #46586c in the light one. */
+    CHECK_EQ(k_role[TEXT_HL_LABEL], UI_C_TEXT_DIM);
+    CHECK(strstr(html, "--h-lb:#84acca;") != NULL);
+    CHECK(strstr(html, "--h-lb:#46586c;") != NULL);
+}
+
+/* The page's tokens and the panel's role each stands for. */
+static const struct {
+    const char *name;
+    ui_color_id_t role;
+} k_page_tokens[] = {
+    { "bg", UI_C_PANEL },       { "fg", UI_C_TEXT },
+    { "dim", UI_C_TEXT_DIM },   { "faint", UI_C_TEXT_FAINT },
+    { "ln", UI_C_EDGE },        { "hi", UI_C_ACCENT },
+    { "ac", UI_C_POWER },       { "warn", UI_C_WARN },
+};
+
+/* The block of the page's tokens that starts at @p from, up to its "}". */
+static void token_block(const char *from, char *out, size_t cap)
+{
+    out[0] = '\0';
+    if (from == NULL) {
+        return;
+    }
+    const char *end = strchr(from, '}');
+    const size_t n = (end != NULL) ? (size_t)(end - from) : 0u;
+    if (n < cap) {
+        memcpy(out, from, n);
+        out[n] = '\0';
+    }
+}
+
+/* Each token of @p block holds its role's colour in @p theme. */
+static void check_tokens(const char *block, ui_theme_id_t theme)
+{
+    char want[48];
+    for (size_t k = 0u; k < sizeof(k_page_tokens) / sizeof(k_page_tokens[0]); ++k) {
+        snprintf(want, sizeof(want), "--pg-%s:#%06lx", k_page_tokens[k].name,
+                 (unsigned long)ui_theme_rgb24(theme, k_page_tokens[k].role));
+        if (strstr(block, want) == NULL) {
+            T_FAIL("theme %d: no \"%s\"", (int)theme, want);
+        }
+    }
+    snprintf(want, sizeof(want), "--pg-sel:#%06lx33",
+             (unsigned long)ui_theme_rgb24(theme, UI_C_ACCENT));
+    CHECK(strstr(block, want) != NULL);
+}
+
+/* The style element of @p html, outside its ":root{...}" blocks, names
+ * every colour by a token: no colour literal, no system colour, and each
+ * background and colour declaration a var() or transparent. */
+static void check_style_uses_tokens(const char *html)
+{
+    const char *a = strstr(html, "<style>");
+    const char *z = (a != NULL) ? strstr(a, "</style>") : NULL;
+    CHECK(a != NULL && z != NULL);
+    if (a == NULL || z == NULL) {
+        return;
+    }
+    CHECK(strstr(html, "Canvas") == NULL);
+    for (const char *p = a; p < z; ++p) {
+        if (strncmp(p, ":root{", 6u) == 0) {
+            const char *end = strchr(p, '}');
+            p = (end != NULL) ? end : z;
+            continue;
+        }
+        if (*p == '#' && p + 1 < z
+            && strchr("0123456789abcdefABCDEF", p[1]) != NULL) {
+            T_FAIL("a colour literal outside the tokens: \"%.24s\"", p);
+        }
+        const bool bg = strncmp(p, "background:", 11u) == 0;
+        const bool fg = strncmp(p, "color:", 6u) == 0;
+        if ((bg || fg) && (p[-1] == '{' || p[-1] == ';' || p[-1] == '\n')) {
+            const char *v = p + (bg ? 11u : 6u);
+            if (strncmp(v, "var(", 4u) != 0
+                && strncmp(v, "transparent", 11u) != 0
+                && strncmp(v, "inherit", 7u) != 0) {
+                T_FAIL("a colour not by a token: \"%.32s\"", p);
+            }
+        }
+    }
+    CHECK(strstr(a, "body{font-family:sans-serif;margin:16px;max-width:72em;"
+                    "background:var(--pg-bg);color:var(--pg-fg)}")
+          != NULL);
+}
+
+/* The whole page, the viewer's header and the boxes, follows the
+ * browser's dark scheme in the panel's colours; the viewer's text keeps
+ * the panel's palettes by class. */
+TEST_CASE(the_whole_page_follows_the_dark_scheme)
+{
+    const char *html = page_with_hl(false);
+    static char block[512];
+    token_block(strstr(html, ":root{color-scheme:light dark;--pg-"), block,
+                sizeof(block));
+    check_tokens(block, UI_THEME_LIGHT);
+    token_block(strstr(html, "@media (prefers-color-scheme:dark){:root{"
+                             "--pg-"),
+                block, sizeof(block));
+    check_tokens(block, UI_THEME_DARK);
+    check_style_uses_tokens(html);
+    /* The viewer's header and its text area stand on the page's tokens and
+     * on the panel's text panel colour. */
+    CHECK(strstr(html, ".fm .viewer{position:fixed;inset:0;display:flex;"
+                       "flex-direction:column;\nbackground:var(--pg-bg);"
+                       "color:var(--pg-fg)") != NULL);
+    CHECK(strstr(html, ".fm .vh{") != NULL);
+    CHECK(strstr(html, "\nbackground:var(--h-bk,var(--pg-bg));"
+                       "color:var(--h-tx,var(--pg-fg))}") != NULL);
+    /* The access code's page has the same tokens without the viewer. */
+    const wa_page_info_t pi = { "rcbench-1A2B", "0.23.2", 0x7C0000u, false,
+                                NULL };
+    free(g_page.buf);
+    memset(&g_page, 0, sizeof(g_page));
+    wa_out_t o;
+    wa_out_init(&o, sink, &g_page);
+    wa_page_code(&o, &pi, false);
+    CHECK(wa_out_flush(&o));
+    token_block(strstr(g_page.buf, ":root{color-scheme:light dark;--pg-"),
+                block, sizeof(block));
+    check_tokens(block, UI_THEME_LIGHT);
+    check_style_uses_tokens(g_page.buf);
 }
 
 TEST_CASE(the_words_and_the_cap_are_the_viewers)
@@ -497,8 +645,10 @@ static void kind_cases(void)
     }
 }
 
-/* Files the viewer splits into lines: its line count (text_view_lines()'s
- * rule) and each line's first byte and end, from the file's first byte. */
+/* Files the viewer splits into lines: its line count
+ * (text_buf_lines_viewed(), which text_view_lines() and the file API's
+ * X-Rcbench-Lines use) and each line's first byte and end, from the
+ * file's first byte. */
 static const struct {
     const char *b;
     size_t n;
@@ -509,6 +659,7 @@ static const struct {
     FILE_OF("\xef\xbb\xbfx\n"), FILE_OF("\xef\xbb\xbf"), FILE_OF("\xef\xbbx"),
     FILE_OF("a\n\rb\r\n\nc"), FILE_OF("\n\n"), FILE_OF("a\r\r\nb"),
     FILE_OF("\xef\xbb\xbf\r\n"), FILE_OF("x\n\xef\xbb\xbf"),
+    FILE_OF("a\nb\n"), FILE_OF("a\nb"), FILE_OF("a\r\nb\r\n"),
 #undef FILE_OF
 };
 
@@ -522,12 +673,8 @@ static void file_cases(void)
         CHECK_EQ(text_buf_init(&tb, mem, sizeof(mem), ends, 64u),
                  TEXT_BUF_OK);
         CHECK_EQ(text_buf_load(&tb, k_files[k].b, k_files[k].n), TEXT_BUF_OK);
-        size_t n = text_buf_lines(&tb);
-        if (text_buf_len(&tb) == 0u) {
-            n = 0u;
-        } else if (n > 1u && text_buf_line_len(&tb, n - 1u) == 0u) {
-            --n;
-        }
+        /* The count the file API's X-Rcbench-Lines gives. */
+        const size_t n = text_buf_lines_viewed(&tb);
         const size_t bom = text_buf_bom(&tb) ? TEXT_BUF_BOM_LEN : 0u;
         fprintf(g_fx, "%s[", k == 0u ? "" : ",");
         hex(k_files[k].b, k_files[k].n);
@@ -610,6 +757,8 @@ TEST_CASE(the_page_and_the_fixtures_are_written_for_the_node_check)
 int main(void)
 {
     RUN(the_colours_are_the_viewers_in_both_palettes);
+    RUN(every_class_is_drawn_in_its_own_colour);
+    RUN(the_whole_page_follows_the_dark_scheme);
     RUN(the_words_and_the_cap_are_the_viewers);
     RUN(a_word_cannot_end_the_data_element);
     RUN(the_page_and_the_fixtures_are_written_for_the_node_check);

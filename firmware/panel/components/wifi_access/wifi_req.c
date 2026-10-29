@@ -66,8 +66,8 @@ static void req_self(httpd_req_t *r, const char *name, wa_self_t *me)
 #endif
 }
 
-bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
-                    wifi_req_bufs_t *bufs, esp_err_t *e)
+wa_guard_t wifi_req_check(httpd_req_t *r, wa_req_kind_t kind,
+                          const char *name, wifi_req_bufs_t *bufs)
 {
     wa_self_t me;
     req_self(r, name, &me);
@@ -84,10 +84,19 @@ bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
                                 sizeof(bufs->upload));
     }
     const wa_guard_t g = wa_guard(kind, &q, &me);
+    if (g != WA_GUARD_OK) {
+        ESP_LOGW(TAG, "request refused: %s", wa_guard_status(g));
+    }
+    return g;
+}
+
+bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
+                    wifi_req_bufs_t *bufs, esp_err_t *e)
+{
+    const wa_guard_t g = wifi_req_check(r, kind, name, bufs);
     if (g == WA_GUARD_OK) {
         return true;
     }
-    ESP_LOGW(TAG, "request refused: %s", wa_guard_status(g));
     httpd_resp_set_status(r, wa_guard_status(g));
     httpd_resp_set_hdr(r, "Connection", "close");
     (void)httpd_resp_sendstr(r, "");

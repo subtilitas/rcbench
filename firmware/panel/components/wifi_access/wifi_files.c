@@ -341,9 +341,19 @@ static esp_err_t answer_file(httpd_req_t *r)
 static esp_err_t serve(httpd_req_t *r, api_t kind)
 {
     esp_err_t e = ESP_OK;
-    const wifi_page_go_t go = wifi_page_begin(r, &e);
+    wa_guard_t guard = WA_GUARD_OK;
+    const wifi_page_go_t go = wifi_page_begin(r, &e, &guard);
     if (go == WIFI_PAGE_DONE) {
         return e;
+    }
+    if (go == WIFI_PAGE_REFUSED) {
+        /* Its body is not read: the connection goes with the answer, as
+         * for the guard's other refusals (wifi_req.h). */
+        wa_page_info_t pi;
+        wifi_page_info(&pi);
+        httpd_resp_set_hdr(r, "Connection", "close");
+        (void)answer_json(r, kind, wa_api_of_guard(guard), pi.de);
+        return ESP_FAIL;
     }
     const int64_t t0 = esp_timer_get_time();
     const char *q = strchr(r->uri, '?');
