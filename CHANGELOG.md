@@ -87,6 +87,15 @@ history is in git.
 
 ### Fixed
 
+- An install whose build does not start showed no rolled-back banner: the
+  build before started again without `Panel firmware … failed to start.`
+  on the band. The restart note moves from LP (low-power) RAM, whose
+  retention ESP-IDF does not test on the ESP32-P4 and whose address follows
+  the build's layout, to one NVS (non-volatile storage) entry, which a
+  power cut keeps too. Each start states its check in one console line,
+  `start check: note …, last invalid slot …, result …`
+  ([Screens, Installing](docs/Screens.md#installing-panel-update)).
+
 - `tools/frame_cost.py` gives the same fills on every run: cachegrind gets
   the ESP32-P4's L1 instruction cache (16KB, 4-way, 64-byte lines) instead
   of the runner CPU's, the bench draws from a stack at a fixed offset
