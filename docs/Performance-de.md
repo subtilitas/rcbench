@@ -33,13 +33,16 @@ nicht die Kopie. Die Zeit der Kopie ist TURN auf der Konsole; sie ist Teil
 von WAIT und kommt zu jedem Frame hinzu, der sich ändert.
 
 `tools/frame_cost.py` baut die echten Bildschirme für den Host und lässt sie
-unter cachegrind mit den beiden Caches des ESP32-P4 laufen: den L1 als erste
-Stufe von cachegrind, den L2 als letzte, bemessen nach
-`firmware/panel/sdkconfig.defaults`. Es meldet die Differenz zwischen einem
-und elf gerenderten Frames, sodass Prozessstart und das erste Füllen jedes
-Buffers herausfallen. Das Modell schickt jeden Datenzugriff durch beide
-Caches, auch die des Stacks, und bildet kein Laden von Instruktionen nach: der
-Host führt x86-Code aus.
+unter cachegrind mit den Caches des ESP32-P4 laufen: den L1-Daten- und den
+L1-Instruktionscache als erste Stufe von cachegrind, den L2 als letzte,
+bemessen nach `firmware/panel/sdkconfig.defaults`. Es meldet die Differenz
+zwischen einem und elf gerenderten Frames, sodass Prozessstart und das erste
+Füllen jedes Buffers herausfallen. Das Modell schickt jeden Datenzugriff durch
+den L1-Datencache und den L2, auch die des Stacks. Das Laden von Instruktionen
+läuft durch den L1-Instruktionscache (16KB, 4-fach, 64-Byte-Zeilen), und seine
+Misses füllen den L2 neben den Daten. Geladen wird der x86-Code des Hosts,
+dessen Größe und Anordnung sich vom RISC-V-Code unterscheiden; wie weit das
+die Fills verschiebt, ist nicht gemessen.
 
 Was ein Fill an Zeit kostet, ist die effektive Bandbreite der Schreibzugriffe
 der CPU in den PSRAM, während die DPI liest. Sie ist nicht gemessen; die
@@ -119,11 +122,17 @@ est. ms and est. fps: not measured
 | `vlines` | siebzehn senkrechte Linien über die volle Höhe |
 | `hlines` | dieselbe Pixelzahl als waagerechte Linien |
 
-Die absoluten Zahlen verschieben sich zwischen Maschinen um einige Fills, weil
-argv und die Umgebungsvariablen denselben Cache belegen wie der Framebuffer.
-`frame_cost.py --check-doc` prüft die Tabelle deshalb mit einer Toleranz von
-2%, mindestens 100 Fills. Es schlägt auch fehl, wenn die Zeile, die die Rate
-des Panels und die Bandbreite nennt, vom Profil des Werkzeugs abweicht.
+Die Zahl ist exakt und wiederholt sich bei jedem Lauf: Das Werkzeug gibt
+cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU des
+Hosts übernommen wird, und der Bench zeichnet von einem Stack mit fester Lage
+innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
+nicht verschieben. Compiler, C-Bibliothek und valgrind prägen die Zahl
+weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners der CI
+(Continuous Integration), und
+eine Maschine mit anderen Versionen misst andere Zahlen.
+`frame_cost.py --check-doc` prüft die Fills jedes Modus exakt und schlägt auch
+fehl, wenn die Zeile, die die Rate des Panels und die Bandbreite nennt, vom
+Profil des Werkzeugs abweicht.
 
 ## Regeln
 
@@ -219,7 +228,7 @@ Ruhe bei 300 000.
 
 ## Obergrenzen
 
-CI (Continuous Integration) hält jeden Modus unten an eine Obergrenze von
+CI hält jeden Modus unten an eine Obergrenze von
 Fills je Frame. Eine Obergrenze liegt 13 bis 29% über der größten Zahl ihrer
 Modi in der Tabelle oben, und ein Modus unter 600 Fills wird bei 1 000
 gehalten. Eine Obergrenze fängt eine Änderung, die das Modell mehr zeichnen

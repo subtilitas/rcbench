@@ -252,7 +252,7 @@ jobs:
       - uses: ./.github/actions/host-deps
 
       # The regression guard is cache-line traffic per frame under the
-      # ESP32-P4's two caches, not wall-clock on a runner that shares nothing
+      # ESP32-P4's caches, not wall-clock on a runner that shares nothing
       # with the board; test_frame_work holds the pixel visits beside it.
       # Each ceiling sits 13 to 29% above its modes in docs/Performance.md,
       # or at 1,000 for a mode under 600 fills, and catches the model
@@ -518,6 +518,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+
+      # valgrind: test_frame_cost.py builds the bench and measures the
+      # servo card and the motor bench twice under cachegrind.
+      - uses: ./.github/actions/host-deps
 
       # The runner image carries git, cmake and a C compiler, which the
       # end-to-end cases of the mutation tool build a three-file project

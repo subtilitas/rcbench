@@ -30,12 +30,16 @@ presents it. The model counts the drawing, not the copy. The copy's time is
 the console's TURN; it is part of WAIT and adds to every frame that changes.
 
 `tools/frame_cost.py` builds the real screens for the host and runs them under
-cachegrind with the ESP32-P4's two caches: the L1 as cachegrind's first level,
-the L2 as its last, sized from `firmware/panel/sdkconfig.defaults`. It reports
-the difference between rendering one frame and eleven, so process start-up and
-the first paint of each buffer cancel out. The model sends every data access
-through both caches, the stack's included, and models no instruction fetch:
-the host runs x86 code.
+cachegrind with the ESP32-P4's caches: the L1 data and instruction caches as
+cachegrind's first level, the L2 as its last, sized from
+`firmware/panel/sdkconfig.defaults`. It reports the difference between
+rendering one frame and eleven, so process start-up and the first paint of
+each buffer cancel out. The model sends every data access through the L1 data
+cache and the L2, the stack's included. Instruction fetches go through the L1
+instruction cache (16KB, 4-way, 64-byte lines), and its misses fill the L2
+beside the data. The code fetched is the host's x86 code, whose size and
+layout differ from the RISC-V code's; how far that moves the fills is not
+measured.
 
 What a fill costs in time is the effective bandwidth of the CPU's writes into
 PSRAM while the DPI reads. It is not measured, so the table gives fills and
@@ -115,11 +119,15 @@ est. ms and est. fps: not measured
 | `vlines` | seventeen full-height vertical lines |
 | `hlines` | the same pixel count as horizontal lines |
 
-Absolute counts shift by a few fills between machines, because argv and the
-environment share the cache with the framebuffer. `frame_cost.py --check-doc`
-therefore checks the table to a tolerance of 2%, and never less than 100
-fills. It fails, too, when the line that names the panel's rate and the
-bandwidth differs from the tool's profile.
+The count is exact and repeats on every run: the tool gives cachegrind the
+geometry of all three caches, so none is taken from the host's CPU, and the
+bench draws from a stack at a fixed offset within 64KB, so argv, the
+environment and the paths do not move it. The compiler, the C library and
+valgrind still shape the count. The table holds the figures of the
+ubuntu-26.04 runner of CI (continuous integration), and a machine with other versions measures other
+figures. `frame_cost.py --check-doc` checks every mode's fills exactly, and
+fails, too, when the line that names the panel's rate and the bandwidth
+differs from the tool's profile.
 
 ## Rules
 
@@ -203,7 +211,7 @@ position to SAFE plus six layers of the grip's box, a swept or dragged horn to
 
 ## Ceilings
 
-CI (continuous integration) holds each mode below to a ceiling of fills per
+CI holds each mode below to a ceiling of fills per
 frame. A ceiling sits 13 to 29% above the largest figure of its modes in the
 table above, and a mode under 600 fills is held at 1,000. A ceiling catches
 a change that makes the model draw more, not a frame that misses the panel:
