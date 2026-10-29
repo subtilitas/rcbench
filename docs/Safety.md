@@ -689,7 +689,8 @@ reads the state and shows the alert, is not in the coverage figure.
   under way ends at an ARM, a DISARM and a stop, and a finger resting on the
   control moves nothing until it lifts and presses again. A value the screen
   has posted and the application has not collected at a DISARM or a stop is
-  dropped.
+  dropped. The one exception is a Hitec servo inside its programming
+  session ([A Hitec servo moved while SAFE](#a-hitec-servo-moved-while-safe)).
 - Every switch to ARMED starts from the channel's rest, not from where the last run left
   the control.
   - MOTOR & ESC: the throttle slider, its `-1` and `+1` steps and the knob
@@ -807,6 +808,60 @@ reads the state and shows the alert, is not in the coverage figure.
   ramped, by decision: the bank ramps a throttle upward only, so a ramp on
   the wire would slow the rise and nothing else. [STATUS.md, Not
   planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
+
+### A Hitec servo moved while SAFE
+
+A Hitec servo may move while the bench is SAFE, inside a held programming
+session only. This is the one exception to the rule that an output value
+changes only while ARMED. The bench cannot switch to ARMED while the HITEC
+page holds a port ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)),
+and a Hitec servo takes its target over the programming wire, not as a
+pulse width.
+
+The rule:
+
+- A move needs an entered session (`hitec_session_move()`; refused with
+  `HITEC_SES_ERR_NOT_IN_MODE` otherwise). D series: a target of 0 to 6000
+  written to register 0x1E, then register 0x0C, the position, read back.
+  Classic: `66` with a target of 3600 to 8400 (900 to 2100us), then `65`.
+  A target outside the range is refused (`HITEC_SES_ERR_ARG`).
+- A move writes to the servo's RAM only: no EEPROM cell, no save
+  (0x70), no reboot. No step of a move carries `MORE`, so an OFF of the
+  supply during a move is not held for a write
+  ([A programming port's supply](#a-programming-ports-supply)). A value
+  reaches the servo's memory only through a write with its backup, record
+  and read-back.
+- The commanded position moves at most 150 counts (2.0deg) a pass and stays
+  inside the reach of the servo's stored end points: the positions of
+  targets 0 and 6000, 2606 to 13743 on a factory D485HW
+  (`hitec_live_d_command()`).
+- Each pass is judged (`hitec_live_judge()`). It binds when the position
+  read lies more than 150 counts from a command that stands still or moves
+  outward on 2 passes in a row, when the supply current stays at or above
+  80% of the session's current limit for 400ms (800mA of the default
+  1000mA), or when the AS5600 angle, while fitted, moved less than half of
+  a commanded change of 3deg or more. A bind moves the command back to the
+  last free position less 75 counts (1.0deg) toward the neutral.
+- The mapping takes a servo set to CW only (`hitec_live_d_ends()`).
+- Moves are switched on by a 2s hold, and only with a PD mini answering
+  with its output on: STOP switches the PD mini off, and with it the
+  servo. The PD mini's own current limit is the hard ceiling.
+
+Current limitations:
+
+- The panel has no control that switches moves on (MOVE SERVO on the
+  TRAVEL tab): nothing calls `hitec_session_move()`.
+- Every threshold of the judges is chosen, not measured with a horn
+  against a block. The stall current of a D485HW is not known.
+- Whether the servo follows the target line below 400 and above 5600 or
+  stops at its end points is not measured; the reach assumes the line
+  goes on.
+- Whether a D series servo holds its last target with no frames is not
+  measured. A switch to SAFE at the bench alone stops the port and leaves
+  the supply on ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)).
+- Whether a reboot discards a RAM write that was not saved is not
+  measured.
+- The mapping of a servo set to CCW is not measured.
 
 ## Heartbeat rather than enable level
 
