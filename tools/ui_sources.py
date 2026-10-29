@@ -137,6 +137,7 @@ SOURCES = [
     # FILES, and the file manager's core it starts its jobs and keeps its
     # panes with (shared/files), the logger's open-file rule with it.
     "shared/ui/files_screen.c",
+    "shared/ui/layout_screen.c",
     "shared/ui/files_draw.c",
     "shared/ui/files_events.c",
     "shared/ui/files_text.c",

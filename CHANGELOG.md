@@ -37,8 +37,11 @@ history is in git.
   (`PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`); the PROG PORT entries
   name their pin and offer no pin, no function and no tester; INTERFACES
   shows Sensor SDA and SCL, Tap pin and PD mini TX and RX at the carrier's
-  pins with no keys; PICK A PIN is not on SETUP
+  pins with no keys
   ([Screens, On the rbmod carrier](docs/Screens.md#on-the-rbmod-carrier)).
+  The PICK A PIN tile opens LAYOUT there: J1 and J2 in their position
+  order with each position's role, GPIO, net and the protocol bound on it,
+  and the other connectors ([Screens, Layout](docs/Screens.md#layout)).
 - The panel carries the IOmcu images of both boards and offers each IOmcu
   the image of the board it reports. A board it carries no image for gets
   no offer, and UPDATES reads

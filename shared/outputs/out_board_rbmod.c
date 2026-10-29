@@ -62,6 +62,29 @@ const outbind_pin_t outbind_rbmod_pins[OUTBIND_RBMOD_PIN_COUNT] = {
     { 28, 34, true,  "unused" },
 };
 
+/**
+ * @brief J1 and J2 in their position order (the carrier's netlist): J1 the
+ *        programming ports on the 5V of M7, J2 the servo outputs on the PD
+ *        mini's two rails.
+ */
+static const outbind_conn_t k_conns[] = {
+    { "J1", (uint8_t)OUTBIND_CONN_PROG, 4u, { 0u, 13u, 14u, 15u },
+      { "VCC_PROGPORT", "VCC_PROGPORT", "VCC_PROGPORT", "VCC_PROGPORT" } },
+    { "J2", (uint8_t)OUTBIND_CONN_OUT, 4u, { 5u, 4u, 2u, 1u },
+      { "VCC_SERVOPORT_B", "VCC_SERVOPORT_B", "VCC_SERVOPORT_A",
+        "VCC_SERVOPORT_A" } },
+};
+
+/** @brief The other connectors, and GPIO 21, which is on none. */
+static const outbind_other_t k_others[] = {
+    { "J3", "HEARTBEAT",  { 3u,  OUTBIND_NO_GPIO } },
+    { "J5", "SENSOR I2C", { 16u, 17u } },
+    { "J4", "I2C 2",      { 18u, 19u } },
+    { "J6", "PD MINI",    { 7u,  6u } },
+    { "J9", "TAP",        { 22u, OUTBIND_NO_GPIO } },
+    { "",   "PROG 5V EN", { 21u, OUTBIND_NO_GPIO } },
+};
+
 const outbind_roles_t outbind_rbmod_roles = {
     .out        = { 2u, 4u, 5u, 1u },
     .prog       = { 13u, 14u, 15u, 0u },
@@ -74,4 +97,8 @@ const outbind_roles_t outbind_rbmod_roles = {
     .tap        = 22u,
     .prog_5v_en = 21u,
     .heartbeat  = 3u,
+    .conns       = k_conns,
+    .conn_count  = (uint8_t)(sizeof(k_conns) / sizeof(k_conns[0])),
+    .others      = k_others,
+    .other_count = (uint8_t)(sizeof(k_others) / sizeof(k_others[0])),
 };

@@ -116,9 +116,14 @@ fest:
   ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
 - SETUP > INTERFACES zeigt Sensor SDA und SCL, Tap pin sowie PD mini TX
   und RX auf den Pins des Carriers, ohne Tasten und ohne Keypad.
-- Die Kachel PICK A PIN ist nicht auf SETUP.
+- Die Kachel PICK A PIN öffnet LAYOUT: J1 und J2 in ihrer
+  Positionsfolge mit Rolle, GPIO, Netz am + und dem gebundenen
+  Protokoll jeder Position, und die weiteren Stecker
+  ([Bildschirme: Layout](Screens-de.md#layout)).
 
-![SETUP auf dem Carrier, ohne PICK A PIN](img/de/setup-rbmod.png)
+![SETUP auf dem Carrier, LAYOUT an der Stelle von PICK A PIN](img/de/setup-rbmod.png)
+
+![LAYOUT](img/de/layout-rbmod.png)
 
 ## Nacharbeit Rev 1
 
