@@ -236,6 +236,19 @@ bool outputs_clash_label(const outbind_t *b, uint8_t index,
                          size_t cap);
 
 /**
+ * @brief The name a board that solders its pins gives @p gpio: "PWM01" to
+ *        "PWM04" for a servo output, "PROGP01" to "PROGP04" for a
+ *        programming port.
+ *
+ * @param board  The board's identity (outbind_roles()).
+ * @param gpio   The GPIO.
+ * @param buf    Takes the name; an empty string when there is none.
+ * @param cap    Bytes at @p buf.
+ * @return true when the board has roles and @p gpio is one of these.
+ */
+bool outputs_role_name(uint16_t board, uint8_t gpio, char *buf, size_t cap);
+
+/**
  * @brief The line under the protocol for such a pin, catalogue entry
  *        @p index: "GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13",
  *        "GPIO 16: SAME PWM CHANNEL AS GPIO 0".

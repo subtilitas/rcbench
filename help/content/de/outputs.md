@@ -104,6 +104,18 @@ Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung de
 
 Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen des Testers hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`.
 
+## Auf dem rbmod-Carrier
+
+![PWM01 bis PWM04, PWM03 wegen Slice 2 abgelehnt](view:outputs-rbmod)
+
+Der [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) verlötet jede Leitung auf ihren Pin, hier wird also kein Pin gewählt. Das Raster zeigt die vier Servoausgänge, PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1, jeder mit seinem GPIO unter dem Namen. Ein Tipp gibt dem Ausgang das gewählte Protokoll, wie ein Haken einem Pin. Slot n ist PWM0(n+1): PWM01 ist Kanal 0. Ein Protokoll belegt höchstens die 4 Ausgänge, `SERVO PWM BELEGT 4 PINS`.
+
+PWM02 und PWM03 sind ein PWM-Slice und laufen mit einer Framerate. Ein Flächenprotokoll (SERVO PWM) und ein Gasprotokoll (MOTOR PWM) werden auf beiden zusammen nicht angeboten: die Zelle zeigt `SLICE VON PWM02` und ein Tipp darauf `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4`. DShot läuft auf einer eigenen Zustandsmaschine und wird neben beiden angeboten.
+
+![PROG PORT 1 auf dem Carrier](view:outputs-rbmod-port)
+
+Die Einträge PROG PORT nennen den Pin jedes Ports, `PROGP01 AUF GPIO 13`, und die Zeile PIN nimmt keinen Tipp. FUNKTION zeigt PROGRAMMIEREN und nimmt keinen Tipp: ein Programmierport trägt die Programmer von KST und Hitec und kein Signalprotokoll. SERVO-TESTER und PORT-PWM werden nicht gezeigt. Die Zeile unter den Zeilen lautet `NUR KST- UND HITEC-PROGRAMMER. SIGNALE: PWM01 BIS PWM04`.
+
 ## Die Übersicht: OFF
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)

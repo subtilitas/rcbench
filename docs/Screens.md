@@ -3763,6 +3763,14 @@ own, 64px high at the list's 70px pitch, in the accent colour over a rule,
 with no keys and no value: a tap or a drag on it changes nothing, and a drag
 scrolls the list. The list is 28 rows long.
 
+On the [rbmod carrier](Carrier.md) five rows are soldered pins: Sensor SDA
+16, Sensor SCL 17, Tap pin 22, PD mini TX 7 and PD mini RX 6. They have no
+keys, open no keypad and read
+`Soldered on this board. Not a setting here.` as their help line. The
+stored values stay and are in force again on a module wired by hand.
+
+![INTERFACES on the carrier](img/setup-rbmod-iface.png)
+
 ![INTERFACES, the current monitors](img/setup-interfaces.png)
 
 The IOmcu reads I2C (Inter-Integrated Circuit) current monitors on one bus
@@ -5080,6 +5088,36 @@ So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
 
+### On the rbmod carrier
+
+The [rbmod carrier](Carrier.md) solders every lead to its pin, and no pin
+is chosen on the panel. The panel takes the board from IDENTITY register 5
+on the IOmcu's link (board 2).
+
+![OUTPUTS on the carrier](img/outputs-rbmod.png)
+
+- The grid has four cells: PWM01 to PWM04 on GPIO 2, 4, 5 and 1, the
+  name on top and the GPIO under it. A tap gives the selected protocol to
+  the output. Slot n drives PWM0(n+1); PWM01 is channel 0.
+- A protocol takes at most the 4 outputs: `SERVO PWM TAKES 4 PINS`.
+- PWM02 and PWM03 are PWM slice 2 and share one frame rate. A surface
+  protocol and a throttle protocol on the two together are refused. The
+  cell reads `SLICE OF PWM02`, and a tap on it
+  `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on a PIO
+  (programmable input/output) state machine and is offered beside either.
+- The line under the protocol counts against 4: `0 OF 4 PINS`.
+
+![A PROG PORT entry on the carrier](img/outputs-rbmod-port.png)
+
+- Each PROG PORT entry names its pin, `PROGP01 ON GPIO 13`. PIN takes no
+  tap and opens no picker.
+- FUNCTION reads `PROGRAMMING` and takes no tap. A programming port
+  carries the KST and Hitec programmers and no signal protocol; FUNC stays
+  NONE.
+- SERVO TESTER and PORT PWM are not drawn.
+- The line under the rows reads
+  `KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04`.
+
 ### The overview: OFF
 
 Every visit from SETUP opens with OFF selected; a TARGET row opens the
@@ -5155,6 +5193,7 @@ in its flash.
 ### Pick a pin
 
 Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
+On the [rbmod carrier](Carrier.md) the tile is not shown.
 Over the open protocol list the home tag closes the list, choosing
 nothing, and the screen stays.
 The same binding the

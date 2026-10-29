@@ -39,6 +39,7 @@
 #include "settings_rows_int.h"
 #include "settings_sensors.h"
 #include "tone_link.h"
+#include "ui_board.h"
 #include "ui_icons.h"
 #include "ui_keypad.h"
 #include "ui_pinlist.h"
@@ -101,6 +102,9 @@ const char *settings_screen_help(setting_id_t id)
     if ((id == SET_PDMINI_TX || id == SET_PDMINI_RX)
         && settings_pdmini_same_pin()) {
         return TR(SET_PD_SAME_PIN);
+    }
+    if (settings_fixed(id) && !settings_screen_unheld(id)) {
+        return TR(SET_PIN_SOLDERED);
     }
     if (!settings_screen_unheld(id)) {
         return hitec && settings_get_int(SET_HITEC_RX)
@@ -196,10 +200,20 @@ gfx_rect_t stg_tile_rect(int i)
     return r;
 }
 
+bool settings_hub_tile_shown(int i)
+{
+    if (i < 0 || i >= TILE_COUNT) {
+        return false;
+    }
+    /* A board that solders its pins has no pin to pick. */
+    return !(k_tiles[i].cat < 0 && k_tiles[i].screen == SCREEN_PICKER
+             && ui_board_roles() != NULL);
+}
+
 static int tile_at(int x, int y)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
-        if (gfx_rect_contains(stg_tile_rect(i), x, y)) {
+        if (settings_hub_tile_shown(i) && gfx_rect_contains(stg_tile_rect(i), x, y)) {
             return i;
         }
     }
@@ -450,7 +464,8 @@ static bool on_key(int kind, int index, int x, int y)
     /* A row whose value follows another setting has no keys: a press
      * there is a press on the list.  Neither has a string's. */
     if (row_is_heading(index) || row_text(index) >= 0
-        || settings_derived(row_setting(index))) {
+        || settings_derived(row_setting(index))
+        || settings_fixed(row_setting(index))) {
         return false;
     }
     return gfx_rect_contains(stg_row_rect(index), x, y);

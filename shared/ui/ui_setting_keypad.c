@@ -28,7 +28,8 @@ bool ui_setting_keypad_offered(setting_id_t id)
         return false;
     }
     return (d->type == SET_TYPE_INT || d->type == SET_TYPE_FLOAT)
-           && !settings_derived(id) && !settings_held(id);
+           && !settings_derived(id) && !settings_fixed(id)
+           && !settings_held(id);
 }
 
 bool ui_setting_keypad_signed(setting_id_t id)

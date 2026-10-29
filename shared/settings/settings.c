@@ -638,8 +638,8 @@ bool settings_tap_pin_valid(int gpio)
 
 bool settings_pdmini_same_pin(void)
 {
-    const int tx = (int)lrintf(s.values[SET_PDMINI_TX]);
-    return tx >= 0 && tx == (int)lrintf(s.values[SET_PDMINI_RX]);
+    const int tx = settings_get_int(SET_PDMINI_TX);
+    return tx >= 0 && tx == settings_get_int(SET_PDMINI_RX);
 }
 
 /* Whether the pin row @p id takes @p pin as a step: Sensor SDA a pin the
@@ -858,9 +858,43 @@ void settings_init(void)
     }
 }
 
+/** @brief The pins a board solders, over the settings that name them:
+ *         s_fix_on[id] says whether s_fix[id] stands for the value. */
+static bool  s_fix_on[SETTING_COUNT];
+static float s_fix[SETTING_COUNT];  /**< The fixed values. */
+
+bool settings_fix(setting_id_t id, int value)
+{
+    if (id < 0 || id >= SETTING_COUNT) {
+        return false;
+    }
+    const float was = settings_get(id);
+    s_fix_on[id] = true;
+    s_fix[id] = (float)value;
+    return settings_get(id) != was;
+}
+
+bool settings_unfix(setting_id_t id)
+{
+    if (id < 0 || id >= SETTING_COUNT || !s_fix_on[id]) {
+        return false;
+    }
+    const float was = settings_get(id);
+    s_fix_on[id] = false;
+    return settings_get(id) != was;
+}
+
+bool settings_fixed(setting_id_t id)
+{
+    return id >= 0 && id < SETTING_COUNT && s_fix_on[id];
+}
+
 float settings_get(setting_id_t id)
 {
-    return (id >= 0 && id < SETTING_COUNT) ? s.values[id] : 0.0f;
+    if (id < 0 || id >= SETTING_COUNT) {
+        return 0.0f;
+    }
+    return s_fix_on[id] ? s_fix[id] : s.values[id];
 }
 
 int settings_get_int(setting_id_t id)

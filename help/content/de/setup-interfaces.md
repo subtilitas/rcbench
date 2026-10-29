@@ -113,6 +113,12 @@ Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, de
 
 Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit 0.21.1 oder 0.21.2 (Protokoll 4.23) empfängt mit PULL-UP; mit PRECHARGE lautet die Zeile dann `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` Ein IOmcu älter als 0.21.1 hat keine Hitec-Leitung; mit PRECHARGE lautet die Zeile `IOmcu älter als 0.21.1: keine Hitec-Leitung.`
 
+## Auf dem rbmod-Carrier
+
+![Sensor SDA und SCL verlötet](view:setup-rbmod-iface)
+
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) sind die Pins verlötet: Sensor SDA und SCL zeigen GPIO 16 und GPIO 17, Tap-Pin GPIO 22, PD mini TX GPIO 7 und PD mini RX GPIO 6. Diese Zeilen haben keine Tasten und öffnen kein Tastenfeld, und ihre Hilfezeile lautet `Auf diesem Board verlötet. Hier keine Einstellung.`. Das Panel schreibt diese Pins zum IOmcu. Die für sie gespeicherten Werte bleiben, wie sie sind, und gelten wieder an einem von Hand verdrahteten Modul.
+
 ## Verwandte Seiten
 
 - [Setup](setup.md): Tasten, Speichern und die anderen Kategorien.
