@@ -1267,14 +1267,20 @@ void outbind_to_chan_cfg(const outbind_t *b, uint16_t *regs,
         return;
     }
     /*
-     * The same walk outbind_to_slots() makes, so a channel takes the role of
-     * the protocol whose pin renders it.  The role is not decoration: it
+     * The same walk outbind_to_slots() makes, cell by cell (a board with
+     * soldered pins puts PWM01 first whatever its GPIO), so a channel takes
+     * the role of the protocol whose pin renders it.  The role is not decoration: it
      * decides where the channel goes when it stops being commanded, and it
      * is what the throttle looks for when it drives the bound pins, so a
      * throttle that centres is a motor at half power.
      */
     uint8_t slot = 0u, channel = 0u;
-    for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
+    const uint8_t cells = outbind_cell_count(b->board);
+    for (uint8_t cell = 0; cell < cells && slot < LINK_OUT_SLOTS; ++cell) {
+        const uint8_t i = outbind_cell_index(b->board, cell);
+        if (i >= bd->count) {
+            continue;
+        }
         const uint8_t g = outbind_group_of(b, i);
         if (g == 0u) {
             continue;
