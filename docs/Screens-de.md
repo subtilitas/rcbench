@@ -2825,7 +2825,9 @@ Die Fußzeile, Körper-y 440 bis 492, trägt links AKTUALISIEREN,
 140 x 52px, wie auf [Logs](#logs), dann KOPIEREN, VERSCHIEBEN,
 UMBENENNEN, LÖSCHEN, NEU, INFO und ÖFFNEN, 118 x 52px, ÖFFNEN am rechten
 Rand; die Tasten stehen 6px auseinander, und die Fußzeile endet 4px über
-dem Alarmband. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
+dem Alarmband. Jede Beschriftung steht in der Schrift 10 x 20 mit
+mindestens 4px Rand je Seite; AKTUALISIEREN ist 130px breit, VERSCHIEBEN
+110px. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
 darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
 12 x 24 über der Fußzeile.
 
@@ -3140,8 +3142,11 @@ meldet `Gestoppt: Der Prüfstand ist ARMED.` oder
 
 Die Rückfrage zu LÖSCHEN ist eine Box von 700 x 280px mit ABBRECHEN und
 LÖSCHEN von 300 x 56px. Sie nennt den Eintrag und seine Größe; bei der
-CSV-Datei eines Laufs mit einem Bericht derselben Nummer nennt sie den
-Bericht, der mitgelöscht wird.
+CSV-Datei eines Laufs nennt sie den Bericht derselben Nummer, der
+mitgelöscht wird, wenn die Seite des Bereichs diesen Bericht listet. Ein
+Bericht, der in einem Ordner mit mehr als 48 Einträgen auf der nächsten
+oder vorigen Seite stünde, wird ebenfalls genannt: Die Seite kann es nicht
+sagen, und LÖSCHEN nimmt den Bericht mit, wann immer die Karte ihn hat.
 
 ![Eine laufende Kopie](img/de/files-copy.png)
 

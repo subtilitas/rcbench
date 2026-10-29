@@ -187,6 +187,33 @@ bool fm_tree_has_prev(const fm_tree_t *tree);
 bool fm_tree_has_next(const fm_tree_t *tree);
 
 /**
+ * @brief What the page on show says of a file in the pane's folder.
+ */
+typedef enum {
+    FM_HAS_NO = 0,   /**< the page spans where it would stand: not there  */
+    FM_HAS_YES,      /**< a file of that name, case folded, is on the page */
+    FM_HAS_UNKNOWN   /**< it would stand on another page                  */
+} fm_has_t;
+
+/**
+ * @brief Whether the folder holds file @p name, as far as the page on show
+ *        tells.
+ *
+ * Names compare with case folded, as FAT finds them; a folder of that name
+ * is not the file.  A name that ranks before the page's first row with
+ * entries ahead of the page, or after its last row with entries after it,
+ * is FM_HAS_UNKNOWN: another page holds where it would stand.
+ *
+ * @param tree  the pane
+ * @param name  the file's name
+ * @return FM_HAS_YES, FM_HAS_NO or FM_HAS_UNKNOWN; FM_HAS_UNKNOWN for a
+ *         NULL, for an empty name, for a name of FM_NAME_BUF bytes or
+ *         more, for a pane with no card (total -1) and for a page whose
+ *         row count is outside 0 to FM_PAGE_MAX
+ */
+fm_has_t fm_tree_has_file(const fm_tree_t *tree, const char *name);
+
+/**
  * @brief The pane's order of two entries: folders first, then names with
  *        case folded, then their bytes.  Strict: zero only for one name.
  * @param a  an fm_entry_t

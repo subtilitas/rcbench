@@ -643,13 +643,17 @@ static void supply_link_alerts(void)
         s_wire_alert_gen = 0u;
     }
     const uint16_t ev = supply_link_events(&s_supply_link);
-    if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST
-               | SUPPLY_LINK_EV_TRIPPED)) != 0u) {
+    /* An ON refused in the IOmcu's failsafe names it and the way out: only
+     * the CLEAR an ARM writes lifts it (supply_link_on_ended()). */
+    const supply_link_say_t say = supply_link_on_ended(ev, far_end_faults());
+    if (say != SUPPLY_LINK_SAY_NONE) {
         supply_switch(false);
-        control_alert(((ev & SUPPLY_LINK_EV_TRIPPED) != 0u)
+        control_alert((say == SUPPLY_LINK_SAY_TRIPPED)
                           ? TR(ALERT_PDMINI_OFF)
-                      : ((ev & SUPPLY_LINK_EV_ON_LOST) != 0u)
+                      : (say == SUPPLY_LINK_SAY_LOST)
                           ? TR(ALERT_SUPPLY_OFF_REMOTE)
+                      : (say == SUPPLY_LINK_SAY_FAILSAFE)
+                          ? TR(ALERT_SUPPLY_REFUSED_FAILSAFE)
                           : TR(ALERT_SUPPLY_REFUSED_ON));
     }
     if ((ev & SUPPLY_LINK_EV_SAGGED) != 0u) {
