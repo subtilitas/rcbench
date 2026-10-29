@@ -522,6 +522,14 @@ typedef struct {
 #define LOG_NOTE_MAX   208
 #define LOG_NOTE_Q_LEN 4
 
+/** @brief The console reports link_report() hands the logger to print,
+ *         10s of them at the 5s cadence: up to 7 lines of up to 167
+ *         characters each, 50ms and more on the UART (universal
+ *         asynchronous receiver-transmitter) console, which would
+ *         otherwise stall the task that beats the safety line.  A full
+ *         queue is printed where it is made: no line is dropped. */
+#define CONSOLE_Q_LEN 2
+
 /* One line of a servo test's files, render loop -> logger. */
 typedef struct {
     uint8_t kind;                        /* servo_test_out_t */
@@ -532,6 +540,12 @@ typedef struct {
 
 extern QueueHandle_t s_log_q;
 extern QueueHandle_t s_note_q;
+/** @brief control task -> logger: link_report_in_t, CONSOLE_Q_LEN deep. */
+extern QueueHandle_t s_console_q;
+/** @brief The logger prints every console report waiting (panel_log.c). */
+void console_reports_print(void);
+/** @brief Print one console report on the calling task (panel_link.c). */
+void console_report_print(const link_report_in_t *r);
 /** @brief The fault log's lock (log_fault_lock()). */
 extern SemaphoreHandle_t s_note_mx;
 extern QueueHandle_t s_test_q;
@@ -672,7 +686,8 @@ static inline bool control_clear_failsafe(link_msg_t *reply)
 }
 
 /* What the panel knows about a link that stopped; the link report, every
- * 5s while the link is down and every 60s while it is up. */
+ * 5s while the link is down and every 60s while it is up, handed to the
+ * logger to print (console_reports_print()). */
 void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
@@ -856,6 +871,9 @@ void advance_model_and_log(bool link_up, float emitted,
                            bool *new_sample);
 void publish_snapshot(const bench_state_t *bench, bool link_up,
                       bool new_sample);
+/* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
+ * Control task only. */
+uint16_t far_end_faults(void);
 
 /* ------------------------------------------------------- main.c, continued */
 

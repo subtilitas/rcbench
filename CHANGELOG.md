@@ -117,6 +117,26 @@ history is in git.
   `Other values than the last read: taken as another servo.` A servo with
   the values of the last read is not told apart
   ([Hitec programmer, The backup before the first write](docs/HitecProgrammer.md#the-backup-before-the-first-write)).
+- SUPPLY: an ON refused while the IOmcu reports its failsafe (FAULT 01,
+  the link silent for 200ms, or FAULT 10, the heartbeat) says
+  `Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then
+  DISARM.` instead of `Supply refused to switch on. Output off.`
+- KST and Hitec CONNECT refused for the failsafe name it and the way out:
+  `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to
+  clear it.` (KST, before `The IOmcu has not yet accepted the link. Try
+  again.`); the Hitec line says `Hold ARM, then DISARM, to clear it.`
+- Hitec: the German count of stored values outside the settings, loaded,
+  restored or written, fits one row of 60 characters at 255; the count no
+  longer stands alone on a second row.
+- FILES: AKTUALISIEREN and VERSCHIEBEN in the footer are drawn in the
+  10 x 20 face of the other buttons, with 4px either side (6px before).
+- FILES: the DELETE question names a run's report only when the pane's
+  page lists it, or when the report would stand on another page. German
+  `Ihr Bericht %s wird mitgelöscht.` (`Sein Bericht` before).
+- The panel's link report is printed by the logger task, not by the
+  control task that beats the heartbeat: once a minute the report stalled
+  that task for 46 to 56ms on the console. A queue of 2 reports carries the
+  counters; a full queue prints on the control task, so no line is lost.
 
 ## 0.23.2 - 2026-10-28
 

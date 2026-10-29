@@ -559,7 +559,7 @@ const char *const wa_web_hl_js[] = {
     NULL,
 };
 
-/** @brief app.js, 15706 bytes. */
+/** @brief app.js, 15781 bytes. */
 const char *const wa_web_app_js[] = {
     "var RcbFm = (function () {\n"
     "'use strict';\n"
@@ -613,6 +613,7 @@ const char *const wa_web_app_js[] = {
     "var waitTimer = null;\n"
     "var view = null;\n"
     "var viewSeq = 0;\n"
+    "var infoSeq = 0;\n"
     "function el(tag, cls, text) {\n"
     "var e = document.createElement(tag);\n"
     "if (cls) {\n"
@@ -642,10 +643,10 @@ const char *const wa_web_app_js[] = {
     "function disarmWait() {\n"
     "if (pending === 0 && waitTimer !== null) {\n"
     "clearTimeout(waitTimer);\n"
-    "waitTimer = null;\n"
+    "waitTimer = null;\n",
     "ui.wait.textContent = '';\n"
     "}\n"
-    "}\n",
+    "}\n"
     "function refusal(status) {\n"
     "return { error: 'HTTP', text: TX.noans + ' HTTP ' + status };\n"
     "}\n"
@@ -665,7 +666,8 @@ const char *const wa_web_app_js[] = {
     "}, function () {\n"
     "return { ok: false, j: refusal(r.status) };\n"
     "});\n"
-    "}, function () {\n"
+    "})\n"
+    ".catch(function () {\n"
     "return { ok: false, j: { error: 'NET', text: TX.noans } };\n"
     "})\n"
     ".then(function (a) {\n"
@@ -739,8 +741,8 @@ const char *const wa_web_app_js[] = {
     "draw();\n"
     "return Promise.all([reread(0), reread(1)]);\n"
     "});\n"
-    "}\n"
-    "function load(i, go, key) {\n",
+    "}\n",
+    "function load(i, go, key) {\n"
     "var p = st.panes[i];\n"
     "var q = 'path=' + F.encPath(p.path) + '&go=' + go;\n"
     "if (key) {\n"
@@ -843,8 +845,8 @@ const char *const wa_web_app_js[] = {
     "var h;\n"
     "if (L.total > 0 && (L.prev || L.next)) {\n"
     "h = F.fmt(TX.of, L.ahead + 1, L.ahead + L.entries.length, L.total);\n"
-    "} else {\n"
-    "h = (L.total === 1) \? TX.one : F.fmt(TX.n, L.total);\n",
+    "} else {\n",
+    "h = (L.total === 1) \? TX.one : F.fmt(TX.n, L.total);\n"
     "}\n"
     "return h + (L.unlisted > 0 \? F.fmt(TX.unl, L.unlisted) : '');\n"
     "}\n"
@@ -928,13 +930,13 @@ const char *const wa_web_app_js[] = {
     "st.panes[i].sel = e;\n"
     "msg('');\n"
     "drawPane(i);\n"
-    "if (was !== i) {\n"
+    "if (was !== i) {\n",
     "drawPane(was);\n"
     "}\n"
     "footer();\n"
     "save();\n"
     "}\n"
-    "function selected() {\n",
+    "function selected() {\n"
     "var p = st.panes[st.active];\n"
     "return (p && p.sel) \? { p: p, e: p.sel } : null;\n"
     "}\n"
@@ -1027,8 +1029,8 @@ const char *const wa_web_app_js[] = {
     "}\n"
     "if (a) {\n"
     "time = (a.ok && a.j.time) \? a.j.time : (a.ok \? TX['i.notime'] : '');\n"
-    "}\n"
-    "infoRow(t, e.d \? TX['i.entries'] : TX['i.size'], size);\n",
+    "}\n",
+    "infoRow(t, e.d \? TX['i.entries'] : TX['i.size'], size);\n"
     "infoRow(t, TX['i.time'], time);\n"
     "infoRow(t, TX['i.rule'], ruleWord(e), e.b || e.p !== 'FREE');\n"
     "ui.boxBody.textContent = '';\n"
@@ -1040,19 +1042,21 @@ const char *const wa_web_app_js[] = {
     "function info() {\n"
     "var s = selected();\n"
     "var mount = s.p.list \? s.p.list.mount : st.mount;\n"
+    "var seq = ++infoSeq;\n"
     "ui.boxTitle.textContent = s.e.d \? TX['k.FOLDER'] : TX['i.file'];\n"
     "infoBody(s, null);\n"
     "ui.box.hidden = false;\n"
     "ui.boxClose.focus();\n"
     "api('/api/info\?path=' + F.encPath(F.join(s.p.path, s.e.n)) + '&dir=' +\n"
     "(s.e.d \? 1 : 0) + '&mount=' + mount).then(function (a) {\n"
-    "if (!ui.box.hidden) {\n"
+    "if (seq === infoSeq && !ui.box.hidden) {\n"
     "infoBody(s, a);\n"
     "}\n"
     "});\n"
     "}\n"
     "function closeBox() {\n"
     "ui.box.hidden = true;\n"
+    "infoSeq++;\n"
     "}\n"
     "function esc(t) {\n"
     "return t.replace(/[&<>]/g, function (c) {\n"
@@ -1095,12 +1099,12 @@ const char *const wa_web_app_js[] = {
     "function viewNote(text) {\n"
     "ui.pre.style.top = '0px';\n"
     "ui.pre.textContent = text;\n"
-    "ui.sizer.style.height = '0px';\n"
+    "ui.sizer.style.height = '0px';\n",
     "ui.vline.textContent = '';\n"
     "}\n"
     "function openFile(i, e) {\n"
     "var p = st.panes[i];\n"
-    "var path = F.join(p.path, e.n);\n",
+    "var path = F.join(p.path, e.n);\n"
     "var seq = ++viewSeq;\n"
     "view = null;\n"
     "ui.vpath.textContent = path;\n"
@@ -1178,11 +1182,11 @@ const char *const wa_web_app_js[] = {
     "panes.appendChild(ui.panes[1].box);\n"
     "root.appendChild(panes);\n"
     "var bar = el('div', 'bar');\n"
-    "var foot = el('div', 'foot');\n"
+    "var foot = el('div', 'foot');\n",
     "foot.appendChild(button(TX.rescan, 'btn', function () {\n"
     "rescan();\n"
     "}));\n"
-    "ui.info = button(TX.info, 'btn', act('info', info));\n",
+    "ui.info = button(TX.info, 'btn', act('info', info));\n"
     "ui.dl = el('a', 'btn', TX.dl);\n"
     "ui.dl.setAttribute('download', '');\n"
     "ui.dl.addEventListener('click', act('dl', function () {}));\n"

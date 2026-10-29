@@ -506,6 +506,23 @@ bool supply_link_ev_error(uint16_t ev)
     return (ev & (uint16_t)SUPPLY_LINK_EV_ERRORS) != 0u;
 }
 
+supply_link_say_t supply_link_on_ended(uint16_t ev, uint16_t faults)
+{
+    if ((ev & (uint16_t)SUPPLY_LINK_EV_TRIPPED) != 0u) {
+        return SUPPLY_LINK_SAY_TRIPPED;
+    }
+    if ((ev & (uint16_t)SUPPLY_LINK_EV_ON_LOST) != 0u) {
+        return SUPPLY_LINK_SAY_LOST;
+    }
+    if ((ev & (uint16_t)SUPPLY_LINK_EV_ON_REFUSED) == 0u) {
+        return SUPPLY_LINK_SAY_NONE;
+    }
+    const uint16_t failsafe = (uint16_t)(LINK_FAULT_LINK_SILENT
+                                         | LINK_FAULT_HEARTBEAT);
+    return ((faults & failsafe) != 0u) ? SUPPLY_LINK_SAY_FAILSAFE
+                                       : SUPPLY_LINK_SAY_REFUSED;
+}
+
 void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
                      uint16_t *set_mv)
 {

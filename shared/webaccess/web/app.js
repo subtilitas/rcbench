@@ -82,6 +82,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     var waitTimer = null;
     var view = null;
     var viewSeq = 0;
+    var infoSeq = 0;
 
     function el(tag, cls, text) {
       var e = document.createElement(tag);
@@ -128,8 +129,10 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     }
 
     // One request after the one before: {ok, j} with the JSON answer or
-    // the refusal, and {body, r} for a file.  A missing access code shows
-    // the code form again.
+    // the refusal, and {body, r} for a file.  A connection that breaks,
+    // before the answer's head or during its body, is a refusal too, so
+    // every request ends here once.  A missing access code shows the code
+    // form again.
     function api(url, file) {
       function run() {
         pending++;
@@ -146,7 +149,8 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
             }, function () {
               return { ok: false, j: refusal(r.status) };
             });
-          }, function () {
+          })
+          .catch(function () {
             return { ok: false, j: { error: 'NET', text: TX.noans } };
           })
           .then(function (a) {
@@ -565,16 +569,19 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       }
     }
 
+    // An answer fills the box only while the box it was asked for is
+    // open: CLOSE and every new INFO move infoSeq on.
     function info() {
       var s = selected();
       var mount = s.p.list ? s.p.list.mount : st.mount;
+      var seq = ++infoSeq;
       ui.boxTitle.textContent = s.e.d ? TX['k.FOLDER'] : TX['i.file'];
       infoBody(s, null);
       ui.box.hidden = false;
       ui.boxClose.focus();
       api('/api/info?path=' + F.encPath(F.join(s.p.path, s.e.n)) + '&dir=' +
         (s.e.d ? 1 : 0) + '&mount=' + mount).then(function (a) {
-        if (!ui.box.hidden) {
+        if (seq === infoSeq && !ui.box.hidden) {
           infoBody(s, a);
         }
       });
@@ -582,6 +589,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
 
     function closeBox() {
       ui.box.hidden = true;
+      infoSeq++;
     }
 
     // ----------------------------------------------------- the viewer

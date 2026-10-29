@@ -332,6 +332,48 @@ TEST_CASE(an_on_without_a_heartbeat_is_refused)
     CHECK_EQ(supply_link_events(&sl), 0u);
 }
 
+/* An ON refused while the far end reports its failsafe names the
+ * failsafe, the one cause only an ARM clears; any other refusal says
+ * refused.  The module's trip comes first, then an ON let go. */
+TEST_CASE(an_on_refused_in_the_far_ends_failsafe_names_it)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(false);
+    supply_link_command(&sl, true, 5000u, 500u);
+    pump(false);
+    const uint16_t ev = supply_link_events(&sl);
+    CHECK_EQ(ev, SUPPLY_LINK_EV_ON_REFUSED);
+    CHECK_EQ(supply_link_on_ended(ev, LINK_FAULT_HEARTBEAT),
+             SUPPLY_LINK_SAY_FAILSAFE);
+    CHECK_EQ(supply_link_on_ended(ev, LINK_FAULT_LINK_SILENT),
+             SUPPLY_LINK_SAY_FAILSAFE);
+    CHECK_EQ(supply_link_on_ended(ev, LINK_FAULT_LINK_SILENT
+                                          | LINK_FAULT_OVERCURRENT),
+             SUPPLY_LINK_SAY_FAILSAFE);
+    CHECK_EQ(supply_link_on_ended(ev, 0u), SUPPLY_LINK_SAY_REFUSED);
+    /* Every other fault bit is no failsafe. */
+    for (unsigned b = 0; b < 16u; ++b) {
+        const uint16_t f = (uint16_t)(1u << b);
+        if ((f & (LINK_FAULT_LINK_SILENT | LINK_FAULT_HEARTBEAT)) == 0u) {
+            CHECK_EQ(supply_link_on_ended(ev, f), SUPPLY_LINK_SAY_REFUSED);
+        }
+    }
+    CHECK_EQ(supply_link_on_ended(SUPPLY_LINK_EV_ON_REFUSED
+                                      | SUPPLY_LINK_EV_ON_LOST,
+                                  LINK_FAULT_HEARTBEAT),
+             SUPPLY_LINK_SAY_LOST);
+    CHECK_EQ(supply_link_on_ended(SUPPLY_LINK_EV_ON_LOST
+                                      | SUPPLY_LINK_EV_TRIPPED, 0u),
+             SUPPLY_LINK_SAY_TRIPPED);
+    CHECK_EQ(supply_link_on_ended(0xFFFFu & ~(unsigned)(
+                                      SUPPLY_LINK_EV_ON_REFUSED
+                                      | SUPPLY_LINK_EV_ON_LOST
+                                      | SUPPLY_LINK_EV_TRIPPED),
+                                  0xFFFFu),
+             SUPPLY_LINK_SAY_NONE);
+}
+
 /* An ON the far end let go -- its heartbeat stopped -- is lost, reported
  * once, and not switched back on. */
 TEST_CASE(an_on_the_far_end_let_go_is_lost)
@@ -1047,6 +1089,7 @@ int main(void)
     RUN(a_wiring_refused_on_its_read_stands_until_new_pins_are_held);
     RUN(an_unwired_supply_refuses_an_on);
     RUN(an_on_without_a_heartbeat_is_refused);
+    RUN(an_on_refused_in_the_far_ends_failsafe_names_it);
     RUN(an_on_the_far_end_let_go_is_lost);
     RUN(a_programming_ports_command_is_adopted_and_not_fought);
     RUN(a_command_under_a_programming_port_is_off_or_refused);

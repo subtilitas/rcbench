@@ -218,7 +218,7 @@ PROGRAMMIEREN wieder offen.
 | `Das Netzteil unterstützt diese Spannung oder Strombegrenzung nicht.` | die Spannung liegt über 8,4V, die Stromgrenze außerhalb 50 bis 3000mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7V unter der Eingangsspannung des PD mini; die Versorgung wird nicht geändert |
 | `Versorgung unter 4.8V. Programmieren benötigt mindestens 4.8V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8V gesetzt ist, sendet das Panel nichts an den IOmcu |
 | `Versorgung hat nicht innerhalb von 3000ms geschaltet. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
-| `IOmcu hat die Verbindung noch nicht freigegeben. Erneut versuchen.` | der IOmcu vertraut dem Heartbeat nicht, oder der Link war still |
+| `Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst. ARM halten, dann DISARM, um ihn aufzuheben.` | der IOmcu vertraut dem Heartbeat nicht (das Band zeigt FEHLER 10), oder der Link war 200ms still und der Failsafe hat ausgelöst (FEHLER 01). Nur das CLEAR, das ein ARM schreibt, hebt ihn auf; ein Neustart des IOmcu kann FEHLER 01 ausgelöst lassen |
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
 
