@@ -636,7 +636,7 @@ jobs:
     # The name is the status check the branch ruleset requires, and it
     # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
     # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
-    name: Panel (ESP-IDF v5.5.5, ESP32-P4)
+    name: Panel (ESP-IDF v6.1, ESP32-P4)
     # The build carries the IOmcu image of this commit, as the release
     # does.
     needs: [iomcu]

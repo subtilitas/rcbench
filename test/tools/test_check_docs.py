@@ -332,7 +332,7 @@ def sdk_tree(tree, **change):
     files = {
         ".github/workflows/ci.yml":
             "env:\n  PICO_SDK_TAG: '2.3.0'\n"
-            "    name: Panel (ESP-IDF v5.5.5, ESP32-P4)\n"
+            "    name: Panel (ESP-IDF v6.1, ESP32-P4)\n"
             "          esp_idf_version: v6.1\n"
             "          esp_idf_version: v6.1\n"
             "    name: IOmcu (pico-sdk 2.3.0)\n",
@@ -382,10 +382,10 @@ def test_sdk_tags_that_agree_pass(tree):
      "Building-de.md says ESP-IDF v5.5.3"),
     ("docs/Building.md", "CI builds v6.1", "CI builds v5.5",
      "Building.md says ESP-IDF v5.5;"),
-    (".github/workflows/ci.yml", "Panel (ESP-IDF v5.5.5,",
-     "Panel (ESP-IDF v6.1,",
-     "the ci.yml panel job is named 'Panel (ESP-IDF v6.1, ESP32-P4)'; the "
-     "ruleset requires 'Panel (ESP-IDF v5.5.5, ESP32-P4)'"),
+    (".github/workflows/ci.yml", "Panel (ESP-IDF v6.1,",
+     "Panel (ESP-IDF v5.5.5,",
+     "the ci.yml panel job is named 'Panel (ESP-IDF v5.5.5, ESP32-P4)'; the "
+     "ruleset requires 'Panel (ESP-IDF v6.1, ESP32-P4)'"),
 ])
 def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
     out = sdk_tree(tree, **{rel: [(old, new)]})

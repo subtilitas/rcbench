@@ -1363,7 +1363,7 @@ def check_pin_counts(problems: list[str]) -> None:
 # renamed in ci.yml alone leaves the required check unreported and blocks
 # every merge; the ruleset's required check and this constant change
 # together.
-PANEL_CHECK_NAME = "Panel (ESP-IDF v5.5.5, ESP32-P4)"
+PANEL_CHECK_NAME = "Panel (ESP-IDF v6.1, ESP32-P4)"
 
 
 def check_sdk_tags(problems: list[str]) -> None:

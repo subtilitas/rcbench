@@ -45,8 +45,8 @@ history is in git.
   [Building](docs/Building.md). The SD card mount leaves the start of
   SDMMC slot 0 to ESP-IDF's mount: v6.1 answers a second start of a started
   slot with `ESP_ERR_INVALID_STATE`, which would keep every card from
-  mounting. The `Panel (ESP-IDF v5.5.5, ESP32-P4)` job keeps its name, the
-  branch ruleset's required check, and builds v6.1. The task stack table in
+  mounting. The panel job is named `Panel (ESP-IDF v6.1, ESP32-P4)`, and
+  the branch ruleset requires that name. The task stack table in
   [Performance](docs/Performance.md) follows the GCC 15.2 and picolibc
   build. `flash_args` in a release archive is written for esptool 5
   ([First run](docs/FirstRun.md)).
