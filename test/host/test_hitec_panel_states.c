@@ -218,8 +218,8 @@ TEST_CASE(read_all_and_abort_by_their_buttons)
 {
     open_en();
     servo_d485();
-    tap_connect();
     g_drv.dreg[0x32] = 3u;
+    tap_connect();
     tap(val(HITEC_PANEL_SERVO, 1, 1));            /* READ ALL */
     CHECK_EQ(pstate(), HITEC_PROG_READING);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
