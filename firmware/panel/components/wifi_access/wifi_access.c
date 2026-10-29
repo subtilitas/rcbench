@@ -449,10 +449,12 @@ static void page_info(wa_page_info_t *pi)
 
 /* ------------------------------------------- lent to the file API */
 
-wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e)
+wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e,
+                               wa_guard_t *guard)
 {
-    if (!req_guard(r, WA_REQ_READ, e)) {
-        return WIFI_PAGE_DONE;
+    *guard = wifi_req_check(r, WA_REQ_READ, s.name, &b->req);
+    if (*guard != WA_GUARD_OK) {
+        return WIFI_PAGE_REFUSED;
     }
     if (!req_begin()) {
         httpd_resp_set_status(r, "503 Service Unavailable");

@@ -21,6 +21,7 @@
 
 #include "esp_err.h"
 #include "esp_http_server.h"
+#include "wa_guard.h"
 #include "wa_page.h"
 #include "wa_send.h"
 #include "wa_walk.h"
@@ -32,17 +33,22 @@ typedef enum {
     WIFI_PAGE_DONE,        /**< refused and answered: return the error   */
     WIFI_PAGE_NO_CODE,     /**< no access code, or a wrong one, counted:
                                 refuse it, then wifi_page_end()          */
+    WIFI_PAGE_REFUSED,     /**< the guard refused it, not answered: answer
+                                it with the connection closed and return
+                                ESP_FAIL; no wifi_page_end()             */
 } wifi_page_go_t;
 
 /**
  * @brief The start of a read of the file API: the guard (Host and body,
  *        wa_guard.h), the request counted for the idle time-out, and the
  *        access code.
- * @param r  the request
- * @param e  takes the handler's return for WIFI_PAGE_DONE
+ * @param r      the request
+ * @param e      takes the handler's return for WIFI_PAGE_DONE
+ * @param guard  takes the guard's refusal for WIFI_PAGE_REFUSED
  * @return what to do with it
  */
-wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e);
+wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e,
+                               wa_guard_t *guard);
 
 /**
  * @brief The end of a request wifi_page_begin() did not answer.

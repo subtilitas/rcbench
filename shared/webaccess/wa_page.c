@@ -72,13 +72,29 @@ static void head(wa_out_t *o, const wa_page_info_t *pi, bool app)
                   "<meta name=\"viewport\" "
                   "content=\"width=device-width,initial-scale=1\"><title>");
     wa_out_html(o, pi->name);
+    /* The page's colour tokens, the panel's theme colours (ui_theme.c):
+     * page PANEL, text TEXT, dim TEXT_DIM, faint TEXT_FAINT, line EDGE,
+     * highlight ACCENT, link POWER, warn WARN; the selection is ACCENT at
+     * 20% and the shade behind a box black at 53%.  The light theme's, and
+     * the dark theme's when the browser asks for a dark scheme.  Every
+     * colour of the page is one of them (app.css); test_wa_hl holds them
+     * to ui_theme. */
     wa_out_str(o, "</title><style>"
-                  "body{font-family:sans-serif;margin:16px;max-width:72em}"
+                  ":root{color-scheme:light dark;--pg-bg:#fcfdff;"
+                  "--pg-fg:#0a121c;--pg-dim:#46586c;--pg-faint:#788a9e;"
+                  "--pg-ln:#aabacc;--pg-hi:#00c4e8;--pg-ac:#0084ba;"
+                  "--pg-warn:#f6a800;--pg-sel:#00c4e833;--pg-shade:#0008}"
+                  "@media (prefers-color-scheme:dark){:root{"
+                  "--pg-bg:#0e1621;--pg-fg:#e8f8ff;--pg-dim:#84acca;"
+                  "--pg-faint:#486a86;--pg-ln:#3a749c;--pg-hi:#00f0ff;"
+                  "--pg-ac:#00d0ff;--pg-warn:#ffba00;--pg-sel:#00f0ff33}}"
+                  "body{font-family:sans-serif;margin:16px;max-width:72em;"
+                  "background:var(--pg-bg);color:var(--pg-fg)}"
                   "table{border-collapse:collapse;width:100%}"
                   "td,th{padding:4px 8px;text-align:left;"
-                  "border-bottom:1px solid #ccc}"
+                  "border-bottom:1px solid var(--pg-ln)}"
                   "h3{margin-bottom:4px;word-break:break-all}"
-                  "a{word-break:break-all}");
+                  "a{color:var(--pg-ac);word-break:break-all}");
     if (app) {
         wa_app_style(o, pi->hl);
     }

@@ -73,6 +73,8 @@ static const why_t k_why[WA_API_COUNT] = {
     [WA_API_MEMORY] = { "MEMORY", 503u, P_API_MEMORY },
     [WA_API_CODE] = { "CODE", 403u, P_API_CODE },
     [WA_API_REQUEST] = { "REQUEST", 400u, P_API_REQUEST },
+    [WA_API_BODY] = { "BODY", 400u, P_API_BODY },
+    [WA_API_HOST] = { "HOST", 421u, P_API_HOST },
 };
 
 /** @brief The API's reason for each answer of the core. */
@@ -120,6 +122,23 @@ wa_api_err_t wa_api_of(fm_err_t e)
     return ((unsigned)e < (unsigned)FM_ERR_COUNT) ? k_of[e] : WA_API_IO;
 }
 
+wa_api_err_t wa_api_of_guard(wa_guard_t g)
+{
+    switch (g) {
+    case WA_GUARD_OK:
+        return WA_API_OK;
+    case WA_GUARD_BODY:
+        return WA_API_BODY;
+    case WA_GUARD_HOST:
+        return WA_API_HOST;
+    case WA_GUARD_BIG:
+    case WA_GUARD_ORIGIN:
+    case WA_GUARD_UPLOAD:
+    default:
+        return WA_API_REQUEST;
+    }
+}
+
 /**
  * @brief The entry of @p e, IO's for a value outside the enum.
  * @param e  the reason
@@ -155,6 +174,8 @@ const char *wa_api_status_line(wa_api_err_t e)
         return "413 Content Too Large";
     case 415u:
         return "415 Unsupported Media Type";
+    case 421u:
+        return "421 Misdirected Request";
     case 422u:
         return "422 Unprocessable Content";
     case 423u:
@@ -782,6 +803,6 @@ size_t wa_api_file_head(const wa_api_t *api, char *out, size_t cap)
                            (unsigned long)wa_api_file_size(api), api->etag,
                            eol_word(&api->tb),
                            text_buf_bom(&api->tb) ? 1 : 0,
-                           (unsigned long)text_buf_lines(&api->tb));
+                           (unsigned long)text_buf_lines_viewed(&api->tb));
     return (n > 0 && (size_t)n < cap) ? (size_t)n : 0u;
 }

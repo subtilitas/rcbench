@@ -152,6 +152,19 @@ history is in git.
   the SD driver copies through a buffer of its own when it is not on a
   cache line. Each download logs its end, and for a failure the cause and
   the entry it was at ([Screens, The page](docs/Screens.md#the-page)).
+- The Wi-Fi page follows the browser's dark scheme as a whole: the page,
+  its panes, boxes and the viewer's header take the panel's dark theme
+  colours, where only the viewer's text area did. Every colour of the page
+  is a token of the panel's theme, light and dark
+  ([Screens, The page](docs/Screens.md#the-page)).
+- The file API's `X-Rcbench-Lines` counts the lines as FILES' viewer and the
+  page's `LINE n OF m` do: a line end at the file's end starts no line, so
+  a file of 58 lines that ends in LF gives 58, not 59; an empty file gives
+  0 ([Screens, The file API](docs/Screens.md#the-file-api)).
+- A read of the file API with a body, or with a `Host` that is not the
+  panel, gets `{"error":"BODY",...}` with 400 and `{"error":"HOST",...}`
+  with 421, as the API's other refusals carry JSON, where the answer had
+  no body.
 - An install whose build does not start showed no rolled-back banner: the
   build before started again without `Panel firmware … failed to start.`
   on the band. The restart note moves from LP (low-power) RAM, whose

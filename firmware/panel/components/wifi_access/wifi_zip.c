@@ -65,9 +65,17 @@ static uint8_t *zip_read_buf(void)
 esp_err_t wifi_zip_get(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
-    const wifi_page_go_t go = wifi_page_begin(r, &g);
+    wa_guard_t guard = WA_GUARD_OK;
+    const wifi_page_go_t go = wifi_page_begin(r, &g, &guard);
     if (go == WIFI_PAGE_DONE) {
         return g;
+    }
+    if (go == WIFI_PAGE_REFUSED) {
+        /* As the page's other refusals of the guard: no body, and the
+         * connection goes with the answer (wifi_req.h). */
+        httpd_resp_set_hdr(r, "Connection", "close");
+        (void)refused(r, wa_guard_status(guard));
+        return ESP_FAIL;
     }
     if (go != WIFI_PAGE_ANSWER) {
         wifi_page_end();
