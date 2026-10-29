@@ -2,7 +2,7 @@
  * @file test_fm_tree.c
  * @brief A pane of the file manager over a card in memory (fm_fake.h):
  *        folders of 0, 1, 47, 48, 49 and 999 entries, paging by key to
- *        every edge and back, the pane's order, names of 63 and 64
+ *        every edge and back, a pane started at a key it does not hold, the pane's order, names of 63 and 64
  *        characters, the places and kinds of every path card_tree.h names
  *        and of the two log folders, a busy name, entering and leaving at
  *        the root, and a card gone part way through a walk.  And the page
@@ -207,6 +207,65 @@ TEST_CASE(entries_999_page_forward_and_back_to_every_edge)
     /* One walk per page; the PREV past the start takes a second. */
     CHECK_EQ(g_card.calls[FK_WALK], 21 + 20 + 2 + 1);
     CHECK_EQ(g_card.holds, 0);
+}
+
+TEST_CASE(a_pane_started_at_a_key_reads_after_before_and_from_it)
+{
+    fresh("D");
+    char path[FK_PATH];
+    for (int i = 0; i < 100; ++i) {
+        snprintf(path, sizeof(path), "D/F%03d.TXT", i);
+        fk_file(&g_card, path, NULL, 1u);
+    }
+    fk_dir(&g_card, "D/SUB");
+    fm_entry_t key;
+    memset(&key, 0, sizeof(key));
+    /* F047.TXT is the 49th row: SUB, then F000 to F047. */
+    snprintf(key.name, sizeof(key.name), "F047.TXT");
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_STR_EQ(g_tree.dir, "D");
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_EQ(g_tree.held, FM_PAGE_MAX);
+    CHECK_STR_EQ(g_tree.page[0].name, "F048.TXT");
+    CHECK_EQ(g_tree.ahead, 49);
+    CHECK(page_in_order());
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_PREV), FM_OK);
+    CHECK_EQ(g_tree.held, FM_PAGE_MAX);
+    CHECK_STR_EQ(g_tree.page[0].name, "SUB");
+    CHECK_STR_EQ(g_tree.page[FM_PAGE_MAX - 1].name, "F046.TXT");
+    CHECK_EQ(g_tree.ahead, 0);
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F047.TXT");
+    /* A key not on the card names its place: "F0475" ranks after F047. */
+    snprintf(key.name, sizeof(key.name), "f0475");
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F048.TXT");
+    /* The key's kind places it: a folder "A" ranks ahead of the folder
+     * SUB, a file "A" behind every folder and ahead of every file. */
+    snprintf(key.name, sizeof(key.name), "A");
+    key.is_dir = true;
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "SUB");
+    key.is_dir = false;
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F000.TXT");
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_PREV), FM_OK);
+    CHECK_EQ(g_tree.held, 1);
+    CHECK_STR_EQ(g_tree.page[0].name, "SUB");
+    /* No key is fm_tree_init(); a key of 64 bytes is cut to the row's 63. */
+    fm_tree_at(&g_tree, "D", NULL);
+    CHECK_EQ(g_tree.held, 0);
+    CHECK_EQ(g_tree.selected, -1);
+    memset(key.name, 'A', sizeof(key.name));
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(strlen(g_tree.page[0].name), FM_LIST_NAME_MAX);
+    fm_tree_at(NULL, "D", &key);
 }
 
 TEST_CASE(a_page_whose_files_went_shows_the_last_page)
@@ -716,6 +775,7 @@ int main(void)
     RUN(one_entry_is_one_row);
     RUN(entries_47_48_and_49_fill_one_page_and_spill_the_49th);
     RUN(entries_999_page_forward_and_back_to_every_edge);
+    RUN(a_pane_started_at_a_key_reads_after_before_and_from_it);
     RUN(a_page_whose_files_went_shows_the_last_page);
     RUN(same_on_the_first_page_takes_a_new_first_entry);
     RUN(folders_come_first_and_names_fold_their_case);

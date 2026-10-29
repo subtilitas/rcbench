@@ -8023,6 +8023,74 @@ UI_WEB_TEXT(P_UP_MEMORY,
 UI_WEB_TEXT(P_UP_OTHER,
     "The panel refused the image.",
     "Das Panel hat das Image abgelehnt.")
+/* The file API's refusals (wa_api.c): the text of each reason word, in
+ * the JSON answer the page's script shows.  NO_CARD is P_NO_CARD. */
+UI_WEB_TEXT(P_API_CARD_GONE,
+    "The card was taken out or swapped. Read the folder again.",
+    "Die Karte wurde entnommen oder getauscht. Den Ordner neu lesen.")
+UI_WEB_TEXT(P_API_NOT_FOUND,
+    "Not on the card.",
+    "Nicht auf der Karte.")
+UI_WEB_TEXT(P_API_EXISTS,
+    "The name is taken.",
+    "Der Name ist schon vergeben.")
+UI_WEB_TEXT(P_API_FULL,
+    "The card or the folder is full.",
+    "Die Karte oder der Ordner ist voll.")
+UI_WEB_TEXT(P_API_DENIED,
+    "The card takes no writes: write-protected.",
+    "Die Karte nimmt nichts an: schreibgeschützt.")
+UI_WEB_TEXT(P_API_BUSY,
+    "The logger is writing this file.",
+    "Der Logger schreibt gerade in diese Datei.")
+UI_WEB_TEXT(P_API_FIXED,
+    "This folder is kept by the bench.",
+    "Dieser Ordner gehört dem Prüfstand.")
+UI_WEB_TEXT(P_API_LOCKED,
+    "This is the servo programmer's record. Download it to read it.",
+    "Das ist der Vermerk der Servoprogrammierung. Zum Lesen herunterladen.")
+UI_WEB_TEXT(P_API_NAME,
+    "The name or the path does not fit the card.",
+    "Name oder Pfad passt nicht auf die Karte.")
+UI_WEB_TEXT(P_API_ARG,
+    "Not possible for this entry.",
+    "Für diesen Eintrag nicht möglich.")
+UI_WEB_TEXT(P_API_IO,
+    "The card did not read or write.",
+    "Die Karte hat nicht gelesen oder geschrieben.")
+UI_WEB_TEXT(P_API_NOT_EMPTY,
+    "The folder is not empty.",
+    "Der Ordner ist nicht leer.")
+UI_WEB_TEXT(P_API_SAME,
+    "The target is this folder or inside it.",
+    "Das Ziel ist dieser Ordner oder liegt darin.")
+UI_WEB_TEXT(P_API_TOO_BIG,
+    "Over 1MB: too large to open. Download it.",
+    "Über 1MB: zu groß zum Öffnen. Herunterladen.")
+UI_WEB_TEXT(P_API_ARMED,
+    "The bench is ARMED: the card is read-only.",
+    "Der Prüfstand ist ARMED: Die Karte ist nur lesbar.")
+UI_WEB_TEXT(P_API_LOGGING,
+    "A run is being logged: the card is read-only.",
+    "Ein Lauf wird aufgezeichnet: Die Karte ist nur lesbar.")
+UI_WEB_TEXT(P_API_CANCELLED,
+    "Stopped: the panel switches Wi-Fi off.",
+    "Gestoppt: Das Panel schaltet WLAN ab.")
+UI_WEB_TEXT(P_API_NOT_TEXT,
+    "Not a text file: a NUL byte in its first 4kB.",
+    "Keine Textdatei: ein NUL-Byte in den ersten 4kB.")
+UI_WEB_TEXT(P_API_TOO_MANY_LINES,
+    "Too many lines: 65536 at most.",
+    "Zu viele Zeilen: höchstens 65536.")
+UI_WEB_TEXT(P_API_MEMORY,
+    "The panel has no memory for the file.",
+    "Das Panel hat keinen Speicher für die Datei.")
+UI_WEB_TEXT(P_API_CODE,
+    "Enter the access code first.",
+    "Erst den Zugangscode eingeben.")
+UI_WEB_TEXT(P_API_REQUEST,
+    "The panel does not understand the request.",
+    "Das Panel versteht die Anfrage nicht.")
 
 #undef UI_TEXT
 #undef UI_SETTING_LABEL
