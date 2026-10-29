@@ -22,6 +22,7 @@
 #include "freertos/queue.h"
 
 #include "card_tree.h"
+#include "error_sites.h"
 #include "fault_log.h"
 #include "log_name.h"
 #include "log_take.h"
@@ -715,7 +716,7 @@ static void test_write(const test_line_t *l)
          * a full one keeps it to the END, which says the files are
          * incomplete. */
         const bool first = !s_test_failed;
-        if (first && !s_test_txt) {
+        if (error_card_csv_edge(bad, s_test_failed, s_test_txt)) {
             atomic_fetch_add(&s_card_faults, 1u);   /* the run's CSV */
         }
         s_test_failed  = true;
@@ -919,7 +920,8 @@ void log_task(void *arg)
             (void)log_writer_commit(&s_log);
         }
 
-        if (s_log_file != NULL && !was_failed && log_writer_failed(&s_log)) {
+        if (error_card_rows_edge(s_log_file != NULL, was_failed,
+                                 log_writer_failed(&s_log))) {
             /* An error of the run: the control task switches the bench
              * to SAFE and the supply off (card_faults_follow()). */
             atomic_fetch_add(&s_card_faults, 1u);
