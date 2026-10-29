@@ -54,6 +54,8 @@
 typedef struct {
     uint16_t    board;                  /**< ui_board()                   */
     bind_read_t read;                   /**< outputs_screen_read_state()  */
+    bool        ok;                     /**< read_ok(): a read binding of
+                                             this board                  */
     uint8_t     group[2][OUTBIND_CONN_POSITIONS]; /**< each position's protocol */
 } layout_seen_t;
 
@@ -160,6 +162,7 @@ static void look(layout_seen_t *seen)
     memset(seen, 0, sizeof(*seen));
     seen->board = ui_board();
     seen->read = outputs_screen_read_state();
+    seen->ok = read_ok(seen->board);
     const outbind_roles_t *r = outbind_roles(seen->board);
     for (int k = 0; r != NULL && k < (int)r->conn_count && k < 2; ++k) {
         for (int p = 0; p < (int)r->conns[k].count; ++p) {
@@ -172,11 +175,12 @@ static void look(layout_seen_t *seen)
  * @brief Whether two looks show the same picture.
  * @param a one look
  * @param b another
- * @return true when board, reading and every position's protocol agree
+ * @return true when board, reading, the reading's board and every
+ *         position's protocol agree
  */
 static bool same_look(const layout_seen_t *a, const layout_seen_t *b)
 {
-    return a->board == b->board && a->read == b->read
+    return a->board == b->board && a->read == b->read && a->ok == b->ok
            && memcmp(a->group, b->group, sizeof(a->group)) == 0;
 }
 

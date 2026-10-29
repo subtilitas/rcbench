@@ -9,6 +9,7 @@
  * - an_output_reads_not_read_until_the_binding_is_read
  * - a_board_without_soldered_pins_has_no_positions
  * - the_picture_repaints_when_the_binding_moves
+ * - a_binding_of_this_board_after_one_of_another_repaints
  *
  * SPDX-License-Identifier: MIT
  */
@@ -170,6 +171,29 @@ TEST_CASE(the_picture_repaints_when_the_binding_moves)
     CHECK(draw_guarded(3));
 }
 
+TEST_CASE(a_binding_of_this_board_after_one_of_another_repaints)
+{
+    /* OUTPUTS holds another board's binding, read: NOT READ. */
+    fresh();
+    ui_board_set(RBMOD);
+    layout_screen()->reset();
+    layout_screen()->enter();
+    layout_pos_t p;
+    CHECK(layout_screen_pos(1, 0, &p));
+    CHECK_STR_EQ(p.state, "NOT READ");
+    CHECK(draw_guarded(0));
+    CHECK(!draw_guarded(0));
+    /* The carrier's binding with every output OFF: the reading's state and
+     * every position's protocol stay, the rows read OFF, and it repaints. */
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, RBMOD);
+    outputs_screen_set_binding(&b);
+    CHECK(layout_screen_pos(1, 0, &p));
+    CHECK(strcmp(p.state, "NOT READ") != 0);
+    CHECK(draw_guarded(0));
+}
+
 int main(void)
 {
     RUN(j1_and_j2_follow_the_connectors_position_order);
@@ -177,6 +201,7 @@ int main(void)
     RUN(an_output_reads_not_read_until_the_binding_is_read);
     RUN(a_board_without_soldered_pins_has_no_positions);
     RUN(the_picture_repaints_when_the_binding_moves);
+    RUN(a_binding_of_this_board_after_one_of_another_repaints);
     ui_board_set(OUTBIND_BOARD_UNKNOWN);
     return test_summary("layout_screen");
 }
