@@ -120,15 +120,15 @@ typedef struct {
      */
     bool (*safe_at)(int x, int y);
     /**
-     * The pages of the screen's guide for what it shows now: a tab, a
+     * @brief The pages of the screen's guide for what it shows now: a tab, a
      * level, the bench's state (ui_help.h).  0 while a level the guide
      * does not explain is up -- a keypad, a keyboard, a question -- and
      * then the band shows no "?".  NULL: the screen has no guide.
      */
     int (*help_count)(void);
     /**
-     * Page @p i of the guide, from 0, into @p out.  False past the last.
-     * NULL when help_count is.
+     * @brief Page @p i of the guide, from 0, into @p out.  False past the
+     *        last.  NULL when help_count is.
      */
     bool (*help_page)(int i, struct ui_help_page *out);
 } ui_screen_t;

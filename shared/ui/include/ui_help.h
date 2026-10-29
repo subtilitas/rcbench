@@ -47,11 +47,12 @@ typedef enum {
 
 /** @brief One control a page marks. */
 typedef struct {
-    /** The control's name as the screen draws it; English where the
-     *  control's label is. */
+    /** @brief The control's name as the screen draws it; English where
+     *         the control's label is. */
     const char  *label;
     ui_text_id_t text;      /**< what it does, in the language showing    */
-    /** Where it is, in the screen's coordinates; y below 0 is the band. */
+    /** @brief Where it is, in the screen's coordinates; y below 0 is the
+     *         band. */
     gfx_rect_t   rect;
 } ui_help_item_t;
 
@@ -59,14 +60,14 @@ typedef struct {
 typedef struct ui_help_page {
     ui_text_id_t   title;       /**< the dock's header                   */
     ui_help_side_t side;        /**< the half the dock takes             */
-    /** Shown while the bench is ARMED: the dock covers no control that
-     *  stops an output and no must_show rect. */
+    /** @brief Shown while the bench is ARMED: the dock covers no control
+     *         that stops an output and no must_show rect. */
     bool           armed_ok;
     uint8_t        count;       /**< items, 1 to UI_HELP_ITEMS            */
     ui_help_item_t item[UI_HELP_ITEMS]; /**< the items, by their number  */
-    /** A rect the dock leaves in view, in the screen's coordinates, such
-     *  as the TARGET row that names the pin an armed screen drives; w 0
-     *  for none. */
+    /** @brief A rect the dock leaves in view, in the screen's
+     *         coordinates, such as the TARGET row that names the pin an
+     *         armed screen drives; w 0 for none. */
     gfx_rect_t     must_show;
 } ui_help_page_t;
 
