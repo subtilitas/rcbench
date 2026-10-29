@@ -39,6 +39,18 @@ static const ui_color_id_t k_role[TEXT_HL_CLASSES] = {
     TEXT_HL_CLASS_ROWS(TV_ROLE)
 };
 
+size_t text_view_class_rgb(int theme, uint32_t *out, size_t n)
+{
+    size_t k = 0u;
+    for (; out != NULL && k < n && k < TEXT_VIEW_RGB; ++k) {
+        /* The text stands on ui_panel()'s fill. */
+        const ui_color_id_t role = (k < TEXT_HL_CLASSES) ? k_role[k]
+                                                         : UI_C_PANEL;
+        out[k] = ui_theme_rgb24((ui_theme_id_t)theme, role);
+    }
+    return k;
+}
+
 /* ------------------------------------------------------------ the walk */
 
 /** @brief One line's walk: where it is drawn and the run being built. */

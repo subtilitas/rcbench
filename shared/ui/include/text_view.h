@@ -109,6 +109,12 @@ extern "C" {
 #define TEXT_VIEW_CELLS_NORMAL 92
 /** @brief Cells of a row in the 8 x 16 face: 920px. */
 #define TEXT_VIEW_CELLS_SMALL 115
+/** @brief Spans a drawn line is classed into; a line with more has its
+ *         last span reach to its end as TEXT (text_hl_line()). */
+#define TEXT_VIEW_SPANS 128u
+/** @brief Colours text_view_class_rgb() gives: one per class, then the
+ *         text's background. */
+#define TEXT_VIEW_RGB (TEXT_HL_CLASSES + 1u)
 
 /** @brief Where the viewer stands. */
 typedef enum {
@@ -284,6 +290,17 @@ int text_view_cell_class(int k, int cell);
  * @return the words
  */
 const text_hl_words_t *text_view_words(void);
+
+/**
+ * @brief The colours the viewer draws in, from a palette as defined: each
+ *        class's role (TEXT_HL_CLASS_ROWS), then the background of the
+ *        text, for a page drawn elsewhere (the Wi-Fi page).
+ * @param theme  the palette, a ui_theme_id_t
+ * @param out    takes 0xRRGGBB per class, then the background
+ * @param n      entries at @p out; TEXT_VIEW_RGB for all
+ * @return the entries written, at most @p n
+ */
+size_t text_view_class_rgb(int theme, uint32_t *out, size_t n);
 
 /**
  * @brief Draw the viewer over the whole body.

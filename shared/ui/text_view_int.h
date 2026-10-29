@@ -141,7 +141,7 @@
 
 /** @brief Spans a drawn line is classed into; a line with more has its
  *         last span reach to its end as TEXT (text_hl_line()). */
-#define TV_SPANS 128
+#define TV_SPANS TEXT_VIEW_SPANS
 
 _Static_assert(TV_TEXT_X + TEXT_VIEW_CELLS_NORMAL * 10 <= TV_TEXT_R,
                "a row of the 10 x 20 face ends short of the bar");
