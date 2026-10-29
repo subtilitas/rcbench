@@ -87,6 +87,8 @@ typedef enum {
     CU_CHECK_USB,         /**< it takes no update over CAN                 */
     CU_CHECK_FAILED,      /**< the check ended without an answer           */
     CU_CHECK_UPDATING,    /**< an update, or the BUY of an image on trial  */
+    CU_CHECK_NO_BOARD,    /**< it reports a board this panel carries no
+                               image for                                    */
 } cu_check_t;
 
 /**
@@ -102,6 +104,8 @@ typedef enum {
     CU_SEC_CHECKING,      /**< the build check runs                        */
     CU_SEC_FAILED,        /**< the build check ended without an answer     */
     CU_SEC_USB,           /**< it takes no update over CAN                 */
+    CU_SEC_NO_BOARD,      /**< it reports a board this panel carries no
+                               image for                                    */
     CU_SEC_SAME,          /**< it runs the carried build: nothing to do    */
     CU_SEC_UNSAFE,        /**< ARMED, an arm waiting, the supply on        */
     CU_SEC_RADIO,         /**< the panel's radio is not wholly off         */

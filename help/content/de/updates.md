@@ -123,6 +123,7 @@ Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, 
 | `Build des IOmcu wird geprüft.` | der SHA-256-Vergleich läuft |
 | `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | der Vergleich endete ohne Antwort |
 | `Kein Update über CAN. Firmware einmal über USB installieren.` | der IOmcu hat keine Update-Pages oder keine Partitionstabelle |
+| `Kein IOmcu-Image für dieses Board in diesem Panel-Build.` | der IOmcu meldet ein Board, für das dieser Panel-Build kein Image trägt; kein Update wird angeboten |
 | `Der IOmcu nutzt den Build dieses Panels.` | es gibt nichts zu senden |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an |
 | `Wartet, bis das WLAN des Panels aus ist.` | eine Suche, ein Download oder [WLAN](wifi.md) hat den Funk an |

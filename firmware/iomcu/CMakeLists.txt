@@ -85,6 +85,24 @@ add_executable(rcbench-iomcu
 )
 target_include_directories(rcbench-iomcu PRIVATE include src)
 
+# Which board the image is for (include/iomcu_pins.h): rp2350_can, the
+# module wired by hand, or rbmod, the carrier whose pins are soldered
+# (shared/outputs/out_board_rbmod.c).  The board names the files: the
+# module's image is rcbench-iomcu.*, a carrier's rcbench-iomcu-<board>.*,
+# so the two never share a file name.
+set(IOMCU_BOARD "rp2350_can" CACHE STRING "Board the image is for: rp2350_can or rbmod")
+set_property(CACHE IOMCU_BOARD PROPERTY STRINGS rp2350_can rbmod)
+if(IOMCU_BOARD STREQUAL "rp2350_can")
+    set(iomcu_out rcbench-iomcu)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0)
+elseif(IOMCU_BOARD STREQUAL "rbmod")
+    set(iomcu_out rcbench-iomcu-rbmod)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=1)
+else()
+    message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can or rbmod")
+endif()
+set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
+
 # Core 0's stack: 4096 bytes, all of the SCRATCH_Y region at 0x20081000.  The
 # SDK's default is 2048, and the deepest chain from main() with panic() and
 # one interrupt on top is 2044 (tools/stack_check.py --iomcu).  The SDK's own
@@ -288,7 +306,7 @@ pico_add_extra_outputs(rcbench-iomcu)
 # board file names (sixteen megabytes): 2036KiB = 2084864 bytes.
 add_custom_command(TARGET rcbench-iomcu POST_BUILD
     COMMAND ${CMAKE_COMMAND}
-            -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.bin
+            -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}.bin
             -DLIMIT=${iomcu_slot_bytes}
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/image_fits.cmake"
     VERBATIM)
@@ -300,12 +318,12 @@ add_custom_command(TARGET rcbench-iomcu POST_BUILD
 add_custom_command(TARGET rcbench-iomcu POST_BUILD
     COMMAND picotool partition create --quiet
             "${CMAKE_CURRENT_LIST_DIR}/partitions.json"
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-pt.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}-pt.uf2"
     COMMAND picotool uf2 combine --quiet
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-pt.uf2"
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.uf2"
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-install.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}-pt.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}-install.uf2"
             --partition 0
-    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/rcbench-iomcu-pt.uf2"
-               "${CMAKE_CURRENT_BINARY_DIR}/rcbench-iomcu-install.uf2"
+    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/${iomcu_out}-pt.uf2"
+               "${CMAKE_CURRENT_BINARY_DIR}/${iomcu_out}-install.uf2"
     VERBATIM)

@@ -207,6 +207,7 @@ SOURCES = [
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/out_board_rbmod.c",
     "shared/outputs/servo_cmd.c",
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",

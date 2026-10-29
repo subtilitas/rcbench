@@ -8,6 +8,8 @@
 #include <string.h>
 
 #include "iomcu.h"
+#include "board_fix.h"
+#include "iomcu_pins.h"
 
 #include "pd_uart.h"
 #include "tone_cap.h"
@@ -129,6 +131,11 @@ uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
     (void)ctx;
+    /* On a board with soldered pins the tap is the carrier's. */
+    if (!board_fix_write_ok(outbind_roles(IOMCU_BOARD_ID), LINK_PAGE_TONE,
+                            off, n, in)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* The pins core 1 still holds, as of its last tick. */
     sense_sync();
     tone_core1_sync(&s_tone);

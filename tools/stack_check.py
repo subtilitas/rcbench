@@ -130,7 +130,7 @@ from pathlib import Path
 
 from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
                        die, doc_rows)
-from stack_iomcu import IOMCU_DIR, IOMCU_ELF, check_iomcu_doc, iomcu_check
+from stack_iomcu import IOMCU_DIR, check_iomcu_doc, iomcu_check, iomcu_elf
 from stack_riscv import EM_RISCV, analyse_riscv
 
 PANEL_DIR = ROOT / "firmware" / "panel"
@@ -647,7 +647,7 @@ def main() -> int:
         rows, fails, out = iomcu_check(build, args.verbose)
         if args.check_doc:
             fails += check_iomcu_doc(rows)
-        print(f"stack_check: {build / IOMCU_ELF}")
+        print(f"stack_check: {iomcu_elf(build)}")
         print("\n".join(out))
         for f in fails:
             print("FAIL " + f)

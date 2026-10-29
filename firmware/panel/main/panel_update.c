@@ -32,6 +32,7 @@
 #include "link_pages.h"
 #include "link_port.h"
 #include "link_update_host.h"
+#include "out_bind.h"
 #include "panel.h"
 #include "rcbench_version.h"
 #include "settings.h"
@@ -73,25 +74,83 @@ static ui_screen_id_t s_update_back = SCREEN_LOGS;
 /* -------------------------------------------- the IOmcu's update */
 
 /*
- * The IOmcu image this panel carries: the release's own, embedded by
- * the build option RCBENCH_IOMCU_BIN (main/CMakeLists.txt).  A build without
- * it carries none and offers no update.
+ * The IOmcu images this panel carries: the release's own, one per board,
+ * embedded by the build options RCBENCH_IOMCU_BIN (the RP2350-CAN wired by
+ * hand) and RCBENCH_IOMCU_RBMOD_BIN (the rbmod carrier), main/CMakeLists.txt.
+ * Each IOmcu is offered the image of the board it reports and no other.  A
+ * build without them carries none and offers no update.
+ *
+ * Each image is two linker symbols, its start and its end (CU_SPAN()).
  */
 #ifdef RCBENCH_IOMCU_IMAGE
+/** @brief First byte of the module's IOmcu image. */
 extern const uint8_t _binary_rcbench_iomcu_bin_start[];
+/** @brief One past the last byte of the module's IOmcu image. */
 extern const uint8_t _binary_rcbench_iomcu_bin_end[];
-#define CU_IMG _binary_rcbench_iomcu_bin_start
-/* The image is two linker symbols, its start and its end.  cppcheck takes
- * them for two arrays and their difference for a subtraction across objects;
- * to the linker they are one object.  The suppression covers every use of
- * CU_LEN and nothing else in this file. */
-// cppcheck-suppress-macro subtractPointers
-#define CU_LEN ((uint32_t)(_binary_rcbench_iomcu_bin_end \
-                           - _binary_rcbench_iomcu_bin_start))
-#else
-#define CU_IMG ((const uint8_t *)NULL)
-#define CU_LEN 0u
 #endif
+#ifdef RCBENCH_IOMCU_RBMOD_IMAGE
+/** @brief First byte of the rbmod carrier's IOmcu image. */
+extern const uint8_t _binary_rcbench_iomcu_rbmod_bin_start[];
+/** @brief One past the last byte of the rbmod carrier's IOmcu image. */
+extern const uint8_t _binary_rcbench_iomcu_rbmod_bin_end[];
+#endif
+
+/** @brief The length of an image between its two linker symbols @p s and
+ *         @p e.  cppcheck takes them for two arrays and their difference
+ *         for a subtraction across objects; to the linker they are one
+ *         object.  The suppression covers this macro and nothing else. */
+// cppcheck-suppress-macro subtractPointers
+#define CU_SPAN(s, e) ((uint32_t)((e) - (s)))
+
+/** @brief Control task: the image the IOmcu that answered last is offered;
+ *         its length is 0 while that IOmcu reports a board this panel
+ *         carries no image for. */
+static fw_coproc_image_t s_cu_img;
+
+/**
+ * @brief The images this build carries, one entry per board.
+ *
+ * Built when it is asked for, because an image's length is the difference
+ * of two linker symbols and no constant initialiser.
+ *
+ * @param tab  Receives 2 entries: the module's, then the carrier's; an
+ *             image not carried has a NULL image and length 0.
+ * @return     The entries written, 2.
+ */
+static size_t cu_images(fw_coproc_image_t tab[2])
+{
+    memset(tab, 0, 2u * sizeof(tab[0]));
+    tab[0].board = (uint16_t)OUTBIND_BOARD_PICO_HEADER;
+    tab[1].board = (uint16_t)OUTBIND_BOARD_RBMOD;
+#ifdef RCBENCH_IOMCU_IMAGE
+    tab[0].image = _binary_rcbench_iomcu_bin_start;
+    tab[0].len = CU_SPAN(_binary_rcbench_iomcu_bin_start,
+                         _binary_rcbench_iomcu_bin_end);
+#endif
+#ifdef RCBENCH_IOMCU_RBMOD_IMAGE
+    tab[1].image = _binary_rcbench_iomcu_rbmod_bin_start;
+    tab[1].len = CU_SPAN(_binary_rcbench_iomcu_rbmod_bin_start,
+                         _binary_rcbench_iomcu_rbmod_bin_end);
+#endif
+    return 2u;
+}
+
+/**
+ * @brief Whether this build carries an IOmcu image at all.
+ *
+ * @return true when at least one board's image is carried.
+ */
+static bool cu_any_image(void)
+{
+    fw_coproc_image_t tab[2];
+    const size_t n = cu_images(tab);
+    for (size_t i = 0; i < n; ++i) {
+        if (tab[i].len != 0u) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /* Steps run back to back in one pass of the control task while an update
  * sends: a block is 9 exchanges, and the pass's own work and its 5ms
@@ -229,14 +288,30 @@ static void cu_publish_progress(bool active)
  */
 void cu_link_up(const link_msg_t *reply)
 {
-    if (CU_LEN == 0u || reply == NULL || s_cu_state == CU_UPDATING) {
+    if (!cu_any_image() || reply == NULL || s_cu_state == CU_UPDATING) {
         return;
     }
     s_cu_running = (cu_version_t){ reply->regs[LINK_ID_FIRMWARE_MAJOR],
                                    reply->regs[LINK_ID_FIRMWARE_MINOR],
                                    reply->regs[LINK_ID_FIRMWARE_PATCH] };
     cu_publish_offer(false);
-    link_uph_check(&s_cu, CU_IMG, CU_LEN, now_ms());
+    /* The image of the board that answered, and none for a board this
+     * panel carries no image for: another board's image would put its pin
+     * map on this one. */
+    fw_coproc_image_t tab[2];
+    const size_t n = cu_images(tab);
+    const fw_coproc_image_t *img =
+        fw_coproc_image(tab, n, reply->regs[LINK_ID_HARDWARE]);
+    memset(&s_cu_img, 0, sizeof(s_cu_img));
+    if (img == NULL) {
+        ESP_LOGW(TAG, "IOmcu board %u: this panel carries no image for it",
+                 (unsigned)reply->regs[LINK_ID_HARDWARE]);
+        cu_enter(CU_IDLE);
+        cu_publish_check(CU_CHECK_NO_BOARD);
+        return;
+    }
+    s_cu_img = *img;
+    link_uph_check(&s_cu, s_cu_img.image, s_cu_img.len, now_ms());
     cu_enter(CU_CHECKING);
     cu_publish_check(CU_CHECK_RUNNING);
 }
@@ -390,7 +465,8 @@ bool cu_service(bool *link_up, bench_state_t *bench,
                 control_alert(TR(ALERT_CU_KEPT));
                 /* Bought, whichever panel sent it: whether it is the build
                  * this panel carries is checked again, as at a link-up. */
-                link_uph_check(&s_cu, CU_IMG, CU_LEN, now_ms());
+                link_uph_check(&s_cu, s_cu_img.image, s_cu_img.len,
+                               now_ms());
                 cu_enter(CU_CHECKING);
                 cu_publish_check(CU_CHECK_RUNNING);
             } else {
@@ -438,9 +514,9 @@ bool cu_service(bool *link_up, bench_state_t *bench,
             cu_publish_offer(s_cu_state == CU_OFFERED);
             return false;
         }
-        ESP_LOGI(TAG, "IOmcu update: %lu bytes",
-                 (unsigned long)CU_LEN);
-        link_uph_update(&s_cu, CU_IMG, CU_LEN, now_ms());
+        ESP_LOGI(TAG, "IOmcu update: board %u, %lu bytes",
+                 (unsigned)s_cu_img.board, (unsigned long)s_cu_img.len);
+        link_uph_update(&s_cu, s_cu_img.image, s_cu_img.len, now_ms());
         cu_enter(CU_UPDATING);
         s_cu_took_down = false;
         s_cu_missed = false;
@@ -991,7 +1067,7 @@ void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs)
         .starts_taken = cs->starts_taken,
         .running      = cs->running,
         .carried      = cu_carried(),
-        .have_image   = CU_LEN != 0u,
+        .have_image   = cu_any_image(),
         .reachable    = link_up || cs->mismatch,
         .check        = (cu_check_t)cs->check,
         .radio_up     = s_wifi_ok && !wifi_access_down(),

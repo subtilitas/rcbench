@@ -646,6 +646,12 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      - name: Fetch the rbmod carrier's IOmcu image
+        uses: actions/download-artifact@v7
+        with:
+          name: iomcu-rbmod
+          path: firmware/panel/iomcu-rbmod
+
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
       # versions.  The step runs once the lock file is committed.
@@ -673,7 +679,8 @@ jobs:
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
           command: >-
-            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
+            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
+            -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
       # A build that rewrites the lock file resolved a version the commit
@@ -706,10 +713,13 @@ jobs:
       - name: Every task's stack holds its deepest call chain
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
-      # The symbol target_add_binary_data() names the embedded image by.
-      - name: The IOmcu image is carried
+      # The symbols target_add_binary_data() names the embedded images by:
+      # the module's and the rbmod carrier's.
+      - name: Both IOmcu images are carried
         run: |
           grep -aq _binary_rcbench_iomcu_bin_start \
+            firmware/panel/build/rcbench-panel.elf
+          grep -aq _binary_rcbench_iomcu_rbmod_bin_start \
             firmware/panel/build/rcbench-panel.elf
 
       # The default build reads a touch injector at 0x14 beside the glass
@@ -896,6 +906,21 @@ jobs:
           fi
           python3 tools/stack_check.py --iomcu firmware/iomcu/build-console
 
+      # The rbmod carrier's image (IOMCU_BOARD=rbmod): the same sources with
+      # the carrier's board identity, so each role starts on its soldered
+      # pin.  Its files carry the board's name, and its two stacks are
+      # checked as the module's are.
+      - name: The rbmod carrier's image
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -G Ninja \
+            -DIOMCU_BOARD=rbmod
+          cmake --build firmware/iomcu/build-rbmod -j"$(nproc)"
+          sha256sum firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.uf2 \
+                    firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-install.uf2
+          python3 tools/stack_check.py --iomcu firmware/iomcu/build-rbmod
+
       - uses: actions/upload-artifact@v7
         with:
           name: iomcu
@@ -905,6 +930,17 @@ jobs:
             firmware/iomcu/build/rcbench-iomcu-pt.uf2
             firmware/iomcu/build/rcbench-iomcu.bin
             firmware/iomcu/build/rcbench-iomcu.elf
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iomcu-rbmod
+          path: |
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-install.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-pt.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.elf
           if-no-files-found: error
 
   touch-injector:
