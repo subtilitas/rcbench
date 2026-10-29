@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "board_fix.h"
 #include "link_pages.h"
 #include "out_board_rbmod.h"
 #include "out_pwm_map.h"
@@ -523,15 +524,57 @@ static uint32_t board_mask(const outbind_board_t *bd)
                               : (((uint32_t)1u << bd->count) - 1u);
 }
 
+/**
+ * @brief Whether a protocol may hold catalogue pin @p i of @p bd: on a board
+ *        with roles one of its servo outputs, else any pin not reserved.
+ *
+ * @param bd  The board. Not NULL.
+ * @param i   Catalogue index, below the board's count.
+ * @return    true when a protocol may hold the pin.
+ */
+static bool bindable(const outbind_board_t *bd, uint8_t i)
+{
+    if (bd->roles != NULL) {
+        return board_fix_out_index(bd->roles, bd->pins[i].gpio) >= 0;
+    }
+    return !bd->pins[i].reserved;
+}
+
+uint8_t outbind_cell_count(uint16_t board)
+{
+    const outbind_board_t *bd = outbind_board(board);
+    if (bd == NULL) {
+        return 0u;
+    }
+    return (bd->roles != NULL) ? (uint8_t)OUTBIND_FIXED_OUTS : bd->count;
+}
+
+uint8_t outbind_cell_index(uint16_t board, uint8_t cell)
+{
+    const outbind_board_t *bd = outbind_board(board);
+    if (bd == NULL) {
+        return 0u;
+    }
+    if (bd->roles == NULL) {
+        return (cell < bd->count) ? cell : bd->count;
+    }
+    if (cell >= OUTBIND_FIXED_OUTS) {
+        return bd->count;
+    }
+    return outbind_index_of(board, bd->roles->out[cell]);
+}
+
 bool outbind_pin_selectable(const outbind_board_t *board, uint8_t index)
 {
     if (board == NULL || index >= board->count) {
         return false;
     }
-    if (board->fixed) {
-        return false;      /* soldered: there is nothing here to choose */
+    /* Soldered with no roles: there is nothing here to choose.  With roles,
+     * the servo outputs take a protocol and nothing else does. */
+    if (board->fixed && board->roles == NULL) {
+        return false;
     }
-    return !board->pins[index].reserved;
+    return bindable(board, index);
 }
 
 const outbind_pin_t *outbind_pins(uint16_t board)
@@ -780,7 +823,7 @@ void outbind_trim(outbind_t *b)
              * restored struct that cannot be rendered, and the lower-numbered
              * protocol keeps it so the result does not depend on walk order.
              */
-            if (kept < cap && !bd->pins[i].reserved && (taken & bit) == 0u) {
+            if (kept < cap && bindable(bd, i) && (taken & bit) == 0u) {
                 ++kept;
                 taken |= bit;
             } else {
@@ -798,7 +841,12 @@ void outbind_trim(outbind_t *b)
      */
     uint8_t slot = 0u, channel = 0u;
     bool room = true;
-    for (uint8_t i = 0; i < bd->count; ++i) {
+    const uint8_t cells = outbind_cell_count(b->board);
+    for (uint8_t c = 0; c < cells; ++c) {
+        const uint8_t i = outbind_cell_index(b->board, c);
+        if (i >= bd->count) {
+            continue;
+        }
         const uint32_t bit = (uint32_t)1u << i;
         uint8_t g = 0u;
         for (uint8_t k = 1; k < OUTBIND_PROTOS; ++k) {
@@ -893,7 +941,10 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
      * the screens draw it as the port.  A slot on the port's pin leaves the
      * port without one, and then its slice is free.
      */
-    for (uint8_t n = 0; ports != NULL && n < count; ++n) {
+    /* A board with roles: its programming ports carry no PWM, so their
+     * slices are free (board_fix.h). */
+    for (uint8_t n = 0; bd->roles == NULL && ports != NULL && n < count;
+         ++n) {
         const uint8_t prog_gpio = ports[n];
         if (prog_gpio <= OUT_MAX_PIN && prog_gpio != gpio
             && outbind_group_of(b, outbind_index_of(b->board, prog_gpio))
@@ -915,6 +966,23 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
             return OUTBIND_CLASH_COMPARE;
         }
     }
+    /*
+     * On a board with roles, two servo outputs on one slice run at one
+     * frame rate, and the SERVO page moves a surface's rate.  A PWM output
+     * of the other role -- a surface beside a throttle -- is refused
+     * (outputs_slots_rate_check()), so it is not offered.
+     */
+    for (uint8_t i = 0; bd->roles != NULL && i < bd->count; ++i) {
+        const uint8_t g = outbind_group_of(b, i);
+        if (i != index && g != 0u && k_protos[g].driver == OUT_DRIVER_PWM
+            && k_protos[g].role != k_protos[proto].role
+            && out_pwm_same_slice(bd->pins[i].gpio, gpio)) {
+            if (with != NULL) {
+                *with = bd->pins[i].gpio;
+            }
+            return OUTBIND_CLASH_OUT_SLICE;
+        }
+    }
     return OUTBIND_CLASH_NONE;
 }
 
@@ -933,8 +1001,11 @@ bool outbind_toggle(outbind_t *b, uint8_t index)
      * the page written from that would take away a driver the board still
      * has a connector for.
      */
-    if (bd->fixed) {
+    if (bd->fixed && bd->roles == NULL) {
         return false;
+    }
+    if (bd->roles != NULL && !bindable(bd, index)) {
+        return false;     /* only a servo output takes a protocol */
     }
     const uint8_t proto = (b->proto < OUTBIND_PROTOS) ? b->proto : 0u;
     const uint32_t bit = (uint32_t)1u << index;
@@ -988,7 +1059,12 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs)
      * the protocols are mixed.
      */
     uint8_t slot = 0u, channel = 0u;
-    for (uint8_t i = 0; i < bd->count && slot < LINK_OUT_SLOTS; ++i) {
+    const uint8_t cells = outbind_cell_count(b->board);
+    for (uint8_t c = 0; c < cells && slot < LINK_OUT_SLOTS; ++c) {
+        const uint8_t i = outbind_cell_index(b->board, c);
+        if (i >= bd->count) {
+            continue;
+        }
         const uint8_t g = outbind_group_of(b, i);
         if (g == 0u) {
             continue;
@@ -1130,7 +1206,7 @@ bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs,
             return false;
         }
         const uint8_t idx = outbind_index_of(board, (uint8_t)pin);
-        if (idx >= bd->count || bd->pins[idx].reserved) {
+        if (idx >= bd->count || !bindable(bd, idx)) {
             /*
              * A pin not on the header, or one that is spoken for.  The page
              * stores what was written and the bank refuses a reserved pin

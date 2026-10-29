@@ -35,6 +35,7 @@
 #include "supply_link.h"
 #include "telemetry_sim.h"
 #include "tone_link.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 static const char *TAG = "rcbench";
@@ -412,6 +413,7 @@ static void link_came_up(const link_msg_t *reply)
      * read of it can reach a value from an earlier IOmcu.
      */
     s_board = reply->regs[LINK_ID_HARDWARE];
+    ui_board_set(s_board);
 
     /* A binding is prepared and committed whole from 4.10
      * (bind_link_write()), and written page by page before it. */

@@ -421,6 +421,28 @@ uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
  */
 uint64_t outbind_reserved_mask(uint16_t board);
 
+/**
+ * @brief How many cells the OUTPUTS grid shows for the board: its catalogue,
+ *        or on a board with roles its servo outputs only.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       The cells, or 0 for a board this build does not know.
+ */
+uint8_t outbind_cell_count(uint16_t board);
+
+/**
+ * @brief The catalogue index cell @p cell shows.
+ *
+ * Cell order is slot order: catalogue (GPIO) order, or on a board with roles
+ * PWM01 first, so slot n is output n + 1 there.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @param cell   Cell, 0 to outbind_cell_count() - 1.
+ * @return       The catalogue index, or the board's count for a cell past
+ *               the grid; 0 for a board this build does not know.
+ */
+uint8_t outbind_cell_index(uint16_t board, uint8_t cell);
+
 /* ------------------------------------------------------------- protocols */
 
 /**
@@ -627,6 +649,10 @@ typedef enum {
     OUTBIND_CLASH_PROG_SLICE,
     /** @brief The pin's compare register drives a pin already bound as PWM. */
     OUTBIND_CLASH_COMPARE,
+    /** @brief On a board with roles: the pin's slice holds a servo output
+     *         bound as PWM of the other role (a surface beside a
+     *         throttle), which may run at another frame rate. */
+    OUTBIND_CLASH_OUT_SLICE,
 } outbind_clash_t;
 
 /**
@@ -686,9 +712,10 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
  * selection does not use is set to no driver, so a page written from this is
  * the whole truth rather than a change to what was there.
  *
- * Slots are filled in pin order across every protocol and take channels from
- * zero upward, so the lowest chosen pin is channel 0 whichever protocol holds
- * it.  Filling stops at LINK_OUT_SLOTS slots or LINK_OUT_CHANNELS channels,
+ * Slots are filled in cell order (outbind_cell_index()) across every
+ * protocol and take channels from zero upward: pin order, so the lowest
+ * chosen pin is channel 0 whichever protocol holds it, or on a board with
+ * roles PWM01 to PWM04.  Filling stops at LINK_OUT_SLOTS slots or LINK_OUT_CHANNELS channels,
  * whichever comes first.  Returns how many slots were used.
  *
  * @param b     The selection.  NULL leaves @p regs with the default slots.

@@ -450,6 +450,9 @@ SCREENS = {
     "setup-folder": ("setup-folder.png", "setup", "dark"),
     # INTERFACES with the INA228 enabled, at the top of the list.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
+    # The rbmod carrier: no PICK A PIN tile, and soldered pin rows.
+    "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
+    "setup-rbmod-iface": ("setup-rbmod-iface.png", "setup", "dark"),
     # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
@@ -497,6 +500,10 @@ SCREENS = {
     # The PROG PORT entry, as SERVO's TARGET row opens it with the port as
     # the tester's target: GP13 lit, SERVO TESTER and PORT PWM.
     "outputs-port": ("outputs-port.png", "outputs", "dark"),
+    # The rbmod carrier: PWM01 to PWM04 and a refusal for slice 2, PROG
+    # PORT 1 on its soldered pin.
+    "outputs-rbmod": ("outputs-rbmod.png", "outputs", "dark"),
+    "outputs-rbmod-port": ("outputs-rbmod-port.png", "outputs", "dark"),
     # PROG PORT 2, function NONE on GP14, its FUNCTION ask waiting for a
     # bench at rest.
     "outputs-port2": ("outputs-port2.png", "outputs", "dark"),

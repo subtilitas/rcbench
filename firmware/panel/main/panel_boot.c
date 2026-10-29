@@ -34,6 +34,7 @@
 #include "touch.h"
 #include "ui_card_text.h"
 #include "ui_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "wifi_access.h"
 
@@ -329,6 +330,7 @@ bool bring_up(void)
              * safety line.
              */
             s_board               = reply.regs[LINK_ID_HARDWARE];
+            ui_board_set(s_board);
             s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
             s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =

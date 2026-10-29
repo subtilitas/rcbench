@@ -67,6 +67,9 @@ static const ui_tile_look_t k_hub_look = {
 static void draw_hub(gfx_canvas_t *c)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
+        if (!settings_hub_tile_shown(i)) {
+            continue;
+        }
         const hub_tile_t *t = &k_tiles[i];
         const bool down = (s.hit_kind == HIT_TILE && s.hit_index == i);
         if (t->cat < 0) {
@@ -233,7 +236,7 @@ static void draw_row(gfx_canvas_t *c, int index)
     int vy = r.y + (ROW_H - gfx_text_height(vf, 1)) / 2;
     gfx_text(c, ux - vw, vy, buf, vf, unheld ? UI_WARN : UI_ACCENT, 1);
 
-    if (settings_derived(id) || settings_held(id)) {
+    if (settings_derived(id) || settings_fixed(id) || settings_held(id)) {
         return;                 /* shown, not set here: no keys */
     }
     bool minus_down = (s.hit_kind == HIT_MINUS && s.hit_index == index);

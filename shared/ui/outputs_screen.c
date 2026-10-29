@@ -393,9 +393,23 @@ static bool clear_offered(void)
     return s.read == BIND_READ_ODD && outputs_screen_port_shown() < 0;
 }
 
+/* The grid position of catalogue pin @p i: its index, or on a board that
+ * solders its pins its servo output's place (outbind_cell_index()). */
+static int cell_pos(int i)
+{
+    const uint8_t n = outbind_cell_count(s.bind.board);
+    for (uint8_t k = 0; k < n; ++k) {
+        if ((int)outbind_cell_index(s.bind.board, k) == i) {
+            return (int)k;
+        }
+    }
+    return i;
+}
+
 static gfx_rect_t cell_rect(int i)
 {
-    const int col = i / GRID_ROWS, row = i % GRID_ROWS;
+    const int pos = cell_pos(i);
+    const int col = pos / GRID_ROWS, row = pos % GRID_ROWS;
     return gfx_rect_make(GRID_X + col * (CELL_W + CELL_GAP),
                          GRID_Y + row * (CELL_H + ROW_GAP),
                          CELL_W, CELL_H);
@@ -410,8 +424,9 @@ static int cell_at(int x, int y)
 {
     /* Once, not per pin: the count is a board-table lookup and this runs on
      * every touch event. */
-    const int n = (int)outbind_pin_count(s.bind.board);
-    for (int i = 0; i < n; ++i) {
+    const int n = (int)outbind_cell_count(s.bind.board);
+    for (int k = 0; k < n; ++k) {
+        const int i = (int)outbind_cell_index(s.bind.board, (uint8_t)k);
         if (inside(cell_rect(i), x, y)) {
             return i;
         }
@@ -694,6 +709,20 @@ static gfx_color_t result_color(void)
 
 /* The binding can arrive from outside -- read off the wire, or restored --
  * so the index is never trusted to be one this build knows. */
+/* The pins protocol @p p can hold on @p b's board: its own cap and the
+ * page's slots, and no more than the grid has cells (four on a board that
+ * solders its pins). */
+static uint8_t pins_cap(const outbind_t *b, const outbind_proto_t *p)
+{
+    uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
+                                                : (uint8_t)OUT_MAX_SLOTS;
+    const uint8_t cells = outbind_cell_count(b->board);
+    if (outbind_roles(b->board) != NULL && cells < cap) {
+        cap = cells;
+    }
+    return cap;
+}
+
 static const outbind_proto_t *chosen_proto(void)
 {
     const uint8_t i = (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
@@ -752,8 +781,7 @@ bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap)
         return true;
     }
     const uint8_t n = outbind_chosen(b);
-    const uint8_t lim = (p->max_pins < OUT_MAX_SLOTS)
-                            ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+    const uint8_t lim = pins_cap(b, p);
     const uint8_t used_ch = outbind_channels_used(b);
     const uint8_t used_sl = outbind_chosen_total(b);
     if (n >= lim) {
@@ -827,7 +855,14 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
         return OUTPUTS_CELL_HELD;
     }
     if (label != NULL) {
-        snprintf(label, cap, "PAD %u", (unsigned)pin->pad);
+        /* A soldered output is named by its role, so the line under it is
+         * its GPIO, the pin the lead is on. */
+        char role[8];
+        if (outputs_role_name(s.bind.board, pin->gpio, role, sizeof(role))) {
+            (void)ui_pin_name(label, cap, pin->gpio);
+        } else {
+            snprintf(label, cap, "PAD %u", (unsigned)pin->pad);
+        }
     }
     return (held != 0u) ? OUTPUTS_CELL_TICKED : OUTPUTS_CELL_FREE;
 }
@@ -849,8 +884,7 @@ static void draw_left(gfx_canvas_t *c)
     /* OFF takes no pin, so a count of its pins says nothing. */
     if (p->max_pins != 0u) {
         const uint8_t n = outbind_chosen(&s.bind);
-        const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS)
-                                ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+        const uint8_t cap = pins_cap(&s.bind, p);
         snprintf(buf, sizeof(buf), TR(OUT_PINS_OF), (unsigned)n,
                  (unsigned)cap);
         gfx_text(c, COL_X, COUNT_Y, buf, OU_FONT_LABEL, UI_TEXT_DIM, 1);
@@ -961,7 +995,9 @@ static void draw_cell(gfx_canvas_t *c, int i)
     }
 
     char name[UI_PIN_NAME_SIZE];
-    (void)ui_pin_name(name, sizeof(name), pin->gpio);
+    if (!outputs_role_name(s.bind.board, pin->gpio, name, sizeof(name))) {
+        (void)ui_pin_name(name, sizeof(name), pin->gpio);
+    }
     gfx_color_t ink = reserved ? UI_TEXT_FAINT
                                     : ((lit || can) ? UI_TEXT : UI_TEXT_DIM);
     gfx_text(c, bx + BOX + 10, r.y + 6, name, OU_FONT_PIN, ink, 1);
@@ -1026,9 +1062,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     gfx_fill_rect(c, 0, 0, c->width, c->height, UI_BG);
     draw_left(c);
-    const int cells = (int)outbind_pin_count(s.bind.board);
-    for (int i = 0; i < cells; ++i) {
-        draw_cell(c, i);
+    const int cells = (int)outbind_cell_count(s.bind.board);
+    for (int k = 0; k < cells; ++k) {
+        draw_cell(c, (int)outbind_cell_index(s.bind.board, (uint8_t)k));
     }
     if (s.open) {
         draw_popup(c);
